@@ -1,0 +1,81 @@
+{
+    "mainModule": {
+        "duration": 2.0,
+        "looping": false,
+        "startLifetime": 1.5,
+        "startLifetimeRandomness": 0.3,
+        "startSpeed": 5.0,
+        "startSpeedRandomness": 2.0,
+        "startSize": 0.2,
+        "startSizeRandomness": 0.1,
+        "startRotation": [0.0, 0.0, 0.0],
+        "startRotationRandomness": [0.0, 0.0, 360.0],
+        "startColor": [1.0, 1.0, 0.3, 1.0],
+        "gravityModifier": 0.0,
+        "simulationSpace": 0,
+        "playOnAwake": false,
+        "scalingMode": 0,
+        "maxParticles": 200
+    },
+    "emissionModule": {
+        "enabled": true,
+        "rateOverTime": 50.0,
+        "rateOverDistance": 0.0,
+        "bursts": [
+            {
+                "time": 0.0,
+                "count": 30,
+                "cycles": 1,
+                "interval": 0.0
+            }
+        ]
+    },
+    "shapeModule": {
+        "enabled": true,
+        "shapeType": 0,
+        "emitFrom": 0,
+        "radius": 0.5,
+        "angle": 25.0,
+        "length": 5.0,
+        "boxSize": [1.0, 1.0, 1.0],
+        "arc": 360.0,
+        "position": [0.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+    },
+    "velocityOverLifetimeModule": {
+        "enabled": false,
+        "linearVelocity": [0.0, 0.0, 0.0],
+        "speedModifier": 1.0
+    },
+    "limitVelocityModule": {
+        "enabled": false,
+        "speedLimit": 5.0,
+        "dampen": 0.8
+    },
+    "forceOverLifetimeModule": {
+        "enabled": false,
+        "force": [0.0, 0.0, 0.0]
+    },
+    "colorOverLifetimeModule": {
+        "enabled": true,
+        "startColor": [1.0, 1.0, 0.5, 1.0],
+        "endColor": [1.0, 1.0, 1.0, 0.0]
+    },
+    "sizeOverLifetimeModule": {
+        "enabled": true,
+        "sizeMultiplier": 1.0,
+        "startSize": 0.25,
+        "endSize": 0.0
+    },
+    "rotationOverLifetimeModule": {
+        "enabled": true,
+        "angularVelocity": [0.0, 0.0, 180.0]
+    },
+    "noiseModule": {
+        "enabled": false,
+        "strength": 1.0,
+        "frequency": 0.5,
+        "scrollSpeed": 1.0
+    }
+}

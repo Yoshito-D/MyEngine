@@ -1,0 +1,589 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Development|x64">
+      <Configuration>Development</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{1445e24a-7fe7-4244-88aa-4f892355b07f}</ProjectGuid>
+    <RootNamespace>CG2DirectX</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
+    <OutDir>$(SolutionDir)..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;MYPROJECT_NON_RELEASE;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)externals;$(ProjectDir)externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
+      <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"</Command>
+    </PostBuildEvent>
+    <Manifest>
+      <AdditionalManifestFiles>$(ProjectDir)DpiAwarenessPerMonitor.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)externals;$(ProjectDir)externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"</Command>
+    </PostBuildEvent>
+    <Manifest>
+      <AdditionalManifestFiles>$(ProjectDir)DpiAwarenessPerMonitor.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>DEVELOPMENT;MYPROJECT_NON_RELEASE;_WINDOWS;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)externals;$(ProjectDir)externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+      <Optimization>Disabled</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration />
+    </Link>
+    <PostBuildEvent>
+      <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"</Command>
+    </PostBuildEvent>
+    <Manifest>
+      <AdditionalManifestFiles>$(ProjectDir)DpiAwarenessPerMonitor.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="externals\imgui\imgui.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_demo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_draw.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_impl_win32.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_tables.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="externals\imgui\imgui_widgets.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\AssetManager.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\MaterialManager.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\ModelAssetManager.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\SoundManager.cpp" />
+    <ClCompile Include="GameEngine\Core\Asset\TextureManager.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Audio\Audio.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\AreaLight.cpp" />
+    <ClCompile Include="GameEngine\Core\Graphics\LightDataBuffer.cpp" />
+    <ClCompile Include="GameEngine\Core\Graphics\OffscreenRenderTarget.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\PointLight.cpp" />
+    <ClCompile Include="GameEngine\Core\Graphics\SpotLight.cpp" />
+    <ClCompile Include="GameEngine\Core\Input\KeyConfig.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\CameraManager.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\DrawCommand.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\LightManager.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Bloom.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PSOManager.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\ChromaticAberration.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\GaussBlur.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Grayscale.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Pixelation.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcess.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcessManager.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\RadialBlur.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\ShockWave.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Vignette.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\Renderer.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\ModelRenderer.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\SpriteRenderer.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\ParticleRenderer.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\UIRenderer.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\ShaderManager.cpp" />
+    <ClCompile Include="GameEngine\Core\TimeProfiler\TimeProfiler.cpp" />
+    <ClCompile Include="GameEngine\Effect\Edit\ParticleEmissionModuleEdit.cpp" />
+    <ClCompile Include="GameEngine\Effect\Edit\ParticleLifetimeModulesEdit.cpp" />
+    <ClCompile Include="GameEngine\Effect\Edit\ParticleMainModuleEdit.cpp" />
+    <ClCompile Include="GameEngine\Effect\Edit\ParticleShapeModuleEdit.cpp" />
+    <ClCompile Include="GameEngine\Effect\LensFlare.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\EmissionModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\LifetimeModules.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\MainModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\RendererModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\ShapeModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Particle.cpp" />
+    <ClCompile Include="GameEngine\Effect\ParticleMaterial.cpp" />
+    <ClCompile Include="GameEngine\Effect\ParticleSystem.cpp" />
+    <ClCompile Include="GameEngine\Effect\ParticleSystemEdit.cpp" />
+    <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
+    <ClCompile Include="GameEngine\Framework\Framework.cpp" />
+    <ClCompile Include="GameEngine\Object\Line\Line.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Line\LineRenderer.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Model\ModelAsset.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Object.cpp" />
+    <ClCompile Include="GameEngine\Collision\Collision.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\ObjectEdit.cpp" />
+    <ClCompile Include="GameEngine\Scene\BaseScene.cpp" />
+    <ClCompile Include="GameEngine\Scene\Camera\Camera.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\DirectionalLight.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\UI\ImGuiManager.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Input\Input.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\Material.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\Mesh.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Model\Model.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\PipelineState.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Audio\Sound.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Scene\Camera\DebugCamera.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Scene\SceneFade.cpp" />
+    <ClCompile Include="GameEngine\Scene\SceneManager.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\ShaderCompiler.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Sprite\Sprite.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\Texture.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\TransformationMatrix.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Utility\JsonDataManager.cpp" />
+    <ClCompile Include="GameEngine\Utility\MathUtils\ColorUtils.cpp" />
+    <ClCompile Include="GameEngine\Utility\MathUtils\EasingFunctions.cpp" />
+    <ClCompile Include="GameEngine\Utility\MathUtils\MatrixOperations.cpp" />
+    <ClCompile Include="GameEngine\Utility\MathUtils\QuaternionOperations.cpp" />
+    <ClCompile Include="GameEngine\Utility\MathUtils\SplineUtils.cpp" />
+    <ClCompile Include="GameEngine\Utility\MathUtils\VectorOperations.cpp" />
+    <ClCompile Include="GameEngine\Utility\StateMachine.cpp" />
+    <ClCompile Include="GameEngine\Utility\TimerSystem.cpp" />
+    <ClCompile Include="GameEngine\Utility\Logger.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">NotUsing</PrecompiledHeader>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\GraphicsDevice.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\ResourceHelper.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameProject\Game.cpp" />
+    <ClCompile Include="GameProject\App\Camera\CameraKeyframe.cpp" />
+    <ClCompile Include="GameProject\App\Camera\CameraSequenceEditor.cpp" />
+    <ClCompile Include="GameProject\App\Camera\CameraSequencer.cpp" />
+    <ClCompile Include="GameProject\App\Camera\OrbitalCameraController.cpp" />
+    <ClCompile Include="GameProject\App\Camera\TPSCameraController.cpp" />
+    <ClCompile Include="GameProject\App\Collider\AABBCollider.cpp" />
+    <ClCompile Include="GameProject\App\Collider\Collider.cpp" />
+    <ClCompile Include="GameProject\App\Collider\CollisionConfig.cpp" />
+    <ClCompile Include="GameProject\App\Collider\CollisionManager.cpp" />
+    <ClCompile Include="GameProject\App\Collider\OBBCollider.cpp" />
+    <ClCompile Include="GameProject\App\Collider\SphereCollider.cpp" />
+    <ClCompile Include="GameProject\App\Component\CameraInputHelper.cpp" />
+    <ClCompile Include="GameProject\App\Component\GravityComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\PlanetSwitchHelper.cpp" />
+    <ClCompile Include="GameProject\App\Component\SphericalMovementComponent.cpp" />
+    <ClCompile Include="GameProject\App\GameObject\Box\Box.cpp" />
+    <ClCompile Include="GameProject\App\GameObject\Enemy\Enemy.cpp" />
+    <ClCompile Include="GameProject\App\GameObject\GameObject.cpp" />
+    <ClCompile Include="GameProject\App\GameObject\Planet\Planet.cpp" />
+    <ClCompile Include="GameProject\App\GameObject\Player\Player.cpp" />
+    <ClCompile Include="GameProject\App\GameObject\Rabbit\Rabbit.cpp" />
+    <ClCompile Include="GameProject\App\GameObject\Star\Star.cpp" />
+    <ClCompile Include="GameProject\App\Scene\ClearScene.cpp" />
+    <ClCompile Include="GameProject\App\Scene\GameOverScene.cpp" />
+    <ClCompile Include="GameProject\App\Scene\GameScene.cpp" />
+    <ClCompile Include="GameProject\App\Scene\GameSceneInitializer.cpp" />
+    <ClCompile Include="GameProject\App\Scene\GameSceneLevelLoader.cpp" />
+    <ClCompile Include="GameProject\App\Scene\GameSceneRenderer.cpp" />
+    <ClCompile Include="GameProject\App\Scene\GameSceneUpdater.cpp" />
+    <ClCompile Include="GameProject\App\Scene\LevelEditor.cpp" />
+    <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp" />
+    <ClCompile Include="GameProject\App\Scene\TestScene.cpp" />
+    <ClCompile Include="GameProject\App\Scene\TitleScene.cpp" />
+    <ClCompile Include="GameProject\App\UI\TimerDisplay.cpp" />
+    <ClCompile Include="main.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">NotUsing</PrecompiledHeader>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Window\Window.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Graphics\RootSignature.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+    <ClCompile Include="GameEngine\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">Create</PrecompiledHeader>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="externals\imgui\imconfig.h" />
+    <ClInclude Include="externals\imgui\imgui.h" />
+    <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="externals\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="externals\imgui\imgui_internal.h" />
+    <ClInclude Include="externals\imgui\imstb_rectpack.h" />
+    <ClInclude Include="externals\imgui\imstb_textedit.h" />
+    <ClInclude Include="externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="externals\nlohmann\json.hpp" />
+    <ClInclude Include="externals\nlohmann\json_fwd.hpp" />
+    <ClInclude Include="GameEngine\Core\Asset\AssetManager.h" />
+    <ClInclude Include="GameEngine\Core\Asset\MaterialManager.h" />
+    <ClInclude Include="GameEngine\Core\Asset\ModelAssetManager.h" />
+    <ClInclude Include="GameEngine\Core\Asset\SoundManager.h" />
+    <ClInclude Include="GameEngine\Core\Asset\TextureManager.h" />
+    <ClInclude Include="GameEngine\Core\Audio\Audio.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\AreaLight.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\LightDataBuffer.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\OffscreenRenderTarget.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\PointLight.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\ShaderCompiler.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\SpotLight.h" />
+    <ClInclude Include="GameEngine\Core\Input\KeyConfig.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\CameraManager.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\DrawCommand.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\LightManager.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PipelineDescriptor.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Bloom.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PSOManager.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\ChromaticAberration.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\GaussBlur.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Grayscale.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Pixelation.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\PostProcess.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\PostProcessManager.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\RadialBlur.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\ShockWave.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Vignette.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Renderer.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\ModelRenderer.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\SpriteRenderer.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\ParticleRenderer.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\UIRenderer.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\ShaderManager.h" />
+    <ClInclude Include="GameEngine\Core\TimeProfiler\TimeProfiler.h" />
+    <ClInclude Include="GameEngine\Effect\Edit\ParticleEmissionModuleEdit.h" />
+    <ClInclude Include="GameEngine\Effect\Edit\ParticleLifetimeModulesEdit.h" />
+    <ClInclude Include="GameEngine\Effect\Edit\ParticleMainModuleEdit.h" />
+    <ClInclude Include="GameEngine\Effect\Edit\ParticleShapeModuleEdit.h" />
+    <ClInclude Include="GameEngine\Effect\LensFlare.h" />
+    <ClInclude Include="GameEngine\Effect\Module\EmissionModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\LifetimeModules.h" />
+    <ClInclude Include="GameEngine\Effect\Module\MainModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\ParticleModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\RendererModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\ShapeModule.h" />
+    <ClInclude Include="GameEngine\Effect\Particle.h" />
+    <ClInclude Include="GameEngine\Effect\ParticleMaterial.h" />
+    <ClInclude Include="GameEngine\Effect\ParticleSystem.h" />
+    <ClInclude Include="GameEngine\Effect\ParticleSystemEdit.h" />
+    <ClInclude Include="GameEngine\Framework\D3DResourceLeakChecker.h" />
+    <ClInclude Include="GameEngine\Framework\EngineContext.h" />
+    <ClInclude Include="GameEngine\Framework\ExportDump.h" />
+    <ClInclude Include="GameEngine\Framework\Framework.h" />
+    <ClInclude Include="GameEngine\Object\Line\Line.h" />
+    <ClInclude Include="GameEngine\Object\Line\LineRenderer.h" />
+    <ClInclude Include="GameEngine\Object\Model\ModelAsset.h" />
+    <ClInclude Include="GameEngine\Object\Object.h" />
+    <ClInclude Include="GameEngine\Collision\Collider.h" />
+    <ClInclude Include="GameEngine\Collision\Collision.h" />
+    <ClInclude Include="GameEngine\Object\ObjectEdit.h" />
+    <ClInclude Include="GameEngine\Scene\BaseScene.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Camera.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\DirectionalLight.h" />
+    <ClInclude Include="GameEngine\Core\UI\ImGuiManager.h" />
+    <ClInclude Include="GameEngine\Core\Input\Input.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\Material.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\Mesh.h" />
+    <ClInclude Include="GameEngine\Object\Model\Model.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\PipelineState.h" />
+    <ClInclude Include="GameEngine\Core\Audio\Sound.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\DebugCamera.h" />
+    <ClInclude Include="GameEngine\Scene\IScene.h" />
+    <ClInclude Include="GameEngine\Scene\ISceneFactory.h" />
+    <ClInclude Include="GameEngine\Scene\SceneFade.h" />
+    <ClInclude Include="GameEngine\Scene\SceneManager.h" />
+    <ClInclude Include="GameEngine\Object\Sprite\Sprite.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\Texture.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\TransformationMatrix.h" />
+    <ClInclude Include="GameEngine\Core\Window\Window.h" />
+    <ClInclude Include="GameEngine\Utility\JsonDataManager.h" />
+    <ClInclude Include="GameEngine\Utility\MathUtils.h" />
+    <ClInclude Include="GameEngine\Utility\MathUtils\ColorUtils.h" />
+    <ClInclude Include="GameEngine\Utility\MathUtils\EasingFunctions.h" />
+    <ClInclude Include="GameEngine\Utility\MathUtils\MatrixOperations.h" />
+    <ClInclude Include="GameEngine\Utility\MathUtils\QuaternionOperations.h" />
+    <ClInclude Include="GameEngine\Utility\MathUtils\RandomUtils.h" />
+    <ClInclude Include="GameEngine\Utility\MathUtils\SplineUtils.h" />
+    <ClInclude Include="GameEngine\Utility\MathUtils\VectorOperations.h" />
+    <ClInclude Include="GameEngine\Utility\Math\Matrix3x3.h" />
+    <ClInclude Include="GameEngine\Utility\Math\Matrix4x4.h" />
+    <ClInclude Include="GameEngine\Utility\Math\Quaternion.h" />
+    <ClInclude Include="GameEngine\Utility\Math\Transform.h" />
+    <ClInclude Include="GameEngine\Utility\Math\Vector2.h" />
+    <ClInclude Include="GameEngine\Utility\Math\Vector3.h" />
+    <ClInclude Include="GameEngine\Utility\Math\Vector4.h" />
+    <ClInclude Include="GameEngine\Utility\StateMachine.h" />
+    <ClInclude Include="GameEngine\Utility\TimerSystem.h" />
+    <ClInclude Include="GameEngine\Utility\Logger.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\GraphicsDevice.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\RootSignature.h" />
+    <ClInclude Include="GameEngine\pch.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\ResourceHelper.h" />
+    <ClInclude Include="GameEngine\Utility\VectorMath.h" />
+    <ClInclude Include="GameProject\Game.h" />
+    <ClInclude Include="GameProject\App\Camera\CameraKeyframe.h" />
+    <ClInclude Include="GameProject\App\Camera\CameraSequenceEditor.h" />
+    <ClInclude Include="GameProject\App\Camera\CameraSequencer.h" />
+    <ClInclude Include="GameProject\App\Camera\OrbitalCameraController.h" />
+    <ClInclude Include="GameProject\App\Camera\TPSCameraController.h" />
+    <ClInclude Include="GameProject\App\Collider\AABBCollider.h" />
+    <ClInclude Include="GameProject\App\Collider\Collider.h" />
+    <ClInclude Include="GameProject\App\Collider\CollisionConfig.h" />
+    <ClInclude Include="GameProject\App\Collider\CollisionLayer.h" />
+    <ClInclude Include="GameProject\App\Collider\CollisionManager.h" />
+    <ClInclude Include="GameProject\App\Collider\OBBCollider.h" />
+    <ClInclude Include="GameProject\App\Collider\SphereCollider.h" />
+    <ClInclude Include="GameProject\App\Component\CameraInputHelper.h" />
+    <ClInclude Include="GameProject\App\Component\GravityComponent.h" />
+    <ClInclude Include="GameProject\App\Component\PlanetSwitchHelper.h" />
+    <ClInclude Include="GameProject\App\Component\SphericalMovementComponent.h" />
+    <ClInclude Include="GameProject\App\GameObject\Box\Box.h" />
+    <ClInclude Include="GameProject\App\GameObject\Enemy\Enemy.h" />
+    <ClInclude Include="GameProject\App\GameObject\GameObject.h" />
+    <ClInclude Include="GameProject\App\GameObject\Planet\Planet.h" />
+    <ClInclude Include="GameProject\App\GameObject\Player\Player.h" />
+    <ClInclude Include="GameProject\App\GameObject\Rabbit\Rabbit.h" />
+    <ClInclude Include="GameProject\App\GameObject\Star\Star.h" />
+    <ClInclude Include="GameProject\App\Scene\ClearScene.h" />
+    <ClInclude Include="GameProject\App\Scene\GameOverScene.h" />
+    <ClInclude Include="GameProject\App\Scene\GameScene.h" />
+    <ClInclude Include="GameProject\App\Scene\GameSceneInitializer.h" />
+    <ClInclude Include="GameProject\App\Scene\GameSceneLevelLoader.h" />
+    <ClInclude Include="GameProject\App\Scene\GameSceneRenderer.h" />
+    <ClInclude Include="GameProject\App\Scene\GameSceneUpdater.h" />
+    <ClInclude Include="GameProject\App\Scene\LevelEditor.h" />
+    <ClInclude Include="GameProject\App\Scene\MySceneFactory.h" />
+    <ClInclude Include="GameProject\App\Scene\TestScene.h" />
+    <ClInclude Include="GameProject\App\Scene\TitleScene.h" />
+    <ClInclude Include="GameProject\App\UI\TimerDisplay.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="externals\imgui\LICENSE.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
+      <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

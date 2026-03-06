@@ -1,0 +1,43 @@
+{
+  "name": "Particle",
+  "vertexShader": "Particle",
+  "pixelShader": "Particle",
+  "rootSignature": "Particle",
+  "supportBlendModes": true,
+  "defaultBlendMode": "None",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "Zero",
+  "depthFunc": "LessEqual",
+  "topologyType": "Triangle",
+  "inputLayout": [
+    {
+      "semanticName": "POSITION",
+      "semanticIndex": 0,
+      "format": "R32G32B32A32_FLOAT",
+      "alignedByteOffset": 4294967295,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    },
+    {
+      "semanticName": "TEXCOORD",
+      "semanticIndex": 0,
+      "format": "R32G32_FLOAT",
+      "alignedByteOffset": 4294967295,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    },
+    {
+      "semanticName": "COLOR",
+      "semanticIndex": 0,
+      "format": "R32G32B32A32_FLOAT",
+      "alignedByteOffset": 4294967295,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    }
+  ]
+}

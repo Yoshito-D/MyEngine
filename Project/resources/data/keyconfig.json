@@ -1,0 +1,16 @@
+{
+  "gamepad": {
+    "Fire": 512,
+    "Jump": 4096
+  },
+  "keys": {
+    "Jump": 57,
+    "MoveDown": 31,
+    "MoveLeft": 30,
+    "MoveRight": 32,
+    "MoveUp": 17
+  },
+  "mouse": {
+    "Fire": 0
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "name": "Line3D",
+  "vertexShader": "Line3D",
+  "pixelShader": "Line3D",
+  "rootSignature": "Line3D",
+  "supportBlendModes": false,
+  "defaultBlendMode": "Normal",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "Zero",
+  "depthFunc": "LessEqual",
+  "topologyType": "Line",
+  "inputLayout": [
+    {
+      "semanticName": "TEXCOORD",
+      "semanticIndex": 0,
+      "format": "R32_FLOAT",
+      "alignedByteOffset": 0,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    },
+    {
+      "semanticName": "POSITION",
+      "semanticIndex": 0,
+      "format": "R32G32B32_FLOAT",
+      "alignedByteOffset": 0,
+      "inputSlot": 1,
+      "inputSlotClass": "PerInstanceData",
+      "instanceDataStepRate": 1
+    },
+    {
+      "semanticName": "POSITION",
+      "semanticIndex": 1,
+      "format": "R32G32B32_FLOAT",
+      "alignedByteOffset": 12,
+      "inputSlot": 1,
+      "inputSlotClass": "PerInstanceData",
+      "instanceDataStepRate": 1
+    },
+    {
+      "semanticName": "COLOR",
+      "semanticIndex": 0,
+      "format": "R32G32B32A32_FLOAT",
+      "alignedByteOffset": 24,
+      "inputSlot": 1,
+      "inputSlotClass": "PerInstanceData",
+      "instanceDataStepRate": 1
+    }
+  ]
+}

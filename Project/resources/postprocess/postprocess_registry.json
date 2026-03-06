@@ -1,0 +1,60 @@
+{
+  "postProcessEffects": [
+    {
+      "name": "Radial Blur",
+      "className": "RadialBlur",
+      "priority": 10,
+      "enabled": false,
+      "pipelineName": "PostProcess_RadialBlur"
+    },
+    {
+      "name": "Grayscale",
+      "className": "Grayscale",
+      "priority": 70,
+      "enabled": false,
+      "pipelineName": "PostProcess_Grayscale"
+    },
+    {
+      "name": "Gauss Blur",
+      "className": "GaussBlur",
+      "priority": 30,
+      "enabled": false,
+      "pipelineName": "PostProcess_GaussBlur"
+    },
+    {
+      "name": "Chromatic Aberration",
+      "className": "ChromaticAberration",
+      "priority": 40,
+      "enabled": false,
+      "pipelineName": "PostProcess_ChromaticAberration"
+    },
+    {
+      "name": "Vignette",
+      "className": "Vignette",
+      "priority": 50,
+      "enabled": false,
+      "pipelineName": "PostProcess_Vignette"
+    },
+    {
+      "name": "Shock Wave",
+      "className": "ShockWave",
+      "priority": 60,
+      "enabled": false,
+      "pipelineName": "PostProcess_ShockWave"
+    },
+    {
+      "name": "Pixelation",
+      "className": "Pixelation",
+      "priority": 70,
+      "enabled": false,
+      "pipelineName": "PostProcess_Pixelation"
+    },
+    {
+      "name": "Bloom",
+      "className": "Bloom",
+      "priority": 20,
+      "enabled": false,
+      "pipelineName": "PostProcess_Bloom"
+    }
+  ]
+}

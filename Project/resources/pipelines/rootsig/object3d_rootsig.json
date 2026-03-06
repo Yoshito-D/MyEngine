@@ -1,0 +1,90 @@
+{
+  "name": "Object3D",
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "registerSpace": 0,
+      "comment": "Material"
+    },
+    {
+      "type": "CBV",
+      "visibility": "Vertex",
+      "shaderRegister": 0,
+      "registerSpace": 0,
+      "comment": "TransformationMatrix"
+    },
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 1,
+      "registerSpace": 0,
+      "comment": "Camera"
+    },
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 2,
+      "registerSpace": 0,
+      "comment": "LightCount"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "registerSpace": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "comment": "DirectionalLights StructuredBuffer (t0)"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 1,
+      "registerSpace": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "comment": "PointLights StructuredBuffer (t1)"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 2,
+      "registerSpace": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "comment": "SpotLights StructuredBuffer (t2)"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 3,
+      "registerSpace": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "comment": "AreaLights StructuredBuffer (t3)"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 4,
+      "registerSpace": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "comment": "Texture (t4)"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Wrap",
+      "addressV": "Wrap",
+      "addressW": "Wrap",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}

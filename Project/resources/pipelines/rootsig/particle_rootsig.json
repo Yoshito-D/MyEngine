@@ -1,0 +1,42 @@
+{
+  "name": "Particle",
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "registerSpace": 0,
+      "comment": "Material"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Vertex",
+      "shaderRegister": 0,
+      "registerSpace": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "comment": "Instance Data (t0)"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "registerSpace": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "comment": "Texture (t0)"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Wrap",
+      "addressV": "Wrap",
+      "addressW": "Wrap",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "Sprite",
+  "vertexShader": "Object3D",
+  "pixelShader": "Object3D",
+  "rootSignature": "Object3D",
+  "supportBlendModes": true,
+  "defaultBlendMode": "None",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "All",
+  "depthFunc": "LessEqual",
+  "topologyType": "Triangle",
+  "inputLayout": [
+    {
+      "semanticName": "POSITION",
+      "semanticIndex": 0,
+      "format": "R32G32B32A32_FLOAT",
+      "alignedByteOffset": 4294967295,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    },
+    {
+      "semanticName": "TEXCOORD",
+      "semanticIndex": 0,
+      "format": "R32G32_FLOAT",
+      "alignedByteOffset": 4294967295,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    },
+    {
+      "semanticName": "NORMAL",
+      "semanticIndex": 0,
+      "format": "R32G32B32_FLOAT",
+      "alignedByteOffset": 4294967295,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    }
+  ]
+}

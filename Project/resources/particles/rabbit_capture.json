@@ -1,0 +1,156 @@
+{
+    "colorOverLifetimeModule": {
+        "enabled": true,
+        "endColor": [
+            0.800000011920929,
+            0.30000001192092896,
+            0.800000011920929,
+            0.0
+        ],
+        "startColor": [
+            0.984455943107605,
+            0.930725634098053,
+            0.43866950273513794,
+            1.0
+        ]
+    },
+    "emissionModule": {
+        "bursts": [
+            {
+                "count": 60,
+                "cycles": 1,
+                "interval": 0.0,
+                "time": 0.10000000149011612
+            }
+        ],
+        "enabled": true,
+        "rateOverDistance": 0.0,
+        "rateOverTime": 0.0
+    },
+    "forceOverLifetimeModule": {
+        "enabled": false,
+        "force": [
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "limitVelocityModule": {
+        "dampen": 0.8999999761581421,
+        "enabled": true,
+        "speedLimit": 4.0
+    },
+    "mainModule": {
+        "duration": 0.20000000298023224,
+        "emissionRate": 10.0,
+        "gravityModifier": 0.0,
+        "looping": false,
+        "maxParticles": 1000,
+        "playOnAwake": false,
+        "scalingMode": 0,
+        "simulationSpace": 0,
+        "startColor": {
+            "max": 4294967295,
+            "min": 4294967295,
+            "randomize": false
+        },
+        "startLifetime": {
+            "max": 0.800000011920929,
+            "min": 0.800000011920929,
+            "randomize": false
+        },
+        "startRotation": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "randomize": false
+        },
+        "startSize": {
+            "max": 1.3199999928474426,
+            "min": 0.8199999928474426,
+            "randomize": false
+        },
+        "startSpeed": {
+            "max": 4.199999809265137,
+            "min": 4.199999809265137,
+            "randomize": false
+        }
+    },
+    "noiseModule": {
+        "enabled": true,
+        "frequency": 0.5,
+        "scrollSpeed": 1.0,
+        "strength": 0.0
+    },
+    "rendererModule": {
+        "billboardType": 0,
+        "enabled": true,
+        "lengthScale": 2.0,
+        "speedScale": 1.0
+    },
+    "rotationOverLifetimeModule": {
+        "angularVelocityMax": [
+            0.0,
+            0.0,
+            270.0
+        ],
+        "angularVelocityMin": [
+            0.0,
+            0.0,
+            270.0
+        ],
+        "angularVelocityRandomize": false,
+        "enabled": true
+    },
+    "shapeModule": {
+        "angle": 25.0,
+        "arc": 360.0,
+        "boxSize": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "emitFrom": 2,
+        "enabled": true,
+        "length": 5.0,
+        "position": [
+            21.230195999145508,
+            -8.08090591430664,
+            34.90845489501953
+        ],
+        "radius": 0.30000001192092896,
+        "rotation": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scale": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "shapeType": 0
+    },
+    "sizeOverLifetimeModule": {
+        "enabled": true,
+        "endSize": 0.0,
+        "sizeMultiplier": 4.0800000429153442,
+        "startSize": 0.47999998927116394
+    },
+    "velocityOverLifetimeModule": {
+        "enabled": false,
+        "linearVelocity": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "speedModifier": 1.0
+    }
+}

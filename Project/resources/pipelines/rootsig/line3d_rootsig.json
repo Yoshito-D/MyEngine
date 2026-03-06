@@ -1,0 +1,12 @@
+{
+  "name": "Line3D",
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Vertex",
+      "shaderRegister": 0,
+      "registerSpace": 0
+    }
+  ],
+  "samplers": []
+}

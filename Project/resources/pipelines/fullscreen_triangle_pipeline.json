@@ -1,0 +1,15 @@
+{
+  "name": "FullscreenTriangle",
+  "vertexShader": "FullscreenTriangle",
+  "pixelShader": "FullscreenTriangle",
+  "rootSignature": "FullscreenTriangle",
+  "supportBlendModes": false,
+  "defaultBlendMode": "None",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "All",
+  "depthFunc": "LessEqual",
+  "topologyType": "Triangle",
+  "inputLayout": []
+}

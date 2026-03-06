@@ -1,0 +1,382 @@
+{
+    "boxes": [
+        {
+            "mass": 1.0,
+            "offset": [
+                13.600000381469727,
+                1.2000000476837158,
+                0.0
+            ],
+            "planetId": 1,
+            "size": 1.899999976158142
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                -2.200000047683716,
+                1.0,
+                0.0
+            ],
+            "planetId": 0,
+            "size": 1.7999999523162842
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                0.0,
+                -1.5,
+                0.0
+            ],
+            "planetId": 0,
+            "size": 2.0999999046325684
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                -3.4000000953674316,
+                -1.0,
+                0.0
+            ],
+            "planetId": 1,
+            "size": 1.7999999523162842
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                0.0,
+                -2.700000047683716,
+                -3.9000000953674316
+            ],
+            "planetId": 1,
+            "size": 1.2999999523162842
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                0.0,
+                1.0,
+                1.5
+            ],
+            "planetId": 2,
+            "size": 1.899999976158142
+        },
+        {
+            "mass": 1.399999976158142,
+            "offset": [
+                -2.299999952316284,
+                1.0,
+                0.0
+            ],
+            "planetId": 2,
+            "size": 2.0
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                0.0,
+                -1.7999999523162842,
+                0.0
+            ],
+            "planetId": 2,
+            "size": 1.7999999523162842
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                2.299999952316284,
+                1.0,
+                0.0
+            ],
+            "planetId": 3,
+            "size": 3.0
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                0.0,
+                -0.800000011920929,
+                0.0
+            ],
+            "planetId": 3,
+            "size": 1.7999999523162842
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                -1.7000000476837158,
+                1.0,
+                0.0
+            ],
+            "planetId": 3,
+            "size": 1.7999999523162842
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                -0.10000000149011612,
+                0.20000000298023224,
+                -0.4000000059604645
+            ],
+            "planetId": 1,
+            "size": 2.0999999046325684
+        },
+        {
+            "mass": 1.0,
+            "offset": [
+                2.0999999046325684,
+                -1.5,
+                2.299999952316284
+            ],
+            "planetId": 0,
+            "size": 1.600000023841858
+        }
+    ],
+    "hasPlayerData": true,
+    "hasStarData": true,
+    "planets": [
+        {
+            "gravitationalRadius": 30.0,
+            "id": 0,
+            "orbitAxis": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "orbitCenter": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "orbitRadius": 10.0,
+            "orbitSpeed": 1.0,
+            "pendulumAngle": 45.0,
+            "planetRadius": 8.800000190734863,
+            "position": [
+                0.0,
+                3.9000000953674316,
+                -25.799999237060547
+            ],
+            "type": 0,
+            "waveAmplitude": 5.0,
+            "waveDirection": [
+                1.0,
+                0.0,
+                0.0
+            ]
+        },
+        {
+            "gravitationalRadius": 200.8000030517578,
+            "id": 1,
+            "orbitAxis": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "orbitCenter": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "orbitRadius": 10.0,
+            "orbitSpeed": 1.0,
+            "pendulumAngle": 45.0,
+            "planetRadius": 11.5,
+            "position": [
+                0.0,
+                3.0,
+                0.0
+            ],
+            "type": 0,
+            "waveAmplitude": 5.0,
+            "waveDirection": [
+                1.0,
+                0.0,
+                0.0
+            ]
+        },
+        {
+            "gravitationalRadius": 16.399999618530273,
+            "id": 2,
+            "orbitAxis": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "orbitCenter": [
+                0.0,
+                1.5,
+                0.0
+            ],
+            "orbitRadius": 48.400001525878906,
+            "orbitSpeed": 0.10000000149011612,
+            "pendulumAngle": 45.0,
+            "planetRadius": 9.699999809265137,
+            "position": [
+                43.5,
+                1.5,
+                0.0
+            ],
+            "type": 1,
+            "waveAmplitude": 5.0,
+            "waveDirection": [
+                1.0,
+                0.0,
+                0.0
+            ]
+        },
+        {
+            "gravitationalRadius": 40.399999618530273,
+            "id": 3,
+            "orbitAxis": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "orbitCenter": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "orbitRadius": 10.0,
+            "orbitSpeed": 1.0,
+            "pendulumAngle": 45.0,
+            "planetRadius": 7.400000095367432,
+            "position": [
+                -19.5,
+                0.0,
+                17.0
+            ],
+            "type": 0,
+            "waveAmplitude": 5.0,
+            "waveDirection": [
+                1.0,
+                0.0,
+                0.0
+            ]
+        },
+        {
+            "gravitationalRadius": 30.899999618530273,
+            "id": 5,
+            "orbitAxis": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "orbitCenter": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "orbitRadius": 10.0,
+            "orbitSpeed": 1.0,
+            "pendulumAngle": 45.0,
+            "planetRadius": 7.5,
+            "position": [
+                24.899999618530273,
+                2.5,
+                -3.5
+            ],
+            "type": 0,
+            "waveAmplitude": 5.0,
+            "waveDirection": [
+                1.0,
+                0.0,
+                0.0
+            ]
+        },
+        {
+            "gravitationalRadius": 25.0,
+            "id": 6,
+            "orbitAxis": [
+                1.4199999570846558,
+                0.019999999552965164,
+                0.7699999809265137
+            ],
+            "orbitCenter": [
+                -20.600000381469727,
+                -8.800000190734863,
+                -8.800000190734863
+            ],
+            "orbitRadius": 10.0,
+            "orbitSpeed": 1.0,
+            "pendulumAngle": 45.0,
+            "planetRadius": 5.699999809265137,
+            "position": [
+                -19.899999618530273,
+                -8.600000381469727,
+                -16.799999237060547
+            ],
+            "type": 1,
+            "waveAmplitude": 5.0,
+            "waveDirection": [
+                1.0,
+                0.0,
+                0.0
+            ]
+        }
+    ],
+    "player": {
+        "offset": [
+            0.0,
+            3.0,
+            0.0
+        ],
+        "planetId": 0
+    },
+    "rabbits": [
+        {
+            "offset": [
+                3.0,
+                0.0,
+                0.0
+            ],
+            "planetId": 0,
+            "radius": 0.30000001192092896
+        },
+        {
+            "offset": [
+                1.600000023841858,
+                1.0,
+                0.0
+            ],
+            "planetId": 2,
+            "radius": 0.3400000035762787
+        },
+        {
+            "offset": [
+                0.0,
+                -1.0,
+                0.0
+            ],
+            "planetId": 1,
+            "radius": 0.30000001192092896
+        },
+        {
+            "offset": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "planetId": 3,
+            "radius": 0.30000001192092896
+        },
+        {
+            "offset": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "planetId": 6,
+            "radius": 0.30000001192092896
+        }
+    ],
+    "star": {
+        "offset": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "planetId": 1,
+        "radius": 0.5
+    }
+}

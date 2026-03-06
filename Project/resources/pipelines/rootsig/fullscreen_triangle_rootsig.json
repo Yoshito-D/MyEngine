@@ -1,0 +1,26 @@
+{
+  "name": "FullscreenTriangle",
+  "parameters": [
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "registerSpace": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "comment": "Input Texture (t0)"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Clamp",
+      "addressV": "Clamp",
+      "addressW": "Clamp",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}

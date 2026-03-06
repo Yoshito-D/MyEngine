@@ -1,0 +1,15 @@
+{
+  "name": "PostProcess_Vignette",
+  "vertexShader": "FullscreenTriangle",
+  "pixelShader": "Vignette",
+  "rootSignature": "PostProcess",
+  "supportBlendModes": false,
+  "defaultBlendMode": "None",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": false,
+  "depthWriteMask": "Zero",
+  "depthFunc": "Always",
+  "topologyType": "Triangle",
+  "inputLayout": []
+}

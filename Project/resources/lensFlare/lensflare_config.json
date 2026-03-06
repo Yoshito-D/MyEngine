@@ -1,0 +1,122 @@
+[
+    {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            0.5902000069618225
+        ],
+        "distance": 0.0,
+        "intensity": 1.0,
+        "name": "NewFlare",
+        "scale": 25.075000762939453,
+        "textureIndex": 2,
+        "textureName": "lensFlare3.png",
+        "visible": true
+    },
+    {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            0.5902000069618225
+        ],
+        "distance": 0.0,
+        "intensity": 1.0,
+        "name": "NewFlare",
+        "scale": 100.0,
+        "textureIndex": 8,
+        "textureName": "lensFlare9.png",
+        "visible": true
+    },
+    {
+        "color": [
+            0.7291477918624878,
+            0.8549222946166992,
+            0.6777363419532776,
+            0.06433179974555969
+        ],
+        "distance": 0.4020000100135803,
+        "intensity": 0.10899999737739563,
+        "name": "NewFlare",
+        "scale": 28.503000259399414,
+        "textureIndex": 6,
+        "textureName": "lensFlare7.png",
+        "visible": true
+    },
+    {
+        "color": [
+            0.4913957417011261,
+            0.5162137746810913,
+            0.6632124185562134,
+            0.08085739612579346
+        ],
+        "distance": 0.3619999885559082,
+        "intensity": 0.13699999451637268,
+        "name": "NewFlare",
+        "scale": 20.434999465942383,
+        "textureIndex": 6,
+        "textureName": "lensFlare7.png",
+        "visible": true
+    },
+    {
+        "color": [
+            0.8911917209625244,
+            0.6963205337524414,
+            0.6834009289741516,
+            0.04308459907770157
+        ],
+        "distance": 0.593999981880188,
+        "intensity": 0.0729999989271164,
+        "name": "NewFlare",
+        "scale": 39.715999603271484,
+        "textureIndex": 6,
+        "textureName": "lensFlare7.png",
+        "visible": true
+    },
+    {
+        "color": [
+            0.5465381741523743,
+            0.9015544056892395,
+            0.88499915599823,
+            0.06610240042209625
+        ],
+        "distance": 0.3190000057220459,
+        "intensity": 0.1120000034570694,
+        "name": "NewFlare",
+        "scale": 16.89299964904785,
+        "textureIndex": 6,
+        "textureName": "lensFlare7.png",
+        "visible": true
+    },
+    {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            0.5902000069618225
+        ],
+        "distance": 0.0,
+        "intensity": 1.0,
+        "name": "NewFlare",
+        "scale": 14.3100004196167,
+        "textureIndex": 3,
+        "textureName": "lensFlare4.png",
+        "visible": true
+    },
+    {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            0.5902000069618225
+        ],
+        "distance": 0.0,
+        "intensity": 1.0,
+        "name": "NewFlare",
+        "scale": 18.184999465942383,
+        "textureIndex": 5,
+        "textureName": "lensFlare6.png",
+        "visible": true
+    }
+]

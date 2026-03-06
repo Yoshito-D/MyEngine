@@ -1,0 +1,74 @@
+{
+    "mainModule": {
+        "duration": 5.0,
+        "looping": true,
+        "startLifetime": 3.0,
+        "startLifetimeRandomness": 0.5,
+        "startSpeed": 2.0,
+        "startSpeedRandomness": 0.5,
+        "startSize": 0.5,
+        "startSizeRandomness": 0.2,
+        "startRotation": [0.0, 0.0, 0.0],
+        "startRotationRandomness": [0.0, 0.0, 180.0],
+        "startColor": [0.7, 0.7, 0.7, 0.8],
+        "gravityModifier": -0.2,
+        "simulationSpace": 0,
+        "playOnAwake": true,
+        "scalingMode": 0,
+        "maxParticles": 50
+    },
+    "emissionModule": {
+        "enabled": true,
+        "rateOverTime": 10.0,
+        "rateOverDistance": 0.0,
+        "bursts": []
+    },
+    "shapeModule": {
+        "enabled": true,
+        "shapeType": 2,
+        "emitFrom": 0,
+        "radius": 0.5,
+        "angle": 15.0,
+        "length": 1.0,
+        "boxSize": [1.0, 1.0, 1.0],
+        "arc": 360.0,
+        "position": [0.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+    },
+    "velocityOverLifetimeModule": {
+        "enabled": true,
+        "linearVelocity": [0.0, 1.0, 0.0],
+        "speedModifier": 0.95
+    },
+    "limitVelocityModule": {
+        "enabled": false,
+        "speedLimit": 10.0,
+        "dampen": 0.5
+    },
+    "forceOverLifetimeModule": {
+        "enabled": false,
+        "force": [0.0, 0.0, 0.0]
+    },
+    "colorOverLifetimeModule": {
+        "enabled": true,
+        "startColor": [0.8, 0.8, 0.8, 0.9],
+        "endColor": [0.4, 0.4, 0.4, 0.0]
+    },
+    "sizeOverLifetimeModule": {
+        "enabled": true,
+        "sizeMultiplier": 1.0,
+        "startSize": 0.5,
+        "endSize": 2.0
+    },
+    "rotationOverLifetimeModule": {
+        "enabled": true,
+        "angularVelocity": [0.0, 0.0, 30.0]
+    },
+    "noiseModule": {
+        "enabled": true,
+        "strength": 0.5,
+        "frequency": 0.3,
+        "scrollSpeed": 0.5
+    }
+}
