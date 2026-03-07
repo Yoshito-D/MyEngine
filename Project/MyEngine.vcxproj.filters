@@ -435,107 +435,11 @@
     <ClCompile Include="GameProject\Game.cpp">
       <Filter>GameProject</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Camera\CameraKeyframe.cpp">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Camera\CameraSequenceEditor.cpp">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Camera\CameraSequencer.cpp">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Camera\OrbitalCameraController.cpp">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Camera\TPSCameraController.cpp">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Collider\AABBCollider.cpp">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Collider\Collider.cpp">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Collider\CollisionConfig.cpp">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Collider\CollisionManager.cpp">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Collider\SphereCollider.cpp">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Component\CameraInputHelper.cpp">
-      <Filter>GameProject\MarioGalaxy\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Component\GravityComponent.cpp">
-      <Filter>GameProject\MarioGalaxy\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Component\PlanetSwitchHelper.cpp">
-      <Filter>GameProject\MarioGalaxy\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Component\SphericalMovementComponent.cpp">
-      <Filter>GameProject\MarioGalaxy\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\GameObject\GameObject.cpp">
-      <Filter>GameProject\MarioGalaxy\GameObject</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\GameObject\Enemy\Enemy.cpp">
-      <Filter>GameProject\MarioGalaxy\GameObject\Enemy</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\GameObject\Planet\Planet.cpp">
-      <Filter>GameProject\MarioGalaxy\GameObject\Planet</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\GameObject\Player\Player.cpp">
-      <Filter>GameProject\MarioGalaxy\GameObject\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\GameObject\Rabbit\Rabbit.cpp">
-      <Filter>GameProject\MarioGalaxy\GameObject\Rabbit</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\GameObject\Star\Star.cpp">
-      <Filter>GameProject\MarioGalaxy\GameObject\Star</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\ClearScene.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\GameOverScene.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\GameScene.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\GameSceneInitializer.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\GameSceneLevelLoader.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\GameSceneRenderer.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\GameSceneUpdater.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\LevelEditor.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp">
       <Filter>GameProject\MarioGalaxy\Scene</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Scene\TestScene.cpp">
       <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\TitleScene.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\UI\TimerDisplay.cpp">
-      <Filter>GameProject\MarioGalaxy\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Collider\OBBCollider.cpp">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\GameObject\Box\Box.cpp">
-      <Filter>GameProject\MarioGalaxy\GameObject\Box</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -884,110 +788,11 @@
     <ClInclude Include="GameProject\Game.h">
       <Filter>GameProject</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Camera\CameraKeyframe.h">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Camera\CameraSequenceEditor.h">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Camera\CameraSequencer.h">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Camera\OrbitalCameraController.h">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Camera\TPSCameraController.h">
-      <Filter>GameProject\MarioGalaxy\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Collider\AABBCollider.h">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Collider\Collider.h">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Collider\CollisionConfig.h">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Collider\CollisionLayer.h">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Collider\CollisionManager.h">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Collider\SphereCollider.h">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\CameraInputHelper.h">
-      <Filter>GameProject\MarioGalaxy\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\GravityComponent.h">
-      <Filter>GameProject\MarioGalaxy\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\PlanetSwitchHelper.h">
-      <Filter>GameProject\MarioGalaxy\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\SphericalMovementComponent.h">
-      <Filter>GameProject\MarioGalaxy\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\GameObject\GameObject.h">
-      <Filter>GameProject\MarioGalaxy\GameObject</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\GameObject\Enemy\Enemy.h">
-      <Filter>GameProject\MarioGalaxy\GameObject\Enemy</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\GameObject\Planet\Planet.h">
-      <Filter>GameProject\MarioGalaxy\GameObject\Planet</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\GameObject\Player\Player.h">
-      <Filter>GameProject\MarioGalaxy\GameObject\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\GameObject\Rabbit\Rabbit.h">
-      <Filter>GameProject\MarioGalaxy\GameObject\Rabbit</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\GameObject\Star\Star.h">
-      <Filter>GameProject\MarioGalaxy\GameObject\Star</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\ClearScene.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\GameOverScene.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\GameScene.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\GameSceneInitializer.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\GameSceneLevelLoader.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\GameSceneRenderer.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\GameSceneUpdater.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\LevelEditor.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h">
       <Filter>GameProject\MarioGalaxy\Scene</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Scene\TestScene.h">
       <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\TitleScene.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\UI\TimerDisplay.h">
-      <Filter>GameProject\MarioGalaxy\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Collider\OBBCollider.h">
-      <Filter>GameProject\MarioGalaxy\Collider</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\GameObject\Box\Box.h">
-      <Filter>GameProject\MarioGalaxy\GameObject\Box</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

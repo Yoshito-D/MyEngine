@@ -1,8 +1,7 @@
 #include "TestScene.h"
 #include "Framework/EngineContext.h"
 #include "ObjectEdit.h"
-#include "MathUtils.h" // 追加: MathUtilsのヘッダをインクルード
-
+#include "MathUtils.h"
 using namespace GameEngine;
 
 void TestScene::Initialize() {
