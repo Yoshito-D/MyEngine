@@ -108,44 +108,11 @@
     <Filter Include="GameProject">
       <UniqueIdentifier>{f9e6e6df-64e4-4ce7-91d3-19648f0bd2a7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameProject\MarioGalaxy">
+    <Filter Include="GameProject\App">
       <UniqueIdentifier>{5c23f770-1fb9-4c43-b8a6-64732eb7d43e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameProject\MarioGalaxy\Camera">
-      <UniqueIdentifier>{e0f3a191-00a0-428d-8f24-62ddc95622b3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\Collider">
-      <UniqueIdentifier>{d4b45f03-412b-4673-bdd6-70dcb2086ce7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\Component">
-      <UniqueIdentifier>{0c1ee955-8175-4ba4-ac1a-fa26bc17de6e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\GameObject">
-      <UniqueIdentifier>{98011d1a-4eeb-4b97-bb96-cfc79d34b929}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\GameObject\Enemy">
-      <UniqueIdentifier>{e1ef9344-0e00-4a1d-b4e1-659dc9745e2f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\GameObject\Planet">
-      <UniqueIdentifier>{8675debd-2984-4748-98ad-fb42212a5316}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\GameObject\Player">
-      <UniqueIdentifier>{047bfbe1-9a9d-463f-a280-8a8c43ba4654}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\GameObject\Rabbit">
-      <UniqueIdentifier>{c54b1dda-b72a-4790-8d4c-7a0c8e824af8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\GameObject\Star">
-      <UniqueIdentifier>{b1a740a7-e759-49a4-afc8-27d4c6f9e42f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\Scene">
+    <Filter Include="GameProject\App\Scene">
       <UniqueIdentifier>{281198dc-35ea-4851-a5ac-2cc38f62a08e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\UI">
-      <UniqueIdentifier>{3fd971ee-82b8-4264-b0be-24a96d3668b0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameProject\MarioGalaxy\GameObject\Box">
-      <UniqueIdentifier>{26f265d6-dd68-4c75-a560-aab6c5101658}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -436,10 +403,10 @@
       <Filter>GameProject</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
+      <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Scene\TestScene.cpp">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
+      <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -789,10 +756,10 @@
       <Filter>GameProject</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
+      <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Scene\TestScene.h">
-      <Filter>GameProject\MarioGalaxy\Scene</Filter>
+      <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
