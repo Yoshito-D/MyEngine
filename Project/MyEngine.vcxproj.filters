@@ -285,9 +285,6 @@
     <ClCompile Include="GameEngine\Core\Window\Window.cpp">
       <Filter>GameEngine\Core\Window</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Effect\LensFlare.cpp">
-      <Filter>GameEngine\Effect</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Effect\Particle.cpp">
       <Filter>GameEngine\Effect</Filter>
     </ClCompile>
@@ -592,9 +589,6 @@
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Window\Window.h">
       <Filter>GameEngine\Core\Window</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Effect\LensFlare.h">
-      <Filter>GameEngine\Effect</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Effect\Particle.h">
       <Filter>GameEngine\Effect</Filter>

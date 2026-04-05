@@ -16,7 +16,6 @@
 #include "CameraManager.h"
 #include "LightManager.h"
 #include "DrawCommand.h"
-#include "Effect/LensFlare.h"
 #include "ModelRenderer.h"
 #include "SpriteRenderer.h"
 #include "ParticleRenderer.h"
@@ -191,16 +190,6 @@ public:
    /// @return PSOManagerのポインタ
    PSOManager* GetPSOManager() const { return psoManager_.get(); }
 
-   /// @brief レンズフレアを取得
-   /// @return レンズフレアのポインタ
-   LensFlare* GetLensFlare() const { return lensFlare_.get(); }
-
-   /// @brief レンズフレアのオクルージョンクエリを開始
-   void BeginLensFlareOcclusionQuery();
-
-   /// @brief レンズフレアのオクルージョンクエリを終了
-   void EndLensFlareOcclusionQuery();
-
    CameraManager* GetCameraManager() const { return cameraManager_; }
    LightManager* GetLightManager() const { return lightManager_; }
 
@@ -228,13 +217,6 @@ private:
 
    // UI描画専用カメラ（平行投影）
    std::unique_ptr<Camera> uiCamera_ = std::make_unique<Camera>();
-
-   // レンズフレア
-   std::unique_ptr<LensFlare> lensFlare_ = std::make_unique<LensFlare>();
-   Vector3 lensFlareSourcePos_ = Vector3(0.0f, 0.0f, 0.0f);
-   bool lensFlareQueryActive_ = false;
-   bool lensFlareTrackingEnabled_ = false;
-   std::vector<Vector3> lensFlareTrackedPositions_;
 
    // 描画コマンドリスト（レンダーパス別）
    // 不透明オブジェクトは即時描画するため、コマンドリストは不要

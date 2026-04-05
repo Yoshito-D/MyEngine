@@ -84,45 +84,6 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
 	  log_.Log("Successfully loaded post-process effects from JSON");
    }
 
-   // レンズフレアの初期化（UIカメラを使用）
-   lensFlare_->Initialize(device_, Window::kWindowWidth, Window::kWindowHeight, uiCamera_.get());
-
-   // テクスチャマネージャーを使ってレンズフレア用のテクスチャを読み込む
-   if (assetManager_ && assetManager_->GetTextureManager()) {
-	  auto* textureManager = assetManager_->GetTextureManager();
-
-	  // レンズフレア用テクスチャを読み込み
-	  const std::vector<std::string> lensFlareTextures = {
-		 "resources/lensFlare/lensFlare1.png",
-		 "resources/lensFlare/lensFlare2.png",
-		 "resources/lensFlare/lensFlare3.png",
-		 "resources/lensFlare/lensFlare4.png",
-		 "resources/lensFlare/lensFlare5.png",
-		 "resources/lensFlare/lensFlare6.png",
-		 "resources/lensFlare/lensFlare7.png",
-		 "resources/lensFlare/lensFlare8.png",
-		 "resources/lensFlare/lensFlare9.png"
-	  };
-
-	  for (const auto& texturePath : lensFlareTextures) {
-		 // ファイル名のみを抽出（パスの最後の部分）
-		 std::string textureName = texturePath.substr(texturePath.find_last_of("/\\") + 1);
-		 textureManager->LoadTexture(texturePath, textureName);
-
-		 // テクスチャをレンズフレアに追加
-		 Texture* texture = textureManager->GetTexture(textureName);
-		 if (texture) {
-			lensFlare_->AddTexture(textureName, texture);
-			log_.Log("Loaded and added lens flare texture: " + textureName);
-		 }
-	  }
-
-	  log_.Log("Lens flare initialization completed");
-   } else {
-	  log_.Log("AssetManager not available, lens flare textures not loaded", Logger::LogLevel::Warning);
-   }
-
-   lensFlare_->LoadFromJson("resources/lensFlare/lensflare_config.json");
 }
 
 void Renderer::BeginFrame() {
@@ -134,11 +95,6 @@ void Renderer::BeginFrame() {
    // 描画コマンドリストをクリア（不透明オブジェクトは即時描画なのでクリア不要）
    transparentCommands_.clear();
    postProcessCommands_.clear();
-
-   // レンズフレアのクエリ状態とトラッキングをリセット
-   lensFlareQueryActive_ = false;
-   lensFlareTrackingEnabled_ = false;
-   lensFlareTrackedPositions_.clear();
 
    offscreenRenderTarget_->PreDraw(true);
 
@@ -161,23 +117,6 @@ void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> ble
    assert(activeCamera != nullptr);
 
    if (!model->GetModelAsset()) return;
-
-   // レンズフレアトラッキングが有効な場合、モデルの位置を記録
-   bool isFirstTrackedModel = false;
-   if (lensFlareTrackingEnabled_) {
-	  isFirstTrackedModel = lensFlareTrackedPositions_.empty();
-	  lensFlareTrackedPositions_.push_back(model->GetTransform().translation);
-
-	  // 最初のトラッキング対象モデルの場合、クエリを開始
-	  if (isFirstTrackedModel && lensFlare_) {
-		 // 重心計算（現時点では1つだけ）
-		 lensFlareSourcePos_ = model->GetTransform().translation;
-
-		 auto* cmdList = device_->GetCommandList();
-		 cmdList->BeginQuery(lensFlare_->GetQueryHeap(), D3D12_QUERY_TYPE_OCCLUSION, 0);
-		 lensFlareQueryActive_ = true;
-	  }
-   }
 
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> handles = { texture->GetTextureSrvHandleGPU() };
 
@@ -221,23 +160,6 @@ void Renderer::Draw(Model* model, const std::vector<Texture*>& textures, std::op
    assert(!textures.empty());
 
    if (!model->GetModelAsset()) return;
-
-   // レンズフレアトラッキングが有効な場合、モデルの位置を記録
-   bool isFirstTrackedModel = false;
-   if (lensFlareTrackingEnabled_) {
-	  isFirstTrackedModel = lensFlareTrackedPositions_.empty();
-	  lensFlareTrackedPositions_.push_back(model->GetTransform().translation);
-
-	  // 最初のトラッキング対象モデルの場合、クエリを開始
-	  if (isFirstTrackedModel && lensFlare_) {
-		 // 重心計算（現時点では1つだけ）
-		 lensFlareSourcePos_ = model->GetTransform().translation;
-
-		 auto* cmdList = device_->GetCommandList();
-		 cmdList->BeginQuery(lensFlare_->GetQueryHeap(), D3D12_QUERY_TYPE_OCCLUSION, 0);
-		 lensFlareQueryActive_ = true;
-	  }
-   }
 
    // TextureポインタからSRVハンドルに変換
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textureSrvHandles;
@@ -511,41 +433,6 @@ void Renderer::EndFrame() {
    // 次のフレームに備えてクリア
    lineRenderer_->Clear();
 
-#ifdef USE_IMGUI
-   /*if (lensFlare_) {
-	  lensFlare_->ImGuiEdit();
-   }*/
-#endif 
-
-   // レンズフレアをオフスクリーンに描画（ポストプロセス前）
-   if (lensFlare_) {
-	  Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
-	  if (activeCamera) {
-		 // オクルージョンクエリ結果を取得
-		 lensFlare_->ResolveOcclusionQuery();
-
-		 // 可視性チェック
-		 float visibility = lensFlare_->GetVisibilityFactor();
-		 if (visibility > 0.0f) {
-			// レンズフレアを更新（スプライトの位置とスケールを計算）
-			lensFlare_->Update(lensFlareSourcePos_, activeCamera);
-
-			// 各フレア要素をRendererのDrawで描画
-			const auto& flareElements = lensFlare_->GetFlareElements();
-			for (const auto& element : flareElements) {
-			   if (!element.visible) continue;
-
-			   // テクスチャを取得
-			   Texture* texture = lensFlare_->GetElementTexture(element);
-			   if (!texture) continue;
-
-			   // 加算ブレンドでスプライトを描画
-			   DrawUI(element.sprite.get(), texture, Sprite::AnchorPoint::MiddleCenter, BlendMode::kBlendModeAdd, true);
-			}
-		 }
-	  }
-   }
-
    // 半透明オブジェクトを描画（ポストプロセス前）
 //    ExecuteDrawCommands(transparentCommands_);
    ExecuteDrawCommands(transparentCommands_);
@@ -692,61 +579,6 @@ void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode)
 
    currentPipelineName_ = pipelineName;
    currentPipelineBlendMode_ = blendMode;
-}
-
-void Renderer::BeginLensFlareOcclusionQuery() {
-   if (!lensFlare_) return;
-
-   // 前回のクエリがまだアクティブな場合は警告
-   if (lensFlareQueryActive_) {
-	  log_.Log("Warning: Previous lens flare query was not ended properly", Logger::LogLevel::Warning);
-	  return;
-   }
-
-   // トラッキングを開始（位置の収集を開始）
-   lensFlareTrackingEnabled_ = true;
-   lensFlareTrackedPositions_.clear();
-}
-
-void Renderer::EndLensFlareOcclusionQuery() {
-   if (!lensFlare_ || !lensFlareTrackingEnabled_) return;
-
-   // トラッキングを終了
-   lensFlareTrackingEnabled_ = false;
-
-   if (lensFlareTrackedPositions_.empty()) {
-	  return;
-   }
-
-   // 全ての位置の平均を計算（重心）
-   Vector3 centerPosition = Vector3(0.0f, 0.0f, 0.0f);
-   for (const auto& pos : lensFlareTrackedPositions_) {
-	  centerPosition = centerPosition + pos;
-   }
-   centerPosition = centerPosition / static_cast<float>(lensFlareTrackedPositions_.size());
-
-   // 光源位置を最終的な重心に更新
-   lensFlareSourcePos_ = centerPosition;
-
-   // クエリがアクティブな場合、終了して結果を解決
-   if (lensFlareQueryActive_) {
-	  auto* cmdList = device_->GetCommandList();
-
-	  // クエリ終了
-	  cmdList->EndQuery(lensFlare_->GetQueryHeap(), D3D12_QUERY_TYPE_OCCLUSION, 0);
-
-	  // クエリ結果をバッファに解決
-	  cmdList->ResolveQueryData(
-		 lensFlare_->GetQueryHeap(),
-		 D3D12_QUERY_TYPE_OCCLUSION,
-		 0,
-		 1,
-		 lensFlare_->GetQueryResultBuffer(),
-		 0
-	  );
-
-	  lensFlareQueryActive_ = false;
-   }
 }
 
 } // namespace GameEngine
