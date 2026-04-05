@@ -249,7 +249,6 @@
     <ClCompile Include="GameEngine\Effect\Edit\ParticleLifetimeModulesEdit.cpp" />
     <ClCompile Include="GameEngine\Effect\Edit\ParticleMainModuleEdit.cpp" />
     <ClCompile Include="GameEngine\Effect\Edit\ParticleShapeModuleEdit.cpp" />
-    <ClCompile Include="GameEngine\Effect\LensFlare.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\EmissionModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\LifetimeModules.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\MainModule.cpp" />
@@ -441,7 +440,6 @@
     <ClInclude Include="GameEngine\Effect\Edit\ParticleLifetimeModulesEdit.h" />
     <ClInclude Include="GameEngine\Effect\Edit\ParticleMainModuleEdit.h" />
     <ClInclude Include="GameEngine\Effect\Edit\ParticleShapeModuleEdit.h" />
-    <ClInclude Include="GameEngine\Effect\LensFlare.h" />
     <ClInclude Include="GameEngine\Effect\Module\EmissionModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\LifetimeModules.h" />
     <ClInclude Include="GameEngine\Effect\Module\MainModule.h" />

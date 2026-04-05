@@ -655,20 +655,6 @@ std::vector<std::string> EngineContext::GetPostProcessEffectNames() {
 }
 
 //================================================================
-// レンズフレア
-//================================================================
-
-void EngineContext::BeginLensFlareOcclusionQuery() {
-   if (!sRenderer_) return;
-   sRenderer_->BeginLensFlareOcclusionQuery();
-}
-
-void EngineContext::EndLensFlareOcclusionQuery() {
-   if (!sRenderer_) return;
-   sRenderer_->EndLensFlareOcclusionQuery();
-}
-
-//================================================================
 // JSON データマネージャー
 //================================================================
 
