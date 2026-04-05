@@ -34,11 +34,11 @@ void Pixelation::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
-	  cmdList->SetGraphicsRootConstantBufferView(0, constantBuffer_->GetGPUVirtualAddress());
+     cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(1, inputSRV);
+    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

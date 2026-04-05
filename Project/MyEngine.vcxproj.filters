@@ -405,6 +405,7 @@
     <ClCompile Include="GameProject\App\Scene\TestScene.cpp">
       <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\RendererEditorController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -755,8 +756,26 @@
     <ClInclude Include="GameProject\App\Scene\TestScene.h">
       <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\ColliderComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h" />
+    <ClInclude Include="GameEngine\Object\Prefab\PrefabLoader.h" />
+    <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\RendererEditorController.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\RootBindingSlots.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\scenes\test_scene.json" />
+    <None Include="resources\prefabs\default_object.prefab.json" />
+    <None Include="resources\shaders\shader_registry.json" />
+    <None Include="resources\pipelines\binding_expectations.json" />
+    <None Include="resources\pipelines\validation_gate_config.json" />
+    <None Include="resources\pipelines\reflection_validation_report.schema.json" />
   </ItemGroup>
 </Project>

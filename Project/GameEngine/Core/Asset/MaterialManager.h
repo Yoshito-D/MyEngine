@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <vector>
 #include "Graphics/Material.h"
 
 namespace GameEngine {
@@ -26,6 +27,9 @@ public:
 
    /// @brief マテリアルを全削除
    void Clear();
+
+   /// @brief マテリアル名一覧を取得
+   std::vector<std::string> GetMaterialNames() const;
 
 private:
    ID3D12Device* device_ = nullptr;

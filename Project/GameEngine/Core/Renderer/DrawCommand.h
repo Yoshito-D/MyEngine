@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <vector>
 #include <functional>
+#include <optional>
 #include "Graphics/PipelineState.h"
 #include "Sprite/Sprite.h"
 #include "Window/Window.h"
@@ -71,6 +72,7 @@ struct LineDrawData {
    std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc;  // ViewProjection行列を受け取る
    Camera* camera;  // 描画時のカメラを保存
    Matrix4x4 viewProjectionMatrix;  // 描画時のカメラのビュープロジェクション行列
+   std::optional<Vector3> sortPosition; // 透過ソート用の位置ヒント
 };
 
 /// @brief 描画コマンド
@@ -132,9 +134,10 @@ struct DrawCommand {
    /// @brief ライン描画コマンドを作成
    /// @param drawFunc ラインを描画する関数（ID3D12GraphicsCommandList*とViewProjection行列を引数に取る）
    /// @param camera 描画時のカメラ
+   /// @param sortPosition 透過ソート用の位置ヒント
    /// @param renderPass 描画パス
    static DrawCommand CreateLine(std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc, Camera* camera,
-	  RenderPass renderPass);
+     RenderPass renderPass, std::optional<Vector3> sortPosition = std::nullopt);
 };
 
 } // namespace GameEngine

@@ -2,12 +2,33 @@
 #include "Model.h"
 #include "ResourceHelper.h"
 #include "Scene/Camera/Camera.h"
+#include <algorithm>
 
 namespace {
 Logger& log_ = Logger::GetInstance();
 }
 
 namespace GameEngine {
+
+std::vector<Model*> Model::sRegisteredModels_{};
+
+Model::Model() {
+   sRegisteredModels_.push_back(this);
+
+   static uint32_t modelCounter = 0;
+   SetObjectName("Model_" + std::to_string(++modelCounter));
+}
+
+Model::~Model() {
+   auto it = std::find(sRegisteredModels_.begin(), sRegisteredModels_.end(), this);
+   if (it != sRegisteredModels_.end()) {
+	  sRegisteredModels_.erase(it);
+   }
+}
+
+const std::vector<Model*>& Model::GetRegisteredModels() {
+   return sRegisteredModels_;
+}
 
 void Model::Create(ModelAsset* modelAsset, Material* material) {
    if (modelAsset) {
@@ -17,26 +38,106 @@ void Model::Create(ModelAsset* modelAsset, Material* material) {
    CreateTransformationMatrix();
 
    if (material) {
-	  materials_.clear();
-	  materials_.push_back(material);
+     SetMaterial(material);
    }
 
-   transform_.scale = Vector3(1.0f, 1.0f, 1.0f);
+   AddComponent<RenderComponent>();
+
+   auto* transformComponent = GetTransformComponent();
+   if (transformComponent) {
+	  transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
+   }
+}
+
+const Vector3& Model::GetPosition() const {
+   static const Vector3 zero = Vector3(0.0f, 0.0f, 0.0f);
+   const auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return zero;
+   }
+   return transformComponent->transform.translation;
+}
+
+const Vector3& Model::GetRotation() const {
+   static const Vector3 zero = Vector3(0.0f, 0.0f, 0.0f);
+   const auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return zero;
+   }
+   return transformComponent->transform.rotation;
+}
+
+const Vector3& Model::GetScale() const {
+   static const Vector3 one(1.0f, 1.0f, 1.0f);
+   const auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return one;
+   }
+   return transformComponent->transform.scale;
+}
+
+void Model::SetTransform(const Transform& transform) {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->transform = transform;
+}
+
+void Model::SetPosition(const Vector3& translation) {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->transform.translation = translation;
+}
+
+void Model::SetRotation(const Vector3& rotation) {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->transform.rotation = rotation;
+}
+
+void Model::SetScale(const Vector3& scale) {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->transform.scale = scale;
+}
+
+void Model::SetParentMatrix(const Matrix4x4& parentMatrix) {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->parentMatrix = parentMatrix;
 }
 
 void Model::UpdateMatrix(Camera* camera) {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent || !camera || !transformationMatrix_) {
+	  return;
+   }
+
    Matrix4x4 worldMatrix;
 
    // Quaternionを使用するかチェック
    if (useQuaternion_) {
 	  // Quaternionから回転行列を生成
-	  Matrix4x4 scaleMatrix = MakeScaleMatrix(transform_.scale);
+      Matrix4x4 scaleMatrix = MakeScaleMatrix(transformComponent->transform.scale);
 	  Matrix4x4 rotateMatrix = MakeRotateMatrix(quaternion_);
-	  Matrix4x4 translateMatrix = MakeTranslateMatrix(transform_.translation);
+    Matrix4x4 translateMatrix = MakeTranslateMatrix(transformComponent->transform.translation);
 	  worldMatrix = scaleMatrix * rotateMatrix * translateMatrix;
    } else {
 	  // 通常のEuler角からアフィン変換行列を生成
-	  worldMatrix = MakeAffineMatrix(transform_);
+     worldMatrix = MakeAffineMatrix(transformComponent->transform);
+   }
+
+   if (hasWorldMatrixOverride_) {
+	  worldMatrix = worldMatrixOverride_;
    }
 
    // modelAssetのrootNode.localMatrixを掛ける
@@ -44,11 +145,11 @@ void Model::UpdateMatrix(Camera* camera) {
 	  worldMatrix = modelAsset_->GetRootNode().localMatrix * worldMatrix;
    }
 
-   if (isUsingParentMatrix_) {
-	  Matrix4x4 wVPMatrix = worldMatrix * parentMatrix_ * camera->GetViewProjectionMatrix();
-	  transformationMatrix_->GetTransformationMatrixData()->world = worldMatrix * parentMatrix_;
+   if (transformComponent->useParentMatrix) {
+	  Matrix4x4 wVPMatrix = worldMatrix * transformComponent->parentMatrix * camera->GetViewProjectionMatrix();
+	  transformationMatrix_->GetTransformationMatrixData()->world = worldMatrix * transformComponent->parentMatrix;
 	  transformationMatrix_->GetTransformationMatrixData()->wVP = wVPMatrix;
-	  transformationMatrix_->GetTransformationMatrixData()->worldInverseTranspose = (worldMatrix * parentMatrix_).Inverse().Transpose();
+      transformationMatrix_->GetTransformationMatrixData()->worldInverseTranspose = (worldMatrix * transformComponent->parentMatrix).Inverse().Transpose();
    } else {
 	  Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
 	  transformationMatrix_->GetTransformationMatrixData()->world = worldMatrix;

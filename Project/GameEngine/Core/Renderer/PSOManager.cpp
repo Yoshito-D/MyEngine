@@ -6,6 +6,9 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
 
 using json = nlohmann::json;
 
@@ -131,6 +134,8 @@ namespace GameEngine {
 void PSOManager::Initialize(GraphicsDevice* device, ShaderManager* shaderManager) {
    device_ = device;
    shaderManager_ = shaderManager;
+   bindingExpectations_.clear();
+   emittedValidationWarnings_.clear();
 }
 
 bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath, DXGI_FORMAT rtvFormat) {
@@ -155,6 +160,14 @@ bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath,
 		 }
 	  }
 
+	  // 期待バインディング定義（任意）
+	  const std::string expectationsPath = registryJson.value("bindingExpectations", "resources/pipelines/binding_expectations.json");
+	  if (!LoadBindingExpectationsFromFile(expectationsPath)) {
+		 LogValidationMessage("binding_expectation_load_failed:" + expectationsPath,
+			"[PSOManager] binding expectations JSON not loaded. fallback expectations will be used: " + expectationsPath,
+			Logger::LogLevel::Info);
+	  }
+
 	  // パイプラインをロード
 	  if (registryJson.contains("pipelines")) {
 		 for (const auto& pipelinePath : registryJson["pipelines"]) {
@@ -171,7 +184,80 @@ bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath,
 	  // JSON解析エラー
 	  (void)e; // 未使用警告を抑制
 	  return false;
+	}
+}
+
+bool PSOManager::LoadBindingExpectationsFromFile(const std::string& filePath) {
+   std::ifstream file(filePath);
+   if (!file.is_open()) {
+	  return false;
    }
+
+   try {
+	  json expectationsJson;
+	  file >> expectationsJson;
+
+	  if (!expectationsJson.contains("rootSignatures") || !expectationsJson["rootSignatures"].is_object()) {
+		 return false;
+	  }
+
+	  bindingExpectations_.clear();
+	  for (const auto& [rootSignatureName, semanticsJson] : expectationsJson["rootSignatures"].items()) {
+		 if (!semanticsJson.is_array()) {
+			continue;
+		 }
+
+		 std::vector<std::string> semantics;
+		 semantics.reserve(semanticsJson.size());
+		 for (const auto& semantic : semanticsJson) {
+			if (semantic.is_string()) {
+			   semantics.push_back(semantic.get<std::string>());
+			}
+		 }
+
+		 if (!semantics.empty()) {
+			bindingExpectations_[rootSignatureName] = std::move(semantics);
+		 }
+	  }
+
+	  return !bindingExpectations_.empty();
+   } catch (...) {
+	  return false;
+   }
+}
+
+std::vector<std::string> PSOManager::GetExpectedSemanticsForRootSignature(const std::string& rootSignatureName) const {
+   auto it = bindingExpectations_.find(rootSignatureName);
+   if (it != bindingExpectations_.end()) {
+	  return it->second;
+   }
+
+   if (rootSignatureName == "Object3D") {
+	  return { "material", "transform", "camera", "lightcount", "directionallights", "pointlights", "spotlights", "arealights", "texture" };
+   }
+   if (rootSignatureName == "Particle") {
+	  return { "material", "instancing", "texture" };
+   }
+   if (rootSignatureName == "Line3D") {
+	  return { "transform" };
+   }
+   if (rootSignatureName == "FullscreenTriangle") {
+	  return { "texture" };
+   }
+   if (rootSignatureName == "PostProcess") {
+	  return { "constantbuffer", "inputtexture" };
+   }
+
+   return {};
+}
+
+void PSOManager::LogValidationMessage(const std::string& dedupeKey, const std::string& message, Logger::LogLevel level) {
+   if (level == Logger::LogLevel::Warning) {
+	  if (!emittedValidationWarnings_.insert(dedupeKey).second) {
+		 return;
+	  }
+   }
+   Logger::GetInstance().Log(message, level);
 }
 
 bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
@@ -478,6 +564,7 @@ bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition
 
    rootSignature->CreateRootSignature(device_->GetDevice());
    rootSignatures_[definition.name] = std::move(rootSignature);
+   rootSignatureParameterCounts_[definition.name] = static_cast<uint32_t>(definition.parameters.size());
 
    return true;
 }
@@ -505,7 +592,9 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
          config.depthFunc = definition.depthFunc;
          config.topologyType = definition.topologyType;
          config.rtvFormat = rtvFormat;
-         config.inputElements = definition.inputLayout;
+         config.inputElements = definition.inputLayout.empty()
+			? BuildInputLayoutFromVertexShaderReflection(definition.vertexShader)
+			: definition.inputLayout;
 
          // 深度書き込みマスクの設定
          if (blendMode == BlendMode::kBlendModeNone) {
@@ -536,7 +625,9 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
       config.depthFunc = definition.depthFunc;
       config.topologyType = definition.topologyType;
       config.rtvFormat = rtvFormat;
-      config.inputElements = definition.inputLayout;
+      config.inputElements = definition.inputLayout.empty()
+		 ? BuildInputLayoutFromVertexShaderReflection(definition.vertexShader)
+		 : definition.inputLayout;
 
       if (!CreateCustomPipeline(definition.name, config)) {
          Logger::GetInstance().Log("Failed to create pipeline: " + definition.name, Logger::LogLevel::Error);
@@ -567,6 +658,69 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
    auto pipeline = std::make_unique<PipelineState>();
    pipeline->SetRootSignature(rootSignature);
 
+   PipelineReflectionMetadata reflectionMetadata{};
+   if (const auto* vsReflection = shaderManager_->GetShaderReflection(config.vertexShaderName, ShaderType::Vertex);
+	  vsReflection && vsReflection->isValid) {
+	  reflectionMetadata.hasVertexReflection = true;
+	  reflectionMetadata.vertexResourceCount = static_cast<uint32_t>(vsReflection->boundResources.size());
+   }
+   if (const auto* psReflection = shaderManager_->GetShaderReflection(config.pixelShaderName, ShaderType::Pixel);
+	  psReflection && psReflection->isValid) {
+	  reflectionMetadata.hasPixelReflection = true;
+	  reflectionMetadata.pixelResourceCount = static_cast<uint32_t>(psReflection->boundResources.size());
+   }
+
+  const std::vector<std::string> expectedSemantics = GetExpectedSemanticsForRootSignature(config.rootSignatureName);
+
+   uint32_t validationWarnings = 0;
+   const auto* rootTable = shaderManager_->GetPipelineRootParameterTable(name);
+   for (const auto& semantic : expectedSemantics) {
+    const bool resolved = rootTable && rootTable->slotBySemanticName.contains(semantic);
+	  if (!resolved) {
+		 ++validationWarnings;
+      reflectionMetadata.missingSemantics.push_back(semantic);
+		 LogValidationMessage(
+			"missing_semantic:" + name + ":" + semantic,
+			"[PSOManager] Binding validation warning in pipeline: " + name +
+			" missing semantic='" + semantic + "' (rootSignature='" + config.rootSignatureName + "')",
+			Logger::LogLevel::Warning);
+	  }
+   }
+
+   reflectionMetadata.estimatedRequiredBindingCount = reflectionMetadata.vertexResourceCount + reflectionMetadata.pixelResourceCount;
+
+   auto rootParamCountIt = rootSignatureParameterCounts_.find(config.rootSignatureName);
+   if (rootParamCountIt != rootSignatureParameterCounts_.end()) {
+	  reflectionMetadata.rootParameterCount = rootParamCountIt->second;
+	  reflectionMetadata.hasPotentialBindingMismatch =
+		 reflectionMetadata.estimatedRequiredBindingCount > reflectionMetadata.rootParameterCount;
+
+	  if (reflectionMetadata.hasPotentialBindingMismatch) {
+      ++validationWarnings;
+      LogValidationMessage(
+			"binding_mismatch:" + name,
+			"[PSOManager] Potential binding mismatch in pipeline: " + name +
+			" (required=" + std::to_string(reflectionMetadata.estimatedRequiredBindingCount) +
+			", rootParameters=" + std::to_string(reflectionMetadata.rootParameterCount) + ")",
+			Logger::LogLevel::Warning);
+	  }
+   }
+
+   reflectionMetadata.validationWarningCount = validationWarnings;
+
+   if (validationWarnings == 0) {
+   LogValidationMessage("binding_pass:" + name, "[PSOManager] Binding validation passed: " + name, Logger::LogLevel::Info);
+   } else {
+      LogValidationMessage(
+		 "binding_report:" + name,
+		 "[PSOManager] Binding validation report: pipeline=" + name +
+		 ", warnings=" + std::to_string(validationWarnings) +
+		 ", expectedSemantics=" + std::to_string(expectedSemantics.size()) +
+		 ", reflectedResources=" + std::to_string(reflectionMetadata.estimatedRequiredBindingCount) +
+		 ", rootParameters=" + std::to_string(reflectionMetadata.rootParameterCount),
+         validationWarnings >= 3 ? Logger::LogLevel::Error : Logger::LogLevel::Warning);
+   }
+
    // 入力レイアウトの設定
    for (const auto& element : config.inputElements) {
       pipeline->SetInputLayOut(
@@ -592,6 +746,7 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
    pipeline->CreatePipelineState(device_->GetDevice());
 
    pipelines_[name] = std::move(pipeline);
+   pipelineReflectionMetadata_[name] = reflectionMetadata;
    Logger::GetInstance().Log("Pipeline created and stored: " + name);
    return true;
 }
@@ -613,12 +768,155 @@ RootSignature* PSOManager::GetRootSignature(const std::string& name) {
    return (it != rootSignatures_.end()) ? it->second.get() : nullptr;
 }
 
+const PipelineReflectionMetadata* PSOManager::GetPipelineReflectionMetadata(const std::string& name) const {
+   auto it = pipelineReflectionMetadata_.find(name);
+   if (it != pipelineReflectionMetadata_.end()) {
+	  return &it->second;
+   }
+
+   auto itNoBlend = pipelineReflectionMetadata_.find(CreatePipelineKey(name, BlendMode::kBlendModeNone));
+   return (itNoBlend != pipelineReflectionMetadata_.end()) ? &itNoBlend->second : nullptr;
+}
+
+ValidationSummary PSOManager::GetValidationSummary() const {
+   ValidationSummary summary{};
+   summary.pipelineCount = static_cast<uint32_t>(pipelineReflectionMetadata_.size());
+
+   for (const auto& [_, metadata] : pipelineReflectionMetadata_) {
+	  summary.totalWarnings += metadata.validationWarningCount;
+	  if (metadata.validationWarningCount > 0) {
+		 ++summary.warningPipelines;
+	  }
+   }
+
+   return summary;
+}
+
+nlohmann::json PSOManager::BuildValidationReportJson() const {
+   nlohmann::json report = nlohmann::json::object();
+   const ValidationSummary summary = GetValidationSummary();
+
+   report["summary"] = {
+	  {"pipelineCount", summary.pipelineCount},
+	  {"warningPipelines", summary.warningPipelines},
+	  {"totalWarnings", summary.totalWarnings}
+   };
+
+   report["pipelines"] = nlohmann::json::array();
+   for (const auto& [pipelineName, metadata] : pipelineReflectionMetadata_) {
+	  nlohmann::json entry = {
+		 {"name", pipelineName},
+		 {"hasVertexReflection", metadata.hasVertexReflection},
+		 {"hasPixelReflection", metadata.hasPixelReflection},
+		 {"vertexResourceCount", metadata.vertexResourceCount},
+		 {"pixelResourceCount", metadata.pixelResourceCount},
+		 {"estimatedRequiredBindingCount", metadata.estimatedRequiredBindingCount},
+		 {"rootParameterCount", metadata.rootParameterCount},
+		 {"hasPotentialBindingMismatch", metadata.hasPotentialBindingMismatch},
+		 {"validationWarningCount", metadata.validationWarningCount},
+		 {"missingSemantics", metadata.missingSemantics}
+	  };
+	  report["pipelines"].push_back(std::move(entry));
+   }
+
+   return report;
+}
+
+bool PSOManager::SaveValidationReportJson(const std::string& filePath) const {
+   try {
+	  std::filesystem::path path(filePath);
+	  if (path.has_parent_path()) {
+		 std::filesystem::create_directories(path.parent_path());
+	  }
+
+	  std::ofstream ofs(path);
+	  if (!ofs.is_open()) {
+		 return false;
+	  }
+
+	  ofs << BuildValidationReportJson().dump(2);
+	  return true;
+   } catch (...) {
+	  return false;
+   }
+}
+
 void PSOManager::Clear() {
    pipelines_.clear();
    rootSignatures_.clear();
+   pipelineReflectionMetadata_.clear();
+   rootSignatureParameterCounts_.clear();
 }
 
-std::string PSOManager::CreatePipelineKey(const std::string& name, BlendMode blendMode) {
+std::string PSOManager::CreatePipelineKey(const std::string& name, BlendMode blendMode) const {
    return name + "_" + std::to_string(static_cast<int>(blendMode));
+}
+
+std::vector<InputElementDefinition> PSOManager::BuildInputLayoutFromVertexShaderReflection(const std::string& vertexShaderName) const {
+   std::vector<InputElementDefinition> layout;
+   if (!shaderManager_) {
+	  return layout;
+   }
+
+   const auto* reflection = shaderManager_->GetShaderReflection(vertexShaderName, ShaderType::Vertex);
+   if (!reflection || !reflection->isValid) {
+	  return layout;
+   }
+
+   layout.reserve(reflection->inputParameters.size());
+   for (const auto& input : reflection->inputParameters) {
+	  std::string semantic = input.semanticName;
+	  std::transform(semantic.begin(), semantic.end(), semantic.begin(), [](unsigned char c) {
+		 return static_cast<char>(std::toupper(c));
+	  });
+
+	  if (semantic.rfind("SV_", 0) == 0) {
+		 continue;
+	  }
+
+	  InputElementDefinition element{};
+	  element.semanticName = input.semanticName;
+	  element.semanticIndex = input.semanticIndex;
+	  element.format = ConvertReflectionInputToFormat(input.mask, input.componentType);
+	  element.alignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	  element.inputSlot = 0;
+	  element.inputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+	  element.instanceDataStepRate = 0;
+	  layout.push_back(std::move(element));
+   }
+
+   return layout;
+}
+
+DXGI_FORMAT PSOManager::ConvertReflectionInputToFormat(BYTE mask, D3D_REGISTER_COMPONENT_TYPE componentType) const {
+   const UINT componentCount =
+	  (mask == 1) ? 1 :
+	  (mask <= 3) ? 2 :
+	  (mask <= 7) ? 3 : 4;
+
+   switch (componentType) {
+   case D3D_REGISTER_COMPONENT_UINT32:
+	  switch (componentCount) {
+	  case 1: return DXGI_FORMAT_R32_UINT;
+	  case 2: return DXGI_FORMAT_R32G32_UINT;
+	  case 3: return DXGI_FORMAT_R32G32B32_UINT;
+	  default: return DXGI_FORMAT_R32G32B32A32_UINT;
+	  }
+   case D3D_REGISTER_COMPONENT_SINT32:
+	  switch (componentCount) {
+	  case 1: return DXGI_FORMAT_R32_SINT;
+	  case 2: return DXGI_FORMAT_R32G32_SINT;
+	  case 3: return DXGI_FORMAT_R32G32B32_SINT;
+	  default: return DXGI_FORMAT_R32G32B32A32_SINT;
+	  }
+   case D3D_REGISTER_COMPONENT_FLOAT32:
+   default:
+	  switch (componentCount) {
+	  case 1: return DXGI_FORMAT_R32_FLOAT;
+	  case 2: return DXGI_FORMAT_R32G32_FLOAT;
+	  case 3: return DXGI_FORMAT_R32G32B32_FLOAT;
+	  default: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+	  }
+   }
 }
 }

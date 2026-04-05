@@ -1,0 +1,30 @@
+{
+  "rootSignatures": {
+    "Object3D": [
+      "material",
+      "transform",
+      "camera",
+      "lightcount",
+      "directionallights",
+      "pointlights",
+      "spotlights",
+      "arealights",
+      "texture"
+    ],
+    "Particle": [
+      "material",
+      "instancing",
+      "texture"
+    ],
+    "Line3D": [
+      "transform"
+    ],
+    "FullscreenTriangle": [
+      "texture"
+    ],
+    "PostProcess": [
+      "constantbuffer",
+      "inputtexture"
+    ]
+  }
+}

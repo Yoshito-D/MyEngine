@@ -6,6 +6,8 @@
 #include "Graphics/Texture.h"
 #include "Graphics/Mesh.h"
 #include "Model/ModelAsset.h"
+#include "ShaderManager.h"
+#include "RootBindingSlots.h"
 
 namespace GameEngine {
 
@@ -28,19 +30,37 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 
 	auto* cmdList = device_->GetCommandList();
 
+	auto resolveSlot = [this](const char* semantic, UINT fallback) -> UINT {
+		if (!psoManager_) {
+			return fallback;
+		}
+
+		auto* shaderManager = psoManager_->GetShaderManager();
+		if (!shaderManager) {
+			return fallback;
+		}
+
+		auto resolved = shaderManager->ResolvePipelineRootParameter("Particle", semantic);
+		return resolved.value_or(fallback);
+	};
+
+	const UINT materialSlot = resolveSlot("material", RootBindingSlots::Particle::kMaterial);
+	const UINT instancingSlot = resolveSlot("instancing", RootBindingSlots::Particle::kInstancing);
+	const UINT textureSlot = resolveSlot("texture", RootBindingSlots::Particle::kTexture);
+
 	// マテリアル設定（ParticleMaterial）
 	auto* material = particleSystem->GetMaterial();
 	if (material && material->GetMaterialResource()) {
-		cmdList->SetGraphicsRootConstantBufferView(0, material->GetMaterialResource()->GetGPUVirtualAddress());
+     cmdList->SetGraphicsRootConstantBufferView(materialSlot, material->GetMaterialResource()->GetGPUVirtualAddress());
 	}
 
 	// インスタンシング用SRV（パーティクルデータ配列） 
-	cmdList->SetGraphicsRootDescriptorTable(1, particleSystem->GetInstancingSrvHandleGPU());
+    cmdList->SetGraphicsRootDescriptorTable(instancingSlot, particleSystem->GetInstancingSrvHandleGPU());
 
 	// テクスチャSRV
 	Texture* texture = particleSystem->GetTexture();
 	if (texture) {
-		cmdList->SetGraphicsRootDescriptorTable(2, texture->GetTextureSrvHandleGPU());
+      cmdList->SetGraphicsRootDescriptorTable(textureSlot, texture->GetTextureSrvHandleGPU());
 	}
 
 	// メッシュ設定（Billboard用Quad または Model）

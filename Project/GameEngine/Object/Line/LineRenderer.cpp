@@ -88,7 +88,7 @@ void LineRenderer::UpdateMatrix(const Matrix4x4& world, const Matrix4x4& viewPro
    data->wVP = world * viewProj;
 }
 
-void LineRenderer::Draw(ID3D12GraphicsCommandList* cmdList) {
+void LineRenderer::Draw(ID3D12GraphicsCommandList* cmdList, UINT transformRootParameterIndex) {
    // このメソッドは描画関数内で呼び出され、
    // 既にインスタンスバッファにデータが書き込まれていることを前提とする
 
@@ -98,7 +98,7 @@ void LineRenderer::Draw(ID3D12GraphicsCommandList* cmdList) {
    D3D12_VERTEX_BUFFER_VIEW views[2] = { baseVBView_, instanceVBView_ };
    cmdList->IASetVertexBuffers(0, 2, views);
 
-   cmdList->SetGraphicsRootConstantBufferView(0,
+    cmdList->SetGraphicsRootConstantBufferView(transformRootParameterIndex,
 	  transformationMatrix_.GetTransformationMatrixResource()->GetGPUVirtualAddress());
 
    // インスタンシング描画は呼び出し元で制御される

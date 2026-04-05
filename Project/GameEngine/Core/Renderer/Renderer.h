@@ -17,6 +17,7 @@
 #include "LightManager.h"
 #include "DrawCommand.h"
 #include "ModelRenderer.h"
+#include "Model/Model.h"
 #include "SpriteRenderer.h"
 #include "ParticleRenderer.h"
 #include "UIRenderer.h"
@@ -24,14 +25,17 @@
 #include <unordered_map>
 #include <vector>
 #include <optional>
+#include <filesystem>
 
 #ifdef USE_IMGUI
 #include "UI/ImGuiManager.h"
+#include "RendererEditorController.h"
 #endif
 
 namespace GameEngine {
 class GraphicsDevice;
 class Model;
+class Object;
 class DirectionalLight;
 class RootSignature;
 class OffscreenRenderTarget;
@@ -42,6 +46,27 @@ class AssetManager;
 // @brief レンダラークラス
 class Renderer {
 public:
+   ~Renderer();
+
+   struct ValidationFailItem {
+	  std::string pipeline;
+	  std::string reason;
+	  std::vector<std::string> missingSemantics;
+	  double stageMatchRate = 1.0;
+   };
+
+   struct PipelineDiffMetrics {
+	  int warningDelta = 0;
+	  double fallbackRateDelta = 0.0;
+	  double stageMatchRateDelta = 0.0;
+   };
+
+   struct SchemaValidationStatus {
+	  bool passed = true;
+	  std::vector<std::string> failedKeys;
+	  std::string schemaFile;
+   };
+
    /// @brief レンダラーの初期化
    /// @param device グラフィックスデバイス
    /// @param window ウィンドウ
@@ -167,6 +192,10 @@ public:
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
    void DrawCircle(const Vector3& center, float radius, const Vector3& normal, const Vector4& color, bool applyPostProcess = true);
 
+   /// @brief 外部システムから描画コマンドを投入する
+   /// @param command 描画コマンド
+   void SubmitDrawCommand(const DrawCommand& command);
+
    /// @brief レンダラーの終了処理
    void Finalize();
 
@@ -211,6 +240,7 @@ private:
 
    std::unique_ptr<OffscreenRenderTarget> offscreenRenderTarget_ = std::make_unique<OffscreenRenderTarget>();
    std::unique_ptr<LineRenderer> lineRenderer_ = std::make_unique<LineRenderer>();
+   std::unique_ptr<LineRenderer> postProcessLineRenderer_ = std::make_unique<LineRenderer>();
 
    // PostProcessManagerで置き換え
    std::unique_ptr<PostProcessManager> postProcessManager_ = std::make_unique<PostProcessManager>();
@@ -219,7 +249,7 @@ private:
    std::unique_ptr<Camera> uiCamera_ = std::make_unique<Camera>();
 
    // 描画コマンドリスト（レンダーパス別）
-   // 不透明オブジェクトは即時描画するため、コマンドリストは不要
+    std::vector<DrawCommand> opaqueCommands_;       // 不透明オブジェクト
    std::vector<DrawCommand> transparentCommands_;  // 半透明オブジェクト
    std::vector<DrawCommand> postProcessCommands_;  // ポストプロセス後の描画
 
@@ -229,15 +259,42 @@ private:
 
    std::unique_ptr<Material> defaultMaterial_ = nullptr;
 
+   uint64_t reflectionResolveRequestsAtFrameBegin_ = 0;
+   uint64_t reflectionResolveHitsAtFrameBegin_ = 0;
+   uint64_t reflectionResolveMissesAtFrameBegin_ = 0;
+   uint64_t frameReflectionResolveRequests_ = 0;
+   uint64_t frameReflectionResolveHits_ = 0;
+   uint64_t frameReflectionResolveFallbacks_ = 0;
+   std::unordered_map<std::string, ResolveStats> reflectionStatsAtFrameBegin_;
+   std::unordered_map<std::string, ResolveStats> frameReflectionStatsByPipeline_;
+   uint32_t latestValidationWarningCount_ = 0;
+   double latestFallbackRate_ = 0.0;
+   bool latestQualityGatePassed_ = true;
+   std::vector<std::string> latestQualityGateFailReasons_;
+   std::vector<ValidationFailItem> latestValidationFailItems_;
+   std::unordered_map<std::string, PipelineDiffMetrics> latestPipelineDiffs_;
+   SchemaValidationStatus latestSchemaValidationStatus_{};
+   std::vector<std::string> latestRegressionFailReasons_;
+   bool showOnlyFailedItems_ = false;
+   int selectedFailItemIndex_ = -1;
+
 #ifdef USE_IMGUI
-   std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();
+    std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();
+	std::unique_ptr<RendererEditorController> editorController_;
    bool isSceneHovered_ = false;
 #endif
 
 private:
+   void DrawAutoRegisteredModels();
+   void DrawAutoRegisteredSprites();
+
    /// @brief 描画コマンドを実行する
    /// @param commands 実行する描画コマンドリスト
    void ExecuteDrawCommands(const std::vector<DrawCommand>& commands);
+
+   /// @brief 描画パスに応じてコマンドを振り分ける
+   /// @param command 振り分ける描画コマンド
+   void RouteDrawCommand(const DrawCommand& command);
 
    /// @brief ラインの内部描画処理
    /// @param lineData ライン描画データ
@@ -250,9 +307,28 @@ private:
    /// @brief UI描画専用カメラを初期化
    void InitializeUICamera();
 
+   /// @brief 指定したパス用のラインレンダラーを取得
+   LineRenderer* SelectLineRenderer(bool applyPostProcess);
+
+   /// @brief ラインレンダラーに蓄積されたコマンドをフラッシュ
+   void FlushLineRenderer(LineRenderer* renderer, RenderPass renderPass);
+
    /// @brief パイプラインを設定する（全レンダラー共通）
    /// @param pipelineName パイプライン名
    /// @param blendMode ブレンドモード
    void SetPipeline(const std::string& pipelineName, BlendMode blendMode);
+
+   /// @brief ブレンドモードとポストプロセス指定から描画パスを決定
+   RenderPass DetermineRenderPass(BlendMode blendMode, bool applyPostProcess) const;
+
+   /// @brief 半透明コマンドをカメラ距離でソート
+   void SortTransparentCommands();
+
+#ifdef USE_IMGUI
+   void ShowReflectionDebugWindow();
+#endif
+
+   /// @brief CI向け反射/検証統合レポートを生成して保存
+   void UpdateValidationReport();
 };
 }
