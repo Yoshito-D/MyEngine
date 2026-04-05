@@ -13,4 +13,9 @@ void PostProcess::SetPipeline(PipelineState* pipeline, RootSignature* rootSignat
    rootSignature_ = rootSignature;
 }
 
+void PostProcess::SetBindingSlots(UINT constantBufferSlot, UINT inputTextureSlot) {
+   constantBufferRootSlot_ = constantBufferSlot;
+   inputTextureRootSlot_ = inputTextureSlot;
+}
+
 }

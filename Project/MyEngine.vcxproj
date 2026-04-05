@@ -240,6 +240,7 @@
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\ModelRenderer.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\RendererEditorController.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\SpriteRenderer.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\ParticleRenderer.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\UIRenderer.cpp" />
@@ -431,6 +432,8 @@
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Vignette.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Renderer.h" />
     <ClInclude Include="GameEngine\Core\Renderer\ModelRenderer.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\RendererEditorController.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\RootBindingSlots.h" />
     <ClInclude Include="GameEngine\Core\Renderer\SpriteRenderer.h" />
     <ClInclude Include="GameEngine\Core\Renderer\ParticleRenderer.h" />
     <ClInclude Include="GameEngine\Core\Renderer\UIRenderer.h" />
@@ -454,6 +457,13 @@
     <ClInclude Include="GameEngine\Framework\EngineContext.h" />
     <ClInclude Include="GameEngine\Framework\ExportDump.h" />
     <ClInclude Include="GameEngine\Framework\Framework.h" />
+    <ClInclude Include="GameEngine\Object\Component\ColliderComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h" />
+    <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
     <ClInclude Include="GameEngine\Object\Line\Line.h" />
     <ClInclude Include="GameEngine\Object\Line\LineRenderer.h" />
     <ClInclude Include="GameEngine\Object\Model\ModelAsset.h" />
@@ -461,6 +471,7 @@
     <ClInclude Include="GameEngine\Collision\Collider.h" />
     <ClInclude Include="GameEngine\Collision\Collision.h" />
     <ClInclude Include="GameEngine\Object\ObjectEdit.h" />
+    <ClInclude Include="GameEngine\Object\Prefab\PrefabLoader.h" />
     <ClInclude Include="GameEngine\Scene\BaseScene.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Camera.h" />
     <ClInclude Include="GameEngine\Core\Graphics\DirectionalLight.h" />
@@ -515,6 +526,14 @@
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\pipelines\binding_expectations.json" />
+    <None Include="resources\pipelines\reflection_validation_report.schema.json" />
+    <None Include="resources\pipelines\validation_gate_config.json" />
+    <None Include="resources\prefabs\default_object.prefab.json" />
+    <None Include="resources\scenes\test_scene.json" />
+    <None Include="resources\shaders\shader_registry.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ModelAssetManager.h"
 #include <cassert>
+#include <algorithm>
 
 namespace {
 Logger& log_ = Logger::GetInstance();
@@ -40,5 +41,16 @@ ModelAsset* ModelAssetManager::GetModel(const std::string& modelName) {
 
 void ModelAssetManager::Clear() {
    modelAssets_.clear();
+}
+
+std::vector<std::string> ModelAssetManager::GetModelNames() const {
+   std::vector<std::string> names;
+   names.reserve(modelAssets_.size());
+   for (const auto& [name, asset] : modelAssets_) {
+	  (void)asset;
+	  names.push_back(name);
+   }
+   std::sort(names.begin(), names.end());
+   return names;
 }
 }

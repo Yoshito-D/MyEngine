@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "MaterialManager.h"
+#include <algorithm>
 
 namespace GameEngine {
 void MaterialManager::Initialize(ID3D12Device* device) {
@@ -28,5 +29,16 @@ Material* MaterialManager::GetMaterial(const std::string& name) const {
 
 void MaterialManager::Clear() {
    materials_.clear();
+}
+
+std::vector<std::string> MaterialManager::GetMaterialNames() const {
+   std::vector<std::string> names;
+   names.reserve(materials_.size());
+   for (const auto& [name, material] : materials_) {
+	  (void)material;
+	  names.push_back(name);
+   }
+   std::sort(names.begin(), names.end());
+   return names;
 }
 }

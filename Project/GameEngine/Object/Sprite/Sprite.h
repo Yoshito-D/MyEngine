@@ -6,12 +6,18 @@
 #include "Camera.h"
 #include "Window.h"
 #include "Object.h"
+#include <vector>
 
 namespace GameEngine {
    class Texture;
 
    class Sprite :public Object {
    public:
+   Sprite();
+	  ~Sprite() override;
+
+	  static const std::vector<Sprite*>& GetRegisteredSprites();
+
 	  /// @brief UI描画用のアンカーポイント
 	  enum class AnchorPoint {
 		 TopLeft,      // 左上
@@ -38,9 +44,9 @@ namespace GameEngine {
 	  void SetRotation(float rotation);
 
 	  Vector2 GetSize() const { return size_; }
-	  Vector2 GetScale() const { return Vector2{ transform_.scale.x, transform_.scale.y }; }
-	  Vector2 GetPosition() const { return Vector2{ transform_.translation.x,  transform_.translation.y }; }
-	  float GetRotation() const { return transform_.rotation.z; }
+      Vector2 GetScale() const;
+	  Vector2 GetPosition() const;
+	  float GetRotation() const;
 	  Vector2 GetAnchorPoint() const { return anchorPoint_; }
 
 	  bool IsFlipX() const { return isFlipX_; }
@@ -103,5 +109,8 @@ namespace GameEngine {
 	  void UpdateVertexPositions();
 
 	  void UpdateTextureCoordinates(Texture* texture);
+
+   private:
+	  inline static std::vector<Sprite*> sRegisteredSprites_{};
    };
 }

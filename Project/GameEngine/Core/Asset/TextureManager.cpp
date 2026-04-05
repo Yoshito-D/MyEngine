@@ -37,6 +37,17 @@ Texture* TextureManager::GetTexture(const std::string& name) {
    return nullptr;
 }
 
+std::vector<std::string> TextureManager::GetTextureNames() const {
+   std::vector<std::string> names;
+   names.reserve(textures_.size());
+   for (const auto& [name, texture] : textures_) {
+	  (void)texture;
+	  names.push_back(name);
+   }
+   std::sort(names.begin(), names.end());
+   return names;
+}
+
 void TextureManager::ReleaseIntermediateResources() {
    if (intermediateResource_.empty()) return;
 

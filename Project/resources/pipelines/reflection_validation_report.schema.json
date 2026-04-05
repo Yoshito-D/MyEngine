@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Reflection Validation Report",
+  "type": "object",
+  "required": [
+    "version",
+    "schemaVersion",
+    "compatibilityPolicy",
+    "schema",
+    "schemaValidation",
+    "qualityGate",
+    "diff",
+    "pso",
+    "shader",
+    "renderer"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "schemaVersion": { "type": "string" },
+    "compatibilityPolicy": {
+      "type": "object",
+      "required": ["backwardCompatibleRange"],
+      "properties": {
+        "backwardCompatibleRange": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "schemaValidation": {
+      "type": "object",
+      "required": ["passed", "schemaFile", "failedKeys"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "schemaFile": { "type": "string" },
+        "failedKeys": { "type": "array" }
+      }
+    },
+    "qualityGate": {
+      "type": "object",
+      "required": ["passed", "warningThreshold", "fallbackRateThreshold", "warningCount", "fallbackRate", "failReasons"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "warningThreshold": { "type": "integer" },
+        "fallbackRateThreshold": { "type": "number" },
+        "warningCount": { "type": "integer" },
+        "fallbackRate": { "type": "number" },
+        "failReasons": { "type": "array" }
+      }
+    },
+    "diff": { "type": "object" },
+    "pso": { "type": "object" },
+    "shader": { "type": "object" },
+    "renderer": { "type": "object" }
+  }
+}

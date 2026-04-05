@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <vector>
 #include "Model/ModelAsset.h"
 
 namespace GameEngine {
@@ -24,6 +25,9 @@ public:
 
    /// @brief モデルアセットを全削除
    void Clear();
+
+   /// @brief 読み込み済みモデル名一覧を取得
+   std::vector<std::string> GetModelNames() const;
 private:
    ID3D12Device* device_ = nullptr;
    std::unordered_map<std::string, std::unique_ptr<ModelAsset>> modelAssets_;

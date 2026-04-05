@@ -1,0 +1,8 @@
+{
+  "warningThreshold": 5,
+  "fallbackRateThreshold": 0.30,
+  "minStageMatchRate": 0.60,
+  "warningIncreaseThreshold": 1,
+  "fallbackRateIncreaseThreshold": 0.05,
+  "stageMatchRateDecreaseThreshold": 0.05
+}

@@ -20,7 +20,7 @@ void Grayscale::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // このエフェクトは定数バッファを使用しないので、ルートパラメータ0はスキップ
    // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(1, inputSRV);
+    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

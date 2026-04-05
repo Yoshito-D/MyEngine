@@ -2,11 +2,14 @@
 #include <d3d12.h>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include <vector>
 #include "Graphics/PipelineState.h"
 #include "Graphics/RootSignature.h"
 #include "PipelineDescriptor.h"
+#include "Utility/Logger.h"
+#include <nlohmann/json_fwd.hpp>
 
 namespace GameEngine {
 class GraphicsDevice;
@@ -28,6 +31,24 @@ struct PipelineConfig {
    DXGI_FORMAT rtvFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
    std::vector<InputElementDefinition> inputElements;
+};
+
+struct PipelineReflectionMetadata {
+   bool hasVertexReflection = false;
+   bool hasPixelReflection = false;
+   uint32_t vertexResourceCount = 0;
+   uint32_t pixelResourceCount = 0;
+   uint32_t estimatedRequiredBindingCount = 0;
+   uint32_t rootParameterCount = 0;
+   bool hasPotentialBindingMismatch = false;
+   uint32_t validationWarningCount = 0;
+   std::vector<std::string> missingSemantics;
+};
+
+struct ValidationSummary {
+   uint32_t pipelineCount = 0;
+   uint32_t warningPipelines = 0;
+   uint32_t totalWarnings = 0;
 };
 
 /// @brief パイプライン管理クラス
@@ -79,6 +100,24 @@ public:
    /// @brief すべてのパイプラインをクリア
    void Clear();
 
+   /// @brief シェーダーマネージャーを取得
+   ShaderManager* GetShaderManager() const { return shaderManager_; }
+
+   /// @brief パイプライン反射メタデータを取得
+   const PipelineReflectionMetadata* GetPipelineReflectionMetadata(const std::string& name) const;
+
+   /// @brief すべてのパイプライン反射メタデータを取得
+   std::unordered_map<std::string, PipelineReflectionMetadata> GetAllPipelineReflectionMetadata() const { return pipelineReflectionMetadata_; }
+
+   /// @brief 全パイプラインの検証結果サマリーを取得（テスト足場）
+   ValidationSummary GetValidationSummary() const;
+
+   /// @brief 検証結果をJSONオブジェクトで取得
+   nlohmann::json BuildValidationReportJson() const;
+
+   /// @brief 検証結果をJSONファイルへ保存
+   bool SaveValidationReportJson(const std::string& filePath) const;
+
 private:
    GraphicsDevice* device_ = nullptr;
    ShaderManager* shaderManager_ = nullptr;
@@ -89,11 +128,23 @@ private:
    // ルートシグネチャ格納用コンテナ
    std::unordered_map<std::string, std::unique_ptr<RootSignature>> rootSignatures_;
 
+   // パイプライン反射メタデータ
+   std::unordered_map<std::string, PipelineReflectionMetadata> pipelineReflectionMetadata_;
+
+   // ルートシグネチャ定義のパラメータ数
+   std::unordered_map<std::string, uint32_t> rootSignatureParameterCounts_;
+
+   // 期待バインディング定義（root signature name -> semantics）
+   std::unordered_map<std::string, std::vector<std::string>> bindingExpectations_;
+
+   // 同一警告の重複抑制
+   std::unordered_set<std::string> emittedValidationWarnings_;
+
    /// @brief パイプラインキーを生成
    /// @param name パイプライン名
    /// @param blendMode ブレンドモード
    /// @return キー文字列
-   std::string CreatePipelineKey(const std::string& name, BlendMode blendMode);
+   std::string CreatePipelineKey(const std::string& name, BlendMode blendMode) const;
 
    /// @brief ルートシグネチャをJSONファイルから読み込み
    /// @param filePath ファイルパス
@@ -105,5 +156,20 @@ private:
    /// @param rtvFormat レンダーターゲットフォーマット
    /// @return 成功時はtrue
    bool LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT rtvFormat);
+
+   /// @brief 期待バインディング定義をJSONから読み込み
+   bool LoadBindingExpectationsFromFile(const std::string& filePath);
+
+   /// @brief 期待バインディングを取得（外部定義優先、未定義時はフォールバック）
+   std::vector<std::string> GetExpectedSemanticsForRootSignature(const std::string& rootSignatureName) const;
+
+   /// @brief 重複抑制付きログ出力
+   void LogValidationMessage(const std::string& dedupeKey, const std::string& message, Logger::LogLevel level);
+
+   /// @brief 頂点シェーダー反射情報から入力レイアウトを構築
+   std::vector<InputElementDefinition> BuildInputLayoutFromVertexShaderReflection(const std::string& vertexShaderName) const;
+
+   /// @brief 反射パラメータをDXGI_FORMATへ変換
+   DXGI_FORMAT ConvertReflectionInputToFormat(BYTE mask, D3D_REGISTER_COMPONENT_TYPE componentType) const;
 };
 }

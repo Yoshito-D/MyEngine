@@ -1,8 +1,27 @@
 #include "pch.h"
 #include "Sprite.h"
 #include "Texture.h"
+#include <algorithm>
 
 namespace GameEngine {
+Sprite::Sprite() {
+   sRegisteredSprites_.push_back(this);
+
+   static uint32_t spriteCounter = 0;
+   SetObjectName("Sprite_" + std::to_string(++spriteCounter));
+}
+
+Sprite::~Sprite() {
+   auto it = std::find(sRegisteredSprites_.begin(), sRegisteredSprites_.end(), this);
+   if (it != sRegisteredSprites_.end()) {
+	  sRegisteredSprites_.erase(it);
+   }
+}
+
+const std::vector<Sprite*>& Sprite::GetRegisteredSprites() {
+   return sRegisteredSprites_;
+}
+
 void Sprite::Create(const Vector2& size, Material* material, const Vector2& anchorPoint) {
    size_ = size;
    SetCreateMeshFunction([this]() {
@@ -16,14 +35,18 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
    CreateTransformationMatrix();
 
    if (material) {
-	  materials_.clear();
-	  materials_.push_back(material);
+     SetMaterial(material);
    }
+
+   AddComponent<RenderComponent>();
 
    anchorPoint_ = anchorPoint;
 
-   transform_.scale = { 1.0f, 1.0f, 1.0f };
-   transform_.translation.z = 1.0f;
+   auto* transformComponent = GetTransformComponent();
+   if (transformComponent) {
+	  transformComponent->transform.scale = { 1.0f, 1.0f, 1.0f };
+	  transformComponent->transform.translation.z = 1.0f;
+   }
    // テクスチャサイズをリセット（UpdateTextureCoordinatesで自動設定されるように）
    textureLeftTop_ = { 0.0f, 0.0f };
    textureSize_ = { 0.0f, 0.0f };  // 0にすることで自動設定をトリガー
@@ -41,35 +64,84 @@ void Sprite::SetSize(const Vector2& size) {
 }
 
 void Sprite::SetScale(const Vector2& scale) {
-   transform_.scale.x = scale.x;
-   transform_.scale.y = scale.y;
-   transform_.scale.z = 1.0f;
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->transform.scale.x = scale.x;
+   transformComponent->transform.scale.y = scale.y;
+   transformComponent->transform.scale.z = 1.0f;
 }
 
 void Sprite::SetPosition(const Vector2& position) {
-   transform_.translation.x = position.x;
-   transform_.translation.y = position.y;
-   transform_.translation.z = 1.0f;
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->transform.translation.x = position.x;
+   transformComponent->transform.translation.y = position.y;
+   transformComponent->transform.translation.z = 1.0f;
 }
 
 void Sprite::SetRotation(float rotation) {
-   transform_.rotation.x = 0.0f;
-   transform_.rotation.y = 0.0f;
-   transform_.rotation.z = rotation;
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->transform.rotation.x = 0.0f;
+   transformComponent->transform.rotation.y = 0.0f;
+   transformComponent->transform.rotation.z = rotation;
+}
+
+Vector2 Sprite::GetScale() const {
+   const auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return Vector2(1.0f, 1.0f);
+   }
+   return Vector2{ transformComponent->transform.scale.x, transformComponent->transform.scale.y };
+}
+
+Vector2 Sprite::GetPosition() const {
+   const auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return Vector2(0.0f, 0.0f);
+   }
+   return Vector2{ transformComponent->transform.translation.x, transformComponent->transform.translation.y };
+}
+
+float Sprite::GetRotation() const {
+   const auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return 0.0f;
+   }
+   return transformComponent->transform.rotation.z;
 }
 
 void Sprite::Update(Camera* camera, Texture* texture) {
+ const auto* transformComponent = GetTransformComponent();
+	if (!transformComponent || !transformationMatrix_) {
+	   return;
+	}
+
    UpdateVertexPositions();
    UpdateTextureCoordinates(texture);
 
    // 最終的なワールド行列
-   Matrix4x4 worldMatrix = MakeAffineMatrix(transform_);
+   Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->transform);
+   if (transformComponent->useParentMatrix) {
+	  worldMatrix = worldMatrix * transformComponent->parentMatrix;
+   }
    Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
    transformationMatrix_->GetTransformationMatrixData()->wVP = wVPMatrix;
    transformationMatrix_->GetTransformationMatrixData()->world = worldMatrix;
 }
 
 void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) {
+   const auto* transformComponent = GetTransformComponent();
+	if (!transformComponent || !transformationMatrix_) {
+	   return;
+	}
+
    // 頂点位置の更新
    UpdateVertexPositions();
    // テクスチャ座標の更新
@@ -79,14 +151,17 @@ void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anc
    // アンカーポイントに基づいてベース座標を計算
    Vector3 anchorPos = CalculateAnchorPosition(anchorPoint, screenWidth, screenHeight);
 
-   Transform finalTransform = transform_;
+   Transform finalTransform = transformComponent->transform;
    // アンカーポイントを考慮した座標調整
    finalTransform.translation.x += anchorPos.x;
    finalTransform.translation.y += anchorPos.y;
-   finalTransform.translation.z = transform_.translation.z;
+ finalTransform.translation.z = transformComponent->transform.translation.z;
 
    // 最終的なワールド行列
    Matrix4x4 worldMatrix = MakeAffineMatrix(finalTransform);
+   if (transformComponent->useParentMatrix) {
+	  worldMatrix = worldMatrix * transformComponent->parentMatrix;
+   }
 
    Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
    transformationMatrix_->GetTransformationMatrixData()->wVP = wVPMatrix;

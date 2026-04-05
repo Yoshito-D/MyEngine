@@ -2,6 +2,7 @@
 #include "Framework/EngineContext.h"
 #include "ObjectEdit.h"
 #include "MathUtils.h"
+
 using namespace GameEngine;
 
 void TestScene::Initialize() {
@@ -46,7 +47,7 @@ void TestScene::Initialize() {
 
 #ifdef USE_IMGUI
    isDebugCameraActive_ = true;
-#endif 
+#endif
 
    auto directionalLight = EngineContext::GetDirectionalLight("MainDirectionalLight");
    if (directionalLight) {
@@ -59,7 +60,7 @@ void TestScene::Initialize() {
 	  pointLight->GetPointLightData()->intensity = 5.0f;
 	  pointLight->GetPointLightData()->position = Vector3(-6.0f, 0.0f, -5.0f);
 	  pointLight->GetPointLightData()->decay = 2.0f;
-	  pointLight->GetPointLightData()->color = Vector4(0.0f, 1.0f, 0.0f, 1.0f); // 緑色
+	  pointLight->GetPointLightData()->color = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
    }
 
    EngineContext::CreatePointLight("SecondPointLight", 0x00ffffff, Vector3(-4.0f, 0.0f, -5.0f), 5.0f);
@@ -78,54 +79,54 @@ void TestScene::Initialize() {
 	  spotLight->GetSpotLightData()->decay = 2.0f;
 	  spotLight->GetSpotLightData()->cosAngle = std::cos(ToRadians(30.0f));
 	  spotLight->GetSpotLightData()->cosFalloffStart = std::cos(ToRadians(20.0f));
-	  spotLight->GetSpotLightData()->color = Vector4(1.0f, 1.0f, 0.0f, 1.0f); // 黄色
+	  spotLight->GetSpotLightData()->color = Vector4(1.0f, 1.0f, 0.0f, 1.0f);
    }
 
-   EngineContext::CreateSpotLight("SecondSpotLight", 0x00ffffff, Vector3(3.0f, 1.0f, -5.0f), 1.0f, Vector3(-0.8f, -0.8f, 0.0f), 10.0f, 2.0f, std::cos(ToRadians(30.0f)), std::cos(ToRadians(20.0f)));
+   EngineContext::CreateSpotLight(
+	  "SecondSpotLight",
+	  0x00ffffff,
+	  Vector3(3.0f, 1.0f, -5.0f),
+	  1.0f,
+	  Vector3(-0.8f, -0.8f, 0.0f),
+	  10.0f,
+	  2.0f,
+	  std::cos(ToRadians(30.0f)),
+	  std::cos(ToRadians(20.0f))
+   );
 
    auto areaLight = EngineContext::GetAreaLight("MainAreaLight");
    if (areaLight) {
 	  areaLight->GetAreaLightData()->intensity = 0.5f;
 	  areaLight->GetAreaLightData()->position = Vector3(8.0f, 0.0f, -5.0f);
-	  areaLight->GetAreaLightData()->color = Vector4(0.0f, 0.0f, 1.0f, 1.0f); // 青色
+	  areaLight->GetAreaLightData()->color = Vector4(0.0f, 0.0f, 1.0f, 1.0f);
    }
 
-   EngineContext::CreateAreaLight("SecondAreaLight", 
-	  Vector3(6.0f, 0.0f, -5.0f),           // position (中心座標)
-	  Vector3(0.0f, -1.0f, 0.0f),          // normal (照射方向: 下向き)
-	  Vector3(1.0f, 0.0f, 0.0f),           // tangent (右方向)
-	  Vector2(2.0f, 2.0f),                 // size (幅と高さ)
-	  Vector3(1.0f, 0.0f, 0.0f),           // color (白)
-	  1.0f                                 // intensity (強度)
+   EngineContext::CreateAreaLight(
+	  "SecondAreaLight",
+	  Vector3(6.0f, 0.0f, -5.0f),
+	  Vector3(0.0f, -1.0f, 0.0f),
+	  Vector3(1.0f, 0.0f, 0.0f),
+	  Vector2(2.0f, 2.0f),
+	  Vector3(1.0f, 0.0f, 0.0f),
+	  1.0f
    );
-
 }
 
 void TestScene::Update() {
    BaseScene::Update();
 
-#ifdef USE_IMGUI
-   ObjectEdit::ModelEdit("MonsterBall", testSpherePhongModel_.get());
-   ObjectEdit::ModelEdit("UVCheckerSphere", testSphereBlinnPhongModel_.get());
-   ObjectEdit::ModelEdit("Plane", testPlaneModel_.get());
-   ObjectEdit::ModelEdit("CubeGltf", testCubeGltfModel_.get());
-   ImGui::ShowDemoWindow();
-#endif 
-   // ライトのデバッグ表示を呼び出す
    EngineContext::DebugDrawLights();
 }
 
 void TestScene::Draw() {
-   // モデルの描画
-   auto white = EngineContext::GetTexture("white1x1");
+  /* auto white = EngineContext::GetTexture("white1x1");
    auto monsterBallTex = EngineContext::GetTexture("monsterBall");
    auto uvCheckerTex = EngineContext::GetTexture("uvChecker");
 
    EngineContext::Draw(testSpherePhongModel_.get(), monsterBallTex);
    EngineContext::Draw(testSphereBlinnPhongModel_.get(), uvCheckerTex);
    EngineContext::Draw(testPlaneModel_.get(), white);
-   EngineContext::Draw(testCubeGltfModel_.get(), uvCheckerTex);
+   EngineContext::Draw(testCubeGltfModel_.get(), uvCheckerTex);*/
 
-   // 基底クラスの描画（フェードなど）
    BaseScene::Draw();
 }

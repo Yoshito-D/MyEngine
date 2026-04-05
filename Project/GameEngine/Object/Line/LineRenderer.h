@@ -31,7 +31,7 @@ public:
    void Begin();
    void End();
    void UpdateMatrix(const Matrix4x4& world, const Matrix4x4& viewProj);
-   void Draw(ID3D12GraphicsCommandList* cmdList);
+   void Draw(ID3D12GraphicsCommandList* cmdList, UINT transformRootParameterIndex = 0);
 
    /// @brief 単純な線を描画する（カメラを指定）
    /// @param start 開始点

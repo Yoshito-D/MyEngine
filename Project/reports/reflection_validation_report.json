@@ -1,0 +1,1299 @@
+{
+  "diff": {
+    "byPipeline": {
+      "FullscreenTriangle": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Line3D": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Object3D_0": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Object3D_1": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Object3D_2": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Object3D_3": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Object3D_4": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Object3D_5": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Particle_0": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Particle_1": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Particle_2": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Particle_3": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Particle_4": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Particle_5": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "PostProcess_Bloom": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "PostProcess_ChromaticAberration": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "PostProcess_GaussBlur": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "PostProcess_Grayscale": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "PostProcess_Pixelation": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "PostProcess_RadialBlur": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "PostProcess_ShockWave": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "PostProcess_Vignette": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Sprite_0": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Sprite_1": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Sprite_2": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Sprite_3": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Sprite_4": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      },
+      "Sprite_5": {
+        "fallbackRateDelta": 0.0,
+        "stageMatchRateDelta": 0.0,
+        "warningDelta": 0
+      }
+    },
+    "fallbackRateIncreaseThreshold": 0.05,
+    "previousReportFound": true,
+    "stageMatchRateDecreaseThreshold": 0.05,
+    "warningIncreaseThreshold": 1
+  },
+  "pso": {
+    "pipelines": [
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Object3D_0",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Object3D_1",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 2,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "FullscreenTriangle",
+        "pixelResourceCount": 2,
+        "rootParameterCount": 1,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Object3D_2",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Object3D_3",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Object3D_4",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Object3D_5",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Sprite_0",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Sprite_1",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Sprite_2",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Sprite_3",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Sprite_4",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 10,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "name": "Sprite_5",
+        "pixelResourceCount": 9,
+        "rootParameterCount": 9,
+        "validationWarningCount": 10,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 1,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": false,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "Line3D",
+        "pixelResourceCount": 0,
+        "rootParameterCount": 1,
+        "validationWarningCount": 0,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 4,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "name": "Particle_0",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 3,
+        "validationWarningCount": 4,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 4,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "name": "Particle_1",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 3,
+        "validationWarningCount": 4,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 4,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "name": "Particle_2",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 3,
+        "validationWarningCount": 4,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 4,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "name": "Particle_3",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 3,
+        "validationWarningCount": 4,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 3,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "PostProcess_ShockWave",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 2,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      },
+      {
+        "estimatedRequiredBindingCount": 4,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "name": "Particle_4",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 3,
+        "validationWarningCount": 4,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 4,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "name": "Particle_5",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 3,
+        "validationWarningCount": 4,
+        "vertexResourceCount": 1
+      },
+      {
+        "estimatedRequiredBindingCount": 2,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": false,
+        "hasVertexReflection": true,
+        "missingSemantics": [
+          "constantbuffer"
+        ],
+        "name": "PostProcess_Grayscale",
+        "pixelResourceCount": 2,
+        "rootParameterCount": 2,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      },
+      {
+        "estimatedRequiredBindingCount": 3,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "PostProcess_RadialBlur",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 2,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      },
+      {
+        "estimatedRequiredBindingCount": 3,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "PostProcess_GaussBlur",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 2,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      },
+      {
+        "estimatedRequiredBindingCount": 3,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "PostProcess_ChromaticAberration",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 2,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      },
+      {
+        "estimatedRequiredBindingCount": 3,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "PostProcess_Vignette",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 2,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      },
+      {
+        "estimatedRequiredBindingCount": 3,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "PostProcess_Pixelation",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 2,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      },
+      {
+        "estimatedRequiredBindingCount": 3,
+        "hasPixelReflection": true,
+        "hasPotentialBindingMismatch": true,
+        "hasVertexReflection": true,
+        "missingSemantics": [],
+        "name": "PostProcess_Bloom",
+        "pixelResourceCount": 3,
+        "rootParameterCount": 2,
+        "validationWarningCount": 1,
+        "vertexResourceCount": 0
+      }
+    ],
+    "summary": {
+      "pipelineCount": 28,
+      "totalWarnings": 153,
+      "warningPipelines": 27
+    }
+  },
+  "qualityGate": {
+    "configSource": "resources/pipelines/validation_gate_config.json",
+    "failItems": [
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Object3D_0",
+        "reason": "pipeline=Object3D_0, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Object3D_1",
+        "reason": "pipeline=Object3D_1, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Object3D_2",
+        "reason": "pipeline=Object3D_2, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Object3D_3",
+        "reason": "pipeline=Object3D_3, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Object3D_4",
+        "reason": "pipeline=Object3D_4, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Object3D_5",
+        "reason": "pipeline=Object3D_5, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Sprite_0",
+        "reason": "pipeline=Sprite_0, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Sprite_1",
+        "reason": "pipeline=Sprite_1, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Sprite_2",
+        "reason": "pipeline=Sprite_2, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Sprite_3",
+        "reason": "pipeline=Sprite_3, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Sprite_4",
+        "reason": "pipeline=Sprite_4, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "transform",
+          "camera",
+          "lightcount",
+          "directionallights",
+          "pointlights",
+          "spotlights",
+          "arealights",
+          "texture"
+        ],
+        "pipeline": "Sprite_5",
+        "reason": "pipeline=Sprite_5, missingSemantics=9, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "pipeline": "Particle_0",
+        "reason": "pipeline=Particle_0, missingSemantics=3, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "pipeline": "Particle_1",
+        "reason": "pipeline=Particle_1, missingSemantics=3, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "pipeline": "Particle_2",
+        "reason": "pipeline=Particle_2, missingSemantics=3, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "pipeline": "Particle_3",
+        "reason": "pipeline=Particle_3, missingSemantics=3, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "pipeline": "Particle_4",
+        "reason": "pipeline=Particle_4, missingSemantics=3, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "material",
+          "instancing",
+          "texture"
+        ],
+        "pipeline": "Particle_5",
+        "reason": "pipeline=Particle_5, missingSemantics=3, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      },
+      {
+        "missingSemantics": [
+          "constantbuffer"
+        ],
+        "pipeline": "PostProcess_Grayscale",
+        "reason": "pipeline=PostProcess_Grayscale, missingSemantics=1, stageMatchRate=1.000000",
+        "stageMatchRate": 1.0
+      }
+    ],
+    "failReasons": [
+      "Validation warnings exceeded threshold (153/5)",
+      "Pipeline Object3D_0 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Object3D_1 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Object3D_2 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Object3D_3 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Object3D_4 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Object3D_5 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Sprite_0 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Sprite_1 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Sprite_2 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Sprite_3 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Sprite_4 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Sprite_5 failed: missingSemantics=9, stageMatchRate=100%",
+      "Pipeline Particle_0 failed: missingSemantics=3, stageMatchRate=100%",
+      "Pipeline Particle_1 failed: missingSemantics=3, stageMatchRate=100%",
+      "Pipeline Particle_2 failed: missingSemantics=3, stageMatchRate=100%",
+      "Pipeline Particle_3 failed: missingSemantics=3, stageMatchRate=100%",
+      "Pipeline Particle_4 failed: missingSemantics=3, stageMatchRate=100%",
+      "Pipeline Particle_5 failed: missingSemantics=3, stageMatchRate=100%",
+      "Pipeline PostProcess_Grayscale failed: missingSemantics=1, stageMatchRate=100%"
+    ],
+    "fallbackRate": 0.0,
+    "fallbackRateIncreaseThreshold": 0.05,
+    "fallbackRateThreshold": 0.3,
+    "minStageMatchRate": 0.6,
+    "passed": false,
+    "stageMatchRateDecreaseThreshold": 0.05,
+    "warningCount": 153,
+    "warningIncreaseThreshold": 1,
+    "warningThreshold": 5
+  },
+  "renderer": {
+    "frameByPipeline": {
+      "Object3D": {
+        "fallbackRate": 0.0,
+        "fallbacks": 0,
+        "hits": 36,
+        "requests": 36
+      }
+    },
+    "frameFallbacks": 0,
+    "frameResolveHits": 36,
+    "frameResolveRequests": 36
+  },
+  "schema": {
+    "qualityGateRequiredFields": [
+      "passed",
+      "warningThreshold",
+      "fallbackRateThreshold",
+      "warningCount",
+      "fallbackRate",
+      "failReasons"
+    ],
+    "requiredTopLevelFields": [
+      "version",
+      "schema",
+      "qualityGate",
+      "diff",
+      "pso",
+      "shader",
+      "renderer"
+    ]
+  },
+  "shader": {
+    "pipelineResolveStats": {
+      "Bloom": {
+        "hits": 2,
+        "misses": 0,
+        "requests": 2
+      },
+      "ChromaticAberration": {
+        "hits": 2,
+        "misses": 0,
+        "requests": 2
+      },
+      "GaussBlur": {
+        "hits": 2,
+        "misses": 0,
+        "requests": 2
+      },
+      "Grayscale": {
+        "hits": 1,
+        "misses": 1,
+        "requests": 2
+      },
+      "Object3D": {
+        "hits": 67104,
+        "misses": 0,
+        "requests": 67104
+      },
+      "Pixelation": {
+        "hits": 2,
+        "misses": 0,
+        "requests": 2
+      },
+      "RadialBlur": {
+        "hits": 2,
+        "misses": 0,
+        "requests": 2
+      },
+      "ShockWave": {
+        "hits": 2,
+        "misses": 0,
+        "requests": 2
+      },
+      "Vignette": {
+        "hits": 2,
+        "misses": 0,
+        "requests": 2
+      }
+    },
+    "resolveStats": {
+      "hits": 67119,
+      "misses": 1,
+      "requests": 67120
+    },
+    "stageMatches": {
+      "Bloom": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 3,
+          "resourceCount": 3
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "ChromaticAberration": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 3,
+          "resourceCount": 3
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "FullscreenTriangle": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 2,
+          "resourceCount": 2
+        },
+        "vertex": {
+          "hasReflection": true,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "GaussBlur": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 3,
+          "resourceCount": 3
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "Grayscale": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 2,
+          "resourceCount": 2
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "Line3D": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": true,
+          "matchedByName": 1,
+          "resourceCount": 1
+        }
+      },
+      "Object3D": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 9,
+          "resourceCount": 9
+        },
+        "vertex": {
+          "hasReflection": true,
+          "matchedByName": 1,
+          "resourceCount": 1
+        }
+      },
+      "Particle": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 3,
+          "resourceCount": 3
+        },
+        "vertex": {
+          "hasReflection": true,
+          "matchedByName": 1,
+          "resourceCount": 1
+        }
+      },
+      "Pixelation": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 3,
+          "resourceCount": 3
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "PostProcess_Bloom": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "PostProcess_ChromaticAberration": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "PostProcess_GaussBlur": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "PostProcess_Grayscale": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "PostProcess_Pixelation": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "PostProcess_RadialBlur": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "PostProcess_ShockWave": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "PostProcess_Vignette": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "RadialBlur": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 3,
+          "resourceCount": 3
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "ShockWave": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 3,
+          "resourceCount": 3
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "Sprite": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      },
+      "Vignette": {
+        "averageMatchRate": 1.0,
+        "pixel": {
+          "hasReflection": true,
+          "matchedByName": 3,
+          "resourceCount": 3
+        },
+        "vertex": {
+          "hasReflection": false,
+          "matchedByName": 0,
+          "resourceCount": 0
+        }
+      }
+    }
+  },
+  "version": "1.0.0"
+}

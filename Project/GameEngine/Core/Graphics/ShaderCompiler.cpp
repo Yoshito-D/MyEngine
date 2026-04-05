@@ -4,10 +4,36 @@
 
 namespace {
 Logger& log_ = Logger::GetInstance();
+
+std::wstring Utf8ToWString(const std::string& str) {
+   if (str.empty()) {
+	  return {};
+   }
+
+   const int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+   if (size <= 0) {
+	  return {};
+   }
+
+   std::wstring result(static_cast<size_t>(size), L'\0');
+   MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, result.data(), size);
+   if (!result.empty() && result.back() == L'\0') {
+	  result.pop_back();
+   }
+   return result;
+}
 }
 
 namespace GameEngine {
-ComPtr<IDxcBlob> ShaderCompiler::CompileShader(const std::wstring& filePath, const wchar_t* profile, IDxcUtils* dxcUtils, IDxcCompiler3* dxcCompiler, IDxcIncludeHandler* includeHandler) {
+ComPtr<IDxcBlob> ShaderCompiler::CompileShader(
+   const std::wstring& filePath,
+   const wchar_t* profile,
+   IDxcUtils* dxcUtils,
+   IDxcCompiler3* dxcCompiler,
+   IDxcIncludeHandler* includeHandler,
+   const std::wstring& entryPoint,
+   const std::vector<std::string>& defines
+) {
    // 1. hlslファイルを読む
 
    // これからシェーダーをコンパイルする旨をログに出す
@@ -25,21 +51,37 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(const std::wstring& filePath, con
 
    // 2. Compileする
 
-   LPCWSTR arguments[] = {
-	   filePath.c_str(), // コンパイル対象のhlslファイル名
-	   L"-E",L"main", // エントリーポイントの指定
-	   L"-T",profile, // ShaderProfileの設定
-	   L"-Zi",L"-Qembed_debug", // デバッグ用の情報を埋め込む
-	   L"-Od", // 最適化を外しておく
-	   L"-Zpr" // メモリレイアウトは行優先
-   };
+   std::vector<std::wstring> defineArguments;
+   defineArguments.reserve(defines.size());
+   for (const auto& define : defines) {
+	  if (define.empty()) {
+		 continue;
+	  }
+	  defineArguments.push_back(L"-D" + Utf8ToWString(define));
+   }
+
+   std::vector<LPCWSTR> arguments;
+   arguments.reserve(12 + defineArguments.size());
+   arguments.push_back(filePath.c_str()); // コンパイル対象のhlslファイル名
+   arguments.push_back(L"-E");
+   arguments.push_back(entryPoint.empty() ? L"main" : entryPoint.c_str()); // エントリーポイント
+   arguments.push_back(L"-T");
+   arguments.push_back(profile); // ShaderProfile
+   arguments.push_back(L"-Zi");
+   arguments.push_back(L"-Qembed_debug");
+   arguments.push_back(L"-Od");
+   arguments.push_back(L"-Zpr");
+
+   for (const auto& defineArg : defineArguments) {
+	  arguments.push_back(defineArg.c_str());
+   }
 
    // 実際にShaderをコンパイルする
    IDxcResult* shaderResult = nullptr;
    hr = dxcCompiler->Compile(
 	  &shaderSourceBuffer, // 読み込んだファイル
-	  arguments,           // コンパイルオプション
-	  _countof(arguments), // コンパイルオプションの数
+      arguments.data(),    // コンパイルオプション
+	  static_cast<UINT>(arguments.size()), // コンパイルオプションの数
 	  includeHandler,      // includeが含まれた諸々
 	  IID_PPV_ARGS(&shaderResult) // コンパイル結果
    );

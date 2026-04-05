@@ -60,13 +60,14 @@ DrawCommand DrawCommand::CreateParticle(ParticleSystem* particleSystem, Camera* 
 }
 
 DrawCommand DrawCommand::CreateLine(std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc, Camera* camera,
-                                   RenderPass renderPass) {
+                                   RenderPass renderPass, std::optional<Vector3> sortPosition) {
     DrawCommand cmd;
     cmd.type = DrawCommandType::Line;
     cmd.blendMode = BlendMode::kBlendModeNormal;
     cmd.renderPass = renderPass;
     cmd.lineData.drawFunc = drawFunc;
     cmd.lineData.camera = camera;
+    cmd.lineData.sortPosition = sortPosition;
     if (camera) {
         cmd.lineData.viewProjectionMatrix = camera->GetViewProjectionMatrix();
     }

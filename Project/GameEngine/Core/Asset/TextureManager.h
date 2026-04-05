@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <string>
+#include <vector>
 #include "Graphics/Texture.h"
 
 namespace GameEngine {
@@ -20,6 +21,9 @@ public:
    /// @brief テクスチャを取得
    /// @param name 取得するテクスチャの名前
    Texture* GetTexture(const std::string& name);
+
+   /// @brief 読み込み済みテクスチャ名一覧を取得
+   std::vector<std::string> GetTextureNames() const;
 
    /// @brief 中間リソースを解放
    void ReleaseIntermediateResources();
