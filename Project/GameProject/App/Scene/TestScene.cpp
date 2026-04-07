@@ -15,9 +15,9 @@ void TestScene::Initialize() {
    EngineContext::CreateMaterial("sphereBlinnPhongMaterial", 0xffffffff, 4);
    EngineContext::CreateMaterial("planeMaterial");
    EngineContext::CreateMaterial("cubeGltfMaterial");
-   EngineContext::LoadTexture("resources/white1x1.png", "white1x1");
-   EngineContext::LoadTexture("resources/monsterBall.png", "monsterBall");
-   EngineContext::LoadTexture("resources/uvChecker.png", "uvChecker");
+   EngineContext::LoadTexture("resources/textures/white1x1.png", "white1x1");
+   EngineContext::LoadTexture("resources/textures/monsterBall.png", "monsterBall");
+   EngineContext::LoadTexture("resources/textures/uvChecker.png", "uvChecker");
 
    auto spherePhongMaterial = EngineContext::GetMaterial("spherePhongMaterial");
    auto sphereBlinnPhongMaterial = EngineContext::GetMaterial("sphereBlinnPhongMaterial");

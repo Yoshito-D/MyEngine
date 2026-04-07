@@ -235,6 +235,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\RadialBlur.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\ShockWave.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Vignette.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\ReflectionValidationCoordinator.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Renderer.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -430,6 +431,8 @@
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\RadialBlur.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\ShockWave.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Vignette.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\ReflectionValidationCoordinator.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\ReflectionValidationState.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Renderer.h" />
     <ClInclude Include="GameEngine\Core\Renderer\ModelRenderer.h" />
     <ClInclude Include="GameEngine\Core\Renderer\RendererEditorController.h" />
@@ -528,11 +531,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="resources\pipelines\binding_expectations.json" />
-    <None Include="resources\pipelines\reflection_validation_report.schema.json" />
-    <None Include="resources\pipelines\validation_gate_config.json" />
+    <None Include="resources\postprocess\postprocess_templates.json" />
     <None Include="resources\prefabs\default_object.prefab.json" />
-    <None Include="resources\scenes\test_scene.json" />
     <None Include="resources\shaders\shader_registry.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

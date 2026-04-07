@@ -134,7 +134,6 @@ namespace GameEngine {
 void PSOManager::Initialize(GraphicsDevice* device, ShaderManager* shaderManager) {
    device_ = device;
    shaderManager_ = shaderManager;
-   bindingExpectations_.clear();
    emittedValidationWarnings_.clear();
 }
 
@@ -160,14 +159,6 @@ bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath,
 		 }
 	  }
 
-	  // 期待バインディング定義（任意）
-	  const std::string expectationsPath = registryJson.value("bindingExpectations", "resources/pipelines/binding_expectations.json");
-	  if (!LoadBindingExpectationsFromFile(expectationsPath)) {
-		 LogValidationMessage("binding_expectation_load_failed:" + expectationsPath,
-			"[PSOManager] binding expectations JSON not loaded. fallback expectations will be used: " + expectationsPath,
-			Logger::LogLevel::Info);
-	  }
-
 	  // パイプラインをロード
 	  if (registryJson.contains("pipelines")) {
 		 for (const auto& pipelinePath : registryJson["pipelines"]) {
@@ -187,51 +178,7 @@ bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath,
 	}
 }
 
-bool PSOManager::LoadBindingExpectationsFromFile(const std::string& filePath) {
-   std::ifstream file(filePath);
-   if (!file.is_open()) {
-	  return false;
-   }
-
-   try {
-	  json expectationsJson;
-	  file >> expectationsJson;
-
-	  if (!expectationsJson.contains("rootSignatures") || !expectationsJson["rootSignatures"].is_object()) {
-		 return false;
-	  }
-
-	  bindingExpectations_.clear();
-	  for (const auto& [rootSignatureName, semanticsJson] : expectationsJson["rootSignatures"].items()) {
-		 if (!semanticsJson.is_array()) {
-			continue;
-		 }
-
-		 std::vector<std::string> semantics;
-		 semantics.reserve(semanticsJson.size());
-		 for (const auto& semantic : semanticsJson) {
-			if (semantic.is_string()) {
-			   semantics.push_back(semantic.get<std::string>());
-			}
-		 }
-
-		 if (!semantics.empty()) {
-			bindingExpectations_[rootSignatureName] = std::move(semantics);
-		 }
-	  }
-
-	  return !bindingExpectations_.empty();
-   } catch (...) {
-	  return false;
-   }
-}
-
 std::vector<std::string> PSOManager::GetExpectedSemanticsForRootSignature(const std::string& rootSignatureName) const {
-   auto it = bindingExpectations_.find(rootSignatureName);
-   if (it != bindingExpectations_.end()) {
-	  return it->second;
-   }
-
    if (rootSignatureName == "Object3D") {
 	  return { "material", "transform", "camera", "lightcount", "directionallights", "pointlights", "spotlights", "arealights", "texture" };
    }

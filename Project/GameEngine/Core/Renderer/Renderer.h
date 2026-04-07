@@ -21,6 +21,8 @@
 #include "SpriteRenderer.h"
 #include "ParticleRenderer.h"
 #include "UIRenderer.h"
+#include "ReflectionValidationState.h"
+#include "ReflectionValidationCoordinator.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -47,25 +49,6 @@ class AssetManager;
 class Renderer {
 public:
    ~Renderer();
-
-   struct ValidationFailItem {
-	  std::string pipeline;
-	  std::string reason;
-	  std::vector<std::string> missingSemantics;
-	  double stageMatchRate = 1.0;
-   };
-
-   struct PipelineDiffMetrics {
-	  int warningDelta = 0;
-	  double fallbackRateDelta = 0.0;
-	  double stageMatchRateDelta = 0.0;
-   };
-
-   struct SchemaValidationStatus {
-	  bool passed = true;
-	  std::vector<std::string> failedKeys;
-	  std::string schemaFile;
-   };
 
    /// @brief レンダラーの初期化
    /// @param device グラフィックスデバイス
@@ -259,24 +242,8 @@ private:
 
    std::unique_ptr<Material> defaultMaterial_ = nullptr;
 
-   uint64_t reflectionResolveRequestsAtFrameBegin_ = 0;
-   uint64_t reflectionResolveHitsAtFrameBegin_ = 0;
-   uint64_t reflectionResolveMissesAtFrameBegin_ = 0;
-   uint64_t frameReflectionResolveRequests_ = 0;
-   uint64_t frameReflectionResolveHits_ = 0;
-   uint64_t frameReflectionResolveFallbacks_ = 0;
-   std::unordered_map<std::string, ResolveStats> reflectionStatsAtFrameBegin_;
-   std::unordered_map<std::string, ResolveStats> frameReflectionStatsByPipeline_;
-   uint32_t latestValidationWarningCount_ = 0;
-   double latestFallbackRate_ = 0.0;
-   bool latestQualityGatePassed_ = true;
-   std::vector<std::string> latestQualityGateFailReasons_;
-   std::vector<ValidationFailItem> latestValidationFailItems_;
-   std::unordered_map<std::string, PipelineDiffMetrics> latestPipelineDiffs_;
-   SchemaValidationStatus latestSchemaValidationStatus_{};
-   std::vector<std::string> latestRegressionFailReasons_;
-   bool showOnlyFailedItems_ = false;
-   int selectedFailItemIndex_ = -1;
+   ReflectionValidationState validationState_{};
+   ReflectionValidationCoordinator validationCoordinator_{};
 
 #ifdef USE_IMGUI
     std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();
@@ -324,11 +291,5 @@ private:
    /// @brief 半透明コマンドをカメラ距離でソート
    void SortTransparentCommands();
 
-#ifdef USE_IMGUI
-   void ShowReflectionDebugWindow();
-#endif
-
-   /// @brief CI向け反射/検証統合レポートを生成して保存
-   void UpdateValidationReport();
 };
 }

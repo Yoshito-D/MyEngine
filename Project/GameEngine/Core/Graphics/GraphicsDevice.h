@@ -27,6 +27,9 @@ public:
    /// @brief ループ終了時の処理
    void PostDraw();
 
+   /// @brief 終了処理
+   void Finalize();
+
    /// @brief デバイスを取得
    /// @return デバイス
    ID3D12Device* GetDevice() const { return device_.Get(); }
@@ -77,6 +80,12 @@ public:
    /// @brief RTVフォーマットを取得
    /// @return RTVフォーマット
    DXGI_FORMAT GetRTVFormat() const { return rtvFormat_; }
+
+   /// @brief フルスクリーンを切り替える
+   void ToggleFullscreen();
+
+   /// @brief ウィンドウサイズにバックバッファサイズを同期する
+   void SyncBackBufferSizeToWindow();
 
 private:
 
@@ -140,5 +149,8 @@ private:
 
    /// @brief コマンドリストを実行し、完了を待機
    ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
+
+   /// @brief スワップチェーン関連リソースを指定サイズへリサイズ
+   void ResizeSwapChainResources(uint32_t width, uint32_t height);
 };
 }

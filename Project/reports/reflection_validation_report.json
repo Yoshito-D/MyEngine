@@ -1,4 +1,8 @@
 {
+  "compatibilityPolicy": {
+    "backwardCompatibleRange": ">=1.0.0 <2.0.0",
+    "note": "Minor version upgrades remain backward compatible."
+  },
   "diff": {
     "byPipeline": {
       "FullscreenTriangle": {
@@ -639,7 +643,7 @@
     }
   },
   "qualityGate": {
-    "configSource": "resources/pipelines/validation_gate_config.json",
+    "configSource": "internal_default",
     "failItems": [
       {
         "missingSemantics": [
@@ -958,7 +962,10 @@
     ],
     "requiredTopLevelFields": [
       "version",
+      "schemaVersion",
+      "compatibilityPolicy",
       "schema",
+      "schemaValidation",
       "qualityGate",
       "diff",
       "pso",
@@ -966,6 +973,12 @@
       "renderer"
     ]
   },
+  "schemaValidation": {
+    "failedKeys": [],
+    "passed": true,
+    "schemaFile": "internal_schema"
+  },
+  "schemaVersion": "1.1.0",
   "shader": {
     "pipelineResolveStats": {
       "Bloom": {
@@ -989,9 +1002,9 @@
         "requests": 2
       },
       "Object3D": {
-        "hits": 67104,
+        "hits": 77184,
         "misses": 0,
-        "requests": 67104
+        "requests": 77184
       },
       "Pixelation": {
         "hits": 2,
@@ -1015,9 +1028,9 @@
       }
     },
     "resolveStats": {
-      "hits": 67119,
+      "hits": 77199,
       "misses": 1,
-      "requests": 67120
+      "requests": 77200
     },
     "stageMatches": {
       "Bloom": {
@@ -1295,5 +1308,5 @@
       }
     }
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

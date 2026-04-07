@@ -134,9 +134,6 @@ private:
    // ルートシグネチャ定義のパラメータ数
    std::unordered_map<std::string, uint32_t> rootSignatureParameterCounts_;
 
-   // 期待バインディング定義（root signature name -> semantics）
-   std::unordered_map<std::string, std::vector<std::string>> bindingExpectations_;
-
    // 同一警告の重複抑制
    std::unordered_set<std::string> emittedValidationWarnings_;
 
@@ -157,10 +154,7 @@ private:
    /// @return 成功時はtrue
    bool LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT rtvFormat);
 
-   /// @brief 期待バインディング定義をJSONから読み込み
-   bool LoadBindingExpectationsFromFile(const std::string& filePath);
-
-   /// @brief 期待バインディングを取得（外部定義優先、未定義時はフォールバック）
+   /// @brief 期待バインディングを取得
    std::vector<std::string> GetExpectedSemanticsForRootSignature(const std::string& rootSignatureName) const;
 
    /// @brief 重複抑制付きログ出力
