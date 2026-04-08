@@ -191,6 +191,7 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\AnimationAssetManager.cpp" />
     <ClCompile Include="GameEngine\Core\Asset\AssetManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -262,6 +263,11 @@
     <ClCompile Include="GameEngine\Effect\ParticleSystemEdit.cpp" />
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
     <ClCompile Include="GameEngine\Framework\Framework.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Line\Line.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -270,6 +276,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Model\AnimationAsset.cpp" />
     <ClCompile Include="GameEngine\Object\Model\ModelAsset.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -403,6 +410,7 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="externals\nlohmann\json.hpp" />
     <ClInclude Include="externals\nlohmann\json_fwd.hpp" />
+    <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\AssetManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\MaterialManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\ModelAssetManager.h" />
@@ -460,6 +468,7 @@
     <ClInclude Include="GameEngine\Framework\EngineContext.h" />
     <ClInclude Include="GameEngine\Framework\ExportDump.h" />
     <ClInclude Include="GameEngine\Framework\Framework.h" />
+    <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ColliderComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h" />
     <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />
@@ -469,6 +478,7 @@
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
     <ClInclude Include="GameEngine\Object\Line\Line.h" />
     <ClInclude Include="GameEngine\Object\Line\LineRenderer.h" />
+    <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h" />
     <ClInclude Include="GameEngine\Object\Model\ModelAsset.h" />
     <ClInclude Include="GameEngine\Object\Object.h" />
     <ClInclude Include="GameEngine\Collision\Collider.h" />
@@ -531,7 +541,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="resources\postprocess\postprocess_templates.json" />
     <None Include="resources\prefabs\default_object.prefab.json" />
     <None Include="resources\shaders\shader_registry.json" />
   </ItemGroup>

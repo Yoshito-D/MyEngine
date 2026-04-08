@@ -1002,9 +1002,9 @@
         "requests": 2
       },
       "Object3D": {
-        "hits": 77184,
+        "hits": 60624,
         "misses": 0,
-        "requests": 77184
+        "requests": 60624
       },
       "Pixelation": {
         "hits": 2,
@@ -1028,9 +1028,9 @@
       }
     },
     "resolveStats": {
-      "hits": 77199,
+      "hits": 60639,
       "misses": 1,
-      "requests": 77200
+      "requests": 60640
     },
     "stageMatches": {
       "Bloom": {

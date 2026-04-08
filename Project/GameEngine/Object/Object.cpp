@@ -5,6 +5,7 @@
 #include "ModelAsset.h"
 #include "Component/ComponentRegistry.h"
 #include "Component/RenderComponent.h"
+#include "Component/AnimationComponent.h"
 
 namespace GameEngine {
 namespace {
@@ -32,6 +33,7 @@ void Object::RegisterDefaultComponentFactories() {
    registry.RegisterFactory("ColliderComponent", [](Object& owner) { return owner.AddComponent<ColliderComponent>(); });
    registry.RegisterFactory("RenderComponent", [](Object& owner) { return owner.AddComponent<RenderComponent>(); });
    registry.RegisterFactory("ObjectNameComponent", [](Object& owner) { return owner.AddComponent<ObjectNameComponent>(); });
+   registry.RegisterFactory("AnimationComponent", [](Object& owner) { return owner.AddComponent<AnimationComponent>(); });
 
    sIsDefaultComponentFactoriesRegistered_ = true;
 }

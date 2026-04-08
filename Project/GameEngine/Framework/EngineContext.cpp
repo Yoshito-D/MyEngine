@@ -288,6 +288,24 @@ void EngineContext::ClearModelAssets() {
    sAssetManager_->GetModelAssetManager()->Clear();
 }
 
+void EngineContext::LoadAnimation(const std::string& animationPath, const std::string& animationName) {
+   if (!sAssetManager_) return;
+   if (!sAssetManager_->GetAnimationAssetManager()) return;
+   sAssetManager_->GetAnimationAssetManager()->LoadAnimation(animationPath, animationName);
+}
+
+AnimationAsset* EngineContext::GetAnimation(const std::string& animationName) {
+   if (!sAssetManager_) return nullptr;
+   if (!sAssetManager_->GetAnimationAssetManager()) return nullptr;
+   return sAssetManager_->GetAnimationAssetManager()->GetAnimation(animationName);
+}
+
+void EngineContext::ClearAnimations() {
+   if (!sAssetManager_) return;
+   if (!sAssetManager_->GetAnimationAssetManager()) return;
+   sAssetManager_->GetAnimationAssetManager()->Clear();
+}
+
 void EngineContext::LoadTexture(const std::string& texturePath, const std::string& name) {
    if (!sAssetManager_) return;
    if (!sAssetManager_->GetTextureManager()) return;

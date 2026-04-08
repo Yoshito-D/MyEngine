@@ -397,7 +397,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       {"failedKeys", state.latestSchemaValidationStatus.failedKeys}
    };
 
-   psoManager->SaveValidationReportJson("reports/pso_validation_report.json");
+   psoManager->SaveValidationReportJson("resources/reports/pso_validation_report.json");
 
    try {
       const std::filesystem::path outPath = "reports/reflection_validation_report.json";

@@ -1,5 +1,6 @@
 #include "TestScene.h"
 #include "Framework/EngineContext.h"
+#include "Component/AnimationComponent.h"
 #include "ObjectEdit.h"
 #include "MathUtils.h"
 
@@ -10,7 +11,8 @@ void TestScene::Initialize() {
 
    EngineContext::LoadModel("resources/models/planet", "planet.obj");
    EngineContext::LoadModel("resources/models/plane", "plane.obj");
-   EngineContext::LoadModel("resources/models/cube", "cube.gltf");
+   EngineContext::LoadModel("resources/models/cube", "AnimatedCube.gltf");
+   EngineContext::LoadAnimation("resources/models/cube", "AnimatedCube.gltf");
    EngineContext::CreateMaterial("spherePhongMaterial", 0xffffffff, 3);
    EngineContext::CreateMaterial("sphereBlinnPhongMaterial", 0xffffffff, 4);
    EngineContext::CreateMaterial("planeMaterial");
@@ -25,7 +27,7 @@ void TestScene::Initialize() {
    auto cubeGltfMaterial = EngineContext::GetMaterial("cubeGltfMaterial");
    auto sphereModelAsset = EngineContext::GetModel("planet.obj");
    auto planeModelAsset = EngineContext::GetModel("plane.obj");
-   auto cubeGltfModelAsset = EngineContext::GetModel("cube.gltf");
+   auto cubeGltfModelAsset = EngineContext::GetModel("AnimatedCube.gltf");
 
    testSpherePhongModel_ = std::make_unique<Model>();
    testSpherePhongModel_->Create(sphereModelAsset, spherePhongMaterial);
@@ -44,6 +46,11 @@ void TestScene::Initialize() {
    testCubeGltfModel_ = std::make_unique<Model>();
    testCubeGltfModel_->Create(cubeGltfModelAsset, cubeGltfMaterial);
    testCubeGltfModel_->SetPosition(Vector3(0.0f, 1.0f, 3.0f));
+   if (auto* animationComponent = testCubeGltfModel_->AddComponent<AnimationComponent>()) {
+	  animationComponent->animationName = "AnimatedCube.gltf";
+	  animationComponent->playing = true;
+	  animationComponent->loop = true;
+   }
 
 #ifdef USE_IMGUI
    isDebugCameraActive_ = true;

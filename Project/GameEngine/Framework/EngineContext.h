@@ -12,6 +12,7 @@
 #include "AssetManager.h"
 #include "TimeProfiler.h"
 #include "ModelAsset.h"
+#include "AnimationAsset.h"
 #include "CameraManager.h"
 #include "LightManager.h"
 #include "Utility/JsonDataManager.h"
@@ -275,6 +276,18 @@ public:
 
    /// @brief モデルアセットを全削除
    static void ClearModelAssets();
+
+   /// @brief アニメーションをロードする
+   /// @param animationPath アニメーションファイルのディレクトリ
+   /// @param animationName アニメーション名（ファイル名）
+   static void LoadAnimation(const std::string& animationPath, const std::string& animationName);
+
+   /// @brief アニメーションアセットを取得する
+   /// @param animationName アニメーション名
+   static AnimationAsset* GetAnimation(const std::string& animationName);
+
+   /// @brief アニメーションアセットを全削除
+   static void ClearAnimations();
 
    /// @brief テクスチャをロードする
    /// @param texturePath テクスチャのパス

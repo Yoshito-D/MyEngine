@@ -25,13 +25,13 @@ struct Node {
    std::vector<Node> children;
 };
 
+
 /// @brief モデルデータを表す構造体
 struct ModelData {
    std::vector<MeshData> meshes;               // 複数メッシュ対応
    std::vector<MaterialAsset> materials;       // 複数マテリアル対応
    Node rootNode;                             // ルートノード
 };
-
 
 /// @brief モデルアセットクラス
 class ModelAsset {
@@ -49,7 +49,6 @@ public:
 	  assert(index < vertexBufferViews_.size());
 	  return vertexBufferViews_[index];
    }
-
 
    /// @brief 指定インデックスの頂点バッファを取得する
    /// @param index メッシュ番号（省略時は0）

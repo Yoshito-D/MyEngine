@@ -66,22 +66,19 @@ public:
 
    /// @brief Quaternionを使用して回転を設定する
    /// @param quaternion 回転を表すQuaternion
-   void SetRotationQuaternion(const Quaternion& quaternion) {
-	  quaternion_ = quaternion;
-	  useQuaternion_ = true;
-   }
+   void SetRotationQuaternion(const Quaternion& quaternion);
 
    /// @brief Quaternionを取得する
    /// @return 現在のQuaternion
-   const Quaternion& GetRotationQuaternion() const { return quaternion_; }
+   const Quaternion& GetRotationQuaternion() const;
 
    /// @brief Quaternionを使用するかどうかを設定する
    /// @param use trueならQuaternion、falseならEuler角を使用
-   void SetUseQuaternion(bool use) { useQuaternion_ = use; }
+   void SetUseQuaternion(bool use);
 
    /// @brief Quaternionを使用しているかどうかを取得する
    /// @return trueならQuaternion使用中
-   bool IsUsingQuaternion() const { return useQuaternion_; }
+   bool IsUsingQuaternion() const;
 
    /// @brief ワールド行列を設定する
    /// @param worldMatrix ワールド行列
@@ -98,8 +95,6 @@ private:
    static std::vector<Model*> sRegisteredModels_;
 
    ModelAsset* modelAsset_ = nullptr;
-   Quaternion quaternion_ = Quaternion::Identity();
-   bool useQuaternion_ = false;
    Matrix4x4 worldMatrixOverride_ = MakeIdentity4x4();
    bool hasWorldMatrixOverride_ = false;
 };

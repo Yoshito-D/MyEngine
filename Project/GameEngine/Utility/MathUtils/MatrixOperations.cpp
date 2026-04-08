@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "MatrixOperations.h"
+#include "QuaternionOperations.h"
 #include <numbers>
 
 namespace GameEngine {
@@ -90,7 +91,13 @@ Matrix4x4 MakeRotateZMatrix(float radian) {
 }
 
 Matrix4x4 MakeAffineMatrix(const Transform& transform) {
-   Matrix4x4 rotateXYZMatrix = MakeRotateXMatrix(transform.rotation.x) * MakeRotateYMatrix(transform.rotation.y) * MakeRotateZMatrix(transform.rotation.z);
+   Matrix4x4 rotateXYZMatrix;
+   if (transform.IsUsingQuaternion()) {
+	  rotateXYZMatrix = MakeRotateMatrix(transform.GetActiveQuaternion());
+   } else {
+	  rotateXYZMatrix = MakeRotateXMatrix(transform.rotation.x) * MakeRotateYMatrix(transform.rotation.y) * MakeRotateZMatrix(transform.rotation.z);
+   }
+
    Matrix4x4 result = {
 	   transform.scale.x * rotateXYZMatrix.m[0][0],transform.scale.x * rotateXYZMatrix.m[0][1],transform.scale.x * rotateXYZMatrix.m[0][2],0.0f,
 	   transform.scale.y * rotateXYZMatrix.m[1][0],transform.scale.y * rotateXYZMatrix.m[1][1],transform.scale.y * rotateXYZMatrix.m[1][2],0.0f,

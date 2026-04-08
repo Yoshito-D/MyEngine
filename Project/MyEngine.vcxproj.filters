@@ -407,6 +407,13 @@
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\RendererEditorController.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\ReflectionValidationCoordinator.cpp" />
+    <ClCompile Include="GameEngine\Object\Model\AnimationAsset.cpp" />
+    <ClCompile Include="GameEngine\Core\Asset\AnimationAssetManager.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -769,6 +776,9 @@
     <ClInclude Include="GameEngine\Core\Renderer\RootBindingSlots.h" />
     <ClInclude Include="GameEngine\Core\Renderer\ReflectionValidationState.h" />
     <ClInclude Include="GameEngine\Core\Renderer\ReflectionValidationCoordinator.h" />
+    <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h" />
+    <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h" />
+    <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
@@ -776,6 +786,5 @@
   <ItemGroup>
     <None Include="resources\prefabs\default_object.prefab.json" />
     <None Include="resources\shaders\shader_registry.json" />
-    <None Include="resources\postprocess\postprocess_templates.json" />
   </ItemGroup>
 </Project>

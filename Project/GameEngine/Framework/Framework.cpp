@@ -8,6 +8,8 @@
 #include "Sound.h"
 #include "SpotLight.h"
 #include "ParticleSystem.h"
+#include "Model/Model.h"
+#include "Sprite/Sprite.h"
 #include "LightDataBuffer.h"
 
 namespace GameEngine {
@@ -114,7 +116,21 @@ void Framework::EndFrame() {
 }
 
 void Framework::Update() {
+   const float deltaTime = timeProfiler_ ? timeProfiler_->GetDeltaTime() : 0.0f;
 
+   for (auto* model : Model::GetRegisteredModels()) {
+      if (!model) {
+         continue;
+      }
+      model->UpdateComponents(deltaTime);
+   }
+
+   for (auto* sprite : Sprite::GetRegisteredSprites()) {
+      if (!sprite) {
+         continue;
+      }
+      sprite->UpdateComponents(deltaTime);
+   }
 }
 
 void Framework::Draw() {

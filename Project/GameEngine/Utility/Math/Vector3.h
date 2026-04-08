@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cmath>
 #include "Vector2.h"
 
@@ -6,6 +7,33 @@ namespace GameEngine {
 
 struct Vector3 {
    float x, y, z;
+
+   static Vector3 Lerp(const Vector3& start, const Vector3& end, float t) {
+      t = std::clamp(t, 0.0f, 1.0f);
+      return start + (end - start) * t;
+   }
+
+   static Vector3 Slerp(const Vector3& start, const Vector3& end, float t) {
+      t = std::clamp(t, 0.0f, 1.0f);
+
+      Vector3 normalizedStart = start.Normalize();
+      Vector3 normalizedEnd = end.Normalize();
+      float dot = std::clamp(normalizedStart.Dot(normalizedEnd), -1.0f, 1.0f);
+
+      if (dot > 0.9995f) {
+         return Lerp(normalizedStart, normalizedEnd, t).Normalize();
+      }
+
+      float theta = std::acos(dot);
+      float sinTheta = std::sin(theta);
+      if (std::abs(sinTheta) < 1e-5f) {
+         return Lerp(normalizedStart, normalizedEnd, t).Normalize();
+      }
+
+      return (normalizedStart * std::sin((1.0f - t) * theta)
+         + normalizedEnd * std::sin(t * theta))
+         / sinTheta;
+   }
 
    Vector3 operator+(const Vector3& vector) const { return { x + vector.x, y + vector.y, z + vector.z }; }
    Vector3 operator-(const Vector3& vector) const { return { x - vector.x, y - vector.y, z - vector.z }; }
