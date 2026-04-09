@@ -7,6 +7,8 @@
 #include "../Utility/VectorMath.h"
 #include "ModelAsset.h"
 #include <vector>
+#include <memory>
+#include <optional>
 
 using namespace Microsoft::WRL;
 
@@ -26,15 +28,22 @@ public:
    /// @brief モデルの作成
    /// @param modelAsset モデルアセット
    /// @param material マテリアル
-   void Create(ModelAsset* modelAsset = nullptr, Material* material = nullptr);
+   void Create(const std::shared_ptr<ModelAsset>& modelAsset = {}, Material* material = nullptr);
 
    /// @brief モデルアセットを取得する
    /// @return モデルアセットへのポインタ
-   ModelAsset* GetModelAsset() const { return modelAsset_; }
+   ModelAsset* GetModelAsset() const { return modelAsset_.get(); }
+
+   /// @brief モデルアセットハンドルを取得する
+   const std::shared_ptr<ModelAsset>& GetModelAssetHandle() const { return modelAsset_; }
 
    /// @brief モデルアセットを設定する
    /// @param modelAsset モデルアセットへのポインタ
-   void SetModelAsset(ModelAsset* modelAsset) { modelAsset_ = modelAsset; }
+   void SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) { modelAsset_ = modelAsset; }
+
+   /// @brief モデル単位のスキンクラスタを取得
+   SkinCluster* GetSkinCluster();
+   const SkinCluster* GetSkinCluster() const;
 
    /// @brief モデルの位置を取得する
    /// @return 位置
@@ -66,22 +75,19 @@ public:
 
    /// @brief Quaternionを使用して回転を設定する
    /// @param quaternion 回転を表すQuaternion
-   void SetRotationQuaternion(const Quaternion& quaternion) {
-	  quaternion_ = quaternion;
-	  useQuaternion_ = true;
-   }
+   void SetRotationQuaternion(const Quaternion& quaternion);
 
    /// @brief Quaternionを取得する
    /// @return 現在のQuaternion
-   const Quaternion& GetRotationQuaternion() const { return quaternion_; }
+   const Quaternion& GetRotationQuaternion() const;
 
    /// @brief Quaternionを使用するかどうかを設定する
    /// @param use trueならQuaternion、falseならEuler角を使用
-   void SetUseQuaternion(bool use) { useQuaternion_ = use; }
+   void SetUseQuaternion(bool use);
 
    /// @brief Quaternionを使用しているかどうかを取得する
    /// @return trueならQuaternion使用中
-   bool IsUsingQuaternion() const { return useQuaternion_; }
+   bool IsUsingQuaternion() const;
 
    /// @brief ワールド行列を設定する
    /// @param worldMatrix ワールド行列
@@ -97,9 +103,8 @@ public:
 private:
    static std::vector<Model*> sRegisteredModels_;
 
-   ModelAsset* modelAsset_ = nullptr;
-   Quaternion quaternion_ = Quaternion::Identity();
-   bool useQuaternion_ = false;
+   std::shared_ptr<ModelAsset> modelAsset_;
+   std::optional<SkinCluster> skinCluster_;
    Matrix4x4 worldMatrixOverride_ = MakeIdentity4x4();
    bool hasWorldMatrixOverride_ = false;
 };

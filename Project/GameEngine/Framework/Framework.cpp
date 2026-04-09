@@ -8,6 +8,8 @@
 #include "Sound.h"
 #include "SpotLight.h"
 #include "ParticleSystem.h"
+#include "Model/Model.h"
+#include "Sprite/Sprite.h"
 #include "LightDataBuffer.h"
 
 namespace GameEngine {
@@ -96,6 +98,14 @@ void Framework::Initialize() {
 
 void Framework::BeginFrame() {
    input_->Update();
+
+   const bool isAltPressed = input_->IsKeyPressed(KeyCode::LeftAlt) || input_->IsKeyPressed(KeyCode::RightAlt);
+   const bool isEnterTriggered = input_->IsKeyTriggered(KeyCode::Enter) || input_->IsKeyTriggered(KeyCode::NumpadEnter);
+   if (isAltPressed && isEnterTriggered) {
+      device_->ToggleFullscreen();
+   }
+
+   device_->SyncBackBufferSizeToWindow();
    renderer_->BeginFrame();
    timeProfiler_->Update();
 }
@@ -106,7 +116,21 @@ void Framework::EndFrame() {
 }
 
 void Framework::Update() {
+   const float deltaTime = timeProfiler_ ? timeProfiler_->GetDeltaTime() : 0.0f;
 
+   for (auto* model : Model::GetRegisteredModels()) {
+      if (!model) {
+         continue;
+      }
+      model->UpdateComponents(deltaTime);
+   }
+
+   for (auto* sprite : Sprite::GetRegisteredSprites()) {
+      if (!sprite) {
+         continue;
+      }
+      sprite->UpdateComponents(deltaTime);
+   }
 }
 
 void Framework::Draw() {
@@ -114,9 +138,29 @@ void Framework::Draw() {
 }
 
 void Framework::Finalize() {
-   renderer_->Finalize();
-   audio_->Finalize();
-   window_->DestroyGameWindow();
+   if (renderer_) {
+      renderer_->Finalize();
+      renderer_.reset();
+   }
+
+   if (assetManager_) {
+      assetManager_.reset();
+   }
+
+   if (device_) {
+      device_->Finalize();
+      device_.reset();
+   }
+
+   if (audio_) {
+      audio_->Finalize();
+      audio_.reset();
+   }
+
+   if (window_) {
+      window_->DestroyGameWindow();
+      window_.reset();
+   }
 }
 
 void Framework::Run() {

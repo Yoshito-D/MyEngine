@@ -12,12 +12,12 @@ void BaseScene::Initialize() {
    EngineContext::CreatePointLight("MainPointLight", 0xffffffff, Vector3(0.0f, 0.0f, 0.0f), 0.0f);
    EngineContext::CreateSpotLight("MainSpotLight", 0xffffffff, Vector3(), 0.0f, Vector3(0.0f, -1.0f, 0.0f), 5.0f, 0.1f, 0.7f, 0.9f);
    EngineContext::CreateAreaLight("MainAreaLight", 
-      Vector3(0.0f, 10.0f, 0.0f),           // position (中心座標)
-      Vector3(0.0f, -1.0f, 0.0f),           // normal (照射方向: 下向き)
-      Vector3(1.0f, 0.0f, 0.0f),            // tangent (右方向)
-      Vector2(5.0f, 5.0f),                  // size (幅と高さ)
-      Vector3(1.0f, 1.0f, 1.0f),            // color (白)
-      0.0f                                  // intensity (強度)
+      Vector3(0.0f, 10.0f, 0.0f),         
+      Vector3(0.0f, -1.0f, 0.0f),         
+      Vector3(1.0f, 0.0f, 0.0f),          
+      Vector2(5.0f, 5.0f),                
+      Vector3(1.0f, 1.0f, 1.0f),          
+      0.0f                                
    );
 
    uiCamera_ = std::make_unique<Camera>();

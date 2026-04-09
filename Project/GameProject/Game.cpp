@@ -13,6 +13,7 @@ void Game::Initialize() {
 }
 
 void Game::Update() {
+   Framework::Update();
    sceneManager_->Update();
 }
 

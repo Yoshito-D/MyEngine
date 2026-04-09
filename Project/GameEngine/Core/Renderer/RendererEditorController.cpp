@@ -6,7 +6,9 @@
 #include "Asset/AssetManager.h"
 #include "Asset/MaterialManager.h"
 #include "Asset/ModelAssetManager.h"
+#include "Asset/AnimationAssetManager.h"
 #include "Asset/TextureManager.h"
+#include "Component/AnimationComponent.h"
 #include "Component/RenderComponent.h"
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
@@ -65,7 +67,7 @@ void RendererEditorController::ShowSceneEditorWindow() {
    }
 
    if (!modelNames.empty() && modelManager) {
-      if (auto* previewModel = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_])) {
+      if (auto previewModel = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_])) {
          ImGui::Text("Model Preview");
          ImGui::Text("Name: %s", modelNames[editorSelectedModelAssetIndex_].c_str());
          ImGui::Text("Meshes: %zu", previewModel->GetMeshData().size());
@@ -86,7 +88,7 @@ void RendererEditorController::ShowSceneEditorWindow() {
    }
 
    if (ImGui::Button("Create Model") && modelManager && materialManager && !modelNames.empty() && !materialNames.empty()) {
-      auto* modelAsset = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_]);
+      auto modelAsset = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_]);
       auto* material = materialManager->GetMaterial(materialNames[editorSelectedMaterialIndex_]);
       if (modelAsset && material) {
          auto model = std::make_unique<Model>();
@@ -371,6 +373,76 @@ void RendererEditorController::ShowInspectorWindow() {
       ImGui::Spacing();
    }
 
+   if (auto* animationComponent = selectedObject_->GetComponent<AnimationComponent>();
+      animationComponent && ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Checkbox("Playing", &animationComponent->playing);
+      ImGui::Checkbox("Loop", &animationComponent->loop);
+      ImGui::DragFloat("Playback Speed", &animationComponent->playbackSpeed, 0.01f, -4.0f, 4.0f);
+      ImGui::Checkbox("Apply Translation", &animationComponent->applyTranslation);
+      ImGui::Checkbox("Apply Rotation", &animationComponent->applyRotation);
+      ImGui::Checkbox("Apply Scale", &animationComponent->applyScale);
+
+      auto* animationManager = assetManager_ ? assetManager_->GetAnimationAssetManager() : nullptr;
+      const auto animationNames = animationManager ? animationManager->GetAnimationNames() : std::vector<std::string>{};
+      if (!animationNames.empty()) {
+         const char* previewName = animationComponent->animationName.empty()
+            ? animationNames.front().c_str()
+            : animationComponent->animationName.c_str();
+
+         if (ImGui::BeginCombo("Animation Asset", previewName)) {
+            for (size_t i = 0; i < animationNames.size(); ++i) {
+               const auto& name = animationNames[i];
+               ImGui::PushID(5000 + static_cast<int>(i));
+               const bool isSelected = (animationComponent->animationName == name);
+               if (ImGui::Selectable(name.c_str(), isSelected)) {
+                  animationComponent->animationName = name;
+                  animationComponent->currentTime = 0.0f;
+               }
+               if (isSelected) {
+                  ImGui::SetItemDefaultFocus();
+               }
+               ImGui::PopID();
+            }
+            ImGui::EndCombo();
+         }
+      }
+
+      if (animationManager && !animationComponent->animationName.empty()) {
+         auto animationAsset = animationManager->GetAnimation(animationComponent->animationName);
+         if (animationAsset && animationAsset->HasAnyClip()) {
+            const auto clipNames = animationAsset->GetClipNames();
+            const std::string previewClip = animationComponent->clipName.empty()
+               ? animationAsset->GetDefaultClipName()
+               : animationComponent->clipName;
+
+            if (ImGui::BeginCombo("Animation Clip", previewClip.c_str())) {
+               for (size_t i = 0; i < clipNames.size(); ++i) {
+                  const auto& name = clipNames[i];
+                  ImGui::PushID(5400 + static_cast<int>(i));
+                  const bool isSelected = (animationComponent->clipName == name);
+                  if (ImGui::Selectable(name.c_str(), isSelected)) {
+                     animationComponent->clipName = name;
+                     animationComponent->currentTime = 0.0f;
+                  }
+                  if (isSelected) {
+                     ImGui::SetItemDefaultFocus();
+                  }
+                  ImGui::PopID();
+               }
+               ImGui::EndCombo();
+            }
+         }
+      }
+
+      char targetNodeBuffer[256]{};
+      std::memcpy(targetNodeBuffer, animationComponent->targetNodeName.c_str(), std::min(animationComponent->targetNodeName.size(), sizeof(targetNodeBuffer) - 1));
+      if (ImGui::InputText("Target Node", targetNodeBuffer, sizeof(targetNodeBuffer))) {
+         animationComponent->targetNodeName = targetNodeBuffer;
+      }
+      ImGui::DragFloat("Current Time", &animationComponent->currentTime, 0.01f, 0.0f, 1000.0f);
+      ImGui::Spacing();
+   }
+
    ImGui::End();
 }
 
@@ -559,7 +631,7 @@ bool RendererEditorController::LoadEditorSceneFromFile(const std::filesystem::pa
       if (type == "Model") {
          const std::string modelName = objectJson.value("modelName", "");
          const std::string materialName = objectJson.value("materialName", "");
-         auto* modelAsset = modelManager->GetModel(modelName);
+         auto modelAsset = modelManager->GetModel(modelName);
          auto* material = materialManager->GetMaterial(materialName);
          if (!modelAsset || !material) {
             continue;

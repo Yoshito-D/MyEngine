@@ -406,6 +406,14 @@
       <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\RendererEditorController.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\ReflectionValidationCoordinator.cpp" />
+    <ClCompile Include="GameEngine\Object\Model\AnimationAsset.cpp" />
+    <ClCompile Include="GameEngine\Core\Asset\AnimationAssetManager.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -766,16 +774,43 @@
     <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
     <ClInclude Include="GameEngine\Core\Renderer\RendererEditorController.h" />
     <ClInclude Include="GameEngine\Core\Renderer\RootBindingSlots.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\ReflectionValidationState.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\ReflectionValidationCoordinator.h" />
+    <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h" />
+    <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h" />
+    <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h" />
+    <ClInclude Include="GameEngine\Object\Model\Skeleton.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="resources\scenes\test_scene.json" />
     <None Include="resources\prefabs\default_object.prefab.json" />
     <None Include="resources\shaders\shader_registry.json" />
-    <None Include="resources\pipelines\binding_expectations.json" />
-    <None Include="resources\pipelines\validation_gate_config.json" />
-    <None Include="resources\pipelines\reflection_validation_report.schema.json" />
+    <None Include="resources\pipelines\skinning_pipeline_registry.json" />
+    <None Include="resources\pipelines\postprocess\bloom_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\gaussblur_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\grayscale_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\pixelation_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\radialblur_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\shockwave_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\vignette_pipeline.json" />
+    <None Include="resources\pipelines\rootsig\fullscreen_triangle_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\line3d_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\object3d_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\particle_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_gaussblur_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_rootsig.json" />
+    <None Include="resources\pipelines\fullscreen_triangle_pipeline.json" />
+    <None Include="resources\pipelines\line3d_pipeline.json" />
+    <None Include="resources\pipelines\object3d_pipeline.json" />
+    <None Include="resources\pipelines\particle_pipeline.json" />
+    <None Include="resources\pipelines\pipeline_registry.json" />
+    <None Include="resources\pipelines\sprite_pipeline.json" />
+    <None Include="resources\postprocess\postprocess_registry.json" />
+    <None Include="resources\pipelines\rootsignatures\Object3DSkinning.json" />
+    <None Include="resources\pipelines\pipelines\SkinningObject3D.json" />
   </ItemGroup>
 </Project>

@@ -21,7 +21,9 @@
 #include "PostProcess/Pixelation.h"
 #include "Utility/MathUtils.h"
 #include "Asset/AssetManager.h"
+#include "Asset/AnimationAssetManager.h"
 #include "Asset/TextureManager.h"
+#include "Component/AnimationComponent.h"
 #include "Component/RenderComponent.h"
 #include "RootBindingSlots.h"
 #include <nlohmann/json.hpp>
@@ -40,122 +42,8 @@
 namespace {
 Logger& log_ = Logger::GetInstance();
 
-struct ValidationGateConfig {
-   uint32_t warningThreshold = 5;
-   double fallbackRateThreshold = 0.30;
-   double minStageMatchRate = 0.60;
-   uint32_t warningIncreaseThreshold = 1;
-   double fallbackRateIncreaseThreshold = 0.05;
-   double stageMatchRateDecreaseThreshold = 0.05;
-   std::string source = "default";
-};
-
-ValidationGateConfig LoadValidationGateConfig() {
-   ValidationGateConfig config{};
-   constexpr const char* kConfigPath = "resources/pipelines/validation_gate_config.json";
-   std::ifstream ifs(kConfigPath);
-   if (!ifs.is_open()) {
-	  return config;
-   }
-
-   try {
-	  nlohmann::json root;
-	  ifs >> root;
-	  config.warningThreshold = root.value("warningThreshold", config.warningThreshold);
-	  config.fallbackRateThreshold = root.value("fallbackRateThreshold", config.fallbackRateThreshold);
-	  config.minStageMatchRate = root.value("minStageMatchRate", config.minStageMatchRate);
-	  config.warningIncreaseThreshold = root.value("warningIncreaseThreshold", config.warningIncreaseThreshold);
-	  config.fallbackRateIncreaseThreshold = root.value("fallbackRateIncreaseThreshold", config.fallbackRateIncreaseThreshold);
-	  config.stageMatchRateDecreaseThreshold = root.value("stageMatchRateDecreaseThreshold", config.stageMatchRateDecreaseThreshold);
-	  config.source = kConfigPath;
-   }
-   catch (...) {
-   }
-
-   return config;
-}
-
-double ComputeStageMatchRate(const GameEngine::PipelineStageMatchInfo& stageInfo) {
-   double sumRate = 0.0;
-   int stageCount = 0;
-
-   auto accumulate = [&](const GameEngine::ShaderStageMatchInfo& info) {
-	  if (!info.hasReflection || info.resourceCount == 0) {
-		 return;
-	  }
-	  sumRate += static_cast<double>(info.matchedByName) / static_cast<double>(info.resourceCount);
-	  ++stageCount;
-	  };
-
-   accumulate(stageInfo.vertex);
-   accumulate(stageInfo.pixel);
-
-   return (stageCount > 0) ? (sumRate / static_cast<double>(stageCount)) : 1.0;
-}
-
-GameEngine::Renderer::SchemaValidationStatus ValidateReportWithSchema(
-   const nlohmann::json& report,
-   const std::filesystem::path& schemaPath) {
-   GameEngine::Renderer::SchemaValidationStatus status{};
-   status.schemaFile = schemaPath.string();
-
-   nlohmann::json schema;
-   std::ifstream ifs(schemaPath);
-   if (!ifs.is_open()) {
-	  status.passed = false;
-	  status.failedKeys.push_back("schema:file_not_found");
-	  return status;
-   }
-
-   try {
-	  ifs >> schema;
-   } catch (...) {
-	  status.passed = false;
-	  status.failedKeys.push_back("schema:parse_error");
-	  return status;
-   }
-
-   std::function<void(const nlohmann::json&, const nlohmann::json&, const std::string&)> validateNode;
-   validateNode = [&](const nlohmann::json& value, const nlohmann::json& schemaNode, const std::string& path) {
-	  if (schemaNode.contains("type") && schemaNode["type"].is_string()) {
-		 const std::string type = schemaNode["type"].get<std::string>();
-		 const bool typeOk =
-			(type == "object" && value.is_object()) ||
-			(type == "array" && value.is_array()) ||
-			(type == "string" && value.is_string()) ||
-			(type == "number" && value.is_number()) ||
-			(type == "integer" && value.is_number_integer()) ||
-			(type == "boolean" && value.is_boolean());
-		 if (!typeOk) {
-			status.failedKeys.push_back(path + ":type");
-			return;
-		 }
-	  }
-
-	  if (schemaNode.contains("required") && schemaNode["required"].is_array() && value.is_object()) {
-		 for (const auto& req : schemaNode["required"]) {
-			if (!req.is_string()) {
-			   continue;
-			}
-			const std::string key = req.get<std::string>();
-			if (!value.contains(key)) {
-			   status.failedKeys.push_back(path + "." + key);
-			}
-		 }
-	  }
-
-	  if (schemaNode.contains("properties") && schemaNode["properties"].is_object() && value.is_object()) {
-		 for (const auto& [key, subSchema] : schemaNode["properties"].items()) {
-			if (value.contains(key)) {
-			   validateNode(value.at(key), subSchema, path + "." + key);
-			}
-		 }
-	  }
-   };
-
-   validateNode(report, schema, "$report");
-   status.passed = status.failedKeys.empty();
-   return status;
+GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
+   return GameEngine::Vector3(matrix.m[3][0], matrix.m[3][1], matrix.m[3][2]);
 }
 
 std::vector<GameEngine::Object*> CollectSceneObjectsForRender() {
@@ -251,7 +139,7 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
    psoManager_->Initialize(device_, shaderManager_.get());
 
    // 専門レンダラーの初期化
-   modelRenderer_->Initialize(device_, psoManager_.get());
+   modelRenderer_->Initialize(device_, psoManager_.get(), assetManager_);
    spriteRenderer_->Initialize(device_, psoManager_.get());
    particleRenderer_->Initialize(device_, psoManager_.get());
    // UIRendererは後でuiCamera_初期化後に設定
@@ -265,8 +153,13 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
 	  log_.Log("Successfully loaded pipeline definitions from JSON");
    }
 
-   lineRenderer_->Initialize(device_->GetDevice(), 10000);
-   postProcessLineRenderer_->Initialize(device_->GetDevice(), 10000);
+   // スキニング用定義をJSONから読み込み
+   if (!psoManager_->LoadPipelineDefinitions(L"resources/pipelines/skinning_pipeline_registry.json", offscreenRenderTarget_->GetFormat())) {
+	  log_.Log("Failed to load skinning pipeline definitions from JSON", Logger::LogLevel::Error);
+   }
+
+   lineRenderer_->Initialize(device_->GetDevice(), 100000);
+   postProcessLineRenderer_->Initialize(device_->GetDevice(), 100000);
 
    // UI描画専用カメラの初期化
    InitializeUICamera();
@@ -314,14 +207,6 @@ void Renderer::BeginFrame() {
    lineRenderer_->Begin();
    postProcessLineRenderer_->Begin();
 
-   if (shaderManager_) {
-	  const auto stats = shaderManager_->GetResolveStats();
-	  reflectionResolveRequestsAtFrameBegin_ = stats.requests;
-	  reflectionResolveHitsAtFrameBegin_ = stats.hits;
-	  reflectionResolveMissesAtFrameBegin_ = stats.misses;
-	  reflectionStatsAtFrameBegin_ = shaderManager_->GetPipelineResolveStats();
-	  frameReflectionStatsByPipeline_.clear();
-   }
 }
 
 void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
@@ -532,6 +417,79 @@ void Renderer::DrawCircle(const Vector3& center, float radius, const Vector3& no
    }
 }
 
+void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& jointColor, const Vector4& boneColor, bool applyPostProcess) {
+   if (!model) {
+	  return;
+   }
+
+   ModelAsset* modelAsset = model->GetModelAsset();
+   if (!modelAsset) {
+	  return;
+   }
+
+   const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
+   if (!bindSkeleton || bindSkeleton->joints.empty()) {
+	  return;
+   }
+
+   Skeleton skeletonPose = *bindSkeleton;
+
+   if (auto* animationComponent = model->GetComponent<AnimationComponent>()) {
+	  if (assetManager_ && !animationComponent->animationName.empty()) {
+		 auto* animationManager = assetManager_->GetAnimationAssetManager();
+		 if (animationManager) {
+			auto animationAsset = animationManager->GetAnimation(animationComponent->animationName);
+			if (animationAsset) {
+			   const AnimationClip* clip = nullptr;
+			   if (!animationComponent->clipName.empty()) {
+				  clip = animationAsset->GetClip(animationComponent->clipName);
+			   }
+			   if (!clip) {
+				  clip = animationAsset->GetDefaultClip();
+			   }
+
+			   if (clip) {
+				  ApplyAnimation(skeletonPose, *clip, animationComponent->currentTime);
+				  skeletonPose.Update();
+			   }
+			}
+		 }
+	  }
+   }
+
+   const TransformComponent* transformComponent = model->GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+
+   Matrix4x4 modelMatrix = MakeAffineMatrix(transformComponent->transform);
+   if (transformComponent->useParentMatrix) {
+	  modelMatrix = modelMatrix * transformComponent->parentMatrix;
+   }
+
+   std::vector<Vector3> jointPositions;
+   jointPositions.resize(skeletonPose.joints.size());
+
+   for (const Joint& joint : skeletonPose.joints) {
+	  const Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * modelMatrix;
+	  jointPositions[joint.index] = ExtractTranslation(jointWorldMatrix);
+	  DrawSphere(jointPositions[joint.index], jointRadius, jointColor, applyPostProcess);
+   }
+
+   for (const Joint& joint : skeletonPose.joints) {
+	  if (!joint.parent) {
+		 continue;
+	  }
+
+	  const int32_t parentIndex = *joint.parent;
+	  if (parentIndex < 0 || static_cast<size_t>(parentIndex) >= jointPositions.size()) {
+		 continue;
+	  }
+
+	  DrawLine(jointPositions[parentIndex], jointPositions[joint.index], boneColor, applyPostProcess);
+   }
+}
+
 void Renderer::EndFrame() {
    DrawAutoRegisteredModels();
    DrawAutoRegisteredSprites();
@@ -572,27 +530,6 @@ void Renderer::EndFrame() {
 	  offscreenRenderTarget_->PostDraw();
    }
 
-   if (shaderManager_) {
-	  const auto stats = shaderManager_->GetResolveStats();
-	  frameReflectionResolveRequests_ = stats.requests - reflectionResolveRequestsAtFrameBegin_;
-	  frameReflectionResolveHits_ = stats.hits - reflectionResolveHitsAtFrameBegin_;
-	  frameReflectionResolveFallbacks_ = stats.misses - reflectionResolveMissesAtFrameBegin_;
-
-	  const auto currentPipelineStats = shaderManager_->GetPipelineResolveStats();
-	  for (const auto& [pipelineName, current] : currentPipelineStats) {
-		 const auto beginIt = reflectionStatsAtFrameBegin_.find(pipelineName);
-		 const ResolveStats begin = (beginIt != reflectionStatsAtFrameBegin_.end()) ? beginIt->second : ResolveStats{};
-		 ResolveStats delta{};
-		 delta.requests = current.requests - begin.requests;
-		 delta.hits = current.hits - begin.hits;
-		 delta.misses = current.misses - begin.misses;
-		 if (delta.requests > 0) {
-			frameReflectionStatsByPipeline_[pipelineName] = delta;
-		 }
-	  }
-   }
-
-   UpdateValidationReport();
    // バックバッファに描画開始
    device_->PreDraw();
 
@@ -612,7 +549,6 @@ void Renderer::EndFrame() {
 
 	  // PostProcessManagerのImGuiコントロールを表示
 	  postProcessManager_->ShowImGuiControls();
-	  ShowReflectionDebugWindow();
 
    } else {
 	  // UI込みのオフスクリーンレンダーターゲットをバックバッファに描画
@@ -953,419 +889,6 @@ void Renderer::SortTransparentCommands() {
 
 		 return std::get<1>(lhsInfo) > std::get<1>(rhsInfo);
 	  });
-}
-
-#ifdef USE_IMGUI
-void Renderer::ShowReflectionDebugWindow() {
-   ImGui::Begin("Reflection Binding Debug");
-   ImGui::Text("Frame Resolve Requests : %llu", frameReflectionResolveRequests_);
-   ImGui::Text("Frame Resolve Hits     : %llu", frameReflectionResolveHits_);
-   ImGui::Text("Frame Fallbacks        : %llu", frameReflectionResolveFallbacks_);
-   ImGui::Separator();
-   ImGui::Text("Quality Gate: %s", latestQualityGatePassed_ ? "PASS" : "FAIL");
-   ImGui::Text("Validation Warnings: %u", latestValidationWarningCount_);
-   ImGui::Text("Fallback Rate: %.2f%%", latestFallbackRate_ * 100.0);
-   if (!latestQualityGateFailReasons_.empty()) {
-	  ImGui::Text("Fail Reasons:");
-	  for (const auto& reason : latestQualityGateFailReasons_) {
-		 ImGui::BulletText("%s", reason.c_str());
-	  }
-   }
-   ImGui::Checkbox("Show Failed Pipelines Only", &showOnlyFailedItems_);
-
-   const double hitRate = (frameReflectionResolveRequests_ > 0)
-	  ? (static_cast<double>(frameReflectionResolveHits_) / static_cast<double>(frameReflectionResolveRequests_) * 100.0)
-	  : 100.0;
-   ImGui::Text("Frame Hit Rate         : %.1f%%", hitRate);
-
-	if (ImGui::BeginTabBar("ReflectionValidationTabs")) {
-		if (ImGui::BeginTabItem("Schema Validation")) {
-			ImGui::Text("Schema Validation: %s", latestSchemaValidationStatus_.passed ? "PASS" : "FAIL");
-			ImGui::Text("Schema File: %s", latestSchemaValidationStatus_.schemaFile.c_str());
-			if (!latestSchemaValidationStatus_.failedKeys.empty()) {
-				ImGui::Text("Failed Keys:");
-				for (const auto& key : latestSchemaValidationStatus_.failedKeys) {
-					ImGui::BulletText("%s", key.c_str());
-				}
-			}
-			ImGui::EndTabItem();
-		}
-
-		if (ImGui::BeginTabItem("Regression Diffs")) {
-			if (ImGui::BeginTable("ReflectionByPipeline", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-				ImGui::TableSetupColumn("Pipeline");
-				ImGui::TableSetupColumn("Requests");
-				ImGui::TableSetupColumn("Hits");
-				ImGui::TableSetupColumn("Fallbacks");
-				ImGui::TableSetupColumn("MismatchWarnings");
-				ImGui::TableHeadersRow();
-
-				for (const auto& [pipelineName, stats] : frameReflectionStatsByPipeline_) {
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(pipelineName.c_str());
-					const auto diffIt = latestPipelineDiffs_.find(pipelineName);
-					const PipelineDiffMetrics diff = (diffIt != latestPipelineDiffs_.end()) ? diffIt->second : PipelineDiffMetrics{};
-					const char* warningTrend = diff.warningDelta > 0 ? "↑" : (diff.warningDelta < 0 ? "↓" : "→");
-					const char* fallbackTrend = diff.fallbackRateDelta > 0.0 ? "↑" : (diff.fallbackRateDelta < 0.0 ? "↓" : "→");
-					const char* stageTrend = diff.stageMatchRateDelta > 0.0 ? "↑" : (diff.stageMatchRateDelta < 0.0 ? "↓" : "→");
-
-					ImGui::TableSetColumnIndex(1); ImGui::Text("%llu", stats.requests);
-					ImGui::TableSetColumnIndex(2); ImGui::Text("%llu %s", stats.hits, stageTrend);
-					ImGui::TableSetColumnIndex(3); ImGui::Text("%llu %s", stats.misses, fallbackTrend);
-					ImGui::TableSetColumnIndex(4);
-					const auto* metadata = psoManager_ ? psoManager_->GetPipelineReflectionMetadata(pipelineName) : nullptr;
-					ImGui::Text("%u %s", metadata ? metadata->validationWarningCount : 0, warningTrend);
-				}
-
-				ImGui::EndTable();
-			}
-
-			if (!latestRegressionFailReasons_.empty()) {
-				ImGui::Separator();
-				ImGui::Text("Regression Fail Reasons:");
-				for (const auto& reason : latestRegressionFailReasons_) {
-					ImGui::BulletText("%s", reason.c_str());
-				}
-			}
-			ImGui::EndTabItem();
-		}
-
-		if (ImGui::BeginTabItem("Current Fail Items")) {
-			if (latestValidationFailItems_.empty()) {
-				ImGui::Text("No fail items.");
-			} else {
-				for (int i = 0; i < static_cast<int>(latestValidationFailItems_.size()); ++i) {
-					const auto& item = latestValidationFailItems_[i];
-					const std::string failLabel = item.pipeline + "##fail_" + std::to_string(i);
-					if (ImGui::Selectable(failLabel.c_str(), selectedFailItemIndex_ == i)) {
-						selectedFailItemIndex_ = i;
-					}
-				}
-
-				if (selectedFailItemIndex_ >= 0 && selectedFailItemIndex_ < static_cast<int>(latestValidationFailItems_.size())) {
-					const auto& selected = latestValidationFailItems_[selectedFailItemIndex_];
-					ImGui::Separator();
-					ImGui::Text("Pipeline: %s", selected.pipeline.c_str());
-					ImGui::TextWrapped("Reason: %s", selected.reason.c_str());
-					ImGui::Text("Stage Match Rate: %.1f%%", selected.stageMatchRate * 100.0);
-					if (!selected.missingSemantics.empty()) {
-						ImGui::Text("Missing Semantics:");
-						for (const auto& semantic : selected.missingSemantics) {
-							ImGui::BulletText("%s", semantic.c_str());
-						}
-					}
-				}
-			}
-			ImGui::EndTabItem();
-		}
-
-		ImGui::EndTabBar();
-	}
-
-   if (ImGui::Button("Dump Root Tables To Log") && shaderManager_) {
-	  shaderManager_->LogRootParameterTablesDebug();
-   }
-   ImGui::End();
-}
-#endif
-
-void Renderer::UpdateValidationReport() {
-   if (!psoManager_ || !shaderManager_) {
-	  return;
-   }
-
-   const auto psoSummary = psoManager_->GetValidationSummary();
-   const auto validationMetadata = psoManager_->GetAllPipelineReflectionMetadata();
-   const auto stageMatchInfos = shaderManager_->GetPipelineStageMatchInfos();
-   latestValidationWarningCount_ = psoSummary.totalWarnings;
-   latestFallbackRate_ = (frameReflectionResolveRequests_ > 0)
-	  ? static_cast<double>(frameReflectionResolveFallbacks_) / static_cast<double>(frameReflectionResolveRequests_)
-	  : 0.0;
-
-   latestQualityGateFailReasons_.clear();
-   latestValidationFailItems_.clear();
-   latestPipelineDiffs_.clear();
-  latestRegressionFailReasons_.clear();
-   const ValidationGateConfig gateConfig = LoadValidationGateConfig();
-   const uint32_t kWarningThreshold = gateConfig.warningThreshold;
-   const double kFallbackRateThreshold = gateConfig.fallbackRateThreshold;
-   const double kMinStageMatchRate = gateConfig.minStageMatchRate;
-   const uint32_t kWarningIncreaseThreshold = gateConfig.warningIncreaseThreshold;
-   const double kFallbackRateIncreaseThreshold = gateConfig.fallbackRateIncreaseThreshold;
-   const double kStageMatchRateDecreaseThreshold = gateConfig.stageMatchRateDecreaseThreshold;
-
-   std::unordered_map<std::string, uint32_t> currentWarningsByPipeline;
-   for (const auto& [pipelineName, metadata] : validationMetadata) {
-	  currentWarningsByPipeline[pipelineName] = metadata.validationWarningCount;
-   }
-
-   std::unordered_map<std::string, double> currentFallbackRateByPipeline;
-   for (const auto& [pipelineName, stats] : frameReflectionStatsByPipeline_) {
-	  const double rate = (stats.requests > 0)
-		 ? static_cast<double>(stats.misses) / static_cast<double>(stats.requests)
-		 : 0.0;
-	  currentFallbackRateByPipeline[pipelineName] = rate;
-   }
-
-   std::unordered_map<std::string, double> currentStageMatchRateByPipeline;
-   for (const auto& [pipelineName, stageInfo] : stageMatchInfos) {
-	  currentStageMatchRateByPipeline[pipelineName] = ComputeStageMatchRate(stageInfo);
-   }
-
-   nlohmann::json previousReport;
-   bool hasPreviousReport = false;
-   try {
-	  std::ifstream ifs("reports/reflection_validation_report.json");
-	  if (ifs.is_open()) {
-		 ifs >> previousReport;
-		 hasPreviousReport = previousReport.is_object();
-	  }
-   }
-   catch (...) {
-	  hasPreviousReport = false;
-   }
-
-   if (latestValidationWarningCount_ > kWarningThreshold) {
-	  latestQualityGateFailReasons_.push_back(
-		 "Validation warnings exceeded threshold (" +
-		 std::to_string(latestValidationWarningCount_) + "/" + std::to_string(kWarningThreshold) + ")");
-   }
-   if (latestFallbackRate_ > kFallbackRateThreshold) {
-	  latestQualityGateFailReasons_.push_back(
-		 "Fallback rate exceeded threshold (" +
-		 std::to_string(static_cast<int>(latestFallbackRate_ * 100.0)) + "%/" +
-		 std::to_string(static_cast<int>(kFallbackRateThreshold * 100.0)) + "%)");
-   }
-
-   for (const auto& [pipelineName, metadata] : validationMetadata) {
-	  double stageMatchRate = 1.0;
-	  if (auto it = stageMatchInfos.find(pipelineName); it != stageMatchInfos.end()) {
-		 stageMatchRate = ComputeStageMatchRate(it->second);
-	  }
-
-	  if (!metadata.missingSemantics.empty() || stageMatchRate < kMinStageMatchRate) {
-		 ValidationFailItem item{};
-		 item.pipeline = pipelineName;
-		 item.missingSemantics = metadata.missingSemantics;
-		 item.stageMatchRate = stageMatchRate;
-		 item.reason = "pipeline=" + pipelineName +
-			", missingSemantics=" + std::to_string(metadata.missingSemantics.size()) +
-			", stageMatchRate=" + std::to_string(stageMatchRate);
-		 latestValidationFailItems_.push_back(item);
-
-		 latestQualityGateFailReasons_.push_back(
-			"Pipeline " + pipelineName + " failed: missingSemantics=" +
-			std::to_string(metadata.missingSemantics.size()) +
-			", stageMatchRate=" + std::to_string(static_cast<int>(stageMatchRate * 100.0)) + "%");
-	  }
-   }
-
-   auto getPreviousPipelineWarning = [&](const std::string& pipelineName) -> uint32_t {
-	  if (!hasPreviousReport || !previousReport.contains("pso") || !previousReport["pso"].contains("pipelines") || !previousReport["pso"]["pipelines"].is_array()) {
-		 return 0;
-	  }
-	  for (const auto& entry : previousReport["pso"]["pipelines"]) {
-		 if (!entry.is_object()) {
-			continue;
-		 }
-		 if (entry.value("name", std::string{}) == pipelineName) {
-			return entry.value("validationWarningCount", 0u);
-		 }
-	  }
-	  return 0;
-	  };
-
-   auto getPreviousPipelineFallbackRate = [&](const std::string& pipelineName) -> double {
-	  if (!hasPreviousReport || !previousReport.contains("renderer") || !previousReport["renderer"].contains("frameByPipeline")) {
-		 return 0.0;
-	  }
-	  const auto& byPipeline = previousReport["renderer"]["frameByPipeline"];
-	  if (!byPipeline.contains(pipelineName)) {
-		 return 0.0;
-	  }
-	  return byPipeline[pipelineName].value("fallbackRate", 0.0);
-	  };
-
-   auto getPreviousPipelineStageMatchRate = [&](const std::string& pipelineName) -> double {
-	  if (!hasPreviousReport || !previousReport.contains("shader") || !previousReport["shader"].contains("stageMatches")) {
-		 return 1.0;
-	  }
-	  const auto& stageMatches = previousReport["shader"]["stageMatches"];
-	  if (!stageMatches.contains(pipelineName)) {
-		 return 1.0;
-	  }
-	  return stageMatches[pipelineName].value("averageMatchRate", 1.0);
-	  };
-
-   nlohmann::json diffByPipeline = nlohmann::json::object();
-   for (const auto& [pipelineName, currentWarningCount] : currentWarningsByPipeline) {
-	  const uint32_t previousWarningCount = getPreviousPipelineWarning(pipelineName);
-	  const double currentFallbackRate = currentFallbackRateByPipeline.contains(pipelineName) ? currentFallbackRateByPipeline[pipelineName] : 0.0;
-	  const double previousFallbackRate = getPreviousPipelineFallbackRate(pipelineName);
-	  const double currentStageRate = currentStageMatchRateByPipeline.contains(pipelineName) ? currentStageMatchRateByPipeline[pipelineName] : 1.0;
-	  const double previousStageRate = getPreviousPipelineStageMatchRate(pipelineName);
-
-	  PipelineDiffMetrics diff{};
-	  diff.warningDelta = static_cast<int>(currentWarningCount) - static_cast<int>(previousWarningCount);
-	  diff.fallbackRateDelta = currentFallbackRate - previousFallbackRate;
-	  diff.stageMatchRateDelta = currentStageRate - previousStageRate;
-	  latestPipelineDiffs_[pipelineName] = diff;
-
-	  diffByPipeline[pipelineName] = {
-		  {"warningDelta", diff.warningDelta},
-		  {"fallbackRateDelta", diff.fallbackRateDelta},
-		  {"stageMatchRateDelta", diff.stageMatchRateDelta}
-	  };
-
-	  if (hasPreviousReport) {
-		 if (diff.warningDelta > static_cast<int>(kWarningIncreaseThreshold)) {
-             const std::string reason = "Pipeline " + pipelineName + " warning regression: +" + std::to_string(diff.warningDelta);
-				latestQualityGateFailReasons_.push_back(reason);
-				latestRegressionFailReasons_.push_back(reason);
-		 }
-		 if (diff.fallbackRateDelta > kFallbackRateIncreaseThreshold) {
-               const std::string reason = "Pipeline " + pipelineName + " fallback regression: +" + std::to_string(static_cast<int>(diff.fallbackRateDelta * 100.0)) + "%";
-				latestQualityGateFailReasons_.push_back(reason);
-				latestRegressionFailReasons_.push_back(reason);
-		 }
-		 if ((-diff.stageMatchRateDelta) > kStageMatchRateDecreaseThreshold) {
-               const std::string reason = "Pipeline " + pipelineName + " stage match regression: " + std::to_string(static_cast<int>(diff.stageMatchRateDelta * 100.0)) + "%";
-				latestQualityGateFailReasons_.push_back(reason);
-				latestRegressionFailReasons_.push_back(reason);
-		 }
-	  }
-   }
-
-   latestQualityGatePassed_ = latestQualityGateFailReasons_.empty();
-
-   nlohmann::json report = nlohmann::json::object();
- report["version"] = "1.1.0";
-	report["schemaVersion"] = "1.1.0";
-	report["compatibilityPolicy"] = {
-		{"backwardCompatibleRange", ">=1.0.0 <2.0.0"},
-		{"note", "Minor version upgrades remain backward compatible."}
-	};
-   report["schema"] = {
-     {"requiredTopLevelFields", nlohmann::json::array({"version", "schemaVersion", "compatibilityPolicy", "schema", "schemaValidation", "qualityGate", "diff", "pso", "shader", "renderer"})},
-	   {"qualityGateRequiredFields", nlohmann::json::array({"passed", "warningThreshold", "fallbackRateThreshold", "warningCount", "fallbackRate", "failReasons"})}
-   };
-   report["diff"] = {
-		{"previousReportFound", hasPreviousReport},
-		{"warningIncreaseThreshold", kWarningIncreaseThreshold},
-		{"fallbackRateIncreaseThreshold", kFallbackRateIncreaseThreshold},
-		{"stageMatchRateDecreaseThreshold", kStageMatchRateDecreaseThreshold},
-		{"byPipeline", diffByPipeline}
-   };
-   report["qualityGate"] = {
-	   {"passed", latestQualityGatePassed_},
-	   {"warningThreshold", kWarningThreshold},
-	   {"fallbackRateThreshold", kFallbackRateThreshold},
-	   {"minStageMatchRate", kMinStageMatchRate},
-	   {"warningIncreaseThreshold", kWarningIncreaseThreshold},
-	   {"fallbackRateIncreaseThreshold", kFallbackRateIncreaseThreshold},
-	   {"stageMatchRateDecreaseThreshold", kStageMatchRateDecreaseThreshold},
-	   {"configSource", gateConfig.source},
-	   {"warningCount", latestValidationWarningCount_},
-	   {"fallbackRate", latestFallbackRate_},
-	 {"failReasons", latestQualityGateFailReasons_},
-	   {"failItems", [&]() {
-		   nlohmann::json items = nlohmann::json::array();
-		   for (const auto& item : latestValidationFailItems_) {
-			   items.push_back({
-				   {"pipeline", item.pipeline},
-				   {"reason", item.reason},
-				   {"missingSemantics", item.missingSemantics},
-				   {"stageMatchRate", item.stageMatchRate}
-			   });
-		   }
-		   return items;
-	   }()}
-   };
-
-   report["pso"] = psoManager_->BuildValidationReportJson();
-   nlohmann::json stageMatchesJson = nlohmann::json::object();
-   for (const auto& [pipelineName, stageInfo] : stageMatchInfos) {
-	  const double averageMatchRate = ComputeStageMatchRate(stageInfo);
-	  stageMatchesJson[pipelineName] = {
-		  {"vertex", {
-			  {"hasReflection", stageInfo.vertex.hasReflection},
-			  {"resourceCount", stageInfo.vertex.resourceCount},
-			  {"matchedByName", stageInfo.vertex.matchedByName}
-		  }},
-		  {"pixel", {
-			  {"hasReflection", stageInfo.pixel.hasReflection},
-			  {"resourceCount", stageInfo.pixel.resourceCount},
-			  {"matchedByName", stageInfo.pixel.matchedByName}
-		}},
-		  {"averageMatchRate", averageMatchRate}
-	  };
-   }
-
-   const auto resolveStats = shaderManager_->GetResolveStats();
-   nlohmann::json pipelineResolveStatsJson = nlohmann::json::object();
-   for (const auto& [pipelineName, stats] : shaderManager_->GetPipelineResolveStats()) {
-	  pipelineResolveStatsJson[pipelineName] = {
-		  {"requests", stats.requests},
-		  {"hits", stats.hits},
-		  {"misses", stats.misses}
-	  };
-   }
-
-   report["shader"] = {
-	   {"stageMatches", stageMatchesJson},
-	   {"resolveStats", {
-		   {"requests", resolveStats.requests},
-		   {"hits", resolveStats.hits},
-		   {"misses", resolveStats.misses}
-	   }},
-	   {"pipelineResolveStats", pipelineResolveStatsJson}
-   };
-
-   nlohmann::json rendererByPipeline = nlohmann::json::object();
-   for (const auto& [pipelineName, stats] : frameReflectionStatsByPipeline_) {
-	  const double fallbackRate = (stats.requests > 0)
-		 ? static_cast<double>(stats.misses) / static_cast<double>(stats.requests)
-		 : 0.0;
-	  rendererByPipeline[pipelineName] = {
-		  {"requests", stats.requests},
-		  {"hits", stats.hits},
-	   {"fallbacks", stats.misses},
-		  {"fallbackRate", fallbackRate}
-	  };
-   }
-   report["renderer"] = {
-	   {"frameResolveRequests", frameReflectionResolveRequests_},
-	   {"frameResolveHits", frameReflectionResolveHits_},
-	   {"frameFallbacks", frameReflectionResolveFallbacks_},
-	   {"frameByPipeline", rendererByPipeline}
-   };
-
-	// スキーマ自己検証（暫定値でキーを確保してから検証）
-	report["schemaValidation"] = {
-		{"passed", true},
-		{"schemaFile", "resources/pipelines/reflection_validation_report.schema.json"},
-		{"failedKeys", nlohmann::json::array()}
-	};
-	latestSchemaValidationStatus_ = ValidateReportWithSchema(report, "resources/pipelines/reflection_validation_report.schema.json");
-	report["schemaValidation"] = {
-		{"passed", latestSchemaValidationStatus_.passed},
-		{"schemaFile", latestSchemaValidationStatus_.schemaFile},
-		{"failedKeys", latestSchemaValidationStatus_.failedKeys}
-	};
-
-   // PSO単体レポート（CI個別参照用）
-   psoManager_->SaveValidationReportJson("reports/pso_validation_report.json");
-
-   try {
-	  const std::filesystem::path outPath = "reports/reflection_validation_report.json";
-	  std::filesystem::create_directories(outPath.parent_path());
-	  std::ofstream ofs(outPath);
-	  if (ofs.is_open()) {
-		 ofs << report.dump(2);
-	  }
-   }
-   catch (...) {
-   }
 }
 
 } // namespace GameEngine

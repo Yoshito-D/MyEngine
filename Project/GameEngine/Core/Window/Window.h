@@ -35,11 +35,24 @@ public:
    /// @brief ウィンドウインスタンスを取得
    /// @return ウィンドウインスタンス
    HINSTANCE GetInstance() const { return wndClass_.hInstance; }
+
+   /// @brief フルスクリーンを切り替える
+   void ToggleFullscreen();
+
+   /// @brief フルスクリーン状態を設定する
+   void SetFullscreen(bool fullscreen);
+
+   /// @brief フルスクリーン状態を取得
+   bool IsFullscreen() const { return isFullscreen_; }
 private:
    HWND hwnd_ = nullptr;   // ウィンドウハンドル
    WNDCLASSEX wndClass_{}; // ウィンドウクラス
    UINT windowStyle_;
    float aspectRatio_;
+   bool isFullscreen_ = false;
+   RECT windowedRect_{};
+   LONG windowedStyle_ = 0;
+   LONG windowedExStyle_ = 0;
 
 private:
 

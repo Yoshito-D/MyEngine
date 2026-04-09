@@ -30,9 +30,14 @@ const std::vector<Model*>& Model::GetRegisteredModels() {
    return sRegisteredModels_;
 }
 
-void Model::Create(ModelAsset* modelAsset, Material* material) {
+void Model::Create(const std::shared_ptr<ModelAsset>& modelAsset, Material* material) {
    if (modelAsset) {
 	  modelAsset_ = modelAsset;
+   }
+
+   skinCluster_.reset();
+   if (modelAsset_ && modelAsset_->HasSkinningData()) {
+	  skinCluster_ = modelAsset_->CreateSkinClusterInstance();
    }
 
    CreateTransformationMatrix();
@@ -47,6 +52,30 @@ void Model::Create(ModelAsset* modelAsset, Material* material) {
    if (transformComponent) {
 	  transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
    }
+}
+
+SkinCluster* Model::GetSkinCluster() {
+   if (skinCluster_) {
+	  return &(*skinCluster_);
+   }
+
+   if (!modelAsset_) {
+	  return nullptr;
+   }
+
+   return modelAsset_->GetSkinCluster();
+}
+
+const SkinCluster* Model::GetSkinCluster() const {
+   if (skinCluster_) {
+	  return &(*skinCluster_);
+   }
+
+   if (!modelAsset_) {
+	  return nullptr;
+   }
+
+   return modelAsset_->GetSkinCluster();
 }
 
 const Vector3& Model::GetPosition() const {
@@ -97,7 +126,50 @@ void Model::SetRotation(const Vector3& rotation) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform.rotation = rotation;
+   transformComponent->transform.SetRotationEuler(rotation);
+}
+
+void Model::SetRotationQuaternion(const Quaternion& quaternion) {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->transform.SetRotationQuaternion(quaternion);
+}
+
+const Quaternion& Model::GetRotationQuaternion() const {
+   static const Quaternion identity = Quaternion::Identity();
+   const auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return identity;
+   }
+
+   return transformComponent->transform.rotationQuaternion;
+}
+
+void Model::SetUseQuaternion(bool use) {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+
+   auto& transform = transformComponent->transform;
+   if (use) {
+	  transform.SetRotationEuler(transform.rotation);
+	  transform.rotationSource = Transform::RotationSource::Quaternion;
+   } else {
+	  transform.rotation = transform.GetActiveEuler();
+	  transform.rotationSource = Transform::RotationSource::Euler;
+   }
+}
+
+bool Model::IsUsingQuaternion() const {
+   const auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+	  return false;
+   }
+
+   return transformComponent->transform.IsUsingQuaternion();
 }
 
 void Model::SetScale(const Vector3& scale) {
@@ -122,19 +194,7 @@ void Model::UpdateMatrix(Camera* camera) {
 	  return;
    }
 
-   Matrix4x4 worldMatrix;
-
-   // Quaternionを使用するかチェック
-   if (useQuaternion_) {
-	  // Quaternionから回転行列を生成
-      Matrix4x4 scaleMatrix = MakeScaleMatrix(transformComponent->transform.scale);
-	  Matrix4x4 rotateMatrix = MakeRotateMatrix(quaternion_);
-    Matrix4x4 translateMatrix = MakeTranslateMatrix(transformComponent->transform.translation);
-	  worldMatrix = scaleMatrix * rotateMatrix * translateMatrix;
-   } else {
-	  // 通常のEuler角からアフィン変換行列を生成
-     worldMatrix = MakeAffineMatrix(transformComponent->transform);
-   }
+   Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->transform);
 
    if (hasWorldMatrixOverride_) {
 	  worldMatrix = worldMatrixOverride_;
@@ -142,7 +202,9 @@ void Model::UpdateMatrix(Camera* camera) {
 
    // modelAssetのrootNode.localMatrixを掛ける
    if (modelAsset_) {
-	  worldMatrix = modelAsset_->GetRootNode().localMatrix * worldMatrix;
+      if (!modelAsset_->HasSkinningData()) {
+		 worldMatrix = modelAsset_->GetRootNode().localMatrix * worldMatrix;
+	  }
    }
 
    if (transformComponent->useParentMatrix) {

@@ -20,4 +20,6 @@ private:
    std::unique_ptr<GameEngine::Model> testSphereBlinnPhongModel_ = nullptr;
    std::unique_ptr<GameEngine::Model> testPlaneModel_ = nullptr;
    std::unique_ptr<GameEngine::Model> testCubeGltfModel_ = nullptr;
+   std::unique_ptr<GameEngine::Model> testSkeletonModel_ = nullptr;
+   std::unique_ptr<GameEngine::Model> testSneakWalkModel_ = nullptr;
 };

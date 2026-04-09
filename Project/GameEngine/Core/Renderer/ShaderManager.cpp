@@ -421,6 +421,7 @@ void ShaderManager::LoadPredefinedShaders() {
    // 事前定義されたシェーダーの読み込み
    LoadVertexShader("Object3D", L"resources/shaders/Object3d.VS.hlsl");
    LoadPixelShader("Object3D", L"resources/shaders/Object3d.PS.hlsl");
+   LoadVertexShader("SkinningObject3D", L"resources/shaders/SkinningObject3d.VS.hlsl");
 
    LoadVertexShader("Line3D", L"resources/shaders/Line3d.VS.hlsl");
    LoadPixelShader("Line3D", L"resources/shaders/Line3d.PS.hlsl");
@@ -611,6 +612,47 @@ void ShaderManager::BuildPipelineRootParameterTables() {
 	  }
 	  registerTable("Object3D", table);
 	  registerTable("Sprite", table);
+   }
+
+   // SkinningObject3D
+   {
+	  PipelineRootParameterTable table{};
+	  registerByReflection(table, "SkinningObject3D", ShaderType::Vertex, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
+		 if (resource.type == D3D_SIT_CBUFFER && resource.bindPoint == 0) {
+			RegisterRootSlot(t.slotBySemanticName, "transform", RootBindingSlots::Object3D::kTransform);
+		 }
+         if ((resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER || resource.type == D3D_SIT_BYTEADDRESS) &&
+			resource.bindPoint == 5) {
+			RegisterRootSlot(t.slotBySemanticName, "skinpalette", RootBindingSlots::Object3D::kSkinPalette);
+		 }
+	  });
+	  registerByReflection(table, "Object3D", ShaderType::Pixel, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
+		 if (resource.type == D3D_SIT_CBUFFER) {
+			if (resource.bindPoint == 0) RegisterRootSlot(t.slotBySemanticName, "material", RootBindingSlots::Object3D::kMaterial);
+			if (resource.bindPoint == 1) RegisterRootSlot(t.slotBySemanticName, "camera", RootBindingSlots::Object3D::kCamera);
+			if (resource.bindPoint == 2) RegisterRootSlot(t.slotBySemanticName, "lightcount", RootBindingSlots::Object3D::kLightCount);
+		 }
+		 if (resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER || resource.type == D3D_SIT_BYTEADDRESS) {
+			if (resource.bindPoint == 0) RegisterRootSlot(t.slotBySemanticName, "directionallights", RootBindingSlots::Object3D::kDirectionalLight);
+			if (resource.bindPoint == 1) RegisterRootSlot(t.slotBySemanticName, "pointlights", RootBindingSlots::Object3D::kPointLight);
+			if (resource.bindPoint == 2) RegisterRootSlot(t.slotBySemanticName, "spotlights", RootBindingSlots::Object3D::kSpotLight);
+			if (resource.bindPoint == 3) RegisterRootSlot(t.slotBySemanticName, "arealights", RootBindingSlots::Object3D::kAreaLight);
+			if (resource.bindPoint == 4) RegisterRootSlot(t.slotBySemanticName, "texture", RootBindingSlots::Object3D::kTexture);
+		 }
+	  });
+	  if (!table.hasReflectionData) {
+		 registerSemantic(table, "material", RootBindingSlots::Object3D::kMaterial);
+		 registerSemantic(table, "transform", RootBindingSlots::Object3D::kTransform);
+		 registerSemantic(table, "camera", RootBindingSlots::Object3D::kCamera);
+		 registerSemantic(table, "lightcount", RootBindingSlots::Object3D::kLightCount);
+		 registerSemantic(table, "directionallights", RootBindingSlots::Object3D::kDirectionalLight);
+		 registerSemantic(table, "pointlights", RootBindingSlots::Object3D::kPointLight);
+		 registerSemantic(table, "spotlights", RootBindingSlots::Object3D::kSpotLight);
+		 registerSemantic(table, "arealights", RootBindingSlots::Object3D::kAreaLight);
+		 registerSemantic(table, "texture", RootBindingSlots::Object3D::kTexture);
+		 registerSemantic(table, "skinpalette", RootBindingSlots::Object3D::kSkinPalette);
+	  }
+	  registerTable("SkinningObject3D", table);
    }
 
    // Particle

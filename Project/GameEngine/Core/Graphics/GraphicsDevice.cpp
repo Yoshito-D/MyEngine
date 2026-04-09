@@ -91,7 +91,7 @@ void GraphicsDevice::PostDraw() {
    commandQueue_->ExecuteCommandLists(1, commandLists);
 
    // GPUとOSに画面の交換を行うように通知する
-   swapChain_->Present(1, 0);
+   swapChain_->Present(0, 0);
 
 #ifdef _DEBUG
    if (FAILED(result)) {
@@ -126,6 +126,43 @@ void GraphicsDevice::PostDraw() {
    assert(SUCCEEDED(result));
    result = commandList_->Reset(commandAllocator_.Get(), nullptr);
    assert(SUCCEEDED(result));
+}
+
+void GraphicsDevice::Finalize() {
+   if (window_ && window_->IsFullscreen()) {
+	  window_->SetFullscreen(false);
+   }
+
+   if (commandQueue_ && fence_) {
+	  fenceValue_++;
+	  commandQueue_->Signal(fence_.Get(), fenceValue_);
+	  if (fence_->GetCompletedValue() < fenceValue_) {
+		 HANDLE eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		 if (eventHandle) {
+			fence_->SetEventOnCompletion(fenceValue_, eventHandle);
+			WaitForSingleObject(eventHandle, INFINITE);
+			CloseHandle(eventHandle);
+		 }
+	  }
+   }
+
+   for (auto& backBuffer : backBuffers_) {
+	  backBuffer.Reset();
+   }
+   backBuffers_.clear();
+
+   depthBuffer_.Reset();
+   rtvHeap_.Reset();
+   dsvHeap_.Reset();
+   srvHeap_.Reset();
+   swapChain_.Reset();
+   commandList_.Reset();
+   commandAllocator_.Reset();
+   commandQueue_.Reset();
+   fence_.Reset();
+   device_.Reset();
+   dxgiFactory_.Reset();
+   window_ = nullptr;
 }
 
 void GraphicsDevice::EnableDebugLayer() {
@@ -251,6 +288,9 @@ void GraphicsDevice::CreateSwapChain() {
    // コマンドキュー、ウィンドウハンドル、設定を渡して生成する
    result = dxgiFactory_->CreateSwapChainForHwnd(commandQueue_.Get(), window_->GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain_.GetAddressOf()));
    assert(SUCCEEDED(result));
+
+   result = dxgiFactory_->MakeWindowAssociation(window_->GetHwnd(), DXGI_MWA_NO_ALT_ENTER);
+   assert(SUCCEEDED(result));
 }
 
 void GraphicsDevice::CreateRenderTargetViews() {
@@ -260,17 +300,19 @@ void GraphicsDevice::CreateRenderTargetViews() {
    result = swapChain_->GetDesc(&swcDesc);
    assert(SUCCEEDED(result));
 
-   // 各種設定をしてディスクリプタヒープを生成
-   D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
-   heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; // レンダーターゲットビュー
-   heapDesc.NumDescriptors = rtvCount_;
-   result = device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(rtvHeap_.GetAddressOf()));
-   assert(SUCCEEDED(result));
+   // RTVヒープはオフスクリーンRTのハンドルが参照するため再生成しない
+   if (!rtvHeap_) {
+	  D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
+	  heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; // レンダーターゲットビュー
+	  heapDesc.NumDescriptors = rtvCount_;
+	  result = device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(rtvHeap_.ReleaseAndGetAddressOf()));
+	  assert(SUCCEEDED(result));
+   }
 
    backBuffers_.resize(swcDesc.BufferCount);
    for (int i = 0; i < backBuffers_.size(); i++) {
 	  // スワップチェーンからバッファを取得
-	  result = swapChain_->GetBuffer(i, IID_PPV_ARGS(backBuffers_[i].GetAddressOf()));
+    result = swapChain_->GetBuffer(i, IID_PPV_ARGS(backBuffers_[i].ReleaseAndGetAddressOf()));
 	  assert(SUCCEEDED(result));
 
 	  // ディスクリプタヒープのハンドルを取得
@@ -310,7 +352,7 @@ void GraphicsDevice::CreateDepthStencilViews() {
 	  &resourceDesc,
 	  D3D12_RESOURCE_STATE_DEPTH_WRITE,
 	  &clearValue,
-	  IID_PPV_ARGS(depthBuffer_.GetAddressOf())
+   IID_PPV_ARGS(depthBuffer_.ReleaseAndGetAddressOf())
    );
 
    assert(SUCCEEDED(result));
@@ -319,7 +361,7 @@ void GraphicsDevice::CreateDepthStencilViews() {
    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc{};
    dsvHeapDesc.NumDescriptors = 1;
    dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-   result = device_->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(dsvHeap_.GetAddressOf()));
+   result = device_->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(dsvHeap_.ReleaseAndGetAddressOf()));
    assert(SUCCEEDED(result));
 
    // DSVの設定
@@ -403,5 +445,59 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GraphicsDevice::CreateDescriptorHea
    HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(descriptorHeap.GetAddressOf()));
    assert(SUCCEEDED(hr));
    return descriptorHeap;
+}
+
+void GraphicsDevice::ToggleFullscreen() {
+   if (!window_) {
+	  return;
+   }
+
+   window_->ToggleFullscreen();
+   SyncBackBufferSizeToWindow();
+}
+
+void GraphicsDevice::SyncBackBufferSizeToWindow() {
+   if (!window_ || !window_->GetHwnd()) {
+	  return;
+   }
+
+   RECT clientRect{};
+   if (!::GetClientRect(window_->GetHwnd(), &clientRect)) {
+	  return;
+   }
+
+   const LONG width = clientRect.right - clientRect.left;
+   const LONG height = clientRect.bottom - clientRect.top;
+   if (width <= 0 || height <= 0) {
+	  return;
+   }
+
+   ResizeSwapChainResources(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+}
+
+void GraphicsDevice::ResizeSwapChainResources(uint32_t width, uint32_t height) {
+   if (!swapChain_) {
+	  return;
+   }
+
+   if (backBufferWidth_ == static_cast<int32_t>(width) && backBufferHeight_ == static_cast<int32_t>(height)) {
+	  return;
+   }
+
+   ExecuteCommandListAndWait();
+
+   for (auto& backBuffer : backBuffers_) {
+	  backBuffer.Reset();
+   }
+   depthBuffer_.Reset();
+
+   HRESULT hr = swapChain_->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+   assert(SUCCEEDED(hr));
+
+   backBufferWidth_ = static_cast<int32_t>(width);
+   backBufferHeight_ = static_cast<int32_t>(height);
+
+   CreateRenderTargetViews();
+   CreateDepthStencilViews();
 }
 }

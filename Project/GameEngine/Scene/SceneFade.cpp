@@ -19,7 +19,7 @@ void SceneFade::Initialize(float fadeDuration, uint32_t fadeColor) {
 
    if (!whiteTexture_) {
 	  // white1x1.pngをロード試行
-	  EngineContext::LoadTexture("resources/white1x1.png", "white1x1");
+	  EngineContext::LoadTexture("resources/textures/white1x1.png", "white1x1");
 	  whiteTexture_ = EngineContext::GetTexture("white1x1");
    }
 

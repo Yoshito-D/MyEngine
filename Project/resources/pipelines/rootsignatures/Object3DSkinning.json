@@ -1,0 +1,27 @@
+{
+  "name": "Object3DSkinning",
+  "parameters": [
+    { "type": "CBV", "visibility": "Pixel", "shaderRegister": 0 },
+    { "type": "CBV", "visibility": "Vertex", "shaderRegister": 0 },
+    { "type": "CBV", "visibility": "Pixel", "shaderRegister": 1 },
+    { "type": "CBV", "visibility": "Pixel", "shaderRegister": 2 },
+    { "type": "DescriptorTable", "visibility": "Pixel", "shaderRegister": 0, "descriptorCount": 1, "rangeType": "SRV" },
+    { "type": "DescriptorTable", "visibility": "Pixel", "shaderRegister": 1, "descriptorCount": 1, "rangeType": "SRV" },
+    { "type": "DescriptorTable", "visibility": "Pixel", "shaderRegister": 2, "descriptorCount": 1, "rangeType": "SRV" },
+    { "type": "DescriptorTable", "visibility": "Pixel", "shaderRegister": 3, "descriptorCount": 1, "rangeType": "SRV" },
+    { "type": "DescriptorTable", "visibility": "Pixel", "shaderRegister": 4, "descriptorCount": 1, "rangeType": "SRV" },
+    { "type": "DescriptorTable", "visibility": "Vertex", "shaderRegister": 0, "descriptorCount": 1, "rangeType": "SRV" }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Wrap",
+      "addressV": "Wrap",
+      "addressW": "Wrap",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}
