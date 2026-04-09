@@ -4,6 +4,7 @@
 #include <vector>
 #include <optional>
 #include <functional>
+#include <memory>
 #include "GraphicsDevice.h"
 #include "Input.h"
 #include "Audio.h"
@@ -272,7 +273,7 @@ public:
 
    /// @brief モデルを取得する
    /// @param modelName モデルの名前
-   static ModelAsset* GetModel(const std::string& modelName);
+   static std::shared_ptr<ModelAsset> GetModel(const std::string& modelName);
 
    /// @brief モデルアセットを全削除
    static void ClearModelAssets();
@@ -284,7 +285,7 @@ public:
 
    /// @brief アニメーションアセットを取得する
    /// @param animationName アニメーション名
-   static AnimationAsset* GetAnimation(const std::string& animationName);
+   static std::shared_ptr<AnimationAsset> GetAnimation(const std::string& animationName);
 
    /// @brief アニメーションアセットを全削除
    static void ClearAnimations();
@@ -602,6 +603,18 @@ public:
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
    static void DrawCircle(const Vector3& center, float radius, const Vector3& normal, const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
+
+   /// @brief モデルのスケルトンをデバッグ描画する
+   /// @param model 描画対象モデル
+   /// @param jointRadius ジョイント球の半径
+   /// @param jointColor ジョイント球の色
+   /// @param boneColor ジョイント接続線の色
+   /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
+   static void DrawSkeleton(Model* model,
+	  float jointRadius = 0.03f,
+	  const Vector4& jointColor = Vector4(1.0f, 0.2f, 0.2f, 1.0f),
+	  const Vector4& boneColor = Vector4(0.2f, 1.0f, 1.0f, 1.0f),
+      bool applyPostProcess = false);
 
    /// @brief ブレンドモードを設定する（次の描画に使用）
    /// @param blendMode ブレンドモード

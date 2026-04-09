@@ -2,6 +2,8 @@
 #include "AnimationComponent.h"
 #include "EngineContext.h"
 #include "Object.h"
+#include "Model/Model.h"
+#include "Model/ModelAsset.h"
 
 #include <algorithm>
 #include <cmath>
@@ -16,6 +18,7 @@ const char* AnimationComponent::GetTypeName() const {
 nlohmann::json AnimationComponent::Serialize() const {
    return nlohmann::json{
       { "animationName", animationName },
+      { "clipName", clipName },
       { "targetNodeName", targetNodeName },
       { "currentTime", currentTime },
       { "playbackSpeed", playbackSpeed },
@@ -23,13 +26,17 @@ nlohmann::json AnimationComponent::Serialize() const {
       { "playing", playing },
       { "applyTranslation", applyTranslation },
       { "applyRotation", applyRotation },
-      { "applyScale", applyScale }
+      { "applyScale", applyScale },
+      { "useSkinning", useSkinning }
    };
 }
 
 void AnimationComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("animationName") && data.at("animationName").is_string()) {
       animationName = data.at("animationName").get<std::string>();
+   }
+   if (data.contains("clipName") && data.at("clipName").is_string()) {
+      clipName = data.at("clipName").get<std::string>();
    }
    if (data.contains("targetNodeName") && data.at("targetNodeName").is_string()) {
       targetNodeName = data.at("targetNodeName").get<std::string>();
@@ -55,6 +62,9 @@ void AnimationComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("applyScale") && data.at("applyScale").is_boolean()) {
       applyScale = data.at("applyScale").get<bool>();
    }
+   if (data.contains("useSkinning") && data.at("useSkinning").is_boolean()) {
+      useSkinning = data.at("useSkinning").get<bool>();
+   }
 }
 
 void AnimationComponent::Update(Object& owner, float deltaTime) {
@@ -62,40 +72,68 @@ void AnimationComponent::Update(Object& owner, float deltaTime) {
       return;
    }
 
-   auto* animationAsset = EngineContext::GetAnimation(animationName);
-   if (!animationAsset) {
+   if (cachedAnimationName_ != animationName) {
+      cachedAnimationAsset_.reset();
+      cachedAnimationName_ = animationName;
+      animator_.SetClip(nullptr);
+   }
+
+   if (!cachedAnimationAsset_) {
+      cachedAnimationAsset_ = EngineContext::GetAnimation(animationName);
+   }
+
+   if (!cachedAnimationAsset_) {
       return;
    }
 
-   const Animation& animation = animationAsset->GetAnimation();
-   if (animation.duration <= 0.0f) {
+   const AnimationClip* selectedClip = nullptr;
+   if (!clipName.empty()) {
+      selectedClip = cachedAnimationAsset_->GetClip(clipName);
+   }
+   if (!selectedClip) {
+      selectedClip = cachedAnimationAsset_->GetDefaultClip();
+   }
+   if (!selectedClip) {
       return;
    }
 
-   currentTime += deltaTime * playbackSpeed;
-   if (loop) {
-      currentTime = std::fmod(currentTime, animation.duration);
-      if (currentTime < 0.0f) {
-         currentTime += animation.duration;
-      }
-   } else {
-      currentTime = std::clamp(currentTime, 0.0f, animation.duration);
-      if (currentTime >= animation.duration) {
-         playing = false;
+   if (animator_.GetClip() != selectedClip) {
+      animator_.SetClip(selectedClip);
+   }
+
+   animator_.SetLoop(loop);
+   animator_.SetPlaybackSpeed(playbackSpeed);
+   animator_.SetPlaying(playing);
+   animator_.SetCurrentTime(currentTime);
+   animator_.Update(deltaTime);
+   currentTime = animator_.GetPlaybackTime();
+
+   if (auto* model = dynamic_cast<Model*>(&owner)) {
+      ModelAsset* modelAsset = model->GetModelAsset();
+      if (useSkinning && modelAsset && modelAsset->HasSkinningData()) {
+         const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
+         SkinCluster* skinCluster = model->GetSkinCluster();
+         if (bindSkeleton && skinCluster && !bindSkeleton->joints.empty() && !skinCluster->mappedPalette.empty()) {
+            Skeleton skeletonPose = *bindSkeleton;
+            ApplyAnimation(skeletonPose, *selectedClip, currentTime);
+            skeletonPose.Update();
+
+            const size_t jointCount = std::min({
+               skeletonPose.joints.size(),
+               skinCluster->inverseBindPoseMatrices.size(),
+               skinCluster->mappedPalette.size()
+            });
+
+            for (size_t jointIndex = 0; jointIndex < jointCount; ++jointIndex) {
+               const Matrix4x4 skinMatrix = skinCluster->inverseBindPoseMatrices[jointIndex] * skeletonPose.joints[jointIndex].skeletonSpaceMatrix;
+               skinCluster->mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
+               skinCluster->mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
+            }
+         }
       }
    }
 
-   const NodeAnimation* nodeAnimation = nullptr;
-   if (!targetNodeName.empty()) {
-      auto it = animation.nodeAnimations.find(targetNodeName);
-      if (it != animation.nodeAnimations.end()) {
-         nodeAnimation = &it->second;
-      }
-   }
-
-   if (!nodeAnimation && !animation.nodeAnimations.empty()) {
-      nodeAnimation = &animation.nodeAnimations.begin()->second;
-   }
+   const NodeAnimation* nodeAnimation = animator_.ResolveNodeAnimation(targetNodeName);
 
    if (!nodeAnimation) {
       return;

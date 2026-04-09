@@ -480,6 +480,7 @@
     <ClInclude Include="GameEngine\Object\Line\LineRenderer.h" />
     <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h" />
     <ClInclude Include="GameEngine\Object\Model\ModelAsset.h" />
+    <ClInclude Include="GameEngine\Object\Model\Skeleton.h" />
     <ClInclude Include="GameEngine\Object\Object.h" />
     <ClInclude Include="GameEngine\Collision\Collider.h" />
     <ClInclude Include="GameEngine\Collision\Collision.h" />
@@ -541,6 +542,31 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="resources\pipelines\fullscreen_triangle_pipeline.json" />
+    <None Include="resources\pipelines\line3d_pipeline.json" />
+    <None Include="resources\pipelines\object3d_pipeline.json" />
+    <None Include="resources\pipelines\particle_pipeline.json" />
+    <None Include="resources\pipelines\pipelines\SkinningObject3D.json" />
+    <None Include="resources\pipelines\pipeline_registry.json" />
+    <None Include="resources\pipelines\postprocess\bloom_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\gaussblur_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\grayscale_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\pixelation_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\radialblur_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\shockwave_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\vignette_pipeline.json" />
+    <None Include="resources\pipelines\rootsignatures\Object3DSkinning.json" />
+    <None Include="resources\pipelines\rootsig\fullscreen_triangle_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\line3d_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\object3d_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\particle_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_gaussblur_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_rootsig.json" />
+    <None Include="resources\pipelines\skinning_pipeline_registry.json" />
+    <None Include="resources\pipelines\sprite_pipeline.json" />
+    <None Include="resources\postprocess\postprocess_registry.json" />
     <None Include="resources\prefabs\default_object.prefab.json" />
     <None Include="resources\shaders\shader_registry.json" />
   </ItemGroup>

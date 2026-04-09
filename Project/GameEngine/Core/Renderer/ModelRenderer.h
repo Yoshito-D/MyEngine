@@ -5,6 +5,7 @@
 namespace GameEngine {
 class GraphicsDevice;
 class PSOManager;
+class AssetManager;
 class Material;
 class LightManager;
 class DirectionalLight;
@@ -18,7 +19,8 @@ public:
 	/// @brief 初期化
 	/// @param device グラフィックスデバイス
 	/// @param psoManager パイプライン状態管理
-	void Initialize(GraphicsDevice* device, PSOManager* psoManager);
+    /// @param assetManager アセット管理
+	void Initialize(GraphicsDevice* device, PSOManager* psoManager, AssetManager* assetManager);
 
 	/// @brief モデルを描画
 	/// @param modelData モデル描画データ
@@ -33,6 +35,7 @@ public:
 private:
 	GraphicsDevice* device_ = nullptr;
 	PSOManager* psoManager_ = nullptr;
+  AssetManager* assetManager_ = nullptr;
 };
 
 } // namespace GameEngine

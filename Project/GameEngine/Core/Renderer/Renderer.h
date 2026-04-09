@@ -21,8 +21,6 @@
 #include "SpriteRenderer.h"
 #include "ParticleRenderer.h"
 #include "UIRenderer.h"
-#include "ReflectionValidationState.h"
-#include "ReflectionValidationCoordinator.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -175,6 +173,18 @@ public:
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
    void DrawCircle(const Vector3& center, float radius, const Vector3& normal, const Vector4& color, bool applyPostProcess = true);
 
+   /// @brief モデルのスケルトンをデバッグ描画する
+   /// @param model 描画対象モデル
+   /// @param jointRadius ジョイント球の半径
+   /// @param jointColor ジョイント球の色
+   /// @param boneColor ジョイント接続線の色
+   /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
+   void DrawSkeleton(Model* model,
+	  float jointRadius = 0.03f,
+	  const Vector4& jointColor = Vector4(1.0f, 0.2f, 0.2f, 1.0f),
+	  const Vector4& boneColor = Vector4(0.2f, 1.0f, 1.0f, 1.0f),
+      bool applyPostProcess = false);
+
    /// @brief 外部システムから描画コマンドを投入する
    /// @param command 描画コマンド
    void SubmitDrawCommand(const DrawCommand& command);
@@ -241,9 +251,6 @@ private:
    BlendMode currentPipelineBlendMode_ = BlendMode::kBlendModeNormal;
 
    std::unique_ptr<Material> defaultMaterial_ = nullptr;
-
-   ReflectionValidationState validationState_{};
-   ReflectionValidationCoordinator validationCoordinator_{};
 
 #ifdef USE_IMGUI
     std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();

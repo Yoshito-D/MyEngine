@@ -12,16 +12,18 @@ namespace GameEngine {
 
 class AnimationAssetManager {
 public:
-   AnimationAsset* LoadAnimation(const std::string& animationPath, const std::string& animationName);
+   using AnimationHandle = std::shared_ptr<AnimationAsset>;
 
-   AnimationAsset* GetAnimation(const std::string& animationName);
+   AnimationHandle LoadAnimation(const std::string& animationPath, const std::string& animationName);
+
+   AnimationHandle GetAnimation(const std::string& animationName);
 
    void Clear();
 
    std::vector<std::string> GetAnimationNames() const;
 
 private:
-   std::unordered_map<std::string, std::unique_ptr<AnimationAsset>> animationAssets_;
+   std::unordered_map<std::string, AnimationHandle> animationAssets_;
 };
 
 }

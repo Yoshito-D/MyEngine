@@ -1,0 +1,21 @@
+{
+  "name": "SkinningObject3D",
+  "vertexShader": "SkinningObject3D",
+  "pixelShader": "Object3D",
+  "rootSignature": "Object3DSkinning",
+  "supportBlendModes": true,
+  "defaultBlendMode": "None",
+  "cullMode": "Back",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "All",
+  "depthFunc": "LessEqual",
+  "topologyType": "Triangle",
+  "inputLayout": [
+    { "semanticName": "POSITION", "semanticIndex": 0, "format": "R32G32B32A32_FLOAT", "inputSlot": 0, "inputSlotClass": "PerVertexData" },
+    { "semanticName": "TEXCOORD", "semanticIndex": 0, "format": "R32G32_FLOAT", "inputSlot": 0, "inputSlotClass": "PerVertexData" },
+    { "semanticName": "NORMAL", "semanticIndex": 0, "format": "R32G32B32_FLOAT", "inputSlot": 0, "inputSlotClass": "PerVertexData" },
+    { "semanticName": "WEIGHT", "semanticIndex": 0, "format": "R32G32B32A32_FLOAT", "inputSlot": 1, "inputSlotClass": "PerVertexData" },
+    { "semanticName": "INDEX", "semanticIndex": 0, "format": "R32G32B32A32_SINT", "inputSlot": 1, "inputSlotClass": "PerVertexData" }
+  ]
+}

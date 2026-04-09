@@ -65,8 +65,7 @@ void LineRenderer::AddLine(Camera* camera, const Line& line) {
 
    auto& lines = cameraLineGroups_[camera];
    if (lines.size() >= maxLines_) {
-	  assert(false && "LineRenderer: max line count exceeded for this camera.");
-	  return;
+      return;
    }
 
    auto verts = line.GetVertices();

@@ -276,9 +276,9 @@ void EngineContext::LoadModel(const std::string& modelPath, const std::string& m
    sAssetManager_->GetModelAssetManager()->LoadModel(modelPath, modelName);
 }
 
-ModelAsset* EngineContext::GetModel(const std::string& modelName) {
-   if (!sAssetManager_) return nullptr;
-   if (!sAssetManager_->GetModelAssetManager()) return nullptr;
+std::shared_ptr<ModelAsset> EngineContext::GetModel(const std::string& modelName) {
+   if (!sAssetManager_) return {};
+   if (!sAssetManager_->GetModelAssetManager()) return {};
    return sAssetManager_->GetModelAssetManager()->GetModel(modelName);
 }
 
@@ -294,9 +294,9 @@ void EngineContext::LoadAnimation(const std::string& animationPath, const std::s
    sAssetManager_->GetAnimationAssetManager()->LoadAnimation(animationPath, animationName);
 }
 
-AnimationAsset* EngineContext::GetAnimation(const std::string& animationName) {
-   if (!sAssetManager_) return nullptr;
-   if (!sAssetManager_->GetAnimationAssetManager()) return nullptr;
+std::shared_ptr<AnimationAsset> EngineContext::GetAnimation(const std::string& animationName) {
+   if (!sAssetManager_) return {};
+   if (!sAssetManager_->GetAnimationAssetManager()) return {};
    return sAssetManager_->GetAnimationAssetManager()->GetAnimation(animationName);
 }
 
@@ -625,6 +625,11 @@ void EngineContext::DrawBox(const Vector3& center, const Vector3& size, const Ve
 void EngineContext::DrawCircle(const Vector3& center, float radius, const Vector3& normal, const Vector4& color, bool applyPostProcess) {
    if (!sRenderer_) return;
    sRenderer_->DrawCircle(center, radius, normal, color, applyPostProcess);
+}
+
+void EngineContext::DrawSkeleton(Model* model, float jointRadius, const Vector4& jointColor, const Vector4& boneColor, bool applyPostProcess) {
+   if (!sRenderer_) return;
+   sRenderer_->DrawSkeleton(model, jointRadius, jointColor, boneColor, applyPostProcess);
 }
 
 void EngineContext::SetBlendMode(BlendMode blendMode) {

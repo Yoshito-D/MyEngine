@@ -21,7 +21,9 @@
 #include "PostProcess/Pixelation.h"
 #include "Utility/MathUtils.h"
 #include "Asset/AssetManager.h"
+#include "Asset/AnimationAssetManager.h"
 #include "Asset/TextureManager.h"
+#include "Component/AnimationComponent.h"
 #include "Component/RenderComponent.h"
 #include "RootBindingSlots.h"
 #include <nlohmann/json.hpp>
@@ -39,6 +41,10 @@
 
 namespace {
 Logger& log_ = Logger::GetInstance();
+
+GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
+   return GameEngine::Vector3(matrix.m[3][0], matrix.m[3][1], matrix.m[3][2]);
+}
 
 std::vector<GameEngine::Object*> CollectSceneObjectsForRender() {
    std::vector<GameEngine::Object*> objects;
@@ -133,7 +139,7 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
    psoManager_->Initialize(device_, shaderManager_.get());
 
    // 専門レンダラーの初期化
-   modelRenderer_->Initialize(device_, psoManager_.get());
+   modelRenderer_->Initialize(device_, psoManager_.get(), assetManager_);
    spriteRenderer_->Initialize(device_, psoManager_.get());
    particleRenderer_->Initialize(device_, psoManager_.get());
    // UIRendererは後でuiCamera_初期化後に設定
@@ -147,8 +153,13 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
 	  log_.Log("Successfully loaded pipeline definitions from JSON");
    }
 
-   lineRenderer_->Initialize(device_->GetDevice(), 10000);
-   postProcessLineRenderer_->Initialize(device_->GetDevice(), 10000);
+   // スキニング用定義をJSONから読み込み
+   if (!psoManager_->LoadPipelineDefinitions(L"resources/pipelines/skinning_pipeline_registry.json", offscreenRenderTarget_->GetFormat())) {
+	  log_.Log("Failed to load skinning pipeline definitions from JSON", Logger::LogLevel::Error);
+   }
+
+   lineRenderer_->Initialize(device_->GetDevice(), 100000);
+   postProcessLineRenderer_->Initialize(device_->GetDevice(), 100000);
 
    // UI描画専用カメラの初期化
    InitializeUICamera();
@@ -196,7 +207,6 @@ void Renderer::BeginFrame() {
    lineRenderer_->Begin();
    postProcessLineRenderer_->Begin();
 
-   validationCoordinator_.BeginFrame(shaderManager_.get(), validationState_);
 }
 
 void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
@@ -407,6 +417,79 @@ void Renderer::DrawCircle(const Vector3& center, float radius, const Vector3& no
    }
 }
 
+void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& jointColor, const Vector4& boneColor, bool applyPostProcess) {
+   if (!model) {
+	  return;
+   }
+
+   ModelAsset* modelAsset = model->GetModelAsset();
+   if (!modelAsset) {
+	  return;
+   }
+
+   const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
+   if (!bindSkeleton || bindSkeleton->joints.empty()) {
+	  return;
+   }
+
+   Skeleton skeletonPose = *bindSkeleton;
+
+   if (auto* animationComponent = model->GetComponent<AnimationComponent>()) {
+	  if (assetManager_ && !animationComponent->animationName.empty()) {
+		 auto* animationManager = assetManager_->GetAnimationAssetManager();
+		 if (animationManager) {
+			auto animationAsset = animationManager->GetAnimation(animationComponent->animationName);
+			if (animationAsset) {
+			   const AnimationClip* clip = nullptr;
+			   if (!animationComponent->clipName.empty()) {
+				  clip = animationAsset->GetClip(animationComponent->clipName);
+			   }
+			   if (!clip) {
+				  clip = animationAsset->GetDefaultClip();
+			   }
+
+			   if (clip) {
+				  ApplyAnimation(skeletonPose, *clip, animationComponent->currentTime);
+				  skeletonPose.Update();
+			   }
+			}
+		 }
+	  }
+   }
+
+   const TransformComponent* transformComponent = model->GetTransformComponent();
+   if (!transformComponent) {
+	  return;
+   }
+
+   Matrix4x4 modelMatrix = MakeAffineMatrix(transformComponent->transform);
+   if (transformComponent->useParentMatrix) {
+	  modelMatrix = modelMatrix * transformComponent->parentMatrix;
+   }
+
+   std::vector<Vector3> jointPositions;
+   jointPositions.resize(skeletonPose.joints.size());
+
+   for (const Joint& joint : skeletonPose.joints) {
+	  const Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * modelMatrix;
+	  jointPositions[joint.index] = ExtractTranslation(jointWorldMatrix);
+	  DrawSphere(jointPositions[joint.index], jointRadius, jointColor, applyPostProcess);
+   }
+
+   for (const Joint& joint : skeletonPose.joints) {
+	  if (!joint.parent) {
+		 continue;
+	  }
+
+	  const int32_t parentIndex = *joint.parent;
+	  if (parentIndex < 0 || static_cast<size_t>(parentIndex) >= jointPositions.size()) {
+		 continue;
+	  }
+
+	  DrawLine(jointPositions[parentIndex], jointPositions[joint.index], boneColor, applyPostProcess);
+   }
+}
+
 void Renderer::EndFrame() {
    DrawAutoRegisteredModels();
    DrawAutoRegisteredSprites();
@@ -447,8 +530,6 @@ void Renderer::EndFrame() {
 	  offscreenRenderTarget_->PostDraw();
    }
 
-   validationCoordinator_.EndFrame(shaderManager_.get(), validationState_);
-   validationCoordinator_.UpdateValidationReport(psoManager_.get(), shaderManager_.get(), validationState_);
    // バックバッファに描画開始
    device_->PreDraw();
 
@@ -468,7 +549,6 @@ void Renderer::EndFrame() {
 
 	  // PostProcessManagerのImGuiコントロールを表示
 	  postProcessManager_->ShowImGuiControls();
-    validationCoordinator_.DrawDebugWindow(psoManager_.get(), shaderManager_.get(), validationState_);
 
    } else {
 	  // UI込みのオフスクリーンレンダーターゲットをバックバッファに描画

@@ -4,26 +4,25 @@
 
 namespace GameEngine {
 
-AnimationAsset* AnimationAssetManager::LoadAnimation(const std::string& animationPath, const std::string& animationName) {
+AnimationAssetManager::AnimationHandle AnimationAssetManager::LoadAnimation(const std::string& animationPath, const std::string& animationName) {
    auto it = animationAssets_.find(animationName);
    if (it != animationAssets_.end()) {
-      return it->second.get();
+      return it->second;
    }
 
-   auto animationAsset = std::make_unique<AnimationAsset>();
+   auto animationAsset = std::make_shared<AnimationAsset>();
    animationAsset->LoadFile(animationPath, animationName);
 
-   AnimationAsset* animationAssetPtr = animationAsset.get();
    animationAssets_[animationName] = std::move(animationAsset);
-   return animationAssetPtr;
+   return animationAssets_[animationName];
 }
 
-AnimationAsset* AnimationAssetManager::GetAnimation(const std::string& animationName) {
+AnimationAssetManager::AnimationHandle AnimationAssetManager::GetAnimation(const std::string& animationName) {
    auto it = animationAssets_.find(animationName);
    if (it == animationAssets_.end()) {
-      return nullptr;
+      return {};
    }
-   return it->second.get();
+   return it->second;
 }
 
 void AnimationAssetManager::Clear() {

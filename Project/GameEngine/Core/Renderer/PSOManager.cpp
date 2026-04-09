@@ -68,6 +68,14 @@ DXGI_FORMAT StringToFormat(const std::string& str) {
    if (str == "R32G32B32_FLOAT") return DXGI_FORMAT_R32G32B32_FLOAT;
    if (str == "R32G32_FLOAT") return DXGI_FORMAT_R32G32_FLOAT;
    if (str == "R32_FLOAT") return DXGI_FORMAT_R32_FLOAT;
+   if (str == "R32G32B32A32_SINT") return DXGI_FORMAT_R32G32B32A32_SINT;
+   if (str == "R32G32B32_SINT") return DXGI_FORMAT_R32G32B32_SINT;
+   if (str == "R32G32_SINT") return DXGI_FORMAT_R32G32_SINT;
+   if (str == "R32_SINT") return DXGI_FORMAT_R32_SINT;
+   if (str == "R32G32B32A32_UINT") return DXGI_FORMAT_R32G32B32A32_UINT;
+   if (str == "R32G32B32_UINT") return DXGI_FORMAT_R32G32B32_UINT;
+   if (str == "R32G32_UINT") return DXGI_FORMAT_R32G32_UINT;
+   if (str == "R32_UINT") return DXGI_FORMAT_R32_UINT;
    return DXGI_FORMAT_R32G32B32A32_FLOAT;
 }
 
@@ -181,6 +189,9 @@ bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath,
 std::vector<std::string> PSOManager::GetExpectedSemanticsForRootSignature(const std::string& rootSignatureName) const {
    if (rootSignatureName == "Object3D") {
 	  return { "material", "transform", "camera", "lightcount", "directionallights", "pointlights", "spotlights", "arealights", "texture" };
+   }
+   if (rootSignatureName == "Object3DSkinning") {
+	  return { "material", "transform", "camera", "lightcount", "directionallights", "pointlights", "spotlights", "arealights", "texture", "skinpalette" };
    }
    if (rootSignatureName == "Particle") {
 	  return { "material", "instancing", "texture" };
@@ -337,11 +348,34 @@ void PSOManager::CreatePredefinedPipelines(OffscreenRenderTarget* offscreenRende
 		  {
 			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 0 },
 			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, 0 },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 0, 0, 1 },
 			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 1 },
 			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 2 },
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 3 },
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 4 }
+            { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 0, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 1, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 2, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 3, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 4, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV }
+		  },
+		  {
+			  { D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+				D3D12_COMPARISON_FUNC_NEVER, D3D12_FLOAT32_MAX, 0, D3D12_SHADER_VISIBILITY_PIXEL }
+		  }
+	  },
+      // Object3DSkinning用ルートシグネチャ
+	  {
+		  "Object3DSkinning",
+		  {
+			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 0 },
+			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, 0 },
+			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 1 },
+			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 2 },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 0, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 1, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 2, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 3, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 4, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
+			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_VERTEX, 0, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV }
 		  },
 		  {
 			  { D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
@@ -399,6 +433,18 @@ void PSOManager::CreatePredefinedPipelines(OffscreenRenderTarget* offscreenRende
 			  { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 			  { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 			  { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		  },
+		  true, BlendMode::kBlendModeNone, D3D12_CULL_MODE_BACK
+	  },
+   // SkinningObject3D
+	  {
+		  "SkinningObject3D", "SkinningObject3D", "Object3D", "Object3DSkinning",
+		  {
+			  { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			  { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			  { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			  { "WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 1, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			  { "INDEX", 0, DXGI_FORMAT_R32G32B32A32_SINT, D3D12_APPEND_ALIGNED_ELEMENT, 1, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		  },
 		  true, BlendMode::kBlendModeNone, D3D12_CULL_MODE_BACK
 	  },
@@ -619,8 +665,20 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
 
   const std::vector<std::string> expectedSemantics = GetExpectedSemanticsForRootSignature(config.rootSignatureName);
 
+   std::string pipelineLookupName = name;
+   const size_t suffixPos = pipelineLookupName.rfind('_');
+   if (suffixPos != std::string::npos && suffixPos + 1 < pipelineLookupName.size()) {
+	  const bool hasNumericSuffix = std::all_of(
+		 pipelineLookupName.begin() + static_cast<std::ptrdiff_t>(suffixPos + 1),
+		 pipelineLookupName.end(),
+		 [](unsigned char c) { return std::isdigit(c) != 0; });
+	  if (hasNumericSuffix) {
+		 pipelineLookupName = pipelineLookupName.substr(0, suffixPos);
+	  }
+   }
+
    uint32_t validationWarnings = 0;
-   const auto* rootTable = shaderManager_->GetPipelineRootParameterTable(name);
+   const auto* rootTable = shaderManager_->GetPipelineRootParameterTable(pipelineLookupName);
    for (const auto& semantic : expectedSemantics) {
     const bool resolved = rootTable && rootTable->slotBySemanticName.contains(semantic);
 	  if (!resolved) {

@@ -30,9 +30,14 @@ const std::vector<Model*>& Model::GetRegisteredModels() {
    return sRegisteredModels_;
 }
 
-void Model::Create(ModelAsset* modelAsset, Material* material) {
+void Model::Create(const std::shared_ptr<ModelAsset>& modelAsset, Material* material) {
    if (modelAsset) {
 	  modelAsset_ = modelAsset;
+   }
+
+   skinCluster_.reset();
+   if (modelAsset_ && modelAsset_->HasSkinningData()) {
+	  skinCluster_ = modelAsset_->CreateSkinClusterInstance();
    }
 
    CreateTransformationMatrix();
@@ -47,6 +52,30 @@ void Model::Create(ModelAsset* modelAsset, Material* material) {
    if (transformComponent) {
 	  transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
    }
+}
+
+SkinCluster* Model::GetSkinCluster() {
+   if (skinCluster_) {
+	  return &(*skinCluster_);
+   }
+
+   if (!modelAsset_) {
+	  return nullptr;
+   }
+
+   return modelAsset_->GetSkinCluster();
+}
+
+const SkinCluster* Model::GetSkinCluster() const {
+   if (skinCluster_) {
+	  return &(*skinCluster_);
+   }
+
+   if (!modelAsset_) {
+	  return nullptr;
+   }
+
+   return modelAsset_->GetSkinCluster();
 }
 
 const Vector3& Model::GetPosition() const {
@@ -173,7 +202,9 @@ void Model::UpdateMatrix(Camera* camera) {
 
    // modelAssetのrootNode.localMatrixを掛ける
    if (modelAsset_) {
-	  worldMatrix = modelAsset_->GetRootNode().localMatrix * worldMatrix;
+      if (!modelAsset_->HasSkinningData()) {
+		 worldMatrix = modelAsset_->GetRootNode().localMatrix * worldMatrix;
+	  }
    }
 
    if (transformComponent->useParentMatrix) {

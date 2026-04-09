@@ -67,7 +67,7 @@ void RendererEditorController::ShowSceneEditorWindow() {
    }
 
    if (!modelNames.empty() && modelManager) {
-      if (auto* previewModel = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_])) {
+      if (auto previewModel = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_])) {
          ImGui::Text("Model Preview");
          ImGui::Text("Name: %s", modelNames[editorSelectedModelAssetIndex_].c_str());
          ImGui::Text("Meshes: %zu", previewModel->GetMeshData().size());
@@ -88,7 +88,7 @@ void RendererEditorController::ShowSceneEditorWindow() {
    }
 
    if (ImGui::Button("Create Model") && modelManager && materialManager && !modelNames.empty() && !materialNames.empty()) {
-      auto* modelAsset = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_]);
+      auto modelAsset = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_]);
       auto* material = materialManager->GetMaterial(materialNames[editorSelectedMaterialIndex_]);
       if (modelAsset && material) {
          auto model = std::make_unique<Model>();
@@ -407,6 +407,33 @@ void RendererEditorController::ShowInspectorWindow() {
          }
       }
 
+      if (animationManager && !animationComponent->animationName.empty()) {
+         auto animationAsset = animationManager->GetAnimation(animationComponent->animationName);
+         if (animationAsset && animationAsset->HasAnyClip()) {
+            const auto clipNames = animationAsset->GetClipNames();
+            const std::string previewClip = animationComponent->clipName.empty()
+               ? animationAsset->GetDefaultClipName()
+               : animationComponent->clipName;
+
+            if (ImGui::BeginCombo("Animation Clip", previewClip.c_str())) {
+               for (size_t i = 0; i < clipNames.size(); ++i) {
+                  const auto& name = clipNames[i];
+                  ImGui::PushID(5400 + static_cast<int>(i));
+                  const bool isSelected = (animationComponent->clipName == name);
+                  if (ImGui::Selectable(name.c_str(), isSelected)) {
+                     animationComponent->clipName = name;
+                     animationComponent->currentTime = 0.0f;
+                  }
+                  if (isSelected) {
+                     ImGui::SetItemDefaultFocus();
+                  }
+                  ImGui::PopID();
+               }
+               ImGui::EndCombo();
+            }
+         }
+      }
+
       char targetNodeBuffer[256]{};
       std::memcpy(targetNodeBuffer, animationComponent->targetNodeName.c_str(), std::min(animationComponent->targetNodeName.size(), sizeof(targetNodeBuffer) - 1));
       if (ImGui::InputText("Target Node", targetNodeBuffer, sizeof(targetNodeBuffer))) {
@@ -604,7 +631,7 @@ bool RendererEditorController::LoadEditorSceneFromFile(const std::filesystem::pa
       if (type == "Model") {
          const std::string modelName = objectJson.value("modelName", "");
          const std::string materialName = objectJson.value("materialName", "");
-         auto* modelAsset = modelManager->GetModel(modelName);
+         auto modelAsset = modelManager->GetModel(modelName);
          auto* material = materialManager->GetMaterial(materialName);
          if (!modelAsset || !material) {
             continue;
