@@ -22,7 +22,7 @@ void Framework::Initialize() {
 
    // ウィンドウの初期化
    window_ = std::make_unique<Window>();
-   window_->CreateGameWindow(L"LE2A_20_ヨシト_ダイキ", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX);
+   window_->CreateGameWindow(L"LE2A_20_ヨシト_ダイキ", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
 
    // デバイスの初期化
    device_ = std::make_unique<GraphicsDevice>();

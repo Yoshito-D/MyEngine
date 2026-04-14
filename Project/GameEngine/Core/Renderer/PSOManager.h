@@ -5,9 +5,13 @@
 #include <unordered_set>
 #include <memory>
 #include <vector>
+#include <optional>
 #include "Graphics/PipelineState.h"
 #include "Graphics/RootSignature.h"
 #include "PipelineDescriptor.h"
+#include "PipelineDefinitionLoader.h"
+#include "PipelineLibrary.h"
+#include "BindingLayoutResolver.h"
 #include "Utility/Logger.h"
 #include <nlohmann/json_fwd.hpp>
 
@@ -86,6 +90,9 @@ public:
    /// @return 作成成功時はtrue
    bool CreateCustomPipeline(const std::string& name, const PipelineConfig& config);
 
+   /// @brief コンピュートパイプライン定義を登録
+   bool CreateComputePipeline(const std::string& name, const std::string& computeShaderName, const std::string& rootSignatureName);
+
    /// @brief パイプラインを取得（文字列とブレンドモード指定）
    /// @param name パイプライン名
    /// @param blendMode ブレンドモード
@@ -96,6 +103,12 @@ public:
    /// @param name ルートシグネチャ名
    /// @return ルートシグネチャ、見つからない場合はnullptr
    RootSignature* GetRootSignature(const std::string& name);
+
+   /// @brief コンピュートパイプライン定義を取得
+   const ComputePipelineDefinition* GetComputePipeline(const std::string& name) const;
+
+   /// @brief パイプライン向けのsemanticからルートパラメータスロットを解決
+   std::optional<UINT> ResolvePipelineRootParameter(const std::string& pipelineName, const std::string& semantic) const;
 
    /// @brief すべてのパイプラインをクリア
    void Clear();
@@ -122,8 +135,7 @@ private:
    GraphicsDevice* device_ = nullptr;
    ShaderManager* shaderManager_ = nullptr;
 
-   // パイプライン格納用コンテナ（名前 + ブレンドモードをキーとする）
-   std::unordered_map<std::string, std::unique_ptr<PipelineState>> pipelines_;
+   PipelineLibrary pipelineLibrary_;
 
    // ルートシグネチャ格納用コンテナ
    std::unordered_map<std::string, std::unique_ptr<RootSignature>> rootSignatures_;
@@ -133,9 +145,14 @@ private:
 
    // ルートシグネチャ定義のパラメータ数
    std::unordered_map<std::string, uint32_t> rootSignatureParameterCounts_;
+   std::unordered_map<std::string, std::unordered_map<std::string, UINT>> rootSignatureSemanticSlots_;
+   std::unordered_map<std::string, std::unordered_map<std::string, UINT>> pipelineSemanticSlots_;
 
    // 同一警告の重複抑制
    std::unordered_set<std::string> emittedValidationWarnings_;
+
+   PipelineDefinitionLoader definitionLoader_;
+   BindingLayoutResolver bindingLayoutResolver_;
 
    /// @brief パイプラインキーを生成
    /// @param name パイプライン名
@@ -154,9 +171,6 @@ private:
    /// @return 成功時はtrue
    bool LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT rtvFormat);
 
-   /// @brief 期待バインディングを取得
-   std::vector<std::string> GetExpectedSemanticsForRootSignature(const std::string& rootSignatureName) const;
-
    /// @brief 重複抑制付きログ出力
    void LogValidationMessage(const std::string& dedupeKey, const std::string& message, Logger::LogLevel level);
 
@@ -165,5 +179,16 @@ private:
 
    /// @brief 反射パラメータをDXGI_FORMATへ変換
    DXGI_FORMAT ConvertReflectionInputToFormat(BYTE mask, D3D_REGISTER_COMPONENT_TYPE componentType) const;
+
+   std::optional<UINT> ResolveShaderRegisterBySemantic(
+      const std::string& semantic,
+      D3D12_ROOT_PARAMETER_TYPE parameterType,
+      D3D12_SHADER_VISIBILITY visibility,
+      D3D12_DESCRIPTOR_RANGE_TYPE rangeType,
+      const std::string& vertexShader,
+      const std::string& pixelShader,
+      const std::string& computeShader) const;
+
+   void RegisterPipelineSemanticSlots(const std::string& pipelineName, const std::string& rootSignatureName);
 };
 }

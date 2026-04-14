@@ -4,7 +4,6 @@
 #include "Model/Model.h"
 #include "Graphics/Material.h"
 #include "PSOManager.h"
-#include "ShaderManager.h"
 #include "LightManager.h"
 #include "RootBindingSlots.h"
 #include "Graphics/DirectionalLight.h"
@@ -82,16 +81,11 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
    auto resolvePipelineSlot = [this, &pipelineName](const char* semantic, UINT fallback) -> UINT {
 	  if (!psoManager_) {
-		 return fallback;
+        return fallback;
 	  }
 
-	  auto* shaderManager = psoManager_->GetShaderManager();
-	  if (!shaderManager) {
-		 return fallback;
-	  }
-
-	  auto resolved = shaderManager->ResolvePipelineRootParameter(pipelineName, semantic);
-	  return resolved.value_or(fallback);
+	  auto resolved = psoManager_->ResolvePipelineRootParameter(pipelineName, semantic);
+    return resolved.value_or(fallback);
    };
 
    const UINT materialSlot = resolvePipelineSlot("material", RootBindingSlots::Object3D::kMaterial);

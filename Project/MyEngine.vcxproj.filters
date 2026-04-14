@@ -339,7 +339,7 @@
     <ClCompile Include="GameEngine\Object\Line\Line.cpp">
       <Filter>GameEngine\Object\Line</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Line\LineRenderer.cpp">
+    <ClCompile Include="GameEngine\Core\Renderer\LineRenderer.cpp">
       <Filter>GameEngine\Object\Line</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Model\Model.cpp">
@@ -414,6 +414,11 @@
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\RenderBootstrapper.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PipelineDefinitionLoader.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PipelineLibrary.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\BindingLayoutResolver.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\EffectFactoryRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -662,7 +667,7 @@
     <ClInclude Include="GameEngine\Object\Line\Line.h">
       <Filter>GameEngine\Object\Line</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Object\Line\LineRenderer.h">
+    <ClInclude Include="GameEngine\Core\Renderer\LineRenderer.h">
       <Filter>GameEngine\Object\Line</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Model\Model.h">
@@ -780,6 +785,11 @@
     <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h" />
     <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h" />
     <ClInclude Include="GameEngine\Object\Model\Skeleton.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\RenderBootstrapper.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PipelineDefinitionLoader.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PipelineLibrary.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\BindingLayoutResolver.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\EffectFactoryRegistry.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
@@ -787,7 +797,6 @@
   <ItemGroup>
     <None Include="resources\prefabs\default_object.prefab.json" />
     <None Include="resources\shaders\shader_registry.json" />
-    <None Include="resources\pipelines\skinning_pipeline_registry.json" />
     <None Include="resources\pipelines\postprocess\bloom_pipeline.json" />
     <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json" />
     <None Include="resources\pipelines\postprocess\gaussblur_pipeline.json" />
@@ -800,8 +809,6 @@
     <None Include="resources\pipelines\rootsig\line3d_rootsig.json" />
     <None Include="resources\pipelines\rootsig\object3d_rootsig.json" />
     <None Include="resources\pipelines\rootsig\particle_rootsig.json" />
-    <None Include="resources\pipelines\rootsig\postprocess_gaussblur_rootsig.json" />
-    <None Include="resources\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
     <None Include="resources\pipelines\rootsig\postprocess_rootsig.json" />
     <None Include="resources\pipelines\fullscreen_triangle_pipeline.json" />
     <None Include="resources\pipelines\line3d_pipeline.json" />
@@ -810,7 +817,9 @@
     <None Include="resources\pipelines\pipeline_registry.json" />
     <None Include="resources\pipelines\sprite_pipeline.json" />
     <None Include="resources\postprocess\postprocess_registry.json" />
-    <None Include="resources\pipelines\rootsignatures\Object3DSkinning.json" />
-    <None Include="resources\pipelines\pipelines\SkinningObject3D.json" />
+    <None Include="resources\pipelines\rootsig\object3d_skinning_rootsig.json" />
+    <None Include="resources\pipelines\skinning_object3d_pipeline.json" />
+    <None Include="resources\pipelines\skinning_pipeline_registry.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
   </ItemGroup>
 </Project>

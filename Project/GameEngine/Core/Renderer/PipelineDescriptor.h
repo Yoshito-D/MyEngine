@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <climits>
 #include <d3d12.h>
 #include "Graphics/PipelineState.h" // BlendModeの定義を含む
 
@@ -10,10 +11,11 @@ namespace GameEngine {
 struct RootParameterDefinition {
    D3D12_ROOT_PARAMETER_TYPE type = D3D12_ROOT_PARAMETER_TYPE_CBV;
    D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL;
-   UINT shaderRegister = 0;
+   UINT shaderRegister = UINT_MAX;
    UINT registerSpace = 0;
    UINT descriptorCount = 1; // DESCRIPTOR_TABLE用
    D3D12_DESCRIPTOR_RANGE_TYPE rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ディスクリプタテーブル用
+   std::string semantic;
 };
 
 /// @brief サンプラー定義
@@ -61,6 +63,7 @@ struct PipelineDefinition {
    D3D12_DEPTH_WRITE_MASK depthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
    D3D12_COMPARISON_FUNC depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
    D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+   std::string computeShader;
 };
 
 /// @brief パイプラインレジストリ定義

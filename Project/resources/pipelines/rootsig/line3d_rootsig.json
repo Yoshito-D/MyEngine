@@ -1,11 +1,13 @@
 {
   "name": "Line3D",
+  "reflectionSources": {
+    "vertexShader": "Line3D"
+  },
   "parameters": [
     {
       "type": "CBV",
       "visibility": "Vertex",
-      "shaderRegister": 0,
-      "registerSpace": 0
+      "semantic": "transform"
     }
   ],
   "samplers": []

@@ -10,11 +10,10 @@
 #include "Pixelation.h"
 #include "Bloom.h"
 #include "Core/Renderer/PSOManager.h"
-#include "Core/Renderer/ShaderManager.h"
-#include "Core/Renderer/RootBindingSlots.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <algorithm>
+#include <array>
 
 #ifdef USE_IMGUI
 #include <imgui/imgui.h>
@@ -39,6 +38,24 @@ void PostProcessManager::Initialize(GraphicsDevice* device, OffscreenRenderTarge
    device_ = device;
    renderTarget_ = renderTarget;
    psoManager_ = psoManager;
+   RegisterDefaultEffectFactories();
+}
+
+void PostProcessManager::RegisterDefaultEffectFactories() {
+   if (effectFactoriesRegistered_) {
+	  return;
+   }
+
+   effectFactoryRegistry_.RegisterFactory("RadialBlur", [] { return std::make_unique<RadialBlur>(); });
+   effectFactoryRegistry_.RegisterFactory("Grayscale", [] { return std::make_unique<Grayscale>(); });
+   effectFactoryRegistry_.RegisterFactory("GaussBlur", [] { return std::make_unique<GaussBlur>(); });
+   effectFactoryRegistry_.RegisterFactory("ChromaticAberration", [] { return std::make_unique<ChromaticAberration>(); });
+   effectFactoryRegistry_.RegisterFactory("Vignette", [] { return std::make_unique<Vignette>(); });
+   effectFactoryRegistry_.RegisterFactory("ShockWave", [] { return std::make_unique<ShockWave>(); });
+   effectFactoryRegistry_.RegisterFactory("Pixelation", [] { return std::make_unique<Pixelation>(); });
+   effectFactoryRegistry_.RegisterFactory("Bloom", [] { return std::make_unique<Bloom>(); });
+
+   effectFactoriesRegistered_ = true;
 }
 
 bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFilePath) {
@@ -75,13 +92,8 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 			   auto* rootSignature = psoManager_->GetRootSignature("PostProcess");
 			   if (pipeline && rootSignature) {
 				  effect->SetPipeline(pipeline, rootSignature);
-                  auto* shaderManager = psoManager_->GetShaderManager();
-				  const UINT cbSlot = shaderManager
-					 ? shaderManager->ResolvePipelineRootParameter(definition.pipelineName, "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-					 : RootBindingSlots::PostProcess::kConstantBuffer;
-				  const UINT inputSlot = shaderManager
-					 ? shaderManager->ResolvePipelineRootParameter(definition.pipelineName, "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-					 : RootBindingSlots::PostProcess::kInputTexture;
+                  const UINT cbSlot = psoManager_->ResolvePipelineRootParameter(definition.pipelineName, "constantbuffer").value_or(0);
+				  const UINT inputSlot = psoManager_->ResolvePipelineRootParameter(definition.pipelineName, "inputtexture").value_or(1);
 				  effect->SetBindingSlots(cbSlot, inputSlot);
 			   }
 			}
@@ -99,179 +111,49 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 }
 
 void PostProcessManager::RegisterPredefinedEffects() {
-   // 事前定義されたエフェクトを登録
-   auto radialBlur = std::make_unique<RadialBlur>();
-   radialBlur->Initialize(device_, renderTarget_);
-   if (psoManager_) {
-	  auto* pipeline = psoManager_->GetPipeline("PostProcess_RadialBlur");
-	  auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-    if (pipeline && rootSig) {
-		 radialBlur->SetPipeline(pipeline, rootSig);
-		 auto* shaderManager = psoManager_->GetShaderManager();
-		 const UINT cbSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_RadialBlur", "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-			: RootBindingSlots::PostProcess::kConstantBuffer;
-		 const UINT inputSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_RadialBlur", "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-			: RootBindingSlots::PostProcess::kInputTexture;
-		 radialBlur->SetBindingSlots(cbSlot, inputSlot);
-	  }
-   }
-   RegisterEffect(std::move(radialBlur), "Radial Blur", 10, false, "PostProcess_RadialBlur");
+   struct PredefinedEffectEntry {
+	  const char* className;
+	  const char* displayName;
+	  int priority;
+	  const char* pipelineName;
+   };
 
-   auto grayscale = std::make_unique<Grayscale>();
-   grayscale->Initialize(device_, renderTarget_);
-   if (psoManager_) {
-	  auto* pipeline = psoManager_->GetPipeline("PostProcess_Grayscale");
-	  auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-     if (pipeline && rootSig) {
-		 grayscale->SetPipeline(pipeline, rootSig);
-		 auto* shaderManager = psoManager_->GetShaderManager();
-		 const UINT cbSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_Grayscale", "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-			: RootBindingSlots::PostProcess::kConstantBuffer;
-		 const UINT inputSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_Grayscale", "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-			: RootBindingSlots::PostProcess::kInputTexture;
-		 grayscale->SetBindingSlots(cbSlot, inputSlot);
-	  }
-   }
-   RegisterEffect(std::move(grayscale), "Grayscale", 20, false, "PostProcess_Grayscale");
+   static const std::array<PredefinedEffectEntry, 8> kEntries = {
+	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur" },
+	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale" },
+	  PredefinedEffectEntry{ "GaussBlur", "Gauss Blur", 30, "PostProcess_GaussBlur" },
+	  PredefinedEffectEntry{ "ChromaticAberration", "Chromatic Aberration", 40, "PostProcess_ChromaticAberration" },
+	  PredefinedEffectEntry{ "Vignette", "Vignette", 50, "PostProcess_Vignette" },
+	  PredefinedEffectEntry{ "ShockWave", "Shock Wave", 60, "PostProcess_ShockWave" },
+	  PredefinedEffectEntry{ "Pixelation", "Pixelation", 70, "PostProcess_Pixelation" },
+	  PredefinedEffectEntry{ "Bloom", "Bloom", 80, "PostProcess_Bloom" }
+   };
 
-   auto gaussBlur = std::make_unique<GaussBlur>();
-   gaussBlur->Initialize(device_, renderTarget_);
-   if (psoManager_) {
-	  auto* pipeline = psoManager_->GetPipeline("PostProcess_GaussBlur");
-	  auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-     if (pipeline && rootSig) {
-		 gaussBlur->SetPipeline(pipeline, rootSig);
-		 auto* shaderManager = psoManager_->GetShaderManager();
-		 const UINT cbSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_GaussBlur", "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-			: RootBindingSlots::PostProcess::kConstantBuffer;
-		 const UINT inputSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_GaussBlur", "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-			: RootBindingSlots::PostProcess::kInputTexture;
-		 gaussBlur->SetBindingSlots(cbSlot, inputSlot);
+   for (const auto& entry : kEntries) {
+	  auto effect = CreateEffectByClassName(entry.className);
+	  if (!effect) {
+		 continue;
 	  }
-   }
-   RegisterEffect(std::move(gaussBlur), "Gauss Blur", 30, false, "PostProcess_GaussBlur");
 
-   auto chromaticAberration = std::make_unique<ChromaticAberration>();
-   chromaticAberration->Initialize(device_, renderTarget_);
-   if (psoManager_) {
-	  auto* pipeline = psoManager_->GetPipeline("PostProcess_ChromaticAberration");
-	  auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-   if (pipeline && rootSig) {
-		 chromaticAberration->SetPipeline(pipeline, rootSig);
-		 auto* shaderManager = psoManager_->GetShaderManager();
-		 const UINT cbSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_ChromaticAberration", "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-			: RootBindingSlots::PostProcess::kConstantBuffer;
-		 const UINT inputSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_ChromaticAberration", "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-			: RootBindingSlots::PostProcess::kInputTexture;
-		 chromaticAberration->SetBindingSlots(cbSlot, inputSlot);
-	  }
-   }
-   RegisterEffect(std::move(chromaticAberration), "Chromatic Aberration", 40, false, "PostProcess_ChromaticAberration");
+	  effect->Initialize(device_, renderTarget_);
 
-   auto vignette = std::make_unique<Vignette>();
-   vignette->Initialize(device_, renderTarget_);
-   if (psoManager_) {
-	  auto* pipeline = psoManager_->GetPipeline("PostProcess_Vignette");
-	  auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-      if (pipeline && rootSig) {
-		 vignette->SetPipeline(pipeline, rootSig);
-		 auto* shaderManager = psoManager_->GetShaderManager();
-		 const UINT cbSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_Vignette", "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-			: RootBindingSlots::PostProcess::kConstantBuffer;
-		 const UINT inputSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_Vignette", "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-			: RootBindingSlots::PostProcess::kInputTexture;
-		 vignette->SetBindingSlots(cbSlot, inputSlot);
+	  if (psoManager_) {
+		 auto* pipeline = psoManager_->GetPipeline(entry.pipelineName);
+		 auto* rootSig = psoManager_->GetRootSignature("PostProcess");
+		 if (pipeline && rootSig) {
+			effect->SetPipeline(pipeline, rootSig);
+			const UINT cbSlot = psoManager_->ResolvePipelineRootParameter(entry.pipelineName, "constantbuffer").value_or(0);
+			const UINT inputSlot = psoManager_->ResolvePipelineRootParameter(entry.pipelineName, "inputtexture").value_or(1);
+			effect->SetBindingSlots(cbSlot, inputSlot);
+		 }
 	  }
-   }
-   RegisterEffect(std::move(vignette), "Vignette", 50, false, "PostProcess_Vignette");
 
-   auto shockWave = std::make_unique<ShockWave>();
-   shockWave->Initialize(device_, renderTarget_);
-   if (psoManager_) {
-	  auto* pipeline = psoManager_->GetPipeline("PostProcess_ShockWave");
-	  auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-     if (pipeline && rootSig) {
-		 shockWave->SetPipeline(pipeline, rootSig);
-		 auto* shaderManager = psoManager_->GetShaderManager();
-		 const UINT cbSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_ShockWave", "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-			: RootBindingSlots::PostProcess::kConstantBuffer;
-		 const UINT inputSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_ShockWave", "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-			: RootBindingSlots::PostProcess::kInputTexture;
-		 shockWave->SetBindingSlots(cbSlot, inputSlot);
-	  }
+	  RegisterEffect(std::move(effect), entry.displayName, entry.priority, false, entry.pipelineName);
    }
-   RegisterEffect(std::move(shockWave), "Shock Wave", 60, false, "PostProcess_ShockWave");
-
-   auto pixelation = std::make_unique<Pixelation>();
-   pixelation->Initialize(device_, renderTarget_);
-   if (psoManager_) {
-	  auto* pipeline = psoManager_->GetPipeline("PostProcess_Pixelation");
-	  auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-    if (pipeline && rootSig) {
-		 pixelation->SetPipeline(pipeline, rootSig);
-		 auto* shaderManager = psoManager_->GetShaderManager();
-		 const UINT cbSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_Pixelation", "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-			: RootBindingSlots::PostProcess::kConstantBuffer;
-		 const UINT inputSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_Pixelation", "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-			: RootBindingSlots::PostProcess::kInputTexture;
-		 pixelation->SetBindingSlots(cbSlot, inputSlot);
-	  }
-   }
-   RegisterEffect(std::move(pixelation), "Pixelation", 70, false, "PostProcess_Pixelation");
-
-   auto bloom = std::make_unique<Bloom>();
-   bloom->Initialize(device_, renderTarget_);
-   if (psoManager_) {
-	  auto* pipeline = psoManager_->GetPipeline("PostProcess_Bloom");
-	  auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-     if (pipeline && rootSig) {
-		 bloom->SetPipeline(pipeline, rootSig);
-		 auto* shaderManager = psoManager_->GetShaderManager();
-		 const UINT cbSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_Bloom", "constantbuffer").value_or(RootBindingSlots::PostProcess::kConstantBuffer)
-			: RootBindingSlots::PostProcess::kConstantBuffer;
-		 const UINT inputSlot = shaderManager
-			? shaderManager->ResolvePipelineRootParameter("PostProcess_Bloom", "inputtexture").value_or(RootBindingSlots::PostProcess::kInputTexture)
-			: RootBindingSlots::PostProcess::kInputTexture;
-		 bloom->SetBindingSlots(cbSlot, inputSlot);
-	  }
-   }
-   RegisterEffect(std::move(bloom), "Bloom", 80, false, "PostProcess_Bloom");
 }
 
 std::unique_ptr<PostProcess> PostProcessManager::CreateEffectByClassName(const std::string& className) {
-   if (className == "RadialBlur") {
-	  return std::make_unique<RadialBlur>();
-   } else if (className == "Grayscale") {
-	  return std::make_unique<Grayscale>();
-   } else if (className == "GaussBlur") {
-	  return std::make_unique<GaussBlur>();
-   } else if (className == "ChromaticAberration") {
-	  return std::make_unique<ChromaticAberration>();
-   } else if (className == "Vignette") {
-	  return std::make_unique<Vignette>();
-   } else if (className == "ShockWave") {
-	  return std::make_unique<ShockWave>();
-   } else if (className == "Pixelation") {
-	  return std::make_unique<Pixelation>();
-   } else if (className == "Bloom") {
-	  return std::make_unique<Bloom>();
-   }
-   return nullptr;
+   return effectFactoryRegistry_.Create(className);
 }
 
 void PostProcessManager::RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority, bool enabled, const std::string& pipelineName) {
