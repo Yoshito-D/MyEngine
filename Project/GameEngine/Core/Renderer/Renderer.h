@@ -4,7 +4,7 @@
 #include "Graphics/OffscreenRenderTarget.h"
 #include "Graphics/Texture.h"
 #include "PostProcess/PostProcessManager.h"
-#include "Line/LineRenderer.h"
+#include "LineRenderer.h"
 #include "Sprite/Sprite.h"
 #include "Scene/Camera/Camera.h"
 #include "PointLight.h"
@@ -21,6 +21,7 @@
 #include "SpriteRenderer.h"
 #include "ParticleRenderer.h"
 #include "UIRenderer.h"
+#include "RenderBootstrapper.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -251,6 +252,7 @@ private:
    BlendMode currentPipelineBlendMode_ = BlendMode::kBlendModeNormal;
 
    std::unique_ptr<Material> defaultMaterial_ = nullptr;
+   std::unique_ptr<RenderBootstrapper> renderBootstrapper_;
 
 #ifdef USE_IMGUI
     std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();

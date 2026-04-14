@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
+#include <optional>
 
 using json = nlohmann::json;
 
@@ -19,6 +20,13 @@ D3D12_CULL_MODE StringToCullMode(const std::string& str) {
    if (str == "Front") return D3D12_CULL_MODE_FRONT;
    if (str == "Back") return D3D12_CULL_MODE_BACK;
    return D3D12_CULL_MODE_BACK;
+}
+
+std::string ToLowerString(std::string value) {
+   std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+	  return static_cast<char>(std::tolower(c));
+   });
+   return value;
 }
 
 D3D12_FILL_MODE StringToFillMode(const std::string& str) {
@@ -146,67 +154,23 @@ void PSOManager::Initialize(GraphicsDevice* device, ShaderManager* shaderManager
 }
 
 bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath, DXGI_FORMAT rtvFormat) {
-   std::string path = WStringToString(definitionFilePath);
-   std::ifstream file(path);
-   if (!file.is_open()) {
-	  // ファイルが開けない場合は事前定義を使用
+   std::vector<std::string> rootSignaturePaths;
+   std::vector<std::string> pipelinePaths;
+   if (!definitionLoader_.LoadRegistryFile(definitionFilePath, rootSignaturePaths, pipelinePaths)) {
 	  return false;
    }
 
-   try {
-	  json registryJson;
-	  file >> registryJson;
-
-	  // ルートシグネチャをロード
-	  if (registryJson.contains("rootSignatures")) {
-		 for (const auto& rootSigPath : registryJson["rootSignatures"]) {
-			std::string rsPath = rootSigPath.get<std::string>();
-			if (!LoadRootSignatureFromFile(rsPath)) {
-			   // ロード失敗時はログ出力など
-			}
-		 }
+   for (const auto& rootSignaturePath : rootSignaturePaths) {
+	  if (!LoadRootSignatureFromFile(rootSignaturePath)) {
 	  }
+   }
 
-	  // パイプラインをロード
-	  if (registryJson.contains("pipelines")) {
-		 for (const auto& pipelinePath : registryJson["pipelines"]) {
-			std::string plPath = pipelinePath.get<std::string>();
-			if (!LoadPipelineFromFile(plPath, rtvFormat)) {
-			   // ロード失敗時はログ出力など
-			}
-		 }
+   for (const auto& pipelinePath : pipelinePaths) {
+	  if (!LoadPipelineFromFile(pipelinePath, rtvFormat)) {
 	  }
-
-	  return true;
-   }
-   catch (const std::exception& e) {
-	  // JSON解析エラー
-	  (void)e; // 未使用警告を抑制
-	  return false;
-	}
-}
-
-std::vector<std::string> PSOManager::GetExpectedSemanticsForRootSignature(const std::string& rootSignatureName) const {
-   if (rootSignatureName == "Object3D") {
-	  return { "material", "transform", "camera", "lightcount", "directionallights", "pointlights", "spotlights", "arealights", "texture" };
-   }
-   if (rootSignatureName == "Object3DSkinning") {
-	  return { "material", "transform", "camera", "lightcount", "directionallights", "pointlights", "spotlights", "arealights", "texture", "skinpalette" };
-   }
-   if (rootSignatureName == "Particle") {
-	  return { "material", "instancing", "texture" };
-   }
-   if (rootSignatureName == "Line3D") {
-	  return { "transform" };
-   }
-   if (rootSignatureName == "FullscreenTriangle") {
-	  return { "texture" };
-   }
-   if (rootSignatureName == "PostProcess") {
-	  return { "constantbuffer", "inputtexture" };
    }
 
-   return {};
+   return true;
 }
 
 void PSOManager::LogValidationMessage(const std::string& dedupeKey, const std::string& message, Logger::LogLevel level) {
@@ -232,15 +196,22 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
       RootSignatureDefinition definition;
       definition.name = rootSigJson["name"].get<std::string>();
 
+	  const auto reflectionSources = rootSigJson.value("reflectionSources", json::object());
+	  const std::string reflectionVS = reflectionSources.value("vertexShader", "");
+	  const std::string reflectionPS = reflectionSources.value("pixelShader", "");
+	  const std::string reflectionCS = reflectionSources.value("computeShader", "");
+	  std::unordered_map<std::string, UINT> fallbackRegisterByGroup;
+
       // パラメータをロード
       if (rootSigJson.contains("parameters")) {
          for (const auto& param : rootSigJson["parameters"]) {
             RootParameterDefinition paramDef;
             paramDef.type = StringToRootParameterType(param["type"].get<std::string>());
             paramDef.visibility = StringToShaderVisibility(param["visibility"].get<std::string>());
-            paramDef.shaderRegister = param["shaderRegister"].get<UINT>();
+            paramDef.shaderRegister = param.value("shaderRegister", UINT_MAX);
             paramDef.registerSpace = param.value("registerSpace", 0);
             paramDef.descriptorCount = param.value("descriptorCount", 1);
+			paramDef.semantic = param.value("semantic", "");
             
             // ディスクリプタテーブルの場合、rangeTypeを読み込む
             if (paramDef.type == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
@@ -253,7 +224,38 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
                   Logger::GetInstance().Log("  Parameter " + std::to_string(definition.parameters.size()) + 
                      ": DescriptorTable without rangeType - using default SRV", Logger::LogLevel::Warning);
                }
-            }
+			}
+
+            if (paramDef.shaderRegister == UINT_MAX && !paramDef.semantic.empty()) {
+			   const auto resolvedRegister = ResolveShaderRegisterBySemantic(
+				  paramDef.semantic,
+				  paramDef.type,
+				  paramDef.visibility,
+				  paramDef.rangeType,
+				  reflectionVS,
+				  reflectionPS,
+				  reflectionCS);
+			   if (resolvedRegister.has_value()) {
+				  paramDef.shaderRegister = resolvedRegister.value();
+			   }
+			}
+
+			std::string fallbackGroupKey = std::to_string(static_cast<int>(paramDef.type)) + ":" +
+			   std::to_string(static_cast<int>(paramDef.visibility)) + ":" +
+			   std::to_string(static_cast<int>(paramDef.rangeType));
+
+			if (paramDef.shaderRegister == UINT_MAX) {
+			   UINT& nextRegister = fallbackRegisterByGroup[fallbackGroupKey];
+			   Logger::GetInstance().Log(
+				  "Failed to resolve shaderRegister by reflection for root signature parameter in " + definition.name +
+				  ", fallback to grouped register " + std::to_string(nextRegister),
+				  Logger::LogLevel::Warning);
+			   paramDef.shaderRegister = nextRegister;
+			   ++nextRegister;
+			} else {
+			   UINT& nextRegister = fallbackRegisterByGroup[fallbackGroupKey];
+			   nextRegister = std::max(nextRegister, paramDef.shaderRegister + 1);
+			}
             
             definition.parameters.push_back(paramDef);
          }
@@ -296,9 +298,14 @@ bool PSOManager::LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT r
 
 	  PipelineDefinition definition;
 	  definition.name = pipelineJson["name"].get<std::string>();
-	  definition.vertexShader = pipelineJson["vertexShader"].get<std::string>();
-	  definition.pixelShader = pipelineJson["pixelShader"].get<std::string>();
+      definition.vertexShader = pipelineJson.value("vertexShader", "");
+	  definition.pixelShader = pipelineJson.value("pixelShader", "");
+	  definition.computeShader = pipelineJson.value("computeShader", "");
 	  definition.rootSignature = pipelineJson["rootSignature"].get<std::string>();
+
+	  if (!definition.computeShader.empty()) {
+		 return CreateComputePipeline(definition.name, definition.computeShader, definition.rootSignature);
+	  }
 	  definition.supportBlendModes = pipelineJson.value("supportBlendModes", false);
 	  definition.defaultBlendMode = StringToBlendMode(pipelineJson.value("defaultBlendMode", "None"));
 	  definition.cullMode = StringToCullMode(pipelineJson.value("cullMode", "Back"));
@@ -521,6 +528,9 @@ bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition
    }
 
    // 2. ルートパラメータを設定
+   auto& semanticSlots = rootSignatureSemanticSlots_[definition.name];
+   semanticSlots.clear();
+
    for (size_t i = 0; i < definition.parameters.size(); ++i) {
 	  const auto& param = definition.parameters[i];
 	  
@@ -538,6 +548,10 @@ bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition
 			param.visibility,
 			param.shaderRegister
 		 );
+	  }
+
+	  if (!param.semantic.empty()) {
+		 semanticSlots[ToLowerString(param.semantic)] = static_cast<UINT>(i);
 	  }
    }
 
@@ -602,8 +616,11 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
             return false;
          } else {
             Logger::GetInstance().Log("Successfully created pipeline: " + pipelineName);
+            RegisterPipelineSemanticSlots(pipelineName, definition.rootSignature);
          }
       }
+
+	  RegisterPipelineSemanticSlots(definition.name, definition.rootSignature);
    } else {
       // 単一パイプラインを作成
       PipelineConfig config;
@@ -627,6 +644,7 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
          return false;
       } else {
          Logger::GetInstance().Log("Successfully created pipeline: " + definition.name);
+         RegisterPipelineSemanticSlots(definition.name, definition.rootSignature);
       }
    }
 
@@ -663,7 +681,7 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
 	  reflectionMetadata.pixelResourceCount = static_cast<uint32_t>(psReflection->boundResources.size());
    }
 
-  const std::vector<std::string> expectedSemantics = GetExpectedSemanticsForRootSignature(config.rootSignatureName);
+  const std::vector<std::string> expectedSemantics = bindingLayoutResolver_.GetExpectedSemanticsForRootSignature(config.rootSignatureName);
 
    std::string pipelineLookupName = name;
    const size_t suffixPos = pipelineLookupName.rfind('_');
@@ -750,22 +768,72 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
    // パイプラインの作成
    pipeline->CreatePipelineState(device_->GetDevice());
 
-   pipelines_[name] = std::move(pipeline);
+   pipelineLibrary_.StoreGraphicsPipeline(name, std::move(pipeline));
    pipelineReflectionMetadata_[name] = reflectionMetadata;
    Logger::GetInstance().Log("Pipeline created and stored: " + name);
    return true;
 }
 
+bool PSOManager::CreateComputePipeline(const std::string& name, const std::string& computeShaderName, const std::string& rootSignatureName) {
+   if (!shaderManager_ || !shaderManager_->GetComputeShader(computeShaderName)) {
+	  Logger::GetInstance().Log("Compute shader not found for pipeline: " + name + " (CS: " + computeShaderName + ")", Logger::LogLevel::Error);
+	  return false;
+   }
+
+   if (!GetRootSignature(rootSignatureName)) {
+	  Logger::GetInstance().Log("Root signature not found for compute pipeline: " + name + " (requires: " + rootSignatureName + ")", Logger::LogLevel::Error);
+	  return false;
+   }
+
+   pipelineLibrary_.StoreComputePipeline({ name, rootSignatureName, computeShaderName });
+   Logger::GetInstance().Log("Compute pipeline definition registered: " + name);
+   return true;
+}
+
 PipelineState* PSOManager::GetPipeline(const std::string& name, BlendMode blendMode) {
    std::string key = CreatePipelineKey(name, blendMode);
-   auto it = pipelines_.find(key);
-   if (it != pipelines_.end()) {
-	  return it->second.get();
+   if (auto* pipeline = pipelineLibrary_.GetGraphicsPipeline(key)) {
+	  return pipeline;
    }
 
    // ブレンドモードが指定されていても見つからない場合は、名前のみで検索
-   it = pipelines_.find(name);
-   return (it != pipelines_.end()) ? it->second.get() : nullptr;
+   return pipelineLibrary_.GetGraphicsPipeline(name);
+}
+
+const ComputePipelineDefinition* PSOManager::GetComputePipeline(const std::string& name) const {
+   return pipelineLibrary_.GetComputePipeline(name);
+}
+
+std::optional<UINT> PSOManager::ResolvePipelineRootParameter(const std::string& pipelineName, const std::string& semantic) const {
+   const std::string normalizedSemantic = ToLowerString(semantic);
+
+   auto it = pipelineSemanticSlots_.find(pipelineName);
+   if (it != pipelineSemanticSlots_.end()) {
+	  auto slotIt = it->second.find(normalizedSemantic);
+	  if (slotIt != it->second.end()) {
+		 return slotIt->second;
+	  }
+   }
+
+   const size_t suffixPos = pipelineName.rfind('_');
+   if (suffixPos != std::string::npos && suffixPos + 1 < pipelineName.size()) {
+	  const bool hasNumericSuffix = std::all_of(
+		 pipelineName.begin() + static_cast<std::ptrdiff_t>(suffixPos + 1),
+		 pipelineName.end(),
+		 [](unsigned char c) { return std::isdigit(c) != 0; });
+	  if (hasNumericSuffix) {
+		 const std::string baseName = pipelineName.substr(0, suffixPos);
+		 auto baseIt = pipelineSemanticSlots_.find(baseName);
+		 if (baseIt != pipelineSemanticSlots_.end()) {
+			auto slotIt = baseIt->second.find(normalizedSemantic);
+			if (slotIt != baseIt->second.end()) {
+			   return slotIt->second;
+			}
+		 }
+	  }
+   }
+
+   return std::nullopt;
 }
 
 RootSignature* PSOManager::GetRootSignature(const std::string& name) {
@@ -847,10 +915,12 @@ bool PSOManager::SaveValidationReportJson(const std::string& filePath) const {
 }
 
 void PSOManager::Clear() {
-   pipelines_.clear();
+   pipelineLibrary_.Clear();
    rootSignatures_.clear();
    pipelineReflectionMetadata_.clear();
    rootSignatureParameterCounts_.clear();
+   rootSignatureSemanticSlots_.clear();
+   pipelineSemanticSlots_.clear();
 }
 
 std::string PSOManager::CreatePipelineKey(const std::string& name, BlendMode blendMode) const {
@@ -924,4 +994,101 @@ DXGI_FORMAT PSOManager::ConvertReflectionInputToFormat(BYTE mask, D3D_REGISTER_C
 	  }
    }
 }
+
+std::optional<UINT> PSOManager::ResolveShaderRegisterBySemantic(
+   const std::string& semantic,
+   D3D12_ROOT_PARAMETER_TYPE parameterType,
+   D3D12_SHADER_VISIBILITY visibility,
+   D3D12_DESCRIPTOR_RANGE_TYPE rangeType,
+   const std::string& vertexShader,
+   const std::string& pixelShader,
+   const std::string& computeShader) const {
+   if (!shaderManager_ || semantic.empty()) {
+	  return std::nullopt;
+   }
+
+   const auto normalizeIdentifier = [](std::string value) {
+	  value = ToLowerString(std::move(value));
+	  value.erase(std::remove_if(value.begin(), value.end(), [](unsigned char c) {
+		 return !std::isalnum(c);
+	  }), value.end());
+	  if (!value.empty() && value.front() == 'g') {
+		 value.erase(value.begin());
+	  }
+	  return value;
+   };
+
+   const std::string target = normalizeIdentifier(semantic);
+
+   const auto matchResourceType = [parameterType, rangeType](D3D_SHADER_INPUT_TYPE type) {
+	  if (parameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
+		 return type == D3D_SIT_CBUFFER;
+	  }
+	  if (parameterType == D3D12_ROOT_PARAMETER_TYPE_SRV ||
+		 (parameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE && rangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SRV)) {
+		 return type == D3D_SIT_TEXTURE || type == D3D_SIT_STRUCTURED || type == D3D_SIT_TBUFFER || type == D3D_SIT_BYTEADDRESS;
+	  }
+	  if (parameterType == D3D12_ROOT_PARAMETER_TYPE_UAV ||
+		 (parameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE && rangeType == D3D12_DESCRIPTOR_RANGE_TYPE_UAV)) {
+		 return type == D3D_SIT_UAV_RWTYPED || type == D3D_SIT_UAV_RWSTRUCTURED || type == D3D_SIT_UAV_RWBYTEADDRESS;
+	  }
+	  return true;
+   };
+
+   const auto searchShader = [&](const std::string& shaderName, ShaderType stage) -> std::optional<UINT> {
+	  if (shaderName.empty()) {
+		 return std::nullopt;
+	  }
+	  const auto* reflection = shaderManager_->GetShaderReflection(shaderName, stage);
+	  if (!reflection || !reflection->isValid) {
+		 return std::nullopt;
+	  }
+
+	  for (const auto& resource : reflection->boundResources) {
+         const std::string candidate = normalizeIdentifier(resource.name);
+		 if (candidate != target && candidate.find(target) == std::string::npos) {
+			continue;
+		 }
+		 if (!matchResourceType(resource.type)) {
+			continue;
+		 }
+		 return resource.bindPoint;
+	  }
+	  return std::nullopt;
+   };
+
+   if (visibility == D3D12_SHADER_VISIBILITY_VERTEX || visibility == D3D12_SHADER_VISIBILITY_ALL) {
+	  if (auto slot = searchShader(vertexShader, ShaderType::Vertex); slot.has_value()) {
+		 return slot;
+	  }
+   }
+   if (visibility == D3D12_SHADER_VISIBILITY_PIXEL || visibility == D3D12_SHADER_VISIBILITY_ALL) {
+	  if (auto slot = searchShader(pixelShader, ShaderType::Pixel); slot.has_value()) {
+		 return slot;
+	  }
+   }
+   if (visibility == D3D12_SHADER_VISIBILITY_ALL) {
+	  if (auto slot = searchShader(computeShader, ShaderType::Compute); slot.has_value()) {
+		 return slot;
+	  }
+   }
+
+   if (visibility == D3D12_SHADER_VISIBILITY_ALL && !computeShader.empty()) {
+	  if (auto slot = searchShader(computeShader, ShaderType::Compute); slot.has_value()) {
+		 return slot;
+	  }
+   }
+
+   return std::nullopt;
+}
+
+void PSOManager::RegisterPipelineSemanticSlots(const std::string& pipelineName, const std::string& rootSignatureName) {
+   auto it = rootSignatureSemanticSlots_.find(rootSignatureName);
+   if (it == rootSignatureSemanticSlots_.end()) {
+	  return;
+   }
+
+   pipelineSemanticSlots_[pipelineName] = it->second;
+}
+
 }

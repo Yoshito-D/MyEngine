@@ -1,31 +1,13 @@
 {
   "name": "Particle",
+  "reflectionSources": {
+    "vertexShader": "Particle",
+    "pixelShader": "Particle"
+  },
   "parameters": [
-    {
-      "type": "CBV",
-      "visibility": "Pixel",
-      "shaderRegister": 0,
-      "registerSpace": 0,
-      "comment": "Material"
-    },
-    {
-      "type": "DescriptorTable",
-      "visibility": "Vertex",
-      "shaderRegister": 0,
-      "registerSpace": 0,
-      "descriptorCount": 1,
-      "rangeType": "SRV",
-      "comment": "Instance Data (t0)"
-    },
-    {
-      "type": "DescriptorTable",
-      "visibility": "Pixel",
-      "shaderRegister": 0,
-      "registerSpace": 0,
-      "descriptorCount": 1,
-      "rangeType": "SRV",
-      "comment": "Texture (t0)"
-    }
+    { "type": "CBV", "visibility": "Pixel", "semantic": "material" },
+    { "type": "DescriptorTable", "visibility": "Vertex", "descriptorCount": 1, "rangeType": "SRV", "semantic": "instancing" },
+    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "semantic": "texture" }
   ],
   "samplers": [
     {

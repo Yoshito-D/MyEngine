@@ -26,6 +26,7 @@
 #include "Component/AnimationComponent.h"
 #include "Component/RenderComponent.h"
 #include "RootBindingSlots.h"
+#include "RenderBootstrapper.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cstring>
@@ -130,56 +131,33 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
    defaultMaterial_ = std::make_unique<Material>();
    defaultMaterial_->Create(0xFF3399FF, Material::LightingMode::NONE);
 
-   offscreenRenderTarget_->Initialize(device_);
-
-   // シェーダーマネージャーの初期化
-   shaderManager_->Initialize(device_);
-
-   // パイプラインマネージャーの初期化
-   psoManager_->Initialize(device_, shaderManager_.get());
-
-   // 専門レンダラーの初期化
-   modelRenderer_->Initialize(device_, psoManager_.get(), assetManager_);
-   spriteRenderer_->Initialize(device_, psoManager_.get());
-   particleRenderer_->Initialize(device_, psoManager_.get());
-   // UIRendererは後でuiCamera_初期化後に設定
-
-   // パイプライン定義をJSONから読み込み（フォールバック付き）
-   if (!psoManager_->LoadPipelineDefinitions(L"resources/pipelines/pipeline_registry.json", offscreenRenderTarget_->GetFormat())) {
-	  // JSONロードに失敗した場合は事前定義を使用
-	  log_.Log("Failed to load pipeline definitions from JSON, using predefined pipelines");
-	  psoManager_->CreatePredefinedPipelines(offscreenRenderTarget_.get());
-   } else {
-	  log_.Log("Successfully loaded pipeline definitions from JSON");
-   }
-
-   // スキニング用定義をJSONから読み込み
-   if (!psoManager_->LoadPipelineDefinitions(L"resources/pipelines/skinning_pipeline_registry.json", offscreenRenderTarget_->GetFormat())) {
-	  log_.Log("Failed to load skinning pipeline definitions from JSON", Logger::LogLevel::Error);
-   }
-
-   lineRenderer_->Initialize(device_->GetDevice(), 100000);
-   postProcessLineRenderer_->Initialize(device_->GetDevice(), 100000);
-
    // UI描画専用カメラの初期化
    InitializeUICamera();
 
-   // UIRendererの初期化（uiCamera_を渡す）
-   uiRenderer_->Initialize(device_, psoManager_.get(), uiCamera_.get(), spriteRenderer_.get(), lightManager_);
-
-   // PostProcessManagerを初期化（PipelineManagerを渡す）
-   postProcessManager_->Initialize(device_, offscreenRenderTarget_.get(), psoManager_.get());
-
-   // ポストプロセス効果をJSONから読み込み（フォールバック付き）
-   if (!postProcessManager_->LoadEffectsFromJson(L"resources/postprocess/postprocess_registry.json")) {
-	  // JSONロードに失敗した場合は事前定義を使用
-	  log_.Log("Failed to load post-process effects from JSON, using predefined effects");
-	  postProcessManager_->RegisterPredefinedEffects();
-   } else {
-	  log_.Log("Successfully loaded post-process effects from JSON");
+   if (!renderBootstrapper_) {
+	  renderBootstrapper_ = std::make_unique<RenderBootstrapper>();
    }
 
-   shaderManager_->LogRootParameterTablesDebug();
+   RenderBootstrapContext context{};
+   context.device = device_;
+   context.window = window;
+   context.cameraManager = cameraManager_;
+   context.lightManager = lightManager_;
+   context.assetManager = assetManager_;
+   context.defaultMaterial = defaultMaterial_.get();
+   context.offscreenRenderTarget = offscreenRenderTarget_.get();
+   context.shaderManager = shaderManager_.get();
+   context.psoManager = psoManager_.get();
+   context.modelRenderer = modelRenderer_.get();
+   context.spriteRenderer = spriteRenderer_.get();
+   context.particleRenderer = particleRenderer_.get();
+   context.uiRenderer = uiRenderer_.get();
+   context.lineRenderer = lineRenderer_.get();
+   context.postProcessLineRenderer = postProcessLineRenderer_.get();
+   context.uiCamera = uiCamera_.get();
+   context.postProcessManager = postProcessManager_.get();
+
+   renderBootstrapper_->Initialize(context);
 
 }
 

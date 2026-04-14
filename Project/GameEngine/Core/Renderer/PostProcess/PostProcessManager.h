@@ -5,6 +5,7 @@
 #include <string>
 #include <algorithm>
 #include "PostProcess.h"
+#include "EffectFactoryRegistry.h"
 
 namespace GameEngine {
 class GraphicsDevice;
@@ -131,5 +132,10 @@ private:
    /// @param className クラス名
    /// @return 作成されたエフェクトのunique_ptr（失敗時はnullptr）
    std::unique_ptr<PostProcess> CreateEffectByClassName(const std::string& className);
+
+   void RegisterDefaultEffectFactories();
+
+   EffectFactoryRegistry effectFactoryRegistry_;
+   bool effectFactoriesRegistered_ = false;
 };
 }

@@ -1,15 +1,10 @@
 {
   "name": "FullscreenTriangle",
+  "reflectionSources": {
+    "pixelShader": "FullscreenTriangle"
+  },
   "parameters": [
-    {
-      "type": "DescriptorTable",
-      "visibility": "Pixel",
-      "shaderRegister": 0,
-      "registerSpace": 0,
-      "descriptorCount": 1,
-      "rangeType": "SRV",
-      "comment": "Input Texture (t0)"
-    }
+    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "semantic": "texture" }
   ],
   "samplers": [
     {

@@ -3,6 +3,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ShaderCompiler.h"
 #include "RootBindingSlots.h"
+#include "BindingLayoutResolver.h"
 #include "Utility/JsonDataManager.h"
 #include "Utility/Logger.h"
 #include <nlohmann/json.hpp>
@@ -70,10 +71,6 @@ bool TryParseShaderType(const std::string& text, GameEngine::ShaderType& outType
    }
 
    return false;
-}
-
-void RegisterRootSlot(std::unordered_map<std::string, UINT>& table, const std::string& semantic, UINT slot) {
-   table[ToLowerString(semantic)] = slot;
 }
 
 std::string NormalizePipelineName(std::string pipelineName) {
@@ -549,193 +546,12 @@ void ShaderManager::BuildObject3DRootParameterTable() {
 }
 
 void ShaderManager::BuildPipelineRootParameterTables() {
-   pipelineRootTables_.clear();
-
-   const auto registerTable = [this](const std::string& name, PipelineRootParameterTable table) {
-	  pipelineRootTables_[name] = std::move(table);
-   };
-
-   const auto registerSemantic = [](PipelineRootParameterTable& table, const std::string& semantic, UINT slot) {
-	  RegisterRootSlot(table.slotBySemanticName, semantic, slot);
-   };
-
-   const auto registerByReflection = [&](PipelineRootParameterTable& table,
-	  const std::string& shaderName,
-	  ShaderType stage,
-	  const std::function<void(const ShaderResourceBindingInfo&, PipelineRootParameterTable&)>& mapFunc) {
-	  const auto* reflection = GetShaderReflection(shaderName, stage);
-	  if (!reflection || !reflection->isValid) {
-		 return;
-	  }
-
-	  table.hasReflectionData = true;
-	  for (const auto& resource : reflection->boundResources) {
-		 mapFunc(resource, table);
-		 if (!resource.name.empty()) {
-			 registerSemantic(table, resource.name, resource.bindPoint);
-		 }
-	  }
-   };
-
-   // Object3D / Sprite
-   {
-	  PipelineRootParameterTable table{};
-      registerByReflection(table, "Object3D", ShaderType::Vertex, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if (resource.type == D3D_SIT_CBUFFER && resource.bindPoint == 0) {
-			 RegisterRootSlot(t.slotBySemanticName, "transform", RootBindingSlots::Object3D::kTransform);
-		 }
+   BindingLayoutResolver resolver;
+   resolver.BuildPipelineRootParameterTables(
+	  pipelineRootTables_,
+	  [this](const std::string& shaderName, ShaderType stage) {
+		 return GetShaderReflection(shaderName, stage);
 	  });
-	  registerByReflection(table, "Object3D", ShaderType::Pixel, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if (resource.type == D3D_SIT_CBUFFER) {
-			 if (resource.bindPoint == 0) RegisterRootSlot(t.slotBySemanticName, "material", RootBindingSlots::Object3D::kMaterial);
-			 if (resource.bindPoint == 1) RegisterRootSlot(t.slotBySemanticName, "camera", RootBindingSlots::Object3D::kCamera);
-			 if (resource.bindPoint == 2) RegisterRootSlot(t.slotBySemanticName, "lightcount", RootBindingSlots::Object3D::kLightCount);
-		 }
-		 if (resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER || resource.type == D3D_SIT_BYTEADDRESS) {
-			 if (resource.bindPoint == 0) RegisterRootSlot(t.slotBySemanticName, "directionallights", RootBindingSlots::Object3D::kDirectionalLight);
-			 if (resource.bindPoint == 1) RegisterRootSlot(t.slotBySemanticName, "pointlights", RootBindingSlots::Object3D::kPointLight);
-			 if (resource.bindPoint == 2) RegisterRootSlot(t.slotBySemanticName, "spotlights", RootBindingSlots::Object3D::kSpotLight);
-			 if (resource.bindPoint == 3) RegisterRootSlot(t.slotBySemanticName, "arealights", RootBindingSlots::Object3D::kAreaLight);
-			 if (resource.bindPoint == 4) RegisterRootSlot(t.slotBySemanticName, "texture", RootBindingSlots::Object3D::kTexture);
-		 }
-	  });
-	  if (!table.hasReflectionData) {
-		 registerSemantic(table, "material", RootBindingSlots::Object3D::kMaterial);
-		 registerSemantic(table, "transform", RootBindingSlots::Object3D::kTransform);
-		 registerSemantic(table, "camera", RootBindingSlots::Object3D::kCamera);
-		 registerSemantic(table, "lightcount", RootBindingSlots::Object3D::kLightCount);
-		 registerSemantic(table, "directionallights", RootBindingSlots::Object3D::kDirectionalLight);
-		 registerSemantic(table, "pointlights", RootBindingSlots::Object3D::kPointLight);
-		 registerSemantic(table, "spotlights", RootBindingSlots::Object3D::kSpotLight);
-		 registerSemantic(table, "arealights", RootBindingSlots::Object3D::kAreaLight);
-		 registerSemantic(table, "texture", RootBindingSlots::Object3D::kTexture);
-	  }
-	  registerTable("Object3D", table);
-	  registerTable("Sprite", table);
-   }
-
-   // SkinningObject3D
-   {
-	  PipelineRootParameterTable table{};
-	  registerByReflection(table, "SkinningObject3D", ShaderType::Vertex, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if (resource.type == D3D_SIT_CBUFFER && resource.bindPoint == 0) {
-			RegisterRootSlot(t.slotBySemanticName, "transform", RootBindingSlots::Object3D::kTransform);
-		 }
-         if ((resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER || resource.type == D3D_SIT_BYTEADDRESS) &&
-			resource.bindPoint == 5) {
-			RegisterRootSlot(t.slotBySemanticName, "skinpalette", RootBindingSlots::Object3D::kSkinPalette);
-		 }
-	  });
-	  registerByReflection(table, "Object3D", ShaderType::Pixel, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if (resource.type == D3D_SIT_CBUFFER) {
-			if (resource.bindPoint == 0) RegisterRootSlot(t.slotBySemanticName, "material", RootBindingSlots::Object3D::kMaterial);
-			if (resource.bindPoint == 1) RegisterRootSlot(t.slotBySemanticName, "camera", RootBindingSlots::Object3D::kCamera);
-			if (resource.bindPoint == 2) RegisterRootSlot(t.slotBySemanticName, "lightcount", RootBindingSlots::Object3D::kLightCount);
-		 }
-		 if (resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER || resource.type == D3D_SIT_BYTEADDRESS) {
-			if (resource.bindPoint == 0) RegisterRootSlot(t.slotBySemanticName, "directionallights", RootBindingSlots::Object3D::kDirectionalLight);
-			if (resource.bindPoint == 1) RegisterRootSlot(t.slotBySemanticName, "pointlights", RootBindingSlots::Object3D::kPointLight);
-			if (resource.bindPoint == 2) RegisterRootSlot(t.slotBySemanticName, "spotlights", RootBindingSlots::Object3D::kSpotLight);
-			if (resource.bindPoint == 3) RegisterRootSlot(t.slotBySemanticName, "arealights", RootBindingSlots::Object3D::kAreaLight);
-			if (resource.bindPoint == 4) RegisterRootSlot(t.slotBySemanticName, "texture", RootBindingSlots::Object3D::kTexture);
-		 }
-	  });
-	  if (!table.hasReflectionData) {
-		 registerSemantic(table, "material", RootBindingSlots::Object3D::kMaterial);
-		 registerSemantic(table, "transform", RootBindingSlots::Object3D::kTransform);
-		 registerSemantic(table, "camera", RootBindingSlots::Object3D::kCamera);
-		 registerSemantic(table, "lightcount", RootBindingSlots::Object3D::kLightCount);
-		 registerSemantic(table, "directionallights", RootBindingSlots::Object3D::kDirectionalLight);
-		 registerSemantic(table, "pointlights", RootBindingSlots::Object3D::kPointLight);
-		 registerSemantic(table, "spotlights", RootBindingSlots::Object3D::kSpotLight);
-		 registerSemantic(table, "arealights", RootBindingSlots::Object3D::kAreaLight);
-		 registerSemantic(table, "texture", RootBindingSlots::Object3D::kTexture);
-		 registerSemantic(table, "skinpalette", RootBindingSlots::Object3D::kSkinPalette);
-	  }
-	  registerTable("SkinningObject3D", table);
-   }
-
-   // Particle
-   {
-	  PipelineRootParameterTable table{};
-      registerByReflection(table, "Particle", ShaderType::Vertex, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if ((resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER) && resource.bindPoint == 0) {
-			 RegisterRootSlot(t.slotBySemanticName, "instancing", RootBindingSlots::Particle::kInstancing);
-		 }
-	  });
-	  registerByReflection(table, "Particle", ShaderType::Pixel, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if (resource.type == D3D_SIT_CBUFFER && resource.bindPoint == 0) {
-			 RegisterRootSlot(t.slotBySemanticName, "material", RootBindingSlots::Particle::kMaterial);
-		 }
-		 if ((resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER) && resource.bindPoint == 1) {
-			 RegisterRootSlot(t.slotBySemanticName, "texture", RootBindingSlots::Particle::kTexture);
-		 }
-	  });
-	  if (!table.hasReflectionData) {
-		 registerSemantic(table, "material", RootBindingSlots::Particle::kMaterial);
-		 registerSemantic(table, "instancing", RootBindingSlots::Particle::kInstancing);
-		 registerSemantic(table, "texture", RootBindingSlots::Particle::kTexture);
-	  }
-	  registerTable("Particle", table);
-   }
-
-   // Line3D
-   {
-	  PipelineRootParameterTable table{};
-      registerByReflection(table, "Line3D", ShaderType::Vertex, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if (resource.type == D3D_SIT_CBUFFER && resource.bindPoint == 0) {
-			 RegisterRootSlot(t.slotBySemanticName, "transform", RootBindingSlots::Line3D::kTransform);
-		 }
-	  });
-	  if (!table.hasReflectionData) {
-		 registerSemantic(table, "transform", RootBindingSlots::Line3D::kTransform);
-	  }
-	  registerTable("Line3D", table);
-   }
-
-   // FullscreenTriangle
-   {
-	  PipelineRootParameterTable table{};
-      registerByReflection(table, "FullscreenTriangle", ShaderType::Pixel, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if ((resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER) && resource.bindPoint == 0) {
-			 RegisterRootSlot(t.slotBySemanticName, "texture", RootBindingSlots::FullscreenTriangle::kTexture);
-			 RegisterRootSlot(t.slotBySemanticName, "inputtexture", RootBindingSlots::FullscreenTriangle::kTexture);
-		 }
-	  });
-	  if (!table.hasReflectionData) {
-		 registerSemantic(table, "texture", RootBindingSlots::FullscreenTriangle::kTexture);
-		 registerSemantic(table, "inputtexture", RootBindingSlots::FullscreenTriangle::kTexture);
-	  }
-	  registerTable("FullscreenTriangle", table);
-   }
-
-   // PostProcess effects
-   const std::vector<std::string> postProcessEffects = {
-	  "Grayscale", "RadialBlur", "GaussBlur", "Vignette",
-	  "ChromaticAberration", "ShockWave", "Pixelation", "Bloom"
-   };
-
-   for (const auto& effectName : postProcessEffects) {
-	  PipelineRootParameterTable table{};
-      registerByReflection(table, effectName, ShaderType::Pixel, [](const ShaderResourceBindingInfo& resource, PipelineRootParameterTable& t) {
-		 if (resource.type == D3D_SIT_CBUFFER && resource.bindPoint == 0) {
-			 RegisterRootSlot(t.slotBySemanticName, "constantbuffer", RootBindingSlots::PostProcess::kConstantBuffer);
-			 RegisterRootSlot(t.slotBySemanticName, "material", RootBindingSlots::PostProcess::kConstantBuffer);
-		 }
-		 if ((resource.type == D3D_SIT_TEXTURE || resource.type == D3D_SIT_STRUCTURED || resource.type == D3D_SIT_TBUFFER) && resource.bindPoint == 0) {
-			 RegisterRootSlot(t.slotBySemanticName, "texture", RootBindingSlots::PostProcess::kInputTexture);
-			 RegisterRootSlot(t.slotBySemanticName, "inputtexture", RootBindingSlots::PostProcess::kInputTexture);
-		 }
-	  });
-	  if (!table.hasReflectionData) {
-		 registerSemantic(table, "constantbuffer", RootBindingSlots::PostProcess::kConstantBuffer);
-		 registerSemantic(table, "material", RootBindingSlots::PostProcess::kConstantBuffer);
-		 registerSemantic(table, "texture", RootBindingSlots::PostProcess::kInputTexture);
-		 registerSemantic(table, "inputtexture", RootBindingSlots::PostProcess::kInputTexture);
-	  }
-	  registerTable(effectName, table);
-	  registerTable("PostProcess_" + effectName, table);
-   }
 }
 
 std::string ShaderManager::CreateShaderKey(const std::string& name, ShaderType type) const {
