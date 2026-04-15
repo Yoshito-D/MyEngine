@@ -9,6 +9,7 @@
 #include <vector>
 
 namespace GameEngine {
+   class Material;
    class Texture;
 
    class Sprite :public Object {
@@ -31,7 +32,7 @@ namespace GameEngine {
 		 BottomRight   // 右下
 	  };
 
-	  void Create(const Vector2& size, Material* material = nullptr,const Vector2& anchorPoint = Vector2(0.0f, 0.0f));
+    void Create(const Vector2& size = Vector2(128.0f, 128.0f), Material* material = nullptr, const Vector2& anchorPoint = Vector2(0.0f, 0.0f));
 
 	  void SetAnchorPoint(const Vector2& anchorPoint);
 
@@ -67,6 +68,8 @@ namespace GameEngine {
 	  void SetTextureSize(const Vector2& size) {
 		 textureSize_ = size;
 	  }
+
+	  Mesh* GetMesh() const { return mesh_.get(); }
 
 	  // テクスチャパラメータのゲッターメソッドを追加
 	  Vector2 GetTextureLeftTop() const { return textureLeftTop_; }

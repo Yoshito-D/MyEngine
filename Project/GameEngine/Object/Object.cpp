@@ -4,7 +4,11 @@
 #include "Model/Model.h"
 #include "ModelAsset.h"
 #include "Component/ComponentRegistry.h"
+#include "Component/TransformComponent.h"
+#include "Component/MaterialComponent.h"
+#include "Component/ColliderComponent.h"
 #include "Component/RenderComponent.h"
+#include "Component/ObjectNameComponent.h"
 #include "Component/AnimationComponent.h"
 
 namespace GameEngine {
@@ -12,6 +16,11 @@ namespace {
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
 bool sIsDefaultComponentFactoriesRegistered_ = false;
+uint64_t sAutoMaterialCounter_ = 0;
+
+std::string BuildAutoMaterialName() {
+   return "ObjectMaterial_" + std::to_string(++sAutoMaterialCounter_);
+}
 }
 
 Object::Object() {
@@ -19,7 +28,10 @@ Object::Object() {
 
    auto* transformComponent = AddComponent<TransformComponent>();
    transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
-   AddComponent<MaterialComponent>();
+   auto* materialComponent = AddComponent<MaterialComponent>();
+   if (materialComponent) {
+	  materialComponent->EnsureMaterial(BuildAutoMaterialName());
+   }
 }
 
 void Object::RegisterDefaultComponentFactories() {
@@ -44,117 +56,9 @@ void Object::Initialize(GraphicsDevice* device) {
    sIsInitialized_ = true;
 }
 
-Material* Object::GetMaterial(size_t index) const {
-   const auto* materialComponent = GetMaterialComponent();
-   if (!materialComponent || index >= materialComponent->materials.size()) {
-	  return nullptr;
-   }
-   return materialComponent->materials[index];
-}
-
-void Object::SetMaterial(Material* material) {
-   assert(material != nullptr);
-   auto* materialComponent = GetMaterialComponent();
-   assert(materialComponent != nullptr);
-
-   materialComponent->materials.clear();
-   materialComponent->materials.push_back(material);
-}
-
-void Object::AddMaterial(Material* material) {
-   assert(material != nullptr);
-   auto* materialComponent = GetMaterialComponent();
-   assert(materialComponent != nullptr);
-
-   materialComponent->materials.push_back(material);
-}
-
-void Object::SetMaterials(const std::vector<Material*>& materials) {
-   assert(!materials.empty());
-   // 全てのマテリアルがnullでないことを確認
-   for (const auto& material : materials) {
-	  assert(material != nullptr);
-   }
-   auto* materialComponent = GetMaterialComponent();
-   assert(materialComponent != nullptr);
-   materialComponent->materials = materials;
-}
-
-const std::vector<Material*>& Object::GetMaterials() const {
-   static const std::vector<Material*> empty;
-   const auto* materialComponent = GetMaterialComponent();
-   if (!materialComponent) {
-	  return empty;
-   }
-   return materialComponent->materials;
-}
-
-Transform Object::GetTransform() const {
-   const auto* transformComponent = GetTransformComponent();
-   if (!transformComponent) {
-	  return Transform();
-   }
-   return transformComponent->transform;
-}
-
-size_t Object::GetMaterialCount() const {
-   const auto* materialComponent = GetMaterialComponent();
-   if (!materialComponent) {
-	  return 0;
-   }
-   return materialComponent->materials.size();
-}
-
-void Object::SetIsUsingParentMatrix(bool isUsing) {
-   auto* transformComponent = GetTransformComponent();
-   if (!transformComponent) {
-	  return;
-   }
-   transformComponent->useParentMatrix = isUsing;
-}
-
-TransformComponent* Object::GetTransformComponent() {
-   return GetComponent<TransformComponent>();
-}
-
-const TransformComponent* Object::GetTransformComponent() const {
-   return GetComponent<TransformComponent>();
-}
-
-MaterialComponent* Object::GetMaterialComponent() {
-   return GetComponent<MaterialComponent>();
-}
-
-const MaterialComponent* Object::GetMaterialComponent() const {
-   return GetComponent<MaterialComponent>();
-}
-
-ColliderComponent* Object::AddColliderComponent() {
-   return AddComponent<ColliderComponent>();
-}
-
-ColliderComponent* Object::GetColliderComponent() {
-   return GetComponent<ColliderComponent>();
-}
-
-const ColliderComponent* Object::GetColliderComponent() const {
-   return GetComponent<ColliderComponent>();
-}
-
-RenderComponent* Object::GetRenderComponent() {
-   return GetComponent<RenderComponent>();
-}
-
-const RenderComponent* Object::GetRenderComponent() const {
-   return GetComponent<RenderComponent>();
-}
-
-ObjectNameComponent* Object::GetObjectNameComponent() {
-   return GetComponent<ObjectNameComponent>();
-}
-
-const ObjectNameComponent* Object::GetObjectNameComponent() const {
-   return GetComponent<ObjectNameComponent>();
+bool Object::RegisterComponentFactory(const std::string& typeName, ComponentFactory factory) {
+   RegisterDefaultComponentFactories();
+   return ComponentRegistry::GetInstance().RegisterFactory(typeName, std::move(factory));
 }
 
 void Object::SetObjectName(const std::string& name) {
@@ -166,7 +70,7 @@ void Object::SetObjectName(const std::string& name) {
 }
 
 std::string Object::GetObjectName() const {
-   const auto* objectNameComponent = GetObjectNameComponent();
+   const auto* objectNameComponent = GetComponent<ObjectNameComponent>();
    if (!objectNameComponent || objectNameComponent->name.empty()) {
 	  return "Object";
    }
@@ -179,6 +83,24 @@ IObjectComponent* Object::AddComponentByTypeName(const std::string& typeName) {
    }
 
    return ComponentRegistry::GetInstance().CreateComponent(*this, typeName);
+}
+
+bool Object::HasComponentByTypeName(const std::string& typeName) const {
+   if (typeName.empty()) {
+	  return false;
+   }
+
+   for (const auto& component : components_) {
+	  if (!component) {
+		 continue;
+	  }
+
+	  if (typeName == component->GetTypeName()) {
+		 return true;
+	  }
+   }
+
+   return false;
 }
 
 bool Object::DeserializeComponents(const nlohmann::json& componentsData) {

@@ -2,15 +2,10 @@
 #pragma once
 #include "GraphicsDevice.h"
 #include "Mesh.h"
-#include "Material.h"
 #include "DirectionalLight.h"
 #include "TransformationMatrix.h"
 #include "Component/IObjectComponent.h"
-#include "Component/TransformComponent.h"
-#include "Component/MaterialComponent.h"
-#include "Component/ColliderComponent.h"
-#include "Component/RenderComponent.h"
-#include "Component/ObjectNameComponent.h"
+#include "Utility/Math/Transform.h"
 #include <memory>
 #include <functional>
 #include <string>
@@ -26,12 +21,24 @@ class Camera;
 
 class Object {
 public:
+   using ComponentFactory = std::function<IObjectComponent*(Object&)>;
+
    Object();
    virtual ~Object() = default;
 
    /// @brief オブジェクトの初期化
    /// @param device グラフィックスデバイス
    static void Initialize(GraphicsDevice* device);
+
+   static bool RegisterComponentFactory(const std::string& typeName, ComponentFactory factory);
+
+   template <typename T>
+   static bool RegisterComponentType(const std::string& typeName) {
+	  static_assert(std::is_base_of_v<IObjectComponent, T>, "T must derive from IObjectComponent");
+	  return RegisterComponentFactory(typeName, [](Object& owner) {
+		 return owner.AddComponent<T>();
+	  });
+   }
 
    template <typename T, typename... Args>
    T* AddComponent(Args&&... args) {
@@ -114,6 +121,7 @@ public:
    }
 
    IObjectComponent* AddComponentByTypeName(const std::string& typeName);
+   bool HasComponentByTypeName(const std::string& typeName) const;
 
    bool DeserializeComponents(const nlohmann::json& componentsData);
 
@@ -128,60 +136,8 @@ public:
    /// @brief トランスフォーメーションマトリックスを取得
    TransformationMatrix* GetTransformationMatrix() { return transformationMatrix_.get(); }
 
-   /// @brief マテリアルのリストを取得する
-   /// @return マテリアルのリストへの参照
-   const std::vector<Material*>& GetMaterials() const;
-
-   /// @brief マテリアルを設定する
-   /// @param material マテリアル（単一マテリアル用）
-   void SetMaterial(Material* material);
-
-   /// @brief マテリアルを追加する
-   /// @param material 追加するマテリアル
-   void AddMaterial(Material* material);
-
-   /// @brief マテリアルを設定する（マルチマテリアル対応）
-   /// @param materials マテリアルのリスト
-   void SetMaterials(const std::vector<Material*>& materials);
-
-   /// @brief オブジェクトのトランスフォームを設定する
-   /// @return トランスフォーム
-   Transform GetTransform() const;
-
-   /// @brief 指定インデックスのマテリアルを取得する
-   /// @param index マテリアルのインデックス（省略時は0）
-   /// @return マテリアルへのポインタ
-   Material* GetMaterial(size_t index = 0) const;
-
-   /// @brief マテリアルの数を取得する
-   /// @return マテリアルの数
-   size_t GetMaterialCount() const;
-
-   /// @brief 親の行列を使用するか設定する
-   /// @param isUsing 親のワールド行列を使用する場合はtrue、使用しない場合はfalse
-   void SetIsUsingParentMatrix(bool isUsing);
-
-   TransformComponent* GetTransformComponent();
-   const TransformComponent* GetTransformComponent() const;
-
-   MaterialComponent* GetMaterialComponent();
-   const MaterialComponent* GetMaterialComponent() const;
-
-   ColliderComponent* AddColliderComponent();
-   ColliderComponent* GetColliderComponent();
-   const ColliderComponent* GetColliderComponent() const;
-
-   RenderComponent* GetRenderComponent();
-   const RenderComponent* GetRenderComponent() const;
-
-   ObjectNameComponent* GetObjectNameComponent();
-   const ObjectNameComponent* GetObjectNameComponent() const;
    void SetObjectName(const std::string& name);
    std::string GetObjectName() const;
-
-   /// @brief メッシュを取得する
-   /// @return メッシュへのポインタ
-   Mesh* GetMesh() const { return mesh_.get(); }
 protected:
    enum class MeshType {
 	  Sprite,

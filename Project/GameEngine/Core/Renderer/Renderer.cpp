@@ -24,6 +24,7 @@
 #include "Asset/AnimationAssetManager.h"
 #include "Asset/TextureManager.h"
 #include "Component/AnimationComponent.h"
+#include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "RootBindingSlots.h"
 #include "RenderBootstrapper.h"
@@ -73,7 +74,7 @@ void ResolveParentRelationForRender(GameEngine::Object* object, const std::vecto
 	  return;
    }
 
-   auto* transformComponent = object->GetTransformComponent();
+   auto* transformComponent = object->GetComponent<GameEngine::TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -101,7 +102,7 @@ void ResolveParentRelationForRender(GameEngine::Object* object, const std::vecto
 	  return;
    }
 
-   const auto* parentTransform = parentObject->GetTransformComponent();
+   const auto* parentTransform = parentObject->GetComponent<GameEngine::TransformComponent>();
    if (!parentTransform) {
 	  transformComponent->useParentMatrix = false;
 	  transformComponent->parentMatrix = GameEngine::MakeIdentity4x4();
@@ -435,7 +436,7 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 	  }
    }
 
-   const TransformComponent* transformComponent = model->GetTransformComponent();
+   const TransformComponent* transformComponent = model->GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -520,6 +521,7 @@ void Renderer::EndFrame() {
 	  imGuiManager_->ShowViewport(offscreenRenderTarget_.get(), isSceneHovered_);
 
 	  if (editorController_) {
+         editorController_->ShowAssetWindow();
 		 editorController_->ShowSceneEditorWindow();
 		 editorController_->ShowHierarchyWindow();
 		 editorController_->ShowInspectorWindow();
@@ -557,7 +559,7 @@ void Renderer::DrawAutoRegisteredModels() {
 		 continue;
 	  }
 
-	  auto* renderComponent = model->GetRenderComponent();
+    auto* renderComponent = model->GetComponent<RenderComponent>();
 	  if (!renderComponent) {
 		 continue;
 	  }
@@ -598,7 +600,7 @@ void Renderer::DrawAutoRegisteredSprites() {
 		 continue;
 	  }
 
-	  auto* renderComponent = sprite->GetRenderComponent();
+   auto* renderComponent = sprite->GetComponent<RenderComponent>();
 	  if (!renderComponent) {
 		 continue;
 	  }
@@ -825,7 +827,9 @@ void Renderer::SortTransparentCommands() {
 			break;
 		 case DrawCommandType::Sprite:
 			if (!cmd.isUISprite && cmd.spriteData.sprite) {
-			   return cmd.spriteData.sprite->GetTransform().translation;
+               if (const auto* transformComponent = cmd.spriteData.sprite->GetComponent<TransformComponent>()) {
+				  return transformComponent->transform.translation;
+			   }
 			}
 			break;
 		 case DrawCommandType::Line:

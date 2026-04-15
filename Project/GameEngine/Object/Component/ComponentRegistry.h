@@ -1,9 +1,11 @@
 #pragma once
 
 #include "IObjectComponent.h"
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace GameEngine {
 class Object;
@@ -37,6 +39,18 @@ public:
 
    bool HasFactory(const std::string& typeName) const {
       return factories_.contains(typeName);
+   }
+
+   std::vector<std::string> GetRegisteredTypeNames() const {
+      std::vector<std::string> names;
+      names.reserve(factories_.size());
+      for (const auto& [typeName, factory] : factories_) {
+         (void)factory;
+         names.push_back(typeName);
+      }
+
+      std::sort(names.begin(), names.end());
+      return names;
    }
 
 private:

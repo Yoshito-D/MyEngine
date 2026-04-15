@@ -11,6 +11,7 @@
 #include "Camera/Camera.h"
 #include "Utility/Logger.h"
 #include "RootBindingSlots.h"
+#include "Component/MaterialComponent.h"
 
 namespace GameEngine {
 
@@ -33,12 +34,18 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 		return;
 	}
 
-	if (sprite->GetMaterials().size() == 0) {
-		sprite->SetMaterial(defaultMaterial);
+	auto* materialComponent = sprite->GetComponent<MaterialComponent>();
+	if (!materialComponent) {
+		Logger::GetInstance().Log("MaterialComponent is missing in DrawSprite", Logger::LogLevel::Error);
+		return;
+	}
+
+   if (materialComponent->materials.empty()) {
+		materialComponent->AssignMaterial(defaultMaterial);
 	}
 
 	// スプライトのマテリアルのライティングモードをNONEに設定
-	Material* spriteMaterial = sprite->GetMaterial();
+   Material* spriteMaterial = materialComponent->materials.empty() ? nullptr : materialComponent->materials[0];
 	if (spriteMaterial) {
 		spriteMaterial->SetLightingMode(Material::LightingMode::NONE);
 	}
@@ -85,7 +92,8 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	
 	// Object3Dルートシグネチャに合わせてルートパラメータを設定
 	// Root Parameter 0: Material (Pixel Shader)
-    cmdList->SetGraphicsRootConstantBufferView(materialSlot, sprite->GetMaterial()->GetMaterialResource()->GetGPUVirtualAddress());
+ assert(spriteMaterial != nullptr);
+	cmdList->SetGraphicsRootConstantBufferView(materialSlot, spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());
 	
 	// Root Parameter 1: TransformationMatrix (Vertex Shader)
     cmdList->SetGraphicsRootConstantBufferView(transformSlot, sprite->GetTransformationMatrix()->GetTransformationMatrixResource()->GetGPUVirtualAddress());

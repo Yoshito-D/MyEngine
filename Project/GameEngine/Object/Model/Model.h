@@ -3,7 +3,6 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include "Object.h"
-#include "Component/RenderComponent.h"
 #include "../Utility/VectorMath.h"
 #include "ModelAsset.h"
 #include <vector>
@@ -13,6 +12,8 @@
 using namespace Microsoft::WRL;
 
 namespace GameEngine {
+class AnimationComponent;
+class Material;
 
 /// @brief モデルクラス
 class Model :public Object {
@@ -21,9 +22,6 @@ public:
    ~Model() override;
 
    static const std::vector<Model*>& GetRegisteredModels();
-
-   RenderComponent* GetRenderComponent() { return GetComponent<RenderComponent>(); }
-   const RenderComponent* GetRenderComponent() const { return GetComponent<RenderComponent>(); }
 
    /// @brief モデルの作成
    /// @param modelAsset モデルアセット
@@ -39,7 +37,7 @@ public:
 
    /// @brief モデルアセットを設定する
    /// @param modelAsset モデルアセットへのポインタ
-   void SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) { modelAsset_ = modelAsset; }
+   void SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset);
 
    /// @brief モデル単位のスキンクラスタを取得
    SkinCluster* GetSkinCluster();

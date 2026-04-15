@@ -1,7 +1,6 @@
 #include "TestScene.h"
 #include "Framework/EngineContext.h"
 #include "Component/AnimationComponent.h"
-#include "ObjectEdit.h"
 #include "MathUtils.h"
 
 using namespace GameEngine;
@@ -89,68 +88,6 @@ void TestScene::Initialize() {
 #ifdef USE_IMGUI
    isDebugCameraActive_ = true;
 #endif
-
-   auto directionalLight = EngineContext::GetDirectionalLight("MainDirectionalLight");
-   if (directionalLight) {
-	  directionalLight->GetDirectionalLightData()->intensity = 0.5f;
-	  directionalLight->GetDirectionalLightData()->direction = Vector3(-1.0f, -1.0f, 1.0f).Normalize();
-   }
-
-   auto pointLight = EngineContext::GetPointLight("MainPointLight");
-   if (pointLight) {
-	  pointLight->GetPointLightData()->intensity = 5.0f;
-	  pointLight->GetPointLightData()->position = Vector3(-6.0f, 0.0f, -5.0f);
-	  pointLight->GetPointLightData()->decay = 2.0f;
-	  pointLight->GetPointLightData()->color = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
-   }
-
-   EngineContext::CreatePointLight("SecondPointLight", 0x00ffffff, Vector3(-4.0f, 0.0f, -5.0f), 5.0f);
-   auto secondPointLight = EngineContext::GetPointLight("SecondPointLight");
-   if (secondPointLight) {
-	  secondPointLight->GetPointLightData()->intensity = 5.0f;
-	  secondPointLight->GetPointLightData()->decay = 2.0f;
-   }
-
-   auto spotLight = EngineContext::GetSpotLight("MainSpotLight");
-   if (spotLight) {
-	  spotLight->GetSpotLightData()->intensity = 1.0f;
-	  spotLight->GetSpotLightData()->position = Vector3(-3.0f, 1.0f, -5.0f);
-	  spotLight->GetSpotLightData()->direction = Vector3(0.8f, -0.8f, 0.0f).Normalize();
-	  spotLight->GetSpotLightData()->distance = 10.0f;
-	  spotLight->GetSpotLightData()->decay = 2.0f;
-	  spotLight->GetSpotLightData()->cosAngle = std::cos(ToRadians(30.0f));
-	  spotLight->GetSpotLightData()->cosFalloffStart = std::cos(ToRadians(20.0f));
-	  spotLight->GetSpotLightData()->color = Vector4(1.0f, 1.0f, 0.0f, 1.0f);
-   }
-
-   EngineContext::CreateSpotLight(
-	  "SecondSpotLight",
-	  0x00ffffff,
-	  Vector3(3.0f, 1.0f, -5.0f),
-	  1.0f,
-	  Vector3(-0.8f, -0.8f, 0.0f),
-	  10.0f,
-	  2.0f,
-	  std::cos(ToRadians(30.0f)),
-	  std::cos(ToRadians(20.0f))
-   );
-
-   auto areaLight = EngineContext::GetAreaLight("MainAreaLight");
-   if (areaLight) {
-	  areaLight->GetAreaLightData()->intensity = 0.5f;
-	  areaLight->GetAreaLightData()->position = Vector3(8.0f, 0.0f, -5.0f);
-	  areaLight->GetAreaLightData()->color = Vector4(0.0f, 0.0f, 1.0f, 1.0f);
-   }
-
-   EngineContext::CreateAreaLight(
-	  "SecondAreaLight",
-	  Vector3(6.0f, 0.0f, -5.0f),
-	  Vector3(0.0f, -1.0f, 0.0f),
-	  Vector3(1.0f, 0.0f, 0.0f),
-	  Vector2(2.0f, 2.0f),
-	  Vector3(1.0f, 0.0f, 0.0f),
-	  1.0f
-   );
 }
 
 void TestScene::Update() {
@@ -180,14 +117,6 @@ void TestScene::Update() {
 }
 
 void TestScene::Draw() {
-  /* auto white = EngineContext::GetTexture("white1x1");
-   auto monsterBallTex = EngineContext::GetTexture("monsterBall");
-   auto uvCheckerTex = EngineContext::GetTexture("uvChecker");
-
-   EngineContext::Draw(testSpherePhongModel_.get(), monsterBallTex);
-   EngineContext::Draw(testSphereBlinnPhongModel_.get(), uvCheckerTex);
-   EngineContext::Draw(testPlaneModel_.get(), white);
-   EngineContext::Draw(testCubeGltfModel_.get(), uvCheckerTex);*/
 
    BaseScene::Draw();
 }

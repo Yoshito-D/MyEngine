@@ -14,6 +14,10 @@ public:
 
    void Deserialize(const nlohmann::json& data) override;
 
+#ifdef USE_IMGUI
+   void DrawInspector(Object& owner) override;
+#endif
+
    bool visible = true;
    bool autoRender = true;
    bool applyPostProcess = true;

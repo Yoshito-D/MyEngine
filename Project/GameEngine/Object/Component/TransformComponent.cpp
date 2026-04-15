@@ -1,6 +1,13 @@
 #include "pch.h"
 #include "TransformComponent.h"
 
+#ifdef USE_IMGUI
+#include "Object.h"
+#include "externals/imgui/imgui.h"
+#include <algorithm>
+#include <cstring>
+#endif
+
 namespace GameEngine {
 
 const char* TransformComponent::GetTypeName() const {
@@ -100,5 +107,36 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
       useParentMatrix = !parentObjectName.empty();
    }
 }
+
+#ifdef USE_IMGUI
+void TransformComponent::DrawInspector(Object& owner) {
+   if (!ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+      return;
+   }
+
+   ImGui::DragFloat3("Position", &transform.translation.x, 0.05f);
+   ImGui::DragFloat3("Rotation", &transform.rotation.x, 0.01f);
+   ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f, 0.001f, 1000.0f);
+
+   bool parentEnabled = useParentMatrix;
+   if (ImGui::Checkbox("Use Parent", &parentEnabled)) {
+      useParentMatrix = parentEnabled;
+      if (!useParentMatrix) {
+         parentObjectName.clear();
+      }
+   }
+
+   char parentNameBuffer[256]{};
+   const size_t copySize = std::min(parentObjectName.size(), sizeof(parentNameBuffer) - 1);
+   std::memcpy(parentNameBuffer, parentObjectName.c_str(), copySize);
+   if (ImGui::InputText("Parent", parentNameBuffer, sizeof(parentNameBuffer))) {
+      parentObjectName = parentNameBuffer;
+      useParentMatrix = !parentObjectName.empty();
+   }
+
+   (void)owner;
+   ImGui::Spacing();
+}
+#endif
 
 }

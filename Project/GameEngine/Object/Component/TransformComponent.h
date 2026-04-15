@@ -15,6 +15,10 @@ public:
 
    void Deserialize(const nlohmann::json& data) override;
 
+#ifdef USE_IMGUI
+   void DrawInspector(Object& owner) override;
+#endif
+
    Transform transform = {};
    Matrix4x4 parentMatrix = MakeIdentity4x4();
    bool useParentMatrix = false;

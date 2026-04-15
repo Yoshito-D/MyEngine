@@ -12,8 +12,23 @@ class Material;
 class MaterialComponent final : public IObjectComponent {
 public:
    using MaterialResolver = std::function<Material*(const std::string&)>;
+   using MaterialCreator = std::function<Material*(const std::string&, uint32_t, int32_t, const Matrix4x4&)>;
+   using MaterialNamesProvider = std::function<std::vector<std::string>()>;
 
    static void SetMaterialResolver(MaterialResolver resolver);
+   static void SetMaterialCreator(MaterialCreator creator);
+   static void SetMaterialNamesProvider(MaterialNamesProvider provider);
+
+   Material* EnsureMaterial(const std::string& name,
+      uint32_t color = 0xffffffff,
+      int32_t lightingMode = Material::LightingMode::HALFLAMBERT,
+      const Matrix4x4& uvTransform = MakeIdentity4x4());
+
+   void AssignMaterial(Material* material, const std::string& materialName = {});
+   void AppendMaterial(Material* material, const std::string& materialName = {});
+   void AssignMaterials(const std::vector<Material*>& materials, const std::vector<std::string>& materialNames = {});
+
+   const std::vector<std::string>& GetMaterialNames() const { return materialNames_; }
 
    const char* GetTypeName() const override;
 
@@ -21,10 +36,18 @@ public:
 
    void Deserialize(const nlohmann::json& data) override;
 
+#ifdef USE_IMGUI
+   void DrawInspector(Object& owner) override;
+#endif
+
    std::vector<Material*> materials;
 
 private:
+   void SyncMaterialNamesSize();
+
    static MaterialResolver resolver_;
+   static MaterialCreator creator_;
+   static MaterialNamesProvider namesProvider_;
    std::vector<std::string> materialNames_;
 };
 }

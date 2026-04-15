@@ -291,7 +291,6 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\ObjectEdit.cpp" />
     <ClCompile Include="GameEngine\Scene\BaseScene.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Camera.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
@@ -494,7 +493,6 @@
     <ClInclude Include="GameEngine\Object\Object.h" />
     <ClInclude Include="GameEngine\Collision\Collider.h" />
     <ClInclude Include="GameEngine\Collision\Collision.h" />
-    <ClInclude Include="GameEngine\Object\ObjectEdit.h" />
     <ClInclude Include="GameEngine\Object\Prefab\PrefabLoader.h" />
     <ClInclude Include="GameEngine\Scene\BaseScene.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Camera.h" />

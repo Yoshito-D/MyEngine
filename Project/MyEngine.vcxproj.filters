@@ -333,9 +333,6 @@
     <ClCompile Include="GameEngine\Object\Object.cpp">
       <Filter>GameEngine\Object</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\ObjectEdit.cpp">
-      <Filter>GameEngine\Object</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Object\Line\Line.cpp">
       <Filter>GameEngine\Object\Line</Filter>
     </ClCompile>
@@ -659,9 +656,6 @@
       <Filter>GameEngine\Framework</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Object.h">
-      <Filter>GameEngine\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Object\ObjectEdit.h">
       <Filter>GameEngine\Object</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Line\Line.h">
