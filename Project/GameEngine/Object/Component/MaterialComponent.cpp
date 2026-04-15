@@ -1,12 +1,86 @@
 #include "pch.h"
 #include "MaterialComponent.h"
 
+#include <algorithm>
+
+#ifdef USE_IMGUI
+#include "Object.h"
+#include "externals/imgui/imgui.h"
+#endif
+
 namespace GameEngine {
 
 MaterialComponent::MaterialResolver MaterialComponent::resolver_ = nullptr;
+MaterialComponent::MaterialCreator MaterialComponent::creator_ = nullptr;
+MaterialComponent::MaterialNamesProvider MaterialComponent::namesProvider_ = nullptr;
 
 void MaterialComponent::SetMaterialResolver(MaterialResolver resolver) {
    resolver_ = std::move(resolver);
+}
+
+void MaterialComponent::SetMaterialCreator(MaterialCreator creator) {
+   creator_ = std::move(creator);
+}
+
+void MaterialComponent::SetMaterialNamesProvider(MaterialNamesProvider provider) {
+   namesProvider_ = std::move(provider);
+}
+
+Material* MaterialComponent::EnsureMaterial(const std::string& name, uint32_t color, int32_t lightingMode, const Matrix4x4& uvTransform) {
+   if (name.empty()) {
+      return nullptr;
+   }
+
+   Material* material = nullptr;
+   if (resolver_) {
+      material = resolver_(name);
+   }
+
+   if (!material && creator_) {
+      material = creator_(name, color, lightingMode, uvTransform);
+   }
+
+   if (material) {
+      AssignMaterial(material, name);
+   }
+
+   return material;
+}
+
+void MaterialComponent::AssignMaterial(Material* material, const std::string& materialName) {
+   materials.clear();
+   materialNames_.clear();
+
+   if (!material) {
+      return;
+   }
+
+   materials.push_back(material);
+   materialNames_.push_back(materialName);
+}
+
+void MaterialComponent::AppendMaterial(Material* material, const std::string& materialName) {
+   if (!material) {
+      return;
+   }
+
+   materials.push_back(material);
+   materialNames_.push_back(materialName);
+   SyncMaterialNamesSize();
+}
+
+void MaterialComponent::AssignMaterials(const std::vector<Material*>& newMaterials, const std::vector<std::string>& materialNames) {
+   materials = newMaterials;
+   materialNames_ = materialNames;
+   SyncMaterialNamesSize();
+}
+
+void MaterialComponent::SyncMaterialNamesSize() {
+   if (materialNames_.size() < materials.size()) {
+      materialNames_.resize(materials.size());
+   } else if (materialNames_.size() > materials.size()) {
+      materialNames_.resize(materials.size());
+   }
 }
 
 const char* MaterialComponent::GetTypeName() const {
@@ -15,7 +89,13 @@ const char* MaterialComponent::GetTypeName() const {
 
 nlohmann::json MaterialComponent::Serialize() const {
    nlohmann::json json = nlohmann::json::object();
-   json["materialNames"] = materialNames_;
+   std::vector<std::string> materialNames = materialNames_;
+   if (materialNames.size() < materials.size()) {
+      materialNames.resize(materials.size());
+   } else if (materialNames.size() > materials.size()) {
+      materialNames.resize(materials.size());
+   }
+   json["materialNames"] = materialNames;
    json["materialCount"] = materials.size();
 
    if (!materials.empty() && materials[0] && materials[0]->GetMaterialData()) {
@@ -103,5 +183,117 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
       }
    }
 }
+
+#ifdef USE_IMGUI
+void MaterialComponent::DrawInspector(Object& owner) {
+   (void)owner;
+
+   SyncMaterialNamesSize();
+
+   if (!ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
+      return;
+   }
+
+   if (materials.empty() || !materials[0] || !materials[0]->GetMaterialData()) {
+      ImGui::Text("No material");
+      if (namesProvider_ && resolver_) {
+         const auto names = namesProvider_();
+         if (!names.empty()) {
+            static int selectedIndex = 0;
+            selectedIndex = std::clamp(selectedIndex, 0, static_cast<int>(names.size() - 1));
+            if (ImGui::BeginCombo("Material Asset", names[selectedIndex].c_str())) {
+               for (size_t i = 0; i < names.size(); ++i) {
+                  const bool selected = static_cast<int>(i) == selectedIndex;
+                  if (ImGui::Selectable(names[i].c_str(), selected)) {
+                     selectedIndex = static_cast<int>(i);
+                  }
+                  if (selected) {
+                     ImGui::SetItemDefaultFocus();
+                  }
+               }
+               ImGui::EndCombo();
+            }
+
+            if (ImGui::Button("Assign Material Asset")) {
+               if (auto* selectedMaterial = resolver_(names[selectedIndex])) {
+                  AssignMaterial(selectedMaterial, names[selectedIndex]);
+               }
+            }
+         }
+      }
+      return;
+   }
+
+   if (namesProvider_ && resolver_) {
+      const auto names = namesProvider_();
+      if (!names.empty()) {
+         int selectedIndex = 0;
+         const std::string currentName = materialNames_.empty() ? std::string() : materialNames_[0];
+         for (size_t i = 0; i < names.size(); ++i) {
+            if (names[i] == currentName) {
+               selectedIndex = static_cast<int>(i);
+               break;
+            }
+         }
+
+         const char* preview = currentName.empty() ? "<default>" : currentName.c_str();
+         if (ImGui::BeginCombo("Material Asset", preview)) {
+            for (size_t i = 0; i < names.size(); ++i) {
+               const bool selected = static_cast<int>(i) == selectedIndex;
+               if (ImGui::Selectable(names[i].c_str(), selected)) {
+                  if (auto* selectedMaterial = resolver_(names[i])) {
+                     AssignMaterial(selectedMaterial, names[i]);
+                  }
+               }
+               if (selected) {
+                  ImGui::SetItemDefaultFocus();
+               }
+            }
+            ImGui::EndCombo();
+         }
+      }
+   }
+
+   auto* material = materials[0];
+   auto* data = material->GetMaterialData();
+   Vector4 color = data->color;
+   if (ImGui::ColorEdit4("Color", &color.x)) {
+      material->SetColor(color);
+   }
+
+   const char* lightingModeLabels[] = { "None", "Lambert", "HalfLambert", "Phong", "BlinnPhong" };
+   int lightingMode = std::clamp(data->lightingMode, 0, 4);
+   if (ImGui::BeginCombo("Lighting Mode", lightingModeLabels[lightingMode])) {
+      for (int i = 0; i < 5; ++i) {
+         const bool selected = (i == lightingMode);
+         if (ImGui::Selectable(lightingModeLabels[i], selected)) {
+            material->SetLightingMode(static_cast<Material::LightingMode>(i));
+         }
+         if (selected) {
+            ImGui::SetItemDefaultFocus();
+         }
+      }
+      ImGui::EndCombo();
+   }
+
+   float shininess = data->shininess;
+   if (ImGui::DragFloat("Shininess", &shininess, 0.1f, 0.0f, 256.0f)) {
+      material->SetShininess(shininess);
+   }
+
+   Vector2 uvScale = material->GetUVScale();
+   float uvRotation = material->GetUVRotation();
+   Vector2 uvTranslation = material->GetUVTranslation();
+   bool changed = false;
+   changed |= ImGui::DragFloat2("UV Scale", &uvScale.x, 0.01f);
+   changed |= ImGui::DragFloat("UV Rotation", &uvRotation, 0.01f);
+   changed |= ImGui::DragFloat2("UV Translation", &uvTranslation.x, 0.01f);
+   if (changed) {
+      material->SetUVTransform(uvScale, uvRotation, uvTranslation);
+   }
+
+   ImGui::Spacing();
+}
+#endif
 
 }

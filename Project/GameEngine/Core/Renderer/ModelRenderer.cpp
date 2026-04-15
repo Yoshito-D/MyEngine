@@ -13,6 +13,7 @@
 #include "Graphics/LightDataBuffer.h"
 #include "Model/ModelAsset.h"
 #include "Component/AnimationComponent.h"
+#include "Component/MaterialComponent.h"
 #include <array>
 #include <string_view>
 
@@ -29,14 +30,18 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    LightManager* lightManager,
    std::function<void(const std::string&, BlendMode)> setPipelineFunc) {
    Model* model = modelData.model;
-   if (model->GetMaterials().size() == 0) {
-	  model->SetMaterial(defaultMaterial);
+   auto* materialComponent = model->GetComponent<MaterialComponent>();
+   if (!materialComponent) {
+	  return;
+   }
+   if (materialComponent->materials.empty()) {
+	  materialComponent->AssignMaterial(defaultMaterial);
    }
 
    auto* cmdList = device_->GetCommandList();
    ModelAsset* asset = model->GetModelAsset();
    const auto& meshes = asset->GetMeshData();
-   const auto& materials = model->GetMaterials();
+   const auto& materials = materialComponent->materials;
 
    assert(!materials.empty());
    assert(!modelData.textures.empty());

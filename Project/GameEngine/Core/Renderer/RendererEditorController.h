@@ -19,6 +19,7 @@ public:
    void Initialize(AssetManager* assetManager);
 
    void ShowSceneEditorWindow();
+   void ShowAssetWindow();
    void ShowHierarchyWindow();
    void ShowInspectorWindow();
 
@@ -35,8 +36,13 @@ private:
 
    std::string editorNewModelName_ = "NewModel";
    std::string editorNewSpriteName_ = "NewSprite";
+   std::string editorNewMaterialName_ = "NewMaterial";
    int editorSelectedModelAssetIndex_ = 0;
    int editorSelectedMaterialIndex_ = 0;
+   int editorSelectedAssetMaterialIndex_ = 0;
+   int editorNewMaterialLightingMode_ = 2;
+   float editorNewMaterialColor_[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+   int editorSelectedAddComponentIndex_ = 0;
    std::filesystem::path editorSceneFilePath_ = "resources/scenes/editor_scene.json";
 
    std::vector<std::unique_ptr<Model>> editorCreatedModels_;

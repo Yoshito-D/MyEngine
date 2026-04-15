@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Sprite.h"
 #include "Texture.h"
+#include "Component/MaterialComponent.h"
+#include "Component/TransformComponent.h"
+#include "Component/RenderComponent.h"
 #include <algorithm>
 
 namespace GameEngine {
@@ -35,14 +38,16 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
    CreateTransformationMatrix();
 
    if (material) {
-     SetMaterial(material);
+      if (auto* materialComponent = GetComponent<MaterialComponent>()) {
+		 materialComponent->AssignMaterial(material);
+	  }
    }
 
    AddComponent<RenderComponent>();
 
    anchorPoint_ = anchorPoint;
 
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (transformComponent) {
 	  transformComponent->transform.scale = { 1.0f, 1.0f, 1.0f };
 	  transformComponent->transform.translation.z = 1.0f;
@@ -64,7 +69,7 @@ void Sprite::SetSize(const Vector2& size) {
 }
 
 void Sprite::SetScale(const Vector2& scale) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -74,7 +79,7 @@ void Sprite::SetScale(const Vector2& scale) {
 }
 
 void Sprite::SetPosition(const Vector2& position) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -84,7 +89,7 @@ void Sprite::SetPosition(const Vector2& position) {
 }
 
 void Sprite::SetRotation(float rotation) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -94,7 +99,7 @@ void Sprite::SetRotation(float rotation) {
 }
 
 Vector2 Sprite::GetScale() const {
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return Vector2(1.0f, 1.0f);
    }
@@ -102,7 +107,7 @@ Vector2 Sprite::GetScale() const {
 }
 
 Vector2 Sprite::GetPosition() const {
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return Vector2(0.0f, 0.0f);
    }
@@ -110,7 +115,7 @@ Vector2 Sprite::GetPosition() const {
 }
 
 float Sprite::GetRotation() const {
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return 0.0f;
    }
@@ -118,7 +123,7 @@ float Sprite::GetRotation() const {
 }
 
 void Sprite::Update(Camera* camera, Texture* texture) {
- const auto* transformComponent = GetTransformComponent();
+ const auto* transformComponent = GetComponent<TransformComponent>();
 	if (!transformComponent || !transformationMatrix_) {
 	   return;
 	}
@@ -137,7 +142,7 @@ void Sprite::Update(Camera* camera, Texture* texture) {
 }
 
 void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) {
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
 	if (!transformComponent || !transformationMatrix_) {
 	   return;
 	}

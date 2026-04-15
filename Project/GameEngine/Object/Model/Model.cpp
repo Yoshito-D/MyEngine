@@ -2,6 +2,10 @@
 #include "Model.h"
 #include "ResourceHelper.h"
 #include "Scene/Camera/Camera.h"
+#include "Component/TransformComponent.h"
+#include "Component/RenderComponent.h"
+#include "Component/MaterialComponent.h"
+#include "Component/AnimationComponent.h"
 #include <algorithm>
 
 namespace {
@@ -30,25 +34,31 @@ const std::vector<Model*>& Model::GetRegisteredModels() {
    return sRegisteredModels_;
 }
 
-void Model::Create(const std::shared_ptr<ModelAsset>& modelAsset, Material* material) {
-   if (modelAsset) {
-	  modelAsset_ = modelAsset;
-   }
+void Model::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) {
+   modelAsset_ = modelAsset;
 
    skinCluster_.reset();
    if (modelAsset_ && modelAsset_->HasSkinningData()) {
 	  skinCluster_ = modelAsset_->CreateSkinClusterInstance();
    }
+}
+
+void Model::Create(const std::shared_ptr<ModelAsset>& modelAsset, Material* material) {
+   if (modelAsset) {
+   SetModelAsset(modelAsset);
+   }
 
    CreateTransformationMatrix();
 
    if (material) {
-     SetMaterial(material);
+      if (auto* materialComponent = GetComponent<MaterialComponent>()) {
+		 materialComponent->AssignMaterial(material);
+	  }
    }
 
    AddComponent<RenderComponent>();
 
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (transformComponent) {
 	  transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
    }
@@ -80,7 +90,8 @@ const SkinCluster* Model::GetSkinCluster() const {
 
 const Vector3& Model::GetPosition() const {
    static const Vector3 zero = Vector3(0.0f, 0.0f, 0.0f);
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
 	  return zero;
    }
@@ -89,7 +100,7 @@ const Vector3& Model::GetPosition() const {
 
 const Vector3& Model::GetRotation() const {
    static const Vector3 zero = Vector3(0.0f, 0.0f, 0.0f);
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return zero;
    }
@@ -98,7 +109,7 @@ const Vector3& Model::GetRotation() const {
 
 const Vector3& Model::GetScale() const {
    static const Vector3 one(1.0f, 1.0f, 1.0f);
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return one;
    }
@@ -106,7 +117,7 @@ const Vector3& Model::GetScale() const {
 }
 
 void Model::SetTransform(const Transform& transform) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -114,7 +125,7 @@ void Model::SetTransform(const Transform& transform) {
 }
 
 void Model::SetPosition(const Vector3& translation) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -122,7 +133,7 @@ void Model::SetPosition(const Vector3& translation) {
 }
 
 void Model::SetRotation(const Vector3& rotation) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -130,7 +141,7 @@ void Model::SetRotation(const Vector3& rotation) {
 }
 
 void Model::SetRotationQuaternion(const Quaternion& quaternion) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -139,7 +150,7 @@ void Model::SetRotationQuaternion(const Quaternion& quaternion) {
 
 const Quaternion& Model::GetRotationQuaternion() const {
    static const Quaternion identity = Quaternion::Identity();
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return identity;
    }
@@ -148,7 +159,7 @@ const Quaternion& Model::GetRotationQuaternion() const {
 }
 
 void Model::SetUseQuaternion(bool use) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -164,7 +175,7 @@ void Model::SetUseQuaternion(bool use) {
 }
 
 bool Model::IsUsingQuaternion() const {
-   const auto* transformComponent = GetTransformComponent();
+   const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return false;
    }
@@ -173,7 +184,7 @@ bool Model::IsUsingQuaternion() const {
 }
 
 void Model::SetScale(const Vector3& scale) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -181,7 +192,7 @@ void Model::SetScale(const Vector3& scale) {
 }
 
 void Model::SetParentMatrix(const Matrix4x4& parentMatrix) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return;
    }
@@ -189,7 +200,7 @@ void Model::SetParentMatrix(const Matrix4x4& parentMatrix) {
 }
 
 void Model::UpdateMatrix(Camera* camera) {
-   auto* transformComponent = GetTransformComponent();
+   auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent || !camera || !transformationMatrix_) {
 	  return;
    }

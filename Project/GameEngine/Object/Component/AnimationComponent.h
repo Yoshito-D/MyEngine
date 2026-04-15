@@ -20,6 +20,10 @@ public:
 
    void Update(Object& owner, float deltaTime) override;
 
+#ifdef USE_IMGUI
+   void DrawInspector(Object& owner) override;
+#endif
+
    std::string animationName;
    std::string clipName;
    std::string targetNodeName;

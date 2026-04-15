@@ -4,10 +4,16 @@
 #include "Object.h"
 #include "Model/Model.h"
 #include "Model/ModelAsset.h"
+#include "TransformComponent.h"
 
 #include <algorithm>
 #include <cmath>
 #include <numbers>
+
+#ifdef USE_IMGUI
+#include "externals/imgui/imgui.h"
+#include <cstring>
+#endif
 
 namespace GameEngine {
 
@@ -139,7 +145,7 @@ void AnimationComponent::Update(Object& owner, float deltaTime) {
       return;
    }
 
-   auto* transformComponent = owner.GetTransformComponent();
+   auto* transformComponent = owner.GetComponent<TransformComponent>();
    if (!transformComponent) {
       return;
    }
@@ -157,6 +163,69 @@ void AnimationComponent::Update(Object& owner, float deltaTime) {
       transformComponent->transform.scale = CalculateValue(nodeAnimation->scale.keyframes, currentTime);
    }
 }
+
+#ifdef USE_IMGUI
+void AnimationComponent::DrawInspector(Object& owner) {
+   (void)owner;
+
+   if (!ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen)) {
+      return;
+   }
+
+   ImGui::Checkbox("Playing", &playing);
+   ImGui::Checkbox("Loop", &loop);
+   ImGui::DragFloat("Playback Speed", &playbackSpeed, 0.01f, -4.0f, 4.0f);
+   ImGui::Checkbox("Apply Translation", &applyTranslation);
+   ImGui::Checkbox("Apply Rotation", &applyRotation);
+   ImGui::Checkbox("Apply Scale", &applyScale);
+   ImGui::Checkbox("Use Skinning", &useSkinning);
+
+   char animationNameBuffer[256]{};
+   size_t animationNameSize = std::min(animationName.size(), sizeof(animationNameBuffer) - 1);
+   std::memcpy(animationNameBuffer, animationName.c_str(), animationNameSize);
+   if (ImGui::InputText("Animation Asset", animationNameBuffer, sizeof(animationNameBuffer))) {
+      animationName = animationNameBuffer;
+      clipName.clear();
+      currentTime = 0.0f;
+   }
+
+   auto animationAsset = animationName.empty() ? nullptr : EngineContext::GetAnimation(animationName);
+   if (animationAsset && animationAsset->HasAnyClip()) {
+      const auto clipNames = animationAsset->GetClipNames();
+      std::string previewClip = clipName.empty() ? animationAsset->GetDefaultClipName() : clipName;
+      if (previewClip.empty() && !clipNames.empty()) {
+         previewClip = clipNames.front();
+      }
+
+      if (!previewClip.empty() && ImGui::BeginCombo("Animation Clip", previewClip.c_str())) {
+         for (size_t i = 0; i < clipNames.size(); ++i) {
+            const auto& name = clipNames[i];
+            ImGui::PushID(5400 + static_cast<int>(i));
+            const bool isSelected = (clipName == name);
+            if (ImGui::Selectable(name.c_str(), isSelected)) {
+               clipName = name;
+               currentTime = 0.0f;
+            }
+            if (isSelected) {
+               ImGui::SetItemDefaultFocus();
+            }
+            ImGui::PopID();
+         }
+         ImGui::EndCombo();
+      }
+   }
+
+   char targetNodeBuffer[256]{};
+   const size_t targetNameSize = std::min(targetNodeName.size(), sizeof(targetNodeBuffer) - 1);
+   std::memcpy(targetNodeBuffer, targetNodeName.c_str(), targetNameSize);
+   if (ImGui::InputText("Target Node", targetNodeBuffer, sizeof(targetNodeBuffer))) {
+      targetNodeName = targetNodeBuffer;
+   }
+
+   ImGui::DragFloat("Current Time", &currentTime, 0.01f, 0.0f, 1000.0f);
+   ImGui::Spacing();
+}
+#endif
 
 Vector3 AnimationComponent::QuaternionToEuler_(const Quaternion& q) const {
    const float sinrCosp = 2.0f * (q.w * q.x + q.y * q.z);

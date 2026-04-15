@@ -6,10 +6,11 @@
 #include "Asset/AssetManager.h"
 #include "Asset/MaterialManager.h"
 #include "Asset/ModelAssetManager.h"
-#include "Asset/AnimationAssetManager.h"
-#include "Asset/TextureManager.h"
-#include "Component/AnimationComponent.h"
+#include "Component/MaterialComponent.h"
+#include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
+#include "Graphics/Material.h"
+#include "Component/ComponentRegistry.h"
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
 #include "externals/imgui/imgui.h"
@@ -22,6 +23,10 @@ namespace GameEngine {
 
 void RendererEditorController::Initialize(AssetManager* assetManager) {
    assetManager_ = assetManager;
+
+   if (!editorSceneFilePath_.empty() && std::filesystem::exists(editorSceneFilePath_)) {
+      LoadEditorSceneFromFile(editorSceneFilePath_);
+   }
 }
 
 void RendererEditorController::ShowSceneEditorWindow() {
@@ -97,7 +102,7 @@ void RendererEditorController::ShowSceneEditorWindow() {
          const auto sceneObjects = CollectSceneObjects();
          model->SetObjectName(BuildUniqueObjectName(editorNewModelName_.empty() ? "Model" : editorNewModelName_, sceneObjects));
 
-         if (auto* materialComponent = model->GetMaterialComponent()) {
+         if (auto* materialComponent = model->GetComponent<MaterialComponent>()) {
             nlohmann::json data = nlohmann::json::object();
             data["materialNames"] = nlohmann::json::array({ materialNames[editorSelectedMaterialIndex_] });
             materialComponent->Deserialize(data);
@@ -129,7 +134,7 @@ void RendererEditorController::ShowSceneEditorWindow() {
       const auto sceneObjects = CollectSceneObjects();
       sprite->SetObjectName(BuildUniqueObjectName(editorNewSpriteName_.empty() ? "Sprite" : editorNewSpriteName_, sceneObjects));
 
-      if (auto* materialComponent = sprite->GetMaterialComponent(); materialComponent && !materialNames.empty()) {
+      if (auto* materialComponent = sprite->GetComponent<MaterialComponent>(); materialComponent && !materialNames.empty()) {
          nlohmann::json data = nlohmann::json::object();
          data["materialNames"] = nlohmann::json::array({ materialNames[editorSelectedMaterialIndex_] });
          materialComponent->Deserialize(data);
@@ -156,6 +161,109 @@ void RendererEditorController::ShowSceneEditorWindow() {
    ImGui::SameLine();
    if (ImGui::Button("Load Scene")) {
       LoadEditorSceneFromFile(editorSceneFilePath_);
+   }
+
+   ImGui::End();
+}
+
+void RendererEditorController::ShowAssetWindow() {
+   ImGui::Begin("Assets");
+
+   auto* materialManager = assetManager_ ? assetManager_->GetMaterialManager() : nullptr;
+   if (!materialManager) {
+      ImGui::Text("MaterialManager is not available");
+      ImGui::End();
+      return;
+   }
+
+   ImGui::Text("Material Assets");
+   ImGui::Separator();
+
+   char materialNameBuffer[128]{};
+   std::memcpy(materialNameBuffer, editorNewMaterialName_.c_str(), std::min(editorNewMaterialName_.size(), sizeof(materialNameBuffer) - 1));
+   if (ImGui::InputText("New Material Name", materialNameBuffer, sizeof(materialNameBuffer))) {
+      editorNewMaterialName_ = materialNameBuffer;
+   }
+
+   ImGui::ColorEdit4("New Material Color", editorNewMaterialColor_);
+
+   const char* lightingModeLabels[] = { "None", "Lambert", "HalfLambert", "Phong", "BlinnPhong" };
+   editorNewMaterialLightingMode_ = std::clamp(editorNewMaterialLightingMode_, 0, 4);
+   if (ImGui::BeginCombo("New Material Lighting", lightingModeLabels[editorNewMaterialLightingMode_])) {
+      for (int i = 0; i < 5; ++i) {
+         const bool selected = (i == editorNewMaterialLightingMode_);
+         if (ImGui::Selectable(lightingModeLabels[i], selected)) {
+            editorNewMaterialLightingMode_ = i;
+         }
+         if (selected) {
+            ImGui::SetItemDefaultFocus();
+         }
+      }
+      ImGui::EndCombo();
+   }
+
+   if (ImGui::Button("Create Material Asset") && !editorNewMaterialName_.empty()) {
+      auto* material = static_cast<Material*>(materialManager->CreateMaterial(editorNewMaterialName_));
+      if (material) {
+         material->SetColor(Vector4(
+            editorNewMaterialColor_[0],
+            editorNewMaterialColor_[1],
+            editorNewMaterialColor_[2],
+            editorNewMaterialColor_[3]));
+         material->SetLightingMode(static_cast<Material::LightingMode>(editorNewMaterialLightingMode_));
+      }
+   }
+
+   ImGui::Spacing();
+
+   const auto materialNames = materialManager->GetMaterialNames();
+   if (materialNames.empty()) {
+      ImGui::Text("No material assets");
+      ImGui::End();
+      return;
+   }
+
+   editorSelectedAssetMaterialIndex_ = std::clamp(editorSelectedAssetMaterialIndex_, 0, static_cast<int>(materialNames.size() - 1));
+   if (ImGui::BeginCombo("Material Asset", materialNames[editorSelectedAssetMaterialIndex_].c_str())) {
+      for (size_t i = 0; i < materialNames.size(); ++i) {
+         const bool selected = (static_cast<int>(i) == editorSelectedAssetMaterialIndex_);
+         if (ImGui::Selectable(materialNames[i].c_str(), selected)) {
+            editorSelectedAssetMaterialIndex_ = static_cast<int>(i);
+         }
+         if (selected) {
+            ImGui::SetItemDefaultFocus();
+         }
+      }
+      ImGui::EndCombo();
+   }
+
+   auto* material = materialManager->GetMaterial(materialNames[editorSelectedAssetMaterialIndex_]);
+   if (material && material->GetMaterialData()) {
+      auto* data = material->GetMaterialData();
+
+      Vector4 color = data->color;
+      if (ImGui::ColorEdit4("Color", &color.x)) {
+         material->SetColor(color);
+      }
+
+      int lightingMode = std::clamp(data->lightingMode, 0, 4);
+      if (ImGui::BeginCombo("Lighting Mode", lightingModeLabels[lightingMode])) {
+         for (int i = 0; i < 5; ++i) {
+            const bool selected = (i == lightingMode);
+            if (ImGui::Selectable(lightingModeLabels[i], selected)) {
+               material->SetLightingMode(static_cast<Material::LightingMode>(i));
+            }
+            if (selected) {
+               ImGui::SetItemDefaultFocus();
+            }
+         }
+         ImGui::EndCombo();
+      }
+
+      float shininess = data->shininess;
+      if (ImGui::DragFloat("Shininess", &shininess, 0.1f, 0.0f, 256.0f)) {
+         material->SetShininess(shininess);
+      }
    }
 
    ImGui::End();
@@ -219,98 +327,82 @@ void RendererEditorController::ShowInspectorWindow() {
    }
    ImGui::Spacing();
 
-   auto* transformComponent = selectedObject_->GetTransformComponent();
-   if (transformComponent && ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::DragFloat3("Position", &transformComponent->transform.translation.x, 0.05f);
-      ImGui::DragFloat3("Rotation", &transformComponent->transform.rotation.x, 0.01f);
-      ImGui::DragFloat3("Scale", &transformComponent->transform.scale.x, 0.01f, 0.001f, 1000.0f);
+   selectedObject_->DrawComponentInspector();
 
-      const auto sceneObjects = CollectSceneObjects();
-      std::vector<std::string> parentCandidates;
-      parentCandidates.reserve(sceneObjects.size() + 1);
-      parentCandidates.push_back("<None>");
-      for (auto* object : sceneObjects) {
-         if (!object || object == selectedObject_) {
-            continue;
-         }
-         parentCandidates.push_back(object->GetObjectName());
-      }
-
-      std::string currentParent = transformComponent->parentObjectName.empty() ? "<None>" : transformComponent->parentObjectName;
-      if (ImGui::BeginCombo("Parent", currentParent.c_str())) {
-         for (size_t i = 0; i < parentCandidates.size(); ++i) {
-            const auto& candidate = parentCandidates[i];
-            ImGui::PushID(2000 + static_cast<int>(i));
-            const bool isSelected = (currentParent == candidate);
-            if (ImGui::Selectable(candidate.c_str(), isSelected)) {
-               if (candidate == "<None>") {
-                  transformComponent->parentObjectName.clear();
-                  transformComponent->useParentMatrix = false;
-               } else {
-                  transformComponent->parentObjectName = candidate;
-                  transformComponent->useParentMatrix = true;
-               }
-            }
-            ImGui::PopID();
-         }
-         ImGui::EndCombo();
-      }
-      ImGui::Spacing();
+   ImGui::Spacing();
+   ImGui::Separator();
+   ImGui::Text("Scene File");
+   if (ImGui::Button("Save Scene (Inspector)")) {
+      SaveEditorSceneToFile(editorSceneFilePath_);
+   }
+   ImGui::SameLine();
+   if (ImGui::Button("Load Scene (Inspector)")) {
+      LoadEditorSceneFromFile(editorSceneFilePath_);
    }
 
-   auto* renderComponent = selectedObject_->GetRenderComponent();
-   if (renderComponent && ImGui::CollapsingHeader("Render", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::Checkbox("Visible", &renderComponent->visible);
-      ImGui::Checkbox("Auto Render", &renderComponent->autoRender);
-      ImGui::Checkbox("Apply PostProcess", &renderComponent->applyPostProcess);
-
-      auto* textureManager = assetManager_ ? assetManager_->GetTextureManager() : nullptr;
-      if (textureManager) {
-         const auto textureNames = textureManager->GetTextureNames();
-         if (!textureNames.empty()) {
-            if (ImGui::BeginCombo("Texture", renderComponent->textureName.c_str())) {
-               for (size_t i = 0; i < textureNames.size(); ++i) {
-                  const auto& textureName = textureNames[i];
-                  ImGui::PushID(3000 + static_cast<int>(i));
-                  const bool isSelected = (renderComponent->textureName == textureName);
-                  if (ImGui::Selectable(textureName.c_str(), isSelected)) {
-                     renderComponent->textureName = textureName;
-                  }
-                  if (isSelected) {
-                     ImGui::SetItemDefaultFocus();
-                  }
-                  ImGui::PopID();
-               }
-               ImGui::EndCombo();
-            }
-
-            if (auto* texture = textureManager->GetTexture(renderComponent->textureName)) {
-               ImGui::Text("Texture Preview");
-               ImTextureID texId = (ImTextureID)(texture->GetTextureSrvHandleGPU().ptr);
-               ImGui::Image(texId, ImVec2(96.0f, 96.0f));
-            }
+   ImGui::Spacing();
+   ImGui::PushID("InspectorAddComponent");
+   if (ImGui::CollapsingHeader("Add Component##Header", ImGuiTreeNodeFlags_DefaultOpen)) {
+      std::vector<std::string> addableComponentTypeNames;
+      const auto registeredTypeNames = ComponentRegistry::GetInstance().GetRegisteredTypeNames();
+      addableComponentTypeNames.reserve(registeredTypeNames.size());
+      for (const auto& typeName : registeredTypeNames) {
+         if (!selectedObject_->HasComponentByTypeName(typeName)) {
+            addableComponentTypeNames.push_back(typeName);
          }
       }
-      ImGui::Spacing();
-   }
 
-   auto* materialComponent = selectedObject_->GetMaterialComponent();
-   if (materialComponent && !materialComponent->materials.empty() && materialComponent->materials[0] && ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
-      auto* material = materialComponent->materials[0];
-      auto* data = material->GetMaterialData();
-      if (data) {
-         Vector4 color = data->color;
-         if (ImGui::ColorEdit4("Color", &color.x)) {
-            material->SetColor(color);
+      if (addableComponentTypeNames.empty()) {
+         ImGui::Text("No addable components");
+      } else {
+         editorSelectedAddComponentIndex_ = std::clamp(editorSelectedAddComponentIndex_, 0, static_cast<int>(addableComponentTypeNames.size() - 1));
+         const char* selectedTypeName = addableComponentTypeNames[editorSelectedAddComponentIndex_].c_str();
+
+         if (ImGui::BeginCombo("Type##ComponentType", selectedTypeName)) {
+            for (size_t i = 0; i < addableComponentTypeNames.size(); ++i) {
+               const bool selected = (static_cast<int>(i) == editorSelectedAddComponentIndex_);
+               if (ImGui::Selectable(addableComponentTypeNames[i].c_str(), selected)) {
+                  editorSelectedAddComponentIndex_ = static_cast<int>(i);
+               }
+            }
+            ImGui::EndCombo();
          }
 
-         const char* lightingModeLabels[] = { "None", "Lambert", "HalfLambert", "Phong", "BlinnPhong" };
-         int lightingMode = std::clamp(data->lightingMode, 0, 4);
-         if (ImGui::BeginCombo("Lighting Mode", lightingModeLabels[lightingMode])) {
-            for (int i = 0; i < 5; ++i) {
-               const bool selected = (i == lightingMode);
-               if (ImGui::Selectable(lightingModeLabels[i], selected)) {
-                  material->SetLightingMode(static_cast<Material::LightingMode>(i));
+         if (ImGui::Button("Add Component##Button")) {
+            selectedObject_->AddComponentByTypeName(addableComponentTypeNames[editorSelectedAddComponentIndex_]);
+         }
+      }
+   }
+   ImGui::PopID();
+
+   if (auto* model = dynamic_cast<Model*>(selectedObject_); model && ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
+      auto* modelManager = assetManager_ ? assetManager_->GetModelAssetManager() : nullptr;
+      const auto modelNames = modelManager ? modelManager->GetModelNames() : std::vector<std::string>{};
+
+      auto itModelName = editorModelAssetNames_.find(model);
+      if (itModelName != editorModelAssetNames_.end()) {
+         ImGui::Text("Asset: %s", itModelName->second.c_str());
+      }
+
+      if (modelManager && !modelNames.empty()) {
+         int selectedIndex = 0;
+         if (itModelName != editorModelAssetNames_.end()) {
+            for (size_t i = 0; i < modelNames.size(); ++i) {
+               if (modelNames[i] == itModelName->second) {
+                  selectedIndex = static_cast<int>(i);
+                  break;
+               }
+            }
+         }
+
+         if (ImGui::BeginCombo("Model Asset##InspectorModelAsset", modelNames[selectedIndex].c_str())) {
+            for (size_t i = 0; i < modelNames.size(); ++i) {
+               const bool selected = (static_cast<int>(i) == selectedIndex);
+               if (ImGui::Selectable(modelNames[i].c_str(), selected)) {
+                  if (auto selectedAsset = modelManager->GetModel(modelNames[i])) {
+                     model->SetModelAsset(selectedAsset);
+                     editorModelAssetNames_[model] = modelNames[i];
+                  }
                }
                if (selected) {
                   ImGui::SetItemDefaultFocus();
@@ -318,34 +410,37 @@ void RendererEditorController::ShowInspectorWindow() {
             }
             ImGui::EndCombo();
          }
-
-         float shininess = data->shininess;
-         if (ImGui::DragFloat("Shininess", &shininess, 0.1f, 0.0f, 256.0f)) {
-            material->SetShininess(shininess);
-         }
-
-         Vector2 uvScale = material->GetUVScale();
-         float uvRotation = material->GetUVRotation();
-         Vector2 uvTranslation = material->GetUVTranslation();
-         bool changed = false;
-         changed |= ImGui::DragFloat2("UV Scale", &uvScale.x, 0.01f);
-         changed |= ImGui::DragFloat("UV Rotation", &uvRotation, 0.01f);
-         changed |= ImGui::DragFloat2("UV Translation", &uvTranslation.x, 0.01f);
-         if (changed) {
-            material->SetUVTransform(uvScale, uvRotation, uvTranslation);
-         }
-      }
-   }
-
-   if (auto* model = dynamic_cast<Model*>(selectedObject_); model && ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
-      auto itModelName = editorModelAssetNames_.find(model);
-      if (itModelName != editorModelAssetNames_.end()) {
-         ImGui::Text("Asset: %s", itModelName->second.c_str());
       }
 
       if (auto* modelAsset = model->GetModelAsset()) {
          ImGui::Text("Meshes: %zu", modelAsset->GetMeshData().size());
          ImGui::Text("Materials: %zu", modelAsset->GetMaterialAssets().size());
+      }
+
+      if (auto* textureManager = assetManager_ ? assetManager_->GetTextureManager() : nullptr) {
+         const auto textureNames = textureManager->GetTextureNames();
+         if (auto* renderComponent = model->GetComponent<RenderComponent>(); renderComponent && !textureNames.empty()) {
+            int textureIndex = 0;
+            for (size_t i = 0; i < textureNames.size(); ++i) {
+               if (textureNames[i] == renderComponent->textureName) {
+                  textureIndex = static_cast<int>(i);
+                  break;
+               }
+            }
+
+            if (ImGui::BeginCombo("Texture##Model", textureNames[textureIndex].c_str())) {
+               for (size_t i = 0; i < textureNames.size(); ++i) {
+                  const bool selected = (static_cast<int>(i) == textureIndex);
+                  if (ImGui::Selectable(textureNames[i].c_str(), selected)) {
+                     renderComponent->textureName = textureNames[i];
+                  }
+                  if (selected) {
+                     ImGui::SetItemDefaultFocus();
+                  }
+               }
+               ImGui::EndCombo();
+            }
+         }
       }
    }
 
@@ -370,76 +465,32 @@ void RendererEditorController::ShowInspectorWindow() {
       if (ImGui::Checkbox("Flip Y", &flipY)) {
          sprite->SetFlipY(flipY);
       }
-      ImGui::Spacing();
-   }
 
-   if (auto* animationComponent = selectedObject_->GetComponent<AnimationComponent>();
-      animationComponent && ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::Checkbox("Playing", &animationComponent->playing);
-      ImGui::Checkbox("Loop", &animationComponent->loop);
-      ImGui::DragFloat("Playback Speed", &animationComponent->playbackSpeed, 0.01f, -4.0f, 4.0f);
-      ImGui::Checkbox("Apply Translation", &animationComponent->applyTranslation);
-      ImGui::Checkbox("Apply Rotation", &animationComponent->applyRotation);
-      ImGui::Checkbox("Apply Scale", &animationComponent->applyScale);
-
-      auto* animationManager = assetManager_ ? assetManager_->GetAnimationAssetManager() : nullptr;
-      const auto animationNames = animationManager ? animationManager->GetAnimationNames() : std::vector<std::string>{};
-      if (!animationNames.empty()) {
-         const char* previewName = animationComponent->animationName.empty()
-            ? animationNames.front().c_str()
-            : animationComponent->animationName.c_str();
-
-         if (ImGui::BeginCombo("Animation Asset", previewName)) {
-            for (size_t i = 0; i < animationNames.size(); ++i) {
-               const auto& name = animationNames[i];
-               ImGui::PushID(5000 + static_cast<int>(i));
-               const bool isSelected = (animationComponent->animationName == name);
-               if (ImGui::Selectable(name.c_str(), isSelected)) {
-                  animationComponent->animationName = name;
-                  animationComponent->currentTime = 0.0f;
+      if (auto* textureManager = assetManager_ ? assetManager_->GetTextureManager() : nullptr) {
+         const auto textureNames = textureManager->GetTextureNames();
+         if (auto* renderComponent = sprite->GetComponent<RenderComponent>(); renderComponent && !textureNames.empty()) {
+            int textureIndex = 0;
+            for (size_t i = 0; i < textureNames.size(); ++i) {
+               if (textureNames[i] == renderComponent->textureName) {
+                  textureIndex = static_cast<int>(i);
+                  break;
                }
-               if (isSelected) {
-                  ImGui::SetItemDefaultFocus();
-               }
-               ImGui::PopID();
             }
-            ImGui::EndCombo();
-         }
-      }
 
-      if (animationManager && !animationComponent->animationName.empty()) {
-         auto animationAsset = animationManager->GetAnimation(animationComponent->animationName);
-         if (animationAsset && animationAsset->HasAnyClip()) {
-            const auto clipNames = animationAsset->GetClipNames();
-            const std::string previewClip = animationComponent->clipName.empty()
-               ? animationAsset->GetDefaultClipName()
-               : animationComponent->clipName;
-
-            if (ImGui::BeginCombo("Animation Clip", previewClip.c_str())) {
-               for (size_t i = 0; i < clipNames.size(); ++i) {
-                  const auto& name = clipNames[i];
-                  ImGui::PushID(5400 + static_cast<int>(i));
-                  const bool isSelected = (animationComponent->clipName == name);
-                  if (ImGui::Selectable(name.c_str(), isSelected)) {
-                     animationComponent->clipName = name;
-                     animationComponent->currentTime = 0.0f;
+            if (ImGui::BeginCombo("Texture##Sprite", textureNames[textureIndex].c_str())) {
+               for (size_t i = 0; i < textureNames.size(); ++i) {
+                  const bool selected = (static_cast<int>(i) == textureIndex);
+                  if (ImGui::Selectable(textureNames[i].c_str(), selected)) {
+                     renderComponent->textureName = textureNames[i];
                   }
-                  if (isSelected) {
+                  if (selected) {
                      ImGui::SetItemDefaultFocus();
                   }
-                  ImGui::PopID();
                }
                ImGui::EndCombo();
             }
          }
       }
-
-      char targetNodeBuffer[256]{};
-      std::memcpy(targetNodeBuffer, animationComponent->targetNodeName.c_str(), std::min(animationComponent->targetNodeName.size(), sizeof(targetNodeBuffer) - 1));
-      if (ImGui::InputText("Target Node", targetNodeBuffer, sizeof(targetNodeBuffer))) {
-         animationComponent->targetNodeName = targetNodeBuffer;
-      }
-      ImGui::DragFloat("Current Time", &animationComponent->currentTime, 0.01f, 0.0f, 1000.0f);
       ImGui::Spacing();
    }
 
@@ -472,7 +523,7 @@ void RendererEditorController::ResolveParentRelation(Object* object, const std::
       return;
    }
 
-   auto* transformComponent = object->GetTransformComponent();
+   auto* transformComponent = object->GetComponent<TransformComponent>();
    if (!transformComponent) {
       return;
    }
@@ -500,7 +551,7 @@ void RendererEditorController::ResolveParentRelation(Object* object, const std::
       return;
    }
 
-   const auto* parentTransform = parentObject->GetTransformComponent();
+   const auto* parentTransform = parentObject->GetComponent<TransformComponent>();
    if (!parentTransform) {
       transformComponent->useParentMatrix = false;
       transformComponent->parentMatrix = MakeIdentity4x4();
@@ -552,10 +603,30 @@ bool RendererEditorController::SaveEditorSceneToFile(const std::filesystem::path
       entry["name"] = modelPtr->GetObjectName();
       entry["components"] = modelPtr->SerializeComponents();
 
+      auto* modelManager = assetManager_ ? assetManager_->GetModelAssetManager() : nullptr;
+      auto* modelAsset = modelPtr->GetModelAsset();
+      if (modelManager && modelAsset) {
+         const auto modelNames = modelManager->GetModelNames();
+         for (const auto& modelName : modelNames) {
+            if (auto candidate = modelManager->GetModel(modelName); candidate && candidate.get() == modelAsset) {
+               entry["modelName"] = modelName;
+               break;
+            }
+         }
+      }
+
       auto itModelName = editorModelAssetNames_.find(modelPtr.get());
       if (itModelName != editorModelAssetNames_.end()) {
          entry["modelName"] = itModelName->second;
       }
+
+      if (const auto* materialComponent = modelPtr->GetComponent<MaterialComponent>()) {
+         const auto& materialNames = materialComponent->GetMaterialNames();
+         if (!materialNames.empty() && !materialNames[0].empty()) {
+            entry["materialName"] = materialNames[0];
+         }
+      }
+
       auto itMaterialName = editorModelMaterialNames_.find(modelPtr.get());
       if (itMaterialName != editorModelMaterialNames_.end()) {
          entry["materialName"] = itMaterialName->second;
@@ -631,20 +702,37 @@ bool RendererEditorController::LoadEditorSceneFromFile(const std::filesystem::pa
       if (type == "Model") {
          const std::string modelName = objectJson.value("modelName", "");
          const std::string materialName = objectJson.value("materialName", "");
-         auto modelAsset = modelManager->GetModel(modelName);
-         auto* material = materialManager->GetMaterial(materialName);
-         if (!modelAsset || !material) {
-            continue;
+         auto model = std::make_unique<Model>();
+         model->Create();
+
+         if (!modelName.empty()) {
+            if (auto modelAsset = modelManager->GetModel(modelName)) {
+               model->SetModelAsset(modelAsset);
+               editorModelAssetNames_[model.get()] = modelName;
+            }
          }
 
-         auto model = std::make_unique<Model>();
-         model->Create(modelAsset, material);
+         if (!materialName.empty()) {
+            if (auto* material = materialManager->GetMaterial(materialName)) {
+               if (auto* materialComponent = model->GetComponent<MaterialComponent>()) {
+                  materialComponent->AssignMaterial(material, materialName);
+               }
+               editorModelMaterialNames_[model.get()] = materialName;
+            }
+         }
+
          model->SetObjectName(name);
          if (objectJson.contains("components") && objectJson.at("components").is_array()) {
             model->DeserializeComponents(objectJson.at("components"));
          }
-         editorModelAssetNames_[model.get()] = modelName;
-         editorModelMaterialNames_[model.get()] = materialName;
+
+         if (const auto* materialComponent = model->GetComponent<MaterialComponent>()) {
+            const auto& materialNames = materialComponent->GetMaterialNames();
+            if (!materialNames.empty() && !materialNames[0].empty()) {
+               editorModelMaterialNames_[model.get()] = materialNames[0];
+            }
+         }
+
          selectedObject_ = model.get();
          editorCreatedModels_.push_back(std::move(model));
       } else if (type == "Sprite") {

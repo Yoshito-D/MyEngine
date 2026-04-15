@@ -524,7 +524,7 @@ void EngineContext::DebugDrawLights() {
 void EngineContext::Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
    if (!sRenderer_) return;
    if (model) {
-	  const auto* renderComponent = model->GetRenderComponent();
+      const auto* renderComponent = model->GetComponent<RenderComponent>();
 	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->autoRender) {
 		 return;
 	  }
@@ -535,7 +535,7 @@ void EngineContext::Draw(Model* model, Texture* texture, std::optional<BlendMode
 void EngineContext::Draw(Model* model, const std::vector<Texture*>& textures, std::optional<BlendMode> blendMode, bool applyPostProcess) {
    if (!sRenderer_) return;
    if (model) {
-	  const auto* renderComponent = model->GetRenderComponent();
+      const auto* renderComponent = model->GetComponent<RenderComponent>();
 	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->autoRender) {
 		 return;
 	  }
@@ -546,7 +546,7 @@ void EngineContext::Draw(Model* model, const std::vector<Texture*>& textures, st
 void EngineContext::Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
    if (!sRenderer_) return;
    if (sprite) {
-	  const auto* renderComponent = sprite->GetRenderComponent();
+     const auto* renderComponent = sprite->GetComponent<RenderComponent>();
 	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->autoRender) {
 		 return;
 	  }
