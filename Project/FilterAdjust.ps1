@@ -1,8 +1,8 @@
 # ============================
-# DirectXGame.vcxproj.filters 生成スクリプト（完全版）
+# MyEngine.vcxproj.filters 生成スクリプト（完全版）
 # ============================
 
-$proj    = Resolve-Path "CG2_DirectX.vcxproj"
+$proj    = (Resolve-Path "MyEngine.vcxproj").Path
 $filters = "$proj.filters"
 
 try {
@@ -11,7 +11,12 @@ try {
 
     # 対象ファイル取得
     $files = Get-ChildItem $root -Recurse -File |
-             Where-Object { $_.Extension -match '\.(cpp|c|h|hpp)$' }
+             Where-Object {
+                 $_.Name -notlike '*.vcxproj' -and
+                 $_.Name -notlike '*.vcxproj.filters' -and
+                 $_.Name -notlike '*.user' -and
+                 $_.Extension -match '^\.(cpp|c|h|hpp|json|xml|txt|ini|csv|md)$'
+             }
 
     # すべてのフィルター（中間階層含む）を収集
     $filterSet = New-Object System.Collections.Generic.HashSet[string]
@@ -39,6 +44,21 @@ try {
         $xml += "    <Filter Include=""$filter"">"
         $xml += "      <UniqueIdentifier>{$guid}</UniqueIdentifier>"
         $xml += "    </Filter>"
+    }
+    $xml += '  </ItemGroup>'
+
+    # --- None (json / xml / txt / ini / csv / md) ---
+    $xml += '  <ItemGroup>'
+    foreach ($f in $files | Where-Object { $_.Extension -match '\.(json|xml|txt|ini|csv|md)$' }) {
+        $rel = $f.FullName.Substring($root.Length + 1) -replace '/', '\'
+        $dir = Split-Path $rel
+
+        if ($dir -and $dir -ne ".") {
+            $xml += "    <None Include=""$rel""><Filter>$dir</Filter></None>"
+        }
+        else {
+            $xml += "    <None Include=""$rel"" />"
+        }
     }
     $xml += '  </ItemGroup>'
 
@@ -74,10 +94,10 @@ try {
 
     $xml += '</Project>'
 
-    # UTF-8 BOM 付きで保存（VS 安定）
-    $utf8bom = New-Object System.Text.UTF8Encoding $true
-    [System.IO.File]::WriteAllLines($filters, $xml, $utf8bom)
+    # UTF-8 で保存
+    $xml | Set-Content -LiteralPath $filters -Encoding UTF8 -Force
 }
 catch {
     Write-Error $_.Exception.Message
+    exit 1
 }
