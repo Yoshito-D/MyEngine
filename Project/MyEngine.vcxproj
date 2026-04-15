@@ -576,7 +576,6 @@
     <None Include="resources\postprocess\postprocess_registry.json" />
     <None Include="resources\prefabs\default_object.prefab.json" />
     <None Include="resources\shaders\shader_registry.json" />
-    <None Include="TL1\level_editor.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
