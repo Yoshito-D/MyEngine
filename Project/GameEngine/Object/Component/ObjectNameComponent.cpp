@@ -1,5 +1,14 @@
 #include "pch.h"
 #include "ObjectNameComponent.h"
+#include "ComponentRegistry.h"
+#include "Object.h"
+
+namespace {
+   const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+      GameEngine::ObjectNameComponent::kTypeName,
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::ObjectNameComponent>(); }
+   );
+}
 
 namespace GameEngine {
 

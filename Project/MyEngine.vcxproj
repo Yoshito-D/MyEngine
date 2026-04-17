@@ -269,7 +269,10 @@
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
     <ClCompile Include="GameEngine\Framework\Framework.cpp" />
     <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ColliderComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp" />
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ModelAssetComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
@@ -479,9 +482,11 @@
     <ClInclude Include="GameEngine\Framework\Framework.h" />
     <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ColliderComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\ComponentContainer.h" />
     <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h" />
     <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\ModelAssetComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />

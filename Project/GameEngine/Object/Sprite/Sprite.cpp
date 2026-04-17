@@ -27,15 +27,12 @@ const std::vector<Sprite*>& Sprite::GetRegisteredSprites() {
 
 void Sprite::Create(const Vector2& size, Material* material, const Vector2& anchorPoint) {
    size_ = size;
-   SetCreateMeshFunction([this]() {
-	  mesh_ = std::make_unique<Mesh>();
-	  mesh_->CreateSprite(size_.x, size_.y);
-	  }
-   );
 
-   CreateMesh();
+   mesh_ = std::make_unique<Mesh>();
+   mesh_->CreateSprite(size_.x, size_.y);
 
-   CreateTransformationMatrix();
+   transformationMatrix_ = std::make_unique<TransformationMatrix>();
+   transformationMatrix_->Create();
 
    if (material) {
       if (auto* materialComponent = GetComponent<MaterialComponent>()) {

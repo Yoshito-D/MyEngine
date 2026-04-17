@@ -6,6 +6,7 @@
 #include "Component/RenderComponent.h"
 #include "Component/MaterialComponent.h"
 #include "Component/AnimationComponent.h"
+#include "Component/ModelAssetComponent.h"
 #include <algorithm>
 
 namespace {
@@ -34,58 +35,34 @@ const std::vector<Model*>& Model::GetRegisteredModels() {
    return sRegisteredModels_;
 }
 
-void Model::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) {
-   modelAsset_ = modelAsset;
-
-   skinCluster_.reset();
-   if (modelAsset_ && modelAsset_->HasSkinningData()) {
-	  skinCluster_ = modelAsset_->CreateSkinClusterInstance();
+Model& Model::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) {
+   if (auto* c = GetComponent<ModelAssetComponent>()) {
+	  c->SetModelAsset(modelAsset);
    }
+   return *this;
 }
 
-void Model::Create(const std::shared_ptr<ModelAsset>& modelAsset, Material* material) {
-   if (modelAsset) {
-   SetModelAsset(modelAsset);
-   }
-
-   CreateTransformationMatrix();
-
+Model& Model::SetMaterial(Material* material) {
    if (material) {
-      if (auto* materialComponent = GetComponent<MaterialComponent>()) {
+	  if (auto* materialComponent = GetComponent<MaterialComponent>()) {
 		 materialComponent->AssignMaterial(material);
 	  }
    }
+   return *this;
+}
 
+Model& Model::Create() {
+   transformationMatrix_ = std::make_unique<TransformationMatrix>();
+   transformationMatrix_->Create();
+
+   AddComponent<ModelAssetComponent>();
    AddComponent<RenderComponent>();
 
    auto* transformComponent = GetComponent<TransformComponent>();
    if (transformComponent) {
 	  transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
    }
-}
-
-SkinCluster* Model::GetSkinCluster() {
-   if (skinCluster_) {
-	  return &(*skinCluster_);
-   }
-
-   if (!modelAsset_) {
-	  return nullptr;
-   }
-
-   return modelAsset_->GetSkinCluster();
-}
-
-const SkinCluster* Model::GetSkinCluster() const {
-   if (skinCluster_) {
-	  return &(*skinCluster_);
-   }
-
-   if (!modelAsset_) {
-	  return nullptr;
-   }
-
-   return modelAsset_->GetSkinCluster();
+   return *this;
 }
 
 const Vector3& Model::GetPosition() const {
@@ -212,9 +189,10 @@ void Model::UpdateMatrix(Camera* camera) {
    }
 
    // modelAssetのrootNode.localMatrixを掛ける
-   if (modelAsset_) {
-      if (!modelAsset_->HasSkinningData()) {
-		 worldMatrix = modelAsset_->GetRootNode().localMatrix * worldMatrix;
+   ModelAsset* modelAsset = GetModelAsset();
+   if (modelAsset) {
+	  if (!modelAsset->HasSkinningData()) {
+		 worldMatrix = modelAsset->GetRootNode().localMatrix * worldMatrix;
 	  }
    }
 

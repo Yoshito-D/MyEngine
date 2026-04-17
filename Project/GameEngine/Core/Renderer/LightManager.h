@@ -4,13 +4,12 @@
 #include <map>
 #include <string>
 #include "LightDataBuffer.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "SpotLight.h"
+#include "AreaLight.h"
 
 namespace GameEngine {
-class DirectionalLight;
-class PointLight;
-class SpotLight;
-class AreaLight;
-class LightDataBuffer;
 
 /// @brief ライトマネージャークラス
 class LightManager {

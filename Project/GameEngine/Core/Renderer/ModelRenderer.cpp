@@ -14,6 +14,7 @@
 #include "Model/ModelAsset.h"
 #include "Component/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
+#include "Component/ModelAssetComponent.h"
 #include <array>
 #include <string_view>
 
@@ -39,7 +40,11 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    }
 
    auto* cmdList = device_->GetCommandList();
-   ModelAsset* asset = model->GetModelAsset();
+   auto* modelAssetComp = model->GetComponent<ModelAssetComponent>();
+   ModelAsset* asset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
+   if (!asset) {
+	  return;
+   }
    const auto& meshes = asset->GetMeshData();
    const auto& materials = materialComponent->materials;
 
@@ -56,7 +61,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  skinningEnabled = animationComponent->useSkinning;
    }
 
-   SkinCluster* skinCluster = model->GetSkinCluster();
+   SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
    const bool canUseSkinning = skinningEnabled && skinCluster;
 
    std::string skinningPipelineName;

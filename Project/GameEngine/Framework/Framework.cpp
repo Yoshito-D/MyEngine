@@ -6,11 +6,13 @@
 #include "Object.h"
 #include "Camera.h"
 #include "Sound.h"
+#include "DirectionalLight.h"
 #include "SpotLight.h"
 #include "ParticleSystem.h"
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
 #include "LightDataBuffer.h"
+#include "Component/ComponentRegistry.h"
 
 namespace GameEngine {
 
@@ -22,13 +24,11 @@ void Framework::Initialize() {
 
    // ウィンドウの初期化
    window_ = std::make_unique<Window>();
-   window_->CreateGameWindow(L"LE2A_20_ヨシト_ダイキ", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+   window_->CreateGameWindow(L"LE3A_20_ヨシト_ダイキ", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
 
    // デバイスの初期化
    device_ = std::make_unique<GraphicsDevice>();
    device_->Initialize(window_.get());
-
-   Object::Initialize(device_.get());
 
    Camera::InitializeGraphicsDevice(device_.get());
 

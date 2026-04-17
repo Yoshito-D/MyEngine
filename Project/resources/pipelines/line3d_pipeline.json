@@ -8,7 +8,7 @@
   "cullMode": "None",
   "fillMode": "Solid",
   "depthEnable": true,
-  "depthWriteMask": "Zero",
+  "depthWriteMask": "All",
   "depthFunc": "LessEqual",
   "topologyType": "Line",
   "inputLayout": [

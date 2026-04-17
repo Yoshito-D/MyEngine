@@ -97,7 +97,7 @@ void RendererEditorController::ShowSceneEditorWindow() {
       auto* material = materialManager->GetMaterial(materialNames[editorSelectedMaterialIndex_]);
       if (modelAsset && material) {
          auto model = std::make_unique<Model>();
-         model->Create(modelAsset, material);
+         model->Create().SetModelAsset(modelAsset).SetMaterial(material);
 
          const auto sceneObjects = CollectSceneObjects();
          model->SetObjectName(BuildUniqueObjectName(editorNewModelName_.empty() ? "Model" : editorNewModelName_, sceneObjects));

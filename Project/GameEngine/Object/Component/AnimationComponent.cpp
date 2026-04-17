@@ -1,9 +1,18 @@
 #include "pch.h"
 #include "AnimationComponent.h"
+#include "ComponentRegistry.h"
 #include "EngineContext.h"
 #include "Object.h"
+
+namespace {
+   const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+      GameEngine::AnimationComponent::kTypeName,
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::AnimationComponent>(); }
+   );
+}
 #include "Model/Model.h"
 #include "Model/ModelAsset.h"
+#include "ModelAssetComponent.h"
 #include "TransformComponent.h"
 
 #include <algorithm>
@@ -73,7 +82,7 @@ void AnimationComponent::Deserialize(const nlohmann::json& data) {
    }
 }
 
-void AnimationComponent::Update(Object& owner, float deltaTime) {
+void AnimationComponent::Update(float deltaTime) {
    if (!playing || animationName.empty()) {
       return;
    }
@@ -114,11 +123,12 @@ void AnimationComponent::Update(Object& owner, float deltaTime) {
    animator_.Update(deltaTime);
    currentTime = animator_.GetPlaybackTime();
 
-   if (auto* model = dynamic_cast<Model*>(&owner)) {
-      ModelAsset* modelAsset = model->GetModelAsset();
+   if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
+      auto* modelAssetComp = model->GetComponent<ModelAssetComponent>();
+      ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
       if (useSkinning && modelAsset && modelAsset->HasSkinningData()) {
          const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
-         SkinCluster* skinCluster = model->GetSkinCluster();
+         SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
          if (bindSkeleton && skinCluster && !bindSkeleton->joints.empty() && !skinCluster->mappedPalette.empty()) {
             Skeleton skeletonPose = *bindSkeleton;
             ApplyAnimation(skeletonPose, *selectedClip, currentTime);
@@ -145,7 +155,7 @@ void AnimationComponent::Update(Object& owner, float deltaTime) {
       return;
    }
 
-   auto* transformComponent = owner.GetComponent<TransformComponent>();
+   auto* transformComponent = GetOwner().GetComponent<TransformComponent>();
    if (!transformComponent) {
       return;
    }
@@ -165,9 +175,7 @@ void AnimationComponent::Update(Object& owner, float deltaTime) {
 }
 
 #ifdef USE_IMGUI
-void AnimationComponent::DrawInspector(Object& owner) {
-   (void)owner;
-
+void AnimationComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
    }

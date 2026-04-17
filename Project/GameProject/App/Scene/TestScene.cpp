@@ -37,21 +37,21 @@ void TestScene::Initialize() {
    auto sneakWalkModelAsset = EngineContext::GetModel("sneakWalk.gltf");
 
    testSpherePhongModel_ = std::make_unique<Model>();
-   testSpherePhongModel_->Create(sphereModelAsset, spherePhongMaterial);
+   testSpherePhongModel_->Create().SetModelAsset(sphereModelAsset).SetMaterial(spherePhongMaterial);
    testSpherePhongModel_->SetPosition(Vector3(-4.0f, 1.0f, 0.0f));
 
    testSphereBlinnPhongModel_ = std::make_unique<Model>();
-   testSphereBlinnPhongModel_->Create(sphereModelAsset, sphereBlinnPhongMaterial);
+   testSphereBlinnPhongModel_->Create().SetModelAsset(sphereModelAsset).SetMaterial(sphereBlinnPhongMaterial);
    testSphereBlinnPhongModel_->SetPosition(Vector3(4.0f, 1.0f, 0.0f));
 
    testPlaneModel_ = std::make_unique<Model>();
-   testPlaneModel_->Create(planeModelAsset, planeMaterial);
+   testPlaneModel_->Create().SetModelAsset(planeModelAsset).SetMaterial(planeMaterial);
    testPlaneModel_->SetRotation(Vector3(ToRadians(90.0f), 0.0f, 0.0f));
    testPlaneModel_->SetScale(Vector3(20.0f, 20.0f, 20.0f));
    testPlaneModel_->SetPosition(Vector3(0.0f, -1.0f, 0.0f));
 
    testCubeGltfModel_ = std::make_unique<Model>();
-   testCubeGltfModel_->Create(cubeGltfModelAsset, cubeGltfMaterial);
+   testCubeGltfModel_->Create().SetModelAsset(cubeGltfModelAsset).SetMaterial(cubeGltfMaterial);
    testCubeGltfModel_->SetPosition(Vector3(0.0f, 1.0f, 3.0f));
    if (auto* animationComponent = testCubeGltfModel_->AddComponent<AnimationComponent>()) {
 	  animationComponent->animationName = "AnimatedCube.gltf";
@@ -60,7 +60,7 @@ void TestScene::Initialize() {
    }
 
    testSkeletonModel_ = std::make_unique<Model>();
-   testSkeletonModel_->Create(skeletonModelAsset, skeletonDebugMaterial);
+   testSkeletonModel_->Create().SetModelAsset(skeletonModelAsset).SetMaterial(skeletonDebugMaterial);
    testSkeletonModel_->SetPosition(Vector3(0.0f, -1.0f, 0.0f));
    if (auto* animationComponent = testSkeletonModel_->AddComponent<AnimationComponent>()) {
 	  animationComponent->animationName = "simpleSkin.gltf";
@@ -72,7 +72,7 @@ void TestScene::Initialize() {
    }
 
    testSneakWalkModel_ = std::make_unique<Model>();
-   testSneakWalkModel_->Create(sneakWalkModelAsset, skeletonDebugMaterial);
+   testSneakWalkModel_->Create().SetModelAsset(sneakWalkModelAsset).SetMaterial(skeletonDebugMaterial);
    testSneakWalkModel_->SetPosition(Vector3(2.5f, -1.0f, 0.0f));
    testSneakWalkModel_->SetScale(Vector3(1.0f, 1.0f, 1.0f));
    if (auto* animationComponent = testSneakWalkModel_->AddComponent<AnimationComponent>()) {

@@ -1,5 +1,14 @@
 #include "pch.h"
 #include "TransformComponent.h"
+#include "ComponentRegistry.h"
+#include "Object.h"
+
+namespace {
+   const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+      GameEngine::TransformComponent::kTypeName,
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::TransformComponent>(); }
+   );
+}
 
 #ifdef USE_IMGUI
 #include "Object.h"
@@ -109,7 +118,7 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 }
 
 #ifdef USE_IMGUI
-void TransformComponent::DrawInspector(Object& owner) {
+void TransformComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
    }
@@ -134,7 +143,6 @@ void TransformComponent::DrawInspector(Object& owner) {
       useParentMatrix = !parentObjectName.empty();
    }
 
-   (void)owner;
    ImGui::Spacing();
 }
 #endif

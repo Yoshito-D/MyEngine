@@ -2,11 +2,13 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include "Core/Graphics/Mesh.h"
+#include "TransformationMatrix.h"
 #include "Utility/VectorMath.h"
 #include "Camera.h"
 #include "Window.h"
 #include "Object.h"
 #include <vector>
+#include <memory>
 
 namespace GameEngine {
    class Material;
@@ -71,6 +73,9 @@ namespace GameEngine {
 
 	  Mesh* GetMesh() const { return mesh_.get(); }
 
+	  /// @brief トランスフォーメーションマトリックスを取得
+	  TransformationMatrix* GetTransformationMatrix() { return transformationMatrix_.get(); }
+
 	  // テクスチャパラメータのゲッターメソッドを追加
 	  Vector2 GetTextureLeftTop() const { return textureLeftTop_; }
 	  Vector2 GetTextureSize() const { return textureSize_; }
@@ -115,5 +120,7 @@ namespace GameEngine {
 
    private:
 	  inline static std::vector<Sprite*> sRegisteredSprites_{};
+	  std::unique_ptr<Mesh> mesh_;
+	  std::unique_ptr<TransformationMatrix> transformationMatrix_;
    };
 }

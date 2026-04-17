@@ -11,6 +11,7 @@ class Material;
 
 class MaterialComponent final : public IObjectComponent {
 public:
+   static constexpr const char* kTypeName = "MaterialComponent";
    using MaterialResolver = std::function<Material*(const std::string&)>;
    using MaterialCreator = std::function<Material*(const std::string&, uint32_t, int32_t, const Matrix4x4&)>;
    using MaterialNamesProvider = std::function<std::vector<std::string>()>;
@@ -37,7 +38,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-   void DrawInspector(Object& owner) override;
+   void DrawInspector() override;
 #endif
 
    std::vector<Material*> materials;
