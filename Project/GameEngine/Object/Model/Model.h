@@ -3,8 +3,10 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include "Object.h"
+#include "TransformationMatrix.h"
 #include "../Utility/VectorMath.h"
 #include "ModelAsset.h"
+#include "Component/ModelAssetComponent.h"
 #include <vector>
 #include <memory>
 #include <optional>
@@ -24,24 +26,42 @@ public:
    static const std::vector<Model*>& GetRegisteredModels();
 
    /// @brief モデルの作成
+   Model& Create();
+
+   /// @brief モデルアセットコンポーネントを取得する
+   ModelAssetComponent* GetModelAssetComponent() { return GetComponent<ModelAssetComponent>(); }
+   const ModelAssetComponent* GetModelAssetComponent() const { return GetComponent<ModelAssetComponent>(); }
+
+   /// @brief モデルアセットを取得する（ModelAssetComponent への便利アクセス）
+   ModelAsset* GetModelAsset() const {
+      const auto* c = GetComponent<ModelAssetComponent>();
+      return c ? c->GetModelAsset() : nullptr;
+   }
+
+   /// @brief モデルアセットハンドルを取得する（ModelAssetComponent への便利アクセス）
+   const std::shared_ptr<ModelAsset>& GetModelAssetHandle() const {
+      static const std::shared_ptr<ModelAsset> kNull;
+      const auto* c = GetComponent<ModelAssetComponent>();
+      return c ? c->GetModelAssetHandle() : kNull;
+   }
+
+   /// @brief モデルアセットを設定する（ビルダー用便利ラッパー）
    /// @param modelAsset モデルアセット
-   /// @param material マテリアル
-   void Create(const std::shared_ptr<ModelAsset>& modelAsset = {}, Material* material = nullptr);
+   Model& SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset);
 
-   /// @brief モデルアセットを取得する
-   /// @return モデルアセットへのポインタ
-   ModelAsset* GetModelAsset() const { return modelAsset_.get(); }
+   /// @brief マテリアルを設定する（ビルダー用便利ラッパー）
+   /// @param material マテリアルへのポインタ
+   Model& SetMaterial(Material* material);
 
-   /// @brief モデルアセットハンドルを取得する
-   const std::shared_ptr<ModelAsset>& GetModelAssetHandle() const { return modelAsset_; }
-
-   /// @brief モデルアセットを設定する
-   /// @param modelAsset モデルアセットへのポインタ
-   void SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset);
-
-   /// @brief モデル単位のスキンクラスタを取得
-   SkinCluster* GetSkinCluster();
-   const SkinCluster* GetSkinCluster() const;
+   /// @brief スキンクラスタを取得する（ModelAssetComponent への便利アクセス）
+   SkinCluster* GetSkinCluster() {
+      auto* c = GetComponent<ModelAssetComponent>();
+      return c ? c->GetSkinCluster() : nullptr;
+   }
+   const SkinCluster* GetSkinCluster() const {
+      const auto* c = GetComponent<ModelAssetComponent>();
+      return c ? c->GetSkinCluster() : nullptr;
+   }
 
    /// @brief モデルの位置を取得する
    /// @return 位置
@@ -98,11 +118,14 @@ public:
    /// @brief 行列の更新
    /// @param camera カメラ
    void UpdateMatrix(Camera* camera);
+
+   /// @brief トランスフォーメーションマトリックスを取得
+   TransformationMatrix* GetTransformationMatrix() { return transformationMatrix_.get(); }
+
 private:
    static std::vector<Model*> sRegisteredModels_;
 
-   std::shared_ptr<ModelAsset> modelAsset_;
-   std::optional<SkinCluster> skinCluster_;
+   std::unique_ptr<TransformationMatrix> transformationMatrix_;
    Matrix4x4 worldMatrixOverride_ = MakeIdentity4x4();
    bool hasWorldMatrixOverride_ = false;
 };

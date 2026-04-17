@@ -1,5 +1,14 @@
 #include "pch.h"
 #include "RenderComponent.h"
+#include "ComponentRegistry.h"
+#include "Object.h"
+
+namespace {
+   const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+      GameEngine::RenderComponent::kTypeName,
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::RenderComponent>(); }
+   );
+}
 
 #ifdef USE_IMGUI
 #include "Framework/EngineContext.h"
@@ -40,9 +49,7 @@ void RenderComponent::Deserialize(const nlohmann::json& data) {
 }
 
 #ifdef USE_IMGUI
-void RenderComponent::DrawInspector(Object& owner) {
-   (void)owner;
-
+void RenderComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader("Render", ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
    }

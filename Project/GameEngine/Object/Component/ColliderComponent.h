@@ -5,6 +5,9 @@
 namespace GameEngine {
 class ColliderComponent final : public IObjectComponent {
 public:
+   static constexpr const char* kTypeName = "ColliderComponent";
+   const char* GetTypeName() const override { return kTypeName; }
+
    enum class ShapeType {
       None,
       Sphere,

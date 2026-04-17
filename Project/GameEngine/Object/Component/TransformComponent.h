@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 
 #include "IObjectComponent.h"
 #include "MathUtils.h"
@@ -9,6 +8,7 @@
 namespace GameEngine {
 class TransformComponent final : public IObjectComponent {
 public:
+   static constexpr const char* kTypeName = "TransformComponent";
    const char* GetTypeName() const override;
 
    nlohmann::json Serialize() const override;
@@ -16,7 +16,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-   void DrawInspector(Object& owner) override;
+   void DrawInspector() override;
 #endif
 
    Transform transform = {};

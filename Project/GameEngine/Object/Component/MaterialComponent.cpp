@@ -1,7 +1,16 @@
 #include "pch.h"
 #include "MaterialComponent.h"
+#include "ComponentRegistry.h"
+#include "Object.h"
 
 #include <algorithm>
+
+namespace {
+   const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+      GameEngine::MaterialComponent::kTypeName,
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::MaterialComponent>(); }
+   );
+}
 
 #ifdef USE_IMGUI
 #include "Object.h"
@@ -185,9 +194,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
 }
 
 #ifdef USE_IMGUI
-void MaterialComponent::DrawInspector(Object& owner) {
-   (void)owner;
-
+void MaterialComponent::DrawInspector() {
    SyncMaterialNamesSize();
 
    if (!ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {

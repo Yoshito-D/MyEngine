@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include "IObjectComponent.h"
 #include "MathUtils.h"
 #include "AnimationAsset.h"
@@ -12,16 +10,17 @@ namespace GameEngine {
 
 class AnimationComponent final : public IObjectComponent {
 public:
+   static constexpr const char* kTypeName = "AnimationComponent";
    const char* GetTypeName() const override;
 
    nlohmann::json Serialize() const override;
 
    void Deserialize(const nlohmann::json& data) override;
 
-   void Update(Object& owner, float deltaTime) override;
+   void Update(float deltaTime) override;
 
 #ifdef USE_IMGUI
-   void DrawInspector(Object& owner) override;
+   void DrawInspector() override;
 #endif
 
    std::string animationName;

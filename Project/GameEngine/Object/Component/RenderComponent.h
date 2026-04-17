@@ -1,13 +1,12 @@
 #pragma once
 
-#pragma once
-
 #include "IObjectComponent.h"
 #include <string>
 
 namespace GameEngine {
 class RenderComponent final : public IObjectComponent {
 public:
+   static constexpr const char* kTypeName = "RenderComponent";
    const char* GetTypeName() const override;
 
    nlohmann::json Serialize() const override;
@@ -15,7 +14,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-   void DrawInspector(Object& owner) override;
+   void DrawInspector() override;
 #endif
 
    bool visible = true;

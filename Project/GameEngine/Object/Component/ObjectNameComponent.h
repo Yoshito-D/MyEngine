@@ -1,13 +1,12 @@
 #pragma once
 
-#pragma once
-
 #include "IObjectComponent.h"
 #include <string>
 
 namespace GameEngine {
 class ObjectNameComponent final : public IObjectComponent {
 public:
+   static constexpr const char* kTypeName = "ObjectNameComponent";
    const char* GetTypeName() const override;
 
    nlohmann::json Serialize() const override;
