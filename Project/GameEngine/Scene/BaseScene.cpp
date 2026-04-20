@@ -34,7 +34,17 @@ void BaseScene::Initialize() {
 
 #ifdef USE_IMGUI
    debugCamera_ = std::make_unique<DebugCamera>();
-   debugCamera_->SetCamera(mainCamera_.get());
+   debugCamera_->Initialize();
+
+   cinemachineBrain_ = std::make_unique<CinemachineBrain>();
+   cinemachineBrain_->Initialize(mainCamera_.get());
+   cinemachineBrain_->RegisterVirtualCamera(debugCamera_.get());
+   cinemachineBrain_->SetDefaultBlendTime(0.0f); // デバッグカメラは即座に切り替え
+
+   cameraEditor_ = std::make_unique<CameraEditor>();
+   cameraEditor_->Initialize(EngineContext::GetLineRenderer());
+   cameraEditor_->SetTargetCamera(mainCamera_.get());
+
    mainCameraPrevTransform_ = mainCamera_->GetTransform();
 #endif
 }
@@ -52,12 +62,9 @@ void BaseScene::Update() {
    }
 
    if (isDebugCameraActive_) {
-      if (EngineContext::GetIsSceneHovered()) {
-         debugCamera_->Update();
-         debugCamera_->ApplyCameraTransform();
-      } else {
-         debugCamera_->ApplyCameraTransform();
-      }
+      float deltaTime = EngineContext::GetDeltaTime();
+      debugCamera_->Update(deltaTime);
+      cinemachineBrain_->Update(deltaTime);
    } else {
       mainCamera_->Update();
    }
@@ -79,6 +86,17 @@ void BaseScene::Update() {
 }
 
 void BaseScene::Draw() {
+#ifdef USE_IMGUI
+   // カメラエディタウィンドウを表示
+   if (cameraEditor_) {
+      cameraEditor_->ShowEditorWindow();
+      // デバッグカメラ使用時はギズモを描画
+      if (isDebugCameraActive_) {
+         cameraEditor_->DrawGizmos(mainCamera_.get());
+      }
+   }
+#endif
+
    // フェードを描画
    if (sceneFade_) {
       sceneFade_->Draw();
@@ -170,12 +188,9 @@ void BaseScene::UpdateDebugCamera() {
    }
 
    if (isDebugCameraActive_) {
-	  if (EngineContext::GetIsSceneHovered()) {
-		 debugCamera_->Update();
-		 debugCamera_->ApplyCameraTransform();
-	  } else {
-		 debugCamera_->ApplyCameraTransform();
-	  }
+	  float deltaTime = EngineContext::GetDeltaTime();
+	  debugCamera_->Update(deltaTime);
+	  cinemachineBrain_->Update(deltaTime);
    } else {
 	  mainCamera_->Update();
    }

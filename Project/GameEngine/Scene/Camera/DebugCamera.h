@@ -1,30 +1,30 @@
 #pragma once
-#include "Camera.h"
-#include "Input/Input.h"
-#include "Utility/MathUtils.h"
+#include "Core/VirtualCamera.h"
+#include "Components/OrbitalBody.h"
 
 namespace GameEngine {
-class DebugCamera {
+
+class Camera;
+
+/// @brief デバッグ用の周回カメラ（Cinemachineシステム使用）
+class DebugCamera : public VirtualCamera {
 public:
-   /// @brief デバッグカメラの更新
-   void Update();
+    /// @brief 初期化
+    /// @param initialState 初期カメラ状態
+    void Initialize(const CameraState& initialState = CameraState()) override;
 
-   /// @brief カメラを設定する
-   /// @param camera カメラ
-   void SetCamera(Camera* camera) { camera_ = camera; }
+    /// @brief デバッグカメラの更新
+    /// @param deltaTime フレーム時間
+    void Update(float deltaTime) override;
 
-   /// @brief ピボットターゲットとの距離を設定する
-   void SetDistance(float distance);
+    /// @brief ピボットターゲットとの距離を設定する
+    void SetDistance(float distance);
 
-   void ApplyCameraTransform();
+    /// @brief OrbitalBodyコンポーネントを取得
+    OrbitalBody* GetOrbitalBody() const { return orbitalBody_; }
+
 private:
-   Camera* camera_ = nullptr;
-
-   float yaw_ = DirectX::XM_PI;
-   float pitch_ = ToRadians(-45.0f);
-   float distance_ = 25.0f;
-   Vector3 pivotTarget_ = { 0, 0, 0 };
-
-   Matrix4x4 rotationMatrix_ = MakeIdentity4x4();
+    OrbitalBody* orbitalBody_ = nullptr;
 };
-}
+
+} // namespace GameEngine

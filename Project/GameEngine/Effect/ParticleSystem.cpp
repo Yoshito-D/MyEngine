@@ -247,14 +247,12 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 
    // カメラのワールド行列を取得
    Matrix4x4 cameraWorldMatrix = MakeIdentity4x4();
-   if (camera->IsUsingQuaternion()) {
-	  Quaternion camQuat = camera->GetRotationQuaternion();
+   {
+	  Quaternion camQuat = cameraTransform.GetActiveQuaternion();
 	  Matrix4x4 scaleMatrix = MakeScaleMatrix(cameraTransform.scale);
 	  Matrix4x4 rotationMatrix = MakeRotateMatrix(camQuat);
 	  Matrix4x4 translationMatrix = MakeTranslateMatrix(cameraTransform.translation);
 	  cameraWorldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
-   } else {
-	  cameraWorldMatrix = MakeAffineMatrix(cameraTransform);
    }
 
    // ビルボード行列を作成（平行移動成分をゼロにする）
@@ -287,11 +285,7 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 
 				  // カメラの上方向を基準にビルボードの上方向を計算
 				  Vector3 cameraUp;
-				  if (camera->IsUsingQuaternion()) {
-					 cameraUp = RotateVector(Vector3(0.0f, 1.0f, 0.0f), camera->GetRotationQuaternion());
-				  } else {
-					 cameraUp = Vector3(0.0f, 1.0f, 0.0f);
-				  }
+				  cameraUp = RotateVector(Vector3(0.0f, 1.0f, 0.0f), cameraTransform.GetActiveQuaternion());
 
 				  // 右方向を計算（外積）
 				  Vector3 right = cameraUp.Cross(forward);

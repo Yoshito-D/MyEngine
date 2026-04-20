@@ -587,6 +587,11 @@ void EngineContext::SetDockSpaceVisible(bool visible) {
 
 #endif // USE_IMGUI
 
+LineRenderer* EngineContext::GetLineRenderer() {
+   if (!sRenderer_) return nullptr;
+   return sRenderer_->GetLineRenderer();
+}
+
 void EngineContext::DrawLine(const Vector3& start, const Vector3& end, const Vector4& color, bool applyPostProcess) {
    if (!sRenderer_) return;
    sRenderer_->DrawLine(start, end, color, applyPostProcess);

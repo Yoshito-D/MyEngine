@@ -331,10 +331,18 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
+    <ClCompile Include="GameEngine\Scene\Camera\Components\FollowBody.cpp" />
+    <ClCompile Include="GameEngine\Scene\Camera\Components\LookAtAim.cpp" />
+    <ClCompile Include="GameEngine\Scene\Camera\Components\OrbitalBody.cpp" />
+    <ClCompile Include="GameEngine\Scene\Camera\Components\PerlinNoise.cpp" />
+    <ClCompile Include="GameEngine\Scene\Camera\Core\CinemachineBrain.cpp" />
+    <ClCompile Include="GameEngine\Scene\Camera\Core\VirtualCamera.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\DebugCamera.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
+    <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraEditor.cpp" />
+    <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraGizmo.cpp" />
     <ClCompile Include="GameEngine\Scene\SceneFade.cpp" />
     <ClCompile Include="GameEngine\Scene\SceneManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
@@ -509,7 +517,17 @@
     <ClInclude Include="GameEngine\Object\Model\Model.h" />
     <ClInclude Include="GameEngine\Core\Graphics\PipelineState.h" />
     <ClInclude Include="GameEngine\Core\Audio\Sound.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Components\FollowBody.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Components\LookAtAim.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Components\OrbitalBody.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Components\PerlinNoise.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Core\CameraState.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Core\CinemachineBrain.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Core\ICinemachineComponent.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Core\VirtualCamera.h" />
     <ClInclude Include="GameEngine\Scene\Camera\DebugCamera.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraEditor.h" />
+    <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraGizmo.h" />
     <ClInclude Include="GameEngine\Scene\IScene.h" />
     <ClInclude Include="GameEngine\Scene\ISceneFactory.h" />
     <ClInclude Include="GameEngine\Scene\SceneFade.h" />

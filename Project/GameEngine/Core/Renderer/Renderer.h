@@ -216,6 +216,10 @@ public:
    CameraManager* GetCameraManager() const { return cameraManager_; }
    LightManager* GetLightManager() const { return lightManager_; }
 
+   /// @brief LineRendererを取得
+   /// @return LineRendererのポインタ
+   LineRenderer* GetLineRenderer() const { return lineRenderer_.get(); }
+
 private:
    GraphicsDevice* device_ = nullptr;
    CameraManager* cameraManager_ = nullptr;
