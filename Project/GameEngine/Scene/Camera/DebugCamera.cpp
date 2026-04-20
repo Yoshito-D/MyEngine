@@ -13,6 +13,7 @@ void DebugCamera::Initialize(const CameraState& initialState) {
 
 void DebugCamera::Update(float deltaTime) {
 	// シーンがホバーされている時のみ入力を処理
+#ifdef USE_IMGUI
 	if (EngineContext::GetIsSceneHovered()) {
 		Vector2 mouseDelta = EngineContext::GetMouseDelta();
 		int32_t wheel = EngineContext::GetMouseWheelDelta();
@@ -23,6 +24,7 @@ void DebugCamera::Update(float deltaTime) {
 			orbitalBody_->ProcessInput(mouseDelta, wheel, isDragging, isShiftPressed);
 		}
 	}
+#endif
 
 	// 基底クラスの更新（コンポーネントを実行してカメラ状態を計算）
 	VirtualCamera::Update(deltaTime);
