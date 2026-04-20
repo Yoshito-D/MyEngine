@@ -1,7 +1,9 @@
 #pragma once
 #include "IScene.h"
 #include <EngineContext.h>
-#include <DebugCamera.h>
+#include "Camera/DebugCamera.h"
+#include "Camera/Core/CinemachineBrain.h"
+#include "Camera/Editor/CameraEditor.h"
 #include "SceneFade.h"
 
 namespace GameEngine {
@@ -46,6 +48,8 @@ protected:
 
 #ifdef USE_IMGUI
    std::unique_ptr<DebugCamera> debugCamera_ = nullptr;
+   std::unique_ptr<CinemachineBrain> cinemachineBrain_ = nullptr;
+   std::unique_ptr<CameraEditor> cameraEditor_ = nullptr;
    bool isDebugCameraActive_ = false;
    Transform mainCameraPrevTransform_{};
 #endif

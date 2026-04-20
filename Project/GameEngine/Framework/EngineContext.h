@@ -540,6 +540,10 @@ public:
    static void SetDockSpaceVisible(bool visible);
 #endif // USE_IMGUI
 
+   /// @brief LineRendererを取得
+   /// @return LineRendererのポインタ
+   static LineRenderer* GetLineRenderer();
+
    /// @brief 線を描画する
    /// @param start 開始点
    /// @param end 終了点
