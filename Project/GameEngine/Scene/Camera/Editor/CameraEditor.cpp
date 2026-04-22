@@ -19,6 +19,12 @@ void CameraEditor::Initialize(LineRenderer* lineRenderer) {
     gizmo_.Initialize(lineRenderer);
 }
 
+void CameraEditor::SetTargetBrain(CinemachineBrain* brain) {
+    targetBrain_ = brain;
+    // BrainがCameraを所有しているのでtargetCamera_を自動設定
+    targetCamera_ = brain ? brain->GetOutputCamera() : nullptr;
+}
+
 void CameraEditor::ShowEditorWindow() {
     if (!ImGui::Begin("Camera Editor")) {
         ImGui::End();
@@ -207,7 +213,7 @@ void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
         const CameraState& state = brain->GetCurrentState();
         ImGui::Text("Position: (%.2f, %.2f, %.2f)", 
             state.transform.translation.x, state.transform.translation.y, state.transform.translation.z);
-        ImGui::Text("FOV: %.2f rad (%.1f deg)", state.fov, state.fov * 57.2958f);
+        ImGui::Text("FOV: %.2f rad (%.1f deg)", state.fov, state.fov * kRadToDeg);
         ImGui::Text("Near/Far: %.2f / %.2f", state.nearClip, state.farClip);
 
         VirtualCamera* activeVcam = brain->GetActiveCamera();
@@ -220,10 +226,34 @@ void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
 
     // 登録されたVirtualCamera一覧
     if (ImGui::CollapsingHeader("Registered Cameras")) {
-        size_t count = brain->GetVirtualCameraCount();
-        ImGui::Text("Count: %zu", count);
+        const auto& vcams = brain->GetVirtualCameras();
+        ImGui::Text("Count: %zu", vcams.size());
+        ImGui::Separator();
 
-        // 注: GetVirtualCamerasの実装が必要な場合は追加
+        for (size_t i = 0; i < vcams.size(); ++i) {
+            VirtualCamera* vcam = vcams[i];
+            if (!vcam) continue;
+
+            bool isActive = (vcam == brain->GetActiveCamera());
+            ImGui::PushID(static_cast<int>(i));
+
+            char label[64];
+            snprintf(label, sizeof(label), "[%zu] Priority:%d%s",
+                i, vcam->GetPriority(), isActive ? " [ACTIVE]" : "");
+
+            if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<int>(i))) {
+                selectedVirtualCameraIndex_ = static_cast<int>(i);
+                targetVirtualCamera_ = vcam;
+            }
+
+            ImGui::SameLine();
+            bool active = vcam->IsActive();
+            if (ImGui::Checkbox("##enabled", &active)) {
+                vcam->SetActive(active);
+            }
+
+            ImGui::PopID();
+        }
     }
 }
 
@@ -253,18 +283,18 @@ bool CameraEditor::EditTransform(Transform& transform) {
     if (transform.IsUsingQuaternion()) {
         // クォータニオン表示（Euler角に変換して表示）
         Vector3 euler = transform.GetActiveEuler();
-        float rot[3] = { euler.x * 57.2958f, euler.y * 57.2958f, euler.z * 57.2958f };
+        float rot[3] = { euler.x * kRadToDeg, euler.y * kRadToDeg, euler.z * kRadToDeg };
         if (ImGui::DragFloat3("Rotation (deg)", rot, 1.0f)) {
-            transform.SetRotationEuler({ rot[0] / 57.2958f, rot[1] / 57.2958f, rot[2] / 57.2958f });
+            transform.SetRotationEuler({ rot[0] * kDegToRad, rot[1] * kDegToRad, rot[2] * kDegToRad });
             changed = true;
         }
 
         Quaternion q = transform.GetActiveQuaternion();
         ImGui::Text("Quaternion: (%.3f, %.3f, %.3f, %.3f)", q.x, q.y, q.z, q.w);
     } else {
-        float rot[3] = { transform.rotation.x * 57.2958f, transform.rotation.y * 57.2958f, transform.rotation.z * 57.2958f };
+        float rot[3] = { transform.rotation.x * kRadToDeg, transform.rotation.y * kRadToDeg, transform.rotation.z * kRadToDeg };
         if (ImGui::DragFloat3("Rotation (deg)", rot, 1.0f)) {
-            transform.rotation = { rot[0] / 57.2958f, rot[1] / 57.2958f, rot[2] / 57.2958f };
+            transform.rotation = { rot[0] * kDegToRad, rot[1] * kDegToRad, rot[2] * kDegToRad };
             changed = true;
         }
     }
@@ -291,9 +321,9 @@ bool CameraEditor::EditProjectionSettings(Camera* camera) {
 
     // FOV
     float fov = camera->GetFovY();
-    float fovDeg = fov * 57.2958f;
+    float fovDeg = fov * kRadToDeg;
     if (ImGui::SliderFloat("FOV (deg)", &fovDeg, 1.0f, 179.0f)) {
-        camera->SetFovY(fovDeg / 57.2958f);
+        camera->SetFovY(fovDeg * kDegToRad);
         changed = true;
     }
 
@@ -319,9 +349,9 @@ bool CameraEditor::EditCameraState(CameraState& state) {
 
     changed |= EditTransform(state.transform);
 
-    float fovDeg = state.fov * 57.2958f;
+    float fovDeg = state.fov * kRadToDeg;
     if (ImGui::SliderFloat("FOV (deg)", &fovDeg, 1.0f, 179.0f)) {
-        state.fov = fovDeg / 57.2958f;
+        state.fov = fovDeg * kDegToRad;
         changed = true;
     }
 
@@ -372,14 +402,14 @@ void CameraEditor::EditOrbitalBody(ICinemachineComponent* component) {
         orbital->SetDistance(distance);
     }
 
-    float yaw = orbital->GetYaw() * 57.2958f;
+    float yaw = orbital->GetYaw() * kRadToDeg;
     if (ImGui::SliderFloat("Yaw (deg)", &yaw, -180.0f, 180.0f)) {
-        orbital->SetYaw(yaw / 57.2958f);
+        orbital->SetYaw(yaw * kDegToRad);
     }
 
-    float pitch = orbital->GetPitch() * 57.2958f;
+    float pitch = orbital->GetPitch() * kRadToDeg;
     if (ImGui::SliderFloat("Pitch (deg)", &pitch, -89.0f, 89.0f)) {
-        orbital->SetPitch(pitch / 57.2958f);
+        orbital->SetPitch(pitch * kDegToRad);
     }
 
     Vector3 pivot = orbital->GetPivotTarget();

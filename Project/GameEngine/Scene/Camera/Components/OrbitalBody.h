@@ -45,6 +45,34 @@ public:
     /// @brief Pitch角度を設定
     void SetPitch(float pitch) { pitch_ = pitch; }
 
+    /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの前方ベクトルを返す
+    Vector3 GetCameraForward() const {
+        float cosP = std::cos(pitch_);
+        float sinP = std::sin(pitch_);
+        float cosY = std::cos(yaw_);
+        float sinY = std::sin(yaw_);
+        Vector3 offset = { cosP * sinY, -sinP, cosP * cosY };
+        return (-offset).Normalize();
+    }
+
+    /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの上ベクトルを返す（スクリーン上方向）
+    Vector3 GetCameraUp() const {
+        float cosP = std::cos(pitch_);
+        float sinP = std::sin(pitch_);
+        float cosY = std::cos(yaw_);
+        float sinY = std::sin(yaw_);
+        // rotationMatrix_ = Rx(pitch)*Ry(yaw) の行1 = TransformNormal({0,1,0}, matrix)
+        return { sinP * sinY, cosP, sinP * cosY };
+    }
+
+    /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの右ベクトルを返す（スクリーン右方向）
+    Vector3 GetCameraRight() const {
+        float cosY = std::cos(yaw_);
+        float sinY = std::sin(yaw_);
+        // LookAtMatrix の xaxis = up.Cross(zaxis) の解析解
+        return { -cosY, 0.0f, sinY };
+    }
+
 private:
     float yaw_ = 3.14159f;  // PI
     float pitch_ = -0.785f; // -45度

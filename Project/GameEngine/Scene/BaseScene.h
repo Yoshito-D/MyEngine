@@ -48,14 +48,10 @@ protected:
 
 #ifdef USE_IMGUI
    std::unique_ptr<DebugCamera> debugCamera_ = nullptr;
-   std::unique_ptr<CinemachineBrain> cinemachineBrain_ = nullptr;
    std::unique_ptr<CameraEditor> cameraEditor_ = nullptr;
    bool isDebugCameraActive_ = false;
-   Transform mainCameraPrevTransform_{};
 #endif
 
-   std::unique_ptr<Camera> mainCamera_ = nullptr;
-   std::unique_ptr<Camera> uiCamera_ = nullptr;
    std::unique_ptr<SceneFade> sceneFade_ = nullptr;
 
    // 静的メンバー

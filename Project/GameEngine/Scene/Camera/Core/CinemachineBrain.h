@@ -2,6 +2,8 @@
 #include "CameraState.h"
 #include "VirtualCamera.h"
 #include <vector>
+#include <stack>
+#include <memory>
 #include <climits>
 
 namespace GameEngine {
@@ -15,9 +17,12 @@ public:
     CinemachineBrain() = default;
     ~CinemachineBrain() = default;
 
-    /// @brief 初期化
-    /// @param outputCamera 出力先のカメラ
-    void Initialize(Camera* outputCamera);
+    /// @brief 初期化（Cameraの所有権を受け取る）
+    /// @param outputCamera 出力先カメラ（所有権移譲）
+    void Initialize(std::unique_ptr<Camera> outputCamera);
+
+    /// @brief 出力カメラを取得
+    Camera* GetOutputCamera() const { return outputCamera_.get(); }
 
     /// @brief 更新処理
     /// @param deltaTime フレーム時間
@@ -45,26 +50,34 @@ public:
     /// @brief 登録されているVirtualCameraの数を取得
     size_t GetVirtualCameraCount() const { return virtualCameras_.size(); }
 
+    /// @brief 登録されているVirtualCamera一覧を取得
+    const std::vector<VirtualCamera*>& GetVirtualCameras() const { return virtualCameras_; }
+
 private:
+    /// @brief ブレンド中の1層を表す構造体
+    struct BlendLayer {
+        CameraState fromState;   // ブレンド開始時の状態
+        VirtualCamera* toCamera; // ブレンド先カメラ
+        float duration;          // ブレンド時間
+        float progress;          // 進行度 [0, 1]
+    };
+
     VirtualCamera* FindHighestPriorityCamera() const;
     void BlendToCamera(VirtualCamera* newCamera);
     void UpdateBlend(float deltaTime);
     void ApplyStateToOutputCamera();
 
     std::vector<VirtualCamera*> virtualCameras_;
-    Camera* outputCamera_ = nullptr;
+    std::unique_ptr<Camera> outputCamera_ = nullptr;
 
     VirtualCamera* activeCamera_ = nullptr;
-    VirtualCamera* previousCamera_ = nullptr;
 
     CameraState currentState_;
-    CameraState blendStartState_;
 
-    float blendProgress_ = 1.0f;
-    float blendDuration_ = 0.0f;
+    /// @brief ブレンドスタック（先頭が現在進行中のブレンド）
+    std::stack<BlendLayer> blendStack_;
+
     float defaultBlendTime_ = 0.5f;
-
-    bool isBlending_ = false;
 };
 
 } // namespace GameEngine

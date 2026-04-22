@@ -4,6 +4,7 @@
 #include "ModelAsset.h"
 #include "BaseScene.h"
 #include "Component/RenderComponent.h"
+#include "Scene/Camera/Core/CinemachineBrain.h"
 #include <numbers>
 
 namespace {
@@ -365,30 +366,14 @@ Camera* EngineContext::GetActiveCamera() {
    return sCameraManager_->GetActiveCamera();
 }
 
-void EngineContext::AddCamera(Camera* camera) {
-   if (!sCameraManager_) return;
-   sCameraManager_->AddCamera(camera);
+CameraUnit* EngineContext::CreateCameraUnit() {
+   if (!sCameraManager_) return nullptr;
+   return sCameraManager_->CreateUnit();
 }
 
-void EngineContext::SetActiveCamera(size_t index) {
-   if (!sCameraManager_) return;
-   sCameraManager_->SetActiveCamera(index);
-}
-
-size_t EngineContext::GetCameraCount() {
-   if (!sCameraManager_) return 0;
-   return sCameraManager_->GetCameraCount();
-}
-
-const std::vector<Camera*>& EngineContext::GetCameras() {
-   static std::vector<Camera*> emptyCameras;
-   if (!sCameraManager_) return emptyCameras;
-   return sCameraManager_->GetCameras();
-}
-
-void EngineContext::ClearCameras() {
-   if (!sCameraManager_) return;
-   sCameraManager_->ClearCameras();
+CinemachineBrain* EngineContext::GetActiveBrain() {
+   if (!sCameraManager_) return nullptr;
+   return sCameraManager_->GetActiveBrain();
 }
 
 //================================================================

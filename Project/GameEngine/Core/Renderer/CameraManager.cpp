@@ -1,14 +1,33 @@
 #include "CameraManager.h"
+#include "Scene/Camera/Core/CinemachineBrain.h"
+#include "Scene/Camera/Camera.h"
 
 namespace GameEngine {
-void CameraManager::AddCamera(Camera* camera) {
-   if (camera) {
-	  cameras_.push_back(camera);
-	  if (!activeCamera_) { activeCamera_ = camera; }
+
+CameraManager::CameraManager() = default;
+CameraManager::~CameraManager() = default;
+
+CameraUnit* CameraManager::CreateUnit() {
+   auto unit = std::make_unique<CameraUnit>();
+   unit->brain = std::make_unique<CinemachineBrain>();
+
+   CameraUnit* ptr = unit.get();
+   units_.push_back(std::move(unit));
+
+   if (!activeUnit_) {
+	  activeUnit_ = ptr;
    }
+   return ptr;
 }
 
-void CameraManager::SetActiveCamera(size_t index) {
-   if (index < cameras_.size()) { activeCamera_ = cameras_[index]; }
+CinemachineBrain* CameraManager::GetActiveBrain() const {
+   if (!activeUnit_) return nullptr;
+   return activeUnit_->brain.get();
+}
+
+Camera* CameraManager::GetActiveCamera() const {
+   CinemachineBrain* brain = GetActiveBrain();
+   if (!brain) return nullptr;
+   return brain->GetOutputCamera();
 }
 }

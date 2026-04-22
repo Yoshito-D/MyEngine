@@ -49,8 +49,8 @@ public:
     /// @brief 編集対象のVirtualCameraを設定
     void SetTargetVirtualCamera(VirtualCamera* vcam) { targetVirtualCamera_ = vcam; }
 
-    /// @brief 編集対象のBrainを設定
-    void SetTargetBrain(CinemachineBrain* brain) { targetBrain_ = brain; }
+    /// @brief 編集対象のBrainを設定（出力カメラも自動的にtargetCamera_に設定される）
+    void SetTargetBrain(CinemachineBrain* brain);
 
     /// @brief ギズモ設定を取得
     CameraGizmo::Settings& GetGizmoSettings() { return gizmo_.GetSettings(); }
@@ -102,6 +102,9 @@ private:
     bool showGizmo_ = true;
     bool showGizmoSettings_ = false;
     int selectedVirtualCameraIndex_ = -1;
+
+    static constexpr float kRadToDeg = 57.2957795f;
+    static constexpr float kDegToRad = 1.0f / kRadToDeg;
 };
 
 } // namespace GameEngine
