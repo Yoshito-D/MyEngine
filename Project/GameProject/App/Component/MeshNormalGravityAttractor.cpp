@@ -6,13 +6,13 @@
 namespace GameEngine {
 
 void MeshNormalGravityAttractor::DrawInspector() {
-    ImGui::Text("MeshNormalGravityAttractor Component");
-    ImGui::Separator();
+   ImGui::Text("MeshNormalGravityAttractor Component");
+   ImGui::Separator();
 
-    ImGui::Text("Fallback Up: (%.2f, %.2f, %.2f)",
-        fallbackUpVector_.x, fallbackUpVector_.y, fallbackUpVector_.z);
+   ImGui::Text("Fallback Up: (%.2f, %.2f, %.2f)",
+	  fallbackUpVector_.x, fallbackUpVector_.y, fallbackUpVector_.z);
 
-    ImGui::TextDisabled("(Override FindSurfaceNormal() for full raycast)");
+   ImGui::TextDisabled("(Override FindSurfaceNormal() for full raycast)");
 }
 
 } // namespace GameEngine

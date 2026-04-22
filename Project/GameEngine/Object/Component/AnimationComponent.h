@@ -30,9 +30,9 @@ public:
    float playbackSpeed = 1.0f;
    bool loop = true;
    bool playing = true;
-   bool applyTranslation = true;
-   bool applyRotation = true;
-   bool applyScale = true;
+   bool applyTranslation = false;
+   bool applyRotation = false;
+   bool applyScale = false;
    bool useSkinning = true;
 
 private:

@@ -4,6 +4,7 @@
 #include "../Component/SphericalGravityAttractor.h"
 #include "../Component/PlayerController.h"
 #include "../Component/GravityFollowCamera.h"
+#include "../Component/PlanetLeashCamera.h"
 #include "Component/TransformComponent.h"
 #include "Component/AnimationComponent.h"
 #include "MathUtils.h"
@@ -12,9 +13,9 @@
 using namespace GameEngine;
 
 // 惑星の半径（モデルスケール換算）
-static constexpr float kPlanetRadius = 5.0f;
+static constexpr float kPlanetRadius = 15.0f;
 // プレイヤーの初期位置（惑星表面）
-static constexpr float kPlayerOrbitHeight = kPlanetRadius + 1.5f;
+static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 
 void TestScene::Initialize() {
    BaseScene::Initialize();
@@ -38,9 +39,6 @@ void TestScene::Initialize() {
    planet_->SetPosition(Vector3(0.0f, 0.0f, 0.0f));
    planet_->SetScale(Vector3(kPlanetRadius, kPlanetRadius, kPlanetRadius));
 
-   // TransformComponentを追加
-   planet_->AddComponent<TransformComponent>();
-
    // SphericalGravityAttractorをアタッチ
    if (auto* attractor = planet_->AddComponent<SphericalGravityAttractor>()) {
 	  // 影響半径は惑星スケールの2倍（広めに設定）
@@ -53,8 +51,6 @@ void TestScene::Initialize() {
    // 惑星表面（+Y方向）に配置
    player_->SetPosition(Vector3(0.0f, kPlayerOrbitHeight, 0.0f));
    player_->SetScale(Vector3(1.0f, 1.0f, 1.0f));
-
-   player_->AddComponent<TransformComponent>();
 
    if (auto* gravityBody = player_->AddComponent<GravityBody>()) {
 	  gravityBody->rotationSpeed = 5.0f;
@@ -76,11 +72,31 @@ void TestScene::Initialize() {
 	  brain->RegisterVirtualCamera(mainVcam_.get());
    }
 
+   // --- レアッシュカメラ（惑星クランプ付き追従カメラ）のセットアップ ---
+   leashVcam_ = std::make_unique<GameEngine::VirtualCamera>();
+   leashVcam_->Initialize();
+   leashVcam_->SetPriority(-1); // GravityFollowCameraより低優先度（切り替えを別途行う場合に備えて）
+   leashCamera_ = leashVcam_->AddComponent<GameEngine::PlanetLeashCamera>();
+   if (leashCamera_) {
+	  leashCamera_->maxFollowDistance = 25.0f;       // この距離を超えると追従開始
+	  leashCamera_->followSpeed       = 15.0f;        // 追従速度 (units/sec)
+	  leashCamera_->minPlanetDistance = kPlanetRadius + 15.0f; // 惑星表面 + マージン
+	  leashCamera_->useGravityUp      = true;
+	  // 初期位置: プレイヤーの後方 & 上方
+	  leashCamera_->SetInitialEyePosition(
+		 Vector3(0.0f, kPlayerOrbitHeight + 5.0f, -15.0f));
+   }
+
+   if (auto* brain = EngineContext::GetActiveBrain()) {
+	  brain->RegisterVirtualCamera(leashVcam_.get());
+   }
+
    // PlayerControllerをアタッチ
    if (auto* controller = player_->AddComponent<PlayerController>()) {
 	  controller->moveSpeed = 4.0f;
 	  // フェーズ4: GravityFollowCameraをセット（スクリーンスペース投影用）
 	  controller->SetGravityFollowCamera(gravityFollowCamera_);
+	  controller->SetPlanetLeashCamera(leashCamera_);
    }
 
    // ウォークアニメーションを設定
@@ -88,9 +104,6 @@ void TestScene::Initialize() {
 	  anim->animationName = "walk.gltf";
 	  anim->playing = true;
 	  anim->loop = true;
-	  anim->applyRotation = false;
-	  anim->applyScale = false;
-	  anim->applyTranslation = false;
    }
 
 #ifdef USE_IMGUI
@@ -104,9 +117,22 @@ void TestScene::Update() {
    float deltaTime = EngineContext::GetDeltaTime();
    testTime_ += deltaTime;
 
+   // Tab キーで GravityFollowCamera / PlanetLeashCamera を切り替え
+   if (EngineContext::IsKeyTriggered(KeyCode::Tab)) {
+	  useLeashCamera_ = !useLeashCamera_;
+	  if (mainVcam_)  mainVcam_->SetPriority(useLeashCamera_ ? -1 :  0);
+	  if (leashVcam_) leashVcam_->SetPriority(useLeashCamera_ ?  0 : -1);
+
+	  // PlayerController が参照するスクリーン軸もアクティブなカメラに切り替える
+	  if (auto* controller = player_->GetComponent<PlayerController>()) {
+		 controller->SetGravityFollowCamera(useLeashCamera_ ? nullptr : gravityFollowCamera_);
+		 controller->SetPlanetLeashCamera(useLeashCamera_ ? leashCamera_ : nullptr);
+	  }
+   }
+
    // SphericalGravityAttractorがプレイヤーのGravityBodyに重力方向を適用
    if (planet_ && player_) {
-	  auto* attractor  = planet_->GetComponent<SphericalGravityAttractor>();
+	  auto* attractor = planet_->GetComponent<SphericalGravityAttractor>();
 	  auto* gravityBody = player_->GetComponent<GravityBody>();
 
 	  if (attractor && gravityBody) {
@@ -115,9 +141,9 @@ void TestScene::Update() {
 
 		 // プレイヤーを惑星表面（半径 + オフセット）に固定する
 		 // コリジョンがないため、GravityBodyのUpVector方向に距離をキープ
-		 Vector3 planetPos  = planet_->GetPosition();
-		 Vector3 toPlayer   = playerPos - planetPos;
-		 float   dist       = toPlayer.Length();
+		 Vector3 planetPos = planet_->GetPosition();
+		 Vector3 toPlayer = playerPos - planetPos;
+		 float   dist = toPlayer.Length();
 		 if (dist > 1e-4f) {
 			Vector3 surfacePos = planetPos + toPlayer.Normalize() * kPlayerOrbitHeight;
 			player_->SetPosition(surfacePos);
@@ -131,6 +157,15 @@ void TestScene::Update() {
 		 float len = gravityUp.Length();
 		 if (len > 1e-4f) gravityFollowCamera_->SetGravityUp(gravityUp * (1.0f / len));
 		 gravityFollowCamera_->SetPivotTarget(playerPos);
+	  }
+
+	  // レアッシュカメラ: gravityUp / pivotTarget / sphereCenter を毎フレーム更新
+	  if (leashCamera_) {
+		 Vector3 gravityUp = (playerPos - planet_->GetPosition());
+		 float len = gravityUp.Length();
+		 if (len > 1e-4f) leashCamera_->SetGravityUp(gravityUp * (1.0f / len));
+		 leashCamera_->SetPivotTarget(playerPos);
+		 leashCamera_->SetSphereCenter(planet_->GetPosition());
 	  }
    }
 
@@ -149,10 +184,10 @@ void TestScene::Update() {
 	  }
 	  if (auto* controller = player_->GetComponent<PlayerController>()) {
 		 Vector3 fProj = controller->GetLastForwardProjected() * 2.0f;
-		 Vector3 rProj = controller->GetLastRightProjected()   * 2.0f;
-		 Vector3 moveDir = controller->GetLastMoveDirection()  * 2.5f;
-		 EngineContext::DrawLine(playerPos, playerPos + fProj,   Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-		 EngineContext::DrawLine(playerPos, playerPos + rProj,   Vector4(1.0f, 0.0f, 0.0f, 1.0f));
+		 Vector3 rProj = controller->GetLastRightProjected() * 2.0f;
+		 Vector3 moveDir = controller->GetLastMoveDirection() * 2.5f;
+		 EngineContext::DrawLine(playerPos, playerPos + fProj, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+		 EngineContext::DrawLine(playerPos, playerPos + rProj, Vector4(1.0f, 0.0f, 0.0f, 1.0f));
 		 if (moveDir.LengthSquared() > 1e-4f) {
 			EngineContext::DrawLine(playerPos, playerPos + moveDir, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
 		 }

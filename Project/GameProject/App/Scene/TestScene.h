@@ -3,6 +3,7 @@
 #include "Model.h"
 #include "Camera/Core/VirtualCamera.h"
 #include "../Component/GravityFollowCamera.h"
+#include "../Component/PlanetLeashCamera.h"
 #include <memory>
 
 /// @brief 重力システムテスト用シーン（フェーズ4: GravityFollowCamera）
@@ -22,6 +23,12 @@ private:
    // フェーズ4: 重力追従型カメラ用の仮想カメラ
    std::unique_ptr<GameEngine::VirtualCamera> mainVcam_ = nullptr;
    GameEngine::GravityFollowCamera* gravityFollowCamera_ = nullptr; ///< 所有はmainVcam_
+
+   // レアッシュカメラ用の仮想カメラ（優先度を下げて別vcamで管理）
+   std::unique_ptr<GameEngine::VirtualCamera> leashVcam_ = nullptr;
+   GameEngine::PlanetLeashCamera* leashCamera_ = nullptr; ///< 所有はleashVcam_
+
+   bool useLeashCamera_ = false; ///< Tab キーで切り替え（false=GravityFollow, true=Leash）
 
    float testTime_ = 0.0f;
 };
