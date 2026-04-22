@@ -583,6 +583,11 @@
     <ClCompile Include="GameEngine\Scene\Camera\Components\PerlinNoise.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraGizmo.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraEditor.cpp" />
+    <ClCompile Include="GameProject\App\Component\GravityBody.cpp" />
+    <ClCompile Include="GameProject\App\Component\SphericalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\MeshNormalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\PlayerController.cpp" />
+    <ClCompile Include="GameProject\App\Component\GravityFollowCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1009,6 +1014,12 @@
     <ClInclude Include="GameEngine\Scene\Camera\Components\PerlinNoise.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraGizmo.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraEditor.h" />
+    <ClInclude Include="GameProject\App\Component\GravityBody.h" />
+    <ClInclude Include="GameProject\App\Component\GravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\SphericalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\MeshNormalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\PlayerController.h" />
+    <ClInclude Include="GameProject\App\Component\GravityFollowCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

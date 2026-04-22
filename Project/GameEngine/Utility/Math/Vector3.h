@@ -16,6 +16,11 @@ struct Vector3 {
    static Vector3 Slerp(const Vector3& start, const Vector3& end, float t) {
       t = std::clamp(t, 0.0f, 1.0f);
 
+      // 0ベクトルチェック
+      if (start.LengthSquared() < 1e-8f || end.LengthSquared() < 1e-8f) {
+         return Lerp(start, end, t);
+      }
+
       Vector3 normalizedStart = start.Normalize();
       Vector3 normalizedEnd = end.Normalize();
       float dot = std::clamp(normalizedStart.Dot(normalizedEnd), -1.0f, 1.0f);
@@ -49,7 +54,14 @@ struct Vector3 {
    float Dot(const Vector3& vector) const { return x * vector.x + y * vector.y + z * vector.z; }
    float Length() const { return std::sqrt(x * x + y * y + z * z); }
    float LengthSquared() const { return x * x + y * y + z * z; }
-   Vector3 Normalize() const { float length = Length(); if (length == 0.0f) { return { 0.0f, 0.0f, 0.0f }; }return { x / length, y / length, z / length }; }
+   Vector3 Normalize() const { 
+      float length = Length(); 
+      // 0除算チェック：長さが極小の場合は0ベクトルを返す
+      if (length < 1e-8f) { 
+         return { 0.0f, 0.0f, 0.0f }; 
+      }
+      return { x / length, y / length, z / length }; 
+   }
    Vector3 Project(const Vector3& vector) const { Vector3 normalized = vector.Normalize(); return normalized * Dot(normalized); }
    Vector3 Perpendicular() const { if (x != 0.0f || y != 0.0f) { return { -y,x,0.0f }; } return { 0.0f,-z,y }; }
 };

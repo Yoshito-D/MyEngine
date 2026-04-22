@@ -83,12 +83,20 @@ struct Quaternion {
 
    Quaternion Normalize() const {
 	  float norm = Norm();
+	  // 0除算チェック：ノルムが極小の場合はIdentityを返す
+	  if (norm < 1e-8f) {
+		 return Identity();
+	  }
 	  return Quaternion{ x / norm, y / norm, z / norm, w / norm };
    }
 
    Quaternion Inverse() const {
 	  Quaternion conj = Conjugate();
 	  float normSq = x * x + y * y + z * z + w * w;
+	  // 0除算チェック：ノルムの2乗が極小の場合はIdentityを返す
+	  if (normSq < 1e-8f) {
+		 return Identity();
+	  }
 	  return Quaternion{ conj.x / normSq, conj.y / normSq, conj.z / normSq, conj.w / normSq };
    }
 

@@ -25,7 +25,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -76,7 +76,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;MYPROJECT_NON_RELEASE;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;MYPROJECT_NON_RELEASE;USE_IMGUI;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -108,7 +108,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -140,7 +140,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DEVELOPMENT;MYPROJECT_NON_RELEASE;_WINDOWS;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEVELOPMENT;MYPROJECT_NON_RELEASE;_WINDOWS;USE_IMGUI;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -388,6 +388,11 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\GravityBody.cpp" />
+    <ClCompile Include="GameProject\App\Component\GravityFollowCamera.cpp" />
+    <ClCompile Include="GameProject\App\Component\MeshNormalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\PlayerController.cpp" />
+    <ClCompile Include="GameProject\App\Component\SphericalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\Game.cpp" />
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp" />
     <ClCompile Include="GameProject\App\Scene\TestScene.cpp" />
@@ -560,6 +565,12 @@
     <ClInclude Include="GameEngine\pch.h" />
     <ClInclude Include="GameEngine\Core\Graphics\ResourceHelper.h" />
     <ClInclude Include="GameEngine\Utility\VectorMath.h" />
+    <ClInclude Include="GameProject\App\Component\GravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\GravityBody.h" />
+    <ClInclude Include="GameProject\App\Component\GravityFollowCamera.h" />
+    <ClInclude Include="GameProject\App\Component\MeshNormalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\PlayerController.h" />
+    <ClInclude Include="GameProject\App\Component\SphericalGravityAttractor.h" />
     <ClInclude Include="GameProject\Game.h" />
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h" />
     <ClInclude Include="GameProject\App\Scene\TestScene.h" />

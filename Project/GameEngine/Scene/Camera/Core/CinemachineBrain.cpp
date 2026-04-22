@@ -5,11 +5,18 @@
 
 namespace GameEngine {
 
-void CinemachineBrain::Initialize(Camera* outputCamera) {
-    outputCamera_ = outputCamera;
+void CinemachineBrain::Initialize(std::unique_ptr<Camera> outputCamera) {
+    outputCamera_ = std::move(outputCamera);
 }
 
 void CinemachineBrain::Update(float deltaTime) {
+    // 登録済みVirtualCameraを全てUpdate
+    for (VirtualCamera* vcam : virtualCameras_) {
+        if (vcam && vcam->IsActive()) {
+            vcam->Update(deltaTime);
+        }
+    }
+
     // 最高優先度のカメラを検索
     VirtualCamera* highestPriority = FindHighestPriorityCamera();
 
@@ -19,7 +26,7 @@ void CinemachineBrain::Update(float deltaTime) {
     }
 
     // ブレンド処理
-    if (isBlending_) {
+    if (!blendStack_.empty()) {
         UpdateBlend(deltaTime);
     } else if (activeCamera_) {
         currentState_ = activeCamera_->GetState();
@@ -46,36 +53,33 @@ VirtualCamera* CinemachineBrain::FindHighestPriorityCamera() const {
 void CinemachineBrain::BlendToCamera(VirtualCamera* newCamera) {
     if (newCamera == nullptr) return;
 
-    previousCamera_ = activeCamera_;
-    activeCamera_ = newCamera;
-
-    if (previousCamera_ != nullptr && defaultBlendTime_ > 0.0f) {
-        blendStartState_ = currentState_;
-        blendDuration_ = defaultBlendTime_;
-        blendProgress_ = 0.0f;
-        isBlending_ = true;
+    if (activeCamera_ != nullptr && defaultBlendTime_ > 0.0f) {
+        // 現在のcurrentState_を開始状態としてスタックに積む（連続ブレンド対応）
+        blendStack_.push({ currentState_, newCamera, defaultBlendTime_, 0.0f });
     } else {
+        // 前のカメラがないかブレンド時間が0の場合は即座に切り替え
         currentState_ = newCamera->GetState();
-        isBlending_ = false;
-        blendProgress_ = 1.0f;
+        while (!blendStack_.empty()) { blendStack_.pop(); }
     }
+
+    activeCamera_ = newCamera;
 }
 
 void CinemachineBrain::UpdateBlend(float deltaTime) {
-    if (!isBlending_ || !activeCamera_) return;
+    if (blendStack_.empty() || !activeCamera_) return;
 
-    blendProgress_ += deltaTime / blendDuration_;
+    BlendLayer& layer = blendStack_.top();
+    layer.progress += deltaTime / layer.duration;
 
-    if (blendProgress_ >= 1.0f) {
-        blendProgress_ = 1.0f;
-        isBlending_ = false;
-        currentState_ = activeCamera_->GetState();
+    if (layer.progress >= 1.0f) {
+        // このレイヤーのブレンド完了
+        currentState_ = layer.toCamera->GetState();
+        blendStack_.pop();
     } else {
         // イーズイン・アウト補間 (Smoothstep)
-        float t = blendProgress_;
+        float t = layer.progress;
         float easedT = t * t * (3.0f - 2.0f * t);
-
-        currentState_ = CameraState::Lerp(blendStartState_, activeCamera_->GetState(), easedT);
+        currentState_ = CameraState::Lerp(layer.fromState, layer.toCamera->GetState(), easedT);
     }
 }
 
@@ -115,19 +119,14 @@ void CinemachineBrain::UnregisterVirtualCamera(VirtualCamera* vcam) {
     if (activeCamera_ == vcam) {
         activeCamera_ = FindHighestPriorityCamera();
     }
-    if (previousCamera_ == vcam) {
-        previousCamera_ = nullptr;
-    }
 }
 
 void CinemachineBrain::Cut(VirtualCamera* vcam) {
     if (vcam == nullptr) return;
 
-    previousCamera_ = activeCamera_;
     activeCamera_ = vcam;
     currentState_ = vcam->GetState();
-    isBlending_ = false;
-    blendProgress_ = 1.0f;
+    while (!blendStack_.empty()) { blendStack_.pop(); }
 }
 
 } // namespace GameEngine

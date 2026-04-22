@@ -17,7 +17,6 @@
 #include "CameraManager.h"
 #include "LightManager.h"
 #include "Utility/JsonDataManager.h"
-
 namespace GameEngine {
 class Framework;
 
@@ -51,6 +50,8 @@ private:
    void SetLightManager(LightManager* lightManager);
    void SetJsonDataManager(JsonDataManager* jsonDataManager);
 };
+
+class CinemachineBrain;
 
 class EngineContext {
 public:
@@ -334,23 +335,15 @@ public:
    // カメラマネージャー
    //================================================================
 
-   /// @brief アクティブなカメラを取得する
+   /// @brief CameraUnit（Brain+Cameraペア）を生成し登録する
+   /// @return 生成したCameraUnitのポインタ
+   static CameraUnit* CreateCameraUnit();
+
+   /// @brief アクティブなCinemachineBrainを取得する
+   static CinemachineBrain* GetActiveBrain();
+
+   /// @brief アクティブなカメラを取得する（Renderer内部用）
    static Camera* GetActiveCamera();
-
-   /// @brief アクティブなカメラを設定する
-   static void SetActiveCamera(size_t index = 0);
-
-   /// @brief カメラを追加する
-   static void AddCamera(Camera* camera);
-
-   /// @brief カメラの数を取得する
-   static size_t GetCameraCount();
-
-   /// @brief カメラの配列を取得する
-   static const std::vector<Camera*>& GetCameras();
-
-   /// @brief カメラを全削除する
-   static void ClearCameras();
 
    //================================================================
    // ライトマネージャー
