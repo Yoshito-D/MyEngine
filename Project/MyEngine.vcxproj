@@ -391,6 +391,7 @@
     <ClCompile Include="GameProject\App\Component\GravityBody.cpp" />
     <ClCompile Include="GameProject\App\Component\GravityFollowCamera.cpp" />
     <ClCompile Include="GameProject\App\Component\MeshNormalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\PlanetLeashCamera.cpp" />
     <ClCompile Include="GameProject\App\Component\PlayerController.cpp" />
     <ClCompile Include="GameProject\App\Component\SphericalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\Game.cpp" />
@@ -569,6 +570,7 @@
     <ClInclude Include="GameProject\App\Component\GravityBody.h" />
     <ClInclude Include="GameProject\App\Component\GravityFollowCamera.h" />
     <ClInclude Include="GameProject\App\Component\MeshNormalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\PlanetLeashCamera.h" />
     <ClInclude Include="GameProject\App\Component\PlayerController.h" />
     <ClInclude Include="GameProject\App\Component\SphericalGravityAttractor.h" />
     <ClInclude Include="GameProject\Game.h" />
