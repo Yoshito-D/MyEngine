@@ -5,6 +5,10 @@
 #include <cmath>
 #include <algorithm>
 
+#ifdef USE_IMGUI
+#include "externals/imgui/imgui.h"
+#endif
+
 using namespace GameEngine;
 
 namespace App {
@@ -93,5 +97,26 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    state.transform.translation = eyePos_;
    state.SetViewMatrix(MakeLookAtMatrix(eyePos_, pivotTarget_, eyeRelUp_));
 }
+
+#ifdef USE_IMGUI
+void PlanetLeashCamera::DrawInspector() {
+   if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+
+   ImGui::DragFloat("Max Follow Distance", &maxFollowDistance, 0.1f, 0.1f, 100.0f);
+   ImGui::DragFloat("Follow Speed",        &followSpeed,       0.1f, 0.0f, 50.0f);
+   ImGui::DragFloat("Min Planet Distance", &minPlanetDistance, 0.1f, 0.0f, 100.0f);
+   ImGui::Checkbox("Use Gravity Up", &useGravityUp);
+
+   ImGui::Separator();
+   ImGui::Text("Eye Pos:   (%.2f, %.2f, %.2f)", eyePos_.x, eyePos_.y, eyePos_.z);
+   ImGui::Text("Gravity Up:(%.2f, %.2f, %.2f)", gravityUp_.x, gravityUp_.y, gravityUp_.z);
+   ImGui::Text("Pivot:     (%.2f, %.2f, %.2f)", pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
+   ImGui::Text("Sphere Ctr:(%.2f, %.2f, %.2f)", sphereCenter_.x, sphereCenter_.y, sphereCenter_.z);
+
+   if (ImGui::Button("Reset Initialization")) {
+      isInitialized_ = false;
+   }
+}
+#endif
 
 } // namespace App

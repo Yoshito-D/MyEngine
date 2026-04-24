@@ -6,7 +6,7 @@
 namespace App {
 
 void SphericalGravityAttractor::DrawInspector() {
-   if (!ImGui::CollapsingHeader("SphericalGravityAttractor", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("SphericalGravityAttractor")) {
       return;
    }
    ImGui::Separator();

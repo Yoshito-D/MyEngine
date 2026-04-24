@@ -127,6 +127,7 @@ void TestScene::Initialize() {
    // --- 仮想カメラのセットアップ ---
    mainVcam_ = std::make_unique<VirtualCamera>();
    mainVcam_->Initialize();
+   mainVcam_->SetName("GravityFollowCamera");
    mainVcam_->SetPriority(0);
    gravityFollowCamera_ = mainVcam_->AddComponent<GravityFollowCamera>();
    if (gravityFollowCamera_) {
@@ -138,6 +139,7 @@ void TestScene::Initialize() {
 
    leashVcam_ = std::make_unique<VirtualCamera>();
    leashVcam_->Initialize();
+   leashVcam_->SetName("PlanetLeashCamera");
    leashVcam_->SetPriority(-1);
    leashCamera_ = leashVcam_->AddComponent<PlanetLeashCamera>();
    if (leashCamera_) {

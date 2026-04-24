@@ -6,6 +6,7 @@
 #include "../Camera.h"
 #include "../Core/VirtualCamera.h"
 #include "../Core/CinemachineBrain.h"
+#include "../Core/ICinemachineComponent.h"
 #include "../Components/FollowBody.h"
 #include "../Components/OrbitalBody.h"
 #include "../Components/LookAtAim.h"
@@ -23,6 +24,9 @@ void CameraEditor::SetTargetBrain(CinemachineBrain* brain) {
     targetBrain_ = brain;
     // BrainがCameraを所有しているのでtargetCamera_を自動設定
     targetCamera_ = brain ? brain->GetOutputCamera() : nullptr;
+    // brain変更時は選択状態をリセット
+    targetVirtualCamera_ = nullptr;
+    selectedVirtualCameraIndex_ = -1;
 }
 
 void CameraEditor::ShowEditorWindow() {
@@ -58,11 +62,7 @@ void CameraEditor::ShowEditorWindow() {
 
         // VirtualCameraタブ
         if (ImGui::BeginTabItem("Virtual Camera")) {
-            if (targetVirtualCamera_) {
-                ShowVirtualCameraInspector(targetVirtualCamera_);
-            } else {
-                ImGui::TextDisabled("No virtual camera selected");
-            }
+            ShowVirtualCameraTab();
             ImGui::EndTabItem();
         }
 
@@ -80,6 +80,79 @@ void CameraEditor::ShowEditorWindow() {
     }
 
     ImGui::End();
+}
+
+void CameraEditor::ShowVirtualCameraTab() {
+    // Brainが設定されている場合は登録一覧からVirtualCameraを選択
+    if (targetBrain_) {
+        const auto& vcams = targetBrain_->GetVirtualCameras();
+
+        // 選択状態を毎フレーム検証
+        if (targetVirtualCamera_) {
+            int foundIndex = -1;
+            for (size_t i = 0; i < vcams.size(); ++i) {
+                if (vcams[i] == targetVirtualCamera_) {
+                    foundIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+            if (foundIndex == -1) {
+                targetVirtualCamera_ = nullptr;
+                selectedVirtualCameraIndex_ = -1;
+            } else {
+                selectedVirtualCameraIndex_ = foundIndex;
+            }
+        }
+
+        // 左ペイン：カメラ一覧
+        ImGui::BeginChild("VCamList", ImVec2(180, 0), true);
+        ImGui::Text("Virtual Cameras (%zu)", vcams.size());
+        ImGui::Separator();
+
+        for (size_t i = 0; i < vcams.size(); ++i) {
+            VirtualCamera* vcam = vcams[i];
+            if (!vcam) continue;
+
+            bool isActive = (vcam == targetBrain_->GetActiveCamera());
+            ImGui::PushID(static_cast<int>(i));
+
+            char label[128];
+            const std::string& vcamName = vcam->GetName();
+            if (vcamName.empty()) {
+                snprintf(label, sizeof(label), "[%zu] P:%d%s", i, vcam->GetPriority(), isActive ? " *" : "");
+            } else {
+                snprintf(label, sizeof(label), "%s%s", vcamName.c_str(), isActive ? " *" : "");
+            }
+
+            if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<int>(i))) {
+                selectedVirtualCameraIndex_ = static_cast<int>(i);
+                targetVirtualCamera_ = vcam;
+            }
+
+            ImGui::PopID();
+        }
+
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+
+        // 右ペイン：選択中VirtualCameraの詳細
+        ImGui::BeginChild("VCamInspector", ImVec2(0, 0), false);
+        if (targetVirtualCamera_) {
+            ShowVirtualCameraInspector(targetVirtualCamera_);
+        } else {
+            ImGui::TextDisabled("Select a virtual camera from the list");
+        }
+        ImGui::EndChild();
+
+    } else {
+        // Brainなし：単一のVirtualCameraを直接表示
+        if (targetVirtualCamera_) {
+            ShowVirtualCameraInspector(targetVirtualCamera_);
+        } else {
+            ImGui::TextDisabled("No virtual camera selected");
+        }
+    }
 }
 
 void CameraEditor::ShowCameraInspector(Camera* camera) {
@@ -119,6 +192,14 @@ void CameraEditor::ShowVirtualCameraInspector(VirtualCamera* vcam) {
 
     // 基本設定
     if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+        // 名前編集
+        char nameBuf[128];
+        const std::string& currentName = vcam->GetName();
+        snprintf(nameBuf, sizeof(nameBuf), "%s", currentName.c_str());
+        if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf))) {
+            vcam->SetName(nameBuf);
+        }
+
         int priority = vcam->GetPriority();
         if (ImGui::DragInt("Priority", &priority)) {
             vcam->SetPriority(priority);
@@ -158,39 +239,91 @@ void CameraEditor::ShowVirtualCameraInspector(VirtualCamera* vcam) {
         }
     }
 
-    // コンポーネント
+    // コンポーネント（各コンポーネントが自身を描画）
     if (ImGui::CollapsingHeader("Components", ImGuiTreeNodeFlags_DefaultOpen)) {
-        // FollowBody
-        if (auto* comp = vcam->GetComponent<FollowBody>()) {
-            if (ImGui::TreeNode("FollowBody")) {
-                EditFollowBody(comp);
-                ImGui::TreePop();
+        const auto& components = vcam->GetComponents();
+        ICinemachineComponent* toRemove = nullptr;
+
+        if (components.empty()) {
+            ImGui::TextDisabled("No components");
+        } else {
+            for (auto& comp : components) {
+                if (!comp) continue;
+                ImGui::PushID(comp.get());
+
+                bool open = ImGui::TreeNode(comp->GetComponentName());
+
+                // 削除ボタン（TreeNode と同じ行）
+                ImGui::SameLine(ImGui::GetContentRegionAvail().x - 14.0f);
+                if (ImGui::SmallButton("x")) {
+                    toRemove = comp.get();
+                }
+
+                if (open) {
+                    comp->DrawInspector();
+                    ImGui::TreePop();
+                }
+
+                ImGui::PopID();
             }
         }
 
-        // OrbitalBody
-        if (auto* comp = vcam->GetComponent<OrbitalBody>()) {
-            if (ImGui::TreeNode("OrbitalBody")) {
-                EditOrbitalBody(comp);
-                ImGui::TreePop();
+        if (toRemove) {
+            vcam->RemoveComponent(toRemove);
+        }
+
+        ImGui::Separator();
+        ShowAddComponentPopup(vcam);
+    }
+}
+
+void CameraEditor::ShowAddComponentPopup(VirtualCamera* vcam) {
+    if (ImGui::Button("+ Add Component")) {
+        ImGui::OpenPopup("AddComponentPopup");
+    }
+
+    if (ImGui::BeginPopup("AddComponentPopup")) {
+        ImGui::Text("Engine Components");
+        ImGui::Separator();
+
+        if (ImGui::MenuItem("FollowBody")) {
+            if (!vcam->GetComponent<FollowBody>()) {
+                vcam->AddComponent<FollowBody>();
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("OrbitalBody")) {
+            if (!vcam->GetComponent<OrbitalBody>()) {
+                vcam->AddComponent<OrbitalBody>();
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("LookAtAim")) {
+            if (!vcam->GetComponent<LookAtAim>()) {
+                vcam->AddComponent<LookAtAim>();
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("PerlinNoise")) {
+            if (!vcam->GetComponent<PerlinNoise>()) {
+                vcam->AddComponent<PerlinNoise>();
+            }
+            ImGui::CloseCurrentPopup();
+        }
+
+        if (!externalFactories_.empty()) {
+            ImGui::Separator();
+            ImGui::Text("App Components");
+            ImGui::Separator();
+            for (auto& entry : externalFactories_) {
+                if (ImGui::MenuItem(entry.displayName.c_str())) {
+                    entry.factory(vcam);
+                    ImGui::CloseCurrentPopup();
+                }
             }
         }
 
-        // LookAtAim
-        if (auto* comp = vcam->GetComponent<LookAtAim>()) {
-            if (ImGui::TreeNode("LookAtAim")) {
-                EditLookAtAim(comp);
-                ImGui::TreePop();
-            }
-        }
-
-        // PerlinNoise
-        if (auto* comp = vcam->GetComponent<PerlinNoise>()) {
-            if (ImGui::TreeNode("PerlinNoise")) {
-                EditPerlinNoise(comp);
-                ImGui::TreePop();
-            }
-        }
+        ImGui::EndPopup();
     }
 }
 
@@ -225,8 +358,26 @@ void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
     }
 
     // 登録されたVirtualCamera一覧
-    if (ImGui::CollapsingHeader("Registered Cameras")) {
+    if (ImGui::CollapsingHeader("Registered Cameras", ImGuiTreeNodeFlags_DefaultOpen)) {
         const auto& vcams = brain->GetVirtualCameras();
+
+        // 選択状態の検証・同期
+        if (targetVirtualCamera_) {
+            int foundIndex = -1;
+            for (size_t i = 0; i < vcams.size(); ++i) {
+                if (vcams[i] == targetVirtualCamera_) {
+                    foundIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+            if (foundIndex == -1) {
+                targetVirtualCamera_ = nullptr;
+                selectedVirtualCameraIndex_ = -1;
+            } else {
+                selectedVirtualCameraIndex_ = foundIndex;
+            }
+        }
+
         ImGui::Text("Count: %zu", vcams.size());
         ImGui::Separator();
 
@@ -366,107 +517,6 @@ bool CameraEditor::EditCameraState(CameraState& state) {
     return changed;
 }
 
-void CameraEditor::EditFollowBody(ICinemachineComponent* component) {
-    auto* follow = static_cast<FollowBody*>(component);
-    if (!follow) return;
-
-    bool enabled = follow->IsEnabled();
-    if (ImGui::Checkbox("Enabled", &enabled)) {
-        follow->SetEnabled(enabled);
-    }
-
-    Vector3 offset = follow->GetOffset();
-    float off[3] = { offset.x, offset.y, offset.z };
-    if (ImGui::DragFloat3("Offset", off, 0.1f)) {
-        follow->SetOffset({ off[0], off[1], off[2] });
-    }
-
-    Vector3 damping = follow->GetDamping();
-    float damp[3] = { damping.x, damping.y, damping.z };
-    if (ImGui::DragFloat3("Damping", damp, 0.1f, 0.0f, 50.0f)) {
-        follow->SetDamping({ damp[0], damp[1], damp[2] });
-    }
-}
-
-void CameraEditor::EditOrbitalBody(ICinemachineComponent* component) {
-    auto* orbital = static_cast<OrbitalBody*>(component);
-    if (!orbital) return;
-
-    bool enabled = orbital->IsEnabled();
-    if (ImGui::Checkbox("Enabled", &enabled)) {
-        orbital->SetEnabled(enabled);
-    }
-
-    float distance = orbital->GetDistance();
-    if (ImGui::DragFloat("Distance", &distance, 0.1f, 0.5f, 1000.0f)) {
-        orbital->SetDistance(distance);
-    }
-
-    float yaw = orbital->GetYaw() * kRadToDeg;
-    if (ImGui::SliderFloat("Yaw (deg)", &yaw, -180.0f, 180.0f)) {
-        orbital->SetYaw(yaw * kDegToRad);
-    }
-
-    float pitch = orbital->GetPitch() * kRadToDeg;
-    if (ImGui::SliderFloat("Pitch (deg)", &pitch, -89.0f, 89.0f)) {
-        orbital->SetPitch(pitch * kDegToRad);
-    }
-
-    Vector3 pivot = orbital->GetPivotTarget();
-    float piv[3] = { pivot.x, pivot.y, pivot.z };
-    if (ImGui::DragFloat3("Pivot Target", piv, 0.1f)) {
-        orbital->SetPivotTarget({ piv[0], piv[1], piv[2] });
-    }
-}
-
-void CameraEditor::EditLookAtAim(ICinemachineComponent* component) {
-    auto* lookAt = static_cast<LookAtAim*>(component);
-    if (!lookAt) return;
-
-    bool enabled = lookAt->IsEnabled();
-    if (ImGui::Checkbox("Enabled", &enabled)) {
-        lookAt->SetEnabled(enabled);
-    }
-
-    float damping = lookAt->GetDamping();
-    if (ImGui::DragFloat("Damping", &damping, 0.1f, 0.0f, 50.0f)) {
-        lookAt->SetDamping(damping);
-    }
-
-    Vector3 offset = lookAt->GetOffset();
-    float off[3] = { offset.x, offset.y, offset.z };
-    if (ImGui::DragFloat3("Offset", off, 0.1f)) {
-        lookAt->SetOffset({ off[0], off[1], off[2] });
-    }
-}
-
-void CameraEditor::EditPerlinNoise(ICinemachineComponent* component) {
-    auto* noise = static_cast<PerlinNoise*>(component);
-    if (!noise) return;
-
-    bool enabled = noise->IsEnabled();
-    if (ImGui::Checkbox("Enabled", &enabled)) {
-        noise->SetEnabled(enabled);
-    }
-
-    ImGui::Text("Shaking: %s", noise->IsShaking() ? "Yes" : "No");
-
-    ImGui::Separator();
-    ImGui::Text("Test Shake");
-
-    static float testAmplitude = 0.3f;
-    static float testFrequency = 10.0f;
-    static float testDuration = 0.5f;
-
-    ImGui::DragFloat("Amplitude", &testAmplitude, 0.01f, 0.0f, 2.0f);
-    ImGui::DragFloat("Frequency", &testFrequency, 0.1f, 0.1f, 50.0f);
-    ImGui::DragFloat("Duration", &testDuration, 0.01f, 0.1f, 5.0f);
-
-    if (ImGui::Button("Trigger Shake")) {
-        noise->Shake(testAmplitude, testFrequency, testDuration);
-    }
-}
-
 void CameraEditor::ShowGizmoSettings() {
     ImGui::BeginChild("GizmoSettings", ImVec2(0, 150), true);
     ImGui::Text("Gizmo Settings");
@@ -492,6 +542,11 @@ void CameraEditor::ShowGizmoSettings() {
     }
 
     ImGui::EndChild();
+}
+
+void CameraEditor::RegisterComponentFactory(const std::string& displayName,
+                                            std::function<ICinemachineComponent*(VirtualCamera*)> factory) {
+    externalFactories_.push_back({ displayName, std::move(factory) });
 }
 
 } // namespace GameEngine

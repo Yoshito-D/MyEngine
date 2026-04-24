@@ -5,6 +5,10 @@
 #include "Utility/MathUtils.h"
 #include <algorithm>
 
+#ifdef USE_IMGUI
+#include "externals/imgui/imgui.h"
+#endif
+
 namespace GameEngine {
 
 void OrbitalBody::MutateCameraState(CameraState& state, float /*deltaTime*/) {
@@ -66,5 +70,33 @@ void OrbitalBody::ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta,
         distance_ = (std::max)(0.5f, distance_);
     }
 }
+
+#ifdef USE_IMGUI
+static constexpr float kRadToDeg = 57.2957795f;
+static constexpr float kDegToRad = 1.0f / kRadToDeg;
+
+void OrbitalBody::DrawInspector() {
+    if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+
+    if (ImGui::DragFloat("Distance", &distance_, 0.1f, 0.5f, 1000.0f)) {
+        distance_ = (std::max)(0.5f, distance_);
+    }
+
+    float yawDeg = yaw_ * kRadToDeg;
+    if (ImGui::SliderFloat("Yaw (deg)", &yawDeg, -180.0f, 180.0f)) {
+        yaw_ = yawDeg * kDegToRad;
+    }
+
+    float pitchDeg = pitch_ * kRadToDeg;
+    if (ImGui::SliderFloat("Pitch (deg)", &pitchDeg, -89.0f, 89.0f)) {
+        pitch_ = pitchDeg * kDegToRad;
+    }
+
+    float piv[3] = { pivotTarget_.x, pivotTarget_.y, pivotTarget_.z };
+    if (ImGui::DragFloat3("Pivot Target", piv, 0.1f)) {
+        pivotTarget_ = { piv[0], piv[1], piv[2] };
+    }
+}
+#endif
 
 } // namespace GameEngine

@@ -12,6 +12,7 @@ public:
 
    void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
    GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Body; }
+   const char* GetComponentName() const override { return "PlanetLeashCamera"; }
 
    void SetPivotTarget(const GameEngine::Vector3& target) { pivotTarget_ = target; }
    void SetSphereCenter(const GameEngine::Vector3& center) { sphereCenter_ = center; }
@@ -20,6 +21,10 @@ public:
 
    GameEngine::Vector3 GetCameraUp()    const { return cachedUp_; }
    GameEngine::Vector3 GetCameraRight() const { return cachedRight_; }
+
+#ifdef USE_IMGUI
+   void DrawInspector() override;
+#endif
 
 public:
    float maxFollowDistance  = 8.0f;

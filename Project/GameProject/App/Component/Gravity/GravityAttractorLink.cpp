@@ -21,7 +21,7 @@ void GravityAttractorLink::Update(float /*deltaTime*/) {
 
 #ifdef USE_IMGUI
 void GravityAttractorLink::DrawInspector() {
-   if (!ImGui::CollapsingHeader("GravityAttractorLink", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("GravityAttractorLink")) {
       return;
    }
    ImGui::Separator();

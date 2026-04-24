@@ -9,6 +9,8 @@ void DebugCamera::Initialize(const CameraState& initialState) {
 
 	// OrbitalBodyコンポーネントを追加
 	orbitalBody_ = AddComponent<OrbitalBody>();
+
+	VirtualCamera::SetName("DebugCamera");
 }
 
 void DebugCamera::Update(float deltaTime) {

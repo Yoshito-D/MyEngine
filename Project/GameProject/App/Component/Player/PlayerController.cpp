@@ -101,7 +101,7 @@ bool PlayerController::CollectJumpInput() const {
 
 #ifdef USE_IMGUI
 void PlayerController::DrawInspector() {
-   if (!ImGui::CollapsingHeader("PlayerController", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("PlayerController")) {
       return;
    }
    ImGui::Separator();

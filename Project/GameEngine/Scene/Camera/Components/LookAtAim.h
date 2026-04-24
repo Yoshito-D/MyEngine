@@ -11,6 +11,7 @@ public:
 
     void MutateCameraState(CameraState& state, float deltaTime) override;
     CinemachineStage GetStage() const override { return CinemachineStage::Aim; }
+    const char* GetComponentName() const override { return "LookAtAim"; }
 
     /// @brief ダンピングを設定
     void SetDamping(float damping) { damping_ = damping; }
@@ -19,6 +20,10 @@ public:
     /// @brief オフセットを設定（注視点のオフセット）
     void SetOffset(const Vector3& offset) { offset_ = offset; }
     const Vector3& GetOffset() const { return offset_; }
+
+#ifdef USE_IMGUI
+    void DrawInspector() override;
+#endif
 
 private:
     float damping_ = 10.0f;

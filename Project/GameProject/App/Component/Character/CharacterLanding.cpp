@@ -53,7 +53,7 @@ void CharacterLanding::Update(float /*deltaTime*/) {
 
 #ifdef USE_IMGUI
 void CharacterLanding::DrawInspector() {
-   if (!ImGui::CollapsingHeader("CharacterLanding", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("CharacterLanding")) {
       return;
    }
    ImGui::Separator();

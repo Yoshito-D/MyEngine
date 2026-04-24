@@ -18,7 +18,7 @@ void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
 
 #ifdef USE_IMGUI
 void CharacterJump::DrawInspector() {
-   if (!ImGui::CollapsingHeader("CharacterJump", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("CharacterJump")) {
       return;
    }
    ImGui::Separator();

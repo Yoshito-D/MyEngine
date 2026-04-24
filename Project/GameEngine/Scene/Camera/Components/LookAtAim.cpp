@@ -4,6 +4,10 @@
 #include "Utility/MathUtils.h"
 #include <cmath>
 
+#ifdef USE_IMGUI
+#include "externals/imgui/imgui.h"
+#endif
+
 namespace GameEngine {
 
 void LookAtAim::MutateCameraState(CameraState& state, float deltaTime) {
@@ -28,5 +32,18 @@ void LookAtAim::MutateCameraState(CameraState& state, float deltaTime) {
     Quaternion newRotation = Quaternion::Slerp(state.transform.GetActiveQuaternion(), targetRotation, t);
     state.transform.SetRotationQuaternion(newRotation);
 }
+
+#ifdef USE_IMGUI
+void LookAtAim::DrawInspector() {
+    if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+
+    if (ImGui::DragFloat("Damping", &damping_, 0.1f, 0.0f, 50.0f)) {}
+
+    float off[3] = { offset_.x, offset_.y, offset_.z };
+    if (ImGui::DragFloat3("Offset", off, 0.1f)) {
+        offset_ = { off[0], off[1], off[2] };
+    }
+}
+#endif
 
 } // namespace GameEngine

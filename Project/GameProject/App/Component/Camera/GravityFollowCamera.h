@@ -12,13 +12,14 @@ public:
 
    void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
    GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Body; }
+   const char* GetComponentName() const override { return "GravityFollowCamera"; }
 
    void ProcessInput(const GameEngine::Vector2& mouseDelta, int32_t wheelDelta, bool isDragging);
 
-   void SetGravityUp(const GameEngine::Vector3& up)     { gravityUp_    = up; }
+   void SetGravityUp(const GameEngine::Vector3& up)       { gravityUp_    = up; }
    void SetPivotTarget(const GameEngine::Vector3& target) { pivotTarget_ = target; }
 
-   GameEngine::Vector3 GetGravityUp()     const { return gravityUp_; }
+   GameEngine::Vector3 GetGravityUp()          const { return gravityUp_; }
    const GameEngine::Vector3& GetPivotTarget() const { return pivotTarget_; }
    float GetPitch()    const { return pitch_; }
    float GetDistance() const { return distance_; }
@@ -26,6 +27,10 @@ public:
 
    GameEngine::Vector3 GetCameraUp()    const;
    GameEngine::Vector3 GetCameraRight() const;
+
+#ifdef USE_IMGUI
+   void DrawInspector() override;
+#endif
 
 public:
    float rotateSpeed = 0.005f;

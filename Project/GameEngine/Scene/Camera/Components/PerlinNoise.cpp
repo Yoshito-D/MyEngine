@@ -3,6 +3,10 @@
 #include <cmath>
 #include <algorithm>
 
+#ifdef USE_IMGUI
+#include "externals/imgui/imgui.h"
+#endif
+
 namespace GameEngine {
 
 void PerlinNoise::MutateCameraState(CameraState& state, float deltaTime) {
@@ -48,5 +52,28 @@ float PerlinNoise::Noise(float t) const {
            std::sin(t * kPi2 * 2.0f + 1.0f) * 0.25f +
            std::sin(t * kPi2 * 4.0f + 2.0f) * 0.125f;
 }
+
+#ifdef USE_IMGUI
+void PerlinNoise::DrawInspector() {
+    if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+
+    ImGui::Text("Shaking: %s", IsShaking() ? "Yes" : "No");
+
+    ImGui::Separator();
+    ImGui::Text("Test Shake");
+
+    static float testAmplitude = 0.3f;
+    static float testFrequency = 10.0f;
+    static float testDuration = 0.5f;
+
+    ImGui::DragFloat("Amplitude", &testAmplitude, 0.01f, 0.0f, 2.0f);
+    ImGui::DragFloat("Frequency", &testFrequency, 0.1f, 0.1f, 50.0f);
+    ImGui::DragFloat("Duration", &testDuration, 0.01f, 0.1f, 5.0f);
+
+    if (ImGui::Button("Trigger Shake")) {
+        Shake(testAmplitude, testFrequency, testDuration);
+    }
+}
+#endif
 
 } // namespace GameEngine
