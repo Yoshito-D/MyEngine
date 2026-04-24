@@ -1,20 +1,27 @@
 #include "TestScene.h"
 #include "Framework/EngineContext.h"
-#include "../Component/GravityBody.h"
-#include "../Component/SphericalGravityAttractor.h"
-#include "../Component/PlayerController.h"
-#include "../Component/GravityFollowCamera.h"
-#include "../Component/PlanetLeashCamera.h"
+#include "../Component/Gravity/GravityBody.h"
+#include "../Component/Gravity/SphericalGravityAttractor.h"
+#include "../Component/Gravity/GravityAttractorLink.h"
+#include "../Component/Gravity/PlanetSwitcher.h"
+#include "../Component/Player/PlayerController.h"
+#include "../Component/Camera/ScreenSpaceBasis.h"
+#include "../Component/Character/CharacterWalker.h"
+#include "../Component/Character/CharacterJump.h"
+#include "../Component/Character/CharacterLanding.h"
+#include "../Component/Camera/CameraGravityBridge.h"
+#include "../Component/Camera/GravityFollowCamera.h"
+#include "../Component/Camera/PlanetLeashCamera.h"
 #include "Component/TransformComponent.h"
 #include "Component/AnimationComponent.h"
+#include "Component/RenderComponent.h"
 #include "MathUtils.h"
 #include <cmath>
 
 using namespace GameEngine;
+using namespace App;
 
-// 惑星の半径（モデルスケール換算）
 static constexpr float kPlanetRadius = 15.0f;
-// プレイヤーの初期位置（惑星表面）
 static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 
 void TestScene::Initialize() {
@@ -24,6 +31,7 @@ void TestScene::Initialize() {
    EngineContext::LoadModel("resources/models/planet", "planet.obj");
    EngineContext::LoadModel("resources/models/human", "walk.gltf");
    EngineContext::LoadAnimation("resources/models/human", "walk.gltf");
+   EngineContext::LoadTexture("resources/textures/uvChecker.png", "uvChecker");
 
    EngineContext::CreateMaterial("planetMaterial", 0xffffffff, 3);
    EngineContext::CreateMaterial("playerMaterial", 0xffffffff, 3);
@@ -33,77 +41,128 @@ void TestScene::Initialize() {
    auto planetModelAsset = EngineContext::GetModel("planet.obj");
    auto playerModelAsset = EngineContext::GetModel("walk.gltf");
 
-   // --- 惑星の作成（SphericalGravityAttractorをアタッチ） ---
+   // --- 惑星1の作成 ---
    planet_ = std::make_unique<Model>();
    planet_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial);
    planet_->SetPosition(Vector3(0.0f, 0.0f, 0.0f));
    planet_->SetScale(Vector3(kPlanetRadius, kPlanetRadius, kPlanetRadius));
 
-   // SphericalGravityAttractorをアタッチ
-   if (auto* attractor = planet_->AddComponent<SphericalGravityAttractor>()) {
-	  // 影響半径は惑星スケールの2倍（広めに設定）
-	  attractor->influenceRadius = kPlanetRadius * 2.0f;
+   if (auto* render = planet_->GetComponent<RenderComponent>()) {
+	  render->textureName = "uvChecker";
    }
 
-   // --- プレイヤーの作成（GravityBodyをアタッチ） ---
+   SphericalGravityAttractor* attractor1 = nullptr;
+   if (auto* a = planet_->AddComponent<SphericalGravityAttractor>()) {
+	  a->influenceRadius = kPlanetRadius * 2.5f;
+	  attractor1 = a;
+   }
+
+   // --- 惑星2の作成 ---
+   planet2_ = std::make_unique<Model>();
+   planet2_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial);
+   planet2_->SetPosition(Vector3(kPlanet2Distance, 0.0f, 0.0f));
+   planet2_->SetScale(Vector3(kPlanet2Radius, kPlanet2Radius, kPlanet2Radius));
+
+   if (auto* render = planet2_->GetComponent<RenderComponent>()) {
+	  render->textureName = "uvChecker";
+   }
+
+   SphericalGravityAttractor* attractor2 = nullptr;
+   if (auto* a = planet2_->AddComponent<SphericalGravityAttractor>()) {
+	  a->influenceRadius = kPlanet2Radius * 2.5f;
+	  attractor2 = a;
+   }
+
+   // --- プレイヤーの作成 ---
    player_ = std::make_unique<Model>();
    player_->Create().SetModelAsset(playerModelAsset).SetMaterial(playerMaterial);
-   // 惑星表面（+Y方向）に配置
    player_->SetPosition(Vector3(0.0f, kPlayerOrbitHeight, 0.0f));
    player_->SetScale(Vector3(1.0f, 1.0f, 1.0f));
 
+   // GravityBody: 姿勢制御 + 物理
    if (auto* gravityBody = player_->AddComponent<GravityBody>()) {
 	  gravityBody->rotationSpeed = 5.0f;
 	  gravityBody->gravityStrength = 9.8f;
-	  gravityBody->useGravity = false;  // フェーズ3では姿勢制御のみ（物理落下なし）
+	  gravityBody->useGravity = true;
    }
 
-   // --- フェーズ4: 重力追従型OrbitalCamera付き仮想カメラを作成 ---
-   mainVcam_ = std::make_unique<GameEngine::VirtualCamera>();
+   // GravityAttractorLink: 初期惑星（惑星1）の重力を適用（PlanetSwitcher が切り替える）
+   if (auto* link = player_->AddComponent<GravityAttractorLink>()) {
+	  link->SetAttractor(attractor1);
+   }
+
+   // CharacterLanding: 初期惑星（惑星1）の表面に固定
+   if (auto* landing = player_->AddComponent<CharacterLanding>()) {
+	  landing->SetPlanetCenter(planet_->GetPosition());
+	  landing->surfaceRadius_ = kPlanetRadius;
+   }
+
+   // PlanetSwitcher: 最近傍の惑星に自動乗り換え
+   if (auto* switcher = player_->AddComponent<PlanetSwitcher>()) {
+	  switcher->AddPlanet(attractor1, planet_->GetPosition(), kPlanetRadius);
+	  switcher->AddPlanet(attractor2, planet2_->GetPosition(), kPlanet2Radius);
+   }
+
+   // ScreenSpaceBasis: カメラ軸の重力平面投影（カメラは後で設定）
+   player_->AddComponent<ScreenSpaceBasis>();
+
+   // CharacterWalker: 水平移動 + yaw補間
+   if (auto* walker = player_->AddComponent<CharacterWalker>()) {
+	  walker->moveSpeed = 4.0f;
+   }
+
+   // CharacterJump: ジャンプ初速
+   player_->AddComponent<CharacterJump>();
+
+   // PlayerController: 入力収集
+   player_->AddComponent<PlayerController>();
+
+   // AnimationComponent
+   if (auto* anim = player_->AddComponent<AnimationComponent>()) {
+	  anim->animationName = "walk.gltf";
+	  anim->playing = true;
+	  anim->loop = true;
+   }
+
+   // --- 仮想カメラのセットアップ ---
+   mainVcam_ = std::make_unique<VirtualCamera>();
    mainVcam_->Initialize();
    mainVcam_->SetPriority(0);
-   gravityFollowCamera_ = mainVcam_->AddComponent<GameEngine::GravityFollowCamera>();
+   gravityFollowCamera_ = mainVcam_->AddComponent<GravityFollowCamera>();
    if (gravityFollowCamera_) {
 	  gravityFollowCamera_->SetDistance(15.0f);
    }
-
-   // CinemachineBrainに登録
    if (auto* brain = EngineContext::GetActiveBrain()) {
 	  brain->RegisterVirtualCamera(mainVcam_.get());
    }
 
-   // --- レアッシュカメラ（惑星クランプ付き追従カメラ）のセットアップ ---
-   leashVcam_ = std::make_unique<GameEngine::VirtualCamera>();
+   leashVcam_ = std::make_unique<VirtualCamera>();
    leashVcam_->Initialize();
-   leashVcam_->SetPriority(-1); // GravityFollowCameraより低優先度（切り替えを別途行う場合に備えて）
-   leashCamera_ = leashVcam_->AddComponent<GameEngine::PlanetLeashCamera>();
+   leashVcam_->SetPriority(-1);
+   leashCamera_ = leashVcam_->AddComponent<PlanetLeashCamera>();
    if (leashCamera_) {
-	  leashCamera_->maxFollowDistance = 25.0f;       // この距離を超えると追従開始
-	  leashCamera_->followSpeed       = 15.0f;        // 追従速度 (units/sec)
-	  leashCamera_->minPlanetDistance = kPlanetRadius + 15.0f; // 惑星表面 + マージン
-	  leashCamera_->useGravityUp      = true;
-	  // 初期位置: プレイヤーの後方 & 上方
-	  leashCamera_->SetInitialEyePosition(
-		 Vector3(0.0f, kPlayerOrbitHeight + 5.0f, -15.0f));
+	  leashCamera_->maxFollowDistance = 30.0f;
+	  leashCamera_->followSpeed = 15.0f;
+	  leashCamera_->minPlanetDistance = kPlanetRadius + 20.0f;
+	  leashCamera_->useGravityUp = true;
+	  leashCamera_->SetInitialEyePosition(Vector3(0.0f, kPlayerOrbitHeight + 5.0f, -15.0f));
    }
 
    if (auto* brain = EngineContext::GetActiveBrain()) {
 	  brain->RegisterVirtualCamera(leashVcam_.get());
    }
 
-   // PlayerControllerをアタッチ
-   if (auto* controller = player_->AddComponent<PlayerController>()) {
-	  controller->moveSpeed = 4.0f;
-	  // フェーズ4: GravityFollowCameraをセット（スクリーンスペース投影用）
-	  controller->SetGravityFollowCamera(gravityFollowCamera_);
-	  controller->SetPlanetLeashCamera(leashCamera_);
+   // CameraGravityBridge: gravityUp / pivotTarget をカメラへ毎フレーム通知（PlanetSwitcher が中心座標を切り替える）
+   if (auto* bridge = player_->AddComponent<CameraGravityBridge>()) {
+	  bridge->SetPlanetCenter(planet_->GetPosition());
+	  bridge->SetGravityFollowCamera(gravityFollowCamera_);
+	  bridge->SetPlanetLeashCamera(leashCamera_);
    }
 
-   // ウォークアニメーションを設定
-   if (auto* anim = player_->AddComponent<AnimationComponent>()) {
-	  anim->animationName = "walk.gltf";
-	  anim->playing = true;
-	  anim->loop = true;
+   // PlayerController にカメラを設定（ScreenSpaceBasis へ転送される）
+   if (auto* controller = player_->GetComponent<PlayerController>()) {
+	  controller->SetGravityFollowCamera(gravityFollowCamera_);
+	  controller->SetPlanetLeashCamera(nullptr); // 初期は GravityFollow を使用
    }
 
 #ifdef USE_IMGUI
@@ -120,52 +179,16 @@ void TestScene::Update() {
    // Tab キーで GravityFollowCamera / PlanetLeashCamera を切り替え
    if (EngineContext::IsKeyTriggered(KeyCode::Tab)) {
 	  useLeashCamera_ = !useLeashCamera_;
-	  if (mainVcam_)  mainVcam_->SetPriority(useLeashCamera_ ? -1 :  0);
-	  if (leashVcam_) leashVcam_->SetPriority(useLeashCamera_ ?  0 : -1);
+	  if (mainVcam_)  mainVcam_->SetPriority(useLeashCamera_ ? -1 : 0);
+	  if (leashVcam_) leashVcam_->SetPriority(useLeashCamera_ ? 0 : -1);
 
-	  // PlayerController が参照するスクリーン軸もアクティブなカメラに切り替える
 	  if (auto* controller = player_->GetComponent<PlayerController>()) {
 		 controller->SetGravityFollowCamera(useLeashCamera_ ? nullptr : gravityFollowCamera_);
 		 controller->SetPlanetLeashCamera(useLeashCamera_ ? leashCamera_ : nullptr);
 	  }
-   }
-
-   // SphericalGravityAttractorがプレイヤーのGravityBodyに重力方向を適用
-   if (planet_ && player_) {
-	  auto* attractor = planet_->GetComponent<SphericalGravityAttractor>();
-	  auto* gravityBody = player_->GetComponent<GravityBody>();
-
-	  if (attractor && gravityBody) {
-		 Vector3 playerPos = player_->GetPosition();
-		 attractor->ApplyTo(*gravityBody, playerPos);
-
-		 // プレイヤーを惑星表面（半径 + オフセット）に固定する
-		 // コリジョンがないため、GravityBodyのUpVector方向に距離をキープ
-		 Vector3 planetPos = planet_->GetPosition();
-		 Vector3 toPlayer = playerPos - planetPos;
-		 float   dist = toPlayer.Length();
-		 if (dist > 1e-4f) {
-			Vector3 surfacePos = planetPos + toPlayer.Normalize() * kPlayerOrbitHeight;
-			player_->SetPosition(surfacePos);
-		 }
-	  }
-
-	  // フェーズ4: GravityFollowCameraにgravityUpとpivotTargetを毎フレーム更新
-	  Vector3 playerPos = player_->GetPosition();
-	  if (gravityFollowCamera_) {
-		 Vector3 gravityUp = (playerPos - planet_->GetPosition());
-		 float len = gravityUp.Length();
-		 if (len > 1e-4f) gravityFollowCamera_->SetGravityUp(gravityUp * (1.0f / len));
-		 gravityFollowCamera_->SetPivotTarget(playerPos);
-	  }
-
-	  // レアッシュカメラ: gravityUp / pivotTarget / sphereCenter を毎フレーム更新
-	  if (leashCamera_) {
-		 Vector3 gravityUp = (playerPos - planet_->GetPosition());
-		 float len = gravityUp.Length();
-		 if (len > 1e-4f) leashCamera_->SetGravityUp(gravityUp * (1.0f / len));
-		 leashCamera_->SetPivotTarget(playerPos);
-		 leashCamera_->SetSphereCenter(planet_->GetPosition());
+	  if (auto* bridge = player_->GetComponent<CameraGravityBridge>()) {
+		 bridge->SetGravityFollowCamera(useLeashCamera_ ? nullptr : gravityFollowCamera_);
+		 bridge->SetPlanetLeashCamera(useLeashCamera_ ? leashCamera_ : nullptr);
 	  }
    }
 
@@ -174,10 +197,8 @@ void TestScene::Update() {
 	  Vector3 planetPos = planet_->GetPosition();
 	  Vector3 playerPos = player_->GetPosition();
 
-	  // 惑星→プレイヤーの重力方向（白）
 	  EngineContext::DrawLine(planetPos, playerPos, Vector4(1.0f, 1.0f, 1.0f, 0.5f));
 
-	  // プレイヤーのUpVector（緑）・F_proj（青）・R_proj（赤）
 	  if (auto* gravityBody = player_->GetComponent<GravityBody>()) {
 		 Vector3 currentUp = gravityBody->GetCurrentUpVector() * 2.0f;
 		 EngineContext::DrawLine(playerPos, playerPos + currentUp, Vector4(0.0f, 1.0f, 0.0f, 1.0f));
@@ -193,12 +214,23 @@ void TestScene::Update() {
 		 }
 	  }
 
-	  // 惑星の影響範囲（黄）
 	  if (auto* attractor = planet_->GetComponent<SphericalGravityAttractor>()) {
 		 float r = attractor->influenceRadius;
-		 EngineContext::DrawLine(planetPos + Vector3(r, 0, 0), planetPos - Vector3(r, 0, 0), Vector4(1.0f, 1.0f, 0.0f, 0.3f));
-		 EngineContext::DrawLine(planetPos + Vector3(0, r, 0), planetPos - Vector3(0, r, 0), Vector4(1.0f, 1.0f, 0.0f, 0.3f));
-		 EngineContext::DrawLine(planetPos + Vector3(0, 0, r), planetPos - Vector3(0, 0, r), Vector4(1.0f, 1.0f, 0.0f, 0.3f));
+		 EngineContext::DrawLine(planetPos + Vector3(r, 0, 0), planetPos - Vector3(r, 0, 0), Vector4(1, 1, 0, 0.3f));
+		 EngineContext::DrawLine(planetPos + Vector3(0, r, 0), planetPos - Vector3(0, r, 0), Vector4(1, 1, 0, 0.3f));
+		 EngineContext::DrawLine(planetPos + Vector3(0, 0, r), planetPos - Vector3(0, 0, r), Vector4(1, 1, 0, 0.3f));
+	  }
+   }
+
+   // 惑星2のデバッグ描画
+   if (planet2_) {
+	  Vector3 p2Pos = planet2_->GetPosition();
+	  EngineContext::DrawLine(p2Pos, player_->GetPosition(), Vector4(0.5f, 0.5f, 1.0f, 0.3f));
+	  if (auto* attractor = planet2_->GetComponent<SphericalGravityAttractor>()) {
+		 float r = attractor->influenceRadius;
+		 EngineContext::DrawLine(p2Pos + Vector3(r, 0, 0), p2Pos - Vector3(r, 0, 0), Vector4(0, 1, 1, 0.3f));
+		 EngineContext::DrawLine(p2Pos + Vector3(0, r, 0), p2Pos - Vector3(0, r, 0), Vector4(0, 1, 1, 0.3f));
+		 EngineContext::DrawLine(p2Pos + Vector3(0, 0, r), p2Pos - Vector3(0, 0, r), Vector4(0, 1, 1, 0.3f));
 	  }
    }
 }

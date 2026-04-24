@@ -583,12 +583,19 @@
     <ClCompile Include="GameEngine\Scene\Camera\Components\PerlinNoise.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraGizmo.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraEditor.cpp" />
-    <ClCompile Include="GameProject\App\Component\GravityBody.cpp" />
-    <ClCompile Include="GameProject\App\Component\SphericalGravityAttractor.cpp" />
-    <ClCompile Include="GameProject\App\Component\MeshNormalGravityAttractor.cpp" />
-    <ClCompile Include="GameProject\App\Component\PlayerController.cpp" />
-    <ClCompile Include="GameProject\App\Component\GravityFollowCamera.cpp" />
-    <ClCompile Include="GameProject\App\Component\PlanetLeashCamera.cpp" />
+    <ClCompile Include="GameProject\App\Component\Gravity\GravityBody.cpp" />
+    <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\Gravity\GravityAttractorLink.cpp" />
+    <ClCompile Include="GameProject\App\Component\Character\CharacterWalker.cpp" />
+    <ClCompile Include="GameProject\App\Component\Character\CharacterJump.cpp" />
+    <ClCompile Include="GameProject\App\Component\Character\CharacterLanding.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\GravityFollowCamera.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\PlanetLeashCamera.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\CameraGravityBridge.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\ScreenSpaceBasis.cpp" />
+    <ClCompile Include="GameProject\App\Component\Player\PlayerController.cpp" />
+    <ClCompile Include="GameProject\App\Component\Gravity\PlanetSwitcher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1015,13 +1022,20 @@
     <ClInclude Include="GameEngine\Scene\Camera\Components\PerlinNoise.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraGizmo.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraEditor.h" />
-    <ClInclude Include="GameProject\App\Component\GravityBody.h" />
-    <ClInclude Include="GameProject\App\Component\GravityAttractor.h" />
-    <ClInclude Include="GameProject\App\Component\SphericalGravityAttractor.h" />
-    <ClInclude Include="GameProject\App\Component\MeshNormalGravityAttractor.h" />
-    <ClInclude Include="GameProject\App\Component\PlayerController.h" />
-    <ClInclude Include="GameProject\App\Component\GravityFollowCamera.h" />
-    <ClInclude Include="GameProject\App\Component\PlanetLeashCamera.h" />
+    <ClInclude Include="GameProject\App\Component\Gravity\GravityBody.h" />
+    <ClInclude Include="GameProject\App\Component\Gravity\GravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\Gravity\GravityAttractorLink.h" />
+    <ClInclude Include="GameProject\App\Component\Character\CharacterWalker.h" />
+    <ClInclude Include="GameProject\App\Component\Character\CharacterJump.h" />
+    <ClInclude Include="GameProject\App\Component\Character\CharacterLanding.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\GravityFollowCamera.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\PlanetLeashCamera.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\CameraGravityBridge.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\ScreenSpaceBasis.h" />
+    <ClInclude Include="GameProject\App\Component\Player\PlayerController.h" />
+    <ClInclude Include="GameProject\App\Component\Gravity\PlanetSwitcher.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

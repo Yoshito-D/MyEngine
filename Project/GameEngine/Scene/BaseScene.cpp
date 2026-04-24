@@ -115,30 +115,11 @@ void BaseScene::Finalize() {
 }
 
 void BaseScene::SetNextSceneName(const std::string& sceneName) {
-#ifdef USE_IMGUI
-   // デバッグ情報を出力
-   OutputDebugStringA("=== SetNextSceneName Debug ===\n");
-   char debugBuffer[256];
-   sprintf_s(debugBuffer, "Scene Name: %s\n", sceneName.c_str());
-   OutputDebugStringA(debugBuffer);
-   sprintf_s(debugBuffer, "sCurrentScene_: %p\n", (void*)sCurrentScene_);
-   OutputDebugStringA(debugBuffer);
-   if (sCurrentScene_) {
-	  sprintf_s(debugBuffer, "sCurrentScene_->sceneFade_: %p\n", (void*)sCurrentScene_->sceneFade_.get());
-	  OutputDebugStringA(debugBuffer);
-   }
-   sprintf_s(debugBuffer, "sIsWaitingForFadeOut_: %s\n", sIsWaitingForFadeOut_ ? "true" : "false");
-   OutputDebugStringA(debugBuffer);
-#endif
 
    // 現在のシーンインスタンスが存在し、フェードが有効な場合はフェードアウトを開始
    if (sCurrentScene_ && sCurrentScene_->sceneFade_ && !sIsWaitingForFadeOut_) {
 	  sPendingSceneName_ = sceneName;
 	  sIsWaitingForFadeOut_ = true;
-
-#ifdef USE_IMGUI
-	  OutputDebugStringA("Starting fade out...\n");
-#endif
 
 	  // フェードの設定を1.5秒、EaseInOutに統一
 	  sCurrentScene_->sceneFade_->SetFadeDuration(1.5f);
@@ -147,9 +128,6 @@ void BaseScene::SetNextSceneName(const std::string& sceneName) {
 	  sCurrentScene_->sceneFade_->ResetFadeOutCompleted();
 	  sCurrentScene_->sceneFade_->StartFadeOut();
    } else {
-#ifdef USE_IMGUI
-	  OutputDebugStringA("Skipping fade out - setting scene directly\n");
-#endif
 	  // フェードが無効な場合は直接設定
 	  sNextSceneName_ = sceneName;
    }
