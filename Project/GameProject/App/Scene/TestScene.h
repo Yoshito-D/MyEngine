@@ -2,11 +2,11 @@
 #include "BaseScene.h"
 #include "Model.h"
 #include "Camera/Core/VirtualCamera.h"
-#include "../Component/GravityFollowCamera.h"
-#include "../Component/PlanetLeashCamera.h"
+#include "../Component/Camera/GravityFollowCamera.h"
+#include "../Component/Camera/PlanetLeashCamera.h"
 #include <memory>
 
-/// @brief 重力システムテスト用シーン（フェーズ4: GravityFollowCamera）
+/// @brief 重力システムテスト用シーン
 class TestScene : public GameEngine::BaseScene {
 public:
    void Initialize() override;
@@ -14,21 +14,23 @@ public:
    void Draw() override;
 
 private:
-   // 惑星（SphericalGravityAttractorをアタッチ）
-   std::unique_ptr<GameEngine::Model> planet_ = nullptr;
+   // 惑星1
+   std::unique_ptr<GameEngine::Model> planet_  = nullptr;
+   // 惑星2
+   std::unique_ptr<GameEngine::Model> planet2_ = nullptr;
 
-   // プレイヤー（GravityBody + PlayerControllerをアタッチ）
    std::unique_ptr<GameEngine::Model> player_ = nullptr;
 
-   // フェーズ4: 重力追従型カメラ用の仮想カメラ
    std::unique_ptr<GameEngine::VirtualCamera> mainVcam_ = nullptr;
-   GameEngine::GravityFollowCamera* gravityFollowCamera_ = nullptr; ///< 所有はmainVcam_
+   App::GravityFollowCamera* gravityFollowCamera_ = nullptr;
 
-   // レアッシュカメラ用の仮想カメラ（優先度を下げて別vcamで管理）
    std::unique_ptr<GameEngine::VirtualCamera> leashVcam_ = nullptr;
-   GameEngine::PlanetLeashCamera* leashCamera_ = nullptr; ///< 所有はleashVcam_
+   App::PlanetLeashCamera* leashCamera_ = nullptr;
 
-   bool useLeashCamera_ = false; ///< Tab キーで切り替え（false=GravityFollow, true=Leash）
+   bool  useLeashCamera_ = false;
+   float testTime_       = 0.0f;
 
-   float testTime_ = 0.0f;
+   // 惑星2 の配置パラメータ
+   static constexpr float kPlanet2Radius   = 10.0f;
+   static constexpr float kPlanet2Distance = 30.0f; ///< 惑星1中心からの距離
 };

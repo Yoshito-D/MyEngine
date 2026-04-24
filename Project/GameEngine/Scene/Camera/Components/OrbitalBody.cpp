@@ -47,7 +47,7 @@ void OrbitalBody::ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta,
 
             float actualMoveSpeed = moveSpeed_ * distance_;
 
-            pivotTarget_ = pivotTarget_ + right * (mouseDelta.x * actualMoveSpeed);
+            pivotTarget_ = pivotTarget_ - right * (mouseDelta.x * actualMoveSpeed);
             pivotTarget_ = pivotTarget_ + up * (mouseDelta.y * actualMoveSpeed);
         } else {
             // 回転操作

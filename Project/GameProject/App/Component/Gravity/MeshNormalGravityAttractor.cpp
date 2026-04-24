@@ -3,18 +3,18 @@
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
 
-namespace GameEngine {
+namespace App {
 
 void MeshNormalGravityAttractor::DrawInspector() {
-   ImGui::Text("MeshNormalGravityAttractor Component");
+   if (!ImGui::CollapsingHeader("MeshNormalGravityAttractor", ImGuiTreeNodeFlags_DefaultOpen)) {
+      return;
+   }
    ImGui::Separator();
-
    ImGui::Text("Fallback Up: (%.2f, %.2f, %.2f)",
-	  fallbackUpVector_.x, fallbackUpVector_.y, fallbackUpVector_.z);
-
+      fallbackUpVector_.x, fallbackUpVector_.y, fallbackUpVector_.z);
    ImGui::TextDisabled("(Override FindSurfaceNormal() for full raycast)");
 }
 
-} // namespace GameEngine
+} // namespace App
 
 #endif

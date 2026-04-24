@@ -71,7 +71,7 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    colors[ImGuiCol_NavCursor] = ImVec4(0.98f, 0.26f, 0.26f, 1.00f);
 
    ImFontConfig config = {};
-   config.SizePixels = 12.0f;
+   config.SizePixels = 13.0f;
 
    const char* fontPath = "C:/Windows/Fonts/YuGothB.ttc";
 
