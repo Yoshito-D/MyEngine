@@ -91,7 +91,7 @@ void GraphicsDevice::PostDraw() {
    commandQueue_->ExecuteCommandLists(1, commandLists);
 
    // GPUとOSに画面の交換を行うように通知する
-   swapChain_->Present(0, 0);
+   swapChain_->Present(1, 0);
 
 #ifdef _DEBUG
    if (FAILED(result)) {

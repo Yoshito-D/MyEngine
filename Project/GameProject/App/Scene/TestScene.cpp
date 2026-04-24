@@ -18,6 +18,10 @@
 #include "MathUtils.h"
 #include <cmath>
 
+#ifdef USE_IMGUI
+#include "ImguiManager.h"
+#endif
+
 using namespace GameEngine;
 using namespace App;
 
@@ -235,6 +239,10 @@ void TestScene::Update() {
 		 EngineContext::DrawLine(p2Pos + Vector3(0, 0, r), p2Pos - Vector3(0, 0, r), Vector4(0, 1, 1, 0.3f));
 	  }
    }
+
+#ifdef USE_IMGUI
+   ImGui::ShowDemoWindow();
+#endif 
 }
 
 void TestScene::Draw() {
