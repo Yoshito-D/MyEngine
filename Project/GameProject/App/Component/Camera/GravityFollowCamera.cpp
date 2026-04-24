@@ -6,6 +6,10 @@
 #include <algorithm>
 #include <cmath>
 
+#ifdef USE_IMGUI
+#include "externals/imgui/imgui.h"
+#endif
+
 using namespace GameEngine;
 
 namespace App {
@@ -89,5 +93,27 @@ void GravityFollowCamera::ProcessInput(const Vector2& mouseDelta, int32_t wheelD
 
 Vector3 GravityFollowCamera::GetCameraUp()    const { return cachedUp_; }
 Vector3 GravityFollowCamera::GetCameraRight() const { return cachedRight_; }
+
+#ifdef USE_IMGUI
+static constexpr float kRadToDeg = 57.2957795f;
+
+void GravityFollowCamera::DrawInspector() {
+   if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+
+   ImGui::DragFloat("Distance",     &distance_,   0.1f, 0.5f, 200.0f);
+   ImGui::DragFloat("Rotate Speed", &rotateSpeed, 0.0001f, 0.0f, 0.1f, "%.4f");
+   ImGui::DragFloat("Scroll Speed", &scrollSpeed, 0.0001f, 0.0f, 0.1f, "%.4f");
+
+   float pitchDeg = pitch_ * kRadToDeg;
+   if (ImGui::SliderFloat("Pitch (deg)", &pitchDeg, 5.0f, 80.0f)) {
+      pitch_ = pitchDeg / kRadToDeg;
+   }
+
+   ImGui::Separator();
+   ImGui::Text("Gravity Up:  (%.2f, %.2f, %.2f)", gravityUp_.x, gravityUp_.y, gravityUp_.z);
+   ImGui::Text("Pivot Target:(%.2f, %.2f, %.2f)", pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
+   ImGui::Text("Flat Forward:(%.2f, %.2f, %.2f)", flatForward_.x, flatForward_.y, flatForward_.z);
+}
+#endif
 
 } // namespace App

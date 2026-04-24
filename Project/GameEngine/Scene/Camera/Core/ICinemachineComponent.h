@@ -33,6 +33,14 @@ public:
     bool IsEnabled() const { return isEnabled_; }
     void SetEnabled(bool enabled) { isEnabled_ = enabled; }
 
+    /// @brief コンポーネント名を取得
+    virtual const char* GetComponentName() const = 0;
+
+#ifdef USE_IMGUI
+    /// @brief ImGuiによるインスペクタ表示（各コンポーネントが自身を描画）
+    virtual void DrawInspector() = 0;
+#endif
+
 protected:
     VirtualCamera* owner_ = nullptr;
     bool isEnabled_ = true;

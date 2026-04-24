@@ -153,7 +153,7 @@ void GravityBody::UpdatePhysics(float deltaTime) {
 
 #ifdef USE_IMGUI
 void GravityBody::DrawInspector() {
-   if (!ImGui::CollapsingHeader("GravityBody", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("GravityBody")) {
       return;
    }
    ImGui::Separator();

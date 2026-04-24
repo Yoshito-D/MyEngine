@@ -73,6 +73,12 @@ public:
         return { -cosY, 0.0f, sinY };
     }
 
+    const char* GetComponentName() const override { return "OrbitalBody"; }
+
+#ifdef USE_IMGUI
+    void DrawInspector() override;
+#endif
+
 private:
     float yaw_ = 3.14159f;  // PI
     float pitch_ = -0.785f; // -45度

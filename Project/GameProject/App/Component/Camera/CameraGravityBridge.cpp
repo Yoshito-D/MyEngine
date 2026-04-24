@@ -33,7 +33,7 @@ void CameraGravityBridge::Update(float /*deltaTime*/) {
 
 #ifdef USE_IMGUI
 void CameraGravityBridge::DrawInspector() {
-   if (!ImGui::CollapsingHeader("CameraGravityBridge", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("CameraGravityBridge")) {
       return;
    }
    ImGui::Separator();

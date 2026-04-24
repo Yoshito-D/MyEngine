@@ -11,6 +11,7 @@ public:
 
     void MutateCameraState(CameraState& state, float deltaTime) override;
     CinemachineStage GetStage() const override { return CinemachineStage::Noise; }
+    const char* GetComponentName() const override { return "PerlinNoise"; }
 
     /// @brief シェイクを開始
     /// @param amplitude 振幅
@@ -25,6 +26,10 @@ public:
 
     /// @brief シェイク中かどうか
     bool IsShaking() const { return remainingTime_ > 0.0f; }
+
+#ifdef USE_IMGUI
+    void DrawInspector() override;
+#endif
 
 private:
     float Noise(float t) const;

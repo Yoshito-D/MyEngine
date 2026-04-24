@@ -11,6 +11,7 @@ public:
 
     void MutateCameraState(CameraState& state, float deltaTime) override;
     CinemachineStage GetStage() const override { return CinemachineStage::Body; }
+    const char* GetComponentName() const override { return "FollowBody"; }
 
     /// @brief オフセットを設定
     void SetOffset(const Vector3& offset) { offset_ = offset; }
@@ -19,6 +20,10 @@ public:
     /// @brief ダンピングを設定（各軸ごと）
     void SetDamping(const Vector3& damping) { damping_ = damping; }
     const Vector3& GetDamping() const { return damping_; }
+
+#ifdef USE_IMGUI
+    void DrawInspector() override;
+#endif
 
 private:
     Vector3 offset_ = { 0.0f, 5.0f, -10.0f };

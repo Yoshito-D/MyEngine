@@ -6,7 +6,7 @@
 namespace App {
 
 void MeshNormalGravityAttractor::DrawInspector() {
-   if (!ImGui::CollapsingHeader("MeshNormalGravityAttractor", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("MeshNormalGravityAttractor")) {
       return;
    }
    ImGui::Separator();

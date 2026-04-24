@@ -51,6 +51,10 @@ public:
         return nullptr;
     }
 
+    // 名前
+    const std::string& GetName() const { return name_; }
+    void SetName(const std::string& name) { name_ = name; }
+
     // ターゲット設定
     void SetFollowTarget(Transform* target) { followTarget_ = target; }
     void SetLookAtTarget(Transform* target) { lookAtTarget_ = target; }
@@ -69,6 +73,9 @@ public:
     const CameraState& GetState() const { return state_; }
     void SetState(const CameraState& state) { state_ = state; }
 
+    /// @brief コンポーネント一覧を取得（読み取り専用）
+    const std::vector<std::unique_ptr<ICinemachineComponent>>& GetComponents() const { return components_; }
+
 protected:
     void SortComponents();
 
@@ -76,6 +83,7 @@ protected:
     Transform* followTarget_ = nullptr;
     Transform* lookAtTarget_ = nullptr;
     CameraState state_;
+    std::string name_;
     int priority_ = 0;
     bool isActive_ = true;
 };

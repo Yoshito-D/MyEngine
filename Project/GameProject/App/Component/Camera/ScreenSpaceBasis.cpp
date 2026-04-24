@@ -58,7 +58,7 @@ Vector3 ScreenSpaceBasis::GetRightBasis(const Vector3& gravityUp) const {
 
 #ifdef USE_IMGUI
 void ScreenSpaceBasis::DrawInspector() {
-   if (!ImGui::CollapsingHeader("ScreenSpaceBasis", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("ScreenSpaceBasis")) {
       return;
    }
    ImGui::Separator();

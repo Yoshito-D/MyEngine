@@ -83,7 +83,7 @@ void PlanetSwitcher::Update(float /*deltaTime*/) {
 
 #ifdef USE_IMGUI
 void PlanetSwitcher::DrawInspector() {
-   if (!ImGui::CollapsingHeader("PlanetSwitcher", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("PlanetSwitcher")) {
 	  return;
    }
    ImGui::Separator();

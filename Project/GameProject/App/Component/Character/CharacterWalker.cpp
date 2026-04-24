@@ -92,7 +92,7 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
 
 #ifdef USE_IMGUI
 void CharacterWalker::DrawInspector() {
-   if (!ImGui::CollapsingHeader("CharacterWalker", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("CharacterWalker")) {
       return;
    }
    ImGui::Separator();

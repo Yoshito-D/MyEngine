@@ -4,6 +4,9 @@
 
 #include "../Core/CameraState.h"
 #include "CameraGizmo.h"
+#include <functional>
+#include <string>
+#include <vector>
 
 namespace GameEngine {
 
@@ -59,7 +62,16 @@ public:
     void SetShowGizmo(bool show) { showGizmo_ = show; }
     bool GetShowGizmo() const { return showGizmo_; }
 
+    /// @brief 外部コンポーネント（App側など）をエディタのAdd Componentリストに登録
+    /// @param displayName ポップアップに表示される名前
+    /// @param factory VirtualCamera* を受け取り ICinemachineComponent* を返すファクトリ関数
+    void RegisterComponentFactory(const std::string& displayName,
+                                  std::function<ICinemachineComponent*(VirtualCamera*)> factory);
+
 private:
+    /// @brief VirtualCameraタブの表示（Brain登録一覧＋インスペクタ）
+    void ShowVirtualCameraTab();
+
     /// @brief Transform編集UI
     /// @param transform 編集対象
     /// @return 変更があった場合true
@@ -75,24 +87,11 @@ private:
     /// @return 変更があった場合true
     bool EditCameraState(CameraState& state);
 
-    /// @brief コンポーネント編集UI
-    /// @param component 編集対象
-    void EditComponent(ICinemachineComponent* component);
-
-    /// @brief FollowBodyコンポーネントの編集
-    void EditFollowBody(ICinemachineComponent* component);
-
-    /// @brief OrbitalBodyコンポーネントの編集
-    void EditOrbitalBody(ICinemachineComponent* component);
-
-    /// @brief LookAtAimコンポーネントの編集
-    void EditLookAtAim(ICinemachineComponent* component);
-
-    /// @brief PerlinNoiseコンポーネントの編集
-    void EditPerlinNoise(ICinemachineComponent* component);
-
     /// @brief ギズモ設定パネル
     void ShowGizmoSettings();
+
+    /// @brief Add Component ポップアップ
+    void ShowAddComponentPopup(VirtualCamera* vcam);
 
     CameraGizmo gizmo_;
     Camera* targetCamera_ = nullptr;
@@ -102,6 +101,12 @@ private:
     bool showGizmo_ = true;
     bool showGizmoSettings_ = false;
     int selectedVirtualCameraIndex_ = -1;
+
+    struct ComponentFactoryEntry {
+        std::string displayName;
+        std::function<ICinemachineComponent*(VirtualCamera*)> factory;
+    };
+    std::vector<ComponentFactoryEntry> externalFactories_;
 
     static constexpr float kRadToDeg = 57.2957795f;
     static constexpr float kDegToRad = 1.0f / kRadToDeg;
