@@ -43,6 +43,7 @@ class OffscreenRenderTarget;
 class ParticleSystem;
 class Mesh;
 class AssetManager;
+class Skybox;
 
 // @brief レンダラークラス
 class Renderer {
@@ -189,6 +190,10 @@ public:
    /// @brief 外部システムから描画コマンドを投入する
    /// @param command 描画コマンド
    void SubmitDrawCommand(const DrawCommand& command);
+
+   /// @brief スカイボックスを描画する（BeginFrame/EndFrameの間で呼ぶ）
+   /// @param skybox スカイボックス
+   void DrawSkybox(Skybox* skybox);
 
    /// @brief レンダラーの終了処理
    void Finalize();

@@ -1,0 +1,14 @@
+{
+  "name": "Skybox",
+  "vertexShader": "Skybox",
+  "pixelShader": "Skybox",
+  "rootSignature": "Skybox",
+  "supportBlendModes": false,
+  "defaultBlendMode": "None",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "Zero",
+  "depthFunc": "LessEqual",
+  "topologyType": "Triangle"
+}

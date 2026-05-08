@@ -28,6 +28,7 @@
 #include "Component/RenderComponent.h"
 #include "RootBindingSlots.h"
 #include "RenderBootstrapper.h"
+#include "Object/Skybox/Skybox.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cstring>
@@ -312,6 +313,58 @@ void Renderer::DrawLine(const Vector3& start, const Vector3& end, const Vector4&
    if (auto* renderer = SelectLineRenderer(applyPostProcess)) {
 	  renderer->DrawLine(start, end, color, activeCamera);
    }
+}
+
+void Renderer::DrawSkybox(Skybox* skybox) {
+   if (!skybox) return;
+
+   Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
+   if (!activeCamera) return;
+
+   Texture* texture = skybox->GetTexture();
+   if (!texture) return;
+
+   // ビュー行列から平行移動を除去してVP行列を作成
+   Matrix4x4 viewMatrix = activeCamera->GetViewMatrix();
+   viewMatrix.m[3][0] = 0.0f;
+   viewMatrix.m[3][1] = 0.0f;
+   viewMatrix.m[3][2] = 0.0f;
+   Matrix4x4 proj = activeCamera->GetProjectionMatrix();
+   Matrix4x4 vp = viewMatrix * proj;
+   skybox->UpdateTransform(vp);
+
+   auto* skyboxPipeline = psoManager_->GetPipeline("Skybox");
+   if (!skyboxPipeline) return;
+
+   auto* cmdList = device_->GetCommandList();
+   cmdList->SetGraphicsRootSignature(skyboxPipeline->GetRootSignature());
+   cmdList->SetPipelineState(skyboxPipeline->GetPipelineState());
+
+   const UINT materialSlot = shaderManager_
+	  ? shaderManager_->ResolvePipelineRootParameter("Skybox", "material").value_or(RootBindingSlots::Skybox::kMaterial)
+	  : RootBindingSlots::Skybox::kMaterial;
+   const UINT transformSlot = shaderManager_
+	  ? shaderManager_->ResolvePipelineRootParameter("Skybox", "transform").value_or(RootBindingSlots::Skybox::kTransform)
+	  : RootBindingSlots::Skybox::kTransform;
+   const UINT textureSlot = shaderManager_
+	  ? shaderManager_->ResolvePipelineRootParameter("Skybox", "texture").value_or(RootBindingSlots::Skybox::kTexture)
+	  : RootBindingSlots::Skybox::kTexture;
+
+   cmdList->SetGraphicsRootConstantBufferView(materialSlot, skybox->GetMaterialResource()->GetGPUVirtualAddress());
+   cmdList->SetGraphicsRootConstantBufferView(transformSlot, skybox->GetTransformResource()->GetGPUVirtualAddress());
+   cmdList->SetGraphicsRootDescriptorTable(textureSlot, texture->GetTextureSrvHandleGPU());
+
+   const auto& mesh = skybox->GetMesh();
+   D3D12_VERTEX_BUFFER_VIEW vbv = mesh.GetVertexBufferView();
+   D3D12_INDEX_BUFFER_VIEW ibv = mesh.GetIndexBufferView();
+   cmdList->IASetVertexBuffers(0, 1, &vbv);
+   cmdList->IASetIndexBuffer(&ibv);
+   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+   cmdList->DrawIndexedInstanced(mesh.GetIndexCount(), 1, 0, 0, 0);
+
+   // パイプライン状態をリセット
+   currentPipelineName_ = "";
+   currentPipelineBlendMode_ = BlendMode::kBlendModeNone;
 }
 
 void Renderer::SubmitDrawCommand(const DrawCommand& command) {

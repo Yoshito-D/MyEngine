@@ -4,7 +4,8 @@
     "resources/pipelines/rootsig/line3d_rootsig.json",
     "resources/pipelines/rootsig/particle_rootsig.json",
     "resources/pipelines/rootsig/fullscreen_triangle_rootsig.json",
-    "resources/pipelines/rootsig/postprocess_rootsig.json"
+    "resources/pipelines/rootsig/postprocess_rootsig.json",
+    "resources/pipelines/rootsig/skybox_rootsig.json"
   ],
   "pipelines": [
     "resources/pipelines/object3d_pipeline.json",
@@ -12,6 +13,7 @@
     "resources/pipelines/line3d_pipeline.json",
     "resources/pipelines/particle_pipeline.json",
     "resources/pipelines/fullscreen_triangle_pipeline.json",
+    "resources/pipelines/skybox_pipeline.json",
     "resources/pipelines/postprocess/grayscale_pipeline.json",
     "resources/pipelines/postprocess/radialblur_pipeline.json",
     "resources/pipelines/postprocess/gaussblur_pipeline.json",

@@ -33,5 +33,11 @@ namespace PostProcess {
 constexpr unsigned int kConstantBuffer = 0;
 constexpr unsigned int kInputTexture = 1;
 } // namespace PostProcess
+
+namespace Skybox {
+constexpr unsigned int kMaterial = 0;
+constexpr unsigned int kTransform = 1;
+constexpr unsigned int kTexture = 2;
+} // namespace Skybox
 } // namespace RootBindingSlots
 } // namespace GameEngine

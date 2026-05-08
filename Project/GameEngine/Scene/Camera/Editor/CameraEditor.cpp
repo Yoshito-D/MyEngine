@@ -465,7 +465,7 @@ bool CameraEditor::EditProjectionSettings(Camera* camera) {
     // Projection Type
     int projType = static_cast<int>(camera->GetProjectionType());
     const char* projTypes[] = { "Perspective", "Orthographic" };
-    if (ImGui::Combo("Projection", &projType, projTypes, 2)) {
+    if (ImGui::Combo("Type##Projection", &projType, projTypes, 2)) {
         camera->SetProjectionType(static_cast<Camera::ProjectionType>(projType));
         changed = true;
     }

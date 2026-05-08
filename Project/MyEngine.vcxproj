@@ -294,6 +294,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Skybox\Skybox.cpp" />
     <ClCompile Include="GameEngine\Scene\BaseScene.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Camera.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
@@ -520,6 +521,7 @@
     <ClInclude Include="GameEngine\Collision\Collider.h" />
     <ClInclude Include="GameEngine\Collision\Collision.h" />
     <ClInclude Include="GameEngine\Object\Prefab\PrefabLoader.h" />
+    <ClInclude Include="GameEngine\Object\Skybox\Skybox.h" />
     <ClInclude Include="GameEngine\Scene\BaseScene.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Camera.h" />
     <ClInclude Include="GameEngine\Core\Graphics\DirectionalLight.h" />
@@ -620,8 +622,10 @@
     <None Include="resources\pipelines\rootsig\particle_rootsig.json" />
     <None Include="resources\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
     <None Include="resources\pipelines\rootsig\postprocess_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\skybox_rootsig.json" />
     <None Include="resources\pipelines\skinning_object3d_pipeline.json" />
     <None Include="resources\pipelines\skinning_pipeline_registry.json" />
+    <None Include="resources\pipelines\skybox_pipeline.json" />
     <None Include="resources\pipelines\sprite_pipeline.json" />
     <None Include="resources\postprocess\postprocess_registry.json" />
     <None Include="resources\prefabs\default_object.prefab.json" />

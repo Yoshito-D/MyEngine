@@ -21,7 +21,7 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    ImGuiIO& io = ImGui::GetIO();
    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
    
-   multiViewportEnabled_ = true;
+   multiViewportEnabled_ = false;
    // マルチビューポートを有効化
    if (multiViewportEnabled_) {
       io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;

@@ -19,6 +19,7 @@
 #include "Utility/JsonDataManager.h"
 namespace GameEngine {
 class Framework;
+class Skybox;
 
 class EngineContextInitializer {
 private:
@@ -345,6 +346,9 @@ public:
    /// @brief アクティブなカメラを取得する（Renderer内部用）
    static Camera* GetActiveCamera();
 
+   /// @brief グラフィックスデバイスを取得する
+   static GraphicsDevice* GetGraphicsDevice();
+
    //================================================================
    // ライトマネージャー
    //================================================================
@@ -510,6 +514,10 @@ public:
    /// @param particleSystem 描画するパーティクルシステム
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
    static void Draw(ParticleSystem* particleSystem, bool applyPostProcess = true);
+
+   /// @brief スカイボックスを描画する
+   /// @param skybox スカイボックス
+   static void DrawSkybox(Skybox* skybox);
 
    /// @brief UI用スプライトを描画する
    /// @param sprite 描画するスプライト

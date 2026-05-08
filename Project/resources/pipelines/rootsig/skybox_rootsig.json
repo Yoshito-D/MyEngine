@@ -1,0 +1,38 @@
+{
+  "name": "Skybox",
+  "reflectionSources": {
+    "vertexShader": "Skybox",
+    "pixelShader": "Skybox"
+  },
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "semantic": "material"
+    },
+    {
+      "type": "CBV",
+      "visibility": "Vertex",
+      "semantic": "transform"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "semantic": "texture"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Wrap",
+      "addressV": "Wrap",
+      "addressW": "Wrap",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}

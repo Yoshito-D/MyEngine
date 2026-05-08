@@ -93,6 +93,7 @@ void CinemachineBrain::ApplyStateToOutputCamera() {
     if (currentState_.hasViewMatrixOverride) {
         // ビュー行列が直接指定されている場合はそのまま使用
         Matrix4x4 projectionMatrix = outputCamera_->GetProjectionMatrix();
+        outputCamera_->SetViewMatrix(currentState_.viewMatrixOverride);
         outputCamera_->SetViewProjectionMatrix(currentState_.viewMatrixOverride * projectionMatrix);
         outputCamera_->SetPosition(currentState_.transform.translation);
         outputCamera_->SetCameraForGpuData();

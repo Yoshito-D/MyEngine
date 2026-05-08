@@ -23,8 +23,16 @@ ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::s
    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
    srvDesc.Format = metadata_.format;
    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-   srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-   srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata_.mipLevels);
+
+   if (metadata_.IsCubemap()) {
+	  srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+	  srvDesc.TextureCube.MostDetailedMip = 0;
+	  srvDesc.TextureCube.MipLevels = UINT_MAX;
+	  srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+   } else {
+	  srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	  srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata_.mipLevels);
+   }
 
    UINT index = device->GetNextSrvIndex();
 
@@ -46,12 +54,13 @@ DirectX::ScratchImage Texture::LoadTextureWithMipmaps(const std::string& filePat
    DirectX::ScratchImage image{};
    std::wstring filePathW = log_.ConvertString(filePath);
 
-   HRESULT hr = DirectX::LoadFromWICFile(
-	  filePathW.c_str(),
-	  DirectX::WIC_FLAGS_FORCE_SRGB,
-	  nullptr,
-	  image
-   );
+   HRESULT hr;
+
+   if (filePathW.ends_with(L".dds")) {
+	  hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
+   } else {
+	  hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+   }
 
    assert(SUCCEEDED(hr));
 
@@ -64,14 +73,19 @@ DirectX::ScratchImage Texture::LoadTextureWithMipmaps(const std::string& filePat
    }
 
    DirectX::ScratchImage mipImages{};
-   hr = DirectX::GenerateMipMaps(
-	  image.GetImages(),
-	  image.GetImageCount(),
-	  metadata,
-	  DirectX::TEX_FILTER_SRGB,
-	  0,
-	  mipImages
-   );
+
+   if (DirectX::IsCompressed(image.GetMetadata().format)) {
+	  mipImages = std::move(image); // 圧縮テクスチャは元画像をそのまま使用
+   } else {
+	  hr = DirectX::GenerateMipMaps(
+		 image.GetImages(),
+		 image.GetImageCount(),
+		 metadata,
+		 DirectX::TEX_FILTER_SRGB,
+		 4,
+		 mipImages
+	  );
+   }
 
    if (FAILED(hr)) {
 	  log_.Log("MipMap generation failed for: " + filePath, Logger::LogLevel::Error);

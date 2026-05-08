@@ -56,6 +56,7 @@ void Camera::Update() {
 			break;
 	}
 
+	viewMatrix_ = viewMatrix;
 	viewProjectionMatrix_ = viewMatrix * projectionMatrix;
 
 	SetCameraForGpuData();

@@ -31,6 +31,12 @@ static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 void TestScene::Initialize() {
    BaseScene::Initialize();
 
+   EngineContext::LoadTexture("resources/textures/rostock_laage_airport_4k.dds", "skyboxTexture");
+
+   skybox_ = std::make_unique<GameEngine::Skybox>();
+   skybox_->Create(EngineContext::GetGraphicsDevice());
+   skybox_->SetTexture(EngineContext::GetTexture("skyboxTexture"));
+
    // --- アセット読み込み ---
    EngineContext::LoadModel("resources/models/planet", "planet.obj");
    EngineContext::LoadModel("resources/models/human", "walk.gltf");
@@ -248,4 +254,7 @@ void TestScene::Update() {
 
 void TestScene::Draw() {
    BaseScene::Draw();
+   if (skybox_) {
+	  EngineContext::DrawSkybox(skybox_.get());
+   }
 }
