@@ -5,6 +5,7 @@
 #include "BaseScene.h"
 #include "Component/RenderComponent.h"
 #include "Scene/Camera/Core/CinemachineBrain.h"
+#include "Object/Skybox/Skybox.h"
 #include <numbers>
 
 namespace {
@@ -366,6 +367,10 @@ Camera* EngineContext::GetActiveCamera() {
    return sCameraManager_->GetActiveCamera();
 }
 
+GraphicsDevice* EngineContext::GetGraphicsDevice() {
+   return sGraphicsDevice_;
+}
+
 CameraUnit* EngineContext::CreateCameraUnit() {
    if (!sCameraManager_) return nullptr;
    return sCameraManager_->CreateUnit();
@@ -542,6 +547,11 @@ void EngineContext::Draw(Sprite* sprite, Texture* texture, std::optional<BlendMo
 void EngineContext::Draw(ParticleSystem* particleSystem, bool applyPostProcess) {
    if (!sRenderer_) return;
    sRenderer_->Draw(particleSystem, applyPostProcess);
+}
+
+void EngineContext::DrawSkybox(Skybox* skybox) {
+   if (!sRenderer_) return;
+   sRenderer_->DrawSkybox(skybox);
 }
 
 void EngineContext::DrawUI(Sprite* sprite, Texture* texture,

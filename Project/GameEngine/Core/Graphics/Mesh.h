@@ -38,6 +38,8 @@ public:
    /// @param height 高さ
    void CreateParticleQuad(float width, float height);
 
+   void CreateSkybox();
+
    const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView() const { return vertexBufferView_; }
    const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView() const { return indexBufferView_; }
    UINT GetIndexCount() const { return indexCount_; }

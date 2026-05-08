@@ -4,6 +4,7 @@
 #include "Camera/Core/VirtualCamera.h"
 #include "../Component/Camera/GravityFollowCamera.h"
 #include "../Component/Camera/PlanetLeashCamera.h"
+#include "Object/Skybox/Skybox.h"
 #include <memory>
 
 /// @brief 重力システムテスト用シーン
@@ -29,6 +30,8 @@ private:
 
    bool  useLeashCamera_ = false;
    float testTime_       = 0.0f;
+
+   std::unique_ptr<GameEngine::Skybox> skybox_ = nullptr;
 
    // 惑星2 の配置パラメータ
    static constexpr float kPlanet2Radius   = 10.0f;

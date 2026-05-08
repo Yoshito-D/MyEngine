@@ -117,6 +117,77 @@ void Mesh::CreateParticleQuad(float width, float height) {
    indexCount_ = 6;
 }
 
+void Mesh::CreateSkybox() {
+   if (!sIsInitialized_) return;
+
+   // スカイボックス: 1x1x1のキューブ、法線は内側向き
+   constexpr int kVertexCount = 24; // 6面 × 4頂点
+   constexpr int kIndexCount = 36;  // 6面 × 6インデックス
+
+   vertexResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(VertexData) * kVertexCount);
+   vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
+   vertexBufferView_.SizeInBytes = sizeof(VertexData) * kVertexCount;
+   vertexBufferView_.StrideInBytes = sizeof(VertexData);
+   vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
+
+   // +X 面 (右)
+   vertexData_[0]  = { { 1.0f, -1.0f,  1.0f, 1.0f }, { 0.0f, 1.0f }, { -1.0f,  0.0f,  0.0f } };
+   vertexData_[1]  = { { 1.0f,  1.0f,  1.0f, 1.0f }, { 0.0f, 0.0f }, { -1.0f,  0.0f,  0.0f } };
+   vertexData_[2]  = { { 1.0f, -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f }, { -1.0f,  0.0f,  0.0f } };
+   vertexData_[3]  = { { 1.0f,  1.0f, -1.0f, 1.0f }, { 1.0f, 0.0f }, { -1.0f,  0.0f,  0.0f } };
+
+   // -X 面 (左)
+   vertexData_[4]  = { { -1.0f, -1.0f, -1.0f, 1.0f }, { 0.0f, 1.0f }, { 1.0f,  0.0f,  0.0f } };
+   vertexData_[5]  = { { -1.0f,  1.0f, -1.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f,  0.0f,  0.0f } };
+   vertexData_[6]  = { { -1.0f, -1.0f,  1.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f,  0.0f,  0.0f } };
+   vertexData_[7]  = { { -1.0f,  1.0f,  1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f,  0.0f,  0.0f } };
+
+   // +Y 面 (上)
+   vertexData_[8]  = { { -1.0f,  1.0f,  1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, -1.0f,  0.0f } };
+   vertexData_[9]  = { { -1.0f,  1.0f, -1.0f, 1.0f }, { 0.0f, 0.0f }, { 0.0f, -1.0f,  0.0f } };
+   vertexData_[10] = { {  1.0f,  1.0f,  1.0f, 1.0f }, { 1.0f, 1.0f }, { 0.0f, -1.0f,  0.0f } };
+   vertexData_[11] = { {  1.0f,  1.0f, -1.0f, 1.0f }, { 1.0f, 0.0f }, { 0.0f, -1.0f,  0.0f } };
+
+   // -Y 面 (下)
+   vertexData_[12] = { { -1.0f, -1.0f, -1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f,  1.0f,  0.0f } };
+   vertexData_[13] = { { -1.0f, -1.0f,  1.0f, 1.0f }, { 0.0f, 0.0f }, { 0.0f,  1.0f,  0.0f } };
+   vertexData_[14] = { {  1.0f, -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f }, { 0.0f,  1.0f,  0.0f } };
+   vertexData_[15] = { {  1.0f, -1.0f,  1.0f, 1.0f }, { 1.0f, 0.0f }, { 0.0f,  1.0f,  0.0f } };
+
+   // +Z 面 (前)
+   vertexData_[16] = { { -1.0f, -1.0f,  1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f,  0.0f, -1.0f } };
+   vertexData_[17] = { { -1.0f,  1.0f,  1.0f, 1.0f }, { 0.0f, 0.0f }, { 0.0f,  0.0f, -1.0f } };
+   vertexData_[18] = { {  1.0f, -1.0f,  1.0f, 1.0f }, { 1.0f, 1.0f }, { 0.0f,  0.0f, -1.0f } };
+   vertexData_[19] = { {  1.0f,  1.0f,  1.0f, 1.0f }, { 1.0f, 0.0f }, { 0.0f,  0.0f, -1.0f } };
+
+   // -Z 面 (後)
+   vertexData_[20] = { {  1.0f, -1.0f, -1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f,  0.0f,  1.0f } };
+   vertexData_[21] = { {  1.0f,  1.0f, -1.0f, 1.0f }, { 0.0f, 0.0f }, { 0.0f,  0.0f,  1.0f } };
+   vertexData_[22] = { { -1.0f, -1.0f, -1.0f, 1.0f }, { 1.0f, 1.0f }, { 0.0f,  0.0f,  1.0f } };
+   vertexData_[23] = { { -1.0f,  1.0f, -1.0f, 1.0f }, { 1.0f, 0.0f }, { 0.0f,  0.0f,  1.0f } };
+
+   indexResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(uint32_t) * kIndexCount);
+   indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
+   indexBufferView_.SizeInBytes = sizeof(uint32_t) * kIndexCount;
+   indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+
+   uint32_t* indexData = nullptr;
+   indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
+
+   for (uint32_t face = 0; face < 6; ++face) {
+      uint32_t base = face * 4;
+      uint32_t i = face * 6;
+      indexData[i + 0] = base + 0;
+      indexData[i + 1] = base + 1;
+      indexData[i + 2] = base + 2;
+      indexData[i + 3] = base + 1;
+      indexData[i + 4] = base + 3;
+      indexData[i + 5] = base + 2;
+   }
+
+   indexCount_ = kIndexCount;
+}
+
 Mesh::VertexData* Mesh::GetVertexData() const {
    return vertexData_;
 }

@@ -66,6 +66,8 @@ public:
 	// 行列アクセス
 	Matrix4x4 GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
 	void SetViewProjectionMatrix(const Matrix4x4& matrix) { viewProjectionMatrix_ = matrix; }
+	Matrix4x4 GetViewMatrix() const { return viewMatrix_; }
+	void SetViewMatrix(const Matrix4x4& matrix) { viewMatrix_ = matrix; }
 	Matrix4x4 GetProjectionMatrix() const;
 
 	// 方向ベクトル
@@ -84,6 +86,7 @@ private:
 	ProjectionType projectionType_ = ProjectionType::Perspective;
 
 	Matrix4x4 viewProjectionMatrix_{};
+	Matrix4x4 viewMatrix_{};
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> cameraResource_ = nullptr;
 	CameraForGPU* cameraForGpuData_ = nullptr;
