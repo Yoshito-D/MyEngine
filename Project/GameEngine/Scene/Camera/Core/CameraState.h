@@ -37,6 +37,21 @@ struct CameraState {
     /// @brief 2つのカメラ状態を線形補間
     static CameraState Lerp(const CameraState& a, const CameraState& b, float t) {
         CameraState result;
+
+        // ビュー行列オーバーライドが片方または両方ある場合、有効な行列同士を補間する
+        if (a.hasViewMatrixOverride || b.hasViewMatrixOverride) {
+            Matrix4x4 viewA = a.GetViewMatrix();
+            Matrix4x4 viewB = b.GetViewMatrix();
+            // 各列を線形補間してビュー行列を合成
+            Matrix4x4 blended;
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j) {
+                    blended.m[i][j] = viewA.m[i][j] + (viewB.m[i][j] - viewA.m[i][j]) * t;
+                }
+            }
+            result.SetViewMatrix(blended);
+        }
+
         result.transform.translation = Vector3::Lerp(a.transform.translation, b.transform.translation, t);
         result.transform.scale = Vector3::Lerp(a.transform.scale, b.transform.scale, t);
         result.transform.SetRotationQuaternion(

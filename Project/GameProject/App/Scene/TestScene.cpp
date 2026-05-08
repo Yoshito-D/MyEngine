@@ -156,6 +156,7 @@ void TestScene::Initialize() {
 
    if (auto* brain = EngineContext::GetActiveBrain()) {
 	  brain->RegisterVirtualCamera(leashVcam_.get());
+	  brain->SetDefaultBlendTime(0.5f);
    }
 
    // CameraGravityBridge: gravityUp / pivotTarget をカメラへ毎フレーム通知（PlanetSwitcher が中心座標を切り替える）

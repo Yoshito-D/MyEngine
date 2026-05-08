@@ -63,7 +63,10 @@ void BaseScene::Update() {
       EngineContext::GetActiveBrain()->Update(deltaTime);
    }
 #else
-   EngineContext::GetActiveCamera()->Update();
+   {
+      float deltaTime = EngineContext::GetDeltaTime();
+      EngineContext::GetActiveBrain()->Update(deltaTime);
+   }
 #endif // _DEBUG
 
    // フェードの更新（デルタタイムは内部で取得）
