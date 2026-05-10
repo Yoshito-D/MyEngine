@@ -10,7 +10,7 @@ struct CameraState {
    Transform transform;
    float fov = 0.45f;
    float nearClip = 0.01f;
-   float farClip = 100.0f;
+   float farClip = 10000.0f;
 
    // ビュー行列を直接保持するフラグと行列
    // trueの場合、Transform→行列変換を行わずviewMatrixOverrideを使用する

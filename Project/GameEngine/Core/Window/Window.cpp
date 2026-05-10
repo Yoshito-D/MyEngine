@@ -70,12 +70,15 @@ void Window::DestroyGameWindow() {
 
 bool Window::ProcessMessage() {
    MSG msg{};
-   if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+   while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
+      if (msg.message == WM_QUIT) {
+         return true;
+      }
    }
 
-   return msg.message == WM_QUIT;
+   return false;
 }
 
 void Window::ToggleFullscreen() {
