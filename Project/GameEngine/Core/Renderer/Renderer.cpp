@@ -595,6 +595,12 @@ void Renderer::EndFrame() {
 #endif
 
    device_->PostDraw();
+
+#ifdef USE_IMGUI
+   // メインウィンドウのPresent完了後にサブウィンドウをPresentする
+   // これによりDWM合成タイミングが揃い、重なり部分の描画ズレが解消される
+   imGuiManager_->PresentPlatformWindows();
+#endif
 }
 
 void Renderer::DrawAutoRegisteredModels() {

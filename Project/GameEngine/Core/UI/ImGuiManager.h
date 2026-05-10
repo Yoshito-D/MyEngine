@@ -21,9 +21,12 @@ public:
    /// @brief 開始時の処理
    void BeginFrame();
 
-   /// @brief 終了時の処理
+   /// @brief 終了時の処理（メインウィンドウへの描画のみ）
    /// @param commandList コマンドリスト
    void EndFrame(ID3D12GraphicsCommandList* commandList);
+
+   /// @brief マルチビューポートのサブウィンドウをPresent（PostDraw後に呼ぶこと）
+   void PresentPlatformWindows();
 
    /// @brief 終了処理
    void Finalize();

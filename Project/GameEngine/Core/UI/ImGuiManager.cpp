@@ -21,10 +21,13 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    ImGuiIO& io = ImGui::GetIO();
    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
    
-   multiViewportEnabled_ = false;
+   multiViewportEnabled_ = true;
    // マルチビューポートを有効化
    if (multiViewportEnabled_) {
-      io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	  io.ConfigViewportsNoAutoMerge = true;     // ウィンドウ境界越え時のマージによるラグを防ぐ
+	  io.ConfigViewportsNoDefaultParent = true; // メインHWNDへの親子関係によるリペアレントラグを防ぐ
+	  io.ConfigDpiScaleViewports = true;
    }
 
    ImGuiStyle& style = ImGui::GetStyle();
@@ -118,10 +121,19 @@ void ImGuiManager::BeginFrame() {
 void ImGuiManager::EndFrame(ID3D12GraphicsCommandList* commandList) {
    ImGui::Render();
    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
-   
+   // サブウィンドウのPresent はメインウィンドウのPresent(PostDraw)より後に
+   // PresentPlatformWindows() で行うため、ここでは UpdatePlatformWindows のみ呼ぶ
    ImGuiIO& io = ImGui::GetIO();
    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
 	  ImGui::UpdatePlatformWindows();
+   }
+}
+
+void ImGuiManager::PresentPlatformWindows() {
+   // メインウィンドウの Present(PostDraw) が完了した後に呼ぶことで
+   // DWM 合成タイミングを揃え、重なり部分の描画ズレを解消する
+   ImGuiIO& io = ImGui::GetIO();
+   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
 	  ImGui::RenderPlatformWindowsDefault();
    }
 }
@@ -221,12 +233,16 @@ void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
    
    // Multi-Viewport setting
    if (ImGui::Checkbox("Enable Multi-Viewport", &multiViewportEnabled_)) {
-      ImGuiIO& io = ImGui::GetIO();
-      if (multiViewportEnabled_) {
-         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-      } else {
-         io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
-      }
+	  ImGuiIO& io = ImGui::GetIO();
+	  if (multiViewportEnabled_) {
+		 io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		 io.ConfigViewportsNoAutoMerge = true;
+		 io.ConfigViewportsNoDefaultParent = true;
+	  } else {
+		 io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+		 io.ConfigViewportsNoAutoMerge = false;
+		 io.ConfigViewportsNoDefaultParent = false;
+	  }
       ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Restart may be required for changes to take effect");
    }
 

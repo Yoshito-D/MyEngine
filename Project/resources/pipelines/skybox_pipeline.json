@@ -5,7 +5,7 @@
   "rootSignature": "Skybox",
   "supportBlendModes": false,
   "defaultBlendMode": "None",
-  "cullMode": "None",
+  "cullMode": "Back",
   "fillMode": "Solid",
   "depthEnable": true,
   "depthWriteMask": "Zero",
