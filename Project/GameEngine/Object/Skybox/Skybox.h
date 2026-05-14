@@ -7,6 +7,7 @@
 #include <wrl.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 using namespace Microsoft::WRL;
 
@@ -17,7 +18,10 @@ class GraphicsDevice;
 class Skybox : public Object {
 public:
    Skybox();
-   ~Skybox() override = default;
+   ~Skybox() override;
+
+   /// @brief 登録済みスカイボックスの一覧を取得する
+   static const std::vector<Skybox*>& GetRegisteredSkyboxes();
 
    /// @brief スカイボックスを作成する
    /// @param device グラフィックスデバイス
@@ -57,6 +61,8 @@ private:
    struct SkyboxMaterialData {
       Vector4 color;
    };
+
+   static std::vector<Skybox*> sRegisteredSkyboxes_;
 
    Mesh mesh_;
    ComPtr<ID3D12Resource> transformResource_ = nullptr;

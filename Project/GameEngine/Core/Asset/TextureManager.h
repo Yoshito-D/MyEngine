@@ -25,6 +25,13 @@ public:
    /// @brief 読み込み済みテクスチャ名一覧を取得
    std::vector<std::string> GetTextureNames() const;
 
+   /// @brief 読み込み済みキューブマップテクスチャ名一覧を取得
+   std::vector<std::string> GetCubemapTextureNames() const;
+
+   /// @brief 最後にロードしたキューブマップテクスチャを取得
+   /// @return キューブマップテクスチャへのポインタ（未ロードの場合は nullptr）
+   Texture* GetLastCubemapTexture() const;
+
    /// @brief 中間リソースを解放
    void ReleaseIntermediateResources();
 
@@ -34,5 +41,6 @@ private:
    GraphicsDevice* device_ = nullptr;
    std::unordered_map<std::string, std::unique_ptr<Texture>> textures_;
    std::list<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResource_;
+   std::string lastCubemapName_;
 };
 }

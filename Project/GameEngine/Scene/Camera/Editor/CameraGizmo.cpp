@@ -5,7 +5,7 @@
 #include "CameraGizmo.h"
 #include "../Camera.h"
 #include "../Core/VirtualCamera.h"
-#include "Core/Renderer/LineRenderer.h"
+#include "Core/Renderer/Pass/LineRenderer.h"
 #include "Utility/MathUtils.h"
 #include <cmath>
 

@@ -7,7 +7,7 @@
 #include "PSOManager.h"
 #include "ShaderManager.h"
 #include "LightManager.h"
-#include "Graphics/LightDataBuffer.h"
+#include "LightDataBuffer.h"
 #include "Camera/Camera.h"
 #include "Utility/Logger.h"
 #include "RootBindingSlots.h"

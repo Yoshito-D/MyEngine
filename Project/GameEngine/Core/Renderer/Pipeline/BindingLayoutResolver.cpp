@@ -96,6 +96,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
             if (resource.bindPoint == 2) RegisterSemantic(t, "spotlights", RootBindingSlots::Object3D::kSpotLight);
             if (resource.bindPoint == 3) RegisterSemantic(t, "arealights", RootBindingSlots::Object3D::kAreaLight);
             if (resource.bindPoint == 4) RegisterSemantic(t, "texture", RootBindingSlots::Object3D::kTexture);
+            if (resource.bindPoint == 5) RegisterSemantic(t, "envmap", RootBindingSlots::Object3D::kEnvMap);
          }
       });
       if (!table.hasReflectionData) {
@@ -108,6 +109,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
          RegisterSemantic(table, "spotlights", RootBindingSlots::Object3D::kSpotLight);
          RegisterSemantic(table, "arealights", RootBindingSlots::Object3D::kAreaLight);
          RegisterSemantic(table, "texture", RootBindingSlots::Object3D::kTexture);
+         RegisterSemantic(table, "envmap", RootBindingSlots::Object3D::kEnvMap);
       }
       registerTable("Object3D", table);
       registerTable("Sprite", table);
@@ -135,6 +137,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
             if (resource.bindPoint == 2) RegisterSemantic(t, "spotlights", RootBindingSlots::Object3D::kSpotLight);
             if (resource.bindPoint == 3) RegisterSemantic(t, "arealights", RootBindingSlots::Object3D::kAreaLight);
             if (resource.bindPoint == 4) RegisterSemantic(t, "texture", RootBindingSlots::Object3D::kTexture);
+            if (resource.bindPoint == 5) RegisterSemantic(t, "envmap", RootBindingSlots::Object3D::kEnvMap);
          }
       });
       if (!table.hasReflectionData) {
@@ -147,6 +150,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
          RegisterSemantic(table, "spotlights", RootBindingSlots::Object3D::kSpotLight);
          RegisterSemantic(table, "arealights", RootBindingSlots::Object3D::kAreaLight);
          RegisterSemantic(table, "texture", RootBindingSlots::Object3D::kTexture);
+         RegisterSemantic(table, "envmap", RootBindingSlots::Object3D::kEnvMap);
          RegisterSemantic(table, "skinpalette", RootBindingSlots::Object3D::kSkinPalette);
       }
       registerTable("SkinningObject3D", table);

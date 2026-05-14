@@ -15,6 +15,7 @@ namespace {
 #ifdef USE_IMGUI
 #include "Object.h"
 #include "externals/imgui/imgui.h"
+#include "Graphics/Texture.h"
 #endif
 
 namespace GameEngine {
@@ -22,6 +23,8 @@ namespace GameEngine {
 MaterialComponent::MaterialResolver MaterialComponent::resolver_ = nullptr;
 MaterialComponent::MaterialCreator MaterialComponent::creator_ = nullptr;
 MaterialComponent::MaterialNamesProvider MaterialComponent::namesProvider_ = nullptr;
+MaterialComponent::EnvironmentTextureResolver MaterialComponent::environmentTextureResolver_ = nullptr;
+MaterialComponent::EnvironmentTextureNamesProvider MaterialComponent::environmentTextureNamesProvider_ = nullptr;
 
 void MaterialComponent::SetMaterialResolver(MaterialResolver resolver) {
    resolver_ = std::move(resolver);
@@ -33,6 +36,14 @@ void MaterialComponent::SetMaterialCreator(MaterialCreator creator) {
 
 void MaterialComponent::SetMaterialNamesProvider(MaterialNamesProvider provider) {
    namesProvider_ = std::move(provider);
+}
+
+void MaterialComponent::SetEnvironmentTextureResolver(EnvironmentTextureResolver resolver) {
+   environmentTextureResolver_ = std::move(resolver);
+}
+
+void MaterialComponent::SetEnvironmentTextureNamesProvider(EnvironmentTextureNamesProvider provider) {
+   environmentTextureNamesProvider_ = std::move(provider);
 }
 
 Material* MaterialComponent::EnsureMaterial(const std::string& name, uint32_t color, int32_t lightingMode, const Matrix4x4& uvTransform) {
@@ -64,8 +75,19 @@ void MaterialComponent::AssignMaterial(Material* material, const std::string& ma
       return;
    }
 
+   std::string resolvedName = materialName;
+   if (resolvedName.empty() && namesProvider_ && resolver_) {
+      const auto names = namesProvider_();
+      for (const auto& name : names) {
+         if (auto* candidate = resolver_(name); candidate == material) {
+            resolvedName = name;
+            break;
+         }
+      }
+   }
+
    materials.push_back(material);
-   materialNames_.push_back(materialName);
+   materialNames_.push_back(resolvedName);
 }
 
 void MaterialComponent::AppendMaterial(Material* material, const std::string& materialName) {
@@ -73,8 +95,19 @@ void MaterialComponent::AppendMaterial(Material* material, const std::string& ma
       return;
    }
 
+   std::string resolvedName = materialName;
+   if (resolvedName.empty() && namesProvider_ && resolver_) {
+      const auto names = namesProvider_();
+      for (const auto& name : names) {
+         if (auto* candidate = resolver_(name); candidate == material) {
+            resolvedName = name;
+            break;
+         }
+      }
+   }
+
    materials.push_back(material);
-   materialNames_.push_back(materialName);
+   materialNames_.push_back(resolvedName);
    SyncMaterialNamesSize();
 }
 
@@ -106,6 +139,7 @@ nlohmann::json MaterialComponent::Serialize() const {
    }
    json["materialNames"] = materialNames;
    json["materialCount"] = materials.size();
+   json["environmentTextureName"] = environmentTextureName_;
 
    if (!materials.empty() && materials[0] && materials[0]->GetMaterialData()) {
       const auto* materialData = materials[0]->GetMaterialData();
@@ -132,6 +166,10 @@ nlohmann::json MaterialComponent::Serialize() const {
 void MaterialComponent::Deserialize(const nlohmann::json& data) {
    if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
       return;
+   }
+
+   if (data.contains("environmentTextureName") && data.at("environmentTextureName").is_string()) {
+      environmentTextureName_ = data.at("environmentTextureName").get<std::string>();
    }
 
    materialNames_.clear();
@@ -297,6 +335,53 @@ void MaterialComponent::DrawInspector() {
    changed |= ImGui::DragFloat2("UV Translation", &uvTranslation.x, 0.01f);
    if (changed) {
       material->SetUVTransform(uvScale, uvRotation, uvTranslation);
+   }
+
+   ImGui::Spacing();
+   ImGui::SeparatorText("Environment Texture");
+
+   if (environmentTextureNamesProvider_) {
+      const auto texNames = environmentTextureNamesProvider_();
+      if (!texNames.empty()) {
+         int envSelectedIndex = 0;
+         for (size_t i = 0; i < texNames.size(); ++i) {
+            if (texNames[i] == environmentTextureName_) {
+               envSelectedIndex = static_cast<int>(i);
+               break;
+            }
+         }
+         const char* envPreview = environmentTextureName_.empty() ? "<none>" : environmentTextureName_.c_str();
+         if (ImGui::BeginCombo("Environment Texture", envPreview)) {
+            if (ImGui::Selectable("<none>", environmentTextureName_.empty())) {
+               environmentTextureName_.clear();
+            }
+            for (size_t i = 0; i < texNames.size(); ++i) {
+               const bool sel = (static_cast<int>(i) == envSelectedIndex && !environmentTextureName_.empty());
+               if (ImGui::Selectable(texNames[i].c_str(), sel)) {
+                  environmentTextureName_ = texNames[i];
+               }
+               if (sel) {
+                  ImGui::SetItemDefaultFocus();
+               }
+            }
+            ImGui::EndCombo();
+         }
+
+         if (!environmentTextureName_.empty() && environmentTextureResolver_) {
+            if (auto* envTex = environmentTextureResolver_(environmentTextureName_)) {
+               const auto& meta = envTex->GetMetadata();
+               ImGui::Indent();
+               ImGui::TextDisabled("Cubemap  %ux%u  mips:%zu",
+                  envTex->GetWidth(), envTex->GetHeight(), meta.mipLevels);
+               ImGui::Unindent();
+            }
+         }
+      }
+   }
+
+   float environmentCoefficient = data->environmentCoefficient;
+   if (ImGui::DragFloat("Environment Coefficient", &environmentCoefficient, 0.01f, 0.0f, 1.0f)) {
+      material->SetEnvironmentTextureStrength(environmentCoefficient);
    }
 
    ImGui::Spacing();

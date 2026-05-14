@@ -3,6 +3,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Audio.h"
 #include "Component/MaterialComponent.h"
+#include "Graphics/Texture.h"
 
 namespace GameEngine {
 void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
@@ -17,6 +18,12 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    });
    MaterialComponent::SetMaterialNamesProvider([this]() {
       return materialManager_ ? materialManager_->GetMaterialNames() : std::vector<std::string>{};
+   });
+   MaterialComponent::SetEnvironmentTextureResolver([this](const std::string& name) -> Texture* {
+      return textureManager_ ? textureManager_->GetTexture(name) : nullptr;
+   });
+   MaterialComponent::SetEnvironmentTextureNamesProvider([this]() {
+      return textureManager_ ? textureManager_->GetCubemapTextureNames() : std::vector<std::string>{};
    });
    modelAssetManager_->Initialize(device);
    textureManager_->Initialize(device);

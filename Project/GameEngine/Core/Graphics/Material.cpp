@@ -28,6 +28,8 @@ void Material::Create(unsigned int color, int32_t lightingMode, const Matrix4x4&
    materialData_->uvTransform = uvTransform;
    // 光沢
    materialData_->shininess = shininess;
+   // 環境マップ強度
+   materialData_->environmentCoefficient = 0.0f;
 }
 
 // ========== プロパティアクセス関数の実装 ==========
@@ -75,6 +77,19 @@ float Material::GetShininess() const {
 	  return materialData_->shininess;
    }
    return 40.0f;
+}
+
+void Material::SetEnvironmentTextureStrength(float strength) {
+   if (materialData_) {
+	  materialData_->environmentCoefficient = strength;
+   }
+}
+
+float Material::GetEnvironmentTextureStrength() const {
+   if (materialData_) {
+	  return materialData_->environmentCoefficient;
+   }
+   return 0.0f;
 }
 
 // ========== UVTransform操作関数の実装 ==========

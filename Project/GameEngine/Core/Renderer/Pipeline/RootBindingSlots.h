@@ -12,7 +12,8 @@ constexpr unsigned int kPointLight = 5;
 constexpr unsigned int kSpotLight = 6;
 constexpr unsigned int kAreaLight = 7;
 constexpr unsigned int kTexture = 8;
-constexpr unsigned int kSkinPalette = 9;
+constexpr unsigned int kEnvMap = 9;
+constexpr unsigned int kSkinPalette = 10; // スキニング時はenvmapの後
 } // namespace Object3D
 
 namespace Particle {

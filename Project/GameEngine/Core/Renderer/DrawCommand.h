@@ -37,6 +37,7 @@ enum class RenderPass {
 struct ModelDrawData {
    Model* model;
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textures;
+   D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandle = {}; // 環境テクスチャSRV (ptr==0なら無効)
    Camera* camera;  // 描画時のカメラを保存
    BlendMode blendMode;  // ブレンドモード
 };

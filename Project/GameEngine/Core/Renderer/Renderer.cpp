@@ -7,10 +7,10 @@
 #include "Graphics/ShaderCompiler.h"
 #include "Graphics/Mesh.h"
 #include "Graphics/TransformationMatrix.h"
-#include "Graphics/DirectionalLight.h"
-#include "Graphics/PointLight.h"
-#include "Graphics/SpotLight.h"
-#include "Graphics/AreaLight.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "SpotLight.h"
+#include "AreaLight.h"
 #include "Effect/ParticleSystem.h"
 #include "PostProcess/Grayscale.h"
 #include "PostProcess/RadialBlur.h"
@@ -26,6 +26,7 @@
 #include "Component/AnimationComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
+#include "Component/MaterialComponent.h"
 #include "RootBindingSlots.h"
 #include "RenderBootstrapper.h"
 #include "Object/Skybox/Skybox.h"
@@ -210,6 +211,7 @@ void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> ble
    RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
 
    DrawCommand cmd = DrawCommand::CreateModel(model, handles, activeCamera, effectiveBlendMode, renderPass);
+   cmd.modelData.environmentTextureSrvHandle = activeEnvironmentTextureSrvHandle_;
    SubmitDrawCommand(cmd);
 }
 
@@ -239,6 +241,7 @@ void Renderer::Draw(Model* model, const std::vector<Texture*>& textures, std::op
    RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
 
    DrawCommand cmd = DrawCommand::CreateModel(model, textureSrvHandles, activeCamera, effectiveBlendMode, renderPass);
+   cmd.modelData.environmentTextureSrvHandle = activeEnvironmentTextureSrvHandle_;
    SubmitDrawCommand(cmd);
 }
 
@@ -545,6 +548,9 @@ void Renderer::EndFrame() {
    SortTransparentCommands();
    ExecuteDrawCommands(transparentCommands_);
 
+   // スカイボックスを最後に描画（深度テストにより不透明オブジェクトで覆われたピクセルはスキップされる）
+   DrawAutoRegisteredSkyboxes();
+
    // オフスクリーンレンダーターゲットの描画を終了
    offscreenRenderTarget_->PostDraw();
 
@@ -575,7 +581,6 @@ void Renderer::EndFrame() {
 
 	  if (editorController_) {
          editorController_->ShowAssetWindow();
-		 editorController_->ShowSceneEditorWindow();
 		 editorController_->ShowHierarchyWindow();
 		 editorController_->ShowInspectorWindow();
 	  }
@@ -640,6 +645,14 @@ void Renderer::DrawAutoRegisteredModels() {
 		 continue;
 	  }
 
+	  auto* materialComp = model->GetComponent<MaterialComponent>();
+	  if (materialComp && !materialComp->GetEnvironmentTextureName().empty()) {
+		 auto* envTex = textureManager->GetTexture(materialComp->GetEnvironmentTextureName());
+		 SetEnvironmentTexture(envTex);
+	  } else {
+		 SetEnvironmentTexture(textureManager->GetLastCubemapTexture());
+	  }
+
 	  Draw(model, texture, std::nullopt, renderComponent->applyPostProcess);
    }
 }
@@ -685,6 +698,14 @@ void Renderer::DrawAutoRegisteredSprites() {
    }
 }
 
+void Renderer::DrawAutoRegisteredSkyboxes() {
+   for (auto* skybox : Skybox::GetRegisteredSkyboxes()) {
+	  if (!skybox) {
+		 continue;
+	  }
+	  DrawSkybox(skybox);
+   }
+}
 
 
 void Renderer::ExecuteDrawCommands(const std::vector<DrawCommand>& commands) {
@@ -787,6 +808,14 @@ void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode)
 
    currentPipelineName_ = pipelineName;
    currentPipelineBlendMode_ = blendMode;
+}
+
+void Renderer::SetEnvironmentTexture(Texture* texture) {
+   if (texture) {
+	  activeEnvironmentTextureSrvHandle_ = texture->GetTextureSrvHandleGPU();
+   } else {
+	  activeEnvironmentTextureSrvHandle_ = {};
+   }
 }
 
 LineRenderer* Renderer::SelectLineRenderer(bool applyPostProcess) {
