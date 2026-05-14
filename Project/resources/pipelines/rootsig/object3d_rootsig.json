@@ -59,6 +59,13 @@
       "descriptorCount": 1,
       "rangeType": "SRV",
       "semantic": "texture"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "semantic": "envmap"
     }
   ],
   "samplers": [

@@ -257,9 +257,6 @@
     <None Include="resources\postprocess\postprocess_registry.json">
       <Filter>resources\postprocess</Filter>
     </None>
-    <None Include="resources\prefabs\default_object.prefab.json">
-      <Filter>resources\prefabs</Filter>
-    </None>
     <None Include="resources\shaders\shader_registry.json">
       <Filter>resources\shaders</Filter>
     </None>
@@ -987,9 +984,6 @@
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Model\Skeleton.h">
       <Filter>GameEngine\Object\Model</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Object\Prefab\PrefabLoader.h">
-      <Filter>GameEngine\Object\Prefab</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Sprite\Sprite.h">
       <Filter>GameEngine\Object\Sprite</Filter>

@@ -13,6 +13,7 @@
 #include "Component/ComponentRegistry.h"
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
+#include "Object/Skybox/Skybox.h"
 #include "externals/imgui/imgui.h"
 #include <algorithm>
 #include <cstring>
@@ -27,143 +28,6 @@ void RendererEditorController::Initialize(AssetManager* assetManager) {
    if (!editorSceneFilePath_.empty() && std::filesystem::exists(editorSceneFilePath_)) {
       LoadEditorSceneFromFile(editorSceneFilePath_);
    }
-}
-
-void RendererEditorController::ShowSceneEditorWindow() {
-   ImGui::Begin("Scene Editor");
-
-   auto* modelManager = assetManager_ ? assetManager_->GetModelAssetManager() : nullptr;
-   auto* materialManager = assetManager_ ? assetManager_->GetMaterialManager() : nullptr;
-
-   const auto modelNames = modelManager ? modelManager->GetModelNames() : std::vector<std::string>{};
-   const auto materialNames = materialManager ? materialManager->GetMaterialNames() : std::vector<std::string>{};
-
-   if (!modelNames.empty()) {
-      editorSelectedModelAssetIndex_ = std::clamp(editorSelectedModelAssetIndex_, 0, static_cast<int>(modelNames.size() - 1));
-   } else {
-      editorSelectedModelAssetIndex_ = 0;
-   }
-
-   if (!materialNames.empty()) {
-      editorSelectedMaterialIndex_ = std::clamp(editorSelectedMaterialIndex_, 0, static_cast<int>(materialNames.size() - 1));
-   } else {
-      editorSelectedMaterialIndex_ = 0;
-   }
-
-   ImGui::Text("Create Object");
-   ImGui::Separator();
-
-   char modelNameBuffer[128]{};
-   std::memcpy(modelNameBuffer, editorNewModelName_.c_str(), std::min(editorNewModelName_.size(), sizeof(modelNameBuffer) - 1));
-   if (ImGui::InputText("New Model Name", modelNameBuffer, sizeof(modelNameBuffer))) {
-      editorNewModelName_ = modelNameBuffer;
-   }
-
-   if (ImGui::BeginCombo("Model Asset", modelNames.empty() ? "<none>" : modelNames[editorSelectedModelAssetIndex_].c_str())) {
-      for (size_t i = 0; i < modelNames.size(); ++i) {
-         ImGui::PushID(static_cast<int>(i));
-         const bool selected = (static_cast<int>(i) == editorSelectedModelAssetIndex_);
-         if (ImGui::Selectable(modelNames[i].c_str(), selected)) {
-            editorSelectedModelAssetIndex_ = static_cast<int>(i);
-         }
-         ImGui::PopID();
-      }
-      ImGui::EndCombo();
-   }
-
-   if (!modelNames.empty() && modelManager) {
-      if (auto previewModel = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_])) {
-         ImGui::Text("Model Preview");
-         ImGui::Text("Name: %s", modelNames[editorSelectedModelAssetIndex_].c_str());
-         ImGui::Text("Meshes: %zu", previewModel->GetMeshData().size());
-         ImGui::Text("Materials: %zu", previewModel->GetMaterialAssets().size());
-      }
-   }
-
-   if (ImGui::BeginCombo("Model Material", materialNames.empty() ? "<none>" : materialNames[editorSelectedMaterialIndex_].c_str())) {
-      for (size_t i = 0; i < materialNames.size(); ++i) {
-         ImGui::PushID(1000 + static_cast<int>(i));
-         const bool selected = (static_cast<int>(i) == editorSelectedMaterialIndex_);
-         if (ImGui::Selectable(materialNames[i].c_str(), selected)) {
-            editorSelectedMaterialIndex_ = static_cast<int>(i);
-         }
-         ImGui::PopID();
-      }
-      ImGui::EndCombo();
-   }
-
-   if (ImGui::Button("Create Model") && modelManager && materialManager && !modelNames.empty() && !materialNames.empty()) {
-      auto modelAsset = modelManager->GetModel(modelNames[editorSelectedModelAssetIndex_]);
-      auto* material = materialManager->GetMaterial(materialNames[editorSelectedMaterialIndex_]);
-      if (modelAsset && material) {
-         auto model = std::make_unique<Model>();
-         model->Create().SetModelAsset(modelAsset).SetMaterial(material);
-
-         const auto sceneObjects = CollectSceneObjects();
-         model->SetObjectName(BuildUniqueObjectName(editorNewModelName_.empty() ? "Model" : editorNewModelName_, sceneObjects));
-
-         if (auto* materialComponent = model->GetComponent<MaterialComponent>()) {
-            nlohmann::json data = nlohmann::json::object();
-            data["materialNames"] = nlohmann::json::array({ materialNames[editorSelectedMaterialIndex_] });
-            materialComponent->Deserialize(data);
-         }
-
-         editorModelAssetNames_[model.get()] = modelNames[editorSelectedModelAssetIndex_];
-         editorModelMaterialNames_[model.get()] = materialNames[editorSelectedMaterialIndex_];
-         selectedObject_ = model.get();
-         editorCreatedModels_.push_back(std::move(model));
-      }
-   }
-
-   ImGui::Spacing();
-
-   char spriteNameBuffer[128]{};
-   std::memcpy(spriteNameBuffer, editorNewSpriteName_.c_str(), std::min(editorNewSpriteName_.size(), sizeof(spriteNameBuffer) - 1));
-   if (ImGui::InputText("New Sprite Name", spriteNameBuffer, sizeof(spriteNameBuffer))) {
-      editorNewSpriteName_ = spriteNameBuffer;
-   }
-
-   if (ImGui::Button("Create Sprite") && materialManager) {
-      auto sprite = std::make_unique<Sprite>();
-      Material* material = nullptr;
-      if (!materialNames.empty()) {
-         material = materialManager->GetMaterial(materialNames[editorSelectedMaterialIndex_]);
-      }
-      sprite->Create(Vector2(128.0f, 128.0f), material);
-
-      const auto sceneObjects = CollectSceneObjects();
-      sprite->SetObjectName(BuildUniqueObjectName(editorNewSpriteName_.empty() ? "Sprite" : editorNewSpriteName_, sceneObjects));
-
-      if (auto* materialComponent = sprite->GetComponent<MaterialComponent>(); materialComponent && !materialNames.empty()) {
-         nlohmann::json data = nlohmann::json::object();
-         data["materialNames"] = nlohmann::json::array({ materialNames[editorSelectedMaterialIndex_] });
-         materialComponent->Deserialize(data);
-      }
-
-      selectedObject_ = sprite.get();
-      editorCreatedSprites_.push_back(std::move(sprite));
-   }
-
-   ImGui::Spacing();
-   ImGui::Text("Scene File");
-   ImGui::Separator();
-
-   std::string scenePathString = editorSceneFilePath_.string();
-   char scenePathBuffer[512]{};
-   std::memcpy(scenePathBuffer, scenePathString.c_str(), std::min(scenePathString.size(), sizeof(scenePathBuffer) - 1));
-   if (ImGui::InputText("Path", scenePathBuffer, sizeof(scenePathBuffer))) {
-      editorSceneFilePath_ = scenePathBuffer;
-   }
-
-   if (ImGui::Button("Save Scene")) {
-      SaveEditorSceneToFile(editorSceneFilePath_);
-   }
-   ImGui::SameLine();
-   if (ImGui::Button("Load Scene")) {
-      LoadEditorSceneFromFile(editorSceneFilePath_);
-   }
-
-   ImGui::End();
 }
 
 void RendererEditorController::ShowAssetWindow() {
@@ -330,17 +194,6 @@ void RendererEditorController::ShowInspectorWindow() {
    selectedObject_->DrawComponentInspector();
 
    ImGui::Spacing();
-   ImGui::Separator();
-   ImGui::Text("Scene File");
-   if (ImGui::Button("Save Scene (Inspector)")) {
-      SaveEditorSceneToFile(editorSceneFilePath_);
-   }
-   ImGui::SameLine();
-   if (ImGui::Button("Load Scene (Inspector)")) {
-      LoadEditorSceneFromFile(editorSceneFilePath_);
-   }
-
-   ImGui::Spacing();
    ImGui::PushID("InspectorAddComponent");
    if (ImGui::CollapsingHeader("Add Component##Header", ImGuiTreeNodeFlags_DefaultOpen)) {
       std::vector<std::string> addableComponentTypeNames;
@@ -501,17 +354,24 @@ std::vector<Object*> RendererEditorController::CollectSceneObjects() const {
    std::vector<Object*> objects;
 
    const auto& models = Model::GetRegisteredModels();
-   objects.reserve(models.size() + Sprite::GetRegisteredSprites().size());
+   const auto& sprites = Sprite::GetRegisteredSprites();
+   const auto& skyboxes = Skybox::GetRegisteredSkyboxes();
+   objects.reserve(models.size() + sprites.size() + skyboxes.size());
    for (auto* model : models) {
       if (model) {
          objects.push_back(model);
       }
    }
 
-   const auto& sprites = Sprite::GetRegisteredSprites();
    for (auto* sprite : sprites) {
       if (sprite) {
          objects.push_back(sprite);
+      }
+   }
+
+   for (auto* skybox : skyboxes) {
+      if (skybox) {
+         objects.push_back(skybox);
       }
    }
 

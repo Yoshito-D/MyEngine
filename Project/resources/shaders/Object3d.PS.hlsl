@@ -20,6 +20,7 @@ StructuredBuffer<PointLight> gPointLights : register(t1);
 StructuredBuffer<SpotLight> gSpotLights : register(t2);
 StructuredBuffer<AreaLight> gAreaLights : register(t3);
 Texture2D<float32_t4> gTexture : register(t4);
+TextureCube<float32_t4> gEnviromentTexture : register(t5);
 SamplerState gSampler : register(s0);
 
 PixelShaderOutput main(VertexShaderOutput input)
@@ -169,8 +170,19 @@ PixelShaderOutput main(VertexShaderOutput input)
         diffuseSum = gMaterial.color.rgb * textureColor.rgb;
     }
 
-    // 最終合成
+    // 合成
     output.color.rgb = diffuseSum + specularSum;
+
+    // 環境マップ反射
+    if (gMaterial.lightingMode != LIGHTING_NONE)
+    {
+        float32_t3 cameraToPosition = normalize(input.worldPosition - gCamera.worldPosition);
+        float32_t3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
+        float32_t4 environmentColor = gEnviromentTexture.Sample(gSampler, reflectedVector);
+        
+        output.color.rgb += (environmentColor.rgb * gMaterial.environmentCoefficient);
+    }
+
     output.color.a = gMaterial.color.a * textureColor.a;
 
     // 最終αチェック

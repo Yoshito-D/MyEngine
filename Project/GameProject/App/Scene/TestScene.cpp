@@ -51,6 +51,8 @@ void TestScene::Initialize() {
    auto planetModelAsset = EngineContext::GetModel("planet.obj");
    auto playerModelAsset = EngineContext::GetModel("walk.gltf");
 
+   planetMaterial->SetEnvironmentTextureStrength(1.0f);
+
    // --- 惑星1の作成 ---
    planet_ = std::make_unique<Model>();
    planet_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial);
@@ -58,7 +60,7 @@ void TestScene::Initialize() {
    planet_->SetScale(Vector3(kPlanetRadius, kPlanetRadius, kPlanetRadius));
 
    if (auto* render = planet_->GetComponent<RenderComponent>()) {
-	  render->textureName = "uvChecker";
+	  render->textureName = "white1x1";
    }
 
    SphericalGravityAttractor* attractor1 = nullptr;
@@ -179,7 +181,7 @@ void TestScene::Initialize() {
    }
 
 #ifdef USE_IMGUI
-   isDebugCameraActive_ = false;
+   debugCamera_->SetPriority(100);
 #endif
 }
 
@@ -254,7 +256,4 @@ void TestScene::Update() {
 
 void TestScene::Draw() {
    BaseScene::Draw();
-   if (skybox_) {
-	  EngineContext::DrawSkybox(skybox_.get());
-   }
 }

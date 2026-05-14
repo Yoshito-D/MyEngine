@@ -24,6 +24,9 @@ void TextureManager::LoadTexture(const std::string& filePath, const std::string&
    intermediateResource_.push_back(intermediate);
 
    textures_[name] = std::move(texture);
+   if (textures_[name]->GetMetadata().IsCubemap()) {
+	  lastCubemapName_ = name;
+   }
    log_.Log("Texture loaded: " + name);
 }
 
@@ -46,6 +49,25 @@ std::vector<std::string> TextureManager::GetTextureNames() const {
    }
    std::sort(names.begin(), names.end());
    return names;
+}
+
+std::vector<std::string> TextureManager::GetCubemapTextureNames() const {
+   std::vector<std::string> names;
+   for (const auto& [name, texture] : textures_) {
+	  if (texture && texture->GetMetadata().IsCubemap()) {
+		 names.push_back(name);
+	  }
+   }
+   std::sort(names.begin(), names.end());
+   return names;
+}
+
+Texture* TextureManager::GetLastCubemapTexture() const {
+   if (lastCubemapName_.empty()) {
+	  return nullptr;
+   }
+   auto it = textures_.find(lastCubemapName_);
+   return (it != textures_.end()) ? it->second.get() : nullptr;
 }
 
 void TextureManager::ReleaseIntermediateResources() {

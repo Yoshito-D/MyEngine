@@ -18,7 +18,6 @@ class RendererEditorController {
 public:
    void Initialize(AssetManager* assetManager);
 
-   void ShowSceneEditorWindow();
    void ShowAssetWindow();
    void ShowHierarchyWindow();
    void ShowInspectorWindow();

@@ -8,6 +8,7 @@
 
 namespace GameEngine {
 class Material;
+class Texture;
 
 class MaterialComponent final : public IObjectComponent {
 public:
@@ -15,10 +16,14 @@ public:
    using MaterialResolver = std::function<Material*(const std::string&)>;
    using MaterialCreator = std::function<Material*(const std::string&, uint32_t, int32_t, const Matrix4x4&)>;
    using MaterialNamesProvider = std::function<std::vector<std::string>()>;
+   using EnvironmentTextureResolver = std::function<Texture*(const std::string&)>;
+   using EnvironmentTextureNamesProvider = std::function<std::vector<std::string>()>;
 
    static void SetMaterialResolver(MaterialResolver resolver);
    static void SetMaterialCreator(MaterialCreator creator);
    static void SetMaterialNamesProvider(MaterialNamesProvider provider);
+   static void SetEnvironmentTextureResolver(EnvironmentTextureResolver resolver);
+   static void SetEnvironmentTextureNamesProvider(EnvironmentTextureNamesProvider provider);
 
    Material* EnsureMaterial(const std::string& name,
       uint32_t color = 0xffffffff,
@@ -30,6 +35,7 @@ public:
    void AssignMaterials(const std::vector<Material*>& materials, const std::vector<std::string>& materialNames = {});
 
    const std::vector<std::string>& GetMaterialNames() const { return materialNames_; }
+   const std::string& GetEnvironmentTextureName() const { return environmentTextureName_; }
 
    const char* GetTypeName() const override;
 
@@ -43,12 +49,16 @@ public:
 
    std::vector<Material*> materials;
 
+   std::string environmentTextureName_;
+
 private:
    void SyncMaterialNamesSize();
 
    static MaterialResolver resolver_;
    static MaterialCreator creator_;
    static MaterialNamesProvider namesProvider_;
+   static EnvironmentTextureResolver environmentTextureResolver_;
+   static EnvironmentTextureNamesProvider environmentTextureNamesProvider_;
    std::vector<std::string> materialNames_;
 };
 }

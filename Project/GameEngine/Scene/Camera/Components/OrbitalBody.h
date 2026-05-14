@@ -82,7 +82,7 @@ public:
 private:
     float yaw_ = 3.14159f;  // PI
     float pitch_ = -0.785f; // -45度
-    float distance_ = 25.0f;
+    float distance_ = 75.0f;
     Vector3 pivotTarget_ = { 0.0f, 0.0f, 0.0f };
 
     float rotateSpeed_ = 0.01f;

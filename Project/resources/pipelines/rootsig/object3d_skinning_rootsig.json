@@ -14,6 +14,7 @@
     { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "semantic": "spotlights" },
     { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "semantic": "arealights" },
     { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "semantic": "texture" },
+    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "semantic": "envmap" },
     { "type": "DescriptorTable", "visibility": "Vertex", "descriptorCount": 1, "rangeType": "SRV", "semantic": "skinpalette" }
   ],
   "samplers": [

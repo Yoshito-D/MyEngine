@@ -6,11 +6,11 @@
 #include "PSOManager.h"
 #include "LightManager.h"
 #include "RootBindingSlots.h"
-#include "Graphics/DirectionalLight.h"
-#include "Graphics/PointLight.h"
-#include "Graphics/SpotLight.h"
-#include "Graphics/AreaLight.h"
-#include "Graphics/LightDataBuffer.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "SpotLight.h"
+#include "AreaLight.h"
+#include "LightDataBuffer.h"
 #include "Model/ModelAsset.h"
 #include "Component/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
@@ -35,8 +35,15 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    if (!materialComponent) {
 	  return;
    }
-   if (materialComponent->materials.empty()) {
-	  materialComponent->AssignMaterial(defaultMaterial);
+
+   std::vector<Material*> fallbackMaterials;
+   const std::vector<Material*>* effectiveMaterials = &materialComponent->materials;
+   if (effectiveMaterials->empty()) {
+	  if (!defaultMaterial) {
+		 return;
+	  }
+	  fallbackMaterials.push_back(defaultMaterial);
+	  effectiveMaterials = &fallbackMaterials;
    }
 
    auto* cmdList = device_->GetCommandList();
@@ -46,7 +53,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  return;
    }
    const auto& meshes = asset->GetMeshData();
-   const auto& materials = materialComponent->materials;
+   const auto& materials = *effectiveMaterials;
 
    assert(!materials.empty());
    assert(!modelData.textures.empty());
@@ -107,6 +114,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    const UINT spotLightSlot = resolvePipelineSlot("spotlights", RootBindingSlots::Object3D::kSpotLight);
    const UINT areaLightSlot = resolvePipelineSlot("arealights", RootBindingSlots::Object3D::kAreaLight);
    const UINT textureSlot = resolvePipelineSlot("texture", RootBindingSlots::Object3D::kTexture);
+   const UINT environmentTextureSlot = resolvePipelineSlot("envmap", RootBindingSlots::Object3D::kEnvMap);
    const UINT skinPaletteSlot = resolvePipelineSlot("skinpalette", RootBindingSlots::Object3D::kSkinPalette);
 
    // 共通バインディング（全メッシュで共通）
@@ -151,6 +159,11 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
 	  // Root Parameter 8: Texture (t4)
 	  cmdList->SetGraphicsRootDescriptorTable(textureSlot, srvHandle);
+
+	  // EnvironmentTexture (t5): バインド (設定されている場合)
+	  if (modelData.environmentTextureSrvHandle.ptr != 0) {
+		 cmdList->SetGraphicsRootDescriptorTable(environmentTextureSlot, modelData.environmentTextureSrvHandle);
+	  }
 
      // 頂点バッファとプリミティブトポロジを設定
       if (useSkinning) {

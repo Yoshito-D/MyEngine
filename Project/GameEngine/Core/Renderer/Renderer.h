@@ -195,6 +195,10 @@ public:
    /// @param skybox スカイボックス
    void DrawSkybox(Skybox* skybox);
 
+   /// @brief モデルに適用する環境テクスチャを設定する
+   /// @param texture キューブマップテクスチャ（nullptrで解除）
+   void SetEnvironmentTexture(Texture* texture);
+
    /// @brief レンダラーの終了処理
    void Finalize();
 
@@ -259,6 +263,7 @@ private:
    BlendMode currentBlendMode_ = BlendMode::kBlendModeNormal;
    std::string currentPipelineName_;
    BlendMode currentPipelineBlendMode_ = BlendMode::kBlendModeNormal;
+   D3D12_GPU_DESCRIPTOR_HANDLE activeEnvironmentTextureSrvHandle_ = {};
 
    std::unique_ptr<Material> defaultMaterial_ = nullptr;
    std::unique_ptr<RenderBootstrapper> renderBootstrapper_;
@@ -272,6 +277,7 @@ private:
 private:
    void DrawAutoRegisteredModels();
    void DrawAutoRegisteredSprites();
+   void DrawAutoRegisteredSkyboxes();
 
    /// @brief 描画コマンドを実行する
    /// @param commands 実行する描画コマンドリスト

@@ -17,7 +17,8 @@ public:
    struct MaterialData {
 	  Vector4 color; // マテリアルの色
 	  int32_t lightingMode; // ライティングを有効にするかどうか
-	  float  padding[3]; // パディング（16バイト境界に揃えるため）
+	  float  environmentCoefficient; // 環境マップの強度
+	  float  padding[2]; // パディング（uvTransformの16バイト境界アライメント用）
 	  Matrix4x4 uvTransform; // UV座標に適用する変換行列
 	  float shininess; // 光沢度
    };
@@ -79,6 +80,14 @@ public:
    /// @brief 光沢度を取得
    /// @return 光沢度
    float GetShininess() const;
+
+   /// @brief 環境テクスチャの強度を設定
+   /// @param strength 強度 (0.0f〜1.0f)
+   void SetEnvironmentTextureStrength(float strength);
+
+   /// @brief 環境テクスチャの強度を取得
+   /// @return 強度
+   float GetEnvironmentTextureStrength() const;
 
    // ========== UVTransform操作関数 ==========
 

@@ -2,10 +2,10 @@
 #ifdef USE_IMGUI
 #include "../../../externals/imgui/imgui.h"
 #endif
-#include "../Graphics/DirectionalLight.h"
-#include "../Graphics/PointLight.h"
-#include "../Graphics/SpotLight.h"
-#include "../Graphics/AreaLight.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "SpotLight.h"
+#include "AreaLight.h"
 #include "MathUtils.h"
 #include <string>
 

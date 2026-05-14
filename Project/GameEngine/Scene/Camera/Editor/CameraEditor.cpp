@@ -11,7 +11,7 @@
 #include "../Components/OrbitalBody.h"
 #include "../Components/LookAtAim.h"
 #include "../Components/PerlinNoise.h"
-#include "Core/Renderer/LineRenderer.h"
+#include "Core/Renderer/Pass/LineRenderer.h"
 #include "externals/imgui/imgui.h"
 
 namespace GameEngine {

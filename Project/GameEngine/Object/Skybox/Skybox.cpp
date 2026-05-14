@@ -2,10 +2,29 @@
 #include "Skybox.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ResourceHelper.h"
+#include <algorithm>
 
 namespace GameEngine {
 
-Skybox::Skybox() = default;
+std::vector<Skybox*> Skybox::sRegisteredSkyboxes_{};
+
+Skybox::Skybox() {
+   sRegisteredSkyboxes_.push_back(this);
+
+   static uint32_t skyboxCounter = 0;
+   SetObjectName("Skybox_" + std::to_string(++skyboxCounter));
+}
+
+Skybox::~Skybox() {
+   auto it = std::find(sRegisteredSkyboxes_.begin(), sRegisteredSkyboxes_.end(), this);
+   if (it != sRegisteredSkyboxes_.end()) {
+      sRegisteredSkyboxes_.erase(it);
+   }
+}
+
+const std::vector<Skybox*>& Skybox::GetRegisteredSkyboxes() {
+   return sRegisteredSkyboxes_;
+}
 
 void Skybox::Create(GraphicsDevice* device) {
    mesh_.CreateSkybox();
