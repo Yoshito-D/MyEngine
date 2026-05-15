@@ -26,7 +26,11 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	std::function<void(const std::string&, BlendMode)> setPipelineFunc) {
 
 	// パイプラインを設定（必ず先に呼び出す）
-	setPipelineFunc("Sprite", spriteData.blendMode);
+	// マテリアルに blendMode が設定されていればそれを優先、なければ DrawCommand の blendMode を使用
+	// ※ この時点ではまだマテリアルを取得していないので DrawCommand の blendMode で先行設定し、
+	//   マテリアル取得後に必要であれば再設定する
+	BlendMode resolvedBlendMode = spriteData.blendMode;
+	setPipelineFunc("Sprite", resolvedBlendMode);
 
 	Sprite* sprite = spriteData.sprite;
 	if (!sprite) {
@@ -48,6 +52,11 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
    Material* spriteMaterial = materialComponent->materials.empty() ? nullptr : materialComponent->materials[0];
 	if (spriteMaterial) {
 		spriteMaterial->SetLightingMode(Material::LightingMode::NONE);
+		// マテリアルに blendMode が設定されていれば再設定
+		if (auto matBlend = spriteMaterial->GetBlendMode()) {
+			resolvedBlendMode = *matBlend;
+			setPipelineFunc("Sprite", resolvedBlendMode);
+		}
 	}
 
 	auto* cmdList = device_->GetCommandList();
@@ -92,8 +101,11 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	
 	// Object3Dルートシグネチャに合わせてルートパラメータを設定
 	// Root Parameter 0: Material (Pixel Shader)
- assert(spriteMaterial != nullptr);
-	cmdList->SetGraphicsRootConstantBufferView(materialSlot, spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());
+ if (!spriteMaterial) {
+	 Logger::GetInstance().Log("[SpriteRenderer] Material is null, skip draw", Logger::LogLevel::Warning);
+	 return;
+ }
+ cmdList->SetGraphicsRootConstantBufferView(materialSlot, spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());
 	
 	// Root Parameter 1: TransformationMatrix (Vertex Shader)
     cmdList->SetGraphicsRootConstantBufferView(transformSlot, sprite->GetTransformationMatrix()->GetTransformationMatrixResource()->GetGPUVirtualAddress());

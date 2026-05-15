@@ -18,7 +18,7 @@ Skybox::Skybox() {
 Skybox::~Skybox() {
    auto it = std::find(sRegisteredSkyboxes_.begin(), sRegisteredSkyboxes_.end(), this);
    if (it != sRegisteredSkyboxes_.end()) {
-      sRegisteredSkyboxes_.erase(it);
+	  sRegisteredSkyboxes_.erase(it);
    }
 }
 
@@ -31,8 +31,8 @@ void Skybox::Create(GraphicsDevice* device) {
 
    transformResource_ = ResourceHelper::CreateBufferResource(device->GetDevice(), sizeof(SkyboxTransformData));
    transformResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformData_));
-   transformData_->wVP                  = MakeIdentity4x4();
-   transformData_->world                = MakeIdentity4x4();
+   transformData_->wVP = MakeIdentity4x4();
+   transformData_->world = MakeIdentity4x4();
    transformData_->worldInverseTranspose = MakeIdentity4x4();
 
    materialResource_ = ResourceHelper::CreateBufferResource(device->GetDevice(), sizeof(SkyboxMaterialData));
@@ -46,7 +46,7 @@ void Skybox::SetTexture(Texture* texture) {
 
 void Skybox::SetColor(const Vector4& color) {
    if (materialData_) {
-      materialData_->color = color;
+	  materialData_->color = color;
    }
 }
 
@@ -60,10 +60,10 @@ ID3D12Resource* Skybox::GetMaterialResource() const {
 
 void Skybox::UpdateTransform(const Matrix4x4& viewProjectionMatrix) {
    if (transformData_) {
-      // VSシェーダーは wVP のみ使用する
-      transformData_->wVP                  = viewProjectionMatrix;
-      transformData_->world                = MakeIdentity4x4();
-      transformData_->worldInverseTranspose = MakeIdentity4x4();
+	  // VSシェーダーは wVP のみ使用する
+	  transformData_->wVP = viewProjectionMatrix;
+	  transformData_->world = MakeIdentity4x4();
+	  transformData_->worldInverseTranspose = MakeIdentity4x4();
    }
 }
 

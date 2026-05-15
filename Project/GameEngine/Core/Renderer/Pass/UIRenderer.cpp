@@ -22,8 +22,14 @@ void UIRenderer::DrawUISprite(const UISpriteDrawData& uiSpriteData,
 	std::function<void(const std::string&, BlendMode)> setPipelineFunc) {
 
 	Sprite* sprite = uiSpriteData.sprite;
-	assert(sprite != nullptr);
-	assert(uiSpriteData.texture != nullptr);
+	if (!sprite) {
+		Logger::GetInstance().Log("[UIRenderer] Sprite is null, skip draw", Logger::LogLevel::Warning);
+		return;
+	}
+	if (!uiSpriteData.texture) {
+		Logger::GetInstance().Log("[UIRenderer] Texture is null, skip draw", Logger::LogLevel::Warning);
+		return;
+	}
 
 	SpriteDrawData spriteData;
 	spriteData.sprite = sprite;

@@ -2,8 +2,12 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
+#include <string>
+#include <optional>
+#include "IMaterialData.h"
 #include "Utility/VectorMath.h"
 #include "Utility/MathUtils.h"
+#include "PipelineState.h"
 
 using namespace Microsoft::WRL;
 
@@ -11,7 +15,7 @@ namespace GameEngine {
 class GraphicsDevice;
 
 //// @brief マテリアルクラス
-class Material {
+class Material : public IMaterialData {
 public:
    /// @brief マテリアルデータ構造体
    struct MaterialData {
@@ -49,7 +53,7 @@ public:
 
    /// @brief マテリアルリソースを取得
    /// @return マテリアルリソースへのポインタ
-   ID3D12Resource* GetMaterialResource() const { return materialResource_.Get(); }
+   ID3D12Resource* GetMaterialResource() const override { return materialResource_.Get(); }
 
    // ========== プロパティアクセス関数 ==========
 
@@ -72,6 +76,22 @@ public:
    /// @brief ライティングモードを取得
    /// @return ライティングモード
    LightingMode GetLightingMode() const;
+
+   /// @brief このマテリアルが使用するパイプライン名を設定
+   /// @param name パイプライン名（空文字列の場合はデフォルト "Object3D" にフォールバック）
+   void SetPipelineName(const std::string& name) { pipelineName_ = name; }
+
+   /// @brief このマテリアルが使用するパイプライン名を取得
+   /// @return パイプライン名（空文字列 = デフォルト動作）
+   const std::string& GetPipelineName() const override { return pipelineName_; }
+
+   /// @brief マテリアルが優先するブレンドモードを設定
+   /// @param mode ブレンドモード（std::nullopt で DrawCommand のモードにフォールバック）
+   void SetBlendMode(std::optional<BlendMode> mode) { blendMode_ = mode; }
+
+   /// @brief マテリアルが優先するブレンドモードを取得
+   /// @return ブレンドモード（nullopt = DrawCommand のブレンドモードを使用）
+   std::optional<BlendMode> GetBlendMode() const { return blendMode_; }
 
    /// @brief 光沢度を設定
    /// @param shininess 光沢度
@@ -135,6 +155,8 @@ public:
 private:
    ComPtr<ID3D12Resource> materialResource_ = nullptr;
    MaterialData* materialData_ = nullptr;
+   std::string pipelineName_;  ///< 使用するパイプライン名（空文字列 = デフォルト）
+   std::optional<BlendMode> blendMode_;  ///< 優先ブレンドモード（nullopt = DrawCommand 依存）
 
    /// @brief 現在のUVTransformからスケール、回転、平行移動を分解
    /// @param outScale 出力：スケール

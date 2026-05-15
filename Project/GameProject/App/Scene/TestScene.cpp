@@ -59,10 +59,6 @@ void TestScene::Initialize() {
    planet_->SetPosition(Vector3(0.0f, 0.0f, 0.0f));
    planet_->SetScale(Vector3(kPlanetRadius, kPlanetRadius, kPlanetRadius));
 
-   if (auto* render = planet_->GetComponent<RenderComponent>()) {
-	  render->textureName = "white1x1";
-   }
-
    SphericalGravityAttractor* attractor1 = nullptr;
    if (auto* a = planet_->AddComponent<SphericalGravityAttractor>()) {
 	  a->influenceRadius = kPlanetRadius * 2.5f;
@@ -74,10 +70,6 @@ void TestScene::Initialize() {
    planet2_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial);
    planet2_->SetPosition(Vector3(kPlanet2Distance, 0.0f, 0.0f));
    planet2_->SetScale(Vector3(kPlanet2Radius, kPlanet2Radius, kPlanet2Radius));
-
-   if (auto* render = planet2_->GetComponent<RenderComponent>()) {
-	  render->textureName = "uvChecker";
-   }
 
    SphericalGravityAttractor* attractor2 = nullptr;
    if (auto* a = planet2_->AddComponent<SphericalGravityAttractor>()) {

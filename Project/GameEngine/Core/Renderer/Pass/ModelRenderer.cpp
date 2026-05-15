@@ -55,8 +55,14 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    const auto& meshes = asset->GetMeshData();
    const auto& materials = *effectiveMaterials;
 
-   assert(!materials.empty());
-   assert(!modelData.textures.empty());
+   if (materials.empty()) {
+      Logger::GetInstance().Log("[ModelRenderer] No materials assigned, skip draw", Logger::LogLevel::Warning);
+      return;
+   }
+   if (modelData.textures.empty()) {
+      Logger::GetInstance().Log("[ModelRenderer] No textures assigned, skip draw", Logger::LogLevel::Warning);
+      return;
+   }
 
    Camera* camera = modelData.camera;
 
@@ -91,10 +97,17 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    }
 
    const bool useSkinning = canUseSkinning && hasSkinningPipeline;
-   const std::string pipelineName = useSkinning ? skinningPipelineName : "Object3D";
+
+   // マテリアルにパイプライン名が指定されていればそれを使用、なければデフォルト "Object3D"
+   const std::string& materialPipelineName = materials[0]->GetPipelineName();
+   const std::string defaultPipelineName = materialPipelineName.empty() ? "Object3D" : materialPipelineName;
+   const std::string pipelineName = useSkinning ? skinningPipelineName : defaultPipelineName;
+
+   // マテリアルに blendMode が設定されていればそれを優先、なければ DrawCommand の blendMode を使用
+   const BlendMode resolvedBlendMode = materials[0]->GetBlendMode().value_or(modelData.blendMode);
 
    // 使用パイプラインを設定
-   setPipelineFunc(pipelineName, modelData.blendMode);
+   setPipelineFunc(pipelineName, resolvedBlendMode);
 
    auto resolvePipelineSlot = [this, &pipelineName](const char* semantic, UINT fallback) -> UINT {
 	  if (!psoManager_) {
@@ -147,11 +160,17 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    for (size_t i = 0; i < meshes.size(); ++i) {
 	  // --- マテリアル取得（不足分は先頭を使い回し） ---
 	  const Material* mat = (i < materials.size()) ? materials[i] : materials[0];
-	  assert(mat != nullptr);
+	  if (!mat) {
+		 Logger::GetInstance().Log("[ModelRenderer] Material is null at index " + std::to_string(i) + ", skip mesh", Logger::LogLevel::Warning);
+		 continue;
+	  }
 
 	  // --- テクスチャSRV取得（不足分は先頭を使い回し） ---
 	  D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = (i < modelData.textures.size()) ? modelData.textures[i] : modelData.textures[0];
-	  assert(srvHandle.ptr != 0);
+	  if (srvHandle.ptr == 0) {
+		 Logger::GetInstance().Log("[ModelRenderer] Invalid texture SRV handle at index " + std::to_string(i) + ", skip mesh", Logger::LogLevel::Warning);
+		 continue;
+	  }
 
 	  // --- メッシュ固有のバインディング ---
 	  // Root Parameter 0: Material (Pixel Shader)

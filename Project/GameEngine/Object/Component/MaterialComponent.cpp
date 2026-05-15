@@ -16,6 +16,7 @@ namespace {
 #include "Object.h"
 #include "externals/imgui/imgui.h"
 #include "Graphics/Texture.h"
+#include <cstring>
 #endif
 
 namespace GameEngine {
@@ -23,6 +24,8 @@ namespace GameEngine {
 MaterialComponent::MaterialResolver MaterialComponent::resolver_ = nullptr;
 MaterialComponent::MaterialCreator MaterialComponent::creator_ = nullptr;
 MaterialComponent::MaterialNamesProvider MaterialComponent::namesProvider_ = nullptr;
+MaterialComponent::TextureResolver MaterialComponent::textureResolver_ = nullptr;
+MaterialComponent::TextureNamesProvider MaterialComponent::textureNamesProvider_ = nullptr;
 MaterialComponent::EnvironmentTextureResolver MaterialComponent::environmentTextureResolver_ = nullptr;
 MaterialComponent::EnvironmentTextureNamesProvider MaterialComponent::environmentTextureNamesProvider_ = nullptr;
 
@@ -36,6 +39,14 @@ void MaterialComponent::SetMaterialCreator(MaterialCreator creator) {
 
 void MaterialComponent::SetMaterialNamesProvider(MaterialNamesProvider provider) {
    namesProvider_ = std::move(provider);
+}
+
+void MaterialComponent::SetTextureResolver(TextureResolver resolver) {
+   textureResolver_ = std::move(resolver);
+}
+
+void MaterialComponent::SetTextureNamesProvider(TextureNamesProvider provider) {
+   textureNamesProvider_ = std::move(provider);
 }
 
 void MaterialComponent::SetEnvironmentTextureResolver(EnvironmentTextureResolver resolver) {
@@ -123,6 +134,19 @@ void MaterialComponent::SyncMaterialNamesSize() {
    } else if (materialNames_.size() > materials.size()) {
       materialNames_.resize(materials.size());
    }
+   if (textureNames_.size() < materials.size()) {
+      textureNames_.resize(materials.size());
+   } else if (textureNames_.size() > materials.size()) {
+      textureNames_.resize(materials.size());
+   }
+}
+
+Texture* MaterialComponent::GetTexture(size_t index) const {
+   if (!textureResolver_) return nullptr;
+   if (index >= textureNames_.size()) return nullptr;
+   const auto& name = textureNames_[index];
+   if (name.empty()) return nullptr;
+   return textureResolver_(name);
 }
 
 const char* MaterialComponent::GetTypeName() const {
@@ -140,6 +164,13 @@ nlohmann::json MaterialComponent::Serialize() const {
    json["materialNames"] = materialNames;
    json["materialCount"] = materials.size();
    json["environmentTextureName"] = environmentTextureName_;
+
+   // テクスチャ名（マテリアルスロット並行）
+   {
+      std::vector<std::string> texNames = textureNames_;
+      texNames.resize(materials.size());
+      json["textureNames"] = texNames;
+   }
 
    if (!materials.empty() && materials[0] && materials[0]->GetMaterialData()) {
       const auto* materialData = materials[0]->GetMaterialData();
@@ -159,6 +190,13 @@ nlohmann::json MaterialComponent::Serialize() const {
          { uv.m[2][0], uv.m[2][1], uv.m[2][2], uv.m[2][3] },
          { uv.m[3][0], uv.m[3][1], uv.m[3][2], uv.m[3][3] }
       };
+
+      // blendMode（nullopt の場合は -1 として保存）
+      const auto blendMode = materials[0]->GetBlendMode();
+      json["blendMode"] = blendMode.has_value() ? static_cast<int>(blendMode.value()) : -1;
+
+      // pipelineName
+      json["pipelineName"] = materials[0]->GetPipelineName();
    }
    return json;
 }
@@ -174,6 +212,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
 
    materialNames_.clear();
    materials.clear();
+   textureNames_.clear();
 
    for (const auto& nameValue : data.at("materialNames")) {
       if (!nameValue.is_string()) {
@@ -190,6 +229,14 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
          }
       }
    }
+
+   // テクスチャ名の復元
+   if (data.contains("textureNames") && data.at("textureNames").is_array()) {
+      for (const auto& tv : data.at("textureNames")) {
+         textureNames_.push_back(tv.is_string() ? tv.get<std::string>() : std::string{});
+      }
+   }
+   textureNames_.resize(materials.size());
 
    if (!materials.empty() && materials[0] && materials[0]->GetMaterialData()) {
       auto* material = materials[0];
@@ -227,6 +274,19 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
          if (valid) {
             material->SetUVTransform(uv);
          }
+      }
+
+      if (data.contains("blendMode") && data.at("blendMode").is_number_integer()) {
+         const int val = data.at("blendMode").get<int>();
+         if (val >= 0 && val < static_cast<int>(BlendMode::kCount)) {
+            material->SetBlendMode(static_cast<BlendMode>(val));
+         } else {
+            material->SetBlendMode(std::nullopt);
+         }
+      }
+
+      if (data.contains("pipelineName") && data.at("pipelineName").is_string()) {
+         material->SetPipelineName(data.at("pipelineName").get<std::string>());
       }
    }
 }
@@ -301,6 +361,60 @@ void MaterialComponent::DrawInspector() {
 
    auto* material = materials[0];
    auto* data = material->GetMaterialData();
+
+   // テクスチャスロット（スロット 0 のみ表示）
+   if (textureNamesProvider_) {
+      const auto texNames = textureNamesProvider_();
+      if (!texNames.empty()) {
+         SyncMaterialNamesSize();
+         const std::string currentTexName = textureNames_.empty() ? std::string() : textureNames_[0];
+         int texSelectedIndex = 0;
+         for (size_t i = 0; i < texNames.size(); ++i) {
+            if (texNames[i] == currentTexName) {
+               texSelectedIndex = static_cast<int>(i);
+               break;
+            }
+         }
+         const char* texPreview = currentTexName.empty() ? "<none>" : currentTexName.c_str();
+         if (ImGui::BeginCombo("Texture", texPreview)) {
+            if (ImGui::Selectable("<none>", currentTexName.empty())) {
+               if (textureNames_.empty()) textureNames_.resize(materials.size());
+               textureNames_[0].clear();
+            }
+            for (size_t i = 0; i < texNames.size(); ++i) {
+               const bool sel = (static_cast<int>(i) == texSelectedIndex && !currentTexName.empty());
+               if (ImGui::Selectable(texNames[i].c_str(), sel)) {
+                  if (textureNames_.empty()) textureNames_.resize(materials.size());
+                  textureNames_[0] = texNames[i];
+               }
+               if (sel) { ImGui::SetItemDefaultFocus(); }
+            }
+            ImGui::EndCombo();
+         }
+
+                // テクスチャプレビュー
+         if (textureResolver_) {
+            const std::string& nameToShow = textureNames_.empty() ? std::string() : textureNames_[0];
+            if (!nameToShow.empty()) {
+               if (Texture* tex = textureResolver_(nameToShow)) {
+                  const float maxSize = 128.0f;
+                  const float w = static_cast<float>(tex->GetWidth());
+                  const float h = static_cast<float>(tex->GetHeight());
+                  const float scale = (w > h) ? (maxSize / w) : (maxSize / h);
+                  const ImVec2 displaySize(w * scale, h * scale);
+                  ImU64 texId{};
+                  const UINT64 gpuPtr = tex->GetTextureSrvHandleGPU().ptr;
+                  static_assert(sizeof(texId) == sizeof(gpuPtr), "ImTextureID size mismatch");
+                  std::memcpy(&texId, &gpuPtr, sizeof(texId));
+                  ImGui::Image(ImTextureRef(texId), displaySize);
+                  ImGui::SameLine();
+                  ImGui::TextDisabled("%ux%u", tex->GetWidth(), tex->GetHeight());
+               }
+            }
+         }
+      }
+   }
+
    Vector4 color = data->color;
    if (ImGui::ColorEdit4("Color", &color.x)) {
       material->SetColor(color);
@@ -324,6 +438,37 @@ void MaterialComponent::DrawInspector() {
    float shininess = data->shininess;
    if (ImGui::DragFloat("Shininess", &shininess, 0.1f, 0.0f, 256.0f)) {
       material->SetShininess(shininess);
+   }
+
+   // ブレンドモード
+   {
+      const char* blendModeLabels[] = { "None", "Normal", "Add", "Subtract", "Multiply", "Screen" };
+      const auto currentBlend = material->GetBlendMode();
+      int blendIndex = currentBlend.has_value() ? static_cast<int>(currentBlend.value()) : -1;
+      const char* blendPreview = (blendIndex >= 0 && blendIndex < 6) ? blendModeLabels[blendIndex] : "<default>";
+      if (ImGui::BeginCombo("Blend Mode", blendPreview)) {
+         if (ImGui::Selectable("<default>", blendIndex < 0)) {
+            material->SetBlendMode(std::nullopt);
+         }
+         for (int i = 0; i < 6; ++i) {
+            const bool sel = (i == blendIndex);
+            if (ImGui::Selectable(blendModeLabels[i], sel)) {
+               material->SetBlendMode(static_cast<BlendMode>(i));
+            }
+            if (sel) { ImGui::SetItemDefaultFocus(); }
+         }
+         ImGui::EndCombo();
+      }
+   }
+
+   // パイプライン名
+   {
+      std::string pipelineName = material->GetPipelineName();
+      char buf[128] = {};
+      pipelineName.copy(buf, sizeof(buf) - 1);
+      if (ImGui::InputText("Pipeline Name", buf, sizeof(buf))) {
+         material->SetPipelineName(buf);
+      }
    }
 
    Vector2 uvScale = material->GetUVScale();

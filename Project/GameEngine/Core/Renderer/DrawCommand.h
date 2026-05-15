@@ -3,6 +3,7 @@
 #include <vector>
 #include <functional>
 #include <optional>
+#include <memory>
 #include "Graphics/PipelineState.h"
 #include "Sprite/Sprite.h"
 #include "Window/Window.h"
@@ -139,6 +140,62 @@ struct DrawCommand {
    /// @param renderPass 描画パス
    static DrawCommand CreateLine(std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc, Camera* camera,
      RenderPass renderPass, std::optional<Vector3> sortPosition = std::nullopt);
+};
+
+// ============================================================
+// IDrawCommand — 型消去ベースの描画コマンドインターフェース
+// DrawCommand の内部データを直接持ちながら、
+// Renderer の Execute/Sort ロジックに必要な情報を仮想関数で公開する。
+// ============================================================
+
+/// @brief 型消去ベース描画コマンドインターフェース
+class IDrawCommand {
+public:
+   virtual ~IDrawCommand() = default;
+
+   /// @brief 描画パスを取得
+   virtual RenderPass GetRenderPass() const = 0;
+
+   /// @brief ブレンドモードを取得
+   virtual BlendMode GetBlendMode() const = 0;
+
+   /// @brief 描画種別のソート優先度を取得（大きいほど先に描画）
+   virtual int GetTypePriority() const = 0;
+
+   /// @brief 透過ソート用のワールド座標を取得（取得不可の場合 nullopt）
+   virtual std::optional<Vector3> GetSortPosition() const = 0;
+
+   /// @brief 描画時に使用するカメラを取得（取得不可の場合 nullptr）
+   virtual Camera* GetCamera() const = 0;
+
+   /// @brief 描画コマンドを DrawCommand 形式で取得（Renderer の Execute に渡すため）
+   virtual const DrawCommand& GetDrawCommand() const = 0;
+};
+
+/// @brief DrawCommand をラップする IDrawCommand の標準実装
+class DrawCommandWrapper final : public IDrawCommand {
+public:
+   explicit DrawCommandWrapper(DrawCommand cmd) : cmd_(std::move(cmd)) {}
+
+   RenderPass GetRenderPass() const override { return cmd_.renderPass; }
+   BlendMode GetBlendMode() const override { return cmd_.blendMode; }
+
+   int GetTypePriority() const override {
+      switch (cmd_.type) {
+         case DrawCommandType::Model:    return 4;
+         case DrawCommandType::Sprite:   return 3;
+         case DrawCommandType::Particle: return 2;
+         case DrawCommandType::Line:     return 1;
+         default:                        return 0;
+      }
+   }
+
+   std::optional<Vector3> GetSortPosition() const override;
+   Camera* GetCamera() const override;
+   const DrawCommand& GetDrawCommand() const override { return cmd_; }
+
+private:
+   DrawCommand cmd_;
 };
 
 } // namespace GameEngine

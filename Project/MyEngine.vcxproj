@@ -213,6 +213,10 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\CommandDispatch.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\OpaquePass.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Light\LightDataBuffer.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\OffscreenRenderTarget.cpp">
@@ -446,6 +450,13 @@
     <ClInclude Include="GameEngine\Core\Asset\SoundManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\TextureManager.h" />
     <ClInclude Include="GameEngine\Core\Audio\Audio.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\IMaterialData.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\CommandDispatch.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\FrameContext.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\IRenderPass.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\OpaquePass.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\PostEffectPass.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
     <ClInclude Include="GameEngine\Scene\Light\AreaLight.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Light\LightDataBuffer.h" />
     <ClInclude Include="GameEngine\Core\Graphics\OffscreenRenderTarget.h" />
@@ -603,6 +614,7 @@
   <ItemGroup>
     <None Include="resources\pipelines\fullscreen_triangle_pipeline.json" />
     <None Include="resources\pipelines\line3d_pipeline.json" />
+    <None Include="resources\pipelines\object3d_dissolve_pipeline.json" />
     <None Include="resources\pipelines\object3d_pipeline.json" />
     <None Include="resources\pipelines\particle_pipeline.json" />
     <None Include="resources\pipelines\pipeline_registry.json" />

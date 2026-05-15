@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "DrawCommand.h"
+#include "Model/Model.h"
+#include "Component/TransformComponent.h"
 
 namespace GameEngine {
 
@@ -72,6 +74,45 @@ DrawCommand DrawCommand::CreateLine(std::function<void(ID3D12GraphicsCommandList
         cmd.lineData.viewProjectionMatrix = camera->GetViewProjectionMatrix();
     }
     return cmd;
+}
+
+// ============================================================
+// DrawCommandWrapper
+// ============================================================
+
+std::optional<Vector3> DrawCommandWrapper::GetSortPosition() const {
+    switch (cmd_.type) {
+        case DrawCommandType::Model:
+            if (cmd_.modelData.model) {
+                return cmd_.modelData.model->GetPosition();
+            }
+            break;
+        case DrawCommandType::Sprite:
+            if (!cmd_.isUISprite && cmd_.spriteData.sprite) {
+                if (const auto* tc = cmd_.spriteData.sprite->GetComponent<TransformComponent>()) {
+                    return tc->transform.translation;
+                }
+            }
+            break;
+        case DrawCommandType::Line:
+            if (cmd_.lineData.sortPosition) {
+                return cmd_.lineData.sortPosition;
+            }
+            break;
+        default:
+            break;
+    }
+    return std::nullopt;
+}
+
+Camera* DrawCommandWrapper::GetCamera() const {
+    switch (cmd_.type) {
+        case DrawCommandType::Model:    return cmd_.modelData.camera;
+        case DrawCommandType::Sprite:   return cmd_.isUISprite ? nullptr : cmd_.spriteData.camera;
+        case DrawCommandType::Particle: return cmd_.particleData.camera;
+        case DrawCommandType::Line:     return cmd_.lineData.camera;
+        default:                        return nullptr;
+    }
 }
 
 } // namespace GameEngine
