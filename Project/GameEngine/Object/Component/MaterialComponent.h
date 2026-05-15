@@ -16,12 +16,16 @@ public:
    using MaterialResolver = std::function<Material*(const std::string&)>;
    using MaterialCreator = std::function<Material*(const std::string&, uint32_t, int32_t, const Matrix4x4&)>;
    using MaterialNamesProvider = std::function<std::vector<std::string>()>;
+   using TextureResolver = std::function<Texture*(const std::string&)>;
+   using TextureNamesProvider = std::function<std::vector<std::string>()>;
    using EnvironmentTextureResolver = std::function<Texture*(const std::string&)>;
    using EnvironmentTextureNamesProvider = std::function<std::vector<std::string>()>;
 
    static void SetMaterialResolver(MaterialResolver resolver);
    static void SetMaterialCreator(MaterialCreator creator);
    static void SetMaterialNamesProvider(MaterialNamesProvider provider);
+   static void SetTextureResolver(TextureResolver resolver);
+   static void SetTextureNamesProvider(TextureNamesProvider provider);
    static void SetEnvironmentTextureResolver(EnvironmentTextureResolver resolver);
    static void SetEnvironmentTextureNamesProvider(EnvironmentTextureNamesProvider provider);
 
@@ -35,6 +39,8 @@ public:
    void AssignMaterials(const std::vector<Material*>& materials, const std::vector<std::string>& materialNames = {});
 
    const std::vector<std::string>& GetMaterialNames() const { return materialNames_; }
+   const std::vector<std::string>& GetTextureNames() const { return textureNames_; }
+   Texture* GetTexture(size_t index = 0) const;
    const std::string& GetEnvironmentTextureName() const { return environmentTextureName_; }
 
    const char* GetTypeName() const override;
@@ -57,8 +63,11 @@ private:
    static MaterialResolver resolver_;
    static MaterialCreator creator_;
    static MaterialNamesProvider namesProvider_;
+   static TextureResolver textureResolver_;
+   static TextureNamesProvider textureNamesProvider_;
    static EnvironmentTextureResolver environmentTextureResolver_;
    static EnvironmentTextureNamesProvider environmentTextureNamesProvider_;
    std::vector<std::string> materialNames_;
+   std::vector<std::string> textureNames_;
 };
 }

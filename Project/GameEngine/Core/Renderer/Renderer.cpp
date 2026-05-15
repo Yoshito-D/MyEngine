@@ -30,6 +30,9 @@
 #include "RootBindingSlots.h"
 #include "RenderBootstrapper.h"
 #include "Object/Skybox/Skybox.h"
+#include "Pass/OpaquePass.h"
+#include "Pass/TransparentPass.h"
+#include "Pass/PostEffectPass.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cstring>
@@ -162,6 +165,41 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
 
    renderBootstrapper_->Initialize(context);
 
+   BuildDefaultPasses();
+}
+
+void Renderer::AddPass(std::unique_ptr<IRenderPass> pass) {
+   if (pass) {
+      renderPasses_.push_back(std::move(pass));
+   }
+}
+
+void Renderer::ClearPasses() {
+   renderPasses_.clear();
+}
+
+void Renderer::BuildDefaultPasses() {
+   ClearPasses();
+   AddPass(std::make_unique<OpaquePass>());
+   AddPass(std::make_unique<TransparentPass>());
+   AddPass(std::make_unique<PostEffectPass>(offscreenRenderTarget_.get()));
+
+   // FrameContext を組み立てる（静的部分のみ。コマンドキューは BeginFrame でリセット済みのポインタを参照）
+   frameCtx_.device          = device_;
+   frameCtx_.psoManager      = psoManager_.get();
+   frameCtx_.lightManager    = lightManager_;
+   frameCtx_.postProcessMgr  = postProcessManager_.get();
+   frameCtx_.defaultMaterial = defaultMaterial_.get();
+   frameCtx_.modelRenderer    = modelRenderer_.get();
+   frameCtx_.spriteRenderer   = spriteRenderer_.get();
+   frameCtx_.particleRenderer = particleRenderer_.get();
+   frameCtx_.uiRenderer       = uiRenderer_.get();
+   frameCtx_.opaqueCommands      = &opaqueCommands_;
+   frameCtx_.transparentCommands = &transparentCommands_;
+   frameCtx_.postProcessCommands = &postProcessCommands_;
+   frameCtx_.setPipelineFunc = [this](const std::string& name, BlendMode mode) {
+      SetPipeline(name, mode);
+   };
 }
 
 void Renderer::BeginFrame() {
@@ -204,8 +242,21 @@ void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> ble
    // 行列を更新
    model->UpdateMatrix(activeCamera);
 
-   // ブレンドモードの決定（引数で指定されていない場合は現在のモードを使用）
-   BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+   // MaterialComponent のブレンドモード優先解決
+   BlendMode effectiveBlendMode = currentBlendMode_;
+   if (const auto* mc = model->GetComponent<MaterialComponent>()) {
+      if (!mc->materials.empty() && mc->materials[0]) {
+         if (const auto matBlend = mc->materials[0]->GetBlendMode()) {
+            effectiveBlendMode = *matBlend;
+         } else {
+            effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+         }
+      } else {
+         effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+      }
+   } else {
+      effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+   }
 
    // 描画パスの決定
    RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
@@ -234,8 +285,21 @@ void Renderer::Draw(Model* model, const std::vector<Texture*>& textures, std::op
    // 行列を更新
    model->UpdateMatrix(activeCamera);
 
-   // ブレンドモードの決定（引数で指定されていない場合は現在のモードを使用）
-   BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+   // MaterialComponent のブレンドモード優先解決
+   BlendMode effectiveBlendMode = currentBlendMode_;
+   if (const auto* mc = model->GetComponent<MaterialComponent>()) {
+      if (!mc->materials.empty() && mc->materials[0]) {
+         if (const auto matBlend = mc->materials[0]->GetBlendMode()) {
+            effectiveBlendMode = *matBlend;
+         } else {
+            effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+         }
+      } else {
+         effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+      }
+   } else {
+      effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+   }
 
    // 描画パスの決定
    RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
@@ -253,8 +317,21 @@ void Renderer::Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> b
 
    sprite->Update(activeCamera, texture);
 
-   // ブレンドモードの決定（引数で指定されていない場合は現在のモードを使用）
-   BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+   // MaterialComponent のブレンドモード優先解決
+   BlendMode effectiveBlendMode = currentBlendMode_;
+   if (const auto* mc = sprite->GetComponent<MaterialComponent>()) {
+      if (!mc->materials.empty() && mc->materials[0]) {
+         if (const auto matBlend = mc->materials[0]->GetBlendMode()) {
+            effectiveBlendMode = *matBlend;
+         } else {
+            effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+         }
+      } else {
+         effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+      }
+   } else {
+      effectiveBlendMode = blendMode.value_or(currentBlendMode_);
+   }
 
    // 描画パスの決定
    RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
@@ -275,8 +352,13 @@ void Renderer::Draw(ParticleSystem* particleSystem, bool applyPostProcess) {
 
    particleSystem->UpdateMatrix(activeCamera);
 
-   // パーティクルは通常加算ブレンドを使用
+   // パーティクルマテリアルのブレンドモード優先解決（デフォルトは加算）
    BlendMode blendMode = BlendMode::kBlendModeAdd;
+   if (const auto* pm = particleSystem->GetMaterial()) {
+      if (const auto matBlend = pm->GetBlendMode()) {
+         blendMode = *matBlend;
+      }
+   }
    RenderPass renderPass = applyPostProcess ? RenderPass::Transparent : RenderPass::PostProcess;
 
    // パーティクルは常に遅延描画（透明度があるため）
@@ -375,17 +457,17 @@ void Renderer::SubmitDrawCommand(const DrawCommand& command) {
 }
 
 void Renderer::RouteDrawCommand(const DrawCommand& command) {
+   auto wrapper = std::make_unique<DrawCommandWrapper>(command);
    switch (command.renderPass) {
 	  case RenderPass::Transparent:
-		 transparentCommands_.push_back(command);
+		 transparentCommands_.push_back(std::move(wrapper));
 		 break;
 	  case RenderPass::PostProcess:
-		 postProcessCommands_.push_back(command);
+		 postProcessCommands_.push_back(std::move(wrapper));
 		 break;
-	  case RenderPass::Opaque: {
-		 opaqueCommands_.push_back(command);
+	  case RenderPass::Opaque:
+		 opaqueCommands_.push_back(std::move(wrapper));
 		 break;
-	  }
    }
 }
 
@@ -541,69 +623,44 @@ void Renderer::EndFrame() {
    lineRenderer_->Clear();
    postProcessLineRenderer_->Clear();
 
-   // 不透明オブジェクトを描画（ポストプロセス前）
-   ExecuteDrawCommands(opaqueCommands_);
-
-   // 半透明オブジェクトを描画（ポストプロセス前）
-   SortTransparentCommands();
-   ExecuteDrawCommands(transparentCommands_);
-
-   // スカイボックスを最後に描画（深度テストにより不透明オブジェクトで覆われたピクセルはスキップされる）
+   // スカイボックスを不透明パス完了後に描画
    DrawAutoRegisteredSkyboxes();
 
-   // オフスクリーンレンダーターゲットの描画を終了
-   offscreenRenderTarget_->PostDraw();
-
-   // PostProcessManagerを使用してポストプロセスを適用
-   postProcessManager_->ApplyEffects(offscreenRenderTarget_->GetSRVHandleGPU());
-
-   // ポストプロセス後の描画を実行
-   if (!postProcessCommands_.empty()) {
-	  offscreenRenderTarget_->PreDrawWithoutClear(true);
-
-	  currentPipelineName_ = "";
-	  currentPipelineBlendMode_ = BlendMode::kBlendModeNone;
-
-	  ExecuteDrawCommands(postProcessCommands_);
-	  offscreenRenderTarget_->PostDraw();
+   // --- レンダーパスを順番に実行 ---
+   for (const auto& pass : renderPasses_) {
+	  if (pass) {
+		 pass->Execute(frameCtx_);
+	  }
    }
 
-   // バックバッファに描画開始
+   // オフスクリーンレンダーターゲットをバックバッファに描画
    device_->PreDraw();
 
 #ifdef USE_IMGUI
-   // エンジン設定ウィンドウを表示
    bool isDockSpaceVisible = imGuiManager_->IsDockSpaceVisible();
    imGuiManager_->ShowEngineSettings(isDockSpaceVisible);
    if (isDockSpaceVisible) {
-	  // ビューポートを表示
 	  imGuiManager_->ShowViewport(offscreenRenderTarget_.get(), isSceneHovered_);
 
 	  if (editorController_) {
-         editorController_->ShowAssetWindow();
+		 editorController_->ShowAssetWindow();
 		 editorController_->ShowHierarchyWindow();
 		 editorController_->ShowInspectorWindow();
 	  }
 
-	  // PostProcessManagerのImGuiコントロールを表示
 	  postProcessManager_->ShowImGuiControls();
-
    } else {
-	  // UI込みのオフスクリーンレンダーターゲットをバックバッファに描画
 	  DrawFullscreenTriangle(offscreenRenderTarget_->GetSRVHandleGPU());
    }
 
    imGuiManager_->EndFrame(device_->GetCommandList());
 #else
-   // UI込みのオフスクリーンレンダーターゲットをバックバッファに描画
    DrawFullscreenTriangle(offscreenRenderTarget_->GetSRVHandleGPU());
 #endif
 
    device_->PostDraw();
 
 #ifdef USE_IMGUI
-   // メインウィンドウのPresent完了後にサブウィンドウをPresentする
-   // これによりDWM合成タイミングが揃い、重なり部分の描画ズレが解消される
    imGuiManager_->PresentPlatformWindows();
 #endif
 }
@@ -634,9 +691,12 @@ void Renderer::DrawAutoRegisteredModels() {
 		 continue;
 	  }
 
+	  auto* materialComp = model->GetComponent<MaterialComponent>();
+
+	  // Texture は MaterialComponent からのみ取得
 	  Texture* texture = nullptr;
-	  if (!renderComponent->textureName.empty()) {
-		 texture = textureManager->GetTexture(renderComponent->textureName);
+	  if (materialComp && !materialComp->GetTextureNames().empty() && !materialComp->GetTextureNames()[0].empty()) {
+		 texture = textureManager->GetTexture(materialComp->GetTextureNames()[0]);
 	  }
 	  if (!texture) {
 		 texture = fallbackTexture;
@@ -645,7 +705,6 @@ void Renderer::DrawAutoRegisteredModels() {
 		 continue;
 	  }
 
-	  auto* materialComp = model->GetComponent<MaterialComponent>();
 	  if (materialComp && !materialComp->GetEnvironmentTextureName().empty()) {
 		 auto* envTex = textureManager->GetTexture(materialComp->GetEnvironmentTextureName());
 		 SetEnvironmentTexture(envTex);
@@ -683,9 +742,12 @@ void Renderer::DrawAutoRegisteredSprites() {
 		 continue;
 	  }
 
+	  auto* materialComp = sprite->GetComponent<MaterialComponent>();
+
+	  // Texture は MaterialComponent からのみ取得
 	  Texture* texture = nullptr;
-	  if (!renderComponent->textureName.empty()) {
-		 texture = textureManager->GetTexture(renderComponent->textureName);
+	  if (materialComp && !materialComp->GetTextureNames().empty() && !materialComp->GetTextureNames()[0].empty()) {
+		 texture = textureManager->GetTexture(materialComp->GetTextureNames()[0]);
 	  }
 	  if (!texture) {
 		 texture = fallbackTexture;
@@ -708,15 +770,15 @@ void Renderer::DrawAutoRegisteredSkyboxes() {
 }
 
 
-void Renderer::ExecuteDrawCommands(const std::vector<DrawCommand>& commands) {
-   for (const auto& cmd : commands) {
+void Renderer::ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawCommand>>& commands) {
+   for (const auto& icmd : commands) {
+	  const DrawCommand& cmd = icmd->GetDrawCommand();
 	  switch (cmd.type) {
 		 case DrawCommandType::Model:
 			modelRenderer_->DrawModel(cmd.modelData, defaultMaterial_.get(), lightManager_,
 			   [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); });
 			break;
 		 case DrawCommandType::Sprite:
-			// isUISpriteフラグでUIスプライトか通常のスプライトか判定
 			if (cmd.isUISprite) {
 			   uiRenderer_->DrawUISprite(cmd.uiSpriteData, defaultMaterial_.get(),
 				  [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); });
@@ -786,21 +848,38 @@ void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHand
 }
 
 void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode) {
-   // パイプラインが既に設定されていて、同じものなら何もしない
+   // 同一パイプラインなら DX12 コマンドリストへの再セットをスキップ
    if (currentPipelineName_ == pipelineName && currentPipelineBlendMode_ == blendMode) {
 	  return;
    }
 
-   auto* pipelineState = psoManager_->GetPipeline(pipelineName, blendMode);
-   if (!pipelineState) {
-	  log_.Log("Failed to get pipeline: " + pipelineName + " with blend mode: " + std::to_string(static_cast<int>(blendMode)), Logger::LogLevel::Error);
-	  // フォールバック: ブレンドモードなしで再試行
-	  pipelineState = psoManager_->GetPipeline(pipelineName, BlendMode::kBlendModeNone);
+   // キャッシュを確認（起動後に一度解決したポインタを再利用）
+   const std::string cacheKey = MakePipelineCacheKey(pipelineName, blendMode);
+   auto it = pipelineCache_.find(cacheKey);
+
+   PipelineState* pipelineState = nullptr;
+
+   if (it != pipelineCache_.end() && it->second.resolved) {
+	  // キャッシュヒット
+	  pipelineState = it->second.pso;
+   } else {
+	  // キャッシュミス → PSOManager に問い合わせてキャッシュに登録
+	  pipelineState = psoManager_->GetPipeline(pipelineName, blendMode);
 	  if (!pipelineState) {
-		 log_.Log("Failed to get fallback pipeline: " + pipelineName, Logger::LogLevel::Error);
-		 assert(false && "Pipeline not found");
-		 return;
+		 log_.Log("Failed to get pipeline: " + pipelineName + " with blend mode: " + std::to_string(static_cast<int>(blendMode)), Logger::LogLevel::Error);
+		 // フォールバック: ブレンドモードなしで再試行
+		 pipelineState = psoManager_->GetPipeline(pipelineName, BlendMode::kBlendModeNone);
+		 if (!pipelineState) {
+			log_.Log("Failed to get fallback pipeline: " + pipelineName, Logger::LogLevel::Error);
+			return;
+		 }
 	  }
+	  // 解決結果を記録（nullptr でも resolved=true として二重検索を防ぐ）
+	  pipelineCache_[cacheKey] = PipelineHandle{ pipelineState, true };
+   }
+
+   if (!pipelineState) {
+	  return;
    }
 
    device_->GetCommandList()->SetGraphicsRootSignature(pipelineState->GetRootSignature());
@@ -881,83 +960,32 @@ void Renderer::SortTransparentCommands() {
 	  return;
    }
 
-   auto getTypePriority = [](DrawCommandType type) {
-	  switch (type) {
-		 case DrawCommandType::Model: return 4;
-		 case DrawCommandType::Sprite: return 3;
-		 case DrawCommandType::Particle: return 2;
-		 case DrawCommandType::Line: return 1;
-		 default: return 0;
-	  }
-	  };
-
-   auto getCommandCamera = [](const DrawCommand& cmd) -> Camera* {
-	  switch (cmd.type) {
-		 case DrawCommandType::Model:
-			return cmd.modelData.camera;
-		 case DrawCommandType::Sprite:
-			return cmd.isUISprite ? nullptr : cmd.spriteData.camera;
-		 case DrawCommandType::Particle:
-			return cmd.particleData.camera;
-		 case DrawCommandType::Line:
-			return cmd.lineData.camera;
-		 default:
-			return nullptr;
-	  }
-	  };
-
-   auto getCommandPosition = [](const DrawCommand& cmd) -> std::optional<Vector3> {
-	  switch (cmd.type) {
-		 case DrawCommandType::Model:
-			if (cmd.modelData.model) {
-			   return cmd.modelData.model->GetPosition();
-			}
-			break;
-		 case DrawCommandType::Sprite:
-			if (!cmd.isUISprite && cmd.spriteData.sprite) {
-               if (const auto* transformComponent = cmd.spriteData.sprite->GetComponent<TransformComponent>()) {
-				  return transformComponent->transform.translation;
-			   }
-			}
-			break;
-		 case DrawCommandType::Line:
-			if (cmd.lineData.sortPosition) {
-			   return cmd.lineData.sortPosition;
-			}
-			break;
-		 default:
-			break;
-	  }
-
-	  return std::nullopt;
-	  };
-
-   auto getSortInfo = [&](const DrawCommand& cmd) {
-	  auto position = getCommandPosition(cmd);
-	  Camera* camera = getCommandCamera(cmd);
-	  const int typePriority = getTypePriority(cmd.type);
-	  if (!position || !camera) {
-		 return std::tuple<int, int, float>{ 0, typePriority, 0.0f };
-	  }
-
-	  const Vector3 delta = *position - camera->GetPosition();
-	  return std::tuple<int, int, float>{ 1, typePriority, delta.LengthSquared() };
-	  };
-
    std::stable_sort(transparentCommands_.begin(), transparentCommands_.end(),
-	  [&](const DrawCommand& lhs, const DrawCommand& rhs) {
-		 const auto lhsInfo = getSortInfo(lhs);
-		 const auto rhsInfo = getSortInfo(rhs);
+	  [](const std::unique_ptr<IDrawCommand>& lhs, const std::unique_ptr<IDrawCommand>& rhs) {
+		 const auto lPos = lhs->GetSortPosition();
+		 const auto rPos = rhs->GetSortPosition();
+		 Camera* lCam = lhs->GetCamera();
+		 Camera* rCam = rhs->GetCamera();
 
-		 if (std::get<0>(lhsInfo) != std::get<0>(rhsInfo)) {
-			return std::get<0>(lhsInfo) > std::get<0>(rhsInfo);
+		 const bool lHasPos = lPos.has_value() && lCam;
+		 const bool rHasPos = rPos.has_value() && rCam;
+
+		 // 位置情報なし → 位置情報ありより手前（先に描画）
+		 if (lHasPos != rHasPos) {
+			return lHasPos > rHasPos;
 		 }
 
-		 if (std::get<2>(lhsInfo) != std::get<2>(rhsInfo)) {
-			return std::get<2>(lhsInfo) > std::get<2>(rhsInfo);
+		 // 両方位置情報あり → カメラ距離の遠い順
+		 if (lHasPos && rHasPos) {
+			const float lDist = (*lPos - lCam->GetPosition()).LengthSquared();
+			const float rDist = (*rPos - rCam->GetPosition()).LengthSquared();
+			if (lDist != rDist) {
+			   return lDist > rDist;
+			}
 		 }
 
-		 return std::get<1>(lhsInfo) > std::get<1>(rhsInfo);
+		 // 距離が同じまたは位置情報なし → 種別優先度順
+		 return lhs->GetTypePriority() > rhs->GetTypePriority();
 	  });
 }
 

@@ -3,6 +3,10 @@
 #include "ComponentRegistry.h"
 #include "Object.h"
 
+#ifdef USE_IMGUI
+#include "externals/imgui/imgui.h"
+#endif
+
 namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       GameEngine::ModelAssetComponent::kTypeName,
@@ -10,9 +14,6 @@ namespace {
    );
 }
 
-#ifdef USE_IMGUI
-#include "externals/imgui/imgui.h"
-#endif
 
 namespace GameEngine {
 

@@ -19,14 +19,22 @@ void ParticleRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager
 void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	std::function<void(const std::string&, BlendMode)> setPipelineFunc) {
 	ParticleSystem* particleSystem = particleData.particleSystem;
-	assert(particleSystem != nullptr);
+	if (!particleSystem) {
+		Logger::GetInstance().Log("[ParticleRenderer] ParticleSystem is null, skip draw", Logger::LogLevel::Warning);
+		return;
+	}
 
 	// アクティブなパーティクルがない場合は描画しない
 	uint32_t activeCount = particleSystem->GetActiveParticleCount();
 	if (activeCount == 0) return;
 
 	// Particleパイプラインを設定
-	setPipelineFunc("Particle", BlendMode::kBlendModeAdd);
+	// マテリアルに blendMode が設定されていればそれを優先、なければ加算ブレンド
+	auto* earlyMaterial = particleSystem->GetMaterial();
+	const BlendMode resolvedBlendMode = (earlyMaterial && earlyMaterial->GetBlendMode().has_value())
+		? earlyMaterial->GetBlendMode().value()
+		: BlendMode::kBlendModeAdd;
+	setPipelineFunc("Particle", resolvedBlendMode);
 
 	auto* cmdList = device_->GetCommandList();
 

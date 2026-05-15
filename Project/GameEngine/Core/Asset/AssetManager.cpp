@@ -25,6 +25,12 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    MaterialComponent::SetEnvironmentTextureNamesProvider([this]() {
       return textureManager_ ? textureManager_->GetCubemapTextureNames() : std::vector<std::string>{};
    });
+   MaterialComponent::SetTextureResolver([this](const std::string& name) -> Texture* {
+      return textureManager_ ? textureManager_->GetTexture(name) : nullptr;
+   });
+   MaterialComponent::SetTextureNamesProvider([this]() {
+      return textureManager_ ? textureManager_->GetTextureNames() : std::vector<std::string>{};
+   });
    modelAssetManager_->Initialize(device);
    textureManager_->Initialize(device);
    soundManager_->Initialize(audio);

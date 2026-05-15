@@ -22,6 +22,8 @@
 #include "ParticleRenderer.h"
 #include "UIRenderer.h"
 #include "RenderBootstrapper.h"
+#include "Pass/IRenderPass.h"
+#include "Pass/FrameContext.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -229,6 +231,18 @@ public:
    /// @return LineRendererのポインタ
    LineRenderer* GetLineRenderer() const { return lineRenderer_.get(); }
 
+   // ========== RenderGraph API ==========
+
+   /// @brief レンダーパスを末尾に追加する
+   /// @param pass 追加するパス（所有権を移譲）
+   void AddPass(std::unique_ptr<IRenderPass> pass);
+
+   /// @brief 登録済みのレンダーパスをすべてクリアする
+   void ClearPasses();
+
+   /// @brief デフォルトのパス構成（Opaque→Transparent→PostEffect）を再構築する
+   void BuildDefaultPasses();
+
 private:
    GraphicsDevice* device_ = nullptr;
    CameraManager* cameraManager_ = nullptr;
@@ -256,17 +270,35 @@ private:
    std::unique_ptr<Camera> uiCamera_ = std::make_unique<Camera>();
 
    // 描画コマンドリスト（レンダーパス別）
-    std::vector<DrawCommand> opaqueCommands_;       // 不透明オブジェクト
-   std::vector<DrawCommand> transparentCommands_;  // 半透明オブジェクト
-   std::vector<DrawCommand> postProcessCommands_;  // ポストプロセス後の描画
+    std::vector<std::unique_ptr<IDrawCommand>> opaqueCommands_;       // 不透明オブジェクト
+   std::vector<std::unique_ptr<IDrawCommand>> transparentCommands_;  // 半透明オブジェクト
+   std::vector<std::unique_ptr<IDrawCommand>> postProcessCommands_;  // ポストプロセス後の描画
 
    BlendMode currentBlendMode_ = BlendMode::kBlendModeNormal;
    std::string currentPipelineName_;
    BlendMode currentPipelineBlendMode_ = BlendMode::kBlendModeNormal;
    D3D12_GPU_DESCRIPTOR_HANDLE activeEnvironmentTextureSrvHandle_ = {};
 
+   /// @brief パイプライン名+ブレンドモードをキーにした解決済みキャッシュ
+   struct PipelineHandle {
+      PipelineState* pso = nullptr;    ///< 起動時に解決済みのポインタ
+      bool resolved = false;           ///< 一度でも解決を試みたか
+   };
+   std::unordered_map<std::string, PipelineHandle> pipelineCache_;
+
+   /// @brief pipelineCache_ のキーを生成
+   std::string MakePipelineCacheKey(const std::string& name, BlendMode mode) const {
+      return name + "_" + std::to_string(static_cast<int>(mode));
+   }
+
    std::unique_ptr<Material> defaultMaterial_ = nullptr;
    std::unique_ptr<RenderBootstrapper> renderBootstrapper_;
+
+   // レンダーパスリスト（Opaque -> Transparent -> PostEffect の順で実行）
+   std::vector<std::unique_ptr<IRenderPass>> renderPasses_;
+
+   // 毎フレーム構築するフレームコンテキスト
+   FrameContext frameCtx_;
 
 #ifdef USE_IMGUI
     std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();
@@ -281,7 +313,7 @@ private:
 
    /// @brief 描画コマンドを実行する
    /// @param commands 実行する描画コマンドリスト
-   void ExecuteDrawCommands(const std::vector<DrawCommand>& commands);
+   void ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawCommand>>& commands);
 
    /// @brief 描画パスに応じてコマンドを振り分ける
    /// @param command 振り分ける描画コマンド

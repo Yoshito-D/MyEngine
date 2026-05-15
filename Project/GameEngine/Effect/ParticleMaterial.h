@@ -1,15 +1,19 @@
 #pragma once
 #include "Utility/VectorMath.h"
 #include "Utility/MathUtils.h"
+#include "Core/Graphics/IMaterialData.h"
+#include "Core/Graphics/PipelineState.h"
 #include <d3d12.h>
 #include <wrl.h>
+#include <string>
+#include <optional>
 
 namespace GameEngine {
 class Texture;
 class GraphicsDevice;
 
 /// @brief パーティクル用マテリアル
-class ParticleMaterial {
+class ParticleMaterial : public IMaterialData {
 public:
    /// @brief マテリアルデータ（GPU送信用）
    struct MaterialData {
@@ -43,11 +47,25 @@ public:
 
    /// @brief マテリアルリソースを取得
    /// @return マテリアルリソースへのポインタ
-   ID3D12Resource* GetMaterialResource() const { return materialResource_.Get(); }
+   ID3D12Resource* GetMaterialResource() const override { return materialResource_.Get(); }
+
+   /// @brief このマテリアルが使用するパイプライン名を取得（デフォルト: "Particle"）
+   const std::string& GetPipelineName() const override { return pipelineName_; }
+
+   /// @brief このマテリアルが使用するパイプライン名を設定
+   void SetPipelineName(const std::string& name) { pipelineName_ = name; }
+
+   /// @brief 優先するブレンドモードを設定（nullopt = デフォルト加算ブレンド）
+   void SetBlendMode(std::optional<BlendMode> mode) { blendMode_ = mode; }
+
+   /// @brief 優先するブレンドモードを取得
+   std::optional<BlendMode> GetBlendMode() const { return blendMode_; }
 
 private:
    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
    MaterialData* materialData_ = nullptr;
    Texture* texture_ = nullptr;
+   std::string pipelineName_ = "Particle";  ///< 使用するパイプライン名
+   std::optional<BlendMode> blendMode_;     ///< 優先ブレンドモード（nullopt = 加算）
 };
 }

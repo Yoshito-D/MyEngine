@@ -270,31 +270,7 @@ void RendererEditorController::ShowInspectorWindow() {
          ImGui::Text("Materials: %zu", modelAsset->GetMaterialAssets().size());
       }
 
-      if (auto* textureManager = assetManager_ ? assetManager_->GetTextureManager() : nullptr) {
-         const auto textureNames = textureManager->GetTextureNames();
-         if (auto* renderComponent = model->GetComponent<RenderComponent>(); renderComponent && !textureNames.empty()) {
-            int textureIndex = 0;
-            for (size_t i = 0; i < textureNames.size(); ++i) {
-               if (textureNames[i] == renderComponent->textureName) {
-                  textureIndex = static_cast<int>(i);
-                  break;
-               }
-            }
-
-            if (ImGui::BeginCombo("Texture##Model", textureNames[textureIndex].c_str())) {
-               for (size_t i = 0; i < textureNames.size(); ++i) {
-                  const bool selected = (static_cast<int>(i) == textureIndex);
-                  if (ImGui::Selectable(textureNames[i].c_str(), selected)) {
-                     renderComponent->textureName = textureNames[i];
-                  }
-                  if (selected) {
-                     ImGui::SetItemDefaultFocus();
-                  }
-               }
-               ImGui::EndCombo();
-            }
-         }
-      }
+      ImGui::TextDisabled("Texture は MaterialComponent で設定してください");
    }
 
    if (auto* sprite = dynamic_cast<Sprite*>(selectedObject_); sprite && ImGui::CollapsingHeader("Sprite", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -319,31 +295,6 @@ void RendererEditorController::ShowInspectorWindow() {
          sprite->SetFlipY(flipY);
       }
 
-      if (auto* textureManager = assetManager_ ? assetManager_->GetTextureManager() : nullptr) {
-         const auto textureNames = textureManager->GetTextureNames();
-         if (auto* renderComponent = sprite->GetComponent<RenderComponent>(); renderComponent && !textureNames.empty()) {
-            int textureIndex = 0;
-            for (size_t i = 0; i < textureNames.size(); ++i) {
-               if (textureNames[i] == renderComponent->textureName) {
-                  textureIndex = static_cast<int>(i);
-                  break;
-               }
-            }
-
-            if (ImGui::BeginCombo("Texture##Sprite", textureNames[textureIndex].c_str())) {
-               for (size_t i = 0; i < textureNames.size(); ++i) {
-                  const bool selected = (static_cast<int>(i) == textureIndex);
-                  if (ImGui::Selectable(textureNames[i].c_str(), selected)) {
-                     renderComponent->textureName = textureNames[i];
-                  }
-                  if (selected) {
-                     ImGui::SetItemDefaultFocus();
-                  }
-               }
-               ImGui::EndCombo();
-            }
-         }
-      }
       ImGui::Spacing();
    }
 
