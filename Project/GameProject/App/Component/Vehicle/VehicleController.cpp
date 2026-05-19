@@ -63,7 +63,8 @@ void VehicleController::Update(float deltaTime) {
    if (mover_) {
 	  float steerInput = CollectSteerInput();
 	  float pitchInput = CollectPitchInput();
-	  mover_->ApplyMovement(steerInput, pitchInput, isGrounded, gravityUp, deltaTime);
+	  bool  driftInput = CollectDriftInput();
+	  mover_->ApplyMovement(steerInput, pitchInput, driftInput, isGrounded, gravityUp, deltaTime);
    }
 }
 
@@ -93,6 +94,18 @@ float VehicleController::CollectPitchInput() const {
 
 bool VehicleController::CollectJumpInput() const {
    return EngineContext::IsKeyTriggered(KeyCode::Space);
+}
+
+bool VehicleController::CollectDriftInput() const {
+   // Q キー押し続けでドリフト入力とする。
+   // IsKeyPressed は押し続けている間 true を返すため、
+   // ButtonMode のドリフトは「押している間だけ維持」という自然な操作感になる。
+   if (EngineContext::IsKeyPressed(KeyCode::Q)) { return true; }
+
+   // ゲームパッドの LB ボタン（LeftShoulder）が押されている場合もドリフト入力とする。
+   if (EngineContext::IsGamePadButtonPressed(GamePadButton::LeftShoulder, 0)) { return true; }
+
+   return false;
 }
 
 #ifdef USE_IMGUI

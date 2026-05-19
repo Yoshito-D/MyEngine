@@ -6,6 +6,11 @@
 #include "../Component/Gravity/PlanetSwitcher.h"
 #include "../Component/Vehicle/VehicleController.h"
 #include "../Component/Vehicle/VehicleMover.h"
+#include "../Component/Vehicle/VehicleGroundMover.h"
+#include "../Component/Vehicle/VehicleAirController.h"
+#include "../Component/Vehicle/VehicleLandingAligner.h"
+#include "../Component/Vehicle/VehicleLandingBoost.h"
+#include "../Component/Vehicle/VehicleDrift.h"
 #include "../Component/Character/CharacterJump.h"
 #include "../Component/Character/CharacterLanding.h"
 #include "../Component/Camera/CameraGravityBridge.h"
@@ -117,8 +122,27 @@ void TestScene::Initialize() {
    // 5. CharacterJump: ジャンプ初速
    player_->AddComponent<CharacterJump>();
 
-   // 6. VehicleMover: Update は空（VehicleController から呼ばれる）
+   // 6. VehicleMover: coordinator（VehicleController から呼ばれる）
    player_->AddComponent<VehicleMover>();
+
+   // 6a. VehicleGroundMover: 地上前進・ステアリング・姿勢再構築
+   player_->AddComponent<VehicleGroundMover>();
+
+   // 6b. VehicleAirController: 空中 yaw/pitch 回転（慣性付き）
+   player_->AddComponent<VehicleAirController>();
+
+   // 6c. VehicleLandingAligner: 着地後の Slerp 姿勢補正（外せば無効化）
+   player_->AddComponent<VehicleLandingAligner>();
+
+   // 6d. VehicleLandingBoost: 着地時の速度ブースト（外せば無効化）
+   player_->AddComponent<VehicleLandingBoost>();
+
+   // 6e. VehicleDrift: ドリフト処理（外せば無効化）
+   //      デフォルトは SustainedSteer モード（追加ボタン不要）。
+   //      miniTurboEnabled = false でミニターボなしのシンプルなドリフトになる。
+   if (auto* drift = player_->AddComponent<VehicleDrift>()) {
+      drift->miniTurboEnabled = false;
+   }
 
    // 7. VehicleController: 入力収集 → VehicleMover 呼び出し（最後に姿勢を確定）
    player_->AddComponent<VehicleController>();

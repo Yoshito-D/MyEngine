@@ -54,6 +54,9 @@ private:
    /// @brief ジャンプ入力を収集する
    bool  CollectJumpInput()  const;
 
+   /// @brief ドリフト入力を収集する（Q キー / ゲームパッド LB）
+   bool  CollectDriftInput() const;
+
    /// @brief 依存コンポーネント参照をキャッシュする
    void  CacheComponents();
 
