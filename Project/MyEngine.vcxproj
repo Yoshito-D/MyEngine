@@ -407,7 +407,12 @@
     <ClCompile Include="GameProject\App\Component\Gravity\PlanetSwitcher.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\App\Component\Player\PlayerController.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleGroundMover.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleMover.cpp" />
     <ClCompile Include="GameProject\Game.cpp" />
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp" />
@@ -603,7 +608,12 @@
     <ClInclude Include="GameProject\App\Component\Gravity\PlanetSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h" />
     <ClInclude Include="GameProject\App\Component\Player\PlayerController.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleGroundMover.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleMover.h" />
     <ClInclude Include="GameProject\Game.h" />
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h" />

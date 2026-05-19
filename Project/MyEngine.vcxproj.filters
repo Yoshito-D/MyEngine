@@ -635,6 +635,11 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleMover.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleGroundMover.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1087,6 +1092,11 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleMover.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
     <ClInclude Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleGroundMover.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
