@@ -34,8 +34,8 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 public:
-   /// @brief ステアリング角速度（deg/sec）
-   float steerSpeed     = 270.0f;
+   /// @brief ロール角速度（deg/sec）
+   float rollSpeed     = 270.0f;
 
    /// @brief ピッチ角速度（deg/sec）
    float pitchSpeed     = 270.0f;
@@ -55,6 +55,10 @@ private:
    /// @brief pitch 角速度を回転クォータニオンへ反映する
    void ApplyPitchRotation(GameEngine::Quaternion& rot,
                            const GameEngine::Vector3& localRight, float deltaTime) const;
+
+   /// @brief roll 角速度を回転クォータニオンへ反映する
+   void ApplyRollRotation(GameEngine::Quaternion& rot,
+	                      const GameEngine::Vector3& localForward, float deltaTime) const;
 
    float angularVelYaw_   = 0.0f;
    float angularVelPitch_ = 0.0f;
