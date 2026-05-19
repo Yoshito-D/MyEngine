@@ -26,21 +26,21 @@ void VehicleAirController::Apply(float steerInput, float pitchInput, float delta
    // 現在のクォータニオンからローカル軸を取得する。
    // localUp    = (0,1,0) を現在回転で変換 → 機体の上方向（yaw 軸として使う）
    // localRight = (1,0,0) を現在回転で変換 → 機体の右方向（pitch 軸として使う）
-   Quaternion currentRot = transform->transform.GetActiveQuaternion();
-   Vector3    localUp    = RotateVector({ 0.0f, 1.0f, 0.0f }, currentRot);
-   Vector3    localRight = RotateVector({ 1.0f, 0.0f, 0.0f }, currentRot);
+   Quaternion currentRot    = transform->transform.GetActiveQuaternion();
+   Vector3    localForward  = RotateVector({ 0.0f, 0.0f, 1.0f }, currentRot);
+   Vector3    localRight    = RotateVector({ 1.0f, 0.0f, 0.0f }, currentRot);
 
    // 角速度を目標値に向けて更新する。
-   // 入力がある場合は targetVel（= input * steerSpeed * deg2rad）に即座にセットする。
+   // 入力がある場合は targetVel（= input * rollSpeed * deg2rad）に即座にセットする。
    // 入力がない場合は指数減衰（angularDamping）で 0 に戻す（慣性の表現）。
    UpdateAngularVelocity(steerInput, angularVelYaw_,
-						 steerInput * steerSpeed * kDeg2Rad, deltaTime);
+						 steerInput * rollSpeed * kDeg2Rad, deltaTime);
    UpdateAngularVelocity(pitchInput, angularVelPitch_,
 						 pitchInput * pitchSpeed * kDeg2Rad, deltaTime);
 
    // yaw / pitch 回転をクォータニオンに合成する。
    Quaternion newRot = currentRot;
-   ApplyYawRotation  (newRot, localUp,    deltaTime);
+   ApplyRollRotation(newRot, localForward, deltaTime);
    ApplyPitchRotation(newRot, localRight, deltaTime);
 
    // 角速度がほぼゼロのときは transform への書き込みをスキップして
@@ -91,6 +91,15 @@ void VehicleAirController::ApplyPitchRotation(Quaternion& rot,
    rot = (delta * rot).Normalize();
 }
 
+void VehicleAirController::ApplyRollRotation(GameEngine::Quaternion& rot, 
+                                             const Vector3& localForward, float deltaTime) const {
+   if (std::abs(angularVelYaw_) <= 1e-6f) { return; }
+
+   // localForward 軸まわりの roll 回転（左右傾き）を合成する。
+   Quaternion delta = MakeRotateAxisAngleQuaternion(localForward, angularVelYaw_ * deltaTime);
+   rot = (delta * rot).Normalize();
+}
+
 // ---------------------------------------------------------------
 // ImGui / Serialize
 // ---------------------------------------------------------------
@@ -99,7 +108,7 @@ void VehicleAirController::ApplyPitchRotation(Quaternion& rot,
 void VehicleAirController::DrawInspector() {
    if (!ImGui::CollapsingHeader("VehicleAirController")) { return; }
    ImGui::Separator();
-   ImGui::DragFloat("Steer Speed",     &steerSpeed,     1.0f, 0.0f, 360.0f);
+   ImGui::DragFloat("Steer Speed",     &rollSpeed,     1.0f, 0.0f, 360.0f);
    ImGui::DragFloat("Pitch Speed",     &pitchSpeed,     1.0f, 0.0f, 360.0f);
    ImGui::DragFloat("Angular Damping", &angularDamping, 0.1f, 0.1f,  20.0f);
    ImGui::Spacing();
@@ -109,14 +118,14 @@ void VehicleAirController::DrawInspector() {
 
 nlohmann::json VehicleAirController::Serialize() const {
    nlohmann::json json;
-   json["steerSpeed"]     = steerSpeed;
+   json["steerSpeed"]     = rollSpeed;
    json["pitchSpeed"]     = pitchSpeed;
    json["angularDamping"] = angularDamping;
    return json;
 }
 
 void VehicleAirController::Deserialize(const nlohmann::json& data) {
-   if (data.contains("steerSpeed"))     { steerSpeed     = data["steerSpeed"]; }
+   if (data.contains("steerSpeed"))     { rollSpeed     = data["steerSpeed"]; }
    if (data.contains("pitchSpeed"))     { pitchSpeed     = data["pitchSpeed"]; }
    if (data.contains("angularDamping")) { angularDamping = data["angularDamping"]; }
 }
