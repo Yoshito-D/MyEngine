@@ -3,6 +3,7 @@
 #include "Model.h"
 #include "Camera/Core/VirtualCamera.h"
 #include "../Component/Camera/GravityFollowCamera.h"
+#include "../Component/Camera/PlayerRearFollowCamera.h"
 #include "../Component/Camera/PlanetLeashCamera.h"
 #include "Object/Skybox/Skybox.h"
 #include <memory>
@@ -15,6 +16,12 @@ public:
    void Draw() override;
 
 private:
+	  enum class CameraMode {
+	  PlayerRearFollow,
+	  GravityFollow,
+	  PlanetLeash,
+   };
+
    // 惑星1
    std::unique_ptr<GameEngine::Model> planet_  = nullptr;
    // 惑星2
@@ -25,10 +32,13 @@ private:
    std::unique_ptr<GameEngine::VirtualCamera> mainVcam_ = nullptr;
    App::GravityFollowCamera* gravityFollowCamera_ = nullptr;
 
+   std::unique_ptr<GameEngine::VirtualCamera> rearFollowVcam_ = nullptr;
+   App::PlayerRearFollowCamera* playerRearFollowCamera_ = nullptr;
+
    std::unique_ptr<GameEngine::VirtualCamera> leashVcam_ = nullptr;
    App::PlanetLeashCamera* leashCamera_ = nullptr;
 
-   bool  useLeashCamera_ = false;
+	  CameraMode cameraMode_ = CameraMode::PlayerRearFollow;
    float testTime_       = 0.0f;
 
    std::unique_ptr<GameEngine::Skybox> skybox_ = nullptr;

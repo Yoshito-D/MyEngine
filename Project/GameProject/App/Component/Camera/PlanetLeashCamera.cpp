@@ -14,6 +14,7 @@ using namespace GameEngine;
 namespace App {
 
 void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
+   // 初回は現在のカメラ状態を初期位置として採用
    if (!isInitialized_) {
       eyePos_        = state.transform.translation;
       prevGravityUp_ = gravityUp_;
@@ -21,7 +22,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       isInitialized_ = true;
    }
 
-   // gravityUp 差分回転を eyePos_ / eyeRelUp_ に適用（ロール防止）
+   // 重力Upの差分回転を eyePos / eyeRelUp に適用してロールの破綻を抑える
    {
       Vector3 up0 = prevGravityUp_;
       Vector3 up1 = gravityUp_;
@@ -51,7 +52,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       prevGravityUp_ = gravityUp_;
    }
 
-   // レアッシュ
+   // レアッシュ: ピボットから遠すぎる場合だけ最大距離まで追従
    Vector3 toTarget = pivotTarget_ - eyePos_;
    float dist = toTarget.Length();
    if (dist > maxFollowDistance) {
@@ -60,19 +61,20 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       eyePos_ = eyePos_ + toTarget * (move / dist);
    }
 
-   // 惑星クランプ
+   // 惑星内部へ侵入しないよう最小半径でクランプ
    Vector3 fromCenter = eyePos_ - sphereCenter_;
    float fromCenterDist = fromCenter.Length();
    if (fromCenterDist < minPlanetDistance && fromCenterDist > 1e-6f) {
       eyePos_ = sphereCenter_ + fromCenter * (minPlanetDistance / fromCenterDist);
    }
 
-   // LookAt
+   // LookAt用の視線方向を算出
    Vector3 lookDir = pivotTarget_ - eyePos_;
    float lookLen = lookDir.Length();
    if (lookLen < 1e-6f) { return; }
    Vector3 lookDirN = lookDir * (1.0f / lookLen);
 
+   // eyeRelUp を視線直交面に再投影して安定化
    {
       Vector3 projected = eyeRelUp_ - lookDirN * eyeRelUp_.Dot(lookDirN);
       float pLen = projected.Length();
@@ -86,6 +88,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       }
    }
 
+   // 参照軸を更新
    Vector3 zaxis = lookDirN;
    Vector3 xaxis = eyeRelUp_.Cross(zaxis);
    float xLen = xaxis.Length();
@@ -94,6 +97,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       cachedUp_    = zaxis.Cross(cachedRight_);
    }
 
+   // カメラ状態へ最終反映
    state.transform.translation = eyePos_;
    state.SetViewMatrix(MakeLookAtMatrix(eyePos_, pivotTarget_, eyeRelUp_));
 }

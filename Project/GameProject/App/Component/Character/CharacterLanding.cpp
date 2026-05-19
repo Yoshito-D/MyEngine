@@ -12,12 +12,15 @@
 namespace App {
 
 void CharacterLanding::Update(float /*deltaTime*/) {
+   // オーナー不在時は処理しない
    if (!HasOwner()) { return; }
 
+   // 必須コンポーネント取得
    auto* transform   = GetOwner().GetComponent<GameEngine::TransformComponent>();
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    if (!transform || !gravityBody) { return; }
 
+   // 惑星中心からの距離と重力Upを算出
    GameEngine::Vector3 toSelf = transform->transform.translation - planetCenter_;
    float dist = toSelf.Length();
    if (dist < 1e-4f) { return; }
@@ -26,25 +29,31 @@ void CharacterLanding::Update(float /*deltaTime*/) {
    GameEngine::Vector3 vel       = gravityBody->GetVelocity();
    float upComp = vel.Dot(gravityUp);
 
+   // ジャンプ状態を確認
    auto* jump      = GetOwner().GetComponent<CharacterJump>();
    bool  isJumping = jump && jump->IsJumping();
 
    if (isJumping) {
-      // 落下中かつ表面以下に到達したら着地
+      // 落下中かつ地表到達で着地
       if (dist <= surfaceRadius_ && upComp <= 0.0f) {
+         // 位置を地表にスナップ
          transform->transform.translation = planetCenter_ + gravityUp * surfaceRadius_;
-         // GravityBody の垂直速度を除去（水平は残す）
+
+         // 垂直速度のみ除去し、水平成分は維持
          vel = vel - gravityUp * upComp;
          gravityBody->SetVelocity(vel);
+
+         // ジャンプ状態解除
          if (jump) { jump->NotifyLanded(); }
-         // CharacterWalker の慣性もリセット
+
+         // 歩行慣性も着地時にリセット
          if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
             walker->ResetHorizontalVelocity();
          }
          isGrounded_ = true;
       }
    } else {
-      // 地上: 表面に固定し速度を完全にゼロ（慣性リセット）
+      // 非ジャンプ時は常に地表へ固定し、速度を完全停止
       transform->transform.translation = planetCenter_ + gravityUp * surfaceRadius_;
       gravityBody->SetVelocity({ 0.0f, 0.0f, 0.0f });
       isGrounded_ = true;

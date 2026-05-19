@@ -15,14 +15,15 @@
 namespace App {
 
 void PlanetSwitcher::Update(float /*deltaTime*/) {
+   // オーナー不在または候補未登録なら何もしない
    if (!HasOwner() || entries_.empty()) { return; }
 
+   // 現在位置を取得
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
    if (!transform) { return; }
-
    const GameEngine::Vector3 pos = transform->transform.translation;
 
-   // 影響圏内かつ最近傍を探す。影響圏外なら全惑星の中で最近傍にフォールバック
+   // 影響圏内の最近傍惑星を探索（無ければ全候補最近傍へフォールバック）
    int bestInRange = -1;
    float bestInRangeDist = std::numeric_limits<float>::max();
    int bestAnyIndex = 0;
@@ -47,28 +48,29 @@ void PlanetSwitcher::Update(float /*deltaTime*/) {
 
    int newIndex = (bestInRange >= 0) ? bestInRange : bestAnyIndex;
 
+   // 切替不要なら終了
    if (newIndex == currentIndex_) { return; }
    currentIndex_ = newIndex;
 
    const auto& best = entries_[newIndex];
 
-   // GravityAttractorLink を切り替え
+   // GravityAttractorLink の接続先を更新
    if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
 	  link->SetAttractor(best.attractor);
    }
 
-   // CharacterLanding を切り替え
+   // CharacterLanding の惑星パラメータを更新
    if (auto* landing = GetOwner().GetComponent<CharacterLanding>()) {
 	  landing->SetPlanetCenter(best.center);
 	  landing->surfaceRadius_ = best.surfaceRadius;
    }
 
-   // CameraGravityBridge を切り替え
+   // CameraGravityBridge の惑星中心を更新
    if (auto* bridge = GetOwner().GetComponent<CameraGravityBridge>()) {
 	  bridge->SetPlanetCenter(best.center);
    }
 
-   // 惑星切替時の姿勢バグ修正: 新しい重力方向へ即時スナップ & 水平速度をリセット
+   // 切替直後の姿勢・移動破綻を防ぐためUpスナップと速度リセットを実施
    if (auto* gravityBody = GetOwner().GetComponent<GravityBody>()) {
 	  GameEngine::Vector3 newUp = (pos - best.center);
 	  float len = newUp.Length();

@@ -41,6 +41,13 @@ public:
    const std::vector<std::string>& GetMaterialNames() const { return materialNames_; }
    const std::vector<std::string>& GetTextureNames() const { return textureNames_; }
    Texture* GetTexture(size_t index = 0) const;
+   const std::string& GetTextureName(size_t index = 0) const;
+
+   /// @brief 指定スロットのテクスチャ名をコードから設定する
+   void SetTextureName(size_t slot, const std::string& name);
+   /// @brief スロット 0 のテクスチャ名を設定する（ショートハンド）
+   void SetTextureName(const std::string& name) { SetTextureName(0, name); }
+
    const std::string& GetEnvironmentTextureName() const { return environmentTextureName_; }
 
    const char* GetTypeName() const override;

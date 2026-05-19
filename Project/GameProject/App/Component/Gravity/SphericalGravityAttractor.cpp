@@ -10,11 +10,15 @@ void SphericalGravityAttractor::DrawInspector() {
       return;
    }
    ImGui::Separator();
+
+   // 影響半径を調整（0以下は無限範囲）
    ImGui::DragFloat("Influence Radius", &influenceRadius, 0.5f, 0.0f, 500.0f);
    if (influenceRadius <= 0.0f) {
       ImGui::SameLine();
       ImGui::TextDisabled("(Infinite)");
    }
+
+   // 現在の中心座標を表示
    if (HasOwner()) {
       if (auto* t = GetOwner().GetComponent<GameEngine::TransformComponent>()) {
          auto& pos = t->transform.translation;
