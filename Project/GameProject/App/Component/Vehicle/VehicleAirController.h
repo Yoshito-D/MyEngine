@@ -38,7 +38,7 @@ public:
    float steerSpeed     = 270.0f;
 
    /// @brief ピッチ角速度（deg/sec）
-   float pitchSpeed     = 370.0f;
+   float pitchSpeed     = 270.0f;
 
    /// @brief 空中回転の減衰係数（大きいほど慣性が少ない）
    float angularDamping = 2.5f;

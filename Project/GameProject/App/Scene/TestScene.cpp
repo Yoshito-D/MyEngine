@@ -52,12 +52,14 @@ void TestScene::Initialize() {
    EngineContext::CreateMaterial("planetMaterial", 0xffffffff, 0);
    EngineContext::CreateMaterial("playerMaterial", 0xffffffff, 3);
 
+   EngineContext::SetPostProcessEffectEnabled("Grayscale",true);
+
    auto planetMaterial = EngineContext::GetMaterial("planetMaterial");
    auto playerMaterial = EngineContext::GetMaterial("playerMaterial");
    auto planetModelAsset = EngineContext::GetModel("planet.obj");
    auto playerModelAsset = EngineContext::GetModel("car.obj");
 
-   playerMaterial->SetEnvironmentTextureStrength(0.0f);
+   playerMaterial->SetEnvironmentTextureStrength(0.015f);
 
    // --- 惑星1の作成 ---
    planet_ = std::make_unique<Model>();
