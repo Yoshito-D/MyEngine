@@ -632,6 +632,9 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\CommandDispatch.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleMover.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1081,6 +1084,9 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\PostEffectPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\CommandDispatch.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleMover.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

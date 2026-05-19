@@ -149,6 +149,19 @@ Texture* MaterialComponent::GetTexture(size_t index) const {
    return textureResolver_(name);
 }
 
+const std::string& MaterialComponent::GetTextureName(size_t index) const {
+   static const std::string kEmpty;
+   if (index >= textureNames_.size()) return kEmpty;
+   return textureNames_[index];
+}
+
+void MaterialComponent::SetTextureName(size_t slot, const std::string& name) {
+   if (textureNames_.size() <= slot) {
+      textureNames_.resize(slot + 1);
+   }
+   textureNames_[slot] = name;
+}
+
 const char* MaterialComponent::GetTypeName() const {
    return "MaterialComponent";
 }
@@ -362,42 +375,46 @@ void MaterialComponent::DrawInspector() {
    auto* material = materials[0];
    auto* data = material->GetMaterialData();
 
-   // テクスチャスロット（スロット 0 のみ表示）
+   // テクスチャスロット（マテリアルスロットごとに表示）
    if (textureNamesProvider_) {
       const auto texNames = textureNamesProvider_();
       if (!texNames.empty()) {
          SyncMaterialNamesSize();
-         const std::string currentTexName = textureNames_.empty() ? std::string() : textureNames_[0];
-         int texSelectedIndex = 0;
-         for (size_t i = 0; i < texNames.size(); ++i) {
-            if (texNames[i] == currentTexName) {
-               texSelectedIndex = static_cast<int>(i);
-               break;
-            }
-         }
-         const char* texPreview = currentTexName.empty() ? "<none>" : currentTexName.c_str();
-         if (ImGui::BeginCombo("Texture", texPreview)) {
-            if (ImGui::Selectable("<none>", currentTexName.empty())) {
-               if (textureNames_.empty()) textureNames_.resize(materials.size());
-               textureNames_[0].clear();
-            }
-            for (size_t i = 0; i < texNames.size(); ++i) {
-               const bool sel = (static_cast<int>(i) == texSelectedIndex && !currentTexName.empty());
-               if (ImGui::Selectable(texNames[i].c_str(), sel)) {
-                  if (textureNames_.empty()) textureNames_.resize(materials.size());
-                  textureNames_[0] = texNames[i];
-               }
-               if (sel) { ImGui::SetItemDefaultFocus(); }
-            }
-            ImGui::EndCombo();
-         }
+         ImGui::SeparatorText("Textures");
+         for (size_t slot = 0; slot < materials.size(); ++slot) {
+            ImGui::PushID(static_cast<int>(slot));
 
-                // テクスチャプレビュー
-         if (textureResolver_) {
-            const std::string& nameToShow = textureNames_.empty() ? std::string() : textureNames_[0];
-            if (!nameToShow.empty()) {
-               if (Texture* tex = textureResolver_(nameToShow)) {
-                  const float maxSize = 128.0f;
+            const std::string currentTexName = slot < textureNames_.size() ? textureNames_[slot] : std::string();
+            int texSelectedIndex = 0;
+            for (size_t i = 0; i < texNames.size(); ++i) {
+               if (texNames[i] == currentTexName) {
+                  texSelectedIndex = static_cast<int>(i);
+                  break;
+               }
+            }
+
+            const std::string label = "Slot " + std::to_string(slot);
+            const char* texPreview = currentTexName.empty() ? "<none>" : currentTexName.c_str();
+            if (ImGui::BeginCombo(label.c_str(), texPreview)) {
+               if (ImGui::Selectable("<none>", currentTexName.empty())) {
+                  if (textureNames_.size() <= slot) textureNames_.resize(slot + 1);
+                  textureNames_[slot].clear();
+               }
+               for (size_t i = 0; i < texNames.size(); ++i) {
+                  const bool sel = (static_cast<int>(i) == texSelectedIndex && !currentTexName.empty());
+                  if (ImGui::Selectable(texNames[i].c_str(), sel)) {
+                     if (textureNames_.size() <= slot) textureNames_.resize(slot + 1);
+                     textureNames_[slot] = texNames[i];
+                  }
+                  if (sel) { ImGui::SetItemDefaultFocus(); }
+               }
+               ImGui::EndCombo();
+            }
+
+            // テクスチャプレビュー
+            if (textureResolver_ && !currentTexName.empty()) {
+               if (Texture* tex = textureResolver_(currentTexName)) {
+                  const float maxSize = 96.0f;
                   const float w = static_cast<float>(tex->GetWidth());
                   const float h = static_cast<float>(tex->GetHeight());
                   const float scale = (w > h) ? (maxSize / w) : (maxSize / h);
@@ -411,6 +428,8 @@ void MaterialComponent::DrawInspector() {
                   ImGui::TextDisabled("%ux%u", tex->GetWidth(), tex->GetHeight());
                }
             }
+
+            ImGui::PopID();
          }
       }
    }

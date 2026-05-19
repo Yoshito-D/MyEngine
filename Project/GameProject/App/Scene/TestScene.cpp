@@ -4,17 +4,18 @@
 #include "../Component/Gravity/SphericalGravityAttractor.h"
 #include "../Component/Gravity/GravityAttractorLink.h"
 #include "../Component/Gravity/PlanetSwitcher.h"
-#include "../Component/Player/PlayerController.h"
-#include "../Component/Camera/ScreenSpaceBasis.h"
-#include "../Component/Character/CharacterWalker.h"
+#include "../Component/Vehicle/VehicleController.h"
+#include "../Component/Vehicle/VehicleMover.h"
 #include "../Component/Character/CharacterJump.h"
 #include "../Component/Character/CharacterLanding.h"
 #include "../Component/Camera/CameraGravityBridge.h"
 #include "../Component/Camera/GravityFollowCamera.h"
+#include "../Component/Camera/PlayerRearFollowCamera.h"
 #include "../Component/Camera/PlanetLeashCamera.h"
 #include "Component/TransformComponent.h"
 #include "Component/AnimationComponent.h"
 #include "Component/RenderComponent.h"
+#include "Component/MaterialComponent.h"
 #include "MathUtils.h"
 #include <cmath>
 
@@ -39,19 +40,19 @@ void TestScene::Initialize() {
 
    // --- アセット読み込み ---
    EngineContext::LoadModel("resources/models/planet", "planet.obj");
-   EngineContext::LoadModel("resources/models/human", "walk.gltf");
-   EngineContext::LoadAnimation("resources/models/human", "walk.gltf");
+   EngineContext::LoadModel("resources/models/car", "car.obj");
    EngineContext::LoadTexture("resources/textures/uvChecker.png", "uvChecker");
+   EngineContext::LoadTexture("resources/textures/color_palette.png", "car");
 
-   EngineContext::CreateMaterial("planetMaterial", 0xffffffff, 3);
+   EngineContext::CreateMaterial("planetMaterial", 0xffffffff, 0);
    EngineContext::CreateMaterial("playerMaterial", 0xffffffff, 3);
 
    auto planetMaterial = EngineContext::GetMaterial("planetMaterial");
    auto playerMaterial = EngineContext::GetMaterial("playerMaterial");
    auto planetModelAsset = EngineContext::GetModel("planet.obj");
-   auto playerModelAsset = EngineContext::GetModel("walk.gltf");
+   auto playerModelAsset = EngineContext::GetModel("car.obj");
 
-   planetMaterial->SetEnvironmentTextureStrength(1.0f);
+   playerMaterial->SetEnvironmentTextureStrength(0.0f);
 
    // --- 惑星1の作成 ---
    planet_ = std::make_unique<Model>();
@@ -61,9 +62,11 @@ void TestScene::Initialize() {
 
    SphericalGravityAttractor* attractor1 = nullptr;
    if (auto* a = planet_->AddComponent<SphericalGravityAttractor>()) {
-	  a->influenceRadius = kPlanetRadius * 2.5f;
+	  a->influenceRadius = kPlanetRadius * 10.0f;
 	  attractor1 = a;
    }
+   // uvChecker テクスチャを設定
+   if (auto* mc = planet_->GetComponent<MaterialComponent>()) { mc->SetTextureName("uvChecker"); }
 
    // --- 惑星2の作成 ---
    planet2_ = std::make_unique<Model>();
@@ -73,9 +76,11 @@ void TestScene::Initialize() {
 
    SphericalGravityAttractor* attractor2 = nullptr;
    if (auto* a = planet2_->AddComponent<SphericalGravityAttractor>()) {
-	  a->influenceRadius = kPlanet2Radius * 2.5f;
+	  a->influenceRadius = kPlanet2Radius * 10.0f;
 	  attractor2 = a;
    }
+   // uvChecker テクスチャを設定
+   if (auto* mc = planet2_->GetComponent<MaterialComponent>()) { mc->SetTextureName("uvChecker"); }
 
    // --- プレイヤーの作成 ---
    player_ = std::make_unique<Model>();
@@ -83,56 +88,57 @@ void TestScene::Initialize() {
    player_->SetPosition(Vector3(0.0f, kPlayerOrbitHeight, 0.0f));
    player_->SetScale(Vector3(1.0f, 1.0f, 1.0f));
 
-   // GravityBody: 姿勢制御 + 物理
+   if (auto* mc = player_->GetComponent<MaterialComponent>()) { mc->SetTextureName("car"); }
+
+   // 1. GravityAttractorLink: 今フレームの重力方向を先に確定させる
+   if (auto* link = player_->AddComponent<GravityAttractorLink>()) {
+	  link->SetAttractor(attractor1);
+   }
+
+   // 2. PlanetSwitcher: GravityAttractorLink の接続先を切り替える
+   if (auto* switcher = player_->AddComponent<PlanetSwitcher>()) {
+	  switcher->AddPlanet(attractor1, planet_->GetPosition(), kPlanetRadius);
+	  switcher->AddPlanet(attractor2, planet2_->GetPosition(), kPlanet2Radius);
+   }
+
+   // 3. GravityBody: 確定済みの重力方向で姿勢回転 + 位置移動
    if (auto* gravityBody = player_->AddComponent<GravityBody>()) {
 	  gravityBody->rotationSpeed = 5.0f;
 	  gravityBody->gravityStrength = 9.8f;
 	  gravityBody->useGravity = true;
    }
 
-   // GravityAttractorLink: 初期惑星（惑星1）の重力を適用（PlanetSwitcher が切り替える）
-   if (auto* link = player_->AddComponent<GravityAttractorLink>()) {
-	  link->SetAttractor(attractor1);
-   }
-
-   // CharacterLanding: 初期惑星（惑星1）の表面に固定
+   // 4. CharacterLanding: 位置を地表にスナップ・垂直速度除去
    if (auto* landing = player_->AddComponent<CharacterLanding>()) {
 	  landing->SetPlanetCenter(planet_->GetPosition());
 	  landing->surfaceRadius_ = kPlanetRadius;
    }
 
-   // PlanetSwitcher: 最近傍の惑星に自動乗り換え
-   if (auto* switcher = player_->AddComponent<PlanetSwitcher>()) {
-	  switcher->AddPlanet(attractor1, planet_->GetPosition(), kPlanetRadius);
-	  switcher->AddPlanet(attractor2, planet2_->GetPosition(), kPlanet2Radius);
-   }
-
-   // ScreenSpaceBasis: カメラ軸の重力平面投影（カメラは後で設定）
-   player_->AddComponent<ScreenSpaceBasis>();
-
-   // CharacterWalker: 水平移動 + yaw補間
-   if (auto* walker = player_->AddComponent<CharacterWalker>()) {
-	  walker->moveSpeed = 4.0f;
-   }
-
-   // CharacterJump: ジャンプ初速
+   // 5. CharacterJump: ジャンプ初速
    player_->AddComponent<CharacterJump>();
 
-   // PlayerController: 入力収集
-   player_->AddComponent<PlayerController>();
+   // 6. VehicleMover: Update は空（VehicleController から呼ばれる）
+   player_->AddComponent<VehicleMover>();
 
-   // AnimationComponent
-   if (auto* anim = player_->AddComponent<AnimationComponent>()) {
-	  anim->animationName = "walk.gltf";
-	  anim->playing = true;
-	  anim->loop = true;
+   // 7. VehicleController: 入力収集 → VehicleMover 呼び出し（最後に姿勢を確定）
+   player_->AddComponent<VehicleController>();
+
+	  // --- 仮想カメラのセットアップ ---
+   rearFollowVcam_ = std::make_unique<VirtualCamera>();
+   rearFollowVcam_->Initialize();
+   rearFollowVcam_->SetName("PlayerRearFollowCamera");
+   rearFollowVcam_->SetPriority(0);
+   playerRearFollowCamera_ = rearFollowVcam_->AddComponent<PlayerRearFollowCamera>();
+   if (playerRearFollowCamera_) {
+	  playerRearFollowCamera_->distance = 15.0f;
+	  playerRearFollowCamera_->height = 4.0f;
+	  playerRearFollowCamera_->rearLerpSpeed = 8.0f;
    }
 
-   // --- 仮想カメラのセットアップ ---
    mainVcam_ = std::make_unique<VirtualCamera>();
    mainVcam_->Initialize();
    mainVcam_->SetName("GravityFollowCamera");
-   mainVcam_->SetPriority(0);
+	  mainVcam_->SetPriority(-1);
    gravityFollowCamera_ = mainVcam_->AddComponent<GravityFollowCamera>();
    if (gravityFollowCamera_) {
 	  gravityFollowCamera_->SetDistance(15.0f);
@@ -155,6 +161,7 @@ void TestScene::Initialize() {
    }
 
    if (auto* brain = EngineContext::GetActiveBrain()) {
+	  brain->RegisterVirtualCamera(rearFollowVcam_.get());
 	  brain->RegisterVirtualCamera(leashVcam_.get());
 	  brain->SetDefaultBlendTime(0.5f);
    }
@@ -162,18 +169,18 @@ void TestScene::Initialize() {
    // CameraGravityBridge: gravityUp / pivotTarget をカメラへ毎フレーム通知（PlanetSwitcher が中心座標を切り替える）
    if (auto* bridge = player_->AddComponent<CameraGravityBridge>()) {
 	  bridge->SetPlanetCenter(planet_->GetPosition());
+	  bridge->SetPlayerRearFollowCamera(playerRearFollowCamera_);
 	  bridge->SetGravityFollowCamera(gravityFollowCamera_);
 	  bridge->SetPlanetLeashCamera(leashCamera_);
    }
 
-   // PlayerController にカメラを設定（ScreenSpaceBasis へ転送される）
-   if (auto* controller = player_->GetComponent<PlayerController>()) {
-	  controller->SetGravityFollowCamera(gravityFollowCamera_);
-	  controller->SetPlanetLeashCamera(nullptr); // 初期は GravityFollow を使用
+   // VehicleController にカメラを設定（矢印キー / 右スティックの回転入力を渡す）
+   if (auto* controller = player_->GetComponent<VehicleController>()) {
+		controller->SetGravityFollowCamera(cameraMode_ == CameraMode::GravityFollow ? gravityFollowCamera_ : nullptr);
    }
 
 #ifdef USE_IMGUI
-   debugCamera_->SetPriority(100);
+   // debugCamera_->SetPriority(100);
 #endif
 }
 
@@ -183,19 +190,38 @@ void TestScene::Update() {
    float deltaTime = EngineContext::GetDeltaTime();
    testTime_ += deltaTime;
 
-   // Tab キーで GravityFollowCamera / PlanetLeashCamera を切り替え
+	  // Tab キーで PlayerRearFollow / GravityFollow / PlanetLeash を切り替え
    if (EngineContext::IsKeyTriggered(KeyCode::Tab)) {
-	  useLeashCamera_ = !useLeashCamera_;
-	  if (mainVcam_)  mainVcam_->SetPriority(useLeashCamera_ ? -1 : 0);
-	  if (leashVcam_) leashVcam_->SetPriority(useLeashCamera_ ? 0 : -1);
+	  switch (cameraMode_) {
+	  case CameraMode::PlayerRearFollow:
+		 cameraMode_ = CameraMode::GravityFollow;
+		 break;
+	  case CameraMode::GravityFollow:
+		 cameraMode_ = CameraMode::PlanetLeash;
+		 break;
+	  default:
+		 cameraMode_ = CameraMode::PlayerRearFollow;
+		 break;
+	  }
 
-	  if (auto* controller = player_->GetComponent<PlayerController>()) {
-		 controller->SetGravityFollowCamera(useLeashCamera_ ? nullptr : gravityFollowCamera_);
-		 controller->SetPlanetLeashCamera(useLeashCamera_ ? leashCamera_ : nullptr);
+	  if (rearFollowVcam_) {
+		 rearFollowVcam_->SetPriority(cameraMode_ == CameraMode::PlayerRearFollow ? 0 : -1);
+	  }
+	  if (mainVcam_) {
+		 mainVcam_->SetPriority(cameraMode_ == CameraMode::GravityFollow ? 0 : -1);
+	  }
+	  if (leashVcam_) {
+		 leashVcam_->SetPriority(cameraMode_ == CameraMode::PlanetLeash ? 0 : -1);
+	  }
+
+	  // VehicleController のカメラ参照も更新
+	  if (auto* controller = player_->GetComponent<VehicleController>()) {
+		 controller->SetGravityFollowCamera(cameraMode_ == CameraMode::GravityFollow ? gravityFollowCamera_ : nullptr);
 	  }
 	  if (auto* bridge = player_->GetComponent<CameraGravityBridge>()) {
-		 bridge->SetGravityFollowCamera(useLeashCamera_ ? nullptr : gravityFollowCamera_);
-		 bridge->SetPlanetLeashCamera(useLeashCamera_ ? leashCamera_ : nullptr);
+		 bridge->SetPlayerRearFollowCamera(cameraMode_ == CameraMode::PlayerRearFollow ? playerRearFollowCamera_ : nullptr);
+		 bridge->SetGravityFollowCamera(cameraMode_ == CameraMode::GravityFollow ? gravityFollowCamera_ : nullptr);
+		 bridge->SetPlanetLeashCamera(cameraMode_ == CameraMode::PlanetLeash ? leashCamera_ : nullptr);
 	  }
    }
 
@@ -210,12 +236,8 @@ void TestScene::Update() {
 		 Vector3 currentUp = gravityBody->GetCurrentUpVector() * 2.0f;
 		 EngineContext::DrawLine(playerPos, playerPos + currentUp, Vector4(0.0f, 1.0f, 0.0f, 1.0f));
 	  }
-	  if (auto* controller = player_->GetComponent<PlayerController>()) {
-		 Vector3 fProj = controller->GetLastForwardProjected() * 2.0f;
-		 Vector3 rProj = controller->GetLastRightProjected() * 2.0f;
+	  if (auto* controller = player_->GetComponent<VehicleController>()) {
 		 Vector3 moveDir = controller->GetLastMoveDirection() * 2.5f;
-		 EngineContext::DrawLine(playerPos, playerPos + fProj, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-		 EngineContext::DrawLine(playerPos, playerPos + rProj, Vector4(1.0f, 0.0f, 0.0f, 1.0f));
 		 if (moveDir.LengthSquared() > 1e-4f) {
 			EngineContext::DrawLine(playerPos, playerPos + moveDir, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
 		 }

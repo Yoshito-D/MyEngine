@@ -10,12 +10,15 @@
 namespace App {
 
 void GravityAttractorLink::Update(float /*deltaTime*/) {
+   // オーナーまたはアトラクタ未設定時は処理しない
    if (!HasOwner() || !attractor_) { return; }
 
+   // 適用対象の GravityBody と現在位置を取得
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    auto* transform   = GetOwner().GetComponent<GameEngine::TransformComponent>();
    if (!gravityBody || !transform) { return; }
 
+   // 発生源側ロジックで重力を適用
    attractor_->ApplyTo(*gravityBody, transform->transform.translation);
 }
 

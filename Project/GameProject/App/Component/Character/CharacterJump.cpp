@@ -9,10 +9,15 @@
 namespace App {
 
 void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
+   // 空中での多重ジャンプを防止
    if (isJumping_) { return; }
+
+   // 重力ボディへ上向き速度を加算
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    if (!gravityBody) { return; }
    gravityBody->SetVelocity(gravityBody->GetVelocity() + gravityUp * jumpStrength);
+
+   // ジャンプ状態を記録
    isJumping_ = true;
 }
 

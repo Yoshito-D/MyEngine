@@ -14,20 +14,27 @@ using namespace GameEngine;
 namespace App {
 
 void GravityBody::Update(float deltaTime) {
+   // オーナー不在時は更新不可
    if (!HasOwner()) {
       return;
    }
+
+   // 目標Up方向へ姿勢を追従
    UpdateRotation(deltaTime);
+
+   // 重力有効時のみ物理更新
    if (useGravity) {
       UpdatePhysics(deltaTime);
    }
 }
 
 void GravityBody::SetTargetUpVector(const Vector3& targetUp) {
+   // 正規化して姿勢目標として保持
    targetUpVector_ = targetUp.Normalize();
 }
 
 void GravityBody::SetGravity(const Vector3& gravity) {
+   // 外部計算済み重力加速度を保持
    gravityAcceleration_ = gravity;
 }
 
@@ -99,18 +106,22 @@ void GravityBody::SnapToUpVector(const Vector3& targetUp) {
 }
 
 void GravityBody::UpdateRotation(float deltaTime) {
+   // 回転対象Transformを取得
    auto* transform = GetOwner().GetComponent<TransformComponent>();
    if (!transform) { return; }
 
+   // 現在Upと目標Upを正規化
    Vector3 current = currentUpVector_.Normalize();
    Vector3 target  = targetUpVector_.Normalize();
 
    if (current.LengthSquared() < 1e-8f) { current = Vector3{ 0.0f, 1.0f, 0.0f }; currentUpVector_ = current; }
    if (target.LengthSquared()  < 1e-8f) { target  = Vector3{ 0.0f, 1.0f, 0.0f }; targetUpVector_  = target; }
 
+   // 方向差が小さい場合は補間不要
    float dot = current.Dot(target);
    if (dot > 0.9999f) { return; }
 
+   // ほぼ逆向きの場合は180度回転の特別処理
    if (dot < -0.9999f) {
       Vector3 axis = Vector3{ 1.0f, 0.0f, 0.0f }.Cross(current);
       if (axis.LengthSquared() < 1e-6f) { axis = Vector3{ 0.0f, 1.0f, 0.0f }.Cross(current); }
@@ -124,18 +135,22 @@ void GravityBody::UpdateRotation(float deltaTime) {
       return;
    }
 
+   // 回転軸を求める
    Vector3 rotAxis = current.Cross(target);
    if (rotAxis.LengthSquared() < 1e-6f) { return; }
    rotAxis = rotAxis.Normalize();
 
+   // 角度差を算出
    float angle = std::acos(std::clamp(dot, -1.0f, 1.0f));
    if (std::abs(angle) < 1e-6f) { return; }
 
+   // rotationSpeed に基づき段階的に回転
    float t = std::clamp(rotationSpeed * deltaTime, 0.0f, 1.0f);
    Quaternion rotDelta = MakeRotateAxisAngleQuaternion(rotAxis, angle * t);
    Quaternion cur      = transform->transform.GetActiveQuaternion();
    transform->transform.SetRotationQuaternion((rotDelta * cur).Normalize());
 
+   // 現在Upも補間更新
    if (t >= 0.9999f) {
       currentUpVector_ = target;
    } else {
@@ -144,9 +159,11 @@ void GravityBody::UpdateRotation(float deltaTime) {
 }
 
 void GravityBody::UpdatePhysics(float deltaTime) {
+   // 位置更新対象Transformを取得
    auto* transform = GetOwner().GetComponent<TransformComponent>();
    if (!transform) { return; }
 
+   // 重力で速度積分し、速度で位置積分
    velocity_ += gravityAcceleration_ * deltaTime;
    transform->transform.translation = transform->transform.translation + velocity_ * deltaTime;
 }
