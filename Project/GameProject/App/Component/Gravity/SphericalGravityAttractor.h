@@ -17,18 +17,10 @@ public:
    void Update(float deltaTime) override { (void)deltaTime; }
 
    /// @brief 影響半径内かどうかを返す（0以下は無限範囲）
-   bool IsInRange(const GameEngine::Vector3& objectPosition) const override {
-      if (influenceRadius <= 0.0f) { return true; }
-      GameEngine::Vector3 diff = objectPosition - GetCenter();
-      return diff.LengthSquared() <= influenceRadius * influenceRadius;
-   }
+   bool IsInRange(const GameEngine::Vector3& objectPosition) const override;
 
    /// @brief 中心から対象への方向を重力Upとして返す
-   GameEngine::Vector3 GetUpVectorFor(const GameEngine::Vector3& objectPosition) const override {
-      GameEngine::Vector3 dir = objectPosition - GetCenter();
-      if (dir.LengthSquared() < 1e-8f) { return GameEngine::Vector3{ 0.0f, 1.0f, 0.0f }; }
-      return dir.Normalize();
-   }
+   GameEngine::Vector3 GetUpVectorFor(const GameEngine::Vector3& objectPosition) const override;
 
    /// @brief influenceRadius をシリアライズする
    nlohmann::json Serialize() const override {

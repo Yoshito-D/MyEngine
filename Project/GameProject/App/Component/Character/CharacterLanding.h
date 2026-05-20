@@ -44,6 +44,14 @@ public:
    /// @brief 惑星地表の半径
    float surfaceRadius_ = 15.0f;
 
+   /// @brief 原点（inertia中心）から着地点までの追加オフセット
+   /// surfaceRadius_ に加算され、実際のスナップ位置が決まる
+   float landingOffset = 0.0f;
+
+   /// @brief 車体OBBの半サイズ（各軸を個別指定）
+   /// 地表スナップ時の支持半径計算に使用する
+   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.2f, 0.75f };
+
 private:
    /// @brief 惑星中心座標
    GameEngine::Vector3 planetCenter_ = { 0.0f, 0.0f, 0.0f };

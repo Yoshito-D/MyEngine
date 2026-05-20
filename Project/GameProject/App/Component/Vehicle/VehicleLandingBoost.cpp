@@ -11,46 +11,54 @@ using namespace GameEngine;
 
 namespace App {
 
-bool VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector3& gravityUp) {
+LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector3& gravityUp) {
    // 着地時の機体上向き (localUp) と重力上向き (gravityUp) の一致度を内積で測る。
    // 完全に一致していれば 1.0、完全にズレていれば 0.0 になる。
    // clamp で負値（真逆方向）を 0 に丸める。
    float alignment = std::clamp(localUp.Dot(gravityUp), 0.0f, 1.0f);
 
-   // alignment が閾値を下回る（機体が斜めで着地）場合はブーストしない。
-   // 逆さまやひどく傾いた着地にボーナスを与えないための安全弁。
-   if (alignment < boostThreshold) { return false; }
-
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
-   if (!groundMover) { return false; }
+   if (!groundMover) { return LandingResult::Normal; }
 
-   // autoSpeed を基準として boostAmount を加算する。
-   // autoSpeed より遅かった場合（ブレーキ直後など）も含め、
-   // 着地ボーナスが常に同じ量になるよう基準値からの加算にしている。
-   float baseSpeed = groundMover->autoSpeed;
-   groundMover->SetCurrentSpeed(baseSpeed + boostAmount);
-   return true;
+   if (alignment >= boostThreshold) {
+      // 成功: 綺麗に着地したのでブーストを加算する。
+      groundMover->AddVelocityImpulse(boostAmount);
+      return LandingResult::Success;
+   }
+   if (alignment >= normalThreshold) {
+      // 普通: 多少傾いた着地なので速度は変化させない。
+      return LandingResult::Normal;
+   }
+   // 失敗: 大きく傾いた着地なので速度を 0 に戻す。
+   groundMover->SetCurrentSpeed(0.0f);
+   return LandingResult::Failure;
 }
 
 #ifdef USE_IMGUI
 void VehicleLandingBoost::DrawInspector() {
    if (!ImGui::CollapsingHeader("VehicleLandingBoost")) { return; }
    ImGui::Separator();
-   ImGui::DragFloat("Boost Amount",    &boostAmount,    0.1f, 0.0f, 200.0f);
-   ImGui::DragFloat("Boost Threshold", &boostThreshold, 0.01f, 0.0f,   1.0f);
+   ImGui::DragFloat("Boost Amount",      &boostAmount,     0.1f,  0.0f, 200.0f);
+   ImGui::DragFloat("Boost Threshold",  &boostThreshold,  0.01f, 0.0f,   1.0f);
+   ImGui::DragFloat("Normal Threshold", &normalThreshold, 0.01f, 0.0f,   1.0f);
+   ImGui::DragFloat("Penalty Amount",   &penaltyAmount,   0.1f,  0.0f, 200.0f);
 }
 #endif
 
 nlohmann::json VehicleLandingBoost::Serialize() const {
    nlohmann::json json;
-   json["boostAmount"]    = boostAmount;
-   json["boostThreshold"] = boostThreshold;
+   json["boostAmount"]     = boostAmount;
+   json["boostThreshold"]  = boostThreshold;
+   json["normalThreshold"] = normalThreshold;
+   json["penaltyAmount"]   = penaltyAmount;
    return json;
 }
 
 void VehicleLandingBoost::Deserialize(const nlohmann::json& data) {
-   if (data.contains("boostAmount"))    { boostAmount    = data["boostAmount"]; }
-   if (data.contains("boostThreshold")) { boostThreshold = data["boostThreshold"]; }
+   if (data.contains("boostAmount"))     { boostAmount     = data["boostAmount"]; }
+   if (data.contains("boostThreshold"))  { boostThreshold  = data["boostThreshold"]; }
+   if (data.contains("normalThreshold")) { normalThreshold = data["normalThreshold"]; }
+   if (data.contains("penaltyAmount"))   { penaltyAmount   = data["penaltyAmount"]; }
 }
 
 } // namespace App

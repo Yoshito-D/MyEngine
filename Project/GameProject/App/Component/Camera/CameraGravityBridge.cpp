@@ -1,5 +1,6 @@
 #include "CameraGravityBridge.h"
 #include "../Character/CharacterJump.h"
+#include "../Vehicle/VehicleGroundMover.h"
 #include "Object/Component/TransformComponent.h"
 #include "Object/Object.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
@@ -46,6 +47,22 @@ void CameraGravityBridge::Update(float /*deltaTime*/) {
       playerRearFollowCamera_->SetPivotTarget(pos);
       playerRearFollowCamera_->SetFollowForward(forward);
       playerRearFollowCamera_->SetAirborne(isAirborne);
+   }
+
+   // VehicleGroundMover から速度と autoSpeed を取得し、両カメラへ供給する
+   float speed     = 0.0f;
+   float autoSpeed = 13.0f;
+   if (auto* mover = GetOwner().GetComponent<VehicleGroundMover>()) {
+      speed     = mover->GetCurrentSpeed();
+      autoSpeed = mover->autoSpeed;
+   }
+   if (gravityFollowCamera_) {
+      gravityFollowCamera_->SetPlayerSpeed(speed);
+      gravityFollowCamera_->SetAutoSpeed(autoSpeed);
+   }
+   if (playerRearFollowCamera_) {
+      playerRearFollowCamera_->SetPlayerSpeed(speed);
+      playerRearFollowCamera_->SetAutoSpeed(autoSpeed);
    }
 
    // PlanetLeashCamera 側へ重力Up・注視対象・惑星中心を同期

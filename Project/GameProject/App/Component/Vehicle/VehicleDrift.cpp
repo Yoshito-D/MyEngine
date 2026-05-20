@@ -223,9 +223,10 @@ void VehicleDrift::TryFireMiniTurbo() {
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
    if (!groundMover) { return; }
 
-   // autoSpeed を基準として miniTurboBoost 分を上乗せする。
-   // 基準値からの加算にすることで毎回同じ量のブーストが得られる。
-   groundMover->SetCurrentSpeed(groundMover->autoSpeed + miniTurboBoost);
+   // 現在の速度に miniTurboBoost を impulse として加算する。
+   // 直接上書きではなく加算にすることで、加速後は UpdateSpeed の減衰により
+   // 自然に autoSpeed へ戻る物理的な挙動になる。
+   groundMover->AddVelocityImpulse(miniTurboBoost);
 }
 
 // ================================================================

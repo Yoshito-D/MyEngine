@@ -81,17 +81,17 @@ public:
 
    /// @brief ドリフト中のステアリング増幅率
    /// 通常ステアより鋭くなることで、ドリフト中の細かい向き修正が可能になる。
-   float driftSteerMult = 1.4f;
+   float driftSteerMult = 1.5f;
 
    /// @brief ミニターボを有効にするか
    /// false にするとドリフト終了時の速度ブーストが発動しない。
    bool miniTurboEnabled = true;
 
    /// @brief ドリフト終了後に加算する速度ブースト量（units/sec）
-   float miniTurboBoost = 20.0f;
+   float miniTurboBoost = 30.0f;
 
    /// @brief ミニターボが発動するドリフト最低継続時間（秒）
-   float miniTurboMinTime = 1.0f;
+   float miniTurboMinTime = 0.5f;
 
    /// @brief SustainedSteer モードで同方向入力を継続する必要がある時間（秒）
    float sustainedSteerTime = 0.2f;

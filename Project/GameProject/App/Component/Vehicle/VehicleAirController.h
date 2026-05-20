@@ -6,6 +6,8 @@
 
 namespace App {
 
+class GravityBody;
+
 /// @brief 空中の yaw / pitch 回転と慣性減衰を担うコンポーネント
 ///
 /// - 入力がある間はターゲット角速度へ即追従
@@ -42,6 +44,10 @@ public:
 
    /// @brief 空中回転の減衰係数（大きいほど慣性が少ない）
    float angularDamping = 2.5f;
+
+   /// @brief 空中の水平減速係数（per sec）
+   /// 小さい値にするほど空中での減速が緩やかになる
+   float airDrag = 0.0003f;
 
 private:
    /// @brief 入力に応じて角速度を更新する（入力なし時は指数減衰）
