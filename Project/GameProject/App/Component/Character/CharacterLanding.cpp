@@ -4,6 +4,8 @@
 #include "../Gravity/GravityBody.h"
 #include "Object/Component/TransformComponent.h"
 #include "Object/Object.h"
+#include "Utility/MathUtils/QuaternionOperations.h"
+#include <cmath>
 
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
@@ -29,15 +31,35 @@ void CharacterLanding::Update(float /*deltaTime*/) {
    GameEngine::Vector3 vel       = gravityBody->GetVelocity();
    float upComp = vel.Dot(gravityUp);
 
+   // OBBの支持半径を計算：重力Down方向へのOBBの最大射影長
+   // = |dot(axisX, -gravityUp)| * halfX + |dot(axisY, -gravityUp)| * halfY + |dot(axisZ, -gravityUp)| * halfZ
+   float obbSupportRadius = 0.0f;
+   {
+      const GameEngine::Quaternion rot  = transform->transform.GetActiveQuaternion();
+      const GameEngine::Vector3    half = obbHalfExtents;
+
+      // OBBの3軸をワールド空間に変換
+      GameEngine::Vector3 axisX = RotateVector({ 1.0f, 0.0f, 0.0f }, rot);
+      GameEngine::Vector3 axisY = RotateVector({ 0.0f, 1.0f, 0.0f }, rot);
+      GameEngine::Vector3 axisZ = RotateVector({ 0.0f, 0.0f, 1.0f }, rot);
+
+      // 各軸の重力Down方向への射影絶対値 × 半サイズ
+      obbSupportRadius = std::abs(axisX.Dot(-gravityUp)) * half.x
+                       + std::abs(axisY.Dot(-gravityUp)) * half.y
+                       + std::abs(axisZ.Dot(-gravityUp)) * half.z;
+   }
+
    // ジャンプ状態を確認
    auto* jump      = GetOwner().GetComponent<CharacterJump>();
    bool  isJumping = jump && jump->IsJumping();
 
+   float snapRadius = surfaceRadius_ + landingOffset + obbSupportRadius;
+
    if (isJumping) {
       // 落下中かつ地表到達で着地
-      if (dist <= surfaceRadius_ && upComp <= 0.0f) {
+      if (dist <= snapRadius && upComp <= 0.0f) {
          // 位置を地表にスナップ
-         transform->transform.translation = planetCenter_ + gravityUp * surfaceRadius_;
+         transform->transform.translation = planetCenter_ + gravityUp * snapRadius;
 
          // 垂直速度のみ除去し、水平成分は維持
          vel = vel - gravityUp * upComp;
@@ -54,7 +76,7 @@ void CharacterLanding::Update(float /*deltaTime*/) {
       }
    } else {
       // 非ジャンプ時は常に地表へ固定し、速度を完全停止
-      transform->transform.translation = planetCenter_ + gravityUp * surfaceRadius_;
+      transform->transform.translation = planetCenter_ + gravityUp * snapRadius;
       gravityBody->SetVelocity({ 0.0f, 0.0f, 0.0f });
       isGrounded_ = true;
    }
@@ -67,6 +89,8 @@ void CharacterLanding::DrawInspector() {
    }
    ImGui::Separator();
    ImGui::DragFloat("Surface Radius", &surfaceRadius_, 0.1f, 0.0f, 1000.0f);
+   ImGui::DragFloat("Landing Offset", &landingOffset, 0.01f, -100.0f, 100.0f);
+   ImGui::DragFloat3("OBB Half Extents", &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
    ImGui::Text("Planet Center: (%.2f, %.2f, %.2f)",
       planetCenter_.x, planetCenter_.y, planetCenter_.z);
    ImGui::Text("Is Grounded: %s", isGrounded_ ? "true" : "false");
@@ -76,11 +100,22 @@ void CharacterLanding::DrawInspector() {
 nlohmann::json CharacterLanding::Serialize() const {
    nlohmann::json json;
    json["surfaceRadius"] = surfaceRadius_;
+   json["landingOffset"] = landingOffset;
+   json["obbHalfExtents"]["x"] = obbHalfExtents.x;
+   json["obbHalfExtents"]["y"] = obbHalfExtents.y;
+   json["obbHalfExtents"]["z"] = obbHalfExtents.z;
    return json;
 }
 
 void CharacterLanding::Deserialize(const nlohmann::json& data) {
    if (data.contains("surfaceRadius")) { surfaceRadius_ = data["surfaceRadius"]; }
+   if (data.contains("landingOffset")) { landingOffset = data["landingOffset"]; }
+   if (data.contains("obbHalfExtents")) {
+      const auto& h = data["obbHalfExtents"];
+      if (h.contains("x")) { obbHalfExtents.x = h["x"]; }
+      if (h.contains("y")) { obbHalfExtents.y = h["y"]; }
+      if (h.contains("z")) { obbHalfExtents.z = h["z"]; }
+   }
 }
 
 } // namespace App

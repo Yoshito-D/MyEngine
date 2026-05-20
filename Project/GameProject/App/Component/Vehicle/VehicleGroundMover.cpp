@@ -63,11 +63,34 @@ void VehicleGroundMover::UpdateSpeed(float deltaTime) {
    // 負値を「未初期化」フラグとして使うことで、シリアライズ値を上書きしない。
    if (currentSpeed_ < 0.0f) { currentSpeed_ = autoSpeed; }
 
+   // 外部から積まれた瞬間速度変化（インパルス）を直接加算する。
+   // ブースト・ペナルティなど「即時に速度を変えたい」場合に使う。
+   currentSpeed_ += velocityImpulse_;
+   velocityImpulse_ = 0.0f;
+
+   // 外部から積まれた加速度を物理則どおりに適用する。
+   // v += a * dt  (acceleration_ は適用後にリセット)
+   currentSpeed_ += acceleration_ * deltaTime;
+   acceleration_  = 0.0f;
+
    // 指数平滑（一次ローパスフィルタ）で autoSpeed に近づける。
    // speedRecovery が大きいほど速く収束する。
    // clamp(speedRecovery * dt, 0, 1) で補間率が 0〜1 に収まることを保証し、
    // dt が大きくても currentSpeed_ が autoSpeed を行き過ぎないようにする。
    currentSpeed_ += (autoSpeed - currentSpeed_) * std::clamp(speedRecovery * deltaTime, 0.0f, 1.0f);
+}
+
+void VehicleGroundMover::AddAcceleration(float accel) {
+   // currentSpeed_ が未初期化（負値）のときは autoSpeed を初期値として使う。
+   if (currentSpeed_ < 0.0f) { currentSpeed_ = autoSpeed; }
+   // 加速度を積み上げる。実際に速度へ返換されるのは次の UpdateSpeed。
+   acceleration_ += accel;
+}
+
+void VehicleGroundMover::AddVelocityImpulse(float impulse) {
+   if (currentSpeed_ < 0.0f) { currentSpeed_ = autoSpeed; }
+   // 速度に即座に加算する。autoSpeed への回復は UpdateSpeed の指数平滑に委ねる。
+   velocityImpulse_ += impulse;
 }
 
 Vector3 VehicleGroundMover::ApplySteering(float steerInput, const Vector3& localForward,

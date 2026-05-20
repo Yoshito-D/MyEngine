@@ -1,4 +1,5 @@
 #include "VehicleAirController.h"
+#include "../Gravity/GravityBody.h"
 #include "Object/Component/TransformComponent.h"
 #include "Object/Object.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
@@ -24,8 +25,8 @@ void VehicleAirController::Apply(float steerInput, float pitchInput, float delta
    constexpr float kDeg2Rad = static_cast<float>(std::numbers::pi) / 180.0f;
 
    // 現在のクォータニオンからローカル軸を取得する。
-   // localUp    = (0,1,0) を現在回転で変換 → 機体の上方向（yaw 軸として使う）
-   // localRight = (1,0,0) を現在回転で変換 → 機体の右方向（pitch 軸として使う）
+   // localForward = (0,0,1) を現在回転で変換 → 機体の上方向（rool 軸として使う）
+   // localRight   = (1,0,0) を現在回転で変換 → 機体の右方向（pitch 軸として使う）
    Quaternion currentRot    = transform->transform.GetActiveQuaternion();
    Vector3    localForward  = RotateVector({ 0.0f, 0.0f, 1.0f }, currentRot);
    Vector3    localRight    = RotateVector({ 1.0f, 0.0f, 0.0f }, currentRot);
@@ -33,8 +34,8 @@ void VehicleAirController::Apply(float steerInput, float pitchInput, float delta
    // 角速度を目標値に向けて更新する。
    // 入力がある場合は targetVel（= input * rollSpeed * deg2rad）に即座にセットする。
    // 入力がない場合は指数減衰（angularDamping）で 0 に戻す（慣性の表現）。
-   UpdateAngularVelocity(steerInput, angularVelYaw_,
-						 steerInput * rollSpeed * kDeg2Rad, deltaTime);
+   UpdateAngularVelocity(-steerInput, angularVelYaw_,
+						 -steerInput * rollSpeed * kDeg2Rad, deltaTime);
    UpdateAngularVelocity(pitchInput, angularVelPitch_,
 						 pitchInput * pitchSpeed * kDeg2Rad, deltaTime);
 
@@ -47,6 +48,20 @@ void VehicleAirController::Apply(float steerInput, float pitchInput, float delta
    // 浮動小数点の累積誤差による不要な更新を防ぐ。
    if (std::abs(angularVelYaw_) > 1e-6f || std::abs(angularVelPitch_) > 1e-6f) {
 	  transform->transform.SetRotationQuaternion(newRot);
+   }
+
+   // 空中でのわずかな水平減速（空気抵抗的な演出）。
+   // GravityBody の速度から垂直成分（重力方向）を分離し、水平成分だけに
+   // exp(-airDrag * dt) の減衰を掛けて戻す。垂直成分は重力計算に任せる。
+   auto* gravityBody = GetOwner().GetComponent<GravityBody>();
+   if (gravityBody) {
+	  const Vector3& vel = gravityBody->GetVelocity();
+	  const Vector3& up  = gravityBody->GetCurrentUpVector();
+	  float   vertSpeed  = vel.Dot(up);
+	  Vector3 vertical   = up * vertSpeed;
+	  Vector3 horizontal = vel - vertical;
+	  float   drag       = std::exp(-airDrag * deltaTime);
+	  gravityBody->SetVelocity(horizontal * drag + vertical);
    }
 }
 
@@ -111,6 +126,7 @@ void VehicleAirController::DrawInspector() {
    ImGui::DragFloat("Steer Speed",     &rollSpeed,     1.0f, 0.0f, 360.0f);
    ImGui::DragFloat("Pitch Speed",     &pitchSpeed,     1.0f, 0.0f, 360.0f);
    ImGui::DragFloat("Angular Damping", &angularDamping, 0.1f, 0.1f,  20.0f);
+   ImGui::DragFloat("Air Drag",        &airDrag,        0.05f, 0.0f,  5.0f);
    ImGui::Spacing();
    ImGui::Text("AngVel Yaw/Pitch: %.2f / %.2f", angularVelYaw_, angularVelPitch_);
 }
@@ -121,6 +137,7 @@ nlohmann::json VehicleAirController::Serialize() const {
    json["steerSpeed"]     = rollSpeed;
    json["pitchSpeed"]     = pitchSpeed;
    json["angularDamping"] = angularDamping;
+   json["airDrag"]        = airDrag;
    return json;
 }
 
@@ -128,6 +145,7 @@ void VehicleAirController::Deserialize(const nlohmann::json& data) {
    if (data.contains("steerSpeed"))     { rollSpeed     = data["steerSpeed"]; }
    if (data.contains("pitchSpeed"))     { pitchSpeed     = data["pitchSpeed"]; }
    if (data.contains("angularDamping")) { angularDamping = data["angularDamping"]; }
+   if (data.contains("airDrag"))        { airDrag        = data["airDrag"]; }
 }
 
 } // namespace App

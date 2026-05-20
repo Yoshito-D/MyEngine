@@ -37,7 +37,7 @@ static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 void TestScene::Initialize() {
    BaseScene::Initialize();
 
-   EngineContext::LoadTexture("resources/textures/rostock_laage_airport_4k.dds", "skyboxTexture");
+   EngineContext::LoadTexture("resources/textures/space_background.dds", "skyboxTexture");
 
    skybox_ = std::make_unique<GameEngine::Skybox>();
    skybox_->Create(EngineContext::GetGraphicsDevice());
@@ -51,8 +51,6 @@ void TestScene::Initialize() {
 
    EngineContext::CreateMaterial("planetMaterial", 0xffffffff, 0);
    EngineContext::CreateMaterial("playerMaterial", 0xffffffff, 3);
-
-   EngineContext::SetPostProcessEffectEnabled("Grayscale",true);
 
    auto planetMaterial = EngineContext::GetMaterial("planetMaterial");
    auto playerMaterial = EngineContext::GetMaterial("playerMaterial");
@@ -111,7 +109,7 @@ void TestScene::Initialize() {
    // 3. GravityBody: 確定済みの重力方向で姿勢回転 + 位置移動
    if (auto* gravityBody = player_->AddComponent<GravityBody>()) {
 	  gravityBody->rotationSpeed = 5.0f;
-	  gravityBody->gravityStrength = 9.8f;
+	  gravityBody->gravityStrength = 12.0f;
 	  gravityBody->useGravity = true;
    }
 
@@ -143,7 +141,7 @@ void TestScene::Initialize() {
    //      デフォルトは SustainedSteer モード（追加ボタン不要）。
    //      miniTurboEnabled = false でミニターボなしのシンプルなドリフトになる。
    if (auto* drift = player_->AddComponent<VehicleDrift>()) {
-      drift->miniTurboEnabled = false;
+      drift->miniTurboEnabled = true;
    }
 
    // 7. VehicleController: 入力収集 → VehicleMover 呼び出し（最後に姿勢を確定）
@@ -155,11 +153,6 @@ void TestScene::Initialize() {
    rearFollowVcam_->SetName("PlayerRearFollowCamera");
    rearFollowVcam_->SetPriority(0);
    playerRearFollowCamera_ = rearFollowVcam_->AddComponent<PlayerRearFollowCamera>();
-   if (playerRearFollowCamera_) {
-	  playerRearFollowCamera_->distance = 15.0f;
-	  playerRearFollowCamera_->height = 4.0f;
-	  playerRearFollowCamera_->rearLerpSpeed = 8.0f;
-   }
 
    mainVcam_ = std::make_unique<VirtualCamera>();
    mainVcam_->Initialize();

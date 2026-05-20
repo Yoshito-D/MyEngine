@@ -27,6 +27,15 @@ public:
    /// @brief 現在の前進実速度を設定する（着地ブーストから呼ばれる）
    void SetCurrentSpeed(float speed) { currentSpeed_ = speed; }
 
+   /// @brief 加速度を積む（持続的な加速・減速用）
+   /// 積まれた加速度は UpdateSpeed 内で v += a * dt として適用され、
+   /// 適用後にリセットされる。autoSpeed への回復はその後に行われる。
+   void AddAcceleration(float accel);
+
+   /// @brief 速度を即座に加算する（着地ブースト・ペナルティなど瞬間的な速度変化用）
+   /// autoSpeed への回復は UpdateSpeed の指数平滑によって行われる。
+   void AddVelocityImpulse(float impulse);
+
    /// @brief 現在の前進実速度を取得する
    float GetCurrentSpeed() const { return currentSpeed_; }
 
@@ -42,13 +51,13 @@ public:
 
 public:
    /// @brief 自動前進速度（units/sec）
-   float autoSpeed      = 14.0f;
+   float autoSpeed      = 13.0f;
 
    /// @brief ステアリング角速度（deg/sec）
    float steerSpeed     = 120.0f;
 
    /// @brief スピード回復速度（per sec）
-   float speedRecovery  = 5.0f;
+   float speedRecovery  = 1.0f;
 
 private:
    /// @brief 速度を autoSpeed へ向けて回復させる
@@ -79,6 +88,12 @@ private:
 
    /// @brief 現在の前進実速度（負値は未初期化を示す）
    float currentSpeed_  = -1.0f;
+
+   /// @brief 外部から積まれた加速度（units/sec²）。UpdateSpeed で v += a * dt して毎フレームリセット
+   float acceleration_  = 0.0f;
+
+   /// @brief 外部から積まれた瞬間速度変化（units/sec）。UpdateSpeed で直接加算してリセット
+   float velocityImpulse_ = 0.0f;
 
    /// @brief 直近の水平前方ベクトル
    GameEngine::Vector3 flatForward_ = { 0.0f, 0.0f, 1.0f };
