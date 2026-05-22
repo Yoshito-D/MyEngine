@@ -59,6 +59,7 @@ public:
    /// @brief スピード回復速度（per sec）
    float speedRecovery  = 1.0f;
 
+   float maxSpeed = 40.0f;
 private:
    /// @brief 速度を autoSpeed へ向けて回復させる
    void UpdateSpeed(float deltaTime);

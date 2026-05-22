@@ -78,6 +78,9 @@ void VehicleGroundMover::UpdateSpeed(float deltaTime) {
    // clamp(speedRecovery * dt, 0, 1) で補間率が 0〜1 に収まることを保証し、
    // dt が大きくても currentSpeed_ が autoSpeed を行き過ぎないようにする。
    currentSpeed_ += (autoSpeed - currentSpeed_) * std::clamp(speedRecovery * deltaTime, 0.0f, 1.0f);
+
+   // maxSpeed を超えないように clamp する。これによりブーストやペナルティの極端な値も制限される。
+   currentSpeed_ = std::clamp(currentSpeed_, -maxSpeed, maxSpeed);
 }
 
 void VehicleGroundMover::AddAcceleration(float accel) {
