@@ -37,7 +37,7 @@ static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 void TestScene::Initialize() {
    BaseScene::Initialize();
 
-   EngineContext::LoadTexture("resources/textures/space_background.dds", "skyboxTexture");
+   EngineContext::LoadTexture("resources/textures/space.dds", "skyboxTexture");
 
    skybox_ = std::make_unique<GameEngine::Skybox>();
    skybox_->Create(EngineContext::GetGraphicsDevice());
