@@ -105,6 +105,22 @@ void BaseScene::Finalize() {
       sCurrentScene_ = nullptr;
    }
 
+   // アクティブなBrainに登録されている全VirtualCameraを解除してからCameraUnitを破棄
+   if (auto* brain = EngineContext::GetActiveBrain()) {
+      auto vcams = brain->GetVirtualCameras(); // コピーして反復
+      for (auto* vcam : vcams) {
+         brain->UnregisterVirtualCamera(vcam);
+      }
+   }
+
+#ifdef USE_IMGUI
+   // デバッグカメラを先に破棄（Brain破棄より前に行う）
+   debugCamera_.reset();
+   cameraEditor_.reset();
+#endif
+
+   EngineContext::ClearCameraUnits();
+
    EngineContext::ClearDirectionalLights();
    EngineContext::ClearPointLights();
    EngineContext::ClearSpotLights();

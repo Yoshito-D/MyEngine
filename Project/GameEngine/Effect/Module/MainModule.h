@@ -99,11 +99,11 @@ namespace GameEngine {
         void SetStartSpeedMax(float max) { startSpeed_.maxValue = max; }
         void SetStartSpeedRandomize(bool randomize) { startSpeed_.randomize = randomize; }
 
-        // Start Size (ランダム対応)
-        void SetStartSize(const RandomFloat& size) { startSize_ = size; }
-        const RandomFloat& GetStartSize() const { return startSize_; }
-        void SetStartSizeMin(float min) { startSize_.minValue = min; }
-        void SetStartSizeMax(float max) { startSize_.maxValue = max; }
+        // Start Size (x/y/zランダム対応)
+        void SetStartSize(const RandomVector3& size) { startSize_ = size; }
+        const RandomVector3& GetStartSize() const { return startSize_; }
+        void SetStartSizeMin(const Vector3& min) { startSize_.minValue = min; }
+        void SetStartSizeMax(const Vector3& max) { startSize_.maxValue = max; }
         void SetStartSizeRandomize(bool randomize) { startSize_.randomize = randomize; }
 
         // Start Rotation (ランダム対応)
@@ -154,7 +154,7 @@ namespace GameEngine {
         
         RandomFloat startLifetime_{2.0f, 2.5f, false};
         RandomFloat startSpeed_{5.0f, 6.0f, false};
-        RandomFloat startSize_{1.0f, 1.0f, false};
+        RandomVector3 startSize_{Vector3(1.0f, 1.0f, 1.0f), Vector3(1.0f, 1.0f, 1.0f), false};
         RandomVector3 startRotation_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false};
         RandomColor startColor_{0xFFFFFFFF, 0xFFFFFFFF, false};
         

@@ -10,6 +10,9 @@
 #ifdef USE_IMGUI
 #include "../../../externals/imgui/imgui.h"
 #include <string>
+#include <map>
+#include <array>
+#include <cstring>
 #endif
 
 namespace ParticleSystemEdit {
@@ -26,18 +29,35 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
    // File Operations
    // ========================================
    if (ImGui::CollapsingHeader("File Operations", ImGuiTreeNodeFlags_DefaultOpen)) {
-	  static char savePathBuffer[256] = "resources/particles/particle_config.json";
-	  static char loadPathBuffer[256] = "resources/particles/particle_config.json";
+	  // name ごとにバッファを保持（初回のみ name から既定パスを生成）
+	  static std::map<std::string, std::array<char, 256>> savePathBuffers;
+	  static std::map<std::string, std::array<char, 256>> loadPathBuffers;
+
+	  if (savePathBuffers.find(name) == savePathBuffers.end()) {
+		 std::string defaultPath = "resources/particles/" + name + ".json";
+		 auto& buf = savePathBuffers[name];
+		 buf.fill('\0');
+		 strncpy_s(buf.data(), buf.size(), defaultPath.c_str(), buf.size() - 1);
+	  }
+	  if (loadPathBuffers.find(name) == loadPathBuffers.end()) {
+		 std::string defaultPath = "resources/particles/" + name + ".json";
+		 auto& buf = loadPathBuffers[name];
+		 buf.fill('\0');
+		 strncpy_s(buf.data(), buf.size(), defaultPath.c_str(), buf.size() - 1);
+	  }
+
+	  auto& savePathBuffer = savePathBuffers[name];
+	  auto& loadPathBuffer = loadPathBuffers[name];
 
 	  ImGui::Text("Save/Load Particle Configuration");
 	  ImGui::Separator();
 
 	  // Save
 	  std::string saveInputID = "##SavePath_" + name;
-	  ImGui::InputText(("Save Path" + saveInputID).c_str(), savePathBuffer, IM_ARRAYSIZE(savePathBuffer));
+	  ImGui::InputText(("Save Path" + saveInputID).c_str(), savePathBuffer.data(), savePathBuffer.size());
 	  std::string saveButtonID = "Save Configuration##" + name;
 	  if (ImGui::Button(saveButtonID.c_str())) {
-		 if (particleSystem->SaveToJson(savePathBuffer)) {
+		 if (particleSystem->SaveToJson(savePathBuffer.data())) {
 			ImGui::OpenPopup(("SaveSuccess##" + name).c_str());
 		 } else {
 			ImGui::OpenPopup(("SaveFailed##" + name).c_str());
@@ -46,10 +66,10 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 
 	  // Load
 	  std::string loadInputID = "##LoadPath_" + name;
-	  ImGui::InputText(("Load Path" + loadInputID).c_str(), loadPathBuffer, IM_ARRAYSIZE(loadPathBuffer));
+	  ImGui::InputText(("Load Path" + loadInputID).c_str(), loadPathBuffer.data(), loadPathBuffer.size());
 	  std::string loadButtonID = "Load Configuration##" + name;
 	  if (ImGui::Button(loadButtonID.c_str())) {
-		 if (particleSystem->LoadFromJson(loadPathBuffer)) {
+		 if (particleSystem->LoadFromJson(loadPathBuffer.data())) {
 			ImGui::OpenPopup(("LoadSuccess##" + name).c_str());
 		 } else {
 			ImGui::OpenPopup(("LoadFailed##" + name).c_str());

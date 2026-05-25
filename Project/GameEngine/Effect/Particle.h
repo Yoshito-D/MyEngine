@@ -12,8 +12,8 @@ struct Particle {
    Vector4 color;            // 色（RGBA）
    float lifeTime;           // 寿命
    float currentTime;        // 現在経過時間
-   float initialSize;        // 初期サイズ
-   float currentSize;        // 現在のサイズ
+   Vector3 initialSize;       // 初期サイズ
+   Vector3 currentSize;       // 現在のサイズ
    bool isActive;            // 有効フラグ
 
    Particle()
@@ -23,8 +23,8 @@ struct Particle {
 	  , color(1.0f, 1.0f, 1.0f, 1.0f)
 	  , lifeTime(1.0f)
 	  , currentTime(0.0f)
-	  , initialSize(1.0f)
-	  , currentSize(1.0f)
+	  , initialSize(1.0f, 1.0f, 1.0f)
+	  , currentSize(1.0f, 1.0f, 1.0f)
 	  , isActive(false) {}
 
    /// @brief 粒子の寿命進行度を取得（0.0 ～ 1.0）

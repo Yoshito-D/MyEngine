@@ -4,6 +4,13 @@
 namespace GameEngine {
     EmissionModule::EmissionModule() = default;
 
+    void EmissionModule::ResetBurstStates() {
+        for (auto& burst : bursts_) {
+            burst.firedCount = 0;
+            burst.nextFireTime = -1.0f;
+        }
+    }
+
     nlohmann::json EmissionModule::ToJson() const {
         nlohmann::json j;
         

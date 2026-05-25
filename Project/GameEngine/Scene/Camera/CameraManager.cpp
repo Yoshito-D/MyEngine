@@ -30,4 +30,9 @@ Camera* CameraManager::GetActiveCamera() const {
    if (!brain) return nullptr;
    return brain->GetOutputCamera();
 }
+
+void CameraManager::ClearUnits() {
+   units_.clear();
+   activeUnit_ = nullptr;
+}
 }

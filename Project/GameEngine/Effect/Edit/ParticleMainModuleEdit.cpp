@@ -96,7 +96,7 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
 
    ImGui::Separator();
 
-   // Start Size (ランダム対応)
+   // Start Size (x/y/zランダム対応)
    ImGui::Text("Start Size");
    auto& size = mainModule->GetStartSize();
    bool sizeRandomize = size.randomize;
@@ -105,23 +105,17 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
    }
 
    if (sizeRandomize) {
-	  float sizeMin = size.minValue;
-	  float sizeMax = size.maxValue;
-	  if (ImGui::DragFloat("Min##Size", &sizeMin, 0.01f, 0.01f, 10.0f)) {
-		 if (sizeMin > sizeMax) {
-			sizeMin = sizeMax;
-		 }
+	  Vector3 sizeMin = size.minValue;
+	  Vector3 sizeMax = size.maxValue;
+	  if (ImGui::DragFloat3("Min##Size", &sizeMin.x, 0.01f, 0.01f, 10.0f)) {
 		 mainModule->SetStartSizeMin(sizeMin);
 	  }
-	  if (ImGui::DragFloat("Max##Size", &sizeMax, 0.01f, 0.01f, 10.0f)) {
-		 if (sizeMax < sizeMin) {
-			sizeMax = sizeMin;
-		 }
+	  if (ImGui::DragFloat3("Max##Size", &sizeMax.x, 0.01f, 0.01f, 10.0f)) {
 		 mainModule->SetStartSizeMax(sizeMax);
 	  }
    } else {
-	  float sizeValue = size.minValue;
-	  if (ImGui::DragFloat("Value##Size", &sizeValue, 0.01f, 0.01f, 10.0f)) {
+	  Vector3 sizeValue = size.minValue;
+	  if (ImGui::DragFloat3("Value##Size", &sizeValue.x, 0.01f, 0.01f, 10.0f)) {
 		 mainModule->SetStartSizeMin(sizeValue);
 		 mainModule->SetStartSizeMax(sizeValue);
 	  }

@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <chrono>
+#include <queue>
 
 namespace GameEngine {
 /// @brief グラフィックスデバイスクラス
@@ -58,12 +59,16 @@ public:
    /// @details コマンドリストを実行し、GPUが完了するまで待機
    void ExecuteCommandListAndWait();
 
-   /// @brief SRVインデックスをインクリメント
-   void IncrementSrvIndex() { ++nextSrvIndex_; }
+   /// @brief SRVインデックスをインクリメント（フリーリスト使用時はpopのみ）
+   void IncrementSrvIndex();
 
-   /// @brief 次のSRVインデックスを取得
+   /// @brief 次のSRVインデックスを取得（フリーリストがあればそちらを優先）
    /// @return 次のSRVインデックス
-   UINT GetNextSrvIndex() const { return nextSrvIndex_; }
+   UINT GetNextSrvIndex() const;
+
+   /// @brief 使い終わったSRVインデックスをフリーリストに返却
+   /// @param index 返却するインデックス
+   void ReleaseSrvIndex(UINT index);
 
    /// @brief CBV/SRV/UAVのデスクリプタサイズを取得
    /// @return CBV/SRV/UAVのデスクリプタサイズ
@@ -110,6 +115,7 @@ private:
    uint32_t descriptorSizeRTV = 0;
    uint32_t descriptorSizeDSV = 0;
    UINT nextSrvIndex_ = 0;
+   std::queue<UINT> freeSrvIndices_;
 
    UINT rtvCount_ = 4;
    DXGI_FORMAT rtvFormat_ = DXGI_FORMAT_R8G8B8A8_UNORM;

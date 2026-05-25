@@ -14,8 +14,12 @@ namespace GameEngine {
         struct Burst {
             float time;          // 発生時間
             uint32_t count;      // 発生数
-            uint32_t cycles;     // 繰り返し回数
+            uint32_t cycles;     // 繰り返し回数（0 = 無限ループ）
             float interval;      // 繰り返し間隔
+
+            // ---- 実行時状態（シリアライズ対象外） ----
+            uint32_t firedCount = 0;     // 発火済みサイクル数
+            float nextFireTime = -1.0f;  // 次回発火予定時刻（負値 = 未初期化）
         };
 
         EmissionModule();
@@ -35,6 +39,10 @@ namespace GameEngine {
         void AddBurst(const Burst& burst) { bursts_.push_back(burst); }
         void ClearBursts() { bursts_.clear(); }
         const std::vector<Burst>& GetBursts() const { return bursts_; }
+        std::vector<Burst>& GetBursts() { return bursts_; }
+
+        /// @brief Burst の発火状態をリセット（Play/Stop 時に呼ぶ）
+        void ResetBurstStates();
 
         // JSON Serialization
         nlohmann::json ToJson() const;

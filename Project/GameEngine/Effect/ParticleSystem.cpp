@@ -67,6 +67,16 @@ ParticleSystem::ParticleSystem() {
    noiseModule_->SetEnabled(false);
 }
 
+ParticleSystem::~ParticleSystem() {
+   if (instancingResource_ && instancingData_) {
+      instancingResource_->Unmap(0, nullptr);
+      instancingData_ = nullptr;
+   }
+   if (sDevice_ && instancingSrvIndex_ != UINT_MAX) {
+      sDevice_->ReleaseSrvIndex(instancingSrvIndex_);
+   }
+}
+
 void ParticleSystem::Create() {
    CreateQuadMesh();
 
@@ -81,6 +91,12 @@ void ParticleSystem::Create() {
    particles_.resize(maxParticles);
    for (auto& particle : particles_) {
 	  particle.isActive = false;
+   }
+
+   // フリーリスト初期化（全インデックスを積む）
+   while (!freeParticleIndices_.empty()) freeParticleIndices_.pop();
+   for (int32_t i = static_cast<int32_t>(maxParticles) - 1; i >= 0; --i) {
+	  freeParticleIndices_.push(static_cast<uint32_t>(i));
    }
 
    // インスタンシング用リソースの作成
@@ -108,6 +124,7 @@ void ParticleSystem::Create() {
    srvDesc.Buffer.StructureByteStride = sizeof(ParticleForGPU);
 
    UINT index = sDevice_->GetNextSrvIndex();
+   instancingSrvIndex_ = index;
 
    instancingSrvHandleCPU_ = CD3DX12_CPU_DESCRIPTOR_HANDLE(
 	  sDevice_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
@@ -147,8 +164,8 @@ void ParticleSystem::Update(float deltaTime) {
 
    // Emission処理
    if (shouldEmit && emissionModule_->IsEnabled()) {
-	  // MainModuleのEmission Rateを使用（1秒間に放出するパーティクル数）
-	  float emissionRate = mainModule_->GetEmissionRate();
+	  // EmissionModule の rateOverTime を使用（1秒間に放出するパーティクル数）
+	  float emissionRate = emissionModule_->GetRateOverTime();
 	  if (emissionRate > 0.0f) {
 		 emissionAccumulator_ += emissionRate * deltaTime;
 
@@ -158,19 +175,30 @@ void ParticleSystem::Update(float deltaTime) {
 		 }
 	  }
 
-	  // Burst emission
-	  for (const auto& burst : emissionModule_->GetBursts()) {
-		 if (std::abs(systemTime_ - burst.time) < deltaTime) {
+	  // Burst emission（フラグ管理で確実に発火、cycles==0 は無限ループ）
+	  for (auto& burst : emissionModule_->GetBursts()) {
+		 // 初回：nextFireTime が未初期化（負値）であれば burst.time で初期化
+		 if (burst.nextFireTime < 0.0f) {
+			burst.nextFireTime = burst.time;
+		 }
+
+		 // cycles == 0 は無限ループ、それ以外は指定回数まで
+		 const bool isInfinite = (burst.cycles == 0);
+		 while (systemTime_ >= burst.nextFireTime &&
+				(isInfinite || burst.firedCount < burst.cycles)) {
 			for (uint32_t i = 0; i < burst.count; ++i) {
 			   EmitParticle();
 			}
+			burst.firedCount++;
+			burst.nextFireTime += burst.interval > 0.0f ? burst.interval : FLT_MAX;
 		 }
 	  }
    }
 
    // パーティクル更新
    activeParticleCount_ = 0;
-   for (auto& particle : particles_) {
+   for (uint32_t i = 0; i < static_cast<uint32_t>(particles_.size()); ++i) {
+	  Particle& particle = particles_[i];
 	  if (!particle.isActive) continue;
 
 	  // 時間を進める
@@ -179,6 +207,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  // 寿命チェック
 	  if (particle.currentTime >= particle.lifeTime) {
 		 particle.isActive = false;
+		 freeParticleIndices_.push(i);
 		 continue;
 	  }
 
@@ -462,6 +491,7 @@ void ParticleSystem::Play() {
    systemTime_ = 0.0f;
    emissionTimer_ = 0.0f;
    emissionAccumulator_ = 0.0f;
+   emissionModule_->ResetBurstStates();
 }
 
 void ParticleSystem::Stop() {
@@ -470,10 +500,13 @@ void ParticleSystem::Stop() {
    systemTime_ = 0.0f;
    emissionTimer_ = 0.0f;
    emissionAccumulator_ = 0.0f;
+   emissionModule_->ResetBurstStates();
 
-   // 全パーティクルを非アクティブ化
-   for (auto& particle : particles_) {
-	  particle.isActive = false;
+   // 全パーティクルを非アクティブ化し、フリーリストを再構築
+   while (!freeParticleIndices_.empty()) freeParticleIndices_.pop();
+   for (uint32_t i = 0; i < static_cast<uint32_t>(particles_.size()); ++i) {
+	  particles_[i].isActive = false;
+	  freeParticleIndices_.push(i);
    }
    activeParticleCount_ = 0;
 }
@@ -498,56 +531,50 @@ Material* ParticleSystem::GetMaterialForRenderer() const {
 }
 
 void ParticleSystem::EmitParticle() {
-   Particle* particle = FindInactiveParticle();
-   if (!particle) return;
+   if (freeParticleIndices_.empty()) return;
+
+   uint32_t index = freeParticleIndices_.top();
+   freeParticleIndices_.pop();
+   Particle& particle = particles_[index];
 
    // Main Module settings with random support
-   particle->lifeTime = mainModule_->GetStartLifetime().GetValue();
-   particle->currentTime = 0.0f;
+   particle.lifeTime = mainModule_->GetStartLifetime().GetValue();
+   particle.currentTime = 0.0f;
 
-   float size = mainModule_->GetStartSize().GetValue();
-   particle->initialSize = size;
-   particle->currentSize = size;
-   particle->transform.scale = Vector3(size, size, size);
+   Vector3 size = mainModule_->GetStartSize().GetValue();
+   particle.initialSize = size;
+   particle.currentSize = size;
+   particle.transform.scale = size;
 
    Vector3 rotation = mainModule_->GetStartRotation().GetValue();
-   particle->transform.rotation = rotation;
+   particle.transform.rotation = rotation;
 
    // Color - RandomColorから取得してVector4に変換
    uint32_t colorValue = mainModule_->GetStartColor().GetValue();
-   particle->color = ConvertUIntToColor(colorValue);
+   particle.color = ConvertUIntToColor(colorValue);
 
    // Angular Velocity - RotationOverLifetimeModuleからランダム取得
    if (rotationOverLifetimeModule_->IsEnabled()) {
-	  particle->angularVelocity = rotationOverLifetimeModule_->GetRandomAngularVelocity();
+	  particle.angularVelocity = rotationOverLifetimeModule_->GetRandomAngularVelocity();
    } else {
-	  particle->angularVelocity = Vector3(0.0f, 0.0f, 0.0f);
+	  particle.angularVelocity = Vector3(0.0f, 0.0f, 0.0f);
    }
 
    // Shape Module - position and direction
    if (shapeModule_->IsEnabled()) {
-	  particle->transform.translation = shapeModule_->GetRandomEmissionPosition();
+	  particle.transform.translation = shapeModule_->GetRandomEmissionPosition();
 
 	  Vector3 direction = shapeModule_->GetRandomEmissionDirection();
 	  float speed = mainModule_->GetStartSpeed().GetValue();
 
-	  particle->velocity = direction * speed;
+	  particle.velocity = direction * speed;
    } else {
-	  particle->transform.translation = Vector3(0.0f, 0.0f, 0.0f);
-	  particle->velocity = Vector3(0.0f, 0.0f, 0.0f);
+	  particle.transform.translation = Vector3(0.0f, 0.0f, 0.0f);
+	  particle.velocity = Vector3(0.0f, 0.0f, 0.0f);
    }
 
-   particle->acceleration = Vector3(0.0f, 0.0f, 0.0f);
-   particle->isActive = true;
-}
-
-Particle* ParticleSystem::FindInactiveParticle() {
-   for (auto& particle : particles_) {
-	  if (!particle.isActive) {
-		 return &particle;
-	  }
-   }
-   return nullptr;
+   particle.acceleration = Vector3(0.0f, 0.0f, 0.0f);
+   particle.isActive = true;
 }
 
 // ============================================================
