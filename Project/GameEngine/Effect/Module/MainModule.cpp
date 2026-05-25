@@ -113,7 +113,8 @@ namespace GameEngine {
                 startSize_.FromJson(j["startSize"]);
             } else {
                 float value = j["startSize"];
-                startSize_ = RandomFloat(value, value, false);
+                Vector3 v(value, value, value);
+                startSize_ = RandomVector3(v, v, false);
             }
         }
         

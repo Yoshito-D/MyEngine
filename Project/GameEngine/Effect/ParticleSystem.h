@@ -13,6 +13,8 @@
 #include "Core/Graphics/Material.h"
 #include "Object/Model/ModelAsset.h"
 #include <nlohmann/json.hpp>
+#include <array>
+#include <stack>
 #include <memory>
 #include <vector>
 #include <wrl.h>
@@ -44,6 +46,9 @@ public:
 
    /// @brief コンストラクタ
    ParticleSystem();
+
+   /// @brief デストラクタ（SRVデスクリプタを解放）
+   ~ParticleSystem();
 
    /// @brief パーティクルシステムの作成
    void Create();
@@ -124,6 +129,9 @@ private:
    std::vector<Particle> particles_;
    uint32_t activeParticleCount_ = 0;
 
+   // O(1) フリーリスト（非アクティブパーティクルのインデックスを管理）
+   std::stack<uint32_t> freeParticleIndices_;
+
    // ============ Unity-like Modules ============
    std::unique_ptr<MainModule> mainModule_ = nullptr;
    std::unique_ptr<EmissionModule> emissionModule_ = nullptr;
@@ -148,6 +156,7 @@ private:
    ParticleForGPU* instancingData_ = nullptr;
    D3D12_CPU_DESCRIPTOR_HANDLE instancingSrvHandleCPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU_{};
+   UINT instancingSrvIndex_ = UINT_MAX;  // 解放用に記録
 
    // レンダリング設定
    ModelAsset* modelAsset_ = nullptr;
@@ -169,9 +178,6 @@ private:
 
    /// @brief 粒子を放出
    void EmitParticle();
-
-   /// @brief 非アクティブな粒子を探して返す
-   Particle* FindInactiveParticle();
 
    /// @brief モジュールの更新を適用
    void ApplyModules(Particle& particle, float deltaTime);

@@ -266,7 +266,6 @@
     <ClCompile Include="GameEngine\Effect\Module\MainModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\RendererModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\ShapeModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Particle.cpp" />
     <ClCompile Include="GameEngine\Effect\ParticleMaterial.cpp" />
     <ClCompile Include="GameEngine\Effect\ParticleSystem.cpp" />
     <ClCompile Include="GameEngine\Effect\ParticleSystemEdit.cpp" />
@@ -414,9 +413,10 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleMover.cpp" />
+    <ClCompile Include="GameProject\App\Scene\EngineTestScene.cpp" />
+    <ClCompile Include="GameProject\App\Scene\GameTestScene.cpp" />
     <ClCompile Include="GameProject\Game.cpp" />
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp" />
-    <ClCompile Include="GameProject\App\Scene\TestScene.cpp" />
     <ClCompile Include="main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -615,9 +615,10 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleMover.h" />
+    <ClInclude Include="GameProject\App\Scene\EngineTestScene.h" />
+    <ClInclude Include="GameProject\App\Scene\GameTestScene.h" />
     <ClInclude Include="GameProject\Game.h" />
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h" />
-    <ClInclude Include="GameProject\App\Scene\TestScene.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

@@ -500,4 +500,23 @@ void GraphicsDevice::ResizeSwapChainResources(uint32_t width, uint32_t height) {
    CreateRenderTargetViews();
    CreateDepthStencilViews();
 }
+
+UINT GraphicsDevice::GetNextSrvIndex() const {
+   if (!freeSrvIndices_.empty()) {
+      return freeSrvIndices_.front();
+   }
+   return nextSrvIndex_;
+}
+
+void GraphicsDevice::IncrementSrvIndex() {
+   if (!freeSrvIndices_.empty()) {
+      freeSrvIndices_.pop();
+   } else {
+      ++nextSrvIndex_;
+   }
+}
+
+void GraphicsDevice::ReleaseSrvIndex(UINT index) {
+   freeSrvIndices_.push(index);
+}
 }

@@ -9,7 +9,7 @@ void Game::Initialize() {
    sceneManager_ = std::make_unique<GameEngine::SceneManager>(factory_.get());
 
    // 最初のシーンを設定
-   sceneManager_->ChangeScene("Test");
+   sceneManager_->ChangeScene("EngineTest");
 }
 
 void Game::Update() {

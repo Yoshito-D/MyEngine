@@ -113,13 +113,13 @@ namespace ParticleSystemEdit {
                 module->SetSizeMultiplier(sizeMultiplier);
             }
 
-            float startSize = module->GetStartSize();
-            if (ImGui::DragFloat("Start Size##SizeLifetime", &startSize, 0.01f, 0.0f, 10.0f)) {
+            Vector3 startSize = module->GetStartSize();
+            if (ImGui::DragFloat3("Start Size##SizeLifetime", &startSize.x, 0.01f, 0.0f, 10.0f)) {
                 module->SetStartSize(startSize);
             }
 
-            float endSize = module->GetEndSize();
-            if (ImGui::DragFloat("End Size##SizeLifetime", &endSize, 0.01f, 0.0f, 10.0f)) {
+            Vector3 endSize = module->GetEndSize();
+            if (ImGui::DragFloat3("End Size##SizeLifetime", &endSize.x, 0.01f, 0.0f, 10.0f)) {
                 module->SetEndSize(endSize);
             }
         }

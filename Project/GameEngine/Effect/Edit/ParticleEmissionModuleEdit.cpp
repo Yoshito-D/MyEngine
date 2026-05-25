@@ -28,14 +28,86 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
 		 emissionModule->SetRateOverDistance(rateOverDistance);
 	  }
 
-	  ImGui::Text("Bursts: %zu", emissionModule->GetBursts().size());
-	  if (ImGui::Button("Add Burst")) {
+	  ImGui::Separator();
+	  ImGui::Text("Bursts (%zu)", emissionModule->GetBursts().size());
+
+	  auto& bursts = emissionModule->GetBursts();
+
+	  int removeIndex = -1;
+	  for (int i = 0; i < static_cast<int>(bursts.size()); ++i) {
+		 auto& burst = bursts[i];
+		 ImGui::PushID(i);
+
+		 // 折りたたみヘッダーで各 Burst を管理
+		 bool open = ImGui::CollapsingHeader(("Burst [" + std::to_string(i) + "]").c_str());
+		 ImGui::SameLine();
+		 if (ImGui::SmallButton("Remove")) {
+			removeIndex = i;
+		 }
+
+		 if (open) {
+			ImGui::Indent();
+
+			// Time
+			if (ImGui::DragFloat("Time", &burst.time, 0.05f, 0.0f, 999.0f, "%.2f")) {
+			   emissionModule->ResetBurstStates();
+			}
+			ImGui::SameLine();
+			ImGui::TextDisabled("(sec) 発火開始時刻");
+
+			// Count
+			int count = static_cast<int>(burst.count);
+			if (ImGui::DragInt("Count", &count, 1, 1, 10000)) {
+			   burst.count = static_cast<uint32_t>(std::max(count, 1));
+			   emissionModule->ResetBurstStates();
+			}
+			ImGui::SameLine();
+			ImGui::TextDisabled("1回の放出数");
+
+			// Cycles（0 = 無限ループ）
+			int cycles = static_cast<int>(burst.cycles);
+			if (ImGui::DragInt("Cycles", &cycles, 1, 0, 1000)) {
+			   burst.cycles = static_cast<uint32_t>(std::max(cycles, 0));
+			   emissionModule->ResetBurstStates();
+			}
+			ImGui::SameLine();
+			if (burst.cycles == 0) {
+			   ImGui::TextDisabled("繰り返し回数 (0 = \xe2\x88\x9e)");
+			} else {
+			   ImGui::TextDisabled("繰り返し回数");
+			}
+
+			// Interval
+			if (ImGui::DragFloat("Interval", &burst.interval, 0.05f, 0.01f, 60.0f, "%.2f")) {
+			   emissionModule->ResetBurstStates();
+			}
+			ImGui::SameLine();
+			ImGui::TextDisabled("(sec) 繰り返し間隔");
+
+			// 現在の発火状態をデバッグ表示
+			ImGui::TextDisabled("  firedCount: %u  nextFireTime: %.2f",
+			   burst.firedCount, burst.nextFireTime);
+
+			ImGui::Unindent();
+		 }
+
+		 ImGui::PopID();
+	  }
+
+	  // 削除処理（ループ外で実施）
+	  if (removeIndex >= 0) {
+		 bursts.erase(bursts.begin() + removeIndex);
+		 emissionModule->ResetBurstStates();
+	  }
+
+	  if (ImGui::Button("+ Add Burst")) {
 		 GameEngine::EmissionModule::Burst burst;
-		 burst.time = 0.0f;
-		 burst.count = 10;
-		 burst.cycles = 1;
+		 burst.time    = 0.0f;
+		 burst.count   = 10;
+		 burst.cycles  = 1;
 		 burst.interval = 1.0f;
 		 emissionModule->AddBurst(burst);
+		 emissionModule->ResetBurstStates();
 	  }
 	  ImGui::SameLine();
 	  if (ImGui::Button("Clear Bursts")) {

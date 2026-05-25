@@ -404,9 +404,6 @@
     <ClCompile Include="GameEngine\Core\Window\Window.cpp">
       <Filter>GameEngine\Core\Window</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Effect\Particle.cpp">
-      <Filter>GameEngine\Effect</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Effect\ParticleMaterial.cpp">
       <Filter>GameEngine\Effect</Filter>
     </ClCompile>
@@ -605,9 +602,6 @@
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp">
       <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\TestScene.cpp">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Object\Skybox\Skybox.cpp" />
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Light\LightDataBuffer.cpp" />
@@ -640,6 +634,8 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
+    <ClCompile Include="GameProject\App\Scene\EngineTestScene.cpp" />
+    <ClCompile Include="GameProject\App\Scene\GameTestScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1056,9 +1052,6 @@
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h">
       <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\TestScene.h">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="GameEngine\Object\Skybox\Skybox.h" />
     <ClInclude Include="GameEngine\Scene\Light\AreaLight.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Light\LightDataBuffer.h" />
@@ -1097,6 +1090,8 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
+    <ClInclude Include="GameProject\App\Scene\EngineTestScene.h" />
+    <ClInclude Include="GameProject\App\Scene\GameTestScene.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

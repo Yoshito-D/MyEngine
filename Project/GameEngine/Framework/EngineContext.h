@@ -346,6 +346,9 @@ public:
    /// @brief アクティブなカメラを取得する（Renderer内部用）
    static Camera* GetActiveCamera();
 
+   /// @brief 全CameraUnitを削除する（シーン終了時に呼び出す）
+   static void ClearCameraUnits();
+
    /// @brief グラフィックスデバイスを取得する
    static GraphicsDevice* GetGraphicsDevice();
 

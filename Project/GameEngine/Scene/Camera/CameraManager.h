@@ -31,6 +31,9 @@ public:
    /// @brief アクティブなカメラを取得（Renderer用）
    Camera* GetActiveCamera() const;
 
+   /// @brief 全CameraUnitを削除しアクティブをリセット
+   void ClearUnits();
+
 private:
    std::vector<std::unique_ptr<CameraUnit>> units_;
    CameraUnit* activeUnit_ = nullptr;

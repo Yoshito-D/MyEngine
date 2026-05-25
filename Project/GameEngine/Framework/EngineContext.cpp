@@ -381,6 +381,11 @@ CinemachineBrain* EngineContext::GetActiveBrain() {
    return sCameraManager_->GetActiveBrain();
 }
 
+void EngineContext::ClearCameraUnits() {
+   if (!sCameraManager_) return;
+   sCameraManager_->ClearUnits();
+}
+
 //================================================================
 // Light Manager
 //================================================================
