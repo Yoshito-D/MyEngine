@@ -66,7 +66,6 @@ void Pixelation::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNode("Pixelation Parameters")) {
-	  ImGui::Checkbox("Enabled", &enabled_);
 
 	  bool changed = false;
 	  changed |= ImGui::SliderFloat("Pixel Size", &pixelSize_, 1.0f, 32.0f);

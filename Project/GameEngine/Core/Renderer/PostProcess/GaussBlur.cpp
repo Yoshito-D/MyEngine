@@ -59,7 +59,6 @@ void GaussBlur::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNode("Gauss Blur Parameters")) {
-	  ImGui::Checkbox("Enabled", &enabled_);
 
 	  bool changed = false;
 	  changed |= ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 1.0f);

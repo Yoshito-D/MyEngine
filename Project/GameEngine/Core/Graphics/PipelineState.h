@@ -109,8 +109,14 @@ public:
    /// @brief パイプラインステートを取得する
    /// @return パイプラインステート
    ID3D12PipelineState* GetPipelineState() const { return graphicsPipelineState_.Get(); }
+
+   /// @brief PIXなどのデバッグ用にPSOへ名前を設定する
+   /// @param name 名前（ワイド文字列）
+   void SetName(const std::wstring& name) { name_ = name; }
+
 private:
    ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+   std::wstring name_{};
    ComPtr<IDxcBlob> vertexShaderBlob_ = nullptr;
    ComPtr<IDxcBlob> pixelShaderBlob_ = nullptr;
    RootSignature* rootSignature_ = nullptr;

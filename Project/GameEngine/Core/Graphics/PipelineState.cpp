@@ -49,6 +49,12 @@ void PipelineState::CreatePipelineState(ID3D12Device* device) {
 
    // 実際に生成
    result = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(graphicsPipelineState_.GetAddressOf()));
+   assert(SUCCEEDED(result));
+
+   // PIXなどのデバッグ用にID3D12ObjectのSetNameで名前を登録
+   if (SUCCEEDED(result) && !name_.empty()) {
+      graphicsPipelineState_->SetName(name_.c_str());
+   }
 
 }
 

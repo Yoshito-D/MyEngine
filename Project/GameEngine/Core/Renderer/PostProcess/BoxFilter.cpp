@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "RadialBlur.h"
+#include "BoxFilter.h"
 #include "ResourceHelper.h"
 
 #ifdef USE_IMGUI
@@ -8,13 +8,13 @@
 
 namespace GameEngine {
 
-void RadialBlur::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) {
+void BoxFilter::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) {
    PostProcess::Initialize(device, renderTarget);
    CreateConstantBuffer();
    UpdateConstantBuffer();
 }
 
-void RadialBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
+void BoxFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!enabled_) return;
    if (!pipeline_ || !rootSignature_) return;
 
@@ -27,11 +27,11 @@ void RadialBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
-     cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+	  cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    // SRVをルートパラメータ1にセット
-    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
+   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -40,31 +40,30 @@ void RadialBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    renderTarget_->PostDraw();
 }
 
-void RadialBlur::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(RadialBlurCB));
+void BoxFilter::CreateConstantBuffer() {
+   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(BoxFilterParams));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 
-void RadialBlur::UpdateConstantBuffer() {
+void BoxFilter::UpdateConstantBuffer() {
    if (constantBufferData_) {
-	  constantBufferData_->centerX = centerX_;
-	  constantBufferData_->centerY = centerY_;
-	  constantBufferData_->strength = blurStrength_;
-	  constantBufferData_->sampleCount = sampleCount_;
+	  constantBufferData_->kernelRadius = kernelRadius_;
+	  constantBufferData_->padding0 = 0.0f;
+	  constantBufferData_->padding1 = 0.0f;
+	  constantBufferData_->padding2 = 0.0f;
    }
 }
 
 #ifdef USE_IMGUI
-void RadialBlur::ImGuiEdit() {
+void BoxFilter::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Radial Blur Parameters")) {
+   if (ImGui::TreeNode("BoxFilter Parameters")) {
 
 	  bool changed = false;
-	  changed |= ImGui::SliderFloat("Blur Strength", &blurStrength_, 0.0f, 0.1f);
-	  changed |= ImGui::SliderFloat("Center X", &centerX_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Center Y", &centerY_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderInt("Sample Count", &sampleCount_, 1, 32);
+	  // 1=3x3, 2=5x5, 3=7x7
+	  changed |= ImGui::SliderInt("Kernel Radius", &kernelRadius_, 1, 7);
+	  ImGui::Text("Kernel size: %dx%d", kernelRadius_ * 2 + 1, kernelRadius_ * 2 + 1);
 
 	  if (changed) {
 		 UpdateConstantBuffer();

@@ -297,7 +297,7 @@ void ShaderManager::LogRootParameterTablesDebug() const {
 	  "Object3D", "Sprite", "Particle", "Line3D", "FullscreenTriangle",
 	  "PostProcess_Grayscale", "PostProcess_RadialBlur", "PostProcess_GaussBlur",
 	  "PostProcess_Vignette", "PostProcess_ChromaticAberration", "PostProcess_ShockWave",
-	  "PostProcess_Pixelation", "PostProcess_Bloom"
+	  "PostProcess_Pixelation", "PostProcess_Bloom", "PostProcess_BoxFilter"
    };
 
    const auto stageInfos = GetPipelineStageMatchInfos();
@@ -438,6 +438,7 @@ void ShaderManager::LoadPredefinedShaders() {
    LoadPixelShader("ShockWave", L"resources/shaders/postprocess/ShockWave.PS.hlsl");
    LoadPixelShader("Pixelation", L"resources/shaders/postprocess/Pixelation.PS.hlsl");
    LoadPixelShader("Bloom", L"resources/shaders/postprocess/Bloom.PS.hlsl");
+   LoadPixelShader("BoxFilter", L"resources/shaders/postprocess/BoxFilter.PS.hlsl");
    BuildPipelineRootParameterTables();
 }
 

@@ -21,6 +21,7 @@
     { "name": "ShockWave", "type": "Pixel", "filePath": "resources/shaders/postprocess/ShockWave.PS.hlsl", "entryPoint": "main" },
     { "name": "Pixelation", "type": "Pixel", "filePath": "resources/shaders/postprocess/Pixelation.PS.hlsl", "entryPoint": "main" },
     { "name": "Bloom", "type": "Pixel", "filePath": "resources/shaders/postprocess/Bloom.PS.hlsl", "entryPoint": "main" },
+    { "name": "BoxFilter", "type": "Pixel", "filePath": "resources/shaders/postprocess/BoxFilter.PS.hlsl", "entryPoint": "main" },
 
     { "name": "Skybox", "type": "Vertex", "filePath": "resources/shaders/Skybox.VS.hlsl", "entryPoint": "main" },
     { "name": "Skybox", "type": "Pixel",  "filePath": "resources/shaders/Skybox.PS.hlsl", "entryPoint": "main" }

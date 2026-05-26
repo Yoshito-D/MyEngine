@@ -12,6 +12,9 @@ void PostEffectPass::Execute(FrameContext& ctx) {
 		return;
 	}
 
+	// メイン描画パスの終了：current を RTV→SRV に遷移させてエフェクトの入力として使えるようにする
+	offscreenRT_->PostDraw();
+
 	// --- 1. ポストプロセスエフェクトチェーンを適用 ---
 	if (ctx.postProcessMgr) {
 		ctx.postProcessMgr->ApplyEffects(offscreenRT_->GetSRVHandleGPU());

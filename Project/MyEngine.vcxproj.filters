@@ -263,6 +263,7 @@
     <None Include="resources\pipelines\rootsig\skybox_rootsig.json" />
     <None Include="resources\pipelines\skybox_pipeline.json" />
     <None Include="resources\pipelines\object3d_dissolve_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\boxfilter_pipeline.json" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -636,6 +637,7 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
     <ClCompile Include="GameProject\App\Scene\EngineTestScene.cpp" />
     <ClCompile Include="GameProject\App\Scene\GameTestScene.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1092,6 +1094,7 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
     <ClInclude Include="GameProject\App\Scene\EngineTestScene.h" />
     <ClInclude Include="GameProject\App\Scene\GameTestScene.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

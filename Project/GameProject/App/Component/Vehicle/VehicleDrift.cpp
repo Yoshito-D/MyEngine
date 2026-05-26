@@ -145,6 +145,8 @@ bool VehicleDrift::ShouldContinueDrift(bool driftInput, float steerInput) const 
 
 void VehicleDrift::ApplySlideVelocity(float steerInput,
                                       const Vector3& gravityUp, float deltaTime) {
+   (void)steerInput;
+
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    if (!gravityBody) { return; }
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();

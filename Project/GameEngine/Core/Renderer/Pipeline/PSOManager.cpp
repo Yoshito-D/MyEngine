@@ -765,6 +765,9 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
    pipeline->SetRTVFormat(config.rtvFormat);
    pipeline->SetPrimitiveTopologyType(config.topologyType);
 
+   // PIXなどのデバッグ用にPSOへ名前を設定
+   pipeline->SetName(std::wstring(name.begin(), name.end()));
+
    // パイプラインの作成
    pipeline->CreatePipelineState(device_->GetDevice());
 

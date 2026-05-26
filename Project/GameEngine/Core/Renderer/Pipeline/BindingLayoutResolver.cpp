@@ -1,5 +1,4 @@
 #include "BindingLayoutResolver.h"
-#include "BindingLayoutResolver.h"
 #include "RootBindingSlots.h"
 #include <algorithm>
 #include <cctype>
@@ -209,7 +208,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
 
    const std::vector<std::string> postProcessEffects = {
       "Grayscale", "RadialBlur", "GaussBlur", "Vignette",
-      "ChromaticAberration", "ShockWave", "Pixelation", "Bloom"
+      "ChromaticAberration", "ShockWave", "Pixelation", "Bloom", "BoxFilter"
    };
 
    for (const auto& effectName : postProcessEffects) {
