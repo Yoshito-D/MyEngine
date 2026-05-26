@@ -59,7 +59,6 @@ void Bloom::ImGuiEdit() {
 	ImGui::PushID(GetImGuiID());
 
 	if (ImGui::TreeNode("Bloom Parameters")) {
-		ImGui::Checkbox("Enabled", &enabled_);
 
 		bool changed = false;
 		changed |= ImGui::SliderFloat("Threshold", &threshold_, 0.0f, 2.0f);

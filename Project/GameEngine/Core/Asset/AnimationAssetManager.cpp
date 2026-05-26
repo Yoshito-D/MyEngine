@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "AnimationAssetManager.h"
-#include <algorithm>
 
 namespace GameEngine {
 

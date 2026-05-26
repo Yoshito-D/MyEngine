@@ -21,6 +21,7 @@
     "resources/pipelines/postprocess/vignette_pipeline.json",
     "resources/pipelines/postprocess/shockwave_pipeline.json",
     "resources/pipelines/postprocess/pixelation_pipeline.json",
-    "resources/pipelines/postprocess/bloom_pipeline.json"
+    "resources/pipelines/postprocess/bloom_pipeline.json",
+    "resources/pipelines/postprocess/boxfilter_pipeline.json"
   ]
 }

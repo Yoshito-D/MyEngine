@@ -1,7 +1,4 @@
 #pragma once
-
-#pragma once
-
 #include "AnimationAsset.h"
 #include <memory>
 #include <string>

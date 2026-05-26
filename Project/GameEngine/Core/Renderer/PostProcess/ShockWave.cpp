@@ -67,7 +67,6 @@ void ShockWave::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNode("Shock Wave Parameters")) {
-	  ImGui::Checkbox("Enabled", &enabled_);
 
 	  bool changed = false;
 	  changed |= ImGui::SliderFloat("Center X", &centerX_, 0.0f, 1.0f);

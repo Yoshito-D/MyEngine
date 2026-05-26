@@ -9,6 +9,7 @@
 #include "ShockWave.h"
 #include "Pixelation.h"
 #include "Bloom.h"
+#include "BoxFilter.h"
 #include "Core/Renderer/Pipeline/PSOManager.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -54,6 +55,7 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
    effectFactoryRegistry_.RegisterFactory("ShockWave", [] { return std::make_unique<ShockWave>(); });
    effectFactoryRegistry_.RegisterFactory("Pixelation", [] { return std::make_unique<Pixelation>(); });
    effectFactoryRegistry_.RegisterFactory("Bloom", [] { return std::make_unique<Bloom>(); });
+   effectFactoryRegistry_.RegisterFactory("BoxFilter", [] { return std::make_unique<BoxFilter>(); });
 
    effectFactoriesRegistered_ = true;
 }
@@ -118,9 +120,10 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  const char* pipelineName;
    };
 
-   static const std::array<PredefinedEffectEntry, 8> kEntries = {
+   static const std::array<PredefinedEffectEntry, 9> kEntries = {
 	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur" },
 	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale" },
+	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter" },
 	  PredefinedEffectEntry{ "GaussBlur", "Gauss Blur", 30, "PostProcess_GaussBlur" },
 	  PredefinedEffectEntry{ "ChromaticAberration", "Chromatic Aberration", 40, "PostProcess_ChromaticAberration" },
 	  PredefinedEffectEntry{ "Vignette", "Vignette", 50, "PostProcess_Vignette" },

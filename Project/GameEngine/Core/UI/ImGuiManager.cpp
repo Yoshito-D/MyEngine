@@ -20,23 +20,23 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    ImGui::StyleColorsDark();
    ImGuiIO& io = ImGui::GetIO();
    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-   
-   multiViewportEnabled_ = true;
+
+   multiViewportEnabled_ = false;
    // マルチビューポートを有効化
    if (multiViewportEnabled_) {
 	  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-	  io.ConfigViewportsNoAutoMerge = true;     // ウィンドウ境界越え時のマージによるラグを防ぐ
-	  io.ConfigViewportsNoDefaultParent = true; // メインHWNDへの親子関係によるリペアレントラグを防ぐ
-	  io.ConfigDpiScaleViewports = true;
    }
+   //io.ConfigViewportsNoAutoMerge = true;     // ウィンドウ境界越え時のマージによるラグを防ぐ
+   //io.ConfigViewportsNoDefaultParent = true; // メインHWNDへの親子関係によるリペアレントラグを防ぐ
+   //io.ConfigDpiScaleViewports = true;
 
    ImGuiStyle& style = ImGui::GetStyle();
    style.FrameRounding = 6.0f;
-   
+
    // マルチビューポート有効時のスタイル調整
    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-      style.WindowRounding = 0.0f;
-      style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+	  style.WindowRounding = 0.0f;
+	  style.Colors[ImGuiCol_WindowBg].w = 1.0f;
    }
 
    ImVec4* colors = ImGui::GetStyle().Colors;
@@ -230,7 +230,7 @@ void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
    if (ImGui::Checkbox("Show DockSpace", &isDockSpaceVisible)) {
 	  isDockSpaceVisible_ = isDockSpaceVisible;
    }
-   
+
    // Multi-Viewport setting
    if (ImGui::Checkbox("Enable Multi-Viewport", &multiViewportEnabled_)) {
 	  ImGuiIO& io = ImGui::GetIO();
@@ -243,7 +243,7 @@ void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
 		 io.ConfigViewportsNoAutoMerge = false;
 		 io.ConfigViewportsNoDefaultParent = false;
 	  }
-      ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Restart may be required for changes to take effect");
+	  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Restart may be required for changes to take effect");
    }
 
    ImGui::Spacing();

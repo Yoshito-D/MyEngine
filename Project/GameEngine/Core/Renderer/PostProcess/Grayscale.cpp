@@ -34,7 +34,6 @@ void Grayscale::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNode("Grayscale Parameters")) {
-	  ImGui::Checkbox("Enabled", &enabled_);
 	  ImGui::TreePop();
    }
 

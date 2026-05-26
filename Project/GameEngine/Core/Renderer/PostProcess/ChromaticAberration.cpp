@@ -63,7 +63,6 @@ void ChromaticAberration::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNode("Chromatic Aberration Parameters")) {
-	  ImGui::Checkbox("Enabled", &enabled_);
 
 	  bool changed = false;
 	  changed |= ImGui::SliderFloat("Pixel Shift", &pixelShift_, 0.0f, 20.0f);
