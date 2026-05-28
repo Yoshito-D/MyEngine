@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <map>
 #include <chrono>
+#include <numbers>
 
 #include "Utility/Logger.h"
 #include "Utility/VectorMath.h"

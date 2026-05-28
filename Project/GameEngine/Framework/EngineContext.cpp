@@ -326,6 +326,12 @@ void EngineContext::ClearTextures() {
    sAssetManager_->GetTextureManager()->Clear();
 }
 
+std::vector<std::string> EngineContext::GetTextureNames() {
+   if (!sAssetManager_) return {};
+   if (!sAssetManager_->GetTextureManager()) return {};
+   return sAssetManager_->GetTextureManager()->GetTextureNames();
+}
+
 void EngineContext::CreateMaterial(const std::string& name, uint32_t color, int32_t lightingMode, const Matrix4x4& uvTransform) {
    if (!sAssetManager_) return;
    if (!sAssetManager_->GetMaterialManager()) return;

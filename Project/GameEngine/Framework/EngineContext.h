@@ -304,6 +304,10 @@ public:
    /// @brief テクスチャを全削除
    static void ClearTextures();
 
+   /// @brief ロード済みテクスチャ名一覧を取得する
+   /// @return テクスチャ名のリスト
+   static std::vector<std::string> GetTextureNames();
+
    /// @brief マテリアルを作成する
    /// @param name マテリアル名
    /// @param color 色（デフォルトは白）

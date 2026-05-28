@@ -5,17 +5,24 @@
 #include "Edit/ParticleEmissionModuleEdit.h"
 #include "Edit/ParticleShapeModuleEdit.h"
 #include "Edit/ParticleLifetimeModulesEdit.h"
+#include "Edit/ParticleUVModulesEdit.h"
 #include "Graphics/Texture.h"
+#include "Utility/VectorMath.h"
+#include "Framework/EngineContext.h"
+#include "VectorMath.h"
 
 #ifdef USE_IMGUI
 #include "../../../externals/imgui/imgui.h"
 #include <string>
 #include <map>
 #include <array>
+#include <vector>
 #include <cstring>
 #endif
 
 namespace ParticleSystemEdit {
+
+using namespace GameEngine;
 
 void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 #ifdef USE_IMGUI
@@ -140,7 +147,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
    // ========================================
    // Main Module
    // ========================================
-   if (ImGui::CollapsingHeader("Main Module", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (ImGui::CollapsingHeader("Main Module")) {
 	  auto* mainModule = particleSystem->GetMainModule();
 	  if (mainModule) {
 		 EditMainModule(mainModule);
@@ -248,6 +255,28 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
    }
 
    // ========================================
+   // UV Transform Module
+   // ========================================
+   if (ImGui::CollapsingHeader("UV Transform Module")) {
+	  auto* module = particleSystem->GetUVTransformModule();
+	  if (module) {
+		 EditUVTransformModule(module);
+	  }
+	  ImGui::Separator();
+   }
+
+   // ========================================
+   // Texture Sheet Animation Module
+   // ========================================
+   if (ImGui::CollapsingHeader("Texture Sheet Animation Module")) {
+	  auto* module = particleSystem->GetTextureSheetAnimationModule();
+	  if (module) {
+		 EditTextureSheetAnimationModule(module);
+	  }
+	  ImGui::Separator();
+   }
+
+   // ========================================
    // Renderer Module
    // ========================================
    if (ImGui::CollapsingHeader("Renderer Module")) {
@@ -295,13 +324,182 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 
 			ImGui::Separator();
 
-			// Texture and Model Settings
-			ImGui::Text("Assets:");
-			auto* texture = particleSystem->GetTexture();
-			if (texture) {
-			   ImGui::Text("Texture: %s", texture->GetName().c_str());
-			} else {
-			   ImGui::Text("Texture: None");
+			// Particle Mesh Shape
+			ImGui::Text("Particle Shape:");
+			static const char* meshTypeNames[] = {
+				"Quad", "Ring", "Sphere", "Box", "Cylinder",
+				"Cone", "Circle", "Plane", "Torus", "Triangle"
+			};
+			int currentMeshType = static_cast<int>(rendererModule->GetParticleMeshType());
+			std::string meshComboID = "Mesh Type##" + name;
+			if (ImGui::Combo(meshComboID.c_str(), &currentMeshType, meshTypeNames, IM_ARRAYSIZE(meshTypeNames))) {
+			   rendererModule->SetParticleMeshType(static_cast<GameEngine::RendererModule::ParticleMeshType>(currentMeshType));
+			}
+
+			// Shape-specific parameters
+			auto meshType = rendererModule->GetParticleMeshType();
+			switch (meshType) {
+			   case GameEngine::RendererModule::ParticleMeshType::Ring: {
+				  float innerR = rendererModule->GetRingInnerRadius();
+				  std::string id = "Inner Radius##Ring_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &innerR, 0.01f, 0.0f, 10.0f))
+					 rendererModule->SetRingInnerRadius(innerR);
+				  float outerR = rendererModule->GetRingOuterRadius();
+				  id = "Outer Radius##Ring_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &outerR, 0.01f, 0.0f, 10.0f))
+					 rendererModule->SetRingOuterRadius(outerR);
+				  int segs = static_cast<int>(rendererModule->GetRingSegments());
+				  id = "Segments##Ring_" + name;
+				  if (ImGui::DragInt(id.c_str(), &segs, 1, 3, 128))
+					 rendererModule->SetRingSegments(static_cast<uint32_t>(segs));
+				  break;
+			   }
+			   case GameEngine::RendererModule::ParticleMeshType::Sphere: {
+				  float r = rendererModule->GetSphereRadius();
+				  std::string id = "Radius##Sphere_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
+					 rendererModule->SetSphereRadius(r);
+				  int stacks = static_cast<int>(rendererModule->GetSphereStacks());
+				  id = "Stacks##Sphere_" + name;
+				  if (ImGui::DragInt(id.c_str(), &stacks, 1, 2, 64))
+					 rendererModule->SetSphereStacks(static_cast<uint32_t>(stacks));
+				  int slices = static_cast<int>(rendererModule->GetSphereSlices());
+				  id = "Slices##Sphere_" + name;
+				  if (ImGui::DragInt(id.c_str(), &slices, 1, 3, 128))
+					 rendererModule->SetSphereSlices(static_cast<uint32_t>(slices));
+				  break;
+			   }
+			   case GameEngine::RendererModule::ParticleMeshType::Box: {
+				  GameEngine::Vector3 bs = rendererModule->GetBoxSize();
+				  float size[3] = {bs.x, bs.y, bs.z};
+				  std::string id = "Size##Box_" + name;
+				  if (ImGui::DragFloat3(id.c_str(), size, 0.01f, 0.01f, 10.0f))
+					 rendererModule->SetBoxSize(GameEngine::Vector3(size[0], size[1], size[2]));
+				  break;
+			   }
+			   case GameEngine::RendererModule::ParticleMeshType::Cylinder: {
+				  float r = rendererModule->GetCylinderRadius();
+				  std::string id = "Radius##Cyl_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
+					 rendererModule->SetCylinderRadius(r);
+				  float h = rendererModule->GetCylinderHeight();
+				  id = "Height##Cyl_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &h, 0.01f, 0.01f, 20.0f))
+					 rendererModule->SetCylinderHeight(h);
+				  int segs = static_cast<int>(rendererModule->GetCylinderSegments());
+				  id = "Segments##Cyl_" + name;
+				  if (ImGui::DragInt(id.c_str(), &segs, 1, 3, 128))
+					 rendererModule->SetCylinderSegments(static_cast<uint32_t>(segs));
+				  break;
+			   }
+			   case GameEngine::RendererModule::ParticleMeshType::Cone: {
+				  float r = rendererModule->GetConeRadius();
+				  std::string id = "Radius##Cone_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
+					 rendererModule->SetConeRadius(r);
+				  float h = rendererModule->GetConeHeight();
+				  id = "Height##Cone_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &h, 0.01f, 0.01f, 20.0f))
+					 rendererModule->SetConeHeight(h);
+				  int segs = static_cast<int>(rendererModule->GetConeSegments());
+				  id = "Segments##Cone_" + name;
+				  if (ImGui::DragInt(id.c_str(), &segs, 1, 3, 128))
+					 rendererModule->SetConeSegments(static_cast<uint32_t>(segs));
+				  break;
+			   }
+			   case GameEngine::RendererModule::ParticleMeshType::Circle: {
+				  float r = rendererModule->GetCircleRadius();
+				  std::string id = "Radius##Circle_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
+					 rendererModule->SetCircleRadius(r);
+				  int segs = static_cast<int>(rendererModule->GetCircleSegments());
+				  id = "Segments##Circle_" + name;
+				  if (ImGui::DragInt(id.c_str(), &segs, 1, 3, 128))
+					 rendererModule->SetCircleSegments(static_cast<uint32_t>(segs));
+				  break;
+			   }
+			   case GameEngine::RendererModule::ParticleMeshType::Plane: {
+				  float w = rendererModule->GetPlaneWidth();
+				  std::string id = "Width##Plane_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &w, 0.01f, 0.01f, 20.0f))
+					 rendererModule->SetPlaneWidth(w);
+				  float d = rendererModule->GetPlaneDepth();
+				  id = "Depth##Plane_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &d, 0.01f, 0.01f, 20.0f))
+					 rendererModule->SetPlaneDepth(d);
+				  break;
+			   }
+			   case GameEngine::RendererModule::ParticleMeshType::Torus: {
+				  float maj = rendererModule->GetTorusMajorRadius();
+				  std::string id = "Major Radius##Torus_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &maj, 0.01f, 0.01f, 10.0f))
+					 rendererModule->SetTorusMajorRadius(maj);
+				  float min_ = rendererModule->GetTorusMinorRadius();
+				  id = "Minor Radius##Torus_" + name;
+				  if (ImGui::DragFloat(id.c_str(), &min_, 0.01f, 0.01f, 10.0f))
+					 rendererModule->SetTorusMinorRadius(min_);
+				  int majSegs = static_cast<int>(rendererModule->GetTorusMajorSegments());
+				  id = "Major Segments##Torus_" + name;
+				  if (ImGui::DragInt(id.c_str(), &majSegs, 1, 3, 128))
+					 rendererModule->SetTorusMajorSegments(static_cast<uint32_t>(majSegs));
+				  int minSegs = static_cast<int>(rendererModule->GetTorusMinorSegments());
+				  id = "Minor Segments##Torus_" + name;
+				  if (ImGui::DragInt(id.c_str(), &minSegs, 1, 3, 128))
+					 rendererModule->SetTorusMinorSegments(static_cast<uint32_t>(minSegs));
+				  break;
+			   }
+			   default:
+				  break;
+			}
+
+			ImGui::Separator();
+
+			// Texture Settings
+			ImGui::Text("Texture:");
+			{
+			   auto* currentTexture = particleSystem->GetTexture();
+			   std::string currentTexName = particleSystem->GetTextureName().empty() ? "(None)" : particleSystem->GetTextureName();
+
+			   // テクスチャ選択コンボ
+			   std::vector<std::string> texNames = GameEngine::EngineContext::GetTextureNames();
+			   std::string comboID = "##TextureSelect_" + name;
+			   if (ImGui::BeginCombo(comboID.c_str(), currentTexName.c_str())) {
+				  bool noneSelected = particleSystem->GetTextureName().empty();
+				  std::string noneID = "(None)##TexNone_" + name;
+				  if (ImGui::Selectable(noneID.c_str(), noneSelected)) {
+					 particleSystem->SetTextureName("");
+				  }
+				  for (const auto& texName : texNames) {
+					 bool selected = (particleSystem->GetTextureName() == texName);
+					 std::string selID = texName + "##TexSel_" + name;
+					 if (ImGui::Selectable(selID.c_str(), selected)) {
+						particleSystem->SetTextureName(texName);
+					 }
+					 if (selected) {
+						ImGui::SetItemDefaultFocus();
+					 }
+				  }
+				  ImGui::EndCombo();
+			   }
+
+			   // テクスチャプレビュー
+			   auto* previewTex = currentTexture;
+			   if (previewTex) {
+				  ImGui::Text("%s (%ux%u)", previewTex->GetName().c_str(),
+					 previewTex->GetWidth(), previewTex->GetHeight());
+
+				  // アスペクト比を保ちながら最大128pxでプレビュー
+				  const float kPreviewMax = 128.0f;
+				  float w = static_cast<float>(previewTex->GetWidth());
+				  float h = static_cast<float>(previewTex->GetHeight());
+				  float scale = (w > h) ? (kPreviewMax / w) : (kPreviewMax / h);
+				  ImVec2 previewSize(w * scale, h * scale);
+
+				  ImTextureID texId = (ImTextureID)(previewTex->GetTextureSrvHandleGPU().ptr);
+				  ImGui::Image(texId, previewSize);
+			   } else {
+				  ImGui::TextDisabled("No texture assigned");
+			   }
 			}
 
 			auto* modelAsset = particleSystem->GetModelAsset();
@@ -330,6 +528,112 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 	  );
 
 	  ImGui::Separator();
+
+	  auto* shapeModule = particleSystem->GetShapeModule();
+
+	  // Shape Visualization
+	  static bool showShape = true;
+	  static Vector4 shapeColor(1.0f, 1.0f, 0.0f, 1.0f);
+
+	  ImGui::Checkbox("Show Shape", &showShape);
+
+	  if (showShape) {
+		 ImGui::ColorEdit4("Shape Color", &shapeColor.x);
+
+		 Vector3 center = shapeModule->GetPosition();
+		 Vector3 scaleVec = shapeModule->GetScale();
+		 Vector3 rotationVec = shapeModule->GetRotation();
+
+
+		 // Shape-specific parameters
+		 auto shapeType = shapeModule->GetShapeType();
+
+		 switch (shapeType) {
+			case GameEngine::ShapeModule::ShapeType::Sphere: {
+			   float scaledRadius = shapeModule->GetRadius() * scaleVec.x;
+			   GameEngine::EngineContext::DrawSphere(center, scaledRadius, shapeColor);
+			   break;
+			}
+
+			case GameEngine::ShapeModule::ShapeType::Hemisphere: {
+			   float scaledRadius = shapeModule->GetRadius() * scaleVec.x;
+			   Vector3 up(0.0f, 1.0f, 0.0f);
+			   GameEngine::EngineContext::DrawHemisphere(center, scaledRadius, up, shapeColor);
+			   break;
+			}
+
+			case GameEngine::ShapeModule::ShapeType::Cone: {
+			   // Coneの角度とスケールを反映
+			   float angle = shapeModule->GetAngle();
+			   float length = shapeModule->GetLength() * scaleVec.y;
+			   float radius = std::tan(angle * std::numbers::pi_v<float> / 180.0f) * length;
+
+			   Vector3 direction(0.0f, 1.0f, 0.0f);
+			   GameEngine::EngineContext::DrawCone(center, radius, length, direction, shapeColor);
+			   break;
+			}
+
+			case GameEngine::ShapeModule::ShapeType::Box: {
+			   Vector3 boxSize = shapeModule->GetBoxSize();
+			   Vector3 scaledSize(
+				  boxSize.x * scaleVec.x,
+				  boxSize.y * scaleVec.y,
+				  boxSize.z * scaleVec.z
+			   );
+			   GameEngine::EngineContext::DrawBox(center, scaledSize, shapeColor);
+			   break;
+			}
+
+			case GameEngine::ShapeModule::ShapeType::Circle: {
+			   float scaledRadius = shapeModule->GetRadius() * scaleVec.x;
+			   float arc = shapeModule->GetArc();
+
+			   // Arcに対応した円の描画
+			   if (arc >= 360.0f) {
+				  // 完全な円
+				  Vector3 normal(0.0f, 1.0f, 0.0f);
+				  GameEngine::EngineContext::DrawCircle(center, scaledRadius, normal, shapeColor);
+			   } else {
+				  // 円弧を線分で描画
+				  const int segments = 32;
+				  float angleStep = (arc * std::numbers::pi_v<float> / 180.0f) / segments;
+				  float startAngle = -arc * 0.5f * std::numbers::pi_v<float> / 180.0f;
+
+				  Vector3 right(1.0f, 0.0f, 0.0f);
+				  Vector3 forward(0.0f, 0.0f, 1.0f);
+
+				  // 中心から放射状の線
+				  for (int i = 0; i <= segments; ++i) {
+					 float angle = startAngle + angleStep * i;
+					 Vector3 p = center +
+						right * (scaledRadius * std::cos(angle)) +
+						forward * (scaledRadius * std::sin(angle));
+
+					 if (i == 0 || i == segments) {
+						// 端点は中心からの線も引く
+						GameEngine::EngineContext::DrawLine(center, p, shapeColor);
+					 }
+
+					 if (i > 0) {
+						// 前の点との接続
+						float prevAngle = startAngle + angleStep * (i - 1);
+						Vector3 prevP = center +
+						   right * (scaledRadius * std::cos(prevAngle)) +
+						   forward * (scaledRadius * std::sin(prevAngle));
+						GameEngine::EngineContext::DrawLine(prevP, p, shapeColor);
+					 }
+				  }
+			   }
+			   break;
+			}
+
+			case GameEngine::ShapeModule::ShapeType::Edge:
+			case GameEngine::ShapeModule::ShapeType::Point:
+			   // 点とエッジは小さい球で表示
+			   GameEngine::EngineContext::DrawSphere(center, 0.1f, shapeColor);
+			   break;
+		 }
+	  }
    }
 
    ImGui::End();

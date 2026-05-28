@@ -203,9 +203,6 @@
     <None Include="resources\pipelines\skinning_object3d_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="resources\pipelines\skinning_pipeline_registry.json">
-      <Filter>resources\pipelines</Filter>
-    </None>
     <None Include="resources\pipelines\sprite_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
@@ -638,6 +635,16 @@
     <ClCompile Include="GameProject\App\Scene\EngineTestScene.cpp" />
     <ClCompile Include="GameProject\App\Scene\GameTestScene.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\LimitVelocityOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\ForceOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\ColorOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\SizeOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\RotationOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\NoiseModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\TextureSheetAnimationModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\UVTransformModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -824,9 +831,6 @@
       <Filter>GameEngine\Effect\Module</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Effect\Module\ParticleModule.h">
-      <Filter>GameEngine\Effect\Module</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Effect\Module\RendererModule.h">
       <Filter>GameEngine\Effect\Module</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Effect\Module\ShapeModule.h">
@@ -1095,6 +1099,17 @@
     <ClInclude Include="GameProject\App\Scene\EngineTestScene.h" />
     <ClInclude Include="GameProject\App\Scene\GameTestScene.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.h" />
+    <ClInclude Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\LimitVelocityOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\ForceOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\ColorOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\SizeOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\RotationOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\NoiseModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\RendererModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\UVTransformModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\TextureSheetAnimationModule.h" />
+    <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

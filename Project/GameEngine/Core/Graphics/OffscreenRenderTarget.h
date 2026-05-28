@@ -74,7 +74,7 @@ private:
    RenderTargetInfo currentRenderTarget_;
    RenderTargetInfo previousRenderTarget_;
 
-   DXGI_FORMAT format_ = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+   DXGI_FORMAT format_ = DXGI_FORMAT_R8G8B8A8_UNORM;
 
    /// @brief レンダーターゲット情報を作成
    /// @param index 作成するレンダーターゲットのインデックス（0または1）

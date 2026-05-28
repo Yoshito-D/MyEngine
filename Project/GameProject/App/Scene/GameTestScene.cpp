@@ -38,6 +38,7 @@ void GameTestScene::Initialize() {
    BaseScene::Initialize();
 
    EngineContext::LoadTexture("resources/textures/space_2048px.dds", "skyboxTexture");
+   EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
 
    skybox_ = std::make_unique<GameEngine::Skybox>();
    skybox_->Create(EngineContext::GetGraphicsDevice());

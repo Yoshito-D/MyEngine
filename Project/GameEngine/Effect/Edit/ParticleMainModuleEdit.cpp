@@ -29,7 +29,7 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
    ImGui::Separator();
 
    // Start Lifetime (ランダム対応)
-   ImGui::Text("Start Lifetime");
+   ImGui::Text("Start Lifetime (開始寿命)");
    auto& lifetime = mainModule->GetStartLifetime();
    bool lifetimeRandomize = lifetime.randomize;
    if (ImGui::Checkbox("Randomize##Lifetime", &lifetimeRandomize)) {
@@ -64,7 +64,7 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
    ImGui::Separator();
 
    // Start Speed (ランダム対応)
-   ImGui::Text("Start Speed");
+   ImGui::Text("Start Speed (開始速度)");
    auto& speed = mainModule->GetStartSpeed();
    bool speedRandomize = speed.randomize;
    if (ImGui::Checkbox("Randomize##Speed", &speedRandomize)) {
@@ -164,7 +164,7 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
    ImGui::Separator();
 
    // Start Color (ランダム対応)
-   ImGui::Text("Start Color");
+   ImGui::Text("Start Color (開始色)");
    auto& color = mainModule->GetStartColor();
    bool colorRandomize = color.randomize;
    if (ImGui::Checkbox("Randomize##Color", &colorRandomize)) {
@@ -215,13 +215,13 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
    // Simulation Space
    static const char* simulationSpaceNames[] = { "World", "Local" };
    int currentSpace = static_cast<int>(mainModule->GetSimulationSpace());
-   if (ImGui::Combo("Simulation Space", &currentSpace, simulationSpaceNames, IM_ARRAYSIZE(simulationSpaceNames))) {
+   if (ImGui::Combo("Simulation Space (シミュレーション空間)", &currentSpace, simulationSpaceNames, IM_ARRAYSIZE(simulationSpaceNames))) {
 	  mainModule->SetSimulationSpace(static_cast<GameEngine::MainModule::SimulationSpace>(currentSpace));
    }
 
    // Max Particles
    int maxParticles = static_cast<int>(mainModule->GetMaxParticles());
-   if (ImGui::DragInt("Max Particles", &maxParticles, 1, 1, 10000)) {
+   if (ImGui::DragInt("Max Particles (最大パーティクル数)", &maxParticles, 1, 1, 10000)) {
 	  mainModule->SetMaxParticles(static_cast<uint32_t>(maxParticles));
    }
 

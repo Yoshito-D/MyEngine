@@ -26,6 +26,23 @@ namespace GameEngine {
         void FromJson(const nlohmann::json& json);
     };
 
+    /// @brief ランダム範囲を表す構造体（Vector2）
+    struct RandomVector2 {
+        Vector2 minValue = Vector2{0.0f, 0.0f};
+        Vector2 maxValue = Vector2{0.0f, 0.0f};
+        bool randomize = false;
+
+        RandomVector2() = default;
+        RandomVector2(const Vector2& value) : minValue(value), maxValue(value), randomize(false) {}
+        RandomVector2(const Vector2& minVal, const Vector2& maxVal, bool enableRandom = true)
+            : minValue(minVal), maxValue(maxVal), randomize(enableRandom) {}
+
+        Vector2 GetValue() const;
+
+        nlohmann::json ToJson() const;
+        void FromJson(const nlohmann::json& json);
+    };
+
     /// @brief ランダム範囲を表す構造体（Vector3）
     struct RandomVector3 {
         Vector3 minValue = Vector3(0.0f, 0.0f, 0.0f);

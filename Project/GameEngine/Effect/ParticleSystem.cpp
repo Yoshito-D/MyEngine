@@ -5,6 +5,7 @@
 #include "MathUtils.h"
 #include "Camera.h"
 #include "Material.h"
+#include "Framework/EngineContext.h"
 #include <numbers>
 #include <random>
 
@@ -37,6 +38,53 @@ void ParticleSystem::CreateQuadMesh() {
    }
 }
 
+void ParticleSystem::RebuildParticleMesh() {
+   if (!quadMesh_ || !sDevice_) return;
+   auto* rm = rendererModule_.get();
+   if (!rm) return;
+
+   using MeshType = RendererModule::ParticleMeshType;
+   switch (rm->GetParticleMeshType()) {
+	  case MeshType::Quad:
+		 quadMesh_->CreateParticleQuad(1.0f, 1.0f);
+		 break;
+	  case MeshType::Ring:
+		 quadMesh_->CreateRing(rm->GetRingInnerRadius(), rm->GetRingOuterRadius(), rm->GetRingSegments());
+		 break;
+	  case MeshType::Sphere:
+		 quadMesh_->CreateSphere(rm->GetSphereRadius(), rm->GetSphereStacks(), rm->GetSphereSlices());
+		 break;
+	  case MeshType::Box: {
+		 auto s = rm->GetBoxSize();
+		 quadMesh_->CreateBox(s.x, s.y, s.z);
+		 break;
+	  }
+	  case MeshType::Cylinder:
+		 quadMesh_->CreateCylinder(rm->GetCylinderRadius(), rm->GetCylinderHeight(), rm->GetCylinderSegments());
+		 break;
+	  case MeshType::Cone:
+		 quadMesh_->CreateCone(rm->GetConeRadius(), rm->GetConeHeight(), rm->GetConeSegments());
+		 break;
+	  case MeshType::Circle:
+		 quadMesh_->CreateCircle(rm->GetCircleRadius(), rm->GetCircleSegments());
+		 break;
+	  case MeshType::Plane:
+		 quadMesh_->CreatePlane(rm->GetPlaneWidth(), rm->GetPlaneDepth());
+		 break;
+	  case MeshType::Torus:
+		 quadMesh_->CreateTorus(rm->GetTorusMajorRadius(), rm->GetTorusMinorRadius(),
+								rm->GetTorusMajorSegments(), rm->GetTorusMinorSegments());
+		 break;
+	  case MeshType::Triangle:
+		 quadMesh_->CreateTriangle();
+		 break;
+	  default:
+		 quadMesh_->CreateParticleQuad(1.0f, 1.0f);
+		 break;
+   }
+   rm->ClearMeshDirty();
+}
+
 ParticleSystem::ParticleSystem() {
    quadMesh_ = std::make_unique<Mesh>();
    material_ = std::make_unique<ParticleMaterial>();
@@ -54,6 +102,8 @@ ParticleSystem::ParticleSystem() {
    forceOverLifetimeModule_ = std::make_unique<ForceOverLifetimeModule>();
    limitVelocityModule_ = std::make_unique<LimitVelocityOverLifetimeModule>();
    noiseModule_ = std::make_unique<NoiseModule>();
+   uvTransformModule_ = std::make_unique<UVTransformModule>();
+   textureSheetAnimationModule_ = std::make_unique<TextureSheetAnimationModule>();
 
    rendererModule_ = std::make_unique<RendererModule>();
 
@@ -65,6 +115,8 @@ ParticleSystem::ParticleSystem() {
    forceOverLifetimeModule_->SetEnabled(false);
    limitVelocityModule_->SetEnabled(false);
    noiseModule_->SetEnabled(false);
+   uvTransformModule_->SetEnabled(false);
+   textureSheetAnimationModule_->SetEnabled(false);
 }
 
 ParticleSystem::~ParticleSystem() {
@@ -110,6 +162,7 @@ void ParticleSystem::Create() {
    for (uint32_t i = 0; i < kMaxParticles; ++i) {
 	  instancingData_[i].wvp = MakeIdentity4x4();
 	  instancingData_[i].world = MakeIdentity4x4();
+	  instancingData_[i].uvTransform = MakeIdentity4x4();
 	  instancingData_[i].color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
    }
 
@@ -156,6 +209,11 @@ void ParticleSystem::Create() {
 
 void ParticleSystem::Update(float deltaTime) {
    if (!isPlaying_ || isPaused_) return;
+
+   // メッシュ形状が変更された場合は再構築
+   if (rendererModule_ && rendererModule_->IsMeshDirty()) {
+      RebuildParticleMesh();
+   }
 
    systemTime_ += deltaTime;
 
@@ -230,6 +288,10 @@ void ParticleSystem::Update(float deltaTime) {
 	  activeParticleCount_++;
    }
 
+   if (material_) {
+	  material_->SetUVTransform(MakeIdentity4x4());
+   }
+
    // Loop handling
    if (!mainModule_->IsLooping() && systemTime_ >= mainModule_->GetDuration()) {
 	  if (activeParticleCount_ == 0) {
@@ -264,6 +326,14 @@ void ParticleSystem::ApplyModules(Particle& particle, float deltaTime) {
 
    if (noiseModule_->IsEnabled()) {
 	  noiseModule_->ApplyNoise(particle, deltaTime);
+   }
+
+   if (uvTransformModule_ && uvTransformModule_->IsEnabled()) {
+	  uvTransformModule_->UpdateUV(particle, deltaTime);
+   }
+
+   if (textureSheetAnimationModule_ && textureSheetAnimationModule_->IsEnabled()) {
+	  textureSheetAnimationModule_->UpdateAnimation(particle, deltaTime);
    }
 }
 
@@ -472,8 +542,37 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 
 	  Matrix4x4 wvpMatrix = worldMatrix * viewProjectionMatrix;
 
+	  Matrix4x4 particleUVTransform = MakeScaleMatrix(Vector3(particle.uvScale.x, particle.uvScale.y, 1.0f)) *
+		 MakeRotateZMatrix(particle.uvRotation) *
+		 MakeTranslateMatrix(Vector3(particle.uvOffset.x, particle.uvOffset.y, 0.0f));
+
+	  if (textureSheetAnimationModule_ && textureSheetAnimationModule_->IsEnabled()) {
+		 const uint32_t tilesX = (std::max)(textureSheetAnimationModule_->GetTilesX(), 1u);
+		 const uint32_t tilesY = (std::max)(textureSheetAnimationModule_->GetTilesY(), 1u);
+		 uint32_t column = 0;
+		 uint32_t row = 0;
+
+		 if (textureSheetAnimationModule_->GetAnimationMode() == TextureSheetAnimationModule::AnimationMode::WholeSheet) {
+			 const uint32_t totalFrames = tilesX * tilesY;
+			 const uint32_t frame = totalFrames > 0 ? static_cast<uint32_t>(particle.sheetFrame) % totalFrames : 0;
+			 column = frame % tilesX;
+			 row = frame / tilesX;
+		 } else {
+			 column = static_cast<uint32_t>(particle.sheetFrame) % tilesX;
+			 row = static_cast<uint32_t>(particle.sheetRow);
+			 if (row >= tilesY) {
+				row = tilesY - 1;
+			 }
+		 }
+
+		 Matrix4x4 sheetTransform = MakeScaleMatrix(Vector3(1.0f / static_cast<float>(tilesX), 1.0f / static_cast<float>(tilesY), 1.0f)) *
+			MakeTranslateMatrix(Vector3(static_cast<float>(column) / static_cast<float>(tilesX), static_cast<float>(row) / static_cast<float>(tilesY), 0.0f));
+		 particleUVTransform = particleUVTransform * sheetTransform;
+	  }
+
 	  instancingData_[instanceIndex].world = worldMatrix;
 	  instancingData_[instanceIndex].wvp = wvpMatrix;
+	  instancingData_[instanceIndex].uvTransform = particleUVTransform;
 	  instancingData_[instanceIndex].color = particle.color;
 
 	  instanceIndex++;
@@ -517,8 +616,25 @@ void ParticleSystem::Pause() {
 
 void ParticleSystem::SetTexture(Texture* texture) {
    texture_ = texture;
+   textureName_ = texture ? texture->GetName() : std::string();
    if (material_) {
 	  material_->SetTexture(texture);
+   }
+}
+
+void ParticleSystem::SetTextureName(const std::string& textureName) {
+   textureName_ = textureName;
+   if (textureName_.empty()) {
+	  SetTexture(nullptr);
+	  return;
+   }
+
+   Texture* texture = EngineContext::GetTexture(textureName_);
+   if (texture) {
+	  texture_ = texture;
+	  if (material_) {
+		 material_->SetTexture(texture);
+	  }
    }
 }
 
@@ -573,6 +689,14 @@ void ParticleSystem::EmitParticle() {
 	  particle.velocity = Vector3(0.0f, 0.0f, 0.0f);
    }
 
+   if (uvTransformModule_ && uvTransformModule_->IsEnabled()) {
+      uvTransformModule_->InitializeParticle(particle);
+   }
+
+   if (textureSheetAnimationModule_ && textureSheetAnimationModule_->IsEnabled()) {
+      textureSheetAnimationModule_->InitializeParticle(particle);
+   }
+
    particle.acceleration = Vector3(0.0f, 0.0f, 0.0f);
    particle.isActive = true;
 }
@@ -610,6 +734,7 @@ bool ParticleSystem::LoadFromJson(const std::string& filePath) {
 
 nlohmann::json ParticleSystem::ToJson() const {
    nlohmann::json j;
+   j["textureName"] = textureName_;
 
    // 各モジュールのToJson()を呼び出し
    if (mainModule_) {
@@ -652,6 +777,14 @@ nlohmann::json ParticleSystem::ToJson() const {
 	  j["noiseModule"] = noiseModule_->ToJson();
    }
 
+   if (uvTransformModule_) {
+	  j["uvTransformModule"] = uvTransformModule_->ToJson();
+   }
+
+   if (textureSheetAnimationModule_) {
+	  j["textureSheetAnimationModule"] = textureSheetAnimationModule_->ToJson();
+   }
+
    if (rendererModule_) {
 	  j["rendererModule"] = rendererModule_->ToJson();
    }
@@ -660,6 +793,10 @@ nlohmann::json ParticleSystem::ToJson() const {
 }
 
 void ParticleSystem::FromJson(const nlohmann::json& j) {
+   if (j.contains("textureName")) {
+      SetTextureName(j["textureName"].get<std::string>());
+   }
+
    // 各モジュールのFromJson()を呼び出し
    if (j.contains("mainModule") && mainModule_) {
 	  mainModule_->FromJson(j["mainModule"]);
@@ -699,6 +836,14 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
 
    if (j.contains("noiseModule") && noiseModule_) {
 	  noiseModule_->FromJson(j["noiseModule"]);
+   }
+
+   if (j.contains("uvTransformModule") && uvTransformModule_) {
+	  uvTransformModule_->FromJson(j["uvTransformModule"]);
+   }
+
+   if (j.contains("textureSheetAnimationModule") && textureSheetAnimationModule_) {
+	  textureSheetAnimationModule_->FromJson(j["textureSheetAnimationModule"]);
    }
 
    if (j.contains("rendererModule") && rendererModule_) {

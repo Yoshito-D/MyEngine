@@ -37,10 +37,6 @@ void RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
       log_.Log("Successfully loaded pipeline definitions from JSON");
    }
 
-   if (!context.psoManager->LoadPipelineDefinitions(L"resources/pipelines/skinning_pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
-      log_.Log("Failed to load skinning pipeline definitions from JSON", Logger::LogLevel::Error);
-   }
-
    context.lineRenderer->Initialize(context.device->GetDevice(), 100000);
    context.postProcessLineRenderer->Initialize(context.device->GetDevice(), 100000);
 
