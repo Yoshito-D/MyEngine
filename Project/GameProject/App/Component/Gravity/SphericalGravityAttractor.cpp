@@ -2,6 +2,7 @@
 
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
+#endif
 
 namespace App {
 /// @brief 影響半径内かどうかを返す（0以下は無限範囲）
@@ -18,6 +19,7 @@ GameEngine::Vector3 SphericalGravityAttractor::GetUpVectorFor(const GameEngine::
    return dir.Normalize();
 }
 
+#ifdef USE_IMGUI
 void SphericalGravityAttractor::DrawInspector() {
    if (!ImGui::CollapsingHeader("SphericalGravityAttractor")) {
       return;
@@ -39,7 +41,6 @@ void SphericalGravityAttractor::DrawInspector() {
       }
    }
 }
+#endif
 
 } // namespace App
-
-#endif

@@ -32,6 +32,7 @@ public:
    struct ParticleForGPU {
 	  Matrix4x4 wvp;
 	  Matrix4x4 world;
+	  Matrix4x4 uvTransform;
 	  Vector4 color;
    };
 
@@ -86,6 +87,8 @@ public:
    ForceOverLifetimeModule* GetForceOverLifetimeModule() { return forceOverLifetimeModule_.get(); }
    LimitVelocityOverLifetimeModule* GetLimitVelocityModule() { return limitVelocityModule_.get(); }
    NoiseModule* GetNoiseModule() { return noiseModule_.get(); }
+   UVTransformModule* GetUVTransformModule() { return uvTransformModule_.get(); }
+   TextureSheetAnimationModule* GetTextureSheetAnimationModule() { return textureSheetAnimationModule_.get(); }
 
    RendererModule* GetRendererModule() { return rendererModule_.get(); }
 
@@ -94,6 +97,12 @@ public:
 
    /// @brief テクスチャを設定
    void SetTexture(Texture* texture);
+
+   /// @brief テクスチャ名を設定して適用
+   void SetTextureName(const std::string& textureName);
+
+   /// @brief 設定中のテクスチャ名を取得
+   const std::string& GetTextureName() const { return textureName_; }
 
    // ============ JSON Serialization ============
    /// @brief パラメータをJSONファイルに保存
@@ -145,6 +154,8 @@ private:
    std::unique_ptr<ForceOverLifetimeModule> forceOverLifetimeModule_ = nullptr;
    std::unique_ptr<LimitVelocityOverLifetimeModule> limitVelocityModule_ = nullptr;
    std::unique_ptr<NoiseModule> noiseModule_ = nullptr;
+   std::unique_ptr<UVTransformModule> uvTransformModule_ = nullptr;
+   std::unique_ptr<TextureSheetAnimationModule> textureSheetAnimationModule_ = nullptr;
 
    std::unique_ptr<RendererModule> rendererModule_ = nullptr;
    // ============================================
@@ -161,6 +172,7 @@ private:
    // レンダリング設定
    ModelAsset* modelAsset_ = nullptr;
    Texture* texture_ = nullptr;
+   std::string textureName_;
 
    // 再生制御
    bool isPlaying_ = false;
@@ -175,6 +187,9 @@ private:
 private:
    /// @brief クワッドメッシュを作成（ビルボード用）
    void CreateQuadMesh();
+
+   /// @brief パーティクルメッシュを再構築（RendererModule の形状設定に基づく）
+   void RebuildParticleMesh();
 
    /// @brief 粒子を放出
    void EmitParticle();

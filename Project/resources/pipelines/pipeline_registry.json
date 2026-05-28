@@ -1,6 +1,7 @@
 {
   "rootSignatures": [
     "resources/pipelines/rootsig/object3d_rootsig.json",
+    "resources/pipelines/rootsig/object3d_skinning_rootsig.json",
     "resources/pipelines/rootsig/line3d_rootsig.json",
     "resources/pipelines/rootsig/particle_rootsig.json",
     "resources/pipelines/rootsig/fullscreen_triangle_rootsig.json",
@@ -9,6 +10,7 @@
   ],
   "pipelines": [
     "resources/pipelines/object3d_pipeline.json",
+    "resources/pipelines/skinning_object3d_pipeline.json",
     "resources/pipelines/sprite_pipeline.json",
     "resources/pipelines/line3d_pipeline.json",
     "resources/pipelines/particle_pipeline.json",

@@ -16,18 +16,18 @@ namespace ParticleSystemEdit {
         if (!module) return;
 
         bool enabled = module->IsEnabled();
-        if (ImGui::Checkbox("Enabled##VelocityOverLifetime", &enabled)) {
+        if (ImGui::Checkbox("Enabled (有効)##VelocityOverLifetime", &enabled)) {
             module->SetEnabled(enabled);
         }
 
         if (enabled) {
             Vector3 linearVelocity = module->GetLinearVelocity();
-            if (ImGui::DragFloat3("Linear Velocity", &linearVelocity.x, 0.1f, -50.0f, 50.0f)) {
+            if (ImGui::DragFloat3("Linear Velocity (線形速度)", &linearVelocity.x, 0.1f, -50.0f, 50.0f)) {
                 module->SetLinearVelocity(linearVelocity);
             }
 
             float speedModifier = module->GetSpeedModifier();
-            if (ImGui::DragFloat("Speed Modifier", &speedModifier, 0.01f, 0.0f, 5.0f)) {
+            if (ImGui::DragFloat("Speed Modifier (速度補正)", &speedModifier, 0.01f, 0.0f, 5.0f)) {
                 module->SetSpeedModifier(speedModifier);
             }
         }
@@ -39,18 +39,18 @@ namespace ParticleSystemEdit {
         if (!module) return;
 
         bool enabled = module->IsEnabled();
-        if (ImGui::Checkbox("Enabled##LimitVelocity", &enabled)) {
+        if (ImGui::Checkbox("Enabled (有効)##LimitVelocity", &enabled)) {
             module->SetEnabled(enabled);
         }
 
         if (enabled) {
             float speedLimit = module->GetSpeedLimit();
-            if (ImGui::DragFloat("Speed Limit", &speedLimit, 0.1f, 0.0f, 100.0f)) {
+            if (ImGui::DragFloat("Speed Limit (速度上限)", &speedLimit, 0.1f, 0.0f, 100.0f)) {
                 module->SetSpeedLimit(speedLimit);
             }
 
             float dampen = module->GetDampen();
-            if (ImGui::DragFloat("Dampen", &dampen, 0.01f, 0.0f, 1.0f)) {
+            if (ImGui::DragFloat("Dampen (減衰)", &dampen, 0.01f, 0.0f, 1.0f)) {
                 module->SetDampen(dampen);
             }
         }
@@ -62,13 +62,13 @@ namespace ParticleSystemEdit {
         if (!module) return;
 
         bool enabled = module->IsEnabled();
-        if (ImGui::Checkbox("Enabled##ForceOverLifetime", &enabled)) {
+        if (ImGui::Checkbox("Enabled (有効)##ForceOverLifetime", &enabled)) {
             module->SetEnabled(enabled);
         }
 
         if (enabled) {
             Vector3 force = module->GetForce();
-            if (ImGui::DragFloat3("Force", &force.x, 0.1f, -50.0f, 50.0f)) {
+            if (ImGui::DragFloat3("Force (力)", &force.x, 0.1f, -50.0f, 50.0f)) {
                 module->SetForce(force);
             }
         }
@@ -80,18 +80,18 @@ namespace ParticleSystemEdit {
         if (!module) return;
 
         bool enabled = module->IsEnabled();
-        if (ImGui::Checkbox("Enabled##ColorOverLifetime", &enabled)) {
+        if (ImGui::Checkbox("Enabled (有効)##ColorOverLifetime", &enabled)) {
             module->SetEnabled(enabled);
         }
 
         if (enabled) {
             Vector4 startColor = module->GetStartColor();
-            if (ImGui::ColorEdit4("Start Color##ColorLifetime", &startColor.x)) {
+            if (ImGui::ColorEdit4("Start Color (開始色)##ColorLifetime", &startColor.x)) {
                 module->SetStartColor(startColor);
             }
 
             Vector4 endColor = module->GetEndColor();
-            if (ImGui::ColorEdit4("End Color##ColorLifetime", &endColor.x)) {
+            if (ImGui::ColorEdit4("End Color (終了色)##ColorLifetime", &endColor.x)) {
                 module->SetEndColor(endColor);
             }
         }
@@ -103,23 +103,23 @@ namespace ParticleSystemEdit {
         if (!module) return;
 
         bool enabled = module->IsEnabled();
-        if (ImGui::Checkbox("Enabled##SizeOverLifetime", &enabled)) {
+        if (ImGui::Checkbox("Enabled (有効)##SizeOverLifetime", &enabled)) {
             module->SetEnabled(enabled);
         }
 
         if (enabled) {
             float sizeMultiplier = module->GetSizeMultiplier();
-            if (ImGui::DragFloat("Size Multiplier", &sizeMultiplier, 0.01f, 0.0f, 10.0f)) {
+            if (ImGui::DragFloat("Size Multiplier (サイズ倍率)", &sizeMultiplier, 0.01f, 0.0f, 10.0f)) {
                 module->SetSizeMultiplier(sizeMultiplier);
             }
 
             Vector3 startSize = module->GetStartSize();
-            if (ImGui::DragFloat3("Start Size##SizeLifetime", &startSize.x, 0.01f, 0.0f, 10.0f)) {
+            if (ImGui::DragFloat3("Start Size (開始サイズ)##SizeLifetime", &startSize.x, 0.01f, 0.0f, 10.0f)) {
                 module->SetStartSize(startSize);
             }
 
             Vector3 endSize = module->GetEndSize();
-            if (ImGui::DragFloat3("End Size##SizeLifetime", &endSize.x, 0.01f, 0.0f, 10.0f)) {
+            if (ImGui::DragFloat3("End Size (終了サイズ)##SizeLifetime", &endSize.x, 0.01f, 0.0f, 10.0f)) {
                 module->SetEndSize(endSize);
             }
         }
@@ -131,14 +131,14 @@ namespace ParticleSystemEdit {
         if (!module) return;
 
         bool enabled = module->IsEnabled();
-        if (ImGui::Checkbox("Enabled##RotationOverLifetime", &enabled)) {
+        if (ImGui::Checkbox("Enabled (有効)##RotationOverLifetime", &enabled)) {
             module->SetEnabled(enabled);
         }
 
         if (enabled) {
-            ImGui::Text("Angular Velocity");
+            ImGui::Text("Angular Velocity (角速度)");
             bool randomize = module->GetAngularVelocityRandomize();
-            if (ImGui::Checkbox("Randomize##AngularVelocity", &randomize)) {
+            if (ImGui::Checkbox("Randomize (ランダム化)##AngularVelocity", &randomize)) {
                 module->SetAngularVelocityRandomize(randomize);
             }
             
@@ -186,23 +186,23 @@ namespace ParticleSystemEdit {
         if (!module) return;
 
         bool enabled = module->IsEnabled();
-        if (ImGui::Checkbox("Enabled##Noise", &enabled)) {
+        if (ImGui::Checkbox("Enabled (有効)##Noise", &enabled)) {
             module->SetEnabled(enabled);
         }
 
         if (enabled) {
             float strength = module->GetStrength();
-            if (ImGui::DragFloat("Strength", &strength, 0.1f, 0.0f, 10.0f)) {
+            if (ImGui::DragFloat("Strength (強さ)", &strength, 0.1f, 0.0f, 10.0f)) {
                 module->SetStrength(strength);
             }
 
             float frequency = module->GetFrequency();
-            if (ImGui::DragFloat("Frequency", &frequency, 0.01f, 0.0f, 5.0f)) {
+            if (ImGui::DragFloat("Frequency (周波数)", &frequency, 0.01f, 0.0f, 5.0f)) {
                 module->SetFrequency(frequency);
             }
 
             float scrollSpeed = module->GetScrollSpeed();
-            if (ImGui::DragFloat("Scroll Speed", &scrollSpeed, 0.1f, 0.0f, 10.0f)) {
+            if (ImGui::DragFloat("Scroll Speed (スクロール速度)", &scrollSpeed, 0.1f, 0.0f, 10.0f)) {
                 module->SetScrollSpeed(scrollSpeed);
             }
         }

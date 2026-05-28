@@ -2,26 +2,32 @@
 
 struct Material
 {
-    float32_t4 color;
-    float32_t4x4 uvTransform;
+    float4 color;
+    float4x4 uvTransform;
 };
 
 struct PixelShaderOutput
 {
-    float32_t4 color : SV_TARGET0;
+    float4 color : SV_TARGET0;
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
-Texture2D<float32_t4> gTexture : register(t0);
+Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
     PixelShaderOutput output;
+    float4x4 particleUvTransform = float4x4(
+        input.uvTransform0,
+        input.uvTransform1,
+        input.uvTransform2,
+        input.uvTransform3);
 
     // UV変換 & テクスチャサンプリング
-    float32_t4 transformedUV = mul(float32_t4(input.texCoord, 0.0f, 1.0f), gMaterial.uvTransform);
-    float32_t4 textureColor = gTexture.Sample(gSampler, transformedUV.xy);
+    float4 transformedUV = mul(float4(input.texCoord, 0.0f, 1.0f), particleUvTransform);
+    transformedUV = mul(transformedUV, gMaterial.uvTransform);
+    float4 textureColor = gTexture.Sample(gSampler, transformedUV.xy);
     
      // α=0ならピクセル破棄
     if (textureColor.a == 0.0f)

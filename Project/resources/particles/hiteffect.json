@@ -17,7 +17,7 @@
     "emissionModule": {
         "bursts": [
             {
-                "count": 4,
+                "count": 3,
                 "cycles": 0,
                 "interval": 2.8499999046325684,
                 "time": 0.0
@@ -61,9 +61,9 @@
         },
         "startRotation": {
             "max": [
-                0.0,
-                0.0,
-                180.0
+                180.0,
+                180.0,
+                0.0
             ],
             "min": [
                 0.0,
@@ -74,14 +74,14 @@
         },
         "startSize": {
             "max": [
-                0.14000000059604645,
-                2.380000114440918,
-                1.0
+                0.009999999776482582,
+                0.009999999776482582,
+                0.009999999776482582
             ],
             "min": [
-                0.09000000357627869,
-                0.9599999785423279,
-                1.0
+                0.009999999776482582,
+                0.009999999776482582,
+                0.009999999776482582
             ],
             "randomize": true
         },
@@ -98,24 +98,50 @@
         "strength": 1.0
     },
     "rendererModule": {
-        "billboardType": 0,
+        "billboardType": 4,
+        "boxSize": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "circleRadius": 0.5,
+        "circleSegments": 32,
+        "coneHeight": 1.0,
+        "coneRadius": 0.5,
+        "coneSegments": 32,
+        "cylinderHeight": 1.0,
+        "cylinderRadius": 0.5,
+        "cylinderSegments": 32,
         "enabled": true,
         "lengthScale": 2.0,
-        "speedScale": 1.0
+        "particleMeshType": 1,
+        "planeDepth": 1.0,
+        "planeWidth": 1.0,
+        "ringInnerRadius": 0.14000000059604645,
+        "ringOuterRadius": 0.5,
+        "ringSegments": 32,
+        "speedScale": 1.0,
+        "sphereRadius": 0.5,
+        "sphereSlices": 32,
+        "sphereStacks": 16,
+        "torusMajorRadius": 0.5,
+        "torusMajorSegments": 32,
+        "torusMinorRadius": 0.20000000298023224,
+        "torusMinorSegments": 16
     },
     "rotationOverLifetimeModule": {
         "angularVelocityMax": [
-            0.0,
-            0.0,
-            0.0
+            1.0,
+            1.0,
+            1.0
         ],
         "angularVelocityMin": [
             0.0,
             0.0,
             0.0
         ],
-        "angularVelocityRandomize": false,
-        "enabled": false
+        "angularVelocityRandomize": true,
+        "enabled": true
     },
     "shapeModule": {
         "angle": 25.0,
@@ -147,18 +173,90 @@
         "shapeType": 6
     },
     "sizeOverLifetimeModule": {
-        "enabled": false,
+        "enabled": true,
         "endSize": [
-            0.0,
-            0.0,
-            0.0
+            1.2000000476837158,
+            1.2000000476837158,
+            1.2000000476837158
         ],
         "sizeMultiplier": 1.0,
         "startSize": [
-            1.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "textureName": "gradationLine",
+    "textureSheetAnimationModule": {
+        "animationMode": 0,
+        "cycles": 9,
+        "enabled": true,
+        "frameOverTime": 1.0,
+        "randomRow": false,
+        "rowIndex": 0,
+        "startFrame": 0,
+        "tilesX": 2,
+        "tilesY": 1
+    },
+    "uvTransformModule": {
+        "enabled": true,
+        "rotationConstant": 0.0,
+        "rotationCurveEnd": 0.0,
+        "rotationCurveStart": 0.0,
+        "rotationMode": 0,
+        "rotationRandom": {
+            "max": 0.0,
+            "min": 0.0,
+            "randomize": false
+        },
+        "scaleConstant": [
             1.0,
             1.0
-        ]
+        ],
+        "scaleCurveEnd": [
+            1.0,
+            1.0
+        ],
+        "scaleCurveStart": [
+            1.0,
+            1.0
+        ],
+        "scaleMode": 0,
+        "scaleRandom": {
+            "max": [
+                1.0,
+                1.0
+            ],
+            "min": [
+                1.0,
+                1.0
+            ],
+            "randomize": false
+        },
+        "scrollConstant": [
+            0.0,
+            0.0
+        ],
+        "scrollCurveEnd": [
+            0.0,
+            1.1100000143051147
+        ],
+        "scrollCurveStart": [
+            0.0,
+            -0.09000000357627869
+        ],
+        "scrollMode": 2,
+        "scrollRandom": {
+            "max": [
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0
+            ],
+            "randomize": false
+        }
     },
     "velocityOverLifetimeModule": {
         "enabled": false,

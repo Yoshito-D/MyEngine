@@ -1,8 +1,0 @@
-{
-  "rootSignatures": [
-    "resources/pipelines/rootsig/object3d_skinning_rootsig.json"
-  ],
-  "pipelines": [
-    "resources/pipelines/skinning_object3d_pipeline.json"
-  ]
-}

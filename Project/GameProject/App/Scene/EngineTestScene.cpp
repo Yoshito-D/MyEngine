@@ -19,6 +19,7 @@ void EngineTestScene::Initialize() {
    EngineContext::LoadAnimation("resources/models/cube", "AnimatedCube.gltf");
    EngineContext::LoadTexture("resources/textures/AnimatedCube_BaseColor.png", "AnimatedCube_BaseColor");
    EngineContext::LoadTexture("resources/textures/particle.png", "particle");
+   EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
 
    EngineContext::CreateMaterial("animCubeMaterial", 0xffffffff, 0);
    auto* animCubeMaterial = EngineContext::GetMaterial("animCubeMaterial");

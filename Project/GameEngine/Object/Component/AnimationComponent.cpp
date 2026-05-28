@@ -5,10 +5,10 @@
 #include "Object.h"
 
 namespace {
-   const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
-      GameEngine::AnimationComponent::kTypeName,
-      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::AnimationComponent>(); }
-   );
+const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+   GameEngine::AnimationComponent::kTypeName,
+   [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::AnimationComponent>(); }
+);
 }
 #include "Model/Model.h"
 #include "Model/ModelAsset.h"
@@ -32,88 +32,88 @@ const char* AnimationComponent::GetTypeName() const {
 
 nlohmann::json AnimationComponent::Serialize() const {
    return nlohmann::json{
-      { "animationName", animationName },
-      { "clipName", clipName },
-      { "targetNodeName", targetNodeName },
-      { "currentTime", currentTime },
-      { "playbackSpeed", playbackSpeed },
-      { "loop", loop },
-      { "playing", playing },
-      { "applyTranslation", applyTranslation },
-      { "applyRotation", applyRotation },
-      { "applyScale", applyScale },
-      { "useSkinning", useSkinning }
+	  { "animationName", animationName },
+	  { "clipName", clipName },
+	  { "targetNodeName", targetNodeName },
+	  { "currentTime", currentTime },
+	  { "playbackSpeed", playbackSpeed },
+	  { "loop", loop },
+	  { "playing", playing },
+	  { "applyTranslation", applyTranslation },
+	  { "applyRotation", applyRotation },
+	  { "applyScale", applyScale },
+	  { "useSkinning", useSkinning }
    };
 }
 
 void AnimationComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("animationName") && data.at("animationName").is_string()) {
-      animationName = data.at("animationName").get<std::string>();
+	  animationName = data.at("animationName").get<std::string>();
    }
    if (data.contains("clipName") && data.at("clipName").is_string()) {
-      clipName = data.at("clipName").get<std::string>();
+	  clipName = data.at("clipName").get<std::string>();
    }
    if (data.contains("targetNodeName") && data.at("targetNodeName").is_string()) {
-      targetNodeName = data.at("targetNodeName").get<std::string>();
+	  targetNodeName = data.at("targetNodeName").get<std::string>();
    }
    if (data.contains("currentTime") && data.at("currentTime").is_number()) {
-      currentTime = data.at("currentTime").get<float>();
+	  currentTime = data.at("currentTime").get<float>();
    }
    if (data.contains("playbackSpeed") && data.at("playbackSpeed").is_number()) {
-      playbackSpeed = data.at("playbackSpeed").get<float>();
+	  playbackSpeed = data.at("playbackSpeed").get<float>();
    }
    if (data.contains("loop") && data.at("loop").is_boolean()) {
-      loop = data.at("loop").get<bool>();
+	  loop = data.at("loop").get<bool>();
    }
    if (data.contains("playing") && data.at("playing").is_boolean()) {
-      playing = data.at("playing").get<bool>();
+	  playing = data.at("playing").get<bool>();
    }
    if (data.contains("applyTranslation") && data.at("applyTranslation").is_boolean()) {
-      applyTranslation = data.at("applyTranslation").get<bool>();
+	  applyTranslation = data.at("applyTranslation").get<bool>();
    }
    if (data.contains("applyRotation") && data.at("applyRotation").is_boolean()) {
-      applyRotation = data.at("applyRotation").get<bool>();
+	  applyRotation = data.at("applyRotation").get<bool>();
    }
    if (data.contains("applyScale") && data.at("applyScale").is_boolean()) {
-      applyScale = data.at("applyScale").get<bool>();
+	  applyScale = data.at("applyScale").get<bool>();
    }
    if (data.contains("useSkinning") && data.at("useSkinning").is_boolean()) {
-      useSkinning = data.at("useSkinning").get<bool>();
+	  useSkinning = data.at("useSkinning").get<bool>();
    }
 }
 
 void AnimationComponent::Update(float deltaTime) {
    if (!playing || animationName.empty()) {
-      return;
+	  return;
    }
 
    if (cachedAnimationName_ != animationName) {
-      cachedAnimationAsset_.reset();
-      cachedAnimationName_ = animationName;
-      animator_.SetClip(nullptr);
+	  cachedAnimationAsset_.reset();
+	  cachedAnimationName_ = animationName;
+	  animator_.SetClip(nullptr);
    }
 
    if (!cachedAnimationAsset_) {
-      cachedAnimationAsset_ = EngineContext::GetAnimation(animationName);
+	  cachedAnimationAsset_ = EngineContext::GetAnimation(animationName);
    }
 
    if (!cachedAnimationAsset_) {
-      return;
+	  return;
    }
 
    const AnimationClip* selectedClip = nullptr;
    if (!clipName.empty()) {
-      selectedClip = cachedAnimationAsset_->GetClip(clipName);
+	  selectedClip = cachedAnimationAsset_->GetClip(clipName);
    }
    if (!selectedClip) {
-      selectedClip = cachedAnimationAsset_->GetDefaultClip();
+	  selectedClip = cachedAnimationAsset_->GetDefaultClip();
    }
    if (!selectedClip) {
-      return;
+	  return;
    }
 
    if (animator_.GetClip() != selectedClip) {
-      animator_.SetClip(selectedClip);
+	  animator_.SetClip(selectedClip);
    }
 
    animator_.SetLoop(loop);
@@ -124,60 +124,60 @@ void AnimationComponent::Update(float deltaTime) {
    currentTime = animator_.GetPlaybackTime();
 
    if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
-      auto* modelAssetComp = model->GetComponent<ModelAssetComponent>();
-      ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
-      if (useSkinning && modelAsset && modelAsset->HasSkinningData()) {
-         const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
-         SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
-         if (bindSkeleton && skinCluster && !bindSkeleton->joints.empty() && !skinCluster->mappedPalette.empty()) {
-            Skeleton skeletonPose = *bindSkeleton;
-            ApplyAnimation(skeletonPose, *selectedClip, currentTime);
-            skeletonPose.Update();
+	  auto* modelAssetComp = model->GetComponent<ModelAssetComponent>();
+	  ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
+	  if (useSkinning && modelAsset && modelAsset->HasSkinningData()) {
+		 const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
+		 SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
+		 if (bindSkeleton && skinCluster && !bindSkeleton->joints.empty() && !skinCluster->mappedPalette.empty()) {
+			Skeleton skeletonPose = *bindSkeleton;
+			ApplyAnimation(skeletonPose, *selectedClip, currentTime);
+			skeletonPose.Update();
 
-            const size_t jointCount = std::min({
-               skeletonPose.joints.size(),
-               skinCluster->inverseBindPoseMatrices.size(),
-               skinCluster->mappedPalette.size()
-            });
+			const size_t jointCount = std::min({
+			   skeletonPose.joints.size(),
+			   skinCluster->inverseBindPoseMatrices.size(),
+			   skinCluster->mappedPalette.size()
+			   });
 
-            for (size_t jointIndex = 0; jointIndex < jointCount; ++jointIndex) {
-               const Matrix4x4 skinMatrix = skinCluster->inverseBindPoseMatrices[jointIndex] * skeletonPose.joints[jointIndex].skeletonSpaceMatrix;
-               skinCluster->mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
-               skinCluster->mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
-            }
-         }
-      }
+			for (size_t jointIndex = 0; jointIndex < jointCount; ++jointIndex) {
+			   const Matrix4x4 skinMatrix = skinCluster->inverseBindPoseMatrices[jointIndex] * skeletonPose.joints[jointIndex].skeletonSpaceMatrix;
+			   skinCluster->mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
+			   skinCluster->mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
+			}
+		 }
+	  }
    }
 
    const NodeAnimation* nodeAnimation = animator_.ResolveNodeAnimation(targetNodeName);
 
    if (!nodeAnimation) {
-      return;
+	  return;
    }
 
    auto* transformComponent = GetOwner().GetComponent<TransformComponent>();
    if (!transformComponent) {
-      return;
+	  return;
    }
 
    if (applyTranslation && !nodeAnimation->translation.keyframes.empty()) {
-      transformComponent->transform.translation = CalculateValue(nodeAnimation->translation.keyframes, currentTime);
+	  transformComponent->transform.translation = CalculateValue(nodeAnimation->translation.keyframes, currentTime);
    }
 
    if (applyRotation && !nodeAnimation->rotation.keyframes.empty()) {
-      const Quaternion quaternion = CalculateValue(nodeAnimation->rotation.keyframes, currentTime);
-      transformComponent->transform.rotation = QuaternionToEuler_(quaternion);
+	  const Quaternion quaternion = CalculateValue(nodeAnimation->rotation.keyframes, currentTime);
+	  transformComponent->transform.rotation = QuaternionToEuler_(quaternion);
    }
 
    if (applyScale && !nodeAnimation->scale.keyframes.empty()) {
-      transformComponent->transform.scale = CalculateValue(nodeAnimation->scale.keyframes, currentTime);
+	  transformComponent->transform.scale = CalculateValue(nodeAnimation->scale.keyframes, currentTime);
    }
 }
 
 #ifdef USE_IMGUI
 void AnimationComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen)) {
-      return;
+	  return;
    }
 
    ImGui::Checkbox("Playing", &playing);
@@ -192,42 +192,42 @@ void AnimationComponent::DrawInspector() {
    size_t animationNameSize = std::min(animationName.size(), sizeof(animationNameBuffer) - 1);
    std::memcpy(animationNameBuffer, animationName.c_str(), animationNameSize);
    if (ImGui::InputText("Animation Asset", animationNameBuffer, sizeof(animationNameBuffer))) {
-      animationName = animationNameBuffer;
-      clipName.clear();
-      currentTime = 0.0f;
+	  animationName = animationNameBuffer;
+	  clipName.clear();
+	  currentTime = 0.0f;
    }
 
    auto animationAsset = animationName.empty() ? nullptr : EngineContext::GetAnimation(animationName);
    if (animationAsset && animationAsset->HasAnyClip()) {
-      const auto clipNames = animationAsset->GetClipNames();
-      std::string previewClip = clipName.empty() ? animationAsset->GetDefaultClipName() : clipName;
-      if (previewClip.empty() && !clipNames.empty()) {
-         previewClip = clipNames.front();
-      }
+	  const auto clipNames = animationAsset->GetClipNames();
+	  std::string previewClip = clipName.empty() ? animationAsset->GetDefaultClipName() : clipName;
+	  if (previewClip.empty() && !clipNames.empty()) {
+		 previewClip = clipNames.front();
+	  }
 
-      if (!previewClip.empty() && ImGui::BeginCombo("Animation Clip", previewClip.c_str())) {
-         for (size_t i = 0; i < clipNames.size(); ++i) {
-            const auto& name = clipNames[i];
-            ImGui::PushID(5400 + static_cast<int>(i));
-            const bool isSelected = (clipName == name);
-            if (ImGui::Selectable(name.c_str(), isSelected)) {
-               clipName = name;
-               currentTime = 0.0f;
-            }
-            if (isSelected) {
-               ImGui::SetItemDefaultFocus();
-            }
-            ImGui::PopID();
-         }
-         ImGui::EndCombo();
-      }
+	  if (!previewClip.empty() && ImGui::BeginCombo("Animation Clip", previewClip.c_str())) {
+		 for (size_t i = 0; i < clipNames.size(); ++i) {
+			const auto& name = clipNames[i];
+			ImGui::PushID(5400 + static_cast<int>(i));
+			const bool isSelected = (clipName == name);
+			if (ImGui::Selectable(name.c_str(), isSelected)) {
+			   clipName = name;
+			   currentTime = 0.0f;
+			}
+			if (isSelected) {
+			   ImGui::SetItemDefaultFocus();
+			}
+			ImGui::PopID();
+		 }
+		 ImGui::EndCombo();
+	  }
    }
 
    char targetNodeBuffer[256]{};
    const size_t targetNameSize = std::min(targetNodeName.size(), sizeof(targetNodeBuffer) - 1);
    std::memcpy(targetNodeBuffer, targetNodeName.c_str(), targetNameSize);
    if (ImGui::InputText("Target Node", targetNodeBuffer, sizeof(targetNodeBuffer))) {
-      targetNodeName = targetNodeBuffer;
+	  targetNodeName = targetNodeBuffer;
    }
 
    ImGui::DragFloat("Current Time", &currentTime, 0.01f, 0.0f, 1000.0f);

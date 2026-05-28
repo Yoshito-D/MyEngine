@@ -13,23 +13,23 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
    if (!emissionModule) return;
 
    bool enabled = emissionModule->IsEnabled();
-   if (ImGui::Checkbox("Enabled##Emission", &enabled)) {
+   if (ImGui::Checkbox("Enabled (有効)##Emission", &enabled)) {
 	  emissionModule->SetEnabled(enabled);
    }
 
    if (enabled) {
 	  float rateOverTime = emissionModule->GetRateOverTime();
-	  if (ImGui::DragFloat("Rate over Time", &rateOverTime, 0.5f, 0.0f, 200.0f)) {
+	  if (ImGui::DragFloat("Rate over Time (時間あたり放出数)", &rateOverTime, 0.5f, 0.0f, 200.0f)) {
 		 emissionModule->SetRateOverTime(rateOverTime);
 	  }
 
 	  float rateOverDistance = emissionModule->GetRateOverDistance();
-	  if (ImGui::DragFloat("Rate over Distance", &rateOverDistance, 0.1f, 0.0f, 50.0f)) {
+	  if (ImGui::DragFloat("Rate over Distance (距離あたり放出数)", &rateOverDistance, 0.1f, 0.0f, 50.0f)) {
 		 emissionModule->SetRateOverDistance(rateOverDistance);
 	  }
 
 	  ImGui::Separator();
-	  ImGui::Text("Bursts (%zu)", emissionModule->GetBursts().size());
+	  ImGui::Text("Bursts (バースト) (%zu)", emissionModule->GetBursts().size());
 
 	  auto& bursts = emissionModule->GetBursts();
 
@@ -39,9 +39,9 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
 		 ImGui::PushID(i);
 
 		 // 折りたたみヘッダーで各 Burst を管理
-		 bool open = ImGui::CollapsingHeader(("Burst [" + std::to_string(i) + "]").c_str());
+		 bool open = ImGui::CollapsingHeader(("Burst (バースト) [" + std::to_string(i) + "]").c_str());
 		 ImGui::SameLine();
-		 if (ImGui::SmallButton("Remove")) {
+		 if (ImGui::SmallButton("Remove (削除)")) {
 			removeIndex = i;
 		 }
 
@@ -49,7 +49,7 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
 			ImGui::Indent();
 
 			// Time
-			if (ImGui::DragFloat("Time", &burst.time, 0.05f, 0.0f, 999.0f, "%.2f")) {
+			if (ImGui::DragFloat("Time (時間)", &burst.time, 0.05f, 0.0f, 999.0f, "%.2f")) {
 			   emissionModule->ResetBurstStates();
 			}
 			ImGui::SameLine();
@@ -57,7 +57,7 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
 
 			// Count
 			int count = static_cast<int>(burst.count);
-			if (ImGui::DragInt("Count", &count, 1, 1, 10000)) {
+			if (ImGui::DragInt("Count (数)", &count, 1, 1, 10000)) {
 			   burst.count = static_cast<uint32_t>(std::max(count, 1));
 			   emissionModule->ResetBurstStates();
 			}
@@ -66,7 +66,7 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
 
 			// Cycles（0 = 無限ループ）
 			int cycles = static_cast<int>(burst.cycles);
-			if (ImGui::DragInt("Cycles", &cycles, 1, 0, 1000)) {
+			if (ImGui::DragInt("Cycles (回数)", &cycles, 1, 0, 1000)) {
 			   burst.cycles = static_cast<uint32_t>(std::max(cycles, 0));
 			   emissionModule->ResetBurstStates();
 			}
@@ -78,7 +78,7 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
 			}
 
 			// Interval
-			if (ImGui::DragFloat("Interval", &burst.interval, 0.05f, 0.01f, 60.0f, "%.2f")) {
+			if (ImGui::DragFloat("Interval (間隔)", &burst.interval, 0.05f, 0.01f, 60.0f, "%.2f")) {
 			   emissionModule->ResetBurstStates();
 			}
 			ImGui::SameLine();
@@ -100,7 +100,7 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
 		 emissionModule->ResetBurstStates();
 	  }
 
-	  if (ImGui::Button("+ Add Burst")) {
+	  if (ImGui::Button("+ Add Burst (+ バースト追加)")) {
 		 GameEngine::EmissionModule::Burst burst;
 		 burst.time    = 0.0f;
 		 burst.count   = 10;
@@ -110,7 +110,7 @@ void EditEmissionModule(GameEngine::EmissionModule* emissionModule) {
 		 emissionModule->ResetBurstStates();
 	  }
 	  ImGui::SameLine();
-	  if (ImGui::Button("Clear Bursts")) {
+	  if (ImGui::Button("Clear Bursts (バーストをクリア)")) {
 		 emissionModule->ClearBursts();
 	  }
    }

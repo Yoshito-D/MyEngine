@@ -8,6 +8,8 @@ class ColorOverLifetimeModule;
 class SizeOverLifetimeModule;
 class RotationOverLifetimeModule;
 class NoiseModule;
+class UVTransformModule;
+class TextureSheetAnimationModule;
 }
 
 namespace ParticleSystemEdit {

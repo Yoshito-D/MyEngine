@@ -11,6 +11,11 @@ namespace GameEngine {
         return RandomUtils::Random(minValue, maxValue);
     }
 
+    Vector2 RandomVector2::GetValue() const {
+        if (!randomize) return minValue;
+        return Vector2{RandomUtils::Random(minValue.x, maxValue.x), RandomUtils::Random(minValue.y, maxValue.y)};
+    }
+
     Vector3 RandomVector3::GetValue() const {
         if (!randomize) return minValue;
         return Vector3(RandomUtils::Random(minValue.x, maxValue.x), RandomUtils::Random(minValue.y, maxValue.y), RandomUtils::Random(minValue.z, maxValue.z));
@@ -28,6 +33,24 @@ namespace GameEngine {
     void RandomFloat::FromJson(const nlohmann::json& json) {
         if (json.contains("min")) minValue = json["min"];
         if (json.contains("max")) maxValue = json["max"];
+        if (json.contains("randomize")) randomize = json["randomize"];
+    }
+
+    nlohmann::json RandomVector2::ToJson() const {
+        return {
+            {"min", {minValue.x, minValue.y}},
+            {"max", {maxValue.x, maxValue.y}},
+            {"randomize", randomize}
+        };
+    }
+
+    void RandomVector2::FromJson(const nlohmann::json& json) {
+        if (json.contains("min") && json["min"].is_array() && json["min"].size() >= 2) {
+            minValue.x = json["min"][0]; minValue.y = json["min"][1];
+        }
+        if (json.contains("max") && json["max"].is_array() && json["max"].size() >= 2) {
+            maxValue.x = json["max"][0]; maxValue.y = json["max"][1];
+        }
         if (json.contains("randomize")) randomize = json["randomize"];
     }
 

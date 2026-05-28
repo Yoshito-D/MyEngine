@@ -12,9 +12,9 @@
   "samplers": [
     {
       "filter": "MinMagMipLinear",
-      "addressU": "Wrap",
-      "addressV": "Wrap",
-      "addressW": "Wrap",
+      "addressU": "Clamp",
+      "addressV": "Clamp",
+      "addressW": "Clamp",
       "comparisonFunc": "Never",
       "maxLOD": 3.402823466e+38,
       "shaderRegister": 0,
