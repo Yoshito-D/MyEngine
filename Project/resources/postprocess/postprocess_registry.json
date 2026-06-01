@@ -25,7 +25,7 @@
       "name": "Box Filter",
       "className": "BoxFilter",
       "priority": 25,
-      "enabled": true,
+      "enabled": false,
       "pipelineName": "PostProcess_BoxFilter"
     },
     {
@@ -62,6 +62,13 @@
       "priority": 20,
       "enabled": false,
       "pipelineName": "PostProcess_Bloom"
+    },
+    {
+      "name": "Linear to sRGB",
+      "className": "LinearToSRGB",
+      "priority": 100,
+      "enabled": true,
+      "pipelineName": "PostProcess_LinearToSRGB"
     }
   ]
 }

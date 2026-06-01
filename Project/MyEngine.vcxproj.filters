@@ -261,6 +261,7 @@
     <None Include="resources\pipelines\skybox_pipeline.json" />
     <None Include="resources\pipelines\object3d_dissolve_pipeline.json" />
     <None Include="resources\pipelines\postprocess\boxfilter_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\linear_to_srgb_pipeline.json" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -645,6 +646,7 @@
     <ClCompile Include="GameEngine\Effect\Module\TextureSheetAnimationModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\UVTransformModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1110,6 +1112,7 @@
     <ClInclude Include="GameEngine\Effect\Module\UVTransformModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\TextureSheetAnimationModule.h" />
     <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

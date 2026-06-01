@@ -24,6 +24,7 @@
     "resources/pipelines/postprocess/shockwave_pipeline.json",
     "resources/pipelines/postprocess/pixelation_pipeline.json",
     "resources/pipelines/postprocess/bloom_pipeline.json",
-    "resources/pipelines/postprocess/boxfilter_pipeline.json"
+    "resources/pipelines/postprocess/boxfilter_pipeline.json",
+    "resources/pipelines/postprocess/linear_to_srgb_pipeline.json"
   ]
 }

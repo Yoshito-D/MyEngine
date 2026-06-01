@@ -14,6 +14,7 @@
     { "name": "FullscreenTriangle", "type": "Pixel", "filePath": "resources/shaders/postprocess/FullscreenTriangle.PS.hlsl", "entryPoint": "main" },
 
     { "name": "Grayscale", "type": "Pixel", "filePath": "resources/shaders/postprocess/Grayscale.PS.hlsl", "entryPoint": "main" },
+    { "name": "LinearToSRGB", "type": "Pixel", "filePath": "resources/shaders/postprocess/LinearToSRGB.PS.hlsl", "entryPoint": "main" },
     { "name": "RadialBlur", "type": "Pixel", "filePath": "resources/shaders/postprocess/RadialBlur.PS.hlsl", "entryPoint": "main" },
     { "name": "GaussBlur", "type": "Pixel", "filePath": "resources/shaders/postprocess/GaussBlur.PS.hlsl", "entryPoint": "main" },
     { "name": "Vignette", "type": "Pixel", "filePath": "resources/shaders/postprocess/Vignette.PS.hlsl", "entryPoint": "main" },
