@@ -81,7 +81,7 @@ void EngineTestScene::Update() {
    ImGui::Text("Current: EngineTestScene");
    ImGui::Separator();
    if (ImGui::Button("Go to GameTestScene", ImVec2(-1, 0))) {
-	  EngineContext::ChangeScene("Test");
+	  EngineContext::ChangeScene("GameTest");
    }
    ImGui::End();
 

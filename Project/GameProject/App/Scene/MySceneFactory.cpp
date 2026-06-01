@@ -5,7 +5,7 @@
 using namespace GameEngine;
 std::unique_ptr<BaseScene> MySceneFactory::CreateScene(const std::string& name) {
 
-	if (name == "Test") {
+	if (name == "GameTest") {
 		auto scene = std::make_unique<GameTestScene>();
 		return scene;
 	}

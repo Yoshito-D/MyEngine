@@ -218,6 +218,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
     <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\ColorOverLifetimeModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\ForceOverLifetimeModule.cpp" />
@@ -477,6 +478,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\PostEffectPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
     <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h" />
     <ClInclude Include="GameEngine\Effect\Module\ColorOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\ForceOverLifetimeModule.h" />
@@ -662,6 +664,7 @@
     <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json" />
     <None Include="resources\pipelines\postprocess\gaussblur_pipeline.json" />
     <None Include="resources\pipelines\postprocess\grayscale_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\linear_to_srgb_pipeline.json" />
     <None Include="resources\pipelines\postprocess\pixelation_pipeline.json" />
     <None Include="resources\pipelines\postprocess\radialblur_pipeline.json" />
     <None Include="resources\pipelines\postprocess\shockwave_pipeline.json" />

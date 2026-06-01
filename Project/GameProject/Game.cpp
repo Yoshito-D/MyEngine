@@ -9,7 +9,11 @@ void Game::Initialize() {
    sceneManager_ = std::make_unique<GameEngine::SceneManager>(factory_.get());
 
    // 最初のシーンを設定
+#ifdef NDEBUG
+   sceneManager_->ChangeScene("GameTest");
+#else
    sceneManager_->ChangeScene("EngineTest");
+#endif
 }
 
 void Game::Update() {
