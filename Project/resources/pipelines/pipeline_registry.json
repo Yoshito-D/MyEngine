@@ -18,7 +18,7 @@
     "resources/pipelines/skybox_pipeline.json",
     "resources/pipelines/postprocess/grayscale_pipeline.json",
     "resources/pipelines/postprocess/radialblur_pipeline.json",
-    "resources/pipelines/postprocess/gaussblur_pipeline.json",
+    "resources/pipelines/postprocess/gaussfilter_pipeline.json",
     "resources/pipelines/postprocess/chromatic_aberration_pipeline.json",
     "resources/pipelines/postprocess/vignette_pipeline.json",
     "resources/pipelines/postprocess/shockwave_pipeline.json",

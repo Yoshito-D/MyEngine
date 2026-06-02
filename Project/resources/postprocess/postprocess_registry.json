@@ -15,11 +15,11 @@
       "pipelineName": "PostProcess_Grayscale"
     },
     {
-      "name": "Gauss Blur",
-      "className": "GaussBlur",
+      "name": "Gauss Filter",
+      "className": "GaussFilter",
       "priority": 30,
       "enabled": false,
-      "pipelineName": "PostProcess_GaussBlur"
+      "pipelineName": "PostProcess_GaussFilter"
     },
     {
       "name": "Box Filter",

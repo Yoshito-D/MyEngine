@@ -295,7 +295,7 @@ const PipelineRootParameterTable* ShaderManager::GetPipelineRootParameterTable(c
 void ShaderManager::LogRootParameterTablesDebug() const {
    static const std::vector<std::string> kMajorPipelines = {
 	  "Object3D", "Sprite", "Particle", "Line3D", "FullscreenTriangle",
-	  "PostProcess_Grayscale", "PostProcess_RadialBlur", "PostProcess_GaussBlur",
+	  "PostProcess_Grayscale", "PostProcess_RadialBlur", "PostProcess_GaussFilter",
 	  "PostProcess_Vignette", "PostProcess_ChromaticAberration", "PostProcess_ShockWave",
 	  "PostProcess_Pixelation", "PostProcess_Bloom", "PostProcess_BoxFilter"
    };
@@ -432,7 +432,7 @@ void ShaderManager::LoadPredefinedShaders() {
    // ポストプロセス用シェーダー
    LoadPixelShader("Grayscale", L"resources/shaders/postprocess/Grayscale.PS.hlsl");
    LoadPixelShader("RadialBlur", L"resources/shaders/postprocess/RadialBlur.PS.hlsl");
-   LoadPixelShader("GaussBlur", L"resources/shaders/postprocess/GaussBlur.PS.hlsl");
+   LoadPixelShader("GaussFilter", L"resources/shaders/postprocess/GaussFilter.PS.hlsl");
    LoadPixelShader("Vignette", L"resources/shaders/postprocess/Vignette.PS.hlsl");
    LoadPixelShader("ChromaticAberration", L"resources/shaders/postprocess/ChromaticAberration.PS.hlsl");
    LoadPixelShader("ShockWave", L"resources/shaders/postprocess/ShockWave.PS.hlsl");

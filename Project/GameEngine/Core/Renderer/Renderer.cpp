@@ -14,7 +14,7 @@
 #include "Effect/ParticleSystem.h"
 #include "PostProcess/Grayscale.h"
 #include "PostProcess/RadialBlur.h"
-#include "PostProcess/GaussBlur.h"
+#include "PostProcess/GaussFilter.h"
 #include "PostProcess/Vignette.h"
 #include"PostProcess/ChromaticAberration.h"
 #include"PostProcess/ShockWave.h"

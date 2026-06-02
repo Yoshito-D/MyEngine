@@ -5,12 +5,12 @@
 
 namespace GameEngine {
 /// @brief ガウシアンブラー効果
-class GaussBlur : public PostProcess {
+class GaussFilter : public PostProcess {
 public:
    /// @brief ブラー効果のパラメータ構造体
-   struct BlurParams {
+   struct FilterParams {
 	  float intensity;
-	  float kernelSize;
+	  int32_t kernelSize;
 	  float sigma;
 	  float padding;
    };
@@ -27,20 +27,20 @@ public:
 #ifdef USE_IMGUI
    void ImGuiEdit() override;
 #endif
-   const char* GetEffectName() const override { return "Gauss Blur"; }
+   const char* GetEffectName() const override { return "Gauss Filter"; }
 
    // パラメータ設定
    void SetBlurStrength(float strength) { intensity_ = strength; UpdateConstantBuffer(); }
-   void SetKernelSize(float size) { kernelSize_ = size; UpdateConstantBuffer(); }
+   void SetKernelSize(int32_t size) { kernelSize_ = size; UpdateConstantBuffer(); }
    void SetSigma(float sigma) { sigma_ = sigma; UpdateConstantBuffer(); }
 
 private:
    float intensity_ = 0.8f;
-   float kernelSize_ = 1.0f;
+   int32_t kernelSize_  = 1;
    float sigma_ = 1.0f;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   BlurParams* constantBufferData_ = nullptr;
+   FilterParams* constantBufferData_ = nullptr;
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

@@ -38,7 +38,7 @@ public:
    }
 
 private:
-   float pixelSize_ = 8.0f;
+   float pixelSize_ = 4.0f;
    float screenSizeX_ = 1280.0f;
    float screenSizeY_ = 720.0f;
 
