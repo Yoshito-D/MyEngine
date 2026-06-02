@@ -33,7 +33,7 @@ public:
    void SetKernelRadius(int radius) { kernelRadius_ = radius; UpdateConstantBuffer(); }
 
 private:
-   int kernelRadius_ = 1; // デフォルト3x3
+   int32_t kernelRadius_ = 1; // デフォルト3x3
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
    BoxFilterParams* constantBufferData_ = nullptr;

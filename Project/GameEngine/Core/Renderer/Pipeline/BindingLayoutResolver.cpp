@@ -207,7 +207,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
    }
 
    const std::vector<std::string> postProcessEffects = {
-      "Grayscale", "RadialBlur", "GaussBlur", "Vignette",
+      "Grayscale", "RadialBlur", "GaussFilter", "Vignette",
       "ChromaticAberration", "ShockWave", "Pixelation", "Bloom", "BoxFilter"
    };
 

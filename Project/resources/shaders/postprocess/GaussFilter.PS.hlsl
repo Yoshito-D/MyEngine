@@ -3,13 +3,12 @@
 Texture2D inputTexture : register(t0);
 SamplerState samplerLinear : register(s0);
 
-// ブラーパラメータ用の定数バッファ（知り合いのコードに合わせて）
-cbuffer BlurParams : register(b0)
+// ブラーパラメータ用の定数バッファ
+cbuffer FilterParams : register(b0)
 {
     float intensity;      // ブラー強度
-    float kernelSize;     // カーネルサイズ
+    int kernelSize;       // カーネルサイズ
     float sigma;          // ガウシアンのシグマ値
-    float padding;        // パディング
 };
 
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
@@ -26,7 +25,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     float totalWeight = 0.0f;
 
     // 可変サイズのブラーカーネル（知り合いのコードと同様）
-    int kernelRadius = max(1, (int)(kernelSize + 0.5f)); // 四捨五入
+    int kernelRadius = max(1, kernelSize); // 四捨五入
 
     // 2Dガウシアンブラー（知り合いのコードと同じ構造）
     for (int x = -kernelRadius; x <= kernelRadius; x++)

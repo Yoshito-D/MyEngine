@@ -120,7 +120,6 @@ void BaseScene::Finalize() {
 #endif
 
    EngineContext::ClearCameraUnits();
-
    EngineContext::ClearDirectionalLights();
    EngineContext::ClearPointLights();
    EngineContext::ClearSpotLights();
@@ -128,9 +127,6 @@ void BaseScene::Finalize() {
    sNextSceneName_ = "";
    sIsWaitingForFadeOut_ = false;
    sPendingSceneName_ = "";
-
-   // ポストプロセスを無効にする
-   EngineContext::SetPostProcessEnabled(false);
 }
 
 void BaseScene::SetNextSceneName(const std::string& sceneName) {

@@ -3,7 +3,7 @@
 #include "PostProcess.h"
 #include "Grayscale.h"
 #include "RadialBlur.h"
-#include "GaussBlur.h"
+#include "GaussFilter.h"
 #include "Vignette.h"
 #include "ChromaticAberration.h"
 #include "ShockWave.h"
@@ -50,7 +50,7 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
 
    effectFactoryRegistry_.RegisterFactory("RadialBlur", [] { return std::make_unique<RadialBlur>(); });
    effectFactoryRegistry_.RegisterFactory("Grayscale", [] { return std::make_unique<Grayscale>(); });
-   effectFactoryRegistry_.RegisterFactory("GaussBlur", [] { return std::make_unique<GaussBlur>(); });
+   effectFactoryRegistry_.RegisterFactory("GaussFilter", [] { return std::make_unique<GaussFilter>(); });
    effectFactoryRegistry_.RegisterFactory("ChromaticAberration", [] { return std::make_unique<ChromaticAberration>(); });
    effectFactoryRegistry_.RegisterFactory("Vignette", [] { return std::make_unique<Vignette>(); });
    effectFactoryRegistry_.RegisterFactory("ShockWave", [] { return std::make_unique<ShockWave>(); });
@@ -126,7 +126,7 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur" },
 	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale" },
 	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter" },
-	  PredefinedEffectEntry{ "GaussBlur", "Gauss Blur", 30, "PostProcess_GaussBlur" },
+	  PredefinedEffectEntry{ "GaussFilter", "Gauss Filter", 30, "PostProcess_GaussFilter" },
 	  PredefinedEffectEntry{ "ChromaticAberration", "Chromatic Aberration", 40, "PostProcess_ChromaticAberration" },
 	  PredefinedEffectEntry{ "Vignette", "Vignette", 50, "PostProcess_Vignette" },
 	  PredefinedEffectEntry{ "ShockWave", "Shock Wave", 60, "PostProcess_ShockWave" },

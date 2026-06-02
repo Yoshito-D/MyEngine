@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "GaussBlur.h"
+#include "GaussFilter.h"
 #include "ResourceHelper.h"
 
 #ifdef USE_IMGUI
@@ -8,13 +8,13 @@
 
 namespace GameEngine {
 
-void GaussBlur::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) {
+void GaussFilter::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) {
    PostProcess::Initialize(device, renderTarget);
    CreateConstantBuffer();
    UpdateConstantBuffer();
 }
 
-void GaussBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
+void GaussFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!enabled_) return;
    if (!pipeline_ || !rootSignature_) return;
 
@@ -40,12 +40,12 @@ void GaussBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    renderTarget_->PostDraw();
 }
 
-void GaussBlur::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(BlurParams));
+void GaussFilter::CreateConstantBuffer() {
+   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(FilterParams));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 
-void GaussBlur::UpdateConstantBuffer() {
+void GaussFilter::UpdateConstantBuffer() {
    if (constantBufferData_) {
 	  constantBufferData_->intensity = intensity_;
 	  constantBufferData_->kernelSize = kernelSize_;
@@ -55,14 +55,15 @@ void GaussBlur::UpdateConstantBuffer() {
 }
 
 #ifdef USE_IMGUI
-void GaussBlur::ImGuiEdit() {
+void GaussFilter::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Gauss Blur Parameters")) {
+   if (ImGui::TreeNode("Gauss Filter Parameters")) {
 
 	  bool changed = false;
 	  changed |= ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Kernel Size", &kernelSize_, 1.0f, 10.0f);
+	  changed |= ImGui::SliderInt("Kernel Size", &kernelSize_, 1, 32);
+	  ImGui::Text("Kernel size: %dx%d", kernelSize_ * 2 + 1, kernelSize_ * 2 + 1);
 	  changed |= ImGui::SliderFloat("Sigma", &sigma_, 0.1f, 5.0f);
 
 	  if (changed) {

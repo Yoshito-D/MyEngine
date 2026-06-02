@@ -16,7 +16,7 @@
     { "name": "Grayscale", "type": "Pixel", "filePath": "resources/shaders/postprocess/Grayscale.PS.hlsl", "entryPoint": "main" },
     { "name": "LinearToSRGB", "type": "Pixel", "filePath": "resources/shaders/postprocess/LinearToSRGB.PS.hlsl", "entryPoint": "main" },
     { "name": "RadialBlur", "type": "Pixel", "filePath": "resources/shaders/postprocess/RadialBlur.PS.hlsl", "entryPoint": "main" },
-    { "name": "GaussBlur", "type": "Pixel", "filePath": "resources/shaders/postprocess/GaussBlur.PS.hlsl", "entryPoint": "main" },
+    { "name": "GaussFilter", "type": "Pixel", "filePath": "resources/shaders/postprocess/GaussFilter.PS.hlsl", "entryPoint": "main" },
     { "name": "Vignette", "type": "Pixel", "filePath": "resources/shaders/postprocess/Vignette.PS.hlsl", "entryPoint": "main" },
     { "name": "ChromaticAberration", "type": "Pixel", "filePath": "resources/shaders/postprocess/ChromaticAberration.PS.hlsl", "entryPoint": "main" },
     { "name": "ShockWave", "type": "Pixel", "filePath": "resources/shaders/postprocess/ShockWave.PS.hlsl", "entryPoint": "main" },

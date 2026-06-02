@@ -1,7 +1,7 @@
 {
-  "name": "PostProcess_GaussBlur",
+  "name": "PostProcess_GaussFilter",
   "vertexShader": "FullscreenTriangle",
-  "pixelShader": "GaussBlur",
+  "pixelShader": "GaussFilter",
   "rootSignature": "PostProcess",
   "supportBlendModes": false,
   "defaultBlendMode": "None",

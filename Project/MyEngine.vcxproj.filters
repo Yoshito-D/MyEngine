@@ -212,7 +212,7 @@
     <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="resources\pipelines\postprocess\gaussblur_pipeline.json">
+    <None Include="resources\pipelines\postprocess\gaussfilter_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
     <None Include="resources\pipelines\postprocess\grayscale_pipeline.json">
@@ -370,7 +370,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\EffectFactoryRegistry.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\GaussBlur.cpp">
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\GaussFilter.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Grayscale.cpp">
@@ -766,7 +766,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\EffectFactoryRegistry.h">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\GaussBlur.h">
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\GaussFilter.h">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Grayscale.h">

@@ -44,8 +44,8 @@ public:
 private:
    float centerX_ = 0.5f;
    float centerY_ = 0.5f;
-   float aspectRatioX_ = 1.0f;
-   float aspectRatioY_ = 1.0f;
+   float aspectRatioX_ = 1.6f;
+   float aspectRatioY_ = 0.9f;
    float waveRadius_ = 0.3f;
    float waveThickness_ = 0.1f;
    float distortionStrength_ = 0.1f;
