@@ -58,7 +58,7 @@ void GameTestScene::Initialize() {
    auto planetModelAsset = EngineContext::GetModel("planet.obj");
    auto playerModelAsset = EngineContext::GetModel("car.obj");
 
-   playerMaterial->SetEnvironmentTextureStrength(0.015f);
+   playerMaterial->SetEnvironmentTextureStrength(0.7f);
 
    // --- 惑星1の作成 ---
    planet_ = std::make_unique<Model>();
@@ -110,7 +110,7 @@ void GameTestScene::Initialize() {
    // 3. GravityBody: 確定済みの重力方向で姿勢回転 + 位置移動
    if (auto* gravityBody = player_->AddComponent<GravityBody>()) {
 	  gravityBody->rotationSpeed = 5.0f;
-	  gravityBody->gravityStrength = 12.0f;
+	  gravityBody->gravityStrength = 18.0f;
 	  gravityBody->useGravity = true;
    }
 

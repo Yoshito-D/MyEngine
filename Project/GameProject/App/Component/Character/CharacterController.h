@@ -14,11 +14,11 @@
 
 namespace App {
 
-/// @brief 入力を収集して移動・ジャンプ・カメラ操作へ振り分けるプレイヤー制御コンポーネント（現在使用予定はない）
-class PlayerController final : public GameEngine::IObjectComponent {
+/// @brief 入力を収集して移動・ジャンプ・カメラ操作へ振り分けるキャラクター制御コンポーネント（現在使用予定はない）
+class CharacterController final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
-   static constexpr const char* kTypeName = "PlayerController";
+   static constexpr const char* kTypeName = "CharacterController";
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

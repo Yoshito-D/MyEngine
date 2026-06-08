@@ -1,4 +1,4 @@
-#include "PlayerController.h"
+#include "CharacterController.h"
 #include "Object/Object.h"
 #include "Framework/EngineContext.h"
 #include <cmath>
@@ -12,7 +12,7 @@ using namespace GameEngine;
 
 namespace App {
 
-void PlayerController::CacheComponents() {
+void CharacterController::CacheComponents() {
    // 同オーナー上の依存コンポーネントを取得
    basis_  = GetOwner().GetComponent<ScreenSpaceBasis>();
    walker_ = GetOwner().GetComponent<CharacterWalker>();
@@ -27,7 +27,7 @@ void PlayerController::CacheComponents() {
    }
 }
 
-void PlayerController::Update(float deltaTime) {
+void CharacterController::Update(float deltaTime) {
    // オーナーが無ければ入力処理を行わない
    if (!HasOwner()) { return; }
 
@@ -91,7 +91,7 @@ void PlayerController::Update(float deltaTime) {
    }
 }
 
-Vector2 PlayerController::CollectMoveInput() const {
+Vector2 CharacterController::CollectMoveInput() const {
    // キーボード入力を合成
    Vector2 input = { 0.0f, 0.0f };
    if (EngineContext::IsKeyPressed(KeyCode::W)) { input.y += 1.0f; }
@@ -107,14 +107,14 @@ Vector2 PlayerController::CollectMoveInput() const {
    return input;
 }
 
-bool PlayerController::CollectJumpInput() const {
+bool CharacterController::CollectJumpInput() const {
    // スペース押下トリガーをジャンプ入力とする
    return EngineContext::IsKeyTriggered(KeyCode::Space);
 }
 
 #ifdef USE_IMGUI
-void PlayerController::DrawInspector() {
-   if (!ImGui::CollapsingHeader("PlayerController")) {
+void CharacterController::DrawInspector() {
+   if (!ImGui::CollapsingHeader("CharacterController")) {
       return;
    }
    ImGui::Separator();
@@ -122,13 +122,13 @@ void PlayerController::DrawInspector() {
 }
 #endif
 
-nlohmann::json PlayerController::Serialize() const {
+nlohmann::json CharacterController::Serialize() const {
    nlohmann::json json;
    json["inputDeadZone"] = inputDeadZone;
    return json;
 }
 
-void PlayerController::Deserialize(const nlohmann::json& data) {
+void CharacterController::Deserialize(const nlohmann::json& data) {
    if (data.contains("inputDeadZone")) { inputDeadZone = data["inputDeadZone"]; }
 }
 

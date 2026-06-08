@@ -262,6 +262,7 @@
     <None Include="resources\pipelines\object3d_dissolve_pipeline.json" />
     <None Include="resources\pipelines\postprocess\boxfilter_pipeline.json" />
     <None Include="resources\pipelines\postprocess\linear_to_srgb_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\speedline_pipeline.json" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -472,7 +473,7 @@
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Line\Line.cpp">
+    <ClCompile Include="GameEngine\Core\Graphics\Line.cpp">
       <Filter>GameEngine\Object\Line</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Model\AnimationAsset.cpp">
@@ -595,7 +596,7 @@
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp">
       <Filter>GameProject\App\Component\Gravity</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Player\PlayerController.cpp">
+    <ClCompile Include="GameProject\App\Component\Character\CharacterController.cpp">
       <Filter>GameProject\App\Component\Player</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp">
@@ -647,6 +648,7 @@
     <ClCompile Include="GameEngine\Effect\Module\UVTransformModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -883,7 +885,7 @@
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Object\Line\Line.h">
+    <ClInclude Include="GameEngine\Core\Graphics\Line.h">
       <Filter>GameEngine\Object\Line</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h">
@@ -1054,7 +1056,7 @@
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h">
       <Filter>GameProject\App\Component\Gravity</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Player\PlayerController.h">
+    <ClInclude Include="GameProject\App\Component\Character\CharacterController.h">
       <Filter>GameProject\App\Component\Player</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h">
@@ -1113,6 +1115,7 @@
     <ClInclude Include="GameEngine\Effect\Module\TextureSheetAnimationModule.h" />
     <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

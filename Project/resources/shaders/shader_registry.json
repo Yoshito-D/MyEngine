@@ -21,6 +21,7 @@
     { "name": "ChromaticAberration", "type": "Pixel", "filePath": "resources/shaders/postprocess/ChromaticAberration.PS.hlsl", "entryPoint": "main" },
     { "name": "ShockWave", "type": "Pixel", "filePath": "resources/shaders/postprocess/ShockWave.PS.hlsl", "entryPoint": "main" },
     { "name": "Pixelation", "type": "Pixel", "filePath": "resources/shaders/postprocess/Pixelation.PS.hlsl", "entryPoint": "main" },
+    { "name": "SpeedLine", "type": "Pixel", "filePath": "resources/shaders/postprocess/SpeedLine.PS.hlsl", "entryPoint": "main" },
     { "name": "Bloom", "type": "Pixel", "filePath": "resources/shaders/postprocess/Bloom.PS.hlsl", "entryPoint": "main" },
     { "name": "BoxFilter", "type": "Pixel", "filePath": "resources/shaders/postprocess/BoxFilter.PS.hlsl", "entryPoint": "main" },
 

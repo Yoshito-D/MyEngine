@@ -57,6 +57,13 @@
       "pipelineName": "PostProcess_Pixelation"
     },
     {
+      "name": "Speed Line",
+      "className": "SpeedLine",
+      "priority": 75,
+      "enabled": false,
+      "pipelineName": "PostProcess_SpeedLine"
+    },
+    {
       "name": "Bloom",
       "className": "Bloom",
       "priority": 20,
