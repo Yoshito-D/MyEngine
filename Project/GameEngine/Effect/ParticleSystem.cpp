@@ -11,6 +11,8 @@
 
 namespace GameEngine {
 
+std::vector<ParticleSystem*> ParticleSystem::sRegisteredParticleSystems_{};
+
 namespace {
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
@@ -28,6 +30,10 @@ void ParticleSystem::Initialize(GraphicsDevice* device) {
    if (sIsInitialized_) return;
    sDevice_ = device;
    sIsInitialized_ = true;
+}
+
+const std::vector<ParticleSystem*>& ParticleSystem::GetRegisteredParticleSystems() {
+   return sRegisteredParticleSystems_;
 }
 
 void ParticleSystem::CreateQuadMesh() {
@@ -117,9 +123,18 @@ ParticleSystem::ParticleSystem() {
    noiseModule_->SetEnabled(false);
    uvTransformModule_->SetEnabled(false);
    textureSheetAnimationModule_->SetEnabled(false);
+
+   static uint32_t particleSystemCounter = 0;
+   name_ = "ParticleSystem_" + std::to_string(++particleSystemCounter);
+   sRegisteredParticleSystems_.push_back(this);
 }
 
 ParticleSystem::~ParticleSystem() {
+   auto it = std::find(sRegisteredParticleSystems_.begin(), sRegisteredParticleSystems_.end(), this);
+   if (it != sRegisteredParticleSystems_.end()) {
+      sRegisteredParticleSystems_.erase(it);
+   }
+
    if (instancingResource_ && instancingData_) {
       instancingResource_->Unmap(0, nullptr);
       instancingData_ = nullptr;
@@ -736,6 +751,16 @@ nlohmann::json ParticleSystem::ToJson() const {
    nlohmann::json j;
    j["textureName"] = textureName_;
 
+   // ブレンドモード
+   if (material_ && material_->GetBlendMode().has_value()) {
+      j["blendMode"] = static_cast<int>(material_->GetBlendMode().value());
+   } else {
+      j["blendMode"] = nullptr;
+   }
+
+   // ポストプロセスフラグ
+   j["usePostProcess"] = usePostProcess_;
+
    // 各モジュールのToJson()を呼び出し
    if (mainModule_) {
 	  j["mainModule"] = mainModule_->ToJson();
@@ -795,6 +820,18 @@ nlohmann::json ParticleSystem::ToJson() const {
 void ParticleSystem::FromJson(const nlohmann::json& j) {
    if (j.contains("textureName")) {
       SetTextureName(j["textureName"].get<std::string>());
+   }
+
+   // ブレンドモード
+   if (j.contains("blendMode") && !j["blendMode"].is_null() && material_) {
+      material_->SetBlendMode(static_cast<BlendMode>(j["blendMode"].get<int>()));
+   } else if (material_) {
+      material_->SetBlendMode(std::nullopt);
+   }
+
+   // ポストプロセスフラグ
+   if (j.contains("usePostProcess")) {
+      usePostProcess_ = j["usePostProcess"].get<bool>();
    }
 
    // 各モジュールのFromJson()を呼び出し

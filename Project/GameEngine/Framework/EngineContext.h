@@ -520,7 +520,7 @@ public:
    /// @brief パーティクルシステムを描画する
    /// @param particleSystem 描画するパーティクルシステム
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void Draw(ParticleSystem* particleSystem, bool applyPostProcess = true);
+   static void Draw(ParticleSystem* particleSystem);
 
    /// @brief スカイボックスを描画する
    /// @param skybox スカイボックス

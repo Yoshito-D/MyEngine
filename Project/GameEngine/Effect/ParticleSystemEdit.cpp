@@ -24,13 +24,11 @@ namespace ParticleSystemEdit {
 
 using namespace GameEngine;
 
-void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
+void Edit(GameEngine::ParticleSystem* particleSystem) {
 #ifdef USE_IMGUI
    if (!particleSystem) return;
 
-   // ウィンドウ名を構築（重複を避けるため）
-   std::string windowName = name + " Editor";
-   ImGui::Begin(windowName.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+   const std::string& particleSystemName = particleSystem->GetName();
 
    // ========================================
    // File Operations
@@ -40,51 +38,51 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 	  static std::map<std::string, std::array<char, 256>> savePathBuffers;
 	  static std::map<std::string, std::array<char, 256>> loadPathBuffers;
 
-	  if (savePathBuffers.find(name) == savePathBuffers.end()) {
-		 std::string defaultPath = "resources/particles/" + name + ".json";
-		 auto& buf = savePathBuffers[name];
+	  if (savePathBuffers.find(particleSystemName) == savePathBuffers.end()) {
+		 std::string defaultPath = "resources/particles/" + particleSystemName + ".json";
+		 auto& buf = savePathBuffers[particleSystemName];
 		 buf.fill('\0');
 		 strncpy_s(buf.data(), buf.size(), defaultPath.c_str(), buf.size() - 1);
 	  }
-	  if (loadPathBuffers.find(name) == loadPathBuffers.end()) {
-		 std::string defaultPath = "resources/particles/" + name + ".json";
-		 auto& buf = loadPathBuffers[name];
+	  if (loadPathBuffers.find(particleSystemName) == loadPathBuffers.end()) {
+		 std::string defaultPath = "resources/particles/" + particleSystemName + ".json";
+		 auto& buf = loadPathBuffers[particleSystemName];
 		 buf.fill('\0');
 		 strncpy_s(buf.data(), buf.size(), defaultPath.c_str(), buf.size() - 1);
 	  }
 
-	  auto& savePathBuffer = savePathBuffers[name];
-	  auto& loadPathBuffer = loadPathBuffers[name];
+	  auto& savePathBuffer = savePathBuffers[particleSystemName];
+	  auto& loadPathBuffer = loadPathBuffers[particleSystemName];
 
 	  ImGui::Text("Save/Load Particle Configuration");
 	  ImGui::Separator();
 
 	  // Save
-	  std::string saveInputID = "##SavePath_" + name;
+	  std::string saveInputID = "##SavePath_" + particleSystemName;
 	  ImGui::InputText(("Save Path" + saveInputID).c_str(), savePathBuffer.data(), savePathBuffer.size());
-	  std::string saveButtonID = "Save Configuration##" + name;
+	  std::string saveButtonID = "Save Configuration##" + particleSystemName;
 	  if (ImGui::Button(saveButtonID.c_str())) {
 		 if (particleSystem->SaveToJson(savePathBuffer.data())) {
-			ImGui::OpenPopup(("SaveSuccess##" + name).c_str());
+			ImGui::OpenPopup(("SaveSuccess##" + particleSystemName).c_str());
 		 } else {
-			ImGui::OpenPopup(("SaveFailed##" + name).c_str());
+			ImGui::OpenPopup(("SaveFailed##" + particleSystemName).c_str());
 		 }
 	  }
 
 	  // Load
-	  std::string loadInputID = "##LoadPath_" + name;
+	  std::string loadInputID = "##LoadPath_" + particleSystemName;
 	  ImGui::InputText(("Load Path" + loadInputID).c_str(), loadPathBuffer.data(), loadPathBuffer.size());
-	  std::string loadButtonID = "Load Configuration##" + name;
+	  std::string loadButtonID = "Load Configuration##" + particleSystemName;
 	  if (ImGui::Button(loadButtonID.c_str())) {
 		 if (particleSystem->LoadFromJson(loadPathBuffer.data())) {
-			ImGui::OpenPopup(("LoadSuccess##" + name).c_str());
+			ImGui::OpenPopup(("LoadSuccess##" + particleSystemName).c_str());
 		 } else {
-			ImGui::OpenPopup(("LoadFailed##" + name).c_str());
+			ImGui::OpenPopup(("LoadFailed##" + particleSystemName).c_str());
 		 }
 	  }
 
 	  // Success/Failure Popups
-	  if (ImGui::BeginPopupModal(("SaveSuccess##" + name).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+	  if (ImGui::BeginPopupModal(("SaveSuccess##" + particleSystemName).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		 ImGui::Text("Configuration saved successfully!");
 		 if (ImGui::Button("OK", ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
@@ -92,7 +90,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 		 ImGui::EndPopup();
 	  }
 
-	  if (ImGui::BeginPopupModal(("SaveFailed##" + name).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+	  if (ImGui::BeginPopupModal(("SaveFailed##" + particleSystemName).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		 ImGui::Text("Failed to save configuration.");
 		 if (ImGui::Button("OK", ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
@@ -100,7 +98,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 		 ImGui::EndPopup();
 	  }
 
-	  if (ImGui::BeginPopupModal(("LoadSuccess##" + name).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+	  if (ImGui::BeginPopupModal(("LoadSuccess##" + particleSystemName).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		 ImGui::Text("Configuration loaded successfully!");
 		 if (ImGui::Button("OK", ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
@@ -108,7 +106,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 		 ImGui::EndPopup();
 	  }
 
-	  if (ImGui::BeginPopupModal(("LoadFailed##" + name).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+	  if (ImGui::BeginPopupModal(("LoadFailed##" + particleSystemName).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		 ImGui::Text("Failed to load configuration.");
 		 if (ImGui::Button("OK", ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
@@ -126,17 +124,17 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 	  bool isPlaying = particleSystem->IsPlaying();
 	  ImGui::Text("Status: %s", isPlaying ? "Playing" : "Stopped");
 
-	  std::string playButtonID = "Play##" + name;
+	  std::string playButtonID = "Play##" + particleSystemName;
 	  if (ImGui::Button(playButtonID.c_str())) {
 		 particleSystem->Play();
 	  }
 	  ImGui::SameLine();
-	  std::string stopButtonID = "Stop##" + name;
+	  std::string stopButtonID = "Stop##" + particleSystemName;
 	  if (ImGui::Button(stopButtonID.c_str())) {
 		 particleSystem->Stop();
 	  }
 	  ImGui::SameLine();
-	  std::string pauseButtonID = "Pause##" + name;
+	  std::string pauseButtonID = "Pause##" + particleSystemName;
 	  if (ImGui::Button(pauseButtonID.c_str())) {
 		 particleSystem->Pause();
 	  }
@@ -282,7 +280,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
    if (ImGui::CollapsingHeader("Renderer Module")) {
 	  auto* rendererModule = particleSystem->GetRendererModule();
 	  if (rendererModule) {
-		 std::string enabledCheckboxID = "Enabled##Renderer_" + name;
+		 std::string enabledCheckboxID = "Enabled##Renderer_" + particleSystemName;
 		 bool enabled = rendererModule->IsEnabled();
 		 if (ImGui::Checkbox(enabledCheckboxID.c_str(), &enabled)) {
 			rendererModule->SetEnabled(enabled);
@@ -299,7 +297,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 			};
 
 			int currentBillboardType = static_cast<int>(rendererModule->GetBillboardType());
-			std::string billboardComboID = "Billboard Type##" + name;
+			std::string billboardComboID = "Billboard Type##" + particleSystemName;
 			if (ImGui::Combo(billboardComboID.c_str(), &currentBillboardType, billboardTypeNames, IM_ARRAYSIZE(billboardTypeNames))) {
 			   rendererModule->SetBillboardType(static_cast<GameEngine::RendererModule::BillboardType>(currentBillboardType));
 			}
@@ -310,13 +308,13 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 			   ImGui::Text("Stretched Billboard Settings:");
 
 			   float speedScale = rendererModule->GetSpeedScale();
-			   std::string speedScaleID = "Speed Scale##" + name;
+			   std::string speedScaleID = "Speed Scale##" + particleSystemName;
 			   if (ImGui::DragFloat(speedScaleID.c_str(), &speedScale, 0.1f, 0.0f, 10.0f)) {
 				  rendererModule->SetSpeedScale(speedScale);
 			   }
 
 			   float lengthScale = rendererModule->GetLengthScale();
-			   std::string lengthScaleID = "Length Scale##" + name;
+			   std::string lengthScaleID = "Length Scale##" + particleSystemName;
 			   if (ImGui::DragFloat(lengthScaleID.c_str(), &lengthScale, 0.1f, 0.0f, 10.0f)) {
 				  rendererModule->SetLengthScale(lengthScale);
 			   }
@@ -331,7 +329,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 				"Cone", "Circle", "Plane", "Torus", "Triangle"
 			};
 			int currentMeshType = static_cast<int>(rendererModule->GetParticleMeshType());
-			std::string meshComboID = "Mesh Type##" + name;
+			std::string meshComboID = "Mesh Type##" + particleSystemName;
 			if (ImGui::Combo(meshComboID.c_str(), &currentMeshType, meshTypeNames, IM_ARRAYSIZE(meshTypeNames))) {
 			   rendererModule->SetParticleMeshType(static_cast<GameEngine::RendererModule::ParticleMeshType>(currentMeshType));
 			}
@@ -341,30 +339,30 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 			switch (meshType) {
 			   case GameEngine::RendererModule::ParticleMeshType::Ring: {
 				  float innerR = rendererModule->GetRingInnerRadius();
-				  std::string id = "Inner Radius##Ring_" + name;
+				  std::string id = "Inner Radius##Ring_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &innerR, 0.01f, 0.0f, 10.0f))
 					 rendererModule->SetRingInnerRadius(innerR);
 				  float outerR = rendererModule->GetRingOuterRadius();
-				  id = "Outer Radius##Ring_" + name;
+				  id = "Outer Radius##Ring_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &outerR, 0.01f, 0.0f, 10.0f))
 					 rendererModule->SetRingOuterRadius(outerR);
 				  int segs = static_cast<int>(rendererModule->GetRingSegments());
-				  id = "Segments##Ring_" + name;
+				  id = "Segments##Ring_" + particleSystemName;
 				  if (ImGui::DragInt(id.c_str(), &segs, 1, 3, 128))
 					 rendererModule->SetRingSegments(static_cast<uint32_t>(segs));
 				  break;
 			   }
 			   case GameEngine::RendererModule::ParticleMeshType::Sphere: {
 				  float r = rendererModule->GetSphereRadius();
-				  std::string id = "Radius##Sphere_" + name;
+				  std::string id = "Radius##Sphere_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
 					 rendererModule->SetSphereRadius(r);
 				  int stacks = static_cast<int>(rendererModule->GetSphereStacks());
-				  id = "Stacks##Sphere_" + name;
+				  id = "Stacks##Sphere_" + particleSystemName;
 				  if (ImGui::DragInt(id.c_str(), &stacks, 1, 2, 64))
 					 rendererModule->SetSphereStacks(static_cast<uint32_t>(stacks));
 				  int slices = static_cast<int>(rendererModule->GetSphereSlices());
-				  id = "Slices##Sphere_" + name;
+				  id = "Slices##Sphere_" + particleSystemName;
 				  if (ImGui::DragInt(id.c_str(), &slices, 1, 3, 128))
 					 rendererModule->SetSphereSlices(static_cast<uint32_t>(slices));
 				  break;
@@ -372,84 +370,122 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 			   case GameEngine::RendererModule::ParticleMeshType::Box: {
 				  GameEngine::Vector3 bs = rendererModule->GetBoxSize();
 				  float size[3] = {bs.x, bs.y, bs.z};
-				  std::string id = "Size##Box_" + name;
+				  std::string id = "Size##Box_" + particleSystemName;
 				  if (ImGui::DragFloat3(id.c_str(), size, 0.01f, 0.01f, 10.0f))
 					 rendererModule->SetBoxSize(GameEngine::Vector3(size[0], size[1], size[2]));
 				  break;
 			   }
 			   case GameEngine::RendererModule::ParticleMeshType::Cylinder: {
 				  float r = rendererModule->GetCylinderRadius();
-				  std::string id = "Radius##Cyl_" + name;
+				  std::string id = "Radius##Cyl_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
 					 rendererModule->SetCylinderRadius(r);
 				  float h = rendererModule->GetCylinderHeight();
-				  id = "Height##Cyl_" + name;
+				  id = "Height##Cyl_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &h, 0.01f, 0.01f, 20.0f))
 					 rendererModule->SetCylinderHeight(h);
 				  int segs = static_cast<int>(rendererModule->GetCylinderSegments());
-				  id = "Segments##Cyl_" + name;
+				  id = "Segments##Cyl_" + particleSystemName;
 				  if (ImGui::DragInt(id.c_str(), &segs, 1, 3, 128))
 					 rendererModule->SetCylinderSegments(static_cast<uint32_t>(segs));
 				  break;
 			   }
 			   case GameEngine::RendererModule::ParticleMeshType::Cone: {
 				  float r = rendererModule->GetConeRadius();
-				  std::string id = "Radius##Cone_" + name;
+				  std::string id = "Radius##Cone_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
 					 rendererModule->SetConeRadius(r);
 				  float h = rendererModule->GetConeHeight();
-				  id = "Height##Cone_" + name;
+				  id = "Height##Cone_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &h, 0.01f, 0.01f, 20.0f))
 					 rendererModule->SetConeHeight(h);
 				  int segs = static_cast<int>(rendererModule->GetConeSegments());
-				  id = "Segments##Cone_" + name;
+				  id = "Segments##Cone_" + particleSystemName;
 				  if (ImGui::DragInt(id.c_str(), &segs, 1, 3, 128))
 					 rendererModule->SetConeSegments(static_cast<uint32_t>(segs));
 				  break;
 			   }
 			   case GameEngine::RendererModule::ParticleMeshType::Circle: {
 				  float r = rendererModule->GetCircleRadius();
-				  std::string id = "Radius##Circle_" + name;
+				  std::string id = "Radius##Circle_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
 					 rendererModule->SetCircleRadius(r);
 				  int segs = static_cast<int>(rendererModule->GetCircleSegments());
-				  id = "Segments##Circle_" + name;
+				  id = "Segments##Circle_" + particleSystemName;
 				  if (ImGui::DragInt(id.c_str(), &segs, 1, 3, 128))
 					 rendererModule->SetCircleSegments(static_cast<uint32_t>(segs));
 				  break;
 			   }
 			   case GameEngine::RendererModule::ParticleMeshType::Plane: {
 				  float w = rendererModule->GetPlaneWidth();
-				  std::string id = "Width##Plane_" + name;
+				  std::string id = "Width##Plane_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &w, 0.01f, 0.01f, 20.0f))
 					 rendererModule->SetPlaneWidth(w);
 				  float d = rendererModule->GetPlaneDepth();
-				  id = "Depth##Plane_" + name;
+				  id = "Depth##Plane_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &d, 0.01f, 0.01f, 20.0f))
 					 rendererModule->SetPlaneDepth(d);
 				  break;
 			   }
 			   case GameEngine::RendererModule::ParticleMeshType::Torus: {
 				  float maj = rendererModule->GetTorusMajorRadius();
-				  std::string id = "Major Radius##Torus_" + name;
+				  std::string id = "Major Radius##Torus_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &maj, 0.01f, 0.01f, 10.0f))
 					 rendererModule->SetTorusMajorRadius(maj);
 				  float min_ = rendererModule->GetTorusMinorRadius();
-				  id = "Minor Radius##Torus_" + name;
+				  id = "Minor Radius##Torus_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &min_, 0.01f, 0.01f, 10.0f))
 					 rendererModule->SetTorusMinorRadius(min_);
 				  int majSegs = static_cast<int>(rendererModule->GetTorusMajorSegments());
-				  id = "Major Segments##Torus_" + name;
+				  id = "Major Segments##Torus_" + particleSystemName;
 				  if (ImGui::DragInt(id.c_str(), &majSegs, 1, 3, 128))
 					 rendererModule->SetTorusMajorSegments(static_cast<uint32_t>(majSegs));
 				  int minSegs = static_cast<int>(rendererModule->GetTorusMinorSegments());
-				  id = "Minor Segments##Torus_" + name;
+				  id = "Minor Segments##Torus_" + particleSystemName;
 				  if (ImGui::DragInt(id.c_str(), &minSegs, 1, 3, 128))
 					 rendererModule->SetTorusMinorSegments(static_cast<uint32_t>(minSegs));
 				  break;
 			   }
 			   default:
 				  break;
+			}
+
+			ImGui::Separator();
+
+			// Blend Mode
+			ImGui::Text("Blend Mode:");
+			{
+			   static const char* blendModeNames[] = {
+				  "Default (Additive)",
+				  "None",
+				  "Normal",
+				  "Add",
+				  "Subtract",
+				  "Multiply",
+				  "Screen"
+			   };
+			   auto currentBlend = particleSystem->GetBlendMode();
+			   // -1 = Default (nullopt), 0..5 = BlendMode enum
+			   int blendIndex = currentBlend.has_value() ? (static_cast<int>(currentBlend.value()) + 1) : 0;
+			   std::string blendComboID = "##BlendMode_" + particleSystemName;
+			   if (ImGui::Combo(blendComboID.c_str(), &blendIndex, blendModeNames, IM_ARRAYSIZE(blendModeNames))) {
+				  if (blendIndex == 0) {
+					 particleSystem->SetBlendMode(std::nullopt);
+				  } else {
+					 particleSystem->SetBlendMode(static_cast<BlendMode>(blendIndex - 1));
+				  }
+			   }
+			}
+
+			ImGui::Separator();
+
+			// Post Process
+			{
+			   bool usePostProcess = particleSystem->GetUsePostProcess();
+			   std::string ppCheckboxID = "Apply Post Process##" + particleSystemName;
+			   if (ImGui::Checkbox(ppCheckboxID.c_str(), &usePostProcess)) {
+				  particleSystem->SetUsePostProcess(usePostProcess);
+			   }
 			}
 
 			ImGui::Separator();
@@ -462,16 +498,16 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 
 			   // テクスチャ選択コンボ
 			   std::vector<std::string> texNames = GameEngine::EngineContext::GetTextureNames();
-			   std::string comboID = "##TextureSelect_" + name;
+			   std::string comboID = "##TextureSelect_" + particleSystemName;
 			   if (ImGui::BeginCombo(comboID.c_str(), currentTexName.c_str())) {
 				  bool noneSelected = particleSystem->GetTextureName().empty();
-				  std::string noneID = "(None)##TexNone_" + name;
+				  std::string noneID = "(None)##TexNone_" + particleSystemName;
 				  if (ImGui::Selectable(noneID.c_str(), noneSelected)) {
 					 particleSystem->SetTextureName("");
 				  }
 				  for (const auto& texName : texNames) {
 					 bool selected = (particleSystem->GetTextureName() == texName);
-					 std::string selID = texName + "##TexSel_" + name;
+					 std::string selID = texName + "##TexSel_" + particleSystemName;
 					 if (ImGui::Selectable(selID.c_str(), selected)) {
 						particleSystem->SetTextureName(texName);
 					 }
@@ -636,8 +672,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem, const std::string& name) {
 	  }
    }
 
-   ImGui::End();
-#endif
+   #endif
 }
 
 }

@@ -1,4 +1,5 @@
 {
+    "blendMode": 2,
     "colorOverLifetimeModule": {
         "enabled": true,
         "endColor": [
@@ -198,6 +199,7 @@
         "tilesX": 2,
         "tilesY": 1
     },
+    "usePostProcess": true,
     "uvTransformModule": {
         "enabled": true,
         "rotationConstant": 0.0,
