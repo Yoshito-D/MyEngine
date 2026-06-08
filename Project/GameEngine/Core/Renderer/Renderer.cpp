@@ -643,7 +643,7 @@ void Renderer::EndFrame() {
 	  imGuiManager_->ShowViewport(offscreenRenderTarget_.get(), isSceneHovered_);
 
 	  if (editorController_) {
-		 editorController_->ShowAssetWindow();
+		 //editorController_->ShowAssetWindow();
 		 editorController_->ShowHierarchyWindow();
 		 editorController_->ShowInspectorWindow();
 	  }

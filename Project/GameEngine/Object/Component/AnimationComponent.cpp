@@ -83,7 +83,12 @@ void AnimationComponent::Deserialize(const nlohmann::json& data) {
 }
 
 void AnimationComponent::Update(float deltaTime) {
+   // 早期リターンして最適化
    if (!playing || animationName.empty()) {
+	  return;
+   }
+
+   if (deltaTime <= 0.0f) {
 	  return;
    }
 

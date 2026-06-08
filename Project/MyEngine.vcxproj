@@ -219,6 +219,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.cpp" />
     <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\ColorOverLifetimeModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\ForceOverLifetimeModule.cpp" />
@@ -291,7 +292,7 @@
     <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Line\Line.cpp">
+    <ClCompile Include="GameEngine\Core\Graphics\Line.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
@@ -417,7 +418,7 @@
     <ClCompile Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\PlanetSwitcher.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp" />
-    <ClCompile Include="GameProject\App\Component\Player\PlayerController.cpp" />
+    <ClCompile Include="GameProject\App\Component\Character\CharacterController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
@@ -479,6 +480,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.h" />
     <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h" />
     <ClInclude Include="GameEngine\Effect\Module\ColorOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\ForceOverLifetimeModule.h" />
@@ -555,7 +557,7 @@
     <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
-    <ClInclude Include="GameEngine\Object\Line\Line.h" />
+    <ClInclude Include="GameEngine\Core\Graphics\Line.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\LineRenderer.h" />
     <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h" />
     <ClInclude Include="GameEngine\Object\Model\ModelAsset.h" />
@@ -631,7 +633,7 @@
     <ClInclude Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\PlanetSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h" />
-    <ClInclude Include="GameProject\App\Component\Player\PlayerController.h" />
+    <ClInclude Include="GameProject\App\Component\Character\CharacterController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
@@ -668,6 +670,7 @@
     <None Include="resources\pipelines\postprocess\pixelation_pipeline.json" />
     <None Include="resources\pipelines\postprocess\radialblur_pipeline.json" />
     <None Include="resources\pipelines\postprocess\shockwave_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\speedline_pipeline.json" />
     <None Include="resources\pipelines\postprocess\vignette_pipeline.json" />
     <None Include="resources\pipelines\rootsig\fullscreen_triangle_rootsig.json" />
     <None Include="resources\pipelines\rootsig\line3d_rootsig.json" />

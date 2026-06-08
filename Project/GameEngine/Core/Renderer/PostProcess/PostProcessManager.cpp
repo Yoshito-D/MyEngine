@@ -8,6 +8,7 @@
 #include "ChromaticAberration.h"
 #include "ShockWave.h"
 #include "Pixelation.h"
+#include "SpeedLine.h"
 #include "Bloom.h"
 #include "BoxFilter.h"
 #include "LinearToSRGB.h"
@@ -55,6 +56,7 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
    effectFactoryRegistry_.RegisterFactory("Vignette", [] { return std::make_unique<Vignette>(); });
    effectFactoryRegistry_.RegisterFactory("ShockWave", [] { return std::make_unique<ShockWave>(); });
    effectFactoryRegistry_.RegisterFactory("Pixelation", [] { return std::make_unique<Pixelation>(); });
+   effectFactoryRegistry_.RegisterFactory("SpeedLine", [] { return std::make_unique<SpeedLine>(); });
    effectFactoryRegistry_.RegisterFactory("Bloom", [] { return std::make_unique<Bloom>(); });
    effectFactoryRegistry_.RegisterFactory("BoxFilter", [] { return std::make_unique<BoxFilter>(); });
    effectFactoryRegistry_.RegisterFactory("LinearToSRGB", [] { return std::make_unique<LinearToSRGB>(); });
@@ -122,7 +124,7 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  const char* pipelineName;
    };
 
-   static const std::array<PredefinedEffectEntry, 10> kEntries = {
+   static const std::array<PredefinedEffectEntry, 11> kEntries = {
 	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur" },
 	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale" },
 	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter" },
@@ -131,6 +133,7 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  PredefinedEffectEntry{ "Vignette", "Vignette", 50, "PostProcess_Vignette" },
 	  PredefinedEffectEntry{ "ShockWave", "Shock Wave", 60, "PostProcess_ShockWave" },
 	  PredefinedEffectEntry{ "Pixelation", "Pixelation", 70, "PostProcess_Pixelation" },
+	  PredefinedEffectEntry{ "SpeedLine", "Speed Line", 75, "PostProcess_SpeedLine" },
 	  PredefinedEffectEntry{ "Bloom", "Bloom", 80, "PostProcess_Bloom" },
 	  PredefinedEffectEntry{ "LinearToSRGB", "Linear to sRGB", 90, "PostProcess_LinearToSRGB" }
    };

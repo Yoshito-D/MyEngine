@@ -62,12 +62,15 @@ void BaseScene::Update() {
       float deltaTime = EngineContext::GetDeltaTime();
       EngineContext::GetActiveBrain()->Update(deltaTime);
    }
+
+   EngineContext::DebugDrawLights();
 #else
    {
       float deltaTime = EngineContext::GetDeltaTime();
       EngineContext::GetActiveBrain()->Update(deltaTime);
    }
 #endif // _DEBUG
+
 
    // フェードの更新（デルタタイムは内部で取得）
    if (sceneFade_) {
