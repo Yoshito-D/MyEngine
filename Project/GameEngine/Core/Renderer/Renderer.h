@@ -89,8 +89,7 @@ public:
 
    /// @brief パーティクルシステムを描画する
    /// @param particleSystem 描画するパーティクルシステム
-   /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void Draw(ParticleSystem* particleSystem, bool applyPostProcess = true);
+   void Draw(ParticleSystem* particleSystem);
 
    /// @brief UI用スプライトを描画する
    /// @param sprite 描画するスプライト
@@ -310,6 +309,7 @@ private:
    void DrawAutoRegisteredModels();
    void DrawAutoRegisteredSprites();
    void DrawAutoRegisteredSkyboxes();
+   void DrawAutoRegisteredParticles();
 
    /// @brief 描画コマンドを実行する
    /// @param commands 実行する描画コマンドリスト

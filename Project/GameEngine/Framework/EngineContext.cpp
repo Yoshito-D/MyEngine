@@ -555,9 +555,9 @@ void EngineContext::Draw(Sprite* sprite, Texture* texture, std::optional<BlendMo
    sRenderer_->Draw(sprite, texture, blendMode, applyPostProcess);
 }
 
-void EngineContext::Draw(ParticleSystem* particleSystem, bool applyPostProcess) {
+void EngineContext::Draw(ParticleSystem* particleSystem) {
    if (!sRenderer_) return;
-   sRenderer_->Draw(particleSystem, applyPostProcess);
+   sRenderer_->Draw(particleSystem);
 }
 
 void EngineContext::DrawSkybox(Skybox* skybox) {

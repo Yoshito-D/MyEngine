@@ -14,6 +14,7 @@
 #include "Object/Model/ModelAsset.h"
 #include <nlohmann/json.hpp>
 #include <array>
+#include <optional>
 #include <stack>
 #include <memory>
 #include <vector>
@@ -27,6 +28,8 @@ class Camera;
 class ParticleSystem {
 public:
    static constexpr uint32_t kMaxParticles = 2048;
+
+   static const std::vector<ParticleSystem*>& GetRegisteredParticleSystems();
 
    /// @brief GPU送信用パーティクルデータ
    struct ParticleForGPU {
@@ -104,6 +107,21 @@ public:
    /// @brief 設定中のテクスチャ名を取得
    const std::string& GetTextureName() const { return textureName_; }
 
+   const std::string& GetName() const { return name_; }
+   void SetName(const std::string& name) { name_ = name; }
+
+   /// @brief ブレンドモードを設定（マテリアルに委譲）
+   void SetBlendMode(std::optional<BlendMode> mode) { if (material_) material_->SetBlendMode(mode); }
+
+   /// @brief ブレンドモードを取得（マテリアルに委譲）
+   std::optional<BlendMode> GetBlendMode() const { return material_ ? material_->GetBlendMode() : std::nullopt; }
+
+   /// @brief ポストプロセスを適用するか設定
+   void SetUsePostProcess(bool use) { usePostProcess_ = use; }
+
+   /// @brief ポストプロセスを適用するか取得
+   bool GetUsePostProcess() const { return usePostProcess_; }
+
    // ============ JSON Serialization ============
    /// @brief パラメータをJSONファイルに保存
    /// @param filePath 保存先のファイルパス
@@ -177,12 +195,16 @@ private:
    // 再生制御
    bool isPlaying_ = false;
    bool isPaused_ = false;
+   bool usePostProcess_ = false;
    float emissionTimer_ = 0.0f;
    float emissionAccumulator_ = 0.0f;
    float systemTime_ = 0.0f;
 
    std::unique_ptr<Mesh> quadMesh_ = nullptr;
    bool isCreated_ = false;
+   std::string name_;
+
+   static std::vector<ParticleSystem*> sRegisteredParticleSystems_;
 
 private:
    /// @brief クワッドメッシュを作成（ビルボード用）

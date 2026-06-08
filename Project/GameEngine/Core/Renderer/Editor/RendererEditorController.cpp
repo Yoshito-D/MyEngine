@@ -14,6 +14,8 @@
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
 #include "Object/Skybox/Skybox.h"
+#include "Effect/ParticleSystem.h"
+#include "Effect/ParticleSystemEdit.h"
 #include "externals/imgui/imgui.h"
 #include <algorithm>
 #include <cstring>
@@ -137,9 +139,11 @@ void RendererEditorController::ShowHierarchyWindow() {
    ImGui::Begin("Hierarchy");
 
    const auto sceneObjects = CollectSceneObjects();
-   if (sceneObjects.empty()) {
+   const auto& particleSystems = ParticleSystem::GetRegisteredParticleSystems();
+   if (sceneObjects.empty() && particleSystems.empty()) {
       ImGui::Text("No objects");
       selectedObject_ = nullptr;
+      selectedParticleSystem_ = nullptr;
       ImGui::End();
       return;
    }
@@ -147,6 +151,12 @@ void RendererEditorController::ShowHierarchyWindow() {
    if (selectedObject_) {
       if (std::find(sceneObjects.begin(), sceneObjects.end(), selectedObject_) == sceneObjects.end()) {
          selectedObject_ = nullptr;
+      }
+   }
+
+   if (selectedParticleSystem_) {
+      if (std::find(particleSystems.begin(), particleSystems.end(), selectedParticleSystem_) == particleSystems.end()) {
+         selectedParticleSystem_ = nullptr;
       }
    }
 
@@ -164,6 +174,26 @@ void RendererEditorController::ShowHierarchyWindow() {
       const bool isSelected = (selectedObject_ == object);
       if (ImGui::Selectable(label.c_str(), isSelected)) {
          selectedObject_ = object;
+         selectedParticleSystem_ = nullptr;
+      }
+      ImGui::PopID();
+   }
+
+   for (size_t i = 0; i < particleSystems.size(); ++i) {
+      auto* particleSystem = particleSystems[i];
+      if (!particleSystem) {
+         continue;
+      }
+
+      ImGui::PushID(static_cast<int>(sceneObjects.size() + i));
+
+      std::string label = particleSystem->GetName();
+      label += "##ParticleSystem_" + std::to_string(i);
+
+      const bool isSelected = (selectedParticleSystem_ == particleSystem);
+      if (ImGui::Selectable(label.c_str(), isSelected)) {
+         selectedObject_ = nullptr;
+         selectedParticleSystem_ = particleSystem;
       }
       ImGui::PopID();
    }
@@ -174,8 +204,25 @@ void RendererEditorController::ShowHierarchyWindow() {
 void RendererEditorController::ShowInspectorWindow() {
    ImGui::Begin("Inspector");
 
-   if (!selectedObject_) {
+   if (!selectedObject_ && !selectedParticleSystem_) {
       ImGui::Text("No selection");
+      ImGui::End();
+      return;
+   }
+
+   if (selectedParticleSystem_) {
+      std::string particleSystemName = selectedParticleSystem_->GetName();
+      char particleSystemNameBuffer[256]{};
+      {
+         const size_t copySize = std::min(particleSystemName.size(), sizeof(particleSystemNameBuffer) - 1);
+         std::memcpy(particleSystemNameBuffer, particleSystemName.c_str(), copySize);
+      }
+      if (ImGui::InputText("Name", particleSystemNameBuffer, sizeof(particleSystemNameBuffer))) {
+         selectedParticleSystem_->SetName(particleSystemNameBuffer);
+      }
+      ImGui::Spacing();
+
+      ParticleSystemEdit::Edit(selectedParticleSystem_);
       ImGui::End();
       return;
    }
@@ -401,182 +448,13 @@ std::string RendererEditorController::BuildUniqueObjectName(const std::string& b
 }
 
 bool RendererEditorController::SaveEditorSceneToFile(const std::filesystem::path& filePath) const {
-   nlohmann::json sceneJson = nlohmann::json::object();
-   sceneJson["objects"] = nlohmann::json::array();
-
-   for (const auto& modelPtr : editorCreatedModels_) {
-      if (!modelPtr) {
-         continue;
-      }
-
-      nlohmann::json entry = nlohmann::json::object();
-      entry["type"] = "Model";
-      entry["name"] = modelPtr->GetObjectName();
-      entry["components"] = modelPtr->SerializeComponents();
-
-      auto* modelManager = assetManager_ ? assetManager_->GetModelAssetManager() : nullptr;
-      auto* modelAsset = modelPtr->GetModelAsset();
-      if (modelManager && modelAsset) {
-         const auto modelNames = modelManager->GetModelNames();
-         for (const auto& modelName : modelNames) {
-            if (auto candidate = modelManager->GetModel(modelName); candidate && candidate.get() == modelAsset) {
-               entry["modelName"] = modelName;
-               break;
-            }
-         }
-      }
-
-      auto itModelName = editorModelAssetNames_.find(modelPtr.get());
-      if (itModelName != editorModelAssetNames_.end()) {
-         entry["modelName"] = itModelName->second;
-      }
-
-      if (const auto* materialComponent = modelPtr->GetComponent<MaterialComponent>()) {
-         const auto& materialNames = materialComponent->GetMaterialNames();
-         if (!materialNames.empty() && !materialNames[0].empty()) {
-            entry["materialName"] = materialNames[0];
-         }
-      }
-
-      auto itMaterialName = editorModelMaterialNames_.find(modelPtr.get());
-      if (itMaterialName != editorModelMaterialNames_.end()) {
-         entry["materialName"] = itMaterialName->second;
-      }
-
-      sceneJson["objects"].push_back(std::move(entry));
-   }
-
-   for (const auto& spritePtr : editorCreatedSprites_) {
-      if (!spritePtr) {
-         continue;
-      }
-
-      nlohmann::json entry = nlohmann::json::object();
-      entry["type"] = "Sprite";
-      entry["name"] = spritePtr->GetObjectName();
-      entry["components"] = spritePtr->SerializeComponents();
-      entry["sprite"] = {
-         { "size", { spritePtr->GetSize().x, spritePtr->GetSize().y } },
-         { "anchor", { spritePtr->GetAnchorPoint().x, spritePtr->GetAnchorPoint().y } },
-         { "flipX", spritePtr->IsFlipX() },
-         { "flipY", spritePtr->IsFlipY() }
-      };
-
-      sceneJson["objects"].push_back(std::move(entry));
-   }
-
-   std::ofstream ofs(filePath);
-   if (!ofs.is_open()) {
-      return false;
-   }
-   ofs << sceneJson.dump(2);
-   return true;
+   (void)filePath;
+   return false;
 }
 
 bool RendererEditorController::LoadEditorSceneFromFile(const std::filesystem::path& filePath) {
-   std::ifstream ifs(filePath);
-   if (!ifs.is_open()) {
-      return false;
-   }
-
-   nlohmann::json sceneJson;
-   try {
-      ifs >> sceneJson;
-   } catch (...) {
-      return false;
-   }
-
-   if (!sceneJson.contains("objects") || !sceneJson.at("objects").is_array()) {
-      return false;
-   }
-
-   auto* modelManager = assetManager_ ? assetManager_->GetModelAssetManager() : nullptr;
-   auto* materialManager = assetManager_ ? assetManager_->GetMaterialManager() : nullptr;
-   if (!modelManager || !materialManager) {
-      return false;
-   }
-
-   editorCreatedModels_.clear();
-   editorCreatedSprites_.clear();
-   editorModelAssetNames_.clear();
-   editorModelMaterialNames_.clear();
-   selectedObject_ = nullptr;
-
-   for (const auto& objectJson : sceneJson.at("objects")) {
-      if (!objectJson.is_object()) {
-         continue;
-      }
-
-      const std::string type = objectJson.value("type", "");
-      const std::string name = objectJson.value("name", "Object");
-
-      if (type == "Model") {
-         const std::string modelName = objectJson.value("modelName", "");
-         const std::string materialName = objectJson.value("materialName", "");
-         auto model = std::make_unique<Model>();
-         model->Create();
-
-         if (!modelName.empty()) {
-            if (auto modelAsset = modelManager->GetModel(modelName)) {
-               model->SetModelAsset(modelAsset);
-               editorModelAssetNames_[model.get()] = modelName;
-            }
-         }
-
-         if (!materialName.empty()) {
-            if (auto* material = materialManager->GetMaterial(materialName)) {
-               if (auto* materialComponent = model->GetComponent<MaterialComponent>()) {
-                  materialComponent->AssignMaterial(material, materialName);
-               }
-               editorModelMaterialNames_[model.get()] = materialName;
-            }
-         }
-
-         model->SetObjectName(name);
-         if (objectJson.contains("components") && objectJson.at("components").is_array()) {
-            model->DeserializeComponents(objectJson.at("components"));
-         }
-
-         if (const auto* materialComponent = model->GetComponent<MaterialComponent>()) {
-            const auto& materialNames = materialComponent->GetMaterialNames();
-            if (!materialNames.empty() && !materialNames[0].empty()) {
-               editorModelMaterialNames_[model.get()] = materialNames[0];
-            }
-         }
-
-         selectedObject_ = model.get();
-         editorCreatedModels_.push_back(std::move(model));
-      } else if (type == "Sprite") {
-         auto sprite = std::make_unique<Sprite>();
-         sprite->Create(Vector2(128.0f, 128.0f));
-         sprite->SetObjectName(name);
-
-         if (objectJson.contains("components") && objectJson.at("components").is_array()) {
-            sprite->DeserializeComponents(objectJson.at("components"));
-         }
-
-         if (objectJson.contains("sprite") && objectJson.at("sprite").is_object()) {
-            const auto& spriteJson = objectJson.at("sprite");
-            if (spriteJson.contains("size") && spriteJson.at("size").is_array() && spriteJson.at("size").size() == 2) {
-               sprite->SetSize(Vector2(spriteJson.at("size")[0].get<float>(), spriteJson.at("size")[1].get<float>()));
-            }
-            if (spriteJson.contains("anchor") && spriteJson.at("anchor").is_array() && spriteJson.at("anchor").size() == 2) {
-               sprite->SetAnchorPoint(Vector2(spriteJson.at("anchor")[0].get<float>(), spriteJson.at("anchor")[1].get<float>()));
-            }
-            if (spriteJson.contains("flipX") && spriteJson.at("flipX").is_boolean()) {
-               sprite->SetFlipX(spriteJson.at("flipX").get<bool>());
-            }
-            if (spriteJson.contains("flipY") && spriteJson.at("flipY").is_boolean()) {
-               sprite->SetFlipY(spriteJson.at("flipY").get<bool>());
-            }
-         }
-
-         selectedObject_ = sprite.get();
-         editorCreatedSprites_.push_back(std::move(sprite));
-      }
-   }
-
-   return true;
+   (void)filePath;
+   return false;
 }
 
 } // namespace GameEngine

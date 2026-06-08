@@ -341,7 +341,7 @@ void Renderer::Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> b
    SubmitDrawCommand(cmd);
 }
 
-void Renderer::Draw(ParticleSystem* particleSystem, bool applyPostProcess) {
+void Renderer::Draw(ParticleSystem* particleSystem) {
    Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
    assert(activeCamera != nullptr);
    assert(particleSystem != nullptr);
@@ -359,7 +359,7 @@ void Renderer::Draw(ParticleSystem* particleSystem, bool applyPostProcess) {
          blendMode = *matBlend;
       }
    }
-   RenderPass renderPass = applyPostProcess ? RenderPass::Transparent : RenderPass::PostProcess;
+   RenderPass renderPass = particleSystem->GetUsePostProcess() ? RenderPass::Transparent : RenderPass::PostProcess;
 
    // パーティクルは常に遅延描画（透明度があるため）
    DrawCommand cmd = DrawCommand::CreateParticle(particleSystem, activeCamera, blendMode, renderPass);
@@ -610,6 +610,7 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 void Renderer::EndFrame() {
    DrawAutoRegisteredModels();
    DrawAutoRegisteredSprites();
+   DrawAutoRegisteredParticles();
 
    // ラインレンダラーを終了
    lineRenderer_->End();
@@ -769,6 +770,14 @@ void Renderer::DrawAutoRegisteredSkyboxes() {
    }
 }
 
+void Renderer::DrawAutoRegisteredParticles() {
+   for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
+	  if (!particleSystem) {
+		 continue;
+	  }
+	  Draw(particleSystem);
+   }
+}
 
 void Renderer::ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawCommand>>& commands) {
    for (const auto& icmd : commands) {

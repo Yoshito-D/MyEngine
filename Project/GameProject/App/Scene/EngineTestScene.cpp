@@ -47,6 +47,7 @@ void EngineTestScene::Initialize() {
    // --- パーティクルシステムの作成 ---
    particleSystem_ = std::make_unique<ParticleSystem>();
    particleSystem_->Create();
+   particleSystem_->SetName("hitEffect");
    particleSystem_->SetTexture(EngineContext::GetTexture("particle"));
    particleSystem_->LoadFromJson("resources/particles/hiteffect.json");
    particleSystem_->Play();
@@ -67,13 +68,6 @@ void EngineTestScene::Initialize() {
 void EngineTestScene::Update() {
    BaseScene::Update();
 
-   float deltaTime = EngineContext::GetDeltaTime();
-
-   if (particleSystem_) {
-	  particleSystem_->Update(deltaTime);
-	  particleSystem_->UpdateMatrix(EngineContext::GetActiveCamera());
-   }
-
 #ifdef USE_IMGUI
    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver);
@@ -84,15 +78,9 @@ void EngineTestScene::Update() {
 	  EngineContext::ChangeScene("GameTest");
    }
    ImGui::End();
-
-   ParticleSystemEdit::Edit(particleSystem_.get(), "hiteffect");
 #endif
 }
 
 void EngineTestScene::Draw() {
    BaseScene::Draw();
-
-   if (particleSystem_) {
-	  EngineContext::Draw(particleSystem_.get());
-   }
 }

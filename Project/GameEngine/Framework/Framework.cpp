@@ -131,6 +131,14 @@ void Framework::Update() {
       }
       sprite->UpdateComponents(deltaTime);
    }
+
+   for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
+	  if (!particleSystem) {
+		 continue;
+	  }
+	  particleSystem->Update(deltaTime);
+	  particleSystem->UpdateMatrix(cameraManager_->GetActiveCamera());
+   }
 }
 
 void Framework::Draw() {

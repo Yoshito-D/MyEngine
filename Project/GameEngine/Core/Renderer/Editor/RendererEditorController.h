@@ -13,6 +13,7 @@ class AssetManager;
 class Object;
 class Model;
 class Sprite;
+class ParticleSystem;
 
 class RendererEditorController {
 public:
@@ -32,6 +33,7 @@ private:
 private:
    AssetManager* assetManager_ = nullptr;
    Object* selectedObject_ = nullptr;
+   ParticleSystem* selectedParticleSystem_ = nullptr;
 
    std::string editorNewModelName_ = "NewModel";
    std::string editorNewSpriteName_ = "NewSprite";
@@ -44,8 +46,6 @@ private:
    int editorSelectedAddComponentIndex_ = 0;
    std::filesystem::path editorSceneFilePath_ = "resources/scenes/editor_scene.json";
 
-   std::vector<std::unique_ptr<Model>> editorCreatedModels_;
-   std::vector<std::unique_ptr<Sprite>> editorCreatedSprites_;
    std::unordered_map<const Model*, std::string> editorModelAssetNames_;
    std::unordered_map<const Model*, std::string> editorModelMaterialNames_;
 };
