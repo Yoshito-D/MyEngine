@@ -3,7 +3,7 @@
 #include <cmath>
 
 namespace GameEngine {
-
+struct Vector3;
 struct Quaternion {
    float x;
    float y;
@@ -102,6 +102,9 @@ struct Quaternion {
    float Dot(const Quaternion& q) const {
 	  return x * q.x + y * q.y + z * q.z + w * q.w;
    }
+
+   Vector3 ToEuler() const;
+
 };
 
 } // namespace GameEngine

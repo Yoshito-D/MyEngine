@@ -109,13 +109,14 @@ void PlanetSwitcher::Update(float /*deltaTime*/) {
    }
 
    // 切替直後の姿勢・移動破綻を防ぐためUpスナップと速度リセットを実施
-   if (auto* gravityBody = GetOwner().GetComponent<GravityBody>()) {
+  /* if (auto* gravityBody = GetOwner().GetComponent<GravityBody>()) {
 	  GameEngine::Vector3 newUp = (pos - best.center);
 	  float len = newUp.Length();
 	  if (len > 1e-4f) {
 		 gravityBody->SnapToUpVector(newUp * (1.0f / len));
 	  }
-   }
+   }*/
+
    if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
 	  walker->ResetHorizontalVelocity();
    }

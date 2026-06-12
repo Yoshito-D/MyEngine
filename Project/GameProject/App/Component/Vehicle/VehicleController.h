@@ -42,7 +42,7 @@ public:
 
 public:
    /// @brief スティック入力デッドゾーン
-   float inputDeadZone = 0.1f;
+   float inputDeadZone = 0.3f;
 
 private:
    /// @brief A/D + 左スティック X からステアリング入力（-1〜+1）を収集する

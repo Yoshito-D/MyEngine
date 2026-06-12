@@ -35,10 +35,10 @@ public:
    void SetSampleCount(int32_t count) { sampleCount_ = count; UpdateConstantBuffer(); }
 
 private:
-   float blurStrength_ = 0.02f;
+   float blurStrength_ = 0.01f;
    float centerX_ = 0.5f;
    float centerY_ = 0.5f;
-   int32_t sampleCount_ = 10;
+   int32_t sampleCount_ = 15;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
    RadialBlurCB* constantBufferData_ = nullptr;

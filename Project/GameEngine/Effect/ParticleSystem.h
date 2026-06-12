@@ -31,6 +31,8 @@ public:
 
    static const std::vector<ParticleSystem*>& GetRegisteredParticleSystems();
 
+   static void ClearRegisteredParticleSystems() { sRegisteredParticleSystems_.clear(); }
+
    /// @brief GPU送信用パーティクルデータ
    struct ParticleForGPU {
 	  Matrix4x4 wvp;
@@ -74,8 +76,14 @@ public:
    /// @brief 一時停止
    void Pause();
 
+   /// @brief 一時停止から再開
+   void Resume();
+
    /// @brief 再生中か判定
    bool IsPlaying() const { return isPlaying_; }
+
+   /// @brief 終了しているか判定（非ループかつ duration を超えた場合 true）
+   bool IsFinished() const;
 
    // ============ Module Access ============
    MainModule* GetMainModule() { return mainModule_.get(); }
@@ -195,6 +203,9 @@ private:
    // 再生制御
    bool isPlaying_ = false;
    bool isPaused_ = false;
+
+	  Transform prevShapeTransform_{};
+   bool shapeTransformInitialized_ = false;
    bool usePostProcess_ = false;
    float emissionTimer_ = 0.0f;
    float emissionAccumulator_ = 0.0f;

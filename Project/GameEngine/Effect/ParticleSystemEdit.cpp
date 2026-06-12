@@ -287,13 +287,25 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 		 }
 
 		 if (enabled) {
+			// Rotation Space
+			static const char* rotationSpaceNames[] = {
+				"World",
+				"Local"
+			};
+
+			int currentRotationSpace = static_cast<int>(rendererModule->GetRotationSpace());
+			std::string rotationSpaceComboID = "Rotation Space##" + particleSystemName;
+			if (ImGui::Combo(rotationSpaceComboID.c_str(), &currentRotationSpace, rotationSpaceNames, IM_ARRAYSIZE(rotationSpaceNames))) {
+			   rendererModule->SetRotationSpace(static_cast<GameEngine::RendererModule::RotationSpace>(currentRotationSpace));
+			}
+
 			// Billboard Type
 			static const char* billboardTypeNames[] = {
-				"Billboard",
-				"Stretched Billboard",
-				"Horizontal Billboard",
-				"Vertical Billboard",
-				"Mesh"
+				"None",
+				"View",
+				"Horizontal",
+				"Vertical",
+				"Velocity"
 			};
 
 			int currentBillboardType = static_cast<int>(rendererModule->GetBillboardType());
@@ -302,10 +314,10 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			   rendererModule->SetBillboardType(static_cast<GameEngine::RendererModule::BillboardType>(currentBillboardType));
 			}
 
-			// Stretched Billboard Settings
-			if (rendererModule->GetBillboardType() == GameEngine::RendererModule::BillboardType::StretchedBillboard) {
+			// Velocity Billboard Settings
+			if (rendererModule->GetBillboardType() == GameEngine::RendererModule::BillboardType::Velocity) {
 			   ImGui::Separator();
-			   ImGui::Text("Stretched Billboard Settings:");
+			   ImGui::Text("Velocity Billboard Settings:");
 
 			   float speedScale = rendererModule->GetSpeedScale();
 			   std::string speedScaleID = "Speed Scale##" + particleSystemName;
@@ -578,7 +590,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 
 		 Vector3 center = shapeModule->GetPosition();
 		 Vector3 scaleVec = shapeModule->GetScale();
-		 Vector3 rotationVec = shapeModule->GetRotation();
+		 Quaternion shapeRotation = shapeModule->GetRotationQuaternion();
 
 
 		 // Shape-specific parameters
@@ -593,7 +605,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 
 			case GameEngine::ShapeModule::ShapeType::Hemisphere: {
 			   float scaledRadius = shapeModule->GetRadius() * scaleVec.x;
-			   Vector3 up(0.0f, 1.0f, 0.0f);
+			   Vector3 up = RotateVector(Vector3(0.0f, 1.0f, 0.0f), shapeRotation);
 			   GameEngine::EngineContext::DrawHemisphere(center, scaledRadius, up, shapeColor);
 			   break;
 			}
@@ -604,7 +616,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			   float length = shapeModule->GetLength() * scaleVec.y;
 			   float radius = std::tan(angle * std::numbers::pi_v<float> / 180.0f) * length;
 
-			   Vector3 direction(0.0f, 1.0f, 0.0f);
+			   Vector3 direction = RotateVector(Vector3(0.0f, 1.0f, 0.0f), shapeRotation);
 			   GameEngine::EngineContext::DrawCone(center, radius, length, direction, shapeColor);
 			   break;
 			}
@@ -623,20 +635,19 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			case GameEngine::ShapeModule::ShapeType::Circle: {
 			   float scaledRadius = shapeModule->GetRadius() * scaleVec.x;
 			   float arc = shapeModule->GetArc();
+			   Vector3 circleNormal = RotateVector(Vector3(0.0f, 1.0f, 0.0f), shapeRotation);
+			   Vector3 right = RotateVector(Vector3(1.0f, 0.0f, 0.0f), shapeRotation);
+			   Vector3 forward = RotateVector(Vector3(0.0f, 0.0f, 1.0f), shapeRotation);
 
 			   // Arcに対応した円の描画
 			   if (arc >= 360.0f) {
 				  // 完全な円
-				  Vector3 normal(0.0f, 1.0f, 0.0f);
-				  GameEngine::EngineContext::DrawCircle(center, scaledRadius, normal, shapeColor);
+				  GameEngine::EngineContext::DrawCircle(center, scaledRadius, circleNormal, shapeColor);
 			   } else {
 				  // 円弧を線分で描画
 				  const int segments = 32;
 				  float angleStep = (arc * std::numbers::pi_v<float> / 180.0f) / segments;
 				  float startAngle = -arc * 0.5f * std::numbers::pi_v<float> / 180.0f;
-
-				  Vector3 right(1.0f, 0.0f, 0.0f);
-				  Vector3 forward(0.0f, 0.0f, 1.0f);
 
 				  // 中心から放射状の線
 				  for (int i = 0; i <= segments; ++i) {

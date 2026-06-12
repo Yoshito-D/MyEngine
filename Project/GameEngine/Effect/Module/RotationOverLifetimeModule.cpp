@@ -5,9 +5,10 @@ namespace GameEngine {
 	RotationOverLifetimeModule::RotationOverLifetimeModule() = default;
 
 	void RotationOverLifetimeModule::UpdateRotation(Particle& particle, float deltaTime) const {
-		particle.transform.rotation.x += particle.angularVelocity.x * deltaTime;
-		particle.transform.rotation.y += particle.angularVelocity.y * deltaTime;
-		particle.transform.rotation.z += particle.angularVelocity.z * deltaTime;
+		const Quaternion currentRotation = particle.transform.GetActiveQuaternion();
+		const Vector3 deltaEuler = particle.angularVelocity * deltaTime;
+		const Quaternion deltaRotation = Vector3ToQuaternion(deltaEuler);
+		particle.transform.SetRotationQuaternion((currentRotation * deltaRotation).Normalize());
 	}
 
 	Vector3 RotationOverLifetimeModule::GetRandomAngularVelocity() const {

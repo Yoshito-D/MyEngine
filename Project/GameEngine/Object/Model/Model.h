@@ -25,6 +25,8 @@ public:
 
    static const std::vector<Model*>& GetRegisteredModels();
 
+   static void ClearRegisteredModels() { sRegisteredModels_.clear(); }
+
    /// @brief モデルの作成
    Model& Create();
 

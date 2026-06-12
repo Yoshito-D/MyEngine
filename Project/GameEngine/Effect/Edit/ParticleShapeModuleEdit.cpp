@@ -120,10 +120,21 @@ void EditShapeModule(GameEngine::ShapeModule* shapeModule) {
 		 shapeModule->SetPosition(Vector3(pos[0], pos[1], pos[2]));
 	  }
 
-	  Vector3 rotation = shapeModule->GetRotation();
-	  float rot[3] = { rotation.x, rotation.y, rotation.z };
+	  Quaternion rotation = shapeModule->GetRotationQuaternion();
+	  Vector3 euler = rotation.ToEuler();
+	  float rot[3] = { euler.x, euler.y, euler.z };
+	  // ImGuiのDragFloat3はオイラー角で回転を編集するため、クォータニオンをオイラー角に変換して表示
+	  // Degreesで表示する場合は、以下のように変換
+	  rot[0] = rot[0] * 180.0f / 3.14159265358979323846f;
+	  rot[1] = rot[1] * 180.0f / 3.14159265358979323846f;
+	  rot[2] = rot[2] * 180.0f / 3.14159265358979323846f;
 	  if (ImGui::DragFloat3("Rotation (回転)", rot, 1.0f)) {
-		 shapeModule->SetRotation(Vector3(rot[0], rot[1], rot[2]));
+		 // 編集後は再度クォータニオンに変換して保存
+		 rot[0] = rot[0] * 3.14159265358979323846f / 180.0f;
+		 rot[1] = rot[1] * 3.14159265358979323846f / 180.0f;
+		 rot[2] = rot[2] * 3.14159265358979323846f / 180.0f;
+
+		 shapeModule->SetRotation(Vector3(rot[0], rot[1], rot[2]).ToQuaternion());
 	  }
 
 	  Vector3 scale = shapeModule->GetScale();

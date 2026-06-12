@@ -93,7 +93,7 @@ float VehicleController::CollectPitchInput() const {
 }
 
 bool VehicleController::CollectJumpInput() const {
-   return EngineContext::IsKeyTriggered(KeyCode::Space);
+   return EngineContext::IsKeyTriggered(KeyCode::Space) || EngineContext::IsGamePadButtonTriggered(GamePadButton::A, 0);
 }
 
 bool VehicleController::CollectDriftInput() const {

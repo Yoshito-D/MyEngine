@@ -1,0 +1,273 @@
+{
+    "blendMode": 2,
+    "colorOverLifetimeModule": {
+        "enabled": true,
+        "endColor": [
+            1.0,
+            1.0,
+            1.0,
+            0.0
+        ],
+        "startColor": [
+            1.0,
+            1.0,
+            1.0,
+            0.32156863808631897
+        ]
+    },
+    "emissionModule": {
+        "bursts": [
+            {
+                "count": 1,
+                "cycles": 0,
+                "interval": 1.649999976158142,
+                "time": 0.0
+            }
+        ],
+        "enabled": true,
+        "rateOverDistance": 0.0,
+        "rateOverTime": 15.0
+    },
+    "forceOverLifetimeModule": {
+        "enabled": false,
+        "force": [
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "limitVelocityModule": {
+        "dampen": 0.5,
+        "enabled": false,
+        "speedLimit": 10.0
+    },
+    "mainModule": {
+        "duration": 0.20000000298023224,
+        "emissionRate": 10.0,
+        "gravityModifier": 0.0,
+        "looping": false,
+        "maxParticles": 1000,
+        "playOnAwake": true,
+        "scalingMode": 0,
+        "simulationSpace": 0,
+        "startColor": {
+            "max": 2711265686,
+            "min": 2711265686,
+            "randomize": false
+        },
+        "startLifetime": {
+            "max": 0.30000001192092896,
+            "min": 0.30000001192092896,
+            "randomize": false
+        },
+        "startRotation": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "randomize": false
+        },
+        "startSize": {
+            "max": [
+                5.0,
+                5.0,
+                5.0
+            ],
+            "min": [
+                5.0,
+                5.0,
+                5.0
+            ],
+            "randomize": false
+        },
+        "startSpeed": {
+            "max": 0.0,
+            "min": 0.0,
+            "randomize": false
+        }
+    },
+    "noiseModule": {
+        "enabled": false,
+        "frequency": 0.5,
+        "scrollSpeed": 1.0,
+        "strength": 1.0
+    },
+    "rendererModule": {
+        "billboardType": 1,
+        "boxSize": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "circleRadius": 0.5,
+        "circleSegments": 32,
+        "coneHeight": 1.0,
+        "coneRadius": 0.5,
+        "coneSegments": 32,
+        "cylinderHeight": 1.0,
+        "cylinderRadius": 0.5,
+        "cylinderSegments": 32,
+        "enabled": true,
+        "lengthScale": 2.0,
+        "particleMeshType": 1,
+        "planeDepth": 1.0,
+        "planeWidth": 1.0,
+        "ringInnerRadius": 0.23000000417232513,
+        "ringOuterRadius": 0.4000000059604645,
+        "ringSegments": 32,
+        "rotationSpace": 1,
+        "speedScale": 1.0,
+        "sphereRadius": 0.5,
+        "sphereSlices": 32,
+        "sphereStacks": 16,
+        "torusMajorRadius": 0.5,
+        "torusMajorSegments": 32,
+        "torusMinorRadius": 0.20000000298023224,
+        "torusMinorSegments": 16
+    },
+    "rotationOverLifetimeModule": {
+        "angularVelocityMax": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "angularVelocityMin": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "angularVelocityRandomize": false,
+        "enabled": false
+    },
+    "shapeModule": {
+        "angle": 25.0,
+        "arc": 360.0,
+        "boxSize": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "emitFrom": 0,
+        "enabled": true,
+        "length": 5.0,
+        "position": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "radius": 1.0,
+        "rotation": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scale": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "shapeType": 6
+    },
+    "sizeOverLifetimeModule": {
+        "enabled": true,
+        "endSize": [
+            2.5,
+            2.5,
+            2.5
+        ],
+        "sizeMultiplier": 2.859999895095825,
+        "startSize": [
+            0.30000001192092896,
+            0.30000001192092896,
+            0.0
+        ]
+    },
+    "textureName": "gradationLine",
+    "textureSheetAnimationModule": {
+        "animationMode": 0,
+        "cycles": 1,
+        "enabled": false,
+        "frameOverTime": 1.0,
+        "randomRow": false,
+        "rowIndex": 0,
+        "startFrame": 0,
+        "tilesX": 1,
+        "tilesY": 1
+    },
+    "usePostProcess": true,
+    "uvTransformModule": {
+        "enabled": true,
+        "rotationConstant": 0.0,
+        "rotationCurveEnd": 0.0,
+        "rotationCurveStart": 0.0,
+        "rotationMode": 0,
+        "rotationRandom": {
+            "max": 0.0,
+            "min": 0.0,
+            "randomize": false
+        },
+        "scaleConstant": [
+            1.0,
+            1.0
+        ],
+        "scaleCurveEnd": [
+            1.0,
+            1.0
+        ],
+        "scaleCurveStart": [
+            1.0,
+            1.0
+        ],
+        "scaleMode": 0,
+        "scaleRandom": {
+            "max": [
+                1.0,
+                1.0
+            ],
+            "min": [
+                1.0,
+                1.0
+            ],
+            "randomize": false
+        },
+        "scrollConstant": [
+            0.0,
+            0.2199999988079071
+        ],
+        "scrollCurveEnd": [
+            0.0,
+            0.0
+        ],
+        "scrollCurveStart": [
+            0.0,
+            0.0
+        ],
+        "scrollMode": 0,
+        "scrollRandom": {
+            "max": [
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                1.0
+            ],
+            "randomize": false
+        }
+    },
+    "velocityOverLifetimeModule": {
+        "enabled": false,
+        "linearVelocity": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "speedModifier": 1.0
+    }
+}

@@ -47,7 +47,7 @@ public:
 
    /// @brief 空中の水平減速係数（per sec）
    /// 小さい値にするほど空中での減速が緩やかになる
-   float airDrag = 0.0003f;
+   float airDrag = 0.001f;
 
 private:
    /// @brief 入力に応じて角速度を更新する（入力なし時は指数減衰）

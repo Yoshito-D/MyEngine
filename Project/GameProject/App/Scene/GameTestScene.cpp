@@ -21,6 +21,7 @@
 #include "Component/AnimationComponent.h"
 #include "Component/RenderComponent.h"
 #include "Component/MaterialComponent.h"
+#include "Effect/ParticleSystem.h"
 #include "MathUtils.h"
 #include <cmath>
 
@@ -31,7 +32,7 @@
 using namespace GameEngine;
 using namespace App;
 
-static constexpr float kPlanetRadius = 15.0f;
+static constexpr float kPlanetRadius = 25.0f;
 static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 
 void GameTestScene::Initialize() {
@@ -39,6 +40,8 @@ void GameTestScene::Initialize() {
 
    EngineContext::LoadTexture("resources/textures/space_2048px.dds", "skyboxTexture");
    EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
+   EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
+
 
    skybox_ = std::make_unique<GameEngine::Skybox>();
    skybox_->Create(EngineContext::GetGraphicsDevice());
@@ -109,8 +112,8 @@ void GameTestScene::Initialize() {
 
    // 3. GravityBody: 確定済みの重力方向で姿勢回転 + 位置移動
    if (auto* gravityBody = player_->AddComponent<GravityBody>()) {
-	  gravityBody->rotationSpeed = 5.0f;
-	  gravityBody->gravityStrength = 18.0f;
+	  gravityBody->rotationSpeed = 10.0f;
+	  gravityBody->gravityStrength = 22.0f;
 	  gravityBody->useGravity = true;
    }
 
@@ -142,13 +145,70 @@ void GameTestScene::Initialize() {
    //      デフォルトは SustainedSteer モード（追加ボタン不要）。
    //      miniTurboEnabled = false でミニターボなしのシンプルなドリフトになる。
    if (auto* drift = player_->AddComponent<VehicleDrift>()) {
-      drift->miniTurboEnabled = true;
+	  drift->miniTurboEnabled = true;
    }
 
    // 7. VehicleController: 入力収集 → VehicleMover 呼び出し（最後に姿勢を確定）
    player_->AddComponent<VehicleController>();
 
-	  // --- 仮想カメラのセットアップ ---
+   // 8. タイヤ埃パーティクル（ドリフト時にのみ表示）
+   tireDustEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (tireDustEmitter_) {
+	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;
+	  tireDustSlotCount_ = 0;
+
+	  // 各タイヤのローカルオフセット（右前・左前・右後・左後）
+	  const GameEngine::Vector3 kTireOffsets[4] = {
+		 {  0.3f, -0.2f,  0.415f },   // 右前
+		 { -0.3f, -0.2f,  0.415f },   // 左前
+		 {  0.3f, -0.2f, -0.415f },   // 右後
+		 { -0.3f, -0.2f, -0.415f },   // 左後
+	  };
+
+	  for (const auto& offset : kTireOffsets) {
+		 Config cfg;
+		 cfg.followPosition = true;
+		 cfg.followRotation = true;
+		 cfg.followScale = false;
+		 cfg.positionOffset = offset;
+		 cfg.simulationSpace = Config::Space::World;
+		 int slotIdx = tireDustEmitter_->AddSlot("resources/particles/tire_dust.json", cfg);
+		 if (auto* slot = tireDustEmitter_->GetSlot(slotIdx)) {
+			slot->loop = true;
+			// AddSlot 後は既に Play() 済みのため、EmissionModule だけ無効化して放出を止める。
+			// isPlaying_ は true のままにすることで、後からEmissionを有効にするだけで再開できる。
+			if (slot->particleSystem) {
+			   if (auto* em = slot->particleSystem->GetEmissionModule()) {
+				  em->SetEnabled(false);
+			   }
+			}
+			++tireDustSlotCount_;
+		 }
+	  }
+   }
+
+   // 9. ソニックブームパーティクル（ミニターボ発動時に一発再生）
+   sonicBoomEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (sonicBoomEmitter_) {
+	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;
+	  Config cfg;
+	  cfg.followPosition = true;
+	  cfg.followRotation = true;
+	  cfg.followScale = false;
+	  cfg.positionOffset = { 0.0f, 0.0f, 1.0f };
+	  cfg.simulationSpace = Config::Space::World;
+	  // AddSlot は内部で LoadSlot を呼ぶため、スロット取得後に loop=false を設定してから
+	  // LoadSlot を再実行して SetLooping(false) を正しく反映させる。
+	  sonicBoomSlotIndex_ = sonicBoomEmitter_->AddSlot("resources/particles/sonicBoom.json", cfg);
+	  if (auto* slot = sonicBoomEmitter_->GetSlot(sonicBoomSlotIndex_)) {
+		 slot->loop = false;
+		 slot->autoPlay = false;
+		 // loop / autoPlay を設定した上で LoadSlot を再実行する
+		 sonicBoomEmitter_->LoadSlot(*slot);
+	  }
+   }
+
+   // --- 仮想カメラのセットアップ ---
    rearFollowVcam_ = std::make_unique<VirtualCamera>();
    rearFollowVcam_->Initialize();
    rearFollowVcam_->SetName("PlayerRearFollowCamera");
@@ -158,7 +218,7 @@ void GameTestScene::Initialize() {
    mainVcam_ = std::make_unique<VirtualCamera>();
    mainVcam_->Initialize();
    mainVcam_->SetName("GravityFollowCamera");
-	  mainVcam_->SetPriority(-1);
+   mainVcam_->SetPriority(-1);
    gravityFollowCamera_ = mainVcam_->AddComponent<GravityFollowCamera>();
    if (gravityFollowCamera_) {
 	  gravityFollowCamera_->SetDistance(15.0f);
@@ -196,7 +256,7 @@ void GameTestScene::Initialize() {
 
    // VehicleController にカメラを設定（矢印キー / 右スティックの回転入力を渡す）
    if (auto* controller = player_->GetComponent<VehicleController>()) {
-		controller->SetGravityFollowCamera(cameraMode_ == CameraMode::GravityFollow ? gravityFollowCamera_ : nullptr);
+	  controller->SetGravityFollowCamera(cameraMode_ == CameraMode::GravityFollow ? gravityFollowCamera_ : nullptr);
    }
 
 #ifdef USE_IMGUI
@@ -210,26 +270,28 @@ void GameTestScene::Update() {
    float deltaTime = EngineContext::GetDeltaTime();
    testTime_ += deltaTime;
 
-	  // Tab キーで PlayerRearFollow / GravityFollow / PlanetLeash を切り替え
+   // Tab キーで PlayerRearFollow / GravityFollow / PlanetLeash を切り替え
    if (EngineContext::IsKeyTriggered(KeyCode::Tab)) {
 	  switch (cameraMode_) {
-	  case CameraMode::PlayerRearFollow:
-		 cameraMode_ = CameraMode::GravityFollow;
-		 break;
-	  case CameraMode::GravityFollow:
-		 cameraMode_ = CameraMode::PlanetLeash;
-		 break;
-	  default:
-		 cameraMode_ = CameraMode::PlayerRearFollow;
-		 break;
+		 case CameraMode::PlayerRearFollow:
+			cameraMode_ = CameraMode::GravityFollow;
+			break;
+		 case CameraMode::GravityFollow:
+			cameraMode_ = CameraMode::PlanetLeash;
+			break;
+		 default:
+			cameraMode_ = CameraMode::PlayerRearFollow;
+			break;
 	  }
 
 	  if (rearFollowVcam_) {
 		 rearFollowVcam_->SetPriority(cameraMode_ == CameraMode::PlayerRearFollow ? 0 : -1);
 	  }
+
 	  if (mainVcam_) {
 		 mainVcam_->SetPriority(cameraMode_ == CameraMode::GravityFollow ? 0 : -1);
 	  }
+
 	  if (leashVcam_) {
 		 leashVcam_->SetPriority(cameraMode_ == CameraMode::PlanetLeash ? 0 : -1);
 	  }
@@ -242,6 +304,47 @@ void GameTestScene::Update() {
 		 bridge->SetPlayerRearFollowCamera(cameraMode_ == CameraMode::PlayerRearFollow ? playerRearFollowCamera_ : nullptr);
 		 bridge->SetGravityFollowCamera(cameraMode_ == CameraMode::GravityFollow ? gravityFollowCamera_ : nullptr);
 		 bridge->SetPlanetLeashCamera(cameraMode_ == CameraMode::PlanetLeash ? leashCamera_ : nullptr);
+	  }
+   }
+
+   // ドリフト中のみタイヤ埃パーティクルを放出（既存パーティクルの更新は常に継続）
+   if (tireDustEmitter_) {
+	  const auto* drift = player_->GetComponent<App::VehicleDrift>();
+	  const bool isDrifting = drift && drift->IsDrifting();
+	  const bool isJump = player_->GetComponent<App::CharacterJump>()->IsJumping();
+	  if (isJump) {
+		 for (int i = 0; i < tireDustSlotCount_; ++i) {
+			if (auto* slot = tireDustEmitter_->GetSlot(i)) {
+			   if (slot->particleSystem) {
+				  if (auto* em = slot->particleSystem->GetEmissionModule()) {
+					 em->SetEnabled(false);
+				  }
+			   }
+			}
+		 }
+	  } else {
+		 if (isDrifting != wasDrifting_) {
+			for (int i = 0; i < tireDustSlotCount_; ++i) {
+			   if (auto* slot = tireDustEmitter_->GetSlot(i)) {
+				  if (slot->particleSystem) {
+					 if (auto* em = slot->particleSystem->GetEmissionModule()) {
+						em->SetEnabled(isDrifting);
+					 }
+				  }
+			   }
+			}
+			wasDrifting_ = isDrifting;
+		 }
+	  }
+   }
+
+   // ミニターボ発動時にソニックブームを一発再生
+   if (sonicBoomEmitter_) {
+	  auto* drift = player_->GetComponent<App::VehicleDrift>();
+	  if (drift && drift->ConsumeMiniTurboFired()) {
+		 if (sonicBoomSlotIndex_ >= 0) {
+			sonicBoomEmitter_->Play(sonicBoomSlotIndex_);
+		 }
 	  }
    }
 
@@ -287,10 +390,8 @@ void GameTestScene::Update() {
    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver);
    ImGui::Begin("Scene Navigator");
-   ImGui::Text("Current: GameTestScene");
-   ImGui::Separator();
-   if (ImGui::Button("Go to EngineTestScene", ImVec2(-1, 0))) {
-      EngineContext::ChangeScene("EngineTest");
+   if (ImGui::Button("EngineTestScene", ImVec2(-1, 0))) {
+	  EngineContext::ChangeScene("EngineTest");
    }
    ImGui::End();
    ImGui::ShowDemoWindow();

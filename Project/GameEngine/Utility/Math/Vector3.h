@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include "Vector2.h"
+#include "Quaternion.h"
 
 namespace GameEngine {
 
@@ -9,35 +10,35 @@ struct Vector3 {
    float x, y, z;
 
    static Vector3 Lerp(const Vector3& start, const Vector3& end, float t) {
-      t = std::clamp(t, 0.0f, 1.0f);
-      return start + (end - start) * t;
+	  t = std::clamp(t, 0.0f, 1.0f);
+	  return start + (end - start) * t;
    }
 
    static Vector3 Slerp(const Vector3& start, const Vector3& end, float t) {
-      t = std::clamp(t, 0.0f, 1.0f);
+	  t = std::clamp(t, 0.0f, 1.0f);
 
-      // 0ベクトルチェック
-      if (start.LengthSquared() < 1e-8f || end.LengthSquared() < 1e-8f) {
-         return Lerp(start, end, t);
-      }
+	  // 0ベクトルチェック
+	  if (start.LengthSquared() < 1e-8f || end.LengthSquared() < 1e-8f) {
+		 return Lerp(start, end, t);
+	  }
 
-      Vector3 normalizedStart = start.Normalize();
-      Vector3 normalizedEnd = end.Normalize();
-      float dot = std::clamp(normalizedStart.Dot(normalizedEnd), -1.0f, 1.0f);
+	  Vector3 normalizedStart = start.Normalize();
+	  Vector3 normalizedEnd = end.Normalize();
+	  float dot = std::clamp(normalizedStart.Dot(normalizedEnd), -1.0f, 1.0f);
 
-      if (dot > 0.9995f) {
-         return Lerp(normalizedStart, normalizedEnd, t).Normalize();
-      }
+	  if (dot > 0.9995f) {
+		 return Lerp(normalizedStart, normalizedEnd, t).Normalize();
+	  }
 
-      float theta = std::acos(dot);
-      float sinTheta = std::sin(theta);
-      if (std::abs(sinTheta) < 1e-5f) {
-         return Lerp(normalizedStart, normalizedEnd, t).Normalize();
-      }
+	  float theta = std::acos(dot);
+	  float sinTheta = std::sin(theta);
+	  if (std::abs(sinTheta) < 1e-5f) {
+		 return Lerp(normalizedStart, normalizedEnd, t).Normalize();
+	  }
 
-      return (normalizedStart * std::sin((1.0f - t) * theta)
-         + normalizedEnd * std::sin(t * theta))
-         / sinTheta;
+	  return (normalizedStart * std::sin((1.0f - t) * theta)
+		 + normalizedEnd * std::sin(t * theta))
+		 / sinTheta;
    }
 
    Vector3 operator+(const Vector3& vector) const { return { x + vector.x, y + vector.y, z + vector.z }; }
@@ -54,16 +55,37 @@ struct Vector3 {
    float Dot(const Vector3& vector) const { return x * vector.x + y * vector.y + z * vector.z; }
    float Length() const { return std::sqrt(x * x + y * y + z * z); }
    float LengthSquared() const { return x * x + y * y + z * z; }
-   Vector3 Normalize() const { 
-      float length = Length(); 
-      // 0除算チェック：長さが極小の場合は0ベクトルを返す
-      if (length < 1e-8f) { 
-         return { 0.0f, 0.0f, 0.0f }; 
-      }
-      return { x / length, y / length, z / length }; 
+   Vector3 Normalize() const {
+	  float length = Length();
+	  // 0除算チェック：長さが極小の場合は0ベクトルを返す
+	  if (length < 1e-8f) {
+		 return { 0.0f, 0.0f, 0.0f };
+	  }
+	  return { x / length, y / length, z / length };
    }
    Vector3 Project(const Vector3& vector) const { Vector3 normalized = vector.Normalize(); return normalized * Dot(normalized); }
    Vector3 Perpendicular() const { if (x != 0.0f || y != 0.0f) { return { -y,x,0.0f }; } return { 0.0f,-z,y }; }
+
+   Quaternion ToQuaternion() const {
+	  float halfX = x * 0.5f;
+	  float halfY = y * 0.5f;
+	  float halfZ = z * 0.5f;
+	  
+	  float cosX = std::cos(halfX);
+	  float cosY = std::cos(halfY);
+	  float cosZ = std::cos(halfZ);
+	  float sinX = std::sin(halfX);
+	  float sinY = std::sin(halfY);
+	  float sinZ = std::sin(halfZ);
+
+	  return Quaternion{
+		  sinX * cosY * cosZ - cosX * sinY * sinZ,
+		  cosX * sinY * cosZ + sinX * cosY * sinZ,
+		  cosX * cosY * sinZ - sinX * sinY * cosZ,
+		  cosX * cosY * cosZ + sinX * sinY * sinZ
+	  };
+   }
+
 };
 
 } // namespace GameEngine

@@ -7,6 +7,7 @@ namespace GameEngine {
     nlohmann::json RendererModule::ToJson() const {
         nlohmann::json j;
         j["enabled"] = enabled_;
+        j["rotationSpace"] = static_cast<int>(rotationSpace_);
         j["billboardType"] = static_cast<int>(billboardType_);
         j["speedScale"] = speedScale_;
         j["lengthScale"] = lengthScale_;
@@ -46,6 +47,7 @@ namespace GameEngine {
 
     void RendererModule::FromJson(const nlohmann::json& j) {
         if (j.contains("enabled")) enabled_ = j["enabled"];
+        if (j.contains("rotationSpace")) rotationSpace_ = static_cast<RotationSpace>(j["rotationSpace"].get<int>());
         if (j.contains("billboardType")) billboardType_ = static_cast<BillboardType>(j["billboardType"].get<int>());
         if (j.contains("speedScale")) speedScale_ = j["speedScale"];
         if (j.contains("lengthScale")) lengthScale_ = j["lengthScale"];

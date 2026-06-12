@@ -24,6 +24,24 @@ float RandomRange(float min, float max) {
    std::uniform_real_distribution<float> dist(min, max);
    return dist(randomEngine);
 }
+
+Quaternion ExtractRotationQuaternion(const Matrix4x4& matrix) {
+   Matrix4x4 rotationOnly = matrix;
+   for (int i = 0; i < 3; ++i) {
+	  Vector3 basis(rotationOnly.m[i][0], rotationOnly.m[i][1], rotationOnly.m[i][2]);
+	  const float len = basis.Length();
+	  if (len > 0.000001f) {
+		 rotationOnly.m[i][0] /= len;
+		 rotationOnly.m[i][1] /= len;
+		 rotationOnly.m[i][2] /= len;
+	  }
+   }
+   rotationOnly.m[3][0] = 0.0f;
+   rotationOnly.m[3][1] = 0.0f;
+   rotationOnly.m[3][2] = 0.0f;
+   rotationOnly.m[3][3] = 1.0f;
+   return MatrixToQuaternion(rotationOnly);
+}
 }
 
 void ParticleSystem::Initialize(GraphicsDevice* device) {
@@ -79,7 +97,7 @@ void ParticleSystem::RebuildParticleMesh() {
 		 break;
 	  case MeshType::Torus:
 		 quadMesh_->CreateTorus(rm->GetTorusMajorRadius(), rm->GetTorusMinorRadius(),
-								rm->GetTorusMajorSegments(), rm->GetTorusMinorSegments());
+			rm->GetTorusMajorSegments(), rm->GetTorusMinorSegments());
 		 break;
 	  case MeshType::Triangle:
 		 quadMesh_->CreateTriangle();
@@ -132,15 +150,15 @@ ParticleSystem::ParticleSystem() {
 ParticleSystem::~ParticleSystem() {
    auto it = std::find(sRegisteredParticleSystems_.begin(), sRegisteredParticleSystems_.end(), this);
    if (it != sRegisteredParticleSystems_.end()) {
-      sRegisteredParticleSystems_.erase(it);
+	  sRegisteredParticleSystems_.erase(it);
    }
 
    if (instancingResource_ && instancingData_) {
-      instancingResource_->Unmap(0, nullptr);
-      instancingData_ = nullptr;
+	  instancingResource_->Unmap(0, nullptr);
+	  instancingData_ = nullptr;
    }
    if (sDevice_ && instancingSrvIndex_ != UINT_MAX) {
-      sDevice_->ReleaseSrvIndex(instancingSrvIndex_);
+	  sDevice_->ReleaseSrvIndex(instancingSrvIndex_);
    }
 }
 
@@ -227,7 +245,7 @@ void ParticleSystem::Update(float deltaTime) {
 
    // メッシュ形状が変更された場合は再構築
    if (rendererModule_ && rendererModule_->IsMeshDirty()) {
-      RebuildParticleMesh();
+	  RebuildParticleMesh();
    }
 
    systemTime_ += deltaTime;
@@ -258,7 +276,7 @@ void ParticleSystem::Update(float deltaTime) {
 		 // cycles == 0 は無限ループ、それ以外は指定回数まで
 		 const bool isInfinite = (burst.cycles == 0);
 		 while (systemTime_ >= burst.nextFireTime &&
-				(isInfinite || burst.firedCount < burst.cycles)) {
+			(isInfinite || burst.firedCount < burst.cycles)) {
 			for (uint32_t i = 0; i < burst.count; ++i) {
 			   EmitParticle();
 			}
@@ -267,6 +285,31 @@ void ParticleSystem::Update(float deltaTime) {
 		 }
 	  }
    }
+
+   const Transform currentShapeTransform = shapeModule_ ? shapeModule_->GetTransform() : Transform{};
+
+   // LocalSpace：Shape Transform の差分をアクティブパーティクルへ適用
+   if (mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local &&
+	  shapeTransformInitialized_) {
+	  const Vector3 prevEmitterTranslation = prevShapeTransform_.translation;
+	  const Vector3 currentEmitterTranslation = currentShapeTransform.translation;
+
+	  const Quaternion prevEmitterRotation = prevShapeTransform_.GetActiveQuaternion();
+	  const Quaternion currentEmitterRotation = currentShapeTransform.GetActiveQuaternion();
+	  const Quaternion deltaEmitterRotation = (prevEmitterRotation.Inverse() * currentEmitterRotation).Normalize();
+
+	  for (auto& particle : particles_) {
+		 if (!particle.isActive) continue;
+
+		 const Vector3 relativePos = particle.transform.translation - prevEmitterTranslation;
+		 const Vector3 rotatedRelativePos = RotateVector(relativePos, deltaEmitterRotation);
+		 particle.transform.translation = currentEmitterTranslation + rotatedRelativePos;
+
+		 particle.velocity = RotateVector(particle.velocity, deltaEmitterRotation);
+	  }
+   }
+   prevShapeTransform_ = currentShapeTransform;
+   shapeTransformInitialized_ = true;
 
    // パーティクル更新
    activeParticleCount_ = 0;
@@ -375,45 +418,42 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    billboardMatrix.m[3][1] = 0.0f;
    billboardMatrix.m[3][2] = 0.0f;
 
-   // Get billboard type from RendererModule
-   auto billboardType = rendererModule_->GetBillboardType();
-   bool useBillboard = (billboardType != RendererModule::BillboardType::Mesh);
+   // Renderer settings
+   const auto rotationSpace = rendererModule_->GetRotationSpace();
+   const auto billboardType = rendererModule_->GetBillboardType();
+   const Quaternion emitterRotation = shapeModule_
+	  ? shapeModule_->GetTransform().GetActiveQuaternion()
+	  : Quaternion::Identity();
 
    for (auto& particle : particles_) {
 	  if (!particle.isActive || instanceIndex >= kMaxParticles) continue;
 
 	  Matrix4x4 worldMatrix;
+	  Quaternion particleRotation = particle.transform.GetActiveQuaternion();
+	  if (rotationSpace == RendererModule::RotationSpace::Local) {
+		 particleRotation = (emitterRotation * particleRotation).Normalize();
+	  }
 
-	  if (useBillboard && !modelAsset_) {
+	  Transform renderTransform = particle.transform;
+	  renderTransform.SetRotationQuaternion(particleRotation);
+
+	  if (!modelAsset_) {
 		 switch (billboardType) {
-			case RendererModule::BillboardType::Billboard: {
-			   // 常にカメラを向く標準的なビルボード（真の3Dビルボード）
-			   // パーティクルからカメラへの視線ベクトルに基づいて回転行列を生成
-
-			   // カメラからパーティクルへのベクトル（Z軸）
+			case RendererModule::BillboardType::View: {
 			   Vector3 toParticle = particle.transform.translation - cameraTransform.translation;
 			   float distance = toParticle.Length();
 
 			   if (distance > 0.0001f) {
-				  Vector3 forward = toParticle.Normalize();  // ビルボードのZ軸（前方向）
-
-				  // カメラの上方向を基準にビルボードの上方向を計算
-				  Vector3 cameraUp;
-				  cameraUp = RotateVector(Vector3(0.0f, 1.0f, 0.0f), cameraTransform.GetActiveQuaternion());
-
-				  // 右方向を計算（外積）
+				  Vector3 forward = toParticle.Normalize();
+				  Vector3 cameraUp = RotateVector(Vector3(0.0f, 1.0f, 0.0f), cameraTransform.GetActiveQuaternion());
 				  Vector3 right = cameraUp.Cross(forward);
 				  if (right.Length() < 0.0001f) {
-					 // カメラの上方向と視線が平行な場合のフォールバック
 					 right = Vector3(1.0f, 0.0f, 0.0f);
 				  } else {
 					 right = right.Normalize();
 				  }
-
-				  // 上方向を再計算（右方向と前方向の外積）
 				  Vector3 up = forward.Cross(right).Normalize();
 
-				  // ビルボード行列を構築
 				  Matrix4x4 billboardRotation = MakeIdentity4x4();
 				  billboardRotation.m[0][0] = right.x;
 				  billboardRotation.m[0][1] = right.y;
@@ -425,27 +465,22 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 				  billboardRotation.m[2][1] = forward.y;
 				  billboardRotation.m[2][2] = forward.z;
 
-				  // S * Rlocal * Rbillboard * T
 				  Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
-				  Matrix4x4 rotationMatrix = MakeRotateZMatrix(particle.transform.rotation.z);
+				  Matrix4x4 rotationMatrix = MakeRotateZMatrix(renderTransform.rotation.z);
 				  Matrix4x4 translateMatrix = MakeTranslateMatrix(particle.transform.translation);
-
 				  worldMatrix = scaleMatrix * rotationMatrix * billboardRotation * translateMatrix;
 			   } else {
-				  // パーティクルがカメラと同じ位置にある場合はカメラの回転を使用
 				  Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
-				  Matrix4x4 rotationMatrix = MakeRotateZMatrix(particle.transform.rotation.z);
+				  Matrix4x4 rotationMatrix = MakeRotateZMatrix(renderTransform.rotation.z);
 				  Matrix4x4 translateMatrix = MakeTranslateMatrix(particle.transform.translation);
-
 				  worldMatrix = scaleMatrix * rotationMatrix * billboardMatrix * translateMatrix;
 			   }
 			   break;
 			}
 
-			case RendererModule::BillboardType::HorizontalBillboard: {
-			   // 水平方向のビルボード（Y軸が常に上）
+			case RendererModule::BillboardType::Horizontal: {
 			   Vector3 cameraToParticle = particle.transform.translation - cameraTransform.translation;
-			   cameraToParticle.y = 0.0f; // Y成分を無視
+			   cameraToParticle.y = 0.0f;
 			   if (cameraToParticle.Length() > 0.0001f) {
 				  cameraToParticle = cameraToParticle.Normalize();
 			   } else {
@@ -467,78 +502,63 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 			   horizontalBillboard.m[2][1] = forward.y;
 			   horizontalBillboard.m[2][2] = forward.z;
 
-			   // S * Rlocal * Rbillboard
 			   Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
-			   Matrix4x4 rotationMatrix = MakeRotateZMatrix(particle.transform.rotation.z);
+			   Matrix4x4 rotationMatrix = MakeRotateZMatrix(renderTransform.rotation.z);
 			   worldMatrix = scaleMatrix * rotationMatrix * horizontalBillboard;
-
-			   // T: 平行移動成分を設定
 			   worldMatrix.m[3][0] = particle.transform.translation.x;
 			   worldMatrix.m[3][1] = particle.transform.translation.y;
 			   worldMatrix.m[3][2] = particle.transform.translation.z;
 			   break;
 			}
 
-			case RendererModule::BillboardType::VerticalBillboard: {
-			   // 垂直方向のビルボード（XZ平面内で回転）
+			case RendererModule::BillboardType::Vertical: {
 			   Vector3 cameraToParticle = particle.transform.translation - cameraTransform.translation;
 			   float angleY = std::atan2(cameraToParticle.x, cameraToParticle.z);
 
 			   Matrix4x4 verticalBillboard = MakeRotateYMatrix(angleY);
-
-			   // S * Rlocal * Rbillboard
 			   Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
-			   Matrix4x4 particleRotation = MakeRotateZMatrix(particle.transform.rotation.z);
-			   worldMatrix = scaleMatrix * particleRotation * verticalBillboard;
-
-			   // T: 平行移動成分を設定
+			   Matrix4x4 particleRotationMatrix = MakeRotateZMatrix(renderTransform.rotation.z);
+			   worldMatrix = scaleMatrix * particleRotationMatrix * verticalBillboard;
 			   worldMatrix.m[3][0] = particle.transform.translation.x;
 			   worldMatrix.m[3][1] = particle.transform.translation.y;
 			   worldMatrix.m[3][2] = particle.transform.translation.z;
 			   break;
 			}
 
-			case RendererModule::BillboardType::StretchedBillboard: {
-			   // 速度方向に引き伸ばされたビルボード
+			case RendererModule::BillboardType::Velocity: {
 			   float speed = particle.velocity.Length();
 			   if (speed > 0.0001f) {
 				  Vector3 direction = particle.velocity.Normalize();
-				  Vector3 up = cameraTransform.rotation.y > 0.5f ? Vector3(0.0f, 1.0f, 0.0f) : Vector3(0.0f, 0.0f, 1.0f);
+				  const Vector3 cameraUp = RotateVector(Vector3(0.0f, 1.0f, 0.0f), cameraTransform.GetActiveQuaternion());
+				  Vector3 up = std::fabs(direction.Dot(cameraUp)) > 0.95f ? Vector3(0.0f, 0.0f, 1.0f) : cameraUp;
 				  Vector3 right = up.Cross(direction).Normalize();
 				  up = direction.Cross(right).Normalize();
 
-				  // 速度に基づくスケール
 				  float speedScale = rendererModule_->GetSpeedScale();
 				  float lengthScale = rendererModule_->GetLengthScale();
 				  Vector3 scale = particle.transform.scale;
 				  scale.z *= (1.0f + speed * speedScale * lengthScale);
 
-				  Matrix4x4 stretchedBillboard = MakeIdentity4x4();
-				  stretchedBillboard.m[0][0] = right.x;
-				  stretchedBillboard.m[0][1] = right.y;
-				  stretchedBillboard.m[0][2] = right.z;
-				  stretchedBillboard.m[1][0] = up.x;
-				  stretchedBillboard.m[1][1] = up.y;
-				  stretchedBillboard.m[1][2] = up.z;
-				  stretchedBillboard.m[2][0] = direction.x;
-				  stretchedBillboard.m[2][1] = direction.y;
-				  stretchedBillboard.m[2][2] = direction.z;
+				  Matrix4x4 velocityBillboard = MakeIdentity4x4();
+				  velocityBillboard.m[0][0] = right.x;
+				  velocityBillboard.m[0][1] = right.y;
+				  velocityBillboard.m[0][2] = right.z;
+				  velocityBillboard.m[1][0] = up.x;
+				  velocityBillboard.m[1][1] = up.y;
+				  velocityBillboard.m[1][2] = up.z;
+				  velocityBillboard.m[2][0] = direction.x;
+				  velocityBillboard.m[2][1] = direction.y;
+				  velocityBillboard.m[2][2] = direction.z;
 
-				  // S * Rbillboard (Stretched Billboardでは回転は適用しない)
 				  Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
-				  worldMatrix = scaleMatrix * stretchedBillboard;
-
-				  // T: 平行移動成分を設定
+				  worldMatrix = scaleMatrix * velocityBillboard;
 				  worldMatrix.m[3][0] = particle.transform.translation.x;
 				  worldMatrix.m[3][1] = particle.transform.translation.y;
 				  worldMatrix.m[3][2] = particle.transform.translation.z;
 			   } else {
-				  // 速度がゼロの場合は通常のビルボード
 				  Matrix4x4 scaleMatrix = MakeScaleMatrix(particle.transform.scale);
-				  Matrix4x4 rotationMatrix = MakeRotateZMatrix(particle.transform.rotation.z);
+				  Matrix4x4 rotationMatrix = MakeRotateZMatrix(renderTransform.rotation.z);
 				  worldMatrix = scaleMatrix * rotationMatrix * billboardMatrix;
-
-				  // T: 平行移動成分を設定
 				  worldMatrix.m[3][0] = particle.transform.translation.x;
 				  worldMatrix.m[3][1] = particle.transform.translation.y;
 				  worldMatrix.m[3][2] = particle.transform.translation.z;
@@ -546,13 +566,13 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 			   break;
 			}
 
+			case RendererModule::BillboardType::None:
 			default:
-			   worldMatrix = MakeAffineMatrix(particle.transform);
+			   worldMatrix = MakeAffineMatrix(renderTransform);
 			   break;
 		 }
 	  } else {
-		 // メッシュモード：通常のワールド行列
-		 worldMatrix = MakeAffineMatrix(particle.transform);
+		 worldMatrix = MakeAffineMatrix(renderTransform);
 	  }
 
 	  Matrix4x4 wvpMatrix = worldMatrix * viewProjectionMatrix;
@@ -568,16 +588,16 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 		 uint32_t row = 0;
 
 		 if (textureSheetAnimationModule_->GetAnimationMode() == TextureSheetAnimationModule::AnimationMode::WholeSheet) {
-			 const uint32_t totalFrames = tilesX * tilesY;
-			 const uint32_t frame = totalFrames > 0 ? static_cast<uint32_t>(particle.sheetFrame) % totalFrames : 0;
-			 column = frame % tilesX;
-			 row = frame / tilesX;
+			const uint32_t totalFrames = tilesX * tilesY;
+			const uint32_t frame = totalFrames > 0 ? static_cast<uint32_t>(particle.sheetFrame) % totalFrames : 0;
+			column = frame % tilesX;
+			row = frame / tilesX;
 		 } else {
-			 column = static_cast<uint32_t>(particle.sheetFrame) % tilesX;
-			 row = static_cast<uint32_t>(particle.sheetRow);
-			 if (row >= tilesY) {
-				row = tilesY - 1;
-			 }
+			column = static_cast<uint32_t>(particle.sheetFrame) % tilesX;
+			row = static_cast<uint32_t>(particle.sheetRow);
+			if (row >= tilesY) {
+			   row = tilesY - 1;
+			}
 		 }
 
 		 Matrix4x4 sheetTransform = MakeScaleMatrix(Vector3(1.0f / static_cast<float>(tilesX), 1.0f / static_cast<float>(tilesY), 1.0f)) *
@@ -615,6 +635,7 @@ void ParticleSystem::Stop() {
    emissionTimer_ = 0.0f;
    emissionAccumulator_ = 0.0f;
    emissionModule_->ResetBurstStates();
+   shapeTransformInitialized_ = false;
 
    // 全パーティクルを非アクティブ化し、フリーリストを再構築
    while (!freeParticleIndices_.empty()) freeParticleIndices_.pop();
@@ -627,6 +648,19 @@ void ParticleSystem::Stop() {
 
 void ParticleSystem::Pause() {
    isPaused_ = true;
+}
+
+void ParticleSystem::Resume() {
+   if (!isPlaying_) return;
+   isPaused_ = false;
+}
+
+bool ParticleSystem::IsFinished() const {
+   if (!isCreated_) return false;
+   if (isPlaying_ && !isPaused_ && !mainModule_->IsLooping() && systemTime_ >= mainModule_->GetDuration()) {
+	  return activeParticleCount_ == 0;
+   }
+   return false;
 }
 
 void ParticleSystem::SetTexture(Texture* texture) {
@@ -667,6 +701,7 @@ void ParticleSystem::EmitParticle() {
    uint32_t index = freeParticleIndices_.top();
    freeParticleIndices_.pop();
    Particle& particle = particles_[index];
+   const Transform emitterTransform = shapeModule_ ? shapeModule_->GetTransform() : Transform{};
 
    // Main Module settings with random support
    particle.lifeTime = mainModule_->GetStartLifetime().GetValue();
@@ -678,7 +713,7 @@ void ParticleSystem::EmitParticle() {
    particle.transform.scale = size;
 
    Vector3 rotation = mainModule_->GetStartRotation().GetValue();
-   particle.transform.rotation = rotation;
+   particle.transform.SetRotationQuaternion(Vector3ToQuaternion(rotation));
 
    // Color - RandomColorから取得してVector4に変換
    uint32_t colorValue = mainModule_->GetStartColor().GetValue();
@@ -693,23 +728,30 @@ void ParticleSystem::EmitParticle() {
 
    // Shape Module - position and direction
    if (shapeModule_->IsEnabled()) {
-	  particle.transform.translation = shapeModule_->GetRandomEmissionPosition();
-
+	  Vector3 emissionPos = shapeModule_->GetRandomEmissionPosition();
 	  Vector3 direction = shapeModule_->GetRandomEmissionDirection();
-	  float speed = mainModule_->GetStartSpeed().GetValue();
+	  particle.transform.translation = emissionPos;
 
+	  const float dirLen = direction.Length();
+	  if (dirLen > 0.0001f) {
+		 direction = direction / dirLen;
+	  }
+
+	  float speed = mainModule_->GetStartSpeed().GetValue();
 	  particle.velocity = direction * speed;
+
    } else {
-	  particle.transform.translation = Vector3(0.0f, 0.0f, 0.0f);
+	  // ShapeModule 無効時も Shape Transform 位置を反映する
+	  particle.transform.translation = emitterTransform.translation;
 	  particle.velocity = Vector3(0.0f, 0.0f, 0.0f);
    }
 
    if (uvTransformModule_ && uvTransformModule_->IsEnabled()) {
-      uvTransformModule_->InitializeParticle(particle);
+	  uvTransformModule_->InitializeParticle(particle);
    }
 
    if (textureSheetAnimationModule_ && textureSheetAnimationModule_->IsEnabled()) {
-      textureSheetAnimationModule_->InitializeParticle(particle);
+	  textureSheetAnimationModule_->InitializeParticle(particle);
    }
 
    particle.acceleration = Vector3(0.0f, 0.0f, 0.0f);
@@ -753,9 +795,9 @@ nlohmann::json ParticleSystem::ToJson() const {
 
    // ブレンドモード
    if (material_ && material_->GetBlendMode().has_value()) {
-      j["blendMode"] = static_cast<int>(material_->GetBlendMode().value());
+	  j["blendMode"] = static_cast<int>(material_->GetBlendMode().value());
    } else {
-      j["blendMode"] = nullptr;
+	  j["blendMode"] = nullptr;
    }
 
    // ポストプロセスフラグ
@@ -819,19 +861,19 @@ nlohmann::json ParticleSystem::ToJson() const {
 
 void ParticleSystem::FromJson(const nlohmann::json& j) {
    if (j.contains("textureName")) {
-      SetTextureName(j["textureName"].get<std::string>());
+	  SetTextureName(j["textureName"].get<std::string>());
    }
 
    // ブレンドモード
    if (j.contains("blendMode") && !j["blendMode"].is_null() && material_) {
-      material_->SetBlendMode(static_cast<BlendMode>(j["blendMode"].get<int>()));
+	  material_->SetBlendMode(static_cast<BlendMode>(j["blendMode"].get<int>()));
    } else if (material_) {
-      material_->SetBlendMode(std::nullopt);
+	  material_->SetBlendMode(std::nullopt);
    }
 
    // ポストプロセスフラグ
    if (j.contains("usePostProcess")) {
-      usePostProcess_ = j["usePostProcess"].get<bool>();
+	  usePostProcess_ = j["usePostProcess"].get<bool>();
    }
 
    // 各モジュールのFromJson()を呼び出し
