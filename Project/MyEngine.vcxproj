@@ -230,6 +230,7 @@
     <ClCompile Include="GameEngine\Effect\Module\TextureSheetAnimationModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\UVTransformModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ParticleEmitterComponent.cpp" />
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Light\LightDataBuffer.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\OffscreenRenderTarget.cpp">
@@ -388,6 +389,7 @@
     <ClCompile Include="GameEngine\Utility\MathUtils\QuaternionOperations.cpp" />
     <ClCompile Include="GameEngine\Utility\MathUtils\SplineUtils.cpp" />
     <ClCompile Include="GameEngine\Utility\MathUtils\VectorOperations.cpp" />
+    <ClCompile Include="GameEngine\Utility\Math\Quaternion.cpp" />
     <ClCompile Include="GameEngine\Utility\StateMachine.cpp" />
     <ClCompile Include="GameEngine\Utility\TimerSystem.cpp" />
     <ClCompile Include="GameEngine\Utility\Logger.cpp">
@@ -492,6 +494,7 @@
     <ClInclude Include="GameEngine\Effect\Module\TextureSheetAnimationModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\UVTransformModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Object\Component\ParticleEmitterComponent.h" />
     <ClInclude Include="GameEngine\Scene\Light\AreaLight.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Light\LightDataBuffer.h" />
     <ClInclude Include="GameEngine\Core\Graphics\OffscreenRenderTarget.h" />

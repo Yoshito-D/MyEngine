@@ -1,6 +1,8 @@
 #include <pch.h>
 #include <BaseScene.h>
 #include <EngineContext.h>
+#include <ParticleSystem.h>
+#include <Skybox/Skybox.h>
 
 namespace GameEngine {
 void BaseScene::Initialize() {
@@ -127,6 +129,11 @@ void BaseScene::Finalize() {
    EngineContext::ClearPointLights();
    EngineContext::ClearSpotLights();
    EngineContext::ClearAreaLights();
+
+   Model::ClearRegisteredModels();
+   Sprite::ClearRegisteredSprites();
+   ParticleSystem::ClearRegisteredParticleSystems();
+   Skybox::ClearRegisteredSkyboxes();
    sNextSceneName_ = "";
    sIsWaitingForFadeOut_ = false;
    sPendingSceneName_ = "";

@@ -12,7 +12,7 @@ void Game::Initialize() {
 #ifdef NDEBUG
    sceneManager_->ChangeScene("GameTest");
 #else
-   sceneManager_->ChangeScene("EngineTest");
+   sceneManager_->ChangeScene("GameTest");
 #endif
 }
 

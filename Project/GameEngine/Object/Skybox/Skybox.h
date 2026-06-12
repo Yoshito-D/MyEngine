@@ -23,6 +23,8 @@ public:
    /// @brief 登録済みスカイボックスの一覧を取得する
    static const std::vector<Skybox*>& GetRegisteredSkyboxes();
 
+   static void ClearRegisteredSkyboxes() { sRegisteredSkyboxes_.clear(); }
+
    /// @brief スカイボックスを作成する
    /// @param device グラフィックスデバイス
    void Create(GraphicsDevice* device);

@@ -649,6 +649,8 @@
     <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ParticleEmitterComponent.cpp" />
+    <ClCompile Include="GameEngine\Utility\Math\Quaternion.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1116,6 +1118,7 @@
     <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.h" />
+    <ClInclude Include="GameEngine\Object\Component\ParticleEmitterComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

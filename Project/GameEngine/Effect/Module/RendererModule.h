@@ -6,12 +6,17 @@
 namespace GameEngine {
 class RendererModule : public ParticleModule {
 public:
+	  enum class RotationSpace {
+	  World = 0,
+	  Local = 1
+   };
+
    enum class BillboardType {
-	  Billboard = 0,
-	  StretchedBillboard = 1,
-	  HorizontalBillboard = 2,
-	  VerticalBillboard = 3,
-	  Mesh = 4
+	  None = 0,
+	  View,
+	  Horizontal,
+	  Vertical,
+	  Velocity
    };
 
    enum class ParticleMeshType {
@@ -28,6 +33,9 @@ public:
    };
 
    RendererModule();
+
+	  void SetRotationSpace(RotationSpace space) { rotationSpace_ = space; }
+   RotationSpace GetRotationSpace() const { return rotationSpace_; }
 
    void SetBillboardType(BillboardType type) { billboardType_ = type; }
    BillboardType GetBillboardType() const { return billboardType_; }
@@ -98,7 +106,8 @@ public:
    void FromJson(const nlohmann::json& json) override;
 
 private:
-   BillboardType billboardType_ = BillboardType::Billboard;
+	  RotationSpace rotationSpace_ = RotationSpace::Local;
+   BillboardType billboardType_ = BillboardType::View;
    float speedScale_ = 1.0f;
    float lengthScale_ = 2.0f;
    ParticleMeshType particleMeshType_ = ParticleMeshType::Quad;

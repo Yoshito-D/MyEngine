@@ -229,6 +229,7 @@ void VehicleDrift::TryFireMiniTurbo() {
    // 直接上書きではなく加算にすることで、加速後は UpdateSpeed の減衰により
    // 自然に autoSpeed へ戻る物理的な挙動になる。
    groundMover->AddVelocityImpulse(miniTurboBoost);
+   miniTurboJustFired_ = true;
 }
 
 // ================================================================

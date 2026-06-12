@@ -123,7 +123,8 @@ Quaternion Vector3ToQuaternion(const Vector3& eulerAngles) {
    q.w = cr * cp * cy + sr * sp * sy;
    q.x = sr * cp * cy - cr * sp * sy;
    q.y = cr * sp * cy + sr * cp * sy;
-   return q;
+	  q.z = cr * cp * sy - sr * sp * cy;
+   return q.Normalize();
 }
 
 Quaternion LookRotation(const Vector3& forward, const Vector3& up) {

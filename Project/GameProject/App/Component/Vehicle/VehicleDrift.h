@@ -52,6 +52,12 @@ public:
    /// @brief ドリフト中かどうかを返す
    bool IsDrifting() const { return isDrifting_; }
 
+   /// @brief ミニターボが発動したか確認し、フラグを消費して返す（1フレームに1回だけ true）
+   bool ConsumeMiniTurboFired() {
+      if (miniTurboJustFired_) { miniTurboJustFired_ = false; return true; }
+      return false;
+   }
+
 #ifdef USE_IMGUI
    void DrawInspector() override;
 #endif
@@ -137,6 +143,9 @@ private:
 
    /// @brief 現在ドリフト中かどうか
    bool  isDrifting_ = false;
+
+   /// @brief ミニターボが発動したフレームに true になる（ConsumeMiniTurboFired で消費）
+   bool  miniTurboJustFired_ = false;
 
    /// @brief ドリフト継続時間（秒）。開始時にリセットされる。
    float driftTimer_ = 0.0f;

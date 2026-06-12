@@ -19,6 +19,7 @@ void EngineTestScene::Initialize() {
    EngineContext::LoadAnimation("resources/models/cube", "AnimatedCube.gltf");
    EngineContext::LoadTexture("resources/textures/AnimatedCube_BaseColor.png", "AnimatedCube_BaseColor");
    EngineContext::LoadTexture("resources/textures/particle.png", "particle");
+   EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
    EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
 
    EngineContext::CreateMaterial("animCubeMaterial", 0xffffffff, 0);
@@ -47,9 +48,8 @@ void EngineTestScene::Initialize() {
    // --- パーティクルシステムの作成 ---
    particleSystem_ = std::make_unique<ParticleSystem>();
    particleSystem_->Create();
-   particleSystem_->SetName("hitEffect");
-   particleSystem_->SetTexture(EngineContext::GetTexture("particle"));
-   particleSystem_->LoadFromJson("resources/particles/hiteffect.json");
+   particleSystem_->SetName("sonicBoom");
+   particleSystem_->LoadFromJson("resources/particles/sonicBoom.json");
    particleSystem_->Play();
 
 #ifdef USE_IMGUI
@@ -72,9 +72,7 @@ void EngineTestScene::Update() {
    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver);
    ImGui::Begin("Scene Navigator");
-   ImGui::Text("Current: EngineTestScene");
-   ImGui::Separator();
-   if (ImGui::Button("Go to GameTestScene", ImVec2(-1, 0))) {
+   if (ImGui::Button("GameTestScene", ImVec2(-1, 0))) {
 	  EngineContext::ChangeScene("GameTest");
    }
    ImGui::End();

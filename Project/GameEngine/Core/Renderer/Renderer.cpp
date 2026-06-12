@@ -608,6 +608,13 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 }
 
 void Renderer::EndFrame() {
+#ifdef USE_IMGUI
+   if (editorController_) {
+	  //editorController_->ShowAssetWindow();
+	  editorController_->ShowHierarchyWindow();
+	  editorController_->ShowInspectorWindow();
+   }
+#endif
    DrawAutoRegisteredModels();
    DrawAutoRegisteredSprites();
    DrawAutoRegisteredParticles();
@@ -642,13 +649,6 @@ void Renderer::EndFrame() {
    imGuiManager_->ShowEngineSettings(isDockSpaceVisible);
    if (isDockSpaceVisible) {
 	  imGuiManager_->ShowViewport(offscreenRenderTarget_.get(), isSceneHovered_);
-
-	  if (editorController_) {
-		 //editorController_->ShowAssetWindow();
-		 editorController_->ShowHierarchyWindow();
-		 editorController_->ShowInspectorWindow();
-	  }
-
 	  postProcessManager_->ShowImGuiControls();
    } else {
 	  DrawFullscreenTriangle(offscreenRenderTarget_->GetSRVHandleGPU());

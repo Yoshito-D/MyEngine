@@ -21,6 +21,8 @@ namespace GameEngine {
 
 	  static const std::vector<Sprite*>& GetRegisteredSprites();
 
+	  static void ClearRegisteredSprites() { sRegisteredSprites_.clear(); }
+
 	  /// @brief UI描画用のアンカーポイント
 	  enum class AnchorPoint {
 		 TopLeft,      // 左上
