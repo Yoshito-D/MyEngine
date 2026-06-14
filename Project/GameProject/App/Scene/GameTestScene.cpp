@@ -169,7 +169,7 @@ void GameTestScene::Initialize() {
 		 Config cfg;
 		 cfg.followPosition = true;
 		 cfg.followRotation = true;
-		 cfg.followScale = false;
+		 cfg.followScale = true;
 		 cfg.positionOffset = offset;
 		 cfg.simulationSpace = Config::Space::World;
 		 int slotIdx = tireDustEmitter_->AddSlot("resources/particles/tire_dust.json", cfg);
@@ -194,7 +194,7 @@ void GameTestScene::Initialize() {
 	  Config cfg;
 	  cfg.followPosition = true;
 	  cfg.followRotation = true;
-	  cfg.followScale = false;
+	  cfg.followScale = true;
 	  cfg.positionOffset = { 0.0f, 0.0f, 1.0f };
 	  cfg.simulationSpace = Config::Space::World;
 	  // AddSlot は内部で LoadSlot を呼ぶため、スロット取得後に loop=false を設定してから

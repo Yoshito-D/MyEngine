@@ -6,7 +6,7 @@
 namespace GameEngine {
 class RendererModule : public ParticleModule {
 public:
-	  enum class RotationSpace {
+   enum class RotationSpace {
 	  World = 0,
 	  Local = 1
    };
@@ -34,7 +34,7 @@ public:
 
    RendererModule();
 
-	  void SetRotationSpace(RotationSpace space) { rotationSpace_ = space; }
+   void SetRotationSpace(RotationSpace space) { rotationSpace_ = space; }
    RotationSpace GetRotationSpace() const { return rotationSpace_; }
 
    void SetBillboardType(BillboardType type) { billboardType_ = type; }
@@ -106,7 +106,7 @@ public:
    void FromJson(const nlohmann::json& json) override;
 
 private:
-	  RotationSpace rotationSpace_ = RotationSpace::Local;
+   RotationSpace rotationSpace_ = RotationSpace::Local;
    BillboardType billboardType_ = BillboardType::View;
    float speedScale_ = 1.0f;
    float lengthScale_ = 2.0f;

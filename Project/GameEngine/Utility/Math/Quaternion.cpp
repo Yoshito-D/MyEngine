@@ -12,7 +12,6 @@ GameEngine::Vector3 GameEngine::Quaternion::ToEuler() const {
 	float t3 = +2.0f * (w * z + x * y);
 	float t4 = +1.0f - 2.0f * (ysqr + z * z);
 	// roll（Z軸回転）
-	float t5 = std::atan2(t3, t4);
 	float t4_clamped = std::clamp(t4, -1.0f, 1.0f);
 	float t2_clamped = std::clamp(t2, -1.0f, 1.0f);
 	float pitch = std::atan2(t0, t1);
