@@ -99,7 +99,7 @@
         "strength": 1.0
     },
     "rendererModule": {
-        "billboardType": 1,
+        "billboardType": 0,
         "boxSize": [
             1.0,
             1.0,
@@ -163,8 +163,8 @@
         ],
         "radius": 1.0,
         "rotation": [
-            0.0,
-            0.0,
+            1.5242230810841306e-09,
+            1.3288425915192192e-11,
             0.0
         ],
         "scale": [

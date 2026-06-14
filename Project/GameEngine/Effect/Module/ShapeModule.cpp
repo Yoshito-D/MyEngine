@@ -159,7 +159,7 @@ void ShapeModule::FromJson(const nlohmann::json& j) {
    }
    if (j.contains("rotation")) {
 	  auto arr = j["rotation"];
-	  transform_.SetRotationEuler(Vector3{ arr[0], arr[1], arr[2] });
+	  transform_.SetRotationQuaternion(Vector3ToQuaternion(Vector3(arr[0], arr[1], arr[2])));
    }
    if (j.contains("scale")) {
 	  auto arr = j["scale"];

@@ -14,12 +14,12 @@
 #endif
 
 namespace {
-   const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
-	  GameEngine::ParticleEmitterComponent::kTypeName,
-	  [](GameEngine::Object& o) -> GameEngine::IObjectComponent* {
-		 return o.AddComponent<GameEngine::ParticleEmitterComponent>();
-	  }
-   );
+const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+   GameEngine::ParticleEmitterComponent::kTypeName,
+   [](GameEngine::Object& o) -> GameEngine::IObjectComponent* {
+	  return o.AddComponent<GameEngine::ParticleEmitterComponent>();
+   }
+);
 }
 
 namespace GameEngine {
@@ -167,6 +167,11 @@ void ParticleEmitterComponent::ApplyEmitterToShapeModule(ParticleSystem* ps, con
    rotationMatrix.m[3][1] = 0.0f;
    rotationMatrix.m[3][2] = 0.0f;
    rotationMatrix.m[3][3] = 1.0f;
+   // MakeAffineMatrix は行に軸を格納する row-major 形式だが、
+   // MatrixToQuaternion は列に軸がある column-major 形式を期待するため転置する
+   std::swap(rotationMatrix.m[0][1], rotationMatrix.m[1][0]);
+   std::swap(rotationMatrix.m[0][2], rotationMatrix.m[2][0]);
+   std::swap(rotationMatrix.m[1][2], rotationMatrix.m[2][1]);
    shapeTransform.SetRotationQuaternion(MatrixToQuaternion(rotationMatrix));
 
    shape->SetTransform(shapeTransform);
@@ -178,7 +183,7 @@ void ParticleEmitterComponent::ApplyEmitterToShapeModule(ParticleSystem* ps, con
 
 int ParticleEmitterComponent::AddSlot(const std::string& jsonPath, const AttachmentConfig& config) {
    EmitterSlot slot;
-   slot.jsonPath     = jsonPath;
+   slot.jsonPath = jsonPath;
    slot.attachConfig = config;
    const int idx = static_cast<int>(slots_.size());
    slots_.push_back(std::move(slot));
@@ -339,8 +344,8 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
    if (!cfg.boneName.empty()) {
 	  auto* mac = GetOwner().GetComponent<ModelAssetComponent>();
 	  if (mac) {
-		 const SkinCluster* sc   = mac->GetSkinCluster();
-		 const ModelAsset*  asset = mac->GetModelAsset();
+		 const SkinCluster* sc = mac->GetSkinCluster();
+		 const ModelAsset* asset = mac->GetModelAsset();
 		 if (sc && asset) {
 			const Skeleton* skeleton = asset->GetBindSkeleton();
 			if (skeleton) {
@@ -377,7 +382,7 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
    }
 
    // followScale / followRotation / followPosition の選択適用
-	  if (!cfg.followScale) {
+   if (!cfg.followScale) {
 	  const float sx = Vector3(base.m[0][0], base.m[0][1], base.m[0][2]).Length();
 	  const float sy = Vector3(base.m[1][0], base.m[1][1], base.m[1][2]).Length();
 	  const float sz = Vector3(base.m[2][0], base.m[2][1], base.m[2][2]).Length();
@@ -403,13 +408,13 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
    const bool hasOffset =
 	  (cfg.positionOffset.x != 0.0f || cfg.positionOffset.y != 0.0f || cfg.positionOffset.z != 0.0f) ||
 	  (cfg.rotationOffset.x != 0.0f || cfg.rotationOffset.y != 0.0f || cfg.rotationOffset.z != 0.0f) ||
-	  (cfg.scaleOffset.x != 1.0f    || cfg.scaleOffset.y != 1.0f    || cfg.scaleOffset.z != 1.0f);
+	  (cfg.scaleOffset.x != 1.0f || cfg.scaleOffset.y != 1.0f || cfg.scaleOffset.z != 1.0f);
 
    if (hasOffset) {
 	  Transform offsetTransform;
+	  offsetTransform.scale = cfg.scaleOffset;
+	  offsetTransform.SetRotationQuaternion(Vector3ToQuaternion(cfg.rotationOffset));
 	  offsetTransform.translation = cfg.positionOffset;
-	  offsetTransform.rotation    = cfg.rotationOffset;
-	  offsetTransform.scale       = cfg.scaleOffset;
 	  base = MakeAffineMatrix(offsetTransform) * base;
    }
 
@@ -459,8 +464,8 @@ void ParticleEmitterComponent::SyncSimulationSpace(ParticleSystem* ps, Attachmen
    if (!ps || !ps->GetMainModule()) return;
    ps->GetMainModule()->SetSimulationSpace(
 	  (space == AttachmentConfig::Space::Local)
-		 ? MainModule::SimulationSpace::Local
-		 : MainModule::SimulationSpace::World
+	  ? MainModule::SimulationSpace::Local
+	  : MainModule::SimulationSpace::World
    );
 }
 
@@ -491,14 +496,14 @@ static void DeserializeAttachmentConfig(const nlohmann::json& j, ParticleEmitter
 		 out.y = j.at(key)[1].get<float>();
 		 out.z = j.at(key)[2].get<float>();
 	  }
-   };
+	  };
 
    if (j.contains("followPosition") && j.at("followPosition").is_boolean()) cfg.followPosition = j.at("followPosition").get<bool>();
    if (j.contains("followRotation") && j.at("followRotation").is_boolean()) cfg.followRotation = j.at("followRotation").get<bool>();
-   if (j.contains("followScale")    && j.at("followScale").is_boolean())    cfg.followScale    = j.at("followScale").get<bool>();
+   if (j.contains("followScale") && j.at("followScale").is_boolean())    cfg.followScale = j.at("followScale").get<bool>();
    readVec3("positionOffset", cfg.positionOffset);
    readVec3("rotationOffset", cfg.rotationOffset);
-   readVec3("scaleOffset",    cfg.scaleOffset);
+   readVec3("scaleOffset", cfg.scaleOffset);
    if (j.contains("simulationSpace") && j.at("simulationSpace").is_string()) {
 	  cfg.simulationSpace = (j.at("simulationSpace").get<std::string>() == "Local") ? Space::Local : Space::World;
    }
@@ -512,11 +517,11 @@ nlohmann::json ParticleEmitterComponent::Serialize() const {
    nlohmann::json slotsJson = nlohmann::json::array();
    for (const auto& slot : slots_) {
 	  nlohmann::json s;
-	  s["jsonPath"]          = slot.jsonPath;
-	  s["autoPlay"]          = slot.autoPlay;
-	  s["loop"]              = slot.loop;
-	  s["playOnceAndDestroy"]= slot.playOnceAndDestroy;
-	  s["attachConfig"]      = SerializeAttachmentConfig(slot.attachConfig);
+	  s["jsonPath"] = slot.jsonPath;
+	  s["autoPlay"] = slot.autoPlay;
+	  s["loop"] = slot.loop;
+	  s["playOnceAndDestroy"] = slot.playOnceAndDestroy;
+	  s["attachConfig"] = SerializeAttachmentConfig(slot.attachConfig);
 	  slotsJson.push_back(std::move(s));
    }
    j["slots"] = std::move(slotsJson);
@@ -534,9 +539,9 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
    // 旧フォーマット互換（jsonPath がトップレベルにある場合）
    if (data.contains("jsonPath") && data.at("jsonPath").is_string()) {
 	  EmitterSlot slot;
-	  slot.jsonPath  = data.at("jsonPath").get<std::string>();
-	  if (data.contains("autoPlay")           && data.at("autoPlay").is_boolean())           slot.autoPlay           = data.at("autoPlay").get<bool>();
-	  if (data.contains("loop")               && data.at("loop").is_boolean())               slot.loop               = data.at("loop").get<bool>();
+	  slot.jsonPath = data.at("jsonPath").get<std::string>();
+	  if (data.contains("autoPlay") && data.at("autoPlay").is_boolean())           slot.autoPlay = data.at("autoPlay").get<bool>();
+	  if (data.contains("loop") && data.at("loop").is_boolean())               slot.loop = data.at("loop").get<bool>();
 	  if (data.contains("playOnceAndDestroy") && data.at("playOnceAndDestroy").is_boolean()) slot.playOnceAndDestroy = data.at("playOnceAndDestroy").get<bool>();
 	  if (data.contains("attachConfig") && data.at("attachConfig").is_object()) {
 		 DeserializeAttachmentConfig(data.at("attachConfig"), slot.attachConfig);
@@ -548,9 +553,9 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("slots") && data.at("slots").is_array()) {
 	  for (const auto& s : data.at("slots")) {
 		 EmitterSlot slot;
-		 if (s.contains("jsonPath")           && s.at("jsonPath").is_string())           slot.jsonPath           = s.at("jsonPath").get<std::string>();
-		 if (s.contains("autoPlay")           && s.at("autoPlay").is_boolean())          slot.autoPlay           = s.at("autoPlay").get<bool>();
-		 if (s.contains("loop")               && s.at("loop").is_boolean())              slot.loop               = s.at("loop").get<bool>();
+		 if (s.contains("jsonPath") && s.at("jsonPath").is_string())           slot.jsonPath = s.at("jsonPath").get<std::string>();
+		 if (s.contains("autoPlay") && s.at("autoPlay").is_boolean())          slot.autoPlay = s.at("autoPlay").get<bool>();
+		 if (s.contains("loop") && s.at("loop").is_boolean())              slot.loop = s.at("loop").get<bool>();
 		 if (s.contains("playOnceAndDestroy") && s.at("playOnceAndDestroy").is_boolean())slot.playOnceAndDestroy = s.at("playOnceAndDestroy").get<bool>();
 		 if (s.contains("attachConfig") && s.at("attachConfig").is_object()) {
 			DeserializeAttachmentConfig(s.at("attachConfig"), slot.attachConfig);
@@ -582,10 +587,10 @@ void ParticleEmitterComponent::DrawInspector() {
 
    // ── 全スロット一括制御 ────────────────────────
    ImGui::SeparatorText("Global Control");
-   if (ImGui::Button("Play All"))    { Play();    }  ImGui::SameLine();
-   if (ImGui::Button("Stop All"))    { Stop();    }  ImGui::SameLine();
-   if (ImGui::Button("Pause All"))   { Pause();   }  ImGui::SameLine();
-   if (ImGui::Button("Resume All"))  { Resume();  }  ImGui::SameLine();
+   if (ImGui::Button("Play All")) { Play(); }  ImGui::SameLine();
+   if (ImGui::Button("Stop All")) { Stop(); }  ImGui::SameLine();
+   if (ImGui::Button("Pause All")) { Pause(); }  ImGui::SameLine();
+   if (ImGui::Button("Resume All")) { Resume(); }  ImGui::SameLine();
    if (ImGui::Button("Restart All")) { Restart(); }
 
    // ── スロット追加 ──────────────────────────────
@@ -625,7 +630,7 @@ void ParticleEmitterComponent::DrawInspector() {
 			ImGui::EndDragDropTarget();
 		 }
 		 ImGui::SameLine();
-		 if (ImGui::Button("Load"))   { LoadSlot(slot); }
+		 if (ImGui::Button("Load")) { LoadSlot(slot); }
 		 ImGui::SameLine();
 		 if (ImGui::Button("Reload")) {
 			if (slot.particleSystem && !slot.jsonPath.empty()) {
@@ -641,11 +646,11 @@ void ParticleEmitterComponent::DrawInspector() {
 		 ImGui::SeparatorText("Playback");
 		 const bool playing = IsPlaying(i);
 		 ImGui::BeginDisabled(playing);
-		 if (ImGui::Button("Play"))    { Play(i);    } ImGui::EndDisabled(); ImGui::SameLine();
+		 if (ImGui::Button("Play")) { Play(i); } ImGui::EndDisabled(); ImGui::SameLine();
 		 ImGui::BeginDisabled(!playing);
-		 if (ImGui::Button("Stop"))    { Stop(i);    } ImGui::SameLine();
-		 if (ImGui::Button("Pause"))   { Pause(i);   } ImGui::SameLine();
-		 if (ImGui::Button("Resume"))  { Resume(i);  } ImGui::EndDisabled(); ImGui::SameLine();
+		 if (ImGui::Button("Stop")) { Stop(i); } ImGui::SameLine();
+		 if (ImGui::Button("Pause")) { Pause(i); } ImGui::SameLine();
+		 if (ImGui::Button("Resume")) { Resume(i); } ImGui::EndDisabled(); ImGui::SameLine();
 		 if (ImGui::Button("Restart")) { Restart(i); }
 
 		 const char* statusStr = "Stopped";
@@ -655,18 +660,18 @@ void ParticleEmitterComponent::DrawInspector() {
 		 }
 		 ImGui::Text("Status: %s", statusStr);
 
-		 ImGui::Checkbox("Auto Play",         &slot.autoPlay);          ImGui::SameLine();
-		 ImGui::Checkbox("Loop",              &slot.loop);              ImGui::SameLine();
-		 ImGui::Checkbox("Once & Destroy",    &slot.playOnceAndDestroy);
+		 ImGui::Checkbox("Auto Play", &slot.autoPlay);          ImGui::SameLine();
+		 ImGui::Checkbox("Loop", &slot.loop);              ImGui::SameLine();
+		 ImGui::Checkbox("Once & Destroy", &slot.playOnceAndDestroy);
 
 		 // 追従設定
 		 ImGui::SeparatorText("Attachment");
-		 ImGui::Checkbox("Pos",  &slot.attachConfig.followPosition); ImGui::SameLine();
-		 ImGui::Checkbox("Rot",  &slot.attachConfig.followRotation); ImGui::SameLine();
-		 ImGui::Checkbox("Scale",&slot.attachConfig.followScale);
-		 ImGui::DragFloat3("Pos Offset",   &slot.attachConfig.positionOffset.x, 0.05f);
-		 ImGui::DragFloat3("Rot Offset",   &slot.attachConfig.rotationOffset.x, 0.01f);
-		 ImGui::DragFloat3("Scale Offset", &slot.attachConfig.scaleOffset.x,    0.01f, 0.001f, 100.0f);
+		 ImGui::Checkbox("Pos", &slot.attachConfig.followPosition); ImGui::SameLine();
+		 ImGui::Checkbox("Rot", &slot.attachConfig.followRotation); ImGui::SameLine();
+		 ImGui::Checkbox("Scale", &slot.attachConfig.followScale);
+		 ImGui::DragFloat3("Pos Offset", &slot.attachConfig.positionOffset.x, 0.05f);
+		 ImGui::DragFloat3("Rot Offset", &slot.attachConfig.rotationOffset.x, 0.01f);
+		 ImGui::DragFloat3("Scale Offset", &slot.attachConfig.scaleOffset.x, 0.01f, 0.001f, 100.0f);
 
 		 const char* spaceItems[] = { "World", "Local" };
 		 int spaceIdx = (slot.attachConfig.simulationSpace == AttachmentConfig::Space::Local) ? 1 : 0;

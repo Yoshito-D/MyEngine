@@ -16,32 +16,6 @@ std::vector<ParticleSystem*> ParticleSystem::sRegisteredParticleSystems_{};
 namespace {
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
-
-std::random_device randomDevice;
-std::mt19937 randomEngine(randomDevice());
-
-float RandomRange(float min, float max) {
-   std::uniform_real_distribution<float> dist(min, max);
-   return dist(randomEngine);
-}
-
-Quaternion ExtractRotationQuaternion(const Matrix4x4& matrix) {
-   Matrix4x4 rotationOnly = matrix;
-   for (int i = 0; i < 3; ++i) {
-	  Vector3 basis(rotationOnly.m[i][0], rotationOnly.m[i][1], rotationOnly.m[i][2]);
-	  const float len = basis.Length();
-	  if (len > 0.000001f) {
-		 rotationOnly.m[i][0] /= len;
-		 rotationOnly.m[i][1] /= len;
-		 rotationOnly.m[i][2] /= len;
-	  }
-   }
-   rotationOnly.m[3][0] = 0.0f;
-   rotationOnly.m[3][1] = 0.0f;
-   rotationOnly.m[3][2] = 0.0f;
-   rotationOnly.m[3][3] = 1.0f;
-   return MatrixToQuaternion(rotationOnly);
-}
 }
 
 void ParticleSystem::Initialize(GraphicsDevice* device) {
@@ -379,8 +353,9 @@ void ParticleSystem::ApplyModules(Particle& particle, float deltaTime) {
 	  sizeOverLifetimeModule_->UpdateSize(particle);
    }
 
-   // 回転は常に適用（パーティクルに角速度が設定されていれば機能する）
-   rotationOverLifetimeModule_->UpdateRotation(particle, deltaTime);
+   if (rotationOverLifetimeModule_->IsEnabled()) {
+	  rotationOverLifetimeModule_->UpdateRotation(particle, deltaTime);
+   }
 
    if (noiseModule_->IsEnabled()) {
 	  noiseModule_->ApplyNoise(particle, deltaTime);
@@ -567,6 +542,8 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 			}
 
 			case RendererModule::BillboardType::None:
+			   worldMatrix = MakeAffineMatrix(renderTransform);
+			   break;
 			default:
 			   worldMatrix = MakeAffineMatrix(renderTransform);
 			   break;

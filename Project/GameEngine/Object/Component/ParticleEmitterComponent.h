@@ -22,7 +22,7 @@ public:
    struct AttachmentConfig {
 	  bool followPosition = true;   ///< 位置を追従するか
 	  bool followRotation = true;   ///< 回転を追従するか
-	  bool followScale = false;  ///< スケールを追従するか（デフォルト off）
+	  bool followScale = true;  ///< スケールを追従するか（デフォルト off）
 
 	  Vector3 positionOffset = { 0.0f, 0.0f, 0.0f };  ///< 位置オフセット
 	  Vector3 rotationOffset = { 0.0f, 0.0f, 0.0f };  ///< 回転オフセット（ラジアン）
