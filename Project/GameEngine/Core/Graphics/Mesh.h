@@ -91,18 +91,20 @@ public:
    void CreateTorus(float majorRadius = 0.5f, float minorRadius = 0.2f, uint32_t majorSegments = 32, uint32_t minorSegments = 16, float originY = 0.5f);
 
    /// @brief シリンダーメッシュを作成
-   /// @param radius 半径
+   /// @param topRadius 上面の半径
+   /// @param bottomRadius 底面の半径
    /// @param height 高さ
    /// @param segmentCount 側面の分割数（デフォルトは32）
    /// @param originY 縦方向の原点位置（0.0=底面, 0.5=中央, 1.0=上面）
-   void CreateCylinder(float radius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
+   void CreateCylinder(float topRadius = 0.5f, float bottomRadius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
 
    /// @brief 底面と上面のないシリンダーメッシュを作成
-   /// @param radius 半径
+   /// @param topRadius 上面の半径
+   /// @param bottomRadius 底面の半径
    /// @param height 高さ
    /// @param segmentCount 側面の分割数（デフォルトは32）
    /// @param originY 縦方向の原点位置（0.0=底面, 0.5=中央, 1.0=上面）
-   void CreateCylinderWithoutCaps(float radius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
+   void CreateCylinderWithoutCaps(float topRadius = 0.5f, float bottomRadius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
 
    /// @brief コーンメッシュを作成
    /// @param radius 底面の半径

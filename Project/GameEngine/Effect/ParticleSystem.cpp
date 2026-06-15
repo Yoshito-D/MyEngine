@@ -59,7 +59,9 @@ void ParticleSystem::RebuildParticleMesh() {
 		 break;
 	  }
 	  case MeshType::Cylinder:
-		 quadMesh_->CreateCylinderWithoutCaps(rm->GetCylinderRadius(), rm->GetCylinderHeight(), rm->GetCylinderSegments(), meshOriginY);
+		 quadMesh_->CreateCylinderWithoutCaps(
+			rm->GetCylinderTopRadius(), rm->GetCylinderBottomRadius(),
+			rm->GetCylinderHeight(), rm->GetCylinderSegments(), meshOriginY);
 		 break;
 	  case MeshType::Cone:
 		 quadMesh_->CreateCone(rm->GetConeRadius(), rm->GetConeHeight(), rm->GetConeSegments(), meshOriginY);

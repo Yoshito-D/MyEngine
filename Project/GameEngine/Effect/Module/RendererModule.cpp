@@ -25,7 +25,9 @@ namespace GameEngine {
         // Box
         j["boxSize"] = {boxSize_.x, boxSize_.y, boxSize_.z};
         // Cylinder
-        j["cylinderRadius"] = cylinderRadius_;
+        j["cylinderTopRadius"] = cylinderTopRadius_;
+        j["cylinderBottomRadius"] = cylinderBottomRadius_;
+        j["cylinderRadius"] = GetCylinderRadius();
         j["cylinderHeight"] = cylinderHeight_;
         j["cylinderSegments"] = cylinderSegments_;
         // Cone
@@ -68,7 +70,9 @@ namespace GameEngine {
             auto arr = j["boxSize"];
             boxSize_ = Vector3{arr[0], arr[1], arr[2]};
         }
-        if (j.contains("cylinderRadius")) cylinderRadius_ = j["cylinderRadius"];
+        if (j.contains("cylinderRadius")) SetCylinderRadius(j["cylinderRadius"]);
+        if (j.contains("cylinderTopRadius")) SetCylinderTopRadius(j["cylinderTopRadius"]);
+        if (j.contains("cylinderBottomRadius")) SetCylinderBottomRadius(j["cylinderBottomRadius"]);
         if (j.contains("cylinderHeight")) cylinderHeight_ = j["cylinderHeight"];
         if (j.contains("cylinderSegments")) cylinderSegments_ = j["cylinderSegments"].get<uint32_t>();
         if (j.contains("coneRadius")) coneRadius_ = j["coneRadius"];

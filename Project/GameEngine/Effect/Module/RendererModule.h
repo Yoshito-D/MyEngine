@@ -70,8 +70,12 @@ public:
    void SetBoxSize(const Vector3& size) { boxSize_ = size; meshDirty_ = true; }
    const Vector3& GetBoxSize() const { return boxSize_; }
 
-   void SetCylinderRadius(float r) { cylinderRadius_ = r; meshDirty_ = true; }
-   float GetCylinderRadius() const { return cylinderRadius_; }
+   void SetCylinderTopRadius(float r) { cylinderTopRadius_ = std::max(0.0f, r); meshDirty_ = true; }
+   float GetCylinderTopRadius() const { return cylinderTopRadius_; }
+   void SetCylinderBottomRadius(float r) { cylinderBottomRadius_ = std::max(0.0f, r); meshDirty_ = true; }
+   float GetCylinderBottomRadius() const { return cylinderBottomRadius_; }
+   void SetCylinderRadius(float r) { SetCylinderTopRadius(r); SetCylinderBottomRadius(r); }
+   float GetCylinderRadius() const { return (cylinderTopRadius_ + cylinderBottomRadius_) * 0.5f; }
    void SetCylinderHeight(float h) { cylinderHeight_ = h; meshDirty_ = true; }
    float GetCylinderHeight() const { return cylinderHeight_; }
    void SetCylinderSegments(uint32_t s) { cylinderSegments_ = s; meshDirty_ = true; }
@@ -124,7 +128,8 @@ private:
    uint32_t sphereStacks_ = 16;
    uint32_t sphereSlices_ = 32;
    Vector3 boxSize_{ 1.0f, 1.0f, 1.0f };
-   float cylinderRadius_ = 0.5f;
+   float cylinderTopRadius_ = 0.5f;
+   float cylinderBottomRadius_ = 0.5f;
    float cylinderHeight_ = 1.0f;
    uint32_t cylinderSegments_ = 32;
    float coneRadius_ = 0.5f;
