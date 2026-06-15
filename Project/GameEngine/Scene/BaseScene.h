@@ -4,7 +4,6 @@
 #include "Camera/DebugCamera.h"
 #include "Camera/Core/CinemachineBrain.h"
 #include "Camera/Editor/CameraEditor.h"
-#include "SceneFade.h"
 
 namespace GameEngine {
 /// @brief 基底シーンクラス
@@ -37,22 +36,11 @@ protected:
    /// @brief デバッグカメラの更新
    void UpdateDebugCamera();
 
-   /// @brief フェードを設定（派生クラスで独自のSceneFadeを設定可能）
-   /// @param fade フェードオブジェクト（所有権を移譲）
-   void SetFade(std::unique_ptr<SceneFade> fade);
-
-   /// @brief デフォルトのフェードを作成
-   /// @param fadeDuration フェード時間（秒）
-   /// @param fadeColor フェードカラー
-   void CreateDefaultFade(float fadeDuration = 1.0f, uint32_t fadeColor = 0x000000ff);
-
 #ifdef USE_IMGUI
    std::unique_ptr<DebugCamera> debugCamera_ = nullptr;
    std::unique_ptr<CameraEditor> cameraEditor_ = nullptr;
    bool isDebugCameraActive_ = false;
 #endif
-
-   std::unique_ptr<SceneFade> sceneFade_ = nullptr;
 
    // 静的メンバー
    static inline std::string sNextSceneName_ = "";

@@ -12,21 +12,21 @@
             1.0,
             1.0,
             1.0,
-            0.4627451002597809
+            0.6980392336845398
         ]
     },
     "emissionModule": {
         "bursts": [
             {
                 "count": 1,
-                "cycles": 0,
-                "interval": 1.649999976158142,
+                "cycles": 1,
+                "interval": -1.0,
                 "time": 0.0
             }
         ],
         "enabled": true,
         "rateOverDistance": 0.0,
-        "rateOverTime": 15.0
+        "rateOverTime": 0.5
     },
     "forceOverLifetimeModule": {
         "enabled": false,
@@ -42,8 +42,8 @@
         "speedLimit": 10.0
     },
     "mainModule": {
-        "duration": 0.20000000298023224,
-        "emissionRate": 10.0,
+        "duration": 0.10000000149011612,
+        "emissionRate": 77.0,
         "gravityModifier": 0.0,
         "looping": false,
         "maxParticles": 1000,
@@ -51,13 +51,13 @@
         "scalingMode": 0,
         "simulationSpace": 0,
         "startColor": {
-            "max": 2711265686,
-            "min": 2711265686,
+            "max": 4294967295,
+            "min": 4294967295,
             "randomize": false
         },
         "startLifetime": {
-            "max": 0.3499999940395355,
-            "min": 0.3499999940395355,
+            "max": 0.25,
+            "min": 0.25,
             "randomize": false
         },
         "startRotation": {
@@ -75,14 +75,14 @@
         },
         "startSize": {
             "max": [
-                5.0,
-                5.0,
-                5.0
+                1.0,
+                1.0,
+                1.0
             ],
             "min": [
-                5.0,
-                5.0,
-                5.0
+                1.0,
+                1.0,
+                1.0
             ],
             "randomize": false
         },
@@ -110,16 +110,17 @@
         "coneHeight": 1.0,
         "coneRadius": 0.5,
         "coneSegments": 32,
-        "cylinderHeight": 1.0,
-        "cylinderRadius": 0.5,
+        "cylinderHeight": 1.8200000524520874,
+        "cylinderRadius": 0.6000000238418579,
         "cylinderSegments": 32,
         "enabled": true,
         "lengthScale": 2.0,
-        "particleMeshType": 1,
+        "meshOriginY": 0.0,
+        "particleMeshType": 4,
         "planeDepth": 1.0,
         "planeWidth": 1.0,
-        "ringInnerRadius": 0.23000000417232513,
-        "ringOuterRadius": 0.4000000059604645,
+        "ringInnerRadius": 0.4000000059604645,
+        "ringOuterRadius": 0.5,
         "ringSegments": 32,
         "rotationSpace": 1,
         "speedScale": 1.0,
@@ -163,8 +164,8 @@
         ],
         "radius": 1.0,
         "rotation": [
-            1.5242230810841306e-09,
-            1.3288425915192192e-11,
+            0.0,
+            0.0,
             0.0
         ],
         "scale": [
@@ -177,18 +178,18 @@
     "sizeOverLifetimeModule": {
         "enabled": true,
         "endSize": [
-            2.0,
-            2.0,
-            2.0
+            1.0,
+            0.0,
+            1.0
         ],
-        "sizeMultiplier": 2.859999895095825,
+        "sizeMultiplier": 1.0,
         "startSize": [
-            0.30000001192092896,
-            0.30000001192092896,
-            0.0
+            0.20000000298023224,
+            0.6399999856948853,
+            0.20000000298023224
         ]
     },
-    "textureName": "gradationLine",
+    "textureName": "gradationLine1",
     "textureSheetAnimationModule": {
         "animationMode": 0,
         "cycles": 1,
@@ -202,7 +203,7 @@
     },
     "usePostProcess": true,
     "uvTransformModule": {
-        "enabled": true,
+        "enabled": false,
         "rotationConstant": 0.0,
         "rotationCurveEnd": 0.0,
         "rotationCurveStart": 0.0,
@@ -238,7 +239,7 @@
         },
         "scrollConstant": [
             0.0,
-            0.2199999988079071
+            0.0
         ],
         "scrollCurveEnd": [
             0.0,
@@ -256,7 +257,7 @@
             ],
             "min": [
                 0.0,
-                1.0
+                0.0
             ],
             "randomize": false
         }

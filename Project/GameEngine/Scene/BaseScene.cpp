@@ -12,7 +12,7 @@ void BaseScene::Initialize() {
    // デフォルトのライトを作成（LightManagerが所有）
    EngineContext::LoadTexture("resources/textures/white1x1.png", "white1x1");
    EngineContext::LoadTexture("resources/textures/uvChecker.png", "uvChecker");
-   EngineContext::CreateDirectionalLight("MainDirectionalLight");
+   EngineContext::CreateDirectionalLight("MainDirectionalLight", 0xffffffff, Vector3(0.0f, -1.0f, 0.0f), 2.5f);
    EngineContext::CreatePointLight("MainPointLight", 0xffffffff, Vector3(0.0f, 0.0f, 0.0f), 0.0f);
    EngineContext::CreateSpotLight("MainSpotLight", 0xffffffff, Vector3(), 0.0f, Vector3(0.0f, -1.0f, 0.0f), 5.0f, 0.1f, 0.7f, 0.9f);
    EngineContext::CreateAreaLight("MainAreaLight", 
@@ -72,19 +72,6 @@ void BaseScene::Update() {
       EngineContext::GetActiveBrain()->Update(deltaTime);
    }
 #endif // _DEBUG
-
-
-   // フェードの更新（デルタタイムは内部で取得）
-   if (sceneFade_) {
-      sceneFade_->Update();
-
-      // フェードアウトが完了したらシーン切り替えフラグを立てる
-      if (sIsWaitingForFadeOut_ && sceneFade_->IsFadeOutCompleted()) {
-         sNextSceneName_ = sPendingSceneName_;
-         sIsWaitingForFadeOut_ = false;
-         sPendingSceneName_ = "";
-      }
-   }
 }
 
 void BaseScene::Draw() {
@@ -97,11 +84,6 @@ void BaseScene::Draw() {
       }
    }
 #endif
-
-   // フェードを描画
-   if (sceneFade_) {
-      sceneFade_->Draw();
-   }
 }
 
 void BaseScene::Finalize() {
@@ -140,34 +122,7 @@ void BaseScene::Finalize() {
 }
 
 void BaseScene::SetNextSceneName(const std::string& sceneName) {
-
-   // 現在のシーンインスタンスが存在し、フェードが有効な場合はフェードアウトを開始
-   if (sCurrentScene_ && sCurrentScene_->sceneFade_ && !sIsWaitingForFadeOut_) {
-	  sPendingSceneName_ = sceneName;
-	  sIsWaitingForFadeOut_ = true;
-
-	  // フェードの設定を1.5秒、EaseInOutに統一
-	  sCurrentScene_->sceneFade_->SetFadeDuration(1.5f);
-	  sCurrentScene_->sceneFade_->SetEasingType(SceneFade::EasingType::EaseInOut);
-	  sCurrentScene_->sceneFade_->SetEasingPower(2.0f);
-	  sCurrentScene_->sceneFade_->ResetFadeOutCompleted();
-	  sCurrentScene_->sceneFade_->StartFadeOut();
-   } else {
-	  // フェードが無効な場合は直接設定
 	  sNextSceneName_ = sceneName;
-   }
-}
-
-void BaseScene::SetFade(std::unique_ptr<SceneFade> fade) {
-   sceneFade_ = std::move(fade);
-}
-
-void BaseScene::CreateDefaultFade(float fadeDuration, uint32_t fadeColor) {
-   sceneFade_ = std::make_unique<SceneFade>();
-   sceneFade_->Initialize(fadeDuration, fadeColor);
-   sceneFade_->SetEasingType(SceneFade::EasingType::EaseInOut);
-   sceneFade_->SetEasingPower(2.0f);
-   sceneFade_->StartFadeIn();
 }
 
 void BaseScene::UpdateDebugCamera() {

@@ -209,6 +209,9 @@
     <None Include="resources\pipelines\postprocess\bloom_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
+    <None Include="resources\pipelines\postprocess\anti_aliasing_pipeline.json">
+      <Filter>resources\pipelines\postprocess</Filter>
+    </None>
     <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
@@ -367,6 +370,9 @@
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Bloom.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.cpp">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\ChromaticAberration.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
@@ -494,9 +500,6 @@
       <Filter>GameEngine\Object\Sprite</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\BaseScene.cpp">
-      <Filter>GameEngine\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Scene\SceneFade.cpp">
       <Filter>GameEngine\Scene</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\SceneManager.cpp">
@@ -769,6 +772,9 @@
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Bloom.h">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.h">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\ChromaticAberration.h">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
@@ -920,9 +926,6 @@
       <Filter>GameEngine\Scene</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Scene\ISceneFactory.h">
-      <Filter>GameEngine\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Scene\SceneFade.h">
       <Filter>GameEngine\Scene</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Scene\SceneManager.h">

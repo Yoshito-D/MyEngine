@@ -13,6 +13,7 @@ namespace GameEngine {
         j["lengthScale"] = lengthScale_;
 
         j["particleMeshType"] = static_cast<int>(particleMeshType_);
+        j["meshOriginY"] = meshOriginY_;
         // Ring
         j["ringInnerRadius"] = ringInnerRadius_;
         j["ringOuterRadius"] = ringOuterRadius_;
@@ -56,6 +57,7 @@ namespace GameEngine {
             particleMeshType_ = static_cast<ParticleMeshType>(j["particleMeshType"].get<int>());
             meshDirty_ = true;
         }
+        if (j.contains("meshOriginY")) SetMeshOriginY(j["meshOriginY"].get<float>());
         if (j.contains("ringInnerRadius")) ringInnerRadius_ = j["ringInnerRadius"];
         if (j.contains("ringOuterRadius")) ringOuterRadius_ = j["ringOuterRadius"];
         if (j.contains("ringSegments")) ringSegments_ = j["ringSegments"].get<uint32_t>();

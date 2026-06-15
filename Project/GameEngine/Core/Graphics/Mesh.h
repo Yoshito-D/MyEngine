@@ -72,32 +72,44 @@ public:
    /// @param width 幅
    /// @param height 高さ
    /// @param depth 奥行き
-   void CreateBox(float width = 1.0f, float height = 1.0f, float depth = 1.0f);
+   /// @param originY 縦方向の原点位置（0.0=下端, 0.5=中央, 1.0=上端）
+   void CreateBox(float width = 1.0f, float height = 1.0f, float depth = 1.0f, float originY = 0.5f);
 
    /// @brief 球体メッシュを作成
    /// @param radius 半径
    /// @param stackCount 縦方向の分割数（デフォルトは16）
    /// @param sliceCount 横方向の分割数（デフォルトは32）
-   void CreateSphere(float radius = 0.5f, uint32_t stackCount = 16, uint32_t sliceCount = 32);
+   /// @param originY 縦方向の原点位置（0.0=下端, 0.5=中央, 1.0=上端）
+   void CreateSphere(float radius = 0.5f, uint32_t stackCount = 16, uint32_t sliceCount = 32, float originY = 0.5f);
 
    /// @brief トーラスメッシュを作成
    /// @param majorRadius チューブ中心の円半径
    /// @param minorRadius チューブ断面の半径
    /// @param majorSegments 主方向の分割数（デフォルトは32）
    /// @param minorSegments チューブ断面の分割数（デフォルトは16）
-   void CreateTorus(float majorRadius = 0.5f, float minorRadius = 0.2f, uint32_t majorSegments = 32, uint32_t minorSegments = 16);
+   /// @param originY 縦方向の原点位置（0.0=下端, 0.5=中央, 1.0=上端）
+   void CreateTorus(float majorRadius = 0.5f, float minorRadius = 0.2f, uint32_t majorSegments = 32, uint32_t minorSegments = 16, float originY = 0.5f);
 
    /// @brief シリンダーメッシュを作成
    /// @param radius 半径
    /// @param height 高さ
    /// @param segmentCount 側面の分割数（デフォルトは32）
-   void CreateCylinder(float radius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32);
+   /// @param originY 縦方向の原点位置（0.0=底面, 0.5=中央, 1.0=上面）
+   void CreateCylinder(float radius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
+
+   /// @brief 底面と上面のないシリンダーメッシュを作成
+   /// @param radius 半径
+   /// @param height 高さ
+   /// @param segmentCount 側面の分割数（デフォルトは32）
+   /// @param originY 縦方向の原点位置（0.0=底面, 0.5=中央, 1.0=上面）
+   void CreateCylinderWithoutCaps(float radius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
 
    /// @brief コーンメッシュを作成
    /// @param radius 底面の半径
    /// @param height 高さ
    /// @param segmentCount 側面の分割数（デフォルトは32）
-   void CreateCone(float radius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32);
+   /// @param originY 縦方向の原点位置（0.0=底面, 0.5=中央, 1.0=上面）
+   void CreateCone(float radius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
 
    /// @brief 三角形メッシュを作成
    /// @param v0 頂点0の位置

@@ -52,7 +52,7 @@
     {
       "name": "Outline",
       "className": "Outline",
-      "priority": 65,
+      "priority": 0,
       "enabled": true,
       "pipelineName": "PostProcess_Outline",
       "rootSignatureName": "PostProcessOutline"
@@ -60,7 +60,7 @@
     {
       "name": "Pixelation",
       "className": "Pixelation",
-      "priority": 70,
+      "priority": 65,
       "enabled": false,
       "pipelineName": "PostProcess_Pixelation"
     },
@@ -79,10 +79,17 @@
       "pipelineName": "PostProcess_Bloom"
     },
     {
+      "name": "Anti Aliasing",
+      "className": "AntiAliasing",
+      "priority": 95,
+      "enabled": true,
+      "pipelineName": "PostProcess_AntiAliasing"
+    },
+    {
       "name": "Linear to sRGB",
       "className": "LinearToSRGB",
       "priority": 100,
-      "enabled": true,
+      "enabled": false,
       "pipelineName": "PostProcess_LinearToSRGB"
     }
   ]

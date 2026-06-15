@@ -113,18 +113,7 @@ Quaternion Slerp(const Quaternion& q0, const Quaternion& q1, float t) {
 }
 
 Quaternion Vector3ToQuaternion(const Vector3& eulerAngles) {
-   float cy = std::cos(eulerAngles.y * 0.5f);
-   float sy = std::sin(eulerAngles.y * 0.5f);
-   float cp = std::cos(eulerAngles.x * 0.5f);
-   float sp = std::sin(eulerAngles.x * 0.5f);
-   float cr = std::cos(eulerAngles.z * 0.5f);
-   float sr = std::sin(eulerAngles.z * 0.5f);
-   Quaternion q;
-   q.w = cr * cp * cy + sr * sp * sy;
-   q.x = sr * cp * cy - cr * sp * sy;
-   q.y = cr * sp * cy + sr * cp * sy;
-	  q.z = cr * cp * sy - sr * sp * cy;
-   return q.Normalize();
+   return eulerAngles.ToQuaternion().Normalize();
 }
 
 Quaternion LookRotation(const Vector3& forward, const Vector3& up) {

@@ -30,7 +30,7 @@ public:
    void SetIntensity(float intensity);
 
 private:
-   float outlineColor_[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+   float outlineColor_[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
    float thickness_ = 1.4f;
    float depthThreshold_ = 0.4f;
    float intensity_ = 0.8f;

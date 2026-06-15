@@ -131,10 +131,13 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
 	  mainModule->SetStartRotationRandomize(rotationRandomize);
    }
 
+   // Degreesで表示するように修正
+
    if (rotationRandomize) {
+	  // ImGuiのDragFloat3はオイラー角で回転を編集するため、クォータニオンをオイラー角に変換して表示
 	  float rotMin[3] = { rotation.minValue.x, rotation.minValue.y, rotation.minValue.z };
 	  float rotMax[3] = { rotation.maxValue.x, rotation.maxValue.y, rotation.maxValue.z };
-	  if (ImGui::DragFloat3("Min##Rotation", rotMin, 1.0f, -180.0f, 180.0f)) {
+	  if (ImGui::DragFloat3("Min##Rotation", rotMin, 1.0f, -std::numbers::pi_v<float>, std::numbers::pi_v<float>)) {
 		 // 各軸でMinがMaxを超えないように制約
 		 for (int i = 0; i < 3; ++i) {
 			if (rotMin[i] > rotMax[i]) {
@@ -143,7 +146,7 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
 		 }
 		 mainModule->SetStartRotationMin(Vector3(rotMin[0], rotMin[1], rotMin[2]));
 	  }
-	  if (ImGui::DragFloat3("Max##Rotation", rotMax, 1.0f, -180.0f, 180.0f)) {
+	  if (ImGui::DragFloat3("Max##Rotation", rotMax, 1.0f, -std::numbers::pi_v<float>, std::numbers::pi_v<float>)) {
 		 // 各軸でMaxがMinを下回らないように制約
 		 for (int i = 0; i < 3; ++i) {
 			if (rotMax[i] < rotMin[i]) {
@@ -154,7 +157,7 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
 	  }
    } else {
 	  float rotValue[3] = { rotation.minValue.x, rotation.minValue.y, rotation.minValue.z };
-	  if (ImGui::DragFloat3("Value##Rotation", rotValue, 1.0f, -180.0f, 180.0f)) {
+	  if (ImGui::DragFloat3("Value##Rotation", rotValue, 1.0f, -std::numbers::pi_v<float>, std::numbers::pi_v<float>)) {
 		 Vector3 rot(rotValue[0], rotValue[1], rotValue[2]);
 		 mainModule->SetStartRotationMin(rot);
 		 mainModule->SetStartRotationMax(rot);

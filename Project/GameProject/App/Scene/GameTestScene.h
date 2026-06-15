@@ -53,6 +53,12 @@ private:
    GameEngine::ParticleEmitterComponent* sonicBoomEmitter_ = nullptr;
    int sonicBoomSlotIndex_ = -1;
 
+   GameEngine::ParticleEmitterComponent* landingRingEmitter_ = nullptr;
+   int landingRingSlotIndex_ = -1;
+
+   GameEngine::ParticleEmitterComponent* landingEmitter_ = nullptr;
+   int landingSlotIndex_ = -1;
+
    // 惑星2 の配置パラメータ
    static constexpr float kPlanet2Radius = 20.0f;
    static constexpr float kPlanet2Distance = 53.0f; ///< 惑星1中心からの距離

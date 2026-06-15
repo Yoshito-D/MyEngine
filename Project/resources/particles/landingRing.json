@@ -12,7 +12,7 @@
             1.0,
             1.0,
             1.0,
-            0.4627451002597809
+            0.9411764740943909
         ]
     },
     "emissionModule": {
@@ -20,13 +20,13 @@
             {
                 "count": 1,
                 "cycles": 0,
-                "interval": 1.649999976158142,
+                "interval": 3.4000000953674316,
                 "time": 0.0
             }
         ],
         "enabled": true,
         "rateOverDistance": 0.0,
-        "rateOverTime": 15.0
+        "rateOverTime": 1.0
     },
     "forceOverLifetimeModule": {
         "enabled": false,
@@ -42,7 +42,7 @@
         "speedLimit": 10.0
     },
     "mainModule": {
-        "duration": 0.20000000298023224,
+        "duration": 0.05000000074505806,
         "emissionRate": 10.0,
         "gravityModifier": 0.0,
         "looping": false,
@@ -62,12 +62,12 @@
         },
         "startRotation": {
             "max": [
-                0.0,
+                1.5700000524520874,
                 0.0,
                 0.0
             ],
             "min": [
-                0.0,
+                1.5700000524520874,
                 0.0,
                 0.0
             ],
@@ -115,10 +115,11 @@
         "cylinderSegments": 32,
         "enabled": true,
         "lengthScale": 2.0,
+        "meshOriginY": 0.0,
         "particleMeshType": 1,
         "planeDepth": 1.0,
         "planeWidth": 1.0,
-        "ringInnerRadius": 0.23000000417232513,
+        "ringInnerRadius": 0.0,
         "ringOuterRadius": 0.4000000059604645,
         "ringSegments": 32,
         "rotationSpace": 1,
@@ -163,9 +164,9 @@
         ],
         "radius": 1.0,
         "rotation": [
+            -2.0254525424732432e-20,
             1.5242230810841306e-09,
-            1.3288425915192192e-11,
-            0.0
+            1.3288425915192192e-11
         ],
         "scale": [
             1.0,
@@ -177,15 +178,15 @@
     "sizeOverLifetimeModule": {
         "enabled": true,
         "endSize": [
-            2.0,
-            2.0,
-            2.0
+            3.0,
+            3.0,
+            3.0
         ],
-        "sizeMultiplier": 2.859999895095825,
+        "sizeMultiplier": 1.940000057220459,
         "startSize": [
-            0.30000001192092896,
-            0.30000001192092896,
-            0.0
+            1.0,
+            1.0,
+            1.0
         ]
     },
     "textureName": "gradationLine",
@@ -213,18 +214,18 @@
             "randomize": false
         },
         "scaleConstant": [
-            1.0,
+            0.550000011920929,
             1.0
         ],
         "scaleCurveEnd": [
             1.0,
-            1.0
+            2.9800000190734863
         ],
         "scaleCurveStart": [
             1.0,
             1.0
         ],
-        "scaleMode": 0,
+        "scaleMode": 2,
         "scaleRandom": {
             "max": [
                 1.0,

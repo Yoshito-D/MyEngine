@@ -7,7 +7,6 @@ struct OutlineParams
     float thickness;
     float depthThreshold;
     float intensity;
-    float3 padding;
 };
 
 ConstantBuffer<OutlineParams> gParams : register(b0);

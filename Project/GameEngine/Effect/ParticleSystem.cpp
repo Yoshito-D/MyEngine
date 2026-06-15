@@ -42,6 +42,7 @@ void ParticleSystem::RebuildParticleMesh() {
    if (!rm) return;
 
    using MeshType = RendererModule::ParticleMeshType;
+   const float meshOriginY = rm->GetMeshOriginY();
    switch (rm->GetParticleMeshType()) {
 	  case MeshType::Quad:
 		 quadMesh_->CreateParticleQuad(1.0f, 1.0f);
@@ -50,18 +51,18 @@ void ParticleSystem::RebuildParticleMesh() {
 		 quadMesh_->CreateRing(rm->GetRingInnerRadius(), rm->GetRingOuterRadius(), rm->GetRingSegments());
 		 break;
 	  case MeshType::Sphere:
-		 quadMesh_->CreateSphere(rm->GetSphereRadius(), rm->GetSphereStacks(), rm->GetSphereSlices());
+		 quadMesh_->CreateSphere(rm->GetSphereRadius(), rm->GetSphereStacks(), rm->GetSphereSlices(), meshOriginY);
 		 break;
 	  case MeshType::Box: {
 		 auto s = rm->GetBoxSize();
-		 quadMesh_->CreateBox(s.x, s.y, s.z);
+		 quadMesh_->CreateBox(s.x, s.y, s.z, meshOriginY);
 		 break;
 	  }
 	  case MeshType::Cylinder:
-		 quadMesh_->CreateCylinder(rm->GetCylinderRadius(), rm->GetCylinderHeight(), rm->GetCylinderSegments());
+		 quadMesh_->CreateCylinderWithoutCaps(rm->GetCylinderRadius(), rm->GetCylinderHeight(), rm->GetCylinderSegments(), meshOriginY);
 		 break;
 	  case MeshType::Cone:
-		 quadMesh_->CreateCone(rm->GetConeRadius(), rm->GetConeHeight(), rm->GetConeSegments());
+		 quadMesh_->CreateCone(rm->GetConeRadius(), rm->GetConeHeight(), rm->GetConeSegments(), meshOriginY);
 		 break;
 	  case MeshType::Circle:
 		 quadMesh_->CreateCircle(rm->GetCircleRadius(), rm->GetCircleSegments());
@@ -71,7 +72,7 @@ void ParticleSystem::RebuildParticleMesh() {
 		 break;
 	  case MeshType::Torus:
 		 quadMesh_->CreateTorus(rm->GetTorusMajorRadius(), rm->GetTorusMinorRadius(),
-			rm->GetTorusMajorSegments(), rm->GetTorusMinorSegments());
+			rm->GetTorusMajorSegments(), rm->GetTorusMinorSegments(), meshOriginY);
 		 break;
 	  case MeshType::Triangle:
 		 quadMesh_->CreateTriangle();
@@ -394,21 +395,13 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    billboardMatrix.m[3][2] = 0.0f;
 
    // Renderer settings
-   const auto rotationSpace = rendererModule_->GetRotationSpace();
    const auto billboardType = rendererModule_->GetBillboardType();
-   const Quaternion emitterRotation = shapeModule_
-	  ? shapeModule_->GetTransform().GetActiveQuaternion()
-	  : Quaternion::Identity();
 
    for (auto& particle : particles_) {
 	  if (!particle.isActive || instanceIndex >= kMaxParticles) continue;
 
 	  Matrix4x4 worldMatrix;
 	  Quaternion particleRotation = particle.transform.GetActiveQuaternion();
-	  if (rotationSpace == RendererModule::RotationSpace::Local) {
-		 particleRotation = (emitterRotation * particleRotation).Normalize();
-	  }
-
 	  Transform renderTransform = particle.transform;
 	  renderTransform.SetRotationQuaternion(particleRotation);
 
@@ -690,7 +683,13 @@ void ParticleSystem::EmitParticle() {
    particle.transform.scale = size;
 
    Vector3 rotation = mainModule_->GetStartRotation().GetValue();
-   particle.transform.SetRotationQuaternion(Vector3ToQuaternion(rotation));
+   Quaternion initialRotation = Vector3ToQuaternion(rotation);
+   if (rendererModule_ &&
+	  rendererModule_->GetRotationSpace() == RendererModule::RotationSpace::Local &&
+	  rendererModule_->GetBillboardType() == RendererModule::BillboardType::None) {
+	  initialRotation = (emitterTransform.GetActiveQuaternion() * initialRotation).Normalize();
+   }
+   particle.transform.SetRotationQuaternion(initialRotation);
 
    // Color - RandomColorから取得してVector4に変換
    uint32_t colorValue = mainModule_->GetStartColor().GetValue();

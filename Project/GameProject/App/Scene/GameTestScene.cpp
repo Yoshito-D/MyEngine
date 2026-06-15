@@ -40,6 +40,7 @@ void GameTestScene::Initialize() {
 
    EngineContext::LoadTexture("resources/textures/space_2048px.dds", "skyboxTexture");
    EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
+   EngineContext::LoadTexture("resources/textures/gradationLine1.png", "gradationLine1");
    EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
 
 
@@ -208,6 +209,41 @@ void GameTestScene::Initialize() {
 	  }
    }
 
+   landingRingEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (landingRingEmitter_) {
+	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;
+	  Config cfg;
+	  cfg.followPosition = true;
+	  cfg.followRotation = true;
+	  cfg.followScale = true;
+	  cfg.positionOffset = { 0.0f, -0.3f, 0.0f };
+	  cfg.simulationSpace = Config::Space::World;
+	  landingRingSlotIndex_ = landingRingEmitter_->AddSlot("resources/particles/landingRing.json", cfg);
+	  if (auto* slot = landingRingEmitter_->GetSlot(landingRingSlotIndex_)) {
+		 slot->loop = false;
+		 slot->autoPlay = false;
+		 landingRingEmitter_->LoadSlot(*slot);
+	  }
+   }
+
+   landingEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (landingEmitter_) {
+	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;
+	  Config cfg;
+	  cfg.followPosition = true;
+	  cfg.followRotation = true;
+	  cfg.followScale = true;
+	  cfg.positionOffset = { 0.0f, -0.3f, 0.0f };
+	  cfg.simulationSpace = Config::Space::World;
+	  landingSlotIndex_ = landingEmitter_->AddSlot("resources/particles/landing.json", cfg);
+	  if (auto* slot = landingEmitter_->GetSlot(landingSlotIndex_)) {
+		 slot->loop = false;
+		 slot->autoPlay = false;
+		 landingEmitter_->LoadSlot(*slot);
+	  }
+   }
+
+
    // --- 仮想カメラのセットアップ ---
    rearFollowVcam_ = std::make_unique<VirtualCamera>();
    rearFollowVcam_->Initialize();
@@ -347,6 +383,31 @@ void GameTestScene::Update() {
 		 }
 	  }
    }
+
+   if (landingRingEmitter_) {
+	  auto* jump = player_->GetComponent<App::CharacterJump>();
+	  auto* landing = player_->GetComponent<App::CharacterLanding>();
+	  static bool wasJump = false;
+	  if (jump && landing && landing->IsGrounded() && wasJump) {
+		 if (landingRingSlotIndex_ >= 0) {
+			landingRingEmitter_->Play(landingRingSlotIndex_);
+		 }
+	  }
+	  wasJump = jump ? jump->IsJumping() : true;
+   }
+
+   if (landingEmitter_) {
+	  auto* jump = player_->GetComponent<App::CharacterJump>();
+	  auto* landing = player_->GetComponent<App::CharacterLanding>();
+	  static bool wasGrounded = false;
+	  if (jump && landing && jump->IsJumping() && wasGrounded) {
+		 if (landingSlotIndex_ >= 0) {
+			landingEmitter_->Play(landingSlotIndex_);
+		 }
+	  }
+	  wasGrounded = landing ? landing->IsGrounded() : true;
+   }
+
 
 #ifdef USE_IMGUI
    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);

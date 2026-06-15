@@ -348,6 +348,20 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 
 			// Shape-specific parameters
 			auto meshType = rendererModule->GetParticleMeshType();
+			const bool supportsMeshOriginY =
+			   meshType == GameEngine::RendererModule::ParticleMeshType::Sphere ||
+			   meshType == GameEngine::RendererModule::ParticleMeshType::Box ||
+			   meshType == GameEngine::RendererModule::ParticleMeshType::Cylinder ||
+			   meshType == GameEngine::RendererModule::ParticleMeshType::Cone ||
+			   meshType == GameEngine::RendererModule::ParticleMeshType::Torus;
+			if (supportsMeshOriginY) {
+			   float originY = rendererModule->GetMeshOriginY();
+			   std::string id = "Origin Y (0=Bottom, 1=Top)##MeshOriginY_" + particleSystemName;
+			   if (ImGui::SliderFloat(id.c_str(), &originY, 0.0f, 1.0f, "%.2f")) {
+				  rendererModule->SetMeshOriginY(originY);
+			   }
+			}
+
 			switch (meshType) {
 			   case GameEngine::RendererModule::ParticleMeshType::Ring: {
 				  float innerR = rendererModule->GetRingInnerRadius();
