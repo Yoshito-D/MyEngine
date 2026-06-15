@@ -63,6 +63,9 @@ public:
    /// @brief フレームの開始時の処理
    void BeginFrame();
 
+   /// @brief 描画先を現在のバックバッファサイズへ同期
+   void SyncRenderTargetSizeToDevice();
+
    /// @brief フレームの終了時の処理
    void EndFrame();
 

@@ -262,7 +262,9 @@
     <None Include="resources\pipelines\object3d_dissolve_pipeline.json" />
     <None Include="resources\pipelines\postprocess\boxfilter_pipeline.json" />
     <None Include="resources\pipelines\postprocess\linear_to_srgb_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\outline_pipeline.json" />
     <None Include="resources\pipelines\postprocess\speedline_pipeline.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_outline_rootsig.json" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -375,6 +377,9 @@
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Grayscale.cpp">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Outline.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Pixelation.cpp">
@@ -774,6 +779,9 @@
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Grayscale.h">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Outline.h">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Pixelation.h">

@@ -15,7 +15,12 @@ public:
    /// @param device グラフィックスデバイス
    /// @param width ウィンドウの幅
    /// @param height ウィンドウの高さ
-   void Initialize(GraphicsDevice* device, uint32_t width = Window::kWindowWidth, uint32_t height = Window::kWindowHeight);
+   void Initialize(GraphicsDevice* device, uint32_t width = Window::kResolutionWidth, uint32_t height = Window::kResolutionHeight);
+
+   /// @brief オフスクリーンレンダリングターゲットを指定サイズへリサイズ
+   /// @param width 新しい幅
+   /// @param height 新しい高さ
+   void Resize(uint32_t width, uint32_t height);
 
    /// @brief 描画前の処理
    /// @param useDSV 深度ステンシルビューを使用するかどうか
@@ -62,6 +67,7 @@ private:
 	  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 	  D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
 	  D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
+	  UINT srvIndex = static_cast<UINT>(-1);
    };
 
    GraphicsDevice* device_ = nullptr;
@@ -78,7 +84,8 @@ private:
 
    /// @brief レンダーターゲット情報を作成
    /// @param index 作成するレンダーターゲットのインデックス（0または1）
+   /// @param srvIndex 再利用するSRVインデックス。未指定の場合は新規確保
    /// @return 作成されたレンダーターゲット情報
-   RenderTargetInfo CreateRenderTargetInfo(int index);
+   RenderTargetInfo CreateRenderTargetInfo(int index, UINT srvIndex = static_cast<UINT>(-1));
 };
 }

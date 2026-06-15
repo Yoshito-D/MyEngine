@@ -13,7 +13,29 @@ void OffscreenRenderTarget::Initialize(GraphicsDevice* device, uint32_t width, u
    previousRenderTarget_ = CreateRenderTargetInfo(1);
 }
 
-OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTargetInfo(int index) {
+void OffscreenRenderTarget::Resize(uint32_t width, uint32_t height) {
+   if (!device_ || width == 0 || height == 0) {
+	  return;
+   }
+
+   if (width_ == width && height_ == height) {
+	  return;
+   }
+
+   const UINT currentSrvIndex = currentRenderTarget_.srvIndex;
+   const UINT previousSrvIndex = previousRenderTarget_.srvIndex;
+
+   currentRenderTarget_.renderTarget.Reset();
+   previousRenderTarget_.renderTarget.Reset();
+
+   width_ = width;
+   height_ = height;
+
+   currentRenderTarget_ = CreateRenderTargetInfo(0, currentSrvIndex);
+   previousRenderTarget_ = CreateRenderTargetInfo(1, previousSrvIndex);
+}
+
+OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTargetInfo(int index, UINT srvIndex) {
    RenderTargetInfo info;
 
    D3D12_RESOURCE_DESC texDesc = {};
@@ -51,7 +73,11 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
    device_->GetDevice()->CreateRenderTargetView(info.renderTarget.Get(), nullptr, info.rtvHandle);
 
    // SRV作成
-   UINT srvIndex = device_->GetNextSrvIndex();
+   const bool allocateSrvIndex = srvIndex == static_cast<UINT>(-1);
+   if (allocateSrvIndex) {
+	  srvIndex = device_->GetNextSrvIndex();
+   }
+   info.srvIndex = srvIndex;
    info.srvHandleCPU = CD3DX12_CPU_DESCRIPTOR_HANDLE(
 	  device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), srvIndex,
 	  device_->GetDescriptorSizeCBVSRVUAV());
@@ -66,7 +92,9 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
    srvDesc.Texture2D.MipLevels = 1;
 
    device_->GetDevice()->CreateShaderResourceView(info.renderTarget.Get(), &srvDesc, info.srvHandleCPU);
-   device_->IncrementSrvIndex();
+   if (allocateSrvIndex) {
+	  device_->IncrementSrvIndex();
+   }
 
    return info;
 }
@@ -83,6 +111,7 @@ void OffscreenRenderTarget::PreDraw(bool useDSV) {
 
    // 描画ターゲットを設定
    if (useDSV) {
+	  device_->TransitionDepthStencilToWrite();
 	  CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
 	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, &dsvHandle);
 
@@ -118,6 +147,7 @@ void OffscreenRenderTarget::PreDrawWithoutClear(bool useDSV) {
    commandList->ResourceBarrier(1, &barrier);
 
    if (useDSV) {
+	  device_->TransitionDepthStencilToWrite();
 	  CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
 	  commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 

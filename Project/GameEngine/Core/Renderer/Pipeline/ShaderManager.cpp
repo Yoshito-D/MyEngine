@@ -297,7 +297,7 @@ void ShaderManager::LogRootParameterTablesDebug() const {
 	  "Object3D", "Sprite", "Particle", "Line3D", "FullscreenTriangle",
 	  "PostProcess_Grayscale", "PostProcess_RadialBlur", "PostProcess_GaussFilter",
 	  "PostProcess_Vignette", "PostProcess_ChromaticAberration", "PostProcess_ShockWave",
-	  "PostProcess_Pixelation", "PostProcess_Bloom", "PostProcess_BoxFilter"
+	  "PostProcess_Pixelation", "PostProcess_Bloom", "PostProcess_BoxFilter", "PostProcess_Outline"
    };
 
    const auto stageInfos = GetPipelineStageMatchInfos();
