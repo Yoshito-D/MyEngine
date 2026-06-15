@@ -59,7 +59,7 @@ public:
 	float distance = 12.0f;
 
 	/// @brief ピボットからの上方向オフセット
-	float height = 5.0f;
+	float height = 4.0f;
 
 	/// @brief 地上時の後方補間速度
 	float rearLerpSpeed = 10.0f;

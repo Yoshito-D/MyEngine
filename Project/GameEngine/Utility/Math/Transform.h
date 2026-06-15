@@ -59,36 +59,11 @@ struct Transform {
 
 private:
    static Quaternion EulerToQuaternion(const Vector3& eulerAngles) {
-      const float cy = std::cos(eulerAngles.y * 0.5f);
-      const float sy = std::sin(eulerAngles.y * 0.5f);
-      const float cp = std::cos(eulerAngles.x * 0.5f);
-      const float sp = std::sin(eulerAngles.x * 0.5f);
-      const float cr = std::cos(eulerAngles.z * 0.5f);
-      const float sr = std::sin(eulerAngles.z * 0.5f);
-
-      Quaternion q;
-      q.w = cr * cp * cy + sr * sp * sy;
-      q.x = sr * cp * cy - cr * sp * sy;
-      q.y = cr * sp * cy + sr * cp * sy;
-      q.z = cr * cp * sy - sr * sp * cy;
-      return q.Normalize();
+      return eulerAngles.ToQuaternion().Normalize();
    }
 
    static Vector3 QuaternionToEuler(const Quaternion& quaternion) {
-      Quaternion q = quaternion.Normalize();
-
-      const float sinPitch = 2.0f * (q.w * q.x - q.y * q.z);
-      float pitch;
-      if (std::fabs(sinPitch) >= 1.0f) {
-         pitch = std::copysign(3.14159265358979323846f * 0.5f, sinPitch);
-      } else {
-         pitch = std::asin(sinPitch);
-      }
-
-      const float yaw = std::atan2(2.0f * (q.w * q.y + q.z * q.x), 1.0f - 2.0f * (q.x * q.x + q.y * q.y));
-      const float roll = std::atan2(2.0f * (q.w * q.z + q.x * q.y), 1.0f - 2.0f * (q.x * q.x + q.z * q.z));
-
-      return Vector3(pitch, yaw, roll);
+      return quaternion.Normalize().ToEuler();
    }
 };
 

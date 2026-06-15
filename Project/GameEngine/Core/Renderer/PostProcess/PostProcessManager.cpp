@@ -13,6 +13,7 @@
 #include "BoxFilter.h"
 #include "LinearToSRGB.h"
 #include "Outline.h"
+#include "AntiAliasing.h"
 #include "Core/Renderer/Pipeline/PSOManager.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -62,6 +63,7 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
    effectFactoryRegistry_.RegisterFactory("BoxFilter", [] { return std::make_unique<BoxFilter>(); });
    effectFactoryRegistry_.RegisterFactory("LinearToSRGB", [] { return std::make_unique<LinearToSRGB>(); });
    effectFactoryRegistry_.RegisterFactory("Outline", [] { return std::make_unique<Outline>(); });
+   effectFactoryRegistry_.RegisterFactory("AntiAliasing", [] { return std::make_unique<AntiAliasing>(); });
 
    effectFactoriesRegistered_ = true;
 }
@@ -118,7 +120,7 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  const char* rootSignatureName;
    };
 
-   static const std::array<PredefinedEffectEntry, 12> kEntries = {
+   static const std::array<PredefinedEffectEntry, 13> kEntries = {
 	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur", "PostProcess" },
 	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale", "PostProcess" },
 	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter", "PostProcess" },
@@ -130,7 +132,8 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  PredefinedEffectEntry{ "Pixelation", "Pixelation", 70, "PostProcess_Pixelation", "PostProcess" },
 	  PredefinedEffectEntry{ "SpeedLine", "Speed Line", 75, "PostProcess_SpeedLine", "PostProcess" },
 	  PredefinedEffectEntry{ "Bloom", "Bloom", 80, "PostProcess_Bloom", "PostProcess" },
-	  PredefinedEffectEntry{ "LinearToSRGB", "Linear to sRGB", 90, "PostProcess_LinearToSRGB", "PostProcess" }
+	  PredefinedEffectEntry{ "AntiAliasing", "Anti Aliasing", 95, "PostProcess_AntiAliasing", "PostProcess" },
+	  PredefinedEffectEntry{ "LinearToSRGB", "Linear to sRGB", 100, "PostProcess_LinearToSRGB", "PostProcess" }
    };
 
    for (const auto& entry : kEntries) {

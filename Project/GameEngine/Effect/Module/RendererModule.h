@@ -1,6 +1,7 @@
 #pragma once
 #include "ParticleModule.h"
 #include "Utility/VectorMath.h"
+#include <algorithm>
 #include <nlohmann/json.hpp>
 
 namespace GameEngine {
@@ -48,6 +49,9 @@ public:
 
    void SetParticleMeshType(ParticleMeshType type) { particleMeshType_ = type; meshDirty_ = true; }
    ParticleMeshType GetParticleMeshType() const { return particleMeshType_; }
+
+   void SetMeshOriginY(float originY) { meshOriginY_ = std::clamp(originY, 0.0f, 1.0f); meshDirty_ = true; }
+   float GetMeshOriginY() const { return meshOriginY_; }
 
    void SetRingInnerRadius(float r) { ringInnerRadius_ = r; meshDirty_ = true; }
    float GetRingInnerRadius() const { return ringInnerRadius_; }
@@ -111,6 +115,7 @@ private:
    float speedScale_ = 1.0f;
    float lengthScale_ = 2.0f;
    ParticleMeshType particleMeshType_ = ParticleMeshType::Quad;
+   float meshOriginY_ = 0.5f;
    bool meshDirty_ = false;
    float ringInnerRadius_ = 0.4f;
    float ringOuterRadius_ = 0.5f;

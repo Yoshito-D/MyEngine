@@ -21,6 +21,7 @@ void EngineTestScene::Initialize() {
    EngineContext::LoadTexture("resources/textures/particle.png", "particle");
    EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
    EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
+   EngineContext::LoadTexture("resources/textures/gradationLine1.png", "gradationLine1");
 
    EngineContext::CreateMaterial("animCubeMaterial", 0xffffffff, 0);
    auto* animCubeMaterial = EngineContext::GetMaterial("animCubeMaterial");
@@ -48,8 +49,9 @@ void EngineTestScene::Initialize() {
    // --- パーティクルシステムの作成 ---
    particleSystem_ = std::make_unique<ParticleSystem>();
    particleSystem_->Create();
-   particleSystem_->SetName("sonicBoom");
-   particleSystem_->LoadFromJson("resources/particles/sonicBoom.json");
+   particleSystem_->SetTexture(EngineContext::GetTexture("particle"));
+   particleSystem_->SetName("landing");
+   particleSystem_->LoadFromJson("resources/particles/landing.json");
    particleSystem_->Play();
 
 #ifdef USE_IMGUI

@@ -4,6 +4,7 @@
 #include "Core/Window/Window.h"
 #include "Utility/MathUtils.h"
 #include "GraphicsDevice.h"
+#include <algorithm>
 #include <numbers>
 
 
@@ -48,6 +49,10 @@ Vector3 PlaneNormal(Mesh::PlaneOrientation orientation) {
    case Mesh::PlaneOrientation::XY:
    default:                         return { 0.0f, 0.0f, -1.0f };
    }
+}
+
+float VerticalOriginOffset(float height, float originY) {
+   return height * (0.5f - std::clamp(originY, 0.0f, 1.0f));
 }
 }
 
@@ -377,7 +382,7 @@ void Mesh::CreateCircle(float radius, uint32_t segmentCount, PlaneOrientation or
    indexCount_ = kIndexCount;
 }
 
-void Mesh::CreateBox(float width, float height, float depth) {
+void Mesh::CreateBox(float width, float height, float depth, float originY) {
    if (!sIsInitialized_) return;
 
    // 各面: { 4頂点 } × 6面
@@ -385,6 +390,7 @@ void Mesh::CreateBox(float width, float height, float depth) {
    const float hw = width * 0.5f;
    const float hh = height * 0.5f;
    const float hd = depth * 0.5f;
+   const float yOffset = VerticalOriginOffset(height, originY);
 
    const FaceVertex kFaces[6][4] = {
 	  // +X
@@ -424,7 +430,9 @@ void Mesh::CreateBox(float width, float height, float depth) {
    for (uint32_t face = 0; face < 6; ++face) {
 	  for (uint32_t v = 0; v < 4; ++v) {
 		 uint32_t idx = face * 4 + v;
-		 vertexData_[idx].position = kFaces[face][v].pos;
+		 Vector4 position = kFaces[face][v].pos;
+		 position.y += yOffset;
+		 vertexData_[idx].position = position;
 		 vertexData_[idx].texCoord = kFaces[face][v].uv;
 		 vertexData_[idx].normal = kFaces[face][v].norm;
 	  }
@@ -436,11 +444,12 @@ void Mesh::CreateBox(float width, float height, float depth) {
    indexCount_ = kIndexCount;
 }
 
-void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount) {
+void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, float originY) {
    if (!sIsInitialized_) return;
 
    const uint32_t kVertexCount = (stackCount + 1) * (sliceCount + 1);
    const uint32_t kIndexCount = stackCount * sliceCount * 6;
+   const float yOffset = VerticalOriginOffset(radius * 2.0f, originY);
 
    uint32_t* indexData = nullptr;
    AllocateMesh(kVertexCount, kIndexCount,
@@ -457,7 +466,7 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount) 
 		 float y = std::cosf(phi);
 		 float z = std::sinf(phi) * std::sinf(theta);
 		 uint32_t idx = stack * (sliceCount + 1) + slice;
-		 vertexData_[idx].position = { x * radius, y * radius, z * radius, 1.0f };
+		 vertexData_[idx].position = { x * radius, y * radius + yOffset, z * radius, 1.0f };
 		 vertexData_[idx].texCoord = { u, v };
 		 vertexData_[idx].normal = { x, y, z };
 	  }
@@ -476,11 +485,12 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount) 
    indexCount_ = kIndexCount;
 }
 
-void Mesh::CreateTorus(float majorRadius, float minorRadius, uint32_t majorSegments, uint32_t minorSegments) {
+void Mesh::CreateTorus(float majorRadius, float minorRadius, uint32_t majorSegments, uint32_t minorSegments, float originY) {
    if (!sIsInitialized_) return;
 
    const uint32_t kVertexCount = (majorSegments + 1) * (minorSegments + 1);
    const uint32_t kIndexCount = majorSegments * minorSegments * 6;
+   const float yOffset = VerticalOriginOffset(minorRadius * 2.0f, originY);
 
    uint32_t* indexData = nullptr;
    AllocateMesh(kVertexCount, kIndexCount,
@@ -498,14 +508,15 @@ void Mesh::CreateTorus(float majorRadius, float minorRadius, uint32_t majorSegme
 		 float cx = majorRadius * cosPhi;
 		 float cz = majorRadius * sinPhi;
 		 float x = (majorRadius + minorRadius * cosTheta) * cosPhi;
-		 float y = minorRadius * sinTheta;
+		 float localY = minorRadius * sinTheta;
+		 float y = localY + yOffset;
 		 float z = (majorRadius + minorRadius * cosTheta) * sinPhi;
 		 float nx = (x - cx) / minorRadius;
 		 float nz = (z - cz) / minorRadius;
 		 uint32_t idx = i * (minorSegments + 1) + j;
 		 vertexData_[idx].position = { x, y, z, 1.0f };
 		 vertexData_[idx].texCoord = { static_cast<float>(i) / majorSegments, static_cast<float>(j) / minorSegments };
-		 vertexData_[idx].normal = { nx, y / minorRadius, nz };
+		 vertexData_[idx].normal = { nx, localY / minorRadius, nz };
 	  }
    }
 
@@ -522,7 +533,7 @@ void Mesh::CreateTorus(float majorRadius, float minorRadius, uint32_t majorSegme
    indexCount_ = kIndexCount;
 }
 
-void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount) {
+void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount, float originY) {
    if (!sIsInitialized_) return;
 
    // 側面頂点: (segmentCount+1) × 2 + 中心頂点 2 個 + 上下外周各 segmentCount 個
@@ -534,6 +545,7 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount) {
    const uint32_t kCapIdx = segmentCount * 3;
    const uint32_t kIndexCount = kSideIdx + kCapIdx * 2;
    const float    hh = height * 0.5f;
+   const float    yOffset = VerticalOriginOffset(height, originY);
    const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
 
    uint32_t* indexData = nullptr;
@@ -547,10 +559,10 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount) {
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
 	  float u = static_cast<float>(i) / static_cast<float>(segmentCount);
-	  vertexData_[i * 2 + 0].position = { radius * cos,  hh, radius * sin, 1.0f };
+	  vertexData_[i * 2 + 0].position = { radius * cos,  hh + yOffset, radius * sin, 1.0f };
 	  vertexData_[i * 2 + 0].texCoord = { u, 0.0f };
 	  vertexData_[i * 2 + 0].normal = { cos, 0.0f, sin };
-	  vertexData_[i * 2 + 1].position = { radius * cos, -hh, radius * sin, 1.0f };
+	  vertexData_[i * 2 + 1].position = { radius * cos, -hh + yOffset, radius * sin, 1.0f };
 	  vertexData_[i * 2 + 1].texCoord = { u, 1.0f };
 	  vertexData_[i * 2 + 1].normal = { cos, 0.0f, sin };
    }
@@ -564,14 +576,14 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount) {
 
    // 上蓋 (Y=+hh, 法線 Y+)
    uint32_t topBase = kSideVerts;
-   vertexData_[topBase].position = { 0.0f, hh, 0.0f, 1.0f };
+   vertexData_[topBase].position = { 0.0f, hh + yOffset, 0.0f, 1.0f };
    vertexData_[topBase].texCoord = { 0.5f, 0.5f };
    vertexData_[topBase].normal = { 0.0f, 1.0f, 0.0f };
    for (uint32_t i = 0; i < segmentCount; ++i) {
 	  float theta = kStep * static_cast<float>(i);
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
-	  vertexData_[topBase + 1 + i].position = { radius * cos, hh, radius * sin, 1.0f };
+	  vertexData_[topBase + 1 + i].position = { radius * cos, hh + yOffset, radius * sin, 1.0f };
 	  vertexData_[topBase + 1 + i].texCoord = { cos * 0.5f + 0.5f, sin * 0.5f + 0.5f };
 	  vertexData_[topBase + 1 + i].normal = { 0.0f, 1.0f, 0.0f };
 	  indexData[kSideIdx + i * 3 + 0] = topBase;
@@ -581,14 +593,14 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount) {
 
    // 下蓋 (Y=-hh, 法線 Y-)
    uint32_t botBase = kSideVerts + kCapVerts;
-   vertexData_[botBase].position = { 0.0f, -hh, 0.0f, 1.0f };
+   vertexData_[botBase].position = { 0.0f, -hh + yOffset, 0.0f, 1.0f };
    vertexData_[botBase].texCoord = { 0.5f, 0.5f };
    vertexData_[botBase].normal = { 0.0f, -1.0f, 0.0f };
    for (uint32_t i = 0; i < segmentCount; ++i) {
 	  float theta = kStep * static_cast<float>(i);
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
-	  vertexData_[botBase + 1 + i].position = { radius * cos, -hh, radius * sin, 1.0f };
+	  vertexData_[botBase + 1 + i].position = { radius * cos, -hh + yOffset, radius * sin, 1.0f };
 	  vertexData_[botBase + 1 + i].texCoord = { cos * 0.5f + 0.5f, sin * 0.5f + 0.5f };
 	  vertexData_[botBase + 1 + i].normal = { 0.0f, -1.0f, 0.0f };
 	  indexData[kSideIdx + kCapIdx + i * 3 + 0] = botBase;
@@ -599,7 +611,43 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount) {
    indexCount_ = kIndexCount;
 }
 
-void Mesh::CreateCone(float radius, float height, uint32_t segmentCount) {
+void Mesh::CreateCylinderWithoutCaps(float radius, float height, uint32_t segmentCount, float originY) {
+   if (!sIsInitialized_) return;
+
+   const uint32_t kVertexCount = (segmentCount + 1) * 2;
+   const uint32_t kIndexCount = segmentCount * 6;
+   const float    hh = height * 0.5f;
+   const float    yOffset = VerticalOriginOffset(height, originY);
+   const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
+
+   uint32_t* indexData = nullptr;
+   AllocateMesh(kVertexCount, kIndexCount,
+	  vertexResource_, vertexBufferView_, vertexData_,
+	  indexResource_, indexBufferView_, indexData);
+
+   for (uint32_t i = 0; i <= segmentCount; ++i) {
+	  float theta = kStep * static_cast<float>(i);
+	  float cos = std::cosf(theta);
+	  float sin = std::sinf(theta);
+	  float u = static_cast<float>(i) / static_cast<float>(segmentCount);
+	  vertexData_[i * 2 + 0].position = { radius * cos,  hh + yOffset, radius * sin, 1.0f };
+	  vertexData_[i * 2 + 0].texCoord = { u, 0.0f };
+	  vertexData_[i * 2 + 0].normal = { cos, 0.0f, sin };
+	  vertexData_[i * 2 + 1].position = { radius * cos, -hh + yOffset, radius * sin, 1.0f };
+	  vertexData_[i * 2 + 1].texCoord = { u, 1.0f };
+	  vertexData_[i * 2 + 1].normal = { cos, 0.0f, sin };
+   }
+
+   for (uint32_t i = 0; i < segmentCount; ++i) {
+	  uint32_t base = i * 6;
+	  indexData[base + 0] = i * 2 + 0; indexData[base + 1] = i * 2 + 2; indexData[base + 2] = i * 2 + 1;
+	  indexData[base + 3] = i * 2 + 2; indexData[base + 4] = i * 2 + 3; indexData[base + 5] = i * 2 + 1;
+   }
+
+   indexCount_ = kIndexCount;
+}
+
+void Mesh::CreateCone(float radius, float height, uint32_t segmentCount, float originY) {
    if (!sIsInitialized_) return;
 
    // 側面: 頂点 1 + 底面外周 segmentCount
@@ -609,6 +657,7 @@ void Mesh::CreateCone(float radius, float height, uint32_t segmentCount) {
    const uint32_t kVertexCount = kSideVerts + kCapVerts;
    const uint32_t kIndexCount = segmentCount * 3 * 2; // 側面 + 底面
    const float    hh = height * 0.5f;
+   const float    yOffset = VerticalOriginOffset(height, originY);
    const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
    const float    slopeLen = std::sqrtf(radius * radius + height * height);
    const float    ny = radius / slopeLen; // 側面法線の Y 成分
@@ -619,7 +668,7 @@ void Mesh::CreateCone(float radius, float height, uint32_t segmentCount) {
 	  indexResource_, indexBufferView_, indexData);
 
    // 頂点 (apex)
-   vertexData_[0].position = { 0.0f, hh, 0.0f, 1.0f };
+   vertexData_[0].position = { 0.0f, hh + yOffset, 0.0f, 1.0f };
    vertexData_[0].texCoord = { 0.5f, 0.0f };
    vertexData_[0].normal = { 0.0f, 1.0f, 0.0f };
 
@@ -628,7 +677,7 @@ void Mesh::CreateCone(float radius, float height, uint32_t segmentCount) {
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
 	  float nr = height / slopeLen;
-	  vertexData_[1 + i].position = { radius * cos, -hh, radius * sin, 1.0f };
+	  vertexData_[1 + i].position = { radius * cos, -hh + yOffset, radius * sin, 1.0f };
 	  vertexData_[1 + i].texCoord = { cos * 0.5f + 0.5f, 1.0f };
 	  vertexData_[1 + i].normal = { cos * nr, ny, sin * nr };
 
@@ -639,14 +688,14 @@ void Mesh::CreateCone(float radius, float height, uint32_t segmentCount) {
 
    // 底蓋
    uint32_t botBase = kSideVerts;
-   vertexData_[botBase].position = { 0.0f, -hh, 0.0f, 1.0f };
+   vertexData_[botBase].position = { 0.0f, -hh + yOffset, 0.0f, 1.0f };
    vertexData_[botBase].texCoord = { 0.5f, 0.5f };
    vertexData_[botBase].normal = { 0.0f, -1.0f, 0.0f };
    for (uint32_t i = 0; i < segmentCount; ++i) {
 	  float theta = kStep * static_cast<float>(i);
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
-	  vertexData_[botBase + 1 + i].position = { radius * cos, -hh, radius * sin, 1.0f };
+	  vertexData_[botBase + 1 + i].position = { radius * cos, -hh + yOffset, radius * sin, 1.0f };
 	  vertexData_[botBase + 1 + i].texCoord = { cos * 0.5f + 0.5f, sin * 0.5f + 0.5f };
 	  vertexData_[botBase + 1 + i].normal = { 0.0f, -1.0f, 0.0f };
 

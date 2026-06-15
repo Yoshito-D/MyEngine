@@ -217,6 +217,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\OpaquePass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.cpp" />
@@ -362,7 +363,6 @@
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraEditor.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraGizmo.cpp" />
-    <ClCompile Include="GameEngine\Scene\SceneFade.cpp" />
     <ClCompile Include="GameEngine\Scene\SceneManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -481,6 +481,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\OpaquePass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\PostEffectPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.h" />
@@ -594,7 +595,6 @@
     <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraGizmo.h" />
     <ClInclude Include="GameEngine\Scene\IScene.h" />
     <ClInclude Include="GameEngine\Scene\ISceneFactory.h" />
-    <ClInclude Include="GameEngine\Scene\SceneFade.h" />
     <ClInclude Include="GameEngine\Scene\SceneManager.h" />
     <ClInclude Include="GameEngine\Object\Sprite\Sprite.h" />
     <ClInclude Include="GameEngine\Core\Graphics\Texture.h" />
@@ -666,6 +666,7 @@
     <None Include="resources\pipelines\object3d_pipeline.json" />
     <None Include="resources\pipelines\particle_pipeline.json" />
     <None Include="resources\pipelines\pipeline_registry.json" />
+    <None Include="resources\pipelines\postprocess\anti_aliasing_pipeline.json" />
     <None Include="resources\pipelines\postprocess\bloom_pipeline.json" />
     <None Include="resources\pipelines\postprocess\boxfilter_pipeline.json" />
     <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json" />

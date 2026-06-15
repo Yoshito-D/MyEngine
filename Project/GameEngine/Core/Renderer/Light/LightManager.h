@@ -25,9 +25,9 @@ public:
    /// @param name ライト名
    /// @param color ライトの色（デフォルト：白）
    /// @param direction ライトの向き（デフォルト：下向き）
-   /// @param intensity 輝度（デフォルト：1.0f）
+   /// @param intensity 輝度（デフォルト：2.0f）
    /// @return 作成されたライトへのポインタ
-   DirectionalLight* CreateDirectionalLight(const std::string& name, unsigned int color = 0xffffffff, const Vector3& direction = { 0.0f,-1.0f,0.0f }, float intensity = 1.0f);
+   DirectionalLight* CreateDirectionalLight(const std::string& name, unsigned int color = 0xffffffff, const Vector3& direction = { 0.0f,-1.0f,0.0f }, float intensity = 2.0f);
 
    /// @brief ディレクショナルライトを取得
    /// @param name ライト名

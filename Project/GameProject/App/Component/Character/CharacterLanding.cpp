@@ -73,6 +73,8 @@ void CharacterLanding::Update(float /*deltaTime*/) {
             walker->ResetHorizontalVelocity();
          }
          isGrounded_ = true;
+      } else {
+		 isGrounded_ = false;
       }
    } else {
       // 非ジャンプ時は常に地表へ固定し、速度を完全停止
