@@ -348,44 +348,6 @@ void GameTestScene::Update() {
 	  }
    }
 
-   // デバッグ描画
-   if (planet_ && player_) {
-	  Vector3 planetPos = planet_->GetPosition();
-	  Vector3 playerPos = player_->GetPosition();
-
-	  EngineContext::DrawLine(planetPos, playerPos, Vector4(1.0f, 1.0f, 1.0f, 0.5f));
-
-	  if (auto* gravityBody = player_->GetComponent<GravityBody>()) {
-		 Vector3 currentUp = gravityBody->GetCurrentUpVector() * 2.0f;
-		 EngineContext::DrawLine(playerPos, playerPos + currentUp, Vector4(0.0f, 1.0f, 0.0f, 1.0f));
-	  }
-	  if (auto* controller = player_->GetComponent<VehicleController>()) {
-		 Vector3 moveDir = controller->GetLastMoveDirection() * 2.5f;
-		 if (moveDir.LengthSquared() > 1e-4f) {
-			EngineContext::DrawLine(playerPos, playerPos + moveDir, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
-		 }
-	  }
-
-	  if (auto* attractor = planet_->GetComponent<SphericalGravityAttractor>()) {
-		 float r = attractor->influenceRadius;
-		 EngineContext::DrawLine(planetPos + Vector3(r, 0, 0), planetPos - Vector3(r, 0, 0), Vector4(1, 1, 0, 0.3f));
-		 EngineContext::DrawLine(planetPos + Vector3(0, r, 0), planetPos - Vector3(0, r, 0), Vector4(1, 1, 0, 0.3f));
-		 EngineContext::DrawLine(planetPos + Vector3(0, 0, r), planetPos - Vector3(0, 0, r), Vector4(1, 1, 0, 0.3f));
-	  }
-   }
-
-   // 惑星2のデバッグ描画
-   if (planet2_) {
-	  Vector3 p2Pos = planet2_->GetPosition();
-	  EngineContext::DrawLine(p2Pos, player_->GetPosition(), Vector4(0.5f, 0.5f, 1.0f, 0.3f));
-	  if (auto* attractor = planet2_->GetComponent<SphericalGravityAttractor>()) {
-		 float r = attractor->influenceRadius;
-		 EngineContext::DrawLine(p2Pos + Vector3(r, 0, 0), p2Pos - Vector3(r, 0, 0), Vector4(0, 1, 1, 0.3f));
-		 EngineContext::DrawLine(p2Pos + Vector3(0, r, 0), p2Pos - Vector3(0, r, 0), Vector4(0, 1, 1, 0.3f));
-		 EngineContext::DrawLine(p2Pos + Vector3(0, 0, r), p2Pos - Vector3(0, 0, r), Vector4(0, 1, 1, 0.3f));
-	  }
-   }
-
 #ifdef USE_IMGUI
    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver);

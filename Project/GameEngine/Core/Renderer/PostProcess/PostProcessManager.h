@@ -34,6 +34,7 @@ public:
 	  int priority = 0;
 	  bool enabled = true;
 	  std::string pipelineName; // パイプライン名を追加
+	  std::string rootSignatureName = "PostProcess";
    };
 
    /// @brief 初期化
@@ -134,6 +135,8 @@ private:
    std::unique_ptr<PostProcess> CreateEffectByClassName(const std::string& className);
 
    void RegisterDefaultEffectFactories();
+
+   void ConfigureEffectPipeline(PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName);
 
    EffectFactoryRegistry effectFactoryRegistry_;
    bool effectFactoriesRegistered_ = false;

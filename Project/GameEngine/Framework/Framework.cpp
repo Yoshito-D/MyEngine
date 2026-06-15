@@ -106,6 +106,7 @@ void Framework::BeginFrame() {
    }
 
    device_->SyncBackBufferSizeToWindow();
+   renderer_->SyncRenderTargetSizeToDevice();
    renderer_->BeginFrame();
    timeProfiler_->Update();
 }

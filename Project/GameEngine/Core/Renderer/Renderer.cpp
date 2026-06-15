@@ -202,6 +202,14 @@ void Renderer::BuildDefaultPasses() {
    };
 }
 
+void Renderer::SyncRenderTargetSizeToDevice() {
+   if (!device_ || !offscreenRenderTarget_) {
+	  return;
+   }
+
+   offscreenRenderTarget_->Resize(device_->GetBackBufferWidth(), device_->GetBackBufferHeight());
+}
+
 void Renderer::BeginFrame() {
    // ライトの構造化バッファを更新
    if (lightManager_) {
@@ -615,13 +623,13 @@ void Renderer::EndFrame() {
 	  editorController_->ShowInspectorWindow();
    }
 #endif
-   DrawAutoRegisteredModels();
-   DrawAutoRegisteredSprites();
-   DrawAutoRegisteredParticles();
-
    // ラインレンダラーを終了
    lineRenderer_->End();
    postProcessLineRenderer_->End();
+
+   DrawAutoRegisteredModels();
+   DrawAutoRegisteredSprites();
+   DrawAutoRegisteredParticles();
 
    // ラインをパス別にフラッシュ
    FlushLineRenderer(lineRenderer_.get(), RenderPass::Opaque);

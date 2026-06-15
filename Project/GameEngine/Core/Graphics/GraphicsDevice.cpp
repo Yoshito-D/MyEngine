@@ -25,9 +25,9 @@ void GraphicsDevice::Initialize(Window* window, int32_t backBufferWidth, int32_t
 
    CreateRenderTargetViews();
 
-   CreateDepthStencilViews();
-
    CreateSRVHeap();
+
+   CreateDepthStencilViews();
 
    CreateFence();
 }
@@ -49,6 +49,8 @@ void GraphicsDevice::PreDraw() {
    rtvHandle.Offset(backBufferIndex, rtvDescriptorSize); // バックバッファごとのRTVのオフセット
 
    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsvHeap_->GetCPUDescriptorHandleForHeapStart());
+
+   TransitionDepthStencilToWrite();
 
    // 描画先のRTVを設定する
    commandList_->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
@@ -337,7 +339,7 @@ void GraphicsDevice::CreateDepthStencilViews() {
 
    // リソース設定
    CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-	  DXGI_FORMAT_D24_UNORM_S8_UINT,
+	  DXGI_FORMAT_R24G8_TYPELESS,
 	  backBufferWidth_, backBufferHeight_,
 	  1, 1, 1, 0,
 	  D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
@@ -356,6 +358,7 @@ void GraphicsDevice::CreateDepthStencilViews() {
    );
 
    assert(SUCCEEDED(result));
+   depthBufferState_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
    // DSV用のヒープでディスクリプタの数は1つ
    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc{};
@@ -372,6 +375,29 @@ void GraphicsDevice::CreateDepthStencilViews() {
    device_->CreateDepthStencilView(
 	  depthBuffer_.Get(), &dsvDesc, dsvHeap_->GetCPUDescriptorHandleForHeapStart()
    );
+
+   if (srvHeap_) {
+	  if (depthSrvIndex_ == static_cast<UINT>(-1)) {
+		 depthSrvIndex_ = GetNextSrvIndex();
+		 depthSrvHandleCPU_ = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+			srvHeap_->GetCPUDescriptorHandleForHeapStart(),
+			depthSrvIndex_,
+			descriptorSizeCBVSRVUAV);
+		 depthSrvHandleGPU_ = CD3DX12_GPU_DESCRIPTOR_HANDLE(
+			srvHeap_->GetGPUDescriptorHandleForHeapStart(),
+			depthSrvIndex_,
+			descriptorSizeCBVSRVUAV);
+		 IncrementSrvIndex();
+	  }
+
+	  D3D12_SHADER_RESOURCE_VIEW_DESC depthSrvDesc{};
+	  depthSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	  depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	  depthSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	  depthSrvDesc.Texture2D.MipLevels = 1;
+
+	  device_->CreateShaderResourceView(depthBuffer_.Get(), &depthSrvDesc, depthSrvHandleCPU_);
+   }
 }
 
 void GraphicsDevice::CreateSRVHeap() {
@@ -382,6 +408,32 @@ void GraphicsDevice::CreateFence() {
    HRESULT result = S_FALSE;
    result = device_->CreateFence(fenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence_.GetAddressOf()));
    assert(SUCCEEDED(result));
+}
+
+void GraphicsDevice::TransitionDepthStencilToShaderResource() {
+   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) {
+	  return;
+   }
+
+   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+	  depthBuffer_.Get(),
+	  depthBufferState_,
+	  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+   commandList_->ResourceBarrier(1, &barrier);
+   depthBufferState_ = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+}
+
+void GraphicsDevice::TransitionDepthStencilToWrite() {
+   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_DEPTH_WRITE) {
+	  return;
+   }
+
+   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+	  depthBuffer_.Get(),
+	  depthBufferState_,
+	  D3D12_RESOURCE_STATE_DEPTH_WRITE);
+   commandList_->ResourceBarrier(1, &barrier);
+   depthBufferState_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 }
 
 void GraphicsDevice::InitializeFixFPS() {

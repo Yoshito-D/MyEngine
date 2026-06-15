@@ -1,0 +1,49 @@
+{
+  "name": "PostProcessOutline",
+  "reflectionSources": {
+    "pixelShader": "Outline"
+  },
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "semantic": "constantbuffer"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "semantic": "inputtexture"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "semantic": "depthtexture"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Clamp",
+      "addressV": "Clamp",
+      "addressW": "Clamp",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    },
+    {
+      "filter": "MinMagMipPoint",
+      "addressU": "Clamp",
+      "addressV": "Clamp",
+      "addressW": "Clamp",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 1,
+      "visibility": "Pixel"
+    }
+  ]
+}

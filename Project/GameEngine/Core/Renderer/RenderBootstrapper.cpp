@@ -21,7 +21,8 @@ Logger& log_ = Logger::GetInstance();
 namespace GameEngine {
 
 void RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const {
-   context.offscreenRenderTarget->Initialize(context.device);
+   context.offscreenRenderTarget->Initialize(
+	  context.device);
 
    context.shaderManager->Initialize(context.device);
    context.psoManager->Initialize(context.device, context.shaderManager);

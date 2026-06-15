@@ -10,8 +10,8 @@ public:
    static const int32_t kWindowWidth = 1280;
    static const int32_t kWindowHeight = 720;
 
-   static const int32_t kResolutionWidth = 1280;
-   static const int32_t kResolutionHeight = 720;
+   static const int32_t kResolutionWidth = 1920;
+   static const int32_t kResolutionHeight = 1080;
 
 public:
    /// @brief ウィンドウの生成

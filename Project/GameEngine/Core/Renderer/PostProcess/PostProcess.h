@@ -30,6 +30,9 @@ public:
    /// @brief 入力SRV/定数バッファのルートパラメータスロットを設定
    void SetBindingSlots(UINT constantBufferSlot, UINT inputTextureSlot);
 
+   /// @brief 深度SRVのルートパラメータスロットを設定
+   void SetDepthTextureRootSlot(UINT depthTextureSlot);
+
 #ifdef USE_IMGUI
    // ImGui編集用メソッド（派生クラスでオーバーライド可能）
    virtual void ImGuiEdit() {}
@@ -53,9 +56,11 @@ protected:
    bool enabled_ = true;
    UINT constantBufferRootSlot_ = 0;
    UINT inputTextureRootSlot_ = 1;
+   UINT depthTextureRootSlot_ = 2;
 
    UINT GetConstantBufferRootSlot() const { return constantBufferRootSlot_; }
    UINT GetInputTextureRootSlot() const { return inputTextureRootSlot_; }
+   UINT GetDepthTextureRootSlot() const { return depthTextureRootSlot_; }
 
    // ImGuiの固有ID管理
 #ifdef USE_IMGUI

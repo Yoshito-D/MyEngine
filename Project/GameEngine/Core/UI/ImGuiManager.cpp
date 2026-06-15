@@ -124,13 +124,23 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    }
 
    ImGui_ImplWin32_Init(hwnd);
+   const UINT imguiSrvIndex = device->GetNextSrvIndex();
+   const D3D12_CPU_DESCRIPTOR_HANDLE imguiSrvHandleCPU = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+	  device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
+	  imguiSrvIndex,
+	  device->GetDescriptorSizeCBVSRVUAV());
+   const D3D12_GPU_DESCRIPTOR_HANDLE imguiSrvHandleGPU = CD3DX12_GPU_DESCRIPTOR_HANDLE(
+	  device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
+	  imguiSrvIndex,
+	  device->GetDescriptorSizeCBVSRVUAV());
+
    ImGui_ImplDX12_Init(
 	  device->GetDevice(),
 	  swapChainDesc.BufferCount,
 	  DXGI_FORMAT_R8G8B8A8_UNORM,
 	  device->GetSRVHeap(),
-	  device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
-	  device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart()
+	  imguiSrvHandleCPU,
+	  imguiSrvHandleGPU
    );
 
    device->IncrementSrvIndex();

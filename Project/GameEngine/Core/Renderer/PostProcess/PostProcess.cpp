@@ -18,4 +18,8 @@ void PostProcess::SetBindingSlots(UINT constantBufferSlot, UINT inputTextureSlot
    inputTextureRootSlot_ = inputTextureSlot;
 }
 
+void PostProcess::SetDepthTextureRootSlot(UINT depthTextureSlot) {
+   depthTextureRootSlot_ = depthTextureSlot;
+}
+
 }

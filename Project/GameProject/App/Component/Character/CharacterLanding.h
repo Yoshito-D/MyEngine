@@ -48,9 +48,9 @@ public:
    /// surfaceRadius_ に加算され、実際のスナップ位置が決まる
    float landingOffset = 0.0f;
 
-   /// @brief 車体OBBの半サイズ（各軸を個別指定）
+   /// @brief OBBの半サイズ（各軸を個別指定）
    /// 地表スナップ時の支持半径計算に使用する
-   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.2f, 0.75f };
+   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.3f, 0.75f };
 
 private:
    /// @brief 惑星中心座標

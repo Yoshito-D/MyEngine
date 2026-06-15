@@ -50,6 +50,14 @@
       "pipelineName": "PostProcess_ShockWave"
     },
     {
+      "name": "Outline",
+      "className": "Outline",
+      "priority": 65,
+      "enabled": true,
+      "pipelineName": "PostProcess_Outline",
+      "rootSignatureName": "PostProcessOutline"
+    },
+    {
       "name": "Pixelation",
       "className": "Pixelation",
       "priority": 70,

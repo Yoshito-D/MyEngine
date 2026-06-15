@@ -3,6 +3,7 @@
 #include "FrameContext.h"
 #include "CommandDispatch.h"
 #include "Graphics/OffscreenRenderTarget.h"
+#include "Graphics/GraphicsDevice.h"
 #include "PostProcess/PostProcessManager.h"
 
 namespace GameEngine {
@@ -17,7 +18,13 @@ void PostEffectPass::Execute(FrameContext& ctx) {
 
 	// --- 1. ポストプロセスエフェクトチェーンを適用 ---
 	if (ctx.postProcessMgr) {
+		if (ctx.device) {
+			ctx.device->TransitionDepthStencilToShaderResource();
+		}
 		ctx.postProcessMgr->ApplyEffects(offscreenRT_->GetSRVHandleGPU());
+		if (ctx.device) {
+			ctx.device->TransitionDepthStencilToWrite();
+		}
 	}
 
 	// --- 2. ポストプロセス後コマンド（UI など）を実行 ---

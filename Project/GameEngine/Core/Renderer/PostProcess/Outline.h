@@ -1,0 +1,44 @@
+#pragma once
+#include "PostProcess.h"
+#include <d3d12.h>
+#include <wrl.h>
+
+namespace GameEngine {
+/// @brief 深度バッファを使ったアウトライン効果
+class Outline : public PostProcess {
+public:
+   struct OutlineParams {
+	  float outlineColor[4];
+	  float texelSize[2];
+	  float thickness;
+	  float depthThreshold;
+	  float intensity;
+	  float padding[3];
+   };
+
+   void Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) override;
+   void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) override;
+
+#ifdef USE_IMGUI
+   void ImGuiEdit() override;
+#endif
+   const char* GetEffectName() const override { return "Outline"; }
+
+   void SetOutlineColor(float r, float g, float b, float a = 1.0f);
+   void SetThickness(float thickness);
+   void SetDepthThreshold(float threshold);
+   void SetIntensity(float intensity);
+
+private:
+   float outlineColor_[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+   float thickness_ = 1.4f;
+   float depthThreshold_ = 0.4f;
+   float intensity_ = 0.8f;
+
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
+   OutlineParams* constantBufferData_ = nullptr;
+
+   void CreateConstantBuffer();
+   void UpdateConstantBuffer();
+};
+}

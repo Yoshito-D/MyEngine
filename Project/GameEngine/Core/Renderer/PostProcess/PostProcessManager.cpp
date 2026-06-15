@@ -12,6 +12,7 @@
 #include "Bloom.h"
 #include "BoxFilter.h"
 #include "LinearToSRGB.h"
+#include "Outline.h"
 #include "Core/Renderer/Pipeline/PSOManager.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -60,6 +61,7 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
    effectFactoryRegistry_.RegisterFactory("Bloom", [] { return std::make_unique<Bloom>(); });
    effectFactoryRegistry_.RegisterFactory("BoxFilter", [] { return std::make_unique<BoxFilter>(); });
    effectFactoryRegistry_.RegisterFactory("LinearToSRGB", [] { return std::make_unique<LinearToSRGB>(); });
+   effectFactoryRegistry_.RegisterFactory("Outline", [] { return std::make_unique<Outline>(); });
 
    effectFactoriesRegistered_ = true;
 }
@@ -86,23 +88,14 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 		 definition.priority = effectDef.value("priority", 0);
 		 definition.enabled = effectDef.value("enabled", true);
 		 definition.pipelineName = effectDef.value("pipelineName", "");
+		 definition.rootSignatureName = effectDef.value("rootSignatureName", "PostProcess");
 
 		 // クラス名からエフェクトインスタンスを作成
 		 auto effect = CreateEffectByClassName(definition.className);
 		 if (effect) {
 			effect->Initialize(device_, renderTarget_);
 
-			// パイプラインを設定
-			if (!definition.pipelineName.empty() && psoManager_) {
-			   auto* pipeline = psoManager_->GetPipeline(definition.pipelineName);
-			   auto* rootSignature = psoManager_->GetRootSignature("PostProcess");
-			   if (pipeline && rootSignature) {
-				  effect->SetPipeline(pipeline, rootSignature);
-                  const UINT cbSlot = psoManager_->ResolvePipelineRootParameter(definition.pipelineName, "constantbuffer").value_or(0);
-				  const UINT inputSlot = psoManager_->ResolvePipelineRootParameter(definition.pipelineName, "inputtexture").value_or(1);
-				  effect->SetBindingSlots(cbSlot, inputSlot);
-			   }
-			}
+			ConfigureEffectPipeline(effect.get(), definition.pipelineName, definition.rootSignatureName);
 
 			RegisterEffect(std::move(effect), definition.name, definition.priority, definition.enabled, definition.pipelineName);
 		 }
@@ -122,20 +115,22 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  const char* displayName;
 	  int priority;
 	  const char* pipelineName;
+	  const char* rootSignatureName;
    };
 
-   static const std::array<PredefinedEffectEntry, 11> kEntries = {
-	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur" },
-	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale" },
-	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter" },
-	  PredefinedEffectEntry{ "GaussFilter", "Gauss Filter", 30, "PostProcess_GaussFilter" },
-	  PredefinedEffectEntry{ "ChromaticAberration", "Chromatic Aberration", 40, "PostProcess_ChromaticAberration" },
-	  PredefinedEffectEntry{ "Vignette", "Vignette", 50, "PostProcess_Vignette" },
-	  PredefinedEffectEntry{ "ShockWave", "Shock Wave", 60, "PostProcess_ShockWave" },
-	  PredefinedEffectEntry{ "Pixelation", "Pixelation", 70, "PostProcess_Pixelation" },
-	  PredefinedEffectEntry{ "SpeedLine", "Speed Line", 75, "PostProcess_SpeedLine" },
-	  PredefinedEffectEntry{ "Bloom", "Bloom", 80, "PostProcess_Bloom" },
-	  PredefinedEffectEntry{ "LinearToSRGB", "Linear to sRGB", 90, "PostProcess_LinearToSRGB" }
+   static const std::array<PredefinedEffectEntry, 12> kEntries = {
+	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur", "PostProcess" },
+	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale", "PostProcess" },
+	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter", "PostProcess" },
+	  PredefinedEffectEntry{ "GaussFilter", "Gauss Filter", 30, "PostProcess_GaussFilter", "PostProcess" },
+	  PredefinedEffectEntry{ "ChromaticAberration", "Chromatic Aberration", 40, "PostProcess_ChromaticAberration", "PostProcess" },
+	  PredefinedEffectEntry{ "Vignette", "Vignette", 50, "PostProcess_Vignette", "PostProcess" },
+	  PredefinedEffectEntry{ "ShockWave", "Shock Wave", 60, "PostProcess_ShockWave", "PostProcess" },
+	  PredefinedEffectEntry{ "Outline", "Outline", 65, "PostProcess_Outline", "PostProcessOutline" },
+	  PredefinedEffectEntry{ "Pixelation", "Pixelation", 70, "PostProcess_Pixelation", "PostProcess" },
+	  PredefinedEffectEntry{ "SpeedLine", "Speed Line", 75, "PostProcess_SpeedLine", "PostProcess" },
+	  PredefinedEffectEntry{ "Bloom", "Bloom", 80, "PostProcess_Bloom", "PostProcess" },
+	  PredefinedEffectEntry{ "LinearToSRGB", "Linear to sRGB", 90, "PostProcess_LinearToSRGB", "PostProcess" }
    };
 
    for (const auto& entry : kEntries) {
@@ -146,19 +141,30 @@ void PostProcessManager::RegisterPredefinedEffects() {
 
 	  effect->Initialize(device_, renderTarget_);
 
-	  if (psoManager_) {
-		 auto* pipeline = psoManager_->GetPipeline(entry.pipelineName);
-		 auto* rootSig = psoManager_->GetRootSignature("PostProcess");
-		 if (pipeline && rootSig) {
-			effect->SetPipeline(pipeline, rootSig);
-			const UINT cbSlot = psoManager_->ResolvePipelineRootParameter(entry.pipelineName, "constantbuffer").value_or(0);
-			const UINT inputSlot = psoManager_->ResolvePipelineRootParameter(entry.pipelineName, "inputtexture").value_or(1);
-			effect->SetBindingSlots(cbSlot, inputSlot);
-		 }
-	  }
+	  ConfigureEffectPipeline(effect.get(), entry.pipelineName, entry.rootSignatureName);
 
 	  RegisterEffect(std::move(effect), entry.displayName, entry.priority, false, entry.pipelineName);
    }
+}
+
+void PostProcessManager::ConfigureEffectPipeline(PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName) {
+   if (!effect || pipelineName.empty() || !psoManager_) {
+	  return;
+   }
+
+   auto* pipeline = psoManager_->GetPipeline(pipelineName);
+   auto* rootSignature = psoManager_->GetRootSignature(rootSignatureName.empty() ? "PostProcess" : rootSignatureName);
+   if (!pipeline || !rootSignature) {
+	  return;
+   }
+
+   effect->SetPipeline(pipeline, rootSignature);
+
+   const UINT cbSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "constantbuffer").value_or(0);
+   const UINT inputSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "inputtexture").value_or(1);
+   const UINT depthSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "depthtexture").value_or(2);
+   effect->SetBindingSlots(cbSlot, inputSlot);
+   effect->SetDepthTextureRootSlot(depthSlot);
 }
 
 std::unique_ptr<PostProcess> PostProcessManager::CreateEffectByClassName(const std::string& className) {

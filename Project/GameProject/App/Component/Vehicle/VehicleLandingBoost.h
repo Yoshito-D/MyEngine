@@ -42,7 +42,7 @@ public:
 
 public:
    /// @brief 着地ブーストの加算量（units/sec）
-   float boostAmount     = 15.0f;
+   float boostAmount     = 0.0f;
 
    /// @brief ブーストが発動する平行度の閾値（dot 積。1 が完全平行）
    float boostThreshold  = 0.95f;

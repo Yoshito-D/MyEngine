@@ -45,6 +45,9 @@ std::vector<std::string> BindingLayoutResolver::GetExpectedSemanticsForRootSigna
    if (rootSignatureName == "PostProcess") {
       return { "constantbuffer", "inputtexture" };
    }
+   if (rootSignatureName == "PostProcessOutline") {
+      return { "constantbuffer", "inputtexture", "depthtexture" };
+   }
 
    return {};
 }
@@ -208,7 +211,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
 
    const std::vector<std::string> postProcessEffects = {
       "Grayscale", "RadialBlur", "GaussFilter", "Vignette",
-      "ChromaticAberration", "ShockWave", "Pixelation", "Bloom", "BoxFilter"
+      "ChromaticAberration", "ShockWave", "Pixelation", "Bloom", "BoxFilter", "Outline"
    };
 
    for (const auto& effectName : postProcessEffects) {
@@ -222,12 +225,18 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
             RegisterSemantic(t, "texture", RootBindingSlots::PostProcess::kInputTexture);
             RegisterSemantic(t, "inputtexture", RootBindingSlots::PostProcess::kInputTexture);
          }
+         if (IsTextureLike(resource.type) && resource.bindPoint == 1) {
+            RegisterSemantic(t, "depthtexture", RootBindingSlots::PostProcess::kDepthTexture);
+         }
       });
       if (!table.hasReflectionData) {
          RegisterSemantic(table, "constantbuffer", RootBindingSlots::PostProcess::kConstantBuffer);
          RegisterSemantic(table, "material", RootBindingSlots::PostProcess::kConstantBuffer);
          RegisterSemantic(table, "texture", RootBindingSlots::PostProcess::kInputTexture);
          RegisterSemantic(table, "inputtexture", RootBindingSlots::PostProcess::kInputTexture);
+         if (effectName == "Outline") {
+            RegisterSemantic(table, "depthtexture", RootBindingSlots::PostProcess::kDepthTexture);
+         }
       }
       registerTable(effectName, table);
       registerTable("PostProcess_" + effectName, table);

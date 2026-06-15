@@ -55,6 +55,16 @@ public:
    /// @return DSVヒープ
    ID3D12DescriptorHeap* GetDSVHeap() const { return dsvHeap_.Get(); }
 
+   /// @brief 深度バッファのSRVハンドル（GPU）を取得
+   /// @return 深度バッファSRVハンドル
+   D3D12_GPU_DESCRIPTOR_HANDLE GetDepthSRVHandleGPU() const { return depthSrvHandleGPU_; }
+
+   /// @brief 深度バッファをシェーダーリソースとして読める状態に遷移
+   void TransitionDepthStencilToShaderResource();
+
+   /// @brief 深度バッファを書き込み可能なDSV状態に遷移
+   void TransitionDepthStencilToWrite();
+
    /// @brief コマンドリストを実行し、完了を待機
    /// @details コマンドリストを実行し、GPUが完了するまで待機
    void ExecuteCommandListAndWait();
@@ -92,6 +102,12 @@ public:
    /// @brief ウィンドウサイズにバックバッファサイズを同期する
    void SyncBackBufferSizeToWindow();
 
+   /// @brief 現在のバックバッファ幅を取得
+   uint32_t GetBackBufferWidth() const { return static_cast<uint32_t>(backBufferWidth_); }
+
+   /// @brief 現在のバックバッファ高さを取得
+   uint32_t GetBackBufferHeight() const { return static_cast<uint32_t>(backBufferHeight_); }
+
 private:
 
    Window* window_ = nullptr;
@@ -107,6 +123,8 @@ private:
    ComPtr<ID3D12DescriptorHeap> rtvHeap_ = nullptr;
    ComPtr<ID3D12DescriptorHeap> dsvHeap_ = nullptr;
    ComPtr<ID3D12DescriptorHeap> srvHeap_ = nullptr;
+   D3D12_CPU_DESCRIPTOR_HANDLE depthSrvHandleCPU_ = {};
+   D3D12_GPU_DESCRIPTOR_HANDLE depthSrvHandleGPU_ = {};
    ComPtr<ID3D12Fence> fence_ = nullptr;
    UINT64 fenceValue_ = 0;
    int32_t backBufferWidth_ = 0;
@@ -115,6 +133,8 @@ private:
    uint32_t descriptorSizeRTV = 0;
    uint32_t descriptorSizeDSV = 0;
    UINT nextSrvIndex_ = 0;
+   UINT depthSrvIndex_ = static_cast<UINT>(-1);
+   D3D12_RESOURCE_STATES depthBufferState_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
    std::queue<UINT> freeSrvIndices_;
 
    UINT rtvCount_ = 4;
