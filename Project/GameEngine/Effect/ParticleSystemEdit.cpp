@@ -402,10 +402,14 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 				  break;
 			   }
 			   case GameEngine::RendererModule::ParticleMeshType::Cylinder: {
-				  float r = rendererModule->GetCylinderRadius();
-				  std::string id = "Radius##Cyl_" + particleSystemName;
-				  if (ImGui::DragFloat(id.c_str(), &r, 0.01f, 0.01f, 10.0f))
-					 rendererModule->SetCylinderRadius(r);
+				  float topR = rendererModule->GetCylinderTopRadius();
+				  std::string id = "Top Radius##Cyl_" + particleSystemName;
+				  if (ImGui::DragFloat(id.c_str(), &topR, 0.01f, 0.0f, 10.0f))
+					 rendererModule->SetCylinderTopRadius(topR);
+				  float bottomR = rendererModule->GetCylinderBottomRadius();
+				  id = "Bottom Radius##Cyl_" + particleSystemName;
+				  if (ImGui::DragFloat(id.c_str(), &bottomR, 0.01f, 0.0f, 10.0f))
+					 rendererModule->SetCylinderBottomRadius(bottomR);
 				  float h = rendererModule->GetCylinderHeight();
 				  id = "Height##Cyl_" + particleSystemName;
 				  if (ImGui::DragFloat(id.c_str(), &h, 0.01f, 0.01f, 20.0f))

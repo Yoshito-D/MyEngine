@@ -533,7 +533,7 @@ void Mesh::CreateTorus(float majorRadius, float minorRadius, uint32_t majorSegme
    indexCount_ = kIndexCount;
 }
 
-void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount, float originY) {
+void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uint32_t segmentCount, float originY) {
    if (!sIsInitialized_) return;
 
    // 側面頂点: (segmentCount+1) × 2 + 中心頂点 2 個 + 上下外周各 segmentCount 個
@@ -546,6 +546,9 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount, flo
    const uint32_t kIndexCount = kSideIdx + kCapIdx * 2;
    const float    hh = height * 0.5f;
    const float    yOffset = VerticalOriginOffset(height, originY);
+   const float    sideSlope = height != 0.0f ? (topRadius - bottomRadius) / height : 0.0f;
+   const float    normalY = -sideSlope;
+   const float    normalScale = 1.0f / std::sqrtf(1.0f + normalY * normalY);
    const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
 
    uint32_t* indexData = nullptr;
@@ -559,12 +562,12 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount, flo
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
 	  float u = static_cast<float>(i) / static_cast<float>(segmentCount);
-	  vertexData_[i * 2 + 0].position = { radius * cos,  hh + yOffset, radius * sin, 1.0f };
+	  vertexData_[i * 2 + 0].position = { topRadius * cos,  hh + yOffset, topRadius * sin, 1.0f };
 	  vertexData_[i * 2 + 0].texCoord = { u, 0.0f };
-	  vertexData_[i * 2 + 0].normal = { cos, 0.0f, sin };
-	  vertexData_[i * 2 + 1].position = { radius * cos, -hh + yOffset, radius * sin, 1.0f };
+	  vertexData_[i * 2 + 0].normal = { cos * normalScale, normalY * normalScale, sin * normalScale };
+	  vertexData_[i * 2 + 1].position = { bottomRadius * cos, -hh + yOffset, bottomRadius * sin, 1.0f };
 	  vertexData_[i * 2 + 1].texCoord = { u, 1.0f };
-	  vertexData_[i * 2 + 1].normal = { cos, 0.0f, sin };
+	  vertexData_[i * 2 + 1].normal = { cos * normalScale, normalY * normalScale, sin * normalScale };
    }
 
    // 側面インデックス
@@ -583,7 +586,7 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount, flo
 	  float theta = kStep * static_cast<float>(i);
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
-	  vertexData_[topBase + 1 + i].position = { radius * cos, hh + yOffset, radius * sin, 1.0f };
+	  vertexData_[topBase + 1 + i].position = { topRadius * cos, hh + yOffset, topRadius * sin, 1.0f };
 	  vertexData_[topBase + 1 + i].texCoord = { cos * 0.5f + 0.5f, sin * 0.5f + 0.5f };
 	  vertexData_[topBase + 1 + i].normal = { 0.0f, 1.0f, 0.0f };
 	  indexData[kSideIdx + i * 3 + 0] = topBase;
@@ -600,7 +603,7 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount, flo
 	  float theta = kStep * static_cast<float>(i);
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
-	  vertexData_[botBase + 1 + i].position = { radius * cos, -hh + yOffset, radius * sin, 1.0f };
+	  vertexData_[botBase + 1 + i].position = { bottomRadius * cos, -hh + yOffset, bottomRadius * sin, 1.0f };
 	  vertexData_[botBase + 1 + i].texCoord = { cos * 0.5f + 0.5f, sin * 0.5f + 0.5f };
 	  vertexData_[botBase + 1 + i].normal = { 0.0f, -1.0f, 0.0f };
 	  indexData[kSideIdx + kCapIdx + i * 3 + 0] = botBase;
@@ -611,13 +614,16 @@ void Mesh::CreateCylinder(float radius, float height, uint32_t segmentCount, flo
    indexCount_ = kIndexCount;
 }
 
-void Mesh::CreateCylinderWithoutCaps(float radius, float height, uint32_t segmentCount, float originY) {
+void Mesh::CreateCylinderWithoutCaps(float topRadius, float bottomRadius, float height, uint32_t segmentCount, float originY) {
    if (!sIsInitialized_) return;
 
    const uint32_t kVertexCount = (segmentCount + 1) * 2;
    const uint32_t kIndexCount = segmentCount * 6;
    const float    hh = height * 0.5f;
    const float    yOffset = VerticalOriginOffset(height, originY);
+   const float    sideSlope = height != 0.0f ? (topRadius - bottomRadius) / height : 0.0f;
+   const float    normalY = -sideSlope;
+   const float    normalScale = 1.0f / std::sqrtf(1.0f + normalY * normalY);
    const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
 
    uint32_t* indexData = nullptr;
@@ -630,12 +636,12 @@ void Mesh::CreateCylinderWithoutCaps(float radius, float height, uint32_t segmen
 	  float cos = std::cosf(theta);
 	  float sin = std::sinf(theta);
 	  float u = static_cast<float>(i) / static_cast<float>(segmentCount);
-	  vertexData_[i * 2 + 0].position = { radius * cos,  hh + yOffset, radius * sin, 1.0f };
+	  vertexData_[i * 2 + 0].position = { topRadius * cos,  hh + yOffset, topRadius * sin, 1.0f };
 	  vertexData_[i * 2 + 0].texCoord = { u, 0.0f };
-	  vertexData_[i * 2 + 0].normal = { cos, 0.0f, sin };
-	  vertexData_[i * 2 + 1].position = { radius * cos, -hh + yOffset, radius * sin, 1.0f };
+	  vertexData_[i * 2 + 0].normal = { cos * normalScale, normalY * normalScale, sin * normalScale };
+	  vertexData_[i * 2 + 1].position = { bottomRadius * cos, -hh + yOffset, bottomRadius * sin, 1.0f };
 	  vertexData_[i * 2 + 1].texCoord = { u, 1.0f };
-	  vertexData_[i * 2 + 1].normal = { cos, 0.0f, sin };
+	  vertexData_[i * 2 + 1].normal = { cos * normalScale, normalY * normalScale, sin * normalScale };
    }
 
    for (uint32_t i = 0; i < segmentCount; ++i) {
