@@ -6,6 +6,17 @@
 #include <imgui/imgui.h>
 #endif
 
+namespace {
+GameEngine::RadialBlurParams NormalizeRadialBlurParams(const GameEngine::RadialBlurParams& source) {
+   GameEngine::RadialBlurParams params = source;
+   params.center.x = std::clamp(params.center.x, 0.0f, 1.0f);
+   params.center.y = std::clamp(params.center.y, 0.0f, 1.0f);
+   params.strength = std::clamp(params.strength, 0.0f, 0.1f);
+   params.sampleCount = std::clamp(params.sampleCount, 2, 32);
+   return params;
+}
+}
+
 namespace GameEngine {
 
 void RadialBlur::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) {
@@ -47,10 +58,10 @@ void RadialBlur::CreateConstantBuffer() {
 
 void RadialBlur::UpdateConstantBuffer() {
    if (constantBufferData_) {
-	  constantBufferData_->centerX = centerX_;
-	  constantBufferData_->centerY = centerY_;
-	  constantBufferData_->strength = blurStrength_;
-	  constantBufferData_->sampleCount = sampleCount_;
+	  constantBufferData_->centerX = params_.center.x;
+	  constantBufferData_->centerY = params_.center.y;
+	  constantBufferData_->strength = params_.strength;
+	  constantBufferData_->sampleCount = params_.sampleCount;
    }
 }
 
@@ -61,13 +72,14 @@ void RadialBlur::ImGuiEdit() {
    if (ImGui::TreeNode("Radial Blur Parameters")) {
 
 	  bool changed = false;
-	  changed |= ImGui::SliderFloat("Blur Strength", &blurStrength_, 0.0f, 0.1f);
-	  changed |= ImGui::SliderFloat("Center X", &centerX_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Center Y", &centerY_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderInt("Sample Count", &sampleCount_, 1, 32);
+	  RadialBlurParams params = params_;
+	  changed |= ImGui::SliderFloat("Blur Strength", &params.strength, 0.0f, 0.1f);
+	  changed |= ImGui::SliderFloat("Center X", &params.center.x, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat("Center Y", &params.center.y, 0.0f, 1.0f);
+	  changed |= ImGui::SliderInt("Sample Count", &params.sampleCount, 2, 32);
 
 	  if (changed) {
-		 UpdateConstantBuffer();
+		 SetParams(params);
 	  }
 
 	  ImGui::TreePop();
@@ -76,5 +88,10 @@ void RadialBlur::ImGuiEdit() {
    ImGui::PopID();
 }
 #endif
+
+void RadialBlur::SetParams(const RadialBlurParams& params) {
+   params_ = NormalizeRadialBlurParams(params);
+   UpdateConstantBuffer();
+}
 
 }

@@ -56,8 +56,8 @@ private:
    GameEngine::ParticleEmitterComponent* landingRingEmitter_ = nullptr;
    int landingRingSlotIndex_ = -1;
 
-   GameEngine::ParticleEmitterComponent* landingEmitter_ = nullptr;
-   int landingSlotIndex_ = -1;
+   GameEngine::ParticleEmitterComponent* jumpEmitter_ = nullptr;
+   int jumpSlotIndex_ = -1;
 
    // 惑星2 の配置パラメータ
    static constexpr float kPlanet2Radius = 20.0f;

@@ -708,6 +708,52 @@ std::vector<std::string> EngineContext::GetPostProcessEffectNames() {
    return postProcessManager->GetEffectNames();
 }
 
+bool EngineContext::SetSpeedLineParams(const SpeedLineParams& params) {
+   if (!sRenderer_) return false;
+   auto* postProcessManager = sRenderer_->GetPostProcessManager();
+   if (!postProcessManager) return false;
+
+   auto* speedLine = dynamic_cast<SpeedLine*>(postProcessManager->GetEffect("Speed Line"));
+   if (!speedLine) return false;
+
+   speedLine->SetParams(params);
+   return true;
+}
+
+std::optional<SpeedLineParams> EngineContext::GetSpeedLineParams() {
+   if (!sRenderer_) return std::nullopt;
+   auto* postProcessManager = sRenderer_->GetPostProcessManager();
+   if (!postProcessManager) return std::nullopt;
+
+   auto* speedLine = dynamic_cast<SpeedLine*>(postProcessManager->GetEffect("Speed Line"));
+   if (!speedLine) return std::nullopt;
+
+   return speedLine->GetParams();
+}
+
+bool EngineContext::SetRadialBlurParams(const RadialBlurParams& params) {
+   if (!sRenderer_) return false;
+   auto* postProcessManager = sRenderer_->GetPostProcessManager();
+   if (!postProcessManager) return false;
+
+   auto* radialBlur = dynamic_cast<RadialBlur*>(postProcessManager->GetEffect("Radial Blur"));
+   if (!radialBlur) return false;
+
+   radialBlur->SetParams(params);
+   return true;
+}
+
+std::optional<RadialBlurParams> EngineContext::GetRadialBlurParams() {
+   if (!sRenderer_) return std::nullopt;
+   auto* postProcessManager = sRenderer_->GetPostProcessManager();
+   if (!postProcessManager) return std::nullopt;
+
+   auto* radialBlur = dynamic_cast<RadialBlur*>(postProcessManager->GetEffect("Radial Blur"));
+   if (!radialBlur) return std::nullopt;
+
+   return radialBlur->GetParams();
+}
+
 //================================================================
 // JSON データマネージャー
 //================================================================

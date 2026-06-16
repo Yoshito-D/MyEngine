@@ -1,5 +1,6 @@
 #pragma once
 #include "../Core/ICinemachineComponent.h"
+#include "Utility/Math/Vector3.h"
 
 namespace GameEngine {
 
@@ -18,6 +19,13 @@ public:
     /// @param frequency 周波数
     /// @param duration 持続時間
     void Shake(float amplitude, float frequency, float duration);
+
+    /// @brief 指定方向だけにシェイクを開始
+    /// @param direction シェイク方向
+    /// @param amplitude 振幅
+    /// @param frequency 周波数
+    /// @param duration 持続時間
+    void ShakeDirectional(const Vector3& direction, float amplitude, float frequency, float duration);
 
     /// @brief 振幅を設定
     void SetAmplitude(float amplitude) { amplitudeGain_ = amplitude; }
@@ -39,6 +47,8 @@ private:
     float time_ = 0.0f;
     float remainingTime_ = 0.0f;
     float initialAmplitude_ = 0.0f;
+    Vector3 shakeDirection_ = { 0.0f, 1.0f, 0.0f };
+    bool useDirectionalShake_ = false;
 };
 
 } // namespace GameEngine

@@ -21,6 +21,9 @@ public:
     /// @param owner 所有するVirtualCamera
     virtual void Initialize(VirtualCamera* owner) { owner_ = owner; }
 
+    /// @brief 所有するVirtualCameraを取得
+    VirtualCamera* GetOwnerCamera() const { return owner_; }
+
     /// @brief カメラ状態を変更する
     /// @param state 変更するカメラ状態
     /// @param deltaTime フレーム時間

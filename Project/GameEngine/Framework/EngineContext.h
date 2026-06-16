@@ -10,6 +10,8 @@
 #include "Audio.h"
 #include "SceneManager.h"
 #include "Renderer.h"
+#include "PostProcess/RadialBlur.h"
+#include "PostProcess/SpeedLine.h"
 #include "AssetManager.h"
 #include "TimeProfiler.h"
 #include "ModelAsset.h"
@@ -661,6 +663,24 @@ public:
    /// @brief 利用可能なポストプロセスエフェクト名のリストを取得
    /// @return エフェクト名のリスト
    static std::vector<std::string> GetPostProcessEffectNames();
+
+   /// @brief SpeedLine のパラメータを設定する
+   /// @param params SpeedLine パラメータ
+   /// @return 設定に成功した場合は true
+   static bool SetSpeedLineParams(const SpeedLineParams& params);
+
+   /// @brief SpeedLine の現在のパラメータを取得する
+   /// @return SpeedLine パラメータ（取得できない場合は std::nullopt）
+   static std::optional<SpeedLineParams> GetSpeedLineParams();
+
+   /// @brief RadialBlur のパラメータを設定する
+   /// @param params RadialBlur パラメータ
+   /// @return 設定に成功した場合は true
+   static bool SetRadialBlurParams(const RadialBlurParams& params);
+
+   /// @brief RadialBlur の現在のパラメータを取得する
+   /// @return RadialBlur パラメータ（取得できない場合は std::nullopt）
+   static std::optional<RadialBlurParams> GetRadialBlurParams();
 
    //================================================================
    // JSONデータマネージャー

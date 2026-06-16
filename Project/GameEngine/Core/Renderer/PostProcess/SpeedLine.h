@@ -1,6 +1,7 @@
 #pragma once
 #include "PostProcess.h"
 #include "ResourceHelper.h"
+#include "Utility/Math/Vector2.h"
 #include <wrl.h>
 #include <d3d12.h>
 #include <algorithm>
@@ -10,6 +11,18 @@
 #endif
 
 namespace GameEngine {
+struct SpeedLineParams {
+   Vector2 center = { 0.5f, 0.5f };
+   float intensity = 0.75f;
+   float lineDensity = 180.0f;
+   float thickness = 0.85f;
+   float innerRadius = 0.10f;
+   float outerRadius = 1.00f;
+   float time = 0.0f;
+   float randomSeed = 1.0f;
+   float flowSpeed = 1.0f;
+};
+
 /// @brief 集中線効果
 class SpeedLine : public PostProcess {
 public:
@@ -47,20 +60,15 @@ public:
 #endif
    const char* GetEffectName() const override { return "Speed Line"; }
 
-   void SetCenter(Vector2 center) { center_ = center; UpdateConstantBuffer(); }
-   void SetIntensity(float value) { intensity_ = value; UpdateConstantBuffer(); }
-   void SetLineDensity(float value) { lineDensity_ = value; UpdateConstantBuffer(); }
+   void SetParams(const SpeedLineParams& params);
+   const SpeedLineParams& GetParams() const { return params_; }
+
+   void SetCenter(Vector2 center) { auto params = params_; params.center = center; SetParams(params); }
+   void SetIntensity(float value) { auto params = params_; params.intensity = value; SetParams(params); }
+   void SetLineDensity(float value) { auto params = params_; params.lineDensity = value; SetParams(params); }
 
 private:
-   Vector2 center_ = { 0.5f, 0.5f };
-   float intensity_ = 0.75f;
-   float lineDensity_ = 180.0f;
-   float thickness_ = 0.85f;
-   float innerRadius_ = 0.10f;
-   float outerRadius_ = 1.00f;
-   float time_ = 0.0f;
-   float randomSeed_ = 1.0f;
-   float flowSpeed_ = 1.0f;
+   SpeedLineParams params_;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
    SpeedLineCB* constantBufferData_ = nullptr;

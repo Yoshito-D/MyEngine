@@ -429,6 +429,7 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleMover.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.cpp" />
     <ClCompile Include="GameProject\App\Scene\EngineTestScene.cpp" />
     <ClCompile Include="GameProject\App\Scene\GameTestScene.cpp" />
     <ClCompile Include="GameProject\Game.cpp" />
@@ -646,6 +647,7 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleMover.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.h" />
     <ClInclude Include="GameProject\App\Scene\EngineTestScene.h" />
     <ClInclude Include="GameProject\App\Scene\GameTestScene.h" />
     <ClInclude Include="GameProject\Game.h" />

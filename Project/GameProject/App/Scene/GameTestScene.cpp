@@ -11,6 +11,7 @@
 #include "../Component/Vehicle/VehicleLandingAligner.h"
 #include "../Component/Vehicle/VehicleLandingBoost.h"
 #include "../Component/Vehicle/VehicleDrift.h"
+#include "../Component/Vehicle/VehicleSpeedPostEffectController.h"
 #include "../Component/Character/CharacterJump.h"
 #include "../Component/Character/CharacterLanding.h"
 #include "../Component/Camera/CameraGravityBridge.h"
@@ -152,6 +153,9 @@ void GameTestScene::Initialize() {
    // 7. VehicleController: 入力収集 → VehicleMover 呼び出し（最後に姿勢を確定）
    player_->AddComponent<VehicleController>();
 
+   // 7a. 速度が autoSpeed を超えた分を SpeedLine ポストエフェクトへ反映
+   player_->AddComponent<VehicleSpeedPostEffectController>();
+
    // 8. タイヤ埃パーティクル（ドリフト時にのみ表示）
    tireDustEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
    if (tireDustEmitter_) {
@@ -226,8 +230,8 @@ void GameTestScene::Initialize() {
 	  }
    }
 
-   landingEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
-   if (landingEmitter_) {
+   jumpEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (jumpEmitter_) {
 	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;
 	  Config cfg;
 	  cfg.followPosition = true;
@@ -235,11 +239,11 @@ void GameTestScene::Initialize() {
 	  cfg.followScale = true;
 	  cfg.positionOffset = { 0.0f, -0.3f, 0.0f };
 	  cfg.simulationSpace = Config::Space::World;
-	  landingSlotIndex_ = landingEmitter_->AddSlot("resources/particles/landing.json", cfg);
-	  if (auto* slot = landingEmitter_->GetSlot(landingSlotIndex_)) {
+	  jumpSlotIndex_ = jumpEmitter_->AddSlot("resources/particles/jump.json", cfg);
+	  if (auto* slot = jumpEmitter_->GetSlot(jumpSlotIndex_)) {
 		 slot->loop = false;
 		 slot->autoPlay = false;
-		 landingEmitter_->LoadSlot(*slot);
+		 jumpEmitter_->LoadSlot(*slot);
 	  }
    }
 
@@ -396,13 +400,13 @@ void GameTestScene::Update() {
 	  wasJump = jump ? jump->IsJumping() : true;
    }
 
-   if (landingEmitter_) {
+   if (jumpEmitter_) {
 	  auto* jump = player_->GetComponent<App::CharacterJump>();
 	  auto* landing = player_->GetComponent<App::CharacterLanding>();
 	  static bool wasGrounded = false;
 	  if (jump && landing && jump->IsJumping() && wasGrounded) {
-		 if (landingSlotIndex_ >= 0) {
-			landingEmitter_->Play(landingSlotIndex_);
+		 if (jumpSlotIndex_ >= 0) {
+			jumpEmitter_->Play(jumpSlotIndex_);
 		 }
 	  }
 	  wasGrounded = landing ? landing->IsGrounded() : true;
