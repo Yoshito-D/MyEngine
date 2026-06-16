@@ -42,16 +42,16 @@ public:
 
 public:
    /// @brief 着地ブーストの加算量（units/sec）
-   float boostAmount     = 0.0f;
+   float boostAmount = 0.0f;
 
    /// @brief ブーストが発動する平行度の閾値（dot 積。1 が完全平行）
-   float boostThreshold  = 0.95f;
+   float boostThreshold = 0.95f;
 
    /// @brief 普通と失敗の境界となる平行度の閾値
-   float normalThreshold = 0.65f;
+   float normalThreshold =/* 0.65f*/0.0f;
 
    /// @brief 失敗着地の減速量（units/sec）
-   float penaltyAmount   = 0.0f;
+   float penaltyAmount = 0.0f;
 };
 
 } // namespace App

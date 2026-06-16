@@ -1,9 +1,17 @@
 #pragma once
 #include "PostProcess.h"
+#include "Utility/Math/Vector2.h"
 #include <wrl.h>
 #include <d3d12.h>
+#include <cstdint>
 
 namespace GameEngine {
+struct RadialBlurParams {
+   Vector2 center = { 0.5f, 0.5f };
+   float strength = 0.0f;
+   int32_t sampleCount = 15;
+};
+
 /// @brief ラジアルブラー効果
 class RadialBlur : public PostProcess {
 public:
@@ -29,16 +37,16 @@ public:
 #endif
    const char* GetEffectName() const override { return "Radial Blur"; }
 
+   void SetParams(const RadialBlurParams& params);
+   const RadialBlurParams& GetParams() const { return params_; }
+
    // パラメータ設定
-   void SetBlurStrength(float strength) { blurStrength_ = strength; UpdateConstantBuffer(); }
-   void SetCenter(float x, float y) { centerX_ = x; centerY_ = y; UpdateConstantBuffer(); }
-   void SetSampleCount(int32_t count) { sampleCount_ = count; UpdateConstantBuffer(); }
+   void SetBlurStrength(float strength) { auto params = params_; params.strength = strength; SetParams(params); }
+   void SetCenter(float x, float y) { auto params = params_; params.center = { x, y }; SetParams(params); }
+   void SetSampleCount(int32_t count) { auto params = params_; params.sampleCount = count; SetParams(params); }
 
 private:
-   float blurStrength_ = 0.01f;
-   float centerX_ = 0.5f;
-   float centerY_ = 0.5f;
-   int32_t sampleCount_ = 15;
+   RadialBlurParams params_;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
    RadialBlurCB* constantBufferData_ = nullptr;

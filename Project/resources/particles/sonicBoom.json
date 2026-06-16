@@ -12,7 +12,7 @@
             1.0,
             1.0,
             1.0,
-            0.4627451002597809
+            0.5686274766921997
         ]
     },
     "emissionModule": {
@@ -26,7 +26,7 @@
         ],
         "enabled": true,
         "rateOverDistance": 0.0,
-        "rateOverTime": 15.0
+        "rateOverTime": 14.0
     },
     "forceOverLifetimeModule": {
         "enabled": false,
@@ -42,7 +42,7 @@
         "speedLimit": 10.0
     },
     "mainModule": {
-        "duration": 0.20000000298023224,
+        "duration": 0.30000001192092896,
         "emissionRate": 10.0,
         "gravityModifier": 0.0,
         "looping": false,
@@ -56,8 +56,8 @@
             "randomize": false
         },
         "startLifetime": {
-            "max": 0.3499999940395355,
-            "min": 0.3499999940395355,
+            "max": 0.20000000298023224,
+            "min": 0.20000000298023224,
             "randomize": false
         },
         "startRotation": {
@@ -110,11 +110,14 @@
         "coneHeight": 1.0,
         "coneRadius": 0.5,
         "coneSegments": 32,
+        "cylinderBottomRadius": 0.5,
         "cylinderHeight": 1.0,
         "cylinderRadius": 0.5,
         "cylinderSegments": 32,
+        "cylinderTopRadius": 0.5,
         "enabled": true,
         "lengthScale": 2.0,
+        "meshOriginY": 0.0,
         "particleMeshType": 1,
         "planeDepth": 1.0,
         "planeWidth": 1.0,
@@ -177,9 +180,9 @@
     "sizeOverLifetimeModule": {
         "enabled": true,
         "endSize": [
-            2.0,
-            2.0,
-            2.0
+            3.0,
+            3.0,
+            3.0
         ],
         "sizeMultiplier": 2.859999895095825,
         "startSize": [

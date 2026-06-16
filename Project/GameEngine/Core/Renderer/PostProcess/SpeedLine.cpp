@@ -1,6 +1,23 @@
 #include "pch.h"
 #include "SpeedLine.h"
 
+namespace {
+GameEngine::SpeedLineParams NormalizeSpeedLineParams(const GameEngine::SpeedLineParams& source) {
+   GameEngine::SpeedLineParams params = source;
+   params.center.x = std::clamp(params.center.x, 0.0f, 1.0f);
+   params.center.y = std::clamp(params.center.y, 0.0f, 1.0f);
+   params.intensity = std::clamp(params.intensity, 0.0f, 3.0f);
+   params.lineDensity = std::clamp(params.lineDensity, 16.0f, 512.0f);
+   params.thickness = std::clamp(params.thickness, 0.0f, 1.0f);
+   params.innerRadius = std::clamp(params.innerRadius, 0.0f, 2.0f);
+   params.outerRadius = std::clamp(params.outerRadius, 0.0f, 2.0f);
+   params.innerRadius = std::min(params.innerRadius, params.outerRadius);
+   params.randomSeed = std::clamp(params.randomSeed, 0.0f, 100.0f);
+   params.flowSpeed = std::clamp(params.flowSpeed, 0.0f, 5.0f);
+   return params;
+}
+}
+
 /// @brief 初期化
 /// @param device グラフィックスデバイス
 /// @param renderTarget レンダーターゲット
@@ -41,19 +58,19 @@ void GameEngine::SpeedLine::ImGuiEdit() {
 
    if (ImGui::TreeNode("Speed Line Parameters")) {
 	  bool changed = false;
-	  changed |= ImGui::SliderFloat2("Center", &center_.x, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 3.0f);
-	  changed |= ImGui::SliderFloat("Density", &lineDensity_, 16.0f, 512.0f);
-	  changed |= ImGui::SliderFloat("Thickness", &thickness_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Inner Radius", &innerRadius_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Outer Radius", &outerRadius_, 0.0f, 2.0f);
-	  changed |= ImGui::SliderFloat("Random Seed", &randomSeed_, 0.0f, 100.0f);
-	  changed |= ImGui::SliderFloat("Flow Speed", &flowSpeed_, 0.0f, 5.0f);
-	  changed |= ImGui::DragFloat("Time", &time_, 0.01f);
+	  SpeedLineParams params = params_;
+	  changed |= ImGui::SliderFloat2("Center", &params.center.x, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat("Intensity", &params.intensity, 0.0f, 3.0f);
+	  changed |= ImGui::SliderFloat("Density", &params.lineDensity, 16.0f, 512.0f);
+	  changed |= ImGui::SliderFloat("Thickness", &params.thickness, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat("Inner Radius", &params.innerRadius, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat("Outer Radius", &params.outerRadius, 0.0f, 2.0f);
+	  changed |= ImGui::SliderFloat("Random Seed", &params.randomSeed, 0.0f, 100.0f);
+	  changed |= ImGui::SliderFloat("Flow Speed", &params.flowSpeed, 0.0f, 5.0f);
+	  changed |= ImGui::DragFloat("Time", &params.time, 0.01f);
 
 	  if (changed) {
-		 innerRadius_ = std::min(innerRadius_, outerRadius_);
-		 UpdateConstantBuffer();
+		 SetParams(params);
 	  }
 
 	  ImGui::TreePop();
@@ -62,6 +79,11 @@ void GameEngine::SpeedLine::ImGuiEdit() {
    ImGui::PopID();
 }
 #endif
+
+void GameEngine::SpeedLine::SetParams(const SpeedLineParams& params) {
+   params_ = NormalizeSpeedLineParams(params);
+   UpdateConstantBuffer();
+}
 
 void GameEngine::SpeedLine::CreateConstantBuffer() {
    constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(SpeedLineCB));
@@ -75,17 +97,17 @@ void GameEngine::SpeedLine::UpdateConstantBuffer()
 	  return;
    }
 
-   constantBufferData_->center = center_;
+   constantBufferData_->center = params_.center;
 
-   constantBufferData_->intensity = intensity_;
-   constantBufferData_->lineDensity = lineDensity_;
+   constantBufferData_->intensity = params_.intensity;
+   constantBufferData_->lineDensity = params_.lineDensity;
 
-   constantBufferData_->thickness = thickness_;
-   constantBufferData_->innerRadius = innerRadius_;
+   constantBufferData_->thickness = params_.thickness;
+   constantBufferData_->innerRadius = params_.innerRadius;
 
-   constantBufferData_->outerRadius = outerRadius_;
-   constantBufferData_->time = time_;
+   constantBufferData_->outerRadius = params_.outerRadius;
+   constantBufferData_->time = params_.time;
 
-   constantBufferData_->randomSeed = randomSeed_;
-   constantBufferData_->flowSpeed = flowSpeed_;
+   constantBufferData_->randomSeed = params_.randomSeed;
+   constantBufferData_->flowSpeed = params_.flowSpeed;
 }

@@ -33,16 +33,29 @@ public:
    /// @brief PlanetLeashCamera 参照を設定する
    void SetPlanetLeashCamera(PlanetLeashCamera* cam)          { planetLeashCamera_   = cam; }
 
+public:
+   /// @brief 着地時の縦シェイクを有効にするか
+   bool enableLandingShake = true;
+
+   /// @brief 着地シェイクの振幅
+   float landingShakeAmplitude = 0.1f;
+
+   /// @brief 着地シェイクの周波数
+   float landingShakeFrequency = 14.0f;
+
+   /// @brief 着地シェイクの持続時間
+   float landingShakeDuration = 0.1f;
+
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
 
-   /// @brief シリアライズ（参照のみのため保存項目なし）
-   nlohmann::json Serialize() const override  { return {}; }
+   /// @brief シリアライズ
+   nlohmann::json Serialize() const override;
 
-   /// @brief デシリアライズ（保存項目なしのため処理なし）
-   void Deserialize(const nlohmann::json&) override {}
+   /// @brief デシリアライズ
+   void Deserialize(const nlohmann::json& data) override;
 
 private:
    /// @brief 重力方向を算出するための惑星中心
@@ -56,6 +69,9 @@ private:
 
    /// @brief レアッシュカメラへの通知先
    PlanetLeashCamera*   planetLeashCamera_   = nullptr;
+
+   /// @brief 着地遷移検出用の前フレーム接地状態
+   bool wasGrounded_ = true;
 };
 
 } // namespace App
