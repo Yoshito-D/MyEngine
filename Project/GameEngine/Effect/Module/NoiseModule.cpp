@@ -5,30 +5,78 @@
 namespace GameEngine {
 	NoiseModule::NoiseModule() = default;
 
+	void NoiseModule::InitializeParticle(Particle& particle) const {
+		particle.noiseStrength = strength_.GetValue();
+		particle.noiseFrequency = frequency_.GetValue();
+		particle.noiseScrollSpeed = scrollSpeed_.GetValue();
+		particle.noiseTime = 0.0f;
+	}
+
 	void NoiseModule::ApplyNoise(Particle& particle, float deltaTime) {
+		ApplyNoise(particle, deltaTime, Transform{}, false);
+	}
+
+	void NoiseModule::ApplyNoise(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) {
 		if (!enabled_) return;
-		noiseTime_ += scrollSpeed_ * deltaTime;
-		float noiseX = std::sin(particle.transform.translation.x * frequency_ + noiseTime_) * strength_;
-		float noiseY = std::sin(particle.transform.translation.y * frequency_ + noiseTime_ * 1.3f) * strength_;
-		float noiseZ = std::sin(particle.transform.translation.z * frequency_ + noiseTime_ * 0.7f) * strength_;
-		particle.velocity.x += noiseX * deltaTime;
-		particle.velocity.y += noiseY * deltaTime;
-		particle.velocity.z += noiseZ * deltaTime;
+		float strength = strength_.randomize ? particle.noiseStrength : strength_.minValue;
+		float frequency = frequency_.randomize ? particle.noiseFrequency : frequency_.minValue;
+		float scrollSpeed = scrollSpeed_.randomize ? particle.noiseScrollSpeed : scrollSpeed_.minValue;
+
+		particle.noiseTime += scrollSpeed * deltaTime;
+
+		Vector3 samplePosition = particle.transform.translation;
+		Quaternion simulationRotation = simulationTransform.GetActiveQuaternion();
+		if (useLocalSimulation) {
+			samplePosition = RotateVector(samplePosition - simulationTransform.translation, simulationRotation.Inverse());
+		}
+
+		Vector3 noiseVelocity{
+			std::sin(samplePosition.x * frequency + particle.noiseTime) * strength,
+			std::sin(samplePosition.y * frequency + particle.noiseTime * 1.3f) * strength,
+			std::sin(samplePosition.z * frequency + particle.noiseTime * 0.7f) * strength
+		};
+
+		if (useLocalSimulation) {
+			noiseVelocity = RotateVector(noiseVelocity, simulationRotation);
+		}
+
+		particle.velocity += noiseVelocity * deltaTime;
 	}
 
 	nlohmann::json NoiseModule::ToJson() const {
 		nlohmann::json j;
 		j["enabled"] = enabled_;
-		j["strength"] = strength_;
-		j["frequency"] = frequency_;
-		j["scrollSpeed"] = scrollSpeed_;
+		j["strength"] = strength_.ToJson();
+		j["frequency"] = frequency_.ToJson();
+		j["scrollSpeed"] = scrollSpeed_.ToJson();
 		return j;
 	}
 
 	void NoiseModule::FromJson(const nlohmann::json& j) {
 		if (j.contains("enabled")) enabled_ = j["enabled"];
-		if (j.contains("strength")) strength_ = j["strength"];
-		if (j.contains("frequency")) frequency_ = j["frequency"];
-		if (j.contains("scrollSpeed")) scrollSpeed_ = j["scrollSpeed"];
+		if (j.contains("strength")) {
+			if (j["strength"].is_object()) {
+				strength_.FromJson(j["strength"]);
+			} else {
+				float value = j["strength"];
+				strength_ = RandomFloat(value, value, false);
+			}
+		}
+		if (j.contains("frequency")) {
+			if (j["frequency"].is_object()) {
+				frequency_.FromJson(j["frequency"]);
+			} else {
+				float value = j["frequency"];
+				frequency_ = RandomFloat(value, value, false);
+			}
+		}
+		if (j.contains("scrollSpeed")) {
+			if (j["scrollSpeed"].is_object()) {
+				scrollSpeed_.FromJson(j["scrollSpeed"]);
+			} else {
+				float value = j["scrollSpeed"];
+				scrollSpeed_ = RandomFloat(value, value, false);
+			}
+		}
 	}
 }

@@ -8,7 +8,7 @@ namespace GameEngine {
 class Pixelation : public PostProcess {
 public:
    /// @brief ピクセル化エフェクト用パラメータ構造体
-   struct PixelationParams {
+   struct PixelationCB {
 	  float pixelSize;
 	  float screenSizeX;
 	  float screenSizeY;
@@ -43,7 +43,7 @@ private:
    float screenSizeY_ = 720.0f;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   PixelationParams* constantBufferData_ = nullptr;
+   PixelationCB* constantBufferData_ = nullptr;
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

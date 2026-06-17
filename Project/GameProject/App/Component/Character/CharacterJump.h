@@ -40,7 +40,7 @@ public:
 
 public:
    /// @brief ジャンプ初速の強さ
-   float jumpStrength = 3.5f;
+   float jumpStrength = 4.0f;
 
 private:
    /// @brief ジャンプ中フラグ

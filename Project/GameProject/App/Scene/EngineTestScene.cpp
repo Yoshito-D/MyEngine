@@ -20,6 +20,8 @@ void EngineTestScene::Initialize() {
    EngineContext::LoadTexture("resources/textures/AnimatedCube_BaseColor.png", "AnimatedCube_BaseColor");
    EngineContext::LoadTexture("resources/textures/particle.png", "particle");
    EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
+   EngineContext::LoadTexture("resources/textures/star_08.png", "star_08");
+   EngineContext::LoadTexture("resources/textures/spark_01.png", "spark_01");
    EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
    EngineContext::LoadTexture("resources/textures/gradationLine1.png", "gradationLine1");
 
@@ -50,8 +52,8 @@ void EngineTestScene::Initialize() {
    particleSystem_ = std::make_unique<ParticleSystem>();
    particleSystem_->Create();
    particleSystem_->SetTexture(EngineContext::GetTexture("particle"));
-   particleSystem_->SetName("landing");
-   particleSystem_->LoadFromJson("resources/particles/landing.json");
+   particleSystem_->SetName("landingDust");
+   particleSystem_->LoadFromJson("resources/particles/tire_dust.json");
    particleSystem_->Play();
 
 #ifdef USE_IMGUI

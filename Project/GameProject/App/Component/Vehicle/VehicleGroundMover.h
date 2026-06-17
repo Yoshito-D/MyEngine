@@ -51,13 +51,13 @@ public:
 
 public:
    /// @brief 自動前進速度（units/sec）
-   float autoSpeed      = 13.0f;
+   float autoSpeed = 16.0f;
 
    /// @brief ステアリング角速度（deg/sec）
-   float steerSpeed     = 120.0f;
+   float steerSpeed = 120.0f;
 
    /// @brief スピード回復速度（per sec）
-   float speedRecovery  = 1.0f;
+   float speedRecovery = 1.0f;
 
    float maxSpeed = 40.0f;
 private:
@@ -66,32 +66,32 @@ private:
 
    /// @brief ステアリング入力を反映した前方ベクトルを返す
    GameEngine::Vector3 ApplySteering(float steerInput,
-                                     const GameEngine::Vector3& localForward,
-                                     const GameEngine::Vector3& gravityUp,
-                                     float deltaTime) const;
+	  const GameEngine::Vector3& localForward,
+	  const GameEngine::Vector3& gravityUp,
+	  float deltaTime) const;
 
    /// @brief 方向ベクトルを gravityUp 平面に投影して正規化する
    GameEngine::Vector3 ProjectToHorizontalPlane(const GameEngine::Vector3& dir,
-                                                const GameEngine::Vector3& gravityUp) const;
+	  const GameEngine::Vector3& gravityUp) const;
 
    /// @brief GravityBody の水平速度を flatForward * currentSpeed_ に更新する
    void ApplyVelocityToGravityBody(const GameEngine::Vector3& flatForward,
-                                   const GameEngine::Vector3& gravityUp);
+	  const GameEngine::Vector3& gravityUp);
 
    /// @brief (gravityUp, flatForward) から姿勢クォータニオンを再構築して適用する
    void RebuildPosture(const GameEngine::Vector3& flatForward,
-                       const GameEngine::Vector3& gravityUp);
+	  const GameEngine::Vector3& gravityUp);
 
    /// @brief right / up / fwd 基底からクォータニオンを生成する
    static GameEngine::Quaternion BasisToQuaternion(const GameEngine::Vector3& right,
-                                                   const GameEngine::Vector3& up,
-                                                   const GameEngine::Vector3& fwd);
+	  const GameEngine::Vector3& up,
+	  const GameEngine::Vector3& fwd);
 
    /// @brief 現在の前進実速度（負値は未初期化を示す）
-   float currentSpeed_  = -1.0f;
+   float currentSpeed_ = -1.0f;
 
    /// @brief 外部から積まれた加速度（units/sec²）。UpdateSpeed で v += a * dt して毎フレームリセット
-   float acceleration_  = 0.0f;
+   float acceleration_ = 0.0f;
 
    /// @brief 外部から積まれた瞬間速度変化（units/sec）。UpdateSpeed で直接加算してリセット
    float velocityImpulse_ = 0.0f;

@@ -8,7 +8,7 @@ namespace GameEngine {
 class Vignette : public PostProcess {
 public:
    /// @brief ビネット効果用パラメータ構造体
-   struct VignetteParams {
+   struct VignetteCB {
 	  float centerX;
 	  float centerY;
 	  float radius;
@@ -49,7 +49,7 @@ private:
    float vignetteColorB_ = 0.0f;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   VignetteParams* constantBufferData_ = nullptr;
+   VignetteCB* constantBufferData_ = nullptr;
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

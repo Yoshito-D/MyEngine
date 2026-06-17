@@ -38,7 +38,7 @@ public:
    bool enableLandingShake = true;
 
    /// @brief 着地シェイクの振幅
-   float landingShakeAmplitude = 0.1f;
+   float landingShakeAmplitude = 0.15f;
 
    /// @brief 着地シェイクの周波数
    float landingShakeFrequency = 14.0f;

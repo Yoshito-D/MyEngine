@@ -6,7 +6,7 @@
 namespace GameEngine {
 class AntiAliasing : public PostProcess {
 public:
-   struct AntiAliasingParams {
+   struct AntiAliasingCB {
 	  float contrastThreshold;
 	  float relativeThreshold;
 	  float subpixelBlending;
@@ -33,7 +33,7 @@ private:
    float edgeSearchSteps_ = 8.0f;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   AntiAliasingParams* constantBufferData_ = nullptr;
+   AntiAliasingCB* constantBufferData_ = nullptr;
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

@@ -48,7 +48,7 @@ void Pixelation::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 }
 
 void Pixelation::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(PixelationParams));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(PixelationCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 

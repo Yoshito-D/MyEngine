@@ -94,6 +94,11 @@ public:
 	  Shape       // 形状のみスケール
    };
 
+   enum class StartSpeedMode {
+	  Directional,  // Shape の放出方向 * speed
+	  Vector3       // Vector3 を速度として直接指定
+   };
+
    MainModule();
 
    // Duration & Loop
@@ -111,10 +116,21 @@ public:
 
    // Start Speed (ランダム対応)
    void SetStartSpeed(const RandomFloat& speed) { startSpeed_ = speed; }
+   void SetStartSpeed(const RandomVector3& velocity) { SetStartVelocity(velocity); }
+   void SetStartSpeed(const Vector3& velocity) { SetStartVelocity(velocity); }
    const RandomFloat& GetStartSpeed() const { return startSpeed_; }
    void SetStartSpeedMin(float min) { startSpeed_.minValue = min; }
    void SetStartSpeedMax(float max) { startSpeed_.maxValue = max; }
    void SetStartSpeedRandomize(bool randomize) { startSpeed_.randomize = randomize; }
+   void SetStartSpeedMode(StartSpeedMode mode) { startSpeedMode_ = mode; }
+   StartSpeedMode GetStartSpeedMode() const { return startSpeedMode_; }
+   void SetStartVelocity(const RandomVector3& velocity) { startVelocity_ = velocity; startSpeedMode_ = StartSpeedMode::Vector3; }
+   void SetStartVelocity(const Vector3& velocity) { SetStartVelocity(RandomVector3(velocity, velocity, false)); }
+   const RandomVector3& GetStartVelocity() const { return startVelocity_; }
+   const RandomVector3& GetStartSpeedVector() const { return startVelocity_; }
+   void SetStartVelocityMin(const Vector3& min) { startVelocity_.minValue = min; startSpeedMode_ = StartSpeedMode::Vector3; }
+   void SetStartVelocityMax(const Vector3& max) { startVelocity_.maxValue = max; startSpeedMode_ = StartSpeedMode::Vector3; }
+   void SetStartVelocityRandomize(bool randomize) { startVelocity_.randomize = randomize; startSpeedMode_ = StartSpeedMode::Vector3; }
 
    // Start Size (x/y/zランダム対応)
    void SetStartSize(const RandomVector3& size) { startSize_ = size; }
@@ -171,6 +187,8 @@ private:
 
    RandomFloat startLifetime_{ 2.0f, 2.5f, false };
    RandomFloat startSpeed_{ 5.0f, 6.0f, false };
+   StartSpeedMode startSpeedMode_ = StartSpeedMode::Directional;
+   RandomVector3 startVelocity_{ Vector3(0.0f, 5.0f, 0.0f), Vector3(0.0f, 6.0f, 0.0f), false };
    RandomVector3 startSize_{ Vector3(1.0f, 1.0f, 1.0f), Vector3(1.0f, 1.0f, 1.0f), false };
    RandomVector3 startRotation_{ Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false };
    RandomColor startColor_{ 0xFFFFFFFF, 0xFFFFFFFF, false };

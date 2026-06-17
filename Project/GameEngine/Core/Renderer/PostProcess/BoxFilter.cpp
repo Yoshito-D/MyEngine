@@ -41,16 +41,16 @@ void BoxFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 }
 
 void BoxFilter::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(BoxFilterParams));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(BoxFilterCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 
 void BoxFilter::UpdateConstantBuffer() {
    if (constantBufferData_) {
 	  constantBufferData_->kernelRadius = kernelRadius_;
-	  constantBufferData_->padding0 = 0.0f;
-	  constantBufferData_->padding1 = 0.0f;
-	  constantBufferData_->padding2 = 0.0f;
+	  constantBufferData_->padding[0] = 0.0f;
+	  constantBufferData_->padding[1] = 0.0f;
+	  constantBufferData_->padding[2] = 0.0f;
    }
 }
 

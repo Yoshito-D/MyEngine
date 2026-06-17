@@ -8,7 +8,7 @@ namespace GameEngine {
 class Bloom : public PostProcess {
 public:
 	/// @brief ブルーム用パラメータ構造体
-	struct BloomParams {
+	struct BloomCB {
 		float threshold;      // 輝度閾値
 		float intensity;      // ブルーム強度
 		float blurRadius;     // ブラー半径
@@ -42,7 +42,7 @@ private:
 	float blurRadius_ = 3.0f;       // ブラー半径
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-	BloomParams* constantBufferData_ = nullptr;
+	BloomCB* constantBufferData_ = nullptr;
 
 	void CreateConstantBuffer();
 	void UpdateConstantBuffer();

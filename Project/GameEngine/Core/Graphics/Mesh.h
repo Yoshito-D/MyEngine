@@ -59,8 +59,8 @@ public:
    /// @param depth 奥行き
    /// @param widthSegments 幅方向の分割数（デフォルトは1）
    /// @param depthSegments 奥行き方向の分割数（デフォルトは1）
-   /// @param orientation 生成平面（デフォルトはXY）
-   void CreatePlane(float width = 1.0f, float depth = 1.0f, uint32_t widthSegments = 1, uint32_t depthSegments = 1, PlaneOrientation orientation = PlaneOrientation::XY);
+   /// @param orientation 生成平面（デフォルトはXZ）
+   void CreatePlane(float width = 1.0f, float depth = 1.0f, uint32_t widthSegments = 1, uint32_t depthSegments = 1, PlaneOrientation orientation = PlaneOrientation::XZ);
 
    /// @brief 円形メッシュを作成
    /// @param radius 半径

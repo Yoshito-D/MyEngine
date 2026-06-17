@@ -41,7 +41,7 @@ void Vignette::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 }
 
 void Vignette::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(VignetteParams));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(VignetteCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 

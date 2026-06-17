@@ -7,7 +7,7 @@ namespace GameEngine {
 /// @brief 深度バッファを使ったアウトライン効果
 class Outline : public PostProcess {
 public:
-   struct OutlineParams {
+   struct OutlineCB {
 	  float outlineColor[4];
 	  float texelSize[2];
 	  float thickness;
@@ -36,7 +36,7 @@ private:
    float intensity_ = 0.8f;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   OutlineParams* constantBufferData_ = nullptr;
+   OutlineCB* constantBufferData_ = nullptr;
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

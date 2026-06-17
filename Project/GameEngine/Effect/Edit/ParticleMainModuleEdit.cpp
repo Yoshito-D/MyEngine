@@ -65,32 +65,69 @@ void EditMainModule(GameEngine::MainModule* mainModule) {
 
    // Start Speed (ランダム対応)
    ImGui::Text("Start Speed (開始速度)");
-   auto& speed = mainModule->GetStartSpeed();
-   bool speedRandomize = speed.randomize;
-   if (ImGui::Checkbox("Randomize##Speed", &speedRandomize)) {
-	  mainModule->SetStartSpeedRandomize(speedRandomize);
+   static const char* startSpeedModeNames[] = { "Directional", "Vector3" };
+   int currentStartSpeedMode = static_cast<int>(mainModule->GetStartSpeedMode());
+   if (ImGui::Combo("Mode##StartSpeed", &currentStartSpeedMode, startSpeedModeNames, IM_ARRAYSIZE(startSpeedModeNames))) {
+	  mainModule->SetStartSpeedMode(static_cast<GameEngine::MainModule::StartSpeedMode>(currentStartSpeedMode));
    }
 
-   if (speedRandomize) {
-	  float speedMin = speed.minValue;
-	  float speedMax = speed.maxValue;
-	  if (ImGui::DragFloat("Min##Speed", &speedMin, 0.1f, 0.0f, 50.0f)) {
-		 if (speedMin > speedMax) {
-			speedMin = speedMax;
-		 }
-		 mainModule->SetStartSpeedMin(speedMin);
+   if (mainModule->GetStartSpeedMode() == GameEngine::MainModule::StartSpeedMode::Directional) {
+	  const auto& speed = mainModule->GetStartSpeed();
+	  bool speedRandomize = speed.randomize;
+	  if (ImGui::Checkbox("Randomize##Speed", &speedRandomize)) {
+		 mainModule->SetStartSpeedRandomize(speedRandomize);
 	  }
-	  if (ImGui::DragFloat("Max##Speed", &speedMax, 0.1f, 0.0f, 50.0f)) {
-		 if (speedMax < speedMin) {
-			speedMax = speedMin;
+
+	  if (speedRandomize) {
+		 float speedMin = speed.minValue;
+		 float speedMax = speed.maxValue;
+		 if (ImGui::DragFloat("Min##Speed", &speedMin, 0.1f, 0.0f, 50.0f)) {
+			if (speedMin > speedMax) {
+			   speedMin = speedMax;
+			}
+			mainModule->SetStartSpeedMin(speedMin);
 		 }
-		 mainModule->SetStartSpeedMax(speedMax);
+		 if (ImGui::DragFloat("Max##Speed", &speedMax, 0.1f, 0.0f, 50.0f)) {
+			if (speedMax < speedMin) {
+			   speedMax = speedMin;
+			}
+			mainModule->SetStartSpeedMax(speedMax);
+		 }
+	  } else {
+		 float speedValue = speed.minValue;
+		 if (ImGui::DragFloat("Value##Speed", &speedValue, 0.1f, 0.0f, 50.0f)) {
+			mainModule->SetStartSpeedMin(speedValue);
+			mainModule->SetStartSpeedMax(speedValue);
+		 }
 	  }
    } else {
-	  float speedValue = speed.minValue;
-	  if (ImGui::DragFloat("Value##Speed", &speedValue, 0.1f, 0.0f, 50.0f)) {
-		 mainModule->SetStartSpeedMin(speedValue);
-		 mainModule->SetStartSpeedMax(speedValue);
+	  const auto& velocity = mainModule->GetStartVelocity();
+	  bool velocityRandomize = velocity.randomize;
+	  if (ImGui::Checkbox("Randomize##StartVelocity", &velocityRandomize)) {
+		 mainModule->SetStartVelocityRandomize(velocityRandomize);
+	  }
+
+	  if (velocityRandomize) {
+		 Vector3 velocityMin = velocity.minValue;
+		 Vector3 velocityMax = velocity.maxValue;
+		 if (ImGui::DragFloat3("Min##StartVelocity", &velocityMin.x, 0.1f, -50.0f, 50.0f)) {
+			if (velocityMin.x > velocityMax.x) velocityMin.x = velocityMax.x;
+			if (velocityMin.y > velocityMax.y) velocityMin.y = velocityMax.y;
+			if (velocityMin.z > velocityMax.z) velocityMin.z = velocityMax.z;
+			mainModule->SetStartVelocityMin(velocityMin);
+		 }
+		 if (ImGui::DragFloat3("Max##StartVelocity", &velocityMax.x, 0.1f, -50.0f, 50.0f)) {
+			if (velocityMax.x < velocityMin.x) velocityMax.x = velocityMin.x;
+			if (velocityMax.y < velocityMin.y) velocityMax.y = velocityMin.y;
+			if (velocityMax.z < velocityMin.z) velocityMax.z = velocityMin.z;
+			mainModule->SetStartVelocityMax(velocityMax);
+		 }
+	  } else {
+		 Vector3 velocityValue = velocity.minValue;
+		 if (ImGui::DragFloat3("Value##StartVelocity", &velocityValue.x, 0.1f, -50.0f, 50.0f)) {
+			mainModule->SetStartVelocityMin(velocityValue);
+			mainModule->SetStartVelocityMax(velocityValue);
+		 }
 	  }
    }
 
