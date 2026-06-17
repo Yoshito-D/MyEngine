@@ -18,11 +18,149 @@
 #include <array>
 #include <vector>
 #include <cstring>
+#include <cmath>
+#include <numbers>
 #endif
 
 namespace ParticleSystemEdit {
 
 using namespace GameEngine;
+
+#ifdef USE_IMGUI
+namespace {
+
+Vector3 TransformShapePoint(const Vector3& localPoint, const Vector3& center, const Quaternion& rotation) {
+   return center + RotateVector(localPoint, rotation);
+}
+
+void DrawShapeLine(const Vector3& localA, const Vector3& localB, const Vector3& center, const Quaternion& rotation, const Vector4& color) {
+   EngineContext::DrawLine(
+	  TransformShapePoint(localA, center, rotation),
+	  TransformShapePoint(localB, center, rotation),
+	  color
+   );
+}
+
+void DrawShapeEllipse(
+   const Vector3& center,
+   const Quaternion& rotation,
+   const Vector3& localCenter,
+   const Vector3& axisA,
+   const Vector3& axisB,
+   float radiusA,
+   float radiusB,
+   float startAngle,
+   float endAngle,
+   const Vector4& color,
+   bool drawRadials
+) {
+   constexpr int kSegments = 48;
+   const float angleSpan = endAngle - startAngle;
+   Vector3 first{};
+   Vector3 prev{};
+
+   for (int i = 0; i <= kSegments; ++i) {
+	  float t = static_cast<float>(i) / static_cast<float>(kSegments);
+	  float angle = startAngle + angleSpan * t;
+	  Vector3 localPoint = localCenter +
+		 axisA * (radiusA * std::cos(angle)) +
+		 axisB * (radiusB * std::sin(angle));
+
+	  if (i == 0) {
+		 first = localPoint;
+	  } else {
+		 DrawShapeLine(prev, localPoint, center, rotation, color);
+	  }
+	  prev = localPoint;
+   }
+
+   if (drawRadials) {
+	  DrawShapeLine(localCenter, first, center, rotation, color);
+	  DrawShapeLine(localCenter, prev, center, rotation, color);
+   }
+}
+
+void DrawShapeEllipsoid(const Vector3& center, const Quaternion& rotation, const Vector3& scale, float radius, const Vector4& color) {
+   const float rx = radius * scale.x;
+   const float ry = radius * scale.y;
+   const float rz = radius * scale.z;
+   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), rx, ry, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
+   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), rx, rz, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
+   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), ry, rz, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
+}
+
+void DrawShapeHemisphere(const Vector3& center, const Quaternion& rotation, const Vector3& scale, float radius, const Vector4& color) {
+   constexpr int kRings = 5;
+   constexpr int kMeridians = 8;
+   constexpr int kSegments = 16;
+
+   for (int ring = 1; ring <= kRings; ++ring) {
+	  float phi = (std::numbers::pi_v<float> * 0.5f) * static_cast<float>(ring) / static_cast<float>(kRings);
+	  float y = radius * std::cos(phi) * scale.y;
+	  float ringRadius = radius * std::sin(phi);
+	  DrawShapeEllipse(center, rotation, Vector3(0.0f, y, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), ringRadius * scale.x, ringRadius * scale.z, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
+   }
+
+   for (int meridian = 0; meridian < kMeridians; ++meridian) {
+	  float theta = 2.0f * std::numbers::pi_v<float> * static_cast<float>(meridian) / static_cast<float>(kMeridians);
+	  Vector3 prev(0.0f, radius * scale.y, 0.0f);
+
+	  for (int i = 1; i <= kSegments; ++i) {
+		 float phi = (std::numbers::pi_v<float> * 0.5f) * static_cast<float>(i) / static_cast<float>(kSegments);
+		 Vector3 localPoint(
+			radius * std::sin(phi) * std::cos(theta) * scale.x,
+			radius * std::cos(phi) * scale.y,
+			radius * std::sin(phi) * std::sin(theta) * scale.z
+		 );
+		 DrawShapeLine(prev, localPoint, center, rotation, color);
+		 prev = localPoint;
+	  }
+   }
+}
+
+void DrawShapeBox(const Vector3& center, const Quaternion& rotation, const Vector3& size, const Vector3& scale, const Vector4& color) {
+   const Vector3 half(size.x * scale.x * 0.5f, size.y * scale.y * 0.5f, size.z * scale.z * 0.5f);
+   const Vector3 vertices[] = {
+	  Vector3(-half.x, -half.y, -half.z),
+	  Vector3( half.x, -half.y, -half.z),
+	  Vector3( half.x,  half.y, -half.z),
+	  Vector3(-half.x,  half.y, -half.z),
+	  Vector3(-half.x, -half.y,  half.z),
+	  Vector3( half.x, -half.y,  half.z),
+	  Vector3( half.x,  half.y,  half.z),
+	  Vector3(-half.x,  half.y,  half.z),
+   };
+
+   const int edges[][2] = {
+	  {0, 1}, {1, 2}, {2, 3}, {3, 0},
+	  {4, 5}, {5, 6}, {6, 7}, {7, 4},
+	  {0, 4}, {1, 5}, {2, 6}, {3, 7}
+   };
+
+   for (const auto& edge : edges) {
+	  DrawShapeLine(vertices[edge[0]], vertices[edge[1]], center, rotation, color);
+   }
+}
+
+void DrawShapeCone(const Vector3& center, const Quaternion& rotation, const Vector3& scale, float angleDegrees, float length, const Vector4& color) {
+   constexpr int kSideLines = 8;
+   const float angle = angleDegrees * std::numbers::pi_v<float> / 180.0f;
+   const float baseY = std::cos(angle) * length * scale.y;
+   const float baseRadiusX = std::sin(angle) * length * scale.x;
+   const float baseRadiusZ = std::sin(angle) * length * scale.z;
+   const Vector3 localBaseCenter(0.0f, baseY, 0.0f);
+
+   DrawShapeEllipse(center, rotation, localBaseCenter, Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), baseRadiusX, baseRadiusZ, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
+
+   for (int i = 0; i < kSideLines; ++i) {
+	  float theta = 2.0f * std::numbers::pi_v<float> * static_cast<float>(i) / static_cast<float>(kSideLines);
+	  Vector3 basePoint(baseRadiusX * std::cos(theta), baseY, baseRadiusZ * std::sin(theta));
+	  DrawShapeLine(Vector3(0.0f, 0.0f, 0.0f), basePoint, center, rotation, color);
+   }
+}
+
+} // namespace
+#endif
 
 void Edit(GameEngine::ParticleSystem* particleSystem) {
 #ifdef USE_IMGUI
@@ -610,91 +748,49 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 		 Vector3 scaleVec = shapeModule->GetScale();
 		 Quaternion shapeRotation = shapeModule->GetRotationQuaternion();
 
-
 		 // Shape-specific parameters
 		 auto shapeType = shapeModule->GetShapeType();
 
 		 switch (shapeType) {
 			case GameEngine::ShapeModule::ShapeType::Sphere: {
-			   float scaledRadius = shapeModule->GetRadius() * scaleVec.x;
-			   GameEngine::EngineContext::DrawSphere(center, scaledRadius, shapeColor);
+			   DrawShapeEllipsoid(center, shapeRotation, scaleVec, shapeModule->GetRadius(), shapeColor);
 			   break;
 			}
 
 			case GameEngine::ShapeModule::ShapeType::Hemisphere: {
-			   float scaledRadius = shapeModule->GetRadius() * scaleVec.x;
-			   Vector3 up = RotateVector(Vector3(0.0f, 1.0f, 0.0f), shapeRotation);
-			   GameEngine::EngineContext::DrawHemisphere(center, scaledRadius, up, shapeColor);
+			   DrawShapeHemisphere(center, shapeRotation, scaleVec, shapeModule->GetRadius(), shapeColor);
 			   break;
 			}
 
 			case GameEngine::ShapeModule::ShapeType::Cone: {
-			   // Coneの角度とスケールを反映
-			   float angle = shapeModule->GetAngle();
-			   float length = shapeModule->GetLength() * scaleVec.y;
-			   float radius = std::tan(angle * std::numbers::pi_v<float> / 180.0f) * length;
-
-			   Vector3 direction = RotateVector(Vector3(0.0f, 1.0f, 0.0f), shapeRotation);
-			   GameEngine::EngineContext::DrawCone(center, radius, length, direction, shapeColor);
+			   DrawShapeCone(center, shapeRotation, scaleVec, shapeModule->GetAngle(), shapeModule->GetLength(), shapeColor);
 			   break;
 			}
 
 			case GameEngine::ShapeModule::ShapeType::Box: {
-			   Vector3 boxSize = shapeModule->GetBoxSize();
-			   Vector3 scaledSize(
-				  boxSize.x * scaleVec.x,
-				  boxSize.y * scaleVec.y,
-				  boxSize.z * scaleVec.z
-			   );
-			   GameEngine::EngineContext::DrawBox(center, scaledSize, shapeColor);
+			   DrawShapeBox(center, shapeRotation, shapeModule->GetBoxSize(), scaleVec, shapeColor);
 			   break;
 			}
 
 			case GameEngine::ShapeModule::ShapeType::Circle: {
-			   float scaledRadius = shapeModule->GetRadius() * scaleVec.x;
+			   float radiusX = shapeModule->GetRadius() * scaleVec.x;
+			   float radiusZ = shapeModule->GetRadius() * scaleVec.z;
 			   float arc = shapeModule->GetArc();
-			   Vector3 circleNormal = RotateVector(Vector3(0.0f, 1.0f, 0.0f), shapeRotation);
-			   Vector3 right = RotateVector(Vector3(1.0f, 0.0f, 0.0f), shapeRotation);
-			   Vector3 forward = RotateVector(Vector3(0.0f, 0.0f, 1.0f), shapeRotation);
-
-			   // Arcに対応した円の描画
+			   float arcRadians = arc * std::numbers::pi_v<float> / 180.0f;
 			   if (arc >= 360.0f) {
-				  // 完全な円
-				  GameEngine::EngineContext::DrawCircle(center, scaledRadius, circleNormal, shapeColor);
+				  DrawShapeEllipse(center, shapeRotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), radiusX, radiusZ, 0.0f, 2.0f * std::numbers::pi_v<float>, shapeColor, false);
 			   } else {
-				  // 円弧を線分で描画
-				  const int segments = 32;
-				  float angleStep = (arc * std::numbers::pi_v<float> / 180.0f) / segments;
-				  float startAngle = -arc * 0.5f * std::numbers::pi_v<float> / 180.0f;
-
-				  // 中心から放射状の線
-				  for (int i = 0; i <= segments; ++i) {
-					 float angle = startAngle + angleStep * i;
-					 Vector3 p = center +
-						right * (scaledRadius * std::cos(angle)) +
-						forward * (scaledRadius * std::sin(angle));
-
-					 if (i == 0 || i == segments) {
-						// 端点は中心からの線も引く
-						GameEngine::EngineContext::DrawLine(center, p, shapeColor);
-					 }
-
-					 if (i > 0) {
-						// 前の点との接続
-						float prevAngle = startAngle + angleStep * (i - 1);
-						Vector3 prevP = center +
-						   right * (scaledRadius * std::cos(prevAngle)) +
-						   forward * (scaledRadius * std::sin(prevAngle));
-						GameEngine::EngineContext::DrawLine(prevP, p, shapeColor);
-					 }
-				  }
+				  DrawShapeEllipse(center, shapeRotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), radiusX, radiusZ, 0.0f, arcRadians, shapeColor, true);
 			   }
 			   break;
 			}
 
-			case GameEngine::ShapeModule::ShapeType::Edge:
+			case GameEngine::ShapeModule::ShapeType::Edge: {
+			   DrawShapeLine(Vector3(-0.5f * scaleVec.x, 0.0f, 0.0f), Vector3(0.5f * scaleVec.x, 0.0f, 0.0f), center, shapeRotation, shapeColor);
+			   break;
+			}
 			case GameEngine::ShapeModule::ShapeType::Point:
-			   // 点とエッジは小さい球で表示
+			   // Point emission is a single world point.
 			   GameEngine::EngineContext::DrawSphere(center, 0.1f, shapeColor);
 			   break;
 		 }

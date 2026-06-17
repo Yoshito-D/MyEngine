@@ -263,30 +263,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  }
    }
 
-   const Transform currentShapeTransform = shapeModule_ ? shapeModule_->GetTransform() : Transform{};
-
-   // LocalSpace：Shape Transform の差分をアクティブパーティクルへ適用
-   if (mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local &&
-	  shapeTransformInitialized_) {
-	  const Vector3 prevEmitterTranslation = prevShapeTransform_.translation;
-	  const Vector3 currentEmitterTranslation = currentShapeTransform.translation;
-
-	  const Quaternion prevEmitterRotation = prevShapeTransform_.GetActiveQuaternion();
-	  const Quaternion currentEmitterRotation = currentShapeTransform.GetActiveQuaternion();
-	  const Quaternion deltaEmitterRotation = (prevEmitterRotation.Inverse() * currentEmitterRotation).Normalize();
-
-	  for (auto& particle : particles_) {
-		 if (!particle.isActive) continue;
-
-		 const Vector3 relativePos = particle.transform.translation - prevEmitterTranslation;
-		 const Vector3 rotatedRelativePos = RotateVector(relativePos, deltaEmitterRotation);
-		 particle.transform.translation = currentEmitterTranslation + rotatedRelativePos;
-
-		 particle.velocity = RotateVector(particle.velocity, deltaEmitterRotation);
-	  }
-   }
-   prevShapeTransform_ = currentShapeTransform;
-   shapeTransformInitialized_ = true;
+   const bool useLocalSimulation = mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local;
 
    // パーティクル更新
    activeParticleCount_ = 0;
@@ -311,7 +288,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  }
 
 	  // モジュール適用
-	  ApplyModules(particle, deltaTime);
+	  ApplyModules(particle, deltaTime, particle.simulationSpaceTransform, useLocalSimulation);
 
 	  // 位置更新
 	  particle.velocity += particle.acceleration * deltaTime;
@@ -335,17 +312,17 @@ void ParticleSystem::Update(float deltaTime) {
    }
 }
 
-void ParticleSystem::ApplyModules(Particle& particle, float deltaTime) {
+void ParticleSystem::ApplyModules(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) {
    if (velocityOverLifetimeModule_->IsEnabled()) {
-	  velocityOverLifetimeModule_->ApplyVelocity(particle, deltaTime);
+	  velocityOverLifetimeModule_->ApplyVelocity(particle, deltaTime, simulationTransform, useLocalSimulation);
    }
 
    if (forceOverLifetimeModule_->IsEnabled()) {
-	  forceOverLifetimeModule_->ApplyForce(particle);
+	  forceOverLifetimeModule_->ApplyForce(particle, simulationTransform, useLocalSimulation);
    }
 
    if (limitVelocityModule_->IsEnabled()) {
-	  limitVelocityModule_->LimitVelocity(particle);
+	  limitVelocityModule_->LimitVelocity(particle, simulationTransform, useLocalSimulation);
    }
 
    if (colorOverLifetimeModule_->IsEnabled()) {
@@ -361,7 +338,7 @@ void ParticleSystem::ApplyModules(Particle& particle, float deltaTime) {
    }
 
    if (noiseModule_->IsEnabled()) {
-	  noiseModule_->ApplyNoise(particle, deltaTime);
+	  noiseModule_->ApplyNoise(particle, deltaTime, simulationTransform, useLocalSimulation);
    }
 
    if (uvTransformModule_ && uvTransformModule_->IsEnabled()) {
@@ -607,7 +584,6 @@ void ParticleSystem::Stop() {
    emissionTimer_ = 0.0f;
    emissionAccumulator_ = 0.0f;
    emissionModule_->ResetBurstStates();
-   shapeTransformInitialized_ = false;
 
    // 全パーティクルを非アクティブ化し、フリーリストを再構築
    while (!freeParticleIndices_.empty()) freeParticleIndices_.pop();
@@ -674,6 +650,7 @@ void ParticleSystem::EmitParticle() {
    freeParticleIndices_.pop();
    Particle& particle = particles_[index];
    const Transform emitterTransform = shapeModule_ ? shapeModule_->GetTransform() : Transform{};
+   particle.simulationSpaceTransform = emitterTransform;
 
    // Main Module settings with random support
    particle.lifeTime = mainModule_->GetStartLifetime().GetValue();
@@ -704,6 +681,31 @@ void ParticleSystem::EmitParticle() {
 	  particle.angularVelocity = Vector3(0.0f, 0.0f, 0.0f);
    }
 
+   if (velocityOverLifetimeModule_) {
+	  velocityOverLifetimeModule_->InitializeParticle(particle);
+   }
+   if (forceOverLifetimeModule_) {
+	  forceOverLifetimeModule_->InitializeParticle(particle);
+   }
+   if (limitVelocityModule_) {
+	  limitVelocityModule_->InitializeParticle(particle);
+   }
+   if (noiseModule_) {
+	  noiseModule_->InitializeParticle(particle);
+   }
+
+   const bool useVectorStartVelocity =
+	  mainModule_->GetStartSpeedMode() == MainModule::StartSpeedMode::Vector3;
+   const bool useLocalSimulation =
+	  mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local;
+   auto resolveStartVelocity = [&]() {
+	  Vector3 velocity = mainModule_->GetStartVelocity().GetValue();
+	  if (useLocalSimulation) {
+		 velocity = RotateVector(velocity, emitterTransform.GetActiveQuaternion());
+	  }
+	  return velocity;
+   };
+
    // Shape Module - position and direction
    if (shapeModule_->IsEnabled()) {
 	  Vector3 emissionPos = shapeModule_->GetRandomEmissionPosition();
@@ -715,13 +717,17 @@ void ParticleSystem::EmitParticle() {
 		 direction = direction / dirLen;
 	  }
 
-	  float speed = mainModule_->GetStartSpeed().GetValue();
-	  particle.velocity = direction * speed;
+	  if (useVectorStartVelocity) {
+		 particle.velocity = resolveStartVelocity();
+	  } else {
+		 float speed = mainModule_->GetStartSpeed().GetValue();
+		 particle.velocity = direction * speed;
+	  }
 
    } else {
 	  // ShapeModule 無効時も Shape Transform 位置を反映する
 	  particle.transform.translation = emitterTransform.translation;
-	  particle.velocity = Vector3(0.0f, 0.0f, 0.0f);
+	  particle.velocity = useVectorStartVelocity ? resolveStartVelocity() : Vector3(0.0f, 0.0f, 0.0f);
    }
 
    if (uvTransformModule_ && uvTransformModule_->IsEnabled()) {

@@ -6,9 +6,19 @@ namespace GameEngine {
 /// @brief 個別粒子データ
 struct Particle {
    Transform transform;        // 位置・回転・スケール
+   Transform simulationSpaceTransform; // 放出時のShape Transform
    Vector3 velocity;          // 速度
    Vector3 acceleration;      // 加速度
    Vector3 angularVelocity;   // 角速度（ランダム対応）
+   Vector3 velocityOverLifetimeLinearVelocity;
+   float velocityOverLifetimeSpeedModifier;
+   Vector3 forceOverLifetimeForce;
+   float limitVelocitySpeedLimit;
+   float limitVelocityDampen;
+   float noiseStrength;
+   float noiseFrequency;
+   float noiseScrollSpeed;
+   float noiseTime;
    Vector4 color;            // 色（RGBA）
    float lifeTime;           // 寿命
    float currentTime;        // 現在経過時間
@@ -23,9 +33,19 @@ struct Particle {
    bool isActive;            // 有効フラグ
 
    Particle()
-	  : velocity(0.0f, 0.0f, 0.0f)
+	  : simulationSpaceTransform()
+	  , velocity(0.0f, 0.0f, 0.0f)
 	  , acceleration(0.0f, 0.0f, 0.0f)
 	  , angularVelocity(0.0f, 0.0f, 0.0f)
+	  , velocityOverLifetimeLinearVelocity(0.0f, 0.0f, 0.0f)
+	  , velocityOverLifetimeSpeedModifier(1.0f)
+	  , forceOverLifetimeForce(0.0f, 0.0f, 0.0f)
+	  , limitVelocitySpeedLimit(10.0f)
+	  , limitVelocityDampen(0.5f)
+	  , noiseStrength(1.0f)
+	  , noiseFrequency(0.5f)
+	  , noiseScrollSpeed(1.0f)
+	  , noiseTime(0.0f)
 	  , color(1.0f, 1.0f, 1.0f, 1.0f)
 	  , lifeTime(1.0f)
 	  , currentTime(0.0f)

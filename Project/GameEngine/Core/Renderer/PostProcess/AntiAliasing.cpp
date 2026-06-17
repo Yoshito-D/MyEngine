@@ -40,7 +40,7 @@ void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 }
 
 void AntiAliasing::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(AntiAliasingParams));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(AntiAliasingCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 

@@ -8,7 +8,7 @@ namespace GameEngine {
 class GaussFilter : public PostProcess {
 public:
    /// @brief ブラー効果のパラメータ構造体
-   struct FilterParams {
+   struct GaussFilterCB {
 	  float intensity;
 	  int32_t kernelSize;
 	  float sigma;
@@ -40,7 +40,7 @@ private:
    float sigma_ = 1.0f;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   FilterParams* constantBufferData_ = nullptr;
+   GaussFilterCB* constantBufferData_ = nullptr;
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

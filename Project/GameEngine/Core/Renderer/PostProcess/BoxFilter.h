@@ -8,11 +8,9 @@ namespace GameEngine {
 class BoxFilter : public PostProcess {
 public:
    /// @brief ボックスフィルター用パラメータ構造体
-   struct BoxFilterParams {
+   struct BoxFilterCB {
       int32_t kernelRadius; // 1=3x3, 2=5x5, 3=7x7
-      float padding0;
-      float padding1;
-      float padding2;
+      float padding[3];
    };
 
    /// @brief 初期化
@@ -36,7 +34,7 @@ private:
    int32_t kernelRadius_ = 1; // デフォルト3x3
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   BoxFilterParams* constantBufferData_ = nullptr;
+   BoxFilterCB* constantBufferData_ = nullptr;
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

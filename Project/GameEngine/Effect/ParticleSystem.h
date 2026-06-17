@@ -204,8 +204,6 @@ private:
    bool isPlaying_ = false;
    bool isPaused_ = false;
 
-	  Transform prevShapeTransform_{};
-   bool shapeTransformInitialized_ = false;
    bool usePostProcess_ = false;
    float emissionTimer_ = 0.0f;
    float emissionAccumulator_ = 0.0f;
@@ -228,6 +226,6 @@ private:
    void EmitParticle();
 
    /// @brief モジュールの更新を適用
-   void ApplyModules(Particle& particle, float deltaTime);
+   void ApplyModules(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation);
 };
 }

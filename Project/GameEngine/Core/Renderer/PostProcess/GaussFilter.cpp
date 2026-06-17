@@ -41,7 +41,7 @@ void GaussFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 }
 
 void GaussFilter::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(FilterParams));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(GaussFilterCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 

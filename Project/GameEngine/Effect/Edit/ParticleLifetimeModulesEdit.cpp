@@ -5,11 +5,98 @@
 
 #ifdef USE_IMGUI
 #include "../../../externals/imgui/imgui.h"
+#include <string>
 #endif
 
 using namespace GameEngine;
 
 namespace ParticleSystemEdit {
+
+#ifdef USE_IMGUI
+namespace {
+
+bool EditRandomFloat(const char* label, const char* id, RandomFloat& value, float dragSpeed, float minValue, float maxValue) {
+    bool changed = false;
+    ImGui::PushID(id);
+    ImGui::Text("%s", label);
+
+    bool randomize = value.randomize;
+    if (ImGui::Checkbox("Randomize", &randomize)) {
+        value.randomize = randomize;
+        changed = true;
+    }
+
+    if (value.randomize) {
+        float min = value.minValue;
+        float max = value.maxValue;
+        if (ImGui::DragFloat("Min", &min, dragSpeed, minValue, maxValue)) {
+            if (min > max) min = max;
+            value.minValue = min;
+            changed = true;
+        }
+        if (ImGui::DragFloat("Max", &max, dragSpeed, minValue, maxValue)) {
+            if (max < min) max = min;
+            value.maxValue = max;
+            changed = true;
+        }
+    } else {
+        float scalar = value.minValue;
+        if (ImGui::DragFloat("Value", &scalar, dragSpeed, minValue, maxValue)) {
+            value.minValue = scalar;
+            value.maxValue = scalar;
+            changed = true;
+        }
+    }
+
+    ImGui::PopID();
+    return changed;
+}
+
+bool EditRandomVector3(const char* label, const char* id, RandomVector3& value, float dragSpeed, float minValue, float maxValue) {
+    bool changed = false;
+    ImGui::PushID(id);
+    ImGui::Text("%s", label);
+
+    bool randomize = value.randomize;
+    if (ImGui::Checkbox("Randomize", &randomize)) {
+        value.randomize = randomize;
+        changed = true;
+    }
+
+    if (value.randomize) {
+        float minArr[3] = { value.minValue.x, value.minValue.y, value.minValue.z };
+        float maxArr[3] = { value.maxValue.x, value.maxValue.y, value.maxValue.z };
+
+        if (ImGui::DragFloat3("Min", minArr, dragSpeed, minValue, maxValue)) {
+            for (int i = 0; i < 3; ++i) {
+                if (minArr[i] > maxArr[i]) minArr[i] = maxArr[i];
+            }
+            value.minValue = Vector3(minArr[0], minArr[1], minArr[2]);
+            changed = true;
+        }
+        if (ImGui::DragFloat3("Max", maxArr, dragSpeed, minValue, maxValue)) {
+            for (int i = 0; i < 3; ++i) {
+                if (maxArr[i] < minArr[i]) maxArr[i] = minArr[i];
+            }
+            value.maxValue = Vector3(maxArr[0], maxArr[1], maxArr[2]);
+            changed = true;
+        }
+    } else {
+        float scalar[3] = { value.minValue.x, value.minValue.y, value.minValue.z };
+        if (ImGui::DragFloat3("Value", scalar, dragSpeed, minValue, maxValue)) {
+            Vector3 vectorValue(scalar[0], scalar[1], scalar[2]);
+            value.minValue = vectorValue;
+            value.maxValue = vectorValue;
+            changed = true;
+        }
+    }
+
+    ImGui::PopID();
+    return changed;
+}
+
+} // namespace
+#endif
 
     void EditVelocityOverLifetimeModule(GameEngine::VelocityOverLifetimeModule* module) {
 #ifdef USE_IMGUI
@@ -21,14 +108,14 @@ namespace ParticleSystemEdit {
         }
 
         if (enabled) {
-            Vector3 linearVelocity = module->GetLinearVelocity();
-            if (ImGui::DragFloat3("Linear Velocity (線形速度)", &linearVelocity.x, 0.1f, -50.0f, 50.0f)) {
-                module->SetLinearVelocity(linearVelocity);
+            RandomVector3 linearVelocity = module->GetLinearVelocityRange();
+            if (EditRandomVector3("Linear Velocity (線形速度)", "VelocityLinear", linearVelocity, 0.1f, -50.0f, 50.0f)) {
+                module->SetLinearVelocityRange(linearVelocity);
             }
 
-            float speedModifier = module->GetSpeedModifier();
-            if (ImGui::DragFloat("Speed Modifier (速度補正)", &speedModifier, 0.01f, 0.0f, 5.0f)) {
-                module->SetSpeedModifier(speedModifier);
+            RandomFloat speedModifier = module->GetSpeedModifierRange();
+            if (EditRandomFloat("Speed Modifier (速度補正)", "VelocitySpeedModifier", speedModifier, 0.01f, 0.0f, 5.0f)) {
+                module->SetSpeedModifierRange(speedModifier);
             }
         }
 #endif
@@ -44,14 +131,14 @@ namespace ParticleSystemEdit {
         }
 
         if (enabled) {
-            float speedLimit = module->GetSpeedLimit();
-            if (ImGui::DragFloat("Speed Limit (速度上限)", &speedLimit, 0.1f, 0.0f, 100.0f)) {
-                module->SetSpeedLimit(speedLimit);
+            RandomFloat speedLimit = module->GetSpeedLimitRange();
+            if (EditRandomFloat("Speed Limit (速度上限)", "LimitSpeed", speedLimit, 0.1f, 0.0f, 100.0f)) {
+                module->SetSpeedLimitRange(speedLimit);
             }
 
-            float dampen = module->GetDampen();
-            if (ImGui::DragFloat("Dampen (減衰)", &dampen, 0.01f, 0.0f, 1.0f)) {
-                module->SetDampen(dampen);
+            RandomFloat dampen = module->GetDampenRange();
+            if (EditRandomFloat("Dampen (減衰)", "LimitDampen", dampen, 0.01f, 0.0f, 1.0f)) {
+                module->SetDampenRange(dampen);
             }
         }
 #endif
@@ -67,9 +154,9 @@ namespace ParticleSystemEdit {
         }
 
         if (enabled) {
-            Vector3 force = module->GetForce();
-            if (ImGui::DragFloat3("Force (力)", &force.x, 0.1f, -50.0f, 50.0f)) {
-                module->SetForce(force);
+            RandomVector3 force = module->GetForceRange();
+            if (EditRandomVector3("Force (力)", "Force", force, 0.1f, -50.0f, 50.0f)) {
+                module->SetForceRange(force);
             }
         }
 #endif
@@ -191,19 +278,19 @@ namespace ParticleSystemEdit {
         }
 
         if (enabled) {
-            float strength = module->GetStrength();
-            if (ImGui::DragFloat("Strength (強さ)", &strength, 0.1f, 0.0f, 10.0f)) {
-                module->SetStrength(strength);
+            RandomFloat strength = module->GetStrengthRange();
+            if (EditRandomFloat("Strength (強さ)", "NoiseStrength", strength, 0.1f, 0.0f, 10.0f)) {
+                module->SetStrengthRange(strength);
             }
 
-            float frequency = module->GetFrequency();
-            if (ImGui::DragFloat("Frequency (周波数)", &frequency, 0.01f, 0.0f, 5.0f)) {
-                module->SetFrequency(frequency);
+            RandomFloat frequency = module->GetFrequencyRange();
+            if (EditRandomFloat("Frequency (周波数)", "NoiseFrequency", frequency, 0.01f, 0.0f, 5.0f)) {
+                module->SetFrequencyRange(frequency);
             }
 
-            float scrollSpeed = module->GetScrollSpeed();
-            if (ImGui::DragFloat("Scroll Speed (スクロール速度)", &scrollSpeed, 0.1f, 0.0f, 10.0f)) {
-                module->SetScrollSpeed(scrollSpeed);
+            RandomFloat scrollSpeed = module->GetScrollSpeedRange();
+            if (EditRandomFloat("Scroll Speed (スクロール速度)", "NoiseScrollSpeed", scrollSpeed, 0.1f, 0.0f, 10.0f)) {
+                module->SetScrollSpeedRange(scrollSpeed);
             }
         }
 #endif

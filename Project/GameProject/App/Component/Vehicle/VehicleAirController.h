@@ -37,10 +37,10 @@ public:
 
 public:
    /// @brief ロール角速度（deg/sec）
-   float rollSpeed     = 270.0f;
+   float rollSpeed     = 285.0f;
 
    /// @brief ピッチ角速度（deg/sec）
-   float pitchSpeed     = 270.0f;
+   float pitchSpeed     = 285.0f;
 
    /// @brief 空中回転の減衰係数（大きいほど慣性が少ない）
    float angularDamping = 2.5f;

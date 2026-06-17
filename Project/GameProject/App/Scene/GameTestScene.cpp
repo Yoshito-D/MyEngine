@@ -33,7 +33,7 @@
 using namespace GameEngine;
 using namespace App;
 
-static constexpr float kPlanetRadius = 25.0f;
+static constexpr float kPlanetRadius = 50.0f;
 static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 
 void GameTestScene::Initialize() {
@@ -42,7 +42,10 @@ void GameTestScene::Initialize() {
    EngineContext::LoadTexture("resources/textures/space_2048px.dds", "skyboxTexture");
    EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
    EngineContext::LoadTexture("resources/textures/gradationLine1.png", "gradationLine1");
+   EngineContext::LoadTexture("resources/textures/particle.png", "particle");
    EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
+   EngineContext::LoadTexture("resources/textures/star_08.png", "star_08");
+   EngineContext::LoadTexture("resources/textures/spark_01.png", "spark_01");
 
 
    skybox_ = std::make_unique<GameEngine::Skybox>();
@@ -192,6 +195,37 @@ void GameTestScene::Initialize() {
 	  }
    }
 
+   miniTurboEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (miniTurboEmitter_) {
+	  miniTurboSlotCount_ = 0;
+	  const GameEngine::Vector3 kTireOffsets[2] = {
+		 {  0.3f, -0.3f, -0.415f },   // 右後
+		 { -0.3f, -0.3f, -0.415f },   // 左後
+	  };
+
+	  for (const auto& offset : kTireOffsets) {
+		 GameEngine::ParticleEmitterComponent::AttachmentConfig cfg;
+		 cfg.followPosition = true;
+		 cfg.followRotation = true;
+		 cfg.followScale = true;
+		 cfg.positionOffset = offset;
+		 cfg.simulationSpace = GameEngine::ParticleEmitterComponent::AttachmentConfig::Space::Local;
+		 int slotIdx = miniTurboEmitter_->AddSlot("resources/particles/miniturbo.json", cfg);
+		 if (auto* slot = miniTurboEmitter_->GetSlot(slotIdx)) {
+			slot->loop = true;
+			// isPlaying_ は true のままにすることで、後からEmissionを有効にするだけで再開できる。
+			if (slot->particleSystem) {
+			   if (auto* em = slot->particleSystem->GetEmissionModule()) {
+				  em->SetEnabled(false);
+			   }
+			}
+			++miniTurboSlotCount_;
+		 }
+	  }
+   }
+
+
+
    // 9. ソニックブームパーティクル（ミニターボ発動時に一発再生）
    sonicBoomEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
    if (sonicBoomEmitter_) {
@@ -200,7 +234,7 @@ void GameTestScene::Initialize() {
 	  cfg.followPosition = true;
 	  cfg.followRotation = true;
 	  cfg.followScale = true;
-	  cfg.positionOffset = { 0.0f, 0.0f, 1.0f };
+	  cfg.positionOffset = { 0.0f, 0.0f, 0.3f };
 	  cfg.simulationSpace = Config::Space::World;
 	  // AddSlot は内部で LoadSlot を呼ぶため、スロット取得後に loop=false を設定してから
 	  // LoadSlot を再実行して SetLooping(false) を正しく反映させる。
@@ -247,6 +281,23 @@ void GameTestScene::Initialize() {
 	  }
    }
 
+   windEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (windEmitter_) {
+	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;
+	  Config cfg;
+	  cfg.followPosition = true;
+	  cfg.followRotation = true;
+	  cfg.followScale = true;
+	  cfg.positionOffset = { 0.0f, 0.0f, 3.0f };
+	  cfg.rotationOffset = { 0.32f, 0.0f, 0.0f };
+	  cfg.simulationSpace = Config::Space::Local;
+	  windSlotIndex_ = windEmitter_->AddSlot("resources/particles/wind.json", cfg);
+	  if (auto* slot = windEmitter_->GetSlot(windSlotIndex_)) {
+		 slot->loop = true;
+		 slot->autoPlay = true;
+		 windEmitter_->LoadSlot(*slot);
+	  }
+   }
 
    // --- 仮想カメラのセットアップ ---
    rearFollowVcam_ = std::make_unique<VirtualCamera>();
@@ -263,6 +314,7 @@ void GameTestScene::Initialize() {
    if (gravityFollowCamera_) {
 	  gravityFollowCamera_->SetDistance(15.0f);
    }
+
    if (auto* brain = EngineContext::GetActiveBrain()) {
 	  brain->RegisterVirtualCamera(mainVcam_.get());
    }
@@ -351,6 +403,7 @@ void GameTestScene::Update() {
    if (tireDustEmitter_) {
 	  const auto* drift = player_->GetComponent<App::VehicleDrift>();
 	  const bool isDrifting = drift && drift->IsDrifting();
+	  static bool wasDrifting = false;
 	  const bool isJump = player_->GetComponent<App::CharacterJump>()->IsJumping();
 	  if (isJump) {
 		 for (int i = 0; i < tireDustSlotCount_; ++i) {
@@ -363,7 +416,7 @@ void GameTestScene::Update() {
 			}
 		 }
 	  } else {
-		 if (isDrifting != wasDrifting_) {
+		 if (isDrifting != wasDrifting) {
 			for (int i = 0; i < tireDustSlotCount_; ++i) {
 			   if (auto* slot = tireDustEmitter_->GetSlot(i)) {
 				  if (slot->particleSystem) {
@@ -373,7 +426,34 @@ void GameTestScene::Update() {
 				  }
 			   }
 			}
-			wasDrifting_ = isDrifting;
+			wasDrifting = isDrifting;
+		 }
+	  }
+   }
+
+   if (miniTurboEmitter_) {
+	  const auto* drift = player_->GetComponent<App::VehicleDrift>();
+	  const bool canFireMiniTurbo = drift && drift->CanFireMiniTurbo();
+	  const bool isJump = player_->GetComponent<App::CharacterJump>()->IsJumping();
+	  if (isJump) {
+		 for (int i = tireDustSlotCount_; i < miniTurboSlotCount_ + tireDustSlotCount_; ++i) {
+			if (auto* slot = miniTurboEmitter_->GetSlot(i)) {
+			   if (slot->particleSystem) {
+				  if (auto* em = slot->particleSystem->GetEmissionModule()) {
+					 em->SetEnabled(false);
+				  }
+			   }
+			}
+		 }
+	  } else {
+		 for (int i = tireDustSlotCount_; i < miniTurboSlotCount_ + tireDustSlotCount_; ++i) {
+			if (auto* slot = miniTurboEmitter_->GetSlot(i)) {
+			   if (slot->particleSystem) {
+				  if (auto* em = slot->particleSystem->GetEmissionModule()) {
+					 em->SetEnabled(canFireMiniTurbo);
+				  }
+			   }
+			}
 		 }
 	  }
    }

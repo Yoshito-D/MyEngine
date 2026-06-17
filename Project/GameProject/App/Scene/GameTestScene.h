@@ -46,7 +46,6 @@ private:
 
    // タイヤ埃パーティクル
    GameEngine::ParticleEmitterComponent* tireDustEmitter_ = nullptr;
-   bool wasDrifting_ = false;
    int tireDustSlotCount_ = 0;
 
    // ソニックブームパーティクル（ミニターボ発動時の一発再生）
@@ -59,7 +58,13 @@ private:
    GameEngine::ParticleEmitterComponent* jumpEmitter_ = nullptr;
    int jumpSlotIndex_ = -1;
 
+   GameEngine::ParticleEmitterComponent* windEmitter_ = nullptr;
+   int windSlotIndex_ = -1;
+
+   GameEngine::ParticleEmitterComponent* miniTurboEmitter_ = nullptr;
+   int miniTurboSlotCount_ = 0;
+
    // 惑星2 の配置パラメータ
-   static constexpr float kPlanet2Radius = 20.0f;
-   static constexpr float kPlanet2Distance = 53.0f; ///< 惑星1中心からの距離
+   static constexpr float kPlanet2Radius = 50.0f;
+   static constexpr float kPlanet2Distance = 150.0f; ///< 惑星1中心からの距離
 };

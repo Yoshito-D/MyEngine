@@ -95,6 +95,8 @@ namespace GameEngine {
         j["looping"] = looping_;
         j["startLifetime"] = startLifetime_.ToJson();
         j["startSpeed"] = startSpeed_.ToJson();
+        j["startSpeedMode"] = static_cast<int>(startSpeedMode_);
+        j["startVelocity"] = startVelocity_.ToJson();
         j["startSize"] = startSize_.ToJson();
         j["startRotation"] = startRotation_.ToJson();
         j["startColor"] = startColor_.ToJson();
@@ -122,12 +124,46 @@ namespace GameEngine {
             }
         }
         
+        const bool hasStartSpeedMode = j.contains("startSpeedMode");
+        if (hasStartSpeedMode) {
+            startSpeedMode_ = static_cast<StartSpeedMode>(j["startSpeedMode"].get<int>());
+        }
+
         if (j.contains("startSpeed")) {
-            if (j["startSpeed"].is_object()) {
-                startSpeed_.FromJson(j["startSpeed"]);
+            const auto& startSpeedJson = j["startSpeed"];
+            if (startSpeedJson.is_object()) {
+                const bool isVectorRange =
+                    startSpeedJson.contains("min") && startSpeedJson["min"].is_array();
+                if (isVectorRange) {
+                    startVelocity_.FromJson(startSpeedJson);
+                    if (!hasStartSpeedMode) {
+                        startSpeedMode_ = StartSpeedMode::Vector3;
+                    }
+                } else {
+                    startSpeed_.FromJson(startSpeedJson);
+                }
+            } else if (startSpeedJson.is_array() && startSpeedJson.size() >= 3) {
+                Vector3 value{startSpeedJson[0], startSpeedJson[1], startSpeedJson[2]};
+                startVelocity_ = RandomVector3(value, value, false);
+                if (!hasStartSpeedMode) {
+                    startSpeedMode_ = StartSpeedMode::Vector3;
+                }
             } else {
-                float value = j["startSpeed"];
+                float value = startSpeedJson;
                 startSpeed_ = RandomFloat(value, value, false);
+            }
+        }
+
+        if (j.contains("startVelocity")) {
+            if (j["startVelocity"].is_object()) {
+                startVelocity_.FromJson(j["startVelocity"]);
+            } else if (j["startVelocity"].is_array() && j["startVelocity"].size() >= 3) {
+                auto arr = j["startVelocity"];
+                Vector3 value{arr[0], arr[1], arr[2]};
+                startVelocity_ = RandomVector3(value, value, false);
+            }
+            if (!hasStartSpeedMode) {
+                startSpeedMode_ = StartSpeedMode::Vector3;
             }
         }
         

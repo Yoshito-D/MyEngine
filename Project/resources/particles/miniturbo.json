@@ -1,37 +1,37 @@
 {
-    "blendMode": 1,
+    "blendMode": 2,
     "colorOverLifetimeModule": {
         "enabled": true,
         "endColor": [
-            1.0,
-            1.0,
-            1.0,
-            0.0
+            0.8362832069396973,
+            0.4909045696258545,
+            0.0999099537730217,
+            0.10588235408067703
         ],
         "startColor": [
-            1.0,
-            1.0,
-            1.0,
-            0.6549019813537598
+            0.5840708017349243,
+            0.2763461470603943,
+            0.04910333454608917,
+            1.0
         ]
     },
     "emissionModule": {
         "bursts": [],
         "enabled": true,
         "rateOverDistance": 0.0,
-        "rateOverTime": 48.5
+        "rateOverTime": 500.0
     },
     "forceOverLifetimeModule": {
-        "enabled": false,
+        "enabled": true,
         "force": {
             "max": [
                 0.0,
-                0.0,
+                -1.7000000476837158,
                 0.0
             ],
             "min": [
                 0.0,
-                0.0,
+                -1.7000000476837158,
                 0.0
             ],
             "randomize": false
@@ -39,14 +39,14 @@
     },
     "limitVelocityModule": {
         "dampen": {
-            "max": 0.5,
-            "min": 0.5,
+            "max": 1.0,
+            "min": 1.0,
             "randomize": false
         },
-        "enabled": false,
+        "enabled": true,
         "speedLimit": {
-            "max": 10.0,
-            "min": 10.0,
+            "max": 5.099999904632568,
+            "min": 5.099999904632568,
             "randomize": false
         }
     },
@@ -54,19 +54,19 @@
         "duration": 0.10000000149011612,
         "emissionRate": 0.0,
         "gravityModifier": 0.0,
-        "looping": false,
+        "looping": true,
         "maxParticles": 292,
         "playOnAwake": false,
         "scalingMode": 0,
-        "simulationSpace": 0,
+        "simulationSpace": 1,
         "startColor": {
             "max": 4294967295,
             "min": 4294967295,
             "randomize": false
         },
         "startLifetime": {
-            "max": 0.44999998807907104,
-            "min": 0.25,
+            "max": 0.15000000596046448,
+            "min": 0.05000000074505806,
             "randomize": true
         },
         "startRotation": {
@@ -96,23 +96,23 @@
             "randomize": true
         },
         "startSpeed": {
-            "max": 0.4000000059604645,
-            "min": 0.10000000149011612,
+            "max": 1.100000023841858,
+            "min": 0.800000011920929,
             "randomize": true
         },
-        "startSpeedMode": 0,
+        "startSpeedMode": 1,
         "startVelocity": {
             "max": [
-                0.0,
-                6.0,
-                0.0
+                3.0,
+                9.600000381469727,
+                -0.20000000298023224
             ],
             "min": [
-                0.0,
-                5.0,
-                0.0
+                -3.0,
+                0.6000000238418579,
+                -1.2999999523162842
             ],
-            "randomize": false
+            "randomize": true
         }
     },
     "noiseModule": {
@@ -158,7 +158,7 @@
         "planeWidth": 1.0,
         "ringInnerRadius": 0.14000000059604645,
         "ringOuterRadius": 0.5,
-        "ringSegments": 32,
+        "ringSegments": 4,
         "rotationSpace": 1,
         "speedScale": 1.0,
         "sphereRadius": 0.5,
@@ -187,9 +187,9 @@
         "angle": 15.0,
         "arc": 360.0,
         "boxSize": [
-            0.20000000298023224,
-            0.05000000074505806,
-            0.20000000298023224
+            0.10000000149011612,
+            0.10000000149011612,
+            0.10000000149011612
         ],
         "emitFrom": 0,
         "enabled": true,
@@ -201,7 +201,7 @@
         ],
         "radius": 0.10000000149011612,
         "rotation": [
-            -2.0354056358337402,
+            0.0,
             0.0,
             0.0
         ],
@@ -210,23 +210,23 @@
             1.0,
             1.0
         ],
-        "shapeType": 0
+        "shapeType": 3
     },
     "sizeOverLifetimeModule": {
         "enabled": true,
         "endSize": [
-            0.6000000238418579,
-            0.6000000238418579,
-            0.6000000238418579
+            0.0,
+            0.0,
+            0.20000000298023224
         ],
         "sizeMultiplier": 1.090000033378601,
         "startSize": [
-            0.05000000074505806,
-            0.05000000074505806,
-            0.10000000149011612
+            0.20000000298023224,
+            0.20000000298023224,
+            0.18000000715255737
         ]
     },
-    "textureName": "smoke",
+    "textureName": "particle",
     "textureSheetAnimationModule": {
         "animationMode": 0,
         "cycles": 1,
@@ -312,7 +312,7 @@
                 0.0,
                 0.0
             ],
-            "randomize": false
+            "randomize": true
         },
         "speedModifier": {
             "max": 1.0,
