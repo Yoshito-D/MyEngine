@@ -36,7 +36,7 @@ public:
 
    /// @brief 車体OBBの半サイズ（各軸を個別指定）
    /// Transformのscaleではなくこの値を距離判定に使用する
-   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.3f, 0.75f };
+   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
 
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
