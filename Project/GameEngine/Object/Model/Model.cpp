@@ -42,7 +42,15 @@ Model::Model() {
 }
 
 Model::~Model() {
-   auto it = std::find(sRegisteredModels_.begin(), sRegisteredModels_.end(), this);
+   UnregisterModel(this);
+}
+
+void Model::UnregisterModel(Model* model) {
+   if (!model) {
+	  return;
+   }
+
+   auto it = std::find(sRegisteredModels_.begin(), sRegisteredModels_.end(), model);
    if (it != sRegisteredModels_.end()) {
 	  sRegisteredModels_.erase(it);
    }

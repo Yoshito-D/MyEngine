@@ -74,6 +74,9 @@ public:
    /// @brief 全スロットを削除する
    void ClearSlots();
 
+   /// @brief 管理中のParticleSystemを自動描画/更新対象から外す
+   void UnregisterParticleSystemsForRender();
+
    /// @brief スロット数を取得する
    int  GetSlotCount() const { return static_cast<int>(slots_.size()); }
 

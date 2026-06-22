@@ -1,7 +1,10 @@
 #pragma once
 #include <d3d12.h>
 #include <wrl.h>
+#include <filesystem>
+#include <list>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "Graphics/Texture.h"
 
@@ -17,6 +20,9 @@ public:
    /// @param filePath テクスチャファイルのパス
    /// @param name テクスチャの名前 + 拡張子
    void LoadTexture(const std::string& filePath, const std::string& name);
+
+   /// @brief ディレクトリ配下のテクスチャを再帰的にロード
+   void LoadTexturesFromDirectory(const std::filesystem::path& directoryPath, const std::filesystem::path& resourcesRoot = "resources");
 
    /// @brief テクスチャを取得
    /// @param name 取得するテクスチャの名前
@@ -38,8 +44,11 @@ public:
    /// @brief テクスチャマネージャーを全削除
    void Clear();
 private:
+   void RegisterAlias(const std::string& alias, const std::string& ownerName);
+
    GraphicsDevice* device_ = nullptr;
    std::unordered_map<std::string, std::unique_ptr<Texture>> textures_;
+   std::unordered_map<std::string, Texture*> textureAliases_;
    std::list<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResource_;
    std::string lastCubemapName_;
 };

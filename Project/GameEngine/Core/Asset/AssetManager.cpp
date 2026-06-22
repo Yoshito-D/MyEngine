@@ -33,6 +33,7 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    });
    modelAssetManager_->Initialize(device);
    textureManager_->Initialize(device);
+   textureManager_->LoadTexturesFromDirectory("resources/textures", "resources");
    soundManager_->Initialize(audio);
 }
 }

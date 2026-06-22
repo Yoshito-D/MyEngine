@@ -618,6 +618,7 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 void Renderer::EndFrame() {
 #ifdef USE_IMGUI
    if (editorController_) {
+	  editorController_->BeginEditorFrame();
 	  editorController_->ShowAssetWindow();
 	  editorController_->ShowInspectorWindow();
 	  editorController_->ShowHierarchyWindow();
@@ -714,6 +715,9 @@ void Renderer::DrawAutoRegisteredModels() {
 	  if (materialComp && !materialComp->GetTextureNames().empty() && !materialComp->GetTextureNames()[0].empty()) {
 		 texture = textureManager->GetTexture(materialComp->GetTextureNames()[0]);
 	  }
+	  if (texture && texture->GetMetadata().IsCubemap()) {
+		 texture = nullptr;
+	  }
 	  if (!texture) {
 		 texture = fallbackTexture;
 	  }
@@ -764,6 +768,9 @@ void Renderer::DrawAutoRegisteredSprites() {
 	  Texture* texture = nullptr;
 	  if (materialComp && !materialComp->GetTextureNames().empty() && !materialComp->GetTextureNames()[0].empty()) {
 		 texture = textureManager->GetTexture(materialComp->GetTextureNames()[0]);
+	  }
+	  if (texture && texture->GetMetadata().IsCubemap()) {
+		 texture = nullptr;
 	  }
 	  if (!texture) {
 		 texture = fallbackTexture;

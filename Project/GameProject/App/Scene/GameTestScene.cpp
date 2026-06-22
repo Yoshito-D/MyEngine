@@ -39,26 +39,12 @@ static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 void GameTestScene::Initialize() {
    BaseScene::Initialize();
 
-   EngineContext::LoadTexture("resources/textures/space_2048px.dds", "skyboxTexture");
-   EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
-   EngineContext::LoadTexture("resources/textures/gradationLine1.png", "gradationLine1");
-   EngineContext::LoadTexture("resources/textures/particle.png", "particle");
-   EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
-   EngineContext::LoadTexture("resources/textures/star_08.png", "star_08");
-   EngineContext::LoadTexture("resources/textures/spark_01.png", "spark_01");
-   EngineContext::LoadTexture("resources/textures/effect1.png", "effect1");
-   EngineContext::LoadTexture("resources/textures/bonfire.png", "bonfire");
-   EngineContext::LoadTexture("resources/textures/rocky_terrain_02_diff_2k.jpg", "rocky");
-   EngineContext::LoadTexture("resources/textures/coast_sand_05_diff_2k.jpg", "coast_sand");
-
    skybox_ = std::make_unique<GameEngine::Skybox>();
    skybox_->Create(EngineContext::GetGraphicsDevice());
-   skybox_->SetTexture(EngineContext::GetTexture("skyboxTexture"));
+   skybox_->SetTexture(EngineContext::GetTexture("space_2048px"));
 
    EngineContext::LoadModel("resources/models/planet", "planet.obj");
    EngineContext::LoadModel("resources/models/car", "car.obj");
-   EngineContext::LoadTexture("resources/textures/uvChecker.png", "uvChecker");
-   EngineContext::LoadTexture("resources/textures/color_palette.png", "car");
 
    EngineContext::CreateMaterial("planetMaterial", 0xffffffff, 0);
    EngineContext::CreateMaterial("playerMaterial", 0xffffffff, 3);
@@ -82,7 +68,7 @@ void GameTestScene::Initialize() {
 	  attractor1 = a;
    }
    // uvChecker テクスチャを設定
-   if (auto* mc = planet_->GetComponent<MaterialComponent>()) { mc->SetTextureName("coast_sand"); }
+   if (auto* mc = planet_->GetComponent<MaterialComponent>()) { mc->SetTextureName("coast_sand_05_diff_2k"); }
 
    // --- 惑星2の作成 ---
    planet2_ = std::make_unique<Model>();
@@ -96,7 +82,7 @@ void GameTestScene::Initialize() {
 	  attractor2 = a;
    }
    // uvChecker テクスチャを設定
-   if (auto* mc = planet2_->GetComponent<MaterialComponent>()) { mc->SetTextureName("coast_sand"); }
+   if (auto* mc = planet2_->GetComponent<MaterialComponent>()) { mc->SetTextureName("coast_sand_05_diff_2k"); }
 
    // --- プレイヤーの作成 ---
    player_ = std::make_unique<Model>();
@@ -104,7 +90,7 @@ void GameTestScene::Initialize() {
    player_->SetPosition(Vector3(0.0f, kPlayerOrbitHeight, 0.0f));
    player_->SetScale(Vector3(1.0f, 1.0f, 1.0f));
 
-   if (auto* mc = player_->GetComponent<MaterialComponent>()) { mc->SetTextureName("car"); }
+   if (auto* mc = player_->GetComponent<MaterialComponent>()) { mc->SetTextureName("color_palette"); }
 
    // 1. GravityAttractorLink: 今フレームの重力方向を先に確定させる
    if (auto* link = player_->AddComponent<GravityAttractorLink>()) {
@@ -127,7 +113,7 @@ void GameTestScene::Initialize() {
    // 4. CharacterLanding: 位置を地表にスナップ・垂直速度除去
    if (auto* landing = player_->AddComponent<CharacterLanding>()) {
 	  landing->SetPlanetCenter(planet_->GetPosition());
-	  landing->surfaceRadius_ = kPlanetRadius;
+	  landing->SetSurfaceRadius(kPlanetRadius);
    }
 
    // 5. CharacterJump: ジャンプ初速

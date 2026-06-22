@@ -674,6 +674,11 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 					 particleSystem->SetTextureName("");
 				  }
 				  for (const auto& texName : texNames) {
+					 if (auto* candidate = GameEngine::EngineContext::GetTexture(texName)) {
+						if (candidate->GetMetadata().IsCubemap()) {
+						   continue;
+						}
+					 }
 					 bool selected = (particleSystem->GetTextureName() == texName);
 					 std::string selID = texName + "##TexSel_" + particleSystemName;
 					 if (ImGui::Selectable(selID.c_str(), selected)) {
@@ -689,18 +694,22 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			   // テクスチャプレビュー
 			   auto* previewTex = currentTexture;
 			   if (previewTex) {
-				  ImGui::Text("%s (%ux%u)", previewTex->GetName().c_str(),
-					 previewTex->GetWidth(), previewTex->GetHeight());
+				  if (previewTex->GetMetadata().IsCubemap()) {
+					 ImGui::TextDisabled("TextureCube cannot be previewed in Particle texture slot");
+				  } else {
+					 ImGui::Text("%s (%ux%u)", previewTex->GetName().c_str(),
+						previewTex->GetWidth(), previewTex->GetHeight());
 
-				  // アスペクト比を保ちながら最大128pxでプレビュー
-				  const float kPreviewMax = 128.0f;
-				  float w = static_cast<float>(previewTex->GetWidth());
-				  float h = static_cast<float>(previewTex->GetHeight());
-				  float scale = (w > h) ? (kPreviewMax / w) : (kPreviewMax / h);
-				  ImVec2 previewSize(w * scale, h * scale);
+					 // アスペクト比を保ちながら最大128pxでプレビュー
+					 const float kPreviewMax = 128.0f;
+					 float w = static_cast<float>(previewTex->GetWidth());
+					 float h = static_cast<float>(previewTex->GetHeight());
+					 float scale = (w > h) ? (kPreviewMax / w) : (kPreviewMax / h);
+					 ImVec2 previewSize(w * scale, h * scale);
 
-				  ImTextureID texId = (ImTextureID)(previewTex->GetTextureSrvHandleGPU().ptr);
-				  ImGui::Image(texId, previewSize);
+					 ImTextureID texId = (ImTextureID)(previewTex->GetTextureSrvHandleGPU().ptr);
+					 ImGui::Image(texId, previewSize);
+				  }
 			   } else {
 				  ImGui::TextDisabled("No texture assigned");
 			   }

@@ -1,0 +1,116 @@
+{
+   "objects": [
+      {
+         "assetId": "models/box/box.obj",
+         "components": [
+            {
+               "data": {
+                  "parentObjectName": "",
+                  "rotation": [
+                     0.0,
+                     -0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "euler",
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "translation": [
+                     -5.127913951873779,
+                     5.654601573944092,
+                     -5.597559452056885
+                  ],
+                  "useParentMatrix": false
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "blendMode": -1,
+                  "color": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "environmentTextureName": "",
+                  "lightingMode": 2,
+                  "materialCount": 1,
+                  "materialNames": [
+                     "ObjectMaterial_6"
+                  ],
+                  "pipelineName": "",
+                  "shininess": 40.0,
+                  "textureNames": [
+                     ""
+                  ],
+                  "uvTransform": [
+                     [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ]
+                  ]
+               },
+               "enabled": true,
+               "typeName": "MaterialComponent"
+            },
+            {
+               "data": {
+                  "name": "box"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "assetId": "models/box/box.obj"
+               },
+               "enabled": true,
+               "typeName": "ModelAssetComponent"
+            },
+            {
+               "data": {
+                  "applyPostProcess": true,
+                  "autoRender": true,
+                  "visible": true
+               },
+               "enabled": true,
+               "typeName": "RenderComponent"
+            }
+         ],
+         "id": "editor_object_1",
+         "objectType": "Model"
+      }
+   ],
+   "sceneName": "EngineTest",
+   "version": 1
+}

@@ -3,6 +3,8 @@
 
 #ifdef USE_IMGUI
 
+#include "Component/MaterialComponent.h"
+#include "Component/ModelAssetComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Effect/ParticleSystem.h"
@@ -15,6 +17,7 @@
 #include "externals/imgui/imgui.h"
 #include <fstream>
 #include <limits>
+#include <string>
 
 namespace GameEngine {
 
@@ -59,7 +62,10 @@ float AbsDiff(float lhs, float rhs) {
 void EditorSceneContext::Initialize(std::string sceneName) {
    sceneName_ = sceneName.empty() ? "Scene" : std::move(sceneName);
    hasAutoLoaded_ = false;
+   isDirty_ = false;
+   SetStatus("Editor scene initialized");
    selectedObject_ = nullptr;
+   selectedParticleSystem_ = nullptr;
    commandStack_.Clear();
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
@@ -77,12 +83,17 @@ void EditorSceneContext::AutoLoad() {
 
 void EditorSceneContext::Clear() {
    selectedObject_ = nullptr;
+   selectedParticleSystem_ = nullptr;
    manipulatingObject_ = nullptr;
+   manipulatingParticleSystem_ = nullptr;
    isManipulating_ = false;
+   isManipulatingParticleSystem_ = false;
    commandStack_.Clear();
    objectStore_.Clear();
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
+   ClearDirty();
+   SetStatus("Editor scene cleared");
 }
 
 bool EditorSceneContext::Save() {
@@ -90,6 +101,7 @@ bool EditorSceneContext::Save() {
    std::error_code error;
    std::filesystem::create_directories(filePath.parent_path(), error);
    if (error) {
+      SetStatus("Save failed: could not create directory " + filePath.parent_path().generic_string());
       return false;
    }
 
@@ -100,21 +112,26 @@ bool EditorSceneContext::Save() {
 
    std::ofstream file(filePath);
    if (!file.is_open()) {
+      SetStatus("Save failed: could not open " + filePath.generic_string());
       return false;
    }
 
    file << sceneData.dump(3);
+   ClearDirty();
+   SetStatus("Saved scene: " + filePath.generic_string());
    return true;
 }
 
 bool EditorSceneContext::Load() {
    const std::filesystem::path filePath = GetSceneFilePath();
    if (!std::filesystem::exists(filePath)) {
+      SetStatus("Load skipped: scene file does not exist " + filePath.generic_string());
       return false;
    }
 
    std::ifstream file(filePath);
    if (!file.is_open()) {
+      SetStatus("Load failed: could not open " + filePath.generic_string());
       return false;
    }
 
@@ -122,14 +139,17 @@ bool EditorSceneContext::Load() {
    try {
       file >> sceneData;
    } catch (...) {
+      SetStatus("Load failed: invalid json " + filePath.generic_string());
       return false;
    }
 
    if (!sceneData.is_object()) {
+      SetStatus("Load failed: root json is not an object");
       return false;
    }
 
    selectedObject_ = nullptr;
+   selectedParticleSystem_ = nullptr;
    commandStack_.Clear();
    objectStore_.Clear();
    hiddenSceneObjects_.clear();
@@ -141,11 +161,21 @@ bool EditorSceneContext::Load() {
       }
    }
 
+   ClearDirty();
+   SetStatus("Loaded scene: " + filePath.generic_string());
    return true;
 }
 
 std::filesystem::path EditorSceneContext::GetSceneFilePath() const {
    return std::filesystem::path("resources") / "scenes" / (sceneName_ + ".json");
+}
+
+void EditorSceneContext::MarkDirty() {
+   isDirty_ = true;
+}
+
+void EditorSceneContext::ClearDirty() {
+   isDirty_ = false;
 }
 
 std::vector<Object*> EditorSceneContext::CollectEditableObjects() const {
@@ -193,6 +223,20 @@ void EditorSceneContext::SelectObject(Object* object) {
       return;
    }
    selectedObject_ = object;
+   if (selectedObject_) {
+      selectedParticleSystem_ = nullptr;
+   }
+}
+
+void EditorSceneContext::SelectParticleSystem(ParticleSystem* particleSystem) {
+   if (particleSystem && !IsParticleSystemAlive(particleSystem)) {
+      selectedParticleSystem_ = nullptr;
+      return;
+   }
+   selectedParticleSystem_ = particleSystem;
+   if (selectedParticleSystem_) {
+      selectedObject_ = nullptr;
+   }
 }
 
 bool EditorSceneContext::CanDeleteSelectedObject() const {
@@ -208,11 +252,47 @@ bool EditorSceneContext::CanDeleteParticleSystem(const ParticleSystem* particleS
 }
 
 void EditorSceneContext::CreateModelFromAsset(const std::string& assetId) {
-   commandStack_.Execute(std::make_unique<CreateModelCommand>(assetId), *this);
+   commandStack_.Execute(std::make_unique<CreateModelCommand>(assetId, BuildPlacementTransformInFrontOfCamera()), *this);
+}
+
+void EditorSceneContext::CreateSpriteFromTexture(const std::string& textureAssetId) {
+   commandStack_.Execute(std::make_unique<CreateSpriteCommand>(textureAssetId, BuildPlacementTransformInFrontOfCamera()), *this);
 }
 
 ParticleSystem* EditorSceneContext::CreateParticleSystemFromAsset(const std::string& assetId) {
-   return objectStore_.CreateParticleSystem(assetId);
+   commandStack_.Execute(std::make_unique<CreateParticleSystemCommand>(assetId, BuildPlacementTransformInFrontOfCamera()), *this);
+   return selectedParticleSystem_;
+}
+
+void EditorSceneContext::DuplicateSelectedObject() {
+   if (selectedParticleSystem_) {
+      const std::string particleId = objectStore_.GetId(selectedParticleSystem_);
+      if (particleId.empty()) {
+         SetStatus("Duplicate failed: selected particle is not editor-owned");
+         return;
+      }
+
+      nlohmann::json snapshot = objectStore_.SerializeObject(particleId);
+      ApplyDuplicateOffset(snapshot);
+      snapshot.erase("id");
+      commandStack_.Execute(std::make_unique<RestoreObjectSnapshotCommand>(std::move(snapshot), "Duplicate Particle System"), *this);
+      return;
+   }
+
+   if (!selectedObject_) {
+      return;
+   }
+
+   const std::string objectId = objectStore_.GetId(selectedObject_);
+   if (objectId.empty()) {
+      SetStatus("Duplicate failed: selected object is not editor-owned");
+      return;
+   }
+
+   nlohmann::json snapshot = objectStore_.SerializeObject(objectId);
+   ApplyDuplicateOffset(snapshot);
+   snapshot.erase("id");
+   commandStack_.Execute(std::make_unique<RestoreObjectSnapshotCommand>(std::move(snapshot), "Duplicate Object"), *this);
 }
 
 void EditorSceneContext::DeleteObject(Object* object) {
@@ -239,15 +319,81 @@ void EditorSceneContext::DeleteParticleSystem(ParticleSystem* particleSystem) {
 
    if (!objectStore_.Contains(particleSystem)) {
       HideSceneOwnedParticleSystem(particleSystem);
+      if (selectedParticleSystem_ == particleSystem) {
+         selectedParticleSystem_ = nullptr;
+      }
+      MarkDirty();
       return;
    }
 
    const std::string objectId = objectStore_.GetId(particleSystem);
-   objectStore_.DeleteParticleSystem(objectId);
+   commandStack_.Execute(std::make_unique<DeleteParticleSystemCommand>(objectId), *this);
 }
 
 void EditorSceneContext::DeleteSelectedObject() {
    DeleteObject(selectedObject_);
+}
+
+void EditorSceneContext::DeleteSelection() {
+   if (selectedParticleSystem_) {
+      DeleteParticleSystem(selectedParticleSystem_);
+      return;
+   }
+   DeleteSelectedObject();
+}
+
+void EditorSceneContext::AddComponentToSelectedObject(const std::string& typeName) {
+   if (!selectedObject_) {
+      return;
+   }
+
+   const std::string objectId = GetObjectIdForCommand(selectedObject_);
+   commandStack_.Execute(std::make_unique<AddComponentCommand>(objectId, selectedObject_, typeName), *this);
+}
+
+void EditorSceneContext::SetModelAsset(Object* object, const std::string& assetId) {
+   if (!object || assetId.empty()) {
+      return;
+   }
+
+   auto* modelAssetComponent = object->GetComponent<ModelAssetComponent>();
+   if (!modelAssetComponent) {
+      return;
+   }
+
+   const std::string beforeAssetId = modelAssetComponent->GetAssetId();
+   if (beforeAssetId == assetId) {
+      return;
+   }
+
+   commandStack_.Execute(std::make_unique<SetModelAssetCommand>(
+      GetObjectIdForCommand(object),
+      object,
+      beforeAssetId,
+      assetId), *this);
+}
+
+void EditorSceneContext::SetMaterialTexture(Object* object, size_t slot, const std::string& textureAssetId) {
+   if (!object) {
+      return;
+   }
+
+   auto* materialComponent = object->GetComponent<MaterialComponent>();
+   if (!materialComponent) {
+      return;
+   }
+
+   const std::string beforeTextureId = materialComponent->GetTextureName(slot);
+   if (beforeTextureId == textureAssetId) {
+      return;
+   }
+
+   commandStack_.Execute(std::make_unique<SetMaterialTextureCommand>(
+      GetObjectIdForCommand(object),
+      object,
+      slot,
+      beforeTextureId,
+      textureAssetId), *this);
 }
 
 void EditorSceneContext::Undo() {
@@ -262,14 +408,68 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
    if (selectedObject_ && !IsObjectAlive(selectedObject_)) {
       selectedObject_ = nullptr;
    }
+   if (selectedParticleSystem_ && !IsParticleSystemAlive(selectedParticleSystem_)) {
+      selectedParticleSystem_ = nullptr;
+   }
 
-   if (!selectedObject_ || viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
+   if ((!selectedObject_ && !selectedParticleSystem_) || viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
+      return;
+   }
+
+   Camera* camera = EngineContext::GetActiveCamera();
+   if (!camera) {
+      return;
+   }
+
+   if (selectedParticleSystem_) {
+      auto* shapeModule = selectedParticleSystem_->GetShapeModule();
+      if (!shapeModule) {
+         return;
+      }
+
+      Matrix4x4 worldMatrix = MakeAffineMatrix(shapeModule->GetTransform());
+      Matrix4x4 viewMatrix = camera->GetViewMatrix();
+      Matrix4x4 projectionMatrix = camera->GetProjectionMatrix();
+
+      const Transform beforeCall = shapeModule->GetTransform();
+
+      ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+      ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
+      ImGuizmo::Manipulate(
+         &viewMatrix.m[0][0],
+         &projectionMatrix.m[0][0],
+         ToImGuizmoOperation(gizmoOperation_),
+         ToImGuizmoMode(gizmoMode_),
+         &worldMatrix.m[0][0]);
+
+      if (ImGuizmo::IsUsing()) {
+         if (!isManipulatingParticleSystem_ || manipulatingParticleSystem_ != selectedParticleSystem_) {
+            particleTransformBeforeManipulation_ = beforeCall;
+            manipulatingParticleSystem_ = selectedParticleSystem_;
+            isManipulatingParticleSystem_ = true;
+         }
+
+         shapeModule->SetTransform(MatrixToTransform(worldMatrix));
+         return;
+      }
+
+      if (isManipulatingParticleSystem_) {
+         ParticleSystem* manipulatedParticleSystem = manipulatingParticleSystem_;
+         manipulatingParticleSystem_ = nullptr;
+         isManipulatingParticleSystem_ = false;
+
+         if (manipulatedParticleSystem && manipulatedParticleSystem->GetShapeModule()) {
+            SubmitParticleTransformIfNeeded(
+               particleTransformBeforeManipulation_,
+               manipulatedParticleSystem->GetShapeModule()->GetTransform(),
+               manipulatedParticleSystem);
+         }
+      }
       return;
    }
 
    auto* transformComponent = selectedObject_->GetComponent<TransformComponent>();
-   Camera* camera = EngineContext::GetActiveCamera();
-   if (!transformComponent || !camera) {
+   if (!transformComponent) {
       return;
    }
 
@@ -318,10 +518,28 @@ void EditorSceneContext::AcceptModelAssetDrop() {
       return;
    }
 
+   if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_MODEL")) {
+      const char* assetId = static_cast<const char*>(payload->Data);
+      if (assetId && payload->DataSize > 1) {
+         CreateModelFromAsset(assetId);
+      }
+   }
    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_MODEL_ASSET")) {
       const char* assetId = static_cast<const char*>(payload->Data);
       if (assetId && payload->DataSize > 1) {
          CreateModelFromAsset(assetId);
+      }
+   }
+   if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_TEXTURE")) {
+      const char* assetId = static_cast<const char*>(payload->Data);
+      if (assetId && payload->DataSize > 1) {
+         CreateSpriteFromTexture(assetId);
+      }
+   }
+   if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_PARTICLE")) {
+      const char* assetId = static_cast<const char*>(payload->Data);
+      if (assetId && payload->DataSize > 1) {
+         CreateParticleSystemFromAsset(assetId);
       }
    }
 
@@ -341,8 +559,23 @@ void EditorSceneContext::HandleEditorShortcuts() {
       return;
    }
 
+   if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) {
+      Redo();
+      return;
+   }
+
    if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Z, false)) {
       Undo();
+      return;
+   }
+
+   if (ctrl && ImGui::IsKeyPressed(ImGuiKey_D, false)) {
+      DuplicateSelectedObject();
+      return;
+   }
+
+   if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+      DeleteSelection();
    }
 }
 
@@ -466,6 +699,7 @@ void EditorSceneContext::HideSceneOwnedObject(Object* object) {
    if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
       renderComponent->visible = false;
    }
+   MarkDirty();
 }
 
 void EditorSceneContext::HideSceneOwnedParticleSystem(ParticleSystem* particleSystem) {
@@ -475,6 +709,7 @@ void EditorSceneContext::HideSceneOwnedParticleSystem(ParticleSystem* particleSy
 
    hiddenParticleSystems_.insert(particleSystem);
    particleSystem->Stop();
+   MarkDirty();
 }
 
 bool EditorSceneContext::HasTransformChanged(const Transform& lhs, const Transform& rhs) const {
@@ -503,8 +738,75 @@ void EditorSceneContext::SubmitTransformIfNeeded(const Transform& before, const 
       *this);
 }
 
+void EditorSceneContext::SubmitParticleTransformIfNeeded(const Transform& before, const Transform& after, ParticleSystem* particleSystem) {
+   if (!particleSystem || !HasTransformChanged(before, after)) {
+      return;
+   }
+
+   commandStack_.Execute(
+      std::make_unique<TransformParticleSystemCommand>(GetParticleSystemIdForCommand(particleSystem), particleSystem, before, after),
+      *this);
+}
+
+Transform EditorSceneContext::BuildPlacementTransformInFrontOfCamera() const {
+   Transform transform{};
+   Camera* camera = EngineContext::GetActiveCamera();
+   if (!camera) {
+      return transform;
+   }
+
+   constexpr float kPlacementDistance = 8.0f;
+   Vector3 forward = camera->GetForward().Normalize();
+   if (forward.LengthSquared() < 1e-8f) {
+      forward = Vector3(0.0f, 0.0f, 1.0f);
+   }
+
+   transform.translation = camera->GetPosition() + forward * kPlacementDistance;
+   return transform;
+}
+
 std::string EditorSceneContext::GetObjectIdForCommand(const Object* object) const {
    return objectStore_.GetId(object);
+}
+
+std::string EditorSceneContext::GetParticleSystemIdForCommand(const ParticleSystem* particleSystem) const {
+   return objectStore_.GetId(particleSystem);
+}
+
+void EditorSceneContext::SetStatus(std::string message) {
+   lastStatusMessage_ = std::move(message);
+   if (!lastStatusMessage_.empty()) {
+      Logger::GetInstance().Log("[Editor] " + lastStatusMessage_);
+   }
+}
+
+void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
+   if (!snapshot.is_object()) {
+      return;
+   }
+
+   if (snapshot.contains("components") && snapshot.at("components").is_array()) {
+      for (auto& componentData : snapshot.at("components")) {
+         if (!componentData.is_object() || componentData.value("typeName", "") != "TransformComponent") {
+            continue;
+         }
+         auto& data = componentData["data"];
+         if (!data.is_object() || !data.contains("translation") || !data.at("translation").is_array() || data.at("translation").size() != 3) {
+            continue;
+         }
+         data["translation"][0] = data["translation"][0].get<float>() + 1.0f;
+      }
+   }
+
+   if (snapshot.value("objectType", "") == "ParticleSystem" &&
+      snapshot.contains("data") &&
+      snapshot.at("data").contains("shapeModule") &&
+      snapshot.at("data").at("shapeModule").contains("position")) {
+      auto& position = snapshot["data"]["shapeModule"]["position"];
+      if (position.is_array() && position.size() == 3) {
+         position[0] = position[0].get<float>() + 1.0f;
+      }
+   }
 }
 
 } // namespace GameEngine

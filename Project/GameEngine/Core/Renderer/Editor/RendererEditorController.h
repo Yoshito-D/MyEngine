@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace GameEngine {
@@ -15,11 +16,14 @@ class Object;
 class Model;
 class Sprite;
 class ParticleSystem;
+enum class EditorAssetType;
+struct EditorAssetEntry;
 
 class RendererEditorController {
 public:
    void Initialize(AssetManager* assetManager);
 
+   void BeginEditorFrame();
    void ShowAssetWindow();
    void ShowHierarchyWindow();
    void ShowInspectorWindow();
@@ -28,15 +32,19 @@ public:
 private:
    EditorSceneContext* GetActiveEditorContext() const;
    std::vector<Object*> CollectSceneObjects() const;
+   void DrawAssetEntry(EditorSceneContext& editorContext, const EditorAssetEntry& entry);
+   void DrawAssetTree(EditorSceneContext& editorContext);
+   void EmitAssetDragPayload(const EditorAssetEntry& entry) const;
+   bool EnsureTextureLoaded(const std::string& textureAssetId);
+   void DrawSelectedObjectAssetDropTargets(EditorSceneContext& editorContext, Object* selectedObject);
+   void DrawParticleAssetDropTarget(EditorSceneContext& editorContext, ParticleSystem* particleSystem);
    void ResolveParentRelation(Object* object, const std::vector<Object*>& sceneObjects) const;
    std::string BuildUniqueObjectName(const std::string& baseName, const std::vector<Object*>& sceneObjects) const;
-   bool SaveEditorSceneToFile(const std::filesystem::path& filePath) const;
-   bool LoadEditorSceneFromFile(const std::filesystem::path& filePath);
 
 private:
    AssetManager* assetManager_ = nullptr;
-   ParticleSystem* selectedParticleSystem_ = nullptr;
 
+   bool editorAssetIconView_ = true;
    std::string editorNewModelName_ = "NewModel";
    std::string editorNewSpriteName_ = "NewSprite";
    std::string editorNewMaterialName_ = "NewMaterial";
@@ -50,6 +58,7 @@ private:
 
    std::unordered_map<const Model*, std::string> editorModelAssetNames_;
    std::unordered_map<const Model*, std::string> editorModelMaterialNames_;
+   std::unordered_set<std::string> editorLoadedTextureAssets_;
 };
 
 } // namespace GameEngine

@@ -7,6 +7,7 @@
 #include "Asset/MaterialManager.h"
 #include "Asset/ModelAssetManager.h"
 #include "Component/MaterialComponent.h"
+#include "Component/ModelAssetComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Graphics/Material.h"
@@ -16,18 +17,77 @@
 #include "Object/Skybox/Skybox.h"
 #include "Effect/ParticleSystem.h"
 #include "Effect/ParticleSystemEdit.h"
+#include "Editor/EditorAssetRegistry.h"
 #include "Editor/EditorSceneContext.h"
+#include "Framework/EngineContext.h"
+#include "Graphics/Texture.h"
 #include "Scene/BaseScene.h"
 #include "externals/imgui/imgui.h"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <nlohmann/json.hpp>
+#include <unordered_map>
 
 namespace GameEngine {
 
+namespace {
+void PopLastUtf8Codepoint(std::string& text) {
+   if (text.empty()) {
+      return;
+   }
+
+   size_t erasePos = text.size() - 1;
+   while (erasePos > 0) {
+      const unsigned char c = static_cast<unsigned char>(text[erasePos]);
+      if ((c & 0xC0) != 0x80) {
+         break;
+      }
+      --erasePos;
+   }
+   text.erase(erasePos);
+}
+
+std::string TruncateTextWithEllipsis(const std::string& text, float maxWidth) {
+   if (text.empty() || maxWidth <= 0.0f) {
+      return {};
+   }
+
+   if (ImGui::CalcTextSize(text.c_str()).x <= maxWidth) {
+      return text;
+   }
+
+   constexpr const char* kEllipsis = "...";
+   if (ImGui::CalcTextSize(kEllipsis).x >= maxWidth) {
+      return kEllipsis;
+   }
+
+   std::string truncated = text;
+   while (!truncated.empty()) {
+      std::string candidate = truncated + kEllipsis;
+      if (ImGui::CalcTextSize(candidate.c_str()).x <= maxWidth) {
+         return candidate;
+      }
+      PopLastUtf8Codepoint(truncated);
+   }
+
+   return kEllipsis;
+}
+} // namespace
+
 void RendererEditorController::Initialize(AssetManager* assetManager) {
    assetManager_ = assetManager;
+}
+
+void RendererEditorController::BeginEditorFrame() {
+   auto* editorContext = GetActiveEditorContext();
+   if (!editorContext) {
+      return;
+   }
+
+   editorContext->GetObjectStore().FlushDeferredDeletes();
+   editorContext->HandleEditorShortcuts();
 }
 
 void RendererEditorController::ShowAssetWindow() {
@@ -35,7 +95,8 @@ void RendererEditorController::ShowAssetWindow() {
 
    auto* editorContext = GetActiveEditorContext();
    if (editorContext) {
-      ImGui::Text("Scene");
+      const std::string dirtyMark = editorContext->IsDirty() ? " *" : "";
+      ImGui::Text("Scene%s", dirtyMark.c_str());
       ImGui::Separator();
       if (ImGui::Button("Save Scene")) {
          editorContext->Save();
@@ -49,26 +110,18 @@ void RendererEditorController::ShowAssetWindow() {
          editorContext->GetAssetRegistry().Scan();
       }
       ImGui::TextDisabled("%s", editorContext->GetSceneFilePath().generic_string().c_str());
+      if (!editorContext->GetLastStatusMessage().empty()) {
+         ImGui::TextWrapped("%s", editorContext->GetLastStatusMessage().c_str());
+      }
       ImGui::Spacing();
 
-      ImGui::Text("Model Assets");
+      ImGui::Text("Project");
       ImGui::Separator();
-      const auto& modelAssets = editorContext->GetAssetRegistry().GetModelAssets();
-      if (modelAssets.empty()) {
-         ImGui::Text("No .obj or .gltf models found");
+      ImGui::Checkbox("Icon View", &editorAssetIconView_);
+      if (editorContext->GetAssetRegistry().GetAllAssets().empty()) {
+         ImGui::Text("No assets found under resources");
       } else {
-         for (const auto& entry : modelAssets) {
-            ImGui::PushID(entry.assetId.c_str());
-            if (ImGui::Selectable(entry.displayName.c_str(), false)) {
-               editorContext->CreateModelFromAsset(entry.assetId);
-            }
-            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
-               ImGui::SetDragDropPayload("EDITOR_MODEL_ASSET", entry.assetId.c_str(), entry.assetId.size() + 1);
-               ImGui::Text("%s", entry.displayName.c_str());
-               ImGui::EndDragDropSource();
-            }
-            ImGui::PopID();
-         }
+         DrawAssetTree(*editorContext);
       }
       ImGui::Spacing();
    } else {
@@ -87,6 +140,14 @@ void RendererEditorController::ShowHierarchyWindow() {
    const auto particleSystems = editorContext ? editorContext->CollectEditableParticleSystems() : ParticleSystem::GetRegisteredParticleSystems();
 
    if (editorContext && ImGui::BeginPopupContextWindow("HierarchyCreateContext", ImGuiPopupFlags_MouseButtonRight)) {
+      if (ImGui::MenuItem("Duplicate Selected", "Ctrl+D")) {
+         editorContext->DuplicateSelectedObject();
+      }
+      if (ImGui::MenuItem("Delete Selected", "Delete")) {
+         editorContext->DeleteSelection();
+      }
+      ImGui::Separator();
+
       if (ImGui::BeginMenu("Model")) {
          const auto& modelAssets = editorContext->GetAssetRegistry().GetModelAssets();
          if (modelAssets.empty()) {
@@ -95,7 +156,20 @@ void RendererEditorController::ShowHierarchyWindow() {
             for (const auto& entry : modelAssets) {
                if (ImGui::MenuItem(entry.displayName.c_str())) {
                   editorContext->CreateModelFromAsset(entry.assetId);
-                  selectedParticleSystem_ = nullptr;
+               }
+            }
+         }
+         ImGui::EndMenu();
+      }
+
+      if (ImGui::BeginMenu("Sprite")) {
+         const auto& textureAssets = editorContext->GetAssetRegistry().GetTextureAssets();
+         if (textureAssets.empty()) {
+            ImGui::TextDisabled("No texture files");
+         } else {
+            for (const auto& entry : textureAssets) {
+               if (ImGui::MenuItem(entry.displayName.c_str())) {
+                  editorContext->CreateSpriteFromTexture(entry.assetId);
                }
             }
          }
@@ -109,8 +183,7 @@ void RendererEditorController::ShowHierarchyWindow() {
          } else {
             for (const auto& entry : particleAssets) {
                if (ImGui::MenuItem(entry.displayName.c_str())) {
-                  selectedParticleSystem_ = editorContext->CreateParticleSystemFromAsset(entry.assetId);
-                  editorContext->SelectObject(nullptr);
+                  editorContext->CreateParticleSystemFromAsset(entry.assetId);
                }
             }
          }
@@ -124,13 +197,14 @@ void RendererEditorController::ShowHierarchyWindow() {
       ImGui::Text("No objects");
       if (editorContext) {
          editorContext->SelectObject(nullptr);
+         editorContext->SelectParticleSystem(nullptr);
       }
-      selectedParticleSystem_ = nullptr;
       ImGui::End();
       return;
    }
 
    Object* selectedObject = editorContext ? editorContext->GetSelectedObject() : nullptr;
+   ParticleSystem* selectedParticleSystem = editorContext ? editorContext->GetSelectedParticleSystem() : nullptr;
    if (selectedObject) {
       if (std::find(sceneObjects.begin(), sceneObjects.end(), selectedObject) == sceneObjects.end()) {
          if (editorContext) {
@@ -140,12 +214,17 @@ void RendererEditorController::ShowHierarchyWindow() {
       }
    }
 
-   if (selectedParticleSystem_) {
-      if (std::find(particleSystems.begin(), particleSystems.end(), selectedParticleSystem_) == particleSystems.end()) {
-         selectedParticleSystem_ = nullptr;
+   if (selectedParticleSystem) {
+      if (std::find(particleSystems.begin(), particleSystems.end(), selectedParticleSystem) == particleSystems.end()) {
+         if (editorContext) {
+            editorContext->SelectParticleSystem(nullptr);
+         }
+         selectedParticleSystem = nullptr;
       }
    }
 
+   ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+   if (ImGui::TreeNodeEx("Scene Objects", ImGuiTreeNodeFlags_DefaultOpen)) {
    for (size_t i = 0; i < sceneObjects.size(); ++i) {
       Object* object = sceneObjects[i];
       if (!object) {
@@ -158,15 +237,23 @@ void RendererEditorController::ShowHierarchyWindow() {
       label += "##Object_" + std::to_string(i);
 
       const bool isSelected = (selectedObject == object);
-      if (ImGui::Selectable(label.c_str(), isSelected)) {
+      ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+      if (isSelected) {
+         flags |= ImGuiTreeNodeFlags_Selected;
+      }
+      ImGui::TreeNodeEx(label.c_str(), flags);
+      if (ImGui::IsItemClicked()) {
          if (editorContext) {
             editorContext->SelectObject(object);
          }
-         selectedParticleSystem_ = nullptr;
       }
       ImGui::PopID();
    }
+      ImGui::TreePop();
+   }
 
+   ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+   if (ImGui::TreeNodeEx("Particle Systems", ImGuiTreeNodeFlags_DefaultOpen)) {
    for (size_t i = 0; i < particleSystems.size(); ++i) {
       auto* particleSystem = particleSystems[i];
       if (!particleSystem) {
@@ -178,14 +265,20 @@ void RendererEditorController::ShowHierarchyWindow() {
       std::string label = particleSystem->GetName();
       label += "##ParticleSystem_" + std::to_string(i);
 
-      const bool isSelected = (selectedParticleSystem_ == particleSystem);
-      if (ImGui::Selectable(label.c_str(), isSelected)) {
+      const bool isSelected = (selectedParticleSystem == particleSystem);
+      ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+      if (isSelected) {
+         flags |= ImGuiTreeNodeFlags_Selected;
+      }
+      ImGui::TreeNodeEx(label.c_str(), flags);
+      if (ImGui::IsItemClicked()) {
          if (editorContext) {
-            editorContext->SelectObject(nullptr);
+            editorContext->SelectParticleSystem(particleSystem);
          }
-         selectedParticleSystem_ = particleSystem;
       }
       ImGui::PopID();
+   }
+      ImGui::TreePop();
    }
 
    ImGui::End();
@@ -196,6 +289,7 @@ void RendererEditorController::ShowInspectorWindow() {
 
    auto* editorContext = GetActiveEditorContext();
    Object* selectedObject = editorContext ? editorContext->GetSelectedObject() : nullptr;
+   ParticleSystem* selectedParticleSystem = editorContext ? editorContext->GetSelectedParticleSystem() : nullptr;
 
    if (editorContext) {
 
@@ -214,33 +308,38 @@ void RendererEditorController::ShowInspectorWindow() {
       ImGui::Spacing();
    }
 
-   if (!selectedObject && !selectedParticleSystem_) {
+   if (!selectedObject && !selectedParticleSystem) {
       ImGui::Text("No selection");
       ImGui::End();
       return;
    }
 
-   if (selectedParticleSystem_) {
-      std::string particleSystemName = selectedParticleSystem_->GetName();
+   if (selectedParticleSystem) {
+      std::string particleSystemName = selectedParticleSystem->GetName();
       char particleSystemNameBuffer[256]{};
       {
          const size_t copySize = std::min(particleSystemName.size(), sizeof(particleSystemNameBuffer) - 1);
          std::memcpy(particleSystemNameBuffer, particleSystemName.c_str(), copySize);
       }
       if (ImGui::InputText("Name", particleSystemNameBuffer, sizeof(particleSystemNameBuffer))) {
-         selectedParticleSystem_->SetName(particleSystemNameBuffer);
+         selectedParticleSystem->SetName(particleSystemNameBuffer);
       }
-      if (editorContext && editorContext->CanDeleteParticleSystem(selectedParticleSystem_)) {
+      if (editorContext && editorContext->CanDeleteParticleSystem(selectedParticleSystem)) {
          if (ImGui::Button("Delete")) {
-            editorContext->DeleteParticleSystem(selectedParticleSystem_);
-            selectedParticleSystem_ = nullptr;
+            editorContext->DeleteParticleSystem(selectedParticleSystem);
             ImGui::End();
             return;
          }
       }
+      if (editorContext) {
+         DrawParticleAssetDropTarget(*editorContext, selectedParticleSystem);
+      }
       ImGui::Spacing();
 
-      ParticleSystemEdit::Edit(selectedParticleSystem_);
+      ParticleSystemEdit::Edit(selectedParticleSystem);
+      if (editorContext && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsAnyItemActive()) {
+         editorContext->MarkDirty();
+      }
       ImGui::End();
       return;
    }
@@ -266,10 +365,17 @@ void RendererEditorController::ShowInspectorWindow() {
             return;
          }
       }
+      ImGui::SameLine();
+      if (ImGui::Button("Duplicate")) {
+         editorContext->DuplicateSelectedObject();
+      }
       ImGui::Spacing();
    }
 
    selectedObject->DrawComponentInspector();
+   if (editorContext) {
+      DrawSelectedObjectAssetDropTargets(*editorContext, selectedObject);
+   }
 
    ImGui::Spacing();
    ImGui::PushID("InspectorAddComponent");
@@ -300,7 +406,11 @@ void RendererEditorController::ShowInspectorWindow() {
          }
 
          if (ImGui::Button("Add Component##Button")) {
-            selectedObject->AddComponentByTypeName(addableComponentTypeNames[editorSelectedAddComponentIndex_]);
+            if (editorContext) {
+               editorContext->AddComponentToSelectedObject(addableComponentTypeNames[editorSelectedAddComponentIndex_]);
+            } else {
+               selectedObject->AddComponentByTypeName(addableComponentTypeNames[editorSelectedAddComponentIndex_]);
+            }
          }
       }
    }
@@ -333,6 +443,9 @@ void RendererEditorController::ShowInspectorWindow() {
                   if (auto selectedAsset = modelManager->GetModel(modelNames[i])) {
                      model->SetModelAsset(selectedAsset);
                      editorModelAssetNames_[model] = modelNames[i];
+                     if (editorContext) {
+                        editorContext->MarkDirty();
+                     }
                   }
                }
                if (selected) {
@@ -376,6 +489,10 @@ void RendererEditorController::ShowInspectorWindow() {
       ImGui::Spacing();
    }
 
+   if (editorContext && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsAnyItemActive()) {
+      editorContext->MarkDirty();
+   }
+
    ImGui::End();
 }
 
@@ -385,7 +502,6 @@ void RendererEditorController::ShowSceneOverlay(float viewportX, float viewportY
       return;
    }
 
-   editorContext->HandleEditorShortcuts();
    editorContext->AcceptModelAssetDrop();
    editorContext->DrawTransformGizmo(viewportX, viewportY, viewportWidth, viewportHeight);
    editorContext->HandleViewportClickSelection(viewportX, viewportY, viewportWidth, viewportHeight);
@@ -397,6 +513,293 @@ EditorSceneContext* RendererEditorController::GetActiveEditorContext() const {
       return nullptr;
    }
    return currentScene->GetEditorSceneContext();
+}
+
+void RendererEditorController::DrawAssetEntry(EditorSceneContext& editorContext, const EditorAssetEntry& entry) {
+   ImGui::PushID(entry.assetId.c_str());
+
+   const char* typeLabel = EditorAssetRegistry::GetAssetTypeLabel(entry.type);
+   bool activated = false;
+   constexpr float kAssetIconSize = 64.0f;
+   constexpr float kAssetCellWidth = 92.0f;
+
+   auto drawTextureIcon = [](Texture* texture, const ImVec2& size) {
+      if (!texture) {
+         ImGui::Button("[File]", size);
+         return;
+      }
+
+      if (texture->GetMetadata().IsCubemap()) {
+         ImGui::Button("[Cube]", size);
+         return;
+      }
+
+      ImU64 texId{};
+      const UINT64 gpuPtr = texture->GetTextureSrvHandleGPU().ptr;
+      std::memcpy(&texId, &gpuPtr, sizeof(texId));
+      ImGui::Image(ImTextureRef(texId), size);
+   };
+
+   auto getGenericAssetIcon = []() -> Texture* {
+      if (Texture* icon = EngineContext::GetTexture("textures/editor/ic_system_folder_01_128.png")) {
+         return icon;
+      }
+      if (Texture* icon = EngineContext::GetTexture("ic_system_folder_01_128")) {
+         return icon;
+      }
+      return EngineContext::GetTexture("white1x1");
+   };
+
+   if (editorAssetIconView_) {
+      ImGui::BeginGroup();
+      const float cellStartX = ImGui::GetCursorPosX();
+      const float iconOffsetX = std::max(0.0f, (kAssetCellWidth - kAssetIconSize) * 0.5f);
+      ImGui::SetCursorPosX(cellStartX + iconOffsetX);
+      if (entry.type == EditorAssetType::Texture && EnsureTextureLoaded(entry.assetId)) {
+         drawTextureIcon(EngineContext::GetTexture(entry.assetId), ImVec2(kAssetIconSize, kAssetIconSize));
+      } else {
+         drawTextureIcon(getGenericAssetIcon(), ImVec2(kAssetIconSize, kAssetIconSize));
+      }
+
+      const std::string displayName = TruncateTextWithEllipsis(entry.displayName, kAssetCellWidth);
+      const float textWidth = ImGui::CalcTextSize(displayName.c_str()).x;
+      ImGui::SetCursorPosX(cellStartX + std::max(0.0f, (kAssetCellWidth - textWidth) * 0.5f));
+      ImGui::TextUnformatted(displayName.c_str());
+      ImGui::SetCursorPosX(cellStartX);
+      ImGui::Dummy(ImVec2(kAssetCellWidth, 0.0f));
+      ImGui::EndGroup();
+      activated = ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+   } else {
+      std::string label = std::string("[") + typeLabel + "] " + entry.displayName;
+      activated = ImGui::Selectable(label.c_str(), false) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+   }
+
+   if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("%s\n%s", entry.assetId.c_str(), typeLabel);
+   }
+
+   EmitAssetDragPayload(entry);
+
+   if (activated) {
+      switch (entry.type) {
+         case EditorAssetType::Model:
+            editorContext.CreateModelFromAsset(entry.assetId);
+            break;
+         case EditorAssetType::Texture: {
+            Texture* texture = EngineContext::GetTexture(entry.assetId);
+            if (texture && !texture->GetMetadata().IsCubemap()) {
+               editorContext.CreateSpriteFromTexture(entry.assetId);
+            }
+            break;
+         }
+         case EditorAssetType::Particle:
+            editorContext.CreateParticleSystemFromAsset(entry.assetId);
+            break;
+         default:
+            break;
+      }
+   }
+
+   ImGui::PopID();
+}
+
+void RendererEditorController::DrawAssetTree(EditorSceneContext& editorContext) {
+   const auto& assets = editorContext.GetAssetRegistry().GetAllAssets();
+   std::unordered_map<std::string, std::vector<const EditorAssetEntry*>> childrenByParent;
+   childrenByParent.reserve(assets.size());
+   constexpr float kAssetCellWidth = 92.0f;
+
+   for (const auto& entry : assets) {
+      std::filesystem::path parentPath = std::filesystem::path(entry.assetId).parent_path();
+      childrenByParent[parentPath.generic_string()].push_back(&entry);
+   }
+
+   auto sortChildren = [](std::vector<const EditorAssetEntry*>& children) {
+      std::sort(children.begin(), children.end(),
+         [](const EditorAssetEntry* lhs, const EditorAssetEntry* rhs) {
+            if (lhs->type != rhs->type) {
+               if (lhs->type == EditorAssetType::Folder) {
+                  return true;
+               }
+               if (rhs->type == EditorAssetType::Folder) {
+                  return false;
+               }
+            }
+            return lhs->displayName < rhs->displayName;
+         });
+   };
+
+   for (auto& [parent, children] : childrenByParent) {
+      (void)parent;
+      sortChildren(children);
+   }
+
+   std::function<void(const std::string&)> drawChildren = [&](const std::string& parent) {
+      auto it = childrenByParent.find(parent);
+      if (it == childrenByParent.end()) {
+         return;
+      }
+
+      bool hasIconOnCurrentLine = false;
+      for (const EditorAssetEntry* entry : it->second) {
+         if (!entry) {
+            continue;
+         }
+
+         if (entry->type == EditorAssetType::Folder) {
+            hasIconOnCurrentLine = false;
+            ImGui::PushID(entry->assetId.c_str());
+            const bool open = ImGui::TreeNodeEx(entry->displayName.c_str(), ImGuiTreeNodeFlags_OpenOnArrow);
+            EmitAssetDragPayload(*entry);
+            if (open) {
+               drawChildren(entry->assetId);
+               ImGui::TreePop();
+            }
+            ImGui::PopID();
+         } else {
+            DrawAssetEntry(editorContext, *entry);
+            if (editorAssetIconView_) {
+               const float nextItemRight = ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + kAssetCellWidth;
+               const float contentRight = ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x;
+               if (nextItemRight < contentRight) {
+                  ImGui::SameLine();
+                  hasIconOnCurrentLine = true;
+               } else {
+                  hasIconOnCurrentLine = false;
+               }
+            }
+         }
+      }
+
+      if (hasIconOnCurrentLine) {
+         ImGui::NewLine();
+      }
+   };
+
+   drawChildren("");
+}
+
+void RendererEditorController::EmitAssetDragPayload(const EditorAssetEntry& entry) const {
+   const char* payloadName = nullptr;
+   switch (entry.type) {
+      case EditorAssetType::Model:
+         payloadName = "EDITOR_ASSET_MODEL";
+         break;
+      case EditorAssetType::Texture:
+         payloadName = "EDITOR_ASSET_TEXTURE";
+         break;
+      case EditorAssetType::Particle:
+         payloadName = "EDITOR_ASSET_PARTICLE";
+         break;
+      case EditorAssetType::Prefab:
+         payloadName = "EDITOR_ASSET_PREFAB";
+         break;
+      case EditorAssetType::Scene:
+         payloadName = "EDITOR_ASSET_SCENE";
+         break;
+      default:
+         break;
+   }
+
+   if (!payloadName) {
+      return;
+   }
+
+   if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+      ImGui::SetDragDropPayload(payloadName, entry.assetId.c_str(), entry.assetId.size() + 1);
+      ImGui::Text("%s", entry.assetId.c_str());
+      ImGui::EndDragDropSource();
+   }
+}
+
+bool RendererEditorController::EnsureTextureLoaded(const std::string& textureAssetId) {
+   if (textureAssetId.empty()) {
+      return false;
+   }
+
+   if (editorLoadedTextureAssets_.contains(textureAssetId)) {
+      return true;
+   }
+
+   if (EngineContext::GetTexture(textureAssetId)) {
+      editorLoadedTextureAssets_.insert(textureAssetId);
+      return true;
+   }
+
+   const std::filesystem::path texturePath(textureAssetId);
+   if (EngineContext::GetTexture(texturePath.stem().string()) || EngineContext::GetTexture(texturePath.filename().string())) {
+      editorLoadedTextureAssets_.insert(textureAssetId);
+      return true;
+   }
+   return false;
+}
+
+void RendererEditorController::DrawSelectedObjectAssetDropTargets(EditorSceneContext& editorContext, Object* selectedObject) {
+   if (!selectedObject) {
+      return;
+   }
+
+   if (auto* modelAssetComponent = selectedObject->GetComponent<ModelAssetComponent>()) {
+      ImGui::SeparatorText("Model Asset Drop");
+      const std::string currentAsset = modelAssetComponent->GetAssetId().empty() ? "<none>" : modelAssetComponent->GetAssetId();
+      ImGui::Button(currentAsset.c_str(), ImVec2(-1.0f, 0.0f));
+      if (ImGui::BeginDragDropTarget()) {
+         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_MODEL")) {
+            const char* assetId = static_cast<const char*>(payload->Data);
+            if (assetId && payload->DataSize > 1) {
+               editorContext.SetModelAsset(selectedObject, assetId);
+            }
+         }
+         ImGui::EndDragDropTarget();
+      }
+   }
+
+   if (auto* materialComponent = selectedObject->GetComponent<MaterialComponent>()) {
+      ImGui::SeparatorText("Texture Asset Drop");
+      const std::string currentTexture = materialComponent->GetTextureName(0).empty() ? "<none>" : materialComponent->GetTextureName(0);
+      ImGui::Button(("Slot 0: " + currentTexture).c_str(), ImVec2(-1.0f, 0.0f));
+      if (ImGui::BeginDragDropTarget()) {
+         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_TEXTURE")) {
+            const char* assetId = static_cast<const char*>(payload->Data);
+            if (assetId && payload->DataSize > 1) {
+               EnsureTextureLoaded(assetId);
+               editorContext.SetMaterialTexture(selectedObject, 0, assetId);
+            }
+         }
+         ImGui::EndDragDropTarget();
+      }
+   }
+}
+
+void RendererEditorController::DrawParticleAssetDropTarget(EditorSceneContext& editorContext, ParticleSystem* particleSystem) {
+   if (!particleSystem) {
+      return;
+   }
+
+   ImGui::SeparatorText("Particle Asset Drop");
+   ImGui::Button("Drop particle json or texture here", ImVec2(-1.0f, 0.0f));
+   if (!ImGui::BeginDragDropTarget()) {
+      return;
+   }
+
+   if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_PARTICLE")) {
+      const char* assetId = static_cast<const char*>(payload->Data);
+      if (assetId && payload->DataSize > 1) {
+         particleSystem->LoadFromJson((std::filesystem::path("resources") / assetId).generic_string());
+         editorContext.MarkDirty();
+      }
+   }
+
+   if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_TEXTURE")) {
+      const char* assetId = static_cast<const char*>(payload->Data);
+      if (assetId && payload->DataSize > 1) {
+         EnsureTextureLoaded(assetId);
+         particleSystem->SetTextureName(assetId);
+         editorContext.MarkDirty();
+      }
+   }
+
+   ImGui::EndDragDropTarget();
 }
 
 std::vector<Object*> RendererEditorController::CollectSceneObjects() const {
@@ -496,16 +899,6 @@ std::string RendererEditorController::BuildUniqueObjectName(const std::string& b
          return withIndex;
       }
    }
-}
-
-bool RendererEditorController::SaveEditorSceneToFile(const std::filesystem::path& filePath) const {
-   (void)filePath;
-   return false;
-}
-
-bool RendererEditorController::LoadEditorSceneFromFile(const std::filesystem::path& filePath) {
-   (void)filePath;
-   return false;
 }
 
 } // namespace GameEngine

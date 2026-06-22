@@ -31,6 +31,8 @@ public:
 
    static const std::vector<ParticleSystem*>& GetRegisteredParticleSystems();
 
+   static void UnregisterParticleSystem(ParticleSystem* particleSystem);
+
    static void ClearRegisteredParticleSystems() { sRegisteredParticleSystems_.clear(); }
 
    /// @brief GPU送信用パーティクルデータ

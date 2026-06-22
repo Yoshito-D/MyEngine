@@ -6,6 +6,7 @@
 #include "EditorCommand.h"
 #include "EditorObjectStore.h"
 #include "MathUtils.h"
+#include <cstddef>
 #include <filesystem>
 #include <string>
 #include <unordered_set>
@@ -36,22 +37,35 @@ public:
    bool Save();
    bool Load();
    std::filesystem::path GetSceneFilePath() const;
+   bool IsDirty() const { return isDirty_; }
+   void MarkDirty();
+   void ClearDirty();
+   const std::string& GetLastStatusMessage() const { return lastStatusMessage_; }
 
    std::vector<Object*> CollectEditableObjects() const;
    std::vector<ParticleSystem*> CollectEditableParticleSystems() const;
    void SelectObject(Object* object);
    Object* GetSelectedObject() const { return selectedObject_; }
+   void SelectParticleSystem(ParticleSystem* particleSystem);
+   ParticleSystem* GetSelectedParticleSystem() const { return selectedParticleSystem_; }
 
    bool IsEditorOwned(const Object* object) const { return objectStore_.Contains(object); }
+   bool IsEditorOwned(const ParticleSystem* particleSystem) const { return objectStore_.Contains(particleSystem); }
    bool CanDeleteSelectedObject() const;
    bool CanDeleteObject(const Object* object) const;
    bool CanDeleteParticleSystem(const ParticleSystem* particleSystem) const;
 
    void CreateModelFromAsset(const std::string& assetId);
+   void CreateSpriteFromTexture(const std::string& textureAssetId);
    ParticleSystem* CreateParticleSystemFromAsset(const std::string& assetId);
+   void DuplicateSelectedObject();
    void DeleteObject(Object* object);
    void DeleteParticleSystem(ParticleSystem* particleSystem);
    void DeleteSelectedObject();
+   void DeleteSelection();
+   void AddComponentToSelectedObject(const std::string& typeName);
+   void SetModelAsset(Object* object, const std::string& assetId);
+   void SetMaterialTexture(Object* object, size_t slot, const std::string& textureAssetId);
    void Undo();
    void Redo();
 
@@ -78,11 +92,19 @@ private:
    void HideSceneOwnedParticleSystem(ParticleSystem* particleSystem);
    bool HasTransformChanged(const Transform& lhs, const Transform& rhs) const;
    void SubmitTransformIfNeeded(const Transform& before, const Transform& after, Object* object);
+   void SubmitParticleTransformIfNeeded(const Transform& before, const Transform& after, ParticleSystem* particleSystem);
+   Transform BuildPlacementTransformInFrontOfCamera() const;
    std::string GetObjectIdForCommand(const Object* object) const;
+   std::string GetParticleSystemIdForCommand(const ParticleSystem* particleSystem) const;
+   void SetStatus(std::string message);
+   void ApplyDuplicateOffset(nlohmann::json& snapshot) const;
 
    std::string sceneName_ = "Scene";
    bool hasAutoLoaded_ = false;
+   bool isDirty_ = false;
+   std::string lastStatusMessage_;
    Object* selectedObject_ = nullptr;
+   ParticleSystem* selectedParticleSystem_ = nullptr;
    EditorAssetRegistry assetRegistry_;
    EditorObjectStore objectStore_;
    EditorCommandStack commandStack_;
@@ -94,6 +116,9 @@ private:
    bool isManipulating_ = false;
    Object* manipulatingObject_ = nullptr;
    Transform transformBeforeManipulation_{};
+   bool isManipulatingParticleSystem_ = false;
+   ParticleSystem* manipulatingParticleSystem_ = nullptr;
+   Transform particleTransformBeforeManipulation_{};
 };
 
 } // namespace GameEngine
