@@ -35,7 +35,15 @@ Sprite::Sprite() {
 }
 
 Sprite::~Sprite() {
-   auto it = std::find(sRegisteredSprites_.begin(), sRegisteredSprites_.end(), this);
+   UnregisterSprite(this);
+}
+
+void Sprite::UnregisterSprite(Sprite* sprite) {
+   if (!sprite) {
+	  return;
+   }
+
+   auto it = std::find(sRegisteredSprites_.begin(), sRegisteredSprites_.end(), sprite);
    if (it != sRegisteredSprites_.end()) {
 	  sRegisteredSprites_.erase(it);
    }

@@ -1,9 +1,33 @@
 #include "pch.h"
 #include "TextureManager.h"
 #include "Graphics/GraphicsDevice.h"
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
 
 namespace {
 Logger& log_ = Logger::GetInstance();
+
+bool IsSupportedTextureExtension(const std::filesystem::path& path) {
+   std::string ext = path.extension().string();
+   std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
+      return static_cast<char>(std::tolower(c));
+   });
+   return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".dds";
+}
+
+std::string ToGenericString(std::filesystem::path path) {
+   return path.lexically_normal().generic_string();
+}
+
+std::string NormalizeAssetId(const std::filesystem::path& path, const std::filesystem::path& resourcesRoot) {
+   std::error_code error;
+   std::filesystem::path relative = std::filesystem::relative(path, resourcesRoot, error);
+   if (error) {
+      relative = path;
+   }
+   return ToGenericString(relative);
+}
 }
 
 namespace GameEngine {
@@ -30,12 +54,40 @@ void TextureManager::LoadTexture(const std::string& filePath, const std::string&
    log_.Log("Texture loaded: " + name);
 }
 
+void TextureManager::LoadTexturesFromDirectory(const std::filesystem::path& directoryPath, const std::filesystem::path& resourcesRoot) {
+   if (!std::filesystem::exists(directoryPath)) {
+      log_.Log("Texture directory not found: " + directoryPath.generic_string(), Logger::LogLevel::Warning);
+      return;
+   }
+
+   for (const auto& entry : std::filesystem::recursive_directory_iterator(directoryPath)) {
+      if (!entry.is_regular_file()) {
+         continue;
+      }
+
+      const auto& path = entry.path();
+      if (!IsSupportedTextureExtension(path)) {
+         continue;
+      }
+
+      const std::string assetId = NormalizeAssetId(path, resourcesRoot);
+      LoadTexture(path.generic_string(), assetId);
+      RegisterAlias(path.stem().string(), assetId);
+      RegisterAlias(path.filename().string(), assetId);
+   }
+}
 
 Texture* TextureManager::GetTexture(const std::string& name) {
    auto it = textures_.find(name);
    if (it != textures_.end()) {
 	  return it->second.get();
    }
+
+   auto aliasIt = textureAliases_.find(name);
+   if (aliasIt != textureAliases_.end()) {
+      return aliasIt->second;
+   }
+
    log_.Log("Texture not found: " + name);
    return nullptr;
 }
@@ -84,6 +136,25 @@ void TextureManager::ReleaseIntermediateResources() {
 
 void TextureManager::Clear() {
    textures_.clear();
+   textureAliases_.clear();
    intermediateResource_.clear();
+   lastCubemapName_.clear();
+}
+
+void TextureManager::RegisterAlias(const std::string& alias, const std::string& ownerName) {
+   if (alias.empty() || alias == ownerName) {
+      return;
+   }
+
+   auto ownerIt = textures_.find(ownerName);
+   if (ownerIt == textures_.end()) {
+      return;
+   }
+
+   if (textures_.contains(alias) || textureAliases_.contains(alias)) {
+      return;
+   }
+
+   textureAliases_[alias] = ownerIt->second.get();
 }
 }

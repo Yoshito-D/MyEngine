@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MaterialComponent.h"
 #include "ComponentRegistry.h"
+#include "Graphics/Texture.h"
 #include "Object.h"
 
 #include <algorithm>
@@ -156,6 +157,12 @@ const std::string& MaterialComponent::GetTextureName(size_t index) const {
 }
 
 void MaterialComponent::SetTextureName(size_t slot, const std::string& name) {
+   if (!name.empty() && textureResolver_) {
+      if (Texture* texture = textureResolver_(name); texture && texture->GetMetadata().IsCubemap()) {
+         return;
+      }
+   }
+
    if (textureNames_.size() <= slot) {
       textureNames_.resize(slot + 1);
    }
@@ -401,6 +408,11 @@ void MaterialComponent::DrawInspector() {
                   textureNames_[slot].clear();
                }
                for (size_t i = 0; i < texNames.size(); ++i) {
+                  if (textureResolver_) {
+                     if (Texture* candidate = textureResolver_(texNames[i]); candidate && candidate->GetMetadata().IsCubemap()) {
+                        continue;
+                     }
+                  }
                   const bool sel = (static_cast<int>(i) == texSelectedIndex && !currentTexName.empty());
                   if (ImGui::Selectable(texNames[i].c_str(), sel)) {
                      if (textureNames_.size() <= slot) textureNames_.resize(slot + 1);
@@ -414,6 +426,11 @@ void MaterialComponent::DrawInspector() {
             // テクスチャプレビュー
             if (textureResolver_ && !currentTexName.empty()) {
                if (Texture* tex = textureResolver_(currentTexName)) {
+                  if (tex->GetMetadata().IsCubemap()) {
+                     ImGui::TextDisabled("TextureCube cannot be previewed in a 2D slot");
+                     ImGui::PopID();
+                     continue;
+                  }
                   const float maxSize = 96.0f;
                   const float w = static_cast<float>(tex->GetWidth());
                   const float h = static_cast<float>(tex->GetHeight());

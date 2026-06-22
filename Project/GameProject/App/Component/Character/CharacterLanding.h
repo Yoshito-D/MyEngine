@@ -41,8 +41,6 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 public:
-   /// @brief 惑星地表の半径
-   float surfaceRadius_ = 15.0f;
 
    /// @brief 原点（inertia中心）から着地点までの追加オフセット
    /// surfaceRadius_ に加算され、実際のスナップ位置が決まる
@@ -53,6 +51,9 @@ public:
    GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
 
 private:
+   /// @brief 惑星地表の半径
+   float surfaceRadius_ = 15.0f;
+
    /// @brief 惑星中心座標
    GameEngine::Vector3 planetCenter_ = { 0.0f, 0.0f, 0.0f };
 

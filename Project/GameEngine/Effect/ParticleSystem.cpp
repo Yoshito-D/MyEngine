@@ -144,10 +144,7 @@ ParticleSystem::ParticleSystem() {
 }
 
 ParticleSystem::~ParticleSystem() {
-   auto it = std::find(sRegisteredParticleSystems_.begin(), sRegisteredParticleSystems_.end(), this);
-   if (it != sRegisteredParticleSystems_.end()) {
-	  sRegisteredParticleSystems_.erase(it);
-   }
+   UnregisterParticleSystem(this);
 
    if (instancingResource_ && instancingData_) {
 	  instancingResource_->Unmap(0, nullptr);
@@ -155,6 +152,17 @@ ParticleSystem::~ParticleSystem() {
    }
    if (sDevice_ && instancingSrvIndex_ != UINT_MAX) {
 	  sDevice_->ReleaseSrvIndex(instancingSrvIndex_);
+   }
+}
+
+void ParticleSystem::UnregisterParticleSystem(ParticleSystem* particleSystem) {
+   if (!particleSystem) {
+	  return;
+   }
+
+   auto it = std::find(sRegisteredParticleSystems_.begin(), sRegisteredParticleSystems_.end(), particleSystem);
+   if (it != sRegisteredParticleSystems_.end()) {
+	  sRegisteredParticleSystems_.erase(it);
    }
 }
 
@@ -647,6 +655,10 @@ bool ParticleSystem::IsFinished() const {
 }
 
 void ParticleSystem::SetTexture(Texture* texture) {
+   if (texture && texture->GetMetadata().IsCubemap()) {
+	  texture = nullptr;
+   }
+
    texture_ = texture;
    textureName_ = texture ? texture->GetName() : std::string();
    if (material_) {
@@ -663,6 +675,10 @@ void ParticleSystem::SetTextureName(const std::string& textureName) {
 
    Texture* texture = EngineContext::GetTexture(textureName_);
    if (texture) {
+	  if (texture->GetMetadata().IsCubemap()) {
+		 SetTexture(nullptr);
+		 return;
+	  }
 	  texture_ = texture;
 	  if (material_) {
 		 material_->SetTexture(texture);

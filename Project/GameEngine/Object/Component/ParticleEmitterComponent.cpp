@@ -11,6 +11,7 @@
 #ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
 #include <cstring>
+#include <filesystem>
 #endif
 
 namespace {
@@ -212,6 +213,14 @@ void ParticleEmitterComponent::ClearSlots() {
 	  }
    }
    slots_.clear();
+}
+
+void ParticleEmitterComponent::UnregisterParticleSystemsForRender() {
+   for (auto& slot : slots_) {
+	  if (slot.particleSystem) {
+		 ParticleSystem::UnregisterParticleSystem(slot.particleSystem.get());
+	  }
+   }
 }
 
 ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(int slotIndex) {
@@ -623,6 +632,13 @@ void ParticleEmitterComponent::DrawInspector() {
 			slot.jsonPath = pathBuf;
 		 }
 		 if (ImGui::BeginDragDropTarget()) {
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_PARTICLE")) {
+			   const char* assetId = static_cast<const char*>(payload->Data);
+			   if (assetId && payload->DataSize > 1) {
+				  slot.jsonPath = (std::filesystem::path("resources") / assetId).generic_string();
+				  LoadSlot(slot);
+			   }
+			}
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_JSON")) {
 			   slot.jsonPath = static_cast<const char*>(payload->Data);
 			   LoadSlot(slot);

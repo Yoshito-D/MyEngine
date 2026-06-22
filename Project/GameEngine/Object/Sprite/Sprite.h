@@ -21,6 +21,8 @@ public:
 
    static const std::vector<Sprite*>& GetRegisteredSprites();
 
+   static void UnregisterSprite(Sprite* sprite);
+
    static void ClearRegisteredSprites() { sRegisteredSprites_.clear(); }
 
    /// @brief UI描画用のアンカーポイント

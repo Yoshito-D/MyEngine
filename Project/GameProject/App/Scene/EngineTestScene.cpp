@@ -18,15 +18,6 @@ void EngineTestScene::Initialize() {
    // --- アセット読み込み ---
    EngineContext::LoadModel("resources/models/cube", "AnimatedCube.gltf");
    EngineContext::LoadAnimation("resources/models/cube", "AnimatedCube.gltf");
-   EngineContext::LoadTexture("resources/textures/AnimatedCube_BaseColor.png", "AnimatedCube_BaseColor");
-   EngineContext::LoadTexture("resources/textures/particle.png", "particle");
-   EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
-   EngineContext::LoadTexture("resources/textures/star_08.png", "star_08");
-   EngineContext::LoadTexture("resources/textures/spark_01.png", "spark_01");
-   EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
-   EngineContext::LoadTexture("resources/textures/gradationLine1.png", "gradationLine1");
-   EngineContext::LoadTexture("resources/textures/bonfire.png", "bonfire");
-   EngineContext::LoadTexture("resources/textures/effect1.png", "effect1");
 
    EngineContext::CreateMaterial("animCubeMaterial", 0xffffffff, 0);
    auto* animCubeMaterial = EngineContext::GetMaterial("animCubeMaterial");

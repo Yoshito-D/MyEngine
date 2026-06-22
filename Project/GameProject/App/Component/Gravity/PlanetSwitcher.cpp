@@ -105,9 +105,10 @@ void PlanetSwitcher::Update(float /*deltaTime*/) {
    }
 
    // CharacterLanding の惑星パラメータを更新
+   // エディタで編集できるようにするため後々常に更新に変更
    if (auto* landing = GetOwner().GetComponent<CharacterLanding>()) {
 	  landing->SetPlanetCenter(best.center);
-	  landing->surfaceRadius_ = best.surfaceRadius;
+	  landing->SetSurfaceRadius(best.surfaceRadius);
    }
 
    // CameraGravityBridge の惑星中心を更新
