@@ -55,6 +55,8 @@ public:
    // Circle
    void SetArc(float arc) { arc_ = arc; }
    float GetArc() const { return arc_; }
+   void SetCircleOutwardVelocity(float velocity) { circleOutwardVelocity_ = velocity; }
+   float GetCircleOutwardVelocity() const { return circleOutwardVelocity_; }
 
    // Position
    void SetPosition(const Vector3& position) { transform_.translation = position; }
@@ -77,6 +79,9 @@ public:
    /// @brief 形状に基づいてランダムな初期速度方向を取得
    Vector3 GetRandomEmissionDirection() const;
 
+   /// @brief Circle 形状の中心から発生位置へ向かう外向き方向を取得
+   Vector3 GetCircleOutwardDirection(const Vector3& emissionPosition) const;
+
    // JSON Serialization
    nlohmann::json ToJson() const;
    void FromJson(const nlohmann::json& json);
@@ -91,6 +96,7 @@ private:
    float length_ = 5.0f;
    Vector3 boxSize_{ 1.0f, 1.0f, 1.0f };
    float arc_ = 360.0f;
+   float circleOutwardVelocity_ = 0.0f;
 
    Transform transform_{};
 };

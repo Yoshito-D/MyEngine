@@ -64,7 +64,13 @@ private:
    GameEngine::ParticleEmitterComponent* miniTurboEmitter_ = nullptr;
    int miniTurboSlotCount_ = 0;
 
+   GameEngine::ParticleEmitterComponent* landingDustEmitter_ = nullptr;
+   int landingDustSlotIndex_ = -1;
+
+   GameEngine::ParticleEmitterComponent* boostFlameEmitter_ = nullptr;
+   int boostFlameSlotCount_ = 0;
+
    // 惑星2 の配置パラメータ
-   static constexpr float kPlanet2Radius = 50.0f;
-   static constexpr float kPlanet2Distance = 150.0f; ///< 惑星1中心からの距離
+   static constexpr float kPlanet2Radius = 30.0f;
+   static constexpr float kPlanet2Distance = 90.0f; ///< 惑星1中心からの距離
 };

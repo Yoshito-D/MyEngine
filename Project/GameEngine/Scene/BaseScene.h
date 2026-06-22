@@ -4,6 +4,9 @@
 #include "Camera/DebugCamera.h"
 #include "Camera/Core/CinemachineBrain.h"
 #include "Camera/Editor/CameraEditor.h"
+#ifdef USE_IMGUI
+#include "Editor/EditorSceneContext.h"
+#endif
 
 namespace GameEngine {
 /// @brief 基底シーンクラス
@@ -32,6 +35,17 @@ public:
    /// @param sceneName 次のシーン名
    static void SetNextSceneName(const std::string& sceneName);
 
+   static BaseScene* GetCurrentScene() { return sCurrentScene_; }
+
+   void SetEditorSceneName(const std::string& sceneName) { editorSceneName_ = sceneName; }
+   const std::string& GetEditorSceneName() const { return editorSceneName_; }
+
+#ifdef USE_IMGUI
+   EditorSceneContext* GetEditorSceneContext() { return editorSceneContext_.get(); }
+   const EditorSceneContext* GetEditorSceneContext() const { return editorSceneContext_.get(); }
+   void LoadEditorSceneIfNeeded();
+#endif
+
 protected:
    /// @brief デバッグカメラの更新
    void UpdateDebugCamera();
@@ -39,6 +53,7 @@ protected:
 #ifdef USE_IMGUI
    std::unique_ptr<DebugCamera> debugCamera_ = nullptr;
    std::unique_ptr<CameraEditor> cameraEditor_ = nullptr;
+   std::unique_ptr<EditorSceneContext> editorSceneContext_ = nullptr;
    bool isDebugCameraActive_ = false;
 #endif
 
@@ -49,5 +64,6 @@ protected:
    static inline BaseScene* sCurrentScene_ = nullptr;  // 現在のシーンインスタンス
 
    bool isFinished_ = false;
+   std::string editorSceneName_ = "Scene";
 };
 }

@@ -120,6 +120,20 @@ Vector3 ShapeModule::GetRandomEmissionDirection() const {
    return RotateVector(direction.Normalize(), shapeRotation).Normalize();
 }
 
+Vector3 ShapeModule::GetCircleOutwardDirection(const Vector3& emissionPosition) const {
+   const Quaternion shapeRotation = transform_.GetActiveQuaternion();
+   const Vector3 circleNormal = RotateVector(Vector3(0.0f, 1.0f, 0.0f), shapeRotation).Normalize();
+
+   Vector3 outward = emissionPosition - transform_.translation;
+   outward = outward - circleNormal * outward.Dot(circleNormal);
+
+   if (outward.LengthSquared() < 1e-8f) {
+	  outward = RotateVector(Vector3(1.0f, 0.0f, 0.0f), shapeRotation);
+   }
+
+   return outward.Normalize();
+}
+
 nlohmann::json ShapeModule::ToJson() const {
    nlohmann::json j;
 
@@ -131,6 +145,7 @@ nlohmann::json ShapeModule::ToJson() const {
    j["length"] = length_;
    j["boxSize"] = { boxSize_.x, boxSize_.y, boxSize_.z };
    j["arc"] = arc_;
+   j["circleOutwardVelocity"] = circleOutwardVelocity_;
 	  j["position"] = { transform_.translation.x, transform_.translation.y, transform_.translation.z };
    j["rotation"] = { transform_.rotation.x, transform_.rotation.y, transform_.rotation.z };
    j["scale"] = { transform_.scale.x, transform_.scale.y, transform_.scale.z };
@@ -152,6 +167,7 @@ void ShapeModule::FromJson(const nlohmann::json& j) {
    }
 
    if (j.contains("arc")) arc_ = j["arc"];
+   if (j.contains("circleOutwardVelocity")) circleOutwardVelocity_ = j["circleOutwardVelocity"];
 
    if (j.contains("position")) {
 	  auto arr = j["position"];

@@ -243,7 +243,7 @@ void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> ble
    Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
    assert(activeCamera != nullptr);
 
-   if (!model->GetModelAsset()) return;
+   if (!model->GetComponent<ModelAssetComponent>()->GetModelAsset()) return;
 
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> handles = { texture->GetTextureSrvHandleGPU() };
 
@@ -280,7 +280,7 @@ void Renderer::Draw(Model* model, const std::vector<Texture*>& textures, std::op
    assert(model != nullptr);
    assert(!textures.empty());
 
-   if (!model->GetModelAsset()) return;
+   if (!model->GetComponent<ModelAssetComponent>()->GetModelAsset()) return;
 
    // TextureポインタからSRVハンドルに変換
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textureSrvHandles;
@@ -547,7 +547,7 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 	  return;
    }
 
-   ModelAsset* modelAsset = model->GetModelAsset();
+   ModelAsset* modelAsset = model->GetComponent<ModelAssetComponent>()->GetModelAsset();
    if (!modelAsset) {
 	  return;
    }
@@ -618,9 +618,9 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 void Renderer::EndFrame() {
 #ifdef USE_IMGUI
    if (editorController_) {
-	  //editorController_->ShowAssetWindow();
-	  editorController_->ShowHierarchyWindow();
+	  editorController_->ShowAssetWindow();
 	  editorController_->ShowInspectorWindow();
+	  editorController_->ShowHierarchyWindow();
    }
 #endif
    // ラインレンダラーを終了
@@ -656,7 +656,14 @@ void Renderer::EndFrame() {
    bool isDockSpaceVisible = imGuiManager_->IsDockSpaceVisible();
    imGuiManager_->ShowEngineSettings(isDockSpaceVisible);
    if (isDockSpaceVisible) {
-	  imGuiManager_->ShowViewport(offscreenRenderTarget_.get(), isSceneHovered_);
+	  imGuiManager_->ShowViewport(
+		 offscreenRenderTarget_.get(),
+		 isSceneHovered_,
+		 [this](float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
+			if (editorController_) {
+			   editorController_->ShowSceneOverlay(viewportX, viewportY, viewportWidth, viewportHeight);
+			}
+		 });
 	  postProcessManager_->ShowImGuiControls();
    } else {
 	  DrawFullscreenTriangle(offscreenRenderTarget_->GetSRVHandleGPU());

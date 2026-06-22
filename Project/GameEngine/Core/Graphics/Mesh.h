@@ -42,7 +42,8 @@ public:
    /// @param width 幅
    /// @param height 高さ
    /// @param orientation 生成平面（デフォルトはXY）
-   void CreateParticleQuad(float width, float height, PlaneOrientation orientation = PlaneOrientation::XY);
+   /// @param originY 縦方向の原点位置（0.0=下端, 0.5=中央, 1.0=上端）
+   void CreateParticleQuad(float width, float height, PlaneOrientation orientation = PlaneOrientation::XY, float originY = 0.5f);
 
    /// @brief スカイボックス用のキューブメッシュを作成
    void CreateSkybox();

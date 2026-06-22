@@ -20,11 +20,11 @@ public:
 
    /// @brief シーンの切り替え
    /// @param name 切り替えるシーンの名前
-   void ChangeScene(const std::string& name);
+   bool ChangeScene(const std::string& name);
 
    /// @brief シーンの切り替え
    /// @param newScene 新しいシーンのポインタ
-   void ChangeScene(std::unique_ptr<BaseScene> newScene);
+   bool ChangeScene(std::unique_ptr<BaseScene> newScene);
 
    /// @brief 現在のシーンの更新
    void Update();
@@ -42,5 +42,6 @@ private:
    std::unique_ptr<BaseScene> currentScene_;
    ISceneFactory* factory_ = nullptr;
    std::string currentSceneName_ = "";
+   bool isChangingScene_ = false;
 };
 }

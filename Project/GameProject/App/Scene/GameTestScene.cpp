@@ -33,7 +33,7 @@
 using namespace GameEngine;
 using namespace App;
 
-static constexpr float kPlanetRadius = 50.0f;
+static constexpr float kPlanetRadius = 30.0f;
 static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 
 void GameTestScene::Initialize() {
@@ -46,13 +46,15 @@ void GameTestScene::Initialize() {
    EngineContext::LoadTexture("resources/textures/smoke.png", "smoke");
    EngineContext::LoadTexture("resources/textures/star_08.png", "star_08");
    EngineContext::LoadTexture("resources/textures/spark_01.png", "spark_01");
-
+   EngineContext::LoadTexture("resources/textures/effect1.png", "effect1");
+   EngineContext::LoadTexture("resources/textures/bonfire.png", "bonfire");
+   EngineContext::LoadTexture("resources/textures/rocky_terrain_02_diff_2k.jpg", "rocky");
+   EngineContext::LoadTexture("resources/textures/coast_sand_05_diff_2k.jpg", "coast_sand");
 
    skybox_ = std::make_unique<GameEngine::Skybox>();
    skybox_->Create(EngineContext::GetGraphicsDevice());
    skybox_->SetTexture(EngineContext::GetTexture("skyboxTexture"));
 
-   // --- アセット読み込み ---
    EngineContext::LoadModel("resources/models/planet", "planet.obj");
    EngineContext::LoadModel("resources/models/car", "car.obj");
    EngineContext::LoadTexture("resources/textures/uvChecker.png", "uvChecker");
@@ -70,7 +72,7 @@ void GameTestScene::Initialize() {
 
    // --- 惑星1の作成 ---
    planet_ = std::make_unique<Model>();
-   planet_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial);
+   planet_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial).SetObjectName("Planet_1");
    planet_->SetPosition(Vector3(0.0f, 0.0f, 0.0f));
    planet_->SetScale(Vector3(kPlanetRadius, kPlanetRadius, kPlanetRadius));
 
@@ -80,11 +82,11 @@ void GameTestScene::Initialize() {
 	  attractor1 = a;
    }
    // uvChecker テクスチャを設定
-   if (auto* mc = planet_->GetComponent<MaterialComponent>()) { mc->SetTextureName("uvChecker"); }
+   if (auto* mc = planet_->GetComponent<MaterialComponent>()) { mc->SetTextureName("coast_sand"); }
 
    // --- 惑星2の作成 ---
    planet2_ = std::make_unique<Model>();
-   planet2_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial);
+   planet2_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial).SetObjectName("Planet_2");
    planet2_->SetPosition(Vector3(kPlanet2Distance, 0.0f, 0.0f));
    planet2_->SetScale(Vector3(kPlanet2Radius, kPlanet2Radius, kPlanet2Radius));
 
@@ -94,11 +96,11 @@ void GameTestScene::Initialize() {
 	  attractor2 = a;
    }
    // uvChecker テクスチャを設定
-   if (auto* mc = planet2_->GetComponent<MaterialComponent>()) { mc->SetTextureName("uvChecker"); }
+   if (auto* mc = planet2_->GetComponent<MaterialComponent>()) { mc->SetTextureName("coast_sand"); }
 
    // --- プレイヤーの作成 ---
    player_ = std::make_unique<Model>();
-   player_->Create().SetModelAsset(playerModelAsset).SetMaterial(playerMaterial);
+   player_->Create().SetModelAsset(playerModelAsset).SetMaterial(playerMaterial).SetObjectName("Player");
    player_->SetPosition(Vector3(0.0f, kPlayerOrbitHeight, 0.0f));
    player_->SetScale(Vector3(1.0f, 1.0f, 1.0f));
 
@@ -111,8 +113,8 @@ void GameTestScene::Initialize() {
 
    // 2. PlanetSwitcher: GravityAttractorLink の接続先を切り替える
    if (auto* switcher = player_->AddComponent<PlanetSwitcher>()) {
-	  switcher->AddPlanet(attractor1, planet_->GetPosition(), kPlanetRadius);
-	  switcher->AddPlanet(attractor2, planet2_->GetPosition(), kPlanet2Radius);
+	  switcher->AddPlanet(planet_->GetObjectName());
+	  switcher->AddPlanet(planet2_->GetObjectName());
    }
 
    // 3. GravityBody: 確定済みの重力方向で姿勢回転 + 位置移動
@@ -224,7 +226,31 @@ void GameTestScene::Initialize() {
 	  }
    }
 
+   boostFlameEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (boostFlameEmitter_) {
+	  boostFlameSlotCount_ = 0;
+	  const GameEngine::Vector3 kTireOffsets[2] = {
+		 {  0.3f, -0.3f, -0.6f },   // 右後
+		 { -0.3f, -0.3f, -0.6f },   // 左後
+	  };
 
+	  for (const auto& offset : kTireOffsets) {
+		 GameEngine::ParticleEmitterComponent::AttachmentConfig cfg;
+		 cfg.followPosition = true;
+		 cfg.followRotation = true;
+		 cfg.followScale = true;
+		 cfg.positionOffset = offset;
+		 cfg.simulationSpace = GameEngine::ParticleEmitterComponent::AttachmentConfig::Space::Local;
+		 int slotIdx = boostFlameEmitter_->AddSlot("resources/particles/bonfire.json", cfg);
+		 if (auto* slot = boostFlameEmitter_->GetSlot(slotIdx)) {
+			slot->loop = false;
+			slot->autoPlay = false;
+			boostFlameEmitter_->LoadSlot(*slot);
+
+			++boostFlameSlotCount_;
+		 }
+	  }
+   }
 
    // 9. ソニックブームパーティクル（ミニターボ発動時に一発再生）
    sonicBoomEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
@@ -254,8 +280,8 @@ void GameTestScene::Initialize() {
 	  cfg.followPosition = true;
 	  cfg.followRotation = true;
 	  cfg.followScale = true;
-	  cfg.positionOffset = { 0.0f, -0.3f, 0.0f };
-	  cfg.simulationSpace = Config::Space::World;
+	  cfg.positionOffset = { 0.0f, -0.3f, 0.5f };
+	  cfg.simulationSpace = Config::Space::Local;
 	  landingRingSlotIndex_ = landingRingEmitter_->AddSlot("resources/particles/landingRing.json", cfg);
 	  if (auto* slot = landingRingEmitter_->GetSlot(landingRingSlotIndex_)) {
 		 slot->loop = false;
@@ -296,6 +322,23 @@ void GameTestScene::Initialize() {
 		 slot->loop = true;
 		 slot->autoPlay = true;
 		 windEmitter_->LoadSlot(*slot);
+	  }
+   }
+
+   landingDustEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
+   if (landingDustEmitter_) {
+	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;
+	  Config cfg;
+	  cfg.followPosition = true;
+	  cfg.followRotation = true;
+	  cfg.followScale = true;
+	  cfg.positionOffset = { 0.0f, -0.3f, 0.5f };
+	  cfg.simulationSpace = Config::Space::Local;
+	  landingDustSlotIndex_ = landingDustEmitter_->AddSlot("resources/particles/landingDust.json", cfg);
+	  if (auto* slot = landingDustEmitter_->GetSlot(landingDustSlotIndex_)) {
+		 slot->loop = false;
+		 slot->autoPlay = false;
+		 landingDustEmitter_->LoadSlot(*slot);
 	  }
    }
 
@@ -458,10 +501,40 @@ void GameTestScene::Update() {
 	  }
    }
 
+   auto* drift = player_->GetComponent<App::VehicleDrift>();
+   const bool isBoosting = drift && drift->ConsumeMiniTurboFired();
+   if (boostFlameEmitter_) {
+	  const bool isJump = player_->GetComponent<App::CharacterJump>()->IsJumping();
+	  if (isJump) {
+		 for (int i = tireDustSlotCount_ + miniTurboSlotCount_; i < boostFlameSlotCount_ + tireDustSlotCount_ + miniTurboSlotCount_; ++i) {
+			if (auto* slot = boostFlameEmitter_->GetSlot(i)) {
+			   if (slot->particleSystem) {
+				  if (auto* em = slot->particleSystem->GetEmissionModule()) {
+					 em->SetEnabled(false);
+				  }
+			   }
+			}
+		 }
+	  } else {
+		 if (isBoosting) {
+			for (int i = tireDustSlotCount_ + miniTurboSlotCount_; i < boostFlameSlotCount_ + tireDustSlotCount_ + miniTurboSlotCount_; ++i) {
+			   if (auto* slot = boostFlameEmitter_->GetSlot(i)) {
+				  if (slot->particleSystem) {
+					 if (auto* em = slot->particleSystem->GetEmissionModule()) {
+						em->SetEnabled(true);
+					 }
+
+					 slot->particleSystem->Play();
+				  }
+			   }
+			}
+		 }
+	  }
+   }
+
    // ミニターボ発動時にソニックブームを一発再生
    if (sonicBoomEmitter_) {
-	  auto* drift = player_->GetComponent<App::VehicleDrift>();
-	  if (drift && drift->ConsumeMiniTurboFired()) {
+	  if (isBoosting) {
 		 if (sonicBoomSlotIndex_ >= 0) {
 			sonicBoomEmitter_->Play(sonicBoomSlotIndex_);
 		 }
@@ -475,6 +548,18 @@ void GameTestScene::Update() {
 	  if (jump && landing && landing->IsGrounded() && wasJump) {
 		 if (landingRingSlotIndex_ >= 0) {
 			landingRingEmitter_->Play(landingRingSlotIndex_);
+		 }
+	  }
+	  wasJump = jump ? jump->IsJumping() : true;
+   }
+
+   if (landingDustEmitter_) {
+	  auto* jump = player_->GetComponent<App::CharacterJump>();
+	  auto* landing = player_->GetComponent<App::CharacterLanding>();
+	  static bool wasJump = false;
+	  if (jump && landing && landing->IsGrounded() && wasJump) {
+		 if (landingDustSlotIndex_ >= 0) {
+			landingDustEmitter_->Play(landingDustSlotIndex_);
 		 }
 	  }
 	  wasJump = jump ? jump->IsJumping() : true;

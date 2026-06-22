@@ -42,6 +42,9 @@ void BaseScene::Initialize() {
    cameraEditor_ = std::make_unique<CameraEditor>();
    cameraEditor_->Initialize(EngineContext::GetLineRenderer());
    cameraEditor_->SetTargetBrain(unit->brain.get());
+
+   editorSceneContext_ = std::make_unique<EditorSceneContext>();
+   editorSceneContext_->Initialize(editorSceneName_);
 #endif
 }
 
@@ -102,6 +105,7 @@ void BaseScene::Finalize() {
 
 #ifdef USE_IMGUI
    // デバッグカメラを先に破棄（Brain破棄より前に行う）
+   editorSceneContext_.reset();
    debugCamera_.reset();
    cameraEditor_.reset();
 #endif
@@ -124,6 +128,14 @@ void BaseScene::Finalize() {
 void BaseScene::SetNextSceneName(const std::string& sceneName) {
 	  sNextSceneName_ = sceneName;
 }
+
+#ifdef USE_IMGUI
+void BaseScene::LoadEditorSceneIfNeeded() {
+   if (editorSceneContext_) {
+      editorSceneContext_->AutoLoad();
+   }
+}
+#endif
 
 void BaseScene::UpdateDebugCamera() {
 #ifdef USE_IMGUI

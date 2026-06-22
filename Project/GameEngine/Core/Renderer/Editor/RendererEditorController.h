@@ -10,6 +10,7 @@
 
 namespace GameEngine {
 class AssetManager;
+class EditorSceneContext;
 class Object;
 class Model;
 class Sprite;
@@ -22,8 +23,10 @@ public:
    void ShowAssetWindow();
    void ShowHierarchyWindow();
    void ShowInspectorWindow();
+   void ShowSceneOverlay(float viewportX, float viewportY, float viewportWidth, float viewportHeight);
 
 private:
+   EditorSceneContext* GetActiveEditorContext() const;
    std::vector<Object*> CollectSceneObjects() const;
    void ResolveParentRelation(Object* object, const std::vector<Object*>& sceneObjects) const;
    std::string BuildUniqueObjectName(const std::string& baseName, const std::vector<Object*>& sceneObjects) const;
@@ -32,7 +35,6 @@ private:
 
 private:
    AssetManager* assetManager_ = nullptr;
-   Object* selectedObject_ = nullptr;
    ParticleSystem* selectedParticleSystem_ = nullptr;
 
    std::string editorNewModelName_ = "NewModel";

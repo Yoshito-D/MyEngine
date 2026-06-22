@@ -162,10 +162,22 @@ void EditTextureSheetAnimationModule(GameEngine::TextureSheetAnimationModule* mo
 		module->SetCycles(static_cast<uint32_t>(cycles));
 	}
 
+	int frameCount = static_cast<int>(module->GetFrameCount());
+	int maxFrameCount = static_cast<int>(module->GetTilesX() * module->GetTilesY());
+	if (module->GetAnimationMode() == GameEngine::TextureSheetAnimationModule::AnimationMode::SingleRow) {
+		maxFrameCount = static_cast<int>(module->GetTilesX());
+	}
+	if (ImGui::DragInt("Frame Count (0=All)##TextureSheetAnimation", &frameCount, 1.0f, 0, maxFrameCount)) {
+		module->SetFrameCount(static_cast<uint32_t>(frameCount));
+	}
+
 	int animationMode = static_cast<int>(module->GetAnimationMode());
 	const char* modeNames[] = { "Whole Sheet", "Single Row" };
 	if (ImGui::Combo("Animation Mode##TextureSheetAnimation", &animationMode, modeNames, IM_ARRAYSIZE(modeNames))) {
 		module->SetAnimationMode(static_cast<GameEngine::TextureSheetAnimationModule::AnimationMode>(animationMode));
+		if (module->GetAnimationMode() == GameEngine::TextureSheetAnimationModule::AnimationMode::WholeSheet) {
+			module->SetRandomRow(false);
+		}
 	}
 
 	int startFrame = static_cast<int>(module->GetStartFrame());
@@ -173,15 +185,17 @@ void EditTextureSheetAnimationModule(GameEngine::TextureSheetAnimationModule* mo
 		module->SetStartFrame(static_cast<uint32_t>(startFrame));
 	}
 
-	bool randomRow = module->GetRandomRow();
-	if (ImGui::Checkbox("Random Row##TextureSheetAnimation", &randomRow)) {
-		module->SetRandomRow(randomRow);
-	}
+	if (module->GetAnimationMode() == GameEngine::TextureSheetAnimationModule::AnimationMode::SingleRow) {
+		bool randomRow = module->GetRandomRow();
+		if (ImGui::Checkbox("Random Row##TextureSheetAnimation", &randomRow)) {
+			module->SetRandomRow(randomRow);
+		}
 
-	if (!randomRow) {
-		int rowIndex = static_cast<int>(module->GetRowIndex());
-		if (ImGui::DragInt("Row Index##TextureSheetAnimation", &rowIndex, 1.0f, 0, 1024)) {
-			module->SetRowIndex(static_cast<uint32_t>(rowIndex));
+		if (!randomRow) {
+			int rowIndex = static_cast<int>(module->GetRowIndex());
+			if (ImGui::DragInt("Row Index##TextureSheetAnimation", &rowIndex, 1.0f, 0, 1024)) {
+				module->SetRowIndex(static_cast<uint32_t>(rowIndex));
+			}
 		}
 	}
 #endif

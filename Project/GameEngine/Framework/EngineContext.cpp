@@ -278,10 +278,22 @@ void EngineContext::LoadModel(const std::string& modelPath, const std::string& m
    sAssetManager_->GetModelAssetManager()->LoadModel(modelPath, modelName);
 }
 
+std::shared_ptr<ModelAsset> EngineContext::LoadModelByAssetId(const std::string& assetId) {
+   if (!sAssetManager_) return {};
+   if (!sAssetManager_->GetModelAssetManager()) return {};
+   return sAssetManager_->GetModelAssetManager()->LoadModelByAssetId(assetId);
+}
+
 std::shared_ptr<ModelAsset> EngineContext::GetModel(const std::string& modelName) {
    if (!sAssetManager_) return {};
    if (!sAssetManager_->GetModelAssetManager()) return {};
    return sAssetManager_->GetModelAssetManager()->GetModel(modelName);
+}
+
+std::shared_ptr<ModelAsset> EngineContext::GetModelByAssetId(const std::string& assetId) {
+   if (!sAssetManager_) return {};
+   if (!sAssetManager_->GetModelAssetManager()) return {};
+   return sAssetManager_->GetModelAssetManager()->GetModelByAssetId(assetId);
 }
 
 void EngineContext::ClearModelAssets() {

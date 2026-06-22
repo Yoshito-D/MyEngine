@@ -27,17 +27,18 @@ PixelShaderOutput main(VertexShaderOutput input)
     // UV変換 & テクスチャサンプリング
     float4 transformedUV = mul(float4(input.texCoord, 0.0f, 1.0f), particleUvTransform);
     transformedUV = mul(transformedUV, gMaterial.uvTransform);
-    float4 textureColor = gTexture.Sample(gSampler, transformedUV.xy);
+    // Texture atlases bleed between frames through generated mipmaps, so particles sample the base mip.
+    float4 textureColor = gTexture.SampleLevel(gSampler, transformedUV.xy, 0.0f);
     
      // α=0ならピクセル破棄
-    if (textureColor.a == 0.0f)
+    if (textureColor.a <= 0.001f)
     {
         discard;
     }
     
     output.color = textureColor * input.color * gMaterial.color;
      
-    if (output.color.a == 0.0f)
+    if (output.color.a <= 0.001f)
     {
         discard;
     }

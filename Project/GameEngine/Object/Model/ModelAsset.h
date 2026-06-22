@@ -85,6 +85,9 @@ struct ModelData {
 /// @brief モデルアセットクラス
 class ModelAsset {
 public:
+   void SetAssetId(const std::string& assetId) { assetId_ = assetId; }
+   const std::string& GetAssetId() const { return assetId_; }
+
    /// @brief objファイルをロードする
    /// @param device グラフィックスデバイス
    /// @param modelPath モデルファイルのパス
@@ -180,6 +183,7 @@ public:
    }
 
 private:
+   std::string assetId_;
    ModelData modelData_;
    std::vector<ComPtr<ID3D12Resource>> vertexResources_;            // 複数リソース
    std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews_;        // 複数ビュー

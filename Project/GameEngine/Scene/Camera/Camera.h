@@ -67,6 +67,7 @@ public:
 	Matrix4x4 GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
 	void SetViewProjectionMatrix(const Matrix4x4& matrix) { viewProjectionMatrix_ = matrix; }
 	Matrix4x4 GetViewMatrix() const { return viewMatrix_; }
+	Matrix4x4 GetViewMatrixForImGuizmo() { return viewMatrix_; }
 	void SetViewMatrix(const Matrix4x4& matrix) { viewMatrix_ = matrix; }
 	Matrix4x4 GetProjectionMatrix() const;
 

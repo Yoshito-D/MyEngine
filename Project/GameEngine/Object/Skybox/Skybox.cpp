@@ -8,11 +8,30 @@ namespace GameEngine {
 
 std::vector<Skybox*> Skybox::sRegisteredSkyboxes_{};
 
-Skybox::Skybox() {
-   sRegisteredSkyboxes_.push_back(this);
+namespace {
+std::string BuildDefaultSkyboxName(const std::vector<Skybox*>& registeredSkyboxes) {
+   auto exists = [&registeredSkyboxes](const std::string& name) {
+	  for (const auto* skybox : registeredSkyboxes) {
+		 if (skybox && skybox->GetObjectName() == name) {
+			return true;
+		 }
+	  }
+	  return false;
+   };
 
-   static uint32_t skyboxCounter = 0;
-   SetObjectName("Skybox_" + std::to_string(++skyboxCounter));
+   uint32_t index = 1;
+   while (true) {
+	  const std::string candidate = "Skybox_" + std::to_string(index++);
+	  if (!exists(candidate)) {
+		 return candidate;
+	  }
+   }
+}
+}
+
+Skybox::Skybox() {
+   SetObjectName(BuildDefaultSkyboxName(sRegisteredSkyboxes_));
+   sRegisteredSkyboxes_.push_back(this);
 }
 
 Skybox::~Skybox() {

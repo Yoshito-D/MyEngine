@@ -11,6 +11,25 @@
 
 namespace {
 Logger& log_ = Logger::GetInstance();
+
+std::string BuildDefaultModelName(const std::vector<GameEngine::Model*>& registeredModels) {
+   auto exists = [&registeredModels](const std::string& name) {
+	  for (const auto* model : registeredModels) {
+		 if (model && model->GetObjectName() == name) {
+			return true;
+		 }
+	  }
+	  return false;
+   };
+
+   uint32_t index = 1;
+   while (true) {
+	  const std::string candidate = "Model_" + std::to_string(index++);
+	  if (!exists(candidate)) {
+		 return candidate;
+	  }
+   }
+}
 }
 
 namespace GameEngine {
@@ -18,10 +37,8 @@ namespace GameEngine {
 std::vector<Model*> Model::sRegisteredModels_{};
 
 Model::Model() {
+   SetObjectName(BuildDefaultModelName(sRegisteredModels_));
    sRegisteredModels_.push_back(this);
-
-   static uint32_t modelCounter = 0;
-   SetObjectName("Model_" + std::to_string(++modelCounter));
 }
 
 Model::~Model() {
@@ -189,7 +206,7 @@ void Model::UpdateMatrix(Camera* camera) {
    }
 
    // modelAssetのrootNode.localMatrixを掛ける
-   ModelAsset* modelAsset = GetModelAsset();
+   ModelAsset* modelAsset = GetComponent<ModelAssetComponent>()->GetModelAsset();
    if (modelAsset) {
 	  if (!modelAsset->HasSkinningData()) {
 		 worldMatrix = modelAsset->GetRootNode().localMatrix * worldMatrix;

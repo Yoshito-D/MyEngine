@@ -7,11 +7,31 @@
 #include <algorithm>
 
 namespace GameEngine {
-Sprite::Sprite() {
-   sRegisteredSprites_.push_back(this);
 
-   static uint32_t spriteCounter = 0;
-   SetObjectName("Sprite_" + std::to_string(++spriteCounter));
+namespace {
+std::string BuildDefaultSpriteName(const std::vector<Sprite*>& registeredSprites) {
+   auto exists = [&registeredSprites](const std::string& name) {
+	  for (const auto* sprite : registeredSprites) {
+		 if (sprite && sprite->GetObjectName() == name) {
+			return true;
+		 }
+	  }
+	  return false;
+   };
+
+   uint32_t index = 1;
+   while (true) {
+	  const std::string candidate = "Sprite_" + std::to_string(index++);
+	  if (!exists(candidate)) {
+		 return candidate;
+	  }
+   }
+}
+}
+
+Sprite::Sprite() {
+   SetObjectName(BuildDefaultSpriteName(sRegisteredSprites_));
+   sRegisteredSprites_.push_back(this);
 }
 
 Sprite::~Sprite() {

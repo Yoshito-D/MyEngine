@@ -5,6 +5,7 @@
 #include "../../../externals/imgui/imgui.h"
 #include "../../../externals/imgui/imgui_impl_dx12.h"
 #include "../../../externals/imgui/imgui_impl_win32.h"
+#include <functional>
 
 namespace GameEngine {
 class GraphicsDevice;
@@ -37,7 +38,10 @@ public:
    /// @brief ビューポートを表示
    /// @param renderTarget オフスクリーンレンダーターゲット
    /// @param isSceneHovered シーンがホバーされているかの出力
-   void ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSceneHovered);
+   void ShowViewport(
+      OffscreenRenderTarget* renderTarget,
+      bool& isSceneHovered,
+      const std::function<void(float, float, float, float)>& overlayCallback = {});
 
    /// @brief エンジン設定ウィンドウを表示
    /// @param isDockSpaceVisible ドッキングスペース表示フラグの参照
