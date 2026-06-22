@@ -65,7 +65,7 @@ public:
 	float rearLerpSpeed = 10.0f;
 
 	/// @brief 惑星切り替え時の重力Up補間速度（大きいほど速く追従）
-	float gravityUpLerpSpeed = 3.0f;
+	float gravityUpLerpSpeed = 5.0f;
 
 	/// @brief 通常時の FOV（ラジアン相当）
 	float fovDefault = 0.45f;

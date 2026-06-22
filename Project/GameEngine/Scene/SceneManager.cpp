@@ -5,21 +5,45 @@
 #include <EngineContext.h>
 
 namespace GameEngine {
-void SceneManager::ChangeScene(const std::string& name) {
+bool SceneManager::ChangeScene(const std::string& name) {
+   if (!factory_ || name.empty() || isChangingScene_) {
+	  return false;
+   }
+
    auto newScene = factory_->CreateScene(name);
-   ChangeScene(std::move(newScene));
+   if (!newScene) {
+	  return false;
+   }
+
+   newScene->SetEditorSceneName(name);
+   if (!ChangeScene(std::move(newScene))) {
+	  return false;
+   }
+
    currentSceneName_ = name;
+   return true;
 }
 
-void SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
+bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
+   if (!newScene || isChangingScene_) {
+	  return false;
+   }
+
+   isChangingScene_ = true;
+
    if (currentScene_) {
 	  currentScene_->Finalize();
+	  currentScene_.reset();
    }
 
    currentScene_ = std::move(newScene);
-   if (currentScene_) {
-	  currentScene_->Initialize();
-   }
+   currentScene_->Initialize();
+#ifdef USE_IMGUI
+   currentScene_->LoadEditorSceneIfNeeded();
+#endif
+
+   isChangingScene_ = false;
+   return true;
 }
 
 void SceneManager::Update() {
@@ -38,12 +62,20 @@ void SceneManager::Finalize() {
 }
 
 void SceneManager::CheckSceneChange() {
-   if (!currentScene_) return;
+   if (!currentScene_ || isChangingScene_) return;
 
    std::string nextSceneName = currentScene_->GetNextSceneName();
-   if (!nextSceneName.empty() && nextSceneName != currentSceneName_) {
-	  ChangeScene(nextSceneName);
-	  currentSceneName_ = nextSceneName;
+   if (nextSceneName.empty()) {
+	  return;
+   }
+
+   if (nextSceneName == currentSceneName_) {
+	  BaseScene::SetNextSceneName("");
+	  return;
+   }
+
+   if (!ChangeScene(nextSceneName)) {
+	  BaseScene::SetNextSceneName("");
    }
 }
 }

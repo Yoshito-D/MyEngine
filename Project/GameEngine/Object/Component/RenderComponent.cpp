@@ -42,7 +42,7 @@ void RenderComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void RenderComponent::DrawInspector() {
-   if (!ImGui::CollapsingHeader("Render", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("Render")) {
       return;
    }
 

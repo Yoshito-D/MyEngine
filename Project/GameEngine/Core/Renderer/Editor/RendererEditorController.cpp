@@ -16,6 +16,8 @@
 #include "Object/Skybox/Skybox.h"
 #include "Effect/ParticleSystem.h"
 #include "Effect/ParticleSystemEdit.h"
+#include "Editor/EditorSceneContext.h"
+#include "Scene/BaseScene.h"
 #include "externals/imgui/imgui.h"
 #include <algorithm>
 #include <cstring>
@@ -26,110 +28,52 @@ namespace GameEngine {
 
 void RendererEditorController::Initialize(AssetManager* assetManager) {
    assetManager_ = assetManager;
-
-   if (!editorSceneFilePath_.empty() && std::filesystem::exists(editorSceneFilePath_)) {
-      LoadEditorSceneFromFile(editorSceneFilePath_);
-   }
 }
 
 void RendererEditorController::ShowAssetWindow() {
    ImGui::Begin("Assets");
 
-   auto* materialManager = assetManager_ ? assetManager_->GetMaterialManager() : nullptr;
-   if (!materialManager) {
-      ImGui::Text("MaterialManager is not available");
-      ImGui::End();
-      return;
-   }
-
-   ImGui::Text("Material Assets");
-   ImGui::Separator();
-
-   char materialNameBuffer[128]{};
-   std::memcpy(materialNameBuffer, editorNewMaterialName_.c_str(), std::min(editorNewMaterialName_.size(), sizeof(materialNameBuffer) - 1));
-   if (ImGui::InputText("New Material Name", materialNameBuffer, sizeof(materialNameBuffer))) {
-      editorNewMaterialName_ = materialNameBuffer;
-   }
-
-   ImGui::ColorEdit4("New Material Color", editorNewMaterialColor_);
-
-   const char* lightingModeLabels[] = { "None", "Lambert", "HalfLambert", "Phong", "BlinnPhong" };
-   editorNewMaterialLightingMode_ = std::clamp(editorNewMaterialLightingMode_, 0, 4);
-   if (ImGui::BeginCombo("New Material Lighting", lightingModeLabels[editorNewMaterialLightingMode_])) {
-      for (int i = 0; i < 5; ++i) {
-         const bool selected = (i == editorNewMaterialLightingMode_);
-         if (ImGui::Selectable(lightingModeLabels[i], selected)) {
-            editorNewMaterialLightingMode_ = i;
-         }
-         if (selected) {
-            ImGui::SetItemDefaultFocus();
-         }
+   auto* editorContext = GetActiveEditorContext();
+   if (editorContext) {
+      ImGui::Text("Scene");
+      ImGui::Separator();
+      if (ImGui::Button("Save Scene")) {
+         editorContext->Save();
       }
-      ImGui::EndCombo();
-   }
-
-   if (ImGui::Button("Create Material Asset") && !editorNewMaterialName_.empty()) {
-      auto* material = static_cast<Material*>(materialManager->CreateMaterial(editorNewMaterialName_));
-      if (material) {
-         material->SetColor(Vector4(
-            editorNewMaterialColor_[0],
-            editorNewMaterialColor_[1],
-            editorNewMaterialColor_[2],
-            editorNewMaterialColor_[3]));
-         material->SetLightingMode(static_cast<Material::LightingMode>(editorNewMaterialLightingMode_));
+      ImGui::SameLine();
+      if (ImGui::Button("Reload Scene")) {
+         editorContext->Load();
       }
-   }
-
-   ImGui::Spacing();
-
-   const auto materialNames = materialManager->GetMaterialNames();
-   if (materialNames.empty()) {
-      ImGui::Text("No material assets");
-      ImGui::End();
-      return;
-   }
-
-   editorSelectedAssetMaterialIndex_ = std::clamp(editorSelectedAssetMaterialIndex_, 0, static_cast<int>(materialNames.size() - 1));
-   if (ImGui::BeginCombo("Material Asset", materialNames[editorSelectedAssetMaterialIndex_].c_str())) {
-      for (size_t i = 0; i < materialNames.size(); ++i) {
-         const bool selected = (static_cast<int>(i) == editorSelectedAssetMaterialIndex_);
-         if (ImGui::Selectable(materialNames[i].c_str(), selected)) {
-            editorSelectedAssetMaterialIndex_ = static_cast<int>(i);
-         }
-         if (selected) {
-            ImGui::SetItemDefaultFocus();
-         }
+      ImGui::SameLine();
+      if (ImGui::Button("Rescan Assets")) {
+         editorContext->GetAssetRegistry().Scan();
       }
-      ImGui::EndCombo();
-   }
+      ImGui::TextDisabled("%s", editorContext->GetSceneFilePath().generic_string().c_str());
+      ImGui::Spacing();
 
-   auto* material = materialManager->GetMaterial(materialNames[editorSelectedAssetMaterialIndex_]);
-   if (material && material->GetMaterialData()) {
-      auto* data = material->GetMaterialData();
-
-      Vector4 color = data->color;
-      if (ImGui::ColorEdit4("Color", &color.x)) {
-         material->SetColor(color);
-      }
-
-      int lightingMode = std::clamp(data->lightingMode, 0, 4);
-      if (ImGui::BeginCombo("Lighting Mode", lightingModeLabels[lightingMode])) {
-         for (int i = 0; i < 5; ++i) {
-            const bool selected = (i == lightingMode);
-            if (ImGui::Selectable(lightingModeLabels[i], selected)) {
-               material->SetLightingMode(static_cast<Material::LightingMode>(i));
+      ImGui::Text("Model Assets");
+      ImGui::Separator();
+      const auto& modelAssets = editorContext->GetAssetRegistry().GetModelAssets();
+      if (modelAssets.empty()) {
+         ImGui::Text("No .obj or .gltf models found");
+      } else {
+         for (const auto& entry : modelAssets) {
+            ImGui::PushID(entry.assetId.c_str());
+            if (ImGui::Selectable(entry.displayName.c_str(), false)) {
+               editorContext->CreateModelFromAsset(entry.assetId);
             }
-            if (selected) {
-               ImGui::SetItemDefaultFocus();
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+               ImGui::SetDragDropPayload("EDITOR_MODEL_ASSET", entry.assetId.c_str(), entry.assetId.size() + 1);
+               ImGui::Text("%s", entry.displayName.c_str());
+               ImGui::EndDragDropSource();
             }
+            ImGui::PopID();
          }
-         ImGui::EndCombo();
       }
-
-      float shininess = data->shininess;
-      if (ImGui::DragFloat("Shininess", &shininess, 0.1f, 0.0f, 256.0f)) {
-         material->SetShininess(shininess);
-      }
+      ImGui::Spacing();
+   } else {
+      ImGui::Text("Editor scene context is not available");
+      ImGui::Spacing();
    }
 
    ImGui::End();
@@ -138,19 +82,61 @@ void RendererEditorController::ShowAssetWindow() {
 void RendererEditorController::ShowHierarchyWindow() {
    ImGui::Begin("Hierarchy");
 
-   const auto sceneObjects = CollectSceneObjects();
-   const auto& particleSystems = ParticleSystem::GetRegisteredParticleSystems();
+   auto* editorContext = GetActiveEditorContext();
+   const auto sceneObjects = editorContext ? editorContext->CollectEditableObjects() : CollectSceneObjects();
+   const auto particleSystems = editorContext ? editorContext->CollectEditableParticleSystems() : ParticleSystem::GetRegisteredParticleSystems();
+
+   if (editorContext && ImGui::BeginPopupContextWindow("HierarchyCreateContext", ImGuiPopupFlags_MouseButtonRight)) {
+      if (ImGui::BeginMenu("Model")) {
+         const auto& modelAssets = editorContext->GetAssetRegistry().GetModelAssets();
+         if (modelAssets.empty()) {
+            ImGui::TextDisabled("No .obj or .gltf models");
+         } else {
+            for (const auto& entry : modelAssets) {
+               if (ImGui::MenuItem(entry.displayName.c_str())) {
+                  editorContext->CreateModelFromAsset(entry.assetId);
+                  selectedParticleSystem_ = nullptr;
+               }
+            }
+         }
+         ImGui::EndMenu();
+      }
+
+      if (ImGui::BeginMenu("Particle System")) {
+         const auto& particleAssets = editorContext->GetAssetRegistry().GetParticleAssets();
+         if (particleAssets.empty()) {
+            ImGui::TextDisabled("No particle json files");
+         } else {
+            for (const auto& entry : particleAssets) {
+               if (ImGui::MenuItem(entry.displayName.c_str())) {
+                  selectedParticleSystem_ = editorContext->CreateParticleSystemFromAsset(entry.assetId);
+                  editorContext->SelectObject(nullptr);
+               }
+            }
+         }
+         ImGui::EndMenu();
+      }
+
+      ImGui::EndPopup();
+   }
+
    if (sceneObjects.empty() && particleSystems.empty()) {
       ImGui::Text("No objects");
-      selectedObject_ = nullptr;
+      if (editorContext) {
+         editorContext->SelectObject(nullptr);
+      }
       selectedParticleSystem_ = nullptr;
       ImGui::End();
       return;
    }
 
-   if (selectedObject_) {
-      if (std::find(sceneObjects.begin(), sceneObjects.end(), selectedObject_) == sceneObjects.end()) {
-         selectedObject_ = nullptr;
+   Object* selectedObject = editorContext ? editorContext->GetSelectedObject() : nullptr;
+   if (selectedObject) {
+      if (std::find(sceneObjects.begin(), sceneObjects.end(), selectedObject) == sceneObjects.end()) {
+         if (editorContext) {
+            editorContext->SelectObject(nullptr);
+         }
+         selectedObject = nullptr;
       }
    }
 
@@ -171,9 +157,11 @@ void RendererEditorController::ShowHierarchyWindow() {
       std::string label = object->GetObjectName();
       label += "##Object_" + std::to_string(i);
 
-      const bool isSelected = (selectedObject_ == object);
+      const bool isSelected = (selectedObject == object);
       if (ImGui::Selectable(label.c_str(), isSelected)) {
-         selectedObject_ = object;
+         if (editorContext) {
+            editorContext->SelectObject(object);
+         }
          selectedParticleSystem_ = nullptr;
       }
       ImGui::PopID();
@@ -192,7 +180,9 @@ void RendererEditorController::ShowHierarchyWindow() {
 
       const bool isSelected = (selectedParticleSystem_ == particleSystem);
       if (ImGui::Selectable(label.c_str(), isSelected)) {
-         selectedObject_ = nullptr;
+         if (editorContext) {
+            editorContext->SelectObject(nullptr);
+         }
          selectedParticleSystem_ = particleSystem;
       }
       ImGui::PopID();
@@ -204,7 +194,27 @@ void RendererEditorController::ShowHierarchyWindow() {
 void RendererEditorController::ShowInspectorWindow() {
    ImGui::Begin("Inspector");
 
-   if (!selectedObject_ && !selectedParticleSystem_) {
+   auto* editorContext = GetActiveEditorContext();
+   Object* selectedObject = editorContext ? editorContext->GetSelectedObject() : nullptr;
+
+   if (editorContext) {
+
+      const char* operationLabels[] = { "Move", "Rotate", "Scale" };
+      int operation = static_cast<int>(editorContext->GetGizmoOperation());
+      if (ImGui::Combo("Gizmo Operation", &operation, operationLabels, 3)) {
+         editorContext->SetGizmoOperation(static_cast<EditorSceneContext::GizmoOperation>(operation));
+      }
+
+      const char* modeLabels[] = { "Local", "World" };
+      int mode = static_cast<int>(editorContext->GetGizmoMode());
+      if (ImGui::Combo("Gizmo Mode", &mode, modeLabels, 2)) {
+         editorContext->SetGizmoMode(static_cast<EditorSceneContext::GizmoMode>(mode));
+      }
+
+      ImGui::Spacing();
+   }
+
+   if (!selectedObject && !selectedParticleSystem_) {
       ImGui::Text("No selection");
       ImGui::End();
       return;
@@ -220,6 +230,14 @@ void RendererEditorController::ShowInspectorWindow() {
       if (ImGui::InputText("Name", particleSystemNameBuffer, sizeof(particleSystemNameBuffer))) {
          selectedParticleSystem_->SetName(particleSystemNameBuffer);
       }
+      if (editorContext && editorContext->CanDeleteParticleSystem(selectedParticleSystem_)) {
+         if (ImGui::Button("Delete")) {
+            editorContext->DeleteParticleSystem(selectedParticleSystem_);
+            selectedParticleSystem_ = nullptr;
+            ImGui::End();
+            return;
+         }
+      }
       ImGui::Spacing();
 
       ParticleSystemEdit::Edit(selectedParticleSystem_);
@@ -227,18 +245,31 @@ void RendererEditorController::ShowInspectorWindow() {
       return;
    }
 
-   std::string objectName = selectedObject_->GetObjectName();
+   std::string objectName = selectedObject->GetObjectName();
    char objectNameBuffer[256]{};
    {
       const size_t copySize = std::min(objectName.size(), sizeof(objectNameBuffer) - 1);
       std::memcpy(objectNameBuffer, objectName.c_str(), copySize);
    }
    if (ImGui::InputText("Name", objectNameBuffer, sizeof(objectNameBuffer))) {
-      selectedObject_->SetObjectName(objectNameBuffer);
+      selectedObject->SetObjectName(objectNameBuffer);
    }
    ImGui::Spacing();
 
-   selectedObject_->DrawComponentInspector();
+   if (editorContext) {
+      const bool editorOwned = editorContext->IsEditorOwned(selectedObject);
+      ImGui::Text("Owner: %s", editorOwned ? "Editor" : "Scene");
+      if (editorContext->CanDeleteObject(selectedObject)) {
+         if (ImGui::Button("Delete")) {
+            editorContext->DeleteSelectedObject();
+            ImGui::End();
+            return;
+         }
+      }
+      ImGui::Spacing();
+   }
+
+   selectedObject->DrawComponentInspector();
 
    ImGui::Spacing();
    ImGui::PushID("InspectorAddComponent");
@@ -247,7 +278,7 @@ void RendererEditorController::ShowInspectorWindow() {
       const auto registeredTypeNames = ComponentRegistry::GetInstance().GetRegisteredTypeNames();
       addableComponentTypeNames.reserve(registeredTypeNames.size());
       for (const auto& typeName : registeredTypeNames) {
-         if (!selectedObject_->HasComponentByTypeName(typeName)) {
+         if (!selectedObject->HasComponentByTypeName(typeName)) {
             addableComponentTypeNames.push_back(typeName);
          }
       }
@@ -269,13 +300,13 @@ void RendererEditorController::ShowInspectorWindow() {
          }
 
          if (ImGui::Button("Add Component##Button")) {
-            selectedObject_->AddComponentByTypeName(addableComponentTypeNames[editorSelectedAddComponentIndex_]);
+            selectedObject->AddComponentByTypeName(addableComponentTypeNames[editorSelectedAddComponentIndex_]);
          }
       }
    }
    ImGui::PopID();
 
-   if (auto* model = dynamic_cast<Model*>(selectedObject_); model && ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (auto* model = dynamic_cast<Model*>(selectedObject); model && ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
       auto* modelManager = assetManager_ ? assetManager_->GetModelAssetManager() : nullptr;
       const auto modelNames = modelManager ? modelManager->GetModelNames() : std::vector<std::string>{};
 
@@ -312,7 +343,7 @@ void RendererEditorController::ShowInspectorWindow() {
          }
       }
 
-      if (auto* modelAsset = model->GetModelAsset()) {
+      if (auto* modelAsset = model->GetComponent<ModelAssetComponent>()->GetModelAsset()) {
          ImGui::Text("Meshes: %zu", modelAsset->GetMeshData().size());
          ImGui::Text("Materials: %zu", modelAsset->GetMaterialAssets().size());
       }
@@ -320,7 +351,7 @@ void RendererEditorController::ShowInspectorWindow() {
       ImGui::TextDisabled("Texture は MaterialComponent で設定してください");
    }
 
-   if (auto* sprite = dynamic_cast<Sprite*>(selectedObject_); sprite && ImGui::CollapsingHeader("Sprite", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (auto* sprite = dynamic_cast<Sprite*>(selectedObject); sprite && ImGui::CollapsingHeader("Sprite", ImGuiTreeNodeFlags_DefaultOpen)) {
       Vector2 size = sprite->GetSize();
       if (ImGui::DragFloat2("Size", &size.x, 0.1f, 0.0f, 4096.0f)) {
          sprite->SetSize(size);
@@ -346,6 +377,26 @@ void RendererEditorController::ShowInspectorWindow() {
    }
 
    ImGui::End();
+}
+
+void RendererEditorController::ShowSceneOverlay(float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
+   auto* editorContext = GetActiveEditorContext();
+   if (!editorContext) {
+      return;
+   }
+
+   editorContext->HandleEditorShortcuts();
+   editorContext->AcceptModelAssetDrop();
+   editorContext->DrawTransformGizmo(viewportX, viewportY, viewportWidth, viewportHeight);
+   editorContext->HandleViewportClickSelection(viewportX, viewportY, viewportWidth, viewportHeight);
+}
+
+EditorSceneContext* RendererEditorController::GetActiveEditorContext() const {
+   auto* currentScene = BaseScene::GetCurrentScene();
+   if (!currentScene) {
+      return nullptr;
+   }
+   return currentScene->GetEditorSceneContext();
 }
 
 std::vector<Object*> RendererEditorController::CollectSceneObjects() const {

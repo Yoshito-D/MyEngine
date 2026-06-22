@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ModelAssetComponent.h"
 #include "ComponentRegistry.h"
+#include "Framework/EngineContext.h"
 #include "Object.h"
 
 #ifdef USE_IMGUI
@@ -23,11 +24,30 @@ const char* ModelAssetComponent::GetTypeName() const {
 
 void ModelAssetComponent::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) {
    modelAsset_ = modelAsset;
+   assetId_.clear();
+   if (modelAsset_) {
+      assetId_ = modelAsset_->GetAssetId();
+   }
 
    skinCluster_.reset();
    if (modelAsset_ && modelAsset_->HasSkinningData()) {
-      skinCluster_ = modelAsset_->CreateSkinClusterInstance();
+	  skinCluster_ = modelAsset_->CreateSkinClusterInstance();
    }
+}
+
+bool ModelAssetComponent::SetModelAssetByAssetId(const std::string& assetId) {
+   if (assetId.empty()) {
+      return false;
+   }
+
+   auto modelAsset = EngineContext::LoadModelByAssetId(assetId);
+   if (!modelAsset) {
+      return false;
+   }
+
+   SetModelAsset(modelAsset);
+   assetId_ = assetId;
+   return true;
 }
 
 SkinCluster* ModelAssetComponent::GetSkinCluster() {
@@ -51,16 +71,28 @@ const SkinCluster* ModelAssetComponent::GetSkinCluster() const {
 }
 
 nlohmann::json ModelAssetComponent::Serialize() const {
-   return nlohmann::json::object();
+   return nlohmann::json{
+      { "assetId", assetId_ }
+   };
 }
 
-void ModelAssetComponent::Deserialize(const nlohmann::json&) {
+void ModelAssetComponent::Deserialize(const nlohmann::json& data) {
+   if (!data.is_object()) {
+      return;
+   }
+
+   if (data.contains("assetId") && data.at("assetId").is_string()) {
+      SetModelAssetByAssetId(data.at("assetId").get<std::string>());
+   }
 }
 
 #ifdef USE_IMGUI
 void ModelAssetComponent::DrawInspector() {
-   const char* assetName = modelAsset_ ? "(設定済み)" : "(未設定)";
+   /*const char* assetName = modelAsset_ ? "(設定済み)" : "(未設定)";
    ImGui::Text("ModelAsset: %s", assetName);
+   if (!assetId_.empty()) {
+      ImGui::TextDisabled("%s", assetId_.c_str());
+   }*/
 }
 #endif
 

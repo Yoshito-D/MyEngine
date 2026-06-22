@@ -16,6 +16,25 @@ std::vector<ParticleSystem*> ParticleSystem::sRegisteredParticleSystems_{};
 namespace {
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
+
+std::string BuildDefaultParticleSystemName(const std::vector<ParticleSystem*>& registeredParticleSystems) {
+   auto exists = [&registeredParticleSystems](const std::string& name) {
+	  for (const auto* particleSystem : registeredParticleSystems) {
+		 if (particleSystem && particleSystem->GetName() == name) {
+			return true;
+		 }
+	  }
+	  return false;
+   };
+
+   uint32_t index = 1;
+   while (true) {
+	  const std::string candidate = "ParticleSystem_" + std::to_string(index++);
+	  if (!exists(candidate)) {
+		 return candidate;
+	  }
+   }
+}
 }
 
 void ParticleSystem::Initialize(GraphicsDevice* device) {
@@ -31,7 +50,8 @@ const std::vector<ParticleSystem*>& ParticleSystem::GetRegisteredParticleSystems
 void ParticleSystem::CreateQuadMesh() {
    if (isCreated_) return;
    if (quadMesh_ && sDevice_) {
-	  quadMesh_->CreateParticleQuad(1.0f, 1.0f);
+	  const float meshOriginY = rendererModule_ ? rendererModule_->GetMeshOriginY() : 0.5f;
+	  quadMesh_->CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
 	  isCreated_ = true;
    }
 }
@@ -45,7 +65,7 @@ void ParticleSystem::RebuildParticleMesh() {
    const float meshOriginY = rm->GetMeshOriginY();
    switch (rm->GetParticleMeshType()) {
 	  case MeshType::Quad:
-		 quadMesh_->CreateParticleQuad(1.0f, 1.0f);
+		 quadMesh_->CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
 		 break;
 	  case MeshType::Ring:
 		 quadMesh_->CreateRing(rm->GetRingInnerRadius(), rm->GetRingOuterRadius(), rm->GetRingSegments());
@@ -80,7 +100,7 @@ void ParticleSystem::RebuildParticleMesh() {
 		 quadMesh_->CreateTriangle();
 		 break;
 	  default:
-		 quadMesh_->CreateParticleQuad(1.0f, 1.0f);
+		 quadMesh_->CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
 		 break;
    }
    rm->ClearMeshDirty();
@@ -119,8 +139,7 @@ ParticleSystem::ParticleSystem() {
    uvTransformModule_->SetEnabled(false);
    textureSheetAnimationModule_->SetEnabled(false);
 
-   static uint32_t particleSystemCounter = 0;
-   name_ = "ParticleSystem_" + std::to_string(++particleSystemCounter);
+   name_ = BuildDefaultParticleSystemName(sRegisteredParticleSystems_);
    sRegisteredParticleSystems_.push_back(this);
 }
 
@@ -549,8 +568,24 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 			}
 		 }
 
-		 Matrix4x4 sheetTransform = MakeScaleMatrix(Vector3(1.0f / static_cast<float>(tilesX), 1.0f / static_cast<float>(tilesY), 1.0f)) *
-			MakeTranslateMatrix(Vector3(static_cast<float>(column) / static_cast<float>(tilesX), static_cast<float>(row) / static_cast<float>(tilesY), 0.0f));
+		 float uSize = 1.0f / static_cast<float>(tilesX);
+		 float vSize = 1.0f / static_cast<float>(tilesY);
+		 float uOffset = static_cast<float>(column) * uSize;
+		 float vOffset = static_cast<float>(row) * vSize;
+
+		 if (texture_ && texture_->GetWidth() > 0 && texture_->GetHeight() > 0) {
+			const float halfTexelU = 0.5f / static_cast<float>(texture_->GetWidth());
+			const float halfTexelV = 0.5f / static_cast<float>(texture_->GetHeight());
+			if (uSize > halfTexelU * 2.0f && vSize > halfTexelV * 2.0f) {
+			   uOffset += halfTexelU;
+			   vOffset += halfTexelV;
+			   uSize -= halfTexelU * 2.0f;
+			   vSize -= halfTexelV * 2.0f;
+			}
+		 }
+
+		 Matrix4x4 sheetTransform = MakeScaleMatrix(Vector3(uSize, vSize, 1.0f)) *
+			MakeTranslateMatrix(Vector3(uOffset, vOffset, 0.0f));
 		 particleUVTransform = particleUVTransform * sheetTransform;
 	  }
 
@@ -722,6 +757,13 @@ void ParticleSystem::EmitParticle() {
 	  } else {
 		 float speed = mainModule_->GetStartSpeed().GetValue();
 		 particle.velocity = direction * speed;
+	  }
+
+	  if (shapeModule_->GetShapeType() == ShapeModule::ShapeType::Circle) {
+		 float outwardVelocity = shapeModule_->GetCircleOutwardVelocity();
+		 if (outwardVelocity != 0.0f) {
+			particle.velocity += shapeModule_->GetCircleOutwardDirection(emissionPos) * outwardVelocity;
+		 }
 	  }
 
    } else {

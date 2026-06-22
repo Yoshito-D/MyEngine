@@ -30,22 +30,7 @@ public:
    /// @brief モデルの作成
    Model& Create();
 
-   /// @brief モデルアセットコンポーネントを取得する
-   ModelAssetComponent* GetModelAssetComponent() { return GetComponent<ModelAssetComponent>(); }
-   const ModelAssetComponent* GetModelAssetComponent() const { return GetComponent<ModelAssetComponent>(); }
-
-   /// @brief モデルアセットを取得する（ModelAssetComponent への便利アクセス）
-   ModelAsset* GetModelAsset() const {
-      const auto* c = GetComponent<ModelAssetComponent>();
-      return c ? c->GetModelAsset() : nullptr;
-   }
-
-   /// @brief モデルアセットハンドルを取得する（ModelAssetComponent への便利アクセス）
-   const std::shared_ptr<ModelAsset>& GetModelAssetHandle() const {
-      static const std::shared_ptr<ModelAsset> kNull;
-      const auto* c = GetComponent<ModelAssetComponent>();
-      return c ? c->GetModelAssetHandle() : kNull;
-   }
+   /// ヘルパー関数群
 
    /// @brief モデルアセットを設定する（ビルダー用便利ラッパー）
    /// @param modelAsset モデルアセット
@@ -57,12 +42,12 @@ public:
 
    /// @brief スキンクラスタを取得する（ModelAssetComponent への便利アクセス）
    SkinCluster* GetSkinCluster() {
-      auto* c = GetComponent<ModelAssetComponent>();
-      return c ? c->GetSkinCluster() : nullptr;
+	  auto* c = GetComponent<ModelAssetComponent>();
+	  return c ? c->GetSkinCluster() : nullptr;
    }
    const SkinCluster* GetSkinCluster() const {
-      const auto* c = GetComponent<ModelAssetComponent>();
-      return c ? c->GetSkinCluster() : nullptr;
+	  const auto* c = GetComponent<ModelAssetComponent>();
+	  return c ? c->GetSkinCluster() : nullptr;
    }
 
    /// @brief モデルの位置を取得する

@@ -275,9 +275,16 @@ public:
    /// @param modelName モデルの名前
    static void LoadModel(const std::string& modelPath, const std::string& modelName);
 
+   /// @brief resources からの相対 assetId でモデルをロードする
+   /// @param assetId 例: models/cube/AnimatedCube.gltf
+   static std::shared_ptr<ModelAsset> LoadModelByAssetId(const std::string& assetId);
+
    /// @brief モデルを取得する
    /// @param modelName モデルの名前
    static std::shared_ptr<ModelAsset> GetModel(const std::string& modelName);
+
+   /// @brief assetId でモデルを取得する
+   static std::shared_ptr<ModelAsset> GetModelByAssetId(const std::string& assetId);
 
    /// @brief モデルアセットを全削除
    static void ClearModelAssets();

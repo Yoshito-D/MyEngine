@@ -308,7 +308,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
 void MaterialComponent::DrawInspector() {
    SyncMaterialNamesSize();
 
-   if (!ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("Material")) {
       return;
    }
 

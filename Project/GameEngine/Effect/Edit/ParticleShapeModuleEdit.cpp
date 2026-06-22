@@ -100,12 +100,17 @@ void EditShapeModule(GameEngine::ShapeModule* shapeModule) {
 			   shapeModule->SetRadius(radius);
 			}
 
-			float arc = shapeModule->GetArc();
-			if (ImGui::DragFloat("Arc (円弧)", &arc, 1.0f, 0.0f, 360.0f)) {
-			   shapeModule->SetArc(arc);
-			}
-			break;
+		 float arc = shapeModule->GetArc();
+		 if (ImGui::DragFloat("Arc (円弧)", &arc, 1.0f, 0.0f, 360.0f)) {
+			shapeModule->SetArc(arc);
 		 }
+
+		 float outwardVelocity = shapeModule->GetCircleOutwardVelocity();
+		 if (ImGui::DragFloat("Outward Velocity (外向き速度)", &outwardVelocity, 0.1f, 0.0f, 100.0f)) {
+			shapeModule->SetCircleOutwardVelocity(outwardVelocity);
+		 }
+		 break;
+	  }
 
 		 default:
 			break;

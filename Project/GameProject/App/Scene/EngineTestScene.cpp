@@ -4,7 +4,8 @@
 #include "Component/MaterialComponent.h"
 
 #ifdef USE_IMGUI
-#include "externals/imgui/imgui.h"
+#include "imgui.h"
+#include "ImGuizmo.h"
 #include "Scene/Camera/Components/OrbitalBody.h"
 #include "Effect/ParticleSystemEdit.h"
 #endif
@@ -24,6 +25,8 @@ void EngineTestScene::Initialize() {
    EngineContext::LoadTexture("resources/textures/spark_01.png", "spark_01");
    EngineContext::LoadTexture("resources/textures/gradationLine.png", "gradationLine");
    EngineContext::LoadTexture("resources/textures/gradationLine1.png", "gradationLine1");
+   EngineContext::LoadTexture("resources/textures/bonfire.png", "bonfire");
+   EngineContext::LoadTexture("resources/textures/effect1.png", "effect1");
 
    EngineContext::CreateMaterial("animCubeMaterial", 0xffffffff, 0);
    auto* animCubeMaterial = EngineContext::GetMaterial("animCubeMaterial");
@@ -52,8 +55,8 @@ void EngineTestScene::Initialize() {
    particleSystem_ = std::make_unique<ParticleSystem>();
    particleSystem_->Create();
    particleSystem_->SetTexture(EngineContext::GetTexture("particle"));
-   particleSystem_->SetName("landingDust");
-   particleSystem_->LoadFromJson("resources/particles/tire_dust.json");
+   particleSystem_->SetName("bonfire");
+   particleSystem_->LoadFromJson("resources/particles/bonfire.json");
    particleSystem_->Play();
 
 #ifdef USE_IMGUI

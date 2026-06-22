@@ -12,7 +12,7 @@
             1.0,
             1.0,
             1.0,
-            0.5686274766921997
+            0.3843137323856354
         ]
     },
     "emissionModule": {
@@ -26,20 +26,36 @@
         ],
         "enabled": true,
         "rateOverDistance": 0.0,
-        "rateOverTime": 14.0
+        "rateOverTime": 12.0
     },
     "forceOverLifetimeModule": {
         "enabled": false,
-        "force": [
-            0.0,
-            0.0,
-            0.0
-        ]
+        "force": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "randomize": false
+        }
     },
     "limitVelocityModule": {
-        "dampen": 0.5,
+        "dampen": {
+            "max": 0.5,
+            "min": 0.5,
+            "randomize": false
+        },
         "enabled": false,
-        "speedLimit": 10.0
+        "speedLimit": {
+            "max": 10.0,
+            "min": 10.0,
+            "randomize": false
+        }
     },
     "mainModule": {
         "duration": 0.30000001192092896,
@@ -56,8 +72,8 @@
             "randomize": false
         },
         "startLifetime": {
-            "max": 0.20000000298023224,
-            "min": 0.20000000298023224,
+            "max": 0.22499999403953552,
+            "min": 0.22499999403953552,
             "randomize": false
         },
         "startRotation": {
@@ -90,13 +106,39 @@
             "max": 0.0,
             "min": 0.0,
             "randomize": false
+        },
+        "startSpeedMode": 0,
+        "startVelocity": {
+            "max": [
+                0.0,
+                6.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                5.0,
+                0.0
+            ],
+            "randomize": false
         }
     },
     "noiseModule": {
         "enabled": false,
-        "frequency": 0.5,
-        "scrollSpeed": 1.0,
-        "strength": 1.0
+        "frequency": {
+            "max": 0.5,
+            "min": 0.5,
+            "randomize": false
+        },
+        "scrollSpeed": {
+            "max": 1.0,
+            "min": 1.0,
+            "randomize": false
+        },
+        "strength": {
+            "max": 1.0,
+            "min": 1.0,
+            "randomize": false
+        }
     },
     "rendererModule": {
         "billboardType": 0,
@@ -121,7 +163,7 @@
         "particleMeshType": 1,
         "planeDepth": 1.0,
         "planeWidth": 1.0,
-        "ringInnerRadius": 0.23000000417232513,
+        "ringInnerRadius": 0.15000000596046448,
         "ringOuterRadius": 0.4000000059604645,
         "ringSegments": 32,
         "rotationSpace": 1,
@@ -156,6 +198,7 @@
             1.0,
             1.0
         ],
+        "circleOutwardVelocity": 2.0999999046325684,
         "emitFrom": 0,
         "enabled": true,
         "length": 5.0,
@@ -180,8 +223,8 @@
     "sizeOverLifetimeModule": {
         "enabled": true,
         "endSize": [
-            3.0,
-            3.0,
+            3.5,
+            3.5,
             3.0
         ],
         "sizeMultiplier": 2.859999895095825,
@@ -196,6 +239,7 @@
         "animationMode": 0,
         "cycles": 1,
         "enabled": false,
+        "frameCount": 1,
         "frameOverTime": 1.0,
         "randomRow": false,
         "rowIndex": 0,
@@ -216,8 +260,8 @@
             "randomize": false
         },
         "scaleConstant": [
-            1.0,
-            1.0
+            0.0,
+            2.0
         ],
         "scaleCurveEnd": [
             1.0,
@@ -241,7 +285,7 @@
         },
         "scrollConstant": [
             0.0,
-            0.2199999988079071
+            0.20000000298023224
         ],
         "scrollCurveEnd": [
             0.0,
@@ -266,11 +310,23 @@
     },
     "velocityOverLifetimeModule": {
         "enabled": false,
-        "linearVelocity": [
-            0.0,
-            0.0,
-            0.0
-        ],
-        "speedModifier": 1.0
+        "linearVelocity": {
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "randomize": false
+        },
+        "speedModifier": {
+            "max": 1.0,
+            "min": 1.0,
+            "randomize": false
+        }
     }
 }

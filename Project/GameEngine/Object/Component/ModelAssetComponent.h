@@ -3,6 +3,7 @@
 #include "Model/ModelAsset.h"
 #include <memory>
 #include <optional>
+#include <string>
 
 namespace GameEngine {
 
@@ -16,8 +17,13 @@ public:
    /// @param modelAsset モデルアセット
    void SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset);
 
+   /// @brief resources からの相対 assetId でモデルアセットを設定する
+   bool SetModelAssetByAssetId(const std::string& assetId);
+
    /// @brief モデルアセットを取得する
    ModelAsset* GetModelAsset() const { return modelAsset_.get(); }
+
+   const std::string& GetAssetId() const { return assetId_; }
 
    /// @brief モデルアセットハンドルを取得する
    const std::shared_ptr<ModelAsset>& GetModelAssetHandle() const { return modelAsset_; }
@@ -35,6 +41,7 @@ public:
 
 private:
    std::shared_ptr<ModelAsset> modelAsset_;
+   std::string assetId_;
    std::optional<SkinCluster> skinCluster_;
 };
 

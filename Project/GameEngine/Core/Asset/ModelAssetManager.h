@@ -22,10 +22,17 @@ public:
    /// @param modelName モデルの名前	
    ModelHandle LoadModel(const std::string& modelPath, const std::string& modelName);
 
+   /// @brief resources からの相対 assetId でモデルをロード
+   /// @param assetId 例: models/cube/AnimatedCube.gltf
+   ModelHandle LoadModelByAssetId(const std::string& assetId);
+
    /// @brief モデルを取得
    /// @param modelName 取得するモデルの名前
    /// @return モデルアセットへのポインタ
    ModelHandle GetModel(const std::string& modelName);
+
+   /// @brief assetId でモデルを取得
+   ModelHandle GetModelByAssetId(const std::string& assetId);
 
    /// @brief モデルアセットを全削除
    void Clear();
@@ -33,7 +40,12 @@ public:
    /// @brief 読み込み済みモデル名一覧を取得
    std::vector<std::string> GetModelNames() const;
 private:
+   static std::string NormalizeAssetId(const std::string& path);
+   static std::string BuildAssetId(const std::string& modelPath, const std::string& modelName);
+   ModelHandle LoadModelInternal(const std::string& modelPath, const std::string& modelName, const std::string& assetId);
+
    GraphicsDevice* device_ = nullptr;
    std::unordered_map<std::string, ModelHandle> modelAssets_;
+   std::unordered_map<std::string, ModelHandle> modelAssetsById_;
 };
 }

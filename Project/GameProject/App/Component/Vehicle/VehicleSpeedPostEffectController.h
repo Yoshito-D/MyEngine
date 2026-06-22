@@ -58,7 +58,7 @@ public:
    float randomSeed = 1.0f;
 
    /// @brief 最大演出時の放射ブラー強度
-   float radialBlurMaxStrength = 0.08f;
+   float radialBlurMaxStrength = 0.05f;
 
    /// @brief 放射ブラーのサンプル数
    int radialBlurSampleCount = 16;

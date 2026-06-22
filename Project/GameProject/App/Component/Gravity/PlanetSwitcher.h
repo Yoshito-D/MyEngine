@@ -21,17 +21,12 @@ public:
 
    /// @brief 惑星1件分の切替情報
    struct PlanetEntry {
-      GravityAttractor*   attractor    = nullptr; ///< 重力発生源
-      GameEngine::Vector3 center       = {};      ///< 惑星中心座標
-      float               surfaceRadius = 15.0f;  ///< 地表半径
+	  std::string objectName; ///< オブジェクト名
+	  GameEngine::Vector3 center = {};      ///< 惑星中心座標
+	  float surfaceRadius = 15.0f;  ///< 地表半径
    };
 
-   /// @brief 切替候補惑星を登録する
-   void AddPlanet(GravityAttractor* attractor,
-                  const GameEngine::Vector3& center,
-                  float surfaceRadius) {
-      entries_.push_back({ attractor, center, surfaceRadius });
-   }
+   void AddPlanet(std::string objectName);;
 
    /// @brief 現在選択中の惑星インデックスを返す
    int GetCurrentPlanetIndex() const { return currentIndex_; }
@@ -41,7 +36,7 @@ public:
 
    /// @brief 車体OBBの半サイズ（各軸を個別指定）
    /// Transformのscaleではなくこの値を距離判定に使用する
-   GameEngine::Vector3 obbHalfExtents = { 0.5f, 0.5f, 0.5f };
+   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.3f, 0.75f };
 
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
@@ -50,23 +45,15 @@ public:
 
    /// @brief パラメータをシリアライズする
    nlohmann::json Serialize() const override {
-      nlohmann::json json;
-      json["switchHysteresis"]    = switchHysteresis;
-      json["obbHalfExtents"]["x"] = obbHalfExtents.x;
-      json["obbHalfExtents"]["y"] = obbHalfExtents.y;
-      json["obbHalfExtents"]["z"] = obbHalfExtents.z;
-      return json;
+	  nlohmann::json json;
+	  // TODO: entries_ のシリアライズを追加する場合はここに記述
+	  return json;
    }
 
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override {
-      if (data.contains("switchHysteresis")) { switchHysteresis = data["switchHysteresis"]; }
-      if (data.contains("obbHalfExtents")) {
-         const auto& h = data["obbHalfExtents"];
-         if (h.contains("x")) { obbHalfExtents.x = h["x"]; }
-         if (h.contains("y")) { obbHalfExtents.y = h["y"]; }
-         if (h.contains("z")) { obbHalfExtents.z = h["z"]; }
-      }
+	  (void)data;
+	  // TODO: entries_ のデシリアライズを追加する場合はここに記述
    }
 
 private:
@@ -75,6 +62,13 @@ private:
 
    /// @brief 現在選択中インデックス
    int currentIndex_ = -1;
+
+private:
+   GravityAttractor* GetAttractorByObjectName(const std::string& objectName) const;
+
+   GameEngine::Vector3 GetPlanetCenter(const std::string& objectName) const;
+
+   float GetPlanetSurfaceRadius(const std::string& objectName) const;
 };
 
 } // namespace App

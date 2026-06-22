@@ -50,14 +50,14 @@ public:
 
    /// @brief OBBの半サイズ（各軸を個別指定）
    /// 地表スナップ時の支持半径計算に使用する
-   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.3f, 0.75f };
+   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.25f, 0.75f };
 
 private:
    /// @brief 惑星中心座標
    GameEngine::Vector3 planetCenter_ = { 0.0f, 0.0f, 0.0f };
 
    /// @brief 接地フラグ
-   bool                isGrounded_   = true;
+   bool isGrounded_ = true;
 };
 
 } // namespace App

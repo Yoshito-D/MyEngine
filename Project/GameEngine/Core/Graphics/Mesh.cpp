@@ -124,7 +124,7 @@ void Mesh::CreateSprite(float width, float height, PlaneOrientation orientation)
    indexCount_ = 6;
 }
 
-void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orientation) {
+void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orientation, float originY) {
    if (!sIsInitialized_)return;
 
    vertexResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(VertexData) * 4);
@@ -133,15 +133,16 @@ void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orient
    vertexBufferView_.StrideInBytes = sizeof(VertexData);
    vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 
-   // パーティクル用: 中心を原点とし、テクスチャ座標を反転
+   // パーティクル用: originY で縦方向の基準位置を指定できるようにする
    float halfWidth = width * 0.5f;
    float halfHeight = height * 0.5f;
+   float yOffset = VerticalOriginOffset(height, originY);
 
    Vector3 n = PlaneNormal(orientation);
 
    // 左下
    {
-      Vector3 p = TransformPlanePoint(-halfWidth, -halfHeight, orientation);
+      Vector3 p = TransformPlanePoint(-halfWidth, -halfHeight + yOffset, orientation);
       vertexData_[0].position = { p.x, p.y, p.z, 1.0f };
       vertexData_[0].texCoord = { 0.0f, 1.0f };
       vertexData_[0].normal = n;
@@ -149,7 +150,7 @@ void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orient
 
    // 左上
    {
-      Vector3 p = TransformPlanePoint(-halfWidth, halfHeight, orientation);
+      Vector3 p = TransformPlanePoint(-halfWidth, halfHeight + yOffset, orientation);
       vertexData_[1].position = { p.x, p.y, p.z, 1.0f };
       vertexData_[1].texCoord = { 0.0f, 0.0f };
       vertexData_[1].normal = n;
@@ -157,7 +158,7 @@ void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orient
 
    // 右下
    {
-      Vector3 p = TransformPlanePoint(halfWidth, -halfHeight, orientation);
+      Vector3 p = TransformPlanePoint(halfWidth, -halfHeight + yOffset, orientation);
       vertexData_[2].position = { p.x, p.y, p.z, 1.0f };
       vertexData_[2].texCoord = { 1.0f, 1.0f };
       vertexData_[2].normal = n;
@@ -165,7 +166,7 @@ void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orient
 
    // 右上
    {
-      Vector3 p = TransformPlanePoint(halfWidth, halfHeight, orientation);
+      Vector3 p = TransformPlanePoint(halfWidth, halfHeight + yOffset, orientation);
       vertexData_[3].position = { p.x, p.y, p.z, 1.0f };
       vertexData_[3].texCoord = { 1.0f, 0.0f };
       vertexData_[3].normal = n;
