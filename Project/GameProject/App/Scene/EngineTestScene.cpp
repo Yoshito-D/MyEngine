@@ -26,6 +26,7 @@ void EngineTestScene::Initialize() {
    // --- アニメーションキューブの作成 ---
    animCube_ = std::make_unique<Model>();
    animCube_->Create().SetModelAsset(animCubeAsset).SetMaterial(animCubeMaterial);
+   animCube_->SetObjectName("AnimatedCube");
    animCube_->SetPosition(Vector3(3.0f, 0.0f, 0.0f));
    animCube_->SetScale(Vector3(1.0f, 1.0f, 1.0f));
 

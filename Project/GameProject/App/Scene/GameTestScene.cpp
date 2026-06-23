@@ -41,6 +41,7 @@ void GameTestScene::Initialize() {
 
    skybox_ = std::make_unique<GameEngine::Skybox>();
    skybox_->Create(EngineContext::GetGraphicsDevice());
+   skybox_->SetObjectName("Skybox");
    skybox_->SetTexture(EngineContext::GetTexture("space_2048px"));
 
    EngineContext::LoadModel("resources/models/planet", "planet.obj");
@@ -432,7 +433,6 @@ void GameTestScene::Update() {
    if (tireDustEmitter_) {
 	  const auto* drift = player_->GetComponent<App::VehicleDrift>();
 	  const bool isDrifting = drift && drift->IsDrifting();
-	  static bool wasDrifting = false;
 	  const bool isJump = player_->GetComponent<App::CharacterJump>()->IsJumping();
 	  if (isJump) {
 		 for (int i = 0; i < tireDustSlotCount_; ++i) {
@@ -445,18 +445,16 @@ void GameTestScene::Update() {
 			}
 		 }
 	  } else {
-		 if (isDrifting != wasDrifting) {
-			for (int i = 0; i < tireDustSlotCount_; ++i) {
-			   if (auto* slot = tireDustEmitter_->GetSlot(i)) {
-				  if (slot->particleSystem) {
-					 if (auto* em = slot->particleSystem->GetEmissionModule()) {
-						em->SetEnabled(isDrifting);
-					 }
+		 for (int i = 0; i < tireDustSlotCount_; ++i) {
+			if (auto* slot = tireDustEmitter_->GetSlot(i)) {
+			   if (slot->particleSystem) {
+				  if (auto* em = slot->particleSystem->GetEmissionModule()) {
+					 em->SetEnabled(isDrifting);
 				  }
 			   }
 			}
-			wasDrifting = isDrifting;
 		 }
+
 	  }
    }
 

@@ -7,6 +7,7 @@
 #include "Object/Component/TransformComponent.h"
 #include "Object/Object.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
+#include <algorithm>
 #include <limits>
 #include <cmath>
 #include <Model/Model.h>
@@ -17,6 +18,39 @@
 #endif
 
 namespace App {
+
+namespace {
+constexpr const char* kSceneObjectPayload = "EDITOR_SCENE_OBJECT";
+
+GameEngine::Model* FindRegisteredModelByObjectName(const std::string& objectName) {
+   const auto& models = GameEngine::Model::GetRegisteredModels();
+   auto it = std::find_if(models.begin(), models.end(),
+      [&objectName](const GameEngine::Model* model) {
+         return model && model->GetObjectName() == objectName;
+      });
+   return it != models.end() ? *it : nullptr;
+}
+
+nlohmann::json SerializeVector3(const GameEngine::Vector3& value) {
+   return {
+      { "x", value.x },
+      { "y", value.y },
+      { "z", value.z }
+   };
+}
+
+GameEngine::Vector3 DeserializeVector3(const nlohmann::json& data, const GameEngine::Vector3& fallback) {
+   if (!data.is_object()) {
+      return fallback;
+   }
+
+   GameEngine::Vector3 value = fallback;
+   if (data.contains("x") && data.at("x").is_number()) { value.x = data.at("x").get<float>(); }
+   if (data.contains("y") && data.at("y").is_number()) { value.y = data.at("y").get<float>(); }
+   if (data.contains("z") && data.at("z").is_number()) { value.z = data.at("z").get<float>(); }
+   return value;
+}
+}
 
 /// @brief OBBと点の最短距離を返す
 /// @param point  ワールド空間の点
@@ -56,7 +90,7 @@ void PlanetSwitcher::Update(float /*deltaTime*/) {
    // 影響圏内の最近傍惑星を探索（OBB最近傍点距離を使用）
    int bestInRange = -1;
    float bestInRangeDist = std::numeric_limits<float>::max();
-   int bestAnyIndex = 0;
+   int bestAnyIndex = -1;
    float bestAnyDist = std::numeric_limits<float>::max();
 
    for (int i = 0; i < static_cast<int>(entries_.size()); ++i) {
@@ -82,6 +116,10 @@ void PlanetSwitcher::Update(float /*deltaTime*/) {
 	  }
    }
 
+   if (bestAnyIndex < 0) {
+	  return;
+   }
+
    int newIndex = (bestInRange >= 0) ? bestInRange : bestAnyIndex;
 
    // ヒステリシス：現在の惑星への距離が新候補よりswitchHysteresis以上大きいときのみ切替
@@ -93,43 +131,115 @@ void PlanetSwitcher::Update(float /*deltaTime*/) {
 	  }
    }
 
-   // 切替不要なら終了
-   if (newIndex == currentIndex_) { return; }
-   currentIndex_ = newIndex;
+   const bool planetChanged = (newIndex != currentIndex_);
+   if (planetChanged) {
+	  currentIndex_ = newIndex;
+	  const auto& best = entries_[currentIndex_];
 
-   const auto& best = entries_[newIndex];
+	  // GravityAttractorLink の接続先は惑星切替時だけ更新する
+	  if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
+		 link->SetAttractor(GetAttractorByObjectName(best.objectName));
+	  }
 
-   // GravityAttractorLink の接続先を更新
-   if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
-	  link->SetAttractor(GetAttractorByObjectName(best.objectName));
+	  if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
+		 walker->ResetHorizontalVelocity();
+	  }
    }
 
-   // CharacterLanding の惑星パラメータを更新
-   // エディタで編集できるようにするため後々常に更新に変更
-   if (auto* landing = GetOwner().GetComponent<CharacterLanding>()) {
-	  landing->SetPlanetCenter(best.center);
-	  landing->SetSurfaceRadius(best.surfaceRadius);
-   }
-
-   // CameraGravityBridge の惑星中心を更新
-   if (auto* bridge = GetOwner().GetComponent<CameraGravityBridge>()) {
-	  bridge->SetPlanetCenter(best.center);
-   }
-
-   if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
-	  walker->ResetHorizontalVelocity();
-   }
+   ApplyCurrentPlanetParameters();
 }
 
 void PlanetSwitcher::AddPlanet(std::string objectName) {
-   std::vector<GameEngine::Model*> models = GameEngine::Model::GetRegisteredModels();
-   for (GameEngine::Model* model : models) {
-	  if (model->GetObjectName() == objectName) {
-		 GameEngine::Vector3 modelPos = model->GetPosition();
-		 float surfaceRadius = model->GetScale().x; // 仮にスケールのX軸を半径として使用
-		 entries_.push_back({ objectName, modelPos, surfaceRadius });
-		 break;
+   if (objectName.empty() || HasPlanet(objectName)) {
+	  return;
+   }
+
+   if (auto* model = FindRegisteredModelByObjectName(objectName)) {
+	  GameEngine::Vector3 modelPos = model->GetPosition();
+	  float surfaceRadius = model->GetScale().x; // 仮にスケールのX軸を半径として使用
+	  entries_.push_back({ objectName, modelPos, surfaceRadius });
+   }
+}
+
+void PlanetSwitcher::ApplyCurrentPlanetParameters() {
+   if (!HasOwner() || currentIndex_ < 0 || currentIndex_ >= static_cast<int>(entries_.size())) {
+	  return;
+   }
+
+   auto& current = entries_[currentIndex_];
+   if (current.objectName.empty()) {
+	  return;
+   }
+
+   // エディタ操作中の移動・拡縮を CharacterLanding に毎フレーム反映する
+   current.center = GetPlanetCenter(current.objectName);
+   current.surfaceRadius = GetPlanetSurfaceRadius(current.objectName);
+
+   if (auto* landing = GetOwner().GetComponent<CharacterLanding>()) {
+	  landing->SetPlanetCenter(current.center);
+	  landing->SetSurfaceRadius(current.surfaceRadius);
+   }
+
+   if (auto* bridge = GetOwner().GetComponent<CameraGravityBridge>()) {
+	  bridge->SetPlanetCenter(current.center);
+   }
+}
+
+bool PlanetSwitcher::HasPlanet(const std::string& objectName) const {
+   return std::any_of(entries_.begin(), entries_.end(),
+	  [&objectName](const PlanetEntry& entry) {
+		 return entry.objectName == objectName;
+	  });
+}
+
+nlohmann::json PlanetSwitcher::Serialize() const {
+   nlohmann::json json;
+   json["switchHysteresis"] = switchHysteresis;
+   json["obbHalfExtents"] = SerializeVector3(obbHalfExtents);
+
+   auto planets = nlohmann::json::array();
+   for (const auto& entry : entries_) {
+	  if (entry.objectName.empty()) {
+		 continue;
 	  }
+	  planets.push_back({ { "objectName", entry.objectName } });
+   }
+   json["planets"] = planets;
+   return json;
+}
+
+void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
+   if (!data.is_object()) {
+	  return;
+   }
+
+   if (data.contains("switchHysteresis") && data.at("switchHysteresis").is_number()) {
+	  switchHysteresis = data.at("switchHysteresis").get<float>();
+   }
+   if (data.contains("obbHalfExtents")) {
+	  obbHalfExtents = DeserializeVector3(data.at("obbHalfExtents"), obbHalfExtents);
+   }
+
+   entries_.clear();
+   currentIndex_ = -1;
+
+   if (!data.contains("planets") || !data.at("planets").is_array()) {
+	  return;
+   }
+
+   for (const auto& planetData : data.at("planets")) {
+	  std::string objectName;
+	  if (planetData.is_string()) {
+		 objectName = planetData.get<std::string>();
+	  } else if (planetData.is_object() && planetData.contains("objectName") && planetData.at("objectName").is_string()) {
+		 objectName = planetData.at("objectName").get<std::string>();
+	  }
+
+	  if (objectName.empty() || HasPlanet(objectName)) {
+		 continue;
+	  }
+
+	  entries_.push_back({ objectName, GetPlanetCenter(objectName), GetPlanetSurfaceRadius(objectName) });
    }
 }
 
@@ -154,15 +264,24 @@ void PlanetSwitcher::DrawInspector() {
 	  ImGui::PopID();
    }
 
-   // 新規惑星追加（ObjectNameのみ入力して追加）
-   if (ImGui::Button("Add Planet")) {
-	  // ObjectNameを入力
-	  static char newObjectName[128] = "";
-	  ImGui::InputText("New Object Name", newObjectName, sizeof(newObjectName));
-	  if (strlen(newObjectName) > 0) {
-		 AddPlanet(newObjectName);
-		 newObjectName[0] = '\0'; // 入力欄をクリア
+   ImGui::SeparatorText("Add Planet");
+   static char newObjectName[128] = "";
+   ImGui::InputText("Object Name##PlanetSwitcherAddObjectName", newObjectName, sizeof(newObjectName));
+   ImGui::SameLine();
+   if (ImGui::Button("Add##PlanetSwitcherAddByName") && newObjectName[0] != '\0') {
+	  AddPlanet(newObjectName);
+	  newObjectName[0] = '\0';
+   }
+
+   ImGui::Button("Drop Hierarchy Object Here##PlanetSwitcherDropTarget", ImVec2(-1.0f, 0.0f));
+   if (ImGui::BeginDragDropTarget()) {
+	  if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kSceneObjectPayload)) {
+		 const char* objectName = static_cast<const char*>(payload->Data);
+		 if (objectName && payload->DataSize > 1) {
+			AddPlanet(objectName);
+		 }
 	  }
+	  ImGui::EndDragDropTarget();
    }
 }
 #endif

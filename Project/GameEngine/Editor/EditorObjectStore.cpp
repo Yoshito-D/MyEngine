@@ -83,15 +83,13 @@ Object* EditorObjectStore::CreateSprite(const std::string& textureAssetId, const
 }
 
 ParticleSystem* EditorObjectStore::CreateParticleSystem(const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
-   if (assetId.empty()) {
-      return nullptr;
-   }
-
    auto particleSystem = std::make_unique<ParticleSystem>();
    ParticleSystem* rawParticleSystem = particleSystem.get();
    rawParticleSystem->Create();
-   rawParticleSystem->SetName(BuildUniqueObjectName(BuildNameFromAssetId(assetId)));
-   rawParticleSystem->LoadFromJson((std::filesystem::path("resources") / assetId).generic_string());
+   rawParticleSystem->SetName(BuildUniqueObjectName(assetId.empty() ? "ParticleSystem" : BuildNameFromAssetId(assetId)));
+   if (!assetId.empty()) {
+      rawParticleSystem->LoadFromJson((std::filesystem::path("resources") / assetId).generic_string());
+   }
    if (initialTransform && rawParticleSystem->GetShapeModule()) {
       rawParticleSystem->GetShapeModule()->SetTransform(*initialTransform);
    }
@@ -328,26 +326,26 @@ nlohmann::json EditorObjectStore::SerializeObject(const std::string& objectId) c
          return nlohmann::json::object();
       }
 
-      const ParticleSystem* particleSystem = particleIt->second;
       std::string assetId;
-      if (auto assetIt = particleSystemAssetIds_.find(particleSystem); assetIt != particleSystemAssetIds_.end()) {
+      if (auto assetIt = particleSystemAssetIds_.find(particleIt->second); assetIt != particleSystemAssetIds_.end()) {
          assetId = assetIt->second;
       }
 
-      return nlohmann::json{
-         { "id", objectId },
-         { "objectType", "ParticleSystem" },
-         { "name", particleSystem->GetName() },
-         { "assetId", assetId },
-         { "data", particleSystem->ToJson() }
-      };
+      return SerializeParticleSystemState(particleIt->second, objectId, assetId);
    }
 
    if (!objectIt->second) {
       return nlohmann::json::object();
    }
 
-   const Object* object = objectIt->second;
+   return SerializeObjectState(objectIt->second, objectId);
+}
+
+nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, const std::string& id) const {
+   if (!object) {
+      return nlohmann::json::object();
+   }
+
    if (const auto* sprite = dynamic_cast<const Sprite*>(object)) {
       std::string textureAssetId;
       if (const auto* materialComponent = sprite->GetComponent<MaterialComponent>()) {
@@ -355,7 +353,7 @@ nlohmann::json EditorObjectStore::SerializeObject(const std::string& objectId) c
       }
 
       return nlohmann::json{
-         { "id", objectId },
+         { "id", id },
          { "objectType", "Sprite" },
          { "assetId", textureAssetId },
          { "components", sprite->SerializeComponents() },
@@ -365,7 +363,11 @@ nlohmann::json EditorObjectStore::SerializeObject(const std::string& objectId) c
 
    const auto* model = dynamic_cast<const Model*>(object);
    if (!model) {
-      return nlohmann::json::object();
+      return nlohmann::json{
+         { "id", id },
+         { "objectType", "Object" },
+         { "components", object->SerializeComponents() }
+      };
    }
 
    std::string assetId;
@@ -374,11 +376,66 @@ nlohmann::json EditorObjectStore::SerializeObject(const std::string& objectId) c
    }
 
    return nlohmann::json{
-      { "id", objectId },
+      { "id", id },
       { "objectType", "Model" },
       { "assetId", assetId },
       { "components", model->SerializeComponents() }
    };
+}
+
+bool EditorObjectStore::ApplyObjectState(Object* object, const nlohmann::json& objectData) const {
+   if (!object || !objectData.is_object()) {
+      return false;
+   }
+
+   const std::string objectType = objectData.value("objectType", "Object");
+   if (objectType == "Model" && dynamic_cast<Model*>(object) == nullptr) {
+      return false;
+   }
+   if (objectType == "Sprite" && dynamic_cast<Sprite*>(object) == nullptr) {
+      return false;
+   }
+
+   if (objectData.contains("components") && objectData.at("components").is_array()) {
+      object->DeserializeComponents(objectData.at("components"));
+   }
+
+   if (auto* sprite = dynamic_cast<Sprite*>(object)) {
+      if (objectData.contains("sprite") && objectData.at("sprite").is_object()) {
+         DeserializeSpriteData(sprite, objectData.at("sprite"));
+      }
+   }
+
+   return true;
+}
+
+nlohmann::json EditorObjectStore::SerializeParticleSystemState(const ParticleSystem* particleSystem, const std::string& id, const std::string& assetId) const {
+   if (!particleSystem) {
+      return nlohmann::json::object();
+   }
+
+   return nlohmann::json{
+      { "id", id },
+      { "objectType", "ParticleSystem" },
+      { "name", particleSystem->GetName() },
+      { "assetId", assetId },
+      { "data", particleSystem->ToJson() }
+   };
+}
+
+bool EditorObjectStore::ApplyParticleSystemState(ParticleSystem* particleSystem, const nlohmann::json& objectData) const {
+   if (!particleSystem || !objectData.is_object()) {
+      return false;
+   }
+
+   if (objectData.contains("data") && objectData.at("data").is_object()) {
+      particleSystem->FromJson(objectData.at("data"));
+   }
+   if (objectData.contains("name") && objectData.at("name").is_string()) {
+      particleSystem->SetName(objectData.at("name").get<std::string>());
+   }
+
+   return true;
 }
 
 nlohmann::json EditorObjectStore::SerializeAll() const {
@@ -546,7 +603,7 @@ void EditorObjectStore::BumpCounterFromId(const std::string& id) {
    }
 }
 
-nlohmann::json EditorObjectStore::SerializeSpriteData(const Sprite* sprite) const {
+nlohmann::json EditorObjectStore::SerializeSpriteData(const Sprite* sprite) {
    if (!sprite) {
       return nlohmann::json::object();
    }

@@ -3,6 +3,7 @@
 #include "Object/Component/IObjectComponent.h"
 #include "Utility/Math/Vector3.h"
 #include "GravityAttractor.h"
+#include <string>
 #include <vector>
 
 namespace App {
@@ -26,7 +27,7 @@ public:
 	  float surfaceRadius = 15.0f;  ///< 地表半径
    };
 
-   void AddPlanet(std::string objectName);;
+   void AddPlanet(std::string objectName);
 
    /// @brief 現在選択中の惑星インデックスを返す
    int GetCurrentPlanetIndex() const { return currentIndex_; }
@@ -44,17 +45,10 @@ public:
 #endif
 
    /// @brief パラメータをシリアライズする
-   nlohmann::json Serialize() const override {
-	  nlohmann::json json;
-	  // TODO: entries_ のシリアライズを追加する場合はここに記述
-	  return json;
-   }
+   nlohmann::json Serialize() const override;
 
    /// @brief パラメータをデシリアライズする
-   void Deserialize(const nlohmann::json& data) override {
-	  (void)data;
-	  // TODO: entries_ のデシリアライズを追加する場合はここに記述
-   }
+   void Deserialize(const nlohmann::json& data) override;
 
 private:
    /// @brief 登録済み惑星候補
@@ -64,6 +58,10 @@ private:
    int currentIndex_ = -1;
 
 private:
+   void ApplyCurrentPlanetParameters();
+
+   bool HasPlanet(const std::string& objectName) const;
+
    GravityAttractor* GetAttractorByObjectName(const std::string& objectName) const;
 
    GameEngine::Vector3 GetPlanetCenter(const std::string& objectName) const;

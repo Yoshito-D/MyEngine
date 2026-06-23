@@ -233,7 +233,8 @@ void RendererEditorController::ShowHierarchyWindow() {
 
       ImGui::PushID(static_cast<int>(i));
 
-      std::string label = object->GetObjectName();
+      const std::string objectName = object->GetObjectName();
+      std::string label = objectName;
       label += "##Object_" + std::to_string(i);
 
       const bool isSelected = (selectedObject == object);
@@ -242,7 +243,13 @@ void RendererEditorController::ShowHierarchyWindow() {
          flags |= ImGuiTreeNodeFlags_Selected;
       }
       ImGui::TreeNodeEx(label.c_str(), flags);
-      if (ImGui::IsItemClicked()) {
+      const bool clicked = ImGui::IsItemClicked();
+      if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+         ImGui::SetDragDropPayload("EDITOR_SCENE_OBJECT", objectName.c_str(), objectName.size() + 1);
+         ImGui::Text("%s", objectName.c_str());
+         ImGui::EndDragDropSource();
+      }
+      if (clicked) {
          if (editorContext) {
             editorContext->SelectObject(object);
          }

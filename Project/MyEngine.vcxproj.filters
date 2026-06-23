@@ -749,6 +749,9 @@
     <ClCompile Include="GameProject\Game.cpp">
       <Filter>GameProject</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\AppComponentRegistry.cpp">
+      <Filter>GameProject\App\Component</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\CameraGravityBridge.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>

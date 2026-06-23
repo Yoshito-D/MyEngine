@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -88,6 +89,15 @@ public:
 private:
    bool IsObjectAlive(const Object* object) const;
    bool IsParticleSystemAlive(const ParticleSystem* particleSystem) const;
+   void RegisterSceneOwnedKeys();
+   std::string EnsureSceneObjectKey(const Object* object);
+   std::string EnsureSceneParticleSystemKey(const ParticleSystem* particleSystem);
+   Object* FindSceneObjectByKey(const std::string& key) const;
+   ParticleSystem* FindSceneParticleSystemByKey(const std::string& key) const;
+   nlohmann::json SerializeSceneObjects();
+   nlohmann::json SerializeSceneParticleSystems();
+   void ApplySceneObjects(const nlohmann::json& sceneObjectsData);
+   void ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData);
    void HideSceneOwnedObject(Object* object);
    void HideSceneOwnedParticleSystem(ParticleSystem* particleSystem);
    bool HasTransformChanged(const Transform& lhs, const Transform& rhs) const;
@@ -110,6 +120,10 @@ private:
    EditorCommandStack commandStack_;
    std::unordered_set<const Object*> hiddenSceneObjects_;
    std::unordered_set<const ParticleSystem*> hiddenParticleSystems_;
+   std::unordered_set<std::string> hiddenSceneObjectKeys_;
+   std::unordered_set<std::string> hiddenParticleSystemKeys_;
+   std::unordered_map<const Object*, std::string> sceneObjectKeys_;
+   std::unordered_map<const ParticleSystem*, std::string> sceneParticleSystemKeys_;
 
    GizmoOperation gizmoOperation_ = GizmoOperation::Translate;
    GizmoMode gizmoMode_ = GizmoMode::Local;
