@@ -29,8 +29,8 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
       // 普通: 多少傾いた着地なので速度は変化させない。
       return LandingResult::Normal;
    }
-   // 失敗: 大きく傾いた着地なので速度を 0 に戻す。
-   groundMover->SetCurrentSpeed(0.0f);
+   // 失敗: 大きく傾いた着地なので速度を penaltySpeed に設定する。
+   groundMover->SetCurrentSpeed(penaltySpeed);
    return LandingResult::Failure;
 }
 
@@ -41,7 +41,7 @@ void VehicleLandingBoost::DrawInspector() {
    ImGui::DragFloat("Boost Amount",      &boostAmount,     0.1f,  0.0f, 200.0f);
    ImGui::DragFloat("Boost Threshold",  &boostThreshold,  0.01f, 0.0f,   1.0f);
    ImGui::DragFloat("Normal Threshold", &normalThreshold, 0.01f, 0.0f,   1.0f);
-   ImGui::DragFloat("Penalty Amount",   &penaltyAmount,   0.1f,  0.0f, 200.0f);
+   ImGui::DragFloat("Penalty Speed",    &penaltySpeed,    0.1f,  0.0f, 200.0f);
 }
 #endif
 
@@ -50,7 +50,7 @@ nlohmann::json VehicleLandingBoost::Serialize() const {
    json["boostAmount"]     = boostAmount;
    json["boostThreshold"]  = boostThreshold;
    json["normalThreshold"] = normalThreshold;
-   json["penaltyAmount"]   = penaltyAmount;
+   json["penaltySpeed"]    = penaltySpeed;
    return json;
 }
 
@@ -58,7 +58,7 @@ void VehicleLandingBoost::Deserialize(const nlohmann::json& data) {
    if (data.contains("boostAmount"))     { boostAmount     = data["boostAmount"]; }
    if (data.contains("boostThreshold"))  { boostThreshold  = data["boostThreshold"]; }
    if (data.contains("normalThreshold")) { normalThreshold = data["normalThreshold"]; }
-   if (data.contains("penaltyAmount"))   { penaltyAmount   = data["penaltyAmount"]; }
+   if (data.contains("penaltySpeed"))    { penaltySpeed    = data["penaltySpeed"]; }
 }
 
 } // namespace App

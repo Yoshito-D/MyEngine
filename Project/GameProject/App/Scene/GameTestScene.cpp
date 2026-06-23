@@ -454,7 +454,6 @@ void GameTestScene::Update() {
 			   }
 			}
 		 }
-
 	  }
    }
 

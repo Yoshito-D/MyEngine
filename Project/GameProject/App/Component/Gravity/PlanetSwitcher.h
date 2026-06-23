@@ -32,8 +32,12 @@ public:
    /// @brief 現在選択中の惑星インデックスを返す
    int GetCurrentPlanetIndex() const { return currentIndex_; }
 
+   bool HasSwitched() const { return switched_; }
+
+   void ResetSwitchedFlag() { switched_ = false; }
+
    /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
-   float switchHysteresis = 1.5f;
+   float switchHysteresis = 0.5f;
 
    /// @brief 車体OBBの半サイズ（各軸を個別指定）
    /// Transformのscaleではなくこの値を距離判定に使用する
@@ -56,6 +60,9 @@ private:
 
    /// @brief 現在選択中インデックス
    int currentIndex_ = -1;
+
+   // 惑星を切り換えたか
+   bool switched_ = false;
 
 private:
    void ApplyCurrentPlanetParameters();

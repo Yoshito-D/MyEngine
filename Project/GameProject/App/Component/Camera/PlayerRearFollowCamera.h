@@ -56,7 +56,7 @@ public:
 
 public:
 	/// @brief ピボットからの後方距離（通常時）
-	float distance = 12.0f;
+	float distance = 15.0f;
 
 	/// @brief ピボットからの上方向オフセット
 	float height = 4.0f;

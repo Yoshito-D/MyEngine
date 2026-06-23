@@ -50,8 +50,8 @@ public:
    /// @brief 普通と失敗の境界となる平行度の閾値
    float normalThreshold =/* 0.65f*/0.0f;
 
-   /// @brief 失敗着地の減速量（units/sec）
-   float penaltyAmount = 0.0f;
+   /// @brief 失敗着地の速度
+   float penaltySpeed = 0.0f;
 };
 
 } // namespace App

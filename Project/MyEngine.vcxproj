@@ -445,6 +445,7 @@
     <ClCompile Include="GameProject\App\Component\Character\CharacterJump.cpp" />
     <ClCompile Include="GameProject\App\Component\Character\CharacterLanding.cpp" />
     <ClCompile Include="GameProject\App\Component\Character\CharacterWalker.cpp" />
+    <ClCompile Include="GameProject\App\Component\Gravity\GravityAttractor.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\GravityAttractorLink.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\GravityBody.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.cpp" />
