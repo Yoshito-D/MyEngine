@@ -51,7 +51,7 @@
                   "pipelineName": "",
                   "shininess": 40.0,
                   "textureNames": [
-                     "textures/aerial_grass_rock_diff_2k.jpg"
+                     "textures/round/aerial_grass_rock_diff_2k.jpg"
                   ],
                   "uvTransform": [
                      [
@@ -230,7 +230,7 @@
                },
                {
                   "data": {
-                     "influenceRadius": 300.0
+                     "influenceRadius": 200.0
                   },
                   "enabled": true,
                   "typeName": "SphericalGravityAttractor"
@@ -294,7 +294,7 @@
                      "pipelineName": "",
                      "shininess": 40.0,
                      "textureNames": [
-                        "textures/rocky_terrain_02_diff_2k.jpg"
+                        "textures/round/rust_coarse_01_diff_2k.jpg"
                      ],
                      "uvTransform": [
                         [
@@ -351,7 +351,7 @@
                },
                {
                   "data": {
-                     "influenceRadius": 300.0
+                     "influenceRadius": 40.0
                   },
                   "enabled": true,
                   "typeName": "SphericalGravityAttractor"
@@ -371,15 +371,15 @@
                   "data": {
                      "parentObjectName": "",
                      "rotation": [
-                        0.6575433611869812,
-                        -0.07679782062768936,
-                        0.06124149635434151
+                        0.06535636633634567,
+                        0.05844040587544441,
+                        3.1105659008026123
                      ],
                      "rotationQuaternion": [
-                        0.32360386848449707,
-                        -0.02643827348947525,
-                        0.04134421423077583,
-                        0.9449191689491272
+                        -0.028690310195088387,
+                        0.033107466995716095,
+                        0.9989044666290283,
+                        0.016452282667160034
                      ],
                      "rotationSource": "quaternion",
                      "scale": [
@@ -388,9 +388,9 @@
                         1.0
                      ],
                      "translation": [
-                        -2.8818798065185547,
-                        23.586694717407227,
-                        18.621326446533203
+                        -0.363153874874115,
+                        -24.902597427368164,
+                        102.99250793457031
                      ],
                      "useParentMatrix": false
                   },
@@ -501,17 +501,17 @@
                {
                   "data": {
                      "currentUpVector": [
-                        -0.09524493664503098,
-                        0.7871424555778503,
-                        0.6093728542327881
+                        -0.0347682423889637,
+                        -0.9972664713859558,
+                        0.06519834697246552
                      ],
                      "gravityStrength": 22.0,
                      "rotationSpeed": 10.0,
                      "useGravity": true,
                      "velocity": [
-                        -0.371293306350708,
-                        -9.819950103759766,
-                        12.626646995544434
+                        -1.5364694595336914,
+                        1.8331714868545532,
+                        27.220630645751953
                      ]
                   },
                   "enabled": true,
@@ -525,7 +525,7 @@
                         "y": 0.17499999701976776,
                         "z": 0.75
                      },
-                     "surfaceRadius": 30.0
+                     "surfaceRadius": 25.0
                   },
                   "enabled": true,
                   "typeName": "CharacterLanding"
@@ -544,8 +544,9 @@
                },
                {
                   "data": {
-                     "autoSpeed": 16.0,
-                     "speedRecovery": 1.0,
+                     "autoSpeed": 50.0,
+                     "maxSpeed": 50.0,
+                     "speedRecovery": 0.05000000074505806,
                      "steerSpeed": 120.0
                   },
                   "enabled": true,
@@ -572,8 +573,8 @@
                   "data": {
                      "boostAmount": 0.0,
                      "boostThreshold": 0.949999988079071,
-                     "normalThreshold": 0.0,
-                     "penaltyAmount": 0.0
+                     "normalThreshold": 0.6499999761581421,
+                     "penaltySpeed": 10.0
                   },
                   "enabled": true,
                   "typeName": "VehicleLandingBoost"
@@ -584,7 +585,7 @@
                      "driftSteerDeadZone": 0.30000001192092896,
                      "driftSteerMult": 1.5,
                      "lateralBuildupRate": 1.0,
-                     "miniTurboBoost": 30.0,
+                     "miniTurboBoost": 10.0,
                      "miniTurboEnabled": true,
                      "miniTurboMinTime": 0.5,
                      "postDriftBleedRate": 6.0,

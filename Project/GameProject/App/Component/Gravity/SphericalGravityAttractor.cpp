@@ -2,6 +2,7 @@
 
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
+#include "EngineContext.h"
 #endif
 
 namespace App {
@@ -21,10 +22,15 @@ GameEngine::Vector3 SphericalGravityAttractor::GetUpVectorFor(const GameEngine::
 
 #ifdef USE_IMGUI
 void SphericalGravityAttractor::DrawInspector() {
-   if (!ImGui::CollapsingHeader("SphericalGravityAttractor")) {
+
+   if (!ImGui::CollapsingHeader("SphericalGravityAttractor", ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
    }
+
    ImGui::Separator();
+
+   // 影響範囲の球をシーンに描画
+   GameEngine::EngineContext::DrawSphere(GetCenter(), influenceRadius > 0.0f ? influenceRadius : 1.0f, GameEngine::Vector4{ 0.1f, 0.5f, 1.0f, 1.0f }, false);
 
    // 影響半径を調整（0以下は無限範囲）
    ImGui::DragFloat("Influence Radius", &influenceRadius, 0.5f, 0.0f, 500.0f);
@@ -40,6 +46,7 @@ void SphericalGravityAttractor::DrawInspector() {
          ImGui::Text("Center: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
       }
    }
+
 }
 #endif
 

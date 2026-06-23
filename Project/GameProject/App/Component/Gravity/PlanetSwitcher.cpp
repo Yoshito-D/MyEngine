@@ -144,6 +144,8 @@ void PlanetSwitcher::Update(float /*deltaTime*/) {
 	  if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
 		 walker->ResetHorizontalVelocity();
 	  }
+
+	  switched_ = true;
    }
 
    ApplyCurrentPlanetParameters();

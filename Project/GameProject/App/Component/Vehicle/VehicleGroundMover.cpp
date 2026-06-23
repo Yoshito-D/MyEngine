@@ -61,7 +61,7 @@ void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float
 void VehicleGroundMover::UpdateSpeed(float deltaTime) {
    // currentSpeed_ が負値のとき（初回呼び出し）は即座に autoSpeed に初期化する。
    // 負値を「未初期化」フラグとして使うことで、シリアライズ値を上書きしない。
-   if (currentSpeed_ < 0.0f) { currentSpeed_ = autoSpeed; }
+   if (currentSpeed_ < 0.0f) { currentSpeed_ = 0.0f; }
 
    // 外部から積まれた瞬間速度変化（インパルス）を直接加算する。
    // ブースト・ペナルティなど「即時に速度を変えたい」場合に使う。
@@ -211,8 +211,10 @@ void VehicleGroundMover::DrawInspector() {
    ImGui::DragFloat("Auto Speed",     &autoSpeed,     0.1f, 0.0f, 100.0f);
    ImGui::DragFloat("Steer Speed",    &steerSpeed,    1.0f, 0.0f, 360.0f);
    ImGui::DragFloat("Speed Recovery", &speedRecovery, 0.1f, 0.1f,  20.0f);
+   ImGui::DragFloat("Max Speed", &maxSpeed, 0.1f, 0.0f, 200.0f);
    ImGui::Spacing();
-   ImGui::Text("CurrentSpeed: %.2f", currentSpeed_);
+   if (ImGui::Button("Reset Speed")) { SetCurrentSpeed(0.0f); }	
+   ImGui::Spacing();
    ImGui::Text("FlatForward: (%.2f, %.2f, %.2f)", flatForward_.x, flatForward_.y, flatForward_.z);
 }
 #endif
@@ -222,6 +224,7 @@ nlohmann::json VehicleGroundMover::Serialize() const {
    json["autoSpeed"]     = autoSpeed;
    json["steerSpeed"]    = steerSpeed;
    json["speedRecovery"] = speedRecovery;
+   json["maxSpeed"] = maxSpeed;
    return json;
 }
 
@@ -229,6 +232,7 @@ void VehicleGroundMover::Deserialize(const nlohmann::json& data) {
    if (data.contains("autoSpeed"))     { autoSpeed     = data["autoSpeed"]; }
    if (data.contains("steerSpeed"))    { steerSpeed     = data["steerSpeed"]; }
    if (data.contains("speedRecovery")) { speedRecovery  = data["speedRecovery"]; }
+   if (data.contains("maxSpeed")) { maxSpeed = data["maxSpeed"]; }
 }
 
 } // namespace App

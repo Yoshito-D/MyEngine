@@ -380,11 +380,6 @@ void RendererEditorController::ShowInspectorWindow() {
    }
 
    selectedObject->DrawComponentInspector();
-   if (editorContext) {
-      DrawSelectedObjectAssetDropTargets(*editorContext, selectedObject);
-   }
-
-   ImGui::Spacing();
    ImGui::PushID("InspectorAddComponent");
    if (ImGui::CollapsingHeader("Add Component##Header", ImGuiTreeNodeFlags_DefaultOpen)) {
       std::vector<std::string> addableComponentTypeNames;
@@ -423,53 +418,11 @@ void RendererEditorController::ShowInspectorWindow() {
    }
    ImGui::PopID();
 
-   if (auto* model = dynamic_cast<Model*>(selectedObject); model && ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
-      auto* modelManager = assetManager_ ? assetManager_->GetModelAssetManager() : nullptr;
-      const auto modelNames = modelManager ? modelManager->GetModelNames() : std::vector<std::string>{};
-
-      auto itModelName = editorModelAssetNames_.find(model);
-      if (itModelName != editorModelAssetNames_.end()) {
-         ImGui::Text("Asset: %s", itModelName->second.c_str());
-      }
-
-      if (modelManager && !modelNames.empty()) {
-         int selectedIndex = 0;
-         if (itModelName != editorModelAssetNames_.end()) {
-            for (size_t i = 0; i < modelNames.size(); ++i) {
-               if (modelNames[i] == itModelName->second) {
-                  selectedIndex = static_cast<int>(i);
-                  break;
-               }
-            }
-         }
-
-         if (ImGui::BeginCombo("Model Asset##InspectorModelAsset", modelNames[selectedIndex].c_str())) {
-            for (size_t i = 0; i < modelNames.size(); ++i) {
-               const bool selected = (static_cast<int>(i) == selectedIndex);
-               if (ImGui::Selectable(modelNames[i].c_str(), selected)) {
-                  if (auto selectedAsset = modelManager->GetModel(modelNames[i])) {
-                     model->SetModelAsset(selectedAsset);
-                     editorModelAssetNames_[model] = modelNames[i];
-                     if (editorContext) {
-                        editorContext->MarkDirty();
-                     }
-                  }
-               }
-               if (selected) {
-                  ImGui::SetItemDefaultFocus();
-               }
-            }
-            ImGui::EndCombo();
-         }
-      }
-
-      if (auto* modelAsset = model->GetComponent<ModelAssetComponent>()->GetModelAsset()) {
-         ImGui::Text("Meshes: %zu", modelAsset->GetMeshData().size());
-         ImGui::Text("Materials: %zu", modelAsset->GetMaterialAssets().size());
-      }
-
-      ImGui::TextDisabled("Texture は MaterialComponent で設定してください");
+   ImGui::Spacing();
+   if (editorContext) {
+      DrawSelectedObjectAssetDropTargets(*editorContext, selectedObject);
    }
+
 
    if (auto* sprite = dynamic_cast<Sprite*>(selectedObject); sprite && ImGui::CollapsingHeader("Sprite", ImGuiTreeNodeFlags_DefaultOpen)) {
       Vector2 size = sprite->GetSize();

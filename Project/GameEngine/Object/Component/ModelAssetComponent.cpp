@@ -88,11 +88,6 @@ void ModelAssetComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void ModelAssetComponent::DrawInspector() {
-   /*const char* assetName = modelAsset_ ? "(設定済み)" : "(未設定)";
-   ImGui::Text("ModelAsset: %s", assetName);
-   if (!assetId_.empty()) {
-      ImGui::TextDisabled("%s", assetId_.c_str());
-   }*/
 }
 #endif
 
