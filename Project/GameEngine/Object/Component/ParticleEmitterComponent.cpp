@@ -247,6 +247,10 @@ bool ParticleEmitterComponent::LoadEffect(const std::string& jsonPath) {
 }
 
 void ParticleEmitterComponent::SetParticleSystem(std::shared_ptr<ParticleSystem> ps) {
+   if (ps) {
+	  ps->SetEditorInspectable(false);
+   }
+
    if (slots_.empty()) {
 	  EmitterSlot slot;
 	  slot.particleSystem = std::move(ps);
@@ -435,11 +439,14 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
 // ============================================================
 
 bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
-   if (slot.particleSystem) {
-	  slot.particleSystem->Stop();
+   std::shared_ptr<ParticleSystem> ps = slot.particleSystem;
+   if (!ps) {
+	  ps = std::make_shared<ParticleSystem>();
+   } else {
+	  ps->Stop();
    }
 
-   auto ps = std::make_shared<ParticleSystem>();
+   ps->SetEditorInspectable(false);
    ps->Create();
 
    if (!slot.jsonPath.empty()) {
@@ -461,7 +468,9 @@ bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
    SyncSimulationSpace(ps.get(), slot.attachConfig.simulationSpace);
    ApplyEmitterToShapeModule(ps.get(), ComputeEmitterMatrix(slot.attachConfig));
 
-   if (!slot.autoPlay) {
+   if (slot.autoPlay) {
+	  ps->Play();
+   } else {
 	  ps->Stop();
    }
 
@@ -587,7 +596,7 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void ParticleEmitterComponent::DrawInspector() {
-   if (!ImGui::CollapsingHeader("ParticleEmitter", ImGuiTreeNodeFlags_DefaultOpen)) {
+   if (!ImGui::CollapsingHeader("ParticleEmitter")) {
 	  return;
    }
 

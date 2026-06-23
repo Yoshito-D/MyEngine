@@ -120,6 +120,9 @@ public:
    const std::string& GetName() const { return name_; }
    void SetName(const std::string& name) { name_ = name; }
 
+   bool IsEditorInspectable() const { return isEditorInspectable_; }
+   void SetEditorInspectable(bool inspectable) { isEditorInspectable_ = inspectable; }
+
    /// @brief ブレンドモードを設定（マテリアルに委譲）
    void SetBlendMode(std::optional<BlendMode> mode) { if (material_) material_->SetBlendMode(mode); }
 
@@ -206,6 +209,7 @@ private:
    bool isPlaying_ = false;
    bool isPaused_ = false;
 
+   bool isEditorInspectable_ = true;
    bool usePostProcess_ = false;
    float emissionTimer_ = 0.0f;
    float emissionAccumulator_ = 0.0f;

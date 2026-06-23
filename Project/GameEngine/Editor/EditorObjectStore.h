@@ -23,6 +23,10 @@ public:
    ParticleSystem* CreateParticleSystem(const std::string& assetId, const std::string& requestedId = {}, const Transform* initialTransform = nullptr);
    Object* RestoreObject(const nlohmann::json& objectData);
    ParticleSystem* RestoreParticleSystem(const nlohmann::json& objectData);
+   nlohmann::json SerializeObjectState(const Object* object, const std::string& id = {}) const;
+   bool ApplyObjectState(Object* object, const nlohmann::json& objectData) const;
+   nlohmann::json SerializeParticleSystemState(const ParticleSystem* particleSystem, const std::string& id = {}, const std::string& assetId = {}) const;
+   bool ApplyParticleSystemState(ParticleSystem* particleSystem, const nlohmann::json& objectData) const;
 
    bool DeleteObject(const std::string& objectId);
    bool DeleteParticleSystem(const std::string& objectId);
@@ -53,9 +57,10 @@ private:
    void UnregisterParticleSystem(ParticleSystem* particleSystem);
    void UnregisterOwnedRuntimeSystems(Object* object);
    void BumpCounterFromId(const std::string& id);
-   nlohmann::json SerializeSpriteData(const Sprite* sprite) const;
    void DeserializeSpriteData(Sprite* sprite, const nlohmann::json& data) const;
    bool EnsureTextureLoaded(const std::string& textureAssetId) const;
+
+   static nlohmann::json SerializeSpriteData(const Sprite* sprite);
 
    std::vector<std::unique_ptr<Model>> models_;
    std::vector<std::unique_ptr<Sprite>> sprites_;

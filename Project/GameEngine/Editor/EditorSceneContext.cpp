@@ -15,6 +15,7 @@
 #include "Sprite/Sprite.h"
 #include "externals/imgui/ImGuizmo/ImGuizmo.h"
 #include "externals/imgui/imgui.h"
+#include <cmath>
 #include <fstream>
 #include <limits>
 #include <string>
@@ -57,6 +58,129 @@ Transform MatrixToTransform(const Matrix4x4& matrix) {
 float AbsDiff(float lhs, float rhs) {
    return std::abs(lhs - rhs);
 }
+
+std::string GetSceneObjectTypeName(const Object* object) {
+   if (dynamic_cast<const Model*>(object)) {
+      return "Model";
+   }
+   if (dynamic_cast<const Sprite*>(object)) {
+      return "Sprite";
+   }
+   if (dynamic_cast<const Skybox*>(object)) {
+      return "Skybox";
+   }
+   return "Object";
+}
+
+std::string BuildSceneKey(const std::string& typeName, const std::string& objectName) {
+   return typeName + ":" + (objectName.empty() ? "Object" : objectName);
+}
+
+std::string BuildDuplicateName(const std::string& name) {
+   const std::string base = name.empty() ? "Object" : name;
+   return base + "_Copy";
+}
+
+bool IsRegisteredParticleSystem(const ParticleSystem* particleSystem) {
+   if (!particleSystem) {
+      return false;
+   }
+
+   for (auto* registered : ParticleSystem::GetRegisteredParticleSystems()) {
+      if (registered == particleSystem) {
+         return true;
+      }
+   }
+   return false;
+}
+
+bool IsEditableSceneParticleSystem(const ParticleSystem* particleSystem) {
+   return particleSystem &&
+      particleSystem->IsEditorInspectable() &&
+      IsRegisteredParticleSystem(particleSystem);
+}
+
+bool StartsWith(const std::string& value, const char* prefix) {
+   return value.rfind(prefix, 0) == 0;
+}
+
+const nlohmann::json* GetParticleSystemPayload(const nlohmann::json& entry) {
+   if (entry.contains("particleSystem") && entry.at("particleSystem").is_object()) {
+      return &entry.at("particleSystem");
+   }
+   return entry.is_object() ? &entry : nullptr;
+}
+
+bool IsLegacyEmitterRuntimeParticleEntry(const nlohmann::json& entry) {
+   const nlohmann::json* particleData = GetParticleSystemPayload(entry);
+   if (!particleData || !particleData->is_object()) {
+      return false;
+   }
+
+   const std::string objectType = particleData->value("objectType", "");
+   const std::string assetId = particleData->value("assetId", "");
+   const std::string id = particleData->value("id", "");
+   const std::string name = particleData->value("name", "");
+   const std::string sceneKey = entry.value("sceneKey", "");
+
+   return objectType == "ParticleSystem" &&
+      assetId.empty() &&
+      (StartsWith(id, "ParticleSystem:ParticleSystem_") ||
+         StartsWith(sceneKey, "ParticleSystem:ParticleSystem_") ||
+         StartsWith(name, "ParticleSystem_"));
+}
+
+bool IsFiniteVector(const Vector3& value) {
+   return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
+}
+
+Vector3 NormalizeOrFallback(const Vector3& value, const Vector3& fallback) {
+   if (!IsFiniteVector(value) || value.LengthSquared() < 1e-8f) {
+      return fallback;
+   }
+   return value.Normalize();
+}
+
+Vector3 ExtractCameraPositionFromView(const Camera* camera) {
+   if (!camera) {
+      return {};
+   }
+
+   const Matrix4x4 cameraWorld = camera->GetViewMatrix().Inverse();
+   const Vector3 position(cameraWorld.m[3][0], cameraWorld.m[3][1], cameraWorld.m[3][2]);
+   return IsFiniteVector(position) ? position : camera->GetPosition();
+}
+
+Vector3 ExtractCameraForwardFromView(const Camera* camera) {
+   if (!camera) {
+      return Vector3(0.0f, 0.0f, 1.0f);
+   }
+
+   const Matrix4x4 cameraWorld = camera->GetViewMatrix().Inverse();
+   const Vector3 forward(cameraWorld.m[2][0], cameraWorld.m[2][1], cameraWorld.m[2][2]);
+   return NormalizeOrFallback(forward, NormalizeOrFallback(camera->GetForward(), Vector3(0.0f, 0.0f, 1.0f)));
+}
+
+bool IsProjectedInsideCamera(const Camera* camera, const Vector3& worldPosition) {
+   if (!camera || !IsFiniteVector(worldPosition)) {
+      return false;
+   }
+
+   const Vector4 clip = TransformVectorByMatrix(
+      Vector4(worldPosition.x, worldPosition.y, worldPosition.z, 1.0f),
+      camera->GetViewProjectionMatrix());
+   if (!std::isfinite(clip.x) || !std::isfinite(clip.y) || !std::isfinite(clip.z) || !std::isfinite(clip.w) ||
+      std::abs(clip.w) < 1e-6f) {
+      return false;
+   }
+
+   const float ndcX = clip.x / clip.w;
+   const float ndcY = clip.y / clip.w;
+   const float ndcZ = clip.z / clip.w;
+   return ndcX >= -0.95f && ndcX <= 0.95f &&
+      ndcY >= -0.95f && ndcY <= 0.95f &&
+      ndcZ >= 0.0f && ndcZ <= 1.0f;
+}
 } // namespace
 
 void EditorSceneContext::Initialize(std::string sceneName) {
@@ -69,6 +193,10 @@ void EditorSceneContext::Initialize(std::string sceneName) {
    commandStack_.Clear();
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
+   hiddenSceneObjectKeys_.clear();
+   hiddenParticleSystemKeys_.clear();
+   sceneObjectKeys_.clear();
+   sceneParticleSystemKeys_.clear();
    assetRegistry_.Scan();
 }
 
@@ -78,6 +206,7 @@ void EditorSceneContext::AutoLoad() {
    }
 
    hasAutoLoaded_ = true;
+   RegisterSceneOwnedKeys();
    Load();
 }
 
@@ -92,6 +221,10 @@ void EditorSceneContext::Clear() {
    objectStore_.Clear();
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
+   hiddenSceneObjectKeys_.clear();
+   hiddenParticleSystemKeys_.clear();
+   sceneObjectKeys_.clear();
+   sceneParticleSystemKeys_.clear();
    ClearDirty();
    SetStatus("Editor scene cleared");
 }
@@ -106,9 +239,11 @@ bool EditorSceneContext::Save() {
    }
 
    nlohmann::json sceneData = nlohmann::json::object();
-   sceneData["version"] = 1;
+   sceneData["version"] = 2;
    sceneData["sceneName"] = sceneName_;
    sceneData["objects"] = objectStore_.SerializeAll();
+   sceneData["sceneObjects"] = SerializeSceneObjects();
+   sceneData["sceneParticleSystems"] = SerializeSceneParticleSystems();
 
    std::ofstream file(filePath);
    if (!file.is_open()) {
@@ -151,14 +286,24 @@ bool EditorSceneContext::Load() {
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
    commandStack_.Clear();
+   RegisterSceneOwnedKeys();
    objectStore_.Clear();
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
+   hiddenSceneObjectKeys_.clear();
+   hiddenParticleSystemKeys_.clear();
 
    if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
       for (const auto& objectData : sceneData.at("objects")) {
          objectStore_.RestoreObject(objectData);
       }
+   }
+
+   if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
+      ApplySceneObjects(sceneData.at("sceneObjects"));
+   }
+   if (sceneData.contains("sceneParticleSystems") && sceneData.at("sceneParticleSystems").is_array()) {
+      ApplySceneParticleSystems(sceneData.at("sceneParticleSystems"));
    }
 
    ClearDirty();
@@ -210,7 +355,7 @@ std::vector<ParticleSystem*> EditorSceneContext::CollectEditableParticleSystems(
    const auto& registered = ParticleSystem::GetRegisteredParticleSystems();
    particleSystems.reserve(registered.size());
    for (auto* particleSystem : registered) {
-      if (particleSystem && !hiddenParticleSystems_.contains(particleSystem)) {
+      if (IsRegisteredParticleSystem(particleSystem) && !hiddenParticleSystems_.contains(particleSystem)) {
          particleSystems.push_back(particleSystem);
       }
    }
@@ -248,7 +393,9 @@ bool EditorSceneContext::CanDeleteObject(const Object* object) const {
 }
 
 bool EditorSceneContext::CanDeleteParticleSystem(const ParticleSystem* particleSystem) const {
-   return particleSystem && IsParticleSystemAlive(particleSystem);
+   return particleSystem &&
+      IsParticleSystemAlive(particleSystem) &&
+      (objectStore_.Contains(particleSystem) || IsEditableSceneParticleSystem(particleSystem));
 }
 
 void EditorSceneContext::CreateModelFromAsset(const std::string& assetId) {
@@ -266,13 +413,21 @@ ParticleSystem* EditorSceneContext::CreateParticleSystemFromAsset(const std::str
 
 void EditorSceneContext::DuplicateSelectedObject() {
    if (selectedParticleSystem_) {
-      const std::string particleId = objectStore_.GetId(selectedParticleSystem_);
-      if (particleId.empty()) {
-         SetStatus("Duplicate failed: selected particle is not editor-owned");
+      nlohmann::json snapshot;
+      if (const std::string particleId = objectStore_.GetId(selectedParticleSystem_); !particleId.empty()) {
+         snapshot = objectStore_.SerializeObject(particleId);
+      } else if (IsEditableSceneParticleSystem(selectedParticleSystem_)) {
+         snapshot = objectStore_.SerializeParticleSystemState(selectedParticleSystem_);
+      }
+
+      if (!snapshot.is_object() || snapshot.empty()) {
+         SetStatus("Duplicate failed: selected particle cannot be duplicated");
          return;
       }
 
-      nlohmann::json snapshot = objectStore_.SerializeObject(particleId);
+      if (snapshot.contains("name") && snapshot.at("name").is_string()) {
+         snapshot["name"] = BuildDuplicateName(snapshot.at("name").get<std::string>());
+      }
       ApplyDuplicateOffset(snapshot);
       snapshot.erase("id");
       commandStack_.Execute(std::make_unique<RestoreObjectSnapshotCommand>(std::move(snapshot), "Duplicate Particle System"), *this);
@@ -283,13 +438,18 @@ void EditorSceneContext::DuplicateSelectedObject() {
       return;
    }
 
-   const std::string objectId = objectStore_.GetId(selectedObject_);
-   if (objectId.empty()) {
-      SetStatus("Duplicate failed: selected object is not editor-owned");
+   nlohmann::json snapshot;
+   if (const std::string objectId = objectStore_.GetId(selectedObject_); !objectId.empty()) {
+      snapshot = objectStore_.SerializeObject(objectId);
+   } else {
+      snapshot = objectStore_.SerializeObjectState(selectedObject_);
+   }
+
+   if (!snapshot.is_object() || snapshot.empty()) {
+      SetStatus("Duplicate failed: selected object cannot be duplicated");
       return;
    }
 
-   nlohmann::json snapshot = objectStore_.SerializeObject(objectId);
    ApplyDuplicateOffset(snapshot);
    snapshot.erase("id");
    commandStack_.Execute(std::make_unique<RestoreObjectSnapshotCommand>(std::move(snapshot), "Duplicate Object"), *this);
@@ -690,11 +850,319 @@ bool EditorSceneContext::IsParticleSystemAlive(const ParticleSystem* particleSys
    return std::find(particleSystems.begin(), particleSystems.end(), particleSystem) != particleSystems.end();
 }
 
+void EditorSceneContext::RegisterSceneOwnedKeys() {
+   std::unordered_set<std::string> usedObjectKeys;
+   for (const auto& [object, key] : sceneObjectKeys_) {
+      if (object && !key.empty()) {
+         usedObjectKeys.insert(key);
+      }
+   }
+
+   auto registerObject = [&](Object* object) {
+      if (!object || objectStore_.Contains(object) || sceneObjectKeys_.contains(object)) {
+         return;
+      }
+
+      const std::string baseKey = BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName());
+      std::string key = baseKey;
+      int suffix = 2;
+      while (usedObjectKeys.contains(key)) {
+         key = baseKey + "#" + std::to_string(suffix++);
+      }
+      usedObjectKeys.insert(key);
+      sceneObjectKeys_[object] = key;
+   };
+
+   for (auto* model : Model::GetRegisteredModels()) {
+      registerObject(model);
+   }
+   for (auto* sprite : Sprite::GetRegisteredSprites()) {
+      registerObject(sprite);
+   }
+   for (auto* skybox : Skybox::GetRegisteredSkyboxes()) {
+      registerObject(skybox);
+   }
+
+   for (auto it = sceneParticleSystemKeys_.begin(); it != sceneParticleSystemKeys_.end();) {
+      if (!IsEditableSceneParticleSystem(it->first) || objectStore_.Contains(it->first)) {
+         it = sceneParticleSystemKeys_.erase(it);
+      } else {
+         ++it;
+      }
+   }
+
+   for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
+      if (!IsEditableSceneParticleSystem(particleSystem) ||
+         objectStore_.Contains(particleSystem) ||
+         sceneParticleSystemKeys_.contains(particleSystem)) {
+         continue;
+      }
+
+      std::unordered_set<std::string> usedParticleKeys;
+      for (const auto& [registeredParticleSystem, key] : sceneParticleSystemKeys_) {
+         if (registeredParticleSystem && !key.empty()) {
+            usedParticleKeys.insert(key);
+         }
+      }
+
+      const std::string baseKey = BuildSceneKey("ParticleSystem", particleSystem->GetName());
+      std::string key = baseKey;
+      int suffix = 2;
+      while (usedParticleKeys.contains(key)) {
+         key = baseKey + "#" + std::to_string(suffix++);
+      }
+      usedParticleKeys.insert(key);
+      sceneParticleSystemKeys_[particleSystem] = key;
+   }
+}
+
+std::string EditorSceneContext::EnsureSceneObjectKey(const Object* object) {
+   if (!object) {
+      return {};
+   }
+
+   RegisterSceneOwnedKeys();
+   auto it = sceneObjectKeys_.find(object);
+   return it == sceneObjectKeys_.end() ? std::string{} : it->second;
+}
+
+std::string EditorSceneContext::EnsureSceneParticleSystemKey(const ParticleSystem* particleSystem) {
+   if (!particleSystem) {
+      return {};
+   }
+
+   RegisterSceneOwnedKeys();
+   auto it = sceneParticleSystemKeys_.find(particleSystem);
+   return it == sceneParticleSystemKeys_.end() ? std::string{} : it->second;
+}
+
+Object* EditorSceneContext::FindSceneObjectByKey(const std::string& key) const {
+   if (key.empty()) {
+      return nullptr;
+   }
+
+   auto isRegistered = [](const Object* object) {
+      for (auto* model : Model::GetRegisteredModels()) {
+         if (model == object) {
+            return true;
+         }
+      }
+      for (auto* sprite : Sprite::GetRegisteredSprites()) {
+         if (sprite == object) {
+            return true;
+         }
+      }
+      for (auto* skybox : Skybox::GetRegisteredSkyboxes()) {
+         if (skybox == object) {
+            return true;
+         }
+      }
+      return false;
+   };
+
+   for (const auto& [object, objectKey] : sceneObjectKeys_) {
+      if (objectKey == key && object && !objectStore_.Contains(object) && isRegistered(object)) {
+         return const_cast<Object*>(object);
+      }
+   }
+   return nullptr;
+}
+
+ParticleSystem* EditorSceneContext::FindSceneParticleSystemByKey(const std::string& key) const {
+   if (key.empty()) {
+      return nullptr;
+   }
+
+   for (const auto& [particleSystem, particleKey] : sceneParticleSystemKeys_) {
+      if (particleKey == key &&
+         IsEditableSceneParticleSystem(particleSystem) &&
+         !objectStore_.Contains(particleSystem)) {
+         return const_cast<ParticleSystem*>(particleSystem);
+      }
+   }
+   return nullptr;
+}
+
+nlohmann::json EditorSceneContext::SerializeSceneObjects() {
+   RegisterSceneOwnedKeys();
+
+   nlohmann::json sceneObjects = nlohmann::json::array();
+   std::unordered_set<std::string> emittedKeys;
+
+   for (Object* object : CollectEditableObjects()) {
+      if (!object || objectStore_.Contains(object)) {
+         continue;
+      }
+
+      const std::string key = EnsureSceneObjectKey(object);
+      if (key.empty()) {
+         continue;
+      }
+
+      nlohmann::json entry = nlohmann::json::object();
+      entry["sceneKey"] = key;
+      entry["deleted"] = false;
+      entry["object"] = objectStore_.SerializeObjectState(object, key);
+      sceneObjects.push_back(std::move(entry));
+      emittedKeys.insert(key);
+   }
+
+   for (const auto& key : hiddenSceneObjectKeys_) {
+      if (key.empty() || emittedKeys.contains(key)) {
+         continue;
+      }
+      sceneObjects.push_back(nlohmann::json{
+         { "sceneKey", key },
+         { "deleted", true }
+      });
+   }
+
+   return sceneObjects;
+}
+
+nlohmann::json EditorSceneContext::SerializeSceneParticleSystems() {
+   RegisterSceneOwnedKeys();
+
+   nlohmann::json sceneParticleSystems = nlohmann::json::array();
+   std::unordered_set<std::string> emittedKeys;
+
+   for (ParticleSystem* particleSystem : CollectEditableParticleSystems()) {
+      if (!IsEditableSceneParticleSystem(particleSystem) || objectStore_.Contains(particleSystem)) {
+         continue;
+      }
+
+      const std::string key = EnsureSceneParticleSystemKey(particleSystem);
+      if (key.empty()) {
+         continue;
+      }
+
+      nlohmann::json entry = nlohmann::json::object();
+      entry["sceneKey"] = key;
+      entry["deleted"] = false;
+      entry["particleSystem"] = objectStore_.SerializeParticleSystemState(particleSystem, key);
+      sceneParticleSystems.push_back(std::move(entry));
+      emittedKeys.insert(key);
+   }
+
+   for (const auto& key : hiddenParticleSystemKeys_) {
+      if (key.empty() || emittedKeys.contains(key)) {
+         continue;
+      }
+      sceneParticleSystems.push_back(nlohmann::json{
+         { "sceneKey", key },
+         { "deleted", true }
+      });
+   }
+
+   return sceneParticleSystems;
+}
+
+void EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsData) {
+   if (!sceneObjectsData.is_array()) {
+      return;
+   }
+
+   RegisterSceneOwnedKeys();
+   for (const auto& entry : sceneObjectsData) {
+      if (!entry.is_object()) {
+         continue;
+      }
+
+      const std::string key = entry.value("sceneKey", "");
+      if (key.empty()) {
+         continue;
+      }
+
+      Object* object = FindSceneObjectByKey(key);
+      if (entry.value("deleted", false)) {
+         hiddenSceneObjectKeys_.insert(key);
+         if (object) {
+            hiddenSceneObjects_.insert(object);
+            if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
+               renderComponent->visible = false;
+            }
+         }
+         continue;
+      }
+
+      if (!object) {
+         SetStatus("Load warning: scene object not found for key " + key);
+         continue;
+      }
+
+      hiddenSceneObjects_.erase(object);
+      hiddenSceneObjectKeys_.erase(key);
+      if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
+         renderComponent->visible = true;
+      }
+
+      const nlohmann::json* objectData = nullptr;
+      if (entry.contains("object") && entry.at("object").is_object()) {
+         objectData = &entry.at("object");
+      } else {
+         objectData = &entry;
+      }
+
+      objectStore_.ApplyObjectState(object, *objectData);
+   }
+}
+
+void EditorSceneContext::ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData) {
+   if (!sceneParticlesData.is_array()) {
+      return;
+   }
+
+   RegisterSceneOwnedKeys();
+   for (const auto& entry : sceneParticlesData) {
+      if (!entry.is_object()) {
+         continue;
+      }
+
+      const std::string key = entry.value("sceneKey", "");
+      if (key.empty()) {
+         continue;
+      }
+
+      ParticleSystem* particleSystem = FindSceneParticleSystemByKey(key);
+      if (entry.value("deleted", false)) {
+         hiddenParticleSystemKeys_.insert(key);
+         if (particleSystem) {
+            hiddenParticleSystems_.insert(particleSystem);
+            particleSystem->Stop();
+         }
+         continue;
+      }
+
+      if (!particleSystem) {
+         if (!IsLegacyEmitterRuntimeParticleEntry(entry)) {
+            SetStatus("Load warning: scene particle system not found for key " + key);
+         }
+         continue;
+      }
+
+      hiddenParticleSystems_.erase(particleSystem);
+      hiddenParticleSystemKeys_.erase(key);
+
+      const nlohmann::json* particleData = nullptr;
+      if (entry.contains("particleSystem") && entry.at("particleSystem").is_object()) {
+         particleData = &entry.at("particleSystem");
+      } else {
+         particleData = &entry;
+      }
+
+      objectStore_.ApplyParticleSystemState(particleSystem, *particleData);
+   }
+}
+
 void EditorSceneContext::HideSceneOwnedObject(Object* object) {
    if (!object) {
       return;
    }
 
+   const std::string key = EnsureSceneObjectKey(object);
+   if (!key.empty()) {
+      hiddenSceneObjectKeys_.insert(key);
+   }
    hiddenSceneObjects_.insert(object);
    if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
       renderComponent->visible = false;
@@ -707,6 +1175,10 @@ void EditorSceneContext::HideSceneOwnedParticleSystem(ParticleSystem* particleSy
       return;
    }
 
+   const std::string key = EnsureSceneParticleSystemKey(particleSystem);
+   if (!key.empty()) {
+      hiddenParticleSystemKeys_.insert(key);
+   }
    hiddenParticleSystems_.insert(particleSystem);
    particleSystem->Stop();
    MarkDirty();
@@ -756,12 +1228,27 @@ Transform EditorSceneContext::BuildPlacementTransformInFrontOfCamera() const {
    }
 
    constexpr float kPlacementDistance = 8.0f;
-   Vector3 forward = camera->GetForward().Normalize();
-   if (forward.LengthSquared() < 1e-8f) {
-      forward = Vector3(0.0f, 0.0f, 1.0f);
+   const Vector3 cameraPosition = ExtractCameraPositionFromView(camera);
+   const Vector3 viewForward = ExtractCameraForwardFromView(camera);
+   const Vector3 transformForward = NormalizeOrFallback(camera->GetForward(), viewForward);
+
+   const Vector3 candidateDirections[] = {
+      viewForward,
+      viewForward * -1.0f,
+      transformForward,
+      transformForward * -1.0f,
+   };
+
+   for (const Vector3& direction : candidateDirections) {
+      const Vector3 normalized = NormalizeOrFallback(direction, viewForward);
+      const Vector3 candidate = cameraPosition + normalized * kPlacementDistance;
+      if (IsProjectedInsideCamera(camera, candidate)) {
+         transform.translation = candidate;
+         return transform;
+      }
    }
 
-   transform.translation = camera->GetPosition() + forward * kPlacementDistance;
+   transform.translation = cameraPosition + viewForward * kPlacementDistance;
    return transform;
 }
 
@@ -795,6 +1282,16 @@ void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
             continue;
          }
          data["translation"][0] = data["translation"][0].get<float>() + 1.0f;
+      }
+
+      for (auto& componentData : snapshot.at("components")) {
+         if (!componentData.is_object() || componentData.value("typeName", "") != "ObjectNameComponent") {
+            continue;
+         }
+         auto& data = componentData["data"];
+         if (data.is_object() && data.contains("name") && data.at("name").is_string()) {
+            data["name"] = BuildDuplicateName(data.at("name").get<std::string>());
+         }
       }
    }
 

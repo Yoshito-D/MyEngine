@@ -1,0 +1,1075 @@
+{
+   "objects": [
+      {
+         "assetId": "models/planet/planet.obj",
+         "components": [
+            {
+               "data": {
+                  "parentObjectName": "",
+                  "rotation": [
+                     0.0,
+                     -0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "euler",
+                  "scale": [
+                     25.0,
+                     25.0,
+                     25.0
+                  ],
+                  "translation": [
+                     0.5399179458618164,
+                     0.1925792694091797,
+                     100.87069702148438
+                  ],
+                  "useParentMatrix": false
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "blendMode": -1,
+                  "color": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "environmentTextureName": "",
+                  "lightingMode": 0,
+                  "materialCount": 1,
+                  "materialNames": [
+                     "planetMaterial"
+                  ],
+                  "pipelineName": "",
+                  "shininess": 40.0,
+                  "textureNames": [
+                     "textures/aerial_grass_rock_diff_2k.jpg"
+                  ],
+                  "uvTransform": [
+                     [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ]
+                  ]
+               },
+               "enabled": true,
+               "typeName": "MaterialComponent"
+            },
+            {
+               "data": {
+                  "name": "Planet_3"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "assetId": "models/planet/planet.obj"
+               },
+               "enabled": true,
+               "typeName": "ModelAssetComponent"
+            },
+            {
+               "data": {
+                  "applyPostProcess": true,
+                  "autoRender": true,
+                  "visible": true
+               },
+               "enabled": true,
+               "typeName": "RenderComponent"
+            },
+            {
+               "data": {
+                  "influenceRadius": 300.0
+               },
+               "enabled": true,
+               "typeName": "SphericalGravityAttractor"
+            }
+         ],
+         "id": "editor_object_2",
+         "objectType": "Model"
+      }
+   ],
+   "sceneName": "GameTest",
+   "sceneObjects": [
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "models/planet/planet.obj",
+            "components": [
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        30.0,
+                        30.0,
+                        30.0
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "lightingMode": 0,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "planetMaterial"
+                     ],
+                     "pipelineName": "",
+                     "shininess": 40.0,
+                     "textureNames": [
+                        "coast_sand_05_diff_2k"
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "name": "Planet_1"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "models/planet/planet.obj"
+                  },
+                  "enabled": true,
+                  "typeName": "ModelAssetComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": {
+                     "influenceRadius": 300.0
+                  },
+                  "enabled": true,
+                  "typeName": "SphericalGravityAttractor"
+               }
+            ],
+            "id": "Model:Planet_1",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:Planet_1"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "models/planet/planet.obj",
+            "components": [
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        -0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        20.0,
+                        20.0,
+                        20.0
+                     ],
+                     "translation": [
+                        37.29665756225586,
+                        15.818010330200195,
+                        53.281246185302734
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "lightingMode": 0,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "planetMaterial"
+                     ],
+                     "pipelineName": "",
+                     "shininess": 40.0,
+                     "textureNames": [
+                        "textures/rocky_terrain_02_diff_2k.jpg"
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "name": "Planet_2"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "models/planet/planet.obj"
+                  },
+                  "enabled": true,
+                  "typeName": "ModelAssetComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": {
+                     "influenceRadius": 300.0
+                  },
+                  "enabled": true,
+                  "typeName": "SphericalGravityAttractor"
+               }
+            ],
+            "id": "Model:Planet_2",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:Planet_2"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "models/car/car.obj",
+            "components": [
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.6575433611869812,
+                        -0.07679782062768936,
+                        0.06124149635434151
+                     ],
+                     "rotationQuaternion": [
+                        0.32360386848449707,
+                        -0.02643827348947525,
+                        0.04134421423077583,
+                        0.9449191689491272
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        -2.8818798065185547,
+                        23.586694717407227,
+                        18.621326446533203
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "lightingMode": 3,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "playerMaterial"
+                     ],
+                     "pipelineName": "",
+                     "shininess": 40.0,
+                     "textureNames": [
+                        "color_palette"
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "name": "Player"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "models/car/car.obj"
+                  },
+                  "enabled": true,
+                  "typeName": "ModelAssetComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": null,
+                  "enabled": true,
+                  "typeName": "GravityAttractorLink"
+               },
+               {
+                  "data": {
+                     "obbHalfExtents": {
+                        "x": 0.3499999940395355,
+                        "y": 0.17499999701976776,
+                        "z": 0.75
+                     },
+                     "planets": [
+                        {
+                           "objectName": "Planet_1"
+                        },
+                        {
+                           "objectName": "Planet_2"
+                        },
+                        {
+                           "objectName": "Planet_3"
+                        }
+                     ],
+                     "switchHysteresis": 1.5
+                  },
+                  "enabled": true,
+                  "typeName": "PlanetSwitcher"
+               },
+               {
+                  "data": {
+                     "currentUpVector": [
+                        -0.09524493664503098,
+                        0.7871424555778503,
+                        0.6093728542327881
+                     ],
+                     "gravityStrength": 22.0,
+                     "rotationSpeed": 10.0,
+                     "useGravity": true,
+                     "velocity": [
+                        -0.371293306350708,
+                        -9.819950103759766,
+                        12.626646995544434
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "GravityBody"
+               },
+               {
+                  "data": {
+                     "landingOffset": 0.0,
+                     "obbHalfExtents": {
+                        "x": 0.3499999940395355,
+                        "y": 0.17499999701976776,
+                        "z": 0.75
+                     },
+                     "surfaceRadius": 30.0
+                  },
+                  "enabled": true,
+                  "typeName": "CharacterLanding"
+               },
+               {
+                  "data": {
+                     "jumpStrength": 5.0
+                  },
+                  "enabled": true,
+                  "typeName": "CharacterJump"
+               },
+               {
+                  "data": {},
+                  "enabled": true,
+                  "typeName": "VehicleMover"
+               },
+               {
+                  "data": {
+                     "autoSpeed": 16.0,
+                     "speedRecovery": 1.0,
+                     "steerSpeed": 120.0
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleGroundMover"
+               },
+               {
+                  "data": {
+                     "airDrag": 0.0010000000474974513,
+                     "angularDamping": 2.5,
+                     "pitchSpeed": 285.0,
+                     "steerSpeed": 285.0
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleAirController"
+               },
+               {
+                  "data": {
+                     "alignTime": 0.10000000149011612
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleLandingAligner"
+               },
+               {
+                  "data": {
+                     "boostAmount": 0.0,
+                     "boostThreshold": 0.949999988079071,
+                     "normalThreshold": 0.0,
+                     "penaltyAmount": 0.0
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleLandingBoost"
+               },
+               {
+                  "data": {
+                     "driftMode": 1,
+                     "driftSteerDeadZone": 0.30000001192092896,
+                     "driftSteerMult": 1.5,
+                     "lateralBuildupRate": 1.0,
+                     "miniTurboBoost": 30.0,
+                     "miniTurboEnabled": true,
+                     "miniTurboMinTime": 0.5,
+                     "postDriftBleedRate": 6.0,
+                     "slideRatio": 0.20000000298023224,
+                     "sustainedSteerTime": 0.20000000298023224
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleDrift"
+               },
+               {
+                  "data": {
+                     "inputDeadZone": 0.30000001192092896
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleController"
+               },
+               {
+                  "data": {
+                     "activationMargin": 0.05000000074505806,
+                     "activeFlowSpeed": 20.0,
+                     "activeInnerRadius": 0.4000000059604645,
+                     "effectSpeedRange": 20.0,
+                     "idleFlowSpeed": 10.0,
+                     "idleInnerRadius": 0.9800000190734863,
+                     "lineDensity": 140.0,
+                     "maxIntensity": 0.800000011920929,
+                     "outerRadius": 2.5,
+                     "radialBlurMaxStrength": 0.05000000074505806,
+                     "radialBlurSampleCount": 16,
+                     "radialBlurVisibleThreshold": 0.019999999552965164,
+                     "randomSeed": 1.0,
+                     "responseSpeed": 100.0,
+                     "thickness": 0.800000011920929,
+                     "visibleThreshold": 0.014999999664723873
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleSpeedPostEffectController"
+               },
+               {
+                  "data": {
+                     "maxCullDistance": 0.0,
+                     "slots": [
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.30000001192092896,
+                                 -0.20000000298023224,
+                                 0.41499999165534973
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "World"
+                           },
+                           "autoPlay": true,
+                           "jsonPath": "resources/particles/tire_dust.json",
+                           "loop": true,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 -0.30000001192092896,
+                                 -0.20000000298023224,
+                                 0.41499999165534973
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "World"
+                           },
+                           "autoPlay": true,
+                           "jsonPath": "resources/particles/tire_dust.json",
+                           "loop": true,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.30000001192092896,
+                                 -0.20000000298023224,
+                                 -0.41499999165534973
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "World"
+                           },
+                           "autoPlay": true,
+                           "jsonPath": "resources/particles/tire_dust.json",
+                           "loop": true,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 -0.30000001192092896,
+                                 -0.20000000298023224,
+                                 -0.41499999165534973
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "World"
+                           },
+                           "autoPlay": true,
+                           "jsonPath": "resources/particles/tire_dust.json",
+                           "loop": true,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.30000001192092896,
+                                 -0.30000001192092896,
+                                 -0.41499999165534973
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "Local"
+                           },
+                           "autoPlay": true,
+                           "jsonPath": "resources/particles/miniturbo.json",
+                           "loop": true,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 -0.30000001192092896,
+                                 -0.30000001192092896,
+                                 -0.41499999165534973
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "Local"
+                           },
+                           "autoPlay": true,
+                           "jsonPath": "resources/particles/miniturbo.json",
+                           "loop": true,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.30000001192092896,
+                                 -0.30000001192092896,
+                                 -0.6000000238418579
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "Local"
+                           },
+                           "autoPlay": false,
+                           "jsonPath": "resources/particles/bonfire.json",
+                           "loop": false,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 -0.30000001192092896,
+                                 -0.30000001192092896,
+                                 -0.6000000238418579
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "Local"
+                           },
+                           "autoPlay": false,
+                           "jsonPath": "resources/particles/bonfire.json",
+                           "loop": false,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.30000001192092896
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "World"
+                           },
+                           "autoPlay": false,
+                           "jsonPath": "resources/particles/sonicBoom.json",
+                           "loop": false,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.0,
+                                 -0.30000001192092896,
+                                 0.5
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "Local"
+                           },
+                           "autoPlay": false,
+                           "jsonPath": "resources/particles/landingRing.json",
+                           "loop": false,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.0,
+                                 -0.30000001192092896,
+                                 0.0
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "World"
+                           },
+                           "autoPlay": false,
+                           "jsonPath": "resources/particles/jump.json",
+                           "loop": false,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.0,
+                                 0.0,
+                                 3.0
+                              ],
+                              "rotationOffset": [
+                                 0.3199999928474426,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "Local"
+                           },
+                           "autoPlay": true,
+                           "jsonPath": "resources/particles/wind.json",
+                           "loop": true,
+                           "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.0,
+                                 -0.30000001192092896,
+                                 0.5
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "Local"
+                           },
+                           "autoPlay": false,
+                           "jsonPath": "resources/particles/landingDust.json",
+                           "loop": false,
+                           "playOnceAndDestroy": false
+                        }
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "ParticleEmitterComponent"
+               },
+               {
+                  "data": {
+                     "enableLandingShake": true,
+                     "landingShakeAmplitude": 0.15000000596046448,
+                     "landingShakeDuration": 0.10000000149011612,
+                     "landingShakeFrequency": 14.0
+                  },
+                  "enabled": true,
+                  "typeName": "CameraGravityBridge"
+               }
+            ],
+            "id": "Model:Player",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:Player"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "environmentTextureName": "",
+                     "materialCount": 0,
+                     "materialNames": [],
+                     "textureNames": []
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "name": "Skybox"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               }
+            ],
+            "id": "Skybox:Skybox",
+            "objectType": "Object"
+         },
+         "sceneKey": "Skybox:Skybox"
+      }
+   ],
+   "sceneParticleSystems": [],
+   "version": 2
+}
