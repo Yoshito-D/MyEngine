@@ -22,4 +22,8 @@ void PostProcess::SetDepthTextureRootSlot(UINT depthTextureSlot) {
    depthTextureRootSlot_ = depthTextureSlot;
 }
 
+void PostProcess::SetMaskTextureRootSlot(UINT maskTextureSlot) {
+   maskTextureRootSlot_ = maskTextureSlot;
+}
+
 }

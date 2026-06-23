@@ -766,6 +766,29 @@ std::optional<RadialBlurParams> EngineContext::GetRadialBlurParams() {
    return radialBlur->GetParams();
 }
 
+bool EngineContext::SetDissolveParams(const DissolveParams& params) {
+   if (!sRenderer_) return false;
+   auto* postProcessManager = sRenderer_->GetPostProcessManager();
+   if (!postProcessManager) return false;
+
+   auto* dissolve = dynamic_cast<Dissolve*>(postProcessManager->GetEffect("Dissolve"));
+   if (!dissolve) return false;
+
+   dissolve->SetParams(params);
+   return true;
+}
+
+std::optional<DissolveParams> EngineContext::GetDissolveParams() {
+   if (!sRenderer_) return std::nullopt;
+   auto* postProcessManager = sRenderer_->GetPostProcessManager();
+   if (!postProcessManager) return std::nullopt;
+
+   auto* dissolve = dynamic_cast<Dissolve*>(postProcessManager->GetEffect("Dissolve"));
+   if (!dissolve) return std::nullopt;
+
+   return dissolve->GetParams();
+}
+
 //================================================================
 // JSON データマネージャー
 //================================================================

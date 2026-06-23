@@ -239,6 +239,9 @@
     <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
+    <None Include="resources\pipelines\postprocess\dissolve_pipeline.json">
+      <Filter>resources\pipelines\postprocess</Filter>
+    </None>
     <None Include="resources\pipelines\postprocess\gaussfilter_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
@@ -279,6 +282,9 @@
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
     <None Include="resources\pipelines\rootsig\particle_rootsig.json">
+      <Filter>resources\pipelines\rootsig</Filter>
+    </None>
+    <None Include="resources\pipelines\rootsig\postprocess_dissolve_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
     <None Include="resources\pipelines\rootsig\postprocess_outline_rootsig.json">
@@ -495,6 +501,9 @@
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\ChromaticAberration.cpp">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Dissolve.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\EffectFactoryRegistry.cpp">
@@ -1059,6 +1068,9 @@
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\ChromaticAberration.h">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Dissolve.h">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\EffectFactoryRegistry.h">
