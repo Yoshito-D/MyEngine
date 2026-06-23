@@ -12,6 +12,7 @@
 #include "Renderer.h"
 #include "PostProcess/RadialBlur.h"
 #include "PostProcess/SpeedLine.h"
+#include "PostProcess/Dissolve.h"
 #include "AssetManager.h"
 #include "TimeProfiler.h"
 #include "ModelAsset.h"
@@ -688,6 +689,15 @@ public:
    /// @brief RadialBlur の現在のパラメータを取得する
    /// @return RadialBlur パラメータ（取得できない場合は std::nullopt）
    static std::optional<RadialBlurParams> GetRadialBlurParams();
+
+   /// @brief Dissolve のパラメータを設定する
+   /// @param params Dissolve パラメータ
+   /// @return 設定に成功した場合は true
+   static bool SetDissolveParams(const DissolveParams& params);
+
+   /// @brief Dissolve の現在のパラメータを取得する
+   /// @return Dissolve パラメータ（取得できない場合は std::nullopt）
+   static std::optional<DissolveParams> GetDissolveParams();
 
    //================================================================
    // JSONデータマネージャー

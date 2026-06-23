@@ -14,6 +14,7 @@
 #include "LinearToSRGB.h"
 #include "Outline.h"
 #include "AntiAliasing.h"
+#include "Dissolve.h"
 #include "Core/Renderer/Pipeline/PSOManager.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -64,6 +65,7 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
    effectFactoryRegistry_.RegisterFactory("LinearToSRGB", [] { return std::make_unique<LinearToSRGB>(); });
    effectFactoryRegistry_.RegisterFactory("Outline", [] { return std::make_unique<Outline>(); });
    effectFactoryRegistry_.RegisterFactory("AntiAliasing", [] { return std::make_unique<AntiAliasing>(); });
+   effectFactoryRegistry_.RegisterFactory("Dissolve", [] { return std::make_unique<Dissolve>(); });
 
    effectFactoriesRegistered_ = true;
 }
@@ -120,7 +122,7 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  const char* rootSignatureName;
    };
 
-   static const std::array<PredefinedEffectEntry, 13> kEntries = {
+   static const std::array<PredefinedEffectEntry, 14> kEntries = {
 	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur", "PostProcess" },
 	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale", "PostProcess" },
 	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter", "PostProcess" },
@@ -132,6 +134,7 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  PredefinedEffectEntry{ "Pixelation", "Pixelation", 70, "PostProcess_Pixelation", "PostProcess" },
 	  PredefinedEffectEntry{ "SpeedLine", "Speed Line", 75, "PostProcess_SpeedLine", "PostProcess" },
 	  PredefinedEffectEntry{ "Bloom", "Bloom", 80, "PostProcess_Bloom", "PostProcess" },
+	  PredefinedEffectEntry{ "Dissolve", "Dissolve", 90, "PostProcess_Dissolve", "PostProcessDissolve" },
 	  PredefinedEffectEntry{ "AntiAliasing", "Anti Aliasing", 95, "PostProcess_AntiAliasing", "PostProcess" },
 	  PredefinedEffectEntry{ "LinearToSRGB", "Linear to sRGB", 100, "PostProcess_LinearToSRGB", "PostProcess" }
    };
@@ -166,8 +169,10 @@ void PostProcessManager::ConfigureEffectPipeline(PostProcess* effect, const std:
    const UINT cbSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "constantbuffer").value_or(0);
    const UINT inputSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "inputtexture").value_or(1);
    const UINT depthSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "depthtexture").value_or(2);
+   const UINT maskSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "masktexture").value_or(2);
    effect->SetBindingSlots(cbSlot, inputSlot);
    effect->SetDepthTextureRootSlot(depthSlot);
+   effect->SetMaskTextureRootSlot(maskSlot);
 }
 
 std::unique_ptr<PostProcess> PostProcessManager::CreateEffectByClassName(const std::string& className) {

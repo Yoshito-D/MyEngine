@@ -34,6 +34,7 @@ namespace PostProcess {
 constexpr unsigned int kConstantBuffer = 0;
 constexpr unsigned int kInputTexture = 1;
 constexpr unsigned int kDepthTexture = 2;
+constexpr unsigned int kMaskTexture = 2;
 } // namespace PostProcess
 
 namespace Skybox {

@@ -243,6 +243,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Dissolve.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.cpp" />
     <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp" />
@@ -523,6 +524,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Dissolve.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.h" />
     <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h" />
@@ -715,6 +717,7 @@
     <None Include="resources\pipelines\postprocess\bloom_pipeline.json" />
     <None Include="resources\pipelines\postprocess\boxfilter_pipeline.json" />
     <None Include="resources\pipelines\postprocess\chromatic_aberration_pipeline.json" />
+    <None Include="resources\pipelines\postprocess\dissolve_pipeline.json" />
     <None Include="resources\pipelines\postprocess\gaussfilter_pipeline.json" />
     <None Include="resources\pipelines\postprocess\grayscale_pipeline.json" />
     <None Include="resources\pipelines\postprocess\linear_to_srgb_pipeline.json" />
@@ -729,6 +732,7 @@
     <None Include="resources\pipelines\rootsig\object3d_rootsig.json" />
     <None Include="resources\pipelines\rootsig\object3d_skinning_rootsig.json" />
     <None Include="resources\pipelines\rootsig\particle_rootsig.json" />
+    <None Include="resources\pipelines\rootsig\postprocess_dissolve_rootsig.json" />
     <None Include="resources\pipelines\rootsig\postprocess_outline_rootsig.json" />
     <None Include="resources\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
     <None Include="resources\pipelines\rootsig\postprocess_rootsig.json" />

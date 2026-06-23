@@ -6,6 +6,7 @@
     "resources/pipelines/rootsig/particle_rootsig.json",
     "resources/pipelines/rootsig/fullscreen_triangle_rootsig.json",
     "resources/pipelines/rootsig/postprocess_rootsig.json",
+    "resources/pipelines/rootsig/postprocess_dissolve_rootsig.json",
     "resources/pipelines/rootsig/postprocess_outline_rootsig.json",
     "resources/pipelines/rootsig/skybox_rootsig.json"
   ],
@@ -28,6 +29,7 @@
     "resources/pipelines/postprocess/bloom_pipeline.json",
     "resources/pipelines/postprocess/boxfilter_pipeline.json",
     "resources/pipelines/postprocess/outline_pipeline.json",
+    "resources/pipelines/postprocess/dissolve_pipeline.json",
     "resources/pipelines/postprocess/anti_aliasing_pipeline.json",
     "resources/pipelines/postprocess/linear_to_srgb_pipeline.json"
   ]

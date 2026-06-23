@@ -79,6 +79,14 @@
       "pipelineName": "PostProcess_Bloom"
     },
     {
+      "name": "Dissolve",
+      "className": "Dissolve",
+      "priority": 90,
+      "enabled": false,
+      "pipelineName": "PostProcess_Dissolve",
+      "rootSignatureName": "PostProcessDissolve"
+    },
+    {
       "name": "Anti Aliasing",
       "className": "AntiAliasing",
       "priority": 95,

@@ -1,0 +1,52 @@
+{
+  "name": "PostProcessDissolve",
+  "reflectionSources": {
+    "pixelShader": "Dissolve"
+  },
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "semantic": "constantbuffer"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "shaderRegister": 0,
+      "semantic": "inputtexture"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "shaderRegister": 1,
+      "semantic": "masktexture"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Clamp",
+      "addressV": "Clamp",
+      "addressW": "Clamp",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    },
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Wrap",
+      "addressV": "Wrap",
+      "addressW": "Wrap",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 1,
+      "visibility": "Pixel"
+    }
+  ]
+}

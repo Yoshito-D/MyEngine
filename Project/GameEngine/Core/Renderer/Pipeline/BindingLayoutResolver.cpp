@@ -48,6 +48,9 @@ std::vector<std::string> BindingLayoutResolver::GetExpectedSemanticsForRootSigna
    if (rootSignatureName == "PostProcessOutline") {
       return { "constantbuffer", "inputtexture", "depthtexture" };
    }
+   if (rootSignatureName == "PostProcessDissolve") {
+      return { "constantbuffer", "inputtexture", "masktexture" };
+   }
 
    return {};
 }
@@ -211,7 +214,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
 
    const std::vector<std::string> postProcessEffects = {
       "Grayscale", "RadialBlur", "GaussFilter", "Vignette",
-      "ChromaticAberration", "ShockWave", "Pixelation", "Bloom", "BoxFilter", "Outline"
+      "ChromaticAberration", "ShockWave", "Pixelation", "Bloom", "BoxFilter", "Outline", "Dissolve"
    };
 
    for (const auto& effectName : postProcessEffects) {
@@ -227,6 +230,7 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
          }
          if (IsTextureLike(resource.type) && resource.bindPoint == 1) {
             RegisterSemantic(t, "depthtexture", RootBindingSlots::PostProcess::kDepthTexture);
+            RegisterSemantic(t, "masktexture", RootBindingSlots::PostProcess::kMaskTexture);
          }
       });
       if (!table.hasReflectionData) {
@@ -236,6 +240,9 @@ void BindingLayoutResolver::BuildPipelineRootParameterTables(
          RegisterSemantic(table, "inputtexture", RootBindingSlots::PostProcess::kInputTexture);
          if (effectName == "Outline") {
             RegisterSemantic(table, "depthtexture", RootBindingSlots::PostProcess::kDepthTexture);
+         }
+         if (effectName == "Dissolve") {
+            RegisterSemantic(table, "masktexture", RootBindingSlots::PostProcess::kMaskTexture);
          }
       }
       registerTable(effectName, table);
