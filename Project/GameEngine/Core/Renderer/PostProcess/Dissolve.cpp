@@ -162,7 +162,47 @@ void Dissolve::ImGuiEdit() {
 	  changed |= ImGui::DragFloat2("Mask Offset", &params.maskOffset.x, 0.005f);
 	  changed |= ImGui::ColorEdit4("Edge Color", params.edgeColor);
 	  changed |= ImGui::ColorEdit4("Dissolve Color", params.dissolveColor);
-	  ImGui::Text("Mask Texture: %s", maskTextureName_.c_str());
+
+	  const auto textureNames = EngineContext::GetTextureNames();
+	  const char* texturePreview = maskTextureName_.empty() ? "<none>" : maskTextureName_.c_str();
+	  if (ImGui::BeginCombo("Mask Texture", texturePreview)) {
+		 for (const auto& textureName : textureNames) {
+			Texture* candidate = EngineContext::GetTexture(textureName);
+			if (candidate && candidate->GetMetadata().IsCubemap()) {
+			   continue;
+			}
+
+			const bool selected = (textureName == maskTextureName_);
+			if (ImGui::Selectable(textureName.c_str(), selected)) {
+			   SetMaskTextureName(textureName);
+			}
+			if (selected) {
+			   ImGui::SetItemDefaultFocus();
+			}
+		 }
+		 ImGui::EndCombo();
+	  }
+
+	  if (Texture* previewTexture = ResolveMaskTexture()) {
+		 if (previewTexture->GetMetadata().IsCubemap()) {
+			ImGui::TextDisabled("TextureCube cannot be previewed as a dissolve mask");
+		 } else {
+			ImGui::Text("Preview: %s (%ux%u)", previewTexture->GetName().c_str(),
+			   previewTexture->GetWidth(), previewTexture->GetHeight());
+
+			constexpr float kPreviewMax = 128.0f;
+			const float width = static_cast<float>(previewTexture->GetWidth());
+			const float height = static_cast<float>(previewTexture->GetHeight());
+			if (width > 0.0f && height > 0.0f) {
+			   const float scale = (width > height) ? (kPreviewMax / width) : (kPreviewMax / height);
+			   const ImVec2 previewSize(width * scale, height * scale);
+			   const ImTextureID texId = static_cast<ImTextureID>(previewTexture->GetTextureSrvHandleGPU().ptr);
+			   ImGui::Image(ImTextureRef(texId), previewSize);
+			}
+		 }
+	  } else {
+		 ImGui::TextDisabled("Mask texture not found");
+	  }
 
 	  if (changed) {
 		 SetParams(params);

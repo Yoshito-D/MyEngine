@@ -51,7 +51,7 @@ public:
 
 private:
    DissolveParams params_;
-   std::string maskTextureName_ = "noise0";
+   std::string maskTextureName_ = "textures/noise0.png";
    Texture* maskTexture_ = nullptr;
    bool maskTextureLookupDirty_ = true;
 
