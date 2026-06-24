@@ -15,7 +15,7 @@ namespace {
 
 #ifdef USE_IMGUI
 #include "Object.h"
-#include "externals/imgui/imgui.h"
+#include "imgui.h"
 #include "Graphics/Texture.h"
 #include <cstring>
 #endif

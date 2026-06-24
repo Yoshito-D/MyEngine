@@ -13,8 +13,8 @@
 #include "Object/Skybox/Skybox.h"
 #include "Scene/Camera/Camera.h"
 #include "Sprite/Sprite.h"
-#include "externals/imgui/ImGuizmo/ImGuizmo.h"
-#include "externals/imgui/imgui.h"
+#include "ImGuizmo.h"
+#include "imgui.h"
 #include <cmath>
 #include <fstream>
 #include <limits>

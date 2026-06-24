@@ -22,7 +22,7 @@
 #include "Framework/EngineContext.h"
 #include "Graphics/Texture.h"
 #include "Scene/BaseScene.h"
-#include "externals/imgui/imgui.h"
+#include "imgui.h"
 #include <algorithm>
 #include <cstring>
 #include <fstream>

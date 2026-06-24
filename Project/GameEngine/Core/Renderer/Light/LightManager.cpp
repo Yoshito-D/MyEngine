@@ -1,6 +1,6 @@
 #include "LightManager.h"
 #ifdef USE_IMGUI
-#include "../../../externals/imgui/imgui.h"
+#include "imgui.h"
 #endif
 #include "DirectionalLight.h"
 #include "PointLight.h"
