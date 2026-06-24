@@ -51,7 +51,7 @@
                   "pipelineName": "",
                   "shininess": 40.0,
                   "textureNames": [
-                     "textures/round/aerial_grass_rock_diff_2k.jpg"
+                     "textures/ground/aerial_grass_rock_diff_2k.jpg"
                   ],
                   "uvTransform": [
                      [
@@ -168,7 +168,7 @@
                   "pipelineName": "",
                   "shininess": 40.0,
                   "textureNames": [
-                     "textures/round/painted_concrete_diff_2k.jpg"
+                     "textures/ground/painted_concrete_diff_2k.jpg"
                   ],
                   "uvTransform": [
                      [
@@ -232,6 +232,123 @@
             }
          ],
          "id": "editor_object_3",
+         "objectType": "Model"
+      },
+      {
+         "assetId": "models/planet/planet.obj",
+         "components": [
+            {
+               "data": {
+                  "parentObjectName": "",
+                  "rotation": [
+                     0.0,
+                     -0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "euler",
+                  "scale": [
+                     20.0,
+                     20.0,
+                     20.0
+                  ],
+                  "translation": [
+                     2.0,
+                     0.0,
+                     365.82452392578125
+                  ],
+                  "useParentMatrix": false
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "blendMode": -1,
+                  "color": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "environmentTextureName": "",
+                  "lightingMode": 0,
+                  "materialCount": 1,
+                  "materialNames": [
+                     "planetMaterial"
+                  ],
+                  "pipelineName": "",
+                  "shininess": 40.0,
+                  "textureNames": [
+                     "textures/ground/plywood_diff_2k.jpg"
+                  ],
+                  "uvTransform": [
+                     [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ]
+                  ]
+               },
+               "enabled": true,
+               "typeName": "MaterialComponent"
+            },
+            {
+               "data": {
+                  "name": "Planet_5"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "assetId": "models/planet/planet.obj"
+               },
+               "enabled": true,
+               "typeName": "ModelAssetComponent"
+            },
+            {
+               "data": {
+                  "applyPostProcess": true,
+                  "autoRender": true,
+                  "visible": true
+               },
+               "enabled": true,
+               "typeName": "RenderComponent"
+            },
+            {
+               "data": {
+                  "influenceRadius": 400.0
+               },
+               "enabled": true,
+               "typeName": "SphericalGravityAttractor"
+            }
+         ],
+         "id": "editor_object_4",
          "objectType": "Model"
       }
    ],
@@ -411,7 +528,7 @@
                      "pipelineName": "",
                      "shininess": 40.0,
                      "textureNames": [
-                        "textures/round/rust_coarse_01_diff_2k.jpg"
+                        "textures/ground/rust_coarse_01_diff_2k.jpg"
                      ],
                      "uvTransform": [
                         [
@@ -468,7 +585,7 @@
                },
                {
                   "data": {
-                     "influenceRadius": 40.0
+                     "influenceRadius": 100.0
                   },
                   "enabled": true,
                   "typeName": "SphericalGravityAttractor"
@@ -488,15 +605,15 @@
                   "data": {
                      "parentObjectName": "",
                      "rotation": [
-                        1.7191323041915894,
-                        0.02059241570532322,
-                        -0.5583114624023438
+                        -1.6103498935699463,
+                        0.03911178186535835,
+                        -0.818118691444397
                      ],
                      "rotationQuaternion": [
-                        0.7300463914871216,
-                        -0.20226925611495972,
-                        -0.18735429644584656,
-                        0.6253142356872559
+                        -0.6559536457061768,
+                        0.2991342544555664,
+                        -0.26264485716819763,
+                        0.6412965059280396
                      ],
                      "rotationSource": "quaternion",
                      "scale": [
@@ -505,9 +622,9 @@
                         1.0
                      ],
                      "translation": [
-                        -2.2090930938720703,
-                        -4.693656921386719,
-                        29.756484985351563
+                        -1.1792808771133423,
+                        0.5136654376983643,
+                        -30.181529998779297
                      ],
                      "useParentMatrix": false
                   },
@@ -611,6 +728,9 @@
                         },
                         {
                            "objectName": "Planet_4"
+                        },
+                        {
+                           "objectName": "Planet_5"
                         }
                      ],
                      "switchHysteresis": 1.5
@@ -621,17 +741,17 @@
                {
                   "data": {
                      "currentUpVector": [
-                        -0.06102124601602554,
-                        -0.13613848388195038,
-                        0.9888087511062622
+                        -0.05556993559002876,
+                        0.001485029119066894,
+                        -0.9984537363052368
                      ],
                      "gravityStrength": 9.699999809265137,
                      "rotationSpeed": 12.5,
                      "useGravity": true,
                      "velocity": [
-                        -20.938007354736328,
-                        -33.29384231567383,
-                        -5.8759965896606445
+                        29.04450035095215,
+                        27.287874221801758,
+                        -1.5759142637252808
                      ]
                   },
                   "enabled": true,

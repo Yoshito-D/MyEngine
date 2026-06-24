@@ -98,6 +98,8 @@ private:
 
    /// @brief 直近の水平前方ベクトル
    GameEngine::Vector3 flatForward_ = { 0.0f, 0.0f, 1.0f };
+
+   const float kInitialSpeed = 15.0f;
 };
 
 } // namespace App
