@@ -170,49 +170,49 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Externals\imgui\imgui.cpp">
+    <ClCompile Include="External\imgui\imgui.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\GraphEditor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
-    </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImCurveEdit.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\GraphEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImGradient.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImCurveEdit.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImGuizmo.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImGradient.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImSequencer.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImGuizmo.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImVectorEditor.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImSequencer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_demo.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImVectorEditor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="External\imgui\imgui_demo.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_draw.cpp">
+    <ClCompile Include="External\imgui\imgui_draw.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_impl_dx12.cpp">
+    <ClCompile Include="External\imgui\imgui_impl_dx12.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_impl_win32.cpp">
+    <ClCompile Include="External\imgui\imgui_impl_win32.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_tables.cpp">
+    <ClCompile Include="External\imgui\imgui_tables.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_widgets.cpp">
+    <ClCompile Include="External\imgui\imgui_widgets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Asset\AnimationAssetManager.cpp" />
@@ -490,24 +490,24 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Externals\imgui\imconfig.h" />
-    <ClInclude Include="Externals\imgui\imgui.h" />
-    <ClInclude Include="Externals\imgui\ImGuizmo\GraphEditor.h" />
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImCurveEdit.h" />
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImGradient.h" />
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImGuizmo.h" />
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImLightRig.h" />
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImSequencer.h" />
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImVectorEditor.h" />
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImZoomSlider.h" />
-    <ClInclude Include="Externals\imgui\imgui_impl_dx12.h" />
-    <ClInclude Include="Externals\imgui\imgui_impl_win32.h" />
-    <ClInclude Include="Externals\imgui\imgui_internal.h" />
-    <ClInclude Include="Externals\imgui\imstb_rectpack.h" />
-    <ClInclude Include="Externals\imgui\imstb_textedit.h" />
-    <ClInclude Include="Externals\imgui\imstb_truetype.h" />
-    <ClInclude Include="Externals\nlohmann\json.hpp" />
-    <ClInclude Include="Externals\nlohmann\json_fwd.hpp" />
+    <ClInclude Include="External\imgui\imconfig.h" />
+    <ClInclude Include="External\imgui\imgui.h" />
+    <ClInclude Include="External\imgui\ImGuizmo\GraphEditor.h" />
+    <ClInclude Include="External\imgui\ImGuizmo\ImCurveEdit.h" />
+    <ClInclude Include="External\imgui\ImGuizmo\ImGradient.h" />
+    <ClInclude Include="External\imgui\ImGuizmo\ImGuizmo.h" />
+    <ClInclude Include="External\imgui\ImGuizmo\ImLightRig.h" />
+    <ClInclude Include="External\imgui\ImGuizmo\ImSequencer.h" />
+    <ClInclude Include="External\imgui\ImGuizmo\ImVectorEditor.h" />
+    <ClInclude Include="External\imgui\ImGuizmo\ImZoomSlider.h" />
+    <ClInclude Include="External\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="External\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="External\imgui\imgui_internal.h" />
+    <ClInclude Include="External\imgui\imstb_rectpack.h" />
+    <ClInclude Include="External\imgui\imstb_textedit.h" />
+    <ClInclude Include="External\imgui\imstb_truetype.h" />
+    <ClInclude Include="External\nlohmann\json.hpp" />
+    <ClInclude Include="External\nlohmann\json_fwd.hpp" />
     <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\AssetManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\MaterialManager.h" />
@@ -700,7 +700,7 @@
     <ClInclude Include="GameEngine\Utility\ImGuiHelper.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Externals\imgui\LICENSE.txt" />
+    <Text Include="External\imgui\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
@@ -708,40 +708,40 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\pipelines\fullscreen_triangle_pipeline.json" />
-    <None Include="Resources\pipelines\line3d_pipeline.json" />
-    <None Include="Resources\pipelines\object3d_pipeline.json" />
-    <None Include="Resources\pipelines\particle_pipeline.json" />
-    <None Include="Resources\pipelines\pipeline_registry.json" />
-    <None Include="Resources\pipelines\postprocess\anti_aliasing_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\bloom_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\boxfilter_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\chromatic_aberration_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\dissolve_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\gaussfilter_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\grayscale_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\linear_to_srgb_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\outline_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\pixelation_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\radialblur_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\shockwave_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\speedline_pipeline.json" />
-    <None Include="Resources\pipelines\postprocess\vignette_pipeline.json" />
-    <None Include="Resources\pipelines\rootsig\fullscreen_triangle_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\line3d_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\object3d_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\object3d_skinning_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\particle_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\postprocess_dissolve_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\postprocess_outline_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\postprocess_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\skybox_rootsig.json" />
-    <None Include="Resources\pipelines\skinning_object3d_pipeline.json" />
-    <None Include="Resources\pipelines\skybox_pipeline.json" />
-    <None Include="Resources\pipelines\sprite_pipeline.json" />
-    <None Include="Resources\postprocess\postprocess_registry.json" />
-    <None Include="Resources\shaders\shader_registry.json" />
+    <None Include="Resource\pipelines\fullscreen_triangle_pipeline.json" />
+    <None Include="Resource\pipelines\line3d_pipeline.json" />
+    <None Include="Resource\pipelines\object3d_pipeline.json" />
+    <None Include="Resource\pipelines\particle_pipeline.json" />
+    <None Include="Resource\pipelines\pipeline_registry.json" />
+    <None Include="Resource\pipelines\postprocess\anti_aliasing_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\bloom_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\boxfilter_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\chromatic_aberration_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\dissolve_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\gaussfilter_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\grayscale_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\linear_to_srgb_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\outline_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\pixelation_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\radialblur_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\shockwave_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\speedline_pipeline.json" />
+    <None Include="Resource\pipelines\postprocess\vignette_pipeline.json" />
+    <None Include="Resource\pipelines\rootsig\fullscreen_triangle_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\line3d_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\object3d_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\object3d_skinning_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\particle_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\postprocess_dissolve_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\postprocess_outline_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\postprocess_rootsig.json" />
+    <None Include="Resource\pipelines\rootsig\skybox_rootsig.json" />
+    <None Include="Resource\pipelines\skinning_object3d_pipeline.json" />
+    <None Include="Resource\pipelines\skybox_pipeline.json" />
+    <None Include="Resource\pipelines\sprite_pipeline.json" />
+    <None Include="Resource\postprocess\postprocess_registry.json" />
+    <None Include="Resource\shaders\shader_registry.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

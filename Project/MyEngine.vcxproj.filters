@@ -203,148 +203,148 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\pipelines\fullscreen_triangle_pipeline.json">
+    <None Include="Resource\pipelines\fullscreen_triangle_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\line3d_pipeline.json">
+    <None Include="Resource\pipelines\line3d_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\object3d_pipeline.json">
+    <None Include="Resource\pipelines\object3d_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\particle_pipeline.json">
+    <None Include="Resource\pipelines\particle_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\pipeline_registry.json">
+    <None Include="Resource\pipelines\pipeline_registry.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\skinning_object3d_pipeline.json">
+    <None Include="Resource\pipelines\skinning_object3d_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\skybox_pipeline.json">
+    <None Include="Resource\pipelines\skybox_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\sprite_pipeline.json">
+    <None Include="Resource\pipelines\sprite_pipeline.json">
       <Filter>resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\anti_aliasing_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\anti_aliasing_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\bloom_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\bloom_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\boxfilter_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\boxfilter_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\chromatic_aberration_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\chromatic_aberration_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\dissolve_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\dissolve_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\gaussfilter_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\gaussfilter_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\grayscale_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\grayscale_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\linear_to_srgb_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\linear_to_srgb_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\outline_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\outline_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\pixelation_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\pixelation_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\radialblur_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\radialblur_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\shockwave_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\shockwave_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\speedline_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\speedline_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\postprocess\vignette_pipeline.json">
+    <None Include="Resource\pipelines\postprocess\vignette_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\fullscreen_triangle_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\fullscreen_triangle_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\line3d_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\line3d_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\object3d_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\object3d_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\object3d_skinning_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\object3d_skinning_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\particle_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\particle_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\postprocess_dissolve_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\postprocess_dissolve_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\postprocess_outline_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\postprocess_outline_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\postprocess_radialblur_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\postprocess_radialblur_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\postprocess_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\postprocess_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\pipelines\rootsig\skybox_rootsig.json">
+    <None Include="Resource\pipelines\rootsig\skybox_rootsig.json">
       <Filter>resources\pipelines\rootsig</Filter>
     </None>
-    <None Include="Resources\postprocess\postprocess_registry.json">
+    <None Include="Resource\postprocess\postprocess_registry.json">
       <Filter>resources\postprocess</Filter>
     </None>
-    <None Include="Resources\shaders\shader_registry.json">
+    <None Include="Resource\shaders\shader_registry.json">
       <Filter>resources\shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Externals\imgui\imgui.cpp">
+    <ClCompile Include="External\imgui\imgui.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_demo.cpp">
+    <ClCompile Include="External\imgui\imgui_demo.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_draw.cpp">
+    <ClCompile Include="External\imgui\imgui_draw.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_impl_dx12.cpp">
+    <ClCompile Include="External\imgui\imgui_impl_dx12.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_impl_win32.cpp">
+    <ClCompile Include="External\imgui\imgui_impl_win32.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_tables.cpp">
+    <ClCompile Include="External\imgui\imgui_tables.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\imgui_widgets.cpp">
+    <ClCompile Include="External\imgui\imgui_widgets.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\GraphEditor.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\GraphEditor.cpp">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImCurveEdit.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImCurveEdit.cpp">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImGradient.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImGradient.cpp">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImGuizmo.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImGuizmo.cpp">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImSequencer.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImSequencer.cpp">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClCompile>
-    <ClCompile Include="Externals\imgui\ImGuizmo\ImVectorEditor.cpp">
+    <ClCompile Include="External\imgui\ImGuizmo\ImVectorEditor.cpp">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\pch.cpp">
@@ -839,58 +839,58 @@
     <ClCompile Include="GameProject\App\Component\Gravity\GravityAttractor.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Externals\imgui\imconfig.h">
+    <ClInclude Include="External\imgui\imconfig.h">
       <Filter>externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\imgui.h">
+    <ClInclude Include="External\imgui\imgui.h">
       <Filter>externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\imgui_impl_dx12.h">
+    <ClInclude Include="External\imgui\imgui_impl_dx12.h">
       <Filter>externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\imgui_impl_win32.h">
+    <ClInclude Include="External\imgui\imgui_impl_win32.h">
       <Filter>externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\imgui_internal.h">
+    <ClInclude Include="External\imgui\imgui_internal.h">
       <Filter>externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\imstb_rectpack.h">
+    <ClInclude Include="External\imgui\imstb_rectpack.h">
       <Filter>externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\imstb_textedit.h">
+    <ClInclude Include="External\imgui\imstb_textedit.h">
       <Filter>externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\imstb_truetype.h">
+    <ClInclude Include="External\imgui\imstb_truetype.h">
       <Filter>externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\ImGuizmo\GraphEditor.h">
+    <ClInclude Include="External\imgui\ImGuizmo\GraphEditor.h">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImCurveEdit.h">
+    <ClInclude Include="External\imgui\ImGuizmo\ImCurveEdit.h">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImGradient.h">
+    <ClInclude Include="External\imgui\ImGuizmo\ImGradient.h">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImGuizmo.h">
+    <ClInclude Include="External\imgui\ImGuizmo\ImGuizmo.h">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImLightRig.h">
+    <ClInclude Include="External\imgui\ImGuizmo\ImLightRig.h">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImSequencer.h">
+    <ClInclude Include="External\imgui\ImGuizmo\ImSequencer.h">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImVectorEditor.h">
+    <ClInclude Include="External\imgui\ImGuizmo\ImVectorEditor.h">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\ImGuizmo\ImZoomSlider.h">
+    <ClInclude Include="External\imgui\ImGuizmo\ImZoomSlider.h">
       <Filter>externals\imgui\ImGuizmo</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\nlohmann\json.hpp">
+    <ClInclude Include="External\nlohmann\json.hpp">
       <Filter>externals\nlohmann</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\nlohmann\json_fwd.hpp">
+    <ClInclude Include="External\nlohmann\json_fwd.hpp">
       <Filter>externals\nlohmann</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\pch.h">
@@ -1465,6 +1465,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Externals\imgui\LICENSE.txt" />
+    <Text Include="External\imgui\LICENSE.txt" />
   </ItemGroup>
 </Project>
