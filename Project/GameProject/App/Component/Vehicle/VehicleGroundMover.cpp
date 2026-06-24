@@ -61,7 +61,7 @@ void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float
 void VehicleGroundMover::UpdateSpeed(float deltaTime) {
    // currentSpeed_ が負値のとき（初回呼び出し）は即座に autoSpeed に初期化する。
    // 負値を「未初期化」フラグとして使うことで、シリアライズ値を上書きしない。
-   if (currentSpeed_ < 0.0f) { currentSpeed_ = 15.0f; }
+   if (currentSpeed_ < 0.0f) { currentSpeed_ = kInitialSpeed; }
 
    // 外部から積まれた瞬間速度変化（インパルス）を直接加算する。
    // ブースト・ペナルティなど「即時に速度を変えたい」場合に使う。
