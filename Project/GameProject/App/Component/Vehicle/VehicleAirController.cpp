@@ -123,7 +123,7 @@ void VehicleAirController::ApplyRollRotation(GameEngine::Quaternion& rot,
 void VehicleAirController::DrawInspector() {
    if (!ImGui::CollapsingHeader("VehicleAirController")) { return; }
    ImGui::Separator();
-   ImGui::DragFloat("Steer Speed",     &rollSpeed,     1.0f, 0.0f, 360.0f);
+   ImGui::DragFloat("Steer Speed##1",     &rollSpeed,     1.0f, 0.0f, 360.0f);
    ImGui::DragFloat("Pitch Speed",     &pitchSpeed,     1.0f, 0.0f, 360.0f);
    ImGui::DragFloat("Angular Damping", &angularDamping, 0.1f, 0.1f,  20.0f);
    ImGui::DragFloat("Air Drag",        &airDrag,        0.05f, 0.0f,  5.0f);
