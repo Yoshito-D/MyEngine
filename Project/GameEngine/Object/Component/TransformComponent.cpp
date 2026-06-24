@@ -12,7 +12,7 @@ namespace {
 
 #ifdef USE_IMGUI
 #include "Object.h"
-#include "externals/imgui/imgui.h"
+#include "imgui.h"
 #include <algorithm>
 #include <cstring>
 #endif

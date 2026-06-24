@@ -12,8 +12,8 @@
 #include <dxgidebug.h>
 #endif
 
-#include "../externals/DirectXTex/d3dx12.h"
-#include "../externals/DirectXTex/DirectXTex.h"
+#include "../Externals/DirectXTex/d3dx12.h"
+#include "../Externals/DirectXTex/DirectXTex.h"
 
 #include <cstdint>
 #include <cassert>

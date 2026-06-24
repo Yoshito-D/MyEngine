@@ -6,7 +6,7 @@ Logger& Logger::GetInstance() {
 }
 
 void Logger::Initialize() {
-   std::filesystem::create_directory("logs");
+   std::filesystem::create_directory("Logs");
    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
    std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
 	  nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);

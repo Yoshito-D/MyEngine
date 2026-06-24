@@ -4,7 +4,7 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include <cstdint>
-#include "../../externals/DirectXTex/DirectXTex.h"
+#include "../../Externals/DirectXTex/DirectXTex.h"
 
 using namespace Microsoft::WRL;
 

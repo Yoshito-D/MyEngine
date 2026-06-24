@@ -20,7 +20,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
 #include <numbers>
 
 #ifdef USE_IMGUI
-#include "externals/imgui/imgui.h"
+#include "imgui.h"
 #include <cstring>
 #endif
 

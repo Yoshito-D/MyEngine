@@ -12,7 +12,7 @@
 #include "../Components/LookAtAim.h"
 #include "../Components/PerlinNoise.h"
 #include "Core/Renderer/Pass/LineRenderer.h"
-#include "externals/imgui/imgui.h"
+#include "imgui.h"
 
 namespace GameEngine {
 

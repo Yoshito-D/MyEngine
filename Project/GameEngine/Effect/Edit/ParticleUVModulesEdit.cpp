@@ -4,7 +4,7 @@
 #include "Effect/Module/TextureSheetAnimationModule.h"
 
 #ifdef USE_IMGUI
-#include "../../../externals/imgui/imgui.h"
+#include "imgui.h"
 #endif
 
 namespace {

@@ -9,8 +9,6 @@
 #include "Utility/MathUtils.h"
 #include "TimeProfiler.h"
 #include <memory>
-#include <array>
-#include "../externals/DirectXTex/DirectXTex.h"
 #include "EngineContext.h"
 #include "CameraManager.h"
 #include "LightManager.h"

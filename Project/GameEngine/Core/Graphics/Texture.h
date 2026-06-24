@@ -3,8 +3,8 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include <string>
-#include "../../../externals/DirectXTex/DirectXTex.h"
-#include "../../../externals/DirectXTex/d3dx12.h"
+#include "../../../Externals/DirectXTex/DirectXTex.h"
+#include "../../../Externals/DirectXTex/d3dx12.h"
 
 using namespace Microsoft::WRL;
 

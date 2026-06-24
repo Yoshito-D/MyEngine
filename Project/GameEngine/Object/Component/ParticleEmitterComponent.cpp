@@ -9,7 +9,7 @@
 #include "Framework/EngineContext.h"
 
 #ifdef USE_IMGUI
-#include "externals/imgui/imgui.h"
+#include "imgui.h"
 #include <cstring>
 #include <filesystem>
 #endif

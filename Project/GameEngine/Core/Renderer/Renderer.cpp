@@ -43,7 +43,7 @@
 
 #ifdef USE_IMGUI
 #include "RendererEditorController.h"
-#include "externals/imgui/imgui.h"
+#include "imgui.h"
 #endif
 
 namespace {
