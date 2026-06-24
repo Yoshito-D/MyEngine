@@ -24,7 +24,7 @@ public:
 
 public:
    /// @brief autoSpeed からこの分だけ超えるまでは非表示扱いにする
-   float activationMargin = 0.05f;
+   float activationMargin = -20.0f;
 
    /// @brief この速度差で SpeedLine 演出量が最大になる
    float effectSpeedRange = 20.0f;
