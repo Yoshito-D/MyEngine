@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "PlanetLeashCamera.h"
 #include "Scene/Camera/Core/CameraState.h"
+#include "Scene/Camera/Core/VirtualCamera.h"
 #include "Utility/MathUtils/MatrixOperations.h"
 #include <cmath>
 #include <algorithm>
@@ -12,6 +13,36 @@
 using namespace GameEngine;
 
 namespace App {
+
+namespace {
+nlohmann::json SerializeVector3(const Vector3& value) {
+   return nlohmann::json::array({ value.x, value.y, value.z });
+}
+
+Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
+   if (!data.is_array() || data.size() != 3) {
+      return fallback;
+   }
+   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
+}
+
+float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
+   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
+}
+
+bool ReadBool(const nlohmann::json& data, const char* key, bool fallback) {
+   return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
+}
+
+const bool kRegistered = VirtualCamera::RegisterComponentFactory(
+   "PlanetLeashCamera",
+   [](VirtualCamera& camera) -> ICinemachineComponent* {
+      if (auto* existing = camera.GetComponent<PlanetLeashCamera>()) {
+         return existing;
+      }
+      return camera.AddComponent<PlanetLeashCamera>();
+   });
+} // namespace
 
 void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    // 初回は現在のカメラ状態を初期位置として採用
@@ -100,6 +131,60 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    // カメラ状態へ最終反映
    state.transform.translation = eyePos_;
    state.SetViewMatrix(MakeLookAtMatrix(eyePos_, pivotTarget_, eyeRelUp_));
+}
+
+nlohmann::json PlanetLeashCamera::Serialize() const {
+   return nlohmann::json{
+      { "maxFollowDistance", maxFollowDistance },
+      { "followSpeed", followSpeed },
+      { "minPlanetDistance", minPlanetDistance },
+      { "useGravityUp", useGravityUp },
+      { "pivotTarget", SerializeVector3(pivotTarget_) },
+      { "sphereCenter", SerializeVector3(sphereCenter_) },
+      { "gravityUp", SerializeVector3(gravityUp_) },
+      { "eyePos", SerializeVector3(eyePos_) },
+      { "isInitialized", isInitialized_ },
+      { "prevGravityUp", SerializeVector3(prevGravityUp_) },
+      { "eyeRelUp", SerializeVector3(eyeRelUp_) },
+      { "cachedRight", SerializeVector3(cachedRight_) },
+      { "cachedUp", SerializeVector3(cachedUp_) }
+   };
+}
+
+void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
+   if (!data.is_object()) {
+      return;
+   }
+
+   maxFollowDistance = ReadFloat(data, "maxFollowDistance", maxFollowDistance);
+   followSpeed = ReadFloat(data, "followSpeed", followSpeed);
+   minPlanetDistance = ReadFloat(data, "minPlanetDistance", minPlanetDistance);
+   useGravityUp = ReadBool(data, "useGravityUp", useGravityUp);
+   if (data.contains("pivotTarget")) {
+      pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
+   }
+   if (data.contains("sphereCenter")) {
+      sphereCenter_ = DeserializeVector3(data.at("sphereCenter"), sphereCenter_);
+   }
+   if (data.contains("gravityUp")) {
+      gravityUp_ = DeserializeVector3(data.at("gravityUp"), gravityUp_);
+   }
+   if (data.contains("eyePos")) {
+      eyePos_ = DeserializeVector3(data.at("eyePos"), eyePos_);
+   }
+   isInitialized_ = ReadBool(data, "isInitialized", isInitialized_);
+   if (data.contains("prevGravityUp")) {
+      prevGravityUp_ = DeserializeVector3(data.at("prevGravityUp"), prevGravityUp_);
+   }
+   if (data.contains("eyeRelUp")) {
+      eyeRelUp_ = DeserializeVector3(data.at("eyeRelUp"), eyeRelUp_);
+   }
+   if (data.contains("cachedRight")) {
+      cachedRight_ = DeserializeVector3(data.at("cachedRight"), cachedRight_);
+   }
+   if (data.contains("cachedUp")) {
+      cachedUp_ = DeserializeVector3(data.at("cachedUp"), cachedUp_);
+   }
 }
 
 #ifdef USE_IMGUI

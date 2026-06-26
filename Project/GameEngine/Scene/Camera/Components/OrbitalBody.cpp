@@ -11,6 +11,32 @@
 
 namespace GameEngine {
 
+namespace {
+const bool kRegistered = VirtualCamera::RegisterComponentFactory(
+    "OrbitalBody",
+    [](VirtualCamera& camera) -> ICinemachineComponent* {
+        if (auto* existing = camera.GetComponent<OrbitalBody>()) {
+            return existing;
+        }
+        return camera.AddComponent<OrbitalBody>();
+    });
+
+nlohmann::json SerializeVector3(const Vector3& value) {
+    return nlohmann::json::array({ value.x, value.y, value.z });
+}
+
+Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
+    if (!data.is_array() || data.size() != 3) {
+        return fallback;
+    }
+    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
+}
+
+float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
+    return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
+}
+} // namespace
+
 void OrbitalBody::MutateCameraState(CameraState& state, float /*deltaTime*/) {
     rotationMatrix_ = MakeRotateXMatrix(pitch_) * MakeRotateYMatrix(yaw_);
 
@@ -70,6 +96,36 @@ void OrbitalBody::ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta,
         distance_ = (std::max)(0.5f, distance_);
     }
 }
+
+#pragma region Serialization
+nlohmann::json OrbitalBody::Serialize() const {
+    return nlohmann::json{
+        { "yaw", yaw_ },
+        { "pitch", pitch_ },
+        { "distance", distance_ },
+        { "pivotTarget", SerializeVector3(pivotTarget_) },
+        { "rotateSpeed", rotateSpeed_ },
+        { "scrollSpeed", scrollSpeed_ },
+        { "moveSpeed", moveSpeed_ }
+    };
+}
+
+void OrbitalBody::Deserialize(const nlohmann::json& data) {
+    if (!data.is_object()) {
+        return;
+    }
+
+    yaw_ = ReadFloat(data, "yaw", yaw_);
+    pitch_ = ReadFloat(data, "pitch", pitch_);
+    SetDistance(ReadFloat(data, "distance", distance_));
+    if (data.contains("pivotTarget")) {
+        pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
+    }
+    rotateSpeed_ = ReadFloat(data, "rotateSpeed", rotateSpeed_);
+    scrollSpeed_ = ReadFloat(data, "scrollSpeed", scrollSpeed_);
+    moveSpeed_ = ReadFloat(data, "moveSpeed", moveSpeed_);
+}
+#pragma endregion
 
 #ifdef USE_IMGUI
 static constexpr float kRadToDeg = 57.2957795f;

@@ -12,6 +12,8 @@
 #include "Model/Model.h"
 #include "Object/Skybox/Skybox.h"
 #include "Scene/Camera/Camera.h"
+#include "Scene/Camera/Core/CinemachineBrain.h"
+#include "Scene/Camera/Core/VirtualCamera.h"
 #include "Sprite/Sprite.h"
 #include "ImGuizmo.h"
 #include "imgui.h"
@@ -239,11 +241,12 @@ bool EditorSceneContext::Save() {
    }
 
    nlohmann::json sceneData = nlohmann::json::object();
-   sceneData["version"] = 2;
+   sceneData["version"] = 3;
    sceneData["sceneName"] = sceneName_;
    sceneData["objects"] = objectStore_.SerializeAll();
    sceneData["sceneObjects"] = SerializeSceneObjects();
    sceneData["sceneParticleSystems"] = SerializeSceneParticleSystems();
+   sceneData["cameras"] = SerializeCameras();
 
    std::ofstream file(filePath);
    if (!file.is_open()) {
@@ -304,6 +307,9 @@ bool EditorSceneContext::Load() {
    }
    if (sceneData.contains("sceneParticleSystems") && sceneData.at("sceneParticleSystems").is_array()) {
       ApplySceneParticleSystems(sceneData.at("sceneParticleSystems"));
+   }
+   if (sceneData.contains("cameras") && sceneData.at("cameras").is_object()) {
+      ApplyCameras(sceneData.at("cameras"));
    }
 
    ClearDirty();
@@ -1057,6 +1063,35 @@ nlohmann::json EditorSceneContext::SerializeSceneParticleSystems() {
    return sceneParticleSystems;
 }
 
+nlohmann::json EditorSceneContext::SerializeCameras() const {
+   nlohmann::json camerasData = nlohmann::json::object();
+
+   CinemachineBrain* brain = EngineContext::GetActiveBrain();
+   if (!brain) {
+      return camerasData;
+   }
+
+   camerasData["brain"] = nlohmann::json{
+      { "defaultBlendTime", brain->GetDefaultBlendTime() }
+   };
+
+   nlohmann::json virtualCameras = nlohmann::json::array();
+   const auto& registeredCameras = brain->GetVirtualCameras();
+   for (size_t index = 0; index < registeredCameras.size(); ++index) {
+      VirtualCamera* camera = registeredCameras[index];
+      if (!camera || camera->GetName() == "DebugCamera") {
+         continue;
+      }
+
+      nlohmann::json cameraData = camera->Serialize();
+      cameraData["index"] = index;
+      virtualCameras.push_back(std::move(cameraData));
+   }
+
+   camerasData["virtualCameras"] = std::move(virtualCameras);
+   return camerasData;
+}
+
 void EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsData) {
    if (!sceneObjectsData.is_array()) {
       return;
@@ -1151,6 +1186,69 @@ void EditorSceneContext::ApplySceneParticleSystems(const nlohmann::json& scenePa
       }
 
       objectStore_.ApplyParticleSystemState(particleSystem, *particleData);
+   }
+}
+
+void EditorSceneContext::ApplyCameras(const nlohmann::json& camerasData) {
+   if (!camerasData.is_object()) {
+      return;
+   }
+
+   CinemachineBrain* brain = EngineContext::GetActiveBrain();
+   if (!brain) {
+      return;
+   }
+
+   if (camerasData.contains("brain") && camerasData.at("brain").is_object()) {
+      const auto& brainData = camerasData.at("brain");
+      if (brainData.contains("defaultBlendTime") && brainData.at("defaultBlendTime").is_number()) {
+         brain->SetDefaultBlendTime(brainData.at("defaultBlendTime").get<float>());
+      }
+   }
+
+   if (!camerasData.contains("virtualCameras") || !camerasData.at("virtualCameras").is_array()) {
+      return;
+   }
+
+   const auto& registeredCameras = brain->GetVirtualCameras();
+   std::unordered_set<VirtualCamera*> appliedCameras;
+
+   for (const auto& cameraData : camerasData.at("virtualCameras")) {
+      if (!cameraData.is_object()) {
+         continue;
+      }
+
+      const std::string cameraName = cameraData.value("name", "");
+      if (cameraName == "DebugCamera") {
+         continue;
+      }
+
+      VirtualCamera* targetCamera = nullptr;
+      if (!cameraName.empty()) {
+         for (VirtualCamera* camera : registeredCameras) {
+            if (camera && camera->GetName() == cameraName && camera->GetName() != "DebugCamera") {
+               targetCamera = camera;
+               break;
+            }
+         }
+      }
+
+      if (!targetCamera && cameraData.contains("index") && cameraData.at("index").is_number_unsigned()) {
+         const size_t index = cameraData.at("index").get<size_t>();
+         if (index < registeredCameras.size()) {
+            VirtualCamera* candidate = registeredCameras[index];
+            if (candidate && candidate->GetName() != "DebugCamera") {
+               targetCamera = candidate;
+            }
+         }
+      }
+
+      if (!targetCamera || appliedCameras.contains(targetCamera)) {
+         continue;
+      }
+
+      targetCamera->Deserialize(cameraData);
+      appliedCameras.insert(targetCamera);
    }
 }
 

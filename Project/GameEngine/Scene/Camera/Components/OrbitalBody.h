@@ -75,6 +75,9 @@ public:
 
     const char* GetComponentName() const override { return "OrbitalBody"; }
 
+    nlohmann::json Serialize() const override;
+    void Deserialize(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
     void DrawInspector() override;
 #endif

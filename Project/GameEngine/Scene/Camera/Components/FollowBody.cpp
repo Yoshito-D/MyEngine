@@ -9,6 +9,28 @@
 
 namespace GameEngine {
 
+namespace {
+const bool kRegistered = VirtualCamera::RegisterComponentFactory(
+    "FollowBody",
+    [](VirtualCamera& camera) -> ICinemachineComponent* {
+        if (auto* existing = camera.GetComponent<FollowBody>()) {
+            return existing;
+        }
+        return camera.AddComponent<FollowBody>();
+    });
+
+nlohmann::json SerializeVector3(const Vector3& value) {
+    return nlohmann::json::array({ value.x, value.y, value.z });
+}
+
+Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
+    if (!data.is_array() || data.size() != 3) {
+        return fallback;
+    }
+    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
+}
+} // namespace
+
 void FollowBody::MutateCameraState(CameraState& state, float deltaTime) {
     if (owner_ == nullptr) return;
 
@@ -26,6 +48,25 @@ void FollowBody::MutateCameraState(CameraState& state, float deltaTime) {
     state.transform.translation.x += (targetPosition.x - state.transform.translation.x) * dampX;
     state.transform.translation.y += (targetPosition.y - state.transform.translation.y) * dampY;
     state.transform.translation.z += (targetPosition.z - state.transform.translation.z) * dampZ;
+}
+
+nlohmann::json FollowBody::Serialize() const {
+    return nlohmann::json{
+        { "offset", SerializeVector3(offset_) },
+        { "damping", SerializeVector3(damping_) }
+    };
+}
+
+void FollowBody::Deserialize(const nlohmann::json& data) {
+    if (!data.is_object()) {
+        return;
+    }
+    if (data.contains("offset")) {
+        offset_ = DeserializeVector3(data.at("offset"), offset_);
+    }
+    if (data.contains("damping")) {
+        damping_ = DeserializeVector3(data.at("damping"), damping_);
+    }
 }
 
 #ifdef USE_IMGUI

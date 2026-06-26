@@ -21,6 +21,9 @@ public:
     void SetOffset(const Vector3& offset) { offset_ = offset; }
     const Vector3& GetOffset() const { return offset_; }
 
+    nlohmann::json Serialize() const override;
+    void Deserialize(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
     void DrawInspector() override;
 #endif

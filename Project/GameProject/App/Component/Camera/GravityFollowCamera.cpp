@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "GravityFollowCamera.h"
 #include "Scene/Camera/Core/CameraState.h"
+#include "Scene/Camera/Core/VirtualCamera.h"
 #include "Utility/MathUtils/MatrixOperations.h"
 #include "Utility/MathUtils/VectorOperations.h"
 #include <algorithm>
@@ -27,6 +28,34 @@ static Vector3 RotateAroundAxis(const Vector3& v, const Vector3& axis, float ang
    // ロドリゲス公式: v*cos + (axis×v)*sin + axis*(axis・v)*(1-cos)
    return v * c + axis.Cross(v) * s + axis * (axis.Dot(v) * (1.0f - c));
 }
+
+static nlohmann::json SerializeVector3(const Vector3& value) {
+   return nlohmann::json::array({ value.x, value.y, value.z });
+}
+
+static Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
+   if (!data.is_array() || data.size() != 3) {
+      return fallback;
+   }
+   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
+}
+
+static float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
+   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
+}
+
+static bool ReadBool(const nlohmann::json& data, const char* key, bool fallback) {
+   return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
+}
+
+const bool kRegistered = VirtualCamera::RegisterComponentFactory(
+   "GravityFollowCamera",
+   [](VirtualCamera& camera) -> ICinemachineComponent* {
+      if (auto* existing = camera.GetComponent<GravityFollowCamera>()) {
+         return existing;
+      }
+      return camera.AddComponent<GravityFollowCamera>();
+   });
 
 /// @brief ベクトルを平面へ投影して正規化する（失敗時はフォールバックを返す）
 /// @details 重力平面への投影に使用する。up 方向成分を除去して水平化する。
@@ -409,6 +438,103 @@ void GravityFollowCamera::ProcessInput(const Vector2& mouseDelta, int32_t wheelD
 
 Vector3 GravityFollowCamera::GetCameraUp()    const { return cachedUp_; }
 Vector3 GravityFollowCamera::GetCameraRight() const { return cachedRight_; }
+
+nlohmann::json GravityFollowCamera::Serialize() const {
+   return nlohmann::json{
+      { "rotateSpeed", rotateSpeed },
+      { "scrollSpeed", scrollSpeed },
+      { "gravityUpLerpSpeed", gravityUpLerpSpeed },
+      { "fovDefault", fovDefault },
+      { "fovBoostMax", fovBoostMax },
+      { "fovLerpSpeed", fovLerpSpeed },
+      { "speedBoostThreshold", speedBoostThreshold },
+      { "speedBoostMax", speedBoostMax },
+      { "distanceBoostMax", distanceBoostMax },
+      { "springStiffness", springStiffness },
+      { "springDamping", springDamping },
+      { "accelToFovKick", accelToFovKick },
+      { "accelToDistanceKick", accelToDistanceKick },
+      { "turboFovKickMax", turboFovKickMax },
+      { "turboDistanceKickMax", turboDistanceKickMax },
+      { "positionLerpSpeed", positionLerpSpeed },
+      { "pitch", pitch_ },
+      { "distance", distance_ },
+      { "flatForward", SerializeVector3(flatForward_) },
+      { "gravityUp", SerializeVector3(gravityUp_) },
+      { "currentGravityUp", SerializeVector3(currentGravityUp_) },
+      { "pivotTarget", SerializeVector3(pivotTarget_) },
+      { "playerSpeed", playerSpeed_ },
+      { "autoSpeed", autoSpeed_ },
+      { "currentFov", currentFov_ },
+      { "springFovOffset", springFovOffset_ },
+      { "springFovVelocity", springFovVelocity_ },
+      { "springDistanceOffset", springDistanceOffset_ },
+      { "springDistanceVelocity", springDistanceVelocity_ },
+      { "previousPlayerSpeed", previousPlayerSpeed_ },
+      { "isSpeedInitialized", isSpeedInitialized_ },
+      { "currentEyeOffset", SerializeVector3(currentEyeOffset_) },
+      { "isEyeInitialized", isEyeInitialized_ },
+      { "cachedRight", SerializeVector3(cachedRight_) },
+      { "cachedUp", SerializeVector3(cachedUp_) }
+   };
+}
+
+void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
+   if (!data.is_object()) {
+      return;
+   }
+
+   rotateSpeed = ReadFloat(data, "rotateSpeed", rotateSpeed);
+   scrollSpeed = ReadFloat(data, "scrollSpeed", scrollSpeed);
+   gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
+   fovDefault = ReadFloat(data, "fovDefault", fovDefault);
+   fovBoostMax = ReadFloat(data, "fovBoostMax", fovBoostMax);
+   fovLerpSpeed = ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
+   speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
+   speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
+   distanceBoostMax = ReadFloat(data, "distanceBoostMax", distanceBoostMax);
+   springStiffness = ReadFloat(data, "springStiffness", springStiffness);
+   springDamping = ReadFloat(data, "springDamping", springDamping);
+   accelToFovKick = ReadFloat(data, "accelToFovKick", accelToFovKick);
+   accelToDistanceKick = ReadFloat(data, "accelToDistanceKick", accelToDistanceKick);
+   turboFovKickMax = ReadFloat(data, "turboFovKickMax", turboFovKickMax);
+   turboDistanceKickMax = ReadFloat(data, "turboDistanceKickMax", turboDistanceKickMax);
+   positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
+   pitch_ = std::clamp(ReadFloat(data, "pitch", pitch_), 0.1f, 1.4f);
+   SetDistance(ReadFloat(data, "distance", distance_));
+
+   if (data.contains("flatForward")) {
+      flatForward_ = DeserializeVector3(data.at("flatForward"), flatForward_);
+   }
+   if (data.contains("gravityUp")) {
+      gravityUp_ = DeserializeVector3(data.at("gravityUp"), gravityUp_);
+   }
+   if (data.contains("currentGravityUp")) {
+      currentGravityUp_ = DeserializeVector3(data.at("currentGravityUp"), currentGravityUp_);
+   }
+   if (data.contains("pivotTarget")) {
+      pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
+   }
+   playerSpeed_ = ReadFloat(data, "playerSpeed", playerSpeed_);
+   autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
+   currentFov_ = ReadFloat(data, "currentFov", currentFov_);
+   springFovOffset_ = ReadFloat(data, "springFovOffset", springFovOffset_);
+   springFovVelocity_ = ReadFloat(data, "springFovVelocity", springFovVelocity_);
+   springDistanceOffset_ = ReadFloat(data, "springDistanceOffset", springDistanceOffset_);
+   springDistanceVelocity_ = ReadFloat(data, "springDistanceVelocity", springDistanceVelocity_);
+   previousPlayerSpeed_ = ReadFloat(data, "previousPlayerSpeed", previousPlayerSpeed_);
+   isSpeedInitialized_ = ReadBool(data, "isSpeedInitialized", isSpeedInitialized_);
+   if (data.contains("currentEyeOffset")) {
+      currentEyeOffset_ = DeserializeVector3(data.at("currentEyeOffset"), currentEyeOffset_);
+   }
+   isEyeInitialized_ = ReadBool(data, "isEyeInitialized", isEyeInitialized_);
+   if (data.contains("cachedRight")) {
+      cachedRight_ = DeserializeVector3(data.at("cachedRight"), cachedRight_);
+   }
+   if (data.contains("cachedUp")) {
+      cachedUp_ = DeserializeVector3(data.at("cachedUp"), cachedUp_);
+   }
+}
 
 #ifdef USE_IMGUI
 static constexpr float kRadToDeg = 57.2957795f;
