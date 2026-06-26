@@ -21,6 +21,9 @@ public:
     void SetDamping(const Vector3& damping) { damping_ = damping; }
     const Vector3& GetDamping() const { return damping_; }
 
+    nlohmann::json Serialize() const override;
+    void Deserialize(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
     void DrawInspector() override;
 #endif

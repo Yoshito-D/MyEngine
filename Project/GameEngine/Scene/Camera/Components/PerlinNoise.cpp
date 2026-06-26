@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "PerlinNoise.h"
+#include "../Core/VirtualCamera.h"
 #include <cmath>
 #include <algorithm>
 
@@ -10,12 +11,36 @@
 namespace GameEngine {
 
 namespace {
+const bool kRegistered = VirtualCamera::RegisterComponentFactory(
+    "PerlinNoise",
+    [](VirtualCamera& camera) -> ICinemachineComponent* {
+        if (auto* existing = camera.GetComponent<PerlinNoise>()) {
+            return existing;
+        }
+        return camera.AddComponent<PerlinNoise>();
+    });
+
 Vector3 NormalizeOrDefault(const Vector3& value, const Vector3& fallback) {
     float length = value.Length();
     if (length > 1e-5f) {
         return value * (1.0f / length);
     }
     return fallback;
+}
+
+nlohmann::json SerializeVector3(const Vector3& value) {
+    return nlohmann::json::array({ value.x, value.y, value.z });
+}
+
+Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
+    if (!data.is_array() || data.size() != 3) {
+        return fallback;
+    }
+    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
+}
+
+float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
+    return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
 }
 }
 
@@ -84,6 +109,38 @@ float PerlinNoise::Noise(float t) const {
     return std::sin(t * kPi2) * 0.5f +
            std::sin(t * kPi2 * 2.0f + 1.0f) * 0.25f +
            std::sin(t * kPi2 * 4.0f + 2.0f) * 0.125f;
+}
+
+nlohmann::json PerlinNoise::Serialize() const {
+    return nlohmann::json{
+        { "amplitudeGain", amplitudeGain_ },
+        { "frequencyGain", frequencyGain_ },
+        { "time", time_ },
+        { "remainingTime", remainingTime_ },
+        { "initialAmplitude", initialAmplitude_ },
+        { "shakeDirection", SerializeVector3(shakeDirection_) },
+        { "useDirectionalShake", useDirectionalShake_ }
+    };
+}
+
+void PerlinNoise::Deserialize(const nlohmann::json& data) {
+    if (!data.is_object()) {
+        return;
+    }
+
+    amplitudeGain_ = ReadFloat(data, "amplitudeGain", amplitudeGain_);
+    frequencyGain_ = ReadFloat(data, "frequencyGain", frequencyGain_);
+    time_ = ReadFloat(data, "time", time_);
+    remainingTime_ = ReadFloat(data, "remainingTime", remainingTime_);
+    initialAmplitude_ = ReadFloat(data, "initialAmplitude", initialAmplitude_);
+    if (data.contains("shakeDirection")) {
+        shakeDirection_ = NormalizeOrDefault(
+            DeserializeVector3(data.at("shakeDirection"), shakeDirection_),
+            { 0.0f, 1.0f, 0.0f });
+    }
+    if (data.contains("useDirectionalShake") && data.at("useDirectionalShake").is_boolean()) {
+        useDirectionalShake_ = data.at("useDirectionalShake").get<bool>();
+    }
 }
 
 #ifdef USE_IMGUI

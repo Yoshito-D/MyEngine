@@ -37,6 +37,9 @@ public:
    /// @brief 直近計算のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const { return cachedRight_; }
 
+   nlohmann::json Serialize() const override;
+   void Deserialize(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;

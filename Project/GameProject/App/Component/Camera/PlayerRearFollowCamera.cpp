@@ -1,4 +1,5 @@
 #include "PlayerRearFollowCamera.h"
+#include "Scene/Camera/Core/VirtualCamera.h"
 #include "Utility/MathUtils/MatrixOperations.h"
 #include <algorithm>
 #include <cmath>
@@ -19,6 +20,34 @@ static float ExpSmoothingFactor(float speed, float deltaTime) {
 	float dt = (std::max)(0.0f, deltaTime);
 	return 1.0f - std::exp(-k * dt);
 }
+
+static nlohmann::json SerializeVector3(const GameEngine::Vector3& value) {
+	return nlohmann::json::array({ value.x, value.y, value.z });
+}
+
+static GameEngine::Vector3 DeserializeVector3(const nlohmann::json& data, const GameEngine::Vector3& fallback) {
+	if (!data.is_array() || data.size() != 3) {
+		return fallback;
+	}
+	return GameEngine::Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
+}
+
+static float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
+	return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
+}
+
+static bool ReadBool(const nlohmann::json& data, const char* key, bool fallback) {
+	return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
+}
+
+const bool kRegistered = GameEngine::VirtualCamera::RegisterComponentFactory(
+	"PlayerRearFollowCamera",
+	[](GameEngine::VirtualCamera& camera) -> GameEngine::ICinemachineComponent* {
+		if (auto* existing = camera.GetComponent<PlayerRearFollowCamera>()) {
+			return existing;
+		}
+		return camera.AddComponent<PlayerRearFollowCamera>();
+	});
 
 /// @brief 1次元Spring（半陰的オイラー）で状態を1ステップ進める
 static void StepSpring1D(float target,
@@ -409,6 +438,109 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
 
 	// ⑥ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
 	ApplyLookAt(state, eye, up);
+}
+
+nlohmann::json PlayerRearFollowCamera::Serialize() const {
+	return nlohmann::json{
+		{ "distance", distance },
+		{ "height", height },
+		{ "rearLerpSpeed", rearLerpSpeed },
+		{ "gravityUpLerpSpeed", gravityUpLerpSpeed },
+		{ "fovDefault", fovDefault },
+		{ "fovBoostMax", fovBoostMax },
+		{ "fovLerpSpeed", fovLerpSpeed },
+		{ "distanceBoostMax", distanceBoostMax },
+		{ "springStiffness", springStiffness },
+		{ "springDamping", springDamping },
+		{ "accelToFovKick", accelToFovKick },
+		{ "accelToDistanceKick", accelToDistanceKick },
+		{ "turboFovKickMax", turboFovKickMax },
+		{ "turboDistanceKickMax", turboDistanceKickMax },
+		{ "speedBoostThreshold", speedBoostThreshold },
+		{ "speedBoostMax", speedBoostMax },
+		{ "positionLerpSpeed", positionLerpSpeed },
+		{ "gravityUp", SerializeVector3(gravityUp_) },
+		{ "currentGravityUp", SerializeVector3(currentGravityUp_) },
+		{ "pivotTarget", SerializeVector3(pivotTarget_) },
+		{ "followForward", SerializeVector3(followForward_) },
+		{ "isAirborne", isAirborne_ },
+		{ "currentBackward", SerializeVector3(currentBackward_) },
+		{ "isInitialized", isInitialized_ },
+		{ "playerSpeed", playerSpeed_ },
+		{ "autoSpeed", autoSpeed_ },
+		{ "currentFov", currentFov_ },
+		{ "springFovOffset", springFovOffset_ },
+		{ "springFovVelocity", springFovVelocity_ },
+		{ "springDistanceOffset", springDistanceOffset_ },
+		{ "springDistanceVelocity", springDistanceVelocity_ },
+		{ "previousPlayerSpeed", previousPlayerSpeed_ },
+		{ "isSpeedInitialized", isSpeedInitialized_ },
+		{ "currentEyeOffset", SerializeVector3(currentEyeOffset_) },
+		{ "isEyeInitialized", isEyeInitialized_ },
+		{ "cachedRight", SerializeVector3(cachedRight_) },
+		{ "cachedUp", SerializeVector3(cachedUp_) }
+	};
+}
+
+void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
+	if (!data.is_object()) {
+		return;
+	}
+
+	distance = ReadFloat(data, "distance", distance);
+	height = ReadFloat(data, "height", height);
+	rearLerpSpeed = ReadFloat(data, "rearLerpSpeed", rearLerpSpeed);
+	gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
+	fovDefault = ReadFloat(data, "fovDefault", fovDefault);
+	fovBoostMax = ReadFloat(data, "fovBoostMax", fovBoostMax);
+	fovLerpSpeed = ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
+	distanceBoostMax = ReadFloat(data, "distanceBoostMax", distanceBoostMax);
+	springStiffness = ReadFloat(data, "springStiffness", springStiffness);
+	springDamping = ReadFloat(data, "springDamping", springDamping);
+	accelToFovKick = ReadFloat(data, "accelToFovKick", accelToFovKick);
+	accelToDistanceKick = ReadFloat(data, "accelToDistanceKick", accelToDistanceKick);
+	turboFovKickMax = ReadFloat(data, "turboFovKickMax", turboFovKickMax);
+	turboDistanceKickMax = ReadFloat(data, "turboDistanceKickMax", turboDistanceKickMax);
+	speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
+	speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
+	positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
+
+	if (data.contains("gravityUp")) {
+		gravityUp_ = DeserializeVector3(data.at("gravityUp"), gravityUp_);
+	}
+	if (data.contains("currentGravityUp")) {
+		currentGravityUp_ = DeserializeVector3(data.at("currentGravityUp"), currentGravityUp_);
+	}
+	if (data.contains("pivotTarget")) {
+		pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
+	}
+	if (data.contains("followForward")) {
+		followForward_ = DeserializeVector3(data.at("followForward"), followForward_);
+	}
+	isAirborne_ = ReadBool(data, "isAirborne", isAirborne_);
+	if (data.contains("currentBackward")) {
+		currentBackward_ = DeserializeVector3(data.at("currentBackward"), currentBackward_);
+	}
+	isInitialized_ = ReadBool(data, "isInitialized", isInitialized_);
+	playerSpeed_ = ReadFloat(data, "playerSpeed", playerSpeed_);
+	autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
+	currentFov_ = ReadFloat(data, "currentFov", currentFov_);
+	springFovOffset_ = ReadFloat(data, "springFovOffset", springFovOffset_);
+	springFovVelocity_ = ReadFloat(data, "springFovVelocity", springFovVelocity_);
+	springDistanceOffset_ = ReadFloat(data, "springDistanceOffset", springDistanceOffset_);
+	springDistanceVelocity_ = ReadFloat(data, "springDistanceVelocity", springDistanceVelocity_);
+	previousPlayerSpeed_ = ReadFloat(data, "previousPlayerSpeed", previousPlayerSpeed_);
+	isSpeedInitialized_ = ReadBool(data, "isSpeedInitialized", isSpeedInitialized_);
+	if (data.contains("currentEyeOffset")) {
+		currentEyeOffset_ = DeserializeVector3(data.at("currentEyeOffset"), currentEyeOffset_);
+	}
+	isEyeInitialized_ = ReadBool(data, "isEyeInitialized", isEyeInitialized_);
+	if (data.contains("cachedRight")) {
+		cachedRight_ = DeserializeVector3(data.at("cachedRight"), cachedRight_);
+	}
+	if (data.contains("cachedUp")) {
+		cachedUp_ = DeserializeVector3(data.at("cachedUp"), cachedUp_);
+	}
 }
 
 #ifdef USE_IMGUI

@@ -1,5 +1,6 @@
 #pragma once
 #include "CameraState.h"
+#include <nlohmann/json.hpp>
 
 namespace GameEngine {
 
@@ -38,6 +39,12 @@ public:
 
     /// @brief コンポーネント名を取得
     virtual const char* GetComponentName() const = 0;
+
+    /// @brief コンポーネント固有パラメータを保存する
+    virtual nlohmann::json Serialize() const { return nlohmann::json::object(); }
+
+    /// @brief コンポーネント固有パラメータを読み込む
+    virtual void Deserialize(const nlohmann::json& data) { (void)data; }
 
 #ifdef USE_IMGUI
     /// @brief ImGuiによるインスペクタ表示（各コンポーネントが自身を描画）

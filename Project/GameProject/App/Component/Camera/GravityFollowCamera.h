@@ -62,6 +62,9 @@ public:
    /// @brief 直近更新時のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const;
 
+   nlohmann::json Serialize() const override;
+   void Deserialize(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;

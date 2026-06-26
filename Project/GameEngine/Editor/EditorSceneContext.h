@@ -96,8 +96,10 @@ private:
    ParticleSystem* FindSceneParticleSystemByKey(const std::string& key) const;
    nlohmann::json SerializeSceneObjects();
    nlohmann::json SerializeSceneParticleSystems();
+   nlohmann::json SerializeCameras() const;
    void ApplySceneObjects(const nlohmann::json& sceneObjectsData);
    void ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData);
+   void ApplyCameras(const nlohmann::json& camerasData);
    void HideSceneOwnedObject(Object* object);
    void HideSceneOwnedParticleSystem(ParticleSystem* particleSystem);
    bool HasTransformChanged(const Transform& lhs, const Transform& rhs) const;

@@ -1,6 +1,9 @@
 #pragma once
 #include "CameraState.h"
 #include "ICinemachineComponent.h"
+#include <functional>
+#include <string>
+#include <unordered_map>
 #include <vector>
 #include <memory>
 #include <algorithm>
@@ -10,6 +13,8 @@ namespace GameEngine {
 /// @brief 仮想カメラの基底クラス
 class VirtualCamera {
 public:
+    using ComponentFactory = std::function<ICinemachineComponent*(VirtualCamera&)>;
+
     VirtualCamera() = default;
     virtual ~VirtualCamera() = default;
 
@@ -39,6 +44,15 @@ public:
 
     /// @brief コンポーネントを削除
     void RemoveComponent(ICinemachineComponent* component);
+
+    /// @brief コンポーネント名からファクトリを登録
+    static bool RegisterComponentFactory(const std::string& componentName, ComponentFactory factory);
+
+    /// @brief コンポーネント名から追加する（登録済みファクトリ経由）
+    ICinemachineComponent* AddComponentByName(const std::string& componentName);
+
+    /// @brief コンポーネント名から取得する
+    ICinemachineComponent* FindComponentByName(const std::string& componentName) const;
 
     /// @brief コンポーネントを取得
     template<typename T>
@@ -75,6 +89,12 @@ public:
 
     /// @brief コンポーネント一覧を取得（読み取り専用）
     const std::vector<std::unique_ptr<ICinemachineComponent>>& GetComponents() const { return components_; }
+
+    /// @brief 仮想カメラ設定を保存する
+    nlohmann::json Serialize() const;
+
+    /// @brief 仮想カメラ設定を読み込む
+    void Deserialize(const nlohmann::json& data);
 
 protected:
     void SortComponents();

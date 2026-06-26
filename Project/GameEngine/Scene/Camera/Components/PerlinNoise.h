@@ -35,6 +35,9 @@ public:
     /// @brief シェイク中かどうか
     bool IsShaking() const { return remainingTime_ > 0.0f; }
 
+    nlohmann::json Serialize() const override;
+    void Deserialize(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
     void DrawInspector() override;
 #endif

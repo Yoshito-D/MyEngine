@@ -3,6 +3,8 @@
 #include <EngineContext.h>
 #include <ParticleSystem.h>
 #include <Skybox/Skybox.h>
+#include <filesystem>
+#include <fstream>
 
 namespace GameEngine {
 void BaseScene::Initialize() {
@@ -34,6 +36,7 @@ void BaseScene::Initialize() {
    debugCamera_ = std::make_unique<DebugCamera>();
    debugCamera_->Initialize();
    debugCamera_->SetPriority(-1); // 通常時は選ばれない
+   LoadDebugCameraState();
    unit->brain->RegisterVirtualCamera(debugCamera_.get());
    unit->brain->SetDefaultBlendTime(0.0f);
 
@@ -93,6 +96,10 @@ void BaseScene::Finalize() {
       sCurrentScene_ = nullptr;
    }
 
+#ifdef USE_IMGUI
+   SaveDebugCameraState();
+#endif
+
    // アクティブなBrainに登録されている全VirtualCameraを解除してからCameraUnitを破棄
    if (auto* brain = EngineContext::GetActiveBrain()) {
       auto vcams = brain->GetVirtualCameras(); // コピーして反復
@@ -132,6 +139,74 @@ void BaseScene::LoadEditorSceneIfNeeded() {
    if (editorSceneContext_) {
       editorSceneContext_->AutoLoad();
    }
+}
+
+std::filesystem::path BaseScene::GetDebugCameraStateFilePath() const {
+   return std::filesystem::path("resources") / "editor" / "debug_cameras" / (editorSceneName_ + ".json");
+}
+
+void BaseScene::LoadDebugCameraState() {
+   if (!debugCamera_) {
+      return;
+   }
+
+   const std::filesystem::path filePath = GetDebugCameraStateFilePath();
+   if (!std::filesystem::exists(filePath)) {
+      return;
+   }
+
+   std::ifstream file(filePath);
+   if (!file.is_open()) {
+      return;
+   }
+
+   nlohmann::json root;
+   try {
+      file >> root;
+   } catch (...) {
+      return;
+   }
+
+   const nlohmann::json* cameraData = nullptr;
+   if (root.is_object() && root.contains("debugCamera") && root.at("debugCamera").is_object()) {
+      cameraData = &root.at("debugCamera");
+   } else if (root.is_object()) {
+      cameraData = &root;
+   }
+   if (!cameraData) {
+      return;
+   }
+
+   const int priority = debugCamera_->GetPriority();
+   const bool active = debugCamera_->IsActive();
+   debugCamera_->Deserialize(*cameraData);
+   debugCamera_->SetName("DebugCamera");
+   debugCamera_->SetPriority(priority);
+   debugCamera_->SetActive(active);
+}
+
+void BaseScene::SaveDebugCameraState() const {
+   if (!debugCamera_) {
+      return;
+   }
+
+   const std::filesystem::path filePath = GetDebugCameraStateFilePath();
+   std::error_code error;
+   std::filesystem::create_directories(filePath.parent_path(), error);
+   if (error) {
+      return;
+   }
+
+   std::ofstream file(filePath);
+   if (!file.is_open()) {
+      return;
+   }
+
+   nlohmann::json root = nlohmann::json::object();
+   root["version"] = 1;
+   root["sceneName"] = editorSceneName_;
+   root["debugCamera"] = debugCamera_->Serialize();
+   file << root.dump(3);
 }
 #endif
 

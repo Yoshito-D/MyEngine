@@ -4,6 +4,7 @@
 #include "Camera/DebugCamera.h"
 #include "Camera/Core/CinemachineBrain.h"
 #include "Camera/Editor/CameraEditor.h"
+#include <filesystem>
 #ifdef USE_IMGUI
 #include "Editor/EditorSceneContext.h"
 #endif
@@ -51,6 +52,10 @@ protected:
    void UpdateDebugCamera();
 
 #ifdef USE_IMGUI
+   void LoadDebugCameraState();
+   void SaveDebugCameraState() const;
+   std::filesystem::path GetDebugCameraStateFilePath() const;
+
    std::unique_ptr<DebugCamera> debugCamera_ = nullptr;
    std::unique_ptr<CameraEditor> cameraEditor_ = nullptr;
    std::unique_ptr<EditorSceneContext> editorSceneContext_ = nullptr;
