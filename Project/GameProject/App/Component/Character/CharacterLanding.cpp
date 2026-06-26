@@ -14,7 +14,7 @@
 
 namespace App {
 
-void CharacterLanding::Update(float /*deltaTime*/) {
+void CharacterLanding::Update(float) {
    // オーナー不在時は処理しない
    if (!HasOwner()) { return; }
 
@@ -90,6 +90,15 @@ void CharacterLanding::Update(float /*deltaTime*/) {
 	  // 非ジャンプ時は常に地表へ固定し、速度を完全停止
 	  transform->transform.translation = planetCenter_ + gravityUp * snapRadius;
 	  gravityBody->SetVelocity({ 0.0f, 0.0f, 0.0f });
+
+	  auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
+
+	  if (switcher) {
+		 if (switcher->HasSwitched()) {
+			switcher->ResetSwitchedFlag();
+		 }
+	  }
+
 	  isGrounded_ = true;
    }
 }

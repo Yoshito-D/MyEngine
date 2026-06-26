@@ -54,7 +54,7 @@ void TriggerDirectionalShake(
 }
 }
 
-void CameraGravityBridge::Update(float /*deltaTime*/) {
+void CameraGravityBridge::Update(float) {
    // オーナー不在時は更新しない
    if (!HasOwner()) { return; }
 

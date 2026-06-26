@@ -24,9 +24,6 @@ public:
    static constexpr const char* kTypeName = "VehicleMover";
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 毎フレーム更新（移動処理は ApplyMovement で行う）
-   void Update(float deltaTime) override { (void)deltaTime; }
-
    /// @brief ステアリング・ピッチ入力と接地状態から移動・姿勢を適用する
    /// @param steerInput  左右入力（-1〜+1）
    /// @param pitchInput  前後入力（-1〜+1）: 空中のみ有効

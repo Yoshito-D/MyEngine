@@ -14,9 +14,6 @@ public:
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 毎フレーム更新（入力は外部制御のため未使用）
-   void Update(float deltaTime) override { (void)deltaTime; }
-
    /// @brief 未ジャンプ時のみジャンプ速度を付与する
    /// @param gravityUp 現在の重力Up方向
    void Jump(const GameEngine::Vector3& gravityUp);

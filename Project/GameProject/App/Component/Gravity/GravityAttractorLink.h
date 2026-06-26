@@ -15,7 +15,7 @@ public:
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 現在の attractor を GravityBody へ適用する
-   void Update(float deltaTime) override;
+   void Update(float) override;
 
    /// @brief 適用元となる重力発生源を設定する
    void SetAttractor(GravityAttractor* attractor) { attractor_ = attractor; }

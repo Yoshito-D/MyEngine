@@ -629,9 +629,6 @@
     <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\ColliderComponent.cpp">
-      <Filter>GameEngine\Object\Component</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
@@ -837,6 +834,8 @@
       <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Gravity\GravityAttractor.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\IObjectComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ComponentRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Externals\imgui\imconfig.h">
@@ -1206,9 +1205,6 @@
       <Filter>GameEngine\Object</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h">
-      <Filter>GameEngine\Object\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\ColliderComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\ComponentContainer.h">

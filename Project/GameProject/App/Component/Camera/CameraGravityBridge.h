@@ -18,8 +18,7 @@ public:
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief オーナー位置から重力Upを算出し、接続先カメラへ反映する
-   /// @param deltaTime フレーム時間（本実装では未使用）
-   void Update(float deltaTime) override;
+   void Update(float) override;
 
    /// @brief 惑星中心座標を設定する
    void SetPlanetCenter(const GameEngine::Vector3& center)    { planetCenter_        = center; }

@@ -6,6 +6,7 @@
 #endif
 
 namespace App {
+
 /// @brief 影響半径内かどうかを返す（0以下は無限範囲）
 bool SphericalGravityAttractor::IsInRange(const GameEngine::Vector3& objectPosition) const {
    if (influenceRadius <= 0.0f) { return true; }

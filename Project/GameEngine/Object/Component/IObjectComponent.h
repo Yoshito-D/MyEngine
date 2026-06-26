@@ -19,33 +19,16 @@ public:
    bool HasOwner() const { return owner_ != nullptr; }
 
    /// @brief コンポーネントをオブジェクトにアタッチする
-   void Attach(Object& owner) {
-      owner_ = &owner;
-      OnAttach();
-   }
+   void Attach(Object& owner);
 
    /// @brief コンポーネントをオブジェクトからデタッチする
-   void Detach() {
-      OnDetach();
-      owner_ = nullptr;
-   }
+   void Detach();
 
    bool IsEnabled() const {
       return isEnabled_;
    }
 
-   void SetEnabled(bool enabled) {
-      if (isEnabled_ == enabled) {
-         return;
-      }
-
-      isEnabled_ = enabled;
-      if (isEnabled_) {
-         OnEnable();
-      } else {
-         OnDisable();
-      }
-   }
+   void SetEnabled(bool enabled);
 
    /// @brief ライフサイクルコールバック
    virtual void OnAttach() {}
@@ -54,17 +37,11 @@ public:
    virtual void OnDisable() {}
 
    /// @brief 更新処理（オーナーはGetOwner()で取得）
-   virtual void Update(float deltaTime) {
-      (void)deltaTime;
-   }
+   virtual void Update([[maybe_unused]]float deltaTime) {};
 
-   virtual nlohmann::json Serialize() const {
-      return nlohmann::json::object();
-   }
+   virtual nlohmann::json Serialize() const = 0;
 
-   virtual void Deserialize(const nlohmann::json& data) {
-      (void)data;
-   }
+   virtual void Deserialize(const nlohmann::json& data) = 0;
 
 #ifdef USE_IMGUI
    /// @brief インスペクター描画（オーナーはGetOwner()で取得）

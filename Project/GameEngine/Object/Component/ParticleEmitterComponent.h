@@ -57,7 +57,7 @@ public:
    void OnDetach() override;
    void OnEnable() override;
    void OnDisable() override;
-   void Update(float deltaTime) override;
+   void Update(float) override;
 
    // ── スロット管理 ──────────────────────────────────
 

@@ -66,7 +66,7 @@ void ParticleEmitterComponent::OnDisable() {
    }
 }
 
-void ParticleEmitterComponent::Update(float deltaTime) {
+void ParticleEmitterComponent::Update(float) {
    if (slots_.empty()) return;
 
    // Distance Culling 判定（共通）
@@ -123,8 +123,6 @@ void ParticleEmitterComponent::Update(float deltaTime) {
 		 onFinished();
 	  }
    }
-
-   (void)deltaTime;
 }
 
 void ParticleEmitterComponent::ApplyEmitterToShapeModule(ParticleSystem* ps, const Matrix4x4& emitterMatrix) {

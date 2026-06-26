@@ -13,9 +13,6 @@ public:
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 毎フレーム更新（問い合わせ駆動のため未使用）
-   void Update(float deltaTime) override { (void)deltaTime; }
-
    /// @brief 影響半径内かどうかを返す（0以下は無限範囲）
    bool IsInRange(const GameEngine::Vector3& objectPosition) const override;
 

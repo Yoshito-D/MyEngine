@@ -256,6 +256,8 @@
     <ClCompile Include="GameEngine\Effect\Module\TextureSheetAnimationModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\UVTransformModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\ComponentRegistry.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\IObjectComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ParticleEmitterComponent.cpp" />
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Light\LightDataBuffer.cpp" />
@@ -317,7 +319,6 @@
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
     <ClCompile Include="GameEngine\Framework\Framework.cpp" />
     <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\ColliderComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp" />
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ModelAssetComponent.cpp" />
@@ -600,7 +601,6 @@
     <ClInclude Include="GameEngine\Framework\ExportDump.h" />
     <ClInclude Include="GameEngine\Framework\Framework.h" />
     <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\ColliderComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ComponentContainer.h" />
     <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h" />
     <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />

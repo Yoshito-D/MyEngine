@@ -1,4 +1,449 @@
 {
+   "cameras": {
+      "brain": {
+         "defaultBlendTime": 0.5
+      },
+      "virtualCameras": [
+         {
+            "active": true,
+            "components": [
+               {
+                  "componentName": "GravityFollowCamera",
+                  "data": {
+                     "accelToDistanceKick": 0.03999999910593033,
+                     "accelToFovKick": 0.0024999999441206455,
+                     "autoSpeed": 45.0,
+                     "cachedRight": [
+                        0.2380557358264923,
+                        0.9705971479415894,
+                        0.03564799204468727
+                     ],
+                     "cachedUp": [
+                        -0.7141847014427185,
+                        0.19980448484420776,
+                        -0.6708342432975769
+                     ],
+                     "currentEyeOffset": [
+                        9.985946655273438,
+                        -2.036484956741333,
+                        -11.237811088562012
+                     ],
+                     "currentFov": 0.536298394203186,
+                     "currentGravityUp": [
+                        0.14011617004871368,
+                        0.02638251520693302,
+                        -0.989783525466919
+                     ],
+                     "distance": 15.0,
+                     "distanceBoostMax": 2.5,
+                     "flatForward": [
+                        -0.9653509259223938,
+                        0.22590263187885284,
+                        -0.1306360363960266
+                     ],
+                     "fovBoostMax": 0.07999999821186066,
+                     "fovDefault": 0.44999998807907104,
+                     "fovLerpSpeed": 4.0,
+                     "gravityUp": [
+                        0.14011617004871368,
+                        0.02638251520693302,
+                        -0.989783525466919
+                     ],
+                     "gravityUpLerpSpeed": 5.0,
+                     "isEyeInitialized": true,
+                     "isSpeedInitialized": true,
+                     "pitch": 1.0,
+                     "pivotTarget": [
+                        7.0327467918396,
+                        1.3241978883743286,
+                        -49.679466247558594
+                     ],
+                     "playerSpeed": 32.53232955932617,
+                     "positionLerpSpeed": 12.0,
+                     "previousPlayerSpeed": 32.53232955932617,
+                     "rotateSpeed": 0.004999999888241291,
+                     "scrollSpeed": 0.008333333767950535,
+                     "speedBoostMax": 25.0,
+                     "speedBoostThreshold": 5.0,
+                     "springDamping": 18.0,
+                     "springDistanceOffset": 0.18865370750427246,
+                     "springDistanceVelocity": -0.009811848402023315,
+                     "springFovOffset": 0.006216997280716896,
+                     "springFovVelocity": -0.000323345884680748,
+                     "springStiffness": 85.0,
+                     "turboDistanceKickMax": 2.0,
+                     "turboFovKickMax": 0.05999999865889549
+                  },
+                  "enabled": true
+               },
+               {
+                  "componentName": "PerlinNoise",
+                  "data": {
+                     "amplitudeGain": 0.0,
+                     "frequencyGain": 14.0,
+                     "initialAmplitude": 0.15000000596046448,
+                     "remainingTime": 0.0,
+                     "shakeDirection": [
+                        -0.7179657816886902,
+                        0.5787301063537598,
+                        0.38677722215652466
+                     ],
+                     "time": 34.356101989746094,
+                     "useDirectionalShake": true
+                  },
+                  "enabled": true
+               }
+            ],
+            "index": 1,
+            "name": "GravityFollowCamera",
+            "priority": -1,
+            "state": {
+               "farClip": 10000.0,
+               "fov": 0.536298394203186,
+               "hasViewMatrixOverride": true,
+               "nearClip": 0.009999999776482582,
+               "transform": {
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "translation": [
+                     17.018693923950195,
+                     -0.7122870683670044,
+                     -60.91727828979492
+                  ]
+               },
+               "viewMatrixOverride": [
+                  [
+                     0.23805572092533112,
+                     -0.7141846418380737,
+                     -0.6582323312759399,
+                     0.0
+                  ],
+                  [
+                     0.9705971479415894,
+                     0.19980445504188538,
+                     0.1342366635799408,
+                     0.0
+                  ],
+                  [
+                     0.03564799949526787,
+                     -0.6708341836929321,
+                     0.7407500743865967,
+                     0.0
+                  ],
+                  [
+                     -1.188474416732788,
+                     -28.568584442138672,
+                     56.42234802246094,
+                     1.0
+                  ]
+               ]
+            }
+         },
+         {
+            "active": true,
+            "components": [
+               {
+                  "componentName": "PlayerRearFollowCamera",
+                  "data": {
+                     "accelToDistanceKick": 0.03999999910593033,
+                     "accelToFovKick": 0.0024999999441206455,
+                     "autoSpeed": 45.0,
+                     "cachedRight": [
+                        0.8386067152023315,
+                        0.5283026099205017,
+                        0.13279703259468079
+                     ],
+                     "cachedUp": [
+                        0.14011617004871368,
+                        0.02638251520693302,
+                        -0.989783525466919
+                     ],
+                     "currentBackward": [
+                        0.5264089107513428,
+                        -0.8486461639404297,
+                        0.05189920589327812
+                     ],
+                     "currentEyeOffset": [
+                        9.585933685302734,
+                        -14.656984329223633,
+                        -2.22524094581604
+                     ],
+                     "currentFov": 0.4573490023612976,
+                     "currentGravityUp": [
+                        0.14011617004871368,
+                        0.02638251520693302,
+                        -0.989783525466919
+                     ],
+                     "distance": 15.0,
+                     "distanceBoostMax": 2.0,
+                     "followForward": [
+                        -0.5246917009353638,
+                        0.8489014506340027,
+                        -0.06375893950462341
+                     ],
+                     "fovBoostMax": 0.0,
+                     "fovDefault": 0.44999998807907104,
+                     "fovLerpSpeed": 4.0,
+                     "gravityUp": [
+                        0.14011617004871368,
+                        0.02638251520693302,
+                        -0.989783525466919
+                     ],
+                     "gravityUpLerpSpeed": 5.0,
+                     "height": 4.0,
+                     "isAirborne": false,
+                     "isEyeInitialized": true,
+                     "isInitialized": true,
+                     "isSpeedInitialized": true,
+                     "pivotTarget": [
+                        7.0327467918396,
+                        1.3241978883743286,
+                        -49.679466247558594
+                     ],
+                     "playerSpeed": 32.53232955932617,
+                     "positionLerpSpeed": 12.0,
+                     "previousPlayerSpeed": 32.53232955932617,
+                     "rearLerpSpeed": 50.0,
+                     "speedBoostMax": 25.0,
+                     "speedBoostThreshold": 5.0,
+                     "springDamping": 12.0,
+                     "springDistanceOffset": 0.22032740712165833,
+                     "springDistanceVelocity": -0.011322811245918274,
+                     "springFovOffset": 0.007260789163410664,
+                     "springFovVelocity": -0.0003731376491487026,
+                     "springStiffness": 30.0,
+                     "turboDistanceKickMax": 2.0,
+                     "turboFovKickMax": 0.05999999865889549
+                  },
+                  "enabled": true
+               },
+               {
+                  "componentName": "PerlinNoise",
+                  "data": {
+                     "amplitudeGain": 0.0,
+                     "frequencyGain": 14.0,
+                     "initialAmplitude": 0.15000000596046448,
+                     "remainingTime": 0.0,
+                     "shakeDirection": [
+                        0.1666543036699295,
+                        0.5790373682975769,
+                        0.7980865240097046
+                     ],
+                     "time": 34.356101989746094,
+                     "useDirectionalShake": true
+                  },
+                  "enabled": true
+               }
+            ],
+            "index": 2,
+            "name": "PlayerRearFollowCamera",
+            "priority": 0,
+            "state": {
+               "farClip": 10000.0,
+               "fov": 0.4573490023612976,
+               "hasViewMatrixOverride": true,
+               "nearClip": 0.009999999776482582,
+               "transform": {
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "translation": [
+                     16.618680953979492,
+                     -13.332786560058594,
+                     -51.90470886230469
+                  ]
+               },
+               "viewMatrixOverride": [
+                  [
+                     0.8386067152023315,
+                     0.04366125911474228,
+                     -0.5429847240447998,
+                     0.0
+                  ],
+                  [
+                     0.5283026099205017,
+                     0.17781014740467072,
+                     0.8302288055419922,
+                     0.0
+                  ],
+                  [
+                     0.13279703259468079,
+                     -0.9830957651138306,
+                     0.12604643404483795,
+                     0.0
+                  ],
+                  [
+                     -4.76837158203125e-07,
+                     -49.38218688964844,
+                     26.635356903076172,
+                     1.0
+                  ]
+               ]
+            }
+         },
+         {
+            "active": true,
+            "components": [
+               {
+                  "componentName": "PlanetLeashCamera",
+                  "data": {
+                     "cachedRight": [
+                        0.7203077077865601,
+                        -0.4129684269428253,
+                        0.5573274493217468
+                     ],
+                     "cachedUp": [
+                        -0.5471455454826355,
+                        0.15560322999954224,
+                        0.8224472403526306
+                     ],
+                     "eyePos": [
+                        2420.851806640625,
+                        5081.57763671875,
+                        594.9899291992188
+                     ],
+                     "eyeRelUp": [
+                        -0.5471456050872803,
+                        0.15560322999954224,
+                        0.8224472403526306
+                     ],
+                     "followSpeed": 15.0,
+                     "gravityUp": [
+                        0.14011617004871368,
+                        0.02638251520693302,
+                        -0.989783525466919
+                     ],
+                     "isInitialized": true,
+                     "maxFollowDistance": 30.0,
+                     "minPlanetDistance": 50.0,
+                     "pivotTarget": [
+                        7.0327467918396,
+                        1.3241978883743286,
+                        -49.679466247558594
+                     ],
+                     "prevGravityUp": [
+                        0.14011617004871368,
+                        0.02638251520693302,
+                        -0.989783525466919
+                     ],
+                     "sphereCenter": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "useGravityUp": true
+                  },
+                  "enabled": true
+               },
+               {
+                  "componentName": "PerlinNoise",
+                  "data": {
+                     "amplitudeGain": 0.0,
+                     "frequencyGain": 14.0,
+                     "initialAmplitude": 0.15000000596046448,
+                     "remainingTime": 0.0,
+                     "shakeDirection": [
+                        -0.5443564653396606,
+                        0.10376232862472534,
+                        -0.8324118852615356
+                     ],
+                     "time": 34.356101989746094,
+                     "useDirectionalShake": true
+                  },
+                  "enabled": true
+               }
+            ],
+            "index": 3,
+            "name": "PlanetLeashCamera",
+            "priority": -1,
+            "state": {
+               "farClip": 10000.0,
+               "fov": 0.44999998807907104,
+               "hasViewMatrixOverride": true,
+               "nearClip": 0.009999999776482582,
+               "transform": {
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "translation": [
+                     2420.851806640625,
+                     5081.57763671875,
+                     594.9899291992188
+                  ]
+               },
+               "viewMatrixOverride": [
+                  [
+                     0.7203077077865601,
+                     -0.5471455454826355,
+                     -0.4263667166233063,
+                     0.0
+                  ],
+                  [
+                     -0.4129684567451477,
+                     0.15560325980186462,
+                     -0.8973543047904968,
+                     0.0
+                  ],
+                  [
+                     0.5573274493217468,
+                     0.8224472403526306,
+                     -0.11387164890766144,
+                     0.0
+                  ],
+                  [
+                     23.168853759765625,
+                     44.5003662109375,
+                     5659.89892578125,
+                     1.0
+                  ]
+               ]
+            }
+         }
+      ]
+   },
    "objects": [
       {
          "assetId": "models/planet/planet.obj",
@@ -19,14 +464,14 @@
                   ],
                   "rotationSource": "euler",
                   "scale": [
-                     25.0,
-                     25.0,
-                     25.0
+                     45.35490036010742,
+                     45.35490036010742,
+                     45.35490036010742
                   ],
                   "translation": [
                      0.0,
                      0.0,
-                     157.19598388671875
+                     261.41424560546875
                   ],
                   "useParentMatrix": false
                },
@@ -136,14 +581,14 @@
                   ],
                   "rotationSource": "euler",
                   "scale": [
-                     30.0,
-                     30.0,
-                     30.0
+                     46.22999954223633,
+                     46.22999954223633,
+                     46.22999954223633
                   ],
                   "translation": [
                      1.0,
                      0.0,
-                     257.74383544921875
+                     388.3906555175781
                   ],
                   "useParentMatrix": false
                },
@@ -253,14 +698,14 @@
                   ],
                   "rotationSource": "euler",
                   "scale": [
-                     20.0,
-                     20.0,
-                     20.0
+                     44.62920379638672,
+                     44.62920379638672,
+                     44.62920379638672
                   ],
                   "translation": [
                      2.0,
                      0.0,
-                     365.82452392578125
+                     516.2827758789063
                   ],
                   "useParentMatrix": false
                },
@@ -375,9 +820,9 @@
                      ],
                      "rotationSource": "euler",
                      "scale": [
-                        30.0,
-                        30.0,
-                        30.0
+                        50.0,
+                        50.0,
+                        50.0
                      ],
                      "translation": [
                         0.0,
@@ -464,7 +909,7 @@
                },
                {
                   "data": {
-                     "influenceRadius": 200.0
+                     "influenceRadius": 300.0
                   },
                   "enabled": true,
                   "typeName": "SphericalGravityAttractor"
@@ -496,14 +941,14 @@
                      ],
                      "rotationSource": "euler",
                      "scale": [
-                        20.0,
-                        20.0,
-                        20.0
+                        48.0,
+                        48.0,
+                        48.0
                      ],
                      "translation": [
                         0.0,
                         0.0,
-                        80.10613250732422
+                        135.8745574951172
                      ],
                      "useParentMatrix": false
                   },
@@ -585,7 +1030,7 @@
                },
                {
                   "data": {
-                     "influenceRadius": 100.0
+                     "influenceRadius": 300.0
                   },
                   "enabled": true,
                   "typeName": "SphericalGravityAttractor"
@@ -605,15 +1050,15 @@
                   "data": {
                      "parentObjectName": "",
                      "rotation": [
-                        -1.6103498935699463,
-                        0.03911178186535835,
-                        -0.818118691444397
+                        -1.6351696252822876,
+                        -0.1331905573606491,
+                        0.5621702075004578
                      ],
                      "rotationQuaternion": [
-                        -0.6559536457061768,
-                        0.2991342544555664,
-                        -0.26264485716819763,
-                        0.6412965059280396
+                        -0.686687171459198,
+                        -0.24564260244369507,
+                        0.14267581701278687,
+                        0.6691518425941467
                      ],
                      "rotationSource": "quaternion",
                      "scale": [
@@ -622,9 +1067,9 @@
                         1.0
                      ],
                      "translation": [
-                        -1.1792808771133423,
-                        0.5136654376983643,
-                        -30.181529998779297
+                        7.0327467918396,
+                        1.3241978883743286,
+                        -49.679466247558594
                      ],
                      "useParentMatrix": false
                   },
@@ -741,17 +1186,17 @@
                {
                   "data": {
                      "currentUpVector": [
-                        -0.05556993559002876,
-                        0.001485029119066894,
-                        -0.9984537363052368
+                        0.14641566574573517,
+                        0.016208767890930176,
+                        -0.9890903830528259
                      ],
                      "gravityStrength": 9.699999809265137,
                      "rotationSpeed": 12.5,
                      "useGravity": true,
                      "velocity": [
-                        29.04450035095215,
-                        27.287874221801758,
-                        -1.5759142637252808
+                        -17.069438934326172,
+                        27.616737365722656,
+                        -2.0742287635803223
                      ]
                   },
                   "enabled": true,
@@ -765,7 +1210,7 @@
                         "y": 0.17499999701976776,
                         "z": 0.75
                      },
-                     "surfaceRadius": 30.0
+                     "surfaceRadius": 50.0
                   },
                   "enabled": true,
                   "typeName": "CharacterLanding"
@@ -784,7 +1229,7 @@
                },
                {
                   "data": {
-                     "autoSpeed": 40.0,
+                     "autoSpeed": 45.0,
                      "maxSpeed": 50.0,
                      "speedRecovery": 0.05000000074505806,
                      "steerSpeed": 120.0
@@ -1312,5 +1757,5 @@
       }
    ],
    "sceneParticleSystems": [],
-   "version": 2
+   "version": 3
 }
