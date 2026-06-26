@@ -39,7 +39,6 @@ public:
 
    static constexpr const char* kTypeName = "VehicleDrift";
    const char* GetTypeName() const override { return kTypeName; }
-   void Update(float deltaTime) override { (void)deltaTime; }
 
    /// @brief ドリフト入力・継続判定・速度横滑りを一括処理する
    /// @param driftInput  ドリフトボタン入力（ButtonMode で使用）

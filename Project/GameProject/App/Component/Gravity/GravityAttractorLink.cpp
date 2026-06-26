@@ -9,7 +9,7 @@
 
 namespace App {
 
-void GravityAttractorLink::Update(float /*deltaTime*/) {
+void GravityAttractorLink::Update(float) {
    // オーナーまたはアトラクタ未設定時は処理しない
    if (!HasOwner() || !attractor_) { return; }
 

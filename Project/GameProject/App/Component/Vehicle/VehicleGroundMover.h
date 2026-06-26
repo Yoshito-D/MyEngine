@@ -16,7 +16,6 @@ class VehicleGroundMover final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleGroundMover";
    const char* GetTypeName() const override { return kTypeName; }
-   void Update(float deltaTime) override { (void)deltaTime; }
 
    /// @brief 接地中の移動・姿勢を適用する
    /// @param steerInput  左右入力（-1〜+1）

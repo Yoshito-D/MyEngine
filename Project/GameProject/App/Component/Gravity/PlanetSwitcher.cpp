@@ -74,7 +74,7 @@ static float DistancePointOBB(
    return std::sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-void PlanetSwitcher::Update(float /*deltaTime*/) {
+void PlanetSwitcher::Update(float) {
    // オーナー不在または候補未登録なら何もしない
    if (!HasOwner() || entries_.empty()) { return; }
 

@@ -19,9 +19,6 @@ public:
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 毎フレーム更新（移動処理は外部呼び出し）
-   void Update(float deltaTime) override { (void)deltaTime; }
-
    /// @brief 入力・重力Up・接地状態から移動を適用する
    /// @param input 移動入力（x:右左, y:前後）
    /// @param gravityUp 現在の重力Up

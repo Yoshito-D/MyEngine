@@ -24,7 +24,6 @@ class VehicleLandingBoost final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleLandingBoost";
    const char* GetTypeName() const override { return kTypeName; }
-   void Update(float deltaTime) override { (void)deltaTime; }
 
    /// @brief 着地時に判定を行い速度を調整する
    /// @param localUp   着地瞬間の車体上方ベクトル

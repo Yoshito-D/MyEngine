@@ -11,7 +11,7 @@ public:
     OrbitalBody() = default;
     ~OrbitalBody() override = default;
 
-    void MutateCameraState(CameraState& state, float deltaTime) override;
+    void MutateCameraState(CameraState& state, float) override;
     CinemachineStage GetStage() const override { return CinemachineStage::Body; }
 
     /// @brief 入力処理

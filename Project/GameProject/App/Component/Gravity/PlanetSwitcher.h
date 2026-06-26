@@ -18,7 +18,7 @@ public:
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 近傍惑星を選び、リンク先を更新する
-   void Update(float deltaTime) override;
+   void Update(float) override;
 
    /// @brief 惑星1件分の切替情報
    struct PlanetEntry {

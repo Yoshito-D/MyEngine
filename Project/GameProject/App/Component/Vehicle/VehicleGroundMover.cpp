@@ -215,6 +215,7 @@ void VehicleGroundMover::DrawInspector() {
    ImGui::Spacing();
    if (ImGui::Button("Reset Speed")) { SetCurrentSpeed(0.0f); }	
    ImGui::Spacing();
+   ImGui::Text("CurrentSpeed: %.2f", currentSpeed_);
    ImGui::Text("FlatForward: (%.2f, %.2f, %.2f)", flatForward_.x, flatForward_.y, flatForward_.z);
 }
 #endif

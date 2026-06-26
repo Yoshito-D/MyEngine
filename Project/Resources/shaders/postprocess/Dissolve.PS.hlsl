@@ -31,7 +31,7 @@ float4 main(VSOutput input) : SV_TARGET
     float edgeMask = saturate(1.0f - abs(maskValue - gThreshold) / width);
     visible = (gThreshold <= 0.0f) ? 1.0f : visible;
     visible = (gThreshold >= 1.0f) ? 0.0f : visible;
-    edgeMask *= step(0.0001f, gThreshold) * (1.0f - step(0.9999f, gThreshold));
+    edgeMask *= smoothstep(0.0f, 1.0f, gThreshold);
     edgeMask *= max(gEdgeIntensity, 0.0f) * gEdgeColor.a;
 
     float3 color = lerp(gDissolveColor.rgb, baseColor.rgb, visible);

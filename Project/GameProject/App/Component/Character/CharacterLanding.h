@@ -18,7 +18,7 @@ public:
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 着地判定と接地状態を更新する
-   void Update(float deltaTime) override;
+   void Update(float) override;
 
    /// @brief 惑星中心を設定する
    void SetPlanetCenter(const GameEngine::Vector3& center) { planetCenter_ = center; }

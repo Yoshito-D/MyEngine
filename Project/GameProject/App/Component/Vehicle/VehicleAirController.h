@@ -17,7 +17,6 @@ class VehicleAirController final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleAirController";
    const char* GetTypeName() const override { return kTypeName; }
-   void Update(float deltaTime) override { (void)deltaTime; }
 
    /// @brief 空中の回転を適用する
    /// @param steerInput  左右入力（-1〜+1）
