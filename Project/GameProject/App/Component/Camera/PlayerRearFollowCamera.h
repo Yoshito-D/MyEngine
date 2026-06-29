@@ -49,7 +49,11 @@ public:
 	/// @brief 直近更新時のカメラRightを取得する
 	GameEngine::Vector3 GetCameraRight() const { return cachedRight_; }
 
+	/// @brief カメラ設定と補間状態をシリアライズする
 	nlohmann::json Serialize() const override;
+
+	/// @brief カメラ設定と補間状態をデシリアライズする
+	/// @param data 読み込むJSONデータ
 	void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
@@ -63,6 +67,18 @@ public:
 
 	/// @brief ピボットからの上方向オフセット
 	float height = 4.0f;
+
+	/// @brief 地上時にプレイヤー中心から上へずらす注視点オフセット
+	float groundedTargetHeight = 1.5f;
+
+	/// @brief 空中時に追加する後方距離
+	float airborneDistanceOffset = 3.0f;
+
+	/// @brief 空中時に追加する FOV 量
+	float airborneFovOffset = 0.05f;
+
+	/// @brief 地上/空中パラメータを切り替える補間速度
+	float airborneBlendLerpSpeed = 6.0f;
 
 	/// @brief 地上時の後方補間速度
 	float rearLerpSpeed = 50.0f;
@@ -126,6 +142,9 @@ private:
 	/// @brief 空中状態
 	bool isAirborne_ = false;
 
+	/// @brief 地上(0)から空中(1)へ補間した現在ブレンド値
+	float currentAirborneBlend_ = 0.0f;
+
 	/// @brief 現在の後方ベクトル（補間結果）
 	GameEngine::Vector3 currentBackward_ = { 0.0f, 0.0f, -1.0f };
 
@@ -181,11 +200,20 @@ private:
 	/// @param deltaTime フレーム時間
 	void UpdateBackwardVector(const GameEngine::Vector3& up, float deltaTime);
 
+	/// @brief 地上/空中ブレンド値を更新する
+	/// @param deltaTime フレーム時間
+	void UpdateAirborneBlend(float deltaTime);
+
 	/// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
 	/// @param up 正規化済み重力Up
 	/// @param boostAlpha 加速度合い [0,1]
 	/// @return カメラ位置
 	GameEngine::Vector3 ComputeEye(const GameEngine::Vector3& up, float boostAlpha) const;
+
+	/// @brief 地上時は少し上、空中時は中心になる注視点を返す
+	/// @param up 正規化済み重力Up（地上時の高さ方向に使用）
+	/// @return LookAt で使用する注視点
+	GameEngine::Vector3 ComputeLookTarget(const GameEngine::Vector3& up) const;
 
 	/// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
 	/// @param state 書き込み先
