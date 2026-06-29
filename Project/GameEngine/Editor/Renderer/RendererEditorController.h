@@ -24,6 +24,7 @@ public:
    void Initialize(AssetManager* assetManager);
 
    void BeginEditorFrame();
+   void ShowPlayModeToolbar();
    void ShowAssetWindow();
    void ShowHierarchyWindow();
    void ShowInspectorWindow();

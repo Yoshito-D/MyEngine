@@ -22,6 +22,12 @@ public:
    /// @brief シーンの更新
    virtual void Update() override;
 
+   /// @brief エディタ用更新
+   virtual void EditorUpdate();
+
+   /// @brief ランタイム用更新
+   virtual void RuntimeUpdate();
+
    /// @brief シーンの描画
    virtual void Draw() override;
 

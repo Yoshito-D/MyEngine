@@ -388,7 +388,24 @@ void GameTestScene::Initialize() {
 
 void GameTestScene::Update() {
    BaseScene::Update();
+}
 
+void GameTestScene::EditorUpdate() {
+   BaseScene::EditorUpdate();
+
+#ifdef USE_IMGUI
+   ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
+   ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver);
+   ImGui::Begin("Scene Navigator");
+   if (ImGui::Button("EngineTestScene", ImVec2(-1, 0))) {
+	  EngineContext::ChangeScene("EngineTest");
+   }
+   ImGui::End();
+   ImGui::ShowDemoWindow();
+#endif 
+}
+
+void GameTestScene::RuntimeUpdate() {
    float deltaTime = EngineContext::GetDeltaTime();
    testTime_ += deltaTime;
 
@@ -560,17 +577,6 @@ void GameTestScene::Update() {
 	  wasGrounded = landing ? landing->IsGrounded() : true;
    }
 
-
-#ifdef USE_IMGUI
-   ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
-   ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver);
-   ImGui::Begin("Scene Navigator");
-   if (ImGui::Button("EngineTestScene", ImVec2(-1, 0))) {
-	  EngineContext::ChangeScene("EngineTest");
-   }
-   ImGui::End();
-   ImGui::ShowDemoWindow();
-#endif 
 }
 
 void GameTestScene::Draw() {

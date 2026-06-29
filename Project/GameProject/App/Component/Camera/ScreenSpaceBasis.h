@@ -19,9 +19,6 @@ public:
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 毎フレーム更新（本体は外部から明示呼び出しされるため未使用）
-   void Update(float deltaTime) override { (void)deltaTime; }
-
    /// @brief キャッシュ済み前方を重力平面へ再投影して返す
    GameEngine::Vector3 GetForwardBasis(const GameEngine::Vector3& gravityUp) const;
 

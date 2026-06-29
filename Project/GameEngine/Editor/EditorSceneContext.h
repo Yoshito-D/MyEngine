@@ -37,6 +37,8 @@ public:
 
    bool Save();
    bool Load();
+   nlohmann::json SerializeToJson();
+   bool LoadFromJson(const nlohmann::json& sceneData);
    std::filesystem::path GetSceneFilePath() const;
    bool IsDirty() const { return isDirty_; }
    void MarkDirty();

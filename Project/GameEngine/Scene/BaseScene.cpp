@@ -43,6 +43,11 @@ void BaseScene::Initialize() {
 }
 
 void BaseScene::Update() {
+   EditorUpdate();
+   RuntimeUpdate();
+}
+
+void BaseScene::EditorUpdate() {
 #ifdef USE_IMGUI
    if (EngineContext::IsKeyTriggered(KeyCode::F1)) {
 	  isDebugCameraActive_ = !isDebugCameraActive_;
@@ -55,11 +60,16 @@ void BaseScene::Update() {
 	  }
    }
 
-   // DebugCamera使用中かどうかに関わらず、常にBrain経由で更新する
-   // （Brain内でアクティブなVirtualCameraが自動選択される）
    {
-	  float deltaTime = EngineContext::GetDeltaTime();
-	  EngineContext::GetActiveBrain()->Update(deltaTime);
+	  CinemachineBrain* brain = EngineContext::GetActiveBrain();
+	  if (brain) {
+		 if (EngineContext::ShouldRunRuntimeUpdate()) {
+			brain->Update(EngineContext::GetDeltaTime());
+		 } else {
+			DebugCamera* editorDrivenCamera = isDebugCameraActive_ ? debugCamera_.get() : nullptr;
+			brain->UpdateEditorPreview(EngineContext::GetUnscaledDeltaTime(), editorDrivenCamera);
+		 }
+	  }
    }
 
    EngineContext::DebugDrawLights();
@@ -71,13 +81,16 @@ void BaseScene::Update() {
 #endif // _DEBUG
 }
 
+void BaseScene::RuntimeUpdate() {
+}
+
 void BaseScene::Draw() {
 #ifdef USE_IMGUI
    // カメラエディタウィンドウを表示
    if (cameraEditor_) {
 	  cameraEditor_->ShowEditorWindow();
-	  if (isDebugCameraActive_) {
-		 cameraEditor_->DrawGizmos(EngineContext::GetActiveBrain()->GetOutputCamera());
+	  if (CinemachineBrain* brain = EngineContext::GetActiveBrain()) {
+		 cameraEditor_->DrawGizmos(brain->GetOutputCamera());
 	  }
    }
 #endif
@@ -216,8 +229,9 @@ void BaseScene::UpdateDebugCamera() {
    }
 
    {
-	  float deltaTime = EngineContext::GetDeltaTime();
-	  EngineContext::GetActiveBrain()->Update(deltaTime);
+	  if (CinemachineBrain* brain = EngineContext::GetActiveBrain()) {
+		 brain->UpdateEditorPreview(EngineContext::GetUnscaledDeltaTime(), debugCamera_.get());
+	  }
    }
 #endif // USE_IMGUI
 }

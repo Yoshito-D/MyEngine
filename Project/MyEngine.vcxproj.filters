@@ -612,6 +612,9 @@
     <ClCompile Include="GameEngine\Framework\Framework.cpp">
       <Filter>GameEngine\Framework</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Framework\PlayModeController.cpp">
+      <Filter>GameEngine\Framework</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Object\Object.cpp">
       <Filter>GameEngine\Object</Filter>
     </ClCompile>
@@ -1173,6 +1176,9 @@
       <Filter>GameEngine\Framework</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Framework\Framework.h">
+      <Filter>GameEngine\Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Framework\PlayModeController.h">
       <Filter>GameEngine\Framework</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Object.h">

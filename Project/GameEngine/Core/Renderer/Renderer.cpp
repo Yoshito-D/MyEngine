@@ -619,6 +619,7 @@ void Renderer::EndFrame() {
 #ifdef USE_IMGUI
    if (editorController_) {
 	  editorController_->BeginEditorFrame();
+	  editorController_->ShowPlayModeToolbar();
 	  editorController_->ShowAssetWindow();
 	  editorController_->ShowInspectorWindow();
 	  editorController_->ShowHierarchyWindow();

@@ -6,57 +6,43 @@
 #include "Scene/Camera/Camera.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
 #include "Core/Renderer/Pass/LineRenderer.h"
+#include "Core/Window/Window.h"
 #include "Utility/MathUtils.h"
+#include <algorithm>
 #include <cmath>
 
 namespace GameEngine {
+namespace {
+constexpr float kDefaultAspectRatio = 16.0f / 9.0f;
+constexpr float kMinAspectRatio = 0.0001f;
+constexpr float kMinClipDistance = 0.0001f;
+constexpr float kHomogeneousEpsilon = 1.0e-6f;
+
+float NormalizeAspectRatio(float aspectRatio) {
+    return aspectRatio > kMinAspectRatio ? aspectRatio : kDefaultAspectRatio;
+}
+
+float NormalizeFarClip(float nearClip, float farClip) {
+    return std::max(farClip, nearClip + kMinClipDistance);
+}
+
+Vector3 NormalizeOrDefault(const Vector3& value, const Vector3& fallback) {
+    return value.LengthSquared() > 1.0e-8f ? value.Normalize() : fallback;
+}
+} // namespace
 
 void CameraGizmo::Initialize(LineRenderer* lineRenderer) {
     lineRenderer_ = lineRenderer;
 }
 
 void CameraGizmo::DrawFrustum(Camera* camera, Camera* viewCamera) {
-    if (!camera || !lineRenderer_) return;
+    if (!camera || !viewCamera || !lineRenderer_) return;
 
-    const Transform& transform = camera->GetTransform();
+    const float farClip = NormalizeFarClip(camera->GetNearClip(), camera->GetFarClip());
+    const Matrix4x4 projectionMatrix = MakeCameraProjectionMatrix(*camera, farClip);
 
-    CalculateFrustumCorners(
-        transform.translation,
-        transform.GetActiveQuaternion(),
-        camera->GetFovY(),
-        camera->GetAspectRatio(),
-        camera->GetNearClip(),
-        camera->GetFarClip() * settings_.frustumScale,
-        nullptr
-    );
-
-    // CameraStateを作成して共通処理を呼び出す
-    CameraState state;
-    state.transform = transform;
-    state.fov = camera->GetFovY();
-    state.nearClip = camera->GetNearClip();
-    state.farClip = camera->GetFarClip();
-
-    DrawFrustum(state, viewCamera);
-}
-
-void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera) {
-    if (!lineRenderer_ || !viewCamera) return;
-
-    // アスペクト比を計算（デフォルト16:9）
-    float aspectRatio = 16.0f / 9.0f;
-
-    // 視錐台の8頂点を計算
     Vector3 corners[8];
-    CalculateFrustumCorners(
-        state.transform.translation,
-        state.transform.GetActiveQuaternion(),
-        state.fov,
-        aspectRatio,
-        state.nearClip,
-        state.farClip * settings_.frustumScale,
-        corners
-    );
+    CalculateFrustumCorners(camera->GetViewMatrix(), projectionMatrix, corners);
 
     // 視錐台のエッジを描画
     if (settings_.showFrustum) {
@@ -77,24 +63,51 @@ void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera) {
         lineRenderer_->DrawLine(corners[3], corners[7], settings_.frustumColor, viewCamera);
     }
 
-    // カメラの向きを描画
-    if (settings_.showDirection) {
-        Vector3 forward = state.GetForward();
-        Vector3 dirEnd = state.transform.translation + forward * 2.0f;
-        lineRenderer_->DrawLine(state.transform.translation, dirEnd, settings_.directionColor, viewCamera);
+    DrawOrientationVectors(camera->GetViewMatrix(), viewCamera);
+}
+
+void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera) {
+    const float aspectRatio = viewCamera ? viewCamera->GetAspectRatio() : kDefaultAspectRatio;
+    DrawFrustum(state, viewCamera, aspectRatio);
+}
+
+void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera, float aspectRatio) {
+    if (!lineRenderer_ || !viewCamera) return;
+
+    const float farClip = NormalizeFarClip(state.nearClip, state.farClip);
+    const Matrix4x4 viewMatrix = state.GetViewMatrix();
+    const Matrix4x4 projectionMatrix = MakeCameraStateProjectionMatrix(state, aspectRatio, farClip);
+
+    // 視錐台の8頂点を計算
+    Vector3 corners[8];
+    CalculateFrustumCorners(viewMatrix, projectionMatrix, corners);
+
+    // 視錐台のエッジを描画
+    if (settings_.showFrustum) {
+        // Near plane edges
+        if (settings_.showNearPlane) {
+            DrawQuad(corners[0], corners[1], corners[2], corners[3], settings_.nearPlaneColor, viewCamera);
+        }
+
+        // Far plane edges
+        if (settings_.showFarPlane) {
+            DrawQuad(corners[4], corners[5], corners[6], corners[7], settings_.farPlaneColor, viewCamera);
+        }
+
+        // Connecting edges (near to far)
+        lineRenderer_->DrawLine(corners[0], corners[4], settings_.frustumColor, viewCamera);
+        lineRenderer_->DrawLine(corners[1], corners[5], settings_.frustumColor, viewCamera);
+        lineRenderer_->DrawLine(corners[2], corners[6], settings_.frustumColor, viewCamera);
+        lineRenderer_->DrawLine(corners[3], corners[7], settings_.frustumColor, viewCamera);
     }
 
-    // 上方向ベクトルを描画
-    if (settings_.showUpVector) {
-        Vector3 up = state.GetUp();
-        Vector3 upEnd = state.transform.translation + up * 1.0f;
-        lineRenderer_->DrawLine(state.transform.translation, upEnd, settings_.upVectorColor, viewCamera);
-    }
+    DrawOrientationVectors(viewMatrix, viewCamera);
 }
 
 void CameraGizmo::DrawFrustum(VirtualCamera* vcam, Camera* viewCamera) {
     if (!vcam) return;
-    DrawFrustum(vcam->GetState(), viewCamera);
+    const float aspectRatio = viewCamera ? viewCamera->GetAspectRatio() : kDefaultAspectRatio;
+    DrawFrustum(vcam->GetState(), viewCamera, aspectRatio);
 }
 
 void CameraGizmo::DrawCameraIcon(const Vector3& position, const Quaternion& rotation, float scale, Camera* viewCamera) {
@@ -153,41 +166,79 @@ void CameraGizmo::DrawCameraIcon(const Vector3& position, const Quaternion& rota
 }
 
 void CameraGizmo::CalculateFrustumCorners(
-    const Vector3& position,
-    const Quaternion& rotation,
-    float fov,
-    float aspectRatio,
-    float nearClip,
-    float farClip,
+    const Matrix4x4& viewMatrix,
+    const Matrix4x4& projectionMatrix,
     Vector3 outCorners[8]) const {
 
-    Matrix4x4 rotMatrix = MakeRotateMatrix(rotation);
+    if (!outCorners) return;
 
-    Vector3 forward = { rotMatrix.m[2][0], rotMatrix.m[2][1], rotMatrix.m[2][2] };
-    Vector3 right = { rotMatrix.m[0][0], rotMatrix.m[0][1], rotMatrix.m[0][2] };
-    Vector3 up = { rotMatrix.m[1][0], rotMatrix.m[1][1], rotMatrix.m[1][2] };
+    const Matrix4x4 inverseViewProjection = (viewMatrix * projectionMatrix).Inverse();
 
-    // Near/Far平面のサイズを計算
-    float nearHeight = 2.0f * nearClip * std::tan(fov * 0.5f);
-    float nearWidth = nearHeight * aspectRatio;
-    float farHeight = 2.0f * farClip * std::tan(fov * 0.5f);
-    float farWidth = farHeight * aspectRatio;
+    // DirectXのNDCは z=[0,1]。ここから逆変換することで、実際の投影行列と同じ視錐台を描く。
+    outCorners[0] = UnprojectClipPoint({ -1.0f, -1.0f, 0.0f, 1.0f }, inverseViewProjection);
+    outCorners[1] = UnprojectClipPoint({  1.0f, -1.0f, 0.0f, 1.0f }, inverseViewProjection);
+    outCorners[2] = UnprojectClipPoint({  1.0f,  1.0f, 0.0f, 1.0f }, inverseViewProjection);
+    outCorners[3] = UnprojectClipPoint({ -1.0f,  1.0f, 0.0f, 1.0f }, inverseViewProjection);
+    outCorners[4] = UnprojectClipPoint({ -1.0f, -1.0f, 1.0f, 1.0f }, inverseViewProjection);
+    outCorners[5] = UnprojectClipPoint({  1.0f, -1.0f, 1.0f, 1.0f }, inverseViewProjection);
+    outCorners[6] = UnprojectClipPoint({  1.0f,  1.0f, 1.0f, 1.0f }, inverseViewProjection);
+    outCorners[7] = UnprojectClipPoint({ -1.0f,  1.0f, 1.0f, 1.0f }, inverseViewProjection);
+}
 
-    Vector3 nearCenter = position + forward * nearClip;
-    Vector3 farCenter = position + forward * farClip;
+Matrix4x4 CameraGizmo::MakeCameraProjectionMatrix(const Camera& camera, float farClip) const {
+    switch (camera.GetProjectionType()) {
+    case Camera::ProjectionType::Orthographic:
+        return MakeOrthographicMatrix(
+            static_cast<float>(-Window::kResolutionWidth) * 0.5f,
+            static_cast<float>(Window::kResolutionHeight) * 0.5f,
+            static_cast<float>(Window::kResolutionWidth) * 0.5f,
+            static_cast<float>(-Window::kResolutionHeight) * 0.5f,
+            camera.GetNearClip(),
+            farClip);
+    case Camera::ProjectionType::Perspective:
+    default:
+        return MakePerspectiveFovMatrix(
+            camera.GetFovY(),
+            NormalizeAspectRatio(camera.GetAspectRatio()),
+            camera.GetNearClip(),
+            farClip);
+    }
+}
 
-    if (outCorners) {
-        // Near plane corners (時計回り、左下から)
-        outCorners[0] = nearCenter - right * (nearWidth * 0.5f) - up * (nearHeight * 0.5f);
-        outCorners[1] = nearCenter + right * (nearWidth * 0.5f) - up * (nearHeight * 0.5f);
-        outCorners[2] = nearCenter + right * (nearWidth * 0.5f) + up * (nearHeight * 0.5f);
-        outCorners[3] = nearCenter - right * (nearWidth * 0.5f) + up * (nearHeight * 0.5f);
+Matrix4x4 CameraGizmo::MakeCameraStateProjectionMatrix(const CameraState& state, float aspectRatio, float farClip) const {
+    return MakePerspectiveFovMatrix(
+        state.fov,
+        NormalizeAspectRatio(aspectRatio),
+        state.nearClip,
+        farClip);
+}
 
-        // Far plane corners
-        outCorners[4] = farCenter - right * (farWidth * 0.5f) - up * (farHeight * 0.5f);
-        outCorners[5] = farCenter + right * (farWidth * 0.5f) - up * (farHeight * 0.5f);
-        outCorners[6] = farCenter + right * (farWidth * 0.5f) + up * (farHeight * 0.5f);
-        outCorners[7] = farCenter - right * (farWidth * 0.5f) + up * (farHeight * 0.5f);
+Vector3 CameraGizmo::UnprojectClipPoint(const Vector4& clipPoint, const Matrix4x4& inverseViewProjection) const {
+    const Vector4 world = TransformVectorByMatrix(clipPoint, inverseViewProjection);
+    if (std::abs(world.w) < kHomogeneousEpsilon) {
+        return { world.x, world.y, world.z };
+    }
+    return { world.x / world.w, world.y / world.w, world.z / world.w };
+}
+
+void CameraGizmo::DrawOrientationVectors(const Matrix4x4& viewMatrix, Camera* viewCamera) {
+    if (!lineRenderer_ || !viewCamera) return;
+
+    const Matrix4x4 worldMatrix = viewMatrix.Inverse();
+    const Vector3 position = { worldMatrix.m[3][0], worldMatrix.m[3][1], worldMatrix.m[3][2] };
+
+    // viewMatrixOverrideを使うCameraStateでも、実際のビュー行列から向きを取り出す。
+    const Vector3 forward = NormalizeOrDefault({ worldMatrix.m[2][0], worldMatrix.m[2][1], worldMatrix.m[2][2] }, { 0.0f, 0.0f, 1.0f });
+    const Vector3 up = NormalizeOrDefault({ worldMatrix.m[1][0], worldMatrix.m[1][1], worldMatrix.m[1][2] }, { 0.0f, 1.0f, 0.0f });
+
+    // カメラの向きを描画
+    if (settings_.showDirection) {
+        lineRenderer_->DrawLine(position, position + forward * 2.0f, settings_.directionColor, viewCamera);
+    }
+
+    // 上方向ベクトルを描画
+    if (settings_.showUpVector) {
+        lineRenderer_->DrawLine(position, position + up * 1.0f, settings_.upVectorColor, viewCamera);
     }
 }
 

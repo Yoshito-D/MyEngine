@@ -314,6 +314,7 @@
     <ClCompile Include="GameEngine\Editor\Particle\ParticleSystemEditor.cpp" />
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
     <ClCompile Include="GameEngine\Framework\Framework.cpp" />
+    <ClCompile Include="GameEngine\Framework\PlayModeController.cpp" />
     <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp" />
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
@@ -591,6 +592,7 @@
     <ClInclude Include="GameEngine\Framework\EngineContext.h" />
     <ClInclude Include="GameEngine\Framework\ExportDump.h" />
     <ClInclude Include="GameEngine\Framework\Framework.h" />
+    <ClInclude Include="GameEngine\Framework\PlayModeController.h" />
     <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ComponentContainer.h" />
     <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h" />

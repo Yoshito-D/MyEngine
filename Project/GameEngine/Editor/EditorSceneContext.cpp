@@ -241,13 +241,7 @@ bool EditorSceneContext::Save() {
       return false;
    }
 
-   nlohmann::json sceneData = nlohmann::json::object();
-   sceneData["version"] = 3;
-   sceneData["sceneName"] = sceneName_;
-   sceneData["objects"] = objectStore_.SerializeAll();
-   sceneData["sceneObjects"] = SerializeSceneObjects();
-   sceneData["sceneParticleSystems"] = SerializeSceneParticleSystems();
-   sceneData["cameras"] = SerializeCameras();
+   nlohmann::json sceneData = SerializeToJson();
 
    std::ofstream file(filePath);
    if (!file.is_open()) {
@@ -282,6 +276,26 @@ bool EditorSceneContext::Load() {
       return false;
    }
 
+   if (!LoadFromJson(sceneData)) {
+      return false;
+   }
+
+   SetStatus("Loaded scene: " + filePath.generic_string());
+   return true;
+}
+
+nlohmann::json EditorSceneContext::SerializeToJson() {
+   nlohmann::json sceneData = nlohmann::json::object();
+   sceneData["version"] = 3;
+   sceneData["sceneName"] = sceneName_;
+   sceneData["objects"] = objectStore_.SerializeAll();
+   sceneData["sceneObjects"] = SerializeSceneObjects();
+   sceneData["sceneParticleSystems"] = SerializeSceneParticleSystems();
+   sceneData["cameras"] = SerializeCameras();
+   return sceneData;
+}
+
+bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
    if (!sceneData.is_object()) {
       SetStatus("Load failed: root json is not an object");
       return false;
@@ -314,7 +328,7 @@ bool EditorSceneContext::Load() {
    }
 
    ClearDirty();
-   SetStatus("Loaded scene: " + filePath.generic_string());
+   SetStatus("Loaded scene snapshot");
    return true;
 }
 

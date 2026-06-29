@@ -36,6 +36,29 @@ void CinemachineBrain::Update(float deltaTime) {
     ApplyStateToOutputCamera();
 }
 
+void CinemachineBrain::UpdateEditorPreview(float deltaTime, VirtualCamera* editorDrivenCamera) {
+    if (editorDrivenCamera && editorDrivenCamera->IsActive()) {
+        // Edit/Paused中はゲーム用VirtualCameraの追従処理を止め、
+        // シーン閲覧に必要なDebugCameraだけ入力を反映する。
+        editorDrivenCamera->Update(deltaTime);
+    }
+
+    // 登録済みカメラのstateは更新せず、現在の優先度だけで出力先を選ぶ。
+    VirtualCamera* highestPriority = FindHighestPriorityCamera();
+
+    if (highestPriority != activeCamera_ && highestPriority != nullptr) {
+        // 停止中のプレビューでは時間経過ブレンドを進めず、編集対象の姿勢を即座に確認できるようにする。
+        Cut(highestPriority);
+    } else if (activeCamera_) {
+        // ブレンド中にPausedへ入った場合は現在の見た目を保持し、通常時だけ編集後のstateを出力へ反映する。
+        if (blendStack_.empty()) {
+            currentState_ = activeCamera_->GetState();
+        }
+    }
+
+    ApplyStateToOutputCamera();
+}
+
 VirtualCamera* CinemachineBrain::FindHighestPriorityCamera() const {
     VirtualCamera* highest = nullptr;
     int highestPriority = INT_MIN;

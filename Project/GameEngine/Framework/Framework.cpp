@@ -117,7 +117,7 @@ void Framework::EndFrame() {
 }
 
 void Framework::Update() {
-   const float deltaTime = timeProfiler_ ? timeProfiler_->GetDeltaTime() : 0.0f;
+   const float deltaTime = EngineContext::GetDeltaTime();
 
    for (auto* model : Model::GetRegisteredModels()) {
       if (!model) {

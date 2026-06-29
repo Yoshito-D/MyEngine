@@ -92,8 +92,8 @@ bool DrawVectorControl(
 
    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0.0f, 0.0f });
 
-   const float lineHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2.0f;
-   const ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
+   const float lineHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2;
+   const ImVec2 buttonSize = { lineHeight, lineHeight };
    const float availableWidth = ImGui::CalcItemWidth();
    const float widthEach = std::max(42.0f, (availableWidth - buttonSize.x * componentCount) / componentCount);
 
