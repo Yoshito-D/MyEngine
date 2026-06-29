@@ -2,6 +2,7 @@
 #include "GravityAttractorLink.h"
 #include "GravityBody.h"
 #include "../Character/CharacterLanding.h"
+#include "../Character/CharacterJump.h"
 #include "../Character/CharacterWalker.h"
 #include "../Camera/CameraGravityBridge.h"
 #include "Object/Component/TransformComponent.h"
@@ -83,9 +84,25 @@ void PlanetSwitcher::Update(float) {
    if (!transform) { return; }
    const GameEngine::Vector3 pos = transform->transform.translation;
 
-   // OBBパラメータを取得
    const GameEngine::Quaternion obbRot = transform->transform.GetActiveQuaternion();
-   const GameEngine::Vector3    halfExtents = obbHalfExtents;
+   int newIndex = SelectBestPlanetIndex(pos, obbRot);
+   if (newIndex < 0) {
+	  return;
+   }
+
+   if (IsOwnerAirborne()) {
+	  // 空中では重力リンクやカメラの基準を切り替えず、着地候補だけ更新する。
+	  pendingIndex_ = newIndex;
+	  return;
+   }
+
+   pendingIndex_ = -1;
+   ApplyPlanetIndex(newIndex);
+}
+
+int PlanetSwitcher::SelectBestPlanetIndex(const GameEngine::Vector3& pos,
+										  const GameEngine::Quaternion& obbRot) {
+   const GameEngine::Vector3 halfExtents = obbHalfExtents;
 
    // 影響圏内の最近傍惑星を探索（OBB最近傍点距離を使用）
    int bestInRange = -1;
@@ -117,7 +134,7 @@ void PlanetSwitcher::Update(float) {
    }
 
    if (bestAnyIndex < 0) {
-	  return;
+	  return -1;
    }
 
    int newIndex = (bestInRange >= 0) ? bestInRange : bestAnyIndex;
@@ -125,10 +142,18 @@ void PlanetSwitcher::Update(float) {
    // ヒステリシス：現在の惑星への距離が新候補よりswitchHysteresis以上大きいときのみ切替
    if (newIndex != currentIndex_ && currentIndex_ >= 0 && currentIndex_ < static_cast<int>(entries_.size())) {
 	  float currentDist = DistancePointOBB(entries_[currentIndex_].center, pos, obbRot, halfExtents);
-	  float newDist = (newIndex == bestInRange) ? bestInRangeDist : bestAnyDist;
+	  float newDist = DistancePointOBB(entries_[newIndex].center, pos, obbRot, halfExtents);
 	  if (currentDist - newDist < switchHysteresis) {
 		 newIndex = currentIndex_; // 差が不十分なので切り替えしない
 	  }
+   }
+
+   return newIndex;
+}
+
+void PlanetSwitcher::ApplyPlanetIndex(int newIndex) {
+   if (newIndex < 0 || newIndex >= static_cast<int>(entries_.size())) {
+	  return;
    }
 
    const bool planetChanged = (newIndex != currentIndex_);
@@ -161,6 +186,37 @@ void PlanetSwitcher::AddPlanet(std::string objectName) {
 	  float surfaceRadius = model->GetScale().x; // 仮にスケールのX軸を半径として使用
 	  entries_.push_back({ objectName, modelPos, surfaceRadius });
    }
+}
+
+bool PlanetSwitcher::TryGetLandingPlanet(GameEngine::Vector3& outCenter, float& outSurfaceRadius) const {
+   int index = pendingIndex_ >= 0 ? pendingIndex_ : currentIndex_;
+   if (index < 0 || index >= static_cast<int>(entries_.size())) {
+	  return false;
+   }
+
+   const PlanetEntry& entry = entries_[index];
+   outCenter = entry.center;
+   outSurfaceRadius = entry.surfaceRadius;
+   return true;
+}
+
+void PlanetSwitcher::CommitPendingSwitch() {
+   if (pendingIndex_ < 0) {
+	  return;
+   }
+
+   int index = pendingIndex_;
+   pendingIndex_ = -1;
+   ApplyPlanetIndex(index);
+}
+
+bool PlanetSwitcher::IsOwnerAirborne() const {
+   if (!HasOwner()) {
+	  return false;
+   }
+
+   auto* jump = GetOwner().GetComponent<CharacterJump>();
+   return jump && jump->IsJumping();
 }
 
 void PlanetSwitcher::ApplyCurrentPlanetParameters() {
@@ -224,6 +280,7 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
 
    entries_.clear();
    currentIndex_ = -1;
+   pendingIndex_ = -1;
 
    if (!data.contains("planets") || !data.at("planets").is_array()) {
 	  return;

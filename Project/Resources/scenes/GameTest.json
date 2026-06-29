@@ -162,63 +162,30 @@
                   "data": {
                      "accelToDistanceKick": 0.03999999910593033,
                      "accelToFovKick": 0.0024999999441206455,
-                     "autoSpeed": 45.0,
-                     "cachedRight": [
-                        0.8386067152023315,
-                        0.528302788734436,
-                        0.13279704749584198
-                     ],
-                     "cachedUp": [
-                        0.14011617004871368,
-                        0.02638251520693302,
-                        -0.989783525466919
-                     ],
-                     "currentBackward": [
-                        0.5264089107513428,
-                        -0.8486461639404297,
-                        0.05189920589327812
-                     ],
+                     "airborneBlendLerpSpeed": 4.0,
+                     "airborneDistanceOffset": 2.0,
+                     "airborneFovOffset": 0.15000000596046448,
+                     "currentAirborneBlend": 0.0,
                      "currentEyeOffset": [
                         9.509416580200195,
                         -14.321455001831055,
                         -3.0768470764160156
                      ],
                      "currentFov": 0.45000001788139343,
-                     "currentGravityUp": [
-                        0.14011617004871368,
-                        0.02638251520693302,
-                        -0.989783525466919
-                     ],
-                     "distance": 15.0,
+                     "distance": 18.0,
                      "distanceBoostMax": 2.0,
-                     "followForward": [
-                        -0.5246917009353638,
-                        0.8489014506340027,
-                        -0.06375893950462341
-                     ],
-                     "fovBoostMax": 0.0,
-                     "fovDefault": 0.44999998807907104,
+                     "fovBoostMax": 0.05000000074505806,
+                     "fovDefault": 0.4699999988079071,
                      "fovLerpSpeed": 4.0,
-                     "gravityUp": [
-                        0.14011617004871368,
-                        0.02638251520693302,
-                        -0.989783525466919
-                     ],
                      "gravityUpLerpSpeed": 5.0,
+                     "groundedTargetHeight": 2.0,
                      "height": 4.0,
                      "isAirborne": false,
-                     "isEyeInitialized": true,
                      "isInitialized": true,
                      "isSpeedInitialized": true,
-                     "pivotTarget": [
-                        7.0327467918396,
-                        1.3241978883743286,
-                        -49.679466247558594
-                     ],
-                     "playerSpeed": 32.53232955932617,
                      "positionLerpSpeed": 12.0,
-                     "previousPlayerSpeed": 32.53232955932617,
-                     "rearLerpSpeed": 50.0,
+                     "previousPlayerSpeed": 0.0,
+                     "rearLerpSpeed": 10.0,
                      "speedBoostMax": 25.0,
                      "speedBoostThreshold": 5.0,
                      "springDamping": 12.0,
@@ -1217,7 +1184,7 @@
                },
                {
                   "data": {
-                     "jumpStrength": 5.0
+                     "jumpStrength": 10.0
                   },
                   "enabled": true,
                   "typeName": "CharacterJump"

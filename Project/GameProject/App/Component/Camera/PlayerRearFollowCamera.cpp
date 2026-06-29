@@ -256,19 +256,44 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
    }
 }
 
+/// @brief 地上/空中ブレンド値を更新する
+/// @details ジャンプ開始・着地で注視点、距離、FOV が一気に変わると画が跳ねるため、
+///          共有ブレンド値を先に滑らかに動かして各パラメータへ適用する。
+void PlayerRearFollowCamera::UpdateAirborneBlend(float deltaTime) {
+   float targetBlend = isAirborne_ ? 1.0f : 0.0f;
+   float t = ExpSmoothingFactor(airborneBlendLerpSpeed, deltaTime);
+   currentAirborneBlend_ = std::clamp(
+	  currentAirborneBlend_ + (targetBlend - currentAirborneBlend_) * t,
+	  0.0f,
+	  1.0f);
+}
+
 /// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
 /// @details カメラは pivot の後方（currentBackward_ 方向）に distance 離れた場所に置く。
 ///          加速中は distanceBoostMax * boostAlpha 分さらに後退させることで
 ///          「カメラが引けて世界が広がる」視覚的な加速感を演出する。
+///          空中では currentAirborneBlend_ に応じてさらに後退し、着地先を見やすくする。
 /// @param up 正規化済み重力Up（高さオフセットに使用）
 /// @param boostAlpha 加速度合い [0,1]
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3& up,
    float boostAlpha) const {
-   // 加速時の後退量を計算（通常距離 + 定常ブースト + Springキックオフセット）
-   float boostedDistance = distance + distanceBoostMax * boostAlpha + springDistanceOffset_;
+   // 加速と空中状態の後退量を合成する。
+   float boostedDistance =
+	  distance
+	  + distanceBoostMax * boostAlpha
+	  + springDistanceOffset_
+	  + airborneDistanceOffset * currentAirborneBlend_;
 
    // eye = pivot から上方向に height、後方に boostedDistance 離れた位置
    return pivotTarget_ + up * height + currentBackward_ * boostedDistance;
+}
+
+/// @brief LookAt に使う注視点を計算する
+/// @details 地上ではプレイヤー中心より少し上を狙い、画面内の地面比率を下げる。
+///          空中では車体姿勢や着地先を読みやすくするため、補間しながら中心へ戻す。
+GameEngine::Vector3 PlayerRearFollowCamera::ComputeLookTarget(const GameEngine::Vector3& up) const {
+   float targetHeight = groundedTargetHeight * (1.0f - currentAirborneBlend_);
+   return pivotTarget_ + up * targetHeight;
 }
 
 /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
@@ -280,8 +305,10 @@ void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    const GameEngine::Vector3& up) {
    using namespace GameEngine;
 
-   // zaxis = pivot を向く方向（カメラ前方）
-   Vector3 zaxis = pivotTarget_ - eye;
+   Vector3 lookTarget = ComputeLookTarget(up);
+
+   // zaxis = 注視点を向く方向（カメラ前方）
+   Vector3 zaxis = lookTarget - eye;
    float zLen = zaxis.Length();
    if (zLen > 1e-6f) {
 	  zaxis = zaxis * (1.0f / zLen);
@@ -304,7 +331,7 @@ void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    cachedUp_ = up;
 
    state.transform.translation = eye;
-   state.SetViewMatrix(MakeLookAtMatrix(eye, pivotTarget_, up));
+   state.SetViewMatrix(MakeLookAtMatrix(eye, lookTarget, up));
 }
 
 /// @brief プレイヤー速度に応じた FOV ブーストを補間し state.fov へ反映する
@@ -369,8 +396,12 @@ float PlayerRearFollowCamera::UpdateAccelerationEffect(GameEngine::CameraState& 
    StepSpring1D(0.0f, springStiffness, springDamping, deltaTime, springFovOffset_, springFovVelocity_);
    StepSpring1D(0.0f, springStiffness, springDamping, deltaTime, springDistanceOffset_, springDistanceVelocity_);
 
-   // 目標 FOV = 通常 FOV + 速度比例ブースト + Springキック
-   float targetFov = fovDefault + fovBoostMax * boostAlpha + springFovOffset_;
+   // 目標 FOV = 通常 FOV + 速度比例ブースト + 空中ブースト + Springキック
+   float targetFov =
+	  fovDefault
+	  + fovBoostMax * boostAlpha
+	  + airborneFovOffset * currentAirborneBlend_
+	  + springFovOffset_;
 
    // FOV を滑らかに補間（急変させず視覚的に自然に追従）
    float t = ExpSmoothingFactor(fovLerpSpeed, deltaTime);
@@ -421,23 +452,26 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    //    → 惑星切り替え時の急激なロール変化を防ぐ
    GameEngine::Vector3 up = SmoothGravityUp(deltaTime);
 
-   // ② 後方ベクトル（currentBackward_）を更新する
+   // ② 地上/空中の見え方を滑らかに切り替えるブレンド値を更新する
+   UpdateAirborneBlend(deltaTime);
+
+   // ③ 後方ベクトル（currentBackward_）を更新する
    //    → 重力平面への再投影 + 地上時の Lerp 追従を行う
    UpdateBackwardVector(up, deltaTime);
 
-   // ③ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
+   // ④ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
    //    → FOV は state.fov へ反映済み、boostAlpha は距離ブーストに転用する
    float boostAlpha = UpdateAccelerationEffect(state, deltaTime);
 
-   // ④ 加速ブーストを加味した eye 位置を算出する
+   // ⑤ 加速ブーストと空中距離を加味した eye 位置を算出する
    //    → 加速中はカメラが後退して視野が広がり、速度感が増す
    GameEngine::Vector3 eye = ComputeEye(up, boostAlpha);
 
-   // ⑤ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
+   // ⑥ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
    //    → 相対補間により、ピボットが移動してもカメラが前方へ突き抜けない
    eye = SmoothEye(eye, deltaTime);
 
-   // ⑥ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
+   // ⑦ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
    ApplyLookAt(state, eye, up);
 }
 
@@ -445,6 +479,10 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
    return nlohmann::json{
 	   { "distance", distance },
 	   { "height", height },
+	   { "groundedTargetHeight", groundedTargetHeight },
+	   { "airborneDistanceOffset", airborneDistanceOffset },
+	   { "airborneFovOffset", airborneFovOffset },
+	   { "airborneBlendLerpSpeed", airborneBlendLerpSpeed },
 	   { "rearLerpSpeed", rearLerpSpeed },
 	   { "gravityUpLerpSpeed", gravityUpLerpSpeed },
 	   { "fovDefault", fovDefault },
@@ -461,6 +499,7 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "speedBoostMax", speedBoostMax },
 	   { "positionLerpSpeed", positionLerpSpeed },
 	   { "isAirborne", isAirborne_ },
+	   { "currentAirborneBlend", currentAirborneBlend_ },
 	   { "isInitialized", isInitialized_ },
 	   { "currentFov", currentFov_ },
 	   { "springFovOffset", springFovOffset_ },
@@ -480,6 +519,10 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
 
    distance = ReadFloat(data, "distance", distance);
    height = ReadFloat(data, "height", height);
+   groundedTargetHeight = ReadFloat(data, "groundedTargetHeight", groundedTargetHeight);
+   airborneDistanceOffset = ReadFloat(data, "airborneDistanceOffset", airborneDistanceOffset);
+   airborneFovOffset = ReadFloat(data, "airborneFovOffset", airborneFovOffset);
+   airborneBlendLerpSpeed = ReadFloat(data, "airborneBlendLerpSpeed", airborneBlendLerpSpeed);
    rearLerpSpeed = ReadFloat(data, "rearLerpSpeed", rearLerpSpeed);
    gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
    fovDefault = ReadFloat(data, "fovDefault", fovDefault);
@@ -497,6 +540,7 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
 
    isAirborne_ = ReadBool(data, "isAirborne", isAirborne_);
+   currentAirborneBlend_ = std::clamp(ReadFloat(data, "currentAirborneBlend", currentAirborneBlend_), 0.0f, 1.0f);
    isInitialized_ = ReadBool(data, "isInitialized", isInitialized_);
    autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
    currentFov_ = ReadFloat(data, "currentFov", currentFov_);
@@ -517,6 +561,10 @@ void PlayerRearFollowCamera::DrawInspector() {
 
    ImGui::DragFloat(Tr("距離", "Distance"), &distance, 0.1f, 1.0f, 100.0f);
    ImGui::DragFloat(Tr("高さ", "Height"), &height, 0.1f, -20.0f, 50.0f);
+   ImGui::DragFloat(Tr("地上注視高さ", "Grounded Target Height"), &groundedTargetHeight, 0.05f, -5.0f, 10.0f);
+   ImGui::DragFloat(Tr("空中距離加算", "Airborne Distance Offset"), &airborneDistanceOffset, 0.1f, 0.0f, 30.0f);
+   ImGui::DragFloat(Tr("空中FOV加算", "Airborne FOV Offset"), &airborneFovOffset, 0.001f, 0.0f, 0.5f, "%.3f");
+   ImGui::DragFloat(Tr("空中補間速度", "Airborne Blend Speed"), &airborneBlendLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::DragFloat(Tr("後方補間速度", "Rear Lerp Speed"), &rearLerpSpeed, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("GravityUp補間", "GravityUp Lerp"), &gravityUpLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::DragFloat(Tr("FOV デフォルト", "FOV Default"), &fovDefault, 0.001f, 0.1f, 1.5f, "%.3f");
@@ -535,6 +583,7 @@ void PlayerRearFollowCamera::DrawInspector() {
 
    ImGui::Separator();
    ImGui::Text("%s: %s", Tr("空中", "Airborne"), isAirborne_ ? Tr("はい", "true") : Tr("いいえ", "false"));
+   ImGui::Text("%s: %.2f", Tr("空中ブレンド", "Airborne Blend"), currentAirborneBlend_);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("目標GravityUp", "Target GravityUp"), gravityUp_.x, gravityUp_.y, gravityUp_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("現在GravityUp", "Current GravityUp"), currentGravityUp_.x, currentGravityUp_.y, currentGravityUp_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("追従前方向", "Follow Forward"), followForward_.x, followForward_.y, followForward_.z);

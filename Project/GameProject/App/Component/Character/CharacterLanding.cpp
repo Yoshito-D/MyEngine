@@ -23,8 +23,18 @@ void CharacterLanding::Update(float) {
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    if (!transform || !gravityBody) { return; }
 
+   auto* jump = GetOwner().GetComponent<CharacterJump>();
+   bool  isJumping = jump && jump->IsJumping();
+   auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
+
+   GameEngine::Vector3 landingCenter = planetCenter_;
+   float landingSurfaceRadius = surfaceRadius_;
+   if (isJumping && switcher) {
+	  switcher->TryGetLandingPlanet(landingCenter, landingSurfaceRadius);
+   }
+
    // 惑星中心からの距離と重力Upを算出
-   GameEngine::Vector3 toSelf = transform->transform.translation - planetCenter_;
+   GameEngine::Vector3 toSelf = transform->transform.translation - landingCenter;
    float dist = toSelf.Length();
    if (dist < 1e-4f) { return; }
 
@@ -50,17 +60,17 @@ void CharacterLanding::Update(float) {
 		 + std::abs(axisZ.Dot(-gravityUp)) * half.z;
    }
 
-   // ジャンプ状態を確認
-   auto* jump = GetOwner().GetComponent<CharacterJump>();
-   bool  isJumping = jump && jump->IsJumping();
-
-   float snapRadius = surfaceRadius_ + landingOffset + obbSupportRadius;
+   float snapRadius = landingSurfaceRadius + landingOffset + obbSupportRadius;
 
    if (isJumping) {
 	  // 落下中かつ地表到達で着地
 	  if (dist <= snapRadius && upComp <= 0.0f) {
+		 if (switcher) {
+			switcher->CommitPendingSwitch();
+		 }
+
 		 // 位置を地表にスナップ
-		 transform->transform.translation = planetCenter_ + gravityUp * snapRadius;
+		 transform->transform.translation = landingCenter + gravityUp * snapRadius;
 
 		 // 垂直速度のみ除去し、水平成分は維持
 		 vel = vel - gravityUp * upComp;
@@ -74,8 +84,6 @@ void CharacterLanding::Update(float) {
 			walker->ResetHorizontalVelocity();
 		 }
 
-		 auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
-
 		 if (switcher) {
 			if (switcher->HasSwitched()) {
 			   switcher->ResetSwitchedFlag();
@@ -88,10 +96,8 @@ void CharacterLanding::Update(float) {
 	  }
    } else {
 	  // 非ジャンプ時は常に地表へ固定し、速度を完全停止
-	  transform->transform.translation = planetCenter_ + gravityUp * snapRadius;
+	  transform->transform.translation = landingCenter + gravityUp * snapRadius;
 	  gravityBody->SetVelocity({ 0.0f, 0.0f, 0.0f });
-
-	  auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
 
 	  if (switcher) {
 		 if (switcher->HasSwitched()) {

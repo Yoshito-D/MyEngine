@@ -2,6 +2,7 @@
 
 #include "Object/Component/IObjectComponent.h"
 #include "Utility/Math/Vector3.h"
+#include "Utility/Math/Quaternion.h"
 #include "GravityAttractor.h"
 #include <string>
 #include <vector>
@@ -28,14 +29,28 @@ public:
 	  float surfaceRadius = 15.0f;  ///< 地表半径
    };
 
+   /// @brief 切り替え候補の惑星をオブジェクト名で追加する
+   /// @param objectName 追加する惑星オブジェクト名
    void AddPlanet(std::string objectName);
 
    /// @brief 現在選択中の惑星インデックスを返す
    int GetCurrentPlanetIndex() const { return currentIndex_; }
 
+   /// @brief 直近フレームで惑星が切り替わったかどうかを返す
    bool HasSwitched() const { return switched_; }
 
+   /// @brief 惑星切り替え済みフラグを解除する
    void ResetSwitchedFlag() { switched_ = false; }
+
+   /// @brief 着地判定に使う惑星情報を取得する
+   /// @details 空中で保留中の候補があれば候補を、なければ現在の惑星を返す。
+   /// @param outCenter 惑星中心の出力先
+   /// @param outSurfaceRadius 地表半径の出力先
+   /// @return 取得できた場合は true
+   bool TryGetLandingPlanet(GameEngine::Vector3& outCenter, float& outSurfaceRadius) const;
+
+   /// @brief 空中で保留していた惑星切り替えを着地時に確定する
+   void CommitPendingSwitch();
 
    /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
    float switchHysteresis = 0.5f;
@@ -62,10 +77,20 @@ private:
    /// @brief 現在選択中インデックス
    int currentIndex_ = -1;
 
+   /// @brief 空中で見つけた着地候補。着地するまで実際の切り替えには使わない
+   int pendingIndex_ = -1;
+
    // 惑星を切り換えたか
    bool switched_ = false;
 
 private:
+   int SelectBestPlanetIndex(const GameEngine::Vector3& pos,
+							 const GameEngine::Quaternion& obbRot);
+
+   void ApplyPlanetIndex(int newIndex);
+
+   bool IsOwnerAirborne() const;
+
    void ApplyCurrentPlanetParameters();
 
    bool HasPlanet(const std::string& objectName) const;
