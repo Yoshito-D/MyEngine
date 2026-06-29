@@ -66,6 +66,10 @@ void EngineTestScene::Initialize() {
 
 void EngineTestScene::Update() {
    BaseScene::Update();
+}
+
+void EngineTestScene::EditorUpdate() {
+   BaseScene::EditorUpdate();
 
 #ifdef USE_IMGUI
    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
@@ -76,6 +80,9 @@ void EngineTestScene::Update() {
    }
    ImGui::End();
 #endif
+}
+
+void EngineTestScene::RuntimeUpdate() {
 }
 
 void EngineTestScene::Draw() {

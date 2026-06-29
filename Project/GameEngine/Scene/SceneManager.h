@@ -29,6 +29,12 @@ public:
    /// @brief 現在のシーンの更新
    void Update();
 
+   /// @brief 現在のシーンのエディタ更新
+   void EditorUpdate();
+
+   /// @brief 現在のシーンのランタイム更新
+   void RuntimeUpdate();
+
    /// @brief 現在のシーンを描画
    void Draw();
 
@@ -37,6 +43,9 @@ public:
 
    /// @brief シーンを切り替えるかどうかをチェック
    void CheckSceneChange();
+
+   BaseScene* GetCurrentScene() const { return currentScene_.get(); }
+   const std::string& GetCurrentSceneName() const { return currentSceneName_; }
 
 private:
    std::unique_ptr<BaseScene> currentScene_;

@@ -28,7 +28,7 @@ public:
         Vector4 directionColor = { 0.0f, 0.5f, 1.0f, 1.0f };    // 青
         Vector4 upVectorColor = { 0.0f, 1.0f, 0.0f, 1.0f };     // 緑
 
-        float frustumScale = 1.0f;     // 視錐台のスケール（遠すぎる場合に縮小）
+        float frustumScale = 1.0f;     // 互換用。視錐台は実際のnear/farで描画する
     };
 
     CameraGizmo() = default;
@@ -48,6 +48,12 @@ public:
     /// @param viewCamera ビューに使用するカメラ
     void DrawFrustum(const CameraState& state, Camera* viewCamera);
 
+    /// @brief CameraStateの視錐台を指定アスペクト比で描画
+    /// @param state カメラ状態
+    /// @param viewCamera ビューに使用するカメラ
+    /// @param aspectRatio 投影行列に使用するアスペクト比
+    void DrawFrustum(const CameraState& state, Camera* viewCamera, float aspectRatio);
+
     /// @brief VirtualCameraの視錐台を描画
     /// @param vcam 仮想カメラ
     /// @param viewCamera ビューに使用するカメラ
@@ -65,15 +71,16 @@ public:
     const Settings& GetSettings() const { return settings_; }
 
 private:
-    /// @brief 視錐台の8頂点を計算
+    /// @brief ViewProjection行列から視錐台の8頂点を計算
     void CalculateFrustumCorners(
-        const Vector3& position,
-        const Quaternion& rotation,
-        float fov,
-        float aspectRatio,
-        float nearClip,
-        float farClip,
+        const Matrix4x4& viewMatrix,
+        const Matrix4x4& projectionMatrix,
         Vector3 outCorners[8]) const;
+
+    Matrix4x4 MakeCameraProjectionMatrix(const Camera& camera, float farClip) const;
+    Matrix4x4 MakeCameraStateProjectionMatrix(const CameraState& state, float aspectRatio, float farClip) const;
+    Vector3 UnprojectClipPoint(const Vector4& clipPoint, const Matrix4x4& inverseViewProjection) const;
+    void DrawOrientationVectors(const Matrix4x4& viewMatrix, Camera* viewCamera);
 
     /// @brief 四角形を描画
     void DrawQuad(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3,

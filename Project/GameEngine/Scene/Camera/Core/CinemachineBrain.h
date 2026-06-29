@@ -28,6 +28,11 @@ public:
     /// @param deltaTime フレーム時間
     void Update(float deltaTime);
 
+    /// @brief エディタ停止中のプレビュー更新
+    /// @param deltaTime フレーム時間
+    /// @param editorDrivenCamera 入力操作だけを反映するエディタ用VirtualCamera
+    void UpdateEditorPreview(float deltaTime, VirtualCamera* editorDrivenCamera);
+
     /// @brief VirtualCameraを登録
     void RegisterVirtualCamera(VirtualCamera* vcam);
 

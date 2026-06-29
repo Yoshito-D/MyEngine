@@ -9,6 +9,8 @@ class EngineTestScene : public GameEngine::BaseScene {
 public:
    void Initialize() override;
    void Update() override;
+   void EditorUpdate() override;
+   void RuntimeUpdate() override;
    void Draw() override;
 
 private:

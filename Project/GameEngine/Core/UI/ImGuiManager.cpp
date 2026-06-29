@@ -226,6 +226,7 @@ void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
 
    // FPS等を表示
    ImGui::Text("%s: %.4f", Tr("デルタタイム", "Delta Time"), EngineContext::GetDeltaTime());
+   ImGui::Text("%s: %.4f", Tr("実時間デルタタイム", "Unscaled Delta Time"), EngineContext::GetUnscaledDeltaTime());
    ImGui::Text("FPS: %.1f", EngineContext::GetFPS());
    ImGui::Spacing();
 

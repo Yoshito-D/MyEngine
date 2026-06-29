@@ -485,14 +485,15 @@ void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
 void CameraEditor::DrawGizmos(Camera* viewCamera) {
     if (!showGizmo_ || !viewCamera) return;
 
-    // ターゲットカメラの視錐台を描画
-    if (targetCamera_ && targetCamera_ != viewCamera) {
-        gizmo_.DrawFrustum(targetCamera_, viewCamera);
-    }
-
-    // VirtualCameraの視錐台を描画
+    // ImGuizmo と同じ対象だけを表示し、複数カメラの視錐台で編集対象を見失わないようにする。
     if (targetVirtualCamera_) {
         gizmo_.DrawFrustum(targetVirtualCamera_, viewCamera);
+        return;
+    }
+
+    // VirtualCameraが未選択の場合のみ、直接指定されたCameraの視錐台を描画
+    if (targetCamera_ && targetCamera_ != viewCamera) {
+        gizmo_.DrawFrustum(targetCamera_, viewCamera);
     }
 }
 
@@ -612,8 +613,6 @@ void CameraEditor::ShowGizmoSettings() {
     ImGui::Checkbox(Tr("上方向を表示", "Show Up Vector"), &settings.showUpVector);
     ImGui::Checkbox(Tr("Near 面を表示", "Show Near Plane"), &settings.showNearPlane);
     ImGui::Checkbox(Tr("Far 面を表示", "Show Far Plane"), &settings.showFarPlane);
-
-    ImGui::DragFloat(Tr("視錐台スケール", "Frustum Scale"), &settings.frustumScale, 0.01f, 0.01f, 1.0f);
 
     const std::string colorsLabel = std::string(Tr("色", "Colors")) + "###CameraGizmoColors";
     if (ImGui::TreeNode(colorsLabel.c_str())) {

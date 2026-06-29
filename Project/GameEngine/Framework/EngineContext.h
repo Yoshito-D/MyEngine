@@ -20,6 +20,7 @@
 #include "CameraManager.h"
 #include "LightManager.h"
 #include "Utility/JsonDataManager.h"
+#include "PlayModeController.h"
 namespace GameEngine {
 class Framework;
 class Skybox;
@@ -264,8 +265,35 @@ public:
    static float GetFPS();
 
    /// @brief デルタタイムを取得
-   /// @return デルタタイム（秒）
+   /// @return ゲーム用デルタタイム（秒）
    static float GetDeltaTime();
+
+   /// @brief 実時間デルタタイムを取得
+   /// @return 実時間デルタタイム（秒）
+   static float GetUnscaledDeltaTime();
+
+   /// @brief ゲーム用デルタタイムを設定
+   /// @param deltaTime ゲーム用デルタタイム（秒）
+   static void SetGameDeltaTime(float deltaTime);
+
+#ifdef USE_IMGUI
+   static void SetPlayModeController(PlayModeController* controller);
+   static PlayMode GetPlayMode();
+   static const char* GetPlayModeName();
+   static bool IsPlayModeEdit();
+   static bool IsInPlayMode();
+   static bool IsPlaying();
+   static bool IsPaused();
+   static bool ShouldRunRuntimeUpdate();
+   static float GetGameDeltaTime();
+   static float GetTimeScale();
+   static void SetTimeScale(float timeScale);
+   static void RequestPlayModeStart();
+   static void RequestPlayModeStop();
+   static void RequestPlayModePause();
+   static void RequestPlayModeResume();
+   static void RequestPlayModeStep();
+#endif
 
    //================================================================
    // アセットマネージャ

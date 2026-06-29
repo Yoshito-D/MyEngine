@@ -100,6 +100,54 @@ void RendererEditorController::BeginEditorFrame() {
    editorContext->HandleEditorShortcuts();
 }
 
+void RendererEditorController::ShowPlayModeToolbar() {
+   const std::string windowLabel = StableWindowLabel(Tr("再生", "Play Mode"), "PlayModeToolbar");
+   ImGui::Begin(windowLabel.c_str());
+
+   const PlayMode mode = EngineContext::GetPlayMode();
+   const bool isEdit = mode == PlayMode::Edit;
+   const bool isPlaying = mode == PlayMode::Playing;
+   const bool isPaused = mode == PlayMode::Paused;
+
+   ImGui::BeginDisabled(isPlaying);
+   if (ImGui::Button(isPaused ? "Resume" : "Play")) {
+      EngineContext::RequestPlayModeStart();
+   }
+   ImGui::EndDisabled();
+
+   ImGui::SameLine();
+   ImGui::BeginDisabled(isEdit);
+   if (ImGui::Button("Stop")) {
+      EngineContext::RequestPlayModeStop();
+   }
+   ImGui::EndDisabled();
+
+   ImGui::SameLine();
+   ImGui::BeginDisabled(!isPlaying);
+   if (ImGui::Button("Pause")) {
+      EngineContext::RequestPlayModePause();
+   }
+   ImGui::EndDisabled();
+
+   ImGui::SameLine();
+   ImGui::BeginDisabled(!isPaused);
+   if (ImGui::Button("Step")) {
+      EngineContext::RequestPlayModeStep();
+   }
+   ImGui::EndDisabled();
+
+   float timeScale = EngineContext::GetTimeScale();
+   if (ImGui::SliderFloat("Time Scale", &timeScale, 0.0f, 2.0f, "%.2f")) {
+      EngineContext::SetTimeScale(timeScale);
+   }
+
+   ImGui::Text("Mode: %s", EngineContext::GetPlayModeName());
+   ImGui::Text("Delta Time: %.4f", EngineContext::GetDeltaTime());
+   ImGui::Text("Unscaled Delta Time: %.4f", EngineContext::GetUnscaledDeltaTime());
+
+   ImGui::End();
+}
+
 void RendererEditorController::ShowAssetWindow() {
    const std::string windowLabel = StableWindowLabel(Tr("アセット", "Assets"), "Assets");
    ImGui::Begin(windowLabel.c_str());
@@ -109,6 +157,8 @@ void RendererEditorController::ShowAssetWindow() {
       const std::string dirtyMark = editorContext->IsDirty() ? " *" : "";
       ImGui::Text("%s%s", Tr("シーン", "Scene"), dirtyMark.c_str());
       ImGui::Separator();
+      const bool canUseSceneFileButtons = !EngineContext::IsInPlayMode();
+      ImGui::BeginDisabled(!canUseSceneFileButtons);
       if (ImGui::Button(Tr("シーンを保存", "Save Scene"))) {
          editorContext->Save();
       }
@@ -116,6 +166,7 @@ void RendererEditorController::ShowAssetWindow() {
       if (ImGui::Button(Tr("シーンを再読み込み", "Reload Scene"))) {
          editorContext->Load();
       }
+      ImGui::EndDisabled();
       ImGui::SameLine();
       if (ImGui::Button(Tr("アセット再スキャン", "Rescan Assets"))) {
          editorContext->GetAssetRegistry().Scan();

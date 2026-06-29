@@ -18,6 +18,11 @@ GameEngine::TimeProfiler* sTimeProfiler_ = nullptr;
 GameEngine::CameraManager* sCameraManager_ = nullptr;
 GameEngine::LightManager* sLightManager_ = nullptr;
 GameEngine::JsonDataManager* sJsonDataManager_ = nullptr;
+float sGameDeltaTime_ = 0.0f;
+bool sHasGameDeltaTimeOverride_ = false;
+#ifdef USE_IMGUI
+GameEngine::PlayModeController* sPlayModeController_ = nullptr;
+#endif
 }
 
 namespace GameEngine {
@@ -258,8 +263,21 @@ void EngineContext::ChangeScene(const std::string& name) {
 }
 
 float EngineContext::GetDeltaTime() {
+   if (sHasGameDeltaTimeOverride_) {
+      return sGameDeltaTime_;
+   }
    if (!sTimeProfiler_) return 0.0f;
    return sTimeProfiler_->GetDeltaTime();
+}
+
+float EngineContext::GetUnscaledDeltaTime() {
+   if (!sTimeProfiler_) return 0.0f;
+   return sTimeProfiler_->GetDeltaTime();
+}
+
+void EngineContext::SetGameDeltaTime(float deltaTime) {
+   sGameDeltaTime_ = deltaTime;
+   sHasGameDeltaTimeOverride_ = true;
 }
 
 float EngineContext::GetFPS() {
@@ -271,6 +289,85 @@ float EngineContext::GetFrameTimeMs() {
    if (!sTimeProfiler_) return 0.0f;
    return sTimeProfiler_->GetFrameTimeMs();
 }
+
+#ifdef USE_IMGUI
+void EngineContext::SetPlayModeController(PlayModeController* controller) {
+   sPlayModeController_ = controller;
+}
+
+PlayMode EngineContext::GetPlayMode() {
+   if (!sPlayModeController_) return PlayMode::Edit;
+   return sPlayModeController_->GetMode();
+}
+
+const char* EngineContext::GetPlayModeName() {
+   return ToString(GetPlayMode());
+}
+
+bool EngineContext::IsPlayModeEdit() {
+   return GetPlayMode() == PlayMode::Edit;
+}
+
+bool EngineContext::IsInPlayMode() {
+   return GetPlayMode() != PlayMode::Edit;
+}
+
+bool EngineContext::IsPlaying() {
+   return GetPlayMode() == PlayMode::Playing;
+}
+
+bool EngineContext::IsPaused() {
+   return GetPlayMode() == PlayMode::Paused;
+}
+
+bool EngineContext::ShouldRunRuntimeUpdate() {
+   return sPlayModeController_ ? sPlayModeController_->ShouldRunRuntimeUpdate() : true;
+}
+
+float EngineContext::GetGameDeltaTime() {
+   return sPlayModeController_ ? sPlayModeController_->GetGameDeltaTime() : GetDeltaTime();
+}
+
+float EngineContext::GetTimeScale() {
+   return sPlayModeController_ ? sPlayModeController_->GetTimeScale() : 1.0f;
+}
+
+void EngineContext::SetTimeScale(float timeScale) {
+   if (sPlayModeController_) {
+      sPlayModeController_->SetTimeScale(timeScale);
+   }
+}
+
+void EngineContext::RequestPlayModeStart() {
+   if (sPlayModeController_) {
+      sPlayModeController_->RequestPlay();
+   }
+}
+
+void EngineContext::RequestPlayModeStop() {
+   if (sPlayModeController_) {
+      sPlayModeController_->RequestStop();
+   }
+}
+
+void EngineContext::RequestPlayModePause() {
+   if (sPlayModeController_) {
+      sPlayModeController_->RequestPause();
+   }
+}
+
+void EngineContext::RequestPlayModeResume() {
+   if (sPlayModeController_) {
+      sPlayModeController_->RequestResume();
+   }
+}
+
+void EngineContext::RequestPlayModeStep() {
+   if (sPlayModeController_) {
+      sPlayModeController_->RequestStep();
+   }
+}
+#endif
 
 void EngineContext::LoadModel(const std::string& modelPath, const std::string& modelName) {
    if (!sAssetManager_) return;

@@ -50,6 +50,14 @@ void SceneManager::Update() {
    if (currentScene_) { currentScene_->Update(); }
 }
 
+void SceneManager::EditorUpdate() {
+   if (currentScene_) { currentScene_->EditorUpdate(); }
+}
+
+void SceneManager::RuntimeUpdate() {
+   if (currentScene_) { currentScene_->RuntimeUpdate(); }
+}
+
 void SceneManager::Draw() {
    if (currentScene_) currentScene_->Draw();
 }

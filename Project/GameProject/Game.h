@@ -3,6 +3,9 @@
 #include "EngineContext.h"
 #include "SceneManager.h"
 #include "App/Scene/MySceneFactory.h"
+#ifdef USE_IMGUI
+#include "PlayModeController.h"
+#endif
 
 class Game : public GameEngine::Framework {
 public:
@@ -14,4 +17,7 @@ public:
 private:
    std::unique_ptr<MySceneFactory> factory_ = nullptr;
    std::unique_ptr<GameEngine::SceneManager> sceneManager_ = nullptr;
+#ifdef USE_IMGUI
+   std::unique_ptr<GameEngine::PlayModeController> playModeController_ = nullptr;
+#endif
 };
