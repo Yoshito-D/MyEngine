@@ -149,21 +149,23 @@ void CameraGravityBridge::Update(float) {
 
 #ifdef USE_IMGUI
 void CameraGravityBridge::DrawInspector() {
-   if (!ImGui::CollapsingHeader("CameraGravityBridge")) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
    ImGui::Separator();
-   ImGui::Text("Planet Center: (%.2f, %.2f, %.2f)",
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("惑星中心", "Planet Center"),
       planetCenter_.x, planetCenter_.y, planetCenter_.z);
-   ImGui::Text("GravityFollowCamera: %s", gravityFollowCamera_ ? "Set" : "None");
-   ImGui::Text("PlayerRearFollow:   %s", playerRearFollowCamera_ ? "Set" : "None");
-   ImGui::Text("PlanetLeashCamera:   %s", planetLeashCamera_   ? "Set" : "None");
+   ImGui::Text("%s: %s", Tr("重力追従カメラ", "Gravity Follow Camera"), gravityFollowCamera_ ? Tr("設定済み", "Set") : Tr("なし", "None"));
+   ImGui::Text("%s: %s", Tr("プレイヤー後方追従", "Player Rear Follow"), playerRearFollowCamera_ ? Tr("設定済み", "Set") : Tr("なし", "None"));
+   ImGui::Text("%s: %s", Tr("惑星レアッシュカメラ", "Planet Leash Camera"), planetLeashCamera_   ? Tr("設定済み", "Set") : Tr("なし", "None"));
    ImGui::Separator();
-   ImGui::Checkbox("Landing Shake", &enableLandingShake);
-   ImGui::DragFloat("Shake Amplitude", &landingShakeAmplitude, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat("Shake Frequency", &landingShakeFrequency, 0.1f, 0.1f, 60.0f);
-   ImGui::DragFloat("Shake Duration", &landingShakeDuration, 0.01f, 0.0f, 3.0f);
-   ImGui::Text("Was Grounded: %s", wasGrounded_ ? "true" : "false");
+   ImGui::Checkbox(Tr("着地シェイク", "Landing Shake"), &enableLandingShake);
+   ImGui::DragFloat(Tr("シェイク振幅", "Shake Amplitude"), &landingShakeAmplitude, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("シェイク周波数", "Shake Frequency"), &landingShakeFrequency, 0.1f, 0.1f, 60.0f);
+   ImGui::DragFloat(Tr("シェイク時間", "Shake Duration"), &landingShakeDuration, 0.01f, 0.0f, 3.0f);
+   ImGui::Text("%s: %s", Tr("接地していた", "Was Grounded"), wasGrounded_ ? Tr("はい", "true") : Tr("いいえ", "false"));
 }
 #endif
 

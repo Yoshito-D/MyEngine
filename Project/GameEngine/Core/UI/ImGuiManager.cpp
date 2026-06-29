@@ -3,6 +3,7 @@
 #include "ImGuiManager.h"  
 #include "Core/Graphics/GraphicsDevice.h"
 #include "Core/Graphics/OffscreenRenderTarget.h"
+#include "Utility/ImGuiHelper.h"
 #include <ImGuizmo.h>
 #include <EngineContext.h>
 
@@ -11,6 +12,18 @@
 namespace fs = std::filesystem;
 
 namespace GameEngine {
+namespace {
+
+const char* Tr(const char* japanese, const char* english) {
+   return ImGuiHelper::Localize({ japanese, english });
+}
+
+std::string StableWindowLabel(const char* visibleLabel, const char* stableId) {
+   return std::string(visibleLabel) + "###" + stableId;
+}
+
+}
+
 void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    DXGI_SWAP_CHAIN_DESC swapChainDesc;
    device->GetSwapChain()->GetDesc(&swapChainDesc);
@@ -20,6 +33,7 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    ImGui::StyleColorsDark();
    ImGuiIO& io = ImGui::GetIO();
    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+   SetLanguage(language_);
 
    multiViewportEnabled_ = false;
    // マルチビューポートを有効化
@@ -82,6 +96,11 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    );
 
    device->IncrementSrvIndex();
+}
+
+void ImGuiManager::SetLanguage(ImGuiHelper::EditorLanguage language) {
+   language_ = language;
+   ImGuiHelper::SetLanguage(language_);
 }
 
 void ImGuiManager::BeginFrame() {
@@ -156,7 +175,8 @@ void ImGuiManager::ShowViewport(
    OffscreenRenderTarget* renderTarget,
    bool& isSceneHovered,
    const std::function<void(float, float, float, float)>& overlayCallback) {
-   ImGui::Begin("Scene");
+   const std::string windowLabel = StableWindowLabel(Tr("シーン", "Scene"), "Scene");
+   ImGui::Begin(windowLabel.c_str());
 
    isSceneHovered = ImGui::IsWindowHovered();
 
@@ -201,23 +221,26 @@ void ImGuiManager::ShowViewport(
 }
 
 void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
-   ImGui::Begin("Engine Settings");
+   const std::string windowLabel = StableWindowLabel(Tr("エンジン設定", "Engine Settings"), "EngineSettings");
+   ImGui::Begin(windowLabel.c_str());
 
    // FPS等を表示
-   ImGui::Text("Delta Time: %.4f", EngineContext::GetDeltaTime());
+   ImGui::Text("%s: %.4f", Tr("デルタタイム", "Delta Time"), EngineContext::GetDeltaTime());
    ImGui::Text("FPS: %.1f", EngineContext::GetFPS());
    ImGui::Spacing();
 
-   ImGui::Text("Display Settings");
+   ImGui::Text("%s", Tr("表示設定", "Display Settings"));
    ImGui::Separator();
 
+   ImGuiHelper::DrawLanguageCombo(Tr("表示言語", "Language"), language_, 150.0f);
+
    // DockSpace display setting
-   if (ImGui::Checkbox("Show DockSpace", &isDockSpaceVisible)) {
+   if (ImGui::Checkbox(Tr("DockSpaceを表示", "Show DockSpace"), &isDockSpaceVisible)) {
 	  isDockSpaceVisible_ = isDockSpaceVisible;
    }
 
    // Multi-Viewport setting
-   if (ImGui::Checkbox("Enable Multi-Viewport", &multiViewportEnabled_)) {
+   if (ImGui::Checkbox(Tr("マルチビューポートを有効化", "Enable Multi-Viewport"), &multiViewportEnabled_)) {
 	  ImGuiIO& io = ImGui::GetIO();
 	  if (multiViewportEnabled_) {
 		 io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -228,16 +251,19 @@ void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
 		 io.ConfigViewportsNoAutoMerge = false;
 		 io.ConfigViewportsNoDefaultParent = false;
 	  }
-	  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Restart may be required for changes to take effect");
+	  ImGui::TextColored(
+		 ImVec4(1.0f, 1.0f, 0.0f, 1.0f),
+		 "%s",
+		 Tr("反映には再起動が必要な場合があります", "Restart may be required for changes to take effect"));
    }
 
    ImGui::Spacing();
-   ImGui::Text("Usage Instructions");
+   ImGui::Text("%s", Tr("使い方", "Usage Instructions"));
    ImGui::Separator();
-   ImGui::BulletText("DockSpace: Allows windows to be docked");
-   ImGui::BulletText("Multi-Viewport: Windows can be dragged outside main window");
-   ImGui::BulletText("Scene: Displays rendering output");
-   ImGui::BulletText("You can drag and arrange various setting windows");
+   ImGui::BulletText("%s", Tr("DockSpace: ウィンドウをドッキングできます", "DockSpace: Allows windows to be docked"));
+   ImGui::BulletText("%s", Tr("マルチビューポート: ウィンドウをメイン画面外へ移動できます", "Multi-Viewport: Windows can be dragged outside main window"));
+   ImGui::BulletText("%s", Tr("シーン: レンダリング結果を表示します", "Scene: Displays rendering output"));
+   ImGui::BulletText("%s", Tr("各設定ウィンドウはドラッグして配置できます", "You can drag and arrange various setting windows"));
 
    ImGui::End();
 }

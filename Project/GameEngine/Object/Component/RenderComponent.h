@@ -6,6 +6,7 @@ namespace GameEngine {
 class RenderComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "RenderComponent";
+   static constexpr ComponentDisplayName kDisplayName{ "描画", "Render" };
    const char* GetTypeName() const override;
 
    nlohmann::json Serialize() const override;

@@ -11,6 +11,7 @@ namespace GameEngine {
 class ModelAssetComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "ModelAssetComponent";
+   static constexpr ComponentDisplayName kDisplayName{ "モデルアセット", "Model Asset" };
    const char* GetTypeName() const override;
 
    /// @brief モデルアセットを設定する

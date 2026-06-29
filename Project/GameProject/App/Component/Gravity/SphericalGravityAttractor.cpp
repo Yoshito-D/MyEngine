@@ -3,6 +3,7 @@
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
 #include "EngineContext.h"
+#include "Object/Component/IObjectComponent.h"
 #endif
 
 namespace App {
@@ -24,7 +25,9 @@ GameEngine::Vector3 SphericalGravityAttractor::GetUpVectorFor(const GameEngine::
 #ifdef USE_IMGUI
 void SphericalGravityAttractor::DrawInspector() {
 
-   if (!ImGui::CollapsingHeader("SphericalGravityAttractor", ImGuiTreeNodeFlags_DefaultOpen)) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
       return;
    }
 
@@ -34,17 +37,17 @@ void SphericalGravityAttractor::DrawInspector() {
    GameEngine::EngineContext::DrawSphere(GetCenter(), influenceRadius > 0.0f ? influenceRadius : 1.0f, GameEngine::Vector4{ 0.1f, 0.5f, 1.0f, 1.0f }, false);
 
    // 影響半径を調整（0以下は無限範囲）
-   ImGui::DragFloat("Influence Radius", &influenceRadius, 0.5f, 0.0f, 500.0f);
+   ImGui::DragFloat(Tr("影響半径", "Influence Radius"), &influenceRadius, 0.5f, 0.0f, 500.0f);
    if (influenceRadius <= 0.0f) {
       ImGui::SameLine();
-      ImGui::TextDisabled("(Infinite)");
+      ImGui::TextDisabled("%s", Tr("(無限)", "(Infinite)"));
    }
 
    // 現在の中心座標を表示
    if (HasOwner()) {
       if (auto* t = GetOwner().GetComponent<GameEngine::TransformComponent>()) {
          auto& pos = t->transform.translation;
-         ImGui::Text("Center: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+         ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("中心", "Center"), pos.x, pos.y, pos.z);
       }
    }
 

@@ -64,12 +64,14 @@ Vector3 ScreenSpaceBasis::GetRightBasis(const Vector3& gravityUp) const {
 
 #ifdef USE_IMGUI
 void ScreenSpaceBasis::DrawInspector() {
-   if (!ImGui::CollapsingHeader("ScreenSpaceBasis")) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
    ImGui::Separator();
-   ImGui::Text("F_proj: (%.2f, %.2f, %.2f)", cachedForward_.x, cachedForward_.y, cachedForward_.z);
-   ImGui::Text("R_proj: (%.2f, %.2f, %.2f)", cachedRight_.x,   cachedRight_.y,   cachedRight_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("投影前方", "Projected Forward"), cachedForward_.x, cachedForward_.y, cachedForward_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("投影右方向", "Projected Right"), cachedRight_.x,   cachedRight_.y,   cachedRight_.z);
 }
 #endif
 

@@ -7,7 +7,8 @@
 namespace {
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::AnimationComponent::kTypeName,
-   [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::AnimationComponent>(); }
+   [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::AnimationComponent>(); },
+   GameEngine::AnimationComponent::kDisplayName
 );
 }
 #include "Model/Model.h"
@@ -21,6 +22,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "Utility/ImGuiHelper.h"
 #include <cstring>
 #endif
 
@@ -171,7 +173,7 @@ void AnimationComponent::Update(float deltaTime) {
 
    if (applyRotation && !nodeAnimation->rotation.keyframes.empty()) {
 	  const Quaternion quaternion = CalculateValue(nodeAnimation->rotation.keyframes, currentTime);
-	  transformComponent->transform.rotation = QuaternionToEuler_(quaternion);
+	  transformComponent->transform.SetRotationQuaternion(quaternion);
    }
 
    if (applyScale && !nodeAnimation->scale.keyframes.empty()) {
@@ -181,22 +183,23 @@ void AnimationComponent::Update(float deltaTime) {
 
 #ifdef USE_IMGUI
 void AnimationComponent::DrawInspector() {
-   if (!ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen)) {
+   const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
+   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
 	  return;
    }
 
-   ImGui::Checkbox("Playing", &playing);
-   ImGui::Checkbox("Loop", &loop);
-   ImGui::DragFloat("Playback Speed", &playbackSpeed, 0.01f, -4.0f, 4.0f);
-   ImGui::Checkbox("Apply Translation", &applyTranslation);
-   ImGui::Checkbox("Apply Rotation", &applyRotation);
-   ImGui::Checkbox("Apply Scale", &applyScale);
-   ImGui::Checkbox("Use Skinning", &useSkinning);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "再生中", "Playing" }), &playing);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "ループ", "Loop" }), &loop);
+   ImGui::DragFloat(ImGuiHelper::Localize({ "再生速度", "Playback Speed" }), &playbackSpeed, 0.01f, -4.0f, 4.0f);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "移動を適用", "Apply Translation" }), &applyTranslation);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "回転を適用", "Apply Rotation" }), &applyRotation);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "スケールを適用", "Apply Scale" }), &applyScale);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "スキニングを使用", "Use Skinning" }), &useSkinning);
 
    char animationNameBuffer[256]{};
    size_t animationNameSize = std::min(animationName.size(), sizeof(animationNameBuffer) - 1);
    std::memcpy(animationNameBuffer, animationName.c_str(), animationNameSize);
-   if (ImGui::InputText("Animation Asset", animationNameBuffer, sizeof(animationNameBuffer))) {
+   if (ImGui::InputText(ImGuiHelper::Localize({ "アニメーションアセット", "Animation Asset" }), animationNameBuffer, sizeof(animationNameBuffer))) {
 	  animationName = animationNameBuffer;
 	  clipName.clear();
 	  currentTime = 0.0f;
@@ -210,7 +213,7 @@ void AnimationComponent::DrawInspector() {
 		 previewClip = clipNames.front();
 	  }
 
-	  if (!previewClip.empty() && ImGui::BeginCombo("Animation Clip", previewClip.c_str())) {
+	  if (!previewClip.empty() && ImGui::BeginCombo(ImGuiHelper::Localize({ "アニメーションクリップ", "Animation Clip" }), previewClip.c_str())) {
 		 for (size_t i = 0; i < clipNames.size(); ++i) {
 			const auto& name = clipNames[i];
 			ImGui::PushID(5400 + static_cast<int>(i));
@@ -231,11 +234,11 @@ void AnimationComponent::DrawInspector() {
    char targetNodeBuffer[256]{};
    const size_t targetNameSize = std::min(targetNodeName.size(), sizeof(targetNodeBuffer) - 1);
    std::memcpy(targetNodeBuffer, targetNodeName.c_str(), targetNameSize);
-   if (ImGui::InputText("Target Node", targetNodeBuffer, sizeof(targetNodeBuffer))) {
+   if (ImGui::InputText(ImGuiHelper::Localize({ "対象ノード", "Target Node" }), targetNodeBuffer, sizeof(targetNodeBuffer))) {
 	  targetNodeName = targetNodeBuffer;
    }
 
-   ImGui::DragFloat("Current Time", &currentTime, 0.01f, 0.0f, 1000.0f);
+   ImGui::DragFloat(ImGuiHelper::Localize({ "現在時間", "Current Time" }), &currentTime, 0.01f, 0.0f, 1000.0f);
    ImGui::Spacing();
 }
 #endif

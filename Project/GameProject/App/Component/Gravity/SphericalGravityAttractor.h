@@ -9,6 +9,7 @@ class SphericalGravityAttractor final : public GravityAttractor {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "SphericalGravityAttractor";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "球状重力アトラクター", "Spherical Gravity Attractor" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

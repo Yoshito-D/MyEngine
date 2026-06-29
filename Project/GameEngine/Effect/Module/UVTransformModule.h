@@ -52,6 +52,10 @@ public:
 	nlohmann::json ToJson() const override;
 	void FromJson(const nlohmann::json& json) override;
 
+#ifdef USE_IMGUI
+	void DrawInspector() override;
+#endif
+
 private:
 	static Vector2 LerpVector2(const Vector2& a, const Vector2& b, float t);
 	static float LerpFloat(float a, float b, float t);

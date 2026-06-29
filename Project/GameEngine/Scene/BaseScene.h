@@ -3,7 +3,7 @@
 #include <EngineContext.h>
 #include "Camera/DebugCamera.h"
 #include "Camera/Core/CinemachineBrain.h"
-#include "Camera/Editor/CameraEditor.h"
+#include "Editor/Camera/CameraEditor.h"
 #include <filesystem>
 #ifdef USE_IMGUI
 #include "Editor/EditorSceneContext.h"
@@ -44,6 +44,8 @@ public:
 #ifdef USE_IMGUI
    EditorSceneContext* GetEditorSceneContext() { return editorSceneContext_.get(); }
    const EditorSceneContext* GetEditorSceneContext() const { return editorSceneContext_.get(); }
+   CameraEditor* GetCameraEditor() { return cameraEditor_.get(); }
+   const CameraEditor* GetCameraEditor() const { return cameraEditor_.get(); }
    void LoadEditorSceneIfNeeded();
 #endif
 

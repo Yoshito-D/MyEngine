@@ -2,7 +2,7 @@
 
 #ifdef USE_IMGUI
 
-#include "../Core/CameraState.h"
+#include "Scene/Camera/Core/CameraState.h"
 #include "CameraGizmo.h"
 #include <functional>
 #include <string>
@@ -20,6 +20,17 @@ class ICinemachineComponent;
 /// カメラのパラメータ編集、視錐台表示、VirtualCamera管理を行う
 class CameraEditor {
 public:
+    enum class GizmoOperation {
+        Translate,
+        Rotate,
+        Scale,
+    };
+
+    enum class GizmoMode {
+        Local,
+        World,
+    };
+
     CameraEditor() = default;
     ~CameraEditor() = default;
 
@@ -45,6 +56,9 @@ public:
     /// @brief ギズモを描画
     /// @param viewCamera ビューに使用するカメラ
     void DrawGizmos(Camera* viewCamera);
+
+    /// @brief viewport 上に ImGuizmo の Transform 操作ハンドルを描画
+    void DrawSceneGizmos(Camera* viewCamera, float viewportX, float viewportY, float viewportWidth, float viewportHeight);
 
     /// @brief 編集対象のカメラを設定
     void SetTargetCamera(Camera* camera) { targetCamera_ = camera; }
@@ -93,13 +107,19 @@ private:
     /// @brief Add Component ポップアップ
     void ShowAddComponentPopup(VirtualCamera* vcam);
 
+    bool DrawTransformGizmo(Transform& transform, Camera* viewCamera, float viewportX, float viewportY, float viewportWidth, float viewportHeight, const char* id);
+    void ShowImGuizmoControls();
+
     CameraGizmo gizmo_;
     Camera* targetCamera_ = nullptr;
     VirtualCamera* targetVirtualCamera_ = nullptr;
     CinemachineBrain* targetBrain_ = nullptr;
 
     bool showGizmo_ = true;
+    bool useImGuizmo_ = true;
     bool showGizmoSettings_ = false;
+    GizmoOperation gizmoOperation_ = GizmoOperation::Translate;
+    GizmoMode gizmoMode_ = GizmoMode::Local;
     int selectedVirtualCameraIndex_ = -1;
 
     struct ComponentFactoryEntry {

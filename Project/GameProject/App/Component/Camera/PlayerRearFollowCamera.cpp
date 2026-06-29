@@ -6,6 +6,7 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "Object/Component/IObjectComponent.h"
 #endif
 
 namespace App {
@@ -545,32 +546,33 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void PlayerRearFollowCamera::DrawInspector() {
-	if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+	auto Tr = GameEngine::LocalizeEditorText;
+	if (ImGui::Checkbox(Tr("有効", "Enabled"), &isEnabled_)) {}
 
-	ImGui::DragFloat("Distance",          &distance,            0.1f,  1.0f,  100.0f);
-	ImGui::DragFloat("Height",            &height,              0.1f, -20.0f,  50.0f);
-	ImGui::DragFloat("Rear Lerp Speed",   &rearLerpSpeed,       0.1f,  0.0f,  30.0f);
-	ImGui::DragFloat("GravityUp Lerp",    &gravityUpLerpSpeed,  0.1f,  0.1f,  30.0f);
-	ImGui::DragFloat("FOV Default",       &fovDefault,          0.001f, 0.1f,  1.5f, "%.3f");
-	ImGui::DragFloat("FOV Boost Max",     &fovBoostMax,         0.001f, 0.0f,  0.5f, "%.3f");
-	ImGui::DragFloat("FOV Lerp Speed",    &fovLerpSpeed,        0.1f,  0.1f,  20.0f);
-	ImGui::DragFloat("Dist Boost Max",    &distanceBoostMax,    0.1f,  0.0f,  30.0f);
-	ImGui::DragFloat("Spring Stiffness",  &springStiffness,     1.0f,  1.0f, 300.0f);
-	ImGui::DragFloat("Spring Damping",    &springDamping,       0.5f,  0.0f, 100.0f);
-	ImGui::DragFloat("Accel->FOV Kick",   &accelToFovKick,      0.0001f, 0.0f, 0.02f, "%.4f");
-	ImGui::DragFloat("Accel->Dist Kick",  &accelToDistanceKick, 0.001f, 0.0f, 0.5f, "%.3f");
-	ImGui::DragFloat("Turbo FOV Kick",    &turboFovKickMax,     0.001f, 0.0f, 0.3f, "%.3f");
-	ImGui::DragFloat("Turbo Dist Kick",   &turboDistanceKickMax,0.05f, 0.0f, 8.0f);
-	ImGui::DragFloat("Speed Threshold",   &speedBoostThreshold, 0.5f,  0.0f, 100.0f);
-	ImGui::DragFloat("Speed Boost Max",   &speedBoostMax,       0.5f,  0.0f, 200.0f);
-	ImGui::DragFloat("Position Lerp",     &positionLerpSpeed,   0.5f,  1.0f, 100.0f);
+	ImGui::DragFloat(Tr("距離", "Distance"),          &distance,            0.1f,  1.0f,  100.0f);
+	ImGui::DragFloat(Tr("高さ", "Height"),            &height,              0.1f, -20.0f,  50.0f);
+	ImGui::DragFloat(Tr("後方補間速度", "Rear Lerp Speed"),   &rearLerpSpeed,       0.1f,  0.0f,  30.0f);
+	ImGui::DragFloat(Tr("GravityUp補間", "GravityUp Lerp"),    &gravityUpLerpSpeed,  0.1f,  0.1f,  30.0f);
+	ImGui::DragFloat(Tr("FOV デフォルト", "FOV Default"),       &fovDefault,          0.001f, 0.1f,  1.5f, "%.3f");
+	ImGui::DragFloat(Tr("FOV ブースト最大", "FOV Boost Max"),     &fovBoostMax,         0.001f, 0.0f,  0.5f, "%.3f");
+	ImGui::DragFloat(Tr("FOV 補間速度", "FOV Lerp Speed"),    &fovLerpSpeed,        0.1f,  0.1f,  20.0f);
+	ImGui::DragFloat(Tr("距離ブースト最大", "Dist Boost Max"),    &distanceBoostMax,    0.1f,  0.0f,  30.0f);
+	ImGui::DragFloat(Tr("ばね剛性", "Spring Stiffness"),  &springStiffness,     1.0f,  1.0f, 300.0f);
+	ImGui::DragFloat(Tr("ばね減衰", "Spring Damping"),    &springDamping,       0.5f,  0.0f, 100.0f);
+	ImGui::DragFloat(Tr("加速→FOVキック", "Accel->FOV Kick"),   &accelToFovKick,      0.0001f, 0.0f, 0.02f, "%.4f");
+	ImGui::DragFloat(Tr("加速→距離キック", "Accel->Dist Kick"),  &accelToDistanceKick, 0.001f, 0.0f, 0.5f, "%.3f");
+	ImGui::DragFloat(Tr("ターボFOVキック", "Turbo FOV Kick"),    &turboFovKickMax,     0.001f, 0.0f, 0.3f, "%.3f");
+	ImGui::DragFloat(Tr("ターボ距離キック", "Turbo Dist Kick"),   &turboDistanceKickMax,0.05f, 0.0f, 8.0f);
+	ImGui::DragFloat(Tr("速度しきい値", "Speed Threshold"),   &speedBoostThreshold, 0.5f,  0.0f, 100.0f);
+	ImGui::DragFloat(Tr("速度ブースト最大", "Speed Boost Max"),   &speedBoostMax,       0.5f,  0.0f, 200.0f);
+	ImGui::DragFloat(Tr("位置補間", "Position Lerp"),     &positionLerpSpeed,   0.5f,  1.0f, 100.0f);
 
 	ImGui::Separator();
-	ImGui::Text("Airborne: %s", isAirborne_ ? "true" : "false");
-	ImGui::Text("Target GravityUp:  (%.2f, %.2f, %.2f)", gravityUp_.x, gravityUp_.y, gravityUp_.z);
-	ImGui::Text("Current GravityUp: (%.2f, %.2f, %.2f)", currentGravityUp_.x, currentGravityUp_.y, currentGravityUp_.z);
-	ImGui::Text("FollowForward:     (%.2f, %.2f, %.2f)", followForward_.x, followForward_.y, followForward_.z);
-	ImGui::Text("Player Speed: %.2f  Current FOV: %.3f", playerSpeed_, currentFov_);
+	ImGui::Text("%s: %s", Tr("空中", "Airborne"), isAirborne_ ? Tr("はい", "true") : Tr("いいえ", "false"));
+	ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("目標GravityUp", "Target GravityUp"), gravityUp_.x, gravityUp_.y, gravityUp_.z);
+	ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("現在GravityUp", "Current GravityUp"), currentGravityUp_.x, currentGravityUp_.y, currentGravityUp_.z);
+	ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("追従前方向", "Follow Forward"), followForward_.x, followForward_.y, followForward_.z);
+	ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), playerSpeed_, Tr("現在FOV", "Current FOV"), currentFov_);
 }
 #endif
 

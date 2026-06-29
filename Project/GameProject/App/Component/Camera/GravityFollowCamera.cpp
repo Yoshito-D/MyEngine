@@ -9,6 +9,7 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "Object/Component/IObjectComponent.h"
 #endif
 
 using namespace GameEngine;
@@ -540,37 +541,41 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
 static constexpr float kRadToDeg = 57.2957795f;
 
 void GravityFollowCamera::DrawInspector() {
-   if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+   auto Tr = GameEngine::LocalizeEditorText;
+   if (ImGui::Checkbox(Tr("有効", "Enabled"), &isEnabled_)) {}
 
-   ImGui::DragFloat("Distance",         &distance_,          0.1f,   0.5f,  200.0f);
-   ImGui::DragFloat("Rotate Speed",     &rotateSpeed,        0.0001f, 0.0f,  0.1f, "%.4f");
-   ImGui::DragFloat("Scroll Speed",     &scrollSpeed,        0.0001f, 0.0f,  0.1f, "%.4f");
-   ImGui::DragFloat("GravityUp Lerp",   &gravityUpLerpSpeed, 0.1f,   0.1f,  30.0f);
-   ImGui::DragFloat("FOV Default",      &fovDefault,         0.001f, 0.1f,  1.5f, "%.3f");
-   ImGui::DragFloat("FOV Boost Max",    &fovBoostMax,        0.001f, 0.0f,  0.5f, "%.3f");
-   ImGui::DragFloat("FOV Lerp Speed",   &fovLerpSpeed,       0.1f,   0.1f,  20.0f);
-   ImGui::DragFloat("Distance Boost",   &distanceBoostMax,   0.05f,  0.0f,  10.0f);
-   ImGui::DragFloat("Spring Stiffness", &springStiffness,    1.0f,   1.0f, 300.0f);
-   ImGui::DragFloat("Spring Damping",   &springDamping,      0.5f,   0.0f, 100.0f);
-   ImGui::DragFloat("Accel->FOV Kick",  &accelToFovKick,     0.0001f, 0.0f, 0.02f, "%.4f");
-   ImGui::DragFloat("Accel->Dist Kick", &accelToDistanceKick,0.001f, 0.0f, 0.5f, "%.3f");
-   ImGui::DragFloat("Turbo FOV Kick",   &turboFovKickMax,    0.001f, 0.0f, 0.3f, "%.3f");
-   ImGui::DragFloat("Turbo Dist Kick",  &turboDistanceKickMax,0.05f, 0.0f, 8.0f);
-   ImGui::DragFloat("Speed Threshold",  &speedBoostThreshold, 0.5f,  0.0f, 100.0f);
-   ImGui::DragFloat("Speed Boost Max",  &speedBoostMax,       0.5f,  0.0f, 200.0f);
-   ImGui::DragFloat("Position Lerp",    &positionLerpSpeed,   0.5f,  1.0f, 100.0f);
+   ImGui::DragFloat(Tr("距離", "Distance"),         &distance_,          0.1f,   0.5f,  200.0f);
+   float rotateSpeedDeg = rotateSpeed * kRadToDeg;
+   if (ImGui::DragFloat(Tr("回転速度 (deg/pixel)", "Rotate Speed (deg/pixel)"), &rotateSpeedDeg, 0.01f, 0.0f, 6.0f, "%.2f")) {
+      rotateSpeed = rotateSpeedDeg / kRadToDeg;
+   }
+   ImGui::DragFloat(Tr("スクロール速度", "Scroll Speed"),     &scrollSpeed,        0.0001f, 0.0f,  0.1f, "%.4f");
+   ImGui::DragFloat(Tr("GravityUp補間", "GravityUp Lerp"),   &gravityUpLerpSpeed, 0.1f,   0.1f,  30.0f);
+   ImGui::DragFloat(Tr("FOV デフォルト", "FOV Default"),      &fovDefault,         0.001f, 0.1f,  1.5f, "%.3f");
+   ImGui::DragFloat(Tr("FOV ブースト最大", "FOV Boost Max"),    &fovBoostMax,        0.001f, 0.0f,  0.5f, "%.3f");
+   ImGui::DragFloat(Tr("FOV 補間速度", "FOV Lerp Speed"),   &fovLerpSpeed,       0.1f,   0.1f,  20.0f);
+   ImGui::DragFloat(Tr("距離ブースト", "Distance Boost"),   &distanceBoostMax,   0.05f,  0.0f,  10.0f);
+   ImGui::DragFloat(Tr("ばね剛性", "Spring Stiffness"), &springStiffness,    1.0f,   1.0f, 300.0f);
+   ImGui::DragFloat(Tr("ばね減衰", "Spring Damping"),   &springDamping,      0.5f,   0.0f, 100.0f);
+   ImGui::DragFloat(Tr("加速→FOVキック", "Accel->FOV Kick"),  &accelToFovKick,     0.0001f, 0.0f, 0.02f, "%.4f");
+   ImGui::DragFloat(Tr("加速→距離キック", "Accel->Dist Kick"), &accelToDistanceKick,0.001f, 0.0f, 0.5f, "%.3f");
+   ImGui::DragFloat(Tr("ターボFOVキック", "Turbo FOV Kick"),   &turboFovKickMax,    0.001f, 0.0f, 0.3f, "%.3f");
+   ImGui::DragFloat(Tr("ターボ距離キック", "Turbo Dist Kick"),  &turboDistanceKickMax,0.05f, 0.0f, 8.0f);
+   ImGui::DragFloat(Tr("速度しきい値", "Speed Threshold"),  &speedBoostThreshold, 0.5f,  0.0f, 100.0f);
+   ImGui::DragFloat(Tr("速度ブースト最大", "Speed Boost Max"),  &speedBoostMax,       0.5f,  0.0f, 200.0f);
+   ImGui::DragFloat(Tr("位置補間", "Position Lerp"),    &positionLerpSpeed,   0.5f,  1.0f, 100.0f);
 
    float pitchDeg = pitch_ * kRadToDeg;
-   if (ImGui::SliderFloat("Pitch (deg)", &pitchDeg, 5.0f, 80.0f)) {
+   if (ImGui::SliderFloat(Tr("ピッチ (deg)", "Pitch (deg)"), &pitchDeg, 5.0f, 80.0f)) {
       pitch_ = pitchDeg / kRadToDeg;
    }
 
    ImGui::Separator();
-   ImGui::Text("Target GravityUp:  (%.2f, %.2f, %.2f)", gravityUp_.x, gravityUp_.y, gravityUp_.z);
-   ImGui::Text("Current GravityUp: (%.2f, %.2f, %.2f)", currentGravityUp_.x, currentGravityUp_.y, currentGravityUp_.z);
-   ImGui::Text("Pivot Target:      (%.2f, %.2f, %.2f)", pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
-   ImGui::Text("Flat Forward:      (%.2f, %.2f, %.2f)", flatForward_.x, flatForward_.y, flatForward_.z);
-   ImGui::Text("Player Speed: %.2f  Current FOV: %.3f", playerSpeed_, currentFov_);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("目標GravityUp", "Target GravityUp"), gravityUp_.x, gravityUp_.y, gravityUp_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("現在GravityUp", "Current GravityUp"), currentGravityUp_.x, currentGravityUp_.y, currentGravityUp_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("ピボット目標", "Pivot Target"), pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("水平前方向", "Flat Forward"), flatForward_.x, flatForward_.y, flatForward_.z);
+   ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), playerSpeed_, Tr("現在FOV", "Current FOV"), currentFov_);
 }
 #endif
 

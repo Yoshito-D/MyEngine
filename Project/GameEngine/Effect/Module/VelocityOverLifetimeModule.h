@@ -32,6 +32,10 @@ namespace GameEngine {
 		nlohmann::json ToJson() const override;
 		void FromJson(const nlohmann::json& json) override;
 
+#ifdef USE_IMGUI
+		void DrawInspector() override;
+#endif
+
 	private:
 		RandomVector3 linearVelocity_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false};
 		RandomFloat speedModifier_{1.0f, 1.0f, false};

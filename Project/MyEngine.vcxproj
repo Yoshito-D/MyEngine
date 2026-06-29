@@ -85,7 +85,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Core\Renderer\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -117,7 +117,7 @@
       <TreatWarningAsError>false</TreatWarningAsError>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Core\Renderer\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -149,7 +149,7 @@
       <TreatWarningAsError>false</TreatWarningAsError>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Core\Renderer\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
@@ -246,7 +246,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Dissolve.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.cpp" />
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\ParticleModuleInspectors.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\ColorOverLifetimeModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\ForceOverLifetimeModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\LimitVelocityOverLifetimeModule.cpp" />
@@ -294,7 +294,7 @@
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pass\ModelRenderer.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Editor\RendererEditorController.cpp" />
+    <ClCompile Include="GameEngine\Editor\Renderer\RendererEditorController.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorAssetRegistry.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorCommand.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorObjectStore.cpp" />
@@ -304,10 +304,6 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\UIRenderer.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ShaderManager.cpp" />
     <ClCompile Include="GameEngine\Core\TimeProfiler\TimeProfiler.cpp" />
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleEmissionModuleEdit.cpp" />
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleLifetimeModulesEdit.cpp" />
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleMainModuleEdit.cpp" />
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleShapeModuleEdit.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\EmissionModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\LifetimeModules.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\MainModule.cpp" />
@@ -315,7 +311,7 @@
     <ClCompile Include="GameEngine\Effect\Module\ShapeModule.cpp" />
     <ClCompile Include="GameEngine\Effect\ParticleMaterial.cpp" />
     <ClCompile Include="GameEngine\Effect\ParticleSystem.cpp" />
-    <ClCompile Include="GameEngine\Effect\ParticleSystemEdit.cpp" />
+    <ClCompile Include="GameEngine\Editor\Particle\ParticleSystemEditor.cpp" />
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
     <ClCompile Include="GameEngine\Framework\Framework.cpp" />
     <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
@@ -391,8 +387,8 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraEditor.cpp" />
-    <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraGizmo.cpp" />
+    <ClCompile Include="GameEngine\Editor\Camera\CameraEditor.cpp" />
+    <ClCompile Include="GameEngine\Editor\Camera\CameraGizmo.cpp" />
     <ClCompile Include="GameEngine\Scene\SceneManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -528,7 +524,6 @@
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Dissolve.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.h" />
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h" />
     <ClInclude Include="GameEngine\Effect\Module\ColorOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\ForceOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\LimitVelocityOverLifetimeModule.h" />
@@ -572,7 +567,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\RenderBootstrapper.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Renderer.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\ModelRenderer.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Editor\RendererEditorController.h" />
+    <ClInclude Include="GameEngine\Editor\Renderer\RendererEditorController.h" />
     <ClInclude Include="GameEngine\Editor\EditorAssetRegistry.h" />
     <ClInclude Include="GameEngine\Editor\EditorCommand.h" />
     <ClInclude Include="GameEngine\Editor\EditorObjectStore.h" />
@@ -583,10 +578,6 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\UIRenderer.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pipeline\ShaderManager.h" />
     <ClInclude Include="GameEngine\Core\TimeProfiler\TimeProfiler.h" />
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleEmissionModuleEdit.h" />
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleLifetimeModulesEdit.h" />
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleMainModuleEdit.h" />
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleShapeModuleEdit.h" />
     <ClInclude Include="GameEngine\Effect\Module\EmissionModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\LifetimeModules.h" />
     <ClInclude Include="GameEngine\Effect\Module\MainModule.h" />
@@ -595,7 +586,7 @@
     <ClInclude Include="GameEngine\Effect\Particle.h" />
     <ClInclude Include="GameEngine\Effect\ParticleMaterial.h" />
     <ClInclude Include="GameEngine\Effect\ParticleSystem.h" />
-    <ClInclude Include="GameEngine\Effect\ParticleSystemEdit.h" />
+    <ClInclude Include="GameEngine\Editor\Particle\ParticleSystemEditor.h" />
     <ClInclude Include="GameEngine\Framework\D3DResourceLeakChecker.h" />
     <ClInclude Include="GameEngine\Framework\EngineContext.h" />
     <ClInclude Include="GameEngine\Framework\ExportDump.h" />
@@ -637,8 +628,8 @@
     <ClInclude Include="GameEngine\Scene\Camera\Core\ICinemachineComponent.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Core\VirtualCamera.h" />
     <ClInclude Include="GameEngine\Scene\Camera\DebugCamera.h" />
-    <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraEditor.h" />
-    <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraGizmo.h" />
+    <ClInclude Include="GameEngine\Editor\Camera\CameraEditor.h" />
+    <ClInclude Include="GameEngine\Editor\Camera\CameraGizmo.h" />
     <ClInclude Include="GameEngine\Scene\IScene.h" />
     <ClInclude Include="GameEngine\Scene\ISceneFactory.h" />
     <ClInclude Include="GameEngine\Scene\SceneManager.h" />
@@ -708,6 +699,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="AGENTS.md">
+      <SubType>
+      </SubType>
+    </None>
     <None Include="Resources\pipelines\fullscreen_triangle_pipeline.json" />
     <None Include="Resources\pipelines\line3d_pipeline.json" />
     <None Include="Resources\pipelines\object3d_pipeline.json" />

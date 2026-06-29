@@ -2,7 +2,7 @@
 
 #ifdef USE_IMGUI
 
-#include "../Core/CameraState.h"
+#include "Scene/Camera/Core/CameraState.h"
 
 namespace GameEngine {
 
@@ -18,7 +18,7 @@ public:
     struct Settings {
         bool showFrustum = true;       // 視錐台を表示
         bool showDirection = true;     // カメラの向きを表示
-        bool showUpVector = false;     // 上方向ベクトルを表示
+        bool showUpVector = true;     // 上方向ベクトルを表示
         bool showNearPlane = true;     // 近クリップ面を表示
         bool showFarPlane = true;      // 遠クリップ面を表示
 

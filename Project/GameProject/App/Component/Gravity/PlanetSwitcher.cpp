@@ -247,35 +247,37 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void PlanetSwitcher::DrawInspector() {
-   if (!ImGui::CollapsingHeader("PlanetSwitcher")) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
 	  return;
    }
    ImGui::Separator();
-   ImGui::Text("Planets: %d", static_cast<int>(entries_.size()));
-   ImGui::Text("Current Planet Index: %d", currentIndex_);
-   ImGui::DragFloat("Switch Hysteresis", &switchHysteresis, 0.05f, 0.0f, 20.0f);
-   ImGui::DragFloat3("OBB Half Extents", &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
+   ImGui::Text("%s: %d", Tr("惑星数", "Planets"), static_cast<int>(entries_.size()));
+   ImGui::Text("%s: %d", Tr("現在の惑星インデックス", "Current Planet Index"), currentIndex_);
+   ImGui::DragFloat(Tr("切り替えヒステリシス", "Switch Hysteresis"), &switchHysteresis, 0.05f, 0.0f, 20.0f);
+   ImGui::DragFloat3(Tr("OBB半径", "OBB Half Extents"), &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
 
    // 登録済み惑星の情報を表示/編集
    for (size_t i = 0; i < entries_.size(); ++i) {
 	  auto& e = entries_[i];
 	  ImGui::PushID(static_cast<int>(i));
-	  ImGui::Text("Object Name: %s", e.objectName.c_str());
-	  ImGui::Text("Center: (%.2f, %.2f, %.2f)", e.center.x, e.center.y, e.center.z);
-	  ImGui::Text("Surface Radius: %.2f", e.surfaceRadius);
+	  ImGui::Text("%s: %s", Tr("オブジェクト名", "Object Name"), e.objectName.c_str());
+	  ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("中心", "Center"), e.center.x, e.center.y, e.center.z);
+	  ImGui::Text("%s: %.2f", Tr("地表半径", "Surface Radius"), e.surfaceRadius);
 	  ImGui::PopID();
    }
 
-   ImGui::SeparatorText("Add Planet");
+   ImGui::SeparatorText(Tr("惑星を追加", "Add Planet"));
    static char newObjectName[128] = "";
-   ImGui::InputText("Object Name##PlanetSwitcherAddObjectName", newObjectName, sizeof(newObjectName));
+   ImGui::InputText((std::string(Tr("オブジェクト名", "Object Name")) + "##PlanetSwitcherAddObjectName").c_str(), newObjectName, sizeof(newObjectName));
    ImGui::SameLine();
-   if (ImGui::Button("Add##PlanetSwitcherAddByName") && newObjectName[0] != '\0') {
+   if (ImGui::Button((std::string(Tr("追加", "Add")) + "##PlanetSwitcherAddByName").c_str()) && newObjectName[0] != '\0') {
 	  AddPlanet(newObjectName);
 	  newObjectName[0] = '\0';
    }
 
-   ImGui::Button("Drop Hierarchy Object Here##PlanetSwitcherDropTarget", ImVec2(-1.0f, 0.0f));
+   ImGui::Button((std::string(Tr("ヒエラルキーのオブジェクトをここへドロップ", "Drop Hierarchy Object Here")) + "##PlanetSwitcherDropTarget").c_str(), ImVec2(-1.0f, 0.0f));
    if (ImGui::BeginDragDropTarget()) {
 	  if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kSceneObjectPayload)) {
 		 const char* objectName = static_cast<const char*>(payload->Data);

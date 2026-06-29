@@ -10,6 +10,7 @@ class CharacterJump final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterJump";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "キャラクタージャンプ", "Character Jump" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

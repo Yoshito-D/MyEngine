@@ -23,12 +23,14 @@ void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
 
 #ifdef USE_IMGUI
 void CharacterJump::DrawInspector() {
-   if (!ImGui::CollapsingHeader("CharacterJump")) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
    ImGui::Separator();
-   ImGui::DragFloat("Jump Strength", &jumpStrength, 0.1f, 0.0f, 30.0f);
-   ImGui::Text("Is Jumping: %s", isJumping_ ? "true" : "false");
+   ImGui::DragFloat(Tr("ジャンプ力", "Jump Strength"), &jumpStrength, 0.1f, 0.0f, 30.0f);
+   ImGui::Text("%s: %s", Tr("ジャンプ中", "Is Jumping"), isJumping_ ? Tr("はい", "true") : Tr("いいえ", "false"));
 }
 #endif
 

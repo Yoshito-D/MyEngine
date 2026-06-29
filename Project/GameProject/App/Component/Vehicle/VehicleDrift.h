@@ -38,6 +38,7 @@ public:
    };
 
    static constexpr const char* kTypeName = "VehicleDrift";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両ドリフト", "Vehicle Drift" };
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief ドリフト入力・継続判定・速度横滑りを一括処理する

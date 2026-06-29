@@ -3,8 +3,8 @@
 #ifdef USE_IMGUI
 
 #include "CameraGizmo.h"
-#include "../Camera.h"
-#include "../Core/VirtualCamera.h"
+#include "Scene/Camera/Camera.h"
+#include "Scene/Camera/Core/VirtualCamera.h"
 #include "Core/Renderer/Pass/LineRenderer.h"
 #include "Utility/MathUtils.h"
 #include <cmath>

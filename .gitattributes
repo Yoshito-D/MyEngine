@@ -1,2 +1,16 @@
-# Auto detect text files and perform LF normalization
+# Default
 * text=auto
+
+# C++ source
+*.cpp   text eol=crlf
+*.h     text eol=crlf
+*.hpp   text eol=crlf
+*.inl   text eol=crlf
+
+# Shaders
+*.hlsl  text eol=crlf
+*.hlsli text eol=crlf
+
+# Config files
+*.json  text eol=crlf
+*.ini   text eol=crlf

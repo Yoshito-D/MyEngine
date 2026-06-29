@@ -11,6 +11,7 @@ class MeshNormalGravityAttractor : public GravityAttractor {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "MeshNormalGravityAttractor";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "メッシュ法線重力アトラクター", "Mesh Normal Gravity Attractor" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

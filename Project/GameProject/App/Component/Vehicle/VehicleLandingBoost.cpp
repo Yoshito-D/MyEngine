@@ -36,12 +36,14 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
 
 #ifdef USE_IMGUI
 void VehicleLandingBoost::DrawInspector() {
-   if (!ImGui::CollapsingHeader("VehicleLandingBoost")) { return; }
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
-   ImGui::DragFloat("Boost Amount",      &boostAmount,     0.1f,  0.0f, 200.0f);
-   ImGui::DragFloat("Boost Threshold",  &boostThreshold,  0.01f, 0.0f,   1.0f);
-   ImGui::DragFloat("Normal Threshold", &normalThreshold, 0.01f, 0.0f,   1.0f);
-   ImGui::DragFloat("Penalty Speed",    &penaltySpeed,    0.1f,  0.0f, 200.0f);
+   ImGui::DragFloat(Tr("ブースト量", "Boost Amount"),      &boostAmount,     0.1f,  0.0f, 200.0f);
+   ImGui::DragFloat(Tr("ブーストしきい値", "Boost Threshold"),  &boostThreshold,  0.01f, 0.0f,   1.0f);
+   ImGui::DragFloat(Tr("法線しきい値", "Normal Threshold"), &normalThreshold, 0.01f, 0.0f,   1.0f);
+   ImGui::DragFloat(Tr("ペナルティ速度", "Penalty Speed"),    &penaltySpeed,    0.1f,  0.0f, 200.0f);
 }
 #endif
 

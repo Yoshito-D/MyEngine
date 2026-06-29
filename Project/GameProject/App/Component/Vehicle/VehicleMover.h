@@ -22,6 +22,7 @@ namespace App {
 class VehicleMover final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleMover";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両移動", "Vehicle Mover" };
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief ステアリング・ピッチ入力と接地状態から移動・姿勢を適用する

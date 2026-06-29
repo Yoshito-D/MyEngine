@@ -15,6 +15,7 @@ namespace App {
 class VehicleGroundMover final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleGroundMover";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両地上移動", "Vehicle Ground Mover" };
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 接地中の移動・姿勢を適用する

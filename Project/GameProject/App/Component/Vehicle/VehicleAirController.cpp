@@ -121,14 +121,17 @@ void VehicleAirController::ApplyRollRotation(GameEngine::Quaternion& rot,
 
 #ifdef USE_IMGUI
 void VehicleAirController::DrawInspector() {
-   if (!ImGui::CollapsingHeader("VehicleAirController")) { return; }
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
-   ImGui::DragFloat("Steer Speed##1",     &rollSpeed,     1.0f, 0.0f, 360.0f);
-   ImGui::DragFloat("Pitch Speed",     &pitchSpeed,     1.0f, 0.0f, 360.0f);
-   ImGui::DragFloat("Angular Damping", &angularDamping, 0.1f, 0.1f,  20.0f);
-   ImGui::DragFloat("Air Drag",        &airDrag,        0.05f, 0.0f,  5.0f);
+   ImGui::DragFloat((std::string(Tr("操舵速度 (deg/s)", "Steer Speed (deg/s)")) + "##1").c_str(), &rollSpeed, 1.0f, 0.0f, 360.0f);
+   ImGui::DragFloat(Tr("ピッチ速度 (deg/s)", "Pitch Speed (deg/s)"), &pitchSpeed, 1.0f, 0.0f, 360.0f);
+   ImGui::DragFloat(Tr("角速度減衰", "Angular Damping"), &angularDamping, 0.1f, 0.1f,  20.0f);
+   ImGui::DragFloat(Tr("空気抵抗", "Air Drag"),        &airDrag,        0.05f, 0.0f,  5.0f);
    ImGui::Spacing();
-   ImGui::Text("AngVel Yaw/Pitch: %.2f / %.2f", angularVelYaw_, angularVelPitch_);
+   constexpr float kRadToDeg = 180.0f / static_cast<float>(std::numbers::pi);
+   ImGui::Text("%s (deg/s): %.2f / %.2f", Tr("角速度 Yaw/Pitch", "AngVel Yaw/Pitch"), angularVelYaw_ * kRadToDeg, angularVelPitch_ * kRadToDeg);
 }
 #endif
 

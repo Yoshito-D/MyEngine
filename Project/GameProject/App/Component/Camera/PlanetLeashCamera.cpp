@@ -8,6 +8,7 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "Object/Component/IObjectComponent.h"
 #endif
 
 using namespace GameEngine;
@@ -189,20 +190,21 @@ void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void PlanetLeashCamera::DrawInspector() {
-   if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+   auto Tr = GameEngine::LocalizeEditorText;
+   if (ImGui::Checkbox(Tr("有効", "Enabled"), &isEnabled_)) {}
 
-   ImGui::DragFloat("Max Follow Distance", &maxFollowDistance, 0.1f, 0.1f, 100.0f);
-   ImGui::DragFloat("Follow Speed",        &followSpeed,       0.1f, 0.0f, 50.0f);
-   ImGui::DragFloat("Min Planet Distance", &minPlanetDistance, 0.1f, 0.0f, 100.0f);
-   ImGui::Checkbox("Use Gravity Up", &useGravityUp);
+   ImGui::DragFloat(Tr("最大追従距離", "Max Follow Distance"), &maxFollowDistance, 0.1f, 0.1f, 100.0f);
+   ImGui::DragFloat(Tr("追従速度", "Follow Speed"),        &followSpeed,       0.1f, 0.0f, 50.0f);
+   ImGui::DragFloat(Tr("惑星最小距離", "Min Planet Distance"), &minPlanetDistance, 0.1f, 0.0f, 100.0f);
+   ImGui::Checkbox(Tr("Gravity Upを使用", "Use Gravity Up"), &useGravityUp);
 
    ImGui::Separator();
-   ImGui::Text("Eye Pos:   (%.2f, %.2f, %.2f)", eyePos_.x, eyePos_.y, eyePos_.z);
-   ImGui::Text("Gravity Up:(%.2f, %.2f, %.2f)", gravityUp_.x, gravityUp_.y, gravityUp_.z);
-   ImGui::Text("Pivot:     (%.2f, %.2f, %.2f)", pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
-   ImGui::Text("Sphere Ctr:(%.2f, %.2f, %.2f)", sphereCenter_.x, sphereCenter_.y, sphereCenter_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("視点位置", "Eye Pos"), eyePos_.x, eyePos_.y, eyePos_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("Gravity Up", "Gravity Up"), gravityUp_.x, gravityUp_.y, gravityUp_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("ピボット", "Pivot"), pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("球中心", "Sphere Center"), sphereCenter_.x, sphereCenter_.y, sphereCenter_.z);
 
-   if (ImGui::Button("Reset Initialization")) {
+   if (ImGui::Button(Tr("初期化をリセット", "Reset Initialization"))) {
       isInitialized_ = false;
    }
 }

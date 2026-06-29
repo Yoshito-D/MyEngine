@@ -10,6 +10,7 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "Utility/ImGuiHelper.h"
 #include <cstring>
 #include <filesystem>
 #endif
@@ -19,7 +20,8 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    GameEngine::ParticleEmitterComponent::kTypeName,
    [](GameEngine::Object& o) -> GameEngine::IObjectComponent* {
 	  return o.AddComponent<GameEngine::ParticleEmitterComponent>();
-   }
+   },
+   GameEngine::ParticleEmitterComponent::kDisplayName
 );
 }
 
@@ -594,24 +596,29 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void ParticleEmitterComponent::DrawInspector() {
-   if (!ImGui::CollapsingHeader("ParticleEmitter")) {
+   auto Tr = [](const char* japanese, const char* english) {
+	  return ImGuiHelper::Localize({ japanese, english });
+   };
+
+   const std::string componentHeader = MakeObjectComponentHeaderLabel(GetTypeName());
+   if (!ImGui::CollapsingHeader(componentHeader.c_str())) {
 	  return;
    }
 
    // ── コンポーネント共通設定 ─────────────────────
-   ImGui::DragFloat("Cull Distance", &maxCullDistance, 1.0f, 0.0f, 10000.0f);
+   ImGui::DragFloat(Tr("カリング距離", "Cull Distance"), &maxCullDistance, 1.0f, 0.0f, 10000.0f);
 
    // ── 全スロット一括制御 ────────────────────────
-   ImGui::SeparatorText("Global Control");
-   if (ImGui::Button("Play All")) { Play(); }  ImGui::SameLine();
-   if (ImGui::Button("Stop All")) { Stop(); }  ImGui::SameLine();
-   if (ImGui::Button("Pause All")) { Pause(); }  ImGui::SameLine();
-   if (ImGui::Button("Resume All")) { Resume(); }  ImGui::SameLine();
-   if (ImGui::Button("Restart All")) { Restart(); }
+   ImGui::SeparatorText(Tr("全体制御", "Global Control"));
+   if (ImGui::Button(Tr("全て再生", "Play All"))) { Play(); }  ImGui::SameLine();
+   if (ImGui::Button(Tr("全て停止", "Stop All"))) { Stop(); }  ImGui::SameLine();
+   if (ImGui::Button(Tr("全て一時停止", "Pause All"))) { Pause(); }  ImGui::SameLine();
+   if (ImGui::Button(Tr("全て再開", "Resume All"))) { Resume(); }  ImGui::SameLine();
+   if (ImGui::Button(Tr("全て再スタート", "Restart All"))) { Restart(); }
 
    // ── スロット追加 ──────────────────────────────
-   ImGui::SeparatorText("Slots");
-   if (ImGui::Button("+ Add Slot")) {
+   ImGui::SeparatorText(Tr("スロット", "Slots"));
+   if (ImGui::Button(Tr("+ スロット追加", "+ Add Slot"))) {
 	  AddSlot("");
    }
 
@@ -621,12 +628,13 @@ void ParticleEmitterComponent::DrawInspector() {
 	  EmitterSlot& slot = slots_[i];
 
 	  ImGui::PushID(i);
-	  const std::string header = "Slot " + std::to_string(i) +
-		 (slot.jsonPath.empty() ? "" : " [" + slot.jsonPath + "]");
+	  const std::string header = std::string(Tr("スロット", "Slot")) + " " + std::to_string(i) +
+		 (slot.jsonPath.empty() ? "" : " [" + slot.jsonPath + "]") +
+		 "###ParticleEmitterSlot";
 	  const bool open = ImGui::CollapsingHeader(header.c_str());
 
 	  if (ImGui::BeginPopupContextItem("SlotContext")) {
-		 if (ImGui::MenuItem("Remove Slot")) { removeIdx = i; }
+		 if (ImGui::MenuItem(Tr("スロットを削除", "Remove Slot"))) { removeIdx = i; }
 		 ImGui::EndPopup();
 	  }
 
@@ -635,7 +643,7 @@ void ParticleEmitterComponent::DrawInspector() {
 		 char pathBuf[512]{};
 		 const size_t pathLen = std::min(slot.jsonPath.size(), sizeof(pathBuf) - 1);
 		 std::memcpy(pathBuf, slot.jsonPath.c_str(), pathLen);
-		 if (ImGui::InputText("JSON Path", pathBuf, sizeof(pathBuf))) {
+		 if (ImGui::InputText(Tr("JSONパス", "JSON Path"), pathBuf, sizeof(pathBuf))) {
 			slot.jsonPath = pathBuf;
 		 }
 		 if (ImGui::BeginDragDropTarget()) {
@@ -653,9 +661,9 @@ void ParticleEmitterComponent::DrawInspector() {
 			ImGui::EndDragDropTarget();
 		 }
 		 ImGui::SameLine();
-		 if (ImGui::Button("Load")) { LoadSlot(slot); }
+		 if (ImGui::Button(Tr("読み込み", "Load"))) { LoadSlot(slot); }
 		 ImGui::SameLine();
-		 if (ImGui::Button("Reload")) {
+		 if (ImGui::Button(Tr("再読み込み", "Reload"))) {
 			if (slot.particleSystem && !slot.jsonPath.empty()) {
 			   slot.particleSystem->LoadFromJson(slot.jsonPath);
 			   if (slot.particleSystem->GetMainModule()) {
@@ -666,39 +674,42 @@ void ParticleEmitterComponent::DrawInspector() {
 		 }
 
 		 // 再生制御
-		 ImGui::SeparatorText("Playback");
+		 ImGui::SeparatorText(Tr("再生制御", "Playback"));
 		 const bool playing = IsPlaying(i);
 		 ImGui::BeginDisabled(playing);
-		 if (ImGui::Button("Play")) { Play(i); } ImGui::EndDisabled(); ImGui::SameLine();
+		 if (ImGui::Button(Tr("再生", "Play"))) { Play(i); } ImGui::EndDisabled(); ImGui::SameLine();
 		 ImGui::BeginDisabled(!playing);
-		 if (ImGui::Button("Stop")) { Stop(i); } ImGui::SameLine();
-		 if (ImGui::Button("Pause")) { Pause(i); } ImGui::SameLine();
-		 if (ImGui::Button("Resume")) { Resume(i); } ImGui::EndDisabled(); ImGui::SameLine();
-		 if (ImGui::Button("Restart")) { Restart(i); }
+		 if (ImGui::Button(Tr("停止", "Stop"))) { Stop(i); } ImGui::SameLine();
+		 if (ImGui::Button(Tr("一時停止", "Pause"))) { Pause(i); } ImGui::SameLine();
+		 if (ImGui::Button(Tr("再開", "Resume"))) { Resume(i); } ImGui::EndDisabled(); ImGui::SameLine();
+		 if (ImGui::Button(Tr("再スタート", "Restart"))) { Restart(i); }
 
-		 const char* statusStr = "Stopped";
+		 const char* statusStr = Tr("停止中", "Stopped");
 		 if (slot.particleSystem) {
-			if (slot.particleSystem->IsPlaying())  statusStr = "Playing";
-			else if (IsFinished(i))                statusStr = "Finished";
+			if (slot.particleSystem->IsPlaying())  statusStr = Tr("再生中", "Playing");
+			else if (IsFinished(i))                statusStr = Tr("完了", "Finished");
 		 }
-		 ImGui::Text("Status: %s", statusStr);
+		 ImGui::Text("%s: %s", Tr("状態", "Status"), statusStr);
 
-		 ImGui::Checkbox("Auto Play", &slot.autoPlay);          ImGui::SameLine();
-		 ImGui::Checkbox("Loop", &slot.loop);              ImGui::SameLine();
-		 ImGui::Checkbox("Once & Destroy", &slot.playOnceAndDestroy);
+		 ImGui::Checkbox(Tr("自動再生", "Auto Play"), &slot.autoPlay);          ImGui::SameLine();
+		 ImGui::Checkbox(Tr("ループ", "Loop"), &slot.loop);              ImGui::SameLine();
+		 ImGui::Checkbox(Tr("1回再生して破棄", "Once & Destroy"), &slot.playOnceAndDestroy);
 
 		 // 追従設定
-		 ImGui::SeparatorText("Attachment");
-		 ImGui::Checkbox("Pos", &slot.attachConfig.followPosition); ImGui::SameLine();
-		 ImGui::Checkbox("Rot", &slot.attachConfig.followRotation); ImGui::SameLine();
-		 ImGui::Checkbox("Scale", &slot.attachConfig.followScale);
-		 ImGui::DragFloat3("Pos Offset", &slot.attachConfig.positionOffset.x, 0.05f);
-		 ImGui::DragFloat3("Rot Offset", &slot.attachConfig.rotationOffset.x, 0.01f);
-		 ImGui::DragFloat3("Scale Offset", &slot.attachConfig.scaleOffset.x, 0.01f, 0.001f, 100.0f);
+		 ImGui::SeparatorText(Tr("追従設定", "Attachment"));
+		 ImGui::Checkbox(Tr("位置", "Pos"), &slot.attachConfig.followPosition); ImGui::SameLine();
+		 ImGui::Checkbox(Tr("回転", "Rot"), &slot.attachConfig.followRotation); ImGui::SameLine();
+		 ImGui::Checkbox(Tr("スケール", "Scale"), &slot.attachConfig.followScale);
+		 ImGui::DragFloat3(Tr("位置オフセット", "Pos Offset"), &slot.attachConfig.positionOffset.x, 0.05f);
+		 Vector3 rotationOffsetDegrees = ImGuiHelper::RadiansToDegrees(slot.attachConfig.rotationOffset);
+		 if (ImGui::DragFloat3(Tr("回転オフセット (deg)", "Rot Offset (deg)"), &rotationOffsetDegrees.x, 0.1f)) {
+			slot.attachConfig.rotationOffset = ImGuiHelper::DegreesToRadians(rotationOffsetDegrees);
+		 }
+		 ImGui::DragFloat3(Tr("スケールオフセット", "Scale Offset"), &slot.attachConfig.scaleOffset.x, 0.01f, 0.001f, 100.0f);
 
-		 const char* spaceItems[] = { "World", "Local" };
+		 const char* spaceItems[] = { Tr("ワールド", "World"), Tr("ローカル", "Local") };
 		 int spaceIdx = (slot.attachConfig.simulationSpace == AttachmentConfig::Space::Local) ? 1 : 0;
-		 if (ImGui::Combo("Sim Space", &spaceIdx, spaceItems, 2)) {
+		 if (ImGui::Combo(Tr("シミュレーション空間", "Sim Space"), &spaceIdx, spaceItems, 2)) {
 			slot.attachConfig.simulationSpace = (spaceIdx == 1)
 			   ? AttachmentConfig::Space::Local
 			   : AttachmentConfig::Space::World;
@@ -708,12 +719,12 @@ void ParticleEmitterComponent::DrawInspector() {
 		 char boneBuf[256]{};
 		 const size_t boneLen = std::min(slot.attachConfig.boneName.size(), sizeof(boneBuf) - 1);
 		 std::memcpy(boneBuf, slot.attachConfig.boneName.c_str(), boneLen);
-		 if (ImGui::InputText("Bone Name", boneBuf, sizeof(boneBuf))) {
+		 if (ImGui::InputText(Tr("ボーン名", "Bone Name"), boneBuf, sizeof(boneBuf))) {
 			slot.attachConfig.boneName = boneBuf;
 		 }
 
 		 if (slot.particleSystem) {
-			ImGui::SeparatorText("ParticleSystem (Live)");
+			ImGui::SeparatorText(Tr("パーティクルシステム (実行中)", "ParticleSystem (Live)"));
 		 }
 	  }
 

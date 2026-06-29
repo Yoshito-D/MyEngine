@@ -1,7 +1,30 @@
 #include "pch.h"
 #include "IObjectComponent.h"
 
+#ifdef USE_IMGUI
+#include "ComponentRegistry.h"
+#include "Utility/ImGuiHelper.h"
+#endif
+
 namespace GameEngine {
+
+#ifdef USE_IMGUI
+const char* LocalizeEditorText(const char* japanese, const char* english) {
+   return ImGuiHelper::Localize({ japanese, english });
+}
+
+std::string LocalizeObjectComponentTypeName(const char* typeName) {
+   if (!typeName || typeName[0] == '\0') {
+      return "";
+   }
+
+   return ComponentRegistry::GetInstance().GetDisplayName(typeName);
+}
+
+std::string MakeObjectComponentHeaderLabel(const char* typeName) {
+   return LocalizeObjectComponentTypeName(typeName) + "###" + (typeName ? typeName : "");
+}
+#endif
 
 /// @brief コンポーネントをオブジェクトにアタッチする
 void IObjectComponent::Attach(Object& owner) {

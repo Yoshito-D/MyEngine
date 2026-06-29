@@ -1,12 +1,15 @@
 #include "LightManager.h"
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "Utility/ImGuiHelper.h"
 #endif
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "SpotLight.h"
 #include "AreaLight.h"
 #include "MathUtils.h"
+#include <algorithm>
+#include <cmath>
 #include <string>
 
 namespace GameEngine {
@@ -407,8 +410,15 @@ void LightManager::DebugDraw() {
                data->direction = Normalize(data->direction);
                ImGui::DragFloat("Distance", &data->distance, 0.1f);
                ImGui::DragFloat("Decay", &data->decay, 0.01f);
-               ImGui::DragFloat("CosAngle", &data->cosAngle, 0.01f);
-               ImGui::DragFloat("CosFalloffStart", &data->cosFalloffStart, 0.01f);
+               float angleDegrees = ImGuiHelper::RadiansToDegrees(std::acos(std::clamp(data->cosAngle, -1.0f, 1.0f)));
+               if (ImGui::DragFloat("Angle (deg)", &angleDegrees, 0.1f, 0.0f, 180.0f)) {
+                  data->cosAngle = std::cos(ImGuiHelper::DegreesToRadians(angleDegrees));
+               }
+
+               float falloffStartDegrees = ImGuiHelper::RadiansToDegrees(std::acos(std::clamp(data->cosFalloffStart, -1.0f, 1.0f)));
+               if (ImGui::DragFloat("Falloff Start (deg)", &falloffStartDegrees, 0.1f, 0.0f, 180.0f)) {
+                  data->cosFalloffStart = std::cos(ImGuiHelper::DegreesToRadians(falloffStartDegrees));
+               }
                
                // 最後の1つの場合は削除ボタンを無効化
                bool canRemove = spotLights_.size() > 1;

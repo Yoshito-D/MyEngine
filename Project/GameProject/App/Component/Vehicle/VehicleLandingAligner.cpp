@@ -83,11 +83,17 @@ void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
 
 #ifdef USE_IMGUI
 void VehicleLandingAligner::DrawInspector() {
-   if (!ImGui::CollapsingHeader("VehicleLandingAligner")) { return; }
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
-   ImGui::DragFloat("Align Time", &alignTime, 0.01f, 0.05f, 2.0f);
+   ImGui::DragFloat(Tr("姿勢合わせ時間", "Align Time"), &alignTime, 0.01f, 0.05f, 2.0f);
    ImGui::Spacing();
-   ImGui::Text("AlignTimer: %.2f  Aligning: %s", alignTimer_, IsAligning() ? "yes" : "no");
+   ImGui::Text("%s: %.2f  %s: %s",
+      Tr("姿勢合わせタイマー", "Align Timer"),
+      alignTimer_,
+      Tr("姿勢合わせ中", "Aligning"),
+      IsAligning() ? Tr("はい", "yes") : Tr("いいえ", "no"));
 }
 #endif
 

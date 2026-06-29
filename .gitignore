@@ -327,3 +327,5 @@ Project/imgui.ini
 *.ini
 
 *.exe
+
+**/AGENTS.md

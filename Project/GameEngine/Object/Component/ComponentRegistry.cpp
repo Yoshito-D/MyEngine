@@ -1,13 +1,27 @@
 #include "pch.h"
 #include "ComponentRegistry.h"
 
+#ifdef USE_IMGUI
+#include "Utility/ImGuiHelper.h"
+#endif
+
 namespace GameEngine {
-bool ComponentRegistry::RegisterFactory(const std::string& typeName, Factory factory) {
+bool ComponentRegistry::RegisterFactory(
+   const std::string& typeName,
+   Factory factory,
+   ComponentDisplayName displayName
+) {
    if (typeName.empty() || !factory) {
 	  return false;
    }
 
    factories_[typeName] = std::move(factory);
+#ifdef USE_IMGUI
+   if ((displayName.japanese && displayName.japanese[0] != '\0') ||
+       (displayName.english && displayName.english[0] != '\0')) {
+      displayNames_[typeName] = displayName;
+   }
+#endif
    return true;
 }
 
@@ -35,4 +49,15 @@ std::vector<std::string> ComponentRegistry::GetRegisteredTypeNames() const {
    std::sort(names.begin(), names.end());
    return names;
 }
+
+#ifdef USE_IMGUI
+std::string ComponentRegistry::GetDisplayName(const std::string& typeName) const {
+   const auto it = displayNames_.find(typeName);
+   if (it == displayNames_.end()) {
+      return typeName;
+   }
+
+   return ImGuiHelper::Localize({ it->second.japanese, it->second.english });
+}
+#endif
 }

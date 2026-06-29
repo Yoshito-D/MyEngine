@@ -110,9 +110,11 @@ bool VehicleController::CollectDriftInput() const {
 
 #ifdef USE_IMGUI
 void VehicleController::DrawInspector() {
-   if (!ImGui::CollapsingHeader("VehicleController")) { return; }
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
-   ImGui::DragFloat("Input DeadZone", &inputDeadZone, 0.01f, 0.0f, 1.0f);
+   ImGui::DragFloat(Tr("入力デッドゾーン", "Input DeadZone"), &inputDeadZone, 0.01f, 0.0f, 1.0f);
 }
 #endif
 

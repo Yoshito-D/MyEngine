@@ -75,11 +75,17 @@
     <Filter Include="GameEngine\Core\Renderer">
       <UniqueIdentifier>{a1488e68-fc03-4f9f-b94f-c52ce4efd844}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameEngine\Core\Renderer\Editor">
-      <UniqueIdentifier>{ff87c0c5-f1c4-4877-8111-1ad443a4850d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameEngine\Editor">
       <UniqueIdentifier>{44d7fd1a-40f6-4e2d-a2f0-c1b4ad066d84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Editor\Camera">
+      <UniqueIdentifier>{928fd5d0-b611-4e3a-bdbb-1d86e2bbba34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Editor\Particle">
+      <UniqueIdentifier>{71da3294-75d2-4851-b759-9b732d92e5a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Editor\Renderer">
+      <UniqueIdentifier>{e239fc76-61ab-401e-a662-b346d473cf57}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Renderer\Light">
       <UniqueIdentifier>{7786d44e-b2f5-483b-8383-3ade7e41c13e}</UniqueIdentifier>
@@ -104,9 +110,6 @@
     </Filter>
     <Filter Include="GameEngine\Effect">
       <UniqueIdentifier>{07af1d75-7fae-4abc-b2f0-4ca4bca20cbc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameEngine\Effect\Edit">
-      <UniqueIdentifier>{c2e59c07-9f49-4412-b209-6d3a38d4b905}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Effect\Module">
       <UniqueIdentifier>{5095b2f7-4192-4ac2-8789-1d5a1d786adb}</UniqueIdentifier>
@@ -140,9 +143,6 @@
     </Filter>
     <Filter Include="GameEngine\Scene\Camera\Core">
       <UniqueIdentifier>{1c9e2b92-88ca-4166-9535-ac1b5279f404}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameEngine\Scene\Camera\Editor">
-      <UniqueIdentifier>{bbd00d43-243b-4aea-a4c9-a9002e2e4a89}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Scene\Light">
       <UniqueIdentifier>{55a3c4c8-3fab-4a4e-a006-701893bd582a}</UniqueIdentifier>
@@ -305,6 +305,7 @@
     <None Include="Resources\shaders\shader_registry.json">
       <Filter>resources\shaders</Filter>
     </None>
+    <None Include="AGENTS.md" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -425,8 +426,8 @@
     <ClCompile Include="GameEngine\Core\Renderer\Renderer.cpp">
       <Filter>GameEngine\Core\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Renderer\Editor\RendererEditorController.cpp">
-      <Filter>GameEngine\Core\Renderer\Editor</Filter>
+    <ClCompile Include="GameEngine\Editor\Renderer\RendererEditorController.cpp">
+      <Filter>GameEngine\Editor\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorAssetRegistry.cpp">
       <Filter>GameEngine\Editor</Filter>
@@ -557,23 +558,8 @@
     <ClCompile Include="GameEngine\Effect\ParticleSystem.cpp">
       <Filter>GameEngine\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Effect\ParticleSystemEdit.cpp">
-      <Filter>GameEngine\Effect</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleEmissionModuleEdit.cpp">
-      <Filter>GameEngine\Effect\Edit</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleLifetimeModulesEdit.cpp">
-      <Filter>GameEngine\Effect\Edit</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleMainModuleEdit.cpp">
-      <Filter>GameEngine\Effect\Edit</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleShapeModuleEdit.cpp">
-      <Filter>GameEngine\Effect\Edit</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.cpp">
-      <Filter>GameEngine\Effect\Edit</Filter>
+    <ClCompile Include="GameEngine\Editor\Particle\ParticleSystemEditor.cpp">
+      <Filter>GameEngine\Editor\Particle</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Effect\Module\ColorOverLifetimeModule.cpp">
       <Filter>GameEngine\Effect\Module</Filter>
@@ -594,6 +580,9 @@
       <Filter>GameEngine\Effect\Module</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Effect\Module\NoiseModule.cpp">
+      <Filter>GameEngine\Effect\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Effect\Module\ParticleModuleInspectors.cpp">
       <Filter>GameEngine\Effect\Module</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Effect\Module\RendererModule.cpp">
@@ -698,11 +687,11 @@
     <ClCompile Include="GameEngine\Scene\Camera\Core\VirtualCamera.cpp">
       <Filter>GameEngine\Scene\Camera\Core</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraEditor.cpp">
-      <Filter>GameEngine\Scene\Camera\Editor</Filter>
+    <ClCompile Include="GameEngine\Editor\Camera\CameraEditor.cpp">
+      <Filter>GameEngine\Editor\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Scene\Camera\Editor\CameraGizmo.cpp">
-      <Filter>GameEngine\Scene\Camera\Editor</Filter>
+    <ClCompile Include="GameEngine\Editor\Camera\CameraGizmo.cpp">
+      <Filter>GameEngine\Editor\Camera</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp">
       <Filter>GameEngine\Scene\Light</Filter>
@@ -976,8 +965,8 @@
     <ClInclude Include="GameEngine\Core\Renderer\Renderer.h">
       <Filter>GameEngine\Core\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Core\Renderer\Editor\RendererEditorController.h">
-      <Filter>GameEngine\Core\Renderer\Editor</Filter>
+    <ClInclude Include="GameEngine\Editor\Renderer\RendererEditorController.h">
+      <Filter>GameEngine\Editor\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorAssetRegistry.h">
       <Filter>GameEngine\Editor</Filter>
@@ -1126,23 +1115,8 @@
     <ClInclude Include="GameEngine\Effect\ParticleSystem.h">
       <Filter>GameEngine\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Effect\ParticleSystemEdit.h">
-      <Filter>GameEngine\Effect</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleEmissionModuleEdit.h">
-      <Filter>GameEngine\Effect\Edit</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleLifetimeModulesEdit.h">
-      <Filter>GameEngine\Effect\Edit</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleMainModuleEdit.h">
-      <Filter>GameEngine\Effect\Edit</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleShapeModuleEdit.h">
-      <Filter>GameEngine\Effect\Edit</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Effect\Edit\ParticleUVModulesEdit.h">
-      <Filter>GameEngine\Effect\Edit</Filter>
+    <ClInclude Include="GameEngine\Editor\Particle\ParticleSystemEditor.h">
+      <Filter>GameEngine\Editor\Particle</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Effect\Module\ColorOverLifetimeModule.h">
       <Filter>GameEngine\Effect\Module</Filter>
@@ -1297,11 +1271,11 @@
     <ClInclude Include="GameEngine\Scene\Camera\Core\VirtualCamera.h">
       <Filter>GameEngine\Scene\Camera\Core</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraEditor.h">
-      <Filter>GameEngine\Scene\Camera\Editor</Filter>
+    <ClInclude Include="GameEngine\Editor\Camera\CameraEditor.h">
+      <Filter>GameEngine\Editor\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Scene\Camera\Editor\CameraGizmo.h">
-      <Filter>GameEngine\Scene\Camera\Editor</Filter>
+    <ClInclude Include="GameEngine\Editor\Camera\CameraGizmo.h">
+      <Filter>GameEngine\Editor\Camera</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Scene\Light\AreaLight.h">
       <Filter>GameEngine\Scene\Light</Filter>

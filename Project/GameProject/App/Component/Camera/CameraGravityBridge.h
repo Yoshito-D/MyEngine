@@ -13,6 +13,7 @@ class CameraGravityBridge final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CameraGravityBridge";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "カメラ重力ブリッジ", "Camera Gravity Bridge" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

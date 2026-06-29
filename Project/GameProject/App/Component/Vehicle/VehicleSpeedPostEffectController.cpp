@@ -87,26 +87,28 @@ void VehicleSpeedPostEffectController::OnDisable() {
 
 #ifdef USE_IMGUI
 void VehicleSpeedPostEffectController::DrawInspector() {
-   if (!ImGui::CollapsingHeader("VehicleSpeedPostEffectController")) { return; }
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
 
    ImGui::Separator();
-   ImGui::DragFloat("Activation Margin", &activationMargin, 0.01f, 0.0f, 10.0f);
-   ImGui::DragFloat("Effect Speed Range", &effectSpeedRange, 0.1f, 0.01f, 100.0f);
-   ImGui::DragFloat("Response Speed", &responseSpeed, 0.1f, 0.0f, 30.0f);
-   ImGui::DragFloat("Visible Threshold", &visibleThreshold, 0.001f, 0.0f, 1.0f);
-   ImGui::DragFloat("Idle Inner Radius", &idleInnerRadius, 0.01f, 0.0f, 2.0f);
-   ImGui::DragFloat("Active Inner Radius", &activeInnerRadius, 0.01f, 0.0f, 2.0f);
-   ImGui::DragFloat("Outer Radius", &outerRadius, 0.01f, 0.0f, 2.0f);
-   ImGui::DragFloat("Max Intensity", &maxIntensity, 0.01f, 0.0f, 3.0f);
-   ImGui::DragFloat("Idle Flow Speed", &idleFlowSpeed, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat("Active Flow Speed", &activeFlowSpeed, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat("Line Density", &lineDensity, 1.0f, 16.0f, 512.0f);
-   ImGui::DragFloat("Thickness", &thickness, 0.01f, 0.0f, 1.0f);
-   ImGui::DragFloat("Random Seed", &randomSeed, 0.1f, 0.0f, 100.0f);
-   ImGui::DragFloat("Radial Blur Max", &radialBlurMaxStrength, 0.001f, 0.0f, 0.1f, "%.3f");
-   ImGui::SliderInt("Radial Samples", &radialBlurSampleCount, 2, 32);
-   ImGui::DragFloat("Radial Visible Threshold", &radialBlurVisibleThreshold, 0.001f, 0.0f, 1.0f);
-   ImGui::Text("EffectAmount: %.3f", effectAmount_);
+   ImGui::DragFloat(Tr("発動マージン", "Activation Margin"), &activationMargin, 0.01f, 0.0f, 10.0f);
+   ImGui::DragFloat(Tr("エフェクト速度範囲", "Effect Speed Range"), &effectSpeedRange, 0.1f, 0.01f, 100.0f);
+   ImGui::DragFloat(Tr("追従速度", "Response Speed"), &responseSpeed, 0.1f, 0.0f, 30.0f);
+   ImGui::DragFloat(Tr("表示しきい値", "Visible Threshold"), &visibleThreshold, 0.001f, 0.0f, 1.0f);
+   ImGui::DragFloat(Tr("待機時内側半径", "Idle Inner Radius"), &idleInnerRadius, 0.01f, 0.0f, 2.0f);
+   ImGui::DragFloat(Tr("有効時内側半径", "Active Inner Radius"), &activeInnerRadius, 0.01f, 0.0f, 2.0f);
+   ImGui::DragFloat(Tr("外側半径", "Outer Radius"), &outerRadius, 0.01f, 0.0f, 2.0f);
+   ImGui::DragFloat(Tr("最大強度", "Max Intensity"), &maxIntensity, 0.01f, 0.0f, 3.0f);
+   ImGui::DragFloat(Tr("待機時フロー速度", "Idle Flow Speed"), &idleFlowSpeed, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("有効時フロー速度", "Active Flow Speed"), &activeFlowSpeed, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("ライン密度", "Line Density"), &lineDensity, 1.0f, 16.0f, 512.0f);
+   ImGui::DragFloat(Tr("太さ", "Thickness"), &thickness, 0.01f, 0.0f, 1.0f);
+   ImGui::DragFloat(Tr("ランダムシード", "Random Seed"), &randomSeed, 0.1f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("放射ブラー最大値", "Radial Blur Max"), &radialBlurMaxStrength, 0.001f, 0.0f, 0.1f, "%.3f");
+   ImGui::SliderInt(Tr("放射ブラーサンプル数", "Radial Samples"), &radialBlurSampleCount, 2, 32);
+   ImGui::DragFloat(Tr("放射ブラー表示しきい値", "Radial Visible Threshold"), &radialBlurVisibleThreshold, 0.001f, 0.0f, 1.0f);
+   ImGui::Text("%s: %.3f", Tr("エフェクト量", "Effect Amount"), effectAmount_);
 }
 #endif
 

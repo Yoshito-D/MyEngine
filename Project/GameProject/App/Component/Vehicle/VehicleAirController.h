@@ -16,6 +16,7 @@ class GravityBody;
 class VehicleAirController final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleAirController";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両空中制御", "Vehicle Air Controller" };
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 空中の回転を適用する

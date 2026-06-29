@@ -1,5 +1,8 @@
 [*.{cpp,h,hlsl,hlsli}]
 charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+
 spelling_error_severity = error
 spelling_checkable_types = identifiers,comments
 spelling_languages = en-us

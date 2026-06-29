@@ -7,7 +7,7 @@
 #include "imgui.h"
 #include "ImGuizmo.h"
 #include "Scene/Camera/Components/OrbitalBody.h"
-#include "Effect/ParticleSystemEdit.h"
+#include "Editor/Particle/ParticleSystemEditor.h"
 #endif
 
 using namespace GameEngine;

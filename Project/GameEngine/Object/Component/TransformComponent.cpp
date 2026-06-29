@@ -6,15 +6,13 @@
 namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       GameEngine::TransformComponent::kTypeName,
-      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::TransformComponent>(); }
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::TransformComponent>(); },
+      GameEngine::TransformComponent::kDisplayName
    );
 }
 
 #ifdef USE_IMGUI
-#include "Object.h"
-#include "imgui.h"
-#include <algorithm>
-#include <cstring>
+#include "Utility/ImGuiHelper.h"
 #endif
 
 namespace GameEngine {
@@ -119,31 +117,29 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void TransformComponent::DrawInspector() {
-   if (!ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+   ImGuiHelper::DrawTransformControl(
+      MakeObjectComponentHeaderLabel(GetTypeName()),
+      transform,
+      120.0f);
+
+   const std::string parentSectionLabel = std::string(ImGuiHelper::Localize({ "親設定", "Parent" })) + "###TransformParentSettings";
+   if (!ImGuiHelper::BeginSection(parentSectionLabel, false)) {
       return;
    }
 
-   ImGui::DragFloat3("Position", &transform.translation.x, 0.05f);
-   ImGui::DragFloat3("Rotation", &transform.rotation.x, 0.01f);
-   ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f, 0.001f, 1000.0f);
-
    bool parentEnabled = useParentMatrix;
-   if (ImGui::Checkbox("Use Parent", &parentEnabled)) {
+   if (ImGuiHelper::DrawCheckbox(ImGuiHelper::Localize({ "親を使用", "Use Parent" }), parentEnabled, 120.0f)) {
       useParentMatrix = parentEnabled;
       if (!useParentMatrix) {
          parentObjectName.clear();
       }
    }
 
-   char parentNameBuffer[256]{};
-   const size_t copySize = std::min(parentObjectName.size(), sizeof(parentNameBuffer) - 1);
-   std::memcpy(parentNameBuffer, parentObjectName.c_str(), copySize);
-   if (ImGui::InputText("Parent", parentNameBuffer, sizeof(parentNameBuffer))) {
-      parentObjectName = parentNameBuffer;
+   if (ImGuiHelper::DrawInputString(ImGuiHelper::Localize({ "親", "Parent" }), parentObjectName, 256, 120.0f)) {
       useParentMatrix = !parentObjectName.empty();
    }
 
-   ImGui::Spacing();
+   ImGuiHelper::EndSection();
 }
 #endif
 

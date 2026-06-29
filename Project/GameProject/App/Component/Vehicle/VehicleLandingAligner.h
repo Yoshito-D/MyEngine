@@ -14,6 +14,7 @@ namespace App {
 class VehicleLandingAligner final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleLandingAligner";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両着地姿勢合わせ", "Vehicle Landing Aligner" };
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 毎フレーム Slerp 補正を進行させる

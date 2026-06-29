@@ -5,6 +5,7 @@
 #include "imgui.h"
 #include "imgui_impl_dx12.h"
 #include "imgui_impl_win32.h"
+#include "Utility/ImGuiHelper.h"
 #include <functional>
 
 namespace GameEngine {
@@ -63,9 +64,18 @@ public:
    /// @param enabled 有効状態
    void SetMultiViewportEnabled(bool enabled) { multiViewportEnabled_ = enabled; }
 
+   /// @brief エディター表示言語を取得
+   /// @return エディター表示言語
+   ImGuiHelper::EditorLanguage GetLanguage() const { return language_; }
+
+   /// @brief エディター表示言語を設定
+   /// @param language エディター表示言語
+   void SetLanguage(ImGuiHelper::EditorLanguage language);
+
 private:
    bool isDockSpaceVisible_ = true;     // ドッキングスペース表示フラグ
    bool multiViewportEnabled_ = true;   // マルチビューポート有効フラグ
+   ImGuiHelper::EditorLanguage language_ = ImGuiHelper::EditorLanguage::Japanese;
 };
 }
 #endif

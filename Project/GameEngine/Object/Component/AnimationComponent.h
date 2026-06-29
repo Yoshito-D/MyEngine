@@ -11,6 +11,7 @@ namespace GameEngine {
 class AnimationComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "AnimationComponent";
+   static constexpr ComponentDisplayName kDisplayName{ "アニメーション", "Animation" };
    const char* GetTypeName() const override;
 
    nlohmann::json Serialize() const override;

@@ -11,6 +11,7 @@ class GravityBody final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "GravityBody";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "重力ボディ", "Gravity Body" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

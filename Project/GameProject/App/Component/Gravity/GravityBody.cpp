@@ -175,16 +175,18 @@ void GravityBody::UpdatePhysics(float deltaTime) {
 
 #ifdef USE_IMGUI
 void GravityBody::DrawInspector() {
-   if (!ImGui::CollapsingHeader("GravityBody")) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
 	  return;
    }
    ImGui::Separator();
-   ImGui::Checkbox("Use Gravity", &useGravity);
-   ImGui::DragFloat("Rotation Speed", &rotationSpeed, 0.1f, 0.1f, 20.0f);
-   ImGui::DragFloat("Gravity Strength", &gravityStrength, 0.1f, 0.0f, 50.0f);
+   ImGui::Checkbox(Tr("重力を使用", "Use Gravity"), &useGravity);
+   ImGui::DragFloat(Tr("回転追従速度", "Rotation Follow Speed"), &rotationSpeed, 0.1f, 0.1f, 20.0f);
+   ImGui::DragFloat(Tr("重力強度", "Gravity Strength"), &gravityStrength, 0.1f, 0.0f, 50.0f);
    ImGui::Spacing();
-   ImGui::Text("Current Up: (%.2f, %.2f, %.2f)", currentUpVector_.x, currentUpVector_.y, currentUpVector_.z);
-   ImGui::Text("Velocity:   (%.2f, %.2f, %.2f)", velocity_.x, velocity_.y, velocity_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("現在の上方向", "Current Up"), currentUpVector_.x, currentUpVector_.y, currentUpVector_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("速度", "Velocity"), velocity_.x, velocity_.y, velocity_.z);
 }
 #endif
 

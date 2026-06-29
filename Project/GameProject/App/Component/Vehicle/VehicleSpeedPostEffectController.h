@@ -8,6 +8,7 @@ namespace App {
 class VehicleSpeedPostEffectController final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleSpeedPostEffectController";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両速度ポストエフェクト", "Vehicle Speed Post Effect Controller" };
    const char* GetTypeName() const override { return kTypeName; }
    ~VehicleSpeedPostEffectController() override;
 
