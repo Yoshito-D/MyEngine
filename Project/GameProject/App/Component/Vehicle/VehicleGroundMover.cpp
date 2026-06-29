@@ -206,17 +206,19 @@ Quaternion VehicleGroundMover::BasisToQuaternion(const Vector3& right,
 
 #ifdef USE_IMGUI
 void VehicleGroundMover::DrawInspector() {
-   if (!ImGui::CollapsingHeader("VehicleGroundMover")) { return; }
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
-   ImGui::DragFloat("Auto Speed",     &autoSpeed,     0.1f, 0.0f, 100.0f);
-   ImGui::DragFloat("Steer Speed##2",    &steerSpeed,    1.0f, 0.0f, 360.0f);
-   ImGui::DragFloat("Speed Recovery", &speedRecovery, 0.1f, 0.1f,  20.0f);
-   ImGui::DragFloat("Max Speed", &maxSpeed, 0.1f, 0.0f, 200.0f);
+   ImGui::DragFloat(Tr("自動速度", "Auto Speed"),     &autoSpeed,     0.1f, 0.0f, 100.0f);
+   ImGui::DragFloat((std::string(Tr("操舵速度", "Steer Speed")) + "##2").c_str(),    &steerSpeed,    1.0f, 0.0f, 360.0f);
+   ImGui::DragFloat(Tr("速度回復", "Speed Recovery"), &speedRecovery, 0.1f, 0.1f,  20.0f);
+   ImGui::DragFloat(Tr("最大速度", "Max Speed"), &maxSpeed, 0.1f, 0.0f, 200.0f);
    ImGui::Spacing();
-   if (ImGui::Button("Reset Speed")) { SetCurrentSpeed(0.0f); }	
+   if (ImGui::Button(Tr("速度リセット", "Reset Speed"))) { SetCurrentSpeed(0.0f); }
    ImGui::Spacing();
-   ImGui::Text("CurrentSpeed: %.2f", currentSpeed_);
-   ImGui::Text("FlatForward: (%.2f, %.2f, %.2f)", flatForward_.x, flatForward_.y, flatForward_.z);
+   ImGui::Text("%s: %.2f", Tr("現在速度", "Current Speed"), currentSpeed_);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("水平前方向", "Flat Forward"), flatForward_.x, flatForward_.y, flatForward_.z);
 }
 #endif
 

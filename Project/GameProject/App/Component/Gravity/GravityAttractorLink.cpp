@@ -24,11 +24,13 @@ void GravityAttractorLink::Update(float) {
 
 #ifdef USE_IMGUI
 void GravityAttractorLink::DrawInspector() {
-   if (!ImGui::CollapsingHeader("GravityAttractorLink")) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
    ImGui::Separator();
-   ImGui::Text("Attractor: %s", attractor_ ? "Set" : "None");
+   ImGui::Text("%s: %s", Tr("アトラクター", "Attractor"), attractor_ ? Tr("設定済み", "Set") : Tr("なし", "None"));
 }
 #endif
 

@@ -10,6 +10,7 @@ class GravityAttractorLink final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "GravityAttractorLink";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "重力アトラクターリンク", "Gravity Attractor Link" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

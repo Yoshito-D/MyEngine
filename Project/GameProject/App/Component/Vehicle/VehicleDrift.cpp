@@ -238,28 +238,38 @@ void VehicleDrift::TryFireMiniTurbo() {
 
 #ifdef USE_IMGUI
 void VehicleDrift::DrawInspector() {
-   if (!ImGui::CollapsingHeader("VehicleDrift")) { return; }
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
 
-   const char* modeNames[] = { "ButtonMode", "SustainedSteer" };
+   const char* modeNames[] = { Tr("ボタン入力", "ButtonMode"), Tr("継続ステア", "SustainedSteer") };
    int modeIdx = static_cast<int>(driftMode);
-   if (ImGui::Combo("Drift Mode", &modeIdx, modeNames, 2)) {
+   if (ImGui::Combo(Tr("ドリフトモード", "Drift Mode"), &modeIdx, modeNames, 2)) {
       driftMode = static_cast<DriftMode>(modeIdx);
    }
-   ImGui::DragFloat("Slide Ratio",           &slideRatio,          0.01f, 0.0f,   1.0f);
-   ImGui::DragFloat("Lateral Buildup Rate",  &lateralBuildupRate,  0.1f,  0.5f,  20.0f);
-   ImGui::DragFloat("Post Drift Bleed Rate", &postDriftBleedRate,  0.1f,  0.5f,  20.0f);
-   ImGui::DragFloat("Drift Steer Mult",      &driftSteerMult,      0.05f, 0.5f,   5.0f);
-   ImGui::Checkbox ("Mini Turbo Enabled",    &miniTurboEnabled);
+   ImGui::DragFloat(Tr("スライド比率", "Slide Ratio"),           &slideRatio,          0.01f, 0.0f,   1.0f);
+   ImGui::DragFloat(Tr("横滑り蓄積速度", "Lateral Buildup Rate"),  &lateralBuildupRate,  0.1f,  0.5f,  20.0f);
+   ImGui::DragFloat(Tr("ドリフト後減衰速度", "Post Drift Bleed Rate"), &postDriftBleedRate,  0.1f,  0.5f,  20.0f);
+   ImGui::DragFloat(Tr("ドリフト操舵倍率", "Drift Steer Mult"),      &driftSteerMult,      0.05f, 0.5f,   5.0f);
+   ImGui::Checkbox (Tr("ミニターボ有効", "Mini Turbo Enabled"),    &miniTurboEnabled);
    if (miniTurboEnabled) {
-      ImGui::DragFloat("Mini Turbo Boost",    &miniTurboBoost,     0.1f,  0.0f, 200.0f);
-      ImGui::DragFloat("Mini Turbo Min Time", &miniTurboMinTime,   0.05f, 0.0f,   5.0f);
+      ImGui::DragFloat(Tr("ミニターボ加速", "Mini Turbo Boost"),    &miniTurboBoost,     0.1f,  0.0f, 200.0f);
+      ImGui::DragFloat(Tr("ミニターボ最小時間", "Mini Turbo Min Time"), &miniTurboMinTime,   0.05f, 0.0f,   5.0f);
    }
-   ImGui::DragFloat("Sustained Steer Time",  &sustainedSteerTime,  0.05f, 0.1f,   3.0f);
-   ImGui::DragFloat("Drift Steer DeadZone",  &driftSteerDeadZone,  0.01f, 0.0f,   1.0f);
+   ImGui::DragFloat(Tr("継続ステア時間", "Sustained Steer Time"),  &sustainedSteerTime,  0.05f, 0.1f,   3.0f);
+   ImGui::DragFloat(Tr("ドリフト操舵デッドゾーン", "Drift Steer DeadZone"),  &driftSteerDeadZone,  0.01f, 0.0f,   1.0f);
    ImGui::Spacing();
-   ImGui::Text("Drifting: %s  DriftTimer: %.2f", isDrifting_ ? "yes" : "no", driftTimer_);
-   ImGui::Text("SustainedTimer: %.2f  LateralSpeed: %.2f", sustainedTimer_, slideLateralSpeed_);
+   ImGui::Text("%s: %s  %s: %.2f",
+      Tr("ドリフト中", "Drifting"),
+      isDrifting_ ? Tr("はい", "yes") : Tr("いいえ", "no"),
+      Tr("ドリフトタイマー", "Drift Timer"),
+      driftTimer_);
+   ImGui::Text("%s: %.2f  %s: %.2f",
+      Tr("継続タイマー", "Sustained Timer"),
+      sustainedTimer_,
+      Tr("横方向速度", "Lateral Speed"),
+      slideLateralSpeed_);
 }
 #endif
 

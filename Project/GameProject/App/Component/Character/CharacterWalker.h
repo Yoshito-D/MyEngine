@@ -15,6 +15,7 @@ class CharacterWalker final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterWalker";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "キャラクター歩行", "Character Walker" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

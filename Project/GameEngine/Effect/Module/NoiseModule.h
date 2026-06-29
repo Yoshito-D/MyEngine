@@ -36,6 +36,10 @@ namespace GameEngine {
 		nlohmann::json ToJson() const override;
 		void FromJson(const nlohmann::json& json) override;
 
+#ifdef USE_IMGUI
+		void DrawInspector() override;
+#endif
+
 	private:
 		RandomFloat strength_{1.0f, 1.0f, false};
 		RandomFloat frequency_{0.5f, 0.5f, false};

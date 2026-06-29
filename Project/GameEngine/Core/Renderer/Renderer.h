@@ -32,7 +32,7 @@
 
 #ifdef USE_IMGUI
 #include "UI/ImGuiManager.h"
-#include "RendererEditorController.h"
+#include "Editor/Renderer/RendererEditorController.h"
 #endif
 
 namespace GameEngine {

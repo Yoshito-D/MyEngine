@@ -9,6 +9,7 @@ namespace GameEngine {
 class TransformComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "TransformComponent";
+   static constexpr ComponentDisplayName kDisplayName{ "トランスフォーム", "Transform" };
    const char* GetTypeName() const override;
 
    nlohmann::json Serialize() const override;

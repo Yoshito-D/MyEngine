@@ -105,16 +105,18 @@ void CharacterLanding::Update(float) {
 
 #ifdef USE_IMGUI
 void CharacterLanding::DrawInspector() {
-   if (!ImGui::CollapsingHeader("CharacterLanding")) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
 	  return;
    }
    ImGui::Separator();
-   ImGui::DragFloat("Surface Radius", &surfaceRadius_, 0.1f, 0.0f, 1000.0f);
-   ImGui::DragFloat("Landing Offset", &landingOffset, 0.01f, -100.0f, 100.0f);
-   ImGui::DragFloat3("OBB Half Extents", &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
-   ImGui::Text("Planet Center: (%.2f, %.2f, %.2f)",
+   ImGui::DragFloat(Tr("地表半径", "Surface Radius"), &surfaceRadius_, 0.1f, 0.0f, 1000.0f);
+   ImGui::DragFloat(Tr("着地オフセット", "Landing Offset"), &landingOffset, 0.01f, -100.0f, 100.0f);
+   ImGui::DragFloat3(Tr("OBB半径", "OBB Half Extents"), &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("惑星中心", "Planet Center"),
 	  planetCenter_.x, planetCenter_.y, planetCenter_.z);
-   ImGui::Text("Is Grounded: %s", isGrounded_ ? "true" : "false");
+   ImGui::Text("%s: %s", Tr("接地中", "Is Grounded"), isGrounded_ ? Tr("はい", "true") : Tr("いいえ", "false"));
 }
 #endif
 

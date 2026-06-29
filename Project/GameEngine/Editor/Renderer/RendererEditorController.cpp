@@ -12,15 +12,17 @@
 #include "Component/RenderComponent.h"
 #include "Graphics/Material.h"
 #include "Component/ComponentRegistry.h"
+#include "Component/IObjectComponent.h"
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
 #include "Object/Skybox/Skybox.h"
 #include "Effect/ParticleSystem.h"
-#include "Effect/ParticleSystemEdit.h"
+#include "Editor/Particle/ParticleSystemEditor.h"
 #include "Editor/EditorAssetRegistry.h"
 #include "Editor/EditorSceneContext.h"
 #include "Framework/EngineContext.h"
 #include "Graphics/Texture.h"
+#include "Utility/ImGuiHelper.h"
 #include "Scene/BaseScene.h"
 #include "imgui.h"
 #include <algorithm>
@@ -33,6 +35,14 @@
 namespace GameEngine {
 
 namespace {
+const char* Tr(const char* japanese, const char* english) {
+   return ImGuiHelper::Localize({ japanese, english });
+}
+
+std::string StableWindowLabel(const char* visibleLabel, const char* stableId) {
+   return std::string(visibleLabel) + "###" + stableId;
+}
+
 void PopLastUtf8Codepoint(std::string& text) {
    if (text.empty()) {
       return;
@@ -91,22 +101,23 @@ void RendererEditorController::BeginEditorFrame() {
 }
 
 void RendererEditorController::ShowAssetWindow() {
-   ImGui::Begin("Assets");
+   const std::string windowLabel = StableWindowLabel(Tr("アセット", "Assets"), "Assets");
+   ImGui::Begin(windowLabel.c_str());
 
    auto* editorContext = GetActiveEditorContext();
    if (editorContext) {
       const std::string dirtyMark = editorContext->IsDirty() ? " *" : "";
-      ImGui::Text("Scene%s", dirtyMark.c_str());
+      ImGui::Text("%s%s", Tr("シーン", "Scene"), dirtyMark.c_str());
       ImGui::Separator();
-      if (ImGui::Button("Save Scene")) {
+      if (ImGui::Button(Tr("シーンを保存", "Save Scene"))) {
          editorContext->Save();
       }
       ImGui::SameLine();
-      if (ImGui::Button("Reload Scene")) {
+      if (ImGui::Button(Tr("シーンを再読み込み", "Reload Scene"))) {
          editorContext->Load();
       }
       ImGui::SameLine();
-      if (ImGui::Button("Rescan Assets")) {
+      if (ImGui::Button(Tr("アセット再スキャン", "Rescan Assets"))) {
          editorContext->GetAssetRegistry().Scan();
       }
       ImGui::TextDisabled("%s", editorContext->GetSceneFilePath().generic_string().c_str());
@@ -115,17 +126,17 @@ void RendererEditorController::ShowAssetWindow() {
       }
       ImGui::Spacing();
 
-      ImGui::Text("Project");
+      ImGui::Text("%s", Tr("プロジェクト", "Project"));
       ImGui::Separator();
-      ImGui::Checkbox("Icon View", &editorAssetIconView_);
+      ImGui::Checkbox(Tr("アイコン表示", "Icon View"), &editorAssetIconView_);
       if (editorContext->GetAssetRegistry().GetAllAssets().empty()) {
-         ImGui::Text("No assets found under resources");
+         ImGui::Text("%s", Tr("resources 以下にアセットが見つかりません", "No assets found under resources"));
       } else {
          DrawAssetTree(*editorContext);
       }
       ImGui::Spacing();
    } else {
-      ImGui::Text("Editor scene context is not available");
+      ImGui::Text("%s", Tr("エディタシーンコンテキストを利用できません", "Editor scene context is not available"));
       ImGui::Spacing();
    }
 
@@ -133,25 +144,26 @@ void RendererEditorController::ShowAssetWindow() {
 }
 
 void RendererEditorController::ShowHierarchyWindow() {
-   ImGui::Begin("Hierarchy");
+   const std::string windowLabel = StableWindowLabel(Tr("ヒエラルキー", "Hierarchy"), "Hierarchy");
+   ImGui::Begin(windowLabel.c_str());
 
    auto* editorContext = GetActiveEditorContext();
    const auto sceneObjects = editorContext ? editorContext->CollectEditableObjects() : CollectSceneObjects();
    const auto particleSystems = editorContext ? editorContext->CollectEditableParticleSystems() : ParticleSystem::GetRegisteredParticleSystems();
 
    if (editorContext && ImGui::BeginPopupContextWindow("HierarchyCreateContext", ImGuiPopupFlags_MouseButtonRight)) {
-      if (ImGui::MenuItem("Duplicate Selected", "Ctrl+D")) {
+      if (ImGui::MenuItem(Tr("選択を複製", "Duplicate Selected"), "Ctrl+D")) {
          editorContext->DuplicateSelectedObject();
       }
-      if (ImGui::MenuItem("Delete Selected", "Delete")) {
+      if (ImGui::MenuItem(Tr("選択を削除", "Delete Selected"), "Delete")) {
          editorContext->DeleteSelection();
       }
       ImGui::Separator();
 
-      if (ImGui::BeginMenu("Model")) {
+      if (ImGui::BeginMenu(Tr("モデル", "Model"))) {
          const auto& modelAssets = editorContext->GetAssetRegistry().GetModelAssets();
          if (modelAssets.empty()) {
-            ImGui::TextDisabled("No .obj or .gltf models");
+            ImGui::TextDisabled("%s", Tr(".obj / .gltf モデルがありません", "No .obj or .gltf models"));
          } else {
             for (const auto& entry : modelAssets) {
                if (ImGui::MenuItem(entry.displayName.c_str())) {
@@ -162,10 +174,10 @@ void RendererEditorController::ShowHierarchyWindow() {
          ImGui::EndMenu();
       }
 
-      if (ImGui::BeginMenu("Sprite")) {
+      if (ImGui::BeginMenu(Tr("スプライト", "Sprite"))) {
          const auto& textureAssets = editorContext->GetAssetRegistry().GetTextureAssets();
          if (textureAssets.empty()) {
-            ImGui::TextDisabled("No texture files");
+            ImGui::TextDisabled("%s", Tr("テクスチャファイルがありません", "No texture files"));
          } else {
             for (const auto& entry : textureAssets) {
                if (ImGui::MenuItem(entry.displayName.c_str())) {
@@ -176,10 +188,10 @@ void RendererEditorController::ShowHierarchyWindow() {
          ImGui::EndMenu();
       }
 
-      if (ImGui::BeginMenu("Particle System")) {
+      if (ImGui::BeginMenu(Tr("パーティクルシステム", "Particle System"))) {
          const auto& particleAssets = editorContext->GetAssetRegistry().GetParticleAssets();
          if (particleAssets.empty()) {
-            ImGui::TextDisabled("No particle json files");
+            ImGui::TextDisabled("%s", Tr("パーティクル json がありません", "No particle json files"));
          } else {
             for (const auto& entry : particleAssets) {
                if (ImGui::MenuItem(entry.displayName.c_str())) {
@@ -194,7 +206,7 @@ void RendererEditorController::ShowHierarchyWindow() {
    }
 
    if (sceneObjects.empty() && particleSystems.empty()) {
-      ImGui::Text("No objects");
+      ImGui::Text("%s", Tr("オブジェクトがありません", "No objects"));
       if (editorContext) {
          editorContext->SelectObject(nullptr);
          editorContext->SelectParticleSystem(nullptr);
@@ -224,7 +236,8 @@ void RendererEditorController::ShowHierarchyWindow() {
    }
 
    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-   if (ImGui::TreeNodeEx("Scene Objects", ImGuiTreeNodeFlags_DefaultOpen)) {
+   const std::string sceneObjectsLabel = std::string(Tr("シーンオブジェクト", "Scene Objects")) + "###HierarchySceneObjects";
+   if (ImGui::TreeNodeEx(sceneObjectsLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
    for (size_t i = 0; i < sceneObjects.size(); ++i) {
       Object* object = sceneObjects[i];
       if (!object) {
@@ -260,7 +273,8 @@ void RendererEditorController::ShowHierarchyWindow() {
    }
 
    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-   if (ImGui::TreeNodeEx("Particle Systems", ImGuiTreeNodeFlags_DefaultOpen)) {
+   const std::string particleSystemsLabel = std::string(Tr("パーティクルシステム", "Particle Systems")) + "###HierarchyParticleSystems";
+   if (ImGui::TreeNodeEx(particleSystemsLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
    for (size_t i = 0; i < particleSystems.size(); ++i) {
       auto* particleSystem = particleSystems[i];
       if (!particleSystem) {
@@ -292,7 +306,8 @@ void RendererEditorController::ShowHierarchyWindow() {
 }
 
 void RendererEditorController::ShowInspectorWindow() {
-   ImGui::Begin("Inspector");
+   const std::string windowLabel = StableWindowLabel(Tr("インスペクター", "Inspector"), "Inspector");
+   ImGui::Begin(windowLabel.c_str());
 
    auto* editorContext = GetActiveEditorContext();
    Object* selectedObject = editorContext ? editorContext->GetSelectedObject() : nullptr;
@@ -300,15 +315,19 @@ void RendererEditorController::ShowInspectorWindow() {
 
    if (editorContext) {
 
-      const char* operationLabels[] = { "Move", "Rotate", "Scale" };
+      const char* operationLabels[] = {
+         Tr("移動", "Move"),
+         Tr("回転", "Rotate"),
+         Tr("拡縮", "Scale")
+      };
       int operation = static_cast<int>(editorContext->GetGizmoOperation());
-      if (ImGui::Combo("Gizmo Operation", &operation, operationLabels, 3)) {
+      if (ImGui::Combo(Tr("ギズモ操作", "Gizmo Operation"), &operation, operationLabels, 3)) {
          editorContext->SetGizmoOperation(static_cast<EditorSceneContext::GizmoOperation>(operation));
       }
 
-      const char* modeLabels[] = { "Local", "World" };
+      const char* modeLabels[] = { Tr("ローカル", "Local"), Tr("ワールド", "World") };
       int mode = static_cast<int>(editorContext->GetGizmoMode());
-      if (ImGui::Combo("Gizmo Mode", &mode, modeLabels, 2)) {
+      if (ImGui::Combo(Tr("ギズモ空間", "Gizmo Mode"), &mode, modeLabels, 2)) {
          editorContext->SetGizmoMode(static_cast<EditorSceneContext::GizmoMode>(mode));
       }
 
@@ -316,7 +335,7 @@ void RendererEditorController::ShowInspectorWindow() {
    }
 
    if (!selectedObject && !selectedParticleSystem) {
-      ImGui::Text("No selection");
+      ImGui::Text("%s", Tr("未選択", "No selection"));
       ImGui::End();
       return;
    }
@@ -328,11 +347,11 @@ void RendererEditorController::ShowInspectorWindow() {
          const size_t copySize = std::min(particleSystemName.size(), sizeof(particleSystemNameBuffer) - 1);
          std::memcpy(particleSystemNameBuffer, particleSystemName.c_str(), copySize);
       }
-      if (ImGui::InputText("Name", particleSystemNameBuffer, sizeof(particleSystemNameBuffer))) {
+      if (ImGui::InputText(Tr("名前", "Name"), particleSystemNameBuffer, sizeof(particleSystemNameBuffer))) {
          selectedParticleSystem->SetName(particleSystemNameBuffer);
       }
       if (editorContext && editorContext->CanDeleteParticleSystem(selectedParticleSystem)) {
-         if (ImGui::Button("Delete")) {
+         if (ImGui::Button(Tr("削除", "Delete"))) {
             editorContext->DeleteParticleSystem(selectedParticleSystem);
             ImGui::End();
             return;
@@ -343,7 +362,7 @@ void RendererEditorController::ShowInspectorWindow() {
       }
       ImGui::Spacing();
 
-      ParticleSystemEdit::Edit(selectedParticleSystem);
+      ParticleSystemEditor::Edit(selectedParticleSystem);
       if (editorContext && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsAnyItemActive()) {
          editorContext->MarkDirty();
       }
@@ -357,23 +376,23 @@ void RendererEditorController::ShowInspectorWindow() {
       const size_t copySize = std::min(objectName.size(), sizeof(objectNameBuffer) - 1);
       std::memcpy(objectNameBuffer, objectName.c_str(), copySize);
    }
-   if (ImGui::InputText("Name", objectNameBuffer, sizeof(objectNameBuffer))) {
+   if (ImGui::InputText(Tr("名前", "Name"), objectNameBuffer, sizeof(objectNameBuffer))) {
       selectedObject->SetObjectName(objectNameBuffer);
    }
    ImGui::Spacing();
 
    if (editorContext) {
       const bool editorOwned = editorContext->IsEditorOwned(selectedObject);
-      ImGui::Text("Owner: %s", editorOwned ? "Editor" : "Scene");
+      ImGui::Text("%s: %s", Tr("所有者", "Owner"), editorOwned ? Tr("エディタ", "Editor") : Tr("シーン", "Scene"));
       if (editorContext->CanDeleteObject(selectedObject)) {
-         if (ImGui::Button("Delete")) {
+         if (ImGui::Button(Tr("削除", "Delete"))) {
             editorContext->DeleteSelectedObject();
             ImGui::End();
             return;
          }
       }
       ImGui::SameLine();
-      if (ImGui::Button("Duplicate")) {
+      if (ImGui::Button(Tr("複製", "Duplicate"))) {
          editorContext->DuplicateSelectedObject();
       }
       ImGui::Spacing();
@@ -381,7 +400,8 @@ void RendererEditorController::ShowInspectorWindow() {
 
    selectedObject->DrawComponentInspector();
    ImGui::PushID("InspectorAddComponent");
-   if (ImGui::CollapsingHeader("Add Component##Header", ImGuiTreeNodeFlags_DefaultOpen)) {
+   const std::string addComponentHeader = std::string(Tr("コンポーネント追加", "Add Component")) + "###InspectorAddComponentHeader";
+   if (ImGui::CollapsingHeader(addComponentHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
       std::vector<std::string> addableComponentTypeNames;
       const auto registeredTypeNames = ComponentRegistry::GetInstance().GetRegisteredTypeNames();
       addableComponentTypeNames.reserve(registeredTypeNames.size());
@@ -392,22 +412,32 @@ void RendererEditorController::ShowInspectorWindow() {
       }
 
       if (addableComponentTypeNames.empty()) {
-         ImGui::Text("No addable components");
+         ImGui::Text("%s", Tr("追加できるコンポーネントがありません", "No addable components"));
       } else {
          editorSelectedAddComponentIndex_ = std::clamp(editorSelectedAddComponentIndex_, 0, static_cast<int>(addableComponentTypeNames.size() - 1));
          const char* selectedTypeName = addableComponentTypeNames[editorSelectedAddComponentIndex_].c_str();
+         const std::string selectedDisplayName = LocalizeObjectComponentTypeName(selectedTypeName);
 
-         if (ImGui::BeginCombo("Type##ComponentType", selectedTypeName)) {
+         const std::string typeLabel = std::string(Tr("タイプ", "Type")) + "##ComponentType";
+         if (ImGui::BeginCombo(typeLabel.c_str(), selectedDisplayName.c_str())) {
             for (size_t i = 0; i < addableComponentTypeNames.size(); ++i) {
                const bool selected = (static_cast<int>(i) == editorSelectedAddComponentIndex_);
-               if (ImGui::Selectable(addableComponentTypeNames[i].c_str(), selected)) {
+               const std::string displayLabel =
+                  LocalizeObjectComponentTypeName(addableComponentTypeNames[i].c_str()) +
+                  "##" +
+                  addableComponentTypeNames[i];
+               if (ImGui::Selectable(displayLabel.c_str(), selected)) {
                   editorSelectedAddComponentIndex_ = static_cast<int>(i);
+               }
+               if (selected) {
+                  ImGui::SetItemDefaultFocus();
                }
             }
             ImGui::EndCombo();
          }
 
-         if (ImGui::Button("Add Component##Button")) {
+         const std::string addButtonLabel = std::string(Tr("追加", "Add Component")) + "##Button";
+         if (ImGui::Button(addButtonLabel.c_str())) {
             if (editorContext) {
                editorContext->AddComponentToSelectedObject(addableComponentTypeNames[editorSelectedAddComponentIndex_]);
             } else {
@@ -424,25 +454,26 @@ void RendererEditorController::ShowInspectorWindow() {
    }
 
 
-   if (auto* sprite = dynamic_cast<Sprite*>(selectedObject); sprite && ImGui::CollapsingHeader("Sprite", ImGuiTreeNodeFlags_DefaultOpen)) {
+   const std::string spriteHeader = std::string(Tr("スプライト", "Sprite")) + "###InspectorSprite";
+   if (auto* sprite = dynamic_cast<Sprite*>(selectedObject); sprite && ImGui::CollapsingHeader(spriteHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
       Vector2 size = sprite->GetSize();
-      if (ImGui::DragFloat2("Size", &size.x, 0.1f, 0.0f, 4096.0f)) {
+      if (ImGui::DragFloat2(Tr("サイズ", "Size"), &size.x, 0.1f, 0.0f, 4096.0f)) {
          sprite->SetSize(size);
       }
       Vector2 scale = sprite->GetScale();
-      if (ImGui::DragFloat2("Scale", &scale.x, 0.01f, 0.001f, 100.0f)) {
+      if (ImGui::DragFloat2(Tr("スケール", "Scale"), &scale.x, 0.01f, 0.001f, 100.0f)) {
          sprite->SetScale(scale);
       }
-      float rotation = sprite->GetRotation();
-      if (ImGui::DragFloat("Rotation Z", &rotation, 0.01f)) {
-         sprite->SetRotation(rotation);
+      float rotationDegrees = ImGuiHelper::RadiansToDegrees(sprite->GetRotation());
+      if (ImGui::DragFloat(Tr("Z回転 (deg)", "Rotation Z (deg)"), &rotationDegrees, 0.1f)) {
+         sprite->SetRotation(ImGuiHelper::DegreesToRadians(rotationDegrees));
       }
       bool flipX = sprite->IsFlipX();
       bool flipY = sprite->IsFlipY();
-      if (ImGui::Checkbox("Flip X", &flipX)) {
+      if (ImGui::Checkbox(Tr("左右反転", "Flip X"), &flipX)) {
          sprite->SetFlipX(flipX);
       }
-      if (ImGui::Checkbox("Flip Y", &flipY)) {
+      if (ImGui::Checkbox(Tr("上下反転", "Flip Y"), &flipY)) {
          sprite->SetFlipY(flipY);
       }
 
@@ -464,6 +495,16 @@ void RendererEditorController::ShowSceneOverlay(float viewportX, float viewportY
 
    editorContext->AcceptModelAssetDrop();
    editorContext->DrawTransformGizmo(viewportX, viewportY, viewportWidth, viewportHeight);
+   if (auto* currentScene = BaseScene::GetCurrentScene()) {
+      if (auto* cameraEditor = currentScene->GetCameraEditor()) {
+         cameraEditor->DrawSceneGizmos(
+            EngineContext::GetActiveCamera(),
+            viewportX,
+            viewportY,
+            viewportWidth,
+            viewportHeight);
+      }
+   }
    editorContext->HandleViewportClickSelection(viewportX, viewportY, viewportWidth, viewportHeight);
 }
 
@@ -700,8 +741,8 @@ void RendererEditorController::DrawSelectedObjectAssetDropTargets(EditorSceneCon
    }
 
    if (auto* modelAssetComponent = selectedObject->GetComponent<ModelAssetComponent>()) {
-      ImGui::SeparatorText("Model Asset Drop");
-      const std::string currentAsset = modelAssetComponent->GetAssetId().empty() ? "<none>" : modelAssetComponent->GetAssetId();
+      ImGui::SeparatorText(Tr("モデルアセットドロップ", "Model Asset Drop"));
+      const std::string currentAsset = modelAssetComponent->GetAssetId().empty() ? Tr("<なし>", "<none>") : modelAssetComponent->GetAssetId();
       ImGui::Button(currentAsset.c_str(), ImVec2(-1.0f, 0.0f));
       if (ImGui::BeginDragDropTarget()) {
          if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_MODEL")) {
@@ -715,9 +756,9 @@ void RendererEditorController::DrawSelectedObjectAssetDropTargets(EditorSceneCon
    }
 
    if (auto* materialComponent = selectedObject->GetComponent<MaterialComponent>()) {
-      ImGui::SeparatorText("Texture Asset Drop");
-      const std::string currentTexture = materialComponent->GetTextureName(0).empty() ? "<none>" : materialComponent->GetTextureName(0);
-      ImGui::Button(("Slot 0: " + currentTexture).c_str(), ImVec2(-1.0f, 0.0f));
+      ImGui::SeparatorText(Tr("テクスチャアセットドロップ", "Texture Asset Drop"));
+      const std::string currentTexture = materialComponent->GetTextureName(0).empty() ? Tr("<なし>", "<none>") : materialComponent->GetTextureName(0);
+      ImGui::Button((std::string(Tr("スロット", "Slot")) + " 0: " + currentTexture).c_str(), ImVec2(-1.0f, 0.0f));
       if (ImGui::BeginDragDropTarget()) {
          if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_TEXTURE")) {
             const char* assetId = static_cast<const char*>(payload->Data);
@@ -736,8 +777,8 @@ void RendererEditorController::DrawParticleAssetDropTarget(EditorSceneContext& e
       return;
    }
 
-   ImGui::SeparatorText("Particle Asset Drop");
-   ImGui::Button("Drop particle json or texture here", ImVec2(-1.0f, 0.0f));
+   ImGui::SeparatorText(Tr("パーティクルアセットドロップ", "Particle Asset Drop"));
+   ImGui::Button(Tr("particle json または texture をここへドロップ", "Drop particle json or texture here"), ImVec2(-1.0f, 0.0f));
    if (!ImGui::BeginDragDropTarget()) {
       return;
    }

@@ -23,6 +23,7 @@ enum class LandingResult {
 class VehicleLandingBoost final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleLandingBoost";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両着地ブースト", "Vehicle Landing Boost" };
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 着地時に判定を行い速度を調整する

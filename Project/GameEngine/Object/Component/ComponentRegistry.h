@@ -19,7 +19,11 @@ public:
       return instance;
    }
 
-   bool RegisterFactory(const std::string& typeName, Factory factory);
+   bool RegisterFactory(
+      const std::string& typeName,
+      Factory factory,
+      ComponentDisplayName displayName = {}
+   );
 
    IObjectComponent* CreateComponent(Object& owner, const std::string& typeName) const;
 
@@ -27,7 +31,14 @@ public:
 
    std::vector<std::string> GetRegisteredTypeNames() const;
 
+#ifdef USE_IMGUI
+   std::string GetDisplayName(const std::string& typeName) const;
+#endif
+
 private:
    std::unordered_map<std::string, Factory> factories_;
+#ifdef USE_IMGUI
+   std::unordered_map<std::string, ComponentDisplayName> displayNames_;
+#endif
 };
 }

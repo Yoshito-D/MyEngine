@@ -14,6 +14,7 @@ class ScreenSpaceBasis final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "ScreenSpaceBasis";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "スクリーンスペース基準", "Screen Space Basis" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

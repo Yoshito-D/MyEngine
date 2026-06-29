@@ -5,12 +5,14 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "Utility/ImGuiHelper.h"
 #endif
 
 namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       GameEngine::RenderComponent::kTypeName,
-      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::RenderComponent>(); }
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::RenderComponent>(); },
+      GameEngine::RenderComponent::kDisplayName
    );
 }
 
@@ -42,13 +44,14 @@ void RenderComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void RenderComponent::DrawInspector() {
-   if (!ImGui::CollapsingHeader("Render")) {
+   const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
+   if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
 
-   ImGui::Checkbox("Visible", &visible);
-   ImGui::Checkbox("Auto Render", &autoRender);
-   ImGui::Checkbox("Apply PostProcess", &applyPostProcess);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "表示", "Visible" }), &visible);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "自動描画", "Auto Render" }), &autoRender);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "ポストプロセスを適用", "Apply PostProcess" }), &applyPostProcess);
 
    ImGui::Spacing();
 }

@@ -50,10 +50,11 @@ Transform MatrixToTransform(const Matrix4x4& matrix) {
    Transform transform{};
    transform.translation = Vector3(translation[0], translation[1], translation[2]);
    transform.scale = Vector3(scale[0], scale[1], scale[2]);
-   transform.SetRotationEuler(Vector3(
+   const Vector3 eulerRadians = Vector3(
       ToRadians(rotationDegrees[0]),
       ToRadians(rotationDegrees[1]),
-      ToRadians(rotationDegrees[2])));
+      ToRadians(rotationDegrees[2]));
+   transform.SetRotationQuaternion(eulerRadians.ToQuaternion().Normalize());
    return transform;
 }
 

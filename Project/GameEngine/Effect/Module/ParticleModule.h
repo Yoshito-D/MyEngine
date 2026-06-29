@@ -19,6 +19,11 @@ public:
    /// @brief JSON形式からパラメータを設定
    virtual void FromJson(const nlohmann::json& json) = 0;
 
+#ifdef USE_IMGUI
+   /// @brief ImGui inspector for editor builds.
+   virtual void DrawInspector() = 0;
+#endif
+
 protected:
    bool enabled_ = true;
 };

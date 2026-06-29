@@ -118,9 +118,7 @@ void Sprite::SetRotation(float rotation) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform.rotation.x = 0.0f;
-   transformComponent->transform.rotation.y = 0.0f;
-   transformComponent->transform.rotation.z = rotation;
+   transformComponent->transform.SetRotationQuaternion(Vector3(0.0f, 0.0f, rotation).ToQuaternion().Normalize());
 }
 
 Vector2 Sprite::GetScale() const {
@@ -144,7 +142,7 @@ float Sprite::GetRotation() const {
    if (!transformComponent) {
 	  return 0.0f;
    }
-   return transformComponent->transform.rotation.z;
+   return transformComponent->transform.GetActiveEuler().z;
 }
 
 void Sprite::Update(Camera* camera, Texture* texture) {

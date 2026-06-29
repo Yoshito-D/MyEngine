@@ -6,12 +6,14 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "Utility/ImGuiHelper.h"
 #endif
 
 namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       GameEngine::ModelAssetComponent::kTypeName,
-      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::ModelAssetComponent>(); }
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::ModelAssetComponent>(); },
+      GameEngine::ModelAssetComponent::kDisplayName
    );
 }
 
@@ -88,6 +90,25 @@ void ModelAssetComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void ModelAssetComponent::DrawInspector() {
+   const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
+   if (!ImGui::CollapsingHeader(header.c_str())) {
+      return;
+   }
+
+   ImGui::Text("%s: %s",
+      ImGuiHelper::Localize({ "アセットID", "Asset ID" }),
+      assetId_.empty() ? ImGuiHelper::Localize({ "なし", "None" }) : assetId_.c_str());
+   ImGui::Text("%s: %s",
+      ImGuiHelper::Localize({ "状態", "Status" }),
+      modelAsset_ ? ImGuiHelper::Localize({ "読み込み済み", "Loaded" }) : ImGuiHelper::Localize({ "未読み込み", "Not loaded" }));
+
+   if (modelAsset_) {
+      ImGui::Text("%s: %s",
+         ImGuiHelper::Localize({ "スキニング", "Skinning" }),
+         modelAsset_->HasSkinningData() ? ImGuiHelper::Localize({ "あり", "Available" }) : ImGuiHelper::Localize({ "なし", "None" }));
+   }
+
+   ImGui::Spacing();
 }
 #endif
 

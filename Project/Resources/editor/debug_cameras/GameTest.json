@@ -21,7 +21,7 @@
          }
       ],
       "name": "DebugCamera",
-      "priority": 100,
+      "priority": -1,
       "state": {
          "farClip": 10000.0,
          "fov": 0.44999998807907104,

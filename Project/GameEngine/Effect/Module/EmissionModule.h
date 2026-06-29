@@ -48,6 +48,10 @@ namespace GameEngine {
         nlohmann::json ToJson() const;
         void FromJson(const nlohmann::json& json);
 
+#ifdef USE_IMGUI
+        void DrawInspector();
+#endif
+
     private:
         bool enabled_ = true;
         float rateOverTime_ = 10.0f;

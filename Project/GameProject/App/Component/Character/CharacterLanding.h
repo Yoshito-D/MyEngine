@@ -13,6 +13,7 @@ class CharacterLanding final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterLanding";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "キャラクター着地", "Character Landing" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

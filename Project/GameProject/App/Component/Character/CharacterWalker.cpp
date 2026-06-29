@@ -96,18 +96,20 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
 
 #ifdef USE_IMGUI
 void CharacterWalker::DrawInspector() {
-   if (!ImGui::CollapsingHeader("CharacterWalker")) {
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
    ImGui::Separator();
-   ImGui::DragFloat("Move Speed",       &moveSpeed,       0.1f, 0.0f, 50.0f);
-   ImGui::DragFloat("Acceleration",     &acceleration,    0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat("Friction",         &friction,        0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat("Air Acceleration", &airAcceleration, 0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat("Air Friction",     &airFriction,     0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat("Turn Speed",       &turnSpeed,       0.5f, 0.0f, 30.0f);
+   ImGui::DragFloat(Tr("移動速度", "Move Speed"),       &moveSpeed,       0.1f, 0.0f, 50.0f);
+   ImGui::DragFloat(Tr("加速度", "Acceleration"),     &acceleration,    0.5f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("摩擦", "Friction"),         &friction,        0.5f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("空中加速度", "Air Acceleration"), &airAcceleration, 0.5f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("空中摩擦", "Air Friction"),     &airFriction,     0.5f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("旋回速度", "Turn Speed"),       &turnSpeed,       0.5f, 0.0f, 30.0f);
    ImGui::Spacing();
-   ImGui::Text("H.Velocity: (%.2f, %.2f, %.2f)",
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("水平速度", "Horizontal Velocity"),
       horizontalVelocity_.x, horizontalVelocity_.y, horizontalVelocity_.z);
 }
 #endif

@@ -29,7 +29,8 @@ bool RegisterAppComponent() {
       T::kTypeName,
       [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
          return object.AddComponent<T>();
-      });
+      },
+      T::kDisplayName);
 }
 
 const bool kRegisteredAppComponents[] = {

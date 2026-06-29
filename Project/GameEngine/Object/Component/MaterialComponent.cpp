@@ -9,7 +9,8 @@
 namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       GameEngine::MaterialComponent::kTypeName,
-      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::MaterialComponent>(); }
+      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::MaterialComponent>(); },
+      GameEngine::MaterialComponent::kDisplayName
    );
 }
 
@@ -17,6 +18,7 @@ namespace {
 #include "Object.h"
 #include "imgui.h"
 #include "Graphics/Texture.h"
+#include "Utility/ImGuiHelper.h"
 #include <cstring>
 #endif
 
@@ -313,20 +315,25 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void MaterialComponent::DrawInspector() {
+   auto Tr = [](const char* japanese, const char* english) {
+      return ImGuiHelper::Localize({ japanese, english });
+   };
+
    SyncMaterialNamesSize();
 
-   if (!ImGui::CollapsingHeader("Material")) {
+   const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
+   if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
 
    if (materials.empty() || !materials[0] || !materials[0]->GetMaterialData()) {
-      ImGui::Text("No material");
+      ImGui::Text("%s", Tr("マテリアルなし", "No material"));
       if (namesProvider_ && resolver_) {
          const auto names = namesProvider_();
          if (!names.empty()) {
             static int selectedIndex = 0;
             selectedIndex = std::clamp(selectedIndex, 0, static_cast<int>(names.size() - 1));
-            if (ImGui::BeginCombo("Material Asset", names[selectedIndex].c_str())) {
+            if (ImGui::BeginCombo(Tr("マテリアルアセット", "Material Asset"), names[selectedIndex].c_str())) {
                for (size_t i = 0; i < names.size(); ++i) {
                   const bool selected = static_cast<int>(i) == selectedIndex;
                   if (ImGui::Selectable(names[i].c_str(), selected)) {
@@ -339,7 +346,7 @@ void MaterialComponent::DrawInspector() {
                ImGui::EndCombo();
             }
 
-            if (ImGui::Button("Assign Material Asset")) {
+            if (ImGui::Button(Tr("マテリアルアセットを割り当て", "Assign Material Asset"))) {
                if (auto* selectedMaterial = resolver_(names[selectedIndex])) {
                   AssignMaterial(selectedMaterial, names[selectedIndex]);
                }
@@ -361,8 +368,8 @@ void MaterialComponent::DrawInspector() {
             }
          }
 
-         const char* preview = currentName.empty() ? "<default>" : currentName.c_str();
-         if (ImGui::BeginCombo("Material Asset", preview)) {
+         const char* preview = currentName.empty() ? Tr("<デフォルト>", "<default>") : currentName.c_str();
+         if (ImGui::BeginCombo(Tr("マテリアルアセット", "Material Asset"), preview)) {
             for (size_t i = 0; i < names.size(); ++i) {
                const bool selected = static_cast<int>(i) == selectedIndex;
                if (ImGui::Selectable(names[i].c_str(), selected)) {
@@ -387,7 +394,7 @@ void MaterialComponent::DrawInspector() {
       const auto texNames = textureNamesProvider_();
       if (!texNames.empty()) {
          SyncMaterialNamesSize();
-         ImGui::SeparatorText("Textures");
+         ImGui::SeparatorText(Tr("テクスチャ", "Textures"));
          for (size_t slot = 0; slot < materials.size(); ++slot) {
             ImGui::PushID(static_cast<int>(slot));
 
@@ -400,10 +407,10 @@ void MaterialComponent::DrawInspector() {
                }
             }
 
-            const std::string label = "Slot " + std::to_string(slot);
-            const char* texPreview = currentTexName.empty() ? "<none>" : currentTexName.c_str();
+            const std::string label = std::string(Tr("スロット", "Slot")) + " " + std::to_string(slot);
+            const char* texPreview = currentTexName.empty() ? Tr("<なし>", "<none>") : currentTexName.c_str();
             if (ImGui::BeginCombo(label.c_str(), texPreview)) {
-               if (ImGui::Selectable("<none>", currentTexName.empty())) {
+               if (ImGui::Selectable(Tr("<なし>", "<none>"), currentTexName.empty())) {
                   if (textureNames_.size() <= slot) textureNames_.resize(slot + 1);
                   textureNames_[slot].clear();
                }
@@ -427,7 +434,7 @@ void MaterialComponent::DrawInspector() {
             if (textureResolver_ && !currentTexName.empty()) {
                if (Texture* tex = textureResolver_(currentTexName)) {
                   if (tex->GetMetadata().IsCubemap()) {
-                     ImGui::TextDisabled("TextureCube cannot be previewed in a 2D slot");
+                     ImGui::TextDisabled("%s", Tr("TextureCube は 2D スロットではプレビューできません", "TextureCube cannot be previewed in a 2D slot"));
                      ImGui::PopID();
                      continue;
                   }
@@ -452,13 +459,13 @@ void MaterialComponent::DrawInspector() {
    }
 
    Vector4 color = data->color;
-   if (ImGui::ColorEdit4("Color", &color.x)) {
+   if (ImGui::ColorEdit4(Tr("色", "Color"), &color.x)) {
       material->SetColor(color);
    }
 
-   const char* lightingModeLabels[] = { "None", "Lambert", "HalfLambert", "Phong", "BlinnPhong" };
+   const char* lightingModeLabels[] = { Tr("なし", "None"), "Lambert", "HalfLambert", "Phong", "BlinnPhong" };
    int lightingMode = std::clamp(data->lightingMode, 0, 4);
-   if (ImGui::BeginCombo("Lighting Mode", lightingModeLabels[lightingMode])) {
+   if (ImGui::BeginCombo(Tr("ライティングモード", "Lighting Mode"), lightingModeLabels[lightingMode])) {
       for (int i = 0; i < 5; ++i) {
          const bool selected = (i == lightingMode);
          if (ImGui::Selectable(lightingModeLabels[i], selected)) {
@@ -472,18 +479,25 @@ void MaterialComponent::DrawInspector() {
    }
 
    float shininess = data->shininess;
-   if (ImGui::DragFloat("Shininess", &shininess, 0.1f, 0.0f, 256.0f)) {
+   if (ImGui::DragFloat(Tr("光沢", "Shininess"), &shininess, 0.1f, 0.0f, 256.0f)) {
       material->SetShininess(shininess);
    }
 
    // ブレンドモード
    {
-      const char* blendModeLabels[] = { "None", "Normal", "Add", "Subtract", "Multiply", "Screen" };
+      const char* blendModeLabels[] = {
+         Tr("なし", "None"),
+         Tr("通常", "Normal"),
+         Tr("加算", "Add"),
+         Tr("減算", "Subtract"),
+         Tr("乗算", "Multiply"),
+         Tr("スクリーン", "Screen")
+      };
       const auto currentBlend = material->GetBlendMode();
       int blendIndex = currentBlend.has_value() ? static_cast<int>(currentBlend.value()) : -1;
-      const char* blendPreview = (blendIndex >= 0 && blendIndex < 6) ? blendModeLabels[blendIndex] : "<default>";
-      if (ImGui::BeginCombo("Blend Mode", blendPreview)) {
-         if (ImGui::Selectable("<default>", blendIndex < 0)) {
+      const char* blendPreview = (blendIndex >= 0 && blendIndex < 6) ? blendModeLabels[blendIndex] : Tr("<デフォルト>", "<default>");
+      if (ImGui::BeginCombo(Tr("ブレンドモード", "Blend Mode"), blendPreview)) {
+         if (ImGui::Selectable(Tr("<デフォルト>", "<default>"), blendIndex < 0)) {
             material->SetBlendMode(std::nullopt);
          }
          for (int i = 0; i < 6; ++i) {
@@ -502,24 +516,28 @@ void MaterialComponent::DrawInspector() {
       std::string pipelineName = material->GetPipelineName();
       char buf[128] = {};
       pipelineName.copy(buf, sizeof(buf) - 1);
-      if (ImGui::InputText("Pipeline Name", buf, sizeof(buf))) {
+      if (ImGui::InputText(Tr("パイプライン名", "Pipeline Name"), buf, sizeof(buf))) {
          material->SetPipelineName(buf);
       }
    }
 
    Vector2 uvScale = material->GetUVScale();
    float uvRotation = material->GetUVRotation();
+   float uvRotationDegrees = ImGuiHelper::RadiansToDegrees(uvRotation);
    Vector2 uvTranslation = material->GetUVTranslation();
    bool changed = false;
-   changed |= ImGui::DragFloat2("UV Scale", &uvScale.x, 0.01f);
-   changed |= ImGui::DragFloat("UV Rotation", &uvRotation, 0.01f);
-   changed |= ImGui::DragFloat2("UV Translation", &uvTranslation.x, 0.01f);
+   changed |= ImGui::DragFloat2(Tr("UVスケール", "UV Scale"), &uvScale.x, 0.01f);
+   if (ImGui::DragFloat(Tr("UV回転 (deg)", "UV Rotation (deg)"), &uvRotationDegrees, 0.1f)) {
+      uvRotation = ImGuiHelper::DegreesToRadians(uvRotationDegrees);
+      changed = true;
+   }
+   changed |= ImGui::DragFloat2(Tr("UV移動", "UV Translation"), &uvTranslation.x, 0.01f);
    if (changed) {
       material->SetUVTransform(uvScale, uvRotation, uvTranslation);
    }
 
    ImGui::Spacing();
-   ImGui::SeparatorText("Environment Texture");
+   ImGui::SeparatorText(Tr("環境テクスチャ", "Environment Texture"));
 
    if (environmentTextureNamesProvider_) {
       const auto texNames = environmentTextureNamesProvider_();
@@ -531,9 +549,9 @@ void MaterialComponent::DrawInspector() {
                break;
             }
          }
-         const char* envPreview = environmentTextureName_.empty() ? "<none>" : environmentTextureName_.c_str();
-         if (ImGui::BeginCombo("Environment Texture", envPreview)) {
-            if (ImGui::Selectable("<none>", environmentTextureName_.empty())) {
+         const char* envPreview = environmentTextureName_.empty() ? Tr("<なし>", "<none>") : environmentTextureName_.c_str();
+         if (ImGui::BeginCombo(Tr("環境テクスチャ", "Environment Texture"), envPreview)) {
+            if (ImGui::Selectable(Tr("<なし>", "<none>"), environmentTextureName_.empty())) {
                environmentTextureName_.clear();
             }
             for (size_t i = 0; i < texNames.size(); ++i) {
@@ -552,7 +570,8 @@ void MaterialComponent::DrawInspector() {
             if (auto* envTex = environmentTextureResolver_(environmentTextureName_)) {
                const auto& meta = envTex->GetMetadata();
                ImGui::Indent();
-               ImGui::TextDisabled("Cubemap  %ux%u  mips:%zu",
+               ImGui::TextDisabled("%s  %ux%u  mips:%zu",
+                  Tr("キューブマップ", "Cubemap"),
                   envTex->GetWidth(), envTex->GetHeight(), meta.mipLevels);
                ImGui::Unindent();
             }
@@ -561,7 +580,7 @@ void MaterialComponent::DrawInspector() {
    }
 
    float environmentCoefficient = data->environmentCoefficient;
-   if (ImGui::DragFloat("Environment Coefficient", &environmentCoefficient, 0.01f, 0.0f, 1.0f)) {
+   if (ImGui::DragFloat(Tr("環境反射係数", "Environment Coefficient"), &environmentCoefficient, 0.01f, 0.0f, 1.0f)) {
       material->SetEnvironmentTextureStrength(environmentCoefficient);
    }
 

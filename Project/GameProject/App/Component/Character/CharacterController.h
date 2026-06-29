@@ -19,6 +19,7 @@ class CharacterController final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterController";
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "キャラクター制御", "Character Controller" };
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }

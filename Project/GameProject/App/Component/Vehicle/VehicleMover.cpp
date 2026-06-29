@@ -175,12 +175,14 @@ Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotat
 
 #ifdef USE_IMGUI
 void VehicleMover::DrawInspector() {
-   if (!ImGui::CollapsingHeader("VehicleMover")) { return; }
+   auto Tr = GameEngine::LocalizeEditorText;
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
-   ImGui::Text("Coordinator: delegates to sub-components.");
-   ImGui::Text("LastMoveDir: (%.2f, %.2f, %.2f)",
+   ImGui::Text("%s", Tr("コーディネーター: サブコンポーネントへ処理を委譲します。", "Coordinator: delegates to sub-components."));
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("最後の移動方向", "Last Move Direction"),
 	  lastMoveDirection_.x, lastMoveDirection_.y, lastMoveDirection_.z);
-   ImGui::Text("WasGrounded: %s", wasGrounded_ ? "yes" : "no");
+   ImGui::Text("%s: %s", Tr("接地していた", "Was Grounded"), wasGrounded_ ? Tr("はい", "yes") : Tr("いいえ", "no"));
 }
 #endif
 

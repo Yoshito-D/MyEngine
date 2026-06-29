@@ -15,14 +15,7 @@ void BaseScene::Initialize() {
    EngineContext::CreateDirectionalLight("MainDirectionalLight", 0xffffffff, Vector3(0.0f, -1.0f, 0.0f), 2.5f);
    EngineContext::CreatePointLight("MainPointLight", 0xffffffff, Vector3(0.0f, 0.0f, 0.0f), 0.0f);
    EngineContext::CreateSpotLight("MainSpotLight", 0xffffffff, Vector3(), 0.0f, Vector3(0.0f, -1.0f, 0.0f), 5.0f, 0.1f, 0.7f, 0.9f);
-   EngineContext::CreateAreaLight("MainAreaLight", 
-      Vector3(0.0f, 10.0f, 0.0f),         
-      Vector3(0.0f, -1.0f, 0.0f),         
-      Vector3(1.0f, 0.0f, 0.0f),          
-      Vector2(5.0f, 5.0f),                
-      Vector3(1.0f, 1.0f, 1.0f),          
-      0.0f                                
-   );
+   EngineContext::CreateAreaLight("MainAreaLight", Vector3(0.0f, 10.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector2(5.0f, 5.0f), Vector3(1.0f, 1.0f, 1.0f), 0.0f);
 
    // CameraUnitを生成（Brain+Cameraのペア）
    CameraUnit* unit = EngineContext::CreateCameraUnit();
@@ -52,28 +45,28 @@ void BaseScene::Initialize() {
 void BaseScene::Update() {
 #ifdef USE_IMGUI
    if (EngineContext::IsKeyTriggered(KeyCode::F1)) {
-      isDebugCameraActive_ = !isDebugCameraActive_;
-      if (isDebugCameraActive_) {
-         // 最高優先度を与えてDebugCameraを選択させる
-         debugCamera_->SetPriority(100);
-      } else {
-         // 優先度を戻してゲーム用VirtualCameraに戻す
-         debugCamera_->SetPriority(-1);
-      }
+	  isDebugCameraActive_ = !isDebugCameraActive_;
+	  if (isDebugCameraActive_) {
+		 // 最高優先度を与えてDebugCameraを選択させる
+		 debugCamera_->SetPriority(100);
+	  } else {
+		 // 優先度を戻してゲーム用VirtualCameraに戻す
+		 debugCamera_->SetPriority(-1);
+	  }
    }
 
    // DebugCamera使用中かどうかに関わらず、常にBrain経由で更新する
    // （Brain内でアクティブなVirtualCameraが自動選択される）
    {
-      float deltaTime = EngineContext::GetDeltaTime();
-      EngineContext::GetActiveBrain()->Update(deltaTime);
+	  float deltaTime = EngineContext::GetDeltaTime();
+	  EngineContext::GetActiveBrain()->Update(deltaTime);
    }
 
    EngineContext::DebugDrawLights();
 #else
    {
-      float deltaTime = EngineContext::GetDeltaTime();
-      EngineContext::GetActiveBrain()->Update(deltaTime);
+	  float deltaTime = EngineContext::GetDeltaTime();
+	  EngineContext::GetActiveBrain()->Update(deltaTime);
    }
 #endif // _DEBUG
 }
@@ -82,10 +75,10 @@ void BaseScene::Draw() {
 #ifdef USE_IMGUI
    // カメラエディタウィンドウを表示
    if (cameraEditor_) {
-      cameraEditor_->ShowEditorWindow();
-      if (isDebugCameraActive_) {
-         cameraEditor_->DrawGizmos(EngineContext::GetActiveBrain()->GetOutputCamera());
-      }
+	  cameraEditor_->ShowEditorWindow();
+	  if (isDebugCameraActive_) {
+		 cameraEditor_->DrawGizmos(EngineContext::GetActiveBrain()->GetOutputCamera());
+	  }
    }
 #endif
 }
@@ -93,7 +86,7 @@ void BaseScene::Draw() {
 void BaseScene::Finalize() {
    // 現在のシーンインスタンスをクリア
    if (sCurrentScene_ == this) {
-      sCurrentScene_ = nullptr;
+	  sCurrentScene_ = nullptr;
    }
 
 #ifdef USE_IMGUI
@@ -102,10 +95,10 @@ void BaseScene::Finalize() {
 
    // アクティブなBrainに登録されている全VirtualCameraを解除してからCameraUnitを破棄
    if (auto* brain = EngineContext::GetActiveBrain()) {
-      auto vcams = brain->GetVirtualCameras(); // コピーして反復
-      for (auto* vcam : vcams) {
-         brain->UnregisterVirtualCamera(vcam);
-      }
+	  auto vcams = brain->GetVirtualCameras(); // コピーして反復
+	  for (auto* vcam : vcams) {
+		 brain->UnregisterVirtualCamera(vcam);
+	  }
    }
 
 #ifdef USE_IMGUI
@@ -131,13 +124,13 @@ void BaseScene::Finalize() {
 }
 
 void BaseScene::SetNextSceneName(const std::string& sceneName) {
-	  sNextSceneName_ = sceneName;
+   sNextSceneName_ = sceneName;
 }
 
 #ifdef USE_IMGUI
 void BaseScene::LoadEditorSceneIfNeeded() {
    if (editorSceneContext_) {
-      editorSceneContext_->AutoLoad();
+	  editorSceneContext_->AutoLoad();
    }
 }
 
@@ -147,34 +140,35 @@ std::filesystem::path BaseScene::GetDebugCameraStateFilePath() const {
 
 void BaseScene::LoadDebugCameraState() {
    if (!debugCamera_) {
-      return;
+	  return;
    }
 
    const std::filesystem::path filePath = GetDebugCameraStateFilePath();
    if (!std::filesystem::exists(filePath)) {
-      return;
+	  return;
    }
 
    std::ifstream file(filePath);
    if (!file.is_open()) {
-      return;
+	  return;
    }
 
    nlohmann::json root;
    try {
-      file >> root;
-   } catch (...) {
-      return;
+	  file >> root;
+   }
+   catch (...) {
+	  return;
    }
 
    const nlohmann::json* cameraData = nullptr;
    if (root.is_object() && root.contains("debugCamera") && root.at("debugCamera").is_object()) {
-      cameraData = &root.at("debugCamera");
+	  cameraData = &root.at("debugCamera");
    } else if (root.is_object()) {
-      cameraData = &root;
+	  cameraData = &root;
    }
    if (!cameraData) {
-      return;
+	  return;
    }
 
    const int priority = debugCamera_->GetPriority();
@@ -187,19 +181,19 @@ void BaseScene::LoadDebugCameraState() {
 
 void BaseScene::SaveDebugCameraState() const {
    if (!debugCamera_) {
-      return;
+	  return;
    }
 
    const std::filesystem::path filePath = GetDebugCameraStateFilePath();
    std::error_code error;
    std::filesystem::create_directories(filePath.parent_path(), error);
    if (error) {
-      return;
+	  return;
    }
 
    std::ofstream file(filePath);
    if (!file.is_open()) {
-      return;
+	  return;
    }
 
    nlohmann::json root = nlohmann::json::object();

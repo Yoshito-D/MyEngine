@@ -146,8 +146,9 @@ nlohmann::json ShapeModule::ToJson() const {
    j["boxSize"] = { boxSize_.x, boxSize_.y, boxSize_.z };
    j["arc"] = arc_;
    j["circleOutwardVelocity"] = circleOutwardVelocity_;
-	  j["position"] = { transform_.translation.x, transform_.translation.y, transform_.translation.z };
-   j["rotation"] = { transform_.rotation.x, transform_.rotation.y, transform_.rotation.z };
+   j["position"] = { transform_.translation.x, transform_.translation.y, transform_.translation.z };
+   const Vector3 activeEuler = transform_.GetActiveEuler();
+   j["rotation"] = { activeEuler.x, activeEuler.y, activeEuler.z };
    j["scale"] = { transform_.scale.x, transform_.scale.y, transform_.scale.z };
 
    return j;

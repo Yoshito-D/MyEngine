@@ -14,6 +14,7 @@ class ParticleSystem;
 class ParticleEmitterComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "ParticleEmitterComponent";
+   static constexpr ComponentDisplayName kDisplayName{ "パーティクルエミッター", "Particle Emitter" };
    const char* GetTypeName() const override;
 
    // ── 追従・オフセット設定 ──────────────────────────

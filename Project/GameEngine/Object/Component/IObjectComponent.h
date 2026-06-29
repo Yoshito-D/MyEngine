@@ -1,9 +1,21 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <string>
 
 namespace GameEngine {
 class Object;
+
+struct ComponentDisplayName {
+   const char* japanese = "";
+   const char* english = "";
+};
+
+#ifdef USE_IMGUI
+const char* LocalizeEditorText(const char* japanese, const char* english);
+std::string LocalizeObjectComponentTypeName(const char* typeName);
+std::string MakeObjectComponentHeaderLabel(const char* typeName);
+#endif
 
 class IObjectComponent {
 public:
