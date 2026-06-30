@@ -163,8 +163,11 @@
                      "accelToDistanceKick": 0.03999999910593033,
                      "accelToFovKick": 0.0024999999441206455,
                      "airborneBlendLerpSpeed": 4.0,
-                     "airborneDistanceOffset": 2.0,
-                     "airborneFovOffset": 0.15000000596046448,
+                     "airborneDistanceOffset": 4.0,
+                     "airborneForwardLerpSpeed": 4.0,
+                     "airborneFovOffset": 0.10000000149011612,
+                     "airborneResetBlend": 0.0,
+                     "airborneResetLerpSpeed": 8.0,
                      "currentAirborneBlend": 0.0,
                      "currentEyeOffset": [
                         9.509416580200195,
@@ -172,7 +175,7 @@
                         -3.0768470764160156
                      ],
                      "currentFov": 0.45000001788139343,
-                     "distance": 18.0,
+                     "distance": 16.0,
                      "distanceBoostMax": 2.0,
                      "fovBoostMax": 0.05000000074505806,
                      "fovDefault": 0.4699999988079071,
@@ -181,6 +184,7 @@
                      "groundedTargetHeight": 2.0,
                      "height": 4.0,
                      "isAirborne": false,
+                     "isAirborneResetHeld": false,
                      "isInitialized": true,
                      "isSpeedInitialized": true,
                      "positionLerpSpeed": 12.0,
@@ -420,7 +424,7 @@
                   "parentObjectName": "",
                   "rotation": [
                      0.0,
-                     -0.0,
+                     0.0,
                      0.0
                   ],
                   "rotationQuaternion": [
@@ -429,7 +433,7 @@
                      0.0,
                      1.0
                   ],
-                  "rotationSource": "euler",
+                  "rotationSource": "quaternion",
                   "scale": [
                      45.35490036010742,
                      45.35490036010742,
@@ -438,7 +442,7 @@
                   "translation": [
                      0.0,
                      0.0,
-                     261.41424560546875
+                     264.9385986328125
                   ],
                   "useParentMatrix": false
                },
@@ -537,7 +541,7 @@
                   "parentObjectName": "",
                   "rotation": [
                      0.0,
-                     -0.0,
+                     0.0,
                      0.0
                   ],
                   "rotationQuaternion": [
@@ -546,7 +550,7 @@
                      0.0,
                      1.0
                   ],
-                  "rotationSource": "euler",
+                  "rotationSource": "quaternion",
                   "scale": [
                      46.22999954223633,
                      46.22999954223633,
@@ -555,7 +559,7 @@
                   "translation": [
                      1.0,
                      0.0,
-                     388.3906555175781
+                     423.8858337402344
                   ],
                   "useParentMatrix": false
                },
@@ -637,7 +641,7 @@
             },
             {
                "data": {
-                  "influenceRadius": 400.0
+                  "influenceRadius": 200.0
                },
                "enabled": true,
                "typeName": "SphericalGravityAttractor"
@@ -654,7 +658,7 @@
                   "parentObjectName": "",
                   "rotation": [
                      0.0,
-                     -0.0,
+                     0.0,
                      0.0
                   ],
                   "rotationQuaternion": [
@@ -663,7 +667,7 @@
                      0.0,
                      1.0
                   ],
-                  "rotationSource": "euler",
+                  "rotationSource": "quaternion",
                   "scale": [
                      44.62920379638672,
                      44.62920379638672,
@@ -672,7 +676,7 @@
                   "translation": [
                      2.0,
                      0.0,
-                     516.2827758789063
+                     590.2962646484375
                   ],
                   "useParentMatrix": false
                },
@@ -762,6 +766,123 @@
          ],
          "id": "editor_object_4",
          "objectType": "Model"
+      },
+      {
+         "assetId": "models/planet/planet.obj",
+         "components": [
+            {
+               "data": {
+                  "parentObjectName": "",
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     44.62920379638672,
+                     44.62920379638672,
+                     44.62920379638672
+                  ],
+                  "translation": [
+                     0.0,
+                     0.0,
+                     766.0769653320313
+                  ],
+                  "useParentMatrix": false
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "blendMode": -1,
+                  "color": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "environmentTextureName": "",
+                  "lightingMode": 0,
+                  "materialCount": 1,
+                  "materialNames": [
+                     "planetMaterial"
+                  ],
+                  "pipelineName": "",
+                  "shininess": 40.0,
+                  "textureNames": [
+                     "textures/ground/aerial_beach_01_diff_2k.jpg"
+                  ],
+                  "uvTransform": [
+                     [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ]
+                  ]
+               },
+               "enabled": true,
+               "typeName": "MaterialComponent"
+            },
+            {
+               "data": {
+                  "name": "Planet_6"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "assetId": "models/planet/planet.obj"
+               },
+               "enabled": true,
+               "typeName": "ModelAssetComponent"
+            },
+            {
+               "data": {
+                  "applyPostProcess": true,
+                  "autoRender": true,
+                  "visible": true
+               },
+               "enabled": true,
+               "typeName": "RenderComponent"
+            },
+            {
+               "data": {
+                  "influenceRadius": 300.0
+               },
+               "enabled": true,
+               "typeName": "SphericalGravityAttractor"
+            }
+         ],
+         "id": "editor_object_5",
+         "objectType": "Model"
       }
    ],
    "sceneName": "GameTest",
@@ -776,7 +897,7 @@
                      "parentObjectName": "",
                      "rotation": [
                         0.0,
-                        -0.0,
+                        0.0,
                         0.0
                      ],
                      "rotationQuaternion": [
@@ -785,7 +906,7 @@
                         0.0,
                         1.0
                      ],
-                     "rotationSource": "euler",
+                     "rotationSource": "quaternion",
                      "scale": [
                         50.0,
                         50.0,
@@ -897,7 +1018,7 @@
                      "parentObjectName": "",
                      "rotation": [
                         0.0,
-                        -0.0,
+                        0.0,
                         0.0
                      ],
                      "rotationQuaternion": [
@@ -906,7 +1027,7 @@
                         0.0,
                         1.0
                      ],
-                     "rotationSource": "euler",
+                     "rotationSource": "quaternion",
                      "scale": [
                         48.0,
                         48.0,
@@ -915,7 +1036,7 @@
                      "translation": [
                         0.0,
                         0.0,
-                        135.8745574951172
+                        130.9347381591797
                      ],
                      "useParentMatrix": false
                   },
@@ -997,7 +1118,7 @@
                },
                {
                   "data": {
-                     "influenceRadius": 300.0
+                     "influenceRadius": 200.0
                   },
                   "enabled": true,
                   "typeName": "SphericalGravityAttractor"
@@ -1143,6 +1264,9 @@
                         },
                         {
                            "objectName": "Planet_5"
+                        },
+                        {
+                           "objectName": "Planet_6"
                         }
                      ],
                      "switchHysteresis": 1.5
@@ -1198,7 +1322,7 @@
                   "data": {
                      "autoSpeed": 45.0,
                      "maxSpeed": 50.0,
-                     "speedRecovery": 0.05000000074505806,
+                     "speedRecovery": 0.10000000149011612,
                      "steerSpeed": 120.0
                   },
                   "enabled": true,
@@ -1206,10 +1330,10 @@
                },
                {
                   "data": {
-                     "airDrag": 0.0010000000474974513,
+                     "airDrag": 0.0,
                      "angularDamping": 2.5,
-                     "pitchSpeed": 285.0,
-                     "steerSpeed": 285.0
+                     "pitchSpeed": 250.0,
+                     "steerSpeed": 250.0
                   },
                   "enabled": true,
                   "typeName": "VehicleAirController"
@@ -1256,16 +1380,16 @@
                },
                {
                   "data": {
-                     "activationMargin": 0.0,
                      "activeFlowSpeed": 20.0,
-                     "activeInnerRadius": 0.4000000059604645,
-                     "effectSpeedRange": 0.10000000149011612,
+                     "activeInnerRadius": 0.38499999046325684,
                      "idleFlowSpeed": 10.0,
                      "idleInnerRadius": 0.9800000190734863,
                      "lineDensity": 140.0,
                      "maxIntensity": 0.800000011920929,
+                     "maximumEffectSpeed": 40.0,
+                     "minimumEffectSpeed": 15.0,
                      "outerRadius": 2.5,
-                     "radialBlurMaxStrength": 0.05000000074505806,
+                     "radialBlurMaxStrength": 0.03999999910593033,
                      "radialBlurSampleCount": 16,
                      "radialBlurVisibleThreshold": 0.019999999552965164,
                      "randomSeed": 1.0,

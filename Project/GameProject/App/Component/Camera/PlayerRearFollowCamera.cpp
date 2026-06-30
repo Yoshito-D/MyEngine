@@ -41,6 +41,22 @@ static bool ReadBool(const nlohmann::json& data, const char* key, bool fallback)
    return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
 }
 
+static GameEngine::Vector3 NormalizeOrFallback(
+   const GameEngine::Vector3& value,
+   const GameEngine::Vector3& fallback) {
+   float len = value.Length();
+   if (len > 1e-5f) {
+	  return value * (1.0f / len);
+   }
+
+   float fallbackLen = fallback.Length();
+   if (fallbackLen > 1e-5f) {
+	  return fallback * (1.0f / fallbackLen);
+   }
+
+   return { 0.0f, 0.0f, 1.0f };
+}
+
 const bool kRegistered = GameEngine::VirtualCamera::RegisterComponentFactory(
    "PlayerRearFollowCamera",
    [](GameEngine::VirtualCamera& camera) -> GameEngine::ICinemachineComponent* {
@@ -214,20 +230,25 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothGravityUp(float deltaTime) {
 }
 
 /// @brief currentBackward_ を更新する
-/// @details 3つのフェーズに分けて管理する：
-///   1. 初回：desiredBackward をそのまま設定（補間なし）
-///   2. 毎フレーム：currentBackward_ を現在の重力平面に再投影
-///      → gravityUp が変化した際に、後方ベクトルが平面から外れるのを防ぐ
-///   3. 地上時のみ：desiredBackward に向けて Lerp で追従
-///      → 空中時は慣性を表現するため後方ベクトルを固定する
+/// @details 地上ではプレイヤー正面、空中では進行方向へ追従する。
+///          リセット補間中はプレイヤー正面を強く採用し、空中姿勢にカメラを寄せる。
 /// @param up 正規化済み補間済み重力Up
 /// @param deltaTime フレーム時間
 void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up, float deltaTime) {
    using namespace GameEngine;
 
-   // プレイヤーの前方の逆方向＝カメラが向かうべき後方ベクトルを重力平面に投影する
-   // （followForward_ は 3D 空間の前方なので、水平成分だけ取り出す）
-   Vector3 desiredBackward = ProjectOnPlaneNorm(-followForward_, up, currentBackward_);
+   // 地上では惑星面に沿ったプレイヤー後方、空中では進行方向の後方を目標にする。
+   Vector3 normalBackward = isAirborne_
+	  ? NormalizeOrFallback(-airborneMoveForward_, currentBackward_)
+	  : ProjectOnPlaneNorm(-followForward_, up, currentBackward_);
+
+   Vector3 resetBackward = NormalizeOrFallback(-playerForward_, normalBackward);
+   Vector3 desiredBackward = normalBackward;
+   if (isAirborne_ && airborneResetBlend_ > 1e-4f) {
+	  desiredBackward = NormalizeOrFallback(
+		 Vector3::Lerp(normalBackward, resetBackward, airborneResetBlend_),
+		 resetBackward);
+   }
 
    if (!isInitialized_) {
 	  // 初回はスムーズ開始のためそのまま採用
@@ -236,23 +257,24 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
 	  return;
    }
 
-   // ---- 毎フレーム: 現在後方ベクトルを重力平面へ再投影 ----
-   // gravityUp が変化すると前フレームの currentBackward_ が平面外にズレるため
-   // 毎フレーム平面に投影し直すことで水平性を維持する
-   currentBackward_ = ProjectOnPlaneNorm(currentBackward_, up, desiredBackward);
+   if (isAirborne_) {
+	  // 空中では進行方向やリセット姿勢をそのまま使えるよう、重力平面へ押し戻さない。
+	  currentBackward_ = NormalizeOrFallback(currentBackward_, desiredBackward);
+   } else {
+	  // 地上では gravityUp が変化しても水平性が保たれるよう、毎フレーム平面へ戻す。
+	  currentBackward_ = ProjectOnPlaneNorm(currentBackward_, up, desiredBackward);
+   }
 
-   if (!isAirborne_) {
-	  // ---- 地上時のみ: desired へ Lerp で追従 ----
-	  // プレイヤーが向きを変えたとき、カメラがその後方へじわりと追いかける挙動を実現する
-	  // 空中時は追従させないことで、ジャンプ中に視点が回ってしまうのを防ぐ
-	  float t = ExpSmoothingFactor(rearLerpSpeed, deltaTime);
-	  Vector3 lerped = Vector3::Lerp(currentBackward_, desiredBackward, t);
-	  float lerpLen = lerped.LengthSquared();
-	  if (lerpLen > 1e-6f) {
-		 currentBackward_ = lerped.Normalize();
-	  } else {
-		 currentBackward_ = desiredBackward;
-	  }
+   float followSpeed = isAirborne_
+	  ? (airborneForwardLerpSpeed + (airborneResetLerpSpeed - airborneForwardLerpSpeed) * airborneResetBlend_)
+	  : rearLerpSpeed;
+   float t = ExpSmoothingFactor(followSpeed, deltaTime);
+   Vector3 lerped = Vector3::Lerp(currentBackward_, desiredBackward, t);
+   float lerpLen = lerped.LengthSquared();
+   if (lerpLen > 1e-6f) {
+	  currentBackward_ = lerped.Normalize();
+   } else {
+	  currentBackward_ = desiredBackward;
    }
 }
 
@@ -268,21 +290,39 @@ void PlayerRearFollowCamera::UpdateAirborneBlend(float deltaTime) {
 	  1.0f);
 }
 
+/// @brief 空中リセットの補間値を更新する
+/// @details リセット入力を押している間だけ1へ、離したら0へ戻す。
+///          値そのものを補間することで、カメラの前方向とUpの切り替えを同じ時間軸で扱う。
+void PlayerRearFollowCamera::UpdateAirborneResetBlend(float deltaTime) {
+   if (!isAirborne_) {
+	  isAirborneResetHeld_ = false;
+   }
+
+   float targetBlend = (isAirborne_ && isAirborneResetHeld_) ? 1.0f : 0.0f;
+   float t = ExpSmoothingFactor(airborneResetLerpSpeed, deltaTime);
+   airborneResetBlend_ = std::clamp(
+	  airborneResetBlend_ + (targetBlend - airborneResetBlend_) * t,
+	  0.0f,
+	  1.0f);
+}
+
 /// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
 /// @details カメラは pivot の後方（currentBackward_ 方向）に distance 離れた場所に置く。
 ///          加速中は distanceBoostMax * boostAlpha 分さらに後退させることで
 ///          「カメラが引けて世界が広がる」視覚的な加速感を演出する。
 ///          空中では currentAirborneBlend_ に応じてさらに後退し、着地先を見やすくする。
-/// @param up 正規化済み重力Up（高さオフセットに使用）
+/// @param up カメラ位置の高さ方向
 /// @param boostAlpha 加速度合い [0,1]
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3& up,
    float boostAlpha) const {
+   float effectiveAirborneBlend = (std::max)(currentAirborneBlend_, airborneResetBlend_);
+
    // 加速と空中状態の後退量を合成する。
    float boostedDistance =
 	  distance
 	  + distanceBoostMax * boostAlpha
 	  + springDistanceOffset_
-	  + airborneDistanceOffset * currentAirborneBlend_;
+	  + airborneDistanceOffset * effectiveAirborneBlend;
 
    // eye = pivot から上方向に height、後方に boostedDistance 離れた位置
    return pivotTarget_ + up * height + currentBackward_ * boostedDistance;
@@ -291,14 +331,29 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3
 /// @brief LookAt に使う注視点を計算する
 /// @details 地上ではプレイヤー中心より少し上を狙い、画面内の地面比率を下げる。
 ///          空中では車体姿勢や着地先を読みやすくするため、補間しながら中心へ戻す。
+///          リセット中も空中扱いとして、プレイヤー中心を保つ。
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeLookTarget(const GameEngine::Vector3& up) const {
-   float targetHeight = groundedTargetHeight * (1.0f - currentAirborneBlend_);
+   float effectiveAirborneBlend = (std::max)(currentAirborneBlend_, airborneResetBlend_);
+   float targetHeight = groundedTargetHeight * (1.0f - effectiveAirborneBlend);
    return pivotTarget_ + up * targetHeight;
 }
 
+/// @brief リセット状態を加味したカメラUpを返す
+GameEngine::Vector3 PlayerRearFollowCamera::ComputeViewUp(const GameEngine::Vector3& gravityUp) const {
+   GameEngine::Vector3 baseUp = NormalizeOrFallback(gravityUp, { 0.0f, 1.0f, 0.0f });
+   if (airborneResetBlend_ <= 1e-4f) {
+	  return baseUp;
+   }
+
+   GameEngine::Vector3 targetUp = NormalizeOrFallback(playerUp_, baseUp);
+   return NormalizeOrFallback(
+	  GameEngine::Vector3::Lerp(baseUp, targetUp, airborneResetBlend_),
+	  targetUp);
+}
+
 /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
-/// @details LookAt の up には補間済み重力Up（currentGravityUp_）を使用する。
-///          これにより惑星の切り替え中も常に「その惑星の重力方向が上」として描画される。
+/// @details LookAt の up には通常は補間済み重力Up、空中リセット中はプレイヤーUpとの補間値を使用する。
+///          これにより通常時の惑星基準と、リセット時のプレイヤー姿勢基準を滑らかに行き来できる。
 ///          cachedRight_ / cachedUp_ は外部（UI など）で参照されるため確定させる。
 void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    const GameEngine::Vector3& eye,
@@ -327,7 +382,7 @@ void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
 
    // キャッシュ更新
    cachedRight_ = xaxis;
-   // cachedUp_ は惑星基準の up を保持（GravityFollowCamera と同じ規約）
+   // cachedUp_ は実際にLookAtへ渡した up を保持する
    cachedUp_ = up;
 
    state.transform.translation = eye;
@@ -396,11 +451,13 @@ float PlayerRearFollowCamera::UpdateAccelerationEffect(GameEngine::CameraState& 
    StepSpring1D(0.0f, springStiffness, springDamping, deltaTime, springFovOffset_, springFovVelocity_);
    StepSpring1D(0.0f, springStiffness, springDamping, deltaTime, springDistanceOffset_, springDistanceVelocity_);
 
+   float effectiveAirborneBlend = (std::max)(currentAirborneBlend_, airborneResetBlend_);
+
    // 目標 FOV = 通常 FOV + 速度比例ブースト + 空中ブースト + Springキック
    float targetFov =
 	  fovDefault
 	  + fovBoostMax * boostAlpha
-	  + airborneFovOffset * currentAirborneBlend_
+	  + airborneFovOffset * effectiveAirborneBlend
 	  + springFovOffset_;
 
    // FOV を滑らかに補間（急変させず視覚的に自然に追従）
@@ -455,24 +512,30 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    // ② 地上/空中の見え方を滑らかに切り替えるブレンド値を更新する
    UpdateAirborneBlend(deltaTime);
 
-   // ③ 後方ベクトル（currentBackward_）を更新する
+   // ③ 空中リセットの補間値を更新する
+   UpdateAirborneResetBlend(deltaTime);
+
+   // ④ 後方ベクトル（currentBackward_）を更新する
    //    → 重力平面への再投影 + 地上時の Lerp 追従を行う
    UpdateBackwardVector(up, deltaTime);
 
-   // ④ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
+   // ⑤ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
    //    → FOV は state.fov へ反映済み、boostAlpha は距離ブーストに転用する
    float boostAlpha = UpdateAccelerationEffect(state, deltaTime);
 
-   // ⑤ 加速ブーストと空中距離を加味した eye 位置を算出する
-   //    → 加速中はカメラが後退して視野が広がり、速度感が増す
-   GameEngine::Vector3 eye = ComputeEye(up, boostAlpha);
+   // ⑥ リセット時はカメラUpもプレイヤーUpへ補間する
+   GameEngine::Vector3 viewUp = ComputeViewUp(up);
 
-   // ⑥ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
+   // ⑦ 加速ブーストと空中距離を加味した eye 位置を算出する
+   //    → 加速中はカメラが後退して視野が広がり、速度感が増す
+   GameEngine::Vector3 eye = ComputeEye(viewUp, boostAlpha);
+
+   // ⑧ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
    //    → 相対補間により、ピボットが移動してもカメラが前方へ突き抜けない
    eye = SmoothEye(eye, deltaTime);
 
-   // ⑦ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
-   ApplyLookAt(state, eye, up);
+   // ⑨ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
+   ApplyLookAt(state, eye, viewUp);
 }
 
 nlohmann::json PlayerRearFollowCamera::Serialize() const {
@@ -483,6 +546,8 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "airborneDistanceOffset", airborneDistanceOffset },
 	   { "airborneFovOffset", airborneFovOffset },
 	   { "airborneBlendLerpSpeed", airborneBlendLerpSpeed },
+	   { "airborneForwardLerpSpeed", airborneForwardLerpSpeed },
+	   { "airborneResetLerpSpeed", airborneResetLerpSpeed },
 	   { "rearLerpSpeed", rearLerpSpeed },
 	   { "gravityUpLerpSpeed", gravityUpLerpSpeed },
 	   { "fovDefault", fovDefault },
@@ -500,6 +565,8 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "positionLerpSpeed", positionLerpSpeed },
 	   { "isAirborne", isAirborne_ },
 	   { "currentAirborneBlend", currentAirborneBlend_ },
+	   { "isAirborneResetHeld", isAirborneResetHeld_ },
+	   { "airborneResetBlend", airborneResetBlend_ },
 	   { "isInitialized", isInitialized_ },
 	   { "currentFov", currentFov_ },
 	   { "springFovOffset", springFovOffset_ },
@@ -523,6 +590,8 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    airborneDistanceOffset = ReadFloat(data, "airborneDistanceOffset", airborneDistanceOffset);
    airborneFovOffset = ReadFloat(data, "airborneFovOffset", airborneFovOffset);
    airborneBlendLerpSpeed = ReadFloat(data, "airborneBlendLerpSpeed", airborneBlendLerpSpeed);
+   airborneForwardLerpSpeed = ReadFloat(data, "airborneForwardLerpSpeed", airborneForwardLerpSpeed);
+   airborneResetLerpSpeed = ReadFloat(data, "airborneResetLerpSpeed", airborneResetLerpSpeed);
    rearLerpSpeed = ReadFloat(data, "rearLerpSpeed", rearLerpSpeed);
    gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
    fovDefault = ReadFloat(data, "fovDefault", fovDefault);
@@ -541,6 +610,9 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
 
    isAirborne_ = ReadBool(data, "isAirborne", isAirborne_);
    currentAirborneBlend_ = std::clamp(ReadFloat(data, "currentAirborneBlend", currentAirborneBlend_), 0.0f, 1.0f);
+   isAirborneResetHeld_ = ReadBool(data, "isAirborneResetHeld",
+	  ReadBool(data, "isAirborneResetting", isAirborneResetHeld_));
+   airborneResetBlend_ = std::clamp(ReadFloat(data, "airborneResetBlend", airborneResetBlend_), 0.0f, 1.0f);
    isInitialized_ = ReadBool(data, "isInitialized", isInitialized_);
    autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
    currentFov_ = ReadFloat(data, "currentFov", currentFov_);
@@ -565,6 +637,8 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::DragFloat(Tr("空中距離加算", "Airborne Distance Offset"), &airborneDistanceOffset, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("空中FOV加算", "Airborne FOV Offset"), &airborneFovOffset, 0.001f, 0.0f, 0.5f, "%.3f");
    ImGui::DragFloat(Tr("空中補間速度", "Airborne Blend Speed"), &airborneBlendLerpSpeed, 0.1f, 0.1f, 30.0f);
+   ImGui::DragFloat(Tr("空中進行方向補間", "Airborne Forward Lerp"), &airborneForwardLerpSpeed, 0.1f, 0.0f, 30.0f);
+   ImGui::DragFloat(Tr("空中リセット補間", "Airborne Reset Lerp"), &airborneResetLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::DragFloat(Tr("後方補間速度", "Rear Lerp Speed"), &rearLerpSpeed, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("GravityUp補間", "GravityUp Lerp"), &gravityUpLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::DragFloat(Tr("FOV デフォルト", "FOV Default"), &fovDefault, 0.001f, 0.1f, 1.5f, "%.3f");
@@ -584,9 +658,11 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::Separator();
    ImGui::Text("%s: %s", Tr("空中", "Airborne"), isAirborne_ ? Tr("はい", "true") : Tr("いいえ", "false"));
    ImGui::Text("%s: %.2f", Tr("空中ブレンド", "Airborne Blend"), currentAirborneBlend_);
+   ImGui::Text("%s: %s / %.2f", Tr("空中リセット", "Airborne Reset"), isAirborneResetHeld_ ? Tr("押下中", "held") : Tr("なし", "none"), airborneResetBlend_);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("目標GravityUp", "Target GravityUp"), gravityUp_.x, gravityUp_.y, gravityUp_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("現在GravityUp", "Current GravityUp"), currentGravityUp_.x, currentGravityUp_.y, currentGravityUp_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("追従前方向", "Follow Forward"), followForward_.x, followForward_.y, followForward_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("空中進行方向", "Air Move Forward"), airborneMoveForward_.x, airborneMoveForward_.y, airborneMoveForward_.z);
    ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), playerSpeed_, Tr("現在FOV", "Current FOV"), currentFov_);
 }
 #endif

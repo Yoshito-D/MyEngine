@@ -26,6 +26,15 @@ float SmoothTowards(float current, float target, float responseSpeed, float delt
    const float alpha = 1.0f - std::exp(-responseSpeed * deltaTime);
    return Lerp(current, target, Saturate(alpha));
 }
+
+float CalculateEffectAmount(float currentSpeed, float minimumEffectSpeed, float maximumEffectSpeed) {
+   const float speedRange = maximumEffectSpeed - minimumEffectSpeed;
+   if (speedRange <= 1e-4f) {
+	  return currentSpeed >= minimumEffectSpeed ? 1.0f : 0.0f;
+   }
+
+   return Saturate((currentSpeed - minimumEffectSpeed) / speedRange);
+}
 }
 
 namespace App {
@@ -48,10 +57,8 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
 
    time_ += std::max(deltaTime * 10.0f, 0.0f);
 
-   const float autoSpeed = std::max(groundMover->autoSpeed, 0.01f);
    const float currentSpeed = std::max(groundMover->GetCurrentSpeed(), 0.0f);
-   const float speedOverAuto = currentSpeed - autoSpeed - std::max(activationMargin, 0.0f);
-   const float targetAmount = Saturate(speedOverAuto / std::max(effectSpeedRange, 0.01f));
+   const float targetAmount = CalculateEffectAmount(currentSpeed, minimumEffectSpeed, maximumEffectSpeed);
    effectAmount_ = SmoothTowards(effectAmount_, targetAmount, responseSpeed, deltaTime);
 
    GameEngine::SpeedLineParams params{};
@@ -92,8 +99,8 @@ void VehicleSpeedPostEffectController::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) { return; }
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("発動マージン", "Activation Margin"), &activationMargin, 0.01f, 0.0f, 10.0f);
-   ImGui::DragFloat(Tr("エフェクト速度範囲", "Effect Speed Range"), &effectSpeedRange, 0.1f, 0.01f, 100.0f);
+   ImGui::DragFloat(Tr("演出最低速度", "Minimum Effect Speed"), &minimumEffectSpeed, 0.1f, 0.0f, 200.0f);
+   ImGui::DragFloat(Tr("演出最大速度", "Maximum Effect Speed"), &maximumEffectSpeed, 0.1f, 0.0f, 200.0f);
    ImGui::DragFloat(Tr("追従速度", "Response Speed"), &responseSpeed, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("表示しきい値", "Visible Threshold"), &visibleThreshold, 0.001f, 0.0f, 1.0f);
    ImGui::DragFloat(Tr("待機時内側半径", "Idle Inner Radius"), &idleInnerRadius, 0.01f, 0.0f, 2.0f);
@@ -114,8 +121,8 @@ void VehicleSpeedPostEffectController::DrawInspector() {
 
 nlohmann::json VehicleSpeedPostEffectController::Serialize() const {
    nlohmann::json json;
-   json["activationMargin"] = activationMargin;
-   json["effectSpeedRange"] = effectSpeedRange;
+   json["minimumEffectSpeed"] = minimumEffectSpeed;
+   json["maximumEffectSpeed"] = maximumEffectSpeed;
    json["responseSpeed"] = responseSpeed;
    json["visibleThreshold"] = visibleThreshold;
    json["idleInnerRadius"] = idleInnerRadius;
@@ -134,8 +141,20 @@ nlohmann::json VehicleSpeedPostEffectController::Serialize() const {
 }
 
 void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
-   if (data.contains("activationMargin")) { activationMargin = data["activationMargin"]; }
-   if (data.contains("effectSpeedRange")) { effectSpeedRange = data["effectSpeedRange"]; }
+   if (data.contains("minimumEffectSpeed")) { minimumEffectSpeed = data["minimumEffectSpeed"]; }
+   if (data.contains("maximumEffectSpeed")) { maximumEffectSpeed = data["maximumEffectSpeed"]; }
+   if (!data.contains("minimumEffectSpeed") && data.contains("activationMargin")) {
+	  float baseSpeed = minimumEffectSpeed;
+	  if (HasOwner()) {
+		 if (auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>()) {
+			baseSpeed = groundMover->autoSpeed;
+		 }
+	  }
+	  minimumEffectSpeed = baseSpeed + std::max(data["activationMargin"].get<float>(), 0.0f);
+   }
+   if (!data.contains("maximumEffectSpeed") && data.contains("effectSpeedRange")) {
+	  maximumEffectSpeed = minimumEffectSpeed + std::max(data["effectSpeedRange"].get<float>(), 0.01f);
+   }
    if (data.contains("responseSpeed")) { responseSpeed = data["responseSpeed"]; }
    if (data.contains("visibleThreshold")) { visibleThreshold = data["visibleThreshold"]; }
    if (data.contains("idleInnerRadius")) { idleInnerRadius = data["idleInnerRadius"]; }
