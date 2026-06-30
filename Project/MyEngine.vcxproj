@@ -242,6 +242,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\WhiteNoise.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Dissolve.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
@@ -521,6 +522,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\PostEffectPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\WhiteNoise.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Dissolve.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
@@ -711,6 +713,7 @@
     <None Include="Resources\pipelines\particle_pipeline.json" />
     <None Include="Resources\pipelines\pipeline_registry.json" />
     <None Include="Resources\pipelines\postprocess\anti_aliasing_pipeline.json" />
+    <None Include="Resources\pipelines\postprocess\white_noise_pipeline.json" />
     <None Include="Resources\pipelines\postprocess\bloom_pipeline.json" />
     <None Include="Resources\pipelines\postprocess\boxfilter_pipeline.json" />
     <None Include="Resources\pipelines\postprocess\chromatic_aberration_pipeline.json" />

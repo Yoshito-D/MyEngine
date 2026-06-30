@@ -297,7 +297,8 @@ void ShaderManager::LogRootParameterTablesDebug() const {
 	  "Object3D", "Sprite", "Particle", "Line3D", "FullscreenTriangle",
 	  "PostProcess_Grayscale", "PostProcess_RadialBlur", "PostProcess_GaussFilter",
 	  "PostProcess_Vignette", "PostProcess_ChromaticAberration", "PostProcess_ShockWave",
-	  "PostProcess_Pixelation", "PostProcess_Bloom", "PostProcess_BoxFilter", "PostProcess_Outline"
+	  "PostProcess_Pixelation", "PostProcess_Bloom", "PostProcess_BoxFilter", "PostProcess_Outline",
+	  "PostProcess_WhiteNoise"
    };
 
    const auto stageInfos = GetPipelineStageMatchInfos();
@@ -439,6 +440,7 @@ void ShaderManager::LoadPredefinedShaders() {
    LoadPixelShader("Pixelation", L"resources/shaders/postprocess/Pixelation.PS.hlsl");
    LoadPixelShader("Bloom", L"resources/shaders/postprocess/Bloom.PS.hlsl");
    LoadPixelShader("BoxFilter", L"resources/shaders/postprocess/BoxFilter.PS.hlsl");
+   LoadPixelShader("WhiteNoise", L"resources/shaders/postprocess/WhiteNoise.PS.hlsl");
    BuildPipelineRootParameterTables();
 }
 

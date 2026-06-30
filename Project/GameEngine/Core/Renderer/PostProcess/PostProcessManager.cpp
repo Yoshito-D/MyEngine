@@ -15,6 +15,7 @@
 #include "Outline.h"
 #include "AntiAliasing.h"
 #include "Dissolve.h"
+#include "WhiteNoise.h"
 #include "Core/Renderer/Pipeline/PSOManager.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -66,6 +67,7 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
    effectFactoryRegistry_.RegisterFactory("Outline", [] { return std::make_unique<Outline>(); });
    effectFactoryRegistry_.RegisterFactory("AntiAliasing", [] { return std::make_unique<AntiAliasing>(); });
    effectFactoryRegistry_.RegisterFactory("Dissolve", [] { return std::make_unique<Dissolve>(); });
+   effectFactoryRegistry_.RegisterFactory("WhiteNoise", [] { return std::make_unique<WhiteNoise>(); });
 
    effectFactoriesRegistered_ = true;
 }
@@ -122,7 +124,7 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  const char* rootSignatureName;
    };
 
-   static const std::array<PredefinedEffectEntry, 14> kEntries = {
+   static const std::array<PredefinedEffectEntry, 15> kEntries = {
 	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur", "PostProcess" },
 	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale", "PostProcess" },
 	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter", "PostProcess" },
@@ -134,6 +136,7 @@ void PostProcessManager::RegisterPredefinedEffects() {
 	  PredefinedEffectEntry{ "Pixelation", "Pixelation", 70, "PostProcess_Pixelation", "PostProcess" },
 	  PredefinedEffectEntry{ "SpeedLine", "Speed Line", 75, "PostProcess_SpeedLine", "PostProcess" },
 	  PredefinedEffectEntry{ "Bloom", "Bloom", 80, "PostProcess_Bloom", "PostProcess" },
+	  PredefinedEffectEntry{ "WhiteNoise", "White Noise", 85, "PostProcess_WhiteNoise", "PostProcess" },
 	  PredefinedEffectEntry{ "Dissolve", "Dissolve", 90, "PostProcess_Dissolve", "PostProcessDissolve" },
 	  PredefinedEffectEntry{ "AntiAliasing", "Anti Aliasing", 95, "PostProcess_AntiAliasing", "PostProcess" },
 	  PredefinedEffectEntry{ "LinearToSRGB", "Linear to sRGB", 100, "PostProcess_LinearToSRGB", "PostProcess" }

@@ -26,6 +26,7 @@
     "resources/pipelines/postprocess/shockwave_pipeline.json",
     "resources/pipelines/postprocess/pixelation_pipeline.json",
     "resources/pipelines/postprocess/speedline_pipeline.json",
+    "resources/pipelines/postprocess/white_noise_pipeline.json",
     "resources/pipelines/postprocess/bloom_pipeline.json",
     "resources/pipelines/postprocess/boxfilter_pipeline.json",
     "resources/pipelines/postprocess/outline_pipeline.json",
