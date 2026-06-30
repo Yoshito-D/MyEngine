@@ -230,6 +230,9 @@
     <None Include="Resources\pipelines\postprocess\anti_aliasing_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
+    <None Include="Resources\pipelines\postprocess\white_noise_pipeline.json">
+      <Filter>resources\pipelines\postprocess</Filter>
+    </None>
     <None Include="Resources\pipelines\postprocess\bloom_pipeline.json">
       <Filter>resources\pipelines\postprocess</Filter>
     </None>
@@ -493,6 +496,9 @@
       <Filter>GameEngine\Core\Renderer\Pipeline</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.cpp">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\WhiteNoise.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Bloom.cpp">
@@ -1050,6 +1056,9 @@
       <Filter>GameEngine\Core\Renderer\Pipeline</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.h">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\WhiteNoise.h">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Bloom.h">

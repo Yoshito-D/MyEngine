@@ -79,6 +79,13 @@
       "pipelineName": "PostProcess_Bloom"
     },
     {
+      "name": "White Noise",
+      "className": "WhiteNoise",
+      "priority": 85,
+      "enabled": false,
+      "pipelineName": "PostProcess_WhiteNoise"
+    },
+    {
       "name": "Dissolve",
       "className": "Dissolve",
       "priority": 90,
