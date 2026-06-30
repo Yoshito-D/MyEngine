@@ -56,13 +56,13 @@ public:
 
 public:
    /// @brief Up補間回転速度
-   float rotationSpeed  = 5.0f;
+   float rotationSpeed = 5.0f;
 
    /// @brief 重力強度（加速度係数）
    float gravityStrength = 9.8f;
 
    /// @brief 重力適用フラグ
-   bool  useGravity     = true;
+   bool  useGravity = true;
 
 private:
    /// @brief 現在Upから目標Upへ姿勢を補間する
@@ -73,16 +73,16 @@ private:
 
 private:
    /// @brief 現在のUpベクトル
-   GameEngine::Vector3 currentUpVector_    = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 currentUpVector_ = { 0.0f, 1.0f, 0.0f };
 
    /// @brief 次に向かうUpベクトル
-   GameEngine::Vector3 targetUpVector_     = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 targetUpVector_ = { 0.0f, 1.0f, 0.0f };
 
    /// @brief 現在の重力加速度
    GameEngine::Vector3 gravityAcceleration_ = { 0.0f, 0.0f, 0.0f };
 
    /// @brief 現在の速度
-   GameEngine::Vector3 velocity_           = { 0.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 velocity_ = { 0.0f, 0.0f, 0.0f };
 };
 
 } // namespace App

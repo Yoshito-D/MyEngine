@@ -32,7 +32,7 @@ public:
 private:
    float outlineColor_[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
    float thickness_ = 1.4f;
-   float depthThreshold_ = 0.4f;
+   float depthThreshold_ = 0.6f;
    float intensity_ = 0.7f;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;

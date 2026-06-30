@@ -75,7 +75,7 @@ void GameTestScene::Initialize() {
    planet2_ = std::make_unique<Model>();
    planet2_->Create().SetModelAsset(planetModelAsset).SetMaterial(planetMaterial).SetObjectName("Planet_2");
    planet2_->SetPosition(Vector3(kPlanet2Distance, 0.0f, 0.0f));
-   planet2_->SetScale(Vector3(kPlanet2Radius, kPlanet2Radius, kPlanet2Radius));
+  // planet2_->SetScale(Vector3(kPlanet2Radius, kPlanet2Radius, kPlanet2Radius));
 
    SphericalGravityAttractor* attractor2 = nullptr;
    if (auto* a = planet2_->AddComponent<SphericalGravityAttractor>()) {
@@ -145,7 +145,7 @@ void GameTestScene::Initialize() {
    // 7. VehicleController: 入力収集 → VehicleMover 呼び出し（最後に姿勢を確定）
    player_->AddComponent<VehicleController>();
 
-   // 7a. 速度が autoSpeed を超えた分を SpeedLine ポストエフェクトへ反映
+   // 7a. 速度に応じて SpeedLine ポストエフェクトへ反映
    player_->AddComponent<VehicleSpeedPostEffectController>();
 
    // 8. タイヤ埃パーティクル（ドリフト時にのみ表示）

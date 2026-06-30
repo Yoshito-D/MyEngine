@@ -1,7 +1,9 @@
 #include "CameraGravityBridge.h"
 #include "../Character/CharacterLanding.h"
 #include "../Character/CharacterJump.h"
+#include "../Gravity/GravityBody.h"
 #include "../Vehicle/VehicleGroundMover.h"
+#include "Framework/EngineContext.h"
 #include "Object/Component/TransformComponent.h"
 #include "Object/Object.h"
 #include "Scene/Camera/Components/PerlinNoise.h"
@@ -78,18 +80,40 @@ void CameraGravityBridge::Update(float) {
    // PlayerRearFollowCamera 側へ重力Up・注視対象・前方・空中状態を同期
    if (playerRearFollowCamera_) {
       GameEngine::Vector3 forward = { 0.0f, 0.0f, 1.0f };
+      GameEngine::Vector3 playerUp = { 0.0f, 1.0f, 0.0f };
       GameEngine::Quaternion rotation = transform->transform.GetActiveQuaternion();
       forward = GameEngine::RotateVector(forward, rotation);
+      playerUp = GameEngine::RotateVector(playerUp, rotation);
 
       bool isAirborne = false;
       if (auto* jump = GetOwner().GetComponent<CharacterJump>()) {
          isAirborne = jump->IsJumping();
       }
 
+      GameEngine::Vector3 airborneMoveForward = forward;
+      if (auto* gravityBody = GetOwner().GetComponent<GravityBody>()) {
+         GameEngine::Vector3 velocity = gravityBody->GetVelocity();
+         // 重力方向成分を除いた進行方向を使い、上下速度だけでカメラが真上/真下を向くのを避ける。
+         GameEngine::Vector3 horizontalVelocity = velocity - gravityUp * velocity.Dot(gravityUp);
+         float horizontalSpeed = horizontalVelocity.Length();
+         if (horizontalSpeed > 1e-4f) {
+            airborneMoveForward = horizontalVelocity * (1.0f / horizontalSpeed);
+         }
+      }
+
       playerRearFollowCamera_->SetGravityUp(gravityUp);
       playerRearFollowCamera_->SetPivotTarget(pos);
       playerRearFollowCamera_->SetFollowForward(forward);
+      playerRearFollowCamera_->SetAirborneMoveForward(airborneMoveForward);
+      playerRearFollowCamera_->SetPlayerBasis(forward, playerUp);
       playerRearFollowCamera_->SetAirborne(isAirborne);
+
+      const bool resetHeld =
+         isAirborne
+         && (GameEngine::EngineContext::IsKeyPressed(GameEngine::KeyCode::R)
+            || GameEngine::EngineContext::IsGamePadButtonPressed(GameEngine::GamePadButton::X, 0)
+            || GameEngine::EngineContext::IsGamePadButtonPressed(GameEngine::GamePadButton::Y, 0));
+      playerRearFollowCamera_->SetAirborneResetHeld(resetHeld);
    }
 
    // VehicleGroundMover から速度と autoSpeed を取得し、両カメラへ供給する

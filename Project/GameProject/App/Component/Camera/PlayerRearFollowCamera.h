@@ -5,9 +5,9 @@
 namespace App {
 
 /// @brief プレイヤーを注視し、後方へ補間追従するカメラコンポーネント
-/// @note upVector は常に惑星基準（gravityUp_）を使用する。
+/// @note upVector は通常は惑星基準（gravityUp_）を使用し、空中リセット中のみプレイヤーUpへ補間する。
 ///       惑星切り替え時のロール急変を防ぐため gravityUp_ を nlerp で補間する。
-///       空中時はヨー（currentBackward_）の補間を行わず、水平方向を維持する。
+///       空中時は進行方向へ徐々に補間し、リセット時はプレイヤー姿勢へ補間する。
 ///       プレイヤーが加速すると FOV 拡大・カメラ後退距離増加で加速感を演出する。
 class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent {
 public:
@@ -32,8 +32,24 @@ public:
 	/// @brief プレイヤー前方を設定する
 	void SetFollowForward(const GameEngine::Vector3& forward) { followForward_ = forward; }
 
+	/// @brief 空中でカメラが追従する進行方向を設定する
+	/// @param forward 重力水平面上の進行方向
+	void SetAirborneMoveForward(const GameEngine::Vector3& forward) { airborneMoveForward_ = forward; }
+
+	/// @brief プレイヤーの正面方向と上方向を設定する
+	/// @param forward プレイヤーの正面方向
+	/// @param up プレイヤーの上方向
+	void SetPlayerBasis(const GameEngine::Vector3& forward, const GameEngine::Vector3& up) {
+		playerForward_ = forward;
+		playerUp_ = up;
+	}
+
 	/// @brief 空中フラグを設定する
 	void SetAirborne(bool isAirborne) { isAirborne_ = isAirborne; }
+
+	/// @brief 空中カメラをプレイヤー正面・上方向へ寄せる入力状態を設定する
+	/// @param isHeld リセット入力を押している間 true
+	void SetAirborneResetHeld(bool isHeld) { isAirborneResetHeld_ = isHeld; }
 
 	/// @brief プレイヤーの現在速度を設定する（加速演出に使用）
 	/// @param speed 速度の大きさ（単位は任意。加速感の判定に使用）
@@ -79,6 +95,12 @@ public:
 
 	/// @brief 地上/空中パラメータを切り替える補間速度
 	float airborneBlendLerpSpeed = 6.0f;
+
+	/// @brief 空中時に進行方向へ向きを合わせる補間速度
+	float airborneForwardLerpSpeed = 4.0f;
+
+	/// @brief 空中リセットでプレイヤー姿勢へ合わせる補間速度
+	float airborneResetLerpSpeed = 8.0f;
 
 	/// @brief 地上時の後方補間速度
 	float rearLerpSpeed = 50.0f;
@@ -139,11 +161,26 @@ private:
 	/// @brief 追従対象の前方
 	GameEngine::Vector3 followForward_ = { 0.0f, 0.0f, 1.0f };
 
+	/// @brief 空中で追従する進行方向
+	GameEngine::Vector3 airborneMoveForward_ = { 0.0f, 0.0f, 1.0f };
+
+	/// @brief プレイヤーの正面方向（リセット時の基準）
+	GameEngine::Vector3 playerForward_ = { 0.0f, 0.0f, 1.0f };
+
+	/// @brief プレイヤーの上方向（リセット時の基準）
+	GameEngine::Vector3 playerUp_ = { 0.0f, 1.0f, 0.0f };
+
 	/// @brief 空中状態
 	bool isAirborne_ = false;
 
 	/// @brief 地上(0)から空中(1)へ補間した現在ブレンド値
 	float currentAirborneBlend_ = 0.0f;
+
+	/// @brief 空中リセット入力を押しているかどうか
+	bool isAirborneResetHeld_ = false;
+
+	/// @brief 通常空中カメラ(0)からプレイヤー姿勢リセット(1)への補間値
+	float airborneResetBlend_ = 0.0f;
 
 	/// @brief 現在の後方ベクトル（補間結果）
 	GameEngine::Vector3 currentBackward_ = { 0.0f, 0.0f, -1.0f };
@@ -204,16 +241,25 @@ private:
 	/// @param deltaTime フレーム時間
 	void UpdateAirborneBlend(float deltaTime);
 
+	/// @brief 空中リセットの補間値を更新する
+	/// @param deltaTime フレーム時間
+	void UpdateAirborneResetBlend(float deltaTime);
+
 	/// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
-	/// @param up 正規化済み重力Up
+	/// @param up カメラ位置の高さ方向
 	/// @param boostAlpha 加速度合い [0,1]
 	/// @return カメラ位置
 	GameEngine::Vector3 ComputeEye(const GameEngine::Vector3& up, float boostAlpha) const;
 
 	/// @brief 地上時は少し上、空中時は中心になる注視点を返す
-	/// @param up 正規化済み重力Up（地上時の高さ方向に使用）
+	/// @param up カメラ位置と注視点の高さ方向
 	/// @return LookAt で使用する注視点
 	GameEngine::Vector3 ComputeLookTarget(const GameEngine::Vector3& up) const;
+
+	/// @brief リセット状態を加味したカメラUpを返す
+	/// @param gravityUp 正規化済み重力Up
+	/// @return LookAt で使用するUp
+	GameEngine::Vector3 ComputeViewUp(const GameEngine::Vector3& gravityUp) const;
 
 	/// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
 	/// @param state 書き込み先

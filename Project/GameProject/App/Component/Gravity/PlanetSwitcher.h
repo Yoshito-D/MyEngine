@@ -53,7 +53,7 @@ public:
    void CommitPendingSwitch();
 
    /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
-   float switchHysteresis = 0.5f;
+   float switchHysteresis = 5.0f;
 
    /// @brief 車体OBBの半サイズ（各軸を個別指定）
    /// Transformのscaleではなくこの値を距離判定に使用する
@@ -85,7 +85,7 @@ private:
 
 private:
    int SelectBestPlanetIndex(const GameEngine::Vector3& pos,
-							 const GameEngine::Quaternion& obbRot);
+	  const GameEngine::Quaternion& obbRot);
 
    void ApplyPlanetIndex(int newIndex);
 
