@@ -3,10 +3,6 @@
 #include "ResourceHelper.h"
 #include "GraphicsDevice.h"
 
-namespace {
-Logger& log_ = Logger::GetInstance();
-}
-
 namespace GameEngine {
 ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::string& filePath) {
    name_ = filePath.substr(filePath.find_last_of("/\\") + 1);
@@ -52,7 +48,7 @@ ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::s
 
 DirectX::ScratchImage Texture::LoadTextureWithMipmaps(const std::string& filePath) {
    DirectX::ScratchImage image{};
-   std::wstring filePathW = log_.ConvertString(filePath);
+   std::wstring filePathW = Logger::ConvertString(filePath);
 
    HRESULT hr;
 
@@ -88,7 +84,7 @@ DirectX::ScratchImage Texture::LoadTextureWithMipmaps(const std::string& filePat
    }
 
    if (FAILED(hr)) {
-	  log_.Log("MipMap generation failed for: " + filePath, Logger::LogLevel::Error);
+	  Logger::Error("MipMap generation failed for: " + filePath);
 	  return image; // ミップマップ生成に失敗した場合、元画像を返す
    }
 

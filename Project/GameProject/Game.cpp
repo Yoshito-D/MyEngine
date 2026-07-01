@@ -3,6 +3,7 @@
 
 void Game::Initialize() {
    Framework::Initialize();
+   Logger::GameInfo("Game initialized.");
 
    // シーンマネージャーの初期化
    factory_ = std::make_unique<MySceneFactory>();

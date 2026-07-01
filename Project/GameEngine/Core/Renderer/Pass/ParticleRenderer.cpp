@@ -20,7 +20,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	std::function<void(const std::string&, BlendMode)> setPipelineFunc) {
 	ParticleSystem* particleSystem = particleData.particleSystem;
 	if (!particleSystem) {
-		Logger::GetInstance().Log("[ParticleRenderer] ParticleSystem is null, skip draw", Logger::LogLevel::Warning);
+		Logger::Warning("[ParticleRenderer] ParticleSystem is null, skip draw");
 		return;
 	}
 

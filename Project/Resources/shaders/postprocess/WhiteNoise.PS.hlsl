@@ -25,7 +25,6 @@ float4 main(VSOutput input) : SV_TARGET
     float2 uv = input.texcoord;
     float4 color = gInputTexture.Sample(gSampler, uv);
 
-    // Quantize UVs so neighboring pixels share the same random value as small dots.
     float2 noiseCoord = floor(uv * max(gNoiseDensity, 1.0f));
     float timeSeed = floor(gTime * max(gSeedChangeRate, 0.0f));
     float random = rand2dTo1d(noiseCoord + float2(timeSeed, timeSeed * 1.37f));

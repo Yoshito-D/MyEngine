@@ -1,4 +1,59 @@
 #include "Logger.h"
+#include <algorithm>
+#include <format>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string_view>
+#include <vector>
+
+namespace {
+const char* const kLogRootDirectory = "Logs";
+const char* const kAllLogFileName = "all.log";
+
+// C++20 timezone APIは環境によって起動時に例外を投げるため、Win32のローカル時刻を使う。
+std::string FormatLocalTimeForDirectory() {
+   SYSTEMTIME localTime{};
+   GetLocalTime(&localTime);
+
+   return std::format(
+      "{:04}-{:02}-{:02}_{:02}-{:02}-{:02}",
+      localTime.wYear,
+      localTime.wMonth,
+      localTime.wDay,
+      localTime.wHour,
+      localTime.wMinute,
+      localTime.wSecond);
+}
+
+std::string FormatLocalTimeForLogLine() {
+   SYSTEMTIME localTime{};
+   GetLocalTime(&localTime);
+
+   return std::format(
+      "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+      localTime.wYear,
+      localTime.wMonth,
+      localTime.wDay,
+      localTime.wHour,
+      localTime.wMinute,
+      localTime.wSecond);
+}
+
+std::string ExtractSourceFileName(const char* sourceFilePath) {
+   if (!sourceFilePath) {
+	  return {};
+   }
+
+   std::string_view path(sourceFilePath);
+   const size_t separatorPosition = path.find_last_of("/\\");
+   if (separatorPosition == std::string_view::npos) {
+	  return std::string(path);
+   }
+
+   return std::string(path.substr(separatorPosition + 1));
+}
+}
 
 Logger& Logger::GetInstance() {
    static Logger instance;
@@ -6,58 +61,61 @@ Logger& Logger::GetInstance() {
 }
 
 void Logger::Initialize() {
-   std::filesystem::create_directory("Logs");
-   std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-   std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-	  nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-   std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
-   std::string dateString = std::format("{:%Y-%m-%d_%H-%M-%S}", localTime);
-   std::string logFilePath = std::string("logs/") + dateString + ".log";
+   GetInstance().InitializeInternal();
+}
 
-   logStream_.open(logFilePath, std::ios::out | std::ios::app);
-   if (!logStream_.is_open()) {
-	  throw std::runtime_error("ログファイルを開けません: " + logFilePath);
+void Logger::WriteLogEntry(const std::string& message, LogLevel level, LogChannel channel, std::source_location location) {
+   Logger& instance = GetInstance();
+   instance.Log(message, level, channel, location);
+}
+
+void Logger::WriteLogEntry(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location) {
+   Logger& instance = GetInstance();
+   instance.Log(message, level, channel, location);
+}
+
+void Logger::InitializeInternal() {
+   std::lock_guard<std::mutex> lock(logMutex_);
+
+   isInitialized_ = false;
+   CloseStreams();
+
+   std::filesystem::create_directories(kLogRootDirectory);
+   std::string dateString = FormatLocalTimeForDirectory();
+
+   currentLogDirectory_ = std::filesystem::path(kLogRootDirectory) / dateString;
+   std::filesystem::create_directories(currentLogDirectory_);
+
+   OpenChannelLogFile(LogChannel::Engine, currentLogDirectory_ / "engine.log");
+   OpenChannelLogFile(LogChannel::Game, currentLogDirectory_ / "game.log");
+   OpenChannelLogFile(LogChannel::Editor, currentLogDirectory_ / "editor.log");
+
+   const std::filesystem::path allLogFilePath = currentLogDirectory_ / kAllLogFileName;
+   allLogStream_.open(allLogFilePath, std::ios::out | std::ios::app);
+   if (!allLogStream_.is_open()) {
+	  throw std::runtime_error("ログファイルを開けません: " + allLogFilePath.generic_string());
    }
 
-   CleanOldLogFiles("logs");
+   CleanOldLogFiles(kLogRootDirectory);
 
    isInitialized_ = true;
 }
 
-void Logger::Log(const std::string& message, LogLevel level, [[maybe_unused]] std::source_location location) {
-   if (!isInitialized_) {
-	  throw std::runtime_error("Logger::Initialize() が呼び出されていません。");
-   }
-
-   std::lock_guard<std::mutex> lock(logMutex_);
-
-   auto now = std::chrono::system_clock::now();
-   auto nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-   auto localTime = std::chrono::zoned_time{ std::chrono::current_zone(), nowSeconds };
-   std::string timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", localTime);
-
-   std::wstring logMessage = L"[" + ConvertString(timestamp) + L"] [" + GetLogLevelString(level) + L"] " + ConvertString(message) + L"\n";
-
-   OutputDebugStringW(logMessage.c_str());
-   WriteToFile(logStream_, ConvertString(logMessage));
+void Logger::Log(const std::string& message, LogLevel level, std::source_location location) {
+   Log(message, level, LogChannel::Engine, location);
 }
 
-void Logger::Log(const std::wstring& message, LogLevel level, [[maybe_unused]] std::source_location location) {
-   if (!isInitialized_) {
-	  throw std::runtime_error("Logger::Initialize() が呼び出されていません。");
-   }
+void Logger::Log(const std::wstring& message, LogLevel level, std::source_location location) {
+   Log(message, level, LogChannel::Engine, location);
+}
 
+void Logger::Log(const std::string& message, LogLevel level, LogChannel channel, std::source_location location) {
+   Log(ConvertString(message), level, channel, location);
+}
+
+void Logger::Log(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location) {
    std::lock_guard<std::mutex> lock(logMutex_);
-
-   auto now = std::chrono::system_clock::now();
-   auto nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-   auto localTime = std::chrono::zoned_time{ std::chrono::current_zone(), nowSeconds };
-   std::string timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", localTime);
-
-   std::wstring logMessage = L"[" + ConvertString(timestamp) + L"] [" + GetLogLevelString(level) + L"] " + message + L"\n";
-
-   OutputDebugStringW(logMessage.c_str());
-   WriteToFile(logStream_, ConvertString(logMessage));
+   WriteLog(message, level, channel, location);
 }
 
 std::wstring Logger::ConvertString(const std::string& str) {
@@ -95,24 +153,110 @@ std::wstring Logger::ConvertStringToWString(const std::string& str) {
 }
 
 void Logger::WriteToFile(std::ostream& os, const std::string& logMessage) {
-   os << logMessage << std::endl;
+   os << logMessage;
+   os.flush();
+}
+
+void Logger::CloseStreams() {
+   for (std::ofstream& stream : channelStreams_) {
+	  if (stream.is_open()) {
+		 stream.close();
+	  }
+   }
+
+   if (allLogStream_.is_open()) {
+	  allLogStream_.close();
+   }
+}
+
+void Logger::OpenChannelLogFile(LogChannel channel, const std::filesystem::path& filePath) {
+   std::ofstream& stream = GetLogChannelStream(channel);
+   stream.open(filePath, std::ios::out | std::ios::app);
+   if (!stream.is_open()) {
+	  throw std::runtime_error("ログファイルを開けません: " + filePath.generic_string());
+   }
+}
+
+void Logger::WriteLog(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location) {
+   if (!isInitialized_) {
+	  throw std::runtime_error("Logger::Initialize() が呼び出されていません。");
+   }
+
+   std::wstring logMessage = FormatLogMessage(message, level, channel, location);
+   std::string narrowLogMessage = ConvertString(logMessage);
+
+   OutputDebugStringW(logMessage.c_str());
+   WriteToFile(GetLogChannelStream(channel), narrowLogMessage);
+   WriteToFile(allLogStream_, narrowLogMessage);
+}
+
+size_t Logger::GetLogChannelIndex(LogChannel channel) const {
+   switch (channel) {
+	  case LogChannel::Engine: return 0;
+	  case LogChannel::Game:   return 1;
+	  case LogChannel::Editor: return 2;
+	  default:                 return 0;
+   }
+}
+
+std::ofstream& Logger::GetLogChannelStream(LogChannel channel) {
+   return channelStreams_[GetLogChannelIndex(channel)];
+}
+
+std::wstring Logger::FormatLogMessage(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location) {
+   std::string timestamp = FormatLocalTimeForLogLine();
+
+   std::wstring logMessage =
+      L"[" + ConvertString(timestamp) + L"] " +
+      L"[" + GetLogLevelString(level) + L"] " +
+      L"[" + GetLogChannelString(channel) + L"] " +
+      L"[" + ConvertString(GetSourceLocationString(location)) + L"] " +
+      message + L"\n";
+
+   return logMessage;
+}
+
+std::string Logger::GetSourceLocationString(std::source_location location) const {
+   std::string fileName = ExtractSourceFileName(location.file_name());
+   if (fileName.empty()) {
+	  fileName = "unknown";
+   }
+
+   return std::format("{}:{} {}", fileName, location.line(), location.function_name());
 }
 
 std::wstring Logger::GetLogLevelString(LogLevel level) {
    switch (level) {
-	  case LogLevel::Info:    return L"INFO   ";
-	  case LogLevel::Warning: return L"WARNING";
-	  case LogLevel::Error:   return L"ERROR  ";
-	  default:                return L"UNKNOWN";
+	  case LogLevel::Trace:    return L"TRACE   ";
+	  case LogLevel::Debug:    return L"DEBUG   ";
+	  case LogLevel::Info:     return L"INFO    ";
+	  case LogLevel::Warning:  return L"WARNING ";
+	  case LogLevel::Error:    return L"ERROR   ";
+	  case LogLevel::Critical: return L"CRITICAL";
+	  default:                 return L"UNKNOWN ";
+   }
+}
+
+std::wstring Logger::GetLogChannelString(LogChannel channel) {
+   switch (channel) {
+	  case LogChannel::Engine: return L"ENGINE";
+	  case LogChannel::Game:   return L"GAME  ";
+	  case LogChannel::Editor: return L"EDITOR";
+	  default:                 return L"UNKNOWN";
    }
 }
 
 void Logger::CleanOldLogFiles(const std::string& logDir) {
    std::vector<std::filesystem::path> logFiles;
+   const std::filesystem::path currentLogDirectory = currentLogDirectory_.empty() ? std::filesystem::path() : std::filesystem::absolute(currentLogDirectory_);
 
    // ディレクトリ内のログファイルを取得
    for (const auto& entry : std::filesystem::directory_iterator(logDir)) {
-	  if (entry.is_regular_file() && entry.path().extension() == ".log") {
+	  if (!currentLogDirectory.empty() && std::filesystem::absolute(entry.path()) == currentLogDirectory) {
+		 continue;
+	  }
+
+	  if ((entry.is_regular_file() && entry.path().extension() == ".log") || entry.is_directory()) {
 		 logFiles.push_back(entry.path());
 	  }
    }
@@ -124,9 +268,14 @@ void Logger::CleanOldLogFiles(const std::string& logDir) {
    );
 
    // ログファイルが指定数を超えている場合、古いファイルを削除
-   while (logFiles.size() > kMaxLogFiles) {
+   const size_t maxOldLogFiles = currentLogDirectory_.empty() ? kMaxLogFiles : kMaxLogFiles - 1;
+   while (logFiles.size() > maxOldLogFiles) {
 	  std::wcout << L"Deleting old log file: " << logFiles.front() << std::endl;
-	  std::filesystem::remove(logFiles.front());  // 古いファイル削除
+	  if (std::filesystem::is_directory(logFiles.front())) {
+		 std::filesystem::remove_all(logFiles.front());  // 古いログフォルダ削除
+	  } else {
+		 std::filesystem::remove(logFiles.front());  // 古いファイル削除
+	  }
 	  logFiles.erase(logFiles.begin());  // 削除したファイルをリストから削除
    }
 }
