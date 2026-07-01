@@ -53,7 +53,7 @@ public:
    void CommitPendingSwitch();
 
    /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
-   float switchHysteresis = 5.0f;
+   float switchHysteresis = 1.0f;
 
    /// @brief 車体OBBの半サイズ（各軸を個別指定）
    /// Transformのscaleではなくこの値を距離判定に使用する
@@ -77,8 +77,11 @@ private:
    /// @brief 現在選択中インデックス
    int currentIndex_ = -1;
 
-   /// @brief 空中で見つけた着地候補。着地するまで実際の切り替えには使わない
+   /// @brief 空中で見つけた着地候補。カメラなどの基準確定は着地まで保留する
    int pendingIndex_ = -1;
+
+   /// @brief 現在 GravityAttractorLink に接続している惑星インデックス
+   int activeGravityIndex_ = -1;
 
    // 惑星を切り換えたか
    bool switched_ = false;
@@ -88,6 +91,8 @@ private:
 	  const GameEngine::Quaternion& obbRot);
 
    void ApplyPlanetIndex(int newIndex);
+
+   void ApplyAirborneAttractorIndex(int newIndex, const GameEngine::Vector3& pos);
 
    bool IsOwnerAirborne() const;
 

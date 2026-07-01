@@ -717,9 +717,6 @@
     <ClCompile Include="GameEngine\Utility\ImGuiHelper.cpp">
       <Filter>GameEngine\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Utility\JsonDataManager.cpp">
-      <Filter>GameEngine\Utility</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Utility\Logger.cpp">
       <Filter>GameEngine\Utility</Filter>
     </ClCompile>
@@ -834,6 +831,7 @@
     <ClCompile Include="GameProject\App\Component\Gravity\GravityAttractor.cpp" />
     <ClCompile Include="GameEngine\Object\Component\IObjectComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ComponentRegistry.cpp" />
+    <ClCompile Include="GameEngine\Utility\JsonDataManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Externals\imgui\imconfig.h">
@@ -1307,9 +1305,6 @@
     <ClInclude Include="GameEngine\Utility\ImGuiHelper.h">
       <Filter>GameEngine\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Utility\JsonDataManager.h">
-      <Filter>GameEngine\Utility</Filter>
-    </ClInclude>
     <ClInclude Include="GameEngine\Utility\Logger.h">
       <Filter>GameEngine\Utility</Filter>
     </ClInclude>
@@ -1448,6 +1443,7 @@
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h">
       <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Utility\JsonDataManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Externals\imgui\LICENSE.txt" />

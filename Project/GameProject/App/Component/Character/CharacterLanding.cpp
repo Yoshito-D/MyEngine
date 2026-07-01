@@ -75,6 +75,9 @@ void CharacterLanding::Update(float) {
 		 // 垂直速度のみ除去し、水平成分は維持
 		 vel = vel - gravityUp * upComp;
 		 gravityBody->SetVelocity(vel);
+		 // PlanetSwitcher の確定は GravityAttractorLink の更新後に起きるため、
+		 // 同フレームの着地結果判定が古い惑星法線を参照しないよう同期する。
+		 gravityBody->SetTargetUpVector(gravityUp);
 
 		 // ジャンプ状態解除
 		 if (jump) { jump->NotifyLanded(); }

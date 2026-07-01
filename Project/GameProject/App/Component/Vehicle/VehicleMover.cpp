@@ -10,6 +10,7 @@
 #include "Utility/MathUtils/QuaternionOperations.h"
 #include <cmath>
 #include <numbers>
+#include "Logger.h"
 
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
@@ -41,6 +42,7 @@ void VehicleMover::ApplyMovement(float steerInput, float pitchInput, bool driftI
    // この瞬間に OnLanded() を呼んでブーストや姿勢補正を開始する。
    // ----------------------------------------------------------------
    if (isGrounded && !wasGrounded_) {
+	  Logger::GameInfo("OnLanded");
 	  OnLanded(currentRotation, gravityUp);
    }
    wasGrounded_ = isGrounded;
