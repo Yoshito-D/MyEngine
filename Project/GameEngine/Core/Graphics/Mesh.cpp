@@ -10,7 +10,6 @@
 
 namespace GameEngine {
 namespace {
-Logger& log_ = Logger::GetInstance();
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
 

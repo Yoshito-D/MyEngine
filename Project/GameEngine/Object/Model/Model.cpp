@@ -10,7 +10,6 @@
 #include <algorithm>
 
 namespace {
-Logger& log_ = Logger::GetInstance();
 
 std::string BuildDefaultModelName(const std::vector<GameEngine::Model*>& registeredModels) {
    auto exists = [&registeredModels](const std::string& name) {

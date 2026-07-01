@@ -451,10 +451,7 @@ bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
 
    if (!slot.jsonPath.empty()) {
 	  if (!ps->LoadFromJson(slot.jsonPath)) {
-		 Logger::GetInstance().Log(
-			"[ParticleEmitterComponent] Failed to load: " + slot.jsonPath,
-			Logger::LogLevel::Warning
-		 );
+		 Logger::Warning("[ParticleEmitterComponent] Failed to load: " + slot.jsonPath);
 		 ps->Stop();
 		 slot.particleSystem = std::move(ps);
 		 return false;

@@ -34,13 +34,13 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 
 	Sprite* sprite = spriteData.sprite;
 	if (!sprite) {
-		Logger::GetInstance().Log("Sprite is null in DrawSprite", Logger::LogLevel::Error);
+		Logger::Error("Sprite is null in DrawSprite");
 		return;
 	}
 
 	auto* materialComponent = sprite->GetComponent<MaterialComponent>();
 	if (!materialComponent) {
-		Logger::GetInstance().Log("MaterialComponent is missing in DrawSprite", Logger::LogLevel::Error);
+		Logger::Error("MaterialComponent is missing in DrawSprite");
 		return;
 	}
 
@@ -63,7 +63,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	Camera* camera = spriteData.camera;
 
 	if (!camera) {
-		Logger::GetInstance().Log("Camera is null in DrawSprite", Logger::LogLevel::Error);
+		Logger::Error("Camera is null in DrawSprite");
 		return;
 	}
 
@@ -102,7 +102,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	// Object3Dルートシグネチャに合わせてルートパラメータを設定
 	// Root Parameter 0: Material (Pixel Shader)
  if (!spriteMaterial) {
-	 Logger::GetInstance().Log("[SpriteRenderer] Material is null, skip draw", Logger::LogLevel::Warning);
+	 Logger::Warning("[SpriteRenderer] Material is null, skip draw");
 	 return;
  }
  cmdList->SetGraphicsRootConstantBufferView(materialSlot, spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());

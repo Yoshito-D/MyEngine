@@ -6,8 +6,6 @@
 #include <filesystem>
 
 namespace {
-Logger& log_ = Logger::GetInstance();
-
 bool IsSupportedTextureExtension(const std::filesystem::path& path) {
    std::string ext = path.extension().string();
    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
@@ -39,7 +37,7 @@ void TextureManager::Initialize(GraphicsDevice* device) {
 
 void TextureManager::LoadTexture(const std::string& filePath, const std::string& name) {
    if (textures_.find(name) != textures_.end()) {
-	  log_.Log("Texture already loaded: " + name);
+	  Logger::Info("Texture already loaded: " + name);
 	  return;
    }
 
@@ -51,12 +49,12 @@ void TextureManager::LoadTexture(const std::string& filePath, const std::string&
    if (textures_[name]->GetMetadata().IsCubemap()) {
 	  lastCubemapName_ = name;
    }
-   log_.Log("Texture loaded: " + name);
+   Logger::Info("Texture loaded: " + name);
 }
 
 void TextureManager::LoadTexturesFromDirectory(const std::filesystem::path& directoryPath, const std::filesystem::path& resourcesRoot) {
    if (!std::filesystem::exists(directoryPath)) {
-      log_.Log("Texture directory not found: " + directoryPath.generic_string(), Logger::LogLevel::Warning);
+      Logger::Warning("Texture directory not found: " + directoryPath.generic_string());
       return;
    }
 
@@ -88,7 +86,7 @@ Texture* TextureManager::GetTexture(const std::string& name) {
       return aliasIt->second;
    }
 
-   log_.Log("Texture not found: " + name);
+   Logger::Info("Texture not found: " + name);
    return nullptr;
 }
 
@@ -131,7 +129,7 @@ void TextureManager::ReleaseIntermediateResources() {
 	  }
    }
    intermediateResource_.clear();
-   log_.Log("Intermediate resources released.");
+   Logger::Info("Intermediate resources released.");
 }
 
 void TextureManager::Clear() {

@@ -18,9 +18,7 @@ namespace GameEngine {
 
 void Framework::Initialize() {
    SetUnhandledExceptionFilter(ExportDump);
-
-   Logger& logger = Logger::GetInstance();
-   logger.Initialize();
+   Logger::Initialize();
 
    // ウィンドウの初期化
    window_ = std::make_unique<Window>();

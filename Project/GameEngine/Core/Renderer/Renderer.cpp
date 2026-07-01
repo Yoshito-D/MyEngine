@@ -47,7 +47,6 @@
 #endif
 
 namespace {
-Logger& log_ = Logger::GetInstance();
 
 GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
    return GameEngine::Vector3(matrix.m[3][0], matrix.m[3][1], matrix.m[3][2]);
@@ -898,11 +897,11 @@ void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode)
 	  // キャッシュミス → PSOManager に問い合わせてキャッシュに登録
 	  pipelineState = psoManager_->GetPipeline(pipelineName, blendMode);
 	  if (!pipelineState) {
-		 log_.Log("Failed to get pipeline: " + pipelineName + " with blend mode: " + std::to_string(static_cast<int>(blendMode)), Logger::LogLevel::Error);
+		 Logger::Error("Failed to get pipeline: " + pipelineName + " with blend mode: " + std::to_string(static_cast<int>(blendMode)));
 		 // フォールバック: ブレンドモードなしで再試行
 		 pipelineState = psoManager_->GetPipeline(pipelineName, BlendMode::kBlendModeNone);
 		 if (!pipelineState) {
-			log_.Log("Failed to get fallback pipeline: " + pipelineName, Logger::LogLevel::Error);
+			Logger::Error("Failed to get fallback pipeline: " + pipelineName);
 			return;
 		 }
 	  }

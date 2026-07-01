@@ -1376,7 +1376,7 @@ std::string EditorSceneContext::GetParticleSystemIdForCommand(const ParticleSyst
 void EditorSceneContext::SetStatus(std::string message) {
    lastStatusMessage_ = std::move(message);
    if (!lastStatusMessage_.empty()) {
-      Logger::GetInstance().Log("[Editor] " + lastStatusMessage_);
+      Logger::Info("[Editor] " + lastStatusMessage_);
    }
 }
 

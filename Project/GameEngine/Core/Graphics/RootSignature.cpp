@@ -4,10 +4,6 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-namespace {
-Logger& log_ = Logger::GetInstance();
-}
-
 namespace GameEngine {
 void RootSignature::CreateRootSignature(ID3D12Device* device) {
    HRESULT result = S_FALSE;
@@ -25,7 +21,7 @@ void RootSignature::CreateRootSignature(ID3D12Device* device) {
 
    result = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignatureBlob_, &errorBlob);
    if (FAILED(result)) {
-	  log_.Log(log_.ConvertString(reinterpret_cast<char*>(errorBlob->GetBufferPointer())));
+	  Logger::Info(Logger::ConvertString(reinterpret_cast<char*>(errorBlob->GetBufferPointer())));
 	  assert(false);
    }
 

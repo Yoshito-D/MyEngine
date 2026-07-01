@@ -179,13 +179,34 @@ void PSOManager::LogValidationMessage(const std::string& dedupeKey, const std::s
 		 return;
 	  }
    }
-   Logger::GetInstance().Log(message, level);
+
+   switch (level) {
+	  case Logger::LogLevel::Trace:
+		 Logger::Trace(message);
+		 break;
+	  case Logger::LogLevel::Debug:
+		 Logger::Debug(message);
+		 break;
+	  case Logger::LogLevel::Warning:
+		 Logger::Warning(message);
+		 break;
+	  case Logger::LogLevel::Error:
+		 Logger::Error(message);
+		 break;
+	  case Logger::LogLevel::Critical:
+		 Logger::Critical(message);
+		 break;
+	  case Logger::LogLevel::Info:
+	  default:
+		 Logger::Info(message);
+		 break;
+   }
 }
 
 bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
    std::ifstream file(filePath);
    if (!file.is_open()) {
-      Logger::GetInstance().Log("Failed to open root signature file: " + filePath, Logger::LogLevel::Error);
+      Logger::Error("Failed to open root signature file: " + filePath);
       return false;
    }
 
@@ -217,12 +238,12 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
             if (paramDef.type == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
                if (param.contains("rangeType")) {
                   paramDef.rangeType = StringToRangeType(param["rangeType"].get<std::string>());
-                  Logger::GetInstance().Log("  Parameter " + std::to_string(definition.parameters.size()) + 
+                  Logger::Info("  Parameter " + std::to_string(definition.parameters.size()) + 
                      ": DescriptorTable with rangeType=" + param["rangeType"].get<std::string>() + 
                      " (value=" + std::to_string(static_cast<int>(paramDef.rangeType)) + ")");
                } else {
-                  Logger::GetInstance().Log("  Parameter " + std::to_string(definition.parameters.size()) + 
-                     ": DescriptorTable without rangeType - using default SRV", Logger::LogLevel::Warning);
+                  Logger::Warning("  Parameter " + std::to_string(definition.parameters.size()) + 
+                     ": DescriptorTable without rangeType - using default SRV");
                }
 			}
 
@@ -246,10 +267,9 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
 
 			if (paramDef.shaderRegister == UINT_MAX) {
 			   UINT& nextRegister = fallbackRegisterByGroup[fallbackGroupKey];
-			   Logger::GetInstance().Log(
+			   Logger::Warning(
 				  "Failed to resolve shaderRegister by reflection for root signature parameter in " + definition.name +
-				  ", fallback to grouped register " + std::to_string(nextRegister),
-				  Logger::LogLevel::Warning);
+				  ", fallback to grouped register " + std::to_string(nextRegister));
 			   paramDef.shaderRegister = nextRegister;
 			   ++nextRegister;
 			} else {
@@ -277,11 +297,11 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
          }
       }
 
-      Logger::GetInstance().Log("Loaded root signature definition: " + definition.name + " with " + std::to_string(definition.parameters.size()) + " parameters");
+      Logger::Info("Loaded root signature definition: " + definition.name + " with " + std::to_string(definition.parameters.size()) + " parameters");
       return CreateRootSignatureFromDefinition(definition);
    }
    catch (const std::exception& e) {
-      Logger::GetInstance().Log("Exception loading root signature from " + filePath + ": " + std::string(e.what()), Logger::LogLevel::Error);
+      Logger::Error("Exception loading root signature from " + filePath + ": " + std::string(e.what()));
       return false;
    }
 }
@@ -298,264 +318,114 @@ bool PSOManager::LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT r
 
 	  PipelineDefinition definition;
 	  definition.name = pipelineJson["name"].get<std::string>();
-      definition.vertexShader = pipelineJson.value("vertexShader", "");
+	  definition.vertexShader = pipelineJson.value("vertexShader", "");
 	  definition.pixelShader = pipelineJson.value("pixelShader", "");
+	  definition.rootSignature = pipelineJson.value("rootSignature", "");
 	  definition.computeShader = pipelineJson.value("computeShader", "");
-	  definition.rootSignature = pipelineJson["rootSignature"].get<std::string>();
-
-	  if (!definition.computeShader.empty()) {
-		 return CreateComputePipeline(definition.name, definition.computeShader, definition.rootSignature);
-	  }
 	  definition.supportBlendModes = pipelineJson.value("supportBlendModes", false);
 	  definition.defaultBlendMode = StringToBlendMode(pipelineJson.value("defaultBlendMode", "None"));
 	  definition.cullMode = StringToCullMode(pipelineJson.value("cullMode", "Back"));
 	  definition.fillMode = StringToFillMode(pipelineJson.value("fillMode", "Solid"));
-	  definition.depthEnable = pipelineJson.value("depthEnable", true);
+	  definition.depthEnable = pipelineJson.value("depthEnable", true) ? TRUE : FALSE;
 	  definition.depthWriteMask = StringToDepthWriteMask(pipelineJson.value("depthWriteMask", "All"));
 	  definition.depthFunc = StringToComparisonFunc(pipelineJson.value("depthFunc", "LessEqual"));
 	  definition.topologyType = StringToTopologyType(pipelineJson.value("topologyType", "Triangle"));
 
-	  // 入力レイアウトをロード
-	  if (pipelineJson.contains("inputLayout")) {
-		 for (const auto& elem : pipelineJson["inputLayout"]) {
-			InputElementDefinition elemDef;
-			elemDef.semanticName = elem["semanticName"].get<std::string>();
-			elemDef.semanticIndex = elem["semanticIndex"].get<UINT>();
-			elemDef.format = StringToFormat(elem["format"].get<std::string>());
-			elemDef.alignedByteOffset = elem.value("alignedByteOffset", D3D12_APPEND_ALIGNED_ELEMENT);
-			elemDef.inputSlot = elem.value("inputSlot", 0);
-			elemDef.inputSlotClass = StringToInputClassification(elem.value("inputSlotClass", "PerVertexData"));
-			elemDef.instanceDataStepRate = elem.value("instanceDataStepRate", 0);
-			definition.inputLayout.push_back(elemDef);
+	  if (pipelineJson.contains("inputLayout") && pipelineJson["inputLayout"].is_array()) {
+		 for (const auto& inputJson : pipelineJson["inputLayout"]) {
+			InputElementDefinition element{};
+			element.semanticName = inputJson.value("semanticName", "");
+			element.semanticIndex = inputJson.value("semanticIndex", 0u);
+			element.format = StringToFormat(inputJson.value("format", "R32G32B32A32_FLOAT"));
+			element.alignedByteOffset = inputJson.value("alignedByteOffset", static_cast<UINT>(D3D12_APPEND_ALIGNED_ELEMENT));
+			element.inputSlot = inputJson.value("inputSlot", 0u);
+			element.inputSlotClass = StringToInputClassification(inputJson.value("inputSlotClass", "PerVertexData"));
+			element.instanceDataStepRate = inputJson.value("instanceDataStepRate", 0u);
+			definition.inputLayout.push_back(element);
 		 }
 	  }
 
+	  if (!definition.computeShader.empty()) {
+		 return CreateComputePipeline(definition.name, definition.computeShader, definition.rootSignature);
+	  }
+
 	  return CreatePipelineFromDefinition(definition, rtvFormat);
-   }
-   catch (const std::exception& e) {
-	  (void)e;
+   } catch (const std::exception& e) {
+	  Logger::Error("Exception loading pipeline from " + filePath + ": " + std::string(e.what()));
 	  return false;
    }
 }
 
 void PSOManager::CreatePredefinedPipelines(OffscreenRenderTarget* offscreenRenderTarget) {
-   DXGI_FORMAT rtvFormat = offscreenRenderTarget->GetFormat();
-
-   // まずJSONから読み込みを試行
-   if (LoadPipelineDefinitions(L"resources/pipelines/pipeline_registry.json", rtvFormat)) {
-	  return; // 成功したら終了
+   if (!offscreenRenderTarget) {
+	  return;
    }
 
-   // JSONロードに失敗した場合はハードコーディング定義を使用
-   // ルートシグネチャ定義
-   std::vector<RootSignatureDefinition> rootSigDefs = {
-	  // Object3D用ルートシグネチャ
-	  {
-		  "Object3D",
-		  {
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 0 },
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, 0 },
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 1 },
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 2 },
-            { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 0, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 1, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 2, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 3, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 4, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV }
-		  },
-		  {
-			  { D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				D3D12_COMPARISON_FUNC_NEVER, D3D12_FLOAT32_MAX, 0, D3D12_SHADER_VISIBILITY_PIXEL }
-		  }
-	  },
-      // Object3DSkinning用ルートシグネチャ
-	  {
-		  "Object3DSkinning",
-		  {
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 0 },
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, 0 },
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 1 },
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 2 },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 0, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 1, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 2, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 3, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 4, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_VERTEX, 0, 0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV }
-		  },
-		  {
-			  { D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				D3D12_COMPARISON_FUNC_NEVER, D3D12_FLOAT32_MAX, 0, D3D12_SHADER_VISIBILITY_PIXEL }
-		  }
-	  },
-	  // Line3D用ルートシグネチャ
-	  {
-		  "Line3D",
-		  {
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, 0 }
-		  },
-		  {}
-	  },
-	  // Particle用ルートシグネチャ
-	  {
-		  "Particle",
-		  {
-			  { D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_PIXEL, 0 },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_VERTEX, 0, 0, 1 },
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 1, 0, 1 }
-		  },
-		  {
-			  { D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				D3D12_COMPARISON_FUNC_NEVER, D3D12_FLOAT32_MAX, 0, D3D12_SHADER_VISIBILITY_PIXEL }
-		  }
-	  },
-	  // FullscreenTriangle用ルートシグネチャ
-	  {
-		  "FullscreenTriangle",
-		  {
-			  { D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, 0, 0, 1 }
-		  },
-		  {
-			  { D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				D3D12_COMPARISON_FUNC_NEVER, D3D12_FLOAT32_MAX, 0, D3D12_SHADER_VISIBILITY_PIXEL }
-		  }
-	  }
-   };
+   const DXGI_FORMAT rtvFormat = offscreenRenderTarget->GetFormat();
+   std::vector<std::filesystem::path> rootSignaturePaths;
+   std::vector<std::filesystem::path> pipelinePaths;
 
-   // ルートシグネチャを作成
-   for (const auto& rootSigDef : rootSigDefs) {
-	  CreateRootSignatureFromDefinition(rootSigDef);
+   const std::filesystem::path pipelineRoot = "resources/pipelines";
+   if (!std::filesystem::exists(pipelineRoot)) {
+	  return;
    }
 
-   // パイプライン定義
-   std::vector<PipelineDefinition> pipelineDefs = {
-	  // Object3D
-	  {
-		  "Object3D", "Object3D", "Object3D", "Object3D",
-		  {
-			  { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-		  },
-		  true, BlendMode::kBlendModeNone, D3D12_CULL_MODE_BACK
-	  },
-   // SkinningObject3D
-	  {
-		  "SkinningObject3D", "SkinningObject3D", "Object3D", "Object3DSkinning",
-		  {
-			  { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "WEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 1, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "INDEX", 0, DXGI_FORMAT_R32G32B32A32_SINT, D3D12_APPEND_ALIGNED_ELEMENT, 1, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-		  },
-		  true, BlendMode::kBlendModeNone, D3D12_CULL_MODE_BACK
-	  },
-	  // Sprite
-	  {
-		  "Sprite", "Object3D", "Object3D", "Object3D",
-		  {
-			  { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-		  },
-		  true, BlendMode::kBlendModeNone, D3D12_CULL_MODE_NONE
-	  },
-	  // Line3D
-	  {
-		  "Line3D", "Line3D", "Line3D", "Line3D",
-		  {
-			  { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-		  },
-		  false, BlendMode::kBlendModeNormal, D3D12_CULL_MODE_NONE, D3D12_FILL_MODE_SOLID,
-		  TRUE, D3D12_DEPTH_WRITE_MASK_ZERO, D3D12_COMPARISON_FUNC_LESS_EQUAL, D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE
-	  },
-	  // Particle
-	  {
-		  "Particle", "Particle", "Particle", "Particle",
-		  {
-			  { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			  { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_APPEND_ALIGNED_ELEMENT, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-		  },
-		  true, BlendMode::kBlendModeNone, D3D12_CULL_MODE_NONE, D3D12_FILL_MODE_SOLID,
-		  TRUE, D3D12_DEPTH_WRITE_MASK_ZERO
-	  },
-	  // FullscreenTriangle
-	  {
-		  "FullscreenTriangle", "FullscreenTriangle", "FullscreenTriangle", "FullscreenTriangle",
-		  {},
-		  false, BlendMode::kBlendModeNone, D3D12_CULL_MODE_NONE
+   for (const auto& entry : std::filesystem::recursive_directory_iterator(pipelineRoot)) {
+	  if (!entry.is_regular_file() || entry.path().extension() != ".json") {
+		 continue;
 	  }
-   };
 
-   // パイプラインを作成
-   for (const auto& pipelineDef : pipelineDefs) {
-	  CreatePipelineFromDefinition(pipelineDef, rtvFormat);
+	  const std::string path = entry.path().generic_string();
+	  if (path.find("/rootsig/") != std::string::npos) {
+		 rootSignaturePaths.push_back(entry.path());
+	  } else if (entry.path().filename() != "pipeline_registry.json") {
+		 pipelinePaths.push_back(entry.path());
+	  }
+   }
+
+   std::sort(rootSignaturePaths.begin(), rootSignaturePaths.end());
+   std::sort(pipelinePaths.begin(), pipelinePaths.end());
+
+   for (const auto& path : rootSignaturePaths) {
+	  LoadRootSignatureFromFile(path.generic_string());
+   }
+
+   for (const auto& path : pipelinePaths) {
+	  LoadPipelineFromFile(path.generic_string(), rtvFormat);
    }
 }
 
 bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition& definition) {
-   // 既に存在する場合はスキップ
-   if (rootSignatures_.find(definition.name) != rootSignatures_.end()) {
-	  return true;
-   }
-
    auto rootSignature = std::make_unique<RootSignature>();
+   std::unordered_map<std::string, UINT> semanticSlots;
 
-   // ディスクリプタレンジのポインタを保持する配列
-   std::vector<const D3D12_DESCRIPTOR_RANGE*> descriptorRangePointers;
-   descriptorRangePointers.reserve(definition.parameters.size());
+   for (UINT i = 0; i < static_cast<UINT>(definition.parameters.size()); ++i) {
+	  const auto& parameter = definition.parameters[i];
+	  const D3D12_DESCRIPTOR_RANGE* descriptorRange = nullptr;
+	  UINT descriptorRangeCount = 0;
 
-   // 1. すべてのディスクリプタレンジを先に作成（ベクターの再配置を防ぐ）
-   for (const auto& param : definition.parameters) {
-	  if (param.type == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
-		 const D3D12_DESCRIPTOR_RANGE* range = rootSignature->CreateDescriptorRange(
-			param.rangeType,
-			param.descriptorCount,
-			param.shaderRegister,
-			param.registerSpace
-		 );
-		 descriptorRangePointers.push_back(range);
-	  } else {
-		 descriptorRangePointers.push_back(nullptr);
+	  if (parameter.type == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
+		 descriptorRange = rootSignature->CreateDescriptorRange(
+			parameter.rangeType,
+			parameter.descriptorCount,
+			parameter.shaderRegister,
+			parameter.registerSpace);
+		 descriptorRangeCount = 1;
+	  }
+
+	  rootSignature->SetRootParameter(
+		 parameter.type,
+		 parameter.visibility,
+		 parameter.shaderRegister,
+		 descriptorRange,
+		 descriptorRangeCount,
+		 parameter.descriptorCount);
+
+	  if (!parameter.semantic.empty()) {
+		 semanticSlots[ToLowerString(parameter.semantic)] = i;
 	  }
    }
 
-   // 2. ルートパラメータを設定
-   auto& semanticSlots = rootSignatureSemanticSlots_[definition.name];
-   semanticSlots.clear();
-
-   for (size_t i = 0; i < definition.parameters.size(); ++i) {
-	  const auto& param = definition.parameters[i];
-	  
-	  if (param.type == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
-		 rootSignature->SetRootParameter(
-			param.type,
-			param.visibility,
-			param.shaderRegister,
-			descriptorRangePointers[i],
-			1  // 1つのレンジ
-		 );
-	  } else {
-		 rootSignature->SetRootParameter(
-			param.type,
-			param.visibility,
-			param.shaderRegister
-		 );
-	  }
-
-	  if (!param.semantic.empty()) {
-		 semanticSlots[ToLowerString(param.semantic)] = static_cast<UINT>(i);
-	  }
-   }
-
-   // サンプラーを設定
    for (const auto& sampler : definition.samplers) {
 	  rootSignature->SetSampler(
 		 sampler.filter,
@@ -572,6 +442,7 @@ bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition
    rootSignature->CreateRootSignature(device_->GetDevice());
    rootSignatures_[definition.name] = std::move(rootSignature);
    rootSignatureParameterCounts_[definition.name] = static_cast<uint32_t>(definition.parameters.size());
+   rootSignatureSemanticSlots_[definition.name] = std::move(semanticSlots);
 
    return true;
 }
@@ -579,7 +450,7 @@ bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition
 bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definition, DXGI_FORMAT rtvFormat) {
    // ルートシグネチャが存在しない場合は失敗
    if (rootSignatures_.find(definition.rootSignature) == rootSignatures_.end()) {
-      Logger::GetInstance().Log("Root signature not found for pipeline: " + definition.name + " (requires: " + definition.rootSignature + ")", Logger::LogLevel::Error);
+      Logger::Error("Root signature not found for pipeline: " + definition.name + " (requires: " + definition.rootSignature + ")");
       return false;
    }
 
@@ -612,10 +483,10 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
 
          std::string pipelineName = CreatePipelineKey(definition.name, blendMode);
          if (!CreateCustomPipeline(pipelineName, config)) {
-            Logger::GetInstance().Log("Failed to create pipeline: " + pipelineName, Logger::LogLevel::Error);
+            Logger::Error("Failed to create pipeline: " + pipelineName);
             return false;
          } else {
-            Logger::GetInstance().Log("Successfully created pipeline: " + pipelineName);
+            Logger::Info("Successfully created pipeline: " + pipelineName);
             RegisterPipelineSemanticSlots(pipelineName, definition.rootSignature);
          }
       }
@@ -640,10 +511,10 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
 		 : definition.inputLayout;
 
       if (!CreateCustomPipeline(definition.name, config)) {
-         Logger::GetInstance().Log("Failed to create pipeline: " + definition.name, Logger::LogLevel::Error);
+         Logger::Error("Failed to create pipeline: " + definition.name);
          return false;
       } else {
-         Logger::GetInstance().Log("Successfully created pipeline: " + definition.name);
+         Logger::Info("Successfully created pipeline: " + definition.name);
          RegisterPipelineSemanticSlots(definition.name, definition.rootSignature);
       }
    }
@@ -656,13 +527,13 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
    auto* pixelShader = shaderManager_->GetPixelShader(config.pixelShaderName);
 
    if (!vertexShader || !pixelShader) {
-      Logger::GetInstance().Log("Shaders not found for pipeline: " + name + " (VS: " + config.vertexShaderName + ", PS: " + config.pixelShaderName + ")", Logger::LogLevel::Error);
+      Logger::Error("Shaders not found for pipeline: " + name + " (VS: " + config.vertexShaderName + ", PS: " + config.pixelShaderName + ")");
       return false;
    }
 
    auto* rootSignature = GetRootSignature(config.rootSignatureName);
    if (!rootSignature) {
-      Logger::GetInstance().Log("Root signature not found for pipeline: " + name + " (requires: " + config.rootSignatureName + ")", Logger::LogLevel::Error);
+      Logger::Error("Root signature not found for pipeline: " + name + " (requires: " + config.rootSignatureName + ")");
       return false;
    }
 
@@ -773,23 +644,23 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
 
    pipelineLibrary_.StoreGraphicsPipeline(name, std::move(pipeline));
    pipelineReflectionMetadata_[name] = reflectionMetadata;
-   Logger::GetInstance().Log("Pipeline created and stored: " + name);
+   Logger::Info("Pipeline created and stored: " + name);
    return true;
 }
 
 bool PSOManager::CreateComputePipeline(const std::string& name, const std::string& computeShaderName, const std::string& rootSignatureName) {
    if (!shaderManager_ || !shaderManager_->GetComputeShader(computeShaderName)) {
-	  Logger::GetInstance().Log("Compute shader not found for pipeline: " + name + " (CS: " + computeShaderName + ")", Logger::LogLevel::Error);
+	  Logger::Error("Compute shader not found for pipeline: " + name + " (CS: " + computeShaderName + ")");
 	  return false;
    }
 
    if (!GetRootSignature(rootSignatureName)) {
-	  Logger::GetInstance().Log("Root signature not found for compute pipeline: " + name + " (requires: " + rootSignatureName + ")", Logger::LogLevel::Error);
+	  Logger::Error("Root signature not found for compute pipeline: " + name + " (requires: " + rootSignatureName + ")");
 	  return false;
    }
 
    pipelineLibrary_.StoreComputePipeline({ name, rootSignatureName, computeShaderName });
-   Logger::GetInstance().Log("Compute pipeline definition registered: " + name);
+   Logger::Info("Compute pipeline definition registered: " + name);
    return true;
 }
 

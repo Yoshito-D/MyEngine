@@ -5,10 +5,6 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
 
-namespace {
-Logger& log_ = Logger::GetInstance();
-}
-
 namespace GameEngine {
 void GraphicsDevice::Initialize(Window* window, int32_t backBufferWidth, int32_t backBufferHeight, bool enableDebugLayer) {
    window_ = window;
@@ -196,7 +192,7 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
 	  DXGI_ADAPTER_DESC3 desc;
 	  adapter->GetDesc3(&desc);
 	  if (!(desc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)) {
-		 log_.Log(std::format(L"Use Adapter: {}", desc.Description));
+		 Logger::Info(std::format(L"Use Adapter: {}", desc.Description));
 		 break;
 	  }
    }
@@ -211,7 +207,7 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
    // 高い順に生成できるか試していく
    for (size_t i = 0; i < _countof(featureLevels); ++i) {
 	  if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), featureLevels[i], IID_PPV_ARGS(device_.GetAddressOf())))) {
-		 log_.Log(std::format("FeatureLevel : {}", featureLevelStrings[i]));
+		 Logger::Info(std::format("FeatureLevel : {}", featureLevelStrings[i]));
 		 break;
 	  }
    }
@@ -220,7 +216,7 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
 	  throw std::runtime_error("Failed to create D3D12 Device.");
    }
 
-   log_.Log("Complete create D3D12Device!!!");
+   Logger::Info("Complete create D3D12Device!!!");
 
 #ifdef _DEBUG
    Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue;

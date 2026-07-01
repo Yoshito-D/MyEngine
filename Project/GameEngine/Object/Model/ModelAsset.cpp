@@ -8,11 +8,6 @@
 #include <string_view>
 #include "MathUtils.h"
 
-namespace {
-Logger& log_ = Logger::GetInstance();
-
-}
-
 namespace GameEngine {
 void ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName) {
    assert(device);

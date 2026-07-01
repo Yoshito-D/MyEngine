@@ -16,7 +16,6 @@
 using json = nlohmann::json;
 
 namespace {
-Logger& log_ = Logger::GetInstance();
 
 std::wstring Utf8ToWString(const std::string& str) {
    if (str.empty()) {
@@ -303,34 +302,34 @@ void ShaderManager::LogRootParameterTablesDebug() const {
 
    const auto stageInfos = GetPipelineStageMatchInfos();
 
-   log_.Log("[ShaderManager] Root parameter table debug dump begin");
+   Logger::Info("[ShaderManager] Root parameter table debug dump begin");
    for (const auto& pipelineName : kMajorPipelines) {
-	  const auto* table = GetPipelineRootParameterTable(pipelineName);
+	  const PipelineRootParameterTable* table = GetPipelineRootParameterTable(pipelineName);
 	  if (!table) {
-		 log_.Log("[ShaderManager] " + pipelineName + ": table not found", Logger::LogLevel::Warning);
+		 Logger::Warning("[ShaderManager] " + pipelineName + ": table not found");
 		 continue;
 	  }
 
-	  log_.Log("[ShaderManager] " + pipelineName +
+	  Logger::Info("[ShaderManager] " + pipelineName +
 		 ": hasReflectionData=" + std::string(table->hasReflectionData ? "true" : "false") +
 		 ", entries=" + std::to_string(table->slotBySemanticName.size()));
 
 	  auto stageIt = stageInfos.find(pipelineName);
 	  if (stageIt != stageInfos.end()) {
 		 const auto& info = stageIt->second;
-		 log_.Log("  [VS] reflection=" + std::string(info.vertex.hasReflection ? "present" : "missing") +
+		 Logger::Info("  [VS] reflection=" + std::string(info.vertex.hasReflection ? "present" : "missing") +
 			", resources=" + std::to_string(info.vertex.resourceCount) +
 			", matchedByName=" + std::to_string(info.vertex.matchedByName));
-		 log_.Log("  [PS] reflection=" + std::string(info.pixel.hasReflection ? "present" : "missing") +
+		 Logger::Info("  [PS] reflection=" + std::string(info.pixel.hasReflection ? "present" : "missing") +
 			", resources=" + std::to_string(info.pixel.resourceCount) +
 			", matchedByName=" + std::to_string(info.pixel.matchedByName));
 	  }
 
 	  for (const auto& [semantic, slot] : table->slotBySemanticName) {
-		 log_.Log("  - " + semantic + " -> " + std::to_string(slot));
+		 Logger::Info("  - " + semantic + " -> " + std::to_string(slot));
 	  }
    }
-   log_.Log("[ShaderManager] Root parameter table debug dump end");
+   Logger::Info("[ShaderManager] Root parameter table debug dump end");
 }
 
 std::unordered_map<std::string, PipelineStageMatchInfo> ShaderManager::GetPipelineStageMatchInfos() const {

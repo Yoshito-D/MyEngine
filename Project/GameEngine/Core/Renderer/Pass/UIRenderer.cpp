@@ -23,11 +23,11 @@ void UIRenderer::DrawUISprite(const UISpriteDrawData& uiSpriteData,
 
 	Sprite* sprite = uiSpriteData.sprite;
 	if (!sprite) {
-		Logger::GetInstance().Log("[UIRenderer] Sprite is null, skip draw", Logger::LogLevel::Warning);
+		Logger::Warning("[UIRenderer] Sprite is null, skip draw");
 		return;
 	}
 	if (!uiSpriteData.texture) {
-		Logger::GetInstance().Log("[UIRenderer] Texture is null, skip draw", Logger::LogLevel::Warning);
+		Logger::Warning("[UIRenderer] Texture is null, skip draw");
 		return;
 	}
 

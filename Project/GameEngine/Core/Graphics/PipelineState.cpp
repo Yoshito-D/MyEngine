@@ -5,10 +5,6 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-namespace {
-Logger& log_ = Logger::GetInstance();
-}
-
 namespace GameEngine {
 void PipelineState::CreatePipelineState(ID3D12Device* device) {
    HRESULT result = S_FALSE;

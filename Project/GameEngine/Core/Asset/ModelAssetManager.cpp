@@ -5,10 +5,6 @@
 #include <algorithm>
 #include <filesystem>
 
-namespace {
-Logger& log_ = Logger::GetInstance();
-}
-
 namespace GameEngine {
 void ModelAssetManager::Initialize(GraphicsDevice* device) {
    assert(device);
@@ -18,7 +14,7 @@ void ModelAssetManager::Initialize(GraphicsDevice* device) {
 ModelAssetManager::ModelHandle ModelAssetManager::LoadModel(const std::string& modelPath, const std::string& modelName) {
    auto it = modelAssets_.find(modelName);
    if (it != modelAssets_.end()) {
-	  log_.Log("Model already loaded: " + modelName);
+	  Logger::Info("Model already loaded: " + modelName);
     return it->second;
    }
 
@@ -56,7 +52,7 @@ ModelAssetManager::ModelHandle ModelAssetManager::LoadModelInternal(const std::s
 
    modelAssets_[modelName] = std::move(model);
    modelAssetsById_[assetId] = modelAssets_[modelName];
-   log_.Log("Model loaded: " + modelName);
+   Logger::Info("Model loaded: " + modelName);
    return modelAssets_[modelName];
 }
 
@@ -65,7 +61,7 @@ ModelAssetManager::ModelHandle ModelAssetManager::GetModel(const std::string& mo
    if (it != modelAssets_.end()) {
     return it->second;
    }
-   log_.Log("Model not found: " + modelName);
+   Logger::Info("Model not found: " + modelName);
    return {};
 }
 

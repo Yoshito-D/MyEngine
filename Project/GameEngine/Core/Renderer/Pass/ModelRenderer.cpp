@@ -56,11 +56,11 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    const auto& materials = *effectiveMaterials;
 
    if (materials.empty()) {
-      Logger::GetInstance().Log("[ModelRenderer] No materials assigned, skip draw", Logger::LogLevel::Warning);
+      Logger::Warning("[ModelRenderer] No materials assigned, skip draw");
       return;
    }
    if (modelData.textures.empty()) {
-      Logger::GetInstance().Log("[ModelRenderer] No textures assigned, skip draw", Logger::LogLevel::Warning);
+      Logger::Warning("[ModelRenderer] No textures assigned, skip draw");
       return;
    }
 
@@ -161,14 +161,14 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  // --- マテリアル取得（不足分は先頭を使い回し） ---
 	  const Material* mat = (i < materials.size()) ? materials[i] : materials[0];
 	  if (!mat) {
-		 Logger::GetInstance().Log("[ModelRenderer] Material is null at index " + std::to_string(i) + ", skip mesh", Logger::LogLevel::Warning);
+		 Logger::Warning("[ModelRenderer] Material is null at index " + std::to_string(i) + ", skip mesh");
 		 continue;
 	  }
 
 	  // --- テクスチャSRV取得（不足分は先頭を使い回し） ---
 	  D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = (i < modelData.textures.size()) ? modelData.textures[i] : modelData.textures[0];
 	  if (srvHandle.ptr == 0) {
-		 Logger::GetInstance().Log("[ModelRenderer] Invalid texture SRV handle at index " + std::to_string(i) + ", skip mesh", Logger::LogLevel::Warning);
+		 Logger::Warning("[ModelRenderer] Invalid texture SRV handle at index " + std::to_string(i) + ", skip mesh");
 		 continue;
 	  }
 
