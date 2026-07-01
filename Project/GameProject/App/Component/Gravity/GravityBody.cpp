@@ -108,6 +108,7 @@ void GravityBody::SnapToUpVector(const Vector3& targetUp) {
 
 void GravityBody::UpdateRotation(float deltaTime) {
 
+   // 惑星が切り替わった場合は回転補間を行わない
    auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
    if (!switcher || switcher->HasSwitched()) { return; }
 

@@ -12,6 +12,7 @@
 
 #ifdef _DEBUG
 namespace GameEngine {
+// @brief リソースリークチェッカー
 struct D3DResourceLeakChecker {
    ~D3DResourceLeakChecker() {
 	  Microsoft::WRL::ComPtr<IDXGIDebug> debug;

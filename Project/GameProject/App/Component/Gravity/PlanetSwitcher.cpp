@@ -91,8 +91,9 @@ void PlanetSwitcher::Update(float) {
    }
 
    if (IsOwnerAirborne()) {
-	  // 空中では重力リンクやカメラの基準を切り替えず、着地候補だけ更新する。
+	  // 空中ではカメラなどの基準確定は保留しつつ、重力だけ近い惑星へ向ける。
 	  pendingIndex_ = newIndex;
+	  ApplyAirborneAttractorIndex(newIndex, pos);
 	  return;
    }
 
@@ -157,23 +158,58 @@ void PlanetSwitcher::ApplyPlanetIndex(int newIndex) {
    }
 
    const bool planetChanged = (newIndex != currentIndex_);
+   const bool gravityChanged = (newIndex != activeGravityIndex_);
    if (planetChanged) {
 	  currentIndex_ = newIndex;
-	  const auto& best = entries_[currentIndex_];
+   }
 
-	  // GravityAttractorLink の接続先は惑星切替時だけ更新する
+   if (planetChanged || gravityChanged) {
+	  const auto& best = entries_[newIndex];
+
+	  // GravityAttractorLink の接続先は惑星または重力対象の切替時だけ更新する。
 	  if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
 		 link->SetAttractor(GetAttractorByObjectName(best.objectName));
+		 if (gravityChanged) {
+			activeGravityIndex_ = newIndex;
+			switched_ = true;
+		 }
 	  }
 
-	  if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
-		 walker->ResetHorizontalVelocity();
+	  if (planetChanged) {
+		 if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
+			walker->ResetHorizontalVelocity();
+		 }
 	  }
-
-	  switched_ = true;
    }
 
    ApplyCurrentPlanetParameters();
+}
+
+void PlanetSwitcher::ApplyAirborneAttractorIndex(int newIndex, const GameEngine::Vector3& pos) {
+   if (newIndex < 0 || newIndex >= static_cast<int>(entries_.size())) {
+	  return;
+   }
+
+   const auto& candidate = entries_[newIndex];
+   if (candidate.objectName.empty()) {
+	  return;
+   }
+
+   auto* attractor = GetAttractorByObjectName(candidate.objectName);
+   if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
+	  if (activeGravityIndex_ != newIndex) {
+		 link->SetAttractor(attractor);
+		 activeGravityIndex_ = newIndex;
+		 switched_ = true;
+	  }
+   }
+
+   // GravityAttractorLink はこのフレームでは既に更新済みなので、
+   // 空中切替直後の物理積分にも新しい重力を反映する。
+   auto* gravityBody = GetOwner().GetComponent<GravityBody>();
+   if (attractor && gravityBody) {
+	  attractor->ApplyTo(*gravityBody, pos);
+   }
 }
 
 void PlanetSwitcher::AddPlanet(std::string objectName) {
@@ -281,6 +317,7 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
    entries_.clear();
    currentIndex_ = -1;
    pendingIndex_ = -1;
+   activeGravityIndex_ = -1;
 
    if (!data.contains("planets") || !data.at("planets").is_array()) {
 	  return;

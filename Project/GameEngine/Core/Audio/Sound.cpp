@@ -23,6 +23,7 @@ IXAudio2* sXAudio2_ = nullptr;
 namespace GameEngine {
 void Sound::Initialize(IXAudio2* xAudio2) {
    sXAudio2_ = xAudio2;
+   Logger::Info("Sound initialized.");
 }
 
 Sound::~Sound() {
@@ -36,6 +37,8 @@ Sound::~Sound() {
 
 void Sound::Load(const std::wstring& filepath) {
    if (!sXAudio2_) return;
+
+   Logger::Info("Loading sound: " + std::string(filepath.begin(), filepath.end()));
 
    HRESULT result = S_FALSE;
 
