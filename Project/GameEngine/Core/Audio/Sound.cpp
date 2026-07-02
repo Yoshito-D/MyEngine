@@ -38,7 +38,7 @@ Sound::~Sound() {
 void Sound::Load(const std::wstring& filepath) {
    if (!sXAudio2_) return;
 
-   Logger::Info("Loading sound: " + std::string(filepath.begin(), filepath.end()));
+   Logger::Info("Loading sound: " + Logger::ConvertString(filepath));
 
    HRESULT result = S_FALSE;
 
