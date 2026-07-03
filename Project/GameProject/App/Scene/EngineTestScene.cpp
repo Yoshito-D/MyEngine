@@ -1,4 +1,4 @@
-﻿#include "EngineTestScene.h"
+#include "EngineTestScene.h"
 #include "Framework/EngineContext.h"
 #include "Component/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
@@ -48,18 +48,6 @@ void EngineTestScene::OnInitialize() {
    particleSystem_->SetName("bonfire");
    particleSystem_->LoadFromJson("resources/particles/bonfire.json");
    particleSystem_->Play();
-
-#ifdef USE_IMGUI
-   // デバッグカメラを初期状態でオン（オブジェクトが正面に映る位置に配置）
-   if (debugCamera_) {
-      debugCamera_->SetPriority(100);
-      debugCamera_->SetDistance(8.0f);
-      if (auto* orbital = debugCamera_->GetOrbitalBody()) {
-         orbital->SetPivotTarget(Vector3(0.0f, 0.0f, 0.0f));
-      }
-      isDebugCameraActive_ = true;
-   }
-#endif
 }
 
 void EngineTestScene::OnEditorUpdate() {
