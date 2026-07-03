@@ -19,7 +19,6 @@
 #include "AnimationAsset.h"
 #include "CameraManager.h"
 #include "LightManager.h"
-#include "Utility/JsonDataManager.h"
 #include "PlayModeController.h"
 namespace GameEngine {
 class Framework;
@@ -41,8 +40,7 @@ private:
 	  AssetManager* assetManager,
 	  TimeProfiler* timeProfiler,
 	  CameraManager* cameraManager,
-	  LightManager* lightManager,
-	  JsonDataManager* jsonDataManager
+	  LightManager* lightManager
    );
 
    void SetGraphicsDevice(GraphicsDevice* graphicsDevice);
@@ -53,7 +51,6 @@ private:
    void SetTimeProfiler(TimeProfiler* timeProfiler);
    void SetCameraManager(CameraManager* cameraManager);
    void SetLightManager(LightManager* lightManager);
-   void SetJsonDataManager(JsonDataManager* jsonDataManager);
 };
 
 class CinemachineBrain;
@@ -726,151 +723,6 @@ public:
    /// @brief Dissolve の現在のパラメータを取得する
    /// @return Dissolve パラメータ（取得できない場合は std::nullopt）
    static std::optional<DissolveParams> GetDissolveParams();
-
-   //================================================================
-   // JSONデータマネージャー
-   //================================================================
-
-   // グループ操作
-
-   /// @brief グループの存在確認
-   /// @param groupName グループ名
-   /// @return グループが存在する場合は true
-   static bool HasJsonGroup(const std::string& groupName);
-
-   /// @brief グループの削除
-   /// @param groupName グループ名
-   /// @return 削除に成功した場合は true
-   static bool RemoveJsonGroup(const std::string& groupName);
-
-   /// @brief すべてのグループ名を取得
-   /// @return グループ名のリスト
-   static std::vector<std::string> GetJsonGroupNames();
-
-   /// @brief すべてのデータをクリア
-   static void ClearJsonData();
-
-   // データ操作（グループ内）
-
-   /// @brief グループ内の値を設定
-   /// @param groupName グループ名
-   /// @param key キー
-   /// @param value 値
-   template<typename T>
-   static void SetJsonData(const std::string& groupName, const std::string& key, const T& value);
-
-   /// @brief グループ内の値を取得
-   /// @param groupName グループ名
-   /// @param key キー
-   /// @return 値（存在しない場合は std::nullopt）
-   template<typename T>
-   static std::optional<T> GetJsonData(const std::string& groupName, const std::string& key);
-
-   /// @brief グループ内の値をデフォルト値付きで取得
-   /// @param groupName グループ名
-   /// @param key キー
-   /// @param defaultValue デフォルト値
-   /// @return 値（存在しない場合はデフォルト値）
-   template<typename T>
-   static T GetJsonDataOr(const std::string& groupName, const std::string& key, const T& defaultValue);
-
-   /// @brief グループ内のキーの存在確認
-   /// @param groupName グループ名
-   /// @param key キー
-   /// @return キーが存在する場合は true
-   static bool HasJsonKey(const std::string& groupName, const std::string& key);
-
-   /// @brief グループ内のキーを削除
-   /// @param groupName グループ名
-   /// @param key キー
-   /// @return 削除に成功した場合は true
-   static bool RemoveJsonKey(const std::string& groupName, const std::string& key);
-
-   // グループレベルの操作
-
-   /// @brief グループ内のすべてのキーを取得
-   /// @param groupName グループ名
-   /// @return キーのリスト
-   static std::vector<std::string> GetJsonKeys(const std::string& groupName);
-
-   /// @brief グループが空かチェック
-   /// @param groupName グループ名
-   /// @return グループが空の場合は true
-   static bool IsJsonGroupEmpty(const std::string& groupName);
-
-   /// @brief グループのデータ数を取得
-   /// @param groupName グループ名
-   /// @return データ数
-   static size_t GetJsonGroupSize(const std::string& groupName);
-
-   /// @brief グループをクリア
-   /// @param groupName グループ名
-   static void ClearJsonGroup(const std::string& groupName);
-
-   // ファイル操作
-
-   /// @brief JSON ファイルから読み込み
-   /// @param filePath ファイルパス
-   /// @return 成功した場合は true
-   static bool LoadJsonFile(const std::string& filePath);
-
-   /// @brief JSON ファイルへ保存
-   /// @param filePath ファイルパス
-   /// @param indent インデント（デフォルト: 4）
-   /// @return 成功した場合は true
-   static bool SaveJsonFile(const std::string& filePath, int indent = 4);
-
-   // 検索機能
-
-   /// @brief グループ内で条件に合うキーを検索
-   /// @param groupName グループ名
-   /// @param predicate 条件関数
-   /// @return 条件に合うキーのリスト
-   template<typename T>
-   static std::vector<std::string> FindJsonKeys(const std::string& groupName, std::function<bool(const T&)> predicate);
-
-   /// @brief 条件に合うグループを検索
-   /// @param predicate 条件関数
-   /// @return 条件に合うグループ名のリスト
-   static std::vector<std::string> FindJsonGroups(std::function<bool(const std::string&)> predicate);
-
-private:
-   // Internal helper to get JsonDataManager pointer
-   static JsonDataManager* GetJsonDataManagerInternal_();
 };
-
-// テンプレート関数の実装
-template<typename T>
-inline void EngineContext::SetJsonData(const std::string& groupName, const std::string& key, const T& value) {
-   auto* manager = GetJsonDataManagerInternal_();
-   if (manager) {
-	  manager->Set(groupName, key, value);
-   }
-}
-
-template<typename T>
-inline std::optional<T> EngineContext::GetJsonData(const std::string& groupName, const std::string& key) {
-   auto* manager = GetJsonDataManagerInternal_();
-   if (!manager) return std::nullopt;
-   return manager->Get<T>(groupName, key);
-}
-
-template<typename T>
-inline T EngineContext::GetJsonDataOr(const std::string& groupName, const std::string& key, const T& defaultValue) {
-   auto* manager = GetJsonDataManagerInternal_();
-   if (!manager) return defaultValue;
-   return manager->GetOr(groupName, key, defaultValue);
-}
-
-template<typename T>
-inline std::vector<std::string> EngineContext::FindJsonKeys(const std::string& groupName, std::function<bool(const T&)> predicate) {
-   auto* manager = GetJsonDataManagerInternal_();
-   if (!manager) return std::vector<std::string>();
-
-   auto group = manager->GetGroup(groupName);
-   if (!group.has_value()) return std::vector<std::string>();
-
-   return group->get().FindKeys<T>(predicate);
-}
 
 } // namespace GameEngine

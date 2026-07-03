@@ -84,9 +84,6 @@ void Framework::Initialize() {
    // タイムプロファイラーの初期化
    timeProfiler_ = std::make_unique<TimeProfiler>();
 
-   // JSON データマネージャーの初期化
-   jsonDataManager_ = std::make_unique<JsonDataManager>();
-
    // EngineContextの初期化
    std::unique_ptr<EngineContextInitializer> initializer = std::make_unique<EngineContextInitializer>();
    initializer->Initialize(
@@ -97,8 +94,7 @@ void Framework::Initialize() {
 	  assetManager_.get(),
 	  timeProfiler_.get(),
 	  cameraManager_.get(),
-	  lightManager_.get(),
-	  jsonDataManager_.get()
+	  lightManager_.get()
    );
 }
 

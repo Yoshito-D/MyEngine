@@ -1,4 +1,4 @@
-#include <pch.h>
+﻿#include <pch.h>
 #include <BaseScene.h>
 #include <EngineContext.h>
 #include <ParticleSystem.h>
@@ -40,6 +40,8 @@ void BaseScene::Initialize() {
    editorSceneContext_ = std::make_unique<EditorSceneContext>();
    editorSceneContext_->Initialize(editorSceneName_);
 #endif
+
+   OnInitialize();
 }
 
 void BaseScene::Update() {
@@ -79,12 +81,17 @@ void BaseScene::EditorUpdate() {
 	  EngineContext::GetActiveBrain()->Update(deltaTime);
    }
 #endif // _DEBUG
+
+   OnEditorUpdate();
 }
 
 void BaseScene::RuntimeUpdate() {
+   OnUpdate(EngineContext::GetDeltaTime());
 }
 
 void BaseScene::Draw() {
+   OnDraw();
+
 #ifdef USE_IMGUI
    // カメラエディタウィンドウを表示
    if (cameraEditor_) {
@@ -97,6 +104,8 @@ void BaseScene::Draw() {
 }
 
 void BaseScene::Finalize() {
+   OnFinalize();
+
    // 現在のシーンインスタンスをクリア
    if (sCurrentScene_ == this) {
 	  sCurrentScene_ = nullptr;

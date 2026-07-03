@@ -17,26 +17,59 @@ const char* ToString(PlayMode mode);
 
 class PlayModeController {
 public:
+   // @brief PlayModeController のコンストラクタ
    void RequestPlay();
+
+   // @brief PlayModeController の停止要求
    void RequestStop();
+
+   // @brief PlayModeController の一時停止要求
    void RequestPause();
+
+   // @brief PlayModeController の再開要求
    void RequestResume();
+
+   // @brief PlayModeController のステップ要求
    void RequestStep();
 
+   // @brief PlayModeController の更新処理
+   // @param sceneManager シーンマネージャー
    void ProcessRequests(SceneManager& sceneManager);
 
+   // @brief プレイモードの状態を取得
    PlayMode GetMode() const { return mode_; }
+
+   // @brief プレイモードが再生中かどうかを取得
    bool IsPlaying() const { return mode_ == PlayMode::Playing; }
+
+   // @brief プレイモードが一時停止中かどうかを取得
    bool IsPaused() const { return mode_ == PlayMode::Paused; }
+
+   // @brief プレイモードが編集モードかどうかを取得
    bool IsInPlayMode() const { return mode_ != PlayMode::Edit; }
+
+   // @brief ランタイム更新を実行すべきかどうかを取得
    bool ShouldRunRuntimeUpdate() const { return shouldRunRuntimeUpdate_; }
+
+   // @brief ゲーム用デルタタイムを取得
    float GetGameDeltaTime() const { return gameDeltaTime_; }
+
+   // @brief タイムスケールを取得
    float GetTimeScale() const { return timeScale_; }
+
+   // @brief タイムスケールを設定
    void SetTimeScale(float timeScale);
 
 private:
+   // @brief プレイモードの開始処理
+   // @param sceneManager シーンマネージャー
    void StartPlaying(SceneManager& sceneManager);
+
+   // @brief プレイモードの停止処理
+   // @param sceneManager シーンマネージャー
    void StopPlaying(SceneManager& sceneManager);
+
+   // @brief プレイモードの一時停止処理
    void ClearTransitionRequests();
 
    PlayMode mode_ = PlayMode::Edit;

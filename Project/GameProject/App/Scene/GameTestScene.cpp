@@ -1,4 +1,4 @@
-#include "GameTestScene.h"
+﻿#include "GameTestScene.h"
 #include "Framework/EngineContext.h"
 #include "../Component/Gravity/GravityBody.h"
 #include "../Component/Gravity/SphericalGravityAttractor.h"
@@ -36,9 +36,7 @@ using namespace App;
 static constexpr float kPlanetRadius = 30.0f;
 static constexpr float kPlayerOrbitHeight = kPlanetRadius;
 
-void GameTestScene::Initialize() {
-   BaseScene::Initialize();
-
+void GameTestScene::OnInitialize() {
    skybox_ = std::make_unique<GameEngine::Skybox>();
    skybox_->Create(EngineContext::GetGraphicsDevice());
    skybox_->SetObjectName("Skybox");
@@ -386,13 +384,7 @@ void GameTestScene::Initialize() {
 #endif
 }
 
-void GameTestScene::Update() {
-   BaseScene::Update();
-}
-
-void GameTestScene::EditorUpdate() {
-   BaseScene::EditorUpdate();
-
+void GameTestScene::OnEditorUpdate() {
 #ifdef USE_IMGUI
    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver);
@@ -405,8 +397,7 @@ void GameTestScene::EditorUpdate() {
 #endif 
 }
 
-void GameTestScene::RuntimeUpdate() {
-   float deltaTime = EngineContext::GetDeltaTime();
+void GameTestScene::OnUpdate(float deltaTime) {
    testTime_ += deltaTime;
 
    // Tab キーで PlayerRearFollow / GravityFollow / PlanetLeash を切り替え
@@ -577,8 +568,4 @@ void GameTestScene::RuntimeUpdate() {
 	  wasGrounded = landing ? landing->IsGrounded() : true;
    }
 
-}
-
-void GameTestScene::Draw() {
-   BaseScene::Draw();
 }

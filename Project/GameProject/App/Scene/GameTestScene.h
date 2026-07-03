@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "BaseScene.h"
 #include "Model.h"
 #include "Camera/Core/VirtualCamera.h"
@@ -11,12 +11,10 @@
 
 /// @brief ゲーム機能テスト用シーン（重力システム等）
 class GameTestScene : public GameEngine::BaseScene {
-public:
-   void Initialize() override;
-   void Update() override;
-   void EditorUpdate() override;
-   void RuntimeUpdate() override;
-   void Draw() override;
+protected:
+   void OnInitialize() override;
+   void OnEditorUpdate() override;
+   void OnUpdate(float deltaTime) override;
 
 private:
    enum class CameraMode {
