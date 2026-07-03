@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "IScene.h"
 #include <EngineContext.h>
 #include "Camera/DebugCamera.h"
@@ -91,6 +91,8 @@ protected:
 
    /// @brief 共通リソース破棄前に派生シーン固有の終了処理を行う
    virtual void OnFinalize() {}
+
+private:
 
    /// @brief デバッグカメラの更新
    void UpdateDebugCamera();
