@@ -64,7 +64,7 @@ bool DrawRandomFloat(
    float columnWidth = 140.0f) {
    bool changed = false;
    ImGui::PushID(label.c_str());
-   ImGui::TextUnformatted(label.c_str());
+   ImGui::SeparatorText(label.c_str());
 
    bool randomize = value.randomize;
    if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
@@ -102,7 +102,7 @@ bool DrawRandomVector2(
    float columnWidth = 140.0f) {
    bool changed = false;
    ImGui::PushID(label.c_str());
-   ImGui::TextUnformatted(label.c_str());
+   ImGui::SeparatorText(label.c_str());
 
    bool randomize = value.randomize;
    if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
@@ -147,7 +147,7 @@ bool DrawRandomVector3(
    float columnWidth = 140.0f) {
    bool changed = false;
    ImGui::PushID(label.c_str());
-   ImGui::TextUnformatted(label.c_str());
+   ImGui::SeparatorText(label.c_str());
 
    bool randomize = value.randomize;
    if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
@@ -193,7 +193,7 @@ bool DrawRandomEulerDegrees(
    float columnWidth = 140.0f) {
    bool changed = false;
    ImGui::PushID(label.c_str());
-   ImGui::TextUnformatted(label.c_str());
+   ImGui::SeparatorText(label.c_str());
 
    bool randomize = value.randomize;
    if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
@@ -234,7 +234,7 @@ bool DrawRandomEulerDegrees(
 bool DrawRandomColor(const std::string& label, RandomColor& value, float columnWidth = 140.0f) {
    bool changed = false;
    ImGui::PushID(label.c_str());
-   ImGui::TextUnformatted(label.c_str());
+   ImGui::SeparatorText(label.c_str());
 
    bool randomize = value.randomize;
    if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
@@ -340,10 +340,14 @@ void MainModule::DrawInspector() {
       SetStartColor(color);
    }
 
+   ImGui::Separator();
+
    float gravity = GetGravityModifier();
    if (ImGuiHelper::DrawFloatControl(L({ "重力倍率", "Gravity Modifier" }), gravity, 0.0f, 140.0f, 0.1f, -10.0f, 10.0f)) {
       SetGravityModifier(gravity);
    }
+
+   ImGui::Separator();
 
    SimulationSpace simulationSpace = GetSimulationSpace();
    if (ImGuiHelper::DrawLocalizedEnumCombo(
@@ -356,6 +360,8 @@ void MainModule::DrawInspector() {
       140.0f)) {
       SetSimulationSpace(simulationSpace);
    }
+
+   ImGui::Separator();
 
    ScalingMode scalingMode = GetScalingMode();
    if (ImGuiHelper::DrawLocalizedEnumCombo(
@@ -370,14 +376,11 @@ void MainModule::DrawInspector() {
       SetScalingMode(scalingMode);
    }
 
+   ImGui::Separator();
+
    int maxParticles = static_cast<int>(GetMaxParticles());
    if (ImGuiHelper::DrawIntControl(L({ "最大粒子数", "Max Particles" }), maxParticles, 1000, 140.0f, 1.0f, 1, 10000)) {
       SetMaxParticles(static_cast<uint32_t>(std::max(maxParticles, 1)));
-   }
-
-   float emissionRate = GetEmissionRate();
-   if (ImGuiHelper::DrawFloatControl(L({ "放出レート", "Emission Rate" }), emissionRate, 10.0f, 140.0f, 0.5f, 0.0f, 500.0f)) {
-      SetEmissionRate(emissionRate);
    }
 }
 

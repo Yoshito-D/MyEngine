@@ -1,4 +1,4 @@
-﻿#include "GameTestScene.h"
+#include "GameTestScene.h"
 #include "Framework/EngineContext.h"
 #include "../Component/Gravity/GravityBody.h"
 #include "../Component/Gravity/SphericalGravityAttractor.h"
@@ -393,7 +393,6 @@ void GameTestScene::OnEditorUpdate() {
 	  EngineContext::ChangeScene("EngineTest");
    }
    ImGui::End();
-   ImGui::ShowDemoWindow();
 #endif 
 }
 
