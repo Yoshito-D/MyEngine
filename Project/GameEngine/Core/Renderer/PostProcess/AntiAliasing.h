@@ -13,10 +13,17 @@ public:
 	  float edgeSearchSteps;
    };
 
+   /// @brief 初期化
+   /// @param device グラフィックスデバイス
+   /// @param renderTarget レンダーターゲット
    void Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) override;
+
+   // @brief エフェクトを適用
+   // @param inputSRV 入力SRV
    void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) override;
 
 #ifdef USE_IMGUI
+   /// @br
    void ImGuiEdit() override;
 #endif
    const char* GetEffectName() const override { return "Anti Aliasing"; }

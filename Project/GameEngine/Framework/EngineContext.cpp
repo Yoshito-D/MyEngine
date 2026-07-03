@@ -17,7 +17,6 @@ GameEngine::AssetManager* sAssetManager_ = nullptr;
 GameEngine::TimeProfiler* sTimeProfiler_ = nullptr;
 GameEngine::CameraManager* sCameraManager_ = nullptr;
 GameEngine::LightManager* sLightManager_ = nullptr;
-GameEngine::JsonDataManager* sJsonDataManager_ = nullptr;
 float sGameDeltaTime_ = 0.0f;
 bool sHasGameDeltaTimeOverride_ = false;
 #ifdef USE_IMGUI
@@ -28,7 +27,7 @@ GameEngine::PlayModeController* sPlayModeController_ = nullptr;
 namespace GameEngine {
 
 void EngineContextInitializer::Initialize(GraphicsDevice* graphicsDevice, Input* input, Audio* audio, Renderer* renderer, AssetManager* assetManager, TimeProfiler* timeProfiler, CameraManager* cameraManager,
-   LightManager* lightManager, JsonDataManager* jsonDataManager) {
+   LightManager* lightManager) {
    sGraphicsDevice_ = graphicsDevice;
    sInput_ = input;
    sAudio_ = audio;
@@ -37,7 +36,6 @@ void EngineContextInitializer::Initialize(GraphicsDevice* graphicsDevice, Input*
    sTimeProfiler_ = timeProfiler;
    sCameraManager_ = cameraManager;
    sLightManager_ = lightManager;
-   sJsonDataManager_ = jsonDataManager;
 }
 
 void EngineContextInitializer::SetGraphicsDevice(GraphicsDevice* graphicsDevice) {
@@ -70,18 +68,6 @@ void EngineContextInitializer::SetCameraManager(CameraManager* cameraManager) {
 
 void EngineContextInitializer::SetLightManager(LightManager* lightManager) {
    sLightManager_ = lightManager;
-}
-
-void EngineContextInitializer::SetJsonDataManager(JsonDataManager* jsonDataManager) {
-   sJsonDataManager_ = jsonDataManager;
-}
-
-//================================================================
-// Internal helper
-//================================================================
-
-JsonDataManager* EngineContext::GetJsonDataManagerInternal_() {
-   return sJsonDataManager_;
 }
 
 //================================================================
@@ -884,104 +870,6 @@ std::optional<DissolveParams> EngineContext::GetDissolveParams() {
    if (!dissolve) return std::nullopt;
 
    return dissolve->GetParams();
-}
-
-//================================================================
-// JSON データマネージャー
-//================================================================
-
-// グループ操作
-
-bool EngineContext::HasJsonGroup(const std::string& groupName) {
-   if (!sJsonDataManager_) return false;
-   return sJsonDataManager_->HasGroup(groupName);
-}
-
-bool EngineContext::RemoveJsonGroup(const std::string& groupName) {
-   if (!sJsonDataManager_) return false;
-   return sJsonDataManager_->RemoveGroup(groupName);
-}
-
-std::vector<std::string> EngineContext::GetJsonGroupNames() {
-   if (!sJsonDataManager_) return std::vector<std::string>();
-   return sJsonDataManager_->GetGroupNames();
-}
-
-void EngineContext::ClearJsonData() {
-   if (!sJsonDataManager_) return;
-   sJsonDataManager_->Clear();
-}
-
-// データ操作（グループ内）
-
-bool EngineContext::HasJsonKey(const std::string& groupName, const std::string& key) {
-   if (!sJsonDataManager_) return false;
-   return sJsonDataManager_->Has(groupName, key);
-}
-
-bool EngineContext::RemoveJsonKey(const std::string& groupName, const std::string& key) {
-   if (!sJsonDataManager_) return false;
-   return sJsonDataManager_->Remove(groupName, key);
-}
-
-// グループレベルの操作
-
-std::vector<std::string> EngineContext::GetJsonKeys(const std::string& groupName) {
-   if (!sJsonDataManager_) return std::vector<std::string>();
-   auto group = sJsonDataManager_->GetGroup(groupName);
-   if (!group.has_value()) return std::vector<std::string>();
-   return group->get().GetKeys();
-}
-
-bool EngineContext::IsJsonGroupEmpty(const std::string& groupName) {
-   if (!sJsonDataManager_) return true;
-   auto group = sJsonDataManager_->GetGroup(groupName);
-   if (!group.has_value()) return true;
-   return group->get().IsEmpty();
-}
-
-size_t EngineContext::GetJsonGroupSize(const std::string& groupName) {
-   if (!sJsonDataManager_) return 0;
-   auto group = sJsonDataManager_->GetGroup(groupName);
-   if (!group.has_value()) return 0;
-   return group->get().Size();
-}
-
-void EngineContext::ClearJsonGroup(const std::string& groupName) {
-   if (!sJsonDataManager_) return;
-   auto group = sJsonDataManager_->GetGroup(groupName);
-   if (group.has_value()) {
-	  group->get().Clear();
-   }
-}
-
-// ファイル操作
-
-bool EngineContext::LoadJsonFile(const std::string& filePath) {
-   if (!sJsonDataManager_) return false;
-   return sJsonDataManager_->LoadFromFile(filePath);
-}
-
-bool EngineContext::SaveJsonFile(const std::string& filePath, int indent) {
-   if (!sJsonDataManager_) return false;
-   return sJsonDataManager_->SaveToFile(filePath, indent);
-}
-
-// 検索機能
-
-std::vector<std::string> EngineContext::FindJsonGroups(std::function<bool(const std::string&)> predicate) {
-   if (!sJsonDataManager_) return std::vector<std::string>();
-
-   std::vector<std::string> result;
-   auto groupNames = sJsonDataManager_->GetGroupNames();
-
-   for (const auto& name : groupNames) {
-	  if (predicate(name)) {
-		 result.push_back(name);
-	  }
-   }
-
-   return result;
 }
 
 }

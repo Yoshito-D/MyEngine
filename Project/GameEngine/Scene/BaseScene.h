@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "IScene.h"
 #include <EngineContext.h>
 #include "Camera/DebugCamera.h"
@@ -16,46 +16,82 @@ public:
    /// @brief デストラクタ
    virtual ~BaseScene() = default;
 
-   /// @brief シーンの初期化
-   virtual void Initialize() override;
+   /// @brief シーンの共通初期化を実行してから派生シーンの初期化フックを呼び出す
+   void Initialize() override final;
 
-   /// @brief シーンの更新
-   virtual void Update() override;
+   /// @brief エディタ更新とランタイム更新を固定順で実行する
+   void Update() override final;
 
-   /// @brief エディタ用更新
-   virtual void EditorUpdate();
+   /// @brief エディタ用の共通更新を実行してから派生シーンのエディタ更新フックを呼び出す
+   void EditorUpdate();
 
-   /// @brief ランタイム用更新
-   virtual void RuntimeUpdate();
+   /// @brief 派生シーンのランタイム更新フックを呼び出す
+   void RuntimeUpdate();
 
-   /// @brief シーンの描画
-   virtual void Draw() override;
+   /// @brief 派生シーンの描画フックを呼び出してから共通エディタ描画を実行する
+   void Draw() override final;
 
-   /// @brief シーンの終了処理
-   virtual void Finalize() override;
+   /// @brief 派生シーンの終了フックを呼び出してから共通リソースを破棄する
+   void Finalize() override final;
 
    /// @brief 次のシーン名を取得
    /// @return 次のシーン名
-   virtual std::string GetNextSceneName() const override { return sNextSceneName_; }
+   std::string GetNextSceneName() const override final { return sNextSceneName_; }
 
    /// @brief 次のシーンを設定（静的メソッド - 現在のシーンのフェードを使用）
    /// @param sceneName 次のシーン名
    static void SetNextSceneName(const std::string& sceneName);
 
+   /// @brief 現在実行中のシーンを取得する
+   /// @return 現在実行中のシーン。存在しない場合は nullptr
    static BaseScene* GetCurrentScene() { return sCurrentScene_; }
 
+   /// @brief エディタで読み込むシーンデータ名を設定する
+   /// @param sceneName エディタ用シーン名
    void SetEditorSceneName(const std::string& sceneName) { editorSceneName_ = sceneName; }
+
+   /// @brief エディタで読み込むシーンデータ名を取得する
+   /// @return エディタ用シーン名
    const std::string& GetEditorSceneName() const { return editorSceneName_; }
 
 #ifdef USE_IMGUI
+   /// @brief エディタ用シーンコンテキストを取得する
+   /// @return エディタ用シーンコンテキスト。未初期化の場合は nullptr
    EditorSceneContext* GetEditorSceneContext() { return editorSceneContext_.get(); }
+
+   /// @brief エディタ用シーンコンテキストを取得する
+   /// @return エディタ用シーンコンテキスト。未初期化の場合は nullptr
    const EditorSceneContext* GetEditorSceneContext() const { return editorSceneContext_.get(); }
+
+   /// @brief カメラエディタを取得する
+   /// @return カメラエディタ。未初期化の場合は nullptr
    CameraEditor* GetCameraEditor() { return cameraEditor_.get(); }
+
+   /// @brief カメラエディタを取得する
+   /// @return カメラエディタ。未初期化の場合は nullptr
    const CameraEditor* GetCameraEditor() const { return cameraEditor_.get(); }
+
+   /// @brief 必要に応じてエディタ用シーンデータを自動読み込みする
    void LoadEditorSceneIfNeeded();
 #endif
 
 protected:
+   /// @brief 共通初期化後に派生シーン固有の初期化を行う
+   virtual void OnInitialize() {}
+
+   /// @brief 共通エディタ更新後に派生シーン固有のエディタ更新を行う
+   virtual void OnEditorUpdate() {}
+
+   /// @brief 派生シーン固有のランタイム更新を行う
+   /// @param deltaTime ゲーム用デルタタイム（秒）
+   virtual void OnUpdate(float deltaTime) { (void)deltaTime; }
+
+   /// @brief 共通エディタ描画前に派生シーン固有の描画を行う
+   virtual void OnDraw() {}
+
+   /// @brief 共通リソース破棄前に派生シーン固有の終了処理を行う
+   virtual void OnFinalize() {}
+
    /// @brief デバッグカメラの更新
    void UpdateDebugCamera();
 

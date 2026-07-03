@@ -1,4 +1,4 @@
-#include "EngineTestScene.h"
+﻿#include "EngineTestScene.h"
 #include "Framework/EngineContext.h"
 #include "Component/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
@@ -12,9 +12,7 @@
 
 using namespace GameEngine;
 
-void EngineTestScene::Initialize() {
-   BaseScene::Initialize();
-
+void EngineTestScene::OnInitialize() {
    // --- アセット読み込み ---
    EngineContext::LoadModel("resources/models/cube", "AnimatedCube.gltf");
    EngineContext::LoadAnimation("resources/models/cube", "AnimatedCube.gltf");
@@ -64,13 +62,7 @@ void EngineTestScene::Initialize() {
 #endif
 }
 
-void EngineTestScene::Update() {
-   BaseScene::Update();
-}
-
-void EngineTestScene::EditorUpdate() {
-   BaseScene::EditorUpdate();
-
+void EngineTestScene::OnEditorUpdate() {
 #ifdef USE_IMGUI
    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver);
@@ -80,11 +72,4 @@ void EngineTestScene::EditorUpdate() {
    }
    ImGui::End();
 #endif
-}
-
-void EngineTestScene::RuntimeUpdate() {
-}
-
-void EngineTestScene::Draw() {
-   BaseScene::Draw();
 }

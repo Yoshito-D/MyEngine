@@ -12,7 +12,6 @@
 #include "EngineContext.h"
 #include "CameraManager.h"
 #include "LightManager.h"
-#include "Utility/JsonDataManager.h"
 
 
 namespace GameEngine {
@@ -52,6 +51,5 @@ private:
    std::unique_ptr<GameEngine::TimeProfiler> timeProfiler_ = nullptr;
    std::unique_ptr<GameEngine::CameraManager> cameraManager_ = nullptr;
    std::unique_ptr<GameEngine::LightManager> lightManager_ = nullptr;
-   std::unique_ptr<GameEngine::JsonDataManager> jsonDataManager_ = nullptr;
 };
 }
