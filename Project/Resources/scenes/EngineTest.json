@@ -1,116 +1,488 @@
 {
-   "objects": [
+   "cameras": {
+      "brain": {
+         "defaultBlendTime": 0.0
+      },
+      "virtualCameras": []
+   },
+   "objects": [],
+   "sceneName": "EngineTest",
+   "sceneObjects": [
       {
-         "assetId": "models/box/box.obj",
-         "components": [
-            {
-               "data": {
-                  "parentObjectName": "",
-                  "rotation": [
-                     0.0,
-                     -0.0,
-                     0.0
-                  ],
-                  "rotationQuaternion": [
-                     0.0,
-                     0.0,
-                     0.0,
-                     1.0
-                  ],
-                  "rotationSource": "euler",
-                  "scale": [
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "translation": [
-                     -5.127913951873779,
-                     5.654601573944092,
-                     -5.597559452056885
-                  ],
-                  "useParentMatrix": false
-               },
-               "enabled": true,
-               "typeName": "TransformComponent"
-            },
-            {
-               "data": {
-                  "blendMode": -1,
-                  "color": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "environmentTextureName": "",
-                  "lightingMode": 2,
-                  "materialCount": 1,
-                  "materialNames": [
-                     "ObjectMaterial_6"
-                  ],
-                  "pipelineName": "",
-                  "shininess": 40.0,
-                  "textureNames": [
-                     ""
-                  ],
-                  "uvTransform": [
-                     [
-                        1.0,
+         "deleted": false,
+         "object": {
+            "assetId": "models/cube/AnimatedCube.gltf",
+            "components": [
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
                         0.0,
                         0.0,
                         0.0
                      ],
-                     [
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0
-                     ],
-                     [
+                     "rotationQuaternion": [
                         0.0,
                         0.0,
                         0.0,
                         1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        3.0,
+                        0.0,
+                        0.0
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "lightingMode": 0,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "animCubeMaterial"
+                     ],
+                     "pipelineName": "",
+                     "shininess": 40.0,
+                     "textureNames": [
+                        "AnimatedCube_BaseColor"
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
                      ]
-                  ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
                },
-               "enabled": true,
-               "typeName": "MaterialComponent"
-            },
-            {
-               "data": {
-                  "name": "box"
+               {
+                  "data": {
+                     "name": "AnimatedCube"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
                },
-               "enabled": true,
-               "typeName": "ObjectNameComponent"
-            },
-            {
-               "data": {
-                  "assetId": "models/box/box.obj"
+               {
+                  "data": {
+                     "assetId": "models/cube/AnimatedCube.gltf"
+                  },
+                  "enabled": true,
+                  "typeName": "ModelAssetComponent"
                },
-               "enabled": true,
-               "typeName": "ModelAssetComponent"
-            },
-            {
-               "data": {
-                  "applyPostProcess": true,
-                  "autoRender": true,
-                  "visible": true
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
                },
-               "enabled": true,
-               "typeName": "RenderComponent"
-            }
-         ],
-         "id": "editor_object_1",
-         "objectType": "Model"
+               {
+                  "data": {
+                     "animationName": "AnimatedCube.gltf",
+                     "applyRotation": true,
+                     "applyScale": false,
+                     "applyTranslation": false,
+                     "clipName": "animation_AnimatedCube",
+                     "currentTime": 0.0,
+                     "loop": true,
+                     "playbackSpeed": 1.0,
+                     "playing": true,
+                     "targetNodeName": "",
+                     "useSkinning": false
+                  },
+                  "enabled": true,
+                  "typeName": "AnimationComponent"
+               }
+            ],
+            "id": "Model:AnimatedCube",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:AnimatedCube"
       }
    ],
-   "sceneName": "EngineTest",
-   "version": 1
+   "sceneParticleSystems": [
+      {
+         "deleted": false,
+         "particleSystem": {
+            "assetId": "",
+            "data": {
+               "blendMode": 2,
+               "colorOverLifetimeModule": {
+                  "enabled": true,
+                  "endColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     0.6196078658103943
+                  ],
+                  "startColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ]
+               },
+               "emissionModule": {
+                  "bursts": [
+                     {
+                        "count": 3,
+                        "cycles": 0,
+                        "interval": -1.0,
+                        "time": 0.0
+                     }
+                  ],
+                  "enabled": true,
+                  "rateOverDistance": 0.0,
+                  "rateOverTime": 500.0
+               },
+               "forceOverLifetimeModule": {
+                  "enabled": false,
+                  "force": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  }
+               },
+               "limitVelocityModule": {
+                  "dampen": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  },
+                  "enabled": false,
+                  "speedLimit": {
+                     "max": 4.900000095367432,
+                     "min": 4.900000095367432,
+                     "randomize": false
+                  }
+               },
+               "mainModule": {
+                  "duration": 0.5,
+                  "emissionRate": 0.0,
+                  "gravityModifier": 0.0,
+                  "looping": false,
+                  "maxParticles": 1000,
+                  "playOnAwake": false,
+                  "scalingMode": 0,
+                  "simulationSpace": 0,
+                  "startColor": {
+                     "max": 4294967295,
+                     "min": 4294967295,
+                     "randomize": false
+                  },
+                  "startLifetime": {
+                     "max": 0.25,
+                     "min": 0.20000000298023224,
+                     "randomize": true
+                  },
+                  "startRotation": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        180.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  },
+                  "startSize": {
+                     "max": [
+                        0.019999999552965164,
+                        0.019999999552965164,
+                        0.019999999552965164
+                     ],
+                     "min": [
+                        0.009999999776482582,
+                        0.009999999776482582,
+                        0.009999999776482582
+                     ],
+                     "randomize": true
+                  },
+                  "startSpeed": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": false
+                  },
+                  "startSpeedMode": 0,
+                  "startVelocity": {
+                     "max": [
+                        0.0,
+                        6.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        5.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  }
+               },
+               "noiseModule": {
+                  "enabled": false,
+                  "frequency": {
+                     "max": 0.5,
+                     "min": 0.5,
+                     "randomize": false
+                  },
+                  "scrollSpeed": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  },
+                  "strength": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  }
+               },
+               "rendererModule": {
+                  "billboardType": 0,
+                  "boxSize": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "circleRadius": 0.5,
+                  "circleSegments": 32,
+                  "coneHeight": 1.0,
+                  "coneRadius": 0.5,
+                  "coneSegments": 32,
+                  "cylinderBottomRadius": 0.5,
+                  "cylinderHeight": 1.0,
+                  "cylinderRadius": 0.5,
+                  "cylinderSegments": 3,
+                  "cylinderTopRadius": 0.5,
+                  "enabled": true,
+                  "lengthScale": 2.0,
+                  "meshOriginY": 0.0,
+                  "particleMeshType": 0,
+                  "planeDepth": 1.0,
+                  "planeWidth": 1.0,
+                  "ringInnerRadius": 0.14000000059604645,
+                  "ringOuterRadius": 0.5,
+                  "ringSegments": 32,
+                  "rotationSpace": 1,
+                  "speedScale": 1.0,
+                  "sphereRadius": 0.5,
+                  "sphereSlices": 32,
+                  "sphereStacks": 16,
+                  "torusMajorRadius": 0.5,
+                  "torusMajorSegments": 32,
+                  "torusMinorRadius": 0.20000000298023224,
+                  "torusMinorSegments": 16
+               },
+               "rotationOverLifetimeModule": {
+                  "angularVelocityMax": [
+                     0.0,
+                     0.0,
+                     2.0
+                  ],
+                  "angularVelocityMin": [
+                     0.0,
+                     0.0,
+                     -2.0
+                  ],
+                  "angularVelocityRandomize": true,
+                  "enabled": false
+               },
+               "shapeModule": {
+                  "angle": 15.0,
+                  "arc": 360.0,
+                  "boxSize": [
+                     0.20000000298023224,
+                     0.05000000074505806,
+                     0.20000000298023224
+                  ],
+                  "circleOutwardVelocity": 2.0999999046325684,
+                  "emitFrom": 2,
+                  "enabled": true,
+                  "length": 0.5,
+                  "position": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "radius": 0.15000000596046448,
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "scale": [
+                     0.6000000238418579,
+                     0.10000000149011612,
+                     5.0
+                  ],
+                  "shapeType": 0
+               },
+               "sizeOverLifetimeModule": {
+                  "enabled": true,
+                  "endSize": [
+                     1.0,
+                     6.0,
+                     1.5
+                  ],
+                  "sizeMultiplier": 0.4000000059604645,
+                  "startSize": [
+                     0.4000000059604645,
+                     0.0,
+                     0.4000000059604645
+                  ]
+               },
+               "textureName": "bonfire",
+               "textureSheetAnimationModule": {
+                  "animationMode": 0,
+                  "cycles": 1,
+                  "enabled": true,
+                  "frameCount": 16,
+                  "frameOverTime": 10.0,
+                  "randomRow": false,
+                  "rowIndex": 0,
+                  "startFrame": 0,
+                  "tilesX": 4,
+                  "tilesY": 4
+               },
+               "usePostProcess": true,
+               "uvTransformModule": {
+                  "enabled": false,
+                  "rotationConstant": 0.0,
+                  "rotationCurveEnd": 0.0,
+                  "rotationCurveStart": 0.0,
+                  "rotationMode": 0,
+                  "rotationRandom": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": false
+                  },
+                  "scaleConstant": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleCurveEnd": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleCurveStart": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleMode": 0,
+                  "scaleRandom": {
+                     "max": [
+                        1.0,
+                        1.0
+                     ],
+                     "min": [
+                        1.0,
+                        1.0
+                     ],
+                     "randomize": false
+                  },
+                  "scrollConstant": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollCurveEnd": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollCurveStart": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollMode": 0,
+                  "scrollRandom": {
+                     "max": [
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  }
+               },
+               "velocityOverLifetimeModule": {
+                  "enabled": false,
+                  "linearVelocity": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  },
+                  "speedModifier": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  }
+               }
+            },
+            "id": "ParticleSystem:bonfire",
+            "name": "bonfire",
+            "objectType": "ParticleSystem"
+         },
+         "sceneKey": "ParticleSystem:bonfire"
+      }
+   ],
+   "version": 3
 }

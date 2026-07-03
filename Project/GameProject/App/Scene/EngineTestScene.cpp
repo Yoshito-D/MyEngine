@@ -33,12 +33,12 @@ void EngineTestScene::OnInitialize() {
    }
 
    if (auto* anim = animCube_->AddComponent<AnimationComponent>()) {
-	  anim->animationName    = "AnimatedCube.gltf";
-	  anim->clipName         = "animation_AnimatedCube";
-	  anim->loop             = true;
-	  anim->playing          = true;
-	  anim->useSkinning      = false;
-	  anim->applyRotation    = true;
+	  anim->animationName = "AnimatedCube.gltf";
+	  anim->clipName = "animation_AnimatedCube";
+	  anim->loop = true;
+	  anim->playing = true;
+	  anim->useSkinning = false;
+	  anim->applyRotation = true;
    }
 
    // --- パーティクルシステムの作成 ---

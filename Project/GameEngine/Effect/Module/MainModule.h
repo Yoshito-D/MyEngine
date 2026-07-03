@@ -173,10 +173,6 @@ public:
    void SetMaxParticles(uint32_t max) { maxParticles_ = max; }
    uint32_t GetMaxParticles() const { return maxParticles_; }
 
-   // Emission Rate (1秒間に放出するパーティクル数)
-   void SetEmissionRate(float rate) { emissionRate_ = rate; }
-   float GetEmissionRate() const { return emissionRate_; }
-
    // JSON Serialization
    nlohmann::json ToJson() const;
    void FromJson(const nlohmann::json& json);
@@ -202,6 +198,5 @@ private:
    bool playOnAwake_ = true;
    ScalingMode scalingMode_ = ScalingMode::Hierarchy;
    uint32_t maxParticles_ = 1000;
-   float emissionRate_ = 10.0f;  // 1秒間に放出するパーティクル数
 };
 }
