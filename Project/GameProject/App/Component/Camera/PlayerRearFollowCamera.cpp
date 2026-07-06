@@ -22,23 +22,8 @@ static float ExpSmoothingFactor(float speed, float deltaTime) {
    return 1.0f - std::exp(-k * dt);
 }
 
-static nlohmann::json SerializeVector3(const GameEngine::Vector3& value) {
-   return nlohmann::json::array({ value.x, value.y, value.z });
-}
-
-static GameEngine::Vector3 DeserializeVector3(const nlohmann::json& data, const GameEngine::Vector3& fallback) {
-   if (!data.is_array() || data.size() != 3) {
-	  return fallback;
-   }
-   return GameEngine::Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
-}
-
 static float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
    return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
-}
-
-static bool ReadBool(const nlohmann::json& data, const char* key, bool fallback) {
-   return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
 }
 
 static GameEngine::Vector3 NormalizeOrFallback(
@@ -306,6 +291,31 @@ void PlayerRearFollowCamera::UpdateAirborneResetBlend(float deltaTime) {
 	  1.0f);
 }
 
+/// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向を更新する
+/// @details 注視点はプレイヤー中心のまま保ち、eye 側の回り込み方向だけを補間する。
+///          これによりプレイヤーを画面中心に置いたまま、近傍惑星を画角へ少し入れる。
+void PlayerRearFollowCamera::UpdatePlanetDirectionGuide(float deltaTime) {
+   GameEngine::Vector3 desiredBackward = currentBackward_;
+   if (isAirborne_) {
+	  GameEngine::Vector3 toPlanet = planetCenter_ - pivotTarget_;
+	  float toPlanetLength = toPlanet.Length();
+	  if (toPlanetLength > 1e-4f) {
+		 desiredBackward = toPlanet * (-1.0f / toPlanetLength);
+	  }
+   }
+
+   if (!isPlanetBackwardInitialized_) {
+	  currentPlanetBackward_ = desiredBackward;
+	  isPlanetBackwardInitialized_ = true;
+	  return;
+   }
+
+   float t = ExpSmoothingFactor(airbornePlanetDirectionLerpSpeed, deltaTime);
+   currentPlanetBackward_ = NormalizeOrFallback(
+	  GameEngine::Vector3::Lerp(currentPlanetBackward_, desiredBackward, t),
+	  desiredBackward);
+}
+
 /// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
 /// @details カメラは pivot の後方（currentBackward_ 方向）に distance 離れた場所に置く。
 ///          加速中は distanceBoostMax * boostAlpha 分さらに後退させることで
@@ -316,6 +326,17 @@ void PlayerRearFollowCamera::UpdateAirborneResetBlend(float deltaTime) {
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3& up,
    float boostAlpha) const {
    float effectiveAirborneBlend = (std::max)(currentAirborneBlend_, airborneResetBlend_);
+   GameEngine::Vector3 effectiveBackward = currentBackward_;
+   float planetDirectionBlend = std::clamp(
+	  currentAirborneBlend_ * (1.0f - airborneResetBlend_) * airbornePlanetDirectionBlend,
+	  0.0f,
+	  1.0f);
+   if (planetDirectionBlend > 1e-4f) {
+	  // プレイヤーを注視したまま、eye側を惑星の反対側へ少し回して惑星を画面へ入れる。
+	  effectiveBackward = NormalizeOrFallback(
+		 GameEngine::Vector3::Lerp(currentBackward_, currentPlanetBackward_, planetDirectionBlend),
+		 currentBackward_);
+   }
 
    // 加速と空中状態の後退量を合成する。
    float boostedDistance =
@@ -325,7 +346,7 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3
 	  + airborneDistanceOffset * effectiveAirborneBlend;
 
    // eye = pivot から上方向に height、後方に boostedDistance 離れた位置
-   return pivotTarget_ + up * height + currentBackward_ * boostedDistance;
+   return pivotTarget_ + up * height + effectiveBackward * boostedDistance;
 }
 
 /// @brief LookAt に使う注視点を計算する
@@ -500,6 +521,49 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothEye(const GameEngine::Vector3&
    return pivotTarget_ + currentEyeOffset_;
 }
 
+/// @brief 保存データから復元すべきでないランタイム補間状態を初期化する
+/// @details シーン保存時に古い currentEyeOffset_ や currentFov_ が残っていても、
+///          起動直後は現在のプレイヤー位置・設定値から必ず同じ初期状態を作る。
+void PlayerRearFollowCamera::ResetRuntimeState() {
+   gravityUp_ = { 0.0f, 1.0f, 0.0f };
+   currentGravityUp_ = gravityUp_;
+   pivotTarget_ = { 0.0f, 0.0f, 0.0f };
+   planetCenter_ = { 0.0f, 0.0f, 0.0f };
+   followForward_ = { 0.0f, 0.0f, 1.0f };
+   airborneMoveForward_ = { 0.0f, 0.0f, 1.0f };
+   playerForward_ = { 0.0f, 0.0f, 1.0f };
+   playerUp_ = { 0.0f, 1.0f, 0.0f };
+
+   isAirborne_ = false;
+   currentAirborneBlend_ = 0.0f;
+   isAirborneResetHeld_ = false;
+   airborneResetBlend_ = 0.0f;
+   currentBackward_ = { 0.0f, 0.0f, -1.0f };
+   currentPlanetBackward_ = currentBackward_;
+   isPlanetBackwardInitialized_ = false;
+   isInitialized_ = false;
+
+   playerSpeed_ = 0.0f;
+   currentFov_ = fovDefault;
+   springFovOffset_ = 0.0f;
+   springFovVelocity_ = 0.0f;
+   springDistanceOffset_ = 0.0f;
+   springDistanceVelocity_ = 0.0f;
+   previousPlayerSpeed_ = 0.0f;
+   isSpeedInitialized_ = false;
+
+   currentEyeOffset_ = { 0.0f, height, -distance };
+   isEyeInitialized_ = false;
+   cachedRight_ = { 1.0f, 0.0f, 0.0f };
+   cachedUp_ = { 0.0f, 1.0f, 0.0f };
+
+   if (auto* owner = GetOwnerCamera()) {
+	  GameEngine::CameraState state = owner->GetState();
+	  state.fov = fovDefault;
+	  owner->SetState(state);
+   }
+}
+
 // =============================================================================
 // パブリックメソッド実装
 // =============================================================================
@@ -519,22 +583,25 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    //    → 重力平面への再投影 + 地上時の Lerp 追従を行う
    UpdateBackwardVector(up, deltaTime);
 
-   // ⑤ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
+   // ⑤ 空中時に近傍惑星が画角へ入るよう、eye の回り込み方向を少しずつ補間する
+   UpdatePlanetDirectionGuide(deltaTime);
+
+   // ⑥ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
    //    → FOV は state.fov へ反映済み、boostAlpha は距離ブーストに転用する
    float boostAlpha = UpdateAccelerationEffect(state, deltaTime);
 
-   // ⑥ リセット時はカメラUpもプレイヤーUpへ補間する
+   // ⑦ リセット時はカメラUpもプレイヤーUpへ補間する
    GameEngine::Vector3 viewUp = ComputeViewUp(up);
 
-   // ⑦ 加速ブーストと空中距離を加味した eye 位置を算出する
+   // ⑧ 加速ブーストと空中距離を加味した eye 位置を算出する
    //    → 加速中はカメラが後退して視野が広がり、速度感が増す
    GameEngine::Vector3 eye = ComputeEye(viewUp, boostAlpha);
 
-   // ⑧ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
+   // ⑨ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
    //    → 相対補間により、ピボットが移動してもカメラが前方へ突き抜けない
    eye = SmoothEye(eye, deltaTime);
 
-   // ⑨ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
+   // ⑩ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
    ApplyLookAt(state, eye, viewUp);
 }
 
@@ -545,6 +612,8 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "groundedTargetHeight", groundedTargetHeight },
 	   { "airborneDistanceOffset", airborneDistanceOffset },
 	   { "airborneFovOffset", airborneFovOffset },
+	   { "airbornePlanetDirectionBlend", airbornePlanetDirectionBlend },
+	   { "airbornePlanetDirectionLerpSpeed", airbornePlanetDirectionLerpSpeed },
 	   { "airborneBlendLerpSpeed", airborneBlendLerpSpeed },
 	   { "airborneForwardLerpSpeed", airborneForwardLerpSpeed },
 	   { "airborneResetLerpSpeed", airborneResetLerpSpeed },
@@ -563,19 +632,6 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "speedBoostThreshold", speedBoostThreshold },
 	   { "speedBoostMax", speedBoostMax },
 	   { "positionLerpSpeed", positionLerpSpeed },
-	   { "isAirborne", isAirborne_ },
-	   { "currentAirborneBlend", currentAirborneBlend_ },
-	   { "isAirborneResetHeld", isAirborneResetHeld_ },
-	   { "airborneResetBlend", airborneResetBlend_ },
-	   { "isInitialized", isInitialized_ },
-	   { "currentFov", currentFov_ },
-	   { "springFovOffset", springFovOffset_ },
-	   { "springFovVelocity", springFovVelocity_ },
-	   { "springDistanceOffset", springDistanceOffset_ },
-	   { "springDistanceVelocity", springDistanceVelocity_ },
-	   { "previousPlayerSpeed", previousPlayerSpeed_ },
-	   { "isSpeedInitialized", isSpeedInitialized_ },
-	   { "currentEyeOffset", SerializeVector3(currentEyeOffset_) },
    };
 }
 
@@ -589,6 +645,8 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    groundedTargetHeight = ReadFloat(data, "groundedTargetHeight", groundedTargetHeight);
    airborneDistanceOffset = ReadFloat(data, "airborneDistanceOffset", airborneDistanceOffset);
    airborneFovOffset = ReadFloat(data, "airborneFovOffset", airborneFovOffset);
+   airbornePlanetDirectionBlend = ReadFloat(data, "airbornePlanetDirectionBlend", airbornePlanetDirectionBlend);
+   airbornePlanetDirectionLerpSpeed = ReadFloat(data, "airbornePlanetDirectionLerpSpeed", airbornePlanetDirectionLerpSpeed);
    airborneBlendLerpSpeed = ReadFloat(data, "airborneBlendLerpSpeed", airborneBlendLerpSpeed);
    airborneForwardLerpSpeed = ReadFloat(data, "airborneForwardLerpSpeed", airborneForwardLerpSpeed);
    airborneResetLerpSpeed = ReadFloat(data, "airborneResetLerpSpeed", airborneResetLerpSpeed);
@@ -607,23 +665,9 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
    speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
    positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
-
-   isAirborne_ = ReadBool(data, "isAirborne", isAirborne_);
-   currentAirborneBlend_ = std::clamp(ReadFloat(data, "currentAirborneBlend", currentAirborneBlend_), 0.0f, 1.0f);
-   isAirborneResetHeld_ = ReadBool(data, "isAirborneResetHeld",
-	  ReadBool(data, "isAirborneResetting", isAirborneResetHeld_));
-   airborneResetBlend_ = std::clamp(ReadFloat(data, "airborneResetBlend", airborneResetBlend_), 0.0f, 1.0f);
-   isInitialized_ = ReadBool(data, "isInitialized", isInitialized_);
    autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
-   currentFov_ = ReadFloat(data, "currentFov", currentFov_);
-   springFovOffset_ = ReadFloat(data, "springFovOffset", springFovOffset_);
-   springFovVelocity_ = ReadFloat(data, "springFovVelocity", springFovVelocity_);
-   springDistanceOffset_ = ReadFloat(data, "springDistanceOffset", springDistanceOffset_);
-   springDistanceVelocity_ = ReadFloat(data, "springDistanceVelocity", springDistanceVelocity_);
-   isSpeedInitialized_ = ReadBool(data, "isSpeedInitialized", isSpeedInitialized_);
-   if (data.contains("currentEyeOffset")) {
-	  currentEyeOffset_ = DeserializeVector3(data.at("currentEyeOffset"), currentEyeOffset_);
-   }
+
+   ResetRuntimeState();
 }
 
 #ifdef USE_IMGUI
@@ -636,6 +680,8 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::DragFloat(Tr("地上注視高さ", "Grounded Target Height"), &groundedTargetHeight, 0.05f, -5.0f, 10.0f);
    ImGui::DragFloat(Tr("空中距離加算", "Airborne Distance Offset"), &airborneDistanceOffset, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("空中FOV加算", "Airborne FOV Offset"), &airborneFovOffset, 0.001f, 0.0f, 0.5f, "%.3f");
+   ImGui::DragFloat(Tr("空中惑星方向補間", "Airborne Planet Direction Blend"), &airbornePlanetDirectionBlend, 0.01f, 0.0f, 1.0f, "%.2f");
+   ImGui::DragFloat(Tr("空中惑星方向補間速度", "Airborne Planet Direction Lerp"), &airbornePlanetDirectionLerpSpeed, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("空中補間速度", "Airborne Blend Speed"), &airborneBlendLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::DragFloat(Tr("空中進行方向補間", "Airborne Forward Lerp"), &airborneForwardLerpSpeed, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("空中リセット補間", "Airborne Reset Lerp"), &airborneResetLerpSpeed, 0.1f, 0.1f, 30.0f);
@@ -663,6 +709,7 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("現在GravityUp", "Current GravityUp"), currentGravityUp_.x, currentGravityUp_.y, currentGravityUp_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("追従前方向", "Follow Forward"), followForward_.x, followForward_.y, followForward_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("空中進行方向", "Air Move Forward"), airborneMoveForward_.x, airborneMoveForward_.y, airborneMoveForward_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("注視惑星中心", "Look Planet Center"), planetCenter_.x, planetCenter_.y, planetCenter_.z);
    ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), playerSpeed_, Tr("現在FOV", "Current FOV"), currentFov_);
 }
 #endif

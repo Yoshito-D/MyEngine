@@ -29,6 +29,9 @@ public:
 	/// @brief 注視対象（ピボット）を設定する
 	void SetPivotTarget(const GameEngine::Vector3& target) { pivotTarget_ = target; }
 
+	/// @brief 空中時に画面へ入れたい近傍惑星の中心を設定する
+	void SetPlanetCenter(const GameEngine::Vector3& center) { planetCenter_ = center; }
+
 	/// @brief プレイヤー前方を設定する
 	void SetFollowForward(const GameEngine::Vector3& forward) { followForward_ = forward; }
 
@@ -65,10 +68,10 @@ public:
 	/// @brief 直近更新時のカメラRightを取得する
 	GameEngine::Vector3 GetCameraRight() const { return cachedRight_; }
 
-	/// @brief カメラ設定と補間状態をシリアライズする
+	/// @brief カメラ設定をシリアライズする
 	nlohmann::json Serialize() const override;
 
-	/// @brief カメラ設定と補間状態をデシリアライズする
+	/// @brief カメラ設定をデシリアライズし、ランタイム補間状態を初期化する
 	/// @param data 読み込むJSONデータ
 	void Deserialize(const nlohmann::json& data) override;
 
@@ -92,6 +95,12 @@ public:
 
 	/// @brief 空中時に追加する FOV 量
 	float airborneFovOffset = 0.05f;
+
+	/// @brief 空中時にカメラ前方を近傍惑星方向へ寄せる最大割合
+	float airbornePlanetDirectionBlend = 0.35f;
+
+	/// @brief 空中時の近傍惑星方向へ向かう補間速度
+	float airbornePlanetDirectionLerpSpeed = 3.0f;
 
 	/// @brief 地上/空中パラメータを切り替える補間速度
 	float airborneBlendLerpSpeed = 6.0f;
@@ -158,6 +167,9 @@ private:
 	/// @brief 注視対象
 	GameEngine::Vector3 pivotTarget_ = { 0.0f, 0.0f, 0.0f };
 
+	/// @brief 空中で画面へ入れる近傍惑星の中心
+	GameEngine::Vector3 planetCenter_ = { 0.0f, 0.0f, 0.0f };
+
 	/// @brief 追従対象の前方
 	GameEngine::Vector3 followForward_ = { 0.0f, 0.0f, 1.0f };
 
@@ -184,6 +196,12 @@ private:
 
 	/// @brief 現在の後方ベクトル（補間結果）
 	GameEngine::Vector3 currentBackward_ = { 0.0f, 0.0f, -1.0f };
+
+	/// @brief 空中時に惑星方向を画角へ入れるための補間済み後方ベクトル
+	GameEngine::Vector3 currentPlanetBackward_ = { 0.0f, 0.0f, -1.0f };
+
+	/// @brief currentPlanetBackward_ の初期化済みフラグ
+	bool isPlanetBackwardInitialized_ = false;
 
 	/// @brief 初回更新フラグ
 	bool isInitialized_ = false;
@@ -245,6 +263,10 @@ private:
 	/// @param deltaTime フレーム時間
 	void UpdateAirborneResetBlend(float deltaTime);
 
+	/// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向を更新する
+	/// @param deltaTime フレーム時間
+	void UpdatePlanetDirectionGuide(float deltaTime);
+
 	/// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
 	/// @param up カメラ位置の高さ方向
 	/// @param boostAlpha 加速度合い [0,1]
@@ -290,6 +312,9 @@ private:
 	static GameEngine::Vector3 ProjectOnPlaneNorm(const GameEngine::Vector3& v,
 												  const GameEngine::Vector3& up,
 												  const GameEngine::Vector3& fallback);
+
+	/// @brief 保存データから復元すべきでないランタイム補間状態を初期化する
+	void ResetRuntimeState();
 };
 
 } // namespace App
