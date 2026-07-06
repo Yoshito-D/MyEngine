@@ -166,15 +166,9 @@
                      "airborneDistanceOffset": 4.0,
                      "airborneForwardLerpSpeed": 4.0,
                      "airborneFovOffset": 0.10000000149011612,
-                     "airborneResetBlend": 0.0,
+                     "airbornePlanetDirectionBlend": 1.0,
+                     "airbornePlanetDirectionLerpSpeed": 1.5,
                      "airborneResetLerpSpeed": 8.0,
-                     "currentAirborneBlend": 0.0,
-                     "currentEyeOffset": [
-                        9.509416580200195,
-                        -14.321455001831055,
-                        -3.0768470764160156
-                     ],
-                     "currentFov": 0.45000001788139343,
                      "distance": 16.0,
                      "distanceBoostMax": 2.0,
                      "fovBoostMax": 0.05000000074505806,
@@ -183,20 +177,11 @@
                      "gravityUpLerpSpeed": 5.0,
                      "groundedTargetHeight": 2.0,
                      "height": 4.0,
-                     "isAirborne": false,
-                     "isAirborneResetHeld": false,
-                     "isInitialized": true,
-                     "isSpeedInitialized": true,
                      "positionLerpSpeed": 12.0,
-                     "previousPlayerSpeed": 0.0,
                      "rearLerpSpeed": 7.5,
                      "speedBoostMax": 25.0,
                      "speedBoostThreshold": 5.0,
                      "springDamping": 12.0,
-                     "springDistanceOffset": 2.802596928649634e-45,
-                     "springDistanceVelocity": -8.407790785948902e-45,
-                     "springFovOffset": 2.802596928649634e-45,
-                     "springFovVelocity": -7.006492321624085e-45,
                      "springStiffness": 30.0,
                      "turboDistanceKickMax": 2.0,
                      "turboFovKickMax": 0.05999999865889549
@@ -226,7 +211,7 @@
             "priority": 0,
             "state": {
                "farClip": 10000.0,
-               "fov": 0.45000001788139343,
+               "fov": 0.4699999988079071,
                "hasViewMatrixOverride": false,
                "nearClip": 0.20000000298023224,
                "transform": {
@@ -466,8 +451,16 @@
                   ],
                   "pipelineName": "",
                   "shininess": 40.0,
+                  "textureLeftTop": [
+                     0.0,
+                     0.0
+                  ],
                   "textureNames": [
                      "textures/ground/aerial_grass_rock_diff_2k.jpg"
+                  ],
+                  "textureSize": [
+                     0.0,
+                     0.0
                   ],
                   "uvTransform": [
                      [
@@ -584,8 +577,16 @@
                   ],
                   "pipelineName": "",
                   "shininess": 40.0,
+                  "textureLeftTop": [
+                     0.0,
+                     0.0
+                  ],
                   "textureNames": [
                      "textures/ground/painted_concrete_diff_2k.jpg"
+                  ],
+                  "textureSize": [
+                     0.0,
+                     0.0
                   ],
                   "uvTransform": [
                      [
@@ -702,8 +703,16 @@
                   ],
                   "pipelineName": "",
                   "shininess": 40.0,
+                  "textureLeftTop": [
+                     0.0,
+                     0.0
+                  ],
                   "textureNames": [
                      "textures/ground/plywood_diff_2k.jpg"
+                  ],
+                  "textureSize": [
+                     0.0,
+                     0.0
                   ],
                   "uvTransform": [
                      [
@@ -820,8 +829,16 @@
                   ],
                   "pipelineName": "",
                   "shininess": 40.0,
+                  "textureLeftTop": [
+                     0.0,
+                     0.0
+                  ],
                   "textureNames": [
                      "textures/ground/aerial_beach_01_diff_2k.jpg"
+                  ],
+                  "textureSize": [
+                     0.0,
+                     0.0
                   ],
                   "uvTransform": [
                      [
@@ -943,8 +960,16 @@
                      ],
                      "pipelineName": "",
                      "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
                      "textureNames": [
                         "coast_sand_05_diff_2k"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
                      ],
                      "uvTransform": [
                         [
@@ -1065,8 +1090,16 @@
                      ],
                      "pipelineName": "",
                      "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
                      "textureNames": [
                         "textures/ground/rust_coarse_01_diff_2k.jpg"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
                      ],
                      "uvTransform": [
                         [
@@ -1187,8 +1220,16 @@
                      ],
                      "pipelineName": "",
                      "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
                      "textureNames": [
                         "color_palette"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
                      ],
                      "uvTransform": [
                         [
@@ -1835,7 +1876,15 @@
                      "environmentTextureName": "",
                      "materialCount": 0,
                      "materialNames": [],
-                     "textureNames": []
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
+                     "textureNames": [],
+                     "textureSize": [
+                        0.0,
+                        0.0
+                     ]
                   },
                   "enabled": true,
                   "typeName": "MaterialComponent"

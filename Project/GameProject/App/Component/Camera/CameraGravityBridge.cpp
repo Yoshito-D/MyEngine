@@ -2,6 +2,7 @@
 #include "../Character/CharacterLanding.h"
 #include "../Character/CharacterJump.h"
 #include "../Gravity/GravityBody.h"
+#include "../Gravity/PlanetSwitcher.h"
 #include "../Vehicle/VehicleGroundMover.h"
 #include "Framework/EngineContext.h"
 #include "Object/Component/TransformComponent.h"
@@ -70,6 +71,11 @@ void CameraGravityBridge::Update(float) {
    if (len < 1e-4f) { return; }
    GameEngine::Vector3 gravityUp = toSelf * (1.0f / len);
    GameEngine::Vector3 pos       = transform->transform.translation;
+   GameEngine::Vector3 cameraPlanetCenter = planetCenter_;
+   if (auto* switcher = GetOwner().GetComponent<PlanetSwitcher>()) {
+      float surfaceRadius = 0.0f;
+      switcher->TryGetLandingPlanet(cameraPlanetCenter, surfaceRadius);
+   }
 
    // GravityFollowCamera 側へ重力Upと注視対象を同期
    if (gravityFollowCamera_) {
@@ -77,7 +83,7 @@ void CameraGravityBridge::Update(float) {
       gravityFollowCamera_->SetPivotTarget(pos);
    }
 
-   // PlayerRearFollowCamera 側へ重力Up・注視対象・前方・空中状態を同期
+   // PlayerRearFollowCamera 側へ重力Up・注視対象・近傍惑星・前方・空中状態を同期
    if (playerRearFollowCamera_) {
       GameEngine::Vector3 forward = { 0.0f, 0.0f, 1.0f };
       GameEngine::Vector3 playerUp = { 0.0f, 1.0f, 0.0f };
@@ -103,6 +109,7 @@ void CameraGravityBridge::Update(float) {
 
       playerRearFollowCamera_->SetGravityUp(gravityUp);
       playerRearFollowCamera_->SetPivotTarget(pos);
+      playerRearFollowCamera_->SetPlanetCenter(cameraPlanetCenter);
       playerRearFollowCamera_->SetFollowForward(forward);
       playerRearFollowCamera_->SetAirborneMoveForward(airborneMoveForward);
       playerRearFollowCamera_->SetPlayerBasis(forward, playerUp);
