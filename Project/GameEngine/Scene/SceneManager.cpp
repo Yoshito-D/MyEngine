@@ -38,9 +38,7 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
 
    currentScene_ = std::move(newScene);
    currentScene_->Initialize();
-#ifdef USE_IMGUI
-   currentScene_->LoadEditorSceneIfNeeded();
-#endif
+   currentScene_->LoadSceneDataIfNeeded();
 
    isChangingScene_ = false;
    return true;

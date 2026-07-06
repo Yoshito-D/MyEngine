@@ -642,6 +642,9 @@
     <ClCompile Include="GameEngine\Object\Component\ParticleEmitterComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\PrimitiveMeshComponent.cpp">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
@@ -1213,6 +1216,9 @@
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\ParticleEmitterComponent.h">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\PrimitiveMeshComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\RenderComponent.h">

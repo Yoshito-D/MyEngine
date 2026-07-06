@@ -228,7 +228,7 @@
                "farClip": 10000.0,
                "fov": 0.45000001788139343,
                "hasViewMatrixOverride": false,
-               "nearClip": 0.009999999776482582,
+               "nearClip": 0.20000000298023224,
                "transform": {
                   "rotation": [
                      0.0,
@@ -517,6 +517,7 @@
                "data": {
                   "applyPostProcess": true,
                   "autoRender": true,
+                  "renderSpace": "World",
                   "visible": true
                },
                "enabled": true,
@@ -634,6 +635,7 @@
                "data": {
                   "applyPostProcess": true,
                   "autoRender": true,
+                  "renderSpace": "World",
                   "visible": true
                },
                "enabled": true,
@@ -751,6 +753,7 @@
                "data": {
                   "applyPostProcess": true,
                   "autoRender": true,
+                  "renderSpace": "World",
                   "visible": true
                },
                "enabled": true,
@@ -868,6 +871,7 @@
                "data": {
                   "applyPostProcess": true,
                   "autoRender": true,
+                  "renderSpace": "World",
                   "visible": true
                },
                "enabled": true,
@@ -990,6 +994,7 @@
                   "data": {
                      "applyPostProcess": true,
                      "autoRender": true,
+                     "renderSpace": "World",
                      "visible": true
                   },
                   "enabled": true,
@@ -1111,6 +1116,7 @@
                   "data": {
                      "applyPostProcess": true,
                      "autoRender": true,
+                     "renderSpace": "World",
                      "visible": true
                   },
                   "enabled": true,
@@ -1232,6 +1238,7 @@
                   "data": {
                      "applyPostProcess": true,
                      "autoRender": true,
+                     "renderSpace": "World",
                      "visible": true
                   },
                   "enabled": true,

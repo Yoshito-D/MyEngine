@@ -88,12 +88,6 @@ public:
 	  Local   // ローカル空間
    };
 
-   enum class ScalingMode {
-	  Hierarchy,  // 階層的スケール
-	  Local,      // ローカルスケールのみ
-	  Shape       // 形状のみスケール
-   };
-
    enum class StartSpeedMode {
 	  Directional,  // Shape の放出方向 * speed
 	  Vector3       // Vector3 を速度として直接指定
@@ -165,10 +159,6 @@ public:
    void SetPlayOnAwake(bool play) { playOnAwake_ = play; }
    bool GetPlayOnAwake() const { return playOnAwake_; }
 
-   // Scaling Mode
-   void SetScalingMode(ScalingMode mode) { scalingMode_ = mode; }
-   ScalingMode GetScalingMode() const { return scalingMode_; }
-
    // Max Particles
    void SetMaxParticles(uint32_t max) { maxParticles_ = max; }
    uint32_t GetMaxParticles() const { return maxParticles_; }
@@ -196,7 +186,6 @@ private:
    float gravityModifier_ = 0.0f;
    SimulationSpace simulationSpace_ = SimulationSpace::World;
    bool playOnAwake_ = true;
-   ScalingMode scalingMode_ = ScalingMode::Hierarchy;
    uint32_t maxParticles_ = 1000;
 };
 }

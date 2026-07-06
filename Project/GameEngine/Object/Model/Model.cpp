@@ -76,15 +76,13 @@ Model& Model::SetMaterial(Material* material) {
 }
 
 Model& Model::Create() {
-   transformationMatrix_ = std::make_unique<TransformationMatrix>();
-   transformationMatrix_->Create();
-
    AddComponent<ModelAssetComponent>();
    AddComponent<RenderComponent>();
 
    auto* transformComponent = GetComponent<TransformComponent>();
    if (transformComponent) {
 	  transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
+	  transformComponent->EnsureTransformationMatrix();
    }
    return *this;
 }
@@ -184,6 +182,14 @@ bool Model::IsUsingQuaternion() const {
    return transformComponent->transform.IsUsingQuaternion();
 }
 
+void Model::SetWorldMatrix(const Matrix4x4& worldMatrix) {
+   auto* transformComponent = GetComponent<TransformComponent>();
+   if (!transformComponent) {
+	  return;
+   }
+   transformComponent->SetWorldMatrixOverride(worldMatrix);
+}
+
 void Model::SetScale(const Vector3& scale) {
    auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
@@ -202,14 +208,19 @@ void Model::SetParentMatrix(const Matrix4x4& parentMatrix) {
 
 void Model::UpdateMatrix(Camera* camera) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent || !camera || !transformationMatrix_) {
+   if (!transformComponent || !camera) {
+	  return;
+   }
+
+   auto* transformationMatrix = transformComponent->EnsureTransformationMatrix();
+   if (!transformationMatrix) {
 	  return;
    }
 
    Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->transform);
 
-   if (hasWorldMatrixOverride_) {
-	  worldMatrix = worldMatrixOverride_;
+   if (transformComponent->HasWorldMatrixOverride()) {
+	  worldMatrix = transformComponent->GetWorldMatrixOverride();
    }
 
    // modelAssetのrootNode.localMatrixを掛ける
@@ -222,14 +233,22 @@ void Model::UpdateMatrix(Camera* camera) {
 
    if (transformComponent->useParentMatrix) {
 	  Matrix4x4 wVPMatrix = worldMatrix * transformComponent->parentMatrix * camera->GetViewProjectionMatrix();
-	  transformationMatrix_->GetTransformationMatrixData()->world = worldMatrix * transformComponent->parentMatrix;
-	  transformationMatrix_->GetTransformationMatrixData()->wVP = wVPMatrix;
-      transformationMatrix_->GetTransformationMatrixData()->worldInverseTranspose = (worldMatrix * transformComponent->parentMatrix).Inverse().Transpose();
+	  transformationMatrix->GetTransformationMatrixData()->world = worldMatrix * transformComponent->parentMatrix;
+	  transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;
+      transformationMatrix->GetTransformationMatrixData()->worldInverseTranspose = (worldMatrix * transformComponent->parentMatrix).Inverse().Transpose();
    } else {
 	  Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
-	  transformationMatrix_->GetTransformationMatrixData()->world = worldMatrix;
-	  transformationMatrix_->GetTransformationMatrixData()->wVP = wVPMatrix;
-	  transformationMatrix_->GetTransformationMatrixData()->worldInverseTranspose = worldMatrix.Inverse().Transpose();
+	  transformationMatrix->GetTransformationMatrixData()->world = worldMatrix;
+	  transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;
+	  transformationMatrix->GetTransformationMatrixData()->worldInverseTranspose = worldMatrix.Inverse().Transpose();
    }
+}
+
+TransformationMatrix* Model::GetTransformationMatrix() {
+   auto* transformComponent = GetComponent<TransformComponent>();
+   if (!transformComponent) {
+	  return nullptr;
+   }
+   return transformComponent->EnsureTransformationMatrix();
 }
 }

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ModelRenderer.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Graphics/TransformationMatrix.h"
 #include "Model/Model.h"
 #include "Graphics/Material.h"
 #include "PSOManager.h"
@@ -130,9 +131,15 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    const UINT environmentTextureSlot = resolvePipelineSlot("envmap", RootBindingSlots::Object3D::kEnvMap);
    const UINT skinPaletteSlot = resolvePipelineSlot("skinpalette", RootBindingSlots::Object3D::kSkinPalette);
 
+   TransformationMatrix* transformationMatrix = model->GetTransformationMatrix();
+   if (!transformationMatrix) {
+	  Logger::Warning("[ModelRenderer] TransformationMatrix is missing, skip draw");
+	  return;
+   }
+
    // 共通バインディング（全メッシュで共通）
    // Root Parameter 1: TransformationMatrix (Vertex Shader)
-   cmdList->SetGraphicsRootConstantBufferView(transformSlot, model->GetTransformationMatrix()->GetTransformationMatrixResource()->GetGPUVirtualAddress());
+   cmdList->SetGraphicsRootConstantBufferView(transformSlot, transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
 
    // Root Parameter 2: Camera (Pixel Shader)
    cmdList->SetGraphicsRootConstantBufferView(cameraSlot, camera->GetCameraResource()->GetGPUVirtualAddress());

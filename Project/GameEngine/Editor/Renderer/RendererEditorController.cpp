@@ -504,33 +504,6 @@ void RendererEditorController::ShowInspectorWindow() {
       DrawSelectedObjectAssetDropTargets(*editorContext, selectedObject);
    }
 
-
-   const std::string spriteHeader = std::string(Tr("スプライト", "Sprite")) + "###InspectorSprite";
-   if (auto* sprite = dynamic_cast<Sprite*>(selectedObject); sprite && ImGui::CollapsingHeader(spriteHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-      Vector2 size = sprite->GetSize();
-      if (ImGui::DragFloat2(Tr("サイズ", "Size"), &size.x, 0.1f, 0.0f, 4096.0f)) {
-         sprite->SetSize(size);
-      }
-      Vector2 scale = sprite->GetScale();
-      if (ImGui::DragFloat2(Tr("スケール", "Scale"), &scale.x, 0.01f, 0.001f, 100.0f)) {
-         sprite->SetScale(scale);
-      }
-      float rotationDegrees = ImGuiHelper::RadiansToDegrees(sprite->GetRotation());
-      if (ImGui::DragFloat(Tr("Z回転 (deg)", "Rotation Z (deg)"), &rotationDegrees, 0.1f)) {
-         sprite->SetRotation(ImGuiHelper::DegreesToRadians(rotationDegrees));
-      }
-      bool flipX = sprite->IsFlipX();
-      bool flipY = sprite->IsFlipY();
-      if (ImGui::Checkbox(Tr("左右反転", "Flip X"), &flipX)) {
-         sprite->SetFlipX(flipX);
-      }
-      if (ImGui::Checkbox(Tr("上下反転", "Flip Y"), &flipY)) {
-         sprite->SetFlipY(flipY);
-      }
-
-      ImGui::Spacing();
-   }
-
    if (editorContext && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsAnyItemActive()) {
       editorContext->MarkDirty();
    }

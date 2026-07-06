@@ -49,6 +49,27 @@ public:
    /// @brief スロット 0 のテクスチャ名を設定する（ショートハンド）
    void SetTextureName(const std::string& name) { SetTextureName(0, name); }
 
+   /// @brief Spriteなどの矩形描画で使用するテクスチャ範囲を設定する
+   /// @param leftTop テクスチャ左上座標
+   /// @param size テクスチャ矩形サイズ。0以下なら描画時に全体を使用する
+   void SetTextureUV(const Vector2& leftTop, const Vector2& size);
+
+   /// @brief Spriteなどの矩形描画で使用するテクスチャ左上座標を設定する
+   /// @param leftTop テクスチャ左上座標
+   void SetTextureLeftTop(const Vector2& leftTop) { textureLeftTop_ = leftTop; }
+
+   /// @brief Spriteなどの矩形描画で使用するテクスチャ矩形サイズを設定する
+   /// @param size テクスチャ矩形サイズ。0以下なら描画時に全体を使用する
+   void SetTextureSize(const Vector2& size) { textureSize_ = size; }
+
+   /// @brief Spriteなどの矩形描画で使用するテクスチャ左上座標を取得する
+   /// @return テクスチャ左上座標
+   Vector2 GetTextureLeftTop() const { return textureLeftTop_; }
+
+   /// @brief Spriteなどの矩形描画で使用するテクスチャ矩形サイズを取得する
+   /// @return テクスチャ矩形サイズ
+   Vector2 GetTextureSize() const { return textureSize_; }
+
    const std::string& GetEnvironmentTextureName() const { return environmentTextureName_; }
 
    const char* GetTypeName() const override;
@@ -77,5 +98,7 @@ private:
    static EnvironmentTextureNamesProvider environmentTextureNamesProvider_;
    std::vector<std::string> materialNames_;
    std::vector<std::string> textureNames_;
+   Vector2 textureLeftTop_ = { 0.0f, 0.0f };
+   Vector2 textureSize_ = { 0.0f, 0.0f };
 };
 }

@@ -22,6 +22,25 @@ const char* TransformComponent::GetTypeName() const {
    return "TransformComponent";
 }
 
+TransformationMatrix* TransformComponent::EnsureTransformationMatrix() {
+   if (!transformationMatrix_) {
+	  transformationMatrix_ = std::make_unique<TransformationMatrix>();
+	  transformationMatrix_->Create();
+   }
+
+   return transformationMatrix_.get();
+}
+
+void TransformComponent::SetWorldMatrixOverride(const Matrix4x4& worldMatrix) {
+   worldMatrixOverride_ = worldMatrix;
+   hasWorldMatrixOverride_ = true;
+}
+
+void TransformComponent::ClearWorldMatrixOverride() {
+   worldMatrixOverride_ = MakeIdentity4x4();
+   hasWorldMatrixOverride_ = false;
+}
+
 nlohmann::json TransformComponent::Serialize() const {
    const Vector3 activeEuler = transform.GetActiveEuler();
    const Quaternion activeQuaternion = transform.GetActiveQuaternion();
@@ -122,11 +141,14 @@ void TransformComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
 	  return;
    }
-   Vector3 scale = transform.scale;
+   Vector3& scale = transform.scale;
    ImGuiHelper::DrawVec3Control(ImGuiHelper::Localize({ "スケール", "Scale" }), scale, 1.0f, 120.0f, 0.1f, 0.1f, 10.0f);
 
-   Quaternion& rotation = transform.rotationQuaternion;
-   ImGuiHelper::DrawQuaternionAsEulerDegrees(ImGuiHelper::Localize({ "回転 (deg)", "Rotation (deg)" }), rotation, 120.0f, 0.1f);
+   Vector3 rotationEuler = transform.GetActiveEuler();
+   if (ImGuiHelper::DrawEulerDegreesControl(ImGuiHelper::Localize({ "回転 (deg)", "Rotation (deg)" }), rotationEuler, 0.0f, 120.0f, 0.1f)) {
+	  // TransformはEuler/Quaternionのどちらを描画に使うかを保持しているため、setter経由で両方を同期する。
+	  transform.SetRotationQuaternion(rotationEuler.ToQuaternion().Normalize());
+   }
 
    Vector3& position = transform.translation;
    ImGuiHelper::DrawVec3Control(ImGuiHelper::Localize({ "位置", "Position" }), position, 0.0f, 120.0f, 0.1f);

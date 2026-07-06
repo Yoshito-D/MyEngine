@@ -12,6 +12,16 @@ namespace {
       [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::MaterialComponent>(); },
       GameEngine::MaterialComponent::kDisplayName
    );
+
+   bool ReadVector2(const nlohmann::json& data, const char* key, GameEngine::Vector2& out) {
+      if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 2) {
+         return false;
+      }
+
+      out.x = data.at(key)[0].get<float>();
+      out.y = data.at(key)[1].get<float>();
+      return true;
+   }
 }
 
 #ifdef USE_IMGUI
@@ -171,6 +181,11 @@ void MaterialComponent::SetTextureName(size_t slot, const std::string& name) {
    textureNames_[slot] = name;
 }
 
+void MaterialComponent::SetTextureUV(const Vector2& leftTop, const Vector2& size) {
+   textureLeftTop_ = leftTop;
+   textureSize_ = size;
+}
+
 const char* MaterialComponent::GetTypeName() const {
    return "MaterialComponent";
 }
@@ -186,6 +201,8 @@ nlohmann::json MaterialComponent::Serialize() const {
    json["materialNames"] = materialNames;
    json["materialCount"] = materials.size();
    json["environmentTextureName"] = environmentTextureName_;
+   json["textureLeftTop"] = { textureLeftTop_.x, textureLeftTop_.y };
+   json["textureSize"] = { textureSize_.x, textureSize_.y };
 
    // テクスチャ名（マテリアルスロット並行）
    {
@@ -224,12 +241,26 @@ nlohmann::json MaterialComponent::Serialize() const {
 }
 
 void MaterialComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
+   if (!data.is_object()) {
       return;
+   }
+
+   Vector2 textureValue = textureLeftTop_;
+   if (ReadVector2(data, "textureLeftTop", textureValue)) {
+      textureLeftTop_ = textureValue;
+   }
+
+   textureValue = textureSize_;
+   if (ReadVector2(data, "textureSize", textureValue)) {
+      textureSize_ = textureValue;
    }
 
    if (data.contains("environmentTextureName") && data.at("environmentTextureName").is_string()) {
       environmentTextureName_ = data.at("environmentTextureName").get<std::string>();
+   }
+
+   if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
+      return;
    }
 
    materialNames_.clear();
@@ -457,6 +488,10 @@ void MaterialComponent::DrawInspector() {
          }
       }
    }
+
+   ImGui::SeparatorText(Tr("テクスチャ矩形", "Texture Rect"));
+   ImGui::DragFloat2(Tr("左上", "Left Top"), &textureLeftTop_.x, 0.1f, 0.0f, 16384.0f);
+   ImGui::DragFloat2(Tr("サイズ", "Size"), &textureSize_.x, 0.1f, 0.0f, 16384.0f);
 
    Vector4 color = data->color;
    if (ImGui::ColorEdit4(Tr("色", "Color"), &color.x)) {

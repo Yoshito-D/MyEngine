@@ -4,7 +4,9 @@
 #include "Camera/DebugCamera.h"
 #include "Camera/Core/CinemachineBrain.h"
 #include "Editor/Camera/CameraEditor.h"
+#include "Editor/EditorObjectStore.h"
 #include <filesystem>
+#include <memory>
 #ifdef USE_IMGUI
 #include "Editor/EditorSceneContext.h"
 #endif
@@ -14,7 +16,7 @@ namespace GameEngine {
 class BaseScene : public IScene {
 public:
    /// @brief デストラクタ
-   virtual ~BaseScene() = default;
+   ~BaseScene() override;
 
    /// @brief シーンの共通初期化を実行してから派生シーンの初期化フックを呼び出す
    void Initialize() override final;
@@ -53,6 +55,9 @@ public:
    /// @brief エディタで読み込むシーンデータ名を取得する
    /// @return エディタ用シーン名
    const std::string& GetEditorSceneName() const { return editorSceneName_; }
+
+   /// @brief 保存済みシーンデータを現在のシーンへ必要に応じて適用する
+   void LoadSceneDataIfNeeded();
 
 #ifdef USE_IMGUI
    /// @brief エディタ用シーンコンテキストを取得する
@@ -97,6 +102,9 @@ private:
    /// @brief デバッグカメラの更新
    void UpdateDebugCamera();
 
+   /// @brief エディタなしビルドで保存済みシーンデータをランタイム用に適用する
+   void LoadRuntimeSceneIfNeeded();
+
 #ifdef USE_IMGUI
    void LoadDebugCameraState();
    void SaveDebugCameraState() const;
@@ -116,5 +124,6 @@ private:
 
    bool isFinished_ = false;
    std::string editorSceneName_ = "Scene";
+   std::unique_ptr<EditorObjectStore> runtimeSceneObjectStore_ = nullptr;
 };
 }

@@ -321,6 +321,7 @@
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ModelAssetComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\PrimitiveMeshComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\Line.cpp">
@@ -602,6 +603,7 @@
     <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ModelAssetComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\PrimitiveMeshComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
     <ClInclude Include="GameEngine\Core\Graphics\Line.h" />
