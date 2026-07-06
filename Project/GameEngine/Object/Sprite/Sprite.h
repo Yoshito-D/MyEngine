@@ -1,17 +1,17 @@
 #pragma once
-#include <d3d12.h>
-#include <wrl.h>
-#include "Core/Graphics/Mesh.h"
-#include "TransformationMatrix.h"
 #include "Utility/VectorMath.h"
 #include "Camera.h"
 #include "Window.h"
 #include "Object.h"
 #include <vector>
-#include <memory>
 
 namespace GameEngine {
 class Material;
+class MaterialComponent;
+class Mesh;
+class PrimitiveMeshComponent;
+class TransformationMatrix;
+class TransformComponent;
 class Texture;
 
 class Sprite :public Object {
@@ -40,8 +40,12 @@ public:
 
    void Create(const Vector2& size = Vector2(128.0f, 128.0f), Material* material = nullptr, const Vector2& anchorPoint = Vector2(0.0f, 0.0f));
 
+   /// @brief Quad頂点配置用アンカーを設定する
+   /// @param anchorPoint 0.0から1.0の範囲を基準にした頂点配置アンカー
    void SetAnchorPoint(const Vector2& anchorPoint);
 
+   /// @brief SpriteのQuadサイズを設定する
+   /// @param size Quadサイズ
    void SetSize(const Vector2& size);
 
    void SetScale(const Vector2& scale);
@@ -50,39 +54,64 @@ public:
 
    void SetRotation(float rotation);
 
-   Vector2 GetSize() const { return size_; }
+   /// @brief SpriteのQuadサイズを取得する
+   /// @return Quadサイズ
+   Vector2 GetSize() const;
    Vector2 GetScale() const;
    Vector2 GetPosition() const;
    float GetRotation() const;
-   Vector2 GetAnchorPoint() const { return anchorPoint_; }
+   /// @brief Quad頂点配置用アンカーを取得する
+   /// @return 頂点配置アンカー
+   Vector2 GetAnchorPoint() const;
 
-   bool IsFlipX() const { return isFlipX_; }
-   bool IsFlipY() const { return isFlipY_; }
+   /// @brief 自動スクリーン描画で使用する画面アンカーを設定する
+   /// @param screenAnchorPoint 画面上の配置基準
+   void SetScreenAnchorPoint(AnchorPoint screenAnchorPoint) { screenAnchorPoint_ = screenAnchorPoint; }
 
-   void SetFlipX(bool isFlip) { isFlipX_ = isFlip; }
-   void SetFlipY(bool isFlip) { isFlipY_ = isFlip; }
+   /// @brief 自動スクリーン描画で使用する画面アンカーを取得する
+   /// @return 画面上の配置基準
+   AnchorPoint GetScreenAnchorPoint() const { return screenAnchorPoint_; }
 
-   void SetTextureUV(const Vector2& leftTop, const Vector2& size) {
-	  textureLeftTop_ = leftTop;
-	  textureSize_ = size;
-   }
+   /// @brief SpriteのQuadが左右反転されているかを取得する
+   /// @return 左右反転ならtrue
+   bool IsFlipX() const;
+   /// @brief SpriteのQuadが上下反転されているかを取得する
+   /// @return 上下反転ならtrue
+   bool IsFlipY() const;
 
-   void SetTextureLeftTop(const Vector2& leftTop) {
-	  textureLeftTop_ = leftTop;
-   }
+   /// @brief SpriteのQuadを左右反転するかを設定する
+   /// @param isFlip trueなら左右反転
+   void SetFlipX(bool isFlip);
+   /// @brief SpriteのQuadを上下反転するかを設定する
+   /// @param isFlip trueなら上下反転
+   void SetFlipY(bool isFlip);
 
-   void SetTextureSize(const Vector2& size) {
-	  textureSize_ = size;
-   }
+   /// @brief 使用するテクスチャ矩形をピクセル座標で設定する
+   /// @param leftTop テクスチャ左上座標
+   /// @param size テクスチャ矩形サイズ。0以下なら全体を使用する
+   void SetTextureUV(const Vector2& leftTop, const Vector2& size);
 
-   Mesh* GetMesh() const { return mesh_.get(); }
+   /// @brief 使用するテクスチャ矩形の左上座標を設定する
+   /// @param leftTop テクスチャ左上座標
+   void SetTextureLeftTop(const Vector2& leftTop);
+
+   /// @brief 使用するテクスチャ矩形のサイズを設定する
+   /// @param size テクスチャ矩形サイズ。0以下なら全体を使用する
+   void SetTextureSize(const Vector2& size);
+
+   /// @brief Sprite描画で使用するメッシュを取得する
+   /// @return PrimitiveMeshComponentが所有するメッシュ
+   Mesh* GetMesh() const;
 
    /// @brief トランスフォーメーションマトリックスを取得
-   TransformationMatrix* GetTransformationMatrix() { return transformationMatrix_.get(); }
+   TransformationMatrix* GetTransformationMatrix();
 
-   // テクスチャパラメータのゲッターメソッドを追加
-   Vector2 GetTextureLeftTop() const { return textureLeftTop_; }
-   Vector2 GetTextureSize() const { return textureSize_; }
+   /// @brief 使用するテクスチャ矩形の左上座標を取得する
+   /// @return テクスチャ左上座標
+   Vector2 GetTextureLeftTop() const;
+   /// @brief 使用するテクスチャ矩形のサイズを取得する
+   /// @return テクスチャ矩形サイズ
+   Vector2 GetTextureSize() const;
 
    /// @brief 通常描画用の行列更新（ワールド座標で処理）
    /// @param camera カメラ
@@ -98,16 +127,7 @@ public:
    /// @details Renderer::DrawUI()で使用。transform_.translationはスクリーン座標のオフセットとして扱われる
    void UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anchorPoint = AnchorPoint::TopLeft, uint32_t screenWidth = Window::kResolutionWidth, uint32_t screenHeight = Window::kResolutionHeight);
 private:
-
-   Vector2 size_ = { 1.0f, 1.0f };
-
-   Vector2 anchorPoint_ = { 0.0f, 0.0f };
-
-   bool isFlipX_ = false;
-   bool isFlipY_ = false;
-
-   Vector2 textureLeftTop_ = { 0.0f, 0.0f };
-   Vector2 textureSize_ = { 0.0f, 0.0f };  // 0に設定することで自動検出をトリガー
+   AnchorPoint screenAnchorPoint_ = AnchorPoint::MiddleCenter;
 
 private:
 
@@ -122,9 +142,14 @@ private:
 
    void UpdateTextureCoordinates(Texture* texture);
 
+   PrimitiveMeshComponent* GetPrimitiveMeshComponent();
+   const PrimitiveMeshComponent* GetPrimitiveMeshComponent() const;
+   MaterialComponent* GetMaterialComponent();
+   const MaterialComponent* GetMaterialComponent() const;
+   TransformComponent* GetTransformComponent();
+   const TransformComponent* GetTransformComponent() const;
+
 private:
    inline static std::vector<Sprite*> sRegisteredSprites_{};
-   std::unique_ptr<Mesh> mesh_;
-   std::unique_ptr<TransformationMatrix> transformationMatrix_;
 };
 }

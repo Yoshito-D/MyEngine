@@ -104,7 +104,6 @@ nlohmann::json MainModule::ToJson() const {
    j["gravityModifier"] = gravityModifier_;
    j["simulationSpace"] = static_cast<int>(simulationSpace_);
    j["playOnAwake"] = playOnAwake_;
-   j["scalingMode"] = static_cast<int>(scalingMode_);
    j["maxParticles"] = maxParticles_;
 
    return j;
@@ -198,7 +197,6 @@ void MainModule::FromJson(const nlohmann::json& j) {
    if (j.contains("gravityModifier")) gravityModifier_ = j["gravityModifier"];
    if (j.contains("simulationSpace")) simulationSpace_ = static_cast<SimulationSpace>(j["simulationSpace"].get<int>());
    if (j.contains("playOnAwake")) playOnAwake_ = j["playOnAwake"];
-   if (j.contains("scalingMode")) scalingMode_ = static_cast<ScalingMode>(j["scalingMode"].get<int>());
    if (j.contains("maxParticles")) maxParticles_ = j["maxParticles"];
 }
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#ifdef USE_IMGUI
-
 #include "MathUtils.h"
 #include <memory>
 #include <nlohmann/json.hpp>
@@ -77,5 +75,3 @@ private:
 };
 
 } // namespace GameEngine
-
-#endif

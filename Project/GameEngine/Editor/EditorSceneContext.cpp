@@ -184,6 +184,79 @@ bool IsProjectedInsideCamera(const Camera* camera, const Vector3& worldPosition)
       ndcY >= -0.95f && ndcY <= 0.95f &&
       ndcZ >= 0.0f && ndcZ <= 1.0f;
 }
+
+bool UsesScreenRenderSpace(const Object* object) {
+   if (!dynamic_cast<const Sprite*>(object)) {
+      return false;
+   }
+
+   const auto* renderComponent = object->GetComponent<RenderComponent>();
+   return renderComponent && renderComponent->renderSpace == RenderComponent::RenderSpace::Screen;
+}
+
+Vector2 GetEditorScreenCameraSize(float viewportWidth, float viewportHeight) {
+   if (auto* graphicsDevice = EngineContext::GetGraphicsDevice()) {
+      const uint32_t width = graphicsDevice->GetBackBufferWidth();
+      const uint32_t height = graphicsDevice->GetBackBufferHeight();
+      if (width > 0 && height > 0) {
+         return Vector2(static_cast<float>(width), static_cast<float>(height));
+      }
+   }
+
+   return Vector2(std::max(viewportWidth, 1.0f), std::max(viewportHeight, 1.0f));
+}
+
+Vector3 CalculateScreenAnchorOffset(Sprite::AnchorPoint anchorPoint, const Vector2& screenSize) {
+   const float halfWidth = screenSize.x * 0.5f;
+   const float halfHeight = screenSize.y * 0.5f;
+
+   switch (anchorPoint) {
+      case Sprite::AnchorPoint::TopLeft:
+         return Vector3(-halfWidth, halfHeight, 0.0f);
+      case Sprite::AnchorPoint::TopCenter:
+         return Vector3(0.0f, halfHeight, 0.0f);
+      case Sprite::AnchorPoint::TopRight:
+         return Vector3(halfWidth, halfHeight, 0.0f);
+      case Sprite::AnchorPoint::MiddleLeft:
+         return Vector3(-halfWidth, 0.0f, 0.0f);
+      case Sprite::AnchorPoint::MiddleRight:
+         return Vector3(halfWidth, 0.0f, 0.0f);
+      case Sprite::AnchorPoint::BottomLeft:
+         return Vector3(-halfWidth, -halfHeight, 0.0f);
+      case Sprite::AnchorPoint::BottomCenter:
+         return Vector3(0.0f, -halfHeight, 0.0f);
+      case Sprite::AnchorPoint::BottomRight:
+         return Vector3(halfWidth, -halfHeight, 0.0f);
+      case Sprite::AnchorPoint::MiddleCenter:
+      default:
+         return Vector3(0.0f, 0.0f, 0.0f);
+   }
+}
+
+Vector3 GetScreenRenderOffset(const Object* object, const Vector2& screenSize) {
+   const auto* sprite = dynamic_cast<const Sprite*>(object);
+   if (!sprite) {
+      return Vector3(0.0f, 0.0f, 0.0f);
+   }
+
+   return CalculateScreenAnchorOffset(sprite->GetScreenAnchorPoint(), screenSize);
+}
+
+Matrix4x4 MakeScreenSpaceProjectionMatrix(const Vector2& screenSize) {
+   return MakeOrthographicMatrix(
+      -screenSize.x * 0.5f,
+      screenSize.y * 0.5f,
+      screenSize.x * 0.5f,
+      -screenSize.y * 0.5f,
+      0.0f,
+      100.0f);
+}
+
+Transform BuildScreenSpacePlacementTransform() {
+   Transform transform{};
+   transform.translation.z = 1.0f;
+   return transform;
+}
 } // namespace
 
 void EditorSceneContext::Initialize(std::string sceneName) {
@@ -424,7 +497,7 @@ void EditorSceneContext::CreateModelFromAsset(const std::string& assetId) {
 }
 
 void EditorSceneContext::CreateSpriteFromTexture(const std::string& textureAssetId) {
-   commandStack_.Execute(std::make_unique<CreateSpriteCommand>(textureAssetId, BuildPlacementTransformInFrontOfCamera()), *this);
+   commandStack_.Execute(std::make_unique<CreateSpriteCommand>(textureAssetId, BuildScreenSpacePlacementTransform()), *this);
 }
 
 ParticleSystem* EditorSceneContext::CreateParticleSystemFromAsset(const std::string& assetId) {
@@ -654,9 +727,16 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
       return;
    }
 
-   Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->transform);
-   Matrix4x4 viewMatrix = camera->GetViewMatrix();
-   Matrix4x4 projectionMatrix = camera->GetProjectionMatrix();
+   const bool useScreenSpace = UsesScreenRenderSpace(selectedObject_);
+   const Vector2 screenSize = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
+   const Vector3 screenRenderOffset = useScreenSpace ? GetScreenRenderOffset(selectedObject_, screenSize) : Vector3(0.0f, 0.0f, 0.0f);
+
+   Transform gizmoTransform = transformComponent->transform;
+   gizmoTransform.translation += screenRenderOffset;
+
+   Matrix4x4 worldMatrix = MakeAffineMatrix(gizmoTransform);
+   Matrix4x4 viewMatrix = useScreenSpace ? MakeIdentity4x4() : camera->GetViewMatrix();
+   Matrix4x4 projectionMatrix = useScreenSpace ? MakeScreenSpaceProjectionMatrix(screenSize) : camera->GetProjectionMatrix();
 
    const Transform beforeCall = transformComponent->transform;
 
@@ -676,7 +756,9 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
          isManipulating_ = true;
       }
 
-      transformComponent->transform = MatrixToTransform(worldMatrix);
+      Transform manipulatedTransform = MatrixToTransform(worldMatrix);
+      manipulatedTransform.translation -= screenRenderOffset;
+      transformComponent->transform = manipulatedTransform;
       return;
    }
 
@@ -788,7 +870,8 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
    float nearestDistanceSquared = std::numeric_limits<float>::max();
    constexpr float kMinPickRadiusPixels = 24.0f;
    constexpr float kMaxPickRadiusPixels = 220.0f;
-   const Matrix4x4 viewProjection = camera->GetViewProjectionMatrix();
+   const Vector2 screenSize = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
+   const Matrix4x4 screenViewProjection = MakeScreenSpaceProjectionMatrix(screenSize);
 
    for (Object* object : CollectEditableObjects()) {
       if (!object) {
@@ -800,8 +883,13 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
          continue;
       }
 
+      const bool useScreenSpace = UsesScreenRenderSpace(object);
+      const Vector3 screenRenderOffset = useScreenSpace ? GetScreenRenderOffset(object, screenSize) : Vector3(0.0f, 0.0f, 0.0f);
+      const Matrix4x4 viewProjection = useScreenSpace ? screenViewProjection : camera->GetViewProjectionMatrix();
+      const Vector3 objectCenter = transformComponent->transform.translation + screenRenderOffset;
+
       const Vector3 screenPosition = Project(
-         transformComponent->transform.translation,
+         objectCenter,
          viewportX,
          viewportY,
          viewportWidth,
@@ -813,9 +901,16 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
       }
 
       const Vector3 scale = transformComponent->transform.scale;
-      const float worldRadius = std::max({ std::abs(scale.x), std::abs(scale.y), std::abs(scale.z), 1.0f }) * 0.5f;
+      float worldRadius = std::max({ std::abs(scale.x), std::abs(scale.y), std::abs(scale.z), 1.0f }) * 0.5f;
+      if (const auto* sprite = dynamic_cast<const Sprite*>(object); sprite && useScreenSpace) {
+         const Vector2 size = sprite->GetSize();
+         worldRadius = std::max({
+            std::abs(size.x * scale.x),
+            std::abs(size.y * scale.y),
+            1.0f
+         }) * 0.5f;
+      }
       float pickRadiusPixels = kMinPickRadiusPixels;
-      const Vector3 worldCenter = transformComponent->transform.translation;
       const Vector3 sampleOffsets[] = {
          Vector3(worldRadius, 0.0f, 0.0f),
          Vector3(0.0f, worldRadius, 0.0f),
@@ -824,7 +919,7 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
 
       for (const auto& offset : sampleOffsets) {
          const Vector3 sample = Project(
-            worldCenter + offset,
+            objectCenter + offset,
             viewportX,
             viewportY,
             viewportWidth,

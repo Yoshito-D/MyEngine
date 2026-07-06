@@ -3,12 +3,10 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include "Object.h"
-#include "TransformationMatrix.h"
 #include "../Utility/VectorMath.h"
 #include "ModelAsset.h"
 #include "Component/ModelAssetComponent.h"
 #include <vector>
-#include <memory>
 #include <optional>
 
 using namespace Microsoft::WRL;
@@ -16,6 +14,7 @@ using namespace Microsoft::WRL;
 namespace GameEngine {
 class AnimationComponent;
 class Material;
+class TransformationMatrix;
 
 /// @brief モデルクラス
 class Model :public Object {
@@ -98,7 +97,7 @@ public:
 
    /// @brief ワールド行列を設定する
    /// @param worldMatrix ワールド行列
-   void SetWorldMatrix(const Matrix4x4& worldMatrix) { worldMatrixOverride_ = worldMatrix; hasWorldMatrixOverride_ = true; }
+   void SetWorldMatrix(const Matrix4x4& worldMatrix);
 
    /// @brief 親のワールド行列を設定する
    /// @param parentWorldMatrix 親のワールド行列
@@ -109,13 +108,9 @@ public:
    void UpdateMatrix(Camera* camera);
 
    /// @brief トランスフォーメーションマトリックスを取得
-   TransformationMatrix* GetTransformationMatrix() { return transformationMatrix_.get(); }
+   TransformationMatrix* GetTransformationMatrix();
 
 private:
    static std::vector<Model*> sRegisteredModels_;
-
-   std::unique_ptr<TransformationMatrix> transformationMatrix_;
-   Matrix4x4 worldMatrixOverride_ = MakeIdentity4x4();
-   bool hasWorldMatrixOverride_ = false;
 };
 }

@@ -4,6 +4,7 @@
 #include "Sprite/Sprite.h"
 #include "Graphics/Material.h"
 #include "Graphics/Mesh.h"
+#include "Graphics/TransformationMatrix.h"
 #include "PSOManager.h"
 #include "ShaderManager.h"
 #include "LightManager.h"
@@ -35,6 +36,18 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	Sprite* sprite = spriteData.sprite;
 	if (!sprite) {
 		Logger::Error("Sprite is null in DrawSprite");
+		return;
+	}
+
+	Mesh* mesh = sprite->GetMesh();
+	if (!mesh) {
+		Logger::Error("PrimitiveMeshComponent mesh is missing in DrawSprite");
+		return;
+	}
+
+	TransformationMatrix* transformationMatrix = sprite->GetTransformationMatrix();
+	if (!transformationMatrix) {
+		Logger::Error("TransformationMatrix is missing in DrawSprite");
 		return;
 	}
 
@@ -95,8 +108,8 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	const UINT textureSlot = resolveSlot("texture", RootBindingSlots::Object3D::kTexture);
 
 	// 頂点バッファとインデックスバッファを設定
-	cmdList->IASetVertexBuffers(0, 1, &sprite->GetMesh()->GetVertexBufferView());
-	cmdList->IASetIndexBuffer(&sprite->GetMesh()->GetIndexBufferView());
+	cmdList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
+	cmdList->IASetIndexBuffer(&mesh->GetIndexBufferView());
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
 	// Object3Dルートシグネチャに合わせてルートパラメータを設定
@@ -108,7 +121,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
  cmdList->SetGraphicsRootConstantBufferView(materialSlot, spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());
 	
 	// Root Parameter 1: TransformationMatrix (Vertex Shader)
-    cmdList->SetGraphicsRootConstantBufferView(transformSlot, sprite->GetTransformationMatrix()->GetTransformationMatrixResource()->GetGPUVirtualAddress());
+    cmdList->SetGraphicsRootConstantBufferView(transformSlot, transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
 	
 	// Root Parameter 2: Camera (Pixel Shader)
  cmdList->SetGraphicsRootConstantBufferView(cameraSlot, camera->GetCameraResource()->GetGPUVirtualAddress());
@@ -132,7 +145,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
     cmdList->SetGraphicsRootDescriptorTable(textureSlot, spriteData.textureSrvHandle);
 
 	// 描画
-	cmdList->DrawIndexedInstanced(sprite->GetMesh()->GetIndexCount(), 1, 0, 0, 0);
+	cmdList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
 }
 
 } // namespace GameEngine

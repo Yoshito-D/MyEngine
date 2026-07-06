@@ -206,7 +206,10 @@ void Renderer::SyncRenderTargetSizeToDevice() {
 	  return;
    }
 
-   offscreenRenderTarget_->Resize(device_->GetBackBufferWidth(), device_->GetBackBufferHeight());
+   const uint32_t width = device_->GetBackBufferWidth();
+   const uint32_t height = device_->GetBackBufferHeight();
+   offscreenRenderTarget_->Resize(width, height);
+   SyncUICameraToRenderTarget(width, height);
 }
 
 void Renderer::BeginFrame() {
@@ -380,6 +383,7 @@ void Renderer::DrawUI(Sprite* sprite, Texture* texture,
    assert(texture != nullptr);
 
    // UI専用カメラとライトをセット、テクスチャ座標も更新
+   SyncUICameraToRenderTarget(screenWidth, screenHeight);
    sprite->UpdateMatrixForUI(uiCamera_.get(), texture, anchorPoint, screenWidth, screenHeight);
 
    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle = texture->GetTextureSrvHandleGPU();
@@ -779,7 +783,13 @@ void Renderer::DrawAutoRegisteredSprites() {
 		 continue;
 	  }
 
-	  Draw(sprite, texture, std::nullopt, renderComponent->applyPostProcess);
+	  if (renderComponent->renderSpace == RenderComponent::RenderSpace::Screen) {
+		 const uint32_t screenWidth = device_ ? device_->GetBackBufferWidth() : Window::kResolutionWidth;
+		 const uint32_t screenHeight = device_ ? device_->GetBackBufferHeight() : Window::kResolutionHeight;
+		 DrawUI(sprite, texture, sprite->GetScreenAnchorPoint(), std::nullopt, renderComponent->applyPostProcess, screenWidth, screenHeight);
+	  } else {
+		 Draw(sprite, texture, std::nullopt, renderComponent->applyPostProcess);
+	  }
    }
 }
 
@@ -861,7 +871,18 @@ void Renderer::InitializeUICamera() {
 
    uiCamera_->Initialize(uiCameraTransform, Camera::ProjectionType::Orthographic);
    uiCamera_->SetNearClip(0.0f);
-   uiCamera_->Update();
+   uiCamera_->SetFarClip(10000.0f);
+   const uint32_t screenWidth = device_ ? device_->GetBackBufferWidth() : Window::kResolutionWidth;
+   const uint32_t screenHeight = device_ ? device_->GetBackBufferHeight() : Window::kResolutionHeight;
+   SyncUICameraToRenderTarget(screenWidth, screenHeight);
+}
+
+void Renderer::SyncUICameraToRenderTarget(uint32_t screenWidth, uint32_t screenHeight) {
+   if (!uiCamera_ || screenWidth == 0 || screenHeight == 0) {
+	  return;
+   }
+
+   uiCamera_->SetOrthographicSize(static_cast<float>(screenWidth), static_cast<float>(screenHeight));
 }
 
 void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle) {

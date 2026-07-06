@@ -2,8 +2,11 @@
 #include "Sprite.h"
 #include "Texture.h"
 #include "Component/MaterialComponent.h"
+#include "Component/PrimitiveMeshComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
+#include "Core/Graphics/Mesh.h"
+#include "Core/Graphics/TransformationMatrix.h"
 #include <algorithm>
 
 namespace GameEngine {
@@ -54,13 +57,12 @@ const std::vector<Sprite*>& Sprite::GetRegisteredSprites() {
 }
 
 void Sprite::Create(const Vector2& size, Material* material, const Vector2& anchorPoint) {
-   size_ = size;
-
-   mesh_ = std::make_unique<Mesh>();
-   mesh_->CreateSprite(size_.x, size_.y);
-
-   transformationMatrix_ = std::make_unique<TransformationMatrix>();
-   transformationMatrix_->Create();
+   if (auto* primitiveMeshComponent = AddComponent<PrimitiveMeshComponent>()) {
+      primitiveMeshComponent->SetPrimitiveType(PrimitiveMeshComponent::PrimitiveType::Quad);
+      primitiveMeshComponent->SetQuadSize(size);
+      primitiveMeshComponent->SetQuadAnchorPoint(anchorPoint);
+      primitiveMeshComponent->CreateMesh();
+   }
 
    if (material) {
       if (auto* materialComponent = GetComponent<MaterialComponent>()) {
@@ -68,29 +70,32 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
 	  }
    }
 
-   AddComponent<RenderComponent>();
-
-   anchorPoint_ = anchorPoint;
+   if (auto* renderComponent = AddComponent<RenderComponent>()) {
+      renderComponent->renderSpace = RenderComponent::RenderSpace::Screen;
+   }
 
    auto* transformComponent = GetComponent<TransformComponent>();
    if (transformComponent) {
 	  transformComponent->transform.scale = { 1.0f, 1.0f, 1.0f };
 	  transformComponent->transform.translation.z = 1.0f;
+	  transformComponent->EnsureTransformationMatrix();
    }
-   // テクスチャサイズをリセット（UpdateTextureCoordinatesで自動設定されるように）
-   textureLeftTop_ = { 0.0f, 0.0f };
-   textureSize_ = { 0.0f, 0.0f };  // 0にすることで自動設定をトリガー
 
-   // 初期頂点位置を設定（これがないと初期状態で描画されない）
    UpdateVertexPositions();
 }
 
 void Sprite::SetAnchorPoint(const Vector2& anchorPoint) {
-   anchorPoint_ = anchorPoint;
+   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      primitiveMeshComponent->SetQuadAnchorPoint(anchorPoint);
+      primitiveMeshComponent->ApplyToMesh();
+   }
 }
 
 void Sprite::SetSize(const Vector2& size) {
-   size_ = size;
+   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      primitiveMeshComponent->SetQuadSize(size);
+      primitiveMeshComponent->ApplyToMesh();
+   }
 }
 
 void Sprite::SetScale(const Vector2& scale) {
@@ -145,11 +150,105 @@ float Sprite::GetRotation() const {
    return transformComponent->transform.GetActiveEuler().z;
 }
 
+Vector2 Sprite::GetSize() const {
+   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      return primitiveMeshComponent->GetQuadSize();
+   }
+   return Vector2(1.0f, 1.0f);
+}
+
+Vector2 Sprite::GetAnchorPoint() const {
+   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      return primitiveMeshComponent->GetQuadAnchorPoint();
+   }
+   return Vector2(0.0f, 0.0f);
+}
+
+bool Sprite::IsFlipX() const {
+   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      return primitiveMeshComponent->IsFlipX();
+   }
+   return false;
+}
+
+bool Sprite::IsFlipY() const {
+   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      return primitiveMeshComponent->IsFlipY();
+   }
+   return false;
+}
+
+void Sprite::SetFlipX(bool isFlip) {
+   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      primitiveMeshComponent->SetFlipX(isFlip);
+      primitiveMeshComponent->ApplyToMesh();
+   }
+}
+
+void Sprite::SetFlipY(bool isFlip) {
+   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      primitiveMeshComponent->SetFlipY(isFlip);
+      primitiveMeshComponent->ApplyToMesh();
+   }
+}
+
+void Sprite::SetTextureUV(const Vector2& leftTop, const Vector2& size) {
+   if (auto* materialComponent = GetMaterialComponent()) {
+      materialComponent->SetTextureUV(leftTop, size);
+   }
+}
+
+void Sprite::SetTextureLeftTop(const Vector2& leftTop) {
+   if (auto* materialComponent = GetMaterialComponent()) {
+      materialComponent->SetTextureLeftTop(leftTop);
+   }
+}
+
+void Sprite::SetTextureSize(const Vector2& size) {
+   if (auto* materialComponent = GetMaterialComponent()) {
+      materialComponent->SetTextureSize(size);
+   }
+}
+
+Vector2 Sprite::GetTextureLeftTop() const {
+   if (const auto* materialComponent = GetMaterialComponent()) {
+      return materialComponent->GetTextureLeftTop();
+   }
+   return Vector2(0.0f, 0.0f);
+}
+
+Vector2 Sprite::GetTextureSize() const {
+   if (const auto* materialComponent = GetMaterialComponent()) {
+      return materialComponent->GetTextureSize();
+   }
+   return Vector2(0.0f, 0.0f);
+}
+
+Mesh* Sprite::GetMesh() const {
+   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      return primitiveMeshComponent->GetMesh();
+   }
+   return nullptr;
+}
+
+TransformationMatrix* Sprite::GetTransformationMatrix() {
+   auto* transformComponent = GetTransformComponent();
+   if (!transformComponent) {
+      return nullptr;
+   }
+   return transformComponent->EnsureTransformationMatrix();
+}
+
 void Sprite::Update(Camera* camera, Texture* texture) {
- const auto* transformComponent = GetComponent<TransformComponent>();
-	if (!transformComponent || !transformationMatrix_) {
+   auto* transformComponent = GetTransformComponent();
+	if (!transformComponent || !camera) {
 	   return;
 	}
+
+   auto* transformationMatrix = transformComponent->EnsureTransformationMatrix();
+   if (!transformationMatrix) {
+      return;
+   }
 
    UpdateVertexPositions();
    UpdateTextureCoordinates(texture);
@@ -160,15 +259,21 @@ void Sprite::Update(Camera* camera, Texture* texture) {
 	  worldMatrix = worldMatrix * transformComponent->parentMatrix;
    }
    Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
-   transformationMatrix_->GetTransformationMatrixData()->wVP = wVPMatrix;
-   transformationMatrix_->GetTransformationMatrixData()->world = worldMatrix;
+   transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;
+   transformationMatrix->GetTransformationMatrixData()->world = worldMatrix;
+   transformationMatrix->GetTransformationMatrixData()->worldInverseTranspose = worldMatrix.Inverse().Transpose();
 }
 
 void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) {
-   const auto* transformComponent = GetComponent<TransformComponent>();
-	if (!transformComponent || !transformationMatrix_) {
+   auto* transformComponent = GetTransformComponent();
+	if (!transformComponent || !camera) {
 	   return;
 	}
+
+   auto* transformationMatrix = transformComponent->EnsureTransformationMatrix();
+   if (!transformationMatrix) {
+      return;
+   }
 
    // 頂点位置の更新
    UpdateVertexPositions();
@@ -192,8 +297,9 @@ void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anc
    }
 
    Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
-   transformationMatrix_->GetTransformationMatrixData()->wVP = wVPMatrix;
-   transformationMatrix_->GetTransformationMatrixData()->world = worldMatrix;
+   transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;
+   transformationMatrix->GetTransformationMatrixData()->world = worldMatrix;
+   transformationMatrix->GetTransformationMatrixData()->worldInverseTranspose = worldMatrix.Inverse().Transpose();
 }
 
 Vector3 Sprite::CalculateAnchorPosition(AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) const {
@@ -245,54 +351,42 @@ Vector3 Sprite::CalculateAnchorPosition(AnchorPoint anchorPoint, uint32_t screen
 }
 
 void Sprite::UpdateVertexPositions() {
-   float left = 0.0f - anchorPoint_.x * size_.x;
-   float right = size_.x - anchorPoint_.x * size_.x;
-   float top = size_.y - anchorPoint_.y * size_.y;
-   float bottom = 0.0f - anchorPoint_.y * size_.y;
-
-   if (isFlipX_) {
-	  left = -left;
-	  right = -right;
+   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+      primitiveMeshComponent->ApplyToMesh();
    }
-
-   if (isFlipY_) {
-	  top = -top;
-	  bottom = -bottom;
-   }
-
-   mesh_->GetVertexData()[0].position = Vector4(left, bottom, 0.0f, 1.0f);
-   mesh_->GetVertexData()[1].position = Vector4(left, top, 0.0f, 1.0f);
-   mesh_->GetVertexData()[2].position = Vector4(right, bottom, 0.0f, 1.0f);
-   mesh_->GetVertexData()[3].position = Vector4(right, top, 0.0f, 1.0f);
 }
 
 void Sprite::UpdateTextureCoordinates(Texture* texture) {
-   const DirectX::TexMetadata& metadata = texture->GetMetadata();
-
-   // textureSize_が未設定（0または異常値）の場合、テクスチャ全体を使用
-   Vector2 actualTextureSize = textureSize_;
-   Vector2 actualTextureLeftTop = textureLeftTop_;
-
-   // テクスチャサイズが0、デフォルト値、または実際のテクスチャサイズより大きい場合
-   // テクスチャ全体を使用するように調整
-   if (textureSize_.x <= 0.0f || textureSize_.y <= 0.0f ||
-	  textureSize_.x > static_cast<float>(metadata.width) ||
-	  textureSize_.y > static_cast<float>(metadata.height)) {
-	  actualTextureSize.x = static_cast<float>(metadata.width);
-	  actualTextureSize.y = static_cast<float>(metadata.height);
-	  actualTextureLeftTop = { 0.0f, 0.0f };
-	  textureSize_ = actualTextureSize;
+   auto* primitiveMeshComponent = GetPrimitiveMeshComponent();
+   if (!primitiveMeshComponent) {
+      return;
    }
 
-   float texLeft = actualTextureLeftTop.x / static_cast<float>(metadata.width);
-   float texRight = (actualTextureLeftTop.x + actualTextureSize.x) / static_cast<float>(metadata.width);
-   float texTop = actualTextureLeftTop.y / static_cast<float>(metadata.height);
-   float texBottom = (actualTextureLeftTop.y + actualTextureSize.y) / static_cast<float>(metadata.height);
+   primitiveMeshComponent->ApplyTextureCoordinates(texture, GetTextureLeftTop(), GetTextureSize());
+}
 
-   mesh_->GetVertexData()[0].texCoord = Vector2(texLeft, texBottom);
-   mesh_->GetVertexData()[1].texCoord = Vector2(texLeft, texTop);
-   mesh_->GetVertexData()[2].texCoord = Vector2(texRight, texBottom);
-   mesh_->GetVertexData()[3].texCoord = Vector2(texRight, texTop);
+PrimitiveMeshComponent* Sprite::GetPrimitiveMeshComponent() {
+   return GetComponent<PrimitiveMeshComponent>();
+}
+
+const PrimitiveMeshComponent* Sprite::GetPrimitiveMeshComponent() const {
+   return GetComponent<PrimitiveMeshComponent>();
+}
+
+MaterialComponent* Sprite::GetMaterialComponent() {
+   return GetComponent<MaterialComponent>();
+}
+
+const MaterialComponent* Sprite::GetMaterialComponent() const {
+   return GetComponent<MaterialComponent>();
+}
+
+TransformComponent* Sprite::GetTransformComponent() {
+   return GetComponent<TransformComponent>();
+}
+
+const TransformComponent* Sprite::GetTransformComponent() const {
+   return GetComponent<TransformComponent>();
 }
 
 }

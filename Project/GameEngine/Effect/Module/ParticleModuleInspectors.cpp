@@ -363,21 +363,6 @@ void MainModule::DrawInspector() {
 
    ImGui::Separator();
 
-   ScalingMode scalingMode = GetScalingMode();
-   if (ImGuiHelper::DrawLocalizedEnumCombo(
-      L({ "スケールモード", "Scaling Mode" }),
-      scalingMode,
-      {
-         { ScalingMode::Hierarchy, { "階層", "Hierarchy" } },
-         { ScalingMode::Local, { "ローカル", "Local" } },
-         { ScalingMode::Shape, { "形状", "Shape" } },
-      },
-      140.0f)) {
-      SetScalingMode(scalingMode);
-   }
-
-   ImGui::Separator();
-
    int maxParticles = static_cast<int>(GetMaxParticles());
    if (ImGuiHelper::DrawIntControl(L({ "最大粒子数", "Max Particles" }), maxParticles, 1000, 140.0f, 1.0f, 1, 10000)) {
       SetMaxParticles(static_cast<uint32_t>(std::max(maxParticles, 1)));

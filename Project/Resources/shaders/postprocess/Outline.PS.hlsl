@@ -38,7 +38,7 @@ static const float32_t2 kIndex3x3[3][3] =
 
 float ConvertNdcDepthToViewZ(float ndcDepth)
 {
-    static const float kNearClip = 0.01f;
+    static const float kNearClip = 0.1f;
     static const float kFarClip = 10000.0f;
     return (kNearClip * kFarClip) / max(kFarClip - ndcDepth * (kFarClip - kNearClip), 0.000001f);
 }

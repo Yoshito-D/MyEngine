@@ -21,6 +21,8 @@ void Camera::Initialize(const Transform& transform, ProjectionType projectionTyp
 	aspectRatio_ = static_cast<float>(Window::kResolutionWidth) / static_cast<float>(Window::kResolutionHeight);
 	nearClip_ = 0.01f;
 	farClip_ = 100.0f;
+	orthographicWidth_ = static_cast<float>(Window::kResolutionWidth);
+	orthographicHeight_ = static_cast<float>(Window::kResolutionHeight);
 	projectionType_ = projectionType;
 
 	cameraResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(CameraForGPU));
@@ -46,10 +48,10 @@ void Camera::Update() {
 
 		case ProjectionType::Orthographic:
 			projectionMatrix = MakeOrthographicMatrix(
-				static_cast<float>(-Window::kResolutionWidth) * 0.5f,
-				static_cast<float>(Window::kResolutionHeight) * 0.5f,
-				static_cast<float>(Window::kResolutionWidth) * 0.5f,
-				static_cast<float>(-Window::kResolutionHeight) * 0.5f,
+				-orthographicWidth_ * 0.5f,
+				orthographicHeight_ * 0.5f,
+				orthographicWidth_ * 0.5f,
+				-orthographicHeight_ * 0.5f,
 				nearClip_,
 				farClip_
 			);
@@ -62,18 +64,29 @@ void Camera::Update() {
 	SetCameraForGpuData();
 }
 
+void Camera::SetOrthographicSize(float width, float height) {
+	if (width <= 0.0f || height <= 0.0f) {
+		return;
+	}
+
+	orthographicWidth_ = width;
+	orthographicHeight_ = height;
+	aspectRatio_ = width / height;
+	Update();
+}
+
 Matrix4x4 Camera::GetProjectionMatrix() const {
 	switch (projectionType_) {
 		case ProjectionType::Perspective:
 			return MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
 		case ProjectionType::Orthographic:
 			return MakeOrthographicMatrix(
-				static_cast<float>(-Window::kResolutionWidth) * 0.5f,
-				static_cast<float>(Window::kResolutionHeight) * 0.5f,
-				static_cast<float>(Window::kResolutionWidth) * 0.5f,
-				static_cast<float>(-Window::kResolutionHeight) * 0.5f,
-				0.0f,
-				1000.0f
+				-orthographicWidth_ * 0.5f,
+				orthographicHeight_ * 0.5f,
+				orthographicWidth_ * 0.5f,
+				-orthographicHeight_ * 0.5f,
+				nearClip_,
+				farClip_
 			);
 		default:
 			return MakeIdentity4x4();

@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "EditorObjectStore.h"
 
-#ifdef USE_IMGUI
-
 #include "Component/ModelAssetComponent.h"
 #include "Component/MaterialComponent.h"
 #include "Component/ParticleEmitterComponent.h"
@@ -22,6 +20,72 @@ std::string BuildNameFromAssetId(const std::string& assetId) {
       return "EditorModel";
    }
    return std::filesystem::path(assetId).stem().string();
+}
+
+const char* ToSpriteAnchorPointName(Sprite::AnchorPoint anchorPoint) {
+   switch (anchorPoint) {
+      case Sprite::AnchorPoint::TopLeft:
+         return "TopLeft";
+      case Sprite::AnchorPoint::TopCenter:
+         return "TopCenter";
+      case Sprite::AnchorPoint::TopRight:
+         return "TopRight";
+      case Sprite::AnchorPoint::MiddleLeft:
+         return "MiddleLeft";
+      case Sprite::AnchorPoint::MiddleCenter:
+         return "MiddleCenter";
+      case Sprite::AnchorPoint::MiddleRight:
+         return "MiddleRight";
+      case Sprite::AnchorPoint::BottomLeft:
+         return "BottomLeft";
+      case Sprite::AnchorPoint::BottomCenter:
+         return "BottomCenter";
+      case Sprite::AnchorPoint::BottomRight:
+         return "BottomRight";
+      default:
+         return "MiddleCenter";
+   }
+}
+
+Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::AnchorPoint fallback) {
+   if (value.is_string()) {
+      const std::string name = value.get<std::string>();
+      if (name == "TopLeft") {
+         return Sprite::AnchorPoint::TopLeft;
+      }
+      if (name == "TopCenter") {
+         return Sprite::AnchorPoint::TopCenter;
+      }
+      if (name == "TopRight") {
+         return Sprite::AnchorPoint::TopRight;
+      }
+      if (name == "MiddleLeft") {
+         return Sprite::AnchorPoint::MiddleLeft;
+      }
+      if (name == "MiddleCenter") {
+         return Sprite::AnchorPoint::MiddleCenter;
+      }
+      if (name == "MiddleRight") {
+         return Sprite::AnchorPoint::MiddleRight;
+      }
+      if (name == "BottomLeft") {
+         return Sprite::AnchorPoint::BottomLeft;
+      }
+      if (name == "BottomCenter") {
+         return Sprite::AnchorPoint::BottomCenter;
+      }
+      if (name == "BottomRight") {
+         return Sprite::AnchorPoint::BottomRight;
+      }
+   } else if (value.is_number_integer()) {
+      const int index = value.get<int>();
+      if (index >= static_cast<int>(Sprite::AnchorPoint::TopLeft) &&
+         index <= static_cast<int>(Sprite::AnchorPoint::BottomRight)) {
+         return static_cast<Sprite::AnchorPoint>(index);
+      }
+   }
+
+   return fallback;
 }
 } // namespace
 
@@ -608,18 +672,8 @@ nlohmann::json EditorObjectStore::SerializeSpriteData(const Sprite* sprite) {
       return nlohmann::json::object();
    }
 
-   const Vector2 size = sprite->GetSize();
-   const Vector2 anchor = sprite->GetAnchorPoint();
-   const Vector2 uvLeftTop = sprite->GetTextureLeftTop();
-   const Vector2 uvSize = sprite->GetTextureSize();
-
    return nlohmann::json{
-      { "size", { size.x, size.y } },
-      { "anchor", { anchor.x, anchor.y } },
-      { "flipX", sprite->IsFlipX() },
-      { "flipY", sprite->IsFlipY() },
-      { "textureLeftTop", { uvLeftTop.x, uvLeftTop.y } },
-      { "textureSize", { uvSize.x, uvSize.y } }
+      { "screenAnchorPoint", ToSpriteAnchorPointName(sprite->GetScreenAnchorPoint()) }
    };
 }
 
@@ -634,6 +688,10 @@ void EditorObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::js
 
    if (data.contains("anchor") && data.at("anchor").is_array() && data.at("anchor").size() == 2) {
       sprite->SetAnchorPoint(Vector2(data.at("anchor")[0].get<float>(), data.at("anchor")[1].get<float>()));
+   }
+
+   if (data.contains("screenAnchorPoint")) {
+      sprite->SetScreenAnchorPoint(ParseSpriteAnchorPoint(data.at("screenAnchorPoint"), sprite->GetScreenAnchorPoint()));
    }
 
    if (data.contains("flipX") && data.at("flipX").is_boolean()) {
@@ -667,5 +725,3 @@ bool EditorObjectStore::EnsureTextureLoaded(const std::string& textureAssetId) c
 }
 
 } // namespace GameEngine
-
-#endif

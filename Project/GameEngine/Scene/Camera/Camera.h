@@ -63,6 +63,11 @@ public:
 	void SetProjectionType(ProjectionType type) { projectionType_ = type; }
 	ProjectionType GetProjectionType() const { return projectionType_; }
 
+	/// @brief 平行投影の投影サイズを設定する
+	/// @param width 投影幅
+	/// @param height 投影高さ
+	void SetOrthographicSize(float width, float height);
+
 	// 行列アクセス
 	Matrix4x4 GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
 	void SetViewProjectionMatrix(const Matrix4x4& matrix) { viewProjectionMatrix_ = matrix; }
@@ -84,6 +89,8 @@ private:
 	float aspectRatio_ = 0.0f;
 	float nearClip_ = 0.01f;
 	float farClip_ = 100.0f;
+	float orthographicWidth_ = static_cast<float>(Window::kResolutionWidth);
+	float orthographicHeight_ = static_cast<float>(Window::kResolutionHeight);
 	ProjectionType projectionType_ = ProjectionType::Perspective;
 
 	Matrix4x4 viewProjectionMatrix_{};

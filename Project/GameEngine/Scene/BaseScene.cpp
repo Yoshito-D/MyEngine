@@ -1,12 +1,343 @@
-﻿#include <pch.h>
+#include <pch.h>
 #include <BaseScene.h>
 #include <EngineContext.h>
+#include <Editor/EditorObjectStore.h>
+#include <Model/Model.h>
+#include <Object.h>
 #include <ParticleSystem.h>
+#include <Sprite/Sprite.h>
+#include <Component/RenderComponent.h>
 #include <Skybox/Skybox.h>
 #include <filesystem>
 #include <fstream>
+#include <unordered_map>
+#include <unordered_set>
+
+namespace {
+std::string GetSceneObjectTypeName(const GameEngine::Object* object) {
+   if (dynamic_cast<const GameEngine::Model*>(object)) {
+	  return "Model";
+   }
+   if (dynamic_cast<const GameEngine::Sprite*>(object)) {
+	  return "Sprite";
+   }
+   if (dynamic_cast<const GameEngine::Skybox*>(object)) {
+	  return "Skybox";
+   }
+   return "Object";
+}
+
+std::string BuildSceneKey(const std::string& typeName, const std::string& objectName) {
+   return typeName + ":" + (objectName.empty() ? "Object" : objectName);
+}
+
+bool IsRegisteredParticleSystem(const GameEngine::ParticleSystem* particleSystem) {
+   if (!particleSystem) {
+	  return false;
+   }
+
+   for (auto* registered : GameEngine::ParticleSystem::GetRegisteredParticleSystems()) {
+	  if (registered == particleSystem) {
+		 return true;
+	  }
+   }
+   return false;
+}
+
+bool IsEditableSceneParticleSystem(const GameEngine::ParticleSystem* particleSystem) {
+   return particleSystem &&
+	  particleSystem->IsEditorInspectable() &&
+	  IsRegisteredParticleSystem(particleSystem);
+}
+
+class RuntimeSceneApplier {
+public:
+   explicit RuntimeSceneApplier(GameEngine::EditorObjectStore& objectStore)
+	  : objectStore_(objectStore) {
+   }
+
+   bool Apply(const nlohmann::json& sceneData) {
+	  if (!sceneData.is_object()) {
+		 return false;
+	  }
+
+	  // シーン固有コードで生成されたオブジェクトは、エディタ生成物を復元する前に
+	  // 固定キーへ結び付ける。これで Release でも editor_scene の上書き対象がずれない。
+	  RegisterSceneOwnedKeys();
+	  objectStore_.Clear();
+
+	  if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
+		 for (const auto& objectData : sceneData.at("objects")) {
+			objectStore_.RestoreObject(objectData);
+		 }
+	  }
+
+	  if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
+		 ApplySceneObjects(sceneData.at("sceneObjects"));
+	  }
+	  if (sceneData.contains("sceneParticleSystems") && sceneData.at("sceneParticleSystems").is_array()) {
+		 ApplySceneParticleSystems(sceneData.at("sceneParticleSystems"));
+	  }
+	  if (sceneData.contains("cameras") && sceneData.at("cameras").is_object()) {
+		 ApplyCameras(sceneData.at("cameras"));
+	  }
+
+	  return true;
+   }
+
+private:
+   void RegisterSceneOwnedKeys() {
+	  std::unordered_set<std::string> usedObjectKeys;
+	  for (const auto& [object, key] : sceneObjectKeys_) {
+		 if (object && !key.empty()) {
+			usedObjectKeys.insert(key);
+		 }
+	  }
+
+	  auto registerObject = [&](GameEngine::Object* object) {
+		 if (!object || objectStore_.Contains(object) || sceneObjectKeys_.contains(object)) {
+			return;
+		 }
+
+		 const std::string baseKey = BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName());
+		 std::string key = baseKey;
+		 int suffix = 2;
+		 while (usedObjectKeys.contains(key)) {
+			key = baseKey + "#" + std::to_string(suffix++);
+		 }
+		 usedObjectKeys.insert(key);
+		 sceneObjectKeys_[object] = key;
+	  };
+
+	  for (auto* model : GameEngine::Model::GetRegisteredModels()) {
+		 registerObject(model);
+	  }
+	  for (auto* sprite : GameEngine::Sprite::GetRegisteredSprites()) {
+		 registerObject(sprite);
+	  }
+	  for (auto* skybox : GameEngine::Skybox::GetRegisteredSkyboxes()) {
+		 registerObject(skybox);
+	  }
+
+	  for (auto it = sceneParticleSystemKeys_.begin(); it != sceneParticleSystemKeys_.end();) {
+		 if (!IsEditableSceneParticleSystem(it->first) || objectStore_.Contains(it->first)) {
+			it = sceneParticleSystemKeys_.erase(it);
+		 } else {
+			++it;
+		 }
+	  }
+
+	  std::unordered_set<std::string> usedParticleKeys;
+	  for (const auto& [particleSystem, key] : sceneParticleSystemKeys_) {
+		 if (particleSystem && !key.empty()) {
+			usedParticleKeys.insert(key);
+		 }
+	  }
+
+	  for (auto* particleSystem : GameEngine::ParticleSystem::GetRegisteredParticleSystems()) {
+		 if (!IsEditableSceneParticleSystem(particleSystem) ||
+			objectStore_.Contains(particleSystem) ||
+			sceneParticleSystemKeys_.contains(particleSystem)) {
+			continue;
+		 }
+
+		 const std::string baseKey = BuildSceneKey("ParticleSystem", particleSystem->GetName());
+		 std::string key = baseKey;
+		 int suffix = 2;
+		 while (usedParticleKeys.contains(key)) {
+			key = baseKey + "#" + std::to_string(suffix++);
+		 }
+		 usedParticleKeys.insert(key);
+		 sceneParticleSystemKeys_[particleSystem] = key;
+	  }
+   }
+
+   GameEngine::Object* FindSceneObjectByKey(const std::string& key) const {
+	  if (key.empty()) {
+		 return nullptr;
+	  }
+
+	  auto isRegistered = [](const GameEngine::Object* object) {
+		 for (auto* model : GameEngine::Model::GetRegisteredModels()) {
+			if (model == object) {
+			   return true;
+			}
+		 }
+		 for (auto* sprite : GameEngine::Sprite::GetRegisteredSprites()) {
+			if (sprite == object) {
+			   return true;
+			}
+		 }
+		 for (auto* skybox : GameEngine::Skybox::GetRegisteredSkyboxes()) {
+			if (skybox == object) {
+			   return true;
+			}
+		 }
+		 return false;
+	  };
+
+	  for (const auto& [object, objectKey] : sceneObjectKeys_) {
+		 if (objectKey == key && object && !objectStore_.Contains(object) && isRegistered(object)) {
+			return const_cast<GameEngine::Object*>(object);
+		 }
+	  }
+	  return nullptr;
+   }
+
+   GameEngine::ParticleSystem* FindSceneParticleSystemByKey(const std::string& key) const {
+	  if (key.empty()) {
+		 return nullptr;
+	  }
+
+	  for (const auto& [particleSystem, particleKey] : sceneParticleSystemKeys_) {
+		 if (particleKey == key &&
+			IsEditableSceneParticleSystem(particleSystem) &&
+			!objectStore_.Contains(particleSystem)) {
+			return const_cast<GameEngine::ParticleSystem*>(particleSystem);
+		 }
+	  }
+	  return nullptr;
+   }
+
+   void ApplySceneObjects(const nlohmann::json& sceneObjectsData) {
+	  for (const auto& entry : sceneObjectsData) {
+		 if (!entry.is_object()) {
+			continue;
+		 }
+
+		 const std::string key = entry.value("sceneKey", "");
+		 if (key.empty()) {
+			continue;
+		 }
+
+		 GameEngine::Object* object = FindSceneObjectByKey(key);
+		 if (entry.value("deleted", false)) {
+			if (object) {
+			   if (auto* renderComponent = object->GetComponent<GameEngine::RenderComponent>()) {
+				  renderComponent->visible = false;
+			   }
+			}
+			continue;
+		 }
+
+		 if (!object) {
+			continue;
+		 }
+
+		 if (auto* renderComponent = object->GetComponent<GameEngine::RenderComponent>()) {
+			renderComponent->visible = true;
+		 }
+
+		 const nlohmann::json* objectData = &entry;
+		 if (entry.contains("object") && entry.at("object").is_object()) {
+			objectData = &entry.at("object");
+		 }
+		 objectStore_.ApplyObjectState(object, *objectData);
+	  }
+   }
+
+   void ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData) {
+	  for (const auto& entry : sceneParticlesData) {
+		 if (!entry.is_object()) {
+			continue;
+		 }
+
+		 const std::string key = entry.value("sceneKey", "");
+		 if (key.empty()) {
+			continue;
+		 }
+
+		 GameEngine::ParticleSystem* particleSystem = FindSceneParticleSystemByKey(key);
+		 if (entry.value("deleted", false)) {
+			if (particleSystem) {
+			   particleSystem->Stop();
+			}
+			continue;
+		 }
+
+		 if (!particleSystem) {
+			continue;
+		 }
+
+		 const nlohmann::json* particleData = &entry;
+		 if (entry.contains("particleSystem") && entry.at("particleSystem").is_object()) {
+			particleData = &entry.at("particleSystem");
+		 }
+		 objectStore_.ApplyParticleSystemState(particleSystem, *particleData);
+	  }
+   }
+
+   void ApplyCameras(const nlohmann::json& camerasData) {
+	  if (!camerasData.is_object()) {
+		 return;
+	  }
+
+	  GameEngine::CinemachineBrain* brain = GameEngine::EngineContext::GetActiveBrain();
+	  if (!brain) {
+		 return;
+	  }
+
+	  if (camerasData.contains("brain") && camerasData.at("brain").is_object()) {
+		 const auto& brainData = camerasData.at("brain");
+		 if (brainData.contains("defaultBlendTime") && brainData.at("defaultBlendTime").is_number()) {
+			brain->SetDefaultBlendTime(brainData.at("defaultBlendTime").get<float>());
+		 }
+	  }
+
+	  if (!camerasData.contains("virtualCameras") || !camerasData.at("virtualCameras").is_array()) {
+		 return;
+	  }
+
+	  const auto& registeredCameras = brain->GetVirtualCameras();
+	  std::unordered_set<GameEngine::VirtualCamera*> appliedCameras;
+	  for (const auto& cameraData : camerasData.at("virtualCameras")) {
+		 if (!cameraData.is_object()) {
+			continue;
+		 }
+
+		 const std::string cameraName = cameraData.value("name", "");
+		 if (cameraName == "DebugCamera") {
+			continue;
+		 }
+
+		 GameEngine::VirtualCamera* targetCamera = nullptr;
+		 if (!cameraName.empty()) {
+			for (GameEngine::VirtualCamera* camera : registeredCameras) {
+			   if (camera && camera->GetName() == cameraName && camera->GetName() != "DebugCamera") {
+				  targetCamera = camera;
+				  break;
+			   }
+			}
+		 }
+
+		 if (!targetCamera && cameraData.contains("index") && cameraData.at("index").is_number_unsigned()) {
+			const size_t index = cameraData.at("index").get<size_t>();
+			if (index < registeredCameras.size()) {
+			   GameEngine::VirtualCamera* candidate = registeredCameras[index];
+			   if (candidate && candidate->GetName() != "DebugCamera") {
+				  targetCamera = candidate;
+			   }
+			}
+		 }
+
+		 if (!targetCamera || appliedCameras.contains(targetCamera)) {
+			continue;
+		 }
+
+		 targetCamera->Deserialize(cameraData);
+		 appliedCameras.insert(targetCamera);
+	  }
+   }
+
+   GameEngine::EditorObjectStore& objectStore_;
+   std::unordered_map<const GameEngine::Object*, std::string> sceneObjectKeys_;
+   std::unordered_map<const GameEngine::ParticleSystem*, std::string> sceneParticleSystemKeys_;
+};
+} // namespace
 
 namespace GameEngine {
+BaseScene::~BaseScene() = default;
+
 void BaseScene::Initialize() {
    // 現在のシーンインスタンスを登録
    sCurrentScene_ = this;
@@ -130,6 +461,11 @@ void BaseScene::Finalize() {
    cameraEditor_.reset();
 #endif
 
+   if (runtimeSceneObjectStore_) {
+	  runtimeSceneObjectStore_->Clear();
+	  runtimeSceneObjectStore_.reset();
+   }
+
    EngineContext::ClearCameraUnits();
    EngineContext::ClearDirectionalLights();
    EngineContext::ClearPointLights();
@@ -147,6 +483,40 @@ void BaseScene::Finalize() {
 
 void BaseScene::SetNextSceneName(const std::string& sceneName) {
    sNextSceneName_ = sceneName;
+}
+
+void BaseScene::LoadSceneDataIfNeeded() {
+#ifdef USE_IMGUI
+   LoadEditorSceneIfNeeded();
+#else
+   LoadRuntimeSceneIfNeeded();
+#endif
+}
+
+void BaseScene::LoadRuntimeSceneIfNeeded() {
+   const std::filesystem::path filePath = std::filesystem::path("resources") / "scenes" / (editorSceneName_ + ".json");
+   if (!std::filesystem::exists(filePath)) {
+	  return;
+   }
+
+   std::ifstream file(filePath);
+   if (!file.is_open()) {
+	  return;
+   }
+
+   nlohmann::json sceneData;
+   try {
+	  file >> sceneData;
+   }
+   catch (...) {
+	  return;
+   }
+
+   runtimeSceneObjectStore_ = std::make_unique<EditorObjectStore>();
+   RuntimeSceneApplier applier(*runtimeSceneObjectStore_);
+   if (!applier.Apply(sceneData)) {
+	  runtimeSceneObjectStore_.reset();
+   }
 }
 
 #ifdef USE_IMGUI

@@ -333,6 +333,9 @@ private:
    /// @brief UI描画専用カメラを初期化
    void InitializeUICamera();
 
+   /// @brief UI描画専用カメラの平行投影サイズを同期
+   void SyncUICameraToRenderTarget(uint32_t screenWidth, uint32_t screenHeight);
+
    /// @brief 指定したパス用のラインレンダラーを取得
    LineRenderer* SelectLineRenderer(bool applyPostProcess);
 

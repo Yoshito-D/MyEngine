@@ -3,6 +3,10 @@
 #include "Object.h"
 #include <algorithm>
 
+#ifdef USE_IMGUI
+#include "imgui.h"
+#endif
+
 namespace GameEngine {
 
 IObjectComponent* ComponentContainer::AddByTypeName(Object& owner, const std::string& typeName) {
@@ -109,7 +113,10 @@ void ComponentContainer::DrawInspector() {
       if (!component) {
          continue;
       }
+      // コンポーネントごとにID空間を分け、同じ表示ラベルを使う編集項目同士の衝突を防ぐ。
+      ImGui::PushID(component->GetTypeName());
       component->DrawInspector();
+      ImGui::PopID();
    }
 }
 #endif
