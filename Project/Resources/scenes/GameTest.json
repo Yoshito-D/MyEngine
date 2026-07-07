@@ -162,21 +162,28 @@
                   "data": {
                      "accelToDistanceKick": 0.03999999910593033,
                      "accelToFovKick": 0.0024999999441206455,
-                     "airborneBlendLerpSpeed": 3.0,
+                     "airborneBlendLerpSpeed": 5.0,
                      "airborneDistanceOffset": 4.0,
-                     "airborneForwardLerpSpeed": 4.0,
+                     "airborneForwardLerpSpeed": 5.0,
                      "airborneFovOffset": 0.10000000149011612,
-                     "airbornePlanetDirectionBlend": 1.0,
-                     "airbornePlanetDirectionLerpSpeed": 1.5,
+                     "airborneGravityDirectionBoostBias": 2.0,
+                     "airborneGravityDirectionBoostFullThreshold": 0.6000000238418579,
+                     "airborneGravityDirectionBoostThreshold": 0.0,
+                     "airbornePlanetDirectionBlend": 0.699999988079071,
+                     "airbornePlanetDirectionLerpSpeed": 2.0,
                      "airborneResetLerpSpeed": 8.0,
                      "distance": 16.0,
                      "distanceBoostMax": 2.0,
+                     "enableAirborneGravityDirectionBoost": true,
+                     "enableAirbornePlanetDirectionGuide": true,
                      "fovBoostMax": 0.05000000074505806,
                      "fovDefault": 0.4699999988079071,
                      "fovLerpSpeed": 4.0,
                      "gravityUpLerpSpeed": 5.0,
                      "groundedTargetHeight": 2.0,
                      "height": 4.0,
+                     "jumpPlanetDirectionRampSeconds": 0.5,
+                     "landingRearLerpRampSeconds": 2.0,
                      "positionLerpSpeed": 12.0,
                      "rearLerpSpeed": 7.5,
                      "speedBoostMax": 25.0,
@@ -427,7 +434,7 @@
                   "translation": [
                      0.0,
                      0.0,
-                     264.9385986328125
+                     246.15359497070313
                   ],
                   "useParentMatrix": false
                },
@@ -456,7 +463,7 @@
                      0.0
                   ],
                   "textureNames": [
-                     "textures/ground/aerial_grass_rock_diff_2k.jpg"
+                     "aerial_grass_rock_diff_2k"
                   ],
                   "textureSize": [
                      0.0,
@@ -553,7 +560,7 @@
                   "translation": [
                      1.0,
                      0.0,
-                     423.8858337402344
+                     375.2118225097656
                   ],
                   "useParentMatrix": false
                },
@@ -582,7 +589,7 @@
                      0.0
                   ],
                   "textureNames": [
-                     "textures/ground/painted_concrete_diff_2k.jpg"
+                     "painted_concrete_diff_2k"
                   ],
                   "textureSize": [
                      0.0,
@@ -679,7 +686,7 @@
                   "translation": [
                      2.0,
                      0.0,
-                     590.2962646484375
+                     517.45361328125
                   ],
                   "useParentMatrix": false
                },
@@ -708,7 +715,7 @@
                      0.0
                   ],
                   "textureNames": [
-                     "textures/ground/plywood_diff_2k.jpg"
+                     "plywood_diff_2k"
                   ],
                   "textureSize": [
                      0.0,
@@ -805,7 +812,7 @@
                   "translation": [
                      0.0,
                      0.0,
-                     766.0769653320313
+                     673.5043334960938
                   ],
                   "useParentMatrix": false
                },
@@ -834,7 +841,7 @@
                      0.0
                   ],
                   "textureNames": [
-                     "textures/ground/aerial_beach_01_diff_2k.jpg"
+                     "aerial_beach_01_diff_2k"
                   ],
                   "textureSize": [
                      0.0,
@@ -1066,7 +1073,7 @@
                      "translation": [
                         0.0,
                         0.0,
-                        130.9347381591797
+                        121.84367370605469
                      ],
                      "useParentMatrix": false
                   },
@@ -1095,7 +1102,7 @@
                         0.0
                      ],
                      "textureNames": [
-                        "textures/ground/rust_coarse_01_diff_2k.jpg"
+                        "rust_coarse_01_diff_2k"
                      ],
                      "textureSize": [
                         0.0,

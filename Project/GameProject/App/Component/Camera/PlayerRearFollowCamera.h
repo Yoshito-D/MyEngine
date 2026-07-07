@@ -7,7 +7,7 @@ namespace App {
 /// @brief プレイヤーを注視し、後方へ補間追従するカメラコンポーネント
 /// @note upVector は通常は惑星基準（gravityUp_）を使用し、空中リセット中のみプレイヤーUpへ補間する。
 ///       惑星切り替え時のロール急変を防ぐため gravityUp_ を nlerp で補間する。
-///       空中時は進行方向へ徐々に補間し、リセット時はプレイヤー姿勢へ補間する。
+///       空中時は速度の反対方向へ徐々に補間し、リセット時はプレイヤー姿勢へ補間する。
 ///       プレイヤーが加速すると FOV 拡大・カメラ後退距離増加で加速感を演出する。
 class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent {
 public:
@@ -35,7 +35,7 @@ public:
 	/// @brief プレイヤー前方を設定する
 	void SetFollowForward(const GameEngine::Vector3& forward) { followForward_ = forward; }
 
-	/// @brief 空中でカメラが追従する進行方向を設定する
+	/// @brief 空中で速度が小さいときに使う補助進行方向を設定する
 	/// @param forward 重力水平面上の進行方向
 	void SetAirborneMoveForward(const GameEngine::Vector3& forward) { airborneMoveForward_ = forward; }
 
@@ -57,6 +57,10 @@ public:
 	/// @brief プレイヤーの現在速度を設定する（加速演出に使用）
 	/// @param speed 速度の大きさ（単位は任意。加速感の判定に使用）
 	void SetPlayerSpeed(float speed) { playerSpeed_ = speed; }
+
+	/// @brief プレイヤーの現在速度ベクトルを設定する（空中カメラ方向補間に使用）
+	/// @param velocity ワールド空間の速度
+	void SetPlayerVelocity(const GameEngine::Vector3& velocity) { playerVelocity_ = velocity; }
 
 	/// @brief 通常走行速度（autoSpeed）を設定する
 	/// @details これを下回った場合のみ減速演出を発火させる
@@ -96,16 +100,34 @@ public:
 	/// @brief 空中時に追加する FOV 量
 	float airborneFovOffset = 0.05f;
 
-	/// @brief 空中時にカメラ前方を近傍惑星方向へ寄せる最大割合
+	/// @brief 空中時に近傍惑星方向へ寄せる最大割合
 	float airbornePlanetDirectionBlend = 0.35f;
 
-	/// @brief 空中時の近傍惑星方向へ向かう補間速度
+	/// @brief 近傍惑星方向と重力方向係数の追従速度
 	float airbornePlanetDirectionLerpSpeed = 3.0f;
+
+	/// @brief ジャンプ開始後に惑星方向補間が通常の強さへ戻るまでの秒数
+	float jumpPlanetDirectionRampSeconds = 0.35f;
+
+	/// @brief 空中時に近傍惑星を画角へ入れる方向ガイドを使うか
+	bool enableAirbornePlanetDirectionGuide = true;
+
+	/// @brief 速度が重力Down方向へ近いときだけ惑星方向補間を開始するか
+	bool enableAirborneGravityDirectionBoost = true;
+
+	/// @brief 惑星方向補間を開始する速度方向と重力Down方向の一致度
+	float airborneGravityDirectionBoostThreshold = 0.35f;
+
+	/// @brief 惑星方向補間係数が最大になる速度方向と重力Down方向の一致度
+	float airborneGravityDirectionBoostFullThreshold = 0.9f;
+
+	/// @brief 重力方向の近さから惑星方向補間係数へ変換するバイアス
+	float airborneGravityDirectionBoostBias = 1.0f;
 
 	/// @brief 地上/空中パラメータを切り替える補間速度
 	float airborneBlendLerpSpeed = 6.0f;
 
-	/// @brief 空中時に進行方向へ向きを合わせる補間速度
+	/// @brief 空中時に速度の反対方向へ向きを合わせる補間速度
 	float airborneForwardLerpSpeed = 4.0f;
 
 	/// @brief 空中リセットでプレイヤー姿勢へ合わせる補間速度
@@ -113,6 +135,9 @@ public:
 
 	/// @brief 地上時の後方補間速度
 	float rearLerpSpeed = 50.0f;
+
+	/// @brief 着地後に地上後方補間速度へ到達するまでの秒数
+	float landingRearLerpRampSeconds = 0.5f;
 
 	/// @brief 惑星切り替え時の重力Up補間速度（大きいほど速く追従）
 	float gravityUpLerpSpeed = 5.0f;
@@ -173,7 +198,7 @@ private:
 	/// @brief 追従対象の前方
 	GameEngine::Vector3 followForward_ = { 0.0f, 0.0f, 1.0f };
 
-	/// @brief 空中で追従する進行方向
+	/// @brief 空中で速度が小さいときに使う補助進行方向
 	GameEngine::Vector3 airborneMoveForward_ = { 0.0f, 0.0f, 1.0f };
 
 	/// @brief プレイヤーの正面方向（リセット時の基準）
@@ -185,6 +210,9 @@ private:
 	/// @brief 空中状態
 	bool isAirborne_ = false;
 
+	/// @brief 前フレームの空中状態
+	bool wasAirborneLastFrame_ = false;
+
 	/// @brief 地上(0)から空中(1)へ補間した現在ブレンド値
 	float currentAirborneBlend_ = 0.0f;
 
@@ -193,6 +221,12 @@ private:
 
 	/// @brief 通常空中カメラ(0)からプレイヤー姿勢リセット(1)への補間値
 	float airborneResetBlend_ = 0.0f;
+
+	/// @brief 惑星方向補間に使う補間済み重力係数
+	float currentPlanetDirectionGravityFactor_ = 0.0f;
+
+	/// @brief ジャンプ開始後の惑星方向補間復帰経過時間
+	float jumpPlanetDirectionRampElapsed_ = 0.0f;
 
 	/// @brief 現在の後方ベクトル（補間結果）
 	GameEngine::Vector3 currentBackward_ = { 0.0f, 0.0f, -1.0f };
@@ -206,8 +240,20 @@ private:
 	/// @brief 初回更新フラグ
 	bool isInitialized_ = false;
 
+	/// @brief 着地後の地上後方補間速度の経過時間
+	float landingRearLerpElapsed_ = 0.0f;
+
+	/// @brief 着地直前の空中後方補間速度
+	float landingRearLerpStartSpeed_ = 4.0f;
+
+	/// @brief 直近の空中後方補間速度
+	float lastAirborneRearFollowSpeed_ = 4.0f;
+
 	/// @brief プレイヤー現在速度（外部から毎フレーム供給）
 	float playerSpeed_ = 0.0f;
+
+	/// @brief プレイヤー現在速度ベクトル（外部から毎フレーム供給）
+	GameEngine::Vector3 playerVelocity_ = { 0.0f, 0.0f, 0.0f };
 
 	/// @brief 通常走行速度。これを下回ったときのみ減速演出を発火する
 	float autoSpeed_ = 13.0f;
@@ -250,7 +296,7 @@ private:
 	/// @return 補間後の正規化済み重力Up
 	GameEngine::Vector3 SmoothGravityUp(float deltaTime);
 
-	/// @brief currentBackward_ を更新する（初回設定 or 重力平面再投影 or Lerp 追従）
+	/// @brief currentBackward_ を更新する（初回設定 or 重力平面再投影 or 角度追従）
 	/// @param up 正規化済み重力Up
 	/// @param deltaTime フレーム時間
 	void UpdateBackwardVector(const GameEngine::Vector3& up, float deltaTime);
@@ -263,9 +309,17 @@ private:
 	/// @param deltaTime フレーム時間
 	void UpdateAirborneResetBlend(float deltaTime);
 
-	/// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向を更新する
+	/// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向と係数を更新する
 	/// @param deltaTime フレーム時間
 	void UpdatePlanetDirectionGuide(float deltaTime);
+
+	/// @brief 現在の空中惑星方向補間量を返す
+	/// @return 補間量 [0, 1]
+	float ComputePlanetDirectionBlend() const;
+
+	/// @brief 速度方向と重力Down方向の近さから惑星方向補間の目標係数を計算する
+	/// @return 目標係数 [0, 1]
+	float ComputePlanetDirectionGravityFactorTarget() const;
 
 	/// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
 	/// @param up カメラ位置の高さ方向
@@ -299,14 +353,17 @@ private:
 	/// @return 加速度合い boostAlpha [0, 1]
 	float UpdateAccelerationEffect(GameEngine::CameraState& state, float deltaTime);
 
-	/// @brief 目標 eye オフセット（ピボット相対）を lerp 補間し、ワールド eye 位置を返す
+	/// @brief 目標 eye オフセット（ピボット相対）をUp基準の高さ・水平角・半径に分けて補間する
 	/// @details 絶対座標ではなくピボット相対オフセットを補間することで、
 	///          ピボット（プレイヤー）が移動しても補間パスが常に後方を通り
 	///          プレイヤーを突き抜ける挙動を防ぐ。初回フレームはスナップする。
 	/// @param targetEye 今フレームの理想カメラ位置（ワールド座標）
+	/// @param up 補間軸に使う正規化済みUp
 	/// @param deltaTime フレーム時間
 	/// @return 補間後のカメラ位置（ワールド座標）
-	GameEngine::Vector3 SmoothEye(const GameEngine::Vector3& targetEye, float deltaTime);
+	GameEngine::Vector3 SmoothEye(const GameEngine::Vector3& targetEye,
+								  const GameEngine::Vector3& up,
+								  float deltaTime);
 
 	/// @brief ベクトルを平面投影して正規化する（失敗時はfallback）
 	static GameEngine::Vector3 ProjectOnPlaneNorm(const GameEngine::Vector3& v,
