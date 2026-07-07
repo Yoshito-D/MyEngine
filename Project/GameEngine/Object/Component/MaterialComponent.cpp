@@ -5,6 +5,8 @@
 #include "Object.h"
 
 #include <algorithm>
+#include <cctype>
+#include <filesystem>
 
 namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
@@ -21,6 +23,28 @@ namespace {
       out.x = data.at(key)[0].get<float>();
       out.y = data.at(key)[1].get<float>();
       return true;
+   }
+
+   bool IsTextureFileExtension(std::string extension) {
+      std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
+         return static_cast<char>(std::tolower(c));
+      });
+      return extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".dds";
+   }
+
+   std::string MakeSerializedTextureName(const std::string& textureId) {
+      if (textureId.empty()) {
+         return {};
+      }
+
+      const std::filesystem::path texturePath(textureId);
+      if (!texturePath.has_parent_path() && !IsTextureFileExtension(texturePath.extension().string())) {
+         return textureId;
+      }
+
+      // Editor asset IDs are resource-relative paths; material save data keeps only the texture name.
+      const std::string textureName = texturePath.stem().string();
+      return textureName.empty() ? textureId : textureName;
    }
 }
 
@@ -200,7 +224,7 @@ nlohmann::json MaterialComponent::Serialize() const {
    }
    json["materialNames"] = materialNames;
    json["materialCount"] = materials.size();
-   json["environmentTextureName"] = environmentTextureName_;
+   json["environmentTextureName"] = MakeSerializedTextureName(environmentTextureName_);
    json["textureLeftTop"] = { textureLeftTop_.x, textureLeftTop_.y };
    json["textureSize"] = { textureSize_.x, textureSize_.y };
 
@@ -208,6 +232,9 @@ nlohmann::json MaterialComponent::Serialize() const {
    {
       std::vector<std::string> texNames = textureNames_;
       texNames.resize(materials.size());
+      for (auto& textureName : texNames) {
+         textureName = MakeSerializedTextureName(textureName);
+      }
       json["textureNames"] = texNames;
    }
 

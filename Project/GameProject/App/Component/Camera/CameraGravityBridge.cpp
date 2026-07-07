@@ -97,8 +97,10 @@ void CameraGravityBridge::Update(float) {
       }
 
       GameEngine::Vector3 airborneMoveForward = forward;
+      GameEngine::Vector3 playerVelocity = { 0.0f, 0.0f, 0.0f };
       if (auto* gravityBody = GetOwner().GetComponent<GravityBody>()) {
          GameEngine::Vector3 velocity = gravityBody->GetVelocity();
+         playerVelocity = velocity;
          // 重力方向成分を除いた進行方向を使い、上下速度だけでカメラが真上/真下を向くのを避ける。
          GameEngine::Vector3 horizontalVelocity = velocity - gravityUp * velocity.Dot(gravityUp);
          float horizontalSpeed = horizontalVelocity.Length();
@@ -114,6 +116,7 @@ void CameraGravityBridge::Update(float) {
       playerRearFollowCamera_->SetAirborneMoveForward(airborneMoveForward);
       playerRearFollowCamera_->SetPlayerBasis(forward, playerUp);
       playerRearFollowCamera_->SetAirborne(isAirborne);
+      playerRearFollowCamera_->SetPlayerVelocity(playerVelocity);
 
       const bool resetHeld =
          isAirborne
