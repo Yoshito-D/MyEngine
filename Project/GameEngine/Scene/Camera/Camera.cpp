@@ -2,11 +2,23 @@
 #include "Camera.h"
 #include "Utility/MathUtils.h"
 #include "ResourceHelper.h"
+#include <algorithm>
+#include <cmath>
 
 namespace GameEngine {
 namespace {
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
+constexpr float kDefaultFovY = 0.45f;
+constexpr float kMinFovY = 0.017453292f;  // 1 degree
+constexpr float kMaxFovY = 3.12413936f;   // 179 degrees
+
+float ClampFovY(float fovY) {
+	if (!std::isfinite(fovY)) {
+		return kDefaultFovY;
+	}
+	return std::clamp(fovY, kMinFovY, kMaxFovY);
+}
 }
 
 void Camera::InitializeGraphicsDevice(GraphicsDevice* device) {
@@ -17,7 +29,7 @@ void Camera::InitializeGraphicsDevice(GraphicsDevice* device) {
 
 void Camera::Initialize(const Transform& transform, ProjectionType projectionType) {
 	transform_ = transform;
-	fovY_ = 0.45f;
+	fovY_ = kDefaultFovY;
 	aspectRatio_ = static_cast<float>(Window::kResolutionWidth) / static_cast<float>(Window::kResolutionHeight);
 	nearClip_ = 0.01f;
 	farClip_ = 100.0f;
@@ -29,6 +41,10 @@ void Camera::Initialize(const Transform& transform, ProjectionType projectionTyp
 	cameraResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGpuData_));
 
 	Update();
+}
+
+void Camera::SetFovY(float fovY) {
+	fovY_ = ClampFovY(fovY);
 }
 
 void Camera::Update() {

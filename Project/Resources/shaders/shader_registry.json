@@ -2,7 +2,7 @@
   "shaders": [
     { "name": "Object3D", "type": "Vertex", "filePath": "Resources/shaders/Object3d.VS.hlsl", "entryPoint": "main" },
     { "name": "Object3D", "type": "Pixel", "filePath": "Resources/shaders/Object3d.PS.hlsl", "entryPoint": "main" },
-    { "name": "SkinningObject3D", "type": "Vertex", "filePath": "Resources/shaders/SkinningObject3d.VS.hlsl", "entryPoint": "main" },
+    { "name": "Skinning", "type": "Compute", "filePath": "Resources/shaders/Skinning.CS.hlsl", "entryPoint": "main" },
 
     { "name": "Line3D", "type": "Vertex", "filePath": "Resources/shaders/Line3d.VS.hlsl", "entryPoint": "main" },
     { "name": "Line3D", "type": "Pixel", "filePath": "Resources/shaders/Line3d.PS.hlsl", "entryPoint": "main" },

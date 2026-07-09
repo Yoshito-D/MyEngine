@@ -48,7 +48,9 @@ public:
 	Vector3 GetScale() const { return transform_.scale; }
 
 	// 投影設定
-	void SetFovY(float fovY) { fovY_ = fovY; }
+	/// @brief 透視投影の垂直 FOV を設定する
+	/// @details 無効値や負値で射影行列が壊れないよう、安全な角度範囲へ丸める。
+	void SetFovY(float fovY);
 	float GetFovY() const { return fovY_; }
 
 	void SetAspectRatio(float aspectRatio) { aspectRatio_ = aspectRatio; }

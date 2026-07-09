@@ -16,6 +16,7 @@ void EngineTestScene::OnInitialize() {
    // --- アセット読み込み ---
    EngineContext::LoadModel("resources/models/cube", "AnimatedCube.gltf");
    EngineContext::LoadAnimation("resources/models/cube", "AnimatedCube.gltf");
+   EngineContext::LoadAnimation("resources/models/human", "walk.gltf");
 
    EngineContext::CreateMaterial("animCubeMaterial", 0xffffffff, 0);
    auto* animCubeMaterial = EngineContext::GetMaterial("animCubeMaterial");

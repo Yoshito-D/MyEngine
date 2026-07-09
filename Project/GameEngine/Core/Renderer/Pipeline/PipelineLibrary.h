@@ -1,4 +1,6 @@
 #pragma once
+#include <d3d12.h>
+#include <wrl.h>
 #include <string>
 #include <unordered_map>
 #include <memory>
@@ -11,6 +13,7 @@ struct ComputePipelineDefinition {
    std::string name;
    std::string rootSignatureName;
    std::string computeShaderName;
+   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
 };
 
 class PipelineLibrary {

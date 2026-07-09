@@ -9,6 +9,167 @@
 #include "MathUtils.h"
 
 namespace GameEngine {
+namespace {
+constexpr size_t kConstantBufferAlignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+
+size_t AlignConstantBufferSize(size_t size) {
+   return (size + kConstantBufferAlignment - 1) & ~(kConstantBufferAlignment - 1);
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> CreateUavBufferResource(ID3D12Device* device, size_t sizeInBytes) {
+   D3D12_HEAP_PROPERTIES heapProperties{};
+   heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+   D3D12_RESOURCE_DESC resourceDesc{};
+   resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+   resourceDesc.Width = sizeInBytes;
+   resourceDesc.Height = 1;
+   resourceDesc.DepthOrArraySize = 1;
+   resourceDesc.MipLevels = 1;
+   resourceDesc.SampleDesc.Count = 1;
+   resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+   Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+   HRESULT hr = device->CreateCommittedResource(
+	  &heapProperties,
+	  D3D12_HEAP_FLAG_NONE,
+	  &resourceDesc,
+	  D3D12_RESOURCE_STATE_COMMON,
+	  nullptr,
+	  IID_PPV_ARGS(resource.GetAddressOf()));
+   assert(SUCCEEDED(hr));
+   return resource;
+}
+
+std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> AllocateSrvUavDescriptor(GraphicsDevice* device) {
+   const UINT index = device->GetNextSrvIndex();
+   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> handle;
+   handle.first = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+	  device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
+	  index,
+	  device->GetDescriptorSizeCBVSRVUAV());
+   handle.second = CD3DX12_GPU_DESCRIPTOR_HANDLE(
+	  device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
+	  index,
+	  device->GetDescriptorSizeCBVSRVUAV());
+   device->IncrementSrvIndex();
+   return handle;
+}
+
+void CreateStructuredBufferSrv(ID3D12Device* device, ID3D12Resource* resource, UINT elementCount, UINT stride, D3D12_CPU_DESCRIPTOR_HANDLE handle) {
+   D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+   srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+   srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+   srvDesc.Buffer.FirstElement = 0;
+   srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+   srvDesc.Buffer.NumElements = elementCount;
+   srvDesc.Buffer.StructureByteStride = stride;
+   device->CreateShaderResourceView(resource, &srvDesc, handle);
+}
+
+void CreateStructuredBufferUav(ID3D12Device* device, ID3D12Resource* resource, UINT elementCount, UINT stride, D3D12_CPU_DESCRIPTOR_HANDLE handle) {
+   D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+   uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+   uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+   uavDesc.Buffer.FirstElement = 0;
+   uavDesc.Buffer.NumElements = elementCount;
+   uavDesc.Buffer.StructureByteStride = stride;
+   device->CreateUnorderedAccessView(resource, nullptr, &uavDesc, handle);
+}
+
+void CreateInputSkinningResourceViews(
+   GraphicsDevice* device,
+   SkinCluster& skinCluster,
+   const std::vector<MeshData>& meshes,
+   const std::vector<ComPtr<ID3D12Resource>>& vertexResources) {
+   ID3D12Device* d3dDevice = device->GetDevice();
+
+   skinCluster.inputVertexSrvHandles.clear();
+   skinCluster.inputVertexSrvHandles.resize(meshes.size());
+   skinCluster.influenceSrvHandles.clear();
+   skinCluster.influenceSrvHandles.resize(meshes.size());
+
+   for (size_t meshIndex = 0; meshIndex < meshes.size(); ++meshIndex) {
+	  const auto& mesh = meshes[meshIndex];
+	  if (mesh.vertices.empty() ||
+		 meshIndex >= vertexResources.size() ||
+		 meshIndex >= skinCluster.influenceResources.size() ||
+		 !vertexResources[meshIndex] ||
+		 !skinCluster.influenceResources[meshIndex]) {
+		 continue;
+	  }
+
+	  skinCluster.inputVertexSrvHandles[meshIndex] = AllocateSrvUavDescriptor(device);
+	  CreateStructuredBufferSrv(
+		 d3dDevice,
+		 vertexResources[meshIndex].Get(),
+		 static_cast<UINT>(mesh.vertices.size()),
+		 sizeof(Mesh::VertexData),
+		 skinCluster.inputVertexSrvHandles[meshIndex].first);
+
+	  skinCluster.influenceSrvHandles[meshIndex] = AllocateSrvUavDescriptor(device);
+	  CreateStructuredBufferSrv(
+		 d3dDevice,
+		 skinCluster.influenceResources[meshIndex].Get(),
+		 static_cast<UINT>(mesh.vertices.size()),
+		 sizeof(VertexInfluence),
+		 skinCluster.influenceSrvHandles[meshIndex].first);
+   }
+}
+
+void CreateOutputSkinningResources(GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes) {
+   ID3D12Device* d3dDevice = device->GetDevice();
+
+   skinCluster.skinnedVertexResources.clear();
+   skinCluster.skinnedVertexResources.resize(meshes.size());
+   skinCluster.skinnedVertexBufferViews.clear();
+   skinCluster.skinnedVertexBufferViews.resize(meshes.size());
+   skinCluster.skinnedVertexUavHandles.clear();
+   skinCluster.skinnedVertexUavHandles.resize(meshes.size());
+   skinCluster.skinningInformationResources.clear();
+   skinCluster.skinningInformationResources.resize(meshes.size());
+   skinCluster.mappedSkinningInformationData.clear();
+   skinCluster.mappedSkinningInformationData.resize(meshes.size(), nullptr);
+   skinCluster.skinnedVertexResourceStates.clear();
+   skinCluster.skinnedVertexResourceStates.resize(meshes.size(), D3D12_RESOURCE_STATE_COMMON);
+
+   for (size_t meshIndex = 0; meshIndex < meshes.size(); ++meshIndex) {
+	  const auto& mesh = meshes[meshIndex];
+	  if (mesh.vertices.empty()) {
+		 continue;
+	  }
+
+	  const size_t vertexBufferSize = sizeof(Mesh::VertexData) * mesh.vertices.size();
+	  skinCluster.skinnedVertexResources[meshIndex] = CreateUavBufferResource(d3dDevice, vertexBufferSize);
+
+	  skinCluster.skinnedVertexBufferViews[meshIndex].BufferLocation =
+		 skinCluster.skinnedVertexResources[meshIndex]->GetGPUVirtualAddress();
+	  skinCluster.skinnedVertexBufferViews[meshIndex].SizeInBytes = static_cast<UINT>(vertexBufferSize);
+	  skinCluster.skinnedVertexBufferViews[meshIndex].StrideInBytes = sizeof(Mesh::VertexData);
+
+	  skinCluster.skinnedVertexUavHandles[meshIndex] = AllocateSrvUavDescriptor(device);
+	  CreateStructuredBufferUav(
+		 d3dDevice,
+		 skinCluster.skinnedVertexResources[meshIndex].Get(),
+		 static_cast<UINT>(mesh.vertices.size()),
+		 sizeof(Mesh::VertexData),
+		 skinCluster.skinnedVertexUavHandles[meshIndex].first);
+
+	  skinCluster.skinningInformationResources[meshIndex] =
+		 ResourceHelper::CreateBufferResource(d3dDevice, AlignConstantBufferSize(sizeof(SkinningInformationForGPU)));
+	  skinCluster.skinningInformationResources[meshIndex]->Map(
+		 0,
+		 nullptr,
+		 reinterpret_cast<void**>(&skinCluster.mappedSkinningInformationData[meshIndex]));
+	  if (skinCluster.mappedSkinningInformationData[meshIndex]) {
+		 skinCluster.mappedSkinningInformationData[meshIndex]->numVertices = static_cast<uint32_t>(mesh.vertices.size());
+	  }
+   }
+}
+}
+
 void ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName) {
    assert(device);
    graphicsDevice_ = device;
@@ -90,6 +251,8 @@ std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() {
 	  instance.mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
 	  instance.mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
    }
+
+   CreateOutputSkinningResources(graphicsDevice_, instance, modelData_.meshes);
 
    return instance;
 }
@@ -315,6 +478,9 @@ SkinCluster ModelAsset::CreateSkinCluster(GraphicsDevice* device, const Skeleton
 	  skinCluster.influenceBufferViews[meshIndex].SizeInBytes = static_cast<UINT>(sizeof(VertexInfluence) * mesh.vertices.size());
 	  skinCluster.influenceBufferViews[meshIndex].StrideInBytes = sizeof(VertexInfluence);
    }
+
+   CreateInputSkinningResourceViews(device, skinCluster, modelData.meshes, vertexResources_);
+   CreateOutputSkinningResources(device, skinCluster, modelData.meshes);
 
    // 5) InverseBindPoseMatrixの保存領域を作成
    skinCluster.inverseBindPoseMatrices.resize(skeleton.joints.size());

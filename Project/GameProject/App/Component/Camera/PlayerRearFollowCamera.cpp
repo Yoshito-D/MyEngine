@@ -16,6 +16,18 @@ namespace App {
 // =============================================================================
 
 constexpr float kPlanetVisibilityGainFadeRange = 0.08f;
+constexpr float kDefaultSafeFov = 0.45f;
+constexpr float kMinSafeFov = 0.017453292f;  // 1 degree
+constexpr float kMaxSafeFov = 3.12413936f;   // 179 degrees
+constexpr float kMaxSpringDeltaTime = 0.25f;
+constexpr float kMaxSpringStep = 1.0f / 120.0f;
+
+static float ClampCameraFov(float fov) {
+   if (!std::isfinite(fov)) {
+	  return kDefaultSafeFov;
+   }
+   return std::clamp(fov, kMinSafeFov, kMaxSafeFov);
+}
 
 /// @brief 指数平滑の補間係数を返す（dt 変動に強く、常に 0..1 未満）
 static float ExpSmoothingFactor(float speed, float deltaTime) {
@@ -64,15 +76,34 @@ static void StepSpring1D(float target,
    float deltaTime,
    float& inOutValue,
    float& inOutVelocity) {
-   float dt = (std::max)(0.0f, deltaTime);
+   float dt = std::clamp(deltaTime, 0.0f, kMaxSpringDeltaTime);
    if (dt <= 0.0f) return;
 
    float k = (std::max)(0.0f, stiffness);
    float c = (std::max)(0.0f, damping);
 
-   float accel = -k * (inOutValue - target) - c * inOutVelocity;
-   inOutVelocity += accel * dt;
-   inOutValue += inOutVelocity * dt;
+   if (!std::isfinite(inOutValue)) {
+	  inOutValue = target;
+   }
+   if (!std::isfinite(inOutVelocity)) {
+	  inOutVelocity = 0.0f;
+   }
+
+   // 起動直後やブレーク復帰時の大きな dt をそのまま入れると、半陰的オイラーでも
+   // ばね速度が反転し過ぎて FOV オフセットが負方向へ大きく飛ぶため、小刻みに積分する。
+   while (dt > 0.0f) {
+	  float step = (std::min)(dt, kMaxSpringStep);
+	  float accel = -k * (inOutValue - target) - c * inOutVelocity;
+	  inOutVelocity += accel * step;
+	  inOutValue += inOutVelocity * step;
+	  dt -= step;
+
+	  if (!std::isfinite(inOutValue) || !std::isfinite(inOutVelocity)) {
+		 inOutValue = target;
+		 inOutVelocity = 0.0f;
+		 return;
+	  }
+   }
 }
 
 /// @brief 現在ベクトルを目標ベクトルへ「最大角速度」で回転させる
@@ -669,15 +700,21 @@ float PlayerRearFollowCamera::UpdateAccelerationEffect(GameEngine::CameraState& 
    float effectiveAirborneBlend = (std::max)(currentAirborneBlend_, airborneResetBlend_);
 
    // 目標 FOV = 通常 FOV + 速度比例ブースト + 空中ブースト + Springキック
+   float baseFov = ClampCameraFov(fovDefault);
    float targetFov =
-	  fovDefault
-	  + fovBoostMax * boostAlpha
-	  + airborneFovOffset * effectiveAirborneBlend
+	  baseFov
+	  + (std::max)(0.0f, fovBoostMax) * boostAlpha
+	  + (std::max)(0.0f, airborneFovOffset) * effectiveAirborneBlend
 	  + springFovOffset_;
+   targetFov = ClampCameraFov(targetFov);
 
    // FOV を滑らかに補間（急変させず視覚的に自然に追従）
+   if (!std::isfinite(currentFov_)) {
+	  currentFov_ = baseFov;
+   }
    float t = ExpSmoothingFactor(fovLerpSpeed, deltaTime);
    currentFov_ = currentFov_ + (targetFov - currentFov_) * t;
+   currentFov_ = ClampCameraFov(currentFov_);
    state.fov = currentFov_;
 
    return boostAlpha;
@@ -778,7 +815,7 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
 
    playerSpeed_ = 0.0f;
    playerVelocity_ = { 0.0f, 0.0f, 0.0f };
-   currentFov_ = fovDefault;
+   currentFov_ = ClampCameraFov(fovDefault);
    springFovOffset_ = 0.0f;
    springFovVelocity_ = 0.0f;
    springDistanceOffset_ = 0.0f;
@@ -793,7 +830,7 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
 
    if (auto* owner = GetOwnerCamera()) {
 	  GameEngine::CameraState state = owner->GetState();
-	  state.fov = fovDefault;
+	  state.fov = currentFov_;
 	  owner->SetState(state);
    }
 }
@@ -924,8 +961,8 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    rearLerpSpeed = ReadFloat(data, "rearLerpSpeed", rearLerpSpeed);
    landingRearLerpRampSeconds = ReadFloat(data, "landingRearLerpRampSeconds", landingRearLerpRampSeconds);
    gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
-   fovDefault = ReadFloat(data, "fovDefault", fovDefault);
-   fovBoostMax = ReadFloat(data, "fovBoostMax", fovBoostMax);
+   fovDefault = ClampCameraFov(ReadFloat(data, "fovDefault", fovDefault));
+   fovBoostMax = (std::max)(0.0f, ReadFloat(data, "fovBoostMax", fovBoostMax));
    fovLerpSpeed = ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
    distanceBoostMax = ReadFloat(data, "distanceBoostMax", distanceBoostMax);
    springStiffness = ReadFloat(data, "springStiffness", springStiffness);

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "BaseScene.h"
 #include "Model.h"
 #include "Camera/Core/VirtualCamera.h"
@@ -57,9 +57,6 @@ private:
 
    GameEngine::ParticleEmitterComponent* jumpEmitter_ = nullptr;
    int jumpSlotIndex_ = -1;
-
-   GameEngine::ParticleEmitterComponent* windEmitter_ = nullptr;
-   int windSlotIndex_ = -1;
 
    GameEngine::ParticleEmitterComponent* miniTurboEmitter_ = nullptr;
    int miniTurboSlotCount_ = 0;

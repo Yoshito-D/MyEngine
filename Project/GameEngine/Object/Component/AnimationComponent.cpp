@@ -84,14 +84,29 @@ void AnimationComponent::Deserialize(const nlohmann::json& data) {
    }
 }
 
-void AnimationComponent::Update(float deltaTime) {
-   // 早期リターンして最適化
-   if (!playing || animationName.empty()) {
-	  return;
-   }
+void AnimationComponent::Play() {
+   playing = true;
+   animator_.SetPlaying(true);
+}
 
-   if (deltaTime <= 0.0f) {
-	  return;
+void AnimationComponent::Pause() {
+   playing = false;
+   animator_.SetPlaying(false);
+}
+
+void AnimationComponent::Stop() {
+   playing = false;
+   currentTime = 0.0f;
+   animator_.SetPlaying(false);
+
+   if (const AnimationClip* selectedClip = PrepareSelectedClip()) {
+	  ApplyCurrentPose(*selectedClip);
+   }
+}
+
+const AnimationClip* AnimationComponent::PrepareSelectedClip() {
+   if (animationName.empty()) {
+	  return nullptr;
    }
 
    if (cachedAnimationName_ != animationName) {
@@ -105,7 +120,7 @@ void AnimationComponent::Update(float deltaTime) {
    }
 
    if (!cachedAnimationAsset_) {
-	  return;
+	  return nullptr;
    }
 
    const AnimationClip* selectedClip = nullptr;
@@ -116,7 +131,7 @@ void AnimationComponent::Update(float deltaTime) {
 	  selectedClip = cachedAnimationAsset_->GetDefaultClip();
    }
    if (!selectedClip) {
-	  return;
+	  return nullptr;
    }
 
    if (animator_.GetClip() != selectedClip) {
@@ -127,8 +142,26 @@ void AnimationComponent::Update(float deltaTime) {
    animator_.SetPlaybackSpeed(playbackSpeed);
    animator_.SetPlaying(playing);
    animator_.SetCurrentTime(currentTime);
-   animator_.Update(deltaTime);
    currentTime = animator_.GetPlaybackTime();
+
+   return selectedClip;
+}
+
+void AnimationComponent::Update(float deltaTime) {
+   const AnimationClip* selectedClip = PrepareSelectedClip();
+   if (!selectedClip) {
+	  return;
+   }
+
+   if (playing && deltaTime > 0.0f) {
+	  animator_.Update(deltaTime);
+	  currentTime = animator_.GetPlaybackTime();
+   }
+
+   ApplyCurrentPose(*selectedClip);
+}
+
+void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 
    if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
 	  auto* modelAssetComp = model->GetComponent<ModelAssetComponent>();
@@ -138,7 +171,7 @@ void AnimationComponent::Update(float deltaTime) {
 		 SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
 		 if (bindSkeleton && skinCluster && !bindSkeleton->joints.empty() && !skinCluster->mappedPalette.empty()) {
 			Skeleton skeletonPose = *bindSkeleton;
-			ApplyAnimation(skeletonPose, *selectedClip, currentTime);
+			ApplyAnimation(skeletonPose, selectedClip, currentTime);
 			skeletonPose.Update();
 
 			const size_t jointCount = std::min({
@@ -188,7 +221,22 @@ void AnimationComponent::DrawInspector() {
 	  return;
    }
 
-   ImGui::Checkbox(ImGuiHelper::Localize({ "再生中", "Playing" }), &playing);
+   auto Tr = [](const char* ja, const char* en) {
+	  return ImGuiHelper::Localize({ ja, en });
+   };
+
+   if (ImGui::Button(Tr("再生", "Play"))) {
+	  Play();
+   }
+   ImGui::SameLine();
+   if (ImGui::Button(Tr("停止", "Stop"))) {
+	  Stop();
+   }
+   ImGui::SameLine();
+   if (ImGui::Button(Tr("ポーズ", "Pause"))) {
+	  Pause();
+   }
+
    ImGui::Checkbox(ImGuiHelper::Localize({ "ループ", "Loop" }), &loop);
    ImGui::DragFloat(ImGuiHelper::Localize({ "再生速度", "Playback Speed" }), &playbackSpeed, 0.01f, -4.0f, 4.0f);
    ImGui::Checkbox(ImGuiHelper::Localize({ "移動を適用", "Apply Translation" }), &applyTranslation);
@@ -196,13 +244,40 @@ void AnimationComponent::DrawInspector() {
    ImGui::Checkbox(ImGuiHelper::Localize({ "スケールを適用", "Apply Scale" }), &applyScale);
    ImGui::Checkbox(ImGuiHelper::Localize({ "スキニングを使用", "Use Skinning" }), &useSkinning);
 
-   char animationNameBuffer[256]{};
-   size_t animationNameSize = std::min(animationName.size(), sizeof(animationNameBuffer) - 1);
-   std::memcpy(animationNameBuffer, animationName.c_str(), animationNameSize);
-   if (ImGui::InputText(ImGuiHelper::Localize({ "アニメーションアセット", "Animation Asset" }), animationNameBuffer, sizeof(animationNameBuffer))) {
-	  animationName = animationNameBuffer;
-	  clipName.clear();
-	  currentTime = 0.0f;
+   const auto animationNames = EngineContext::GetAnimationNames();
+   const char* animationPreview = animationName.empty() ? Tr("<なし>", "<none>") : animationName.c_str();
+   if (ImGui::BeginCombo(Tr("アニメーションアセット", "Animation Asset"), animationPreview)) {
+	  if (ImGui::Selectable(Tr("<なし>", "<none>"), animationName.empty())) {
+		 animationName.clear();
+		 clipName.clear();
+		 currentTime = 0.0f;
+		 cachedAnimationName_.clear();
+		 cachedAnimationAsset_.reset();
+		 animator_.SetClip(nullptr);
+	  }
+
+	  for (size_t i = 0; i < animationNames.size(); ++i) {
+		 const auto& name = animationNames[i];
+		 ImGui::PushID(5300 + static_cast<int>(i));
+		 const bool isSelected = animationName == name;
+		 if (ImGui::Selectable(name.c_str(), isSelected)) {
+			animationName = name;
+			clipName.clear();
+			currentTime = 0.0f;
+			cachedAnimationName_.clear();
+			cachedAnimationAsset_.reset();
+			animator_.SetClip(nullptr);
+		 }
+		 if (isSelected) {
+			ImGui::SetItemDefaultFocus();
+		 }
+		 ImGui::PopID();
+	  }
+	  ImGui::EndCombo();
+   }
+
+   if (animationNames.empty()) {
+	  ImGui::TextDisabled("%s", Tr("ロード済みアニメーションなし", "No loaded animations"));
    }
 
    auto animationAsset = animationName.empty() ? nullptr : EngineContext::GetAnimation(animationName);
@@ -221,6 +296,7 @@ void AnimationComponent::DrawInspector() {
 			if (ImGui::Selectable(name.c_str(), isSelected)) {
 			   clipName = name;
 			   currentTime = 0.0f;
+			   animator_.SetClip(nullptr);
 			}
 			if (isSelected) {
 			   ImGui::SetItemDefaultFocus();
@@ -238,7 +314,11 @@ void AnimationComponent::DrawInspector() {
 	  targetNodeName = targetNodeBuffer;
    }
 
-   ImGui::DragFloat(ImGuiHelper::Localize({ "現在時間", "Current Time" }), &currentTime, 0.01f, 0.0f, 1000.0f);
+   if (ImGui::DragFloat(ImGuiHelper::Localize({ "現在時間", "Current Time" }), &currentTime, 0.01f, 0.0f, 1000.0f)) {
+	  if (const AnimationClip* selectedClip = PrepareSelectedClip()) {
+		 ApplyCurrentPose(*selectedClip);
+	  }
+   }
    ImGui::Spacing();
 }
 #endif

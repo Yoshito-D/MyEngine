@@ -20,6 +20,19 @@ namespace App {
 // ファイルスコープのユーティリティ関数
 // =============================================================================
 
+constexpr float kDefaultSafeFov = 0.45f;
+constexpr float kMinSafeFov = 0.017453292f;  // 1 degree
+constexpr float kMaxSafeFov = 3.12413936f;   // 179 degrees
+constexpr float kMaxSpringDeltaTime = 0.25f;
+constexpr float kMaxSpringStep = 1.0f / 120.0f;
+
+static float ClampCameraFov(float fov) {
+   if (!std::isfinite(fov)) {
+      return kDefaultSafeFov;
+   }
+   return std::clamp(fov, kMinSafeFov, kMaxSafeFov);
+}
+
 /// @brief 任意軸周りの回転（ロドリゲスの回転公式）
 /// @details クォータニオンを使わずに v を axis 周りに angle ラジアン回転させる。
 ///          ピッチ回転（right 軸周り）や yaw 回転（up 軸周り）に使用する。
@@ -81,15 +94,34 @@ static void StepSpring1D(float target,
                          float deltaTime,
                          float& inOutValue,
                          float& inOutVelocity) {
-   float dt = (std::max)(0.0f, deltaTime);
+   float dt = std::clamp(deltaTime, 0.0f, kMaxSpringDeltaTime);
    if (dt <= 0.0f) return;
 
    float k = (std::max)(0.0f, stiffness);
    float c = (std::max)(0.0f, damping);
 
-   float accel = -k * (inOutValue - target) - c * inOutVelocity;
-   inOutVelocity += accel * dt;
-   inOutValue += inOutVelocity * dt;
+   if (!std::isfinite(inOutValue)) {
+      inOutValue = target;
+   }
+   if (!std::isfinite(inOutVelocity)) {
+      inOutVelocity = 0.0f;
+   }
+
+   // 起動直後やブレーク復帰時の大きな dt をそのまま入れると、半陰的オイラーでも
+   // ばね速度が反転し過ぎて FOV オフセットが負方向へ大きく飛ぶため、小刻みに積分する。
+   while (dt > 0.0f) {
+      float step = (std::min)(dt, kMaxSpringStep);
+      float accel = -k * (inOutValue - target) - c * inOutVelocity;
+      inOutVelocity += accel * step;
+      inOutValue += inOutVelocity * step;
+      dt -= step;
+
+      if (!std::isfinite(inOutValue) || !std::isfinite(inOutVelocity)) {
+         inOutValue = target;
+         inOutVelocity = 0.0f;
+         return;
+      }
+   }
 }
 
 /// @brief 現在ベクトルを目標ベクトルへ「最大角速度」で回転させる
@@ -333,11 +365,17 @@ void GravityFollowCamera::UpdateAccelerationEffect(CameraState& state, float del
    StepSpring1D(0.0f, springStiffness, springDamping, deltaTime, springDistanceOffset_, springDistanceVelocity_);
 
    // 目標 FOV = 通常FOV + 速度比例ブースト + Springキック
-   float targetFov = fovDefault + fovBoostMax * boostAlpha + springFovOffset_;
+   float baseFov = ClampCameraFov(fovDefault);
+   float targetFov = baseFov + (std::max)(0.0f, fovBoostMax) * boostAlpha + springFovOffset_;
+   targetFov = ClampCameraFov(targetFov);
 
    // 最終FOVは指数平滑で追従
+   if (!std::isfinite(currentFov_)) {
+      currentFov_ = baseFov;
+   }
    float t = ExpSmoothingFactor(fovLerpSpeed, deltaTime);
    currentFov_ = currentFov_ + (targetFov - currentFov_) * t;
+   currentFov_ = ClampCameraFov(currentFov_);
 
    state.fov = currentFov_;
 }
@@ -488,8 +526,8 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
    rotateSpeed = ReadFloat(data, "rotateSpeed", rotateSpeed);
    scrollSpeed = ReadFloat(data, "scrollSpeed", scrollSpeed);
    gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
-   fovDefault = ReadFloat(data, "fovDefault", fovDefault);
-   fovBoostMax = ReadFloat(data, "fovBoostMax", fovBoostMax);
+   fovDefault = ClampCameraFov(ReadFloat(data, "fovDefault", fovDefault));
+   fovBoostMax = (std::max)(0.0f, ReadFloat(data, "fovBoostMax", fovBoostMax));
    fovLerpSpeed = ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
    speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
    speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
@@ -534,6 +572,22 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
    }
    if (data.contains("cachedUp")) {
       cachedUp_ = DeserializeVector3(data.at("cachedUp"), cachedUp_);
+   }
+
+   // 保存時の一時的な FOV/spring 状態をゲーム開始時へ持ち越すと、
+   // 初回の速度差や大きな dt と合わさって画角が負へ飛ぶため設定値から再開する。
+   currentFov_ = ClampCameraFov(fovDefault);
+   springFovOffset_ = 0.0f;
+   springFovVelocity_ = 0.0f;
+   springDistanceOffset_ = 0.0f;
+   springDistanceVelocity_ = 0.0f;
+   previousPlayerSpeed_ = playerSpeed_;
+   isSpeedInitialized_ = false;
+
+   if (auto* owner = GetOwnerCamera()) {
+      CameraState state = owner->GetState();
+      state.fov = currentFov_;
+      owner->SetState(state);
    }
 }
 
