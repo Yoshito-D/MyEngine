@@ -733,7 +733,6 @@
     <None Include="Resources\pipelines\rootsig\fullscreen_triangle_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\line3d_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\object3d_rootsig.json" />
-    <None Include="Resources\pipelines\rootsig\object3d_skinning_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\particle_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\postprocess_dissolve_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\postprocess_outline_rootsig.json" />
@@ -741,7 +740,6 @@
     <None Include="Resources\pipelines\rootsig\postprocess_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\skinning_compute_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\skybox_rootsig.json" />
-    <None Include="Resources\pipelines\skinning_object3d_pipeline.json" />
     <None Include="Resources\pipelines\skybox_pipeline.json" />
     <None Include="Resources\pipelines\sprite_pipeline.json" />
     <None Include="Resources\postprocess\postprocess_registry.json" />

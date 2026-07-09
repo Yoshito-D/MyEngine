@@ -16,11 +16,15 @@
 
 namespace GameEngine {
 
-void RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const {
+bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const {
    context.offscreenRenderTarget->Initialize(
 	  context.device);
 
-   context.shaderManager->Initialize(context.device);
+   if (!context.shaderManager->Initialize(context.device)) {
+	  Logger::Error("[RenderBootstrapper] Failed to initialize shaders from JSON registry.");
+	  return false;
+   }
+
    context.psoManager->Initialize(context.device, context.shaderManager);
 
    context.modelRenderer->Initialize(context.device, context.psoManager, context.assetManager);
@@ -28,11 +32,10 @@ void RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    context.particleRenderer->Initialize(context.device, context.psoManager);
 
    if (!context.psoManager->LoadPipelineDefinitions(L"resources/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
-      Logger::Info("Failed to load pipeline definitions from JSON, using predefined pipelines");
-      context.psoManager->CreatePredefinedPipelines(context.offscreenRenderTarget);
-   } else {
-      Logger::Info("Successfully loaded pipeline definitions from JSON");
+      Logger::Error("[RenderBootstrapper] Failed to load pipeline definitions from JSON registry.");
+	  return false;
    }
+   Logger::Info("Successfully loaded pipeline definitions from JSON");
 
    context.lineRenderer->Initialize(context.device->GetDevice(), 100000);
    context.postProcessLineRenderer->Initialize(context.device->GetDevice(), 100000);
@@ -42,13 +45,13 @@ void RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    context.postProcessManager->Initialize(context.device, context.offscreenRenderTarget, context.psoManager);
 
    if (!context.postProcessManager->LoadEffectsFromJson(L"resources/postprocess/postprocess_registry.json")) {
-      Logger::Info("Failed to load post-process effects from JSON, using predefined effects");
-      context.postProcessManager->RegisterPredefinedEffects();
-   } else {
-      Logger::Info("Successfully loaded post-process effects from JSON");
+      Logger::Error("[RenderBootstrapper] Failed to load post-process effects from JSON registry.");
+	  return false;
    }
+   Logger::Info("Successfully loaded post-process effects from JSON");
 
    context.shaderManager->LogRootParameterTablesDebug();
+   return true;
 }
 
 }

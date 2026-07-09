@@ -65,6 +65,7 @@
       "visibility": "Pixel",
       "descriptorCount": 1,
       "rangeType": "SRV",
+      "shaderRegister": 5,
       "semantic": "envmap"
     }
   ],

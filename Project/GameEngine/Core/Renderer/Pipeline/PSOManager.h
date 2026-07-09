@@ -11,14 +11,12 @@
 #include "PipelineDescriptor.h"
 #include "PipelineDefinitionLoader.h"
 #include "PipelineLibrary.h"
-#include "BindingLayoutResolver.h"
 #include "Utility/Logger.h"
 #include <nlohmann/json_fwd.hpp>
 
 namespace GameEngine {
 class GraphicsDevice;
 class ShaderManager;
-class OffscreenRenderTarget;
 
 /// @brief パイプライン設定構造体
 struct PipelineConfig {
@@ -68,10 +66,6 @@ public:
    /// @param rtvFormat レンダーターゲットフォーマット
    /// @return 成功時はtrue
    bool LoadPipelineDefinitions(const std::wstring& definitionFilePath, DXGI_FORMAT rtvFormat);
-
-   /// @brief 事前定義されたパイプラインを作成（後方互換性用）
-   /// @param offscreenRenderTarget オフスクリーンレンダーターゲット
-   void CreatePredefinedPipelines(OffscreenRenderTarget* offscreenRenderTarget);
 
    /// @brief ルートシグネチャ定義から作成
    /// @param definition ルートシグネチャ定義
@@ -152,7 +146,6 @@ private:
    std::unordered_set<std::string> emittedValidationWarnings_;
 
    PipelineDefinitionLoader definitionLoader_;
-   BindingLayoutResolver bindingLayoutResolver_;
 
    /// @brief パイプラインキーを生成
    /// @param name パイプライン名

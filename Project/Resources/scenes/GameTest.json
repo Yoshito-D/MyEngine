@@ -28,7 +28,7 @@
                         -1.4978336095809937,
                         -11.434368133544922
                      ],
-                     "currentFov": 0.5300000309944153,
+                     "currentFov": 0.44999998807907104,
                      "currentGravityUp": [
                         0.14011617004871368,
                         0.02638251520693302,
@@ -51,7 +51,7 @@
                      ],
                      "gravityUpLerpSpeed": 5.0,
                      "isEyeInitialized": true,
-                     "isSpeedInitialized": true,
+                     "isSpeedInitialized": false,
                      "pitch": 1.0,
                      "pivotTarget": [
                         7.0327467918396,
@@ -99,7 +99,7 @@
             "priority": -1,
             "state": {
                "farClip": 10000.0,
-               "fov": 0.5300000309944153,
+               "fov": 0.44999998807907104,
                "hasViewMatrixOverride": true,
                "nearClip": 0.009999999776482582,
                "transform": {
@@ -172,7 +172,7 @@
                      "airbornePlanetDirectionBlend": 0.699999988079071,
                      "airbornePlanetDirectionLerpSpeed": 2.0,
                      "airborneResetLerpSpeed": 8.0,
-                     "distance": 16.0,
+                     "distance": 14.0,
                      "distanceBoostMax": 2.0,
                      "enableAirborneGravityDirectionBoost": true,
                      "enableAirbornePlanetDirectionGuide": true,
@@ -180,8 +180,8 @@
                      "fovDefault": 0.4699999988079071,
                      "fovLerpSpeed": 4.0,
                      "gravityUpLerpSpeed": 5.0,
-                     "groundedTargetHeight": 2.0,
-                     "height": 4.0,
+                     "groundedTargetHeight": 2.5,
+                     "height": 5.5,
                      "jumpPlanetDirectionRampSeconds": 0.5,
                      "landingRearLerpRampSeconds": 2.0,
                      "positionLerpSpeed": 12.0,
@@ -1363,7 +1363,7 @@
                },
                {
                   "data": {
-                     "jumpStrength": 10.0
+                     "jumpStrength": 7.0
                   },
                   "enabled": true,
                   "typeName": "CharacterJump"

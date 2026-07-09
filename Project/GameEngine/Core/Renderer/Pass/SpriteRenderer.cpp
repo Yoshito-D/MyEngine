@@ -6,12 +6,10 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/TransformationMatrix.h"
 #include "PSOManager.h"
-#include "ShaderManager.h"
 #include "LightManager.h"
 #include "LightDataBuffer.h"
 #include "Camera/Camera.h"
 #include "Utility/Logger.h"
-#include "RootBindingSlots.h"
 #include "Component/MaterialComponent.h"
 
 namespace GameEngine {
@@ -83,29 +81,33 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	// LightDataBufferを取得
 	LightDataBuffer* lightBuffer = lightManager->GetLightDataBuffer();
 
-	auto resolveSlot = [this](const char* semantic, UINT fallback) -> UINT {
+	auto resolveSlot = [this](const char* semantic) -> std::optional<UINT> {
 		if (!psoManager_) {
-			return fallback;
+			Logger::Error("[SpriteRenderer] PSOManager is null while resolving root slot: " + std::string(semantic));
+			return std::nullopt;
 		}
 
-		auto* shaderManager = psoManager_->GetShaderManager();
-		if (!shaderManager) {
-			return fallback;
+		auto resolved = psoManager_->ResolvePipelineRootParameter("Sprite", semantic);
+		if (!resolved.has_value()) {
+			Logger::Error("[SpriteRenderer] Failed to resolve root slot: pipeline=Sprite, semantic=" + std::string(semantic));
 		}
-
-		auto resolved = shaderManager->ResolveObject3DRootParameter(semantic);
-		return resolved.value_or(fallback);
+		return resolved;
 	};
 
-	const UINT materialSlot = resolveSlot("material", RootBindingSlots::Object3D::kMaterial);
-	const UINT transformSlot = resolveSlot("transform", RootBindingSlots::Object3D::kTransform);
-	const UINT cameraSlot = resolveSlot("camera", RootBindingSlots::Object3D::kCamera);
-	const UINT lightCountSlot = resolveSlot("lightcount", RootBindingSlots::Object3D::kLightCount);
-	const UINT directionalLightSlot = resolveSlot("directionallights", RootBindingSlots::Object3D::kDirectionalLight);
-	const UINT pointLightSlot = resolveSlot("pointlights", RootBindingSlots::Object3D::kPointLight);
-	const UINT spotLightSlot = resolveSlot("spotlights", RootBindingSlots::Object3D::kSpotLight);
-	const UINT areaLightSlot = resolveSlot("arealights", RootBindingSlots::Object3D::kAreaLight);
-	const UINT textureSlot = resolveSlot("texture", RootBindingSlots::Object3D::kTexture);
+	const auto materialSlot = resolveSlot("material");
+	const auto transformSlot = resolveSlot("transform");
+	const auto cameraSlot = resolveSlot("camera");
+	const auto lightCountSlot = resolveSlot("lightcount");
+	const auto directionalLightSlot = resolveSlot("directionallights");
+	const auto pointLightSlot = resolveSlot("pointlights");
+	const auto spotLightSlot = resolveSlot("spotlights");
+	const auto areaLightSlot = resolveSlot("arealights");
+	const auto textureSlot = resolveSlot("texture");
+	if (!materialSlot || !transformSlot || !cameraSlot || !lightCountSlot ||
+		!directionalLightSlot || !pointLightSlot || !spotLightSlot ||
+		!areaLightSlot || !textureSlot) {
+		return;
+	}
 
 	// 頂点バッファとインデックスバッファを設定
 	cmdList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
@@ -118,31 +120,31 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	 Logger::Warning("[SpriteRenderer] Material is null, skip draw");
 	 return;
  }
- cmdList->SetGraphicsRootConstantBufferView(materialSlot, spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());
+ cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());
 	
 	// Root Parameter 1: TransformationMatrix (Vertex Shader)
-    cmdList->SetGraphicsRootConstantBufferView(transformSlot, transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
+    cmdList->SetGraphicsRootConstantBufferView(transformSlot.value(), transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
 	
 	// Root Parameter 2: Camera (Pixel Shader)
- cmdList->SetGraphicsRootConstantBufferView(cameraSlot, camera->GetCameraResource()->GetGPUVirtualAddress());
+ cmdList->SetGraphicsRootConstantBufferView(cameraSlot.value(), camera->GetCameraResource()->GetGPUVirtualAddress());
 	
 	// Root Parameter 3: LightCount (Pixel Shader)
-    cmdList->SetGraphicsRootConstantBufferView(lightCountSlot, lightBuffer->GetLightCountResource()->GetGPUVirtualAddress());
+    cmdList->SetGraphicsRootConstantBufferView(lightCountSlot.value(), lightBuffer->GetLightCountResource()->GetGPUVirtualAddress());
 	
 	// Root Parameter 4: DirectionalLights StructuredBuffer (t0)
-  cmdList->SetGraphicsRootDescriptorTable(directionalLightSlot, lightBuffer->GetDirectionalLightSRV());
+  cmdList->SetGraphicsRootDescriptorTable(directionalLightSlot.value(), lightBuffer->GetDirectionalLightSRV());
 	
 	// Root Parameter 5: PointLights StructuredBuffer (t1)
-    cmdList->SetGraphicsRootDescriptorTable(pointLightSlot, lightBuffer->GetPointLightSRV());
+    cmdList->SetGraphicsRootDescriptorTable(pointLightSlot.value(), lightBuffer->GetPointLightSRV());
 	
 	// Root Parameter 6: SpotLights StructuredBuffer (t2)
- cmdList->SetGraphicsRootDescriptorTable(spotLightSlot, lightBuffer->GetSpotLightSRV());
+ cmdList->SetGraphicsRootDescriptorTable(spotLightSlot.value(), lightBuffer->GetSpotLightSRV());
 	
 	// Root Parameter 7: AreaLights StructuredBuffer (t3)
- cmdList->SetGraphicsRootDescriptorTable(areaLightSlot, lightBuffer->GetAreaLightSRV());
+ cmdList->SetGraphicsRootDescriptorTable(areaLightSlot.value(), lightBuffer->GetAreaLightSRV());
 	
 	// Root Parameter 8: Texture (t4)
-    cmdList->SetGraphicsRootDescriptorTable(textureSlot, spriteData.textureSrvHandle);
+    cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), spriteData.textureSrvHandle);
 
 	// 描画
 	cmdList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);

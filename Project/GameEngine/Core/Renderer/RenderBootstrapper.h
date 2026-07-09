@@ -42,7 +42,10 @@ struct RenderBootstrapContext {
 
 class RenderBootstrapper {
 public:
-   void Initialize(const RenderBootstrapContext& context) const;
+   /// @brief レンダリングに必要な各サブシステムを初期化する
+   /// @param context 初期化対象のレンダリングコンテキスト
+   /// @return JSON定義を含む必須リソースの初期化に成功した場合はtrue
+   bool Initialize(const RenderBootstrapContext& context) const;
 };
 
 }

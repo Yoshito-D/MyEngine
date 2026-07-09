@@ -34,7 +34,7 @@ public:
 	  int priority = 0;
 	  bool enabled = true;
 	  std::string pipelineName; // パイプライン名を追加
-	  std::string rootSignatureName = "PostProcess";
+	  std::string rootSignatureName;
    };
 
    /// @brief 初期化
@@ -47,9 +47,6 @@ public:
    /// @param definitionFilePath 定義ファイルのパス
    /// @return 成功時はtrue
    bool LoadEffectsFromJson(const std::wstring& definitionFilePath);
-
-   /// @brief 事前定義されたエフェクトを登録（後方互換性用）
-   void RegisterPredefinedEffects();
 
    /// @brief エフェクトを登録
    /// @param effect ポストプロセス効果
@@ -136,7 +133,7 @@ private:
 
    void RegisterDefaultEffectFactories();
 
-   void ConfigureEffectPipeline(PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName);
+   bool ConfigureEffectPipeline(PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName);
 
    EffectFactoryRegistry effectFactoryRegistry_;
    bool effectFactoriesRegistered_ = false;

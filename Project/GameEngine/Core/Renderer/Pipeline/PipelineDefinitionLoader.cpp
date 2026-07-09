@@ -1,4 +1,5 @@
 #include "PipelineDefinitionLoader.h"
+#include "Utility/Logger.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
@@ -27,6 +28,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
 
    std::ifstream file(WStringToString(registryFilePath));
    if (!file.is_open()) {
+      Logger::Error("[PipelineDefinitionLoader] Failed to open pipeline registry: " + WStringToString(registryFilePath));
       return false;
    }
 
@@ -34,48 +36,59 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
       json registryJson;
       file >> registryJson;
 
-      if (registryJson.contains("rootSignatures")) {
-         for (const auto& rootSigPath : registryJson["rootSignatures"]) {
-            rootSignaturePaths.push_back(ResolvePath(rootSigPath.get<std::string>()));
-         }
+      if (!registryJson.contains("rootSignatures") || !registryJson["rootSignatures"].is_array()) {
+         Logger::Error("[PipelineDefinitionLoader] Pipeline registry is missing required array: rootSignatures");
+         return false;
+      }
+      if (!registryJson.contains("pipelines") || !registryJson["pipelines"].is_array()) {
+         Logger::Error("[PipelineDefinitionLoader] Pipeline registry is missing required array: pipelines");
+         return false;
       }
 
-      if (registryJson.contains("pipelines")) {
-         for (const auto& pipelinePath : registryJson["pipelines"]) {
-            pipelinePaths.push_back(ResolvePath(pipelinePath.get<std::string>()));
+      bool allSucceeded = true;
+      const auto loadPathArray = [&](const json& paths, const char* label, std::vector<std::string>& output) {
+         size_t index = 0;
+         for (const auto& pathJson : paths) {
+            const std::string entryLabel = std::string(label) + "[" + std::to_string(index) + "]";
+            ++index;
+
+            if (!pathJson.is_string()) {
+               Logger::Error("[PipelineDefinitionLoader] Registry path entry is not a string: " + entryLabel);
+               allSucceeded = false;
+               continue;
+            }
+
+            const std::string path = pathJson.get<std::string>();
+            if (!std::filesystem::exists(path)) {
+               Logger::Error("[PipelineDefinitionLoader] Registry path does not exist: " + path + " (" + entryLabel + ")");
+               allSucceeded = false;
+               continue;
+            }
+
+            output.push_back(path);
          }
+      };
+
+      loadPathArray(registryJson["rootSignatures"], "rootSignatures", rootSignaturePaths);
+      loadPathArray(registryJson["pipelines"], "pipelines", pipelinePaths);
+
+      if (rootSignaturePaths.empty()) {
+         Logger::Error("[PipelineDefinitionLoader] Pipeline registry did not provide any valid root signature paths.");
+         allSucceeded = false;
+      }
+      if (pipelinePaths.empty()) {
+         Logger::Error("[PipelineDefinitionLoader] Pipeline registry did not provide any valid pipeline paths.");
+         allSucceeded = false;
       }
 
-      return true;
+      return allSucceeded;
+   } catch (const std::exception& e) {
+      Logger::Error("[PipelineDefinitionLoader] Exception loading pipeline registry: " + std::string(e.what()));
+      return false;
    } catch (...) {
+      Logger::Error("[PipelineDefinitionLoader] Unknown exception loading pipeline registry.");
       return false;
    }
-}
-
-std::string PipelineDefinitionLoader::ResolvePath(const std::string& path) const {
-   if (std::filesystem::exists(path)) {
-      return path;
-   }
-
-   std::string resolved = path;
-
-   const std::string legacyRootSig = "resources/pipelines/rootsignatures/";
-   if (resolved.rfind(legacyRootSig, 0) == 0) {
-      resolved = "resources/pipelines/rootsig/" + resolved.substr(legacyRootSig.size());
-      if (std::filesystem::exists(resolved)) {
-         return resolved;
-      }
-   }
-
-   const std::string legacyPipelineFolder = "resources/pipelines/pipelines/";
-   if (resolved.rfind(legacyPipelineFolder, 0) == 0) {
-      resolved = "resources/pipelines/" + resolved.substr(legacyPipelineFolder.size());
-      if (std::filesystem::exists(resolved)) {
-         return resolved;
-      }
-   }
-
-   return path;
 }
 
 }
