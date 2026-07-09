@@ -17,10 +17,10 @@
 #include "Dissolve.h"
 #include "WhiteNoise.h"
 #include "Core/Renderer/Pipeline/PSOManager.h"
+#include "Utility/Logger.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <algorithm>
-#include <array>
 
 #ifdef USE_IMGUI
 #include <imgui/imgui.h>
@@ -76,6 +76,7 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
    std::string path = WStringToString(definitionFilePath);
    std::ifstream file(path);
    if (!file.is_open()) {
+	  Logger::Error("[PostProcessManager] Failed to open post-process registry: " + path);
 	  return false;
    }
 
@@ -83,99 +84,118 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 	  json effectsJson;
 	  file >> effectsJson;
 
-	  if (!effectsJson.contains("postProcessEffects")) {
+	  if (!effectsJson.contains("postProcessEffects") || !effectsJson["postProcessEffects"].is_array()) {
+		 Logger::Error("[PostProcessManager] Post-process registry is missing required array: postProcessEffects");
 		 return false;
 	  }
 
+	  bool loadedAny = false;
+	  bool allSucceeded = true;
+	  size_t effectIndex = 0;
 	  for (const auto& effectDef : effectsJson["postProcessEffects"]) {
+		 const std::string entryLabel = path + "#postProcessEffects[" + std::to_string(effectIndex) + "]";
+		 ++effectIndex;
+
+		 if (!effectDef.is_object()) {
+			Logger::Error("[PostProcessManager] Effect registry entry is not an object: " + entryLabel);
+			allSucceeded = false;
+			continue;
+		 }
+
 		 EffectDefinition definition;
-		 definition.name = effectDef["name"].get<std::string>();
-		 definition.className = effectDef["className"].get<std::string>();
+		 definition.name = effectDef.value("name", "");
+		 definition.className = effectDef.value("className", "");
 		 definition.priority = effectDef.value("priority", 0);
 		 definition.enabled = effectDef.value("enabled", true);
 		 definition.pipelineName = effectDef.value("pipelineName", "");
-		 definition.rootSignatureName = effectDef.value("rootSignatureName", "PostProcess");
+		 definition.rootSignatureName = effectDef.value("rootSignatureName", "");
+
+		 if (definition.name.empty() || definition.className.empty() ||
+			definition.pipelineName.empty() || definition.rootSignatureName.empty()) {
+			Logger::Error("[PostProcessManager] Effect registry entry is missing required fields: " + entryLabel);
+			allSucceeded = false;
+			continue;
+		 }
 
 		 // クラス名からエフェクトインスタンスを作成
 		 auto effect = CreateEffectByClassName(definition.className);
-		 if (effect) {
-			effect->Initialize(device_, renderTarget_);
-
-			ConfigureEffectPipeline(effect.get(), definition.pipelineName, definition.rootSignatureName);
-
-			RegisterEffect(std::move(effect), definition.name, definition.priority, definition.enabled, definition.pipelineName);
+		 if (!effect) {
+			Logger::Error("[PostProcessManager] Unknown post-process effect class: " + definition.className);
+			allSucceeded = false;
+			continue;
 		 }
+
+		 effect->Initialize(device_, renderTarget_);
+
+		 if (!ConfigureEffectPipeline(effect.get(), definition.pipelineName, definition.rootSignatureName)) {
+			Logger::Error("[PostProcessManager] Failed to configure post-process effect: " + definition.name);
+			allSucceeded = false;
+			continue;
+		 }
+
+		 RegisterEffect(std::move(effect), definition.name, definition.priority, definition.enabled, definition.pipelineName);
+		 loadedAny = true;
 	  }
 
-	  return true;
+	  if (!loadedAny) {
+		 Logger::Error("[PostProcessManager] Post-process registry did not load any effects: " + path);
+		 return false;
+	  }
+
+	  return allSucceeded;
    }
    catch (const std::exception& e) {
-	  (void)e;
+	  Logger::Error("[PostProcessManager] Exception loading post-process registry " + path + ": " + std::string(e.what()));
+	  return false;
+   }
+   catch (...) {
+	  Logger::Error("[PostProcessManager] Unknown exception loading post-process registry: " + path);
 	  return false;
    }
 }
 
-void PostProcessManager::RegisterPredefinedEffects() {
-   struct PredefinedEffectEntry {
-	  const char* className;
-	  const char* displayName;
-	  int priority;
-	  const char* pipelineName;
-	  const char* rootSignatureName;
-   };
-
-   static const std::array<PredefinedEffectEntry, 15> kEntries = {
-	  PredefinedEffectEntry{ "RadialBlur", "Radial Blur", 10, "PostProcess_RadialBlur", "PostProcess" },
-	  PredefinedEffectEntry{ "Grayscale", "Grayscale", 20, "PostProcess_Grayscale", "PostProcess" },
-	  PredefinedEffectEntry{ "BoxFilter", "Box Filter", 25, "PostProcess_BoxFilter", "PostProcess" },
-	  PredefinedEffectEntry{ "GaussFilter", "Gauss Filter", 30, "PostProcess_GaussFilter", "PostProcess" },
-	  PredefinedEffectEntry{ "ChromaticAberration", "Chromatic Aberration", 40, "PostProcess_ChromaticAberration", "PostProcess" },
-	  PredefinedEffectEntry{ "Vignette", "Vignette", 50, "PostProcess_Vignette", "PostProcess" },
-	  PredefinedEffectEntry{ "ShockWave", "Shock Wave", 60, "PostProcess_ShockWave", "PostProcess" },
-	  PredefinedEffectEntry{ "Outline", "Outline", 65, "PostProcess_Outline", "PostProcessOutline" },
-	  PredefinedEffectEntry{ "Pixelation", "Pixelation", 70, "PostProcess_Pixelation", "PostProcess" },
-	  PredefinedEffectEntry{ "SpeedLine", "Speed Line", 75, "PostProcess_SpeedLine", "PostProcess" },
-	  PredefinedEffectEntry{ "Bloom", "Bloom", 80, "PostProcess_Bloom", "PostProcess" },
-	  PredefinedEffectEntry{ "WhiteNoise", "White Noise", 85, "PostProcess_WhiteNoise", "PostProcess" },
-	  PredefinedEffectEntry{ "Dissolve", "Dissolve", 90, "PostProcess_Dissolve", "PostProcessDissolve" },
-	  PredefinedEffectEntry{ "AntiAliasing", "Anti Aliasing", 95, "PostProcess_AntiAliasing", "PostProcess" },
-	  PredefinedEffectEntry{ "LinearToSRGB", "Linear to sRGB", 100, "PostProcess_LinearToSRGB", "PostProcess" }
-   };
-
-   for (const auto& entry : kEntries) {
-	  auto effect = CreateEffectByClassName(entry.className);
-	  if (!effect) {
-		 continue;
-	  }
-
-	  effect->Initialize(device_, renderTarget_);
-
-	  ConfigureEffectPipeline(effect.get(), entry.pipelineName, entry.rootSignatureName);
-
-	  RegisterEffect(std::move(effect), entry.displayName, entry.priority, false, entry.pipelineName);
-   }
-}
-
-void PostProcessManager::ConfigureEffectPipeline(PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName) {
+bool PostProcessManager::ConfigureEffectPipeline(PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName) {
    if (!effect || pipelineName.empty() || !psoManager_) {
-	  return;
+	  Logger::Error("[PostProcessManager] Invalid post-process pipeline configuration request.");
+	  return false;
    }
 
    auto* pipeline = psoManager_->GetPipeline(pipelineName);
-   auto* rootSignature = psoManager_->GetRootSignature(rootSignatureName.empty() ? "PostProcess" : rootSignatureName);
+   auto* rootSignature = psoManager_->GetRootSignature(rootSignatureName);
    if (!pipeline || !rootSignature) {
-	  return;
+	  Logger::Error("[PostProcessManager] Pipeline or root signature not found: pipeline=" +
+		 pipelineName + ", rootSignature=" + rootSignatureName);
+	  return false;
    }
 
    effect->SetPipeline(pipeline, rootSignature);
 
-   const UINT cbSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "constantbuffer").value_or(0);
-   const UINT inputSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "inputtexture").value_or(1);
-   const UINT depthSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "depthtexture").value_or(2);
-   const UINT maskSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "masktexture").value_or(2);
-   effect->SetBindingSlots(cbSlot, inputSlot);
-   effect->SetDepthTextureRootSlot(depthSlot);
-   effect->SetMaskTextureRootSlot(maskSlot);
+   const auto cbSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "constantbuffer");
+   const auto inputSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "inputtexture");
+   if (!cbSlot.has_value() || !inputSlot.has_value()) {
+	  Logger::Error("[PostProcessManager] Required post-process binding slots are missing: pipeline=" + pipelineName);
+	  return false;
+   }
+
+   const auto depthSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "depthtexture");
+   const auto maskSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "masktexture");
+   if (rootSignatureName == "PostProcessOutline" && !depthSlot.has_value()) {
+	  Logger::Error("[PostProcessManager] Outline post-process binding slot is missing: depthtexture");
+	  return false;
+   }
+   if (rootSignatureName == "PostProcessDissolve" && !maskSlot.has_value()) {
+	  Logger::Error("[PostProcessManager] Dissolve post-process binding slot is missing: masktexture");
+	  return false;
+   }
+
+   effect->SetBindingSlots(cbSlot.value(), inputSlot.value());
+   if (depthSlot.has_value()) {
+	  effect->SetDepthTextureRootSlot(depthSlot.value());
+   }
+   if (maskSlot.has_value()) {
+	  effect->SetMaskTextureRootSlot(maskSlot.value());
+   }
+   return true;
 }
 
 std::unique_ptr<PostProcess> PostProcessManager::CreateEffectByClassName(const std::string& className) {

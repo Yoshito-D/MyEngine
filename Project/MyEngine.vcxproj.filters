@@ -231,9 +231,6 @@
     <None Include="Resources\pipelines\skinning_compute_pipeline.json">
       <Filter>Resources\pipelines</Filter>
     </None>
-    <None Include="Resources\pipelines\skinning_object3d_pipeline.json">
-      <Filter>Resources\pipelines</Filter>
-    </None>
     <None Include="Resources\pipelines\skybox_pipeline.json">
       <Filter>Resources\pipelines</Filter>
     </None>
@@ -292,9 +289,6 @@
       <Filter>Resources\pipelines\rootsig</Filter>
     </None>
     <None Include="Resources\pipelines\rootsig\object3d_rootsig.json">
-      <Filter>Resources\pipelines\rootsig</Filter>
-    </None>
-    <None Include="Resources\pipelines\rootsig\object3d_skinning_rootsig.json">
       <Filter>Resources\pipelines\rootsig</Filter>
     </None>
     <None Include="Resources\pipelines\rootsig\particle_rootsig.json">

@@ -2,8 +2,6 @@
 #include "ShaderManager.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ShaderCompiler.h"
-#include "RootBindingSlots.h"
-#include "BindingLayoutResolver.h"
 #include "Utility/Logger.h"
 #include <nlohmann/json.hpp>
 #include <filesystem>
@@ -80,13 +78,15 @@ std::string NormalizePipelineName(std::string pipelineName) {
 }
 
 namespace GameEngine {
-void ShaderManager::Initialize(GraphicsDevice* device) {
+bool ShaderManager::Initialize(GraphicsDevice* device) {
    device_ = device;
    InitializeDXC();
    if (!LoadShaderRegistry()) {
-	  LoadPredefinedShaders();
+	  Logger::Error("[ShaderManager] Shader registry load failed. Hardcoded shader fallback is disabled.");
+	  return false;
    }
    BuildPipelineRootParameterTables();
+   return true;
 }
 
 bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
@@ -94,6 +94,7 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
    std::ifstream inputStream;
    inputStream.open(registryPath);
    if (!inputStream.is_open()) {
+	  Logger::Error("[ShaderManager] Failed to open shader registry: " + registryPath);
 	  return false;
    }
 
@@ -102,36 +103,51 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
       inputStream >> root;
 
 	  if (!root.contains("shaders") || !root["shaders"].is_array()) {
+		 Logger::Error("[ShaderManager] Shader registry is missing required array: shaders (" + registryPath + ")");
 		 return false;
 	  }
 
 	  bool loadedAny = false;
 	  bool allSucceeded = true;
 
+	  size_t shaderIndex = 0;
 	  for (const auto& shaderJson : root["shaders"]) {
+		 const std::string entryLabel = registryPath + "#shaders[" + std::to_string(shaderIndex) + "]";
+		 ++shaderIndex;
+
 		 if (!shaderJson.is_object()) {
+			Logger::Error("[ShaderManager] Shader registry entry is not an object: " + entryLabel);
+			allSucceeded = false;
 			continue;
 		 }
 
 		 ShaderInfo info;
 		 info.name = shaderJson.value("name", "");
 		 if (info.name.empty()) {
+			Logger::Error("[ShaderManager] Shader registry entry is missing name: " + entryLabel);
 			allSucceeded = false;
 			continue;
 		 }
 
 		 std::string typeString = shaderJson.value("type", "");
 		 if (!TryParseShaderType(typeString, info.type)) {
+			Logger::Error("[ShaderManager] Shader registry entry has invalid type: " + entryLabel + " name=" + info.name);
 			allSucceeded = false;
 			continue;
 		 }
 
 		 std::string filePathString = shaderJson.value("filePath", shaderJson.value("file", shaderJson.value("path", "")));
 		 if (filePathString.empty()) {
+			Logger::Error("[ShaderManager] Shader registry entry is missing filePath: " + entryLabel + " name=" + info.name);
 			allSucceeded = false;
 			continue;
 		 }
 		 info.filePath = Utf8ToWString(filePathString);
+		 if (!std::filesystem::exists(std::filesystem::path(info.filePath))) {
+			Logger::Error("[ShaderManager] Shader file does not exist: " + filePathString + " (name=" + info.name + ")");
+			allSucceeded = false;
+			continue;
+		 }
 
 		 const std::string entryPointString = shaderJson.value("entryPoint", "main");
 		 info.entryPoint = Utf8ToWString(entryPointString);
@@ -148,6 +164,7 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
 		 }
 
 		 if (!LoadShader(info)) {
+			Logger::Error("[ShaderManager] Failed to load shader: " + info.name + " from " + filePathString);
 			allSucceeded = false;
 			continue;
 		 }
@@ -156,12 +173,17 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
 	  }
 
 	  if (!loadedAny) {
+		 Logger::Error("[ShaderManager] Shader registry did not load any shaders: " + registryPath);
 		 return false;
 	  }
 
       BuildPipelineRootParameterTables();
 	  return allSucceeded;
+   } catch (const std::exception& e) {
+	  Logger::Error("[ShaderManager] Exception loading shader registry " + registryPath + ": " + std::string(e.what()));
+	  return false;
    } catch (...) {
+	  Logger::Error("[ShaderManager] Unknown exception loading shader registry: " + registryPath);
 	  return false;
    }
 }
@@ -196,6 +218,7 @@ bool ShaderManager::LoadComputeShader(const std::string& name, const std::wstrin
 bool ShaderManager::LoadShader(const ShaderInfo& info) {
    auto shader = CompileShader(info.filePath, GetShaderProfile(info.type), info.entryPoint, info.defines);
    if (!shader) {
+	  Logger::Error("[ShaderManager] Shader compilation failed: " + info.name + " (" + std::filesystem::path(info.filePath).string() + ")");
 	  return false;
    }
 
@@ -291,27 +314,17 @@ const PipelineRootParameterTable* ShaderManager::GetPipelineRootParameterTable(c
 }
 
 void ShaderManager::LogRootParameterTablesDebug() const {
-   static const std::vector<std::string> kMajorPipelines = {
-	  "Object3D", "Sprite", "Particle", "Line3D", "FullscreenTriangle",
-	  "PostProcess_Grayscale", "PostProcess_RadialBlur", "PostProcess_GaussFilter",
-	  "PostProcess_Vignette", "PostProcess_ChromaticAberration", "PostProcess_ShockWave",
-	  "PostProcess_Pixelation", "PostProcess_Bloom", "PostProcess_BoxFilter", "PostProcess_Outline",
-	  "PostProcess_WhiteNoise"
-   };
-
    const auto stageInfos = GetPipelineStageMatchInfos();
 
    Logger::Info("[ShaderManager] Root parameter table debug dump begin");
-   for (const auto& pipelineName : kMajorPipelines) {
-	  const PipelineRootParameterTable* table = GetPipelineRootParameterTable(pipelineName);
-	  if (!table) {
-		 Logger::Warning("[ShaderManager] " + pipelineName + ": table not found");
-		 continue;
-	  }
+   if (pipelineRootTables_.empty()) {
+	  Logger::Info("[ShaderManager] Root parameter tables are supplied by PSO JSON definitions.");
+   }
+   for (const auto& [pipelineName, table] : pipelineRootTables_) {
 
 	  Logger::Info("[ShaderManager] " + pipelineName +
-		 ": hasReflectionData=" + std::string(table->hasReflectionData ? "true" : "false") +
-		 ", entries=" + std::to_string(table->slotBySemanticName.size()));
+		 ": hasReflectionData=" + std::string(table.hasReflectionData ? "true" : "false") +
+		 ", entries=" + std::to_string(table.slotBySemanticName.size()));
 
 	  auto stageIt = stageInfos.find(pipelineName);
 	  if (stageIt != stageInfos.end()) {
@@ -324,7 +337,7 @@ void ShaderManager::LogRootParameterTablesDebug() const {
 			", matchedByName=" + std::to_string(info.pixel.matchedByName));
 	  }
 
-	  for (const auto& [semantic, slot] : table->slotBySemanticName) {
+	  for (const auto& [semantic, slot] : table.slotBySemanticName) {
 		 Logger::Info("  - " + semantic + " -> " + std::to_string(slot));
 	  }
    }
@@ -410,36 +423,6 @@ void ShaderManager::ReloadAllShaders() {
 		 shader.fileTimestamp = GetFileTimestamp(shader.filePath);
 	  }
    }
-   BuildPipelineRootParameterTables();
-}
-
-void ShaderManager::LoadPredefinedShaders() {
-   // 事前定義されたシェーダーの読み込み
-   LoadVertexShader("Object3D", L"resources/shaders/Object3d.VS.hlsl");
-   LoadPixelShader("Object3D", L"resources/shaders/Object3d.PS.hlsl");
-   LoadVertexShader("SkinningObject3D", L"resources/shaders/SkinningObject3d.VS.hlsl");
-   LoadComputeShader("Skinning", L"resources/shaders/Skinning.CS.hlsl");
-
-   LoadVertexShader("Line3D", L"resources/shaders/Line3d.VS.hlsl");
-   LoadPixelShader("Line3D", L"resources/shaders/Line3d.PS.hlsl");
-
-   LoadVertexShader("Particle", L"resources/shaders/Particle.VS.hlsl");
-   LoadPixelShader("Particle", L"resources/shaders/Particle.PS.hlsl");
-
-   LoadVertexShader("FullscreenTriangle", L"resources/shaders/postprocess/FullscreenTriangle.VS.hlsl");
-   LoadPixelShader("FullscreenTriangle", L"resources/shaders/postprocess/FullscreenTriangle.PS.hlsl");
-
-   // ポストプロセス用シェーダー
-   LoadPixelShader("Grayscale", L"resources/shaders/postprocess/Grayscale.PS.hlsl");
-   LoadPixelShader("RadialBlur", L"resources/shaders/postprocess/RadialBlur.PS.hlsl");
-   LoadPixelShader("GaussFilter", L"resources/shaders/postprocess/GaussFilter.PS.hlsl");
-   LoadPixelShader("Vignette", L"resources/shaders/postprocess/Vignette.PS.hlsl");
-   LoadPixelShader("ChromaticAberration", L"resources/shaders/postprocess/ChromaticAberration.PS.hlsl");
-   LoadPixelShader("ShockWave", L"resources/shaders/postprocess/ShockWave.PS.hlsl");
-   LoadPixelShader("Pixelation", L"resources/shaders/postprocess/Pixelation.PS.hlsl");
-   LoadPixelShader("Bloom", L"resources/shaders/postprocess/Bloom.PS.hlsl");
-   LoadPixelShader("BoxFilter", L"resources/shaders/postprocess/BoxFilter.PS.hlsl");
-   LoadPixelShader("WhiteNoise", L"resources/shaders/postprocess/WhiteNoise.PS.hlsl");
    BuildPipelineRootParameterTables();
 }
 
@@ -548,12 +531,7 @@ void ShaderManager::BuildObject3DRootParameterTable() {
 }
 
 void ShaderManager::BuildPipelineRootParameterTables() {
-   BindingLayoutResolver resolver;
-   resolver.BuildPipelineRootParameterTables(
-	  pipelineRootTables_,
-	  [this](const std::string& shaderName, ShaderType stage) {
-		 return GetShaderReflection(shaderName, stage);
-	  });
+   pipelineRootTables_.clear();
 }
 
 std::string ShaderManager::CreateShaderKey(const std::string& name, ShaderType type) const {

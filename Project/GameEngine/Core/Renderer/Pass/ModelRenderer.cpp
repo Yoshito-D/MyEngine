@@ -6,7 +6,6 @@
 #include "Graphics/Material.h"
 #include "PSOManager.h"
 #include "LightManager.h"
-#include "RootBindingSlots.h"
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "SpotLight.h"
@@ -124,25 +123,35 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    // 使用パイプラインを設定
    setPipelineFunc(pipelineName, resolvedBlendMode);
 
-   auto resolvePipelineSlot = [this, &pipelineName](const char* semantic, UINT fallback) -> UINT {
+   auto resolvePipelineSlot = [this, &pipelineName](const char* semantic) -> std::optional<UINT> {
 	  if (!psoManager_) {
-        return fallback;
+		 Logger::Error("[ModelRenderer] PSOManager is null while resolving root slot: " + std::string(semantic));
+		 return std::nullopt;
 	  }
 
 	  auto resolved = psoManager_->ResolvePipelineRootParameter(pipelineName, semantic);
-    return resolved.value_or(fallback);
+	  if (!resolved.has_value()) {
+		 Logger::Error("[ModelRenderer] Failed to resolve root slot: pipeline=" + pipelineName +
+			", semantic=" + semantic);
+	  }
+	  return resolved;
    };
 
-   const UINT materialSlot = resolvePipelineSlot("material", RootBindingSlots::Object3D::kMaterial);
-   const UINT transformSlot = resolvePipelineSlot("transform", RootBindingSlots::Object3D::kTransform);
-   const UINT cameraSlot = resolvePipelineSlot("camera", RootBindingSlots::Object3D::kCamera);
-   const UINT lightCountSlot = resolvePipelineSlot("lightcount", RootBindingSlots::Object3D::kLightCount);
-   const UINT directionalLightSlot = resolvePipelineSlot("directionallights", RootBindingSlots::Object3D::kDirectionalLight);
-   const UINT pointLightSlot = resolvePipelineSlot("pointlights", RootBindingSlots::Object3D::kPointLight);
-   const UINT spotLightSlot = resolvePipelineSlot("spotlights", RootBindingSlots::Object3D::kSpotLight);
-   const UINT areaLightSlot = resolvePipelineSlot("arealights", RootBindingSlots::Object3D::kAreaLight);
-   const UINT textureSlot = resolvePipelineSlot("texture", RootBindingSlots::Object3D::kTexture);
-   const UINT environmentTextureSlot = resolvePipelineSlot("envmap", RootBindingSlots::Object3D::kEnvMap);
+   const auto materialSlot = resolvePipelineSlot("material");
+   const auto transformSlot = resolvePipelineSlot("transform");
+   const auto cameraSlot = resolvePipelineSlot("camera");
+   const auto lightCountSlot = resolvePipelineSlot("lightcount");
+   const auto directionalLightSlot = resolvePipelineSlot("directionallights");
+   const auto pointLightSlot = resolvePipelineSlot("pointlights");
+   const auto spotLightSlot = resolvePipelineSlot("spotlights");
+   const auto areaLightSlot = resolvePipelineSlot("arealights");
+   const auto textureSlot = resolvePipelineSlot("texture");
+   const auto environmentTextureSlot = resolvePipelineSlot("envmap");
+   if (!materialSlot || !transformSlot || !cameraSlot || !lightCountSlot ||
+	  !directionalLightSlot || !pointLightSlot || !spotLightSlot ||
+	  !areaLightSlot || !textureSlot || !environmentTextureSlot) {
+	  return;
+   }
 
    TransformationMatrix* transformationMatrix = model->GetTransformationMatrix();
    if (!transformationMatrix) {
@@ -151,11 +160,23 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    }
 
    if (useSkinning) {
-	  const UINT skinningInfoSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "skinninginformation").value_or(0);
-	  const UINT paletteSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "matrixpalette").value_or(1);
-	  const UINT inputVerticesSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "inputvertices").value_or(2);
-	  const UINT influencesSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "influences").value_or(3);
-	  const UINT outputVerticesSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "outputvertices").value_or(4);
+	  const auto resolveComputeSlot = [this](const char* semantic) -> std::optional<UINT> {
+		 auto resolved = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, semantic);
+		 if (!resolved.has_value()) {
+			Logger::Error("[ModelRenderer] Failed to resolve compute root slot: pipeline=" +
+			   std::string(kSkinningComputePipelineName) + ", semantic=" + semantic);
+		 }
+		 return resolved;
+	  };
+
+	  const auto skinningInfoSlot = resolveComputeSlot("skinninginformation");
+	  const auto paletteSlot = resolveComputeSlot("matrixpalette");
+	  const auto inputVerticesSlot = resolveComputeSlot("inputvertices");
+	  const auto influencesSlot = resolveComputeSlot("influences");
+	  const auto outputVerticesSlot = resolveComputeSlot("outputvertices");
+	  if (!skinningInfoSlot || !paletteSlot || !inputVerticesSlot || !influencesSlot || !outputVerticesSlot) {
+		 return;
+	  }
 
 	  cmdList->SetComputeRootSignature(skinningComputeRootSignature->GetRootSignature());
 	  cmdList->SetPipelineState(skinningComputePipeline->pipelineState.Get());
@@ -174,12 +195,12 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 		 skinCluster->skinnedVertexResourceStates[i] = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
 		 cmdList->SetComputeRootConstantBufferView(
-			skinningInfoSlot,
+			skinningInfoSlot.value(),
 			skinCluster->skinningInformationResources[i]->GetGPUVirtualAddress());
-		 cmdList->SetComputeRootDescriptorTable(paletteSlot, skinCluster->paletteSrvHandle.second);
-		 cmdList->SetComputeRootDescriptorTable(inputVerticesSlot, skinCluster->inputVertexSrvHandles[i].second);
-		 cmdList->SetComputeRootDescriptorTable(influencesSlot, skinCluster->influenceSrvHandles[i].second);
-		 cmdList->SetComputeRootDescriptorTable(outputVerticesSlot, skinCluster->skinnedVertexUavHandles[i].second);
+		 cmdList->SetComputeRootDescriptorTable(paletteSlot.value(), skinCluster->paletteSrvHandle.second);
+		 cmdList->SetComputeRootDescriptorTable(inputVerticesSlot.value(), skinCluster->inputVertexSrvHandles[i].second);
+		 cmdList->SetComputeRootDescriptorTable(influencesSlot.value(), skinCluster->influenceSrvHandles[i].second);
+		 cmdList->SetComputeRootDescriptorTable(outputVerticesSlot.value(), skinCluster->skinnedVertexUavHandles[i].second);
 
 		 const UINT vertexCount = static_cast<UINT>(meshes[i].vertices.size());
 		 const UINT dispatchCount = (vertexCount + kSkinningThreadGroupSize - 1) / kSkinningThreadGroupSize;
@@ -200,25 +221,25 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
    // 共通バインディング（全メッシュで共通）
    // Root Parameter 1: TransformationMatrix (Vertex Shader)
-   cmdList->SetGraphicsRootConstantBufferView(transformSlot, transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
+   cmdList->SetGraphicsRootConstantBufferView(transformSlot.value(), transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
 
    // Root Parameter 2: Camera (Pixel Shader)
-   cmdList->SetGraphicsRootConstantBufferView(cameraSlot, camera->GetCameraResource()->GetGPUVirtualAddress());
+   cmdList->SetGraphicsRootConstantBufferView(cameraSlot.value(), camera->GetCameraResource()->GetGPUVirtualAddress());
 
    // Root Parameter 3: LightCount (Pixel Shader)
-   cmdList->SetGraphicsRootConstantBufferView(lightCountSlot, lightBuffer->GetLightCountResource()->GetGPUVirtualAddress());
+   cmdList->SetGraphicsRootConstantBufferView(lightCountSlot.value(), lightBuffer->GetLightCountResource()->GetGPUVirtualAddress());
 
    // Root Parameter 4: DirectionalLights StructuredBuffer (t0)
-   cmdList->SetGraphicsRootDescriptorTable(directionalLightSlot, lightBuffer->GetDirectionalLightSRV());
+   cmdList->SetGraphicsRootDescriptorTable(directionalLightSlot.value(), lightBuffer->GetDirectionalLightSRV());
 
    // Root Parameter 5: PointLights StructuredBuffer (t1)
-   cmdList->SetGraphicsRootDescriptorTable(pointLightSlot, lightBuffer->GetPointLightSRV());
+   cmdList->SetGraphicsRootDescriptorTable(pointLightSlot.value(), lightBuffer->GetPointLightSRV());
 
    // Root Parameter 6: SpotLights StructuredBuffer (t2)
-   cmdList->SetGraphicsRootDescriptorTable(spotLightSlot, lightBuffer->GetSpotLightSRV());
+   cmdList->SetGraphicsRootDescriptorTable(spotLightSlot.value(), lightBuffer->GetSpotLightSRV());
 
    // Root Parameter 7: AreaLights StructuredBuffer (t3)
-   cmdList->SetGraphicsRootDescriptorTable(areaLightSlot, lightBuffer->GetAreaLightSRV());
+   cmdList->SetGraphicsRootDescriptorTable(areaLightSlot.value(), lightBuffer->GetAreaLightSRV());
 
    // 各メッシュごとの描画
    for (size_t i = 0; i < meshes.size(); ++i) {
@@ -238,14 +259,14 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
 	  // --- メッシュ固有のバインディング ---
 	  // Root Parameter 0: Material (Pixel Shader)
-	  cmdList->SetGraphicsRootConstantBufferView(materialSlot, mat->GetMaterialResource()->GetGPUVirtualAddress());
+	  cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), mat->GetMaterialResource()->GetGPUVirtualAddress());
 
 	  // Root Parameter 8: Texture (t4)
-	  cmdList->SetGraphicsRootDescriptorTable(textureSlot, srvHandle);
+	  cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), srvHandle);
 
 	  // EnvironmentTexture (t5): バインド (設定されている場合)
    if (modelData.environmentTextureSrvHandle.ptr != 0) {
-		 cmdList->SetGraphicsRootDescriptorTable(environmentTextureSlot, modelData.environmentTextureSrvHandle);
+		 cmdList->SetGraphicsRootDescriptorTable(environmentTextureSlot.value(), modelData.environmentTextureSrvHandle);
 	  }
 
      // 頂点バッファとプリミティブトポロジを設定

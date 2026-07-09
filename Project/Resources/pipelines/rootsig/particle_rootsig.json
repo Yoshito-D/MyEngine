@@ -6,7 +6,7 @@
   },
   "parameters": [
     { "type": "CBV", "visibility": "Pixel", "semantic": "material" },
-    { "type": "DescriptorTable", "visibility": "Vertex", "descriptorCount": 1, "rangeType": "SRV", "semantic": "instancing" },
+    { "type": "DescriptorTable", "visibility": "Vertex", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 0, "semantic": "instancing" },
     { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "semantic": "texture" }
   ],
   "samplers": [

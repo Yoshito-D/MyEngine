@@ -2,7 +2,6 @@
 #include "PSOManager.h"
 #include "ShaderManager.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Graphics/OffscreenRenderTarget.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <sstream>
@@ -27,6 +26,19 @@ std::string ToLowerString(std::string value) {
 	  return static_cast<char>(std::tolower(c));
    });
    return value;
+}
+
+uint32_t CountRootBindableResources(const GameEngine::ShaderReflectionInfo* reflection) {
+   if (!reflection || !reflection->isValid) {
+	  return 0;
+   }
+
+   return static_cast<uint32_t>(std::count_if(
+	  reflection->boundResources.begin(),
+	  reflection->boundResources.end(),
+	  [](const GameEngine::ShaderResourceBindingInfo& resource) {
+		 return resource.type != D3D_SIT_SAMPLER;
+	  }));
 }
 
 D3D12_FILL_MODE StringToFillMode(const std::string& str) {
@@ -157,20 +169,26 @@ bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath,
    std::vector<std::string> rootSignaturePaths;
    std::vector<std::string> pipelinePaths;
    if (!definitionLoader_.LoadRegistryFile(definitionFilePath, rootSignaturePaths, pipelinePaths)) {
+	  Logger::Error("[PSOManager] Failed to load pipeline registry.");
 	  return false;
    }
 
+   bool allSucceeded = true;
    for (const auto& rootSignaturePath : rootSignaturePaths) {
 	  if (!LoadRootSignatureFromFile(rootSignaturePath)) {
+		 Logger::Error("[PSOManager] Failed to load root signature definition: " + rootSignaturePath);
+		 allSucceeded = false;
 	  }
    }
 
    for (const auto& pipelinePath : pipelinePaths) {
 	  if (!LoadPipelineFromFile(pipelinePath, rtvFormat)) {
+		 Logger::Error("[PSOManager] Failed to load pipeline definition: " + pipelinePath);
+		 allSucceeded = false;
 	  }
    }
 
-   return true;
+   return allSucceeded;
 }
 
 void PSOManager::LogValidationMessage(const std::string& dedupeKey, const std::string& message, Logger::LogLevel level) {
@@ -221,10 +239,10 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
 	  const std::string reflectionVS = reflectionSources.value("vertexShader", "");
 	  const std::string reflectionPS = reflectionSources.value("pixelShader", "");
 	  const std::string reflectionCS = reflectionSources.value("computeShader", "");
-	  std::unordered_map<std::string, UINT> fallbackRegisterByGroup;
 
       // パラメータをロード
-      if (rootSigJson.contains("parameters")) {
+      if (rootSigJson.contains("parameters") && rootSigJson["parameters"].is_array()) {
+		 size_t parameterIndex = 0;
          for (const auto& param : rootSigJson["parameters"]) {
             RootParameterDefinition paramDef;
             paramDef.type = StringToRootParameterType(param["type"].get<std::string>());
@@ -242,8 +260,9 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
                      ": DescriptorTable with rangeType=" + param["rangeType"].get<std::string>() + 
                      " (value=" + std::to_string(static_cast<int>(paramDef.rangeType)) + ")");
                } else {
-                  Logger::Warning("  Parameter " + std::to_string(definition.parameters.size()) + 
-                     ": DescriptorTable without rangeType - using default SRV");
+                  Logger::Error("DescriptorTable parameter is missing rangeType in root signature: " + definition.name +
+					 " parameter=" + std::to_string(parameterIndex));
+				  return false;
                }
 			}
 
@@ -261,24 +280,20 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
 			   }
 			}
 
-			std::string fallbackGroupKey = std::to_string(static_cast<int>(paramDef.type)) + ":" +
-			   std::to_string(static_cast<int>(paramDef.visibility)) + ":" +
-			   std::to_string(static_cast<int>(paramDef.rangeType));
-
 			if (paramDef.shaderRegister == UINT_MAX) {
-			   UINT& nextRegister = fallbackRegisterByGroup[fallbackGroupKey];
-			   Logger::Warning(
-				  "Failed to resolve shaderRegister by reflection for root signature parameter in " + definition.name +
-				  ", fallback to grouped register " + std::to_string(nextRegister));
-			   paramDef.shaderRegister = nextRegister;
-			   ++nextRegister;
-			} else {
-			   UINT& nextRegister = fallbackRegisterByGroup[fallbackGroupKey];
-			   nextRegister = std::max(nextRegister, paramDef.shaderRegister + 1);
+			   Logger::Error(
+				  "Failed to resolve shaderRegister for root signature parameter in " + definition.name +
+				  " parameter=" + std::to_string(parameterIndex) +
+				  " semantic='" + paramDef.semantic + "'");
+			   return false;
 			}
             
             definition.parameters.push_back(paramDef);
+			++parameterIndex;
          }
+      } else {
+		 Logger::Error("Root signature definition is missing required parameters array: " + filePath);
+		 return false;
       }
 
       // サンプラーをロード
@@ -309,6 +324,7 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
 bool PSOManager::LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT rtvFormat) {
    std::ifstream file(filePath);
    if (!file.is_open()) {
+	  Logger::Error("Failed to open pipeline file: " + filePath);
 	  return false;
    }
 
@@ -353,45 +369,6 @@ bool PSOManager::LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT r
    } catch (const std::exception& e) {
 	  Logger::Error("Exception loading pipeline from " + filePath + ": " + std::string(e.what()));
 	  return false;
-   }
-}
-
-void PSOManager::CreatePredefinedPipelines(OffscreenRenderTarget* offscreenRenderTarget) {
-   if (!offscreenRenderTarget) {
-	  return;
-   }
-
-   const DXGI_FORMAT rtvFormat = offscreenRenderTarget->GetFormat();
-   std::vector<std::filesystem::path> rootSignaturePaths;
-   std::vector<std::filesystem::path> pipelinePaths;
-
-   const std::filesystem::path pipelineRoot = "resources/pipelines";
-   if (!std::filesystem::exists(pipelineRoot)) {
-	  return;
-   }
-
-   for (const auto& entry : std::filesystem::recursive_directory_iterator(pipelineRoot)) {
-	  if (!entry.is_regular_file() || entry.path().extension() != ".json") {
-		 continue;
-	  }
-
-	  const std::string path = entry.path().generic_string();
-	  if (path.find("/rootsig/") != std::string::npos) {
-		 rootSignaturePaths.push_back(entry.path());
-	  } else if (entry.path().filename() != "pipeline_registry.json") {
-		 pipelinePaths.push_back(entry.path());
-	  }
-   }
-
-   std::sort(rootSignaturePaths.begin(), rootSignaturePaths.end());
-   std::sort(pipelinePaths.begin(), pipelinePaths.end());
-
-   for (const auto& path : rootSignaturePaths) {
-	  LoadRootSignatureFromFile(path.generic_string());
-   }
-
-   for (const auto& path : pipelinePaths) {
-	  LoadPipelineFromFile(path.generic_string(), rtvFormat);
    }
 }
 
@@ -544,42 +521,26 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
    if (const auto* vsReflection = shaderManager_->GetShaderReflection(config.vertexShaderName, ShaderType::Vertex);
 	  vsReflection && vsReflection->isValid) {
 	  reflectionMetadata.hasVertexReflection = true;
-	  reflectionMetadata.vertexResourceCount = static_cast<uint32_t>(vsReflection->boundResources.size());
+	  reflectionMetadata.vertexResourceCount = CountRootBindableResources(vsReflection);
    }
    if (const auto* psReflection = shaderManager_->GetShaderReflection(config.pixelShaderName, ShaderType::Pixel);
 	  psReflection && psReflection->isValid) {
 	  reflectionMetadata.hasPixelReflection = true;
-	  reflectionMetadata.pixelResourceCount = static_cast<uint32_t>(psReflection->boundResources.size());
+	  reflectionMetadata.pixelResourceCount = CountRootBindableResources(psReflection);
    }
 
-  const std::vector<std::string> expectedSemantics = bindingLayoutResolver_.GetExpectedSemanticsForRootSignature(config.rootSignatureName);
-
-   std::string pipelineLookupName = name;
-   const size_t suffixPos = pipelineLookupName.rfind('_');
-   if (suffixPos != std::string::npos && suffixPos + 1 < pipelineLookupName.size()) {
-	  const bool hasNumericSuffix = std::all_of(
-		 pipelineLookupName.begin() + static_cast<std::ptrdiff_t>(suffixPos + 1),
-		 pipelineLookupName.end(),
-		 [](unsigned char c) { return std::isdigit(c) != 0; });
-	  if (hasNumericSuffix) {
-		 pipelineLookupName = pipelineLookupName.substr(0, suffixPos);
-	  }
+   std::vector<std::string> expectedSemantics;
+   const auto semanticSlotsIt = rootSignatureSemanticSlots_.find(config.rootSignatureName);
+   if (semanticSlotsIt == rootSignatureSemanticSlots_.end()) {
+	  Logger::Error("[PSOManager] Root signature semantic slots are not registered: " + config.rootSignatureName);
+	  return false;
+   }
+   expectedSemantics.reserve(semanticSlotsIt->second.size());
+   for (const auto& [semantic, _] : semanticSlotsIt->second) {
+	  expectedSemantics.push_back(semantic);
    }
 
    uint32_t validationWarnings = 0;
-   const auto* rootTable = shaderManager_->GetPipelineRootParameterTable(pipelineLookupName);
-   for (const auto& semantic : expectedSemantics) {
-    const bool resolved = rootTable && rootTable->slotBySemanticName.contains(semantic);
-	  if (!resolved) {
-		 ++validationWarnings;
-      reflectionMetadata.missingSemantics.push_back(semantic);
-		 LogValidationMessage(
-			"missing_semantic:" + name + ":" + semantic,
-			"[PSOManager] Binding validation warning in pipeline: " + name +
-			" missing semantic='" + semantic + "' (rootSignature='" + config.rootSignatureName + "')",
-			Logger::LogLevel::Warning);
-	  }
-   }
 
    reflectionMetadata.estimatedRequiredBindingCount = reflectionMetadata.vertexResourceCount + reflectionMetadata.pixelResourceCount;
 

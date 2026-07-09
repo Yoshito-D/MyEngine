@@ -27,7 +27,6 @@
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Component/MaterialComponent.h"
-#include "RootBindingSlots.h"
 #include "RenderBootstrapper.h"
 #include "Object/Skybox/Skybox.h"
 #include "Pass/OpaquePass.h"
@@ -162,7 +161,10 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
    context.uiCamera = uiCamera_.get();
    context.postProcessManager = postProcessManager_.get();
 
-   renderBootstrapper_->Initialize(context);
+   if (!renderBootstrapper_->Initialize(context)) {
+	  Logger::Error("[Renderer] Render bootstrap failed. Rendering passes were not created.");
+	  return;
+   }
 
    BuildDefaultPasses();
 }
@@ -436,19 +438,17 @@ void Renderer::DrawSkybox(Skybox* skybox) {
    cmdList->SetGraphicsRootSignature(skyboxPipeline->GetRootSignature());
    cmdList->SetPipelineState(skyboxPipeline->GetPipelineState());
 
-   const UINT materialSlot = shaderManager_
-	  ? shaderManager_->ResolvePipelineRootParameter("Skybox", "material").value_or(RootBindingSlots::Skybox::kMaterial)
-	  : RootBindingSlots::Skybox::kMaterial;
-   const UINT transformSlot = shaderManager_
-	  ? shaderManager_->ResolvePipelineRootParameter("Skybox", "transform").value_or(RootBindingSlots::Skybox::kTransform)
-	  : RootBindingSlots::Skybox::kTransform;
-   const UINT textureSlot = shaderManager_
-	  ? shaderManager_->ResolvePipelineRootParameter("Skybox", "texture").value_or(RootBindingSlots::Skybox::kTexture)
-	  : RootBindingSlots::Skybox::kTexture;
+   const auto materialSlot = psoManager_->ResolvePipelineRootParameter("Skybox", "material");
+   const auto transformSlot = psoManager_->ResolvePipelineRootParameter("Skybox", "transform");
+   const auto textureSlot = psoManager_->ResolvePipelineRootParameter("Skybox", "texture");
+   if (!materialSlot || !transformSlot || !textureSlot) {
+	  Logger::Error("[Renderer] Failed to resolve Skybox root slots from PSO JSON.");
+	  return;
+   }
 
-   cmdList->SetGraphicsRootConstantBufferView(materialSlot, skybox->GetMaterialResource()->GetGPUVirtualAddress());
-   cmdList->SetGraphicsRootConstantBufferView(transformSlot, skybox->GetTransformResource()->GetGPUVirtualAddress());
-   cmdList->SetGraphicsRootDescriptorTable(textureSlot, texture->GetTextureSrvHandleGPU());
+   cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), skybox->GetMaterialResource()->GetGPUVirtualAddress());
+   cmdList->SetGraphicsRootConstantBufferView(transformSlot.value(), skybox->GetTransformResource()->GetGPUVirtualAddress());
+   cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), texture->GetTextureSrvHandleGPU());
 
    const auto& mesh = skybox->GetMesh();
    D3D12_VERTEX_BUFFER_VIEW vbv = mesh.GetVertexBufferView();
@@ -889,12 +889,14 @@ void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHand
    auto cmdList = device_->GetCommandList();
    auto* fullscreenPipeline = psoManager_->GetPipeline("FullscreenTriangle");
    assert(fullscreenPipeline != nullptr);
-   const UINT textureSlot = shaderManager_
-	  ? shaderManager_->ResolvePipelineRootParameter("FullscreenTriangle", "texture").value_or(RootBindingSlots::FullscreenTriangle::kTexture)
-	  : RootBindingSlots::FullscreenTriangle::kTexture;
+   const auto textureSlot = psoManager_->ResolvePipelineRootParameter("FullscreenTriangle", "texture");
+   if (!textureSlot.has_value()) {
+	  Logger::Error("[Renderer] Failed to resolve FullscreenTriangle texture root slot from PSO JSON.");
+	  return;
+   }
    cmdList->SetGraphicsRootSignature(fullscreenPipeline->GetRootSignature());
    cmdList->SetPipelineState(fullscreenPipeline->GetPipelineState());
-   cmdList->SetGraphicsRootDescriptorTable(textureSlot, textureSrvHandle);
+   cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), textureSrvHandle);
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
 }
@@ -967,16 +969,18 @@ void Renderer::FlushLineRenderer(LineRenderer* renderer, RenderPass renderPass) 
 	  std::vector<LineRenderer::LineInstance> capturedLines = lines;
 	  const size_t lineCount = capturedLines.size();
 	  auto* lineRendererPtr = renderer;
-	  const UINT lineTransformSlot = shaderManager_
-		 ? shaderManager_->ResolvePipelineRootParameter("Line3D", "transform").value_or(RootBindingSlots::Line3D::kTransform)
-		 : RootBindingSlots::Line3D::kTransform;
+	  const auto lineTransformSlot = psoManager_->ResolvePipelineRootParameter("Line3D", "transform");
+	  if (!lineTransformSlot.has_value()) {
+		 Logger::Error("[Renderer] Failed to resolve Line3D transform root slot from PSO JSON.");
+		 continue;
+	  }
 	  Vector3 center = { 0.0f, 0.0f, 0.0f };
 	  for (const auto& line : capturedLines) {
 		 center += (line.start + line.end) * 0.5f;
 	  }
 	  center /= static_cast<float>(lineCount);
 
-	  auto drawFunc = [lineRendererPtr, capturedLines, lineCount, lineTransformSlot](ID3D12GraphicsCommandList* cmdList, const Matrix4x4& viewProjMatrix) {
+	  auto drawFunc = [lineRendererPtr, capturedLines, lineCount, lineTransformSlot = lineTransformSlot.value()](ID3D12GraphicsCommandList* cmdList, const Matrix4x4& viewProjMatrix) {
 		 if (capturedLines.empty() || !lineRendererPtr) {
 			return;
 		 }

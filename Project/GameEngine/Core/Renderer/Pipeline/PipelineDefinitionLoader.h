@@ -6,15 +6,12 @@ namespace GameEngine {
 
 class PipelineDefinitionLoader {
 public:
-   // @brief レジストリファイルを読み込み、ルートシグネチャとパイプラインのパスを取得する
-   // @param registryFilePath レジストリファイルのパス
-   // @param rootSignaturePaths ルートシグネチャのパスを格納するベクター
+   /// @brief レジストリファイルを読み込み、ルートシグネチャとパイプラインのパスを取得する
+   /// @param registryFilePath レジストリファイルのパス
+   /// @param rootSignaturePaths ルートシグネチャのパスを格納するベクター
+   /// @param pipelinePaths パイプライン定義のパスを格納するベクター
+   /// @return レジストリと参照先ファイルをすべて読み取れた場合はtrue
    bool LoadRegistryFile(const std::wstring& registryFilePath, std::vector<std::string>& rootSignaturePaths, std::vector<std::string>& pipelinePaths) const;
-
-private:
-   // @brief パスを解決する（存在しない場合はレガシーパスを試す）
-   // @param path 解決するパス
-   std::string ResolvePath(const std::string& path) const;
 };
 
 }
