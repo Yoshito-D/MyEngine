@@ -17,7 +17,7 @@
     },
     "emissionModule": {
         "bursts": [],
-        "enabled": true,
+        "enabled": false,
         "rateOverDistance": 0.0,
         "rateOverTime": 200.0
     },
@@ -51,13 +51,11 @@
         }
     },
     "mainModule": {
-        "duration": 5.0,
-        "emissionRate": 10.0,
+        "duration": 0.10000000149011612,
         "gravityModifier": 0.0,
-        "looping": true,
+        "looping": false,
         "maxParticles": 1000,
-        "playOnAwake": true,
-        "scalingMode": 0,
+        "playOnAwake": false,
         "simulationSpace": 1,
         "startColor": {
             "max": 4294967295,
@@ -99,6 +97,20 @@
             "max": 0.0,
             "min": 0.0,
             "randomize": true
+        },
+        "startSpeedMode": 0,
+        "startVelocity": {
+            "max": [
+                0.0,
+                6.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                5.0,
+                0.0
+            ],
+            "randomize": false
         }
     },
     "noiseModule": {
@@ -177,6 +189,7 @@
             7.0,
             9.300000190734863
         ],
+        "circleOutwardVelocity": 2.0999999046325684,
         "emitFrom": 0,
         "enabled": true,
         "length": 0.0,
@@ -217,6 +230,7 @@
         "animationMode": 0,
         "cycles": 1,
         "enabled": false,
+        "frameCount": 1,
         "frameOverTime": 1.0,
         "randomRow": false,
         "rowIndex": 0,

@@ -649,17 +649,34 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
 }
 
 bool PSOManager::CreateComputePipeline(const std::string& name, const std::string& computeShaderName, const std::string& rootSignatureName) {
-   if (!shaderManager_ || !shaderManager_->GetComputeShader(computeShaderName)) {
+   auto* computeShader = shaderManager_ ? shaderManager_->GetComputeShader(computeShaderName) : nullptr;
+   if (!computeShader) {
 	  Logger::Error("Compute shader not found for pipeline: " + name + " (CS: " + computeShaderName + ")");
 	  return false;
    }
 
-   if (!GetRootSignature(rootSignatureName)) {
+   auto* rootSignature = GetRootSignature(rootSignatureName);
+   if (!rootSignature) {
 	  Logger::Error("Root signature not found for compute pipeline: " + name + " (requires: " + rootSignatureName + ")");
 	  return false;
    }
 
-   pipelineLibrary_.StoreComputePipeline({ name, rootSignatureName, computeShaderName });
+   D3D12_COMPUTE_PIPELINE_STATE_DESC pipelineDesc{};
+   pipelineDesc.pRootSignature = rootSignature->GetRootSignature();
+   pipelineDesc.CS = { computeShader->GetBufferPointer(), computeShader->GetBufferSize() };
+
+   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+   HRESULT hr = device_->GetDevice()->CreateComputePipelineState(&pipelineDesc, IID_PPV_ARGS(pipelineState.GetAddressOf()));
+   if (FAILED(hr)) {
+	  Logger::Error("Failed to create compute pipeline: " + name);
+	  return false;
+   }
+
+   const std::wstring wideName(name.begin(), name.end());
+   pipelineState->SetName(wideName.c_str());
+
+   pipelineLibrary_.StoreComputePipeline({ name, rootSignatureName, computeShaderName, pipelineState });
+   RegisterPipelineSemanticSlots(name, rootSignatureName);
    Logger::Info("Compute pipeline definition registered: " + name);
    return true;
 }

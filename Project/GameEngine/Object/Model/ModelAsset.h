@@ -57,14 +57,54 @@ struct WellForGPU {
    Matrix4x4 skeletonSpaceInverseTransposeMatrix;
 };
 
+struct SkinningInformationForGPU {
+   uint32_t numVertices = 0;
+   uint32_t padding[3] = {};
+};
+
 struct SkinCluster {
    std::vector<Matrix4x4> inverseBindPoseMatrices; // 逆バインドポーズ行列のリスト
    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> influenceResources; // メッシュごとの頂点影響リソース
    std::vector<D3D12_VERTEX_BUFFER_VIEW> influenceBufferViews; // メッシュごとの頂点バッファ
    std::vector<VertexInfluence*> mappedInfluenceData; // メッシュごとのマップ済み頂点影響データ
+   std::vector<std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>> inputVertexSrvHandles;
+   std::vector<std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>> influenceSrvHandles;
+   std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> skinnedVertexResources;
+   std::vector<D3D12_VERTEX_BUFFER_VIEW> skinnedVertexBufferViews;
+   std::vector<std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>> skinnedVertexUavHandles;
+   std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> skinningInformationResources;
+   std::vector<SkinningInformationForGPU*> mappedSkinningInformationData;
+   std::vector<D3D12_RESOURCE_STATES> skinnedVertexResourceStates;
    Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource;
    std::span<WellForGPU> mappedPalette; // マップされたスケルトン行列データへのスパン
    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle; // パレット用のCPU/GPUディスクリプタハンドル
+
+   /// @brief 指定メッシュのCompute Skinning用リソースがそろっているか
+   /// @param meshIndex メッシュ番号
+   /// @return 必要なSRV/UAV/CBV/VBVが利用可能ならtrue
+   bool HasComputeSkinningResources(size_t meshIndex) const {
+	  return meshIndex < inputVertexSrvHandles.size() &&
+		 meshIndex < influenceSrvHandles.size() &&
+		 meshIndex < skinnedVertexResources.size() &&
+		 meshIndex < skinnedVertexBufferViews.size() &&
+		 meshIndex < skinnedVertexUavHandles.size() &&
+		 meshIndex < skinningInformationResources.size() &&
+		 inputVertexSrvHandles[meshIndex].second.ptr != 0 &&
+		 influenceSrvHandles[meshIndex].second.ptr != 0 &&
+		 skinnedVertexResources[meshIndex] &&
+		 skinnedVertexUavHandles[meshIndex].second.ptr != 0 &&
+		 skinningInformationResources[meshIndex];
+   }
+
+   /// @brief 指定メッシュのCompute Skinning済み頂点バッファビューを取得する
+   /// @param meshIndex メッシュ番号
+   /// @return 利用可能な場合は頂点バッファビュー、範囲外ならnullptr
+   const D3D12_VERTEX_BUFFER_VIEW* GetSkinnedVertexBufferView(size_t meshIndex) const {
+	  if (meshIndex >= skinnedVertexBufferViews.size()) {
+		 return nullptr;
+	  }
+	  return &skinnedVertexBufferViews[meshIndex];
+   }
 
    const D3D12_VERTEX_BUFFER_VIEW* GetInfluenceBufferView(size_t meshIndex) const {
 	  if (meshIndex >= influenceBufferViews.size()) {

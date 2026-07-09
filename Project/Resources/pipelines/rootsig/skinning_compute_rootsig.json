@@ -1,0 +1,13 @@
+{
+  "name": "SkinningCompute",
+  "reflectionSources": {
+    "computeShader": "Skinning"
+  },
+  "parameters": [
+    { "type": "CBV", "visibility": "All", "semantic": "skinninginformation" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "SRV", "semantic": "matrixpalette" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "SRV", "semantic": "inputvertices" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "SRV", "semantic": "influences" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "UAV", "semantic": "outputvertices" }
+  ]
+}

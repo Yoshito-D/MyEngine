@@ -1,0 +1,5 @@
+{
+  "name": "SkinningCompute",
+  "computeShader": "Skinning",
+  "rootSignature": "SkinningCompute"
+}

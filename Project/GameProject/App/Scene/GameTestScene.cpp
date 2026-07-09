@@ -292,24 +292,6 @@ void GameTestScene::OnInitialize() {
 	  }
    }
 
-   windEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
-   if (windEmitter_) {
-	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;
-	  Config cfg;
-	  cfg.followPosition = true;
-	  cfg.followRotation = true;
-	  cfg.followScale = true;
-	  cfg.positionOffset = { 0.0f, 0.0f, 3.0f };
-	  cfg.rotationOffset = { 0.32f, 0.0f, 0.0f };
-	  cfg.simulationSpace = Config::Space::Local;
-	  windSlotIndex_ = windEmitter_->AddSlot("resources/particles/wind.json", cfg);
-	  if (auto* slot = windEmitter_->GetSlot(windSlotIndex_)) {
-		 slot->loop = true;
-		 slot->autoPlay = true;
-		 windEmitter_->LoadSlot(*slot);
-	  }
-   }
-
    landingDustEmitter_ = player_->AddComponent<GameEngine::ParticleEmitterComponent>();
    if (landingDustEmitter_) {
 	  using Config = GameEngine::ParticleEmitterComponent::AttachmentConfig;

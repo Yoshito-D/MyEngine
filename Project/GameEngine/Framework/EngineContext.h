@@ -327,6 +327,10 @@ public:
    /// @brief アニメーションアセットを全削除
    static void ClearAnimations();
 
+   /// @brief ロード済みアニメーション名一覧を取得する
+   /// @return アニメーション名のリスト
+   static std::vector<std::string> GetAnimationNames();
+
    /// @brief テクスチャをロードする
    /// @param texturePath テクスチャのパス
    /// @param name 名前

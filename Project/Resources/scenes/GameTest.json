@@ -1375,9 +1375,9 @@
                },
                {
                   "data": {
-                     "autoSpeed": 45.0,
-                     "maxSpeed": 50.0,
-                     "speedRecovery": 0.10000000149011612,
+                     "autoSpeed": 35.0,
+                     "maxSpeed": 40.0,
+                     "speedRecovery": 0.20000000298023224,
                      "steerSpeed": 120.0
                   },
                   "enabled": true,
@@ -1790,9 +1790,9 @@
                               ],
                               "simulationSpace": "Local"
                            },
-                           "autoPlay": true,
+                           "autoPlay": false,
                            "jsonPath": "resources/particles/wind.json",
-                           "loop": true,
+                           "loop": false,
                            "playOnceAndDestroy": false
                         },
                         {

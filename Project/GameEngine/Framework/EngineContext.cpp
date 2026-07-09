@@ -403,6 +403,12 @@ void EngineContext::ClearAnimations() {
    sAssetManager_->GetAnimationAssetManager()->Clear();
 }
 
+std::vector<std::string> EngineContext::GetAnimationNames() {
+   if (!sAssetManager_) return {};
+   if (!sAssetManager_->GetAnimationAssetManager()) return {};
+   return sAssetManager_->GetAnimationAssetManager()->GetAnimationNames();
+}
+
 void EngineContext::LoadTexture(const std::string& texturePath, const std::string& name) {
    if (!sAssetManager_) return;
    if (!sAssetManager_->GetTextureManager()) return;

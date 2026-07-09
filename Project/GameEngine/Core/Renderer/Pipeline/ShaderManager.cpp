@@ -418,6 +418,7 @@ void ShaderManager::LoadPredefinedShaders() {
    LoadVertexShader("Object3D", L"resources/shaders/Object3d.VS.hlsl");
    LoadPixelShader("Object3D", L"resources/shaders/Object3d.PS.hlsl");
    LoadVertexShader("SkinningObject3D", L"resources/shaders/SkinningObject3d.VS.hlsl");
+   LoadComputeShader("Skinning", L"resources/shaders/Skinning.CS.hlsl");
 
    LoadVertexShader("Line3D", L"resources/shaders/Line3d.VS.hlsl");
    LoadPixelShader("Line3D", L"resources/shaders/Line3d.PS.hlsl");

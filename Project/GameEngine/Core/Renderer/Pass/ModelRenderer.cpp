@@ -16,10 +16,25 @@
 #include "Component/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
 #include "Component/ModelAssetComponent.h"
-#include <array>
-#include <string_view>
 
 namespace GameEngine {
+namespace {
+constexpr const char* kSkinningComputePipelineName = "SkinningCompute";
+constexpr UINT kSkinningThreadGroupSize = 1024;
+
+void TransitionResource(
+   ID3D12GraphicsCommandList* cmdList,
+   ID3D12Resource* resource,
+   D3D12_RESOURCE_STATES before,
+   D3D12_RESOURCE_STATES after) {
+   if (!resource || before == after) {
+	  return;
+   }
+
+   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource, before, after);
+   cmdList->ResourceBarrier(1, &barrier);
+}
+}
 
 void ModelRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager, AssetManager* assetManager) {
    device_ = device;
@@ -78,34 +93,33 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
    const bool canUseSkinning = skinningEnabled && skinCluster;
 
-   std::string skinningPipelineName;
-   bool hasSkinningPipeline = false;
-   if (psoManager_) {
-	  static constexpr std::array<std::string_view, 2> kSkinningPipelineCandidates = {
-		 "SkinningObject3D",
-		 "SkinningObject3d"
-	  };
-
-	  for (std::string_view candidate : kSkinningPipelineCandidates) {
-		 const std::string name(candidate);
-		 if (psoManager_->GetPipeline(name, modelData.blendMode) ||
-			psoManager_->GetPipeline(name, BlendMode::kBlendModeNone)) {
-			hasSkinningPipeline = true;
-			skinningPipelineName = name;
-			break;
-		 }
-	  }
-   }
-
-   const bool useSkinning = canUseSkinning && hasSkinningPipeline;
+   const auto* skinningComputePipeline = psoManager_ ? psoManager_->GetComputePipeline(kSkinningComputePipelineName) : nullptr;
+   auto* skinningComputeRootSignature = (psoManager_ && skinningComputePipeline)
+	  ? psoManager_->GetRootSignature(skinningComputePipeline->rootSignatureName)
+	  : nullptr;
+   const bool useSkinning =
+	  canUseSkinning &&
+	  skinningComputePipeline &&
+	  skinningComputePipeline->pipelineState &&
+	  skinningComputeRootSignature &&
+	  skinCluster->paletteSrvHandle.second.ptr != 0;
 
    // マテリアルにパイプライン名が指定されていればそれを使用、なければデフォルト "Object3D"
    const std::string& materialPipelineName = materials[0]->GetPipelineName();
    const std::string defaultPipelineName = materialPipelineName.empty() ? "Object3D" : materialPipelineName;
-   const std::string pipelineName = useSkinning ? skinningPipelineName : defaultPipelineName;
+   const std::string pipelineName = defaultPipelineName;
 
    // マテリアルに blendMode が設定されていればそれを優先、なければ DrawCommand の blendMode を使用
    const BlendMode resolvedBlendMode = materials[0]->GetBlendMode().value_or(modelData.blendMode);
+
+   PipelineState* graphicsPipeline = psoManager_ ? psoManager_->GetPipeline(pipelineName, resolvedBlendMode) : nullptr;
+   if (!graphicsPipeline && psoManager_) {
+	  graphicsPipeline = psoManager_->GetPipeline(pipelineName, BlendMode::kBlendModeNone);
+   }
+   if (!graphicsPipeline) {
+	  Logger::Error("[ModelRenderer] Failed to resolve graphics pipeline: " + pipelineName);
+	  return;
+   }
 
    // 使用パイプラインを設定
    setPipelineFunc(pipelineName, resolvedBlendMode);
@@ -129,12 +143,59 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    const UINT areaLightSlot = resolvePipelineSlot("arealights", RootBindingSlots::Object3D::kAreaLight);
    const UINT textureSlot = resolvePipelineSlot("texture", RootBindingSlots::Object3D::kTexture);
    const UINT environmentTextureSlot = resolvePipelineSlot("envmap", RootBindingSlots::Object3D::kEnvMap);
-   const UINT skinPaletteSlot = resolvePipelineSlot("skinpalette", RootBindingSlots::Object3D::kSkinPalette);
 
    TransformationMatrix* transformationMatrix = model->GetTransformationMatrix();
    if (!transformationMatrix) {
 	  Logger::Warning("[ModelRenderer] TransformationMatrix is missing, skip draw");
 	  return;
+   }
+
+   if (useSkinning) {
+	  const UINT skinningInfoSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "skinninginformation").value_or(0);
+	  const UINT paletteSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "matrixpalette").value_or(1);
+	  const UINT inputVerticesSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "inputvertices").value_or(2);
+	  const UINT influencesSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "influences").value_or(3);
+	  const UINT outputVerticesSlot = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, "outputvertices").value_or(4);
+
+	  cmdList->SetComputeRootSignature(skinningComputeRootSignature->GetRootSignature());
+	  cmdList->SetPipelineState(skinningComputePipeline->pipelineState.Get());
+
+	  for (size_t i = 0; i < meshes.size(); ++i) {
+		 if (!skinCluster->HasComputeSkinningResources(i) || i >= skinCluster->skinnedVertexResourceStates.size()) {
+			continue;
+		 }
+
+		 ID3D12Resource* skinnedVertexResource = skinCluster->skinnedVertexResources[i].Get();
+		 TransitionResource(
+			cmdList,
+			skinnedVertexResource,
+			skinCluster->skinnedVertexResourceStates[i],
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		 skinCluster->skinnedVertexResourceStates[i] = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
+		 cmdList->SetComputeRootConstantBufferView(
+			skinningInfoSlot,
+			skinCluster->skinningInformationResources[i]->GetGPUVirtualAddress());
+		 cmdList->SetComputeRootDescriptorTable(paletteSlot, skinCluster->paletteSrvHandle.second);
+		 cmdList->SetComputeRootDescriptorTable(inputVerticesSlot, skinCluster->inputVertexSrvHandles[i].second);
+		 cmdList->SetComputeRootDescriptorTable(influencesSlot, skinCluster->influenceSrvHandles[i].second);
+		 cmdList->SetComputeRootDescriptorTable(outputVerticesSlot, skinCluster->skinnedVertexUavHandles[i].second);
+
+		 const UINT vertexCount = static_cast<UINT>(meshes[i].vertices.size());
+		 const UINT dispatchCount = (vertexCount + kSkinningThreadGroupSize - 1) / kSkinningThreadGroupSize;
+		 cmdList->Dispatch(dispatchCount, 1, 1);
+
+		 TransitionResource(
+			cmdList,
+			skinnedVertexResource,
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		 skinCluster->skinnedVertexResourceStates[i] = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	  }
+
+	  // Compute DispatchでPSOが切り替わるため、以降のRoot Parameter設定前に描画PSOへ戻す。
+	  cmdList->SetGraphicsRootSignature(graphicsPipeline->GetRootSignature());
+	  cmdList->SetPipelineState(graphicsPipeline->GetPipelineState());
    }
 
    // 共通バインディング（全メッシュで共通）
@@ -158,10 +219,6 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
    // Root Parameter 7: AreaLights StructuredBuffer (t3)
    cmdList->SetGraphicsRootDescriptorTable(areaLightSlot, lightBuffer->GetAreaLightSRV());
-
-   if (useSkinning && skinCluster->paletteSrvHandle.second.ptr != 0) {
-	  cmdList->SetGraphicsRootDescriptorTable(skinPaletteSlot, skinCluster->paletteSrvHandle.second);
-   }
 
    // 各メッシュごとの描画
    for (size_t i = 0; i < meshes.size(); ++i) {
@@ -187,26 +244,14 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  cmdList->SetGraphicsRootDescriptorTable(textureSlot, srvHandle);
 
 	  // EnvironmentTexture (t5): バインド (設定されている場合)
-	  if (modelData.environmentTextureSrvHandle.ptr != 0) {
+   if (modelData.environmentTextureSrvHandle.ptr != 0) {
 		 cmdList->SetGraphicsRootDescriptorTable(environmentTextureSlot, modelData.environmentTextureSrvHandle);
 	  }
 
      // 頂点バッファとプリミティブトポロジを設定
-      if (useSkinning) {
-		 const D3D12_VERTEX_BUFFER_VIEW* influenceBufferView = skinCluster->GetInfluenceBufferView(i);
-		 if (!influenceBufferView) {
-			 cmdList->IASetVertexBuffers(0, 1, &asset->GetVertexBufferView(i));
-			 cmdList->IASetIndexBuffer(&asset->GetIndexBufferView(i));
-			 cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			 cmdList->DrawIndexedInstanced(static_cast<UINT>(meshes[i].indices.size()), 1, 0, 0, 0);
-			 continue;
-		 }
-
-		 D3D12_VERTEX_BUFFER_VIEW vertexBufferViews[2] = {
-			asset->GetVertexBufferView(i),
-            *influenceBufferView
-		 };
-		 cmdList->IASetVertexBuffers(0, 2, vertexBufferViews);
+      if (useSkinning && skinCluster->HasComputeSkinningResources(i)) {
+		 const D3D12_VERTEX_BUFFER_VIEW* skinnedVertexBufferView = skinCluster->GetSkinnedVertexBufferView(i);
+		 cmdList->IASetVertexBuffers(0, 1, skinnedVertexBufferView);
 	  } else {
 		 cmdList->IASetVertexBuffers(0, 1, &asset->GetVertexBufferView(i));
 	  }

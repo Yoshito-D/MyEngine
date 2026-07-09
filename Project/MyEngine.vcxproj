@@ -714,6 +714,7 @@
     <None Include="Resources\pipelines\object3d_pipeline.json" />
     <None Include="Resources\pipelines\particle_pipeline.json" />
     <None Include="Resources\pipelines\pipeline_registry.json" />
+    <None Include="Resources\pipelines\skinning_compute_pipeline.json" />
     <None Include="Resources\pipelines\postprocess\anti_aliasing_pipeline.json" />
     <None Include="Resources\pipelines\postprocess\white_noise_pipeline.json" />
     <None Include="Resources\pipelines\postprocess\bloom_pipeline.json" />
@@ -738,6 +739,7 @@
     <None Include="Resources\pipelines\rootsig\postprocess_outline_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\postprocess_radialblur_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\postprocess_rootsig.json" />
+    <None Include="Resources\pipelines\rootsig\skinning_compute_rootsig.json" />
     <None Include="Resources\pipelines\rootsig\skybox_rootsig.json" />
     <None Include="Resources\pipelines\skinning_object3d_pipeline.json" />
     <None Include="Resources\pipelines\skybox_pipeline.json" />

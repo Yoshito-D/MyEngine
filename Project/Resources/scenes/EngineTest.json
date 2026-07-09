@@ -5,7 +5,144 @@
       },
       "virtualCameras": []
    },
-   "objects": [],
+   "objects": [
+      {
+         "assetId": "models/human/walk.gltf",
+         "components": [
+            {
+               "data": {
+                  "parentObjectName": "",
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "euler",
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "translation": [
+                     0.5789824724197388,
+                     0.49095815420150757,
+                     4.01204776763916
+                  ],
+                  "useParentMatrix": false
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "blendMode": -1,
+                  "color": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "environmentTextureName": "",
+                  "lightingMode": 2,
+                  "materialCount": 1,
+                  "materialNames": [
+                     "ObjectMaterial_1"
+                  ],
+                  "pipelineName": "",
+                  "shininess": 40.0,
+                  "textureLeftTop": [
+                     0.0,
+                     0.0
+                  ],
+                  "textureNames": [
+                     ""
+                  ],
+                  "textureSize": [
+                     0.0,
+                     0.0
+                  ],
+                  "uvTransform": [
+                     [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ]
+                  ]
+               },
+               "enabled": true,
+               "typeName": "MaterialComponent"
+            },
+            {
+               "data": {
+                  "name": "walk"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "assetId": "models/human/walk.gltf"
+               },
+               "enabled": true,
+               "typeName": "ModelAssetComponent"
+            },
+            {
+               "data": {
+                  "applyPostProcess": true,
+                  "autoRender": true,
+                  "renderSpace": "World",
+                  "visible": true
+               },
+               "enabled": true,
+               "typeName": "RenderComponent"
+            },
+            {
+               "data": {
+                  "animationName": "walk.gltf",
+                  "applyRotation": false,
+                  "applyScale": false,
+                  "applyTranslation": false,
+                  "clipName": "",
+                  "currentTime": 0.0,
+                  "loop": true,
+                  "playbackSpeed": 1.0,
+                  "playing": true,
+                  "targetNodeName": "",
+                  "useSkinning": true
+               },
+               "enabled": true,
+               "typeName": "AnimationComponent"
+            }
+         ],
+         "id": "editor_object_1",
+         "objectType": "Model"
+      }
+   ],
    "sceneName": "EngineTest",
    "sceneObjects": [
       {
@@ -60,8 +197,16 @@
                      ],
                      "pipelineName": "",
                      "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
                      "textureNames": [
                         "AnimatedCube_BaseColor"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
                      ],
                      "uvTransform": [
                         [
@@ -111,6 +256,7 @@
                   "data": {
                      "applyPostProcess": true,
                      "autoRender": true,
+                     "renderSpace": "World",
                      "visible": true
                   },
                   "enabled": true,
@@ -206,12 +352,10 @@
                },
                "mainModule": {
                   "duration": 0.5,
-                  "emissionRate": 0.0,
                   "gravityModifier": 0.0,
                   "looping": false,
                   "maxParticles": 1000,
                   "playOnAwake": false,
-                  "scalingMode": 0,
                   "simulationSpace": 0,
                   "startColor": {
                      "max": 4294967295,

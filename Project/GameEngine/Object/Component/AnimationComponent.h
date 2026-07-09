@@ -20,6 +20,15 @@ public:
 
    void Update(float deltaTime) override;
 
+   /// @brief アニメーションの再生を開始する
+   void Play();
+
+   /// @brief アニメーションの再生を一時停止する
+   void Pause();
+
+   /// @brief アニメーションの再生を停止し、先頭フレームへ戻す
+   void Stop();
+
 #ifdef USE_IMGUI
    void DrawInspector() override;
 #endif
@@ -37,6 +46,8 @@ public:
    bool useSkinning = true;
 
 private:
+   const AnimationClip* PrepareSelectedClip();
+   void ApplyCurrentPose(const AnimationClip& selectedClip);
    Vector3 QuaternionToEuler_(const Quaternion& q) const;
 
    std::shared_ptr<AnimationAsset> cachedAnimationAsset_;
