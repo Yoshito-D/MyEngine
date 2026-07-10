@@ -1,6 +1,7 @@
 #include "PlayerRearFollowCamera.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
 #include "Utility/MathUtils/MatrixOperations.h"
+#include "Utility/MathUtils/QuaternionOperations.h"
 #include <algorithm>
 #include <cmath>
 
@@ -21,6 +22,9 @@ constexpr float kMinSafeFov = 0.017453292f;  // 1 degree
 constexpr float kMaxSafeFov = 3.12413936f;   // 179 degrees
 constexpr float kMaxSpringDeltaTime = 0.25f;
 constexpr float kMaxSpringStep = 1.0f / 120.0f;
+constexpr float kPi = 3.14159265358979323846f;
+constexpr float kGroundDirectionProjectionBlendRange = 0.15f;
+constexpr float kLookAtDegenerateBlendRange = 0.15f;
 
 static float ClampCameraFov(float fov) {
    if (!std::isfinite(fov)) {
@@ -193,6 +197,49 @@ static GameEngine::Vector3 RotateAroundAxisUnit(const GameEngine::Vector3& value
    return NormalizeOrFallback(out, v);
 }
 
+/// @brief 同一平面上の単位方向同士の符号付き角度を返す
+/// @details 180度付近では外積がほぼゼロになって符号を失うため、直前の旋回符号を使う。
+static float SignedAngleAroundAxis(const GameEngine::Vector3& from,
+   const GameEngine::Vector3& to,
+   const GameEngine::Vector3& axis,
+   float antipodalSign) {
+   GameEngine::Vector3 safeFrom = NormalizeOrFallback(from, { 0.0f, 0.0f, 1.0f });
+   GameEngine::Vector3 safeTo = NormalizeOrFallback(to, safeFrom);
+   GameEngine::Vector3 safeAxis = NormalizeOrFallback(axis, { 0.0f, 1.0f, 0.0f });
+   float cosine = std::clamp(safeFrom.Dot(safeTo), -1.0f, 1.0f);
+   float sine = safeAxis.Dot(safeFrom.Cross(safeTo));
+   if (std::abs(sine) <= 1e-5f && cosine < -0.9999f) {
+      return antipodalSign < 0.0f ? -kPi : kPi;
+   }
+   return std::atan2(sine, cosine);
+}
+
+/// @brief 0..1 の値を端で滑らかになるS字カーブへ変換する
+static float SmoothStep01(float value) {
+   float t = std::clamp(value, 0.0f, 1.0f);
+   return t * t * (3.0f - 2.0f * t);
+}
+
+/// @brief カメラの直交基底からワールド回転クォータニオンを構築する
+/// @details ビュー行列の回転部はワールド回転の転置なので、軸を列へ格納して変換する。
+static GameEngine::Quaternion MakeCameraRotationFromBasis(
+   const GameEngine::Vector3& right,
+   const GameEngine::Vector3& up,
+   const GameEngine::Vector3& forward) {
+   GameEngine::Matrix4x4 viewRotation{};
+   viewRotation.m[0][0] = right.x;
+   viewRotation.m[1][0] = right.y;
+   viewRotation.m[2][0] = right.z;
+   viewRotation.m[0][1] = up.x;
+   viewRotation.m[1][1] = up.y;
+   viewRotation.m[2][1] = up.z;
+   viewRotation.m[0][2] = forward.x;
+   viewRotation.m[1][2] = forward.y;
+   viewRotation.m[2][2] = forward.z;
+   viewRotation.m[3][3] = 1.0f;
+   return GameEngine::MatrixToQuaternion(viewRotation);
+}
+
 /// @brief ベクトルを平面へ投影して正規化する（失敗時はフォールバックを返す）
 /// @details 重力平面への水平化に使用する。投影結果が極小（up と平行）な場合は
 ///          fallback の投影を試み、それも失敗したら代替軸を返す。
@@ -296,10 +343,25 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
    Vector3 airborneFallbackBackward = NormalizeOrFallback(-airborneMoveForward_, currentBackward_);
 
    // 地上では惑星面に沿ったプレイヤー後方、空中では速度ベクトルの反対側を目標にする。
-   // 速度がほぼゼロの瞬間は方向が定まらないため、橋渡し側で作った水平進行方向をフォールバックにする。
-   Vector3 normalBackward = isAirborne_
-	  ? NormalizeOrFallback(-playerVelocity_, airborneFallbackBackward)
-	  : ProjectOnPlaneNorm(-followForward_, up, currentBackward_);
+   // 機首がUpと平行に近い着地では水平投影の微小なノイズを正規化せず、
+   // 前フレームの表示Rightから復元した後方を使って画面上の方位を維持する。
+   Vector3 normalBackward = NormalizeOrFallback(-playerVelocity_, airborneFallbackBackward);
+   if (!isAirborne_) {
+      Vector3 motionBackward = ProjectOnPlaneNorm(-airborneMoveForward_, up, currentBackward_);
+      Vector3 displayedBackward = ProjectOnPlaneNorm(up.Cross(cachedRight_), up, motionBackward);
+      Vector3 followBackward = NormalizeOrFallback(-followForward_, displayedBackward);
+      Vector3 projectedFollow = followBackward - up * up.Dot(followBackward);
+      float projectedLength = projectedFollow.Length();
+
+      if (projectedLength > 1e-5f) {
+         projectedFollow = projectedFollow * (1.0f / projectedLength);
+         float projectionBlend = SmoothStep01(projectedLength / kGroundDirectionProjectionBlendRange);
+         float signedAngle = SignedAngleAroundAxis(displayedBackward, projectedFollow, up, 1.0f);
+         normalBackward = RotateAroundAxisUnit(displayedBackward, up, signedAngle * projectionBlend);
+      } else {
+         normalBackward = displayedBackward;
+      }
+   }
 
    Vector3 resetBackward = NormalizeOrFallback(-playerForward_, normalBackward);
    Vector3 desiredBackward = normalBackward;
@@ -318,11 +380,12 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
    }
 
    if (isAirborne_) {
-	  // 空中では速度後方やリセット姿勢をそのまま使えるよう、重力平面へ押し戻さない。
-	  currentBackward_ = NormalizeOrFallback(currentBackward_, desiredBackward);
+      // 空中では速度後方やリセット姿勢をそのまま使えるよう、重力平面へ押し戻さない。
+      currentBackward_ = NormalizeOrFallback(currentBackward_, desiredBackward);
    } else {
-	  // 地上では gravityUp が変化しても水平性が保たれるよう、毎フレーム平面へ戻す。
-	  currentBackward_ = ProjectOnPlaneNorm(currentBackward_, up, desiredBackward);
+      // 着地直後の空中後方を先に水平投影すると、垂直落下時に方位が一度で地上側へ飛ぶ。
+      // 現在の3D方向を保持し、下の角度補間そのものに地上復帰を任せる。
+      currentBackward_ = NormalizeOrFallback(currentBackward_, desiredBackward);
    }
 
    float airborneFollowSpeed = airborneForwardLerpSpeed + (airborneResetLerpSpeed - airborneForwardLerpSpeed) * airborneResetBlend_;
@@ -348,7 +411,11 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
    //       180°近く離れた状態で Lerp され、補間途中がゼロに近づいて前後反転が発生する。
    // 修正: 補間率 t を角度量へ変換し、RotateTowardsUnit で一方向に回すことで反転を防ぐ。
    Vector3 trackedBackward = BlendUnitDirectionSafely(currentBackward_, desiredBackward, t, desiredBackward);
-   currentBackward_ = isAirborne_ ? trackedBackward : ProjectOnPlaneNorm(trackedBackward, up, desiredBackward);
+   currentBackward_ = trackedBackward;
+   if (!isAirborne_ && currentBackward_.Dot(desiredBackward) > 0.9999f) {
+      // 収束後だけ厳密な地上後方へ確定し、長時間の数値誤差を残さない。
+      currentBackward_ = desiredBackward;
+   }
 }
 
 /// @brief 地上/空中ブレンド値を更新する
@@ -549,13 +616,13 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeLookTarget(const GameEngine::
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeViewUp(const GameEngine::Vector3& gravityUp) const {
    GameEngine::Vector3 baseUp = NormalizeOrFallback(gravityUp, { 0.0f, 1.0f, 0.0f });
    if (airborneResetBlend_ <= 1e-4f) {
-	  return baseUp;
+      return baseUp;
    }
 
    GameEngine::Vector3 targetUp = NormalizeOrFallback(playerUp_, baseUp);
-   return NormalizeOrFallback(
-	  GameEngine::Vector3::Lerp(baseUp, targetUp, airborneResetBlend_),
-	  targetUp);
+   // 反対向きのUpをLerpすると中点でゼロになり、Normalize後の向きが1フレームで反転する。
+   // 角度補間を使い、空中リセット解除から着地まで同じ回転弧を連続して辿らせる。
+   return BlendUnitDirectionSafely(baseUp, targetUp, airborneResetBlend_, baseUp);
 }
 
 /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
@@ -564,10 +631,12 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeViewUp(const GameEngine::Vect
 ///          cachedRight_ / cachedUp_ は外部（UI など）で参照されるため確定させる。
 void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    const GameEngine::Vector3& eye,
-   const GameEngine::Vector3& up) {
+   const GameEngine::Vector3& up,
+   float deltaTime) {
    using namespace GameEngine;
 
    Vector3 lookTarget = ComputeLookTarget(up);
+   Vector3 requestedUp = NormalizeOrFallback(up, cachedUp_);
 
    // zaxis = 注視点を向く方向（カメラ前方）
    Vector3 zaxis = lookTarget - eye;
@@ -575,46 +644,63 @@ void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    if (zLen > 1e-6f) {
 	  zaxis = zaxis * (1.0f / zLen);
    } else {
-	  zaxis = -currentBackward_; // eye が pivot と一致する極端ケース
+      zaxis = -currentBackward_; // eye が pivot と一致する極端ケース
    }
 
-   // 原因: 空中で落下/上昇方向を追うと視線 zaxis と up が平行に近づき、
-   //       up.Cross(zaxis) が極小になって LookAt のロールが数学的に不定になる。
-   //       さらに MakeLookAtMatrix 内でも同じ cross を再計算するため、ここで cachedRight_ を
-   //       用意しても実際のビュー行列には退化対策が反映されず、急なロール回転として見えていた。
-   // 修正: 前フレームの right を現在の視線平面へ投影して非常用の right とし、
-   //       退化付近ではその right を優先して、安定した直交基底からビュー行列を直接組み立てる。
-   Vector3 candidateRight = up.Cross(zaxis);
-   float candidateRightLen = candidateRight.Length();
-   if (candidateRightLen > 1e-6f) {
-	  candidateRight = candidateRight * (1.0f / candidateRightLen);
-   }
-
+   // 前フレームのRightを現在の視線平面へ平行移動し、特異点を跨いでも方位を維持する。
    Vector3 previousRight = cachedRight_ - zaxis * zaxis.Dot(cachedRight_);
    float previousRightLen = previousRight.Length();
    if (previousRightLen > 1e-6f) {
-	  previousRight = previousRight * (1.0f / previousRightLen);
+      previousRight = previousRight * (1.0f / previousRightLen);
    } else {
-	  Vector3 fallbackAxis = (std::abs(zaxis.x) < 0.9f)
-		 ? Vector3{ 1.0f, 0.0f, 0.0f }
-		 : Vector3{ 0.0f, 1.0f, 0.0f };
-	  previousRight = fallbackAxis - zaxis * zaxis.Dot(fallbackAxis);
-	  previousRight = NormalizeOrFallback(previousRight, { 1.0f, 0.0f, 0.0f });
+      Vector3 fallbackAxis = (std::abs(zaxis.x) < 0.9f)
+         ? Vector3{ 1.0f, 0.0f, 0.0f }
+         : Vector3{ 0.0f, 1.0f, 0.0f };
+      previousRight = fallbackAxis - zaxis * zaxis.Dot(fallbackAxis);
+      previousRight = NormalizeOrFallback(previousRight, { 1.0f, 0.0f, 0.0f });
    }
 
-   Vector3 xaxis = previousRight;
+   // gravity Upから求めたRightへ戻す量は退化度に応じて連続化する。
+   // これにより、垂直落下から着地してcrossが復活した瞬間の180度ロールを防ぐ。
+   Vector3 candidateRight = requestedUp.Cross(zaxis);
+   float candidateRightLen = candidateRight.Length();
    if (candidateRightLen > 1e-6f) {
-	  float normalRightBlend = std::clamp(candidateRightLen / 0.15f, 0.0f, 1.0f);
-	  xaxis = BlendUnitDirectionSafely(previousRight, candidateRight, normalRightBlend, previousRight);
+      candidateRight = candidateRight * (1.0f / candidateRightLen);
    }
-   xaxis = NormalizeOrFallback(xaxis - zaxis * zaxis.Dot(xaxis), previousRight);
-   Vector3 yaxis = NormalizeOrFallback(zaxis.Cross(xaxis), up);
+
+   Vector3 targetRight = previousRight;
+   if (candidateRightLen > 1e-6f) {
+      float normalRightBlend = SmoothStep01(candidateRightLen / kLookAtDegenerateBlendRange);
+      float signedRoll = SignedAngleAroundAxis(previousRight, candidateRight, zaxis, 1.0f);
+      targetRight = RotateAroundAxisUnit(previousRight, zaxis, signedRoll * normalRightBlend);
+   }
+
+   targetRight = NormalizeOrFallback(targetRight - zaxis * zaxis.Dot(targetRight), previousRight);
+   Vector3 targetUp = NormalizeOrFallback(zaxis.Cross(targetRight), requestedUp);
+   Quaternion targetRotation = MakeCameraRotationFromBasis(targetRight, targetUp, zaxis);
+
+   if (!isViewRotationInitialized_) {
+      currentViewRotation_ = targetRotation;
+      isViewRotationInitialized_ = true;
+   } else {
+      float rotationT = ExpSmoothingFactor(rotationLerpSpeed, deltaTime);
+      currentViewRotation_ = Quaternion::Slerp(currentViewRotation_, targetRotation, rotationT);
+   }
+
+   // 視線前方は常にプレイヤーへ向けたまま、補間済み回転のRightを再直交化する。
+   // 全回転をそのまま使って注視点を遅らせず、ロールだけを時間補間できる。
+   Vector3 smoothedRight = RotateVector({ 1.0f, 0.0f, 0.0f }, currentViewRotation_);
+   Vector3 xaxis = smoothedRight - zaxis * zaxis.Dot(smoothedRight);
+   xaxis = NormalizeOrFallback(xaxis, previousRight);
+   Vector3 yaxis = NormalizeOrFallback(zaxis.Cross(xaxis), requestedUp);
+   currentViewRotation_ = MakeCameraRotationFromBasis(xaxis, yaxis, zaxis);
 
    // キャッシュ更新
    cachedRight_ = xaxis;
    cachedUp_ = yaxis;
 
    state.transform.translation = eye;
+   state.transform.SetRotationQuaternion(currentViewRotation_);
    Matrix4x4 view{};
    view.m[0][0] = xaxis.x;
    view.m[1][0] = xaxis.y;
@@ -737,6 +823,7 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothEye(const GameEngine::Vector3&
 
    // ピボットから見た理想オフセット
    Vector3 targetOffset = targetEye - pivotTarget_;
+   Vector3 safeUp = NormalizeOrFallback(up, { 0.0f, 1.0f, 0.0f });
 
    if (!isEyeInitialized_) {
 	  // 初回はスナップ（補間履歴なし）
@@ -748,38 +835,32 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothEye(const GameEngine::Vector3&
    // ピボット相対オフセットを補間する
    float t = ExpSmoothingFactor(positionLerpSpeed, deltaTime);
 
-   // 原因: eye オフセット全体を3D方向としてslerpすると、着地時に補間軸が任意になり、
-   //       カメラがプレイヤーの上や下を通って「ぐりん」と一回転するように見える。
-   // 修正: 重力Upに沿う高さと、Upに垂直な水平半径・水平角を分けて補間し、
-   //       位置補間を必ず重力水平面まわりの自然な回り込みに制限する。
-   Vector3 safeUp = NormalizeOrFallback(up, { 0.0f, 1.0f, 0.0f });
-   float currentHeight = currentEyeOffset_.Dot(safeUp);
-   float targetHeight = targetOffset.Dot(safeUp);
-   Vector3 currentPlanar = currentEyeOffset_ - safeUp * currentHeight;
-   Vector3 targetPlanar = targetOffset - safeUp * targetHeight;
-   float currentRadius = currentPlanar.Length();
-   float targetRadius = targetPlanar.Length();
+   // 1. 方向と距離を3D空間で最短補間（プレイヤーの頭上を通るルートを許可）
+   float currentLength = currentEyeOffset_.Length();
+   float targetLength = targetOffset.Length();
 
-   float smoothedHeight = currentHeight + (targetHeight - currentHeight) * t;
-   float smoothedRadius = currentRadius + (targetRadius - currentRadius) * t;
-   Vector3 smoothedPlanar = targetPlanar;
-   if (currentRadius > 1e-4f && targetRadius > 1e-4f) {
-	  Vector3 currentDirection = currentPlanar * (1.0f / currentRadius);
-	  Vector3 targetDirection = targetPlanar * (1.0f / targetRadius);
-	  float dot = std::clamp(currentDirection.Dot(targetDirection), -1.0f, 1.0f);
-	  float signedAngle = std::acos(dot);
-	  if (safeUp.Dot(currentDirection.Cross(targetDirection)) < 0.0f) {
-		 signedAngle = -signedAngle;
-	  }
-	  smoothedPlanar = RotateAroundAxisUnit(currentDirection, safeUp, signedAngle * t) * smoothedRadius;
-   } else if (targetRadius > 1e-4f) {
-	  smoothedPlanar = targetPlanar * (smoothedRadius / targetRadius);
-   } else if (currentRadius > 1e-4f) {
-	  smoothedPlanar = currentPlanar * (smoothedRadius / currentRadius);
-   } else {
-	  smoothedPlanar = { 0.0f, 0.0f, 0.0f };
+   float smoothedLength = currentLength + (targetLength - currentLength) * t;
+
+   Vector3 currentDir = currentLength > 1e-4f ? currentEyeOffset_ * (1.0f / currentLength) : safeUp;
+   Vector3 targetDir = targetLength > 1e-4f ? targetOffset * (1.0f / targetLength) : safeUp;
+
+   Vector3 smoothedDir = BlendUnitDirectionSafely(currentDir, targetDir, t, targetDir);
+
+   // 3D補間後のオフセットを一度決定する
+   currentEyeOffset_ = smoothedDir * smoothedLength;
+
+
+   // 2. 現在の height をそのまま扱い、一定以下にならないように制限をかける
+   float currentHeight = currentEyeOffset_.Dot(safeUp);
+
+   // 下限値（※もしクラス内に既存の height 変数などがあれば、この数値を置き換えてください）
+   float minHeightLimit = 0.5f;
+
+   // currentHeight が制限値を下回っていたら押し上げる
+   if (currentHeight < minHeightLimit) {
+	  // 足りない高さの分だけ、Up方向へ加算する
+	  currentEyeOffset_ += safeUp * (minHeightLimit - currentHeight);
    }
-   currentEyeOffset_ = safeUp * smoothedHeight + smoothedPlanar;
 
    // ワールド座標に戻して返す
    return pivotTarget_ + currentEyeOffset_;
@@ -827,6 +908,11 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    isEyeInitialized_ = false;
    cachedRight_ = { 1.0f, 0.0f, 0.0f };
    cachedUp_ = { 0.0f, 1.0f, 0.0f };
+   currentViewRotation_ = GameEngine::Quaternion::Identity();
+   isViewRotationInitialized_ = false;
+   lastEyePlanarDirection_ = { 0.0f, 0.0f, -1.0f };
+   isEyePlanarDirectionInitialized_ = false;
+   eyeOrbitTurnSign_ = 1.0f;
 
    if (auto* owner = GetOwnerCamera()) {
 	  GameEngine::CameraState state = owner->GetState();
@@ -895,7 +981,7 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    eye = SmoothEye(eye, viewUp, deltaTime);
 
    // ⑩ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
-   ApplyLookAt(state, eye, viewUp);
+   ApplyLookAt(state, eye, viewUp, deltaTime);
 
    wasAirborneLastFrame_ = isAirborne_;
 }
@@ -931,9 +1017,10 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "accelToDistanceKick", accelToDistanceKick },
 	   { "turboFovKickMax", turboFovKickMax },
 	   { "turboDistanceKickMax", turboDistanceKickMax },
-	   { "speedBoostThreshold", speedBoostThreshold },
-	   { "speedBoostMax", speedBoostMax },
-	   { "positionLerpSpeed", positionLerpSpeed },
+      { "speedBoostThreshold", speedBoostThreshold },
+      { "speedBoostMax", speedBoostMax },
+      { "positionLerpSpeed", positionLerpSpeed },
+      { "rotationLerpSpeed", rotationLerpSpeed },
    };
 }
 
@@ -974,6 +1061,7 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
    speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
    positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
+   rotationLerpSpeed = ReadFloat(data, "rotationLerpSpeed", rotationLerpSpeed);
    autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
 
    ResetRuntimeState();
@@ -1016,6 +1104,7 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::DragFloat(Tr("速度しきい値", "Speed Threshold"), &speedBoostThreshold, 0.5f, 0.0f, 100.0f);
    ImGui::DragFloat(Tr("速度ブースト最大", "Speed Boost Max"), &speedBoostMax, 0.5f, 0.0f, 200.0f);
    ImGui::DragFloat(Tr("位置補間", "Position Lerp"), &positionLerpSpeed, 0.5f, 1.0f, 100.0f);
+   ImGui::DragFloat(Tr("回転補間", "Rotation Lerp"), &rotationLerpSpeed, 0.5f, 0.1f, 100.0f);
 
    ImGui::Separator();
    ImGui::Text("%s: %s", Tr("空中", "Airborne"), isAirborne_ ? Tr("はい", "true") : Tr("いいえ", "false"));

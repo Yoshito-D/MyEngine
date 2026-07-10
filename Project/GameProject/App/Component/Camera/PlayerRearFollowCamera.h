@@ -6,7 +6,7 @@ namespace App {
 
 /// @brief プレイヤーを注視し、後方へ補間追従するカメラコンポーネント
 /// @note upVector は通常は惑星基準（gravityUp_）を使用し、空中リセット中のみプレイヤーUpへ補間する。
-///       惑星切り替え時のロール急変を防ぐため gravityUp_ を nlerp で補間する。
+///       惑星切り替え時のロール急変を防ぐため gravityUp_ を角速度制限付きで補間する。
 ///       空中時は速度の反対方向へ徐々に補間し、リセット時はプレイヤー姿勢へ補間する。
 ///       プレイヤーが加速すると FOV 拡大・カメラ後退距離増加で加速感を演出する。
 class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent {
@@ -182,6 +182,10 @@ public:
 	///        値が大きいほど素早く追従し、小さいほどふわりとした遅延になる
 	float positionLerpSpeed = 12.0f;
 
+	/// @brief カメラ回転の追従速度
+	///        値が大きいほど素早く目標姿勢へ戻り、小さいほどロールをゆっくり補間する
+	float rotationLerpSpeed = 12.0f;
+
 private:
 	/// @brief 目標の重力Up（惑星ごとに変わる）
 	GameEngine::Vector3 gravityUp_ = { 0.0f, 1.0f, 0.0f };
@@ -287,11 +291,26 @@ private:
 	/// @brief 直近計算のカメラUp
 	mutable GameEngine::Vector3 cachedUp_ = { 0.0f, 1.0f, 0.0f };
 
+	/// @brief 補間済みのカメラ回転
+	GameEngine::Quaternion currentViewRotation_ = GameEngine::Quaternion::Identity();
+
+	/// @brief カメラ回転が初期化済みかどうか
+	bool isViewRotationInitialized_ = false;
+
+	/// @brief eye の水平半径が退化したときに保持する直近の水平向き
+	GameEngine::Vector3 lastEyePlanarDirection_ = { 0.0f, 0.0f, -1.0f };
+
+	/// @brief lastEyePlanarDirection_ が初期化済みかどうか
+	bool isEyePlanarDirectionInitialized_ = false;
+
+	/// @brief 180度付近で eye の回り込み側を固定する符号
+	float eyeOrbitTurnSign_ = 1.0f;
+
 	// -----------------------------------------------------------------------
 	// 処理を分担するプライベートメソッド群
 	// -----------------------------------------------------------------------
 
-	/// @brief 目標重力Up に向けて currentGravityUp_ を nlerp で補間する
+	/// @brief 目標重力Up に向けて currentGravityUp_ を角速度制限付きで補間する
 	/// @param deltaTime フレーム時間
 	/// @return 補間後の正規化済み重力Up
 	GameEngine::Vector3 SmoothGravityUp(float deltaTime);
@@ -341,9 +360,11 @@ private:
 	/// @param state 書き込み先
 	/// @param eye カメラ位置
 	/// @param up 正規化済み重力Up（LookAt の up に使用）
+	/// @param deltaTime フレーム時間
 	void ApplyLookAt(GameEngine::CameraState& state,
 					 const GameEngine::Vector3& eye,
-					 const GameEngine::Vector3& up);
+					 const GameEngine::Vector3& up,
+					 float deltaTime);
 
 	/// @brief プレイヤー速度に応じた FOV ブーストと加速度合いを計算して返す
 	/// @details FOV 拡大と距離ブーストを共通の boostAlpha から算出するため、
