@@ -1,0 +1,35 @@
+{
+  "shaders": [
+    { "name": "Object3D", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/object3d/Object3d.VS.hlsl", "entryPoint": "main" },
+    { "name": "Object3D", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/object3d/Object3d.PS.hlsl", "entryPoint": "main" },
+    { "name": "Skinning", "type": "Compute", "filePath": "Resources/engine/shaders/compute/skinning/Skinning.CS.hlsl", "entryPoint": "main" },
+
+    { "name": "Line3D", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/line3d/Line3d.VS.hlsl", "entryPoint": "main" },
+    { "name": "Line3D", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/line3d/Line3d.PS.hlsl", "entryPoint": "main" },
+
+    { "name": "Particle", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/particle/Particle.VS.hlsl", "entryPoint": "main" },
+    { "name": "Particle", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/particle/Particle.PS.hlsl", "entryPoint": "main" },
+
+    { "name": "FullscreenTriangle", "type": "Vertex", "filePath": "Resources/engine/shaders/postprocess/FullscreenTriangle.VS.hlsl", "entryPoint": "main" },
+    { "name": "FullscreenTriangle", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/FullscreenTriangle.PS.hlsl", "entryPoint": "main" },
+
+    { "name": "Grayscale", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/Grayscale.PS.hlsl", "entryPoint": "main" },
+    { "name": "LinearToSRGB", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/LinearToSRGB.PS.hlsl", "entryPoint": "main" },
+    { "name": "RadialBlur", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/RadialBlur.PS.hlsl", "entryPoint": "main" },
+    { "name": "GaussFilter", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/GaussFilter.PS.hlsl", "entryPoint": "main" },
+    { "name": "Vignette", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/Vignette.PS.hlsl", "entryPoint": "main" },
+    { "name": "ChromaticAberration", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/ChromaticAberration.PS.hlsl", "entryPoint": "main" },
+    { "name": "ShockWave", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/ShockWave.PS.hlsl", "entryPoint": "main" },
+    { "name": "Pixelation", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/Pixelation.PS.hlsl", "entryPoint": "main" },
+    { "name": "SpeedLine", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/SpeedLine.PS.hlsl", "entryPoint": "main" },
+    { "name": "WhiteNoise", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/WhiteNoise.PS.hlsl", "entryPoint": "main" },
+    { "name": "Bloom", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/Bloom.PS.hlsl", "entryPoint": "main" },
+    { "name": "BoxFilter", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/BoxFilter.PS.hlsl", "entryPoint": "main" },
+    { "name": "Outline", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/Outline.PS.hlsl", "entryPoint": "main" },
+    { "name": "AntiAliasing", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/AntiAliasing.PS.hlsl", "entryPoint": "main" },
+    { "name": "Dissolve", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/Dissolve.PS.hlsl", "entryPoint": "main" },
+
+    { "name": "Skybox", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/skybox/Skybox.VS.hlsl", "entryPoint": "main" },
+    { "name": "Skybox", "type": "Pixel",  "filePath": "Resources/engine/shaders/graphics/skybox/Skybox.PS.hlsl", "entryPoint": "main" }
+  ]
+}

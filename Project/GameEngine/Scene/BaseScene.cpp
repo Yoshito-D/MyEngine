@@ -494,7 +494,7 @@ void BaseScene::LoadSceneDataIfNeeded() {
 }
 
 void BaseScene::LoadRuntimeSceneIfNeeded() {
-   const std::filesystem::path filePath = std::filesystem::path("resources") / "scenes" / (editorSceneName_ + ".json");
+   const std::filesystem::path filePath = std::filesystem::path("resources") / "game" / "scenes" / (editorSceneName_ + ".json");
    if (!std::filesystem::exists(filePath)) {
 	  return;
    }
@@ -527,7 +527,7 @@ void BaseScene::LoadEditorSceneIfNeeded() {
 }
 
 std::filesystem::path BaseScene::GetDebugCameraStateFilePath() const {
-   return std::filesystem::path("resources") / "editor" / "debug_cameras" / (editorSceneName_ + ".json");
+   return std::filesystem::path("resources") / "game" / "editor" / "debug_cameras" / (editorSceneName_ + ".json");
 }
 
 void BaseScene::LoadDebugCameraState() {

@@ -302,7 +302,7 @@ public:
    static void LoadModel(const std::string& modelPath, const std::string& modelName);
 
    /// @brief resources からの相対 assetId でモデルをロードする
-   /// @param assetId 例: models/cube/AnimatedCube.gltf
+   /// @param assetId 例: game/models/cube/AnimatedCube.gltf
    static std::shared_ptr<ModelAsset> LoadModelByAssetId(const std::string& assetId);
 
    /// @brief モデルを取得する

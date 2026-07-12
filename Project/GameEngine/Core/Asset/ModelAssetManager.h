@@ -23,7 +23,7 @@ public:
    ModelHandle LoadModel(const std::string& modelPath, const std::string& modelName);
 
    /// @brief resources からの相対 assetId でモデルをロード
-   /// @param assetId 例: models/cube/AnimatedCube.gltf
+   /// @param assetId 例: game/models/cube/AnimatedCube.gltf
    ModelHandle LoadModelByAssetId(const std::string& assetId);
 
    /// @brief モデルを取得

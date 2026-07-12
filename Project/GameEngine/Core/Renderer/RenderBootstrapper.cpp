@@ -31,7 +31,7 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    context.spriteRenderer->Initialize(context.device, context.psoManager);
    context.particleRenderer->Initialize(context.device, context.psoManager);
 
-   if (!context.psoManager->LoadPipelineDefinitions(L"resources/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
+   if (!context.psoManager->LoadPipelineDefinitions(L"resources/engine/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
       Logger::Error("[RenderBootstrapper] Failed to load pipeline definitions from JSON registry.");
 	  return false;
    }
@@ -44,7 +44,7 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
 
    context.postProcessManager->Initialize(context.device, context.offscreenRenderTarget, context.psoManager);
 
-   if (!context.postProcessManager->LoadEffectsFromJson(L"resources/postprocess/postprocess_registry.json")) {
+   if (!context.postProcessManager->LoadEffectsFromJson(L"resources/engine/postprocess/postprocess_registry.json")) {
       Logger::Error("[RenderBootstrapper] Failed to load post-process effects from JSON registry.");
 	  return false;
    }

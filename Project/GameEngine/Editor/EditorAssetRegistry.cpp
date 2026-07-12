@@ -94,7 +94,7 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
       }
    }
 
-   const std::filesystem::path modelsRoot = resourcesRoot / "models";
+   const std::filesystem::path modelsRoot = resourcesRoot / "game" / "models";
    if (std::filesystem::exists(modelsRoot)) {
       for (const auto& entry : std::filesystem::recursive_directory_iterator(modelsRoot)) {
          if (!entry.is_regular_file()) {
@@ -116,7 +116,7 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
       }
    }
 
-   const std::filesystem::path particlesRoot = resourcesRoot / "particles";
+   const std::filesystem::path particlesRoot = resourcesRoot / "game" / "particles";
    if (std::filesystem::exists(particlesRoot)) {
       for (const auto& entry : std::filesystem::recursive_directory_iterator(particlesRoot)) {
          if (!entry.is_regular_file()) {
@@ -252,7 +252,10 @@ EditorAssetType EditorAssetRegistry::ClassifyAsset(const std::filesystem::path& 
    if (!relative.empty()) {
       auto first = relative.begin();
       if (first != relative.end()) {
-         const std::string rootFolder = first->string();
+         std::string rootFolder = first->string();
+         if (rootFolder == "game" && ++first != relative.end()) {
+            rootFolder = first->string();
+         }
          if (rootFolder == "particles") {
             return EditorAssetType::Particle;
          }
