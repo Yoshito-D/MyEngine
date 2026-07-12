@@ -55,7 +55,7 @@ private:
    int editorNewMaterialLightingMode_ = 2;
    float editorNewMaterialColor_[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
    int editorSelectedAddComponentIndex_ = 0;
-   std::filesystem::path editorSceneFilePath_ = "resources/scenes/editor_scene.json";
+   std::filesystem::path editorSceneFilePath_ = "resources/game/scenes/editor_scene.json";
 
    std::unordered_map<const Model*, std::string> editorModelAssetNames_;
    std::unordered_map<const Model*, std::string> editorModelMaterialNames_;

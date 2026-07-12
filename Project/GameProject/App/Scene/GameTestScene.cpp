@@ -42,8 +42,8 @@ void GameTestScene::OnInitialize() {
    skybox_->SetObjectName("Skybox");
    skybox_->SetTexture(EngineContext::GetTexture("space_2048px"));
 
-   EngineContext::LoadModel("resources/models/planet", "planet.obj");
-   EngineContext::LoadModel("resources/models/car", "car.obj");
+   EngineContext::LoadModel("resources/game/models/planet", "planet.obj");
+   EngineContext::LoadModel("resources/game/models/car", "car.obj");
 
    EngineContext::CreateMaterial("planetMaterial", 0xffffffff, 0);
    EngineContext::CreateMaterial("playerMaterial", 0xffffffff, 3);
@@ -167,7 +167,7 @@ void GameTestScene::OnInitialize() {
 		 cfg.followScale = true;
 		 cfg.positionOffset = offset;
 		 cfg.simulationSpace = Config::Space::World;
-		 int slotIdx = tireDustEmitter_->AddSlot("resources/particles/tire_dust.json", cfg);
+		 int slotIdx = tireDustEmitter_->AddSlot("resources/game/particles/tire_dust.json", cfg);
 		 if (auto* slot = tireDustEmitter_->GetSlot(slotIdx)) {
 			slot->loop = true;
 			// AddSlot 後は既に Play() 済みのため、EmissionModule だけ無効化して放出を止める。
@@ -197,7 +197,7 @@ void GameTestScene::OnInitialize() {
 		 cfg.followScale = true;
 		 cfg.positionOffset = offset;
 		 cfg.simulationSpace = GameEngine::ParticleEmitterComponent::AttachmentConfig::Space::Local;
-		 int slotIdx = miniTurboEmitter_->AddSlot("resources/particles/miniturbo.json", cfg);
+		 int slotIdx = miniTurboEmitter_->AddSlot("resources/game/particles/miniturbo.json", cfg);
 		 if (auto* slot = miniTurboEmitter_->GetSlot(slotIdx)) {
 			slot->loop = true;
 			// isPlaying_ は true のままにすることで、後からEmissionを有効にするだけで再開できる。
@@ -226,7 +226,7 @@ void GameTestScene::OnInitialize() {
 		 cfg.followScale = true;
 		 cfg.positionOffset = offset;
 		 cfg.simulationSpace = GameEngine::ParticleEmitterComponent::AttachmentConfig::Space::Local;
-		 int slotIdx = boostFlameEmitter_->AddSlot("resources/particles/bonfire.json", cfg);
+		 int slotIdx = boostFlameEmitter_->AddSlot("resources/game/particles/bonfire.json", cfg);
 		 if (auto* slot = boostFlameEmitter_->GetSlot(slotIdx)) {
 			slot->loop = false;
 			slot->autoPlay = false;
@@ -249,7 +249,7 @@ void GameTestScene::OnInitialize() {
 	  cfg.simulationSpace = Config::Space::World;
 	  // AddSlot は内部で LoadSlot を呼ぶため、スロット取得後に loop=false を設定してから
 	  // LoadSlot を再実行して SetLooping(false) を正しく反映させる。
-	  sonicBoomSlotIndex_ = sonicBoomEmitter_->AddSlot("resources/particles/sonicBoom.json", cfg);
+	  sonicBoomSlotIndex_ = sonicBoomEmitter_->AddSlot("resources/game/particles/sonicBoom.json", cfg);
 	  if (auto* slot = sonicBoomEmitter_->GetSlot(sonicBoomSlotIndex_)) {
 		 slot->loop = false;
 		 slot->autoPlay = false;
@@ -267,7 +267,7 @@ void GameTestScene::OnInitialize() {
 	  cfg.followScale = true;
 	  cfg.positionOffset = { 0.0f, -0.3f, 0.5f };
 	  cfg.simulationSpace = Config::Space::Local;
-	  landingRingSlotIndex_ = landingRingEmitter_->AddSlot("resources/particles/landingRing.json", cfg);
+	  landingRingSlotIndex_ = landingRingEmitter_->AddSlot("resources/game/particles/landingRing.json", cfg);
 	  if (auto* slot = landingRingEmitter_->GetSlot(landingRingSlotIndex_)) {
 		 slot->loop = false;
 		 slot->autoPlay = false;
@@ -284,7 +284,7 @@ void GameTestScene::OnInitialize() {
 	  cfg.followScale = true;
 	  cfg.positionOffset = { 0.0f, -0.3f, 0.0f };
 	  cfg.simulationSpace = Config::Space::World;
-	  jumpSlotIndex_ = jumpEmitter_->AddSlot("resources/particles/jump.json", cfg);
+	  jumpSlotIndex_ = jumpEmitter_->AddSlot("resources/game/particles/jump.json", cfg);
 	  if (auto* slot = jumpEmitter_->GetSlot(jumpSlotIndex_)) {
 		 slot->loop = false;
 		 slot->autoPlay = false;
@@ -301,7 +301,7 @@ void GameTestScene::OnInitialize() {
 	  cfg.followScale = true;
 	  cfg.positionOffset = { 0.0f, -0.3f, 0.5f };
 	  cfg.simulationSpace = Config::Space::Local;
-	  landingDustSlotIndex_ = landingDustEmitter_->AddSlot("resources/particles/landingDust.json", cfg);
+	  landingDustSlotIndex_ = landingDustEmitter_->AddSlot("resources/game/particles/landingDust.json", cfg);
 	  if (auto* slot = landingDustEmitter_->GetSlot(landingDustSlotIndex_)) {
 		 slot->loop = false;
 		 slot->autoPlay = false;

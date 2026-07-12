@@ -112,7 +112,7 @@ public:
    /// @brief シェーダーレジストリファイルから読み込み
    /// @param registryFilePath レジストリファイルのパス
    /// @return 成功時はtrue
-   bool LoadShaderRegistry(const std::wstring& registryFilePath = L"resources/shaders/shader_registry.json");
+   bool LoadShaderRegistry(const std::wstring& registryFilePath = L"resources/engine/shaders/shader_registry.json");
 
    /// @brief 頂点シェーダーをコンパイルして登録
    /// @param name シェーダー名

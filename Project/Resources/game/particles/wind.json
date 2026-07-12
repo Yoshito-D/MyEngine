@@ -1,25 +1,25 @@
 {
-    "blendMode": null,
+    "blendMode": 1,
     "colorOverLifetimeModule": {
         "enabled": true,
         "endColor": [
             1.0,
             1.0,
             1.0,
-            1.0
+            0.0
         ],
         "startColor": [
             1.0,
             1.0,
             1.0,
-            0.0
+            0.27450981736183167
         ]
     },
     "emissionModule": {
         "bursts": [],
-        "enabled": false,
+        "enabled": true,
         "rateOverDistance": 0.0,
-        "rateOverTime": 200.0
+        "rateOverTime": 8.0
     },
     "forceOverLifetimeModule": {
         "enabled": false,
@@ -53,9 +53,9 @@
     "mainModule": {
         "duration": 0.10000000149011612,
         "gravityModifier": 0.0,
-        "looping": false,
+        "looping": true,
         "maxParticles": 1000,
-        "playOnAwake": false,
+        "playOnAwake": true,
         "simulationSpace": 1,
         "startColor": {
             "max": 4294967295,
@@ -63,8 +63,8 @@
             "randomize": false
         },
         "startLifetime": {
-            "max": 1.7999999523162842,
-            "min": 1.0,
+            "max": 1.0,
+            "min": 0.800000011920929,
             "randomize": true
         },
         "startRotation": {
@@ -132,7 +132,7 @@
         }
     },
     "rendererModule": {
-        "billboardType": 0,
+        "billboardType": 1,
         "boxSize": [
             1.0,
             1.0,
@@ -151,7 +151,7 @@
         "enabled": true,
         "lengthScale": 0.0,
         "meshOriginY": 0.5,
-        "particleMeshType": 7,
+        "particleMeshType": 0,
         "planeDepth": 1.0,
         "planeWidth": 1.0,
         "ringInnerRadius": 0.4000000059604645,
@@ -171,23 +171,23 @@
         "angularVelocityMax": [
             0.0,
             0.0,
-            0.0
+            6.2831854820251465
         ],
         "angularVelocityMin": [
             0.0,
             0.0,
-            0.0
+            -6.2831854820251465
         ],
-        "angularVelocityRandomize": false,
-        "enabled": true
+        "angularVelocityRandomize": true,
+        "enabled": false
     },
     "shapeModule": {
         "angle": 25.0,
         "arc": 360.0,
         "boxSize": [
-            7.0,
-            7.0,
-            9.300000190734863
+            0.3499999940395355,
+            0.20000000298023224,
+            0.699999988079071
         ],
         "circleOutwardVelocity": 2.0999999046325684,
         "emitFrom": 0,
@@ -205,27 +205,27 @@
             0.0
         ],
         "scale": [
-            1.0000001192092896,
-            1.0000001192092896,
-            1.0000001192092896
+            0.5,
+            0.5,
+            0.5
         ],
         "shapeType": 3
     },
     "sizeOverLifetimeModule": {
         "enabled": true,
         "endSize": [
-            0.0,
-            0.0,
-            3.5899999141693115
+            0.10000000149011612,
+            0.10000000149011612,
+            0.0
         ],
-        "sizeMultiplier": 1.0,
+        "sizeMultiplier": 0.6200000047683716,
         "startSize": [
-            0.029999999329447746,
-            0.0,
-            0.07999999821186066
+            1.0,
+            1.0,
+            0.0
         ]
     },
-    "textureName": "particle",
+    "textureName": "game/textures/smoke.png",
     "textureSheetAnimationModule": {
         "animationMode": 0,
         "cycles": 1,
@@ -300,7 +300,7 @@
         }
     },
     "velocityOverLifetimeModule": {
-        "enabled": true,
+        "enabled": false,
         "linearVelocity": {
             "max": [
                 0.0,

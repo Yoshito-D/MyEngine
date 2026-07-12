@@ -185,13 +185,13 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 	  static std::map<std::string, std::array<char, 256>> loadPathBuffers;
 
 	  if (savePathBuffers.find(particleSystemName) == savePathBuffers.end()) {
-		 std::string defaultPath = "resources/particles/" + particleSystemName + ".json";
+		 std::string defaultPath = "resources/game/particles/" + particleSystemName + ".json";
 		 auto& buf = savePathBuffers[particleSystemName];
 		 buf.fill('\0');
 		 strncpy_s(buf.data(), buf.size(), defaultPath.c_str(), buf.size() - 1);
 	  }
 	  if (loadPathBuffers.find(particleSystemName) == loadPathBuffers.end()) {
-		 std::string defaultPath = "resources/particles/" + particleSystemName + ".json";
+		 std::string defaultPath = "resources/game/particles/" + particleSystemName + ".json";
 		 auto& buf = loadPathBuffers[particleSystemName];
 		 buf.fill('\0');
 		 strncpy_s(buf.data(), buf.size(), defaultPath.c_str(), buf.size() - 1);

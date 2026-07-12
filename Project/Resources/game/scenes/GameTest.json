@@ -186,7 +186,7 @@
                      "landingRearLerpRampSeconds": 5.0,
                      "positionLerpSpeed": 7.5,
                      "rearLerpSpeed": 7.5,
-                     "rotationLerpSpeed": 15.0,
+                     "rotationLerpSpeed": 12.0,
                      "speedBoostMax": 25.0,
                      "speedBoostThreshold": 5.0,
                      "springDamping": 20.0,
@@ -410,7 +410,7 @@
    },
    "objects": [
       {
-         "assetId": "models/planet/planet.obj",
+         "assetId": "game/models/planet/planet.obj",
          "components": [
             {
                "data": {
@@ -509,7 +509,7 @@
             },
             {
                "data": {
-                  "assetId": "models/planet/planet.obj"
+                  "assetId": "game/models/planet/planet.obj"
                },
                "enabled": true,
                "typeName": "ModelAssetComponent"
@@ -536,7 +536,7 @@
          "objectType": "Model"
       },
       {
-         "assetId": "models/planet/planet.obj",
+         "assetId": "game/models/planet/planet.obj",
          "components": [
             {
                "data": {
@@ -635,7 +635,7 @@
             },
             {
                "data": {
-                  "assetId": "models/planet/planet.obj"
+                  "assetId": "game/models/planet/planet.obj"
                },
                "enabled": true,
                "typeName": "ModelAssetComponent"
@@ -662,7 +662,7 @@
          "objectType": "Model"
       },
       {
-         "assetId": "models/planet/planet.obj",
+         "assetId": "game/models/planet/planet.obj",
          "components": [
             {
                "data": {
@@ -761,7 +761,7 @@
             },
             {
                "data": {
-                  "assetId": "models/planet/planet.obj"
+                  "assetId": "game/models/planet/planet.obj"
                },
                "enabled": true,
                "typeName": "ModelAssetComponent"
@@ -788,7 +788,7 @@
          "objectType": "Model"
       },
       {
-         "assetId": "models/planet/planet.obj",
+         "assetId": "game/models/planet/planet.obj",
          "components": [
             {
                "data": {
@@ -887,7 +887,7 @@
             },
             {
                "data": {
-                  "assetId": "models/planet/planet.obj"
+                  "assetId": "game/models/planet/planet.obj"
                },
                "enabled": true,
                "typeName": "ModelAssetComponent"
@@ -919,7 +919,7 @@
       {
          "deleted": false,
          "object": {
-            "assetId": "models/planet/planet.obj",
+            "assetId": "game/models/planet/planet.obj",
             "components": [
                {
                   "data": {
@@ -1018,7 +1018,7 @@
                },
                {
                   "data": {
-                     "assetId": "models/planet/planet.obj"
+                     "assetId": "game/models/planet/planet.obj"
                   },
                   "enabled": true,
                   "typeName": "ModelAssetComponent"
@@ -1049,7 +1049,7 @@
       {
          "deleted": false,
          "object": {
-            "assetId": "models/planet/planet.obj",
+            "assetId": "game/models/planet/planet.obj",
             "components": [
                {
                   "data": {
@@ -1148,7 +1148,7 @@
                },
                {
                   "data": {
-                     "assetId": "models/planet/planet.obj"
+                     "assetId": "game/models/planet/planet.obj"
                   },
                   "enabled": true,
                   "typeName": "ModelAssetComponent"
@@ -1179,7 +1179,7 @@
       {
          "deleted": false,
          "object": {
-            "assetId": "models/car/car.obj",
+            "assetId": "game/models/car/car.obj",
             "components": [
                {
                   "data": {
@@ -1278,7 +1278,7 @@
                },
                {
                   "data": {
-                     "assetId": "models/car/car.obj"
+                     "assetId": "game/models/car/car.obj"
                   },
                   "enabled": true,
                   "typeName": "ModelAssetComponent"
@@ -1386,7 +1386,7 @@
                },
                {
                   "data": {
-                     "airDrag": 0.004999999888241291,
+                     "airDrag": 0.009999999776482582,
                      "angularDamping": 2.5,
                      "pitchSpeed": 250.0,
                      "steerSpeed": 250.0
@@ -1484,7 +1484,7 @@
                               "simulationSpace": "World"
                            },
                            "autoPlay": true,
-                           "jsonPath": "resources/particles/tire_dust.json",
+                           "jsonPath": "resources/game/particles/tire_dust.json",
                            "loop": true,
                            "playOnceAndDestroy": false
                         },
@@ -1512,7 +1512,7 @@
                               "simulationSpace": "World"
                            },
                            "autoPlay": true,
-                           "jsonPath": "resources/particles/tire_dust.json",
+                           "jsonPath": "resources/game/particles/tire_dust.json",
                            "loop": true,
                            "playOnceAndDestroy": false
                         },
@@ -1540,7 +1540,7 @@
                               "simulationSpace": "World"
                            },
                            "autoPlay": true,
-                           "jsonPath": "resources/particles/tire_dust.json",
+                           "jsonPath": "resources/game/particles/tire_dust.json",
                            "loop": true,
                            "playOnceAndDestroy": false
                         },
@@ -1568,7 +1568,7 @@
                               "simulationSpace": "World"
                            },
                            "autoPlay": true,
-                           "jsonPath": "resources/particles/tire_dust.json",
+                           "jsonPath": "resources/game/particles/tire_dust.json",
                            "loop": true,
                            "playOnceAndDestroy": false
                         },
@@ -1596,7 +1596,7 @@
                               "simulationSpace": "Local"
                            },
                            "autoPlay": true,
-                           "jsonPath": "resources/particles/miniturbo.json",
+                           "jsonPath": "resources/game/particles/miniturbo.json",
                            "loop": true,
                            "playOnceAndDestroy": false
                         },
@@ -1624,7 +1624,7 @@
                               "simulationSpace": "Local"
                            },
                            "autoPlay": true,
-                           "jsonPath": "resources/particles/miniturbo.json",
+                           "jsonPath": "resources/game/particles/miniturbo.json",
                            "loop": true,
                            "playOnceAndDestroy": false
                         },
@@ -1652,7 +1652,7 @@
                               "simulationSpace": "Local"
                            },
                            "autoPlay": false,
-                           "jsonPath": "resources/particles/bonfire.json",
+                           "jsonPath": "resources/game/particles/bonfire.json",
                            "loop": false,
                            "playOnceAndDestroy": false
                         },
@@ -1680,7 +1680,7 @@
                               "simulationSpace": "Local"
                            },
                            "autoPlay": false,
-                           "jsonPath": "resources/particles/bonfire.json",
+                           "jsonPath": "resources/game/particles/bonfire.json",
                            "loop": false,
                            "playOnceAndDestroy": false
                         },
@@ -1708,7 +1708,7 @@
                               "simulationSpace": "World"
                            },
                            "autoPlay": false,
-                           "jsonPath": "resources/particles/sonicBoom.json",
+                           "jsonPath": "resources/game/particles/sonicBoom.json",
                            "loop": false,
                            "playOnceAndDestroy": false
                         },
@@ -1736,7 +1736,7 @@
                               "simulationSpace": "Local"
                            },
                            "autoPlay": false,
-                           "jsonPath": "resources/particles/landingRing.json",
+                           "jsonPath": "resources/game/particles/landingRing.json",
                            "loop": false,
                            "playOnceAndDestroy": false
                         },
@@ -1764,7 +1764,7 @@
                               "simulationSpace": "World"
                            },
                            "autoPlay": false,
-                           "jsonPath": "resources/particles/jump.json",
+                           "jsonPath": "resources/game/particles/jump.json",
                            "loop": false,
                            "playOnceAndDestroy": false
                         },
@@ -1777,10 +1777,10 @@
                               "positionOffset": [
                                  0.0,
                                  0.0,
-                                 3.0
+                                 0.0
                               ],
                               "rotationOffset": [
-                                 0.3199999928474426,
+                                 0.0,
                                  0.0,
                                  0.0
                               ],
@@ -1792,7 +1792,7 @@
                               "simulationSpace": "Local"
                            },
                            "autoPlay": false,
-                           "jsonPath": "resources/particles/wind.json",
+                           "jsonPath": "resources/game/particles/wind.json",
                            "loop": false,
                            "playOnceAndDestroy": false
                         },
@@ -1820,7 +1820,7 @@
                               "simulationSpace": "Local"
                            },
                            "autoPlay": false,
-                           "jsonPath": "resources/particles/landingDust.json",
+                           "jsonPath": "resources/game/particles/landingDust.json",
                            "loop": false,
                            "playOnceAndDestroy": false
                         }

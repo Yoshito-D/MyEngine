@@ -14,9 +14,9 @@ using namespace GameEngine;
 
 void EngineTestScene::OnInitialize() {
    // --- アセット読み込み ---
-   EngineContext::LoadModel("resources/models/cube", "AnimatedCube.gltf");
-   EngineContext::LoadAnimation("resources/models/cube", "AnimatedCube.gltf");
-   EngineContext::LoadAnimation("resources/models/human", "walk.gltf");
+   EngineContext::LoadModel("resources/game/models/cube", "AnimatedCube.gltf");
+   EngineContext::LoadAnimation("resources/game/models/cube", "AnimatedCube.gltf");
+   EngineContext::LoadAnimation("resources/game/models/human", "walk.gltf");
 
    EngineContext::CreateMaterial("animCubeMaterial", 0xffffffff, 0);
    auto* animCubeMaterial = EngineContext::GetMaterial("animCubeMaterial");
@@ -47,7 +47,7 @@ void EngineTestScene::OnInitialize() {
    particleSystem_->Create();
    particleSystem_->SetTexture(EngineContext::GetTexture("particle"));
    particleSystem_->SetName("bonfire");
-   particleSystem_->LoadFromJson("resources/particles/bonfire.json");
+   particleSystem_->LoadFromJson("resources/game/particles/bonfire.json");
    particleSystem_->Play();
 }
 

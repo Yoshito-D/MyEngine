@@ -7,7 +7,7 @@
    },
    "objects": [
       {
-         "assetId": "models/human/walk.gltf",
+         "assetId": "game/models/human/walk.gltf",
          "components": [
             {
                "data": {
@@ -106,7 +106,7 @@
             },
             {
                "data": {
-                  "assetId": "models/human/walk.gltf"
+                  "assetId": "game/models/human/walk.gltf"
                },
                "enabled": true,
                "typeName": "ModelAssetComponent"
@@ -148,7 +148,7 @@
       {
          "deleted": false,
          "object": {
-            "assetId": "models/cube/AnimatedCube.gltf",
+            "assetId": "game/models/cube/AnimatedCube.gltf",
             "components": [
                {
                   "data": {
@@ -247,7 +247,7 @@
                },
                {
                   "data": {
-                     "assetId": "models/cube/AnimatedCube.gltf"
+                     "assetId": "game/models/cube/AnimatedCube.gltf"
                   },
                   "enabled": true,
                   "typeName": "ModelAssetComponent"
@@ -292,34 +292,27 @@
          "particleSystem": {
             "assetId": "",
             "data": {
-               "blendMode": 2,
+               "blendMode": 1,
                "colorOverLifetimeModule": {
                   "enabled": true,
                   "endColor": [
                      1.0,
                      1.0,
                      1.0,
-                     0.6196078658103943
+                     0.0
                   ],
                   "startColor": [
                      1.0,
                      1.0,
                      1.0,
-                     1.0
+                     0.27450981736183167
                   ]
                },
                "emissionModule": {
-                  "bursts": [
-                     {
-                        "count": 3,
-                        "cycles": 0,
-                        "interval": -1.0,
-                        "time": 0.0
-                     }
-                  ],
+                  "bursts": [],
                   "enabled": true,
                   "rateOverDistance": 0.0,
-                  "rateOverTime": 500.0
+                  "rateOverTime": 8.0
                },
                "forceOverLifetimeModule": {
                   "enabled": false,
@@ -339,64 +332,64 @@
                },
                "limitVelocityModule": {
                   "dampen": {
-                     "max": 1.0,
-                     "min": 1.0,
+                     "max": 0.5,
+                     "min": 0.5,
                      "randomize": false
                   },
                   "enabled": false,
                   "speedLimit": {
-                     "max": 4.900000095367432,
-                     "min": 4.900000095367432,
+                     "max": 10.0,
+                     "min": 10.0,
                      "randomize": false
                   }
                },
                "mainModule": {
-                  "duration": 0.5,
+                  "duration": 0.10000000149011612,
                   "gravityModifier": 0.0,
-                  "looping": false,
+                  "looping": true,
                   "maxParticles": 1000,
-                  "playOnAwake": false,
-                  "simulationSpace": 0,
+                  "playOnAwake": true,
+                  "simulationSpace": 1,
                   "startColor": {
                      "max": 4294967295,
                      "min": 4294967295,
                      "randomize": false
                   },
                   "startLifetime": {
-                     "max": 0.25,
-                     "min": 0.20000000298023224,
+                     "max": 1.0,
+                     "min": 0.800000011920929,
                      "randomize": true
                   },
                   "startRotation": {
                      "max": [
                         0.0,
                         0.0,
-                        180.0
+                        3.140000104904175
                      ],
                      "min": [
                         0.0,
                         0.0,
                         0.0
                      ],
-                     "randomize": false
+                     "randomize": true
                   },
                   "startSize": {
                      "max": [
-                        0.019999999552965164,
-                        0.019999999552965164,
-                        0.019999999552965164
+                        1.0,
+                        1.0,
+                        1.0
                      ],
                      "min": [
-                        0.009999999776482582,
-                        0.009999999776482582,
-                        0.009999999776482582
+                        1.0,
+                        1.0,
+                        1.0
                      ],
-                     "randomize": true
+                     "randomize": false
                   },
                   "startSpeed": {
                      "max": 0.0,
                      "min": 0.0,
-                     "randomize": false
+                     "randomize": true
                   },
                   "startSpeedMode": 0,
                   "startVelocity": {
@@ -416,23 +409,23 @@
                "noiseModule": {
                   "enabled": false,
                   "frequency": {
-                     "max": 0.5,
-                     "min": 0.5,
+                     "max": 0.6299999952316284,
+                     "min": 0.6299999952316284,
                      "randomize": false
                   },
                   "scrollSpeed": {
-                     "max": 1.0,
-                     "min": 1.0,
+                     "max": 2.0,
+                     "min": 2.0,
                      "randomize": false
                   },
                   "strength": {
-                     "max": 1.0,
-                     "min": 1.0,
+                     "max": 0.0,
+                     "min": 0.0,
                      "randomize": false
                   }
                },
                "rendererModule": {
-                  "billboardType": 0,
+                  "billboardType": 1,
                   "boxSize": [
                      1.0,
                      1.0,
@@ -446,15 +439,15 @@
                   "cylinderBottomRadius": 0.5,
                   "cylinderHeight": 1.0,
                   "cylinderRadius": 0.5,
-                  "cylinderSegments": 3,
+                  "cylinderSegments": 32,
                   "cylinderTopRadius": 0.5,
                   "enabled": true,
-                  "lengthScale": 2.0,
-                  "meshOriginY": 0.0,
+                  "lengthScale": 0.0,
+                  "meshOriginY": 0.5,
                   "particleMeshType": 0,
                   "planeDepth": 1.0,
                   "planeWidth": 1.0,
-                  "ringInnerRadius": 0.14000000059604645,
+                  "ringInnerRadius": 0.4000000059604645,
                   "ringOuterRadius": 0.5,
                   "ringSegments": 32,
                   "rotationSpace": 1,
@@ -471,72 +464,72 @@
                   "angularVelocityMax": [
                      0.0,
                      0.0,
-                     2.0
+                     6.2831854820251465
                   ],
                   "angularVelocityMin": [
                      0.0,
                      0.0,
-                     -2.0
+                     -6.2831854820251465
                   ],
                   "angularVelocityRandomize": true,
                   "enabled": false
                },
                "shapeModule": {
-                  "angle": 15.0,
+                  "angle": 25.0,
                   "arc": 360.0,
                   "boxSize": [
+                     0.3499999940395355,
                      0.20000000298023224,
-                     0.05000000074505806,
-                     0.20000000298023224
+                     0.699999988079071
                   ],
                   "circleOutwardVelocity": 2.0999999046325684,
-                  "emitFrom": 2,
+                  "emitFrom": 0,
                   "enabled": true,
-                  "length": 0.5,
+                  "length": 0.0,
                   "position": [
                      0.0,
                      0.0,
                      0.0
                   ],
-                  "radius": 0.15000000596046448,
+                  "radius": 9.600000381469727,
                   "rotation": [
                      0.0,
                      0.0,
                      0.0
                   ],
                   "scale": [
-                     0.6000000238418579,
-                     0.10000000149011612,
-                     5.0
+                     0.5,
+                     0.5,
+                     0.5
                   ],
-                  "shapeType": 0
+                  "shapeType": 3
                },
                "sizeOverLifetimeModule": {
                   "enabled": true,
                   "endSize": [
-                     1.0,
-                     6.0,
-                     1.5
+                     0.10000000149011612,
+                     0.10000000149011612,
+                     0.0
                   ],
-                  "sizeMultiplier": 0.4000000059604645,
+                  "sizeMultiplier": 0.6200000047683716,
                   "startSize": [
-                     0.4000000059604645,
-                     0.0,
-                     0.4000000059604645
+                     1.0,
+                     1.0,
+                     0.0
                   ]
                },
-               "textureName": "bonfire",
+               "textureName": "game/textures/smoke.png",
                "textureSheetAnimationModule": {
                   "animationMode": 0,
                   "cycles": 1,
-                  "enabled": true,
-                  "frameCount": 16,
-                  "frameOverTime": 10.0,
+                  "enabled": false,
+                  "frameCount": 1,
+                  "frameOverTime": 1.0,
                   "randomRow": false,
                   "rowIndex": 0,
                   "startFrame": 0,
-                  "tilesX": 4,
-                  "tilesY": 4
+                  "tilesX": 1,
+                  "tilesY": 1
                },
                "usePostProcess": true,
                "uvTransformModule": {
@@ -605,24 +598,24 @@
                      "max": [
                         0.0,
                         0.0,
-                        0.0
+                        -50.0
                      ],
                      "min": [
                         0.0,
                         0.0,
-                        0.0
+                        -50.0
                      ],
                      "randomize": false
                   },
                   "speedModifier": {
-                     "max": 1.0,
-                     "min": 1.0,
-                     "randomize": false
+                     "max": 1.659999966621399,
+                     "min": 0.9700000286102295,
+                     "randomize": true
                   }
                }
             },
             "id": "ParticleSystem:bonfire",
-            "name": "bonfire",
+            "name": "wind",
             "objectType": "ParticleSystem"
          },
          "sceneKey": "ParticleSystem:bonfire"

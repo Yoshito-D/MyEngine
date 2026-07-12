@@ -566,7 +566,7 @@ void RendererEditorController::DrawAssetEntry(EditorSceneContext& editorContext,
    };
 
    auto getGenericAssetIcon = []() -> Texture* {
-      if (Texture* icon = EngineContext::GetTexture("textures/editor/ic_system_folder_01_128.png")) {
+      if (Texture* icon = EngineContext::GetTexture("engine/textures/editor/ic_system_folder_01_128.png")) {
          return icon;
       }
       if (Texture* icon = EngineContext::GetTexture("ic_system_folder_01_128")) {

@@ -133,7 +133,7 @@ Texture* Dissolve::ResolveMaskTexture() {
    static constexpr std::array<const char*, 3> kDefaultMaskNames = {
 	  "noise0",
 	  "noise0.png",
-	  "textures/noise0.png"
+	  "engine/textures/postprocess/noise0.png"
    };
 
    for (const char* textureName : kDefaultMaskNames) {
