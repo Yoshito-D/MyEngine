@@ -60,7 +60,7 @@
       "name": "Outline",
       "className": "Outline",
       "priority": 0,
-      "enabled": true,
+      "enabled": false,
       "pipelineName": "PostProcess_Outline",
       "rootSignatureName": "PostProcessOutline"
     },

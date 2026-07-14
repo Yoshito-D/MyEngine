@@ -27,6 +27,20 @@ float3 CalculateBlinnPhongSpecular(float3 normal, float3 lightDirection, float3 
     return float3(1.0f, 1.0f, 1.0f) * specularPow;
 }
 
+float3 CalculateRimLight(float3 normal, float3 toEye, float3 color, float intensity, float power)
+{
+    // 視線に対して横を向く面だけを強調し、シルエットに沿った補助光を作る。
+    float rimFactor = 1.0f - saturate(dot(normal, toEye));
+    rimFactor = pow(rimFactor, max(power, 0.01f));
+    return color * rimFactor * max(intensity, 0.0f);
+}
+
+float3 CalculateFillLight(float3 albedo, float3 color, float intensity)
+{
+    // 主光源が届かない面にもベース色を残し、黒つぶれを抑える。
+    return albedo * color * max(intensity, 0.0f);
+}
+
 float CalculatePointLightAttenuation(float distance, float radius, float decay)
 {
     return pow(saturate(-distance / radius + 1.0f), decay);

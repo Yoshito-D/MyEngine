@@ -30,6 +30,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     // UV変換 & テクスチャサンプリング
     float32_t4 transformedUV = mul(float32_t4(input.texCoord, 0.0f, 1.0f), gMaterial.uvTransform);
     float32_t4 textureColor = gTexture.Sample(gSampler, transformedUV.xy);
+    float32_t3 albedo = gMaterial.color.rgb * textureColor.rgb;
     
     // αテスト
     if (textureColor.a <= 0.001f)
@@ -172,6 +173,15 @@ PixelShaderOutput main(VertexShaderOutput input)
 
     // 合成
     output.color.rgb = diffuseSum + specularSum;
+
+    if (gMaterial.lightingMode != LIGHTING_NONE)
+    {
+        output.color.rgb += CalculateFillLight(albedo, gMaterial.fillLightColor.rgb, gMaterial.fillLightIntensity);
+        output.color.rgb += CalculateRimLight(
+            normal, toEye, gMaterial.rimLightColor.rgb,
+            gMaterial.rimLightIntensity, gMaterial.rimLightPower
+        );
+    }
 
     // 環境マップ反射
     if (gMaterial.lightingMode != LIGHTING_NONE)

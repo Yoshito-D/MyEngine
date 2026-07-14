@@ -248,6 +248,21 @@ nlohmann::json MaterialComponent::Serialize() const {
       };
       json["lightingMode"] = materialData->lightingMode;
       json["shininess"] = materialData->shininess;
+      json["rimLightColor"] = {
+         materialData->rimLightColor.x,
+         materialData->rimLightColor.y,
+         materialData->rimLightColor.z,
+         materialData->rimLightColor.w
+      };
+      json["rimLightIntensity"] = materialData->rimLightIntensity;
+      json["rimLightPower"] = materialData->rimLightPower;
+      json["fillLightColor"] = {
+         materialData->fillLightColor.x,
+         materialData->fillLightColor.y,
+         materialData->fillLightColor.z,
+         materialData->fillLightColor.w
+      };
+      json["fillLightIntensity"] = materialData->fillLightIntensity;
 
       const Matrix4x4 uv = materialData->uvTransform;
       json["uvTransform"] = {
@@ -336,6 +351,36 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
 
       if (data.contains("shininess") && data.at("shininess").is_number()) {
          material->SetShininess(data.at("shininess").get<float>());
+      }
+
+      if (data.contains("rimLightColor") && data.at("rimLightColor").is_array() && data.at("rimLightColor").size() == 4) {
+         material->SetRimLightColor(Vector4(
+            data.at("rimLightColor")[0].get<float>(),
+            data.at("rimLightColor")[1].get<float>(),
+            data.at("rimLightColor")[2].get<float>(),
+            data.at("rimLightColor")[3].get<float>()
+         ));
+      }
+
+      if (data.contains("rimLightIntensity") && data.at("rimLightIntensity").is_number()) {
+         material->SetRimLightIntensity(data.at("rimLightIntensity").get<float>());
+      }
+
+      if (data.contains("rimLightPower") && data.at("rimLightPower").is_number()) {
+         material->SetRimLightPower(data.at("rimLightPower").get<float>());
+      }
+
+      if (data.contains("fillLightColor") && data.at("fillLightColor").is_array() && data.at("fillLightColor").size() == 4) {
+         material->SetFillLightColor(Vector4(
+            data.at("fillLightColor")[0].get<float>(),
+            data.at("fillLightColor")[1].get<float>(),
+            data.at("fillLightColor")[2].get<float>(),
+            data.at("fillLightColor")[3].get<float>()
+         ));
+      }
+
+      if (data.contains("fillLightIntensity") && data.at("fillLightIntensity").is_number()) {
+         material->SetFillLightIntensity(data.at("fillLightIntensity").get<float>());
       }
 
       if (data.contains("uvTransform") && data.at("uvTransform").is_array() && data.at("uvTransform").size() == 4) {
@@ -543,6 +588,33 @@ void MaterialComponent::DrawInspector() {
    float shininess = data->shininess;
    if (ImGui::DragFloat(Tr("光沢", "Shininess"), &shininess, 0.1f, 0.0f, 256.0f)) {
       material->SetShininess(shininess);
+   }
+
+   ImGui::SeparatorText(Tr("補助光", "Supplemental Lighting"));
+
+   Vector4 rimLightColor = data->rimLightColor;
+   if (ImGui::ColorEdit3(Tr("リムライト色", "Rim Light Color"), &rimLightColor.x)) {
+      material->SetRimLightColor(rimLightColor);
+   }
+
+   float rimLightIntensity = data->rimLightIntensity;
+   if (ImGui::DragFloat(Tr("リムライト強度", "Rim Light Intensity"), &rimLightIntensity, 0.01f, 0.0f, 10.0f)) {
+      material->SetRimLightIntensity(rimLightIntensity);
+   }
+
+   float rimLightPower = data->rimLightPower;
+   if (ImGui::DragFloat(Tr("リムライト減衰", "Rim Light Power"), &rimLightPower, 0.05f, 0.01f, 32.0f)) {
+      material->SetRimLightPower(rimLightPower);
+   }
+
+   Vector4 fillLightColor = data->fillLightColor;
+   if (ImGui::ColorEdit3(Tr("フィルライト色", "Fill Light Color"), &fillLightColor.x)) {
+      material->SetFillLightColor(fillLightColor);
+   }
+
+   float fillLightIntensity = data->fillLightIntensity;
+   if (ImGui::DragFloat(Tr("フィルライト強度", "Fill Light Intensity"), &fillLightIntensity, 0.01f, 0.0f, 10.0f)) {
+      material->SetFillLightIntensity(fillLightIntensity);
    }
 
    // ブレンドモード

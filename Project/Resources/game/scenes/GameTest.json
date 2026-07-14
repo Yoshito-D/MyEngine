@@ -454,12 +454,27 @@
                      1.0
                   ],
                   "environmentTextureName": "",
-                  "lightingMode": 0,
+                  "fillLightColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "fillLightIntensity": 0.5699999928474426,
+                  "lightingMode": 2,
                   "materialCount": 1,
                   "materialNames": [
                      "planetMaterial"
                   ],
                   "pipelineName": "",
+                  "rimLightColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "rimLightIntensity": 0.41999998688697815,
+                  "rimLightPower": 12.510000228881836,
                   "shininess": 40.0,
                   "textureLeftTop": [
                      0.0,
@@ -580,12 +595,27 @@
                      1.0
                   ],
                   "environmentTextureName": "",
-                  "lightingMode": 0,
+                  "fillLightColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "fillLightIntensity": 0.5699999928474426,
+                  "lightingMode": 2,
                   "materialCount": 1,
                   "materialNames": [
                      "planetMaterial"
                   ],
                   "pipelineName": "",
+                  "rimLightColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "rimLightIntensity": 0.41999998688697815,
+                  "rimLightPower": 12.510000228881836,
                   "shininess": 40.0,
                   "textureLeftTop": [
                      0.0,
@@ -706,12 +736,27 @@
                      1.0
                   ],
                   "environmentTextureName": "",
-                  "lightingMode": 0,
+                  "fillLightColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "fillLightIntensity": 0.5699999928474426,
+                  "lightingMode": 2,
                   "materialCount": 1,
                   "materialNames": [
                      "planetMaterial"
                   ],
                   "pipelineName": "",
+                  "rimLightColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "rimLightIntensity": 0.41999998688697815,
+                  "rimLightPower": 12.510000228881836,
                   "shininess": 40.0,
                   "textureLeftTop": [
                      0.0,
@@ -832,12 +877,27 @@
                      1.0
                   ],
                   "environmentTextureName": "",
-                  "lightingMode": 0,
+                  "fillLightColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "fillLightIntensity": 0.5699999928474426,
+                  "lightingMode": 2,
                   "materialCount": 1,
                   "materialNames": [
                      "planetMaterial"
                   ],
                   "pipelineName": "",
+                  "rimLightColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "rimLightIntensity": 0.41999998688697815,
+                  "rimLightPower": 12.510000228881836,
                   "shininess": 40.0,
                   "textureLeftTop": [
                      0.0,
@@ -963,12 +1023,27 @@
                         1.0
                      ],
                      "environmentTextureName": "",
-                     "lightingMode": 0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.5699999928474426,
+                     "lightingMode": 2,
                      "materialCount": 1,
                      "materialNames": [
                         "planetMaterial"
                      ],
                      "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.41999998688697815,
+                     "rimLightPower": 12.510000228881836,
                      "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
@@ -1093,12 +1168,27 @@
                         1.0
                      ],
                      "environmentTextureName": "",
-                     "lightingMode": 0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.5699999928474426,
+                     "lightingMode": 2,
                      "materialCount": 1,
                      "materialNames": [
                         "planetMaterial"
                      ],
                      "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.41999998688697815,
+                     "rimLightPower": 12.510000228881836,
                      "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
@@ -1223,13 +1313,28 @@
                         1.0
                      ],
                      "environmentTextureName": "",
-                     "lightingMode": 3,
+                     "fillLightColor": [
+                        0.9607843160629272,
+                        0.8987267017364502,
+                        0.8854286670684814,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.6499999761581421,
+                     "lightingMode": 4,
                      "materialCount": 1,
                      "materialNames": [
                         "playerMaterial"
                      ],
                      "pipelineName": "",
-                     "shininess": 40.0,
+                     "rimLightColor": [
+                        0.9656862616539001,
+                        0.9136149287223816,
+                        0.9136149287223816,
+                        1.0
+                     ],
+                     "rimLightIntensity": 1.9700000286102295,
+                     "rimLightPower": 10.300000190734863,
+                     "shininess": 42.20000076293945,
                      "textureLeftTop": [
                         0.0,
                         0.0
@@ -1447,7 +1552,7 @@
                      "maximumEffectSpeed": 35.0,
                      "minimumEffectSpeed": 15.0,
                      "outerRadius": 2.5,
-                     "radialBlurMaxStrength": 0.029999999329447746,
+                     "radialBlurMaxStrength": 0.0,
                      "radialBlurSampleCount": 16,
                      "radialBlurVisibleThreshold": 0.019999999552965164,
                      "randomSeed": 1.0,

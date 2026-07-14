@@ -28,7 +28,7 @@ class PSOManager;
 /// @brief Unity ライクなパーティクルシステム
 class ParticleSystem {
 public:
-   static constexpr uint32_t kMaxParticles = 65536;
+   static constexpr uint32_t kMaxParticles = 4096;
 
    /// @brief 親粒子イベントから生成する子エフェクト設定
    struct SubEmitterSettings {

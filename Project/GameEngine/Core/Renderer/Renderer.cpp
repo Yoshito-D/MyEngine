@@ -362,9 +362,10 @@ void Renderer::Draw(ParticleSystem* particleSystem) {
    assert(activeCamera != nullptr);
    assert(particleSystem != nullptr);
 
-   // アクティブなパーティクルがない場合は描画しない
-   uint32_t activeCount = particleSystem->GetActiveParticleCount();
-   if (activeCount == 0) return;
+   // CPU粒子が尽きた直後も、前フレームのGPU粒子をFreeListへ戻すため最後のCompute更新が必要。
+   const uint32_t activeCount = particleSystem->GetActiveParticleCount();
+   const bool needsGpuCleanup = activeCount == 0 && particleSystem->GetDrawParticleCount() > 0;
+   if (activeCount == 0 && !needsGpuCleanup) return;
 
    particleSystem->UpdateMatrix(activeCamera);
 
