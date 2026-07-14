@@ -18,6 +18,11 @@ struct Material
     float32_t environmentCoefficient;
     float32_t4x4 uvTransform;
     float32_t shininess;
+    float32_t rimLightIntensity;
+    float32_t rimLightPower;
+    float32_t fillLightIntensity;
+    float32_t4 rimLightColor;
+    float32_t4 fillLightColor;
 };
 
 struct DirectionalLight

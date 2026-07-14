@@ -25,7 +25,14 @@ public:
 	  float  padding[2]; // パディング（uvTransformの16バイト境界アライメント用）
 	  Matrix4x4 uvTransform; // UV座標に適用する変換行列
 	  float shininess; // 光沢度
+	  float rimLightIntensity; // リムライトの強度
+	  float rimLightPower; // リムライトの減衰指数
+	  float fillLightIntensity; // フィルライトの強度
+	  Vector4 rimLightColor; // リムライトの色
+	  Vector4 fillLightColor; // フィルライトの色
    };
+
+   static_assert(sizeof(MaterialData) == 144, "MaterialData must match the HLSL constant-buffer layout");
 
    /// @brief ライティングモード列挙体
    enum LightingMode {
@@ -108,6 +115,46 @@ public:
    /// @brief 環境テクスチャの強度を取得
    /// @return 強度
    float GetEnvironmentTextureStrength() const;
+
+   /// @brief リムライトの色を設定
+   /// @param color リムライトの色
+   void SetRimLightColor(const Vector4& color);
+
+   /// @brief リムライトの色を取得
+   /// @return リムライトの色
+   Vector4 GetRimLightColor() const;
+
+   /// @brief リムライトの強度を設定
+   /// @param intensity 0以上の強度
+   void SetRimLightIntensity(float intensity);
+
+   /// @brief リムライトの強度を取得
+   /// @return リムライトの強度
+   float GetRimLightIntensity() const;
+
+   /// @brief リムライトの減衰指数を設定
+   /// @param power 0より大きい減衰指数。大きいほど輪郭が細くなる
+   void SetRimLightPower(float power);
+
+   /// @brief リムライトの減衰指数を取得
+   /// @return リムライトの減衰指数
+   float GetRimLightPower() const;
+
+   /// @brief フィルライトの色を設定
+   /// @param color フィルライトの色
+   void SetFillLightColor(const Vector4& color);
+
+   /// @brief フィルライトの色を取得
+   /// @return フィルライトの色
+   Vector4 GetFillLightColor() const;
+
+   /// @brief フィルライトの強度を設定
+   /// @param intensity 0以上の強度
+   void SetFillLightIntensity(float intensity);
+
+   /// @brief フィルライトの強度を取得
+   /// @return フィルライトの強度
+   float GetFillLightIntensity() const;
 
    // ========== UVTransform操作関数 ==========
 

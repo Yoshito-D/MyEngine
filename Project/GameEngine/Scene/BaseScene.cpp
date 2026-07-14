@@ -343,7 +343,7 @@ void BaseScene::Initialize() {
    sCurrentScene_ = this;
 
    // デフォルトのライトを作成（LightManagerが所有）
-   EngineContext::CreateDirectionalLight("MainDirectionalLight", 0xffffffff, Vector3(0.0f, -1.0f, 0.0f), 2.5f);
+   EngineContext::CreateDirectionalLight("MainDirectionalLight", 0xffffffff, Vector3(0.0f, -1.0f, 0.0f), 1.0f);
    EngineContext::CreatePointLight("MainPointLight", 0xffffffff, Vector3(0.0f, 0.0f, 0.0f), 0.0f);
    EngineContext::CreateSpotLight("MainSpotLight", 0xffffffff, Vector3(), 0.0f, Vector3(0.0f, -1.0f, 0.0f), 5.0f, 0.1f, 0.7f, 0.9f);
    EngineContext::CreateAreaLight("MainAreaLight", Vector3(0.0f, 10.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector2(5.0f, 5.0f), Vector3(1.0f, 1.0f, 1.0f), 0.0f);

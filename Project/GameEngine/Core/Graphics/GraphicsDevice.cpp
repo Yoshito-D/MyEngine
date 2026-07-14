@@ -225,8 +225,8 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
 	  infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
 	  // エラー時に止まる
 	  infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-	  // 警告はデバッグ出力へ残すが、対応可能な非致命メッセージで実行不能にしない。
-	  infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false);
+	  // 警告を止める
+	  infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
 
 	  // 抑制するメッセージのID
 	  D3D12_MESSAGE_ID denyIds[] = {

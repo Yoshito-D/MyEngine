@@ -30,6 +30,12 @@ void Material::Create(unsigned int color, int32_t lightingMode, const Matrix4x4&
    materialData_->shininess = shininess;
    // 環境マップ強度
    materialData_->environmentCoefficient = 0.0f;
+   // 既存マテリアルの見た目を維持し、必要なオブジェクトだけ補助光を有効にする。
+   materialData_->rimLightColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+   materialData_->rimLightIntensity = 0.0f;
+   materialData_->rimLightPower = 4.0f;
+   materialData_->fillLightColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+   materialData_->fillLightIntensity = 0.0f;
 }
 
 // ========== プロパティアクセス関数の実装 ==========
@@ -88,6 +94,71 @@ void Material::SetEnvironmentTextureStrength(float strength) {
 float Material::GetEnvironmentTextureStrength() const {
    if (materialData_) {
 	  return materialData_->environmentCoefficient;
+   }
+   return 0.0f;
+}
+
+void Material::SetRimLightColor(const Vector4& color) {
+   if (materialData_) {
+	  materialData_->rimLightColor = color;
+   }
+}
+
+Vector4 Material::GetRimLightColor() const {
+   if (materialData_) {
+	  return materialData_->rimLightColor;
+   }
+   return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
+void Material::SetRimLightIntensity(float intensity) {
+   if (materialData_) {
+	  materialData_->rimLightIntensity = std::max(intensity, 0.0f);
+   }
+}
+
+float Material::GetRimLightIntensity() const {
+   if (materialData_) {
+	  return materialData_->rimLightIntensity;
+   }
+   return 0.0f;
+}
+
+void Material::SetRimLightPower(float power) {
+   if (materialData_) {
+	  materialData_->rimLightPower = std::max(power, 0.01f);
+   }
+}
+
+float Material::GetRimLightPower() const {
+   if (materialData_) {
+	  return materialData_->rimLightPower;
+   }
+   return 4.0f;
+}
+
+void Material::SetFillLightColor(const Vector4& color) {
+   if (materialData_) {
+	  materialData_->fillLightColor = color;
+   }
+}
+
+Vector4 Material::GetFillLightColor() const {
+   if (materialData_) {
+	  return materialData_->fillLightColor;
+   }
+   return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
+void Material::SetFillLightIntensity(float intensity) {
+   if (materialData_) {
+	  materialData_->fillLightIntensity = std::max(intensity, 0.0f);
+   }
+}
+
+float Material::GetFillLightIntensity() const {
+   if (materialData_) {
+	  return materialData_->fillLightIntensity;
    }
    return 0.0f;
 }

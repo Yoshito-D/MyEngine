@@ -34,23 +34,23 @@ constexpr uint32_t kParticleComputeThreadGroupSize = 64;
 constexpr uint32_t kInvalidGpuParticleIndex = UINT_MAX;
 
 Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
-   ID3D12Device* device, size_t size, D3D12_RESOURCE_FLAGS flags, D3D12_RESOURCE_STATES initialState) {
+   ID3D12Device* device, size_t size, D3D12_RESOURCE_FLAGS flags) {
    Microsoft::WRL::ComPtr<ID3D12Resource> resource;
    const CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
    const CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(size, flags);
+   // D3D12バッファの生成時状態は実質COMMONとして扱われるため、実際の初期状態と追跡値を一致させる。
    const HRESULT result = device->CreateCommittedResource(
 	  &heapProperties,
 	  D3D12_HEAP_FLAG_NONE,
 	  &resourceDesc,
-	  initialState,
+	  D3D12_RESOURCE_STATE_COMMON,
 	  nullptr,
 	  IID_PPV_ARGS(&resource));
    if (FAILED(result)) {
 	  Logger::Error(std::format(
-		 "[ParticleSystem] Failed to create default GPU buffer: size={}, flags={}, state={}, HRESULT=0x{:08X}",
+		 "[ParticleSystem] Failed to create default GPU buffer: size={}, flags={}, HRESULT=0x{:08X}",
 		 size,
 		 static_cast<uint32_t>(flags),
-		 static_cast<uint32_t>(initialState),
 		 static_cast<uint32_t>(result)));
 	  return nullptr;
    }
@@ -405,38 +405,31 @@ void ParticleSystem::CreateGpuSimulationResources() {
    gpuStateResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(GpuParticleState) * kMaxParticles,
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuMotionResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(GpuParticleMotion) * kMaxParticles,
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuAliveResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(uint32_t) * kMaxParticles,
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuFreeListResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(uint32_t) * kMaxParticles,
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuFreeCountResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(uint32_t),
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuOwnerMappingResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(uint32_t) * kMaxParticles,
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuOutputResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(ParticleForGPU) * kMaxParticles,
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_COMMON);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    if (!gpuStateResource_ || !gpuMotionResource_ || !gpuAliveResource_ ||
 	  !gpuFreeListResource_ || !gpuFreeCountResource_ || !gpuOwnerMappingResource_ ||
 	  !gpuOutputResource_) {
@@ -553,8 +546,8 @@ void ParticleSystem::CreateGpuSimulationResources() {
    gpuOwnerMappingUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[10]);
    gpuOwnerMappingSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[11]);
 
-   gpuStateResourceState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-   gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+   gpuStateResourceState_ = D3D12_RESOURCE_STATE_COMMON;
+   gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    gpuOutputResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    gpuNeedsInitialize_ = true;
    gpuInitializationStartIndex_ = 0;
@@ -604,13 +597,11 @@ void ParticleSystem::EnsureGpuRibbonResources(uint32_t requiredSegmentCount) {
    gpuRibbonVertexResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(Mesh::VertexData) * newCapacity * 4u,
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_COMMON);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuRibbonIndexResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(uint32_t) * newCapacity * 6u,
-	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	  D3D12_RESOURCE_STATE_COMMON);
+	  D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    if (!gpuRibbonVertexResource_ || !gpuRibbonIndexResource_) {
 	  Logger::Error("[ParticleSystem] GPU ribbon resources are unavailable.");
 	  gpuRibbonSegmentCount_ = 0;
@@ -1164,6 +1155,8 @@ void ParticleSystem::Stop() {
 	renderParticleIndices_.clear();
 	std::fill(gpuStateIndexByCpuParticle_.begin(), gpuStateIndexByCpuParticle_.end(), kInvalidGpuParticleIndex);
 	gpuPendingSpawnRequestCount_ = 0;
+	// Stop後の再生では古いowner mappingを残さず、GPUプール全体を再構築する。
+	gpuInitializationStartIndex_ = 0;
 	gpuNeedsInitialize_ = true;
 	gpuStateReadbackAvailable_ = false;
 }
@@ -1316,7 +1309,7 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
 }
 
 void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
-   if (!psoManager || !sDevice_ || !CanUseGpuSimulation() || gpuRenderParticleCount_ == 0) return;
+   if (!psoManager || !sDevice_ || !CanUseGpuSimulation()) return;
 
    ID3D12GraphicsCommandList* commandList = sDevice_->GetCommandList();
    if (gpuStateResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
@@ -1471,6 +1464,10 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
 	  D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
    commandList->ResourceBarrier(1, &mappingToSrv);
    gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+
+   // 描画対象が0でも上のUpdate CSまでは実行し、寿命切れ粒子のowner mappingとFreeListを解放する。
+   if (gpuRenderParticleCount_ == 0) return;
+
    if (gpuOutputResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
 	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		 gpuOutputResource_.Get(), gpuOutputResourceState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
