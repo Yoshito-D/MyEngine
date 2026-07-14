@@ -63,6 +63,8 @@ struct PipelineDefinition {
    D3D12_DEPTH_WRITE_MASK depthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
    D3D12_COMPARISON_FUNC depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
    D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+   // 中間HDRターゲットと最終LDRターゲットを同一レジストリで安全に使い分けるための任意上書き。
+   DXGI_FORMAT rtvFormatOverride = DXGI_FORMAT_UNKNOWN;
    std::string computeShader;
 };
 

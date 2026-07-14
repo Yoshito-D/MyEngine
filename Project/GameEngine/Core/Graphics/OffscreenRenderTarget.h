@@ -39,6 +39,19 @@ public:
    /// @brief 前フレームのSRVハンドル（GPU）を取得
    D3D12_GPU_DESCRIPTOR_HANDLE GetPreviousSRVHandleGPU() const { return previousRenderTarget_.srvHandleGPU; }
 
+   /// @brief 透明エフェクトが参照する不透明シーン色のSRVを取得する
+   D3D12_GPU_DESCRIPTOR_HANDLE GetSceneColorSRVHandleGPU() const { return sceneColorSnapshot_.srvHandleGPU; }
+
+   /// @brief 透明エフェクトが参照するシーン深度のSRVを取得する
+   D3D12_GPU_DESCRIPTOR_HANDLE GetSceneDepthSRVHandleGPU() const { return sceneDepthSnapshot_.srvHandleGPU; }
+
+   /// @brief 現在の色・深度を透明エフェクト用テクスチャへコピーする
+   void CaptureSceneTextures();
+
+   /// @brief 現在の色だけを屈折エフェクト用テクスチャへコピーする
+   /// @note 屈折描画の直前に呼び、同一パスで先に描かれた背景も参照可能にする
+   void CaptureSceneColor();
+
    /// @brief 現在のリソースを取得
    ID3D12Resource* GetResource() const { return currentRenderTarget_.renderTarget.Get(); }
 
@@ -68,6 +81,7 @@ private:
 	  D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
 	  D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
 	  UINT srvIndex = static_cast<UINT>(-1);
+	  D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    };
 
    GraphicsDevice* device_ = nullptr;
@@ -79,13 +93,22 @@ private:
    // レンダーターゲット情報
    RenderTargetInfo currentRenderTarget_;
    RenderTargetInfo previousRenderTarget_;
+   RenderTargetInfo sceneColorSnapshot_;
+   RenderTargetInfo sceneDepthSnapshot_;
 
-   DXGI_FORMAT format_ = DXGI_FORMAT_R8G8B8A8_UNORM;
+   // 発光強度を1.0で飽和させずBloomへ渡すため、シーン中間色はHDRで保持する。
+   DXGI_FORMAT format_ = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
    /// @brief レンダーターゲット情報を作成
    /// @param index 作成するレンダーターゲットのインデックス（0または1）
    /// @param srvIndex 再利用するSRVインデックス。未指定の場合は新規確保
    /// @return 作成されたレンダーターゲット情報
    RenderTargetInfo CreateRenderTargetInfo(int index, UINT srvIndex = static_cast<UINT>(-1));
+
+   /// @brief 描画先を持たないシーン参照用テクスチャを作成する
+   RenderTargetInfo CreateSnapshotInfo(DXGI_FORMAT resourceFormat, DXGI_FORMAT srvFormat, UINT srvIndex = static_cast<UINT>(-1));
+
+   /// @brief 現在の深度をソフトパーティクル用テクスチャへコピーする
+   void CaptureSceneDepth();
 };
 }

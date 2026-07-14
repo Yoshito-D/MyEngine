@@ -84,7 +84,7 @@
       "name": "Bloom",
       "className": "Bloom",
       "priority": 20,
-      "enabled": false,
+      "enabled": true,
       "pipelineName": "PostProcess_Bloom",
       "rootSignatureName": "PostProcess"
     },

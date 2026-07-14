@@ -1,6 +1,7 @@
 #pragma once
 #include "Utility/VectorMath.h"
 #include "Utility/MathUtils.h"
+#include <vector>
 
 namespace GameEngine {
 /// @brief 個別粒子データ
@@ -20,6 +21,13 @@ struct Particle {
    float noiseScrollSpeed;
    float noiseTime;
    Vector4 color;            // 色（RGBA）
+   Vector4 customData;       // シェーダー連携用（年齢、乱数、カメラフェード、速度）
+   std::vector<Vector3> ribbonPoints; // リボン生成用のワールド位置履歴
+   float ribbonWidth;
+   float subEmitterTimer;
+   float gravityModifier;
+   float drag;
+   float sizeOverLifetimeMultiplier;
    float lifeTime;           // 寿命
    float currentTime;        // 現在経過時間
    Vector3 initialSize;       // 初期サイズ
@@ -47,6 +55,12 @@ struct Particle {
 	  , noiseScrollSpeed(1.0f)
 	  , noiseTime(0.0f)
 	  , color(1.0f, 1.0f, 1.0f, 1.0f)
+	  , customData(0.0f, 0.0f, 1.0f, 0.0f)
+	  , ribbonWidth(0.5f)
+	  , subEmitterTimer(0.0f)
+	  , gravityModifier(0.0f)
+	  , drag(0.0f)
+	  , sizeOverLifetimeMultiplier(1.0f)
 	  , lifeTime(1.0f)
 	  , currentTime(0.0f)
 	  , initialSize(1.0f, 1.0f, 1.0f)

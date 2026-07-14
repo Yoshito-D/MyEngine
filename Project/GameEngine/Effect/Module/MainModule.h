@@ -3,6 +3,7 @@
 #include "Utility/MathUtils.h"
 #include <nlohmann/json.hpp>
 #include "ParticleModule.h"
+#include <algorithm>
 
 namespace GameEngine {
 // ============================================================
@@ -148,8 +149,21 @@ public:
    void SetStartColorRandomize(bool randomize) { startColor_.randomize = randomize; }
 
    // Gravity Modifier
-   void SetGravityModifier(float modifier) { gravityModifier_ = modifier; }
-   float GetGravityModifier() const { return gravityModifier_; }
+   void SetGravityModifier(float modifier) { gravityModifier_ = RandomFloat(modifier, modifier, false); }
+   float GetGravityModifier() const { return gravityModifier_.minValue; }
+
+   /// @brief 粒子ごとの重力倍率範囲を設定する
+   void SetGravityModifierRange(const RandomFloat& modifier) { gravityModifier_ = modifier; }
+
+   /// @brief 粒子ごとの重力倍率範囲を取得する
+   const RandomFloat& GetGravityModifierRange() const { return gravityModifier_; }
+
+   /// @brief このシステム固有の時間倍率を設定する
+   /// @param timeScale 0で停止、1で等速となる0以上の倍率
+   void SetTimeScale(float timeScale) { timeScale_ = (std::max)(timeScale, 0.0f); }
+
+   /// @brief このシステム固有の時間倍率を取得する
+   float GetTimeScale() const { return timeScale_; }
 
    // Simulation Space
    void SetSimulationSpace(SimulationSpace space) { simulationSpace_ = space; }
@@ -183,7 +197,8 @@ private:
    RandomVector3 startRotation_{ Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false };
    RandomColor startColor_{ 0xFFFFFFFF, 0xFFFFFFFF, false };
 
-   float gravityModifier_ = 0.0f;
+   RandomFloat gravityModifier_{ 0.0f, 0.0f, false };
+   float timeScale_ = 1.0f;
    SimulationSpace simulationSpace_ = SimulationSpace::World;
    bool playOnAwake_ = true;
    uint32_t maxParticles_ = 1000;

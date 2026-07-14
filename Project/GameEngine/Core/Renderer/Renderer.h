@@ -347,6 +347,9 @@ private:
    /// @param blendMode ブレンドモード
    void SetPipeline(const std::string& pipelineName, BlendMode blendMode);
 
+   /// CSなどによる外部PSO変更後に、次のグラフィックスPSO設定を強制する。
+   void InvalidatePipelineBinding();
+
    /// @brief ブレンドモードとポストプロセス指定から描画パスを決定
    RenderPass DetermineRenderPass(BlendMode blendMode, bool applyPostProcess) const;
 

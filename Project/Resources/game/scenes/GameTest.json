@@ -164,15 +164,15 @@
                      "accelToFovKick": 0.0024999999441206455,
                      "airborneBlendLerpSpeed": 4.0,
                      "airborneDistanceOffset": 4.0,
-                     "airborneForwardLerpSpeed": 4.0,
+                     "airborneForwardLerpSpeed": 5.0,
                      "airborneFovOffset": 0.10000000149011612,
                      "airborneGravityDirectionBoostBias": 1.0,
-                     "airborneGravityDirectionBoostFullThreshold": 0.6000000238418579,
+                     "airborneGravityDirectionBoostFullThreshold": 0.5,
                      "airborneGravityDirectionBoostThreshold": 0.0,
                      "airbornePlanetDirectionBlend": 0.6499999761581421,
-                     "airbornePlanetDirectionLerpSpeed": 2.0,
+                     "airbornePlanetDirectionLerpSpeed": 2.25,
                      "airborneResetLerpSpeed": 8.0,
-                     "distance": 13.0,
+                     "distance": 14.699999809265137,
                      "distanceBoostMax": 2.0,
                      "enableAirborneGravityDirectionBoost": true,
                      "enableAirbornePlanetDirectionGuide": true,
@@ -181,8 +181,9 @@
                      "fovLerpSpeed": 4.0,
                      "gravityUpLerpSpeed": 5.0,
                      "groundedTargetHeight": 3.0,
-                     "height": 6.0,
+                     "height": 7.900000095367432,
                      "jumpPlanetDirectionRampSeconds": 0.20000000298023224,
+                     "landingFramingBlendSeconds": 1.149999976158142,
                      "landingRearLerpRampSeconds": 5.0,
                      "positionLerpSpeed": 7.5,
                      "rearLerpSpeed": 7.5,
@@ -191,6 +192,7 @@
                      "speedBoostThreshold": 5.0,
                      "springDamping": 20.0,
                      "springStiffness": 30.0,
+                     "takeoffFramingBlendSeconds": 0.4000000059604645,
                      "turboDistanceKickMax": 2.0,
                      "turboFovKickMax": 0.05999999865889549
                   },
@@ -1377,7 +1379,7 @@
                {
                   "data": {
                      "autoSpeed": 35.0,
-                     "maxSpeed": 40.0,
+                     "maxSpeed": 35.0,
                      "speedRecovery": 0.20000000298023224,
                      "steerSpeed": 120.0
                   },
@@ -1406,7 +1408,7 @@
                      "boostAmount": 0.0,
                      "boostThreshold": 0.949999988079071,
                      "normalThreshold": 0.6499999761581421,
-                     "penaltySpeed": 15.0
+                     "penaltySpeed": 20.0
                   },
                   "enabled": true,
                   "typeName": "VehicleLandingBoost"
@@ -1442,7 +1444,7 @@
                      "idleInnerRadius": 0.9800000190734863,
                      "lineDensity": 140.0,
                      "maxIntensity": 0.800000011920929,
-                     "maximumEffectSpeed": 40.0,
+                     "maximumEffectSpeed": 35.0,
                      "minimumEffectSpeed": 15.0,
                      "outerRadius": 2.5,
                      "radialBlurMaxStrength": 0.029999999329447746,

@@ -59,11 +59,18 @@ public:
    /// @return 深度バッファSRVハンドル
    D3D12_GPU_DESCRIPTOR_HANDLE GetDepthSRVHandleGPU() const { return depthSrvHandleGPU_; }
 
+   /// @brief 深度バッファリソースを取得する
+   /// @return 深度バッファリソース。未初期化の場合はnullptr
+   ID3D12Resource* GetDepthBufferResource() const { return depthBuffer_.Get(); }
+
    /// @brief 深度バッファをシェーダーリソースとして読める状態に遷移
    void TransitionDepthStencilToShaderResource();
 
    /// @brief 深度バッファを書き込み可能なDSV状態に遷移
    void TransitionDepthStencilToWrite();
+
+   /// @brief 深度バッファをコピー元として読める状態に遷移する
+   void TransitionDepthStencilToCopySource();
 
    /// @brief コマンドリストを実行し、完了を待機
    /// @details コマンドリストを実行し、GPUが完了するまで待機

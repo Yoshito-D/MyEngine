@@ -36,10 +36,10 @@ public:
 	void SetSoftThreshold(float softThreshold) { softThreshold_ = softThreshold; UpdateConstantBuffer(); }
 
 private:
-	float threshold_ = 0.6f;        // 輝度閾値（この値以上の明るい部分がブルームする）
-	float softThreshold_ = 1.0f;    // ソフト閾値（0.0 = 急激、1.0 = 非常に滑らか）
-	float intensity_ = 2.0f;        // ブルーム強度
-	float blurRadius_ = 3.0f;       // ブラー半径
+	float threshold_ = 1.0f;        // 通常の白を超えるHDR発光を中心に抽出する
+	float softThreshold_ = 0.5f;    // 閾値境界だけを滑らかにし、通常色へのにじみを抑える
+	float intensity_ = 1.0f;        // HDR輝度差を保ちながら周辺光を加算する
+	float blurRadius_ = 4.0f;       // パーティクル輪郭の外側まで発光を広げる
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
 	BloomCB* constantBufferData_ = nullptr;

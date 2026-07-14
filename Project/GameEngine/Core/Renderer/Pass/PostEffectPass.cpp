@@ -29,6 +29,7 @@ void PostEffectPass::Execute(FrameContext& ctx) {
 
 	// --- 2. ポストプロセス後コマンド（UI など）を実行 ---
 	if (ctx.postProcessCommands && !ctx.postProcessCommands->empty()) {
+		offscreenRT_->CaptureSceneTextures();
 		offscreenRT_->PreDrawWithoutClear(true);
 
 		for (const auto& icmd : *ctx.postProcessCommands) {

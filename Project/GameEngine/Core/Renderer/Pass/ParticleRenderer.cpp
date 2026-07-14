@@ -15,23 +15,37 @@ void ParticleRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager
 }
 
 void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
-	std::function<void(const std::string&, BlendMode)> setPipelineFunc) {
+	std::function<void(const std::string&, BlendMode)> setPipelineFunc,
+	std::function<void()> invalidatePipelineBindingFunc,
+	D3D12_GPU_DESCRIPTOR_HANDLE sceneColorHandle,
+	D3D12_GPU_DESCRIPTOR_HANDLE sceneDepthHandle) {
 	ParticleSystem* particleSystem = particleData.particleSystem;
 	if (!particleSystem) {
 		Logger::Warning("[ParticleRenderer] ParticleSystem is null, skip draw");
 		return;
 	}
 
-	// アクティブなパーティクルがない場合は描画しない
-	uint32_t activeCount = particleSystem->GetActiveParticleCount();
+	// リボンも初回のGPUシミュレーション結果から履歴を作るため、描画数判定より先にComputeを実行する。
+	particleSystem->DispatchGpuSimulation(psoManager_);
+	// Compute PSOを設定するとRendererのグラフィックスPSOキャッシュと実コマンドリストが乖離する。
+	// 後続のSetPipelineが必ずグラフィックスPSOを再設定できるよう、外部変更を明示的に通知する。
+	if (invalidatePipelineBindingFunc) {
+		invalidatePipelineBindingFunc();
+	}
+
+	// Compute後も描画対象がない場合はグラフィックスパイプラインを変更しない。
+	uint32_t activeCount = particleSystem->GetDrawParticleCount();
 	if (activeCount == 0) return;
 
 	// Particleパイプラインを設定
 	// マテリアルに blendMode が設定されていればそれを優先、なければ加算ブレンド
 	auto* earlyMaterial = particleSystem->GetMaterial();
-	const BlendMode resolvedBlendMode = (earlyMaterial && earlyMaterial->GetBlendMode().has_value())
-		? earlyMaterial->GetBlendMode().value()
-		: BlendMode::kBlendModeAdd;
+	const bool usesSceneRefraction = earlyMaterial && std::fabs(earlyMaterial->GetDistortionStrength()) > 0.0001f;
+	const BlendMode resolvedBlendMode = usesSceneRefraction
+		? BlendMode::kBlendModeNormal
+		: (earlyMaterial && earlyMaterial->GetBlendMode().has_value())
+			? earlyMaterial->GetBlendMode().value()
+			: BlendMode::kBlendModeAdd;
 	setPipelineFunc("Particle", resolvedBlendMode);
 
 	auto* cmdList = device_->GetCommandList();
@@ -52,7 +66,9 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	const auto materialSlot = resolveSlot("material");
 	const auto instancingSlot = resolveSlot("instancing");
 	const auto textureSlot = resolveSlot("texture");
-	if (!materialSlot || !instancingSlot || !textureSlot) {
+	const auto sceneColorSlot = resolveSlot("scenecolor");
+	const auto sceneDepthSlot = resolveSlot("scenedepth");
+	if (!materialSlot || !instancingSlot || !textureSlot || !sceneColorSlot || !sceneDepthSlot) {
 		return;
 	}
 
@@ -62,14 +78,33 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
      cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), material->GetMaterialResource()->GetGPUVirtualAddress());
 	}
 
-	// インスタンシング用SRV（パーティクルデータ配列） 
-    cmdList->SetGraphicsRootDescriptorTable(instancingSlot.value(), particleSystem->GetInstancingSrvHandleGPU());
-
 	// テクスチャSRV
 	Texture* texture = particleSystem->GetTexture();
 	if (texture) {
       cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), texture->GetTextureSrvHandleGPU());
 	}
+	if (sceneColorHandle.ptr != 0) {
+		cmdList->SetGraphicsRootDescriptorTable(sceneColorSlot.value(), sceneColorHandle);
+	}
+	if (sceneDepthHandle.ptr != 0) {
+		cmdList->SetGraphicsRootDescriptorTable(sceneDepthSlot.value(), sceneDepthHandle);
+	}
+
+	// トレイルは本体を置き換えず、先に独立した履歴メッシュとして描画する。
+	if (particleSystem->GetRendererModule() && particleSystem->GetRendererModule()->IsRibbonEnabled() &&
+		particleSystem->GetRibbonIndexCount() > 0) {
+		cmdList->SetGraphicsRootDescriptorTable(
+			instancingSlot.value(), particleSystem->GetRibbonInstancingSrvHandleGPU());
+		const auto& vertexBufferView = particleSystem->GetRibbonVertexBufferView();
+		const auto& indexBufferView = particleSystem->GetRibbonIndexBufferView();
+		cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
+		cmdList->IASetIndexBuffer(&indexBufferView);
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->DrawIndexedInstanced(particleSystem->GetRibbonIndexCount(), 1, 0, 0, 0);
+	}
+
+	// 本体は常にGPUシミュレーション出力を使い、トレイルの有無とは独立して描画する。
+	cmdList->SetGraphicsRootDescriptorTable(instancingSlot.value(), particleSystem->GetInstancingSrvHandleGPU());
 
 	// メッシュ設定（Billboard用Quad または Model）
 	ModelAsset* modelAsset = particleSystem->GetModelAsset();

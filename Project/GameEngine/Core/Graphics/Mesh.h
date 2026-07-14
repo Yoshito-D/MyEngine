@@ -121,6 +121,16 @@ public:
    /// @param orientation 生成平面（デフォルトはXY）
    void CreateTriangle(const Vector3& v0 = {-0.5f, 0.0f, 0.0f}, const Vector3& v1 = {0.0f, 1.0f, 0.0f}, const Vector3& v2 = {0.5f, 0.0f, 0.0f}, PlaneOrientation orientation = PlaneOrientation::XY);
 
+   /// @brief 毎フレーム更新可能な動的メッシュ領域を確保する
+   /// @param maxVertexCount 最大頂点数
+   /// @param maxIndexCount 最大インデックス数
+   void CreateDynamic(uint32_t maxVertexCount, uint32_t maxIndexCount);
+
+   /// @brief 動的メッシュの頂点とインデックスを更新する
+   /// @param vertices 新しい頂点列
+   /// @param indices 新しいインデックス列
+   void UpdateDynamic(const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices);
+
    const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView() const { return vertexBufferView_; }
    const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView() const { return indexBufferView_; }
    UINT GetIndexCount() const { return indexCount_; }
@@ -132,6 +142,9 @@ private:
    D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
    D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
    VertexData* vertexData_ = nullptr;
+   uint32_t* dynamicIndexData_ = nullptr;
+   uint32_t dynamicVertexCapacity_ = 0;
+   uint32_t dynamicIndexCapacity_ = 0;
    UINT indexCount_ = 0;
 };
 }

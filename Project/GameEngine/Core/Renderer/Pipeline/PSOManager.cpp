@@ -99,6 +99,13 @@ DXGI_FORMAT StringToFormat(const std::string& str) {
    return DXGI_FORMAT_R32G32B32A32_FLOAT;
 }
 
+DXGI_FORMAT StringToRenderTargetFormat(const std::string& str) {
+   if (str == "R8G8B8A8_UNORM") return DXGI_FORMAT_R8G8B8A8_UNORM;
+   if (str == "R16G16B16A16_FLOAT") return DXGI_FORMAT_R16G16B16A16_FLOAT;
+   if (str == "R11G11B10_FLOAT") return DXGI_FORMAT_R11G11B10_FLOAT;
+   return DXGI_FORMAT_UNKNOWN;
+}
+
 D3D12_INPUT_CLASSIFICATION StringToInputClassification(const std::string& str) {
    if (str == "PerVertexData") return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
    if (str == "PerInstanceData") return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
@@ -346,6 +353,7 @@ bool PSOManager::LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT r
 	  definition.depthWriteMask = StringToDepthWriteMask(pipelineJson.value("depthWriteMask", "All"));
 	  definition.depthFunc = StringToComparisonFunc(pipelineJson.value("depthFunc", "LessEqual"));
 	  definition.topologyType = StringToTopologyType(pipelineJson.value("topologyType", "Triangle"));
+	  definition.rtvFormatOverride = StringToRenderTargetFormat(pipelineJson.value("rtvFormat", ""));
 
 	  if (pipelineJson.contains("inputLayout") && pipelineJson["inputLayout"].is_array()) {
 		 for (const auto& inputJson : pipelineJson["inputLayout"]) {
@@ -431,6 +439,11 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
       return false;
    }
 
+   // 通常は中間ターゲット形式を継承し、最終合成など明示指定されたPSOだけ形式を上書きする。
+   const DXGI_FORMAT resolvedRtvFormat = definition.rtvFormatOverride != DXGI_FORMAT_UNKNOWN
+	  ? definition.rtvFormatOverride
+	  : rtvFormat;
+
    if (definition.supportBlendModes) {
       // ブレンドモード別にパイプラインを作成
       for (int32_t i = 0; i < static_cast<int32_t>(BlendMode::kCount); ++i) {
@@ -446,7 +459,7 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
          config.depthEnable = definition.depthEnable;
          config.depthFunc = definition.depthFunc;
          config.topologyType = definition.topologyType;
-         config.rtvFormat = rtvFormat;
+         config.rtvFormat = resolvedRtvFormat;
          config.inputElements = definition.inputLayout.empty()
 			? BuildInputLayoutFromVertexShaderReflection(definition.vertexShader)
 			: definition.inputLayout;
@@ -482,7 +495,7 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
       config.depthWriteMask = definition.depthWriteMask;
       config.depthFunc = definition.depthFunc;
       config.topologyType = definition.topologyType;
-      config.rtvFormat = rtvFormat;
+      config.rtvFormat = resolvedRtvFormat;
       config.inputElements = definition.inputLayout.empty()
 		 ? BuildInputLayoutFromVertexShaderReflection(definition.vertexShader)
 		 : definition.inputLayout;

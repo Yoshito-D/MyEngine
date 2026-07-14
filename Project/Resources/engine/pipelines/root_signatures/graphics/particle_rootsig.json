@@ -7,7 +7,9 @@
   "parameters": [
     { "type": "CBV", "visibility": "Pixel", "semantic": "material" },
     { "type": "DescriptorTable", "visibility": "Vertex", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 0, "semantic": "instancing" },
-    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "semantic": "texture" }
+    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 0, "semantic": "texture" },
+    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 1, "semantic": "scenecolor" },
+    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 2, "semantic": "scenedepth" }
   ],
   "samplers": [
     {

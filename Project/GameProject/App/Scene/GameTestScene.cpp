@@ -307,9 +307,9 @@ void GameTestScene::OnInitialize() {
 		 slot->autoPlay = false;
 		 landingDustEmitter_->LoadSlot(*slot);
 	  }
-   }
+	}
 
-   // --- 仮想カメラのセットアップ ---
+	// --- 仮想カメラのセットアップ ---
    rearFollowVcam_ = std::make_unique<VirtualCamera>();
    rearFollowVcam_->Initialize();
    rearFollowVcam_->SetName("PlayerRearFollowCamera");

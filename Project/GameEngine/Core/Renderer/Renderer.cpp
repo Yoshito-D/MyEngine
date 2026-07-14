@@ -190,6 +190,7 @@ void Renderer::BuildDefaultPasses() {
    frameCtx_.psoManager      = psoManager_.get();
    frameCtx_.lightManager    = lightManager_;
    frameCtx_.postProcessMgr  = postProcessManager_.get();
+   frameCtx_.offscreenRenderTarget = offscreenRenderTarget_.get();
    frameCtx_.defaultMaterial = defaultMaterial_.get();
    frameCtx_.modelRenderer    = modelRenderer_.get();
    frameCtx_.spriteRenderer   = spriteRenderer_.get();
@@ -198,9 +199,12 @@ void Renderer::BuildDefaultPasses() {
    frameCtx_.opaqueCommands      = &opaqueCommands_;
    frameCtx_.transparentCommands = &transparentCommands_;
    frameCtx_.postProcessCommands = &postProcessCommands_;
-   frameCtx_.setPipelineFunc = [this](const std::string& name, BlendMode mode) {
-      SetPipeline(name, mode);
-   };
+	frameCtx_.setPipelineFunc = [this](const std::string& name, BlendMode mode) {
+	   SetPipeline(name, mode);
+	};
+	frameCtx_.invalidatePipelineBindingFunc = [this]() {
+	   InvalidatePipelineBinding();
+	};
 }
 
 void Renderer::SyncRenderTargetSizeToDevice() {
@@ -371,7 +375,12 @@ void Renderer::Draw(ParticleSystem* particleSystem) {
          blendMode = *matBlend;
       }
    }
-   RenderPass renderPass = particleSystem->GetUsePostProcess() ? RenderPass::Transparent : RenderPass::PostProcess;
+   const auto* particleMaterial = particleSystem->GetMaterial();
+   const bool requiresBloomPass = particleMaterial && particleMaterial->GetBrightness() > 1.0f;
+   // 発光値はBloom前のHDRシーンへ書く必要がある。明示設定がなくても輝度>1なら自動的に前段へ送る。
+   RenderPass renderPass = particleSystem->GetUsePostProcess() || requiresBloomPass
+	  ? RenderPass::Transparent
+	  : RenderPass::PostProcess;
 
    // パーティクルは常に遅延描画（透明度があるため）
    DrawCommand cmd = DrawCommand::CreateParticle(particleSystem, activeCamera, blendMode, renderPass);
@@ -830,7 +839,8 @@ void Renderer::ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawComman
 			break;
 		 case DrawCommandType::Particle:
 			particleRenderer_->DrawParticle(cmd.particleData,
-			   [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); });
+			   [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); },
+			   [this]() { InvalidatePipelineBinding(); });
 			break;
 		 case DrawCommandType::Line:
 			DrawLineInternal(cmd.lineData);
@@ -940,7 +950,12 @@ void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode)
    device_->GetCommandList()->SetPipelineState(pipelineState->GetPipelineState());
 
    currentPipelineName_ = pipelineName;
-   currentPipelineBlendMode_ = blendMode;
+	currentPipelineBlendMode_ = blendMode;
+}
+
+void Renderer::InvalidatePipelineBinding() {
+	currentPipelineName_.clear();
+	currentPipelineBlendMode_ = BlendMode::kBlendModeNone;
 }
 
 void Renderer::SetEnvironmentTexture(Texture* texture) {

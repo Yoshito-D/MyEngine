@@ -17,8 +17,12 @@ public:
 	/// @brief パーティクルを描画
 	/// @param particleData パーティクル描画データ
 	/// @param setPipelineFunc パイプライン設定関数（外部から渡される）
+	/// @param invalidatePipelineBindingFunc CSが変更したPSO状態をRendererへ通知する関数
 	void DrawParticle(const ParticleDrawData& particleData,
-		std::function<void(const std::string&, BlendMode)> setPipelineFunc);
+		std::function<void(const std::string&, BlendMode)> setPipelineFunc,
+		std::function<void()> invalidatePipelineBindingFunc,
+		D3D12_GPU_DESCRIPTOR_HANDLE sceneColorHandle = {},
+		D3D12_GPU_DESCRIPTOR_HANDLE sceneDepthHandle = {});
 
 private:
 	GraphicsDevice* device_ = nullptr;

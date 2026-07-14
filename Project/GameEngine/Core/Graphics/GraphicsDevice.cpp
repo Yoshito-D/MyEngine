@@ -115,9 +115,9 @@ void GraphicsDevice::PostDraw() {
 	  fence_->SetEventOnCompletion(fenceValue_, event);
 	  WaitForSingleObject(event, INFINITE);
 	  CloseHandle(event);
-   }
+	}
 
-   UpdateFixFPS();
+	UpdateFixFPS();
 
    // 次のフレーム用のコマンドリストを準備
    result = commandAllocator_->Reset();
@@ -225,8 +225,8 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
 	  infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
 	  // エラー時に止まる
 	  infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-	  // 警告時に止まる
-	  infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+	  // 警告はデバッグ出力へ残すが、対応可能な非致命メッセージで実行不能にしない。
+	  infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false);
 
 	  // 抑制するメッセージのID
 	  D3D12_MESSAGE_ID denyIds[] = {
@@ -430,6 +430,19 @@ void GraphicsDevice::TransitionDepthStencilToWrite() {
 	  D3D12_RESOURCE_STATE_DEPTH_WRITE);
    commandList_->ResourceBarrier(1, &barrier);
    depthBufferState_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+}
+
+void GraphicsDevice::TransitionDepthStencilToCopySource() {
+   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_COPY_SOURCE) {
+	  return;
+   }
+
+   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+	  depthBuffer_.Get(),
+	  depthBufferState_,
+	  D3D12_RESOURCE_STATE_COPY_SOURCE);
+   commandList_->ResourceBarrier(1, &barrier);
+   depthBufferState_ = D3D12_RESOURCE_STATE_COPY_SOURCE;
 }
 
 void GraphicsDevice::InitializeFixFPS() {

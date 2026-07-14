@@ -3,6 +3,11 @@
     { "name": "Object3D", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/object3d/Object3d.VS.hlsl", "entryPoint": "main" },
     { "name": "Object3D", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/object3d/Object3d.PS.hlsl", "entryPoint": "main" },
     { "name": "Skinning", "type": "Compute", "filePath": "Resources/engine/shaders/compute/skinning/Skinning.CS.hlsl", "entryPoint": "main" },
+    { "name": "ParticleInit", "type": "Compute", "filePath": "Resources/engine/shaders/compute/particle/ParticleInit.CS.hlsl", "entryPoint": "main" },
+    { "name": "ParticleEmitter", "type": "Compute", "filePath": "Resources/engine/shaders/compute/particle/ParticleEmitter.CS.hlsl", "entryPoint": "main" },
+    { "name": "ParticleUpdate", "type": "Compute", "filePath": "Resources/engine/shaders/compute/particle/ParticleUpdate.CS.hlsl", "entryPoint": "main" },
+    { "name": "ParticleRender", "type": "Compute", "filePath": "Resources/engine/shaders/compute/particle/ParticleRender.CS.hlsl", "entryPoint": "main" },
+    { "name": "ParticleRibbon", "type": "Compute", "filePath": "Resources/engine/shaders/compute/particle/ParticleRibbon.CS.hlsl", "entryPoint": "main" },
 
     { "name": "Line3D", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/line3d/Line3d.VS.hlsl", "entryPoint": "main" },
     { "name": "Line3D", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/line3d/Line3d.PS.hlsl", "entryPoint": "main" },

@@ -47,7 +47,7 @@ void EngineTestScene::OnInitialize() {
    particleSystem_->Create();
    particleSystem_->SetTexture(EngineContext::GetTexture("particle"));
    particleSystem_->SetName("bonfire");
-   particleSystem_->LoadFromJson("resources/game/particles/bonfire.json");
+	 particleSystem_->LoadFromJson("resources/game/particles/bonfire.json");
    particleSystem_->Play();
 }
 

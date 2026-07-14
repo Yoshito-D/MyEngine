@@ -10,5 +10,6 @@
   "depthEnable": true,
   "depthWriteMask": "All",
   "depthFunc": "LessEqual",
-  "topologyType": "Triangle"
+  "topologyType": "Triangle",
+  "rtvFormat": "R8G8B8A8_UNORM"
 }

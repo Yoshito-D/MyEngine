@@ -2,6 +2,11 @@
   "rootSignatures": [
     "resources/engine/pipelines/root_signatures/graphics/object3d_rootsig.json",
     "resources/engine/pipelines/root_signatures/compute/skinning_compute_rootsig.json",
+    "resources/engine/pipelines/root_signatures/compute/particle_init_compute_rootsig.json",
+    "resources/engine/pipelines/root_signatures/compute/particle_emitter_compute_rootsig.json",
+    "resources/engine/pipelines/root_signatures/compute/particle_update_compute_rootsig.json",
+    "resources/engine/pipelines/root_signatures/compute/particle_render_compute_rootsig.json",
+    "resources/engine/pipelines/root_signatures/compute/particle_ribbon_compute_rootsig.json",
     "resources/engine/pipelines/root_signatures/graphics/line3d_rootsig.json",
     "resources/engine/pipelines/root_signatures/graphics/particle_rootsig.json",
     "resources/engine/pipelines/root_signatures/postprocess/fullscreen_triangle_rootsig.json",
@@ -13,6 +18,11 @@
   "pipelines": [
     "resources/engine/pipelines/pso/graphics/object3d_pipeline.json",
     "resources/engine/pipelines/pso/compute/skinning_compute_pipeline.json",
+    "resources/engine/pipelines/pso/compute/particle_init_compute_pipeline.json",
+    "resources/engine/pipelines/pso/compute/particle_emitter_compute_pipeline.json",
+    "resources/engine/pipelines/pso/compute/particle_update_compute_pipeline.json",
+    "resources/engine/pipelines/pso/compute/particle_render_compute_pipeline.json",
+    "resources/engine/pipelines/pso/compute/particle_ribbon_compute_pipeline.json",
     "resources/engine/pipelines/pso/graphics/sprite_pipeline.json",
     "resources/engine/pipelines/pso/graphics/line3d_pipeline.json",
     "resources/engine/pipelines/pso/graphics/particle_pipeline.json",
