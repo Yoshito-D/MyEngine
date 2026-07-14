@@ -96,6 +96,14 @@ void ParticleEmitterComponent::Update(float) {
 	  if (!slot.particleSystem) continue;
 	  if (culled) continue;
 
+	  if (auto* shape = slot.particleSystem->GetShapeModule()) {
+		 if (auto* modelComponent = GetOwner().GetComponent<ModelAssetComponent>()) {
+			shape->SetSkinnedMeshSource(modelComponent->GetModelAsset(), modelComponent->GetSkinCluster());
+		 } else {
+			shape->SetSkinnedMeshSource(nullptr, nullptr);
+		 }
+	  }
+
 	  // ShapeModule Transform を毎フレーム更新
 	  ApplyEmitterToShapeModule(slot.particleSystem.get(), ComputeEmitterMatrix(slot.attachConfig));
 	  SyncSimulationSpace(slot.particleSystem.get(), slot.attachConfig.simulationSpace);

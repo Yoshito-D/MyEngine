@@ -55,6 +55,40 @@ float VerticalOriginOffset(float height, float originY) {
 }
 }
 
+void Mesh::CreateDynamic(uint32_t maxVertexCount, uint32_t maxIndexCount) {
+   maxVertexCount = (std::max)(maxVertexCount, 1u);
+   maxIndexCount = (std::max)(maxIndexCount, 1u);
+   AllocateMesh(
+	  maxVertexCount,
+	  maxIndexCount,
+	  vertexResource_,
+	  vertexBufferView_,
+	  vertexData_,
+	  indexResource_,
+	  indexBufferView_,
+	  dynamicIndexData_);
+   dynamicVertexCapacity_ = maxVertexCount;
+   dynamicIndexCapacity_ = maxIndexCount;
+   indexCount_ = 0;
+}
+
+void Mesh::UpdateDynamic(const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices) {
+   if (!vertexData_ || !dynamicIndexData_ || vertices.size() > dynamicVertexCapacity_ || indices.size() > dynamicIndexCapacity_) {
+	  const uint32_t vertexCapacity = (std::max)(static_cast<uint32_t>(vertices.size()), dynamicVertexCapacity_ * 2u);
+	  const uint32_t indexCapacity = (std::max)(static_cast<uint32_t>(indices.size()), dynamicIndexCapacity_ * 2u);
+	  CreateDynamic(vertexCapacity, indexCapacity);
+   }
+   if (!vertices.empty()) {
+	  std::memcpy(vertexData_, vertices.data(), sizeof(VertexData) * vertices.size());
+   }
+   if (!indices.empty()) {
+	  std::memcpy(dynamicIndexData_, indices.data(), sizeof(uint32_t) * indices.size());
+   }
+   vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * vertices.size());
+   indexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(uint32_t) * indices.size());
+   indexCount_ = static_cast<UINT>(indices.size());
+}
+
 void Mesh::Initialize(GraphicsDevice* device) {
    if (sIsInitialized_) return;
    sDevice_ = device;

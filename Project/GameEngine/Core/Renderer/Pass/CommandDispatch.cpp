@@ -7,6 +7,8 @@
 #include "UIRenderer.h"
 #include "Graphics/GraphicsDevice.h"
 #include "PSOManager.h"
+#include "Graphics/OffscreenRenderTarget.h"
+#include "Effect/ParticleSystem.h"
 
 namespace GameEngine {
 
@@ -43,9 +45,20 @@ void DispatchDrawCommand(const DrawCommand& cmd, FrameContext& ctx) {
 
 	  case DrawCommandType::Particle:
 		 if (ctx.particleRenderer) {
+			// 屈折はパス開始時の古いコピーではなく、描画直前までの最新シーン色を参照する。
+			// これによりポストプロセス除外オブジェクトの上でもクリアカラーへ抜けない。
+			if (ctx.offscreenRenderTarget && cmd.particleData.particleSystem) {
+			   const auto* material = cmd.particleData.particleSystem->GetMaterial();
+			   if (material && std::fabs(material->GetDistortionStrength()) > 0.0001f) {
+				  ctx.offscreenRenderTarget->CaptureSceneColor();
+			   }
+			}
 			ctx.particleRenderer->DrawParticle(
 			   cmd.particleData,
-			   ctx.setPipelineFunc);
+			   ctx.setPipelineFunc,
+			   ctx.invalidatePipelineBindingFunc,
+			   ctx.offscreenRenderTarget ? ctx.offscreenRenderTarget->GetSceneColorSRVHandleGPU() : D3D12_GPU_DESCRIPTOR_HANDLE{},
+			   ctx.offscreenRenderTarget ? ctx.offscreenRenderTarget->GetSceneDepthSRVHandleGPU() : D3D12_GPU_DESCRIPTOR_HANDLE{});
 		 }
 		 break;
 

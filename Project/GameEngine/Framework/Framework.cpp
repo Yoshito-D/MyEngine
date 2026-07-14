@@ -148,8 +148,8 @@ void Framework::Update() {
    for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
 	  if (!particleSystem) { continue; }
 	  particleSystem->Update(deltaTime);
-	  particleSystem->UpdateMatrix(cameraManager_->GetActiveCamera());
    }
+   ParticleSystem::ProcessPendingSubEmitters();
 }
 
 void Framework::Draw() {

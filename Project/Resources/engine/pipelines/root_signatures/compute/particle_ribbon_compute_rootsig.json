@@ -1,0 +1,12 @@
+{
+  "name": "ParticleRibbonCompute",
+  "reflectionSources": {
+    "computeShader": "ParticleRibbon"
+  },
+  "parameters": [
+    { "type": "CBV", "visibility": "All", "shaderRegister": 0, "semantic": "settings" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 0, "semantic": "segments" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "UAV", "shaderRegister": 0, "semantic": "vertices" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "UAV", "shaderRegister": 1, "semantic": "indices" }
+  ]
+}

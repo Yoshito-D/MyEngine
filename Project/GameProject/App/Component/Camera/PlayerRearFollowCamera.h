@@ -94,6 +94,12 @@ public:
 	/// @brief 地上時にプレイヤー中心から上へずらす注視点オフセット
 	float groundedTargetHeight = 1.5f;
 
+	/// @brief 離陸時にプレイヤーの画面位置を下側から中央へ切り替える秒数
+	float takeoffFramingBlendSeconds = 0.5f;
+
+	/// @brief 着地時にプレイヤーの画面位置を中央から下側へ切り替える秒数
+	float landingFramingBlendSeconds = 0.5f;
+
 	/// @brief 空中時に追加する後方距離
 	float airborneDistanceOffset = 3.0f;
 
@@ -220,6 +226,21 @@ private:
 	/// @brief 地上(0)から空中(1)へ補間した現在ブレンド値
 	float currentAirborneBlend_ = 0.0f;
 
+	/// @brief プレイヤーの画面位置を地上下側(0)から空中中央(1)へ補間した値
+	float currentPlayerFramingBlend_ = 0.0f;
+
+	/// @brief 画面位置補間を開始した時点の値
+	float playerFramingBlendStart_ = 0.0f;
+
+	/// @brief 現在の画面位置補間の目標値
+	float playerFramingBlendTarget_ = 0.0f;
+
+	/// @brief 現在の画面位置補間の経過秒数
+	float playerFramingBlendElapsed_ = 0.0f;
+
+	/// @brief 現在の画面位置補間に使う総秒数
+	float playerFramingBlendDuration_ = 0.0f;
+
 	/// @brief 空中リセット入力を押しているかどうか
 	bool isAirborneResetHeld_ = false;
 
@@ -323,6 +344,10 @@ private:
 	/// @brief 地上/空中ブレンド値を更新する
 	/// @param deltaTime フレーム時間
 	void UpdateAirborneBlend(float deltaTime);
+
+	/// @brief 離陸/着地に応じてプレイヤーの画面位置ブレンドを更新する
+	/// @param deltaTime フレーム時間
+	void UpdatePlayerFramingBlend(float deltaTime);
 
 	/// @brief 空中リセットの補間値を更新する
 	/// @param deltaTime フレーム時間

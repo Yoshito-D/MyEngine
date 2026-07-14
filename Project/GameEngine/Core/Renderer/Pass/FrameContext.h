@@ -16,6 +16,7 @@ class ModelRenderer;
 class SpriteRenderer;
 class ParticleRenderer;
 class UIRenderer;
+class OffscreenRenderTarget;
 
 /// @brief 1フレーム内でRenderPassが共有するデータ
 /// Renderer から各パスへ毎フレーム渡される。
@@ -26,6 +27,7 @@ struct FrameContext {
 	PSOManager*          psoManager      = nullptr;
 	LightManager*        lightManager    = nullptr;
 	PostProcessManager*  postProcessMgr  = nullptr;
+	OffscreenRenderTarget* offscreenRenderTarget = nullptr;
 	Material*            defaultMaterial = nullptr;
 
 	// ----- 専門レンダラー -----
@@ -41,6 +43,8 @@ struct FrameContext {
 
 	// ----- パイプライン設定関数（Renderer::SetPipeline を経由させる）-----
 	std::function<void(const std::string&, BlendMode)> setPipelineFunc;
+	// CSなどがコマンドリストのPSOを直接変更した際にRendererのキャッシュを無効化する。
+	std::function<void()> invalidatePipelineBindingFunc;
 };
 
 } // namespace GameEngine

@@ -1,0 +1,5 @@
+{
+  "name": "ParticleEmitterCompute",
+  "computeShader": "ParticleEmitter",
+  "rootSignature": "ParticleEmitterCompute"
+}

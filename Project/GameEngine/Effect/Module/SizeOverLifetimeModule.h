@@ -1,6 +1,7 @@
 #pragma once
 #include "ParticleModule.h"
 #include "Utility/VectorMath.h"
+#include "MainModule.h"
 #include <nlohmann/json.hpp>
 
 namespace GameEngine {
@@ -14,8 +15,13 @@ namespace GameEngine {
 		/// @brief パーティクルのサイズを更新
 		void UpdateSize(Particle& particle) const;
 
-		void SetSizeMultiplier(float multiplier) { sizeMultiplier_ = multiplier; }
-		float GetSizeMultiplier() const { return sizeMultiplier_; }
+		void SetSizeMultiplier(float multiplier) { sizeMultiplier_ = RandomFloat(multiplier); }
+		float GetSizeMultiplier() const { return sizeMultiplier_.minValue; }
+		void SetSizeMultiplierRange(const RandomFloat& multiplier) { sizeMultiplier_ = multiplier; }
+		const RandomFloat& GetSizeMultiplierRange() const { return sizeMultiplier_; }
+
+		/// @brief 粒子固有のサイズ倍率を初期化する
+		void InitializeParticle(Particle& particle) const;
 
 		void SetStartSize(const Vector3& size) { startSize_ = size; }
 		const Vector3& GetStartSize() const { return startSize_; }
@@ -31,7 +37,7 @@ namespace GameEngine {
 #endif
 
 	private:
-		float sizeMultiplier_ = 1.0f;
+		RandomFloat sizeMultiplier_{ 1.0f, 1.0f, false };
 		Vector3 startSize_{1.0f, 1.0f, 1.0f};
 		Vector3 endSize_{0.0f, 0.0f, 0.0f};
 	};

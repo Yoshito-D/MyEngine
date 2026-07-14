@@ -433,6 +433,41 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 		 if (rendererModule->IsEnabled()) {
 			ImGui::Separator();
 
+			ImGui::TextDisabled("%s", Tr("GPUシミュレーション（常時有効）", "GPU Simulation (Always On)"));
+			if (!particleSystem->CanUseGpuSimulation()) {
+			   ImGui::TextDisabled("%s", Tr("GPUリソースを作成できないため実行できません", "GPU resources are unavailable"));
+			}
+
+			auto& subEmitters = particleSystem->GetSubEmitterSettings();
+			ImGui::Checkbox(ScopedLabel(Tr("サブエミッター", "Sub Emitters"), "ParticleSubEmitters_" + particleSystemName).c_str(), &subEmitters.enabled);
+			if (subEmitters.enabled) {
+			   char deathPath[512]{};
+			   std::memcpy(deathPath, subEmitters.spawnOnDeathPath.c_str(), (std::min)(subEmitters.spawnOnDeathPath.size(), sizeof(deathPath) - 1));
+			   if (ImGui::InputText(ScopedLabel(Tr("死亡時エフェクト", "Spawn On Death"), "ParticleDeathEmitter_" + particleSystemName).c_str(), deathPath, sizeof(deathPath))) {
+				  subEmitters.spawnOnDeathPath = deathPath;
+			   }
+			   char updatePath[512]{};
+			   std::memcpy(updatePath, subEmitters.spawnOnUpdatePath.c_str(), (std::min)(subEmitters.spawnOnUpdatePath.size(), sizeof(updatePath) - 1));
+			   if (ImGui::InputText(ScopedLabel(Tr("更新時エフェクト", "Spawn On Update"), "ParticleUpdateEmitter_" + particleSystemName).c_str(), updatePath, sizeof(updatePath))) {
+				  subEmitters.spawnOnUpdatePath = updatePath;
+			   }
+			   char collisionPath[512]{};
+			   std::memcpy(collisionPath, subEmitters.spawnOnCollisionPath.c_str(), (std::min)(subEmitters.spawnOnCollisionPath.size(), sizeof(collisionPath) - 1));
+			   if (ImGui::InputText(ScopedLabel(Tr("衝突時エフェクト", "Spawn On Collision"), "ParticleCollisionEmitter_" + particleSystemName).c_str(), collisionPath, sizeof(collisionPath))) {
+				  subEmitters.spawnOnCollisionPath = collisionPath;
+			   }
+			   ImGui::DragFloat(ScopedLabel(Tr("更新発生間隔", "Update Spawn Interval"), "ParticleSubInterval_" + particleSystemName).c_str(), &subEmitters.updateInterval, 0.01f, 0.001f, 60.0f);
+			   int maxEvents = static_cast<int>(subEmitters.maxEventsPerFrame);
+			   if (ImGui::DragInt(ScopedLabel(Tr("毎フレーム上限", "Events Per Frame"), "ParticleSubLimit_" + particleSystemName).c_str(), &maxEvents, 1.0f, 1, 1024)) {
+				  subEmitters.maxEventsPerFrame = static_cast<uint32_t>((std::max)(maxEvents, 1));
+			   }
+			   if (!subEmitters.spawnOnCollisionPath.empty()) {
+				  ImGui::DragFloat3(ScopedLabel(Tr("衝突平面法線", "Collision Plane Normal"), "ParticleCollisionNormal_" + particleSystemName).c_str(), &subEmitters.collisionPlaneNormal.x, 0.01f, -1.0f, 1.0f);
+				  ImGui::DragFloat(ScopedLabel(Tr("衝突平面距離", "Collision Plane Distance"), "ParticleCollisionDistance_" + particleSystemName).c_str(), &subEmitters.collisionPlaneDistance, 0.05f, -10000.0f, 10000.0f);
+				  ImGui::SliderFloat(ScopedLabel(Tr("反発係数", "Restitution"), "ParticleCollisionRestitution_" + particleSystemName).c_str(), &subEmitters.collisionRestitution, 0.0f, 1.0f);
+			   }
+			}
+
 			// Blend Mode
 			ImGui::Text("%s:", Tr("ブレンドモード", "Blend Mode"));
 			{
@@ -454,6 +489,49 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 					 particleSystem->SetBlendMode(std::nullopt);
 				  } else {
 					 particleSystem->SetBlendMode(static_cast<BlendMode>(blendIndex - 1));
+				  }
+			   }
+			}
+
+			if (auto* particleMaterial = particleSystem->GetMaterial()) {
+			   float brightness = particleMaterial->GetBrightness();
+			   if (ImGui::DragFloat(ScopedLabel(Tr("輝度", "Brightness"), "ParticleBrightness_" + particleSystemName).c_str(), &brightness, 0.05f, 0.0f, 100.0f)) {
+				  particleMaterial->SetBrightness(brightness);
+			   }
+
+			   float alphaCutoff = particleMaterial->GetAlphaCutoff();
+			   if (ImGui::SliderFloat(ScopedLabel(Tr("マスク閾値", "Alpha Cutoff"), "ParticleAlphaCutoff_" + particleSystemName).c_str(), &alphaCutoff, 0.0f, 1.0f)) {
+				  particleMaterial->SetAlphaCutoff(alphaCutoff);
+			   }
+
+			   int toonSteps = static_cast<int>(particleMaterial->GetToonSteps());
+			   if (ImGui::DragInt(ScopedLabel(Tr("トゥーン階調 (0=無効)", "Toon Steps (0=Off)"), "ParticleToonSteps_" + particleSystemName).c_str(), &toonSteps, 1.0f, 0, 16)) {
+				  particleMaterial->SetToonSteps(static_cast<uint32_t>((std::max)(toonSteps, 0)));
+			   }
+
+			   bool softParticles = particleMaterial->IsSoftParticlesEnabled();
+			   if (ImGui::Checkbox(ScopedLabel(Tr("ソフトパーティクル", "Soft Particles"), "ParticleSoft_" + particleSystemName).c_str(), &softParticles)) {
+				  particleMaterial->SetSoftParticlesEnabled(softParticles);
+			   }
+			   if (softParticles) {
+				  float softDistance = particleMaterial->GetSoftParticleDistance();
+				  if (ImGui::DragFloat(ScopedLabel(Tr("交差フェード距離", "Intersection Fade Distance"), "ParticleSoftDistance_" + particleSystemName).c_str(), &softDistance, 0.01f, 0.001f, 100.0f)) {
+					 particleMaterial->SetSoftParticleDistance(softDistance);
+				  }
+			   }
+
+			   float distortionStrength = particleMaterial->GetDistortionStrength();
+			   if (ImGui::DragFloat(ScopedLabel(Tr("屈折・歪み (px)", "Refraction / Distortion (px)"), "ParticleDistortion_" + particleSystemName).c_str(), &distortionStrength, 0.1f, -100.0f, 100.0f)) {
+				  particleMaterial->SetDistortionStrength(distortionStrength);
+			   }
+			   if (std::fabs(distortionStrength) > 0.0001f) {
+				  float distortionBlend = particleMaterial->GetDistortionBlend();
+				  if (ImGui::SliderFloat(ScopedLabel(Tr("歪み混合率", "Distortion Blend"), "ParticleDistortionBlend_" + particleSystemName).c_str(), &distortionBlend, 0.0f, 1.0f)) {
+					 particleMaterial->SetDistortionBlend(distortionBlend);
+				  }
+				  bool useTextureFlow = particleMaterial->IsDistortionUsingTextureFlow();
+				  if (ImGui::Checkbox(ScopedLabel(Tr("RGフローマップを使用", "Use RG Flow Map"), "ParticleDistortionFlow_" + particleSystemName).c_str(), &useTextureFlow)) {
+					 particleMaterial->SetDistortionUseTextureFlow(useTextureFlow);
 				  }
 			   }
 			}

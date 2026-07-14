@@ -7,4 +7,5 @@ struct VertexShaderOutput
     float4 uvTransform1 : TEXCOORD2;
     float4 uvTransform2 : TEXCOORD3;
     float4 uvTransform3 : TEXCOORD4;
+    float4 customData : TEXCOORD5;
 };

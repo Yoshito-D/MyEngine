@@ -29,6 +29,20 @@
         "rateOverTime": 500.0
     },
     "forceOverLifetimeModule": {
+        "attractorEnabled": false,
+        "attractorFalloff": 1.0,
+        "attractorPosition": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "attractorRadius": 0.0,
+        "attractorStrength": 0.0,
+        "drag": {
+            "max": 0.0,
+            "min": 0.0,
+            "randomize": false
+        },
         "enabled": false,
         "force": {
             "max": [
@@ -59,7 +73,11 @@
     },
     "mainModule": {
         "duration": 0.5,
-        "gravityModifier": 0.0,
+        "gravityModifier": {
+            "max": 0.0,
+            "min": 0.0,
+            "randomize": false
+        },
         "looping": false,
         "maxParticles": 1000,
         "playOnAwake": false,
@@ -118,7 +136,18 @@
                 0.0
             ],
             "randomize": false
-        }
+        },
+        "timeScale": 1.0
+    },
+    "materialSettings": {
+        "alphaCutoff": 0.0010000000474974513,
+        "brightness": 2.25,
+        "distortionBlend": 1.0,
+        "distortionStrength": 0.0,
+        "distortionUseTextureFlow": false,
+        "softParticleDistance": 0.5,
+        "softParticles": false,
+        "toonSteps": 0
     },
     "noiseModule": {
         "enabled": false,
@@ -145,6 +174,9 @@
             1.0,
             1.0
         ],
+        "cameraFadeEnabled": false,
+        "cameraFadeFar": 1.0,
+        "cameraFadeNear": 0.25,
         "circleRadius": 0.5,
         "circleSegments": 32,
         "coneHeight": 1.0,
@@ -161,10 +193,19 @@
         "particleMeshType": 0,
         "planeDepth": 1.0,
         "planeWidth": 1.0,
+        "ribbonEnabled": false,
+        "ribbonMaxPoints": 16,
+        "ribbonMinDistance": 0.10000000149011612,
+        "ribbonWidth": {
+            "max": 0.5,
+            "min": 0.5,
+            "randomize": false
+        },
         "ringInnerRadius": 0.14000000059604645,
         "ringOuterRadius": 0.5,
         "ringSegments": 32,
         "rotationSpace": 1,
+        "sortMode": 0,
         "speedScale": 1.0,
         "sphereRadius": 0.5,
         "sphereSlices": 32,
@@ -216,7 +257,8 @@
             0.10000000149011612,
             5.0
         ],
-        "shapeType": 0
+        "shapeType": 0,
+        "torusMajorRadius": 1.0
     },
     "sizeOverLifetimeModule": {
         "enabled": true,
@@ -225,12 +267,31 @@
             6.0,
             1.5
         ],
-        "sizeMultiplier": 0.4000000059604645,
+        "sizeMultiplier": {
+            "max": 0.4000000059604645,
+            "min": 0.4000000059604645,
+            "randomize": false
+        },
         "startSize": [
             0.4000000059604645,
             0.0,
             0.4000000059604645
         ]
+    },
+    "subEmitters": {
+        "collisionPlaneDistance": 0.0,
+        "collisionPlaneNormal": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "collisionRestitution": 0.0,
+        "enabled": false,
+        "maxEventsPerFrame": 32,
+        "spawnOnCollisionPath": "",
+        "spawnOnDeathPath": "",
+        "spawnOnUpdatePath": "",
+        "updateInterval": 0.10000000149011612
     },
     "textureName": "bonfire",
     "textureSheetAnimationModule": {

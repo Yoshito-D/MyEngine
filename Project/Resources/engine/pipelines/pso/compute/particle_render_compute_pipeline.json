@@ -1,0 +1,5 @@
+{
+  "name": "ParticleRenderCompute",
+  "computeShader": "ParticleRender",
+  "rootSignature": "ParticleRenderCompute"
+}

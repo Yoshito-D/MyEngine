@@ -16,9 +16,9 @@ void Game::Initialize() {
 
    // 最初のシーンを設定
 #ifdef NDEBUG
-   sceneManager_->ChangeScene("GameTest");
+	 sceneManager_->ChangeScene("GameTest");
 #else
-   sceneManager_->ChangeScene("GameTest");
+	 sceneManager_->ChangeScene("GameTest");
 #endif
 
 #ifdef USE_IMGUI

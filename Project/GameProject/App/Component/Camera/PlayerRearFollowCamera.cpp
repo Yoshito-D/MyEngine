@@ -425,9 +425,49 @@ void PlayerRearFollowCamera::UpdateAirborneBlend(float deltaTime) {
    float targetBlend = isAirborne_ ? 1.0f : 0.0f;
    float t = ExpSmoothingFactor(airborneBlendLerpSpeed, deltaTime);
    currentAirborneBlend_ = std::clamp(
-	  currentAirborneBlend_ + (targetBlend - currentAirborneBlend_) * t,
-	  0.0f,
-	  1.0f);
+      currentAirborneBlend_ + (targetBlend - currentAirborneBlend_) * t,
+      0.0f,
+      1.0f);
+}
+
+/// @brief 離陸/着地に応じてプレイヤーの画面位置ブレンドを更新する
+/// @details 地上下側(0)と空中中央(1)の構図だけを独立して補間し、
+///          距離・FOV・惑星ガイドに使う currentAirborneBlend_ へは影響させない。
+void PlayerRearFollowCamera::UpdatePlayerFramingBlend(float deltaTime) {
+   float targetBlend = isAirborne_ ? 1.0f : 0.0f;
+   if (std::abs(targetBlend - playerFramingBlendTarget_) > 1e-4f) {
+      playerFramingBlendStart_ = currentPlayerFramingBlend_;
+      playerFramingBlendTarget_ = targetBlend;
+      playerFramingBlendElapsed_ = 0.0f;
+
+      float configuredSeconds = isAirborne_
+         ? (std::max)(0.0f, takeoffFramingBlendSeconds)
+         : (std::max)(0.0f, landingFramingBlendSeconds);
+      // 途中で状態が反転した場合は残り距離に比例して時間を短縮し、
+      // 0→1 / 1→0 の全区間が設定秒数になる速度感を維持する。
+      playerFramingBlendDuration_ = configuredSeconds
+         * std::abs(playerFramingBlendTarget_ - playerFramingBlendStart_);
+   }
+
+   if (playerFramingBlendDuration_ <= 1e-4f) {
+      currentPlayerFramingBlend_ = playerFramingBlendTarget_;
+      playerFramingBlendElapsed_ = playerFramingBlendDuration_;
+      return;
+   }
+
+   playerFramingBlendElapsed_ = (std::min)(
+      playerFramingBlendElapsed_ + (std::max)(0.0f, deltaTime),
+      playerFramingBlendDuration_);
+   float progress = std::clamp(
+      playerFramingBlendElapsed_ / playerFramingBlendDuration_,
+      0.0f,
+      1.0f);
+   float easedProgress = SmoothStep01(progress);
+   currentPlayerFramingBlend_ = std::clamp(
+      playerFramingBlendStart_
+         + (playerFramingBlendTarget_ - playerFramingBlendStart_) * easedProgress,
+      0.0f,
+      1.0f);
 }
 
 /// @brief 空中リセットの補間値を更新する
@@ -607,8 +647,9 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3
 ///          空中では車体姿勢や着地先を読みやすくするため、補間しながら中心へ戻す。
 ///          リセット中も空中扱いとして、プレイヤー中心を保つ。
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeLookTarget(const GameEngine::Vector3& up) const {
-   float effectiveAirborneBlend = (std::max)(currentAirborneBlend_, airborneResetBlend_);
-   float targetHeight = groundedTargetHeight * (1.0f - effectiveAirborneBlend);
+   // 構図専用ブレンドを使い、距離やFOVの空中補間速度から独立して
+   // 地上下側と空中中央の切り替え時間を調整できるようにする。
+   float targetHeight = groundedTargetHeight * (1.0f - currentPlayerFramingBlend_);
    return pivotTarget_ + up * targetHeight;
 }
 
@@ -789,8 +830,8 @@ float PlayerRearFollowCamera::UpdateAccelerationEffect(GameEngine::CameraState& 
    float baseFov = ClampCameraFov(fovDefault);
    float targetFov =
 	  baseFov
-	  + (std::max)(0.0f, fovBoostMax) * boostAlpha
-	  + (std::max)(0.0f, airborneFovOffset) * effectiveAirborneBlend
+	  + std::max(0.0f, fovBoostMax) * boostAlpha
+	  + std::max(0.0f, airborneFovOffset) * effectiveAirborneBlend
 	  + springFovOffset_;
    targetFov = ClampCameraFov(targetFov);
 
@@ -882,6 +923,11 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    isAirborne_ = false;
    wasAirborneLastFrame_ = false;
    currentAirborneBlend_ = 0.0f;
+   currentPlayerFramingBlend_ = 0.0f;
+   playerFramingBlendStart_ = 0.0f;
+   playerFramingBlendTarget_ = 0.0f;
+   playerFramingBlendElapsed_ = 0.0f;
+   playerFramingBlendDuration_ = 0.0f;
    isAirborneResetHeld_ = false;
    airborneResetBlend_ = 0.0f;
    currentPlanetDirectionGravityFactor_ = 0.0f;
@@ -954,6 +1000,9 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    // ② 地上/空中の見え方を滑らかに切り替えるブレンド値を更新する
    UpdateAirborneBlend(deltaTime);
 
+   // プレイヤーの画面位置は離陸/着地それぞれの設定秒数で独立して切り替える
+   UpdatePlayerFramingBlend(deltaTime);
+
    // ③ 空中リセットの補間値を更新する
    UpdateAirborneResetBlend(deltaTime);
 
@@ -991,6 +1040,8 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "distance", distance },
 	   { "height", height },
 	   { "groundedTargetHeight", groundedTargetHeight },
+	   { "takeoffFramingBlendSeconds", takeoffFramingBlendSeconds },
+	   { "landingFramingBlendSeconds", landingFramingBlendSeconds },
 	   { "airborneDistanceOffset", airborneDistanceOffset },
 	   { "airborneFovOffset", airborneFovOffset },
 	   { "airbornePlanetDirectionBlend", airbornePlanetDirectionBlend },
@@ -1032,6 +1083,12 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    distance = ReadFloat(data, "distance", distance);
    height = ReadFloat(data, "height", height);
    groundedTargetHeight = ReadFloat(data, "groundedTargetHeight", groundedTargetHeight);
+   takeoffFramingBlendSeconds = (std::max)(
+      0.0f,
+      ReadFloat(data, "takeoffFramingBlendSeconds", takeoffFramingBlendSeconds));
+   landingFramingBlendSeconds = (std::max)(
+      0.0f,
+      ReadFloat(data, "landingFramingBlendSeconds", landingFramingBlendSeconds));
    airborneDistanceOffset = ReadFloat(data, "airborneDistanceOffset", airborneDistanceOffset);
    airborneFovOffset = ReadFloat(data, "airborneFovOffset", airborneFovOffset);
    airbornePlanetDirectionBlend = ReadFloat(data, "airbornePlanetDirectionBlend", airbornePlanetDirectionBlend);
@@ -1075,6 +1132,8 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::DragFloat(Tr("距離", "Distance"), &distance, 0.1f, 1.0f, 100.0f);
    ImGui::DragFloat(Tr("高さ", "Height"), &height, 0.1f, -20.0f, 50.0f);
    ImGui::DragFloat(Tr("地上注視高さ", "Grounded Target Height"), &groundedTargetHeight, 0.05f, -5.0f, 10.0f);
+   ImGui::DragFloat(Tr("離陸構図補間秒", "Takeoff Framing Seconds"), &takeoffFramingBlendSeconds, 0.01f, 0.0f, 5.0f, "%.2f");
+   ImGui::DragFloat(Tr("着地構図補間秒", "Landing Framing Seconds"), &landingFramingBlendSeconds, 0.01f, 0.0f, 5.0f, "%.2f");
    ImGui::DragFloat(Tr("空中距離加算", "Airborne Distance Offset"), &airborneDistanceOffset, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("空中FOV加算", "Airborne FOV Offset"), &airborneFovOffset, 0.001f, 0.0f, 0.5f, "%.3f");
    ImGui::Checkbox(Tr("空中惑星方向ガイド", "Airborne Planet Direction Guide"), &enableAirbornePlanetDirectionGuide);
@@ -1109,6 +1168,7 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::Separator();
    ImGui::Text("%s: %s", Tr("空中", "Airborne"), isAirborne_ ? Tr("はい", "true") : Tr("いいえ", "false"));
    ImGui::Text("%s: %.2f", Tr("空中ブレンド", "Airborne Blend"), currentAirborneBlend_);
+   ImGui::Text("%s: %.2f", Tr("画面位置ブレンド", "Player Framing Blend"), currentPlayerFramingBlend_);
    ImGui::Text("%s: %s / %.2f", Tr("空中リセット", "Airborne Reset"), isAirborneResetHeld_ ? Tr("押下中", "held") : Tr("なし", "none"), airborneResetBlend_);
    ImGui::Text("%s: %.2f", Tr("惑星補間重力係数", "Planet Blend Gravity Factor"), currentPlanetDirectionGravityFactor_);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("目標GravityUp", "Target GravityUp"), gravityUp_.x, gravityUp_.y, gravityUp_.z);

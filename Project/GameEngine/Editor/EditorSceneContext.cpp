@@ -406,7 +406,7 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
 }
 
 std::filesystem::path EditorSceneContext::GetSceneFilePath() const {
-   return std::filesystem::path("resources") / "scenes" / (sceneName_ + ".json");
+   return std::filesystem::path("resources") / "game" / "scenes" / (sceneName_ + ".json");
 }
 
 void EditorSceneContext::MarkDirty() {

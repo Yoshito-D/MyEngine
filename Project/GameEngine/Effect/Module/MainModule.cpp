@@ -101,7 +101,8 @@ nlohmann::json MainModule::ToJson() const {
    j["startRotation"] = startRotation_.ToJson();
    j["startColor"] = startColor_.ToJson();
 
-   j["gravityModifier"] = gravityModifier_;
+   j["gravityModifier"] = gravityModifier_.ToJson();
+   j["timeScale"] = timeScale_;
    j["simulationSpace"] = static_cast<int>(simulationSpace_);
    j["playOnAwake"] = playOnAwake_;
    j["maxParticles"] = maxParticles_;
@@ -194,7 +195,11 @@ void MainModule::FromJson(const nlohmann::json& j) {
 	  }
    }
 
-   if (j.contains("gravityModifier")) gravityModifier_ = j["gravityModifier"];
+   if (j.contains("gravityModifier")) {
+	  if (j["gravityModifier"].is_object()) gravityModifier_.FromJson(j["gravityModifier"]);
+	  else SetGravityModifier(j["gravityModifier"]);
+   }
+   if (j.contains("timeScale")) SetTimeScale(j["timeScale"]);
    if (j.contains("simulationSpace")) simulationSpace_ = static_cast<SimulationSpace>(j["simulationSpace"].get<int>());
    if (j.contains("playOnAwake")) playOnAwake_ = j["playOnAwake"];
    if (j.contains("maxParticles")) maxParticles_ = j["maxParticles"];

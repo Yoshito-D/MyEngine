@@ -1,6 +1,7 @@
 #pragma once
 #include "ParticleModule.h"
 #include "Utility/VectorMath.h"
+#include "MainModule.h"
 #include <algorithm>
 #include <nlohmann/json.hpp>
 
@@ -33,6 +34,14 @@ public:
 	  Triangle
    };
 
+   /// @brief 透明パーティクルの描画順序
+   enum class SortMode {
+	  Auto = 0,
+	  None,
+	  BackToFront,
+	  FrontToBack
+   };
+
    RendererModule();
 
    void SetRotationSpace(RotationSpace space) { rotationSpace_ = space; }
@@ -46,6 +55,62 @@ public:
 
    void SetLengthScale(float scale) { lengthScale_ = scale; }
    float GetLengthScale() const { return lengthScale_; }
+
+   /// @brief 速度に応じて粒子本体を長軸方向へ引き延ばすか設定する
+   /// @param enabled trueの場合、トレイルとは独立して速度ストレッチを適用する
+   void SetVelocityStretchEnabled(bool enabled) { velocityStretchEnabled_ = enabled; }
+
+   /// @brief 速度ストレッチが有効か取得する
+   /// @return 有効な場合true
+   bool IsVelocityStretchEnabled() const { return velocityStretchEnabled_; }
+
+   /// @brief 描画順序を設定する
+   void SetSortMode(SortMode mode) { sortMode_ = mode; }
+
+   /// @brief 描画順序を取得する
+   SortMode GetSortMode() const { return sortMode_; }
+
+   /// @brief カメラ近接フェードを有効化する
+   void SetCameraFadeEnabled(bool enabled) { cameraFadeEnabled_ = enabled; }
+
+   /// @brief カメラ近接フェードが有効か取得する
+   bool IsCameraFadeEnabled() const { return cameraFadeEnabled_; }
+
+   /// @brief 完全に透明になるカメラ距離を設定する
+   void SetCameraFadeNear(float distance) { cameraFadeNear_ = (std::max)(distance, 0.0f); }
+
+   /// @brief 完全に透明になるカメラ距離を取得する
+   float GetCameraFadeNear() const { return cameraFadeNear_; }
+
+   /// @brief 完全に表示されるカメラ距離を設定する
+   void SetCameraFadeFar(float distance) { cameraFadeFar_ = (std::max)(distance, 0.0f); }
+
+   /// @brief 完全に表示されるカメラ距離を取得する
+   float GetCameraFadeFar() const { return cameraFadeFar_; }
+
+   /// @brief 粒子の位置履歴を帯として描画するリボンを有効化する
+   void SetRibbonEnabled(bool enabled) { ribbonEnabled_ = enabled; }
+
+   /// @brief リボン描画が有効か取得する
+   bool IsRibbonEnabled() const { return ribbonEnabled_; }
+
+   /// @brief 粒子ごとのリボン幅範囲を設定する
+   void SetRibbonWidthRange(const RandomFloat& width) { ribbonWidth_ = width; }
+
+   /// @brief 粒子ごとのリボン幅範囲を取得する
+   const RandomFloat& GetRibbonWidthRange() const { return ribbonWidth_; }
+
+   /// @brief 1粒子が保持する履歴点数を設定する
+   void SetRibbonMaxPoints(uint32_t count) { ribbonMaxPoints_ = std::clamp(count, 2u, 128u); }
+
+   /// @brief 1粒子が保持する履歴点数を取得する
+   uint32_t GetRibbonMaxPoints() const { return ribbonMaxPoints_; }
+
+   /// @brief 履歴点を追加する最小移動距離を設定する
+   void SetRibbonMinDistance(float distance) { ribbonMinDistance_ = (std::max)(distance, 0.0001f); }
+
+   /// @brief 履歴点を追加する最小移動距離を取得する
+   float GetRibbonMinDistance() const { return ribbonMinDistance_; }
 
    void SetParticleMeshType(ParticleMeshType type) { particleMeshType_ = type; meshDirty_ = true; }
    ParticleMeshType GetParticleMeshType() const { return particleMeshType_; }
@@ -122,6 +187,15 @@ private:
    BillboardType billboardType_ = BillboardType::View;
    float speedScale_ = 1.0f;
    float lengthScale_ = 2.0f;
+   bool velocityStretchEnabled_ = false;
+   SortMode sortMode_ = SortMode::Auto;
+   bool cameraFadeEnabled_ = false;
+   float cameraFadeNear_ = 0.25f;
+   float cameraFadeFar_ = 1.0f;
+   bool ribbonEnabled_ = false;
+   RandomFloat ribbonWidth_{ 0.5f, 0.5f, false };
+   uint32_t ribbonMaxPoints_ = 16;
+   float ribbonMinDistance_ = 0.1f;
    ParticleMeshType particleMeshType_ = ParticleMeshType::Quad;
    float meshOriginY_ = 0.5f;
    bool meshDirty_ = false;

@@ -11,6 +11,8 @@ void OffscreenRenderTarget::Initialize(GraphicsDevice* device, uint32_t width, u
    // 2つのレンダーターゲットを作成
    currentRenderTarget_ = CreateRenderTargetInfo(0);
    previousRenderTarget_ = CreateRenderTargetInfo(1);
+   sceneColorSnapshot_ = CreateSnapshotInfo(format_, format_);
+   sceneDepthSnapshot_ = CreateSnapshotInfo(DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
 }
 
 void OffscreenRenderTarget::Resize(uint32_t width, uint32_t height) {
@@ -24,15 +26,21 @@ void OffscreenRenderTarget::Resize(uint32_t width, uint32_t height) {
 
    const UINT currentSrvIndex = currentRenderTarget_.srvIndex;
    const UINT previousSrvIndex = previousRenderTarget_.srvIndex;
+   const UINT sceneColorSrvIndex = sceneColorSnapshot_.srvIndex;
+   const UINT sceneDepthSrvIndex = sceneDepthSnapshot_.srvIndex;
 
    currentRenderTarget_.renderTarget.Reset();
    previousRenderTarget_.renderTarget.Reset();
+   sceneColorSnapshot_.renderTarget.Reset();
+   sceneDepthSnapshot_.renderTarget.Reset();
 
    width_ = width;
    height_ = height;
 
    currentRenderTarget_ = CreateRenderTargetInfo(0, currentSrvIndex);
    previousRenderTarget_ = CreateRenderTargetInfo(1, previousSrvIndex);
+   sceneColorSnapshot_ = CreateSnapshotInfo(format_, format_, sceneColorSrvIndex);
+   sceneDepthSnapshot_ = CreateSnapshotInfo(DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, sceneDepthSrvIndex);
 }
 
 OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTargetInfo(int index, UINT srvIndex) {
@@ -99,15 +107,131 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
    return info;
 }
 
+OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateSnapshotInfo(
+   DXGI_FORMAT resourceFormat, DXGI_FORMAT srvFormat, UINT srvIndex) {
+   RenderTargetInfo info;
+
+   D3D12_RESOURCE_DESC textureDesc{};
+   textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   textureDesc.Width = width_;
+   textureDesc.Height = height_;
+   textureDesc.DepthOrArraySize = 1;
+   textureDesc.MipLevels = 1;
+   textureDesc.Format = resourceFormat;
+   textureDesc.SampleDesc.Count = 1;
+   textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+   textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+   D3D12_HEAP_PROPERTIES heapProperties{};
+   heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+   const HRESULT result = device_->GetDevice()->CreateCommittedResource(
+	  &heapProperties,
+	  D3D12_HEAP_FLAG_NONE,
+	  &textureDesc,
+	  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+	  nullptr,
+	  IID_PPV_ARGS(&info.renderTarget));
+   assert(SUCCEEDED(result));
+
+   const bool allocateSrvIndex = srvIndex == static_cast<UINT>(-1);
+   if (allocateSrvIndex) {
+	  srvIndex = device_->GetNextSrvIndex();
+   }
+   info.srvIndex = srvIndex;
+   info.srvHandleCPU = CD3DX12_CPU_DESCRIPTOR_HANDLE(
+	  device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
+	  srvIndex,
+	  device_->GetDescriptorSizeCBVSRVUAV());
+   info.srvHandleGPU = CD3DX12_GPU_DESCRIPTOR_HANDLE(
+	  device_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
+	  srvIndex,
+	  device_->GetDescriptorSizeCBVSRVUAV());
+
+   D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+   srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   srvDesc.Format = srvFormat;
+   srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+   srvDesc.Texture2D.MipLevels = 1;
+   device_->GetDevice()->CreateShaderResourceView(info.renderTarget.Get(), &srvDesc, info.srvHandleCPU);
+   if (allocateSrvIndex) {
+	  device_->IncrementSrvIndex();
+   }
+   info.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+   return info;
+}
+
+void OffscreenRenderTarget::CaptureSceneTextures() {
+   CaptureSceneColor();
+   CaptureSceneDepth();
+}
+
+void OffscreenRenderTarget::CaptureSceneColor() {
+   if (!device_ || !currentRenderTarget_.renderTarget || !sceneColorSnapshot_.renderTarget) {
+	  return;
+   }
+
+   auto* commandList = device_->GetCommandList();
+   const D3D12_RESOURCE_STATES previousColorState = currentRenderTarget_.state;
+   if (previousColorState != D3D12_RESOURCE_STATE_COPY_SOURCE) {
+	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 currentRenderTarget_.renderTarget.Get(), previousColorState, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	  commandList->ResourceBarrier(1, &barrier);
+   }
+   {
+	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 sceneColorSnapshot_.renderTarget.Get(), sceneColorSnapshot_.state, D3D12_RESOURCE_STATE_COPY_DEST);
+	  commandList->ResourceBarrier(1, &barrier);
+	  sceneColorSnapshot_.state = D3D12_RESOURCE_STATE_COPY_DEST;
+   }
+   commandList->CopyResource(sceneColorSnapshot_.renderTarget.Get(), currentRenderTarget_.renderTarget.Get());
+   {
+	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 sceneColorSnapshot_.renderTarget.Get(), sceneColorSnapshot_.state, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	  commandList->ResourceBarrier(1, &barrier);
+	  sceneColorSnapshot_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+   }
+   if (previousColorState != D3D12_RESOURCE_STATE_COPY_SOURCE) {
+	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 currentRenderTarget_.renderTarget.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, previousColorState);
+	  commandList->ResourceBarrier(1, &barrier);
+   }
+}
+
+void OffscreenRenderTarget::CaptureSceneDepth() {
+   if (!device_ || !sceneDepthSnapshot_.renderTarget || !device_->GetDepthBufferResource()) {
+	  return;
+   }
+
+   auto* commandList = device_->GetCommandList();
+   device_->TransitionDepthStencilToCopySource();
+   {
+	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 sceneDepthSnapshot_.renderTarget.Get(), sceneDepthSnapshot_.state, D3D12_RESOURCE_STATE_COPY_DEST);
+	  commandList->ResourceBarrier(1, &barrier);
+	  sceneDepthSnapshot_.state = D3D12_RESOURCE_STATE_COPY_DEST;
+   }
+   commandList->CopyResource(sceneDepthSnapshot_.renderTarget.Get(), device_->GetDepthBufferResource());
+   {
+	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 sceneDepthSnapshot_.renderTarget.Get(), sceneDepthSnapshot_.state, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	  commandList->ResourceBarrier(1, &barrier);
+	  sceneDepthSnapshot_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+   }
+   device_->TransitionDepthStencilToWrite();
+}
+
 void OffscreenRenderTarget::PreDraw(bool useDSV) {
    auto commandList = device_->GetCommandList();
 
    // バリア：SRV -> RTV
-   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-	  currentRenderTarget_.renderTarget.Get(),
-	  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-	  D3D12_RESOURCE_STATE_RENDER_TARGET);
-   commandList->ResourceBarrier(1, &barrier);
+   if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_RENDER_TARGET) {
+	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 currentRenderTarget_.renderTarget.Get(),
+		 currentRenderTarget_.state,
+		 D3D12_RESOURCE_STATE_RENDER_TARGET);
+	  commandList->ResourceBarrier(1, &barrier);
+	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
+   }
 
    // 描画ターゲットを設定
    if (useDSV) {
@@ -140,11 +264,14 @@ void OffscreenRenderTarget::PreDrawWithoutClear(bool useDSV) {
    auto commandList = device_->GetCommandList();
 
    // バリア：SRV -> RTV
-   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-	  currentRenderTarget_.renderTarget.Get(),
-	  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-	  D3D12_RESOURCE_STATE_RENDER_TARGET);
-   commandList->ResourceBarrier(1, &barrier);
+   if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_RENDER_TARGET) {
+	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 currentRenderTarget_.renderTarget.Get(),
+		 currentRenderTarget_.state,
+		 D3D12_RESOURCE_STATE_RENDER_TARGET);
+	  commandList->ResourceBarrier(1, &barrier);
+	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
+   }
 
    if (useDSV) {
 	  device_->TransitionDepthStencilToWrite();
@@ -173,10 +300,13 @@ void OffscreenRenderTarget::PostDraw() {
    auto commandList = device_->GetCommandList();
 
    // バリア：RTV -> SRV
-   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-	  currentRenderTarget_.renderTarget.Get(),
-	  D3D12_RESOURCE_STATE_RENDER_TARGET,
-	  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-   commandList->ResourceBarrier(1, &barrier);
+   if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) {
+	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 currentRenderTarget_.renderTarget.Get(),
+		 currentRenderTarget_.state,
+		 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	  commandList->ResourceBarrier(1, &barrier);
+	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+   }
 }
 }

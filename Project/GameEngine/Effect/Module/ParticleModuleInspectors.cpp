@@ -343,9 +343,14 @@ void MainModule::DrawInspector() {
 
    ImGui::Separator();
 
-   float gravity = GetGravityModifier();
-   if (ImGuiHelper::DrawFloatControl(L({ "重力倍率", "Gravity Modifier" }), gravity, 0.0f, 140.0f, 0.1f, -10.0f, 10.0f)) {
-	  SetGravityModifier(gravity);
+   RandomFloat gravity = GetGravityModifierRange();
+   if (DrawRandomFloat(L({ "重力倍率", "Gravity Modifier" }), gravity, 0.1f, -10.0f, 10.0f)) {
+	  SetGravityModifierRange(gravity);
+   }
+
+   float timeScale = GetTimeScale();
+   if (ImGuiHelper::DrawFloatControl(L({ "時間倍率", "Time Scale" }), timeScale, 1.0f, 140.0f, 0.05f, 0.0f, 10.0f)) {
+	  SetTimeScale(timeScale);
    }
 
    ImGui::Separator();
@@ -482,6 +487,9 @@ void ShapeModule::DrawInspector() {
 		 { ShapeType::Circle, { "円", "Circle" } },
 		 { ShapeType::Edge, { "エッジ", "Edge" } },
 		 { ShapeType::Point, { "点", "Point" } },
+		 { ShapeType::Cylinder, { "円柱", "Cylinder" } },
+		 { ShapeType::Torus, { "トーラス", "Torus" } },
+		 { ShapeType::SkinnedMesh, { "スキンメッシュ", "Skinned Mesh" } },
 	  },
 	  140.0f)) {
 	  SetShapeType(shapeType);
@@ -550,6 +558,28 @@ void ShapeModule::DrawInspector() {
 		 }
 		 break;
 	  }
+	  case ShapeType::Cylinder: {
+		 float radius = GetRadius();
+		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+			SetRadius(radius);
+		 }
+		 float height = GetLength();
+		 if (ImGuiHelper::DrawFloatControl(L({ "高さ", "Height" }), height, 5.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+			SetLength(height);
+		 }
+		 break;
+	  }
+	  case ShapeType::Torus: {
+		 float majorRadius = GetTorusMajorRadius();
+		 if (ImGuiHelper::DrawFloatControl(L({ "主半径", "Major Radius" }), majorRadius, 1.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+			SetTorusMajorRadius(majorRadius);
+		 }
+		 float minorRadius = GetRadius();
+		 if (ImGuiHelper::DrawFloatControl(L({ "副半径", "Minor Radius" }), minorRadius, 1.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+			SetRadius(minorRadius);
+		 }
+		 break;
+	  }
 	  default:
 		 break;
    }
@@ -613,6 +643,34 @@ void ForceOverLifetimeModule::DrawInspector() {
    if (DrawRandomVector3(L({ "力", "Force" }), force, 0.1f, -50.0f, 50.0f)) {
 	  SetForceRange(force);
    }
+
+   RandomFloat drag = GetDragRange();
+   if (DrawRandomFloat(L({ "空気抵抗", "Drag" }), drag, 0.05f, 0.0f, 50.0f)) {
+	  SetDragRange(drag);
+   }
+
+   bool attractorEnabled = IsAttractorEnabled();
+   if (ImGuiHelper::DrawCheckbox(L({ "ポイントフォース", "Point Force" }), attractorEnabled, 140.0f)) {
+	  SetAttractorEnabled(attractorEnabled);
+   }
+   if (attractorEnabled) {
+	  Vector3 position = GetAttractorPosition();
+	  if (ImGuiHelper::DrawVec3Control(L({ "中心", "Center" }), position, 0.0f, 140.0f, 0.1f)) {
+		 SetAttractorPosition(position);
+	  }
+	  float strength = GetAttractorStrength();
+	  if (ImGuiHelper::DrawFloatControl(L({ "強度 (+引力 / -斥力)", "Strength (+Attract / -Repel)" }), strength, 0.0f, 140.0f, 0.1f, -1000.0f, 1000.0f)) {
+		 SetAttractorStrength(strength);
+	  }
+	  float radius = GetAttractorRadius();
+	  if (ImGuiHelper::DrawFloatControl(L({ "作用半径 (0=無限)", "Radius (0=Infinite)" }), radius, 0.0f, 140.0f, 0.1f, 0.0f, 1000.0f)) {
+		 SetAttractorRadius(radius);
+	  }
+	  float falloff = GetAttractorFalloff();
+	  if (ImGuiHelper::DrawFloatControl(L({ "距離減衰", "Falloff" }), falloff, 1.0f, 140.0f, 0.1f, 0.0f, 8.0f)) {
+		 SetAttractorFalloff(falloff);
+	  }
+   }
 }
 
 void ColorOverLifetimeModule::DrawInspector() {
@@ -636,9 +694,9 @@ void SizeOverLifetimeModule::DrawInspector() {
 	  return;
    }
 
-   float sizeMultiplier = GetSizeMultiplier();
-   if (ImGuiHelper::DrawFloatControl(L({ "サイズ倍率", "Size Multiplier" }), sizeMultiplier, 1.0f, 140.0f, 0.01f, 0.0f, 10.0f)) {
-	  SetSizeMultiplier(sizeMultiplier);
+   RandomFloat sizeMultiplier = GetSizeMultiplierRange();
+   if (DrawRandomFloat(L({ "サイズ倍率", "Size Multiplier" }), sizeMultiplier, 0.01f, 0.0f, 10.0f)) {
+	  SetSizeMultiplierRange(sizeMultiplier);
    }
 
    Vector3 startSize = GetStartSize();
@@ -882,7 +940,12 @@ void RendererModule::DrawInspector() {
 	  SetBillboardType(billboardType);
    }
 
-   if (GetBillboardType() == BillboardType::Velocity) {
+   bool velocityStretchEnabled = IsVelocityStretchEnabled();
+   if (ImGuiHelper::DrawCheckbox(L({ "速度ストレッチ", "Velocity Stretch" }), velocityStretchEnabled, 140.0f)) {
+	  SetVelocityStretchEnabled(velocityStretchEnabled);
+   }
+
+   if (velocityStretchEnabled) {
 	  float speedScale = GetSpeedScale();
 	  if (ImGuiHelper::DrawFloatControl(L({ "速度スケール", "Speed Scale" }), speedScale, 1.0f, 140.0f, 0.1f, 0.0f, 10.0f)) {
 		 SetSpeedScale(speedScale);
@@ -891,6 +954,54 @@ void RendererModule::DrawInspector() {
 	  float lengthScale = GetLengthScale();
 	  if (ImGuiHelper::DrawFloatControl(L({ "長さスケール", "Length Scale" }), lengthScale, 2.0f, 140.0f, 0.1f, 0.0f, 10.0f)) {
 		 SetLengthScale(lengthScale);
+	  }
+   }
+
+   SortMode sortMode = GetSortMode();
+   if (ImGuiHelper::DrawLocalizedEnumCombo(
+	  L({ "描画順", "Sort Mode" }),
+	  sortMode,
+	  {
+		 { SortMode::Auto, { "自動", "Auto" } },
+		 { SortMode::None, { "なし", "None" } },
+		 { SortMode::BackToFront, { "後方から前方", "Back To Front" } },
+		 { SortMode::FrontToBack, { "前方から後方", "Front To Back" } },
+	  },
+	  140.0f)) {
+	  SetSortMode(sortMode);
+   }
+
+   bool cameraFadeEnabled = IsCameraFadeEnabled();
+   if (ImGuiHelper::DrawCheckbox(L({ "カメラフェード", "Camera Fade" }), cameraFadeEnabled, 140.0f)) {
+	  SetCameraFadeEnabled(cameraFadeEnabled);
+   }
+   if (cameraFadeEnabled) {
+	  float fadeNear = GetCameraFadeNear();
+	  if (ImGuiHelper::DrawFloatControl(L({ "透明距離", "Invisible Distance" }), fadeNear, 0.25f, 140.0f, 0.01f, 0.0f, 100.0f)) {
+		 SetCameraFadeNear(fadeNear);
+	  }
+	  float fadeFar = GetCameraFadeFar();
+	  if (ImGuiHelper::DrawFloatControl(L({ "表示距離", "Visible Distance" }), fadeFar, 1.0f, 140.0f, 0.01f, 0.0f, 100.0f)) {
+		 SetCameraFadeFar(fadeFar);
+	  }
+   }
+
+   bool ribbonEnabled = IsRibbonEnabled();
+   if (ImGuiHelper::DrawCheckbox(L({ "トレイルを追加", "Add Trail" }), ribbonEnabled, 140.0f)) {
+	  SetRibbonEnabled(ribbonEnabled);
+   }
+   if (ribbonEnabled) {
+	  RandomFloat width = GetRibbonWidthRange();
+	  if (DrawRandomFloat(L({ "リボン幅", "Ribbon Width" }), width, 0.01f, 0.001f, 100.0f)) {
+		 SetRibbonWidthRange(width);
+	  }
+	  int maxPoints = static_cast<int>(GetRibbonMaxPoints());
+	  if (ImGuiHelper::DrawIntControl(L({ "履歴点数", "History Points" }), maxPoints, 16, 140.0f, 1.0f, 2, 128)) {
+		 SetRibbonMaxPoints(static_cast<uint32_t>(maxPoints));
+	  }
+	  float minDistance = GetRibbonMinDistance();
+	  if (ImGuiHelper::DrawFloatControl(L({ "点間の最小距離", "Minimum Point Distance" }), minDistance, 0.1f, 140.0f, 0.01f, 0.001f, 100.0f)) {
+		 SetRibbonMinDistance(minDistance);
 	  }
    }
 

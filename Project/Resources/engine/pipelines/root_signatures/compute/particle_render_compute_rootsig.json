@@ -1,0 +1,13 @@
+{
+  "name": "ParticleRenderCompute",
+  "reflectionSources": {
+    "computeShader": "ParticleRender"
+  },
+  "parameters": [
+    { "type": "CBV", "visibility": "All", "shaderRegister": 0, "semantic": "settings" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 0, "semantic": "attributes" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 1, "semantic": "states" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 2, "semantic": "ownermappings" },
+    { "type": "DescriptorTable", "visibility": "All", "descriptorCount": 1, "rangeType": "UAV", "shaderRegister": 0, "semantic": "outputparticles" }
+  ]
+}
