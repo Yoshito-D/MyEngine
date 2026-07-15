@@ -8,13 +8,17 @@
 #include "LimitVelocityOverLifetimeModule.h"
 #include "MainModule.h"
 #include "NoiseModule.h"
+#include "ParticleMeshModule.h"
 #include "RendererModule.h"
 #include "RotationOverLifetimeModule.h"
 #include "ShapeModule.h"
 #include "SizeOverLifetimeModule.h"
 #include "TextureSheetAnimationModule.h"
+#include "TrailModule.h"
 #include "UVTransformModule.h"
 #include "VelocityOverLifetimeModule.h"
+#include "Core/Graphics/Texture.h"
+#include "Framework/EngineContext.h"
 #include "Utility/ImGuiHelper.h"
 #include "Utility/MathUtils/ColorUtils.h"
 
@@ -986,62 +990,122 @@ void RendererModule::DrawInspector() {
 	  }
    }
 
-   bool ribbonEnabled = IsRibbonEnabled();
-   if (ImGuiHelper::DrawCheckbox(L({ "トレイルを追加", "Add Trail" }), ribbonEnabled, 140.0f)) {
-	  SetRibbonEnabled(ribbonEnabled);
+}
+
+void TrailModule::DrawInspector() {
+	if (!DrawModuleEnabled(*this, "Trail")) {
+	  return;
    }
-   if (ribbonEnabled) {
-	  RandomFloat width = GetRibbonWidthRange();
+
+	TrailMode mode = GetMode();
+	if (ImGuiHelper::DrawLocalizedEnumCombo(
+	  L({ "トレイル方式", "Trail Mode" }),
+	  mode,
+	  {
+		 { TrailMode::ParticlePath, { "パーティクルの移動軌跡", "Particle Path" } },
+		 { TrailMode::EmitterToParticle, { "エミッター → パーティクル", "Emitter to Particle" } },
+	  },
+	  140.0f)) {
+	  SetMode(mode);
+	}
+
+      std::vector<std::string> textureOptions{ L({ "パーティクルと同じ", "Same as Particle" }) };
+      int selectedTextureIndex = 0;
+      for (const std::string& textureName : EngineContext::GetTextureNames()) {
+         Texture* texture = EngineContext::GetTexture(textureName);
+         if (texture && texture->GetMetadata().IsCubemap()) {
+            continue;
+         }
+         textureOptions.push_back(textureName);
+         if (textureName == GetTextureName()) {
+            selectedTextureIndex = static_cast<int>(textureOptions.size() - 1);
+         }
+      }
+      if (ImGuiHelper::DrawCombo(
+         L({ "トレイル画像", "Trail Texture" }), selectedTextureIndex, textureOptions, 140.0f)) {
+         SetTextureName(selectedTextureIndex == 0 ? std::string() : textureOptions[selectedTextureIndex]);
+      }
+
+      Vector4 color = GetColor();
+      if (ImGuiHelper::DrawColorEdit4(L({ "トレイル色", "Trail Color" }), color, 140.0f)) {
+         SetColor(color);
+      }
+
+	  RandomFloat width = GetWidthRange();
 	  if (DrawRandomFloat(L({ "リボン幅", "Ribbon Width" }), width, 0.01f, 0.001f, 100.0f)) {
-		 SetRibbonWidthRange(width);
+		 SetWidthRange(width);
 	  }
-	  int maxPoints = static_cast<int>(GetRibbonMaxPoints());
-	  if (ImGuiHelper::DrawIntControl(L({ "履歴点数", "History Points" }), maxPoints, 16, 140.0f, 1.0f, 2, 128)) {
-		 SetRibbonMaxPoints(static_cast<uint32_t>(maxPoints));
+	  if (GetMode() == TrailMode::ParticlePath) {
+		 int maxPoints = static_cast<int>(GetMaxPoints());
+		 if (ImGuiHelper::DrawIntControl(L({ "履歴点数", "History Points" }), maxPoints, 16, 140.0f, 1.0f, 2, 128)) {
+			SetMaxPoints(static_cast<uint32_t>(maxPoints));
+		 }
+		 float minDistance = GetMinDistance();
+		 if (ImGuiHelper::DrawFloatControl(L({ "点間の最小距離", "Minimum Point Distance" }), minDistance, 0.1f, 140.0f, 0.01f, 0.001f, 100.0f)) {
+			SetMinDistance(minDistance);
+		 }
 	  }
-	  float minDistance = GetRibbonMinDistance();
-	  if (ImGuiHelper::DrawFloatControl(L({ "点間の最小距離", "Minimum Point Distance" }), minDistance, 0.1f, 140.0f, 0.01f, 0.001f, 100.0f)) {
-		 SetRibbonMinDistance(minDistance);
+      float retractionDuration = GetRetractionDuration();
+      if (ImGuiHelper::DrawFloatControl(L({ "消滅時間", "Retraction Duration" }), retractionDuration, 0.5f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+         SetRetractionDuration(retractionDuration);
+      }
+      float tailWidthScale = GetTailWidthScale();
+      if (ImGuiHelper::DrawFloatControl(L({ "末尾の幅倍率", "Tail Width Scale" }), tailWidthScale, 0.0f, 140.0f, 0.01f, 0.0f, 1.0f)) {
+         SetTailWidthScale(tailWidthScale);
+      }
+      float textureTiling = GetTextureTiling();
+      if (ImGuiHelper::DrawFloatControl(L({ "画像の繰り返し", "Texture Tiling" }), textureTiling, 1.0f, 140.0f, 0.1f, 1.0f, 64.0f)) {
+         SetTextureTiling(textureTiling);
+      }
+}
+
+void ParticleMeshModule::DrawInspector() {
+	const bool wasEnabled = IsEnabled();
+	if (!DrawModuleEnabled(*this, "ParticleMesh")) {
+	  if (wasEnabled != IsEnabled()) {
+		 meshDirty_ = true;
 	  }
+	  return;
    }
+	if (wasEnabled != IsEnabled()) {
+	  meshDirty_ = true;
+	}
 
-   ImGui::Separator();
-
-   ParticleMeshType meshType = GetParticleMeshType();
+   MeshType meshType = GetMeshType();
    if (ImGuiHelper::DrawLocalizedEnumCombo(
 	  L({ "メッシュタイプ", "Mesh Type" }),
 	  meshType,
 	  {
-		 { ParticleMeshType::Quad, { "四角形", "Quad" } },
-		 { ParticleMeshType::Ring, { "リング", "Ring" } },
-		 { ParticleMeshType::Sphere, { "球", "Sphere" } },
-		 { ParticleMeshType::Box, { "箱", "Box" } },
-		 { ParticleMeshType::Cylinder, { "円柱", "Cylinder" } },
-		 { ParticleMeshType::Cone, { "円錐", "Cone" } },
-		 { ParticleMeshType::Circle, { "円", "Circle" } },
-		 { ParticleMeshType::Plane, { "平面", "Plane" } },
-		 { ParticleMeshType::Torus, { "トーラス", "Torus" } },
-		 { ParticleMeshType::Triangle, { "三角形", "Triangle" } },
+		 { MeshType::Quad, { "四角形", "Quad" } },
+		 { MeshType::Ring, { "リング", "Ring" } },
+		 { MeshType::Sphere, { "球", "Sphere" } },
+		 { MeshType::Box, { "箱", "Box" } },
+		 { MeshType::Cylinder, { "円柱", "Cylinder" } },
+		 { MeshType::Cone, { "円錐", "Cone" } },
+		 { MeshType::Circle, { "円", "Circle" } },
+		 { MeshType::Plane, { "平面", "Plane" } },
+		 { MeshType::Torus, { "トーラス", "Torus" } },
+		 { MeshType::Triangle, { "三角形", "Triangle" } },
 	  },
 	  140.0f)) {
-	  SetParticleMeshType(meshType);
+	  SetMeshType(meshType);
    }
 
    const bool supportsMeshOriginY =
-	  meshType == ParticleMeshType::Sphere ||
-	  meshType == ParticleMeshType::Box ||
-	  meshType == ParticleMeshType::Cylinder ||
-	  meshType == ParticleMeshType::Cone ||
-	  meshType == ParticleMeshType::Torus;
+	  meshType == MeshType::Sphere ||
+	  meshType == MeshType::Box ||
+	  meshType == MeshType::Cylinder ||
+	  meshType == MeshType::Cone ||
+	  meshType == MeshType::Torus;
    if (supportsMeshOriginY) {
-	  float originY = GetMeshOriginY();
+	  float originY = GetOriginY();
 	  if (ImGuiHelper::DrawSliderFloat(L({ "原点Y", "Origin Y" }), originY, 0.0f, 1.0f, 140.0f, "%.2f")) {
-		 SetMeshOriginY(originY);
+		 SetOriginY(originY);
 	  }
    }
 
    switch (meshType) {
-	  case ParticleMeshType::Ring: {
+	  case MeshType::Ring: {
 		 float inner = GetRingInnerRadius();
 		 if (ImGuiHelper::DrawFloatControl(L({ "内半径", "Inner Radius" }), inner, 0.4f, 140.0f, 0.01f, 0.0f, 10.0f)) {
 			SetRingInnerRadius(inner);
@@ -1056,7 +1120,7 @@ void RendererModule::DrawInspector() {
 		 }
 		 break;
 	  }
-	  case ParticleMeshType::Sphere: {
+	  case MeshType::Sphere: {
 		 float radius = GetSphereRadius();
 		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, 140.0f, 0.01f, 0.01f, 10.0f)) {
 			SetSphereRadius(radius);
@@ -1071,14 +1135,14 @@ void RendererModule::DrawInspector() {
 		 }
 		 break;
 	  }
-	  case ParticleMeshType::Box: {
+	  case MeshType::Box: {
 		 Vector3 size = GetBoxSize();
 		 if (ImGuiHelper::DrawVec3Control(L({ "サイズ", "Size" }), size, 1.0f, 140.0f, 0.01f, 0.01f, 10.0f)) {
 			SetBoxSize(size);
 		 }
 		 break;
 	  }
-	  case ParticleMeshType::Cylinder: {
+	  case MeshType::Cylinder: {
 		 float topRadius = GetCylinderTopRadius();
 		 if (ImGuiHelper::DrawFloatControl(L({ "上半径", "Top Radius" }), topRadius, 0.5f, 140.0f, 0.01f, 0.0f, 10.0f)) {
 			SetCylinderTopRadius(topRadius);
@@ -1097,7 +1161,7 @@ void RendererModule::DrawInspector() {
 		 }
 		 break;
 	  }
-	  case ParticleMeshType::Cone: {
+	  case MeshType::Cone: {
 		 float radius = GetConeRadius();
 		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, 140.0f, 0.01f, 0.01f, 10.0f)) {
 			SetConeRadius(radius);
@@ -1112,7 +1176,7 @@ void RendererModule::DrawInspector() {
 		 }
 		 break;
 	  }
-	  case ParticleMeshType::Circle: {
+	  case MeshType::Circle: {
 		 float radius = GetCircleRadius();
 		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, 140.0f, 0.01f, 0.01f, 10.0f)) {
 			SetCircleRadius(radius);
@@ -1123,7 +1187,7 @@ void RendererModule::DrawInspector() {
 		 }
 		 break;
 	  }
-	  case ParticleMeshType::Plane: {
+	  case MeshType::Plane: {
 		 float width = GetPlaneWidth();
 		 if (ImGuiHelper::DrawFloatControl(L({ "幅", "Width" }), width, 1.0f, 140.0f, 0.01f, 0.01f, 20.0f)) {
 			SetPlaneWidth(width);
@@ -1134,7 +1198,7 @@ void RendererModule::DrawInspector() {
 		 }
 		 break;
 	  }
-	  case ParticleMeshType::Torus: {
+	  case MeshType::Torus: {
 		 float majorRadius = GetTorusMajorRadius();
 		 if (ImGuiHelper::DrawFloatControl(L({ "主半径", "Major Radius" }), majorRadius, 0.5f, 140.0f, 0.01f, 0.01f, 10.0f)) {
 			SetTorusMajorRadius(majorRadius);

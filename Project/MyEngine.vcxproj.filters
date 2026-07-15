@@ -657,6 +657,12 @@
     <ClCompile Include="GameEngine\Effect\Module\RendererModule.cpp">
       <Filter>GameEngine\Effect\Module</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Effect\Module\ParticleMeshModule.cpp">
+      <Filter>GameEngine\Effect\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Effect\Module\TrailModule.cpp">
+      <Filter>GameEngine\Effect\Module</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Effect\Module\RotationOverLifetimeModule.cpp">
       <Filter>GameEngine\Effect\Module</Filter>
     </ClCompile>
@@ -1227,6 +1233,12 @@
       <Filter>GameEngine\Effect\Module</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Effect\Module\RendererModule.h">
+      <Filter>GameEngine\Effect\Module</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Effect\Module\ParticleMeshModule.h">
+      <Filter>GameEngine\Effect\Module</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Effect\Module\TrailModule.h">
       <Filter>GameEngine\Effect\Module</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Effect\Module\RotationOverLifetimeModule.h">

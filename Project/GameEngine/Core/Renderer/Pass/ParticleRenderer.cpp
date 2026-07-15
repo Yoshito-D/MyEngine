@@ -33,9 +33,12 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 		invalidatePipelineBindingFunc();
 	}
 
-	// Compute後も描画対象がない場合はグラフィックスパイプラインを変更しない。
-	uint32_t activeCount = particleSystem->GetDrawParticleCount();
-	if (activeCount == 0) return;
+	// 親粒子の死亡後は本体数が0でも、切り離されたトレイルだけを描画する。
+	const uint32_t activeCount = particleSystem->GetDrawParticleCount();
+	const bool hasRibbon = particleSystem->GetTrailModule() &&
+		particleSystem->GetTrailModule()->IsEnabled() &&
+		particleSystem->GetRibbonIndexCount() > 0;
+	if (activeCount == 0 && !hasRibbon) return;
 
 	// Particleパイプラインを設定
 	// マテリアルに blendMode が設定されていればそれを優先、なければ加算ブレンド
@@ -78,11 +81,6 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
      cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), material->GetMaterialResource()->GetGPUVirtualAddress());
 	}
 
-	// テクスチャSRV
-	Texture* texture = particleSystem->GetTexture();
-	if (texture) {
-      cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), texture->GetTextureSrvHandleGPU());
-	}
 	if (sceneColorHandle.ptr != 0) {
 		cmdList->SetGraphicsRootDescriptorTable(sceneColorSlot.value(), sceneColorHandle);
 	}
@@ -91,8 +89,10 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	}
 
 	// トレイルは本体を置き換えず、先に独立した履歴メッシュとして描画する。
-	if (particleSystem->GetRendererModule() && particleSystem->GetRendererModule()->IsRibbonEnabled() &&
-		particleSystem->GetRibbonIndexCount() > 0) {
+	if (hasRibbon) {
+		if (Texture* ribbonTexture = particleSystem->GetRibbonTexture()) {
+			cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), ribbonTexture->GetTextureSrvHandleGPU());
+		}
 		cmdList->SetGraphicsRootDescriptorTable(
 			instancingSlot.value(), particleSystem->GetRibbonInstancingSrvHandleGPU());
 		const auto& vertexBufferView = particleSystem->GetRibbonVertexBufferView();
@@ -103,7 +103,12 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 		cmdList->DrawIndexedInstanced(particleSystem->GetRibbonIndexCount(), 1, 0, 0, 0);
 	}
 
+	if (activeCount == 0) return;
+
 	// 本体は常にGPUシミュレーション出力を使い、トレイルの有無とは独立して描画する。
+	if (Texture* texture = particleSystem->GetTexture()) {
+		cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), texture->GetTextureSrvHandleGPU());
+	}
 	cmdList->SetGraphicsRootDescriptorTable(instancingSlot.value(), particleSystem->GetInstancingSrvHandleGPU());
 
 	// メッシュ設定（Billboard用Quad または Model）
