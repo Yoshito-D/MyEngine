@@ -21,10 +21,6 @@ void Game::Initialize() {
 	 sceneManager_->ChangeScene("GameTest");
 #endif
 
-#ifdef USE_IMGUI
-   // Development 実行直後から Release と同じランタイム更新を走らせる。
-   playModeController_->RequestPlay();
-#endif
 }
 
 void Game::Update() {

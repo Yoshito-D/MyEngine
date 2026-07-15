@@ -436,7 +436,7 @@
                   ],
                   "translation": [
                      0.0,
-                     0.0,
+                     -1.9073486328125e-06,
                      246.15359497070313
                   ],
                   "useParentMatrix": false
@@ -576,7 +576,7 @@
                      46.22999954223633
                   ],
                   "translation": [
-                     1.0,
+                     0.0,
                      0.0,
                      375.2118225097656
                   ],
@@ -717,7 +717,7 @@
                      44.62920379638672
                   ],
                   "translation": [
-                     2.0,
+                     0.0,
                      0.0,
                      517.45361328125
                   ],
@@ -1524,7 +1524,7 @@
                      "driftSteerDeadZone": 0.30000001192092896,
                      "driftSteerMult": 1.5,
                      "lateralBuildupRate": 1.0,
-                     "miniTurboBoost": 10.0,
+                     "miniTurboBoost": 5.0,
                      "miniTurboEnabled": true,
                      "miniTurboMinTime": 0.5,
                      "postDriftBleedRate": 6.0,

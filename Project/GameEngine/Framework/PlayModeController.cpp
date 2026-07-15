@@ -92,6 +92,20 @@ void PlayModeController::SetTimeScale(float timeScale) {
    timeScale_ = std::max(0.0f, timeScale);
 }
 
+void PlayModeController::StopForSceneInitialization() {
+   const bool wasInPlayMode = mode_ != PlayMode::Edit;
+   mode_ = PlayMode::Edit;
+   shouldRunRuntimeUpdate_ = false;
+   gameDeltaTime_ = 0.0f;
+   ClearTransitionRequests();
+   EngineContext::SetGameDeltaTime(gameDeltaTime_);
+
+   if (wasInPlayMode) {
+	  // 遷移先のシーンを保持するため、通常のStopのような開始シーン復元は行わない。
+	  ClearPlaySessionState();
+   }
+}
+
 void PlayModeController::StartPlaying(SceneManager& sceneManager) {
    if (mode_ != PlayMode::Edit) {
       return;
@@ -140,10 +154,7 @@ void PlayModeController::StopPlaying(SceneManager& sceneManager) {
    }
 #endif
 
-   playStartSceneName_.clear();
-   editorSceneSnapshot_ = nlohmann::json();
-   hasEditorSceneSnapshot_ = false;
-   playStartSceneWasDirty_ = false;
+   ClearPlaySessionState();
 }
 
 void PlayModeController::ClearTransitionRequests() {
@@ -152,6 +163,13 @@ void PlayModeController::ClearTransitionRequests() {
    pauseRequested_ = false;
    resumeRequested_ = false;
    stepRequested_ = false;
+}
+
+void PlayModeController::ClearPlaySessionState() {
+   playStartSceneName_.clear();
+   editorSceneSnapshot_ = nlohmann::json();
+   hasEditorSceneSnapshot_ = false;
+   playStartSceneWasDirty_ = false;
 }
 
 } // namespace GameEngine

@@ -1029,7 +1029,15 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    gpuSettingsData_->cameraPosition = Vector4(cameraTransform.translation.x, cameraTransform.translation.y, cameraTransform.translation.z, 1.0f);
    gpuSettingsData_->cameraRight = Vector4(cameraRight.x, cameraRight.y, cameraRight.z, 0.0f);
    gpuSettingsData_->cameraUp = Vector4(cameraUp.x, cameraUp.y, cameraUp.z, 0.0f);
-   gpuSettingsData_->cameraForward = Vector4(cameraForward.x, cameraForward.y, cameraForward.z, gpuDeltaTime_);
+   float simulationDeltaTime = gpuDeltaTime_;
+#ifdef USE_IMGUI
+   // ポーズ中はCPU更新が省略されるため、前フレームのGPU用デルタタイムを再利用させない。
+   // ShouldRunRuntimeUpdate はステップ実行中だけtrueになるので、1フレーム送りは従来どおり動作する。
+   if (!EngineContext::ShouldRunRuntimeUpdate()) {
+	  simulationDeltaTime = 0.0f;
+   }
+#endif
+   gpuSettingsData_->cameraForward = Vector4(cameraForward.x, cameraForward.y, cameraForward.z, simulationDeltaTime);
    const int billboardType = modelAsset_
 	  ? static_cast<int>(RendererModule::BillboardType::None)
 	  : static_cast<int>(rendererModule_->GetBillboardType());
