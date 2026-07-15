@@ -13,7 +13,7 @@ StructuredBuffer<ParticleForGPU> gParticle : register(t0);
 struct VertexShaderInput {
     float4 position : POSITION0;
     float2 texCoord : TEXCOORD0;
-    float4 color : COLOR0;
+    float3 normal : NORMAL0;
 };
 
 VertexShaderOutput main(VertexShaderInput input, uint instanceId : SV_InstanceID) {
@@ -21,6 +21,10 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceId : SV_InstanceID
     output.position = mul(input.position, gParticle[instanceId].wVP);
     output.texCoord = input.texCoord;
     output.color = gParticle[instanceId].color;
+    if (gParticle[instanceId].customData.x < 0.0f)
+    {
+        output.color.a *= saturate(input.normal.x);
+    }
     output.uvTransform0 = gParticle[instanceId].uvTransform[0];
     output.uvTransform1 = gParticle[instanceId].uvTransform[1];
     output.uvTransform2 = gParticle[instanceId].uvTransform[2];

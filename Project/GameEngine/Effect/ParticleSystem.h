@@ -8,12 +8,15 @@
 #include "Module/ShapeModule.h"
 #include "Module/LifetimeModules.h"
 #include "Module/RendererModule.h"
+#include "Module/TrailModule.h"
+#include "Module/ParticleMeshModule.h"
 #include "Core/Graphics/Mesh.h"
 #include "Core/Graphics/Texture.h"
 #include "Core/Graphics/Material.h"
 #include "Object/Model/ModelAsset.h"
 #include <nlohmann/json.hpp>
 #include <array>
+#include <deque>
 #include <optional>
 #include <stack>
 #include <memory>
@@ -120,8 +123,10 @@ public:
    /// @brief リボン1区間をCompute Shaderへ渡す入力
    struct GpuRibbonSegment {
 	  Vector4 startAndWidth;
-	  Vector4 endAndStartV;
-	  Vector4 endVAndPadding;
+	  Vector4 endAndWidth;
+	  Vector4 startTangentAndV;
+	  Vector4 endTangentAndV;
+	  Vector4 alphaAndPadding;
    };
 
    /// @brief シミュレーション空間
@@ -185,6 +190,14 @@ public:
    TextureSheetAnimationModule* GetTextureSheetAnimationModule() { return textureSheetAnimationModule_.get(); }
 
    RendererModule* GetRendererModule() { return rendererModule_.get(); }
+
+   /// @brief トレイル設定モジュールを取得する
+   /// @return トレイル設定モジュール
+   TrailModule* GetTrailModule() { return trailModule_.get(); }
+
+   /// @brief パーティクルメッシュ設定モジュールを取得する
+   /// @return パーティクルメッシュ設定モジュール
+   ParticleMeshModule* GetParticleMeshModule() { return particleMeshModule_.get(); }
 
    /// @brief マテリアルを取得
    ParticleMaterial* GetMaterial() { return material_.get(); }
@@ -253,6 +266,11 @@ public:
    Mesh* GetMesh() const { return quadMesh_.get(); }
    D3D12_GPU_DESCRIPTOR_HANDLE GetInstancingSrvHandleGPU() const;
    Texture* GetTexture() const;
+
+   /// @brief リボン描画に使用するテクスチャを取得する
+   /// @return 専用テクスチャ、未設定または無効な場合はパーティクル本体のテクスチャ
+   Texture* GetRibbonTexture() const;
+
    Material* GetMaterialForRenderer() const;
    uint32_t GetActiveParticleCount() const { return activeParticleCount_; }
 
@@ -277,8 +295,18 @@ public:
    // ========================================================
 
 private:
+   /// @brief 親粒子の消滅後に末尾から巻き取るリボン履歴
+   struct DetachedRibbon {
+	  std::vector<Vector3> points;
+	  float width = 0.5f;
+	  float age = 0.0f;
+	  float retractionDuration = 0.5f;
+   };
+
    // パーティクル管理
    std::vector<Particle> particles_;
+   std::deque<DetachedRibbon> detachedRibbons_;
+   TrailModule::TrailMode lastTrailMode_ = TrailModule::TrailMode::ParticlePath;
    uint32_t activeParticleCount_ = 0;
 
    // O(1) フリーリスト（非アクティブパーティクルのインデックスを管理）
@@ -301,6 +329,8 @@ private:
    std::unique_ptr<TextureSheetAnimationModule> textureSheetAnimationModule_ = nullptr;
 
    std::unique_ptr<RendererModule> rendererModule_ = nullptr;
+   std::unique_ptr<TrailModule> trailModule_ = nullptr;
+   std::unique_ptr<ParticleMeshModule> particleMeshModule_ = nullptr;
    // ============================================
 
    std::unique_ptr<ParticleMaterial> material_ = nullptr;
@@ -433,11 +463,24 @@ private:
    /// @brief サブエミッター生成を遅延イベントキューへ登録する
    void QueueSubEmitter(const std::string& effectPath, const Vector3& position);
 
-   /// @brief パーティクルメッシュを再構築（RendererModule の形状設定に基づく）
+   /// @brief ParticleMeshModule の形状設定に基づいてパーティクルメッシュを再構築する
    void RebuildParticleMesh();
 
    /// @brief 粒子履歴からカメラ向きのリボンメッシュを更新する
    void BuildRibbonMesh(Camera* camera);
+
+   /// @brief 選択中のトレイル方式に応じて粒子のリボン点を更新する
+   /// @param particle 更新対象の粒子
+   void UpdateTrailPoints(Particle& particle);
+
+   /// @brief トレイル方式の変更を検出し、既存点列を新しい方式で初期化する
+   void SynchronizeTrailMode();
+
+   /// @brief 親粒子からリボン履歴を切り離して巻き取り対象へ移す
+   void DetachRibbon(Particle& particle);
+
+   /// @brief 切り離されたリボンの巻き取り時間を更新して期限切れを破棄する
+   void UpdateDetachedRibbons(float deltaTime);
 
    /// @brief 粒子を放出
    void EmitParticle();

@@ -308,8 +308,10 @@
     <ClCompile Include="GameEngine\Effect\Module\EmissionModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\LifetimeModules.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\MainModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\ParticleMeshModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\RendererModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\ShapeModule.cpp" />
+    <ClCompile Include="GameEngine\Effect\Module\TrailModule.cpp" />
     <ClCompile Include="GameEngine\Effect\ParticleMaterial.cpp" />
     <ClCompile Include="GameEngine\Effect\ParticleSystem.cpp" />
     <ClCompile Include="GameEngine\Editor\Particle\ParticleSystemEditor.cpp" />
@@ -532,10 +534,12 @@
     <ClInclude Include="GameEngine\Effect\Module\ForceOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\LimitVelocityOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\NoiseModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\ParticleMeshModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\RendererModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\RotationOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\SizeOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\TextureSheetAnimationModule.h" />
+    <ClInclude Include="GameEngine\Effect\Module\TrailModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\UVTransformModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Object\Component\ParticleEmitterComponent.h" />

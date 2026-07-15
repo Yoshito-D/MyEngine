@@ -44,6 +44,11 @@ PixelShaderOutput main(VertexShaderOutput input)
     // UV変換 & テクスチャサンプリング
     float4 transformedUV = mul(float4(input.texCoord, 0.0f, 1.0f), particleUvTransform);
     transformedUV = mul(transformedUV, gMaterial.uvTransform);
+    if (input.customData.x < 0.0f)
+    {
+        // 通常パーティクルのClampサンプラーを維持したまま、トレイルの長手方向だけを繰り返す。
+        transformedUV.y = frac(transformedUV.y);
+    }
     // Texture atlases bleed between frames through generated mipmaps, so particles sample the base mip.
     float4 textureColor = gTexture.SampleLevel(gSampler, transformedUV.xy, 0.0f);
     

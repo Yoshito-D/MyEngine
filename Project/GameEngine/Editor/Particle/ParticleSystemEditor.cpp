@@ -437,7 +437,26 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			if (!particleSystem->CanUseGpuSimulation()) {
 			   ImGui::TextDisabled("%s", Tr("GPUリソースを作成できないため実行できません", "GPU resources are unavailable"));
 			}
+		 }
+	  }
+	  ImGui::Separator();
+   }
 
+	if (ImGui::CollapsingHeader(StableLabel(Tr("トレイルモジュール", "Trail Module"), "ParticleTrailModule").c_str())) {
+	  if (auto* trailModule = particleSystem->GetTrailModule()) {
+		 trailModule->DrawInspector();
+	  }
+	  ImGui::Separator();
+	}
+
+	if (ImGui::CollapsingHeader(StableLabel(Tr("パーティクルメッシュモジュール", "Particle Mesh Module"), "ParticleMeshModule").c_str())) {
+	  if (auto* particleMeshModule = particleSystem->GetParticleMeshModule()) {
+		 particleMeshModule->DrawInspector();
+	  }
+	  ImGui::Separator();
+	}
+
+	if (ImGui::CollapsingHeader(StableLabel(Tr("サブエミッターモジュール", "Sub Emitter Module"), "ParticleSubEmitterModule").c_str())) {
 			auto& subEmitters = particleSystem->GetSubEmitterSettings();
 			ImGui::Checkbox(ScopedLabel(Tr("サブエミッター", "Sub Emitters"), "ParticleSubEmitters_" + particleSystemName).c_str(), &subEmitters.enabled);
 			if (subEmitters.enabled) {
@@ -467,7 +486,10 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 				  ImGui::SliderFloat(ScopedLabel(Tr("反発係数", "Restitution"), "ParticleCollisionRestitution_" + particleSystemName).c_str(), &subEmitters.collisionRestitution, 0.0f, 1.0f);
 			   }
 			}
+			ImGui::Separator();
+	}
 
+	if (ImGui::CollapsingHeader(StableLabel(Tr("パーティクルマテリアル", "Particle Material"), "ParticleMaterialModule").c_str())) {
 			// Blend Mode
 			ImGui::Text("%s:", Tr("ブレンドモード", "Blend Mode"));
 			{
@@ -537,7 +559,9 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			}
 
 			ImGui::Separator();
+	}
 
+	if (ImGui::CollapsingHeader(StableLabel(Tr("出力設定", "Output Settings"), "ParticleOutputSettings").c_str())) {
 			// Post Process
 			{
 			   bool usePostProcess = particleSystem->GetUsePostProcess();
@@ -548,7 +572,9 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			}
 
 			ImGui::Separator();
+	}
 
+	if (ImGui::CollapsingHeader(StableLabel(Tr("テクスチャとモデル", "Texture and Model"), "ParticleTextureAndModel").c_str())) {
 			// Texture Settings
 			ImGui::Text("%s:", Tr("テクスチャ", "Texture"));
 			{
@@ -612,10 +638,8 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			} else {
 			   ImGui::Text("%s: %s", Tr("モデル", "Model"), Tr("なし", "None"));
 			}
-		 }
-	  }
-	  ImGui::Separator();
-   }
+			ImGui::Separator();
+	}
 
    // ========================================
    // Debug Info

@@ -1,8 +1,10 @@
 struct RibbonSegment
 {
     float4 startAndWidth;
-    float4 endAndStartV;
-    float4 endVAndPadding;
+    float4 endAndWidth;
+    float4 startTangentAndV;
+    float4 endTangentAndV;
+    float4 alphaAndPadding;
 };
 
 struct ParticleVertex
@@ -50,29 +52,33 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 
     RibbonSegment segment = gSegments[segmentIndex];
     float3 start = segment.startAndWidth.xyz;
-    float3 end = segment.endAndStartV.xyz;
-    float halfWidth = segment.startAndWidth.w * 0.5f;
-    float3 tangent = SafeNormalize(end - start, float3(0.0f, 1.0f, 0.0f));
+    float3 end = segment.endAndWidth.xyz;
+    float startHalfWidth = segment.startAndWidth.w * 0.5f;
+    float endHalfWidth = segment.endAndWidth.w * 0.5f;
+    float3 startTangent = SafeNormalize(segment.startTangentAndV.xyz, float3(0.0f, 1.0f, 0.0f));
+    float3 endTangent = SafeNormalize(segment.endTangentAndV.xyz, startTangent);
     float3 startView = SafeNormalize(gCameraPosition.xyz - start, -gCameraForward.xyz);
     float3 endView = SafeNormalize(gCameraPosition.xyz - end, -gCameraForward.xyz);
-    float3 startSide = SafeNormalize(cross(tangent, startView), gCameraRight.xyz) * halfWidth;
-    float3 endSide = SafeNormalize(cross(tangent, endView), gCameraRight.xyz) * halfWidth;
+    // 隣接区間から平均した点接線を使い、各区間の端を同じ左右位置へ揃える。
+    float3 startSide = SafeNormalize(cross(startTangent, startView), gCameraRight.xyz) * startHalfWidth;
+    float3 endSide = SafeNormalize(cross(endTangent, endView), gCameraRight.xyz) * endHalfWidth;
 
     uint vertexBase = segmentIndex * 4u;
     ParticleVertex vertex;
     vertex.position = float4(start - startSide, 1.0f);
-    vertex.texCoord = float2(0.0f, segment.endAndStartV.w);
-    vertex.normal = startView;
+    vertex.texCoord = float2(0.0f, segment.startTangentAndV.w);
+    // Particle VSはリボンインスタンスだけnormal.xを頂点アルファとして解釈する。
+    vertex.normal = float3(saturate(segment.alphaAndPadding.x), 0.0f, 0.0f);
     gVertices[vertexBase] = vertex;
     vertex.position = float4(start + startSide, 1.0f);
-    vertex.texCoord = float2(1.0f, segment.endAndStartV.w);
+    vertex.texCoord = float2(1.0f, segment.startTangentAndV.w);
     gVertices[vertexBase + 1u] = vertex;
     vertex.position = float4(end - endSide, 1.0f);
-    vertex.texCoord = float2(0.0f, segment.endVAndPadding.x);
-    vertex.normal = endView;
+    vertex.texCoord = float2(0.0f, segment.endTangentAndV.w);
+    vertex.normal = float3(saturate(segment.alphaAndPadding.y), 0.0f, 0.0f);
     gVertices[vertexBase + 2u] = vertex;
     vertex.position = float4(end + endSide, 1.0f);
-    vertex.texCoord = float2(1.0f, segment.endVAndPadding.x);
+    vertex.texCoord = float2(1.0f, segment.endTangentAndV.w);
     gVertices[vertexBase + 3u] = vertex;
 
     uint indexBase = segmentIndex * 6u;

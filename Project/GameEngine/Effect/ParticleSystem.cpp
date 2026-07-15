@@ -25,6 +25,8 @@ static_assert(sizeof(ParticleSystem::GpuParticleAttributes) == 144,
    "GpuParticleAttributes must match ParticleRender.CS.hlsl.");
 static_assert(sizeof(ParticleSystem::GpuSpawnRequest) == 128,
    "GpuSpawnRequest must match ParticleEmitter.CS.hlsl.");
+static_assert(sizeof(ParticleSystem::GpuRibbonSegment) == 80,
+   "GpuRibbonSegment must match ParticleRibbon.CS.hlsl.");
 
 namespace {
 GraphicsDevice* sDevice_ = nullptr;
@@ -111,7 +113,9 @@ const std::vector<ParticleSystem*>& ParticleSystem::GetRegisteredParticleSystems
 void ParticleSystem::CreateQuadMesh() {
    if (isCreated_) return;
    if (quadMesh_ && sDevice_) {
-	  const float meshOriginY = rendererModule_ ? rendererModule_->GetMeshOriginY() : 0.5f;
+	  const float meshOriginY = particleMeshModule_ && particleMeshModule_->IsEnabled()
+		 ? particleMeshModule_->GetOriginY()
+		 : 0.5f;
 	  quadMesh_->CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
 	  isCreated_ = true;
    }
@@ -119,43 +123,44 @@ void ParticleSystem::CreateQuadMesh() {
 
 void ParticleSystem::RebuildParticleMesh() {
    if (!quadMesh_ || !sDevice_) return;
-   auto* rm = rendererModule_.get();
-   if (!rm) return;
+   auto* meshModule = particleMeshModule_.get();
+   if (!meshModule) return;
 
-   using MeshType = RendererModule::ParticleMeshType;
-   const float meshOriginY = rm->GetMeshOriginY();
-   switch (rm->GetParticleMeshType()) {
+   using MeshType = ParticleMeshModule::MeshType;
+   const float meshOriginY = meshModule->IsEnabled() ? meshModule->GetOriginY() : 0.5f;
+   const MeshType meshType = meshModule->IsEnabled() ? meshModule->GetMeshType() : MeshType::Quad;
+   switch (meshType) {
 	  case MeshType::Quad:
 		 quadMesh_->CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
 		 break;
 	  case MeshType::Ring:
-		 quadMesh_->CreateRing(rm->GetRingInnerRadius(), rm->GetRingOuterRadius(), rm->GetRingSegments());
+		 quadMesh_->CreateRing(meshModule->GetRingInnerRadius(), meshModule->GetRingOuterRadius(), meshModule->GetRingSegments());
 		 break;
 	  case MeshType::Sphere:
-		 quadMesh_->CreateSphere(rm->GetSphereRadius(), rm->GetSphereStacks(), rm->GetSphereSlices(), meshOriginY);
+		 quadMesh_->CreateSphere(meshModule->GetSphereRadius(), meshModule->GetSphereStacks(), meshModule->GetSphereSlices(), meshOriginY);
 		 break;
 	  case MeshType::Box: {
-		 auto s = rm->GetBoxSize();
+		 auto s = meshModule->GetBoxSize();
 		 quadMesh_->CreateBox(s.x, s.y, s.z, meshOriginY);
 		 break;
 	  }
 	  case MeshType::Cylinder:
 		 quadMesh_->CreateCylinderWithoutCaps(
-			rm->GetCylinderTopRadius(), rm->GetCylinderBottomRadius(),
-			rm->GetCylinderHeight(), rm->GetCylinderSegments(), meshOriginY);
+			meshModule->GetCylinderTopRadius(), meshModule->GetCylinderBottomRadius(),
+			meshModule->GetCylinderHeight(), meshModule->GetCylinderSegments(), meshOriginY);
 		 break;
 	  case MeshType::Cone:
-		 quadMesh_->CreateCone(rm->GetConeRadius(), rm->GetConeHeight(), rm->GetConeSegments(), meshOriginY);
+		 quadMesh_->CreateCone(meshModule->GetConeRadius(), meshModule->GetConeHeight(), meshModule->GetConeSegments(), meshOriginY);
 		 break;
 	  case MeshType::Circle:
-		 quadMesh_->CreateCircle(rm->GetCircleRadius(), rm->GetCircleSegments());
+		 quadMesh_->CreateCircle(meshModule->GetCircleRadius(), meshModule->GetCircleSegments());
 		 break;
 	  case MeshType::Plane:
-		 quadMesh_->CreatePlane(rm->GetPlaneWidth(), rm->GetPlaneDepth());
+		 quadMesh_->CreatePlane(meshModule->GetPlaneWidth(), meshModule->GetPlaneDepth());
 		 break;
 	  case MeshType::Torus:
-		 quadMesh_->CreateTorus(rm->GetTorusMajorRadius(), rm->GetTorusMinorRadius(),
-			rm->GetTorusMajorSegments(), rm->GetTorusMinorSegments(), meshOriginY);
+		 quadMesh_->CreateTorus(meshModule->GetTorusMajorRadius(), meshModule->GetTorusMinorRadius(),
+			meshModule->GetTorusMajorSegments(), meshModule->GetTorusMinorSegments(), meshOriginY);
 		 break;
 	  case MeshType::Triangle:
 		 quadMesh_->CreateTriangle();
@@ -164,7 +169,7 @@ void ParticleSystem::RebuildParticleMesh() {
 		 quadMesh_->CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
 		 break;
    }
-   rm->ClearMeshDirty();
+	 meshModule->ClearDirty();
 }
 
 ParticleSystem::ParticleSystem() {
@@ -188,6 +193,8 @@ ParticleSystem::ParticleSystem() {
    textureSheetAnimationModule_ = std::make_unique<TextureSheetAnimationModule>();
 
    rendererModule_ = std::make_unique<RendererModule>();
+   trailModule_ = std::make_unique<TrailModule>();
+   particleMeshModule_ = std::make_unique<ParticleMeshModule>();
 
    // Disable some modules by default
    velocityOverLifetimeModule_->SetEnabled(false);
@@ -199,6 +206,7 @@ ParticleSystem::ParticleSystem() {
    noiseModule_->SetEnabled(false);
    uvTransformModule_->SetEnabled(false);
    textureSheetAnimationModule_->SetEnabled(false);
+   trailModule_->SetEnabled(false);
 
    name_ = BuildDefaultParticleSystemName(sRegisteredParticleSystems_);
    sRegisteredParticleSystems_.push_back(this);
@@ -265,7 +273,7 @@ void ParticleSystem::UnregisterParticleSystem(ParticleSystem* particleSystem) {
 
 void ParticleSystem::Create() {
    CreateQuadMesh();
-   if (rendererModule_ && rendererModule_->IsMeshDirty()) {
+   if (particleMeshModule_ && particleMeshModule_->IsDirty()) {
 	  RebuildParticleMesh();
    }
 
@@ -719,17 +727,19 @@ void ParticleSystem::Update(float deltaTime) {
    if (!isPlaying_ || isPaused_) return;
 
    // システム単位の時間倍率を全ての寿命・放出・物理へ一貫して適用する。
-   deltaTime *= mainModule_->GetTimeScale();
-   if (deltaTime <= 0.0f) return;
-   gpuDeltaTime_ = deltaTime;
-   subEmitterEventsThisFrame_ = 0;
+	deltaTime *= mainModule_->GetTimeScale();
+	if (deltaTime <= 0.0f) return;
+	gpuDeltaTime_ = deltaTime;
+	subEmitterEventsThisFrame_ = 0;
+	SynchronizeTrailMode();
 
    // メッシュ形状が変更された場合は再構築
-   if (rendererModule_ && rendererModule_->IsMeshDirty()) {
+   if (particleMeshModule_ && particleMeshModule_->IsDirty()) {
 	  RebuildParticleMesh();
    }
 
    systemTime_ += deltaTime;
+   UpdateDetachedRibbons(deltaTime);
 
    // Check if emission should continue
    bool shouldEmit = mainModule_->IsLooping() || systemTime_ < mainModule_->GetDuration();
@@ -786,7 +796,7 @@ void ParticleSystem::Update(float deltaTime) {
    activeParticleCount_ = 0;
    const bool needsCpuState = gpuStateReadbackAvailable_ && gpuStateReadbackData_ &&
 	  (ResolveSortMode() != RendererModule::SortMode::None ||
-		 rendererModule_->IsRibbonEnabled() || subEmitterSettings_.enabled);
+		 (trailModule_ && trailModule_->IsEnabled()) || subEmitterSettings_.enabled);
    if (needsCpuState) {
 	  std::fill(gpuStateIndexByCpuParticle_.begin(), gpuStateIndexByCpuParticle_.end(), kInvalidGpuParticleIndex);
 	  for (uint32_t stateIndex = 0; stateIndex < static_cast<uint32_t>(particles_.size()); ++stateIndex) {
@@ -812,6 +822,7 @@ void ParticleSystem::Update(float deltaTime) {
 			   state.velocityAndLifetime.x, state.velocityAndLifetime.y, state.velocityAndLifetime.z);
 		 }
 	  }
+	  UpdateTrailPoints(particle);
 
 	  // 時間を進める
 	  particle.currentTime += deltaTime;
@@ -819,6 +830,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  // 寿命チェック
 	  if (particle.currentTime >= particle.lifeTime) {
 		 QueueSubEmitter(subEmitterSettings_.spawnOnDeathPath, particle.transform.translation);
+		 DetachRibbon(particle);
 		 particle.isActive = false;
 		 freeParticleIndices_.push(i);
 		 continue;
@@ -860,23 +872,6 @@ void ParticleSystem::Update(float deltaTime) {
 		 }
 	  }
 
-	  if (rendererModule_->IsRibbonEnabled()) {
-		 auto& points = particle.ribbonPoints;
-		 const float minDistanceSquared = rendererModule_->GetRibbonMinDistance() * rendererModule_->GetRibbonMinDistance();
-		 const float distanceSquared = points.empty()
-			? 0.0f
-			: (particle.transform.translation - points.back()).LengthSquared();
-		 // 最初の区間だけは最小距離を待たずに作り、低速・短寿命粒子でもリボンが消えたように見せない。
-		 const bool createsFirstSegment = points.size() == 1 && distanceSquared > 0.00000001f;
-		 if (points.empty() || createsFirstSegment || distanceSquared >= minDistanceSquared) {
-			points.push_back(particle.transform.translation);
-			const size_t maxPoints = rendererModule_->GetRibbonMaxPoints();
-			if (points.size() > maxPoints) {
-			   points.erase(points.begin(), points.begin() + (points.size() - maxPoints));
-			}
-		 }
-	  }
-
 	  activeParticleCount_++;
    }
 
@@ -886,7 +881,7 @@ void ParticleSystem::Update(float deltaTime) {
 
    // Loop handling
    if (!mainModule_->IsLooping() && systemTime_ >= mainModule_->GetDuration()) {
-	  if (activeParticleCount_ == 0) {
+	  if (activeParticleCount_ == 0 && detachedRibbons_.empty()) {
 		 Stop();
 	  }
    }
@@ -932,67 +927,255 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
 	  MakeTranslateMatrix(Vector3(uOffset, vOffset, 0.0f)));
 }
 
+void ParticleSystem::UpdateTrailPoints(Particle& particle) {
+	if (!trailModule_ || !trailModule_->IsEnabled()) {
+	  // 再有効化した瞬間に古い位置から長い帯が伸びないよう、無効中の履歴は保持しない。
+	  particle.ribbonPoints.clear();
+	  return;
+	}
+
+	auto& points = particle.ribbonPoints;
+	if (trailModule_->GetMode() == TrailModule::TrailMode::EmitterToParticle) {
+	  const Vector3 emitterPosition = shapeModule_
+		 ? shapeModule_->GetTransform().translation
+		 : Vector3(0.0f, 0.0f, 0.0f);
+	  // 接続モードでは履歴を蓄積せず、毎フレーム現在の両端だけを保持する。
+	  points.clear();
+	  points.push_back(emitterPosition);
+	  points.push_back(particle.transform.translation);
+	  return;
+	}
+
+	const float minDistanceSquared = trailModule_->GetMinDistance() * trailModule_->GetMinDistance();
+	const float distanceSquared = points.empty()
+	  ? 0.0f
+	  : (particle.transform.translation - points.back()).LengthSquared();
+	// 現在位置は描画時に仮想の先端として補うため、履歴には距離を満たした固定点だけを残す。
+	if (points.empty() || distanceSquared >= minDistanceSquared) {
+	  points.push_back(particle.transform.translation);
+	  const size_t maxPoints = trailModule_->GetMaxPoints();
+	  if (points.size() > maxPoints) {
+		 points.erase(points.begin(), points.begin() + (points.size() - maxPoints));
+	  }
+	}
+}
+
+void ParticleSystem::SynchronizeTrailMode() {
+	if (!trailModule_ || trailModule_->GetMode() == lastTrailMode_) {
+	  return;
+	}
+
+	// 異なる意味の点列を混在させず、停止中のプレビューでも新しい方式を即座に反映する。
+	detachedRibbons_.clear();
+	lastTrailMode_ = trailModule_->GetMode();
+	for (Particle& particle : particles_) {
+	  particle.ribbonPoints.clear();
+	  if (particle.isActive) {
+		 UpdateTrailPoints(particle);
+	  }
+	}
+}
+
+void ParticleSystem::DetachRibbon(Particle& particle) {
+	if (!trailModule_ || !trailModule_->IsEnabled()) {
+	  particle.ribbonPoints.clear();
+	  return;
+   }
+
+	const float retractionDuration = trailModule_->GetRetractionDuration();
+	if (retractionDuration <= 0.0f || particle.ribbonPoints.empty()) {
+	  particle.ribbonPoints.clear();
+	  return;
+   }
+
+   std::vector<Vector3> points = std::move(particle.ribbonPoints);
+   particle.ribbonPoints.clear();
+   if ((particle.transform.translation - points.back()).LengthSquared() > 0.00000001f) {
+	  points.push_back(particle.transform.translation);
+   }
+   if (points.size() < 2) {
+	  return;
+   }
+
+   // 長寿命・高レート設定でも死亡済み履歴が無制限に増えないよう、粒子上限と同数に抑える。
+   if (detachedRibbons_.size() >= kMaxParticles) {
+	  detachedRibbons_.pop_front();
+   }
+	DetachedRibbon detachedRibbon;
+	detachedRibbon.points = std::move(points);
+	detachedRibbon.width = particle.ribbonWidth;
+	detachedRibbon.retractionDuration = retractionDuration;
+	detachedRibbons_.push_back(std::move(detachedRibbon));
+}
+
+void ParticleSystem::UpdateDetachedRibbons(float deltaTime) {
+	if (!trailModule_ || !trailModule_->IsEnabled()) {
+	  detachedRibbons_.clear();
+	  return;
+   }
+
+   for (DetachedRibbon& ribbon : detachedRibbons_) {
+	  ribbon.age += deltaTime;
+   }
+	detachedRibbons_.erase(
+	  std::remove_if(detachedRibbons_.begin(), detachedRibbons_.end(), [](const DetachedRibbon& ribbon) {
+		 return ribbon.points.size() < 2 || ribbon.age >= ribbon.retractionDuration;
+		 }),
+	  detachedRibbons_.end());
+}
+
 void ParticleSystem::BuildRibbonMesh(Camera* camera) {
-   if (!camera || !quadMesh_ || !gpuRibbonSettingsData_) {
+	if (!camera || !quadMesh_ || !gpuRibbonSettingsData_) {
+	  return;
+   }
+	SynchronizeTrailMode();
+
+   constexpr float kPointEpsilonSquared = 0.00000001f;
+   auto hasVirtualHead = [](const Particle& particle) {
+	  return !particle.ribbonPoints.empty() &&
+		 (particle.transform.translation - particle.ribbonPoints.back()).LengthSquared() > kPointEpsilonSquared;
+   };
+
+   uint32_t segmentCount = 0;
+   for (const Particle& particle : particles_) {
+	  if (!particle.isActive || particle.ribbonPoints.empty()) continue;
+	  const size_t pointCount = particle.ribbonPoints.size() + (hasVirtualHead(particle) ? 1u : 0u);
+	  if (pointCount >= 2) segmentCount += static_cast<uint32_t>(pointCount - 1);
+   }
+   for (const DetachedRibbon& ribbon : detachedRibbons_) {
+	  if (ribbon.points.size() >= 2) segmentCount += static_cast<uint32_t>(ribbon.points.size() - 1);
+   }
+
+   gpuRibbonSegmentCount_ = segmentCount;
+   gpuRibbonIndexCount_ = segmentCount * 6u;
+   if (segmentCount == 0) {
 	  return;
    }
 
-   {
-	  uint32_t segmentCount = 0;
-	  for (const Particle& particle : particles_) {
-		 if (particle.isActive && particle.ribbonPoints.size() >= 2) {
-			segmentCount += static_cast<uint32_t>(particle.ribbonPoints.size() - 1);
-		 }
-	  }
-	  gpuRibbonSegmentCount_ = segmentCount;
-	  gpuRibbonIndexCount_ = segmentCount * 6u;
-	  if (segmentCount == 0) {
-		 return;
-	  }
-
-	  EnsureGpuRibbonResources(segmentCount);
-	  if (!gpuRibbonInputData_ || !gpuRibbonVertexResource_ || !gpuRibbonIndexResource_) {
-		 gpuRibbonSegmentCount_ = 0;
-		 gpuRibbonIndexCount_ = 0;
-		 return;
-	  }
-	  uint32_t segmentIndex = 0;
-	  for (const Particle& particle : particles_) {
-		 if (!particle.isActive || particle.ribbonPoints.size() < 2) continue;
-		 const float denominator = static_cast<float>(particle.ribbonPoints.size() - 1);
-		 for (size_t pointIndex = 0; pointIndex + 1 < particle.ribbonPoints.size(); ++pointIndex) {
-			const Vector3& start = particle.ribbonPoints[pointIndex];
-			const Vector3& end = particle.ribbonPoints[pointIndex + 1];
-			GpuRibbonSegment& segment = gpuRibbonInputData_[segmentIndex++];
-			segment.startAndWidth = Vector4(start.x, start.y, start.z, particle.ribbonWidth);
-			segment.endAndStartV = Vector4(end.x, end.y, end.z, static_cast<float>(pointIndex) / denominator);
-			segment.endVAndPadding = Vector4(static_cast<float>(pointIndex + 1) / denominator, 0.0f, 0.0f, 0.0f);
-		 }
-	  }
-
-	  const Transform cameraTransform = camera->GetTransform();
-	  const Vector3 cameraForward = camera->GetForward();
-	  const Quaternion cameraRotation = cameraTransform.GetActiveQuaternion();
-	  const Vector3 cameraRight = RotateVector(Vector3(1.0f, 0.0f, 0.0f), cameraRotation).Normalize();
-	  const Vector3 cameraUp = RotateVector(Vector3(0.0f, 1.0f, 0.0f), cameraRotation).Normalize();
-	  // リボンと粒子シミュレーションは同一フレームに別Dispatchされるため、定数バッファを分離する。
-	  gpuRibbonSettingsData_->viewProjection = camera->GetViewProjectionMatrix();
-	  gpuRibbonSettingsData_->cameraPosition = Vector4(cameraTransform.translation.x, cameraTransform.translation.y, cameraTransform.translation.z, 1.0f);
-	  gpuRibbonSettingsData_->cameraRight = Vector4(cameraRight.x, cameraRight.y, cameraRight.z, 0.0f);
-	  gpuRibbonSettingsData_->cameraUp = Vector4(cameraUp.x, cameraUp.y, cameraUp.z, 0.0f);
-	  gpuRibbonSettingsData_->cameraForward = Vector4(cameraForward.x, cameraForward.y, cameraForward.z, 0.0f);
-	  gpuRibbonSettingsData_->particleCount = segmentCount;
-	  gpuRibbonVertexBufferView_.SizeInBytes = sizeof(Mesh::VertexData) * segmentCount * 4u;
-	  gpuRibbonIndexBufferView_.SizeInBytes = sizeof(uint32_t) * gpuRibbonIndexCount_;
-
-	  instancingData_[0].world = MakeIdentity4x4();
-	  instancingData_[0].wvp = camera->GetViewProjectionMatrix();
-	  instancingData_[0].uvTransform = MakeIdentity4x4();
-	  instancingData_[0].color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	  instancingData_[0].customData = Vector4(0.0f, 0.0f, 1.0f, 0.0f);
+   EnsureGpuRibbonResources(segmentCount);
+   if (!gpuRibbonInputData_ || !gpuRibbonVertexResource_ || !gpuRibbonIndexResource_) {
+	  gpuRibbonSegmentCount_ = 0;
+	  gpuRibbonIndexCount_ = 0;
 	  return;
    }
 
+	const float tailWidthScale = trailModule_->GetTailWidthScale();
+	const float textureTiling = trailModule_->GetTextureTiling();
+   uint32_t segmentIndex = 0;
+   auto writeTrail = [&](size_t pointCount, auto&& getPoint, float width, float alpha) {
+	  if (pointCount < 2) return;
+
+	  float totalDistance = 0.0f;
+	  for (size_t pointIndex = 0; pointIndex + 1 < pointCount; ++pointIndex) {
+		 totalDistance += (getPoint(pointIndex + 1) - getPoint(pointIndex)).Length();
+	  }
+	  const float safeTotalDistance = (std::max)(totalDistance, 0.0001f);
+
+	  auto normalizeDirection = [](const Vector3& direction, const Vector3& fallback) {
+		 const float lengthSquared = direction.LengthSquared();
+		 return lengthSquared > kPointEpsilonSquared
+			? direction / std::sqrt(lengthSquared)
+			: fallback;
+	  };
+	  auto getTangent = [&](size_t pointIndex) {
+		 if (pointIndex == 0) {
+			return normalizeDirection(getPoint(1) - getPoint(0), Vector3(0.0f, 1.0f, 0.0f));
+		 }
+		 if (pointIndex + 1 == pointCount) {
+			return normalizeDirection(getPoint(pointIndex) - getPoint(pointIndex - 1), Vector3(0.0f, 1.0f, 0.0f));
+		 }
+		 const Vector3 previousDirection = normalizeDirection(
+			getPoint(pointIndex) - getPoint(pointIndex - 1), Vector3(0.0f, 1.0f, 0.0f));
+		 const Vector3 nextDirection = normalizeDirection(
+			getPoint(pointIndex + 1) - getPoint(pointIndex), previousDirection);
+		 // 隣接区間で同じ接線を共有し、曲がり角の左右頂点を完全に一致させる。
+		 return normalizeDirection(previousDirection + nextDirection, nextDirection);
+	  };
+
+	  float traveledDistance = 0.0f;
+	  for (size_t pointIndex = 0; pointIndex + 1 < pointCount; ++pointIndex) {
+		 const Vector3 start = getPoint(pointIndex);
+		 const Vector3 end = getPoint(pointIndex + 1);
+		 const float segmentLength = (end - start).Length();
+		 const float startProgress = traveledDistance / safeTotalDistance;
+		 traveledDistance += segmentLength;
+		 const float endProgress = traveledDistance / safeTotalDistance;
+		 const float startWidthScale = tailWidthScale + (1.0f - tailWidthScale) * startProgress;
+		 const float endWidthScale = tailWidthScale + (1.0f - tailWidthScale) * endProgress;
+		 const Vector3 startTangent = getTangent(pointIndex);
+		 const Vector3 endTangent = getTangent(pointIndex + 1);
+
+		 GpuRibbonSegment& segment = gpuRibbonInputData_[segmentIndex++];
+		 segment.startAndWidth = Vector4(start.x, start.y, start.z, width * startWidthScale);
+		 segment.endAndWidth = Vector4(end.x, end.y, end.z, width * endWidthScale);
+		 segment.startTangentAndV = Vector4(
+			startTangent.x, startTangent.y, startTangent.z, startProgress * textureTiling);
+		 segment.endTangentAndV = Vector4(
+			endTangent.x, endTangent.y, endTangent.z, endProgress * textureTiling);
+		 segment.alphaAndPadding = Vector4(alpha, alpha, 0.0f, 0.0f);
+	  }
+   };
+
+   for (const Particle& particle : particles_) {
+	  if (!particle.isActive || particle.ribbonPoints.empty()) continue;
+	  const bool includesVirtualHead = hasVirtualHead(particle);
+	  const size_t pointCount = particle.ribbonPoints.size() + (includesVirtualHead ? 1u : 0u);
+	  writeTrail(pointCount, [&](size_t pointIndex) {
+		 return includesVirtualHead && pointIndex == particle.ribbonPoints.size()
+			? particle.transform.translation
+			: particle.ribbonPoints[pointIndex];
+		 }, particle.ribbonWidth, 1.0f);
+	}
+	for (const DetachedRibbon& ribbon : detachedRibbons_) {
+	  float totalDistance = 0.0f;
+	  for (size_t pointIndex = 0; pointIndex + 1 < ribbon.points.size(); ++pointIndex) {
+		 totalDistance += (ribbon.points[pointIndex + 1] - ribbon.points[pointIndex]).Length();
+	  }
+	  const float progress = std::clamp(ribbon.age / ribbon.retractionDuration, 0.0f, 1.0f);
+	  const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
+	  float distanceToRetract = totalDistance * easedProgress;
+	  size_t tailSegmentIndex = 0;
+	  while (tailSegmentIndex + 2 < ribbon.points.size()) {
+		 const float segmentLength =
+			(ribbon.points[tailSegmentIndex + 1] - ribbon.points[tailSegmentIndex]).Length();
+		 if (distanceToRetract <= segmentLength) break;
+		 distanceToRetract -= segmentLength;
+		 ++tailSegmentIndex;
+	  }
+	  const Vector3& segmentStart = ribbon.points[tailSegmentIndex];
+	  const Vector3& segmentEnd = ribbon.points[tailSegmentIndex + 1];
+	  const float segmentLength = (segmentEnd - segmentStart).Length();
+	  const float segmentProgress = segmentLength > 0.0001f
+		 ? std::clamp(distanceToRetract / segmentLength, 0.0f, 1.0f)
+		 : 1.0f;
+	  const Vector3 retractedTail = segmentStart + (segmentEnd - segmentStart) * segmentProgress;
+	  // 古い履歴点を進行中の尾端へ畳み、頂点数を保ったまま退縮済み区間を退化三角形にする。
+	  writeTrail(ribbon.points.size(), [&](size_t pointIndex) {
+		 return pointIndex <= tailSegmentIndex ? retractedTail : ribbon.points[pointIndex];
+		 }, ribbon.width, 1.0f);
+	}
+
+   const Transform cameraTransform = camera->GetTransform();
+   const Vector3 cameraForward = camera->GetForward();
+   const Quaternion cameraRotation = cameraTransform.GetActiveQuaternion();
+   const Vector3 cameraRight = RotateVector(Vector3(1.0f, 0.0f, 0.0f), cameraRotation).Normalize();
+   const Vector3 cameraUp = RotateVector(Vector3(0.0f, 1.0f, 0.0f), cameraRotation).Normalize();
+   // リボンと粒子シミュレーションは同一フレームに別Dispatchされるため、定数バッファを分離する。
+   gpuRibbonSettingsData_->viewProjection = camera->GetViewProjectionMatrix();
+   gpuRibbonSettingsData_->cameraPosition = Vector4(cameraTransform.translation.x, cameraTransform.translation.y, cameraTransform.translation.z, 1.0f);
+   gpuRibbonSettingsData_->cameraRight = Vector4(cameraRight.x, cameraRight.y, cameraRight.z, 0.0f);
+   gpuRibbonSettingsData_->cameraUp = Vector4(cameraUp.x, cameraUp.y, cameraUp.z, 0.0f);
+   gpuRibbonSettingsData_->cameraForward = Vector4(cameraForward.x, cameraForward.y, cameraForward.z, 0.0f);
+   gpuRibbonSettingsData_->particleCount = segmentCount;
+   gpuRibbonVertexBufferView_.SizeInBytes = sizeof(Mesh::VertexData) * segmentCount * 4u;
+   gpuRibbonIndexBufferView_.SizeInBytes = sizeof(uint32_t) * gpuRibbonIndexCount_;
+
+   instancingData_[0].world = MakeIdentity4x4();
+   instancingData_[0].wvp = camera->GetViewProjectionMatrix();
+   instancingData_[0].uvTransform = MakeIdentity4x4();
+	instancingData_[0].color = trailModule_->GetColor();
+   // 負の寿命進行度をリボン頂点アルファの有効フラグとしてVSへ渡す。
+   instancingData_[0].customData = Vector4(-1.0f, 0.0f, 1.0f, 0.0f);
 }
 
 void ParticleSystem::UpdateMatrix(Camera* camera) {
@@ -1123,7 +1306,7 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 	  attributes.stateIndex = particleIndex;
    }
 
-   if (rendererModule_->IsRibbonEnabled()) {
+	if (trailModule_ && trailModule_->IsEnabled()) {
 	  BuildRibbonMesh(camera);
    }
 
@@ -1156,10 +1339,14 @@ void ParticleSystem::Stop() {
    while (!freeParticleIndices_.empty()) freeParticleIndices_.pop();
    for (uint32_t i = 0; i < static_cast<uint32_t>(particles_.size()); ++i) {
 	  particles_[i].isActive = false;
+	  particles_[i].ribbonPoints.clear();
 	  freeParticleIndices_.push(i);
    }
+   detachedRibbons_.clear();
    activeParticleCount_ = 0;
 	gpuRenderParticleCount_ = 0;
+	gpuRibbonSegmentCount_ = 0;
+	gpuRibbonIndexCount_ = 0;
 	renderParticleIndices_.clear();
 	std::fill(gpuStateIndexByCpuParticle_.begin(), gpuStateIndexByCpuParticle_.end(), kInvalidGpuParticleIndex);
 	gpuPendingSpawnRequestCount_ = 0;
@@ -1181,7 +1368,7 @@ void ParticleSystem::Resume() {
 bool ParticleSystem::IsFinished() const {
    if (!isCreated_) return false;
    if (isPlaying_ && !isPaused_ && !mainModule_->IsLooping() && systemTime_ >= mainModule_->GetDuration()) {
-	  return activeParticleCount_ == 0;
+	  return activeParticleCount_ == 0 && detachedRibbons_.empty();
    }
    return false;
 }
@@ -1220,6 +1407,17 @@ void ParticleSystem::SetTextureName(const std::string& textureName) {
 
 Texture* ParticleSystem::GetTexture() const {
    return texture_;
+}
+
+Texture* ParticleSystem::GetRibbonTexture() const {
+	if (!trailModule_ || trailModule_->GetTextureName().empty()) {
+	  return texture_;
+   }
+	Texture* ribbonTexture = EngineContext::GetTexture(trailModule_->GetTextureName());
+   if (!ribbonTexture || ribbonTexture->GetMetadata().IsCubemap()) {
+	  return texture_;
+   }
+   return ribbonTexture;
 }
 
 Material* ParticleSystem::GetMaterialForRenderer() const {
@@ -1447,8 +1645,8 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
    };
    commandList->ResourceBarrier(static_cast<UINT>(std::size(updateBarriers)), updateBarriers);
 
-   const bool needsCpuState = ResolveSortMode() != RendererModule::SortMode::None ||
-	  (rendererModule_ && rendererModule_->IsRibbonEnabled()) || subEmitterSettings_.enabled;
+	const bool needsCpuState = ResolveSortMode() != RendererModule::SortMode::None ||
+	  (trailModule_ && trailModule_->IsEnabled()) || subEmitterSettings_.enabled;
    const auto stateTarget = needsCpuState
 	  ? D3D12_RESOURCE_STATE_COPY_SOURCE
 	  : D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
@@ -1473,7 +1671,9 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
    commandList->ResourceBarrier(1, &mappingToSrv);
    gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
-   // 描画対象が0でも上のUpdate CSまでは実行し、寿命切れ粒子のowner mappingとFreeListを解放する。
+	if (trailModule_ && trailModule_->IsEnabled()) DispatchGpuRibbon(psoManager);
+
+   // 本体が0でも上のUpdate CSとリボン生成までは実行し、死亡後のトレイルだけを描画できるようにする。
    if (gpuRenderParticleCount_ == 0) return;
 
    if (gpuOutputResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
@@ -1506,8 +1706,6 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
 	  D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
    commandList->ResourceBarrier(1, &outputTransition);
    gpuOutputResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-
-   if (rendererModule_ && rendererModule_->IsRibbonEnabled()) DispatchGpuRibbon(psoManager);
 }
 
 void ParticleSystem::EmitParticle() {
@@ -1623,7 +1821,7 @@ void ParticleSystem::EmitParticle() {
    particle.acceleration = Vector3(0.0f, 0.0f, 0.0f);
    particle.ribbonPoints.clear();
    particle.ribbonPoints.push_back(particle.transform.translation);
-   particle.ribbonWidth = rendererModule_->GetRibbonWidthRange().GetValue();
+	particle.ribbonWidth = trailModule_ ? trailModule_->GetWidthRange().GetValue() : 0.5f;
    particle.subEmitterTimer = 0.0f;
    particle.isActive = true;
    // 同一フレームのRate/Burstループにも上限を適用し、設定数を超える生成要求を積まない。
@@ -1753,6 +1951,14 @@ nlohmann::json ParticleSystem::ToJson() const {
 	  j["rendererModule"] = rendererModule_->ToJson();
    }
 
+   if (trailModule_) {
+	  j["trailModule"] = trailModule_->ToJson();
+   }
+
+   if (particleMeshModule_) {
+	  j["particleMeshModule"] = particleMeshModule_->ToJson();
+   }
+
    return j;
 }
 
@@ -1851,6 +2057,23 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
 
    if (j.contains("rendererModule") && rendererModule_) {
 	  rendererModule_->FromJson(j["rendererModule"]);
+   }
+
+   if (j.contains("trailModule") && trailModule_) {
+	  trailModule_->FromJson(j["trailModule"]);
+   } else if (j.contains("rendererModule") && j["rendererModule"].contains("ribbonEnabled") && trailModule_) {
+	  // 旧設定ではトレイル項目がRendererModule内に保存されていた。
+	  trailModule_->FromJson(j["rendererModule"]);
+   }
+
+   if (j.contains("particleMeshModule") && particleMeshModule_) {
+	  particleMeshModule_->FromJson(j["particleMeshModule"]);
+   } else if (j.contains("rendererModule") && particleMeshModule_) {
+	  // 旧RendererModuleのenabledはメッシュ有効状態ではないため引き継がない。
+	  nlohmann::json legacyMeshSettings = j["rendererModule"];
+	  legacyMeshSettings.erase("enabled");
+	  particleMeshModule_->SetEnabled(true);
+	  particleMeshModule_->FromJson(legacyMeshSettings);
    }
 }
 }

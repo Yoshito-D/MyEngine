@@ -3,23 +3,23 @@
     "colorOverLifetimeModule": {
         "enabled": true,
         "endColor": [
-            0.8362832069396973,
-            0.4909045696258545,
-            0.0999099537730217,
-            0.10588235408067703
+            0.8352941274642944,
+            0.4901960790157318,
+            0.09803921729326248,
+            0.0
         ],
         "startColor": [
-            0.5840708017349243,
-            0.2763461470603943,
-            0.04910333454608917,
-            1.0
+            0.5843137502670288,
+            0.27450981736183167,
+            0.05098039284348488,
+            0.9450980424880981
         ]
     },
     "emissionModule": {
         "bursts": [],
         "enabled": true,
         "rateOverDistance": 0.0,
-        "rateOverTime": 500.0
+        "rateOverTime": 1000.0
     },
     "forceOverLifetimeModule": {
         "attractorEnabled": false,
@@ -59,8 +59,8 @@
         },
         "enabled": true,
         "speedLimit": {
-            "max": 5.099999904632568,
-            "min": 5.099999904632568,
+            "max": 16.799999237060547,
+            "min": 16.799999237060547,
             "randomize": false
         }
     },
@@ -81,7 +81,7 @@
             "randomize": false
         },
         "startLifetime": {
-            "max": 0.15000000596046448,
+            "max": 0.07500000298023224,
             "min": 0.05000000074505806,
             "randomize": true
         },
@@ -119,13 +119,13 @@
         "startSpeedMode": 1,
         "startVelocity": {
             "max": [
-                3.0,
-                9.600000381469727,
+                4.0,
+                12.0,
                 -0.20000000298023224
             ],
             "min": [
-                -3.0,
-                0.6000000238418579,
+                -4.0,
+                2.0,
                 -1.2999999523162842
             ],
             "randomize": true
@@ -160,16 +160,12 @@
             "randomize": false
         }
     },
-    "rendererModule": {
-        "billboardType": 1,
+    "particleMeshModule": {
         "boxSize": [
             1.0,
             1.0,
             1.0
         ],
-        "cameraFadeEnabled": false,
-        "cameraFadeFar": 1.0,
-        "cameraFadeNear": 0.25,
         "circleRadius": 0.5,
         "circleSegments": 32,
         "coneHeight": 1.0,
@@ -181,25 +177,13 @@
         "cylinderSegments": 32,
         "cylinderTopRadius": 0.5,
         "enabled": true,
-        "lengthScale": 2.0,
         "meshOriginY": 0.5,
         "particleMeshType": 0,
         "planeDepth": 1.0,
         "planeWidth": 1.0,
-        "ribbonEnabled": false,
-        "ribbonMaxPoints": 16,
-        "ribbonMinDistance": 0.10000000149011612,
-        "ribbonWidth": {
-            "max": 0.0010000000474974513,
-            "min": 0.0010000000474974513,
-            "randomize": false
-        },
         "ringInnerRadius": 0.14000000059604645,
         "ringOuterRadius": 0.5,
         "ringSegments": 4,
-        "rotationSpace": 1,
-        "sortMode": 0,
-        "speedScale": 1.0,
         "sphereRadius": 0.5,
         "sphereSlices": 32,
         "sphereStacks": 16,
@@ -207,6 +191,18 @@
         "torusMajorSegments": 32,
         "torusMinorRadius": 0.20000000298023224,
         "torusMinorSegments": 16
+    },
+    "rendererModule": {
+        "billboardType": 1,
+        "cameraFadeEnabled": false,
+        "cameraFadeFar": 1.0,
+        "cameraFadeNear": 0.25,
+        "enabled": true,
+        "lengthScale": 2.0,
+        "rotationSpace": 1,
+        "sortMode": 0,
+        "speedScale": 1.0,
+        "velocityStretchEnabled": false
     },
     "rotationOverLifetimeModule": {
         "angularVelocityMax": [
@@ -235,9 +231,9 @@
         "enabled": true,
         "length": 0.5,
         "position": [
-            0.0,
-            0.0,
-            0.0
+            0.8238213658332825,
+            -3.2871882915496826,
+            1.7838373184204102
         ],
         "radius": 0.10000000149011612,
         "rotation": [
@@ -246,7 +242,7 @@
             0.0
         ],
         "scale": [
-            1.0,
+            2.0999999046325684,
             1.0,
             1.0
         ],
@@ -258,12 +254,12 @@
         "endSize": [
             0.0,
             0.0,
-            0.20000000298023224
+            0.0
         ],
         "sizeMultiplier": {
-            "max": 1.090000033378601,
-            "min": 1.090000033378601,
-            "randomize": false
+            "max": 0.07000000029802322,
+            "min": 0.0,
+            "randomize": true
         },
         "startSize": [
             0.20000000298023224,
@@ -298,6 +294,27 @@
         "startFrame": 0,
         "tilesX": 1,
         "tilesY": 1
+    },
+    "trailModule": {
+        "color": [
+            0.970588207244873,
+            0.4328185021877289,
+            0.09991347044706345,
+            0.35686275362968445
+        ],
+        "enabled": true,
+        "maxPoints": 26,
+        "minDistance": 0.0010000000474974513,
+        "mode": 1,
+        "retractionDuration": 0.0,
+        "tailWidthScale": 0.0,
+        "textureName": "",
+        "textureTiling": 1.0,
+        "width": {
+            "max": 0.03999999910593033,
+            "min": 0.009999999776482582,
+            "randomize": true
+        }
     },
     "usePostProcess": true,
     "uvTransformModule": {
