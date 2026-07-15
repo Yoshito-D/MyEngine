@@ -36,6 +36,10 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
 	  currentScene_.reset();
    }
 
+#ifdef USE_IMGUI
+   EngineContext::StopPlayModeForSceneInitialization();
+#endif
+
    currentScene_ = std::move(newScene);
    currentScene_->Initialize();
    currentScene_->LoadSceneDataIfNeeded();

@@ -60,6 +60,10 @@ public:
    // @brief タイムスケールを設定
    void SetTimeScale(float timeScale);
 
+   /// @brief 新しいシーンを初期化する前にプレイモードを停止する
+   /// @details 通常の停止と異なり、再生開始時のシーンは復元しない
+   void StopForSceneInitialization();
+
 private:
    // @brief プレイモードの開始処理
    // @param sceneManager シーンマネージャー
@@ -71,6 +75,9 @@ private:
 
    // @brief プレイモードの一時停止処理
    void ClearTransitionRequests();
+
+   // @brief 再生開始時に保存したシーン情報を破棄する
+   void ClearPlaySessionState();
 
    PlayMode mode_ = PlayMode::Edit;
    bool playRequested_ = false;

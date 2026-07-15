@@ -353,6 +353,12 @@ void EngineContext::RequestPlayModeStep() {
       sPlayModeController_->RequestStep();
    }
 }
+
+void EngineContext::StopPlayModeForSceneInitialization() {
+   if (sPlayModeController_) {
+      sPlayModeController_->StopForSceneInitialization();
+   }
+}
 #endif
 
 void EngineContext::LoadModel(const std::string& modelPath, const std::string& modelName) {

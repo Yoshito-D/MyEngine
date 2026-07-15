@@ -290,6 +290,9 @@ public:
    static void RequestPlayModePause();
    static void RequestPlayModeResume();
    static void RequestPlayModeStep();
+
+   /// @brief 新しいシーンの初期化前にプレイモードを停止する
+   static void StopPlayModeForSceneInitialization();
 #endif
 
    //================================================================
