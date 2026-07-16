@@ -271,7 +271,8 @@ bool DrawRandomColor(const std::string& label, RandomColor& value, float columnW
    return changed;
 }
 
-bool DrawModuleEnabled(ParticleModule& module, const char* id) {
+template <typename Module>
+bool DrawModuleEnabled(Module& module, const char* id) {
    ImGui::PushID(id);
    bool enabled = module.IsEnabled();
    const bool changed = ImGuiHelper::DrawCheckbox(L({ "有効", "Enabled" }), enabled, 140.0f);
@@ -380,12 +381,7 @@ void MainModule::DrawInspector() {
 }
 
 void EmissionModule::DrawInspector() {
-   bool enabled = IsEnabled();
-   if (ImGuiHelper::DrawCheckbox(L({ "有効", "Enabled" }), enabled, 140.0f)) {
-	  SetEnabled(enabled);
-   }
-
-   if (!enabled) {
+   if (!DrawModuleEnabled(*this, "Emission")) {
 	  return;
    }
 
@@ -470,12 +466,7 @@ void EmissionModule::DrawInspector() {
 }
 
 void ShapeModule::DrawInspector() {
-   bool enabled = IsEnabled();
-   if (ImGuiHelper::DrawCheckbox(L({ "有効", "Enabled" }), enabled, 140.0f)) {
-	  SetEnabled(enabled);
-   }
-
-   if (!enabled) {
+   if (!DrawModuleEnabled(*this, "Shape")) {
 	  return;
    }
 
@@ -1003,7 +994,7 @@ void TrailModule::DrawInspector() {
 	  mode,
 	  {
 		 { TrailMode::ParticlePath, { "パーティクルの移動軌跡", "Particle Path" } },
-		 { TrailMode::EmitterToParticle, { "エミッター → パーティクル", "Emitter to Particle" } },
+		 { TrailMode::EmitterToParticle, { "エミッターからパーティクル", "Emitter to Particle" } },
 	  },
 	  140.0f)) {
 	  SetMode(mode);

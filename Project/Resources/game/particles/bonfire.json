@@ -145,8 +145,8 @@
         "distortionBlend": 1.0,
         "distortionStrength": 0.0,
         "distortionUseTextureFlow": false,
-        "softParticleDistance": 0.5,
-        "softParticles": false,
+        "softParticleDistance": 1.2510000467300415,
+        "softParticles": true,
         "toonSteps": 0
     },
     "noiseModule": {
@@ -167,16 +167,12 @@
             "randomize": false
         }
     },
-    "rendererModule": {
-        "billboardType": 0,
+    "particleMeshModule": {
         "boxSize": [
             1.0,
             1.0,
             1.0
         ],
-        "cameraFadeEnabled": false,
-        "cameraFadeFar": 1.0,
-        "cameraFadeNear": 0.25,
         "circleRadius": 0.5,
         "circleSegments": 32,
         "coneHeight": 1.0,
@@ -188,25 +184,13 @@
         "cylinderSegments": 3,
         "cylinderTopRadius": 0.5,
         "enabled": true,
-        "lengthScale": 2.0,
         "meshOriginY": 0.0,
         "particleMeshType": 0,
         "planeDepth": 1.0,
         "planeWidth": 1.0,
-        "ribbonEnabled": false,
-        "ribbonMaxPoints": 16,
-        "ribbonMinDistance": 0.10000000149011612,
-        "ribbonWidth": {
-            "max": 0.5,
-            "min": 0.5,
-            "randomize": false
-        },
         "ringInnerRadius": 0.14000000059604645,
         "ringOuterRadius": 0.5,
         "ringSegments": 32,
-        "rotationSpace": 1,
-        "sortMode": 0,
-        "speedScale": 1.0,
         "sphereRadius": 0.5,
         "sphereSlices": 32,
         "sphereStacks": 16,
@@ -214,6 +198,18 @@
         "torusMajorSegments": 32,
         "torusMinorRadius": 0.20000000298023224,
         "torusMinorSegments": 16
+    },
+    "rendererModule": {
+        "billboardType": 1,
+        "cameraFadeEnabled": false,
+        "cameraFadeFar": 1.0,
+        "cameraFadeNear": 0.25,
+        "enabled": true,
+        "lengthScale": 2.0,
+        "rotationSpace": 1,
+        "sortMode": 0,
+        "speedScale": 1.0,
+        "velocityStretchEnabled": false
     },
     "rotationOverLifetimeModule": {
         "angularVelocityMax": [
@@ -242,9 +238,9 @@
         "enabled": true,
         "length": 0.5,
         "position": [
-            0.0,
-            0.0,
-            0.0
+            2.9909138679504395,
+            0.916295051574707,
+            -0.12522488832473755
         ],
         "radius": 0.15000000596046448,
         "rotation": [
@@ -253,9 +249,9 @@
             0.0
         ],
         "scale": [
-            0.6000000238418579,
-            0.10000000149011612,
-            5.0
+            1.0,
+            1.0,
+            1.0
         ],
         "shapeType": 0,
         "torusMajorRadius": 1.0
@@ -269,12 +265,12 @@
         ],
         "sizeMultiplier": {
             "max": 0.4000000059604645,
-            "min": 0.4000000059604645,
-            "randomize": false
+            "min": 0.27000001072883606,
+            "randomize": true
         },
         "startSize": [
             0.4000000059604645,
-            0.0,
+            1.0,
             0.4000000059604645
         ]
     },
@@ -305,6 +301,27 @@
         "startFrame": 0,
         "tilesX": 4,
         "tilesY": 4
+    },
+    "trailModule": {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "enabled": false,
+        "maxPoints": 16,
+        "minDistance": 0.10000000149011612,
+        "mode": 0,
+        "retractionDuration": 0.5,
+        "tailWidthScale": 0.0,
+        "textureName": "",
+        "textureTiling": 1.0,
+        "width": {
+            "max": 0.5,
+            "min": 0.5,
+            "randomize": false
+        }
     },
     "usePostProcess": true,
     "uvTransformModule": {
