@@ -2,7 +2,7 @@
 #include "Sprite.h"
 #include "Texture.h"
 #include "Component/MaterialComponent.h"
-#include "Component/PrimitiveMeshComponent.h"
+#include "Component/Sprite/PrimitiveMeshComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Core/Graphics/Mesh.h"
@@ -12,6 +12,12 @@
 namespace GameEngine {
 
 namespace {
+uint64_t sAutoSpriteMaterialCounter = 0;
+
+std::string BuildAutoSpriteMaterialName() {
+   return "SpriteMaterial_" + std::to_string(++sAutoSpriteMaterialCounter);
+}
+
 std::string BuildDefaultSpriteName(const std::vector<Sprite*>& registeredSprites) {
    auto exists = [&registeredSprites](const std::string& name) {
 	  for (const auto* sprite : registeredSprites) {
@@ -33,6 +39,15 @@ std::string BuildDefaultSpriteName(const std::vector<Sprite*>& registeredSprites
 }
 
 Sprite::Sprite() {
+   auto* transformComponent = AddComponent<TransformComponent>();
+   transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
+   if (auto* materialComponent = AddComponent<MaterialComponent>()) {
+      materialComponent->EnsureMaterial(BuildAutoSpriteMaterialName(), 0xffffffff, Material::LightingMode::NONE);
+   }
+   AddComponent<PrimitiveMeshComponent>();
+   if (auto* renderComponent = AddComponent<RenderComponent>()) {
+      renderComponent->renderSpace = RenderComponent::RenderSpace::Screen;
+   }
    SetObjectName(BuildDefaultSpriteName(sRegisteredSprites_));
    sRegisteredSprites_.push_back(this);
 }

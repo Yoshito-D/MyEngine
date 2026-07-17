@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "AnimationComponent.h"
-#include "ComponentRegistry.h"
+#include "Component/ComponentRegistry.h"
 #include "EngineContext.h"
 #include "Object.h"
 
@@ -8,13 +8,14 @@ namespace {
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::AnimationComponent::kTypeName,
    [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::AnimationComponent>(); },
-   GameEngine::AnimationComponent::kDisplayName
+   GameEngine::AnimationComponent::kDisplayName,
+   GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)
 );
 }
 #include "Model/Model.h"
 #include "Model/ModelAsset.h"
 #include "ModelAssetComponent.h"
-#include "TransformComponent.h"
+#include "Component/TransformComponent.h"
 
 #include <algorithm>
 #include <cmath>

@@ -1,0 +1,35 @@
+{
+  "name": "Text",
+  "reflectionSources": {
+    "vertexShader": "Text",
+    "pixelShader": "Text"
+  },
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Vertex",
+      "shaderRegister": 0,
+      "semantic": "viewport"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "shaderRegister": 0,
+      "semantic": "fontatlas"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Clamp",
+      "addressV": "Clamp",
+      "addressW": "Clamp",
+      "comparisonFunc": "Never",
+      "maxLOD": 0.0,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}

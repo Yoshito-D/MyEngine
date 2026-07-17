@@ -9,6 +9,7 @@
 #include "SpriteRenderer.h"
 #include "ParticleRenderer.h"
 #include "UIRenderer.h"
+#include "Pass/TextRenderer.h"
 #include "LineRenderer.h"
 #include "PostProcess/PostProcessManager.h"
 #include "Scene/Camera/Camera.h"
@@ -36,6 +37,11 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
 	  return false;
    }
    Logger::Info("Successfully loaded pipeline definitions from JSON");
+
+   if (!context.textRenderer->Initialize(context.device, context.psoManager, context.assetManager->GetFontManager())) {
+      Logger::Error("[RenderBootstrapper] Failed to initialize the text renderer.");
+      return false;
+   }
 
    context.lineRenderer->Initialize(context.device->GetDevice(), 100000);
    context.postProcessLineRenderer->Initialize(context.device->GetDevice(), 100000);

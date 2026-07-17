@@ -11,6 +11,7 @@
 #include "ParticleSystem.h"
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
+#include "Object/Text/UIText.h"
 #include "LightDataBuffer.h"
 #include "Component/ComponentRegistry.h"
 
@@ -126,6 +127,7 @@ void Framework::EndFrame() {
    renderer_->EndFrame();
    // 中間リソースの解放
    assetManager_->GetTextureManager()->ReleaseIntermediateResources();
+   assetManager_->GetFontManager()->ReleaseIntermediateResources();
 }
 
 void Framework::Update() {
@@ -142,6 +144,12 @@ void Framework::Update() {
    for (auto* sprite : Sprite::GetRegisteredSprites()) {
 	  if (!sprite) { continue; }
 	  sprite->UpdateComponents(deltaTime);
+   }
+
+   // UIテキストのトゥイーンやタイプライターも通常のコンポーネントと同じ更新経路で動かす。
+   for (auto* text : UIText::GetRegisteredTexts()) {
+	  if (!text) { continue; }
+	  text->UpdateComponents(deltaTime);
    }
 
    // 登録されている全てのパーティクルシステムを更新

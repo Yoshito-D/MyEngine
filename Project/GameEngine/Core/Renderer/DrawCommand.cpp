@@ -50,6 +50,15 @@ DrawCommand DrawCommand::CreateUISprite(Sprite* sprite, Texture* texture, D3D12_
     return cmd;
 }
 
+DrawCommand DrawCommand::CreateText(const TextDrawData& textData, RenderPass renderPass) {
+    DrawCommand cmd;
+    cmd.type = DrawCommandType::Text;
+    cmd.blendMode = BlendMode::kBlendModeNormal;
+    cmd.renderPass = renderPass;
+    cmd.textData = textData;
+    return cmd;
+}
+
 DrawCommand DrawCommand::CreateParticle(ParticleSystem* particleSystem, Camera* camera,
                                        BlendMode blendMode, RenderPass renderPass) {
     DrawCommand cmd;
@@ -94,6 +103,8 @@ std::optional<Vector3> DrawCommandWrapper::GetSortPosition() const {
                 }
             }
             break;
+        case DrawCommandType::Text:
+            break;
         case DrawCommandType::Line:
             if (cmd_.lineData.sortPosition) {
                 return cmd_.lineData.sortPosition;
@@ -109,6 +120,7 @@ Camera* DrawCommandWrapper::GetCamera() const {
     switch (cmd_.type) {
         case DrawCommandType::Model:    return cmd_.modelData.camera;
         case DrawCommandType::Sprite:   return cmd_.isUISprite ? nullptr : cmd_.spriteData.camera;
+        case DrawCommandType::Text:     return nullptr;
         case DrawCommandType::Particle: return cmd_.particleData.camera;
         case DrawCommandType::Line:     return cmd_.lineData.camera;
         default:                        return nullptr;

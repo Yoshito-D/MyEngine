@@ -19,7 +19,7 @@
 #include "../Component/Camera/PlayerRearFollowCamera.h"
 #include "../Component/Camera/PlanetLeashCamera.h"
 #include "Component/TransformComponent.h"
-#include "Component/AnimationComponent.h"
+#include "Component/Model/AnimationComponent.h"
 #include "Component/RenderComponent.h"
 #include "Component/MaterialComponent.h"
 #include "Effect/ParticleSystem.h"

@@ -1,0 +1,52 @@
+{
+  "name": "Text",
+  "vertexShader": "Text",
+  "pixelShader": "Text",
+  "rootSignature": "Text",
+  "supportBlendModes": false,
+  "defaultBlendMode": "Normal",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": false,
+  "depthWriteMask": "Zero",
+  "depthFunc": "Always",
+  "topologyType": "Triangle",
+  "inputLayout": [
+    {
+      "semanticName": "POSITION",
+      "semanticIndex": 0,
+      "format": "R32G32_FLOAT",
+      "alignedByteOffset": 0,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    },
+    {
+      "semanticName": "TEXCOORD",
+      "semanticIndex": 0,
+      "format": "R32G32_FLOAT",
+      "alignedByteOffset": 8,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    },
+    {
+      "semanticName": "COLOR",
+      "semanticIndex": 0,
+      "format": "R32G32B32A32_FLOAT",
+      "alignedByteOffset": 16,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    },
+    {
+      "semanticName": "TEXCOORD",
+      "semanticIndex": 1,
+      "format": "R32G32B32A32_FLOAT",
+      "alignedByteOffset": 32,
+      "inputSlot": 0,
+      "inputSlotClass": "PerVertexData",
+      "instanceDataStepRate": 0
+    }
+  ]
+}

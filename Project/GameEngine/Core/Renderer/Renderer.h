@@ -21,6 +21,7 @@
 #include "SpriteRenderer.h"
 #include "ParticleRenderer.h"
 #include "UIRenderer.h"
+#include "Pass/TextRenderer.h"
 #include "RenderBootstrapper.h"
 #include "Pass/IRenderPass.h"
 #include "Pass/FrameContext.h"
@@ -29,6 +30,7 @@
 #include <vector>
 #include <optional>
 #include <filesystem>
+#include <string_view>
 
 #ifdef USE_IMGUI
 #include "UI/ImGuiManager.h"
@@ -109,6 +111,18 @@ public:
 	  uint32_t screenWidth = Window::kResolutionWidth,
 	  uint32_t screenHeight = Window::kResolutionHeight
    );
+
+   /// @brief UTF-8文字列をスクリーンUIとして描画する
+   /// @param text UTF-8文字列
+   /// @param position 画面アンカーからのピクセル位置
+   /// @param style フォントと表示設定
+   void DrawUIText(std::string_view text, const Vector2& position, const TextStyle& style);
+
+   /// @brief UTF-8文字列のレイアウトサイズを測定する
+   /// @param text UTF-8文字列
+   /// @param style フォントとレイアウト設定
+   /// @return ピクセル単位の幅と高さ
+   Vector2 MeasureText(std::string_view text, const TextStyle& style);
 
 #ifdef USE_IMGUI
    bool GetIsSceneHovered() const { return isSceneHovered_; }
@@ -260,6 +274,7 @@ private:
    std::unique_ptr<SpriteRenderer> spriteRenderer_ = std::make_unique<SpriteRenderer>();
    std::unique_ptr<ParticleRenderer> particleRenderer_ = std::make_unique<ParticleRenderer>();
    std::unique_ptr<UIRenderer> uiRenderer_ = std::make_unique<UIRenderer>();
+   std::unique_ptr<TextRenderer> textRenderer_ = std::make_unique<TextRenderer>();
 
    std::unique_ptr<OffscreenRenderTarget> offscreenRenderTarget_ = std::make_unique<OffscreenRenderTarget>();
    std::unique_ptr<LineRenderer> lineRenderer_ = std::make_unique<LineRenderer>();
@@ -313,6 +328,7 @@ private:
    void DrawAutoRegisteredSprites();
    void DrawAutoRegisteredSkyboxes();
    void DrawAutoRegisteredParticles();
+   void DrawAutoRegisteredTexts();
 
    /// @brief 描画コマンドを実行する
    /// @param commands 実行する描画コマンドリスト

@@ -16,6 +16,7 @@ class ModelRenderer;
 class SpriteRenderer;
 class ParticleRenderer;
 class UIRenderer;
+class TextRenderer;
 class OffscreenRenderTarget;
 
 /// @brief 1フレーム内でRenderPassが共有するデータ
@@ -35,6 +36,7 @@ struct FrameContext {
 	SpriteRenderer*   spriteRenderer   = nullptr;
 	ParticleRenderer* particleRenderer = nullptr;
 	UIRenderer*       uiRenderer       = nullptr;
+	TextRenderer*     textRenderer     = nullptr;
 
 	// ----- コマンドキュー（レンダーパス別）-----
 	std::vector<std::unique_ptr<IDrawCommand>>* opaqueCommands      = nullptr;

@@ -13,11 +13,20 @@ class Model;
 class Object;
 class ParticleSystem;
 class Sprite;
+class UIText;
 
 class EditorObjectStore {
 public:
+   /// @brief 所有するエディター生成オブジェクトを破棄する
+   ~EditorObjectStore();
+
    Object* CreateModel(const std::string& assetId, const Transform* initialTransform = nullptr, const std::string& requestedId = {});
    Object* CreateSprite(const std::string& textureAssetId, const Transform* initialTransform = nullptr, const std::string& requestedId = {});
+   /// @brief エディター管理のUIテキストを作成する
+   /// @param initialTransform 初期スクリーン座標。省略時は既定値を使用する
+   /// @param requestedId 復元時に使用するオブジェクトID
+   /// @return 作成したUIテキスト。作成できなかった場合はnullptr
+   Object* CreateUIText(const Transform* initialTransform = nullptr, const std::string& requestedId = {});
    ParticleSystem* CreateParticleSystem(const std::string& assetId, const std::string& requestedId = {}, const Transform* initialTransform = nullptr);
    Object* RestoreObject(const nlohmann::json& objectData);
    ParticleSystem* RestoreParticleSystem(const nlohmann::json& objectData);
@@ -44,6 +53,9 @@ public:
 
    const std::vector<std::unique_ptr<Model>>& GetModels() const { return models_; }
    const std::vector<std::unique_ptr<Sprite>>& GetSprites() const { return sprites_; }
+   /// @brief エディターが所有するUIテキスト一覧を取得する
+   /// @return UIテキスト一覧
+   const std::vector<std::unique_ptr<UIText>>& GetUITexts() const { return uiTexts_; }
    const std::vector<std::unique_ptr<ParticleSystem>>& GetParticleSystems() const { return particleSystems_; }
 
 private:
@@ -62,9 +74,11 @@ private:
 
    std::vector<std::unique_ptr<Model>> models_;
    std::vector<std::unique_ptr<Sprite>> sprites_;
+   std::vector<std::unique_ptr<UIText>> uiTexts_;
    std::vector<std::unique_ptr<ParticleSystem>> particleSystems_;
    std::vector<std::unique_ptr<Model>> deferredDeleteModels_;
    std::vector<std::unique_ptr<Sprite>> deferredDeleteSprites_;
+   std::vector<std::unique_ptr<UIText>> deferredDeleteUITexts_;
    std::vector<std::unique_ptr<ParticleSystem>> deferredDeleteParticleSystems_;
    std::unordered_map<std::string, Object*> idToObject_;
    std::unordered_map<std::string, ParticleSystem*> idToParticleSystem_;

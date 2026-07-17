@@ -23,12 +23,15 @@
 #include "Asset/AssetManager.h"
 #include "Asset/AnimationAssetManager.h"
 #include "Asset/TextureManager.h"
-#include "Component/AnimationComponent.h"
+#include "Asset/Font/FontManager.h"
+#include "Component/Model/AnimationComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Component/MaterialComponent.h"
 #include "RenderBootstrapper.h"
 #include "Object/Skybox/Skybox.h"
+#include "Object/Text/UIText.h"
+#include "Component/UI/UITextComponent.h"
 #include "Pass/OpaquePass.h"
 #include "Pass/TransparentPass.h"
 #include "Pass/PostEffectPass.h"
@@ -55,7 +58,7 @@ std::vector<GameEngine::Object*> CollectSceneObjectsForRender() {
    std::vector<GameEngine::Object*> objects;
 
    const auto& models = GameEngine::Model::GetRegisteredModels();
-   objects.reserve(models.size() + GameEngine::Sprite::GetRegisteredSprites().size());
+   objects.reserve(models.size() + GameEngine::Sprite::GetRegisteredSprites().size() + GameEngine::UIText::GetRegisteredTexts().size());
    for (auto* model : models) {
 	  if (model) {
 		 objects.push_back(model);
@@ -66,6 +69,13 @@ std::vector<GameEngine::Object*> CollectSceneObjectsForRender() {
    for (auto* sprite : sprites) {
 	  if (sprite) {
 		 objects.push_back(sprite);
+	  }
+   }
+
+   const auto& texts = GameEngine::UIText::GetRegisteredTexts();
+   for (auto* text : texts) {
+	  if (text) {
+		 objects.push_back(text);
 	  }
    }
 
@@ -156,6 +166,7 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
    context.spriteRenderer = spriteRenderer_.get();
    context.particleRenderer = particleRenderer_.get();
    context.uiRenderer = uiRenderer_.get();
+   context.textRenderer = textRenderer_.get();
    context.lineRenderer = lineRenderer_.get();
    context.postProcessLineRenderer = postProcessLineRenderer_.get();
    context.uiCamera = uiCamera_.get();
@@ -196,6 +207,7 @@ void Renderer::BuildDefaultPasses() {
    frameCtx_.spriteRenderer   = spriteRenderer_.get();
    frameCtx_.particleRenderer = particleRenderer_.get();
    frameCtx_.uiRenderer       = uiRenderer_.get();
+   frameCtx_.textRenderer     = textRenderer_.get();
    frameCtx_.opaqueCommands      = &opaqueCommands_;
    frameCtx_.transparentCommands = &transparentCommands_;
    frameCtx_.postProcessCommands = &postProcessCommands_;
@@ -228,6 +240,7 @@ void Renderer::BeginFrame() {
    opaqueCommands_.clear();
    transparentCommands_.clear();
    postProcessCommands_.clear();
+   textRenderer_->BeginFrame();
 
    offscreenRenderTarget_->PreDraw(true);
 
@@ -412,6 +425,32 @@ void Renderer::DrawUI(Sprite* sprite, Texture* texture,
 	  anchorPoint, screenWidth, screenHeight,
 	  effectiveBlendMode, renderPass);
    SubmitDrawCommand(cmd);
+}
+
+void Renderer::DrawUIText(std::string_view text, const Vector2& position, const TextStyle& style) {
+   FontManager* fontManager = assetManager_ ? assetManager_->GetFontManager() : nullptr;
+   if (!fontManager || !textRenderer_ || text.empty()) {
+      return;
+   }
+
+   Transform transform{};
+   transform.translation = { position.x, position.y, 0.0f };
+   const TextLayoutResult layout = fontManager->LayoutText(text, style);
+   const auto drawDataList = textRenderer_->QueueText(
+      layout,
+      style,
+      transform,
+      UITextComponent::kShowAllGlyphs,
+      device_->GetBackBufferWidth(),
+      device_->GetBackBufferHeight());
+   for (const TextDrawData& textData : drawDataList) {
+      SubmitDrawCommand(DrawCommand::CreateText(textData, RenderPass::PostProcess));
+   }
+}
+
+Vector2 Renderer::MeasureText(std::string_view text, const TextStyle& style) {
+   FontManager* fontManager = assetManager_ ? assetManager_->GetFontManager() : nullptr;
+   return fontManager ? fontManager->LayoutText(text, style).size : Vector2{ 0.0f, 0.0f };
 }
 
 void Renderer::DrawLine(const Vector3& start, const Vector3& end, const Vector4& color, bool applyPostProcess) {
@@ -645,6 +684,12 @@ void Renderer::EndFrame() {
    DrawAutoRegisteredModels();
    DrawAutoRegisteredSprites();
    DrawAutoRegisteredParticles();
+   DrawAutoRegisteredTexts();
+
+   if (FontManager* fontManager = assetManager_ ? assetManager_->GetFontManager() : nullptr) {
+      fontManager->FlushPendingUploads();
+   }
+   textRenderer_->UploadBuffers();
 
    // ラインをパス別にフラッシュ
    FlushLineRenderer(lineRenderer_.get(), RenderPass::Opaque);
@@ -821,6 +866,47 @@ void Renderer::DrawAutoRegisteredParticles() {
    }
 }
 
+void Renderer::DrawAutoRegisteredTexts() {
+   FontManager* fontManager = assetManager_ ? assetManager_->GetFontManager() : nullptr;
+   if (!fontManager || !textRenderer_) {
+      return;
+   }
+
+   std::vector<UIText*> texts = UIText::GetRegisteredTexts();
+   std::stable_sort(texts.begin(), texts.end(), [](const UIText* lhs, const UIText* rhs) {
+      const auto* leftText = lhs ? lhs->GetComponent<UITextComponent>() : nullptr;
+      const auto* rightText = rhs ? rhs->GetComponent<UITextComponent>() : nullptr;
+      const int32_t leftOrder = leftText ? leftText->GetStyle().sortingOrder : 0;
+      const int32_t rightOrder = rightText ? rightText->GetStyle().sortingOrder : 0;
+      return leftOrder < rightOrder;
+   });
+
+   for (UIText* text : texts) {
+      if (!text) {
+         continue;
+      }
+      const auto* renderComponent = text->GetComponent<RenderComponent>();
+      auto* textComponent = text->GetComponent<UITextComponent>();
+      const auto* transformComponent = text->GetComponent<TransformComponent>();
+      if (!textComponent || !transformComponent ||
+         (renderComponent && (!renderComponent->visible || !renderComponent->autoRender))) {
+         continue;
+      }
+
+      const TextLayoutResult& layout = textComponent->GetLayout(*fontManager);
+      const auto drawDataList = textRenderer_->QueueText(
+         layout,
+         textComponent->GetStyle(),
+         transformComponent->transform,
+         textComponent->GetVisibleGlyphCount(),
+         device_->GetBackBufferWidth(),
+         device_->GetBackBufferHeight());
+      for (const TextDrawData& textData : drawDataList) {
+         SubmitDrawCommand(DrawCommand::CreateText(textData, RenderPass::PostProcess));
+      }
+   }
+}
+
 void Renderer::ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawCommand>>& commands) {
    for (const auto& icmd : commands) {
 	  const DrawCommand& cmd = icmd->GetDrawCommand();
@@ -842,6 +928,10 @@ void Renderer::ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawComman
 			particleRenderer_->DrawParticle(cmd.particleData,
 			   [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); },
 			   [this]() { InvalidatePipelineBinding(); });
+			break;
+		 case DrawCommandType::Text:
+			textRenderer_->DrawUIText(cmd.textData,
+			   [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); });
 			break;
 		 case DrawCommandType::Line:
 			DrawLineInternal(cmd.lineData);
@@ -865,6 +955,9 @@ void Renderer::DrawLineInternal(const LineDrawData& lineData) {
 }
 
 void Renderer::Finalize() {
+   if (textRenderer_) {
+      textRenderer_->Finalize();
+   }
 #ifdef USE_IMGUI
    imGuiManager_->Finalize();
 #endif

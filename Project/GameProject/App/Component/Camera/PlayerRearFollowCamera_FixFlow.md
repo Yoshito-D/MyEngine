@@ -191,9 +191,3 @@ LookAt 行列を作る際、視線方向とUpが平行に近づくとRightを安
 - eye の水平角は直前の水平方向と旋回側を保持し、半径極小や180度付近でも同じ側から回り込む。
 - LookAt の Right ベクトルは前フレーム情報とクォータニオンSlerpで安定化し、注視点を保ったまま急なロールを抑える。
 
-## 確認したこと
-
-- `Debug x64` と `Development x64` のビルドが成功している。
-- 編集した `PlayerRearFollowCamera.cpp` と `PlayerRearFollowCamera.h` は CRLF を維持している。
-- 生成された空の `.git` / `.agents` は残していない。
-

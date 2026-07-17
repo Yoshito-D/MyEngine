@@ -70,6 +70,26 @@ private:
    nlohmann::json snapshot_;
 };
 
+/// @brief UIテキストの作成をUndo/Redo可能にするコマンド
+class CreateUITextCommand final : public IEditorCommand {
+public:
+   /// @brief UIテキスト作成コマンドを構築する
+   /// @param initialTransform 初期スクリーン座標
+   explicit CreateUITextCommand(Transform initialTransform = Transform());
+
+   /// @copydoc IEditorCommand::Execute
+   bool Execute(EditorSceneContext& context) override;
+   /// @copydoc IEditorCommand::Undo
+   void Undo(EditorSceneContext& context) override;
+   /// @copydoc IEditorCommand::GetName
+   const char* GetName() const override { return "Create UI Text"; }
+
+private:
+   Transform initialTransform_{};
+   std::string objectId_;
+   nlohmann::json snapshot_;
+};
+
 class CreateParticleSystemCommand final : public IEditorCommand {
 public:
    explicit CreateParticleSystemCommand(std::string assetId, Transform initialTransform = Transform());

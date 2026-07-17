@@ -1,26 +1,12 @@
 #include "pch.h"
 #include "Object.h"
 #include "Component/ComponentRegistry.h"
-#include "Component/TransformComponent.h"
-#include "Component/MaterialComponent.h"
 #include "Component/ObjectNameComponent.h"
 
 namespace GameEngine {
-namespace {
-uint64_t sAutoMaterialCounter_ = 0;
-
-std::string BuildAutoMaterialName() {
-   return "ObjectMaterial_" + std::to_string(++sAutoMaterialCounter_);
-}
-}
 
 Object::Object() {
-   auto* transformComponent = AddComponent<TransformComponent>();
-   transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
-   auto* materialComponent = AddComponent<MaterialComponent>();
-   if (materialComponent) {
-	  materialComponent->EnsureMaterial(BuildAutoMaterialName());
-   }
+   AddComponent<ObjectNameComponent>();
 }
 
 void Object::SetObjectName(const std::string& name) {

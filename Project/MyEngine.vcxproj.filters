@@ -258,6 +258,33 @@
     <Filter Include="Resources\engine\shaders\postprocess">
       <UniqueIdentifier>{6595d8e8-f0f9-4f12-8b22-ea431efbc693}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameEngine\Core\Asset\Font">
+      <UniqueIdentifier>{ba334e4a-6945-4dd0-9494-9e2086aa0289}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Core\UI\Text">
+      <UniqueIdentifier>{00b7091d-5252-459f-9bfa-9581108a1cd3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Object\Component\UI">
+      <UniqueIdentifier>{8a3052d3-18d5-41a5-b5ea-200692a10c67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Object\Component\Model">
+      <UniqueIdentifier>{d2f1560d-cdce-42b9-bfc0-a1d25725e4de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Object\Component\Sprite">
+      <UniqueIdentifier>{9c5278bc-19d6-48b2-b7d5-bfc03261cfcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Object\Component\Particle">
+      <UniqueIdentifier>{1c69d98d-3df3-452b-8b08-9515604ca762}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Object\Component\Skybox">
+      <UniqueIdentifier>{cdf91fbd-435b-461c-99e0-6860e2b56d86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameEngine\Object\Text">
+      <UniqueIdentifier>{54f16ec0-12da-4e03-8f95-c761401ab130}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources\engine\shaders\graphics\text">
+      <UniqueIdentifier>{d074ac8c-bede-4d05-8cb4-8d428a05691d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="AGENTS.md" />
@@ -271,6 +298,9 @@
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso\graphics</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json">
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\pipeline_registry.json">
@@ -360,11 +390,20 @@
     <None Include="Resources\engine\pipelines\root_signatures\graphics\skybox_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
+    </None>
     <None Include="Resources\engine\postprocess\postprocess_registry.json">
       <Filter>Resources\engine\postprocess</Filter>
     </None>
     <None Include="Resources\engine\shaders\shader_registry.json">
       <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\text\Text.PS.hlsl">
+      <Filter>Resources\engine\shaders\graphics\text</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\text\Text.VS.hlsl">
+      <Filter>Resources\engine\shaders\graphics\text</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -416,6 +455,18 @@
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Asset\AnimationAssetManager.cpp">
       <Filter>GameEngine\Core\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\Font\FontFace.cpp">
+      <Filter>GameEngine\Core\Asset\Font</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\Font\FontManager.cpp">
+      <Filter>GameEngine\Core\Asset\Font</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\Font\GlyphAtlas.cpp">
+      <Filter>GameEngine\Core\Asset\Font</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Asset\Font\MsdfFont.cpp">
+      <Filter>GameEngine\Core\Asset\Font</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Asset\AssetManager.cpp">
       <Filter>GameEngine\Core\Asset</Filter>
@@ -494,6 +545,15 @@
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pass\CommandDispatch.cpp">
       <Filter>GameEngine\Core\Renderer\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\TextRenderer.cpp">
+      <Filter>GameEngine\Core\Renderer\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\UI\Text\TextLayout.cpp">
+      <Filter>GameEngine\Core\UI\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\UI\Text\Utf8Decoder.cpp">
+      <Filter>GameEngine\Core\UI\Text</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pass\LineRenderer.cpp">
       <Filter>GameEngine\Core\Renderer\Pass</Filter>
@@ -693,8 +753,8 @@
     <ClCompile Include="GameEngine\Object\Object.cpp">
       <Filter>GameEngine\Object</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp">
-      <Filter>GameEngine\Object\Component</Filter>
+    <ClCompile Include="GameEngine\Object\Component\Model\AnimationComponent.cpp">
+      <Filter>GameEngine\Object\Component\Model</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp">
       <Filter>GameEngine\Object\Component</Filter>
@@ -702,23 +762,38 @@
     <ClCompile Include="GameEngine\Object\Component\ComponentRegistry.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\UI\TypewriterComponent.cpp">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\UI\UIFadeComponent.cpp">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\UI\UITextComponent.cpp">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\UI\UITransformTweenComponent.cpp">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\IObjectComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\ModelAssetComponent.cpp">
-      <Filter>GameEngine\Object\Component</Filter>
+    <ClCompile Include="GameEngine\Object\Component\Model\ModelAssetComponent.cpp">
+      <Filter>GameEngine\Object\Component\Model</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\ParticleEmitterComponent.cpp">
-      <Filter>GameEngine\Object\Component</Filter>
+    <ClCompile Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.cpp">
+      <Filter>GameEngine\Object\Component\Particle</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\PrimitiveMeshComponent.cpp">
-      <Filter>GameEngine\Object\Component</Filter>
+    <ClCompile Include="GameEngine\Object\Component\Sprite\PrimitiveMeshComponent.cpp">
+      <Filter>GameEngine\Object\Component\Sprite</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp">
+      <Filter>GameEngine\Object\Component\Skybox</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
@@ -740,6 +815,9 @@
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Sprite\Sprite.cpp">
       <Filter>GameEngine\Object\Sprite</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Text\UIText.cpp">
+      <Filter>GameEngine\Object\Text</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\BaseScene.cpp">
       <Filter>GameEngine\Scene</Filter>
@@ -973,6 +1051,18 @@
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h">
       <Filter>GameEngine\Core\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Asset\Font\FontFace.h">
+      <Filter>GameEngine\Core\Asset\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Asset\Font\FontManager.h">
+      <Filter>GameEngine\Core\Asset\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Asset\Font\GlyphAtlas.h">
+      <Filter>GameEngine\Core\Asset\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Asset\Font\MsdfFont.h">
+      <Filter>GameEngine\Core\Asset\Font</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Asset\AssetManager.h">
       <Filter>GameEngine\Core\Asset</Filter>
@@ -1277,8 +1367,11 @@
     <ClInclude Include="GameEngine\Object\Object.h">
       <Filter>GameEngine\Object</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h">
-      <Filter>GameEngine\Object\Component</Filter>
+    <ClInclude Include="GameEngine\Object\ObjectType.h">
+      <Filter>GameEngine\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\Model\AnimationComponent.h">
+      <Filter>GameEngine\Object\Component\Model</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\ComponentContainer.h">
       <Filter>GameEngine\Object\Component</Filter>
@@ -1286,23 +1379,41 @@
     <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\UI\TypewriterComponent.h">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\UI\UIAnimationTypes.h">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\UI\UIFadeComponent.h">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\UI\UITextComponent.h">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\UI\UITransformTweenComponent.h">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\ModelAssetComponent.h">
-      <Filter>GameEngine\Object\Component</Filter>
+    <ClInclude Include="GameEngine\Object\Component\Model\ModelAssetComponent.h">
+      <Filter>GameEngine\Object\Component\Model</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\ParticleEmitterComponent.h">
-      <Filter>GameEngine\Object\Component</Filter>
+    <ClInclude Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.h">
+      <Filter>GameEngine\Object\Component\Particle</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\PrimitiveMeshComponent.h">
-      <Filter>GameEngine\Object\Component</Filter>
+    <ClInclude Include="GameEngine\Object\Component\Sprite\PrimitiveMeshComponent.h">
+      <Filter>GameEngine\Object\Component\Sprite</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\Skybox\SkyboxComponent.h">
+      <Filter>GameEngine\Object\Component\Skybox</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\RenderComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
@@ -1327,6 +1438,21 @@
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Sprite\Sprite.h">
       <Filter>GameEngine\Object\Sprite</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Text\UIText.h">
+      <Filter>GameEngine\Object\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\TextRenderer.h">
+      <Filter>GameEngine\Core\Renderer\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\UI\Text\TextLayout.h">
+      <Filter>GameEngine\Core\UI\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\UI\Text\TextTypes.h">
+      <Filter>GameEngine\Core\UI\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\UI\Text\Utf8Decoder.h">
+      <Filter>GameEngine\Core\UI\Text</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Scene\BaseScene.h">
       <Filter>GameEngine\Scene</Filter>

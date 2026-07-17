@@ -6,6 +6,7 @@
 #include <Object.h>
 #include <ParticleSystem.h>
 #include <Sprite/Sprite.h>
+#include <Object/Text/UIText.h>
 #include <Component/RenderComponent.h>
 #include <Skybox/Skybox.h>
 #include <filesystem>
@@ -15,6 +16,9 @@
 
 namespace {
 std::string GetSceneObjectTypeName(const GameEngine::Object* object) {
+   if (dynamic_cast<const GameEngine::UIText*>(object)) {
+	  return "UIText";
+   }
    if (dynamic_cast<const GameEngine::Model*>(object)) {
 	  return "Model";
    }
@@ -115,6 +119,9 @@ private:
 	  for (auto* sprite : GameEngine::Sprite::GetRegisteredSprites()) {
 		 registerObject(sprite);
 	  }
+	  for (auto* uiText : GameEngine::UIText::GetRegisteredTexts()) {
+		 registerObject(uiText);
+	  }
 	  for (auto* skybox : GameEngine::Skybox::GetRegisteredSkyboxes()) {
 		 registerObject(skybox);
 	  }
@@ -165,6 +172,11 @@ private:
 		 }
 		 for (auto* sprite : GameEngine::Sprite::GetRegisteredSprites()) {
 			if (sprite == object) {
+			   return true;
+			}
+		 }
+		 for (auto* uiText : GameEngine::UIText::GetRegisteredTexts()) {
+			if (uiText == object) {
 			   return true;
 			}
 		 }
@@ -474,6 +486,7 @@ void BaseScene::Finalize() {
 
    Model::ClearRegisteredModels();
    Sprite::ClearRegisteredSprites();
+   UIText::ClearRegisteredTexts();
    ParticleSystem::ClearRegisteredParticleSystems();
    Skybox::ClearRegisteredSkyboxes();
    sNextSceneName_ = "";
