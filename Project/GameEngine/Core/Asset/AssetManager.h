@@ -4,6 +4,7 @@
 #include "TextureManager.h"
 #include "SoundManager.h"
 #include "AnimationAssetManager.h"
+#include "Font/FontManager.h"
 #include <memory>
 
 namespace GameEngine {
@@ -37,11 +38,16 @@ public:
    /// @brief アニメーションアセットマネージャーを取得
    /// @return アニメーションアセットマネージャー
    AnimationAssetManager* GetAnimationAssetManager() { return animationAssetManager_.get(); }
+
+   /// @brief フォントマネージャーを取得
+   /// @return フォントマネージャー
+   FontManager* GetFontManager() { return fontManager_.get(); }
 private:
    std::unique_ptr<MaterialManager> materialManager_ = std::make_unique<MaterialManager>();
    std::unique_ptr<ModelAssetManager> modelAssetManager_ = std::make_unique<ModelAssetManager>();
    std::unique_ptr<TextureManager> textureManager_ = std::make_unique<TextureManager>();
    std::unique_ptr<SoundManager> soundManager_ = std::make_unique<SoundManager>();
    std::unique_ptr<AnimationAssetManager> animationAssetManager_ = std::make_unique<AnimationAssetManager>();
+   std::unique_ptr<FontManager> fontManager_ = std::make_unique<FontManager>();
 };
 }

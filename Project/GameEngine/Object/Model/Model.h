@@ -5,7 +5,7 @@
 #include "Object.h"
 #include "../Utility/VectorMath.h"
 #include "ModelAsset.h"
-#include "Component/ModelAssetComponent.h"
+#include "Component/Model/ModelAssetComponent.h"
 #include <vector>
 #include <optional>
 
@@ -21,6 +21,10 @@ class Model :public Object {
 public:
    Model();
    ~Model() override;
+
+   /// @brief モデルのオブジェクト種別を取得する
+   /// @return ObjectType::Model
+   ObjectType GetObjectType() const override { return ObjectType::Model; }
 
    static const std::vector<Model*>& GetRegisteredModels();
 

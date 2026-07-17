@@ -12,7 +12,8 @@ namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       GameEngine::RenderComponent::kTypeName,
       [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::RenderComponent>(); },
-      GameEngine::RenderComponent::kDisplayName
+      GameEngine::RenderComponent::kDisplayName,
+      GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite | GameEngine::ObjectType::UIText
    );
 
    const char* ToRenderSpaceName(GameEngine::RenderComponent::RenderSpace renderSpace) {

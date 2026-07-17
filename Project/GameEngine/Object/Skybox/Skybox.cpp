@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Skybox.h"
+#include "Component/Skybox/SkyboxComponent.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ResourceHelper.h"
 #include <algorithm>
@@ -30,6 +31,7 @@ std::string BuildDefaultSkyboxName(const std::vector<Skybox*>& registeredSkyboxe
 }
 
 Skybox::Skybox() {
+   AddComponent<SkyboxComponent>();
    SetObjectName(BuildDefaultSkyboxName(sRegisteredSkyboxes_));
    sRegisteredSkyboxes_.push_back(this);
 }
@@ -56,14 +58,25 @@ void Skybox::Create(GraphicsDevice* device) {
 
    materialResource_ = ResourceHelper::CreateBufferResource(device->GetDevice(), sizeof(SkyboxMaterialData));
    materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
-   materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+   const auto* skyboxComponent = GetComponent<SkyboxComponent>();
+   materialData_->color = skyboxComponent ? skyboxComponent->GetColor() : Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void Skybox::SetTexture(Texture* texture) {
-   texture_ = texture;
+   if (auto* skyboxComponent = GetComponent<SkyboxComponent>()) {
+      skyboxComponent->SetTexture(texture);
+   }
+}
+
+Texture* Skybox::GetTexture() const {
+   const auto* skyboxComponent = GetComponent<SkyboxComponent>();
+   return skyboxComponent ? skyboxComponent->GetTexture() : nullptr;
 }
 
 void Skybox::SetColor(const Vector4& color) {
+   if (auto* skyboxComponent = GetComponent<SkyboxComponent>()) {
+      skyboxComponent->SetColor(color);
+   }
    if (materialData_) {
 	  materialData_->color = color;
    }
@@ -78,6 +91,11 @@ ID3D12Resource* Skybox::GetMaterialResource() const {
 }
 
 void Skybox::UpdateTransform(const Matrix4x4& viewProjectionMatrix) {
+   if (materialData_) {
+      if (const auto* skyboxComponent = GetComponent<SkyboxComponent>()) {
+         materialData_->color = skyboxComponent->GetColor();
+      }
+   }
    if (transformData_) {
 	  // VSシェーダーは wVP のみ使用する
 	  transformData_->wVP = viewProjectionMatrix;

@@ -1,5 +1,5 @@
 #pragma once
-#include "IObjectComponent.h"
+#include "Component/IObjectComponent.h"
 #include "Model/ModelAsset.h"
 #include <memory>
 #include <optional>

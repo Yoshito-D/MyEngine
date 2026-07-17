@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <string_view>
 #include <cstdint>
 #include <vector>
 #include <optional>
@@ -350,6 +351,16 @@ public:
    /// @return テクスチャ名のリスト
    static std::vector<std::string> GetTextureNames();
 
+   /// @brief TrueType/OpenTypeフォントを読み込む
+   /// @param fontPath .ttfまたは.otfファイルのパス
+   /// @param fontId UIテキストから参照するID
+   /// @return 読み込みに成功した場合はtrue
+   static bool LoadFont(const std::string& fontPath, const std::string& fontId);
+
+   /// @brief 読み込み済みフォントID一覧を取得する
+   /// @return フォントIDのリスト
+   static std::vector<std::string> GetFontIds();
+
    /// @brief マテリアルを作成する
    /// @param name マテリアル名
    /// @param color 色（デフォルトは白）
@@ -583,6 +594,18 @@ public:
 	  uint32_t screenWidth = Window::kResolutionWidth,
 	  uint32_t screenHeight = Window::kResolutionHeight
    );
+
+   /// @brief UTF-8文字列をスクリーンUIとして描画する
+   /// @param text UTF-8文字列
+   /// @param position 画面アンカーからのピクセル位置
+   /// @param style フォントと表示設定
+   static void DrawUIText(std::string_view text, const Vector2& position, const TextStyle& style);
+
+   /// @brief UTF-8文字列のレイアウトサイズを測定する
+   /// @param text UTF-8文字列
+   /// @param style フォントとレイアウト設定
+   /// @return ピクセル単位の幅と高さ
+   static Vector2 MeasureText(std::string_view text, const TextStyle& style);
 
 #ifdef USE_IMGUI
    static bool GetIsSceneHovered();

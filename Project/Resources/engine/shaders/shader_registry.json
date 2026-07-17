@@ -2,6 +2,8 @@
   "shaders": [
     { "name": "Object3D", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/object3d/Object3d.VS.hlsl", "entryPoint": "main" },
     { "name": "Object3D", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/object3d/Object3d.PS.hlsl", "entryPoint": "main" },
+    { "name": "Text", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/text/Text.VS.hlsl", "entryPoint": "main" },
+    { "name": "Text", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/text/Text.PS.hlsl", "entryPoint": "main" },
     { "name": "Skinning", "type": "Compute", "filePath": "Resources/engine/shaders/compute/skinning/Skinning.CS.hlsl", "entryPoint": "main" },
     { "name": "ParticleInit", "type": "Compute", "filePath": "Resources/engine/shaders/compute/particle/ParticleInit.CS.hlsl", "entryPoint": "main" },
     { "name": "ParticleEmitter", "type": "Compute", "filePath": "Resources/engine/shaders/compute/particle/ParticleEmitter.CS.hlsl", "entryPoint": "main" },

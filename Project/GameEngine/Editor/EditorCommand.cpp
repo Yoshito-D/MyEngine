@@ -4,7 +4,7 @@
 #ifdef USE_IMGUI
 
 #include "Component/MaterialComponent.h"
-#include "Component/ModelAssetComponent.h"
+#include "Component/Model/ModelAssetComponent.h"
 #include "Component/TransformComponent.h"
 #include "EditorSceneContext.h"
 #include "Effect/ParticleSystem.h"
@@ -124,6 +124,39 @@ bool CreateSpriteCommand::Execute(EditorSceneContext& context) {
 }
 
 void CreateSpriteCommand::Undo(EditorSceneContext& context) {
+   if (objectId_.empty()) {
+      return;
+   }
+
+   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
+      context.SelectObject(nullptr);
+   }
+   context.GetObjectStore().DeleteObject(objectId_);
+}
+
+CreateUITextCommand::CreateUITextCommand(Transform initialTransform)
+   : initialTransform_(initialTransform) {
+}
+
+bool CreateUITextCommand::Execute(EditorSceneContext& context) {
+   Object* object = nullptr;
+   if (!snapshot_.is_null() && snapshot_.is_object()) {
+      object = context.GetObjectStore().RestoreObject(snapshot_);
+   } else {
+      object = context.GetObjectStore().CreateUIText(&initialTransform_);
+   }
+
+   if (!object) {
+      return false;
+   }
+
+   objectId_ = context.GetObjectStore().GetId(object);
+   context.SelectObject(object);
+   return true;
+}
+
+void CreateUITextCommand::Undo(EditorSceneContext& context) {
    if (objectId_.empty()) {
       return;
    }

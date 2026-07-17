@@ -1,6 +1,7 @@
 {
   "rootSignatures": [
     "resources/engine/pipelines/root_signatures/graphics/object3d_rootsig.json",
+    "resources/engine/pipelines/root_signatures/graphics/text_rootsig.json",
     "resources/engine/pipelines/root_signatures/compute/skinning_compute_rootsig.json",
     "resources/engine/pipelines/root_signatures/compute/particle_init_compute_rootsig.json",
     "resources/engine/pipelines/root_signatures/compute/particle_emitter_compute_rootsig.json",
@@ -17,6 +18,7 @@
   ],
   "pipelines": [
     "resources/engine/pipelines/pso/graphics/object3d_pipeline.json",
+    "resources/engine/pipelines/pso/graphics/text_pipeline.json",
     "resources/engine/pipelines/pso/compute/skinning_compute_pipeline.json",
     "resources/engine/pipelines/pso/compute/particle_init_compute_pipeline.json",
     "resources/engine/pipelines/pso/compute/particle_emitter_compute_pipeline.json",

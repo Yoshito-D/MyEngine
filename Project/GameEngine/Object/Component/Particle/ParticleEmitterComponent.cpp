@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "ParticleEmitterComponent.h"
-#include "ComponentRegistry.h"
+#include "Component/ComponentRegistry.h"
 #include "Object.h"
-#include "TransformComponent.h"
-#include "ModelAssetComponent.h"
+#include "Component/TransformComponent.h"
+#include "Component/Model/ModelAssetComponent.h"
 #include "Effect/ParticleSystem.h"
 #include "MathUtils.h"
 #include "Framework/EngineContext.h"
@@ -21,7 +21,8 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    [](GameEngine::Object& o) -> GameEngine::IObjectComponent* {
 	  return o.AddComponent<GameEngine::ParticleEmitterComponent>();
    },
-   GameEngine::ParticleEmitterComponent::kDisplayName
+   GameEngine::ParticleEmitterComponent::kDisplayName,
+   GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)
 );
 }
 

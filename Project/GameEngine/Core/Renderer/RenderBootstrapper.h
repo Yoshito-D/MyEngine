@@ -15,6 +15,7 @@ class ModelRenderer;
 class SpriteRenderer;
 class ParticleRenderer;
 class UIRenderer;
+class TextRenderer;
 class OffscreenRenderTarget;
 class LineRenderer;
 class PostProcessManager;
@@ -34,6 +35,7 @@ struct RenderBootstrapContext {
    SpriteRenderer* spriteRenderer = nullptr;
    ParticleRenderer* particleRenderer = nullptr;
    UIRenderer* uiRenderer = nullptr;
+   TextRenderer* textRenderer = nullptr;
    LineRenderer* lineRenderer = nullptr;
    LineRenderer* postProcessLineRenderer = nullptr;
    Camera* uiCamera = nullptr;

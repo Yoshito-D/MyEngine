@@ -12,9 +12,9 @@
 #include "AreaLight.h"
 #include "LightDataBuffer.h"
 #include "Model/ModelAsset.h"
-#include "Component/AnimationComponent.h"
+#include "Component/Model/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
-#include "Component/ModelAssetComponent.h"
+#include "Component/Model/ModelAssetComponent.h"
 
 namespace GameEngine {
 namespace {

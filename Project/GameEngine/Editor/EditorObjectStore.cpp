@@ -1,14 +1,15 @@
 #include "pch.h"
 #include "EditorObjectStore.h"
 
-#include "Component/ModelAssetComponent.h"
+#include "Component/Model/ModelAssetComponent.h"
 #include "Component/MaterialComponent.h"
-#include "Component/ParticleEmitterComponent.h"
+#include "Component/Particle/ParticleEmitterComponent.h"
 #include "Component/TransformComponent.h"
 #include "Effect/ParticleSystem.h"
 #include "Framework/EngineContext.h"
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
+#include "Text/UIText.h"
 #include <algorithm>
 #include <filesystem>
 
@@ -89,6 +90,8 @@ Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::
 }
 } // namespace
 
+EditorObjectStore::~EditorObjectStore() = default;
+
 Object* EditorObjectStore::CreateModel(const std::string& assetId, const Transform* initialTransform, const std::string& requestedId) {
    auto modelAsset = EngineContext::LoadModelByAssetId(assetId);
    if (!modelAsset) {
@@ -146,6 +149,30 @@ Object* EditorObjectStore::CreateSprite(const std::string& textureAssetId, const
    return rawSprite;
 }
 
+Object* EditorObjectStore::CreateUIText(const Transform* initialTransform, const std::string& requestedId) {
+   auto uiText = std::make_unique<UIText>();
+   UIText* rawText = uiText.get();
+
+   TextStyle style{};
+   const auto fontIds = EngineContext::GetFontIds();
+   if (!fontIds.empty()) {
+      style.fontId = fontIds.front();
+   }
+   rawText->Create("Text", style);
+   rawText->SetObjectName(BuildUniqueObjectName("UIText"));
+
+   if (initialTransform) {
+      if (auto* transformComponent = rawText->GetComponent<TransformComponent>()) {
+         transformComponent->transform = *initialTransform;
+      }
+   }
+
+   const std::string id = AllocateId(requestedId);
+   RegisterObject(id, rawText);
+   uiTexts_.push_back(std::move(uiText));
+   return rawText;
+}
+
 ParticleSystem* EditorObjectStore::CreateParticleSystem(const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
    auto particleSystem = std::make_unique<ParticleSystem>();
    ParticleSystem* rawParticleSystem = particleSystem.get();
@@ -174,6 +201,19 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
    if (objectType == "ParticleSystem") {
       RestoreParticleSystem(objectData);
       return nullptr;
+   }
+
+   if (objectType == "UIText") {
+      const std::string id = objectData.value("id", "");
+      Object* object = CreateUIText(nullptr, id);
+      if (!object) {
+         return nullptr;
+      }
+
+      if (objectData.contains("components") && objectData.at("components").is_array()) {
+         object->DeserializeComponents(objectData.at("components"));
+      }
+      return object;
    }
 
    if (objectType == "Sprite") {
@@ -238,6 +278,24 @@ bool EditorObjectStore::DeleteObject(const std::string& objectId) {
    }
 
    Object* target = mapIt->second;
+   if (auto* textTarget = dynamic_cast<UIText*>(target)) {
+      auto vecIt = std::find_if(uiTexts_.begin(), uiTexts_.end(),
+         [textTarget](const std::unique_ptr<UIText>& text) {
+            return text.get() == textTarget;
+         });
+
+      if (vecIt == uiTexts_.end()) {
+         return false;
+      }
+
+      UnregisterObject(target);
+      UnregisterOwnedRuntimeSystems(target);
+      UIText::UnregisterText(textTarget);
+      deferredDeleteUITexts_.push_back(std::move(*vecIt));
+      uiTexts_.erase(vecIt);
+      return true;
+   }
+
    if (auto* modelTarget = dynamic_cast<Model*>(target)) {
       auto vecIt = std::find_if(models_.begin(), models_.end(),
          [modelTarget](const std::unique_ptr<Model>& model) {
@@ -302,6 +360,7 @@ bool EditorObjectStore::DeleteParticleSystem(const std::string& objectId) {
 
 void EditorObjectStore::FlushDeferredDeletes() {
    deferredDeleteParticleSystems_.clear();
+   deferredDeleteUITexts_.clear();
    deferredDeleteSprites_.clear();
    deferredDeleteModels_.clear();
 }
@@ -321,6 +380,13 @@ void EditorObjectStore::Clear() {
          deferredDeleteSprites_.push_back(std::move(sprite));
       }
    }
+   for (auto& uiText : uiTexts_) {
+      if (uiText) {
+         UnregisterOwnedRuntimeSystems(uiText.get());
+         UIText::UnregisterText(uiText.get());
+         deferredDeleteUITexts_.push_back(std::move(uiText));
+      }
+   }
    for (auto& particleSystem : particleSystems_) {
       if (particleSystem) {
          ParticleSystem::UnregisterParticleSystem(particleSystem.get());
@@ -334,6 +400,7 @@ void EditorObjectStore::Clear() {
    idToParticleSystem_.clear();
    particleSystemAssetIds_.clear();
    particleSystems_.clear();
+   uiTexts_.clear();
    sprites_.clear();
    models_.clear();
 }
@@ -410,6 +477,14 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
       return nlohmann::json::object();
    }
 
+   if (const auto* uiText = dynamic_cast<const UIText*>(object)) {
+      return nlohmann::json{
+         { "id", id },
+         { "objectType", "UIText" },
+         { "components", uiText->SerializeComponents() }
+      };
+   }
+
    if (const auto* sprite = dynamic_cast<const Sprite*>(object)) {
       std::string textureAssetId;
       if (const auto* materialComponent = sprite->GetComponent<MaterialComponent>()) {
@@ -457,6 +532,9 @@ bool EditorObjectStore::ApplyObjectState(Object* object, const nlohmann::json& o
       return false;
    }
    if (objectType == "Sprite" && dynamic_cast<Sprite*>(object) == nullptr) {
+      return false;
+   }
+   if (objectType == "UIText" && dynamic_cast<UIText*>(object) == nullptr) {
       return false;
    }
 
@@ -530,6 +608,19 @@ nlohmann::json EditorObjectStore::SerializeAll() const {
       objects.push_back(SerializeObject(id));
    }
 
+   for (const auto& uiText : uiTexts_) {
+      if (!uiText) {
+         continue;
+      }
+
+      const std::string id = GetId(uiText.get());
+      if (id.empty()) {
+         continue;
+      }
+
+      objects.push_back(SerializeObject(id));
+   }
+
    for (const auto& particleSystem : particleSystems_) {
       if (!particleSystem) {
          continue;
@@ -570,6 +661,11 @@ std::string EditorObjectStore::BuildUniqueObjectName(const std::string& baseName
       }
       for (const auto* sprite : Sprite::GetRegisteredSprites()) {
          if (sprite && sprite->GetObjectName() == name) {
+            return true;
+         }
+      }
+      for (const auto* uiText : UIText::GetRegisteredTexts()) {
+         if (uiText && uiText->GetObjectName() == name) {
             return true;
          }
       }

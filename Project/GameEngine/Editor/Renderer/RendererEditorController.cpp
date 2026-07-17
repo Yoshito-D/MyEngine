@@ -7,7 +7,7 @@
 #include "Asset/MaterialManager.h"
 #include "Asset/ModelAssetManager.h"
 #include "Component/MaterialComponent.h"
-#include "Component/ModelAssetComponent.h"
+#include "Component/Model/ModelAssetComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Graphics/Material.h"
@@ -15,6 +15,7 @@
 #include "Component/IObjectComponent.h"
 #include "Model/Model.h"
 #include "Sprite/Sprite.h"
+#include "Text/UIText.h"
 #include "Object/Skybox/Skybox.h"
 #include "Effect/ParticleSystem.h"
 #include "Editor/Particle/ParticleSystemEditor.h"
@@ -239,6 +240,10 @@ void RendererEditorController::ShowHierarchyWindow() {
          ImGui::EndMenu();
       }
 
+      if (ImGui::MenuItem(Tr("UIテキスト", "UI Text"))) {
+         editorContext->CreateUIText();
+      }
+
       if (ImGui::BeginMenu(Tr("パーティクルシステム", "Particle System"))) {
          const auto& particleAssets = editorContext->GetAssetRegistry().GetParticleAssets();
          if (particleAssets.empty()) {
@@ -454,7 +459,7 @@ void RendererEditorController::ShowInspectorWindow() {
    const std::string addComponentHeader = std::string(Tr("コンポーネント追加", "Add Component")) + "###InspectorAddComponentHeader";
    if (ImGui::CollapsingHeader(addComponentHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
       std::vector<std::string> addableComponentTypeNames;
-      const auto registeredTypeNames = ComponentRegistry::GetInstance().GetRegisteredTypeNames();
+      const auto registeredTypeNames = ComponentRegistry::GetInstance().GetRegisteredTypeNames(*selectedObject);
       addableComponentTypeNames.reserve(registeredTypeNames.size());
       for (const auto& typeName : registeredTypeNames) {
          if (!selectedObject->HasComponentByTypeName(typeName)) {
@@ -832,8 +837,9 @@ std::vector<Object*> RendererEditorController::CollectSceneObjects() const {
 
    const auto& models = Model::GetRegisteredModels();
    const auto& sprites = Sprite::GetRegisteredSprites();
+   const auto& uiTexts = UIText::GetRegisteredTexts();
    const auto& skyboxes = Skybox::GetRegisteredSkyboxes();
-   objects.reserve(models.size() + sprites.size() + skyboxes.size());
+   objects.reserve(models.size() + sprites.size() + uiTexts.size() + skyboxes.size());
    for (auto* model : models) {
       if (model) {
          objects.push_back(model);
@@ -843,6 +849,12 @@ std::vector<Object*> RendererEditorController::CollectSceneObjects() const {
    for (auto* sprite : sprites) {
       if (sprite) {
          objects.push_back(sprite);
+      }
+   }
+
+   for (auto* uiText : uiTexts) {
+      if (uiText) {
+         objects.push_back(uiText);
       }
    }
 

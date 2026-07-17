@@ -7,7 +7,8 @@ namespace {
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::TransformComponent::kTypeName,
    [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::TransformComponent>(); },
-   GameEngine::TransformComponent::kDisplayName
+   GameEngine::TransformComponent::kDisplayName,
+   GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite | GameEngine::ObjectType::UIText
 );
 }
 

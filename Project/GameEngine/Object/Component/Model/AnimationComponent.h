@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IObjectComponent.h"
+#include "Component/IObjectComponent.h"
 #include "MathUtils.h"
 #include "AnimationAsset.h"
 #include <string>

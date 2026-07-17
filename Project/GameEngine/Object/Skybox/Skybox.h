@@ -20,6 +20,10 @@ public:
    Skybox();
    ~Skybox() override;
 
+   /// @brief スカイボックスのオブジェクト種別を取得する
+   /// @return ObjectType::Skybox
+   ObjectType GetObjectType() const override { return ObjectType::Skybox; }
+
    /// @brief 登録済みスカイボックスの一覧を取得する
    static const std::vector<Skybox*>& GetRegisteredSkyboxes();
 
@@ -34,7 +38,7 @@ public:
    void SetTexture(Texture* texture);
 
    /// @brief テクスチャを取得する
-   Texture* GetTexture() const { return texture_; }
+   Texture* GetTexture() const;
 
    /// @brief メッシュを取得する
    const Mesh& GetMesh() const { return mesh_; }
@@ -73,7 +77,6 @@ private:
    ComPtr<ID3D12Resource> materialResource_ = nullptr;
    SkyboxMaterialData* materialData_ = nullptr;
 
-   Texture* texture_ = nullptr;
 };
 
 } // namespace GameEngine

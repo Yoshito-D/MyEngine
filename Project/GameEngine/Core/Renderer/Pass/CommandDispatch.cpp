@@ -5,6 +5,7 @@
 #include "SpriteRenderer.h"
 #include "ParticleRenderer.h"
 #include "UIRenderer.h"
+#include "TextRenderer.h"
 #include "Graphics/GraphicsDevice.h"
 #include "PSOManager.h"
 #include "Graphics/OffscreenRenderTarget.h"
@@ -59,6 +60,12 @@ void DispatchDrawCommand(const DrawCommand& cmd, FrameContext& ctx) {
 			   ctx.invalidatePipelineBindingFunc,
 			   ctx.offscreenRenderTarget ? ctx.offscreenRenderTarget->GetSceneColorSRVHandleGPU() : D3D12_GPU_DESCRIPTOR_HANDLE{},
 			   ctx.offscreenRenderTarget ? ctx.offscreenRenderTarget->GetSceneDepthSRVHandleGPU() : D3D12_GPU_DESCRIPTOR_HANDLE{});
+		 }
+		 break;
+
+	  case DrawCommandType::Text:
+		 if (ctx.textRenderer) {
+			ctx.textRenderer->DrawUIText(cmd.textData, ctx.setPipelineFunc);
 		 }
 		 break;
 

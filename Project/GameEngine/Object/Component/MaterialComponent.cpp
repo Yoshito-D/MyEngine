@@ -12,7 +12,8 @@ namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       GameEngine::MaterialComponent::kTypeName,
       [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::MaterialComponent>(); },
-      GameEngine::MaterialComponent::kDisplayName
+      GameEngine::MaterialComponent::kDisplayName,
+      GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite
    );
 
    bool ReadVector2(const nlohmann::json& data, const char* key, GameEngine::Vector2& out) {

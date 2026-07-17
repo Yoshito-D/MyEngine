@@ -1,6 +1,7 @@
 #pragma once
 #include "Component/ComponentContainer.h"
 #include "Component/IObjectComponent.h"
+#include "ObjectType.h"
 #include <memory>
 #include <string>
 
@@ -14,6 +15,10 @@ class Object {
 public:
    Object();
    virtual ~Object() = default;
+
+   /// @brief 実体のオブジェクト種別を取得する
+   /// @return コンポーネント互換性の判定に使用する種別
+   virtual ObjectType GetObjectType() const { return ObjectType::Generic; }
 
    // --- コンポーネント操作（ComponentContainerへ委譲） ---
 

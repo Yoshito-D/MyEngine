@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "PrimitiveMeshComponent.h"
-#include "ComponentRegistry.h"
+#include "Component/ComponentRegistry.h"
 #include "Core/Graphics/Mesh.h"
 #include "Graphics/Texture.h"
 #include "Object.h"
@@ -12,7 +12,8 @@ namespace {
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::PrimitiveMeshComponent::kTypeName,
    [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::PrimitiveMeshComponent>(); },
-   GameEngine::PrimitiveMeshComponent::kDisplayName
+   GameEngine::PrimitiveMeshComponent::kDisplayName,
+   GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Sprite)
 );
 
 const char* ToPrimitiveTypeName(GameEngine::PrimitiveMeshComponent::PrimitiveType primitiveType) {

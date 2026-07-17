@@ -4,9 +4,10 @@
 #ifdef USE_IMGUI
 
 #include "Component/MaterialComponent.h"
-#include "Component/ModelAssetComponent.h"
+#include "Component/Model/ModelAssetComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
+#include "Component/UI/UITextComponent.h"
 #include "Effect/ParticleSystem.h"
 #include "Framework/EngineContext.h"
 #include "Model/Model.h"
@@ -15,6 +16,7 @@
 #include "Scene/Camera/Core/CinemachineBrain.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
 #include "Sprite/Sprite.h"
+#include "Text/UIText.h"
 #include "ImGuizmo.h"
 #include "imgui.h"
 #include <cmath>
@@ -63,6 +65,9 @@ float AbsDiff(float lhs, float rhs) {
 }
 
 std::string GetSceneObjectTypeName(const Object* object) {
+   if (dynamic_cast<const UIText*>(object)) {
+      return "UIText";
+   }
    if (dynamic_cast<const Model*>(object)) {
       return "Model";
    }
@@ -186,7 +191,7 @@ bool IsProjectedInsideCamera(const Camera* camera, const Vector3& worldPosition)
 }
 
 bool UsesScreenRenderSpace(const Object* object) {
-   if (!dynamic_cast<const Sprite*>(object)) {
+   if (!dynamic_cast<const Sprite*>(object) && !dynamic_cast<const UIText*>(object)) {
       return false;
    }
 
@@ -233,13 +238,60 @@ Vector3 CalculateScreenAnchorOffset(Sprite::AnchorPoint anchorPoint, const Vecto
    }
 }
 
+Vector3 CalculateScreenAnchorOffset(UIAnchor anchorPoint, const Vector2& screenSize) {
+   const float halfWidth = screenSize.x * 0.5f;
+   const float halfHeight = screenSize.y * 0.5f;
+
+   switch (anchorPoint) {
+      case UIAnchor::TopLeft:
+         return Vector3(-halfWidth, halfHeight, 0.0f);
+      case UIAnchor::TopCenter:
+         return Vector3(0.0f, halfHeight, 0.0f);
+      case UIAnchor::TopRight:
+         return Vector3(halfWidth, halfHeight, 0.0f);
+      case UIAnchor::MiddleLeft:
+         return Vector3(-halfWidth, 0.0f, 0.0f);
+      case UIAnchor::MiddleRight:
+         return Vector3(halfWidth, 0.0f, 0.0f);
+      case UIAnchor::BottomLeft:
+         return Vector3(-halfWidth, -halfHeight, 0.0f);
+      case UIAnchor::BottomCenter:
+         return Vector3(0.0f, -halfHeight, 0.0f);
+      case UIAnchor::BottomRight:
+         return Vector3(halfWidth, -halfHeight, 0.0f);
+      case UIAnchor::MiddleCenter:
+      default:
+         return Vector3(0.0f, 0.0f, 0.0f);
+   }
+}
+
 Vector3 GetScreenRenderOffset(const Object* object, const Vector2& screenSize) {
-   const auto* sprite = dynamic_cast<const Sprite*>(object);
-   if (!sprite) {
-      return Vector3(0.0f, 0.0f, 0.0f);
+   if (const auto* sprite = dynamic_cast<const Sprite*>(object)) {
+      return CalculateScreenAnchorOffset(sprite->GetScreenAnchorPoint(), screenSize);
    }
 
-   return CalculateScreenAnchorOffset(sprite->GetScreenAnchorPoint(), screenSize);
+   if (const auto* uiText = dynamic_cast<const UIText*>(object)) {
+      if (const auto* textComponent = uiText->GetComponent<UITextComponent>()) {
+         return CalculateScreenAnchorOffset(textComponent->GetStyle().screenAnchor, screenSize);
+      }
+   }
+
+   return Vector3(0.0f, 0.0f, 0.0f);
+}
+
+Vector3 ToEditorScreenWorldPosition(const Vector3& screenTranslation, const Vector3& anchorOffset) {
+   // Rendererは下向きYのピクセル座標、Editorの直交投影は上向きYの中央原点を使う。
+   return Vector3(
+      anchorOffset.x + screenTranslation.x,
+      anchorOffset.y - screenTranslation.y,
+      anchorOffset.z + screenTranslation.z);
+}
+
+Vector3 FromEditorScreenWorldPosition(const Vector3& worldPosition, const Vector3& anchorOffset) {
+   return Vector3(
+      worldPosition.x - anchorOffset.x,
+      anchorOffset.y - worldPosition.y,
+      worldPosition.z - anchorOffset.z);
 }
 
 Matrix4x4 MakeScreenSpaceProjectionMatrix(const Vector2& screenSize) {
@@ -421,7 +473,7 @@ std::vector<Object*> EditorSceneContext::CollectEditableObjects() const {
    std::vector<Object*> objects;
 
    const auto& models = Model::GetRegisteredModels();
-   objects.reserve(models.size() + Sprite::GetRegisteredSprites().size() + Skybox::GetRegisteredSkyboxes().size());
+   objects.reserve(models.size() + Sprite::GetRegisteredSprites().size() + UIText::GetRegisteredTexts().size() + Skybox::GetRegisteredSkyboxes().size());
 
    for (auto* model : models) {
       if (model && !hiddenSceneObjects_.contains(model)) {
@@ -432,6 +484,12 @@ std::vector<Object*> EditorSceneContext::CollectEditableObjects() const {
    for (auto* sprite : Sprite::GetRegisteredSprites()) {
       if (sprite && !hiddenSceneObjects_.contains(sprite)) {
          objects.push_back(sprite);
+      }
+   }
+
+   for (auto* uiText : UIText::GetRegisteredTexts()) {
+      if (uiText && !hiddenSceneObjects_.contains(uiText)) {
+         objects.push_back(uiText);
       }
    }
 
@@ -498,6 +556,10 @@ void EditorSceneContext::CreateModelFromAsset(const std::string& assetId) {
 
 void EditorSceneContext::CreateSpriteFromTexture(const std::string& textureAssetId) {
    commandStack_.Execute(std::make_unique<CreateSpriteCommand>(textureAssetId, BuildScreenSpacePlacementTransform()), *this);
+}
+
+void EditorSceneContext::CreateUIText() {
+   commandStack_.Execute(std::make_unique<CreateUITextCommand>(BuildScreenSpacePlacementTransform()), *this);
 }
 
 ParticleSystem* EditorSceneContext::CreateParticleSystemFromAsset(const std::string& assetId) {
@@ -732,7 +794,9 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
    const Vector3 screenRenderOffset = useScreenSpace ? GetScreenRenderOffset(selectedObject_, screenSize) : Vector3(0.0f, 0.0f, 0.0f);
 
    Transform gizmoTransform = transformComponent->transform;
-   gizmoTransform.translation += screenRenderOffset;
+   if (useScreenSpace) {
+      gizmoTransform.translation = ToEditorScreenWorldPosition(gizmoTransform.translation, screenRenderOffset);
+   }
 
    Matrix4x4 worldMatrix = MakeAffineMatrix(gizmoTransform);
    Matrix4x4 viewMatrix = useScreenSpace ? MakeIdentity4x4() : camera->GetViewMatrix();
@@ -757,7 +821,9 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
       }
 
       Transform manipulatedTransform = MatrixToTransform(worldMatrix);
-      manipulatedTransform.translation -= screenRenderOffset;
+      if (useScreenSpace) {
+         manipulatedTransform.translation = FromEditorScreenWorldPosition(manipulatedTransform.translation, screenRenderOffset);
+      }
       transformComponent->transform = manipulatedTransform;
       return;
    }
@@ -886,7 +952,9 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
       const bool useScreenSpace = UsesScreenRenderSpace(object);
       const Vector3 screenRenderOffset = useScreenSpace ? GetScreenRenderOffset(object, screenSize) : Vector3(0.0f, 0.0f, 0.0f);
       const Matrix4x4 viewProjection = useScreenSpace ? screenViewProjection : camera->GetViewProjectionMatrix();
-      const Vector3 objectCenter = transformComponent->transform.translation + screenRenderOffset;
+      const Vector3 objectCenter = useScreenSpace
+         ? ToEditorScreenWorldPosition(transformComponent->transform.translation, screenRenderOffset)
+         : transformComponent->transform.translation;
 
       const Vector3 screenPosition = Project(
          objectCenter,
@@ -909,6 +977,15 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
             std::abs(size.y * scale.y),
             1.0f
          }) * 0.5f;
+      } else if (const auto* uiText = dynamic_cast<const UIText*>(object); uiText && useScreenSpace) {
+         if (const auto* textComponent = uiText->GetComponent<UITextComponent>()) {
+            const Vector2 size = EngineContext::MeasureText(textComponent->GetText(), textComponent->GetStyle());
+            worldRadius = std::max({
+               std::abs(size.x * scale.x),
+               std::abs(size.y * scale.y),
+               1.0f
+            }) * 0.5f;
+         }
       }
       float pickRadiusPixels = kMinPickRadiusPixels;
       const Vector3 sampleOffsets[] = {
@@ -995,6 +1072,9 @@ void EditorSceneContext::RegisterSceneOwnedKeys() {
    for (auto* sprite : Sprite::GetRegisteredSprites()) {
       registerObject(sprite);
    }
+   for (auto* uiText : UIText::GetRegisteredTexts()) {
+      registerObject(uiText);
+   }
    for (auto* skybox : Skybox::GetRegisteredSkyboxes()) {
       registerObject(skybox);
    }
@@ -1065,6 +1145,11 @@ Object* EditorSceneContext::FindSceneObjectByKey(const std::string& key) const {
       }
       for (auto* sprite : Sprite::GetRegisteredSprites()) {
          if (sprite == object) {
+            return true;
+         }
+      }
+      for (auto* uiText : UIText::GetRegisteredTexts()) {
+         if (uiText == object) {
             return true;
          }
       }

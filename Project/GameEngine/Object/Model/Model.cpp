@@ -5,11 +5,17 @@
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Component/MaterialComponent.h"
-#include "Component/AnimationComponent.h"
-#include "Component/ModelAssetComponent.h"
+#include "Component/Model/AnimationComponent.h"
+#include "Component/Model/ModelAssetComponent.h"
 #include <algorithm>
 
 namespace {
+
+uint64_t sAutoModelMaterialCounter = 0;
+
+std::string BuildAutoModelMaterialName() {
+   return "ModelMaterial_" + std::to_string(++sAutoModelMaterialCounter);
+}
 
 std::string BuildDefaultModelName(const std::vector<GameEngine::Model*>& registeredModels) {
    auto exists = [&registeredModels](const std::string& name) {
@@ -36,6 +42,13 @@ namespace GameEngine {
 std::vector<Model*> Model::sRegisteredModels_{};
 
 Model::Model() {
+   auto* transformComponent = AddComponent<TransformComponent>();
+   transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
+   if (auto* materialComponent = AddComponent<MaterialComponent>()) {
+      materialComponent->EnsureMaterial(BuildAutoModelMaterialName());
+   }
+   AddComponent<ModelAssetComponent>();
+   AddComponent<RenderComponent>();
    SetObjectName(BuildDefaultModelName(sRegisteredModels_));
    sRegisteredModels_.push_back(this);
 }

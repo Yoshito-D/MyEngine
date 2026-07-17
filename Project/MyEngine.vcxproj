@@ -57,6 +57,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IncludePath>$(ProjectDir)Externals\FreeType\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\Generated\Outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
@@ -97,7 +100,7 @@
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-copy "$(ProjectDir)Externals\FreeType\lib\Debug\freetype-d.dll" "$(TargetDir)freetype-d.dll"
+copy /Y "$(ProjectDir)Externals\FreeType\lib\Debug\freetype-d.dll" "$(TargetDir)freetype-d.dll"
 </Command>
     </PostBuildEvent>
     <Manifest>
@@ -131,7 +134,7 @@ copy "$(ProjectDir)Externals\FreeType\lib\Debug\freetype-d.dll" "$(TargetDir)fre
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)freetype.dll"</Command>
+copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)freetype.dll"</Command>
     </PostBuildEvent>
     <Manifest>
       <AdditionalManifestFiles>$(ProjectDir)DpiAwarenessPerMonitor.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
@@ -167,7 +170,7 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)freetype.dll"</Command>
+copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)freetype.dll"</Command>
     </PostBuildEvent>
     <Manifest>
       <AdditionalManifestFiles>$(ProjectDir)DpiAwarenessPerMonitor.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
@@ -220,6 +223,10 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Asset\AnimationAssetManager.cpp" />
+    <ClCompile Include="GameEngine\Core\Asset\Font\FontFace.cpp" />
+    <ClCompile Include="GameEngine\Core\Asset\Font\FontManager.cpp" />
+    <ClCompile Include="GameEngine\Core\Asset\Font\GlyphAtlas.cpp" />
+    <ClCompile Include="GameEngine\Core\Asset\Font\MsdfFont.cpp" />
     <ClCompile Include="GameEngine\Core\Asset\AssetManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -242,6 +249,9 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pass\CommandDispatch.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\TextRenderer.cpp" />
+    <ClCompile Include="GameEngine\Core\UI\Text\TextLayout.cpp" />
+    <ClCompile Include="GameEngine\Core\UI\Text\Utf8Decoder.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\OpaquePass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
@@ -262,8 +272,12 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <ClCompile Include="GameEngine\Effect\Module\UVTransformModule.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ComponentRegistry.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\UI\TypewriterComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\UI\UIFadeComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\UI\UITextComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\UI\UITransformTweenComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\IObjectComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\ParticleEmitterComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.cpp" />
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Light\LightDataBuffer.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\OffscreenRenderTarget.cpp">
@@ -322,12 +336,13 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
     <ClCompile Include="GameEngine\Framework\Framework.cpp" />
     <ClCompile Include="GameEngine\Framework\PlayModeController.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\AnimationComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Model\AnimationComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp" />
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\ModelAssetComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Model\ModelAssetComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\PrimitiveMeshComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Sprite\PrimitiveMeshComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\Line.cpp">
@@ -410,6 +425,7 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Text\UIText.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\Texture.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -515,6 +531,10 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <ClInclude Include="Externals\nlohmann\json.hpp" />
     <ClInclude Include="Externals\nlohmann\json_fwd.hpp" />
     <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h" />
+    <ClInclude Include="GameEngine\Core\Asset\Font\FontFace.h" />
+    <ClInclude Include="GameEngine\Core\Asset\Font\FontManager.h" />
+    <ClInclude Include="GameEngine\Core\Asset\Font\GlyphAtlas.h" />
+    <ClInclude Include="GameEngine\Core\Asset\Font\MsdfFont.h" />
     <ClInclude Include="GameEngine\Core\Asset\AssetManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\MaterialManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\ModelAssetManager.h" />
@@ -546,7 +566,7 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <ClInclude Include="GameEngine\Effect\Module\TrailModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\UVTransformModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.h" />
-    <ClInclude Include="GameEngine\Object\Component\ParticleEmitterComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.h" />
     <ClInclude Include="GameEngine\Scene\Light\AreaLight.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Light\LightDataBuffer.h" />
     <ClInclude Include="GameEngine\Core\Graphics\OffscreenRenderTarget.h" />
@@ -604,14 +624,20 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <ClInclude Include="GameEngine\Framework\ExportDump.h" />
     <ClInclude Include="GameEngine\Framework\Framework.h" />
     <ClInclude Include="GameEngine\Framework\PlayModeController.h" />
-    <ClInclude Include="GameEngine\Object\Component\AnimationComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Model\AnimationComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ComponentContainer.h" />
     <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h" />
+    <ClInclude Include="GameEngine\Object\Component\UI\TypewriterComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\UI\UIAnimationTypes.h" />
+    <ClInclude Include="GameEngine\Object\Component\UI\UIFadeComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\UI\UITextComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\UI\UITransformTweenComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\ModelAssetComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Model\ModelAssetComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\PrimitiveMeshComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Sprite\PrimitiveMeshComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Skybox\SkyboxComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
     <ClInclude Include="GameEngine\Core\Graphics\Line.h" />
@@ -620,6 +646,7 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <ClInclude Include="GameEngine\Object\Model\ModelAsset.h" />
     <ClInclude Include="GameEngine\Object\Model\Skeleton.h" />
     <ClInclude Include="GameEngine\Object\Object.h" />
+    <ClInclude Include="GameEngine\Object\ObjectType.h" />
     <ClInclude Include="GameEngine\Collision\Collider.h" />
     <ClInclude Include="GameEngine\Collision\Collision.h" />
     <ClInclude Include="GameEngine\Object\Skybox\Skybox.h" />
@@ -648,6 +675,11 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <ClInclude Include="GameEngine\Scene\ISceneFactory.h" />
     <ClInclude Include="GameEngine\Scene\SceneManager.h" />
     <ClInclude Include="GameEngine\Object\Sprite\Sprite.h" />
+    <ClInclude Include="GameEngine\Object\Text\UIText.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\TextRenderer.h" />
+    <ClInclude Include="GameEngine\Core\UI\Text\TextLayout.h" />
+    <ClInclude Include="GameEngine\Core\UI\Text\TextTypes.h" />
+    <ClInclude Include="GameEngine\Core\UI\Text\Utf8Decoder.h" />
     <ClInclude Include="GameEngine\Core\Graphics\Texture.h" />
     <ClInclude Include="GameEngine\Core\Graphics\TransformationMatrix.h" />
     <ClInclude Include="GameEngine\Core\Window\Window.h" />
@@ -721,6 +753,7 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <None Include="Resources\engine\pipelines\pso\graphics\line3d_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\object3d_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json" />
     <None Include="Resources\engine\pipelines\pipeline_registry.json" />
     <None Include="Resources\engine\pipelines\pso\compute\skinning_compute_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\postprocess\anti_aliasing_pipeline.json" />
@@ -742,6 +775,7 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <None Include="Resources\engine\pipelines\root_signatures\graphics\line3d_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_dissolve_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_outline_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_radialblur_rootsig.json" />
@@ -752,6 +786,8 @@ copy "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)fre
     <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
     <None Include="Resources\engine\postprocess\postprocess_registry.json" />
     <None Include="Resources\engine\shaders\shader_registry.json" />
+    <None Include="Resources\engine\shaders\graphics\text\Text.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\text\Text.VS.hlsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

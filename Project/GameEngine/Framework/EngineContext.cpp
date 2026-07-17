@@ -439,6 +439,16 @@ std::vector<std::string> EngineContext::GetTextureNames() {
    return sAssetManager_->GetTextureManager()->GetTextureNames();
 }
 
+bool EngineContext::LoadFont(const std::string& fontPath, const std::string& fontId) {
+   if (!sAssetManager_ || !sAssetManager_->GetFontManager()) return false;
+   return sAssetManager_->GetFontManager()->LoadFont(fontId, fontPath);
+}
+
+std::vector<std::string> EngineContext::GetFontIds() {
+   if (!sAssetManager_ || !sAssetManager_->GetFontManager()) return {};
+   return sAssetManager_->GetFontManager()->GetFontIds();
+}
+
 void EngineContext::CreateMaterial(const std::string& name, uint32_t color, int32_t lightingMode, const Matrix4x4& uvTransform) {
    if (!sAssetManager_) return;
    if (!sAssetManager_->GetMaterialManager()) return;
@@ -680,6 +690,15 @@ void EngineContext::DrawUI(Sprite* sprite, Texture* texture,
    uint32_t screenHeight) {
    if (!sRenderer_) return;
    sRenderer_->DrawUI(sprite, texture, anchorPoint, blendMode, applyPostProcess, screenWidth, screenHeight);
+}
+
+void EngineContext::DrawUIText(std::string_view text, const Vector2& position, const TextStyle& style) {
+   if (!sRenderer_) return;
+   sRenderer_->DrawUIText(text, position, style);
+}
+
+Vector2 EngineContext::MeasureText(std::string_view text, const TextStyle& style) {
+   return sRenderer_ ? sRenderer_->MeasureText(text, style) : Vector2{ 0.0f, 0.0f };
 }
 
 #ifdef USE_IMGUI

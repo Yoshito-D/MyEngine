@@ -19,6 +19,10 @@ public:
    Sprite();
    ~Sprite() override;
 
+   /// @brief スプライトのオブジェクト種別を取得する
+   /// @return ObjectType::Sprite
+   ObjectType GetObjectType() const override { return ObjectType::Sprite; }
+
    static const std::vector<Sprite*>& GetRegisteredSprites();
 
    static void UnregisterSprite(Sprite* sprite);

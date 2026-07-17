@@ -22,6 +22,7 @@ class Camera;
 enum class DrawCommandType {
    Model,
    Sprite,
+   Text,
    Particle,
    Line,
    Shape
@@ -63,6 +64,15 @@ struct UISpriteDrawData {
    BlendMode blendMode;  // ブレンドモード
 };
 
+/// @brief UIテキスト描画用データ
+struct TextDrawData {
+   D3D12_GPU_DESCRIPTOR_HANDLE atlasSrv = {};
+   uint32_t indexCount = 0;
+   uint32_t startIndex = 0;
+   int32_t baseVertex = 0;
+   int32_t sortingOrder = 0;
+};
+
 /// @brief パーティクル描画用データ
 struct ParticleDrawData {
    ParticleSystem* particleSystem;
@@ -88,6 +98,7 @@ struct DrawCommand {
    ModelDrawData modelData;
    SpriteDrawData spriteData;
    UISpriteDrawData uiSpriteData;
+   TextDrawData textData;
    ParticleDrawData particleData;
    LineDrawData lineData;
 
@@ -124,6 +135,11 @@ struct DrawCommand {
    static DrawCommand CreateUISprite(Sprite* sprite, Texture* texture, D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle,
 	  Sprite::AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight,
 	  BlendMode blendMode, RenderPass renderPass);
+
+   /// @brief UIテキスト描画コマンドを作成
+   /// @param textData 共有テキストバッファ上の描画範囲
+   /// @param renderPass 描画パス
+   static DrawCommand CreateText(const TextDrawData& textData, RenderPass renderPass);
 
    /// @brief パーティクル描画コマンドを作成
    /// @param particleSystem 描画するパーティクルシステム
@@ -184,6 +200,7 @@ public:
       switch (cmd_.type) {
          case DrawCommandType::Model:    return 4;
          case DrawCommandType::Sprite:   return 3;
+         case DrawCommandType::Text:     return 3;
          case DrawCommandType::Particle: return 2;
          case DrawCommandType::Line:     return 1;
          default:                        return 0;

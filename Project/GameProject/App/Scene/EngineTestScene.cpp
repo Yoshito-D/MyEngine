@@ -1,6 +1,6 @@
 #include "EngineTestScene.h"
 #include "Framework/EngineContext.h"
-#include "Component/AnimationComponent.h"
+#include "Component/Model/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
 
 #ifdef USE_IMGUI

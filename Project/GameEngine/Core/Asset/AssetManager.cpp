@@ -3,6 +3,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Audio.h"
 #include "Component/MaterialComponent.h"
+#include "Component/Skybox/SkyboxComponent.h"
 #include "Graphics/Texture.h"
 
 namespace GameEngine {
@@ -31,10 +32,25 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    MaterialComponent::SetTextureNamesProvider([this]() {
       return textureManager_ ? textureManager_->GetTextureNames() : std::vector<std::string>{};
    });
+   SkyboxComponent::SetTextureResolver([this](const std::string& name) -> Texture* {
+      return textureManager_ ? textureManager_->GetTexture(name) : nullptr;
+   });
+   SkyboxComponent::SetTextureNamesProvider([this]() {
+      return textureManager_ ? textureManager_->GetCubemapTextureNames() : std::vector<std::string>{};
+   });
    modelAssetManager_->Initialize(device);
    textureManager_->Initialize(device);
    textureManager_->LoadTexturesFromDirectory("resources/engine/textures", "resources");
    textureManager_->LoadTexturesFromDirectory("resources/game/textures", "resources");
+   fontManager_->Initialize(device);
+   fontManager_->LoadFontsFromDirectory("resources/engine/font");
+   fontManager_->LoadMsdfFontsFromDirectory("resources/engine/font");
+   fontManager_->LoadFontsFromDirectory("resources/engine/fonts");
+   fontManager_->LoadMsdfFontsFromDirectory("resources/engine/fonts");
+   fontManager_->LoadFontsFromDirectory("resources/game/font");
+   fontManager_->LoadMsdfFontsFromDirectory("resources/game/font");
+   fontManager_->LoadFontsFromDirectory("resources/game/fonts");
+   fontManager_->LoadMsdfFontsFromDirectory("resources/game/fonts");
    soundManager_->Initialize(audio);
 }
 }

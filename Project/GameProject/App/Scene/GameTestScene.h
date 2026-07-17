@@ -6,7 +6,7 @@
 #include "../Component/Camera/PlayerRearFollowCamera.h"
 #include "../Component/Camera/PlanetLeashCamera.h"
 #include "Object/Skybox/Skybox.h"
-#include "Object/Component/ParticleEmitterComponent.h"
+#include "Object/Component/Particle/ParticleEmitterComponent.h"
 #include <memory>
 
 /// @brief ゲーム機能テスト用シーン（重力システム等）

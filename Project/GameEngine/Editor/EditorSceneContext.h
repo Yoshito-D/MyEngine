@@ -60,6 +60,8 @@ public:
 
    void CreateModelFromAsset(const std::string& assetId);
    void CreateSpriteFromTexture(const std::string& textureAssetId);
+   /// @brief ビューポート中央に編集可能なUIテキストを作成する
+   void CreateUIText();
    ParticleSystem* CreateParticleSystemFromAsset(const std::string& assetId);
    void DuplicateSelectedObject();
    void DeleteObject(Object* object);

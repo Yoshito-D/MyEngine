@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IObjectComponent.h"
+#include "Object/ObjectType.h"
 #include <algorithm>
 #include <functional>
 #include <string>
@@ -22,7 +23,8 @@ public:
    bool RegisterFactory(
       const std::string& typeName,
       Factory factory,
-      ComponentDisplayName displayName = {}
+      ComponentDisplayName displayName = {},
+      ObjectTypeMask supportedObjectTypes = kAllObjectTypes
    );
 
    IObjectComponent* CreateComponent(Object& owner, const std::string& typeName) const;
@@ -31,12 +33,22 @@ public:
 
    std::vector<std::string> GetRegisteredTypeNames() const;
 
+   /// @brief 指定オブジェクトへ追加できる登録済みコンポーネント型を取得する
+   /// @param owner 追加先オブジェクト
+   /// @return 対応しているコンポーネント型名の一覧
+   std::vector<std::string> GetRegisteredTypeNames(const Object& owner) const;
+
 #ifdef USE_IMGUI
    std::string GetDisplayName(const std::string& typeName) const;
 #endif
 
 private:
-   std::unordered_map<std::string, Factory> factories_;
+   struct Registration {
+      Factory factory;
+      ObjectTypeMask supportedObjectTypes = kAllObjectTypes;
+   };
+
+   std::unordered_map<std::string, Registration> registrations_;
 #ifdef USE_IMGUI
    std::unordered_map<std::string, ComponentDisplayName> displayNames_;
 #endif
