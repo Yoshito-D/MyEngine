@@ -46,9 +46,31 @@ const bool kRegistered = VirtualCamera::RegisterComponentFactory(
 } // namespace
 
 void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
-   // 初回は現在のカメラ状態を初期位置として採用
+   // 保存されたランタイム座標が残っていても、初回からプレイヤー近傍で追従を始める。
    if (!isInitialized_) {
-      eyePos_        = state.transform.translation;
+      const float initialMaxDistance = (std::max)(maxFollowDistance, 0.1f);
+      Vector3 initialOffset = state.transform.translation - pivotTarget_;
+      const float initialDistance = initialOffset.Length();
+      const bool hasValidInitialOffset =
+         std::isfinite(initialOffset.x) &&
+         std::isfinite(initialOffset.y) &&
+         std::isfinite(initialOffset.z) &&
+         std::isfinite(initialDistance) &&
+         initialDistance > 1e-6f;
+
+      if (!hasValidInitialOffset) {
+         initialOffset = gravityUp_;
+         float fallbackLength = initialOffset.Length();
+         if (!std::isfinite(fallbackLength) || fallbackLength <= 1e-6f) {
+            initialOffset = { 0.0f, 1.0f, 0.0f };
+            fallbackLength = 1.0f;
+         }
+         eyePos_ = pivotTarget_ + initialOffset * (initialMaxDistance / fallbackLength);
+      } else if (initialDistance > initialMaxDistance) {
+         eyePos_ = pivotTarget_ + initialOffset * (initialMaxDistance / initialDistance);
+      } else {
+         eyePos_ = state.transform.translation;
+      }
       prevGravityUp_ = gravityUp_;
       eyeRelUp_      = gravityUp_;
       isInitialized_ = true;
@@ -140,15 +162,6 @@ nlohmann::json PlanetLeashCamera::Serialize() const {
       { "followSpeed", followSpeed },
       { "minPlanetDistance", minPlanetDistance },
       { "useGravityUp", useGravityUp },
-      { "pivotTarget", SerializeVector3(pivotTarget_) },
-      { "sphereCenter", SerializeVector3(sphereCenter_) },
-      { "gravityUp", SerializeVector3(gravityUp_) },
-      { "eyePos", SerializeVector3(eyePos_) },
-      { "isInitialized", isInitialized_ },
-      { "prevGravityUp", SerializeVector3(prevGravityUp_) },
-      { "eyeRelUp", SerializeVector3(eyeRelUp_) },
-      { "cachedRight", SerializeVector3(cachedRight_) },
-      { "cachedUp", SerializeVector3(cachedUp_) }
    };
 }
 
@@ -161,31 +174,6 @@ void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
    followSpeed = ReadFloat(data, "followSpeed", followSpeed);
    minPlanetDistance = ReadFloat(data, "minPlanetDistance", minPlanetDistance);
    useGravityUp = ReadBool(data, "useGravityUp", useGravityUp);
-   if (data.contains("pivotTarget")) {
-      pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
-   }
-   if (data.contains("sphereCenter")) {
-      sphereCenter_ = DeserializeVector3(data.at("sphereCenter"), sphereCenter_);
-   }
-   if (data.contains("gravityUp")) {
-      gravityUp_ = DeserializeVector3(data.at("gravityUp"), gravityUp_);
-   }
-   if (data.contains("eyePos")) {
-      eyePos_ = DeserializeVector3(data.at("eyePos"), eyePos_);
-   }
-   isInitialized_ = ReadBool(data, "isInitialized", isInitialized_);
-   if (data.contains("prevGravityUp")) {
-      prevGravityUp_ = DeserializeVector3(data.at("prevGravityUp"), prevGravityUp_);
-   }
-   if (data.contains("eyeRelUp")) {
-      eyeRelUp_ = DeserializeVector3(data.at("eyeRelUp"), eyeRelUp_);
-   }
-   if (data.contains("cachedRight")) {
-      cachedRight_ = DeserializeVector3(data.at("cachedRight"), cachedRight_);
-   }
-   if (data.contains("cachedUp")) {
-      cachedUp_ = DeserializeVector3(data.at("cachedUp"), cachedUp_);
-   }
 }
 
 #ifdef USE_IMGUI

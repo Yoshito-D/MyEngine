@@ -7,7 +7,6 @@
 #include "Asset/MaterialManager.h"
 #include "Asset/ModelAssetManager.h"
 #include "Component/MaterialComponent.h"
-#include "Component/Model/ModelAssetComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Graphics/Material.h"
@@ -212,6 +211,10 @@ void RendererEditorController::ShowHierarchyWindow() {
       }
       ImGui::Separator();
 
+      if (ImGui::MenuItem(Tr("空のオブジェクト", "Empty Object"))) {
+         editorContext->CreateEmptyObject();
+      }
+
       if (ImGui::BeginMenu(Tr("モデル", "Model"))) {
          const auto& modelAssets = editorContext->GetAssetRegistry().GetModelAssets();
          if (modelAssets.empty()) {
@@ -369,27 +372,6 @@ void RendererEditorController::ShowInspectorWindow() {
    Object* selectedObject = editorContext ? editorContext->GetSelectedObject() : nullptr;
    ParticleSystem* selectedParticleSystem = editorContext ? editorContext->GetSelectedParticleSystem() : nullptr;
 
-   if (editorContext) {
-
-      const char* operationLabels[] = {
-         Tr("移動", "Move"),
-         Tr("回転", "Rotate"),
-         Tr("拡縮", "Scale")
-      };
-      int operation = static_cast<int>(editorContext->GetGizmoOperation());
-      if (ImGui::Combo(Tr("ギズモ操作", "Gizmo Operation"), &operation, operationLabels, 3)) {
-         editorContext->SetGizmoOperation(static_cast<EditorSceneContext::GizmoOperation>(operation));
-      }
-
-      const char* modeLabels[] = { Tr("ローカル", "Local"), Tr("ワールド", "World") };
-      int mode = static_cast<int>(editorContext->GetGizmoMode());
-      if (ImGui::Combo(Tr("ギズモ空間", "Gizmo Mode"), &mode, modeLabels, 2)) {
-         editorContext->SetGizmoMode(static_cast<EditorSceneContext::GizmoMode>(mode));
-      }
-
-      ImGui::Spacing();
-   }
-
    if (!selectedObject && !selectedParticleSystem) {
       ImGui::Text("%s", Tr("未選択", "No selection"));
       ImGui::End();
@@ -415,6 +397,7 @@ void RendererEditorController::ShowInspectorWindow() {
       }
       if (editorContext) {
          DrawParticleAssetDropTarget(*editorContext, selectedParticleSystem);
+         editorContext->DrawGizmoInspectorControls();
       }
       ImGui::Spacing();
 
@@ -454,7 +437,16 @@ void RendererEditorController::ShowInspectorWindow() {
       ImGui::Spacing();
    }
 
-   selectedObject->DrawComponentInspector();
+   const std::string pendingRemovedComponentType = selectedObject->DrawComponentInspector();
+
+   if (!pendingRemovedComponentType.empty()) {
+      if (editorContext) {
+         editorContext->RemoveComponentFromSelectedObject(pendingRemovedComponentType);
+      } else {
+         selectedObject->RemoveComponentByTypeName(pendingRemovedComponentType);
+      }
+   }
+
    ImGui::PushID("InspectorAddComponent");
    const std::string addComponentHeader = std::string(Tr("コンポーネント追加", "Add Component")) + "###InspectorAddComponentHeader";
    if (ImGui::CollapsingHeader(addComponentHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -767,21 +759,6 @@ bool RendererEditorController::EnsureTextureLoaded(const std::string& textureAss
 void RendererEditorController::DrawSelectedObjectAssetDropTargets(EditorSceneContext& editorContext, Object* selectedObject) {
    if (!selectedObject) {
       return;
-   }
-
-   if (auto* modelAssetComponent = selectedObject->GetComponent<ModelAssetComponent>()) {
-      ImGui::SeparatorText(Tr("モデルアセットドロップ", "Model Asset Drop"));
-      const std::string currentAsset = modelAssetComponent->GetAssetId().empty() ? Tr("<なし>", "<none>") : modelAssetComponent->GetAssetId();
-      ImGui::Button(currentAsset.c_str(), ImVec2(-1.0f, 0.0f));
-      if (ImGui::BeginDragDropTarget()) {
-         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_MODEL")) {
-            const char* assetId = static_cast<const char*>(payload->Data);
-            if (assetId && payload->DataSize > 1) {
-               editorContext.SetModelAsset(selectedObject, assetId);
-            }
-         }
-         ImGui::EndDragDropTarget();
-      }
    }
 
    if (auto* materialComponent = selectedObject->GetComponent<MaterialComponent>()) {

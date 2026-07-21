@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ModelRenderer.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Graphics/Mesh.h"
 #include "Graphics/TransformationMatrix.h"
 #include "Model/Model.h"
 #include "Graphics/Material.h"
@@ -14,7 +15,7 @@
 #include "Model/ModelAsset.h"
 #include "Component/Model/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
-#include "Component/Model/ModelAssetComponent.h"
+#include "Component/MeshComponent.h"
 
 namespace GameEngine {
 namespace {
@@ -62,12 +63,15 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    }
 
    auto* cmdList = device_->GetCommandList();
-   auto* modelAssetComp = model->GetComponent<ModelAssetComponent>();
-   ModelAsset* asset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
-   if (!asset) {
+   auto* meshComponent = model->GetComponent<MeshComponent>();
+   ModelAsset* asset = meshComponent ? meshComponent->GetModelAsset() : nullptr;
+   Mesh* primitiveMesh = meshComponent && meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive
+      ? meshComponent->EnsureMesh()
+      : nullptr;
+   if (!asset && !primitiveMesh) {
 	  return;
    }
-   const auto& meshes = asset->GetMeshData();
+   const std::vector<MeshData>* modelMeshes = asset ? &asset->GetMeshData() : nullptr;
    const auto& materials = *effectiveMaterials;
 
    if (materials.empty()) {
@@ -89,8 +93,8 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  skinningEnabled = animationComponent->useSkinning;
    }
 
-   SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
-   const bool canUseSkinning = skinningEnabled && skinCluster;
+   SkinCluster* skinCluster = meshComponent ? meshComponent->GetSkinCluster() : nullptr;
+   const bool canUseSkinning = asset && skinningEnabled && skinCluster;
 
    const auto* skinningComputePipeline = psoManager_ ? psoManager_->GetComputePipeline(kSkinningComputePipelineName) : nullptr;
    auto* skinningComputeRootSignature = (psoManager_ && skinningComputePipeline)
@@ -106,7 +110,9 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    // マテリアルにパイプライン名が指定されていればそれを使用、なければデフォルト "Object3D"
    const std::string& materialPipelineName = materials[0]->GetPipelineName();
    const std::string defaultPipelineName = materialPipelineName.empty() ? "Object3D" : materialPipelineName;
-   const std::string pipelineName = defaultPipelineName;
+   const std::string pipelineName = meshComponent->IsReverseFaces()
+      ? PSOManager::MakeReversedFacePipelineName(defaultPipelineName)
+      : defaultPipelineName;
 
    // マテリアルに blendMode が設定されていればそれを優先、なければ DrawCommand の blendMode を使用
    const BlendMode resolvedBlendMode = materials[0]->GetBlendMode().value_or(modelData.blendMode);
@@ -181,7 +187,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  cmdList->SetComputeRootSignature(skinningComputeRootSignature->GetRootSignature());
 	  cmdList->SetPipelineState(skinningComputePipeline->pipelineState.Get());
 
-	  for (size_t i = 0; i < meshes.size(); ++i) {
+	  for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
 		 if (!skinCluster->HasComputeSkinningResources(i) || i >= skinCluster->skinnedVertexResourceStates.size()) {
 			continue;
 		 }
@@ -202,7 +208,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 		 cmdList->SetComputeRootDescriptorTable(influencesSlot.value(), skinCluster->influenceSrvHandles[i].second);
 		 cmdList->SetComputeRootDescriptorTable(outputVerticesSlot.value(), skinCluster->skinnedVertexUavHandles[i].second);
 
-		 const UINT vertexCount = static_cast<UINT>(meshes[i].vertices.size());
+		 const UINT vertexCount = static_cast<UINT>((*modelMeshes)[i].vertices.size());
 		 const UINT dispatchCount = (vertexCount + kSkinningThreadGroupSize - 1) / kSkinningThreadGroupSize;
 		 cmdList->Dispatch(dispatchCount, 1, 1);
 
@@ -241,8 +247,30 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    // Root Parameter 7: AreaLights StructuredBuffer (t3)
    cmdList->SetGraphicsRootDescriptorTable(areaLightSlot.value(), lightBuffer->GetAreaLightSRV());
 
+   if (primitiveMesh) {
+      const Material* material = materials[0];
+      const D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = modelData.textures[0];
+      if (!material || textureHandle.ptr == 0) {
+         Logger::Warning("[ModelRenderer] Primitive mesh material or texture is invalid, skip draw");
+         return;
+      }
+
+      cmdList->SetGraphicsRootConstantBufferView(
+         materialSlot.value(), material->GetMaterialResource()->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), textureHandle);
+      if (modelData.environmentTextureSrvHandle.ptr != 0) {
+         cmdList->SetGraphicsRootDescriptorTable(
+            environmentTextureSlot.value(), modelData.environmentTextureSrvHandle);
+      }
+      cmdList->IASetVertexBuffers(0, 1, &primitiveMesh->GetVertexBufferView());
+      cmdList->IASetIndexBuffer(&primitiveMesh->GetIndexBufferView());
+      cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+      cmdList->DrawIndexedInstanced(primitiveMesh->GetIndexCount(), 1, 0, 0, 0);
+      return;
+   }
+
    // 各メッシュごとの描画
-   for (size_t i = 0; i < meshes.size(); ++i) {
+   for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
 	  // --- マテリアル取得（不足分は先頭を使い回し） ---
 	  const Material* mat = (i < materials.size()) ? materials[i] : materials[0];
 	  if (!mat) {
@@ -280,7 +308,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	  // 描画
-	  cmdList->DrawIndexedInstanced(static_cast<UINT>(meshes[i].indices.size()), 1, 0, 0, 0);
+	  cmdList->DrawIndexedInstanced(static_cast<UINT>((*modelMeshes)[i].indices.size()), 1, 0, 0, 0);
    }
 }
 

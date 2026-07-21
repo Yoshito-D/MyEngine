@@ -77,6 +77,16 @@ public:
    /// @brief 文字列名でコンポーネントを持っているか確認する
    bool HasByTypeName(const std::string& typeName) const;
 
+   /// @brief 文字列名でコンポーネントを取得する
+   /// @param typeName コンポーネント型名
+   /// @return 見つからない場合はnullptr
+   IObjectComponent* GetByTypeName(const std::string& typeName) const;
+
+   /// @brief 文字列名でコンポーネントを削除する
+   /// @param typeName コンポーネント型名
+   /// @return 削除できた場合はtrue
+   bool RemoveByTypeName(const std::string& typeName);
+
    /// @brief 全コンポーネントを更新する
    void Update(float deltaTime);
 
@@ -86,12 +96,16 @@ public:
    /// @brief シリアライズ
    nlohmann::json Serialize() const;
 
-   /// @brief デシリアライズ
+   /// @brief JSONの一覧と一致するよう既存コンポーネントを復元する
+   /// @param owner コンポーネントの所有者
+   /// @param componentsData コンポーネントの完全なJSON配列
+   /// @return 有効な配列を適用できた場合はtrue
    bool Deserialize(Object& owner, const nlohmann::json& componentsData);
 
 #ifdef USE_IMGUI
-   /// @brief インスペクター描画
-   void DrawInspector();
+   /// @brief 各コンポーネントのインスペクターと見出し内の削除ボタンを描画する
+   /// @return 削除ボタンが押されたコンポーネント型名。未選択時は空文字列
+   std::string DrawInspector();
 #endif
 
    /// @brief 全コンポーネントのリストを取得

@@ -13,6 +13,8 @@
 using json = nlohmann::json;
 
 namespace {
+constexpr const char* kReversedFacePipelineSuffix = "_ReversedFace";
+
 // 文字列からD3D12列挙型への変換ヘルパー
 D3D12_CULL_MODE StringToCullMode(const std::string& str) {
    if (str == "None") return D3D12_CULL_MODE_NONE;
@@ -444,6 +446,34 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
 	  ? definition.rtvFormatOverride
 	  : rtvFormat;
 
+   // メッシュ単位で表裏を切り替えても共有頂点・インデックスを変更せずに済むよう、
+   // カリングを使用するPSOには前面判定だけを反転した派生PSOも用意する。
+   const auto createPipelineVariants = [this, &definition](
+      const std::string& pipelineName,
+      const std::string& reversedPipelineName,
+      const PipelineConfig& config) {
+      if (!CreateCustomPipeline(pipelineName, config)) {
+         Logger::Error("Failed to create pipeline: " + pipelineName);
+         return false;
+      }
+      Logger::Info("Successfully created pipeline: " + pipelineName);
+      RegisterPipelineSemanticSlots(pipelineName, definition.rootSignature);
+
+      if (config.cullMode == D3D12_CULL_MODE_NONE) {
+         return true;
+      }
+
+      PipelineConfig reversedConfig = config;
+      reversedConfig.frontCounterClockwise = !config.frontCounterClockwise;
+      if (!CreateCustomPipeline(reversedPipelineName, reversedConfig)) {
+         Logger::Error("Failed to create reversed-face pipeline: " + reversedPipelineName);
+         return false;
+      }
+      Logger::Info("Successfully created reversed-face pipeline: " + reversedPipelineName);
+      RegisterPipelineSemanticSlots(reversedPipelineName, definition.rootSignature);
+      return true;
+   };
+
    if (definition.supportBlendModes) {
       // ブレンドモード別にパイプラインを作成
       for (int32_t i = 0; i < static_cast<int32_t>(BlendMode::kCount); ++i) {
@@ -471,17 +501,16 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
             config.depthWriteMask = definition.depthWriteMask;
          }
 
-         std::string pipelineName = CreatePipelineKey(definition.name, blendMode);
-         if (!CreateCustomPipeline(pipelineName, config)) {
-            Logger::Error("Failed to create pipeline: " + pipelineName);
+         const std::string pipelineName = CreatePipelineKey(definition.name, blendMode);
+         const std::string reversedPipelineName = CreatePipelineKey(
+            MakeReversedFacePipelineName(definition.name), blendMode);
+         if (!createPipelineVariants(pipelineName, reversedPipelineName, config)) {
             return false;
-         } else {
-            Logger::Info("Successfully created pipeline: " + pipelineName);
-            RegisterPipelineSemanticSlots(pipelineName, definition.rootSignature);
          }
       }
 
 	  RegisterPipelineSemanticSlots(definition.name, definition.rootSignature);
+      RegisterPipelineSemanticSlots(MakeReversedFacePipelineName(definition.name), definition.rootSignature);
    } else {
       // 単一パイプラインを作成
       PipelineConfig config;
@@ -500,13 +529,11 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
 		 ? BuildInputLayoutFromVertexShaderReflection(definition.vertexShader)
 		 : definition.inputLayout;
 
-      if (!CreateCustomPipeline(definition.name, config)) {
-         Logger::Error("Failed to create pipeline: " + definition.name);
+      const std::string reversedPipelineName = MakeReversedFacePipelineName(definition.name);
+      if (!createPipelineVariants(definition.name, reversedPipelineName, config)) {
          return false;
-      } else {
-         Logger::Info("Successfully created pipeline: " + definition.name);
-         RegisterPipelineSemanticSlots(definition.name, definition.rootSignature);
       }
+      RegisterPipelineSemanticSlots(MakeReversedFacePipelineName(definition.name), definition.rootSignature);
    }
 
    return true;
@@ -604,7 +631,7 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
 
    // パイプラインステートの設定
    pipeline->SetBlendState(config.blendMode);
-   pipeline->SetRasterizer(config.cullMode, config.fillMode);
+   pipeline->SetRasterizer(config.cullMode, config.fillMode, config.frontCounterClockwise);
    pipeline->SetDepthStencil(config.depthEnable, config.depthWriteMask, config.depthFunc);
    pipeline->SetShaders(vertexShader, pixelShader);
    pipeline->SetRTVFormat(config.rtvFormat);
@@ -662,7 +689,25 @@ PipelineState* PSOManager::GetPipeline(const std::string& name, BlendMode blendM
    }
 
    // ブレンドモードが指定されていても見つからない場合は、名前のみで検索
-   return pipelineLibrary_.GetGraphicsPipeline(name);
+   if (auto* pipeline = pipelineLibrary_.GetGraphicsPipeline(name)) {
+      return pipeline;
+   }
+
+   // カリングなしのPSOは反転版を複製しないため、反転名から通常版へフォールバックする。
+   const std::string suffix = kReversedFacePipelineSuffix;
+   if (name.size() > suffix.size() && name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0) {
+      const std::string baseName = name.substr(0, name.size() - suffix.size());
+      if (auto* pipeline = pipelineLibrary_.GetGraphicsPipeline(CreatePipelineKey(baseName, blendMode))) {
+         return pipeline;
+      }
+      return pipelineLibrary_.GetGraphicsPipeline(baseName);
+   }
+
+   return nullptr;
+}
+
+std::string PSOManager::MakeReversedFacePipelineName(const std::string& name) {
+   return name + kReversedFacePipelineSuffix;
 }
 
 const ComputePipelineDefinition* PSOManager::GetComputePipeline(const std::string& name) const {

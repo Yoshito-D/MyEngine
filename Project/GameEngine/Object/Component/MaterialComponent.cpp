@@ -26,6 +26,157 @@ namespace {
       return true;
    }
 
+   bool ReadVector4(const nlohmann::json& data, const char* key, GameEngine::Vector4& out) {
+      if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 4) {
+         return false;
+      }
+
+      const auto& value = data.at(key);
+      for (const auto& component : value) {
+         if (!component.is_number()) {
+            return false;
+         }
+      }
+
+      out = GameEngine::Vector4(
+         value[0].get<float>(),
+         value[1].get<float>(),
+         value[2].get<float>(),
+         value[3].get<float>());
+      return true;
+   }
+
+   bool ReadMatrix4x4(const nlohmann::json& data, const char* key, GameEngine::Matrix4x4& out) {
+      if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 4) {
+         return false;
+      }
+
+      GameEngine::Matrix4x4 value = GameEngine::MakeIdentity4x4();
+      for (size_t row = 0; row < 4; ++row) {
+         const auto& rowData = data.at(key)[row];
+         if (!rowData.is_array() || rowData.size() != 4) {
+            return false;
+         }
+         for (size_t column = 0; column < 4; ++column) {
+            if (!rowData[column].is_number()) {
+               return false;
+            }
+            value.m[row][column] = rowData[column].get<float>();
+         }
+      }
+
+      out = value;
+      return true;
+   }
+
+   nlohmann::json SerializeMaterialProperties(const GameEngine::Material* material) {
+      nlohmann::json json = nlohmann::json::object();
+      if (!material || !material->GetMaterialData()) {
+         return json;
+      }
+
+      const auto* materialData = material->GetMaterialData();
+      json["color"] = {
+         materialData->color.x,
+         materialData->color.y,
+         materialData->color.z,
+         materialData->color.w
+      };
+      json["lightingMode"] = materialData->lightingMode;
+      json["shininess"] = materialData->shininess;
+      json["environmentTextureStrength"] = materialData->environmentCoefficient;
+      json["rimLightColor"] = {
+         materialData->rimLightColor.x,
+         materialData->rimLightColor.y,
+         materialData->rimLightColor.z,
+         materialData->rimLightColor.w
+      };
+      json["rimLightIntensity"] = materialData->rimLightIntensity;
+      json["rimLightPower"] = materialData->rimLightPower;
+      json["fillLightColor"] = {
+         materialData->fillLightColor.x,
+         materialData->fillLightColor.y,
+         materialData->fillLightColor.z,
+         materialData->fillLightColor.w
+      };
+      json["fillLightIntensity"] = materialData->fillLightIntensity;
+
+      const GameEngine::Matrix4x4 uv = materialData->uvTransform;
+      json["uvTransform"] = {
+         { uv.m[0][0], uv.m[0][1], uv.m[0][2], uv.m[0][3] },
+         { uv.m[1][0], uv.m[1][1], uv.m[1][2], uv.m[1][3] },
+         { uv.m[2][0], uv.m[2][1], uv.m[2][2], uv.m[2][3] },
+         { uv.m[3][0], uv.m[3][1], uv.m[3][2], uv.m[3][3] }
+      };
+
+      const auto blendMode = material->GetBlendMode();
+      json["blendMode"] = blendMode.has_value() ? static_cast<int>(blendMode.value()) : -1;
+      json["pipelineName"] = material->GetPipelineName();
+      return json;
+   }
+
+   void DeserializeMaterialProperties(GameEngine::Material* material, const nlohmann::json& data) {
+      if (!material || !material->GetMaterialData() || !data.is_object()) {
+         return;
+      }
+
+      GameEngine::Vector4 vectorValue{};
+      if (ReadVector4(data, "color", vectorValue)) {
+         material->SetColor(vectorValue);
+      }
+
+      if (data.contains("lightingMode") && data.at("lightingMode").is_number_integer()) {
+         const int32_t lightingMode = data.at("lightingMode").get<int32_t>();
+         if (lightingMode >= GameEngine::Material::LightingMode::NONE &&
+            lightingMode <= GameEngine::Material::LightingMode::BLINNPHONG) {
+            material->SetLightingMode(static_cast<GameEngine::Material::LightingMode>(lightingMode));
+         }
+      }
+
+      if (data.contains("shininess") && data.at("shininess").is_number()) {
+         material->SetShininess(data.at("shininess").get<float>());
+      }
+
+      if (data.contains("environmentTextureStrength") && data.at("environmentTextureStrength").is_number()) {
+         material->SetEnvironmentTextureStrength(data.at("environmentTextureStrength").get<float>());
+      }
+
+      if (ReadVector4(data, "rimLightColor", vectorValue)) {
+         material->SetRimLightColor(vectorValue);
+      }
+      if (data.contains("rimLightIntensity") && data.at("rimLightIntensity").is_number()) {
+         material->SetRimLightIntensity(data.at("rimLightIntensity").get<float>());
+      }
+      if (data.contains("rimLightPower") && data.at("rimLightPower").is_number()) {
+         material->SetRimLightPower(data.at("rimLightPower").get<float>());
+      }
+
+      if (ReadVector4(data, "fillLightColor", vectorValue)) {
+         material->SetFillLightColor(vectorValue);
+      }
+      if (data.contains("fillLightIntensity") && data.at("fillLightIntensity").is_number()) {
+         material->SetFillLightIntensity(data.at("fillLightIntensity").get<float>());
+      }
+
+      GameEngine::Matrix4x4 uvTransform = GameEngine::MakeIdentity4x4();
+      if (ReadMatrix4x4(data, "uvTransform", uvTransform)) {
+         material->SetUVTransform(uvTransform);
+      }
+
+      if (data.contains("blendMode") && data.at("blendMode").is_number_integer()) {
+         const int blendMode = data.at("blendMode").get<int>();
+         if (blendMode >= 0 && blendMode < static_cast<int>(BlendMode::kCount)) {
+            material->SetBlendMode(static_cast<BlendMode>(blendMode));
+         } else {
+            material->SetBlendMode(std::nullopt);
+         }
+      }
+
+      if (data.contains("pipelineName") && data.at("pipelineName").is_string()) {
+         material->SetPipelineName(data.at("pipelineName").get<std::string>());
+      }
+   }
+
    bool IsTextureFileExtension(std::string extension) {
       std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
          return static_cast<char>(std::tolower(c));
@@ -217,14 +368,11 @@ const char* MaterialComponent::GetTypeName() const {
 
 nlohmann::json MaterialComponent::Serialize() const {
    nlohmann::json json = nlohmann::json::object();
+   const size_t materialSlotCount = std::max({ materials.size(), materialNames_.size(), textureNames_.size() });
    std::vector<std::string> materialNames = materialNames_;
-   if (materialNames.size() < materials.size()) {
-      materialNames.resize(materials.size());
-   } else if (materialNames.size() > materials.size()) {
-      materialNames.resize(materials.size());
-   }
+   materialNames.resize(materialSlotCount);
    json["materialNames"] = materialNames;
-   json["materialCount"] = materials.size();
+   json["materialCount"] = materialSlotCount;
    json["environmentTextureName"] = MakeSerializedTextureName(environmentTextureName_);
    json["textureLeftTop"] = { textureLeftTop_.x, textureLeftTop_.y };
    json["textureSize"] = { textureSize_.x, textureSize_.y };
@@ -232,53 +380,30 @@ nlohmann::json MaterialComponent::Serialize() const {
    // テクスチャ名（マテリアルスロット並行）
    {
       std::vector<std::string> texNames = textureNames_;
-      texNames.resize(materials.size());
+      texNames.resize(materialSlotCount);
       for (auto& textureName : texNames) {
          textureName = MakeSerializedTextureName(textureName);
       }
       json["textureNames"] = texNames;
    }
 
-   if (!materials.empty() && materials[0] && materials[0]->GetMaterialData()) {
-      const auto* materialData = materials[0]->GetMaterialData();
-      json["color"] = {
-         materialData->color.x,
-         materialData->color.y,
-         materialData->color.z,
-         materialData->color.w
-      };
-      json["lightingMode"] = materialData->lightingMode;
-      json["shininess"] = materialData->shininess;
-      json["rimLightColor"] = {
-         materialData->rimLightColor.x,
-         materialData->rimLightColor.y,
-         materialData->rimLightColor.z,
-         materialData->rimLightColor.w
-      };
-      json["rimLightIntensity"] = materialData->rimLightIntensity;
-      json["rimLightPower"] = materialData->rimLightPower;
-      json["fillLightColor"] = {
-         materialData->fillLightColor.x,
-         materialData->fillLightColor.y,
-         materialData->fillLightColor.z,
-         materialData->fillLightColor.w
-      };
-      json["fillLightIntensity"] = materialData->fillLightIntensity;
+   // 旧形式との互換性を保ちながら、複数スロットを欠落なく保存する。
+   json["materialSlots"] = nlohmann::json::array();
+   for (size_t slot = 0; slot < materialSlotCount; ++slot) {
+      const Material* material = slot < materials.size() ? materials[slot] : nullptr;
+      nlohmann::json slotData = SerializeMaterialProperties(material);
+      slotData["name"] = materialNames[slot];
+      slotData["textureName"] = slot < textureNames_.size()
+         ? MakeSerializedTextureName(textureNames_[slot])
+         : std::string{};
+      json["materialSlots"].push_back(std::move(slotData));
+   }
 
-      const Matrix4x4 uv = materialData->uvTransform;
-      json["uvTransform"] = {
-         { uv.m[0][0], uv.m[0][1], uv.m[0][2], uv.m[0][3] },
-         { uv.m[1][0], uv.m[1][1], uv.m[1][2], uv.m[1][3] },
-         { uv.m[2][0], uv.m[2][1], uv.m[2][2], uv.m[2][3] },
-         { uv.m[3][0], uv.m[3][1], uv.m[3][2], uv.m[3][3] }
-      };
-
-      // blendMode（nullopt の場合は -1 として保存）
-      const auto blendMode = materials[0]->GetBlendMode();
-      json["blendMode"] = blendMode.has_value() ? static_cast<int>(blendMode.value()) : -1;
-
-      // pipelineName
-      json["pipelineName"] = materials[0]->GetPipelineName();
+   if (!materials.empty()) {
+      const nlohmann::json firstMaterial = SerializeMaterialProperties(materials[0]);
+      for (auto it = firstMaterial.begin(); it != firstMaterial.end(); ++it) {
+         json[it.key()] = it.value();
+      }
    }
    return json;
 }
@@ -302,118 +427,93 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
       environmentTextureName_ = data.at("environmentTextureName").get<std::string>();
    }
 
-   if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
-      return;
-   }
+   const std::vector<Material*> previousMaterials = materials;
+   auto resolveMaterial = [&previousMaterials](const std::string& name, size_t slot) -> Material* {
+      Material* material = nullptr;
+      if (!name.empty() && resolver_) {
+         material = resolver_(name);
+      }
+      if (!material && !name.empty() && creator_) {
+         // シーン固有マテリアルは旧シーンクラスに依存せず、保存データから再生成する。
+         material = creator_(name, 0xffffffff, Material::LightingMode::HALFLAMBERT, MakeIdentity4x4());
+      }
+      if (!material && slot < previousMaterials.size()) {
+         material = previousMaterials[slot];
+      }
+      return material;
+   };
 
    materialNames_.clear();
    materials.clear();
    textureNames_.clear();
 
-   for (const auto& nameValue : data.at("materialNames")) {
-      if (!nameValue.is_string()) {
-         continue;
-      }
+   if (data.contains("materialSlots") && data.at("materialSlots").is_array()) {
+      const auto& materialSlots = data.at("materialSlots");
+      materialNames_.reserve(materialSlots.size());
+      materials.reserve(materialSlots.size());
+      textureNames_.reserve(materialSlots.size());
 
-      const std::string name = nameValue.get<std::string>();
-      materialNames_.push_back(name);
-
-      if (resolver_) {
-         auto* material = resolver_(name);
-         if (material) {
-            materials.push_back(material);
+      for (size_t slot = 0; slot < materialSlots.size(); ++slot) {
+         const auto& slotData = materialSlots[slot];
+         if (!slotData.is_object()) {
+            materialNames_.emplace_back();
+            materials.push_back(slot < previousMaterials.size() ? previousMaterials[slot] : nullptr);
+            textureNames_.emplace_back();
+            continue;
          }
+
+         const std::string materialName = slotData.contains("name") && slotData.at("name").is_string()
+            ? slotData.at("name").get<std::string>()
+            : std::string{};
+         const std::string textureName = slotData.contains("textureName") && slotData.at("textureName").is_string()
+            ? slotData.at("textureName").get<std::string>()
+            : std::string{};
+         Material* material = resolveMaterial(materialName, slot);
+         materialNames_.push_back(materialName);
+         materials.push_back(material);
+         textureNames_.push_back(textureName);
+         DeserializeMaterialProperties(material, slotData);
+      }
+      return;
+   }
+
+   if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
+      materials = previousMaterials;
+      SyncMaterialNamesSize();
+      return;
+   }
+
+   const auto& serializedNames = data.at("materialNames");
+   size_t materialSlotCount = serializedNames.size();
+   if (data.contains("materialCount") && data.at("materialCount").is_number_unsigned()) {
+      materialSlotCount = std::max(materialSlotCount, data.at("materialCount").get<size_t>());
+   } else if (data.contains("materialCount") && data.at("materialCount").is_number_integer()) {
+      const int64_t serializedSlotCount = data.at("materialCount").get<int64_t>();
+      if (serializedSlotCount >= 0) {
+         materialSlotCount = std::max(materialSlotCount, static_cast<size_t>(serializedSlotCount));
       }
    }
 
-   // テクスチャ名の復元
+   materialNames_.reserve(materialSlotCount);
+   materials.reserve(materialSlotCount);
+   for (size_t slot = 0; slot < materialSlotCount; ++slot) {
+      const std::string materialName = slot < serializedNames.size() && serializedNames[slot].is_string()
+         ? serializedNames[slot].get<std::string>()
+         : std::string{};
+      materialNames_.push_back(materialName);
+      materials.push_back(resolveMaterial(materialName, slot));
+   }
+
    if (data.contains("textureNames") && data.at("textureNames").is_array()) {
-      for (const auto& tv : data.at("textureNames")) {
-         textureNames_.push_back(tv.is_string() ? tv.get<std::string>() : std::string{});
+      for (const auto& textureName : data.at("textureNames")) {
+         textureNames_.push_back(textureName.is_string() ? textureName.get<std::string>() : std::string{});
       }
    }
-   textureNames_.resize(materials.size());
+   textureNames_.resize(materialSlotCount);
 
-   if (!materials.empty() && materials[0] && materials[0]->GetMaterialData()) {
-      auto* material = materials[0];
-
-      if (data.contains("color") && data.at("color").is_array() && data.at("color").size() == 4) {
-         material->SetColor(Vector4(
-            data.at("color")[0].get<float>(),
-            data.at("color")[1].get<float>(),
-            data.at("color")[2].get<float>(),
-            data.at("color")[3].get<float>()
-         ));
-      }
-
-      if (data.contains("lightingMode") && data.at("lightingMode").is_number_integer()) {
-         material->SetLightingMode(static_cast<Material::LightingMode>(data.at("lightingMode").get<int32_t>()));
-      }
-
-      if (data.contains("shininess") && data.at("shininess").is_number()) {
-         material->SetShininess(data.at("shininess").get<float>());
-      }
-
-      if (data.contains("rimLightColor") && data.at("rimLightColor").is_array() && data.at("rimLightColor").size() == 4) {
-         material->SetRimLightColor(Vector4(
-            data.at("rimLightColor")[0].get<float>(),
-            data.at("rimLightColor")[1].get<float>(),
-            data.at("rimLightColor")[2].get<float>(),
-            data.at("rimLightColor")[3].get<float>()
-         ));
-      }
-
-      if (data.contains("rimLightIntensity") && data.at("rimLightIntensity").is_number()) {
-         material->SetRimLightIntensity(data.at("rimLightIntensity").get<float>());
-      }
-
-      if (data.contains("rimLightPower") && data.at("rimLightPower").is_number()) {
-         material->SetRimLightPower(data.at("rimLightPower").get<float>());
-      }
-
-      if (data.contains("fillLightColor") && data.at("fillLightColor").is_array() && data.at("fillLightColor").size() == 4) {
-         material->SetFillLightColor(Vector4(
-            data.at("fillLightColor")[0].get<float>(),
-            data.at("fillLightColor")[1].get<float>(),
-            data.at("fillLightColor")[2].get<float>(),
-            data.at("fillLightColor")[3].get<float>()
-         ));
-      }
-
-      if (data.contains("fillLightIntensity") && data.at("fillLightIntensity").is_number()) {
-         material->SetFillLightIntensity(data.at("fillLightIntensity").get<float>());
-      }
-
-      if (data.contains("uvTransform") && data.at("uvTransform").is_array() && data.at("uvTransform").size() == 4) {
-         Matrix4x4 uv = MakeIdentity4x4();
-         bool valid = true;
-         for (int row = 0; row < 4; ++row) {
-            const auto& rowData = data.at("uvTransform")[row];
-            if (!rowData.is_array() || rowData.size() != 4) {
-               valid = false;
-               break;
-            }
-            for (int col = 0; col < 4; ++col) {
-               uv.m[row][col] = rowData[col].get<float>();
-            }
-         }
-         if (valid) {
-            material->SetUVTransform(uv);
-         }
-      }
-
-      if (data.contains("blendMode") && data.at("blendMode").is_number_integer()) {
-         const int val = data.at("blendMode").get<int>();
-         if (val >= 0 && val < static_cast<int>(BlendMode::kCount)) {
-            material->SetBlendMode(static_cast<BlendMode>(val));
-         } else {
-            material->SetBlendMode(std::nullopt);
-         }
-      }
-
-      if (data.contains("pipelineName") && data.at("pipelineName").is_string()) {
-         material->SetPipelineName(data.at("pipelineName").get<std::string>());
-      }
+   // v1 のシーンJSONは第0スロットの値をコンポーネント直下に保持している。
+   if (!materials.empty()) {
+      DeserializeMaterialProperties(materials[0], data);
    }
 }
 

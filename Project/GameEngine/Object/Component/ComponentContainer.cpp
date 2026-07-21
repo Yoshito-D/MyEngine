@@ -2,6 +2,7 @@
 #include "ComponentContainer.h"
 #include "Object.h"
 #include <algorithm>
+#include <unordered_set>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
@@ -18,8 +19,12 @@ IObjectComponent* ComponentContainer::AddByTypeName(Object& owner, const std::st
 }
 
 bool ComponentContainer::HasByTypeName(const std::string& typeName) const {
+   return GetByTypeName(typeName) != nullptr;
+}
+
+IObjectComponent* ComponentContainer::GetByTypeName(const std::string& typeName) const {
    if (typeName.empty()) {
-      return false;
+      return nullptr;
    }
 
    for (const auto& component : components_) {
@@ -27,11 +32,19 @@ bool ComponentContainer::HasByTypeName(const std::string& typeName) const {
          continue;
       }
       if (typeName == component->GetTypeName()) {
-         return true;
+         return component.get();
       }
    }
 
-   return false;
+   return nullptr;
+}
+
+bool ComponentContainer::RemoveByTypeName(const std::string& typeName) {
+   IObjectComponent* component = GetByTypeName(typeName);
+   if (!component) {
+      return false;
+   }
+   return RemoveByTypeIndex(std::type_index(typeid(*component)));
 }
 
 void ComponentContainer::Update(float deltaTime) {
@@ -77,7 +90,26 @@ bool ComponentContainer::Deserialize(Object& owner, const nlohmann::json& compon
       return false;
    }
 
-   bool hasAppliedAnyComponent = false;
+   std::unordered_set<std::string> serializedTypeNames;
+   for (const auto& componentData : componentsData) {
+      if (componentData.is_object()) {
+         const std::string typeName = componentData.value("typeName", "");
+         if (!typeName.empty()) {
+            serializedTypeNames.insert(typeName);
+         }
+      }
+   }
+
+   std::vector<std::string> removedTypeNames;
+   for (const auto& component : components_) {
+      if (component && !serializedTypeNames.contains(component->GetTypeName())) {
+         removedTypeNames.emplace_back(component->GetTypeName());
+      }
+   }
+   for (const auto& typeName : removedTypeNames) {
+      RemoveByTypeName(typeName);
+   }
+
    for (const auto& componentData : componentsData) {
       if (!componentData.is_object()) {
          continue;
@@ -101,23 +133,44 @@ bool ComponentContainer::Deserialize(Object& owner, const nlohmann::json& compon
          component->Deserialize(componentData.at("data"));
       }
 
-      hasAppliedAnyComponent = true;
    }
 
-   return hasAppliedAnyComponent;
+   return true;
 }
 
 #ifdef USE_IMGUI
-void ComponentContainer::DrawInspector() {
+std::string ComponentContainer::DrawInspector() {
+   std::string pendingRemovedComponentType;
    for (auto& component : components_) {
       if (!component) {
          continue;
       }
       // コンポーネントごとにID空間を分け、同じ表示ラベルを使う編集項目同士の衝突を防ぐ。
       ImGui::PushID(component->GetTypeName());
+
+      const ImVec2 headerPosition = ImGui::GetCursorScreenPos();
+      const float headerWidth = ImGui::GetContentRegionAvail().x;
+      // 各コンポーネントが最初に描くCollapsingHeaderへ、後描画の削除ボタンを重ねられるようにする。
+      ImGui::SetNextItemAllowOverlap();
       component->DrawInspector();
+
+      const ImVec2 contentEndPosition = ImGui::GetCursorScreenPos();
+      const ImGuiStyle& style = ImGui::GetStyle();
+      const float removeButtonWidth = ImGui::CalcTextSize("X").x + style.FramePadding.x * 2.0f;
+      ImGui::SetCursorScreenPos(ImVec2(
+         headerPosition.x + (std::max)(headerWidth - removeButtonWidth - style.FramePadding.x, 0.0f),
+         headerPosition.y + 1.0f));
+      if (ImGui::SmallButton("X##RemoveComponent")) {
+         pendingRemovedComponentType = component->GetTypeName();
+      }
+      if (ImGui::IsItemHovered()) {
+         ImGui::SetTooltip("%s", LocalizeEditorText("コンポーネントを外す", "Remove Component"));
+      }
+      // 絶対座標へ一時移動したカーソルを戻し、次のコンポーネントのレイアウトを維持する。
+      ImGui::SetCursorScreenPos(contentEndPosition);
       ImGui::PopID();
    }
+   return pendingRemovedComponentType;
 }
 #endif
 

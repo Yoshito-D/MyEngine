@@ -33,6 +33,14 @@ bool Object::HasComponentByTypeName(const std::string& typeName) const {
    return components_.HasByTypeName(typeName);
 }
 
+IObjectComponent* Object::GetComponentByTypeName(const std::string& typeName) const {
+   return components_.GetByTypeName(typeName);
+}
+
+bool Object::RemoveComponentByTypeName(const std::string& typeName) {
+   return components_.RemoveByTypeName(typeName);
+}
+
 bool Object::DeserializeComponents(const nlohmann::json& componentsData) {
    return components_.Deserialize(*this, componentsData);
 }
@@ -46,8 +54,8 @@ void Object::UpdateComponents(float deltaTime) {
 }
 
 #ifdef USE_IMGUI
-void Object::DrawComponentInspector() {
-   components_.DrawInspector();
+std::string Object::DrawComponentInspector() {
+   return components_.DrawInspector();
 }
 #endif
 

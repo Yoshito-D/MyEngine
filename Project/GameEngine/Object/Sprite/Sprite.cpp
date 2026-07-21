@@ -2,7 +2,7 @@
 #include "Sprite.h"
 #include "Texture.h"
 #include "Component/MaterialComponent.h"
-#include "Component/Sprite/PrimitiveMeshComponent.h"
+#include "Component/MeshComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Core/Graphics/Mesh.h"
@@ -44,7 +44,7 @@ Sprite::Sprite() {
    if (auto* materialComponent = AddComponent<MaterialComponent>()) {
       materialComponent->EnsureMaterial(BuildAutoSpriteMaterialName(), 0xffffffff, Material::LightingMode::NONE);
    }
-   AddComponent<PrimitiveMeshComponent>();
+   AddComponent<MeshComponent>();
    if (auto* renderComponent = AddComponent<RenderComponent>()) {
       renderComponent->renderSpace = RenderComponent::RenderSpace::Screen;
    }
@@ -72,8 +72,8 @@ const std::vector<Sprite*>& Sprite::GetRegisteredSprites() {
 }
 
 void Sprite::Create(const Vector2& size, Material* material, const Vector2& anchorPoint) {
-   if (auto* primitiveMeshComponent = AddComponent<PrimitiveMeshComponent>()) {
-      primitiveMeshComponent->SetPrimitiveType(PrimitiveMeshComponent::PrimitiveType::Quad);
+   if (auto* primitiveMeshComponent = AddComponent<MeshComponent>()) {
+      primitiveMeshComponent->SetPrimitiveType(MeshComponent::PrimitiveType::Quad);
       primitiveMeshComponent->SetQuadSize(size);
       primitiveMeshComponent->SetQuadAnchorPoint(anchorPoint);
       primitiveMeshComponent->CreateMesh();
@@ -100,14 +100,14 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
 }
 
 void Sprite::SetAnchorPoint(const Vector2& anchorPoint) {
-   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (auto* primitiveMeshComponent = GetMeshComponent()) {
       primitiveMeshComponent->SetQuadAnchorPoint(anchorPoint);
       primitiveMeshComponent->ApplyToMesh();
    }
 }
 
 void Sprite::SetSize(const Vector2& size) {
-   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (auto* primitiveMeshComponent = GetMeshComponent()) {
       primitiveMeshComponent->SetQuadSize(size);
       primitiveMeshComponent->ApplyToMesh();
    }
@@ -166,42 +166,42 @@ float Sprite::GetRotation() const {
 }
 
 Vector2 Sprite::GetSize() const {
-   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->GetQuadSize();
    }
    return Vector2(1.0f, 1.0f);
 }
 
 Vector2 Sprite::GetAnchorPoint() const {
-   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->GetQuadAnchorPoint();
    }
    return Vector2(0.0f, 0.0f);
 }
 
 bool Sprite::IsFlipX() const {
-   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->IsFlipX();
    }
    return false;
 }
 
 bool Sprite::IsFlipY() const {
-   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->IsFlipY();
    }
    return false;
 }
 
 void Sprite::SetFlipX(bool isFlip) {
-   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (auto* primitiveMeshComponent = GetMeshComponent()) {
       primitiveMeshComponent->SetFlipX(isFlip);
       primitiveMeshComponent->ApplyToMesh();
    }
 }
 
 void Sprite::SetFlipY(bool isFlip) {
-   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (auto* primitiveMeshComponent = GetMeshComponent()) {
       primitiveMeshComponent->SetFlipY(isFlip);
       primitiveMeshComponent->ApplyToMesh();
    }
@@ -240,7 +240,7 @@ Vector2 Sprite::GetTextureSize() const {
 }
 
 Mesh* Sprite::GetMesh() const {
-   if (const auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->GetMesh();
    }
    return nullptr;
@@ -366,13 +366,13 @@ Vector3 Sprite::CalculateAnchorPosition(AnchorPoint anchorPoint, uint32_t screen
 }
 
 void Sprite::UpdateVertexPositions() {
-   if (auto* primitiveMeshComponent = GetPrimitiveMeshComponent()) {
+   if (auto* primitiveMeshComponent = GetMeshComponent()) {
       primitiveMeshComponent->ApplyToMesh();
    }
 }
 
 void Sprite::UpdateTextureCoordinates(Texture* texture) {
-   auto* primitiveMeshComponent = GetPrimitiveMeshComponent();
+   auto* primitiveMeshComponent = GetMeshComponent();
    if (!primitiveMeshComponent) {
       return;
    }
@@ -380,12 +380,12 @@ void Sprite::UpdateTextureCoordinates(Texture* texture) {
    primitiveMeshComponent->ApplyTextureCoordinates(texture, GetTextureLeftTop(), GetTextureSize());
 }
 
-PrimitiveMeshComponent* Sprite::GetPrimitiveMeshComponent() {
-   return GetComponent<PrimitiveMeshComponent>();
+MeshComponent* Sprite::GetMeshComponent() {
+   return GetComponent<MeshComponent>();
 }
 
-const PrimitiveMeshComponent* Sprite::GetPrimitiveMeshComponent() const {
-   return GetComponent<PrimitiveMeshComponent>();
+const MeshComponent* Sprite::GetMeshComponent() const {
+   return GetComponent<MeshComponent>();
 }
 
 MaterialComponent* Sprite::GetMaterialComponent() {

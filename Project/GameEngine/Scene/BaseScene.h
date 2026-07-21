@@ -57,7 +57,7 @@ public:
    const std::string& GetEditorSceneName() const { return editorSceneName_; }
 
    /// @brief 保存済みシーンデータを現在のシーンへ必要に応じて適用する
-   void LoadSceneDataIfNeeded();
+   virtual void LoadSceneDataIfNeeded();
 
 #ifdef USE_IMGUI
    /// @brief エディタ用シーンコンテキストを取得する

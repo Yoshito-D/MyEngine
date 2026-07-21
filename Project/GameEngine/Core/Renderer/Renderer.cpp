@@ -28,6 +28,7 @@
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Component/MaterialComponent.h"
+#include "Component/MeshComponent.h"
 #include "RenderBootstrapper.h"
 #include "Object/Skybox/Skybox.h"
 #include "Object/Text/UIText.h"
@@ -264,7 +265,12 @@ void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> ble
    Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
    assert(activeCamera != nullptr);
 
-   if (!model->GetComponent<ModelAssetComponent>()->GetModelAsset()) return;
+   auto* meshComponent = model->GetComponent<MeshComponent>();
+   if (!meshComponent ||
+      (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile && !meshComponent->GetModelAsset()) ||
+      (meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive && !meshComponent->EnsureMesh())) {
+      return;
+   }
 
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> handles = { texture->GetTextureSrvHandleGPU() };
 
@@ -301,7 +307,12 @@ void Renderer::Draw(Model* model, const std::vector<Texture*>& textures, std::op
    assert(model != nullptr);
    assert(!textures.empty());
 
-   if (!model->GetComponent<ModelAssetComponent>()->GetModelAsset()) return;
+   auto* meshComponent = model->GetComponent<MeshComponent>();
+   if (!meshComponent ||
+      (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile && !meshComponent->GetModelAsset()) ||
+      (meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive && !meshComponent->EnsureMesh())) {
+      return;
+   }
 
    // TextureポインタからSRVハンドルに変換
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textureSrvHandles;
@@ -599,7 +610,7 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 	  return;
    }
 
-   ModelAsset* modelAsset = model->GetComponent<ModelAssetComponent>()->GetModelAsset();
+   ModelAsset* modelAsset = model->GetComponent<MeshComponent>()->GetModelAsset();
    if (!modelAsset) {
 	  return;
    }

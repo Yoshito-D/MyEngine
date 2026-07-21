@@ -1,13 +1,14 @@
 #include "pch.h"
 #include "EditorObjectStore.h"
 
-#include "Component/Model/ModelAssetComponent.h"
+#include "Component/MeshComponent.h"
 #include "Component/MaterialComponent.h"
 #include "Component/Particle/ParticleEmitterComponent.h"
 #include "Component/TransformComponent.h"
 #include "Effect/ParticleSystem.h"
 #include "Framework/EngineContext.h"
 #include "Model/Model.h"
+#include "Object/Skybox/Skybox.h"
 #include "Sprite/Sprite.h"
 #include "Text/UIText.h"
 #include <algorithm>
@@ -92,16 +93,37 @@ Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::
 
 EditorObjectStore::~EditorObjectStore() = default;
 
+Object* EditorObjectStore::CreateGenericObject(const Transform* initialTransform, const std::string& requestedId) {
+   auto object = std::make_unique<Object>();
+   Object* rawObject = object.get();
+   auto* transformComponent = rawObject->AddComponent<TransformComponent>();
+   if (initialTransform && transformComponent) {
+      transformComponent->transform = *initialTransform;
+   }
+   rawObject->SetObjectName(BuildUniqueObjectName("EmptyObject"));
+
+   const std::string id = AllocateId(requestedId);
+   RegisterObject(id, rawObject);
+   genericObjects_.push_back(std::move(object));
+   return rawObject;
+}
+
 Object* EditorObjectStore::CreateModel(const std::string& assetId, const Transform* initialTransform, const std::string& requestedId) {
-   auto modelAsset = EngineContext::LoadModelByAssetId(assetId);
-   if (!modelAsset) {
-      return nullptr;
+   std::shared_ptr<ModelAsset> modelAsset;
+   if (!assetId.empty()) {
+      modelAsset = EngineContext::LoadModelByAssetId(assetId);
+      if (!modelAsset) {
+         return nullptr;
+      }
    }
 
    auto model = std::make_unique<Model>();
    Model* rawModel = model.get();
-   rawModel->Create().SetModelAsset(modelAsset);
-   rawModel->SetObjectName(BuildUniqueObjectName(BuildNameFromAssetId(assetId)));
+   rawModel->Create();
+   if (modelAsset) {
+      rawModel->SetModelAsset(modelAsset);
+   }
+   rawModel->SetObjectName(BuildUniqueObjectName(assetId.empty() ? "Model" : BuildNameFromAssetId(assetId)));
 
    if (initialTransform) {
       rawModel->SetTransform(*initialTransform);
@@ -201,6 +223,15 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
    if (objectType == "ParticleSystem") {
       RestoreParticleSystem(objectData);
       return nullptr;
+   }
+
+   if (objectType == "Generic" || objectType == "Object") {
+      const std::string id = objectData.value("id", "");
+      Object* object = CreateGenericObject(nullptr, id);
+      if (object && objectData.contains("components") && objectData.at("components").is_array()) {
+         object->DeserializeComponents(objectData.at("components"));
+      }
+      return object;
    }
 
    if (objectType == "UIText") {
@@ -332,6 +363,18 @@ bool EditorObjectStore::DeleteObject(const std::string& objectId) {
       return true;
    }
 
+   auto genericIt = std::find_if(genericObjects_.begin(), genericObjects_.end(),
+      [target](const std::unique_ptr<Object>& object) {
+         return object.get() == target;
+      });
+   if (genericIt != genericObjects_.end()) {
+      UnregisterObject(target);
+      UnregisterOwnedRuntimeSystems(target);
+      deferredDeleteGenericObjects_.push_back(std::move(*genericIt));
+      genericObjects_.erase(genericIt);
+      return true;
+   }
+
    return false;
 }
 
@@ -359,6 +402,7 @@ bool EditorObjectStore::DeleteParticleSystem(const std::string& objectId) {
 }
 
 void EditorObjectStore::FlushDeferredDeletes() {
+   deferredDeleteGenericObjects_.clear();
    deferredDeleteParticleSystems_.clear();
    deferredDeleteUITexts_.clear();
    deferredDeleteSprites_.clear();
@@ -366,6 +410,12 @@ void EditorObjectStore::FlushDeferredDeletes() {
 }
 
 void EditorObjectStore::Clear() {
+   for (auto& object : genericObjects_) {
+      if (object) {
+         UnregisterOwnedRuntimeSystems(object.get());
+         deferredDeleteGenericObjects_.push_back(std::move(object));
+      }
+   }
    for (auto& model : models_) {
       if (model) {
          UnregisterOwnedRuntimeSystems(model.get());
@@ -403,6 +453,7 @@ void EditorObjectStore::Clear() {
    uiTexts_.clear();
    sprites_.clear();
    models_.clear();
+   genericObjects_.clear();
 }
 
 bool EditorObjectStore::Contains(const Object* object) const {
@@ -500,18 +551,28 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
       };
    }
 
+   if (const auto* skybox = dynamic_cast<const Skybox*>(object)) {
+      return nlohmann::json{
+         { "id", id },
+         { "objectType", "Skybox" },
+         { "components", skybox->SerializeComponents() }
+      };
+   }
+
    const auto* model = dynamic_cast<const Model*>(object);
    if (!model) {
       return nlohmann::json{
          { "id", id },
-         { "objectType", "Object" },
+         { "objectType", "Generic" },
          { "components", object->SerializeComponents() }
       };
    }
 
    std::string assetId;
-   if (const auto* modelAssetComponent = model->GetComponent<ModelAssetComponent>()) {
-      assetId = modelAssetComponent->GetAssetId();
+   if (const auto* meshComponent = model->GetComponent<MeshComponent>()) {
+      if (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile) {
+         assetId = meshComponent->GetAssetId();
+      }
    }
 
    return nlohmann::json{
@@ -535,6 +596,9 @@ bool EditorObjectStore::ApplyObjectState(Object* object, const nlohmann::json& o
       return false;
    }
    if (objectType == "UIText" && dynamic_cast<UIText*>(object) == nullptr) {
+      return false;
+   }
+   if (objectType == "Skybox" && dynamic_cast<Skybox*>(object) == nullptr) {
       return false;
    }
 
@@ -582,6 +646,16 @@ bool EditorObjectStore::ApplyParticleSystemState(ParticleSystem* particleSystem,
 
 nlohmann::json EditorObjectStore::SerializeAll() const {
    nlohmann::json objects = nlohmann::json::array();
+   for (const auto& object : genericObjects_) {
+      if (!object) {
+         continue;
+      }
+
+      const std::string id = GetId(object.get());
+      if (!id.empty()) {
+         objects.push_back(SerializeObject(id));
+      }
+   }
    for (const auto& model : models_) {
       if (!model) {
          continue;
@@ -653,7 +727,12 @@ std::string EditorObjectStore::AllocateId(const std::string& requestedId) {
 std::string EditorObjectStore::BuildUniqueObjectName(const std::string& baseName) const {
    const std::string base = baseName.empty() ? "EditorObject" : baseName;
 
-   auto exists = [](const std::string& name) {
+   auto exists = [this](const std::string& name) {
+      for (const auto& object : genericObjects_) {
+         if (object && object->GetObjectName() == name) {
+            return true;
+         }
+      }
       for (const auto* model : Model::GetRegisteredModels()) {
          if (model && model->GetObjectName() == name) {
             return true;

@@ -26,6 +26,7 @@ struct PipelineConfig {
    BlendMode blendMode = BlendMode::kBlendModeNone;
    D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK;
    D3D12_FILL_MODE fillMode = D3D12_FILL_MODE_SOLID;
+   BOOL frontCounterClockwise = FALSE; ///< TRUEの場合は反時計回りの面を前面として扱う
    BOOL depthEnable = TRUE;
    D3D12_DEPTH_WRITE_MASK depthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
    D3D12_COMPARISON_FUNC depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
@@ -92,6 +93,11 @@ public:
    /// @param blendMode ブレンドモード
    /// @return パイプラインステート、見つからない場合はnullptr
    PipelineState* GetPipeline(const std::string& name, BlendMode blendMode = BlendMode::kBlendModeNone);
+
+   /// @brief 表裏反転用パイプラインの論理名を生成する
+   /// @param name 元のパイプライン名
+   /// @return 表裏反転用パイプライン名
+   static std::string MakeReversedFacePipelineName(const std::string& name);
 
    /// @brief ルートシグネチャを取得
    /// @param name ルートシグネチャ名

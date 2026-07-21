@@ -14,7 +14,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
 }
 #include "Model/Model.h"
 #include "Model/ModelAsset.h"
-#include "ModelAssetComponent.h"
+#include "Component/MeshComponent.h"
 #include "Component/TransformComponent.h"
 
 #include <algorithm>
@@ -165,7 +165,7 @@ void AnimationComponent::Update(float deltaTime) {
 void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 
    if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
-	  auto* modelAssetComp = model->GetComponent<ModelAssetComponent>();
+	  auto* modelAssetComp = model->GetComponent<MeshComponent>();
 	  ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
 	  if (useSkinning && modelAsset && modelAsset->HasSkinningData()) {
 		 const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();

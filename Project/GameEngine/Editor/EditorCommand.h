@@ -40,6 +40,26 @@ private:
    std::vector<std::unique_ptr<IEditorCommand>> redoStack_;
 };
 
+/// @brief 描画コンポーネントを持たない汎用オブジェクトの作成をUndo/Redo可能にするコマンド
+class CreateGenericObjectCommand final : public IEditorCommand {
+public:
+   /// @brief 空オブジェクト作成コマンドを構築する
+   /// @param initialTransform 初期トランスフォーム
+   explicit CreateGenericObjectCommand(Transform initialTransform = Transform());
+
+   /// @copydoc IEditorCommand::Execute
+   bool Execute(EditorSceneContext& context) override;
+   /// @copydoc IEditorCommand::Undo
+   void Undo(EditorSceneContext& context) override;
+   /// @copydoc IEditorCommand::GetName
+   const char* GetName() const override { return "Create Empty Object"; }
+
+private:
+   Transform initialTransform_{};
+   std::string objectId_;
+   nlohmann::json snapshot_;
+};
+
 class CreateModelCommand final : public IEditorCommand {
 public:
    explicit CreateModelCommand(std::string assetId, Transform initialTransform = Transform());
@@ -233,6 +253,33 @@ private:
    Object* fallbackObject_ = nullptr;
    std::string typeName_;
    nlohmann::json beforeSnapshot_;
+};
+
+/// @brief オブジェクトからコンポーネントを外し、Undoで設定ごと復元するコマンド
+class RemoveComponentCommand final : public IEditorCommand {
+public:
+   /// @brief コンポーネント削除コマンドを構築する
+   /// @param objectId エディタ所有オブジェクトのID。シーン所有時は空文字
+   /// @param fallbackObject IDで解決できないシーン所有オブジェクト
+   /// @param typeName 外すコンポーネント型名
+   RemoveComponentCommand(std::string objectId, Object* fallbackObject, std::string typeName);
+
+   /// @copydoc IEditorCommand::Execute
+   bool Execute(EditorSceneContext& context) override;
+
+   /// @copydoc IEditorCommand::Undo
+   void Undo(EditorSceneContext& context) override;
+
+   /// @copydoc IEditorCommand::GetName
+   const char* GetName() const override { return "Remove Component"; }
+
+private:
+   Object* ResolveObject(EditorSceneContext& context) const;
+
+   std::string objectId_;
+   Object* fallbackObject_ = nullptr;
+   std::string typeName_;
+   nlohmann::json removedComponentData_;
 };
 
 } // namespace GameEngine

@@ -3,7 +3,7 @@
 #include "Component/ComponentRegistry.h"
 #include "Object.h"
 #include "Component/TransformComponent.h"
-#include "Component/Model/ModelAssetComponent.h"
+#include "Component/MeshComponent.h"
 #include "Effect/ParticleSystem.h"
 #include "MathUtils.h"
 #include "Framework/EngineContext.h"
@@ -98,7 +98,7 @@ void ParticleEmitterComponent::Update(float) {
 	  if (culled) continue;
 
 	  if (auto* shape = slot.particleSystem->GetShapeModule()) {
-		 if (auto* modelComponent = GetOwner().GetComponent<ModelAssetComponent>()) {
+		 if (auto* modelComponent = GetOwner().GetComponent<MeshComponent>()) {
 			shape->SetSkinnedMeshSource(modelComponent->GetModelAsset(), modelComponent->GetSkinCluster());
 		 } else {
 			shape->SetSkinnedMeshSource(nullptr, nullptr);
@@ -364,7 +364,7 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
 
    // ボーン追従
    if (!cfg.boneName.empty()) {
-	  auto* mac = GetOwner().GetComponent<ModelAssetComponent>();
+	  auto* mac = GetOwner().GetComponent<MeshComponent>();
 	  if (mac) {
 		 const SkinCluster* sc = mac->GetSkinCluster();
 		 const ModelAsset* asset = mac->GetModelAsset();

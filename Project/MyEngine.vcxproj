@@ -339,12 +339,12 @@ copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)
     <ClCompile Include="GameEngine\Object\Component\Model\AnimationComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp" />
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\Model\ModelAssetComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\MeshComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\Sprite\PrimitiveMeshComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\TriggerVolumeComponent.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\Line.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -365,6 +365,8 @@ copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Skybox\Skybox.cpp" />
     <ClCompile Include="GameEngine\Scene\BaseScene.cpp" />
+    <ClCompile Include="GameEngine\Scene\DataDrivenScene.cpp" />
+    <ClCompile Include="GameEngine\Scene\SceneWorld.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Camera.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -461,6 +463,7 @@ copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\AppComponentRegistry.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\CameraGravityBridge.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\CameraModeSwitcher.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\GravityFollowCamera.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\PlanetLeashCamera.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.cpp" />
@@ -474,19 +477,25 @@ copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)
     <ClCompile Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\PlanetSwitcher.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceCountdownTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceManagerComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceResultUIComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceTimeFormatting.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceTimeTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Character\CharacterController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEffectController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleGroundMover.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleMover.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.cpp" />
-    <ClCompile Include="GameProject\App\Scene\EngineTestScene.cpp" />
-    <ClCompile Include="GameProject\App\Scene\GameTestScene.cpp" />
     <ClCompile Include="GameProject\Game.cpp" />
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp" />
+    <ClCompile Include="GameProject\App\Scene\SceneCatalog.cpp" />
     <ClCompile Include="GameEngine\Utility\ImGuiHelper.cpp" />
     <ClCompile Include="main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -634,12 +643,12 @@ copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)
     <ClInclude Include="GameEngine\Object\Component\UI\UITransformTweenComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\Model\ModelAssetComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\MeshComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\Sprite\PrimitiveMeshComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\Skybox\SkyboxComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\TriggerVolumeComponent.h" />
     <ClInclude Include="GameEngine\Core\Graphics\Line.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\LineRenderer.h" />
     <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h" />
@@ -651,6 +660,8 @@ copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)
     <ClInclude Include="GameEngine\Collision\Collision.h" />
     <ClInclude Include="GameEngine\Object\Skybox\Skybox.h" />
     <ClInclude Include="GameEngine\Scene\BaseScene.h" />
+    <ClInclude Include="GameEngine\Scene\DataDrivenScene.h" />
+    <ClInclude Include="GameEngine\Scene\SceneWorld.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Camera.h" />
     <ClInclude Include="GameEngine\Scene\Light\DirectionalLight.h" />
     <ClInclude Include="GameEngine\Core\UI\ImGuiManager.h" />
@@ -708,6 +719,7 @@ copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)
     <ClInclude Include="GameEngine\Core\Graphics\ResourceHelper.h" />
     <ClInclude Include="GameEngine\Utility\VectorMath.h" />
     <ClInclude Include="GameProject\App\Component\Camera\CameraGravityBridge.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\CameraModeSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Camera\GravityFollowCamera.h" />
     <ClInclude Include="GameProject\App\Component\Camera\PlanetLeashCamera.h" />
     <ClInclude Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.h" />
@@ -721,19 +733,25 @@ copy /Y "$(ProjectDir)Externals\FreeType\lib\Release\freetype.dll" "$(TargetDir)
     <ClInclude Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\PlanetSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceCountdownTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceManagerComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceResultUIComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceTimeFormatting.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceTimeTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Character\CharacterController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEffectController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleGroundMover.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingBoost.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleMover.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.h" />
-    <ClInclude Include="GameProject\App\Scene\EngineTestScene.h" />
-    <ClInclude Include="GameProject\App\Scene\GameTestScene.h" />
     <ClInclude Include="GameProject\Game.h" />
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h" />
+    <ClInclude Include="GameProject\App\Scene\SceneCatalog.h" />
     <ClInclude Include="GameEngine\Utility\ImGuiHelper.h" />
   </ItemGroup>
   <ItemGroup>

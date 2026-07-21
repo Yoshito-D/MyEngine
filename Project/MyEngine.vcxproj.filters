@@ -177,6 +177,9 @@
     <Filter Include="GameProject\App\Component\Vehicle">
       <UniqueIdentifier>{461bf2a5-8dad-4173-a536-6e71ddfcd253}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameProject\App\Component\Race">
+      <UniqueIdentifier>{cbadc520-2992-4d27-a83f-050e36403ff8}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameProject\App\Scene">
       <UniqueIdentifier>{2ee5977a-d1d9-4cac-adee-4eed0d0f3741}</UniqueIdentifier>
     </Filter>
@@ -269,9 +272,6 @@
     </Filter>
     <Filter Include="GameEngine\Object\Component\Model">
       <UniqueIdentifier>{d2f1560d-cdce-42b9-bfc0-a1d25725e4de}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameEngine\Object\Component\Sprite">
-      <UniqueIdentifier>{9c5278bc-19d6-48b2-b7d5-bfc03261cfcc}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Component\Particle">
       <UniqueIdentifier>{1c69d98d-3df3-452b-8b08-9515604ca762}</UniqueIdentifier>
@@ -780,17 +780,14 @@
     <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\Model\ModelAssetComponent.cpp">
-      <Filter>GameEngine\Object\Component\Model</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.cpp">
       <Filter>GameEngine\Object\Component\Particle</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\Sprite\PrimitiveMeshComponent.cpp">
-      <Filter>GameEngine\Object\Component\Sprite</Filter>
+    <ClCompile Include="GameEngine\Object\Component\MeshComponent.cpp">
+      <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp">
       <Filter>GameEngine\Object\Component\Skybox</Filter>
@@ -799,6 +796,9 @@
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\TriggerVolumeComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Model\AnimationAsset.cpp">
@@ -820,6 +820,12 @@
       <Filter>GameEngine\Object\Text</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\BaseScene.cpp">
+      <Filter>GameEngine\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Scene\DataDrivenScene.cpp">
+      <Filter>GameEngine\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Scene\SceneWorld.cpp">
       <Filter>GameEngine\Scene</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\SceneManager.cpp">
@@ -909,6 +915,9 @@
     <ClCompile Include="GameProject\App\Component\Camera\CameraGravityBridge.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Camera\CameraModeSwitcher.cpp">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\GravityFollowCamera.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
@@ -951,6 +960,24 @@
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp">
       <Filter>GameProject\App\Component\Gravity</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceCountdownTextComponent.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceManagerComponent.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceResultUIComponent.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceTimeFormatting.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceTimeTextComponent.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
@@ -958,6 +985,9 @@
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp">
+      <Filter>GameProject\App\Component\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEffectController.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleGroundMover.cpp">
@@ -975,13 +1005,10 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\EngineTestScene.cpp">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\GameTestScene.cpp">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp">
+      <Filter>GameProject\App\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Scene\SceneCatalog.cpp">
       <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1400,17 +1427,14 @@
     <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\Model\ModelAssetComponent.h">
-      <Filter>GameEngine\Object\Component\Model</Filter>
+    <ClInclude Include="GameEngine\Object\Component\MeshComponent.h">
+      <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.h">
       <Filter>GameEngine\Object\Component\Particle</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\Sprite\PrimitiveMeshComponent.h">
-      <Filter>GameEngine\Object\Component\Sprite</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\Skybox\SkyboxComponent.h">
       <Filter>GameEngine\Object\Component\Skybox</Filter>
@@ -1419,6 +1443,9 @@
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\TriggerVolumeComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h">
@@ -1455,6 +1482,12 @@
       <Filter>GameEngine\Core\UI\Text</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Scene\BaseScene.h">
+      <Filter>GameEngine\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Scene\DataDrivenScene.h">
+      <Filter>GameEngine\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Scene\SceneWorld.h">
       <Filter>GameEngine\Scene</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Scene\IScene.h">
@@ -1580,6 +1613,9 @@
     <ClInclude Include="GameProject\App\Component\Camera\CameraGravityBridge.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\CameraModeSwitcher.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\GravityFollowCamera.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
@@ -1622,6 +1658,24 @@
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h">
       <Filter>GameProject\App\Component\Gravity</Filter>
     </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceCountdownTextComponent.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceManagerComponent.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceResultUIComponent.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceTimeFormatting.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceTimeTextComponent.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
@@ -1629,6 +1683,9 @@
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h">
+      <Filter>GameProject\App\Component\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEffectController.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleGroundMover.h">
@@ -1646,13 +1703,10 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\EngineTestScene.h">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\GameTestScene.h">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h">
+      <Filter>GameProject\App\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Scene\SceneCatalog.h">
       <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
   </ItemGroup>

@@ -635,6 +635,7 @@ bool CameraEditor::DrawTransformGizmo(Transform& transform, Camera* viewCamera, 
     ImGui::PushID(id ? id : "CameraTransformGizmo");
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
+    ImGuizmo::SetOrthographic(viewCamera->GetProjectionType() == Camera::ProjectionType::Orthographic);
     ImGuizmo::Manipulate(
         &viewMatrix.m[0][0],
         &projectionMatrix.m[0][0],

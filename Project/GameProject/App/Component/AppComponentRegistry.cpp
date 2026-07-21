@@ -2,6 +2,7 @@
 #include "Object/Object.h"
 
 #include "Camera/CameraGravityBridge.h"
+#include "Camera/CameraModeSwitcher.h"
 #include "Camera/ScreenSpaceBasis.h"
 #include "Character/CharacterController.h"
 #include "Character/CharacterJump.h"
@@ -12,9 +13,15 @@
 #include "Gravity/MeshNormalGravityAttractor.h"
 #include "Gravity/PlanetSwitcher.h"
 #include "Gravity/SphericalGravityAttractor.h"
+#include "Race/RaceGateComponent.h"
+#include "Race/RaceCountdownTextComponent.h"
+#include "Race/RaceManagerComponent.h"
+#include "Race/RaceResultUIComponent.h"
+#include "Race/RaceTimeTextComponent.h"
 #include "Vehicle/VehicleAirController.h"
 #include "Vehicle/VehicleController.h"
 #include "Vehicle/VehicleDrift.h"
+#include "Vehicle/VehicleEffectController.h"
 #include "Vehicle/VehicleGroundMover.h"
 #include "Vehicle/VehicleLandingAligner.h"
 #include "Vehicle/VehicleLandingBoost.h"
@@ -24,18 +31,19 @@
 namespace {
 
 template <typename T>
-bool RegisterAppComponent() {
+bool RegisterAppComponent(GameEngine::ObjectTypeMask supportedObjectTypes = GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)) {
    return GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       T::kTypeName,
       [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
          return object.AddComponent<T>();
       },
       T::kDisplayName,
-      GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model));
+      supportedObjectTypes);
 }
 
 const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::CameraGravityBridge>(),
+   RegisterAppComponent<App::CameraModeSwitcher>(),
    RegisterAppComponent<App::ScreenSpaceBasis>(),
    RegisterAppComponent<App::CharacterController>(),
    RegisterAppComponent<App::CharacterJump>(),
@@ -46,9 +54,16 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::MeshNormalGravityAttractor>(),
    RegisterAppComponent<App::PlanetSwitcher>(),
    RegisterAppComponent<App::SphericalGravityAttractor>(),
+   RegisterAppComponent<App::RaceManagerComponent>(GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model),
+   RegisterAppComponent<App::RaceGateComponent>(
+      GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite),
+   RegisterAppComponent<App::RaceCountdownTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
+   RegisterAppComponent<App::RaceResultUIComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
+   RegisterAppComponent<App::RaceTimeTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleAirController>(),
    RegisterAppComponent<App::VehicleController>(),
    RegisterAppComponent<App::VehicleDrift>(),
+   RegisterAppComponent<App::VehicleEffectController>(),
    RegisterAppComponent<App::VehicleGroundMover>(),
    RegisterAppComponent<App::VehicleLandingAligner>(),
    RegisterAppComponent<App::VehicleLandingBoost>(),

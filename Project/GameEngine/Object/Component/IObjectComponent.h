@@ -5,6 +5,7 @@
 
 namespace GameEngine {
 class Object;
+class SceneWorld;
 
 struct ComponentDisplayName {
    const char* japanese = "";
@@ -47,6 +48,10 @@ public:
    virtual void OnDetach() {}
    virtual void OnEnable() {}
    virtual void OnDisable() {}
+
+   /// @brief シーン内の全オブジェクト生成後に参照を解決する
+   /// @param sceneWorld このコンポーネントを所有するシーンワールド
+   virtual void OnSceneLoaded(SceneWorld& sceneWorld) { (void)sceneWorld; }
 
    /// @brief 更新処理（オーナーはGetOwner()で取得）
    virtual void Update([[maybe_unused]]float deltaTime) {};

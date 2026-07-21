@@ -1,0 +1,8 @@
+{
+   "version": 1,
+   "initialScene": "GameTest",
+   "scenes": {
+      "GameTest": "game/scenes/GameTest.json",
+      "EngineTest": "game/scenes/EngineTest.json"
+   }
+}

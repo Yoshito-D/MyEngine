@@ -1,5 +1,7 @@
 #include "StateMachine.h"
 
+#include <limits>
+
 StateMachine::StateMachine() {}
 
 // --------------------------------------------------------
@@ -7,9 +9,24 @@ StateMachine::StateMachine() {}
 // --------------------------------------------------------
 void StateMachine::AddState(const std::string& name,
    std::function<void()> onEnter,
-   std::function<void()> onUpdate)
+   std::function<void()> onUpdate,
+   std::function<void()> onExit
+   )
 {
-   states_[name] = { onEnter, onUpdate };
+   states_[name] = { onEnter, onUpdate, onExit };
+
+   if (name == currentState_ && !hasEnteredCurrentState_) {
+	  hasEnteredCurrentState_ = true;
+	  if (states_[name].onEnter) {
+		 states_[name].onEnter();
+	  }
+   }
+}
+
+void StateMachine::SetTransitionCallback(
+   std::function<void(const std::string&, const std::string&)> callback)
+{
+   transitionCallback_ = std::move(callback);
 }
 
 // --------------------------------------------------------
@@ -17,6 +34,7 @@ void StateMachine::AddState(const std::string& name,
 // --------------------------------------------------------
 void StateMachine::RequestState(const std::string& stateName, int priority)
 {
+	  if (states_.find(stateName) == states_.end()) return;
    if (!CanTransition(stateName)) return;
 
    auto it = requests_.find(stateName);
@@ -34,26 +52,41 @@ const std::string& StateMachine::Resolve()
 {
    if (requests_.empty()) return currentState_;
 
-   int bestPriority = -999999;
+	  int bestPriority = std::numeric_limits<int>::lowest();
    std::string bestState = currentState_;
+   bool hasBestState = false;
 
    for (const auto& req : requests_) {
-	  if (req.second > bestPriority) {
+	  if (!hasBestState || req.second > bestPriority ||
+		 (req.second == bestPriority && req.first < bestState)) {
 		 bestPriority = req.second;
 		 bestState = req.first;
+		 hasBestState = true;
 	  }
    }
 
+   requests_.clear();
+
    // 状態が切り替わった場合に onEnter を呼ぶ
    if (bestState != currentState_) {
+	  const std::string previousState = currentState_;
+		auto currentIt = states_.find(currentState_);
+	  if (currentIt != states_.end() && currentIt->second.onExit) {
+		 currentIt->second.onExit();
+	  }
+
 	  currentState_ = bestState;
 	  auto it = states_.find(bestState);
 	  if (it != states_.end() && it->second.onEnter) {
 		 it->second.onEnter();
 	  }
+	  hasEnteredCurrentState_ = true;
+
+	  if (transitionCallback_) {
+		 transitionCallback_(previousState, currentState_);
+	  }
    }
 
-   requests_.clear();
    return currentState_;
 }
 

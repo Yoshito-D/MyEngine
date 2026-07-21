@@ -58,6 +58,8 @@ public:
    bool CanDeleteObject(const Object* object) const;
    bool CanDeleteParticleSystem(const ParticleSystem* particleSystem) const;
 
+   /// @brief ビューポート前方に描画コンポーネントを持たない空オブジェクトを作成する
+   void CreateEmptyObject();
    void CreateModelFromAsset(const std::string& assetId);
    void CreateSpriteFromTexture(const std::string& textureAssetId);
    /// @brief ビューポート中央に編集可能なUIテキストを作成する
@@ -69,6 +71,9 @@ public:
    void DeleteSelectedObject();
    void DeleteSelection();
    void AddComponentToSelectedObject(const std::string& typeName);
+   /// @brief 選択中オブジェクトから指定コンポーネントをUndo可能な形で外す
+   /// @param typeName 外すコンポーネント型名
+   void RemoveComponentFromSelectedObject(const std::string& typeName);
    void SetModelAsset(Object* object, const std::string& assetId);
    void SetMaterialTexture(Object* object, size_t slot, const std::string& textureAssetId);
    void Undo();
@@ -84,6 +89,9 @@ public:
    void SetGizmoOperation(GizmoOperation operation) { gizmoOperation_ = operation; }
    GizmoMode GetGizmoMode() const { return gizmoMode_; }
    void SetGizmoMode(GizmoMode mode) { gizmoMode_ = mode; }
+
+   /// @brief Transformインスペクター内へGuizmoの操作種別と座標空間を描画する
+   void DrawGizmoInspectorControls();
 
    void DrawTransformGizmo(float viewportX, float viewportY, float viewportWidth, float viewportHeight);
    void AcceptModelAssetDrop();

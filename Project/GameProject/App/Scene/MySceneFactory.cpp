@@ -1,19 +1,11 @@
 #include "MySceneFactory.h"
-#include "GameTestScene.h"
-#include "EngineTestScene.h"
+#include "Scene/DataDrivenScene.h"
 
 using namespace GameEngine;
 std::unique_ptr<BaseScene> MySceneFactory::CreateScene(const std::string& name) {
-
-	if (name == "GameTest") {
-		auto scene = std::make_unique<GameTestScene>();
-		return scene;
+	const auto scenePath = sceneCatalog_.Resolve(name);
+	if (scenePath.empty()) {
+		return nullptr;
 	}
-
-	if (name == "EngineTest") {
-		auto scene = std::make_unique<EngineTestScene>();
-		return scene;
-	}
-
-	return nullptr;
+	return std::make_unique<DataDrivenScene>(scenePath);
 }

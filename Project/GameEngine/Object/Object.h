@@ -50,6 +50,16 @@ public:
    IObjectComponent* AddComponentByTypeName(const std::string& typeName);
    bool HasComponentByTypeName(const std::string& typeName) const;
 
+   /// @brief 型名からコンポーネントを取得する
+   /// @param typeName コンポーネント型名
+   /// @return 見つからない場合はnullptr
+   IObjectComponent* GetComponentByTypeName(const std::string& typeName) const;
+
+   /// @brief 型名を指定してコンポーネントを外す
+   /// @param typeName コンポーネント型名
+   /// @return 削除できた場合はtrue
+   bool RemoveComponentByTypeName(const std::string& typeName);
+
    // --- シリアライゼーション ---
 
    bool DeserializeComponents(const nlohmann::json& componentsData);
@@ -67,7 +77,9 @@ public:
    const ComponentContainer& GetComponentContainer() const { return components_; }
 
 #ifdef USE_IMGUI
-   void DrawComponentInspector();
+   /// @brief コンポーネントのインスペクターを描画する
+   /// @return 削除ボタンが押されたコンポーネント型名。未選択時は空文字列
+   std::string DrawComponentInspector();
 #endif
 
 private:

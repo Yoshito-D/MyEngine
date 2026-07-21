@@ -13,6 +13,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
 }
 
 #ifdef USE_IMGUI
+#include "Scene/BaseScene.h"
 #include "Utility/ImGuiHelper.h"
 #include <imgui.h>
 #endif
@@ -153,6 +154,12 @@ void TransformComponent::DrawInspector() {
 
    Vector3& position = transform.translation;
    ImGuiHelper::DrawVec3Control(ImGuiHelper::Localize({ "位置", "Position" }), position, 0.0f, 120.0f, 0.1f);
+
+   if (auto* currentScene = BaseScene::GetCurrentScene()) {
+      if (auto* editorContext = currentScene->GetEditorSceneContext()) {
+         editorContext->DrawGizmoInspectorControls();
+      }
+   }
 
    ImGui::Spacing();
    ImGui::Separator();
