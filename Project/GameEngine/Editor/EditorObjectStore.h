@@ -20,6 +20,11 @@ public:
    /// @brief 所有するエディター生成オブジェクトを破棄する
    ~EditorObjectStore();
 
+   /// @brief 描画機能を持たないGenericオブジェクトを作成する
+   /// @param initialTransform 初期トランスフォーム。省略時は既定値
+   /// @param requestedId 復元時に使用するオブジェクトID
+   /// @return 作成したGenericオブジェクト
+   Object* CreateGenericObject(const Transform* initialTransform = nullptr, const std::string& requestedId = {});
    Object* CreateModel(const std::string& assetId, const Transform* initialTransform = nullptr, const std::string& requestedId = {});
    Object* CreateSprite(const std::string& textureAssetId, const Transform* initialTransform = nullptr, const std::string& requestedId = {});
    /// @brief エディター管理のUIテキストを作成する
@@ -51,6 +56,9 @@ public:
    nlohmann::json SerializeObject(const std::string& objectId) const;
    nlohmann::json SerializeAll() const;
 
+   /// @brief エディターが所有するGenericオブジェクト一覧を取得する
+   /// @return Genericオブジェクト一覧
+   const std::vector<std::unique_ptr<Object>>& GetGenericObjects() const { return genericObjects_; }
    const std::vector<std::unique_ptr<Model>>& GetModels() const { return models_; }
    const std::vector<std::unique_ptr<Sprite>>& GetSprites() const { return sprites_; }
    /// @brief エディターが所有するUIテキスト一覧を取得する
@@ -72,10 +80,12 @@ private:
 
    static nlohmann::json SerializeSpriteData(const Sprite* sprite);
 
+   std::vector<std::unique_ptr<Object>> genericObjects_;
    std::vector<std::unique_ptr<Model>> models_;
    std::vector<std::unique_ptr<Sprite>> sprites_;
    std::vector<std::unique_ptr<UIText>> uiTexts_;
    std::vector<std::unique_ptr<ParticleSystem>> particleSystems_;
+   std::vector<std::unique_ptr<Object>> deferredDeleteGenericObjects_;
    std::vector<std::unique_ptr<Model>> deferredDeleteModels_;
    std::vector<std::unique_ptr<Sprite>> deferredDeleteSprites_;
    std::vector<std::unique_ptr<UIText>> deferredDeleteUITexts_;

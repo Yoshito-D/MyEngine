@@ -34,7 +34,7 @@
                         0.02638251520693302,
                         -0.989783525466919
                      ],
-                     "distance": 15.0,
+                     "distance": 25.0,
                      "distanceBoostMax": 2.5,
                      "flatForward": [
                         -0.9653508067131042,
@@ -160,17 +160,15 @@
                {
                   "componentName": "PlayerRearFollowCamera",
                   "data": {
-                     "accelToDistanceKick": 0.03999999910593033,
-                     "accelToFovKick": 0.0024999999441206455,
                      "airborneBlendLerpSpeed": 4.0,
                      "airborneDistanceOffset": 4.0,
-                     "airborneForwardLerpSpeed": 5.0,
+                     "airborneForwardLerpSpeed": 3.0,
                      "airborneFovOffset": 0.10000000149011612,
                      "airborneGravityDirectionBoostBias": 1.0,
-                     "airborneGravityDirectionBoostFullThreshold": 0.5,
-                     "airborneGravityDirectionBoostThreshold": 0.0,
-                     "airbornePlanetDirectionBlend": 0.6499999761581421,
-                     "airbornePlanetDirectionLerpSpeed": 2.25,
+                     "airborneGravityDirectionBoostFullThreshold": -0.5,
+                     "airborneGravityDirectionBoostThreshold": -1.0,
+                     "airbornePlanetDirectionBlend": 0.8999999761581421,
+                     "airbornePlanetDirectionLerpSpeed": 2.0,
                      "airborneResetLerpSpeed": 8.0,
                      "distance": 14.699999809265137,
                      "distanceBoostMax": 2.0,
@@ -182,19 +180,20 @@
                      "gravityUpLerpSpeed": 5.0,
                      "groundedTargetHeight": 3.0,
                      "height": 7.900000095367432,
-                     "jumpPlanetDirectionRampSeconds": 0.20000000298023224,
-                     "landingFramingBlendSeconds": 1.149999976158142,
+                     "jumpPlanetDirectionDelaySeconds": 0.30000001192092896,
+                     "jumpPlanetDirectionRestoreSeconds": 0.5,
+                     "landingFramingBlendSeconds": 1.0,
                      "landingRearLerpRampSeconds": 5.0,
                      "positionLerpSpeed": 7.5,
                      "rearLerpSpeed": 7.5,
                      "rotationLerpSpeed": 12.0,
                      "speedBoostMax": 25.0,
                      "speedBoostThreshold": 5.0,
+                     "speedChangeDistanceKickMax": 2.200000047683716,
+                     "speedChangeFovKickMax": 0.07249999791383743,
                      "springDamping": 20.0,
                      "springStiffness": 30.0,
-                     "takeoffFramingBlendSeconds": 0.4000000059604645,
-                     "turboDistanceKickMax": 2.0,
-                     "turboFovKickMax": 0.05999999865889549
+                     "takeoffFramingBlendSeconds": 0.4000000059604645
                   },
                   "enabled": true
                },
@@ -282,50 +281,9 @@
                {
                   "componentName": "PlanetLeashCamera",
                   "data": {
-                     "cachedRight": [
-                        0.7203076481819153,
-                        -0.41296857595443726,
-                        0.5573274493217468
-                     ],
-                     "cachedUp": [
-                        -0.5471456050872803,
-                        0.1556033194065094,
-                        0.8224472403526306
-                     ],
-                     "eyePos": [
-                        1537.1868896484375,
-                        3221.767578125,
-                        358.98553466796875
-                     ],
-                     "eyeRelUp": [
-                        -0.5471456050872803,
-                        0.1556033343076706,
-                        0.8224472403526306
-                     ],
                      "followSpeed": 15.0,
-                     "gravityUp": [
-                        0.14011617004871368,
-                        0.02638251520693302,
-                        -0.989783525466919
-                     ],
-                     "isInitialized": true,
                      "maxFollowDistance": 30.0,
                      "minPlanetDistance": 50.0,
-                     "pivotTarget": [
-                        7.0327467918396,
-                        1.3241978883743286,
-                        -49.679466247558594
-                     ],
-                     "prevGravityUp": [
-                        0.14011617004871368,
-                        0.02638251520693302,
-                        -0.989783525466919
-                     ],
-                     "sphereCenter": [
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
                      "useGravityUp": true
                   },
                   "enabled": true
@@ -354,7 +312,7 @@
             "state": {
                "farClip": 10000.0,
                "fov": 0.44999998807907104,
-               "hasViewMatrixOverride": true,
+               "hasViewMatrixOverride": false,
                "nearClip": 0.009999999776482582,
                "transform": {
                   "rotation": [
@@ -375,9 +333,9 @@
                      1.0
                   ],
                   "translation": [
-                     1537.1868896484375,
-                     3221.767578125,
-                     358.98553466796875
+                     0.0,
+                     55.0,
+                     -16.399999618530273
                   ]
                },
                "viewMatrixOverride": [
@@ -410,579 +368,1389 @@
          }
       ]
    },
-   "objects": [
-      {
-         "assetId": "game/models/planet/planet.obj",
-         "components": [
-            {
-               "data": {
-                  "parentObjectName": "",
-                  "rotation": [
-                     0.0,
-                     0.0,
-                     0.0
-                  ],
-                  "rotationQuaternion": [
-                     0.0,
-                     0.0,
-                     0.0,
-                     1.0
-                  ],
-                  "rotationSource": "quaternion",
-                  "scale": [
-                     45.35490036010742,
-                     45.35490036010742,
-                     45.35490036010742
-                  ],
-                  "translation": [
-                     0.0,
-                     -1.9073486328125e-06,
-                     246.15359497070313
-                  ],
-                  "useParentMatrix": false
-               },
-               "enabled": true,
-               "typeName": "TransformComponent"
-            },
-            {
-               "data": {
-                  "blendMode": -1,
-                  "color": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "environmentTextureName": "",
-                  "fillLightColor": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "fillLightIntensity": 0.5699999928474426,
-                  "lightingMode": 2,
-                  "materialCount": 1,
-                  "materialNames": [
-                     "planetMaterial"
-                  ],
-                  "pipelineName": "",
-                  "rimLightColor": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "rimLightIntensity": 0.41999998688697815,
-                  "rimLightPower": 12.510000228881836,
-                  "shininess": 40.0,
-                  "textureLeftTop": [
-                     0.0,
-                     0.0
-                  ],
-                  "textureNames": [
-                     "aerial_grass_rock_diff_2k"
-                  ],
-                  "textureSize": [
-                     0.0,
-                     0.0
-                  ],
-                  "uvTransform": [
-                     [
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                     ]
-                  ]
-               },
-               "enabled": true,
-               "typeName": "MaterialComponent"
-            },
-            {
-               "data": {
-                  "name": "Planet_3"
-               },
-               "enabled": true,
-               "typeName": "ObjectNameComponent"
-            },
-            {
-               "data": {
-                  "assetId": "game/models/planet/planet.obj"
-               },
-               "enabled": true,
-               "typeName": "ModelAssetComponent"
-            },
-            {
-               "data": {
-                  "applyPostProcess": true,
-                  "autoRender": true,
-                  "renderSpace": "World",
-                  "visible": true
-               },
-               "enabled": true,
-               "typeName": "RenderComponent"
-            },
-            {
-               "data": {
-                  "influenceRadius": 300.0
-               },
-               "enabled": true,
-               "typeName": "SphericalGravityAttractor"
-            }
-         ],
-         "id": "editor_object_2",
-         "objectType": "Model"
-      },
-      {
-         "assetId": "game/models/planet/planet.obj",
-         "components": [
-            {
-               "data": {
-                  "parentObjectName": "",
-                  "rotation": [
-                     0.0,
-                     0.0,
-                     0.0
-                  ],
-                  "rotationQuaternion": [
-                     0.0,
-                     0.0,
-                     0.0,
-                     1.0
-                  ],
-                  "rotationSource": "quaternion",
-                  "scale": [
-                     46.22999954223633,
-                     46.22999954223633,
-                     46.22999954223633
-                  ],
-                  "translation": [
-                     0.0,
-                     0.0,
-                     375.2118225097656
-                  ],
-                  "useParentMatrix": false
-               },
-               "enabled": true,
-               "typeName": "TransformComponent"
-            },
-            {
-               "data": {
-                  "blendMode": -1,
-                  "color": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "environmentTextureName": "",
-                  "fillLightColor": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "fillLightIntensity": 0.5699999928474426,
-                  "lightingMode": 2,
-                  "materialCount": 1,
-                  "materialNames": [
-                     "planetMaterial"
-                  ],
-                  "pipelineName": "",
-                  "rimLightColor": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "rimLightIntensity": 0.41999998688697815,
-                  "rimLightPower": 12.510000228881836,
-                  "shininess": 40.0,
-                  "textureLeftTop": [
-                     0.0,
-                     0.0
-                  ],
-                  "textureNames": [
-                     "painted_concrete_diff_2k"
-                  ],
-                  "textureSize": [
-                     0.0,
-                     0.0
-                  ],
-                  "uvTransform": [
-                     [
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                     ]
-                  ]
-               },
-               "enabled": true,
-               "typeName": "MaterialComponent"
-            },
-            {
-               "data": {
-                  "name": "Planet_4"
-               },
-               "enabled": true,
-               "typeName": "ObjectNameComponent"
-            },
-            {
-               "data": {
-                  "assetId": "game/models/planet/planet.obj"
-               },
-               "enabled": true,
-               "typeName": "ModelAssetComponent"
-            },
-            {
-               "data": {
-                  "applyPostProcess": true,
-                  "autoRender": true,
-                  "renderSpace": "World",
-                  "visible": true
-               },
-               "enabled": true,
-               "typeName": "RenderComponent"
-            },
-            {
-               "data": {
-                  "influenceRadius": 200.0
-               },
-               "enabled": true,
-               "typeName": "SphericalGravityAttractor"
-            }
-         ],
-         "id": "editor_object_3",
-         "objectType": "Model"
-      },
-      {
-         "assetId": "game/models/planet/planet.obj",
-         "components": [
-            {
-               "data": {
-                  "parentObjectName": "",
-                  "rotation": [
-                     0.0,
-                     0.0,
-                     0.0
-                  ],
-                  "rotationQuaternion": [
-                     0.0,
-                     0.0,
-                     0.0,
-                     1.0
-                  ],
-                  "rotationSource": "quaternion",
-                  "scale": [
-                     44.62920379638672,
-                     44.62920379638672,
-                     44.62920379638672
-                  ],
-                  "translation": [
-                     0.0,
-                     0.0,
-                     517.45361328125
-                  ],
-                  "useParentMatrix": false
-               },
-               "enabled": true,
-               "typeName": "TransformComponent"
-            },
-            {
-               "data": {
-                  "blendMode": -1,
-                  "color": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "environmentTextureName": "",
-                  "fillLightColor": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "fillLightIntensity": 0.5699999928474426,
-                  "lightingMode": 2,
-                  "materialCount": 1,
-                  "materialNames": [
-                     "planetMaterial"
-                  ],
-                  "pipelineName": "",
-                  "rimLightColor": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "rimLightIntensity": 0.41999998688697815,
-                  "rimLightPower": 12.510000228881836,
-                  "shininess": 40.0,
-                  "textureLeftTop": [
-                     0.0,
-                     0.0
-                  ],
-                  "textureNames": [
-                     "plywood_diff_2k"
-                  ],
-                  "textureSize": [
-                     0.0,
-                     0.0
-                  ],
-                  "uvTransform": [
-                     [
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                     ]
-                  ]
-               },
-               "enabled": true,
-               "typeName": "MaterialComponent"
-            },
-            {
-               "data": {
-                  "name": "Planet_5"
-               },
-               "enabled": true,
-               "typeName": "ObjectNameComponent"
-            },
-            {
-               "data": {
-                  "assetId": "game/models/planet/planet.obj"
-               },
-               "enabled": true,
-               "typeName": "ModelAssetComponent"
-            },
-            {
-               "data": {
-                  "applyPostProcess": true,
-                  "autoRender": true,
-                  "renderSpace": "World",
-                  "visible": true
-               },
-               "enabled": true,
-               "typeName": "RenderComponent"
-            },
-            {
-               "data": {
-                  "influenceRadius": 400.0
-               },
-               "enabled": true,
-               "typeName": "SphericalGravityAttractor"
-            }
-         ],
-         "id": "editor_object_4",
-         "objectType": "Model"
-      },
-      {
-         "assetId": "game/models/planet/planet.obj",
-         "components": [
-            {
-               "data": {
-                  "parentObjectName": "",
-                  "rotation": [
-                     0.0,
-                     0.0,
-                     0.0
-                  ],
-                  "rotationQuaternion": [
-                     0.0,
-                     0.0,
-                     0.0,
-                     1.0
-                  ],
-                  "rotationSource": "quaternion",
-                  "scale": [
-                     44.62920379638672,
-                     44.62920379638672,
-                     44.62920379638672
-                  ],
-                  "translation": [
-                     0.0,
-                     0.0,
-                     673.5043334960938
-                  ],
-                  "useParentMatrix": false
-               },
-               "enabled": true,
-               "typeName": "TransformComponent"
-            },
-            {
-               "data": {
-                  "blendMode": -1,
-                  "color": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "environmentTextureName": "",
-                  "fillLightColor": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "fillLightIntensity": 0.5699999928474426,
-                  "lightingMode": 2,
-                  "materialCount": 1,
-                  "materialNames": [
-                     "planetMaterial"
-                  ],
-                  "pipelineName": "",
-                  "rimLightColor": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "rimLightIntensity": 0.41999998688697815,
-                  "rimLightPower": 12.510000228881836,
-                  "shininess": 40.0,
-                  "textureLeftTop": [
-                     0.0,
-                     0.0
-                  ],
-                  "textureNames": [
-                     "aerial_beach_01_diff_2k"
-                  ],
-                  "textureSize": [
-                     0.0,
-                     0.0
-                  ],
-                  "uvTransform": [
-                     [
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0
-                     ],
-                     [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                     ]
-                  ]
-               },
-               "enabled": true,
-               "typeName": "MaterialComponent"
-            },
-            {
-               "data": {
-                  "name": "Planet_6"
-               },
-               "enabled": true,
-               "typeName": "ObjectNameComponent"
-            },
-            {
-               "data": {
-                  "assetId": "game/models/planet/planet.obj"
-               },
-               "enabled": true,
-               "typeName": "ModelAssetComponent"
-            },
-            {
-               "data": {
-                  "applyPostProcess": true,
-                  "autoRender": true,
-                  "renderSpace": "World",
-                  "visible": true
-               },
-               "enabled": true,
-               "typeName": "RenderComponent"
-            },
-            {
-               "data": {
-                  "influenceRadius": 300.0
-               },
-               "enabled": true,
-               "typeName": "SphericalGravityAttractor"
-            }
-         ],
-         "id": "editor_object_5",
-         "objectType": "Model"
-      }
-   ],
+   "objects": [],
    "sceneName": "GameTest",
    "sceneObjects": [
       {
          "deleted": false,
          "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "RaceManager"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "checkpointCount": 0,
+                     "countdownSeconds": 3.0,
+                     "finishCameraId": "GravityFollowCamera",
+                     "finishDelay": 0.0,
+                     "lockPlayerDuringCountdown": true,
+                     "lockPlayerOnFinish": true,
+                     "nextScene": "",
+                     "playerObjectId": "Model:Player",
+                     "recordFile": "Saved/race_records.json",
+                     "recordKey": "GameTest",
+                     "restartScene": "GameTest",
+                     "startMode": "Countdown",
+                     "startTextDuration": 0.800000011920929
+                  },
+                  "enabled": true,
+                  "typeName": "RaceManagerComponent"
+               }
+            ],
+            "id": "Object:RaceManager",
+            "objectType": "Generic"
+         },
+         "sceneKey": "Object:RaceManager"
+      },
+      {
+         "deleted": false,
+         "object": {
             "assetId": "game/models/planet/planet.obj",
             "components": [
+               {
+                  "data": {
+                     "name": "Planet_3"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        45.35490036010742,
+                        45.35490036010742,
+                        45.35490036010742
+                     ],
+                     "translation": [
+                        0.0,
+                        -1.9073486328125e-06,
+                        246.15359497070313
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.5699999928474426,
+                     "lightingMode": 2,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "planetMaterial"
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.5699999928474426,
+                           "lightingMode": 2,
+                           "name": "planetMaterial",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.41999998688697815,
+                           "rimLightPower": 12.510000228881836,
+                           "shininess": 40.0,
+                           "textureName": "aerial_grass_rock_diff_2k",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
+                     ],
+                     "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.41999998688697815,
+                     "rimLightPower": 12.510000228881836,
+                     "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
+                     "textureNames": [
+                        "aerial_grass_rock_diff_2k"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "game/models/planet/planet.obj",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": false,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        128.0,
+                        128.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "ModelFile",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MeshComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "renderSpace": "World",
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": {
+                     "influenceRadius": 300.0
+                  },
+                  "enabled": true,
+                  "typeName": "SphericalGravityAttractor"
+               }
+            ],
+            "id": "Model:Planet_3",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:Planet_3"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "game/models/planet/planet.obj",
+            "components": [
+               {
+                  "data": {
+                     "name": "Planet_4"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        46.22999954223633,
+                        46.22999954223633,
+                        46.22999954223633
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        375.2118225097656
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.5699999928474426,
+                     "lightingMode": 2,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "planetMaterial"
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.5699999928474426,
+                           "lightingMode": 2,
+                           "name": "planetMaterial",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.41999998688697815,
+                           "rimLightPower": 12.510000228881836,
+                           "shininess": 40.0,
+                           "textureName": "painted_concrete_diff_2k",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
+                     ],
+                     "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.41999998688697815,
+                     "rimLightPower": 12.510000228881836,
+                     "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
+                     "textureNames": [
+                        "painted_concrete_diff_2k"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "game/models/planet/planet.obj",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": false,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        128.0,
+                        128.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "ModelFile",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MeshComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "renderSpace": "World",
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": {
+                     "influenceRadius": 200.0
+                  },
+                  "enabled": true,
+                  "typeName": "SphericalGravityAttractor"
+               }
+            ],
+            "id": "Model:Planet_4",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:Planet_4"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "game/models/planet/planet.obj",
+            "components": [
+               {
+                  "data": {
+                     "name": "Planet_5"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        44.62920379638672,
+                        44.62920379638672,
+                        44.62920379638672
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        511.2686462402344
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.5699999928474426,
+                     "lightingMode": 2,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "planetMaterial"
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.5699999928474426,
+                           "lightingMode": 2,
+                           "name": "planetMaterial",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.41999998688697815,
+                           "rimLightPower": 12.510000228881836,
+                           "shininess": 40.0,
+                           "textureName": "plywood_diff_2k",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
+                     ],
+                     "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.41999998688697815,
+                     "rimLightPower": 12.510000228881836,
+                     "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
+                     "textureNames": [
+                        "plywood_diff_2k"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "game/models/planet/planet.obj",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": false,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        128.0,
+                        128.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "ModelFile",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MeshComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "renderSpace": "World",
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": {
+                     "influenceRadius": 400.0
+                  },
+                  "enabled": true,
+                  "typeName": "SphericalGravityAttractor"
+               }
+            ],
+            "id": "Model:Planet_5",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:Planet_5"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "game/models/planet/planet.obj",
+            "components": [
+               {
+                  "data": {
+                     "name": "Planet_6"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        44.62920379638672,
+                        44.62920379638672,
+                        44.62920379638672
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        659.9898681640625
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.5699999928474426,
+                     "lightingMode": 2,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "planetMaterial"
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.5699999928474426,
+                           "lightingMode": 2,
+                           "name": "planetMaterial",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.41999998688697815,
+                           "rimLightPower": 12.510000228881836,
+                           "shininess": 40.0,
+                           "textureName": "rocky_terrain_02_diff_2k",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
+                     ],
+                     "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.41999998688697815,
+                     "rimLightPower": 12.510000228881836,
+                     "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
+                     "textureNames": [
+                        "rocky_terrain_02_diff_2k"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "game/models/planet/planet.obj",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": false,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        128.0,
+                        128.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "ModelFile",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MeshComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "renderSpace": "World",
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": {
+                     "influenceRadius": 300.0
+                  },
+                  "enabled": true,
+                  "typeName": "SphericalGravityAttractor"
+               }
+            ],
+            "id": "Model:Planet_6",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:Planet_6"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "game/models/flag/flag-red.obj",
+            "components": [
+               {
+                  "data": {
+                     "name": "Goal"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        7.0,
+                        7.0,
+                        7.0
+                     ],
+                     "translation": [
+                        0.0,
+                        44.212669372558594,
+                        660.2974853515625
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.4300000071525574,
+                     "lightingMode": 1,
+                     "materialCount": 1,
+                     "materialNames": [
+                        "GoalMaterial"
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.4300000071525574,
+                           "lightingMode": 1,
+                           "name": "GoalMaterial",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.0,
+                           "rimLightPower": 4.0,
+                           "shininess": 40.0,
+                           "textureName": "colormap",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
+                     ],
+                     "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.0,
+                     "rimLightPower": 4.0,
+                     "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
+                     "textureNames": [
+                        "colormap"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "game/models/flag/flag-red.obj",
+                     "boxSize": [
+                        10.0,
+                        10.0,
+                        0.5
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": false,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Sphere",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        128.0,
+                        128.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "ModelFile",
+                     "sphereRadius": 7.710000038146973,
+                     "sphereSlices": 256,
+                     "sphereStacks": 256,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MeshComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": true,
+                     "autoRender": true,
+                     "renderSpace": "World",
+                     "visible": true
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": {
+                     "centerOffset": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "debugDraw": false,
+                     "halfExtents": [
+                        5.0,
+                        5.0,
+                        2.0
+                     ],
+                     "radius": 6.900000095367432,
+                     "shape": "Sphere",
+                     "targetObjectId": "Model:Player"
+                  },
+                  "enabled": true,
+                  "typeName": "TriggerVolumeComponent"
+               },
+               {
+                  "data": {
+                     "checkpointIndex": 0,
+                     "gateType": "Finish",
+                     "raceManagerId": "Object:RaceManager"
+                  },
+                  "enabled": true,
+                  "typeName": "RaceGateComponent"
+               }
+            ],
+            "id": "Model:Goal",
+            "objectType": "Model"
+         },
+         "sceneKey": "Model:Goal"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "game/models/planet/planet.obj",
+            "components": [
+               {
+                  "data": {
+                     "name": "Planet_1"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
                {
                   "data": {
                      "parentObjectName": "",
@@ -1023,6 +1791,7 @@
                         1.0
                      ],
                      "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
                      "fillLightColor": [
                         1.0,
                         1.0,
@@ -1034,6 +1803,64 @@
                      "materialCount": 1,
                      "materialNames": [
                         "planetMaterial"
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.5699999928474426,
+                           "lightingMode": 2,
+                           "name": "planetMaterial",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.41999998688697815,
+                           "rimLightPower": 12.510000228881836,
+                           "shininess": 40.0,
+                           "textureName": "coast_sand_05_diff_2k",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
                      ],
                      "pipelineName": "",
                      "rimLightColor": [
@@ -1088,17 +1915,68 @@
                },
                {
                   "data": {
-                     "name": "Planet_1"
+                     "assetId": "game/models/planet/planet.obj",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": false,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        128.0,
+                        128.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "ModelFile",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
                   },
                   "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "assetId": "game/models/planet/planet.obj"
-                  },
-                  "enabled": true,
-                  "typeName": "ModelAssetComponent"
+                  "typeName": "MeshComponent"
                },
                {
                   "data": {
@@ -1128,6 +2006,13 @@
          "object": {
             "assetId": "game/models/planet/planet.obj",
             "components": [
+               {
+                  "data": {
+                     "name": "Planet_2"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
                {
                   "data": {
                      "parentObjectName": "",
@@ -1168,6 +2053,7 @@
                         1.0
                      ],
                      "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
                      "fillLightColor": [
                         1.0,
                         1.0,
@@ -1179,6 +2065,64 @@
                      "materialCount": 1,
                      "materialNames": [
                         "planetMaterial"
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.5699999928474426,
+                           "lightingMode": 2,
+                           "name": "planetMaterial",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.41999998688697815,
+                           "rimLightPower": 12.510000228881836,
+                           "shininess": 40.0,
+                           "textureName": "rust_coarse_01_diff_2k",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
                      ],
                      "pipelineName": "",
                      "rimLightColor": [
@@ -1233,17 +2177,68 @@
                },
                {
                   "data": {
-                     "name": "Planet_2"
+                     "assetId": "game/models/planet/planet.obj",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": false,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        128.0,
+                        128.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "ModelFile",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
                   },
                   "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "assetId": "game/models/planet/planet.obj"
-                  },
-                  "enabled": true,
-                  "typeName": "ModelAssetComponent"
+                  "typeName": "MeshComponent"
                },
                {
                   "data": {
@@ -1273,6 +2268,13 @@
          "object": {
             "assetId": "game/models/car/car.obj",
             "components": [
+               {
+                  "data": {
+                     "name": "Player"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
                {
                   "data": {
                      "parentObjectName": "",
@@ -1313,6 +2315,7 @@
                         1.0
                      ],
                      "environmentTextureName": "",
+                     "environmentTextureStrength": 0.699999988079071,
                      "fillLightColor": [
                         0.9607843160629272,
                         0.8987267017364502,
@@ -1324,6 +2327,64 @@
                      "materialCount": 1,
                      "materialNames": [
                         "playerMaterial"
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.699999988079071,
+                           "fillLightColor": [
+                              0.9607843160629272,
+                              0.8987267017364502,
+                              0.8854286670684814,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.6499999761581421,
+                           "lightingMode": 4,
+                           "name": "playerMaterial",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              0.9656862616539001,
+                              0.9136149287223816,
+                              0.9136149287223816,
+                              1.0
+                           ],
+                           "rimLightIntensity": 1.9700000286102295,
+                           "rimLightPower": 10.300000190734863,
+                           "shininess": 42.20000076293945,
+                           "textureName": "color_palette",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
                      ],
                      "pipelineName": "",
                      "rimLightColor": [
@@ -1378,17 +2439,68 @@
                },
                {
                   "data": {
-                     "name": "Player"
+                     "assetId": "game/models/car/car.obj",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": false,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        128.0,
+                        128.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "ModelFile",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
                   },
                   "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "assetId": "game/models/car/car.obj"
-                  },
-                  "enabled": true,
-                  "typeName": "ModelAssetComponent"
+                  "typeName": "MeshComponent"
                },
                {
                   "data": {
@@ -1439,19 +2551,9 @@
                },
                {
                   "data": {
-                     "currentUpVector": [
-                        0.14641566574573517,
-                        0.016208767890930176,
-                        -0.9890903830528259
-                     ],
                      "gravityStrength": 9.699999809265137,
                      "rotationSpeed": 12.5,
-                     "useGravity": true,
-                     "velocity": [
-                        -17.069438934326172,
-                        27.616737365722656,
-                        -2.0742287635803223
-                     ]
+                     "useGravity": true
                   },
                   "enabled": true,
                   "typeName": "GravityBody"
@@ -1939,12 +3041,32 @@
                {
                   "data": {
                      "enableLandingShake": true,
+                     "gravityFollowCameraId": "GravityFollowCamera",
                      "landingShakeAmplitude": 0.15000000596046448,
                      "landingShakeDuration": 0.10000000149011612,
-                     "landingShakeFrequency": 14.0
+                     "landingShakeFrequency": 14.0,
+                     "planetLeashCameraId": "PlanetLeashCamera",
+                     "playerRearFollowCameraId": "PlayerRearFollowCamera"
                   },
                   "enabled": true,
                   "typeName": "CameraGravityBridge"
+               },
+               {
+                  "data": {
+                     "cameraIds": [
+                        "PlayerRearFollowCamera",
+                        "GravityFollowCamera",
+                        "PlanetLeashCamera"
+                     ],
+                     "initialIndex": 0
+                  },
+                  "enabled": true,
+                  "typeName": "CameraModeSwitcher"
+               },
+               {
+                  "data": {},
+                  "enabled": true,
+                  "typeName": "VehicleEffectController"
                }
             ],
             "id": "Model:Player",
@@ -1956,6 +3078,91 @@
          "deleted": false,
          "object": {
             "components": [
+               {
+                  "data": {
+                     "name": "RaceTimerText"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        0.0,
+                        53.57354736328125,
+                        1.0
+                     ],
+                     "useParentMatrix": false
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fontId": "851Gkktt",
+                     "fontSize": 48,
+                     "horizontalAlignment": "Left",
+                     "lineSpacing": 1.0,
+                     "maxWidth": 600.0,
+                     "pivot": [
+                        0.25,
+                        0.5
+                     ],
+                     "screenAnchor": "TopCenter",
+                     "sortingOrder": 100,
+                     "text": ""
+                  },
+                  "enabled": true,
+                  "typeName": "UITextComponent"
+               },
+               {
+                  "data": {
+                     "raceManagerId": "Object:RaceManager"
+                  },
+                  "enabled": true,
+                  "typeName": "RaceTimeTextComponent"
+               }
+            ],
+            "id": "UIText:RaceTimerText",
+            "objectType": "UIText"
+         },
+         "sceneKey": "UIText:RaceTimerText"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "RaceCountdownText"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
                {
                   "data": {
                      "parentObjectName": "",
@@ -1979,7 +3186,7 @@
                      "translation": [
                         0.0,
                         0.0,
-                        0.0
+                        1.0
                      ],
                      "useParentMatrix": false
                   },
@@ -1988,32 +3195,147 @@
                },
                {
                   "data": {
-                     "environmentTextureName": "",
-                     "materialCount": 0,
-                     "materialNames": [],
-                     "textureLeftTop": [
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fontId": "851Gkktt",
+                     "fontSize": 128,
+                     "horizontalAlignment": "Center",
+                     "lineSpacing": 1.0,
+                     "maxWidth": 800.0,
+                     "pivot": [
+                        0.5,
+                        0.5
+                     ],
+                     "screenAnchor": "MiddleCenter",
+                     "sortingOrder": 110,
+                     "text": ""
+                  },
+                  "enabled": true,
+                  "typeName": "UITextComponent"
+               },
+               {
+                  "data": {
+                     "raceManagerId": "Object:RaceManager",
+                     "startText": "START"
+                  },
+                  "enabled": true,
+                  "typeName": "RaceCountdownTextComponent"
+               }
+            ],
+            "id": "UIText:RaceCountdownText",
+            "objectType": "UIText"
+         },
+         "sceneKey": "UIText:RaceCountdownText"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "RaceResultUI"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentObjectName": "",
+                     "rotation": [
+                        0.0,
                         0.0,
                         0.0
                      ],
-                     "textureNames": [],
-                     "textureSize": [
+                     "rotationQuaternion": [
                         0.0,
-                        0.0
-                     ]
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "useParentMatrix": false
                   },
                   "enabled": true,
-                  "typeName": "MaterialComponent"
+                  "typeName": "TransformComponent"
                },
+               {
+                  "data": {
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fontId": "851Gkktt",
+                     "fontSize": 48,
+                     "horizontalAlignment": "Center",
+                     "lineSpacing": 1.3700000047683716,
+                     "maxWidth": 800.0,
+                     "pivot": [
+                        0.5,
+                        0.5
+                     ],
+                     "screenAnchor": "MiddleCenter",
+                     "sortingOrder": 120,
+                     "text": ""
+                  },
+                  "enabled": true,
+                  "typeName": "UITextComponent"
+               },
+               {
+                  "data": {
+                     "raceManagerId": "Object:RaceManager"
+                  },
+                  "enabled": true,
+                  "typeName": "RaceResultUIComponent"
+               }
+            ],
+            "id": "UIText:RaceResultUI",
+            "objectType": "UIText"
+         },
+         "sceneKey": "UIText:RaceResultUI"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
                {
                   "data": {
                      "name": "Skybox"
                   },
                   "enabled": true,
                   "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "textureName": "game/textures/space_2048px.dds"
+                  },
+                  "enabled": true,
+                  "typeName": "SkyboxComponent"
                }
             ],
             "id": "Skybox:Skybox",
-            "objectType": "Object"
+            "objectType": "Skybox"
          },
          "sceneKey": "Skybox:Skybox"
       }

@@ -115,6 +115,24 @@ void SkyboxComponent::DrawInspector() {
       }
       ImGui::EndCombo();
    }
+
+   const std::string dropLabel = textureName_.empty()
+      ? Tr("DDSキューブマップをここへドロップ", "Drop DDS Cubemap Here")
+      : textureName_;
+   ImGui::Button((dropLabel + "##SkyboxCubemapDrop").c_str(), ImVec2(-1.0f, 0.0f));
+   if (ImGui::BeginDragDropTarget()) {
+      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_TEXTURE")) {
+         const char* textureAssetId = static_cast<const char*>(payload->Data);
+         if (textureAssetId && payload->DataSize > 1 && textureResolver_) {
+            Texture* candidate = textureResolver_(textureAssetId);
+            if (candidate && candidate->GetMetadata().IsCubemap()) {
+               textureName_ = textureAssetId;
+               texture_ = candidate;
+            }
+         }
+      }
+      ImGui::EndDragDropTarget();
+   }
 }
 #endif
 

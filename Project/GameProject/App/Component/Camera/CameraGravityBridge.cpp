@@ -9,6 +9,7 @@
 #include "Object/Object.h"
 #include "Scene/Camera/Components/PerlinNoise.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
+#include "Scene/SceneWorld.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
 
 #ifdef USE_IMGUI
@@ -55,6 +56,22 @@ void TriggerDirectionalShake(
 
    noise->ShakeDirectional(direction, amplitude, frequency, duration);
 }
+}
+
+void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   gravityFollowCamera_ = nullptr;
+   playerRearFollowCamera_ = nullptr;
+   planetLeashCamera_ = nullptr;
+
+   if (auto* camera = sceneWorld.FindVirtualCamera(gravityFollowCameraId_)) {
+      gravityFollowCamera_ = camera->GetComponent<GravityFollowCamera>();
+   }
+   if (auto* camera = sceneWorld.FindVirtualCamera(playerRearFollowCameraId_)) {
+      playerRearFollowCamera_ = camera->GetComponent<PlayerRearFollowCamera>();
+   }
+   if (auto* camera = sceneWorld.FindVirtualCamera(planetLeashCameraId_)) {
+      planetLeashCamera_ = camera->GetComponent<PlanetLeashCamera>();
+   }
 }
 
 void CameraGravityBridge::Update(float) {
@@ -205,6 +222,9 @@ void CameraGravityBridge::DrawInspector() {
 
 nlohmann::json CameraGravityBridge::Serialize() const {
    nlohmann::json json;
+   json["gravityFollowCameraId"] = gravityFollowCameraId_;
+   json["playerRearFollowCameraId"] = playerRearFollowCameraId_;
+   json["planetLeashCameraId"] = planetLeashCameraId_;
    json["enableLandingShake"] = enableLandingShake;
    json["landingShakeAmplitude"] = landingShakeAmplitude;
    json["landingShakeFrequency"] = landingShakeFrequency;
@@ -213,6 +233,15 @@ nlohmann::json CameraGravityBridge::Serialize() const {
 }
 
 void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
+   if (data.contains("gravityFollowCameraId") && data.at("gravityFollowCameraId").is_string()) {
+      gravityFollowCameraId_ = data.at("gravityFollowCameraId").get<std::string>();
+   }
+   if (data.contains("playerRearFollowCameraId") && data.at("playerRearFollowCameraId").is_string()) {
+      playerRearFollowCameraId_ = data.at("playerRearFollowCameraId").get<std::string>();
+   }
+   if (data.contains("planetLeashCameraId") && data.at("planetLeashCameraId").is_string()) {
+      planetLeashCameraId_ = data.at("planetLeashCameraId").get<std::string>();
+   }
    if (data.contains("enableLandingShake")) { enableLandingShake = data["enableLandingShake"]; }
    if (data.contains("landingShakeAmplitude")) { landingShakeAmplitude = data["landingShakeAmplitude"]; }
    if (data.contains("landingShakeFrequency")) { landingShakeFrequency = data["landingShakeFrequency"]; }

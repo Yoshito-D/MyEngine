@@ -39,7 +39,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 
 	Mesh* mesh = sprite->GetMesh();
 	if (!mesh) {
-		Logger::Error("PrimitiveMeshComponent mesh is missing in DrawSprite");
+		Logger::Error("MeshComponent mesh is missing in DrawSprite");
 		return;
 	}
 

@@ -112,8 +112,11 @@ public:
 	/// @brief 近傍惑星方向と重力方向係数の追従速度
 	float airbornePlanetDirectionLerpSpeed = 3.0f;
 
-	/// @brief ジャンプ開始後に惑星方向補間が通常の強さへ戻るまでの秒数
-	float jumpPlanetDirectionRampSeconds = 0.35f;
+	/// @brief 離陸後に惑星ガイドの追従速度を0に保つ秒数
+	float jumpPlanetDirectionDelaySeconds = 0.35f;
+
+	/// @brief 離陸後の停止終了から惑星ガイド追従速度が設定値へ戻るまでの秒数
+	float jumpPlanetDirectionRestoreSeconds = 0.5f;
 
 	/// @brief 空中時に近傍惑星を画角へ入れる方向ガイドを使うか
 	bool enableAirbornePlanetDirectionGuide = true;
@@ -166,17 +169,11 @@ public:
 	/// @brief Spring の減衰（大きいほど揺れが早く収束）
 	float springDamping = 12.0f;
 
-	/// @brief 速度変化量（加速度）を FOV キックへ変換する係数
-	float accelToFovKick = 0.0025f;
+	/// @brief 1フレームの速度変化で加える瞬間的な FOV キックの最大量
+	float speedChangeFovKickMax = 0.06f;
 
-	/// @brief 速度変化量（加速度）を距離キックへ変換する係数
-	float accelToDistanceKick = 0.04f;
-
-	/// @brief ミニターボ時に上乗せする FOV キック最大量
-	float turboFovKickMax = 0.06f;
-
-	/// @brief ミニターボ時に上乗せする距離キック最大量
-	float turboDistanceKickMax = 2.0f;
+	/// @brief 1フレームの速度変化で加える瞬間的な距離キックの最大量
+	float speedChangeDistanceKickMax = 2.2f;
 
 	/// @brief 加速演出を開始するプレイヤー速度の閾値
 	float speedBoostThreshold = 5.0f;
@@ -250,8 +247,8 @@ private:
 	/// @brief 惑星方向補間に使う補間済み重力係数
 	float currentPlanetDirectionGravityFactor_ = 0.0f;
 
-	/// @brief ジャンプ開始後の惑星方向補間復帰経過時間
-	float jumpPlanetDirectionRampElapsed_ = 0.0f;
+	/// @brief 離陸後の惑星ガイド追従速度制御に使う経過時間
+	float jumpPlanetDirectionSpeedElapsed_ = 0.0f;
 
 	/// @brief 現在の後方ベクトル（補間結果）
 	GameEngine::Vector3 currentBackward_ = { 0.0f, 0.0f, -1.0f };
@@ -318,13 +315,13 @@ private:
 	/// @brief カメラ回転が初期化済みかどうか
 	bool isViewRotationInitialized_ = false;
 
-	/// @brief eye の水平半径が退化したときに保持する直近の水平向き
+	/// @brief 旧水平角補間方式で使用していた直近の水平向き（現在の SmoothEye では未使用）
 	GameEngine::Vector3 lastEyePlanarDirection_ = { 0.0f, 0.0f, -1.0f };
 
-	/// @brief lastEyePlanarDirection_ が初期化済みかどうか
+	/// @brief 旧水平角補間方式の初期化状態（現在の SmoothEye では未使用）
 	bool isEyePlanarDirectionInitialized_ = false;
 
-	/// @brief 180度付近で eye の回り込み側を固定する符号
+	/// @brief 旧水平角補間方式の旋回符号（現在の SmoothEye では未使用）
 	float eyeOrbitTurnSign_ = 1.0f;
 
 	// -----------------------------------------------------------------------
@@ -356,6 +353,10 @@ private:
 	/// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向と係数を更新する
 	/// @param deltaTime フレーム時間
 	void UpdatePlanetDirectionGuide(float deltaTime);
+
+	/// @brief 離陸後の停止時間と復帰時間を反映した惑星ガイド追従速度を返す
+	/// @return 現在フレームで使用する惑星ガイド追従速度
+	float ComputePlanetDirectionFollowSpeed() const;
 
 	/// @brief 現在の空中惑星方向補間量を返す
 	/// @return 補間量 [0, 1]
@@ -399,12 +400,13 @@ private:
 	/// @return 加速度合い boostAlpha [0, 1]
 	float UpdateAccelerationEffect(GameEngine::CameraState& state, float deltaTime);
 
-	/// @brief 目標 eye オフセット（ピボット相対）をUp基準の高さ・水平角・半径に分けて補間する
+	/// @brief 目標 eye オフセット（ピボット相対）の3D方向と距離を補間する
 	/// @details 絶対座標ではなくピボット相対オフセットを補間することで、
-	///          ピボット（プレイヤー）が移動しても補間パスが常に後方を通り
-	///          プレイヤーを突き抜ける挙動を防ぐ。初回フレームはスナップする。
+	///          ピボット（プレイヤー）の移動とカメラの追従を分離する。
+	///          方向は角度ベース、距離は指数平滑で補間し、補間後はUp方向の高さ下限を適用する。
+	///          初回フレームは補間履歴がないため目標位置へスナップする。
 	/// @param targetEye 今フレームの理想カメラ位置（ワールド座標）
-	/// @param up 補間軸に使う正規化済みUp
+	/// @param up 高さ下限の基準に使う正規化済みUp
 	/// @param deltaTime フレーム時間
 	/// @return 補間後のカメラ位置（ワールド座標）
 	GameEngine::Vector3 SmoothEye(const GameEngine::Vector3& targetEye,

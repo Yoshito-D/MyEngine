@@ -3,6 +3,7 @@
 #include "EngineContext.h"
 #include "SceneManager.h"
 #include "App/Scene/MySceneFactory.h"
+#include "App/Scene/SceneCatalog.h"
 #ifdef USE_IMGUI
 #include "PlayModeController.h"
 #endif
@@ -15,6 +16,7 @@ public:
    void Finalize() override;
    void EndFrame() override;
 private:
+	SceneCatalog sceneCatalog_;
    std::unique_ptr<MySceneFactory> factory_ = nullptr;
    std::unique_ptr<GameEngine::SceneManager> sceneManager_ = nullptr;
 #ifdef USE_IMGUI

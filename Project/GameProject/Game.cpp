@@ -6,7 +6,11 @@ void Game::Initialize() {
    Logger::GameInfo("Game initialized.");
 
    // シーンマネージャーの初期化
-   factory_ = std::make_unique<MySceneFactory>();
+   if (!sceneCatalog_.Load()) {
+      Logger::Critical("Scene catalog initialization failed.");
+      return;
+   }
+   factory_ = std::make_unique<MySceneFactory>(sceneCatalog_);
    sceneManager_ = std::make_unique<GameEngine::SceneManager>(factory_.get());
 
 #ifdef USE_IMGUI
@@ -15,15 +19,14 @@ void Game::Initialize() {
 #endif
 
    // 最初のシーンを設定
-#ifdef NDEBUG
-	 sceneManager_->ChangeScene("GameTest");
-#else
-	 sceneManager_->ChangeScene("GameTest");
-#endif
+   sceneManager_->ChangeScene(sceneCatalog_.GetInitialSceneName());
 
 }
 
 void Game::Update() {
+   if (!sceneManager_) {
+      return;
+   }
 #ifdef USE_IMGUI
    playModeController_->ProcessRequests(*sceneManager_);
    if (playModeController_->ShouldRunRuntimeUpdate()) {
@@ -40,11 +43,15 @@ void Game::Update() {
 }
 
 void Game::Draw() {
-   sceneManager_->Draw();
+   if (sceneManager_) {
+      sceneManager_->Draw();
+   }
 }
 
 void Game::Finalize() {
-   sceneManager_->Finalize();
+   if (sceneManager_) {
+      sceneManager_->Finalize();
+   }
 #ifdef USE_IMGUI
    GameEngine::EngineContext::SetPlayModeController(nullptr);
    playModeController_.reset();
@@ -54,5 +61,7 @@ void Game::Finalize() {
 
 void Game::EndFrame() {
    Framework::EndFrame();
-   sceneManager_->CheckSceneChange();
+   if (sceneManager_) {
+      sceneManager_->CheckSceneChange();
+   }
 }

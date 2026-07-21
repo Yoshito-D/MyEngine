@@ -9,7 +9,7 @@ namespace GameEngine {
 class Material;
 class MaterialComponent;
 class Mesh;
-class PrimitiveMeshComponent;
+class MeshComponent;
 class TransformationMatrix;
 class TransformComponent;
 class Texture;
@@ -104,7 +104,7 @@ public:
    void SetTextureSize(const Vector2& size);
 
    /// @brief Sprite描画で使用するメッシュを取得する
-   /// @return PrimitiveMeshComponentが所有するメッシュ
+   /// @return MeshComponentが所有するメッシュ
    Mesh* GetMesh() const;
 
    /// @brief トランスフォーメーションマトリックスを取得
@@ -146,8 +146,8 @@ private:
 
    void UpdateTextureCoordinates(Texture* texture);
 
-   PrimitiveMeshComponent* GetPrimitiveMeshComponent();
-   const PrimitiveMeshComponent* GetPrimitiveMeshComponent() const;
+   MeshComponent* GetMeshComponent();
+   const MeshComponent* GetMeshComponent() const;
    MaterialComponent* GetMaterialComponent();
    const MaterialComponent* GetMaterialComponent() const;
    TransformComponent* GetTransformComponent();

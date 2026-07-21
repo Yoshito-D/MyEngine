@@ -6,7 +6,7 @@
 #include "Component/RenderComponent.h"
 #include "Component/MaterialComponent.h"
 #include "Component/Model/AnimationComponent.h"
-#include "Component/Model/ModelAssetComponent.h"
+#include "Component/MeshComponent.h"
 #include <algorithm>
 
 namespace {
@@ -47,7 +47,7 @@ Model::Model() {
    if (auto* materialComponent = AddComponent<MaterialComponent>()) {
       materialComponent->EnsureMaterial(BuildAutoModelMaterialName());
    }
-   AddComponent<ModelAssetComponent>();
+   AddComponent<MeshComponent>();
    AddComponent<RenderComponent>();
    SetObjectName(BuildDefaultModelName(sRegisteredModels_));
    sRegisteredModels_.push_back(this);
@@ -73,7 +73,7 @@ const std::vector<Model*>& Model::GetRegisteredModels() {
 }
 
 Model& Model::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) {
-   if (auto* c = GetComponent<ModelAssetComponent>()) {
+   if (auto* c = GetComponent<MeshComponent>()) {
 	  c->SetModelAsset(modelAsset);
    }
    return *this;
@@ -89,7 +89,7 @@ Model& Model::SetMaterial(Material* material) {
 }
 
 Model& Model::Create() {
-   AddComponent<ModelAssetComponent>();
+   AddComponent<MeshComponent>();
    AddComponent<RenderComponent>();
 
    auto* transformComponent = GetComponent<TransformComponent>();
@@ -237,7 +237,7 @@ void Model::UpdateMatrix(Camera* camera) {
    }
 
    // modelAssetのrootNode.localMatrixを掛ける
-   ModelAsset* modelAsset = GetComponent<ModelAssetComponent>()->GetModelAsset();
+   ModelAsset* modelAsset = GetComponent<MeshComponent>()->GetModelAsset();
    if (modelAsset) {
 	  if (!modelAsset->HasSkinningData()) {
 		 worldMatrix = modelAsset->GetRootNode().localMatrix * worldMatrix;

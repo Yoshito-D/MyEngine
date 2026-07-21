@@ -196,8 +196,6 @@ nlohmann::json GravityBody::Serialize() const {
    json["rotationSpeed"] = rotationSpeed;
    json["gravityStrength"] = gravityStrength;
    json["useGravity"] = useGravity;
-   json["currentUpVector"] = { currentUpVector_.x, currentUpVector_.y, currentUpVector_.z };
-   json["velocity"] = { velocity_.x, velocity_.y, velocity_.z };
    return json;
 }
 
@@ -205,15 +203,6 @@ void GravityBody::Deserialize(const nlohmann::json& data) {
    if (data.contains("rotationSpeed")) { rotationSpeed = data["rotationSpeed"]; }
    if (data.contains("gravityStrength")) { gravityStrength = data["gravityStrength"]; }
    if (data.contains("useGravity")) { useGravity = data["useGravity"]; }
-   if (data.contains("currentUpVector")) {
-	  auto up = data["currentUpVector"];
-	  currentUpVector_ = { up[0], up[1], up[2] };
-	  targetUpVector_ = currentUpVector_;
-   }
-   if (data.contains("velocity")) {
-	  auto vel = data["velocity"];
-	  velocity_ = { vel[0], vel[1], vel[2] };
-   }
 }
 
 } // namespace App

@@ -5,7 +5,7 @@
 #include "Object.h"
 #include "../Utility/VectorMath.h"
 #include "ModelAsset.h"
-#include "Component/Model/ModelAssetComponent.h"
+#include "Component/MeshComponent.h"
 #include <vector>
 #include <optional>
 
@@ -45,13 +45,13 @@ public:
    /// @param material マテリアルへのポインタ
    Model& SetMaterial(Material* material);
 
-   /// @brief スキンクラスタを取得する（ModelAssetComponent への便利アクセス）
+   /// @brief スキンクラスタを取得する（MeshComponent への便利アクセス）
    SkinCluster* GetSkinCluster() {
-	  auto* c = GetComponent<ModelAssetComponent>();
+	  auto* c = GetComponent<MeshComponent>();
 	  return c ? c->GetSkinCluster() : nullptr;
    }
    const SkinCluster* GetSkinCluster() const {
-	  const auto* c = GetComponent<ModelAssetComponent>();
+	  const auto* c = GetComponent<MeshComponent>();
 	  return c ? c->GetSkinCluster() : nullptr;
    }
 

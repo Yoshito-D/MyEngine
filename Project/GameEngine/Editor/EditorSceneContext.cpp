@@ -4,7 +4,7 @@
 #ifdef USE_IMGUI
 
 #include "Component/MaterialComponent.h"
-#include "Component/Model/ModelAssetComponent.h"
+#include "Component/MeshComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
 #include "Component/UI/UITextComponent.h"
@@ -15,8 +15,10 @@
 #include "Scene/Camera/Camera.h"
 #include "Scene/Camera/Core/CinemachineBrain.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
+#include "Scene/SceneWorld.h"
 #include "Sprite/Sprite.h"
 #include "Text/UIText.h"
+#include "Utility/ImGuiHelper.h"
 #include "ImGuizmo.h"
 #include "imgui.h"
 #include <cmath>
@@ -27,7 +29,19 @@
 namespace GameEngine {
 
 namespace {
-ImGuizmo::OPERATION ToImGuizmoOperation(EditorSceneContext::GizmoOperation operation) {
+ImGuizmo::OPERATION ToImGuizmoOperation(EditorSceneContext::GizmoOperation operation, bool restrictTo2D = false) {
+   if (restrictTo2D) {
+      switch (operation) {
+         case EditorSceneContext::GizmoOperation::Rotate:
+            return ImGuizmo::ROTATE_Z;
+         case EditorSceneContext::GizmoOperation::Scale:
+            return ImGuizmo::SCALE_X | ImGuizmo::SCALE_Y;
+         case EditorSceneContext::GizmoOperation::Translate:
+         default:
+            return ImGuizmo::TRANSLATE_X | ImGuizmo::TRANSLATE_Y;
+      }
+   }
+
    switch (operation) {
       case EditorSceneContext::GizmoOperation::Rotate:
          return ImGuizmo::ROTATE;
@@ -191,7 +205,12 @@ bool IsProjectedInsideCamera(const Camera* camera, const Vector3& worldPosition)
 }
 
 bool UsesScreenRenderSpace(const Object* object) {
-   if (!dynamic_cast<const Sprite*>(object) && !dynamic_cast<const UIText*>(object)) {
+   // UITextはRenderComponentを持たない旧シーンでもTextRendererが常にスクリーン空間で描画する。
+   if (dynamic_cast<const UIText*>(object)) {
+      return true;
+   }
+
+   if (!dynamic_cast<const Sprite*>(object)) {
       return false;
    }
 
@@ -244,21 +263,21 @@ Vector3 CalculateScreenAnchorOffset(UIAnchor anchorPoint, const Vector2& screenS
 
    switch (anchorPoint) {
       case UIAnchor::TopLeft:
-         return Vector3(-halfWidth, halfHeight, 0.0f);
+         return Vector3(-halfWidth, -halfHeight, 0.0f);
       case UIAnchor::TopCenter:
-         return Vector3(0.0f, halfHeight, 0.0f);
+         return Vector3(0.0f, -halfHeight, 0.0f);
       case UIAnchor::TopRight:
-         return Vector3(halfWidth, halfHeight, 0.0f);
+         return Vector3(halfWidth, -halfHeight, 0.0f);
       case UIAnchor::MiddleLeft:
          return Vector3(-halfWidth, 0.0f, 0.0f);
       case UIAnchor::MiddleRight:
          return Vector3(halfWidth, 0.0f, 0.0f);
       case UIAnchor::BottomLeft:
-         return Vector3(-halfWidth, -halfHeight, 0.0f);
+         return Vector3(-halfWidth, halfHeight, 0.0f);
       case UIAnchor::BottomCenter:
-         return Vector3(0.0f, -halfHeight, 0.0f);
+         return Vector3(0.0f, halfHeight, 0.0f);
       case UIAnchor::BottomRight:
-         return Vector3(halfWidth, -halfHeight, 0.0f);
+         return Vector3(halfWidth, halfHeight, 0.0f);
       case UIAnchor::MiddleCenter:
       default:
          return Vector3(0.0f, 0.0f, 0.0f);
@@ -280,26 +299,27 @@ Vector3 GetScreenRenderOffset(const Object* object, const Vector2& screenSize) {
 }
 
 Vector3 ToEditorScreenWorldPosition(const Vector3& screenTranslation, const Vector3& anchorOffset) {
-   // Rendererは下向きYのピクセル座標、Editorの直交投影は上向きYの中央原点を使う。
    return Vector3(
       anchorOffset.x + screenTranslation.x,
-      anchorOffset.y - screenTranslation.y,
+      anchorOffset.y + screenTranslation.y,
       anchorOffset.z + screenTranslation.z);
 }
 
 Vector3 FromEditorScreenWorldPosition(const Vector3& worldPosition, const Vector3& anchorOffset) {
    return Vector3(
       worldPosition.x - anchorOffset.x,
-      anchorOffset.y - worldPosition.y,
+      worldPosition.y - anchorOffset.y,
       worldPosition.z - anchorOffset.z);
 }
 
-Matrix4x4 MakeScreenSpaceProjectionMatrix(const Vector2& screenSize) {
+Matrix4x4 MakeScreenSpaceProjectionMatrix(const Vector2& screenSize, bool useDownwardYAxis = false) {
+   const float top = useDownwardYAxis ? -screenSize.y * 0.5f : screenSize.y * 0.5f;
+   const float bottom = -top;
    return MakeOrthographicMatrix(
       -screenSize.x * 0.5f,
-      screenSize.y * 0.5f,
+      top,
       screenSize.x * 0.5f,
-      -screenSize.y * 0.5f,
+      bottom,
       0.0f,
       100.0f);
 }
@@ -473,30 +493,44 @@ std::vector<Object*> EditorSceneContext::CollectEditableObjects() const {
    std::vector<Object*> objects;
 
    const auto& models = Model::GetRegisteredModels();
-   objects.reserve(models.size() + Sprite::GetRegisteredSprites().size() + UIText::GetRegisteredTexts().size() + Skybox::GetRegisteredSkyboxes().size());
+   const auto& editorGenericObjects = objectStore_.GetGenericObjects();
+   const auto* sceneWorld = SceneWorld::GetCurrent();
+   const size_t sceneGenericObjectCount = sceneWorld ? sceneWorld->GetGenericObjects().size() : 0;
+   objects.reserve(editorGenericObjects.size() + sceneGenericObjectCount + models.size() + Sprite::GetRegisteredSprites().size() + UIText::GetRegisteredTexts().size() + Skybox::GetRegisteredSkyboxes().size());
+
+   auto appendEditableObject = [&](Object* object) {
+      if (!object || hiddenSceneObjects_.contains(object)) {
+         return;
+      }
+      if (std::find(objects.begin(), objects.end(), object) == objects.end()) {
+         objects.push_back(object);
+      }
+   };
+
+   for (const auto& object : editorGenericObjects) {
+      appendEditableObject(object.get());
+   }
+
+   if (sceneWorld) {
+      for (const auto& object : sceneWorld->GetGenericObjects()) {
+         appendEditableObject(object.get());
+      }
+   }
 
    for (auto* model : models) {
-      if (model && !hiddenSceneObjects_.contains(model)) {
-         objects.push_back(model);
-      }
+      appendEditableObject(model);
    }
 
    for (auto* sprite : Sprite::GetRegisteredSprites()) {
-      if (sprite && !hiddenSceneObjects_.contains(sprite)) {
-         objects.push_back(sprite);
-      }
+      appendEditableObject(sprite);
    }
 
    for (auto* uiText : UIText::GetRegisteredTexts()) {
-      if (uiText && !hiddenSceneObjects_.contains(uiText)) {
-         objects.push_back(uiText);
-      }
+      appendEditableObject(uiText);
    }
 
    for (auto* skybox : Skybox::GetRegisteredSkyboxes()) {
-      if (skybox && !hiddenSceneObjects_.contains(skybox)) {
-         objects.push_back(skybox);
-      }
+      appendEditableObject(skybox);
    }
 
    return objects;
@@ -548,6 +582,10 @@ bool EditorSceneContext::CanDeleteParticleSystem(const ParticleSystem* particleS
    return particleSystem &&
       IsParticleSystemAlive(particleSystem) &&
       (objectStore_.Contains(particleSystem) || IsEditableSceneParticleSystem(particleSystem));
+}
+
+void EditorSceneContext::CreateEmptyObject() {
+   commandStack_.Execute(std::make_unique<CreateGenericObjectCommand>(BuildPlacementTransformInFrontOfCamera()), *this);
 }
 
 void EditorSceneContext::CreateModelFromAsset(const std::string& assetId) {
@@ -667,17 +705,26 @@ void EditorSceneContext::AddComponentToSelectedObject(const std::string& typeNam
    commandStack_.Execute(std::make_unique<AddComponentCommand>(objectId, selectedObject_, typeName), *this);
 }
 
+void EditorSceneContext::RemoveComponentFromSelectedObject(const std::string& typeName) {
+   if (!selectedObject_ || typeName.empty()) {
+      return;
+   }
+
+   const std::string objectId = GetObjectIdForCommand(selectedObject_);
+   commandStack_.Execute(std::make_unique<RemoveComponentCommand>(objectId, selectedObject_, typeName), *this);
+}
+
 void EditorSceneContext::SetModelAsset(Object* object, const std::string& assetId) {
    if (!object || assetId.empty()) {
       return;
    }
 
-   auto* modelAssetComponent = object->GetComponent<ModelAssetComponent>();
-   if (!modelAssetComponent) {
+   auto* meshComponent = object->GetComponent<MeshComponent>();
+   if (!meshComponent) {
       return;
    }
 
-   const std::string beforeAssetId = modelAssetComponent->GetAssetId();
+   const std::string beforeAssetId = meshComponent->GetAssetId();
    if (beforeAssetId == assetId) {
       return;
    }
@@ -720,6 +767,29 @@ void EditorSceneContext::Redo() {
    commandStack_.Redo(*this);
 }
 
+void EditorSceneContext::DrawGizmoInspectorControls() {
+   ImGui::SeparatorText("Guizmo");
+
+   const char* operationLabels[] = {
+      ImGuiHelper::Localize({ "移動", "Move" }),
+      ImGuiHelper::Localize({ "回転", "Rotate" }),
+      ImGuiHelper::Localize({ "拡縮", "Scale" })
+   };
+   int operation = static_cast<int>(gizmoOperation_);
+   if (ImGui::Combo(ImGuiHelper::Localize({ "操作", "Operation" }), &operation, operationLabels, 3)) {
+      gizmoOperation_ = static_cast<GizmoOperation>(operation);
+   }
+
+   const char* modeLabels[] = {
+      ImGuiHelper::Localize({ "ローカル", "Local" }),
+      ImGuiHelper::Localize({ "ワールド", "World" })
+   };
+   int mode = static_cast<int>(gizmoMode_);
+   if (ImGui::Combo(ImGuiHelper::Localize({ "空間", "Mode" }), &mode, modeLabels, 2)) {
+      gizmoMode_ = static_cast<GizmoMode>(mode);
+   }
+}
+
 void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
    if (selectedObject_ && !IsObjectAlive(selectedObject_)) {
       selectedObject_ = nullptr;
@@ -751,6 +821,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
 
       ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
       ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
+      ImGuizmo::SetOrthographic(camera->GetProjectionType() == Camera::ProjectionType::Orthographic);
       ImGuizmo::Manipulate(
          &viewMatrix.m[0][0],
          &projectionMatrix.m[0][0],
@@ -790,6 +861,8 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
    }
 
    const bool useScreenSpace = UsesScreenRenderSpace(selectedObject_);
+   // UITextは左上原点のY下向き座標で頂点化されるため、SpriteのY上向き投影と分ける。
+   const bool useUITextCoordinates = useScreenSpace && dynamic_cast<UIText*>(selectedObject_) != nullptr;
    const Vector2 screenSize = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
    const Vector3 screenRenderOffset = useScreenSpace ? GetScreenRenderOffset(selectedObject_, screenSize) : Vector3(0.0f, 0.0f, 0.0f);
 
@@ -800,16 +873,17 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
 
    Matrix4x4 worldMatrix = MakeAffineMatrix(gizmoTransform);
    Matrix4x4 viewMatrix = useScreenSpace ? MakeIdentity4x4() : camera->GetViewMatrix();
-   Matrix4x4 projectionMatrix = useScreenSpace ? MakeScreenSpaceProjectionMatrix(screenSize) : camera->GetProjectionMatrix();
+   Matrix4x4 projectionMatrix = useScreenSpace ? MakeScreenSpaceProjectionMatrix(screenSize, useUITextCoordinates) : camera->GetProjectionMatrix();
 
    const Transform beforeCall = transformComponent->transform;
 
    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
    ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
+   ImGuizmo::SetOrthographic(useScreenSpace || camera->GetProjectionType() == Camera::ProjectionType::Orthographic);
    ImGuizmo::Manipulate(
       &viewMatrix.m[0][0],
       &projectionMatrix.m[0][0],
-      ToImGuizmoOperation(gizmoOperation_),
+      ToImGuizmoOperation(gizmoOperation_, useUITextCoordinates),
       ToImGuizmoMode(gizmoMode_),
       &worldMatrix.m[0][0]);
 
@@ -938,6 +1012,7 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
    constexpr float kMaxPickRadiusPixels = 220.0f;
    const Vector2 screenSize = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
    const Matrix4x4 screenViewProjection = MakeScreenSpaceProjectionMatrix(screenSize);
+   const Matrix4x4 uiTextScreenViewProjection = MakeScreenSpaceProjectionMatrix(screenSize, true);
 
    for (Object* object : CollectEditableObjects()) {
       if (!object) {
@@ -950,8 +1025,11 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
       }
 
       const bool useScreenSpace = UsesScreenRenderSpace(object);
+      const bool useUITextCoordinates = useScreenSpace && dynamic_cast<const UIText*>(object) != nullptr;
       const Vector3 screenRenderOffset = useScreenSpace ? GetScreenRenderOffset(object, screenSize) : Vector3(0.0f, 0.0f, 0.0f);
-      const Matrix4x4 viewProjection = useScreenSpace ? screenViewProjection : camera->GetViewProjectionMatrix();
+      const Matrix4x4 viewProjection = useScreenSpace
+         ? (useUITextCoordinates ? uiTextScreenViewProjection : screenViewProjection)
+         : camera->GetViewProjectionMatrix();
       const Vector3 objectCenter = useScreenSpace
          ? ToEditorScreenWorldPosition(transformComponent->transform.translation, screenRenderOffset)
          : transformComponent->transform.translation;
@@ -1066,6 +1144,11 @@ void EditorSceneContext::RegisterSceneOwnedKeys() {
       sceneObjectKeys_[object] = key;
    };
 
+   if (const auto* sceneWorld = SceneWorld::GetCurrent()) {
+      for (const auto& object : sceneWorld->GetGenericObjects()) {
+         registerObject(object.get());
+      }
+   }
    for (auto* model : Model::GetRegisteredModels()) {
       registerObject(model);
    }
@@ -1138,6 +1221,13 @@ Object* EditorSceneContext::FindSceneObjectByKey(const std::string& key) const {
    }
 
    auto isRegistered = [](const Object* object) {
+      if (const auto* sceneWorld = SceneWorld::GetCurrent()) {
+         for (const auto& genericObject : sceneWorld->GetGenericObjects()) {
+            if (genericObject.get() == object) {
+               return true;
+            }
+         }
+      }
       for (auto* model : Model::GetRegisteredModels()) {
          if (model == object) {
             return true;

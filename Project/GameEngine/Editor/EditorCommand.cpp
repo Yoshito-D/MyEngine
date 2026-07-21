@@ -4,7 +4,7 @@
 #ifdef USE_IMGUI
 
 #include "Component/MaterialComponent.h"
-#include "Component/Model/ModelAssetComponent.h"
+#include "Component/MeshComponent.h"
 #include "Component/TransformComponent.h"
 #include "EditorSceneContext.h"
 #include "Effect/ParticleSystem.h"
@@ -65,6 +65,39 @@ const char* EditorCommandStack::GetUndoName() const {
 
 const char* EditorCommandStack::GetRedoName() const {
    return redoStack_.empty() ? "" : redoStack_.back()->GetName();
+}
+
+CreateGenericObjectCommand::CreateGenericObjectCommand(Transform initialTransform)
+   : initialTransform_(initialTransform) {
+}
+
+bool CreateGenericObjectCommand::Execute(EditorSceneContext& context) {
+   Object* object = nullptr;
+   if (!snapshot_.is_null() && snapshot_.is_object()) {
+      object = context.GetObjectStore().RestoreObject(snapshot_);
+   } else {
+      object = context.GetObjectStore().CreateGenericObject(&initialTransform_);
+   }
+
+   if (!object) {
+      return false;
+   }
+
+   objectId_ = context.GetObjectStore().GetId(object);
+   context.SelectObject(object);
+   return true;
+}
+
+void CreateGenericObjectCommand::Undo(EditorSceneContext& context) {
+   if (objectId_.empty()) {
+      return;
+   }
+
+   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
+      context.SelectObject(nullptr);
+   }
+   context.GetObjectStore().DeleteObject(objectId_);
 }
 
 CreateModelCommand::CreateModelCommand(std::string assetId, Transform initialTransform)
@@ -429,12 +462,12 @@ bool SetModelAssetCommand::Apply(EditorSceneContext& context, const std::string&
       return false;
    }
 
-   auto* modelAssetComponent = object->GetComponent<ModelAssetComponent>();
-   if (!modelAssetComponent) {
+   auto* meshComponent = object->GetComponent<MeshComponent>();
+   if (!meshComponent) {
       return false;
    }
 
-   return modelAssetComponent->SetModelAssetByAssetId(assetId);
+   return meshComponent->SetModelAssetByAssetId(assetId);
 }
 
 SetMaterialTextureCommand::SetMaterialTextureCommand(std::string objectId, Object* fallbackObject, size_t slot, std::string beforeTextureId, std::string afterTextureId)
@@ -513,6 +546,63 @@ void AddComponentCommand::Undo(EditorSceneContext& context) {
 }
 
 Object* AddComponentCommand::ResolveObject(EditorSceneContext& context) const {
+   if (!objectId_.empty()) {
+      if (Object* object = context.GetObjectStore().FindById(objectId_)) {
+         return object;
+      }
+   }
+   return fallbackObject_;
+}
+
+RemoveComponentCommand::RemoveComponentCommand(
+   std::string objectId,
+   Object* fallbackObject,
+   std::string typeName
+)
+   : objectId_(std::move(objectId))
+   , fallbackObject_(fallbackObject)
+   , typeName_(std::move(typeName)) {
+}
+
+bool RemoveComponentCommand::Execute(EditorSceneContext& context) {
+   Object* object = ResolveObject(context);
+   if (!object || typeName_.empty()) {
+      return false;
+   }
+
+   IObjectComponent* component = object->GetComponentByTypeName(typeName_);
+   if (!component) {
+      return false;
+   }
+
+   if (removedComponentData_.is_null()) {
+      removedComponentData_ = nlohmann::json{
+         { "enabled", component->IsEnabled() },
+         { "data", component->Serialize() }
+      };
+   }
+   return object->RemoveComponentByTypeName(typeName_);
+}
+
+void RemoveComponentCommand::Undo(EditorSceneContext& context) {
+   Object* object = ResolveObject(context);
+   if (!object || removedComponentData_.is_null()) {
+      return;
+   }
+
+   IObjectComponent* component = object->AddComponentByTypeName(typeName_);
+   if (!component) {
+      return;
+   }
+   if (removedComponentData_.contains("enabled") && removedComponentData_.at("enabled").is_boolean()) {
+      component->SetEnabled(removedComponentData_.at("enabled").get<bool>());
+   }
+   if (removedComponentData_.contains("data") && removedComponentData_.at("data").is_object()) {
+      component->Deserialize(removedComponentData_.at("data"));
+   }
+}
+
+Object* RemoveComponentCommand::ResolveObject(EditorSceneContext& context) const {
    if (!objectId_.empty()) {
       if (Object* object = context.GetObjectStore().FindById(objectId_)) {
          return object;

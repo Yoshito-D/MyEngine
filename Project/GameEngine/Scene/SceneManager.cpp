@@ -79,13 +79,21 @@ void SceneManager::CheckSceneChange() {
 	  return;
    }
 
-   if (nextSceneName == currentSceneName_) {
-	  BaseScene::SetNextSceneName("");
-	  return;
+#ifdef USE_IMGUI
+   const bool resumePlayMode = EngineContext::IsPlaying();
+#endif
+
+   // 同名シーンもファクトリーから作り直し、ゲーム内リスタートとして扱う。
+   if (!ChangeScene(nextSceneName)) {
+      BaseScene::SetNextSceneName("");
+      return;
    }
 
-   if (!ChangeScene(nextSceneName)) {
-	  BaseScene::SetNextSceneName("");
+#ifdef USE_IMGUI
+   if (resumePlayMode) {
+      // シーン初期化で一時停止したプレイモードを次フレーム開始時に復帰させる。
+      EngineContext::RequestPlayModeStart();
    }
+#endif
 }
-}
+} // namespace GameEngine

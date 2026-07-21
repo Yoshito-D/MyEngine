@@ -49,6 +49,7 @@
                      1.0
                   ],
                   "environmentTextureName": "",
+                  "environmentTextureStrength": 0.0,
                   "fillLightColor": [
                      1.0,
                      1.0,
@@ -121,10 +122,11 @@
             },
             {
                "data": {
-                  "assetId": "game/models/human/walk.gltf"
+                  "assetId": "game/models/human/walk.gltf",
+                  "sourceType": "ModelFile"
                },
                "enabled": true,
-               "typeName": "ModelAssetComponent"
+               "typeName": "MeshComponent"
             },
             {
                "data": {
@@ -612,6 +614,7 @@
                         1.0
                      ],
                      "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
                      "fillLightColor": [
                         1.0,
                         1.0,
@@ -684,10 +687,11 @@
                },
                {
                   "data": {
-                     "assetId": "game/models/cube/AnimatedCube.gltf"
+                     "assetId": "game/models/cube/AnimatedCube.gltf",
+                     "sourceType": "ModelFile"
                   },
                   "enabled": true,
-                  "typeName": "ModelAssetComponent"
+                  "typeName": "MeshComponent"
                },
                {
                   "data": {
