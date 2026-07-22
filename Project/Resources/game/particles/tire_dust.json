@@ -22,6 +22,20 @@
         "rateOverTime": 26.0
     },
     "forceOverLifetimeModule": {
+        "attractorEnabled": false,
+        "attractorFalloff": 1.0,
+        "attractorPosition": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "attractorRadius": 0.0,
+        "attractorStrength": 0.0,
+        "drag": {
+            "max": 0.0,
+            "min": 0.0,
+            "randomize": false
+        },
         "enabled": false,
         "force": {
             "max": [
@@ -52,12 +66,14 @@
     },
     "mainModule": {
         "duration": 0.10000000149011612,
-        "emissionRate": 0.0,
-        "gravityModifier": 0.0,
+        "gravityModifier": {
+            "max": 0.0,
+            "min": 0.0,
+            "randomize": false
+        },
         "looping": false,
         "maxParticles": 292,
         "playOnAwake": false,
-        "scalingMode": 0,
         "simulationSpace": 0,
         "startColor": {
             "max": 4294967295,
@@ -113,7 +129,18 @@
                 0.0
             ],
             "randomize": false
-        }
+        },
+        "timeScale": 1.0
+    },
+    "materialSettings": {
+        "alphaCutoff": 0.0010000000474974513,
+        "brightness": 1.0,
+        "distortionBlend": 1.0,
+        "distortionStrength": 0.0,
+        "distortionUseTextureFlow": false,
+        "softParticleDistance": 0.5,
+        "softParticles": false,
+        "toonSteps": 0
     },
     "noiseModule": {
         "enabled": false,
@@ -133,8 +160,7 @@
             "randomize": false
         }
     },
-    "rendererModule": {
-        "billboardType": 1,
+    "particleMeshModule": {
         "boxSize": [
             1.0,
             1.0,
@@ -151,7 +177,6 @@
         "cylinderSegments": 32,
         "cylinderTopRadius": 0.5,
         "enabled": true,
-        "lengthScale": 2.0,
         "meshOriginY": 0.5,
         "particleMeshType": 0,
         "planeDepth": 1.0,
@@ -159,8 +184,6 @@
         "ringInnerRadius": 0.14000000059604645,
         "ringOuterRadius": 0.5,
         "ringSegments": 32,
-        "rotationSpace": 1,
-        "speedScale": 1.0,
         "sphereRadius": 0.5,
         "sphereSlices": 32,
         "sphereStacks": 16,
@@ -168,6 +191,18 @@
         "torusMajorSegments": 32,
         "torusMinorRadius": 0.20000000298023224,
         "torusMinorSegments": 16
+    },
+    "rendererModule": {
+        "billboardType": 1,
+        "cameraFadeEnabled": false,
+        "cameraFadeFar": 1.0,
+        "cameraFadeNear": 0.25,
+        "enabled": true,
+        "lengthScale": 2.0,
+        "rotationSpace": 1,
+        "sortMode": 0,
+        "speedScale": 1.0,
+        "velocityStretchEnabled": false
     },
     "rotationOverLifetimeModule": {
         "angularVelocityMax": [
@@ -197,8 +232,8 @@
         "length": 0.5,
         "position": [
             0.0,
-            0.0,
-            0.0
+            53.997337341308594,
+            -8.463081359863281
         ],
         "radius": 0.10000000149011612,
         "rotation": [
@@ -211,7 +246,8 @@
             1.0,
             1.0
         ],
-        "shapeType": 0
+        "shapeType": 6,
+        "torusMajorRadius": 1.0
     },
     "sizeOverLifetimeModule": {
         "enabled": true,
@@ -220,12 +256,31 @@
             0.4000000059604645,
             0.4000000059604645
         ],
-        "sizeMultiplier": 1.090000033378601,
+        "sizeMultiplier": {
+            "max": 1.25,
+            "min": 0.6899999976158142,
+            "randomize": true
+        },
         "startSize": [
             0.05000000074505806,
             0.05000000074505806,
             0.10000000149011612
         ]
+    },
+    "subEmitters": {
+        "collisionPlaneDistance": 0.0,
+        "collisionPlaneNormal": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "collisionRestitution": 0.0,
+        "enabled": false,
+        "maxEventsPerFrame": 32,
+        "spawnOnCollisionPath": "",
+        "spawnOnDeathPath": "",
+        "spawnOnUpdatePath": "",
+        "updateInterval": 0.10000000149011612
     },
     "textureName": "smoke",
     "textureSheetAnimationModule": {
@@ -239,6 +294,27 @@
         "startFrame": 0,
         "tilesX": 1,
         "tilesY": 1
+    },
+    "trailModule": {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "enabled": false,
+        "maxPoints": 16,
+        "minDistance": 0.10000000149011612,
+        "mode": 0,
+        "retractionDuration": 0.5,
+        "tailWidthScale": 0.0,
+        "textureName": "",
+        "textureTiling": 1.0,
+        "width": {
+            "max": 0.5,
+            "min": 0.5,
+            "randomize": false
+        }
     },
     "usePostProcess": true,
     "uvTransformModule": {

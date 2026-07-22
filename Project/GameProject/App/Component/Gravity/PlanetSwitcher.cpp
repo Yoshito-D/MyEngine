@@ -410,7 +410,7 @@ float PlanetSwitcher::GetPlanetSurfaceRadius(const std::string& objectName) cons
    auto& models = GameEngine::Model::GetRegisteredModels();
    for (auto* model : models) {
 	  if (model->GetObjectName() == objectName) {
-		 return model->GetScale().x; // 仮にスケールのX軸を半径として使用
+		 return model->GetScale().x * 0.5f; // 仮にスケールのX軸を半径として使用
 	  }
    }
    return 0.0f;
