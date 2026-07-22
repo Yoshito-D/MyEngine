@@ -511,8 +511,8 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, 
 	  for (uint32_t slice = 0; slice < sliceCount; ++slice) {
 		 uint32_t a = stack * (sliceCount + 1) + slice;
 		 uint32_t b = (stack + 1) * (sliceCount + 1) + slice;
-		 indexData[idx++] = a;   indexData[idx++] = b;   indexData[idx++] = a + 1;
-		 indexData[idx++] = b;   indexData[idx++] = b + 1; indexData[idx++] = a + 1;
+			indexData[idx++] = a;   indexData[idx++] = a + 1; indexData[idx++] = b;
+			indexData[idx++] = b;   indexData[idx++] = a + 1; indexData[idx++] = b + 1;
 	  }
    }
 
