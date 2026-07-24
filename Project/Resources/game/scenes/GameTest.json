@@ -169,7 +169,6 @@
                      "airborneGravityDirectionBoostThreshold": -1.0,
                      "airbornePlanetDirectionBlend": 0.8999999761581421,
                      "airbornePlanetDirectionLerpSpeed": 2.0,
-                     "airborneResetLerpSpeed": 8.0,
                      "distance": 14.699999809265137,
                      "distanceBoostMax": 2.0,
                      "enableAirborneGravityDirectionBoost": true,
@@ -2638,7 +2637,13 @@
                },
                {
                   "data": {
-                     "inputDeadZone": 0.30000001192092896
+                     "playerSlot": 0
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleInputComponent"
+               },
+               {
+                  "data": {
                   },
                   "enabled": true,
                   "typeName": "VehicleController"

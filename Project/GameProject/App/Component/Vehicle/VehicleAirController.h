@@ -8,10 +8,10 @@ namespace App {
 
 class GravityBody;
 
-/// @brief 空中の yaw / pitch 回転と慣性減衰を担うコンポーネント
+/// @brief 空中の roll / pitch 回転と慣性減衰を担うコンポーネント
 ///
-/// - 入力がある間はターゲット角速度へ即追従
-/// - 入力を離すと angularDamping に従って指数的に減衰
+/// - 入力による加速・反転は即時反映
+/// - 入力を弱めるか離すと angularDamping に従って指数的に減衰
 /// - 着地した瞬間に角速度をリセットする（VehicleMover から呼ばれる）
 class VehicleAirController final : public GameEngine::IObjectComponent {
 public:
@@ -20,13 +20,13 @@ public:
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 空中の回転を適用する
-   /// @param steerInput  左右入力（-1〜+1）
+   /// @param rollInput   左右ロール入力（-1〜+1）
    /// @param pitchInput  前後入力（-1〜+1）
    /// @param deltaTime   フレーム時間
-   void Apply(float steerInput, float pitchInput, float deltaTime);
+   void Apply(float rollInput, float pitchInput, float deltaTime);
 
    /// @brief 着地時に角速度をリセットする
-   void ResetAngularVelocity() { angularVelYaw_ = 0.0f; angularVelPitch_ = 0.0f; }
+   void ResetAngularVelocity() { angularVelRoll_ = 0.0f; angularVelPitch_ = 0.0f; }
 
 #ifdef USE_IMGUI
    void DrawInspector() override;
@@ -50,13 +50,9 @@ public:
    float airDrag = 0.001f;
 
 private:
-   /// @brief 入力に応じて角速度を更新する（入力なし時は指数減衰）
+   /// @brief アナログ入力を考慮して角速度の加速・反転・慣性減衰を更新する
    void UpdateAngularVelocity(float input, float& angVel,
                               float targetVel, float deltaTime) const;
-
-   /// @brief yaw 角速度を回転クォータニオンへ反映する
-   void ApplyYawRotation(GameEngine::Quaternion& rot,
-                         const GameEngine::Vector3& localUp, float deltaTime) const;
 
    /// @brief pitch 角速度を回転クォータニオンへ反映する
    void ApplyPitchRotation(GameEngine::Quaternion& rot,
@@ -66,7 +62,7 @@ private:
    void ApplyRollRotation(GameEngine::Quaternion& rot,
 	                      const GameEngine::Vector3& localForward, float deltaTime) const;
 
-   float angularVelYaw_   = 0.0f;
+   float angularVelRoll_  = 0.0f;
    float angularVelPitch_ = 0.0f;
 };
 

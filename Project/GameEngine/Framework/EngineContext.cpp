@@ -11,6 +11,7 @@
 namespace {
 GameEngine::GraphicsDevice* sGraphicsDevice_ = nullptr;
 GameEngine::Input* sInput_ = nullptr;
+GameEngine::InputActionService* sInputActionService_ = nullptr;
 GameEngine::Audio* sAudio_ = nullptr;
 GameEngine::Renderer* sRenderer_ = nullptr;
 GameEngine::AssetManager* sAssetManager_ = nullptr;
@@ -26,10 +27,12 @@ GameEngine::PlayModeController* sPlayModeController_ = nullptr;
 
 namespace GameEngine {
 
-void EngineContextInitializer::Initialize(GraphicsDevice* graphicsDevice, Input* input, Audio* audio, Renderer* renderer, AssetManager* assetManager, TimeProfiler* timeProfiler, CameraManager* cameraManager,
+void EngineContextInitializer::Initialize(GraphicsDevice* graphicsDevice, Input* input, InputActionService* inputActionService,
+   Audio* audio, Renderer* renderer, AssetManager* assetManager, TimeProfiler* timeProfiler, CameraManager* cameraManager,
    LightManager* lightManager) {
    sGraphicsDevice_ = graphicsDevice;
    sInput_ = input;
+   sInputActionService_ = inputActionService;
    sAudio_ = audio;
    sRenderer_ = renderer;
    sAssetManager_ = assetManager;
@@ -44,6 +47,10 @@ void EngineContextInitializer::SetGraphicsDevice(GraphicsDevice* graphicsDevice)
 
 void EngineContextInitializer::SetInput(Input* input) {
    sInput_ = input;
+}
+
+void EngineContextInitializer::SetInputActionService(InputActionService* inputActionService) {
+   sInputActionService_ = inputActionService;
 }
 
 void EngineContextInitializer::SetAudio(Audio* audio) {
@@ -244,6 +251,17 @@ void EngineContext::SetVibration(uint32_t index, float leftMotor, float rightMot
    return sInput_->SetVibration(index, leftMotor, rightMotor);
 }
 
+const InputActionState& EngineContext::GetInputActionState(
+   const std::string& actionMap,
+   const std::string& actionId,
+   uint32_t playerSlot) {
+   static const InputActionState emptyState{};
+   if (!sInputActionService_) {
+      return emptyState;
+   }
+   return sInputActionService_->GetActionState(actionMap, actionId, playerSlot);
+}
+
 void EngineContext::ChangeScene(const std::string& name) {
    BaseScene::SetNextSceneName(name);
 }
@@ -437,11 +455,6 @@ std::vector<std::string> EngineContext::GetTextureNames() {
    if (!sAssetManager_) return {};
    if (!sAssetManager_->GetTextureManager()) return {};
    return sAssetManager_->GetTextureManager()->GetTextureNames();
-}
-
-bool EngineContext::LoadFont(const std::string& fontPath, const std::string& fontId) {
-   if (!sAssetManager_ || !sAssetManager_->GetFontManager()) return false;
-   return sAssetManager_->GetFontManager()->LoadFont(fontId, fontPath);
 }
 
 std::vector<std::string> EngineContext::GetFontIds() {

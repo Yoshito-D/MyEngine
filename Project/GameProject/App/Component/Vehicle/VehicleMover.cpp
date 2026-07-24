@@ -24,7 +24,7 @@ namespace App {
 // public
 // ================================================================
 
-void VehicleMover::ApplyMovement(float steerInput, float pitchInput, bool driftInput,
+void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput,
 								 bool isGrounded,
 								 const Vector3& gravityUp, float deltaTime) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
@@ -76,10 +76,10 @@ void VehicleMover::ApplyMovement(float steerInput, float pitchInput, bool driftI
 		 drift->Apply(driftInput, steerInput, gravityUp, deltaTime);
 	  }
    } else {
-	  // 空中では VehicleAirController が yaw/pitch 回転を担当する。
+	  // 空中では地上操舵を使わず、専用の roll/pitch 入力だけを姿勢へ反映する。
 	  // ドリフトは接地中のみ有効なので空中では呼ばない。
 	  auto* air = GetOwner().GetComponent<VehicleAirController>();
-	  if (air) { air->Apply(steerInput, pitchInput, deltaTime); }
+	  if (air) { air->Apply(rollInput, pitchInput, deltaTime); }
    }
 }
 
@@ -104,7 +104,7 @@ void VehicleMover::NotifyLandingBoost(const Vector3& localUp, const Vector3& gra
 }
 
 void VehicleMover::ResetAirAngularVelocity() {
-   // 空中で蓄積した yaw/pitch 角速度を着地時にゼロに戻す。
+   // 空中で蓄積した roll/pitch 角速度を着地時にゼロに戻す。
    // リセットしないと着地後も慣性で回転し続けてしまう。
    auto* air = GetOwner().GetComponent<VehicleAirController>();
    if (air) { air->ResetAngularVelocity(); }

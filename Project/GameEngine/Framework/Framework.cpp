@@ -82,6 +82,13 @@ void Framework::Initialize() {
    input_ = std::make_unique<Input>();
    input_->Initialize(window_->GetInstance(), window_->GetHwnd());
 
+   // 物理入力とゲームロジックの間にアクション層を置き、キー割り当てを一元管理する。
+   inputActionService_ = std::make_unique<InputActionService>();
+   inputActionService_->Initialize(
+      *input_,
+      "Resources/game/config/input_actions.json",
+      "Saved/input_actions.json");
+
    // タイムプロファイラーの初期化
    timeProfiler_ = std::make_unique<TimeProfiler>();
 
@@ -90,6 +97,7 @@ void Framework::Initialize() {
    initializer->Initialize(
 	  device_.get(),
 	  input_.get(),
+	  inputActionService_.get(),
 	  audio_.get(),
 	  renderer_.get(),
 	  assetManager_.get(),
@@ -102,6 +110,7 @@ void Framework::Initialize() {
 void Framework::BeginFrame() {
    // 入力システムの更新
    input_->Update();
+   inputActionService_->Update();
 
    // タイムプロファイラーの更新
    timeProfiler_->Update();
@@ -165,6 +174,9 @@ void Framework::Draw() {
 }
 
 void Framework::Finalize() {
+   inputActionService_.reset();
+   input_.reset();
+
    if (renderer_) {
 	  renderer_->Finalize();
 	  renderer_.reset();

@@ -698,7 +698,6 @@ void Renderer::EndFrame() {
    DrawAutoRegisteredTexts();
 
    if (FontManager* fontManager = assetManager_ ? assetManager_->GetFontManager() : nullptr) {
-      fontManager->FlushPendingUploads();
    }
    textRenderer_->UploadBuffers();
 

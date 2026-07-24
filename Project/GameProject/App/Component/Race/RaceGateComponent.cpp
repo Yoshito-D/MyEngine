@@ -113,7 +113,7 @@ void RaceGateComponent::DrawInspector() {
    if (gateType_ == GateType::Checkpoint) {
       int checkpointIndex = static_cast<int>(checkpointIndex_);
       if (ImGui::DragInt("Checkpoint Index", &checkpointIndex, 1.0f, 0)) {
-         checkpointIndex_ = static_cast<size_t>((std::max)(checkpointIndex, 0));
+         checkpointIndex_ = static_cast<size_t>(std::max(checkpointIndex, 0));
       }
    }
    ImGui::TextDisabled("Trigger Volume is added automatically.");

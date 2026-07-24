@@ -93,7 +93,7 @@ void OrbitalBody::ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta,
    // ズーム操作
    if (wheelDelta != 0) {
 	  distance_ -= wheelDelta * scrollSpeed_;
-	  distance_ = (std::max)(0.5f, distance_);
+	  distance_ = std::max(0.5f, distance_);
    }
 }
 
@@ -128,24 +128,21 @@ void OrbitalBody::Deserialize(const nlohmann::json& data) {
 #pragma endregion
 
 #ifdef USE_IMGUI
-static constexpr float kRadToDeg = 57.2957795f;
-static constexpr float kDegToRad = 1.0f / kRadToDeg;
-
 void OrbitalBody::DrawInspector() {
    if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
 
    if (ImGui::DragFloat("Distance", &distance_, 0.1f, 0.5f, 1000.0f)) {
-	  distance_ = (std::max)(0.5f, distance_);
+	  distance_ = std::max(0.5f, distance_);
    }
 
-   float yawDeg = yaw_ * kRadToDeg;
+   float yawDeg = yaw_ * MathConstants::kRadiansToDegrees;
    if (ImGui::SliderFloat("Yaw (deg)", &yawDeg, -180.0f, 180.0f)) {
-	  yaw_ = yawDeg * kDegToRad;
+	  yaw_ = yawDeg * MathConstants::kDegreesToRadians;
    }
 
-   float pitchDeg = pitch_ * kRadToDeg;
+   float pitchDeg = pitch_ * MathConstants::kRadiansToDegrees;
    if (ImGui::SliderFloat("Pitch (deg)", &pitchDeg, -89.0f, 89.0f)) {
-	  pitch_ = pitchDeg * kDegToRad;
+	  pitch_ = pitchDeg * MathConstants::kDegreesToRadians;
    }
 
    float piv[3] = { pivotTarget_.x, pivotTarget_.y, pivotTarget_.z };

@@ -7,7 +7,7 @@ namespace GameEngine {
 
 	void ForceOverLifetimeModule::InitializeParticle(Particle& particle) const {
 		particle.forceOverLifetimeForce = force_.GetValue();
-		particle.drag = (std::max)(drag_.GetValue(), 0.0f);
+		particle.drag = std::max(drag_.GetValue(), 0.0f);
 	}
 
 	void ForceOverLifetimeModule::ApplyForce(Particle& particle) const {
@@ -39,8 +39,8 @@ namespace GameEngine {
 				float attenuation = 1.0f;
 				if (attractorFalloff_ > 0.0f) {
 					attenuation = attractorRadius_ > 0.0f
-						? std::pow((std::max)(1.0f - distance / attractorRadius_, 0.0f), attractorFalloff_)
-						: 1.0f / std::pow((std::max)(distance, 1.0f), attractorFalloff_);
+						? std::pow(std::max(1.0f - distance / attractorRadius_, 0.0f), attractorFalloff_)
+						: 1.0f / std::pow(std::max(distance, 1.0f), attractorFalloff_);
 				}
 				particle.acceleration += (toTarget / distance) * (attractorStrength_ * attenuation);
 			}

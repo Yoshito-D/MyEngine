@@ -160,7 +160,7 @@ public:
 
    /// @brief このシステム固有の時間倍率を設定する
    /// @param timeScale 0で停止、1で等速となる0以上の倍率
-   void SetTimeScale(float timeScale) { timeScale_ = (std::max)(timeScale, 0.0f); }
+   void SetTimeScale(float timeScale) { timeScale_ = std::max(timeScale, 0.0f); }
 
    /// @brief このシステム固有の時間倍率を取得する
    float GetTimeScale() const { return timeScale_; }

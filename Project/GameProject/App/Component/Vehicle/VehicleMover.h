@@ -13,7 +13,7 @@ namespace App {
 ///
 ///   必須:
 ///     - VehicleGroundMover  … 地上前進・ステアリング・姿勢再構築
-///     - VehicleAirController… 空中 yaw/pitch 回転（慣性付き）
+///     - VehicleAirController… 空中 roll/pitch 回転（慣性付き）
 ///
 ///   オプション（外すと機能が無効化される）:
 ///     - VehicleLandingAligner … 着地直後の Slerp 姿勢補正
@@ -25,14 +25,15 @@ public:
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両移動", "Vehicle Mover" };
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief ステアリング・ピッチ入力と接地状態から移動・姿勢を適用する
-   /// @param steerInput  左右入力（-1〜+1）
+   /// @brief 操舵・空中姿勢入力と接地状態から移動・姿勢を適用する
+   /// @param steerInput  地上の左右操舵入力（-1〜+1）
+   /// @param rollInput   空中の左右ロール入力（-1〜+1）
    /// @param pitchInput  前後入力（-1〜+1）: 空中のみ有効
    /// @param driftInput  ドリフトボタン入力（VehicleDrift コンポーネントへ転送）
    /// @param isGrounded  接地中なら true
    /// @param gravityUp   現在の重力Up方向
    /// @param deltaTime   フレーム時間
-   void ApplyMovement(float steerInput, float pitchInput, bool driftInput, bool isGrounded,
+   void ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput, bool isGrounded,
 					  const GameEngine::Vector3& gravityUp, float deltaTime);
 
    /// @brief 直近の移動方向を取得する

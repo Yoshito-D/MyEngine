@@ -5,7 +5,6 @@
 #include "Utility/MathUtils.h"
 #include "GraphicsDevice.h"
 #include <algorithm>
-#include <numbers>
 
 
 namespace GameEngine {
@@ -56,8 +55,8 @@ float VerticalOriginOffset(float height, float originY) {
 }
 
 void Mesh::CreateDynamic(uint32_t maxVertexCount, uint32_t maxIndexCount) {
-   maxVertexCount = (std::max)(maxVertexCount, 1u);
-   maxIndexCount = (std::max)(maxIndexCount, 1u);
+   maxVertexCount = std::max(maxVertexCount, 1u);
+   maxIndexCount = std::max(maxIndexCount, 1u);
    AllocateMesh(
 	  maxVertexCount,
 	  maxIndexCount,
@@ -74,8 +73,8 @@ void Mesh::CreateDynamic(uint32_t maxVertexCount, uint32_t maxIndexCount) {
 
 void Mesh::UpdateDynamic(const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices) {
    if (!vertexData_ || !dynamicIndexData_ || vertices.size() > dynamicVertexCapacity_ || indices.size() > dynamicIndexCapacity_) {
-	  const uint32_t vertexCapacity = (std::max)(static_cast<uint32_t>(vertices.size()), dynamicVertexCapacity_ * 2u);
-	  const uint32_t indexCapacity = (std::max)(static_cast<uint32_t>(indices.size()), dynamicIndexCapacity_ * 2u);
+	  const uint32_t vertexCapacity = std::max(static_cast<uint32_t>(vertices.size()), dynamicVertexCapacity_ * 2u);
+	  const uint32_t indexCapacity = std::max(static_cast<uint32_t>(indices.size()), dynamicIndexCapacity_ * 2u);
 	  CreateDynamic(vertexCapacity, indexCapacity);
    }
    if (!vertices.empty()) {
@@ -295,7 +294,7 @@ void Mesh::CreateRing(float innerRadius, float outerRadius, uint32_t segmentCoun
 
    const uint32_t kVertexCount = segmentCount * 2;
    const uint32_t kIndexCount = segmentCount * 6;
-   const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
+   const float    kStep = MathConstants::kTwoPi / static_cast<float>(segmentCount);
 
    uint32_t* indexData = nullptr;
    AllocateMesh(kVertexCount, kIndexCount,
@@ -385,7 +384,7 @@ void Mesh::CreateCircle(float radius, uint32_t segmentCount, PlaneOrientation or
 
    const uint32_t kVertexCount = segmentCount + 1; // 中心 + 外周
    const uint32_t kIndexCount = segmentCount * 3;
-   const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
+   const float    kStep = MathConstants::kTwoPi / static_cast<float>(segmentCount);
 
    uint32_t* indexData = nullptr;
    AllocateMesh(kVertexCount, kIndexCount,
@@ -491,10 +490,10 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, 
 	  indexResource_, indexBufferView_, indexData);
 
    for (uint32_t stack = 0; stack <= stackCount; ++stack) {
-	  float phi = std::numbers::pi_v<float> *static_cast<float>(stack) / static_cast<float>(stackCount);
+	  float phi = MathConstants::kPi * static_cast<float>(stack) / static_cast<float>(stackCount);
 	  float v = static_cast<float>(stack) / static_cast<float>(stackCount);
 	  for (uint32_t slice = 0; slice <= sliceCount; ++slice) {
-		 float theta = 2.0f * std::numbers::pi_v<float> *static_cast<float>(slice) / static_cast<float>(sliceCount);
+		 float theta = MathConstants::kTwoPi * static_cast<float>(slice) / static_cast<float>(sliceCount);
 		 float u = static_cast<float>(slice) / static_cast<float>(sliceCount);
 		 float x = std::sinf(phi) * std::cosf(theta);
 		 float y = std::cosf(phi);
@@ -532,11 +531,11 @@ void Mesh::CreateTorus(float majorRadius, float minorRadius, uint32_t majorSegme
 	  indexResource_, indexBufferView_, indexData);
 
    for (uint32_t i = 0; i <= majorSegments; ++i) {
-	  float phi = 2.0f * std::numbers::pi_v<float> *static_cast<float>(i) / static_cast<float>(majorSegments);
+	  float phi = MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(majorSegments);
 	  float cosPhi = std::cosf(phi);
 	  float sinPhi = std::sinf(phi);
 	  for (uint32_t j = 0; j <= minorSegments; ++j) {
-		 float theta = 2.0f * std::numbers::pi_v<float> *static_cast<float>(j) / static_cast<float>(minorSegments);
+		 float theta = MathConstants::kTwoPi * static_cast<float>(j) / static_cast<float>(minorSegments);
 		 float cosTheta = std::cosf(theta);
 		 float sinTheta = std::sinf(theta);
 		 float cx = majorRadius * cosPhi;
@@ -583,7 +582,7 @@ void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uin
    const float    sideSlope = height != 0.0f ? (topRadius - bottomRadius) / height : 0.0f;
    const float    normalY = -sideSlope;
    const float    normalScale = 1.0f / std::sqrtf(1.0f + normalY * normalY);
-   const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
+   const float    kStep = MathConstants::kTwoPi / static_cast<float>(segmentCount);
 
    uint32_t* indexData = nullptr;
    AllocateMesh(kVertexCount, kIndexCount,
@@ -658,7 +657,7 @@ void Mesh::CreateCylinderWithoutCaps(float topRadius, float bottomRadius, float 
    const float    sideSlope = height != 0.0f ? (topRadius - bottomRadius) / height : 0.0f;
    const float    normalY = -sideSlope;
    const float    normalScale = 1.0f / std::sqrtf(1.0f + normalY * normalY);
-   const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
+   const float    kStep = MathConstants::kTwoPi / static_cast<float>(segmentCount);
 
    uint32_t* indexData = nullptr;
    AllocateMesh(kVertexCount, kIndexCount,
@@ -698,7 +697,7 @@ void Mesh::CreateCone(float radius, float height, uint32_t segmentCount, float o
    const uint32_t kIndexCount = segmentCount * 3 * 2; // 側面 + 底面
    const float    hh = height * 0.5f;
    const float    yOffset = VerticalOriginOffset(height, originY);
-   const float    kStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(segmentCount);
+   const float    kStep = MathConstants::kTwoPi / static_cast<float>(segmentCount);
    const float    slopeLen = std::sqrtf(radius * radius + height * height);
    const float    ny = radius / slopeLen; // 側面法線の Y 成分
 

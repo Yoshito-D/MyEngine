@@ -65,7 +65,7 @@ public:
    float GetCircleOutwardVelocity() const { return circleOutwardVelocity_; }
 
    /// @brief トーラスの主半径を設定する
-   void SetTorusMajorRadius(float radius) { torusMajorRadius_ = (std::max)(radius, 0.0f); }
+   void SetTorusMajorRadius(float radius) { torusMajorRadius_ = std::max(radius, 0.0f); }
 
    /// @brief トーラスの主半径を取得する
    float GetTorusMajorRadius() const { return torusMajorRadius_; }

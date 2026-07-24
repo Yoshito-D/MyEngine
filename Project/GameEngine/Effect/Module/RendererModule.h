@@ -62,13 +62,13 @@ public:
    bool IsCameraFadeEnabled() const { return cameraFadeEnabled_; }
 
    /// @brief 完全に透明になるカメラ距離を設定する
-   void SetCameraFadeNear(float distance) { cameraFadeNear_ = (std::max)(distance, 0.0f); }
+   void SetCameraFadeNear(float distance) { cameraFadeNear_ = std::max(distance, 0.0f); }
 
    /// @brief 完全に透明になるカメラ距離を取得する
    float GetCameraFadeNear() const { return cameraFadeNear_; }
 
    /// @brief 完全に表示されるカメラ距離を設定する
-   void SetCameraFadeFar(float distance) { cameraFadeFar_ = (std::max)(distance, 0.0f); }
+   void SetCameraFadeFar(float distance) { cameraFadeFar_ = std::max(distance, 0.0f); }
 
    /// @brief 完全に表示されるカメラ距離を取得する
    float GetCameraFadeFar() const { return cameraFadeFar_; }

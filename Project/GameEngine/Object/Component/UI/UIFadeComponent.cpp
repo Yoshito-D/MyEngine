@@ -40,7 +40,7 @@ void UIFadeComponent::Update(float deltaTime) {
    if (!playing_) {
       return;
    }
-   elapsed_ += (std::max)(deltaTime, 0.0f);
+   elapsed_ += std::max(deltaTime, 0.0f);
    const UIPlaybackSample sample = EvaluateUIPlayback(elapsed_, delay, duration, playbackMode);
    Apply(EvaluateUIEasing(sample.progress, easing));
    if (sample.finished) {
@@ -75,13 +75,13 @@ nlohmann::json UIFadeComponent::Serialize() const {
 }
 
 void UIFadeComponent::Deserialize(const nlohmann::json& data) {
-   startOpacity = (std::clamp)(data.value("startOpacity", startOpacity), 0.0f, 1.0f);
-   endOpacity = (std::clamp)(data.value("endOpacity", endOpacity), 0.0f, 1.0f);
-   delay = (std::max)(data.value("delay", delay), 0.0f);
-   duration = (std::max)(data.value("duration", duration), 0.0001f);
+   startOpacity = std::clamp(data.value("startOpacity", startOpacity), 0.0f, 1.0f);
+   endOpacity = std::clamp(data.value("endOpacity", endOpacity), 0.0f, 1.0f);
+   delay = std::max(data.value("delay", delay), 0.0f);
+   duration = std::max(data.value("duration", duration), 0.0001f);
    playOnEnable = data.value("playOnEnable", playOnEnable);
-   playbackMode = static_cast<UIPlaybackMode>((std::clamp)(data.value("playbackMode", static_cast<int>(playbackMode)), 0, 2));
-   easing = static_cast<UIEasingType>((std::clamp)(data.value("easing", static_cast<int>(easing)), 0, 3));
+   playbackMode = static_cast<UIPlaybackMode>(std::clamp(data.value("playbackMode", static_cast<int>(playbackMode)), 0, 2));
+   easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<int>(easing)), 0, 3));
    if (playOnEnable) {
       Restart();
    }

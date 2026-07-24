@@ -37,8 +37,9 @@ void RaceResultUIComponent::Update(float deltaTime) {
    }
 
    text->SetText(BuildResultText());
-   if (GameEngine::EngineContext::IsKeyTriggered(GameEngine::KeyCode::Space) ||
-      GameEngine::EngineContext::IsGamePadButtonTriggered(GameEngine::GamePadButton::A, 0)) {
+   const auto& confirmAction =
+      GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
+   if (confirmAction.triggered) {
       raceManager_->RequestRestart();
    }
 }

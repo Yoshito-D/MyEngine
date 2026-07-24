@@ -1,5 +1,6 @@
 #include "PlayerRearFollowCamera.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include "Utility/MathUtils/MatrixOperations.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
 #include <algorithm>
@@ -24,7 +25,6 @@ constexpr float kMaxSpringDeltaTime = 0.25f;
 constexpr float kMaxSpringStep = 1.0f / 120.0f;
 // 旧ターボ係数が最大になっていた速度差を統合後も基準として使う。
 constexpr float kSpeedDeltaForMaxKick = 5.0f;
-constexpr float kPi = 3.14159265358979323846f;
 constexpr float kGroundDirectionProjectionBlendRange = 0.15f;
 constexpr float kLookAtDegenerateBlendRange = 0.15f;
 
@@ -37,8 +37,8 @@ static float ClampCameraFov(float fov) {
 
 /// @brief 指数平滑の補間係数を返す（dt 変動に強く、常に 0..1 未満）
 static float ExpSmoothingFactor(float speed, float deltaTime) {
-   float k = (std::max)(0.0f, speed);
-   float dt = (std::max)(0.0f, deltaTime);
+   float k = std::max(0.0f, speed);
+   float dt = std::max(0.0f, deltaTime);
    return 1.0f - std::exp(-k * dt);
 }
 
@@ -85,8 +85,8 @@ static void StepSpring1D(float target,
    float dt = std::clamp(deltaTime, 0.0f, kMaxSpringDeltaTime);
    if (dt <= 0.0f) return;
 
-   float k = (std::max)(0.0f, stiffness);
-   float c = (std::max)(0.0f, damping);
+   float k = std::max(0.0f, stiffness);
+   float c = std::max(0.0f, damping);
 
    if (!std::isfinite(inOutValue)) {
 	  inOutValue = target;
@@ -98,7 +98,7 @@ static void StepSpring1D(float target,
    // 起動直後やブレーク復帰時の大きな dt をそのまま入れると、半陰的オイラーでも
    // ばね速度が反転し過ぎて FOV オフセットが負方向へ大きく飛ぶため、小刻みに積分する。
    while (dt > 0.0f) {
-	  float step = (std::min)(dt, kMaxSpringStep);
+	  float step = std::min(dt, kMaxSpringStep);
 	  float accel = -k * (inOutValue - target) - c * inOutVelocity;
 	  inOutVelocity += accel * step;
 	  inOutValue += inOutVelocity * step;
@@ -135,7 +135,7 @@ static GameEngine::Vector3 RotateTowardsUnit(const GameEngine::Vector3& current,
 	  return t;
    }
 
-   float step = (std::max)(0.0f, maxRadiansDelta);
+   float step = std::max(0.0f, maxRadiansDelta);
    if (step >= angle) {
 	  return t;
    }
@@ -211,7 +211,7 @@ static float SignedAngleAroundAxis(const GameEngine::Vector3& from,
    float cosine = std::clamp(safeFrom.Dot(safeTo), -1.0f, 1.0f);
    float sine = safeAxis.Dot(safeFrom.Cross(safeTo));
    if (std::abs(sine) <= 1e-5f && cosine < -0.9999f) {
-      return antipodalSign < 0.0f ? -kPi : kPi;
+      return antipodalSign < 0.0f ? -GameEngine::MathConstants::kPi : GameEngine::MathConstants::kPi;
    }
    return std::atan2(sine, cosine);
 }
@@ -297,7 +297,7 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothGravityUp(float deltaTime) {
    Vector3 oldUp = currentGravityUp_;
 
    // 角速度制限付きで目標 Up へ追従（180°近傍でも破綻しない）
-   float maxRadiansDelta = gravityUpLerpSpeed * (std::max)(0.0f, deltaTime);
+   float maxRadiansDelta = gravityUpLerpSpeed * std::max(0.0f, deltaTime);
    currentGravityUp_ = RotateTowardsUnit(oldUp, targetUp, maxRadiansDelta);
 
    // ─────────────────────────────────────────────────────────────
@@ -336,7 +336,6 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothGravityUp(float deltaTime) {
 
 /// @brief currentBackward_ を更新する
 /// @details 地上では重力平面上のプレイヤー後方、空中ではプレイヤー速度の反対方向へ追従する。
-///          リセット補間中はプレイヤー後方を強く採用し、空中姿勢にカメラを寄せる。
 /// @param up 正規化済み補間済み重力Up
 /// @param deltaTime フレーム時間
 void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up, float deltaTime) {
@@ -365,14 +364,7 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
       }
    }
 
-   Vector3 resetBackward = NormalizeOrFallback(-playerForward_, normalBackward);
    Vector3 desiredBackward = normalBackward;
-   if (isAirborne_ && airborneResetBlend_ > 1e-4f) {
-	  // 原因: 空中の速度後方とリセット時のプレイヤー後方がほぼ逆向きだと、
-	  //       Lerp 後の方向がゼロ付近になり、Normalize の結果でカメラ前後が反転して見える。
-	  // 修正: 線形補間ではなく角度補間にして、現在の空中後方からリセット後方へ連続回転させる。
-	  desiredBackward = BlendUnitDirectionSafely(normalBackward, resetBackward, airborneResetBlend_, resetBackward);
-   }
 
    if (!isInitialized_) {
 	  // 初回はスムーズ開始のためそのまま採用
@@ -382,7 +374,7 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
    }
 
    if (isAirborne_) {
-      // 空中では速度後方やリセット姿勢をそのまま使えるよう、重力平面へ押し戻さない。
+      // 空中では速度後方をそのまま使えるよう、重力平面へ押し戻さない。
       currentBackward_ = NormalizeOrFallback(currentBackward_, desiredBackward);
    } else {
       // 着地直後の空中後方を先に水平投影すると、垂直落下時に方位が一度で地上側へ飛ぶ。
@@ -390,19 +382,18 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
       currentBackward_ = NormalizeOrFallback(currentBackward_, desiredBackward);
    }
 
-   float airborneFollowSpeed = airborneForwardLerpSpeed + (airborneResetLerpSpeed - airborneForwardLerpSpeed) * airborneResetBlend_;
    float followSpeed = rearLerpSpeed;
    if (isAirborne_) {
-	  followSpeed = airborneFollowSpeed;
+	  followSpeed = airborneForwardLerpSpeed;
 	  lastAirborneRearFollowSpeed_ = followSpeed;
 	  landingRearLerpStartSpeed_ = followSpeed;
-	  landingRearLerpElapsed_ = (std::max)(0.0f, landingRearLerpRampSeconds);
+	  landingRearLerpElapsed_ = std::max(0.0f, landingRearLerpRampSeconds);
    } else {
-	  float rampSeconds = (std::max)(0.0f, landingRearLerpRampSeconds);
+	  float rampSeconds = std::max(0.0f, landingRearLerpRampSeconds);
 	  if (rampSeconds > 1e-4f && landingRearLerpElapsed_ < rampSeconds) {
 		 // 着地した瞬間に rearLerpSpeed をそのまま使うと、地上後方へ戻る力が急に強くなり画が跳ねる。
 		 // 着地直前の空中追従速度から設定値へ指定秒数で近づけ、接地直後の戻り方をなめらかにする。
-		 landingRearLerpElapsed_ = (std::min)(landingRearLerpElapsed_ + (std::max)(0.0f, deltaTime), rampSeconds);
+		 landingRearLerpElapsed_ = std::min(landingRearLerpElapsed_ + std::max(0.0f, deltaTime), rampSeconds);
 		 float rampAlpha = std::clamp(landingRearLerpElapsed_ / rampSeconds, 0.0f, 1.0f);
 		 followSpeed = landingRearLerpStartSpeed_ + (rearLerpSpeed - landingRearLerpStartSpeed_) * rampAlpha;
 	  }
@@ -443,8 +434,8 @@ void PlayerRearFollowCamera::UpdatePlayerFramingBlend(float deltaTime) {
       playerFramingBlendElapsed_ = 0.0f;
 
       float configuredSeconds = isAirborne_
-         ? (std::max)(0.0f, takeoffFramingBlendSeconds)
-         : (std::max)(0.0f, landingFramingBlendSeconds);
+         ? std::max(0.0f, takeoffFramingBlendSeconds)
+         : std::max(0.0f, landingFramingBlendSeconds);
       // 途中で状態が反転した場合は残り距離に比例して時間を短縮し、
       // 0→1 / 1→0 の全区間が設定秒数になる速度感を維持する。
       playerFramingBlendDuration_ = configuredSeconds
@@ -457,8 +448,8 @@ void PlayerRearFollowCamera::UpdatePlayerFramingBlend(float deltaTime) {
       return;
    }
 
-   playerFramingBlendElapsed_ = (std::min)(
-      playerFramingBlendElapsed_ + (std::max)(0.0f, deltaTime),
+   playerFramingBlendElapsed_ = std::min(
+      playerFramingBlendElapsed_ + std::max(0.0f, deltaTime),
       playerFramingBlendDuration_);
    float progress = std::clamp(
       playerFramingBlendElapsed_ / playerFramingBlendDuration_,
@@ -470,22 +461,6 @@ void PlayerRearFollowCamera::UpdatePlayerFramingBlend(float deltaTime) {
          + (playerFramingBlendTarget_ - playerFramingBlendStart_) * easedProgress,
       0.0f,
       1.0f);
-}
-
-/// @brief 空中リセットの補間値を更新する
-/// @details リセット入力を押している間だけ1へ、離したら0へ戻す。
-///          値そのものを補間することで、カメラの前方向とUpの切り替えを同じ時間軸で扱う。
-void PlayerRearFollowCamera::UpdateAirborneResetBlend(float deltaTime) {
-   if (!isAirborne_) {
-	  isAirborneResetHeld_ = false;
-   }
-
-   float targetBlend = (isAirborne_ && isAirborneResetHeld_) ? 1.0f : 0.0f;
-   float t = ExpSmoothingFactor(airborneResetLerpSpeed, deltaTime);
-   airborneResetBlend_ = std::clamp(
-	  airborneResetBlend_ + (targetBlend - airborneResetBlend_) * t,
-	  0.0f,
-	  1.0f);
 }
 
 /// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向と係数を更新する
@@ -529,17 +504,17 @@ void PlayerRearFollowCamera::UpdatePlanetDirectionGuide(float deltaTime) {
 /// @details 待機中は0を返す。待機終了後はSmoothstepで0から設定値へ戻し、
 ///          地上時は次回離陸へ影響しないよう常に設定値を返す。
 float PlayerRearFollowCamera::ComputePlanetDirectionFollowSpeed() const {
-	float configuredSpeed = (std::max)(0.0f, airbornePlanetDirectionLerpSpeed);
+	float configuredSpeed = std::max(0.0f, airbornePlanetDirectionLerpSpeed);
 	if (!isAirborne_) {
 	  return configuredSpeed;
 	}
 
-	float delaySeconds = (std::max)(0.0f, jumpPlanetDirectionDelaySeconds);
+	float delaySeconds = std::max(0.0f, jumpPlanetDirectionDelaySeconds);
 	if (jumpPlanetDirectionSpeedElapsed_ < delaySeconds) {
 	  return 0.0f;
 	}
 
-	float restoreSeconds = (std::max)(0.0f, jumpPlanetDirectionRestoreSeconds);
+	float restoreSeconds = std::max(0.0f, jumpPlanetDirectionRestoreSeconds);
 	if (restoreSeconds <= 1e-4f) {
 	  return configuredSpeed;
 	}
@@ -577,7 +552,7 @@ float PlayerRearFollowCamera::ComputePlanetDirectionGravityFactorTarget() const 
    float startThreshold = std::clamp(airborneGravityDirectionBoostThreshold, 0.0f, 0.999f);
    float fullThreshold = std::clamp(airborneGravityDirectionBoostFullThreshold, 0.0f, 1.0f);
    if (fullThreshold <= startThreshold + 0.001f) {
-	  fullThreshold = (std::min)(1.0f, startThreshold + 0.001f);
+	  fullThreshold = std::min(1.0f, startThreshold + 0.001f);
    }
    float normalized = std::clamp(
 	  (gravityAlignment - startThreshold) / (fullThreshold - startThreshold),
@@ -586,7 +561,7 @@ float PlayerRearFollowCamera::ComputePlanetDirectionGravityFactorTarget() const 
 
    // 閾値の境界で急に効き始めないよう、S字カーブへ変換してから bias をかける。
    float smoothed = normalized * normalized * (3.0f - 2.0f * normalized);
-   float bias = (std::max)(0.01f, airborneGravityDirectionBoostBias);
+   float bias = std::max(0.01f, airborneGravityDirectionBoostBias);
    return std::clamp(static_cast<float>(std::pow(smoothed, bias)), 0.0f, 1.0f);
 }
 
@@ -600,7 +575,7 @@ float PlayerRearFollowCamera::ComputePlanetDirectionBlend() const {
 
 	float configuredMaxBlend = std::clamp(airbornePlanetDirectionBlend, 0.0f, 1.0f);
 	float cappedBlend = std::clamp(
-	  currentAirborneBlend_ * (1.0f - airborneResetBlend_) * currentPlanetDirectionGravityFactor_ * configuredMaxBlend,
+	  currentAirborneBlend_ * currentPlanetDirectionGravityFactor_ * configuredMaxBlend,
 	  0.0f,
 	  configuredMaxBlend);
    if (cappedBlend <= 0.0f) {
@@ -644,7 +619,6 @@ float PlayerRearFollowCamera::ComputePlanetDirectionBlend() const {
 /// @param boostAlpha 加速度合い [0,1]
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3& up,
    float boostAlpha) const {
-   float effectiveAirborneBlend = (std::max)(currentAirborneBlend_, airborneResetBlend_);
    GameEngine::Vector3 effectiveBackward = currentBackward_;
    float planetDirectionBlend = ComputePlanetDirectionBlend();
    if (planetDirectionBlend > 1e-4f) {
@@ -659,7 +633,7 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3
 	  distance
 	  + distanceBoostMax * boostAlpha
 	  + springDistanceOffset_
-	  + airborneDistanceOffset * effectiveAirborneBlend;
+	  + airborneDistanceOffset * currentAirborneBlend_;
 
    // eye = pivot から上方向に height、後方に boostedDistance 離れた位置
    return pivotTarget_ + up * height + effectiveBackward * boostedDistance;
@@ -668,7 +642,6 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3
 /// @brief LookAt に使う注視点を計算する
 /// @details 地上ではプレイヤー中心より少し上を狙い、画面内の地面比率を下げる。
 ///          空中では構図補間によりプレイヤー中心へ戻すが、着地先などへの注視切り替えは行わない。
-///          リセット中も同じ注視点を使用する。
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeLookTarget(const GameEngine::Vector3& up) const {
    // 構図専用ブレンドを使い、距離やFOVの空中補間速度から独立して
    // 地上下側と空中中央の切り替え時間を調整できるようにする。
@@ -676,22 +649,8 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeLookTarget(const GameEngine::
    return pivotTarget_ + up * targetHeight;
 }
 
-/// @brief リセット状態を加味したカメラUpを返す
-GameEngine::Vector3 PlayerRearFollowCamera::ComputeViewUp(const GameEngine::Vector3& gravityUp) const {
-   GameEngine::Vector3 baseUp = NormalizeOrFallback(gravityUp, { 0.0f, 1.0f, 0.0f });
-   if (airborneResetBlend_ <= 1e-4f) {
-      return baseUp;
-   }
-
-   GameEngine::Vector3 targetUp = NormalizeOrFallback(playerUp_, baseUp);
-   // 反対向きのUpをLerpすると中点でゼロになり、Normalize後の向きが1フレームで反転する。
-   // 角度補間を使い、空中リセット解除から着地まで同じ回転弧を連続して辿らせる。
-   return BlendUnitDirectionSafely(baseUp, targetUp, airborneResetBlend_, baseUp);
-}
-
 /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
-/// @details LookAt の up には通常は補間済み重力Up、空中リセット中はプレイヤーUpとの補間値を使用する。
-///          これにより通常時の惑星基準と、リセット時のプレイヤー姿勢基準を滑らかに行き来できる。
+/// @details LookAt の up には補間済み重力Upを使用する。
 ///          cachedRight_ / cachedUp_ は外部（UI など）で参照されるため確定させる。
 void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    const GameEngine::Vector3& eye,
@@ -826,8 +785,8 @@ float PlayerRearFollowCamera::UpdateAccelerationEffect(GameEngine::CameraState& 
 	if (speedDelta > 0.0f) {
 	  // 同じ速度差へ係数とターボ量を二重加算せず、最大キック量だけで強さを決める。
 	  float kickAlpha = std::clamp(speedDelta / kSpeedDeltaForMaxKick, 0.0f, 1.0f);
-	  float fovImpulse = kickAlpha * (std::max)(0.0f, speedChangeFovKickMax);
-	  float distImpulse = kickAlpha * (std::max)(0.0f, speedChangeDistanceKickMax);
+	  float fovImpulse = kickAlpha * std::max(0.0f, speedChangeFovKickMax);
+	  float distImpulse = kickAlpha * std::max(0.0f, speedChangeDistanceKickMax);
 
 	  springFovVelocity_ += fovImpulse * springStiffness;
 	  springDistanceVelocity_ += distImpulse * springStiffness;
@@ -836,8 +795,8 @@ float PlayerRearFollowCamera::UpdateAccelerationEffect(GameEngine::CameraState& 
 	  // ブースト後の autoSpeed への自然回復中は発火しない
 	  float decel = -speedDelta;
 	  float kickAlpha = std::clamp(decel / kSpeedDeltaForMaxKick, 0.0f, 1.0f);
-	  float fovImpulse = kickAlpha * (std::max)(0.0f, speedChangeFovKickMax);
-	  float distImpulse = kickAlpha * (std::max)(0.0f, speedChangeDistanceKickMax);
+	  float fovImpulse = kickAlpha * std::max(0.0f, speedChangeFovKickMax);
+	  float distImpulse = kickAlpha * std::max(0.0f, speedChangeDistanceKickMax);
 
 	  springFovVelocity_ -= fovImpulse * springStiffness;
 	  springDistanceVelocity_ -= distImpulse * springStiffness;
@@ -847,14 +806,12 @@ float PlayerRearFollowCamera::UpdateAccelerationEffect(GameEngine::CameraState& 
    StepSpring1D(0.0f, springStiffness, springDamping, deltaTime, springFovOffset_, springFovVelocity_);
    StepSpring1D(0.0f, springStiffness, springDamping, deltaTime, springDistanceOffset_, springDistanceVelocity_);
 
-   float effectiveAirborneBlend = (std::max)(currentAirborneBlend_, airborneResetBlend_);
-
    // 目標 FOV = 通常 FOV + 速度比例ブースト + 空中ブースト + Springキック
    float baseFov = ClampCameraFov(fovDefault);
    float targetFov =
 	  baseFov
 	  + std::max(0.0f, fovBoostMax) * boostAlpha
-	  + std::max(0.0f, airborneFovOffset) * effectiveAirborneBlend
+	  + std::max(0.0f, airborneFovOffset) * currentAirborneBlend_
 	  + springFovOffset_;
    targetFov = ClampCameraFov(targetFov);
 
@@ -939,8 +896,6 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    planetCenter_ = { 0.0f, 0.0f, 0.0f };
    followForward_ = { 0.0f, 0.0f, 1.0f };
    airborneMoveForward_ = { 0.0f, 0.0f, 1.0f };
-   playerForward_ = { 0.0f, 0.0f, 1.0f };
-   playerUp_ = { 0.0f, 1.0f, 0.0f };
 
    isAirborne_ = false;
    wasAirborneLastFrame_ = false;
@@ -950,16 +905,14 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    playerFramingBlendTarget_ = 0.0f;
    playerFramingBlendElapsed_ = 0.0f;
    playerFramingBlendDuration_ = 0.0f;
-   isAirborneResetHeld_ = false;
-   airborneResetBlend_ = 0.0f;
    currentPlanetDirectionGravityFactor_ = 0.0f;
-	jumpPlanetDirectionSpeedElapsed_ = (std::max)(0.0f, jumpPlanetDirectionDelaySeconds)
-	  + (std::max)(0.0f, jumpPlanetDirectionRestoreSeconds);
+	jumpPlanetDirectionSpeedElapsed_ = std::max(0.0f, jumpPlanetDirectionDelaySeconds)
+	  + std::max(0.0f, jumpPlanetDirectionRestoreSeconds);
    currentBackward_ = { 0.0f, 0.0f, -1.0f };
    currentPlanetBackward_ = currentBackward_;
    isPlanetBackwardInitialized_ = false;
    isInitialized_ = false;
-   landingRearLerpElapsed_ = (std::max)(0.0f, landingRearLerpRampSeconds);
+   landingRearLerpElapsed_ = std::max(0.0f, landingRearLerpRampSeconds);
    landingRearLerpStartSpeed_ = airborneForwardLerpSpeed;
    lastAirborneRearFollowSpeed_ = airborneForwardLerpSpeed;
 
@@ -1012,12 +965,12 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
 	  currentPlanetBackward_ = currentBackward_;
 	  isPlanetBackwardInitialized_ = true;
 	}
-	float jumpPlanetDirectionControlSeconds = (std::max)(0.0f, jumpPlanetDirectionDelaySeconds)
-	  + (std::max)(0.0f, jumpPlanetDirectionRestoreSeconds);
+	float jumpPlanetDirectionControlSeconds = std::max(0.0f, jumpPlanetDirectionDelaySeconds)
+	  + std::max(0.0f, jumpPlanetDirectionRestoreSeconds);
 	if (isAirborne_) {
 	  // 離陸直後はガイド方向を動かさず、待機終了後に追従速度そのものを徐々に戻す。
-	  jumpPlanetDirectionSpeedElapsed_ = (std::min)(
-		 jumpPlanetDirectionSpeedElapsed_ + (std::max)(0.0f, deltaTime),
+	  jumpPlanetDirectionSpeedElapsed_ = std::min(
+		 jumpPlanetDirectionSpeedElapsed_ + std::max(0.0f, deltaTime),
 		 jumpPlanetDirectionControlSeconds);
 	} else {
 	  jumpPlanetDirectionSpeedElapsed_ = jumpPlanetDirectionControlSeconds;
@@ -1029,34 +982,28 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    // プレイヤーの画面位置は離陸/着地それぞれの設定秒数で独立して切り替える
    UpdatePlayerFramingBlend(deltaTime);
 
-   // ③ 空中リセットの補間値を更新する
-   UpdateAirborneResetBlend(deltaTime);
-
-   // ④ 後方ベクトル（currentBackward_）を更新する
+   // ③ 後方ベクトル（currentBackward_）を更新する
    //    → 重力平面への再投影 + 角度ベースの追従を行う
    UpdateBackwardVector(up, deltaTime);
 
-   // ⑤ 空中時に近傍惑星が画角へ入るよう、eye の回り込み方向を少しずつ補間する
+   // ④ 空中時に近傍惑星が画角へ入るよう、eye の回り込み方向を少しずつ補間する
    //    → 速度方向が重力Down方向へ近いほど惑星方向への補間係数が強まる
    UpdatePlanetDirectionGuide(deltaTime);
 
-   // ⑥ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
+   // ⑤ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
    //    → FOV は state.fov へ反映済み、boostAlpha は距離ブーストに転用する
    float boostAlpha = UpdateAccelerationEffect(state, deltaTime);
 
-   // ⑦ リセット時はカメラUpもプレイヤーUpへ補間する
-   GameEngine::Vector3 viewUp = ComputeViewUp(up);
-
-   // ⑧ 加速ブーストと空中距離を加味した eye 位置を算出する
+   // ⑥ 加速ブーストと空中距離を加味した eye 位置を算出する
    //    → 加速中はカメラが後退して視野が広がり、速度感が増す
-   GameEngine::Vector3 eye = ComputeEye(viewUp, boostAlpha);
+   GameEngine::Vector3 eye = ComputeEye(up, boostAlpha);
 
-   // ⑨ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
+   // ⑦ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
    //    → 相対補間により、ピボットが移動してもカメラが前方へ突き抜けない
-   eye = SmoothEye(eye, viewUp, deltaTime);
+   eye = SmoothEye(eye, up, deltaTime);
 
-   // ⑩ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
-   ApplyLookAt(state, eye, viewUp, deltaTime);
+   // ⑧ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
+   ApplyLookAt(state, eye, up, deltaTime);
 
    wasAirborneLastFrame_ = isAirborne_;
 }
@@ -1081,7 +1028,6 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "airborneGravityDirectionBoostBias", airborneGravityDirectionBoostBias },
 	   { "airborneBlendLerpSpeed", airborneBlendLerpSpeed },
 	   { "airborneForwardLerpSpeed", airborneForwardLerpSpeed },
-	   { "airborneResetLerpSpeed", airborneResetLerpSpeed },
 	   { "rearLerpSpeed", rearLerpSpeed },
 	   { "landingRearLerpRampSeconds", landingRearLerpRampSeconds },
 	   { "gravityUpLerpSpeed", gravityUpLerpSpeed },
@@ -1108,23 +1054,23 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    distance = ReadFloat(data, "distance", distance);
    height = ReadFloat(data, "height", height);
    groundedTargetHeight = ReadFloat(data, "groundedTargetHeight", groundedTargetHeight);
-   takeoffFramingBlendSeconds = (std::max)(
+   takeoffFramingBlendSeconds = std::max(
       0.0f,
       ReadFloat(data, "takeoffFramingBlendSeconds", takeoffFramingBlendSeconds));
-   landingFramingBlendSeconds = (std::max)(
+   landingFramingBlendSeconds = std::max(
       0.0f,
       ReadFloat(data, "landingFramingBlendSeconds", landingFramingBlendSeconds));
    airborneDistanceOffset = ReadFloat(data, "airborneDistanceOffset", airborneDistanceOffset);
    airborneFovOffset = ReadFloat(data, "airborneFovOffset", airborneFovOffset);
    airbornePlanetDirectionBlend = ReadFloat(data, "airbornePlanetDirectionBlend", airbornePlanetDirectionBlend);
    airbornePlanetDirectionLerpSpeed = ReadFloat(data, "airbornePlanetDirectionLerpSpeed", airbornePlanetDirectionLerpSpeed);
-	jumpPlanetDirectionDelaySeconds = (std::max)(
+	jumpPlanetDirectionDelaySeconds = std::max(
 	  0.0f,
 	  ReadFloat(
 		 data,
 		 "jumpPlanetDirectionDelaySeconds",
 		 ReadFloat(data, "jumpPlanetDirectionRampSeconds", jumpPlanetDirectionDelaySeconds)));
-	jumpPlanetDirectionRestoreSeconds = (std::max)(
+	jumpPlanetDirectionRestoreSeconds = std::max(
 	  0.0f,
 	  ReadFloat(data, "jumpPlanetDirectionRestoreSeconds", jumpPlanetDirectionRestoreSeconds));
    enableAirbornePlanetDirectionGuide = ReadBool(data, "enableAirbornePlanetDirectionGuide", enableAirbornePlanetDirectionGuide);
@@ -1134,28 +1080,27 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    airborneGravityDirectionBoostBias = ReadFloat(data, "airborneGravityDirectionBoostBias", airborneGravityDirectionBoostBias);
    airborneBlendLerpSpeed = ReadFloat(data, "airborneBlendLerpSpeed", airborneBlendLerpSpeed);
    airborneForwardLerpSpeed = ReadFloat(data, "airborneForwardLerpSpeed", airborneForwardLerpSpeed);
-   airborneResetLerpSpeed = ReadFloat(data, "airborneResetLerpSpeed", airborneResetLerpSpeed);
    rearLerpSpeed = ReadFloat(data, "rearLerpSpeed", rearLerpSpeed);
    landingRearLerpRampSeconds = ReadFloat(data, "landingRearLerpRampSeconds", landingRearLerpRampSeconds);
    gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
    fovDefault = ClampCameraFov(ReadFloat(data, "fovDefault", fovDefault));
-   fovBoostMax = (std::max)(0.0f, ReadFloat(data, "fovBoostMax", fovBoostMax));
+   fovBoostMax = std::max(0.0f, ReadFloat(data, "fovBoostMax", fovBoostMax));
    fovLerpSpeed = ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
    distanceBoostMax = ReadFloat(data, "distanceBoostMax", distanceBoostMax);
    springStiffness = ReadFloat(data, "springStiffness", springStiffness);
    springDamping = ReadFloat(data, "springDamping", springDamping);
 	// 旧データでは同じ速度差に「加速度係数」と「ターボ最大量」を重ねていた。
 	// 最大キックに到達する速度差で両者が作る量を合算し、新しい1項目へ移行する。
-	float legacyTurboFovKickMax = (std::max)(0.0f, ReadFloat(data, "turboFovKickMax", speedChangeFovKickMax));
-	float legacyTurboDistanceKickMax = (std::max)(0.0f, ReadFloat(data, "turboDistanceKickMax", speedChangeDistanceKickMax));
-	float legacyFovKickMax = (std::min)(
-	   legacyTurboFovKickMax + (std::max)(0.0f, ReadFloat(data, "accelToFovKick", 0.0f)) * kSpeedDeltaForMaxKick,
-	   (std::max)(0.0f, fovBoostMax) + legacyTurboFovKickMax);
-	float legacyDistanceKickMax = (std::min)(
-	   legacyTurboDistanceKickMax + (std::max)(0.0f, ReadFloat(data, "accelToDistanceKick", 0.0f)) * kSpeedDeltaForMaxKick,
-	   (std::max)(0.0f, distanceBoostMax) + legacyTurboDistanceKickMax);
-	speedChangeFovKickMax = (std::max)(0.0f, ReadFloat(data, "speedChangeFovKickMax", legacyFovKickMax));
-	speedChangeDistanceKickMax = (std::max)(0.0f, ReadFloat(data, "speedChangeDistanceKickMax", legacyDistanceKickMax));
+	float legacyTurboFovKickMax = std::max(0.0f, ReadFloat(data, "turboFovKickMax", speedChangeFovKickMax));
+	float legacyTurboDistanceKickMax = std::max(0.0f, ReadFloat(data, "turboDistanceKickMax", speedChangeDistanceKickMax));
+	float legacyFovKickMax = std::min(
+	   legacyTurboFovKickMax + std::max(0.0f, ReadFloat(data, "accelToFovKick", 0.0f)) * kSpeedDeltaForMaxKick,
+	   std::max(0.0f, fovBoostMax) + legacyTurboFovKickMax);
+	float legacyDistanceKickMax = std::min(
+	   legacyTurboDistanceKickMax + std::max(0.0f, ReadFloat(data, "accelToDistanceKick", 0.0f)) * kSpeedDeltaForMaxKick,
+	   std::max(0.0f, distanceBoostMax) + legacyTurboDistanceKickMax);
+	speedChangeFovKickMax = std::max(0.0f, ReadFloat(data, "speedChangeFovKickMax", legacyFovKickMax));
+	speedChangeDistanceKickMax = std::max(0.0f, ReadFloat(data, "speedChangeDistanceKickMax", legacyDistanceKickMax));
    speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
    speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
    positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
@@ -1245,9 +1190,6 @@ void PlayerRearFollowCamera::DrawInspector() {
       ImGui::DragFloat(Tr("空中速度後方の追従速度", "Airborne Velocity-rear Follow"), &airborneForwardLerpSpeed, 0.1f, 0.0f, 30.0f);
       DrawHelp("空中でカメラの理想後方を、プレイヤー速度の反対方向へ回す速さです。カメラ位置全体の追従とは別です。",
          "How quickly the ideal rear direction turns opposite the player's velocity; separate from final camera-position smoothing.");
-      ImGui::DragFloat(Tr("空中リセット姿勢の追従速度", "Airborne Reset Follow"), &airborneResetLerpSpeed, 0.1f, 0.1f, 30.0f);
-      DrawHelp("リセット入力中にカメラ後方とUpをプレイヤー姿勢へ寄せ、入力解除時に戻す速さです。",
-         "How quickly camera rear and Up move toward the player basis while reset is held, and return after release.");
       ImGui::DragFloat(Tr("地上後方の追従速度", "Grounded Rear Follow"), &rearLerpSpeed, 0.1f, 0.0f, 30.0f);
       DrawHelp("地上でカメラの理想後方をプレイヤー正面の反対へ回す速さです。",
          "How quickly the ideal rear direction turns behind the player's facing direction on the ground.");
@@ -1305,7 +1247,6 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::Text("%s: %s", Tr("空中", "Airborne"), isAirborne_ ? Tr("はい", "true") : Tr("いいえ", "false"));
    ImGui::Text("%s: %.2f", Tr("空中ブレンド", "Airborne Blend"), currentAirborneBlend_);
    ImGui::Text("%s: %.2f", Tr("画面位置ブレンド", "Player Framing Blend"), currentPlayerFramingBlend_);
-   ImGui::Text("%s: %s / %.2f", Tr("空中リセット", "Airborne Reset"), isAirborneResetHeld_ ? Tr("押下中", "held") : Tr("なし", "none"), airborneResetBlend_);
 	ImGui::Text("%s: %.2f", Tr("惑星補間重力係数", "Planet Blend Gravity Factor"), currentPlanetDirectionGravityFactor_);
 	ImGui::Text("%s: %.2f", Tr("現在の惑星ガイド追従速度", "Current Planet Guide Follow Speed"), ComputePlanetDirectionFollowSpeed());
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("目標GravityUp", "Target GravityUp"), gravityUp_.x, gravityUp_.y, gravityUp_.z);

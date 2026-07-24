@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ShapeModule.h"
 #include "Object/Model/ModelAsset.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include <random>
 #include <cmath>
 
@@ -13,8 +14,6 @@ float RandomRange(float min, float max) {
    std::uniform_real_distribution<float> dist(min, max);
    return dist(randomEngine);
 }
-
-constexpr float kPi = 3.14159265358979323846f;
 
 Vector3 ResolveSkinnedVertexPosition(
    const ModelAsset& modelAsset,
@@ -60,8 +59,8 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 
    switch (shapeType_) {
 	  case ShapeType::Sphere: {
-		 float theta = RandomRange(0.0f, 2.0f * kPi);
-		 float phi = RandomRange(0.0f, kPi);
+		 float theta = RandomRange(0.0f, MathConstants::kTwoPi);
+		 float phi = RandomRange(0.0f, MathConstants::kPi);
 		 float r = (emitFrom_ == EmitFrom::Shell) ? radius_ : RandomRange(0.0f, radius_);
 		 localOffset.x += r * std::sin(phi) * std::cos(theta) * scale.x;
 		 localOffset.y += r * std::cos(phi) * scale.y;
@@ -69,8 +68,8 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 		 break;
 	  }
 	  case ShapeType::Hemisphere: {
-		 float theta = RandomRange(0.0f, 2.0f * kPi);
-		 float phi = RandomRange(0.0f, kPi * 0.5f);
+		 float theta = RandomRange(0.0f, MathConstants::kTwoPi);
+		 float phi = RandomRange(0.0f, MathConstants::kHalfPi);
 		 float r = (emitFrom_ == EmitFrom::Shell) ? radius_ : RandomRange(0.0f, radius_);
 		 localOffset.x += r * std::sin(phi) * std::cos(theta) * scale.x;
 		 localOffset.y += r * std::cos(phi) * scale.y;
@@ -78,8 +77,8 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 		 break;
 	  }
 	  case ShapeType::Cone: {
-		 float angle = RandomRange(0.0f, angle_ * kPi / 180.0f);
-		 float rotation = RandomRange(0.0f, 2.0f * kPi);
+		 float angle = RandomRange(0.0f, angle_ * MathConstants::kDegreesToRadians);
+		 float rotation = RandomRange(0.0f, MathConstants::kTwoPi);
 		 float distance = RandomRange(0.0f, length_);
 		 localOffset.x += distance * std::sin(angle) * std::cos(rotation) * scale.x;
 		 localOffset.y += distance * std::cos(angle) * scale.y;
@@ -105,7 +104,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 		 break;
 	  }
 	  case ShapeType::Circle: {
-		 float angle = RandomRange(0.0f, arc_ * kPi / 180.0f);
+		 float angle = RandomRange(0.0f, arc_ * MathConstants::kDegreesToRadians);
 		 float r = (emitFrom_ == EmitFrom::Edge) ? radius_ : RandomRange(0.0f, radius_);
 		 localOffset.x += r * std::cos(angle) * scale.x;
 		 localOffset.z += r * std::sin(angle) * scale.z;
@@ -117,7 +116,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 		 break;
 	  }
 	  case ShapeType::Cylinder: {
-		 const float angle = RandomRange(0.0f, 2.0f * kPi);
+		 const float angle = RandomRange(0.0f, MathConstants::kTwoPi);
 		 const float radialDistance = emitFrom_ == EmitFrom::Volume
 			? std::sqrt(RandomRange(0.0f, 1.0f)) * radius_
 			: radius_;
@@ -127,8 +126,8 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 		 break;
 	  }
 	  case ShapeType::Torus: {
-		 const float majorAngle = RandomRange(0.0f, 2.0f * kPi);
-		 const float minorAngle = RandomRange(0.0f, 2.0f * kPi);
+		 const float majorAngle = RandomRange(0.0f, MathConstants::kTwoPi);
+		 const float minorAngle = RandomRange(0.0f, MathConstants::kTwoPi);
 		 const float minorRadius = emitFrom_ == EmitFrom::Volume
 			? std::sqrt(RandomRange(0.0f, 1.0f)) * radius_
 			: radius_;
@@ -148,7 +147,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 		 if (totalTriangleCount == 0) {
 			break;
 		 }
-		 size_t selectedTriangle = (std::min)(
+		 size_t selectedTriangle = std::min(
 			static_cast<size_t>(RandomRange(0.0f, static_cast<float>(totalTriangleCount))),
 			totalTriangleCount - 1);
 		 size_t meshIndex = 0;
@@ -188,31 +187,31 @@ Vector3 ShapeModule::GetRandomEmissionDirection() const {
    switch (shapeType_) {
 	  case ShapeType::Sphere:
 	  case ShapeType::Hemisphere: {
-		 float theta = RandomRange(0.0f, 2.0f * kPi);
+		 float theta = RandomRange(0.0f, MathConstants::kTwoPi);
 		 float phi = (shapeType_ == ShapeType::Hemisphere)
-			? RandomRange(0.0f, kPi * 0.5f)
-			: RandomRange(0.0f, kPi);
+			? RandomRange(0.0f, MathConstants::kHalfPi)
+			: RandomRange(0.0f, MathConstants::kPi);
 		 direction.x = std::sin(phi) * std::cos(theta);
 		 direction.y = std::cos(phi);
 		 direction.z = std::sin(phi) * std::sin(theta);
 		 break;
 	  }
 	  case ShapeType::Cone: {
-		 float angle = RandomRange(0.0f, angle_ * kPi / 180.0f);
-		 float rotation = RandomRange(0.0f, 2.0f * kPi);
+		 float angle = RandomRange(0.0f, angle_ * MathConstants::kDegreesToRadians);
+		 float rotation = RandomRange(0.0f, MathConstants::kTwoPi);
 		 direction.x = std::sin(angle) * std::cos(rotation);
 		 direction.y = std::cos(angle);
 		 direction.z = std::sin(angle) * std::sin(rotation);
 		 break;
 	  }
 	  case ShapeType::Cylinder: {
-		 const float angle = RandomRange(0.0f, 2.0f * kPi);
+		 const float angle = RandomRange(0.0f, MathConstants::kTwoPi);
 		 direction = Vector3(std::cos(angle), 0.0f, std::sin(angle));
 		 break;
 	  }
 	  case ShapeType::Torus: {
-		 const float majorAngle = RandomRange(0.0f, 2.0f * kPi);
-		 const float minorAngle = RandomRange(0.0f, 2.0f * kPi);
+		 const float majorAngle = RandomRange(0.0f, MathConstants::kTwoPi);
+		 const float minorAngle = RandomRange(0.0f, MathConstants::kTwoPi);
 		 direction = Vector3(
 			std::cos(minorAngle) * std::cos(majorAngle),
 			std::sin(minorAngle),

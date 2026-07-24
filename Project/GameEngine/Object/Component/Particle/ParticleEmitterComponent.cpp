@@ -355,6 +355,34 @@ bool ParticleEmitterComponent::IsFinished(int idx) const {
    return slot && slot->particleSystem && slot->particleSystem->IsFinished();
 }
 
+void ParticleEmitterComponent::SetSlotWorldTransform(
+   int idx,
+   const Vector3& position,
+   const Quaternion& rotation,
+   const Vector3& scale) {
+   auto* slot = GetSlot(idx);
+   if (!slot) return;
+
+   // オーナーやボーンから切り離し、指定されたワールド変換をそのまま使う。
+   auto& config = slot->attachConfig;
+   config.followPosition = false;
+   config.followRotation = false;
+   config.followScale = false;
+   config.boneName.clear();
+   config.positionOffset = position;
+   config.rotationOffset = rotation.Normalize().ToEuler();
+   config.scaleOffset = scale;
+   config.simulationSpace = AttachmentConfig::Space::World;
+
+   // Update の実行順に依存せず、このフレームの Play より先に反映する。
+   if (slot->particleSystem) {
+	  SyncSimulationSpace(slot->particleSystem.get(), config.simulationSpace);
+	  ApplyEmitterToShapeModule(
+		 slot->particleSystem.get(),
+		 ComputeEmitterMatrix(config));
+   }
+}
+
 // ============================================================
 // エミッター行列の計算
 // ============================================================

@@ -31,7 +31,7 @@ void RaceCountdownTextComponent::Update(float deltaTime) {
    }
 
    if (raceManager_->GetState() == RaceManagerComponent::State::Countdown) {
-      const int count = (std::max)(1, static_cast<int>(std::ceil(raceManager_->GetCountdownRemaining())));
+      const int count = std::max(1, static_cast<int>(std::ceil(raceManager_->GetCountdownRemaining())));
       text->SetText(std::to_string(count));
    } else if (raceManager_->IsStartBannerVisible()) {
       text->SetText(startText_);

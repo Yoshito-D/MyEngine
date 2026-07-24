@@ -25,6 +25,25 @@ void SetEmission(GameEngine::ParticleEmitterComponent::EmitterSlot& slot, bool e
       }
    }
 }
+
+GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
+   const GameEngine::Vector3 localUp{ 0.0f, 1.0f, 0.0f };
+   const GameEngine::Vector3 surfaceNormal = normal.Normalize();
+   const float dot = localUp.Dot(surfaceNormal);
+
+   // 真下だけは回転軸が一意に決まらないため、X軸周りの180度回転を使う。
+   if (dot < -0.9999f) {
+      return { 1.0f, 0.0f, 0.0f, 0.0f };
+   }
+
+   const GameEngine::Vector3 axis = localUp.Cross(surfaceNormal);
+   return GameEngine::Quaternion{
+      axis.x,
+      axis.y,
+      axis.z,
+      1.0f + dot
+   }.Normalize();
+}
 }
 
 void VehicleEffectController::Update(float deltaTime) {
@@ -48,6 +67,15 @@ void VehicleEffectController::Update(float deltaTime) {
    const bool jumpedThisFrame = isJumping && !wasJumping_;
    const bool landedThisFrame = isGrounded && !wasGrounded_;
 
+   GameEngine::Vector3 landingContactPoint{};
+   GameEngine::Quaternion landingRotation = GameEngine::Quaternion::Identity();
+   const bool hasLandingTransform =
+	  landedThisFrame && landing && landing->HasLandingContact();
+   if (hasLandingTransform) {
+	  landingContactPoint = landing->GetLastLandingContactPoint();
+	  landingRotation = AlignUpToNormal(landing->GetLastLandingNormal());
+   }
+
    for (int slotIndex = 0; slotIndex < emitter->GetSlotCount(); ++slotIndex) {
       auto* slot = emitter->GetSlot(slotIndex);
       if (!slot) {
@@ -63,8 +91,22 @@ void VehicleEffectController::Update(float deltaTime) {
          SetEmission(*slot, true);
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "landingRing") && landedThisFrame) {
+         if (hasLandingTransform) {
+            emitter->SetSlotWorldTransform(
+               slotIndex,
+               landingContactPoint,
+               landingRotation,
+               slot->attachConfig.scaleOffset);
+         }
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "landingDust") && landedThisFrame) {
+         if (hasLandingTransform) {
+            emitter->SetSlotWorldTransform(
+               slotIndex,
+               landingContactPoint,
+               landingRotation,
+               slot->attachConfig.scaleOffset);
+         }
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "/jump.json") && jumpedThisFrame) {
          emitter->Play(slotIndex);

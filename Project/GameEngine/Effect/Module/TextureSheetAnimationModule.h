@@ -15,13 +15,13 @@ public:
 	void InitializeParticle(Particle& particle) const;
 	void UpdateAnimation(Particle& particle, float deltaTime) const;
 
-	void SetTilesX(uint32_t value) { tilesX_ = (std::max)(value, 1u); ClampSettings(); }
+	void SetTilesX(uint32_t value) { tilesX_ = std::max(value, 1u); ClampSettings(); }
 	uint32_t GetTilesX() const { return tilesX_; }
-	void SetTilesY(uint32_t value) { tilesY_ = (std::max)(value, 1u); ClampSettings(); }
+	void SetTilesY(uint32_t value) { tilesY_ = std::max(value, 1u); ClampSettings(); }
 	uint32_t GetTilesY() const { return tilesY_; }
-	void SetFrameOverTime(float value) { frameOverTime_ = (std::max)(value, 0.0f); }
+	void SetFrameOverTime(float value) { frameOverTime_ = std::max(value, 0.0f); }
 	float GetFrameOverTime() const { return frameOverTime_; }
-	void SetCycles(uint32_t value) { cycles_ = (std::max)(value, 1u); }
+	void SetCycles(uint32_t value) { cycles_ = std::max(value, 1u); }
 	uint32_t GetCycles() const { return cycles_; }
 	void SetFrameCount(uint32_t value) { frameCount_ = value; ClampSettings(); }
 	uint32_t GetFrameCount() const { return frameCount_; }

@@ -47,7 +47,7 @@ void ParticleMaterial::SetUVTransform(const Matrix4x4& transform) {
 }
 
 void ParticleMaterial::SetBrightness(float brightness) {
-   brightness_ = (std::max)(brightness, 0.0f);
+   brightness_ = std::max(brightness, 0.0f);
    if (materialData_) {
 	  materialData_->renderingParams.x = brightness_;
    }
@@ -87,7 +87,7 @@ void ParticleMaterial::SetSoftParticlesEnabled(bool enabled) {
 }
 
 void ParticleMaterial::SetSoftParticleDistance(float distance) {
-   softParticleDistance_ = (std::max)(distance, 0.0001f);
+   softParticleDistance_ = std::max(distance, 0.0001f);
    if (materialData_) {
 	  materialData_->effectParams.y = softParticleDistance_;
    }
@@ -119,10 +119,10 @@ void ParticleMaterial::SetSceneParameters(float width, float height, float nearC
 	  return;
    }
    materialData_->sceneParams = Vector4(
-	  (std::max)(width, 1.0f),
-	  (std::max)(height, 1.0f),
-	  (std::max)(nearClip, 0.0001f),
-	  (std::max)(farClip, nearClip + 0.0001f));
+	  std::max(width, 1.0f),
+	  std::max(height, 1.0f),
+	  std::max(nearClip, 0.0001f),
+	  std::max(farClip, nearClip + 0.0001f));
    materialData_->projectionParams.x = orthographic ? 1.0f : 0.0f;
 }
 }

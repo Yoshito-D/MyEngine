@@ -44,7 +44,7 @@ public:
 
    /// @brief 履歴点を追加する最小移動距離を設定する
    /// @param distance 0より大きいワールド距離
-   void SetMinDistance(float distance) { minDistance_ = (std::max)(distance, 0.0001f); }
+   void SetMinDistance(float distance) { minDistance_ = std::max(distance, 0.0001f); }
 
    /// @brief 履歴点を追加する最小移動距離を取得する
    /// @return ワールド距離
@@ -68,7 +68,7 @@ public:
 
    /// @brief 親粒子の消滅後に末尾が先端へ到達する時間を設定する
    /// @param duration 巻き取り時間（秒）
-   void SetRetractionDuration(float duration) { retractionDuration_ = (std::max)(duration, 0.0f); }
+   void SetRetractionDuration(float duration) { retractionDuration_ = std::max(duration, 0.0f); }
 
    /// @brief 親粒子の消滅後に末尾が先端へ到達する時間を取得する
    /// @return 巻き取り時間（秒）

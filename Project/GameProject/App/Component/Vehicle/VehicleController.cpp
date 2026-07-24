@@ -1,8 +1,5 @@
 #include "VehicleController.h"
 #include "Object/Object.h"
-#include "Framework/EngineContext.h"
-#include <cmath>
-#include <algorithm>
 
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
@@ -13,6 +10,7 @@ using namespace GameEngine;
 namespace App {
 
 void VehicleController::CacheComponents() {
+   input_ = GetOwner().GetComponent<VehicleInputComponent>();
    mover_ = GetOwner().GetComponent<VehicleMover>();
    jump_  = GetOwner().GetComponent<CharacterJump>();
 }
@@ -20,7 +18,7 @@ void VehicleController::CacheComponents() {
 void VehicleController::Update(float deltaTime) {
    if (!HasOwner()) { return; }
 
-   if (!mover_ || !jump_) {
+   if (!input_ || !mover_ || !jump_) {
 	  CacheComponents();
    }
 
@@ -29,20 +27,9 @@ void VehicleController::Update(float deltaTime) {
    Vector3 gravityUp = { 0.0f, 1.0f, 0.0f };
    if (gravityBody) { gravityUp = gravityBody->GetTargetUpVector(); }
 
-   // カメラ入力を GravityFollowCamera へ反映（矢印キー / 右スティック）
-   if (gravityFollowCamera_) {
-      Vector2 camInput = { 0.0f, 0.0f };
-
-      Vector2 rStick = EngineContext::GetRightStick(0);
-      if (std::abs(rStick.x) > inputDeadZone || std::abs(rStick.y) > inputDeadZone) {
-         camInput = rStick;
-      }
-
-      if (EngineContext::IsKeyPressed(KeyCode::Right)) { camInput.x += 1.0f; }
-      if (EngineContext::IsKeyPressed(KeyCode::Left))  { camInput.x -= 1.0f; }
-      if (EngineContext::IsKeyPressed(KeyCode::Up))    { camInput.y -= 1.0f; }
-      if (EngineContext::IsKeyPressed(KeyCode::Down))  { camInput.y += 1.0f; }
-
+   // 制御側は物理キーを知らず、意味付け済みの入力だけを消費する。
+   if (gravityFollowCamera_ && input_) {
+      const Vector2 camInput = input_->GetCameraLookInput();
       if (camInput.x != 0.0f || camInput.y != 0.0f) {
          constexpr float kCamRotateScale = 150.0f;
          Vector2 delta = { camInput.x * kCamRotateScale * deltaTime,
@@ -55,57 +42,18 @@ void VehicleController::Update(float deltaTime) {
    bool isGrounded = !(jump_ && jump_->IsJumping());
 
    // ジャンプ入力
-   if (jump_ && CollectJumpInput()) {
+   if (jump_ && input_ && input_->IsJumpTriggered()) {
 	  jump_->Jump(gravityUp);
    }
 
    // 移動・姿勢入力を VehicleMover へ委譲
    if (mover_) {
-	  float steerInput = CollectSteerInput();
-	  float pitchInput = CollectPitchInput();
-	  bool  driftInput = CollectDriftInput();
-	  mover_->ApplyMovement(steerInput, pitchInput, driftInput, isGrounded, gravityUp, deltaTime);
+	  const float steerInput = input_ ? input_->GetSteerInput() : 0.0f;
+	  const float rollInput = input_ ? input_->GetRollInput() : 0.0f;
+	  const float pitchInput = input_ ? input_->GetPitchInput() : 0.0f;
+	  const bool driftInput = input_ && input_->IsDriftHeld();
+	  mover_->ApplyMovement(steerInput, rollInput, pitchInput, driftInput, isGrounded, gravityUp, deltaTime);
    }
-}
-
-float VehicleController::CollectSteerInput() const {
-   float input = 0.0f;
-   if (EngineContext::IsKeyPressed(KeyCode::A)) { input -= 1.0f; }
-   if (EngineContext::IsKeyPressed(KeyCode::D)) { input += 1.0f; }
-
-   // 左スティック X が有効なら優先採用
-   Vector2 stick = EngineContext::GetLeftStick(0);
-   if (std::abs(stick.x) > inputDeadZone) { input = stick.x; }
-
-   return std::clamp(input, -1.0f, 1.0f);
-}
-
-float VehicleController::CollectPitchInput() const {
-   float input = 0.0f;
-   if (EngineContext::IsKeyPressed(KeyCode::W)) { input += 1.0f; }
-   if (EngineContext::IsKeyPressed(KeyCode::S)) { input -= 1.0f; }
-
-   // 左スティック Y が有効なら優先採用
-   Vector2 stick = EngineContext::GetLeftStick(0);
-   if (std::abs(stick.y) > inputDeadZone) { input = stick.y; }
-
-   return std::clamp(input, -1.0f, 1.0f);
-}
-
-bool VehicleController::CollectJumpInput() const {
-   return EngineContext::IsKeyTriggered(KeyCode::Space) || EngineContext::IsGamePadButtonTriggered(GamePadButton::A, 0);
-}
-
-bool VehicleController::CollectDriftInput() const {
-   // Q キー押し続けでドリフト入力とする。
-   // IsKeyPressed は押し続けている間 true を返すため、
-   // ButtonMode のドリフトは「押している間だけ維持」という自然な操作感になる。
-   if (EngineContext::IsKeyPressed(KeyCode::Q)) { return true; }
-
-   // ゲームパッドの LB ボタン（LeftShoulder）が押されている場合もドリフト入力とする。
-   if (EngineContext::IsGamePadButtonPressed(GamePadButton::LeftShoulder, 0)) { return true; }
-
-   return false;
 }
 
 #ifdef USE_IMGUI
@@ -114,18 +62,16 @@ void VehicleController::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
    if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
-   ImGui::DragFloat(Tr("入力デッドゾーン", "Input DeadZone"), &inputDeadZone, 0.01f, 0.0f, 1.0f);
+   ImGui::TextUnformatted(Tr("入力は VehicleInputComponent から取得します", "Input is provided by VehicleInputComponent"));
 }
 #endif
 
 nlohmann::json VehicleController::Serialize() const {
-   nlohmann::json json;
-   json["inputDeadZone"] = inputDeadZone;
-   return json;
+   return nlohmann::json::object();
 }
 
 void VehicleController::Deserialize(const nlohmann::json& data) {
-   if (data.contains("inputDeadZone")) { inputDeadZone = data["inputDeadZone"]; }
+   (void)data;
 }
 
 } // namespace App

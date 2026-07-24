@@ -4,6 +4,7 @@
 #include "Graphics/Texture.h"
 #include "Utility/VectorMath.h"
 #include "Framework/EngineContext.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include "VectorMath.h"
 
 #ifdef USE_IMGUI
@@ -15,7 +16,6 @@
 #include <vector>
 #include <cstring>
 #include <cmath>
-#include <numbers>
 #endif
 
 namespace ParticleSystemEditor {
@@ -92,9 +92,9 @@ void DrawShapeEllipsoid(const Vector3& center, const Quaternion& rotation, const
    const float rx = radius * scale.x;
    const float ry = radius * scale.y;
    const float rz = radius * scale.z;
-   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), rx, ry, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
-   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), rx, rz, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
-   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), ry, rz, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
+   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), rx, ry, 0.0f, GameEngine::MathConstants::kTwoPi, color, false);
+   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), rx, rz, 0.0f, GameEngine::MathConstants::kTwoPi, color, false);
+   DrawShapeEllipse(center, rotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), ry, rz, 0.0f, GameEngine::MathConstants::kTwoPi, color, false);
 }
 
 void DrawShapeHemisphere(const Vector3& center, const Quaternion& rotation, const Vector3& scale, float radius, const Vector4& color) {
@@ -103,18 +103,18 @@ void DrawShapeHemisphere(const Vector3& center, const Quaternion& rotation, cons
    constexpr int kSegments = 16;
 
    for (int ring = 1; ring <= kRings; ++ring) {
-	  float phi = (std::numbers::pi_v<float> * 0.5f) * static_cast<float>(ring) / static_cast<float>(kRings);
+	  float phi = GameEngine::MathConstants::kHalfPi * static_cast<float>(ring) / static_cast<float>(kRings);
 	  float y = radius * std::cos(phi) * scale.y;
 	  float ringRadius = radius * std::sin(phi);
-	  DrawShapeEllipse(center, rotation, Vector3(0.0f, y, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), ringRadius * scale.x, ringRadius * scale.z, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
+	  DrawShapeEllipse(center, rotation, Vector3(0.0f, y, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), ringRadius * scale.x, ringRadius * scale.z, 0.0f, GameEngine::MathConstants::kTwoPi, color, false);
    }
 
    for (int meridian = 0; meridian < kMeridians; ++meridian) {
-	  float theta = 2.0f * std::numbers::pi_v<float> * static_cast<float>(meridian) / static_cast<float>(kMeridians);
+	  float theta = GameEngine::MathConstants::kTwoPi * static_cast<float>(meridian) / static_cast<float>(kMeridians);
 	  Vector3 prev(0.0f, radius * scale.y, 0.0f);
 
 	  for (int i = 1; i <= kSegments; ++i) {
-		 float phi = (std::numbers::pi_v<float> * 0.5f) * static_cast<float>(i) / static_cast<float>(kSegments);
+		 float phi = GameEngine::MathConstants::kHalfPi * static_cast<float>(i) / static_cast<float>(kSegments);
 		 Vector3 localPoint(
 			radius * std::sin(phi) * std::cos(theta) * scale.x,
 			radius * std::cos(phi) * scale.y,
@@ -152,16 +152,16 @@ void DrawShapeBox(const Vector3& center, const Quaternion& rotation, const Vecto
 
 void DrawShapeCone(const Vector3& center, const Quaternion& rotation, const Vector3& scale, float angleDegrees, float length, const Vector4& color) {
    constexpr int kSideLines = 8;
-   const float angle = angleDegrees * std::numbers::pi_v<float> / 180.0f;
+   const float angle = angleDegrees * GameEngine::MathConstants::kDegreesToRadians;
    const float baseY = std::cos(angle) * length * scale.y;
    const float baseRadiusX = std::sin(angle) * length * scale.x;
    const float baseRadiusZ = std::sin(angle) * length * scale.z;
    const Vector3 localBaseCenter(0.0f, baseY, 0.0f);
 
-   DrawShapeEllipse(center, rotation, localBaseCenter, Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), baseRadiusX, baseRadiusZ, 0.0f, 2.0f * std::numbers::pi_v<float>, color, false);
+   DrawShapeEllipse(center, rotation, localBaseCenter, Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), baseRadiusX, baseRadiusZ, 0.0f, GameEngine::MathConstants::kTwoPi, color, false);
 
    for (int i = 0; i < kSideLines; ++i) {
-	  float theta = 2.0f * std::numbers::pi_v<float> * static_cast<float>(i) / static_cast<float>(kSideLines);
+	  float theta = GameEngine::MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(kSideLines);
 	  Vector3 basePoint(baseRadiusX * std::cos(theta), baseY, baseRadiusZ * std::sin(theta));
 	  DrawShapeLine(Vector3(0.0f, 0.0f, 0.0f), basePoint, center, rotation, color);
    }
@@ -461,24 +461,24 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			ImGui::Checkbox(ScopedLabel(Tr("サブエミッター", "Sub Emitters"), "ParticleSubEmitters_" + particleSystemName).c_str(), &subEmitters.enabled);
 			if (subEmitters.enabled) {
 			   char deathPath[512]{};
-			   std::memcpy(deathPath, subEmitters.spawnOnDeathPath.c_str(), (std::min)(subEmitters.spawnOnDeathPath.size(), sizeof(deathPath) - 1));
+			   std::memcpy(deathPath, subEmitters.spawnOnDeathPath.c_str(), std::min(subEmitters.spawnOnDeathPath.size(), sizeof(deathPath) - 1));
 			   if (ImGui::InputText(ScopedLabel(Tr("死亡時エフェクト", "Spawn On Death"), "ParticleDeathEmitter_" + particleSystemName).c_str(), deathPath, sizeof(deathPath))) {
 				  subEmitters.spawnOnDeathPath = deathPath;
 			   }
 			   char updatePath[512]{};
-			   std::memcpy(updatePath, subEmitters.spawnOnUpdatePath.c_str(), (std::min)(subEmitters.spawnOnUpdatePath.size(), sizeof(updatePath) - 1));
+			   std::memcpy(updatePath, subEmitters.spawnOnUpdatePath.c_str(), std::min(subEmitters.spawnOnUpdatePath.size(), sizeof(updatePath) - 1));
 			   if (ImGui::InputText(ScopedLabel(Tr("更新時エフェクト", "Spawn On Update"), "ParticleUpdateEmitter_" + particleSystemName).c_str(), updatePath, sizeof(updatePath))) {
 				  subEmitters.spawnOnUpdatePath = updatePath;
 			   }
 			   char collisionPath[512]{};
-			   std::memcpy(collisionPath, subEmitters.spawnOnCollisionPath.c_str(), (std::min)(subEmitters.spawnOnCollisionPath.size(), sizeof(collisionPath) - 1));
+			   std::memcpy(collisionPath, subEmitters.spawnOnCollisionPath.c_str(), std::min(subEmitters.spawnOnCollisionPath.size(), sizeof(collisionPath) - 1));
 			   if (ImGui::InputText(ScopedLabel(Tr("衝突時エフェクト", "Spawn On Collision"), "ParticleCollisionEmitter_" + particleSystemName).c_str(), collisionPath, sizeof(collisionPath))) {
 				  subEmitters.spawnOnCollisionPath = collisionPath;
 			   }
 			   ImGui::DragFloat(ScopedLabel(Tr("更新発生間隔", "Update Spawn Interval"), "ParticleSubInterval_" + particleSystemName).c_str(), &subEmitters.updateInterval, 0.01f, 0.001f, 60.0f);
 			   int maxEvents = static_cast<int>(subEmitters.maxEventsPerFrame);
 			   if (ImGui::DragInt(ScopedLabel(Tr("毎フレーム上限", "Events Per Frame"), "ParticleSubLimit_" + particleSystemName).c_str(), &maxEvents, 1.0f, 1, 1024)) {
-				  subEmitters.maxEventsPerFrame = static_cast<uint32_t>((std::max)(maxEvents, 1));
+				  subEmitters.maxEventsPerFrame = static_cast<uint32_t>(std::max(maxEvents, 1));
 			   }
 			   if (!subEmitters.spawnOnCollisionPath.empty()) {
 				  ImGui::DragFloat3(ScopedLabel(Tr("衝突平面法線", "Collision Plane Normal"), "ParticleCollisionNormal_" + particleSystemName).c_str(), &subEmitters.collisionPlaneNormal.x, 0.01f, -1.0f, 1.0f);
@@ -528,7 +528,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 
 			   int toonSteps = static_cast<int>(particleMaterial->GetToonSteps());
 			   if (ImGui::DragInt(ScopedLabel(Tr("トゥーン階調 (0=無効)", "Toon Steps (0=Off)"), "ParticleToonSteps_" + particleSystemName).c_str(), &toonSteps, 1.0f, 0, 16)) {
-				  particleMaterial->SetToonSteps(static_cast<uint32_t>((std::max)(toonSteps, 0)));
+				  particleMaterial->SetToonSteps(static_cast<uint32_t>(std::max(toonSteps, 0)));
 			   }
 
 			   bool softParticles = particleMaterial->IsSoftParticlesEnabled();
@@ -701,9 +701,9 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			   float radiusX = shapeModule->GetRadius() * scaleVec.x;
 			   float radiusZ = shapeModule->GetRadius() * scaleVec.z;
 			   float arc = shapeModule->GetArc();
-			   float arcRadians = arc * std::numbers::pi_v<float> / 180.0f;
+			   float arcRadians = arc * GameEngine::MathConstants::kDegreesToRadians;
 			   if (arc >= 360.0f) {
-				  DrawShapeEllipse(center, shapeRotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), radiusX, radiusZ, 0.0f, 2.0f * std::numbers::pi_v<float>, shapeColor, false);
+				  DrawShapeEllipse(center, shapeRotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), radiusX, radiusZ, 0.0f, GameEngine::MathConstants::kTwoPi, shapeColor, false);
 			   } else {
 				  DrawShapeEllipse(center, shapeRotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), radiusX, radiusZ, 0.0f, arcRadians, shapeColor, true);
 			   }

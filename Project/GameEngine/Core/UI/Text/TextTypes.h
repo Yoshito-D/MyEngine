@@ -48,17 +48,6 @@ struct TextStyle {
    int32_t sortingOrder = 0;
 };
 
-/// @brief FreeTypeから取り出した1グリフ分のCPUビットマップ
-struct RasterizedGlyph {
-   std::vector<uint8_t> pixels;
-   uint32_t width = 0;
-   uint32_t height = 0;
-   int32_t bitmapLeft = 0;
-   int32_t bitmapTop = 0;
-   float advanceX = 0.0f;
-   uint32_t glyphIndex = 0;
-};
-
 /// @brief グリフアトラスに登録された文字の描画情報
 struct GlyphInfo {
    Vector2 uvMin = { 0.0f, 0.0f };

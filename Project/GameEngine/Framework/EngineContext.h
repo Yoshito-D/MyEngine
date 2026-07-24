@@ -8,6 +8,7 @@
 #include <memory>
 #include "GraphicsDevice.h"
 #include "Input.h"
+#include "InputActionService.h"
 #include "Audio.h"
 #include "SceneManager.h"
 #include "Renderer.h"
@@ -36,6 +37,7 @@ private:
    void Initialize(
 	  GraphicsDevice* graphicsDevice,
 	  Input* input,
+	  InputActionService* inputActionService,
 	  Audio* audio,
 	  Renderer* renderer,
 	  AssetManager* assetManager,
@@ -46,6 +48,7 @@ private:
 
    void SetGraphicsDevice(GraphicsDevice* graphicsDevice);
    void SetInput(Input* input);
+   void SetInputActionService(InputActionService* inputActionService);
    void SetAudio(Audio* audio);
    void SetRenderer(Renderer* renderer);
    void SetAssetManager(AssetManager* assetManager);
@@ -242,6 +245,16 @@ public:
    /// @param rightMotor 右モーターの強さ（0.0f～1.0f）
    static void SetVibration(uint32_t index, float leftMotor, float rightMotor);
 
+   /// @brief 物理入力から変換済みの入力アクション状態を取得する
+   /// @param actionMap アクションマップ名
+   /// @param actionId 安定したアクションID
+   /// @param playerSlot プレイヤースロット
+   /// @return 指定アクションの現在フレーム状態。未登録時はゼロ状態
+   static const InputActionState& GetInputActionState(
+      const std::string& actionMap,
+      const std::string& actionId,
+      uint32_t playerSlot = 0);
+
    //================================================================
    // シーン切り換え
    //================================================================
@@ -350,12 +363,6 @@ public:
    /// @brief ロード済みテクスチャ名一覧を取得する
    /// @return テクスチャ名のリスト
    static std::vector<std::string> GetTextureNames();
-
-   /// @brief TrueType/OpenTypeフォントを読み込む
-   /// @param fontPath .ttfまたは.otfファイルのパス
-   /// @param fontId UIテキストから参照するID
-   /// @return 読み込みに成功した場合はtrue
-   static bool LoadFont(const std::string& fontPath, const std::string& fontId);
 
    /// @brief 読み込み済みフォントID一覧を取得する
    /// @return フォントIDのリスト

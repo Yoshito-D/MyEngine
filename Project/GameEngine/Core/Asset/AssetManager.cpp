@@ -43,13 +43,9 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    textureManager_->LoadTexturesFromDirectory("resources/engine/textures", "resources");
    textureManager_->LoadTexturesFromDirectory("resources/game/textures", "resources");
    fontManager_->Initialize(device);
-   fontManager_->LoadFontsFromDirectory("resources/engine/font");
    fontManager_->LoadMsdfFontsFromDirectory("resources/engine/font");
-   fontManager_->LoadFontsFromDirectory("resources/engine/fonts");
    fontManager_->LoadMsdfFontsFromDirectory("resources/engine/fonts");
-   fontManager_->LoadFontsFromDirectory("resources/game/font");
    fontManager_->LoadMsdfFontsFromDirectory("resources/game/font");
-   fontManager_->LoadFontsFromDirectory("resources/game/fonts");
    fontManager_->LoadMsdfFontsFromDirectory("resources/game/fonts");
    soundManager_->Initialize(audio);
 }

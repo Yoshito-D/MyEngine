@@ -301,17 +301,15 @@ void LineRenderer::DrawSphere(const Vector3& center, float radius, const Vector4
 
    const int segments = 16;
    const int rings = 8;
-   const float pi = 3.14159265358979323846f;
-
    // 経度方向のライン
    for (int i = 0; i <= rings; ++i) {
-	  float theta = pi * static_cast<float>(i) / static_cast<float>(rings);
+	  float theta = MathConstants::kPi * static_cast<float>(i) / static_cast<float>(rings);
 	  float sinTheta = std::sin(theta);
 	  float cosTheta = std::cos(theta);
 
 	  for (int j = 0; j < segments; ++j) {
-		 float phi1 = 2.0f * pi * static_cast<float>(j) / static_cast<float>(segments);
-		 float phi2 = 2.0f * pi * static_cast<float>(j + 1) / static_cast<float>(segments);
+		 float phi1 = MathConstants::kTwoPi * static_cast<float>(j) / static_cast<float>(segments);
+		 float phi2 = MathConstants::kTwoPi * static_cast<float>(j + 1) / static_cast<float>(segments);
 
 		 Vector3 p1(
 			center.x + radius * sinTheta * std::cos(phi1),
@@ -331,11 +329,11 @@ void LineRenderer::DrawSphere(const Vector3& center, float radius, const Vector4
 
    // 緯度方向のライン
    for (int j = 0; j < segments; ++j) {
-	  float phi = 2.0f * pi * static_cast<float>(j) / static_cast<float>(segments);
+	  float phi = MathConstants::kTwoPi * static_cast<float>(j) / static_cast<float>(segments);
 
 	  for (int i = 0; i < rings; ++i) {
-		 float theta1 = pi * static_cast<float>(i) / static_cast<float>(rings);
-		 float theta2 = pi * static_cast<float>(i + 1) / static_cast<float>(rings);
+		 float theta1 = MathConstants::kPi * static_cast<float>(i) / static_cast<float>(rings);
+		 float theta2 = MathConstants::kPi * static_cast<float>(i + 1) / static_cast<float>(rings);
 
 		 Vector3 p1(
 			center.x + radius * std::sin(theta1) * std::cos(phi),
@@ -359,17 +357,15 @@ void LineRenderer::DrawHemisphere(const Vector3& center, float radius, const Vec
 
    const int segments = 16;
    const int rings = 8;
-   const float pi = 3.14159265358979323846f;
-
    // 半球のみ描画（theta: 0 to π/2）
    for (int i = 0; i <= rings; ++i) {
-	  float theta = pi * 0.5f * static_cast<float>(i) / static_cast<float>(rings);
+	  float theta = MathConstants::kHalfPi * static_cast<float>(i) / static_cast<float>(rings);
 	  float sinTheta = std::sin(theta);
 	  float cosTheta = std::cos(theta);
 
 	  for (int j = 0; j < segments; ++j) {
-		 float phi1 = 2.0f * pi * static_cast<float>(j) / static_cast<float>(segments);
-		 float phi2 = 2.0f * pi * static_cast<float>(j + 1) / static_cast<float>(segments);
+		 float phi1 = MathConstants::kTwoPi * static_cast<float>(j) / static_cast<float>(segments);
+		 float phi2 = MathConstants::kTwoPi * static_cast<float>(j + 1) / static_cast<float>(segments);
 
 		 Vector3 p1(
 			center.x + radius * sinTheta * std::cos(phi1),
@@ -395,8 +391,6 @@ void LineRenderer::DrawCone(const Vector3& apex, float radius, float height, con
    if (!camera) return;
 
    const int segments = 16;
-   const float pi = 3.14159265358979323846f;
-
    Vector3 dir = direction.Normalize();
    Vector3 base = apex + dir * height;
 
@@ -407,8 +401,8 @@ void LineRenderer::DrawCone(const Vector3& apex, float radius, float height, con
 
    // 円周上の点を計算して頂点から線を引く
    for (int i = 0; i < segments; ++i) {
-	  float angle1 = 2.0f * pi * static_cast<float>(i) / static_cast<float>(segments);
-	  float angle2 = 2.0f * pi * static_cast<float>(i + 1) / static_cast<float>(segments);
+	  float angle1 = MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(segments);
+	  float angle2 = MathConstants::kTwoPi * static_cast<float>(i + 1) / static_cast<float>(segments);
 
 	  Vector3 p1 = base + right * (radius * std::cos(angle1)) + upVec * (radius * std::sin(angle1));
 	  Vector3 p2 = base + right * (radius * std::cos(angle2)) + upVec * (radius * std::sin(angle2));
@@ -462,8 +456,6 @@ void LineRenderer::DrawCircle(const Vector3& center, float radius, const Vector3
    if (!camera) return;
 
    const int segments = 32;
-   const float pi = 3.14159265358979323846f;
-
    Vector3 n = normal.Normalize();
 
    // 法線に垂直な2つのベクトルを作成
@@ -473,8 +465,8 @@ void LineRenderer::DrawCircle(const Vector3& center, float radius, const Vector3
 
    // 円を描画
    for (int i = 0; i < segments; ++i) {
-	  float angle1 = 2.0f * pi * static_cast<float>(i) / static_cast<float>(segments);
-	  float angle2 = 2.0f * pi * static_cast<float>(i + 1) / static_cast<float>(segments);
+	  float angle1 = MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(segments);
+	  float angle2 = MathConstants::kTwoPi * static_cast<float>(i + 1) / static_cast<float>(segments);
 
 	  Vector3 p1 = center + right * (radius * std::cos(angle1)) + upVec * (radius * std::sin(angle1));
 	  Vector3 p2 = center + right * (radius * std::cos(angle2)) + upVec * (radius * std::sin(angle2));

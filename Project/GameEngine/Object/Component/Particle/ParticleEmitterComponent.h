@@ -118,6 +118,17 @@ public:
    bool IsPlaying(int slotIndex) const;
    bool IsFinished(int slotIndex) const;
 
+   /// @brief スロットのエミッターを指定ワールド座標に固定する
+   /// @param slotIndex 対象スロット
+   /// @param position ワールド位置
+   /// @param rotation ワールド回転
+   /// @param scale ワールドスケール
+   void SetSlotWorldTransform(
+	  int slotIndex,
+	  const Vector3& position,
+	  const Quaternion& rotation,
+	  const Vector3& scale = { 1.0f, 1.0f, 1.0f });
+
    // ── コールバック（全スロット終了時） ──────────────
    /// @brief 全スロットが終了したとき（IsFinished() が true になったとき）に呼ばれる
    std::function<void()> onFinished;
