@@ -32,7 +32,7 @@ public:
    const RandomVector3& GetForceRange() const { return force_; }
 
    /// @brief 速度に比例する空気抵抗係数を設定する
-   void SetDrag(float drag) { drag_ = RandomFloat((std::max)(drag, 0.0f)); }
+   void SetDrag(float drag) { drag_ = RandomFloat(std::max(drag, 0.0f)); }
 
    /// @brief 空気抵抗係数を取得する
    float GetDrag() const { return drag_.minValue; }
@@ -64,13 +64,13 @@ public:
 
    /// @brief 作用半径を設定する
    /// @param radius 0なら距離制限なし
-   void SetAttractorRadius(float radius) { attractorRadius_ = (std::max)(radius, 0.0f); }
+   void SetAttractorRadius(float radius) { attractorRadius_ = std::max(radius, 0.0f); }
 
    /// @brief 作用半径を取得する
    float GetAttractorRadius() const { return attractorRadius_; }
 
    /// @brief 距離減衰指数を設定する
-   void SetAttractorFalloff(float falloff) { attractorFalloff_ = (std::max)(falloff, 0.0f); }
+   void SetAttractorFalloff(float falloff) { attractorFalloff_ = std::max(falloff, 0.0f); }
 
    /// @brief 距離減衰指数を取得する
    float GetAttractorFalloff() const { return attractorFalloff_; }

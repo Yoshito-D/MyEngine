@@ -85,9 +85,9 @@ void UITextComponent::SetText(std::u8string_view text) {
 
 void UITextComponent::SetStyle(const TextStyle& style) {
    TextStyle sanitizedStyle = style;
-   sanitizedStyle.fontSize = (std::max)(sanitizedStyle.fontSize, 1u);
-   sanitizedStyle.lineSpacing = (std::max)(sanitizedStyle.lineSpacing, 0.1f);
-   sanitizedStyle.color.w = (std::clamp)(sanitizedStyle.color.w, 0.0f, 1.0f);
+   sanitizedStyle.fontSize = std::max(sanitizedStyle.fontSize, 1u);
+   sanitizedStyle.lineSpacing = std::max(sanitizedStyle.lineSpacing, 0.1f);
+   sanitizedStyle.color.w = std::clamp(sanitizedStyle.color.w, 0.0f, 1.0f);
 
    const bool layoutChanged =
       style_.fontId != sanitizedStyle.fontId ||
@@ -222,7 +222,7 @@ void UITextComponent::DrawInspector() {
 
    int fontSize = static_cast<int>(editedStyle.fontSize);
    ImGui::DragInt(ImGuiHelper::Localize({ "文字サイズ", "Font Size" }), &fontSize, 1.0f, 1, 512);
-   editedStyle.fontSize = static_cast<uint32_t>((std::max)(fontSize, 1));
+   editedStyle.fontSize = static_cast<uint32_t>(std::max(fontSize, 1));
    ImGui::ColorEdit4(ImGuiHelper::Localize({ "文字色", "Color" }), &editedStyle.color.x);
    ImGui::DragFloat2(ImGuiHelper::Localize({ "ピボット", "Pivot" }), &editedStyle.pivot.x, 0.01f, 0.0f, 1.0f);
    ImGui::DragFloat(ImGuiHelper::Localize({ "最大幅", "Max Width" }), &editedStyle.maxWidth, 1.0f, 0.0f, 10000.0f);

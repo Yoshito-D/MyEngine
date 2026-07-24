@@ -4,11 +4,11 @@
 #include "GravityFollowCamera.h"
 #include "PlanetLeashCamera.h"
 #include "PlayerRearFollowCamera.h"
-#include "Framework/EngineContext.h"
 #include "Object/Object.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
 #include "Scene/SceneWorld.h"
 #include "../Vehicle/VehicleController.h"
+#include "../Vehicle/VehicleInputComponent.h"
 #include <algorithm>
 
 #ifdef USE_IMGUI
@@ -23,13 +23,13 @@ void CameraModeSwitcher::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    for (const auto& cameraId : cameraIds_) {
       cameras_.push_back(sceneWorld.FindVirtualCamera(cameraId));
    }
-   currentIndex_ = cameras_.empty() ? 0 : (std::min)(initialIndex_, cameras_.size() - 1);
+   currentIndex_ = cameras_.empty() ? 0 : std::min(initialIndex_, cameras_.size() - 1);
    ApplyMode();
 }
 
-void CameraModeSwitcher::Update(float deltaTime) {
-   (void)deltaTime;
-   if (cameras_.empty() || !GameEngine::EngineContext::IsKeyTriggered(GameEngine::KeyCode::Tab)) {
+void CameraModeSwitcher::Update(float) {
+   const auto* vehicleInput = HasOwner() ? GetOwner().GetComponent<VehicleInputComponent>() : nullptr;
+   if (cameras_.empty() || !vehicleInput || !vehicleInput->IsNextCameraTriggered()) {
       return;
    }
    currentIndex_ = (currentIndex_ + 1) % cameras_.size();

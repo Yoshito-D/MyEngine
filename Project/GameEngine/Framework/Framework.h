@@ -5,6 +5,7 @@
 #include "AssetManager.h"
 #include "Renderer.h"
 #include "Input.h"
+#include "InputActionService.h"
 #include "Audio.h"
 #include "Utility/MathUtils.h"
 #include "TimeProfiler.h"
@@ -46,6 +47,7 @@ private:
    std::unique_ptr<GameEngine::GraphicsDevice> device_ = nullptr;
    std::unique_ptr<GameEngine::Renderer> renderer_ = nullptr;
    std::unique_ptr<GameEngine::Input> input_ = nullptr;
+   std::unique_ptr<GameEngine::InputActionService> inputActionService_ = nullptr;
    std::unique_ptr<GameEngine::Audio> audio_ = nullptr;
    std::unique_ptr<GameEngine::AssetManager> assetManager_ = nullptr;
    std::unique_ptr<GameEngine::TimeProfiler> timeProfiler_ = nullptr;

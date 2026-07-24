@@ -5,6 +5,7 @@
 #include "../Gravity/GravityBody.h"
 #include "../Character/CharacterJump.h"
 #include "../Camera/GravityFollowCamera.h"
+#include "VehicleInputComponent.h"
 #include "VehicleMover.h"
 
 namespace App {
@@ -41,27 +42,14 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-public:
-   /// @brief スティック入力デッドゾーン
-   float inputDeadZone = 0.3f;
-
 private:
-   /// @brief A/D + 左スティック X からステアリング入力（-1〜+1）を収集する
-   float CollectSteerInput() const;
-
-   /// @brief W/S + 左スティック Y からピッチ入力（-1〜+1）を収集する
-   float CollectPitchInput() const;
-
-   /// @brief ジャンプ入力を収集する
-   bool  CollectJumpInput()  const;
-
-   /// @brief ドリフト入力を収集する（Q キー / ゲームパッド LB）
-   bool  CollectDriftInput() const;
-
    /// @brief 依存コンポーネント参照をキャッシュする
    void  CacheComponents();
 
 private:
+   /// @brief ゲーム固有入力コンポーネント
+   VehicleInputComponent* input_ = nullptr;
+
    /// @brief 車移動コンポーネント
    VehicleMover*  mover_ = nullptr;
 

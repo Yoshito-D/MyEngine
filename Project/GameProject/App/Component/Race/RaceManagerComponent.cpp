@@ -31,7 +31,7 @@ void RaceManagerComponent::Update(float deltaTime) {
       Restart();
    }
 
-   const float safeDeltaTime = (std::max)(deltaTime, 0.0f);
+   const float safeDeltaTime = std::max(deltaTime, 0.0f);
    switch (state_) {
       case State::Countdown:
          countdownRemaining_ -= safeDeltaTime;
@@ -41,7 +41,7 @@ void RaceManagerComponent::Update(float deltaTime) {
          break;
       case State::Running:
          elapsedTime_ += static_cast<double>(safeDeltaTime);
-         startBannerRemaining_ = (std::max)(startBannerRemaining_ - safeDeltaTime, 0.0f);
+         startBannerRemaining_ = std::max(startBannerRemaining_ - safeDeltaTime, 0.0f);
          break;
       case State::Finished:
          if (!restartRequested_ && !nextScene_.empty() && !sceneChangeRequested_) {
@@ -236,10 +236,10 @@ void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
       }
    }
    if (data.contains("countdownSeconds") && data.at("countdownSeconds").is_number()) {
-      countdownSeconds_ = (std::max)(data.at("countdownSeconds").get<float>(), 0.0f);
+      countdownSeconds_ = std::max(data.at("countdownSeconds").get<float>(), 0.0f);
    }
    if (data.contains("startTextDuration") && data.at("startTextDuration").is_number()) {
-      startTextDuration_ = (std::max)(data.at("startTextDuration").get<float>(), 0.0f);
+      startTextDuration_ = std::max(data.at("startTextDuration").get<float>(), 0.0f);
    }
    if (data.contains("checkpointCount") && data.at("checkpointCount").is_number_unsigned()) {
       checkpointCount_ = data.at("checkpointCount").get<size_t>();
@@ -269,7 +269,7 @@ void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
       nextScene_ = data.at("nextScene").get<std::string>();
    }
    if (data.contains("finishDelay") && data.at("finishDelay").is_number()) {
-      finishDelay_ = (std::max)(data.at("finishDelay").get<float>(), 0.0f);
+      finishDelay_ = std::max(data.at("finishDelay").get<float>(), 0.0f);
    }
 }
 

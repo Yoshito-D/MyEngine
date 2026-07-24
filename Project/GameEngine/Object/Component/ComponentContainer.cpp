@@ -158,7 +158,7 @@ std::string ComponentContainer::DrawInspector() {
       const ImGuiStyle& style = ImGui::GetStyle();
       const float removeButtonWidth = ImGui::CalcTextSize("X").x + style.FramePadding.x * 2.0f;
       ImGui::SetCursorScreenPos(ImVec2(
-         headerPosition.x + (std::max)(headerWidth - removeButtonWidth - style.FramePadding.x, 0.0f),
+         headerPosition.x + std::max(headerWidth - removeButtonWidth - style.FramePadding.x, 0.0f),
          headerPosition.y + 1.0f));
       if (ImGui::SmallButton("X##RemoveComponent")) {
          pendingRemovedComponentType = component->GetTypeName();

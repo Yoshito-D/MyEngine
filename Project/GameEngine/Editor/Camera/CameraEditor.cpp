@@ -46,7 +46,6 @@ ImGuizmo::MODE ToImGuizmoMode(CameraEditor::GizmoMode mode) {
 }
 
 Transform MatrixToTransform(const Matrix4x4& matrix) {
-    constexpr float kDegToRad = 3.14159265358979323846f / 180.0f;
     float translation[3]{};
     float rotationDegrees[3]{};
     float scale[3]{};
@@ -56,9 +55,9 @@ Transform MatrixToTransform(const Matrix4x4& matrix) {
     transform.translation = Vector3(translation[0], translation[1], translation[2]);
     transform.scale = Vector3(scale[0], scale[1], scale[2]);
     const Vector3 eulerRadians(
-        rotationDegrees[0] * kDegToRad,
-        rotationDegrees[1] * kDegToRad,
-        rotationDegrees[2] * kDegToRad);
+        rotationDegrees[0] * MathConstants::kDegreesToRadians,
+        rotationDegrees[1] * MathConstants::kDegreesToRadians,
+        rotationDegrees[2] * MathConstants::kDegreesToRadians);
     transform.SetRotationQuaternion(eulerRadians.ToQuaternion().Normalize());
     return transform;
 }
@@ -416,7 +415,7 @@ void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
         ImGui::Text("%s: (%.2f, %.2f, %.2f)",
             Tr("位置", "Position"),
             state.transform.translation.x, state.transform.translation.y, state.transform.translation.z);
-        ImGui::Text("%s: %.1f deg", Tr("視野角", "FOV"), state.fov * kRadToDeg);
+        ImGui::Text("%s: %.1f deg", Tr("視野角", "FOV"), state.fov * MathConstants::kRadiansToDegrees);
         ImGui::Text("%s: %.2f / %.2f", Tr("Near/Far", "Near/Far"), state.nearClip, state.farClip);
 
         VirtualCamera* activeVcam = brain->GetActiveCamera();
@@ -550,10 +549,10 @@ bool CameraEditor::EditProjectionSettings(Camera* camera) {
 
     // FOV
     float fov = camera->GetFovY();
-    float fovDeg = fov * kRadToDeg;
+    float fovDeg = fov * MathConstants::kRadiansToDegrees;
     const std::string fovLabel = std::string(Tr("視野角 (deg)", "FOV (deg)")) + "##CameraProjectionFov";
     if (ImGui::SliderFloat(fovLabel.c_str(), &fovDeg, 1.0f, 179.0f)) {
-        camera->SetFovY(fovDeg * kDegToRad);
+        camera->SetFovY(fovDeg * MathConstants::kDegreesToRadians);
         changed = true;
     }
 
@@ -581,10 +580,10 @@ bool CameraEditor::EditCameraState(CameraState& state) {
 
     changed |= EditTransform(state.transform);
 
-    float fovDeg = state.fov * kRadToDeg;
+    float fovDeg = state.fov * MathConstants::kRadiansToDegrees;
     const std::string fovLabel = std::string(Tr("視野角 (deg)", "FOV (deg)")) + "##CameraStateFov";
     if (ImGui::SliderFloat(fovLabel.c_str(), &fovDeg, 1.0f, 179.0f)) {
-        state.fov = fovDeg * kDegToRad;
+        state.fov = fovDeg * MathConstants::kDegreesToRadians;
         changed = true;
     }
 

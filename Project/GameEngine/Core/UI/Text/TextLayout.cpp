@@ -25,7 +25,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
 
    const FontMetrics metrics = fontManager.GetMetrics(style.fontId, style.fontSize);
    const float lineHeight = metrics.lineHeight > 0.0f ? metrics.lineHeight : static_cast<float>(style.fontSize);
-   const float lineAdvance = lineHeight * (std::max)(style.lineSpacing, 0.1f);
+   const float lineAdvance = lineHeight * std::max(style.lineSpacing, 0.1f);
    float baseline = metrics.ascender > 0.0f ? metrics.ascender : static_cast<float>(style.fontSize);
    result.baseline = baseline;
 
@@ -37,7 +37,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
 
    const auto finishLine = [&]() {
       lines.push_back({ lineBegin, result.glyphs.size(), penX });
-      maximumLineWidth = (std::max)(maximumLineWidth, penX);
+      maximumLineWidth = std::max(maximumLineWidth, penX);
       lineBegin = result.glyphs.size();
       penX = 0.0f;
       previousGlyphIndex = 0;

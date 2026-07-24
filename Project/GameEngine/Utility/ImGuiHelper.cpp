@@ -1,6 +1,7 @@
 #include "pch.h"
 #ifdef USE_IMGUI
 #include "ImGuiHelper.h"
+#include "MathUtils/MathConstants.h"
 #include "imgui.h"
 #include "ImGuizmo.h"
 
@@ -11,10 +12,6 @@
 namespace GameEngine {
 namespace ImGuiHelper {
 namespace {
-
-constexpr float kPi = 3.14159265358979323846f;
-constexpr float kRadToDeg = 180.0f / kPi;
-constexpr float kDegToRad = kPi / 180.0f;
 
 EditorLanguage gLanguage = EditorLanguage::Japanese;
 
@@ -169,11 +166,11 @@ const char* LanguageDisplayName(EditorLanguage language) {
 }
 
 float RadiansToDegrees(float radians) {
-   return radians * kRadToDeg;
+   return radians * MathConstants::kRadiansToDegrees;
 }
 
 float DegreesToRadians(float degrees) {
-   return degrees * kDegToRad;
+   return degrees * MathConstants::kDegreesToRadians;
 }
 
 Vector3 RadiansToDegrees(const Vector3& radians) {

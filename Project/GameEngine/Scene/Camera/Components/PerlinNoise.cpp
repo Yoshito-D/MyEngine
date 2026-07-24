@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "PerlinNoise.h"
 #include "../Core/VirtualCamera.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include <cmath>
 #include <algorithm>
 
@@ -105,10 +106,9 @@ void PerlinNoise::ShakeDirectional(const Vector3& direction, float amplitude, fl
 
 float PerlinNoise::Noise(float t) const {
     // 簡易的なサイン波ベースのノイズ
-    constexpr float kPi2 = 6.28318f;
-    return std::sin(t * kPi2) * 0.5f +
-           std::sin(t * kPi2 * 2.0f + 1.0f) * 0.25f +
-           std::sin(t * kPi2 * 4.0f + 2.0f) * 0.125f;
+    return std::sin(t * MathConstants::kTwoPi) * 0.5f +
+           std::sin(t * MathConstants::kTwoPi * 2.0f + 1.0f) * 0.25f +
+           std::sin(t * MathConstants::kTwoPi * 4.0f + 2.0f) * 0.125f;
 }
 
 nlohmann::json PerlinNoise::Serialize() const {

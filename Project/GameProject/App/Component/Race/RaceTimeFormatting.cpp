@@ -7,7 +7,7 @@
 namespace App {
 
 std::string FormatRaceTime(double seconds) {
-   const auto totalMilliseconds = static_cast<long long>((std::max)(seconds, 0.0) * 1000.0);
+   const auto totalMilliseconds = static_cast<long long>(std::max(seconds, 0.0) * 1000.0);
    const long long minutes = totalMilliseconds / 60000;
    const long long remainder = totalMilliseconds % 60000;
    const long long wholeSeconds = remainder / 1000;

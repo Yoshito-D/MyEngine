@@ -40,7 +40,7 @@ void UITransformTweenComponent::Update(float deltaTime) {
    if (!playing_) {
       return;
    }
-   elapsed_ += (std::max)(deltaTime, 0.0f);
+   elapsed_ += std::max(deltaTime, 0.0f);
    const UIPlaybackSample sample = EvaluateUIPlayback(elapsed_, delay, duration, playbackMode);
    Apply(EvaluateUIEasing(sample.progress, easing));
    if (sample.finished) {
@@ -99,11 +99,11 @@ void UITransformTweenComponent::Deserialize(const nlohmann::json& data) {
    }
    startRotation = data.value("startRotation", startRotation);
    endRotation = data.value("endRotation", endRotation);
-   delay = (std::max)(data.value("delay", delay), 0.0f);
-   duration = (std::max)(data.value("duration", duration), 0.0001f);
+   delay = std::max(data.value("delay", delay), 0.0f);
+   duration = std::max(data.value("duration", duration), 0.0001f);
    playOnEnable = data.value("playOnEnable", playOnEnable);
-   playbackMode = static_cast<UIPlaybackMode>((std::clamp)(data.value("playbackMode", static_cast<int>(playbackMode)), 0, 2));
-   easing = static_cast<UIEasingType>((std::clamp)(data.value("easing", static_cast<int>(easing)), 0, 3));
+   playbackMode = static_cast<UIPlaybackMode>(std::clamp(data.value("playbackMode", static_cast<int>(playbackMode)), 0, 2));
+   easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<int>(easing)), 0, 3));
    if (playOnEnable) {
       Restart();
    }

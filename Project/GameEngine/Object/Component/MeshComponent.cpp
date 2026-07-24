@@ -293,12 +293,12 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
 
    auto readFloat = [&data](const char* key, float& destination, float minimum) {
       if (data.contains(key) && data.at(key).is_number()) {
-         destination = (std::max)(data.at(key).get<float>(), minimum);
+         destination = std::max(data.at(key).get<float>(), minimum);
       }
    };
    auto readSegments = [&data](const char* key, uint32_t& destination, uint32_t minimum) {
       if (data.contains(key) && data.at(key).is_number_unsigned()) {
-         destination = (std::max)(data.at(key).get<uint32_t>(), minimum);
+         destination = std::max(data.at(key).get<uint32_t>(), minimum);
       }
    };
 
@@ -312,9 +312,9 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
    readSegments("sphereStacks", sphereStacks_, 2);
    readSegments("sphereSlices", sphereSlices_, 3);
    if (ReadVector3(data, "boxSize", boxSize_)) {
-      boxSize_.x = (std::max)(boxSize_.x, 0.001f);
-      boxSize_.y = (std::max)(boxSize_.y, 0.001f);
-      boxSize_.z = (std::max)(boxSize_.z, 0.001f);
+      boxSize_.x = std::max(boxSize_.x, 0.001f);
+      boxSize_.y = std::max(boxSize_.y, 0.001f);
+      boxSize_.z = std::max(boxSize_.z, 0.001f);
    }
    readFloat("cylinderTopRadius", cylinderTopRadius_, 0.0f);
    readFloat("cylinderBottomRadius", cylinderBottomRadius_, 0.0f);
@@ -448,7 +448,7 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("外半径", "Outer Radius"), &ringOuterRadius_, 0.01f, 0.001f, 1000.0f);
          int segments = static_cast<int>(ringSegments_);
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
-            ringSegments_ = static_cast<uint32_t>((std::max)(segments, 3));
+            ringSegments_ = static_cast<uint32_t>(std::max(segments, 3));
             meshChanged = true;
          }
          break;
@@ -458,11 +458,11 @@ void MeshComponent::DrawInspector() {
          int stacks = static_cast<int>(sphereStacks_);
          int slices = static_cast<int>(sphereSlices_);
          if (ImGui::DragInt(Tr("スタック", "Stacks"), &stacks, 1.0f, 2, 256)) {
-            sphereStacks_ = static_cast<uint32_t>((std::max)(stacks, 2));
+            sphereStacks_ = static_cast<uint32_t>(std::max(stacks, 2));
             meshChanged = true;
          }
          if (ImGui::DragInt(Tr("スライス", "Slices"), &slices, 1.0f, 3, 512)) {
-            sphereSlices_ = static_cast<uint32_t>((std::max)(slices, 3));
+            sphereSlices_ = static_cast<uint32_t>(std::max(slices, 3));
             meshChanged = true;
          }
          break;
@@ -476,7 +476,7 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("高さ", "Height"), &cylinderHeight_, 0.01f, 0.001f, 1000.0f);
          int segments = static_cast<int>(cylinderSegments_);
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
-            cylinderSegments_ = static_cast<uint32_t>((std::max)(segments, 3));
+            cylinderSegments_ = static_cast<uint32_t>(std::max(segments, 3));
             meshChanged = true;
          }
          break;
@@ -486,7 +486,7 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("高さ", "Height"), &coneHeight_, 0.01f, 0.001f, 1000.0f);
          int segments = static_cast<int>(coneSegments_);
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
-            coneSegments_ = static_cast<uint32_t>((std::max)(segments, 3));
+            coneSegments_ = static_cast<uint32_t>(std::max(segments, 3));
             meshChanged = true;
          }
          break;
@@ -495,7 +495,7 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &circleRadius_, 0.01f, 0.001f, 1000.0f);
          int segments = static_cast<int>(circleSegments_);
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
-            circleSegments_ = static_cast<uint32_t>((std::max)(segments, 3));
+            circleSegments_ = static_cast<uint32_t>(std::max(segments, 3));
             meshChanged = true;
          }
          break;
@@ -506,11 +506,11 @@ void MeshComponent::DrawInspector() {
          int widthSegments = static_cast<int>(planeWidthSegments_);
          int depthSegments = static_cast<int>(planeDepthSegments_);
          if (ImGui::DragInt(Tr("幅の分割数", "Width Segments"), &widthSegments, 1.0f, 1, 512)) {
-            planeWidthSegments_ = static_cast<uint32_t>((std::max)(widthSegments, 1));
+            planeWidthSegments_ = static_cast<uint32_t>(std::max(widthSegments, 1));
             meshChanged = true;
          }
          if (ImGui::DragInt(Tr("奥行きの分割数", "Depth Segments"), &depthSegments, 1.0f, 1, 512)) {
-            planeDepthSegments_ = static_cast<uint32_t>((std::max)(depthSegments, 1));
+            planeDepthSegments_ = static_cast<uint32_t>(std::max(depthSegments, 1));
             meshChanged = true;
          }
          break;
@@ -521,11 +521,11 @@ void MeshComponent::DrawInspector() {
          int majorSegments = static_cast<int>(torusMajorSegments_);
          int minorSegments = static_cast<int>(torusMinorSegments_);
          if (ImGui::DragInt(Tr("主分割数", "Major Segments"), &majorSegments, 1.0f, 3, 512)) {
-            torusMajorSegments_ = static_cast<uint32_t>((std::max)(majorSegments, 3));
+            torusMajorSegments_ = static_cast<uint32_t>(std::max(majorSegments, 3));
             meshChanged = true;
          }
          if (ImGui::DragInt(Tr("副分割数", "Minor Segments"), &minorSegments, 1.0f, 3, 512)) {
-            torusMinorSegments_ = static_cast<uint32_t>((std::max)(minorSegments, 3));
+            torusMinorSegments_ = static_cast<uint32_t>(std::max(minorSegments, 3));
             meshChanged = true;
          }
          break;
@@ -538,11 +538,11 @@ void MeshComponent::DrawInspector() {
    }
 
    if (meshChanged) {
-      ringInnerRadius_ = (std::max)(ringInnerRadius_, 0.0f);
-      ringOuterRadius_ = (std::max)(ringOuterRadius_, ringInnerRadius_ + 0.001f);
-      boxSize_.x = (std::max)(boxSize_.x, 0.001f);
-      boxSize_.y = (std::max)(boxSize_.y, 0.001f);
-      boxSize_.z = (std::max)(boxSize_.z, 0.001f);
+      ringInnerRadius_ = std::max(ringInnerRadius_, 0.0f);
+      ringOuterRadius_ = std::max(ringOuterRadius_, ringInnerRadius_ + 0.001f);
+      boxSize_.x = std::max(boxSize_.x, 0.001f);
+      boxSize_.y = std::max(boxSize_.y, 0.001f);
+      boxSize_.z = std::max(boxSize_.z, 0.001f);
       CreateMesh();
    }
 

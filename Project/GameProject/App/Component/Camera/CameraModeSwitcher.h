@@ -26,8 +26,7 @@ public:
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief Tab入力で次のカメラへ切り替える
-   /// @param deltaTime 未使用
-   void Update(float deltaTime) override;
+   void Update(float) override;
 
    /// @brief JSONで登録されたIDを指定してカメラを切り替える
    /// @param cameraId 切り替え先の仮想カメラIDまたは名前

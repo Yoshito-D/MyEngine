@@ -2,6 +2,7 @@
 #include "GravityFollowCamera.h"
 #include "Scene/Camera/Core/CameraState.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include "Utility/MathUtils/MatrixOperations.h"
 #include "Utility/MathUtils/VectorOperations.h"
 #include <algorithm>
@@ -82,8 +83,8 @@ static Vector3 ProjectOnPlaneNorm(const Vector3& v, const Vector3& up, const Vec
 
 /// @brief 指数平滑の補間係数を返す（dt 変動に強く、常に 0..1 未満）
 static float ExpSmoothingFactor(float speed, float deltaTime) {
-   float k = (std::max)(0.0f, speed);
-   float dt = (std::max)(0.0f, deltaTime);
+   float k = std::max(0.0f, speed);
+   float dt = std::max(0.0f, deltaTime);
    return 1.0f - std::exp(-k * dt);
 }
 
@@ -97,8 +98,8 @@ static void StepSpring1D(float target,
    float dt = std::clamp(deltaTime, 0.0f, kMaxSpringDeltaTime);
    if (dt <= 0.0f) return;
 
-   float k = (std::max)(0.0f, stiffness);
-   float c = (std::max)(0.0f, damping);
+   float k = std::max(0.0f, stiffness);
+   float c = std::max(0.0f, damping);
 
    if (!std::isfinite(inOutValue)) {
       inOutValue = target;
@@ -110,7 +111,7 @@ static void StepSpring1D(float target,
    // 起動直後やブレーク復帰時の大きな dt をそのまま入れると、半陰的オイラーでも
    // ばね速度が反転し過ぎて FOV オフセットが負方向へ大きく飛ぶため、小刻みに積分する。
    while (dt > 0.0f) {
-      float step = (std::min)(dt, kMaxSpringStep);
+      float step = std::min(dt, kMaxSpringStep);
       float accel = -k * (inOutValue - target) - c * inOutVelocity;
       inOutVelocity += accel * step;
       inOutValue += inOutVelocity * step;
@@ -143,7 +144,7 @@ static Vector3 RotateTowardsUnit(const Vector3& current, const Vector3& target, 
       return t;
    }
 
-   float step = (std::max)(0.0f, maxRadiansDelta);
+   float step = std::max(0.0f, maxRadiansDelta);
    if (step >= angle) {
       return t;
    }
@@ -195,7 +196,7 @@ Vector3 GravityFollowCamera::SmoothGravityUp(float deltaTime) {
    Vector3 oldUp = currentGravityUp_;
 
    // 角速度制限付きで目標 Up へ追従（180°近傍でも破綻しない）
-   float maxRadiansDelta = gravityUpLerpSpeed * (std::max)(0.0f, deltaTime);
+   float maxRadiansDelta = gravityUpLerpSpeed * std::max(0.0f, deltaTime);
    currentGravityUp_ = RotateTowardsUnit(oldUp, targetUp, maxRadiansDelta);
 
    // ─────────────────────────────────────────────────────────────
@@ -366,7 +367,7 @@ void GravityFollowCamera::UpdateAccelerationEffect(CameraState& state, float del
 
    // 目標 FOV = 通常FOV + 速度比例ブースト + Springキック
    float baseFov = ClampCameraFov(fovDefault);
-   float targetFov = baseFov + (std::max)(0.0f, fovBoostMax) * boostAlpha + springFovOffset_;
+   float targetFov = baseFov + std::max(0.0f, fovBoostMax) * boostAlpha + springFovOffset_;
    targetFov = ClampCameraFov(targetFov);
 
    // 最終FOVは指数平滑で追従
@@ -471,7 +472,7 @@ void GravityFollowCamera::ProcessInput(const Vector2& mouseDelta, int32_t wheelD
    // ホイール入力でカメラ距離を更新（近すぎないようにクランプ）
    if (wheelDelta != 0) {
       distance_ -= wheelDelta * scrollSpeed;
-      distance_ = (std::max)(1.0f, distance_);
+      distance_ = std::max(1.0f, distance_);
    }
 }
 
@@ -527,7 +528,7 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
    scrollSpeed = ReadFloat(data, "scrollSpeed", scrollSpeed);
    gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
    fovDefault = ClampCameraFov(ReadFloat(data, "fovDefault", fovDefault));
-   fovBoostMax = (std::max)(0.0f, ReadFloat(data, "fovBoostMax", fovBoostMax));
+   fovBoostMax = std::max(0.0f, ReadFloat(data, "fovBoostMax", fovBoostMax));
    fovLerpSpeed = ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
    speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
    speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
@@ -592,16 +593,14 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
 }
 
 #ifdef USE_IMGUI
-static constexpr float kRadToDeg = 57.2957795f;
-
 void GravityFollowCamera::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    if (ImGui::Checkbox(Tr("有効", "Enabled"), &isEnabled_)) {}
 
    ImGui::DragFloat(Tr("距離", "Distance"),         &distance_,          0.1f,   0.5f,  200.0f);
-   float rotateSpeedDeg = rotateSpeed * kRadToDeg;
+   float rotateSpeedDeg = rotateSpeed * MathConstants::kRadiansToDegrees;
    if (ImGui::DragFloat(Tr("回転速度 (deg/pixel)", "Rotate Speed (deg/pixel)"), &rotateSpeedDeg, 0.01f, 0.0f, 6.0f, "%.2f")) {
-      rotateSpeed = rotateSpeedDeg / kRadToDeg;
+      rotateSpeed = rotateSpeedDeg * MathConstants::kDegreesToRadians;
    }
    ImGui::DragFloat(Tr("スクロール速度", "Scroll Speed"),     &scrollSpeed,        0.0001f, 0.0f,  0.1f, "%.4f");
    ImGui::DragFloat(Tr("GravityUp補間", "GravityUp Lerp"),   &gravityUpLerpSpeed, 0.1f,   0.1f,  30.0f);
@@ -619,9 +618,9 @@ void GravityFollowCamera::DrawInspector() {
    ImGui::DragFloat(Tr("速度ブースト最大", "Speed Boost Max"),  &speedBoostMax,       0.5f,  0.0f, 200.0f);
    ImGui::DragFloat(Tr("位置補間", "Position Lerp"),    &positionLerpSpeed,   0.5f,  1.0f, 100.0f);
 
-   float pitchDeg = pitch_ * kRadToDeg;
+   float pitchDeg = pitch_ * MathConstants::kRadiansToDegrees;
    if (ImGui::SliderFloat(Tr("ピッチ (deg)", "Pitch (deg)"), &pitchDeg, 5.0f, 80.0f)) {
-      pitch_ = pitchDeg / kRadToDeg;
+      pitch_ = pitchDeg * MathConstants::kDegreesToRadians;
    }
 
    ImGui::Separator();

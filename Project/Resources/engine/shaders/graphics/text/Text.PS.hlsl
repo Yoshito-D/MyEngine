@@ -19,7 +19,6 @@ float4 main(PixelShaderInput input) : SV_TARGET0
     const float4 atlasSample = gFontAtlas.Sample(gFontSampler, input.texCoord);
     float coverage = atlasSample.r;
 
-    // atlasParameters.w == 0 is the existing FreeType bitmap path.
     // MSDF/MTSDF stores edge distances in RGB and must be interpreted in linear space.
     if (input.atlasParameters.w >= 1.0f)
     {

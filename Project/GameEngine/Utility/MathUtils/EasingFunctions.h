@@ -1,5 +1,6 @@
 #pragma once
 #include "../VectorMath.h"
+#include "MathConstants.h"
 #include <algorithm>
 #include <concepts>
 #include <cstdint>
@@ -46,7 +47,7 @@ Vector3 Slerp(const Vector3& start, const Vector3& end, float t);
 template<Interpolatable T>
 constexpr T EaseInSine(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
-   float easedT = 1.0f - std::cos((t * 3.14159265358979323846f) / 2.0f);
+   float easedT = 1.0f - std::cos(t * MathConstants::kHalfPi);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
@@ -54,7 +55,7 @@ constexpr T EaseInSine(const T& start, const T& end, float t) {
 template<Interpolatable T>
 constexpr T EaseOutSine(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
-   float easedT = std::sin((t * 3.14159265358979323846f) / 2.0f);
+   float easedT = std::sin(t * MathConstants::kHalfPi);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
@@ -62,7 +63,7 @@ constexpr T EaseOutSine(const T& start, const T& end, float t) {
 template<Interpolatable T>
 constexpr T EaseInOutSine(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
-   float easedT = -(std::cos(3.14159265358979323846f * t) - 1.0f) / 2.0f;
+   float easedT = -(std::cos(MathConstants::kPi * t) - 1.0f) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
 }
 
@@ -273,7 +274,7 @@ constexpr T EaseInOutBack(const T& start, const T& end, float t, float overshoot
 template<Interpolatable T>
 constexpr T EaseInElastic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
-   const float c4 = (2.0f * 3.14159265358979323846f) / 3.0f;
+   const float c4 = MathConstants::kTwoPi / 3.0f;
    float easedT;
    if (t == 0.0f) {
       easedT = 0.0f;
@@ -289,7 +290,7 @@ constexpr T EaseInElastic(const T& start, const T& end, float t) {
 template<Interpolatable T>
 constexpr T EaseOutElastic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
-   const float c4 = (2.0f * 3.14159265358979323846f) / 3.0f;
+   const float c4 = MathConstants::kTwoPi / 3.0f;
    float easedT;
    if (t == 0.0f) {
       easedT = 0.0f;
@@ -305,7 +306,7 @@ constexpr T EaseOutElastic(const T& start, const T& end, float t) {
 template<Interpolatable T>
 constexpr T EaseInOutElastic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
-   const float c5 = (2.0f * 3.14159265358979323846f) / 4.5f;
+   const float c5 = MathConstants::kTwoPi / 4.5f;
    float easedT;
    if (t == 0.0f) {
       easedT = 0.0f;

@@ -67,7 +67,7 @@ std::vector<TextDrawData> TextRenderer::QueueText(
 
    std::vector<PageGeometry> pageGeometry;
    std::unordered_map<UINT64, size_t> pageLookup;
-   const size_t glyphLimit = (std::min)(visibleGlyphCount, layout.glyphs.size());
+   const size_t glyphLimit = std::min(visibleGlyphCount, layout.glyphs.size());
    for (size_t placementIndex = 0; placementIndex < glyphLimit; ++placementIndex) {
       const GlyphPlacement& placement = layout.glyphs[placementIndex];
       const GlyphInfo& glyph = placement.glyph;

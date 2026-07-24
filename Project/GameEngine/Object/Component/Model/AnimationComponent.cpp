@@ -16,10 +16,10 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
 #include "Model/ModelAsset.h"
 #include "Component/MeshComponent.h"
 #include "Component/TransformComponent.h"
+#include "Utility/MathUtils/MathConstants.h"
 
 #include <algorithm>
 #include <cmath>
-#include <numbers>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
@@ -330,7 +330,7 @@ Vector3 AnimationComponent::QuaternionToEuler_(const Quaternion& q) const {
    const float roll = std::atan2(sinrCosp, cosrCosp);
 
    const float sinp = 2.0f * (q.w * q.y - q.z * q.x);
-   const float pitch = std::abs(sinp) >= 1.0f ? std::copysign(std::numbers::pi_v<float> / 2.0f, sinp) : std::asin(sinp);
+   const float pitch = std::abs(sinp) >= 1.0f ? std::copysign(MathConstants::kHalfPi, sinp) : std::asin(sinp);
 
    const float sinyCosp = 2.0f * (q.w * q.z + q.x * q.y);
    const float cosyCosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);

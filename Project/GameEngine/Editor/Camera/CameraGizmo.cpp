@@ -154,8 +154,8 @@ void CameraGizmo::DrawCameraIcon(const Vector3& position, const Quaternion& rota
    // レンズの円周を描画
    constexpr int segments = 8;
    for (int i = 0; i < segments; ++i) {
-      float angle1 = (float)i / segments * 6.28318f;
-      float angle2 = (float)(i + 1) / segments * 6.28318f;
+      float angle1 = (float)i / segments * MathConstants::kTwoPi;
+      float angle2 = (float)(i + 1) / segments * MathConstants::kTwoPi;
 
       Vector3 p1 = lensCenter + right * std::cos(angle1) * lensRadius + up * std::sin(angle1) * lensRadius;
       Vector3 p2 = lensCenter + right * std::cos(angle2) * lensRadius + up * std::sin(angle2) * lensRadius;

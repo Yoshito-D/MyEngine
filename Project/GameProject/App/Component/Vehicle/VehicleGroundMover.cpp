@@ -3,9 +3,9 @@
 #include "VehicleLandingAligner.h"
 #include "Object/Component/TransformComponent.h"
 #include "Object/Object.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
 #include <cmath>
-#include <numbers>
 
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
@@ -103,9 +103,7 @@ Vector3 VehicleGroundMover::ApplySteering(float steerInput, const Vector3& local
 
    // ステアリング = 重力Up 軸まわりの yaw 回転。
    // steerSpeed (deg/sec) × deltaTime で今フレームの回転角(rad)を計算する。
-   // kDeg2Rad: π/180、角度→ラジアン変換係数。
-   constexpr float kDeg2Rad = static_cast<float>(std::numbers::pi) / 180.0f;
-   float      yawAngle = steerInput * steerSpeed * kDeg2Rad * deltaTime;
+   float      yawAngle = steerInput * steerSpeed * MathConstants::kDegreesToRadians * deltaTime;
 
    // MakeRotateAxisAngleQuaternion で yawAngle ラジアン分の yaw クォータニオンを作り、
    // 現在の前方ベクトルを回転させる。

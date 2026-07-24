@@ -30,6 +30,15 @@ public:
    /// @brief 接地中かどうかを返す
    bool IsGrounded() const { return isGrounded_; }
 
+   /// @brief 直近の着地時にプレイヤーと惑星が接触したワールド座標を返す
+   const GameEngine::Vector3& GetLastLandingContactPoint() const { return lastLandingContactPoint_; }
+
+   /// @brief 直近の着地面の外向き法線を返す
+   const GameEngine::Vector3& GetLastLandingNormal() const { return lastLandingNormal_; }
+
+   /// @brief 有効な着地接触情報を保持しているかを返す
+   bool HasLandingContact() const { return hasLandingContact_; }
+
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
@@ -60,6 +69,15 @@ private:
 
    /// @brief 接地フラグ
    bool isGrounded_ = true;
+
+   /// @brief 直近の着地接触点（ワールド座標）
+   GameEngine::Vector3 lastLandingContactPoint_ = { 0.0f, 0.0f, 0.0f };
+
+   /// @brief 直近の着地面法線（惑星外向き）
+   GameEngine::Vector3 lastLandingNormal_ = { 0.0f, 1.0f, 0.0f };
+
+   /// @brief 直近の着地接触情報が有効か
+   bool hasLandingContact_ = false;
 };
 
 } // namespace App

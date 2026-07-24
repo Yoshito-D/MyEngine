@@ -593,7 +593,7 @@ void ParticleSystem::EnsureGpuRibbonResources(uint32_t requiredSegmentCount) {
 	  return;
    }
 
-   const uint32_t newCapacity = (std::max)(requiredSegmentCount, (std::max)(gpuRibbonSegmentCapacity_ * 2u, 64u));
+   const uint32_t newCapacity = std::max(requiredSegmentCount, std::max(gpuRibbonSegmentCapacity_ * 2u, 64u));
    if (gpuRibbonInputResource_ && gpuRibbonInputData_) {
 	  gpuRibbonInputResource_->Unmap(0, nullptr);
 	  gpuRibbonInputData_ = nullptr;
@@ -865,7 +865,7 @@ void ParticleSystem::Update(float deltaTime) {
 
 	  if (subEmitterSettings_.enabled && !subEmitterSettings_.spawnOnUpdatePath.empty()) {
 		 particle.subEmitterTimer += deltaTime;
-		 const float interval = (std::max)(subEmitterSettings_.updateInterval, 0.001f);
+		 const float interval = std::max(subEmitterSettings_.updateInterval, 0.001f);
 		 while (particle.subEmitterTimer >= interval) {
 			QueueSubEmitter(subEmitterSettings_.spawnOnUpdatePath, particle.transform.translation);
 			particle.subEmitterTimer -= interval;
@@ -895,8 +895,8 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
 	  return result;
    }
 
-   const uint32_t tilesX = (std::max)(textureSheetAnimationModule_->GetTilesX(), 1u);
-   const uint32_t tilesY = (std::max)(textureSheetAnimationModule_->GetTilesY(), 1u);
+   const uint32_t tilesX = std::max(textureSheetAnimationModule_->GetTilesX(), 1u);
+   const uint32_t tilesY = std::max(textureSheetAnimationModule_->GetTilesY(), 1u);
    uint32_t column = 0;
    uint32_t row = 0;
    if (textureSheetAnimationModule_->GetAnimationMode() == TextureSheetAnimationModule::AnimationMode::WholeSheet) {
@@ -906,7 +906,7 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
 	  row = frame / tilesX;
    } else {
 	  column = static_cast<uint32_t>(particle.sheetFrame) % tilesX;
-	  row = (std::min)(static_cast<uint32_t>(particle.sheetRow), tilesY - 1);
+	  row = std::min(static_cast<uint32_t>(particle.sheetRow), tilesY - 1);
    }
 
    float uSize = 1.0f / static_cast<float>(tilesX);
@@ -1069,7 +1069,7 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
 	  for (size_t pointIndex = 0; pointIndex + 1 < pointCount; ++pointIndex) {
 		 totalDistance += (getPoint(pointIndex + 1) - getPoint(pointIndex)).Length();
 	  }
-	  const float safeTotalDistance = (std::max)(totalDistance, 0.0001f);
+	  const float safeTotalDistance = std::max(totalDistance, 0.0001f);
 
 	  auto normalizeDirection = [](const Vector3& direction, const Vector3& fallback) {
 		 const float lengthSquared = direction.LengthSquared();
@@ -1563,7 +1563,7 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
 	  commandList->SetComputeRootDescriptorTable(freeCount.value(), gpuFreeCountUavHandleGPU_);
 	  commandList->SetComputeRootDescriptorTable(mappings.value(), gpuOwnerMappingUavHandleGPU_);
 	  const uint32_t initializationCount = gpuSettingsData_->particleCapacity -
-		 (std::min)(gpuInitializationStartIndex_, gpuSettingsData_->particleCapacity);
+		 std::min(gpuInitializationStartIndex_, gpuSettingsData_->particleCapacity);
 	  commandList->Dispatch(
 		 (initializationCount + kParticleComputeThreadGroupSize - 1u) / kParticleComputeThreadGroupSize,
 		 1, 1);
@@ -1709,7 +1709,7 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
 }
 
 void ParticleSystem::EmitParticle() {
-   const uint32_t activeParticleLimit = (std::min)(
+   const uint32_t activeParticleLimit = std::min(
 	  std::clamp(mainModule_->GetMaxParticles(), 1u, kMaxParticles),
 	  static_cast<uint32_t>(particles_.size()));
    if (activeParticleCount_ >= activeParticleLimit || freeParticleIndices_.empty()) return;
@@ -1985,7 +1985,7 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
 	  if (settings.contains("spawnOnDeathPath")) subEmitterSettings_.spawnOnDeathPath = settings["spawnOnDeathPath"];
 	  if (settings.contains("spawnOnUpdatePath")) subEmitterSettings_.spawnOnUpdatePath = settings["spawnOnUpdatePath"];
 	  if (settings.contains("spawnOnCollisionPath")) subEmitterSettings_.spawnOnCollisionPath = settings["spawnOnCollisionPath"];
-	  if (settings.contains("updateInterval")) subEmitterSettings_.updateInterval = (std::max)(settings["updateInterval"].get<float>(), 0.001f);
+	  if (settings.contains("updateInterval")) subEmitterSettings_.updateInterval = std::max(settings["updateInterval"].get<float>(), 0.001f);
 	  if (settings.contains("maxEventsPerFrame")) subEmitterSettings_.maxEventsPerFrame = settings["maxEventsPerFrame"];
 	  if (settings.contains("collisionPlaneNormal") && settings["collisionPlaneNormal"].is_array() && settings["collisionPlaneNormal"].size() >= 3) {
 		 subEmitterSettings_.collisionPlaneNormal = Vector3(settings["collisionPlaneNormal"][0], settings["collisionPlaneNormal"][1], settings["collisionPlaneNormal"][2]);

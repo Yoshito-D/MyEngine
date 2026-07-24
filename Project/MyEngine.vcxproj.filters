@@ -456,13 +456,7 @@
     <ClCompile Include="GameEngine\Core\Asset\AnimationAssetManager.cpp">
       <Filter>GameEngine\Core\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Asset\Font\FontFace.cpp">
-      <Filter>GameEngine\Core\Asset\Font</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Core\Asset\Font\FontManager.cpp">
-      <Filter>GameEngine\Core\Asset\Font</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Core\Asset\Font\GlyphAtlas.cpp">
       <Filter>GameEngine\Core\Asset\Font</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Asset\Font\MsdfFont.cpp">
@@ -523,9 +517,6 @@
       <Filter>GameEngine\Core\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Input\Input.cpp">
-      <Filter>GameEngine\Core\Input</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Core\Input\KeyConfig.cpp">
       <Filter>GameEngine\Core\Input</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\DrawCommand.cpp">
@@ -930,9 +921,6 @@
     <ClCompile Include="GameProject\App\Component\Camera\ScreenSpaceBasis.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Character\CharacterController.cpp">
-      <Filter>GameProject\App\Component\Character</Filter>
-    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Character\CharacterJump.cpp">
       <Filter>GameProject\App\Component\Character</Filter>
     </ClCompile>
@@ -993,6 +981,9 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleGroundMover.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleInputComponent.cpp">
+      <Filter>GameProject\App\Component\Vehicle</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
@@ -1011,6 +1002,7 @@
     <ClCompile Include="GameProject\App\Scene\SceneCatalog.cpp">
       <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Input\InputActionService.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Externals\imgui\imconfig.h">
@@ -1079,13 +1071,7 @@
     <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h">
       <Filter>GameEngine\Core\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Core\Asset\Font\FontFace.h">
-      <Filter>GameEngine\Core\Asset\Font</Filter>
-    </ClInclude>
     <ClInclude Include="GameEngine\Core\Asset\Font\FontManager.h">
-      <Filter>GameEngine\Core\Asset\Font</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Core\Asset\Font\GlyphAtlas.h">
       <Filter>GameEngine\Core\Asset\Font</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Asset\Font\MsdfFont.h">
@@ -1149,9 +1135,6 @@
       <Filter>GameEngine\Core\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Input\Input.h">
-      <Filter>GameEngine\Core\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Core\Input\KeyConfig.h">
       <Filter>GameEngine\Core\Input</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\DrawCommand.h">
@@ -1592,6 +1575,9 @@
     <ClInclude Include="GameEngine\Utility\MathUtils\EasingFunctions.h">
       <Filter>GameEngine\Utility\MathUtils</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Utility\MathUtils\MathConstants.h">
+      <Filter>GameEngine\Utility\MathUtils</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Utility\MathUtils\MatrixOperations.h">
       <Filter>GameEngine\Utility\MathUtils</Filter>
     </ClInclude>
@@ -1627,9 +1613,6 @@
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\ScreenSpaceBasis.h">
       <Filter>GameProject\App\Component\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Character\CharacterController.h">
-      <Filter>GameProject\App\Component\Character</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Character\CharacterJump.h">
       <Filter>GameProject\App\Component\Character</Filter>
@@ -1691,6 +1674,9 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleGroundMover.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleInputComponent.h">
+      <Filter>GameProject\App\Component\Vehicle</Filter>
+    </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
@@ -1709,6 +1695,7 @@
     <ClInclude Include="GameProject\App\Scene\SceneCatalog.h">
       <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Core\Input\InputActionService.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Externals\imgui\LICENSE.txt" />

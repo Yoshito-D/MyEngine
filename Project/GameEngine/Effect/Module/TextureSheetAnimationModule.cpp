@@ -5,10 +5,10 @@ namespace GameEngine {
 TextureSheetAnimationModule::TextureSheetAnimationModule() = default;
 
 void TextureSheetAnimationModule::ClampSettings() {
-	tilesX_ = (std::max)(tilesX_, 1u);
-	tilesY_ = (std::max)(tilesY_, 1u);
-	cycles_ = (std::max)(cycles_, 1u);
-	frameOverTime_ = (std::max)(frameOverTime_, 0.0f);
+	tilesX_ = std::max(tilesX_, 1u);
+	tilesY_ = std::max(tilesY_, 1u);
+	cycles_ = std::max(cycles_, 1u);
+	frameOverTime_ = std::max(frameOverTime_, 0.0f);
 
 	const uint32_t totalFrameCount = GetTotalFrameCount();
 	if (totalFrameCount > 0) {
@@ -20,12 +20,12 @@ void TextureSheetAnimationModule::ClampSettings() {
 	if (animationMode_ == AnimationMode::WholeSheet) {
 		randomRow_ = false;
 	}
-	rowIndex_ = (std::min)(rowIndex_, tilesY_ - 1u);
+	rowIndex_ = std::min(rowIndex_, tilesY_ - 1u);
 }
 
 uint32_t TextureSheetAnimationModule::GetTotalFrameCount() const {
-	const uint32_t safeTilesX = (std::max)(tilesX_, 1u);
-	const uint32_t safeTilesY = (std::max)(tilesY_, 1u);
+	const uint32_t safeTilesX = std::max(tilesX_, 1u);
+	const uint32_t safeTilesY = std::max(tilesY_, 1u);
 	return animationMode_ == AnimationMode::WholeSheet ? safeTilesX * safeTilesY : safeTilesX;
 }
 
@@ -36,7 +36,7 @@ uint32_t TextureSheetAnimationModule::GetPlayableFrameCount() const {
 	}
 
 	const uint32_t safeStartFrame = startFrame_ % totalFrameCount;
-	const uint32_t availableFrames = (std::max)(totalFrameCount - safeStartFrame, 1u);
+	const uint32_t availableFrames = std::max(totalFrameCount - safeStartFrame, 1u);
 	if (frameCount_ == 0) {
 		return availableFrames;
 	}
@@ -45,18 +45,18 @@ uint32_t TextureSheetAnimationModule::GetPlayableFrameCount() const {
 
 void TextureSheetAnimationModule::InitializeParticle(Particle& particle) const {
 	if (!enabled_) return;
-	const uint32_t safeTilesY = (std::max)(tilesY_, 1u);
+	const uint32_t safeTilesY = std::max(tilesY_, 1u);
 	particle.sheetFrame = static_cast<int>(startFrame_);
-	particle.sheetRow = randomRow_ ? RandomUtils::Random<int>(0, static_cast<int>(safeTilesY - 1u)) : static_cast<int>((std::min)(rowIndex_, safeTilesY - 1u));
+	particle.sheetRow = randomRow_ ? RandomUtils::Random<int>(0, static_cast<int>(safeTilesY - 1u)) : static_cast<int>(std::min(rowIndex_, safeTilesY - 1u));
 }
 
 uint32_t TextureSheetAnimationModule::ResolveFrame(const Particle& particle) const {
-	const uint32_t safeTilesX = (std::max)(tilesX_, 1u);
-	const uint32_t safeTilesY = (std::max)(tilesY_, 1u);
+	const uint32_t safeTilesX = std::max(tilesX_, 1u);
+	const uint32_t safeTilesY = std::max(tilesY_, 1u);
 	const uint32_t totalFrames = safeTilesX * safeTilesY;
 	const uint32_t playableFrames = GetPlayableFrameCount();
 	const float progress = particle.GetLifeProgress();
-	const float animated = progress * frameOverTime_ * static_cast<float>((std::max)(cycles_, 1u));
+	const float animated = progress * frameOverTime_ * static_cast<float>(std::max(cycles_, 1u));
 	uint32_t frame = startFrame_;
 
 	if (animationMode_ == AnimationMode::WholeSheet) {

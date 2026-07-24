@@ -1,16 +1,16 @@
 #include "pch.h"
 #include "MatrixOperations.h"
+#include "MathConstants.h"
 #include "QuaternionOperations.h"
-#include <numbers>
 
 namespace GameEngine {
 
 float ToRadians(float degrees) {
-   return degrees * std::numbers::pi_v<float> / 180.0f;
+   return degrees * MathConstants::kDegreesToRadians;
 }
 
 float ToDegrees(float radians) {
-   return radians * 180.0f / std::numbers::pi_v<float>;
+   return radians * MathConstants::kRadiansToDegrees;
 }
 
 Matrix4x4 MakeIdentity4x4() {

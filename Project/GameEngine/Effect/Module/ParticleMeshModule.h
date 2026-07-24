@@ -72,11 +72,11 @@ public:
    const Vector3& GetBoxSize() const { return boxSize_; }
 
    /// @brief 円柱の上半径を設定する
-   void SetCylinderTopRadius(float radius) { cylinderTopRadius_ = (std::max)(0.0f, radius); meshDirty_ = true; }
+   void SetCylinderTopRadius(float radius) { cylinderTopRadius_ = std::max(0.0f, radius); meshDirty_ = true; }
    /// @brief 円柱の上半径を取得する
    float GetCylinderTopRadius() const { return cylinderTopRadius_; }
    /// @brief 円柱の下半径を設定する
-   void SetCylinderBottomRadius(float radius) { cylinderBottomRadius_ = (std::max)(0.0f, radius); meshDirty_ = true; }
+   void SetCylinderBottomRadius(float radius) { cylinderBottomRadius_ = std::max(0.0f, radius); meshDirty_ = true; }
    /// @brief 円柱の下半径を取得する
    float GetCylinderBottomRadius() const { return cylinderBottomRadius_; }
    /// @brief 円柱の上下半径を同時に設定する

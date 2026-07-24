@@ -1,0 +1,123 @@
+{
+   "maps": {
+      "Gameplay": {
+         "Vehicle.Steer": {
+            "type": "Axis1D",
+            "deadZone": 0.3,
+            "bindings": [
+               {
+                  "type": "KeyAxis1D",
+                  "negative": "A",
+                  "positive": "D"
+               },
+               {
+                  "type": "LeftStick",
+                  "axis": "X"
+               }
+            ]
+         },
+         "Vehicle.Pitch": {
+            "type": "Axis1D",
+            "deadZone": 0.3,
+            "bindings": [
+               {
+                  "type": "KeyAxis1D",
+                  "negative": "S",
+                  "positive": "W"
+               },
+               {
+                  "type": "LeftStick",
+                  "axis": "Y"
+               }
+            ]
+         },
+         "Vehicle.Roll": {
+            "type": "Axis1D",
+            "bindings": [
+               {
+                  "type": "KeyAxis1D",
+                  "negative": "Q",
+                  "positive": "E"
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "LeftShoulder",
+                  "scale": -1.0
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "RightShoulder",
+                  "scale": 1.0
+               }
+            ]
+         },
+         "Vehicle.Jump": {
+            "type": "Button",
+            "bindings": [
+               {
+                  "type": "Key",
+                  "key": "Space"
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "A"
+               }
+            ]
+         },
+         "Vehicle.Drift": {
+            "type": "Button",
+            "bindings": [
+               {
+                  "type": "Key",
+                  "key": "Q"
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "LeftShoulder"
+               }
+            ]
+         },
+         "Camera.Look": {
+            "type": "Axis2D",
+            "deadZone": 0.3,
+            "bindings": [
+               {
+                  "type": "KeyAxis2D",
+                  "left": "Left",
+                  "right": "Right",
+                  "up": "Up",
+                  "down": "Down"
+               },
+               {
+                  "type": "RightStick",
+                  "axis": "Both"
+               }
+            ]
+         },
+         "Camera.Next": {
+            "type": "Button",
+            "bindings": [
+               {
+                  "type": "Key",
+                  "key": "Tab"
+               }
+            ]
+         }
+      },
+      "UI": {
+         "UI.Confirm": {
+            "type": "Button",
+            "bindings": [
+               {
+                  "type": "Key",
+                  "key": "Space"
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "A"
+               }
+            ]
+         }
+      }
+   }
+}

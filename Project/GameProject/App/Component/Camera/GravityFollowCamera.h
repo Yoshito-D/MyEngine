@@ -54,7 +54,7 @@ public:
    float GetDistance() const { return distance_; }
 
    /// @brief カメラ距離を設定する（下限あり）
-   void  SetDistance(float d) { distance_ = (std::max)(0.5f, d); }
+   void  SetDistance(float d) { distance_ = std::max(0.5f, d); }
 
    /// @brief 直近更新時のカメラUpを取得する
    GameEngine::Vector3 GetCameraUp()    const;

@@ -58,20 +58,20 @@ void TypewriterComponent::Update(float deltaTime) {
       return;
    }
 
-   elapsed_ += (std::max)(deltaTime, 0.0f);
+   elapsed_ += std::max(deltaTime, 0.0f);
    if (elapsed_ <= delay) {
       textComponent->SetVisibleGlyphCount(0);
       return;
    }
 
-   const float safeRate = (std::max)(glyphsPerSecond, 0.001f);
+   const float safeRate = std::max(glyphsPerSecond, 0.001f);
    const float revealTime = static_cast<float>(glyphCount) / safeRate;
-   float animationTime = elapsed_ - (std::max)(delay, 0.0f);
+   float animationTime = elapsed_ - std::max(delay, 0.0f);
    if (loop && animationTime >= revealTime) {
       animationTime = std::fmod(animationTime, revealTime);
    }
 
-   const size_t visibleCount = (std::min)(
+   const size_t visibleCount = std::min(
       static_cast<size_t>(std::floor(animationTime * safeRate)), glyphCount);
    textComponent->SetVisibleGlyphCount(visibleCount);
    if (!loop && visibleCount >= glyphCount) {
@@ -120,8 +120,8 @@ nlohmann::json TypewriterComponent::Serialize() const {
 }
 
 void TypewriterComponent::Deserialize(const nlohmann::json& data) {
-   glyphsPerSecond = (std::max)(data.value("glyphsPerSecond", glyphsPerSecond), 0.001f);
-   delay = (std::max)(data.value("delay", delay), 0.0f);
+   glyphsPerSecond = std::max(data.value("glyphsPerSecond", glyphsPerSecond), 0.001f);
+   delay = std::max(data.value("delay", delay), 0.0f);
    playOnEnable = data.value("playOnEnable", playOnEnable);
    loop = data.value("loop", loop);
    restartOnTextChange = data.value("restartOnTextChange", restartOnTextChange);

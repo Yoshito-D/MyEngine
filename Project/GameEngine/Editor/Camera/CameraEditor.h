@@ -128,8 +128,6 @@ private:
     };
     std::vector<ComponentFactoryEntry> externalFactories_;
 
-    static constexpr float kRadToDeg = 57.2957795f;
-    static constexpr float kDegToRad = 1.0f / kRadToDeg;
 };
 
 } // namespace GameEngine

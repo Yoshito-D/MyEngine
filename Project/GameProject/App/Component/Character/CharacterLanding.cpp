@@ -72,6 +72,13 @@ void CharacterLanding::Update(float) {
 		 // 位置を地表にスナップ
 		 transform->transform.translation = landingCenter + gravityUp * snapRadius;
 
+		 // OBB の下端が惑星と接した点と、その地点の外向き法線を保存する。
+		 // landingOffset は実際の接地面として扱われているため接触点にも反映する。
+		 lastLandingContactPoint_ =
+			landingCenter + gravityUp * (landingSurfaceRadius + landingOffset);
+		 lastLandingNormal_ = gravityUp;
+		 hasLandingContact_ = true;
+
 		 // 垂直速度のみ除去し、水平成分は維持
 		 vel = vel - gravityUp * upComp;
 		 gravityBody->SetVelocity(vel);

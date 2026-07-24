@@ -148,10 +148,35 @@ enum class GamePadButton : WORD {
    Y = XINPUT_GAMEPAD_Y
 };
 
-/// @brief 入力管理クラス
-class Input {
+/// @brief 入力アクション層が利用する低レベル入力の抽象インターフェース
+/// @details 実機入力への依存を境界に閉じ込め、入力アクションをテスト時に差し替え可能にする。
+class IInputBackend {
 public:
-   ~Input();
+   virtual ~IInputBackend() = default;
+
+   /// @brief キーが押されているかを取得する
+   virtual bool IsKeyPressed(KeyCode key) = 0;
+
+   /// @brief キーが押された瞬間かを取得する
+   virtual bool IsKeyTriggered(KeyCode key) = 0;
+
+   /// @brief ゲームパッドボタンが押されているかを取得する
+   virtual bool IsGamePadButtonPressed(GamePadButton button, uint32_t index = 0) const = 0;
+
+   /// @brief ゲームパッドボタンが押された瞬間かを取得する
+   virtual bool IsGamePadButtonTriggered(GamePadButton button, uint32_t index = 0) const = 0;
+
+   /// @brief 左スティックの状態を取得する
+   virtual Vector2 GetLeftStick(uint32_t index, float deadZone) const = 0;
+
+   /// @brief 右スティックの状態を取得する
+   virtual Vector2 GetRightStick(uint32_t index, float deadZone) const = 0;
+};
+
+/// @brief 入力管理クラス
+class Input final : public IInputBackend {
+public:
+   ~Input() override;
 
    /// @brief 入力システムの初期化
    /// @param hInstance アプリケーションのインスタンスハンドル
@@ -169,7 +194,7 @@ public:
    /// @brief キーが押されているか（enum版）
    /// @param key キーコード
    /// @return キーが押されている場合はtrue
-   bool IsKeyPressed(KeyCode key);
+   bool IsKeyPressed(KeyCode key) override;
 
    /// @brief キーが押されていないか
    /// @param key キーコード（DIK_で始まる値）
@@ -189,7 +214,7 @@ public:
    /// @brief キーがトリガー(押された瞬間)されたか（enum版）
    /// @param key キーコード
    /// @return キーがトリガーされた場合はtrue
-   bool IsKeyTriggered(KeyCode key);
+   bool IsKeyTriggered(KeyCode key) override;
 
    /// @brief キーがリリース(離された瞬間)されたか
    /// @param key キーコード（DIK_で始まる値）
@@ -284,7 +309,7 @@ public:
    /// @param button ゲームパッドのボタン
    /// @param index ゲームパッド番号（通常0）
    /// @return ボタンが押されている場合はtrue
-   bool IsGamePadButtonPressed(GamePadButton button, uint32_t index = 0) const;
+   bool IsGamePadButtonPressed(GamePadButton button, uint32_t index = 0) const override;
 
    /// @brief ゲームパッドのボタンがトリガーされたか
    /// @param button ゲームパッドのボタンコード（XINPUT_GAMEPAD_で始まる値）
@@ -296,7 +321,7 @@ public:
    /// @param button ゲームパッドのボタン
    /// @param index ゲームパッド番号（通常0）
    /// @return ボタンがトリガーされた場合はtrue
-   bool IsGamePadButtonTriggered(GamePadButton button, uint32_t index = 0) const;
+   bool IsGamePadButtonTriggered(GamePadButton button, uint32_t index = 0) const override;
 
    /// @brief ゲームパッドのボタンがリリースされたか
    /// @param button ゲームパッドのボタンコード（XINPUT_GAMEPAD_で始まる値）
@@ -314,13 +339,13 @@ public:
    /// @param index ゲームパッド番号（通常0）
    /// @param deadZone デッドゾーンの値（0.0～1.0）
    /// @return 左スティックのベクトル
-   Vector2 GetLeftStick(uint32_t index, float deadZone = 0.24) const;
+   Vector2 GetLeftStick(uint32_t index, float deadZone = 0.24) const override;
 
    /// @brief ゲームパッドの右スティックの状態を取得
    /// @param index ゲームパッド番号（通常0)
    /// @param deadZone デッドゾーンの値（0.0～1.0）
    /// @return 右スティックのベクトル
-   Vector2 GetRightStick(uint32_t index, float deadZone = 0.26f) const;
+   Vector2 GetRightStick(uint32_t index, float deadZone = 0.26f) const override;
 
    // Todo: ↓ゲームパッドのスティックの状態を取得する関数は、デッドゾーンの値が少しバグっている。
 

@@ -48,7 +48,7 @@ const bool kRegistered = VirtualCamera::RegisterComponentFactory(
 void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    // 保存されたランタイム座標が残っていても、初回からプレイヤー近傍で追従を始める。
    if (!isInitialized_) {
-      const float initialMaxDistance = (std::max)(maxFollowDistance, 0.1f);
+      const float initialMaxDistance = std::max(maxFollowDistance, 0.1f);
       Vector3 initialOffset = state.transform.translation - pivotTarget_;
       const float initialDistance = initialOffset.Length();
       const bool hasValidInitialOffset =
@@ -111,7 +111,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    float dist = toTarget.Length();
    if (dist > maxFollowDistance) {
       float over = dist - maxFollowDistance;
-      float move = (std::min)(over, followSpeed * deltaTime);
+      float move = std::min(over, followSpeed * deltaTime);
       eyePos_ = eyePos_ + toTarget * (move / dist);
    }
 

@@ -49,7 +49,7 @@ void TriggerVolumeComponent::Update(float deltaTime) {
          const Vector3 center = transform->transform.translation + centerOffset_;
          const float debugRadius = shape_ == Shape::Sphere
             ? radius_
-            : (std::max)({ halfExtents_.x, halfExtents_.y, halfExtents_.z });
+            : std::max({ halfExtents_.x, halfExtents_.y, halfExtents_.z });
          const Vector4 color = isInside_
             ? Vector4(0.2f, 1.0f, 0.2f, 1.0f)
             : Vector4(1.0f, 0.8f, 0.1f, 1.0f);
@@ -91,7 +91,7 @@ void TriggerVolumeComponent::Deserialize(const nlohmann::json& data) {
    readVector("centerOffset", centerOffset_);
    readVector("halfExtents", halfExtents_);
    if (data.contains("radius") && data.at("radius").is_number()) {
-      radius_ = (std::max)(data.at("radius").get<float>(), 0.0f);
+      radius_ = std::max(data.at("radius").get<float>(), 0.0f);
    }
    if (data.contains("debugDraw") && data.at("debugDraw").is_boolean()) {
       debugDraw_ = data.at("debugDraw").get<bool>();

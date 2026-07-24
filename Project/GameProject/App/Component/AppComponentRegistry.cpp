@@ -4,7 +4,6 @@
 #include "Camera/CameraGravityBridge.h"
 #include "Camera/CameraModeSwitcher.h"
 #include "Camera/ScreenSpaceBasis.h"
-#include "Character/CharacterController.h"
 #include "Character/CharacterJump.h"
 #include "Character/CharacterLanding.h"
 #include "Character/CharacterWalker.h"
@@ -23,6 +22,7 @@
 #include "Vehicle/VehicleDrift.h"
 #include "Vehicle/VehicleEffectController.h"
 #include "Vehicle/VehicleGroundMover.h"
+#include "Vehicle/VehicleInputComponent.h"
 #include "Vehicle/VehicleLandingAligner.h"
 #include "Vehicle/VehicleLandingBoost.h"
 #include "Vehicle/VehicleMover.h"
@@ -45,7 +45,6 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::CameraGravityBridge>(),
    RegisterAppComponent<App::CameraModeSwitcher>(),
    RegisterAppComponent<App::ScreenSpaceBasis>(),
-   RegisterAppComponent<App::CharacterController>(),
    RegisterAppComponent<App::CharacterJump>(),
    RegisterAppComponent<App::CharacterLanding>(),
    RegisterAppComponent<App::CharacterWalker>(),
@@ -65,6 +64,7 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::VehicleDrift>(),
    RegisterAppComponent<App::VehicleEffectController>(),
    RegisterAppComponent<App::VehicleGroundMover>(),
+   RegisterAppComponent<App::VehicleInputComponent>(),
    RegisterAppComponent<App::VehicleLandingAligner>(),
    RegisterAppComponent<App::VehicleLandingBoost>(),
    RegisterAppComponent<App::VehicleMover>(),

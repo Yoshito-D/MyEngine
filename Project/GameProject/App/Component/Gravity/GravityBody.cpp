@@ -1,6 +1,7 @@
 #include "GravityBody.h"
 #include "Object/Component/TransformComponent.h"
 #include "Object/Object.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
 #include <algorithm>
 #include <cmath>
@@ -134,7 +135,7 @@ void GravityBody::UpdateRotation(float deltaTime) {
 	  if (axis.LengthSquared() < 1e-6f) { axis = Vector3{ 0.0f, 0.0f, 1.0f }.Cross(current); }
 	  if (axis.LengthSquared() < 1e-6f) { return; }
 	  axis = axis.Normalize();
-	  Quaternion rotDelta = MakeRotateAxisAngleQuaternion(axis, 3.14159265358979323846f);
+	  Quaternion rotDelta = MakeRotateAxisAngleQuaternion(axis, MathConstants::kPi);
 	  Quaternion cur = transform->transform.GetActiveQuaternion();
 	  transform->transform.SetRotationQuaternion((rotDelta * cur).Normalize());
 	  currentUpVector_ = target;

@@ -2,9 +2,10 @@
 #include "../Gravity/GravityBody.h"
 #include "Object/Component/TransformComponent.h"
 #include "Object/Object.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
+#include <algorithm>
 #include <cmath>
-#include <numbers>
 
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
@@ -13,40 +14,44 @@
 using namespace GameEngine;
 
 namespace App {
+namespace {
+
+constexpr float kMaxControlDeltaTime = 0.05f;
+constexpr float kInputNoiseThreshold = 0.02f;
+constexpr float kAngularVelocityEpsilon = 0.001f;
+
+} // namespace
 
 // ---------------------------------------------------------------
 // public
 // ---------------------------------------------------------------
 
-void VehicleAirController::Apply(float steerInput, float pitchInput, float deltaTime) {
+void VehicleAirController::Apply(float rollInput, float pitchInput, float deltaTime) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
    if (!transform) { return; }
 
-   constexpr float kDeg2Rad = static_cast<float>(std::numbers::pi) / 180.0f;
+   // 処理落ちやブレーク復帰時の大きなdtで、慣性が1フレームで消えることを防ぐ。
+   const float controlDeltaTime = std::clamp(deltaTime, 0.0f, kMaxControlDeltaTime);
 
-   // 現在のクォータニオンからローカル軸を取得する。
-   // localForward = (0,0,1) を現在回転で変換 → 機体の上方向（rool 軸として使う）
-   // localRight   = (1,0,0) を現在回転で変換 → 機体の右方向（pitch 軸として使う）
-   Quaternion currentRot    = transform->transform.GetActiveQuaternion();
-   Vector3    localForward  = RotateVector({ 0.0f, 0.0f, 1.0f }, currentRot);
-   Vector3    localRight    = RotateVector({ 1.0f, 0.0f, 0.0f }, currentRot);
+   const Quaternion currentRot = transform->transform.GetActiveQuaternion();
 
    // 角速度を目標値に向けて更新する。
-   // 入力がある場合は targetVel（= input * rollSpeed * deg2rad）に即座にセットする。
-   // 入力がない場合は指数減衰（angularDamping）で 0 に戻す（慣性の表現）。
-   UpdateAngularVelocity(-steerInput, angularVelYaw_,
-						 -steerInput * rollSpeed * kDeg2Rad, deltaTime);
+   // スティックを戻す途中の小さい入力で、保持中の角速度を直接上書きしない。
+   UpdateAngularVelocity(-rollInput, angularVelRoll_,
+						 -rollInput * rollSpeed * MathConstants::kDegreesToRadians, controlDeltaTime);
    UpdateAngularVelocity(pitchInput, angularVelPitch_,
-						 pitchInput * pitchSpeed * kDeg2Rad, deltaTime);
+						 pitchInput * pitchSpeed * MathConstants::kDegreesToRadians, controlDeltaTime);
 
-   // yaw / pitch 回転をクォータニオンに合成する。
+   // roll後の姿勢からpitch軸を取り直し、同時入力時も常に機体のローカル軸で回す。
    Quaternion newRot = currentRot;
-   ApplyRollRotation(newRot, localForward, deltaTime);
-   ApplyPitchRotation(newRot, localRight, deltaTime);
+   const Vector3 localForward = RotateVector({ 0.0f, 0.0f, 1.0f }, newRot);
+   ApplyRollRotation(newRot, localForward, controlDeltaTime);
+   const Vector3 localRight = RotateVector({ 1.0f, 0.0f, 0.0f }, newRot);
+   ApplyPitchRotation(newRot, localRight, controlDeltaTime);
 
    // 角速度がほぼゼロのときは transform への書き込みをスキップして
    // 浮動小数点の累積誤差による不要な更新を防ぐ。
-   if (std::abs(angularVelYaw_) > 1e-6f || std::abs(angularVelPitch_) > 1e-6f) {
+   if (std::abs(angularVelRoll_) > 1e-6f || std::abs(angularVelPitch_) > 1e-6f) {
 	  transform->transform.SetRotationQuaternion(newRot);
    }
 
@@ -60,7 +65,7 @@ void VehicleAirController::Apply(float steerInput, float pitchInput, float delta
 	  float   vertSpeed  = vel.Dot(up);
 	  Vector3 vertical   = up * vertSpeed;
 	  Vector3 horizontal = vel - vertical;
-	  float   drag       = std::exp(-airDrag * deltaTime);
+	  float   drag       = std::exp(-airDrag * controlDeltaTime);
 	  gravityBody->SetVelocity(horizontal * drag + vertical);
    }
 }
@@ -71,29 +76,25 @@ void VehicleAirController::Apply(float steerInput, float pitchInput, float delta
 
 void VehicleAirController::UpdateAngularVelocity(float input, float& angVel,
 												 float targetVel, float deltaTime) const {
-   if (std::abs(input) > 1e-4f) {
-	  // 入力がある場合: 角速度を即座に目標値（input × 角速度上限）にセットする。
-	  // 慣性をつけるなら lerp にするが、即応性を優先してここでは即値代入にしている。
+   const bool hasInput = std::abs(input) > kInputNoiseThreshold;
+   const bool reversesDirection = angVel * targetVel < 0.0f;
+   const bool acceleratesCurrentDirection = std::abs(targetVel) >= std::abs(angVel);
+
+   if (hasInput && (reversesDirection || acceleratesCurrentDirection)) {
+	  // 新規入力・加速・反転は即時反映し、操作の応答性を維持する。
 	  angVel = targetVel;
    } else {
-	  // 入力がない場合: 指数減衰で角速度をゼロへ戻す。
-	  // angVel *= exp(-angularDamping * dt) は時定数 1/angularDamping の
-	  // 一階線形 ODE の厳密解であり、dt の大きさに関わらず安定している。
-	  angVel *= std::exp(-angularDamping * deltaTime);
-	  // 十分小さくなったらゼロにスナップして残留振動を防ぐ。
-	  if (std::abs(angVel) < 0.001f) { angVel = 0.0f; }
+	  // 入力解放または同方向への弱い入力では、現在の運動量から指数減衰させる。
+	  // アナログスティックの戻り途中に発生する小さい値で、慣性を上書きしないための分岐。
+	  angVel *= std::exp(-std::max(angularDamping, 0.0f) * deltaTime);
+
+	  // 弱い入力を保持している場合は、その目標角速度を下回らないよう収束させる。
+	  if (hasInput && std::abs(angVel) < std::abs(targetVel)) {
+		 angVel = targetVel;
+	  } else if (!hasInput && std::abs(angVel) < kAngularVelocityEpsilon) {
+		 angVel = 0.0f;
+	  }
    }
-}
-
-void VehicleAirController::ApplyYawRotation(Quaternion& rot,
-											const Vector3& localUp, float deltaTime) const {
-   if (std::abs(angularVelYaw_) <= 1e-6f) { return; }
-
-   // localUp 軸まわりに angularVelYaw_ * dt ラジアン回転させるクォータニオンを作り、
-   // 現在の回転に左から掛けて合成する（ワールド空間での回転軸を維持するため左掛け）。
-   // 最後に Normalize して浮動小数点誤差の蓄積を防ぐ。
-   Quaternion delta = MakeRotateAxisAngleQuaternion(localUp, angularVelYaw_ * deltaTime);
-   rot = (delta * rot).Normalize();
 }
 
 void VehicleAirController::ApplyPitchRotation(Quaternion& rot,
@@ -101,17 +102,17 @@ void VehicleAirController::ApplyPitchRotation(Quaternion& rot,
    if (std::abs(angularVelPitch_) <= 1e-6f) { return; }
 
    // localRight 軸まわりの pitch 回転（前後傾き）を合成する。
-   // yaw と同じく左掛けでワールド空間基準の軸を維持する。
+   // roll と同じく左掛けでワールド空間基準の軸を維持する。
    Quaternion delta = MakeRotateAxisAngleQuaternion(localRight, angularVelPitch_ * deltaTime);
    rot = (delta * rot).Normalize();
 }
 
 void VehicleAirController::ApplyRollRotation(GameEngine::Quaternion& rot, 
                                              const Vector3& localForward, float deltaTime) const {
-   if (std::abs(angularVelYaw_) <= 1e-6f) { return; }
+   if (std::abs(angularVelRoll_) <= 1e-6f) { return; }
 
    // localForward 軸まわりの roll 回転（左右傾き）を合成する。
-   Quaternion delta = MakeRotateAxisAngleQuaternion(localForward, angularVelYaw_ * deltaTime);
+   Quaternion delta = MakeRotateAxisAngleQuaternion(localForward, angularVelRoll_ * deltaTime);
    rot = (delta * rot).Normalize();
 }
 
@@ -125,13 +126,14 @@ void VehicleAirController::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
    if (!ImGui::CollapsingHeader(header.c_str())) { return; }
    ImGui::Separator();
-   ImGui::DragFloat((std::string(Tr("操舵速度 (deg/s)", "Steer Speed (deg/s)")) + "##1").c_str(), &rollSpeed, 1.0f, 0.0f, 360.0f);
+   ImGui::DragFloat((std::string(Tr("ロール速度 (deg/s)", "Roll Speed (deg/s)")) + "##1").c_str(), &rollSpeed, 1.0f, 0.0f, 360.0f);
    ImGui::DragFloat(Tr("ピッチ速度 (deg/s)", "Pitch Speed (deg/s)"), &pitchSpeed, 1.0f, 0.0f, 360.0f);
    ImGui::DragFloat(Tr("角速度減衰", "Angular Damping"), &angularDamping, 0.1f, 0.1f,  20.0f);
    ImGui::DragFloat(Tr("空気抵抗", "Air Drag"),        &airDrag,        0.05f, 0.0f,  5.0f);
    ImGui::Spacing();
-   constexpr float kRadToDeg = 180.0f / static_cast<float>(std::numbers::pi);
-   ImGui::Text("%s (deg/s): %.2f / %.2f", Tr("角速度 Yaw/Pitch", "AngVel Yaw/Pitch"), angularVelYaw_ * kRadToDeg, angularVelPitch_ * kRadToDeg);
+   ImGui::Text("%s (deg/s): %.2f / %.2f", Tr("角速度 Roll/Pitch", "AngVel Roll/Pitch"),
+      angularVelRoll_ * MathConstants::kRadiansToDegrees,
+      angularVelPitch_ * MathConstants::kRadiansToDegrees);
 }
 #endif
 

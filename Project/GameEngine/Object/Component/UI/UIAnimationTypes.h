@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Utility/MathUtils/MathConstants.h"
 #include <algorithm>
 #include <cmath>
 
@@ -41,8 +42,8 @@ inline UIPlaybackSample EvaluateUIPlayback(
       return {};
    }
 
-   const float safeDuration = (std::max)(duration, 0.0001f);
-   const float cycles = (elapsed - (std::max)(delay, 0.0f)) / safeDuration;
+   const float safeDuration = std::max(duration, 0.0001f);
+   const float cycles = (elapsed - std::max(delay, 0.0f)) / safeDuration;
    switch (mode) {
       case UIPlaybackMode::Loop:
          return { cycles - std::floor(cycles), false };
@@ -52,7 +53,7 @@ inline UIPlaybackSample EvaluateUIPlayback(
       }
       case UIPlaybackMode::Once:
       default:
-         return { (std::min)(cycles, 1.0f), cycles >= 1.0f };
+         return { std::min(cycles, 1.0f), cycles >= 1.0f };
    }
 }
 
@@ -61,11 +62,10 @@ inline UIPlaybackSample EvaluateUIPlayback(
 /// @param easing 補間曲線
 /// @return 補間後の進捗
 inline float EvaluateUIEasing(float progress, UIEasingType easing) {
-   constexpr float kPi = 3.14159265358979323846f;
    const float t = (std::clamp)(progress, 0.0f, 1.0f);
    switch (easing) {
       case UIEasingType::EaseInOutSine:
-         return -(std::cos(kPi * t) - 1.0f) * 0.5f;
+         return -(std::cos(MathConstants::kPi * t) - 1.0f) * 0.5f;
       case UIEasingType::EaseOutCubic: {
          const float inverse = 1.0f - t;
          return 1.0f - inverse * inverse * inverse;

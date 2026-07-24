@@ -1,5 +1,6 @@
 #pragma once
 #include "../Core/ICinemachineComponent.h"
+#include "Utility/MathUtils/MathConstants.h"
 #include <algorithm>
 
 namespace GameEngine {
@@ -22,7 +23,7 @@ public:
     void ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta, bool isDragging, bool isShiftPressed);
 
     /// @brief 距離を設定
-    void SetDistance(float distance) { distance_ = (std::max)(0.5f, distance); }
+    void SetDistance(float distance) { distance_ = std::max(0.5f, distance); }
     float GetDistance() const { return distance_; }
 
     /// @brief ピボットターゲットを設定
@@ -83,7 +84,7 @@ public:
 #endif
 
 private:
-    float yaw_ = 3.14159f;  // PI
+    float yaw_ = MathConstants::kPi;
     float pitch_ = -0.785f; // -45度
     float distance_ = 75.0f;
     Vector3 pivotTarget_ = { 0.0f, 0.0f, 0.0f };
