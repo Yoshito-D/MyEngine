@@ -57,7 +57,7 @@ public:
    Transform transform = {}; ///< Objectのローカル変換
    Matrix4x4 parentMatrix = MakeIdentity4x4(); ///< 階層合成に使用する親ワールド行列
    bool useParentMatrix = false; ///< 親行列をワールド行列へ合成するか
-   std::string parentObjectName; ///< シーン読み込み後に解決する親Object名
+   std::string parentObjectName; ///< version 4以前の名前参照を読み込むための互換フィールド
 
 private:
    std::unique_ptr<TransformationMatrix> transformationMatrix_;

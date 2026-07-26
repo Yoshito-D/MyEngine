@@ -2,6 +2,7 @@
 #include "SceneWorld.h"
 
 #include "Component/TransformComponent.h"
+#include "Component/LightComponent.h"
 #include "Effect/ParticleSystem.h"
 #include "Framework/EngineContext.h"
 #include "Model/Model.h"
@@ -40,12 +41,8 @@ bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
    // version 3までのsceneObjectsはC++生成物への差分だった。
    // データ駆動シーンでは埋め込まれた完全スナップショットを通常オブジェクトとして復元する。
    RestoreLegacyEntries(sceneData);
+   RestoreLegacyLights(sceneData);
    RestoreCameras(sceneData);
-   if (sceneData.contains("environment") &&
-      !EngineContext::ApplyLightingSceneState(sceneData.at("environment"))) {
-      Logger::Error("SceneWorld load failed: invalid environment settings");
-      return false;
-   }
    if (sceneData.contains("renderSettings") &&
       !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
       Logger::Error("SceneWorld load failed: invalid render settings");
@@ -76,24 +73,14 @@ void SceneWorld::Clear() {
    genericObjects_.clear();
    objectStore_.Clear();
    objectStore_.FlushDeferredDeletes();
-   cameraData_ = nlohmann::json::object();
-
    if (sCurrent_ == this) {
       sCurrent_ = nullptr;
    }
 }
 
 void SceneWorld::Update(float deltaTime) {
-   for (const auto& object : genericObjects_) {
-      if (object) {
-         object->UpdateComponents(deltaTime);
-      }
-   }
-   for (const auto& skybox : skyboxes_) {
-      if (skybox) {
-         skybox->UpdateComponents(deltaTime);
-      }
-   }
+   // ObjectコンポーネントはFrameworkの共通Entity更新経路で一度だけ更新する。
+   (void)deltaTime;
 }
 
 Object* SceneWorld::FindObjectById(const std::string& objectId) const {
@@ -155,6 +142,10 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
       Logger::EngineWarning("Scene object skipped because it has no stable id");
       return false;
    }
+   if (Object* existingEntity = Object::FindByEntityId(id);
+      existingEntity && !FindObjectById(id)) {
+      return objectStore_.ApplyObjectState(existingEntity, objectData);
+   }
    if (FindObjectById(id) || objectStore_.FindParticleById(id)) {
       Logger::EngineWarning("Duplicate scene object id skipped: " + id);
       return false;
@@ -168,9 +159,13 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
    if (objectType == "Generic" || objectType == "Object") {
       auto object = std::make_unique<Object>();
       Object* rawObject = object.get();
+      rawObject->SetEntityId(id);
       rawObject->SetObjectName(id);
       if (objectData.contains("components") && objectData.at("components").is_array()) {
          rawObject->DeserializeComponents(objectData.at("components"));
+      }
+      if (objectData.contains("parentId") && objectData.at("parentId").is_string()) {
+         rawObject->SetParentEntityId(objectData.at("parentId").get<std::string>());
       }
       RegisterLooseObject(id, rawObject);
       genericObjects_.push_back(std::move(object));
@@ -180,10 +175,14 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
    if (objectType == "Skybox") {
       auto skybox = std::make_unique<Skybox>();
       Skybox* rawSkybox = skybox.get();
+      rawSkybox->SetEntityId(id);
       rawSkybox->Create(EngineContext::GetGraphicsDevice());
       rawSkybox->SetObjectName(id);
       if (objectData.contains("components") && objectData.at("components").is_array()) {
          rawSkybox->DeserializeComponents(objectData.at("components"));
+      }
+      if (objectData.contains("parentId") && objectData.at("parentId").is_string()) {
+         rawSkybox->SetParentEntityId(objectData.at("parentId").get<std::string>());
       }
       RegisterLooseObject(id, rawSkybox);
       skyboxes_.push_back(std::move(skybox));
@@ -219,30 +218,69 @@ void SceneWorld::RestoreLegacyEntries(const nlohmann::json& sceneData) {
    }
 }
 
+void SceneWorld::RestoreLegacyLights(const nlohmann::json& sceneData) {
+   if (!sceneData.contains("environment") || !sceneData.at("environment").is_object()) {
+      return;
+   }
+   const auto& environment = sceneData.at("environment");
+   if (!environment.contains("lights") || !environment.at("lights").is_array()) {
+      return;
+   }
+
+   for (const auto& lightData : environment.at("lights")) {
+      if (!lightData.is_object()) {
+         continue;
+      }
+      const std::string id = lightData.value("id", "");
+      if (id.empty()) {
+         continue;
+      }
+
+      Object* entity = Object::FindByEntityId(id);
+      if (!entity) {
+         auto newEntity = std::make_unique<Object>();
+         entity = newEntity.get();
+         entity->SetEntityId(id);
+         entity->SetObjectName(id);
+         entity->AddComponent<TransformComponent>();
+         RegisterLooseObject(id, entity);
+         genericObjects_.push_back(std::move(newEntity));
+      }
+
+      auto* light = entity->GetComponent<LightComponent>();
+      if (!light) {
+         light = entity->AddComponent<LightComponent>();
+      }
+      if (light) {
+         light->DeserializeLegacy(lightData);
+      }
+   }
+}
+
 void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
    if (!sceneData.contains("cameras") || !sceneData.at("cameras").is_object()) {
       return;
    }
 
-   cameraData_ = sceneData.at("cameras");
    auto* brain = EngineContext::GetActiveBrain();
    if (!brain) {
       Logger::EngineWarning("Virtual cameras skipped because no active camera brain exists");
       return;
    }
 
-   if (cameraData_.contains("brain") && cameraData_.at("brain").is_object()) {
-      const auto& brainData = cameraData_.at("brain");
+   const auto& camerasData = sceneData.at("cameras");
+   if (camerasData.contains("brain") && camerasData.at("brain").is_object()) {
+      const auto& brainData = camerasData.at("brain");
       if (brainData.contains("defaultBlendTime") && brainData.at("defaultBlendTime").is_number()) {
          brain->SetDefaultBlendTime(brainData.at("defaultBlendTime").get<float>());
       }
    }
 
-   if (!cameraData_.contains("virtualCameras") || !cameraData_.at("virtualCameras").is_array()) {
+   if (!camerasData.contains("virtualCameras") || !camerasData.at("virtualCameras").is_array()) {
       return;
    }
 
-   for (const auto& cameraData : cameraData_.at("virtualCameras")) {
+   for (const auto& cameraData : camerasData.at("virtualCameras")) {
       if (!cameraData.is_object() || cameraData.value("name", "") == "DebugCamera") {
          continue;
       }
@@ -255,6 +293,7 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
          Logger::EngineWarning("Virtual camera skipped because its id is empty or duplicated");
          continue;
       }
+
       brain->RegisterVirtualCamera(rawCamera);
       virtualCamerasById_[id] = rawCamera;
       virtualCameras_.push_back(std::move(camera));
@@ -262,36 +301,18 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
 }
 
 void SceneWorld::ResolveReferences() {
-   if (cameraData_.contains("virtualCameras") && cameraData_.at("virtualCameras").is_array()) {
-      for (const auto& cameraData : cameraData_.at("virtualCameras")) {
-         if (!cameraData.is_object()) {
-            continue;
-         }
-         const std::string cameraKey = cameraData.value("id", cameraData.value("name", ""));
-         VirtualCamera* camera = FindVirtualCamera(cameraKey);
-         if (!camera) {
-            continue;
-         }
-
-         auto resolveTransform = [this](const nlohmann::json& data, const char* key) -> Transform* {
-            if (!data.contains(key) || !data.at(key).is_string()) {
-               return nullptr;
-            }
-            Object* object = FindObjectById(data.at(key).get<std::string>());
-            if (!object) {
-               return nullptr;
-            }
-            auto* transform = object->GetComponent<TransformComponent>();
-            return transform ? &transform->transform : nullptr;
-         };
-         camera->SetFollowTarget(resolveTransform(cameraData, "followTargetId"));
-         camera->SetLookAtTarget(resolveTransform(cameraData, "lookAtTargetId"));
-      }
-   }
-
    for (Object* object : CollectObjects()) {
       if (!object) {
          continue;
+      }
+      if (object->GetParentEntityId().empty()) {
+         if (auto* transform = object->GetComponent<TransformComponent>();
+            transform && !transform->parentObjectName.empty()) {
+            if (Object* parent = Object::FindByObjectName(transform->parentObjectName)) {
+               object->SetParentEntityId(parent->GetEntityId());
+               transform->parentObjectName.clear();
+            }
+         }
       }
       for (const auto& component : object->GetComponentContainer().GetAll()) {
          if (component) {
@@ -305,7 +326,8 @@ std::vector<Object*> SceneWorld::CollectObjects() const {
    std::vector<Object*> objects;
    objects.reserve(
       objectStore_.GetModels().size() + objectStore_.GetSprites().size() +
-      objectStore_.GetUITexts().size() + genericObjects_.size() + skyboxes_.size());
+      objectStore_.GetUITexts().size() + objectStore_.GetGenericObjects().size() +
+      genericObjects_.size() + skyboxes_.size());
    for (const auto& model : objectStore_.GetModels()) {
       if (model) { objects.push_back(model.get()); }
    }
@@ -314,6 +336,9 @@ std::vector<Object*> SceneWorld::CollectObjects() const {
    }
    for (const auto& text : objectStore_.GetUITexts()) {
       if (text) { objects.push_back(text.get()); }
+   }
+   for (const auto& object : objectStore_.GetGenericObjects()) {
+      if (object) { objects.push_back(object.get()); }
    }
    for (const auto& object : genericObjects_) {
       if (object) { objects.push_back(object.get()); }
@@ -330,6 +355,7 @@ void SceneWorld::RegisterLooseObject(const std::string& id, Object* object) {
    }
    looseObjectsById_[id] = object;
    looseObjectIds_[object] = id;
+   object->SetEntityId(id);
 }
 
 } // namespace GameEngine

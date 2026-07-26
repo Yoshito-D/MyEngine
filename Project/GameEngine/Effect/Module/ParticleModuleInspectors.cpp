@@ -32,6 +32,8 @@
 namespace GameEngine {
 namespace {
 
+constexpr float kInspectorColumnWidth = 140.0f;
+
 const char* L(const ImGuiHelper::LocalizedText& text) {
    return ImGuiHelper::Localize(text);
 }
@@ -67,7 +69,7 @@ bool DrawRandomFloat(
    float speed,
    float minValue,
    float maxValue,
-   float columnWidth = 140.0f) {
+   float columnWidth = kInspectorColumnWidth) {
    bool changed = false;
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
@@ -105,7 +107,7 @@ bool DrawRandomVector2(
    float speed,
    float minValue,
    float maxValue,
-   float columnWidth = 140.0f) {
+   float columnWidth = kInspectorColumnWidth) {
    bool changed = false;
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
@@ -150,7 +152,7 @@ bool DrawRandomVector3(
    float speed,
    float minValue,
    float maxValue,
-   float columnWidth = 140.0f) {
+   float columnWidth = kInspectorColumnWidth) {
    bool changed = false;
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
@@ -196,7 +198,7 @@ bool DrawRandomEulerDegrees(
    float speedDegrees = 1.0f,
    float minDegrees = -360.0f,
    float maxDegrees = 360.0f,
-   float columnWidth = 140.0f) {
+   float columnWidth = kInspectorColumnWidth) {
    bool changed = false;
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
@@ -237,7 +239,7 @@ bool DrawRandomEulerDegrees(
    return changed;
 }
 
-bool DrawRandomColor(const std::string& label, RandomColor& value, float columnWidth = 140.0f) {
+bool DrawRandomColor(const std::string& label, RandomColor& value, float columnWidth = kInspectorColumnWidth) {
    bool changed = false;
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
@@ -278,7 +280,7 @@ bool DrawModuleEnabled(Module& module, const char* id) {
    // 全モジュールで同じ有効化UIとID規則を共有し、ラベル衝突を防ぐ。
    ImGui::PushID(id);
    bool enabled = module.IsEnabled();
-   const bool changed = ImGuiHelper::DrawCheckbox(L({ "有効", "Enabled" }), enabled, 140.0f);
+   const bool changed = ImGuiHelper::DrawCheckbox(L({ "有効", "Enabled" }), enabled, kInspectorColumnWidth);
    if (changed) {
 	  module.SetEnabled(enabled);
    }
@@ -290,17 +292,17 @@ bool DrawModuleEnabled(Module& module, const char* id) {
 
 void MainModule::DrawInspector() {
    float duration = GetDuration();
-   if (ImGuiHelper::DrawFloatControl(L({ "再生時間", "Duration" }), duration, 5.0f, 140.0f, 0.1f, 0.1f, 60.0f)) {
+   if (ImGuiHelper::DrawFloatControl(L({ "再生時間", "Duration" }), duration, 5.0f, kInspectorColumnWidth, 0.1f, 0.1f, 60.0f)) {
 	  SetDuration(duration);
    }
 
    bool looping = IsLooping();
-   if (ImGuiHelper::DrawCheckbox(L({ "ループ", "Looping" }), looping, 140.0f)) {
+   if (ImGuiHelper::DrawCheckbox(L({ "ループ", "Looping" }), looping, kInspectorColumnWidth)) {
 	  SetLooping(looping);
    }
 
    bool playOnAwake = GetPlayOnAwake();
-   if (ImGuiHelper::DrawCheckbox(L({ "開始時に再生", "Play On Awake" }), playOnAwake, 140.0f)) {
+   if (ImGuiHelper::DrawCheckbox(L({ "開始時に再生", "Play On Awake" }), playOnAwake, kInspectorColumnWidth)) {
 	  SetPlayOnAwake(playOnAwake);
    }
 
@@ -330,7 +332,7 @@ void MainModule::DrawInspector() {
 		 { StartSpeedMode::Directional, { "方向速度", "Directional" } },
 		 { StartSpeedMode::Vector3, { "ベクトル", "Vector3" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetStartSpeedMode(speedMode);
    }
 
@@ -357,7 +359,7 @@ void MainModule::DrawInspector() {
    }
 
    float timeScale = GetTimeScale();
-   if (ImGuiHelper::DrawFloatControl(L({ "時間倍率", "Time Scale" }), timeScale, 1.0f, 140.0f, 0.05f, 0.0f, 10.0f)) {
+   if (ImGuiHelper::DrawFloatControl(L({ "時間倍率", "Time Scale" }), timeScale, 1.0f, kInspectorColumnWidth, 0.05f, 0.0f, 10.0f)) {
 	  SetTimeScale(timeScale);
    }
 
@@ -371,14 +373,14 @@ void MainModule::DrawInspector() {
 		 { SimulationSpace::World, { "ワールド", "World" } },
 		 { SimulationSpace::Local, { "ローカル", "Local" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetSimulationSpace(simulationSpace);
    }
 
    ImGui::Separator();
 
    int maxParticles = static_cast<int>(GetMaxParticles());
-   if (ImGuiHelper::DrawIntControl(L({ "最大粒子数", "Max Particles" }), maxParticles, 1000, 140.0f, 1.0f, 1, 10000)) {
+   if (ImGuiHelper::DrawIntControl(L({ "最大粒子数", "Max Particles" }), maxParticles, 1000, kInspectorColumnWidth, 1.0f, 1, 10000)) {
 	  SetMaxParticles(static_cast<uint32_t>(std::max(maxParticles, 1)));
    }
 }
@@ -389,12 +391,12 @@ void EmissionModule::DrawInspector() {
    }
 
    float rateOverTime = GetRateOverTime();
-   if (ImGuiHelper::DrawFloatControl(L({ "時間あたり放出数", "Rate Over Time" }), rateOverTime, 10.0f, 140.0f, 0.5f, 0.0f, 200.0f)) {
+   if (ImGuiHelper::DrawFloatControl(L({ "時間あたり放出数", "Rate Over Time" }), rateOverTime, 10.0f, kInspectorColumnWidth, 0.5f, 0.0f, 200.0f)) {
 	  SetRateOverTime(rateOverTime);
    }
 
    float rateOverDistance = GetRateOverDistance();
-   if (ImGuiHelper::DrawFloatControl(L({ "距離あたり放出数", "Rate Over Distance" }), rateOverDistance, 0.0f, 140.0f, 0.1f, 0.0f, 50.0f)) {
+   if (ImGuiHelper::DrawFloatControl(L({ "距離あたり放出数", "Rate Over Distance" }), rateOverDistance, 0.0f, kInspectorColumnWidth, 0.1f, 0.0f, 50.0f)) {
 	  SetRateOverDistance(rateOverDistance);
    }
 
@@ -418,25 +420,25 @@ void EmissionModule::DrawInspector() {
 		 ImGui::Indent();
 
 		 float time = burst.time;
-		 if (ImGuiHelper::DrawFloatControl(L({ "時間", "Time" }), time, 0.0f, 140.0f, 0.05f, 0.0f, 999.0f, "%.2f")) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "時間", "Time" }), time, 0.0f, kInspectorColumnWidth, 0.05f, 0.0f, 999.0f, "%.2f")) {
 			burst.time = time;
 			ResetBurstStates();
 		 }
 
 		 int count = static_cast<int>(burst.count);
-		 if (ImGuiHelper::DrawIntControl(L({ "数", "Count" }), count, 10, 140.0f, 1.0f, 1, 10000)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "数", "Count" }), count, 10, kInspectorColumnWidth, 1.0f, 1, 10000)) {
 			burst.count = static_cast<uint32_t>(std::max(count, 1));
 			ResetBurstStates();
 		 }
 
 		 int cycles = static_cast<int>(burst.cycles);
-		 if (ImGuiHelper::DrawIntControl(L({ "回数", "Cycles" }), cycles, 1, 140.0f, 1.0f, 0, 1000)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "回数", "Cycles" }), cycles, 1, kInspectorColumnWidth, 1.0f, 0, 1000)) {
 			burst.cycles = static_cast<uint32_t>(std::max(cycles, 0));
 			ResetBurstStates();
 		 }
 
 		 float interval = burst.interval;
-		 if (ImGuiHelper::DrawFloatControl(L({ "間隔", "Interval" }), interval, 1.0f, 140.0f, 0.05f, 0.01f, 60.0f, "%.2f")) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "間隔", "Interval" }), interval, 1.0f, kInspectorColumnWidth, 0.05f, 0.01f, 60.0f, "%.2f")) {
 			burst.interval = interval;
 			ResetBurstStates();
 		 }
@@ -489,7 +491,7 @@ void ShapeModule::DrawInspector() {
 		 { ShapeType::Torus, { "トーラス", "Torus" } },
 		 { ShapeType::SkinnedMesh, { "スキンメッシュ", "Skinned Mesh" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetShapeType(shapeType);
    }
 
@@ -502,7 +504,7 @@ void ShapeModule::DrawInspector() {
 		 { EmitFrom::Shell, { "表面", "Shell" } },
 		 { EmitFrom::Edge, { "エッジ", "Edge" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetEmitFrom(emitFrom);
    }
 
@@ -510,70 +512,70 @@ void ShapeModule::DrawInspector() {
 	  case ShapeType::Sphere:
 	  case ShapeType::Hemisphere: {
 		 float radius = GetRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, 140.0f, 0.1f, 0.1f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
 			SetRadius(radius);
 		 }
 		 break;
 	  }
 	  case ShapeType::Cone: {
 		 float angle = GetAngle();
-		 if (ImGuiHelper::DrawFloatControl(L({ "角度 (deg)", "Angle (deg)" }), angle, 25.0f, 140.0f, 1.0f, 0.0f, 90.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "角度 (deg)", "Angle (deg)" }), angle, 25.0f, kInspectorColumnWidth, 1.0f, 0.0f, 90.0f)) {
 			SetAngle(angle);
 		 }
 
 		 float radius = GetRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, 140.0f, 0.1f, 0.1f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
 			SetRadius(radius);
 		 }
 
 		 float length = GetLength();
-		 if (ImGuiHelper::DrawFloatControl(L({ "長さ", "Length" }), length, 5.0f, 140.0f, 0.1f, 0.1f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "長さ", "Length" }), length, 5.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
 			SetLength(length);
 		 }
 		 break;
 	  }
 	  case ShapeType::Box: {
 		 Vector3 boxSize = GetBoxSize();
-		 if (ImGuiHelper::DrawVec3Control(L({ "箱サイズ", "Box Size" }), boxSize, 1.0f, 140.0f, 0.1f, 0.1f, 100.0f)) {
+		 if (ImGuiHelper::DrawVec3Control(L({ "箱サイズ", "Box Size" }), boxSize, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
 			SetBoxSize(boxSize);
 		 }
 		 break;
 	  }
 	  case ShapeType::Circle: {
 		 float radius = GetRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, 140.0f, 0.1f, 0.1f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
 			SetRadius(radius);
 		 }
 
 		 float arc = GetArc();
-		 if (ImGuiHelper::DrawFloatControl(L({ "円弧 (deg)", "Arc (deg)" }), arc, 360.0f, 140.0f, 1.0f, 0.0f, 360.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "円弧 (deg)", "Arc (deg)" }), arc, 360.0f, kInspectorColumnWidth, 1.0f, 0.0f, 360.0f)) {
 			SetArc(arc);
 		 }
 
 		 float outwardVelocity = GetCircleOutwardVelocity();
-		 if (ImGuiHelper::DrawFloatControl(L({ "外向き速度", "Outward Velocity" }), outwardVelocity, 0.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "外向き速度", "Outward Velocity" }), outwardVelocity, 0.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
 			SetCircleOutwardVelocity(outwardVelocity);
 		 }
 		 break;
 	  }
 	  case ShapeType::Cylinder: {
 		 float radius = GetRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
 			SetRadius(radius);
 		 }
 		 float height = GetLength();
-		 if (ImGuiHelper::DrawFloatControl(L({ "高さ", "Height" }), height, 5.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "高さ", "Height" }), height, 5.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
 			SetLength(height);
 		 }
 		 break;
 	  }
 	  case ShapeType::Torus: {
 		 float majorRadius = GetTorusMajorRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "主半径", "Major Radius" }), majorRadius, 1.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "主半径", "Major Radius" }), majorRadius, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
 			SetTorusMajorRadius(majorRadius);
 		 }
 		 float minorRadius = GetRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "副半径", "Minor Radius" }), minorRadius, 1.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "副半径", "Minor Radius" }), minorRadius, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
 			SetRadius(minorRadius);
 		 }
 		 break;
@@ -585,17 +587,17 @@ void ShapeModule::DrawInspector() {
    ImGui::Separator();
 
    Vector3 position = GetPosition();
-   if (ImGuiHelper::DrawVec3Control(L({ "位置", "Position" }), position, 0.0f, 140.0f, 0.1f)) {
+   if (ImGuiHelper::DrawVec3Control(L({ "位置", "Position" }), position, 0.0f, kInspectorColumnWidth, 0.1f)) {
 	  SetPosition(position);
    }
 
    Quaternion rotation = GetRotationQuaternion();
-   if (ImGuiHelper::DrawQuaternionAsEulerDegrees(L({ "回転 (deg)", "Rotation (deg)" }), rotation, 140.0f, 0.1f)) {
+   if (ImGuiHelper::DrawQuaternionAsEulerDegrees(L({ "回転 (deg)", "Rotation (deg)" }), rotation, kInspectorColumnWidth, 0.1f)) {
 	  SetRotation(rotation);
    }
 
    Vector3 scale = GetScale();
-   if (ImGuiHelper::DrawVec3Control(L({ "スケール", "Scale" }), scale, 1.0f, 140.0f, 0.1f, 0.1f, 10.0f)) {
+   if (ImGuiHelper::DrawVec3Control(L({ "スケール", "Scale" }), scale, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 10.0f)) {
 	  SetScale(scale);
    }
 }
@@ -648,24 +650,24 @@ void ForceOverLifetimeModule::DrawInspector() {
    }
 
    bool attractorEnabled = IsAttractorEnabled();
-   if (ImGuiHelper::DrawCheckbox(L({ "ポイントフォース", "Point Force" }), attractorEnabled, 140.0f)) {
+   if (ImGuiHelper::DrawCheckbox(L({ "ポイントフォース", "Point Force" }), attractorEnabled, kInspectorColumnWidth)) {
 	  SetAttractorEnabled(attractorEnabled);
    }
    if (attractorEnabled) {
 	  Vector3 position = GetAttractorPosition();
-	  if (ImGuiHelper::DrawVec3Control(L({ "中心", "Center" }), position, 0.0f, 140.0f, 0.1f)) {
+	  if (ImGuiHelper::DrawVec3Control(L({ "中心", "Center" }), position, 0.0f, kInspectorColumnWidth, 0.1f)) {
 		 SetAttractorPosition(position);
 	  }
 	  float strength = GetAttractorStrength();
-	  if (ImGuiHelper::DrawFloatControl(L({ "強度 (+引力 / -斥力)", "Strength (+Attract / -Repel)" }), strength, 0.0f, 140.0f, 0.1f, -1000.0f, 1000.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "強度 (+引力 / -斥力)", "Strength (+Attract / -Repel)" }), strength, 0.0f, kInspectorColumnWidth, 0.1f, -1000.0f, 1000.0f)) {
 		 SetAttractorStrength(strength);
 	  }
 	  float radius = GetAttractorRadius();
-	  if (ImGuiHelper::DrawFloatControl(L({ "作用半径 (0=無限)", "Radius (0=Infinite)" }), radius, 0.0f, 140.0f, 0.1f, 0.0f, 1000.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "作用半径 (0=無限)", "Radius (0=Infinite)" }), radius, 0.0f, kInspectorColumnWidth, 0.1f, 0.0f, 1000.0f)) {
 		 SetAttractorRadius(radius);
 	  }
 	  float falloff = GetAttractorFalloff();
-	  if (ImGuiHelper::DrawFloatControl(L({ "距離減衰", "Falloff" }), falloff, 1.0f, 140.0f, 0.1f, 0.0f, 8.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "距離減衰", "Falloff" }), falloff, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 8.0f)) {
 		 SetAttractorFalloff(falloff);
 	  }
    }
@@ -677,12 +679,12 @@ void ColorOverLifetimeModule::DrawInspector() {
    }
 
    Vector4 startColor = GetStartColor();
-   if (ImGuiHelper::DrawColorEdit4(L({ "開始色", "Start Color" }), startColor, 140.0f)) {
+   if (ImGuiHelper::DrawColorEdit4(L({ "開始色", "Start Color" }), startColor, kInspectorColumnWidth)) {
 	  SetStartColor(startColor);
    }
 
    Vector4 endColor = GetEndColor();
-   if (ImGuiHelper::DrawColorEdit4(L({ "終了色", "End Color" }), endColor, 140.0f)) {
+   if (ImGuiHelper::DrawColorEdit4(L({ "終了色", "End Color" }), endColor, kInspectorColumnWidth)) {
 	  SetEndColor(endColor);
    }
 }
@@ -698,12 +700,12 @@ void SizeOverLifetimeModule::DrawInspector() {
    }
 
    Vector3 startSize = GetStartSize();
-   if (ImGuiHelper::DrawVec3Control(L({ "開始サイズ", "Start Size" }), startSize, 1.0f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+   if (ImGuiHelper::DrawVec3Control(L({ "開始サイズ", "Start Size" }), startSize, 1.0f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 	  SetStartSize(startSize);
    }
 
    Vector3 endSize = GetEndSize();
-   if (ImGuiHelper::DrawVec3Control(L({ "終了サイズ", "End Size" }), endSize, 0.0f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+   if (ImGuiHelper::DrawVec3Control(L({ "終了サイズ", "End Size" }), endSize, 0.0f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 	  SetEndSize(endSize);
    }
 }
@@ -754,12 +756,12 @@ void UVTransformModule::DrawInspector() {
    };
 
    ValueMode scrollMode = GetScrollMode();
-   if (ImGuiHelper::DrawLocalizedEnumCombo(L({ "スクロールモード", "Scroll Mode" }), scrollMode, valueModes, 140.0f)) {
+   if (ImGuiHelper::DrawLocalizedEnumCombo(L({ "スクロールモード", "Scroll Mode" }), scrollMode, valueModes, kInspectorColumnWidth)) {
 	  SetScrollMode(scrollMode);
    }
    if (GetScrollMode() == ValueMode::Constant) {
 	  Vector2 value = GetScrollConstant();
-	  if (ImGuiHelper::DrawVec2Control(L({ "スクロール", "Scroll" }), value, 0.0f, 140.0f, 0.01f, -10.0f, 10.0f)) {
+	  if (ImGuiHelper::DrawVec2Control(L({ "スクロール", "Scroll" }), value, 0.0f, kInspectorColumnWidth, 0.01f, -10.0f, 10.0f)) {
 		 SetScrollConstant(value);
 	  }
    } else if (GetScrollMode() == ValueMode::RandomBetweenTwoConstants) {
@@ -770,10 +772,10 @@ void UVTransformModule::DrawInspector() {
    } else {
 	  Vector2 start = GetScrollCurveStart();
 	  Vector2 end = GetScrollCurveEnd();
-	  if (ImGuiHelper::DrawVec2Control(L({ "開始スクロール", "Start Scroll" }), start, 0.0f, 140.0f, 0.01f, -10.0f, 10.0f)) {
+	  if (ImGuiHelper::DrawVec2Control(L({ "開始スクロール", "Start Scroll" }), start, 0.0f, kInspectorColumnWidth, 0.01f, -10.0f, 10.0f)) {
 		 SetScrollCurveStart(start);
 	  }
-	  if (ImGuiHelper::DrawVec2Control(L({ "終了スクロール", "End Scroll" }), end, 0.0f, 140.0f, 0.01f, -10.0f, 10.0f)) {
+	  if (ImGuiHelper::DrawVec2Control(L({ "終了スクロール", "End Scroll" }), end, 0.0f, kInspectorColumnWidth, 0.01f, -10.0f, 10.0f)) {
 		 SetScrollCurveEnd(end);
 	  }
    }
@@ -781,12 +783,12 @@ void UVTransformModule::DrawInspector() {
    ImGui::Separator();
 
    ValueMode rotationMode = GetRotationMode();
-   if (ImGuiHelper::DrawLocalizedEnumCombo(L({ "回転モード", "Rotation Mode" }), rotationMode, valueModes, 140.0f)) {
+   if (ImGuiHelper::DrawLocalizedEnumCombo(L({ "回転モード", "Rotation Mode" }), rotationMode, valueModes, kInspectorColumnWidth)) {
 	  SetRotationMode(rotationMode);
    }
    if (GetRotationMode() == ValueMode::Constant) {
 	  float valueDegrees = ImGuiHelper::RadiansToDegrees(GetRotationConstant());
-	  if (ImGuiHelper::DrawFloatControl(L({ "回転 (deg)", "Rotation (deg)" }), valueDegrees, 0.0f, 140.0f, 0.1f, -360.0f, 360.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "回転 (deg)", "Rotation (deg)" }), valueDegrees, 0.0f, kInspectorColumnWidth, 0.1f, -360.0f, 360.0f)) {
 		 SetRotationConstant(ImGuiHelper::DegreesToRadians(valueDegrees));
 	  }
    } else if (GetRotationMode() == ValueMode::RandomBetweenTwoConstants) {
@@ -801,10 +803,10 @@ void UVTransformModule::DrawInspector() {
    } else {
 	  float startDegrees = ImGuiHelper::RadiansToDegrees(GetRotationCurveStart());
 	  float endDegrees = ImGuiHelper::RadiansToDegrees(GetRotationCurveEnd());
-	  if (ImGuiHelper::DrawFloatControl(L({ "開始回転 (deg)", "Start Rotation (deg)" }), startDegrees, 0.0f, 140.0f, 0.1f, -360.0f, 360.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "開始回転 (deg)", "Start Rotation (deg)" }), startDegrees, 0.0f, kInspectorColumnWidth, 0.1f, -360.0f, 360.0f)) {
 		 SetRotationCurveStart(ImGuiHelper::DegreesToRadians(startDegrees));
 	  }
-	  if (ImGuiHelper::DrawFloatControl(L({ "終了回転 (deg)", "End Rotation (deg)" }), endDegrees, 0.0f, 140.0f, 0.1f, -360.0f, 360.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "終了回転 (deg)", "End Rotation (deg)" }), endDegrees, 0.0f, kInspectorColumnWidth, 0.1f, -360.0f, 360.0f)) {
 		 SetRotationCurveEnd(ImGuiHelper::DegreesToRadians(endDegrees));
 	  }
    }
@@ -812,12 +814,12 @@ void UVTransformModule::DrawInspector() {
    ImGui::Separator();
 
    ValueMode scaleMode = GetScaleMode();
-   if (ImGuiHelper::DrawLocalizedEnumCombo(L({ "スケールモード", "Scale Mode" }), scaleMode, valueModes, 140.0f)) {
+   if (ImGuiHelper::DrawLocalizedEnumCombo(L({ "スケールモード", "Scale Mode" }), scaleMode, valueModes, kInspectorColumnWidth)) {
 	  SetScaleMode(scaleMode);
    }
    if (GetScaleMode() == ValueMode::Constant) {
 	  Vector2 value = GetScaleConstant();
-	  if (ImGuiHelper::DrawVec2Control(L({ "スケール", "Scale" }), value, 1.0f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+	  if (ImGuiHelper::DrawVec2Control(L({ "スケール", "Scale" }), value, 1.0f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 		 SetScaleConstant(value);
 	  }
    } else if (GetScaleMode() == ValueMode::RandomBetweenTwoConstants) {
@@ -828,10 +830,10 @@ void UVTransformModule::DrawInspector() {
    } else {
 	  Vector2 start = GetScaleCurveStart();
 	  Vector2 end = GetScaleCurveEnd();
-	  if (ImGuiHelper::DrawVec2Control(L({ "開始スケール", "Start Scale" }), start, 1.0f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+	  if (ImGuiHelper::DrawVec2Control(L({ "開始スケール", "Start Scale" }), start, 1.0f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 		 SetScaleCurveStart(start);
 	  }
-	  if (ImGuiHelper::DrawVec2Control(L({ "終了スケール", "End Scale" }), end, 1.0f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+	  if (ImGuiHelper::DrawVec2Control(L({ "終了スケール", "End Scale" }), end, 1.0f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 		 SetScaleCurveEnd(end);
 	  }
    }
@@ -843,22 +845,22 @@ void TextureSheetAnimationModule::DrawInspector() {
    }
 
    int tilesX = static_cast<int>(GetTilesX());
-   if (ImGuiHelper::DrawIntControl(L({ "横分割数", "Tiles X" }), tilesX, 1, 140.0f, 1.0f, 1, 64)) {
+   if (ImGuiHelper::DrawIntControl(L({ "横分割数", "Tiles X" }), tilesX, 1, kInspectorColumnWidth, 1.0f, 1, 64)) {
 	  SetTilesX(static_cast<uint32_t>(std::max(tilesX, 1)));
    }
 
    int tilesY = static_cast<int>(GetTilesY());
-   if (ImGuiHelper::DrawIntControl(L({ "縦分割数", "Tiles Y" }), tilesY, 1, 140.0f, 1.0f, 1, 64)) {
+   if (ImGuiHelper::DrawIntControl(L({ "縦分割数", "Tiles Y" }), tilesY, 1, kInspectorColumnWidth, 1.0f, 1, 64)) {
 	  SetTilesY(static_cast<uint32_t>(std::max(tilesY, 1)));
    }
 
    float frameOverTime = GetFrameOverTime();
-   if (ImGuiHelper::DrawFloatControl(L({ "時間あたりフレーム", "Frame Over Time" }), frameOverTime, 1.0f, 140.0f, 0.1f, 0.0f, 100.0f)) {
+   if (ImGuiHelper::DrawFloatControl(L({ "時間あたりフレーム", "Frame Over Time" }), frameOverTime, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
 	  SetFrameOverTime(frameOverTime);
    }
 
    int cycles = static_cast<int>(GetCycles());
-   if (ImGuiHelper::DrawIntControl(L({ "サイクル", "Cycles" }), cycles, 1, 140.0f, 1.0f, 1, 100)) {
+   if (ImGuiHelper::DrawIntControl(L({ "サイクル", "Cycles" }), cycles, 1, kInspectorColumnWidth, 1.0f, 1, 100)) {
 	  SetCycles(static_cast<uint32_t>(std::max(cycles, 1)));
    }
 
@@ -867,7 +869,7 @@ void TextureSheetAnimationModule::DrawInspector() {
    if (GetAnimationMode() == AnimationMode::SingleRow) {
 	  maxFrameCount = static_cast<int>(GetTilesX());
    }
-   if (ImGuiHelper::DrawIntControl(L({ "フレーム数 (0=全て)", "Frame Count (0=All)" }), frameCount, 0, 140.0f, 1.0f, 0, maxFrameCount)) {
+   if (ImGuiHelper::DrawIntControl(L({ "フレーム数 (0=全て)", "Frame Count (0=All)" }), frameCount, 0, kInspectorColumnWidth, 1.0f, 0, maxFrameCount)) {
 	  SetFrameCount(static_cast<uint32_t>(std::max(frameCount, 0)));
    }
 
@@ -879,7 +881,7 @@ void TextureSheetAnimationModule::DrawInspector() {
 		 { AnimationMode::WholeSheet, { "シート全体", "Whole Sheet" } },
 		 { AnimationMode::SingleRow, { "単一行", "Single Row" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetAnimationMode(animationMode);
 	  if (GetAnimationMode() == AnimationMode::WholeSheet) {
 		 SetRandomRow(false);
@@ -887,19 +889,19 @@ void TextureSheetAnimationModule::DrawInspector() {
    }
 
    int startFrame = static_cast<int>(GetStartFrame());
-   if (ImGuiHelper::DrawIntControl(L({ "開始フレーム", "Start Frame" }), startFrame, 0, 140.0f, 1.0f, 0, 1024)) {
+   if (ImGuiHelper::DrawIntControl(L({ "開始フレーム", "Start Frame" }), startFrame, 0, kInspectorColumnWidth, 1.0f, 0, 1024)) {
 	  SetStartFrame(static_cast<uint32_t>(std::max(startFrame, 0)));
    }
 
    if (GetAnimationMode() == AnimationMode::SingleRow) {
 	  bool randomRow = GetRandomRow();
-	  if (ImGuiHelper::DrawCheckbox(L({ "ランダム行", "Random Row" }), randomRow, 140.0f)) {
+	  if (ImGuiHelper::DrawCheckbox(L({ "ランダム行", "Random Row" }), randomRow, kInspectorColumnWidth)) {
 		 SetRandomRow(randomRow);
 	  }
 
 	  if (!randomRow) {
 		 int rowIndex = static_cast<int>(GetRowIndex());
-		 if (ImGuiHelper::DrawIntControl(L({ "行インデックス", "Row Index" }), rowIndex, 0, 140.0f, 1.0f, 0, 1024)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "行インデックス", "Row Index" }), rowIndex, 0, kInspectorColumnWidth, 1.0f, 0, 1024)) {
 			SetRowIndex(static_cast<uint32_t>(std::max(rowIndex, 0)));
 		 }
 	  }
@@ -919,7 +921,7 @@ void RendererModule::DrawInspector() {
 		 { RotationSpace::World, { "ワールド", "World" } },
 		 { RotationSpace::Local, { "ローカル", "Local" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetRotationSpace(rotationSpace);
    }
 
@@ -934,23 +936,23 @@ void RendererModule::DrawInspector() {
 		 { BillboardType::Vertical, { "垂直", "Vertical" } },
 		 { BillboardType::Velocity, { "速度方向", "Velocity" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetBillboardType(billboardType);
    }
 
    bool velocityStretchEnabled = IsVelocityStretchEnabled();
-   if (ImGuiHelper::DrawCheckbox(L({ "速度ストレッチ", "Velocity Stretch" }), velocityStretchEnabled, 140.0f)) {
+   if (ImGuiHelper::DrawCheckbox(L({ "速度ストレッチ", "Velocity Stretch" }), velocityStretchEnabled, kInspectorColumnWidth)) {
 	  SetVelocityStretchEnabled(velocityStretchEnabled);
    }
 
    if (velocityStretchEnabled) {
 	  float speedScale = GetSpeedScale();
-	  if (ImGuiHelper::DrawFloatControl(L({ "速度スケール", "Speed Scale" }), speedScale, 1.0f, 140.0f, 0.1f, 0.0f, 10.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "速度スケール", "Speed Scale" }), speedScale, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 10.0f)) {
 		 SetSpeedScale(speedScale);
 	  }
 
 	  float lengthScale = GetLengthScale();
-	  if (ImGuiHelper::DrawFloatControl(L({ "長さスケール", "Length Scale" }), lengthScale, 2.0f, 140.0f, 0.1f, 0.0f, 10.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "長さスケール", "Length Scale" }), lengthScale, 2.0f, kInspectorColumnWidth, 0.1f, 0.0f, 10.0f)) {
 		 SetLengthScale(lengthScale);
 	  }
    }
@@ -965,21 +967,21 @@ void RendererModule::DrawInspector() {
 		 { SortMode::BackToFront, { "後方から前方", "Back To Front" } },
 		 { SortMode::FrontToBack, { "前方から後方", "Front To Back" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetSortMode(sortMode);
    }
 
    bool cameraFadeEnabled = IsCameraFadeEnabled();
-   if (ImGuiHelper::DrawCheckbox(L({ "カメラフェード", "Camera Fade" }), cameraFadeEnabled, 140.0f)) {
+   if (ImGuiHelper::DrawCheckbox(L({ "カメラフェード", "Camera Fade" }), cameraFadeEnabled, kInspectorColumnWidth)) {
 	  SetCameraFadeEnabled(cameraFadeEnabled);
    }
    if (cameraFadeEnabled) {
 	  float fadeNear = GetCameraFadeNear();
-	  if (ImGuiHelper::DrawFloatControl(L({ "透明距離", "Invisible Distance" }), fadeNear, 0.25f, 140.0f, 0.01f, 0.0f, 100.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "透明距離", "Invisible Distance" }), fadeNear, 0.25f, kInspectorColumnWidth, 0.01f, 0.0f, 100.0f)) {
 		 SetCameraFadeNear(fadeNear);
 	  }
 	  float fadeFar = GetCameraFadeFar();
-	  if (ImGuiHelper::DrawFloatControl(L({ "表示距離", "Visible Distance" }), fadeFar, 1.0f, 140.0f, 0.01f, 0.0f, 100.0f)) {
+	  if (ImGuiHelper::DrawFloatControl(L({ "表示距離", "Visible Distance" }), fadeFar, 1.0f, kInspectorColumnWidth, 0.01f, 0.0f, 100.0f)) {
 		 SetCameraFadeFar(fadeFar);
 	  }
    }
@@ -999,7 +1001,7 @@ void TrailModule::DrawInspector() {
 		 { TrailMode::ParticlePath, { "パーティクルの移動軌跡", "Particle Path" } },
 		 { TrailMode::EmitterToParticle, { "エミッターからパーティクル", "Emitter to Particle" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetMode(mode);
 	}
 
@@ -1016,12 +1018,12 @@ void TrailModule::DrawInspector() {
          }
       }
       if (ImGuiHelper::DrawCombo(
-         L({ "トレイル画像", "Trail Texture" }), selectedTextureIndex, textureOptions, 140.0f)) {
+         L({ "トレイル画像", "Trail Texture" }), selectedTextureIndex, textureOptions, kInspectorColumnWidth)) {
          SetTextureName(selectedTextureIndex == 0 ? std::string() : textureOptions[selectedTextureIndex]);
       }
 
       Vector4 color = GetColor();
-      if (ImGuiHelper::DrawColorEdit4(L({ "トレイル色", "Trail Color" }), color, 140.0f)) {
+      if (ImGuiHelper::DrawColorEdit4(L({ "トレイル色", "Trail Color" }), color, kInspectorColumnWidth)) {
          SetColor(color);
       }
 
@@ -1031,24 +1033,24 @@ void TrailModule::DrawInspector() {
 	  }
 	  if (GetMode() == TrailMode::ParticlePath) {
 		 int maxPoints = static_cast<int>(GetMaxPoints());
-		 if (ImGuiHelper::DrawIntControl(L({ "履歴点数", "History Points" }), maxPoints, 16, 140.0f, 1.0f, 2, 128)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "履歴点数", "History Points" }), maxPoints, 16, kInspectorColumnWidth, 1.0f, 2, 128)) {
 			SetMaxPoints(static_cast<uint32_t>(maxPoints));
 		 }
 		 float minDistance = GetMinDistance();
-		 if (ImGuiHelper::DrawFloatControl(L({ "点間の最小距離", "Minimum Point Distance" }), minDistance, 0.1f, 140.0f, 0.01f, 0.001f, 100.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "点間の最小距離", "Minimum Point Distance" }), minDistance, 0.1f, kInspectorColumnWidth, 0.01f, 0.001f, 100.0f)) {
 			SetMinDistance(minDistance);
 		 }
 	  }
       float retractionDuration = GetRetractionDuration();
-      if (ImGuiHelper::DrawFloatControl(L({ "消滅時間", "Retraction Duration" }), retractionDuration, 0.5f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+      if (ImGuiHelper::DrawFloatControl(L({ "消滅時間", "Retraction Duration" }), retractionDuration, 0.5f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
          SetRetractionDuration(retractionDuration);
       }
       float tailWidthScale = GetTailWidthScale();
-      if (ImGuiHelper::DrawFloatControl(L({ "末尾の幅倍率", "Tail Width Scale" }), tailWidthScale, 0.0f, 140.0f, 0.01f, 0.0f, 1.0f)) {
+      if (ImGuiHelper::DrawFloatControl(L({ "末尾の幅倍率", "Tail Width Scale" }), tailWidthScale, 0.0f, kInspectorColumnWidth, 0.01f, 0.0f, 1.0f)) {
          SetTailWidthScale(tailWidthScale);
       }
       float textureTiling = GetTextureTiling();
-      if (ImGuiHelper::DrawFloatControl(L({ "画像の繰り返し", "Texture Tiling" }), textureTiling, 1.0f, 140.0f, 0.1f, 1.0f, 64.0f)) {
+      if (ImGuiHelper::DrawFloatControl(L({ "画像の繰り返し", "Texture Tiling" }), textureTiling, 1.0f, kInspectorColumnWidth, 0.1f, 1.0f, 64.0f)) {
          SetTextureTiling(textureTiling);
       }
 }
@@ -1081,7 +1083,7 @@ void ParticleMeshModule::DrawInspector() {
 		 { MeshType::Torus, { "トーラス", "Torus" } },
 		 { MeshType::Triangle, { "三角形", "Triangle" } },
 	  },
-	  140.0f)) {
+	  kInspectorColumnWidth)) {
 	  SetMeshType(meshType);
    }
 
@@ -1093,7 +1095,7 @@ void ParticleMeshModule::DrawInspector() {
 	  meshType == MeshType::Torus;
    if (supportsMeshOriginY) {
 	  float originY = GetOriginY();
-	  if (ImGuiHelper::DrawSliderFloat(L({ "原点Y", "Origin Y" }), originY, 0.0f, 1.0f, 140.0f, "%.2f")) {
+	  if (ImGuiHelper::DrawSliderFloat(L({ "原点Y", "Origin Y" }), originY, 0.0f, 1.0f, kInspectorColumnWidth, "%.2f")) {
 		 SetOriginY(originY);
 	  }
    }
@@ -1101,112 +1103,112 @@ void ParticleMeshModule::DrawInspector() {
    switch (meshType) {
 	  case MeshType::Ring: {
 		 float inner = GetRingInnerRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "内半径", "Inner Radius" }), inner, 0.4f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "内半径", "Inner Radius" }), inner, 0.4f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 			SetRingInnerRadius(inner);
 		 }
 		 float outer = GetRingOuterRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "外半径", "Outer Radius" }), outer, 0.5f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "外半径", "Outer Radius" }), outer, 0.5f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 			SetRingOuterRadius(outer);
 		 }
 		 int segments = static_cast<int>(GetRingSegments());
-		 if (ImGuiHelper::DrawIntControl(L({ "分割数", "Segments" }), segments, 32, 140.0f, 1.0f, 3, 128)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "分割数", "Segments" }), segments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
 			SetRingSegments(static_cast<uint32_t>(std::max(segments, 3)));
 		 }
 		 break;
 	  }
 	  case MeshType::Sphere: {
 		 float radius = GetSphereRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, 140.0f, 0.01f, 0.01f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
 			SetSphereRadius(radius);
 		 }
 		 int stacks = static_cast<int>(GetSphereStacks());
-		 if (ImGuiHelper::DrawIntControl(L({ "スタック", "Stacks" }), stacks, 16, 140.0f, 1.0f, 2, 64)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "スタック", "Stacks" }), stacks, 16, kInspectorColumnWidth, 1.0f, 2, 64)) {
 			SetSphereStacks(static_cast<uint32_t>(std::max(stacks, 2)));
 		 }
 		 int slices = static_cast<int>(GetSphereSlices());
-		 if (ImGuiHelper::DrawIntControl(L({ "スライス", "Slices" }), slices, 32, 140.0f, 1.0f, 3, 128)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "スライス", "Slices" }), slices, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
 			SetSphereSlices(static_cast<uint32_t>(std::max(slices, 3)));
 		 }
 		 break;
 	  }
 	  case MeshType::Box: {
 		 Vector3 size = GetBoxSize();
-		 if (ImGuiHelper::DrawVec3Control(L({ "サイズ", "Size" }), size, 1.0f, 140.0f, 0.01f, 0.01f, 10.0f)) {
+		 if (ImGuiHelper::DrawVec3Control(L({ "サイズ", "Size" }), size, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
 			SetBoxSize(size);
 		 }
 		 break;
 	  }
 	  case MeshType::Cylinder: {
 		 float topRadius = GetCylinderTopRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "上半径", "Top Radius" }), topRadius, 0.5f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "上半径", "Top Radius" }), topRadius, 0.5f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 			SetCylinderTopRadius(topRadius);
 		 }
 		 float bottomRadius = GetCylinderBottomRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "下半径", "Bottom Radius" }), bottomRadius, 0.5f, 140.0f, 0.01f, 0.0f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "下半径", "Bottom Radius" }), bottomRadius, 0.5f, kInspectorColumnWidth, 0.01f, 0.0f, 10.0f)) {
 			SetCylinderBottomRadius(bottomRadius);
 		 }
 		 float height = GetCylinderHeight();
-		 if (ImGuiHelper::DrawFloatControl(L({ "高さ", "Height" }), height, 1.0f, 140.0f, 0.01f, 0.01f, 20.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "高さ", "Height" }), height, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 20.0f)) {
 			SetCylinderHeight(height);
 		 }
 		 int segments = static_cast<int>(GetCylinderSegments());
-		 if (ImGuiHelper::DrawIntControl(L({ "分割数", "Segments" }), segments, 32, 140.0f, 1.0f, 3, 128)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "分割数", "Segments" }), segments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
 			SetCylinderSegments(static_cast<uint32_t>(std::max(segments, 3)));
 		 }
 		 break;
 	  }
 	  case MeshType::Cone: {
 		 float radius = GetConeRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, 140.0f, 0.01f, 0.01f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
 			SetConeRadius(radius);
 		 }
 		 float height = GetConeHeight();
-		 if (ImGuiHelper::DrawFloatControl(L({ "高さ", "Height" }), height, 1.0f, 140.0f, 0.01f, 0.01f, 20.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "高さ", "Height" }), height, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 20.0f)) {
 			SetConeHeight(height);
 		 }
 		 int segments = static_cast<int>(GetConeSegments());
-		 if (ImGuiHelper::DrawIntControl(L({ "分割数", "Segments" }), segments, 32, 140.0f, 1.0f, 3, 128)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "分割数", "Segments" }), segments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
 			SetConeSegments(static_cast<uint32_t>(std::max(segments, 3)));
 		 }
 		 break;
 	  }
 	  case MeshType::Circle: {
 		 float radius = GetCircleRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, 140.0f, 0.01f, 0.01f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "半径", "Radius" }), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
 			SetCircleRadius(radius);
 		 }
 		 int segments = static_cast<int>(GetCircleSegments());
-		 if (ImGuiHelper::DrawIntControl(L({ "分割数", "Segments" }), segments, 32, 140.0f, 1.0f, 3, 128)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "分割数", "Segments" }), segments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
 			SetCircleSegments(static_cast<uint32_t>(std::max(segments, 3)));
 		 }
 		 break;
 	  }
 	  case MeshType::Plane: {
 		 float width = GetPlaneWidth();
-		 if (ImGuiHelper::DrawFloatControl(L({ "幅", "Width" }), width, 1.0f, 140.0f, 0.01f, 0.01f, 20.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "幅", "Width" }), width, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 20.0f)) {
 			SetPlaneWidth(width);
 		 }
 		 float depth = GetPlaneDepth();
-		 if (ImGuiHelper::DrawFloatControl(L({ "奥行き", "Depth" }), depth, 1.0f, 140.0f, 0.01f, 0.01f, 20.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "奥行き", "Depth" }), depth, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 20.0f)) {
 			SetPlaneDepth(depth);
 		 }
 		 break;
 	  }
 	  case MeshType::Torus: {
 		 float majorRadius = GetTorusMajorRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "主半径", "Major Radius" }), majorRadius, 0.5f, 140.0f, 0.01f, 0.01f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "主半径", "Major Radius" }), majorRadius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
 			SetTorusMajorRadius(majorRadius);
 		 }
 		 float minorRadius = GetTorusMinorRadius();
-		 if (ImGuiHelper::DrawFloatControl(L({ "副半径", "Minor Radius" }), minorRadius, 0.2f, 140.0f, 0.01f, 0.01f, 10.0f)) {
+		 if (ImGuiHelper::DrawFloatControl(L({ "副半径", "Minor Radius" }), minorRadius, 0.2f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
 			SetTorusMinorRadius(minorRadius);
 		 }
 		 int majorSegments = static_cast<int>(GetTorusMajorSegments());
-		 if (ImGuiHelper::DrawIntControl(L({ "主分割数", "Major Segments" }), majorSegments, 32, 140.0f, 1.0f, 3, 128)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "主分割数", "Major Segments" }), majorSegments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
 			SetTorusMajorSegments(static_cast<uint32_t>(std::max(majorSegments, 3)));
 		 }
 		 int minorSegments = static_cast<int>(GetTorusMinorSegments());
-		 if (ImGuiHelper::DrawIntControl(L({ "副分割数", "Minor Segments" }), minorSegments, 16, 140.0f, 1.0f, 3, 128)) {
+		 if (ImGuiHelper::DrawIntControl(L({ "副分割数", "Minor Segments" }), minorSegments, 16, kInspectorColumnWidth, 1.0f, 3, 128)) {
 			SetTorusMinorSegments(static_cast<uint32_t>(std::max(minorSegments, 3)));
 		 }
 		 break;

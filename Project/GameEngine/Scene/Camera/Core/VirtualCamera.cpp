@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "VirtualCamera.h"
+#include "Object/Object.h"
 #include <unordered_map>
 
 namespace GameEngine {
@@ -140,6 +141,21 @@ CameraState DeserializeCameraState(const nlohmann::json& data, const CameraState
     }
     return state;
 }
+
+Transform* ResolveEntityTransform(const std::string& entityId, Transform& resolvedTransform) {
+    Object* entity = Object::FindByEntityId(entityId);
+    if (!entity) {
+        return nullptr;
+    }
+
+    const Matrix4x4 worldMatrix = entity->GetWorldMatrix();
+    resolvedTransform.translation = {
+        worldMatrix.m[3][0],
+        worldMatrix.m[3][1],
+        worldMatrix.m[3][2]
+    };
+    return &resolvedTransform;
+}
 } // namespace
 
 void VirtualCamera::Initialize(const CameraState& initialState) {
@@ -148,6 +164,40 @@ void VirtualCamera::Initialize(const CameraState& initialState) {
 
 void VirtualCamera::Update(float deltaTime) {
     state_ = CalculateState(deltaTime);
+}
+
+void VirtualCamera::SetFollowTarget(Transform* target) {
+    followTargetEntityId_.clear();
+    followTarget_ = target;
+}
+
+void VirtualCamera::SetLookAtTarget(Transform* target) {
+    lookAtTargetEntityId_.clear();
+    lookAtTarget_ = target;
+}
+
+void VirtualCamera::SetFollowTargetEntityId(const std::string& entityId) {
+    followTarget_ = nullptr;
+    followTargetEntityId_ = entityId;
+}
+
+void VirtualCamera::SetLookAtTargetEntityId(const std::string& entityId) {
+    lookAtTarget_ = nullptr;
+    lookAtTargetEntityId_ = entityId;
+}
+
+Transform* VirtualCamera::GetFollowTarget() const {
+    if (!followTargetEntityId_.empty()) {
+        return ResolveEntityTransform(followTargetEntityId_, resolvedFollowTarget_);
+    }
+    return followTarget_;
+}
+
+Transform* VirtualCamera::GetLookAtTarget() const {
+    if (!lookAtTargetEntityId_.empty()) {
+        return ResolveEntityTransform(lookAtTargetEntityId_, resolvedLookAtTarget_);
+    }
+    return lookAtTarget_;
 }
 
 CameraState VirtualCamera::CalculateState(float deltaTime) {
@@ -238,6 +288,8 @@ nlohmann::json VirtualCamera::Serialize() const {
         { "name", name_ },
         { "priority", priority_ },
         { "active", isActive_ },
+        { "followTargetId", followTargetEntityId_ },
+        { "lookAtTargetId", lookAtTargetEntityId_ },
         { "state", SerializeCameraState(state_) },
         { "components", componentsData }
     };
@@ -256,6 +308,12 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
     }
     if (data.contains("active") && data.at("active").is_boolean()) {
         isActive_ = data.at("active").get<bool>();
+    }
+    if (data.contains("followTargetId") && data.at("followTargetId").is_string()) {
+        SetFollowTargetEntityId(data.at("followTargetId").get<std::string>());
+    }
+    if (data.contains("lookAtTargetId") && data.at("lookAtTargetId").is_string()) {
+        SetLookAtTargetEntityId(data.at("lookAtTargetId").get<std::string>());
     }
     if (data.contains("state") && data.at("state").is_object()) {
         state_ = DeserializeCameraState(data.at("state"), state_);

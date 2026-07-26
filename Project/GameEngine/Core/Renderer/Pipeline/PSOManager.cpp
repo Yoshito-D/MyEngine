@@ -14,6 +14,7 @@ using json = nlohmann::json;
 
 namespace {
 constexpr const char* kReversedFacePipelineSuffix = "_ReversedFace";
+constexpr int kJsonIndentSize = 2;
 
 // 文字列からD3D12列挙型への変換ヘルパー
 D3D12_CULL_MODE StringToCullMode(const std::string& str) {
@@ -817,7 +818,7 @@ bool PSOManager::SaveValidationReportJson(const std::string& filePath) const {
 		 return false;
 	  }
 
-	  ofs << BuildValidationReportJson().dump(2);
+	  ofs << BuildValidationReportJson().dump(kJsonIndentSize);
 	  return true;
    } catch (...) {
 	  return false;

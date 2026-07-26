@@ -21,6 +21,9 @@
 namespace GameEngine {
 namespace {
 
+constexpr float kMinimumClipDistance = 0.001f;
+constexpr float kMaximumFarClipDistance = 100000.0f;
+
 const char* Tr(const char* japanese, const char* english) {
     return ImGuiHelper::Localize({ japanese, english });
 }
@@ -522,15 +525,32 @@ void CameraEditor::DrawSceneGizmos(Camera* viewCamera, float viewportX, float vi
 bool CameraEditor::EditTransform(Transform& transform) {
     bool changed = false;
 
-    changed |= ImGuiHelper::DrawVec3Control(Tr("位置", "Position"), transform.translation, 0.0f, 120.0f, 0.1f);
+    changed |= ImGuiHelper::DrawVec3Control(
+        Tr("位置", "Position"),
+        transform.translation,
+        0.0f,
+        ImGuiHelper::kDefaultColumnWidth,
+        0.1f);
 
     Vector3 euler = transform.GetActiveEuler();
-    if (ImGuiHelper::DrawEulerDegreesControl(Tr("回転 (deg)", "Rotation (deg)"), euler, 0.0f, 120.0f, 0.1f)) {
+    if (ImGuiHelper::DrawEulerDegreesControl(
+        Tr("回転 (deg)", "Rotation (deg)"),
+        euler,
+        0.0f,
+        ImGuiHelper::kDefaultColumnWidth,
+        0.1f)) {
         transform.SetRotationQuaternion(euler.ToQuaternion().Normalize());
         changed = true;
     }
 
-    changed |= ImGuiHelper::DrawVec3Control(Tr("スケール", "Scale"), transform.scale, 1.0f, 120.0f, 0.01f, 0.01f, 100.0f);
+    changed |= ImGuiHelper::DrawVec3Control(
+        Tr("スケール", "Scale"),
+        transform.scale,
+        1.0f,
+        ImGuiHelper::kDefaultColumnWidth,
+        0.01f,
+        0.01f,
+        100.0f);
 
     return changed;
 }
@@ -561,13 +581,23 @@ bool CameraEditor::EditProjectionSettings(Camera* camera) {
     float farClip = camera->GetFarClip();
 
     const std::string nearClipLabel = std::string(Tr("Near クリップ", "Near Clip")) + "##CameraProjectionNear";
-    if (ImGui::DragFloat(nearClipLabel.c_str(), &nearClip, 0.01f, 0.001f, farClip - 0.001f)) {
+    if (ImGui::DragFloat(
+        nearClipLabel.c_str(),
+        &nearClip,
+        0.01f,
+        kMinimumClipDistance,
+        farClip - kMinimumClipDistance)) {
         camera->SetNearClip(nearClip);
         changed = true;
     }
 
     const std::string farClipLabel = std::string(Tr("Far クリップ", "Far Clip")) + "##CameraProjectionFar";
-    if (ImGui::DragFloat(farClipLabel.c_str(), &farClip, 1.0f, nearClip + 0.001f, 100000.0f)) {
+    if (ImGui::DragFloat(
+        farClipLabel.c_str(),
+        &farClip,
+        1.0f,
+        nearClip + kMinimumClipDistance,
+        kMaximumFarClipDistance)) {
         camera->SetFarClip(farClip);
         changed = true;
     }
@@ -588,12 +618,22 @@ bool CameraEditor::EditCameraState(CameraState& state) {
     }
 
     const std::string nearClipLabel = std::string(Tr("Near クリップ", "Near Clip")) + "##CameraStateNear";
-    if (ImGui::DragFloat(nearClipLabel.c_str(), &state.nearClip, 0.01f, 0.001f, state.farClip - 0.001f)) {
+    if (ImGui::DragFloat(
+        nearClipLabel.c_str(),
+        &state.nearClip,
+        0.01f,
+        kMinimumClipDistance,
+        state.farClip - kMinimumClipDistance)) {
         changed = true;
     }
 
     const std::string farClipLabel = std::string(Tr("Far クリップ", "Far Clip")) + "##CameraStateFar";
-    if (ImGui::DragFloat(farClipLabel.c_str(), &state.farClip, 1.0f, state.nearClip + 0.001f, 100000.0f)) {
+    if (ImGui::DragFloat(
+        farClipLabel.c_str(),
+        &state.farClip,
+        1.0f,
+        state.nearClip + kMinimumClipDistance,
+        kMaximumFarClipDistance)) {
         changed = true;
     }
 

@@ -229,8 +229,8 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
    if (objectType == "Generic" || objectType == "Object") {
       const std::string id = objectData.value("id", "");
       Object* object = CreateGenericObject(nullptr, id);
-      if (object && objectData.contains("components") && objectData.at("components").is_array()) {
-         object->DeserializeComponents(objectData.at("components"));
+      if (object) {
+         ApplyObjectState(object, objectData);
       }
       return object;
    }
@@ -242,9 +242,7 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
          return nullptr;
       }
 
-      if (objectData.contains("components") && objectData.at("components").is_array()) {
-         object->DeserializeComponents(objectData.at("components"));
-      }
+      ApplyObjectState(object, objectData);
       return object;
    }
 
@@ -257,13 +255,7 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
          return nullptr;
       }
 
-      if (objectData.contains("components") && objectData.at("components").is_array()) {
-         object->DeserializeComponents(objectData.at("components"));
-      }
-
-      if (objectData.contains("sprite") && objectData.at("sprite").is_object()) {
-         DeserializeSpriteData(sprite, objectData.at("sprite"));
-      }
+      ApplyObjectState(object, objectData);
 
       return object;
    }
@@ -279,9 +271,7 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
       return nullptr;
    }
 
-   if (objectData.contains("components") && objectData.at("components").is_array()) {
-      object->DeserializeComponents(objectData.at("components"));
-   }
+   ApplyObjectState(object, objectData);
 
    return object;
 }
@@ -468,7 +458,8 @@ bool EditorObjectStore::Contains(const ParticleSystem* particleSystem) const {
 }
 
 bool EditorObjectStore::ContainsId(const std::string& objectId) const {
-   return idToObject_.contains(objectId) || idToParticleSystem_.contains(objectId);
+   return idToObject_.contains(objectId) || idToParticleSystem_.contains(objectId) ||
+      Object::FindByEntityId(objectId) != nullptr;
 }
 
 std::string EditorObjectStore::GetId(const Object* object) const {
@@ -531,10 +522,14 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
       return nlohmann::json::object();
    }
 
+   const std::string stableId = id.empty() ? object->GetEntityId() : id;
+   const std::string& parentId = object->GetParentEntityId();
+
    if (const auto* uiText = dynamic_cast<const UIText*>(object)) {
       // 復元前に正しい具象型を生成できるよう、Object共通データとは別に安定した種別名を保存する。
       return nlohmann::json{
-         { "id", id },
+         { "id", stableId },
+         { "parentId", parentId },
          { "objectType", "UIText" },
          { "components", uiText->SerializeComponents() }
       };
@@ -547,7 +542,8 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
       }
 
       return nlohmann::json{
-         { "id", id },
+         { "id", stableId },
+         { "parentId", parentId },
          { "objectType", "Sprite" },
          { "assetId", textureAssetId },
          { "components", sprite->SerializeComponents() },
@@ -557,7 +553,8 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
 
    if (const auto* skybox = dynamic_cast<const Skybox*>(object)) {
       return nlohmann::json{
-         { "id", id },
+         { "id", stableId },
+         { "parentId", parentId },
          { "objectType", "Skybox" },
          { "components", skybox->SerializeComponents() }
       };
@@ -566,7 +563,8 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
    const auto* model = dynamic_cast<const Model*>(object);
    if (!model) {
       return nlohmann::json{
-         { "id", id },
+         { "id", stableId },
+         { "parentId", parentId },
          { "objectType", "Generic" },
          { "components", object->SerializeComponents() }
       };
@@ -580,7 +578,8 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
    }
 
    return nlohmann::json{
-      { "id", id },
+      { "id", stableId },
+      { "parentId", parentId },
       { "objectType", "Model" },
       { "assetId", assetId },
       { "components", model->SerializeComponents() }
@@ -609,6 +608,9 @@ bool EditorObjectStore::ApplyObjectState(Object* object, const nlohmann::json& o
 
    if (objectData.contains("components") && objectData.at("components").is_array()) {
       object->DeserializeComponents(objectData.at("components"));
+   }
+   if (objectData.contains("parentId") && objectData.at("parentId").is_string()) {
+      object->SetParentEntityId(objectData.at("parentId").get<std::string>());
    }
 
    if (auto* sprite = dynamic_cast<Sprite*>(object)) {
@@ -716,7 +718,7 @@ nlohmann::json EditorObjectStore::SerializeAll() const {
 }
 
 std::string EditorObjectStore::AllocateId(const std::string& requestedId) {
-   if (!requestedId.empty() && !idToObject_.contains(requestedId) && !idToParticleSystem_.contains(requestedId)) {
+   if (!requestedId.empty() && !ContainsId(requestedId)) {
       // 復元IDの番号を採用した後に自動採番が衝突しないようカウンターも追従させる。
       BumpCounterFromId(requestedId);
       return requestedId;
@@ -724,7 +726,7 @@ std::string EditorObjectStore::AllocateId(const std::string& requestedId) {
 
    while (true) {
       const std::string id = "editor_object_" + std::to_string(nextObjectIndex_++);
-      if (!idToObject_.contains(id) && !idToParticleSystem_.contains(id)) {
+      if (!ContainsId(id)) {
          return id;
       }
    }
@@ -733,25 +735,10 @@ std::string EditorObjectStore::AllocateId(const std::string& requestedId) {
 std::string EditorObjectStore::BuildUniqueObjectName(const std::string& baseName) const {
    const std::string base = baseName.empty() ? "EditorObject" : baseName;
 
-   auto exists = [this](const std::string& name) {
-      // エディタ所有だけでなく各ランタイム描画レジストリも調べ、ヒエラルキー全体で名前を一意にする。
-      for (const auto& object : genericObjects_) {
+   auto exists = [](const std::string& name) {
+      // Entity種別に依存せず、ヒエラルキー全体で表示名を一意にする。
+      for (const auto* object : Object::GetRegisteredObjects()) {
          if (object && object->GetObjectName() == name) {
-            return true;
-         }
-      }
-      for (const auto* model : Model::GetRegisteredModels()) {
-         if (model && model->GetObjectName() == name) {
-            return true;
-         }
-      }
-      for (const auto* sprite : Sprite::GetRegisteredSprites()) {
-         if (sprite && sprite->GetObjectName() == name) {
-            return true;
-         }
-      }
-      for (const auto* uiText : UIText::GetRegisteredTexts()) {
-         if (uiText && uiText->GetObjectName() == name) {
             return true;
          }
       }
@@ -783,6 +770,7 @@ void EditorObjectStore::RegisterObject(const std::string& id, Object* object) {
 
    idToObject_[id] = object;
    objectToId_[object] = id;
+   object->SetEntityId(id);
 }
 
 void EditorObjectStore::RegisterParticleSystem(const std::string& id, ParticleSystem* particleSystem, const std::string& assetId) {

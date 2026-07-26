@@ -22,6 +22,9 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    },
    GameEngine::TriggerVolumeComponent::kDisplayName,
    GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite);
+#ifdef USE_IMGUI
+constexpr float kInspectorColumnWidth = 140.0f;
+#endif
 }
 
 namespace GameEngine {
@@ -132,7 +135,11 @@ void TriggerVolumeComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGuiHelper::DrawInputString("Target Object ID", targetObjectId_, 256, 140.0f);
+   ImGuiHelper::DrawInputString(
+      "Target Object ID",
+      targetObjectId_,
+      ImGuiHelper::kDefaultTextBufferSize,
+      kInspectorColumnWidth);
    const char* shapes[] = { "Sphere", "AABB" };
    int shapeIndex = shape_ == Shape::Sphere ? 0 : 1;
    if (ImGui::Combo("Shape", &shapeIndex, shapes, 2)) {

@@ -21,6 +21,9 @@ class ParticleSystem;
 /// @brief エディタの選択・生成・保存・Undo履歴を1シーン単位で統括する
 class EditorSceneContext {
 public:
+   /// @brief 新規保存するシーンJSONの現在の形式バージョン
+   static constexpr int kCurrentSceneFormatVersion = 6;
+
    /// @brief ギズモで編集するトランスフォーム要素
    enum class GizmoOperation {
       Translate, ///< 平行移動
@@ -32,6 +35,13 @@ public:
    enum class GizmoMode {
       Local, ///< オブジェクト自身の回転に沿う軸
       World, ///< ワールド座標に固定された軸
+   };
+
+   /// @brief ヒエラルキーのドロップ位置
+   enum class HierarchyDropPosition {
+      Before, ///< 対象と同じ親の直前
+      Into,   ///< 対象の末尾の子
+      After,  ///< 対象と同じ親の直後
    };
 
    /// @brief シーン名とアセット一覧を初期化する
@@ -55,6 +65,9 @@ public:
    /// @param sceneData 読み込むシーンJSON
    /// @return 必要なシーン構造を適用できた場合はtrue
    bool LoadFromJson(const nlohmann::json& sceneData);
+   /// @brief シーンJSONのヒエラルキー順を現在のオブジェクトへ適用する
+   /// @param hierarchyOrderData オブジェクトIDの配列
+   void ApplyHierarchyOrder(const nlohmann::json& hierarchyOrderData);
    /// @brief 現在のシーン名に対応する保存先を取得する
    /// @return resources配下のシーンJSONパス
    std::filesystem::path GetSceneFilePath() const;
@@ -88,6 +101,16 @@ public:
    /// @return 選択対象。未選択の場合はnullptr
    ParticleSystem* GetSelectedParticleSystem() const { return selectedParticleSystem_; }
 
+   /// @brief オブジェクトの親とヒエラルキー表示順を変更する
+   /// @param movedObject 移動するオブジェクト
+   /// @param targetObject ドロップ先。nullptrの場合はルート末尾へ移動
+   /// @param dropPosition 対象の前・子・後ろのいずれへ配置するか
+   /// @return 並び替えを適用できた場合はtrue
+   bool ReorderObject(
+      Object* movedObject,
+      Object* targetObject,
+      HierarchyDropPosition dropPosition);
+
    /// @brief オブジェクトがエディタの動的ストアに所有されているか調べる
    /// @param object 確認するオブジェクト
    /// @return エディタ所有の場合はtrue
@@ -118,6 +141,14 @@ public:
    void CreateSpriteFromTexture(const std::string& textureAssetId);
    /// @brief ビューポート中央に編集可能なUIテキストを作成する
    void CreateUIText();
+   /// @brief Directional Light Entityを作成する
+   void CreateDirectionalLight();
+   /// @brief Point Light Entityを作成する
+   void CreatePointLight();
+   /// @brief Spot Light Entityを作成する
+   void CreateSpotLight();
+   /// @brief Area Light Entityを作成する
+   void CreateAreaLight();
    /// @brief パーティクルアセットをビューポート前方へUndo可能な形で配置する
    /// @param assetId パーティクルJSONのアセットID
    /// @return 作成したパーティクル。失敗した場合はnullptr
@@ -243,6 +274,7 @@ private:
    std::unordered_set<std::string> hiddenParticleSystemKeys_;
    std::unordered_map<const Object*, std::string> sceneObjectKeys_;
    std::unordered_map<const ParticleSystem*, std::string> sceneParticleSystemKeys_;
+   std::vector<std::string> hierarchyOrder_;
 
    GizmoOperation gizmoOperation_ = GizmoOperation::Translate;
    GizmoMode gizmoMode_ = GizmoMode::Local;

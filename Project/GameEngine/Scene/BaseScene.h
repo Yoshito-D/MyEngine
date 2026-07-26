@@ -7,11 +7,14 @@
 #include "Editor/EditorObjectStore.h"
 #include <filesystem>
 #include <memory>
+#include <vector>
 #ifdef USE_IMGUI
 #include "Editor/EditorSceneContext.h"
 #endif
 
 namespace GameEngine {
+class Object;
+
 /// @brief 基底シーンクラス
 class BaseScene : public IScene {
 public:
@@ -27,7 +30,7 @@ public:
    /// @brief エディタ用の共通更新を実行してから派生シーンのエディタ更新フックを呼び出す
    void EditorUpdate();
 
-   /// @brief 派生シーンのランタイム更新フックを呼び出す
+   /// @brief 派生シーンのランタイム更新後にカメラのLate Updateを実行する
    void RuntimeUpdate();
 
    /// @brief 派生シーンの描画フックを呼び出してから共通エディタ描画を実行する
@@ -125,5 +128,6 @@ private:
    bool isFinished_ = false;
    std::string editorSceneName_ = "Scene";
    std::unique_ptr<EditorObjectStore> runtimeSceneObjectStore_ = nullptr;
+   std::vector<std::unique_ptr<Object>> sceneEntities_;
 };
 }

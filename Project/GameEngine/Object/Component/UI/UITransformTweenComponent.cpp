@@ -103,8 +103,14 @@ void UITransformTweenComponent::Deserialize(const nlohmann::json& data) {
    delay = std::max(data.value("delay", delay), 0.0f);
    duration = std::max(data.value("duration", duration), 0.0001f);
    playOnEnable = data.value("playOnEnable", playOnEnable);
-   playbackMode = static_cast<UIPlaybackMode>(std::clamp(data.value("playbackMode", static_cast<int>(playbackMode)), 0, 2));
-   easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<int>(easing)), 0, 3));
+   playbackMode = static_cast<UIPlaybackMode>(std::clamp(
+      data.value("playbackMode", static_cast<int>(playbackMode)),
+      static_cast<int>(UIPlaybackMode::Once),
+      static_cast<int>(UIPlaybackMode::PingPong)));
+   easing = static_cast<UIEasingType>(std::clamp(
+      data.value("easing", static_cast<int>(easing)),
+      static_cast<int>(UIEasingType::Linear),
+      static_cast<int>(UIEasingType::EaseOutBack)));
    if (playOnEnable) {
       Restart();
    }

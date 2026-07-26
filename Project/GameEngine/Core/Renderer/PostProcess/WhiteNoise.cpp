@@ -8,13 +8,21 @@
 #endif
 
 namespace {
+constexpr float kTimeMin = 0.0f;
+constexpr float kNoiseDensityMin = 1.0f;
+constexpr float kNoiseDensityMax = 2048.0f;
+constexpr float kSeedChangeRateMin = 0.0f;
+constexpr float kSeedChangeRateMax = 120.0f;
+constexpr float kNormalizedParameterMin = 0.0f;
+constexpr float kNormalizedParameterMax = 1.0f;
+
 GameEngine::WhiteNoiseParams NormalizeWhiteNoiseParams(const GameEngine::WhiteNoiseParams& source) {
    GameEngine::WhiteNoiseParams params = source;
-   params.time = std::max(params.time, 0.0f);
-   params.noiseDensity = std::clamp(params.noiseDensity, 1.0f, 2048.0f);
-   params.seedChangeRate = std::clamp(params.seedChangeRate, 0.0f, 120.0f);
-   params.noiseThreshold = std::clamp(params.noiseThreshold, 0.0f, 1.0f);
-   params.noiseIntensity = std::clamp(params.noiseIntensity, 0.0f, 1.0f);
+   params.time = std::max(params.time, kTimeMin);
+   params.noiseDensity = std::clamp(params.noiseDensity, kNoiseDensityMin, kNoiseDensityMax);
+   params.seedChangeRate = std::clamp(params.seedChangeRate, kSeedChangeRateMin, kSeedChangeRateMax);
+   params.noiseThreshold = std::clamp(params.noiseThreshold, kNormalizedParameterMin, kNormalizedParameterMax);
+   params.noiseIntensity = std::clamp(params.noiseIntensity, kNormalizedParameterMin, kNormalizedParameterMax);
    return params;
 }
 }
@@ -63,11 +71,27 @@ void WhiteNoise::ImGuiEdit() {
       LocalizeEditorText("ホワイトノイズのパラメータ", "White Noise Parameters"))) {
 	  bool changed = false;
 	  WhiteNoiseParams params = params_;
-	  changed |= ImGui::DragFloat(LocalizeEditorText("時間", "Time"), &params.time, 0.01f, 0.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("ノイズ密度", "Noise Density"), &params.noiseDensity, 1.0f, 2048.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("シード更新頻度", "Seed Change Rate"), &params.seedChangeRate, 0.0f, 120.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("ノイズしきい値", "Noise Threshold"), &params.noiseThreshold, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("ノイズ強度", "Noise Intensity"), &params.noiseIntensity, 0.0f, 1.0f);
+	  changed |= ImGui::DragFloat(LocalizeEditorText("時間", "Time"), &params.time, 0.01f, kTimeMin);
+	  changed |= ImGui::SliderFloat(
+		 LocalizeEditorText("ノイズ密度", "Noise Density"),
+		 &params.noiseDensity,
+		 kNoiseDensityMin,
+		 kNoiseDensityMax);
+	  changed |= ImGui::SliderFloat(
+		 LocalizeEditorText("シード更新頻度", "Seed Change Rate"),
+		 &params.seedChangeRate,
+		 kSeedChangeRateMin,
+		 kSeedChangeRateMax);
+	  changed |= ImGui::SliderFloat(
+		 LocalizeEditorText("ノイズしきい値", "Noise Threshold"),
+		 &params.noiseThreshold,
+		 kNormalizedParameterMin,
+		 kNormalizedParameterMax);
+	  changed |= ImGui::SliderFloat(
+		 LocalizeEditorText("ノイズ強度", "Noise Intensity"),
+		 &params.noiseIntensity,
+		 kNormalizedParameterMin,
+		 kNormalizedParameterMax);
 
 	  if (changed) {
 		 SetParams(params);

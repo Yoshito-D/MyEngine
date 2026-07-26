@@ -2,6 +2,7 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <wrl.h>
+#include <cstddef>
 #include <cstdint>
 #include <Xinput.h>
 #include "Utility/VectorMath.h"
@@ -369,17 +370,20 @@ public:
 
 
 private:
+   static constexpr size_t kKeyboardKeyCount = 256;
+   static constexpr BYTE kPressedStateMask = 0x80;
+
    ComPtr<IDirectInput8> directInput_ = nullptr;
    ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
-   BYTE key_[256] = {};
-   BYTE prevKey_[256] = {};
+   BYTE key_[kKeyboardKeyCount] = {};
+   BYTE prevKey_[kKeyboardKeyCount] = {};
 
    ComPtr<IDirectInputDevice8> mouse_ = nullptr;
    DIMOUSESTATE mouseState_ = {};
    DIMOUSESTATE prevMouseState_ = {};
 
-   XINPUT_STATE gamePadState_[4]{};
-   XINPUT_STATE prevGamePadState_[4]{};
+   XINPUT_STATE gamePadState_[XUSER_MAX_COUNT]{};
+   XINPUT_STATE prevGamePadState_[XUSER_MAX_COUNT]{};
 
    HWND hwnd_ = nullptr;
 private:

@@ -4,6 +4,7 @@
 #ifdef USE_IMGUI
 
 #include "Component/MaterialComponent.h"
+#include "Component/LightComponent.h"
 #include "Component/MeshComponent.h"
 #include "Component/TransformComponent.h"
 #include "Component/RenderComponent.h"
@@ -23,12 +24,21 @@
 #include "imgui.h"
 #include <cmath>
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <string>
 
 namespace GameEngine {
 
 namespace {
+constexpr int kJsonIndentSize = 3;
+constexpr float kVectorLengthEpsilonSquared = 1.0e-8f;
+constexpr float kHomogeneousCoordinateEpsilon = 1.0e-6f;
+constexpr float kSafeNormalizedDeviceCoordinateLimit = 0.95f;
+constexpr float kScreenSpaceFarClip = 100.0f;
+constexpr float kDefaultScreenSpaceDepth = 1.0f;
+constexpr float kDuplicatePositionOffset = 1.0f;
+
 ImGuizmo::OPERATION ToImGuizmoOperation(EditorSceneContext::GizmoOperation operation, bool restrictTo2D = false) {
    if (restrictTo2D) {
       switch (operation) {
@@ -157,7 +167,7 @@ bool IsFiniteVector(const Vector3& value) {
 }
 
 Vector3 NormalizeOrFallback(const Vector3& value, const Vector3& fallback) {
-   if (!IsFiniteVector(value) || value.LengthSquared() < 1e-8f) {
+   if (!IsFiniteVector(value) || value.LengthSquared() < kVectorLengthEpsilonSquared) {
       return fallback;
    }
    return value.Normalize();
@@ -192,15 +202,15 @@ bool IsProjectedInsideCamera(const Camera* camera, const Vector3& worldPosition)
       Vector4(worldPosition.x, worldPosition.y, worldPosition.z, 1.0f),
       camera->GetViewProjectionMatrix());
    if (!std::isfinite(clip.x) || !std::isfinite(clip.y) || !std::isfinite(clip.z) || !std::isfinite(clip.w) ||
-      std::abs(clip.w) < 1e-6f) {
+      std::abs(clip.w) < kHomogeneousCoordinateEpsilon) {
       return false;
    }
 
    const float ndcX = clip.x / clip.w;
    const float ndcY = clip.y / clip.w;
    const float ndcZ = clip.z / clip.w;
-   return ndcX >= -0.95f && ndcX <= 0.95f &&
-      ndcY >= -0.95f && ndcY <= 0.95f &&
+   return ndcX >= -kSafeNormalizedDeviceCoordinateLimit && ndcX <= kSafeNormalizedDeviceCoordinateLimit &&
+      ndcY >= -kSafeNormalizedDeviceCoordinateLimit && ndcY <= kSafeNormalizedDeviceCoordinateLimit &&
       ndcZ >= 0.0f && ndcZ <= 1.0f;
 }
 
@@ -321,12 +331,12 @@ Matrix4x4 MakeScreenSpaceProjectionMatrix(const Vector2& screenSize, bool useDow
       screenSize.x * 0.5f,
       bottom,
       0.0f,
-      100.0f);
+      kScreenSpaceFarClip);
 }
 
 Transform BuildScreenSpacePlacementTransform() {
    Transform transform{};
-   transform.translation.z = 1.0f;
+   transform.translation.z = kDefaultScreenSpaceDepth;
    return transform;
 }
 } // namespace
@@ -345,6 +355,7 @@ void EditorSceneContext::Initialize(std::string sceneName) {
    hiddenParticleSystemKeys_.clear();
    sceneObjectKeys_.clear();
    sceneParticleSystemKeys_.clear();
+   hierarchyOrder_.clear();
    assetRegistry_.Scan();
 }
 
@@ -367,12 +378,27 @@ void EditorSceneContext::Clear() {
    isManipulatingParticleSystem_ = false;
    commandStack_.Clear();
    objectStore_.Clear();
+   for (const Object* hiddenObject : hiddenSceneObjects_) {
+      Object* object = const_cast<Object*>(hiddenObject);
+      if (!object) {
+         continue;
+      }
+      for (const auto& component : object->GetComponentContainer().GetAll()) {
+         if (component) {
+            component->SetEnabled(true);
+         }
+      }
+      if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
+         renderComponent->visible = true;
+      }
+   }
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
    hiddenSceneObjectKeys_.clear();
    hiddenParticleSystemKeys_.clear();
    sceneObjectKeys_.clear();
    sceneParticleSystemKeys_.clear();
+   hierarchyOrder_.clear();
    ClearDirty();
    SetStatus("Editor scene cleared");
 }
@@ -394,7 +420,7 @@ bool EditorSceneContext::Save() {
       return false;
    }
 
-   file << sceneData.dump(3);
+   file << sceneData.dump(kJsonIndentSize);
    ClearDirty();
    SetStatus("Saved scene: " + filePath.generic_string());
    return true;
@@ -431,13 +457,20 @@ bool EditorSceneContext::Load() {
 
 nlohmann::json EditorSceneContext::SerializeToJson() {
    nlohmann::json sceneData = nlohmann::json::object();
-   sceneData["version"] = 4;
+   sceneData["version"] = kCurrentSceneFormatVersion;
    sceneData["sceneName"] = sceneName_;
    sceneData["objects"] = objectStore_.SerializeAll();
    sceneData["sceneObjects"] = SerializeSceneObjects();
    sceneData["sceneParticleSystems"] = SerializeSceneParticleSystems();
+   sceneData["hierarchyOrder"] = nlohmann::json::array();
+   for (const Object* object : CollectEditableObjects()) {
+      if (object && !object->GetEntityId().empty()) {
+         sceneData["hierarchyOrder"].push_back(object->GetEntityId());
+      }
+   }
    sceneData["cameras"] = SerializeCameras();
-   sceneData["environment"] = EngineContext::SerializeLightingSceneState();
+   // シーンライトはLightComponentとしてobjects/sceneObjectsへ保存し、環境設定との二重所有を避ける。
+   sceneData["environment"] = nlohmann::json::object();
    sceneData["renderSettings"] = EngineContext::SerializePostProcessSceneState();
    return sceneData;
 }
@@ -457,6 +490,7 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
    hiddenParticleSystems_.clear();
    hiddenSceneObjectKeys_.clear();
    hiddenParticleSystemKeys_.clear();
+   hierarchyOrder_.clear();
 
    if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
       for (const auto& objectData : sceneData.at("objects")) {
@@ -473,20 +507,73 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
    if (sceneData.contains("cameras") && sceneData.at("cameras").is_object()) {
       ApplyCameras(sceneData.at("cameras"));
    }
-   if (sceneData.contains("environment") &&
-      !EngineContext::ApplyLightingSceneState(sceneData.at("environment"))) {
-      SetStatus("Load failed: invalid environment settings");
-      return false;
+   if (sceneData.contains("environment") && sceneData.at("environment").is_object()) {
+      const auto& environment = sceneData.at("environment");
+      if (environment.contains("lights") && environment.at("lights").is_array()) {
+         for (const auto& lightData : environment.at("lights")) {
+            if (!lightData.is_object()) {
+               continue;
+            }
+            const std::string id = lightData.value("id", "");
+            if (id.empty()) {
+               continue;
+            }
+
+            Object* entity = Object::FindByEntityId(id);
+            if (!entity) {
+               entity = objectStore_.CreateGenericObject(nullptr, id);
+               if (entity) {
+                  entity->SetObjectName(id);
+               }
+            }
+            if (!entity) {
+               continue;
+            }
+
+            auto* light = entity->GetComponent<LightComponent>();
+            if (!light) {
+               light = entity->AddComponent<LightComponent>();
+            }
+            if (light) {
+               light->DeserializeLegacy(lightData);
+            }
+         }
+      }
    }
    if (sceneData.contains("renderSettings") &&
       !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
       SetStatus("Load failed: invalid render settings");
       return false;
    }
+   ApplyHierarchyOrder(sceneData.value("hierarchyOrder", nlohmann::json::array()));
 
    ClearDirty();
    SetStatus("Loaded scene snapshot");
    return true;
+}
+
+void EditorSceneContext::ApplyHierarchyOrder(const nlohmann::json& hierarchyOrderData) {
+   hierarchyOrder_.clear();
+   if (!hierarchyOrderData.is_array()) {
+      return;
+   }
+
+   std::unordered_set<std::string> registeredIds;
+   for (const Object* object : CollectEditableObjects()) {
+      if (object && !object->GetEntityId().empty()) {
+         registeredIds.insert(object->GetEntityId());
+      }
+   }
+   for (const auto& objectId : hierarchyOrderData) {
+      if (!objectId.is_string()) {
+         continue;
+      }
+      const std::string id = objectId.get<std::string>();
+      if (registeredIds.contains(id) &&
+         std::find(hierarchyOrder_.begin(), hierarchyOrder_.end(), id) == hierarchyOrder_.end()) {
+         hierarchyOrder_.push_back(id);
+      }
+   }
 }
 
 std::filesystem::path EditorSceneContext::GetSceneFilePath() const {
@@ -503,46 +590,33 @@ void EditorSceneContext::ClearDirty() {
 
 std::vector<Object*> EditorSceneContext::CollectEditableObjects() const {
    std::vector<Object*> objects;
-
-   const auto& models = Model::GetRegisteredModels();
-   const auto& editorGenericObjects = objectStore_.GetGenericObjects();
-   const auto* sceneWorld = SceneWorld::GetCurrent();
-   const size_t sceneGenericObjectCount = sceneWorld ? sceneWorld->GetGenericObjects().size() : 0;
-   objects.reserve(editorGenericObjects.size() + sceneGenericObjectCount + models.size() + Sprite::GetRegisteredSprites().size() + UIText::GetRegisteredTexts().size() + Skybox::GetRegisteredSkyboxes().size());
-
-   auto appendEditableObject = [&](Object* object) {
-      if (!object || hiddenSceneObjects_.contains(object)) {
-         return;
-      }
-      if (std::find(objects.begin(), objects.end(), object) == objects.end()) {
+   const auto& registeredObjects = Object::GetRegisteredObjects();
+   objects.reserve(registeredObjects.size());
+   for (Object* object : registeredObjects) {
+      if (object && !hiddenSceneObjects_.contains(object)) {
          objects.push_back(object);
       }
-   };
-
-   for (const auto& object : editorGenericObjects) {
-      appendEditableObject(object.get());
    }
 
-   if (sceneWorld) {
-      for (const auto& object : sceneWorld->GetGenericObjects()) {
-         appendEditableObject(object.get());
+   if (!hierarchyOrder_.empty()) {
+      std::unordered_map<std::string, size_t> hierarchyRanks;
+      hierarchyRanks.reserve(hierarchyOrder_.size());
+      for (size_t index = 0; index < hierarchyOrder_.size(); ++index) {
+         hierarchyRanks.try_emplace(hierarchyOrder_[index], index);
       }
-   }
 
-   for (auto* model : models) {
-      appendEditableObject(model);
-   }
-
-   for (auto* sprite : Sprite::GetRegisteredSprites()) {
-      appendEditableObject(sprite);
-   }
-
-   for (auto* uiText : UIText::GetRegisteredTexts()) {
-      appendEditableObject(uiText);
-   }
-
-   for (auto* skybox : Skybox::GetRegisteredSkyboxes()) {
-      appendEditableObject(skybox);
+      // 未登録の新規オブジェクトは生成順のまま末尾へ残し、既存順だけを安定して復元する。
+      std::stable_sort(objects.begin(), objects.end(),
+         [&hierarchyRanks](const Object* lhs, const Object* rhs) {
+            const auto lhsRank = lhs ? hierarchyRanks.find(lhs->GetEntityId()) : hierarchyRanks.end();
+            const auto rhsRank = rhs ? hierarchyRanks.find(rhs->GetEntityId()) : hierarchyRanks.end();
+            const bool lhsOrdered = lhsRank != hierarchyRanks.end();
+            const bool rhsOrdered = rhsRank != hierarchyRanks.end();
+            if (lhsOrdered != rhsOrdered) {
+               return lhsOrdered;
+            }
+            return lhsOrdered && lhsRank->second < rhsRank->second;
+         });
    }
 
    return objects;
@@ -582,6 +656,64 @@ void EditorSceneContext::SelectParticleSystem(ParticleSystem* particleSystem) {
    }
 }
 
+bool EditorSceneContext::ReorderObject(
+   Object* movedObject,
+   Object* targetObject,
+   HierarchyDropPosition dropPosition) {
+   if (!IsObjectAlive(movedObject) ||
+      (targetObject && !IsObjectAlive(targetObject)) ||
+      movedObject == targetObject) {
+      return false;
+   }
+
+   const std::string targetParentId = !targetObject
+      ? std::string{}
+      : (dropPosition == HierarchyDropPosition::Into
+         ? targetObject->GetEntityId()
+         : targetObject->GetParentEntityId());
+   if (!movedObject->SetParentEntityId(targetParentId)) {
+      return false;
+   }
+
+   const std::string movedId = movedObject->GetEntityId();
+   std::vector<std::string> orderedIds;
+   for (const Object* object : CollectEditableObjects()) {
+      if (object && !object->GetEntityId().empty() && object->GetEntityId() != movedId) {
+         orderedIds.push_back(object->GetEntityId());
+      }
+   }
+
+   auto insertionPoint = orderedIds.end();
+   if (targetObject) {
+      const auto targetIt = std::find(
+         orderedIds.begin(), orderedIds.end(), targetObject->GetEntityId());
+      if (targetIt == orderedIds.end()) {
+         return false;
+      }
+
+      insertionPoint = targetIt;
+      if (dropPosition != HierarchyDropPosition::Before) {
+         ++insertionPoint;
+      }
+
+      if (dropPosition == HierarchyDropPosition::Into) {
+         // 登録順が深さ優先とは限らないため、配列全体から最後の直下の子を探す。
+         // その後ろへ置けば、ヒエラルキー描画時には常に末尾の子として表示される。
+         for (auto candidateIt = targetIt + 1; candidateIt != orderedIds.end(); ++candidateIt) {
+            const Object* candidate = Object::FindByEntityId(*candidateIt);
+            if (candidate && candidate->GetParentEntityId() == targetObject->GetEntityId()) {
+               insertionPoint = candidateIt + 1;
+            }
+         }
+      }
+   }
+
+   orderedIds.insert(insertionPoint, movedId);
+   hierarchyOrder_ = std::move(orderedIds);
+   MarkDirty();
+   return true;
+}
+
 bool EditorSceneContext::CanDeleteSelectedObject() const {
    return CanDeleteObject(selectedObject_);
 }
@@ -610,6 +742,46 @@ void EditorSceneContext::CreateSpriteFromTexture(const std::string& textureAsset
 
 void EditorSceneContext::CreateUIText() {
    commandStack_.Execute(std::make_unique<CreateUITextCommand>(BuildScreenSpacePlacementTransform()), *this);
+}
+
+void EditorSceneContext::CreateDirectionalLight() {
+   const Transform placement = BuildPlacementTransformInFrontOfCamera();
+   if (Object* entity = objectStore_.CreateGenericObject(&placement)) {
+      entity->SetObjectName("DirectionalLight_" + entity->GetEntityId());
+      entity->AddComponent<LightComponent>()->SetLightType(LightComponent::Type::Directional);
+      SelectObject(entity);
+      MarkDirty();
+   }
+}
+
+void EditorSceneContext::CreatePointLight() {
+   const Transform placement = BuildPlacementTransformInFrontOfCamera();
+   if (Object* entity = objectStore_.CreateGenericObject(&placement)) {
+      entity->SetObjectName("PointLight_" + entity->GetEntityId());
+      entity->AddComponent<LightComponent>()->SetLightType(LightComponent::Type::Point);
+      SelectObject(entity);
+      MarkDirty();
+   }
+}
+
+void EditorSceneContext::CreateSpotLight() {
+   const Transform placement = BuildPlacementTransformInFrontOfCamera();
+   if (Object* entity = objectStore_.CreateGenericObject(&placement)) {
+      entity->SetObjectName("SpotLight_" + entity->GetEntityId());
+      entity->AddComponent<LightComponent>()->SetLightType(LightComponent::Type::Spot);
+      SelectObject(entity);
+      MarkDirty();
+   }
+}
+
+void EditorSceneContext::CreateAreaLight() {
+   const Transform placement = BuildPlacementTransformInFrontOfCamera();
+   if (Object* entity = objectStore_.CreateGenericObject(&placement)) {
+      entity->SetObjectName("AreaLight_" + entity->GetEntityId());
+      entity->AddComponent<LightComponent>()->SetLightType(LightComponent::Type::Area);
+      SelectObject(entity);
+      MarkDirty();
+   }
 }
 
 ParticleSystem* EditorSceneContext::CreateParticleSystemFromAsset(const std::string& assetId) {
@@ -788,7 +960,11 @@ void EditorSceneContext::DrawGizmoInspectorControls() {
       ImGuiHelper::Localize({ "拡縮", "Scale" })
    };
    int operation = static_cast<int>(gizmoOperation_);
-   if (ImGui::Combo(ImGuiHelper::Localize({ "操作", "Operation" }), &operation, operationLabels, 3)) {
+   if (ImGui::Combo(
+      ImGuiHelper::Localize({ "操作", "Operation" }),
+      &operation,
+      operationLabels,
+      static_cast<int>(std::size(operationLabels)))) {
       gizmoOperation_ = static_cast<GizmoOperation>(operation);
    }
 
@@ -797,7 +973,11 @@ void EditorSceneContext::DrawGizmoInspectorControls() {
       ImGuiHelper::Localize({ "ワールド", "World" })
    };
    int mode = static_cast<int>(gizmoMode_);
-   if (ImGui::Combo(ImGuiHelper::Localize({ "空間", "Mode" }), &mode, modeLabels, 2)) {
+   if (ImGui::Combo(
+      ImGuiHelper::Localize({ "空間", "Mode" }),
+      &mode,
+      modeLabels,
+      static_cast<int>(std::size(modeLabels)))) {
       gizmoMode_ = static_cast<GizmoMode>(mode);
    }
 }
@@ -1146,32 +1326,24 @@ void EditorSceneContext::RegisterSceneOwnedKeys() {
          return;
       }
 
-      const std::string baseKey = BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName());
+      const std::string& entityId = object->GetEntityId();
+      const std::string baseKey = entityId.rfind("runtime_entity_", 0) == 0
+         ? BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName())
+         : entityId;
       std::string key = baseKey;
       int suffix = 2;
       while (usedObjectKeys.contains(key)) {
          key = baseKey + "#" + std::to_string(suffix++);
       }
       usedObjectKeys.insert(key);
+      if (object->GetEntityId().rfind("runtime_entity_", 0) == 0) {
+         object->SetEntityId(key);
+      }
       sceneObjectKeys_[object] = key;
    };
 
-   if (const auto* sceneWorld = SceneWorld::GetCurrent()) {
-      for (const auto& object : sceneWorld->GetGenericObjects()) {
-         registerObject(object.get());
-      }
-   }
-   for (auto* model : Model::GetRegisteredModels()) {
-      registerObject(model);
-   }
-   for (auto* sprite : Sprite::GetRegisteredSprites()) {
-      registerObject(sprite);
-   }
-   for (auto* uiText : UIText::GetRegisteredTexts()) {
-      registerObject(uiText);
-   }
-   for (auto* skybox : Skybox::GetRegisteredSkyboxes()) {
-      registerObject(skybox);
+   for (Object* object : Object::GetRegisteredObjects()) {
+      registerObject(object);
    }
 
    for (auto it = sceneParticleSystemKeys_.begin(); it != sceneParticleSystemKeys_.end();) {
@@ -1233,34 +1405,8 @@ Object* EditorSceneContext::FindSceneObjectByKey(const std::string& key) const {
    }
 
    auto isRegistered = [](const Object* object) {
-      if (const auto* sceneWorld = SceneWorld::GetCurrent()) {
-         for (const auto& genericObject : sceneWorld->GetGenericObjects()) {
-            if (genericObject.get() == object) {
-               return true;
-            }
-         }
-      }
-      for (auto* model : Model::GetRegisteredModels()) {
-         if (model == object) {
-            return true;
-         }
-      }
-      for (auto* sprite : Sprite::GetRegisteredSprites()) {
-         if (sprite == object) {
-            return true;
-         }
-      }
-      for (auto* uiText : UIText::GetRegisteredTexts()) {
-         if (uiText == object) {
-            return true;
-         }
-      }
-      for (auto* skybox : Skybox::GetRegisteredSkyboxes()) {
-         if (skybox == object) {
-            return true;
-         }
-      }
-      return false;
+      const auto& registeredObjects = Object::GetRegisteredObjects();
+      return std::find(registeredObjects.begin(), registeredObjects.end(), object) != registeredObjects.end();
    };
 
    for (const auto& [object, objectKey] : sceneObjectKeys_) {
@@ -1559,6 +1705,11 @@ void EditorSceneContext::HideSceneOwnedObject(Object* object) {
       hiddenSceneObjectKeys_.insert(key);
    }
    hiddenSceneObjects_.insert(object);
+   for (const auto& component : object->GetComponentContainer().GetAll()) {
+      if (component) {
+         component->SetEnabled(false);
+      }
+   }
    if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
       renderComponent->visible = false;
    }
@@ -1676,7 +1827,7 @@ void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
          if (!data.is_object() || !data.contains("translation") || !data.at("translation").is_array() || data.at("translation").size() != 3) {
             continue;
          }
-         data["translation"][0] = data["translation"][0].get<float>() + 1.0f;
+         data["translation"][0] = data["translation"][0].get<float>() + kDuplicatePositionOffset;
       }
 
       for (auto& componentData : snapshot.at("components")) {
@@ -1696,7 +1847,7 @@ void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
       snapshot.at("data").at("shapeModule").contains("position")) {
       auto& position = snapshot["data"]["shapeModule"]["position"];
       if (position.is_array() && position.size() == 3) {
-         position[0] = position[0].get<float>() + 1.0f;
+         position[0] = position[0].get<float>() + kDuplicatePositionOffset;
       }
    }
 }

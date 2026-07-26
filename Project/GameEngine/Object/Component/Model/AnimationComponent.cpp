@@ -313,7 +313,7 @@ void AnimationComponent::DrawInspector() {
 	  }
    }
 
-   char targetNodeBuffer[256]{};
+   char targetNodeBuffer[ImGuiHelper::kDefaultTextBufferSize]{};
    const size_t targetNameSize = std::min(targetNodeName.size(), sizeof(targetNodeBuffer) - 1);
    std::memcpy(targetNodeBuffer, targetNodeName.c_str(), targetNameSize);
    if (ImGui::InputText(ImGuiHelper::Localize({ "対象ノード", "Target Node" }), targetNodeBuffer, sizeof(targetNodeBuffer))) {

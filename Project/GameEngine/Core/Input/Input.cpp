@@ -71,7 +71,7 @@ void Input::MouseUpdate() {
 }
 
 void Input::GamePadUpdate() {
-   for (uint32_t i = 0; i < 4; ++i) {
+   for (uint32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
 	  prevGamePadState_[i] = gamePadState_[i];
 
 	  ZeroMemory(&gamePadState_[i], sizeof(XINPUT_STATE));
@@ -80,7 +80,7 @@ void Input::GamePadUpdate() {
 }
 
 bool Input::IsKeyPressed(uint8_t key) {
-   return (key_[key] & 0x80) != 0;
+   return (key_[key] & kPressedStateMask) != 0;
 }
 
 bool Input::IsKeyPressed(KeyCode key) {
@@ -88,7 +88,7 @@ bool Input::IsKeyPressed(KeyCode key) {
 }
 
 bool Input::IsKeyNotPressed(uint8_t key) {
-   return (key_[key] & 0x80) == 0;
+   return (key_[key] & kPressedStateMask) == 0;
 }
 
 bool Input::IsKeyNotPressed(KeyCode key) {
@@ -96,7 +96,8 @@ bool Input::IsKeyNotPressed(KeyCode key) {
 }
 
 bool Input::IsKeyTriggered(uint8_t key) {
-   return (key_[key] & 0x80) != 0 && (prevKey_[key] & 0x80) == 0;
+   return (key_[key] & kPressedStateMask) != 0 &&
+	  (prevKey_[key] & kPressedStateMask) == 0;
 }
 
 bool Input::IsKeyTriggered(KeyCode key) {
@@ -104,7 +105,8 @@ bool Input::IsKeyTriggered(KeyCode key) {
 }
 
 bool Input::IsKeyReleased(uint8_t key) {
-   return (key_[key] & 0x80) == 0 && (prevKey_[key] & 0x80) != 0;
+   return (key_[key] & kPressedStateMask) == 0 &&
+	  (prevKey_[key] & kPressedStateMask) != 0;
 }
 
 bool Input::IsKeyReleased(KeyCode key) {
@@ -112,7 +114,7 @@ bool Input::IsKeyReleased(KeyCode key) {
 }
 
 bool Input::IsMousePressed(uint8_t button) {
-   return (mouseState_.rgbButtons[button] & 0x80) != 0;
+   return (mouseState_.rgbButtons[button] & kPressedStateMask) != 0;
 }
 
 bool Input::IsMousePressed(MouseButton button) {
@@ -120,7 +122,7 @@ bool Input::IsMousePressed(MouseButton button) {
 }
 
 bool Input::IsMouseNotPressed(uint8_t button) {
-   return (mouseState_.rgbButtons[button] & 0x80) == 0;
+   return (mouseState_.rgbButtons[button] & kPressedStateMask) == 0;
 }
 
 bool Input::IsMouseNotPressed(MouseButton button) {
@@ -128,8 +130,8 @@ bool Input::IsMouseNotPressed(MouseButton button) {
 }
 
 bool Input::IsMouseTriggered(uint8_t button) {
-   return (mouseState_.rgbButtons[button] & 0x80) != 0 &&
-	  (prevMouseState_.rgbButtons[button] & 0x80) == 0;
+   return (mouseState_.rgbButtons[button] & kPressedStateMask) != 0 &&
+	  (prevMouseState_.rgbButtons[button] & kPressedStateMask) == 0;
 }
 
 bool Input::IsMouseTriggered(MouseButton button) {
@@ -137,8 +139,8 @@ bool Input::IsMouseTriggered(MouseButton button) {
 }
 
 bool Input::IsMouseReleased(uint8_t button) {
-   return (mouseState_.rgbButtons[button] & 0x80) == 0 &&
-	  (prevMouseState_.rgbButtons[button] & 0x80) != 0;
+   return (mouseState_.rgbButtons[button] & kPressedStateMask) == 0 &&
+	  (prevMouseState_.rgbButtons[button] & kPressedStateMask) != 0;
 }
 
 bool Input::IsMouseReleased(MouseButton button) {
@@ -165,7 +167,7 @@ int32_t Input::GetMouseWheelDelta() const {
 
 bool Input::IsGamePadConnected(uint32_t index) const {
    XINPUT_STATE tempState{};
-   return (index < 4) && (XInputGetState(index, &tempState) == ERROR_SUCCESS);
+   return (index < XUSER_MAX_COUNT) && (XInputGetState(index, &tempState) == ERROR_SUCCESS);
 }
 
 uint32_t Input::GetConnectedGamePadCount() const {
@@ -183,7 +185,7 @@ uint32_t Input::GetConnectedGamePadCount() const {
 }
 
 bool Input::IsGamePadButtonPressed(WORD button, uint32_t index) const {
-   return (index < 4) && ((gamePadState_[index].Gamepad.wButtons & button) != 0);
+   return (index < XUSER_MAX_COUNT) && ((gamePadState_[index].Gamepad.wButtons & button) != 0);
 }
 
 bool Input::IsGamePadButtonPressed(GamePadButton button, uint32_t index) const {
@@ -191,7 +193,7 @@ bool Input::IsGamePadButtonPressed(GamePadButton button, uint32_t index) const {
 }
 
 bool Input::IsGamePadButtonNotPressed(WORD button, uint32_t index) const {
-   return (index < 4) && ((gamePadState_[index].Gamepad.wButtons & button) == 0);
+   return (index < XUSER_MAX_COUNT) && ((gamePadState_[index].Gamepad.wButtons & button) == 0);
 }
 
 bool Input::IsGamePadButtonNotPressed(GamePadButton button, uint32_t index) const {
@@ -199,7 +201,7 @@ bool Input::IsGamePadButtonNotPressed(GamePadButton button, uint32_t index) cons
 }
 
 bool Input::IsGamePadButtonTriggered(WORD button, uint32_t index) const {
-   return (index < 4) &&
+   return (index < XUSER_MAX_COUNT) &&
 	  (gamePadState_[index].Gamepad.wButtons & button) &&
 	  !(prevGamePadState_[index].Gamepad.wButtons & button);
 }
@@ -209,7 +211,7 @@ bool Input::IsGamePadButtonTriggered(GamePadButton button, uint32_t index) const
 }
 
 bool Input::IsGamePadButtonReleased(WORD button, uint32_t index) const {
-   return (index < 4) &&
+   return (index < XUSER_MAX_COUNT) &&
 	  !(gamePadState_[index].Gamepad.wButtons & button) &&
 	  (prevGamePadState_[index].Gamepad.wButtons & button);
 }

@@ -792,6 +792,9 @@
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\LightComponent.cpp">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\TriggerVolumeComponent.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
@@ -955,6 +958,12 @@
       <Filter>GameProject\App\Component\Race</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceGoalDirectionHUDComponent.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceGoalDistanceTextComponent.cpp">
       <Filter>GameProject\App\Component\Race</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\RaceManagerComponent.cpp">
@@ -1431,6 +1440,9 @@
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\LightComponent.h">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\TriggerVolumeComponent.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
@@ -1648,6 +1660,12 @@
       <Filter>GameProject\App\Component\Race</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceGoalDirectionHUDComponent.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceGoalDistanceTextComponent.h">
       <Filter>GameProject\App\Component\Race</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RaceManagerComponent.h">

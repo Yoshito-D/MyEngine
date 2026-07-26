@@ -393,6 +393,22 @@ private:
    D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU_{};
    UINT instancingSrvIndex_ = UINT_MAX;  // 解放用に記録
 
+   enum GpuDescriptorSlot : size_t {
+	  kGpuStateUavDescriptor,
+	  kGpuStateSrvDescriptor,
+	  kGpuAttributesSrvDescriptor,
+	  kGpuOutputUavDescriptor,
+	  kGpuOutputSrvDescriptor,
+	  kGpuMotionUavDescriptor,
+	  kGpuSpawnRequestSrvDescriptor,
+	  kGpuAliveUavDescriptor,
+	  kGpuFreeListUavDescriptor,
+	  kGpuFreeCountUavDescriptor,
+	  kGpuOwnerMappingUavDescriptor,
+	  kGpuOwnerMappingSrvDescriptor,
+	  kGpuDescriptorCount
+   };
+
    Microsoft::WRL::ComPtr<ID3D12Resource> gpuStateResource_ = nullptr;
    Microsoft::WRL::ComPtr<ID3D12Resource> gpuMotionResource_ = nullptr;
    Microsoft::WRL::ComPtr<ID3D12Resource> gpuSpawnRequestResource_ = nullptr;
@@ -421,9 +437,11 @@ private:
    D3D12_GPU_DESCRIPTOR_HANDLE gpuAttributesSrvHandleGPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE gpuOutputUavHandleGPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE gpuOutputSrvHandleGPU_{};
-   std::array<UINT, 12> gpuDescriptorIndices_{
-	  UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX,
-	  UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX };
+   std::array<UINT, kGpuDescriptorCount> gpuDescriptorIndices_ = [] {
+	  std::array<UINT, kGpuDescriptorCount> indices{};
+	  indices.fill(UINT_MAX);
+	  return indices;
+	  }();
    D3D12_RESOURCE_STATES gpuStateResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    D3D12_RESOURCE_STATES gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    D3D12_RESOURCE_STATES gpuOutputResourceState_ = D3D12_RESOURCE_STATE_COMMON;

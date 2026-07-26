@@ -460,17 +460,17 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			auto& subEmitters = particleSystem->GetSubEmitterSettings();
 			ImGui::Checkbox(ScopedLabel(Tr("サブエミッター", "Sub Emitters"), "ParticleSubEmitters_" + particleSystemName).c_str(), &subEmitters.enabled);
 			if (subEmitters.enabled) {
-			   char deathPath[512]{};
+			   char deathPath[ImGuiHelper::kDefaultPathBufferSize]{};
 			   std::memcpy(deathPath, subEmitters.spawnOnDeathPath.c_str(), std::min(subEmitters.spawnOnDeathPath.size(), sizeof(deathPath) - 1));
 			   if (ImGui::InputText(ScopedLabel(Tr("死亡時エフェクト", "Spawn On Death"), "ParticleDeathEmitter_" + particleSystemName).c_str(), deathPath, sizeof(deathPath))) {
 				  subEmitters.spawnOnDeathPath = deathPath;
 			   }
-			   char updatePath[512]{};
+			   char updatePath[ImGuiHelper::kDefaultPathBufferSize]{};
 			   std::memcpy(updatePath, subEmitters.spawnOnUpdatePath.c_str(), std::min(subEmitters.spawnOnUpdatePath.size(), sizeof(updatePath) - 1));
 			   if (ImGui::InputText(ScopedLabel(Tr("更新時エフェクト", "Spawn On Update"), "ParticleUpdateEmitter_" + particleSystemName).c_str(), updatePath, sizeof(updatePath))) {
 				  subEmitters.spawnOnUpdatePath = updatePath;
 			   }
-			   char collisionPath[512]{};
+			   char collisionPath[ImGuiHelper::kDefaultPathBufferSize]{};
 			   std::memcpy(collisionPath, subEmitters.spawnOnCollisionPath.c_str(), std::min(subEmitters.spawnOnCollisionPath.size(), sizeof(collisionPath) - 1));
 			   if (ImGui::InputText(ScopedLabel(Tr("衝突時エフェクト", "Spawn On Collision"), "ParticleCollisionEmitter_" + particleSystemName).c_str(), collisionPath, sizeof(collisionPath))) {
 				  subEmitters.spawnOnCollisionPath = collisionPath;

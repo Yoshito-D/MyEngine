@@ -2,6 +2,7 @@
 
 #ifdef USE_IMGUI
 
+#include <cstddef>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -52,8 +53,13 @@ private:
    void DrawParticleAssetDropTarget(EditorSceneContext& editorContext, ParticleSystem* particleSystem);
    void ResolveParentRelation(Object* object, const std::vector<Object*>& sceneObjects) const;
    std::string BuildUniqueObjectName(const std::string& baseName, const std::vector<Object*>& sceneObjects) const;
+   void RefreshSceneCatalog();
+   bool CreateEditorScene(const std::string& sceneName);
+   bool SetReleaseStartScene(const std::string& sceneName);
 
 private:
+   static constexpr size_t kSceneNameBufferSize = 128;
+
    AssetManager* assetManager_ = nullptr;
 
    bool editorAssetIconView_ = true;
@@ -67,6 +73,11 @@ private:
    float editorNewMaterialColor_[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
    int editorSelectedAddComponentIndex_ = 0;
    std::filesystem::path editorSceneFilePath_ = "resources/game/scenes/editor_scene.json";
+   char editorNewSceneName_[kSceneNameBufferSize] = "NewScene";
+   std::vector<std::string> editorSceneNames_;
+   std::string editorSelectedSceneName_;
+   std::string editorReleaseStartSceneName_;
+   std::string editorSceneCatalogStatus_;
 
    std::unordered_map<const Model*, std::string> editorModelAssetNames_;
    std::unordered_map<const Model*, std::string> editorModelMaterialNames_;

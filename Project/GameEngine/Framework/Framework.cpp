@@ -10,6 +10,7 @@
 #include "SpotLight.h"
 #include "ParticleSystem.h"
 #include "Model/Model.h"
+#include "Object/Object.h"
 #include "Sprite/Sprite.h"
 #include "Object/Text/UIText.h"
 #include "LightDataBuffer.h"
@@ -143,22 +144,11 @@ void Framework::Update() {
    // デルタタイムを取得
    const float deltaTime = EngineContext::GetDeltaTime();
 
-   // 登録されている全てのモデルのコンポーネントを更新
-   for (auto* model : Model::GetRegisteredModels()) {
-	  if (!model) { continue; }
-	  model->UpdateComponents(deltaTime);
-   }
-
-   // 登録されている全てのスプライトのコンポーネントを更新
-   for (auto* sprite : Sprite::GetRegisteredSprites()) {
-	  if (!sprite) { continue; }
-	  sprite->UpdateComponents(deltaTime);
-   }
-
-   // UIテキストのトゥイーンやタイプライターも通常のコンポーネントと同じ更新経路で動かす。
-   for (auto* text : UIText::GetRegisteredTexts()) {
-	  if (!text) { continue; }
-	  text->UpdateComponents(deltaTime);
+   // 機能種別ごとの静的レジストリではなく、全Entityに共通する経路でComponentを一度だけ更新する。
+   const auto registeredObjects = Object::GetRegisteredObjects();
+   for (auto* object : registeredObjects) {
+	  if (!object) { continue; }
+	  object->UpdateComponents(deltaTime);
    }
 
    // 登録されている全てのパーティクルシステムを更新

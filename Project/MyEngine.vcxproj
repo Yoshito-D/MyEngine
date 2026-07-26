@@ -339,6 +339,7 @@
     <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\LightComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\TriggerVolumeComponent.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\Line.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
@@ -474,6 +475,8 @@
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceCountdownTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceGoalDistanceTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceGoalDirectionHUDComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceManagerComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceResultUIComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeFormatting.cpp" />
@@ -641,6 +644,7 @@
     <ClInclude Include="GameEngine\Object\Component\Skybox\SkyboxComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\LightComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\TriggerVolumeComponent.h" />
     <ClInclude Include="GameEngine\Core\Graphics\Line.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\LineRenderer.h" />
@@ -729,6 +733,8 @@
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceCountdownTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceGoalDistanceTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceGoalDirectionHUDComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceManagerComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceResultUIComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeFormatting.h" />

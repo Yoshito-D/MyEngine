@@ -8,13 +8,24 @@
 #include <Sprite/Sprite.h>
 #include <Object/Text/UIText.h>
 #include <Component/RenderComponent.h>
+#include <Component/LightComponent.h>
+#include <Component/TransformComponent.h>
 #include <Skybox/Skybox.h>
+#include "Utility/MathUtils/QuaternionOperations.h"
 #include <filesystem>
 #include <fstream>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace {
+constexpr float kMainCameraFarClip = 10000.0f;
+#ifdef USE_IMGUI
+constexpr int kInactiveDebugCameraPriority = -1;
+constexpr int kActiveDebugCameraPriority = 100;
+constexpr int kDebugCameraStateFormatVersion = 1;
+constexpr int kDebugCameraJsonIndentSize = 3;
+#endif
+
 std::string GetSceneObjectTypeName(const GameEngine::Object* object) {
    if (dynamic_cast<const GameEngine::UIText*>(object)) {
 	  return "UIText";
@@ -54,6 +65,19 @@ bool IsEditableSceneParticleSystem(const GameEngine::ParticleSystem* particleSys
 	  IsRegisteredParticleSystem(particleSystem);
 }
 
+void UpdateEditorLightProxies(float deltaTime) {
+   const auto registeredObjects = GameEngine::Object::GetRegisteredObjects();
+   for (GameEngine::Object* object : registeredObjects) {
+      if (!object) {
+         continue;
+      }
+      if (auto* light = object->GetComponent<GameEngine::LightComponent>();
+         light && light->IsEnabled()) {
+         light->Update(deltaTime);
+      }
+   }
+}
+
 class RuntimeSceneApplier {
 public:
    explicit RuntimeSceneApplier(GameEngine::EditorObjectStore& objectStore)
@@ -85,9 +109,8 @@ public:
 	  if (sceneData.contains("cameras") && sceneData.at("cameras").is_object()) {
 		 ApplyCameras(sceneData.at("cameras"));
 	  }
-	  if (sceneData.contains("environment") &&
-		 !GameEngine::EngineContext::ApplyLightingSceneState(sceneData.at("environment"))) {
-		 return false;
+	  if (sceneData.contains("environment") && sceneData.at("environment").is_object()) {
+		 ApplyLegacyLights(sceneData.at("environment"));
 	  }
 	  if (sceneData.contains("renderSettings") &&
 		 !GameEngine::EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
@@ -111,27 +134,24 @@ private:
 			return;
 		 }
 
-		 const std::string baseKey = BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName());
+		 const std::string& entityId = object->GetEntityId();
+		 const std::string baseKey = entityId.rfind("runtime_entity_", 0) == 0
+			? BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName())
+			: entityId;
 		 std::string key = baseKey;
 		 int suffix = 2;
 		 while (usedObjectKeys.contains(key)) {
 			key = baseKey + "#" + std::to_string(suffix++);
 		 }
 		 usedObjectKeys.insert(key);
+		 if (object->GetEntityId().rfind("runtime_entity_", 0) == 0) {
+			object->SetEntityId(key);
+		 }
 		 sceneObjectKeys_[object] = key;
 	  };
 
-	  for (auto* model : GameEngine::Model::GetRegisteredModels()) {
-		 registerObject(model);
-	  }
-	  for (auto* sprite : GameEngine::Sprite::GetRegisteredSprites()) {
-		 registerObject(sprite);
-	  }
-	  for (auto* uiText : GameEngine::UIText::GetRegisteredTexts()) {
-		 registerObject(uiText);
-	  }
-	  for (auto* skybox : GameEngine::Skybox::GetRegisteredSkyboxes()) {
-		 registerObject(skybox);
+	  for (auto* object : GameEngine::Object::GetRegisteredObjects()) {
+		 registerObject(object);
 	  }
 
 	  for (auto it = sceneParticleSystemKeys_.begin(); it != sceneParticleSystemKeys_.end();) {
@@ -173,27 +193,8 @@ private:
 	  }
 
 	  auto isRegistered = [](const GameEngine::Object* object) {
-		 for (auto* model : GameEngine::Model::GetRegisteredModels()) {
-			if (model == object) {
-			   return true;
-			}
-		 }
-		 for (auto* sprite : GameEngine::Sprite::GetRegisteredSprites()) {
-			if (sprite == object) {
-			   return true;
-			}
-		 }
-		 for (auto* uiText : GameEngine::UIText::GetRegisteredTexts()) {
-			if (uiText == object) {
-			   return true;
-			}
-		 }
-		 for (auto* skybox : GameEngine::Skybox::GetRegisteredSkyboxes()) {
-			if (skybox == object) {
-			   return true;
-			}
-		 }
-		 return false;
+		 const auto& registeredObjects = GameEngine::Object::GetRegisteredObjects();
+		 return std::find(registeredObjects.begin(), registeredObjects.end(), object) != registeredObjects.end();
 	  };
 
 	  for (const auto& [object, objectKey] : sceneObjectKeys_) {
@@ -233,6 +234,11 @@ private:
 		 GameEngine::Object* object = FindSceneObjectByKey(key);
 		 if (entry.value("deleted", false)) {
 			if (object) {
+			   for (const auto& component : object->GetComponentContainer().GetAll()) {
+				  if (component) {
+					 component->SetEnabled(false);
+				  }
+			   }
 			   if (auto* renderComponent = object->GetComponent<GameEngine::RenderComponent>()) {
 				  renderComponent->visible = false;
 			   }
@@ -349,6 +355,41 @@ private:
 	  }
    }
 
+   void ApplyLegacyLights(const nlohmann::json& environment) {
+	  if (!environment.contains("lights") || !environment.at("lights").is_array()) {
+		 return;
+	  }
+
+	  for (const auto& lightData : environment.at("lights")) {
+		 if (!lightData.is_object()) {
+			continue;
+		 }
+		 const std::string id = lightData.value("id", "");
+		 if (id.empty()) {
+			continue;
+		 }
+
+		 GameEngine::Object* entity = GameEngine::Object::FindByEntityId(id);
+		 if (!entity) {
+			entity = objectStore_.CreateGenericObject(nullptr, id);
+			if (entity) {
+			   entity->SetObjectName(id);
+			}
+		 }
+		 if (!entity) {
+			continue;
+		 }
+
+		 auto* light = entity->GetComponent<GameEngine::LightComponent>();
+		 if (!light) {
+			light = entity->AddComponent<GameEngine::LightComponent>();
+		 }
+		 if (light) {
+			light->DeserializeLegacy(lightData);
+		 }
+	  }
+   }
+
    GameEngine::EditorObjectStore& objectStore_;
    std::unordered_map<const GameEngine::Object*, std::string> sceneObjectKeys_;
    std::unordered_map<const GameEngine::ParticleSystem*, std::string> sceneParticleSystemKeys_;
@@ -362,24 +403,49 @@ void BaseScene::Initialize() {
    // 現在のシーンインスタンスを登録
    sCurrentScene_ = this;
 
-   // デフォルトのライトを作成（LightManagerが所有）
-   EngineContext::CreateDirectionalLight("MainDirectionalLight", 0xffffffff, Vector3(0.0f, -1.0f, 0.0f), 1.0f);
-   EngineContext::CreatePointLight("MainPointLight", 0xffffffff, Vector3(0.0f, 0.0f, 0.0f), 0.0f);
-   EngineContext::CreateSpotLight("MainSpotLight", 0xffffffff, Vector3(), 0.0f, Vector3(0.0f, -1.0f, 0.0f), 5.0f, 0.1f, 0.7f, 0.9f);
-   EngineContext::CreateAreaLight("MainAreaLight", Vector3(0.0f, 10.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector2(5.0f, 5.0f), Vector3(1.0f, 1.0f, 1.0f), 0.0f);
+   auto createDefaultLight = [this](
+      const char* entityId,
+      LightComponent::Type type,
+      const Vector3& position,
+      const Vector3& direction,
+      float intensity) {
+      auto entity = std::make_unique<Object>();
+      entity->SetEntityId(entityId);
+      entity->SetObjectName(entityId);
+      auto* transform = entity->AddComponent<TransformComponent>();
+      transform->transform.translation = position;
+      if (type != LightComponent::Type::Point) {
+         transform->transform.SetRotationQuaternion(
+            LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
+      }
+      auto* light = entity->AddComponent<LightComponent>();
+      light->SetLightType(type);
+      light->intensity = intensity;
+      sceneEntities_.push_back(std::move(entity));
+   };
+
+   // デフォルトライトも通常Entityとして所有し、ヒエラルキー・保存・親子Transformを共通化する。
+   createDefaultLight("MainDirectionalLight", LightComponent::Type::Directional,
+      Vector3(), Vector3(0.0f, -1.0f, 0.0f), 1.0f);
+   createDefaultLight("MainPointLight", LightComponent::Type::Point,
+      Vector3(), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
+   createDefaultLight("MainSpotLight", LightComponent::Type::Spot,
+      Vector3(), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
+   createDefaultLight("MainAreaLight", LightComponent::Type::Area,
+      Vector3(0.0f, 10.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
 
    // CameraUnitを生成（Brain+Cameraのペア）
    CameraUnit* unit = EngineContext::CreateCameraUnit();
 
    auto mainCamera = std::make_unique<Camera>();
    mainCamera->Initialize();
-   mainCamera->SetFarClip(10000.0f);
+   mainCamera->SetFarClip(kMainCameraFarClip);
    unit->brain->Initialize(std::move(mainCamera));
 
 #ifdef USE_IMGUI
    debugCamera_ = std::make_unique<DebugCamera>();
    debugCamera_->Initialize();
-   debugCamera_->SetPriority(-1); // 通常時は選ばれない
+   debugCamera_->SetPriority(kInactiveDebugCameraPriority); // 通常時は選ばれない
    LoadDebugCameraState();
    unit->brain->RegisterVirtualCamera(debugCamera_.get());
    unit->brain->SetDefaultBlendTime(0.0f);
@@ -402,44 +468,42 @@ void BaseScene::Update() {
 
 void BaseScene::EditorUpdate() {
 #ifdef USE_IMGUI
+   if (!EngineContext::ShouldRunRuntimeUpdate()) {
+      // 編集停止中は描画プロキシだけを同期し、ゲームプレイ用Componentを誤って進めない。
+      UpdateEditorLightProxies(EngineContext::GetUnscaledDeltaTime());
+   }
+
    if (EngineContext::IsKeyTriggered(KeyCode::F1)) {
 	  isDebugCameraActive_ = !isDebugCameraActive_;
 	  if (isDebugCameraActive_) {
 		 // 最高優先度を与えてDebugCameraを選択させる
-		 debugCamera_->SetPriority(100);
+		 debugCamera_->SetPriority(kActiveDebugCameraPriority);
 	  } else {
 		 // 優先度を戻してゲーム用VirtualCameraに戻す
-		 debugCamera_->SetPriority(-1);
+		 debugCamera_->SetPriority(kInactiveDebugCameraPriority);
 	  }
    }
 
    {
 	  CinemachineBrain* brain = EngineContext::GetActiveBrain();
-	  if (brain) {
-		 if (EngineContext::ShouldRunRuntimeUpdate()) {
-			brain->Update(EngineContext::GetDeltaTime());
-		 } else {
-			DebugCamera* editorDrivenCamera = isDebugCameraActive_ ? debugCamera_.get() : nullptr;
-			brain->UpdateEditorPreview(EngineContext::GetUnscaledDeltaTime(), editorDrivenCamera);
-		 }
+	  if (brain && !EngineContext::ShouldRunRuntimeUpdate()) {
+		 DebugCamera* editorDrivenCamera = isDebugCameraActive_ ? debugCamera_.get() : nullptr;
+		 brain->UpdateEditorPreview(EngineContext::GetUnscaledDeltaTime(), editorDrivenCamera);
 	  }
    }
-
-   if (EngineContext::DebugDrawLights() && editorSceneContext_) {
-	  editorSceneContext_->MarkDirty();
-   }
-#else
-   {
-	  float deltaTime = EngineContext::GetDeltaTime();
-	  EngineContext::GetActiveBrain()->Update(deltaTime);
-   }
-#endif // _DEBUG
+#endif
 
    OnEditorUpdate();
 }
 
 void BaseScene::RuntimeUpdate() {
-   OnUpdate(EngineContext::GetDeltaTime());
+   const float deltaTime = EngineContext::GetDeltaTime();
+   OnUpdate(deltaTime);
+
+   // ターゲットやゲーム状態の更新後にカメラを評価するLate Update相当のフェーズ。
+   if (CinemachineBrain* brain = EngineContext::GetActiveBrain()) {
+      brain->Update(deltaTime);
+   }
 }
 
 void BaseScene::Draw() {
@@ -488,6 +552,7 @@ void BaseScene::Finalize() {
 	  runtimeSceneObjectStore_.reset();
    }
 
+   sceneEntities_.clear();
    EngineContext::ClearCameraUnits();
    EngineContext::ClearDirectionalLights();
    EngineContext::ClearPointLights();
@@ -612,10 +677,10 @@ void BaseScene::SaveDebugCameraState() const {
    }
 
    nlohmann::json root = nlohmann::json::object();
-   root["version"] = 1;
+   root["version"] = kDebugCameraStateFormatVersion;
    root["sceneName"] = editorSceneName_;
    root["debugCamera"] = debugCamera_->Serialize();
-   file << root.dump(3);
+   file << root.dump(kDebugCameraJsonIndentSize);
 }
 #endif
 
@@ -624,9 +689,9 @@ void BaseScene::UpdateDebugCamera() {
    if (EngineContext::IsKeyTriggered(KeyCode::F1)) {
 	  isDebugCameraActive_ = !isDebugCameraActive_;
 	  if (isDebugCameraActive_) {
-		 debugCamera_->SetPriority(100);
+		 debugCamera_->SetPriority(kActiveDebugCameraPriority);
 	  } else {
-		 debugCamera_->SetPriority(-1);
+		 debugCamera_->SetPriority(kInactiveDebugCameraPriority);
 	  }
    }
 

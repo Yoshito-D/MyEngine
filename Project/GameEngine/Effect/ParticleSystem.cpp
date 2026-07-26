@@ -34,6 +34,7 @@ bool sIsInitialized_ = false;
 // 全Particle Compute Shaderのnumthreadsと一致させ、Dispatch過不足を防ぐ。
 constexpr uint32_t kParticleComputeThreadGroupSize = 64;
 constexpr uint32_t kInvalidGpuParticleIndex = UINT_MAX;
+constexpr int kJsonIndentSize = 4;
 
 Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
    ID3D12Device* device, size_t size, D3D12_RESOURCE_FLAGS flags) {
@@ -522,37 +523,37 @@ void ParticleSystem::CreateGpuSimulationResources() {
 	  device->CreateShaderResourceView(resource, &desc, cpuHandle(descriptorIndex));
    };
 
-   createStructuredUav(gpuStateResource_.Get(), kMaxParticles, sizeof(GpuParticleState), gpuDescriptorIndices_[0]);
-   createStructuredSrv(gpuStateResource_.Get(), kMaxParticles, sizeof(GpuParticleState), gpuDescriptorIndices_[1]);
-   createStructuredSrv(gpuAttributesResource_.Get(), kMaxParticles, sizeof(GpuParticleAttributes), gpuDescriptorIndices_[2]);
-   createStructuredUav(gpuOutputResource_.Get(), kMaxParticles, sizeof(ParticleForGPU), gpuDescriptorIndices_[3]);
-   createStructuredSrv(gpuOutputResource_.Get(), kMaxParticles, sizeof(ParticleForGPU), gpuDescriptorIndices_[4]);
-   createStructuredUav(gpuMotionResource_.Get(), kMaxParticles, sizeof(GpuParticleMotion), gpuDescriptorIndices_[5]);
-   createStructuredSrv(gpuSpawnRequestResource_.Get(), kMaxParticles, sizeof(GpuSpawnRequest), gpuDescriptorIndices_[6]);
-   createStructuredUav(gpuAliveResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[7]);
-   createStructuredUav(gpuFreeListResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[8]);
+   createStructuredUav(gpuStateResource_.Get(), kMaxParticles, sizeof(GpuParticleState), gpuDescriptorIndices_[kGpuStateUavDescriptor]);
+   createStructuredSrv(gpuStateResource_.Get(), kMaxParticles, sizeof(GpuParticleState), gpuDescriptorIndices_[kGpuStateSrvDescriptor]);
+   createStructuredSrv(gpuAttributesResource_.Get(), kMaxParticles, sizeof(GpuParticleAttributes), gpuDescriptorIndices_[kGpuAttributesSrvDescriptor]);
+   createStructuredUav(gpuOutputResource_.Get(), kMaxParticles, sizeof(ParticleForGPU), gpuDescriptorIndices_[kGpuOutputUavDescriptor]);
+   createStructuredSrv(gpuOutputResource_.Get(), kMaxParticles, sizeof(ParticleForGPU), gpuDescriptorIndices_[kGpuOutputSrvDescriptor]);
+   createStructuredUav(gpuMotionResource_.Get(), kMaxParticles, sizeof(GpuParticleMotion), gpuDescriptorIndices_[kGpuMotionUavDescriptor]);
+   createStructuredSrv(gpuSpawnRequestResource_.Get(), kMaxParticles, sizeof(GpuSpawnRequest), gpuDescriptorIndices_[kGpuSpawnRequestSrvDescriptor]);
+   createStructuredUav(gpuAliveResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[kGpuAliveUavDescriptor]);
+   createStructuredUav(gpuFreeListResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[kGpuFreeListUavDescriptor]);
    D3D12_UNORDERED_ACCESS_VIEW_DESC counterDesc{};
    counterDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
    counterDesc.Format = DXGI_FORMAT_R32_TYPELESS;
    counterDesc.Buffer.NumElements = 1;
    counterDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
    device->CreateUnorderedAccessView(
-	  gpuFreeCountResource_.Get(), nullptr, &counterDesc, cpuHandle(gpuDescriptorIndices_[9]));
-   createStructuredUav(gpuOwnerMappingResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[10]);
-   createStructuredSrv(gpuOwnerMappingResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[11]);
+	  gpuFreeCountResource_.Get(), nullptr, &counterDesc, cpuHandle(gpuDescriptorIndices_[kGpuFreeCountUavDescriptor]));
+   createStructuredUav(gpuOwnerMappingResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[kGpuOwnerMappingUavDescriptor]);
+   createStructuredSrv(gpuOwnerMappingResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[kGpuOwnerMappingSrvDescriptor]);
 
-   gpuStateUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[0]);
-   gpuStateSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[1]);
-   gpuAttributesSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[2]);
-   gpuOutputUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[3]);
-   gpuOutputSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[4]);
-   gpuMotionUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[5]);
-   gpuSpawnRequestSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[6]);
-   gpuAliveUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[7]);
-   gpuFreeListUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[8]);
-   gpuFreeCountUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[9]);
-   gpuOwnerMappingUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[10]);
-   gpuOwnerMappingSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[11]);
+   gpuStateUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuStateUavDescriptor]);
+   gpuStateSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuStateSrvDescriptor]);
+   gpuAttributesSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuAttributesSrvDescriptor]);
+   gpuOutputUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuOutputUavDescriptor]);
+   gpuOutputSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuOutputSrvDescriptor]);
+   gpuMotionUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuMotionUavDescriptor]);
+   gpuSpawnRequestSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuSpawnRequestSrvDescriptor]);
+   gpuAliveUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuAliveUavDescriptor]);
+   gpuFreeListUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuFreeListUavDescriptor]);
+   gpuFreeCountUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuFreeCountUavDescriptor]);
+   gpuOwnerMappingUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuOwnerMappingUavDescriptor]);
+   gpuOwnerMappingSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuOwnerMappingSrvDescriptor]);
 
    gpuStateResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_COMMON;
@@ -1838,7 +1839,7 @@ bool ParticleSystem::SaveToJson(const std::string& filePath) const {
 	  nlohmann::json j = ToJson();
 	  std::ofstream ofs(filePath);
 	  if (!ofs.is_open()) return false;
-	  ofs << j.dump(4);
+	  ofs << j.dump(kJsonIndentSize);
 	  return true;
    }
    catch (...) {

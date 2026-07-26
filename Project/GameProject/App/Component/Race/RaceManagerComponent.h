@@ -32,6 +32,8 @@ public:
 
    static constexpr const char* kTypeName = "RaceManagerComponent";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "レース管理", "Race Manager" };
+   /// @brief 保存・表示するベストタイムの最大件数
+   static constexpr size_t kBestTimeCount = 3;
 
    /// @brief コンポーネント型名を取得する
    /// @return RaceManagerComponent
