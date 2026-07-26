@@ -26,15 +26,26 @@
 #include "Scene/BaseScene.h"
 #include "imgui.h"
 #include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <fstream>
 #include <functional>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace GameEngine {
 
 namespace {
+constexpr int kJsonIndentSize = 3;
+constexpr unsigned char kUtf8ContinuationByteMask = 0xC0;
+constexpr unsigned char kUtf8ContinuationByteTag = 0x80;
+constexpr unsigned char kAsciiControlCharacterLimit = 0x20;
+constexpr float kHierarchyDropGuideThickness = 2.0f;
+constexpr int kEmptyCStringPayloadSize = 1;
+constexpr size_t kInspectorNameBufferSize = 256;
+constexpr int kFirstUniqueNameSuffix = 1;
+
 const char* Tr(const char* japanese, const char* english) {
    return ImGuiHelper::Localize({ japanese, english });
 }
@@ -53,7 +64,7 @@ void PopLastUtf8Codepoint(std::string& text) {
    // UTF-8継続バイトをさかのぼり、切り詰め時に不正な文字列を作らない。
    while (erasePos > 0) {
       const unsigned char c = static_cast<unsigned char>(text[erasePos]);
-      if ((c & 0xC0) != 0x80) {
+      if ((c & kUtf8ContinuationByteMask) != kUtf8ContinuationByteTag) {
          break;
       }
       --erasePos;
@@ -86,10 +97,129 @@ std::string TruncateTextWithEllipsis(const std::string& text, float maxWidth) {
 
    return kEllipsis;
 }
+
+constexpr const char* kSceneCatalogPath = "resources/game/scene_catalog.json";
+
+bool LoadSceneCatalogData(nlohmann::json& catalogData, std::string& errorMessage) {
+   std::ifstream file(kSceneCatalogPath);
+   if (!file.is_open()) {
+      errorMessage = "Scene catalog could not be opened";
+      return false;
+   }
+
+   try {
+      file >> catalogData;
+   } catch (const nlohmann::json::exception& exception) {
+      errorMessage = "Scene catalog contains invalid JSON: " + std::string(exception.what());
+      return false;
+   }
+
+   if (!catalogData.is_object() ||
+      !catalogData.contains("scenes") ||
+      !catalogData.at("scenes").is_object()) {
+      errorMessage = "Scene catalog must contain a scenes object";
+      return false;
+   }
+   return true;
+}
+
+bool SaveJsonFile(
+   const std::filesystem::path& filePath,
+   const nlohmann::json& jsonData,
+   std::string& errorMessage) {
+   std::error_code error;
+   std::filesystem::create_directories(filePath.parent_path(), error);
+   if (error) {
+      errorMessage = "Could not create directory: " + filePath.parent_path().generic_string();
+      return false;
+   }
+
+   std::ofstream file(filePath);
+   if (!file.is_open()) {
+      errorMessage = "Could not write: " + filePath.generic_string();
+      return false;
+   }
+   file << jsonData.dump(kJsonIndentSize);
+   file.flush();
+   if (!file.good()) {
+      errorMessage = "Write failed: " + filePath.generic_string();
+      return false;
+   }
+   return true;
+}
+
+bool IsValidSceneName(const std::string& sceneName) {
+   if (sceneName.empty() || sceneName == "." || sceneName == ".." ||
+      sceneName.back() == '.' ||
+      std::isspace(static_cast<unsigned char>(sceneName.front())) ||
+      std::isspace(static_cast<unsigned char>(sceneName.back()))) {
+      return false;
+   }
+
+   constexpr const char* kInvalidFileNameCharacters = "\\/:*?\"<>|";
+   return sceneName.find_first_of(kInvalidFileNameCharacters) == std::string::npos &&
+      std::none_of(sceneName.begin(), sceneName.end(),
+         [](unsigned char character) {
+            return character < kAsciiControlCharacterLimit;
+         });
+}
+
+void DrawHierarchyInsertionDropTarget(
+   EditorSceneContext& editorContext,
+   Object* targetObject,
+   EditorSceneContext::HierarchyDropPosition dropPosition) {
+   if (!targetObject) {
+      return;
+   }
+
+   // 通常のItemSpacingを実際にドロップできる領域へ置き換え、行間を大きく広げずに
+   // オブジェクト同士の境界を狙えるようにする。
+   const ImGuiStyle& style = ImGui::GetStyle();
+   constexpr float kMinimumDropTargetHeight = 6.0f;
+   const float dropTargetHeight = std::max(style.ItemSpacing.y, kMinimumDropTargetHeight);
+   ImGui::SetCursorPosY(ImGui::GetCursorPosY() - style.ItemSpacing.y);
+   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, 0.0f));
+   ImGui::PushID(targetObject);
+   ImGui::PushID(static_cast<int>(dropPosition));
+   ImGui::InvisibleButton(
+      "##HierarchyInsertionDropTarget",
+      ImVec2(std::max(ImGui::GetContentRegionAvail().x, 1.0f), dropTargetHeight));
+
+   if (ImGui::BeginDragDropTarget()) {
+      constexpr ImGuiDragDropFlags acceptFlags =
+         ImGuiDragDropFlags_AcceptBeforeDelivery |
+         ImGuiDragDropFlags_AcceptNoDrawDefaultRect;
+      if (const ImGuiPayload* payload =
+         ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT", acceptFlags)) {
+         if (payload->IsPreview()) {
+            const ImVec2 targetMin = ImGui::GetItemRectMin();
+            const ImVec2 targetMax = ImGui::GetItemRectMax();
+            const float guideY = (targetMin.y + targetMax.y) * 0.5f;
+            ImGui::GetWindowDrawList()->AddLine(
+               ImVec2(targetMin.x, guideY),
+               ImVec2(targetMax.x, guideY),
+               ImGui::GetColorU32(ImGuiCol_DragDropTarget),
+               kHierarchyDropGuideThickness);
+         }
+         if (payload->IsDelivery() && payload->Data && payload->DataSize > kEmptyCStringPayloadSize) {
+            const char* draggedId = static_cast<const char*>(payload->Data);
+            if (Object* draggedObject = Object::FindByEntityId(draggedId)) {
+               editorContext.ReorderObject(draggedObject, targetObject, dropPosition);
+            }
+         }
+      }
+      ImGui::EndDragDropTarget();
+   }
+
+   ImGui::PopID();
+   ImGui::PopID();
+   ImGui::PopStyleVar();
+}
 } // namespace
 
 void RendererEditorController::Initialize(AssetManager* assetManager) {
    assetManager_ = assetManager;
+   RefreshSceneCatalog();
 }
 
 void RendererEditorController::BeginEditorFrame() {
@@ -180,6 +310,78 @@ void RendererEditorController::ShowAssetWindow() {
       }
       ImGui::Spacing();
 
+      ImGui::Text("%s", Tr("シーン管理", "Scene Management"));
+      ImGui::Separator();
+      const BaseScene* activeScene = BaseScene::GetCurrentScene();
+      const std::string activeSceneName = activeScene ? activeScene->GetEditorSceneName() : std::string{};
+      ImGui::Text("%s: %s", Tr("現在", "Current"), activeSceneName.c_str());
+
+      const char* selectedSceneLabel = editorSelectedSceneName_.empty()
+         ? Tr("シーンを選択", "Select a scene")
+         : editorSelectedSceneName_.c_str();
+      if (ImGui::BeginCombo(Tr("シーン一覧", "Scenes"), selectedSceneLabel)) {
+         for (const std::string& sceneName : editorSceneNames_) {
+            const bool isSelected = sceneName == editorSelectedSceneName_;
+            if (ImGui::Selectable(sceneName.c_str(), isSelected)) {
+               editorSelectedSceneName_ = sceneName;
+            }
+            if (isSelected) {
+               ImGui::SetItemDefaultFocus();
+            }
+         }
+         ImGui::EndCombo();
+      }
+
+      const bool canOpenScene =
+         canUseSceneFileButtons &&
+         !editorContext->IsDirty() &&
+         !editorSelectedSceneName_.empty() &&
+         editorSelectedSceneName_ != activeSceneName;
+      ImGui::BeginDisabled(!canOpenScene);
+      if (ImGui::Button(Tr("選択シーンを開く", "Open Selected Scene"))) {
+         EngineContext::ChangeScene(editorSelectedSceneName_);
+      }
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+      if (ImGui::Button(Tr("一覧を更新", "Refresh List"))) {
+         RefreshSceneCatalog();
+      }
+      if (editorContext->IsDirty()) {
+         ImGui::TextDisabled("%s", Tr(
+            "別のシーンを開く前に現在のシーンを保存してください",
+            "Save the current scene before opening another scene"));
+      }
+
+      ImGui::InputText(Tr("新しいシーン名", "New Scene Name"), editorNewSceneName_, sizeof(editorNewSceneName_));
+      ImGui::BeginDisabled(!canUseSceneFileButtons);
+      if (ImGui::Button(Tr("シーンを作成", "Create Scene"))) {
+         CreateEditorScene(editorNewSceneName_);
+      }
+      ImGui::EndDisabled();
+
+      const char* releaseStartLabel = editorReleaseStartSceneName_.empty()
+         ? Tr("未設定", "Not set")
+         : editorReleaseStartSceneName_.c_str();
+      if (ImGui::BeginCombo(Tr("リリース開始シーン", "Release Start Scene"), releaseStartLabel)) {
+         for (const std::string& sceneName : editorSceneNames_) {
+            const bool isSelected = sceneName == editorReleaseStartSceneName_;
+            if (ImGui::Selectable(sceneName.c_str(), isSelected)) {
+               SetReleaseStartScene(sceneName);
+            }
+            if (isSelected) {
+               ImGui::SetItemDefaultFocus();
+            }
+         }
+         ImGui::EndCombo();
+      }
+      ImGui::TextDisabled("%s", Tr(
+         "次回の起動時とリリースビルドはこのシーンから開始します",
+         "The next launch and release build start from this scene"));
+      if (!editorSceneCatalogStatus_.empty()) {
+         ImGui::TextWrapped("%s", editorSceneCatalogStatus_.c_str());
+      }
+      ImGui::Spacing();
+
       ImGui::Text("%s", Tr("プロジェクト", "Project"));
       ImGui::Separator();
       ImGui::Checkbox(Tr("アイコン表示", "Icon View"), &editorAssetIconView_);
@@ -211,6 +413,14 @@ void RendererEditorController::ShowHierarchyWindow() {
       }
       if (ImGui::MenuItem(Tr("選択を削除", "Delete Selected"), "Delete")) {
          editorContext->DeleteSelection();
+      }
+      if (Object* selected = editorContext->GetSelectedObject();
+         selected && !selected->GetParentEntityId().empty() &&
+         ImGui::MenuItem(Tr("親子関係を解除", "Unparent Selected"))) {
+         editorContext->ReorderObject(
+            selected,
+            nullptr,
+            EditorSceneContext::HierarchyDropPosition::After);
       }
       ImGui::Separator();
 
@@ -248,6 +458,22 @@ void RendererEditorController::ShowHierarchyWindow() {
 
       if (ImGui::MenuItem(Tr("UIテキスト", "UI Text"))) {
          editorContext->CreateUIText();
+      }
+
+      if (ImGui::BeginMenu(Tr("ライト", "Light"))) {
+         if (ImGui::MenuItem(Tr("ディレクショナル", "Directional"))) {
+            editorContext->CreateDirectionalLight();
+         }
+         if (ImGui::MenuItem(Tr("ポイント", "Point"))) {
+            editorContext->CreatePointLight();
+         }
+         if (ImGui::MenuItem(Tr("スポット", "Spot"))) {
+            editorContext->CreateSpotLight();
+         }
+         if (ImGui::MenuItem(Tr("エリア", "Area"))) {
+            editorContext->CreateAreaLight();
+         }
+         ImGui::EndMenu();
       }
 
       if (ImGui::BeginMenu(Tr("パーティクルシステム", "Particle System"))) {
@@ -300,38 +526,131 @@ void RendererEditorController::ShowHierarchyWindow() {
 
    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
    const std::string sceneObjectsLabel = std::string(Tr("シーンオブジェクト", "Scene Objects")) + "###HierarchySceneObjects";
-   if (ImGui::TreeNodeEx(sceneObjectsLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-   for (size_t i = 0; i < sceneObjects.size(); ++i) {
-      Object* object = sceneObjects[i];
-      if (!object) {
-         continue;
-      }
-
-      ImGui::PushID(static_cast<int>(i));
-
-      const std::string objectName = object->GetObjectName();
-      std::string label = objectName;
-      label += "##Object_" + std::to_string(i);
-
-      const bool isSelected = (selectedObject == object);
-      ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-      if (isSelected) {
-         flags |= ImGuiTreeNodeFlags_Selected;
-      }
-      ImGui::TreeNodeEx(label.c_str(), flags);
-      const bool clicked = ImGui::IsItemClicked();
-      if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-         ImGui::SetDragDropPayload("EDITOR_SCENE_OBJECT", objectName.c_str(), objectName.size() + 1);
-         ImGui::Text("%s", objectName.c_str());
-         ImGui::EndDragDropSource();
-      }
-      if (clicked) {
-         if (editorContext) {
-            editorContext->SelectObject(object);
+   const bool sceneObjectsOpen = ImGui::TreeNodeEx(sceneObjectsLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+   if (editorContext && ImGui::BeginDragDropTarget()) {
+      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT")) {
+         const char* draggedId = static_cast<const char*>(payload->Data);
+         if (Object* draggedObject = draggedId ? Object::FindByEntityId(draggedId) : nullptr) {
+            editorContext->ReorderObject(
+               draggedObject,
+               nullptr,
+               EditorSceneContext::HierarchyDropPosition::After);
          }
       }
-      ImGui::PopID();
+      ImGui::EndDragDropTarget();
    }
+   if (sceneObjectsOpen) {
+      std::unordered_set<Object*> renderedObjects;
+      std::function<void(Object*)> drawEntityNode;
+      std::function<void(const std::vector<Object*>&)> drawEntityList;
+      drawEntityNode = [&](Object* object) {
+         if (!object || renderedObjects.contains(object)) {
+            return;
+         }
+         renderedObjects.insert(object);
+
+         std::vector<Object*> children;
+         for (Object* candidate : sceneObjects) {
+            if (candidate && candidate->GetParentEntityId() == object->GetEntityId()) {
+               children.push_back(candidate);
+            }
+         }
+
+         ImGui::PushID(object);
+         const std::string objectName = object->GetObjectName();
+         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+         if (children.empty()) {
+            flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+         }
+         if (selectedObject == object) {
+            flags |= ImGuiTreeNodeFlags_Selected;
+         }
+
+         const bool isOpen = ImGui::TreeNodeEx(objectName.c_str(), flags);
+         const bool clicked = ImGui::IsItemClicked();
+         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+            const std::string& entityId = object->GetEntityId();
+            ImGui::SetDragDropPayload("EDITOR_SCENE_OBJECT", entityId.c_str(), entityId.size() + 1);
+            ImGui::Text("%s", objectName.c_str());
+            ImGui::TextDisabled("%s", Tr(
+               "行間: 並び替え  オブジェクト上: 子にする",
+               "Between rows: reorder  On object: make child"));
+            ImGui::EndDragDropSource();
+         }
+         if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT")) {
+               const char* draggedId = static_cast<const char*>(payload->Data);
+               Object* draggedObject = draggedId ? Object::FindByEntityId(draggedId) : nullptr;
+               if (draggedObject && editorContext) {
+                  editorContext->ReorderObject(
+                     draggedObject,
+                     object,
+                     EditorSceneContext::HierarchyDropPosition::Into);
+               }
+            }
+            ImGui::EndDragDropTarget();
+         }
+         if (clicked && editorContext) {
+            editorContext->SelectObject(object);
+         }
+
+         if (isOpen && !children.empty()) {
+            drawEntityList(children);
+            ImGui::TreePop();
+         }
+         ImGui::PopID();
+      };
+
+      drawEntityList = [&](const std::vector<Object*>& objects) {
+         Object* lastObject = nullptr;
+         for (Object* object : objects) {
+            if (!object || renderedObjects.contains(object)) {
+               continue;
+            }
+            if (editorContext) {
+               DrawHierarchyInsertionDropTarget(
+                  *editorContext,
+                  object,
+                  EditorSceneContext::HierarchyDropPosition::Before);
+            }
+            drawEntityNode(object);
+            lastObject = object;
+         }
+         if (editorContext && lastObject) {
+            DrawHierarchyInsertionDropTarget(
+               *editorContext,
+               lastObject,
+               EditorSceneContext::HierarchyDropPosition::After);
+         }
+      };
+
+      std::vector<Object*> rootObjects;
+      rootObjects.reserve(sceneObjects.size());
+      for (Object* object : sceneObjects) {
+         if (!object) {
+            continue;
+         }
+         const std::string& parentId = object->GetParentEntityId();
+         const bool hasVisibleParent = !parentId.empty() &&
+            std::any_of(sceneObjects.begin(), sceneObjects.end(),
+               [&parentId](const Object* candidate) {
+                  return candidate && candidate->GetEntityId() == parentId;
+               });
+         if (!hasVisibleParent) {
+            rootObjects.push_back(object);
+         }
+      }
+      drawEntityList(rootObjects);
+
+      // 循環や壊れた参照があってもEntityをヒエラルキーから消さない。
+      std::vector<Object*> remainingObjects;
+      remainingObjects.reserve(sceneObjects.size() - renderedObjects.size());
+      for (Object* object : sceneObjects) {
+         if (object && !renderedObjects.contains(object)) {
+            remainingObjects.push_back(object);
+         }
+      }
+      drawEntityList(remainingObjects);
       ImGui::TreePop();
    }
 
@@ -368,6 +687,131 @@ void RendererEditorController::ShowHierarchyWindow() {
    ImGui::End();
 }
 
+void RendererEditorController::RefreshSceneCatalog() {
+   nlohmann::json catalogData;
+   std::string errorMessage;
+   if (!LoadSceneCatalogData(catalogData, errorMessage)) {
+      editorSceneNames_.clear();
+      editorReleaseStartSceneName_.clear();
+      editorSceneCatalogStatus_ = std::move(errorMessage);
+      return;
+   }
+
+   editorSceneNames_.clear();
+   for (const auto& [sceneName, scenePath] : catalogData.at("scenes").items()) {
+      if (!sceneName.empty() && scenePath.is_string()) {
+         editorSceneNames_.push_back(sceneName);
+      }
+   }
+   std::sort(editorSceneNames_.begin(), editorSceneNames_.end());
+   editorReleaseStartSceneName_ = catalogData.value("initialScene", "");
+
+   if (editorSelectedSceneName_.empty() ||
+      std::find(editorSceneNames_.begin(), editorSceneNames_.end(), editorSelectedSceneName_) ==
+         editorSceneNames_.end()) {
+      editorSelectedSceneName_ = editorReleaseStartSceneName_;
+   }
+   editorSceneCatalogStatus_.clear();
+}
+
+bool RendererEditorController::CreateEditorScene(const std::string& sceneName) {
+   if (!IsValidSceneName(sceneName)) {
+      editorSceneCatalogStatus_ = "Create failed: invalid scene name";
+      return false;
+   }
+
+   nlohmann::json catalogData;
+   std::string errorMessage;
+   if (!LoadSceneCatalogData(catalogData, errorMessage)) {
+      editorSceneCatalogStatus_ = std::move(errorMessage);
+      return false;
+   }
+
+   const std::string foldedSceneName = [&sceneName]() {
+      std::string folded = sceneName;
+      std::transform(folded.begin(), folded.end(), folded.begin(),
+         [](unsigned char character) {
+            return static_cast<char>(std::tolower(character));
+         });
+      return folded;
+   }();
+   for (const auto& registeredScene : catalogData.at("scenes").items()) {
+      const std::string& registeredName = registeredScene.key();
+      std::string foldedRegisteredName = registeredName;
+      std::transform(foldedRegisteredName.begin(), foldedRegisteredName.end(), foldedRegisteredName.begin(),
+         [](unsigned char character) {
+            return static_cast<char>(std::tolower(character));
+         });
+      if (foldedRegisteredName == foldedSceneName) {
+         editorSceneCatalogStatus_ = "Create failed: scene already exists";
+         return false;
+      }
+   }
+
+   const std::filesystem::path sceneFilePath =
+      std::filesystem::path("resources") / "game" / "scenes" / (sceneName + ".json");
+   if (std::filesystem::exists(sceneFilePath)) {
+      editorSceneCatalogStatus_ = "Create failed: scene file already exists";
+      return false;
+   }
+
+   nlohmann::json sceneData = {
+      { "version", EditorSceneContext::kCurrentSceneFormatVersion },
+      { "sceneName", sceneName },
+      { "objects", nlohmann::json::array() },
+      { "sceneObjects", nlohmann::json::array() },
+      { "sceneParticleSystems", nlohmann::json::array() },
+      { "hierarchyOrder", nlohmann::json::array() },
+      { "cameras", {
+         { "brain", { { "defaultBlendTime", 0.0f } } },
+         { "virtualCameras", nlohmann::json::array() }
+      } },
+      { "environment", nlohmann::json::object() }
+   };
+   if (!SaveJsonFile(sceneFilePath, sceneData, errorMessage)) {
+      editorSceneCatalogStatus_ = std::move(errorMessage);
+      return false;
+   }
+
+   catalogData["scenes"][sceneName] = "game/scenes/" + sceneName + ".json";
+   if (!SaveJsonFile(kSceneCatalogPath, catalogData, errorMessage)) {
+      std::error_code rollbackError;
+      std::filesystem::remove(sceneFilePath, rollbackError);
+      editorSceneCatalogStatus_ = rollbackError
+         ? "Scene file was created, but catalog update failed: " + errorMessage
+         : "Catalog update failed; the new scene file was rolled back: " + errorMessage;
+      return false;
+   }
+
+   RefreshSceneCatalog();
+   editorSelectedSceneName_ = sceneName;
+   editorSceneCatalogStatus_ = "Created scene: " + sceneName;
+   return true;
+}
+
+bool RendererEditorController::SetReleaseStartScene(const std::string& sceneName) {
+   nlohmann::json catalogData;
+   std::string errorMessage;
+   if (!LoadSceneCatalogData(catalogData, errorMessage)) {
+      editorSceneCatalogStatus_ = std::move(errorMessage);
+      return false;
+   }
+   if (sceneName.empty() || !catalogData.at("scenes").contains(sceneName)) {
+      editorSceneCatalogStatus_ = "Release start scene is not registered";
+      return false;
+   }
+
+   catalogData["initialScene"] = sceneName;
+   if (!SaveJsonFile(kSceneCatalogPath, catalogData, errorMessage)) {
+      editorSceneCatalogStatus_ = std::move(errorMessage);
+      return false;
+   }
+
+   editorReleaseStartSceneName_ = sceneName;
+   editorSceneCatalogStatus_ = "Release start scene: " + sceneName;
+   return true;
+}
+
 void RendererEditorController::ShowInspectorWindow() {
    const std::string windowLabel = StableWindowLabel(Tr("インスペクター", "Inspector"), "Inspector");
    ImGui::Begin(windowLabel.c_str());
@@ -384,7 +828,7 @@ void RendererEditorController::ShowInspectorWindow() {
 
    if (selectedParticleSystem) {
       std::string particleSystemName = selectedParticleSystem->GetName();
-      char particleSystemNameBuffer[256]{};
+      char particleSystemNameBuffer[kInspectorNameBufferSize]{};
       {
          const size_t copySize = std::min(particleSystemName.size(), sizeof(particleSystemNameBuffer) - 1);
          std::memcpy(particleSystemNameBuffer, particleSystemName.c_str(), copySize);
@@ -414,7 +858,7 @@ void RendererEditorController::ShowInspectorWindow() {
    }
 
    std::string objectName = selectedObject->GetObjectName();
-   char objectNameBuffer[256]{};
+   char objectNameBuffer[kInspectorNameBufferSize]{};
    {
       const size_t copySize = std::min(objectName.size(), sizeof(objectNameBuffer) - 1);
       std::memcpy(objectNameBuffer, objectName.c_str(), copySize);
@@ -427,6 +871,10 @@ void RendererEditorController::ShowInspectorWindow() {
    if (editorContext) {
       const bool editorOwned = editorContext->IsEditorOwned(selectedObject);
       ImGui::Text("%s: %s", Tr("所有者", "Owner"), editorOwned ? Tr("エディタ", "Editor") : Tr("シーン", "Scene"));
+      ImGui::Text("%s: %s", Tr("Entity ID", "Entity ID"), selectedObject->GetEntityId().c_str());
+      if (!selectedObject->GetParentEntityId().empty()) {
+         ImGui::Text("%s: %s", Tr("親Entity", "Parent Entity"), selectedObject->GetParentEntityId().c_str());
+      }
       if (editorContext->CanDeleteObject(selectedObject)) {
          if (ImGui::Button(Tr("削除", "Delete"))) {
             editorContext->DeleteSelectedObject();
@@ -778,7 +1226,7 @@ void RendererEditorController::DrawSelectedObjectAssetDropTargets(EditorSceneCon
       if (ImGui::BeginDragDropTarget()) {
          if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_TEXTURE")) {
             const char* assetId = static_cast<const char*>(payload->Data);
-            if (assetId && payload->DataSize > 1) {
+            if (assetId && payload->DataSize > kEmptyCStringPayloadSize) {
                EnsureTextureLoaded(assetId);
                editorContext.SetMaterialTexture(selectedObject, 0, assetId);
             }
@@ -801,7 +1249,7 @@ void RendererEditorController::DrawParticleAssetDropTarget(EditorSceneContext& e
 
    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_PARTICLE")) {
       const char* assetId = static_cast<const char*>(payload->Data);
-      if (assetId && payload->DataSize > 1) {
+      if (assetId && payload->DataSize > kEmptyCStringPayloadSize) {
          particleSystem->LoadFromJson((std::filesystem::path("resources") / assetId).generic_string());
          editorContext.MarkDirty();
       }
@@ -809,7 +1257,7 @@ void RendererEditorController::DrawParticleAssetDropTarget(EditorSceneContext& e
 
    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_TEXTURE")) {
       const char* assetId = static_cast<const char*>(payload->Data);
-      if (assetId && payload->DataSize > 1) {
+      if (assetId && payload->DataSize > kEmptyCStringPayloadSize) {
          EnsureTextureLoaded(assetId);
          particleSystem->SetTextureName(assetId);
          editorContext.MarkDirty();
@@ -820,38 +1268,7 @@ void RendererEditorController::DrawParticleAssetDropTarget(EditorSceneContext& e
 }
 
 std::vector<Object*> RendererEditorController::CollectSceneObjects() const {
-   std::vector<Object*> objects;
-
-   const auto& models = Model::GetRegisteredModels();
-   const auto& sprites = Sprite::GetRegisteredSprites();
-   const auto& uiTexts = UIText::GetRegisteredTexts();
-   const auto& skyboxes = Skybox::GetRegisteredSkyboxes();
-   objects.reserve(models.size() + sprites.size() + uiTexts.size() + skyboxes.size());
-   for (auto* model : models) {
-      if (model) {
-         objects.push_back(model);
-      }
-   }
-
-   for (auto* sprite : sprites) {
-      if (sprite) {
-         objects.push_back(sprite);
-      }
-   }
-
-   for (auto* uiText : uiTexts) {
-      if (uiText) {
-         objects.push_back(uiText);
-      }
-   }
-
-   for (auto* skybox : skyboxes) {
-      if (skybox) {
-         objects.push_back(skybox);
-      }
-   }
-
-   return objects;
+   return Object::GetRegisteredObjects();
 }
 
 void RendererEditorController::ResolveParentRelation(Object* object, const std::vector<Object*>& sceneObjects) const {
@@ -864,39 +1281,32 @@ void RendererEditorController::ResolveParentRelation(Object* object, const std::
       return;
    }
 
-   if (transformComponent->parentObjectName.empty()) {
+   if (object->GetParentEntityId().empty() && !transformComponent->parentObjectName.empty()) {
+      const auto legacyParent = std::find_if(sceneObjects.begin(), sceneObjects.end(),
+         [object, transformComponent](const Object* candidate) {
+            return candidate && candidate != object &&
+               candidate->GetObjectName() == transformComponent->parentObjectName;
+         });
+      if (legacyParent != sceneObjects.end()) {
+         object->SetParentEntityId((*legacyParent)->GetEntityId());
+         transformComponent->parentObjectName.clear();
+      }
+   }
+
+   if (object->GetParentEntityId().empty()) {
       transformComponent->useParentMatrix = false;
       transformComponent->parentMatrix = MakeIdentity4x4();
       return;
    }
 
-   Object* parentObject = nullptr;
-   // シーン保存ではポインターを保持できないため、永続化されたオブジェクト名から親を解決する。
-   for (auto* candidate : sceneObjects) {
-      if (!candidate || candidate == object) {
-         continue;
-      }
-      if (candidate->GetObjectName() == transformComponent->parentObjectName) {
-         parentObject = candidate;
-         break;
-      }
-   }
-
-   if (!parentObject) {
-      transformComponent->useParentMatrix = false;
-      transformComponent->parentMatrix = MakeIdentity4x4();
-      return;
-   }
-
-   const auto* parentTransform = parentObject->GetComponent<TransformComponent>();
-   if (!parentTransform) {
+   if (!Object::FindByEntityId(object->GetParentEntityId())) {
       transformComponent->useParentMatrix = false;
       transformComponent->parentMatrix = MakeIdentity4x4();
       return;
    }
 
    transformComponent->useParentMatrix = true;
-   transformComponent->parentMatrix = MakeAffineMatrix(parentTransform->transform);
+   transformComponent->parentMatrix = object->GetParentWorldMatrix();
 }
 
 std::string RendererEditorController::BuildUniqueObjectName(const std::string& baseName, const std::vector<Object*>& sceneObjects) const {
@@ -917,7 +1327,7 @@ std::string RendererEditorController::BuildUniqueObjectName(const std::string& b
       return candidate;
    }
 
-   int index = 1;
+   int index = kFirstUniqueNameSuffix;
    while (true) {
       std::string withIndex = candidate + "_" + std::to_string(index++);
       if (!exists(withIndex)) {

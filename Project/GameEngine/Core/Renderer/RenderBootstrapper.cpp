@@ -16,6 +16,9 @@
 #include "Utility/Logger.h"
 
 namespace GameEngine {
+namespace {
+constexpr size_t kLineRendererCapacity = 100000;
+}
 
 bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const {
    // 後続パスが参照する描画形式を確定するため、オフスクリーンターゲットを最初に生成する。
@@ -45,8 +48,8 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
       return false;
    }
 
-   context.lineRenderer->Initialize(context.device->GetDevice(), 100000);
-   context.postProcessLineRenderer->Initialize(context.device->GetDevice(), 100000);
+   context.lineRenderer->Initialize(context.device->GetDevice(), kLineRendererCapacity);
+   context.postProcessLineRenderer->Initialize(context.device->GetDevice(), kLineRendererCapacity);
 
    context.uiRenderer->Initialize(context.device, context.psoManager, context.uiCamera, context.spriteRenderer, context.lightManager);
 

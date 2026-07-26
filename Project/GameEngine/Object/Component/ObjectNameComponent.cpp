@@ -41,7 +41,7 @@ void ObjectNameComponent::DrawInspector() {
       return;
    }
 
-   char nameBuffer[256]{};
+   char nameBuffer[ImGuiHelper::kDefaultTextBufferSize]{};
    // ImGuiの固定長バッファへ収まる範囲だけコピーし、必ず末尾NULを残す。
    const size_t nameSize = std::min(name.size(), sizeof(nameBuffer) - 1);
    std::memcpy(nameBuffer, name.c_str(), nameSize);

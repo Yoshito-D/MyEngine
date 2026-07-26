@@ -14,6 +14,8 @@
 #include "Gravity/SphericalGravityAttractor.h"
 #include "Race/RaceGateComponent.h"
 #include "Race/RaceCountdownTextComponent.h"
+#include "Race/RaceGoalDirectionHUDComponent.h"
+#include "Race/RaceGoalDistanceTextComponent.h"
 #include "Race/RaceManagerComponent.h"
 #include "Race/RaceResultUIComponent.h"
 #include "Race/RaceTimeTextComponent.h"
@@ -58,6 +60,8 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::RaceGateComponent>(
       GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite),
    RegisterAppComponent<App::RaceCountdownTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
+   RegisterAppComponent<App::RaceGoalDirectionHUDComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Sprite)),
+   RegisterAppComponent<App::RaceGoalDistanceTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::RaceResultUIComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::RaceTimeTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleAirController>(),

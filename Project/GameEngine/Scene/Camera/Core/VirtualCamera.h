@@ -74,13 +74,25 @@ public:
     void SetName(const std::string& name) { name_ = name; }
 
     /// @brief 位置追従対象を設定する
-    void SetFollowTarget(Transform* target) { followTarget_ = target; }
+    void SetFollowTarget(Transform* target);
     /// @brief 注視対象を設定する
-    void SetLookAtTarget(Transform* target) { lookAtTarget_ = target; }
+    void SetLookAtTarget(Transform* target);
+    /// @brief 位置追従対象を安定Entity IDで設定する
+    /// @param entityId 追従対象。空文字列で解除する
+    void SetFollowTargetEntityId(const std::string& entityId);
+    /// @brief 注視対象を安定Entity IDで設定する
+    /// @param entityId 注視対象。空文字列で解除する
+    void SetLookAtTargetEntityId(const std::string& entityId);
+    /// @brief 位置追従対象の安定Entity IDを取得する
+    /// @return 旧ポインター指定時は空文字列
+    const std::string& GetFollowTargetEntityId() const { return followTargetEntityId_; }
+    /// @brief 注視対象の安定Entity IDを取得する
+    /// @return 旧ポインター指定時は空文字列
+    const std::string& GetLookAtTargetEntityId() const { return lookAtTargetEntityId_; }
     /// @brief 位置追従対象を取得する
-    Transform* GetFollowTarget() const { return followTarget_; }
+    Transform* GetFollowTarget() const;
     /// @brief 注視対象を取得する
-    Transform* GetLookAtTarget() const { return lookAtTarget_; }
+    Transform* GetLookAtTarget() const;
 
     /// @brief ブレンド選択に使用する優先度を取得する
     int GetPriority() const { return priority_; }
@@ -112,6 +124,10 @@ protected:
     std::vector<std::unique_ptr<ICinemachineComponent>> components_;
     Transform* followTarget_ = nullptr;
     Transform* lookAtTarget_ = nullptr;
+    std::string followTargetEntityId_;
+    std::string lookAtTargetEntityId_;
+    mutable Transform resolvedFollowTarget_;
+    mutable Transform resolvedLookAtTarget_;
     CameraState state_;
     std::string name_;
     int priority_ = 0;

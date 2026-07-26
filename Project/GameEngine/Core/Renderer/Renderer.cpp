@@ -51,39 +51,13 @@
 
 namespace {
 
+constexpr float kUiCameraFarClip = 10000.0f;
+
 GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
    return GameEngine::Vector3(matrix.m[3][0], matrix.m[3][1], matrix.m[3][2]);
 }
 
-std::vector<GameEngine::Object*> CollectSceneObjectsForRender() {
-   std::vector<GameEngine::Object*> objects;
-
-   const auto& models = GameEngine::Model::GetRegisteredModels();
-   objects.reserve(models.size() + GameEngine::Sprite::GetRegisteredSprites().size() + GameEngine::UIText::GetRegisteredTexts().size());
-   for (auto* model : models) {
-	  if (model) {
-		 objects.push_back(model);
-	  }
-   }
-
-   const auto& sprites = GameEngine::Sprite::GetRegisteredSprites();
-   for (auto* sprite : sprites) {
-	  if (sprite) {
-		 objects.push_back(sprite);
-	  }
-   }
-
-   const auto& texts = GameEngine::UIText::GetRegisteredTexts();
-   for (auto* text : texts) {
-	  if (text) {
-		 objects.push_back(text);
-	  }
-   }
-
-   return objects;
-}
-
-void ResolveParentRelationForRender(GameEngine::Object* object, const std::vector<GameEngine::Object*>& sceneObjects) {
+void ResolveParentRelationForRender(GameEngine::Object* object) {
    if (!object) {
 	  return;
    }
@@ -93,38 +67,27 @@ void ResolveParentRelationForRender(GameEngine::Object* object, const std::vecto
 	  return;
    }
 
-   if (transformComponent->parentObjectName.empty()) {
+   if (object->GetParentEntityId().empty() && !transformComponent->parentObjectName.empty()) {
+	  if (auto* legacyParent = GameEngine::Object::FindByObjectName(transformComponent->parentObjectName)) {
+		 object->SetParentEntityId(legacyParent->GetEntityId());
+		 transformComponent->parentObjectName.clear();
+	  }
+   }
+
+   if (object->GetParentEntityId().empty()) {
 	  transformComponent->useParentMatrix = false;
 	  transformComponent->parentMatrix = GameEngine::MakeIdentity4x4();
 	  return;
    }
 
-   GameEngine::Object* parentObject = nullptr;
-   for (auto* candidate : sceneObjects) {
-	  if (!candidate || candidate == object) {
-		 continue;
-	  }
-	  if (candidate->GetObjectName() == transformComponent->parentObjectName) {
-		 parentObject = candidate;
-		 break;
-	  }
-   }
-
-   if (!parentObject) {
-	  transformComponent->useParentMatrix = false;
-	  transformComponent->parentMatrix = GameEngine::MakeIdentity4x4();
-	  return;
-   }
-
-   const auto* parentTransform = parentObject->GetComponent<GameEngine::TransformComponent>();
-   if (!parentTransform) {
+   if (!GameEngine::Object::FindByEntityId(object->GetParentEntityId())) {
 	  transformComponent->useParentMatrix = false;
 	  transformComponent->parentMatrix = GameEngine::MakeIdentity4x4();
 	  return;
    }
 
    transformComponent->useParentMatrix = true;
-   transformComponent->parentMatrix = GameEngine::MakeAffineMatrix(parentTransform->transform);
+   transformComponent->parentMatrix = object->GetParentWorldMatrix();
 }
 }
 
@@ -759,8 +722,6 @@ void Renderer::DrawAutoRegisteredModels() {
 	  return;
    }
 
-   const auto sceneObjects = CollectSceneObjectsForRender();
-
    auto* fallbackTexture = textureManager->GetTexture("white1x1");
 
    for (auto* model : Model::GetRegisteredModels()) {
@@ -773,7 +734,7 @@ void Renderer::DrawAutoRegisteredModels() {
 		 continue;
 	  }
 
-	  ResolveParentRelationForRender(model, sceneObjects);
+	  ResolveParentRelationForRender(model);
 
 	  if (!renderComponent->IsEnabled() || !renderComponent->autoRender || !renderComponent->visible) {
 		 continue;
@@ -815,8 +776,6 @@ void Renderer::DrawAutoRegisteredSprites() {
 
    auto* fallbackTexture = textureManager->GetTexture("white1x1");
 
-   const auto sceneObjects = CollectSceneObjectsForRender();
-
    for (auto* sprite : Sprite::GetRegisteredSprites()) {
 	  if (!sprite) {
 		 continue;
@@ -827,7 +786,7 @@ void Renderer::DrawAutoRegisteredSprites() {
 		 continue;
 	  }
 
-	  ResolveParentRelationForRender(sprite, sceneObjects);
+	  ResolveParentRelationForRender(sprite);
 
 	  if (!renderComponent->IsEnabled() || !renderComponent->autoRender || !renderComponent->visible) {
 		 continue;
@@ -987,7 +946,7 @@ void Renderer::InitializeUICamera() {
 
    uiCamera_->Initialize(uiCameraTransform, Camera::ProjectionType::Orthographic);
    uiCamera_->SetNearClip(0.0f);
-   uiCamera_->SetFarClip(10000.0f);
+   uiCamera_->SetFarClip(kUiCameraFarClip);
    const uint32_t screenWidth = device_ ? device_->GetBackBufferWidth() : Window::kResolutionWidth;
    const uint32_t screenHeight = device_ ? device_->GetBackBufferHeight() : Window::kResolutionHeight;
    SyncUICameraToRenderTarget(screenWidth, screenHeight);

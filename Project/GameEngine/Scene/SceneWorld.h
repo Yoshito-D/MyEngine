@@ -66,6 +66,7 @@ public:
 private:
    bool RestoreObjectEntry(const nlohmann::json& objectData, const std::string& legacySceneKey = {});
    void RestoreLegacyEntries(const nlohmann::json& sceneData);
+   void RestoreLegacyLights(const nlohmann::json& sceneData);
    void RestoreCameras(const nlohmann::json& sceneData);
    void ResolveReferences();
    std::vector<Object*> CollectObjects() const;
@@ -78,7 +79,6 @@ private:
    std::unordered_map<std::string, Object*> looseObjectsById_;
    std::unordered_map<const Object*, std::string> looseObjectIds_;
    std::unordered_map<std::string, VirtualCamera*> virtualCamerasById_;
-   nlohmann::json cameraData_ = nlohmann::json::object();
 
    static inline SceneWorld* sCurrent_ = nullptr;
 };

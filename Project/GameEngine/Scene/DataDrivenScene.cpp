@@ -34,7 +34,16 @@ void DataDrivenScene::LoadSceneDataIfNeeded() {
    isLoaded_ = sceneWorld_.LoadFromJson(sceneData);
    if (!isLoaded_) {
       Logger::Error("DataDrivenScene failed to build: " + sceneFilePath_.generic_string());
+      return;
    }
+
+#ifdef USE_IMGUI
+   if (auto* editorContext = GetEditorSceneContext()) {
+      // データ駆動シーンはBaseSceneの自動読込を通らないため、表示順だけを重複生成なしで渡す。
+      editorContext->ApplyHierarchyOrder(
+         sceneData.value("hierarchyOrder", nlohmann::json::array()));
+   }
+#endif
 }
 
 void DataDrivenScene::OnUpdate(float deltaTime) {

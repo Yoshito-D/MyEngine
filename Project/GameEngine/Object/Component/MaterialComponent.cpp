@@ -672,9 +672,14 @@ void MaterialComponent::DrawInspector() {
    }
 
    const char* lightingModeLabels[] = { Tr("なし", "None"), "Lambert", "HalfLambert", "Phong", "BlinnPhong" };
-   int lightingMode = std::clamp(data->lightingMode, 0, 4);
+   int lightingMode = std::clamp(
+      data->lightingMode,
+      static_cast<int>(Material::LightingMode::NONE),
+      static_cast<int>(Material::LightingMode::BLINNPHONG));
    if (ImGui::BeginCombo(Tr("ライティングモード", "Lighting Mode"), lightingModeLabels[lightingMode])) {
-      for (int i = 0; i < 5; ++i) {
+      for (int i = static_cast<int>(Material::LightingMode::NONE);
+         i <= static_cast<int>(Material::LightingMode::BLINNPHONG);
+         ++i) {
          const bool selected = (i == lightingMode);
          if (ImGui::Selectable(lightingModeLabels[i], selected)) {
             material->SetLightingMode(static_cast<Material::LightingMode>(i));
@@ -730,12 +735,15 @@ void MaterialComponent::DrawInspector() {
       };
       const auto currentBlend = material->GetBlendMode();
       int blendIndex = currentBlend.has_value() ? static_cast<int>(currentBlend.value()) : -1;
-      const char* blendPreview = (blendIndex >= 0 && blendIndex < 6) ? blendModeLabels[blendIndex] : Tr("<デフォルト>", "<default>");
+      const char* blendPreview =
+         (blendIndex >= 0 && blendIndex < static_cast<int>(BlendMode::kCount))
+         ? blendModeLabels[blendIndex]
+         : Tr("<デフォルト>", "<default>");
       if (ImGui::BeginCombo(Tr("ブレンドモード", "Blend Mode"), blendPreview)) {
          if (ImGui::Selectable(Tr("<デフォルト>", "<default>"), blendIndex < 0)) {
             material->SetBlendMode(std::nullopt);
          }
-         for (int i = 0; i < 6; ++i) {
+         for (int i = 0; i < static_cast<int>(BlendMode::kCount); ++i) {
             const bool sel = (i == blendIndex);
             if (ImGui::Selectable(blendModeLabels[i], sel)) {
                material->SetBlendMode(static_cast<BlendMode>(i));

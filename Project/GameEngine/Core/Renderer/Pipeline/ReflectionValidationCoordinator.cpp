@@ -10,6 +10,8 @@
 #endif
 
 namespace {
+constexpr int kJsonIndentSize = 2;
+
 struct ValidationGateConfig {
    uint32_t warningThreshold = 5;
    double fallbackRateThreshold = 0.30;
@@ -409,7 +411,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       std::filesystem::create_directories(outPath.parent_path());
       std::ofstream ofs(outPath);
       if (ofs.is_open()) {
-         ofs << report.dump(2);
+         ofs << report.dump(kJsonIndentSize);
       }
    } catch (...) {
       // 検証レポートは診断用なので、保存失敗で描画ループ自体を停止させない。

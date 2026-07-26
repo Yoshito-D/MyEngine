@@ -11,6 +11,13 @@ namespace GameEngine {
 /// @brief カメラクラス（GPUリソース管理とマトリックス計算）
 class Camera {
 public:
+	/// @brief 透視投影カメラの既定垂直FOV（ラジアン）
+	static constexpr float kDefaultFovY = 0.45f;
+	/// @brief カメラの既定ニアクリップ距離
+	static constexpr float kDefaultNearClip = 0.01f;
+	/// @brief カメラの既定ファークリップ距離
+	static constexpr float kDefaultFarClip = 100.0f;
+
 	/// @brief シェーダーが参照するカメラ定数
 	struct CameraForGPU {
 		Vector3 worldPosition; ///< カメラのワールド位置
@@ -142,10 +149,10 @@ public:
 
 private:
 	Transform transform_;
-	float fovY_ = 0.45f;
+	float fovY_ = kDefaultFovY;
 	float aspectRatio_ = 0.0f;
-	float nearClip_ = 0.01f;
-	float farClip_ = 100.0f;
+	float nearClip_ = kDefaultNearClip;
+	float farClip_ = kDefaultFarClip;
 	float orthographicWidth_ = static_cast<float>(Window::kResolutionWidth);
 	float orthographicHeight_ = static_cast<float>(Window::kResolutionHeight);
 	ProjectionType projectionType_ = ProjectionType::Perspective;

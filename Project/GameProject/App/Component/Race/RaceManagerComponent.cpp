@@ -18,8 +18,8 @@
 #endif
 
 namespace {
-constexpr size_t kBestTimeCount = 3;
 constexpr int kRecordFormatVersion = 1;
+constexpr int kJsonIndentSize = 3;
 }
 
 namespace App {
@@ -411,7 +411,7 @@ bool RaceManagerComponent::SaveBestTimes() const {
          LogRecordWarning("could not open temporary record file");
          return false;
       }
-      output << root.dump(3) << '\n';
+      output << root.dump(kJsonIndentSize) << '\n';
       output.close();
       if (!output) {
          LogRecordWarning("could not finish writing temporary record file");

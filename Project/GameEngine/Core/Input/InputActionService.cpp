@@ -13,6 +13,9 @@ namespace {
 
 using json = nlohmann::json;
 
+constexpr int kInputActionFormatVersion = 1;
+constexpr int kJsonIndentSize = 2;
+
 const InputActionState kEmptyActionState{};
 
 const std::pair<const char*, KeyCode> kKnownKeys[] = {
@@ -650,7 +653,7 @@ bool InputActionService::LoadOverrides() {
 
 bool InputActionService::SaveOverrides() const {
    json root;
-   root["version"] = 1;
+   root["version"] = kInputActionFormatVersion;
    for (const auto& [key, action] : actions_) {
       (void)key;
       json actionData;
@@ -668,7 +671,7 @@ bool InputActionService::SaveOverrides() const {
    const std::filesystem::path temporaryPath = overridePath_.wstring() + L".tmp";
    std::ofstream stream(temporaryPath, std::ios::trunc);
    if (!stream) { return false; }
-   stream << root.dump(2);
+   stream << root.dump(kJsonIndentSize);
    stream.close();
    if (!stream) { return false; }
 

@@ -6,6 +6,19 @@
 #pragma comment(lib, "dxguid.lib")
 
 namespace GameEngine {
+namespace {
+constexpr UINT kShaderVisibleDescriptorCount = 4096;
+constexpr float kBackBufferClearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
+constexpr int64_t kMicrosecondsPerSecond = 1'000'000;
+constexpr int64_t kTargetFramesPerSecond = 60;
+constexpr int64_t kSleepCheckFramesPerSecond = 65;
+constexpr std::chrono::microseconds kTargetFrameTime(
+   kMicrosecondsPerSecond / kTargetFramesPerSecond);
+constexpr std::chrono::microseconds kSleepCheckTime(
+   kMicrosecondsPerSecond / kSleepCheckFramesPerSecond);
+constexpr std::chrono::microseconds kSpinSleepInterval(1);
+}
+
 void GraphicsDevice::Initialize(Window* window, int32_t backBufferWidth, int32_t backBufferHeight, bool enableDebugLayer) {
    window_ = window;
    backBufferWidth_ = backBufferWidth;
@@ -55,8 +68,7 @@ void GraphicsDevice::PreDraw() {
    commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
    // 指定した色で画面全体をクリアする
-   float clearColor[] = { 0.1f,0.25f,0.5f,1.0f }; // 青っぽい色。RGBAの順
-   commandList_->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+   commandList_->ClearRenderTargetView(rtvHandle, kBackBufferClearColor, 0, nullptr);
 
    // ビューポートの設定
    CD3DX12_VIEWPORT viewport =
@@ -397,7 +409,11 @@ void GraphicsDevice::CreateDepthStencilViews() {
 }
 
 void GraphicsDevice::CreateSRVHeap() {
-   srvHeap_ = CreateDescriptorHeap(device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4096, true);
+   srvHeap_ = CreateDescriptorHeap(
+      device_.Get(),
+      D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+      kShaderVisibleDescriptorCount,
+      true);
 }
 
 void GraphicsDevice::CreateFence() {
@@ -450,18 +466,15 @@ void GraphicsDevice::InitializeFixFPS() {
 }
 
 void GraphicsDevice::UpdateFixFPS() {
-   const std::chrono::microseconds kMinTime(uint64_t(1000000.0f / 60.0f));
-   const std::chrono::microseconds kMinCheckTime(uint64_t(1000000.0f / 65.0f));
-
    // 現在時間を取得
    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
    // 前回記録からの経過時間を取得
    std::chrono::microseconds elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now - reference_);
 
    // 1/60秒（よりわずかに短い時間）経っていない場合
-   if (elapsed < kMinCheckTime) {
-	  while (std::chrono::steady_clock::now() - reference_ < kMinTime) {
-		 std::this_thread::sleep_for(std::chrono::microseconds(1));
+   if (elapsed < kSleepCheckTime) {
+	  while (std::chrono::steady_clock::now() - reference_ < kTargetFrameTime) {
+		 std::this_thread::sleep_for(kSpinSleepInterval);
 	  }
    }
 

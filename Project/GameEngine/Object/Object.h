@@ -2,8 +2,10 @@
 #include "Component/ComponentContainer.h"
 #include "Component/IObjectComponent.h"
 #include "ObjectType.h"
+#include "Utility/MathUtils.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace GameEngine {
 class Camera;
@@ -16,7 +18,42 @@ public:
    /// @brief 必須の名前コンポーネントを持つオブジェクトを生成する
    Object();
    /// @brief 所有するコンポーネントとともに破棄する
-   virtual ~Object() = default;
+   virtual ~Object();
+
+   /// @brief シーン内参照に使用する安定IDを設定する
+   /// @param entityId 保存データと親子参照に使用するID
+   /// @return 空文字列または他Entityと重複する場合はfalse
+   bool SetEntityId(const std::string& entityId);
+   /// @brief シーン内参照に使用する安定IDを取得する
+   /// @return このEntityの安定ID
+   const std::string& GetEntityId() const { return entityId_; }
+
+   /// @brief 親Entityを安定IDで設定する
+   /// @param parentEntityId 親EntityのID。空文字列で親を解除する
+   /// @return 自己参照または循環参照でなければtrue
+   bool SetParentEntityId(const std::string& parentEntityId);
+   /// @brief 親Entityの安定IDを取得する
+   /// @return 親がない場合は空文字列
+   const std::string& GetParentEntityId() const { return parentEntityId_; }
+
+   /// @brief ローカルTransformと親階層からワールド行列を計算する
+   /// @return Transformを持たない場合は単位行列
+   Matrix4x4 GetWorldMatrix() const;
+   /// @brief 親階層のワールド行列を計算する
+   /// @return 親がない場合は単位行列
+   Matrix4x4 GetParentWorldMatrix() const;
+
+   /// @brief 現在生存している全シーンEntityを取得する
+   /// @return Objectの非所有ポインター一覧
+   static const std::vector<Object*>& GetRegisteredObjects();
+   /// @brief 安定IDから生存中のEntityを検索する
+   /// @param entityId 検索する安定ID
+   /// @return 一致するEntity。存在しない場合はnullptr
+   static Object* FindByEntityId(const std::string& entityId);
+   /// @brief 表示名から生存中のEntityを検索する
+   /// @param objectName 検索する表示名
+   /// @return 最初に一致するEntity。存在しない場合はnullptr
+   static Object* FindByObjectName(const std::string& objectName);
 
    /// @brief 実体のオブジェクト種別を取得する
    /// @return コンポーネント互換性の判定に使用する種別
@@ -104,7 +141,11 @@ public:
 #endif
 
 private:
+   bool WouldCreateParentCycle(const std::string& parentEntityId) const;
+
    ComponentContainer components_;
+   std::string entityId_;
+   std::string parentEntityId_;
 };
 
 } // namespace GameEngine

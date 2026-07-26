@@ -53,8 +53,7 @@ nlohmann::json TransformComponent::Serialize() const {
 	  { "rotationQuaternion", { activeQuaternion.x, activeQuaternion.y, activeQuaternion.z, activeQuaternion.w } },
 	  { "rotationSource", transform.IsUsingQuaternion() ? "quaternion" : "euler" },
 	  { "scale", { transform.scale.x, transform.scale.y, transform.scale.z } },
-	  { "useParentMatrix", useParentMatrix },
-	  { "parentObjectName", parentObjectName }
+	  { "parentEntityId", HasOwner() ? GetOwner().GetParentEntityId() : std::string() }
    };
 }
 
@@ -135,6 +134,11 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 	  parentObjectName = data.at("parentObjectName").get<std::string>();
 	  useParentMatrix = !parentObjectName.empty();
    }
+
+   if (data.contains("parentEntityId") && data.at("parentEntityId").is_string() && HasOwner()) {
+	  GetOwner().SetParentEntityId(data.at("parentEntityId").get<std::string>());
+	  useParentMatrix = !GetOwner().GetParentEntityId().empty();
+   }
 }
 
 #ifdef USE_IMGUI
@@ -144,16 +148,33 @@ void TransformComponent::DrawInspector() {
 	  return;
    }
    Vector3& scale = transform.scale;
-   ImGuiHelper::DrawVec3Control(ImGuiHelper::Localize({ "スケール", "Scale" }), scale, 1.0f, 120.0f, 0.1f, 0.1f, 10.0f);
+   ImGuiHelper::DrawVec3Control(
+      ImGuiHelper::Localize({ "スケール", "Scale" }),
+      scale,
+      1.0f,
+      ImGuiHelper::kDefaultColumnWidth,
+      0.1f,
+      0.1f,
+      10.0f);
 
    Vector3 rotationEuler = transform.GetActiveEuler();
-   if (ImGuiHelper::DrawEulerDegreesControl(ImGuiHelper::Localize({ "回転 (deg)", "Rotation (deg)" }), rotationEuler, 0.0f, 120.0f, 0.1f)) {
+   if (ImGuiHelper::DrawEulerDegreesControl(
+      ImGuiHelper::Localize({ "回転 (deg)", "Rotation (deg)" }),
+      rotationEuler,
+      0.0f,
+      ImGuiHelper::kDefaultColumnWidth,
+      0.1f)) {
 	  // TransformはEuler/Quaternionのどちらを描画に使うかを保持しているため、setter経由で両方を同期する。
 	  transform.SetRotationQuaternion(rotationEuler.ToQuaternion().Normalize());
    }
 
    Vector3& position = transform.translation;
-   ImGuiHelper::DrawVec3Control(ImGuiHelper::Localize({ "位置", "Position" }), position, 0.0f, 120.0f, 0.1f);
+   ImGuiHelper::DrawVec3Control(
+      ImGuiHelper::Localize({ "位置", "Position" }),
+      position,
+      0.0f,
+      ImGuiHelper::kDefaultColumnWidth,
+      0.1f);
 
    if (auto* currentScene = BaseScene::GetCurrentScene()) {
       if (auto* editorContext = currentScene->GetEditorSceneContext()) {
@@ -165,16 +186,25 @@ void TransformComponent::DrawInspector() {
    ImGui::Separator();
    ImGui::Spacing();
 
-   bool parentEnabled = useParentMatrix;
-   if (ImGuiHelper::DrawCheckbox(ImGuiHelper::Localize({ "親を使用", "Use Parent" }), parentEnabled, 120.0f)) {
+   std::string parentEntityId = HasOwner() ? GetOwner().GetParentEntityId() : std::string();
+   bool parentEnabled = !parentEntityId.empty();
+   if (ImGuiHelper::DrawCheckbox(ImGuiHelper::Localize({ "親を使用", "Use Parent" }), parentEnabled)) {
 	  useParentMatrix = parentEnabled;
 	  if (!useParentMatrix) {
+		 if (HasOwner()) {
+			GetOwner().SetParentEntityId({});
+		 }
 		 parentObjectName.clear();
 	  }
    }
 
-   if (ImGuiHelper::DrawInputString(ImGuiHelper::Localize({ "親", "Parent" }), parentObjectName, 256, 120.0f)) {
-	  useParentMatrix = !parentObjectName.empty();
+   if (ImGuiHelper::DrawInputString(
+      ImGuiHelper::Localize({ "親Entity ID", "Parent Entity ID" }),
+      parentEntityId) && HasOwner()) {
+	  if (GetOwner().SetParentEntityId(parentEntityId)) {
+		 useParentMatrix = !parentEntityId.empty();
+		 parentObjectName.clear();
+	  }
    }
 }
 #endif

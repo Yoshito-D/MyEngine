@@ -10,6 +10,9 @@
 
 namespace GameEngine {
 namespace {
+constexpr size_t kInitialVertexCapacity = 1024;
+constexpr size_t kInitialIndexCapacity = 1536;
+
 size_t GrowCapacity(size_t required, size_t minimum) {
    size_t capacity = minimum;
    // 2倍成長により文字数が徐々に増えるUIでGPUバッファの再生成回数を抑える。
@@ -29,7 +32,9 @@ bool TextRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager, Fo
    device_ = device;
    psoManager_ = psoManager;
    fontManager_ = fontManager;
-   viewportBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), 256u);
+   viewportBuffer_ = ResourceHelper::CreateBufferResource(
+      device_->GetDevice(),
+      D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
    return viewportBuffer_ != nullptr;
 }
 
@@ -222,7 +227,7 @@ bool TextRenderer::EnsureBufferCapacity(size_t vertexCount, size_t indexCount) {
    }
 
    if (vertexCount > vertexCapacity_) {
-      vertexCapacity_ = GrowCapacity(vertexCount, 1024u);
+      vertexCapacity_ = GrowCapacity(vertexCount, kInitialVertexCapacity);
       vertexBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), vertexCapacity_ * sizeof(TextVertex));
       if (!vertexBuffer_) {
          return false;
@@ -233,7 +238,7 @@ bool TextRenderer::EnsureBufferCapacity(size_t vertexCount, size_t indexCount) {
    }
 
    if (indexCount > indexCapacity_) {
-      indexCapacity_ = GrowCapacity(indexCount, 1536u);
+      indexCapacity_ = GrowCapacity(indexCount, kInitialIndexCapacity);
       indexBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), indexCapacity_ * sizeof(uint32_t));
       if (!indexBuffer_) {
          return false;

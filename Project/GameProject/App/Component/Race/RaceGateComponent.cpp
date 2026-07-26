@@ -11,6 +11,12 @@
 #include "Utility/ImGuiHelper.h"
 #endif
 
+namespace {
+#ifdef USE_IMGUI
+constexpr float kInspectorColumnWidth = 140.0f;
+#endif
+}
+
 namespace App {
 
 void RaceGateComponent::OnAttach() {
@@ -104,7 +110,11 @@ void RaceGateComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   GameEngine::ImGuiHelper::DrawInputString("Race Manager ID", raceManagerId_, 256, 140.0f);
+   GameEngine::ImGuiHelper::DrawInputString(
+      "Race Manager ID",
+      raceManagerId_,
+      GameEngine::ImGuiHelper::kDefaultTextBufferSize,
+      kInspectorColumnWidth);
    const char* gateTypes[] = { "Start", "Checkpoint", "Finish", "StartFinish" };
    int gateTypeIndex = static_cast<int>(gateType_);
    if (ImGui::Combo("Gate Type", &gateTypeIndex, gateTypes, 4)) {

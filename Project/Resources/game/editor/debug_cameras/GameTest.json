@@ -20,6 +20,8 @@
             "enabled": true
          }
       ],
+      "followTargetId": "",
+      "lookAtTargetId": "",
       "name": "DebugCamera",
       "priority": -1,
       "state": {

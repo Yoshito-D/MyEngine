@@ -12,6 +12,19 @@
 namespace GameEngine {
 namespace ImGuiHelper {
 
+/// @brief プロパティUIで使用する既定のラベル列幅
+inline constexpr float kDefaultColumnWidth = 120.0f;
+/// @brief 1行テキスト入力で確保する既定のバイト数
+inline constexpr size_t kDefaultTextBufferSize = 256;
+/// @brief 複数行テキスト入力で確保する既定のバイト数
+inline constexpr size_t kDefaultMultilineTextBufferSize = 1024;
+/// @brief パス入力で確保する既定のバイト数
+inline constexpr size_t kDefaultPathBufferSize = 512;
+/// @brief 複数行テキスト入力欄の既定高さ
+inline constexpr float kDefaultMultilineTextHeight = 80.0f;
+/// @brief 利用可能な横幅全体を使うことを表すImGui幅指定
+inline constexpr float kFillAvailableWidth = -1.0f;
+
 // Language / localization ----------------------------------------------------
 enum class EditorLanguage {
    Japanese,
@@ -44,13 +57,13 @@ bool BeginSection(const std::string& label, bool defaultOpen = true);
 void EndSection();
 
 // Basic property controls ----------------------------------------------------
-bool DrawButton(const std::string& label, const std::string& buttonLabel, float columnWidth = 120.0f);
-bool DrawCheckbox(const std::string& label, bool& value, float columnWidth = 120.0f);
+bool DrawButton(const std::string& label, const std::string& buttonLabel, float columnWidth = kDefaultColumnWidth);
+bool DrawCheckbox(const std::string& label, bool& value, float columnWidth = kDefaultColumnWidth);
 bool DrawIntControl(
    const std::string& label,
    int& value,
    int resetValue = 0,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speed = 1.0f,
    int minValue = 0,
    int maxValue = 0);
@@ -61,7 +74,7 @@ bool DrawFloatControl(
    const std::string& label,
    float& value,
    float resetValue = 0.0f,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speed = 0.1f,
    float minValue = 0.0f,
    float maxValue = 0.0f,
@@ -72,7 +85,7 @@ bool DrawSliderFloat(
    float& value,
    float minValue,
    float maxValue,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    const char* format = "%.2f");
 
 bool DrawRangeFloat(
@@ -81,7 +94,7 @@ bool DrawRangeFloat(
    float& maxValue,
    float limitMin,
    float limitMax,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speed = 0.1f,
    const char* format = "%.2f");
 
@@ -89,7 +102,7 @@ bool DrawVec2Control(
    const std::string& label,
    Vector2& values,
    float resetValue = 0.0f,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speed = 0.1f,
    float minValue = 0.0f,
    float maxValue = 0.0f,
@@ -99,7 +112,7 @@ bool DrawVec3Control(
    const std::string& label,
    Vector3& values,
    float resetValue = 0.0f,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speed = 0.1f,
    float minValue = 0.0f,
    float maxValue = 0.0f,
@@ -109,7 +122,7 @@ bool DrawVec4Control(
    const std::string& label,
    Vector4& values,
    float resetValue = 0.0f,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speed = 0.1f,
    float minValue = 0.0f,
    float maxValue = 0.0f,
@@ -118,7 +131,7 @@ bool DrawVec4Control(
 bool DrawQuaternionControl(
    const std::string& label,
    Quaternion& value,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speed = 0.01f,
    bool normalizeOnEdit = true);
 
@@ -126,7 +139,7 @@ bool DrawEulerDegreesControl(
    const std::string& label,
    Vector3& eulerRadians,
    float resetDegrees = 0.0f,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speedDegrees = 0.1f,
    float minDegrees = 0.0f,
    float maxDegrees = 0.0f,
@@ -135,7 +148,7 @@ bool DrawEulerDegreesControl(
 bool DrawQuaternionAsEulerDegrees(
    const std::string& label,
    Quaternion& value,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    float speedDegrees = 0.1f,
    float minDegrees = 0.0f,
    float maxDegrees = 0.0f,
@@ -144,36 +157,44 @@ bool DrawQuaternionAsEulerDegrees(
 bool DrawTransformControl(
    const std::string& label,
    Transform& transform,
-   float columnWidth = 120.0f,
+   float columnWidth = kDefaultColumnWidth,
    bool rotationInDegrees = true);
 
 // Text controls --------------------------------------------------------------
-bool InputString(const std::string& label, std::string& text, size_t bufferSize = 256);
-bool DrawInputString(const std::string& label, std::string& text, size_t bufferSize = 256, float columnWidth = 120.0f);
+bool InputString(const std::string& label, std::string& text, size_t bufferSize = kDefaultTextBufferSize);
+bool DrawInputString(
+   const std::string& label,
+   std::string& text,
+   size_t bufferSize = kDefaultTextBufferSize,
+   float columnWidth = kDefaultColumnWidth);
 bool DrawMultilineText(
    const std::string& label,
    std::string& text,
-   size_t bufferSize = 1024,
-   float columnWidth = 120.0f,
-   float height = 80.0f);
+   size_t bufferSize = kDefaultMultilineTextBufferSize,
+   float columnWidth = kDefaultColumnWidth,
+   float height = kDefaultMultilineTextHeight);
 
 // Dropdown / enum controls ---------------------------------------------------
-bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<std::string>& items, float columnWidth = 120.0f);
-bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<const char*>& items, float columnWidth = 120.0f);
-bool DrawLanguageCombo(const std::string& label, EditorLanguage& language, float columnWidth = 120.0f);
+bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<std::string>& items, float columnWidth = kDefaultColumnWidth);
+bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<const char*>& items, float columnWidth = kDefaultColumnWidth);
+bool DrawLanguageCombo(const std::string& label, EditorLanguage& language, float columnWidth = kDefaultColumnWidth);
 
 // Color controls -------------------------------------------------------------
-bool DrawColorEdit3(const std::string& label, Vector3& color, float columnWidth = 120.0f);
-bool DrawColorEdit4(const std::string& label, Vector4& color, float columnWidth = 120.0f);
+bool DrawColorEdit3(const std::string& label, Vector3& color, float columnWidth = kDefaultColumnWidth);
+bool DrawColorEdit4(const std::string& label, Vector4& color, float columnWidth = kDefaultColumnWidth);
 
 // Search / reference controls ------------------------------------------------
-bool DrawSearchBox(std::string& filterText, const char* hint = "Search...", float width = -1.0f, size_t bufferSize = 256);
-bool DrawReadOnlyText(const std::string& label, const std::string& text, float columnWidth = 120.0f);
+bool DrawSearchBox(
+   std::string& filterText,
+   const char* hint = "Search...",
+   float width = kFillAvailableWidth,
+   size_t bufferSize = kDefaultTextBufferSize);
+bool DrawReadOnlyText(const std::string& label, const std::string& text, float columnWidth = kDefaultColumnWidth);
 bool DrawPathControl(
    const std::string& label,
    std::string& path,
-   size_t bufferSize = 512,
-   float columnWidth = 120.0f,
+   size_t bufferSize = kDefaultPathBufferSize,
+   float columnWidth = kDefaultColumnWidth,
    bool showClearButton = true);
 
 bool AcceptStringDragDrop(const char* payloadType, std::string& value);
@@ -183,7 +204,7 @@ bool DrawEnumCombo(
    const std::string& label,
    Enum& value,
    const std::vector<std::pair<Enum, std::string>>& items,
-   float columnWidth = 120.0f) {
+   float columnWidth = kDefaultColumnWidth) {
    static_assert(std::is_enum_v<Enum>, "DrawEnumCombo requires an enum type.");
 
    if (items.empty()) {
@@ -214,7 +235,7 @@ bool DrawLocalizedEnumCombo(
    const std::string& label,
    Enum& value,
    const std::vector<std::pair<Enum, LocalizedText>>& items,
-   float columnWidth = 120.0f) {
+   float columnWidth = kDefaultColumnWidth) {
    static_assert(std::is_enum_v<Enum>, "DrawLocalizedEnumCombo requires an enum type.");
 
    if (items.empty()) {

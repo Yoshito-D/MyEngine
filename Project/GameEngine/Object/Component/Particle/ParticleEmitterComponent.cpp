@@ -674,7 +674,7 @@ void ParticleEmitterComponent::DrawInspector() {
 
 	  if (open) {
 		 // JSON パス
-		 char pathBuf[512]{};
+		 char pathBuf[ImGuiHelper::kDefaultPathBufferSize]{};
 		 const size_t pathLen = std::min(slot.jsonPath.size(), sizeof(pathBuf) - 1);
 		 std::memcpy(pathBuf, slot.jsonPath.c_str(), pathLen);
 		 if (ImGui::InputText(Tr("JSONパス", "JSON Path"), pathBuf, sizeof(pathBuf))) {
@@ -750,7 +750,7 @@ void ParticleEmitterComponent::DrawInspector() {
 			SyncSimulationSpace(slot.particleSystem.get(), slot.attachConfig.simulationSpace);
 		 }
 
-		 char boneBuf[256]{};
+		 char boneBuf[ImGuiHelper::kDefaultTextBufferSize]{};
 		 const size_t boneLen = std::min(slot.attachConfig.boneName.size(), sizeof(boneBuf) - 1);
 		 std::memcpy(boneBuf, slot.attachConfig.boneName.c_str(), boneLen);
 		 if (ImGui::InputText(Tr("ボーン名", "Bone Name"), boneBuf, sizeof(boneBuf))) {

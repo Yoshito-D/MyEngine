@@ -7,12 +7,19 @@
 #endif
 
 namespace {
+constexpr float kNormalizedCoordinateMin = 0.0f;
+constexpr float kNormalizedCoordinateMax = 1.0f;
+constexpr float kBlurStrengthMin = 0.0f;
+constexpr float kBlurStrengthMax = 0.1f;
+constexpr int32_t kSampleCountMin = 2;
+constexpr int32_t kSampleCountMax = 32;
+
 GameEngine::RadialBlurParams NormalizeRadialBlurParams(const GameEngine::RadialBlurParams& source) {
    GameEngine::RadialBlurParams params = source;
-   params.center.x = std::clamp(params.center.x, 0.0f, 1.0f);
-   params.center.y = std::clamp(params.center.y, 0.0f, 1.0f);
-   params.strength = std::clamp(params.strength, 0.0f, 0.1f);
-   params.sampleCount = std::clamp(params.sampleCount, 2, 32);
+   params.center.x = std::clamp(params.center.x, kNormalizedCoordinateMin, kNormalizedCoordinateMax);
+   params.center.y = std::clamp(params.center.y, kNormalizedCoordinateMin, kNormalizedCoordinateMax);
+   params.strength = std::clamp(params.strength, kBlurStrengthMin, kBlurStrengthMax);
+   params.sampleCount = std::clamp(params.sampleCount, kSampleCountMin, kSampleCountMax);
    return params;
 }
 }
@@ -74,10 +81,26 @@ void RadialBlur::ImGuiEdit() {
 
 	  bool changed = false;
 	  RadialBlurParams params = params_;
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("ブラー強度", "Blur Strength"), &params.strength, 0.0f, 0.1f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &params.center.x, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &params.center.y, 0.0f, 1.0f);
-	  changed |= ImGui::SliderInt(LocalizeEditorText("サンプル数", "Sample Count"), &params.sampleCount, 2, 32);
+	  changed |= ImGui::SliderFloat(
+		 LocalizeEditorText("ブラー強度", "Blur Strength"),
+		 &params.strength,
+		 kBlurStrengthMin,
+		 kBlurStrengthMax);
+	  changed |= ImGui::SliderFloat(
+		 LocalizeEditorText("中心 X", "Center X"),
+		 &params.center.x,
+		 kNormalizedCoordinateMin,
+		 kNormalizedCoordinateMax);
+	  changed |= ImGui::SliderFloat(
+		 LocalizeEditorText("中心 Y", "Center Y"),
+		 &params.center.y,
+		 kNormalizedCoordinateMin,
+		 kNormalizedCoordinateMax);
+	  changed |= ImGui::SliderInt(
+		 LocalizeEditorText("サンプル数", "Sample Count"),
+		 &params.sampleCount,
+		 kSampleCountMin,
+		 kSampleCountMax);
 
 	  if (changed) {
 		 SetParams(params);

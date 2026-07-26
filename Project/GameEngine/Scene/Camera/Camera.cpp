@@ -9,13 +9,12 @@ namespace GameEngine {
 namespace {
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
-constexpr float kDefaultFovY = 0.45f;
 constexpr float kMinFovY = 0.017453292f;  // 1 degree
 constexpr float kMaxFovY = 3.12413936f;   // 179 degrees
 
 float ClampFovY(float fovY) {
 	if (!std::isfinite(fovY)) {
-		return kDefaultFovY;
+		return Camera::kDefaultFovY;
 	}
 	return std::clamp(fovY, kMinFovY, kMaxFovY);
 }
@@ -31,8 +30,8 @@ void Camera::Initialize(const Transform& transform, ProjectionType projectionTyp
 	transform_ = transform;
 	fovY_ = kDefaultFovY;
 	aspectRatio_ = static_cast<float>(Window::kResolutionWidth) / static_cast<float>(Window::kResolutionHeight);
-	nearClip_ = 0.01f;
-	farClip_ = 100.0f;
+	nearClip_ = kDefaultNearClip;
+	farClip_ = kDefaultFarClip;
 	orthographicWidth_ = static_cast<float>(Window::kResolutionWidth);
 	orthographicHeight_ = static_cast<float>(Window::kResolutionHeight);
 	projectionType_ = projectionType;
