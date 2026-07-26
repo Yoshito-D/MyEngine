@@ -12,6 +12,7 @@
 namespace {
 GameEngine::DissolveParams NormalizeDissolveParams(const GameEngine::DissolveParams& source) {
    GameEngine::DissolveParams params = source;
+   // シェーダーの除算・補間が破綻しない範囲へ、APIとJSON由来の値を一括で正規化する。
    params.threshold = std::clamp(params.threshold, 0.0f, 1.0f);
    params.edgeWidth = std::clamp(params.edgeWidth, 0.0001f, 0.5f);
    params.edgeIntensity = std::clamp(params.edgeIntensity, 0.0f, 4.0f);
@@ -43,6 +44,7 @@ void Dissolve::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!pipeline_ || !rootSignature_) return;
 
    D3D12_GPU_DESCRIPTOR_HANDLE maskSRV = inputSRV;
+   // マスク未解決時も有効なSRVを束縛し、ルートテーブルの未設定によるGPUエラーを避ける。
    if (Texture* maskTexture = ResolveMaskTexture()) {
 	  maskSRV = maskTexture->GetTextureSrvHandleGPU();
    }
@@ -121,6 +123,7 @@ void Dissolve::UpdateConstantBuffer() {
 
 Texture* Dissolve::ResolveMaskTexture() {
    if (!maskTextureLookupDirty_) {
+	  // 毎フレームの名前検索を避け、名前変更時だけ再解決する。
 	  return maskTexture_;
    }
 
@@ -136,6 +139,7 @@ Texture* Dissolve::ResolveMaskTexture() {
 	  "engine/textures/postprocess/noise0.png"
    };
 
+   // 旧プロジェクトで使われた短縮名・ファイル名・正規IDの順に既定ノイズを探す。
    for (const char* textureName : kDefaultMaskNames) {
 	  maskTexture_ = EngineContext::GetTexture(textureName);
 	  if (maskTexture_) {
@@ -150,22 +154,25 @@ Texture* Dissolve::ResolveMaskTexture() {
 void Dissolve::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Dissolve Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("ディゾルブのパラメータ", "Dissolve Parameters"))) {
 	  bool changed = false;
 	  DissolveParams params = params_;
 
-	  changed |= ImGui::SliderFloat("Threshold", &params.threshold, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Edge Width", &params.edgeWidth, 0.0001f, 0.5f, "%.4f");
-	  changed |= ImGui::SliderFloat("Edge Intensity", &params.edgeIntensity, 0.0f, 4.0f);
-	  changed |= ImGui::SliderFloat("Mask Contrast", &params.maskContrast, 0.0f, 4.0f);
-	  changed |= ImGui::SliderFloat2("Mask Tiling", &params.maskTiling.x, 0.01f, 8.0f);
-	  changed |= ImGui::DragFloat2("Mask Offset", &params.maskOffset.x, 0.005f);
-	  changed |= ImGui::ColorEdit4("Edge Color", params.edgeColor);
-	  changed |= ImGui::ColorEdit4("Dissolve Color", params.dissolveColor);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("しきい値", "Threshold"), &params.threshold, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("エッジ幅", "Edge Width"), &params.edgeWidth, 0.0001f, 0.5f, "%.4f");
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("エッジ強度", "Edge Intensity"), &params.edgeIntensity, 0.0f, 4.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("マスクコントラスト", "Mask Contrast"), &params.maskContrast, 0.0f, 4.0f);
+	  changed |= ImGui::SliderFloat2(LocalizeEditorText("マスクタイリング", "Mask Tiling"), &params.maskTiling.x, 0.01f, 8.0f);
+	  changed |= ImGui::DragFloat2(LocalizeEditorText("マスクオフセット", "Mask Offset"), &params.maskOffset.x, 0.005f);
+	  changed |= ImGui::ColorEdit4(LocalizeEditorText("エッジ色", "Edge Color"), params.edgeColor);
+	  changed |= ImGui::ColorEdit4(LocalizeEditorText("ディゾルブ色", "Dissolve Color"), params.dissolveColor);
 
 	  const auto textureNames = EngineContext::GetTextureNames();
-	  const char* texturePreview = maskTextureName_.empty() ? "<none>" : maskTextureName_.c_str();
-	  if (ImGui::BeginCombo("Mask Texture", texturePreview)) {
+	  const char* texturePreview = maskTextureName_.empty()
+		 ? LocalizeEditorText("なし", "<none>")
+		 : maskTextureName_.c_str();
+	  if (ImGui::BeginCombo(LocalizeEditorText("マスクテクスチャ", "Mask Texture"), texturePreview)) {
 		 for (const auto& textureName : textureNames) {
 			Texture* candidate = EngineContext::GetTexture(textureName);
 			if (candidate && candidate->GetMetadata().IsCubemap()) {
@@ -185,9 +192,11 @@ void Dissolve::ImGuiEdit() {
 
 	  if (Texture* previewTexture = ResolveMaskTexture()) {
 		 if (previewTexture->GetMetadata().IsCubemap()) {
-			ImGui::TextDisabled("TextureCube cannot be previewed as a dissolve mask");
+			ImGui::TextDisabled("%s", LocalizeEditorText(
+			   "TextureCubeはディゾルブマスクとしてプレビューできません",
+			   "TextureCube cannot be previewed as a dissolve mask"));
 		 } else {
-			ImGui::Text("Preview: %s (%ux%u)", previewTexture->GetName().c_str(),
+			ImGui::Text("%s: %s (%ux%u)", LocalizeEditorText("プレビュー", "Preview"), previewTexture->GetName().c_str(),
 			   previewTexture->GetWidth(), previewTexture->GetHeight());
 
 			constexpr float kPreviewMax = 128.0f;
@@ -201,7 +210,8 @@ void Dissolve::ImGuiEdit() {
 			}
 		 }
 	  } else {
-		 ImGui::TextDisabled("Mask texture not found");
+		 ImGui::TextDisabled("%s", LocalizeEditorText(
+			"マスクテクスチャが見つかりません", "Mask texture not found"));
 	  }
 
 	  if (changed) {

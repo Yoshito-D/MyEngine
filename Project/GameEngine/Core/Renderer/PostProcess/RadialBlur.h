@@ -37,6 +37,11 @@ public:
 #endif
    const char* GetEffectName() const override { return "Radial Blur"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    void SetParams(const RadialBlurParams& params);
    const RadialBlurParams& GetParams() const { return params_; }
 

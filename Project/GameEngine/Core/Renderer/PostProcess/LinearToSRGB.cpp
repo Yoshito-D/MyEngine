@@ -33,7 +33,8 @@ void LinearToSRGB::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 void LinearToSRGB::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Linear to sRGB Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("リニアからsRGBのパラメータ", "Linear to sRGB Parameters"))) {
 	  ImGui::TreePop();
    }
 

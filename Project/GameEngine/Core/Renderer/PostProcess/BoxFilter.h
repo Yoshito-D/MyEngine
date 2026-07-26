@@ -27,6 +27,11 @@ public:
 #endif
    const char* GetEffectName() const override { return "BoxFilter"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    /// @brief カーネル半径を設定（1=3x3, 2=5x5, 3=7x7）
    void SetKernelRadius(int radius) { kernelRadius_ = radius; UpdateConstantBuffer(); }
 

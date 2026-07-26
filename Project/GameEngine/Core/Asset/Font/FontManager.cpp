@@ -53,6 +53,7 @@ size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& dire
    const std::filesystem::recursive_directory_iterator end;
    while (iterator != end) {
       if (error) {
+         // 読めない1ディレクトリで全フォントの自動検出を中断しない。
          error.clear();
          iterator.increment(error);
          continue;
@@ -71,6 +72,7 @@ size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& dire
                relativePath = entry.path().filename();
             }
             relativePath.replace_extension();
+            // ディレクトリ相対パスをIDにして、同名フォントをサブフォルダーで共存させる。
             if (LoadMsdfFont(relativePath.generic_string(), entry.path())) {
                ++loadedCount;
             }

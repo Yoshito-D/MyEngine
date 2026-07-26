@@ -16,6 +16,7 @@ enum class CinemachineStage {
 /// @brief Cinemachineコンポーネントのインターフェース
 class ICinemachineComponent {
 public:
+    /// @brief 派生コンポーネントを基底ポインター経由で安全に破棄する
     virtual ~ICinemachineComponent() = default;
 
     /// @brief コンポーネントの初期化
@@ -35,6 +36,7 @@ public:
 
     /// @brief コンポーネントが有効かどうか
     bool IsEnabled() const { return isEnabled_; }
+    /// @brief カメラ状態へ反映するかを設定する
     void SetEnabled(bool enabled) { isEnabled_ = enabled; }
 
     /// @brief コンポーネント名を取得

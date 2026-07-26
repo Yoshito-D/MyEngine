@@ -8,6 +8,7 @@
 namespace GameEngine {
 namespace {
 uint64_t BuildGlyphCacheKey(uint32_t pixelSize, uint32_t codePoint) {
+   // サイズとUnicodeを1整数へ詰め、追加のキー構造体なしで高速にキャッシュ検索する。
    return (static_cast<uint64_t>(pixelSize) << 32u) | codePoint;
 }
 
@@ -135,6 +136,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
       DirectX::WIC_FLAGS_FORCE_RGB |
       DirectX::WIC_FLAGS_IGNORE_SRGB |
       DirectX::WIC_FLAGS_FORCE_LINEAR);
+   // 距離値を色としてガンマ補正すると輪郭位置がずれるため、アトラスは必ず線形値で読み込む。
    HRESULT result = DirectX::LoadFromWICFile(
       imagePath.wstring().c_str(),
       wicFlags,
@@ -164,6 +166,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
 
    const auto& metadata = image.GetMetadata();
    if (metadata.width != atlasWidth || metadata.height != atlasHeight) {
+      // JSONのピクセル座標と画像寸法が食い違う場合、誤ったUVで別グリフを読むためロードを中止する。
       Logger::Error("[MsdfFont] JSON and PNG atlas dimensions do not match.");
       return false;
    }
@@ -226,6 +229,7 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
    }
 
    const SourceGlyph* source = FindSourceGlyph(codePoint);
+   // 未収録文字は置換文字、次にASCIIの疑問符へフォールバックして文字列全体の描画を継続する。
    if (!source) {
       source = FindSourceGlyph(0xFFFD);
    }
@@ -237,6 +241,7 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
    }
 
    const uint64_t cacheKey = BuildGlyphCacheKey(pixelSize, source->codePoint);
+   // 元データはem単位なので、同じサイズの繰り返しレイアウトでは拡大済み値を再利用する。
    if (const auto iterator = scaledGlyphs_.find(cacheKey); iterator != scaledGlyphs_.end()) {
       return &iterator->second;
    }
@@ -261,6 +266,7 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
       };
       glyph.uvMin.x = source->atlasLeft / static_cast<float>(atlasWidth_);
       glyph.uvMax.x = source->atlasRight / static_cast<float>(atlasWidth_);
+      // msdf-atlas-genのyOrigin設定をDirectXの上原点UVへ揃える。
       if (bottomOrigin_) {
          glyph.uvMin.y = (static_cast<float>(atlasHeight_) - source->atlasTop) / static_cast<float>(atlasHeight_);
          glyph.uvMax.y = (static_cast<float>(atlasHeight_) - source->atlasBottom) / static_cast<float>(atlasHeight_);
@@ -303,6 +309,7 @@ void MsdfFont::Clear() {
    intermediateResource_.Reset();
    atlasTexture_.Reset();
    if (device_ && descriptorIndex_ != UINT_MAX) {
+      // GraphicsDeviceの再利用可能SRV番号へ返し、フォントの再読込でヒープを消費し続けないようにする。
       device_->ReleaseSrvIndex(descriptorIndex_);
    }
    device_ = nullptr;

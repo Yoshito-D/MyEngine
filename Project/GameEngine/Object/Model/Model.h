@@ -19,17 +19,22 @@ class TransformationMatrix;
 /// @brief モデルクラス
 class Model :public Object {
 public:
+   /// @brief 空のモデルを生成して描画レジストリへ登録する
    Model();
+   /// @brief 描画レジストリから解除して破棄する
    ~Model() override;
 
    /// @brief モデルのオブジェクト種別を取得する
    /// @return ObjectType::Model
    ObjectType GetObjectType() const override { return ObjectType::Model; }
 
+   /// @brief 描画レジストリ内の全モデルを取得する
    static const std::vector<Model*>& GetRegisteredModels();
 
+   /// @brief 指定モデルを描画レジストリから解除する
    static void UnregisterModel(Model* model);
 
+   /// @brief シーン終了時に描画レジストリを空にする
    static void ClearRegisteredModels() { sRegisteredModels_.clear(); }
 
    /// @brief モデルの作成
@@ -50,6 +55,7 @@ public:
 	  auto* c = GetComponent<MeshComponent>();
 	  return c ? c->GetSkinCluster() : nullptr;
    }
+   /// @brief スキンクラスタを読み取り専用で取得する
    const SkinCluster* GetSkinCluster() const {
 	  const auto* c = GetComponent<MeshComponent>();
 	  return c ? c->GetSkinCluster() : nullptr;

@@ -10,6 +10,7 @@ namespace GameEngine {
 // ============================================================
 class ForceOverLifetimeModule : public ParticleModule {
 public:
+   /// @brief 生存期間フォース設定を既定値で初期化する
    ForceOverLifetimeModule();
 
    /// @brief ランダム値を粒子ごとに初期化
@@ -17,6 +18,7 @@ public:
 
    /// @brief パーティクルに力を適用
    void ApplyForce(Particle& particle) const;
+   /// @brief シミュレーション空間を考慮して力を適用する
    void ApplyForce(Particle& particle, const Transform& simulationTransform, bool useLocalSimulation) const;
 
    /// @brief デルタタイムを考慮してパーティクルに力と空気抵抗を適用する
@@ -26,9 +28,13 @@ public:
    /// @param useLocalSimulation ローカル空間として解釈するか
    void ApplyForce(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const;
 
+   /// @brief 加える力を固定値で設定する
    void SetForce(const Vector3& force) { force_ = RandomVector3(force, force, false); }
+   /// @brief 加える力の代表値を取得する
    const Vector3& GetForce() const { return force_.minValue; }
+   /// @brief 加える力を乱数範囲で設定する
    void SetForceRange(const RandomVector3& force) { force_ = force; }
+   /// @brief 加える力の乱数範囲を取得する
    const RandomVector3& GetForceRange() const { return force_; }
 
    /// @brief 速度に比例する空気抵抗係数を設定する
@@ -75,10 +81,13 @@ public:
    /// @brief 距離減衰指数を取得する
    float GetAttractorFalloff() const { return attractorFalloff_; }
 
+   /// @copydoc ParticleModule::ToJson
    nlohmann::json ToJson() const override;
+   /// @copydoc ParticleModule::FromJson
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
+   /// @copydoc ParticleModule::DrawInspector
    void DrawInspector() override;
 #endif
 

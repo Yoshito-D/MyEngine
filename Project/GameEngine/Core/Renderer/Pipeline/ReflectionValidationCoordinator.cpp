@@ -34,6 +34,7 @@ double ComputeStageMatchRate(const GameEngine::PipelineStageMatchInfo& stageInfo
    double sumRate = 0.0;
    int stageCount = 0;
    auto accumulate = [&](const GameEngine::ShaderStageMatchInfo& info) {
+      // リフレクションを持たない段階は失敗扱いにせず、検証可能な段階だけで平均する。
       if (!info.hasReflection || info.resourceCount == 0) {
          return;
       }
@@ -79,6 +80,7 @@ void ReflectionValidationCoordinator::BeginFrame(ShaderManager* shaderManager, R
       return;
    }
 
+   // 累積カウンターの開始値を保存し、EndFrameでこのフレーム分だけを差分抽出する。
    const auto stats = shaderManager->GetResolveStats();
    state.resolveRequestsAtFrameBegin = stats.requests;
    state.resolveHitsAtFrameBegin = stats.hits;
@@ -157,6 +159,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
 
    nlohmann::json previousReport;
    bool hasPreviousReport = false;
+   // 直前レポートをベースラインにして、絶対値だけでなく品質の悪化もゲート対象にする。
    try {
       std::ifstream ifs("reports/reflection_validation_report.json");
       if (ifs.is_open()) {
@@ -260,6 +263,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       };
 
       if (hasPreviousReport) {
+         // 初回実行には比較対象がないため、回帰判定は既存レポートがある場合だけ行う。
          if (diff.warningDelta > static_cast<int>(kWarningIncreaseThreshold)) {
             const std::string reason = "Pipeline " + pipelineName + " warning regression: +" + std::to_string(diff.warningDelta);
             state.latestQualityGateFailReasons.push_back(reason);
@@ -387,6 +391,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       {"schemaFile", "internal_schema"},
       {"failedKeys", nlohmann::json::array()}
    };
+   // 出力直前に必須キーを自己検証し、壊れたレポートをCIが成功扱いしないようにする。
    const auto localSchemaStatus = ValidateReportWithSchema(report);
    state.latestSchemaValidationStatus.passed = localSchemaStatus.passed;
    state.latestSchemaValidationStatus.schemaFile = localSchemaStatus.schemaFile;
@@ -407,6 +412,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
          ofs << report.dump(2);
       }
    } catch (...) {
+      // 検証レポートは診断用なので、保存失敗で描画ループ自体を停止させない。
    }
 }
 

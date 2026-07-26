@@ -18,6 +18,7 @@
 namespace GameEngine {
 void Audio::Initialize() {
    HRESULT result = S_FALSE;
+   // 圧縮音声のデコード基盤をXAudio2より先に起動する。
    result = MFStartup(MF_VERSION);
    assert(SUCCEEDED(result));
 
@@ -30,6 +31,7 @@ void Audio::Initialize() {
 
 void Audio::Finalize() {
    if (xAudio2_) {
+	  // 子Voiceが再生を終える前にエンジンを停止し、MasteringVoiceを安全に破棄する。
 	  xAudio2_->StopEngine();
 	  masteringVoice_->DestroyVoice();
    }

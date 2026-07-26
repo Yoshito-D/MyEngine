@@ -10,6 +10,8 @@ namespace GameEngine {
 void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    assert(device != nullptr);
    assert(audio != nullptr);
+
+   // コンポーネントはAssetManagerへ直接依存しないため、名前解決だけをコールバックとして公開する。
    materialManager_->Initialize(device->GetDevice());
    MaterialComponent::SetMaterialResolver([this](const std::string& name) {
       return materialManager_ ? materialManager_->GetMaterial(name) : nullptr;
@@ -38,6 +40,8 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    SkyboxComponent::SetTextureNamesProvider([this]() {
       return textureManager_ ? textureManager_->GetCubemapTextureNames() : std::vector<std::string>{};
    });
+
+   // 各マネージャーを利用側へ公開する前にGPU/音声デバイスとの接続と既定アセット読込を完了する。
    modelAssetManager_->Initialize(device);
    textureManager_->Initialize(device);
    textureManager_->LoadTexturesFromDirectory("resources/engine/textures", "resources");

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "PostProcess.h"
 #include "EffectFactoryRegistry.h"
+#include <nlohmann/json.hpp>
 
 namespace GameEngine {
 class GraphicsDevice;
@@ -20,15 +21,20 @@ public:
 	  std::unique_ptr<PostProcess> effect;
 	  bool enabled = true;
 	  int priority = 0; // 数値が小さいほど先に実行される
+	  std::string id;
 	  std::string name;
 	  std::string pipelineName; // パイプライン名を追加
+	  bool defaultEnabled = true;
+	  int defaultPriority = 0;
+	  nlohmann::json defaultSettings = nlohmann::json::object();
 
-	  EffectInfo(std::unique_ptr<PostProcess> eff, const std::string& effectName, int prio = 0, const std::string& pipeline = "")
-		 : effect(std::move(eff)), name(effectName), priority(prio), pipelineName(pipeline) {}
+	  EffectInfo(std::unique_ptr<PostProcess> eff, const std::string& effectId, const std::string& effectName, int prio = 0, const std::string& pipeline = "")
+		 : effect(std::move(eff)), id(effectId), name(effectName), priority(prio), pipelineName(pipeline) {}
    };
 
    /// @brief エフェクト定義構造体
    struct EffectDefinition {
+	  std::string id;
 	  std::string name;
 	  std::string className;
 	  int priority = 0;
@@ -54,7 +60,8 @@ public:
    /// @param priority 実行優先度（小さいほど先に実行）
    /// @param enabled 初期有効状態
    /// @param pipelineName パイプライン名
-   void RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority = 0, bool enabled = true, const std::string& pipelineName = "");
+   /// @param id シーン保存に使用する不変ID
+   void RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority = 0, bool enabled = true, const std::string& pipelineName = "", const std::string& id = "");
 
    /// @brief 全てのエフェクトを適用
    /// @param inputSRV 入力SRV
@@ -93,6 +100,15 @@ public:
    /// @return ソートされたエフェクト情報のリスト
    std::vector<const EffectInfo*> GetSortedEffects() const;
 
+   /// @brief シーンへ保存するポストプロセス状態を取得する
+   /// @return ポストプロセススタックを格納したJSONオブジェクト
+   nlohmann::json SerializeSceneState() const;
+
+   /// @brief シーンのポストプロセス状態で現在のスタックを置き換える
+   /// @param state ポストプロセススタックを格納したJSONオブジェクト
+   /// @return 状態を適用できた場合はtrue
+   bool ApplySceneState(const nlohmann::json& state);
+
    /// @brief エフェクトを削除
    /// @param name エフェクト名
    void RemoveEffect(const std::string& name);
@@ -108,7 +124,8 @@ public:
 
 #ifdef USE_IMGUI
    /// @brief ImGuiコントロールを表示
-   void ShowImGuiControls();
+   /// @return シーンへ保存すべき設定が変更された場合はtrue
+   bool ShowImGuiControls();
 #endif
 
 private:

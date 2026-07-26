@@ -14,19 +14,25 @@ class TransformationMatrix;
 class TransformComponent;
 class Texture;
 
+/// @brief 2Dの矩形描画とスクリーンアンカー配置を提供するオブジェクト
 class Sprite :public Object {
 public:
+   /// @brief 空のスプライトを生成して描画レジストリへ登録する
    Sprite();
+   /// @brief 描画レジストリから解除して破棄する
    ~Sprite() override;
 
    /// @brief スプライトのオブジェクト種別を取得する
    /// @return ObjectType::Sprite
    ObjectType GetObjectType() const override { return ObjectType::Sprite; }
 
+   /// @brief 描画レジストリ内の全スプライトを取得する
    static const std::vector<Sprite*>& GetRegisteredSprites();
 
+   /// @brief 指定スプライトを描画レジストリから解除する
    static void UnregisterSprite(Sprite* sprite);
 
+   /// @brief シーン終了時に描画レジストリを空にする
    static void ClearRegisteredSprites() { sRegisteredSprites_.clear(); }
 
    /// @brief UI描画用のアンカーポイント
@@ -42,6 +48,7 @@ public:
 	  BottomRight   // 右下
    };
 
+   /// @brief Quadのサイズ・マテリアル・頂点アンカーを設定して生成する
    void Create(const Vector2& size = Vector2(128.0f, 128.0f), Material* material = nullptr, const Vector2& anchorPoint = Vector2(0.0f, 0.0f));
 
    /// @brief Quad頂点配置用アンカーを設定する
@@ -52,17 +59,23 @@ public:
    /// @param size Quadサイズ
    void SetSize(const Vector2& size);
 
+   /// @brief 2D表示倍率を設定する
    void SetScale(const Vector2& scale);
 
+   /// @brief 2D表示位置を設定する
    void SetPosition(const Vector2& position);
 
+   /// @brief 画面奥行き軸まわりの回転を設定する
    void SetRotation(float rotation);
 
    /// @brief SpriteのQuadサイズを取得する
    /// @return Quadサイズ
    Vector2 GetSize() const;
+   /// @brief 2D表示倍率を取得する
    Vector2 GetScale() const;
+   /// @brief 2D表示位置を取得する
    Vector2 GetPosition() const;
+   /// @brief 画面奥行き軸まわりの回転を取得する
    float GetRotation() const;
    /// @brief Quad頂点配置用アンカーを取得する
    /// @return 頂点配置アンカー

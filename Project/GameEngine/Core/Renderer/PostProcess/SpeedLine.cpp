@@ -56,18 +56,19 @@ void GameEngine::SpeedLine::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 void GameEngine::SpeedLine::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Speed Line Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("集中線のパラメータ", "Speed Line Parameters"))) {
 	  bool changed = false;
 	  SpeedLineParams params = params_;
-	  changed |= ImGui::SliderFloat2("Center", &params.center.x, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Intensity", &params.intensity, 0.0f, 3.0f);
-	  changed |= ImGui::SliderFloat("Density", &params.lineDensity, 16.0f, 512.0f);
-	  changed |= ImGui::SliderFloat("Thickness", &params.thickness, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Inner Radius", &params.innerRadius, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Outer Radius", &params.outerRadius, 0.0f, 2.0f);
-	  changed |= ImGui::SliderFloat("Random Seed", &params.randomSeed, 0.0f, 100.0f);
-	  changed |= ImGui::SliderFloat("Flow Speed", &params.flowSpeed, 0.0f, 5.0f);
-	  changed |= ImGui::DragFloat("Time", &params.time, 0.01f);
+	  changed |= ImGui::SliderFloat2(LocalizeEditorText("中心", "Center"), &params.center.x, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &params.intensity, 0.0f, 3.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("密度", "Density"), &params.lineDensity, 16.0f, 512.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("太さ", "Thickness"), &params.thickness, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("内側半径", "Inner Radius"), &params.innerRadius, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("外側半径", "Outer Radius"), &params.outerRadius, 0.0f, 2.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("ランダムシード", "Random Seed"), &params.randomSeed, 0.0f, 100.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("流れる速度", "Flow Speed"), &params.flowSpeed, 0.0f, 5.0f);
+	  changed |= ImGui::DragFloat(LocalizeEditorText("時間", "Time"), &params.time, 0.01f);
 
 	  if (changed) {
 		 SetParams(params);

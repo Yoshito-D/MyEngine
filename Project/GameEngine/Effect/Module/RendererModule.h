@@ -27,18 +27,27 @@ public:
 	  FrontToBack
    };
 
+   /// @brief パーティクル描画設定を既定値で初期化する
    RendererModule();
 
+   /// @brief 粒子回転を解釈する座標空間を設定する
    void SetRotationSpace(RotationSpace space) { rotationSpace_ = space; }
+   /// @brief 粒子回転を解釈する座標空間を取得する
    RotationSpace GetRotationSpace() const { return rotationSpace_; }
 
+   /// @brief ビルボードの向き合わせ方式を設定する
    void SetBillboardType(BillboardType type) { billboardType_ = type; }
+   /// @brief ビルボードの向き合わせ方式を取得する
    BillboardType GetBillboardType() const { return billboardType_; }
 
+   /// @brief 速度ストレッチへ使用する速度倍率を設定する
    void SetSpeedScale(float scale) { speedScale_ = scale; }
+   /// @brief 速度ストレッチへ使用する速度倍率を取得する
    float GetSpeedScale() const { return speedScale_; }
 
+   /// @brief 速度ストレッチの長さ倍率を設定する
    void SetLengthScale(float scale) { lengthScale_ = scale; }
+   /// @brief 速度ストレッチの長さ倍率を取得する
    float GetLengthScale() const { return lengthScale_; }
 
    /// @brief 速度に応じて粒子本体を長軸方向へ引き延ばすか設定する
@@ -73,10 +82,13 @@ public:
    /// @brief 完全に表示されるカメラ距離を取得する
    float GetCameraFadeFar() const { return cameraFadeFar_; }
 
+   /// @copydoc ParticleModule::ToJson
    nlohmann::json ToJson() const override;
+   /// @copydoc ParticleModule::FromJson
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
+   /// @copydoc ParticleModule::DrawInspector
    void DrawInspector() override;
 #endif
 

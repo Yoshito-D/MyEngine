@@ -17,6 +17,7 @@ class VehicleAirController final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleAirController";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両空中制御", "Vehicle Air Controller" };
+   /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 空中の回転を適用する
@@ -29,10 +30,13 @@ public:
    void ResetAngularVelocity() { angularVelRoll_ = 0.0f; angularVelPitch_ = 0.0f; }
 
 #ifdef USE_IMGUI
+   /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
+   /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 public:

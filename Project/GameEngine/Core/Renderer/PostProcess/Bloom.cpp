@@ -58,16 +58,19 @@ void Bloom::UpdateConstantBuffer() {
 void Bloom::ImGuiEdit() {
 	ImGui::PushID(GetImGuiID());
 
-	if (ImGui::TreeNode("Bloom Parameters")) {
+	if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+		LocalizeEditorText("ブルームのパラメータ", "Bloom Parameters"))) {
 
 		bool changed = false;
-		changed |= ImGui::SliderFloat("Threshold", &threshold_, 0.0f, 2.0f);
-		changed |= ImGui::SliderFloat("Soft Threshold", &softThreshold_, 0.0f, 1.0f);
-		changed |= ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 5.0f);
-		changed |= ImGui::SliderFloat("Blur Radius", &blurRadius_, 0.5f, 10.0f);
+		changed |= ImGui::SliderFloat(LocalizeEditorText("しきい値", "Threshold"), &threshold_, 0.0f, 2.0f);
+		changed |= ImGui::SliderFloat(LocalizeEditorText("ソフトしきい値", "Soft Threshold"), &softThreshold_, 0.0f, 1.0f);
+		changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 5.0f);
+		changed |= ImGui::SliderFloat(LocalizeEditorText("ブラー半径", "Blur Radius"), &blurRadius_, 0.5f, 10.0f);
 
 		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Controls the smoothness of the bloom threshold transition");
+			ImGui::SetTooltip("%s", LocalizeEditorText(
+				"ブルームしきい値の遷移の滑らかさを調整します",
+				"Controls the smoothness of the bloom threshold transition"));
 		}
 
 		if (changed) {

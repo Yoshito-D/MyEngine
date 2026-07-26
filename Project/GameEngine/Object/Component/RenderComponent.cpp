@@ -27,6 +27,7 @@ namespace {
    }
 
    GameEngine::RenderComponent::RenderSpace ParseRenderSpace(const nlohmann::json& value, GameEngine::RenderComponent::RenderSpace fallback) {
+      // 現行の可読な文字列と旧シーンの整数列挙値の両方を受け付ける。
       if (value.is_string()) {
          const std::string name = value.get<std::string>();
          if (name == "Screen") {

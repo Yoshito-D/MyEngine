@@ -17,12 +17,18 @@ class Object;
 /// @brief コンポーネントの所有・管理を担当するコンテナクラス
 class ComponentContainer {
 public:
+   /// @brief 空のコンポーネントコンテナを生成する
    ComponentContainer() = default;
+   /// @brief 所有する全コンポーネントを破棄する
    ~ComponentContainer() = default;
 
+   /// @brief コンポーネント所有権の複製を禁止する
    ComponentContainer(const ComponentContainer&) = delete;
+   /// @brief コンポーネント所有権のコピー代入を禁止する
    ComponentContainer& operator=(const ComponentContainer&) = delete;
+   /// @brief コンポーネント所有権を移動する
    ComponentContainer(ComponentContainer&&) = default;
+   /// @brief コンポーネント所有権を移動代入する
    ComponentContainer& operator=(ComponentContainer&&) = default;
 
    /// @brief コンポーネントを追加する（テンプレート版）

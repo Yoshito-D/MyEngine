@@ -8,6 +8,7 @@ namespace GameEngine {
 		const Quaternion currentRotation = particle.transform.GetActiveQuaternion();
 		const Vector3 deltaEuler = particle.angularVelocity * deltaTime;
 		const Quaternion deltaRotation = Vector3ToQuaternion(deltaEuler);
+		// 現在回転の右側へ増分を合成し、角速度をパーティクルのローカル軸として適用する。
 		particle.transform.SetRotationQuaternion((currentRotation * deltaRotation).Normalize());
 	}
 
@@ -32,6 +33,7 @@ namespace GameEngine {
 	void RotationOverLifetimeModule::FromJson(const nlohmann::json& j) {
 		if (j.contains("enabled")) enabled_ = j["enabled"];
 		if (j.contains("angularVelocity") && j["angularVelocity"].is_array()) {
+			// 旧JSONの固定角速度を上下限が同じ範囲へ移行する。
 			auto arr = j["angularVelocity"];
 			angularVelocityMin_ = Vector3{arr[0], arr[1], arr[2]};
 			angularVelocityMax_ = angularVelocityMin_;

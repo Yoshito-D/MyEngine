@@ -18,8 +18,8 @@ public:
    /// @param renderTarget レンダーターゲット
    void Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) override;
 
-   // @brief エフェクトを適用
-   // @param inputSRV 入力SRV
+   /// @brief エフェクトを適用
+   /// @param inputSRV 入力SRV
    void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) override;
 
 #ifdef USE_IMGUI
@@ -27,6 +27,11 @@ public:
    void ImGuiEdit() override;
 #endif
    const char* GetEffectName() const override { return "Anti Aliasing"; }
+
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
 
    void SetContrastThreshold(float threshold) { contrastThreshold_ = threshold; UpdateConstantBuffer(); }
    void SetRelativeThreshold(float threshold) { relativeThreshold_ = threshold; UpdateConstantBuffer(); }

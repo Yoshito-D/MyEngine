@@ -40,6 +40,7 @@ const char* Tr(const char* japanese, const char* english) {
 }
 
 std::string StableWindowLabel(const char* visibleLabel, const char* stableId) {
+   // 表示言語が変わってもImGuiのウィンドウ状態を保持するため、###以降に固定IDを置く。
    return std::string(visibleLabel) + "###" + stableId;
 }
 
@@ -49,6 +50,7 @@ void PopLastUtf8Codepoint(std::string& text) {
    }
 
    size_t erasePos = text.size() - 1;
+   // UTF-8継続バイトをさかのぼり、切り詰め時に不正な文字列を作らない。
    while (erasePos > 0) {
       const unsigned char c = static_cast<unsigned char>(text[erasePos]);
       if ((c & 0xC0) != 0x80) {
@@ -96,6 +98,7 @@ void RendererEditorController::BeginEditorFrame() {
       return;
    }
 
+   // 前フレームのUIが参照し終えた後で、遅延削除されたオブジェクトを安全に破棄する。
    editorContext->GetObjectStore().FlushDeferredDeletes();
    editorContext->HandleEditorShortcuts();
 }
@@ -277,6 +280,7 @@ void RendererEditorController::ShowHierarchyWindow() {
    Object* selectedObject = editorContext ? editorContext->GetSelectedObject() : nullptr;
    ParticleSystem* selectedParticleSystem = editorContext ? editorContext->GetSelectedParticleSystem() : nullptr;
    if (selectedObject) {
+      // シーン切り替えや外部削除で一覧から消えた選択ポインターをインスペクターへ渡さない。
       if (std::find(sceneObjects.begin(), sceneObjects.end(), selectedObject) == sceneObjects.end()) {
          if (editorContext) {
             editorContext->SelectObject(nullptr);
@@ -527,6 +531,12 @@ void RendererEditorController::ShowSceneOverlay(float viewportX, float viewportY
       }
    }
    editorContext->HandleViewportClickSelection(viewportX, viewportY, viewportWidth, viewportHeight);
+}
+
+void RendererEditorController::MarkActiveSceneDirty() {
+   if (auto* editorContext = GetActiveEditorContext()) {
+      editorContext->MarkDirty();
+   }
 }
 
 EditorSceneContext* RendererEditorController::GetActiveEditorContext() const {
@@ -861,6 +871,7 @@ void RendererEditorController::ResolveParentRelation(Object* object, const std::
    }
 
    Object* parentObject = nullptr;
+   // シーン保存ではポインターを保持できないため、永続化されたオブジェクト名から親を解決する。
    for (auto* candidate : sceneObjects) {
       if (!candidate || candidate == object) {
          continue;

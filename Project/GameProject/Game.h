@@ -8,12 +8,18 @@
 #include "PlayModeController.h"
 #endif
 
+/// @brief エンジン基盤とゲーム固有のシーン遷移を結び付けるアプリケーション本体
 class Game : public GameEngine::Framework {
 public:
+   /// @copydoc GameEngine::Framework::Initialize
    void Initialize() override;
+   /// @copydoc GameEngine::Framework::Update
    void Update() override;
+   /// @copydoc GameEngine::Framework::Draw
    void Draw() override;
+   /// @copydoc GameEngine::Framework::Finalize
    void Finalize() override;
+   /// @copydoc GameEngine::Framework::EndFrame
    void EndFrame() override;
 private:
 	SceneCatalog sceneCatalog_;

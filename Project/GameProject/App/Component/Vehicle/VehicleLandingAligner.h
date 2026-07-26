@@ -15,6 +15,7 @@ class VehicleLandingAligner final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleLandingAligner";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両着地姿勢合わせ", "Vehicle Landing Aligner" };
+   /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 毎フレーム Slerp 補正を進行させる
@@ -30,10 +31,13 @@ public:
    bool IsAligning() const { return alignTimer_ > 0.0f; }
 
 #ifdef USE_IMGUI
+   /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
+   /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 public:

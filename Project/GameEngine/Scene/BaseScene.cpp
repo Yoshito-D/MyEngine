@@ -85,6 +85,14 @@ public:
 	  if (sceneData.contains("cameras") && sceneData.at("cameras").is_object()) {
 		 ApplyCameras(sceneData.at("cameras"));
 	  }
+	  if (sceneData.contains("environment") &&
+		 !GameEngine::EngineContext::ApplyLightingSceneState(sceneData.at("environment"))) {
+		 return false;
+	  }
+	  if (sceneData.contains("renderSettings") &&
+		 !GameEngine::EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
+		 return false;
+	  }
 
 	  return true;
    }
@@ -417,7 +425,9 @@ void BaseScene::EditorUpdate() {
 	  }
    }
 
-   EngineContext::DebugDrawLights();
+   if (EngineContext::DebugDrawLights() && editorSceneContext_) {
+	  editorSceneContext_->MarkDirty();
+   }
 #else
    {
 	  float deltaTime = EngineContext::GetDeltaTime();

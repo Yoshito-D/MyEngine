@@ -21,6 +21,7 @@ ModelAssetManager::ModelHandle ModelAssetManager::LoadModel(const std::string& m
    const std::string assetId = BuildAssetId(modelPath, modelName);
    auto idIt = modelAssetsById_.find(assetId);
    if (idIt != modelAssetsById_.end()) {
+      // 短いモデル名でも同じアセットIDなら共有し、GPUリソースを二重ロードしない。
       modelAssets_[modelName] = idIt->second;
       return idIt->second;
    }
@@ -95,6 +96,7 @@ std::string ModelAssetManager::NormalizeAssetId(const std::string& path) {
    std::string result = normalizedPath.lexically_normal().generic_string();
    constexpr const char* kResourcesPrefix = "resources/";
    if (result.rfind(kResourcesPrefix, 0) == 0) {
+      // 呼び出し側が絶対寄りのパスを渡しても、保存時はresources相対IDへ統一する。
       result = result.substr(std::char_traits<char>::length(kResourcesPrefix));
    }
    return result;

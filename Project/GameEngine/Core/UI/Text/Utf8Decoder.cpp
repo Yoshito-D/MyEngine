@@ -62,6 +62,7 @@ std::vector<char32_t> DecodeUtf8(std::string_view text) {
 
       if (!valid || isOverlong || isSurrogate || isOutOfRange) {
          result.push_back(kReplacementCharacter);
+         // 壊れた先頭バイトだけを消費し、次の正しい文字境界へ早く再同期する。
          ++offset;
          continue;
       }

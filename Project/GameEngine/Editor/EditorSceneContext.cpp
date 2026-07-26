@@ -431,12 +431,14 @@ bool EditorSceneContext::Load() {
 
 nlohmann::json EditorSceneContext::SerializeToJson() {
    nlohmann::json sceneData = nlohmann::json::object();
-   sceneData["version"] = 3;
+   sceneData["version"] = 4;
    sceneData["sceneName"] = sceneName_;
    sceneData["objects"] = objectStore_.SerializeAll();
    sceneData["sceneObjects"] = SerializeSceneObjects();
    sceneData["sceneParticleSystems"] = SerializeSceneParticleSystems();
    sceneData["cameras"] = SerializeCameras();
+   sceneData["environment"] = EngineContext::SerializeLightingSceneState();
+   sceneData["renderSettings"] = EngineContext::SerializePostProcessSceneState();
    return sceneData;
 }
 
@@ -470,6 +472,16 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
    }
    if (sceneData.contains("cameras") && sceneData.at("cameras").is_object()) {
       ApplyCameras(sceneData.at("cameras"));
+   }
+   if (sceneData.contains("environment") &&
+      !EngineContext::ApplyLightingSceneState(sceneData.at("environment"))) {
+      SetStatus("Load failed: invalid environment settings");
+      return false;
+   }
+   if (sceneData.contains("renderSettings") &&
+      !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
+      SetStatus("Load failed: invalid render settings");
+      return false;
    }
 
    ClearDirty();

@@ -102,6 +102,7 @@ struct DrawCommand {
    ParticleDrawData particleData;
    LineDrawData lineData;
 
+   /// @brief 後からファクトリ関数と同じ形式で値を設定できる空コマンドを生成する
    DrawCommand() = default;
 
    /// @brief モデル描画コマンドを作成
@@ -114,7 +115,7 @@ struct DrawCommand {
 	  Camera* camera, BlendMode blendMode, RenderPass renderPass);
 
    /// @brief スプライト描画コマンドを作成
-   /// @brief sprite 描画するスプライト
+   /// @param sprite 描画するスプライト
    /// @param texture スプライトに使用するテクスチャ
    /// @param textureSrvHandle スプライトに使用するテクスチャのSRVハンドル
    /// @param camera 描画時のカメラ
@@ -167,6 +168,7 @@ struct DrawCommand {
 /// @brief 型消去ベース描画コマンドインターフェース
 class IDrawCommand {
 public:
+   /// @brief 派生コマンドを基底ポインター経由で安全に破棄する
    virtual ~IDrawCommand() = default;
 
    /// @brief 描画パスを取得
@@ -191,11 +193,15 @@ public:
 /// @brief DrawCommand をラップする IDrawCommand の標準実装
 class DrawCommandWrapper final : public IDrawCommand {
 public:
+   /// @brief 値型の描画コマンドを型消去インターフェースで所有する
    explicit DrawCommandWrapper(DrawCommand cmd) : cmd_(std::move(cmd)) {}
 
+   /// @copydoc IDrawCommand::GetRenderPass
    RenderPass GetRenderPass() const override { return cmd_.renderPass; }
+   /// @copydoc IDrawCommand::GetBlendMode
    BlendMode GetBlendMode() const override { return cmd_.blendMode; }
 
+   /// @copydoc IDrawCommand::GetTypePriority
    int GetTypePriority() const override {
       switch (cmd_.type) {
          case DrawCommandType::Model:    return 4;
@@ -207,8 +213,11 @@ public:
       }
    }
 
+   /// @copydoc IDrawCommand::GetSortPosition
    std::optional<Vector3> GetSortPosition() const override;
+   /// @copydoc IDrawCommand::GetCamera
    Camera* GetCamera() const override;
+   /// @copydoc IDrawCommand::GetDrawCommand
    const DrawCommand& GetDrawCommand() const override { return cmd_; }
 
 private:

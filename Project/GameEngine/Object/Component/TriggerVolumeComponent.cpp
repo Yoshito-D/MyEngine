@@ -40,6 +40,7 @@ void TriggerVolumeComponent::Update(float deltaTime) {
 
    Object* target = ResolveTarget();
    const bool overlaps = target && CalculateOverlap(*target);
+   // 前フレームの状態との差分から、1フレームだけ有効なEnter/Exitイベントを作る。
    enteredThisFrame_ = overlaps && !isInside_;
    exitedThisFrame_ = !overlaps && isInside_;
    isInside_ = overlaps;
@@ -114,6 +115,7 @@ bool TriggerVolumeComponent::CalculateOverlap(const Object& target) const {
 
    const Vector3 center = ownerTransform->transform.translation + centerOffset_;
    const Vector3 targetPosition = targetTransform->transform.translation;
+   // 現在は対象の原点を点として判定し、対象側の描画形状には依存させない。
    const Vector3 difference = targetPosition - center;
    if (shape_ == Shape::Sphere) {
       return difference.LengthSquared() <= radius_ * radius_;

@@ -23,6 +23,7 @@ class VehicleMover final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleMover";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両移動", "Vehicle Mover" };
+   /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 操舵・空中姿勢入力と接地状態から移動・姿勢を適用する
@@ -40,10 +41,13 @@ public:
    GameEngine::Vector3 GetLastMoveDirection() const { return lastMoveDirection_; }
 
 #ifdef USE_IMGUI
+   /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
+   /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 private:

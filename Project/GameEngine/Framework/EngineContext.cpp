@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "EngineContext.h"
+#include <nlohmann/json.hpp>
 #include "Model/Model.h"
 #include "ModelAsset.h"
 #include "BaseScene.h"
@@ -644,12 +645,21 @@ std::vector<std::string> EngineContext::GetAreaLightNames() {
    return sLightManager_->GetAreaLightNames();
 }
 
-void EngineContext::DebugDrawLights() {
+bool EngineContext::DebugDrawLights() {
 #ifdef USE_IMGUI
    if (sLightManager_) {
-      sLightManager_->DebugDraw();
+      return sLightManager_->DebugDraw();
    }
 #endif
+   return false;
+}
+
+nlohmann::json EngineContext::SerializeLightingSceneState() {
+   return sLightManager_ ? sLightManager_->SerializeSceneState() : nlohmann::json::object();
+}
+
+bool EngineContext::ApplyLightingSceneState(const nlohmann::json& state) {
+   return sLightManager_ && sLightManager_->ApplySceneState(state);
 }
 
 void EngineContext::Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
@@ -845,6 +855,18 @@ std::vector<std::string> EngineContext::GetPostProcessEffectNames() {
    if (!postProcessManager) return std::vector<std::string>();
 
    return postProcessManager->GetEffectNames();
+}
+
+nlohmann::json EngineContext::SerializePostProcessSceneState() {
+   if (!sRenderer_) return nlohmann::json::object();
+   auto* postProcessManager = sRenderer_->GetPostProcessManager();
+   return postProcessManager ? postProcessManager->SerializeSceneState() : nlohmann::json::object();
+}
+
+bool EngineContext::ApplyPostProcessSceneState(const nlohmann::json& state) {
+   if (!sRenderer_) return false;
+   auto* postProcessManager = sRenderer_->GetPostProcessManager();
+   return postProcessManager && postProcessManager->ApplySceneState(state);
 }
 
 bool EngineContext::SetSpeedLineParams(const SpeedLineParams& params) {

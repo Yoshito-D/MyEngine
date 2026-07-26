@@ -8,6 +8,7 @@
 #include "PointLight.h"
 #include "SpotLight.h"
 #include "AreaLight.h"
+#include <nlohmann/json_fwd.hpp>
 
 namespace GameEngine {
 
@@ -154,8 +155,18 @@ public:
    /// @brief 構造化バッファを更新
    void UpdateStructureBuffer();
 
+   /// @brief シーンへ保存するライト状態を取得する
+   /// @return ライト一覧を格納した環境設定JSON
+   nlohmann::json SerializeSceneState() const;
+
+   /// @brief シーンのライト状態で現在のライト一覧を置き換える
+   /// @param state ライト一覧を格納した環境設定JSON
+   /// @return 状態を適用できた場合はtrue
+   bool ApplySceneState(const nlohmann::json& state);
+
    /// @brief デバッグ用描画（ImGuiによる編集・追加・削除）
-   void DebugDraw();
+   /// @return シーンへ保存すべき設定が変更された場合はtrue
+   bool DebugDraw();
 
 private:
    std::map<std::string, std::unique_ptr<DirectionalLight>> directionalLights_;

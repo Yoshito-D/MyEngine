@@ -41,6 +41,7 @@ bool RegisterAppComponent(GameEngine::ObjectTypeMask supportedObjectTypes = Game
       supportedObjectTypes);
 }
 
+// 静的初期化でゲーム固有型を登録し、シーン復元時に型名だけから生成できるようにする。
 const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::CameraGravityBridge>(),
    RegisterAppComponent<App::CameraModeSwitcher>(),

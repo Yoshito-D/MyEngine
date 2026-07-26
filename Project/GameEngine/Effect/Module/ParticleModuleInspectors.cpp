@@ -48,12 +48,14 @@ uint32_t PackColor(const Vector4& color) {
 }
 
 void ClampRange(float& minValue, float& maxValue) {
+   // インスペクターで下限を上限より大きくした場合も、乱数分布へ正しい順序を渡す。
    if (minValue > maxValue) {
 	  minValue = maxValue;
    }
 }
 
 void ClampRange(Vector3& minValue, Vector3& maxValue) {
+   // ベクトル乱数は成分ごとに独立して抽選するため、各軸を個別に正規化する。
    if (minValue.x > maxValue.x) minValue.x = maxValue.x;
    if (minValue.y > maxValue.y) minValue.y = maxValue.y;
    if (minValue.z > maxValue.z) minValue.z = maxValue.z;
@@ -273,6 +275,7 @@ bool DrawRandomColor(const std::string& label, RandomColor& value, float columnW
 
 template <typename Module>
 bool DrawModuleEnabled(Module& module, const char* id) {
+   // 全モジュールで同じ有効化UIとID規則を共有し、ラベル衝突を防ぐ。
    ImGui::PushID(id);
    bool enabled = module.IsEnabled();
    const bool changed = ImGuiHelper::DrawCheckbox(L({ "有効", "Enabled" }), enabled, 140.0f);

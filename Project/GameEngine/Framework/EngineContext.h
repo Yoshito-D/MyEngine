@@ -22,6 +22,7 @@
 #include "CameraManager.h"
 #include "LightManager.h"
 #include "PlayModeController.h"
+#include <nlohmann/json_fwd.hpp>
 namespace GameEngine {
 class Framework;
 class Skybox;
@@ -288,21 +289,37 @@ public:
    static void SetGameDeltaTime(float deltaTime);
 
 #ifdef USE_IMGUI
+   /// @brief エディターのプレイ状態を管理するコントローラーを接続する
    static void SetPlayModeController(PlayModeController* controller);
+   /// @brief 現在のプレイモードを取得する
    static PlayMode GetPlayMode();
+   /// @brief 現在のプレイモード名を取得する
    static const char* GetPlayModeName();
+   /// @brief 編集モードかを判定する
    static bool IsPlayModeEdit();
+   /// @brief 編集モード以外かを判定する
    static bool IsInPlayMode();
+   /// @brief 再生中かを判定する
    static bool IsPlaying();
+   /// @brief 一時停止中かを判定する
    static bool IsPaused();
+   /// @brief 現在のフレームでランタイム更新を実行すべきか判定する
    static bool ShouldRunRuntimeUpdate();
+   /// @brief プレイ状態とタイムスケールを反映したデルタタイムを取得する
    static float GetGameDeltaTime();
+   /// @brief ゲーム時間へ適用する倍率を取得する
    static float GetTimeScale();
+   /// @brief ゲーム時間へ適用する倍率を設定する
    static void SetTimeScale(float timeScale);
+   /// @brief プレイモードの開始を予約する
    static void RequestPlayModeStart();
+   /// @brief プレイモードの停止を予約する
    static void RequestPlayModeStop();
+   /// @brief プレイモードの一時停止を予約する
    static void RequestPlayModePause();
+   /// @brief プレイモードの再開を予約する
    static void RequestPlayModeResume();
+   /// @brief 一時停止中の1フレーム実行を予約する
    static void RequestPlayModeStep();
 
    /// @brief 新しいシーンの初期化前にプレイモードを停止する
@@ -549,8 +566,18 @@ public:
    /// @return ライト名のリスト
    static std::vector<std::string> GetAreaLightNames();
 
-   /// @brief 全てのライトのデバッグ用UIを表示
-   static void DebugDrawLights();
+   /// @brief ライト編集UIを描画する
+   /// @return シーンへ保存すべきライト設定が変更された場合はtrue
+   static bool DebugDrawLights();
+
+   /// @brief 現在のライト状態をシーン保存用JSONへ変換する
+   /// @return ライト一覧を格納した環境設定JSON
+   static nlohmann::json SerializeLightingSceneState();
+
+   /// @brief シーンのライト状態を現在のレンダラーへ適用する
+   /// @param state ライト一覧を格納した環境設定JSON
+   /// @return 状態を適用できた場合はtrue
+   static bool ApplyLightingSceneState(const nlohmann::json& state);
 
    //================================================================
    // レンダラー
@@ -615,8 +642,11 @@ public:
    static Vector2 MeasureText(std::string_view text, const TextStyle& style);
 
 #ifdef USE_IMGUI
+   /// @brief シーンビューへマウスカーソルが重なっているか取得する
    static bool GetIsSceneHovered();
+   /// @brief エディターのドックスペースが表示中か取得する
    static bool GetIsDockSpaceVisible();
+   /// @brief エディターのドックスペース表示を切り替える
    static void SetDockSpaceVisible(bool visible);
 #endif // USE_IMGUI
 
@@ -733,6 +763,15 @@ public:
    /// @brief 利用可能なポストプロセスエフェクト名のリストを取得
    /// @return エフェクト名のリスト
    static std::vector<std::string> GetPostProcessEffectNames();
+
+   /// @brief 現在のポストプロセス状態をシーン保存用JSONへ変換する
+   /// @return ポストプロセススタックを格納した描画設定JSON
+   static nlohmann::json SerializePostProcessSceneState();
+
+   /// @brief シーンのポストプロセス状態を現在のレンダラーへ適用する
+   /// @param state ポストプロセススタックを格納した描画設定JSON
+   /// @return 状態を適用できた場合はtrue
+   static bool ApplyPostProcessSceneState(const nlohmann::json& state);
 
    /// @brief SpeedLine のパラメータを設定する
    /// @param params SpeedLine パラメータ

@@ -16,6 +16,7 @@ enum class RenderPassType {
 /// 将来のパス追加は IRenderPass を実装するだけでよい。
 class IRenderPass {
 public:
+	/// @brief 派生パスを基底ポインター経由で安全に破棄する
 	virtual ~IRenderPass() = default;
 
 	/// @brief パスを実行する

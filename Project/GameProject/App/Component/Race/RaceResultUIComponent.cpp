@@ -60,6 +60,7 @@ std::string RaceResultUIComponent::BuildResultText() const {
       << "\n\nBEST TIMES\n";
 
    const auto& bestTimes = raceManager_->GetBestTimes();
+   // 記録数にかかわらず3枠を固定表示し、リザルトUIの高さが変動しないようにする。
    for (size_t index = 0; index < 3; ++index) {
       stream << index + 1 << ". ";
       if (index < bestTimes.size()) {

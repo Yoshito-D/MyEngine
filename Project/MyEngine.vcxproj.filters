@@ -627,6 +627,9 @@
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcessManager.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcessSceneSerialization.cpp">
+      <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\RadialBlur.cpp">
       <Filter>GameEngine\Core\Renderer\PostProcess</Filter>
     </ClCompile>

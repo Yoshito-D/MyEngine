@@ -5,6 +5,7 @@ namespace GameEngine {
     EmissionModule::EmissionModule() = default;
 
     void EmissionModule::ResetBurstStates() {
+        // firedCountとnextFireTimeは再生セッション固有で、設定JSONには含めず再生開始時に初期化する。
         for (auto& burst : bursts_) {
             burst.firedCount = 0;
             burst.nextFireTime = -1.0f;

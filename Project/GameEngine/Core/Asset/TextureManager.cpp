@@ -43,6 +43,7 @@ void TextureManager::LoadTexture(const std::string& filePath, const std::string&
 
    auto texture = std::make_unique<Texture>();
    Microsoft::WRL::ComPtr<ID3D12Resource> intermediate = texture->LoadTexture(device_, filePath);
+   // GPUコピー完了まではアップロード用リソースが必要なため、明示解放まで所有する。
    intermediateResource_.push_back(intermediate);
 
    textures_[name] = std::move(texture);
@@ -70,6 +71,7 @@ void TextureManager::LoadTexturesFromDirectory(const std::filesystem::path& dire
 
       const std::string assetId = NormalizeAssetId(path, resourcesRoot);
       LoadTexture(path.generic_string(), assetId);
+      // 旧シーンの短い名前も解決できるよう別名を登録しつつ、衝突時は先着を維持する。
       RegisterAlias(path.stem().string(), assetId);
       RegisterAlias(path.filename().string(), assetId);
    }
@@ -150,6 +152,7 @@ void TextureManager::RegisterAlias(const std::string& alias, const std::string& 
    }
 
    if (textures_.contains(alias) || textureAliases_.contains(alias)) {
+      // 同名ファイルが別フォルダーにある場合、曖昧な短縮名を後勝ちで変化させない。
       return;
    }
 

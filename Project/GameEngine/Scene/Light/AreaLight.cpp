@@ -34,6 +34,7 @@ void AreaLight::Create(const Vector3& position,
                       normalizedTangent.y * normalizedNormal.y + 
                       normalizedTangent.z * normalizedNormal.z;
    
+   // Gram-Schmidt法で接線から法線成分を除き、ライト面の直交基底を保証する。
    Vector3 orthogonalTangent = normalizedTangent - normalizedNormal * dotProduct;
    Vector3 finalTangent = Normalize(orthogonalTangent);
 

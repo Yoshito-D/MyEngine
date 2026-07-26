@@ -30,10 +30,12 @@ bool SceneCatalog::Load(const std::filesystem::path& catalogPath) {
    initialSceneName_ = catalogData.value("initialScene", "");
    for (const auto& [sceneName, scenePath] : catalogData.at("scenes").items()) {
       if (!sceneName.empty() && scenePath.is_string()) {
+         // カタログのパスをresources相対に限定し、実行ディレクトリからの解決規則を統一する。
          scenes_[sceneName] = std::filesystem::path("resources") / scenePath.get<std::string>();
       }
    }
 
+   // 起動後に遷移不能となる設定をロード成功として扱わない。
    if (initialSceneName_.empty() || !Contains(initialSceneName_)) {
       Logger::Error("Scene catalog initialScene is missing or not registered");
       return false;

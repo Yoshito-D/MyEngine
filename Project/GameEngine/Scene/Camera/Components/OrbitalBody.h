@@ -9,10 +9,14 @@ namespace GameEngine {
 /// DebugCameraの動作を再現
 class OrbitalBody : public ICinemachineComponent {
 public:
+    /// @brief 既定の旋回角度と距離で生成する
     OrbitalBody() = default;
+    /// @brief カメラコンポーネントを破棄する
     ~OrbitalBody() override = default;
 
+    /// @copydoc ICinemachineComponent::MutateCameraState
     void MutateCameraState(CameraState& state, float) override;
+    /// @copydoc ICinemachineComponent::GetStage
     CinemachineStage GetStage() const override { return CinemachineStage::Body; }
 
     /// @brief 入力処理
@@ -24,10 +28,12 @@ public:
 
     /// @brief 距離を設定
     void SetDistance(float distance) { distance_ = std::max(0.5f, distance); }
+    /// @brief ピボットからの距離を取得する
     float GetDistance() const { return distance_; }
 
     /// @brief ピボットターゲットを設定
     void SetPivotTarget(const Vector3& target) { pivotTarget_ = target; }
+    /// @brief ピボットターゲットを取得する
     const Vector3& GetPivotTarget() const { return pivotTarget_; }
 
     /// @brief 回転速度を設定
@@ -74,12 +80,16 @@ public:
         return { -cosY, 0.0f, sinY };
     }
 
+    /// @copydoc ICinemachineComponent::GetComponentName
     const char* GetComponentName() const override { return "OrbitalBody"; }
 
+    /// @copydoc ICinemachineComponent::Serialize
     nlohmann::json Serialize() const override;
+    /// @copydoc ICinemachineComponent::Deserialize
     void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+    /// @copydoc ICinemachineComponent::DrawInspector
     void DrawInspector() override;
 #endif
 

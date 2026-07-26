@@ -41,6 +41,16 @@ bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
    // データ駆動シーンでは埋め込まれた完全スナップショットを通常オブジェクトとして復元する。
    RestoreLegacyEntries(sceneData);
    RestoreCameras(sceneData);
+   if (sceneData.contains("environment") &&
+      !EngineContext::ApplyLightingSceneState(sceneData.at("environment"))) {
+      Logger::Error("SceneWorld load failed: invalid environment settings");
+      return false;
+   }
+   if (sceneData.contains("renderSettings") &&
+      !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
+      Logger::Error("SceneWorld load failed: invalid render settings");
+      return false;
+   }
    ResolveReferences();
 
    if (!loadedAnyObject && looseObjectsById_.empty() && objectStore_.SerializeAll().empty()) {

@@ -7,11 +7,16 @@ namespace GameEngine {
 /// @brief パーリンノイズベースのカメラシェイク
 class PerlinNoise : public ICinemachineComponent {
 public:
+    /// @brief 停止状態のノイズコンポーネントを生成する
     PerlinNoise() = default;
+    /// @brief カメラコンポーネントを破棄する
     ~PerlinNoise() override = default;
 
+    /// @copydoc ICinemachineComponent::MutateCameraState
     void MutateCameraState(CameraState& state, float deltaTime) override;
+    /// @copydoc ICinemachineComponent::GetStage
     CinemachineStage GetStage() const override { return CinemachineStage::Noise; }
+    /// @copydoc ICinemachineComponent::GetComponentName
     const char* GetComponentName() const override { return "PerlinNoise"; }
 
     /// @brief シェイクを開始
@@ -35,10 +40,13 @@ public:
     /// @brief シェイク中かどうか
     bool IsShaking() const { return remainingTime_ > 0.0f; }
 
+    /// @copydoc ICinemachineComponent::Serialize
     nlohmann::json Serialize() const override;
+    /// @copydoc ICinemachineComponent::Deserialize
     void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+    /// @copydoc ICinemachineComponent::DrawInspector
     void DrawInspector() override;
 #endif
 

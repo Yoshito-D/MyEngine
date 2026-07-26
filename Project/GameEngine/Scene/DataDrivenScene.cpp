@@ -12,6 +12,7 @@ DataDrivenScene::DataDrivenScene(std::filesystem::path sceneFilePath)
 
 void DataDrivenScene::LoadSceneDataIfNeeded() {
    if (isLoaded_) {
+      // 初期化と更新の両方から呼ばれても、同じオブジェクトを二重生成しない。
       return;
    }
 
@@ -29,6 +30,7 @@ void DataDrivenScene::LoadSceneDataIfNeeded() {
       return;
    }
 
+   // 構築に失敗した場合は未ロードのままにし、呼び出し側が再試行できる状態を残す。
    isLoaded_ = sceneWorld_.LoadFromJson(sceneData);
    if (!isLoaded_) {
       Logger::Error("DataDrivenScene failed to build: " + sceneFilePath_.generic_string());

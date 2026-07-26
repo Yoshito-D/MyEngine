@@ -14,8 +14,11 @@ public:
 	/// @param offscreenRT オフスクリーンレンダーターゲット（ping-pong バッファ管理用）
 	explicit PostEffectPass(OffscreenRenderTarget* offscreenRT) : offscreenRT_(offscreenRT) {}
 
+	/// @copydoc IRenderPass::Execute
 	void Execute(FrameContext& ctx) override;
+	/// @copydoc IRenderPass::GetName
 	std::string_view GetName() const override { return "PostEffectPass"; }
+	/// @copydoc IRenderPass::GetPassType
 	RenderPassType GetPassType() const override { return RenderPassType::PostEffect; }
 
 private:

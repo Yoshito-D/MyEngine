@@ -27,9 +27,11 @@ namespace GameEngine {
 		Vector3 samplePosition = particle.transform.translation;
 		Quaternion simulationRotation = simulationTransform.GetActiveQuaternion();
 		if (useLocalSimulation) {
+			// エミッターと一緒にノイズ場を移動させるため、サンプル位置をローカル空間へ戻す。
 			samplePosition = RotateVector(samplePosition - simulationTransform.translation, simulationRotation.Inverse());
 		}
 
+		// 軸ごとに位相速度を変え、三軸が同時に反転する規則的な揺れを避ける。
 		Vector3 noiseVelocity{
 			std::sin(samplePosition.x * frequency + particle.noiseTime) * strength,
 			std::sin(samplePosition.y * frequency + particle.noiseTime * 1.3f) * strength,
@@ -37,6 +39,7 @@ namespace GameEngine {
 		};
 
 		if (useLocalSimulation) {
+			// ローカルで生成した揺れを、ワールド空間の粒子速度へ合わせて回転する。
 			noiseVelocity = RotateVector(noiseVelocity, simulationRotation);
 		}
 
@@ -58,6 +61,7 @@ namespace GameEngine {
 			if (j["strength"].is_object()) {
 				strength_.FromJson(j["strength"]);
 			} else {
+				// 旧JSONのスカラー値はランダム化しない固定範囲として移行する。
 				float value = j["strength"];
 				strength_ = RandomFloat(value, value, false);
 			}

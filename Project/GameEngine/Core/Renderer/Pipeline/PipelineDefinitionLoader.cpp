@@ -65,6 +65,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
                continue;
             }
 
+            // 正常な項目は保持しつつ全体は失敗扱いにし、ログで複数の設定不備を一度に確認できるようにする。
             output.push_back(path);
          }
       };

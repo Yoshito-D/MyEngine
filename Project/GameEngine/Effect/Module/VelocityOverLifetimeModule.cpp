@@ -17,6 +17,7 @@ namespace GameEngine {
 		if (!enabled_) return;
 		Vector3 linearVelocity = linearVelocity_.randomize ? particle.velocityOverLifetimeLinearVelocity : linearVelocity_.minValue;
 		if (useLocalSimulation) {
+			// 設定値はエミッターのローカル方向として解釈し、加算前にワールド方向へ回転する。
 			linearVelocity = RotateVector(linearVelocity, simulationTransform.GetActiveQuaternion());
 		}
 
@@ -42,6 +43,7 @@ namespace GameEngine {
 			if (j["linearVelocity"].is_object()) {
 				linearVelocity_.FromJson(j["linearVelocity"]);
 			} else if (j["linearVelocity"].is_array()) {
+				// 旧JSONのVector3は固定範囲へ変換し、見た目を変えずに新形式へ移行する。
 				auto arr = j["linearVelocity"];
 				Vector3 value{arr[0], arr[1], arr[2]};
 				linearVelocity_ = RandomVector3(value, value, false);

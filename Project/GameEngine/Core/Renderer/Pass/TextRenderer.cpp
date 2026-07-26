@@ -12,6 +12,7 @@ namespace GameEngine {
 namespace {
 size_t GrowCapacity(size_t required, size_t minimum) {
    size_t capacity = minimum;
+   // 2倍成長により文字数が徐々に増えるUIでGPUバッファの再生成回数を抑える。
    while (capacity < required) {
       capacity *= 2u;
    }
@@ -68,6 +69,7 @@ std::vector<TextDrawData> TextRenderer::QueueText(
    std::vector<PageGeometry> pageGeometry;
    std::unordered_map<UINT64, size_t> pageLookup;
    const size_t glyphLimit = std::min(visibleGlyphCount, layout.glyphs.size());
+   // アトラスごとにジオメトリをまとめ、1描画中に同じSRVだけを参照できるようにする。
    for (size_t placementIndex = 0; placementIndex < glyphLimit; ++placementIndex) {
       const GlyphPlacement& placement = layout.glyphs[placementIndex];
       const GlyphInfo& glyph = placement.glyph;
@@ -94,6 +96,7 @@ std::vector<TextDrawData> TextRenderer::QueueText(
       }
 
       PageGeometry& geometry = pageGeometry[geometryIndex];
+      // レイアウト原点からpivotを引いてから画面アンカー基準のTransformを適用する。
       const Vector2 localTopLeft = placement.position - pivotOffset;
       const Vector2 localTopRight = { localTopLeft.x + glyph.bitmapSize.x, localTopLeft.y };
       const Vector2 localBottomLeft = { localTopLeft.x, localTopLeft.y + glyph.bitmapSize.y };
@@ -118,6 +121,7 @@ std::vector<TextDrawData> TextRenderer::QueueText(
 
       const uint32_t globalBaseVertex = static_cast<uint32_t>(vertices_.size());
       const uint32_t startIndex = static_cast<uint32_t>(indices_.size());
+      // ページ別のローカルインデックスをフレーム共通バッファの頂点位置へ付け替える。
       vertices_.insert(vertices_.end(), geometry.vertices.begin(), geometry.vertices.end());
       for (uint32_t localIndex : geometry.indices) {
          indices_.push_back(globalBaseVertex + localIndex);
@@ -169,6 +173,7 @@ bool TextRenderer::UploadBuffers() {
       return false;
    }
    viewportData->size = { static_cast<float>(screenWidth_), static_cast<float>(screenHeight_) };
+   // シェーダー側でピクセル座標をクリップ空間へ変換するため両方を渡す。
    viewportData->inverseSize = { 1.0f / viewportData->size.x, 1.0f / viewportData->size.y };
    viewportBuffer_->Unmap(0, nullptr);
    return true;

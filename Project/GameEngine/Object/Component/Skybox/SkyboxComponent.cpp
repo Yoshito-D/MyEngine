@@ -38,6 +38,7 @@ const char* SkyboxComponent::GetTypeName() const {
 }
 
 void SkyboxComponent::SetTexture(Texture* texture) {
+   // 通常の2Dテクスチャをキューブとして参照するとSRV次元が一致しないため拒否する。
    if (texture && !texture->GetMetadata().IsCubemap()) {
       texture = nullptr;
    }
@@ -52,6 +53,7 @@ void SkyboxComponent::SetTextureName(const std::string& textureName) {
 }
 
 Texture* SkyboxComponent::GetTexture() const {
+   // シーン読込時に未ロードでも、描画時点で名前から遅延解決できるようにする。
    if (!texture_ && !textureName_.empty() && textureResolver_) {
       Texture* resolvedTexture = textureResolver_(textureName_);
       if (resolvedTexture && resolvedTexture->GetMetadata().IsCubemap()) {

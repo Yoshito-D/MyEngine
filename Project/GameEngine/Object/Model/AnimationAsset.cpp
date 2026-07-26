@@ -39,6 +39,7 @@ void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const s
 		 ? 1.0f
 		 : static_cast<float>(animationAssimp->mTicksPerSecond);
 
+	  // Assimpのtick時刻をここで秒へ統一し、以降の再生処理をエンジン時間だけで扱えるようにする。
 	  AnimationClip clip;
 	  if (animationAssimp->mName.length > 0) {
 		 clip.name = animationAssimp->mName.C_Str();
@@ -58,6 +59,7 @@ void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const s
 			aiVectorKey& keyAssimp = nodeAnimationAssimp->mPositionKeys[keyIndex];
 			KeyframeVector3 keyframe;
 			keyframe.time = static_cast<float>(keyAssimp.mTime / ticksPerSecond);
+			// Assimpの右手系データをエンジンの左手系へ合わせる。
 			keyframe.value = Vector3(-keyAssimp.mValue.x, keyAssimp.mValue.y, keyAssimp.mValue.z);
 			nodeAnimation.translation.keyframes.push_back(keyframe);
 		 }
@@ -66,6 +68,7 @@ void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const s
 			aiQuatKey& keyAssimp = nodeAnimationAssimp->mRotationKeys[keyIndex];
 			KeyframeQuaternion keyframe;
 			keyframe.time = static_cast<float>(keyAssimp.mTime / ticksPerSecond);
+			// X軸反転に対応してQuaternionのY・Z成分も反転する。
 			keyframe.value = Quaternion(keyAssimp.mValue.x, -keyAssimp.mValue.y, -keyAssimp.mValue.z, keyAssimp.mValue.w);
 			nodeAnimation.rotation.keyframes.push_back(keyframe);
 		 }
@@ -133,6 +136,7 @@ void Animator::SetCurrentTime(float currentTime) {
    }
 
    if (loop_) {
+	  // fmodの負値を正規化し、逆再生でも常に[0, duration)へ循環させる。
 	  currentTime_ = std::fmod(currentTime, clip_->duration);
 	  if (currentTime_ < 0.0f) {
 		 currentTime_ += clip_->duration;
@@ -171,6 +175,7 @@ const NodeAnimation* Animator::ResolveNodeAnimation(const std::string& nodeName)
 	  return nullptr;
    }
 
+   // 旧データがノード名を保持していない場合も単一チャンネルの再生を継続できるよう先頭を使う。
    return &clip_->nodeAnimations.begin()->second;
 }
 
@@ -183,6 +188,7 @@ Vector3 CalculateValue(const std::vector<KeyframeVector3>& keyframes, float time
    for (size_t index = 0; index < keyframes.size() - 1; ++index) {
 	  size_t nextIndex = index + 1;
 	  if (keyframes[index].time <= time && time <= keyframes[nextIndex].time) {
+		 // 隣接キーの区間へ時刻を正規化してから値を補間する。
 		 float t = (time - keyframes[index].time) / (keyframes[nextIndex].time - keyframes[index].time);
          return Vector3::Lerp(keyframes[index].value, keyframes[nextIndex].value, t);
 	  }
@@ -199,6 +205,7 @@ Quaternion CalculateValue(const std::vector<KeyframeQuaternion>& keyframes, floa
    for (size_t index = 0; index < keyframes.size() - 1; ++index) {
 	  size_t nextIndex = index + 1;
 	  if (keyframes[index].time <= time && time <= keyframes[nextIndex].time) {
+		 // 回転速度が不自然に変化しないようQuaternionは球面線形補間する。
 		 float t = (time - keyframes[index].time) / (keyframes[nextIndex].time - keyframes[index].time);
 		 return Quaternion::Slerp(keyframes[index].value, keyframes[nextIndex].value, t);
 	  }

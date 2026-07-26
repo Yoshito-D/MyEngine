@@ -7,6 +7,7 @@ namespace GameEngine {
 	void ColorOverLifetimeModule::UpdateColor(Particle& particle) const {
 		if (!enabled_) return;
 		float t = particle.GetLifeProgress();
+		// RGBAを同じ寿命進行度で補間し、色相と透明度の変化を同期させる。
 		particle.color.x = startColor_.x + (endColor_.x - startColor_.x) * t;
 		particle.color.y = startColor_.y + (endColor_.y - startColor_.y) * t;
 		particle.color.z = startColor_.z + (endColor_.z - startColor_.z) * t;

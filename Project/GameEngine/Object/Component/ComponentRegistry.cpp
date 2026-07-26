@@ -34,6 +34,7 @@ IObjectComponent* ComponentRegistry::CreateComponent(Object& owner, const std::s
    }
 
    if ((it->second.supportedObjectTypes & ToObjectTypeMask(owner.GetObjectType())) == 0) {
+      // コンポーネントが前提とする描画・UI機能を持たないObject型への追加を拒否する。
       return nullptr;
    }
 
