@@ -142,6 +142,7 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
       [](const EditorAssetEntry& lhs, const EditorAssetEntry& rhs) {
          if (lhs.filePath.parent_path() == rhs.filePath.parent_path()) {
             if (lhs.type != rhs.type) {
+               // 同じ階層ではフォルダーを先に出し、一般的なファイルブラウザーと同じ探索順にする。
                return lhs.type == EditorAssetType::Folder;
             }
          }
@@ -200,6 +201,7 @@ std::string EditorAssetRegistry::NormalizeAssetId(const std::filesystem::path& p
    std::error_code error;
    std::filesystem::path relative = std::filesystem::relative(path, resourcesRoot, error);
    if (error) {
+      // 別ドライブなどで相対化できない場合も、元パスを正規化して検索可能なIDを返す。
       relative = path;
    }
    return ToGenericString(relative);
@@ -254,6 +256,7 @@ EditorAssetType EditorAssetRegistry::ClassifyAsset(const std::filesystem::path& 
       if (first != relative.end()) {
          std::string rootFolder = first->string();
          if (rootFolder == "game" && ++first != relative.end()) {
+            // game配下は用途別の次階層を種別判定に使う。
             rootFolder = first->string();
          }
          if (rootFolder == "particles") {

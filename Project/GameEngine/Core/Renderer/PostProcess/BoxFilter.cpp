@@ -58,12 +58,13 @@ void BoxFilter::UpdateConstantBuffer() {
 void BoxFilter::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("BoxFilter Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("ボックスフィルターのパラメータ", "Box Filter Parameters"))) {
 
 	  bool changed = false;
 	  // 1=3x3, 2=5x5, 3=7x7
-	  changed |= ImGui::SliderInt("Kernel Radius", &kernelRadius_, 1, 7);
-	  ImGui::Text("Kernel size: %dx%d", kernelRadius_ * 2 + 1, kernelRadius_ * 2 + 1);
+	  changed |= ImGui::SliderInt(LocalizeEditorText("カーネル半径", "Kernel Radius"), &kernelRadius_, 1, 7);
+	  ImGui::Text("%s: %dx%d", LocalizeEditorText("カーネルサイズ", "Kernel Size"), kernelRadius_ * 2 + 1, kernelRadius_ * 2 + 1);
 
 	  if (changed) {
 		 UpdateConstantBuffer();

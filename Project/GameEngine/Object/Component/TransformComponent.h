@@ -8,17 +8,22 @@
 #include <string>
 
 namespace GameEngine {
+/// @brief Objectのローカル変換・親行列・GPU変換バッファを管理する
 class TransformComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "TransformComponent";
    static constexpr ComponentDisplayName kDisplayName{ "トランスフォーム", "Transform" };
+   /// @copydoc IObjectComponent::GetTypeName
    const char* GetTypeName() const override;
 
+   /// @copydoc IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
 
+   /// @copydoc IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+   /// @copydoc IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
@@ -49,10 +54,10 @@ public:
    /// @return 上書き用ワールド行列
    const Matrix4x4& GetWorldMatrixOverride() const { return worldMatrixOverride_; }
 
-   Transform transform = {};
-   Matrix4x4 parentMatrix = MakeIdentity4x4();
-   bool useParentMatrix = false;
-   std::string parentObjectName;
+   Transform transform = {}; ///< Objectのローカル変換
+   Matrix4x4 parentMatrix = MakeIdentity4x4(); ///< 階層合成に使用する親ワールド行列
+   bool useParentMatrix = false; ///< 親行列をワールド行列へ合成するか
+   std::string parentObjectName; ///< シーン読み込み後に解決する親Object名
 
 private:
    std::unique_ptr<TransformationMatrix> transformationMatrix_;

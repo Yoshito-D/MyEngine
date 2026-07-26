@@ -10,7 +10,9 @@ namespace App {
 ///       また、プレイヤー速度を受け取り、加速時に FOV を広げて速度感を演出する。
 class GravityFollowCamera : public GameEngine::ICinemachineComponent {
 public:
+   /// @brief 追従カメラを既定の補間設定で生成する
    GravityFollowCamera() = default;
+   /// @brief カメラコンポーネントを破棄する
    ~GravityFollowCamera() override = default;
 
    /// @brief カメラ状態を更新する
@@ -62,7 +64,9 @@ public:
    /// @brief 直近更新時のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const;
 
+   /// @copydoc GameEngine::ICinemachineComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc GameEngine::ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

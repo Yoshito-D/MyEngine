@@ -24,6 +24,7 @@ class VehicleLandingBoost final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleLandingBoost";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両着地ブースト", "Vehicle Landing Boost" };
+   /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 着地時に判定を行い速度を調整する
@@ -34,10 +35,13 @@ public:
 						  const GameEngine::Vector3& gravityUp);
 
 #ifdef USE_IMGUI
+   /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
+   /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 public:

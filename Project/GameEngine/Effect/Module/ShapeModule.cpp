@@ -36,6 +36,7 @@ Vector3 ResolveSkinnedVertexPosition(
    const VertexInfluence& influence = skinCluster->mappedInfluenceData[meshIndex][vertexIndex];
    Vector3 skinnedPosition(0.0f, 0.0f, 0.0f);
    float totalWeight = 0.0f;
+   // GPUと同じ最大影響数だけを合成し、欠損・未正規化ウェイトは最後に補正する。
    for (uint32_t influenceIndex = 0; influenceIndex < kNumMaxInfluence; ++influenceIndex) {
 	  const float weight = influence.weights[influenceIndex];
 	  const int32_t jointIndex = influence.jointIndices[influenceIndex];
@@ -117,6 +118,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 	  }
 	  case ShapeType::Cylinder: {
 		 const float angle = RandomRange(0.0f, MathConstants::kTwoPi);
+		 // 半径をsqrt分布にして円盤の中心へサンプルが偏らないようにする。
 		 const float radialDistance = emitFrom_ == EmitFrom::Volume
 			? std::sqrt(RandomRange(0.0f, 1.0f)) * radius_
 			: radius_;
@@ -163,11 +165,13 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 		 const Vector3 p0 = ResolveSkinnedVertexPosition(*skinnedMeshModel_, skinnedMeshSkinCluster_, meshIndex, indices[indexOffset]);
 		 const Vector3 p1 = ResolveSkinnedVertexPosition(*skinnedMeshModel_, skinnedMeshSkinCluster_, meshIndex, indices[indexOffset + 1]);
 		 const Vector3 p2 = ResolveSkinnedVertexPosition(*skinnedMeshModel_, skinnedMeshSkinCluster_, meshIndex, indices[indexOffset + 2]);
+		 // sqrtを使う重心座標で三角形面内を一様にサンプリングする。
 		 const float sqrtRandom = std::sqrt(RandomRange(0.0f, 1.0f));
 		 const float barycentric1 = RandomRange(0.0f, 1.0f);
 		 localOffset = p0 * (1.0f - sqrtRandom) +
 			p1 * (sqrtRandom * (1.0f - barycentric1)) +
 			p2 * (sqrtRandom * barycentric1);
+		 // 位置取得の直後に方向取得が呼ばれる契約に合わせ、選択面の法線を保持する。
 		 lastEmissionDirection_ = (p1 - p0).Cross(p2 - p0).Normalize();
 		 localOffset = Vector3(localOffset.x * scale.x, localOffset.y * scale.y, localOffset.z * scale.z);
 		 break;
@@ -234,6 +238,7 @@ Vector3 ShapeModule::GetCircleOutwardDirection(const Vector3& emissionPosition) 
    const Vector3 circleNormal = RotateVector(Vector3(0.0f, 1.0f, 0.0f), shapeRotation).Normalize();
 
    Vector3 outward = emissionPosition - transform_.translation;
+   // 非一様スケールや回転後も円平面内の外向きベクトルとなるよう法線成分を除く。
    outward = outward - circleNormal * outward.Dot(circleNormal);
 
    if (outward.LengthSquared() < 1e-8f) {

@@ -33,6 +33,7 @@ void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
+   // 頂点バッファを持たないフルスクリーントライアングルで画面端の継ぎ目を避ける。
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
 
@@ -59,12 +60,13 @@ void AntiAliasing::UpdateConstantBuffer() {
 void AntiAliasing::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Anti Aliasing Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("アンチエイリアシングのパラメータ", "Anti Aliasing Parameters"))) {
 	  bool changed = false;
-	  changed |= ImGui::SliderFloat("Contrast Threshold", &contrastThreshold_, 0.001f, 0.2f, "%.4f");
-	  changed |= ImGui::SliderFloat("Relative Threshold", &relativeThreshold_, 0.0312f, 0.333f, "%.4f");
-	  changed |= ImGui::SliderFloat("Subpixel Blending", &subpixelBlending_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Edge Search Steps", &edgeSearchSteps_, 1.0f, 16.0f, "%.0f");
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("コントラストしきい値", "Contrast Threshold"), &contrastThreshold_, 0.001f, 0.2f, "%.4f");
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("相対しきい値", "Relative Threshold"), &relativeThreshold_, 0.0312f, 0.333f, "%.4f");
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("サブピクセルブレンド", "Subpixel Blending"), &subpixelBlending_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("エッジ探索ステップ数", "Edge Search Steps"), &edgeSearchSteps_, 1.0f, 16.0f, "%.0f");
 
 	  if (changed) {
 		 UpdateConstantBuffer();

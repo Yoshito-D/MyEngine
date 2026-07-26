@@ -23,6 +23,7 @@ bool EditorCommandStack::Execute(std::unique_ptr<IEditorCommand> command, Editor
       return false;
    }
 
+   // 新しい分岐を実行した時点で以前のRedo履歴は到達不能になるため破棄する。
    undoStack_.push_back(std::move(command));
    redoStack_.clear();
    context.MarkDirty();
@@ -73,6 +74,7 @@ CreateGenericObjectCommand::CreateGenericObjectCommand(Transform initialTransfor
 
 bool CreateGenericObjectCommand::Execute(EditorSceneContext& context) {
    Object* object = nullptr;
+   // 初回は新規作成し、RedoではUndo直前に保存した同一ID・同一設定のスナップショットを復元する。
    if (!snapshot_.is_null() && snapshot_.is_object()) {
       object = context.GetObjectStore().RestoreObject(snapshot_);
    } else {
@@ -323,6 +325,7 @@ Object* TransformObjectCommand::ResolveObject(EditorSceneContext& context) const
          return object;
       }
    }
+   // シーン本体が所有するオブジェクトはEditorObjectStoreにIDがないため、生存中の直接参照を使う。
    return fallbackObject_;
 }
 
@@ -389,6 +392,7 @@ bool RestoreObjectSnapshotCommand::Execute(EditorSceneContext& context) {
    }
 
    const std::string objectType = snapshot_.value("objectType", "Model");
+   // ParticleSystemはObject階層外で別ストアに登録されるため、種別を見て復元経路を分ける。
    if (objectType == "ParticleSystem") {
       ParticleSystem* particleSystem = context.GetObjectStore().RestoreParticleSystem(snapshot_);
       if (!particleSystem) {
@@ -523,6 +527,7 @@ bool AddComponentCommand::Execute(EditorSceneContext& context) {
    }
 
    if (beforeSnapshot_.is_null() && !objectId_.empty()) {
+      // コンポーネント間の依存設定も戻せるよう、追加対象だけでなくオブジェクト全体を保存する。
       beforeSnapshot_ = context.GetObjectStore().SerializeObject(objectId_);
    }
 
@@ -576,6 +581,7 @@ bool RemoveComponentCommand::Execute(EditorSceneContext& context) {
    }
 
    if (removedComponentData_.is_null()) {
+      // Undoで有効状態と固有設定を両方戻せる最小スナップショットを初回実行時だけ保存する。
       removedComponentData_ = nlohmann::json{
          { "enabled", component->IsEnabled() },
          { "data", component->Serialize() }

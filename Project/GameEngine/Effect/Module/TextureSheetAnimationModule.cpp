@@ -5,6 +5,7 @@ namespace GameEngine {
 TextureSheetAnimationModule::TextureSheetAnimationModule() = default;
 
 void TextureSheetAnimationModule::ClampSettings() {
+	// JSONやインスペクターから不正値が入っても剰余演算と行選択を安全に行える範囲へ戻す。
 	tilesX_ = std::max(tilesX_, 1u);
 	tilesY_ = std::max(tilesY_, 1u);
 	cycles_ = std::max(cycles_, 1u);
@@ -37,6 +38,7 @@ uint32_t TextureSheetAnimationModule::GetPlayableFrameCount() const {
 
 	const uint32_t safeStartFrame = startFrame_ % totalFrameCount;
 	const uint32_t availableFrames = std::max(totalFrameCount - safeStartFrame, 1u);
+	// frameCount=0は「開始位置から末尾まで」として扱い、既定設定で全フレームを再生する。
 	if (frameCount_ == 0) {
 		return availableFrames;
 	}
@@ -56,6 +58,7 @@ uint32_t TextureSheetAnimationModule::ResolveFrame(const Particle& particle) con
 	const uint32_t totalFrames = safeTilesX * safeTilesY;
 	const uint32_t playableFrames = GetPlayableFrameCount();
 	const float progress = particle.GetLifeProgress();
+	// 絶対時間ではなく寿命進行度を使い、寿命が異なる粒子でも同じ割合でシートを走査する。
 	const float animated = progress * frameOverTime_ * static_cast<float>(std::max(cycles_, 1u));
 	uint32_t frame = startFrame_;
 
@@ -63,6 +66,7 @@ uint32_t TextureSheetAnimationModule::ResolveFrame(const Particle& particle) con
 		frame += static_cast<uint32_t>(animated * static_cast<float>(playableFrames)) % playableFrames;
 		frame %= totalFrames;
 	} else {
+		// 行はsheetRowで別管理されるため、単一行モードではX方向の番号だけを返す。
 		frame += static_cast<uint32_t>(animated * static_cast<float>(playableFrames)) % playableFrames;
 		frame %= safeTilesX;
 	}

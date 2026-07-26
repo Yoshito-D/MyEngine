@@ -15,6 +15,7 @@ float UVTransformModule::LerpFloat(float a, float b, float t) {
 void UVTransformModule::InitializeParticle(Particle& particle) const {
 	if (!enabled_) return;
 
+	// ランダム値は生成時に一度だけ確定し、フレームごとのちらつきを防ぐ。
 	switch (scrollMode_) {
 	case ValueMode::Constant:
 		particle.uvScroll = scrollConstant_;
@@ -60,6 +61,7 @@ void UVTransformModule::UpdateUV(Particle& particle, float deltaTime) const {
 	const float t = particle.GetLifeProgress();
 	Vector2 currentScroll = particle.uvScroll;
 
+	// カーブは寿命に対する速度を返すため、オフセット自体は経過時間で積分する。
 	switch (scrollMode_) {
 	case ValueMode::Constant:
 	case ValueMode::RandomBetweenTwoConstants:
@@ -72,6 +74,7 @@ void UVTransformModule::UpdateUV(Particle& particle, float deltaTime) const {
 
 	particle.uvOffset += currentScroll * deltaTime;
 
+	// 回転とスケールは累積値ではなく寿命上の絶対値として評価し、更新頻度への依存をなくす。
 	switch (rotationMode_) {
 	case ValueMode::Constant:
 	case ValueMode::RandomBetweenTwoConstants:

@@ -69,14 +69,15 @@ void RadialBlur::UpdateConstantBuffer() {
 void RadialBlur::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Radial Blur Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("放射ブラーのパラメータ", "Radial Blur Parameters"))) {
 
 	  bool changed = false;
 	  RadialBlurParams params = params_;
-	  changed |= ImGui::SliderFloat("Blur Strength", &params.strength, 0.0f, 0.1f);
-	  changed |= ImGui::SliderFloat("Center X", &params.center.x, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Center Y", &params.center.y, 0.0f, 1.0f);
-	  changed |= ImGui::SliderInt("Sample Count", &params.sampleCount, 2, 32);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("ブラー強度", "Blur Strength"), &params.strength, 0.0f, 0.1f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &params.center.x, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &params.center.y, 0.0f, 1.0f);
+	  changed |= ImGui::SliderInt(LocalizeEditorText("サンプル数", "Sample Count"), &params.sampleCount, 2, 32);
 
 	  if (changed) {
 		 SetParams(params);

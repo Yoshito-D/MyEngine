@@ -49,7 +49,7 @@ class Mesh;
 class AssetManager;
 class Skybox;
 
-// @brief レンダラークラス
+/// @brief 描画コマンドの収集・レンダーパス実行・エディター描画を統括する
 class Renderer {
 public:
    ~Renderer();

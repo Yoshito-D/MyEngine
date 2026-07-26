@@ -46,10 +46,15 @@ public:
 	  float collisionRestitution = 0.0f;
    };
 
+   /// @brief 自動更新・描画対象として登録された全システムを取得する
+   /// @return 生存中の登録システム一覧
    static const std::vector<ParticleSystem*>& GetRegisteredParticleSystems();
 
+   /// @brief 指定システムを自動更新・描画一覧から外す
+   /// @param particleSystem 解除対象
    static void UnregisterParticleSystem(ParticleSystem* particleSystem);
 
+   /// @brief 自動更新・描画レジストリを空にする
    static void ClearRegisteredParticleSystems();
 
    /// @brief 更新中に蓄積したサブエミッターイベントを安全なタイミングで生成する
@@ -173,22 +178,47 @@ public:
    /// @brief 終了しているか判定（非ループかつ duration を超えた場合 true）
    bool IsFinished() const;
 
-   // ============ Module Access ============
+   /// @brief 寿命・初期値・再生条件を管理するメインモジュールを取得する
+   /// @return 常に有効なメインモジュール
    MainModule* GetMainModule() { return mainModule_.get(); }
+   /// @brief 時間・距離・バースト放出を管理するモジュールを取得する
+   /// @return 常に有効な放出モジュール
    EmissionModule* GetEmissionModule() { return emissionModule_.get(); }
+   /// @brief 放出位置と初期方向を管理する形状モジュールを取得する
+   /// @return 常に有効な形状モジュール
    ShapeModule* GetShapeModule() { return shapeModule_.get(); }
 
+   /// @brief 寿命中の速度変更モジュールを取得する
+   /// @return 速度モジュール
    VelocityOverLifetimeModule* GetVelocityOverLifetimeModule() { return velocityOverLifetimeModule_.get(); }
+   /// @brief 寿命中の色変更モジュールを取得する
+   /// @return 色モジュール
    ColorOverLifetimeModule* GetColorOverLifetimeModule() { return colorOverLifetimeModule_.get(); }
+   /// @brief 寿命中のサイズ変更モジュールを取得する
+   /// @return サイズモジュール
    SizeOverLifetimeModule* GetSizeOverLifetimeModule() { return sizeOverLifetimeModule_.get(); }
+   /// @brief 寿命中の回転変更モジュールを取得する
+   /// @return 回転モジュール
    RotationOverLifetimeModule* GetRotationOverLifetimeModule() { return rotationOverLifetimeModule_.get(); }
 
+   /// @brief 寿命中に力を加えるモジュールを取得する
+   /// @return 力モジュール
    ForceOverLifetimeModule* GetForceOverLifetimeModule() { return forceOverLifetimeModule_.get(); }
+   /// @brief 速度上限モジュールを取得する
+   /// @return 速度上限モジュール
    LimitVelocityOverLifetimeModule* GetLimitVelocityModule() { return limitVelocityModule_.get(); }
+   /// @brief 擬似ノイズによる揺らぎモジュールを取得する
+   /// @return ノイズモジュール
    NoiseModule* GetNoiseModule() { return noiseModule_.get(); }
+   /// @brief UV移動・回転・拡縮モジュールを取得する
+   /// @return UV変換モジュール
    UVTransformModule* GetUVTransformModule() { return uvTransformModule_.get(); }
+   /// @brief テクスチャシート再生モジュールを取得する
+   /// @return シートアニメーションモジュール
    TextureSheetAnimationModule* GetTextureSheetAnimationModule() { return textureSheetAnimationModule_.get(); }
 
+   /// @brief ビルボード・ソートなどの描画設定モジュールを取得する
+   /// @return 描画モジュール
    RendererModule* GetRendererModule() { return rendererModule_.get(); }
 
    /// @brief トレイル設定モジュールを取得する
@@ -211,10 +241,18 @@ public:
    /// @brief 設定中のテクスチャ名を取得
    const std::string& GetTextureName() const { return textureName_; }
 
+   /// @brief エディタとデバッグ表示に使うシステム名を取得する
+   /// @return システム名
    const std::string& GetName() const { return name_; }
+   /// @brief エディタとデバッグ表示に使うシステム名を設定する
+   /// @param name 新しいシステム名
    void SetName(const std::string& name) { name_ = name; }
 
+   /// @brief エディタのヒエラルキーとインスペクターへ公開するか取得する
+   /// @return エディタで編集可能な場合はtrue
    bool IsEditorInspectable() const { return isEditorInspectable_; }
+   /// @brief エディタのヒエラルキーとインスペクターへの公開可否を設定する
+   /// @param inspectable 公開する場合はtrue
    void SetEditorInspectable(bool inspectable) { isEditorInspectable_ = inspectable; }
 
    /// @brief ブレンドモードを設定（マテリアルに委譲）
@@ -262,22 +300,35 @@ public:
    /// @param json JSON形式のパラメータ
    void FromJson(const nlohmann::json& json);
 
-   // ============ Renderer 用公開インターフェース ============
+   /// @brief パーティクル描画に使用する現在のメッシュを取得する
+   /// @return クアッドまたは生成済み形状メッシュ
    Mesh* GetMesh() const { return quadMesh_.get(); }
+   /// @brief CPUシミュレーション用インスタンスSRVを取得する
+   /// @return インスタンシングバッファのGPUハンドル
    D3D12_GPU_DESCRIPTOR_HANDLE GetInstancingSrvHandleGPU() const;
+   /// @brief パーティクル本体のテクスチャを取得する
+   /// @return 設定中のテクスチャ
    Texture* GetTexture() const;
 
    /// @brief リボン描画に使用するテクスチャを取得する
    /// @return 専用テクスチャ、未設定または無効な場合はパーティクル本体のテクスチャ
    Texture* GetRibbonTexture() const;
 
+   /// @brief 描画パスへ渡す内部マテリアルを取得する
+   /// @return パーティクル用マテリアル
    Material* GetMaterialForRenderer() const;
+   /// @brief CPU側で生存しているパーティクル数を取得する
+   /// @return 生存パーティクル数
    uint32_t GetActiveParticleCount() const { return activeParticleCount_; }
 
    /// @brief GPUシミュレーションが生成した描画インスタンス数を取得する
    /// @return 描画に使用するGPU出力要素数
    uint32_t GetDrawParticleCount() const;
+   /// @brief メッシュパーティクルへ使用するモデルアセットを取得する
+   /// @return 設定中のモデル。未設定の場合はnullptr
    ModelAsset* GetModelAsset() const { return modelAsset_; }
+   /// @brief メッシュパーティクルへ使用するモデルアセットを設定する
+   /// @param model 使用するモデル。nullptrで解除
    void SetModelAsset(ModelAsset* model) { modelAsset_ = model; }
 
    /// @brief リボン描画用GPU頂点バッファビューを取得する

@@ -11,6 +11,7 @@ void MaterialManager::Initialize(ID3D12Device* device) {
 void* MaterialManager::CreateMaterial(const std::string& name, uint32_t color, int32_t enableLighting, const Matrix4x4& uvTransform) {
    auto it = materials_.find(name);
    if (it != materials_.end()) {
+	  // 名前をマテリアルの共有キーとし、同一設定要求で定数バッファを重複生成しない。
 	  return it->second.get();
    }
 

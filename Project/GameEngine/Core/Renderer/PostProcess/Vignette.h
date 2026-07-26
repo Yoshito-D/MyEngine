@@ -33,6 +33,11 @@ public:
 #endif
    const char* GetEffectName() const override { return "Vignette"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    // パラメータ設定
    void SetIntensity(float intensity) { intensity_ = intensity; UpdateConstantBuffer(); }
    void SetSoftness(float softness) { softness_ = softness; UpdateConstantBuffer(); }

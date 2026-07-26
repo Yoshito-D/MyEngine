@@ -58,13 +58,14 @@ void GaussFilter::UpdateConstantBuffer() {
 void GaussFilter::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Gauss Filter Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("ガウシアンフィルターのパラメータ", "Gauss Filter Parameters"))) {
 
 	  bool changed = false;
-	  changed |= ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderInt("Kernel Size", &kernelSize_, 1, 32);
-	  ImGui::Text("Kernel size: %dx%d", kernelSize_ * 2 + 1, kernelSize_ * 2 + 1);
-	  changed |= ImGui::SliderFloat("Sigma", &sigma_, 0.1f, 5.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderInt(LocalizeEditorText("カーネル半径", "Kernel Radius"), &kernelSize_, 1, 32);
+	  ImGui::Text("%s: %dx%d", LocalizeEditorText("カーネルサイズ", "Kernel Size"), kernelSize_ * 2 + 1, kernelSize_ * 2 + 1);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("シグマ", "Sigma"), &sigma_, 0.1f, 5.0f);
 
 	  if (changed) {
 		 UpdateConstantBuffer();

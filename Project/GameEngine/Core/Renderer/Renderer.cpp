@@ -734,7 +734,9 @@ void Renderer::EndFrame() {
 			   editorController_->ShowSceneOverlay(viewportX, viewportY, viewportWidth, viewportHeight);
 			}
 		 });
-	  postProcessManager_->ShowImGuiControls();
+	  if (postProcessManager_->ShowImGuiControls() && editorController_) {
+		 editorController_->MarkActiveSceneDirty();
+	  }
    } else {
 	  DrawFullscreenTriangle(offscreenRenderTarget_->GetSRVHandleGPU());
    }

@@ -1,5 +1,6 @@
 #pragma once
 
+// 既存コードの単一インクルードを維持するため、用途別MathUtilsヘッダーを集約する。
 #include "MathUtils/MathConstants.h"
 #include "MathUtils/MatrixOperations.h"
 #include "MathUtils/QuaternionOperations.h"

@@ -220,6 +220,7 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
    }
 
    const std::string objectType = objectData.value("objectType", "Model");
+   // 派生型ごとの必須リソースを先に生成してから、共通コンポーネント状態を上書きする。
    if (objectType == "ParticleSystem") {
       RestoreParticleSystem(objectData);
       return nullptr;
@@ -309,6 +310,7 @@ bool EditorObjectStore::DeleteObject(const std::string& objectId) {
    }
 
    Object* target = mapIt->second;
+   // 描画レジストリから先に解除し、フレーム中に残った生ポインターが破棄済みメモリを参照しないようにする。
    if (auto* textTarget = dynamic_cast<UIText*>(target)) {
       auto vecIt = std::find_if(uiTexts_.begin(), uiTexts_.end(),
          [textTarget](const std::unique_ptr<UIText>& text) {
@@ -402,6 +404,7 @@ bool EditorObjectStore::DeleteParticleSystem(const std::string& objectId) {
 }
 
 void EditorObjectStore::FlushDeferredDeletes() {
+   // UI・描画側が前フレームの一覧を使い終えたフレーム先頭で実体を破棄する。
    deferredDeleteGenericObjects_.clear();
    deferredDeleteParticleSystems_.clear();
    deferredDeleteUITexts_.clear();
@@ -529,6 +532,7 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
    }
 
    if (const auto* uiText = dynamic_cast<const UIText*>(object)) {
+      // 復元前に正しい具象型を生成できるよう、Object共通データとは別に安定した種別名を保存する。
       return nlohmann::json{
          { "id", id },
          { "objectType", "UIText" },
@@ -589,6 +593,7 @@ bool EditorObjectStore::ApplyObjectState(Object* object, const nlohmann::json& o
    }
 
    const std::string objectType = objectData.value("objectType", "Object");
+   // 異なる具象型へスナップショットを適用すると専用データが欠落するため、先に型整合性を検証する。
    if (objectType == "Model" && dynamic_cast<Model*>(object) == nullptr) {
       return false;
    }
@@ -712,6 +717,7 @@ nlohmann::json EditorObjectStore::SerializeAll() const {
 
 std::string EditorObjectStore::AllocateId(const std::string& requestedId) {
    if (!requestedId.empty() && !idToObject_.contains(requestedId) && !idToParticleSystem_.contains(requestedId)) {
+      // 復元IDの番号を採用した後に自動採番が衝突しないようカウンターも追従させる。
       BumpCounterFromId(requestedId);
       return requestedId;
    }
@@ -728,6 +734,7 @@ std::string EditorObjectStore::BuildUniqueObjectName(const std::string& baseName
    const std::string base = baseName.empty() ? "EditorObject" : baseName;
 
    auto exists = [this](const std::string& name) {
+      // エディタ所有だけでなく各ランタイム描画レジストリも調べ、ヒエラルキー全体で名前を一意にする。
       for (const auto& object : genericObjects_) {
          if (object && object->GetObjectName() == name) {
             return true;

@@ -11,7 +11,9 @@ namespace App {
 ///       プレイヤーが加速すると FOV 拡大・カメラ後退距離増加で加速感を演出する。
 class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent {
 public:
+	/// @brief 後方追従カメラを既定の補間設定で生成する
 	PlayerRearFollowCamera() = default;
+	/// @brief カメラコンポーネントを破棄する
 	~PlayerRearFollowCamera() override = default;
 
 	/// @brief カメラ状態を更新する

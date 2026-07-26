@@ -45,6 +45,7 @@ void TypewriterComponent::Update(float deltaTime) {
    }
 
    if (restartOnTextChange && observedTextRevision_ != textComponent->GetTextRevision()) {
+      // 同じUITextを会話更新などで再利用した場合、新しい文章を先頭から表示し直す。
       Restart();
    }
    if (!playing_) {
@@ -68,6 +69,7 @@ void TypewriterComponent::Update(float deltaTime) {
    const float revealTime = static_cast<float>(glyphCount) / safeRate;
    float animationTime = elapsed_ - std::max(delay, 0.0f);
    if (loop && animationTime >= revealTime) {
+      // 経過時間そのものを巻き戻さず表示位相だけを循環し、長時間実行時の更新を単純に保つ。
       animationTime = std::fmod(animationTime, revealTime);
    }
 
@@ -106,6 +108,7 @@ void TypewriterComponent::Complete() {
 
 size_t TypewriterComponent::CountGlyphs() const {
    const auto* textComponent = GetOwner().GetComponent<UITextComponent>();
+   // UTF-8バイト数ではなく描画可能コードポイント数を使い、日本語も1文字として進める。
    return textComponent ? CountRenderableCodePoints(textComponent->GetText()) : 0;
 }
 

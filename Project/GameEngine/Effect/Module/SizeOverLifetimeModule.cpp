@@ -11,6 +11,7 @@ namespace GameEngine {
 	void SizeOverLifetimeModule::UpdateSize(Particle& particle) const {
 		if (!enabled_) return;
 		float t = particle.GetLifeProgress();
+		// ランダム倍率は生成時の値を再利用し、寿命中にサイズがちらつかないようにする。
 		const float multiplier = sizeMultiplier_.randomize ? particle.sizeOverLifetimeMultiplier : sizeMultiplier_.minValue;
 		Vector3 size = (startSize_ + (endSize_ - startSize_) * t) * multiplier;
 		particle.currentSize = size;
@@ -37,6 +38,7 @@ namespace GameEngine {
 				auto arr = j["startSize"];
 				startSize_ = Vector3{arr[0], arr[1], arr[2]};
 			} else {
+				// 旧形式の一様スカラーを三軸へ展開して互換性を維持する。
 				float value = j["startSize"];
 				startSize_ = Vector3(value, value, value);
 			}

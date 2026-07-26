@@ -21,9 +21,12 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <algorithm>
+#include <unordered_map>
+#include <unordered_set>
 
 #ifdef USE_IMGUI
 #include <imgui/imgui.h>
+#include "Utility/ImGuiHelper.h"
 #endif
 
 using json = nlohmann::json;
@@ -37,6 +40,39 @@ std::string WStringToString(const std::wstring& wstr) {
    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
    return strTo;
 }
+
+#ifdef USE_IMGUI
+const char* LocalizeEditorText(const char* japanese, const char* english) {
+   return GameEngine::ImGuiHelper::Localize({ japanese, english });
+}
+
+const char* LocalizeEffectName(const std::string& id, const std::string& fallback) {
+   static const std::unordered_map<std::string, GameEngine::ImGuiHelper::LocalizedText> names = {
+      { "radialBlur", { "放射ブラー", "Radial Blur" } },
+      { "grayscale", { "グレースケール", "Grayscale" } },
+      { "gaussFilter", { "ガウシアンフィルター", "Gauss Filter" } },
+      { "boxFilter", { "ボックスフィルター", "Box Filter" } },
+      { "chromaticAberration", { "色収差", "Chromatic Aberration" } },
+      { "vignette", { "ビネット", "Vignette" } },
+      { "shockWave", { "ショックウェーブ", "Shock Wave" } },
+      { "outline", { "アウトライン", "Outline" } },
+      { "pixelation", { "ピクセル化", "Pixelation" } },
+      { "speedLine", { "集中線", "Speed Line" } },
+      { "bloom", { "ブルーム", "Bloom" } },
+      { "whiteNoise", { "ホワイトノイズ", "White Noise" } },
+      { "dissolve", { "ディゾルブ", "Dissolve" } },
+      { "antiAliasing", { "アンチエイリアシング", "Anti Aliasing" } },
+      { "linearToSrgb", { "リニアからsRGB", "Linear to sRGB" } }
+   };
+
+   const auto it = names.find(id);
+   return it != names.end() ? GameEngine::ImGuiHelper::Localize(it->second) : fallback.c_str();
+}
+
+std::string StableEditorLabel(const char* japanese, const char* english, const char* id) {
+   return std::string(LocalizeEditorText(japanese, english)) + "###" + id;
+}
+#endif
 }
 
 namespace GameEngine {
@@ -92,6 +128,7 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 	  bool loadedAny = false;
 	  bool allSucceeded = true;
 	  size_t effectIndex = 0;
+	  std::unordered_set<std::string> loadedEffectIds;
 	  for (const auto& effectDef : effectsJson["postProcessEffects"]) {
 		 const std::string entryLabel = path + "#postProcessEffects[" + std::to_string(effectIndex) + "]";
 		 ++effectIndex;
@@ -105,14 +142,20 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 		 EffectDefinition definition;
 		 definition.name = effectDef.value("name", "");
 		 definition.className = effectDef.value("className", "");
+		 definition.id = effectDef.value("id", definition.className);
 		 definition.priority = effectDef.value("priority", 0);
 		 definition.enabled = effectDef.value("enabled", true);
 		 definition.pipelineName = effectDef.value("pipelineName", "");
 		 definition.rootSignatureName = effectDef.value("rootSignatureName", "");
 
 		 if (definition.name.empty() || definition.className.empty() ||
-			definition.pipelineName.empty() || definition.rootSignatureName.empty()) {
+			definition.id.empty() || definition.pipelineName.empty() || definition.rootSignatureName.empty()) {
 			Logger::Error("[PostProcessManager] Effect registry entry is missing required fields: " + entryLabel);
+			allSucceeded = false;
+			continue;
+		 }
+		 if (!loadedEffectIds.insert(definition.id).second) {
+			Logger::Error("[PostProcessManager] Duplicate post-process effect id: " + definition.id);
 			allSucceeded = false;
 			continue;
 		 }
@@ -133,7 +176,7 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 			continue;
 		 }
 
-		 RegisterEffect(std::move(effect), definition.name, definition.priority, definition.enabled, definition.pipelineName);
+		 RegisterEffect(std::move(effect), definition.name, definition.priority, definition.enabled, definition.pipelineName, definition.id);
 		 loadedAny = true;
 	  }
 
@@ -202,9 +245,13 @@ std::unique_ptr<PostProcess> PostProcessManager::CreateEffectByClassName(const s
    return effectFactoryRegistry_.Create(className);
 }
 
-void PostProcessManager::RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority, bool enabled, const std::string& pipelineName) {
-   effects_.emplace_back(std::move(effect), name, priority, pipelineName);
-   effects_.back().enabled = enabled;
+void PostProcessManager::RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority, bool enabled, const std::string& pipelineName, const std::string& id) {
+   effects_.emplace_back(std::move(effect), id.empty() ? name : id, name, priority, pipelineName);
+   EffectInfo& effectInfo = effects_.back();
+   effectInfo.enabled = enabled;
+   effectInfo.defaultEnabled = enabled;
+   effectInfo.defaultPriority = priority;
+   effectInfo.defaultSettings = effectInfo.effect ? effectInfo.effect->SerializeSettings() : nlohmann::json::object();
    SortEffectsByPriority();
 }
 
@@ -296,6 +343,101 @@ std::vector<const PostProcessManager::EffectInfo*> PostProcessManager::GetSorted
    return sortedEffects;
 }
 
+nlohmann::json PostProcessManager::SerializeSceneState() const {
+   nlohmann::json stack = nlohmann::json::array();
+   for (const auto& effectInfo : effects_) {
+      if (!effectInfo.effect) {
+         continue;
+      }
+      stack.push_back(nlohmann::json{
+         { "id", effectInfo.id },
+         { "enabled", effectInfo.enabled },
+         { "order", effectInfo.priority },
+         { "settings", effectInfo.effect->SerializeSettings() }
+      });
+   }
+   return nlohmann::json{ { "postProcessStack", std::move(stack) } };
+}
+
+bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
+   if (!state.is_object()) {
+      return false;
+   }
+   const auto stackIt = state.find("postProcessStack");
+   if (stackIt == state.end()) {
+      return true;
+   }
+   if (!stackIt->is_array()) {
+      return false;
+   }
+
+   std::unordered_map<std::string, const nlohmann::json*> entriesById;
+   for (const auto& entry : *stackIt) {
+      if (!entry.is_object()) {
+         return false;
+      }
+      const auto idIt = entry.find("id");
+      if (idIt == entry.end() || !idIt->is_string()) {
+         return false;
+      }
+      const std::string id = idIt->get<std::string>();
+      if (id.empty() || entriesById.contains(id)) {
+         return false;
+      }
+      if (const auto enabledIt = entry.find("enabled");
+         enabledIt != entry.end() && !enabledIt->is_boolean()) {
+         return false;
+      }
+      if (const auto orderIt = entry.find("order");
+         orderIt != entry.end() && !orderIt->is_number_integer()) {
+         return false;
+      }
+      if (const auto orderIt = entry.find("order"); orderIt != entry.end()) {
+         try {
+            (void)orderIt->get<int>();
+         } catch (const nlohmann::json::exception&) {
+            return false;
+         }
+      }
+      if (const auto settingsIt = entry.find("settings");
+         settingsIt != entry.end() && !settingsIt->is_object()) {
+         return false;
+      }
+      entriesById.emplace(id, &entry);
+   }
+
+   std::unordered_set<std::string> appliedIds;
+   for (auto& effectInfo : effects_) {
+      effectInfo.enabled = effectInfo.defaultEnabled;
+      effectInfo.priority = effectInfo.defaultPriority;
+      if (effectInfo.effect && !effectInfo.effect->DeserializeSettings(effectInfo.defaultSettings)) {
+         return false;
+      }
+
+      const auto entryIt = entriesById.find(effectInfo.id);
+      if (entryIt == entriesById.end()) {
+         continue;
+      }
+      const nlohmann::json& entry = *entryIt->second;
+      appliedIds.insert(effectInfo.id);
+      effectInfo.enabled = entry.value("enabled", effectInfo.defaultEnabled);
+      effectInfo.priority = entry.value("order", effectInfo.defaultPriority);
+      if (effectInfo.effect && entry.contains("settings") &&
+         !effectInfo.effect->DeserializeSettings(entry.at("settings"))) {
+         return false;
+      }
+   }
+
+   for (const auto& [id, entry] : entriesById) {
+      (void)entry;
+      if (!appliedIds.contains(id)) {
+         Logger::EngineWarning("[PostProcessManager] Scene references an unknown effect: " + id);
+      }
+   }
+   SortEffectsByPriority();
+   return true;
+}
+
 void PostProcessManager::RemoveEffect(const std::string& name) {
    auto it = FindEffect(name);
    if (it != effects_.end()) {
@@ -320,36 +462,42 @@ void PostProcessManager::DisableAllEffects() {
 }
 
 #ifdef USE_IMGUI
-void PostProcessManager::ShowImGuiControls() {
-   ImGui::Begin("Post Process Manager");
+bool PostProcessManager::ShowImGuiControls() {
+   const nlohmann::json stateBeforeEditing = SerializeSceneState();
+   const std::string windowLabel = StableEditorLabel(
+      "ポストプロセス", "Post Process Manager", "PostProcessManager");
+   ImGui::Begin(windowLabel.c_str());
 
-   ImGui::Text("Post Process Control Panel");
+   ImGui::Text("%s", LocalizeEditorText("ポストプロセス設定", "Post Process Control Panel"));
    ImGui::Separator();
 
    // 全体制御ボタン
-   if (ImGui::Button("Enable All")) {
+   if (ImGui::Button(LocalizeEditorText("すべて有効", "Enable All"))) {
 	  EnableAllEffects();
    }
    ImGui::SameLine();
-   if (ImGui::Button("Disable All")) {
+   if (ImGui::Button(LocalizeEditorText("すべて無効", "Disable All"))) {
 	  DisableAllEffects();
    }
 
    ImGui::Separator();
 
    // 各エフェクトの制御
+   bool shouldSortEffects = false;
    for (auto& effectInfo : effects_) {
 	  ImGui::PushID(effectInfo.effect.get());
 
-	  if (ImGui::TreeNode(effectInfo.name.c_str())) {
+      const std::string effectLabel = std::string(
+         LocalizeEffectName(effectInfo.id, effectInfo.name)) + "###Effect";
+	  if (ImGui::TreeNode(effectLabel.c_str())) {
 		 // 有効/無効チェックボックス
-		 ImGui::Checkbox("Enabled", &effectInfo.enabled);
+		 ImGui::Checkbox(LocalizeEditorText("有効", "Enabled"), &effectInfo.enabled);
 
 		 // 優先度設定
 		 int priority = effectInfo.priority;
-		 if (ImGui::SliderInt("Priority", &priority, 0, 100)) {
+		 if (ImGui::SliderInt(LocalizeEditorText("実行順", "Priority"), &priority, 0, 100)) {
 			effectInfo.priority = priority;
-			SortEffectsByPriority();
+			shouldSortEffects = true;
 		 }
 
 		 // エフェクト固有のパラメータ編集
@@ -363,7 +511,11 @@ void PostProcessManager::ShowImGuiControls() {
 	  ImGui::PopID();
    }
 
+   if (shouldSortEffects) {
+	  SortEffectsByPriority();
+   }
    ImGui::End();
+   return stateBeforeEditing != SerializeSceneState();
 }
 #endif
 

@@ -5,6 +5,7 @@
 #include "Graphics/OffscreenRenderTarget.h"
 #include "Graphics/PipelineState.h"
 #include "Graphics/RootSignature.h"
+#include <nlohmann/json_fwd.hpp>
 
 namespace GameEngine {
 /// @brief ポストプロセスクラス
@@ -37,16 +38,26 @@ public:
    void SetMaskTextureRootSlot(UINT maskTextureSlot);
 
 #ifdef USE_IMGUI
-   // ImGui編集用メソッド（派生クラスでオーバーライド可能）
+   /// @brief エフェクト固有のImGui編集項目を描画する
    virtual void ImGuiEdit() {}
 #endif
 
-   // エフェクトの有効/無効設定
+   /// @brief エフェクトの有効状態を設定する
    virtual void SetEnabled(bool enabled) { enabled_ = enabled; }
+   /// @brief エフェクトが有効か取得する
    virtual bool IsEnabled() const { return enabled_; }
 
-   // エフェクト名の取得（派生クラスでオーバーライド推奨）
+   /// @brief エディター表示と保存識別に使用するエフェクト名を取得する
    virtual const char* GetEffectName() const { return "Unknown"; }
+
+   /// @brief シーンへ保存するエフェクト固有設定を取得する
+   /// @return エフェクト固有設定を格納したJSONオブジェクト
+   virtual nlohmann::json SerializeSettings() const;
+
+   /// @brief シーンからエフェクト固有設定を復元する
+   /// @param settings エフェクト固有設定を格納したJSONオブジェクト
+   /// @return 設定を適用できた場合はtrue
+   virtual bool DeserializeSettings(const nlohmann::json& settings);
 
 protected:
    GraphicsDevice* device_ = nullptr;
@@ -71,6 +82,12 @@ protected:
 #ifdef USE_IMGUI
 		// 各エフェクトインスタンス用の固有IDを生成
    const void* GetImGuiID() const { return static_cast<const void*>(this); }
+
+   /// @brief エディタの現在言語に対応する表示文字列を取得する
+   /// @param japanese 日本語表示
+   /// @param english 英語表示
+   /// @return 現在のエディタ言語に対応する文字列
+   static const char* LocalizeEditorText(const char* japanese, const char* english);
 #endif
 };
 }

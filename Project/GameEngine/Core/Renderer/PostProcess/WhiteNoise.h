@@ -65,6 +65,12 @@ public:
    /// @return Effect name.
    const char* GetEffectName() const override { return "White Noise"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    /// @brief Sets all white noise parameters.
    /// @param params Parameters to apply.
    void SetParams(const WhiteNoiseParams& params);

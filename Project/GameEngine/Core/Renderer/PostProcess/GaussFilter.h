@@ -29,6 +29,11 @@ public:
 #endif
    const char* GetEffectName() const override { return "Gauss Filter"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    // パラメータ設定
    void SetBlurStrength(float strength) { intensity_ = strength; UpdateConstantBuffer(); }
    void SetKernelSize(int32_t size) { kernelSize_ = size; UpdateConstantBuffer(); }

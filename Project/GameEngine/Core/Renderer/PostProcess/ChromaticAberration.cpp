@@ -62,12 +62,13 @@ void ChromaticAberration::UpdateConstantBuffer() {
 void ChromaticAberration::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Chromatic Aberration Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("色収差のパラメータ", "Chromatic Aberration Parameters"))) {
 
 	  bool changed = false;
-	  changed |= ImGui::SliderFloat("Pixel Shift", &pixelShift_, 0.0f, 20.0f);
-	  changed |= ImGui::SliderFloat("Center X", &centerX_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Center Y", &centerY_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("ピクセルずれ", "Pixel Shift"), &pixelShift_, 0.0f, 20.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &centerX_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &centerY_, 0.0f, 1.0f);
 
 	  if (changed) {
 		 UpdateConstantBuffer();

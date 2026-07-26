@@ -10,8 +10,10 @@ public:
    void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) override;
 
 #ifdef USE_IMGUI
+   /// @copydoc PostProcess::ImGuiEdit
    void ImGuiEdit() override;
 #endif
+   /// @copydoc PostProcess::GetEffectName
    const char* GetEffectName() const override { return "Grayscale"; }
 };
 }

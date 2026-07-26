@@ -41,6 +41,7 @@ void UIFadeComponent::Update(float deltaTime) {
       return;
    }
    elapsed_ += std::max(deltaTime, 0.0f);
+   // 共通評価器を通し、TransformTweenと同じLoop/PingPongの時間規則を使う。
    const UIPlaybackSample sample = EvaluateUIPlayback(elapsed_, delay, duration, playbackMode);
    Apply(EvaluateUIEasing(sample.progress, easing));
    if (sample.finished) {

@@ -25,6 +25,7 @@ struct VectorComponent {
 };
 
 void DrawVisibleLabel(const std::string& label) {
+   // ImGuiの##以降はID専用なので、プロパティ名としては利用者に見せない。
    const size_t hiddenIdPos = label.find("##");
    const char* begin = label.c_str();
    const char* end = hiddenIdPos == std::string::npos ? nullptr : begin + hiddenIdPos;
@@ -34,6 +35,7 @@ void DrawVisibleLabel(const std::string& label) {
 }
 
 void BeginPropertyRow(const std::string& label, float columnWidth, bool pushItemWidth = true) {
+   // 同じ表示名を持つ別プロパティが衝突しないよう、行全体をラベルIDのスコープへ入れる。
    ImGui::PushID(label.c_str());
    ImGui::Columns(2, nullptr, false);
    ImGui::SetColumnWidth(0, columnWidth);
@@ -55,6 +57,7 @@ void EndPropertyRow(bool popItemWidth = true) {
 }
 
 std::vector<char> MakeTextBuffer(const std::string& text, size_t bufferSize) {
+   // 現在値が指定容量より長い場合も切り捨てず、終端文字を含む最小容量を確保する。
    const size_t safeSize = std::max<size_t>(bufferSize, text.size() + 1);
    std::vector<char> buffer(safeSize, '\0');
    const size_t copySize = std::min(text.size(), safeSize - 1);
@@ -92,6 +95,7 @@ bool DrawVectorControl(
    const float lineHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2;
    const ImVec2 buttonSize = { lineHeight, lineHeight };
    const float availableWidth = ImGui::CalcItemWidth();
+   // 各成分のリセットボタンを差し引いた残りを均等分配し、狭いパネルでも入力欄を保つ。
    const float widthEach = std::max(42.0f, (availableWidth - buttonSize.x * componentCount) / componentCount);
 
    for (int i = 0; i < componentCount; ++i) {
@@ -697,6 +701,7 @@ bool AcceptStringDragDrop(const char* payloadType, std::string& value) {
 
    bool accepted = false;
    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType)) {
+      // ペイロードは終端保証がないためDataSizeを上限にし、末尾のNULだけを除いてコピーする。
       const char* data = static_cast<const char*>(payload->Data);
       value.assign(data, data + payload->DataSize);
 

@@ -46,6 +46,7 @@ void ParticleMeshModule::FromJson(const nlohmann::json& j) {
    if (j.contains("boxSize") && j["boxSize"].is_array() && j["boxSize"].size() >= 3) {
 	  SetBoxSize(Vector3(j["boxSize"][0], j["boxSize"][1], j["boxSize"][2]));
    }
+   // 旧データの単一半径を先に適用し、新しい上下半径があれば個別値で上書きする。
    if (j.contains("cylinderRadius")) SetCylinderRadius(j["cylinderRadius"]);
    if (j.contains("cylinderTopRadius")) SetCylinderTopRadius(j["cylinderTopRadius"]);
    if (j.contains("cylinderBottomRadius")) SetCylinderBottomRadius(j["cylinderBottomRadius"]);

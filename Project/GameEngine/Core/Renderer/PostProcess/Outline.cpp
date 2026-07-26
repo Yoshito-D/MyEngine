@@ -85,6 +85,7 @@ void Outline::UpdateConstantBuffer() {
 
    const float width = static_cast<float>(renderTarget_->GetWidth());
    const float height = static_cast<float>(renderTarget_->GetHeight());
+   // ピクセル単位の近傍サンプルを解像度に依存させないため、UVの1テクセル幅を渡す。
    constantBufferData_->texelSize[0] = width > 0.0f ? 1.0f / width : 0.0f;
    constantBufferData_->texelSize[1] = height > 0.0f ? 1.0f / height : 0.0f;
    constantBufferData_->thickness = thickness_;
@@ -99,12 +100,13 @@ void Outline::UpdateConstantBuffer() {
 void Outline::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Outline Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("アウトラインのパラメータ", "Outline Parameters"))) {
 	  bool changed = false;
-	  changed |= ImGui::ColorEdit4("Outline Color", outlineColor_);
-	  changed |= ImGui::SliderFloat("Thickness", &thickness_, 0.5f, 5.0f);
-	  changed |= ImGui::SliderFloat("Depth Threshold", &depthThreshold_, 0.0001f, 1.0f, "%.4f");
-	  changed |= ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 1.0f);
+	  changed |= ImGui::ColorEdit4(LocalizeEditorText("アウトライン色", "Outline Color"), outlineColor_);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("太さ", "Thickness"), &thickness_, 0.5f, 5.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("深度しきい値", "Depth Threshold"), &depthThreshold_, 0.0001f, 1.0f, "%.4f");
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
 
 	  if (changed) {
 		 UpdateConstantBuffer();

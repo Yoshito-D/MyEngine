@@ -13,9 +13,12 @@ namespace GameEngine {
 /// @brief 仮想カメラの基底クラス
 class VirtualCamera {
 public:
+    /// @brief カメラコンポーネントを生成して所有権を登録するファクトリ
     using ComponentFactory = std::function<ICinemachineComponent*(VirtualCamera&)>;
 
+    /// @brief 空の仮想カメラを生成する
     VirtualCamera() = default;
+    /// @brief 所有するカメラコンポーネントとともに破棄する
     virtual ~VirtualCamera() = default;
 
     /// @brief 初期化
@@ -65,26 +68,33 @@ public:
         return nullptr;
     }
 
-    // 名前
+    /// @brief 仮想カメラ名を取得する
     const std::string& GetName() const { return name_; }
+    /// @brief 仮想カメラ名を設定する
     void SetName(const std::string& name) { name_ = name; }
 
-    // ターゲット設定
+    /// @brief 位置追従対象を設定する
     void SetFollowTarget(Transform* target) { followTarget_ = target; }
+    /// @brief 注視対象を設定する
     void SetLookAtTarget(Transform* target) { lookAtTarget_ = target; }
+    /// @brief 位置追従対象を取得する
     Transform* GetFollowTarget() const { return followTarget_; }
+    /// @brief 注視対象を取得する
     Transform* GetLookAtTarget() const { return lookAtTarget_; }
 
-    // 優先度
+    /// @brief ブレンド選択に使用する優先度を取得する
     int GetPriority() const { return priority_; }
+    /// @brief ブレンド選択に使用する優先度を設定する
     void SetPriority(int priority) { priority_ = priority; }
 
-    // 有効状態
+    /// @brief カメラがブレンド候補として有効かを取得する
     bool IsActive() const { return isActive_; }
+    /// @brief カメラをブレンド候補として有効または無効にする
     void SetActive(bool active) { isActive_ = active; }
 
-    // カメラ状態アクセス
+    /// @brief 最後に計算したカメラ状態を取得する
     const CameraState& GetState() const { return state_; }
+    /// @brief カメラ状態を外部から設定する
     void SetState(const CameraState& state) { state_ = state; }
 
     /// @brief コンポーネント一覧を取得（読み取り専用）

@@ -41,6 +41,11 @@ public:
 #endif
    const char* GetEffectName() const override { return "Dissolve"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    void SetParams(const DissolveParams& params);
    const DissolveParams& GetParams() const { return params_; }
 

@@ -7,7 +7,9 @@ namespace App {
 /// @brief 惑星表面周辺での追従距離と最小半径を保つレアッシュカメラ
 class PlanetLeashCamera : public GameEngine::ICinemachineComponent {
 public:
+   /// @brief レアッシュカメラを既定の追従設定で生成する
    PlanetLeashCamera()  = default;
+   /// @brief カメラコンポーネントを破棄する
    ~PlanetLeashCamera() override = default;
 
    /// @brief カメラ状態を更新する
@@ -37,7 +39,9 @@ public:
    /// @brief 直近計算のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const { return cachedRight_; }
 
+   /// @copydoc GameEngine::ICinemachineComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc GameEngine::ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

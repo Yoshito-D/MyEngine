@@ -33,7 +33,8 @@ void Grayscale::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 void Grayscale::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Grayscale Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("グレースケールのパラメータ", "Grayscale Parameters"))) {
 	  ImGui::TreePop();
    }
 

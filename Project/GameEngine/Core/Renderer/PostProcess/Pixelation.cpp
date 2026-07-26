@@ -65,14 +65,15 @@ void Pixelation::UpdateConstantBuffer() {
 void Pixelation::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Pixelation Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("ピクセル化のパラメータ", "Pixelation Parameters"))) {
 
 	  bool changed = false;
-	  changed |= ImGui::SliderFloat("Pixel Size", &pixelSize_, 1.0f, 32.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("ピクセルサイズ", "Pixel Size"), &pixelSize_, 1.0f, 32.0f);
 
-	  if (ImGui::CollapsingHeader("Screen Size (Auto)")) {
-		 ImGui::Text("Width: %.0f", screenSizeX_);
-		 ImGui::Text("Height: %.0f", screenSizeY_);
+	  if (ImGui::CollapsingHeader(LocalizeEditorText("画面サイズ (自動)", "Screen Size (Auto)"))) {
+		 ImGui::Text("%s: %.0f", LocalizeEditorText("幅", "Width"), screenSizeX_);
+		 ImGui::Text("%s: %.0f", LocalizeEditorText("高さ", "Height"), screenSizeY_);
 	  }
 
 	  if (changed) {

@@ -41,6 +41,7 @@ void UITransformTweenComponent::Update(float deltaTime) {
       return;
    }
    elapsed_ += std::max(deltaTime, 0.0f);
+   // Fadeなど他のUIアニメーションと同じ再生規則を使い、Loop/PingPongの位相を揃える。
    const UIPlaybackSample sample = EvaluateUIPlayback(elapsed_, delay, duration, playbackMode);
    Apply(EvaluateUIEasing(sample.progress, easing));
    if (sample.finished) {
@@ -126,6 +127,7 @@ void UITransformTweenComponent::Apply(float progress) {
       transform.scale.y = value.y;
    }
    if (animateRotation) {
+      // UI平面に使うZ回転だけを置き換え、既存のX/Y回転は保持する。
       Vector3 euler = transform.GetActiveEuler();
       euler.z = startRotation + (endRotation - startRotation) * progress;
       transform.SetRotationEuler(euler);

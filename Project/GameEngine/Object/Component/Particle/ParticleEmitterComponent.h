@@ -23,7 +23,7 @@ public:
    struct AttachmentConfig {
 	  bool followPosition = true;   ///< 位置を追従するか
 	  bool followRotation = true;   ///< 回転を追従するか
-	  bool followScale = true;  ///< スケールを追従するか（デフォルト off）
+	  bool followScale = true;  ///< スケールを追従するか（デフォルト on）
 
 	  Vector3 positionOffset = { 0.0f, 0.0f, 0.0f };  ///< 位置オフセット
 	  Vector3 rotationOffset = { 0.0f, 0.0f, 0.0f };  ///< 回転オフセット（ラジアン）
@@ -54,10 +54,15 @@ public:
    };
 
    // ── ライフサイクル ────────────────────────────────
+   /// @copydoc IObjectComponent::OnAttach
    void OnAttach() override;
+   /// @copydoc IObjectComponent::OnDetach
    void OnDetach() override;
+   /// @copydoc IObjectComponent::OnEnable
    void OnEnable() override;
+   /// @copydoc IObjectComponent::OnDisable
    void OnDisable() override;
+   /// @copydoc IObjectComponent::Update
    void Update(float) override;
 
    // ── スロット管理 ──────────────────────────────────
@@ -99,23 +104,41 @@ public:
    ParticleSystem* GetParticleSystem() const;
 
    // ── 一括再生制御（全スロット） ────────────────────
+   /// @brief 全スロットの再生を開始する
    void Play();
+   /// @brief 全スロットを停止し、再生位置を先頭へ戻す
    void Stop();
+   /// @brief 再生中の全スロットを一時停止する
    void Pause();
+   /// @brief 一時停止中の全スロットを再開する
    void Resume();
+   /// @brief 全スロットを先頭から再生し直す
    void Restart();
 
+   /// @brief いずれかのスロットが再生中かを判定する
+   /// @return 少なくとも1スロットが再生中の場合はtrue
    bool IsPlaying()  const;  ///< 少なくとも 1 スロットが再生中なら true
+   /// @brief 全スロットが再生を完了したかを判定する
+   /// @return 全スロットが完了している場合はtrue
    bool IsFinished() const;  ///< 全スロットが終了していれば true
 
    // ── 個別スロット再生制御 ──────────────────────────
+   /// @brief 指定スロットの再生を開始する
    void Play(int slotIndex);
+   /// @brief 指定スロットを停止し、再生位置を先頭へ戻す
    void Stop(int slotIndex);
+   /// @brief 指定スロットを一時停止する
    void Pause(int slotIndex);
+   /// @brief 指定スロットの一時停止を解除する
    void Resume(int slotIndex);
+   /// @brief 指定スロットを先頭から再生し直す
    void Restart(int slotIndex);
 
+   /// @brief 指定スロットが再生中かを判定する
+   /// @return スロットが存在し再生中の場合はtrue
    bool IsPlaying(int slotIndex) const;
+   /// @brief 指定スロットが再生を完了したかを判定する
+   /// @return スロットが存在し完了している場合はtrue
    bool IsFinished(int slotIndex) const;
 
    /// @brief スロットのエミッターを指定ワールド座標に固定する
@@ -137,13 +160,16 @@ public:
    float maxCullDistance = 0.0f;  ///< カリング距離（0 = 無効）
 
    // ── シリアライズ ──────────────────────────────────
+   /// @copydoc IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
    /// @brief 指定スロットの ParticleSystem を再生成する（loop / autoPlay 変更後に呼ぶ）
    bool LoadSlot(EmitterSlot& slot);
 
 #ifdef USE_IMGUI
+   /// @copydoc IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 

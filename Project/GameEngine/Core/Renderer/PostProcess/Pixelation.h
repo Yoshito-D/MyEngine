@@ -29,6 +29,11 @@ public:
 #endif
    const char* GetEffectName() const override { return "Pixelation"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    // パラメータ設定
    void SetPixelSize(float size) { pixelSize_ = size; UpdateConstantBuffer(); }
    void SetScreenSize(float width, float height) {

@@ -6,6 +6,7 @@
 namespace GameEngine {
 
 Object::Object() {
+   // 全Objectがシリアライズ可能な名前を持つよう、生成時に必須コンポーネントを付与する。
    AddComponent<ObjectNameComponent>();
 }
 
@@ -20,6 +21,7 @@ void Object::SetObjectName(const std::string& name) {
 std::string Object::GetObjectName() const {
    const auto* objectNameComponent = GetComponent<ObjectNameComponent>();
    if (!objectNameComponent || objectNameComponent->name.empty()) {
+	  // 旧データや削除済みコンポーネントでも、ヒエラルキーへ安定した表示名を返す。
 	  return "Object";
    }
    return objectNameComponent->name;

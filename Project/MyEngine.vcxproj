@@ -297,6 +297,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Pixelation.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcess.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcessManager.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcessSceneSerialization.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\RadialBlur.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\ShockWave.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Vignette.cpp" />

@@ -23,6 +23,7 @@ float SmoothTowards(float current, float target, float responseSpeed, float delt
 	  return target;
    }
 
+   // 指数応答にするとフレームレートが変わっても同じ時間感覚で目標値へ追従できる。
    const float alpha = 1.0f - std::exp(-responseSpeed * deltaTime);
    return Lerp(current, target, Saturate(alpha));
 }
@@ -61,6 +62,7 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
    const float targetAmount = CalculateEffectAmount(currentSpeed, minimumEffectSpeed, maximumEffectSpeed);
    effectAmount_ = SmoothTowards(effectAmount_, targetAmount, responseSpeed, deltaTime);
 
+   // 速度由来の同じ係数を共有し、スピードラインと放射ブラーの立ち上がりを同期させる。
    GameEngine::SpeedLineParams params{};
    params.center = { 0.5f, 0.5f };
    params.intensity = maxIntensity * effectAmount_;
@@ -143,6 +145,7 @@ nlohmann::json VehicleSpeedPostEffectController::Serialize() const {
 void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
    if (data.contains("minimumEffectSpeed")) { minimumEffectSpeed = data["minimumEffectSpeed"]; }
    if (data.contains("maximumEffectSpeed")) { maximumEffectSpeed = data["maximumEffectSpeed"]; }
+   // 旧シーンの相対指定を絶対速度へ移行し、保存済みデータとの互換性を維持する。
    if (!data.contains("minimumEffectSpeed") && data.contains("activationMargin")) {
 	  float baseSpeed = minimumEffectSpeed;
 	  if (HasOwner()) {
@@ -174,6 +177,7 @@ void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
 void VehicleSpeedPostEffectController::ApplyNeutralEffect() {
    effectAmount_ = 0.0f;
 
+   // コンポーネントの寿命よりエフェクトスタックの方が長いため、無効化時に共有状態を明示的に戻す。
    GameEngine::SpeedLineParams params{};
    params.center = { 0.5f, 0.5f };
    params.intensity = 0.0f;

@@ -59,14 +59,15 @@ void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 void WhiteNoise::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("White Noise Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("ホワイトノイズのパラメータ", "White Noise Parameters"))) {
 	  bool changed = false;
 	  WhiteNoiseParams params = params_;
-	  changed |= ImGui::DragFloat("Time", &params.time, 0.01f, 0.0f);
-	  changed |= ImGui::SliderFloat("Noise Density", &params.noiseDensity, 1.0f, 2048.0f);
-	  changed |= ImGui::SliderFloat("Seed Change Rate", &params.seedChangeRate, 0.0f, 120.0f);
-	  changed |= ImGui::SliderFloat("Noise Threshold", &params.noiseThreshold, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Noise Intensity", &params.noiseIntensity, 0.0f, 1.0f);
+	  changed |= ImGui::DragFloat(LocalizeEditorText("時間", "Time"), &params.time, 0.01f, 0.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("ノイズ密度", "Noise Density"), &params.noiseDensity, 1.0f, 2048.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("シード更新頻度", "Seed Change Rate"), &params.seedChangeRate, 0.0f, 120.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("ノイズしきい値", "Noise Threshold"), &params.noiseThreshold, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("ノイズ強度", "Noise Intensity"), &params.noiseIntensity, 0.0f, 1.0f);
 
 	  if (changed) {
 		 SetParams(params);

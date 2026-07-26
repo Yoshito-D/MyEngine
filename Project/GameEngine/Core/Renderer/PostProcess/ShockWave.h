@@ -35,6 +35,11 @@ public:
 #endif
    const char* GetEffectName() const override { return "Shock Wave"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    // パラメータ設定
    void SetCenter(float x, float y) { centerX_ = x; centerY_ = y; UpdateConstantBuffer(); }
    void SetStrength(float strength) { distortionStrength_ = strength; UpdateConstantBuffer(); }

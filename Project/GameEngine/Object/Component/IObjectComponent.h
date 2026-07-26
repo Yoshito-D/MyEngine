@@ -7,6 +7,7 @@ namespace GameEngine {
 class Object;
 class SceneWorld;
 
+/// @brief コンポーネント型のエディター表示名
 struct ComponentDisplayName {
    const char* japanese = "";
    const char* english = "";
@@ -18,8 +19,10 @@ std::string LocalizeObjectComponentTypeName(const char* typeName);
 std::string MakeObjectComponentHeaderLabel(const char* typeName);
 #endif
 
+/// @brief Objectへアタッチできるコンポーネントの共通インターフェース
 class IObjectComponent {
 public:
+   /// @brief 派生コンポーネントを基底ポインター経由で安全に破棄する
    virtual ~IObjectComponent() = default;
 
    /// @brief コンポーネントの型名を取得する（純粋仮想）
@@ -37,16 +40,21 @@ public:
    /// @brief コンポーネントをオブジェクトからデタッチする
    void Detach();
 
+   /// @brief コンポーネントが更新対象として有効か取得する
    bool IsEnabled() const {
       return isEnabled_;
    }
 
+   /// @brief 有効状態を変更し、必要なライフサイクル通知を行う
    void SetEnabled(bool enabled);
 
-   /// @brief ライフサイクルコールバック
+   /// @brief オブジェクトへアタッチされた直後に呼ばれる
    virtual void OnAttach() {}
+   /// @brief オブジェクトからデタッチされる直前に呼ばれる
    virtual void OnDetach() {}
+   /// @brief コンポーネントが有効化された直後に呼ばれる
    virtual void OnEnable() {}
+   /// @brief コンポーネントが無効化された直後に呼ばれる
    virtual void OnDisable() {}
 
    /// @brief シーン内の全オブジェクト生成後に参照を解決する
@@ -56,8 +64,10 @@ public:
    /// @brief 更新処理（オーナーはGetOwner()で取得）
    virtual void Update([[maybe_unused]]float deltaTime) {};
 
+   /// @brief コンポーネント設定をJSONへ変換する
    virtual nlohmann::json Serialize() const = 0;
 
+   /// @brief JSONからコンポーネント設定を復元する
    virtual void Deserialize(const nlohmann::json& data) = 0;
 
 #ifdef USE_IMGUI

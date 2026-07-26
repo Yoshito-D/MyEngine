@@ -17,7 +17,9 @@ class GraphicsDevice;
 /// @brief スカイボックスクラス
 class Skybox : public Object {
 public:
+   /// @brief 空のスカイボックスを生成して描画レジストリへ登録する
    Skybox();
+   /// @brief 描画レジストリから解除してGPUリソースを破棄する
    ~Skybox() override;
 
    /// @brief スカイボックスのオブジェクト種別を取得する
@@ -27,6 +29,7 @@ public:
    /// @brief 登録済みスカイボックスの一覧を取得する
    static const std::vector<Skybox*>& GetRegisteredSkyboxes();
 
+   /// @brief シーン終了時に描画レジストリを空にする
    static void ClearRegisteredSkyboxes() { sRegisteredSkyboxes_.clear(); }
 
    /// @brief スカイボックスを作成する

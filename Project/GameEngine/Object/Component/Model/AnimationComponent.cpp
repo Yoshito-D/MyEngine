@@ -111,6 +111,7 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
    }
 
    if (cachedAnimationName_ != animationName) {
+	  // アセット名変更時は旧クリップへの生ポインターも同時に破棄し、解放後参照を防ぐ。
 	  cachedAnimationAsset_.reset();
 	  cachedAnimationName_ = animationName;
 	  animator_.SetClip(nullptr);
@@ -128,6 +129,7 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
    if (!clipName.empty()) {
 	  selectedClip = cachedAnimationAsset_->GetClip(clipName);
    }
+   // クリップ名が空または旧データの名前と不一致でも、アセット既定のモーションを再生する。
    if (!selectedClip) {
 	  selectedClip = cachedAnimationAsset_->GetDefaultClip();
    }
@@ -171,6 +173,7 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 		 const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
 		 SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
 		 if (bindSkeleton && skinCluster && !bindSkeleton->joints.empty() && !skinCluster->mappedPalette.empty()) {
+			// 毎フレームBind Poseから評価し直し、前フレームの姿勢へ差分を重ねてドリフトさせない。
 			Skeleton skeletonPose = *bindSkeleton;
 			ApplyAnimation(skeletonPose, selectedClip, currentTime);
 			skeletonPose.Update();
@@ -181,9 +184,11 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 			   skinCluster->mappedPalette.size()
 			   });
 
+			// CPU側配列とGPUパレットの最小範囲だけを書き、壊れたアセットでも範囲外参照を避ける。
 			for (size_t jointIndex = 0; jointIndex < jointCount; ++jointIndex) {
 			   const Matrix4x4 skinMatrix = skinCluster->inverseBindPoseMatrices[jointIndex] * skeletonPose.joints[jointIndex].skeletonSpaceMatrix;
 			   skinCluster->mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
+			   // 非一様スケール後も法線を正しく変換するため逆転置行列を別に保持する。
 			   skinCluster->mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
 			}
 		 }

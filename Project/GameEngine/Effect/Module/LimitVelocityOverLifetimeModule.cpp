@@ -19,6 +19,7 @@ namespace GameEngine {
 		float speedLimit = speedLimit_.randomize ? particle.limitVelocitySpeedLimit : speedLimit_.minValue;
 		float dampen = dampen_.randomize ? particle.limitVelocityDampen : dampen_.minValue;
 		if (speed > speedLimit) {
+			// 超過分の割合だけ速度ベクトルを縮め、方向を変えずに上限へ滑らかに近づける。
 			float excess = speed - speedLimit;
 			particle.velocity = particle.velocity * (1.0f - dampen * excess / speed);
 		}

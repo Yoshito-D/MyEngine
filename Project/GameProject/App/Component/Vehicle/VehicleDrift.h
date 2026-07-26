@@ -39,6 +39,7 @@ public:
 
    static constexpr const char* kTypeName = "VehicleDrift";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両ドリフト", "Vehicle Drift" };
+   /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief ドリフト入力・継続判定・速度横滑りを一括処理する
@@ -62,10 +63,13 @@ public:
    }
 
 #ifdef USE_IMGUI
+   /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
+   /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 public:

@@ -16,6 +16,7 @@ class VehicleGroundMover final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleGroundMover";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両地上移動", "Vehicle Ground Mover" };
+   /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 接地中の移動・姿勢を適用する
@@ -43,10 +44,13 @@ public:
    GameEngine::Vector3 GetFlatForward() const { return flatForward_; }
 
 #ifdef USE_IMGUI
+   /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
+   /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+   /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 public:
@@ -59,7 +63,7 @@ public:
    /// @brief スピード回復速度（per sec）
    float speedRecovery = 1.0f;
 
-   float maxSpeed = 40.0f;
+   float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限
 private:
    /// @brief 速度を autoSpeed へ向けて回復させる
    void UpdateSpeed(float deltaTime);

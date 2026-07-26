@@ -20,6 +20,7 @@ namespace App {
 void CameraModeSwitcher::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    cameras_.clear();
    cameras_.reserve(cameraIds_.size());
+   // ID順を保持することで、シリアライズされた初期インデックスと入力による巡回順を一致させる。
    for (const auto& cameraId : cameraIds_) {
       cameras_.push_back(sceneWorld.FindVirtualCamera(cameraId));
    }
@@ -77,6 +78,7 @@ void CameraModeSwitcher::Deserialize(const nlohmann::json& data) {
 }
 
 void CameraModeSwitcher::ApplyMode() {
+   // Brainは優先度最大のカメラを選ぶため、選択対象だけを基準値へ上げる。
    for (size_t index = 0; index < cameras_.size(); ++index) {
       if (cameras_[index]) {
          cameras_[index]->SetPriority(index == currentIndex_ ? 0 : -1);
@@ -91,6 +93,7 @@ void CameraModeSwitcher::ApplyMode() {
    auto* rearFollow = selectedCamera ? selectedCamera->GetComponent<PlayerRearFollowCamera>() : nullptr;
    auto* planetLeash = selectedCamera ? selectedCamera->GetComponent<PlanetLeashCamera>() : nullptr;
 
+   // 重力方向や車両姿勢を補正する側にも、Brainと同じアクティブカメラの部品を渡す。
    if (auto* bridge = GetOwner().GetComponent<CameraGravityBridge>()) {
       bridge->SetGravityFollowCamera(gravityFollow);
       bridge->SetPlayerRearFollowCamera(rearFollow);

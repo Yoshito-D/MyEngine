@@ -7,57 +7,60 @@ namespace GameEngine {
 
 class SceneManager;
 
+/// @brief エディターの実行状態
 enum class PlayMode {
    Edit,
    Playing,
    Paused,
 };
 
+/// @brief プレイモードを表示用文字列へ変換する
 const char* ToString(PlayMode mode);
 
+/// @brief 編集・再生・一時停止の遷移とゲーム時間を管理する
 class PlayModeController {
 public:
-   // @brief PlayModeController のコンストラクタ
+   /// @brief 再生開始を次回更新へ予約する
    void RequestPlay();
 
-   // @brief PlayModeController の停止要求
+   /// @brief 再生停止を次回更新へ予約する
    void RequestStop();
 
-   // @brief PlayModeController の一時停止要求
+   /// @brief 一時停止を次回更新へ予約する
    void RequestPause();
 
-   // @brief PlayModeController の再開要求
+   /// @brief 再開を次回更新へ予約する
    void RequestResume();
 
-   // @brief PlayModeController のステップ要求
+   /// @brief 一時停止中の1フレーム実行を予約する
    void RequestStep();
 
-   // @brief PlayModeController の更新処理
-   // @param sceneManager シーンマネージャー
+   /// @brief 予約された状態遷移を処理してゲーム時間を更新する
+   /// @param sceneManager シーンの保存と復元に使用するマネージャー
    void ProcessRequests(SceneManager& sceneManager);
 
-   // @brief プレイモードの状態を取得
+   /// @brief 現在のプレイモードを取得する
    PlayMode GetMode() const { return mode_; }
 
-   // @brief プレイモードが再生中かどうかを取得
+   /// @brief プレイモードが再生中かを取得する
    bool IsPlaying() const { return mode_ == PlayMode::Playing; }
 
-   // @brief プレイモードが一時停止中かどうかを取得
+   /// @brief プレイモードが一時停止中かを取得する
    bool IsPaused() const { return mode_ == PlayMode::Paused; }
 
-   // @brief プレイモードが編集モードかどうかを取得
+   /// @brief 編集モード以外かを取得する
    bool IsInPlayMode() const { return mode_ != PlayMode::Edit; }
 
-   // @brief ランタイム更新を実行すべきかどうかを取得
+   /// @brief 現在のフレームでランタイム更新を実行すべきか取得する
    bool ShouldRunRuntimeUpdate() const { return shouldRunRuntimeUpdate_; }
 
-   // @brief ゲーム用デルタタイムを取得
+   /// @brief タイムスケールとプレイ状態を反映したデルタタイムを取得する
    float GetGameDeltaTime() const { return gameDeltaTime_; }
 
-   // @brief タイムスケールを取得
+   /// @brief ゲーム時間へ適用する倍率を取得する
    float GetTimeScale() const { return timeScale_; }
 
-   // @brief タイムスケールを設定
+   /// @brief ゲーム時間へ適用する倍率を設定する
    void SetTimeScale(float timeScale);
 
    /// @brief 新しいシーンを初期化する前にプレイモードを停止する
@@ -65,18 +68,18 @@ public:
    void StopForSceneInitialization();
 
 private:
-   // @brief プレイモードの開始処理
-   // @param sceneManager シーンマネージャー
+   /// @brief プレイモードの開始処理
+   /// @param sceneManager シーンマネージャー
    void StartPlaying(SceneManager& sceneManager);
 
-   // @brief プレイモードの停止処理
-   // @param sceneManager シーンマネージャー
+   /// @brief プレイモードの停止処理
+   /// @param sceneManager シーンマネージャー
    void StopPlaying(SceneManager& sceneManager);
 
-   // @brief プレイモードの一時停止処理
+   /// @brief 未処理の状態遷移要求を破棄する
    void ClearTransitionRequests();
 
-   // @brief 再生開始時に保存したシーン情報を破棄する
+   /// @brief 再生開始時に保存したシーン情報を破棄する
    void ClearPlaySessionState();
 
    PlayMode mode_ = PlayMode::Edit;

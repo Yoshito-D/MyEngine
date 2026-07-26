@@ -31,6 +31,7 @@ void RaceCountdownTextComponent::Update(float deltaTime) {
    }
 
    if (raceManager_->GetState() == RaceManagerComponent::State::Countdown) {
+      // 切り上げにより残り時間が正の間は0を表示せず、GO表示との境界を明確にする。
       const int count = std::max(1, static_cast<int>(std::ceil(raceManager_->GetCountdownRemaining())));
       text->SetText(std::to_string(count));
    } else if (raceManager_->IsStartBannerVisible()) {

@@ -24,6 +24,11 @@ public:
 #endif
    const char* GetEffectName() const override { return "Outline"; }
 
+   /// @copydoc PostProcess::SerializeSettings
+   nlohmann::json SerializeSettings() const override;
+   /// @copydoc PostProcess::DeserializeSettings
+   bool DeserializeSettings(const nlohmann::json& settings) override;
+
    void SetOutlineColor(float r, float g, float b, float a = 1.0f);
    void SetThickness(float thickness);
    void SetDepthThreshold(float threshold);

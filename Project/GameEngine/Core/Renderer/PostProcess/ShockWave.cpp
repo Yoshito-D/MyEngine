@@ -66,16 +66,17 @@ void ShockWave::UpdateConstantBuffer() {
 void ShockWave::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Shock Wave Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("ショックウェーブのパラメータ", "Shock Wave Parameters"))) {
 
 	  bool changed = false;
-	  changed |= ImGui::SliderFloat("Center X", &centerX_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Center Y", &centerY_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Wave Radius", &waveRadius_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Wave Thickness", &waveThickness_, 0.01f, 0.5f);
-	  changed |= ImGui::SliderFloat("Distortion Strength", &distortionStrength_, 0.0f, 0.5f);
-	  changed |= ImGui::SliderFloat("Fade Out Radius", &fadeOutRadius_, 0.5f, 2.0f);
-	  changed |= ImGui::SliderFloat("Highlight Intensity", &highlightIntensity_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &centerX_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &centerY_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("波紋半径", "Wave Radius"), &waveRadius_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("波紋幅", "Wave Thickness"), &waveThickness_, 0.01f, 0.5f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("歪み強度", "Distortion Strength"), &distortionStrength_, 0.0f, 0.5f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("フェード範囲", "Fade Out Radius"), &fadeOutRadius_, 0.5f, 2.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("ハイライト強度", "Highlight Intensity"), &highlightIntensity_, 0.0f, 1.0f);
 
 	  if (changed) {
 		 UpdateConstantBuffer();

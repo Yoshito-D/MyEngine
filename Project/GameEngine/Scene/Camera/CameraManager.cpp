@@ -15,6 +15,7 @@ CameraUnit* CameraManager::CreateUnit() {
    units_.push_back(std::move(unit));
 
    if (!activeUnit_) {
+	  // 明示選択前でもカメラAPIが利用できるよう、最初のユニットを既定出力にする。
 	  activeUnit_ = ptr;
    }
    return ptr;

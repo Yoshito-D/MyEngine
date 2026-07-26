@@ -62,14 +62,15 @@ void Vignette::UpdateConstantBuffer() {
 void Vignette::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
-   if (ImGui::TreeNode("Vignette Parameters")) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+      LocalizeEditorText("ビネットのパラメータ", "Vignette Parameters"))) {
 
 	  bool changed = false;
 	  // ImGuiのColorPicker3はRGBの順番でカラーを扱うため、vignetteColorR_からvignetteColorB_までをまとめて渡す
-	  changed |= ImGui::ColorEdit3("Vignette Color", reinterpret_cast<float*>(&vignetteColorR_));
-	  changed |= ImGui::SliderFloat("Intensity", &intensity_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Softness", &softness_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat("Radius", &radius_, 0.0f, 2.0f);
+	  changed |= ImGui::ColorEdit3(LocalizeEditorText("ビネット色", "Vignette Color"), reinterpret_cast<float*>(&vignetteColorR_));
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("柔らかさ", "Softness"), &softness_, 0.0f, 1.0f);
+	  changed |= ImGui::SliderFloat(LocalizeEditorText("半径", "Radius"), &radius_, 0.0f, 2.0f);
 
 	  if (changed) {
 		 UpdateConstantBuffer();
