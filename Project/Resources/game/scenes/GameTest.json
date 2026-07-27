@@ -172,12 +172,12 @@
                      "airbornePlanetDirectionBlend": 0.8999999761581421,
                      "airbornePlanetDirectionLerpSpeed": 2.0,
                      "distance": 14.699999809265137,
-                     "distanceBoostMax": 2.0,
+                     "distanceBoostMax": 4.0,
                      "enableAirborneGravityDirectionBoost": true,
                      "enableAirbornePlanetDirectionGuide": true,
-                     "fovBoostMax": 0.05000000074505806,
+                     "fovBoostMax": 0.07000000029802322,
                      "fovDefault": 0.4699999988079071,
-                     "fovLerpSpeed": 4.0,
+                     "fovLerpSpeed": 3.0,
                      "gravityUpLerpSpeed": 5.0,
                      "groundedTargetHeight": 3.0,
                      "height": 7.900000095367432,
@@ -4093,7 +4093,10 @@
                },
                {
                   "data": {
+                     "fadeDuration": 0.550000011920929,
+                     "fadeEndScale": 1.600000023841858,
                      "raceManagerId": "Object:RaceManager",
+                     "rotationDuration": 0.30000001192092896,
                      "startText": "START"
                   },
                   "enabled": true,

@@ -1,9 +1,11 @@
 #include "RaceCountdownTextComponent.h"
 
 #include "RaceManagerComponent.h"
+#include "Object/Component/TransformComponent.h"
 #include "Object/Component/UI/UITextComponent.h"
 #include "Object/Object.h"
 #include "Scene/SceneWorld.h"
+#include "Utility/MathUtils.h"
 #include <algorithm>
 #include <cmath>
 
@@ -18,33 +20,56 @@ void RaceCountdownTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorl
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
+   CaptureBaseVisualState();
+   displayedText_.clear();
+   animationElapsed_ = 0.0f;
 }
 
 void RaceCountdownTextComponent::Update(float deltaTime) {
-   (void)deltaTime;
    if (!raceManager_ || !HasOwner()) {
       return;
    }
    auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
-   if (!text) {
+   auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
+   if (!text || !transform) {
       return;
    }
 
+   std::string nextText;
    if (raceManager_->GetState() == RaceManagerComponent::State::Countdown) {
       // 切り上げにより残り時間が正の間は0を表示せず、GO表示との境界を明確にする。
       const int count = std::max(1, static_cast<int>(std::ceil(raceManager_->GetCountdownRemaining())));
-      text->SetText(std::to_string(count));
+      nextText = std::to_string(count);
    } else if (raceManager_->IsStartBannerVisible()) {
-      text->SetText(startText_);
-   } else {
-      text->SetText("");
+      nextText = startText_;
    }
+
+   text->SetText(nextText);
+   if (nextText.empty()) {
+      RestoreBaseVisualState(*text, *transform);
+      displayedText_.clear();
+      animationElapsed_ = 0.0f;
+      return;
+   }
+
+   if (nextText != displayedText_) {
+      // 秒境界で必ず初期姿勢へ戻し、フレーム落ちで前の数字のフェード状態を引き継がない。
+      RestoreBaseVisualState(*text, *transform);
+      displayedText_ = std::move(nextText);
+      animationElapsed_ = 0.0f;
+   } else {
+      animationElapsed_ += std::max(deltaTime, 0.0f);
+   }
+   ApplyAnimation(*text, *transform);
 }
 
 nlohmann::json RaceCountdownTextComponent::Serialize() const {
    return nlohmann::json{
       { "raceManagerId", raceManagerId_ },
-      { "startText", startText_ }
+      { "startText", startText_ },
+      { "rotationDuration", rotationDuration_ },
+      { "fadeDuration", fadeDuration_ },
+      { "fadeEndScale", fadeEndScale_ }
    };
 }
 
@@ -58,6 +83,80 @@ void RaceCountdownTextComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("startText") && data.at("startText").is_string()) {
       startText_ = data.at("startText").get<std::string>();
    }
+   if (data.contains("rotationDuration") && data.at("rotationDuration").is_number()) {
+      rotationDuration_ = std::max(data.at("rotationDuration").get<float>(), 0.0001f);
+   }
+   if (data.contains("fadeDuration") && data.at("fadeDuration").is_number()) {
+      fadeDuration_ = std::max(data.at("fadeDuration").get<float>(), 0.0001f);
+   }
+   if (data.contains("fadeEndScale") && data.at("fadeEndScale").is_number()) {
+      fadeEndScale_ = std::max(data.at("fadeEndScale").get<float>(), 1.0f);
+   }
+}
+
+void RaceCountdownTextComponent::CaptureBaseVisualState() {
+   hasBaseVisualState_ = false;
+   if (!HasOwner()) {
+      return;
+   }
+   const auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
+   const auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
+   if (!text || !transform) {
+      return;
+   }
+
+   baseOpacity_ = text->GetStyle().color.w;
+   baseScale_ = transform->transform.scale;
+   baseEuler_ = transform->transform.GetActiveEuler();
+   baseRotationQuaternion_ = transform->transform.GetActiveQuaternion();
+   baseUsesQuaternion_ = transform->transform.IsUsingQuaternion();
+   hasBaseVisualState_ = true;
+}
+
+void RaceCountdownTextComponent::RestoreBaseVisualState(
+   GameEngine::UITextComponent& text,
+   GameEngine::TransformComponent& transform) {
+   if (!hasBaseVisualState_) {
+      CaptureBaseVisualState();
+   }
+   if (!hasBaseVisualState_) {
+      return;
+   }
+
+   text.SetOpacity(baseOpacity_);
+   transform.transform.scale = baseScale_;
+   if (baseUsesQuaternion_) {
+      transform.transform.SetRotationQuaternion(baseRotationQuaternion_);
+   } else {
+      transform.transform.SetRotationEuler(baseEuler_);
+   }
+}
+
+void RaceCountdownTextComponent::ApplyAnimation(
+   GameEngine::UITextComponent& text,
+   GameEngine::TransformComponent& transform) {
+   if (!hasBaseVisualState_) {
+      return;
+   }
+
+   const float rotationProgress = std::clamp(animationElapsed_ / rotationDuration_, 0.0f, 1.0f);
+   const float easedRotation = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, rotationProgress);
+   GameEngine::Vector3 animatedEuler = baseEuler_;
+   animatedEuler.z += GameEngine::MathConstants::kTwoPi * easedRotation;
+   transform.transform.SetRotationEuler(animatedEuler);
+
+   // 一回転を終えてから拡大と透明化を始め、数字ごとの動きを明確に分離する。
+   const float fadeProgress = std::clamp(
+      (animationElapsed_ - rotationDuration_) / fadeDuration_,
+      0.0f,
+      1.0f);
+   const float scaleMultiplier = GameEngine::Easing::EaseOutCubic(1.0f, fadeEndScale_, fadeProgress);
+   transform.transform.scale = {
+      baseScale_.x * scaleMultiplier,
+      baseScale_.y * scaleMultiplier,
+      baseScale_.z
+   };
+   text.SetOpacity(GameEngine::Easing::EaseInQuad(baseOpacity_, 0.0f, fadeProgress));
 }
 
 #ifdef USE_IMGUI
@@ -68,6 +167,9 @@ void RaceCountdownTextComponent::DrawInspector() {
    }
    ImGui::Text("Race Manager ID: %s", raceManagerId_.c_str());
    ImGui::Text("Resolved: %s", raceManager_ ? "true" : "false");
+   ImGui::DragFloat("Rotation Duration", &rotationDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
+   ImGui::DragFloat("Fade Duration", &fadeDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
+   ImGui::DragFloat("Fade End Scale", &fadeEndScale_, 0.01f, 1.0f, 3.0f, "%.2f");
 }
 #endif
 

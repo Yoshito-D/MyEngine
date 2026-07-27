@@ -48,9 +48,25 @@ public:
    const std::string& GetCurrentSceneName() const { return currentSceneName_; }
 
 private:
+   enum class TransitionState {
+      Idle,
+      FadingOut,
+      FadingIn,
+   };
+
+   void UpdateTransition(float deltaTime);
+   void StartFadeOut(const std::string& nextSceneName);
+   void BeginFadeIn();
+
+   static constexpr float kTransitionDuration = 0.4f;
+
    std::unique_ptr<BaseScene> currentScene_;
    ISceneFactory* factory_ = nullptr;
    std::string currentSceneName_ = "";
+   std::string pendingSceneName_;
+   TransitionState transitionState_ = TransitionState::Idle;
+   float transitionElapsed_ = 0.0f;
+   float transitionOpacity_ = 0.0f;
    bool isChangingScene_ = false;
 };
 }

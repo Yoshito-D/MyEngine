@@ -267,6 +267,12 @@ void EngineContext::ChangeScene(const std::string& name) {
    BaseScene::SetNextSceneName(name);
 }
 
+void EngineContext::SetSceneTransitionOpacity(float opacity) {
+   if (sRenderer_) {
+      sRenderer_->SetSceneTransitionOpacity(opacity);
+   }
+}
+
 float EngineContext::GetDeltaTime() {
    if (sHasGameDeltaTimeOverride_) {
       return sGameDeltaTime_;

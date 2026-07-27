@@ -1,7 +1,13 @@
 #pragma once
 
 #include "Object/Component/IObjectComponent.h"
+#include "Utility/VectorMath.h"
 #include <string>
+
+namespace GameEngine {
+class TransformComponent;
+class UITextComponent;
+}
 
 namespace App {
 
@@ -39,9 +45,28 @@ public:
 #endif
 
 private:
+   void CaptureBaseVisualState();
+   void RestoreBaseVisualState(
+      GameEngine::UITextComponent& text,
+      GameEngine::TransformComponent& transform);
+   void ApplyAnimation(
+      GameEngine::UITextComponent& text,
+      GameEngine::TransformComponent& transform);
+
    std::string raceManagerId_;
    std::string startText_ = "START";
    RaceManagerComponent* raceManager_ = nullptr;
+   std::string displayedText_;
+   float animationElapsed_ = 0.0f;
+   float rotationDuration_ = 0.45f;
+   float fadeDuration_ = 0.45f;
+   float fadeEndScale_ = 1.6f;
+   GameEngine::Vector3 baseScale_ = { 1.0f, 1.0f, 1.0f };
+   GameEngine::Vector3 baseEuler_ = {};
+   GameEngine::Quaternion baseRotationQuaternion_ = GameEngine::Quaternion::Identity();
+   float baseOpacity_ = 1.0f;
+   bool baseUsesQuaternion_ = false;
+   bool hasBaseVisualState_ = false;
 };
 
 } // namespace App

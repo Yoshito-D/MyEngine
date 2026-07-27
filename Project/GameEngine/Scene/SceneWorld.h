@@ -32,8 +32,7 @@ public:
    void Clear();
 
    /// @brief Model等とは別に管理される汎用オブジェクトを更新する
-   /// @param deltaTime ゲーム用デルタタイム（秒）
-   void Update(float deltaTime);
+   void Update(float);
 
    /// @brief 安定IDからオブジェクトを検索する
    /// @param objectId JSONに保存されたオブジェクトID

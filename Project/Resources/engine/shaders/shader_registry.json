@@ -19,6 +19,7 @@
 
     { "name": "FullscreenTriangle", "type": "Vertex", "filePath": "Resources/engine/shaders/postprocess/FullscreenTriangle.VS.hlsl", "entryPoint": "main" },
     { "name": "FullscreenTriangle", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/FullscreenTriangle.PS.hlsl", "entryPoint": "main" },
+    { "name": "SceneTransition", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/SceneTransition.PS.hlsl", "entryPoint": "main" },
 
     { "name": "Grayscale", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/Grayscale.PS.hlsl", "entryPoint": "main" },
     { "name": "LinearToSRGB", "type": "Pixel", "filePath": "Resources/engine/shaders/postprocess/LinearToSRGB.PS.hlsl", "entryPoint": "main" },
