@@ -68,21 +68,20 @@ bool IsEditableSceneParticleSystem(const GameEngine::ParticleSystem* particleSys
 void UpdateEditorLightProxies(float deltaTime) {
    const auto registeredObjects = GameEngine::Object::GetRegisteredObjects();
    for (GameEngine::Object* object : registeredObjects) {
-      if (!object) {
-         continue;
-      }
-      if (auto* light = object->GetComponent<GameEngine::LightComponent>();
-         light && light->IsEnabled()) {
-         light->Update(deltaTime);
-      }
+	  if (!object) {
+		 continue;
+	  }
+	  if (auto* light = object->GetComponent<GameEngine::LightComponent>();
+		 light && light->IsEnabled()) {
+		 light->Update(deltaTime);
+	  }
    }
 }
 
 class RuntimeSceneApplier {
 public:
    explicit RuntimeSceneApplier(GameEngine::EditorObjectStore& objectStore)
-	  : objectStore_(objectStore) {
-   }
+	  : objectStore_(objectStore) {}
 
    bool Apply(const nlohmann::json& sceneData) {
 	  if (!sceneData.is_object()) {
@@ -148,7 +147,7 @@ private:
 			object->SetEntityId(key);
 		 }
 		 sceneObjectKeys_[object] = key;
-	  };
+		 };
 
 	  for (auto* object : GameEngine::Object::GetRegisteredObjects()) {
 		 registerObject(object);
@@ -195,7 +194,7 @@ private:
 	  auto isRegistered = [](const GameEngine::Object* object) {
 		 const auto& registeredObjects = GameEngine::Object::GetRegisteredObjects();
 		 return std::find(registeredObjects.begin(), registeredObjects.end(), object) != registeredObjects.end();
-	  };
+		 };
 
 	  for (const auto& [object, objectKey] : sceneObjectKeys_) {
 		 if (objectKey == key && object && !objectStore_.Contains(object) && isRegistered(object)) {
@@ -404,35 +403,35 @@ void BaseScene::Initialize() {
    sCurrentScene_ = this;
 
    auto createDefaultLight = [this](
-      const char* entityId,
-      LightComponent::Type type,
-      const Vector3& position,
-      const Vector3& direction,
-      float intensity) {
-      auto entity = std::make_unique<Object>();
-      entity->SetEntityId(entityId);
-      entity->SetObjectName(entityId);
-      auto* transform = entity->AddComponent<TransformComponent>();
-      transform->transform.translation = position;
-      if (type != LightComponent::Type::Point) {
-         transform->transform.SetRotationQuaternion(
-            LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
-      }
-      auto* light = entity->AddComponent<LightComponent>();
-      light->SetLightType(type);
-      light->intensity = intensity;
-      sceneEntities_.push_back(std::move(entity));
-   };
+	  const char* entityId,
+	  LightComponent::Type type,
+	  const Vector3& position,
+	  const Vector3& direction,
+	  float intensity) {
+		 auto entity = std::make_unique<Object>();
+		 entity->SetEntityId(entityId);
+		 entity->SetObjectName(entityId);
+		 auto* transform = entity->AddComponent<TransformComponent>();
+		 transform->transform.translation = position;
+		 if (type != LightComponent::Type::Point) {
+			transform->transform.SetRotationQuaternion(
+			   LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
+		 }
+		 auto* light = entity->AddComponent<LightComponent>();
+		 light->SetLightType(type);
+		 light->intensity = intensity;
+		 sceneEntities_.push_back(std::move(entity));
+	  };
 
    // デフォルトライトも通常Entityとして所有し、ヒエラルキー・保存・親子Transformを共通化する。
    createDefaultLight("MainDirectionalLight", LightComponent::Type::Directional,
-      Vector3(), Vector3(0.0f, -1.0f, 0.0f), 1.0f);
+	  Vector3(), Vector3(0.0f, -1.0f, 0.0f), 1.0f);
    createDefaultLight("MainPointLight", LightComponent::Type::Point,
-      Vector3(), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
+	  Vector3(), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
    createDefaultLight("MainSpotLight", LightComponent::Type::Spot,
-      Vector3(), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
+	  Vector3(), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
    createDefaultLight("MainAreaLight", LightComponent::Type::Area,
-      Vector3(0.0f, 10.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
+	  Vector3(0.0f, 10.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
 
    // CameraUnitを生成（Brain+Cameraのペア）
    CameraUnit* unit = EngineContext::CreateCameraUnit();
@@ -469,8 +468,8 @@ void BaseScene::Update() {
 void BaseScene::EditorUpdate() {
 #ifdef USE_IMGUI
    if (!EngineContext::ShouldRunRuntimeUpdate()) {
-      // 編集停止中は描画プロキシだけを同期し、ゲームプレイ用Componentを誤って進めない。
-      UpdateEditorLightProxies(EngineContext::GetUnscaledDeltaTime());
+	  // 編集停止中は描画プロキシだけを同期し、ゲームプレイ用Componentを誤って進めない。
+	  UpdateEditorLightProxies(EngineContext::GetUnscaledDeltaTime());
    }
 
    if (EngineContext::IsKeyTriggered(KeyCode::F1)) {
@@ -502,7 +501,7 @@ void BaseScene::RuntimeUpdate() {
 
    // ターゲットやゲーム状態の更新後にカメラを評価するLate Update相当のフェーズ。
    if (CinemachineBrain* brain = EngineContext::GetActiveBrain()) {
-      brain->Update(deltaTime);
+	  brain->Update(deltaTime);
    }
 }
 

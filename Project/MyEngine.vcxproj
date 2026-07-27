@@ -481,6 +481,7 @@
     <ClCompile Include="GameProject\App\Component\Race\RaceResultUIComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeFormatting.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
@@ -739,6 +740,7 @@
     <ClInclude Include="GameProject\App\Component\Race\RaceResultUIComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeFormatting.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
@@ -769,6 +771,7 @@
     </None>
     <None Include="Resources\game\config\input_actions.json" />
     <None Include="Resources\engine\pipelines\pso\postprocess\fullscreen_triangle_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\scene_transition_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\line3d_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\object3d_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json" />
@@ -803,10 +806,7 @@
     <None Include="Resources\engine\pipelines\root_signatures\graphics\skybox_rootsig.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
-    <None Include="Resources\engine\postprocess\postprocess_registry.json" />
     <None Include="Resources\engine\shaders\shader_registry.json" />
-    <None Include="Resources\engine\shaders\graphics\text\Text.PS.hlsl" />
-    <None Include="Resources\engine\shaders\graphics\text\Text.VS.hlsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

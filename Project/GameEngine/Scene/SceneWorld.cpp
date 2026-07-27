@@ -78,9 +78,8 @@ void SceneWorld::Clear() {
    }
 }
 
-void SceneWorld::Update(float deltaTime) {
+void SceneWorld::Update(float) {
    // ObjectコンポーネントはFrameworkの共通Entity更新経路で一度だけ更新する。
-   (void)deltaTime;
 }
 
 Object* SceneWorld::FindObjectById(const std::string& objectId) const {

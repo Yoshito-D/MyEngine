@@ -313,6 +313,7 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 Project/imgui.ini
+Project/Resources/game/editor/session_state.json
 
 # DirectXTex Compiled Shaders
 **/DirectXTex/Shaders/Compiled/

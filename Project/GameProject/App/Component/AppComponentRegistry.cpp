@@ -19,6 +19,7 @@
 #include "Race/RaceManagerComponent.h"
 #include "Race/RaceResultUIComponent.h"
 #include "Race/RaceTimeTextComponent.h"
+#include "Title/TitleStartComponent.h"
 #include "Vehicle/VehicleAirController.h"
 #include "Vehicle/VehicleController.h"
 #include "Vehicle/VehicleDrift.h"
@@ -64,6 +65,7 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::RaceGoalDistanceTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::RaceResultUIComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::RaceTimeTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
+   RegisterAppComponent<App::TitleStartComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleAirController>(),
    RegisterAppComponent<App::VehicleController>(),
    RegisterAppComponent<App::VehicleDrift>(),

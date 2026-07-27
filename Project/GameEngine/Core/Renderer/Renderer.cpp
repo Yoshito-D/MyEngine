@@ -6,6 +6,7 @@
 #include "Graphics/RootSignature.h"
 #include "Graphics/ShaderCompiler.h"
 #include "Graphics/Mesh.h"
+#include "Graphics/ResourceHelper.h"
 #include "Graphics/TransformationMatrix.h"
 #include "DirectionalLight.h"
 #include "PointLight.h"
@@ -140,6 +141,14 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
 	  Logger::Error("[Renderer] Render bootstrap failed. Rendering passes were not created.");
 	  return;
    }
+
+   sceneTransitionConstantBuffer_ =
+      ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(SceneTransitionConstants));
+   sceneTransitionConstantBuffer_->Map(
+      0,
+      nullptr,
+      reinterpret_cast<void**>(&sceneTransitionConstants_));
+   SetSceneTransitionOpacity(0.0f);
 
    BuildDefaultPasses();
 }
@@ -682,6 +691,9 @@ void Renderer::EndFrame() {
 	  }
    }
 
+   // UIまで合成した画像へ適用し、実行画面とエディタのシーンビューを同じ暗転結果にする。
+   ApplySceneTransitionOverlay();
+
    // オフスクリーンレンダーターゲットをバックバッファに描画
    device_->PreDraw();
 
@@ -926,6 +938,11 @@ void Renderer::DrawLineInternal(const LineDrawData& lineData) {
 }
 
 void Renderer::Finalize() {
+   if (sceneTransitionConstantBuffer_ && sceneTransitionConstants_) {
+      sceneTransitionConstantBuffer_->Unmap(0, nullptr);
+   }
+   sceneTransitionConstants_ = nullptr;
+   sceneTransitionConstantBuffer_.Reset();
    if (textRenderer_) {
       textRenderer_->Finalize();
    }
@@ -936,6 +953,13 @@ void Renderer::Finalize() {
 
 void Renderer::SetBlendMode(BlendMode blendMode) {
    currentBlendMode_ = blendMode;
+}
+
+void Renderer::SetSceneTransitionOpacity(float opacity) {
+   sceneTransitionOpacity_ = std::clamp(opacity, 0.0f, 1.0f);
+   if (sceneTransitionConstants_) {
+      sceneTransitionConstants_->opacity = sceneTransitionOpacity_;
+   }
 }
 
 void Renderer::InitializeUICamera() {
@@ -974,6 +998,41 @@ void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHand
    cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), textureSrvHandle);
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
+}
+
+void Renderer::ApplySceneTransitionOverlay() {
+   if (sceneTransitionOpacity_ <= 0.0f ||
+      !sceneTransitionConstantBuffer_ ||
+      !offscreenRenderTarget_) {
+      return;
+   }
+
+   auto* transitionPipeline = psoManager_->GetPipeline("SceneTransition");
+   const auto constantBufferSlot =
+      psoManager_->ResolvePipelineRootParameter("SceneTransition", "constantbuffer");
+   const auto inputTextureSlot =
+      psoManager_->ResolvePipelineRootParameter("SceneTransition", "inputtexture");
+   if (!transitionPipeline || !constantBufferSlot.has_value() || !inputTextureSlot.has_value()) {
+      Logger::Error("[Renderer] SceneTransition pipeline bindings could not be resolved.");
+      return;
+   }
+
+   const D3D12_GPU_DESCRIPTOR_HANDLE inputTexture = offscreenRenderTarget_->GetSRVHandleGPU();
+   offscreenRenderTarget_->SwapBuffers();
+   offscreenRenderTarget_->PreDraw(false);
+
+   auto* commandList = device_->GetCommandList();
+   commandList->SetGraphicsRootSignature(transitionPipeline->GetRootSignature());
+   commandList->SetPipelineState(transitionPipeline->GetPipelineState());
+   commandList->SetGraphicsRootConstantBufferView(
+      constantBufferSlot.value(),
+      sceneTransitionConstantBuffer_->GetGPUVirtualAddress());
+   commandList->SetGraphicsRootDescriptorTable(inputTextureSlot.value(), inputTexture);
+   commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+   commandList->DrawInstanced(3, 1, 0, 0);
+
+   offscreenRenderTarget_->PostDraw();
+   InvalidatePipelineBinding();
 }
 
 void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode) {

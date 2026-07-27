@@ -124,6 +124,10 @@ public:
    /// @return ピクセル単位の幅と高さ
    Vector2 MeasureText(std::string_view text, const TextStyle& style);
 
+   /// @brief シーン遷移用の全画面暗転率を設定する
+   /// @param opacity 0で通常表示、1で完全な黒
+   void SetSceneTransitionOpacity(float opacity);
+
 #ifdef USE_IMGUI
    bool GetIsSceneHovered() const { return isSceneHovered_; }
    bool GetIsDockSpaceVisible() const { return imGuiManager_->IsDockSpaceVisible(); }
@@ -296,6 +300,14 @@ private:
    BlendMode currentPipelineBlendMode_ = BlendMode::kBlendModeNormal;
    D3D12_GPU_DESCRIPTOR_HANDLE activeEnvironmentTextureSrvHandle_ = {};
 
+   struct SceneTransitionConstants {
+      float opacity = 0.0f;
+      float padding[3] = {};
+   };
+   Microsoft::WRL::ComPtr<ID3D12Resource> sceneTransitionConstantBuffer_;
+   SceneTransitionConstants* sceneTransitionConstants_ = nullptr;
+   float sceneTransitionOpacity_ = 0.0f;
+
    /// @brief パイプライン名+ブレンドモードをキーにした解決済みキャッシュ
    struct PipelineHandle {
       PipelineState* pso = nullptr;    ///< 起動時に解決済みのポインタ
@@ -345,6 +357,9 @@ private:
    /// @brief フルスクリーントライアングルでテクスチャを画面に描画
    /// @param textureSrvHandle 描画するテクスチャのSRVハンドル
    void DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle);
+
+   /// @brief UIを含む最終シーン画像へ遷移暗転を適用する
+   void ApplySceneTransitionOverlay();
 
    /// @brief UI描画専用カメラを初期化
    void InitializeUICamera();

@@ -29,6 +29,7 @@
     "resources/engine/pipelines/pso/graphics/line3d_pipeline.json",
     "resources/engine/pipelines/pso/graphics/particle_pipeline.json",
     "resources/engine/pipelines/pso/postprocess/fullscreen_triangle_pipeline.json",
+    "resources/engine/pipelines/pso/postprocess/scene_transition_pipeline.json",
     "resources/engine/pipelines/pso/graphics/skybox_pipeline.json",
     "resources/engine/pipelines/pso/postprocess/grayscale_pipeline.json",
     "resources/engine/pipelines/pso/postprocess/radialblur_pipeline.json",

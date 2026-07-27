@@ -1,6 +1,77 @@
 #include "Game.h"
 #include "Utility/Logger.h"
 
+#ifdef USE_IMGUI
+#include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+namespace {
+constexpr int kEditorSessionStateFormatVersion = 1;
+constexpr int kEditorSessionStateJsonIndentSize = 3;
+
+std::filesystem::path GetEditorSessionStateFilePath() {
+   return std::filesystem::path("resources") / "game" / "editor" / "session_state.json";
+}
+
+std::string LoadLastEditorSceneName(const SceneCatalog& sceneCatalog) {
+   const std::filesystem::path filePath = GetEditorSessionStateFilePath();
+   std::ifstream file(filePath);
+   if (!file.is_open()) {
+      return {};
+   }
+
+   nlohmann::json sessionState;
+   try {
+      file >> sessionState;
+   } catch (const nlohmann::json::exception& exception) {
+      Logger::Warning(
+         "Editor session state contains invalid JSON: " + std::string(exception.what()),
+         Logger::LogChannel::Editor);
+      return {};
+   }
+
+   if (!sessionState.is_object()) {
+      return {};
+   }
+
+   const std::string sceneName = sessionState.value("lastSceneName", "");
+   // 削除・改名済みのシーンで起動不能にならないよう、現在のカタログを正とする。
+   return sceneCatalog.Contains(sceneName) ? sceneName : std::string();
+}
+
+void SaveLastEditorSceneName(const std::string& sceneName) {
+   if (sceneName.empty()) {
+      return;
+   }
+
+   const std::filesystem::path filePath = GetEditorSessionStateFilePath();
+   std::error_code error;
+   std::filesystem::create_directories(filePath.parent_path(), error);
+   if (error) {
+      Logger::Warning(
+         "Editor session directory could not be created: " + error.message(),
+         Logger::LogChannel::Editor);
+      return;
+   }
+
+   std::ofstream file(filePath);
+   if (!file.is_open()) {
+      Logger::Warning(
+         "Editor session state could not be saved: " + filePath.generic_string(),
+         Logger::LogChannel::Editor);
+      return;
+   }
+
+   const nlohmann::json sessionState = {
+      { "version", kEditorSessionStateFormatVersion },
+      { "lastSceneName", sceneName },
+   };
+   file << sessionState.dump(kEditorSessionStateJsonIndentSize);
+}
+}
+#endif
+
 void Game::Initialize() {
    Framework::Initialize();
    Logger::GameInfo("Game initialized.");
@@ -19,7 +90,13 @@ void Game::Initialize() {
 #endif
 
    // 最初のシーンを設定
-   sceneManager_->ChangeScene(sceneCatalog_.GetInitialSceneName());
+   std::string initialSceneName = sceneCatalog_.GetInitialSceneName();
+#ifdef USE_IMGUI
+   if (const std::string lastSceneName = LoadLastEditorSceneName(sceneCatalog_); !lastSceneName.empty()) {
+      initialSceneName = lastSceneName;
+   }
+#endif
+   sceneManager_->ChangeScene(initialSceneName);
 
 }
 
@@ -50,6 +127,9 @@ void Game::Draw() {
 
 void Game::Finalize() {
    if (sceneManager_) {
+#ifdef USE_IMGUI
+      SaveLastEditorSceneName(sceneManager_->GetCurrentSceneName());
+#endif
       sceneManager_->Finalize();
    }
 #ifdef USE_IMGUI
