@@ -2,6 +2,12 @@
 #include "Scene/Camera/Core/ICinemachineComponent.h"
 #include "Scene/Camera/Core/CameraState.h"
 
+#ifdef USE_IMGUI
+#include <cstdint>
+#include <string>
+#include <vector>
+#endif
+
 namespace App {
 
 /// @brief プレイヤーを注視し、後方へ補間追従するカメラコンポーネント
@@ -299,6 +305,67 @@ private:
 	/// @brief 旧水平角補間方式の旋回符号（現在の SmoothEye では未使用）
 	float eyeOrbitTurnSign_ = 1.0f;
 
+#ifdef USE_IMGUI
+	/// @brief 1フレーム分のカメラ計測値
+	struct CameraMeasurementSample {
+		std::uint64_t frameIndex = 0;
+		double elapsedSeconds = 0.0;
+		float deltaTime = 0.0f;
+		bool isAirborne = false;
+		bool airborneChanged = false;
+		bool hasPreviousFrame = false;
+		GameEngine::Vector3 targetGravityUp{};
+		GameEngine::Vector3 smoothedGravityUp{};
+		GameEngine::Vector3 requestedUp{};
+		GameEngine::Vector3 right{};
+		GameEngine::Vector3 up{};
+		GameEngine::Vector3 forward{};
+		GameEngine::Vector3 backward{};
+		float rightLength = 0.0f;
+		float upLength = 0.0f;
+		float forwardLength = 0.0f;
+		float backwardLength = 0.0f;
+		float rightDot = 1.0f;
+		float upDot = 1.0f;
+		float forwardDot = 1.0f;
+		float backwardDot = 1.0f;
+		float rightAngleDegrees = 0.0f;
+		float upAngleDegrees = 0.0f;
+		float forwardAngleDegrees = 0.0f;
+		float backwardAngleDegrees = 0.0f;
+		float lookAtCrossLength = 0.0f;
+		float lookDirectionLength = 0.0f;
+		float gazeDot = 1.0f;
+		float framingBlend = 0.0f;
+		float framingTarget = 0.0f;
+		float framingElapsedSeconds = 0.0f;
+		float framingDurationSeconds = 0.0f;
+		bool isFinite = true;
+	};
+
+	bool isCameraMeasurementRecording_ = false;
+	std::uint64_t cameraMeasurementFrameIndex_ = 0;
+	double cameraMeasurementElapsedSeconds_ = 0.0;
+	bool hasPreviousMeasuredAxes_ = false;
+	GameEngine::Vector3 previousMeasuredRight_ = { 1.0f, 0.0f, 0.0f };
+	GameEngine::Vector3 previousMeasuredUp_ = { 0.0f, 1.0f, 0.0f };
+	GameEngine::Vector3 previousMeasuredForward_ = { 0.0f, 0.0f, 1.0f };
+	GameEngine::Vector3 previousMeasuredBackward_ = { 0.0f, 0.0f, -1.0f };
+	std::vector<CameraMeasurementSample> cameraMeasurementSamples_;
+	char cameraMeasurementScenarioInput_[64] = "planet_switch";
+	int cameraMeasurementTrialInput_ = 1;
+	std::string activeCameraMeasurementScenario_ = "measurement";
+	int activeCameraMeasurementTrial_ = 1;
+	std::string lastCameraMeasurementFilePath_;
+	std::string cameraMeasurementStatus_;
+	float measuredMaxRightAngleDegrees_ = 0.0f;
+	float measuredMaxUpAngleDegrees_ = 0.0f;
+	float measuredMinRightDot_ = 1.0f;
+	float measuredMinUpDot_ = 1.0f;
+	float measuredMinGazeDot_ = 1.0f;
+	std::size_t measuredNonFiniteFrameCount_ = 0;
+#endif
+
 	// -----------------------------------------------------------------------
 	// 処理を分担するプライベートメソッド群
 	// -----------------------------------------------------------------------
@@ -383,6 +450,31 @@ private:
 	static GameEngine::Vector3 ProjectOnPlaneNorm(const GameEngine::Vector3& v,
 												  const GameEngine::Vector3& up,
 												  const GameEngine::Vector3& fallback);
+
+#ifdef USE_IMGUI
+	/// @brief カメラ計測を新しい条件として開始する
+	void StartCameraMeasurement();
+
+	/// @brief カメラ計測を停止し、蓄積した値をCSVへ保存する
+	void StopCameraMeasurementAndSave();
+
+	/// @brief 保存前または保存後の計測値を破棄する
+	void DiscardCameraMeasurement();
+
+	/// @brief 最終的なカメラ軸と遷移状態を1フレーム分記録する
+	void RecordCameraMeasurementFrame(const GameEngine::Vector3& eye,
+									  const GameEngine::Vector3& lookTarget,
+									  const GameEngine::Vector3& requestedUp,
+									  const GameEngine::Vector3& right,
+									  const GameEngine::Vector3& up,
+									  const GameEngine::Vector3& forward,
+									  float lookAtCrossLength,
+									  float deltaTime);
+
+	/// @brief 蓄積済みのカメラ計測値をCSVへ一括保存する
+	/// @return 保存に成功した場合はtrue
+	bool SaveCameraMeasurementCsv();
+#endif
 
 	/// @brief 保存データから復元すべきでないランタイム補間状態を初期化する
 	void ResetRuntimeState();

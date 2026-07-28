@@ -9,6 +9,13 @@
 #ifdef USE_IMGUI
 #include "imgui.h"
 #include "Object/Component/IObjectComponent.h"
+#include <chrono>
+#include <ctime>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <limits>
+#include <sstream>
 #endif
 
 namespace App {
@@ -27,6 +34,55 @@ constexpr float kMaxSpringStep = 1.0f / 120.0f;
 constexpr float kSpeedDeltaForMaxKick = 5.0f;
 constexpr float kGroundDirectionProjectionBlendRange = 0.15f;
 constexpr float kLookAtDegenerateBlendRange = 0.15f;
+
+#ifdef USE_IMGUI
+constexpr float kRadiansToDegrees = 57.29577951308232f;
+
+static bool IsFiniteVector(const GameEngine::Vector3& value) {
+   return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
+}
+
+static float NormalizedDotOrNaN(const GameEngine::Vector3& from,
+   const GameEngine::Vector3& to) {
+   float fromLength = from.Length();
+   float toLength = to.Length();
+   if (!std::isfinite(fromLength) || !std::isfinite(toLength)
+      || fromLength <= 1e-6f || toLength <= 1e-6f) {
+	  return std::numeric_limits<float>::quiet_NaN();
+   }
+
+   float dot = from.Dot(to) / (fromLength * toLength);
+   return std::clamp(dot, -1.0f, 1.0f);
+}
+
+static float AngleDegreesFromDot(float dot) {
+   if (!std::isfinite(dot)) {
+	  return std::numeric_limits<float>::quiet_NaN();
+   }
+   return std::acos(std::clamp(dot, -1.0f, 1.0f)) * kRadiansToDegrees;
+}
+
+static std::string SanitizeMeasurementScenario(const char* scenario) {
+   std::string sanitized;
+   if (scenario) {
+	  for (const unsigned char character : std::string(scenario)) {
+		 if ((character >= 'a' && character <= 'z')
+			|| (character >= 'A' && character <= 'Z')
+			|| (character >= '0' && character <= '9')
+			|| character == '-' || character == '_') {
+			sanitized.push_back(static_cast<char>(character));
+		 } else if (!sanitized.empty() && sanitized.back() != '_') {
+			sanitized.push_back('_');
+		 }
+	  }
+   }
+
+   while (!sanitized.empty() && sanitized.back() == '_') {
+	  sanitized.pop_back();
+   }
+   return sanitized.empty() ? "measurement" : sanitized;
+}
+#endif
 
 static float ClampCameraFov(float fov) {
    if (!std::isfinite(fov)) {
@@ -742,6 +798,11 @@ void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    view.m[2][3] = 0.0f;
    view.m[3][3] = 1.0f;
    state.SetViewMatrix(view);
+
+#ifdef USE_IMGUI
+   RecordCameraMeasurementFrame(
+	  eye, lookTarget, requestedUp, xaxis, yaxis, zaxis, candidateRightLen, deltaTime);
+#endif
 }
 
 /// @brief プレイヤー速度に応じた FOV ブーストを補間し state.fov へ反映する
@@ -932,6 +993,10 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    cachedUp_ = { 0.0f, 1.0f, 0.0f };
    currentViewRotation_ = GameEngine::Quaternion::Identity();
    isViewRotationInitialized_ = false;
+#ifdef USE_IMGUI
+   // ランタイム状態の初期化を、隣接フレームの急変として誤計測しない。
+   hasPreviousMeasuredAxes_ = false;
+#endif
    lastEyePlanarDirection_ = { 0.0f, 0.0f, -1.0f };
    isEyePlanarDirectionInitialized_ = false;
    eyeOrbitTurnSign_ = 1.0f;
@@ -1111,6 +1176,312 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
 }
 
 #ifdef USE_IMGUI
+void PlayerRearFollowCamera::StartCameraMeasurement() {
+   activeCameraMeasurementScenario_ = SanitizeMeasurementScenario(cameraMeasurementScenarioInput_);
+   activeCameraMeasurementTrial_ = std::max(1, cameraMeasurementTrialInput_);
+   cameraMeasurementTrialInput_ = activeCameraMeasurementTrial_;
+
+   cameraMeasurementSamples_.clear();
+   if (cameraMeasurementSamples_.capacity() < 18000) {
+	  // 60 FPSで約5分間、計測中のファイルI/Oなしで保持できる初期容量。
+	  cameraMeasurementSamples_.reserve(18000);
+   }
+
+   cameraMeasurementFrameIndex_ = 0;
+   cameraMeasurementElapsedSeconds_ = 0.0;
+   hasPreviousMeasuredAxes_ = false;
+   measuredMaxRightAngleDegrees_ = 0.0f;
+   measuredMaxUpAngleDegrees_ = 0.0f;
+   measuredMinRightDot_ = 1.0f;
+   measuredMinUpDot_ = 1.0f;
+   measuredMinGazeDot_ = 1.0f;
+   measuredNonFiniteFrameCount_ = 0;
+   lastCameraMeasurementFilePath_.clear();
+   isCameraMeasurementRecording_ = true;
+   cameraMeasurementStatus_ = "Recording in memory...";
+}
+
+void PlayerRearFollowCamera::StopCameraMeasurementAndSave() {
+   if (!isCameraMeasurementRecording_) {
+	  return;
+   }
+
+   isCameraMeasurementRecording_ = false;
+   if (cameraMeasurementSamples_.empty()) {
+	  cameraMeasurementStatus_ = "No frames were recorded.";
+	  return;
+   }
+   SaveCameraMeasurementCsv();
+}
+
+void PlayerRearFollowCamera::DiscardCameraMeasurement() {
+   isCameraMeasurementRecording_ = false;
+   cameraMeasurementSamples_.clear();
+   cameraMeasurementFrameIndex_ = 0;
+   cameraMeasurementElapsedSeconds_ = 0.0;
+   hasPreviousMeasuredAxes_ = false;
+   measuredMaxRightAngleDegrees_ = 0.0f;
+   measuredMaxUpAngleDegrees_ = 0.0f;
+   measuredMinRightDot_ = 1.0f;
+   measuredMinUpDot_ = 1.0f;
+   measuredMinGazeDot_ = 1.0f;
+   measuredNonFiniteFrameCount_ = 0;
+   cameraMeasurementStatus_ = "Measurement discarded.";
+}
+
+void PlayerRearFollowCamera::RecordCameraMeasurementFrame(
+   const GameEngine::Vector3& eye,
+   const GameEngine::Vector3& lookTarget,
+   const GameEngine::Vector3& requestedUp,
+   const GameEngine::Vector3& right,
+   const GameEngine::Vector3& up,
+   const GameEngine::Vector3& forward,
+   float lookAtCrossLength,
+   float deltaTime) {
+   if (!isCameraMeasurementRecording_) {
+	  return;
+   }
+
+   CameraMeasurementSample sample{};
+   sample.frameIndex = cameraMeasurementFrameIndex_++;
+   sample.deltaTime = deltaTime;
+   cameraMeasurementElapsedSeconds_ += std::max(0.0f, deltaTime);
+   sample.elapsedSeconds = cameraMeasurementElapsedSeconds_;
+   sample.isAirborne = isAirborne_;
+   sample.airborneChanged = isAirborne_ != wasAirborneLastFrame_;
+   sample.hasPreviousFrame = hasPreviousMeasuredAxes_;
+   sample.targetGravityUp = gravityUp_;
+   sample.smoothedGravityUp = currentGravityUp_;
+   sample.requestedUp = requestedUp;
+   sample.right = right;
+   sample.up = up;
+   sample.forward = forward;
+   sample.backward = currentBackward_;
+   sample.rightLength = right.Length();
+   sample.upLength = up.Length();
+   sample.forwardLength = forward.Length();
+   sample.backwardLength = currentBackward_.Length();
+
+   if (hasPreviousMeasuredAxes_) {
+	  sample.rightDot = NormalizedDotOrNaN(previousMeasuredRight_, right);
+	  sample.upDot = NormalizedDotOrNaN(previousMeasuredUp_, up);
+	  sample.forwardDot = NormalizedDotOrNaN(previousMeasuredForward_, forward);
+	  sample.backwardDot = NormalizedDotOrNaN(previousMeasuredBackward_, currentBackward_);
+	  sample.rightAngleDegrees = AngleDegreesFromDot(sample.rightDot);
+	  sample.upAngleDegrees = AngleDegreesFromDot(sample.upDot);
+	  sample.forwardAngleDegrees = AngleDegreesFromDot(sample.forwardDot);
+	  sample.backwardAngleDegrees = AngleDegreesFromDot(sample.backwardDot);
+   }
+
+   sample.lookAtCrossLength = lookAtCrossLength;
+   GameEngine::Vector3 lookDirection = lookTarget - eye;
+   sample.lookDirectionLength = lookDirection.Length();
+   sample.gazeDot = NormalizedDotOrNaN(forward, lookDirection);
+   sample.framingBlend = currentPlayerFramingBlend_;
+   sample.framingTarget = playerFramingBlendTarget_;
+   sample.framingElapsedSeconds = playerFramingBlendElapsed_;
+   sample.framingDurationSeconds = playerFramingBlendDuration_;
+
+   sample.isFinite =
+	  std::isfinite(sample.elapsedSeconds)
+	  && std::isfinite(sample.deltaTime)
+	  && sample.deltaTime >= 0.0f
+	  && IsFiniteVector(sample.targetGravityUp)
+	  && IsFiniteVector(sample.smoothedGravityUp)
+	  && IsFiniteVector(sample.requestedUp)
+	  && IsFiniteVector(sample.right)
+	  && IsFiniteVector(sample.up)
+	  && IsFiniteVector(sample.forward)
+	  && IsFiniteVector(sample.backward)
+	  && std::isfinite(sample.rightLength)
+	  && std::isfinite(sample.upLength)
+	  && std::isfinite(sample.forwardLength)
+	  && std::isfinite(sample.backwardLength)
+	  && std::isfinite(sample.rightDot)
+	  && std::isfinite(sample.upDot)
+	  && std::isfinite(sample.forwardDot)
+	  && std::isfinite(sample.backwardDot)
+	  && std::isfinite(sample.rightAngleDegrees)
+	  && std::isfinite(sample.upAngleDegrees)
+	  && std::isfinite(sample.forwardAngleDegrees)
+	  && std::isfinite(sample.backwardAngleDegrees)
+	  && std::isfinite(sample.lookAtCrossLength)
+	  && std::isfinite(sample.lookDirectionLength)
+	  && std::isfinite(sample.gazeDot)
+	  && std::isfinite(sample.framingBlend)
+	  && std::isfinite(sample.framingTarget)
+	  && std::isfinite(sample.framingElapsedSeconds)
+	  && std::isfinite(sample.framingDurationSeconds);
+
+   if (sample.hasPreviousFrame) {
+	  if (std::isfinite(sample.rightAngleDegrees)) {
+		 measuredMaxRightAngleDegrees_ =
+			std::max(measuredMaxRightAngleDegrees_, sample.rightAngleDegrees);
+	  }
+	  if (std::isfinite(sample.upAngleDegrees)) {
+		 measuredMaxUpAngleDegrees_ =
+			std::max(measuredMaxUpAngleDegrees_, sample.upAngleDegrees);
+	  }
+	  if (std::isfinite(sample.rightDot)) {
+		 measuredMinRightDot_ = std::min(measuredMinRightDot_, sample.rightDot);
+	  }
+	  if (std::isfinite(sample.upDot)) {
+		 measuredMinUpDot_ = std::min(measuredMinUpDot_, sample.upDot);
+	  }
+   }
+   if (std::isfinite(sample.gazeDot)) {
+	  measuredMinGazeDot_ = std::min(measuredMinGazeDot_, sample.gazeDot);
+   }
+   if (!sample.isFinite) {
+	  ++measuredNonFiniteFrameCount_;
+   }
+
+   previousMeasuredRight_ = right;
+   previousMeasuredUp_ = up;
+   previousMeasuredForward_ = forward;
+   previousMeasuredBackward_ = currentBackward_;
+   hasPreviousMeasuredAxes_ = true;
+   cameraMeasurementSamples_.push_back(sample);
+}
+
+bool PlayerRearFollowCamera::SaveCameraMeasurementCsv() {
+   if (cameraMeasurementSamples_.empty()) {
+	  cameraMeasurementStatus_ = "No measurement data to save.";
+	  return false;
+   }
+
+   const auto now = std::chrono::system_clock::now();
+   const std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+   std::tm localTime{};
+   localtime_s(&localTime, &currentTime);
+   const auto milliseconds =
+	  std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() % 1000;
+
+   std::ostringstream dateStream;
+   dateStream << std::put_time(&localTime, "%Y%m%d");
+   std::ostringstream timeStream;
+   timeStream << std::put_time(&localTime, "%H%M%S")
+	  << '_' << std::setw(3) << std::setfill('0') << milliseconds;
+
+   const std::filesystem::path outputDirectory =
+	  std::filesystem::path("Evidence") / "PlayerRearFollowCamera" / dateStream.str();
+   std::error_code directoryError;
+   std::filesystem::create_directories(outputDirectory, directoryError);
+   if (directoryError) {
+	  cameraMeasurementStatus_ =
+		 "Failed to create output directory: " + directoryError.message();
+	  return false;
+   }
+
+   std::ostringstream fileName;
+   fileName << activeCameraMeasurementScenario_
+	  << "_trial" << activeCameraMeasurementTrial_
+	  << '_' << timeStream.str() << ".csv";
+   const std::filesystem::path outputPath = outputDirectory / fileName.str();
+   std::filesystem::path temporaryPath = outputPath;
+   temporaryPath += ".tmp";
+   std::ofstream output(temporaryPath, std::ios::out | std::ios::trunc);
+   if (!output.is_open()) {
+	  cameraMeasurementStatus_ = "Failed to open CSV file.";
+	  return false;
+   }
+
+   output
+	  << "scenario,trial,frameIndex,elapsedSeconds,deltaTime,isAirborne,airborneChanged,hasPreviousFrame,"
+	  << "targetGravityUpX,targetGravityUpY,targetGravityUpZ,"
+	  << "smoothedGravityUpX,smoothedGravityUpY,smoothedGravityUpZ,"
+	  << "requestedUpX,requestedUpY,requestedUpZ,"
+	  << "rightX,rightY,rightZ,upX,upY,upZ,forwardX,forwardY,forwardZ,"
+	  << "backwardX,backwardY,backwardZ,"
+	  << "rightLength,upLength,forwardLength,backwardLength,"
+	  << "rightDot,upDot,forwardDot,backwardDot,"
+	  << "rightAngleDegrees,upAngleDegrees,forwardAngleDegrees,backwardAngleDegrees,"
+	  << "lookAtCrossLength,lookDirectionLength,gazeDot,"
+	  << "framingBlend,framingTarget,framingElapsedSeconds,framingDurationSeconds,isFinite\n";
+
+   output << std::fixed << std::setprecision(9);
+   for (const CameraMeasurementSample& sample : cameraMeasurementSamples_) {
+	  output
+		 << activeCameraMeasurementScenario_ << ','
+		 << activeCameraMeasurementTrial_ << ','
+		 << sample.frameIndex << ','
+		 << sample.elapsedSeconds << ','
+		 << sample.deltaTime << ','
+		 << (sample.isAirborne ? 1 : 0) << ','
+		 << (sample.airborneChanged ? 1 : 0) << ','
+		 << (sample.hasPreviousFrame ? 1 : 0) << ','
+		 << sample.targetGravityUp.x << ','
+		 << sample.targetGravityUp.y << ','
+		 << sample.targetGravityUp.z << ','
+		 << sample.smoothedGravityUp.x << ','
+		 << sample.smoothedGravityUp.y << ','
+		 << sample.smoothedGravityUp.z << ','
+		 << sample.requestedUp.x << ','
+		 << sample.requestedUp.y << ','
+		 << sample.requestedUp.z << ','
+		 << sample.right.x << ','
+		 << sample.right.y << ','
+		 << sample.right.z << ','
+		 << sample.up.x << ','
+		 << sample.up.y << ','
+		 << sample.up.z << ','
+		 << sample.forward.x << ','
+		 << sample.forward.y << ','
+		 << sample.forward.z << ','
+		 << sample.backward.x << ','
+		 << sample.backward.y << ','
+		 << sample.backward.z << ','
+		 << sample.rightLength << ','
+		 << sample.upLength << ','
+		 << sample.forwardLength << ','
+		 << sample.backwardLength << ','
+		 << sample.rightDot << ','
+		 << sample.upDot << ','
+		 << sample.forwardDot << ','
+		 << sample.backwardDot << ','
+		 << sample.rightAngleDegrees << ','
+		 << sample.upAngleDegrees << ','
+		 << sample.forwardAngleDegrees << ','
+		 << sample.backwardAngleDegrees << ','
+		 << sample.lookAtCrossLength << ','
+		 << sample.lookDirectionLength << ','
+		 << sample.gazeDot << ','
+		 << sample.framingBlend << ','
+		 << sample.framingTarget << ','
+		 << sample.framingElapsedSeconds << ','
+		 << sample.framingDurationSeconds << ','
+		 << (sample.isFinite ? 1 : 0) << '\n';
+   }
+
+   output.flush();
+   const bool writeSucceeded = output.good();
+   output.close();
+   if (!writeSucceeded) {
+	  std::error_code cleanupError;
+	  std::filesystem::remove(temporaryPath, cleanupError);
+	  cameraMeasurementStatus_ = "Failed while writing CSV data.";
+	  return false;
+   }
+
+   std::error_code renameError;
+   std::filesystem::rename(temporaryPath, outputPath, renameError);
+   if (renameError) {
+	  std::error_code cleanupError;
+	  std::filesystem::remove(temporaryPath, cleanupError);
+	  cameraMeasurementStatus_ = "Failed to finalize CSV file: " + renameError.message();
+	  return false;
+   }
+
+   std::error_code absolutePathError;
+   const std::filesystem::path absoluteOutputPath =
+	  std::filesystem::absolute(outputPath, absolutePathError);
+   lastCameraMeasurementFilePath_ =
+	  (absolutePathError ? outputPath : absoluteOutputPath).generic_string();
+   cameraMeasurementStatus_ =
+	  "Saved " + std::to_string(cameraMeasurementSamples_.size()) + " frames.";
+   return true;
+}
+
 void PlayerRearFollowCamera::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    auto DrawHelp = [Tr](const char* japanese, const char* english) {
@@ -1241,6 +1612,65 @@ void PlayerRearFollowCamera::DrawInspector() {
       ImGui::DragFloat(Tr("最終ロールの追従速度", "Final Roll Follow"), &rotationLerpSpeed, 0.5f, 0.1f, 100.0f);
       DrawHelp("カメラの視線をプレイヤーへ固定したまま、最終的なRight/Up（ロール）だけを滑らかにします。重力Up補間とは処理段階が異なります。",
          "Smooths only final Right/Up roll while keeping the view aimed at the player; it is downstream from gravity-Up tracking.");
+   }
+
+   if (ImGui::CollapsingHeader(Tr("カメラ計測", "Camera Measurement"), ImGuiTreeNodeFlags_DefaultOpen)) {
+	  ImGui::TextDisabled("%s", Tr(
+		 "実行中はメモリへ記録し、停止時に Evidence/PlayerRearFollowCamera へCSVを保存します。",
+		 "Frames are buffered in memory and saved to Evidence/PlayerRearFollowCamera when stopped."));
+	  ImGui::TextDisabled("%s", Tr(
+		 "基準: Right/Up 10度/フレーム以下、注視Dot 0.999以上、非有限値0件。",
+		 "Targets: Right/Up <= 10 deg/frame, gaze dot >= 0.999, and zero non-finite frames."));
+
+	  ImGui::BeginDisabled(isCameraMeasurementRecording_);
+	  ImGui::InputText(Tr("計測条件名", "Measurement Scenario"),
+		 cameraMeasurementScenarioInput_, sizeof(cameraMeasurementScenarioInput_));
+	  ImGui::InputInt(Tr("試行番号", "Trial Number"), &cameraMeasurementTrialInput_);
+	  ImGui::EndDisabled();
+
+	  if (isCameraMeasurementRecording_) {
+		 if (ImGui::Button(Tr("計測停止・CSV保存", "Stop and Save CSV"))) {
+			StopCameraMeasurementAndSave();
+		 }
+	  } else {
+		 if (ImGui::Button(Tr("計測開始", "Start Measurement"))) {
+			StartCameraMeasurement();
+		 }
+		 if (!cameraMeasurementSamples_.empty()) {
+			ImGui::SameLine();
+			if (ImGui::Button(Tr("CSVを再保存", "Save CSV Again"))) {
+			   SaveCameraMeasurementCsv();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(Tr("計測値を破棄", "Discard Samples"))) {
+			   DiscardCameraMeasurement();
+			}
+		 }
+	  }
+
+	  ImGui::Text("%s: %s",
+		 Tr("計測中", "Recording"),
+		 isCameraMeasurementRecording_ ? Tr("はい", "true") : Tr("いいえ", "false"));
+	  ImGui::Text("%s: %zu  %s: %.3f",
+		 Tr("記録フレーム", "Recorded Frames"), cameraMeasurementSamples_.size(),
+		 Tr("経過秒", "Elapsed Seconds"), cameraMeasurementElapsedSeconds_);
+	  ImGui::Text("%s: %.3f  %s: %.3f",
+		 Tr("Right最大角度(deg/frame)", "Max Right Angle (deg/frame)"), measuredMaxRightAngleDegrees_,
+		 Tr("Up最大角度(deg/frame)", "Max Up Angle (deg/frame)"), measuredMaxUpAngleDegrees_);
+	  ImGui::Text("%s: %.6f  %s: %.6f",
+		 Tr("Right最小Dot", "Min Right Dot"), measuredMinRightDot_,
+		 Tr("Up最小Dot", "Min Up Dot"), measuredMinUpDot_);
+	  ImGui::Text("%s: %.6f  %s: %zu",
+		 Tr("注視方向最小Dot", "Min Gaze Dot"), measuredMinGazeDot_,
+		 Tr("非有限フレーム", "Non-finite Frames"), measuredNonFiniteFrameCount_);
+	  if (!cameraMeasurementStatus_.empty()) {
+		 ImGui::TextWrapped("%s: %s",
+			Tr("状態", "Status"), cameraMeasurementStatus_.c_str());
+	  }
+	  if (!lastCameraMeasurementFilePath_.empty()) {
+		 ImGui::TextWrapped("%s: %s",
+			Tr("保存先", "Saved File"), lastCameraMeasurementFilePath_.c_str());
+	  }
    }
 
    ImGui::Separator();
