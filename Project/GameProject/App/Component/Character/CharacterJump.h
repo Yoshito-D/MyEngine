@@ -41,6 +41,17 @@ public:
    float jumpStrength = 5.0f;
 
 private:
+#ifdef USE_IMGUI
+   /// @brief 計測用に水平速度を持たない垂直落下状態を開始する
+   void StartDebugVerticalDrop();
+
+   /// @brief 垂直落下テスト開始時に現在位置から持ち上げる距離
+   float debugVerticalDropHeight_ = 20.0f;
+
+   /// @brief 垂直落下テスト開始時に与える下向き速度
+   float debugVerticalDropInitialSpeed_ = 0.0f;
+#endif
+
    /// @brief ジャンプ中フラグ
    bool isJumping_ = false;
 };
