@@ -42,7 +42,7 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    });
 
    // 各マネージャーを利用側へ公開する前にGPU/音声デバイスとの接続と既定アセット読込を完了する。
-   modelAssetManager_->Initialize(device);
+   modelAssetManager_->Initialize(device, animationAssetManager_.get());
    textureManager_->Initialize(device);
    textureManager_->LoadTexturesFromDirectory("resources/engine/textures", "resources");
    textureManager_->LoadTexturesFromDirectory("resources/game/textures", "resources");

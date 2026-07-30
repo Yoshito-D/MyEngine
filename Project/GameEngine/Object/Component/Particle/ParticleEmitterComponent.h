@@ -65,6 +65,9 @@ public:
    /// @copydoc IObjectComponent::Update
    void Update(float) override;
 
+   /// @brief 選択中のジョイントとエミッター位置をデバッグ描画する
+   void DrawDebugAttachments() const;
+
    // ── スロット管理 ──────────────────────────────────
 
    /// @brief スロットを追加して JSON からエフェクトを読み込む
@@ -158,6 +161,7 @@ public:
 
    // ── コンポーネント共通オプション ─────────────────
    float maxCullDistance = 0.0f;  ///< カリング距離（0 = 無効）
+   bool debugDrawAttachments = true; ///< ジョイントのアタッチ位置をデバッグ描画するか
 
    // ── シリアライズ ──────────────────────────────────
    /// @copydoc IObjectComponent::Serialize
@@ -174,6 +178,9 @@ public:
 #endif
 
 private:
+   /// @brief 指定ジョイントの現在のワールド行列を取得する
+   bool TryComputeJointWorldMatrix(const std::string& jointName, Matrix4x4& jointWorldMatrix) const;
+
    /// @brief スロット用エミッター行列を計算する
    Matrix4x4 ComputeEmitterMatrix(const AttachmentConfig& cfg) const;
 

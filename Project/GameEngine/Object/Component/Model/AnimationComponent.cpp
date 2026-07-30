@@ -45,7 +45,8 @@ nlohmann::json AnimationComponent::Serialize() const {
 	  { "applyTranslation", applyTranslation },
 	  { "applyRotation", applyRotation },
 	  { "applyScale", applyScale },
-	  { "useSkinning", useSkinning }
+	  { "useSkinning", useSkinning },
+	  { "debugDrawBones", debugDrawBones }
    };
 }
 
@@ -82,6 +83,9 @@ void AnimationComponent::Deserialize(const nlohmann::json& data) {
    }
    if (data.contains("useSkinning") && data.at("useSkinning").is_boolean()) {
 	  useSkinning = data.at("useSkinning").get<bool>();
+   }
+   if (data.contains("debugDrawBones") && data.at("debugDrawBones").is_boolean()) {
+	  debugDrawBones = data.at("debugDrawBones").get<bool>();
    }
 }
 
@@ -152,16 +156,26 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
 
 void AnimationComponent::Update(float deltaTime) {
    const AnimationClip* selectedClip = PrepareSelectedClip();
-   if (!selectedClip) {
+   if (selectedClip) {
+	  if (playing && deltaTime > 0.0f) {
+		 animator_.Update(deltaTime);
+		 currentTime = animator_.GetPlaybackTime();
+	  }
+
+	  ApplyCurrentPose(*selectedClip);
+   }
+
+   DrawDebugBones();
+}
+
+void AnimationComponent::DrawDebugBones() const {
+   if (!debugDrawBones) {
 	  return;
    }
 
-   if (playing && deltaTime > 0.0f) {
-	  animator_.Update(deltaTime);
-	  currentTime = animator_.GetPlaybackTime();
+   if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
+	  EngineContext::DrawSkeleton(model);
    }
-
-   ApplyCurrentPose(*selectedClip);
 }
 
 void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
@@ -249,6 +263,7 @@ void AnimationComponent::DrawInspector() {
    ImGui::Checkbox(ImGuiHelper::Localize({ "回転を適用", "Apply Rotation" }), &applyRotation);
    ImGui::Checkbox(ImGuiHelper::Localize({ "スケールを適用", "Apply Scale" }), &applyScale);
    ImGui::Checkbox(ImGuiHelper::Localize({ "スキニングを使用", "Use Skinning" }), &useSkinning);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "ボーンをデバッグ描画", "Debug Draw Bones" }), &debugDrawBones);
 
    const auto animationNames = EngineContext::GetAnimationNames();
    const char* animationPreview = animationName.empty() ? Tr("<なし>", "<none>") : animationName.c_str();

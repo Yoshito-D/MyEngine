@@ -34,6 +34,9 @@ public:
    /// @brief アニメーションの再生を停止し、先頭フレームへ戻す
    void Stop();
 
+   /// @brief 有効な場合に現在のボーン姿勢をデバッグ描画する
+   void DrawDebugBones() const;
+
 #ifdef USE_IMGUI
    /// @copydoc IObjectComponent::DrawInspector
    void DrawInspector() override;
@@ -50,6 +53,7 @@ public:
    bool applyRotation = false; ///< ノードの回転を適用するか
    bool applyScale = false; ///< ノードの拡縮を適用するか
    bool useSkinning = true; ///< スケルトン全体へスキニング姿勢を適用するか
+   bool debugDrawBones = true; ///< 現在のボーン姿勢をデバッグ描画するか
 
 private:
    const AnimationClip* PrepareSelectedClip();

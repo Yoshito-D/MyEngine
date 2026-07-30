@@ -52,6 +52,22 @@ public:
 	/// @param velocity ワールド空間の速度
 	void SetPlayerVelocity(const GameEngine::Vector3& velocity) { playerVelocity_ = velocity; }
 
+	/// @brief 予測した着地情報を設定する
+	/// @param up 予測接触地点の外向き法線
+	/// @param backward 着地後に進む接線方向の反対方向
+	/// @param contactPoint 予測接触地点
+	/// @param secondsToImpact 予測接触までの残り秒数
+	void SetLandingPrediction(const GameEngine::Vector3& up,
+							  const GameEngine::Vector3& backward,
+							  const GameEngine::Vector3& contactPoint,
+							  float secondsToImpact);
+
+	/// @brief 今フレームに有効な着地予測がないことを通知する
+	void ClearLandingPrediction() { landingPredictionValid_ = false; }
+
+	/// @brief 着地予測を探索する最大秒数を返す
+	float GetPreLandingPredictionHorizon() const { return preLandingPredictionSeconds; }
+
 	/// @brief 通常走行速度（autoSpeed）を設定する
 	/// @details これを下回った場合のみ減速演出を発火させる
 	void SetAutoSpeed(float speed) { autoSpeed_ = speed; }
@@ -126,6 +142,30 @@ public:
 	/// @brief 地上/空中パラメータを切り替える補間速度
 	float airborneBlendLerpSpeed = 6.0f;
 
+	/// @brief 着地予測を使って接触前からカメラを準備するか
+	bool enablePreLandingCamera = true;
+
+	/// @brief 着地前補間を開始する予測接触までの秒数
+	float preLandingPredictionSeconds = 1.8f;
+
+	/// @brief 着地方向への補間を完了させる接触前の秒数
+	float preLandingFullBlendSeconds = 0.2f;
+
+	/// @brief 残り時間から求めた着地前補間量へ追従する速度
+	float preLandingBlendLerpSpeed = 6.0f;
+
+	/// @brief 予測が外れた場合と着地後に着地前補間を解除する速度
+	float preLandingReleaseLerpSpeed = 4.0f;
+
+	/// @brief 着地前に予測接触地点から進行方向へ先読みする注視距離
+	float preLandingTerrainLookAhead = 4.0f;
+
+	/// @brief 着地前に注視点を地形側へ寄せる最大割合
+	float preLandingTerrainLookBlend = 0.25f;
+
+	/// @brief 着地前にカメラを予測地表の外側へ保つ最小高さ
+	float preLandingMinOutwardHeight = 1.0f;
+
 	/// @brief 空中時に速度の反対方向へ向きを合わせる補間速度
 	float airborneForwardLerpSpeed = 4.0f;
 
@@ -168,9 +208,13 @@ public:
 	/// @brief 加速演出が最大になるプレイヤー速度
 	float speedBoostMax = 25.0f;
 
-	/// @brief カメラ位置（eye）の追従速度
-	///        値が大きいほど素早く追従し、小さいほどふわりとした遅延になる
+	/// @brief カメラのピボット相対距離が目標へ追従する速度
+	///        値が大きいほど距離変化へ素早く追従し、小さいほどふわりとした遅延になる
 	float positionLerpSpeed = 12.0f;
+
+	/// @brief 最終eye方向が1秒間に旋回できる最大角度（ラジアン）
+	///        上流で決めた方向を通常はそのまま使い、急変時だけ角速度を制限する
+	float eyeDirectionMaxAngularSpeed = 4.0f;
 
 	/// @brief カメラ回転の追従速度
 	///        値が大きいほど素早く目標姿勢へ戻り、小さいほどロールをゆっくり補間する
@@ -224,6 +268,36 @@ private:
 
 	/// @brief 離陸後の惑星ガイド追従速度制御に使う経過時間
 	float jumpPlanetDirectionSpeedElapsed_ = 0.0f;
+
+	/// @brief 今フレームの着地予測が有効か
+	bool landingPredictionValid_ = false;
+
+	/// @brief 予測接触地点の外向き法線
+	GameEngine::Vector3 predictedLandingUp_ = { 0.0f, 1.0f, 0.0f };
+
+	/// @brief 予測した着地後進行方向の反対方向
+	GameEngine::Vector3 predictedLandingBackward_ = { 0.0f, 0.0f, -1.0f };
+
+	/// @brief 予測接触地点
+	GameEngine::Vector3 predictedLandingContact_ = { 0.0f, 0.0f, 0.0f };
+
+	/// @brief 予測接触までの残り秒数
+	float predictedLandingSeconds_ = 0.0f;
+
+	/// @brief 現在の着地前補間量
+	float currentPreLandingBlend_ = 0.0f;
+
+	/// @brief 接地時に表示中だったカメラ状態から地上状態へ戻しているか
+	bool isLandingReleaseActive_ = false;
+
+	/// @brief 接地時点の着地前補間量
+	float landingReleaseBlendStart_ = 0.0f;
+
+	/// @brief 接地時に表示していた注視点のピボット相対オフセット
+	GameEngine::Vector3 landingReleaseLookOffset_ = { 0.0f, 0.0f, 0.0f };
+
+	/// @brief 直近フレームで表示した注視点のピボット相対オフセット
+	GameEngine::Vector3 lastLookTargetOffset_ = { 0.0f, 0.0f, 0.0f };
 
 	/// @brief 現在の後方ベクトル（補間結果）
 	GameEngine::Vector3 currentBackward_ = { 0.0f, 0.0f, -1.0f };
@@ -321,6 +395,16 @@ private:
 	/// @param deltaTime フレーム時間
 	void UpdatePlayerFramingBlend(float deltaTime);
 
+	/// @brief 予測接触までの残り時間から着地前補間量を更新する
+	/// @param deltaTime フレーム時間
+	void UpdatePreLandingBlend(float deltaTime);
+
+	/// @brief 接地時の表示状態を地上復帰用スナップショットへ保存する
+	void BeginLandingRelease();
+
+	/// @brief 空中予測または接地時スナップショットを適用する現在の割合を返す
+	float ComputePreLandingGuideBlend() const;
+
 	/// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向と係数を更新する
 	/// @param deltaTime フレーム時間
 	void UpdatePlanetDirectionGuide(float deltaTime);
@@ -366,10 +450,11 @@ private:
 	/// @return 加速度合い boostAlpha [0, 1]
 	float UpdateAccelerationEffect(GameEngine::CameraState& state, float deltaTime);
 
-	/// @brief 目標 eye オフセット（ピボット相対）の3D方向と距離を補間する
+	/// @brief 目標 eye オフセット（ピボット相対）の方向変化を制限し、距離を補間する
 	/// @details 絶対座標ではなくピボット相対オフセットを補間することで、
 	///          ピボット（プレイヤー）の移動とカメラの追従を分離する。
-	///          方向は角度ベース、距離は指数平滑で補間し、補間後はUp方向の高さ下限を適用する。
+	///          方向は上流で決定し、ここでは急変時だけ最大角速度を制限する。
+	///          距離は指数平滑し、補間後にUp方向の高さ下限を適用する。
 	///          初回フレームは補間履歴がないため目標位置へスナップする。
 	/// @param targetEye 今フレームの理想カメラ位置（ワールド座標）
 	/// @param up 高さ下限の基準に使う正規化済みUp

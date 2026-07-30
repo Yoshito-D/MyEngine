@@ -116,7 +116,8 @@ static void StepSpring1D(float target,
 /// @details 180°近傍でもゼロベクトル化を避けるため、線形補間ではなく角度ベースで追従する。
 static GameEngine::Vector3 RotateTowardsUnit(const GameEngine::Vector3& current,
    const GameEngine::Vector3& target,
-   float maxRadiansDelta) {
+   float maxRadiansDelta,
+   const GameEngine::Vector3& preferredAntipodalAxis = { 0.0f, 0.0f, 0.0f }) {
    using namespace GameEngine;
 
    Vector3 c = current;
@@ -141,14 +142,22 @@ static GameEngine::Vector3 RotateTowardsUnit(const GameEngine::Vector3& current,
    }
 
    if (dot < -0.999f) {
-	  Vector3 axis = (std::abs(c.x) < 0.9f) ? Vector3{ 1.0f, 0.0f, 0.0f } : Vector3{ 0.0f, 1.0f, 0.0f };
-	  axis = c.Cross(axis);
+	  // 180度では回転軸が一意に決まらない。Upの反転時は表示中のRightを渡し、
+	  // 任意のワールド軸が選ばれて急なロール経路へ入ることを防ぐ。
+	  Vector3 axis =
+		 preferredAntipodalAxis
+		 - c * c.Dot(preferredAntipodalAxis);
 	  float axisLen = axis.Length();
 	  if (axisLen < 1e-6f) {
-		 axis = Vector3{ 0.0f, 0.0f, 1.0f };
-	  } else {
-		 axis = axis * (1.0f / axisLen);
+		 Vector3 fallbackAxis = (std::abs(c.x) < 0.9f)
+			? Vector3{ 1.0f, 0.0f, 0.0f }
+			: Vector3{ 0.0f, 1.0f, 0.0f };
+		 axis = c.Cross(fallbackAxis);
+		 axisLen = axis.Length();
 	  }
+	  axis = axisLen > 1e-6f
+		 ? axis * (1.0f / axisLen)
+		 : Vector3{ 0.0f, 0.0f, 1.0f };
 
 	  // ロドリゲス回転
 	  float cs = std::cos(step);
@@ -172,7 +181,8 @@ static GameEngine::Vector3 RotateTowardsUnit(const GameEngine::Vector3& current,
 static GameEngine::Vector3 BlendUnitDirectionSafely(const GameEngine::Vector3& current,
    const GameEngine::Vector3& target,
    float blend,
-   const GameEngine::Vector3& fallback) {
+   const GameEngine::Vector3& fallback,
+   const GameEngine::Vector3& preferredAntipodalAxis = { 0.0f, 0.0f, 0.0f }) {
    GameEngine::Vector3 from = NormalizeOrFallback(current, fallback);
    GameEngine::Vector3 to = NormalizeOrFallback(target, from);
    float t = std::clamp(blend, 0.0f, 1.0f);
@@ -184,7 +194,7 @@ static GameEngine::Vector3 BlendUnitDirectionSafely(const GameEngine::Vector3& c
    }
 
    float angle = std::acos(std::clamp(from.Dot(to), -1.0f, 1.0f));
-   return RotateTowardsUnit(from, to, angle * t);
+   return RotateTowardsUnit(from, to, angle * t, preferredAntipodalAxis);
 }
 
 /// @brief 単位ベクトルを指定軸まわりに回転する
@@ -282,8 +292,19 @@ GameEngine::Vector3 PlayerRearFollowCamera::ProjectOnPlaneNorm(const GameEngine:
 GameEngine::Vector3 PlayerRearFollowCamera::SmoothGravityUp(float deltaTime) {
    using namespace GameEngine;
 
-   // 目標 up を正規化
+   // 着地候補惑星へ接近している間は、接触前から予測着地法線へ基準Upを移す。
+   // 惑星切替の確定を待つと接触フレームで目標Upが変わり、急なロールの原因になる。
    Vector3 targetUp = gravityUp_;
+   if (isAirborne_ && currentPreLandingBlend_ > 1e-4f) {
+	  targetUp = BlendUnitDirectionSafely(
+		 targetUp,
+		 predictedLandingUp_,
+		 currentPreLandingBlend_,
+		 targetUp,
+		 cachedRight_);
+   }
+
+   // 目標 up を正規化
    float targetLen = targetUp.Length();
    if (targetLen < 1e-6f) targetUp = { 0.0f, 1.0f, 0.0f };
    else targetUp = targetUp * (1.0f / targetLen);
@@ -297,8 +318,14 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothGravityUp(float deltaTime) {
    Vector3 oldUp = currentGravityUp_;
 
    // 角速度制限付きで目標 Up へ追従（180°近傍でも破綻しない）
-   float maxRadiansDelta = gravityUpLerpSpeed * std::max(0.0f, deltaTime);
-   currentGravityUp_ = RotateTowardsUnit(oldUp, targetUp, maxRadiansDelta);
+   float maxRadiansDelta = std::min(
+	  gravityUpLerpSpeed * std::max(0.0f, deltaTime),
+	  GameEngine::MathConstants::kPi - 1e-4f);
+   currentGravityUp_ = RotateTowardsUnit(
+	  oldUp,
+	  targetUp,
+	  maxRadiansDelta,
+	  cachedRight_);
 
    // ─────────────────────────────────────────────────────────────
    // 【重要】今フレームの Up デルタ回転を currentBackward_ にも適用する
@@ -342,29 +369,58 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
    using namespace GameEngine;
 
    Vector3 airborneFallbackBackward = NormalizeOrFallback(-airborneMoveForward_, currentBackward_);
+   Vector3 airborneBackward = NormalizeOrFallback(-playerVelocity_, airborneFallbackBackward);
 
-   // 地上では惑星面に沿ったプレイヤー後方、空中では速度ベクトルの反対側を目標にする。
-   // 機首がUpと平行に近い着地では水平投影の微小なノイズを正規化せず、
-   // 前フレームの表示Rightから復元した後方を使って画面上の方位を維持する。
-   Vector3 normalBackward = NormalizeOrFallback(-playerVelocity_, airborneFallbackBackward);
-   if (!isAirborne_) {
-      Vector3 motionBackward = ProjectOnPlaneNorm(-airborneMoveForward_, up, currentBackward_);
-      Vector3 displayedBackward = ProjectOnPlaneNorm(up.Cross(cachedRight_), up, motionBackward);
-      Vector3 followBackward = NormalizeOrFallback(-followForward_, displayedBackward);
-      Vector3 projectedFollow = followBackward - up * up.Dot(followBackward);
-      float projectedLength = projectedFollow.Length();
+   // 地上後方も空中フラグに関係なく計算し、currentAirborneBlend_ で速度後方との間を連続化する。
+   // boolの切替フレームで目標方向そのものを交換しないため、補間開始のタイミングが画面へ出にくい。
+   Vector3 motionBackward = ProjectOnPlaneNorm(-airborneMoveForward_, up, currentBackward_);
+   Vector3 displayedBackward = ProjectOnPlaneNorm(up.Cross(cachedRight_), up, motionBackward);
+   Vector3 followBackward = NormalizeOrFallback(-followForward_, displayedBackward);
+   Vector3 projectedFollow = followBackward - up * up.Dot(followBackward);
+   float projectedLength = projectedFollow.Length();
+   Vector3 groundedBackward = displayedBackward;
 
-      if (projectedLength > 1e-5f) {
-         projectedFollow = projectedFollow * (1.0f / projectedLength);
-         float projectionBlend = SmoothStep01(projectedLength / kGroundDirectionProjectionBlendRange);
-         float signedAngle = SignedAngleAroundAxis(displayedBackward, projectedFollow, up, 1.0f);
-         normalBackward = RotateAroundAxisUnit(displayedBackward, up, signedAngle * projectionBlend);
-      } else {
-         normalBackward = displayedBackward;
-      }
+   if (projectedLength > 1e-5f) {
+	  projectedFollow = projectedFollow * (1.0f / projectedLength);
+	  float projectionBlend = SmoothStep01(projectedLength / kGroundDirectionProjectionBlendRange);
+	  float signedAngle = SignedAngleAroundAxis(displayedBackward, projectedFollow, up, 1.0f);
+	  groundedBackward = RotateAroundAxisUnit(displayedBackward, up, signedAngle * projectionBlend);
    }
 
+   Vector3 normalBackward = BlendUnitDirectionSafely(
+	  groundedBackward,
+	  airborneBackward,
+	  currentAirborneBlend_,
+	  groundedBackward,
+	  up);
+
    Vector3 desiredBackward = normalBackward;
+
+   // 惑星ガイドは速度後方を補助する低優先度の入力として、最終方向を追従させる前に合成する。
+   // 着地前補間が始まった後は地表の接線後方を優先し、惑星ガイドを段階的に解除する。
+   if (isAirborne_) {
+	  float planetDirectionBlend =
+		 ComputePlanetDirectionBlend() * (1.0f - currentPreLandingBlend_);
+	  if (planetDirectionBlend > 1e-4f) {
+		 desiredBackward = BlendUnitDirectionSafely(
+			desiredBackward,
+			currentPlanetBackward_,
+			planetDirectionBlend,
+			desiredBackward,
+			up);
+	  }
+   }
+
+   // 接触前だけ予測着地速度の接線成分から求めた後方へ寄せる。
+   // 接地後は現在方向を開始点に既存の角度補間で地上後方へ戻し、予測値を参照しない。
+   if (isAirborne_ && currentPreLandingBlend_ > 1e-4f) {
+	  desiredBackward = BlendUnitDirectionSafely(
+		 desiredBackward,
+		 predictedLandingBackward_,
+		 currentPreLandingBlend_,
+		 desiredBackward,
+		 predictedLandingUp_);
+   }
 
    if (!isInitialized_) {
 	  // 初回はスムーズ開始のためそのまま採用
@@ -403,7 +459,12 @@ void PlayerRearFollowCamera::UpdateBackwardVector(const GameEngine::Vector3& up,
    // 原因: 空中で速度方向が急に反対側へ変わると、currentBackward_ と desiredBackward が
    //       180°近く離れた状態で Lerp され、補間途中がゼロに近づいて前後反転が発生する。
    // 修正: 補間率 t を角度量へ変換し、RotateTowardsUnit で一方向に回すことで反転を防ぐ。
-   Vector3 trackedBackward = BlendUnitDirectionSafely(currentBackward_, desiredBackward, t, desiredBackward);
+   Vector3 trackedBackward = BlendUnitDirectionSafely(
+	  currentBackward_,
+	  desiredBackward,
+	  t,
+	  desiredBackward,
+	  up);
    currentBackward_ = trackedBackward;
    if (!isAirborne_ && currentBackward_.Dot(desiredBackward) > 0.9999f) {
       // 収束後だけ厳密な地上後方へ確定し、長時間の数値誤差を残さない。
@@ -461,6 +522,68 @@ void PlayerRearFollowCamera::UpdatePlayerFramingBlend(float deltaTime) {
          + (playerFramingBlendTarget_ - playerFramingBlendStart_) * easedProgress,
       0.0f,
       1.0f);
+}
+
+/// @brief 予測接触までの時間から着地前補間量を更新する
+/// @details 残り時間をSmoothstepへ変換した後、別の指数平滑で追従する。
+///          予測が有効になった瞬間の補間量を直接適用せず、切り替わりの境界を画面へ出さない。
+void PlayerRearFollowCamera::UpdatePreLandingBlend(float deltaTime) {
+   float targetBlend = 0.0f;
+   if (enablePreLandingCamera && isAirborne_ && landingPredictionValid_) {
+	  float startSeconds = std::max(0.0f, preLandingPredictionSeconds);
+	  float fullSeconds = std::clamp(
+		 preLandingFullBlendSeconds,
+		 0.0f,
+		 std::max(0.0f, startSeconds - 0.001f));
+	  float blendDuration = startSeconds - fullSeconds;
+	  if (blendDuration <= 1e-4f) {
+		 targetBlend = predictedLandingSeconds_ <= fullSeconds ? 1.0f : 0.0f;
+	  } else {
+		 float progress = (startSeconds - predictedLandingSeconds_) / blendDuration;
+		 targetBlend = SmoothStep01(progress);
+	  }
+   }
+
+   float followSpeed = targetBlend >= currentPreLandingBlend_
+	  ? preLandingBlendLerpSpeed
+	  : preLandingReleaseLerpSpeed;
+   float blendT = ExpSmoothingFactor(followSpeed, deltaTime);
+   currentPreLandingBlend_ = std::clamp(
+	  currentPreLandingBlend_ + (targetBlend - currentPreLandingBlend_) * blendT,
+	  0.0f,
+	  1.0f);
+   if (currentPreLandingBlend_ < 1e-4f) {
+	  currentPreLandingBlend_ = 0.0f;
+	  if (!isAirborne_) {
+		 isLandingReleaseActive_ = false;
+		 landingReleaseBlendStart_ = 0.0f;
+	  }
+   }
+}
+
+/// @brief 接地時の表示状態を地上復帰用スナップショットへ保存する
+/// @details 予測接触点などのワールド座標を接地後も使うと、移動するプレイヤーから古い地点へ
+///          カメラが引かれ続ける。ステートレスに再計算される注視点だけを相対オフセットで保存し、
+///          プレイヤーと一緒に移動する状態として地上カメラへ戻す。
+void PlayerRearFollowCamera::BeginLandingRelease() {
+   if (currentPreLandingBlend_ <= 1e-4f) {
+	  isLandingReleaseActive_ = false;
+	  landingReleaseBlendStart_ = 0.0f;
+	  return;
+   }
+
+   isLandingReleaseActive_ = true;
+   landingReleaseBlendStart_ = currentPreLandingBlend_;
+   landingReleaseLookOffset_ = lastLookTargetOffset_;
+}
+
+/// @brief 空中予測または接地時スナップショットを適用する現在の割合を返す
+float PlayerRearFollowCamera::ComputePreLandingGuideBlend() const {
+   if (!isAirborne_ && isLandingReleaseActive_) {
+	  float startBlend = std::max(landingReleaseBlendStart_, 1e-4f);
+	  return std::clamp(currentPreLandingBlend_ / startBlend, 0.0f, 1.0f);
+   }
+   return std::clamp(currentPreLandingBlend_, 0.0f, 1.0f);
 }
 
 /// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向と係数を更新する
@@ -619,15 +742,6 @@ float PlayerRearFollowCamera::ComputePlanetDirectionBlend() const {
 /// @param boostAlpha 加速度合い [0,1]
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3& up,
    float boostAlpha) const {
-   GameEngine::Vector3 effectiveBackward = currentBackward_;
-   float planetDirectionBlend = ComputePlanetDirectionBlend();
-   if (planetDirectionBlend > 1e-4f) {
-	  // 原因: 惑星方向ガイドが現在後方の反対側に近いと、Lerp した方向がゼロ付近を通り、
-	  //       eye の後方ベクトルが一瞬反対側へ正規化されてカメラの前後反転に見える。
-	  // 修正: 惑星補間量を角度補間へ使い、現在後方から惑星ガイド方向へ連続回転させる。
-	  effectiveBackward = BlendUnitDirectionSafely(currentBackward_, currentPlanetBackward_, planetDirectionBlend, currentBackward_);
-   }
-
    // 加速と空中状態の後退量を合成する。
    float boostedDistance =
 	  distance
@@ -635,18 +749,73 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeEye(const GameEngine::Vector3
 	  + springDistanceOffset_
 	  + airborneDistanceOffset * currentAirborneBlend_;
 
-   // eye = pivot から上方向に height、後方に boostedDistance 離れた位置
-   return pivotTarget_ + up * height + effectiveBackward * boostedDistance;
+   // 高さを後方ベクトルへそのまま加えると、上昇中に backward と Up が逆向きになった場面で
+   // distance と height が相殺し、カメラがプレイヤーへ急接近する。
+   // Up のうち後方と直交する成分だけを高さへ使い、後方距離を常に独立して確保する。
+   GameEngine::Vector3 safeBackward = NormalizeOrFallback(currentBackward_, -up);
+   GameEngine::Vector3 orthogonalUp = up - safeBackward * up.Dot(safeBackward);
+   float safeRearDistance = std::max(0.0f, boostedDistance);
+   GameEngine::Vector3 eyeOffset =
+	  safeBackward * safeRearDistance
+	  + orthogonalUp * height;
+
+   // distance はカメラの基準距離なので、速度Springや方向合成の結果でも下回らせない。
+   float minimumEyeDistance = std::max(1.0f, distance);
+   float eyeOffsetLength = eyeOffset.Length();
+   if (eyeOffsetLength < minimumEyeDistance) {
+	  GameEngine::Vector3 fallbackDirection =
+		 eyeOffsetLength > 1e-4f
+		 ? eyeOffset * (1.0f / eyeOffsetLength)
+		 : safeBackward;
+	  eyeOffset = fallbackDirection * minimumEyeDistance;
+   }
+   GameEngine::Vector3 eye = pivotTarget_ + eyeOffset;
+
+   // 着地前は予測地表の外向き法線に対して最低限の高さを確保する。
+   // これにより、速度後方から着地接線後方へ移る途中でもカメラがプレイヤーと惑星の間へ入らない。
+   if (isAirborne_ && currentPreLandingBlend_ > 1e-4f) {
+	  GameEngine::Vector3 landingUp = NormalizeOrFallback(predictedLandingUp_, up);
+	  float minimumOutwardHeight =
+		 std::max(0.0f, preLandingMinOutwardHeight) * currentPreLandingBlend_;
+	  float outwardHeight = (eye - pivotTarget_).Dot(landingUp);
+	  if (outwardHeight < minimumOutwardHeight) {
+		 eye += landingUp * (minimumOutwardHeight - outwardHeight);
+	  }
+   }
+
+   return eye;
 }
 
 /// @brief LookAt に使う注視点を計算する
 /// @details 地上ではプレイヤー中心より少し上を狙い、画面内の地面比率を下げる。
-///          空中では構図補間によりプレイヤー中心へ戻すが、着地先などへの注視切り替えは行わない。
+///          空中ではプレイヤー中心へ戻し、着地予測中だけ接触地点の少し先へ注視点を寄せる。
 GameEngine::Vector3 PlayerRearFollowCamera::ComputeLookTarget(const GameEngine::Vector3& up) const {
    // 構図専用ブレンドを使い、距離やFOVの空中補間速度から独立して
    // 地上下側と空中中央の切り替え時間を調整できるようにする。
    float targetHeight = groundedTargetHeight * (1.0f - currentPlayerFramingBlend_);
-   return pivotTarget_ + up * targetHeight;
+   GameEngine::Vector3 lookTarget = pivotTarget_ + up * targetHeight;
+
+   float preLandingGuideBlend = ComputePreLandingGuideBlend();
+   if (!isAirborne_ && isLandingReleaseActive_ && preLandingGuideBlend > 1e-4f) {
+	  // 接地時に表示していた注視点をピボット相対で保持する。
+	  // ワールド着地点を保持しないため、地上移動しても古い地点へカメラが引かれない。
+	  GameEngine::Vector3 releaseTarget = pivotTarget_ + landingReleaseLookOffset_;
+	  lookTarget =
+		 lookTarget + (releaseTarget - lookTarget) * preLandingGuideBlend;
+   } else if (isAirborne_ && currentPreLandingBlend_ > 1e-4f) {
+	  GameEngine::Vector3 landingForward = -NormalizeOrFallback(
+		 predictedLandingBackward_,
+		 -currentBackward_);
+	  GameEngine::Vector3 terrainTarget =
+		 predictedLandingContact_
+		 + landingForward * std::max(0.0f, preLandingTerrainLookAhead);
+	  float terrainBlend =
+		 std::clamp(preLandingTerrainLookBlend, 0.0f, 1.0f)
+		 * currentPreLandingBlend_;
+	  lookTarget = lookTarget + (terrainTarget - lookTarget) * terrainBlend;
+   }
+
+   return lookTarget;
 }
 
 /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
@@ -659,6 +828,7 @@ void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    using namespace GameEngine;
 
    Vector3 lookTarget = ComputeLookTarget(up);
+   lastLookTargetOffset_ = lookTarget - pivotTarget_;
    Vector3 requestedUp = NormalizeOrFallback(up, cachedUp_);
 
    // zaxis = 注視点を向く方向（カメラ前方）
@@ -827,15 +997,16 @@ float PlayerRearFollowCamera::UpdateAccelerationEffect(GameEngine::CameraState& 
    return boostAlpha;
 }
 
-/// @brief 目標 eye オフセット（ピボット相対）の3D方向と距離を補間する
+/// @brief 目標 eye オフセット（ピボット相対）の方向変化を制限し、距離を補間する
 /// @details 【なぜ相対オフセットで補間するか】
 ///          絶対座標で補間すると、ピボット（プレイヤー）が移動するたびに
 ///          理想 eye も一緒にワールド空間を動く。この場合の補間パスは
 ///          「前フレームの eye（旧ピボット後方）→ 今フレームの eye（新ピボット後方）」
 ///          という直線を通るため、一瞬プレイヤーを突き抜けるルートになり得る。
 ///
-///          現在の実装では、ピボット相対オフセットを距離と単位方向に分け、
-///          距離は指数平滑、方向は180度付近でもゼロを通らない角度補間で目標へ近づける。
+///          現在の実装では方向を UpdateBackwardVector で一度だけ補間し、
+///          ここでは通常の方向変化へ遅延を足さず、急変時だけ最大角速度を制限する。
+///          ピボット相対距離は指数平滑で目標へ近づける。
 ///          補間後はUp方向の高さ下限を適用し、カメラが基準面より下へ沈みすぎることを防ぐ。
 GameEngine::Vector3 PlayerRearFollowCamera::SmoothEye(const GameEngine::Vector3& targetEye,
    const GameEngine::Vector3& up,
@@ -853,25 +1024,31 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothEye(const GameEngine::Vector3&
 	  return pivotTarget_ + currentEyeOffset_;
    }
 
-   // ピボット相対オフセットを補間する
+   // ピボット相対オフセットの距離を補間する。
    float t = ExpSmoothingFactor(positionLerpSpeed, deltaTime);
 
-   // 1. 方向と距離を3D空間で最短補間（プレイヤーの頭上を通るルートを許可）
    float currentLength = currentEyeOffset_.Length();
    float targetLength = targetOffset.Length();
-
    float smoothedLength = currentLength + (targetLength - currentLength) * t;
-
-   Vector3 currentDir = currentLength > 1e-4f ? currentEyeOffset_ * (1.0f / currentLength) : safeUp;
+   smoothedLength = std::max(smoothedLength, std::max(1.0f, distance));
+   Vector3 currentDir =
+	  currentLength > 1e-4f
+	  ? currentEyeOffset_ * (1.0f / currentLength)
+	  : safeUp;
    Vector3 targetDir = targetLength > 1e-4f ? targetOffset * (1.0f / targetLength) : safeUp;
 
-   Vector3 smoothedDir = BlendUnitDirectionSafely(currentDir, targetDir, t, targetDir);
+   // 低いジャンプでは空中後方と着地後方が短時間に往復する。
+   // targetDirを即採用すると最終eye位置だけが大きく旋回するため、通常の小さな変化はそのまま通し、
+   // 1フレームの方向変化が上限を超える場合だけ角速度を制限する。
+   float targetAngle = std::acos(std::clamp(currentDir.Dot(targetDir), -1.0f, 1.0f));
+   float maxAngularDelta =
+	  std::max(0.0f, eyeDirectionMaxAngularSpeed) * std::max(0.0f, deltaTime);
+   Vector3 outputDir = targetAngle <= maxAngularDelta
+	  ? targetDir
+	  : RotateTowardsUnit(currentDir, targetDir, maxAngularDelta, cachedRight_);
+   currentEyeOffset_ = outputDir * smoothedLength;
 
-   // 3D補間後のオフセットを一度決定する
-   currentEyeOffset_ = smoothedDir * smoothedLength;
-
-
-   // 2. 現在の height をそのまま扱い、一定以下にならないように制限をかける
+   // 現在の height をそのまま扱い、一定以下にならないように制限をかける
    float currentHeight = currentEyeOffset_.Dot(safeUp);
 
    // 下限値（※もしクラス内に既存の height 変数などがあれば、この数値を置き換えてください）
@@ -881,6 +1058,16 @@ GameEngine::Vector3 PlayerRearFollowCamera::SmoothEye(const GameEngine::Vector3&
    if (currentHeight < minHeightLimit) {
 	  // 足りない高さの分だけ、Up方向へ加算する
 	  currentEyeOffset_ += safeUp * (minHeightLimit - currentHeight);
+   }
+
+   if (isAirborne_ && currentPreLandingBlend_ > 1e-4f) {
+	  Vector3 landingUp = NormalizeOrFallback(predictedLandingUp_, safeUp);
+	  float minimumOutwardHeight =
+		 std::max(0.0f, preLandingMinOutwardHeight) * currentPreLandingBlend_;
+	  float outwardHeight = currentEyeOffset_.Dot(landingUp);
+	  if (outwardHeight < minimumOutwardHeight) {
+		 currentEyeOffset_ += landingUp * (minimumOutwardHeight - outwardHeight);
+	  }
    }
 
    // ワールド座標に戻して返す
@@ -908,6 +1095,16 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    currentPlanetDirectionGravityFactor_ = 0.0f;
 	jumpPlanetDirectionSpeedElapsed_ = std::max(0.0f, jumpPlanetDirectionDelaySeconds)
 	  + std::max(0.0f, jumpPlanetDirectionRestoreSeconds);
+   landingPredictionValid_ = false;
+   predictedLandingUp_ = { 0.0f, 1.0f, 0.0f };
+   predictedLandingBackward_ = { 0.0f, 0.0f, -1.0f };
+   predictedLandingContact_ = { 0.0f, 0.0f, 0.0f };
+   predictedLandingSeconds_ = 0.0f;
+   currentPreLandingBlend_ = 0.0f;
+   isLandingReleaseActive_ = false;
+   landingReleaseBlendStart_ = 0.0f;
+   landingReleaseLookOffset_ = { 0.0f, groundedTargetHeight, 0.0f };
+   lastLookTargetOffset_ = landingReleaseLookOffset_;
    currentBackward_ = { 0.0f, 0.0f, -1.0f };
    currentPlanetBackward_ = currentBackward_;
    isPlanetBackwardInitialized_ = false;
@@ -947,19 +1144,47 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
 // パブリックメソッド実装
 // =============================================================================
 
+void PlayerRearFollowCamera::SetLandingPrediction(
+   const GameEngine::Vector3& up,
+   const GameEngine::Vector3& backward,
+   const GameEngine::Vector3& contactPoint,
+   float secondsToImpact) {
+   predictedLandingUp_ = NormalizeOrFallback(up, predictedLandingUp_);
+   predictedLandingBackward_ = NormalizeOrFallback(backward, predictedLandingBackward_);
+   predictedLandingContact_ = contactPoint;
+   predictedLandingSeconds_ = std::max(0.0f, secondsToImpact);
+   landingPredictionValid_ = true;
+}
+
 void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
-   // ① 重力Up を目標値へ向けてスムーズに補間する
+   bool justLanded = wasAirborneLastFrame_ && !isAirborne_;
+   bool justTookOff = !wasAirborneLastFrame_ && isAirborne_;
+
+   // 接地後に古い予測値を使い続けず、直前に画面へ出していた相対状態から地上へ戻す。
+   if (justLanded) {
+	  BeginLandingRelease();
+   } else if (justTookOff) {
+	  // 前回着地の解除途中に再ジャンプしても、古いスナップショットを新しい予測へ混ぜない。
+	  isLandingReleaseActive_ = false;
+	  landingReleaseBlendStart_ = 0.0f;
+	  currentPreLandingBlend_ = 0.0f;
+   }
+
+   // ① 予測接触までの残り時間から、着地前に準備する量を決める
+   UpdatePreLandingBlend(deltaTime);
+
+   // ② 重力Up を目標値へ向けてスムーズに補間する
    //    → 惑星切り替え時の急激なロール変化を防ぐ
    GameEngine::Vector3 up = SmoothGravityUp(deltaTime);
 
    // 着地した瞬間から地上用 rearLerpSpeed を使うと後方復帰が急に強くなるため、
    // 着地直前の空中追従速度を始点として、指定秒数で地上設定値へ近づける。
-   if (wasAirborneLastFrame_ && !isAirborne_) {
+   if (justLanded) {
 	  landingRearLerpElapsed_ = 0.0f;
 	  landingRearLerpStartSpeed_ = lastAirborneRearFollowSpeed_;
    }
 
-	if (!wasAirborneLastFrame_ && isAirborne_) {
+	if (justTookOff) {
 	  jumpPlanetDirectionSpeedElapsed_ = 0.0f;
 	  currentPlanetDirectionGravityFactor_ = 0.0f;
 	  currentPlanetBackward_ = currentBackward_;
@@ -976,33 +1201,31 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
 	  jumpPlanetDirectionSpeedElapsed_ = jumpPlanetDirectionControlSeconds;
 	}
 
-   // ② 地上/空中の見え方を滑らかに切り替えるブレンド値を更新する
+   // ③ 地上/空中の見え方を滑らかに切り替えるブレンド値を更新する
    UpdateAirborneBlend(deltaTime);
 
    // プレイヤーの画面位置は離陸/着地それぞれの設定秒数で独立して切り替える
    UpdatePlayerFramingBlend(deltaTime);
 
-   // ③ 後方ベクトル（currentBackward_）を更新する
-   //    → 重力平面への再投影 + 角度ベースの追従を行う
-   UpdateBackwardVector(up, deltaTime);
-
-   // ④ 空中時に近傍惑星が画角へ入るよう、eye の回り込み方向を少しずつ補間する
+   // ④ 空中時に近傍惑星が画角へ入るよう、低優先度の方向ガイドを更新する
    //    → 速度方向が重力Down方向へ近いほど惑星方向への補間係数が強まる
    UpdatePlanetDirectionGuide(deltaTime);
 
-   // ⑤ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
+   // ⑤ 速度後方・惑星補助・予測着地後方から目標を1つ作り、方向補間を1回だけ行う
+   UpdateBackwardVector(up, deltaTime);
+
+   // ⑥ プレイヤー速度に応じた FOV ブーストを計算し boostAlpha を取得する
    //    → FOV は state.fov へ反映済み、boostAlpha は距離ブーストに転用する
    float boostAlpha = UpdateAccelerationEffect(state, deltaTime);
 
-   // ⑥ 加速ブーストと空中距離を加味した eye 位置を算出する
+   // ⑦ 加速ブーストと空中距離を加味した eye 位置を算出する
    //    → 加速中はカメラが後退して視野が広がり、速度感が増す
    GameEngine::Vector3 eye = ComputeEye(up, boostAlpha);
 
-   // ⑦ eye 位置をピボット相対オフセットで補間し、急激なテレポートを防ぐ
-   //    → 相対補間により、ピボットが移動してもカメラが前方へ突き抜けない
+   // ⑧ eye のピボット相対距離を補間し、方向は急変時だけ最大角速度を制限する
    eye = SmoothEye(eye, up, deltaTime);
 
-   // ⑧ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
+   // ⑨ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
    ApplyLookAt(state, eye, up, deltaTime);
 
    wasAirborneLastFrame_ = isAirborne_;
@@ -1027,6 +1250,14 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 	   { "airborneGravityDirectionBoostFullThreshold", airborneGravityDirectionBoostFullThreshold },
 	   { "airborneGravityDirectionBoostBias", airborneGravityDirectionBoostBias },
 	   { "airborneBlendLerpSpeed", airborneBlendLerpSpeed },
+	   { "enablePreLandingCamera", enablePreLandingCamera },
+	   { "preLandingPredictionSeconds", preLandingPredictionSeconds },
+	   { "preLandingFullBlendSeconds", preLandingFullBlendSeconds },
+	   { "preLandingBlendLerpSpeed", preLandingBlendLerpSpeed },
+	   { "preLandingReleaseLerpSpeed", preLandingReleaseLerpSpeed },
+	   { "preLandingTerrainLookAhead", preLandingTerrainLookAhead },
+	   { "preLandingTerrainLookBlend", preLandingTerrainLookBlend },
+	   { "preLandingMinOutwardHeight", preLandingMinOutwardHeight },
 	   { "airborneForwardLerpSpeed", airborneForwardLerpSpeed },
 	   { "rearLerpSpeed", rearLerpSpeed },
 	   { "landingRearLerpRampSeconds", landingRearLerpRampSeconds },
@@ -1042,6 +1273,7 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
       { "speedBoostThreshold", speedBoostThreshold },
       { "speedBoostMax", speedBoostMax },
       { "positionLerpSpeed", positionLerpSpeed },
+      { "eyeDirectionMaxAngularSpeed", eyeDirectionMaxAngularSpeed },
       { "rotationLerpSpeed", rotationLerpSpeed },
    };
 }
@@ -1079,6 +1311,29 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    airborneGravityDirectionBoostFullThreshold = ReadFloat(data, "airborneGravityDirectionBoostFullThreshold", airborneGravityDirectionBoostFullThreshold);
    airborneGravityDirectionBoostBias = ReadFloat(data, "airborneGravityDirectionBoostBias", airborneGravityDirectionBoostBias);
    airborneBlendLerpSpeed = ReadFloat(data, "airborneBlendLerpSpeed", airborneBlendLerpSpeed);
+   enablePreLandingCamera = ReadBool(data, "enablePreLandingCamera", enablePreLandingCamera);
+   preLandingPredictionSeconds = std::max(
+	  0.0f,
+	  ReadFloat(data, "preLandingPredictionSeconds", preLandingPredictionSeconds));
+   preLandingFullBlendSeconds = std::max(
+	  0.0f,
+	  ReadFloat(data, "preLandingFullBlendSeconds", preLandingFullBlendSeconds));
+   preLandingBlendLerpSpeed = std::max(
+	  0.0f,
+	  ReadFloat(data, "preLandingBlendLerpSpeed", preLandingBlendLerpSpeed));
+   preLandingReleaseLerpSpeed = std::max(
+	  0.0f,
+	  ReadFloat(data, "preLandingReleaseLerpSpeed", preLandingReleaseLerpSpeed));
+   preLandingTerrainLookAhead = std::max(
+	  0.0f,
+	  ReadFloat(data, "preLandingTerrainLookAhead", preLandingTerrainLookAhead));
+   preLandingTerrainLookBlend = std::clamp(
+	  ReadFloat(data, "preLandingTerrainLookBlend", preLandingTerrainLookBlend),
+	  0.0f,
+	  1.0f);
+   preLandingMinOutwardHeight = std::max(
+	  0.0f,
+	  ReadFloat(data, "preLandingMinOutwardHeight", preLandingMinOutwardHeight));
    airborneForwardLerpSpeed = ReadFloat(data, "airborneForwardLerpSpeed", airborneForwardLerpSpeed);
    rearLerpSpeed = ReadFloat(data, "rearLerpSpeed", rearLerpSpeed);
    landingRearLerpRampSeconds = ReadFloat(data, "landingRearLerpRampSeconds", landingRearLerpRampSeconds);
@@ -1104,6 +1359,9 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
    speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
    positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
+   eyeDirectionMaxAngularSpeed = std::max(
+	  0.0f,
+	  ReadFloat(data, "eyeDirectionMaxAngularSpeed", eyeDirectionMaxAngularSpeed));
    rotationLerpSpeed = ReadFloat(data, "rotationLerpSpeed", rotationLerpSpeed);
    autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
 
@@ -1154,6 +1412,33 @@ void PlayerRearFollowCamera::DrawInspector() {
       ImGui::DragFloat(Tr("空中表示切替速度", "Airborne State Blend Speed"), &airborneBlendLerpSpeed, 0.1f, 0.1f, 30.0f);
       DrawHelp("空中距離・空中FOV・惑星ガイドの有効量を地上と空中の間で切り替える速度です。画面内のプレイヤー位置は構図切替秒で調整します。",
          "Blends airborne distance, FOV, and planet-guide strength. Player screen placement uses the framing durations instead.");
+   }
+
+   if (ImGui::CollapsingHeader(Tr("着地前カメラ", "Pre-landing Camera"), ImGuiTreeNodeFlags_DefaultOpen)) {
+	  ImGui::Checkbox(Tr("着地前補間を使う", "Enable Pre-landing Blend"), &enablePreLandingCamera);
+	  DrawHelp("現在軌道が地表へ到達すると予測できたとき、接触前から着地Up・着地後方・地形注視へ移行します。",
+		 "When the current trajectory is predicted to reach the surface, prepares landing Up, rear direction, and terrain framing before contact.");
+	  ImGui::DragFloat(Tr("着地予測開始秒", "Prediction Lead Time"), &preLandingPredictionSeconds, 0.05f, 0.0f, 5.0f, "%.2f");
+	  DrawHelp("予測接触までの残り時間がこの値を下回ると、着地方向への補間を開始します。",
+		 "Starts blending toward the landing frame when predicted time to contact falls below this value.");
+	  ImGui::DragFloat(Tr("着地補間完了秒", "Full Blend Before Impact"), &preLandingFullBlendSeconds, 0.01f, 0.0f, 1.0f, "%.2f");
+	  DrawHelp("接触の何秒前までに着地方向への補間を完了させるかを指定します。予測開始秒より小さくしてください。",
+		 "How long before contact the landing blend should be complete; keep it below the prediction lead time.");
+	  ImGui::DragFloat(Tr("着地補間の追従速度", "Pre-landing Blend Follow"), &preLandingBlendLerpSpeed, 0.1f, 0.0f, 30.0f);
+	  DrawHelp("残り時間から求めた補間量へ実際の着地前ブレンドが追従する速度です。小さくすると切り替わりがより穏やかになります。",
+		 "How quickly the actual pre-landing blend follows its time-based target; lower values make the transition more gradual.");
+	  ImGui::DragFloat(Tr("着地補間解除速度", "Pre-landing Release Speed"), &preLandingReleaseLerpSpeed, 0.1f, 0.0f, 30.0f);
+	  DrawHelp("予測が外れた場合と着地後に、保持していた着地前補間を解除する速度です。",
+		 "How quickly the retained pre-landing blend is released after a missed prediction or actual landing.");
+	  ImGui::DragFloat(Tr("地形注視の先読み距離", "Terrain Look-ahead Distance"), &preLandingTerrainLookAhead, 0.1f, 0.0f, 30.0f);
+	  DrawHelp("予測接触地点から着地後の進行方向へ、注視候補を先読みする距離です。",
+		 "Distance ahead of the predicted contact point used as the terrain look target.");
+	  ImGui::DragFloat(Tr("地形注視の最大補正率", "Terrain Look Blend"), &preLandingTerrainLookBlend, 0.01f, 0.0f, 1.0f, "%.2f");
+	  DrawHelp("プレイヤー注視点から予測地形注視点へ寄せる最大割合です。",
+		 "Maximum blend from the player framing target toward the predicted terrain target.");
+	  ImGui::DragFloat(Tr("地表外側の最低高さ", "Minimum Outward Height"), &preLandingMinOutwardHeight, 0.1f, 0.0f, 20.0f);
+	  DrawHelp("着地前にカメラをプレイヤーと惑星の間へ入れないため、予測地表法線方向へ確保する最低高さです。",
+		 "Minimum offset along the predicted surface normal that keeps the camera from moving between the player and planet.");
    }
 
    if (ImGui::CollapsingHeader(Tr("空中の惑星方向ガイド", "Airborne Planet Guide"))) {
@@ -1235,9 +1520,12 @@ void PlayerRearFollowCamera::DrawInspector() {
    }
 
    if (ImGui::CollapsingHeader(Tr("最終出力の安定化", "Final Output Stabilization"), ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::DragFloat(Tr("最終カメラ位置の追従速度", "Final Camera Position Follow"), &positionLerpSpeed, 0.5f, 1.0f, 100.0f);
-      DrawHelp("各方向・距離を合成した最終カメラ位置を滑らかにする安全段です。後方追従は理想方向を決め、この項目は実際のeye位置を追従させます。",
-         "Final safety smoothing after all directions and distances are composed. Rear-follow controls the ideal direction; this tracks the actual eye position.");
+	  ImGui::DragFloat(Tr("最終カメラ位置の追従速度", "Final Camera Position Follow"), &positionLerpSpeed, 0.5f, 1.0f, 100.0f);
+	  DrawHelp("空中・速度演出を合成した最終カメラ距離を滑らかにします。",
+		 "Smooths final camera distance after airborne and speed effects are composed.");
+	  ImGui::DragFloat(Tr("eye方向の最大角速度", "Eye Direction Max Angular Speed"), &eyeDirectionMaxAngularSpeed, 0.1f, 0.0f, 30.0f);
+	  DrawHelp("上流で決定済みのeye方向は通常そのまま使い、急変時だけ1秒あたりの旋回角を制限します。低いジャンプの短い状態往復を吸収します。",
+		 "Normally keeps the resolved eye direction unchanged and only caps its angular speed during abrupt changes, absorbing short-hop state reversals.");
       ImGui::DragFloat(Tr("最終ロールの追従速度", "Final Roll Follow"), &rotationLerpSpeed, 0.5f, 0.1f, 100.0f);
       DrawHelp("カメラの視線をプレイヤーへ固定したまま、最終的なRight/Up（ロール）だけを滑らかにします。重力Up補間とは処理段階が異なります。",
          "Smooths only final Right/Up roll while keeping the view aimed at the player; it is downstream from gravity-Up tracking.");
@@ -1247,6 +1535,21 @@ void PlayerRearFollowCamera::DrawInspector() {
    ImGui::Text("%s: %s", Tr("空中", "Airborne"), isAirborne_ ? Tr("はい", "true") : Tr("いいえ", "false"));
    ImGui::Text("%s: %.2f", Tr("空中ブレンド", "Airborne Blend"), currentAirborneBlend_);
    ImGui::Text("%s: %.2f", Tr("画面位置ブレンド", "Player Framing Blend"), currentPlayerFramingBlend_);
+   ImGui::Text("%s: %s", Tr("着地予測", "Landing Prediction"), landingPredictionValid_ ? Tr("有効", "valid") : Tr("なし", "none"));
+   ImGui::Text("%s: %.2f  %s: %.2f",
+	  Tr("着地予測残り秒", "Predicted Impact Seconds"),
+	  predictedLandingSeconds_,
+	  Tr("着地前ブレンド", "Pre-landing Blend"),
+	  currentPreLandingBlend_);
+   ImGui::Text("%s: %s  %s: %.2f",
+	  Tr("地上復帰スナップショット", "Ground Release Snapshot"),
+	  isLandingReleaseActive_ ? Tr("有効", "active") : Tr("なし", "none"),
+	  Tr("適用率", "Guide Blend"),
+	  ComputePreLandingGuideBlend());
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("予測着地Up", "Predicted Landing Up"),
+	  predictedLandingUp_.x, predictedLandingUp_.y, predictedLandingUp_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("予測着地後方", "Predicted Landing Rear"),
+	  predictedLandingBackward_.x, predictedLandingBackward_.y, predictedLandingBackward_.z);
 	ImGui::Text("%s: %.2f", Tr("惑星補間重力係数", "Planet Blend Gravity Factor"), currentPlanetDirectionGravityFactor_);
 	ImGui::Text("%s: %.2f", Tr("現在の惑星ガイド追従速度", "Current Planet Guide Follow Speed"), ComputePlanetDirectionFollowSpeed());
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("目標GravityUp", "Target GravityUp"), gravityUp_.x, gravityUp_.y, gravityUp_.z);

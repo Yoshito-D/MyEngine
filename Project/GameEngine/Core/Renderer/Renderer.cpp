@@ -142,12 +142,25 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
 	  return;
    }
 
+   sceneTransitionHorizontalConstantBuffer_ =
+      ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(SceneTransitionConstants));
+   sceneTransitionHorizontalConstantBuffer_->Map(
+      0,
+      nullptr,
+      reinterpret_cast<void**>(&sceneTransitionHorizontalConstants_));
+   sceneTransitionHorizontalConstants_->blurDirection[0] = 1.0f;
+   sceneTransitionHorizontalConstants_->blurDirection[1] = 0.0f;
+   sceneTransitionHorizontalConstants_->applyComposite = 0;
+
    sceneTransitionConstantBuffer_ =
       ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(SceneTransitionConstants));
    sceneTransitionConstantBuffer_->Map(
       0,
       nullptr,
       reinterpret_cast<void**>(&sceneTransitionConstants_));
+   sceneTransitionConstants_->blurDirection[0] = 0.0f;
+   sceneTransitionConstants_->blurDirection[1] = 1.0f;
+   sceneTransitionConstants_->applyComposite = 1;
    SetSceneTransitionOpacity(0.0f);
 
    BuildDefaultPasses();
@@ -938,6 +951,11 @@ void Renderer::DrawLineInternal(const LineDrawData& lineData) {
 }
 
 void Renderer::Finalize() {
+   if (sceneTransitionHorizontalConstantBuffer_ && sceneTransitionHorizontalConstants_) {
+      sceneTransitionHorizontalConstantBuffer_->Unmap(0, nullptr);
+   }
+   sceneTransitionHorizontalConstants_ = nullptr;
+   sceneTransitionHorizontalConstantBuffer_.Reset();
    if (sceneTransitionConstantBuffer_ && sceneTransitionConstants_) {
       sceneTransitionConstantBuffer_->Unmap(0, nullptr);
    }
@@ -957,6 +975,9 @@ void Renderer::SetBlendMode(BlendMode blendMode) {
 
 void Renderer::SetSceneTransitionOpacity(float opacity) {
    sceneTransitionOpacity_ = std::clamp(opacity, 0.0f, 1.0f);
+   if (sceneTransitionHorizontalConstants_) {
+      sceneTransitionHorizontalConstants_->opacity = sceneTransitionOpacity_;
+   }
    if (sceneTransitionConstants_) {
       sceneTransitionConstants_->opacity = sceneTransitionOpacity_;
    }
@@ -1002,6 +1023,7 @@ void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHand
 
 void Renderer::ApplySceneTransitionOverlay() {
    if (sceneTransitionOpacity_ <= 0.0f ||
+      !sceneTransitionHorizontalConstantBuffer_ ||
       !sceneTransitionConstantBuffer_ ||
       !offscreenRenderTarget_) {
       return;
@@ -1017,21 +1039,32 @@ void Renderer::ApplySceneTransitionOverlay() {
       return;
    }
 
-   const D3D12_GPU_DESCRIPTOR_HANDLE inputTexture = offscreenRenderTarget_->GetSRVHandleGPU();
-   offscreenRenderTarget_->SwapBuffers();
-   offscreenRenderTarget_->PreDraw(false);
-
    auto* commandList = device_->GetCommandList();
-   commandList->SetGraphicsRootSignature(transitionPipeline->GetRootSignature());
-   commandList->SetPipelineState(transitionPipeline->GetPipelineState());
-   commandList->SetGraphicsRootConstantBufferView(
-      constantBufferSlot.value(),
-      sceneTransitionConstantBuffer_->GetGPUVirtualAddress());
-   commandList->SetGraphicsRootDescriptorTable(inputTextureSlot.value(), inputTexture);
-   commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   commandList->DrawInstanced(3, 1, 0, 0);
+   const auto applyTransitionPass =
+      [&](D3D12_GPU_DESCRIPTOR_HANDLE inputTexture, ID3D12Resource* constantBuffer) {
+         offscreenRenderTarget_->SwapBuffers();
+         offscreenRenderTarget_->PreDraw(false);
 
-   offscreenRenderTarget_->PostDraw();
+         commandList->SetGraphicsRootSignature(transitionPipeline->GetRootSignature());
+         commandList->SetPipelineState(transitionPipeline->GetPipelineState());
+         commandList->SetGraphicsRootConstantBufferView(
+            constantBufferSlot.value(),
+            constantBuffer->GetGPUVirtualAddress());
+         commandList->SetGraphicsRootDescriptorTable(inputTextureSlot.value(), inputTexture);
+         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+         commandList->DrawInstanced(3, 1, 0, 0);
+
+         offscreenRenderTarget_->PostDraw();
+      };
+
+   // 隣接画素を横・縦に分けて取得し、間隔を空けた格子状サンプリングを避ける。
+   applyTransitionPass(
+      offscreenRenderTarget_->GetSRVHandleGPU(),
+      sceneTransitionHorizontalConstantBuffer_.Get());
+   applyTransitionPass(
+      offscreenRenderTarget_->GetSRVHandleGPU(),
+      sceneTransitionConstantBuffer_.Get());
+
    InvalidatePipelineBinding();
 }
 
