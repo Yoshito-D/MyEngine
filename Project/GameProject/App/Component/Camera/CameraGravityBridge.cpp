@@ -10,6 +10,8 @@
 #include "Scene/Camera/Core/VirtualCamera.h"
 #include "Scene/SceneWorld.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
+#include <algorithm>
+#include <cmath>
 
 #ifdef USE_IMGUI
 #include "ImguiManager.h"
@@ -17,6 +19,9 @@
 
 namespace App {
 namespace {
+constexpr float kLandingPredictionStepSeconds = 1.0f / 60.0f;
+constexpr float kLandingPredictionDirectionEpsilon = 1e-4f;
+
 GameEngine::Vector3 NormalizeOrFallback(
    const GameEngine::Vector3& value,
    const GameEngine::Vector3& fallback) {
@@ -31,6 +36,141 @@ GameEngine::Vector3 NormalizeOrFallback(
    }
 
    return { 0.0f, 1.0f, 0.0f };
+}
+
+struct LandingPrediction {
+   GameEngine::Vector3 up = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 backward = { 0.0f, 0.0f, -1.0f };
+   GameEngine::Vector3 contactPoint = { 0.0f, 0.0f, 0.0f };
+   float secondsToImpact = 0.0f;
+};
+
+float ComputeObbSupportRadius(
+   const GameEngine::Quaternion& rotation,
+   const GameEngine::Vector3& halfExtents,
+   const GameEngine::Vector3& surfaceUp) {
+   const GameEngine::Vector3 axisX =
+	  GameEngine::RotateVector({ 1.0f, 0.0f, 0.0f }, rotation);
+   const GameEngine::Vector3 axisY =
+	  GameEngine::RotateVector({ 0.0f, 1.0f, 0.0f }, rotation);
+   const GameEngine::Vector3 axisZ =
+	  GameEngine::RotateVector({ 0.0f, 0.0f, 1.0f }, rotation);
+   return std::abs(axisX.Dot(surfaceUp)) * std::abs(halfExtents.x)
+	  + std::abs(axisY.Dot(surfaceUp)) * std::abs(halfExtents.y)
+	  + std::abs(axisZ.Dot(surfaceUp)) * std::abs(halfExtents.z);
+}
+
+bool PredictLanding(
+   const GameEngine::Vector3& position,
+   const GameEngine::Vector3& velocity,
+   const GameEngine::Vector3& planetCenter,
+   float surfaceRadius,
+   float landingOffset,
+   const GameEngine::Vector3& obbHalfExtents,
+   const GameEngine::Quaternion& playerRotation,
+   float gravityStrength,
+   float predictionHorizon,
+   const GameEngine::Vector3& fallbackForward,
+   const GameEngine::Vector3& fallbackRight,
+   LandingPrediction& outPrediction) {
+   float horizon = std::clamp(predictionHorizon, 0.0f, 5.0f);
+   if (horizon <= 1e-4f || surfaceRadius <= 1e-4f) {
+	  return false;
+   }
+
+   GameEngine::Vector3 simulatedPosition = position;
+   GameEngine::Vector3 simulatedVelocity = velocity;
+   GameEngine::Vector3 initialToSelf = simulatedPosition - planetCenter;
+   float initialDistance = initialToSelf.Length();
+   if (initialDistance <= 1e-4f) {
+	  return false;
+   }
+
+   GameEngine::Vector3 initialUp = initialToSelf * (1.0f / initialDistance);
+   float initialSnapRadius =
+	  surfaceRadius
+	  + landingOffset
+	  + ComputeObbSupportRadius(playerRotation, obbHalfExtents, initialUp);
+   float previousClearance = initialDistance - initialSnapRadius;
+   if (previousClearance <= 0.0f) {
+	  return false;
+   }
+
+   float elapsed = 0.0f;
+   while (elapsed < horizon) {
+	  float step = std::min(kLandingPredictionStepSeconds, horizon - elapsed);
+	  GameEngine::Vector3 toSelf = simulatedPosition - planetCenter;
+	  float distance = toSelf.Length();
+	  if (distance <= 1e-4f) {
+		 return false;
+	  }
+
+	  GameEngine::Vector3 surfaceUp = toSelf * (1.0f / distance);
+	  GameEngine::Vector3 previousVelocity = simulatedVelocity;
+	  GameEngine::Vector3 previousPosition = simulatedPosition;
+
+	  // GravityBody と同じ半陰的オイラー順序で、候補惑星の放射重力だけを短時間先読みする。
+	  simulatedVelocity +=
+		 surfaceUp * (-std::max(0.0f, gravityStrength) * step);
+	  simulatedPosition += simulatedVelocity * step;
+
+	  GameEngine::Vector3 nextToSelf = simulatedPosition - planetCenter;
+	  float nextDistance = nextToSelf.Length();
+	  if (nextDistance <= 1e-4f) {
+		 return false;
+	  }
+	  GameEngine::Vector3 nextUp = nextToSelf * (1.0f / nextDistance);
+	  float nextSnapRadius =
+		 surfaceRadius
+		 + landingOffset
+		 + ComputeObbSupportRadius(playerRotation, obbHalfExtents, nextUp);
+	  float nextClearance = nextDistance - nextSnapRadius;
+
+	  if (nextClearance <= 0.0f) {
+		 float denominator = previousClearance - nextClearance;
+		 float crossingAlpha = denominator > 1e-5f
+			? std::clamp(previousClearance / denominator, 0.0f, 1.0f)
+			: 1.0f;
+		 GameEngine::Vector3 hitPosition =
+			previousPosition + (simulatedPosition - previousPosition) * crossingAlpha;
+		 GameEngine::Vector3 hitVelocity =
+			previousVelocity + (simulatedVelocity - previousVelocity) * crossingAlpha;
+		 GameEngine::Vector3 hitUp = NormalizeOrFallback(hitPosition - planetCenter, nextUp);
+
+		 // 地表へ近づく交差だけを着地予測として扱う。
+		 if (hitVelocity.Dot(hitUp) > 0.0f) {
+			return false;
+		 }
+
+		 GameEngine::Vector3 landingForward =
+			hitVelocity - hitUp * hitVelocity.Dot(hitUp);
+		 if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
+			landingForward =
+			   fallbackForward - hitUp * fallbackForward.Dot(hitUp);
+		 }
+		 if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
+			// 真上・真下を向いた垂直着地では機首投影も退化するため、
+			// 表示中のカメラRightから画面上の前方を復元して方位を維持する。
+			landingForward = fallbackRight.Cross(hitUp);
+		 }
+		 if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
+			return false;
+		 }
+
+		 landingForward = NormalizeOrFallback(landingForward, fallbackForward);
+		 outPrediction.up = hitUp;
+		 outPrediction.backward = -landingForward;
+		 outPrediction.contactPoint =
+			planetCenter + hitUp * (surfaceRadius + landingOffset);
+		 outPrediction.secondsToImpact = elapsed + step * crossingAlpha;
+		 return true;
+	  }
+
+	  previousClearance = nextClearance;
+	  elapsed += step;
+   }
+
+   return false;
 }
 
 void TriggerDirectionalShake(
@@ -80,6 +220,9 @@ void CameraGravityBridge::Update(float) {
    // ワールド座標の取得元（Transform）を参照
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
    if (!transform) { return; }
+   auto* gravityBody = GetOwner().GetComponent<GravityBody>();
+   auto* landing = GetOwner().GetComponent<CharacterLanding>();
+   auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
 
    // 惑星中心→自身方向を正規化して重力Upを作る
    GameEngine::Vector3 toSelf = transform->transform.translation - planetCenter_;
@@ -88,9 +231,11 @@ void CameraGravityBridge::Update(float) {
    GameEngine::Vector3 gravityUp = toSelf * (1.0f / len);
    GameEngine::Vector3 pos       = transform->transform.translation;
    GameEngine::Vector3 cameraPlanetCenter = planetCenter_;
-   if (auto* switcher = GetOwner().GetComponent<PlanetSwitcher>()) {
-      float surfaceRadius = 0.0f;
-      switcher->TryGetLandingPlanet(cameraPlanetCenter, surfaceRadius);
+   float cameraPlanetSurfaceRadius = 0.0f;
+   bool hasCameraPlanet = false;
+   if (switcher) {
+      hasCameraPlanet =
+		 switcher->TryGetLandingPlanet(cameraPlanetCenter, cameraPlanetSurfaceRadius);
    }
 
    // GravityFollowCamera 側へ重力Upと注視対象を同期
@@ -112,7 +257,7 @@ void CameraGravityBridge::Update(float) {
 
       GameEngine::Vector3 airborneMoveForward = forward;
       GameEngine::Vector3 playerVelocity = { 0.0f, 0.0f, 0.0f };
-      if (auto* gravityBody = GetOwner().GetComponent<GravityBody>()) {
+      if (gravityBody) {
          GameEngine::Vector3 velocity = gravityBody->GetVelocity();
          playerVelocity = velocity;
          // 重力方向成分を除いた進行方向を使い、上下速度だけでカメラが真上/真下を向くのを避ける。
@@ -130,6 +275,35 @@ void CameraGravityBridge::Update(float) {
       playerRearFollowCamera_->SetAirborneMoveForward(airborneMoveForward);
       playerRearFollowCamera_->SetAirborne(isAirborne);
       playerRearFollowCamera_->SetPlayerVelocity(playerVelocity);
+
+      playerRearFollowCamera_->ClearLandingPrediction();
+      if (isAirborne && hasCameraPlanet && gravityBody && landing) {
+		 LandingPrediction prediction{};
+		 float predictionHorizon = std::max(
+			0.0f,
+			playerRearFollowCamera_->GetPreLandingPredictionHorizon());
+		 float predictionGravity =
+			gravityBody->useGravity ? gravityBody->gravityStrength : 0.0f;
+		 if (PredictLanding(
+			pos,
+			playerVelocity,
+			cameraPlanetCenter,
+			cameraPlanetSurfaceRadius,
+			landing->landingOffset,
+			landing->obbHalfExtents,
+			rotation,
+			predictionGravity,
+			predictionHorizon,
+			forward,
+			playerRearFollowCamera_->GetCameraRight(),
+			prediction)) {
+			playerRearFollowCamera_->SetLandingPrediction(
+			   prediction.up,
+			   prediction.backward,
+			   prediction.contactPoint,
+			   prediction.secondsToImpact);
+		 }
+      }
    }
 
    // VehicleGroundMover から速度と autoSpeed を取得し、両カメラへ供給する
@@ -155,7 +329,7 @@ void CameraGravityBridge::Update(float) {
       planetLeashCamera_->SetSphereCenter(planetCenter_);
    }
 
-   if (auto* landing = GetOwner().GetComponent<CharacterLanding>()) {
+   if (landing) {
       const bool isGrounded = landing->IsGrounded();
       if (enableLandingShake && isGrounded && !wasGrounded_) {
          if (gravityFollowCamera_) {

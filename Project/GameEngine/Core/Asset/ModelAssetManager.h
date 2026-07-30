@@ -6,6 +6,7 @@
 #include "Model/ModelAsset.h"
 
 namespace GameEngine {
+class AnimationAssetManager;
 class GraphicsDevice;
 
 /// @brief モデルアセットマネージャークラス
@@ -15,7 +16,8 @@ public:
 
    /// @brief モデルアセットマネージャーの初期化
    /// @param device グラフィックスデバイス
-   void Initialize(GraphicsDevice* device);
+   /// @param animationAssetManager glTFに含まれるアニメーションの登録先
+   void Initialize(GraphicsDevice* device, AnimationAssetManager* animationAssetManager);
 
    /// @brief モデルをロード
    /// @param modelPath モデルのパス
@@ -42,9 +44,11 @@ public:
 private:
    static std::string NormalizeAssetId(const std::string& path);
    static std::string BuildAssetId(const std::string& modelPath, const std::string& modelName);
+   void RegisterGltfAnimation(const std::string& modelPath, const std::string& modelName);
    ModelHandle LoadModelInternal(const std::string& modelPath, const std::string& modelName, const std::string& assetId);
 
    GraphicsDevice* device_ = nullptr;
+   AnimationAssetManager* animationAssetManager_ = nullptr;
    std::unordered_map<std::string, ModelHandle> modelAssets_;
    std::unordered_map<std::string, ModelHandle> modelAssetsById_;
 };

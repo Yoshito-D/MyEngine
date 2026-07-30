@@ -134,6 +134,8 @@ void ParticleEmitterComponent::Update(float) {
 		 onFinished();
 	  }
    }
+
+   DrawDebugAttachments();
 }
 
 void ParticleEmitterComponent::ApplyEmitterToShapeModule(ParticleSystem* ps, const Matrix4x4& emitterMatrix) {
@@ -387,42 +389,60 @@ void ParticleEmitterComponent::SetSlotWorldTransform(
 // エミッター行列の計算
 // ============================================================
 
+bool ParticleEmitterComponent::TryComputeJointWorldMatrix(
+   const std::string& jointName,
+   Matrix4x4& jointWorldMatrix) const {
+   if (jointName.empty()) {
+	  return false;
+   }
+
+   const auto* meshComponent = GetOwner().GetComponent<MeshComponent>();
+   const ModelAsset* modelAsset = meshComponent ? meshComponent->GetModelAsset() : nullptr;
+   const Skeleton* skeleton = modelAsset ? modelAsset->GetBindSkeleton() : nullptr;
+   if (!skeleton) {
+	  return false;
+   }
+
+   const auto jointIt = skeleton->jointMap.find(jointName);
+   if (jointIt == skeleton->jointMap.end()) {
+	  return false;
+   }
+
+   const int32_t jointIndex = jointIt->second;
+   if (jointIndex < 0 || static_cast<size_t>(jointIndex) >= skeleton->joints.size()) {
+	  return false;
+   }
+
+   Matrix4x4 jointSkeletonMatrix = skeleton->joints[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix;
+   if (const SkinCluster* skinCluster = meshComponent->GetSkinCluster();
+	  skinCluster &&
+	  static_cast<size_t>(jointIndex) < skinCluster->inverseBindPoseMatrices.size() &&
+	  static_cast<size_t>(jointIndex) < skinCluster->mappedPalette.size()) {
+	  // GPUパレットから逆バインドを戻し、描画中のアニメーション姿勢と同じジョイント行列を得る。
+	  jointSkeletonMatrix =
+		 skinCluster->inverseBindPoseMatrices[static_cast<size_t>(jointIndex)].Inverse() *
+		 skinCluster->mappedPalette[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix;
+   }
+
+   if (const auto* transformComponent = GetOwner().GetComponent<TransformComponent>()) {
+	  Matrix4x4 modelWorld = MakeAffineMatrix(transformComponent->transform);
+	  if (transformComponent->useParentMatrix) {
+		 modelWorld = modelWorld * transformComponent->parentMatrix;
+	  }
+	  jointWorldMatrix = jointSkeletonMatrix * modelWorld;
+   } else {
+	  jointWorldMatrix = jointSkeletonMatrix;
+   }
+
+   return true;
+}
+
 Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig& cfg) const {
    Matrix4x4 base = MakeIdentity4x4();
 
    // ボーン追従
    if (!cfg.boneName.empty()) {
-	  auto* mac = GetOwner().GetComponent<MeshComponent>();
-	  if (mac) {
-		 const SkinCluster* sc = mac->GetSkinCluster();
-		 const ModelAsset* asset = mac->GetModelAsset();
-		 if (sc && asset) {
-			const Skeleton* skeleton = asset->GetBindSkeleton();
-			if (skeleton) {
-			   auto it = skeleton->jointMap.find(cfg.boneName);
-			   if (it != skeleton->jointMap.end()) {
-				  const int32_t jointIdx = it->second;
-				  if (jointIdx >= 0 &&
-					 static_cast<size_t>(jointIdx) < sc->inverseBindPoseMatrices.size() &&
-					 static_cast<size_t>(jointIdx) < sc->mappedPalette.size())
-				  {
-					 const Matrix4x4 animPoseLocal =
-						sc->inverseBindPoseMatrices[jointIdx].Inverse() *
-						sc->mappedPalette[jointIdx].skeletonSpaceMatrix;
-
-					 auto* tc = GetOwner().GetComponent<TransformComponent>();
-					 if (tc) {
-						Matrix4x4 modelWorld = MakeAffineMatrix(tc->transform);
-						if (tc->useParentMatrix) modelWorld = modelWorld * tc->parentMatrix;
-						base = animPoseLocal * modelWorld;
-					 } else {
-						base = animPoseLocal;
-					 }
-				  }
-			   }
-			}
-		 }
-	  }
+	  TryComputeJointWorldMatrix(cfg.boneName, base);
    } else {
 	  auto* tc = GetOwner().GetComponent<TransformComponent>();
 	  if (tc) {
@@ -469,6 +489,69 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
    }
 
    return base;
+}
+
+void ParticleEmitterComponent::DrawDebugAttachments() const {
+   if (!debugDrawAttachments) {
+	  return;
+   }
+
+   constexpr float kJointRadius = 0.06f;
+   constexpr float kEmitterRadius = 0.035f;
+   constexpr float kAxisLength = 0.25f;
+   const Vector4 slotColors[] = {
+	  Vector4(1.0f, 0.2f, 1.0f, 1.0f),
+	  Vector4(1.0f, 0.65f, 0.1f, 1.0f),
+	  Vector4(0.2f, 1.0f, 0.45f, 1.0f),
+	  Vector4(0.2f, 0.65f, 1.0f, 1.0f),
+   };
+
+   for (size_t slotIndex = 0; slotIndex < slots_.size(); ++slotIndex) {
+	  const AttachmentConfig& config = slots_[slotIndex].attachConfig;
+	  if (config.boneName.empty()) {
+		 continue;
+	  }
+
+	  Matrix4x4 jointWorldMatrix;
+	  if (!TryComputeJointWorldMatrix(config.boneName, jointWorldMatrix)) {
+		 continue;
+	  }
+
+	  const Vector3 jointPosition(
+		 jointWorldMatrix.m[3][0],
+		 jointWorldMatrix.m[3][1],
+		 jointWorldMatrix.m[3][2]);
+	  const Matrix4x4 emitterMatrix = ComputeEmitterMatrix(config);
+	  const Vector3 emitterPosition(
+		 emitterMatrix.m[3][0],
+		 emitterMatrix.m[3][1],
+		 emitterMatrix.m[3][2]);
+	  const Vector4& slotColor = slotColors[slotIndex % 4];
+
+	  EngineContext::DrawSphere(jointPosition, kJointRadius, slotColor, false);
+	  EngineContext::DrawSphere(emitterPosition, kEmitterRadius, slotColor, false);
+	  EngineContext::DrawLine(jointPosition, emitterPosition, slotColor, false);
+
+	  // RGB軸でジョイントの向きも示し、位置オフセットの調整方向を判断しやすくする。
+	  const Vector3 xAxis = Vector3(
+		 jointWorldMatrix.m[0][0],
+		 jointWorldMatrix.m[0][1],
+		 jointWorldMatrix.m[0][2]).Normalize();
+	  const Vector3 yAxis = Vector3(
+		 jointWorldMatrix.m[1][0],
+		 jointWorldMatrix.m[1][1],
+		 jointWorldMatrix.m[1][2]).Normalize();
+	  const Vector3 zAxis = Vector3(
+		 jointWorldMatrix.m[2][0],
+		 jointWorldMatrix.m[2][1],
+		 jointWorldMatrix.m[2][2]).Normalize();
+	  EngineContext::DrawLine(
+		 jointPosition, jointPosition + xAxis * kAxisLength, Vector4(1.0f, 0.15f, 0.15f, 1.0f), false);
+	  EngineContext::DrawLine(
+		 jointPosition, jointPosition + yAxis * kAxisLength, Vector4(0.15f, 1.0f, 0.15f, 1.0f), false);
+	  EngineContext::DrawLine(
+		 jointPosition, jointPosition + zAxis * kAxisLength, Vector4(0.15f, 0.4f, 1.0f, 1.0f), false);
+   }
 }
 
 // ============================================================
@@ -565,6 +648,7 @@ static void DeserializeAttachmentConfig(const nlohmann::json& j, ParticleEmitter
 nlohmann::json ParticleEmitterComponent::Serialize() const {
    nlohmann::json j;
    j["maxCullDistance"] = maxCullDistance;
+   j["debugDrawAttachments"] = debugDrawAttachments;
 
    nlohmann::json slotsJson = nlohmann::json::array();
    for (const auto& slot : slots_) {
@@ -584,6 +668,9 @@ nlohmann::json ParticleEmitterComponent::Serialize() const {
 void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("maxCullDistance") && data.at("maxCullDistance").is_number()) {
 	  maxCullDistance = data.at("maxCullDistance").get<float>();
+   }
+   if (data.contains("debugDrawAttachments") && data.at("debugDrawAttachments").is_boolean()) {
+	  debugDrawAttachments = data.at("debugDrawAttachments").get<bool>();
    }
 
    ClearSlots();
@@ -641,6 +728,14 @@ void ParticleEmitterComponent::DrawInspector() {
 
    // ── コンポーネント共通設定 ─────────────────────
    ImGui::DragFloat(Tr("カリング距離", "Cull Distance"), &maxCullDistance, 1.0f, 0.0f, 10000.0f);
+   ImGui::Checkbox(Tr("アタッチ先をデバッグ描画", "Debug Draw Attachments"), &debugDrawAttachments);
+
+   const Skeleton* ownerSkeleton = nullptr;
+   if (const auto* meshComponent = GetOwner().GetComponent<MeshComponent>()) {
+	  if (const ModelAsset* modelAsset = meshComponent->GetModelAsset()) {
+		 ownerSkeleton = modelAsset->GetBindSkeleton();
+	  }
+   }
 
    // ── 全スロット一括制御 ────────────────────────
    ImGui::SeparatorText(Tr("全体制御", "Global Control"));
@@ -750,11 +845,65 @@ void ParticleEmitterComponent::DrawInspector() {
 			SyncSimulationSpace(slot.particleSystem.get(), slot.attachConfig.simulationSpace);
 		 }
 
-		 char boneBuf[ImGuiHelper::kDefaultTextBufferSize]{};
-		 const size_t boneLen = std::min(slot.attachConfig.boneName.size(), sizeof(boneBuf) - 1);
-		 std::memcpy(boneBuf, slot.attachConfig.boneName.c_str(), boneLen);
-		 if (ImGui::InputText(Tr("ボーン名", "Bone Name"), boneBuf, sizeof(boneBuf))) {
-			slot.attachConfig.boneName = boneBuf;
+		 bool hasSelectedJoint =
+			slot.attachConfig.boneName.empty() ||
+			(ownerSkeleton && ownerSkeleton->jointMap.contains(slot.attachConfig.boneName));
+		 std::string jointPreview = slot.attachConfig.boneName.empty()
+			? Tr("<ルートTransform>", "<Root Transform>")
+			: slot.attachConfig.boneName;
+		 if (!hasSelectedJoint) {
+			jointPreview += Tr(" (見つかりません)", " (Not Found)");
+		 }
+
+		 if (ImGui::BeginCombo(Tr("アタッチ先ジョイント", "Attachment Joint"), jointPreview.c_str())) {
+			const bool usesRootTransform = slot.attachConfig.boneName.empty();
+			if (ImGui::Selectable(Tr("<ルートTransform>", "<Root Transform>"), usesRootTransform)) {
+			   slot.attachConfig.boneName.clear();
+			   hasSelectedJoint = true;
+			}
+			if (usesRootTransform) {
+			   ImGui::SetItemDefaultFocus();
+			}
+
+			if (ownerSkeleton) {
+			   for (const Joint& joint : ownerSkeleton->joints) {
+				  size_t hierarchyDepth = 0;
+				  std::optional<int32_t> parentIndex = joint.parent;
+				  while (parentIndex && hierarchyDepth < ownerSkeleton->joints.size()) {
+					 ++hierarchyDepth;
+					 const int32_t index = *parentIndex;
+					 if (index < 0 || static_cast<size_t>(index) >= ownerSkeleton->joints.size()) {
+						break;
+					 }
+					 parentIndex = ownerSkeleton->joints[static_cast<size_t>(index)].parent;
+				  }
+
+				  const std::string jointLabel = std::string(hierarchyDepth * 2, ' ') + joint.name;
+				  ImGui::PushID(joint.index);
+				  const bool isSelected = slot.attachConfig.boneName == joint.name;
+				  if (ImGui::Selectable(jointLabel.c_str(), isSelected)) {
+					 slot.attachConfig.boneName = joint.name;
+					 hasSelectedJoint = true;
+				  }
+				  if (isSelected) {
+					 ImGui::SetItemDefaultFocus();
+				  }
+				  ImGui::PopID();
+			   }
+			} else {
+			   ImGui::TextDisabled("%s", Tr("スケルトンを持つモデルが必要です", "A model with a skeleton is required"));
+		 }
+			ImGui::EndCombo();
+		 }
+
+		 if (ownerSkeleton) {
+			ImGui::TextDisabled("%s: %zu", Tr("ジョイント数", "Joint Count"), ownerSkeleton->joints.size());
+		 }
+		 if (!hasSelectedJoint) {
+			ImGui::TextColored(
+			   ImVec4(1.0f, 0.35f, 0.25f, 1.0f),
+			   "%s",
+			   Tr("選択中のジョイントは現在のモデルに存在しません", "The selected joint does not exist in the current model"));
 		 }
 
 		 if (slot.particleSystem) {

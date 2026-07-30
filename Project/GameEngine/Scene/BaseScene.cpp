@@ -8,6 +8,8 @@
 #include <Sprite/Sprite.h>
 #include <Object/Text/UIText.h>
 #include <Component/RenderComponent.h>
+#include <Component/Model/AnimationComponent.h>
+#include <Component/Particle/ParticleEmitterComponent.h>
 #include <Component/LightComponent.h>
 #include <Component/TransformComponent.h>
 #include <Skybox/Skybox.h>
@@ -74,6 +76,24 @@ void UpdateEditorLightProxies(float deltaTime) {
 	  if (auto* light = object->GetComponent<GameEngine::LightComponent>();
 		 light && light->IsEnabled()) {
 		 light->Update(deltaTime);
+	  }
+   }
+}
+
+void DrawEditorComponentDebug() {
+   const auto registeredObjects = GameEngine::Object::GetRegisteredObjects();
+   for (GameEngine::Object* object : registeredObjects) {
+	  if (!object) {
+		 continue;
+	  }
+
+	  if (auto* animation = object->GetComponent<GameEngine::AnimationComponent>();
+		 animation && animation->IsEnabled()) {
+		 animation->DrawDebugBones();
+	  }
+	  if (auto* particleEmitter = object->GetComponent<GameEngine::ParticleEmitterComponent>();
+		 particleEmitter && particleEmitter->IsEnabled()) {
+		 particleEmitter->DrawDebugAttachments();
 	  }
    }
 }
@@ -470,6 +490,7 @@ void BaseScene::EditorUpdate() {
    if (!EngineContext::ShouldRunRuntimeUpdate()) {
 	  // 編集停止中は描画プロキシだけを同期し、ゲームプレイ用Componentを誤って進めない。
 	  UpdateEditorLightProxies(EngineContext::GetUnscaledDeltaTime());
+	  DrawEditorComponentDebug();
    }
 
    if (EngineContext::IsKeyTriggered(KeyCode::F1)) {

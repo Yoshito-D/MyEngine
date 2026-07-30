@@ -1,17 +1,33 @@
 #include "pch.h"
 #include "ModelAssetManager.h"
+#include "AnimationAssetManager.h"
 #include "Graphics/GraphicsDevice.h"
 #include <cassert>
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 
+namespace {
+bool HasGltfExtension(const std::string& fileName) {
+   std::string extension = std::filesystem::path(fileName).extension().string();
+   std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char character) {
+      return static_cast<char>(std::tolower(character));
+   });
+   return extension == ".gltf";
+}
+}
+
 namespace GameEngine {
-void ModelAssetManager::Initialize(GraphicsDevice* device) {
+void ModelAssetManager::Initialize(GraphicsDevice* device, AnimationAssetManager* animationAssetManager) {
    assert(device);
+   assert(animationAssetManager);
    device_ = device;
+   animationAssetManager_ = animationAssetManager;
 }
 
 ModelAssetManager::ModelHandle ModelAssetManager::LoadModel(const std::string& modelPath, const std::string& modelName) {
+   RegisterGltfAnimation(modelPath, modelName);
+
    auto it = modelAssets_.find(modelName);
    if (it != modelAssets_.end()) {
 	  Logger::Info("Model already loaded: " + modelName);
@@ -31,16 +47,18 @@ ModelAssetManager::ModelHandle ModelAssetManager::LoadModel(const std::string& m
 
 ModelAssetManager::ModelHandle ModelAssetManager::LoadModelByAssetId(const std::string& assetId) {
    const std::string normalizedAssetId = NormalizeAssetId(assetId);
-   auto idIt = modelAssetsById_.find(normalizedAssetId);
-   if (idIt != modelAssetsById_.end()) {
-      return idIt->second;
-   }
-
    const std::filesystem::path relativePath(normalizedAssetId);
    const std::filesystem::path directory = std::filesystem::path("resources") / relativePath.parent_path();
    const std::string modelName = relativePath.filename().string();
    if (modelName.empty()) {
       return {};
+   }
+
+   RegisterGltfAnimation(directory.generic_string(), modelName);
+
+   auto idIt = modelAssetsById_.find(normalizedAssetId);
+   if (idIt != modelAssetsById_.end()) {
+      return idIt->second;
    }
 
    return LoadModelInternal(directory.generic_string(), modelName, normalizedAssetId);
@@ -104,5 +122,14 @@ std::string ModelAssetManager::NormalizeAssetId(const std::string& path) {
 
 std::string ModelAssetManager::BuildAssetId(const std::string& modelPath, const std::string& modelName) {
    return NormalizeAssetId((std::filesystem::path(modelPath) / modelName).generic_string());
+}
+
+void ModelAssetManager::RegisterGltfAnimation(const std::string& modelPath, const std::string& modelName) {
+   if (!animationAssetManager_ || !HasGltfExtension(modelName)) {
+      return;
+   }
+
+   // モデルと同じglTFをアニメーション管理にも登録し、個別の明示ロードを不要にする。
+   animationAssetManager_->LoadAnimation(modelPath, modelName);
 }
 }

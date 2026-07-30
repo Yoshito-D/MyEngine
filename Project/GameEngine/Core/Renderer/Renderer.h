@@ -31,6 +31,7 @@
 #include <optional>
 #include <filesystem>
 #include <string_view>
+#include <cstdint>
 
 #ifdef USE_IMGUI
 #include "UI/ImGuiManager.h"
@@ -302,8 +303,11 @@ private:
 
    struct SceneTransitionConstants {
       float opacity = 0.0f;
-      float padding[3] = {};
+      float blurDirection[2] = {};
+      uint32_t applyComposite = 0;
    };
+   Microsoft::WRL::ComPtr<ID3D12Resource> sceneTransitionHorizontalConstantBuffer_;
+   SceneTransitionConstants* sceneTransitionHorizontalConstants_ = nullptr;
    Microsoft::WRL::ComPtr<ID3D12Resource> sceneTransitionConstantBuffer_;
    SceneTransitionConstants* sceneTransitionConstants_ = nullptr;
    float sceneTransitionOpacity_ = 0.0f;
