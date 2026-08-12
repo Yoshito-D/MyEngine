@@ -20,20 +20,26 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
    float alignment = std::clamp(localUp.Dot(gravityUp), 0.0f, 1.0f);
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
-   if (!groundMover) { return LandingResult::Normal; }
+   if (!groundMover) {
+	  lastLandingResult_ = LandingResult::Normal;
+	  return lastLandingResult_;
+   }
 
    if (alignment >= boostThreshold) {
 	  // 成功: 綺麗に着地したのでブーストを加算する。
 	  groundMover->AddVelocityImpulse(boostAmount);
-	  return LandingResult::Success;
+	  lastLandingResult_ = LandingResult::Success;
+	  return lastLandingResult_;
    }
    if (alignment >= normalThreshold) {
 	  // 普通: 多少傾いた着地なので速度は変化させない。
-	  return LandingResult::Normal;
+	  lastLandingResult_ = LandingResult::Normal;
+	  return lastLandingResult_;
    }
    // 失敗: 大きく傾いた着地なので速度を penaltySpeed に設定する。
    groundMover->SetCurrentSpeed(penaltySpeed);
-   return LandingResult::Failure;
+   lastLandingResult_ = LandingResult::Failure;
+   return lastLandingResult_;
 }
 
 #ifdef USE_IMGUI

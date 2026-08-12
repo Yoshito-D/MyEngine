@@ -34,6 +34,9 @@ public:
    LandingResult TryBoost(const GameEngine::Vector3& localUp,
 						  const GameEngine::Vector3& gravityUp);
 
+   /// @brief 直近の着地判定結果を取得する
+   LandingResult GetLastLandingResult() const { return lastLandingResult_; }
+
 #ifdef USE_IMGUI
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
@@ -56,6 +59,10 @@ public:
 
    /// @brief 失敗着地の速度
    float penaltySpeed = 0.0f;
+
+private:
+   /// @brief 直近の着地判定結果（エフェクトなどの後続処理で参照する）
+   LandingResult lastLandingResult_ = LandingResult::Normal;
 };
 
 } // namespace App

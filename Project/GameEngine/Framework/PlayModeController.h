@@ -6,6 +6,7 @@
 namespace GameEngine {
 
 class SceneManager;
+class Object;
 
 /// @brief エディターの実行状態
 enum class PlayMode {
@@ -34,6 +35,14 @@ public:
 
    /// @brief 一時停止中の1フレーム実行を予約する
    void RequestStep();
+
+#ifdef USE_IMGUI
+   /// @brief プレイ中の指定コンポーネントだけを開始時スナップショットとシーンファイルへ保存する
+   /// @param object 保存対象コンポーネントを所有するEntity
+   /// @param componentTypeName 保存対象のコンポーネント型名
+   /// @return 両方の保存先を更新できた場合はtrue
+   bool SaveComponent(Object& object, const std::string& componentTypeName);
+#endif
 
    /// @brief 予約された状態遷移を処理してゲーム時間を更新する
    /// @param sceneManager シーンの保存と復元に使用するマネージャー

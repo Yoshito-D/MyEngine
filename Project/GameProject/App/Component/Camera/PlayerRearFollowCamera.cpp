@@ -891,6 +891,7 @@ void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    // キャッシュ更新
    cachedRight_ = xaxis;
    cachedUp_ = yaxis;
+   cachedForward_ = zaxis;
 
    state.transform.translation = eye;
    state.transform.SetRotationQuaternion(currentViewRotation_);
@@ -1127,6 +1128,7 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    isEyeInitialized_ = false;
    cachedRight_ = { 1.0f, 0.0f, 0.0f };
    cachedUp_ = { 0.0f, 1.0f, 0.0f };
+   cachedForward_ = { 0.0f, 0.0f, 1.0f };
    currentViewRotation_ = GameEngine::Quaternion::Identity();
    isViewRotationInitialized_ = false;
    lastEyePlanarDirection_ = { 0.0f, 0.0f, -1.0f };
@@ -1563,4 +1565,3 @@ void PlayerRearFollowCamera::DrawInspector() {
 #endif
 
 } // namespace App
-

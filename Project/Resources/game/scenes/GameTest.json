@@ -441,10 +441,10 @@
             "id": "bloom",
             "order": 20,
             "settings": {
-               "blurRadius": 2.4619998931884766,
+               "blurRadius": 2.0999999046325684,
                "intensity": 0.8790000081062317,
                "softThreshold": 0.5,
-               "threshold": 0.2879999876022339
+               "threshold": 0.3140000104904175
             }
          },
          {
@@ -2792,7 +2792,7 @@
                      "applyTranslation": false,
                      "clipName": "",
                      "currentTime": 0.0,
-                     "debugDrawBones": true,
+                     "debugDrawBones": false,
                      "loop": true,
                      "playbackSpeed": 3.1600000858306885,
                      "playing": true,
@@ -2801,44 +2801,6 @@
                   },
                   "enabled": true,
                   "typeName": "AnimationComponent"
-               },
-               {
-                  "data": {
-                     "debugDrawAttachments": true,
-                     "maxCullDistance": 0.0,
-                     "slots": [
-                        {
-                           "attachConfig": {
-                              "boneName": "ROOT",
-                              "followPosition": true,
-                              "followRotation": true,
-                              "followScale": true,
-                              "positionOffset": [
-                                 0.0,
-                                 0.0,
-                                 0.0
-                              ],
-                              "rotationOffset": [
-                                 0.0,
-                                 0.0,
-                                 0.0
-                              ],
-                              "scaleOffset": [
-                                 1.0,
-                                 1.0,
-                                 1.0
-                              ],
-                              "simulationSpace": "World"
-                           },
-                           "autoPlay": true,
-                           "jsonPath": "resources/game/particles/Ring.json",
-                           "loop": true,
-                           "playOnceAndDestroy": false
-                        }
-                     ]
-                  },
-                  "enabled": true,
-                  "typeName": "ParticleEmitterComponent"
                }
             ],
             "id": "Model:Goal",
@@ -3621,6 +3583,34 @@
                            "jsonPath": "resources/game/particles/landingDust.json",
                            "loop": false,
                            "playOnceAndDestroy": false
+                        },
+                        {
+                           "attachConfig": {
+                              "boneName": "",
+                              "followPosition": true,
+                              "followRotation": true,
+                              "followScale": true,
+                              "positionOffset": [
+                                 0.0,
+                                 0.0,
+                                 -0.699999988079071
+                              ],
+                              "rotationOffset": [
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              "scaleOffset": [
+                                 1.0,
+                                 1.0,
+                                 1.0
+                              ],
+                              "simulationSpace": "World"
+                           },
+                           "autoPlay": false,
+                           "jsonPath": "resources/game/particles/landing_failure.json",
+                           "loop": false,
+                           "playOnceAndDestroy": false
                         }
                      ]
                   },
@@ -3631,6 +3621,14 @@
                   "data": {
                      "enableLandingShake": true,
                      "gravityFollowCameraId": "GravityFollowCamera",
+                     "debugDrawPresentationGuides": false,
+                     "presentationGuideLength": 8.0,
+                     "autoCapturePresentationSequence": false,
+                     "presentationCaptureJumpDelay": 1.25,
+                     "autoCapturePresentationVideoFrames": false,
+                     "presentationVideoFrameRate": 10.0,
+                     "presentationVideoCaptureStartDelay": 3.25,
+                     "presentationVideoCaptureDuration": 8.0,
                      "landingShakeAmplitude": 0.15000000596046448,
                      "landingShakeDuration": 0.10000000149011612,
                      "landingShakeFrequency": 14.0,

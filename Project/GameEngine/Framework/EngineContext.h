@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include <functional>
+#include <filesystem>
 #include <memory>
 #include "GraphicsDevice.h"
 #include "Input.h"
@@ -26,6 +27,7 @@
 namespace GameEngine {
 class Framework;
 class Skybox;
+class Object;
 
 class EngineContextInitializer {
 private:
@@ -325,6 +327,12 @@ public:
    static void RequestPlayModeResume();
    /// @brief 一時停止中の1フレーム実行を予約する
    static void RequestPlayModeStep();
+
+   /// @brief プレイ中の指定コンポーネントだけを開始時状態とシーンファイルへ保存する
+   /// @param object 保存対象コンポーネントを所有するEntity
+   /// @param componentTypeName 保存対象のコンポーネント型名
+   /// @return 保存できた場合はtrue
+   static bool SavePlayModeComponent(Object& object, const std::string& componentTypeName);
 
    /// @brief 新しいシーンの初期化前にプレイモードを停止する
    static void StopPlayModeForSceneInitialization();
@@ -644,6 +652,10 @@ public:
    /// @param style フォントとレイアウト設定
    /// @return ピクセル単位の幅と高さ
    static Vector2 MeasureText(std::string_view text, const TextStyle& style);
+
+   /// @brief 次に完成するゲーム画面をPNGへ保存する
+   /// @param outputPath 保存先PNGパス
+   static void RequestScreenshot(const std::filesystem::path& outputPath);
 
 #ifdef USE_IMGUI
    /// @brief シーンビューへマウスカーソルが重なっているか取得する

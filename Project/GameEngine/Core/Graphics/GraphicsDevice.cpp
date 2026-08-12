@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "GraphicsDevice.h"
 #include "ImGuiManager.h"
+#include <wincodec.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -82,15 +83,88 @@ void GraphicsDevice::PreDraw() {
    commandList_->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
 }
 
+void GraphicsDevice::RequestScreenshot(const std::filesystem::path& outputPath) {
+   if (!outputPath.empty()) {
+      screenshotRequests_.push(outputPath);
+   }
+}
+
 void GraphicsDevice::PostDraw() {
    HRESULT result = S_FALSE;
 
-   // リソースバリアを変更（描画対象→表示状態）
-   UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
-   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-	  backBuffers_[backBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET,
-	  D3D12_RESOURCE_STATE_PRESENT);
-   commandList_->ResourceBarrier(1, &barrier);
+   const UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
+   ID3D12Resource* backBuffer = backBuffers_[backBufferIndex].Get();
+   Microsoft::WRL::ComPtr<ID3D12Resource> screenshotReadback;
+   std::optional<std::filesystem::path> screenshotPath;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT screenshotFootprint{};
+   UINT64 screenshotBufferSize = 0;
+   D3D12_RESOURCE_DESC screenshotSourceDesc{};
+
+   if (!screenshotRequests_.empty()) {
+      screenshotPath = screenshotRequests_.front();
+      screenshotRequests_.pop();
+      screenshotSourceDesc = backBuffer->GetDesc();
+      device_->GetCopyableFootprints(
+         &screenshotSourceDesc,
+         0,
+         1,
+         0,
+         &screenshotFootprint,
+         nullptr,
+         nullptr,
+         &screenshotBufferSize);
+
+      const CD3DX12_HEAP_PROPERTIES readbackHeap(D3D12_HEAP_TYPE_READBACK);
+      const CD3DX12_RESOURCE_DESC readbackBuffer =
+         CD3DX12_RESOURCE_DESC::Buffer(screenshotBufferSize);
+      result = device_->CreateCommittedResource(
+         &readbackHeap,
+         D3D12_HEAP_FLAG_NONE,
+         &readbackBuffer,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         nullptr,
+         IID_PPV_ARGS(screenshotReadback.GetAddressOf()));
+
+      if (SUCCEEDED(result)) {
+         const CD3DX12_RESOURCE_BARRIER toCopySource =
+            CD3DX12_RESOURCE_BARRIER::Transition(
+               backBuffer,
+               D3D12_RESOURCE_STATE_RENDER_TARGET,
+               D3D12_RESOURCE_STATE_COPY_SOURCE);
+         commandList_->ResourceBarrier(1, &toCopySource);
+
+         D3D12_TEXTURE_COPY_LOCATION source{};
+         source.pResource = backBuffer;
+         source.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+         source.SubresourceIndex = 0;
+         D3D12_TEXTURE_COPY_LOCATION destination{};
+         destination.pResource = screenshotReadback.Get();
+         destination.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+         destination.PlacedFootprint = screenshotFootprint;
+         commandList_->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+
+         const CD3DX12_RESOURCE_BARRIER toPresent =
+            CD3DX12_RESOURCE_BARRIER::Transition(
+               backBuffer,
+               D3D12_RESOURCE_STATE_COPY_SOURCE,
+               D3D12_RESOURCE_STATE_PRESENT);
+         commandList_->ResourceBarrier(1, &toPresent);
+      } else {
+         Logger::Error(
+            "Screenshot readback resource creation failed: "
+            + screenshotPath->generic_string());
+         screenshotPath.reset();
+      }
+   }
+
+   if (!screenshotReadback) {
+      const CD3DX12_RESOURCE_BARRIER toPresent =
+         CD3DX12_RESOURCE_BARRIER::Transition(
+            backBuffer,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_PRESENT);
+      commandList_->ResourceBarrier(1, &toPresent);
+   }
 
    // コマンドリストの内容を確定させる。全てのコマンドをつんでからCloseすること
    result = commandList_->Close();
@@ -129,7 +203,45 @@ void GraphicsDevice::PostDraw() {
 	  CloseHandle(event);
 	}
 
-	UpdateFixFPS();
+   if (screenshotPath && screenshotReadback) {
+      void* mappedData = nullptr;
+      const D3D12_RANGE readRange = { 0, static_cast<SIZE_T>(screenshotBufferSize) };
+      result = screenshotReadback->Map(0, &readRange, &mappedData);
+      if (SUCCEEDED(result) && mappedData) {
+         DirectX::Image image{};
+         image.width = static_cast<size_t>(screenshotSourceDesc.Width);
+         image.height = static_cast<size_t>(screenshotSourceDesc.Height);
+         image.format = screenshotSourceDesc.Format;
+         image.rowPitch = screenshotFootprint.Footprint.RowPitch;
+         image.slicePitch = image.rowPitch * image.height;
+         image.pixels =
+            static_cast<uint8_t*>(mappedData) + screenshotFootprint.Offset;
+
+         std::error_code directoryError;
+         std::filesystem::create_directories(
+            screenshotPath->parent_path(),
+            directoryError);
+         const HRESULT saveResult = directoryError
+            ? HRESULT_FROM_WIN32(directoryError.value())
+            : DirectX::SaveToWICFile(
+               image,
+               DirectX::WIC_FLAGS_FORCE_SRGB,
+               GUID_ContainerFormatPng,
+               screenshotPath->c_str());
+         if (SUCCEEDED(saveResult)) {
+            Logger::Info("Screenshot saved: " + screenshotPath->generic_string());
+         } else {
+            Logger::Error("Screenshot save failed: " + screenshotPath->generic_string());
+         }
+
+         const D3D12_RANGE writtenRange = { 0, 0 };
+         screenshotReadback->Unmap(0, &writtenRange);
+      } else {
+         Logger::Error("Screenshot readback map failed: " + screenshotPath->generic_string());
+      }
+   }
+
+   UpdateFixFPS();
 
    // 次のフレーム用のコマンドリストを準備
    result = commandAllocator_->Reset();

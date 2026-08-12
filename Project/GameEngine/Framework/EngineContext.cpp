@@ -379,6 +379,10 @@ void EngineContext::RequestPlayModeStep() {
    }
 }
 
+bool EngineContext::SavePlayModeComponent(Object& object, const std::string& componentTypeName) {
+   return sPlayModeController_ && sPlayModeController_->SaveComponent(object, componentTypeName);
+}
+
 void EngineContext::StopPlayModeForSceneInitialization() {
    if (sPlayModeController_) {
       sPlayModeController_->StopForSceneInitialization();
@@ -728,6 +732,11 @@ void EngineContext::DrawUIText(std::string_view text, const Vector2& position, c
 
 Vector2 EngineContext::MeasureText(std::string_view text, const TextStyle& style) {
    return sRenderer_ ? sRenderer_->MeasureText(text, style) : Vector2{ 0.0f, 0.0f };
+}
+
+void EngineContext::RequestScreenshot(const std::filesystem::path& outputPath) {
+   if (!sGraphicsDevice_) return;
+   sGraphicsDevice_->RequestScreenshot(outputPath);
 }
 
 #ifdef USE_IMGUI

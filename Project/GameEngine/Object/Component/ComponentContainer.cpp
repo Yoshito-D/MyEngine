@@ -139,8 +139,8 @@ bool ComponentContainer::Deserialize(Object& owner, const nlohmann::json& compon
 }
 
 #ifdef USE_IMGUI
-std::string ComponentContainer::DrawInspector() {
-   std::string pendingRemovedComponentType;
+ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent) {
+   ComponentInspectorAction action;
    for (auto& component : components_) {
       if (!component) {
          continue;
@@ -157,11 +157,40 @@ std::string ComponentContainer::DrawInspector() {
       const ImVec2 contentEndPosition = ImGui::GetCursorScreenPos();
       const ImGuiStyle& style = ImGui::GetStyle();
       const float removeButtonWidth = ImGui::CalcTextSize("X").x + style.FramePadding.x * 2.0f;
+      const float removeButtonX =
+         headerPosition.x + std::max(headerWidth - removeButtonWidth - style.FramePadding.x, 0.0f);
+
+      if (canSaveComponent) {
+         std::string saveButtonText = LocalizeEditorText("保存", "Save");
+         float saveButtonWidth =
+            ImGui::CalcTextSize(saveButtonText.c_str()).x + style.FramePadding.x * 2.0f;
+         float saveButtonX = removeButtonX - saveButtonWidth - style.ItemSpacing.x;
+         if (saveButtonX < headerPosition.x) {
+            saveButtonText = "S";
+            saveButtonWidth = ImGui::CalcTextSize(saveButtonText.c_str()).x + style.FramePadding.x * 2.0f;
+            saveButtonX = removeButtonX - saveButtonWidth - style.ItemSpacing.x;
+         }
+
+         // 極端に狭い幅では削除ボタンとの重なりを避け、幅を戻すまで保存操作を隠す。
+         if (saveButtonX >= headerPosition.x) {
+            const std::string saveButtonLabel = saveButtonText + "##SaveComponent";
+            ImGui::SetCursorScreenPos(ImVec2(saveButtonX, headerPosition.y + 1.0f));
+            if (ImGui::SmallButton(saveButtonLabel.c_str())) {
+               action.savedTypeName = component->GetTypeName();
+            }
+            if (ImGui::IsItemHovered()) {
+               ImGui::SetTooltip("%s", LocalizeEditorText(
+                  "プレイ中の値でこのコンポーネントだけを上書き保存",
+                  "Overwrite only this component with its play mode values"));
+            }
+         }
+      }
+
       ImGui::SetCursorScreenPos(ImVec2(
-         headerPosition.x + std::max(headerWidth - removeButtonWidth - style.FramePadding.x, 0.0f),
+         removeButtonX,
          headerPosition.y + 1.0f));
       if (ImGui::SmallButton("X##RemoveComponent")) {
-         pendingRemovedComponentType = component->GetTypeName();
+         action.removedTypeName = component->GetTypeName();
       }
       if (ImGui::IsItemHovered()) {
          ImGui::SetTooltip("%s", LocalizeEditorText("コンポーネントを外す", "Remove Component"));
@@ -170,7 +199,7 @@ std::string ComponentContainer::DrawInspector() {
       ImGui::SetCursorScreenPos(contentEndPosition);
       ImGui::PopID();
    }
-   return pendingRemovedComponentType;
+   return action;
 }
 #endif
 

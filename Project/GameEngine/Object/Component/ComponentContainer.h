@@ -14,6 +14,14 @@
 namespace GameEngine {
 class Object;
 
+#ifdef USE_IMGUI
+/// @brief コンポーネントインスペクターで要求された操作
+struct ComponentInspectorAction {
+   std::string removedTypeName; ///< 外すコンポーネント型名
+   std::string savedTypeName;   ///< プレイ中の値を保存するコンポーネント型名
+};
+#endif
+
 /// @brief コンポーネントの所有・管理を担当するコンテナクラス
 class ComponentContainer {
 public:
@@ -109,9 +117,10 @@ public:
    bool Deserialize(Object& owner, const nlohmann::json& componentsData);
 
 #ifdef USE_IMGUI
-   /// @brief 各コンポーネントのインスペクターと見出し内の削除ボタンを描画する
-   /// @return 削除ボタンが押されたコンポーネント型名。未選択時は空文字列
-   std::string DrawInspector();
+   /// @brief 各コンポーネントのインスペクターと見出し内の操作ボタンを描画する
+   /// @param canSaveComponent プレイ中の値を保存するボタンを表示する場合はtrue
+   /// @return 保存または削除を要求されたコンポーネント型名
+   ComponentInspectorAction DrawInspector(bool canSaveComponent);
 #endif
 
    /// @brief 全コンポーネントのリストを取得

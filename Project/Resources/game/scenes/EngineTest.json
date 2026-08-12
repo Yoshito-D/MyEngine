@@ -1,0 +1,1342 @@
+{
+   "cameras": {
+      "brain": {
+         "defaultBlendTime": 0.0
+      },
+      "virtualCameras": []
+   },
+   "environment": {},
+   "hierarchyOrder": [
+      "MainDirectionalLight",
+      "MainPointLight",
+      "MainSpotLight",
+      "MainAreaLight"
+   ],
+   "objects": [],
+   "renderSettings": {
+      "postProcessStack": [
+         {
+            "enabled": false,
+            "id": "outline",
+            "order": 0,
+            "settings": {
+               "depthThreshold": 0.6000000238418579,
+               "intensity": 0.699999988079071,
+               "outlineColor": [
+                  0.10000000149011612,
+                  0.10000000149011612,
+                  0.10000000149011612,
+                  1.0
+               ],
+               "thickness": 1.3079999685287476
+            }
+         },
+         {
+            "enabled": false,
+            "id": "radialBlur",
+            "order": 10,
+            "settings": {
+               "center": [
+                  0.5,
+                  0.5
+               ],
+               "sampleCount": 16,
+               "strength": 0.0
+            }
+         },
+         {
+            "enabled": true,
+            "id": "bloom",
+            "order": 20,
+            "settings": {
+               "blurRadius": 2.0999999046325684,
+               "intensity": 0.8790000081062317,
+               "softThreshold": 0.5,
+               "threshold": 0.3140000104904175
+            }
+         },
+         {
+            "enabled": false,
+            "id": "boxFilter",
+            "order": 25,
+            "settings": {
+               "kernelRadius": 1
+            }
+         },
+         {
+            "enabled": false,
+            "id": "gaussFilter",
+            "order": 30,
+            "settings": {
+               "intensity": 0.800000011920929,
+               "kernelSize": 1,
+               "sigma": 1.0
+            }
+         },
+         {
+            "enabled": false,
+            "id": "chromaticAberration",
+            "order": 40,
+            "settings": {
+               "center": [
+                  0.5,
+                  0.5
+               ],
+               "fixedDirection": [
+                  1.0,
+                  0.0
+               ],
+               "pixelShift": 5.0,
+               "useFixedDirection": false
+            }
+         },
+         {
+            "enabled": true,
+            "id": "vignette",
+            "order": 50,
+            "settings": {
+               "center": [
+                  0.5,
+                  0.5
+               ],
+               "color": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "intensity": 0.503000020980835,
+               "radius": 0.800000011920929,
+               "softness": 0.49900001287460327
+            }
+         },
+         {
+            "enabled": false,
+            "id": "shockWave",
+            "order": 60,
+            "settings": {
+               "aspectRatio": [
+                  1.600000023841858,
+                  0.8999999761581421
+               ],
+               "center": [
+                  0.5,
+                  0.5
+               ],
+               "distortionStrength": 0.10000000149011612,
+               "fadeOutRadius": 1.0,
+               "highlightIntensity": 0.5,
+               "waveRadius": 0.30000001192092896,
+               "waveThickness": 0.10000000149011612
+            }
+         },
+         {
+            "enabled": false,
+            "id": "pixelation",
+            "order": 65,
+            "settings": {
+               "pixelSize": 4.0
+            }
+         },
+         {
+            "enabled": false,
+            "id": "grayscale",
+            "order": 70,
+            "settings": {}
+         },
+         {
+            "enabled": false,
+            "id": "speedLine",
+            "order": 75,
+            "settings": {
+               "center": [
+                  0.5,
+                  0.5
+               ],
+               "flowSpeed": 5.0,
+               "innerRadius": 0.9800000190734863,
+               "intensity": 0.0,
+               "lineDensity": 140.0,
+               "outerRadius": 2.0,
+               "randomSeed": 1.0,
+               "thickness": 0.800000011920929,
+               "time": 0.0
+            }
+         },
+         {
+            "enabled": false,
+            "id": "whiteNoise",
+            "order": 85,
+            "settings": {
+               "noiseDensity": 320.0,
+               "noiseIntensity": 0.8500000238418579,
+               "noiseThreshold": 0.9399999976158142,
+               "seedChangeRate": 24.0
+            }
+         },
+         {
+            "enabled": false,
+            "id": "dissolve",
+            "order": 90,
+            "settings": {
+               "dissolveColor": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+               ],
+               "edgeColor": [
+                  1.0,
+                  0.550000011920929,
+                  0.07999999821186066,
+                  1.0
+               ],
+               "edgeIntensity": 1.0,
+               "edgeWidth": 0.07999999821186066,
+               "maskContrast": 1.0,
+               "maskOffset": [
+                  0.0,
+                  0.0
+               ],
+               "maskTexture": "engine/textures/postprocess/noise0.png",
+               "maskTiling": [
+                  1.0,
+                  1.0
+               ],
+               "threshold": 0.0
+            }
+         },
+         {
+            "enabled": true,
+            "id": "antiAliasing",
+            "order": 95,
+            "settings": {
+               "contrastThreshold": 0.031199999153614044,
+               "edgeSearchSteps": 8.0,
+               "relativeThreshold": 0.125,
+               "subpixelBlending": 0.75
+            }
+         },
+         {
+            "enabled": false,
+            "id": "linearToSrgb",
+            "order": 100,
+            "settings": {}
+         }
+      ]
+   },
+   "sceneName": "EngineTest",
+   "sceneObjects": [
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "MainDirectionalLight"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        -1.5707963705062866,
+                        0.0,
+                        1.5707963705062866
+                     ],
+                     "rotationQuaternion": [
+                        -0.5,
+                        -0.5,
+                        0.5,
+                        0.5
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "areaSize": [
+                        5.0,
+                        5.0
+                     ],
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "cosAngle": 0.699999988079071,
+                     "cosFalloffStart": 0.8999999761581421,
+                     "decay": 0.10000000149011612,
+                     "distance": 5.0,
+                     "intensity": 1.0,
+                     "lightType": "directional",
+                     "radius": 2.0
+                  },
+                  "enabled": true,
+                  "typeName": "LightComponent"
+               }
+            ],
+            "id": "MainDirectionalLight",
+            "objectType": "Generic",
+            "parentId": ""
+         },
+         "sceneKey": "MainDirectionalLight"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "MainPointLight"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "areaSize": [
+                        5.0,
+                        5.0
+                     ],
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "cosAngle": 0.699999988079071,
+                     "cosFalloffStart": 0.8999999761581421,
+                     "decay": 0.10000000149011612,
+                     "distance": 5.0,
+                     "intensity": 0.0,
+                     "lightType": "point",
+                     "radius": 2.0
+                  },
+                  "enabled": true,
+                  "typeName": "LightComponent"
+               }
+            ],
+            "id": "MainPointLight",
+            "objectType": "Generic",
+            "parentId": ""
+         },
+         "sceneKey": "MainPointLight"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "MainSpotLight"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        -1.5707963705062866,
+                        0.0,
+                        1.5707963705062866
+                     ],
+                     "rotationQuaternion": [
+                        -0.5,
+                        -0.5,
+                        0.5,
+                        0.5
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "areaSize": [
+                        5.0,
+                        5.0
+                     ],
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "cosAngle": 0.699999988079071,
+                     "cosFalloffStart": 0.8999999761581421,
+                     "decay": 0.10000000149011612,
+                     "distance": 5.0,
+                     "intensity": 0.0,
+                     "lightType": "spot",
+                     "radius": 2.0
+                  },
+                  "enabled": true,
+                  "typeName": "LightComponent"
+               }
+            ],
+            "id": "MainSpotLight",
+            "objectType": "Generic",
+            "parentId": ""
+         },
+         "sceneKey": "MainSpotLight"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "MainAreaLight"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        -1.5707963705062866,
+                        0.0,
+                        1.5707963705062866
+                     ],
+                     "rotationQuaternion": [
+                        -0.5,
+                        -0.5,
+                        0.5,
+                        0.5
+                     ],
+                     "rotationSource": "quaternion",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        0.0,
+                        10.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "areaSize": [
+                        5.0,
+                        5.0
+                     ],
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "cosAngle": 0.699999988079071,
+                     "cosFalloffStart": 0.8999999761581421,
+                     "decay": 0.10000000149011612,
+                     "distance": 5.0,
+                     "intensity": 0.0,
+                     "lightType": "area",
+                     "radius": 2.0
+                  },
+                  "enabled": true,
+                  "typeName": "LightComponent"
+               }
+            ],
+            "id": "MainAreaLight",
+            "objectType": "Generic",
+            "parentId": ""
+         },
+         "sceneKey": "MainAreaLight"
+      }
+   ],
+   "sceneParticleSystems": [
+      {
+         "deleted": false,
+         "particleSystem": {
+            "assetId": "",
+            "data": {
+               "blendMode": 1,
+               "colorOverLifetimeModule": {
+                  "enabled": true,
+                  "endColor": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "startColor": [
+                     0.024509787559509277,
+                     0.024509787559509277,
+                     0.024509787559509277,
+                     0.2823529541492462
+                  ]
+               },
+               "emissionModule": {
+                  "bursts": [],
+                  "enabled": true,
+                  "rateOverDistance": 0.0,
+                  "rateOverTime": 9.5
+               },
+               "forceOverLifetimeModule": {
+                  "attractorEnabled": false,
+                  "attractorFalloff": 1.0,
+                  "attractorPosition": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "attractorRadius": 0.0,
+                  "attractorStrength": 0.0,
+                  "drag": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": false
+                  },
+                  "enabled": false,
+                  "force": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  }
+               },
+               "limitVelocityModule": {
+                  "dampen": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  },
+                  "enabled": true,
+                  "speedLimit": {
+                     "max": 4.900000095367432,
+                     "min": 4.900000095367432,
+                     "randomize": false
+                  }
+               },
+               "mainModule": {
+                  "duration": 1.5,
+                  "gravityModifier": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": false
+                  },
+                  "looping": false,
+                  "maxParticles": 292,
+                  "playOnAwake": false,
+                  "simulationSpace": 0,
+                  "startColor": {
+                     "max": 4294967295,
+                     "min": 4294967295,
+                     "randomize": false
+                  },
+                  "startLifetime": {
+                     "max": 0.7699999809265137,
+                     "min": 0.4699999988079071,
+                     "randomize": true
+                  },
+                  "startRotation": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        180.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": true
+                  },
+                  "startSize": {
+                     "max": [
+                        0.019999999552965164,
+                        0.019999999552965164,
+                        0.019999999552965164
+                     ],
+                     "min": [
+                        0.009999999776482582,
+                        0.009999999776482582,
+                        0.009999999776482582
+                     ],
+                     "randomize": true
+                  },
+                  "startSpeed": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": true
+                  },
+                  "startSpeedMode": 0,
+                  "startVelocity": {
+                     "max": [
+                        0.0,
+                        6.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        5.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  },
+                  "timeScale": 1.0
+               },
+               "materialSettings": {
+                  "alphaCutoff": 0.0010000000474974513,
+                  "brightness": 1.0,
+                  "distortionBlend": 1.0,
+                  "distortionStrength": 0.0,
+                  "distortionUseTextureFlow": false,
+                  "softParticleDistance": 1.0099999904632568,
+                  "softParticles": true,
+                  "toonSteps": 0
+               },
+               "noiseModule": {
+                  "enabled": false,
+                  "frequency": {
+                     "max": 0.5,
+                     "min": 0.5,
+                     "randomize": false
+                  },
+                  "scrollSpeed": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  },
+                  "strength": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  }
+               },
+               "particleMeshModule": {
+                  "boxSize": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "circleRadius": 0.5,
+                  "circleSegments": 32,
+                  "coneHeight": 1.0,
+                  "coneRadius": 0.5,
+                  "coneSegments": 32,
+                  "cylinderBottomRadius": 0.5,
+                  "cylinderHeight": 1.0,
+                  "cylinderRadius": 0.5,
+                  "cylinderSegments": 32,
+                  "cylinderTopRadius": 0.5,
+                  "enabled": true,
+                  "meshOriginY": 0.5,
+                  "particleMeshType": 0,
+                  "planeDepth": 1.0,
+                  "planeWidth": 1.0,
+                  "ringInnerRadius": 0.14000000059604645,
+                  "ringOuterRadius": 0.5,
+                  "ringSegments": 32,
+                  "sphereRadius": 0.5,
+                  "sphereSlices": 32,
+                  "sphereStacks": 16,
+                  "torusMajorRadius": 0.5,
+                  "torusMajorSegments": 32,
+                  "torusMinorRadius": 0.20000000298023224,
+                  "torusMinorSegments": 16
+               },
+               "rendererModule": {
+                  "billboardType": 1,
+                  "cameraFadeEnabled": false,
+                  "cameraFadeFar": 1.0,
+                  "cameraFadeNear": 0.25,
+                  "enabled": true,
+                  "lengthScale": 2.0,
+                  "rotationSpace": 1,
+                  "sortMode": 0,
+                  "speedScale": 1.0,
+                  "velocityStretchEnabled": false
+               },
+               "rotationOverLifetimeModule": {
+                  "angularVelocityMax": [
+                     0.0,
+                     0.0,
+                     2.0
+                  ],
+                  "angularVelocityMin": [
+                     0.0,
+                     0.0,
+                     -2.0
+                  ],
+                  "angularVelocityRandomize": true,
+                  "enabled": true
+               },
+               "shapeModule": {
+                  "angle": 15.0,
+                  "arc": 360.0,
+                  "boxSize": [
+                     0.20000000298023224,
+                     0.05000000074505806,
+                     0.20000000298023224
+                  ],
+                  "circleOutwardVelocity": 2.0999999046325684,
+                  "emitFrom": 2,
+                  "enabled": true,
+                  "length": 0.5,
+                  "position": [
+                     -10.988847732543945,
+                     5.376364231109619,
+                     9.18006420135498
+                  ],
+                  "radius": 0.4000000059604645,
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "shapeType": 3,
+                  "torusMajorRadius": 1.0
+               },
+               "sizeOverLifetimeModule": {
+                  "enabled": true,
+                  "endSize": [
+                     0.5,
+                     0.5,
+                     0.5
+                  ],
+                  "sizeMultiplier": {
+                     "max": 0.9399999976158142,
+                     "min": 0.5299999713897705,
+                     "randomize": true
+                  },
+                  "startSize": [
+                     0.10000000149011612,
+                     0.10000000149011612,
+                     0.5
+                  ]
+               },
+               "subEmitters": {
+                  "collisionPlaneDistance": 0.0,
+                  "collisionPlaneNormal": [
+                     0.0,
+                     1.0,
+                     0.0
+                  ],
+                  "collisionRestitution": 0.0,
+                  "enabled": false,
+                  "maxEventsPerFrame": 32,
+                  "spawnOnCollisionPath": "",
+                  "spawnOnDeathPath": "",
+                  "spawnOnUpdatePath": "",
+                  "updateInterval": 0.10000000149011612
+               },
+               "textureName": "smoke",
+               "textureSheetAnimationModule": {
+                  "animationMode": 0,
+                  "cycles": 1,
+                  "enabled": false,
+                  "frameCount": 1,
+                  "frameOverTime": 1.0,
+                  "randomRow": false,
+                  "rowIndex": 0,
+                  "startFrame": 0,
+                  "tilesX": 1,
+                  "tilesY": 1
+               },
+               "trailModule": {
+                  "color": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "enabled": false,
+                  "maxPoints": 16,
+                  "minDistance": 0.10000000149011612,
+                  "mode": 0,
+                  "retractionDuration": 0.5,
+                  "tailWidthScale": 0.0,
+                  "textureName": "",
+                  "textureTiling": 1.0,
+                  "width": {
+                     "max": 0.5,
+                     "min": 0.5,
+                     "randomize": false
+                  }
+               },
+               "usePostProcess": true,
+               "uvTransformModule": {
+                  "enabled": false,
+                  "rotationConstant": 0.0,
+                  "rotationCurveEnd": 0.0,
+                  "rotationCurveStart": 0.0,
+                  "rotationMode": 0,
+                  "rotationRandom": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": false
+                  },
+                  "scaleConstant": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleCurveEnd": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleCurveStart": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleMode": 0,
+                  "scaleRandom": {
+                     "max": [
+                        1.0,
+                        1.0
+                     ],
+                     "min": [
+                        1.0,
+                        1.0
+                     ],
+                     "randomize": false
+                  },
+                  "scrollConstant": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollCurveEnd": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollCurveStart": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollMode": 0,
+                  "scrollRandom": {
+                     "max": [
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  }
+               },
+               "velocityOverLifetimeModule": {
+                  "enabled": false,
+                  "linearVelocity": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  },
+                  "speedModifier": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  }
+               }
+            },
+            "id": "ParticleSystem:landing_failure",
+            "name": "landing_failure",
+            "objectType": "ParticleSystem"
+         },
+         "sceneKey": "ParticleSystem:landing_failure"
+      },
+      {
+         "deleted": false,
+         "particleSystem": {
+            "assetId": "",
+            "data": {
+               "blendMode": 1,
+               "colorOverLifetimeModule": {
+                  "enabled": true,
+                  "endColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     0.0
+                  ],
+                  "startColor": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     0.2823529541492462
+                  ]
+               },
+               "emissionModule": {
+                  "bursts": [
+                     {
+                        "count": 26,
+                        "cycles": 0,
+                        "interval": -1.0,
+                        "time": 0.0
+                     }
+                  ],
+                  "enabled": true,
+                  "rateOverDistance": 0.0,
+                  "rateOverTime": 5.0
+               },
+               "forceOverLifetimeModule": {
+                  "attractorEnabled": false,
+                  "attractorFalloff": 1.0,
+                  "attractorPosition": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "attractorRadius": 0.0,
+                  "attractorStrength": 0.0,
+                  "drag": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": false
+                  },
+                  "enabled": false,
+                  "force": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  }
+               },
+               "limitVelocityModule": {
+                  "dampen": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  },
+                  "enabled": true,
+                  "speedLimit": {
+                     "max": 4.900000095367432,
+                     "min": 4.900000095367432,
+                     "randomize": false
+                  }
+               },
+               "mainModule": {
+                  "duration": 0.10000000149011612,
+                  "gravityModifier": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": false
+                  },
+                  "looping": false,
+                  "maxParticles": 292,
+                  "playOnAwake": false,
+                  "simulationSpace": 0,
+                  "startColor": {
+                     "max": 4294967295,
+                     "min": 4294967295,
+                     "randomize": false
+                  },
+                  "startLifetime": {
+                     "max": 0.2750000059604645,
+                     "min": 0.125,
+                     "randomize": true
+                  },
+                  "startRotation": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        180.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": true
+                  },
+                  "startSize": {
+                     "max": [
+                        0.019999999552965164,
+                        0.019999999552965164,
+                        0.019999999552965164
+                     ],
+                     "min": [
+                        0.009999999776482582,
+                        0.009999999776482582,
+                        0.009999999776482582
+                     ],
+                     "randomize": true
+                  },
+                  "startSpeed": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": true
+                  },
+                  "startSpeedMode": 0,
+                  "startVelocity": {
+                     "max": [
+                        0.0,
+                        6.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        5.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  },
+                  "timeScale": 1.0
+               },
+               "materialSettings": {
+                  "alphaCutoff": 0.0010000000474974513,
+                  "brightness": 1.0,
+                  "distortionBlend": 1.0,
+                  "distortionStrength": 0.0,
+                  "distortionUseTextureFlow": false,
+                  "softParticleDistance": 0.5,
+                  "softParticles": false,
+                  "toonSteps": 0
+               },
+               "noiseModule": {
+                  "enabled": false,
+                  "frequency": {
+                     "max": 0.5,
+                     "min": 0.5,
+                     "randomize": false
+                  },
+                  "scrollSpeed": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  },
+                  "strength": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  }
+               },
+               "particleMeshModule": {
+                  "boxSize": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "circleRadius": 0.5,
+                  "circleSegments": 32,
+                  "coneHeight": 1.0,
+                  "coneRadius": 0.5,
+                  "coneSegments": 32,
+                  "cylinderBottomRadius": 0.5,
+                  "cylinderHeight": 1.0,
+                  "cylinderRadius": 0.5,
+                  "cylinderSegments": 32,
+                  "cylinderTopRadius": 0.5,
+                  "enabled": true,
+                  "meshOriginY": 0.5,
+                  "particleMeshType": 0,
+                  "planeDepth": 1.0,
+                  "planeWidth": 1.0,
+                  "ringInnerRadius": 0.14000000059604645,
+                  "ringOuterRadius": 0.5,
+                  "ringSegments": 32,
+                  "sphereRadius": 0.5,
+                  "sphereSlices": 32,
+                  "sphereStacks": 16,
+                  "torusMajorRadius": 0.5,
+                  "torusMajorSegments": 32,
+                  "torusMinorRadius": 0.20000000298023224,
+                  "torusMinorSegments": 16
+               },
+               "rendererModule": {
+                  "billboardType": 1,
+                  "cameraFadeEnabled": false,
+                  "cameraFadeFar": 1.0,
+                  "cameraFadeNear": 0.25,
+                  "enabled": true,
+                  "lengthScale": 2.0,
+                  "rotationSpace": 1,
+                  "sortMode": 0,
+                  "speedScale": 1.0,
+                  "velocityStretchEnabled": false
+               },
+               "rotationOverLifetimeModule": {
+                  "angularVelocityMax": [
+                     0.0,
+                     0.0,
+                     2.0
+                  ],
+                  "angularVelocityMin": [
+                     0.0,
+                     0.0,
+                     -2.0
+                  ],
+                  "angularVelocityRandomize": true,
+                  "enabled": true
+               },
+               "shapeModule": {
+                  "angle": 15.0,
+                  "arc": 360.0,
+                  "boxSize": [
+                     0.20000000298023224,
+                     0.05000000074505806,
+                     0.20000000298023224
+                  ],
+                  "circleOutwardVelocity": 2.0999999046325684,
+                  "emitFrom": 2,
+                  "enabled": true,
+                  "length": 0.5,
+                  "position": [
+                     -11.52227783203125,
+                     7.088024139404297,
+                     13.857563018798828
+                  ],
+                  "radius": 0.4000000059604645,
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "shapeType": 4,
+                  "torusMajorRadius": 1.0
+               },
+               "sizeOverLifetimeModule": {
+                  "enabled": true,
+                  "endSize": [
+                     0.5,
+                     0.5,
+                     0.5
+                  ],
+                  "sizeMultiplier": {
+                     "max": 1.090000033378601,
+                     "min": 1.090000033378601,
+                     "randomize": false
+                  },
+                  "startSize": [
+                     0.10000000149011612,
+                     0.10000000149011612,
+                     0.5
+                  ]
+               },
+               "subEmitters": {
+                  "collisionPlaneDistance": 0.0,
+                  "collisionPlaneNormal": [
+                     0.0,
+                     1.0,
+                     0.0
+                  ],
+                  "collisionRestitution": 0.0,
+                  "enabled": false,
+                  "maxEventsPerFrame": 32,
+                  "spawnOnCollisionPath": "",
+                  "spawnOnDeathPath": "",
+                  "spawnOnUpdatePath": "",
+                  "updateInterval": 0.10000000149011612
+               },
+               "textureName": "smoke",
+               "textureSheetAnimationModule": {
+                  "animationMode": 0,
+                  "cycles": 1,
+                  "enabled": false,
+                  "frameCount": 1,
+                  "frameOverTime": 1.0,
+                  "randomRow": false,
+                  "rowIndex": 0,
+                  "startFrame": 0,
+                  "tilesX": 1,
+                  "tilesY": 1
+               },
+               "trailModule": {
+                  "color": [
+                     1.0,
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "enabled": false,
+                  "maxPoints": 16,
+                  "minDistance": 0.10000000149011612,
+                  "mode": 0,
+                  "retractionDuration": 0.5,
+                  "tailWidthScale": 0.0,
+                  "textureName": "",
+                  "textureTiling": 1.0,
+                  "width": {
+                     "max": 0.5,
+                     "min": 0.5,
+                     "randomize": false
+                  }
+               },
+               "usePostProcess": true,
+               "uvTransformModule": {
+                  "enabled": false,
+                  "rotationConstant": 0.0,
+                  "rotationCurveEnd": 0.0,
+                  "rotationCurveStart": 0.0,
+                  "rotationMode": 0,
+                  "rotationRandom": {
+                     "max": 0.0,
+                     "min": 0.0,
+                     "randomize": false
+                  },
+                  "scaleConstant": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleCurveEnd": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleCurveStart": [
+                     1.0,
+                     1.0
+                  ],
+                  "scaleMode": 0,
+                  "scaleRandom": {
+                     "max": [
+                        1.0,
+                        1.0
+                     ],
+                     "min": [
+                        1.0,
+                        1.0
+                     ],
+                     "randomize": false
+                  },
+                  "scrollConstant": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollCurveEnd": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollCurveStart": [
+                     0.0,
+                     0.0
+                  ],
+                  "scrollMode": 0,
+                  "scrollRandom": {
+                     "max": [
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  }
+               },
+               "velocityOverLifetimeModule": {
+                  "enabled": false,
+                  "linearVelocity": {
+                     "max": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "min": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "randomize": false
+                  },
+                  "speedModifier": {
+                     "max": 1.0,
+                     "min": 1.0,
+                     "randomize": false
+                  }
+               }
+            },
+            "id": "ParticleSystem:jump",
+            "name": "jump",
+            "objectType": "ParticleSystem"
+         },
+         "sceneKey": "ParticleSystem:jump"
+      }
+   ],
+   "version": 6
+}
