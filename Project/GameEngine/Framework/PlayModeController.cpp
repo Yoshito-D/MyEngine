@@ -7,11 +7,158 @@
 
 #ifdef USE_IMGUI
 #include "Editor/EditorSceneContext.h"
+#include "Object/Object.h"
+#include "Component/TransformComponent.h"
 #endif
 
 #include <algorithm>
+#include <fstream>
 
 namespace GameEngine {
+
+#ifdef USE_IMGUI
+namespace {
+constexpr int kSceneJsonIndentSize = 3;
+
+bool PatchObjectComponentData(
+   nlohmann::json& objectData,
+   const std::string& fallbackObjectId,
+   const std::string& objectId,
+   const std::string& componentTypeName,
+   const nlohmann::json& componentData,
+   const std::string& parentEntityId) {
+   if (!objectData.is_object()) {
+      return false;
+   }
+
+   std::string serializedObjectId = objectData.value("id", "");
+   if (serializedObjectId.empty()) {
+      serializedObjectId = fallbackObjectId;
+   }
+   if (serializedObjectId != objectId ||
+      !objectData.contains("components") ||
+      !objectData.at("components").is_array()) {
+      return false;
+   }
+
+   for (auto& componentEntry : objectData["components"]) {
+      if (!componentEntry.is_object() ||
+         componentEntry.value("typeName", "") != componentTypeName) {
+         continue;
+      }
+
+      // enabledはゲーム進行中に一時変更されるため、保存開始時の値を維持する。
+      componentEntry["data"] = componentData;
+      if (componentTypeName == TransformComponent::kTypeName) {
+         // Object直下の親IDは復元時にTransformの値より後から適用されるため、両方を同期する。
+         objectData["parentId"] = parentEntityId;
+      }
+      return true;
+   }
+
+   return false;
+}
+
+bool PatchSceneComponentData(
+   nlohmann::json& sceneData,
+   const std::string& objectId,
+   const std::string& componentTypeName,
+   const nlohmann::json& componentData,
+   const std::string& parentEntityId) {
+   if (!sceneData.is_object()) {
+      return false;
+   }
+
+   bool patched = false;
+   if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
+      for (auto& objectData : sceneData["objects"]) {
+         patched = PatchObjectComponentData(
+            objectData,
+            {},
+            objectId,
+            componentTypeName,
+            componentData,
+            parentEntityId) || patched;
+      }
+   }
+
+   if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
+      for (auto& sceneObjectEntry : sceneData["sceneObjects"]) {
+         if (!sceneObjectEntry.is_object() || sceneObjectEntry.value("deleted", false)) {
+            continue;
+         }
+
+         const std::string sceneKey = sceneObjectEntry.value("sceneKey", "");
+         nlohmann::json* objectData = &sceneObjectEntry;
+         if (sceneObjectEntry.contains("object") && sceneObjectEntry.at("object").is_object()) {
+            objectData = &sceneObjectEntry["object"];
+         }
+         patched = PatchObjectComponentData(
+            *objectData,
+            sceneKey,
+            objectId,
+            componentTypeName,
+            componentData,
+            parentEntityId) || patched;
+      }
+   }
+
+   return patched;
+}
+
+bool LoadSceneJsonFile(const std::filesystem::path& filePath, nlohmann::json& sceneData) {
+   std::ifstream file(filePath);
+   if (!file.is_open()) {
+      return false;
+   }
+
+   try {
+      file >> sceneData;
+   } catch (...) {
+      return false;
+   }
+   return sceneData.is_object();
+}
+
+bool SaveSceneJsonFile(const std::filesystem::path& filePath, const nlohmann::json& sceneData) {
+   std::string serializedSceneData;
+   try {
+      serializedSceneData = sceneData.dump(kSceneJsonIndentSize);
+   } catch (...) {
+      return false;
+   }
+
+   std::filesystem::path temporaryFilePath = filePath;
+   temporaryFilePath += ".component-save.tmp";
+
+   {
+      std::ofstream file(temporaryFilePath, std::ios::trunc);
+      if (!file.is_open()) {
+         return false;
+      }
+
+      file << serializedSceneData;
+      if (!file.good()) {
+         file.close();
+         std::error_code removeError;
+         std::filesystem::remove(temporaryFilePath, removeError);
+         return false;
+      }
+   }
+
+   // 書き込み途中のJSONで既存シーンを壊さないよう、完了した一時ファイルだけを置換する。
+   if (!MoveFileExW(
+      temporaryFilePath.c_str(),
+      filePath.c_str(),
+      MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+      std::error_code removeError;
+      std::filesystem::remove(temporaryFilePath, removeError);
+      return false;
+   }
+   return true;
+}
+} // namespace
+#endif
 
 const char* ToString(PlayMode mode) {
    switch (mode) {
@@ -48,6 +195,81 @@ void PlayModeController::RequestResume() {
 void PlayModeController::RequestStep() {
    stepRequested_ = true;
 }
+
+#ifdef USE_IMGUI
+bool PlayModeController::SaveComponent(Object& object, const std::string& componentTypeName) {
+   auto reportFailure = [](const std::string& reason) {
+      Logger::Warning(
+         "Play mode component save failed: " + reason,
+         Logger::LogChannel::Editor);
+      return false;
+   };
+
+   if (mode_ == PlayMode::Edit || !hasEditorSceneSnapshot_) {
+      return reportFailure("play mode snapshot is not available");
+   }
+   if (componentTypeName.empty() || object.GetEntityId().empty()) {
+      return reportFailure("component type or Entity ID is empty");
+   }
+
+   const IObjectComponent* component = object.GetComponentByTypeName(componentTypeName);
+   if (!component) {
+      return reportFailure("component is not attached to Entity " + object.GetEntityId());
+   }
+
+   nlohmann::json componentData;
+   nlohmann::json patchedSnapshot = editorSceneSnapshot_;
+   try {
+      componentData = component->Serialize();
+      if (!PatchSceneComponentData(
+         patchedSnapshot,
+         object.GetEntityId(),
+         componentTypeName,
+         componentData,
+         object.GetParentEntityId())) {
+         return reportFailure("component was not present when play mode started");
+      }
+   } catch (...) {
+      return reportFailure("component serialization failed");
+   }
+
+   BaseScene* scene = BaseScene::GetCurrentScene();
+   EditorSceneContext* editorContext = scene ? scene->GetEditorSceneContext() : nullptr;
+   if (!editorContext) {
+      return reportFailure("editor scene context is not available");
+   }
+
+   const std::filesystem::path sceneFilePath = editorContext->GetSceneFilePath();
+   nlohmann::json savedSceneData;
+   if (!LoadSceneJsonFile(sceneFilePath, savedSceneData)) {
+      return reportFailure("could not load " + sceneFilePath.generic_string());
+   }
+
+   try {
+      if (!PatchSceneComponentData(
+         savedSceneData,
+         object.GetEntityId(),
+         componentTypeName,
+         componentData,
+         object.GetParentEntityId())) {
+         return reportFailure("component was not found in " + sceneFilePath.generic_string());
+      }
+   } catch (...) {
+      return reportFailure("saved scene data is invalid");
+   }
+
+   if (!SaveSceneJsonFile(sceneFilePath, savedSceneData)) {
+      return reportFailure("could not write " + sceneFilePath.generic_string());
+   }
+
+   // ディスク保存が成功してから停止時の復元元を更新し、両者の不整合を避ける。
+   editorSceneSnapshot_ = std::move(patchedSnapshot);
+   Logger::Info(
+      "Play mode component saved: " + object.GetEntityId() + "/" + componentTypeName,
+      Logger::LogChannel::Editor);
+   return true;
+}
+#endif
 
 void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
    shouldRunRuntimeUpdate_ = false;

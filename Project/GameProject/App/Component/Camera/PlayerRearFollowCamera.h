@@ -78,6 +78,9 @@ public:
 	/// @brief 直近更新時のカメラRightを取得する
 	GameEngine::Vector3 GetCameraRight() const { return cachedRight_; }
 
+	/// @brief 直近更新時のカメラ前方を取得する
+	GameEngine::Vector3 GetCameraForward() const { return cachedForward_; }
+
 	/// @brief カメラ設定をシリアライズする
 	nlohmann::json Serialize() const override;
 
@@ -358,6 +361,9 @@ private:
 	/// @brief 直近計算のカメラUp
 	mutable GameEngine::Vector3 cachedUp_ = { 0.0f, 1.0f, 0.0f };
 
+	/// @brief 直近計算のカメラ前方
+	mutable GameEngine::Vector3 cachedForward_ = { 0.0f, 0.0f, 1.0f };
+
 	/// @brief 補間済みのカメラ回転
 	GameEngine::Quaternion currentViewRotation_ = GameEngine::Quaternion::Identity();
 
@@ -474,4 +480,3 @@ private:
 };
 
 } // namespace App
-

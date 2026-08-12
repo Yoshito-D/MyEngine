@@ -1,6 +1,7 @@
 #include "VehicleEffectController.h"
 
 #include "VehicleDrift.h"
+#include "VehicleLandingBoost.h"
 #include "../Character/CharacterJump.h"
 #include "../Character/CharacterLanding.h"
 #include "Effect/Module/EmissionModule.h"
@@ -53,6 +54,7 @@ void VehicleEffectController::Update(float deltaTime) {
    }
    auto* emitter = GetOwner().GetComponent<GameEngine::ParticleEmitterComponent>();
    auto* drift = GetOwner().GetComponent<VehicleDrift>();
+   auto* landingBoost = GetOwner().GetComponent<VehicleLandingBoost>();
    auto* jump = GetOwner().GetComponent<CharacterJump>();
    auto* landing = GetOwner().GetComponent<CharacterLanding>();
    if (!emitter) {
@@ -66,6 +68,9 @@ void VehicleEffectController::Update(float deltaTime) {
    const bool miniTurboFired = drift && drift->ConsumeMiniTurboFired();
    const bool jumpedThisFrame = isJumping && !wasJumping_;
    const bool landedThisFrame = isGrounded && !wasGrounded_;
+   const bool failedLandingThisFrame =
+	  landedThisFrame && landingBoost &&
+	  landingBoost->GetLastLandingResult() == LandingResult::Failure;
 
    GameEngine::Vector3 landingContactPoint{};
    GameEngine::Quaternion landingRotation = GameEngine::Quaternion::Identity();
@@ -107,6 +112,8 @@ void VehicleEffectController::Update(float deltaTime) {
                landingRotation,
                slot->attachConfig.scaleOffset);
          }
+         emitter->Play(slotIndex);
+      } else if (ContainsEffectName(slot->jsonPath, "landing_failure") && failedLandingThisFrame) {
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "/jump.json") && jumpedThisFrame) {
          emitter->Play(slotIndex);

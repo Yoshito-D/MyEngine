@@ -5,6 +5,7 @@
 #include "GravityFollowCamera.h"
 #include "PlayerRearFollowCamera.h"
 #include "PlanetLeashCamera.h"
+#include <cstdint>
 
 namespace App {
 
@@ -50,6 +51,30 @@ public:
    /// @brief 着地シェイクの持続時間
    float landingShakeDuration = 0.1f;
 
+   /// @brief 発表用スクリーンショットにカメラ軸と着地予測を表示するか
+   bool debugDrawPresentationGuides = false;
+
+   /// @brief 発表用デバッグ矢印の長さ
+   float presentationGuideLength = 8.0f;
+
+   /// @brief 発表用のジャンプ・着地スクリーンショットを自動保存するか
+   bool autoCapturePresentationSequence = false;
+
+   /// @brief 自動撮影を開始してからジャンプするまでの待ち時間
+   float presentationCaptureJumpDelay = 1.25f;
+
+   /// @brief 発表用動画へ変換する連番PNGを自動保存するか
+   bool autoCapturePresentationVideoFrames = false;
+
+   /// @brief 発表用動画の連番PNGを保存するフレームレート
+   float presentationVideoFrameRate = 10.0f;
+
+   /// @brief 発表用動画の連番PNGを保存し始めるまでの待ち時間
+   float presentationVideoCaptureStartDelay = 3.25f;
+
+   /// @brief 発表用動画として保存する時間
+   float presentationVideoCaptureDuration = 8.0f;
+
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
@@ -76,6 +101,42 @@ private:
 
    /// @brief 着地遷移検出用の前フレーム接地状態
    bool wasGrounded_ = true;
+
+   /// @brief 発表用自動撮影の開始後経過時間
+   float presentationCaptureElapsed_ = 0.0f;
+
+   /// @brief 発表用自動撮影でジャンプ済みか
+   bool presentationJumpTriggered_ = false;
+
+   /// @brief 発表用の地上方向軸を撮影済みか
+   bool presentationGroundCaptured_ = false;
+
+   /// @brief 発表用の予測開始を撮影済みか
+   bool presentationPredictionCaptured_ = false;
+
+   /// @brief 発表用の接触直前を撮影済みか
+   bool presentationBeforeContactCaptured_ = false;
+
+   /// @brief 発表用の接地を撮影済みか
+   bool presentationContactCaptured_ = false;
+
+   /// @brief 発表用の着地後を撮影済みか
+   bool presentationAfterLandingCaptured_ = false;
+
+   /// @brief 接地撮影後の経過時間
+   float presentationAfterLandingElapsed_ = 0.0f;
+
+   /// @brief カメラ前方と重力Upが同一直線に近い条件を撮影済みか
+   bool presentationStraightDownCaptured_ = false;
+
+   /// @brief 速度後方と惑星ガイド後方が反対に近い条件を撮影済みか
+   bool presentationBackwardReversalCaptured_ = false;
+
+   /// @brief 発表用動画の次フレームを保存するまでの蓄積時間
+   float presentationVideoFrameAccumulator_ = 0.0f;
+
+   /// @brief 発表用動画として保存した連番PNGの枚数
+   uint32_t presentationVideoFrameIndex_ = 0;
 
    std::string gravityFollowCameraId_ = "GravityFollowCamera";
    std::string playerRearFollowCameraId_ = "PlayerRearFollowCamera";

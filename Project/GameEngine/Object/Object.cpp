@@ -224,8 +224,8 @@ void Object::UpdateComponents(float deltaTime) {
 }
 
 #ifdef USE_IMGUI
-std::string Object::DrawComponentInspector() {
-   return components_.DrawInspector();
+ComponentInspectorAction Object::DrawComponentInspector(bool canSaveComponent) {
+   return components_.DrawInspector(canSaveComponent);
 }
 #endif
 

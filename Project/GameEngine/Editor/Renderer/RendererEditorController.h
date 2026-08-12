@@ -78,6 +78,8 @@ private:
    std::string editorSelectedSceneName_;
    std::string editorReleaseStartSceneName_;
    std::string editorSceneCatalogStatus_;
+   const Object* editorComponentSaveStatusObject_ = nullptr;
+   std::string editorComponentSaveStatus_;
 
    std::unordered_map<const Model*, std::string> editorModelAssetNames_;
    std::unordered_map<const Model*, std::string> editorModelMaterialNames_;

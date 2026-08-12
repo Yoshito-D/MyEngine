@@ -136,8 +136,9 @@ public:
 
 #ifdef USE_IMGUI
    /// @brief コンポーネントのインスペクターを描画する
-   /// @return 削除ボタンが押されたコンポーネント型名。未選択時は空文字列
-   std::string DrawComponentInspector();
+   /// @param canSaveComponent プレイ中の値を保存するボタンを表示する場合はtrue
+   /// @return 保存または削除を要求されたコンポーネント型名
+   ComponentInspectorAction DrawComponentInspector(bool canSaveComponent);
 #endif
 
 private:

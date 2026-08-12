@@ -821,12 +821,16 @@ void RendererEditorController::ShowInspectorWindow() {
    ParticleSystem* selectedParticleSystem = editorContext ? editorContext->GetSelectedParticleSystem() : nullptr;
 
    if (!selectedObject && !selectedParticleSystem) {
+      editorComponentSaveStatusObject_ = nullptr;
+      editorComponentSaveStatus_.clear();
       ImGui::Text("%s", Tr("未選択", "No selection"));
       ImGui::End();
       return;
    }
 
    if (selectedParticleSystem) {
+      editorComponentSaveStatusObject_ = nullptr;
+      editorComponentSaveStatus_.clear();
       std::string particleSystemName = selectedParticleSystem->GetName();
       char particleSystemNameBuffer[kInspectorNameBufferSize]{};
       {
@@ -850,11 +854,17 @@ void RendererEditorController::ShowInspectorWindow() {
       ImGui::Spacing();
 
       ParticleSystemEditor::Edit(selectedParticleSystem);
-      if (editorContext && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsAnyItemActive()) {
+      if (editorContext && EngineContext::IsPlayModeEdit() &&
+         ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsAnyItemActive()) {
          editorContext->MarkDirty();
       }
       ImGui::End();
       return;
+   }
+
+   if (editorComponentSaveStatusObject_ != selectedObject) {
+      editorComponentSaveStatusObject_ = selectedObject;
+      editorComponentSaveStatus_.clear();
    }
 
    std::string objectName = selectedObject->GetObjectName();
@@ -889,13 +899,31 @@ void RendererEditorController::ShowInspectorWindow() {
       ImGui::Spacing();
    }
 
-   const std::string pendingRemovedComponentType = selectedObject->DrawComponentInspector();
+   const ComponentInspectorAction componentAction =
+      selectedObject->DrawComponentInspector(EngineContext::IsInPlayMode());
 
-   if (!pendingRemovedComponentType.empty()) {
-      if (editorContext) {
-         editorContext->RemoveComponentFromSelectedObject(pendingRemovedComponentType);
+   if (!componentAction.savedTypeName.empty()) {
+      const std::string componentDisplayName =
+         LocalizeObjectComponentTypeName(componentAction.savedTypeName.c_str());
+      if (EngineContext::SavePlayModeComponent(*selectedObject, componentAction.savedTypeName)) {
+         editorComponentSaveStatus_ =
+            std::string(Tr("保存しました: ", "Saved: ")) + componentDisplayName;
       } else {
-         selectedObject->RemoveComponentByTypeName(pendingRemovedComponentType);
+         editorComponentSaveStatus_ =
+            std::string(Tr("保存できませんでした: ", "Could not save: ")) + componentDisplayName;
+      }
+   }
+
+   if (!editorComponentSaveStatus_.empty()) {
+      ImGui::TextWrapped("%s", editorComponentSaveStatus_.c_str());
+      ImGui::Spacing();
+   }
+
+   if (!componentAction.removedTypeName.empty()) {
+      if (editorContext) {
+         editorContext->RemoveComponentFromSelectedObject(componentAction.removedTypeName);
+      } else {
+         selectedObject->RemoveComponentByTypeName(componentAction.removedTypeName);
       }
    }
 
@@ -953,7 +981,8 @@ void RendererEditorController::ShowInspectorWindow() {
       DrawSelectedObjectAssetDropTargets(*editorContext, selectedObject);
    }
 
-   if (editorContext && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsAnyItemActive()) {
+   if (editorContext && EngineContext::IsPlayModeEdit() &&
+      ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsAnyItemActive()) {
       editorContext->MarkDirty();
    }
 

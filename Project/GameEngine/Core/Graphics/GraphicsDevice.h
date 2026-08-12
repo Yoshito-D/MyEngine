@@ -6,6 +6,8 @@
 #include <vector>
 #include <memory>
 #include <chrono>
+#include <filesystem>
+#include <optional>
 #include <queue>
 
 namespace GameEngine {
@@ -27,6 +29,10 @@ public:
 
    /// @brief ループ終了時の処理
    void PostDraw();
+
+   /// @brief 次に完成するバックバッファをPNGへ保存する
+   /// @param outputPath 保存先PNGパス
+   void RequestScreenshot(const std::filesystem::path& outputPath);
 
    /// @brief 終了処理
    void Finalize();
@@ -143,6 +149,7 @@ private:
    UINT depthSrvIndex_ = static_cast<UINT>(-1);
    D3D12_RESOURCE_STATES depthBufferState_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
    std::queue<UINT> freeSrvIndices_;
+   std::queue<std::filesystem::path> screenshotRequests_;
 
    UINT rtvCount_ = 4;
    DXGI_FORMAT rtvFormat_ = DXGI_FORMAT_R8G8B8A8_UNORM;
