@@ -15,6 +15,7 @@ IObjectComponent* ComponentContainer::AddByTypeName(Object& owner, const std::st
       return nullptr;
    }
 
+   // 文字列から具象型を生成する責務はRegistryへ集約し、JSON復元側が各Componentを知らずに済むようにする。
    return ComponentRegistry::GetInstance().CreateComponent(owner, typeName);
 }
 
@@ -48,6 +49,7 @@ bool ComponentContainer::RemoveByTypeName(const std::string& typeName) {
 }
 
 void ComponentContainer::Update(float deltaTime) {
+   // 無効Componentは状態を保持したまま更新だけ停止し、再有効化時に同じインスタンスを再利用する。
    for (auto& component : components_) {
       if (!component || !component->IsEnabled()) {
          continue;
@@ -57,6 +59,7 @@ void ComponentContainer::Update(float deltaTime) {
 }
 
 void ComponentContainer::Clear() {
+   // unique_ptrの破棄前にDetachを呼び、RendererやLightManagerが保持する非所有ポインターを解除させる。
    for (auto& component : components_) {
       if (component) {
          component->Detach();
@@ -67,6 +70,7 @@ void ComponentContainer::Clear() {
 }
 
 nlohmann::json ComponentContainer::Serialize() const {
+   // 型名・有効状態・型固有データを共通Envelopeへ包み、Component追加時もシーン形式を変えずに済ませる。
    nlohmann::json componentsData = nlohmann::json::array();
 
    for (const auto& component : components_) {
@@ -90,6 +94,8 @@ bool ComponentContainer::Deserialize(Object& owner, const nlohmann::json& compon
       return false;
    }
 
+   // JSONを完全スナップショットとして扱うため、まず存在する型名を収集する。
+   // 先に追加・更新を始めると、削除対象判定が途中状態へ依存してしまう。
    std::unordered_set<std::string> serializedTypeNames;
    for (const auto& componentData : componentsData) {
       if (componentData.is_object()) {
@@ -100,6 +106,7 @@ bool ComponentContainer::Deserialize(Object& owner, const nlohmann::json& compon
       }
    }
 
+   // components_を走査中に直接eraseせず、型名を退避してから削除してIterator無効化を避ける。
    std::vector<std::string> removedTypeNames;
    for (const auto& component : components_) {
       if (component && !serializedTypeNames.contains(component->GetTypeName())) {
@@ -120,6 +127,7 @@ bool ComponentContainer::Deserialize(Object& owner, const nlohmann::json& compon
          continue;
       }
 
+      // AddByTypeNameは同型が既にあれば既存実体を返すため、新規作成と状態上書きを同じ経路で処理できる。
       auto* component = AddByTypeName(owner, typeName);
       if (!component) {
          continue;
@@ -209,6 +217,7 @@ bool ComponentContainer::RemoveByTypeIndex(const std::type_index& type) {
       return false;
    }
 
+   // O(1)索引から対象アドレスを確定し、索引を先に消してDetach中の再問い合わせへ削除状態を見せる。
    IObjectComponent* target = mapIt->second;
    typeIndex_.erase(mapIt);
 
@@ -218,6 +227,7 @@ bool ComponentContainer::RemoveByTypeIndex(const std::type_index& type) {
       });
 
    if (vecIt != components_.end()) {
+      // 所有権を解放する前にDetachし、Component固有の外部登録解除を完了させる。
       (*vecIt)->Detach();
       components_.erase(vecIt);
       return true;

@@ -153,6 +153,8 @@ bool TryParseGamePadButton(const std::string& text, GamePadButton& button) {
 }
 
 json SerializeBinding(const InputBinding& binding) {
+   // バインド種別ごとに有効なフィールドだけを書き出す。未使用メンバーまで保存すると、
+   // 後から種別を変更した際に古い値を誤って復元する可能性があるためである。
    json result;
    result["type"] = ToString(binding.type);
    result["scale"] = binding.scale;
@@ -182,6 +184,8 @@ json SerializeBinding(const InputBinding& binding) {
 }
 
 bool DeserializeBinding(const json& source, InputBinding& binding) {
+   // 設定ファイルはユーザーが直接編集できるため、値を取り出す前に型まで検証する。
+   // 一つでも必須項目が壊れていれば部分的なバインドを作らず、呼び出し側で既定値を維持する。
    if (!source.is_object() || !source.contains("type") || !source["type"].is_string()) { return false; }
    if (!TryParseBindingType(source["type"].get<std::string>(), binding.type)) { return false; }
    if (source.contains("scale") && !source.at("scale").is_number()) { return false; }
@@ -211,6 +215,7 @@ bool DeserializeBinding(const json& source, InputBinding& binding) {
    case InputBindingType::LeftStick:
    case InputBindingType::RightStick:
       if (!source.contains("axis")) {
+         // axis が存在しない旧形式も読み込めるよう、従来どおりスティック全体を割り当てる。
          binding.axis = InputBindingAxis::Both;
          return true;
       }
@@ -252,6 +257,8 @@ struct PhysicalControl {
 };
 
 std::vector<PhysicalControl> GetPhysicalControls(const InputBinding& binding) {
+   // 複合バインドを「物理デバイス上の入力」の列へ正規化することで、
+   // KeyAxis1D/2D を含む異種バインド同士でも同じ手順で競合を検出できる。
    auto key = [](KeyCode value) {
       return PhysicalControl{ PhysicalControlType::Key, static_cast<uint32_t>(value) };
    };
@@ -285,6 +292,8 @@ bool FindSingleChangedControl(
    const InputBinding& replacement,
    PhysicalControl& previousControl,
    PhysicalControl& replacementControl) {
+   // 競合時に安全に入れ替えられるのは、同じ形のバインドで一つの物理入力だけを
+   // 変更した場合に限る。複数変更を推測で交換すると別方向の割り当てまで壊れてしまう。
    if (previous.type != replacement.type) {
       return false;
    }
@@ -315,6 +324,8 @@ bool ReplacePhysicalControl(
    InputBinding& binding,
    const PhysicalControl& target,
    const PhysicalControl& replacement) {
+   // キーとゲームパッドボタンのようにデバイス種別をまたぐ置換は行わない。
+   // 呼び出し側は false を受け取ると、バインド全体を旧割り当てへ差し替える。
    if (target.type != replacement.type) {
       return false;
    }
@@ -360,6 +371,9 @@ void InputActionService::Initialize(
    backend_ = &backend;
    defaultPath_ = defaultPath;
    overridePath_ = overridePath;
+
+   // 組み込み定義を土台に外部定義を重ねる。ファイルが欠けても最低限の操作を失わず、
+   // 正常に読めた定義だけを「リセット先」として確定してからユーザー設定を適用する。
    BuildFallbackDefaults();
 
    if (!LoadDefinitions(defaultPath_, true)) {
@@ -370,6 +384,7 @@ void InputActionService::Initialize(
 }
 
 void InputActionService::BuildFallbackDefaults() {
+   // 起動不能を避けるための最小構成。ここで定義した操作は既定JSONが壊れていても残る。
    actions_.clear();
 
    auto addAction = [this](const char* map, const char* id, InputActionType type, std::initializer_list<InputBinding> bindings) {
@@ -381,6 +396,7 @@ void InputActionService::BuildFallbackDefaults() {
       actions_[MakeKey(map, id)] = std::move(action);
    };
 
+   // 同じアクションへキーボードとゲームパッドを併記し、Update() 側で入力値を合成する。
    InputBinding steerKeys;
    steerKeys.type = InputBindingType::KeyAxis1D;
    steerKeys.negativeKey = KeyCode::A;
@@ -401,6 +417,7 @@ void InputActionService::BuildFallbackDefaults() {
    InputBinding rollKeys = steerKeys;
    rollKeys.negativeKey = KeyCode::Q;
    rollKeys.positiveKey = KeyCode::E;
+   // 左右ショルダーは同じ1D軸へ逆符号で加算し、同時押しなら相殺されるようにする。
    InputBinding rollLeftShoulder;
    rollLeftShoulder.type = InputBindingType::GamePadButton;
    rollLeftShoulder.gamePadButton = GamePadButton::LeftShoulder;
@@ -453,6 +470,8 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
    }
    if (!root.contains("maps") || !root["maps"].is_object()) { return false; }
 
+   // 読み込み途中で不正項目が見つかっても現在の設定を壊さないよう、作業用コピーへ適用する。
+   // replaceAll は未知アクションの追加可否を表し、override 読み込み時は既知項目だけを許可する。
    auto loadedActions = replaceAll ? actions_ : actions_;
    size_t appliedCount = 0;
    for (const auto& [mapName, mapData] : root["maps"].items()) {
@@ -466,7 +485,8 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
             continue;
          }
 
-         ActionDefinition action = existing != actions_.end() ? existing->second : ActionDefinition{};
+          // 各項目を既存定義から始めることで、不正な項目だけフォールバック値へ戻せる。
+          ActionDefinition action = existing != actions_.end() ? existing->second : ActionDefinition{};
          action.map = mapName;
          action.id = actionId;
          InputActionType type = action.type;
@@ -477,7 +497,8 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
             continue;
          }
 
-         std::vector<InputBinding> bindings;
+          // 配列全体を検証してから置換する。途中まで有効な配列は操作体系を予測不能にするため採用しない。
+          std::vector<InputBinding> bindings;
          bool valid = true;
          for (const json& bindingData : actionData["bindings"]) {
             InputBinding binding;
@@ -498,7 +519,8 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
          const float configuredDeadZone = actionData.contains("deadZone")
             ? actionData.at("deadZone").get<float>()
             : action.deadZone;
-         action.deadZone = std::clamp(configuredDeadZone, 0.0f, 0.95f);
+          // 1.0ではスティックが決して反応しなくなるため、上限にはわずかな余裕を残す。
+          action.deadZone = std::clamp(configuredDeadZone, 0.0f, 0.95f);
          action.bindings = std::move(bindings);
          loadedActions[key] = std::move(action);
          ++appliedCount;
@@ -514,6 +536,8 @@ void InputActionService::Update() {
    if (!backend_) { return; }
    ++frameNumber_;
 
+   // 全アクションをプレイヤー単位で評価し、このフレームのスナップショットを完成させる。
+   // 利用側が同じフレームに何度問い合わせても triggered/released が変化しない設計である。
    for (auto& [key, action] : actions_) {
       (void)key;
       for (uint32_t playerSlot = 0; playerSlot < kMaxPlayers; ++playerSlot) {
@@ -521,16 +545,21 @@ void InputActionService::Update() {
          for (const InputBinding& binding : action.bindings) {
             const Vector2 bindingValue = EvaluateBinding(binding, playerSlot, action.deadZone);
             if (action.type == InputActionType::Button) {
+               // ボタンは複数デバイスの論理OR。加算すると二重入力時だけ値が変わるため最大値を使う。
                value.x = std::max(value.x, bindingValue.x);
             } else {
+               // 軸入力はキーボード、スティック、補助ボタンを合成できるよう加算する。
                value.x += bindingValue.x;
                value.y += bindingValue.y;
             }
          }
 
+         // 複数バインドの合成後も、利用側へ渡す論理入力の範囲は常に [-1, 1] に保つ。
          value.x = std::clamp(value.x, -1.0f, 1.0f);
          value.y = std::clamp(value.y, -1.0f, 1.0f);
          InputActionState& state = action.states[playerSlot];
+         // 前フレームの held と比較してエッジを生成する。バックエンドごとのトリガー判定へ
+         // 依存しないため、キーボードとゲームパッドを同じアクションとして扱える。
          const bool wasHeld = state.held;
          state.value = value;
          state.held = std::abs(value.x) > 0.0001f || std::abs(value.y) > 0.0001f;
@@ -543,6 +572,8 @@ void InputActionService::Update() {
 
 Vector2 InputActionService::EvaluateBinding(const InputBinding& binding, uint32_t playerSlot, float deadZone) const {
    Vector2 value{};
+   // キーボードは共有デバイスなのでプレイヤー0だけへ割り当てる。
+   // ゲームパッドは playerSlot と物理ポートを一対一で対応させる。
    const bool allowKeyboard = playerSlot == 0;
    switch (binding.type) {
    case InputBindingType::Key:
@@ -572,6 +603,8 @@ Vector2 InputActionService::EvaluateBinding(const InputBinding& binding, uint32_
       value = backend_->GetRightStick(playerSlot, deadZone);
       break;
    }
+   // 1Dアクションは最終的に x 成分を読むため、Y指定も x へ詰め替える。
+   // Both は2D値を保ち、Axis2Dアクションからそのまま利用できる。
    if (binding.axis == InputBindingAxis::X) {
       value.y = 0.0f;
    } else if (binding.axis == InputBindingAxis::Y) {
@@ -617,11 +650,15 @@ bool InputActionService::ApplyBinding(
    ActionDefinition* target = FindAction(actionMap, actionId);
    if (!target || bindingIndex >= target->bindings.size()) { return false; }
    const InputBinding previousTargetBinding = target->bindings[bindingIndex];
+
+   // 一方向だけを再割り当てた複合軸では、競合先の同じ物理入力と旧入力を交換する。
+   // これにより「左をDへ変更」した際、既存の右=Dが未割り当てになるのを防ぐ。
    PhysicalControl previousControl{};
    PhysicalControl replacementControl{};
    const bool changesSingleControl = FindSingleChangedControl(
       previousTargetBinding, binding, previousControl, replacementControl);
 
+   // マップをまたいで同じ物理入力が二重登録されないよう、全アクションを走査する。
    for (auto& [key, action] : actions_) {
       (void)key;
       for (InputBinding& existing : action.bindings) {
@@ -629,7 +666,8 @@ bool InputActionService::ApplyBinding(
          if (!isTarget && SharesPhysicalControl(existing, binding)) {
             if (!replaceConflict) { return false; }
             if (!changesSingleControl ||
-               !ReplacePhysicalControl(existing, replacementControl, previousControl)) {
+                !ReplacePhysicalControl(existing, replacementControl, previousControl)) {
+               // 安全な局所交換ができない場合は、競合側へ対象の旧バインド全体を移す。
                existing = previousTargetBinding;
             }
          }
@@ -652,6 +690,8 @@ bool InputActionService::LoadOverrides() {
 }
 
 bool InputActionService::SaveOverrides() const {
+   // 現在有効な定義を完全なスナップショットとして保存し、既定JSONの変更後も
+   // ユーザーが確認した割り当てが不用意に変わらないようにする。
    json root;
    root["version"] = kInputActionFormatVersion;
    for (const auto& [key, action] : actions_) {
@@ -668,6 +708,9 @@ bool InputActionService::SaveOverrides() const {
 
    std::error_code error;
    std::filesystem::create_directories(overridePath_.parent_path(), error);
+
+   // 直接上書きすると書き込み中の終了でJSONが破損するため、一時ファイルを閉じてから
+   // WRITE_THROUGH付きの置換で切り替える。
    const std::filesystem::path temporaryPath = overridePath_.wstring() + L".tmp";
    std::ofstream stream(temporaryPath, std::ios::trunc);
    if (!stream) { return false; }
@@ -706,6 +749,7 @@ const InputActionService::ActionDefinition* InputActionService::FindAction(
 }
 
 std::string InputActionService::MakeKey(const std::string& actionMap, const std::string& actionId) {
+   // UI表示用文字列と衝突しにくい改行を区切りに使い、map/id の組を単一キーへまとめる。
    return actionMap + '\n' + actionId;
 }
 
@@ -714,6 +758,8 @@ void InputActionService::DrawImGui() {
    if (!ImGui::CollapsingHeader("Input Actions")) { return; }
    ImGui::TextUnformatted("Keyboard/Mouse: Player 0, XInput: matching player slot");
 
+   // actions_ はunordered_mapのため、そのまま描画すると毎回並びが揺れる。
+   // ポインターだけを並べ替え、実体と再バインド状態のアドレスは維持する。
    std::vector<ActionDefinition*> sortedActions;
    sortedActions.reserve(actions_.size());
    for (auto& [key, action] : actions_) {
@@ -774,6 +820,7 @@ void InputActionService::DrawImGui() {
          ? pendingAction->bindings[pendingRebind_.bindingIndex]
          : InputBinding{};
       bool hasCapture = false;
+      // 押下中ではなくトリガーだけを拾い、再バインド開始に使った入力を誤採用しない。
       for (const auto& [name, key] : kKnownKeys) {
          (void)name;
          if (backend_->IsKeyTriggered(key)) {
@@ -795,6 +842,8 @@ void InputActionService::DrawImGui() {
             break;
          }
       }
+      // 複合軸の一方向には同種のキーだけを許可し、バインド全体の置換時だけ
+      // ゲームパッドボタンへ種別変更できるようにする。
       if (!hasCapture && pendingRebind_.part == RebindPart::Whole) {
          for (const auto& [name, button] : kKnownGamePadButtons) {
             (void)name;
@@ -807,6 +856,7 @@ void InputActionService::DrawImGui() {
          }
       }
       if (hasCapture) {
+         // まず非破壊モードで適用し、競合があった場合だけユーザー確認へ進む。
          if (ApplyBinding(pendingRebind_.map, pendingRebind_.actionId, pendingRebind_.bindingIndex, captured, false)) {
             pendingRebind_.active = false;
          } else {

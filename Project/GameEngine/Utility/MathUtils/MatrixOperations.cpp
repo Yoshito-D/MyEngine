@@ -92,12 +92,14 @@ Matrix4x4 MakeRotateZMatrix(float radian) {
 
 Matrix4x4 MakeAffineMatrix(const Transform& transform) {
    Matrix4x4 rotateXYZMatrix;
+   // Transformが保持する有効な回転表現を選び、EulerとQuaternionの二重適用を避ける。
    if (transform.IsUsingQuaternion()) {
 	  rotateXYZMatrix = MakeRotateMatrix(transform.GetActiveQuaternion());
    } else {
 	  rotateXYZMatrix = MakeRotateXMatrix(transform.rotation.x) * MakeRotateYMatrix(transform.rotation.y) * MakeRotateZMatrix(transform.rotation.z);
    }
 
+   // 行ベクトル規約に合わせ、各回転行へ対応軸のスケールを掛けて平行移動を最終行へ置く。
    Matrix4x4 result = {
 	   transform.scale.x * rotateXYZMatrix.m[0][0],transform.scale.x * rotateXYZMatrix.m[0][1],transform.scale.x * rotateXYZMatrix.m[0][2],0.0f,
 	   transform.scale.y * rotateXYZMatrix.m[1][0],transform.scale.y * rotateXYZMatrix.m[1][1],transform.scale.y * rotateXYZMatrix.m[1][2],0.0f,
@@ -108,6 +110,7 @@ Matrix4x4 MakeAffineMatrix(const Transform& transform) {
 }
 
 Matrix4x4 MakeRotationAxis(const Vector3& axis, float angle) {
+   // Rodriguesの式は単位軸を前提とするため、成分展開より先に正規化する。
    Vector3 a = axis.Normalize();
    float x = a.x;
    float y = a.y;
@@ -166,6 +169,7 @@ Matrix4x4 MakeRotationMatrixFromTo(const Vector3& from, const Vector3& to) {
    float cosTheta = f.Dot(t);
    const float EPSILON = 1e-6f;
 
+   // 外積が退化する平行・反平行だけを先に分離し、通常経路の回転軸を有効に保つ。
    // 同じ方向
    if (cosTheta > 1.0f - EPSILON) {
 	  return MakeIdentity4x4();
@@ -198,6 +202,7 @@ Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to) {
 
    if (cosTheta < -0.999999f) {
 	  Vector3 orthogonal;
+	  // 最小成分の基準軸を選ぶとfromとの平行を避けやすく、180度回転軸を安定して作れる。
 	  if (fabsf(f.x) < fabsf(f.y) && fabsf(f.x) < fabsf(f.z)) {
 		 orthogonal = Vector3{ 1.0f, 0.0f, 0.0f };
 	  } else if (fabsf(f.y) < fabsf(f.z)) {
@@ -216,6 +221,7 @@ Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to) {
 }
 
 Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
+   // DirectXの左手系・深度0～1と行ベクトル規約に合わせた透視射影を構成する。
    Matrix4x4 result = {
 	   1.0f / aspectRatio * (std::cos(fovY * 0.5f) / std::sin(fovY * 0.5f)),0.0f,0.0f,0.0f,
 	   0.0f,std::cos(fovY * 0.5f) / std::sin(fovY * 0.5f),0.0f,0.0f,
@@ -236,6 +242,7 @@ Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float botto
 }
 
 Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth) {
+   // NDCの上向きYを画面座標の下向きYへ反転し、中心移動と深度範囲変換を同時に行う。
    Matrix4x4 result = {
 	   width * 0.5f,0.0f,0.0f,0.0f,
 	   0.0f,-height * 0.5f,0.0f,0.0f,
@@ -246,6 +253,7 @@ Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, f
 }
 
 Matrix4x4 MakeLookAtMatrix(const Vector3& eye, const Vector3& target, const Vector3& up) {
+   // 左手系の前方Zを基準に直交基底を作り、内積の符号反転で視点を原点へ移す。
    Vector3 zaxis = (target - eye).Normalize();
    Vector3 xaxis = (up.Cross(zaxis)).Normalize();
    Vector3 yaxis = zaxis.Cross(xaxis);
@@ -275,6 +283,7 @@ Matrix4x4 MakeLookAtMatrix(const Vector3& eye, const Vector3& target, const Vect
 }
 
 Matrix4x4 ExtractRotationMatrix(const Matrix4x4& worldMatrix) {
+   // 平行移動だけを除去する。上位3行のスケール成分は呼び出し側の規約どおり保持する。
    Matrix4x4 rotationOnly = worldMatrix;
    rotationOnly.m[3][0] = 0.0f;
    rotationOnly.m[3][1] = 0.0f;
@@ -291,6 +300,7 @@ Vector3 MatrixToEulerXYZ(const Matrix4x4& m) {
 	  roll = atan2(-m.m[2][0], m.m[2][2]);
 	  yaw = atan2(-m.m[0][1], m.m[1][1]);
    } else {
+	  // pitchが±90度ではrollとyawを一意に分離できないため、rollを0へ固定して解を選ぶ。
 	  pitch = (m.m[2][1] > 0) ? DirectX::XM_PI * 0.5f : -DirectX::XM_PI * 0.5f;
 	  roll = 0.0f;
 	  yaw = atan2(m.m[1][0], m.m[0][0]);

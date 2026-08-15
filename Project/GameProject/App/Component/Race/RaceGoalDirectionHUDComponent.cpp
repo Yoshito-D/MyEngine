@@ -50,6 +50,7 @@ GameEngine::Vector2 ClampDirectionToScreenRect(
    float maxVerticalOffset,
    bool forceToEdge
 ) {
+   // 方向を保ったまま矩形境界へ到達する倍率を、横・縦のうち先に当たる側から求める。
    float scaleToEdge = std::numeric_limits<float>::infinity();
    if (std::abs(direction.x) > kDirectionEpsilon) {
       scaleToEdge = std::min(scaleToEdge, maxHorizontalOffset / std::abs(direction.x));
@@ -82,6 +83,7 @@ GameEngine::Vector2 MoveTowards(
 }
 
 float MoveAngleTowards(float current, float target, float maxRadians) {
+   // ±2πを跨ぐ場合も遠回りしないよう、差分を[-π, π]へ折り返す。
    const float shortestDelta = std::remainder(target - current, kTwoPi);
    if (std::abs(shortestDelta) <= maxRadians) {
       return target;
@@ -97,6 +99,7 @@ float MoveAngleTowards(float current, float target, float maxRadians) {
 namespace App {
 
 void RaceGoalDirectionHUDComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   // シーン再読込で無効になる参照をすべて破棄してから、設定IDを新ワールドへ解決する。
    raceManager_ = nullptr;
    playerObject_ = nullptr;
    goalObject_ = nullptr;
@@ -134,6 +137,7 @@ void RaceGoalDirectionHUDComponent::Update(float deltaTime) {
       raceManager_->GetState() == RaceManagerComponent::State::Running &&
       playerObject_ && goalObject_ && sprite_;
    if (!shouldShow) {
+      // 非表示期間の補間値を持ち越さず、次のレース開始時は正しい位置から表示する。
       SetVisible(false);
       ResetFollowState();
       return;
@@ -186,6 +190,7 @@ bool RaceGoalDirectionHUDComponent::TryCalculateTarget(HudTarget& target) {
    GameEngine::Vector3 surfaceUp = gravityBody_
       ? gravityBody_->GetTargetUpVector().Normalize()
       : GameEngine::Vector3{ 0.0f, 1.0f, 0.0f };
+   // 重力情報が未確定な初期フレームでもHUD計算を継続できるようワールドUpへ退避する。
    if (surfaceUp.LengthSquared() < kDirectionEpsilonSquared) {
       surfaceUp = { 0.0f, 1.0f, 0.0f };
    }
@@ -196,6 +201,7 @@ bool RaceGoalDirectionHUDComponent::TryCalculateTarget(HudTarget& target) {
       return false;
    }
    const GameEngine::Vector3 flatGoalDirection = ProjectOntoPlane(goalDirection, surfaceUp);
+   // 高低差を除いた惑星接平面上の方位を使い、崖や球面越しでも方向表示を安定させる。
    if (flatGoalDirection.LengthSquared() < kDirectionEpsilonSquared) {
       return false;
    }
@@ -213,6 +219,7 @@ bool RaceGoalDirectionHUDComponent::TryCalculateTarget(HudTarget& target) {
 
    GameEngine::Vector3 flatCameraForward = ProjectOntoPlane(viewForward, surfaceUp);
    if (flatCameraForward.LengthSquared() < kDirectionEpsilonSquared) {
+      // カメラが地面を真上・真下に見る場合は前方投影が退化するため、画面Upから方位を復元する。
       flatCameraForward = ProjectOntoPlane(viewUp, surfaceUp);
    }
    if (flatCameraForward.LengthSquared() < kDirectionEpsilonSquared) {
@@ -221,6 +228,7 @@ bool RaceGoalDirectionHUDComponent::TryCalculateTarget(HudTarget& target) {
    flatCameraForward = flatCameraForward.Normalize();
 
    GameEngine::Vector3 flatCameraRight = surfaceUp.Cross(flatCameraForward).Normalize();
+   // 外積の符号を実際の画面Rightへ合わせ、カメラ姿勢による左右反転を防ぐ。
    if (flatCameraRight.Dot(viewRight) < 0.0f) {
       flatCameraRight = -flatCameraRight;
    }
@@ -233,11 +241,13 @@ bool RaceGoalDirectionHUDComponent::TryCalculateTarget(HudTarget& target) {
    const float halfScreenHeight = static_cast<float>(graphicsDevice->GetBackBufferHeight()) * 0.5f;
    const GameEngine::Vector2 spriteSize = sprite_->GetSize();
    const GameEngine::Vector2 spriteScale = sprite_->GetScale();
+   // 回転後も四隅が画面外へ出ないよう、幅・高さではなく半対角を安全余白に使う。
    const float spriteHalfDiagonal = 0.5f * std::sqrt(
       spriteSize.x * spriteScale.x * spriteSize.x * spriteScale.x +
       spriteSize.y * spriteScale.y * spriteSize.y * spriteScale.y);
 
    if (fixedBottomRight_) {
+      // 固定モードは位置をアンカー相対に保ち、矢印の回転だけで接平面上の方位を示す。
       sprite_->SetScreenAnchorPoint(GameEngine::Sprite::AnchorPoint::BottomRight);
       const float inset = spriteHalfDiagonal + edgePadding_;
       target.position = { -inset, inset };
@@ -271,6 +281,7 @@ bool RaceGoalDirectionHUDComponent::TryCalculateTarget(HudTarget& target) {
 
    GameEngine::Vector2 screenDirection = compassDirection;
    if (useProjectedPosition_) {
+      // 前方に見えるゴールはクリップ座標を画面ピクセルへ変換し、実際の見える位置へ寄せる。
       screenDirection = {
          clipPosition.x / clipPosition.w * halfScreenWidth,
          clipPosition.y / clipPosition.w * halfScreenHeight
@@ -281,6 +292,7 @@ bool RaceGoalDirectionHUDComponent::TryCalculateTarget(HudTarget& target) {
       }
    }
 
+   // 投影不能な背面ゴールは方位ベクトルを必ず画面端まで伸ばし、画面内に浮かせない。
    target.position = ClampDirectionToScreenRect(
       screenDirection,
       maxHorizontalOffset,

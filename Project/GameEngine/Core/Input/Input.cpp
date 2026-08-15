@@ -7,6 +7,7 @@
 
 namespace GameEngine {
 Input::~Input() {
+   // アプリ終了後にコントローラーが振動し続けないよう、保持している出力を明示的に停止する。
    for (size_t i = 0; i < GetConnectedGamePadCount(); ++i) {
 	  SetVibration(static_cast<int32_t>(i), 0.0f, 0.0f);
    }
@@ -24,6 +25,7 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
    assert(SUCCEEDED(result));
 
    // キーボードデバイスの初期化
+   // FOREGROUNDで非アクティブ時の入力を遮断し、NONEXCLUSIVEでOSやImGuiとの共有を許可する。
    result = directInput_->CreateDevice(GUID_SysKeyboard, &keyboard_, NULL);
    assert(SUCCEEDED(result));
 
@@ -35,6 +37,7 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
 	  DISCL_FOREGROUND | DISCL_NONEXCLUSIVE
    );
 
+   // マウスにもキーボードと同じ協調レベルを設定し、ウィンドウのフォーカス規則を統一する。
    // マウスデバイスの初期化
    result = directInput_->CreateDevice(GUID_SysMouse, &mouse_, NULL);
    assert(SUCCEEDED(result));
@@ -51,12 +54,15 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
 }
 
 void Input::Update() {
+   // 全デバイスを同じフレーム境界で更新し、Pressed/Triggered/Releasedの比較元を揃える。
    KeyboardUpdate();
    MouseUpdate();
    GamePadUpdate();
 }
 
 void Input::KeyboardUpdate() {
+   // 読み込み前に現在値を前フレームへ退避する。Acquire/GetDeviceStateが失敗した場合は
+   // クリア済み状態が残り、フォーカス喪失を「全キー解放」として安全に扱える。
    memcpy(prevKey_, key_, sizeof(key_));
    std::fill(std::begin(key_), std::end(key_), static_cast<BYTE>(0));
    keyboard_->Acquire();
@@ -64,6 +70,7 @@ void Input::KeyboardUpdate() {
 }
 
 void Input::MouseUpdate() {
+   // DIMOUSESTATEの移動量はフレーム相対値なので、毎回ゼロ初期化してから取得する。
    prevMouseState_ = mouseState_;
    ZeroMemory(&mouseState_, sizeof(mouseState_));
    mouse_->Acquire();
@@ -71,6 +78,7 @@ void Input::MouseUpdate() {
 }
 
 void Input::GamePadUpdate() {
+   // 未接続ポートもゼロ状態へ更新し、切断したフレームにReleaseエッジを生成できるようにする。
    for (uint32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
 	  prevGamePadState_[i] = gamePadState_[i];
 
@@ -148,6 +156,7 @@ bool Input::IsMouseReleased(MouseButton button) {
 }
 
 Vector2 Input::GetMouseScreenPosition() const {
+   // Win32のスクリーン座標を、この入力デバイスに関連付けたウィンドウのクライアント座標へ変換する。
    POINT pt{};
    GetCursorPos(&pt);
    ScreenToClient(hwnd_, &pt);
@@ -166,6 +175,7 @@ int32_t Input::GetMouseWheelDelta() const {
 }
 
 bool Input::IsGamePadConnected(uint32_t index) const {
+   // キャッシュだけでは切断と全入力0を区別できないため、接続確認時はXInputへ直接問い合わせる。
    XINPUT_STATE tempState{};
    return (index < XUSER_MAX_COUNT) && (XInputGetState(index, &tempState) == ERROR_SUCCESS);
 }
@@ -227,12 +237,14 @@ Vector2 Input::GetLeftStick(uint32_t index, float deadZone) const {
    float x = static_cast<float>(state.Gamepad.sThumbLX);
    float y = static_cast<float>(state.Gamepad.sThumbLY);
 
+   // 軸ごとのデッドゾーンでは斜め入力の角度が歪むため、スティック全体を円形領域として評価する。
    float normX = x / 32767.0f;
    float normY = y / 32767.0f;
    float length = std::sqrt(normX * normX + normY * normY);
 
    if (length < deadZone) return Vector2(0.0f, 0.0f);
 
+   // デッドゾーン外の残り区間を0～1へ再マップし、境界で値が急にdeadZone分跳ねないようにする。
    float scale = (length - deadZone) / (1.0f - deadZone);
    scale = std::clamp(scale, 0.0f, 1.0f);
 
@@ -246,6 +258,7 @@ Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
    float x = static_cast<float>(state.Gamepad.sThumbRX);
    float y = static_cast<float>(state.Gamepad.sThumbRY);
 
+   // 左スティックと同じ円形デッドゾーンを適用し、カメラ操作時の方向を保つ。
    float normX = x / 32767.0f;
    float normY = y / 32767.0f;
    float length = std::sqrt(normX * normX + normY * normY);
@@ -260,6 +273,7 @@ Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
 
 float Input::GetLeftTrigger(uint32_t index, float deadZone) const {
    if (index >= 4) return 0.0f;
+   // 8bit入力を正規化し、デッドゾーンより上の範囲を再び0～1へ広げる。
    float value = gamePadState_[index].Gamepad.bLeftTrigger / 255.0f;
    return (value < deadZone) ? 0.0f : (value - deadZone) / (1.0f - deadZone);
 }
@@ -273,6 +287,7 @@ float Input::GetRightTrigger(uint32_t index, float deadZone) const {
 void Input::SetVibration(uint32_t index, float leftMotor, float rightMotor) {
    if (index >= 4) return;
 
+   // 範囲外のゲーム側パラメーターを先にClampし、WORDへの変換時の折り返しを防ぐ。
    // 0.0f～1.0f → 0～65535 に変換
    WORD leftValue = static_cast<WORD>(std::clamp(leftMotor, 0.0f, 1.0f) * 65535.0f);
    WORD rightValue = static_cast<WORD>(std::clamp(rightMotor, 0.0f, 1.0f) * 65535.0f);

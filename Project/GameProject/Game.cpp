@@ -21,6 +21,7 @@ std::string LoadLastEditorSceneName(const SceneCatalog& sceneCatalog) {
       return {};
    }
 
+   // セッションファイルの破損は起動失敗にせず、カタログ既定シーンへフォールバックする。
    nlohmann::json sessionState;
    try {
       file >> sessionState;
@@ -45,6 +46,7 @@ void SaveLastEditorSceneName(const std::string& sceneName) {
       return;
    }
 
+   // 初回起動でも保存できるよう、状態ファイルより先に親ディレクトリを用意する。
    const std::filesystem::path filePath = GetEditorSessionStateFilePath();
    std::error_code error;
    std::filesystem::create_directories(filePath.parent_path(), error);
@@ -105,6 +107,7 @@ void Game::Update() {
       return;
    }
 #ifdef USE_IMGUI
+   // エディタでは入力・時間を進めるランタイム更新と、選択表示などの編集更新を分離する。
    playModeController_->ProcessRequests(*sceneManager_);
    if (playModeController_->ShouldRunRuntimeUpdate()) {
       Framework::Update();
@@ -128,6 +131,7 @@ void Game::Draw() {
 void Game::Finalize() {
    if (sceneManager_) {
 #ifdef USE_IMGUI
+      // 次回の編集開始位置だけを保存し、ランタイム中のシーン状態そのものは持ち越さない。
       SaveLastEditorSceneName(sceneManager_->GetCurrentSceneName());
 #endif
       sceneManager_->Finalize();
@@ -142,6 +146,7 @@ void Game::Finalize() {
 void Game::EndFrame() {
    Framework::EndFrame();
    if (sceneManager_) {
+      // 描画中の参照を無効化しないよう、予約されたシーン遷移はフレーム末尾で確定する。
       sceneManager_->CheckSceneChange();
    }
 }

@@ -43,11 +43,13 @@ void BeginPropertyRow(const std::string& label, float columnWidth, bool pushItem
    ImGui::NextColumn();
 
    if (pushItemWidth) {
+      // 負の幅で第2列の残り領域を使い切り、呼び出し側ごとの幅計算を不要にする。
       ImGui::PushItemWidth(-FLT_MIN);
    }
 }
 
 void EndPropertyRow(bool popItemWidth = true) {
+   // BeginPropertyRowで積んだ幅・列・IDを逆順に戻し、後続プロパティへ状態を漏らさない。
    if (popItemWidth) {
       ImGui::PopItemWidth();
    }
@@ -147,6 +149,7 @@ const char* Localize(const LocalizedText& text) {
    const char* selected = gLanguage == EditorLanguage::Japanese ? text.japanese : text.english;
    const char* fallback = gLanguage == EditorLanguage::Japanese ? text.english : text.japanese;
 
+   // 選択言語が未設定でも反対言語へ退避し、ラベルやImGui IDが空になるのを避ける。
    if (selected != nullptr && selected[0] != '\0') {
       return selected;
    }
@@ -222,6 +225,7 @@ bool BeginSection(const std::string& label, bool defaultOpen) {
 
    const bool open = ImGui::CollapsingHeader(label.c_str(), flags);
    if (open) {
+      // 開いている場合だけ字下げし、呼び出し側のEndSectionとのスタックを対応させる。
       ImGui::Indent();
    }
 
@@ -345,6 +349,7 @@ bool DrawRangeFloat(
       format);
 
    if (minValue > maxValue) {
+      // 数値入力で両端が交差しても、利用側へは常に昇順の範囲を返す。
       std::swap(minValue, maxValue);
    }
 
@@ -427,6 +432,7 @@ bool DrawQuaternionControl(
 
    value = Quaternion{ components.x, components.y, components.z, components.w };
    if (normalizeOnEdit) {
+      // 回転用途では単位長を維持し、編集値による拡縮成分の混入を防ぐ。
       value = value.Normalize();
    }
 
@@ -442,6 +448,7 @@ bool DrawEulerDegreesControl(
    float minDegrees,
    float maxDegrees,
    const char* format) {
+   // エンジン内部のラジアンを一時的に度へ変換し、編集が確定した場合だけ書き戻す。
    Vector3 eulerDegrees = RadiansToDegrees(eulerRadians);
 
    if (!DrawVec3Control(label, eulerDegrees, resetDegrees, columnWidth, speedDegrees, minDegrees, maxDegrees, format)) {
@@ -483,11 +490,13 @@ bool DrawTransformControl(
    changed |= DrawVec3Control(Localize({ "位置", "Position" }), transform.translation, 0.0f, columnWidth, 0.05f);
 
    Vector3 euler = transform.GetActiveEuler();
+   // Transformがどちらの回転表現を保持していても、現在有効な姿勢を編集開始値にする。
    const bool rotationChanged = rotationInDegrees
       ? DrawEulerDegreesControl(Localize({ "回転 (deg)", "Rotation (deg)" }), euler, 0.0f, columnWidth, 0.1f)
       : DrawVec3Control(Localize({ "回転 (rad)", "Rotation (rad)" }), euler, 0.0f, columnWidth, 0.01f);
 
    if (rotationChanged) {
+      // 編集後はQuaternionへ統一してジンバル角の累積加算を避ける。
       transform.SetRotationQuaternion(euler.ToQuaternion().Normalize());
       changed = true;
    }
@@ -544,6 +553,7 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<st
    std::vector<const char*> itemPointers;
    itemPointers.reserve(items.size());
 
+   // ImGui呼び出し中だけ有効な参照へ変換し、文字列本体のコピーは増やさない。
    for (const std::string& item : items) {
       itemPointers.emplace_back(item.c_str());
    }
@@ -556,6 +566,7 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<co
    bool changed = false;
 
    if (items.empty()) {
+      // 選択肢消失時は古いインデックスを無効化し、再追加時の範囲外参照を防ぐ。
       currentIndex = -1;
       ImGui::TextDisabled("%s", Localize({ "項目なし", "No items" }));
       EndPropertyRow();
@@ -563,6 +574,7 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<co
    }
 
    if (currentIndex < 0 || currentIndex >= static_cast<int>(items.size())) {
+      // 外部データ由来の不正インデックスは、プレビューへ使う前に先頭へ正規化する。
       currentIndex = 0;
    }
 
@@ -667,6 +679,7 @@ bool DrawPathControl(
    if (showClearButton) {
       const char* clearLabel = Localize({ "クリア", "Clear" });
       const float buttonWidth = ImGui::CalcTextSize(clearLabel).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+      // クリアボタン分を先に確保し、残りを入力欄へ割り当てて狭いInspectorでも両方を保つ。
       const float inputWidth = std::max(48.0f, ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
 
       ImGui::PushItemWidth(inputWidth);

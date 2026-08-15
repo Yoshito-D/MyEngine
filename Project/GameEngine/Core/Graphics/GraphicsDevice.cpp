@@ -25,6 +25,8 @@ void GraphicsDevice::Initialize(Window* window, int32_t backBufferWidth, int32_t
    backBufferWidth_ = backBufferWidth;
    backBufferHeight_ = backBufferHeight;
 
+   // 後続の生成処理は前段で得たデバイス、キュー、各ヒープを参照するため、
+   // 依存関係の順に初期化する。特にDSVはシェーダー参照用SRVも同時に作る。
    InitializeDXGIDevice(enableDebugLayer);
 
    InitializeCommand();
@@ -43,7 +45,8 @@ void GraphicsDevice::Initialize(Window* window, int32_t backBufferWidth, int32_t
 }
 
 void GraphicsDevice::PreDraw() {
-   // これから書き込むバックバッファのインデックスを取得
+   // Present済みのバッファへ直接書き込めないため、このフレームが所有する
+   // バックバッファだけをRENDER_TARGETへ遷移させる。
    UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
    // リソースバリアを変更（表示状態→描画対象）
@@ -62,7 +65,8 @@ void GraphicsDevice::PreDraw() {
 
    TransitionDepthStencilToWrite();
 
-   // 描画先のRTVを設定する
+   // RTVとDSVを同時に束縛してからクリアする。DSVはポストエフェクトでSRV化されるため、
+   // フレーム開始時に必ず書き込み状態へ戻しておく。
    commandList_->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
 
    // 指定した深度で画面全体をクリアする
@@ -79,6 +83,8 @@ void GraphicsDevice::PreDraw() {
    CD3DX12_RECT scissorRect = CD3DX12_RECT(0, 0, backBufferWidth_, backBufferHeight_);
    commandList_->RSSetScissorRects(1, &scissorRect);
 
+   // シェーダー可視ヒープはコマンドリスト全体で一つだけを共有する。
+   // 描画側はこのヒープを前提にGPUディスクリプタハンドルを設定する。
    ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = { srvHeap_ };
    commandList_->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
 }
@@ -101,6 +107,8 @@ void GraphicsDevice::PostDraw() {
    D3D12_RESOURCE_DESC screenshotSourceDesc{};
 
    if (!screenshotRequests_.empty()) {
+      // GPUテクスチャは行ピッチに配置制約があるため、単純なwidth * pixelSizeではなく
+      // GetCopyableFootprintsが返すレイアウトでリードバックバッファを確保する。
       screenshotPath = screenshotRequests_.front();
       screenshotRequests_.pop();
       screenshotSourceDesc = backBuffer->GetDesc();
@@ -126,6 +134,8 @@ void GraphicsDevice::PostDraw() {
          IID_PPV_ARGS(screenshotReadback.GetAddressOf()));
 
       if (SUCCEEDED(result)) {
+         // バックバッファを一時的にコピー元へ変更し、コピー後はPresent可能な状態へ戻す。
+         // スクリーンショットの有無で最終状態が変わらないことが後段のPresentの前提となる。
          const CD3DX12_RESOURCE_BARRIER toCopySource =
             CD3DX12_RESOURCE_BARRIER::Transition(
                backBuffer,
@@ -158,6 +168,7 @@ void GraphicsDevice::PostDraw() {
    }
 
    if (!screenshotReadback) {
+      // 通常経路でもスクリーンショット経路と同じPRESENT状態へ収束させる。
       const CD3DX12_RESOURCE_BARRIER toPresent =
          CD3DX12_RESOURCE_BARRIER::Transition(
             backBuffer,
@@ -190,7 +201,8 @@ void GraphicsDevice::PostDraw() {
    }
 #endif
 
-   // Fenceの値を更新
+   // この実装はフレームごとにGPU完了を待つ。これにより単一のアロケータを安全に再利用でき、
+   // スクリーンショット用リードバックも直後にCPUから参照できる。
    fenceValue_++;
    // GPUがここまでたどり着いたときに、Fenceの値を指定した値に代入するようにSignalを送る
    commandQueue_->Signal(fence_.Get(), fenceValue_);
@@ -204,6 +216,8 @@ void GraphicsDevice::PostDraw() {
 	}
 
    if (screenshotPath && screenshotReadback) {
+      // フェンス完了後なのでGPU書き込みとの競合はない。RowPitchはアライン済みの値を保持し、
+      // WIC側へ実際のテクスチャ幅と併せて渡す。
       void* mappedData = nullptr;
       const D3D12_RANGE readRange = { 0, static_cast<SIZE_T>(screenshotBufferSize) };
       result = screenshotReadback->Map(0, &readRange, &mappedData);
@@ -256,6 +270,8 @@ void GraphicsDevice::Finalize() {
    }
 
    if (commandQueue_ && fence_) {
+      // COMリソースを解放する前に、キューへ投入済みの全参照が切れるまで待つ。
+      // ここを省くと終了時だけGPUが解放済みバックバッファを参照し得る。
 	  fenceValue_++;
 	  commandQueue_->Signal(fence_.Get(), fenceValue_);
 	  if (fence_->GetCompletedValue() < fenceValue_) {
@@ -310,6 +326,7 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
    assert(SUCCEEDED(result));
 
    Microsoft::WRL::ComPtr<IDXGIAdapter4> adapter;
+   // 列挙順を高性能GPU優先とし、WARP等のソフトウェアアダプターを除外する。
    for (UINT i = 0; dxgiFactory_->EnumAdapterByGpuPreference(
 	  i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(adapter.GetAddressOf())) != DXGI_ERROR_NOT_FOUND; ++i) {
 
@@ -328,7 +345,7 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
    };
    const char* featureLevelStrings[] = { "12.2", "12.1", "12.0" };
 
-   // 高い順に生成できるか試していく
+   // 同じ物理アダプター上で利用可能な最高機能レベルを選び、下位GPUにもフォールバックする。
    for (size_t i = 0; i < _countof(featureLevels); ++i) {
 	  if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), featureLevels[i], IID_PPV_ARGS(device_.GetAddressOf())))) {
 		 Logger::Info(std::format("FeatureLevel : {}", featureLevelStrings[i]));
@@ -422,7 +439,8 @@ void GraphicsDevice::CreateRenderTargetViews() {
    result = swapChain_->GetDesc(&swcDesc);
    assert(SUCCEEDED(result));
 
-   // RTVヒープはオフスクリーンRTのハンドルが参照するため再生成しない
+   // RTVヒープはオフスクリーンRTが2番以降のCPUハンドルを保持している。
+   // リサイズ時もヒープ自体を再生成せず、既存ハンドルの有効性を保つ。
    if (!rtvHeap_) {
 	  D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
 	  heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; // レンダーターゲットビュー
@@ -457,7 +475,8 @@ void GraphicsDevice::CreateDepthStencilViews() {
    // ヒーププロパティ
    CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
-   // リソース設定
+   // 同一リソースをDSVとSRVの両方から見るため、実体はTYPELESSで作り、
+   // 各ビュー側で深度書き込み用／深度読み取り用の型を確定する。
    CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
 	  DXGI_FORMAT_R24G8_TYPELESS,
 	  backBufferWidth_, backBufferHeight_,
@@ -497,6 +516,8 @@ void GraphicsDevice::CreateDepthStencilViews() {
    );
 
    if (srvHeap_) {
+      // リサイズ後もルートテーブルが保持するGPUハンドルを変えないよう、
+      // 初回に確保したディスクリプタ位置へ新しい深度SRVを上書きする。
 	  if (depthSrvIndex_ == static_cast<UINT>(-1)) {
 		 depthSrvIndex_ = GetNextSrvIndex();
 		 depthSrvHandleCPU_ = CD3DX12_CPU_DESCRIPTOR_HANDLE(
@@ -539,6 +560,7 @@ void GraphicsDevice::TransitionDepthStencilToShaderResource() {
 	  return;
    }
 
+   // 呼び出し側が直前の用途を意識せずに済むよう、追跡中の実状態をbeforeに使う。
    CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 	  depthBuffer_.Get(),
 	  depthBufferState_,
@@ -583,7 +605,8 @@ void GraphicsDevice::UpdateFixFPS() {
    // 前回記録からの経過時間を取得
    std::chrono::microseconds elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now - reference_);
 
-   // 1/60秒（よりわずかに短い時間）経っていない場合
+   // 目標時刻から十分遠い場合だけ待機ループへ入る。65fps相当を入口にすることで、
+   // 既に処理が重いフレームへ追加のsleepを入れず、60fps到達までの微小待機だけを行う。
    if (elapsed < kSleepCheckTime) {
 	  while (std::chrono::steady_clock::now() - reference_ < kTargetFrameTime) {
 		 std::this_thread::sleep_for(kSpinSleepInterval);
@@ -594,7 +617,8 @@ void GraphicsDevice::UpdateFixFPS() {
 }
 
 void GraphicsDevice::ExecuteCommandListAndWait() {
-   // コマンドリストを閉じる
+   // リサイズ等で参照中のGPUリソースを作り直す前に、現在までのコマンドを明示的に
+   // フラッシュして完了を待つ。通常のPresentを伴わない同期経路として使用する。
    HRESULT hr = commandList_->Close();
    assert(SUCCEEDED(hr));
 
@@ -670,6 +694,8 @@ void GraphicsDevice::ResizeSwapChainResources(uint32_t width, uint32_t height) {
 	  return;
    }
 
+   // ResizeBuffersはキューから参照中のバックバッファに対して実行できないため、
+   // 先にコマンドを完了させてから全参照を解放する。
    ExecuteCommandListAndWait();
 
    for (auto& backBuffer : backBuffers_) {
@@ -688,6 +714,8 @@ void GraphicsDevice::ResizeSwapChainResources(uint32_t width, uint32_t height) {
 }
 
 UINT GraphicsDevice::GetNextSrvIndex() const {
+   // 解放済みスロットを先に再利用し、長時間のアセット差し替えでヒープ末尾が
+   // 一方向に消費され続けることを防ぐ。確保確定はIncrementSrvIndexで行う。
    if (!freeSrvIndices_.empty()) {
       return freeSrvIndices_.front();
    }

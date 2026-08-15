@@ -3,7 +3,8 @@
 
 namespace GameEngine {
 ComPtr<ID3D12Resource> ResourceHelper::CreateBufferResource(ID3D12Device* device, size_t sizeInBytes) {
-   // 頂点リソース用のヒープの設定
+   // 頂点・定数・一時転送バッファをCPUから直接更新する共通経路。
+   // UPLOADヒープは常にGENERIC_READで使い、明示的な状態遷移を不要にする。
    D3D12_HEAP_PROPERTIES uploadHeapProperties{};
    uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
    // 頂点リソースの設定
@@ -27,6 +28,8 @@ ComPtr<ID3D12Resource> ResourceHelper::CreateBufferResource(ID3D12Device* device
 }
 
 ComPtr<ID3D12Resource> ResourceHelper::CreateTextureResource(ID3D12Device* device, const DirectX::TexMetadata& metadata) {
+   // mipと配列数をScratchImageのメタデータに一致させ、キューブマップを含む
+   // 全サブリソースを後続のUploadTextureDataで一括転送できる実体を作る。
    D3D12_RESOURCE_DESC resourceDesc{};
    resourceDesc.Width = UINT(metadata.width);
    resourceDesc.Height = UINT(metadata.height);
@@ -91,12 +94,15 @@ ComPtr<ID3D12Resource> ResourceHelper::CreateDepthStencilTextureResource(ID3D12D
 }
 
 ComPtr<ID3D12Resource> ResourceHelper::UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages, ID3D12Device* device, ID3D12GraphicsCommandList* commandList) {
+   // DEFAULTヒープへCPUメモリを直接Mapできないため、各mipの配置をUPLOADヒープへ展開し、
+   // UpdateSubresourcesでGPUコピーコマンドを記録する。
    std::vector<D3D12_SUBRESOURCE_DATA> subresources;
    DirectX::PrepareUpload(device, mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
    uint64_t intermediateSize = GetRequiredIntermediateSize(texture, 0, UINT(subresources.size()));
    ComPtr<ID3D12Resource> intermediateResource = CreateBufferResource(device, intermediateSize);
    UpdateSubresources(commandList, texture, intermediateResource.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
-   // Textureへの転送後は利用できるよう、D3D12_RESOURCE_STATE_COPY_DESTからDESTからD3D12_RESOURCE_GENERIC_READへResourceStateを変更する
+   // コピー完了後はSRVとして読める共通状態へ遷移する。返した中間リソースは、
+   // 記録済みコピーがGPUで完了するまで呼び出し側が保持しなければならない。
    CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 	  texture,
 	  D3D12_RESOURCE_STATE_COPY_DEST,

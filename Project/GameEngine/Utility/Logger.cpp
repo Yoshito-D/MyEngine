@@ -75,8 +75,10 @@ void Logger::WriteLogEntry(const std::wstring& message, LogLevel level, LogChann
 }
 
 void Logger::InitializeInternal() {
+   // 出力中にストリームを差し替えないよう、再初期化全体を通常の書き込みと同じMutexで保護する。
    std::lock_guard<std::mutex> lock(logMutex_);
 
+   // 新しい出力先がすべて開くまでは未初期化扱いにし、部分的なファイル群へ書き込ませない。
    isInitialized_ = false;
    CloseStreams();
 
@@ -90,12 +92,14 @@ void Logger::InitializeInternal() {
    OpenChannelLogFile(LogChannel::Game, currentLogDirectory_ / "game.log");
    OpenChannelLogFile(LogChannel::Editor, currentLogDirectory_ / "editor.log");
 
+   // チャンネル別ログに加えて時系列を横断できる集約ログへも同じ行を出力する。
    const std::filesystem::path allLogFilePath = currentLogDirectory_ / kAllLogFileName;
    allLogStream_.open(allLogFilePath, std::ios::out | std::ios::app);
    if (!allLogStream_.is_open()) {
 	  throw std::runtime_error("ログファイルを開けません: " + allLogFilePath.generic_string());
    }
 
+   // 現在のストリーム確立後に世代整理し、起動中のディレクトリを削除候補から除外する。
    CleanOldLogFiles(kLogRootDirectory);
 
    isInitialized_ = true;
@@ -114,6 +118,7 @@ void Logger::Log(const std::string& message, LogLevel level, LogChannel channel,
 }
 
 void Logger::Log(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location) {
+   // 1行の整形と複数出力先への書き込みを不可分にし、スレッド間で行が混ざるのを防ぐ。
    std::lock_guard<std::mutex> lock(logMutex_);
    WriteLog(message, level, channel, location);
 }
@@ -123,6 +128,7 @@ std::wstring Logger::ConvertString(const std::string& str) {
 	  return std::wstring();
    }
 
+   // Win32変換をサイズ照会と実変換の2段階で行い、可変長UTF-8でも切り捨てない。
    auto sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), NULL, 0);
    if (sizeNeeded == 0) {
 	  return std::wstring();
@@ -137,6 +143,7 @@ std::string Logger::ConvertString(const std::wstring& str) {
 	  return std::string();
    }
 
+   // デバッグ出力用UTF-16から、ログファイル共通のUTF-8バイト列へ必要量だけ確保して変換する。
    auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0, NULL, NULL);
    if (sizeNeeded == 0) {
 	  return std::string();
@@ -182,6 +189,7 @@ void Logger::WriteLog(const std::wstring& message, LogLevel level, LogChannel ch
 	  throw std::runtime_error("Logger::Initialize() が呼び出されていません。");
    }
 
+   // 表示とファイルで時刻・重大度・呼び出し元がずれないよう、整形結果を一度だけ作って分配する。
    std::wstring logMessage = FormatLogMessage(message, level, channel, location);
    std::string narrowLogMessage = ConvertString(logMessage);
 
@@ -217,6 +225,7 @@ std::wstring Logger::FormatLogMessage(const std::wstring& message, LogLevel leve
 }
 
 std::string Logger::GetSourceLocationString(std::source_location location) const {
+   // ビルド環境固有の絶対パスを落とし、ログを短く保ちながらファイル・行・関数は残す。
    std::string fileName = ExtractSourceFileName(location.file_name());
    if (fileName.empty()) {
 	  fileName = "unknown";
@@ -250,6 +259,7 @@ void Logger::CleanOldLogFiles(const std::string& logDir) {
    std::vector<std::filesystem::path> logFiles;
    const std::filesystem::path currentLogDirectory = currentLogDirectory_.empty() ? std::filesystem::path() : std::filesystem::absolute(currentLogDirectory_);
 
+   // 現行の日時ディレクトリと旧形式の直下.logを同じ世代数の対象として列挙する。
    // ディレクトリ内のログファイルを取得
    for (const auto& entry : std::filesystem::directory_iterator(logDir)) {
 	  if (!currentLogDirectory.empty() && std::filesystem::absolute(entry.path()) == currentLogDirectory) {
@@ -268,6 +278,7 @@ void Logger::CleanOldLogFiles(const std::string& logDir) {
    );
 
    // ログファイルが指定数を超えている場合、古いファイルを削除
+   // 現在のディレクトリ1件を上限へ含めるため、古い世代へ割り当てる枠を1つ減らす。
    const size_t maxOldLogFiles = currentLogDirectory_.empty() ? kMaxLogFiles : kMaxLogFiles - 1;
    while (logFiles.size() > maxOldLogFiles) {
 	  std::wcout << L"Deleting old log file: " << logFiles.front() << std::endl;

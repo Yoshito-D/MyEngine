@@ -25,6 +25,7 @@ float ReadFloat(const json& settings, const char* key, float fallback) {
    }
 
    try {
+      // 欠落・型不一致・範囲外表現は現在値へフォールバックし、旧シーンの部分設定を受け入れる。
       const float value = it->get<float>();
       return std::isfinite(value) ? value : fallback;
    } catch (const json::exception&) {
@@ -81,6 +82,7 @@ void ReadFloat4(const json& settings, const char* key, float (&values)[4]) {
       }
    }
 
+   // 4要素を一時配列へすべて検証してから反映し、途中要素だけ更新された色を作らない。
    try {
       float parsedValues[4]{};
       for (size_t index = 0; index < 4; ++index) {

@@ -31,6 +31,8 @@ void TransitionResource(
 	  return;
    }
 
+   // ComputeのUAV出力とInput Assemblerの頂点読み取りは同じリソースを共有するため、
+   // 用途を切り替える境界で明示的に可視化する。
    CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource, before, after);
    cmdList->ResourceBarrier(1, &barrier);
 }
@@ -55,6 +57,8 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    std::vector<Material*> fallbackMaterials;
    const std::vector<Material*>* effectiveMaterials = &materialComponent->materials;
    if (effectiveMaterials->empty()) {
+      // マテリアル未割り当てでもプリミティブを表示できるよう、一時配列から既定材を参照する。
+      // Component自体は変更せず、描画だけのフォールバックに限定する。
 	  if (!defaultMaterial) {
 		 return;
 	  }
@@ -96,6 +100,8 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    SkinCluster* skinCluster = meshComponent ? meshComponent->GetSkinCluster() : nullptr;
    const bool canUseSkinning = asset && skinningEnabled && skinCluster;
 
+   // アセット・ユーザー設定・GPU資源・Compute PSOがすべて揃った場合だけGPUスキニングへ入る。
+   // 不完全なロード状態では静的頂点へフォールバックし、描画全体を失わない。
    const auto* skinningComputePipeline = psoManager_ ? psoManager_->GetComputePipeline(kSkinningComputePipelineName) : nullptr;
    auto* skinningComputeRootSignature = (psoManager_ && skinningComputePipeline)
 	  ? psoManager_->GetRootSignature(skinningComputePipeline->rootSignatureName)
@@ -126,7 +132,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  return;
    }
 
-   // 使用パイプラインを設定
+   // Computeへ切り替える前に描画PSOも解決しておき、Dispatch後に確実に復帰できるようにする。
    setPipelineFunc(pipelineName, resolvedBlendMode);
 
    auto resolvePipelineSlot = [this, &pipelineName](const char* semantic) -> std::optional<UINT> {
@@ -166,6 +172,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    }
 
    if (useSkinning) {
+      // ルートスロットをJSONの意味名から解決し、Computeルート定義の並び替えをC++から隠蔽する。
 	  const auto resolveComputeSlot = [this](const char* semantic) -> std::optional<UINT> {
 		 auto resolved = psoManager_->ResolvePipelineRootParameter(kSkinningComputePipelineName, semantic);
 		 if (!resolved.has_value()) {
@@ -192,6 +199,8 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 			continue;
 		 }
 
+		 // 前フレームに頂点入力だった出力バッファをUAVへ戻してから、同じメッシュ番号の
+		 // 元頂点・ウェイト・パレットを使って上書きする。
 		 ID3D12Resource* skinnedVertexResource = skinCluster->skinnedVertexResources[i].Get();
 		 TransitionResource(
 			cmdList,
@@ -209,9 +218,11 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 		 cmdList->SetComputeRootDescriptorTable(outputVerticesSlot.value(), skinCluster->skinnedVertexUavHandles[i].second);
 
 		 const UINT vertexCount = static_cast<UINT>((*modelMeshes)[i].vertices.size());
+		 // 端数頂点も処理するため切り上げ除算し、シェーダー側の範囲判定へ余剰スレッドを委ねる。
 		 const UINT dispatchCount = (vertexCount + kSkinningThreadGroupSize - 1) / kSkinningThreadGroupSize;
 		 cmdList->Dispatch(dispatchCount, 1, 1);
 
+		 // Dispatch完了後のUAV書き込みを頂点フェッチから可視にし、直後のGraphics描画へ接続する。
 		 TransitionResource(
 			cmdList,
 			skinnedVertexResource,
@@ -225,6 +236,8 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  cmdList->SetPipelineState(graphicsPipeline->GetPipelineState());
    }
 
+   // モデル内の全サブメッシュで不変な変換・カメラ・ライトはループ外で一度だけ束縛する。
+   // マテリアルとテクスチャだけをメッシュごとに差し替える。
    // 共通バインディング（全メッシュで共通）
    // Root Parameter 1: TransformationMatrix (Vertex Shader)
    cmdList->SetGraphicsRootConstantBufferView(transformSlot.value(), transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
@@ -248,6 +261,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    cmdList->SetGraphicsRootDescriptorTable(areaLightSlot.value(), lightBuffer->GetAreaLightSRV());
 
    if (primitiveMesh) {
+      // エンジン生成プリミティブは単一メッシュ・単一材なので、ModelAssetのサブメッシュ走査を省く。
       const Material* material = materials[0];
       const D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = modelData.textures[0];
       if (!material || textureHandle.ptr == 0) {
@@ -269,7 +283,8 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
       return;
    }
 
-   // 各メッシュごとの描画
+   // 各メッシュごとの描画。材質／テクスチャ数がメッシュ数より少ない旧アセットでは、
+   // 先頭要素を使い回して範囲外参照を避けつつ描画を継続する。
    for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
 	  // --- マテリアル取得（不足分は先頭を使い回し） ---
 	  const Material* mat = (i < materials.size()) ? materials[i] : materials[0];
@@ -298,6 +313,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  }
 
      // 頂点バッファとプリミティブトポロジを設定
+      // Compute出力があるメッシュだけ動的頂点を使い、未対応メッシュは元の頂点へ個別に戻す。
       if (useSkinning && skinCluster->HasComputeSkinningResources(i)) {
 		 const D3D12_VERTEX_BUFFER_VIEW* skinnedVertexBufferView = skinCluster->GetSkinnedVertexBufferView(i);
 		 cmdList->IASetVertexBuffers(0, 1, skinnedVertexBufferView);

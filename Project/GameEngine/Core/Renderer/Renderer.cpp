@@ -69,6 +69,8 @@ void ResolveParentRelationForRender(GameEngine::Object* object) {
    }
 
    if (object->GetParentEntityId().empty() && !transformComponent->parentObjectName.empty()) {
+      // 旧シーン形式の名前参照を、同名衝突に強いEntityId参照へ描画時に移行する。
+      // 解決できた場合だけ旧フィールドを消し、未解決データは後続フレームへ残す。
 	  if (auto* legacyParent = GameEngine::Object::FindByObjectName(transformComponent->parentObjectName)) {
 		 object->SetParentEntityId(legacyParent->GetEntityId());
 		 transformComponent->parentObjectName.clear();
@@ -82,6 +84,7 @@ void ResolveParentRelationForRender(GameEngine::Object* object) {
    }
 
    if (!GameEngine::Object::FindByEntityId(object->GetParentEntityId())) {
+      // 親が削除済みでも前フレームの行列を使い続けないよう、親適用を明示的に解除する。
 	  transformComponent->useParentMatrix = false;
 	  transformComponent->parentMatrix = GameEngine::MakeIdentity4x4();
 	  return;
@@ -118,6 +121,8 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
    }
 
    RenderBootstrapContext context{};
+   // Bootstrapperが生成・接続する描画サブシステムを一つのコンテキストへ集約する。
+   // Renderer側は所有ポインタを維持し、初期化順やJSONロードの成否だけを委譲する。
    context.device = device_;
    context.window = window;
    context.cameraManager = cameraManager_;
@@ -144,6 +149,8 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
 
    sceneTransitionHorizontalConstantBuffer_ =
       ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(SceneTransitionConstants));
+   // シーン遷移は横方向ぼかしと縦方向ぼかし＋暗転合成の2パスに分ける。
+   // 同じ構造体を別バッファで保持し、各パス固有の方向と合成フラグを固定する。
    sceneTransitionHorizontalConstantBuffer_->Map(
       0,
       nullptr,
@@ -178,11 +185,13 @@ void Renderer::ClearPasses() {
 
 void Renderer::BuildDefaultPasses() {
    ClearPasses();
+   // 色を書き込む順序そのものが合成結果を決めるため、不透明→透明→ポスト処理の順を固定する。
    AddPass(std::make_unique<OpaquePass>());
    AddPass(std::make_unique<TransparentPass>());
    AddPass(std::make_unique<PostEffectPass>(offscreenRenderTarget_.get()));
 
-   // FrameContext を組み立てる（静的部分のみ。コマンドキューは BeginFrame でリセット済みのポインタを参照）
+   // パス間で共有する依存先とコマンド配列のアドレスを一度だけ束縛する。
+   // vectorの中身はBeginFrameで消えるがvector自体のアドレスは変わらない。
    frameCtx_.device          = device_;
    frameCtx_.psoManager      = psoManager_.get();
    frameCtx_.lightManager    = lightManager_;
@@ -210,6 +219,8 @@ void Renderer::SyncRenderTargetSizeToDevice() {
 	  return;
    }
 
+   // 3D描画面とピクセル座標ベースのUIカメラを同じサイズへ更新し、
+   // リサイズ後も合成位置とクリップ空間変換を一致させる。
    const uint32_t width = device_->GetBackBufferWidth();
    const uint32_t height = device_->GetBackBufferHeight();
    offscreenRenderTarget_->Resize(width, height);
@@ -217,17 +228,19 @@ void Renderer::SyncRenderTargetSizeToDevice() {
 }
 
 void Renderer::BeginFrame() {
-   // ライトの構造化バッファを更新
+   // コマンド生成時には最新のGPUハンドルを参照できるよう、ライトを先にGPUレイアウトへ詰める。
    if (lightManager_) {
 	  lightManager_->UpdateStructureBuffer();
    }
 
-   // 描画コマンドリストをクリア
+   // 各パスのキューはフレーム単位。テキストだけは全コマンド確定後に一括アップロードするため、
+   // CPU側の頂点・インデックス蓄積もここで開始する。
    opaqueCommands_.clear();
    transparentCommands_.clear();
    postProcessCommands_.clear();
    textRenderer_->BeginFrame();
 
+   // 以降の登録処理と即時描画は、最終バックバッファではなくHDR中間面へ積む。
    offscreenRenderTarget_->PreDraw(true);
 
 #ifdef USE_IMGUI
@@ -262,7 +275,8 @@ void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> ble
    // 行列を更新
    model->UpdateMatrix(activeCamera);
 
-   // MaterialComponent のブレンドモード優先解決
+   // ブレンド設定はマテリアル固有値を最優先し、呼び出し引数、Renderer既定値の順に解決する。
+   // 見た目をアセット側で固定しつつ、一時描画だけ引数で上書きできる規則にしている。
    BlendMode effectiveBlendMode = currentBlendMode_;
    if (const auto* mc = model->GetComponent<MaterialComponent>()) {
       if (!mc->materials.empty() && mc->materials[0]) {
@@ -299,7 +313,8 @@ void Renderer::Draw(Model* model, const std::vector<Texture*>& textures, std::op
       return;
    }
 
-   // TextureポインタからSRVハンドルに変換
+   // DrawCommandが実行時にTextureオブジェクトへ再アクセスしないよう、登録時点で
+   // メッシュ順にGPU SRVハンドルへ変換して値として保持する。
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textureSrvHandles;
    textureSrvHandles.reserve(textures.size());
    for (const auto& texture : textures) {
@@ -429,6 +444,8 @@ void Renderer::DrawUIText(std::string_view text, const Vector2& position, const 
       return;
    }
 
+   // 文字列全体を先にレイアウトし、アトラスページごとに分かれた描画データを
+   // 通常のコマンドキューへ合流させる。GPUバッファ転送はEndFrameで一括実行する。
    Transform transform{};
    transform.translation = { position.x, position.y, 0.0f };
    const TextLayoutResult layout = fontManager->LayoutText(text, style);
@@ -467,7 +484,7 @@ void Renderer::DrawSkybox(Skybox* skybox) {
    Texture* texture = skybox->GetTexture();
    if (!texture) return;
 
-   // ビュー行列から平行移動を除去してVP行列を作成
+   // カメラ回転には追従するが位置移動では空が近づかないよう、ビュー行列から平行移動を除く。
    Matrix4x4 viewMatrix = activeCamera->GetViewMatrix();
    viewMatrix.m[3][0] = 0.0f;
    viewMatrix.m[3][1] = 0.0f;
@@ -483,6 +500,7 @@ void Renderer::DrawSkybox(Skybox* skybox) {
    cmdList->SetGraphicsRootSignature(skyboxPipeline->GetRootSignature());
    cmdList->SetPipelineState(skyboxPipeline->GetPipelineState());
 
+   // JSONのルート定義から意味名でスロットを引き、定義順変更をC++へ波及させない。
    const auto materialSlot = psoManager_->ResolvePipelineRootParameter("Skybox", "material");
    const auto transformSlot = psoManager_->ResolvePipelineRootParameter("Skybox", "transform");
    const auto textureSlot = psoManager_->ResolvePipelineRootParameter("Skybox", "texture");
@@ -503,7 +521,8 @@ void Renderer::DrawSkybox(Skybox* skybox) {
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawIndexedInstanced(mesh.GetIndexCount(), 1, 0, 0, 0);
 
-   // パイプライン状態をリセット
+   // Skyboxはキューを介さずPSOを直接変更するため、RendererのPSOキャッシュを無効化し、
+   // 後続コマンドが誤って再設定を省略しないようにする。
    currentPipelineName_ = "";
    currentPipelineBlendMode_ = BlendMode::kBlendModeNone;
 }
@@ -513,6 +532,8 @@ void Renderer::SubmitDrawCommand(const DrawCommand& command) {
 }
 
 void Renderer::RouteDrawCommand(const DrawCommand& command) {
+   // 登録時にパス別の配列へ分離し、EndFrameでは依存順に連続実行できるようにする。
+   // wrapperは各描画種別に共通のソート情報と実データの寿命を提供する。
    auto wrapper = std::make_unique<DrawCommandWrapper>(command);
    switch (command.renderPass) {
 	  case RenderPass::Transparent:
@@ -605,6 +626,8 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 	  return;
    }
 
+   // デバッグ描画のためにバインド姿勢を複製し、モデル本体のスキンクラスターを変更せず
+   // 現在時刻のアニメーション姿勢だけをローカルに評価する。
    Skeleton skeletonPose = *bindSkeleton;
 
    if (auto* animationComponent = model->GetComponent<AnimationComponent>()) {
@@ -643,6 +666,7 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
    std::vector<Vector3> jointPositions;
    jointPositions.resize(skeletonPose.joints.size());
 
+   // 全関節のモデル変換後位置を先に確定し、親子線の走査で親行列を再計算しない。
    for (const Joint& joint : skeletonPose.joints) {
 	  const Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * modelMatrix;
 	  jointPositions[joint.index] = ExtractTranslation(jointWorldMatrix);
@@ -677,6 +701,8 @@ void Renderer::EndFrame() {
    lineRenderer_->End();
    postProcessLineRenderer_->End();
 
+   // 自動登録オブジェクトをすべてキュー化してから、テキストとラインの共有バッファを確定する。
+   // これ以降に追加すると当該フレームのアップロード範囲へ含まれない。
    DrawAutoRegisteredModels();
    DrawAutoRegisteredSprites();
    DrawAutoRegisteredParticles();
@@ -686,7 +712,7 @@ void Renderer::EndFrame() {
    }
    textRenderer_->UploadBuffers();
 
-   // ラインをパス別にフラッシュ
+   // ポストエフェクト対象のラインと対象外ラインを別キューへ送り、合成前後の位置を固定する。
    FlushLineRenderer(lineRenderer_.get(), RenderPass::Opaque);
    FlushLineRenderer(postProcessLineRenderer_.get(), RenderPass::PostProcess);
 
@@ -697,7 +723,7 @@ void Renderer::EndFrame() {
    // スカイボックスを不透明パス完了後に描画
    DrawAutoRegisteredSkyboxes();
 
-   // --- レンダーパスを順番に実行 ---
+   // 各パスは前段の出力状態を前提とするため、BuildDefaultPassesで登録した順を崩さない。
    for (const auto& pass : renderPasses_) {
 	  if (pass) {
 		 pass->Execute(frameCtx_);
@@ -707,7 +733,7 @@ void Renderer::EndFrame() {
    // UIまで合成した画像へ適用し、実行画面とエディタのシーンビューを同じ暗転結果にする。
    ApplySceneTransitionOverlay();
 
-   // オフスクリーンレンダーターゲットをバックバッファに描画
+   // 中間面の全合成が終わってからバックバッファをRTV化し、最終画像を一度だけ転送する。
    device_->PreDraw();
 
 #ifdef USE_IMGUI
@@ -747,6 +773,7 @@ void Renderer::DrawAutoRegisteredModels() {
 	  return;
    }
 
+   // テクスチャ未設定でもマテリアル色を描けるよう白テクスチャを既定値にする。
    auto* fallbackTexture = textureManager->GetTexture("white1x1");
 
    for (auto* model : Model::GetRegisteredModels()) {
@@ -772,6 +799,7 @@ void Renderer::DrawAutoRegisteredModels() {
 	  if (materialComp && !materialComp->GetTextureNames().empty() && !materialComp->GetTextureNames()[0].empty()) {
 		 texture = textureManager->GetTexture(materialComp->GetTextureNames()[0]);
 	  }
+      // 2DサンプラーへCubemap SRVを渡すのはビュー次元不一致になるため、環境用は通常テクスチャから除外する。
 	  if (texture && texture->GetMetadata().IsCubemap()) {
 		 texture = nullptr;
 	  }
@@ -868,6 +896,7 @@ void Renderer::DrawAutoRegisteredTexts() {
       return;
    }
 
+   // 同じsortingOrder内では登録順を保ち、文字の重なりがフレームごとに揺れないようstable_sortを使う。
    std::vector<UIText*> texts = UIText::GetRegisteredTexts();
    std::stable_sort(texts.begin(), texts.end(), [](const UIText* lhs, const UIText* rhs) {
       const auto* leftText = lhs ? lhs->GetComponent<UITextComponent>() : nullptr;
@@ -904,6 +933,8 @@ void Renderer::DrawAutoRegisteredTexts() {
 }
 
 void Renderer::ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawCommand>>& commands) {
+   // パス側で並べ替えた共通コマンドを、型ごとの専用レンダラーへここで振り分ける。
+   // PSO設定コールバックを共有し、連続する同一PSOの冗長なバインドを抑える。
    for (const auto& icmd : commands) {
 	  const DrawCommand& cmd = icmd->GetDrawCommand();
 	  switch (cmd.type) {
@@ -1017,6 +1048,7 @@ void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHand
    cmdList->SetGraphicsRootSignature(fullscreenPipeline->GetRootSignature());
    cmdList->SetPipelineState(fullscreenPipeline->GetPipelineState());
    cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), textureSrvHandle);
+   // 頂点バッファを持たずVertexIDから画面全体を覆う三角形を生成するため、3頂点だけ発行する。
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
 }
@@ -1042,6 +1074,8 @@ void Renderer::ApplySceneTransitionOverlay() {
    auto* commandList = device_->GetCommandList();
    const auto applyTransitionPass =
       [&](D3D12_GPU_DESCRIPTOR_HANDLE inputTexture, ID3D12Resource* constantBuffer) {
+         // 読み込み中の面と書き込み面を分離するため、各方向の処理ごとにping-pongする。
+         // PreDrawのクリア後に全画面三角形で入力を再構成し、PostDrawで次段のSRVへ戻す。
          offscreenRenderTarget_->SwapBuffers();
          offscreenRenderTarget_->PreDraw(false);
 
@@ -1074,7 +1108,8 @@ void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode)
 	  return;
    }
 
-   // キャッシュを確認（起動後に一度解決したポインタを再利用）
+   // PSOManagerの名前検索を描画ごとに繰り返さないよう、名前とブレンドの組で解決結果を保持する。
+   // 実コマンドリストが外部から変更された場合はInvalidatePipelineBindingで状態だけ無効化する。
    const std::string cacheKey = MakePipelineCacheKey(pipelineName, blendMode);
    auto it = pipelineCache_.find(cacheKey);
 
@@ -1138,6 +1173,7 @@ void Renderer::FlushLineRenderer(LineRenderer* renderer, RenderPass renderPass) 
 		 continue;
 	  }
 
+      // キュー実行はこの関数の後なので、Begin/End用の一時配列を値キャプチャし寿命を切り離す。
 	  std::vector<LineRenderer::LineInstance> capturedLines = lines;
 	  const size_t lineCount = capturedLines.size();
 	  auto* lineRendererPtr = renderer;
@@ -1146,6 +1182,7 @@ void Renderer::FlushLineRenderer(LineRenderer* renderer, RenderPass renderPass) 
 		 Logger::Error("[Renderer] Failed to resolve Line3D transform root slot from PSO JSON.");
 		 continue;
 	  }
+      // 透明キューに送られた場合の距離ソート代表点として、全線分の中点平均を使う。
 	  Vector3 center = { 0.0f, 0.0f, 0.0f };
 	  for (const auto& line : capturedLines) {
 		 center += (line.start + line.end) * 0.5f;
@@ -1157,6 +1194,7 @@ void Renderer::FlushLineRenderer(LineRenderer* renderer, RenderPass renderPass) 
 			return;
 		 }
 
+		 // 実行順が確定した時点で共有インスタンスバッファへ転送し、直後のDrawInstancedで消費する。
 		 auto* mappedBuffer = lineRendererPtr->GetMappedInstanceBuffer();
 		 if (mappedBuffer) {
 			memcpy(mappedBuffer, capturedLines.data(), sizeof(LineRenderer::LineInstance) * lineCount);
@@ -1177,9 +1215,11 @@ void Renderer::FlushLineRenderer(LineRenderer* renderer, RenderPass renderPass) 
 
 RenderPass Renderer::DetermineRenderPass(BlendMode blendMode, bool applyPostProcess) const {
    if (!applyPostProcess) {
+      // 「ポストプロセス対象外」はエフェクト適用後に描くキューを意味する。
 	  return RenderPass::PostProcess;
    }
 
+   // 深度を書き込む不透明物を先に確定し、ブレンド物だけを距離ソート可能な透明パスへ送る。
    return (blendMode == BlendMode::kBlendModeNone) ? RenderPass::Opaque : RenderPass::Transparent;
 }
 
@@ -1188,6 +1228,7 @@ void Renderer::SortTransparentCommands() {
 	  return;
    }
 
+   // 同距離の登録順を維持しつつ、位置を持つ要素は奥から手前へ描いてアルファ合成を成立させる。
    std::stable_sort(transparentCommands_.begin(), transparentCommands_.end(),
 	  [](const std::unique_ptr<IDrawCommand>& lhs, const std::unique_ptr<IDrawCommand>& rhs) {
 		 const auto lPos = lhs->GetSortPosition();

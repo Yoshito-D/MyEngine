@@ -148,6 +148,8 @@ void MeshComponent::SetSourceType(SourceType sourceType) {
    if (sourceType_ == sourceType) {
       return;
    }
+   // ModelFileとPrimitiveは所有リソースの経路が排他的。Modelへ切り替える時は
+   // 以前生成した編集可能Meshを破棄し、誤ってそちらを描画しないようにする。
    sourceType_ = sourceType;
    if (sourceType_ == SourceType::ModelFile) {
       mesh_.reset();
@@ -155,6 +157,7 @@ void MeshComponent::SetSourceType(SourceType sourceType) {
 }
 
 void MeshComponent::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) {
+   // Asset本体はManagerと共有し、アニメーションで変化するSkinClusterだけをEntityごとに複製する。
    modelAsset_ = modelAsset;
    assetId_ = modelAsset_ ? modelAsset_->GetAssetId() : std::string{};
    sourceType_ = SourceType::ModelFile;
@@ -162,6 +165,7 @@ void MeshComponent::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset)
 
    skinCluster_.reset();
    if (modelAsset_ && modelAsset_->HasSkinningData()) {
+      // PaletteとCompute出力を共有すると複数Entityの姿勢が上書きし合うため、専用Instanceを作る。
       skinCluster_ = modelAsset_->CreateSkinClusterInstance();
    }
 }
@@ -172,6 +176,7 @@ bool MeshComponent::SetModelAssetByAssetId(const std::string& assetId) {
       return true;
    }
 
+   // ID解決と必要ならロードする責務をAssetManagerへ集約し、このComponentはパス形式を知らない。
    auto modelAsset = EngineContext::LoadModelByAssetId(assetId);
    if (!modelAsset) {
       return false;
@@ -190,6 +195,8 @@ SkinCluster* MeshComponent::GetSkinCluster() {
    if (sourceType_ != SourceType::ModelFile) {
       return nullptr;
    }
+   // 通常はInstance固有Clusterを返す。生成できなかった場合だけAsset側のBind Poseを
+   // 読み取り用途のフォールバックとして公開する。
    if (skinCluster_) {
       return &(*skinCluster_);
    }
@@ -207,6 +214,7 @@ const SkinCluster* MeshComponent::GetSkinCluster() const {
 }
 
 nlohmann::json MeshComponent::Serialize() const {
+   // 現在選択していないPrimitiveパラメーターも保存し、種類を行き来しても調整値を失わないようにする。
    return nlohmann::json{
       { "sourceType", ToSourceTypeName(sourceType_) },
       { "reverseFaces", reverseFaces_ },
@@ -260,6 +268,7 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
       reverseFaces_ = data.at("reverseFaces").get<bool>();
    }
 
+   // Sourceを先に確定し、ModelFile時だけAssetを解決する。Primitiveの古いassetIdを誤ロードしない。
    if (sourceType_ == SourceType::ModelFile && data.contains("assetId") && data.at("assetId").is_string()) {
       const std::string assetId = data.at("assetId").get<std::string>();
       if (!assetId.empty()) {
@@ -274,6 +283,7 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
       planeOrientation_ = ParsePlaneOrientation(data.at("planeOrientation"), planeOrientation_);
    }
 
+   // size/anchorはQuad専用名導入前の互換キー。現行キーを先に試し、なければ旧キーを読む。
    Vector2 value = quadSize_;
    if (ReadVector2(data, "quadSize", value) || ReadVector2(data, "size", value)) {
       quadSize_ = value;
@@ -291,6 +301,7 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
       flipY_ = data.at("flipY").get<bool>();
    }
 
+   // 生成アルゴリズムが除算や面生成に使う値を読み込み境界で制限し、壊れたJSONから退化面を作らない。
    auto readFloat = [&data](const char* key, float& destination, float minimum) {
       if (data.contains(key) && data.at(key).is_number()) {
          destination = std::max(data.at(key).get<float>(), minimum);
@@ -305,6 +316,7 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("originY") && data.at("originY").is_number()) {
       originY_ = std::clamp(data.at("originY").get<float>(), 0.0f, 1.0f);
    }
+   // 外半径は現在の内半径以上を要求するため、内半径を先に復元する順序を維持する。
    readFloat("ringInnerRadius", ringInnerRadius_, 0.0f);
    readFloat("ringOuterRadius", ringOuterRadius_, ringInnerRadius_);
    readSegments("ringSegments", ringSegments_, 3);
@@ -337,6 +349,7 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
    ReadVector3(data, "triangleV1", triangleV1_);
    ReadVector3(data, "triangleV2", triangleV2_);
 
+   // 既に遅延生成済みのPrimitiveだけ即時再生成する。未使用ComponentのGPU確保は先送りする。
    if (mesh_ && sourceType_ == SourceType::Primitive) {
       CreateMesh();
    } else if (sourceType_ == SourceType::ModelFile) {
@@ -382,6 +395,7 @@ void MeshComponent::DrawInspector() {
          ? Tr("モデルアセットをここへドロップ", "Drop Model Asset Here")
          : assetId_;
       ImGui::Button((dropLabel + "##MeshModelAssetDrop").c_str(), ImVec2(-1.0f, 0.0f));
+      // EditorContext経由ならUndo/Dirty管理も同時に更新し、Context不在のRuntime UIでは直接適用する。
       if (ImGui::BeginDragDropTarget()) {
          if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_MODEL")) {
             const char* assetId = static_cast<const char*>(payload->Data);
@@ -403,6 +417,7 @@ void MeshComponent::DrawInspector() {
       return;
    }
 
+   // すべてのUI変更を一つのフラグへ集約し、操作ごとの部分再生成を避けてフレーム末尾に一度だけ作り直す。
    bool meshChanged = false;
    const char* primitiveTypeItems[] = {
       "Quad", "Ring", "Sphere", "Box", "Cylinder",
@@ -414,6 +429,7 @@ void MeshComponent::DrawInspector() {
       meshChanged = true;
    }
 
+   // 同じ生成関数を任意平面へ射影できる形状だけにOrientation設定を表示する。
    const bool supportsPlaneOrientation = primitiveType_ == PrimitiveType::Ring ||
       primitiveType_ == PrimitiveType::Circle ||
       primitiveType_ == PrimitiveType::Plane ||
@@ -427,6 +443,7 @@ void MeshComponent::DrawInspector() {
       }
    }
 
+   // 立体形状のY方向原点だけを0～1で移動し、地面置き/中心基準をTransform変更なしで選べる。
    const bool supportsOriginY = primitiveType_ == PrimitiveType::Sphere ||
       primitiveType_ == PrimitiveType::Box ||
       primitiveType_ == PrimitiveType::Cylinder ||
@@ -538,6 +555,7 @@ void MeshComponent::DrawInspector() {
    }
 
    if (meshChanged) {
+      // UIの相互依存値を再度整合させてからMeshへ渡す。特に外半径は内半径より必ず大きくする。
       ringInnerRadius_ = std::max(ringInnerRadius_, 0.0f);
       ringOuterRadius_ = std::max(ringOuterRadius_, ringInnerRadius_ + 0.001f);
       boxSize_.x = std::max(boxSize_.x, 0.001f);
@@ -555,11 +573,13 @@ void MeshComponent::CreateMesh() {
       mesh_.reset();
       return;
    }
+   // 編集済み頂点を残さず、選択中パラメーターからGPUバッファまで一括で再構築する。
    mesh_ = std::make_unique<Mesh>();
    const Mesh::PlaneOrientation meshOrientation = ToMeshPlaneOrientation(planeOrientation_);
    switch (primitiveType_) {
       case PrimitiveType::Quad:
          mesh_->CreateSprite(quadSize_.x, quadSize_.y);
+         // Sprite生成後にAnchor/Flipを頂点位置へ反映する必要があるのはQuadだけである。
          ApplyToMesh();
          break;
       case PrimitiveType::Ring:
@@ -599,6 +619,7 @@ Mesh* MeshComponent::EnsureMesh() {
    if (sourceType_ != SourceType::Primitive) {
       return nullptr;
    }
+   // Serialize/Deserializeだけに使われるComponentではGPU Meshを作らず、最初の利用時まで遅延する。
    if (!mesh_) {
       CreateMesh();
    }
@@ -619,6 +640,7 @@ void MeshComponent::ApplyToMesh(Mesh* mesh) const {
       return;
    }
 
+   // Anchorをサイズ比として各辺から引き、(0,0)=左下、(0.5,0.5)=中心のローカル座標を作る。
    float left = 0.0f - quadAnchorPoint_.x * quadSize_.x;
    float right = quadSize_.x - quadAnchorPoint_.x * quadSize_.x;
    float top = quadSize_.y - quadAnchorPoint_.y * quadSize_.y;
@@ -669,6 +691,7 @@ void MeshComponent::ApplyTextureCoordinates(Texture* texture, const Vector2& lef
       actualTextureLeftTop = { 0.0f, 0.0f };
    }
 
+   // ピクセル単位のAtlas矩形をシェーダーが扱う0～1 UVへ正規化する。
    const float texLeft = actualTextureLeftTop.x / static_cast<float>(metadata.width);
    const float texRight = (actualTextureLeftTop.x + actualTextureSize.x) / static_cast<float>(metadata.width);
    const float texTop = actualTextureLeftTop.y / static_cast<float>(metadata.height);

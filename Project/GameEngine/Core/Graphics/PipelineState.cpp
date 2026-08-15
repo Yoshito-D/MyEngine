@@ -12,6 +12,8 @@ void PipelineState::CreatePipelineState(ID3D12Device* device) {
    assert(vertexShaderBlob_ != nullptr);
    assert(pixelShaderBlob_ != nullptr);
 
+   // ルートレイアウト、シェーダー、IA、固定機能状態を一つの不変PSOへ焼き込む。
+   // 描画時はこの組み合わせを丸ごと切り替え、個別状態の不整合を避ける。
    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
    graphicsPipelineStateDesc.pRootSignature = rootSignature_->GetRootSignature();
    if (!inputElementDescs_.empty()) {
@@ -37,6 +39,7 @@ void PipelineState::CreatePipelineState(ID3D12Device* device) {
    // DepthStencilの設定
   // depthStencilDesc_.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc_;
+   // 深度を使わない全画面パスではDSVも束縛しないため、PSO形式をUNKNOWNへ合わせる。
    if (depthStencilDesc_.DepthEnable == FALSE) {
 	  graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
    } else {
@@ -72,6 +75,7 @@ void PipelineState::SetInputLayOut(const char* semanticName, UINT semanticIndex,
 }
 
 void PipelineState::SetBlendState(BlendMode blendMode) {
+   // アルファ値は後段で独立利用しない設計のためRGBのみを書き込み、各モードの色合成式をPSOへ固定する。
    blendDesc_.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_RED | D3D12_COLOR_WRITE_ENABLE_GREEN | D3D12_COLOR_WRITE_ENABLE_BLUE;
    blendDesc_.AlphaToCoverageEnable = FALSE;
    blendDesc_.IndependentBlendEnable = FALSE;

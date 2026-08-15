@@ -19,6 +19,8 @@ std::wstring Utf8ToWString(const std::string& str) {
 	  return {};
    }
 
+   // JSONはUTF-8、DXCとWindowsファイルAPIはUTF-16を受け取るため、終端を含む必要長を
+   // 先に取得してから変換する。戻り値からはstd::wstring自身の終端要素を除く。
    const int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
    if (size <= 0) {
 	  return {};
@@ -107,6 +109,8 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
 		 return false;
 	  }
 
+	  // 不正エントリだけを飛ばして残りをロードし、最後に全体成否を返す。
+	  // これによりログへ複数の定義エラーを一度の起動で列挙できる。
 	  bool loadedAny = false;
 	  bool allSucceeded = true;
 
@@ -156,6 +160,7 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
 		 }
 
 		 if (shaderJson.contains("defines") && shaderJson["defines"].is_array()) {
+			// defineはコンパイル結果のキャッシュキー情報としても保持し、ホットリロードで同じ条件を再現する。
 			for (const auto& define : shaderJson["defines"]) {
 			   if (define.is_string()) {
 				  info.defines.push_back(define.get<std::string>());
@@ -222,6 +227,8 @@ bool ShaderManager::LoadShader(const ShaderInfo& info) {
 	  return false;
    }
 
+   // Blobだけでなく反射情報・元パス・エントリポイント・define・更新時刻を一体で保存し、
+   // PSO構築とホットリロードの双方が同じコンパイル条件を再利用できるようにする。
    CompiledShader compiled;
    compiled.blob = shader;
    compiled.type = info.type;
@@ -276,6 +283,7 @@ const PipelineRootParameterTable& ShaderManager::GetObject3DRootParameterTable()
 }
 
 std::optional<UINT> ShaderManager::ResolvePipelineRootParameter(const std::string& pipelineName, const std::string& semanticName) const {
+   // 解決統計は実行時の不足スロットや過剰検索を可視化する診断用で、結果の選択には影響しない。
    ++resolveStats_.requests;
    const std::string normalizedPipeline = NormalizePipelineName(pipelineName);
    ResolveStats& pipelineStats = pipelineResolveStats_[normalizedPipeline];
@@ -396,7 +404,7 @@ bool ShaderManager::ReloadShader(const std::string& name, ShaderType type) {
 	  return false;
    }
 
-   // 既存のシェーダー情報を取得
+   // 新しいコンパイルが成功するまで既存Blobを保持し、編集途中のHLSLで描画を失わない。
    const auto& oldShader = it->second;
 
    // 再コンパイル
@@ -415,6 +423,7 @@ bool ShaderManager::ReloadShader(const std::string& name, ShaderType type) {
 }
 
 void ShaderManager::ReloadAllShaders() {
+   // 各シェーダーを独立して差し替え、失敗したものだけ旧Blobを継続使用する。
    for (auto& [key, shader] : shaders_) {
    auto newBlob = CompileShader(shader.filePath, GetShaderProfile(shader.type), shader.entryPoint, shader.defines);
 	  if (newBlob) {
@@ -454,6 +463,8 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
 	  return info;
    }
 
+   // DXCコンテナ内の反射チャンクをID3D12ShaderReflectionとして開き、
+   // PSO入力レイアウトとルート定義検証に必要な最小情報だけをコピーする。
    DxcBuffer reflectionBuffer{};
    reflectionBuffer.Ptr = shaderBlob->GetBufferPointer();
    reflectionBuffer.Size = shaderBlob->GetBufferSize();
@@ -473,6 +484,7 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
 	  return info;
    }
 
+   // CBV/SRV/UAV/Samplerを含むバインド資源は、semanticからレジスタを推定する際に使う。
    for (UINT i = 0; i < shaderDesc.BoundResources; ++i) {
 	  D3D12_SHADER_INPUT_BIND_DESC bindDesc{};
 	  if (SUCCEEDED(reflection->GetResourceBindingDesc(i, &bindDesc))) {
@@ -488,6 +500,7 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
 	  }
    }
 
+   // 定数バッファはサイズと変数数も保存し、将来のレイアウト診断で利用できるようにする。
    for (UINT i = 0; i < shaderDesc.ConstantBuffers; ++i) {
 	  ID3D12ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByIndex(i);
 	  if (!cb) {
@@ -507,6 +520,8 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
    }
 
    if (type == ShaderType::Vertex) {
+      // Input Assemblerのレイアウトを自動生成できるのは頂点シェーダー入力だけなので、
+      // 他ステージではシグネチャ走査を省く。
 	  for (UINT i = 0; i < shaderDesc.InputParameters; ++i) {
 		 D3D12_SIGNATURE_PARAMETER_DESC inputDesc{};
 		 if (SUCCEEDED(reflection->GetInputParameterDesc(i, &inputDesc))) {
@@ -531,6 +546,8 @@ void ShaderManager::BuildObject3DRootParameterTable() {
 }
 
 void ShaderManager::BuildPipelineRootParameterTables() {
+   // ルートスロットの正本はPSO JSONへ移行済み。旧来の反射ベース表を残すと
+   // 定義順と食い違うため、互換APIには空表を明示する。
    pipelineRootTables_.clear();
 }
 

@@ -24,6 +24,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
    }
 
    const FontMetrics metrics = fontManager.GetMetrics(style.fontId, style.fontSize);
+   // 不完全なフォントメタデータでも文字を重ねないよう、指定サイズを行高と基準線の代替にする。
    const float lineHeight = metrics.lineHeight > 0.0f ? metrics.lineHeight : static_cast<float>(style.fontSize);
    const float lineAdvance = lineHeight * std::max(style.lineSpacing, 0.1f);
    float baseline = metrics.ascender > 0.0f ? metrics.ascender : static_cast<float>(style.fontSize);
@@ -36,6 +37,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
    uint32_t previousGlyphIndex = 0;
 
    const auto finishLine = [&]() {
+      // 空行も範囲として残し、改行数を最終レイアウト高へ正しく反映する。
       lines.push_back({ lineBegin, result.glyphs.size(), penX });
       maximumLineWidth = std::max(maximumLineWidth, penX);
       lineBegin = result.glyphs.size();
@@ -56,6 +58,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
 
       const GlyphInfo* glyph = fontManager.GetOrCreateGlyph(style.fontId, style.fontSize, codePoint);
       if (!glyph) {
+         // フォールバック文字も得られないコードポイントだけを飛ばし、残りの文章は配置する。
          continue;
       }
 
@@ -65,6 +68,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
          glyph->glyphIndex,
          style.fontSize);
       if (style.maxWidth > 0.0f && penX > 0.0f && penX + kerning + glyph->advance > style.maxWidth) {
+         // 単語情報を持たない単純レイアウトなので、幅を超える直前のグリフ境界で折り返す。
          // グリフを追加する前に折り返し、次行先頭ではカーニングを適用しない。
          finishLine();
          baseline += lineAdvance;

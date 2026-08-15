@@ -6,6 +6,7 @@ namespace GameEngine {
 	ForceOverLifetimeModule::ForceOverLifetimeModule() = default;
 
 	void ForceOverLifetimeModule::InitializeParticle(Particle& particle) const {
+		// 個体差は生成時に一度だけ抽選し、寿命中のForceとDragを安定させる。
 		particle.forceOverLifetimeForce = force_.GetValue();
 		particle.drag = std::max(drag_.GetValue(), 0.0f);
 	}
@@ -22,6 +23,7 @@ namespace GameEngine {
 		if (!enabled_) return;
 		Vector3 force = force_.randomize ? particle.forceOverLifetimeForce : force_.minValue;
 		if (useLocalSimulation) {
+			// ローカル設定値をWorld加速度へ変換してから、他モジュールと共有するaccelerationへ加算する。
 			force = RotateVector(force, simulationTransform.GetActiveQuaternion());
 		}
 		particle.acceleration += force;
@@ -29,15 +31,18 @@ namespace GameEngine {
 		if (attractorEnabled_ && attractorStrength_ != 0.0f) {
 			Vector3 target = attractorPosition_;
 			if (useLocalSimulation) {
+				// Attractor位置は方向と異なり平行移動も必要なので、Emitter原点を加えてWorld座標へ直す。
 				target = simulationTransform.translation +
 					RotateVector(attractorPosition_, simulationTransform.GetActiveQuaternion());
 			}
 
 			Vector3 toTarget = target - particle.transform.translation;
 			const float distance = toTarget.Length();
+			// 中心では方向を定義できないため除外し、正の半径が指定された場合だけ作用範囲も制限する。
 			if (distance > 0.0001f && (attractorRadius_ <= 0.0f || distance <= attractorRadius_)) {
 				float attenuation = 1.0f;
 				if (attractorFalloff_ > 0.0f) {
+					// 有限半径は境界で0、無限半径は距離のべき乗で減衰する別式を使う。
 					attenuation = attractorRadius_ > 0.0f
 						? std::pow(std::max(1.0f - distance / attractorRadius_, 0.0f), attractorFalloff_)
 						: 1.0f / std::pow(std::max(distance, 1.0f), attractorFalloff_);

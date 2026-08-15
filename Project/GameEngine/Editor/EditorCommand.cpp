@@ -35,6 +35,7 @@ void EditorCommandStack::Undo(EditorSceneContext& context) {
       return;
    }
 
+   // Command自身がUndo中にRedo用スナップショットを更新できるため、同じインスタンスを反対側のStackへ移す。
    auto command = std::move(undoStack_.back());
    undoStack_.pop_back();
    command->Undo(context);
@@ -49,6 +50,7 @@ void EditorCommandStack::Redo(EditorSceneContext& context) {
 
    auto command = std::move(redoStack_.back());
    redoStack_.pop_back();
+   // 再実行に失敗したCommandは現在状態と整合しないため、Undo履歴へ戻さずこの分岐を打ち切る。
    if (command->Execute(context)) {
       undoStack_.push_back(std::move(command));
       context.MarkDirty();
@@ -95,6 +97,7 @@ void CreateGenericObjectCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
+   // 削除前に現在状態を保存し、作成後に加えられた編集もRedoで同じ内容へ戻す。
    snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
    if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
       context.SelectObject(nullptr);
@@ -248,6 +251,7 @@ bool DeleteObjectCommand::Execute(EditorSceneContext& context) {
    }
 
    Object* object = context.GetObjectStore().FindById(objectId_);
+   // Storeの遅延削除へ移す前に完全な状態を確保し、Undoを実体ポインターの寿命へ依存させない。
    snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
    if (context.GetSelectedObject() == object) {
       context.SelectObject(nullptr);
@@ -369,6 +373,7 @@ ParticleSystem* TransformParticleSystemCommand::ResolveParticleSystem(EditorScen
          return particleSystem;
       }
    }
+   // BaseScene所有のParticleSystemはStore IDを持たないため、シーン内で生存している直接参照を利用する。
    return fallbackParticleSystem_;
 }
 
@@ -378,6 +383,7 @@ void TransformParticleSystemCommand::Apply(EditorSceneContext& context, const Tr
       return;
    }
 
+   // ParticleSystemの配置はObject Transformではなく放出ShapeのTransformが正本になっている。
    particleSystem->GetShapeModule()->SetTransform(transform);
 }
 
@@ -420,6 +426,7 @@ void RestoreObjectSnapshotCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
+   // 復元時にrequested IDが衝突すると別IDが採番されるため、snapshot内ではなく実際の登録IDで取り消す。
    if (ParticleSystem* particleSystem = context.GetObjectStore().FindParticleById(restoredObjectId_)) {
       if (context.GetSelectedParticleSystem() == particleSystem) {
          context.SelectParticleSystem(nullptr);
@@ -471,6 +478,7 @@ bool SetModelAssetCommand::Apply(EditorSceneContext& context, const std::string&
       return false;
    }
 
+   // アセット解決失敗をCommand失敗として返し、不成立の変更をUndo履歴へ積まない。
    return meshComponent->SetModelAssetByAssetId(assetId);
 }
 
@@ -510,6 +518,7 @@ bool SetMaterialTextureCommand::Apply(EditorSceneContext& context, const std::st
       return false;
    }
 
+   // 空文字列も「テクスチャ解除」という有効な履歴値なので、そのままComponentへ渡す。
    materialComponent->SetTextureName(slot_, textureId);
    return true;
 }
@@ -539,6 +548,7 @@ void AddComponentCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
+   // 依存Componentの自動追加・設定変更も含めて戻すため、単体削除ではなく保存済みObjectを再構築する。
    Object* selectedObject = context.GetSelectedObject();
    if (selectedObject == context.GetObjectStore().FindById(objectId_)) {
       context.SelectObject(nullptr);
@@ -600,6 +610,7 @@ void RemoveComponentCommand::Undo(EditorSceneContext& context) {
    if (!component) {
       return;
    }
+   // 生成直後の既定状態へ、保存した有効状態と固有データを順に重ねて削除前の状態を復元する。
    if (removedComponentData_.contains("enabled") && removedComponentData_.at("enabled").is_boolean()) {
       component->SetEnabled(removedComponentData_.at("enabled").get<bool>());
    }

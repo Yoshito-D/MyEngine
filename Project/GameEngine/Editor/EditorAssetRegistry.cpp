@@ -45,6 +45,7 @@ std::string BuildDisplayName(const std::filesystem::path& path) {
 } // namespace
 
 void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
+   // 再スキャンは差分更新せず全一覧を作り直し、削除・種別変更されたファイルを確実に反映する。
    allAssets_.clear();
    modelAssets_.clear();
    particleAssets_.clear();
@@ -95,6 +96,7 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
    }
 
    const std::filesystem::path modelsRoot = resourcesRoot / "game" / "models";
+   // 汎用分類で拾えない旧配置も専用ルートから補完し、assetId重複は既存一覧を優先する。
    if (std::filesystem::exists(modelsRoot)) {
       for (const auto& entry : std::filesystem::recursive_directory_iterator(modelsRoot)) {
          if (!entry.is_regular_file()) {
@@ -117,6 +119,7 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
    }
 
    const std::filesystem::path particlesRoot = resourcesRoot / "game" / "particles";
+   // Particle JSONの専用一覧は過去のフォルダー規約を前提とするUIとの互換性のため別途補完する。
    if (std::filesystem::exists(particlesRoot)) {
       for (const auto& entry : std::filesystem::recursive_directory_iterator(particlesRoot)) {
          if (!entry.is_regular_file()) {

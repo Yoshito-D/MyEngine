@@ -35,6 +35,7 @@ constexpr const char* kPresentationCleanCaptureDirectory =
 GameEngine::Vector3 NormalizeOrFallback(
    const GameEngine::Vector3& value,
    const GameEngine::Vector3& fallback) {
+   // デバッグ描画やカメラ基底へNaNを渡さないよう、候補を段階的に退避させる。
    const float length = value.Length();
    if (length > 1e-5f) {
       return value * (1.0f / length);
@@ -68,6 +69,7 @@ float ComputeObbSupportRadius(
    const GameEngine::Quaternion& rotation,
    const GameEngine::Vector3& halfExtents,
    const GameEngine::Vector3& surfaceUp) {
+   // OBBの各ローカル軸を法線へ射影し、法線方向に張り出す半径へ合成する。
    const GameEngine::Vector3 axisX =
 	  GameEngine::RotateVector({ 1.0f, 0.0f, 0.0f }, rotation);
    const GameEngine::Vector3 axisY =
@@ -99,6 +101,7 @@ bool PredictLanding(
 
    GameEngine::Vector3 simulatedPosition = position;
    GameEngine::Vector3 simulatedVelocity = velocity;
+   // 軌道表示と接触判定が同じ積分結果を参照できるよう、初期点から記録する。
    outPrediction.trajectoryPoints.clear();
    outPrediction.trajectoryPoints.push_back(position);
    GameEngine::Vector3 initialToSelf = simulatedPosition - planetCenter;
@@ -108,6 +111,7 @@ bool PredictLanding(
    }
 
    GameEngine::Vector3 initialUp = initialToSelf * (1.0f / initialDistance);
+   // プレイヤー中心ではなく、回転中のOBB下面が地表へ触れる半径を判定境界にする。
    float initialSnapRadius =
 	  surfaceRadius
 	  + landingOffset
@@ -149,6 +153,7 @@ bool PredictLanding(
 	  float nextClearance = nextDistance - nextSnapRadius;
 
 	  if (nextClearance <= 0.0f) {
+		 // 前後フレームの符号変化を線形補間し、固定刻みの内側まで接触時刻を詰める。
 		 float denominator = previousClearance - nextClearance;
 		 float crossingAlpha = denominator > 1e-5f
 			? std::clamp(previousClearance / denominator, 0.0f, 1.0f)
@@ -267,6 +272,7 @@ void DrawPresentationGuides(
       cameraForward,
       -safeMotionBackward);
    if (conditionPreviewMode == 1) {
+      // 後方ベクトルが反転する条件では、比較する2軸を並べて角度差を可視化する。
       const GameEngine::Vector3 guideOrigin =
          playerPosition + safeTargetUp * safeGuideLength * 0.45f;
       DrawDebugArrow(
@@ -300,6 +306,7 @@ void DrawPresentationGuides(
       return;
    }
    if (conditionPreviewMode == 2) {
+      // 視線が重力軸へ寄る条件では、重なりを避けた平行配置で実測方向を示す。
       const GameEngine::Vector3 gravityDown = -safeTargetUp;
       const GameEngine::Vector3 guideOrigin =
          playerPosition + safeTargetUp * safeGuideLength * 0.75f;
@@ -333,6 +340,7 @@ void DrawPresentationGuides(
    }
 
    const std::vector<GameEngine::Vector3>& points = prediction->trajectoryPoints;
+   // 軌道は全区間を線で結び、球マーカーだけを間引いて画面の密集を抑える。
    for (size_t index = 1; index < points.size(); ++index) {
       GameEngine::EngineContext::DrawLine(
          points[index - 1],
@@ -394,6 +402,7 @@ void TriggerDirectionalShake(
 
    auto* noise = virtualCamera->GetComponent<GameEngine::PerlinNoise>();
    if (!noise) {
+      // シェイク未設定のカメラでも着地演出を受けられるよう、必要時だけ追加する。
       noise = virtualCamera->AddComponent<GameEngine::PerlinNoise>();
    }
 
@@ -402,6 +411,7 @@ void TriggerDirectionalShake(
 }
 
 void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   // シーンを跨いだポインタと撮影済みフラグを破棄し、新しいシーケンスとして解決し直す。
    gravityFollowCamera_ = nullptr;
    playerRearFollowCamera_ = nullptr;
    planetLeashCamera_ = nullptr;
@@ -451,6 +461,7 @@ void CameraGravityBridge::Update(float deltaTime) {
    float cameraPlanetSurfaceRadius = 0.0f;
    bool hasCameraPlanet = false;
    if (switcher) {
+      // 空中切替中は確定惑星ではなく保留中の着地先を使い、予測と重力先を一致させる。
       hasCameraPlanet =
 		 switcher->TryGetLandingPlanet(cameraPlanetCenter, cameraPlanetSurfaceRadius);
    }
@@ -493,6 +504,7 @@ void CameraGravityBridge::Update(float deltaTime) {
       playerRearFollowCamera_->SetAirborne(isAirborne);
       playerRearFollowCamera_->SetPlayerVelocity(playerVelocity);
 
+      // 条件を満たさないフレームでは前回値を残さず、カメラ側の予測補間を確実に解除する。
       playerRearFollowCamera_->ClearLandingPrediction();
       LandingPrediction prediction{};
       bool hasLandingPrediction = false;
@@ -534,6 +546,7 @@ void CameraGravityBridge::Update(float deltaTime) {
          actualMotionBackward.Dot(actualPlanetGuideBackward);
 
       if (debugDrawPresentationGuides) {
+         // 反転条件を先に選び、同時成立時も発表用ガイドの意味を一意に保つ。
          int conditionPreviewMode = 0;
          const GameEngine::Vector3 actualCameraForward = NormalizeOrFallback(
             playerRearFollowCamera_->GetCameraForward(),
@@ -563,10 +576,12 @@ void CameraGravityBridge::Update(float deltaTime) {
 
       if (autoCapturePresentationSequence) {
 #ifdef USE_IMGUI
+         // 発表素材にはエディタUIを含めず、ゲーム画面とガイドだけを記録する。
          GameEngine::EngineContext::SetDockSpaceVisible(false);
 #endif
          presentationCaptureElapsed_ += std::max(0.0f, deltaTime);
          if (autoCapturePresentationVideoFrames) {
+            // 実フレームレートとは独立した累積時間で、指定レートの連番画像へ間引く。
             const float frameRate = std::max(1.0f, presentationVideoFrameRate);
             const float captureStart = std::max(
                0.0f,
@@ -591,6 +606,7 @@ void CameraGravityBridge::Update(float deltaTime) {
                      presentationVideoFrameIndex_);
                   RequestPresentationScreenshot(filename, debugDrawPresentationGuides);
                   ++presentationVideoFrameIndex_;
+                  // 超過時間を次の撮影判定へ繰り越し、長いフレーム後の位相ずれを抑える。
                   presentationVideoFrameAccumulator_ = std::fmod(
                      presentationVideoFrameAccumulator_,
                      frameInterval);
@@ -600,6 +616,7 @@ void CameraGravityBridge::Update(float deltaTime) {
          const float groundCaptureTime = std::max(
             0.75f,
             presentationCaptureJumpDelay - 0.5f);
+         // ジャンプ前後の節目を一度ずつ記録し、同じ状態が続いても重複撮影しない。
          if (!presentationGroundCaptured_ && presentationCaptureElapsed_ >= groundCaptureTime) {
             RequestPresentationScreenshot(
                "01_direction_axes_grounded.png",
@@ -680,6 +697,7 @@ void CameraGravityBridge::Update(float deltaTime) {
    if (landing) {
       const bool isGrounded = landing->IsGrounded();
       if (autoCapturePresentationSequence && presentationJumpTriggered_) {
+         // 接地の立ち上がりを接触瞬間とし、その後は姿勢が落ち着くまで別タイマーで待つ。
          if (isGrounded && !wasGrounded_ && !presentationContactCaptured_) {
             RequestPresentationScreenshot("04_contact.png", debugDrawPresentationGuides);
             presentationContactCaptured_ = true;
@@ -695,6 +713,7 @@ void CameraGravityBridge::Update(float deltaTime) {
          }
       }
       if (enableLandingShake && isGrounded && !wasGrounded_) {
+         // 接地中の連続発火を避け、各カメラ固有の画面Upに沿って同じ衝撃を与える。
          if (gravityFollowCamera_) {
             TriggerDirectionalShake(
                gravityFollowCamera_,

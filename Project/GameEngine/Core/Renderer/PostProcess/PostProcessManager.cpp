@@ -89,6 +89,8 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
 	  return;
    }
 
+   // JSONはC++型を直接生成できないため、安定したclassNameから所有権付きインスタンスを作る
+   // ファクトリー表を一度だけ登録する。
    effectFactoryRegistry_.RegisterFactory("RadialBlur", [] { return std::make_unique<RadialBlur>(); });
    effectFactoryRegistry_.RegisterFactory("Grayscale", [] { return std::make_unique<Grayscale>(); });
    effectFactoryRegistry_.RegisterFactory("GaussFilter", [] { return std::make_unique<GaussFilter>(); });
@@ -125,6 +127,7 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 		 return false;
 	  }
 
+	  // 不正な一件で走査を打ち切らず、他のエフェクトも検証して設定エラーをまとめて報告する。
 	  bool loadedAny = false;
 	  bool allSucceeded = true;
 	  size_t effectIndex = 0;
@@ -155,6 +158,7 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 			continue;
 		 }
 		 if (!loadedEffectIds.insert(definition.id).second) {
+			// 表示名は翻訳等で変わり得るため、シーン保存に使う安定IDだけを一意制約とする。
 			Logger::Error("[PostProcessManager] Duplicate post-process effect id: " + definition.id);
 			allSucceeded = false;
 			continue;
@@ -213,6 +217,7 @@ bool PostProcessManager::ConfigureEffectPipeline(PostProcess* effect, const std:
 
    effect->SetPipeline(pipeline, rootSignature);
 
+   // ルート引数の物理番号はJSON定義へ閉じ込め、エフェクト側には意味名から解決した番号だけを渡す。
    const auto cbSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "constantbuffer");
    const auto inputSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "inputtexture");
    if (!cbSlot.has_value() || !inputSlot.has_value()) {
@@ -220,6 +225,7 @@ bool PostProcessManager::ConfigureEffectPipeline(PostProcess* effect, const std:
 	  return false;
    }
 
+   // 深度とマスクは一部エフェクトだけの任意入力だが、対応するRootSignatureを選んだ場合は必須とする。
    const auto depthSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "depthtexture");
    const auto maskSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "masktexture");
    if (rootSignatureName == "PostProcessOutline" && !depthSlot.has_value()) {
@@ -251,6 +257,8 @@ void PostProcessManager::RegisterEffect(std::unique_ptr<PostProcess> effect, con
    effectInfo.enabled = enabled;
    effectInfo.defaultEnabled = enabled;
    effectInfo.defaultPriority = priority;
+   // レジストリ読込直後の値を既定スナップショットとして保持し、別シーン適用時に
+   // 前シーンの未指定パラメータが残らないようにする。
    effectInfo.defaultSettings = effectInfo.effect ? effectInfo.effect->SerializeSettings() : nlohmann::json::object();
    SortEffectsByPriority();
 }
@@ -260,7 +268,7 @@ void PostProcessManager::ApplyEffects(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 	  return;
    }
 
-   // 有効なエフェクトを収集
+   // 実行中にenabled判定やnull判定を繰り返さないよう、現在有効な順序付きビューを先に作る。
    std::vector<EffectInfo*> enabledEffects;
    for (auto& effectInfo : effects_) {
 	  if (effectInfo.enabled && effectInfo.effect) {
@@ -272,13 +280,14 @@ void PostProcessManager::ApplyEffects(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 	  return;
    }
 
-   // 最初のエフェクトは inputSRV を入力として使用
+   // 最初はシーン色、以降は直前の出力SRVを入力にする。各ApplyはSwapBuffers後の
+   // 別面へ書くため、同じテクスチャをSRVとRTVへ同時束縛しない。
    D3D12_GPU_DESCRIPTOR_HANDLE currentInputSRV = inputSRV;
 
    for (size_t i = 0; i < enabledEffects.size(); ++i) {
 	  auto* effectInfo = enabledEffects[i];
 
-	  // バッファを切り替えて次の描画先を準備
+      // 現在入力中の面と反対側を次の描画先にする。
 	  renderTarget_->SwapBuffers();
 
 	  // エフェクトを適用
@@ -344,6 +353,7 @@ std::vector<const PostProcessManager::EffectInfo*> PostProcessManager::GetSorted
 }
 
 nlohmann::json PostProcessManager::SerializeSceneState() const {
+   // 表示名やパイプライン名ではなく安定IDを保存し、名称変更後も同じエフェクトへ復元する。
    nlohmann::json stack = nlohmann::json::array();
    for (const auto& effectInfo : effects_) {
       if (!effectInfo.effect) {
@@ -372,6 +382,7 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
    }
 
    std::unordered_map<std::string, const nlohmann::json*> entriesById;
+   // エフェクトへ値を書き込む前に、外側の型・重複・整数範囲を全件検証する。
    for (const auto& entry : *stackIt) {
       if (!entry.is_object()) {
          return false;
@@ -408,6 +419,7 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
 
    std::unordered_set<std::string> appliedIds;
    for (auto& effectInfo : effects_) {
+      // シーンに記載のない項目は前シーン値を引き継がず、レジストリ既定値へ戻す。
       effectInfo.enabled = effectInfo.defaultEnabled;
       effectInfo.priority = effectInfo.defaultPriority;
       if (effectInfo.effect && !effectInfo.effect->DeserializeSettings(effectInfo.defaultSettings)) {
@@ -431,6 +443,7 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
    for (const auto& [id, entry] : entriesById) {
       (void)entry;
       if (!appliedIds.contains(id)) {
+         // 新しい／削除済みエフェクトIDは無視して、異なるバージョンのシーンを読み進められるようにする。
          Logger::EngineWarning("[PostProcessManager] Scene references an unknown effect: " + id);
       }
    }
@@ -530,6 +543,7 @@ auto PostProcessManager::FindEffect(const std::string& name) const -> decltype(e
 }
 
 void PostProcessManager::SortEffectsByPriority() {
+   // 小さいpriorityほど先に適用し、配列順をそのままping-pongチェーンの実行順にする。
    std::sort(effects_.begin(), effects_.end(),
 	  [](const EffectInfo& a, const EffectInfo& b) {
 		 return a.priority < b.priority;

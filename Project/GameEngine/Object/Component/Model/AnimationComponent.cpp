@@ -34,6 +34,7 @@ const char* AnimationComponent::GetTypeName() const {
 }
 
 nlohmann::json AnimationComponent::Serialize() const {
+   // 再生位置と再生可否も保存し、Editorで調整したプレビュー状態をそのまま復元できるようにする。
    return nlohmann::json{
 	  { "animationName", animationName },
 	  { "clipName", clipName },
@@ -51,6 +52,7 @@ nlohmann::json AnimationComponent::Serialize() const {
 }
 
 void AnimationComponent::Deserialize(const nlohmann::json& data) {
+   // Component単体保存や旧シーンを受け入れるため、存在して型が正しい項目だけを現在値へ重ねる。
    if (data.contains("animationName") && data.at("animationName").is_string()) {
 	  animationName = data.at("animationName").get<std::string>();
    }
@@ -104,6 +106,7 @@ void AnimationComponent::Stop() {
    currentTime = 0.0f;
    animator_.SetPlaying(false);
 
+   // 時刻0の姿勢まで即時適用し、次のUpdateを待たずに停止結果をViewportへ反映する。
    if (const AnimationClip* selectedClip = PrepareSelectedClip()) {
 	  ApplyCurrentPose(*selectedClip);
    }
@@ -121,6 +124,7 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
 	  animator_.SetClip(nullptr);
    }
 
+   // 毎フレームのManager検索を避けつつ、未ロード時は後のフレームで再試行できるようにする。
    if (!cachedAnimationAsset_) {
 	  cachedAnimationAsset_ = EngineContext::GetAnimation(animationName);
    }
@@ -141,10 +145,12 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
 	  return nullptr;
    }
 
+   // Clip実体が変わった時だけAnimator内部参照を差し替え、同一Clipの再生状態を保つ。
    if (animator_.GetClip() != selectedClip) {
 	  animator_.SetClip(selectedClip);
    }
 
+   // 公開されたInspector/Serialize用状態をAnimatorへ同期し、AnimatorがClampした時刻を戻す。
    animator_.SetLoop(loop);
    animator_.SetPlaybackSpeed(playbackSpeed);
    animator_.SetPlaying(playing);
@@ -157,12 +163,13 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
 void AnimationComponent::Update(float deltaTime) {
    const AnimationClip* selectedClip = PrepareSelectedClip();
    if (selectedClip) {
-	  if (playing && deltaTime > 0.0f) {
-		 animator_.Update(deltaTime);
+      if (playing && deltaTime > 0.0f) {
+         animator_.Update(deltaTime);
 		 currentTime = animator_.GetPlaybackTime();
 	  }
 
-	  ApplyCurrentPose(*selectedClip);
+      // Pause中も現在時刻の姿勢は適用し、Inspectorのスクラブや設定変更を表示できるようにする。
+      ApplyCurrentPose(*selectedClip);
    }
 
    DrawDebugBones();
@@ -180,6 +187,8 @@ void AnimationComponent::DrawDebugBones() const {
 
 void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 
+   // SkinningはSkeleton全体をGPU Paletteへ書き、下段のNode AnimationはOwner Transformだけを更新する。
+   // 両方は独立設定なので、キャラクター本体移動とボーン変形を同時に適用できる。
    if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
 	  auto* modelAssetComp = model->GetComponent<MeshComponent>();
 	  ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
@@ -209,6 +218,7 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 	  }
    }
 
+   // targetNodeNameが空の場合の既定Node選択もAnimatorへ委ね、Assetごとの命名差を吸収する。
    const NodeAnimation* nodeAnimation = animator_.ResolveNodeAnimation(targetNodeName);
 
    if (!nodeAnimation) {
@@ -220,6 +230,7 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 	  return;
    }
 
+   // 各TRSチャンネルを個別に許可し、Root Motionだけ除外する等の用途を可能にする。
    if (applyTranslation && !nodeAnimation->translation.keyframes.empty()) {
 	  transformComponent->transform.translation = CalculateValue(nodeAnimation->translation.keyframes, currentTime);
    }
@@ -268,8 +279,9 @@ void AnimationComponent::DrawInspector() {
    const auto animationNames = EngineContext::GetAnimationNames();
    const char* animationPreview = animationName.empty() ? Tr("<なし>", "<none>") : animationName.c_str();
    if (ImGui::BeginCombo(Tr("アニメーションアセット", "Animation Asset"), animationPreview)) {
-	  if (ImGui::Selectable(Tr("<なし>", "<none>"), animationName.empty())) {
-		 animationName.clear();
+         if (ImGui::Selectable(Tr("<なし>", "<none>"), animationName.empty())) {
+            // Asset参照・Clip参照・再生時刻を一組で破棄し、旧Assetの生ポインターを残さない。
+            animationName.clear();
 		 clipName.clear();
 		 currentTime = 0.0f;
 		 cachedAnimationName_.clear();
@@ -281,8 +293,9 @@ void AnimationComponent::DrawInspector() {
 		 const auto& name = animationNames[i];
 		 ImGui::PushID(5300 + static_cast<int>(i));
 		 const bool isSelected = animationName == name;
-		 if (ImGui::Selectable(name.c_str(), isSelected)) {
-			animationName = name;
+         if (ImGui::Selectable(name.c_str(), isSelected)) {
+            // Asset変更時は同名Clipでも別実体なので、選択とAnimatorキャッシュを初期化する。
+            animationName = name;
 			clipName.clear();
 			currentTime = 0.0f;
 			cachedAnimationName_.clear();
@@ -335,6 +348,7 @@ void AnimationComponent::DrawInspector() {
 	  targetNodeName = targetNodeBuffer;
    }
 
+   // スクラブ中はゲームUpdateを待たず、変更した時刻の姿勢をその場で評価する。
    if (ImGui::DragFloat(ImGuiHelper::Localize({ "現在時間", "Current Time" }), &currentTime, 0.01f, 0.0f, 1000.0f)) {
 	  if (const AnimationClip* selectedClip = PrepareSelectedClip()) {
 		 ApplyCurrentPose(*selectedClip);
@@ -349,6 +363,7 @@ Vector3 AnimationComponent::QuaternionToEuler_(const Quaternion& q) const {
    const float cosrCosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
    const float roll = std::atan2(sinrCosp, cosrCosp);
 
+   // asinの定義域を丸め誤差で越える±90度付近はcopysignで極値へ固定し、NaNを防ぐ。
    const float sinp = 2.0f * (q.w * q.y - q.z * q.x);
    const float pitch = std::abs(sinp) >= 1.0f ? std::copysign(MathConstants::kHalfPi, sinp) : std::asin(sinp);
 

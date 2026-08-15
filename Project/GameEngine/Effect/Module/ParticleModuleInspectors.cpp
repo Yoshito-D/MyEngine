@@ -91,6 +91,7 @@ bool DrawRandomFloat(
    } else {
 	  float scalar = value.minValue;
 	  if (ImGuiHelper::DrawFloatControl(L({ "値", "Value" }), scalar, value.minValue, columnWidth, speed, minValue, maxValue)) {
+		 // 固定モードでは両端を同期し、後からRandomへ切り替えた際に古いmax値が突然復活しないようにする。
 		 value.minValue = scalar;
 		 value.maxValue = scalar;
 		 changed = true;
@@ -121,6 +122,7 @@ bool DrawRandomVector2(
    if (value.randomize) {
 	  Vector2 minVec = value.minValue;
 	  Vector2 maxVec = value.maxValue;
+	  // 片側ずつ編集するUIなので、その場で反対端へ制約して常に有効な成分別範囲を保つ。
 	  if (ImGuiHelper::DrawVec2Control(L({ "最小", "Min" }), minVec, 0.0f, columnWidth, speed, minValue, maxValue)) {
 		 if (minVec.x > maxVec.x) minVec.x = maxVec.x;
 		 if (minVec.y > maxVec.y) minVec.y = maxVec.y;
@@ -209,6 +211,7 @@ bool DrawRandomEulerDegrees(
 	  changed = true;
    }
 
+   // 保存・計算はradian、Inspectorだけdegreeへ変換し、編集しやすさと内部単位の一貫性を両立する。
    if (value.randomize) {
 	  Vector3 minDeg = ImGuiHelper::RadiansToDegrees(value.minValue);
 	  Vector3 maxDeg = ImGuiHelper::RadiansToDegrees(value.maxValue);
@@ -250,6 +253,7 @@ bool DrawRandomColor(const std::string& label, RandomColor& value, float columnW
 	  changed = true;
    }
 
+   // UIはfloat RGBA、RandomColorはpacked整数なので、表示の入口と確定時だけ相互変換する。
    if (value.randomize) {
 	  Vector4 minColor = ConvertUIntToColor(value.minValue);
 	  Vector4 maxColor = ConvertUIntToColor(value.maxValue);
@@ -404,6 +408,7 @@ void EmissionModule::DrawInspector() {
    ImGui::Text("%s (%zu)", L({ "バースト", "Bursts" }), GetBursts().size());
 
    auto& bursts = GetBursts();
+   // 走査中のeraseで参照を無効化しないよう、削除対象だけ記録してループ後に反映する。
    int removeIndex = -1;
    for (int i = 0; i < static_cast<int>(bursts.size()); ++i) {
 	  auto& burst = bursts[i];
@@ -422,6 +427,7 @@ void EmissionModule::DrawInspector() {
 		 float time = burst.time;
 		 if (ImGuiHelper::DrawFloatControl(L({ "時間", "Time" }), time, 0.0f, kInspectorColumnWidth, 0.05f, 0.0f, 999.0f, "%.2f")) {
 			burst.time = time;
+			// 時刻設定の変更後は実行時カウンターを破棄し、新しいスケジュールを先頭から評価し直す。
 			ResetBurstStates();
 		 }
 
@@ -508,6 +514,7 @@ void ShapeModule::DrawInspector() {
 	  SetEmitFrom(emitFrom);
    }
 
+   // 共有パラメーターの意味が形状ごとに異なるため、現在のShapeが利用する設定だけを表示する。
    switch (GetShapeType()) {
 	  case ShapeType::Sphere:
 	  case ShapeType::Hemisphere: {
@@ -749,6 +756,7 @@ void UVTransformModule::DrawInspector() {
 	  return;
    }
 
+   // Scroll/Rotation/Scaleで同じValueMode定義を使い、各モード固有値は切替後も保持して再編集可能にする。
    const std::vector<std::pair<ValueMode, ImGuiHelper::LocalizedText>> valueModes = {
 	  { ValueMode::Constant, { "固定", "Constant" } },
 	  { ValueMode::RandomBetweenTwoConstants, { "2定数ランダム", "Random Between Two Constants" } },
@@ -864,6 +872,7 @@ void TextureSheetAnimationModule::DrawInspector() {
 	  SetCycles(static_cast<uint32_t>(std::max(cycles, 1)));
    }
 
+   // 単一行ではX方向だけが再生対象なので、選択モードに合わせて入力上限を変える。
    int frameCount = static_cast<int>(GetFrameCount());
    int maxFrameCount = static_cast<int>(GetTilesX() * GetTilesY());
    if (GetAnimationMode() == AnimationMode::SingleRow) {
@@ -884,6 +893,7 @@ void TextureSheetAnimationModule::DrawInspector() {
 	  kInspectorColumnWidth)) {
 	  SetAnimationMode(animationMode);
 	  if (GetAnimationMode() == AnimationMode::WholeSheet) {
+		 // 全体走査ではrowがframe番号から決まるため、単一行専用の乱数設定を無効化する。
 		 SetRandomRow(false);
 	  }
    }
@@ -945,6 +955,7 @@ void RendererModule::DrawInspector() {
 	  SetVelocityStretchEnabled(velocityStretchEnabled);
    }
 
+   // Stretchを使わない時は無効な係数を隠し、設定が描画へ影響する条件をUI上でも明確にする。
    if (velocityStretchEnabled) {
 	  float speedScale = GetSpeedScale();
 	  if (ImGuiHelper::DrawFloatControl(L({ "速度スケール", "Speed Scale" }), speedScale, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 10.0f)) {
@@ -1005,6 +1016,7 @@ void TrailModule::DrawInspector() {
 	  SetMode(mode);
 	}
 
+      // index 0を空のtextureNameへ対応させ、粒子本体のTextureを継承する状態を明示的に選べるようにする。
       std::vector<std::string> textureOptions{ L({ "パーティクルと同じ", "Same as Particle" }) };
       int selectedTextureIndex = 0;
       for (const std::string& textureName : EngineContext::GetTextureNames()) {
@@ -1031,6 +1043,7 @@ void TrailModule::DrawInspector() {
 	  if (DrawRandomFloat(L({ "リボン幅", "Ribbon Width" }), width, 0.01f, 0.001f, 100.0f)) {
 		 SetWidthRange(width);
 	  }
+	  // Emitter接続モードは常に二点だけを使うため、履歴点数と点間距離の設定はPath時だけ意味を持つ。
 	  if (GetMode() == TrailMode::ParticlePath) {
 		 int maxPoints = static_cast<int>(GetMaxPoints());
 		 if (ImGuiHelper::DrawIntControl(L({ "履歴点数", "History Points" }), maxPoints, 16, kInspectorColumnWidth, 1.0f, 2, 128)) {
@@ -1059,6 +1072,7 @@ void ParticleMeshModule::DrawInspector() {
 	const bool wasEnabled = IsEnabled();
 	if (!DrawModuleEnabled(*this, "ParticleMesh")) {
 	  if (wasEnabled != IsEnabled()) {
+		 // 無効化時も既定Quadへ戻す再構築が必要なので、早期return前にdirtyを立てる。
 		 meshDirty_ = true;
 	  }
 	  return;

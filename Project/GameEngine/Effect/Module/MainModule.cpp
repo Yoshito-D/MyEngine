@@ -13,11 +13,13 @@ float RandomFloat::GetValue() const {
 
 Vector2 RandomVector2::GetValue() const {
    if (!randomize) return minValue;
+   // 各成分を独立抽選し、矩形範囲内の任意の組み合わせを生成できるようにする。
    return Vector2{ RandomUtils::Random(minValue.x, maxValue.x), RandomUtils::Random(minValue.y, maxValue.y) };
 }
 
 Vector3 RandomVector3::GetValue() const {
    if (!randomize) return minValue;
+   // 一つの補間率を共有せず、軸ごとの最小・最大で直方体の乱数分布を作る。
    return Vector3(RandomUtils::Random(minValue.x, maxValue.x), RandomUtils::Random(minValue.y, maxValue.y), RandomUtils::Random(minValue.z, maxValue.z));
 }
 
@@ -131,6 +133,7 @@ void MainModule::FromJson(const nlohmann::json& j) {
    if (j.contains("startSpeed")) {
 	  const auto& startSpeedJson = j["startSpeed"];
 	  if (startSpeedJson.is_object()) {
+		 // 旧形式ではstartSpeedキーにVector範囲も格納されたため、minの型から移行先を判定する。
 		 const bool isVectorRange =
 			startSpeedJson.contains("min") && startSpeedJson["min"].is_array();
 		 if (isVectorRange) {
@@ -170,6 +173,7 @@ void MainModule::FromJson(const nlohmann::json& j) {
 	  if (j["startSize"].is_object()) {
 		 startSize_.FromJson(j["startSize"]);
 	  } else {
+		 // 旧スカラーサイズは三軸へ同値展開し、一様スケールとして見た目を維持する。
 		 float value = j["startSize"];
 		 Vector3 v(value, value, value);
 		 startSize_ = RandomVector3(v, v, false);

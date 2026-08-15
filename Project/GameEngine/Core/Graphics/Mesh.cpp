@@ -12,7 +12,8 @@ namespace {
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
 
-// 頂点バッファとインデックスバッファを確保し、ポインタを返すヘルパー
+// 頂点・インデックスを頻繁にCPU生成するプリミティブ向けにUPLOADヒープを確保する。
+// Mapしたポインタはリソース寿命中保持し、各生成関数が直接データを構築する。
 void AllocateMesh(
    uint32_t vertexCount, uint32_t indexCount,
    ComPtr<ID3D12Resource>& vertexResource, D3D12_VERTEX_BUFFER_VIEW& vertexView, Mesh::VertexData*& vertexData,
@@ -32,6 +33,8 @@ void AllocateMesh(
 }
 
 Vector3 TransformPlanePoint(float u, float v, Mesh::PlaneOrientation orientation) {
+   // すべての平面プリミティブを共通の2次元(u, v)で生成し、最後に対象平面へ写像する。
+   // これにより頂点順序とUV規則を向きごとに重複させずに済む。
    switch (orientation) {
    case Mesh::PlaneOrientation::XZ: return { u, 0.0f, v };
    case Mesh::PlaneOrientation::YZ: return { 0.0f, u, v };
@@ -41,6 +44,7 @@ Vector3 TransformPlanePoint(float u, float v, Mesh::PlaneOrientation orientation
 }
 
 Vector3 PlaneNormal(Mesh::PlaneOrientation orientation) {
+   // TransformPlanePointの頂点巻き順と表面方向に対応する固定法線を返す。
    switch (orientation) {
    case Mesh::PlaneOrientation::XZ: return { 0.0f, 1.0f, 0.0f };
    case Mesh::PlaneOrientation::YZ: return { 1.0f, 0.0f, 0.0f };
@@ -50,11 +54,13 @@ Vector3 PlaneNormal(Mesh::PlaneOrientation orientation) {
 }
 
 float VerticalOriginOffset(float height, float originY) {
+   // originY=0/0.5/1を底/中心/上端として扱えるよう、中心原点の形状をY方向へずらす。
    return height * (0.5f - std::clamp(originY, 0.0f, 1.0f));
 }
 }
 
 void Mesh::CreateDynamic(uint32_t maxVertexCount, uint32_t maxIndexCount) {
+   // 空配列から開始しても有効なD3D12バッファを持てるよう、容量は最低1要素確保する。
    maxVertexCount = std::max(maxVertexCount, 1u);
    maxIndexCount = std::max(maxIndexCount, 1u);
    AllocateMesh(
@@ -73,6 +79,8 @@ void Mesh::CreateDynamic(uint32_t maxVertexCount, uint32_t maxIndexCount) {
 
 void Mesh::UpdateDynamic(const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices) {
    if (!vertexData_ || !dynamicIndexData_ || vertices.size() > dynamicVertexCapacity_ || indices.size() > dynamicIndexCapacity_) {
+      // 毎フレーム少しずつ増える動的メッシュで再確保を繰り返さないよう、
+      // 必要量と現在容量の2倍の大きい方へ成長させる。
 	  const uint32_t vertexCapacity = std::max(static_cast<uint32_t>(vertices.size()), dynamicVertexCapacity_ * 2u);
 	  const uint32_t indexCapacity = std::max(static_cast<uint32_t>(indices.size()), dynamicIndexCapacity_ * 2u);
 	  CreateDynamic(vertexCapacity, indexCapacity);
@@ -104,6 +112,8 @@ void Mesh::CreateSprite(float width, float height, PlaneOrientation orientation)
 
    Vector3 n = PlaneNormal(orientation);
 
+   // UVの原点は画像の左上、ローカル座標の原点も左上として4頂点を対応付ける。
+   // インデックスはこの並びを前提に2三角形を同じ巻き順で構成する。
    // 左下
    {
       Vector3 p = TransformPlanePoint(0.0f, height, orientation);
@@ -165,7 +175,8 @@ void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orient
    vertexBufferView_.StrideInBytes = sizeof(VertexData);
    vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 
-   // パーティクル用: originY で縦方向の基準位置を指定できるようにする
+   // ビルボード回転時の支点を炎の根元などへ置けるよう、中心配置したQuad全体を
+   // originYに応じて移動する。幅方向の原点は常に中央に保つ。
    float halfWidth = width * 0.5f;
    float halfHeight = height * 0.5f;
    float yOffset = VerticalOriginOffset(height, originY);
@@ -224,7 +235,8 @@ void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orient
 void Mesh::CreateSkybox() {
    if (!sIsInitialized_) return;
 
-   // 各面: { 4頂点の { position, texCoord, normal } }, 法線は内向き
+   // カメラが立方体内部から見るため、巻き順と法線を通常のBoxとは逆向きにする。
+   // 角を共有すると面ごとのUVと法線を保持できないため、各面4頂点に分離する。
    struct FaceVertex { Vector4 pos; Vector2 uv; Vector3 norm; };
    static constexpr FaceVertex kFaces[6][4] = {
 	  // +X (右)
@@ -274,6 +286,7 @@ void Mesh::CreateSkybox() {
 	  indexResource_, indexBufferView_, indexData);
 
    for (uint32_t face = 0; face < 6; ++face) {
+      // 面ごとの局所インデックスを、連続した24頂点の絶対インデックスへ変換する。
 	  for (uint32_t v = 0; v < 4; ++v) {
 		 uint32_t idx = face * 4 + v;
 		 vertexData_[idx].position = kFaces[face][v].pos;
@@ -303,6 +316,7 @@ void Mesh::CreateRing(float innerRadius, float outerRadius, uint32_t segmentCoun
 
    Vector3 n = PlaneNormal(orientation);
 
+   // 各角度に外周・内周を一組ずつ置き、隣接する組を2三角形で接続する。
    for (uint32_t i = 0; i < segmentCount; ++i) {
 	  float theta = kStep * static_cast<float>(i);
 	  float cos = std::cosf(theta);
@@ -325,6 +339,7 @@ void Mesh::CreateRing(float innerRadius, float outerRadius, uint32_t segmentCoun
 	  vertexData_[i * 2 + 1].normal = n;
    }
 
+   // 最終セグメントだけnextを0へ戻して閉じる。頂点を重複しないためUVには継ぎ目がある。
    for (uint32_t i = 0; i < segmentCount; ++i) {
 	  uint32_t next = (i + 1) % segmentCount;
 	  uint32_t base = i * 6;
@@ -354,6 +369,8 @@ void Mesh::CreatePlane(float width, float depth, uint32_t widthSegments, uint32_
 
    Vector3 n = PlaneNormal(orientation);
 
+   // 分割数より1つ多い格子点を作り、隣接セル同士で頂点を共有する。
+   // 正規化した格子座標をそのままUVとして利用する。
    for (uint32_t row = 0; row < kRows; ++row) {
 	  for (uint32_t col = 0; col < kCols; ++col) {
 		 float u = static_cast<float>(col) / static_cast<float>(widthSegments);
@@ -366,6 +383,7 @@ void Mesh::CreatePlane(float width, float depth, uint32_t widthSegments, uint32_
 	  }
    }
 
+   // 各セルを同じ対角線で二分し、平面全体の巻き順を一定に保つ。
    uint32_t idx = 0;
    for (uint32_t row = 0; row < depthSegments; ++row) {
 	  for (uint32_t col = 0; col < widthSegments; ++col) {
@@ -393,7 +411,7 @@ void Mesh::CreateCircle(float radius, uint32_t segmentCount, PlaneOrientation or
 
    Vector3 n = PlaneNormal(orientation);
 
-   // 中心
+   // 中心を共有する三角形ファンとして構築し、円周座標を[0,1]のUVへ写像する。
    vertexData_[0].position = { 0.0f, 0.0f, 0.0f, 1.0f };
    vertexData_[0].texCoord = { 0.5f, 0.5f };
    vertexData_[0].normal = n;
@@ -418,7 +436,8 @@ void Mesh::CreateCircle(float radius, uint32_t segmentCount, PlaneOrientation or
 void Mesh::CreateBox(float width, float height, float depth, float originY) {
    if (!sIsInitialized_) return;
 
-   // 各面: { 4頂点 } × 6面
+   // 面間で頂点を共有せず、各面に一定法線を持たせて角をハードエッジとして描画する。
+   // 同じ分離により、各面へ独立した0..1 UVも割り当てられる。
    struct FaceVertex { Vector4 pos; Vector2 uv; Vector3 norm; };
    const float hw = width * 0.5f;
    const float hh = height * 0.5f;
@@ -489,6 +508,8 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, 
 	  vertexResource_, vertexBufferView_, vertexData_,
 	  indexResource_, indexBufferView_, indexData);
 
+   // 経度方向は始点と終点を重複させ、位置が同じでもU=0とU=1を分けて
+   // テクスチャの継ぎ目を補間させない。
    for (uint32_t stack = 0; stack <= stackCount; ++stack) {
 	  float phi = MathConstants::kPi * static_cast<float>(stack) / static_cast<float>(stackCount);
 	  float v = static_cast<float>(stack) / static_cast<float>(stackCount);
@@ -505,6 +526,7 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, 
 	  }
    }
 
+   // (sliceCount + 1)を行幅として、上下の緯度リング間を四角形単位で接続する。
    uint32_t idx = 0;
    for (uint32_t stack = 0; stack < stackCount; ++stack) {
 	  for (uint32_t slice = 0; slice < sliceCount; ++slice) {
@@ -530,6 +552,8 @@ void Mesh::CreateTorus(float majorRadius, float minorRadius, uint32_t majorSegme
 	  vertexResource_, vertexBufferView_, vertexData_,
 	  indexResource_, indexBufferView_, indexData);
 
+   // 大円中心から小円表面への差分を法線に使う。Yの原点オフセットは位置だけへ加え、
+   // 法線計算には加えないことで照明方向を変化させない。
    for (uint32_t i = 0; i <= majorSegments; ++i) {
 	  float phi = MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(majorSegments);
 	  float cosPhi = std::cosf(phi);
@@ -581,6 +605,7 @@ void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uin
    const float    yOffset = VerticalOriginOffset(height, originY);
    const float    sideSlope = height != 0.0f ? (topRadius - bottomRadius) / height : 0.0f;
    const float    normalY = -sideSlope;
+   // 半径差から側面の傾きを求め、円周方向成分と合わせて単位法線へ正規化する。
    const float    normalScale = 1.0f / std::sqrtf(1.0f + normalY * normalY);
    const float    kStep = MathConstants::kTwoPi / static_cast<float>(segmentCount);
 
@@ -589,7 +614,7 @@ void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uin
 	  vertexResource_, vertexBufferView_, vertexData_,
 	  indexResource_, indexBufferView_, indexData);
 
-   // 側面
+   // 側面はU=0とU=1の頂点を重複させ、周回境界でUVが逆方向に補間されるのを防ぐ。
    for (uint32_t i = 0; i <= segmentCount; ++i) {
 	  float theta = kStep * static_cast<float>(i);
 	  float cos = std::cosf(theta);
@@ -610,6 +635,7 @@ void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uin
 	  indexData[base + 3] = i * 2 + 2; indexData[base + 4] = i * 2 + 3; indexData[base + 5] = i * 2 + 1;
    }
 
+   // 蓋は側面と法線・UVが異なるため頂点を共有せず、中心を持つ三角形ファンにする。
    // 上蓋 (Y=+hh, 法線 Y+)
    uint32_t topBase = kSideVerts;
    vertexData_[topBase].position = { 0.0f, hh + yOffset, 0.0f, 1.0f };
@@ -664,6 +690,7 @@ void Mesh::CreateCylinderWithoutCaps(float topRadius, float bottomRadius, float 
 	  vertexResource_, vertexBufferView_, vertexData_,
 	  indexResource_, indexBufferView_, indexData);
 
+   // 蓋付き円柱と同じ側面規則を使い、モデル切替時もUVと照明結果を一致させる。
    for (uint32_t i = 0; i <= segmentCount; ++i) {
 	  float theta = kStep * static_cast<float>(i);
 	  float cos = std::cosf(theta);
@@ -706,6 +733,8 @@ void Mesh::CreateCone(float radius, float height, uint32_t segmentCount, float o
 	  vertexResource_, vertexBufferView_, vertexData_,
 	  indexResource_, indexBufferView_, indexData);
 
+   // 側面法線は斜辺長で正規化する。頂点は共有するため先端法線は上向きとし、
+   // 円周側の法線で側面の傾きを表現する。
    // 頂点 (apex)
    vertexData_[0].position = { 0.0f, hh + yOffset, 0.0f, 1.0f };
    vertexData_[0].texCoord = { 0.5f, 0.0f };
@@ -759,7 +788,8 @@ void Mesh::CreateTriangle(const Vector3& v0, const Vector3& v1, const Vector3& v
    Vector3 p1 = TransformPlanePoint(v1.x, v1.y, orientation);
    Vector3 p2 = TransformPlanePoint(v2.x, v2.y, orientation);
 
-   // 法線: 外積で計算
+   // 入力の巻き順を外積へ反映し、任意形状でもカリング方向と法線方向を一致させる。
+   // 退化三角形では長さ0のままにしてゼロ除算を避ける。
    Vector3 edge1 = { p1.x - p0.x, p1.y - p0.y, p1.z - p0.z };
    Vector3 edge2 = { p2.x - p0.x, p2.y - p0.y, p2.z - p0.z };
    Vector3 norm = {

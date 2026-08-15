@@ -144,6 +144,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 			break;
 		 }
 		 const auto& meshes = skinnedMeshModel_->GetMeshData();
+		 // 頂点数ではなくindex三個を一面として数え、複数Meshを一続きの抽選範囲として扱う。
 		 size_t totalTriangleCount = 0;
 		 for (const auto& mesh : meshes) totalTriangleCount += mesh.indices.size() / 3;
 		 if (totalTriangleCount == 0) {
@@ -181,6 +182,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
 		 break;
    }
 
+	  // 形状固有計算はローカル空間で完結させ、最後に共通Transformの回転・移動を一度だけ適用する。
 	  const Quaternion shapeRotation = transform_.GetActiveQuaternion();
    return transform_.translation + RotateVector(localOffset, shapeRotation);
 }
@@ -229,6 +231,7 @@ Vector3 ShapeModule::GetRandomEmissionDirection() const {
 		 break;
    }
 
+	  // 非一様Scaleで速度方向まで歪ませず、回転だけを適用して単位方向として返す。
 	  const Quaternion shapeRotation = transform_.GetActiveQuaternion();
    return RotateVector(direction.Normalize(), shapeRotation).Normalize();
 }
@@ -292,6 +295,7 @@ void ShapeModule::FromJson(const nlohmann::json& j) {
    }
    if (j.contains("rotation")) {
 	  auto arr = j["rotation"];
+	  // JSONのEuler値は入力互換用に読み、内部の正本はQuaternionへ統一する。
 	  transform_.SetRotationQuaternion(Vector3ToQuaternion(Vector3(arr[0], arr[1], arr[2])));
    }
    if (j.contains("scale")) {

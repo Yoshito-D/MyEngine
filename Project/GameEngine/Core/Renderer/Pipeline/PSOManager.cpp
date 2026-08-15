@@ -36,6 +36,7 @@ uint32_t CountRootBindableResources(const GameEngine::ShaderReflectionInfo* refl
 	  return 0;
    }
 
+   // 静的サンプラーはルートパラメータを消費しないため、バインド数の概算から除外する。
    return static_cast<uint32_t>(std::count_if(
 	  reflection->boundResources.begin(),
 	  reflection->boundResources.end(),
@@ -183,6 +184,8 @@ bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath,
 	  return false;
    }
 
+   // Pipeline生成は参照先RootSignatureが登録済みであることを前提とするため、
+   // レジストリ上の記述順に依存せずルート定義をすべて先に処理する。
    bool allSucceeded = true;
    for (const auto& rootSignaturePath : rootSignaturePaths) {
 	  if (!LoadRootSignatureFromFile(rootSignaturePath)) {
@@ -203,6 +206,8 @@ bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath,
 
 void PSOManager::LogValidationMessage(const std::string& dedupeKey, const std::string& message, Logger::LogLevel level) {
    if (level == Logger::LogLevel::Warning) {
+      // ブレンド派生PSOなどから同じ警告が大量発生して本質的な問題を埋めないよう、
+      // 警告だけを意味単位のキーで一度に抑える。エラーと情報は常に記録する。
 	  if (!emittedValidationWarnings_.insert(dedupeKey).second) {
 		 return;
 	  }
@@ -246,11 +251,13 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
       definition.name = rootSigJson["name"].get<std::string>();
 
 	  const auto reflectionSources = rootSigJson.value("reflectionSources", json::object());
+      // shaderRegisterを省略したパラメータは、ここで指定された各ステージの反射情報から
+      // semanticと資源種別を照合してレジスタ番号を補完する。
 	  const std::string reflectionVS = reflectionSources.value("vertexShader", "");
 	  const std::string reflectionPS = reflectionSources.value("pixelShader", "");
 	  const std::string reflectionCS = reflectionSources.value("computeShader", "");
 
-      // パラメータをロード
+      // JSON配列の順番がそのままD3D12のRootParameterIndexになるため、順序を保持して読み込む。
       if (rootSigJson.contains("parameters") && rootSigJson["parameters"].is_array()) {
 		 size_t parameterIndex = 0;
          for (const auto& param : rootSigJson["parameters"]) {
@@ -277,6 +284,8 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
 			}
 
             if (paramDef.shaderRegister == UINT_MAX && !paramDef.semantic.empty()) {
+               // 明示レジスタを最優先し、省略時だけ反射へ問い合わせることで、
+               // 特殊な別名や互換定義をJSONから固定できる余地を残す。
 			   const auto resolvedRegister = ResolveShaderRegisterBySemantic(
 				  paramDef.semantic,
 				  paramDef.type,
@@ -387,6 +396,8 @@ bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition
    auto rootSignature = std::make_unique<RootSignature>();
    std::unordered_map<std::string, UINT> semanticSlots;
 
+   // D3D12_DESCRIPTOR_RANGEの寿命はRootSignature内部で保持し、SetRootParameterへ渡す
+   // ポインタが最終シリアライズまで有効になるようにする。
    for (UINT i = 0; i < static_cast<UINT>(definition.parameters.size()); ++i) {
 	  const auto& parameter = definition.parameters[i];
 	  const D3D12_DESCRIPTOR_RANGE* descriptorRange = nullptr;
@@ -410,6 +421,7 @@ bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition
 		 parameter.descriptorCount);
 
 	  if (!parameter.semantic.empty()) {
+         // 呼び出し側の大小文字差を吸収し、JSONの表示名変更以外では描画コードを壊さない。
 		 semanticSlots[ToLowerString(parameter.semantic)] = i;
 	  }
    }
@@ -476,7 +488,8 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
    };
 
    if (definition.supportBlendModes) {
-      // ブレンドモード別にパイプラインを作成
+      // ブレンド状態はPSOへ焼き込まれるため実行時変更できない。
+      // 同一シェーダー／ルート定義から全BlendMode派生を先に生成する。
       for (int32_t i = 0; i < static_cast<int32_t>(BlendMode::kCount); ++i) {
          BlendMode blendMode = static_cast<BlendMode>(i);
 
@@ -495,7 +508,8 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
 			? BuildInputLayoutFromVertexShaderReflection(definition.vertexShader)
 			: definition.inputLayout;
 
-         // 深度書き込みマスクの設定
+         // 完全不透明だけは必ず深度を書き、透明派生は定義側のマスクへ従う。
+         // 透明物が後続の透明物を誤って隠すことを防ぐための分岐。
          if (blendMode == BlendMode::kBlendModeNone) {
             config.depthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
          } else {
@@ -559,6 +573,7 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
    pipeline->SetRootSignature(rootSignature);
 
    PipelineReflectionMetadata reflectionMetadata{};
+   // 反射情報はPSO生成自体の入力ではなく、ルート定義との不一致を起動時に発見する診断値として保持する。
    if (const auto* vsReflection = shaderManager_->GetShaderReflection(config.vertexShaderName, ShaderType::Vertex);
 	  vsReflection && vsReflection->isValid) {
 	  reflectionMetadata.hasVertexReflection = true;
@@ -583,6 +598,8 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
 
    uint32_t validationWarnings = 0;
 
+   // ステージ間で共有する資源も重複加算されるため、厳密検証ではなく「明らかに少ない」
+   // ルートパラメータを検出する保守的な警告として扱う。
    reflectionMetadata.estimatedRequiredBindingCount = reflectionMetadata.vertexResourceCount + reflectionMetadata.pixelResourceCount;
 
    auto rootParamCountIt = rootSignatureParameterCounts_.find(config.rootSignatureName);
@@ -617,7 +634,7 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
          validationWarnings >= 3 ? Logger::LogLevel::Error : Logger::LogLevel::Warning);
    }
 
-   // 入力レイアウトの設定
+   // semanticNameの文字列はPipelineStateがPSO生成まで参照するため、configの生存区間内にまとめて登録する。
    for (const auto& element : config.inputElements) {
       pipeline->SetInputLayOut(
          element.semanticName.c_str(),
@@ -663,6 +680,8 @@ bool PSOManager::CreateComputePipeline(const std::string& name, const std::strin
 	  return false;
    }
 
+   // Compute PSOはGraphics用PipelineStateラッパーの入力レイアウト等を必要としないため、
+   // 最小のD3D12_COMPUTE_PIPELINE_STATE_DESCから直接生成する。
    D3D12_COMPUTE_PIPELINE_STATE_DESC pipelineDesc{};
    pipelineDesc.pRootSignature = rootSignature->GetRootSignature();
    pipelineDesc.CS = { computeShader->GetBufferPointer(), computeShader->GetBufferSize() };
@@ -684,6 +703,7 @@ bool PSOManager::CreateComputePipeline(const std::string& name, const std::strin
 }
 
 PipelineState* PSOManager::GetPipeline(const std::string& name, BlendMode blendMode) {
+   // 派生名を先に検索し、BlendModeを持たない単一PSO定義へ名前だけでフォールバックする。
    std::string key = CreatePipelineKey(name, blendMode);
    if (auto* pipeline = pipelineLibrary_.GetGraphicsPipeline(key)) {
 	  return pipeline;
@@ -726,6 +746,8 @@ std::optional<UINT> PSOManager::ResolvePipelineRootParameter(const std::string& 
 	  }
    }
 
+   // ブレンド派生名「Base_<enum値>」に個別テーブルがない場合はBaseの意味表を共有する。
+   // 数字以外の接尾辞を誤って除去しないよう、末尾全体が数値か確認する。
    const size_t suffixPos = pipelineName.rfind('_');
    if (suffixPos != std::string::npos && suffixPos + 1 < pipelineName.size()) {
 	  const bool hasNumericSuffix = std::all_of(
@@ -849,6 +871,7 @@ std::vector<InputElementDefinition> PSOManager::BuildInputLayoutFromVertexShader
 	  return layout;
    }
 
+   // 頂点シェーダー入力の順番を保ち、明示レイアウトがない定義だけを反射結果で補完する。
    layout.reserve(reflection->inputParameters.size());
    for (const auto& input : reflection->inputParameters) {
 	  std::string semantic = input.semanticName;
@@ -857,6 +880,7 @@ std::vector<InputElementDefinition> PSOManager::BuildInputLayoutFromVertexShader
 	  });
 
 	  if (semantic.rfind("SV_", 0) == 0) {
+         // SV_VertexID等はInput Assemblerから供給する頂点要素ではない。
 		 continue;
 	  }
 
@@ -875,6 +899,8 @@ std::vector<InputElementDefinition> PSOManager::BuildInputLayoutFromVertexShader
 }
 
 DXGI_FORMAT PSOManager::ConvertReflectionInputToFormat(BYTE mask, D3D_REGISTER_COMPONENT_TYPE componentType) const {
+   // 反射maskは使用中のxyzwビット列なので、最上位ビット位置から1～4成分へ変換する。
+   // 成分型と組み合わせてIAがシェーダー入力と同じ幅で読むDXGI_FORMATを選ぶ。
    const UINT componentCount =
 	  (mask == 1) ? 1 :
 	  (mask <= 3) ? 2 :
@@ -918,6 +944,8 @@ std::optional<UINT> PSOManager::ResolveShaderRegisterBySemantic(
 	  return std::nullopt;
    }
 
+   // JSON側の意味名とHLSLのg_Prefix／区切り差を吸収するため、比較用識別子だけを
+   // 小文字英数字へ正規化する。実際のバインド名は反射情報のまま保持する。
    const auto normalizeIdentifier = [](std::string value) {
 	  value = ToLowerString(std::move(value));
 	  value.erase(std::remove_if(value.begin(), value.end(), [](unsigned char c) {
@@ -931,6 +959,7 @@ std::optional<UINT> PSOManager::ResolveShaderRegisterBySemantic(
 
    const std::string target = normalizeIdentifier(semantic);
 
+   // 名前が似ていてもCBV/SRV/UAVの種類が違えば誤解決なので、ルート種別も照合する。
    const auto matchResourceType = [parameterType, rangeType](D3D_SHADER_INPUT_TYPE type) {
 	  if (parameterType == D3D12_ROOT_PARAMETER_TYPE_CBV) {
 		 return type == D3D_SIT_CBUFFER;
@@ -946,6 +975,7 @@ std::optional<UINT> PSOManager::ResolveShaderRegisterBySemantic(
 	  return true;
    };
 
+   // visibilityで許可されたステージだけを探索し、最初に一致したレジスタを採用する。
    const auto searchShader = [&](const std::string& shaderName, ShaderType stage) -> std::optional<UINT> {
 	  if (shaderName.empty()) {
 		 return std::nullopt;
@@ -999,6 +1029,7 @@ void PSOManager::RegisterPipelineSemanticSlots(const std::string& pipelineName, 
 	  return;
    }
 
+   // 派生PSOは同じRootSignatureを共有するため、意味名→スロット表も値コピーして同じ規約を公開する。
    pipelineSemanticSlots_[pipelineName] = it->second;
 }
 

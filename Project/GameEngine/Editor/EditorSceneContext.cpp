@@ -41,6 +41,7 @@ constexpr float kDuplicatePositionOffset = 1.0f;
 
 ImGuizmo::OPERATION ToImGuizmoOperation(EditorSceneContext::GizmoOperation operation, bool restrictTo2D = false) {
    if (restrictTo2D) {
+      // スクリーン空間の要素は深度軸を操作すると描画順まで変わるため、平面内の自由度だけを公開する。
       switch (operation) {
          case EditorSceneContext::GizmoOperation::Rotate:
             return ImGuizmo::ROTATE_Z;
@@ -76,6 +77,7 @@ Transform MatrixToTransform(const Matrix4x4& matrix) {
    Transform transform{};
    transform.translation = Vector3(translation[0], translation[1], translation[2]);
    transform.scale = Vector3(scale[0], scale[1], scale[2]);
+   // ImGuizmoのEuler角は表示上の中間値に留め、エンジン側では合成時に安定するQuaternionを正規化して保持する。
    const Vector3 eulerRadians = Vector3(
       ToRadians(rotationDegrees[0]),
       ToRadians(rotationDegrees[1]),
@@ -155,6 +157,7 @@ bool IsLegacyEmitterRuntimeParticleEntry(const nlohmann::json& entry) {
    const std::string name = particleData->value("name", "");
    const std::string sceneKey = entry.value("sceneKey", "");
 
+   // 旧シーンに保存された実行時サブエミッターは再生成対象ではないため、自動採番名の組み合わせで識別する。
    return objectType == "ParticleSystem" &&
       assetId.empty() &&
       (StartsWith(id, "ParticleSystem:ParticleSystem_") ||
@@ -178,6 +181,7 @@ Vector3 ExtractCameraPositionFromView(const Camera* camera) {
       return {};
    }
 
+   // ブレンド中のカメラではTransformより実際のView行列が描画位置を正確に表すため、逆行列から位置を取り出す。
    const Matrix4x4 cameraWorld = camera->GetViewMatrix().Inverse();
    const Vector3 position(cameraWorld.m[3][0], cameraWorld.m[3][1], cameraWorld.m[3][2]);
    return IsFiniteVector(position) ? position : camera->GetPosition();
@@ -188,6 +192,7 @@ Vector3 ExtractCameraForwardFromView(const Camera* camera) {
       return Vector3(0.0f, 0.0f, 1.0f);
    }
 
+   // 配置方向も現在描画中のViewに合わせ、TransformとViewの更新タイミング差で画面外へ生成されるのを避ける。
    const Matrix4x4 cameraWorld = camera->GetViewMatrix().Inverse();
    const Vector3 forward(cameraWorld.m[2][0], cameraWorld.m[2][1], cameraWorld.m[2][2]);
    return NormalizeOrFallback(forward, NormalizeOrFallback(camera->GetForward(), Vector3(0.0f, 0.0f, 1.0f)));
@@ -209,6 +214,7 @@ bool IsProjectedInsideCamera(const Camera* camera, const Vector3& worldPosition)
    const float ndcX = clip.x / clip.w;
    const float ndcY = clip.y / clip.w;
    const float ndcZ = clip.z / clip.w;
+   // クリップ境界ぎりぎりを避け、生成直後のオブジェクトが確実に選択できる余白を残す。
    return ndcX >= -kSafeNormalizedDeviceCoordinateLimit && ndcX <= kSafeNormalizedDeviceCoordinateLimit &&
       ndcY >= -kSafeNormalizedDeviceCoordinateLimit && ndcY <= kSafeNormalizedDeviceCoordinateLimit &&
       ndcZ >= 0.0f && ndcZ <= 1.0f;
@@ -229,6 +235,7 @@ bool UsesScreenRenderSpace(const Object* object) {
 }
 
 Vector2 GetEditorScreenCameraSize(float viewportWidth, float viewportHeight) {
+   // スクリーン空間オブジェクトはゲーム解像度基準なので、ドッキング後のプレビュー領域よりBackBuffer寸法を優先する。
    if (auto* graphicsDevice = EngineContext::GetGraphicsDevice()) {
       const uint32_t width = graphicsDevice->GetBackBufferWidth();
       const uint32_t height = graphicsDevice->GetBackBufferHeight();
@@ -271,6 +278,7 @@ Vector3 CalculateScreenAnchorOffset(UIAnchor anchorPoint, const Vector2& screenS
    const float halfWidth = screenSize.x * 0.5f;
    const float halfHeight = screenSize.y * 0.5f;
 
+   // UITextはレイアウト系と同じY下向き規約を使うため、Sprite用アンカーとは上下の符号が逆になる。
    switch (anchorPoint) {
       case UIAnchor::TopLeft:
          return Vector3(-halfWidth, -halfHeight, 0.0f);
@@ -349,6 +357,7 @@ void EditorSceneContext::Initialize(std::string sceneName) {
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
    commandStack_.Clear();
+   // 前シーンの非所有ポインターや安定キーを持ち越すと別シーンのEntityへ誤適用されるため一括で破棄する。
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
    hiddenSceneObjectKeys_.clear();
@@ -365,6 +374,7 @@ void EditorSceneContext::AutoLoad() {
    }
 
    hasAutoLoaded_ = true;
+   // JSONを適用する前にBaseSceneが生成した実体へキーを割り当て、保存済み状態との対応を固定する。
    RegisterSceneOwnedKeys();
    Load();
 }
@@ -378,6 +388,7 @@ void EditorSceneContext::Clear() {
    isManipulatingParticleSystem_ = false;
    commandStack_.Clear();
    objectStore_.Clear();
+   // シーン所有EntityはStoreから破棄できないため、コンテキスト終了時に一時的な非表示状態だけを元へ戻す。
    for (const Object* hiddenObject : hiddenSceneObjects_) {
       Object* object = const_cast<Object*>(hiddenObject);
       if (!object) {
@@ -459,6 +470,7 @@ nlohmann::json EditorSceneContext::SerializeToJson() {
    nlohmann::json sceneData = nlohmann::json::object();
    sceneData["version"] = kCurrentSceneFormatVersion;
    sceneData["sceneName"] = sceneName_;
+   // Editor生成物とBaseScene所有物は寿命が異なるため、復元可能な所有物と差分適用対象を別配列へ保存する。
    sceneData["objects"] = objectStore_.SerializeAll();
    sceneData["sceneObjects"] = SerializeSceneObjects();
    sceneData["sceneParticleSystems"] = SerializeSceneParticleSystems();
@@ -481,6 +493,7 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
       return false;
    }
 
+   // Storeの再構築でポインターが無効になり得るため、選択と履歴を先に切り離してから状態を入れ替える。
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
    commandStack_.Clear();
@@ -508,6 +521,7 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
       ApplyCameras(sceneData.at("cameras"));
    }
    if (sceneData.contains("environment") && sceneData.at("environment").is_object()) {
+      // 旧形式だけがenvironmentにライトを持つため、現在のLightComponentへ移行しながら読み込む。
       const auto& environment = sceneData.at("environment");
       if (environment.contains("lights") && environment.at("lights").is_array()) {
          for (const auto& lightData : environment.at("lights")) {
@@ -564,6 +578,7 @@ void EditorSceneContext::ApplyHierarchyOrder(const nlohmann::json& hierarchyOrde
          registeredIds.insert(object->GetEntityId());
       }
    }
+   // 削除済みIDと重複IDを除外し、壊れた保存データが現在のヒエラルキーへ混入しないようにする。
    for (const auto& objectId : hierarchyOrderData) {
       if (!objectId.is_string()) {
          continue;
@@ -640,6 +655,7 @@ void EditorSceneContext::SelectObject(Object* object) {
       return;
    }
    selectedObject_ = object;
+   // ObjectとParticleSystemは別インスペクター経路なので、選択は常に排他的に保つ。
    if (selectedObject_) {
       selectedParticleSystem_ = nullptr;
    }
@@ -671,6 +687,7 @@ bool EditorSceneContext::ReorderObject(
       : (dropPosition == HierarchyDropPosition::Into
          ? targetObject->GetEntityId()
          : targetObject->GetParentEntityId());
+   // 親設定側で循環参照を拒否させ、表示順だけが先に変わる半端な状態を作らない。
    if (!movedObject->SetParentEntityId(targetParentId)) {
       return false;
    }
@@ -791,6 +808,7 @@ ParticleSystem* EditorSceneContext::CreateParticleSystemFromAsset(const std::str
 
 void EditorSceneContext::DuplicateSelectedObject() {
    if (selectedParticleSystem_) {
+      // 複製もUndo可能にするため、具象型を直接コピーせず復元可能なスナップショットへ統一する。
       nlohmann::json snapshot;
       if (const std::string particleId = objectStore_.GetId(selectedParticleSystem_); !particleId.empty()) {
          snapshot = objectStore_.SerializeObject(particleId);
@@ -839,6 +857,7 @@ void EditorSceneContext::DeleteObject(Object* object) {
    }
 
    if (!objectStore_.Contains(object)) {
+      // BaseSceneが所有する実体は破棄せず、シーン差分に削除墓標を残して更新と描画だけを停止する。
       HideSceneOwnedObject(object);
       if (selectedObject_ == object) {
          selectedObject_ = nullptr;
@@ -1023,6 +1042,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
 
       if (ImGuizmo::IsUsing()) {
          if (!isManipulatingParticleSystem_ || manipulatingParticleSystem_ != selectedParticleSystem_) {
+            // 連続ドラッグの開始値を一度だけ保存し、毎フレームの微小移動を個別の履歴にしない。
             particleTransformBeforeManipulation_ = beforeCall;
             manipulatingParticleSystem_ = selectedParticleSystem_;
             isManipulatingParticleSystem_ = true;
@@ -1033,6 +1053,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
       }
 
       if (isManipulatingParticleSystem_) {
+         // マウスを離した時点で一つのCommandへ確定し、Undoでドラッグ開始位置まで戻せるようにする。
          ParticleSystem* manipulatedParticleSystem = manipulatingParticleSystem_;
          manipulatingParticleSystem_ = nullptr;
          isManipulatingParticleSystem_ = false;
@@ -1060,6 +1081,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
 
    Transform gizmoTransform = transformComponent->transform;
    if (useScreenSpace) {
+      // 保存値はアンカー相対、ギズモは画面中心原点で扱うため、操作中だけ同じ座標系へ変換する。
       gizmoTransform.translation = ToEditorScreenWorldPosition(gizmoTransform.translation, screenRenderOffset);
    }
 
@@ -1081,6 +1103,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
 
    if (ImGuizmo::IsUsing()) {
       if (!isManipulating_ || manipulatingObject_ != selectedObject_) {
+         // 選択がドラッグ中に変わっても、開始値と対象を同じ組として保持する。
          transformBeforeManipulation_ = beforeCall;
          manipulatingObject_ = selectedObject_;
          isManipulating_ = true;
@@ -1143,6 +1166,7 @@ void EditorSceneContext::AcceptModelAssetDrop() {
 
 void EditorSceneContext::HandleEditorShortcuts() {
    ImGuiIO& io = ImGui::GetIO();
+   // InputText編集中の文字操作をUndoや削除コマンドとして誤解釈しない。
    if (io.WantTextInput) {
       return;
    }
@@ -1206,6 +1230,7 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
    const Matrix4x4 screenViewProjection = MakeScreenSpaceProjectionMatrix(screenSize);
    const Matrix4x4 uiTextScreenViewProjection = MakeScreenSpaceProjectionMatrix(screenSize, true);
 
+   // 専用Pickingバッファを持たないため、各中心と投影後の概算半径を使って最も近い候補を選ぶ。
    for (Object* object : CollectEditableObjects()) {
       if (!object) {
          continue;
@@ -1258,6 +1283,7 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
          }
       }
       float pickRadiusPixels = kMinPickRadiusPixels;
+      // 三軸を投影してPerspectiveや非一様スケールをピクセル半径へ近似する。
       const Vector3 sampleOffsets[] = {
          Vector3(worldRadius, 0.0f, 0.0f),
          Vector3(0.0f, worldRadius, 0.0f),
@@ -1314,6 +1340,7 @@ bool EditorSceneContext::IsParticleSystemAlive(const ParticleSystem* particleSys
 }
 
 void EditorSceneContext::RegisterSceneOwnedKeys() {
+   // ポインターや表示名だけでは再起動後に対応できないため、シーン所有物へ保存用の安定キーを割り当てる。
    std::unordered_set<std::string> usedObjectKeys;
    for (const auto& [object, key] : sceneObjectKeys_) {
       if (object && !key.empty()) {
@@ -1337,6 +1364,7 @@ void EditorSceneContext::RegisterSceneOwnedKeys() {
       }
       usedObjectKeys.insert(key);
       if (object->GetEntityId().rfind("runtime_entity_", 0) == 0) {
+         // 一時IDは起動ごとに変わるので、初回登録時にシーン内で再現可能なキーへ置換する。
          object->SetEntityId(key);
       }
       sceneObjectKeys_[object] = key;
@@ -1456,6 +1484,7 @@ nlohmann::json EditorSceneContext::SerializeSceneObjects() {
       emittedKeys.insert(key);
    }
 
+   // 実体が列挙から消えても削除意図を次回ロードへ伝えるため、キーだけの墓標を出力する。
    for (const auto& key : hiddenSceneObjectKeys_) {
       if (key.empty() || emittedKeys.contains(key)) {
          continue;
@@ -1551,6 +1580,7 @@ void EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsDat
          continue;
       }
 
+      // BaseSceneが生成した実体へ差分を適用し、ここでは所有権を持つ新規Entityを作らない。
       Object* object = FindSceneObjectByKey(key);
       if (entry.value("deleted", false)) {
          hiddenSceneObjectKeys_.insert(key);
@@ -1666,6 +1696,7 @@ void EditorSceneContext::ApplyCameras(const nlohmann::json& camerasData) {
          continue;
       }
 
+      // 並び替えに強い名前一致を優先し、旧データや同名不在時だけ保存時のindexへフォールバックする。
       VirtualCamera* targetCamera = nullptr;
       if (!cameraName.empty()) {
          for (VirtualCamera* camera : registeredCameras) {
@@ -1705,6 +1736,7 @@ void EditorSceneContext::HideSceneOwnedObject(Object* object) {
       hiddenSceneObjectKeys_.insert(key);
    }
    hiddenSceneObjects_.insert(object);
+   // RenderComponentだけでなく更新系Componentも止め、削除済みEntityが副作用を発生させないようにする。
    for (const auto& component : object->GetComponentContainer().GetAll()) {
       if (component) {
          component->SetEnabled(false);
@@ -1731,6 +1763,7 @@ void EditorSceneContext::HideSceneOwnedParticleSystem(ParticleSystem* particleSy
 }
 
 bool EditorSceneContext::HasTransformChanged(const Transform& lhs, const Transform& rhs) const {
+   // 行列の分解誤差で空のギズモ操作が履歴化されないよう、編集精度より小さい差を無視する。
    constexpr float kEpsilon = 0.0001f;
    const Vector3 lhsRotation = lhs.GetActiveEuler();
    const Vector3 rhsRotation = rhs.GetActiveEuler();
@@ -1778,6 +1811,7 @@ Transform EditorSceneContext::BuildPlacementTransformInFrontOfCamera() const {
    const Vector3 viewForward = ExtractCameraForwardFromView(camera);
    const Vector3 transformForward = NormalizeOrFallback(camera->GetForward(), viewForward);
 
+   // Camera実装間で前方軸の符号規約が異なっても画面内へ置けるよう、両向きを投影して検証する。
    const Vector3 candidateDirections[] = {
       viewForward,
       viewForward * -1.0f,
@@ -1818,6 +1852,7 @@ void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
       return;
    }
 
+   // Object系とParticleSystem系はTransformの保存場所が異なるため、それぞれのスキーマを個別にずらす。
    if (snapshot.contains("components") && snapshot.at("components").is_array()) {
       for (auto& componentData : snapshot.at("components")) {
          if (!componentData.is_object() || componentData.value("typeName", "") != "TransformComponent") {

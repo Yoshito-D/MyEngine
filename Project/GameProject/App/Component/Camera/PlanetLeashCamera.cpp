@@ -59,6 +59,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
          initialDistance > 1e-6f;
 
       if (!hasValidInitialOffset) {
+         // 保存座標が退化している場合は重力Upを視点方向に使い、最大距離上へ安全に配置する。
          initialOffset = gravityUp_;
          float fallbackLength = initialOffset.Length();
          if (!std::isfinite(fallbackLength) || fallbackLength <= 1e-6f) {
@@ -67,6 +68,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
          }
          eyePos_ = pivotTarget_ + initialOffset * (initialMaxDistance / fallbackLength);
       } else if (initialDistance > initialMaxDistance) {
+         // 初回だけでもレアッシュ外に描画されないよう、既存方向を保って上限へ収める。
          eyePos_ = pivotTarget_ + initialOffset * (initialMaxDistance / initialDistance);
       } else {
          eyePos_ = state.transform.translation;
@@ -86,6 +88,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
          up1 = up1 * (1.0f / u1Len);
          float cosA = std::clamp(up0.Dot(up1), -1.0f, 1.0f);
          if (cosA < 1.0f - 1e-7f) {
+            // Upの変化量だけ視点オフセットも回し、惑星切替で画面方位が急にねじれないようにする。
             Vector3 axis = up0.Cross(up1);
             float axLen = axis.Length();
             if (axLen > 1e-6f) {
@@ -110,6 +113,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    Vector3 toTarget = pivotTarget_ - eyePos_;
    float dist = toTarget.Length();
    if (dist > maxFollowDistance) {
+      // 超過分だけを移動上限にすることで、目標を追い越さずレアッシュ境界へ収束させる。
       float over = dist - maxFollowDistance;
       float move = std::min(over, followSpeed * deltaTime);
       eyePos_ = eyePos_ + toTarget * (move / dist);
@@ -135,6 +139,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       if (pLen > 1e-6f) {
          eyeRelUp_ = projected * (1.0f / pLen);
       } else {
+         // 視線とUpが平行な特異点では、平行になりにくい軸から直交Upを作り直す。
          Vector3 tmp = (std::abs(lookDirN.x) < 0.9f) ? Vector3{ 1.0f, 0.0f, 0.0f }
                                                        : Vector3{ 0.0f, 1.0f, 0.0f };
          tmp = tmp - lookDirN * tmp.Dot(lookDirN);

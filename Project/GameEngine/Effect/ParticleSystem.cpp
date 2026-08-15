@@ -128,6 +128,7 @@ void ParticleSystem::RebuildParticleMesh() {
    if (!meshModule) return;
 
    using MeshType = ParticleMeshModule::MeshType;
+   // Mesh Moduleを無効化した場合も描画経路を変えず、既定Quadへ戻して既存エフェクトの見た目を維持する。
    const float meshOriginY = meshModule->IsEnabled() ? meshModule->GetOriginY() : 0.5f;
    const MeshType meshType = meshModule->IsEnabled() ? meshModule->GetMeshType() : MeshType::Quad;
    switch (meshType) {
@@ -216,6 +217,7 @@ ParticleSystem::ParticleSystem() {
 ParticleSystem::~ParticleSystem() {
    UnregisterParticleSystem(this);
 
+   // 永続MapしたUpload/Readbackを先に解除し、ComPtr破棄後にCPU側ポインターが残らないようにする。
    if (instancingResource_ && instancingData_) {
 	  instancingResource_->Unmap(0, nullptr);
 	  instancingData_ = nullptr;
@@ -248,6 +250,7 @@ ParticleSystem::~ParticleSystem() {
 	  gpuRibbonInputData_ = nullptr;
    }
    if (sDevice_) {
+	  // Descriptor indexは共有Heapから借りているため、Resourceとは別に全て返却する。
 	  for (const UINT descriptorIndex : gpuDescriptorIndices_) {
 		 if (descriptorIndex != UINT_MAX) {
 			sDevice_->ReleaseSrvIndex(descriptorIndex);
@@ -282,6 +285,7 @@ void ParticleSystem::Create() {
    material_->Create(sDevice_);
 
    // パーティクル配列を確保
+   // CPU側は設定上限だけ確保し、GPU Bufferは実行中の上限変更に備えてkMaxParticles固定で確保する。
    uint32_t maxParticles = mainModule_->GetMaxParticles();
    if (maxParticles > kMaxParticles) {
 	  maxParticles = kMaxParticles;
@@ -298,6 +302,7 @@ void ParticleSystem::Create() {
 
    // フリーリスト初期化（全インデックスを積む）
    while (!freeParticleIndices_.empty()) freeParticleIndices_.pop();
+   // stackから小さいindex順に払い出されるよう逆順で積み、初期状態の対応を追いやすくする。
    for (int32_t i = static_cast<int32_t>(maxParticles) - 1; i >= 0; --i) {
 	  freeParticleIndices_.push(static_cast<uint32_t>(i));
    }
@@ -368,12 +373,14 @@ void ParticleSystem::ClearRegisteredParticleSystems() {
 }
 
 void ParticleSystem::ProcessPendingSubEmitters() {
+   // 更新中のグローバル登録配列を変更しないよう、イベントはフレーム境界でまとめて実体化する。
    sRuntimeSubEmitters_.erase(
 	  std::remove_if(sRuntimeSubEmitters_.begin(), sRuntimeSubEmitters_.end(), [](const auto& particleSystem) {
 		 return !particleSystem || (!particleSystem->IsPlaying() && particleSystem->GetActiveParticleCount() == 0);
 	  }),
 	  sRuntimeSubEmitters_.end());
 
+   // 死亡エフェクトが相互参照しても、再帰的な生成でメモリが無制限に増えないよう全体数を制限する。
    constexpr size_t kMaxRuntimeSubEmitters = 256;
    for (const PendingSubEmitterEvent& event : sPendingSubEmitterEvents_) {
 	  if (event.effectPath.empty() || sRuntimeSubEmitters_.size() >= kMaxRuntimeSubEmitters) {
@@ -411,6 +418,7 @@ void ParticleSystem::CreateGpuSimulationResources() {
    }
 
    ID3D12Device* device = sDevice_->GetDevice();
+   // 可視状態と運動パラメーターを分離し、Render CSは必要なstateだけをSRVとして参照できるようにする。
    gpuStateResource_ = CreateDefaultBuffer(
 	  device,
 	  sizeof(GpuParticleState) * kMaxParticles,
@@ -451,6 +459,7 @@ void ParticleSystem::CreateGpuSimulationResources() {
 	   gpuStateReadbackResource_->Unmap(0, nullptr);
 	   gpuStateReadbackData_ = nullptr;
 	}
+   // Spawn/Attributes/SettingsはCPUが毎フレーム更新するUpload、Stateだけがイベント用Readbackとなる。
    gpuSpawnRequestResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuSpawnRequest) * kMaxParticles);
    gpuAttributesResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuParticleAttributes) * kMaxParticles);
    gpuSettingsResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuSimulationSettings));
@@ -523,6 +532,7 @@ void ParticleSystem::CreateGpuSimulationResources() {
 	  device->CreateShaderResourceView(resource, &desc, cpuHandle(descriptorIndex));
    };
 
+   // 同じResourceへ用途別のUAV/SRVを用意し、Compute段間ではResource Stateだけを遷移させて再利用する。
    createStructuredUav(gpuStateResource_.Get(), kMaxParticles, sizeof(GpuParticleState), gpuDescriptorIndices_[kGpuStateUavDescriptor]);
    createStructuredSrv(gpuStateResource_.Get(), kMaxParticles, sizeof(GpuParticleState), gpuDescriptorIndices_[kGpuStateSrvDescriptor]);
    createStructuredSrv(gpuAttributesResource_.Get(), kMaxParticles, sizeof(GpuParticleAttributes), gpuDescriptorIndices_[kGpuAttributesSrvDescriptor]);
@@ -594,6 +604,7 @@ void ParticleSystem::EnsureGpuRibbonResources(uint32_t requiredSegmentCount) {
 	  return;
    }
 
+   // 履歴点が少し増えるたびにGPU Resourceを作り直さないよう、倍増方式か最小64区間で拡張する。
    const uint32_t newCapacity = std::max(requiredSegmentCount, std::max(gpuRibbonSegmentCapacity_ * 2u, 64u));
    if (gpuRibbonInputResource_ && gpuRibbonInputData_) {
 	  gpuRibbonInputResource_->Unmap(0, nullptr);
@@ -684,6 +695,7 @@ void ParticleSystem::DispatchGpuRibbon(PSOManager* psoManager) {
    if (!rootSignature || !settingsSlot || !segmentsSlot || !verticesSlot || !indicesSlot) return;
 
    ID3D12GraphicsCommandList* commandList = sDevice_->GetCommandList();
+   // 前フレームはVertex/Index Bufferとして終わるため、Compute書込み前に両方をUAVへ戻す。
    if (gpuRibbonVertexState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
 	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		 gpuRibbonVertexResource_.Get(), gpuRibbonVertexState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -708,6 +720,7 @@ void ParticleSystem::DispatchGpuRibbon(PSOManager* psoManager) {
 	  1,
 	  1);
 
+   // UAV書込み完了を可視化してから描画用Stateへ遷移し、同一フレームですぐDrawできるようにする。
    const D3D12_RESOURCE_BARRIER uavBarriers[] = {
 	  CD3DX12_RESOURCE_BARRIER::UAV(gpuRibbonVertexResource_.Get()),
 	  CD3DX12_RESOURCE_BARRIER::UAV(gpuRibbonIndexResource_.Get())
@@ -723,6 +736,7 @@ void ParticleSystem::DispatchGpuRibbon(PSOManager* psoManager) {
 }
 
 void ParticleSystem::Update(float deltaTime) {
+   // 早期returnするフレームで前回値を再Dispatchしないよう、GPU用時間を最初に無効化する。
    gpuDeltaTime_ = 0.0f;
    EnsureParticlePoolCapacity();
    if (!isPlaying_ || isPaused_) return;
@@ -752,6 +766,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  if (emissionRate > 0.0f) {
 		 emissionAccumulator_ += emissionRate * deltaTime;
 
+		 // 端数を次フレームへ持ち越し、可変deltaTimeでも長期的な放出レートを一定に保つ。
 		 while (emissionAccumulator_ >= 1.0f) {
 			EmitParticle();
 			emissionAccumulator_ -= 1.0f;
@@ -782,6 +797,7 @@ void ParticleSystem::Update(float deltaTime) {
 
 		 // cycles == 0 は無限ループ、それ以外は指定回数まで
 		 const bool isInfinite = (burst.cycles == 0);
+		 // 1フレームで複数intervalを跨いだ場合も、未発火分を同じ更新内で追いつかせる。
 		 while (systemTime_ >= burst.nextFireTime &&
 			(isInfinite || burst.firedCount < burst.cycles)) {
 			for (uint32_t i = 0; i < burst.count; ++i) {
@@ -799,6 +815,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  (ResolveSortMode() != RendererModule::SortMode::None ||
 		 (trailModule_ && trailModule_->IsEnabled()) || subEmitterSettings_.enabled);
    if (needsCpuState) {
+	  // GPU slotはatomic FreeListで決まるため、owner indexから現在のslotを逆引きできる表を毎回組み直す。
 	  std::fill(gpuStateIndexByCpuParticle_.begin(), gpuStateIndexByCpuParticle_.end(), kInvalidGpuParticleIndex);
 	  for (uint32_t stateIndex = 0; stateIndex < static_cast<uint32_t>(particles_.size()); ++stateIndex) {
 		 const GpuParticleState& state = gpuStateReadbackData_[stateIndex];
@@ -823,6 +840,7 @@ void ParticleSystem::Update(float deltaTime) {
 			   state.velocityAndLifetime.x, state.velocityAndLifetime.y, state.velocityAndLifetime.z);
 		 }
 	  }
+	  // 死亡判定より先に最終位置を履歴へ反映し、リボンが寿命直前の区間で途切れないようにする。
 	  UpdateTrailPoints(particle);
 
 	  // 時間を進める
@@ -838,6 +856,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  }
 
 	  // 視覚属性はGPUへ渡す初期値を更新する。位置・速度・重力・フォース等の積分はCSだけが行う。
+	  // 寿命進行度に依存する視覚値を先に確定し、後段のAttributes作成では完成値だけをGPUへ渡す。
 	  if (colorOverLifetimeModule_->IsEnabled()) colorOverLifetimeModule_->UpdateColor(particle);
 	  if (sizeOverLifetimeModule_->IsEnabled()) sizeOverLifetimeModule_->UpdateSize(particle);
 	  if (rotationOverLifetimeModule_->IsEnabled()) rotationOverLifetimeModule_->UpdateRotation(particle, deltaTime);
@@ -852,6 +871,7 @@ void ParticleSystem::Update(float deltaTime) {
 		 planeNormal = planeNormal.Normalize();
 		 const float previousDistance = previousPosition.Dot(planeNormal) - subEmitterSettings_.collisionPlaneDistance;
 		 const float currentDistance = particle.transform.translation.Dot(planeNormal) - subEmitterSettings_.collisionPlaneDistance;
+		 // 平面を正側から負側へ横切った瞬間だけ反応し、接触中に毎フレームイベントを生成しない。
 		 if (previousDistance >= 0.0f && currentDistance < 0.0f) {
 			particle.transform.translation -= planeNormal * currentDistance;
 			const float normalVelocity = particle.velocity.Dot(planeNormal);
@@ -867,6 +887,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  if (subEmitterSettings_.enabled && !subEmitterSettings_.spawnOnUpdatePath.empty()) {
 		 particle.subEmitterTimer += deltaTime;
 		 const float interval = std::max(subEmitterSettings_.updateInterval, 0.001f);
+		 // 低FPSでも経過したinterval数だけ発火させるが、Queue側のフレーム上限で連鎖数は抑える。
 		 while (particle.subEmitterTimer >= interval) {
 			QueueSubEmitter(subEmitterSettings_.spawnOnUpdatePath, particle.transform.translation);
 			particle.subEmitterTimer -= interval;
@@ -877,6 +898,7 @@ void ParticleSystem::Update(float deltaTime) {
    }
 
    if (material_) {
+	  // UV変換は粒子ごとのAttributesへ移しているため、Material共通行列は二重適用を避けて単位行列にする。
 	  material_->SetUVTransform(MakeIdentity4x4());
    }
 
@@ -889,6 +911,7 @@ void ParticleSystem::Update(float deltaTime) {
 }
 
 Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) const {
+   // 行ベクトル規約の適用順に合わせ、粒子固有のScale→Rotation→Scrollを先に合成する。
    Matrix4x4 result = MakeScaleMatrix(Vector3(particle.uvScale.x, particle.uvScale.y, 1.0f)) *
 	  MakeRotateZMatrix(particle.uvRotation) *
 	  MakeTranslateMatrix(Vector3(particle.uvOffset.x, particle.uvOffset.y, 0.0f));
@@ -915,6 +938,7 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
    float uOffset = static_cast<float>(column) * uSize;
    float vOffset = static_cast<float>(row) * vSize;
    if (texture_ && texture_->GetWidth() > 0 && texture_->GetHeight() > 0) {
+	  // セル境界の線形補間が隣フレームを拾わないよう、UV矩形を半Texelずつ内側へ縮める。
 	  const float halfTexelU = 0.5f / static_cast<float>(texture_->GetWidth());
 	  const float halfTexelV = 0.5f / static_cast<float>(texture_->GetHeight());
 	  if (uSize > halfTexelU * 2.0f && vSize > halfTexelV * 2.0f) {
@@ -1037,6 +1061,7 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
 		 (particle.transform.translation - particle.ribbonPoints.back()).LengthSquared() > kPointEpsilonSquared;
    };
 
+   // 必要区間数を先に集計し、Upload先を確保してから一度の走査で連続データを書き込む。
    uint32_t segmentCount = 0;
    for (const Particle& particle : particles_) {
 	  if (!particle.isActive || particle.ribbonPoints.empty()) continue;
@@ -1063,6 +1088,7 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
 	const float tailWidthScale = trailModule_->GetTailWidthScale();
 	const float textureTiling = trailModule_->GetTextureTiling();
    uint32_t segmentIndex = 0;
+   // 生存粒子と切り離し済みRibbonで頂点化規則を共有し、継ぎ目・UVの計算差をなくす。
    auto writeTrail = [&](size_t pointCount, auto&& getPoint, float width, float alpha) {
 	  if (pointCount < 2) return;
 
@@ -1132,6 +1158,7 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
 	  for (size_t pointIndex = 0; pointIndex + 1 < ribbon.points.size(); ++pointIndex) {
 		 totalDistance += (ribbon.points[pointIndex + 1] - ribbon.points[pointIndex]).Length();
 	  }
+	  // smoothstepで退縮開始・終了の速度を0へ寄せ、尾端が急に動き出したり停止したりする印象を抑える。
 	  const float progress = std::clamp(ribbon.age / ribbon.retractionDuration, 0.0f, 1.0f);
 	  const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
 	  float distanceToRetract = totalDistance * easedProgress;
@@ -1209,6 +1236,7 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    const Transform simulationTransform = shapeModule_ ? shapeModule_->GetTransform() : Transform{};
    const Quaternion simulationRotation = simulationTransform.GetActiveQuaternion();
 
+   // Update/Render Computeが同じフレーム設定を参照できるよう、Dispatch前に共通定数を一括更新する。
    gpuSettingsData_->viewProjection = viewProjectionMatrix;
    gpuSettingsData_->cameraPosition = Vector4(cameraTransform.translation.x, cameraTransform.translation.y, cameraTransform.translation.z, 1.0f);
    gpuSettingsData_->cameraRight = Vector4(cameraRight.x, cameraRight.y, cameraRight.z, 0.0f);
@@ -1241,6 +1269,7 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 	  forceOverLifetimeModule_->IsAttractorEnabled() &&
 	  forceOverLifetimeModule_->GetAttractorStrength() != 0.0f;
    if (attractorEnabled && useLocalSimulation) {
+	  // Attractor中心はCPUで一度Worldへ変換し、全粒子Threadで同じ変換を繰り返さない。
 	  attractorPosition = simulationTransform.translation + RotateVector(attractorPosition, simulationRotation);
    }
    gpuSettingsData_->attractorPosition = Vector4(attractorPosition.x, attractorPosition.y, attractorPosition.z, 0.0f);
@@ -1280,6 +1309,7 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 		 [cameraPosition, backToFront, &getSortPosition](uint32_t lhsIndex, uint32_t rhsIndex) {
 			const float lhsDistance = (getSortPosition(lhsIndex) - cameraPosition).LengthSquared();
 			const float rhsDistance = (getSortPosition(rhsIndex) - cameraPosition).LengthSquared();
+			// 等距離時はowner indexをTie-breakerにして、フレーム間の描画順ちらつきを防ぐ。
 			if (lhsDistance == rhsDistance) return lhsIndex < rhsIndex;
 			return backToFront ? lhsDistance > rhsDistance : lhsDistance < rhsDistance;
 		 });
@@ -1290,6 +1320,7 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    gpuSettingsData_->particleCapacity = static_cast<uint32_t>(particles_.size());
    gpuSettingsData_->spawnRequestCount = gpuPendingSpawnRequestCount_;
    gpuSettingsData_->initializationStartIndex = gpuInitializationStartIndex_;
+   // Attributesはソート後の出力順に並べ、stateIndexでFreeList上の実状態へ対応付ける。
    for (uint32_t outputIndex = 0; outputIndex < gpuRenderParticleCount_; ++outputIndex) {
 	  const uint32_t particleIndex = renderParticleIndices_[outputIndex];
 	  Particle& particle = particles_[particleIndex];
@@ -1444,6 +1475,7 @@ RendererModule::SortMode ParticleSystem::ResolveSortMode() const {
    const BlendMode blendMode = material_ && material_->GetBlendMode().has_value()
 	  ? material_->GetBlendMode().value()
 	  : BlendMode::kBlendModeAdd;
+   // 順序依存のAlpha系Blendだけを自動ソートし、加算系ではCPU Readbackとsortのコストを省く。
    return blendMode == BlendMode::kBlendModeNormal ||
 	  blendMode == BlendMode::kBlendModeMultiply ||
 	  blendMode == BlendMode::kBlendModeScreen
@@ -1481,6 +1513,7 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
    request.state.ownerParticleIndex = particleIndex;
    request.state.age = 0.0f;
    request.state.initialLifetime = particle.lifeTime;
+   // 新規生成はFreeListからslotを確保し、衝突補正はowner mapping上の既存slotを上書きする。
    request.operation = overwriteExisting ? 1u : 0u;
 
    const bool useLocalSimulation = mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local;
@@ -1492,6 +1525,7 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
 	  if (useLocalSimulation) force = RotateVector(force, simulationRotation);
 	  drag = particle.drag;
    }
+   // モジュール乱数は生成時に確定した値をRequestへ固定し、GPU更新ごとの再抽選を避ける。
    request.motion.forceAndDrag = Vector4(force.x, force.y, force.z, drag);
 
    Vector3 linearVelocity(0.0f, 0.0f, 0.0f);
@@ -1548,6 +1582,7 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
 	  return psoManager->ResolvePipelineRootParameter(pipelineName, semantic);
    };
 
+   // FreeList構築→Spawn反映→全slot更新→必要時Readback→描画変換の依存順を崩さずDispatchする。
    if (gpuNeedsInitialize_) {
 	  constexpr const char* kInitPipeline = "ParticleInitCompute";
 	  const auto settings = resolve(kInitPipeline, "settings");
@@ -1616,6 +1651,7 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
 	  gpuPendingSpawnRequestCount_ = 0;
    }
 
+   // Spawnがないフレームも全capacityを更新し、寿命切れslotをFreeListへ確実に返却する。
    constexpr const char* kUpdatePipeline = "ParticleUpdateCompute";
    const auto updateSettings = resolve(kUpdatePipeline, "settings");
    const auto updateStates = resolve(kUpdatePipeline, "states");
@@ -1648,6 +1684,7 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
 
 	const bool needsCpuState = ResolveSortMode() != RendererModule::SortMode::None ||
 	  (trailModule_ && trailModule_->IsEnabled()) || subEmitterSettings_.enabled;
+   // CPU機能が不要ならCOPYを挟まず直接SRVへ遷移し、不要なReadback帯域を使わない。
    const auto stateTarget = needsCpuState
 	  ? D3D12_RESOURCE_STATE_COPY_SOURCE
 	  : D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
@@ -1672,6 +1709,7 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
    commandList->ResourceBarrier(1, &mappingToSrv);
    gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
+	// Ribbonは更新後の位置履歴を使う一方、粒子本体が0でも残存できるためRender CSより先に独立実行する。
 	if (trailModule_ && trailModule_->IsEnabled()) DispatchGpuRibbon(psoManager);
 
    // 本体が0でも上のUpdate CSとリボン生成までは実行し、死亡後のトレイルだけを描画できるようにする。
@@ -1684,6 +1722,7 @@ void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
 	  gpuOutputResourceState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
    }
 
+   // 最終段でソート済みAttributesとowner mappingを結合し、描画専用の連続Bufferへ変換する。
    constexpr const char* kRenderPipeline = "ParticleRenderCompute";
    const auto renderSettings = resolve(kRenderPipeline, "settings");
    const auto renderAttributes = resolve(kRenderPipeline, "attributes");
@@ -1732,6 +1771,7 @@ void ParticleSystem::EmitParticle() {
 
    Vector3 rotation = mainModule_->GetStartRotation().GetValue();
    Quaternion initialRotation = Vector3ToQuaternion(rotation);
+   // 非BillboardメッシュだけはEmitterの姿勢を焼き込み、Billboard系はRender CSのカメラ回転へ委ねる。
    if (rendererModule_ &&
 	  rendererModule_->GetRotationSpace() == RendererModule::RotationSpace::Local &&
 	  rendererModule_->GetBillboardType() == RendererModule::BillboardType::None) {
@@ -1751,6 +1791,7 @@ void ParticleSystem::EmitParticle() {
 	  particle.angularVelocity = Vector3(0.0f, 0.0f, 0.0f);
    }
 
+   // 各モジュールの乱数を先に粒子へ固定し、直後のGpuSpawnRequestへ一貫した初期値を詰める。
    if (velocityOverLifetimeModule_) {
 	  velocityOverLifetimeModule_->InitializeParticle(particle);
    }
@@ -1775,6 +1816,7 @@ void ParticleSystem::EmitParticle() {
    auto resolveStartVelocity = [&]() {
 	  Vector3 velocity = mainModule_->GetStartVelocity().GetValue();
 	  if (useLocalSimulation) {
+		 // Vector3モードの設定値はShapeローカル軸として扱い、GPUへ渡す前にWorld方向へ回転する。
 		 velocity = RotateVector(velocity, emitterTransform.GetActiveQuaternion());
 	  }
 	  return velocity;
@@ -1811,6 +1853,7 @@ void ParticleSystem::EmitParticle() {
 	  particle.velocity = useVectorStartVelocity ? resolveStartVelocity() : Vector3(0.0f, 0.0f, 0.0f);
    }
 
+   // UVとSheetの生成時乱数もRequest登録前に確定し、最初の描画フレームから同じ値を使う。
    if (uvTransformModule_ && uvTransformModule_->IsEnabled()) {
 	  uvTransformModule_->InitializeParticle(particle);
    }

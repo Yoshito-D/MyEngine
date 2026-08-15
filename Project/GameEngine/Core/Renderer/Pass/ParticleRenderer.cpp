@@ -43,6 +43,8 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	// Particleパイプラインを設定
 	// マテリアルに blendMode が設定されていればそれを優先、なければ加算ブレンド
 	auto* earlyMaterial = particleSystem->GetMaterial();
+	// 背景屈折は通常の加算では背景色を保持できないため、アルファ合成PSOへ強制する。
+	// 非屈折粒子だけがマテリアル指定または既定の加算ブレンドを使う。
 	const bool usesSceneRefraction = earlyMaterial && std::fabs(earlyMaterial->GetDistortionStrength()) > 0.0001f;
 	const BlendMode resolvedBlendMode = usesSceneRefraction
 		? BlendMode::kBlendModeNormal
@@ -82,6 +84,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	}
 
 	if (sceneColorHandle.ptr != 0) {
+		// 透明パス開始時に固定した色・深度を参照し、現在書き込み中のRTVとの自己依存を避ける。
 		cmdList->SetGraphicsRootDescriptorTable(sceneColorSlot.value(), sceneColorHandle);
 	}
 	if (sceneDepthHandle.ptr != 0) {
@@ -114,7 +117,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	// メッシュ設定（Billboard用Quad または Model）
 	ModelAsset* modelAsset = particleSystem->GetModelAsset();
 	if (modelAsset) {
-		// Model モード
+		// Modelモードは各頂点をactiveCount回インスタンス化し、粒子データはSRVから引く。
 		const auto& meshes = modelAsset->GetMeshData();
 		for (size_t i = 0; i < meshes.size(); ++i) {
 			cmdList->IASetVertexBuffers(0, 1, &modelAsset->GetVertexBufferView(i));
@@ -122,7 +125,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 			cmdList->DrawInstanced(static_cast<UINT>(meshes[i].vertices.size()), activeCount, 0, 0);
 		}
 	} else {
-		// Billboard mode (default)
+		// Billboardモードは共有Quadのインデックスを使い、頂点数を抑える。
 		Mesh* mesh = particleSystem->GetMesh();
 		if (mesh) {
 			cmdList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());

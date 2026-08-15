@@ -14,6 +14,7 @@ constexpr const wchar_t* kWindowClassName = L"GameEngineWindowClass";
 }
 
 void Window::CreateGameWindow(const wchar_t* title, UINT windowStyle, int32_t clientWidth, int32_t clientHeight) {
+   // ウィンドウと同じスレッドで利用するCOM系サブシステムに備え、破棄時のCoUninitializeと対にする。
    HRESULT result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
    if (FAILED(result)) {
@@ -27,6 +28,7 @@ void Window::CreateGameWindow(const wchar_t* title, UINT windowStyle, int32_t cl
    wndClass_.hInstance = GetModuleHandle(nullptr);
    wndClass_.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
+   // フレーム待機の粒度を確保するため、プロセス利用中の設定として要求する。
    // システムタイマーの分解能を上げる
    timeBeginPeriod(1);
 
@@ -36,6 +38,7 @@ void Window::CreateGameWindow(const wchar_t* title, UINT windowStyle, int32_t cl
    aspectRatio_ = static_cast<float>(clientWidth) / static_cast<float>(clientHeight);
 
    RECT wrc = { 0, 0, clientWidth, clientHeight };
+   // 指定値をクライアント領域として確保できるよう、枠・タイトルバー分を外寸へ加える。
    AdjustWindowRect(&wrc, windowStyle_, false);
 
    hwnd_ = CreateWindow(
@@ -70,6 +73,7 @@ void Window::DestroyGameWindow() {
 
 bool Window::ProcessMessage() {
    MSG msg{};
+   // キューを空になるまで処理し、入力やリサイズを残したまま次フレームへ進めない。
    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
@@ -91,12 +95,14 @@ void Window::SetFullscreen(bool fullscreen) {
    }
 
    if (fullscreen) {
+      // 復帰時に元の配置を完全再現できるよう、枠を外す前のスタイルと外接矩形を保存する。
       windowedStyle_ = GetWindowLong(hwnd_, GWL_STYLE);
       windowedExStyle_ = GetWindowLong(hwnd_, GWL_EXSTYLE);
       GetWindowRect(hwnd_, &windowedRect_);
 
       MONITORINFO monitorInfo{};
       monitorInfo.cbSize = sizeof(MONITORINFO);
+      // 複数モニター環境では現在のウィンドウに最も近い画面だけを覆う。
       GetMonitorInfo(MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST), &monitorInfo);
 
       SetWindowLong(hwnd_, GWL_STYLE, windowedStyle_ & ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU));
@@ -108,6 +114,7 @@ void Window::SetFullscreen(bool fullscreen) {
          monitorInfo.rcMonitor.top,
          monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
          monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+         // スタイル変更後の非クライアント領域を即時再計算させる。
          SWP_NOOWNERZORDER | SWP_FRAMECHANGED
       );
    } else {
@@ -130,6 +137,7 @@ void Window::SetFullscreen(bool fullscreen) {
 
 LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 #ifdef USE_IMGUI
+   // ImGuiが消費したマウス・キーボード入力はゲーム側へ二重配送しない。
    if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
       return true;
    }
@@ -137,6 +145,7 @@ LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM l
 
    switch (msg) {
    case WM_SYSKEYDOWN:
+      // Alt+Enterの既定システム動作だけを抑え、フルスクリーン切替は上位の入力処理へ委ねる。
       if (wparam == VK_RETURN && (lparam & (1 << 29))) {
          return 0;
       }

@@ -13,6 +13,7 @@ uint64_t BuildGlyphCacheKey(uint32_t pixelSize, uint32_t codePoint) {
 }
 
 uint64_t BuildKerningKey(uint32_t leftGlyph, uint32_t rightGlyph) {
+   // 左右の順序を上位・下位へ保持し、向きの異なるペアを同じキーにしない。
    return (static_cast<uint64_t>(leftGlyph) << 32u) | rightGlyph;
 }
 
@@ -43,6 +44,7 @@ MsdfFont::~MsdfFont() {
 }
 
 bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPath) {
+   // 再読込時に旧SRVとキャッシュを先に返し、同じインスタンスへ新アトラスを構築する。
    Clear();
    if (!device || !device->GetDevice() || !std::filesystem::is_regular_file(jsonPath)) {
       Logger::Error("[MsdfFont] Invalid load request: " + jsonPath.generic_string());
@@ -84,8 +86,10 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
       return false;
    }
 
+   // GPU生成まで成功する前はローカル領域へ組み立て、途中失敗で半端なフォント状態を公開しない。
    std::unordered_map<uint32_t, SourceGlyph> sourceGlyphs;
    for (const auto& glyphData : root.at("glyphs")) {
+      // 壊れた1グリフは読み飛ばし、残りの有効な文字までロード不能にしない。
       if (!glyphData.is_object() || !glyphData.contains("unicode") || !glyphData.at("unicode").is_number_unsigned()) {
          continue;
       }
@@ -93,6 +97,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
       SourceGlyph glyph{};
       glyph.codePoint = glyphData.at("unicode").get<uint32_t>();
       glyph.advance = glyphData.value("advance", 0.0f);
+      // 空白文字などは画像境界なしでもadvanceを保持し、レイアウト幅へ反映する。
       if (glyphData.contains("planeBounds") && glyphData.contains("atlasBounds")) {
          glyph.hasImage = ReadBounds(
             glyphData.at("planeBounds"),
@@ -116,6 +121,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
 
    std::unordered_map<uint64_t, float> kerningPairs;
    if (root.contains("kerning") && root.at("kerning").is_array()) {
+      // カーニングは任意節として扱い、未出力のアトラスでも等幅配置を継続できるようにする。
       for (const auto& kerningData : root.at("kerning")) {
          if (!kerningData.is_object() ||
             !kerningData.contains("unicode1") || !kerningData.at("unicode1").is_number_unsigned() ||
@@ -148,6 +154,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
    }
 
    if (image.GetMetadata().format != DXGI_FORMAT_R8G8B8A8_UNORM) {
+      // シェーダーが想定する4チャンネル線形形式へ統一し、入力画像形式の差を描画側へ持ち込まない。
       DirectX::ScratchImage convertedImage;
       result = DirectX::Convert(
          image.GetImages(),
@@ -186,6 +193,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
       return false;
    }
 
+   // SRV番号は全検証とアップロード準備後に確保し、失敗経路でヒープ枠を消費しない。
    const UINT descriptorIndex = device->GetNextSrvIndex();
    const CD3DX12_CPU_DESCRIPTOR_HANDLE srvCpu(
       device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
@@ -203,6 +211,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
    device->GetDevice()->CreateShaderResourceView(atlasTexture.Get(), &srvDescription, srvCpu);
    device->IncrementSrvIndex();
 
+   // ここまで成功してからメンバーへ一括反映し、利用側には完全なフォントだけを見せる。
    const auto& metrics = root.at("metrics");
    device_ = device;
    atlasTexture_ = std::move(atlasTexture);
@@ -248,6 +257,7 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
 
    const float scale = static_cast<float>(pixelSize);
    GlyphInfo glyph{};
+   // msdf-atlas-genのplaneBoundsはem単位なので、要求ピクセルサイズを倍率として実寸へ変換する。
    glyph.advance = source->advance * scale;
    glyph.glyphIndex = source->codePoint;
    glyph.atlasSrv = atlasSrv_;
@@ -299,6 +309,7 @@ float MsdfFont::GetKerning(uint32_t leftGlyph, uint32_t rightGlyph, uint32_t pix
 }
 
 void MsdfFont::ReleaseIntermediateResources() {
+   // コマンド実行完了後は本体テクスチャだけで描画できるため、アップロードバッファを手放す。
    intermediateResource_.Reset();
 }
 

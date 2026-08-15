@@ -65,6 +65,8 @@ std::vector<TextDrawData> TextRenderer::QueueText(
    };
 
    const Vector2 anchorPosition = CalculateAnchorPosition(style.screenAnchor, screenWidth, screenHeight);
+   // アンカーは画面上の基準点、pivotはレイアウト矩形内の基準点として別々に扱う。
+   // Transformの平行移動はアンカーからのオフセットになる。
    const Vector2 pivotOffset = { layout.size.x * style.pivot.x, layout.size.y * style.pivot.y };
    const Vector2 origin = {
       anchorPosition.x + transform.translation.x,
@@ -108,6 +110,8 @@ std::vector<TextDrawData> TextRenderer::QueueText(
       const Vector2 localBottomRight = { localTopRight.x, localBottomLeft.y };
       const Vector4 atlasParameters = geometry.atlasParameters;
 
+      // 1グリフを4頂点・2三角形へ展開する。位置だけCPUでSRT変換し、
+      // atlasParametersはMSDF/ビットマップ種別をシェーダーで判別するため全頂点へ複製する。
       const uint32_t firstVertex = static_cast<uint32_t>(geometry.vertices.size());
       geometry.vertices.push_back({ TransformPoint(localTopLeft, transform, origin), glyph.uvMin, style.color, atlasParameters });
       geometry.vertices.push_back({ TransformPoint(localTopRight, transform, origin), { glyph.uvMax.x, glyph.uvMin.y }, style.color, atlasParameters });
@@ -152,6 +156,8 @@ bool TextRenderer::UploadBuffers() {
       return false;
    }
 
+   // 全テキストを一つの頂点・インデックスバッファへ連続配置し、描画ごとは
+   // startIndexとatlas SRVの変更だけで済ませる。
    void* mappedVertices = nullptr;
    if (FAILED(vertexBuffer_->Map(0, nullptr, &mappedVertices)) || !mappedVertices) {
       Logger::Error("[TextRenderer] Failed to map the vertex buffer.");
@@ -227,6 +233,7 @@ bool TextRenderer::EnsureBufferCapacity(size_t vertexCount, size_t indexCount) {
    }
 
    if (vertexCount > vertexCapacity_) {
+      // 容量超過時だけバッファを作り直し、通常フレームでは既存UPLOAD領域を再利用する。
       vertexCapacity_ = GrowCapacity(vertexCount, kInitialVertexCapacity);
       vertexBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), vertexCapacity_ * sizeof(TextVertex));
       if (!vertexBuffer_) {
@@ -268,6 +275,8 @@ Vector2 TextRenderer::CalculateAnchorPosition(UIAnchor anchor, uint32_t screenWi
 }
 
 Vector2 TextRenderer::TransformPoint(const Vector2& point, const Transform& transform, const Vector2& origin) {
+   // pivot補正済みの局所点を拡縮・Z回転してから、画面アンカーを含む原点へ平行移動する。
+   // UI座標系のY方向はレイアウト結果のまま維持する。
    const float scaledX = point.x * transform.scale.x;
    const float scaledY = point.y * transform.scale.y;
    const float rotation = transform.GetActiveEuler().z;
