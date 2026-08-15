@@ -44,6 +44,7 @@ void RaceGateComponent::Update(float deltaTime) {
       return;
    }
 
+   // 接触中ではなく進入エッジだけを通知し、滞在中のチェックポイント連打を避ける。
    if (trigger->WasEnteredThisFrame()) {
       switch (gateType_) {
          case GateType::Start:
@@ -61,6 +62,7 @@ void RaceGateComponent::Update(float deltaTime) {
       }
    }
    if (gateType_ == GateType::StartFinish && trigger->WasExitedThisFrame()) {
+      // 共用ゲートは一度外へ出た事実を記録し、スタート直後の進入をゴールと区別する。
       raceManager_->NotifyStartGateExit();
    }
 }

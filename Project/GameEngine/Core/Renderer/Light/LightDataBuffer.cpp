@@ -23,7 +23,7 @@ void LightDataBuffer::Create(uint32_t maxDirectionalLights, uint32_t maxPointLig
 	maxSpotLights_ = maxSpotLights;
 	maxAreaLights_ = maxAreaLights;
 
-	// 各ライトタイプの構造化バッファを作成
+	// 型ごとにStructureByteStrideが異なるため別SRVへ分け、シェーダー側のStructuredBuffer型と一致させる。
 	CreateStructuredBuffer(directionalLightBuffer_, directionalLightSRVHandle_, sizeof(DirectionalLightData), maxDirectionalLights_);
 	CreateStructuredBuffer(pointLightBuffer_, pointLightSRVHandle_, sizeof(PointLightData), maxPointLights_);
 	CreateStructuredBuffer(spotLightBuffer_, spotLightSRVHandle_, sizeof(SpotLightData), maxSpotLights_);
@@ -33,7 +33,7 @@ void LightDataBuffer::Create(uint32_t maxDirectionalLights, uint32_t maxPointLig
 	lightCountResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(LightCountData));
 	lightCountResource_->Map(0, nullptr, reinterpret_cast<void**>(&lightCountData_));
 
-	// マップ処理
+	// フレームごとのライト変更をコピーコマンドなしで反映するため、UPLOADバッファを永続Mapする。
 	directionalLightBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
 	pointLightBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightData_));
 	spotLightBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&spotLightData_));
@@ -46,6 +46,7 @@ void LightDataBuffer::Create(uint32_t maxDirectionalLights, uint32_t maxPointLig
 void LightDataBuffer::UpdateDirectionalLights(const std::vector<DirectionalLightData>& lights) {
 	if (!directionalLightData_) return;
 
+	// GPU確保容量を上限にし、シェーダーが参照する件数も実際に転送した要素数へ合わせる。
 	currentDirectionalLightCount_ = static_cast<uint32_t>(std::min(lights.size(), static_cast<size_t>(maxDirectionalLights_)));
 	for (uint32_t i = 0; i < currentDirectionalLightCount_; ++i) {
 		directionalLightData_[i] = lights[i];
@@ -90,6 +91,7 @@ void LightDataBuffer::UpdateAreaLights(const std::vector<AreaLightData>& lights)
 void LightDataBuffer::UpdateLightCount() {
 	if (!lightCountData_) return;
 
+	// 各StructuredBufferの有効範囲を一つのCBVへ集約し、シェーダー側ループの上限として渡す。
 	lightCountData_->directionalLightCount = currentDirectionalLightCount_;
 	lightCountData_->pointLightCount = currentPointLightCount_;
 	lightCountData_->spotLightCount = currentSpotLightCount_;
@@ -97,7 +99,8 @@ void LightDataBuffer::UpdateLightCount() {
 }
 
 void LightDataBuffer::CreateStructuredBuffer(ComPtr<ID3D12Resource>& buffer, D3D12_GPU_DESCRIPTOR_HANDLE& srvHandle, uint32_t elementSize, uint32_t elementCount) {
-	// バッファサイズを計算（最低1要素は確保）
+	// D3D12では幅0のバッファを作れないため実体は最低1要素確保する。
+	// SRVのNumElementsは論理上限を保持し、有効件数は別のLightCountDataで制御する。
 	uint32_t bufferSize = elementSize * std::max(elementCount, 1u);
 
 	// 構造化バッファ用のヒーププロパティ
@@ -137,7 +140,7 @@ void LightDataBuffer::CreateStructuredBuffer(ComPtr<ID3D12Resource>& buffer, D3D
 	srvDesc.Buffer.StructureByteStride = elementSize;
 	srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
-	// ディスクリプタヒープにSRVを作成
+	// CPUハンドルへSRVを書き込み、同じインデックスのGPUハンドルを描画側へ公開する。
 	UINT srvIndex = sDevice_->GetNextSrvIndex();
 	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = sDevice_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart();
 	cpuHandle.ptr += srvIndex * sDevice_->GetDescriptorSizeCBVSRVUAV();

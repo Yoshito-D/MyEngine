@@ -41,6 +41,7 @@ float CalculateEffectAmount(float currentSpeed, float minimumEffectSpeed, float 
 namespace App {
 
 VehicleSpeedPostEffectController::~VehicleSpeedPostEffectController() {
+   // エフェクト設定はEngineContextの共有状態なので、破棄時にも残像を残さない。
    ApplyNeutralEffect();
 }
 
@@ -58,6 +59,7 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
 
    time_ += std::max(deltaTime * 10.0f, 0.0f);
 
+   // 最低・最高速度間を0～1へ正規化し、急変は指数追従で視覚的に平滑化する。
    const float currentSpeed = std::max(groundMover->GetCurrentSpeed(), 0.0f);
    const float targetAmount = CalculateEffectAmount(currentSpeed, minimumEffectSpeed, maximumEffectSpeed);
    effectAmount_ = SmoothTowards(effectAmount_, targetAmount, responseSpeed, deltaTime);
@@ -75,6 +77,7 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
    params.flowSpeed = Lerp(idleFlowSpeed, activeFlowSpeed, effectAmount_);
 
    GameEngine::EngineContext::SetSpeedLineParams(params);
+   // ごく弱い値では描画パス自体を止め、見えないポストエフェクトの負荷を避ける。
    GameEngine::EngineContext::SetPostProcessEffectEnabled("Speed Line", effectAmount_ >= std::max(visibleThreshold, 0.0f));
 
    GameEngine::RadialBlurParams radialParams{};
@@ -83,6 +86,7 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
    radialParams.sampleCount = radialBlurSampleCount;
 
    GameEngine::EngineContext::SetRadialBlurParams(radialParams);
+   // 放射ブラーは別しきい値を持たせ、ラインより遅い立ち上がりも調整可能にする。
    GameEngine::EngineContext::SetPostProcessEffectEnabled("Radial Blur", effectAmount_ >= std::max(radialBlurVisibleThreshold, 0.0f));
 }
 

@@ -10,6 +10,8 @@ void CinemachineBrain::Initialize(std::unique_ptr<Camera> outputCamera) {
 }
 
 void CinemachineBrain::Update(float deltaTime) {
+    // 選択中だけでなく全候補を先に更新し、優先度が切り替わった瞬間にも
+    // 新しいカメラの追従状態がそのフレームのターゲット位置へ追いついているようにする。
     // 登録済みVirtualCameraを全てUpdate
     for (VirtualCamera* vcam : virtualCameras_) {
         if (vcam && vcam->IsActive()) {
@@ -63,6 +65,7 @@ VirtualCamera* CinemachineBrain::FindHighestPriorityCamera() const {
     VirtualCamera* highest = nullptr;
     int highestPriority = INT_MIN;
 
+    // 同一優先度では先に登録されたカメラを維持し、毎フレーム選択が揺れないよう厳密な > で比較する。
     for (VirtualCamera* vcam : virtualCameras_) {
         if (vcam && vcam->IsActive() && vcam->GetPriority() > highestPriority) {
             highestPriority = vcam->GetPriority();
@@ -78,6 +81,7 @@ void CinemachineBrain::BlendToCamera(VirtualCamera* newCamera) {
 
     if (activeCamera_ != nullptr && defaultBlendTime_ > 0.0f) {
         // 現在のcurrentState_を開始状態としてスタックに積む（連続ブレンド対応）
+        // 途中で再切り替えされても元VirtualCameraの古いstateへ戻らず、現在表示中の姿勢からつなぐ。
         blendStack_.push({ currentState_, newCamera, defaultBlendTime_, 0.0f });
     } else {
         // 前のカメラがないかブレンド時間が0の場合は即座に切り替え
@@ -91,6 +95,7 @@ void CinemachineBrain::BlendToCamera(VirtualCamera* newCamera) {
 void CinemachineBrain::UpdateBlend(float deltaTime) {
     if (blendStack_.empty() || !activeCamera_) return;
 
+    // Stack最上段の切り替え要求だけをこのフレームで進め、各Layerが保持する開始stateから補間する。
     BlendLayer& layer = blendStack_.top();
     layer.progress += deltaTime / layer.duration;
 
@@ -100,6 +105,7 @@ void CinemachineBrain::UpdateBlend(float deltaTime) {
         blendStack_.pop();
     } else {
         // イーズイン・アウト補間 (Smoothstep)
+        // Smoothstepで始端・終端の速度を0にし、カメラ切り替え時の速度段差を抑える。
         float t = layer.progress;
         float easedT = t * t * (3.0f - 2.0f * t);
         currentState_ = CameraState::Lerp(layer.fromState, layer.toCamera->GetState(), easedT);
@@ -115,6 +121,8 @@ void CinemachineBrain::ApplyStateToOutputCamera() {
 
     if (currentState_.hasViewMatrixOverride) {
         // ビュー行列が直接指定されている場合はそのまま使用
+        // 通常のCamera::UpdateはTransformからViewを再計算するため、Override時はProjectionとの合成と
+        // GPU定数更新までをここで明示的に完了する。
         Matrix4x4 projectionMatrix = outputCamera_->GetProjectionMatrix();
         outputCamera_->SetViewMatrix(currentState_.viewMatrixOverride);
         outputCamera_->SetViewProjectionMatrix(currentState_.viewMatrixOverride * projectionMatrix);
@@ -140,6 +148,7 @@ void CinemachineBrain::UnregisterVirtualCamera(VirtualCamera* vcam) {
         std::remove(virtualCameras_.begin(), virtualCameras_.end(), vcam),
         virtualCameras_.end());
 
+    // 選択中の候補が消えた場合は残りから即座に選び直し、破棄済みポインターを保持しない。
     if (activeCamera_ == vcam) {
         activeCamera_ = FindHighestPriorityCamera();
     }
@@ -148,6 +157,7 @@ void CinemachineBrain::UnregisterVirtualCamera(VirtualCamera* vcam) {
 void CinemachineBrain::Cut(VirtualCamera* vcam) {
     if (vcam == nullptr) return;
 
+    // Cut後に古いBlendが再適用されないよう、出力状態と選択先を同時に更新してStackを空にする。
     activeCamera_ = vcam;
     currentState_ = vcam->GetState();
     while (!blendStack_.empty()) { blendStack_.pop(); }

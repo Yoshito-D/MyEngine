@@ -14,6 +14,8 @@
 namespace GameEngine {
 
 void DispatchDrawCommand(const DrawCommand& cmd, FrameContext& ctx) {
+   // パスは並び順とリソース状態だけを管理し、型固有のバインドは専用レンダラーへ委譲する。
+   // これにより同じDrawCommandを不透明・透明・エフェクト後のどのパスでも実行できる。
    switch (cmd.type) {
 	  case DrawCommandType::Model:
 		 if (ctx.modelRenderer) {

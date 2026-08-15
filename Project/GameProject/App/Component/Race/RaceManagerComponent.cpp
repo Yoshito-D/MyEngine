@@ -32,6 +32,7 @@ void RaceManagerComponent::Update(float deltaTime) {
    }
 
    const float safeDeltaTime = std::max(deltaTime, 0.0f);
+   // 状態ごとに進める時計を分離し、カウントダウンや結果待機を走行時間へ混ぜない。
    switch (state_) {
       case State::Countdown:
          countdownRemaining_ -= safeDeltaTime;
@@ -44,6 +45,7 @@ void RaceManagerComponent::Update(float deltaTime) {
          startBannerRemaining_ = std::max(startBannerRemaining_ - safeDeltaTime, 0.0f);
          break;
       case State::Finished:
+         // リスタートを選んだ場合は自動遷移より優先し、二重のシーン要求を防ぐ。
          if (!restartRequested_ && !nextScene_.empty() && !sceneChangeRequested_) {
             finishElapsed_ += safeDeltaTime;
             if (finishElapsed_ >= finishDelay_) {
@@ -58,6 +60,7 @@ void RaceManagerComponent::Update(float deltaTime) {
 }
 
 void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   // 前シーンの参照を残さず、設定されたPlayerを起点に関連コンポーネントをまとめて解決する。
    vehicleController_ = nullptr;
    gravityBody_ = nullptr;
    cameraSwitcher_ = nullptr;
@@ -104,6 +107,7 @@ void RaceManagerComponent::NotifyStart() {
 }
 
 void RaceManagerComponent::NotifyCheckpoint(size_t checkpointIndex) {
+   // 次に期待する番号だけを受理し、逆走やゲートの往復で進捗を飛ばさない。
    if (state_ == State::Running && checkpointIndex == nextCheckpointIndex_ && checkpointIndex < checkpointCount_) {
       ++nextCheckpointIndex_;
    }
@@ -141,10 +145,12 @@ void RaceManagerComponent::NotifyFinish() {
 
 void RaceManagerComponent::NotifyStartFinish() {
    if (state_ == State::Waiting) {
+      // 共用ゲートへの最初の進入はスタートとして扱う。
       NotifyStart();
       return;
    }
    if (state_ == State::Running && startGateExited_) {
+      // スタート後に一度ゲート外へ出るまで、同じ重なりをゴールとして受理しない。
       NotifyFinish();
    }
 }
@@ -156,6 +162,7 @@ void RaceManagerComponent::NotifyStartGateExit() {
 }
 
 void RaceManagerComponent::Restart() {
+   // レース進行と遷移要求を一括で初期化し、再試行を新規セッションと同じ状態に戻す。
    elapsedTime_ = 0.0;
    countdownRemaining_ = countdownSeconds_;
    startBannerRemaining_ = 0.0f;
@@ -166,6 +173,7 @@ void RaceManagerComponent::Restart() {
    restartRequested_ = false;
 
    if (cameraSwitcher_) {
+      // 結果画面で停止した入力・演出制御を、シーン解決時に記録した有効状態へ戻す。
       cameraSwitcher_->SetEnabled(cameraSwitcherEnabledWhenUnlocked_);
    }
    if (speedPostEffectController_) {
@@ -274,6 +282,7 @@ void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
 }
 
 void RaceManagerComponent::BeginRace() {
+   // カウントダウン時間は走行記録へ含めず、開始時点を0秒として計測し直す。
    state_ = State::Running;
    elapsedTime_ = 0.0;
    startBannerRemaining_ = startTextDuration_;
@@ -289,6 +298,7 @@ bool RaceManagerComponent::CanFinish() const {
 void RaceManagerComponent::SetPlayerLocked(bool locked) {
    playerLocked_ = locked;
    if (locked) {
+      // 物理を止める前に残速度を消し、解除直後にロック前の慣性が再開しないようにする。
       if (gravityBody_) {
          gravityBody_->SetVelocity({ 0.0f, 0.0f, 0.0f });
          gravityBody_->SetEnabled(false);
@@ -299,6 +309,7 @@ void RaceManagerComponent::SetPlayerLocked(bool locked) {
       return;
    }
 
+   // 解除時にも速度を中立化してから、シーン本来の有効状態だけを復元する。
    if (gravityBody_) {
       gravityBody_->SetVelocity({ 0.0f, 0.0f, 0.0f });
       gravityBody_->SetEnabled(gravityBodyEnabledWhenUnlocked_);
@@ -313,6 +324,7 @@ void RaceManagerComponent::AddBestTime(double timeSeconds) {
       return;
    }
    bestTimes_.push_back(timeSeconds);
+   // 保存・表示の双方が先頭から最速順を仮定するため、追加時点で固定件数へ正規化する。
    std::sort(bestTimes_.begin(), bestTimes_.end());
    if (bestTimes_.size() > kBestTimeCount) {
       bestTimes_.resize(kBestTimeCount);
@@ -327,6 +339,7 @@ bool RaceManagerComponent::LoadBestTimes() {
 
    const std::filesystem::path recordPath(recordFile_);
    if (!std::filesystem::exists(recordPath)) {
+      // 初回起動は記録なしが正常なので、空ランキングのまま成功として扱う。
       return true;
    }
 
@@ -345,6 +358,7 @@ bool RaceManagerComponent::LoadBestTimes() {
       }
 
       const auto& races = root.at("races");
+      // 1ファイルを複数コースで共有するため、現在のrecordKeyだけを取り出す。
       if (!races.contains(recordKey_) || !races.at(recordKey_).is_object()) {
          return true;
       }
@@ -375,6 +389,7 @@ bool RaceManagerComponent::SaveBestTimes() const {
    const std::filesystem::path recordPath(recordFile_);
    nlohmann::json root = nlohmann::json::object();
    if (std::filesystem::exists(recordPath)) {
+      // 他コースの記録を保持するため、既存JSONを土台に現在キーだけを更新する。
       try {
          std::ifstream input(recordPath);
          if (input.is_open()) {
@@ -405,6 +420,7 @@ bool RaceManagerComponent::SaveBestTimes() const {
 
    std::filesystem::path temporaryPath = recordPath;
    temporaryPath += ".tmp";
+   // 書き込み途中の本番ファイルを残さないよう、一時ファイルを完成させてから置換する。
    try {
       std::ofstream output(temporaryPath, std::ios::out | std::ios::trunc);
       if (!output.is_open()) {
@@ -423,6 +439,7 @@ bool RaceManagerComponent::SaveBestTimes() const {
    }
 
 #ifdef _WIN32
+   // Windowsでは置換とディスク反映を同じAPIで要求し、既存ファイルも安全に更新する。
    if (!MoveFileExW(
       temporaryPath.c_str(),
       recordPath.c_str(),

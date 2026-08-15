@@ -8,7 +8,8 @@ void OffscreenRenderTarget::Initialize(GraphicsDevice* device, uint32_t width, u
    height_ = height;
    device_ = device;
 
-   // 2つのレンダーターゲットを作成
+   // ポストエフェクトを連鎖させるため、入力と出力を交互に入れ替える2面を持つ。
+   // スナップショットは透明描画が同時に書き込んでいるRTを自己参照しないための固定コピー。
    currentRenderTarget_ = CreateRenderTargetInfo(0);
    previousRenderTarget_ = CreateRenderTargetInfo(1);
    sceneColorSnapshot_ = CreateSnapshotInfo(format_, format_);
@@ -29,6 +30,8 @@ void OffscreenRenderTarget::Resize(uint32_t width, uint32_t height) {
    const UINT sceneColorSrvIndex = sceneColorSnapshot_.srvIndex;
    const UINT sceneDepthSrvIndex = sceneDepthSnapshot_.srvIndex;
 
+   // SRV番号は描画コマンドやエフェクトがGPUハンドルとして保持し得るため再利用し、
+   // サイズ依存のリソース本体とビュー内容だけを差し替える。
    currentRenderTarget_.renderTarget.Reset();
    previousRenderTarget_.renderTarget.Reset();
    sceneColorSnapshot_.renderTarget.Reset();
@@ -64,7 +67,8 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
    D3D12_HEAP_PROPERTIES heapProps = {};
    heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
 
-   // レンダーターゲットリソースを作成
+   // 初期状態をSRVにそろえることで、生成直後やSwapBuffers直後の面を入力として扱える。
+   // 描画開始時だけPreDrawがRTVへ遷移させる。
    HRESULT hr = device_->GetDevice()->CreateCommittedResource(
 	  &heapProps, D3D12_HEAP_FLAG_NONE, &texDesc,
 	  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &clearValue,
@@ -76,6 +80,7 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
    UINT rtvDescriptorSize = device_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
    info.rtvHandle = rtvHeapStart;
+   // 0,1番はスワップチェーン用としてGraphicsDeviceが所有する。
    info.rtvHandle.ptr += rtvDescriptorSize * (2 + index);  // RTV heap内の位置（例：2,3番目）
 
    device_->GetDevice()->CreateRenderTargetView(info.renderTarget.Get(), nullptr, info.rtvHandle);
@@ -111,6 +116,8 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateSnapshotInf
    DXGI_FORMAT resourceFormat, DXGI_FORMAT srvFormat, UINT srvIndex) {
    RenderTargetInfo info;
 
+   // 深度コピーではTYPELESS実体をR24_UNORM_X8_TYPELESSのSRVとして読むため、
+   // リソース形式とビュー形式を分けて受け取る。
    D3D12_RESOURCE_DESC textureDesc{};
    textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
    textureDesc.Width = width_;
@@ -171,6 +178,8 @@ void OffscreenRenderTarget::CaptureSceneColor() {
    }
 
    auto* commandList = device_->GetCommandList();
+   // 呼び出し時点の描画状態を保存し、コピー後に同じ用途へ戻す。
+   // 透明パス途中でも後続描画を継続できることが重要になる。
    const D3D12_RESOURCE_STATES previousColorState = currentRenderTarget_.state;
    if (previousColorState != D3D12_RESOURCE_STATE_COPY_SOURCE) {
 	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -183,6 +192,7 @@ void OffscreenRenderTarget::CaptureSceneColor() {
 	  commandList->ResourceBarrier(1, &barrier);
 	  sceneColorSnapshot_.state = D3D12_RESOURCE_STATE_COPY_DEST;
    }
+   // 同一サイズ・同一形式で作成しているため、サブリソース指定なしの全体コピーを使える。
    commandList->CopyResource(sceneColorSnapshot_.renderTarget.Get(), currentRenderTarget_.renderTarget.Get());
    {
 	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -203,6 +213,8 @@ void OffscreenRenderTarget::CaptureSceneDepth() {
    }
 
    auto* commandList = device_->GetCommandList();
+   // 深度本体は通常DSVとして使用中なので、コピー元へ遷移させた区間だけ描画を止める。
+   // コピー先をSRVへ戻してから本体もDEPTH_WRITEへ復帰させる。
    device_->TransitionDepthStencilToCopySource();
    {
 	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -223,7 +235,7 @@ void OffscreenRenderTarget::CaptureSceneDepth() {
 void OffscreenRenderTarget::PreDraw(bool useDSV) {
    auto commandList = device_->GetCommandList();
 
-   // バリア：SRV -> RTV
+   // ping-pongで直前まで入力だった面を、次のエフェクトの出力先へ切り替える。
    if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_RENDER_TARGET) {
 	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		 currentRenderTarget_.renderTarget.Get(),
@@ -233,7 +245,8 @@ void OffscreenRenderTarget::PreDraw(bool useDSV) {
 	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
    }
 
-   // 描画ターゲットを設定
+   // シーン描画ではDSVもクリアするが、色だけを処理するポストエフェクトでは
+   // 深度を束縛せず、別途保存した深度SRVとの競合を避ける。
    if (useDSV) {
 	  device_->TransitionDepthStencilToWrite();
 	  CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
@@ -263,7 +276,7 @@ void OffscreenRenderTarget::PreDraw(bool useDSV) {
 void OffscreenRenderTarget::PreDrawWithoutClear(bool useDSV) {
    auto commandList = device_->GetCommandList();
 
-   // バリア：SRV -> RTV
+   // ポストプロセス済みの色へUI等を重ねる経路なので、RTV状態へ戻しても色は消去しない。
    if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_RENDER_TARGET) {
 	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		 currentRenderTarget_.renderTarget.Get(),
@@ -299,7 +312,7 @@ void OffscreenRenderTarget::PreDrawWithoutClear(bool useDSV) {
 void OffscreenRenderTarget::PostDraw() {
    auto commandList = device_->GetCommandList();
 
-   // バリア：RTV -> SRV
+   // 次のポストエフェクトまたは最終合成がこの面を読むため、書き込み完了後にSRVへ戻す。
    if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) {
 	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		 currentRenderTarget_.renderTarget.Get(),

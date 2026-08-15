@@ -8,6 +8,7 @@
 namespace {
 bool IsSupportedTextureExtension(const std::filesystem::path& path) {
    std::string ext = path.extension().string();
+   // Windows上でも入力表記に依存しないよう、拡張子だけを小文字へ正規化する。
    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
       return static_cast<char>(std::tolower(c));
    });
@@ -20,6 +21,7 @@ std::string ToGenericString(std::filesystem::path path) {
 
 std::string NormalizeAssetId(const std::filesystem::path& path, const std::filesystem::path& resourcesRoot) {
    std::error_code error;
+   // 保存IDはresources相対を優先し、相対化不能な別ボリューム等では元パスを失わない。
    std::filesystem::path relative = std::filesystem::relative(path, resourcesRoot, error);
    if (error) {
       relative = path;
@@ -59,6 +61,7 @@ void TextureManager::LoadTexturesFromDirectory(const std::filesystem::path& dire
       return;
    }
 
+   // サブフォルダー名を含むアセットIDを作るため、対象ルートを再帰的に走査する。
    for (const auto& entry : std::filesystem::recursive_directory_iterator(directoryPath)) {
       if (!entry.is_regular_file()) {
          continue;
@@ -99,6 +102,7 @@ std::vector<std::string> TextureManager::GetTextureNames() const {
 	  (void)texture;
 	  names.push_back(name);
    }
+   // unordered_mapの反復順を外へ出さず、Inspectorの候補順を実行ごとに安定させる。
    std::sort(names.begin(), names.end());
    return names;
 }
@@ -135,6 +139,7 @@ void TextureManager::ReleaseIntermediateResources() {
 }
 
 void TextureManager::Clear() {
+   // AliasはTextureへの非所有ポインタなので、本体破棄と同じ操作で必ず無効化する。
    textures_.clear();
    textureAliases_.clear();
    intermediateResource_.clear();

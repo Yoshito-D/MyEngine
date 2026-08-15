@@ -19,6 +19,8 @@ void RootSignature::CreateRootSignature(ID3D12Device* device) {
    descriptionRootSignature.pStaticSamplers = staticSamplers_.data();
    descriptionRootSignature.NumStaticSamplers = static_cast<UINT>(staticSamplers_.size());
 
+   // CPU側で組み立てたパラメータ／静的サンプラー配列を一度バイナリ化し、
+   // D3D12が検証済みの不変レイアウトとして生成する。
    result = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignatureBlob_, &errorBlob);
    if (FAILED(result)) {
 	  Logger::Info(Logger::ConvertString(reinterpret_cast<char*>(errorBlob->GetBufferPointer())));
@@ -34,6 +36,7 @@ void RootSignature::SetRootParameter(D3D12_ROOT_PARAMETER_TYPE type, D3D12_SHADE
    auto& rootParameter = rootParameters_.back();
    rootParameter.ParameterType = type;
    rootParameter.ShaderVisibility = visibility;
+   // Root Parameter種別ごとに有効なunionメンバーだけを設定し、JSON配列の追加順をスロット番号として保つ。
    if (type == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE) {
 	  rootParameter.DescriptorTable.pDescriptorRanges = descriptorRanges;
 	  rootParameter.DescriptorTable.NumDescriptorRanges = numDescriptorRanges;
@@ -73,7 +76,8 @@ const D3D12_DESCRIPTOR_RANGE* RootSignature::CreateDescriptorRange(
    range.RegisterSpace = registerSpace;
    range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
    
-   // 最初に全体のサイズを確保して、再配置を防ぐ
+   // RootParameterはこのvector要素への生ポインタを保持するため、追加時の再配置頻度を
+   // 抑える意図で一定数ずつ余裕を持たせる。
    if (descriptorRanges_.capacity() == descriptorRanges_.size()) {
       descriptorRanges_.reserve(descriptorRanges_.capacity() + 10);
    }

@@ -17,6 +17,8 @@ void Material::Initialize(GraphicsDevice* device) {
 
 void Material::Create(unsigned int color, int32_t lightingMode, const Matrix4x4& uvTransform, float shininess) {
    if (!sIsInitialized_)return;
+   // シェーダーからCBVとして直接読むUPLOADバッファを永続Mapし、
+   // セッターの変更を次回描画へ即時反映できるようにする。
    materialResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(MaterialData));
    // 書き込むためのアドレスを取得
    materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
@@ -242,14 +244,15 @@ void Material::DecomposeUVTransform(Vector2& outScale, float& outRotation, Vecto
 
    const Matrix4x4& mat = materialData_->uvTransform;
 
-   // 平行移動を取得
+   // ComposeUVTransformと同じ行ベクトル規約を前提に、最終行から平行移動を復元する。
    outTranslation = Vector2(mat.m[3][0], mat.m[3][1]);
 
-   // スケールを計算
+   // UV行列にせん断が含まれない前提で、回転を含む各基底行の長さをスケールとみなす。
+   // 符号付きスケールは保持できないため、この分解はUI編集用のSRT行列に限定される。
    outScale.x = Vector2(mat.m[0][0], mat.m[0][1]).Length();
    outScale.y = Vector2(mat.m[1][0], mat.m[1][1]).Length();
 
-   // 回転を計算（スケールで正規化後）
+   // X基底をスケールで正規化して回転成分だけを取り出す。
    if (outScale.x > 0.0f) {
 	  float cosTheta = mat.m[0][0] / outScale.x;
 	  float sinTheta = mat.m[0][1] / outScale.x; // X軸の成分を使ってsinThetaを計算
@@ -266,7 +269,8 @@ void Material::ComposeUVTransform(const Vector2& scale, float rotation, const Ve
    Matrix4x4 rotMat = MakeRotateZMatrix(rotation);
    Matrix4x4 transMat = MakeTranslateMatrix(Vector3(translation.x, translation.y, 0.0f));
 
-   // 正しい変換順序：Scale → Rotate → Translate
+   // エンジンの行ベクトル規約に合わせてScale → Rotate → Translateの順に合成する。
+   // 順序を変えると平行移動まで拡縮・回転され、インスペクター値と見た目が一致しない。
    materialData_->uvTransform = scaleMat * rotMat * transMat;
 }
 }

@@ -47,6 +47,7 @@ Quaternion MatrixToQuaternion(const Matrix4x4& m) {
    Quaternion q;
    float trace = m.m[0][0] + m.m[1][1] + m.m[2][2];
 
+   // トレースまたは最大対角成分を基準に分岐し、差し引きで小さな値を割る数値不安定を避ける。
    if (trace > 0.0f) {
 	  float s = std::sqrt(trace + 1.0f) * 2.0f;
 	  q.w = 0.25f * s;
@@ -118,6 +119,7 @@ Quaternion Vector3ToQuaternion(const Vector3& eulerAngles) {
 
 Quaternion LookRotation(const Vector3& forward, const Vector3& up) {
    Vector3 f = forward;
+   // 退化した入力でも回転行列を構築できるよう、前方とUpを既定軸へ段階的に退避する。
    if (f.LengthSquared() < 1e-6f)
 	  f = Vector3(0, 0, 1);
    else

@@ -7,6 +7,7 @@ namespace GameEngine {
 
 namespace {
 std::unordered_map<std::string, VirtualCamera::ComponentFactory>& ComponentFactories() {
+    // 静的初期化順序の影響を避けるため、Registryは初回利用時に関数ローカルで構築する。
     static std::unordered_map<std::string, VirtualCamera::ComponentFactory> factories;
     return factories;
 }
@@ -57,6 +58,8 @@ Matrix4x4 DeserializeMatrix4x4(const nlohmann::json& data, const Matrix4x4& fall
         return fallback;
     }
 
+    // 一行でも形が不正なら行列全体をfallbackへ戻す。部分更新されたView行列は
+    // 逆行列計算やカメラ姿勢を壊すため、要素単位の復元は行わない。
     Matrix4x4 matrix = fallback;
     for (int row = 0; row < 4; ++row) {
         if (!data[row].is_array() || data[row].size() != 4) {
@@ -70,6 +73,8 @@ Matrix4x4 DeserializeMatrix4x4(const nlohmann::json& data, const Matrix4x4& fall
 }
 
 nlohmann::json SerializeTransform(const Transform& transform) {
+    // Euler角とQuaternionを両方保存し、rotationSourceでどちらを正とするかを記録する。
+    // Editor表示用Eulerと補間用Quaternionを相互変換した際の丸め誤差を避けるためである。
     const Quaternion activeQuaternion = transform.GetActiveQuaternion();
     const Vector3 activeEuler = transform.GetActiveEuler();
     return nlohmann::json{
@@ -94,6 +99,7 @@ Transform DeserializeTransform(const nlohmann::json& data, const Transform& fall
         ? DeserializeVector3(data.at("scale"), transform.scale)
         : transform.scale;
 
+    // rotationSourceのない旧データはEuler形式として読み、互換性を保つ。
     const std::string rotationSource = data.value("rotationSource", "euler");
     if (rotationSource == "quaternion" && data.contains("rotationQuaternion")) {
         transform.SetRotationQuaternion(DeserializeQuaternion(data.at("rotationQuaternion"), transform.GetActiveQuaternion()));
@@ -120,6 +126,7 @@ CameraState DeserializeCameraState(const nlohmann::json& data, const CameraState
         return fallback;
     }
 
+    // 欠けている項目は現在値を維持し、旧バージョンの部分的なCameraStateも適用できるようにする。
     CameraState state = fallback;
     if (data.contains("transform")) {
         state.transform = DeserializeTransform(data.at("transform"), state.transform);
@@ -148,6 +155,8 @@ Transform* ResolveEntityTransform(const std::string& entityId, Transform& resolv
         return nullptr;
     }
 
+    // Cinemachine Componentが必要とするのは追従点のWorld位置である。
+    // OwnerのローカルTransformを直接返すと親子階層の移動が反映されないため、作業Transformへ抽出する。
     const Matrix4x4 worldMatrix = entity->GetWorldMatrix();
     resolvedTransform.translation = {
         worldMatrix.m[3][0],
@@ -163,10 +172,12 @@ void VirtualCamera::Initialize(const CameraState& initialState) {
 }
 
 void VirtualCamera::Update(float deltaTime) {
+    // 前フレームのstate_を入力として全Componentを評価し、完成した状態だけを公開する。
     state_ = CalculateState(deltaTime);
 }
 
 void VirtualCamera::SetFollowTarget(Transform* target) {
+    // 直接ポインター指定とEntity ID指定は排他的にし、どちらを優先するかが曖昧にならないようにする。
     followTargetEntityId_.clear();
     followTarget_ = target;
 }
@@ -188,6 +199,7 @@ void VirtualCamera::SetLookAtTargetEntityId(const std::string& entityId) {
 
 Transform* VirtualCamera::GetFollowTarget() const {
     if (!followTargetEntityId_.empty()) {
+        // EntityはScene再ロードで置き換わり得るため、永続ID指定はアクセスごとに解決する。
         return ResolveEntityTransform(followTargetEntityId_, resolvedFollowTarget_);
     }
     return followTarget_;
@@ -201,6 +213,7 @@ Transform* VirtualCamera::GetLookAtTarget() const {
 }
 
 CameraState VirtualCamera::CalculateState(float deltaTime) {
+    // 各Stageは一つ前のStageの結果を受け取るため、state_のコピーを作業値として順次更新する。
     CameraState result = state_;
 
     // Body -> Aim -> Noise の順でコンポーネントを適用
@@ -227,6 +240,7 @@ bool VirtualCamera::RegisterComponentFactory(const std::string& componentName, C
         return false;
     }
 
+    // 同名登録は最新Factoryで上書きし、静的登録の再実行や実装差し替えを冪等に扱う。
     ComponentFactories()[componentName] = std::move(factory);
     return true;
 }
@@ -236,6 +250,7 @@ ICinemachineComponent* VirtualCamera::AddComponentByName(const std::string& comp
         return nullptr;
     }
 
+    // 同種Componentを複数追加するとSerialize時に名前で区別できないため、既存実体を返す。
     if (auto* existing = FindComponentByName(componentName)) {
         return existing;
     }
@@ -263,6 +278,7 @@ ICinemachineComponent* VirtualCamera::FindComponentByName(const std::string& com
 }
 
 void VirtualCamera::SortComponents() {
+    // Body → Aim → NoiseのStage順を保証し、追加順によるカメラ結果の違いをなくす。
     std::sort(components_.begin(), components_.end(),
         [](const std::unique_ptr<ICinemachineComponent>& a,
            const std::unique_ptr<ICinemachineComponent>& b) {
@@ -271,6 +287,8 @@ void VirtualCamera::SortComponents() {
 }
 
 nlohmann::json VirtualCamera::Serialize() const {
+    // Componentの具象型はcomponentNameだけを保存し、復元時はFactory Registryから再生成する。
+    // これによりVirtualCamera本体が各Component型へ直接依存しない。
     nlohmann::json componentsData = nlohmann::json::array();
     for (const auto& component : components_) {
         if (!component) {
@@ -323,6 +341,8 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
         return;
     }
 
+    // 既存Componentには状態を重ね、不足しているComponentだけFactoryで追加する。
+    // JSONにない既存ComponentはC++側の構成として残し、部分設定の読み込みを許容する。
     for (const auto& componentData : data.at("components")) {
         if (!componentData.is_object()) {
             continue;

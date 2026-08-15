@@ -37,6 +37,7 @@ bool ReadFloat(const json& source, const char* key, float& destination) {
    }
    try {
       destination = it->get<float>();
+      // JSONとして数値でもNaN/Infは行列・照明計算を伝播して画面全体を壊すため拒否する。
       return std::isfinite(destination);
    } catch (const json::exception&) {
       return false;
@@ -132,6 +133,8 @@ std::string StableEditorLabel(const char* japanese, const char* english, const c
 namespace GameEngine {
 
 void LightManager::Initialize() {
+   // シェーダー側の固定上限と同じ容量で各StructuredBufferを一度だけ確保する。
+   // フレーム更新では件数分だけ内容を書き換え、リソース自体は再利用する。
    lightDataBuffer_ = std::make_unique<LightDataBuffer>();
    lightDataBuffer_->Create(1, 32, 32, 16);
 }
@@ -291,6 +294,8 @@ std::vector<std::string> LightManager::GetAreaLightNames() const {
 void LightManager::UpdateStructureBuffer() {
    if (!lightDataBuffer_) return;
 
+   // ゲームオブジェクト側のライト構造体を、HLSL StructuredBufferと一致する
+   // GPU専用レイアウトへ型別に詰め直す。明示paddingもここで初期化する。
    // ディレクショナルライトの更新
    std::vector<LightDataBuffer::DirectionalLightData> dirLights;
    for (const auto& pair : directionalLights_) {
@@ -303,6 +308,7 @@ void LightManager::UpdateStructureBuffer() {
    }
    lightDataBuffer_->UpdateDirectionalLights(dirLights);
 
+   // CPU構造体の未初期化領域をGPUへ送らないよう、パディングを含め全フィールドを代入する。
    // ポイントライトの更新
    std::vector<LightDataBuffer::PointLightData> ptLights;
    for (const auto& pair : pointLights_) {
@@ -357,6 +363,8 @@ void LightManager::UpdateStructureBuffer() {
 }
 
 nlohmann::json LightManager::SerializeSceneState() const {
+   // 型ごとの内部コンテナを単一配列へ正規化し、idとtypeの組で復元できる形式にする。
+   // GPU向けpaddingはシーンの意味を持たないため保存しない。
    nlohmann::json lights = nlohmann::json::array();
    for (const auto& [id, light] : directionalLights_) {
       if (!light || !light->GetDirectionalLightData()) {
@@ -441,6 +449,8 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
    std::vector<AreaSceneLight> areaLights;
    std::unordered_set<std::string> lightKeys;
 
+   // 現在のライトを消す前に、入力全体を一時配列へ検証・変換する。
+   // 途中で壊れた値が見つかった場合は既存シーンを維持したまま失敗できる。
    for (const auto& entry : *lightsIt) {
       if (!entry.is_object()) {
          return false;
@@ -453,6 +463,7 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
       }
       const std::string id = idIt->get<std::string>();
       const std::string type = typeIt->get<std::string>();
+      // idは型ごとの名前空間なので、異なるライト型では同名を許可する。
       if (id.empty() || !lightKeys.insert(type + ":" + id).second) {
          return false;
       }
@@ -515,9 +526,11 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
 
    if (directionalLights.size() > 1 || pointLights.size() > 32 ||
       spotLights.size() > 32 || areaLights.size() > 16) {
+      // LightDataBufferの固定容量を越えるデータは切り捨てず、保存内容と描画結果の不一致を防ぐため拒否する。
       return false;
    }
 
+   // 全項目の形式・有限値・重複・GPU容量を確認できた後にだけ現在状態を置換する。
    ClearDirectionalLights();
    ClearPointLights();
    ClearSpotLights();
@@ -543,6 +556,7 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
          *light->GetAreaLightData() = source.data;
       }
    }
+   // 復元直後のフレームからGPU側の件数と内容を一致させる。
    UpdateStructureBuffer();
    return true;
 }

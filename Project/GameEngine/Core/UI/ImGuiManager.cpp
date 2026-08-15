@@ -19,6 +19,7 @@ const char* Tr(const char* japanese, const char* english) {
 }
 
 std::string StableWindowLabel(const char* visibleLabel, const char* stableId) {
+   // 表示言語が変わっても###以降のIDを固定し、Docking配置を別ウィンドウとして失わない。
    return std::string(visibleLabel) + "###" + stableId;
 }
 
@@ -76,6 +77,7 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    }
 
    ImGui_ImplWin32_Init(hwnd);
+   // ImGuiのフォントアトラス用SRVを共有ヒープから1枠確保し、バックエンドの寿命中固定する。
    const UINT imguiSrvIndex = device->GetNextSrvIndex();
    const D3D12_CPU_DESCRIPTOR_HANDLE imguiSrvHandleCPU = CD3DX12_CPU_DESCRIPTOR_HANDLE(
 	  device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
@@ -104,6 +106,7 @@ void ImGuiManager::SetLanguage(ImGuiHelper::EditorLanguage language) {
 }
 
 void ImGuiManager::BeginFrame() {
+   // 両バックエンドの入力・GPU状態を更新してからImGui本体とGizmoのフレームを開始する。
    ImGui_ImplDX12_NewFrame();
    ImGui_ImplWin32_NewFrame();
    ImGui::NewFrame();
@@ -147,6 +150,7 @@ void ImGuiManager::ShowDockSpace() {
 
    if (opt_fullscreen)
    {
+      // メインViewportの作業領域へ厳密に重ね、DockSpace自体は操作対象に見えないホストにする。
 	  ImGuiViewport* viewport = ImGui::GetMainViewport();
 	  ImGui::SetNextWindowPos(viewport->WorkPos);
 	  ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -162,6 +166,7 @@ void ImGuiManager::ShowDockSpace() {
 
    ImGui::Begin("DockSpace", nullptr, window_flags);
 
+   // Begin前に積んだ3スタイルを同フレーム内で戻し、ドッキング先ウィンドウへ伝播させない。
    ImGui::PopStyleVar(3); // WindowPadding, Rounding, BorderSizeを戻す
 
    // DockSpace作成（バーなし、背景のみ）
@@ -181,6 +186,7 @@ void ImGuiManager::ShowViewport(
    isSceneHovered = ImGui::IsWindowHovered();
 
    D3D12_GPU_DESCRIPTOR_HANDLE handle = renderTarget->GetSRVHandleGPU();
+   // DX12バックエンドではGPUディスクリプタ値をImTextureIDとして渡す。
    ImTextureID texId = (ImTextureID)(handle.ptr);
 
    ImVec2 availSize = ImGui::GetContentRegionAvail(); // ウィンドウ内の空きサイズ
@@ -214,6 +220,7 @@ void ImGuiManager::ShowViewport(
    ImVec2 imageMin = ImGui::GetCursorScreenPos();
    ImGui::Image(texId, imageSize);
    if (overlayCallback) {
+	  // オーバーレイ側が画像と同じ座標系を使えるよう、中央寄せ後の画面矩形を通知する。
 	  overlayCallback(imageMin.x, imageMin.y, imageSize.x, imageSize.y);
    }
 

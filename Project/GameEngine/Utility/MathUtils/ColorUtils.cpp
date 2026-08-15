@@ -5,6 +5,7 @@
 namespace GameEngine {
 
 Vector4 ConvertUIntToColor(uint32_t color) {
+   // パック形式を上位からRGBAの順として、各8bitチャンネルを0～1へ正規化する。
    float r = ((color >> 24) & 0xFF) / 255.0f;
    float g = ((color >> 16) & 0xFF) / 255.0f;
    float b = ((color >> 8) & 0xFF) / 255.0f;
@@ -18,6 +19,7 @@ uint32_t RandomLerpRGBAColor(uint32_t colorA, uint32_t colorB) {
 
    float t = dist(rng);
 
+   // 全チャンネルに同じtを使い、2色を結ぶ線分上から一様に色を選ぶ。
    // 各チャンネルを抽出
    uint8_t rA = (colorA >> 24) & 0xFF;
    uint8_t gA = (colorA >> 16) & 0xFF;
@@ -39,6 +41,7 @@ uint32_t RandomLerpRGBAColor(uint32_t colorA, uint32_t colorB) {
 }
 
 void HSVtoRGB(float h, float s, float v, uint8_t& outR, uint8_t& outG, uint8_t& outB) {
+   // 彩度から色成分幅cを作り、色相60度ごとの区間でRGB成分を並べ替える。
    float c = v * s;
    float x = c * (1.0f - std::fabs(fmod(h / 60.0f, 2.0f) - 1.0f));
    float m = v - c;
@@ -64,6 +67,7 @@ void HSVtoRGB(float h, float s, float v, uint8_t& outR, uint8_t& outG, uint8_t& 
 }
 
 uint32_t GetLoopingHueColor(float t, float saturation, float value, uint8_t alpha) {
+   // fmodが負値を返す場合も加算して、任意のtを連続な0～1周期へ折り返す。
    t = fmod(t, 1.0f); // 0〜1 にループ
    if (t < 0.0f) t += 1.0f;
 

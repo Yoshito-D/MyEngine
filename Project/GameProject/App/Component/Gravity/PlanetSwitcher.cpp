@@ -122,6 +122,7 @@ int PlanetSwitcher::SelectBestPlanetIndex(const GameEngine::Vector3& pos,
 	  // OBBと惑星中心の最短距離（OBBの最近傍点→惑星中心）
 	  float dist = DistancePointOBB(e.center, pos, obbRot, halfExtents);
 
+	  // 影響圏候補を優先しつつ、圏外しかない場合に重力先を失わないよう最近傍も並行して保持する。
 	  if (dist < bestAnyDist) {
 		 bestAnyDist = dist;
 		 bestAnyIndex = i;
@@ -159,6 +160,7 @@ void PlanetSwitcher::ApplyPlanetIndex(int newIndex) {
 
    const bool planetChanged = (newIndex != currentIndex_);
    const bool gravityChanged = (newIndex != activeGravityIndex_);
+   // 着地基準の惑星と、空中ですでに切り替えた重力先は別インデックスで追跡する。
    if (planetChanged) {
 	  currentIndex_ = newIndex;
    }
@@ -225,6 +227,7 @@ void PlanetSwitcher::AddPlanet(std::string objectName) {
 }
 
 bool PlanetSwitcher::TryGetLandingPlanet(GameEngine::Vector3& outCenter, float& outSurfaceRadius) const {
+   // 空中では保留候補を返し、カメラの着地予測だけを実際の重力先へ先行させる。
    int index = pendingIndex_ >= 0 ? pendingIndex_ : currentIndex_;
    if (index < 0 || index >= static_cast<int>(entries_.size())) {
 	  return false;
@@ -242,6 +245,7 @@ void PlanetSwitcher::CommitPendingSwitch() {
    }
 
    int index = pendingIndex_;
+   // 接地処理から呼ばれた時点で、保留していた惑星を正式な地表・カメラ基準へ昇格する。
    pendingIndex_ = -1;
    ApplyPlanetIndex(index);
 }
@@ -315,6 +319,7 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
    }
 
    entries_.clear();
+   // 読み直した配列と旧インデックスの対応は保証できないため、選択状態も同時に破棄する。
    currentIndex_ = -1;
    pendingIndex_ = -1;
    activeGravityIndex_ = -1;
@@ -325,6 +330,7 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
 
    for (const auto& planetData : data.at("planets")) {
 	  std::string objectName;
+	  // 旧形式の文字列配列と現行のobjectNameオブジェクトをどちらも受け付ける。
 	  if (planetData.is_string()) {
 		 objectName = planetData.get<std::string>();
 	  } else if (planetData.is_object() && planetData.contains("objectName") && planetData.at("objectName").is_string()) {

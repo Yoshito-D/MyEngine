@@ -20,6 +20,7 @@ constexpr float kInspectorColumnWidth = 150.0f;
 #endif
 
 GameEngine::Vector3 GetWorldPosition(const GameEngine::Object& object) {
+   // 親子階層を含む最終位置を使うため、ローカルTransformではなくワールド行列から取り出す。
    const GameEngine::Matrix4x4 worldMatrix = object.GetWorldMatrix();
    return { worldMatrix.m[3][0], worldMatrix.m[3][1], worldMatrix.m[3][2] };
 }
@@ -59,6 +60,7 @@ void RaceGoalDistanceTextComponent::Update(float deltaTime) {
    const bool shouldShow = raceManager_ &&
       raceManager_->GetState() == RaceManagerComponent::State::Running &&
       playerObject_ && goalObject_;
+   // 待機・カウントダウン・結果中は専用UIと競合しないよう距離表示を消す。
    if (!shouldShow) {
       text->SetText("");
       return;
@@ -66,6 +68,7 @@ void RaceGoalDistanceTextComponent::Update(float deltaTime) {
 
    const float distanceMeters =
       (GetWorldPosition(*goalObject_) - GetWorldPosition(*playerObject_)).Length();
+   // 不正なTransform値を文字列化してUIへ伝播させず、そのフレームだけ非表示にする。
    if (!std::isfinite(distanceMeters)) {
       text->SetText("");
       return;

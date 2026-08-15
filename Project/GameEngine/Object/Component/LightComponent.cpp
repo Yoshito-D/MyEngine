@@ -22,6 +22,8 @@ namespace {
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::LightComponent::kTypeName,
    [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
+      // ライトの位置と向きはEntityのWorld Transformから同期するため、
+      // Inspector追加時にも必ずTransformComponentを先に用意する。
       if (!object.HasComponent<GameEngine::TransformComponent>()) {
          object.AddComponent<GameEngine::TransformComponent>();
       }
@@ -85,6 +87,8 @@ void LightComponent::SetLightType(Type type) {
    if (type_ == type) {
       return;
    }
+   // LightManagerは種類別コンテナを持つ。同じキーのまま型だけ変えると旧コンテナにも
+   // 登録が残るため、型を書き換える前に現在のRuntimeライトを解除する。
    ReleaseRuntimeLight();
    type_ = type;
 }
@@ -99,6 +103,8 @@ bool LightComponent::DeserializeLegacy(const nlohmann::json& data) {
       return false;
    }
 
+   // 旧形式はTransformをライトデータ内に保持していたため、Component固有値と
+   // OwnerのTransformへ分けて移行する。
    SetLightType(parsedType);
    color = ReadVector4(data, "color", color);
    intensity = ReadFloat(data, "intensity", intensity);
@@ -111,9 +117,11 @@ bool LightComponent::DeserializeLegacy(const nlohmann::json& data) {
 
    if (auto* transform = GetOwner().GetComponent<TransformComponent>()) {
       transform->transform.translation = ReadVector3(data, "position", transform->transform.translation);
+      // Area Lightだけ旧フィールド名がnormalで、それ以外はdirectionを使用していた。
       const Vector3 direction = type_ == Type::Area
          ? ReadVector3(data, "normal", Vector3(0.0f, -1.0f, 0.0f))
          : ReadVector3(data, "direction", Vector3(0.0f, -1.0f, 0.0f));
+      // Point Lightには方向がないため回転を変更せず、既存Entityの姿勢を保つ。
       if (type_ == Type::Directional || type_ == Type::Spot || type_ == Type::Area) {
          transform->transform.SetRotationQuaternion(LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
       }
@@ -127,6 +135,7 @@ void LightComponent::Update(float deltaTime) {
 }
 
 void LightComponent::OnDisable() {
+   // 無効ComponentをLightManagerに残すと描画だけ継続するため、ライフサイクルに合わせて登録解除する。
    ReleaseRuntimeLight();
 }
 
@@ -168,6 +177,7 @@ void LightComponent::Deserialize(const nlohmann::json& data) {
    distance = ReadFloat(data, "distance", distance);
    cosAngle = ReadFloat(data, "cosAngle", cosAngle);
    cosFalloffStart = ReadFloat(data, "cosFalloffStart", cosFalloffStart);
+   // sizeは旧形式との互換名。現行areaSizeがあれば必ずそちらを優先する。
    areaSize = ReadVector2(data, "areaSize", ReadVector2(data, "size", areaSize));
 }
 
@@ -176,20 +186,26 @@ void LightComponent::SynchronizeRuntimeLight() {
       return;
    }
 
+   // Entity IDをManager上の一意キーとして使い、Componentと描画用ライトを一対一に対応させる。
    const std::string runtimeKey = ResolveRuntimeKey();
    if (runtimeKey.empty()) {
       return;
    }
+   // Entity IDの変更またはライト型変更があれば、旧キー/旧型の登録を先に削除する。
    if (!runtimeLightKey_.empty() &&
       (runtimeLightKey_ != runtimeKey || registeredType_ != type_)) {
       ReleaseRuntimeLight();
    }
 
+   // 親子Transformを含むWorld行列から位置とローカル基底を取り出す。
+   // 方向ベクトルには平行移動を適用せず、スケールの影響をNormalizeで除去する。
    const Matrix4x4 worldMatrix = GetOwner().GetWorldMatrix();
    const Vector3 position(worldMatrix.m[3][0], worldMatrix.m[3][1], worldMatrix.m[3][2]);
    const Vector3 forward = TransformNormal(Vector3(0.0f, 0.0f, 1.0f), worldMatrix).Normalize();
    const Vector3 right = TransformNormal(Vector3(1.0f, 0.0f, 0.0f), worldMatrix).Normalize();
 
+   // 以降は種類別Managerに「なければ作成、あれば更新」する。
+   // キーと登録型を先に記録し、Disable/Detach時に正しいコンテナから削除できるようにする。
    runtimeLightKey_ = runtimeKey;
    registeredType_ = type_;
    switch (type_) {
@@ -216,6 +232,7 @@ void LightComponent::SynchronizeRuntimeLight() {
          data.color = color;
          data.position = position;
          data.intensity = intensity;
+         // 負値は減衰式を不安定にするため、GPUへ渡す境界で物理量を0以上に制限する。
          data.radius = std::max(radius, 0.0f);
          data.decay = std::max(decay, 0.0f);
       }
@@ -249,6 +266,7 @@ void LightComponent::SynchronizeRuntimeLight() {
          data.color = color;
          data.position = position;
          data.intensity = intensity;
+         // Area Lightは面法線にforward、面内方向にrightを用い、Transform回転へ追従させる。
          data.normal = forward;
          data.tangent = right;
          data.width = std::max(areaSize.x, 0.0f);
@@ -264,6 +282,8 @@ void LightComponent::ReleaseRuntimeLight() {
       return;
    }
 
+   // type_ではなく実際に登録した型を使う。SetLightTypeは解除後にtype_を更新するため、
+   // ここで現在値を見ると別のManagerへ削除要求を送る可能性がある。
    switch (registeredType_) {
    case Type::Directional:
       EngineContext::RemoveDirectionalLight(runtimeLightKey_);
@@ -342,6 +362,7 @@ void LightComponent::DrawInspector() {
       ImGui::DragFloat2("Size", &areaSize.x, 0.05f, 0.0f, 10000.0f);
    }
 
+   // Edit停止中でもInspector操作の結果を同じフレームのViewportへ反映する。
    SynchronizeRuntimeLight();
 }
 #endif

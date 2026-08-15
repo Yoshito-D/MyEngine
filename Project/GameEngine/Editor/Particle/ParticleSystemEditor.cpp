@@ -181,6 +181,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("ファイル操作", "File Operations"), "ParticleFileOperations").c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
 	  // name ごとにバッファを保持（初回のみ name から既定パスを生成）
+	  // static Bufferをシステム別に分け、選択を切り替えても入力途中のパスを失わないようにする。
 	  static std::map<std::string, std::array<char, 256>> savePathBuffers;
 	  static std::map<std::string, std::array<char, 256>> loadPathBuffers;
 
@@ -293,6 +294,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    // ========================================
    // Main Module
    // ========================================
+   // Inspectorの並びを生成設定→運動→視覚→描画の実行依存順に揃え、上流設定から追って調整できるようにする。
    if (ImGui::CollapsingHeader(StableLabel(Tr("メインモジュール", "Main Module"), "ParticleMainModule").c_str())) {
 	  auto* mainModule = particleSystem->GetMainModule();
 	  if (mainModule) {

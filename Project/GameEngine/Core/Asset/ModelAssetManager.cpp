@@ -26,6 +26,7 @@ void ModelAssetManager::Initialize(GraphicsDevice* device, AnimationAssetManager
 }
 
 ModelAssetManager::ModelHandle ModelAssetManager::LoadModel(const std::string& modelPath, const std::string& modelName) {
+   // モデルがキャッシュ済みでもglTF内アニメーションの登録機会を失わないよう先に連携する。
    RegisterGltfAnimation(modelPath, modelName);
 
    auto it = modelAssets_.find(modelName);
@@ -47,6 +48,7 @@ ModelAssetManager::ModelHandle ModelAssetManager::LoadModel(const std::string& m
 
 ModelAssetManager::ModelHandle ModelAssetManager::LoadModelByAssetId(const std::string& assetId) {
    const std::string normalizedAssetId = NormalizeAssetId(assetId);
+   // resources相対IDを、既存LoadFile APIが要求するディレクトリとファイル名へ分解する。
    const std::filesystem::path relativePath(normalizedAssetId);
    const std::filesystem::path directory = std::filesystem::path("resources") / relativePath.parent_path();
    const std::string modelName = relativePath.filename().string();
@@ -69,6 +71,7 @@ ModelAssetManager::ModelHandle ModelAssetManager::LoadModelInternal(const std::s
    model->SetAssetId(assetId);
    model->LoadFile(device_, modelPath, modelName);
 
+   // 表示用の短い名前と永続化用IDの両方から、同じshared_ptrへ到達できるよう登録する。
    modelAssets_[modelName] = std::move(model);
    modelAssetsById_[assetId] = modelAssets_[modelName];
    Logger::Info("Model loaded: " + modelName);
@@ -105,6 +108,7 @@ std::vector<std::string> ModelAssetManager::GetModelNames() const {
 	  (void)asset;
 	  names.push_back(name);
    }
+   // エディタ選択肢がハッシュ配置で並び替わらないよう、公開直前に名前順へ揃える。
    std::sort(names.begin(), names.end());
    return names;
 }

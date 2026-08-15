@@ -65,7 +65,9 @@ void VehicleEffectController::Update(float deltaTime) {
    const bool isGrounded = landing && landing->IsGrounded();
    const bool isDrifting = drift && drift->IsDrifting();
    const bool canFireMiniTurbo = drift && drift->CanFireMiniTurbo();
+   // 発火通知はイベントとして一度だけ消費し、複数フレームの重複再生を防ぐ。
    const bool miniTurboFired = drift && drift->ConsumeMiniTurboFired();
+   // 継続状態から立ち上がりを抽出し、ジャンプ・着地系の単発エフェクトへ変換する。
    const bool jumpedThisFrame = isJumping && !wasJumping_;
    const bool landedThisFrame = isGrounded && !wasGrounded_;
    const bool failedLandingThisFrame =
@@ -77,10 +79,12 @@ void VehicleEffectController::Update(float deltaTime) {
    const bool hasLandingTransform =
 	  landedThisFrame && landing && landing->HasLandingContact();
    if (hasLandingTransform) {
+	  // 車体中心ではなく実際の接触点・法線へ配置し、球面上でも地表に沿わせる。
 	  landingContactPoint = landing->GetLastLandingContactPoint();
 	  landingRotation = AlignUpToNormal(landing->GetLastLandingNormal());
    }
 
+   // 共通エミッタ内のスロットをJSONパスで役割分けし、各ゲーム状態へ結び付ける。
    for (int slotIndex = 0; slotIndex < emitter->GetSlotCount(); ++slotIndex) {
       auto* slot = emitter->GetSlot(slotIndex);
       if (!slot) {
@@ -121,6 +125,7 @@ void VehicleEffectController::Update(float deltaTime) {
    }
 
    wasJumping_ = isJumping;
+   // 次フレームのエッジ判定に使うため、全スロット処理後に状態を更新する。
    wasGrounded_ = isGrounded;
 }
 

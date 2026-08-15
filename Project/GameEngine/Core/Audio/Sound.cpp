@@ -42,11 +42,13 @@ void Sound::Load(const std::wstring& filepath) {
 
    HRESULT result = S_FALSE;
 
+   // SourceReaderにコンテナと圧縮形式の判別を任せ、以降はデコード済みサンプルだけを扱う。
    // SourceReader作成
    ComPtr<IMFSourceReader> sourceReader;
    result = MFCreateSourceReaderFromURL(filepath.c_str(), nullptr, &sourceReader);
    if (FAILED(result)) throw std::runtime_error("Failed to create source reader.");
 
+   // XAudio2へそのまま渡せる共通形式へ揃えるため、SourceReaderの出力をPCMへ交渉する。
    // PCM形式での出力を指定
    ComPtr<IMFMediaType> pcmType;
    result = MFCreateMediaType(&pcmType);
@@ -60,6 +62,7 @@ void Sound::Load(const std::wstring& filepath) {
 
    audioData_.clear();
 
+   // 交渉後の実フォーマットを取得し、後で作るSourceVoiceとPCMバイト列を一致させる。
    // フォーマット取得
    ComPtr<IMFMediaType> nativeType;
    result = sourceReader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, &nativeType);
@@ -85,6 +88,7 @@ void Sound::Load(const std::wstring& filepath) {
 
 	  if (sample) {
 		 ComPtr<IMFMediaBuffer> buffer;
+		 // サンプルが複数バッファでも、連続領域へまとめてから所有ベクターへコピーする。
 		 result = sample->ConvertToContiguousBuffer(&buffer);
 		 if (FAILED(result)) throw std::runtime_error("Failed to get contiguous buffer.");
 
@@ -93,6 +97,7 @@ void Sound::Load(const std::wstring& filepath) {
 		 result = buffer->Lock(&data, &maxLen, &currentLen);
 		 if (FAILED(result)) throw std::runtime_error("Failed to lock buffer.");
 
+		 // Media Foundationのロック寿命を越えて再生するため、PCMデータを自前領域へ退避する。
 		 audioData_.insert(audioData_.end(), data, data + currentLen);
 
 		 result = buffer->Unlock();
@@ -100,6 +105,7 @@ void Sound::Load(const std::wstring& filepath) {
 	  }
    }
 
+   // 新しいPCM形式でVoiceを作り直す前に、旧キューと旧フォーマットのVoiceを破棄する。
    // 既存のVoice破棄
    if (sourceVoice_) {
 	  sourceVoice_->Stop();
@@ -118,6 +124,7 @@ void Sound::Play(float volume, bool loop, bool restart) {
    XAUDIO2_VOICE_STATE state = {};
    sourceVoice_->GetState(&state);
 
+   // 非同期再生完了をVoiceのキュー状態から取り込み、内部フラグの遅れを補正する。
    if (state.BuffersQueued == 0) {
 	  isPlaying_ = false;
    }
@@ -142,6 +149,7 @@ void Sound::Play(float volume, bool loop, bool restart) {
 
    buffer_ = {};
    buffer_.AudioBytes = static_cast<UINT32>(audioData_.size());
+   // XAudio2はデータをコピーしないため、再生中はメンバーvectorのアドレスを安定して保持する。
    buffer_.pAudioData = audioData_.data();
    buffer_.Flags = XAUDIO2_END_OF_STREAM;
    buffer_.LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
@@ -157,6 +165,7 @@ void Sound::Play(float volume, bool loop, bool restart) {
 
 void Sound::Stop() {
    if (sourceVoice_) {
+      // キューは残して停止するため、次のStartで同じ再生位置から再開できる。
 	  sourceVoice_->Stop();
 	  isPlaying_ = false;
    }
@@ -164,6 +173,7 @@ void Sound::Stop() {
 
 void Sound::Reset() {
    if (sourceVoice_) {
+      // 停止に加えてキューを破棄し、次回Submitを先頭から受け付ける状態へ戻す。
 	  sourceVoice_->Stop();
 	  sourceVoice_->FlushSourceBuffers();
    }

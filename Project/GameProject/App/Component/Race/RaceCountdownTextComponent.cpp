@@ -20,6 +20,7 @@ void RaceCountdownTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorl
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
+   // アニメーションで上書きする前の見た目を、シーンに設定された復元先として記録する。
    CaptureBaseVisualState();
    displayedText_.clear();
    animationElapsed_ = 0.0f;
@@ -107,6 +108,7 @@ void RaceCountdownTextComponent::CaptureBaseVisualState() {
 
    baseOpacity_ = text->GetStyle().color.w;
    baseScale_ = transform->transform.scale;
+   // 元の回転表現を変えないよう、Euler値とQuaternion値の両方を退避する。
    baseEuler_ = transform->transform.GetActiveEuler();
    baseRotationQuaternion_ = transform->transform.GetActiveQuaternion();
    baseUsesQuaternion_ = transform->transform.IsUsingQuaternion();
@@ -140,6 +142,7 @@ void RaceCountdownTextComponent::ApplyAnimation(
    }
 
    const float rotationProgress = std::clamp(animationElapsed_ / rotationDuration_, 0.0f, 1.0f);
+   // 基準姿勢へ毎フレーム加算し、前フレームの回転誤差を累積させない。
    const float easedRotation = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, rotationProgress);
    GameEngine::Vector3 animatedEuler = baseEuler_;
    animatedEuler.z += GameEngine::MathConstants::kTwoPi * easedRotation;

@@ -29,6 +29,8 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	// ※ この時点ではまだマテリアルを取得していないので DrawCommand の blendMode で先行設定し、
 	//   マテリアル取得後に必要であれば再設定する
 	BlendMode resolvedBlendMode = spriteData.blendMode;
+	// 先行設定で通常ケースを処理し、後から見つかったマテリアル固有値が異なる時だけ
+	// PSOキャッシュ経由で再設定する。
 	setPipelineFunc("Sprite", resolvedBlendMode);
 
 	Sprite* sprite = spriteData.sprite;
@@ -59,7 +61,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 		materialComponent->AssignMaterial(defaultMaterial);
 	}
 
-	// スプライトのマテリアルのライティングモードをNONEに設定
+	// ワールド空間スプライトも面の色をそのまま表示するため、3Dライト計算は無効化する。
    Material* spriteMaterial = materialComponent->materials.empty() ? nullptr : materialComponent->materials[0];
 	if (spriteMaterial) {
 		spriteMaterial->SetLightingMode(Material::LightingMode::NONE);
@@ -114,6 +116,8 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	cmdList->IASetIndexBuffer(&mesh->GetIndexBufferView());
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
+	// 変換・カメラ・ライト・テクスチャを意味名で解決済みのスロットへまとめて束縛する。
+	// Sprite PSOがObject3Dと似た資源構成でも、JSON上の並び順には依存しない。
 	// Object3Dルートシグネチャに合わせてルートパラメータを設定
 	// Root Parameter 0: Material (Pixel Shader)
  if (!spriteMaterial) {

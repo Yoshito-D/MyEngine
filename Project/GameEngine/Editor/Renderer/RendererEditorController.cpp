@@ -140,6 +140,7 @@ bool SaveJsonFile(
       return false;
    }
    file << jsonData.dump(kJsonIndentSize);
+   // close時まで遅延するI/O失敗を呼び出し元へ返せるよう、明示的にflushして状態を確認する。
    file.flush();
    if (!file.good()) {
       errorMessage = "Write failed: " + filePath.generic_string();
@@ -290,6 +291,7 @@ void RendererEditorController::ShowAssetWindow() {
       const std::string dirtyMark = editorContext->IsDirty() ? " *" : "";
       ImGui::Text("%s%s", Tr("シーン", "Scene"), dirtyMark.c_str());
       ImGui::Separator();
+      // 実行中の一時状態を編集用シーンへ保存・再読込しないよう、シーンファイル操作はEdit時だけ許可する。
       const bool canUseSceneFileButtons = !EngineContext::IsInPlayMode();
       ImGui::BeginDisabled(!canUseSceneFileButtons);
       if (ImGui::Button(Tr("シーンを保存", "Save Scene"))) {
@@ -332,6 +334,7 @@ void RendererEditorController::ShowAssetWindow() {
          ImGui::EndCombo();
       }
 
+      // 未保存変更がある間はシーン切替を禁止し、確認ダイアログなしでも編集内容を失わないようにする。
       const bool canOpenScene =
          canUseSceneFileButtons &&
          !editorContext->IsDirty() &&
@@ -404,6 +407,7 @@ void RendererEditorController::ShowHierarchyWindow() {
    ImGui::Begin(windowLabel.c_str());
 
    auto* editorContext = GetActiveEditorContext();
+   // コンテキストがある場合は削除墓標で隠されたシーン所有物を除いた編集用一覧を正本にする。
    const auto sceneObjects = editorContext ? editorContext->CollectEditableObjects() : CollectSceneObjects();
    const auto particleSystems = editorContext ? editorContext->CollectEditableParticleSystems() : ParticleSystem::GetRegisteredParticleSystems();
 
@@ -547,6 +551,7 @@ void RendererEditorController::ShowHierarchyWindow() {
          if (!object || renderedObjects.contains(object)) {
             return;
          }
+         // 再帰へ入る前に記録し、循環した親子参照でも無限再帰しないようにする。
          renderedObjects.insert(object);
 
          std::vector<Object*> children;
@@ -570,6 +575,7 @@ void RendererEditorController::ShowHierarchyWindow() {
          const bool clicked = ImGui::IsItemClicked();
          if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
             const std::string& entityId = object->GetEntityId();
+            // フレームをまたぐDrag中も有効なEntity IDを渡し、生ポインターをPayloadへ保存しない。
             ImGui::SetDragDropPayload("EDITOR_SCENE_OBJECT", entityId.c_str(), entityId.size() + 1);
             ImGui::Text("%s", objectName.c_str());
             ImGui::TextDisabled("%s", Tr(
@@ -636,6 +642,7 @@ void RendererEditorController::ShowHierarchyWindow() {
                [&parentId](const Object* candidate) {
                   return candidate && candidate->GetEntityId() == parentId;
                });
+         // 親が非表示・欠損している子もルート扱いにし、編集不能な孤児を作らない。
          if (!hasVisibleParent) {
             rootObjects.push_back(object);
          }
@@ -706,6 +713,7 @@ void RendererEditorController::RefreshSceneCatalog() {
    std::sort(editorSceneNames_.begin(), editorSceneNames_.end());
    editorReleaseStartSceneName_ = catalogData.value("initialScene", "");
 
+   // 選択中の項目が外部編集で消えた場合は、起動シーンへ戻して不正な切替要求を防ぐ。
    if (editorSelectedSceneName_.empty() ||
       std::find(editorSceneNames_.begin(), editorSceneNames_.end(), editorSelectedSceneName_) ==
          editorSceneNames_.end()) {
@@ -727,6 +735,7 @@ bool RendererEditorController::CreateEditorScene(const std::string& sceneName) {
       return false;
    }
 
+   // Windowsの大文字小文字非区別環境で同一ファイルへ衝突しないよう、表示名もcase-insensitiveで検査する。
    const std::string foldedSceneName = [&sceneName]() {
       std::string folded = sceneName;
       std::transform(folded.begin(), folded.end(), folded.begin(),
@@ -775,6 +784,7 @@ bool RendererEditorController::CreateEditorScene(const std::string& sceneName) {
 
    catalogData["scenes"][sceneName] = "game/scenes/" + sceneName + ".json";
    if (!SaveJsonFile(kSceneCatalogPath, catalogData, errorMessage)) {
+      // カタログへ登録できなければ到達不能なシーンファイルになるため、直前の生成だけをロールバックする。
       std::error_code rollbackError;
       std::filesystem::remove(sceneFilePath, rollbackError);
       editorSceneCatalogStatus_ = rollbackError
@@ -862,6 +872,7 @@ void RendererEditorController::ShowInspectorWindow() {
       return;
    }
 
+   // 前の選択対象に対する保存結果を別Objectのメッセージとして表示しない。
    if (editorComponentSaveStatusObject_ != selectedObject) {
       editorComponentSaveStatusObject_ = selectedObject;
       editorComponentSaveStatus_.clear();
@@ -899,6 +910,7 @@ void RendererEditorController::ShowInspectorWindow() {
       ImGui::Spacing();
    }
 
+   // Inspector描画中にComponentコンテナを変更せず、描画完了後に要求を処理してiteratorを安定させる。
    const ComponentInspectorAction componentAction =
       selectedObject->DrawComponentInspector(EngineContext::IsInPlayMode());
 
@@ -995,6 +1007,7 @@ void RendererEditorController::ShowSceneOverlay(float viewportX, float viewportY
       return;
    }
 
+   // Drop、Gizmo、クリック選択の順に処理し、同じクリックで生成直後の選択が上書きされないようにする。
    editorContext->AcceptModelAssetDrop();
    editorContext->DrawTransformGizmo(viewportX, viewportY, viewportWidth, viewportHeight);
    if (auto* currentScene = BaseScene::GetCurrentScene()) {
@@ -1043,6 +1056,7 @@ void RendererEditorController::DrawAssetEntry(EditorSceneContext& editorContext,
          return;
       }
 
+      // ImGuiのTexture ID型へGPU descriptor値をサイズ安全に写し、ポインター型の直接キャストを避ける。
       ImU64 texId{};
       const UINT64 gpuPtr = texture->GetTextureSrvHandleGPU().ptr;
       std::memcpy(&texId, &gpuPtr, sizeof(texId));
@@ -1118,6 +1132,7 @@ void RendererEditorController::DrawAssetTree(EditorSceneContext& editorContext) 
    childrenByParent.reserve(assets.size());
    constexpr float kAssetCellWidth = 92.0f;
 
+   // フラットなRegistryを親パスごとに束ね、再帰描画だけでフォルダ階層を再構成する。
    for (const auto& entry : assets) {
       std::filesystem::path parentPath = std::filesystem::path(entry.assetId).parent_path();
       childrenByParent[parentPath.generic_string()].push_back(&entry);
@@ -1226,6 +1241,7 @@ bool RendererEditorController::EnsureTextureLoaded(const std::string& textureAss
       return false;
    }
 
+   // 毎フレーム描画されるアイコンから同じ名前解決を繰り返さないよう、成功したIDだけをキャッシュする。
    if (editorLoadedTextureAssets_.contains(textureAssetId)) {
       return true;
    }
@@ -1235,6 +1251,7 @@ bool RendererEditorController::EnsureTextureLoaded(const std::string& textureAss
       return true;
    }
 
+   // TextureManagerの登録規約がパス・stem・ファイル名のいずれでも既存リソースを見つけられるようにする。
    const std::filesystem::path texturePath(textureAssetId);
    if (EngineContext::GetTexture(texturePath.stem().string()) || EngineContext::GetTexture(texturePath.filename().string())) {
       editorLoadedTextureAssets_.insert(textureAssetId);
@@ -1310,6 +1327,7 @@ void RendererEditorController::ResolveParentRelation(Object* object, const std::
       return;
    }
 
+   // 旧シーンの表示名参照を一度だけ安定したEntity IDへ移行する。
    if (object->GetParentEntityId().empty() && !transformComponent->parentObjectName.empty()) {
       const auto legacyParent = std::find_if(sceneObjects.begin(), sceneObjects.end(),
          [object, transformComponent](const Object* candidate) {
@@ -1329,6 +1347,7 @@ void RendererEditorController::ResolveParentRelation(Object* object, const std::
    }
 
    if (!Object::FindByEntityId(object->GetParentEntityId())) {
+      // 親が未ロード・削除済みでも前フレームの行列を使い続けないよう、親行列を明示的に解除する。
       transformComponent->useParentMatrix = false;
       transformComponent->parentMatrix = MakeIdentity4x4();
       return;

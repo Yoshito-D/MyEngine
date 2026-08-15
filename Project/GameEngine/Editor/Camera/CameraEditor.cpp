@@ -76,6 +76,7 @@ void CameraEditor::SetTargetBrain(CinemachineBrain* brain) {
     // BrainがCameraを所有しているのでtargetCamera_を自動設定
     targetCamera_ = brain ? brain->GetOutputCamera() : nullptr;
     // brain変更時は選択状態をリセット
+    // VirtualCameraの所有Registryが切り替わるため、以前のindexと生ポインターを新しい一覧へ持ち越さない。
     targetVirtualCamera_ = nullptr;
     selectedVirtualCameraIndex_ = -1;
 }
@@ -149,6 +150,7 @@ void CameraEditor::ShowVirtualCameraTab() {
         const auto& vcams = targetBrain_->GetVirtualCameras();
 
         // 選択状態を毎フレーム検証
+        // Scene切替などでBrain側から削除されたCameraをInspectorが参照し続けないようにする。
         if (targetVirtualCamera_) {
             int foundIndex = -1;
             for (size_t i = 0; i < vcams.size(); ++i) {
@@ -337,6 +339,7 @@ void CameraEditor::ShowVirtualCameraInspector(VirtualCamera* vcam) {
             }
         }
 
+        // 描画中のcomponentsを直接eraseせず、走査後に削除してiteratorの無効化を避ける。
         if (toRemove) {
             vcam->RemoveComponent(toRemove);
         }
@@ -507,6 +510,7 @@ void CameraEditor::DrawSceneGizmos(Camera* viewCamera, float viewportX, float vi
     if (targetVirtualCamera_) {
         CameraState state = targetVirtualCamera_->GetState();
         if (DrawTransformGizmo(state.transform, viewCamera, viewportX, viewportY, viewportWidth, viewportHeight, "VirtualCamera")) {
+            // 手動Transformを正本へ戻し、以前のView行列Overrideが編集結果を上書きしないようにする。
             state.hasViewMatrixOverride = false;
             targetVirtualCamera_->SetState(state);
         }
@@ -517,6 +521,7 @@ void CameraEditor::DrawSceneGizmos(Camera* viewCamera, float viewportX, float vi
         Transform transform = targetCamera_->GetTransform();
         if (DrawTransformGizmo(transform, viewCamera, viewportX, viewportY, viewportWidth, viewportHeight, "MainCamera")) {
             targetCamera_->SetTransform(transform);
+            // 同じフレームの視錐台とプレビューへ操作結果を反映するため、行列更新を遅延させない。
             targetCamera_->Update();
         }
     }

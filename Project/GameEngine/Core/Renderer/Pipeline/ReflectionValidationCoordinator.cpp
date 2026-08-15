@@ -45,6 +45,7 @@ double ComputeStageMatchRate(const GameEngine::PipelineStageMatchInfo& stageInfo
    };
    accumulate(stageInfo.vertex);
    accumulate(stageInfo.pixel);
+   // 検証対象ステージがないパイプラインを0%扱いにすると誤検知になるため、検証不能時は中立の100%とする。
    return (stageCount > 0) ? (sumRate / static_cast<double>(stageCount)) : 1.0;
 }
 
@@ -101,6 +102,7 @@ void ReflectionValidationCoordinator::EndFrame(ShaderManager* shaderManager, Ref
    state.frameResolveHits = stats.hits - state.resolveHitsAtFrameBegin;
    state.frameResolveFallbacks = stats.misses - state.resolveMissesAtFrameBegin;
 
+   // パイプライン別も開始時スナップショットとの差を取り、このフレームで実際に使ったものだけをレポートする。
    const auto currentPipelineStats = shaderManager->GetPipelineResolveStats();
    for (const auto& [pipelineName, current] : currentPipelineStats) {
       const auto beginIt = state.pipelineStatsAtFrameBegin.find(pipelineName);
@@ -120,6 +122,8 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       return;
    }
 
+   // PSO生成時の静的検証、シェーダー反射の一致率、描画中のスロット解決失敗を
+   // 一つの品質ゲートへ統合する。
    const auto psoSummary = psoManager->GetValidationSummary();
    const auto validationMetadata = psoManager->GetAllPipelineReflectionMetadata();
    const auto stageMatchInfos = shaderManager->GetPipelineStageMatchInfos();
@@ -141,6 +145,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
    const double kFallbackRateIncreaseThreshold = gateConfig.fallbackRateIncreaseThreshold;
    const double kStageMatchRateDecreaseThreshold = gateConfig.stageMatchRateDecreaseThreshold;
 
+   // 後段の前回値比較を単純化するため、指標ごとに現在値をパイプライン名で正規化する。
    std::unordered_map<std::string, uint32_t> currentWarningsByPipeline;
    for (const auto& [pipelineName, metadata] : validationMetadata) {
       currentWarningsByPipeline[pipelineName] = metadata.validationWarningCount;
@@ -207,6 +212,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       }
    }
 
+   // 旧レポートに項目がない場合は互換既定値を返し、スキーマ追加後も比較処理を継続する。
    auto getPreviousPipelineWarning = [&](const std::string& pipelineName) -> uint32_t {
       if (!hasPreviousReport || !previousReport.contains("pso") || !previousReport["pso"].contains("pipelines") || !previousReport["pso"]["pipelines"].is_array()) {
          return 0;
@@ -244,6 +250,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       return stageMatches[pipelineName].value("averageMatchRate", 1.0);
    };
 
+   // 絶対閾値内でも前回から急激に悪化した場合を検出するため、三つの指標を差分化する。
    nlohmann::json diffByPipeline = nlohmann::json::object();
    for (const auto& [pipelineName, currentWarningCount] : currentWarningsByPipeline) {
       const uint32_t previousWarningCount = getPreviousPipelineWarning(pipelineName);
@@ -286,6 +293,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
 
    state.latestQualityGatePassed = state.latestQualityGateFailReasons.empty();
 
+   // CIとデバッグUIが同じ結果を読めるよう、判定根拠・現在値・差分・互換方針を一つのJSONへ格納する。
    nlohmann::json report = nlohmann::json::object();
    report["version"] = "1.1.0";
    report["schemaVersion"] = "1.1.0";
@@ -404,6 +412,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       {"failedKeys", state.latestSchemaValidationStatus.failedKeys}
    };
 
+   // PSO単体レポートと統合レポートを分け、低レイヤーだけの調査にも使えるようにする。
    psoManager->SaveValidationReportJson("resources/engine/reports/pso_validation_report.json");
 
    try {

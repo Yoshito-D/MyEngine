@@ -29,11 +29,13 @@ bool FontManager::LoadMsdfFont(const std::string& fontId, const std::filesystem:
    }
 
    auto font = std::make_unique<MsdfFont>();
+   // 新フォントを完全にロードしてから同じIDへ差し替え、失敗時は既存フォントを残す。
    if (!font->Load(device_, jsonPath)) {
       return false;
    }
 
    msdfFonts_[fontId] = std::move(font);
+   // UIText側のレイアウトキャッシュへフォント差し替えを通知する世代番号を進める。
    ++revision_;
    Logger::Info("[FontManager] Loaded MSDF font: " + fontId + " <- " + jsonPath.generic_string());
    return true;
@@ -51,6 +53,7 @@ size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& dire
       std::filesystem::directory_options::skip_permission_denied,
       error);
    const std::filesystem::recursive_directory_iterator end;
+   // error_code版を使い、アクセス不能な項目を例外で全走査失敗にしない。
    while (iterator != end) {
       if (error) {
          // 読めない1ディレクトリで全フォントの自動検出を中断しない。
@@ -119,6 +122,7 @@ float FontManager::GetKerning(const std::string& fontId, uint32_t leftGlyph, uin
 }
 
 void FontManager::ReleaseIntermediateResources() {
+   // GPU転送完了後、各フォントのアトラス本体を残してアップロード領域だけを解放する。
    for (auto& [fontId, font] : msdfFonts_) {
       (void)fontId;
       font->ReleaseIntermediateResources();
@@ -128,6 +132,7 @@ void FontManager::ReleaseIntermediateResources() {
 void FontManager::Clear() {
    msdfFonts_.clear();
    device_ = nullptr;
+   // 全フォント消失も既存テキストの再レイアウト対象になるため、世代を更新する。
    ++revision_;
 }
 

@@ -80,6 +80,7 @@ DrawCommand DrawCommand::CreateLine(std::function<void(ID3D12GraphicsCommandList
     cmd.lineData.camera = camera;
     cmd.lineData.sortPosition = sortPosition;
     if (camera) {
+        // 実行時までCameraの行列が変化しても、登録時に意図した視点で線を描けるよう値をスナップショットする。
         cmd.lineData.viewProjectionMatrix = camera->GetViewProjectionMatrix();
     }
     return cmd;
@@ -90,6 +91,7 @@ DrawCommand DrawCommand::CreateLine(std::function<void(ID3D12GraphicsCommandList
 // ============================================================
 
 std::optional<Vector3> DrawCommandWrapper::GetSortPosition() const {
+    // 透明ソートに使える代表位置だけを返す。画面空間UI／テキストは距離の概念を持たないため未指定とする。
     switch (cmd_.type) {
         case DrawCommandType::Model:
             if (cmd_.modelData.model) {

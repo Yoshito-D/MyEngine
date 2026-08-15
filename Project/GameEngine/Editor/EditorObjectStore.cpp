@@ -51,6 +51,7 @@ const char* ToSpriteAnchorPointName(Sprite::AnchorPoint anchorPoint) {
 
 Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::AnchorPoint fallback) {
    if (value.is_string()) {
+      // 現行形式はenumの並び替えに影響されない名前で保存する。
       const std::string name = value.get<std::string>();
       if (name == "TopLeft") {
          return Sprite::AnchorPoint::TopLeft;
@@ -80,6 +81,7 @@ Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::
          return Sprite::AnchorPoint::BottomRight;
       }
    } else if (value.is_number_integer()) {
+      // 旧シーンの整数値も有効範囲内だけ受け入れて後方互換性を保つ。
       const int index = value.get<int>();
       if (index >= static_cast<int>(Sprite::AnchorPoint::TopLeft) &&
          index <= static_cast<int>(Sprite::AnchorPoint::BottomRight)) {
@@ -110,6 +112,7 @@ Object* EditorObjectStore::CreateGenericObject(const Transform* initialTransform
 
 Object* EditorObjectStore::CreateModel(const std::string& assetId, const Transform* initialTransform, const std::string& requestedId) {
    std::shared_ptr<ModelAsset> modelAsset;
+   // 読み込み失敗時に空のModelを各レジストリへ残さないよう、所有オブジェクト生成より先にアセットを解決する。
    if (!assetId.empty()) {
       modelAsset = EngineContext::LoadModelByAssetId(assetId);
       if (!modelAsset) {
@@ -142,6 +145,7 @@ Object* EditorObjectStore::CreateSprite(const std::string& textureAssetId, const
 
    EnsureTextureLoaded(textureAssetId);
 
+   // 未ロード時にも編集可能な既定寸法を使い、利用可能なら実テクスチャのピクセル寸法へ合わせる。
    Vector2 spriteSize(128.0f, 128.0f);
    if (Texture* texture = EngineContext::GetTexture(textureAssetId)) {
       if (texture->GetMetadata().IsCubemap()) {
@@ -176,6 +180,7 @@ Object* EditorObjectStore::CreateUIText(const Transform* initialTransform, const
    UIText* rawText = uiText.get();
 
    TextStyle style{};
+   // 空のFont IDで生成に失敗しないよう、現在登録済みの先頭フォントを初期値にする。
    const auto fontIds = EngineContext::GetFontIds();
    if (!fontIds.empty()) {
       style.fontId = fontIds.front();
@@ -203,6 +208,7 @@ ParticleSystem* EditorObjectStore::CreateParticleSystem(const std::string& asset
    if (!assetId.empty()) {
       rawParticleSystem->LoadFromJson((std::filesystem::path("resources") / assetId).generic_string());
    }
+   // アセット内のShape位置よりユーザーがドロップした配置を優先するため、JSON読込後にTransformを上書きする。
    if (initialTransform && rawParticleSystem->GetShapeModule()) {
       rawParticleSystem->GetShapeModule()->SetTransform(*initialTransform);
    }
@@ -284,6 +290,7 @@ ParticleSystem* EditorObjectStore::RestoreParticleSystem(const nlohmann::json& o
    const std::string assetId = objectData.value("assetId", "");
    const std::string id = objectData.value("id", "");
    ParticleSystem* particleSystem = CreateParticleSystem(assetId, id);
+   // assetIdはテンプレート生成用、dataは保存時点の完全な編集状態なので後者を最後に適用する。
    if (particleSystem && objectData.contains("data") && objectData.at("data").is_object()) {
       particleSystem->FromJson(objectData.at("data"));
    }
@@ -386,6 +393,7 @@ bool EditorObjectStore::DeleteParticleSystem(const std::string& objectId) {
       return false;
    }
 
+   // Store内の検索表とグローバル描画レジストリを先に外し、実体はフレーム境界まで保持する。
    UnregisterParticleSystem(target);
    ParticleSystem::UnregisterParticleSystem(target);
    deferredDeleteParticleSystems_.push_back(std::move(*vecIt));
@@ -403,6 +411,7 @@ void EditorObjectStore::FlushDeferredDeletes() {
 }
 
 void EditorObjectStore::Clear() {
+   // 各具象型の静的レジストリを解除してからunique_ptrを遅延キューへ移し、列挙中の破棄を避ける。
    for (auto& object : genericObjects_) {
       if (object) {
          UnregisterOwnedRuntimeSystems(object.get());
@@ -458,6 +467,7 @@ bool EditorObjectStore::Contains(const ParticleSystem* particleSystem) const {
 }
 
 bool EditorObjectStore::ContainsId(const std::string& objectId) const {
+   // BaseScene所有EntityともID空間を共有するため、Store外のグローバルEntity IDまで衝突判定へ含める。
    return idToObject_.contains(objectId) || idToParticleSystem_.contains(objectId) ||
       Object::FindByEntityId(objectId) != nullptr;
 }
@@ -653,6 +663,7 @@ bool EditorObjectStore::ApplyParticleSystemState(ParticleSystem* particleSystem,
 
 nlohmann::json EditorObjectStore::SerializeAll() const {
    nlohmann::json objects = nlohmann::json::array();
+   // 所有コンテナは具象型ごとに分かれているが、復元側がobjectTypeで振り分けられる単一配列へ正規化する。
    for (const auto& object : genericObjects_) {
       if (!object) {
          continue;
@@ -768,6 +779,7 @@ void EditorObjectStore::RegisterObject(const std::string& id, Object* object) {
       return;
    }
 
+   // ID検索とポインター検索の双方向表を同時に更新し、Undoコマンドのどちらの参照経路も一致させる。
    idToObject_[id] = object;
    objectToId_[object] = id;
    object->SetEntityId(id);
@@ -778,6 +790,7 @@ void EditorObjectStore::RegisterParticleSystem(const std::string& id, ParticleSy
       return;
    }
 
+   // 再保存時に元テンプレートも保持できるよう、識別表とassetIdを同じ寿命で登録する。
    idToParticleSystem_[id] = particleSystem;
    particleSystemToId_[particleSystem] = id;
    particleSystemAssetIds_[particleSystem] = assetId;
@@ -813,6 +826,7 @@ void EditorObjectStore::UnregisterOwnedRuntimeSystems(Object* object) {
       return;
    }
 
+   // 親Objectより長く静的描画リストへ残らないよう、Emitterが所有する実行時システムも先に解除する。
    if (auto* emitter = object->GetComponent<ParticleEmitterComponent>()) {
       emitter->UnregisterParticleSystemsForRender();
    }
@@ -834,6 +848,7 @@ void EditorObjectStore::BumpCounterFromId(const std::string& id) {
       const uint64_t number = std::stoull(numberText);
       nextObjectIndex_ = std::max(nextObjectIndex_, number + 1);
    } catch (...) {
+      // 接頭辞が同じでも数値でない外部IDは有効な識別子として残し、自動採番だけを変更しない。
    }
 }
 
@@ -852,6 +867,7 @@ void EditorObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::js
       return;
    }
 
+   // 現行SerializeではComponent側が保持する項目も、旧専用spriteブロックからは引き続き復元する。
    if (data.contains("size") && data.at("size").is_array() && data.at("size").size() == 2) {
       sprite->SetSize(Vector2(data.at("size")[0].get<float>(), data.at("size")[1].get<float>()));
    }
@@ -889,6 +905,7 @@ bool EditorObjectStore::EnsureTextureLoaded(const std::string& textureAssetId) c
       return true;
    }
 
+   // Texture管理側に相対パス、stem、ファイル名のいずれで登録されていても既存リソースを再利用する。
    const std::filesystem::path texturePath(textureAssetId);
    return EngineContext::GetTexture(texturePath.stem().string()) != nullptr ||
       EngineContext::GetTexture(texturePath.filename().string()) != nullptr;

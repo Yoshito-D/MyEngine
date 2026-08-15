@@ -24,12 +24,15 @@ SceneWorld::~SceneWorld() {
 }
 
 bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
+   // 再読み込み時に旧シーンのカメラ登録やID索引を残さないよう、検証より先に所有物を解放する。
    Clear();
    if (!sceneData.is_object()) {
       Logger::Error("SceneWorld load failed: scene root is not an object");
       return false;
    }
 
+   // コンポーネントのデシリアライズ中にも現在のワールドを参照できるよう、
+   // 個々のオブジェクトを復元する前に公開する。
    sCurrent_ = this;
    bool loadedAnyObject = false;
    if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
@@ -40,9 +43,13 @@ bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
 
    // version 3までのsceneObjectsはC++生成物への差分だった。
    // データ駆動シーンでは埋め込まれた完全スナップショットを通常オブジェクトとして復元する。
+   // 現行形式と旧形式を同じワールドへ統合した後、カメラやコンポーネント間参照を解決する。
+   // 復元途中では参照先がまだ生成されていない場合があるため、この順序を維持する。
    RestoreLegacyEntries(sceneData);
    RestoreLegacyLights(sceneData);
    RestoreCameras(sceneData);
+   // 描画設定もシーンの一部として扱う。不正な設定を黙って既定値にすると
+   // 見た目だけ異なるシーンが成立してしまうため、ワールド全体の読み込み失敗とする。
    if (sceneData.contains("renderSettings") &&
       !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
       Logger::Error("SceneWorld load failed: invalid render settings");
@@ -57,6 +64,8 @@ bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
 }
 
 void SceneWorld::Clear() {
+   // VirtualCamera はワールドが所有する一方、Brain は非所有ポインターを保持している。
+   // unique_ptr を破棄する前に登録解除し、次フレームのダングリング参照を防ぐ。
    if (auto* brain = EngineContext::GetActiveBrain()) {
       for (const auto& camera : virtualCameras_) {
          if (camera) {
@@ -65,12 +74,15 @@ void SceneWorld::Clear() {
       }
    }
 
+   // 逆引きマップには所有コンテナ内の生ポインターが入るため、所有物より先に無効化する。
    virtualCamerasById_.clear();
    virtualCameras_.clear();
    looseObjectIds_.clear();
    looseObjectsById_.clear();
    skyboxes_.clear();
    genericObjects_.clear();
+   // EditorObjectStore は削除を遅延できる。Clear後に必ずフラッシュし、
+   // 旧シーンのEntityがグローバル検索へ残らない状態まで確定させる。
    objectStore_.Clear();
    objectStore_.FlushDeferredDeletes();
    if (sCurrent_ == this) {
@@ -86,6 +98,7 @@ Object* SceneWorld::FindObjectById(const std::string& objectId) const {
    if (objectId.empty()) {
       return nullptr;
    }
+   // Skyboxや旧形式の汎用ObjectはEditorObjectStore外で所有するため、両方の索引を調べる。
    if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end()) {
       return it->second;
    }
@@ -134,6 +147,7 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
       return false;
    }
 
+   // 旧形式の補正値を原文JSONへ書き戻さないよう、エントリー単位の作業コピーを使う。
    nlohmann::json objectData = sourceData;
    std::string objectType = objectData.value("objectType", "Model");
    std::string id = objectData.value("id", legacySceneKey);
@@ -141,6 +155,8 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
       Logger::EngineWarning("Scene object skipped because it has no stable id");
       return false;
    }
+   // シーン初期化コードが先に生成したEntityと同じIDなら、新規生成せず保存状態だけを重ねる。
+   // FindObjectByIdで当ワールド未登録であることも確認し、重複エントリーとの区別を保つ。
    if (Object* existingEntity = Object::FindByEntityId(id);
       existingEntity && !FindObjectById(id)) {
       return objectStore_.ApplyObjectState(existingEntity, objectData);
@@ -150,11 +166,14 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
       return false;
    }
 
+   // 古いファイルにはSkybox専用typeがなく、sceneKeyの接頭辞だけが識別情報だった。
    if ((objectType == "Object" || objectType == "Generic") && legacySceneKey.rfind("Skybox:", 0) == 0) {
       objectType = "Skybox";
       objectData["objectType"] = objectType;
    }
 
+   // 汎用ObjectとSkyboxはEditorObjectStoreの型別コンテナに入らないため、
+   // SceneWorld自身が所有し、loose object用の双方向索引へ登録する。
    if (objectType == "Generic" || objectType == "Object") {
       auto object = std::make_unique<Object>();
       Object* rawObject = object.get();
@@ -188,6 +207,7 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
       return true;
    }
 
+   // ParticleSystemは通常Objectとは別の所有コンテナを使うので専用復元経路へ振り分ける。
    if (objectType == "ParticleSystem") {
       return objectStore_.RestoreParticleSystem(objectData) != nullptr;
    }
@@ -196,6 +216,8 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
 }
 
 void SceneWorld::RestoreLegacyEntries(const nlohmann::json& sceneData) {
+   // 旧sceneObjectsは削除差分も含む。完全スナップショットへ移行する際は
+   // deleted項目を生成せず、生存エントリーの埋め込み本体だけを復元する。
    if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
       for (const auto& entry : sceneData.at("sceneObjects")) {
          if (!entry.is_object() || entry.value("deleted", false) ||
@@ -226,6 +248,8 @@ void SceneWorld::RestoreLegacyLights(const nlohmann::json& sceneData) {
       return;
    }
 
+   // 旧ライトは環境設定直下にありEntityを持たなかった。現行Component形式へ移すため、
+   // 同IDのEntityを再利用するか、Transform付きの受け皿Entityを生成する。
    for (const auto& lightData : environment.at("lights")) {
       if (!lightData.is_object()) {
          continue;
@@ -261,6 +285,8 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
       return;
    }
 
+   // VirtualCameraはBrainへ登録されて初めて評価対象になる。Brain不在時に
+   // 半端なカメラだけ所有しても機能しないため、まとめて読み飛ばす。
    auto* brain = EngineContext::GetActiveBrain();
    if (!brain) {
       Logger::EngineWarning("Virtual cameras skipped because no active camera brain exists");
@@ -280,6 +306,7 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
    }
 
    for (const auto& cameraData : camerasData.at("virtualCameras")) {
+      // DebugCameraはエディター側が別途所有・復元するため、シーンデータから二重生成しない。
       if (!cameraData.is_object() || cameraData.value("name", "") == "DebugCamera") {
          continue;
       }
@@ -293,6 +320,8 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
          continue;
       }
 
+      // BrainとID索引は非所有ポインターを保持する。最後にunique_ptrをコンテナへ移し、
+      // 以降の参照先アドレスがワールド破棄まで安定するようにする。
       brain->RegisterVirtualCamera(rawCamera);
       virtualCamerasById_[id] = rawCamera;
       virtualCameras_.push_back(std::move(camera));
@@ -300,10 +329,14 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
 }
 
 void SceneWorld::ResolveReferences() {
+   // 全Entityの生成後に参照を結ぶ二段階ロード。デシリアライズ順に依存せず、
+   // 子が親より先に記録されたJSONでも同じ結果になる。
    for (Object* object : CollectObjects()) {
       if (!object) {
          continue;
       }
+      // parentObjectNameは安定ID導入前の互換フィールド。解決できた時点でIDへ移し、
+      // 以後の保存で名前変更の影響を受けないよう旧参照を消す。
       if (object->GetParentEntityId().empty()) {
          if (auto* transform = object->GetComponent<TransformComponent>();
             transform && !transform->parentObjectName.empty()) {
@@ -313,6 +346,7 @@ void SceneWorld::ResolveReferences() {
             }
          }
       }
+      // 親子関係など基礎参照を先に確定し、その後で各コンポーネント固有の参照を通知する。
       for (const auto& component : object->GetComponentContainer().GetAll()) {
          if (component) {
             component->OnSceneLoaded(*this);
@@ -322,6 +356,8 @@ void SceneWorld::ResolveReferences() {
 }
 
 std::vector<Object*> SceneWorld::CollectObjects() const {
+   // 所有場所の違いを利用側へ漏らさないため、一時的な統合ビューを構築する。
+   // ParticleSystemはObject継承ではないので、この一覧には意図的に含めない。
    std::vector<Object*> objects;
    objects.reserve(
       objectStore_.GetModels().size() + objectStore_.GetSprites().size() +
@@ -352,6 +388,7 @@ void SceneWorld::RegisterLooseObject(const std::string& id, Object* object) {
    if (id.empty() || !object) {
       return;
    }
+   // ID→Objectは参照解決、Object→IDは保存処理で使用するため、必ず同時に更新する。
    looseObjectsById_[id] = object;
    looseObjectIds_[object] = id;
    object->SetEntityId(id);

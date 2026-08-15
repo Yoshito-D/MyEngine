@@ -12,6 +12,8 @@ void TransparentPass::Sort(std::vector<std::unique_ptr<IDrawCommand>>& commands)
 		return;
 	}
 
+	// 通常のアルファ合成を成立させるため奥から手前へ並べる。
+	// 距離が同じ要素はstable_sortで登録順を保持し、描画のちらつきを防ぐ。
 	std::stable_sort(commands.begin(), commands.end(),
 		[](const std::unique_ptr<IDrawCommand>& lhs, const std::unique_ptr<IDrawCommand>& rhs) {
 			const auto lPos = lhs->GetSortPosition();
@@ -22,6 +24,7 @@ void TransparentPass::Sort(std::vector<std::unique_ptr<IDrawCommand>>& commands)
 			const bool lHasPos = lPos.has_value() && lCam;
 			const bool rHasPos = rPos.has_value() && rCam;
 
+			// 位置情報を持つ要素を距離ソート対象として先にまとめ、情報なし同士は種別優先度へ委ねる。
 			if (lHasPos != rHasPos) {
 				return lHasPos > rHasPos;
 			}

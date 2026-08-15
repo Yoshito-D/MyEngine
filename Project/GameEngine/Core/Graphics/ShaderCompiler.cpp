@@ -51,6 +51,8 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(
    // 2. Compileする
 
    std::vector<std::wstring> defineArguments;
+   // UTF-8のJSON defineをDXC引数用のUTF-16文字列へ変換し、argumentsが参照する実体を
+   // コンパイル完了まで別vectorで保持する。
    defineArguments.reserve(defines.size());
    for (const auto& define : defines) {
 	  if (define.empty()) {
@@ -67,6 +69,8 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(
    arguments.push_back(L"-T");
    arguments.push_back(profile); // ShaderProfile
    arguments.push_back(L"-Zi");
+   // デバッグ情報をBlobへ埋め込み、最適化を無効化してGPUデバッガ上のHLSL追跡を優先する。
+   // 行列はエンジン側のメモリ規約に合わせてrow-majorでコンパイルする。
    arguments.push_back(L"-Qembed_debug");
    arguments.push_back(L"-Od");
    arguments.push_back(L"-Zpr");

@@ -28,6 +28,7 @@ void TitleStartComponent::Update(float deltaTime) {
    }
    auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
+   // OnSceneLoaded時に部品が未解決でも、利用可能になった最初の更新で基準値を取得する。
    if (!text || !transform || (!hasBaseVisualState_ && !CaptureBaseVisualState())) {
       return;
    }
@@ -92,6 +93,7 @@ bool TitleStartComponent::CaptureBaseVisualState() {
 void TitleStartComponent::ApplyStartReaction(
    GameEngine::UITextComponent& text,
    GameEngine::TransformComponent& transform) {
+   // 毎フレーム基準値から計算し、スケールと透明度の補間誤差を蓄積させない。
    const float progress = std::clamp(reactionElapsed_ / reactionDuration_, 0.0f, 1.0f);
    const float scaleMultiplier =
       GameEngine::Easing::EaseOutCubic(1.0f, reactionEndScale_, progress);

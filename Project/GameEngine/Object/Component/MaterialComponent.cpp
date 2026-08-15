@@ -51,6 +51,7 @@ namespace {
          return false;
       }
 
+      // 作業行列を最後まで検証してからoutへ代入し、不正な一行でUV行列が部分更新されるのを防ぐ。
       GameEngine::Matrix4x4 value = GameEngine::MakeIdentity4x4();
       for (size_t row = 0; row < 4; ++row) {
          const auto& rowData = data.at(key)[row];
@@ -70,6 +71,8 @@ namespace {
    }
 
    nlohmann::json SerializeMaterialProperties(const GameEngine::Material* material) {
+      // Material Managerが所有する実体から、シーンで上書き可能な描画パラメーターだけを抽出する。
+      // GPUリソースやディスクリプタはAsset側で再構築するため保存しない。
       nlohmann::json json = nlohmann::json::object();
       if (!material || !material->GetMaterialData()) {
          return json;
@@ -109,6 +112,7 @@ namespace {
          { uv.m[3][0], uv.m[3][1], uv.m[3][2], uv.m[3][3] }
       };
 
+      // -1はパイプライン既定のBlendModeを使うという意味で、明示的なモードと区別する。
       const auto blendMode = material->GetBlendMode();
       json["blendMode"] = blendMode.has_value() ? static_cast<int>(blendMode.value()) : -1;
       json["pipelineName"] = material->GetPipelineName();
@@ -120,6 +124,7 @@ namespace {
          return;
       }
 
+      // MaterialDataへ直接書かずsetterを通し、永続MapされたGPU定数との同期規則を一か所に保つ。
       GameEngine::Vector4 vectorValue{};
       if (ReadVector4(data, "color", vectorValue)) {
          material->SetColor(vectorValue);
@@ -189,6 +194,7 @@ namespace {
          return {};
       }
 
+      // 既に論理名だけならそのまま保持し、Editorの相対パスIDだけを拡張子なしのRuntime名へ正規化する。
       const std::filesystem::path texturePath(textureId);
       if (!texturePath.has_parent_path() && !IsTextureFileExtension(texturePath.extension().string())) {
          return textureId;
@@ -217,6 +223,9 @@ MaterialComponent::TextureResolver MaterialComponent::textureResolver_ = nullptr
 MaterialComponent::TextureNamesProvider MaterialComponent::textureNamesProvider_ = nullptr;
 MaterialComponent::EnvironmentTextureResolver MaterialComponent::environmentTextureResolver_ = nullptr;
 MaterialComponent::EnvironmentTextureNamesProvider MaterialComponent::environmentTextureNamesProvider_ = nullptr;
+
+// Resolver群はAssetManagerへの依存を注入する境界である。ComponentをEditor/Runtimeの
+// どちらでも同じ形式のまま使い、所有権を持たないMaterial/Textureを名前から再解決する。
 
 void MaterialComponent::SetMaterialResolver(MaterialResolver resolver) {
    resolver_ = std::move(resolver);
@@ -251,6 +260,7 @@ Material* MaterialComponent::EnsureMaterial(const std::string& name, uint32_t co
       return nullptr;
    }
 
+   // 共有アセットを先に検索し、存在しないシーン固有名だけを生成して重複Materialを避ける。
    Material* material = nullptr;
    if (resolver_) {
       material = resolver_(name);
@@ -275,6 +285,7 @@ void MaterialComponent::AssignMaterial(Material* material, const std::string& ma
       return;
    }
 
+   // 呼び出し元が名前を持たない旧APIの場合だけ、Provider一覧を逆引きして保存可能な名前を補う。
    std::string resolvedName = materialName;
    if (resolvedName.empty() && namesProvider_ && resolver_) {
       const auto names = namesProvider_();
@@ -318,6 +329,8 @@ void MaterialComponent::AssignMaterials(const std::vector<Material*>& newMateria
 }
 
 void MaterialComponent::SyncMaterialNamesSize() {
+   // material/name/textureは同じslot indexを共有する平行配列。常にMaterial数へ揃え、
+   // InspectorやRendererが別配列を同じindexで参照しても範囲外にならないようにする。
    if (materialNames_.size() < materials.size()) {
       materialNames_.resize(materials.size());
    } else if (materialNames_.size() > materials.size()) {
@@ -345,6 +358,7 @@ const std::string& MaterialComponent::GetTextureName(size_t index) const {
 }
 
 void MaterialComponent::SetTextureName(size_t slot, const std::string& name) {
+   // 通常Texture2DスロットへCubemapを入れるとShaderのView次元と一致しないため、割り当てを拒否する。
    if (!name.empty() && textureResolver_) {
       if (Texture* texture = textureResolver_(name); texture && texture->GetMetadata().IsCubemap()) {
          return;
@@ -368,6 +382,8 @@ const char* MaterialComponent::GetTypeName() const {
 
 nlohmann::json MaterialComponent::Serialize() const {
    nlohmann::json json = nlohmann::json::object();
+   // 一時的にMaterial解決が失敗していても名前やTexture割り当てを失わないよう、
+   // 3配列の最大長を保存スロット数として採用する。
    const size_t materialSlotCount = std::max({ materials.size(), materialNames_.size(), textureNames_.size() });
    std::vector<std::string> materialNames = materialNames_;
    materialNames.resize(materialSlotCount);
@@ -399,6 +415,7 @@ nlohmann::json MaterialComponent::Serialize() const {
       json["materialSlots"].push_back(std::move(slotData));
    }
 
+   // v1 Reader向けに第0スロットを直下にも複製する。現行ReaderはmaterialSlotsを優先する。
    if (!materials.empty()) {
       const nlohmann::json firstMaterial = SerializeMaterialProperties(materials[0]);
       for (auto it = firstMaterial.begin(); it != firstMaterial.end(); ++it) {
@@ -427,6 +444,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
       environmentTextureName_ = data.at("environmentTextureName").get<std::string>();
    }
 
+   // 名前解決不能な旧データでも既存描画を維持できるよう、現在のslot実体をfallbackとして退避する。
    const std::vector<Material*> previousMaterials = materials;
    auto resolveMaterial = [&previousMaterials](const std::string& name, size_t slot) -> Material* {
       Material* material = nullptr;
@@ -447,6 +465,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
    materials.clear();
    textureNames_.clear();
 
+   // 現行形式はslotごとにMaterialプロパティとTexture名を完結して保持するため最優先で読む。
    if (data.contains("materialSlots") && data.at("materialSlots").is_array()) {
       const auto& materialSlots = data.at("materialSlots");
       materialNames_.reserve(materialSlots.size());
@@ -468,6 +487,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
          const std::string textureName = slotData.contains("textureName") && slotData.at("textureName").is_string()
             ? slotData.at("textureName").get<std::string>()
             : std::string{};
+         // 実体を解決してからプロパティを適用し、同名の共有Materialを保存値で復元する。
          Material* material = resolveMaterial(materialName, slot);
          materialNames_.push_back(materialName);
          materials.push_back(material);
@@ -477,6 +497,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
       return;
    }
 
+   // materialSlotsも旧materialNamesもない部分データでは、現在の割り当てを破棄しない。
    if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
       materials = previousMaterials;
       SyncMaterialNamesSize();
@@ -484,6 +505,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
    }
 
    const auto& serializedNames = data.at("materialNames");
+   // v1では空slotをmaterialCountだけで表せるため、名前配列と明示Countの大きい方を復元する。
    size_t materialSlotCount = serializedNames.size();
    if (data.contains("materialCount") && data.at("materialCount").is_number_unsigned()) {
       materialSlotCount = std::max(materialSlotCount, data.at("materialCount").get<size_t>());
@@ -523,6 +545,7 @@ void MaterialComponent::DrawInspector() {
       return ImGuiHelper::Localize({ japanese, english });
    };
 
+   // 外部コードからMaterial配列だけ更新された場合も、UIを描く前に平行配列を整える。
    SyncMaterialNamesSize();
 
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
@@ -620,6 +643,7 @@ void MaterialComponent::DrawInspector() {
                }
                for (size_t i = 0; i < texNames.size(); ++i) {
                   if (textureResolver_) {
+                     // Shader Resourceの次元が異なるCubemapは2D候補一覧から除外する。
                      if (Texture* candidate = textureResolver_(texNames[i]); candidate && candidate->GetMetadata().IsCubemap()) {
                         continue;
                      }
@@ -642,11 +666,13 @@ void MaterialComponent::DrawInspector() {
                      ImGui::PopID();
                      continue;
                   }
+                  // 縦横比を保ったまま最大96pxへ収め、Inspector幅を大きなTexture寸法へ依存させない。
                   const float maxSize = 96.0f;
                   const float w = static_cast<float>(tex->GetWidth());
                   const float h = static_cast<float>(tex->GetHeight());
                   const float scale = (w > h) ? (maxSize / w) : (maxSize / h);
                   const ImVec2 displaySize(w * scale, h * scale);
+                  // ImGuiバックエンドが要求するImTextureIDへGPU descriptor値のビット列を安全に移す。
                   ImU64 texId{};
                   const UINT64 gpuPtr = tex->GetTextureSrvHandleGPU().ptr;
                   static_assert(sizeof(texId) == sizeof(gpuPtr), "ImTextureID size mismatch");
@@ -768,6 +794,7 @@ void MaterialComponent::DrawInspector() {
    float uvRotation = material->GetUVRotation();
    float uvRotationDegrees = ImGuiHelper::RadiansToDegrees(uvRotation);
    Vector2 uvTranslation = material->GetUVTranslation();
+   // Scale/Rotation/Translationを個別に編集し、いずれかが変わったフレームだけ行列を再合成する。
    bool changed = false;
    changed |= ImGui::DragFloat2(Tr("UVスケール", "UV Scale"), &uvScale.x, 0.01f);
    if (ImGui::DragFloat(Tr("UV回転 (deg)", "UV Rotation (deg)"), &uvRotationDegrees, 0.1f)) {

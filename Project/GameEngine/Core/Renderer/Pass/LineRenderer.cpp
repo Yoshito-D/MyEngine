@@ -7,7 +7,8 @@ namespace GameEngine {
 void LineRenderer::Initialize(ID3D12Device* device, size_t maxLines) {
    maxLines_ = maxLines;
 
-   // インスタンスバッファの作成
+   // 各線分の始終点と色はインスタンスデータとして一つの永続Mapバッファへ置く。
+   // 2頂点の基本形状を共有することで、線分数に比例した頂点バッファ生成を避ける。
    size_t instanceBufferSize = sizeof(LineInstance) * maxLines;
    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
    CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(instanceBufferSize);
@@ -63,6 +64,7 @@ void LineRenderer::Begin() {
 void LineRenderer::AddLine(Camera* camera, const Line& line) {
    if (!camera) return;
 
+   // ViewProjectionが異なる線を同じDrawInstancedへ混ぜられないため、カメラ単位でまとめる。
    auto& lines = cameraLineGroups_[camera];
    if (lines.size() >= maxLines_) {
       return;
@@ -115,6 +117,7 @@ void LineRenderer::DrawSpline(const std::vector<Vector3>& controlPoints, const V
    std::vector<Vector3> pointsDrawing;
    pointsDrawing.clear();
 
+   // 区間の両端を含むsegmentCount+1点を評価し、隣接点を線分化して曲線を近似する。
    for (size_t i = 0; i < segmentCount + 1; i++) {
 	  float t = 1.0f / segmentCount * i;
 	  Vector3 pos = CatmullRomPosition(controlPoints, t);
@@ -146,6 +149,8 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
    float start1 = 0.0f, end1 = 0.0f, start2 = 0.0f, end2 = 0.0f;
    float cameraAxis1 = 0.0f, cameraAxis2 = 0.0f;
 
+   // カメラ座標をグリッド間隔へ丸めた位置を中心に生成範囲を移動させる。
+   // ワールド原点の軸色は維持しつつ、広いワールドでも線数を一定に保つ。
    switch (plane) {
 	  case GridPlane::XZ:  // XZ平面（Y軸が上）
 		 axis1Color = Vector4(1.0f, 0.3f, 0.2f, 0.8f);  // X軸（赤）
@@ -187,6 +192,8 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
 		 break;
    }
 
+   // 線の座標は第1軸上を移動するが、線自体は第2軸方向へ伸びるため、
+   // 原点判定時には交差する第2軸の色を割り当てる。
    // 第1軸方向の線を描画
    for (float pos1 = start1; pos1 <= end1; pos1 += gridSize) {
 	  Vector4 color;
@@ -241,6 +248,7 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
 	  DrawLine(lineStart, lineEnd, color, camera);
    }
 
+   // 直交方向も同じフェード・太線規則で生成し、格子を完成させる。
    // 第2軸方向の線を描画
    for (float pos2 = start2; pos2 <= end2; pos2 += gridSize) {
 	  Vector4 color;
@@ -301,6 +309,7 @@ void LineRenderer::DrawSphere(const Vector3& center, float radius, const Vector4
 
    const int segments = 16;
    const int rings = 8;
+   // 緯度リングと経度アークの両方を線分化し、どの視点からも球の輪郭を読めるようにする。
    // 経度方向のライン
    for (int i = 0; i <= rings; ++i) {
 	  float theta = MathConstants::kPi * static_cast<float>(i) / static_cast<float>(rings);
@@ -394,7 +403,7 @@ void LineRenderer::DrawCone(const Vector3& apex, float radius, float height, con
    Vector3 dir = direction.Normalize();
    Vector3 base = apex + dir * height;
 
-   // 基準となる垂直ベクトルを作成
+   // directionとほぼ平行な補助軸を避けて外積し、底面上の安定した直交基底を作る。
    Vector3 perpendicular = std::abs(dir.y) < 0.9f ? Vector3(0.0f, 1.0f, 0.0f) : Vector3(1.0f, 0.0f, 0.0f);
    Vector3 right = dir.Cross(perpendicular).Normalize();
    Vector3 upVec = right.Cross(dir).Normalize();
@@ -458,7 +467,7 @@ void LineRenderer::DrawCircle(const Vector3& center, float radius, const Vector3
    const int segments = 32;
    Vector3 n = normal.Normalize();
 
-   // 法線に垂直な2つのベクトルを作成
+   // 法線とほぼ平行な補助軸を避け、円平面を張る直交基底を外積から構成する。
    Vector3 perpendicular = std::abs(n.y) < 0.9f ? Vector3(0.0f, 1.0f, 0.0f) : Vector3(1.0f, 0.0f, 0.0f);
    Vector3 right = n.Cross(perpendicular).Normalize();
    Vector3 upVec = right.Cross(n).Normalize();
