@@ -288,8 +288,9 @@ private:
    // PostProcessManagerで置き換え
    std::unique_ptr<PostProcessManager> postProcessManager_ = std::make_unique<PostProcessManager>();
 
-   // UI描画専用カメラ（平行投影）
+   // UI描画専用カメラ
    std::unique_ptr<Camera> uiCamera_ = std::make_unique<Camera>();
+   std::unique_ptr<Camera> perspectiveUiCamera_ = std::make_unique<Camera>();
 
    // 描画コマンドリスト（レンダーパス別）
     std::vector<std::unique_ptr<IDrawCommand>> opaqueCommands_;       // 不透明オブジェクト
@@ -346,6 +347,14 @@ private:
    void DrawAutoRegisteredParticles();
    void DrawAutoRegisteredTexts();
 
+   /// @brief 指定カメラでモデル描画コマンドを登録する
+   void DrawModelWithCamera(
+      Model* model,
+      Texture* texture,
+      Camera* camera,
+      std::optional<BlendMode> blendMode,
+      bool applyPostProcess);
+
    /// @brief 描画コマンドを実行する
    /// @param commands 実行する描画コマンドリスト
    void ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawCommand>>& commands);
@@ -368,7 +377,7 @@ private:
    /// @brief UI描画専用カメラを初期化
    void InitializeUICamera();
 
-   /// @brief UI描画専用カメラの平行投影サイズを同期
+   /// @brief UI描画専用カメラの投影設定を描画先サイズへ同期
    void SyncUICameraToRenderTarget(uint32_t screenWidth, uint32_t screenHeight);
 
    /// @brief 指定したパス用のラインレンダラーを取得

@@ -48,6 +48,7 @@ public:
 
    /// @brief 次のカメラへ切り替える入力が押されたかを取得する
    /// @return 押された瞬間ならtrue
+   /// @brief 非Releaseビルドでカメラ切り替え入力が発生したかを返す
    bool IsNextCameraTriggered() const;
 
    /// @brief プレイヤースロットを保存する

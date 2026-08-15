@@ -269,6 +269,7 @@
     <ClCompile Include="GameEngine\Object\Component\ComponentRegistry.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\TypewriterComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\UIFadeComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\UI\UIModelComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\UITextComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\UITransformTweenComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\IObjectComponent.cpp" />
@@ -473,6 +474,7 @@
     <ClCompile Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\PlanetSwitcher.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\GamepadGuideTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceCountdownTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceGoalDistanceTextComponent.cpp" />
@@ -481,6 +483,7 @@
     <ClCompile Include="GameProject\App\Component\Race\RaceResultUIComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeFormatting.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
@@ -636,6 +639,7 @@
     <ClInclude Include="GameEngine\Object\Component\UI\TypewriterComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UIAnimationTypes.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UIFadeComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\UI\UIModelComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UITextComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UITransformTweenComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />
@@ -732,6 +736,7 @@
     <ClInclude Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\PlanetSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\Race\GamepadGuideTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceCountdownTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceGoalDistanceTextComponent.h" />
@@ -740,6 +745,7 @@
     <ClInclude Include="GameProject\App\Component\Race\RaceResultUIComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeFormatting.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.h" />
     <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />

@@ -96,9 +96,18 @@ void VehicleEffectController::Update(float deltaTime) {
          SetEmission(*slot, canFireMiniTurbo && !isJumping);
       } else if (ContainsEffectName(slot->jsonPath, "sonicBoom") && miniTurboFired) {
          emitter->Play(slotIndex);
-      } else if (ContainsEffectName(slot->jsonPath, "bonfire") && miniTurboFired && !isJumping) {
-         SetEmission(*slot, true);
-         emitter->Play(slotIndex);
+      } else if (ContainsEffectName(slot->jsonPath, "bonfire")) {
+         if (!isGrounded) {
+            // 空中へ移った時点で既存粒子も消し、車体に追従して見え続けるのを防ぐ。
+            SetEmission(*slot, false);
+            if (emitter->IsPlaying(slotIndex) ||
+               (slot->particleSystem && slot->particleSystem->GetActiveParticleCount() > 0)) {
+               emitter->Stop(slotIndex);
+            }
+         } else if (miniTurboFired) {
+            SetEmission(*slot, true);
+            emitter->Play(slotIndex);
+         }
       } else if (ContainsEffectName(slot->jsonPath, "landingRing") && landedThisFrame) {
          if (hasLandingTransform) {
             emitter->SetSlotWorldTransform(

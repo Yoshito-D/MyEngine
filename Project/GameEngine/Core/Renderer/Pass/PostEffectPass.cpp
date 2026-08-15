@@ -24,6 +24,10 @@ void PostEffectPass::Execute(FrameContext& ctx) {
 			ctx.device->TransitionDepthStencilToShaderResource();
 		}
 		ctx.postProcessMgr->ApplyEffects(offscreenRT_->GetSRVHandleGPU());
+		// エフェクトがRootSignature/PSOを直接変更するため、後続UIモデルで必ず再バインドさせる。
+		if (ctx.invalidatePipelineBindingFunc) {
+			ctx.invalidatePipelineBindingFunc();
+		}
 		if (ctx.device) {
 			ctx.device->TransitionDepthStencilToWrite();
 		}

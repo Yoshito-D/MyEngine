@@ -523,17 +523,17 @@
                      0.0
                   ],
                   "startColor": [
-                     0.024509787559509277,
-                     0.024509787559509277,
-                     0.024509787559509277,
-                     0.2823529541492462
+                     0.0235294122248888,
+                     0.0235294122248888,
+                     0.0235294122248888,
+                     1.0
                   ]
                },
                "emissionModule": {
                   "bursts": [],
                   "enabled": true,
                   "rateOverDistance": 0.0,
-                  "rateOverTime": 9.5
+                  "rateOverTime": 47.5
                },
                "forceOverLifetimeModule": {
                   "attractorEnabled": false,
@@ -579,7 +579,7 @@
                   }
                },
                "mainModule": {
-                  "duration": 1.5,
+                  "duration": 1.0,
                   "gravityModifier": {
                      "max": 0.0,
                      "min": 0.0,
@@ -736,9 +736,9 @@
                   "angle": 15.0,
                   "arc": 360.0,
                   "boxSize": [
-                     0.20000000298023224,
-                     0.05000000074505806,
-                     0.20000000298023224
+                     0.4000000059604645,
+                     0.30000001192092896,
+                     0.699999988079071
                   ],
                   "circleOutwardVelocity": 2.0999999046325684,
                   "emitFrom": 2,
@@ -766,18 +766,18 @@
                "sizeOverLifetimeModule": {
                   "enabled": true,
                   "endSize": [
-                     0.5,
-                     0.5,
-                     0.5
+                     0.0,
+                     0.0,
+                     0.0
                   ],
                   "sizeMultiplier": {
-                     "max": 0.9399999976158142,
-                     "min": 0.5299999713897705,
+                     "max": 0.6800000071525574,
+                     "min": 0.5099999904632568,
                      "randomize": true
                   },
                   "startSize": [
-                     0.10000000149011612,
-                     0.10000000149011612,
+                     1.0,
+                     1.0,
                      0.5
                   ]
                },

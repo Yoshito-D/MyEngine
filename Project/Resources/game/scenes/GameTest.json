@@ -397,12 +397,16 @@
       "Model:Planet_6",
       "Model:Goal",
       "Model:Player",
-      "Sprite:GoalDirectionHUD",
+      "Model:GoalDirectionHUD",
       "UIText:GoalDistanceText",
       "UIText:RaceTimerText",
       "UIText:RaceCountdownText",
       "UIText:RaceResultUI",
-      "Skybox:Skybox"
+      "Skybox:Skybox",
+      "Sprite:SpeedGaugeFill",
+      "Sprite:SpeedGaugeFrame",
+      "UIText:SpeedGaugeText",
+      "UIText:GamepadGuideText"
    ],
    "objects": [],
    "renderSettings": {
@@ -3619,21 +3623,21 @@
                },
                {
                   "data": {
+                     "autoCapturePresentationSequence": false,
+                     "autoCapturePresentationVideoFrames": false,
+                     "debugDrawPresentationGuides": false,
                      "enableLandingShake": true,
                      "gravityFollowCameraId": "GravityFollowCamera",
-                     "debugDrawPresentationGuides": false,
-                     "presentationGuideLength": 8.0,
-                     "autoCapturePresentationSequence": false,
-                     "presentationCaptureJumpDelay": 1.25,
-                     "autoCapturePresentationVideoFrames": false,
-                     "presentationVideoFrameRate": 10.0,
-                     "presentationVideoCaptureStartDelay": 3.25,
-                     "presentationVideoCaptureDuration": 8.0,
                      "landingShakeAmplitude": 0.15000000596046448,
                      "landingShakeDuration": 0.10000000149011612,
                      "landingShakeFrequency": 14.0,
                      "planetLeashCameraId": "PlanetLeashCamera",
-                     "playerRearFollowCameraId": "PlayerRearFollowCamera"
+                     "playerRearFollowCameraId": "PlayerRearFollowCamera",
+                     "presentationCaptureJumpDelay": 1.25,
+                     "presentationGuideLength": 8.0,
+                     "presentationVideoCaptureDuration": 8.0,
+                     "presentationVideoCaptureStartDelay": 3.25,
+                     "presentationVideoFrameRate": 10.0
                   },
                   "enabled": true,
                   "typeName": "CameraGravityBridge"
@@ -3665,7 +3669,7 @@
       {
          "deleted": false,
          "object": {
-            "assetId": "arrow",
+            "assetId": "game/models/arrow/arrow.obj",
             "components": [
                {
                   "data": {
@@ -3690,9 +3694,9 @@
                      ],
                      "rotationSource": "quaternion",
                      "scale": [
-                        0.5,
-                        0.5,
-                        1.0
+                        0.11999999731779099,
+                        0.11999999731779099,
+                        0.11999999731779099
                      ],
                      "translation": [
                         0.0,
@@ -3705,7 +3709,7 @@
                },
                {
                   "data": {
-                     "blendMode": 1,
+                     "blendMode": -1,
                      "color": [
                         1.0,
                         1.0,
@@ -3720,15 +3724,15 @@
                         1.0,
                         1.0
                      ],
-                     "fillLightIntensity": 0.0,
-                     "lightingMode": 0,
+                     "fillLightIntensity": 0.75,
+                     "lightingMode": 2,
                      "materialCount": 1,
                      "materialNames": [
                         "GoalDirectionHUDMaterial"
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": 1,
+                           "blendMode": -1,
                            "color": [
                               1.0,
                               1.0,
@@ -3742,8 +3746,8 @@
                               1.0,
                               1.0
                            ],
-                           "fillLightIntensity": 0.0,
-                           "lightingMode": 0,
+                           "fillLightIntensity": 0.75,
+                           "lightingMode": 2,
                            "name": "GoalDirectionHUDMaterial",
                            "pipelineName": "",
                            "rimLightColor": [
@@ -3752,10 +3756,10 @@
                               1.0,
                               1.0
                            ],
-                           "rimLightIntensity": 0.0,
+                           "rimLightIntensity": 8.239999771118164,
                            "rimLightPower": 4.0,
                            "shininess": 40.0,
-                           "textureName": "arrow",
+                           "textureName": "",
                            "uvTransform": [
                               [
                                  1.0,
@@ -3791,7 +3795,7 @@
                         1.0,
                         1.0
                      ],
-                     "rimLightIntensity": 0.0,
+                     "rimLightIntensity": 8.239999771118164,
                      "rimLightPower": 4.0,
                      "shininess": 40.0,
                      "textureLeftTop": [
@@ -3799,7 +3803,7 @@
                         0.0
                      ],
                      "textureNames": [
-                        "arrow"
+                        ""
                      ],
                      "textureSize": [
                         0.0,
@@ -3837,7 +3841,7 @@
                },
                {
                   "data": {
-                     "assetId": "",
+                     "assetId": "game/models/arrow/arrow.obj",
                      "boxSize": [
                         1.0,
                         1.0,
@@ -3873,7 +3877,7 @@
                      "ringInnerRadius": 0.4000000059604645,
                      "ringOuterRadius": 0.5,
                      "ringSegments": 32,
-                     "sourceType": "Primitive",
+                     "sourceType": "ModelFile",
                      "sphereRadius": 0.5,
                      "sphereSlices": 32,
                      "sphereStacks": 16,
@@ -3912,26 +3916,37 @@
                },
                {
                   "data": {
-                     "edgePadding": 48.0,
-                     "fixedBottomRight": true,
+                     "anchorPoint": "BottomRight",
+                     "depth": 2.5,
+                     "localPivot": [
+                        0.0,
+                        0.0,
+                        1.5
+                     ],
+                     "projectionType": "Perspective",
+                     "screenOffset": [
+                        -112.0,
+                        112.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "UIModelComponent"
+               },
+               {
+                  "data": {
                      "goalObjectId": "Model:Goal",
                      "playerObjectId": "Model:Player",
-                     "positionFollowSpeed": 640.0,
-                     "raceManagerId": "Object:RaceManager",
-                     "rotationFollowSpeed": 10.0
+                     "raceManagerId": "Object:RaceManager"
                   },
                   "enabled": true,
                   "typeName": "RaceGoalDirectionHUDComponent"
                }
             ],
-            "id": "Sprite:GoalDirectionHUD",
-            "objectType": "Sprite",
-            "parentId": "",
-            "sprite": {
-               "screenAnchorPoint": "BottomRight"
-            }
+            "id": "Model:GoalDirectionHUD",
+            "objectType": "Model",
+            "parentId": ""
          },
-         "sceneKey": "Sprite:GoalDirectionHUD"
+         "sceneKey": "Model:GoalDirectionHUD"
       },
       {
          "deleted": false,
@@ -3965,8 +3980,8 @@
                         1.0
                      ],
                      "translation": [
-                        -93.25483703613281,
-                        -28.0,
+                        -110.8499984741211,
+                        -36.0,
                         1.0
                      ]
                   },
@@ -4281,6 +4296,686 @@
             "parentId": ""
          },
          "sceneKey": "Skybox:Skybox"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "speed_gauge_triangle",
+            "components": [
+               {
+                  "data": {
+                     "name": "SpeedGaugeFill"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        380.0,
+                        8.0,
+                        1.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.0,
+                     "lightingMode": 0,
+                     "materialCount": 1,
+                     "materialNames": [
+                        ""
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.0,
+                           "lightingMode": 0,
+                           "name": "",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.0,
+                           "rimLightPower": 4.0,
+                           "shininess": 40.0,
+                           "textureName": "speed_gauge_triangle",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
+                     ],
+                     "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.0,
+                     "rimLightPower": 4.0,
+                     "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
+                     "textureNames": [
+                        "speed_gauge_triangle"
+                     ],
+                     "textureSize": [
+                        2161.0,
+                        728.0
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": true,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        360.0,
+                        121.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "Primitive",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MeshComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": false,
+                     "autoRender": true,
+                     "renderSpace": "Screen",
+                     "visible": false
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               },
+               {
+                  "data": {
+                     "frameObjectId": "Sprite:SpeedGaugeFrame",
+                     "gaugeHeight": 121.0,
+                     "gaugeWidth": 360.0,
+                     "playerObjectId": "Model:Player",
+                     "raceManagerId": "Object:RaceManager",
+                     "response": 8.0,
+                     "speedTextObjectId": "UIText:SpeedGaugeText",
+                     "unitToKmh": 3.5999999046325684
+                  },
+                  "enabled": true,
+                  "typeName": "VehicleSpeedGaugeUIComponent"
+               }
+            ],
+            "id": "Sprite:SpeedGaugeFill",
+            "objectType": "Sprite",
+            "parentId": "",
+            "sprite": {
+               "screenAnchorPoint": "BottomLeft"
+            }
+         },
+         "sceneKey": "Sprite:SpeedGaugeFill"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "assetId": "speed_gauge_triangle_frame",
+            "components": [
+               {
+                  "data": {
+                     "name": "SpeedGaugeFrame"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        380.0,
+                        8.0,
+                        1.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "blendMode": -1,
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "environmentTextureName": "",
+                     "environmentTextureStrength": 0.0,
+                     "fillLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fillLightIntensity": 0.0,
+                     "lightingMode": 0,
+                     "materialCount": 1,
+                     "materialNames": [
+                        ""
+                     ],
+                     "materialSlots": [
+                        {
+                           "blendMode": -1,
+                           "color": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "environmentTextureStrength": 0.0,
+                           "fillLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "fillLightIntensity": 0.0,
+                           "lightingMode": 0,
+                           "name": "",
+                           "pipelineName": "",
+                           "rimLightColor": [
+                              1.0,
+                              1.0,
+                              1.0,
+                              1.0
+                           ],
+                           "rimLightIntensity": 0.0,
+                           "rimLightPower": 4.0,
+                           "shininess": 40.0,
+                           "textureName": "speed_gauge_triangle_frame",
+                           "uvTransform": [
+                              [
+                                 1.0,
+                                 0.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 1.0,
+                                 0.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 1.0,
+                                 0.0
+                              ],
+                              [
+                                 0.0,
+                                 0.0,
+                                 0.0,
+                                 1.0
+                              ]
+                           ]
+                        }
+                     ],
+                     "pipelineName": "",
+                     "rimLightColor": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "rimLightIntensity": 0.0,
+                     "rimLightPower": 4.0,
+                     "shininess": 40.0,
+                     "textureLeftTop": [
+                        0.0,
+                        0.0
+                     ],
+                     "textureNames": [
+                        "speed_gauge_triangle_frame"
+                     ],
+                     "textureSize": [
+                        0.0,
+                        0.0
+                     ],
+                     "uvTransform": [
+                        [
+                           1.0,
+                           0.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           1.0,
+                           0.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           1.0,
+                           0.0
+                        ],
+                        [
+                           0.0,
+                           0.0,
+                           0.0,
+                           1.0
+                        ]
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MaterialComponent"
+               },
+               {
+                  "data": {
+                     "assetId": "",
+                     "boxSize": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "circleRadius": 0.5,
+                     "circleSegments": 32,
+                     "coneHeight": 1.0,
+                     "coneRadius": 0.5,
+                     "coneSegments": 32,
+                     "cylinderBottomRadius": 0.5,
+                     "cylinderHeight": 1.0,
+                     "cylinderSegments": 32,
+                     "cylinderTopRadius": 0.5,
+                     "flipX": true,
+                     "flipY": false,
+                     "originY": 0.5,
+                     "planeDepth": 1.0,
+                     "planeDepthSegments": 1,
+                     "planeOrientation": "XY",
+                     "planeWidth": 1.0,
+                     "planeWidthSegments": 1,
+                     "primitiveType": "Quad",
+                     "quadAnchorPoint": [
+                        0.0,
+                        0.0
+                     ],
+                     "quadSize": [
+                        360.0,
+                        121.0
+                     ],
+                     "reverseFaces": false,
+                     "ringInnerRadius": 0.4000000059604645,
+                     "ringOuterRadius": 0.5,
+                     "ringSegments": 32,
+                     "sourceType": "Primitive",
+                     "sphereRadius": 0.5,
+                     "sphereSlices": 32,
+                     "sphereStacks": 16,
+                     "torusMajorRadius": 0.5,
+                     "torusMajorSegments": 32,
+                     "torusMinorRadius": 0.20000000298023224,
+                     "torusMinorSegments": 16,
+                     "triangleV0": [
+                        -0.5,
+                        0.0,
+                        0.0
+                     ],
+                     "triangleV1": [
+                        0.0,
+                        1.0,
+                        0.0
+                     ],
+                     "triangleV2": [
+                        0.5,
+                        0.0,
+                        0.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "MeshComponent"
+               },
+               {
+                  "data": {
+                     "applyPostProcess": false,
+                     "autoRender": true,
+                     "renderSpace": "Screen",
+                     "visible": false
+                  },
+                  "enabled": true,
+                  "typeName": "RenderComponent"
+               }
+            ],
+            "id": "Sprite:SpeedGaugeFrame",
+            "objectType": "Sprite",
+            "parentId": "",
+            "sprite": {
+               "screenAnchorPoint": "BottomLeft"
+            }
+         },
+         "sceneKey": "Sprite:SpeedGaugeFrame"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "SpeedGaugeText"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        24.0,
+                        -75.0,
+                        1.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "color": [
+                        0.8999999761581421,
+                        0.9800000190734863,
+                        1.0,
+                        1.0
+                     ],
+                     "fontId": "851Gkktt",
+                     "fontSize": 32,
+                     "horizontalAlignment": "Right",
+                     "lineSpacing": 1.0,
+                     "maxWidth": 360.0,
+                     "pivot": [
+                        0.0,
+                        1.0
+                     ],
+                     "screenAnchor": "BottomLeft",
+                     "sortingOrder": 110,
+                     "text": ""
+                  },
+                  "enabled": true,
+                  "typeName": "UITextComponent"
+               }
+            ],
+            "id": "UIText:SpeedGaugeText",
+            "objectType": "UIText",
+            "parentId": ""
+         },
+         "sceneKey": "UIText:SpeedGaugeText"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "GamepadGuideText"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        32.0,
+                        0.0,
+                        1.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        0.8500000238418579
+                     ],
+                     "fontId": "851Gkktt",
+                     "fontSize": 24,
+                     "horizontalAlignment": "Left",
+                     "lineSpacing": 1.149999976158142,
+                     "maxWidth": 520.0,
+                     "pivot": [
+                        0.0,
+                        0.5
+                     ],
+                     "screenAnchor": "MiddleLeft",
+                     "sortingOrder": 100,
+                     "text": ""
+                  },
+                  "enabled": true,
+                  "typeName": "UITextComponent"
+               },
+               {
+                  "data": {
+                     "playerObjectId": "Model:Player",
+                     "raceManagerId": "Object:RaceManager"
+                  },
+                  "enabled": true,
+                  "typeName": "GamepadGuideTextComponent"
+               }
+            ],
+            "id": "UIText:GamepadGuideText",
+            "objectType": "UIText",
+            "parentId": ""
+         },
+         "sceneKey": "UIText:GamepadGuideText"
       }
    ],
    "sceneParticleSystems": [],

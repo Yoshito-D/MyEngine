@@ -34,6 +34,7 @@
 #include "Object/Skybox/Skybox.h"
 #include "Object/Text/UIText.h"
 #include "Component/UI/UITextComponent.h"
+#include "Component/UI/UIModelComponent.h"
 #include "Pass/OpaquePass.h"
 #include "Pass/TransparentPass.h"
 #include "Pass/PostEffectPass.h"
@@ -53,6 +54,8 @@
 namespace {
 
 constexpr float kUiCameraFarClip = 10000.0f;
+constexpr float kPerspectiveUiCameraFarClip = 100.0f;
+constexpr float kPerspectiveUiCameraFovY = 0.7853981633974483f;
 
 GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
    return GameEngine::Vector3(matrix.m[3][0], matrix.m[3][1], matrix.m[3][2]);
@@ -257,11 +260,21 @@ void Renderer::BeginFrame() {
 }
 
 void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
-   assert(model != nullptr);
-   assert(texture != nullptr);
-
    Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
    assert(activeCamera != nullptr);
+   DrawModelWithCamera(model, texture, activeCamera, blendMode, applyPostProcess);
+}
+
+void Renderer::DrawModelWithCamera(
+   Model* model,
+   Texture* texture,
+   Camera* camera,
+   std::optional<BlendMode> blendMode,
+   bool applyPostProcess
+) {
+   assert(model != nullptr);
+   assert(texture != nullptr);
+   assert(camera != nullptr);
 
    auto* meshComponent = model->GetComponent<MeshComponent>();
    if (!meshComponent ||
@@ -273,7 +286,7 @@ void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> ble
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> handles = { texture->GetTextureSrvHandleGPU() };
 
    // 行列を更新
-   model->UpdateMatrix(activeCamera);
+   model->UpdateMatrix(camera);
 
    // ブレンド設定はマテリアル固有値を最優先し、呼び出し引数、Renderer既定値の順に解決する。
    // 見た目をアセット側で固定しつつ、一時描画だけ引数で上書きできる規則にしている。
@@ -295,7 +308,7 @@ void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> ble
    // 描画パスの決定
    RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
 
-   DrawCommand cmd = DrawCommand::CreateModel(model, handles, activeCamera, effectiveBlendMode, renderPass);
+   DrawCommand cmd = DrawCommand::CreateModel(model, handles, camera, effectiveBlendMode, renderPass);
    cmd.modelData.environmentTextureSrvHandle = activeEnvironmentTextureSrvHandle_;
    SubmitDrawCommand(cmd);
 }
@@ -817,7 +830,23 @@ void Renderer::DrawAutoRegisteredModels() {
 		 SetEnvironmentTexture(textureManager->GetLastCubemapTexture());
 	  }
 
-	  Draw(model, texture, std::nullopt, renderComponent->applyPostProcess);
+      auto* uiModelComponent = model->GetComponent<UIModelComponent>();
+      if (uiModelComponent && uiModelComponent->IsEnabled()) {
+         Camera* uiModelCamera = uiModelComponent->projectionType == UIModelComponent::ProjectionType::Perspective
+            ? perspectiveUiCamera_.get()
+            : uiCamera_.get();
+         const uint32_t screenWidth = device_ ? device_->GetBackBufferWidth() : Window::kResolutionWidth;
+         const uint32_t screenHeight = device_ ? device_->GetBackBufferHeight() : Window::kResolutionHeight;
+         uiModelComponent->ApplyLayout(*uiModelCamera, screenWidth, screenHeight);
+         DrawModelWithCamera(
+            model,
+            texture,
+            uiModelCamera,
+            std::nullopt,
+            renderComponent->applyPostProcess);
+      } else {
+	     Draw(model, texture, std::nullopt, renderComponent->applyPostProcess);
+      }
    }
 }
 
@@ -1023,17 +1052,24 @@ void Renderer::InitializeUICamera() {
    uiCamera_->Initialize(uiCameraTransform, Camera::ProjectionType::Orthographic);
    uiCamera_->SetNearClip(0.0f);
    uiCamera_->SetFarClip(kUiCameraFarClip);
+
+   perspectiveUiCamera_->Initialize(uiCameraTransform, Camera::ProjectionType::Perspective);
+   perspectiveUiCamera_->SetFovY(kPerspectiveUiCameraFovY);
+   perspectiveUiCamera_->SetNearClip(Camera::kDefaultNearClip);
+   perspectiveUiCamera_->SetFarClip(kPerspectiveUiCameraFarClip);
    const uint32_t screenWidth = device_ ? device_->GetBackBufferWidth() : Window::kResolutionWidth;
    const uint32_t screenHeight = device_ ? device_->GetBackBufferHeight() : Window::kResolutionHeight;
    SyncUICameraToRenderTarget(screenWidth, screenHeight);
 }
 
 void Renderer::SyncUICameraToRenderTarget(uint32_t screenWidth, uint32_t screenHeight) {
-   if (!uiCamera_ || screenWidth == 0 || screenHeight == 0) {
+   if (!uiCamera_ || !perspectiveUiCamera_ || screenWidth == 0 || screenHeight == 0) {
 	  return;
    }
 
    uiCamera_->SetOrthographicSize(static_cast<float>(screenWidth), static_cast<float>(screenHeight));
+   perspectiveUiCamera_->SetAspectRatio(static_cast<float>(screenWidth) / static_cast<float>(screenHeight));
+   perspectiveUiCamera_->Update();
 }
 
 void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle) {

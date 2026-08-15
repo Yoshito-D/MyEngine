@@ -1224,8 +1224,16 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    //    → 加速中はカメラが後退して視野が広がり、速度感が増す
    GameEngine::Vector3 eye = ComputeEye(up, boostAlpha);
 
-   // ⑧ eye のピボット相対距離を補間し、方向は急変時だけ最大角速度を制限する
-   eye = SmoothEye(eye, up, deltaTime);
+   // ⑧ 初回はシーンに保存された配置を追従補間の始点にする。
+   //    ここで理想位置へスナップすると、カウントダウン開始時点で編集時の配置からずれる。
+   if (!isEyeInitialized_) {
+	  currentEyeOffset_ = state.transform.translation - pivotTarget_;
+	  isEyeInitialized_ = true;
+	  eye = state.transform.translation;
+   } else {
+	  // ピボット相対距離を補間し、方向は急変時だけ最大角速度を制限する。
+	  eye = SmoothEye(eye, up, deltaTime);
+   }
 
    // ⑨ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
    ApplyLookAt(state, eye, up, deltaTime);

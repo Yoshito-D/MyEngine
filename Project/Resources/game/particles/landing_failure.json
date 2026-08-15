@@ -19,7 +19,7 @@
         "bursts": [],
         "enabled": true,
         "rateOverDistance": 0.0,
-        "rateOverTime": 18.5
+        "rateOverTime": 47.5
     },
     "forceOverLifetimeModule": {
         "attractorEnabled": false,
@@ -65,7 +65,7 @@
         }
     },
     "mainModule": {
-        "duration": 1.5,
+        "duration": 1.0,
         "gravityModifier": {
             "max": 0.0,
             "min": 0.0,
@@ -222,9 +222,9 @@
         "angle": 15.0,
         "arc": 360.0,
         "boxSize": [
-            0.20000000298023224,
-            0.05000000074505806,
-            0.20000000298023224
+            0.4000000059604645,
+            0.30000001192092896,
+            0.699999988079071
         ],
         "circleOutwardVelocity": 2.0999999046325684,
         "emitFrom": 2,
@@ -252,18 +252,18 @@
     "sizeOverLifetimeModule": {
         "enabled": true,
         "endSize": [
-            0.5,
-            0.5,
-            0.5
+            0.0,
+            0.0,
+            0.0
         ],
         "sizeMultiplier": {
-            "max": 1.7000000476837158,
-            "min": 1.090000033378601,
+            "max": 0.6800000071525574,
+            "min": 0.5099999904632568,
             "randomize": true
         },
         "startSize": [
-            0.10000000149011612,
-            0.10000000149011612,
+            1.0,
+            1.0,
             0.5
         ]
     },

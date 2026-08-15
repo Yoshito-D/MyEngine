@@ -5,8 +5,10 @@
 #include "../Vehicle/VehicleController.h"
 #include "../Vehicle/VehicleSpeedPostEffectController.h"
 #include "Logger.h"
+#include "Framework/EngineContext.h"
 #include "Object/Object.h"
 #include "Scene/BaseScene.h"
+#include "Scene/Camera/Core/CinemachineBrain.h"
 #include "Scene/SceneWorld.h"
 #include <algorithm>
 #include <cmath>
@@ -183,15 +185,18 @@ void RaceManagerComponent::Restart() {
    switch (startMode_) {
       case StartMode::Immediate:
          state_ = State::Running;
+         SetCameraMotionPaused(false);
          SetPlayerLocked(false);
          break;
       case StartMode::Countdown:
          state_ = State::Countdown;
+         SetCameraMotionPaused(true);
          SetPlayerLocked(runtimeInitialized_ && lockPlayerDuringCountdown_);
          break;
       case StartMode::Gate:
       default:
          state_ = State::Waiting;
+         SetCameraMotionPaused(false);
          SetPlayerLocked(false);
          break;
    }
@@ -284,11 +289,18 @@ void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
 void RaceManagerComponent::BeginRace() {
    // カウントダウン時間は走行記録へ含めず、開始時点を0秒として計測し直す。
    state_ = State::Running;
+   SetCameraMotionPaused(false);
    elapsedTime_ = 0.0;
    startBannerRemaining_ = startTextDuration_;
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
    SetPlayerLocked(false);
+}
+
+void RaceManagerComponent::SetCameraMotionPaused(bool paused) {
+   if (auto* brain = GameEngine::EngineContext::GetActiveBrain()) {
+      brain->SetCameraMotionPaused(paused);
+   }
 }
 
 bool RaceManagerComponent::CanFinish() const {

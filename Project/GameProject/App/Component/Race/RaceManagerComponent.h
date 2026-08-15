@@ -110,6 +110,7 @@ private:
    void BeginRace();
    bool CanFinish() const;
    void SetPlayerLocked(bool locked);
+   void SetCameraMotionPaused(bool paused);
    void AddBestTime(double timeSeconds);
    bool LoadBestTimes();
    bool SaveBestTimes() const;
