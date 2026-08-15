@@ -12,7 +12,7 @@ public:
    /// @brief 自動描画時に使用する座標空間
    enum class RenderSpace {
 	  World,  ///< アクティブな3Dカメラでワールド空間に描画する
-	  Screen  ///< Renderer内部の平行投影カメラでスクリーン空間に描画する
+	  Screen  ///< Renderer内部のUIカメラでスクリーン空間に描画する
    };
 
    /// @copydoc IObjectComponent::GetTypeName

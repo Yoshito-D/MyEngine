@@ -25,7 +25,7 @@ public:
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @brief Tab入力で次のカメラへ切り替える
+   /// @brief 非ReleaseビルドではTab入力で次のカメラへ切り替える
    void Update(float) override;
 
    /// @brief JSONで登録されたIDを指定してカメラを切り替える

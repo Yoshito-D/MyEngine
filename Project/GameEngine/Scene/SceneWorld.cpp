@@ -72,6 +72,8 @@ void SceneWorld::Clear() {
             brain->UnregisterVirtualCamera(camera.get());
          }
       }
+      // レースのカウントダウン中にシーンが破棄されても、停止状態を次シーンへ持ち越さない。
+      brain->SetCameraMotionPaused(false);
    }
 
    // 逆引きマップには所有コンテナ内の生ポインターが入るため、所有物より先に無効化する。

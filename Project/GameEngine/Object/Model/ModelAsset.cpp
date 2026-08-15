@@ -2,6 +2,7 @@
 #include "ModelAsset.h"
 #include "ResourceHelper.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Logger.h"
 #include <cassert>
 #include <algorithm>
 #include <cstring>
@@ -291,9 +292,18 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
    const aiScene* scene = importer.ReadFile(filePath.c_str(),
 	  aiProcess_FlipWindingOrder |
 	  aiProcess_FlipUVs |
+	  aiProcess_GenSmoothNormals |
 	  aiProcess_Triangulate
    );
-   assert(scene->HasMeshes());
+   // パス不一致や壊れたファイルはAssimpがnullptrを返すため、診断を残して空アセットとして扱う。
+   if (!scene) {
+	  Logger::Error("Model import failed: " + filePath + " (" + importer.GetErrorString() + ")");
+	  return modelData;
+   }
+   if (!scene->HasMeshes()) {
+	  Logger::Error("Model import produced no meshes: " + filePath);
+	  return modelData;
+   }
 
    for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 	  aiMesh* mesh = scene->mMeshes[meshIndex];

@@ -10,6 +10,16 @@ void CinemachineBrain::Initialize(std::unique_ptr<Camera> outputCamera) {
 }
 
 void CinemachineBrain::Update(float deltaTime) {
+    if (cameraMotionPaused_) {
+        // 停止中も優先度による選択は反映するが、追従計算や時間補間は進めない。
+        // Cutで残っているブレンドも破棄し、シーンに保存された状態を固定出力する。
+        if (VirtualCamera* selectedCamera = FindHighestPriorityCamera()) {
+            Cut(selectedCamera);
+        }
+        ApplyStateToOutputCamera();
+        return;
+    }
+
     // 選択中だけでなく全候補を先に更新し、優先度が切り替わった瞬間にも
     // 新しいカメラの追従状態がそのフレームのターゲット位置へ追いついているようにする。
     // 登録済みVirtualCameraを全てUpdate

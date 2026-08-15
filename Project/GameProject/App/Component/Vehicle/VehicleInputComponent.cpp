@@ -56,7 +56,11 @@ bool VehicleInputComponent::IsDriftHeld() const {
 }
 
 bool VehicleInputComponent::IsNextCameraTriggered() const {
+#ifdef MYPROJECT_NON_RELEASE
    return GetActionState(kNextCameraAction).triggered;
+#else
+   return false;
+#endif
 }
 
 nlohmann::json VehicleInputComponent::Serialize() const {

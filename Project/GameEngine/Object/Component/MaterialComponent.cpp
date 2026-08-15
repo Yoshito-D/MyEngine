@@ -446,6 +446,8 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
 
    // 名前解決不能な旧データでも既存描画を維持できるよう、現在のslot実体をfallbackとして退避する。
    const std::vector<Material*> previousMaterials = materials;
+   const std::vector<std::string> previousMaterialNames = materialNames_;
+   const std::vector<std::string> previousTextureNames = textureNames_;
    auto resolveMaterial = [&previousMaterials](const std::string& name, size_t slot) -> Material* {
       Material* material = nullptr;
       if (!name.empty() && resolver_) {
@@ -500,6 +502,8 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
    // materialSlotsも旧materialNamesもない部分データでは、現在の割り当てを破棄しない。
    if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
       materials = previousMaterials;
+      materialNames_ = previousMaterialNames;
+      textureNames_ = previousTextureNames;
       SyncMaterialNamesSize();
       return;
    }

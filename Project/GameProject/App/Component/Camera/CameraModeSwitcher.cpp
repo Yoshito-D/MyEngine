@@ -29,12 +29,14 @@ void CameraModeSwitcher::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
 }
 
 void CameraModeSwitcher::Update(float) {
+#ifdef MYPROJECT_NON_RELEASE
    const auto* vehicleInput = HasOwner() ? GetOwner().GetComponent<VehicleInputComponent>() : nullptr;
    if (cameras_.empty() || !vehicleInput || !vehicleInput->IsNextCameraTriggered()) {
       return;
    }
    currentIndex_ = (currentIndex_ + 1) % cameras_.size();
    ApplyMode();
+#endif
 }
 
 bool CameraModeSwitcher::SwitchToCamera(const std::string& cameraId) {

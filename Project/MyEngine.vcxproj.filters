@@ -1,4 +1,4 @@
-﻿<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Externals">
       <UniqueIdentifier>{398b2be7-9e69-4e86-bb01-8f28a69e281b}</UniqueIdentifier>
@@ -498,6 +498,7 @@
     <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp"><Filter>GameEngine\Object\Component\Skybox</Filter></ClCompile>
     <ClCompile Include="GameEngine\Object\Component\UI\TypewriterComponent.cpp"><Filter>GameEngine\Object\Component\UI</Filter></ClCompile>
     <ClCompile Include="GameEngine\Object\Component\UI\UIFadeComponent.cpp"><Filter>GameEngine\Object\Component\UI</Filter></ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\UI\UIModelComponent.cpp"><Filter>GameEngine\Object\Component\UI</Filter></ClCompile>
     <ClCompile Include="GameEngine\Object\Component\UI\UITextComponent.cpp"><Filter>GameEngine\Object\Component\UI</Filter></ClCompile>
     <ClCompile Include="GameEngine\Object\Component\UI\UITransformTweenComponent.cpp"><Filter>GameEngine\Object\Component\UI</Filter></ClCompile>
     <ClCompile Include="GameEngine\Object\Model\AnimationAsset.cpp"><Filter>GameEngine\Object\Model</Filter></ClCompile>
@@ -552,6 +553,7 @@
     <ClCompile Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.cpp"><Filter>GameProject\App\Component\Gravity</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Gravity\PlanetSwitcher.cpp"><Filter>GameProject\App\Component\Gravity</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp"><Filter>GameProject\App\Component\Gravity</Filter></ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\GamepadGuideTextComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\RaceCountdownTextComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\RaceGoalDirectionHUDComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
@@ -560,6 +562,7 @@
     <ClCompile Include="GameProject\App\Component\Race\RaceResultUIComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeFormatting.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeTextComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp"><Filter>GameProject\App\Component\Title</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp"><Filter>GameProject\App\Component\Vehicle</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp"><Filter>GameProject\App\Component\Vehicle</Filter></ClCompile>
@@ -812,6 +815,7 @@
     <ClInclude Include="GameEngine\Object\Component\UI\TypewriterComponent.h"><Filter>GameEngine\Object\Component\UI</Filter></ClInclude>
     <ClInclude Include="GameEngine\Object\Component\UI\UIAnimationTypes.h"><Filter>GameEngine\Object\Component\UI</Filter></ClInclude>
     <ClInclude Include="GameEngine\Object\Component\UI\UIFadeComponent.h"><Filter>GameEngine\Object\Component\UI</Filter></ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\UI\UIModelComponent.h"><Filter>GameEngine\Object\Component\UI</Filter></ClInclude>
     <ClInclude Include="GameEngine\Object\Component\UI\UITextComponent.h"><Filter>GameEngine\Object\Component\UI</Filter></ClInclude>
     <ClInclude Include="GameEngine\Object\Component\UI\UITransformTweenComponent.h"><Filter>GameEngine\Object\Component\UI</Filter></ClInclude>
     <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h"><Filter>GameEngine\Object\Model</Filter></ClInclude>
@@ -880,6 +884,7 @@
     <ClInclude Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.h"><Filter>GameProject\App\Component\Gravity</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Gravity\PlanetSwitcher.h"><Filter>GameProject\App\Component\Gravity</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h"><Filter>GameProject\App\Component\Gravity</Filter></ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\GamepadGuideTextComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RaceCountdownTextComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RaceGoalDirectionHUDComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
@@ -888,6 +893,7 @@
     <ClInclude Include="GameProject\App\Component\Race\RaceResultUIComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeFormatting.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeTextComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h"><Filter>GameProject\App\Component\Title</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h"><Filter>GameProject\App\Component\Vehicle</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h"><Filter>GameProject\App\Component\Vehicle</Filter></ClInclude>

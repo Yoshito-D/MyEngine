@@ -49,6 +49,14 @@ public:
     void SetDefaultBlendTime(float seconds) { defaultBlendTime_ = seconds; }
     float GetDefaultBlendTime() const { return defaultBlendTime_; }
 
+    /// @brief ランタイムの追従更新とカメラ間ブレンドを一時停止する
+    /// @param paused trueの間は選択中カメラの保存状態をそのまま出力する
+    void SetCameraMotionPaused(bool paused) { cameraMotionPaused_ = paused; }
+
+    /// @brief ランタイムのカメラ更新が一時停止中か取得する
+    /// @return 追従更新とブレンドを停止している場合はtrue
+    bool IsCameraMotionPaused() const { return cameraMotionPaused_; }
+
     /// @brief 即座にカメラを切り替え（ブレンドなし）
     void Cut(VirtualCamera* vcam);
 
@@ -83,6 +91,7 @@ private:
     std::stack<BlendLayer> blendStack_;
 
     float defaultBlendTime_ = 0.5f;
+    bool cameraMotionPaused_ = false;
 };
 
 } // namespace GameEngine
