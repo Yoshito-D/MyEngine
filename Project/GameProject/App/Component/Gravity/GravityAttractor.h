@@ -19,11 +19,9 @@ public:
    virtual GameEngine::Vector3 GetUpVectorFor(const GameEngine::Vector3& objectPosition) const = 0;
 
    /// @brief GravityBody に重力方向と加速度を適用する
-   void ApplyTo(GravityBody& gravityBody, const GameEngine::Vector3& objectPosition) const;
+   /// @return 有効かつ影響範囲内で、正常な重力方向を適用できた場合は true
+   bool ApplyTo(GravityBody& gravityBody, const GameEngine::Vector3& objectPosition) const;
 
-public:
-   /// @brief コンポーネント有効フラグ（将来拡張用）
-   bool enabled = true;
 };
 
 } // namespace App

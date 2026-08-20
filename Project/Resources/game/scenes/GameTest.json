@@ -177,35 +177,35 @@
                      "enableAirbornePlanetDirectionGuide": true,
                      "enablePreLandingCamera": true,
                      "eyeDirectionMaxAngularSpeed": 4.0,
-                     "fovBoostMax": 0.07000000029802322,
+                     "fovBoostMax": 0.029999999329447746,
                      "fovDefault": 0.4699999988079071,
-                     "fovLerpSpeed": 3.0,
+                     "fovLerpSpeed": 0.009999999776482582,
                      "gravityUpLerpSpeed": 5.0,
                      "groundedTargetHeight": 3.0,
                      "height": 7.900000095367432,
                      "jumpPlanetDirectionDelaySeconds": 0.30000001192092896,
                      "jumpPlanetDirectionRestoreSeconds": 0.5,
-                     "landingFramingBlendSeconds": 1.0,
+                     "landingFramingBlendSeconds": 0.8999999761581421,
                      "landingRearLerpRampSeconds": 5.0,
                      "lookAtRecoveryCurveControl1": 0.0,
                      "lookAtRecoveryCurveControl2": 1.0,
                      "lookAtRecoveryRange": 0.15000000596046448,
                      "positionLerpSpeed": 7.5,
-                     "preLandingBlendLerpSpeed": 2.0,
-                     "preLandingFullBlendSeconds": 0.25,
+                     "preLandingBlendLerpSpeed": 1.5,
+                     "preLandingFullBlendSeconds": 0.10000000149011612,
                      "preLandingMinOutwardHeight": 1.0,
-                     "preLandingPredictionSeconds": 0.5,
+                     "preLandingPredictionSeconds": 1.524999976158142,
                      "preLandingReleaseLerpSpeed": 2.0,
-                     "preLandingTerrainLookAhead": 6.0,
-                     "preLandingTerrainLookBlend": 0.25,
+                     "preLandingTerrainLookAhead": 9.0,
+                     "preLandingTerrainLookBlend": 0.5,
                      "rearLerpSpeed": 7.5,
                      "rotationLerpSpeed": 12.0,
                      "showCameraEvidenceWindow": false,
                      "showCameraMeasurementOverlay": true,
-                     "speedBoostMax": 25.0,
-                     "speedBoostThreshold": 5.0,
-                     "speedChangeDistanceKickMax": 2.200000047683716,
-                     "speedChangeFovKickMax": 0.07249999791383743,
+                     "speedBoostMax": 35.0,
+                     "speedBoostThreshold": 1.5,
+                     "speedChangeDistanceKickMax": 4.0,
+                     "speedChangeFovKickMax": 0.004999999888241291,
                      "springDamping": 20.0,
                      "springStiffness": 30.0,
                      "takeoffFramingBlendSeconds": 0.4000000059604645
@@ -242,15 +242,15 @@
                "nearClip": 0.20000000298023224,
                "transform": {
                   "rotation": [
-                     0.12566368281841278,
+                     0.32637664675712585,
                      0.0,
                      0.0
                   ],
                   "rotationQuaternion": [
-                     0.06279051303863525,
+                     0.16246497631072998,
                      0.0,
                      0.0,
-                     0.9980267286300659
+                     0.9867143630981445
                   ],
                   "rotationSource": "quaternion",
                   "scale": [
@@ -260,8 +260,8 @@
                   ],
                   "translation": [
                      0.0,
-                     55.0,
-                     -16.399999618530273
+                     58.599998474121094,
+                     -16.100000381469727
                   ]
                },
                "viewMatrixOverride": [
@@ -1245,7 +1245,7 @@
                         150.0
                      ],
                      "translation": [
-                        -85.57366180419922,
+                        -105.97450256347656,
                         -72.6890869140625,
                         130.68243408203125
                      ]
@@ -1507,8 +1507,8 @@
                         100.0
                      ],
                      "translation": [
-                        68.04347229003906,
-                        19.490781784057617,
+                        108.96614074707031,
+                        53.2475471496582,
                         90.84000396728516
                      ]
                   },
@@ -1770,8 +1770,8 @@
                      ],
                      "translation": [
                         2.661102294921875,
-                        44.47768783569336,
-                        223.78265380859375
+                        135.55909729003906,
+                        212.12860107421875
                      ]
                   },
                   "enabled": true,
@@ -2031,9 +2031,9 @@
                         125.0
                      ],
                      "translation": [
-                        -152.88145446777344,
-                        -39.77368927001953,
-                        414.29046630859375
+                        -208.02471923828125,
+                        15.178487777709961,
+                        438.688720703125
                      ]
                   },
                   "enabled": true,
@@ -2550,14 +2550,14 @@
                      ],
                      "rotationSource": "quaternion",
                      "scale": [
-                        120.0,
-                        120.0,
-                        120.0
+                        130.0,
+                        130.0,
+                        130.0
                      ],
                      "translation": [
-                        21.747623443603516,
-                        -4.393159866333008,
-                        492.2264099121094
+                        20.120147705078125,
+                        -79.12806701660156,
+                        489.0728454589844
                      ]
                   },
                   "enabled": true,
@@ -2817,7 +2817,7 @@
                         100.0
                      ],
                      "translation": [
-                        82.18497467041016,
+                        101.27706146240234,
                         -86.96155548095703,
                         242.2393341064453
                      ]
@@ -3074,14 +3074,14 @@
                      ],
                      "rotationSource": "quaternion",
                      "scale": [
-                        80.0,
-                        80.0,
-                        80.0
+                        100.0,
+                        100.0,
+                        100.0
                      ],
                      "translation": [
-                        -112.61312103271484,
-                        -115.02471923828125,
-                        288.36090087890625
+                        -199.77139282226563,
+                        -85.61032104492188,
+                        306.88043212890625
                      ]
                   },
                   "enabled": true,
@@ -3341,9 +3341,9 @@
                         110.0
                      ],
                      "translation": [
-                        121.73442077636719,
-                        -27.434606552124023,
-                        377.250732421875
+                        146.089111328125,
+                        14.405916213989258,
+                        398.60113525390625
                      ]
                   },
                   "enabled": true,
@@ -3598,14 +3598,14 @@
                      ],
                      "rotationSource": "quaternion",
                      "scale": [
-                        75.0,
-                        75.0,
-                        75.0
+                        100.0,
+                        100.0,
+                        100.0
                      ],
                      "translation": [
                         -112.61891174316406,
-                        56.176856994628906,
-                        555.7265014648438
+                        25.35757064819336,
+                        571.4720458984375
                      ]
                   },
                   "enabled": true,
@@ -3860,14 +3860,14 @@
                      ],
                      "rotationSource": "quaternion",
                      "scale": [
-                        90.0,
-                        90.0,
-                        90.0
+                        100.0,
+                        100.0,
+                        100.0
                      ],
                      "translation": [
-                        -38.540550231933594,
-                        73.75703430175781,
-                        351.7278137207031
+                        -54.7059326171875,
+                        32.02520751953125,
+                        340.37152099609375
                      ]
                   },
                   "enabled": true,
@@ -4723,7 +4723,7 @@
                },
                {
                   "data": {
-                     "jumpStrength": 10.0
+                     "jumpStrength": 12.0
                   },
                   "enabled": true,
                   "typeName": "CharacterJump"
@@ -4736,8 +4736,8 @@
                {
                   "data": {
                      "autoSpeed": 35.0,
-                     "maxSpeed": 35.0,
-                     "speedRecovery": 0.20000000298023224,
+                     "maxSpeed": 37.5,
+                     "speedRecovery": 0.17499999701976776,
                      "steerSpeed": 120.0
                   },
                   "enabled": true,
