@@ -69,10 +69,27 @@ static float DistancePointOBB(
    GameEngine::Vector3 localVec = RotateVector(point - obbCenter, invRot);
 
    // 各軸でクランプして最近傍点を求め、距離を返す
-   float dx = localVec.x - std::clamp(localVec.x, -halfExtents.x, halfExtents.x);
-   float dy = localVec.y - std::clamp(localVec.y, -halfExtents.y, halfExtents.y);
-   float dz = localVec.z - std::clamp(localVec.z, -halfExtents.z, halfExtents.z);
+   const GameEngine::Vector3 extents{
+      std::abs(halfExtents.x),
+      std::abs(halfExtents.y),
+      std::abs(halfExtents.z)
+   };
+   float dx = localVec.x - std::clamp(localVec.x, -extents.x, extents.x);
+   float dy = localVec.y - std::clamp(localVec.y, -extents.y, extents.y);
+   float dz = localVec.z - std::clamp(localVec.z, -extents.z, extents.z);
    return std::sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+/// @brief OBBと惑星地表の最短距離を返す
+static float DistancePlanetSurfaceToOBB(
+   const GameEngine::Vector3& planetCenter,
+   float planetRadius,
+   const GameEngine::Vector3& obbCenter,
+   const GameEngine::Quaternion& obbRot,
+   const GameEngine::Vector3& halfExtents)
+{
+   const float centerDistance = DistancePointOBB(planetCenter, obbCenter, obbRot, halfExtents);
+   return std::max(centerDistance - std::max(planetRadius, 0.0f), 0.0f);
 }
 
 void PlanetSwitcher::Update(float) {
@@ -87,6 +104,15 @@ void PlanetSwitcher::Update(float) {
    const GameEngine::Quaternion obbRot = transform->transform.GetActiveQuaternion();
    int newIndex = SelectBestPlanetIndex(pos, obbRot);
    if (newIndex < 0) {
+	  // 候補が全て削除・無効・圏外の場合、古い惑星の重力を持ち越さない。
+	  pendingIndex_ = -1;
+	  activeGravityIndex_ = -1;
+	  if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
+		 link->SetAttractor(nullptr);
+	  }
+	  if (auto* gravityBody = GetOwner().GetComponent<GravityBody>()) {
+		 gravityBody->SetGravity({ 0.0f, 0.0f, 0.0f });
+	  }
 	  return;
    }
 
@@ -105,11 +131,9 @@ int PlanetSwitcher::SelectBestPlanetIndex(const GameEngine::Vector3& pos,
 										  const GameEngine::Quaternion& obbRot) {
    const GameEngine::Vector3 halfExtents = obbHalfExtents;
 
-   // 影響圏内の最近傍惑星を探索（OBB最近傍点距離を使用）
-   int bestInRange = -1;
-   float bestInRangeDist = std::numeric_limits<float>::max();
-   int bestAnyIndex = -1;
-   float bestAnyDist = std::numeric_limits<float>::max();
+   // 実際に重力を適用できる惑星の中から、OBBと地表の距離が最短のものを探索する。
+   int bestIndex = -1;
+   float bestDistance = std::numeric_limits<float>::max();
 
    for (int i = 0; i < static_cast<int>(entries_.size()); ++i) {
 	  auto& e = entries_[i];
@@ -119,34 +143,38 @@ int PlanetSwitcher::SelectBestPlanetIndex(const GameEngine::Vector3& pos,
 	  e.center = GetPlanetCenter(e.objectName);
 	  e.surfaceRadius = GetPlanetSurfaceRadius(e.objectName);
 
-	  // OBBと惑星中心の最短距離（OBBの最近傍点→惑星中心）
-	  float dist = DistancePointOBB(e.center, pos, obbRot, halfExtents);
-
-	  // 影響圏候補を優先しつつ、圏外しかない場合に重力先を失わないよう最近傍も並行して保持する。
-	  if (dist < bestAnyDist) {
-		 bestAnyDist = dist;
-		 bestAnyIndex = i;
+	  auto* attractor = GetAttractorByObjectName(e.objectName);
+	  if (!attractor || !attractor->IsEnabled() || !attractor->IsInRange(pos)) {
+		 continue;
 	  }
 
-	  auto* attractor = GetAttractorByObjectName(e.objectName);
-	  if (attractor && attractor->IsInRange(pos) && dist < bestInRangeDist) {
-		 bestInRangeDist = dist;
-		 bestInRange = i;
+	  const float distance = DistancePlanetSurfaceToOBB(
+		 e.center, e.surfaceRadius, pos, obbRot, halfExtents);
+	  if (distance < bestDistance) {
+		 bestDistance = distance;
+		 bestIndex = i;
 	  }
    }
 
-   if (bestAnyIndex < 0) {
+   if (bestIndex < 0) {
 	  return -1;
    }
 
-   int newIndex = (bestInRange >= 0) ? bestInRange : bestAnyIndex;
+   int newIndex = bestIndex;
 
-   // ヒステリシス：現在の惑星への距離が新候補よりswitchHysteresis以上大きいときのみ切替
-   if (newIndex != currentIndex_ && currentIndex_ >= 0 && currentIndex_ < static_cast<int>(entries_.size())) {
-	  float currentDist = DistancePointOBB(entries_[currentIndex_].center, pos, obbRot, halfExtents);
-	  float newDist = DistancePointOBB(entries_[newIndex].center, pos, obbRot, halfExtents);
-	  if (currentDist - newDist < switchHysteresis) {
-		 newIndex = currentIndex_; // 差が不十分なので切り替えしない
+   // 空中では着地済み惑星ではなく、現在実際に接続中の重力先を基準にする。
+   const int referenceIndex = activeGravityIndex_ >= 0 ? activeGravityIndex_ : currentIndex_;
+   if (newIndex != referenceIndex &&
+	  referenceIndex >= 0 && referenceIndex < static_cast<int>(entries_.size())) {
+	  const auto& reference = entries_[referenceIndex];
+	  auto* referenceAttractor = GetAttractorByObjectName(reference.objectName);
+	  // 圏外・無効な旧惑星をヒステリシスで維持すると重力が適用されないため、保持対象から外す。
+	  if (referenceAttractor && referenceAttractor->IsEnabled() && referenceAttractor->IsInRange(pos)) {
+		 const float referenceDistance = DistancePlanetSurfaceToOBB(
+			reference.center, reference.surfaceRadius, pos, obbRot, halfExtents);
+		 if (referenceDistance - bestDistance < std::max(switchHysteresis, 0.0f)) {
+			newIndex = referenceIndex;
+		 }
 	  }
    }
 
@@ -165,22 +193,36 @@ void PlanetSwitcher::ApplyPlanetIndex(int newIndex) {
 	  currentIndex_ = newIndex;
    }
 
-   if (planetChanged || gravityChanged) {
-	  const auto& best = entries_[newIndex];
+   const auto& best = entries_[newIndex];
+   auto* attractor = GetAttractorByObjectName(best.objectName);
 
-	  // GravityAttractorLink の接続先は惑星または重力対象の切替時だけ更新する。
-	  if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
-		 link->SetAttractor(GetAttractorByObjectName(best.objectName));
-		 if (gravityChanged) {
-			activeGravityIndex_ = newIndex;
-			switched_ = true;
-		 }
+   // 毎フレーム参照を更新し、エディタでの削除・再生成や有効状態変更にも追従する。
+   if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
+	  link->SetAttractor(attractor);
+   }
+
+   bool gravityApplied = false;
+   auto* gravityBody = GetOwner().GetComponent<GravityBody>();
+   auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
+   if (attractor && gravityBody && transform) {
+	  gravityApplied = attractor->ApplyTo(*gravityBody, transform->transform.translation);
+   }
+   if (!gravityApplied && gravityBody) {
+	  gravityBody->SetGravity({ 0.0f, 0.0f, 0.0f });
+   }
+
+   if (gravityApplied) {
+	  activeGravityIndex_ = newIndex;
+	  if (gravityChanged) {
+		 switched_ = true;
 	  }
+   } else {
+	  activeGravityIndex_ = -1;
+   }
 
-	  if (planetChanged) {
-		 if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
-			walker->ResetHorizontalVelocity();
-		 }
+   if (planetChanged) {
+	  if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
+		 walker->ResetHorizontalVelocity();
 	  }
    }
 
@@ -199,18 +241,23 @@ void PlanetSwitcher::ApplyAirborneAttractorIndex(int newIndex, const GameEngine:
 
    auto* attractor = GetAttractorByObjectName(candidate.objectName);
    if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) {
-	  if (activeGravityIndex_ != newIndex) {
-		 link->SetAttractor(attractor);
-		 activeGravityIndex_ = newIndex;
-		 switched_ = true;
-	  }
+	  link->SetAttractor(attractor);
    }
 
    // GravityAttractorLink はこのフレームでは既に更新済みなので、
    // 空中切替直後の物理積分にも新しい重力を反映する。
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   if (attractor && gravityBody) {
-	  attractor->ApplyTo(*gravityBody, pos);
+   const bool gravityChanged = activeGravityIndex_ != newIndex;
+   if (attractor && gravityBody && attractor->ApplyTo(*gravityBody, pos)) {
+	  activeGravityIndex_ = newIndex;
+	  if (gravityChanged) {
+		 switched_ = true;
+	  }
+   } else {
+	  activeGravityIndex_ = -1;
+	  if (gravityBody) {
+		 gravityBody->SetGravity({ 0.0f, 0.0f, 0.0f });
+	  }
    }
 }
 
@@ -221,7 +268,7 @@ void PlanetSwitcher::AddPlanet(std::string objectName) {
 
    if (auto* model = FindRegisteredModelByObjectName(objectName)) {
 	  GameEngine::Vector3 modelPos = model->GetPosition();
-	  float surfaceRadius = model->GetScale().x; // 仮にスケールのX軸を半径として使用
+	  float surfaceRadius = GetPlanetSurfaceRadius(objectName);
 	  entries_.push_back({ objectName, modelPos, surfaceRadius });
    }
 }
@@ -312,7 +359,7 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
    }
 
    if (data.contains("switchHysteresis") && data.at("switchHysteresis").is_number()) {
-	  switchHysteresis = data.at("switchHysteresis").get<float>();
+	  switchHysteresis = std::max(data.at("switchHysteresis").get<float>(), 0.0f);
    }
    if (data.contains("obbHalfExtents")) {
 	  obbHalfExtents = DeserializeVector3(data.at("obbHalfExtents"), obbHalfExtents);
@@ -391,33 +438,25 @@ void PlanetSwitcher::DrawInspector() {
 #endif
 
 GravityAttractor* PlanetSwitcher::GetAttractorByObjectName(const std::string& objectName) const {
-   auto& models = GameEngine::Model::GetRegisteredModels();
-   for (auto* model : models) {
-	  if (model->GetObjectName() == objectName) {
-		 auto* attractor = model->GetComponent<SphericalGravityAttractor>();
-		 return attractor;
-	  }
+   if (auto* model = FindRegisteredModelByObjectName(objectName)) {
+	  return model->GetComponent<SphericalGravityAttractor>();
    }
    return nullptr;
 }
 
 GameEngine::Vector3 PlanetSwitcher::GetPlanetCenter(const std::string& objectName) const {
-   auto& models = GameEngine::Model::GetRegisteredModels();
-   for (auto* model : models) {
-	  if (model->GetObjectName() == objectName) {
-		 return model->GetPosition();
-	  }
+   if (auto* model = FindRegisteredModelByObjectName(objectName)) {
+	  return model->GetPosition();
    }
    return { 0.0f, 0.0f, 0.0f };
 }
 
 float PlanetSwitcher::GetPlanetSurfaceRadius(const std::string& objectName) const
 {
-   auto& models = GameEngine::Model::GetRegisteredModels();
-   for (auto* model : models) {
-	  if (model->GetObjectName() == objectName) {
-		 return model->GetScale().x * 0.5f; // 仮にスケールのX軸を半径として使用
-	  }
+   if (auto* model = FindRegisteredModelByObjectName(objectName)) {
+	  const auto scale = model->GetScale();
+	  // 非一様・負スケールでも地表距離が負や過小にならないよう最大軸を球半径に使う。
+	  return std::max({ std::abs(scale.x), std::abs(scale.y), std::abs(scale.z) }) * 0.5f;
    }
    return 0.0f;
 }

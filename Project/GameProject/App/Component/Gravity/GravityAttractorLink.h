@@ -2,6 +2,7 @@
 
 #include "Object/Component/IObjectComponent.h"
 #include "GravityAttractor.h"
+#include <string>
 
 namespace App {
 
@@ -19,7 +20,8 @@ public:
    void Update(float) override;
 
    /// @brief 適用元となる重力発生源を設定する
-   void SetAttractor(GravityAttractor* attractor) { attractor_ = attractor; }
+   /// @details 非所有ポインターは保持せず、安定IDと型名から毎フレーム安全に再解決する。
+   void SetAttractor(GravityAttractor* attractor);
 
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
@@ -33,8 +35,17 @@ public:
    void Deserialize(const nlohmann::json&) override {}
 
 private:
-   /// @brief 現在接続中の重力発生源
-   GravityAttractor* attractor_ = nullptr;
+   /// @brief 現在接続中の重力発生源を再解決する
+   GravityAttractor* ResolveAttractor() const;
+
+   /// @brief 接続先オブジェクトの安定ID（旧データ等で空の場合は名前を使用）
+   std::string attractorEntityId_;
+
+   /// @brief 接続先オブジェクト名
+   std::string attractorObjectName_;
+
+   /// @brief 接続先コンポーネント型名
+   std::string attractorTypeName_;
 };
 
 } // namespace App
