@@ -226,7 +226,7 @@ void DrawPresentationLegendEntry(
    float y,
    const GameEngine::Vector4& color) {
    GameEngine::TextStyle shadowStyle{};
-   shadowStyle.fontId = "851Gkktt";
+   shadowStyle.fontId = "arial";
    shadowStyle.fontSize = 28;
    shadowStyle.color = { 0.0f, 0.0f, 0.0f, 0.9f };
    shadowStyle.sortingOrder = 899;
@@ -294,11 +294,11 @@ void DrawPresentationGuides(
       std::snprintf(
          conditionText,
          sizeof(conditionText),
-         "実測: 速度後方と惑星ガイドの差=%.0f度 (dot=%.2f)",
+         "Measured: velocity-back vs planet-guide = %.0f deg (dot=%.2f)",
          angleDegrees,
          backwardDot);
-      DrawPresentationLegendEntry("青: 速度後方（実測）", 24.0f, targetUpColor);
-      DrawPresentationLegendEntry("紫: 惑星ガイド後方（実測）", 60.0f, cameraBasisColor);
+      DrawPresentationLegendEntry("BLUE: velocity back (measured)", 24.0f, targetUpColor);
+      DrawPresentationLegendEntry("PURPLE: planet guide back (measured)", 60.0f, cameraBasisColor);
       DrawPresentationLegendEntry(
          conditionText,
          104.0f,
@@ -324,10 +324,10 @@ void DrawPresentationGuides(
       std::snprintf(
          conditionText,
          sizeof(conditionText),
-         "実測: 前方と重力軸 |dot|=%.2f",
+         "Measured: forward vs gravity axis |dot|=%.2f",
          std::abs(safeCameraForward.Dot(safeTargetUp)));
-      DrawPresentationLegendEntry("青: 重力方向（実測）", 24.0f, targetUpColor);
-      DrawPresentationLegendEntry("赤: カメラ前方（実測）", 60.0f, cameraForwardColor);
+      DrawPresentationLegendEntry("BLUE: gravity direction (measured)", 24.0f, targetUpColor);
+      DrawPresentationLegendEntry("RED: camera forward (measured)", 60.0f, cameraForwardColor);
       DrawPresentationLegendEntry(
          conditionText,
          104.0f,
@@ -380,9 +380,9 @@ void DrawPresentationGuides(
       safeGuideLength * 0.25f,
       landingUpColor);
 
-   DrawPresentationLegendEntry("橙: 予測軌道", 24.0f, trajectoryColor);
-   DrawPresentationLegendEntry("水色: 接触予定点", 60.0f, contactColor);
-   DrawPresentationLegendEntry("緑: 着地後Up", 96.0f, landingUpColor);
+   DrawPresentationLegendEntry("ORANGE: predicted trajectory", 24.0f, trajectoryColor);
+   DrawPresentationLegendEntry("CYAN: predicted contact", 60.0f, contactColor);
+   DrawPresentationLegendEntry("GREEN: landing Up", 96.0f, landingUpColor);
 }
 
 void TriggerDirectionalShake(
@@ -579,6 +579,12 @@ void CameraGravityBridge::Update(float deltaTime) {
          // 発表素材にはエディタUIを含めず、ゲーム画面とガイドだけを記録する。
          GameEngine::EngineContext::SetDockSpaceVisible(false);
 #endif
+         if (!presentationMeasurementStarted_) {
+            // スクリーンショットとCSVを同じ試行へ結び付け、資料上の時刻と実測値を対応させる。
+            playerRearFollowCamera_->StartCameraMeasurement(
+               "presentation_sequence_warmup");
+            presentationMeasurementStarted_ = true;
+         }
          presentationCaptureElapsed_ += std::max(0.0f, deltaTime);
          if (autoCapturePresentationVideoFrames) {
             // 実フレームレートとは独立した累積時間で、指定レートの連番画像へ間引く。
@@ -626,8 +632,13 @@ void CameraGravityBridge::Update(float deltaTime) {
 
          if (!presentationJumpTriggered_
             && presentationCaptureElapsed_ >= std::max(0.0f, presentationCaptureJumpDelay)
+            && playerRearFollowCamera_->GetCameraMeasurementSampleCount() >= 30
             && jump
             && !isAirborne) {
+            // シーン読込直後の姿勢初期化を実測最大値へ混ぜず、安定した直前フレームを始点にする。
+            playerRearFollowCamera_->StartCameraMeasurement(
+               "presentation_sequence_current_settings");
+            presentationMeasurementResetForJump_ = true;
             jump->Jump(gravityUp);
             presentationJumpTriggered_ = true;
          }
@@ -709,6 +720,12 @@ void CameraGravityBridge::Update(float deltaTime) {
                   "05_after_landing.png",
                   debugDrawPresentationGuides);
                presentationAfterLandingCaptured_ = true;
+               if (presentationMeasurementStarted_
+                  && presentationMeasurementResetForJump_
+                  && !presentationMeasurementSaved_) {
+                  presentationMeasurementSaved_ =
+                     playerRearFollowCamera_->StopCameraMeasurement(true);
+               }
             }
          }
       }
@@ -740,6 +757,16 @@ void CameraGravityBridge::Update(float deltaTime) {
          }
       }
       wasGrounded_ = isGrounded;
+   }
+
+   if (autoCapturePresentationSequence
+      && presentationMeasurementStarted_
+      && !presentationMeasurementSaved_
+      && presentationCaptureElapsed_ >= 30.0f
+      && playerRearFollowCamera_) {
+      // 着地条件が成立しない試行でも無限に記録せず、失敗を含む30秒分を検証材料として残す。
+      presentationMeasurementSaved_ =
+         playerRearFollowCamera_->StopCameraMeasurement(true);
    }
 }
 

@@ -1,10 +1,20 @@
 #include "PlayerRearFollowCamera.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
+#include "Framework/EngineContext.h"
+#include "Utility/Logger.h"
 #include "Utility/MathUtils/MathConstants.h"
 #include "Utility/MathUtils/MatrixOperations.h"
 #include "Utility/MathUtils/QuaternionOperations.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cctype>
+#include <cstdio>
+#include <ctime>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
@@ -26,7 +36,9 @@ constexpr float kMaxSpringStep = 1.0f / 120.0f;
 // 旧ターボ係数が最大になっていた速度差を統合後も基準として使う。
 constexpr float kSpeedDeltaForMaxKick = 5.0f;
 constexpr float kGroundDirectionProjectionBlendRange = 0.15f;
-constexpr float kLookAtDegenerateBlendRange = 0.15f;
+constexpr float kRadiansToDegrees = 57.29577951308232f;
+constexpr size_t kMaxCameraMeasurementSamples = 36000;
+constexpr const char* kCameraMeasurementDirectory = "../Generated/CameraMeasurements";
 
 static float ClampCameraFov(float fov) {
    if (!std::isfinite(fov)) {
@@ -230,6 +242,47 @@ static float SignedAngleAroundAxis(const GameEngine::Vector3& from,
 static float SmoothStep01(float value) {
    float t = std::clamp(value, 0.0f, 1.0f);
    return t * t * (3.0f - 2.0f * t);
+}
+
+/// @brief 2方向のなす角を度で返す
+static float AngleDegrees(const GameEngine::Vector3& from, const GameEngine::Vector3& to) {
+   float fromLength = from.Length();
+   float toLength = to.Length();
+   if (fromLength <= 1e-6f || toLength <= 1e-6f) {
+      return 0.0f;
+   }
+   float dot = from.Dot(to) / (fromLength * toLength);
+   return std::acos(std::clamp(dot, -1.0f, 1.0f)) * kRadiansToDegrees;
+}
+
+/// @brief ベクトルの全要素が有限値かを返す
+static bool IsFiniteVector(const GameEngine::Vector3& value) {
+   return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
+}
+
+/// @brief 検証条件名をファイル名として安全なASCIIへ変換する
+static std::string SanitizeMeasurementName(const std::string& name) {
+   std::string sanitized;
+   sanitized.reserve(name.size());
+   for (unsigned char character : name) {
+      if (std::isalnum(character) || character == '-' || character == '_') {
+         sanitized.push_back(static_cast<char>(character));
+      } else if (sanitized.empty() || sanitized.back() != '_') {
+         sanitized.push_back('_');
+      }
+   }
+   return sanitized.empty() ? "camera_measurement" : sanitized;
+}
+
+/// @brief 計測ファイル名へ付けるローカル時刻を返す
+static std::string BuildMeasurementTimestamp() {
+   const auto now = std::chrono::system_clock::now();
+   const std::time_t time = std::chrono::system_clock::to_time_t(now);
+   std::tm localTime{};
+   localtime_s(&localTime, &time);
+   std::ostringstream stream;
+   stream << std::put_time(&localTime, "%Y%m%d_%H%M%S");
+   return stream.str();
 }
 
 /// @brief カメラの直交基底からワールド回転クォータニオンを構築する
@@ -818,6 +871,18 @@ GameEngine::Vector3 PlayerRearFollowCamera::ComputeLookTarget(const GameEngine::
    return lookTarget;
 }
 
+float PlayerRearFollowCamera::EvaluateLookAtRecoveryCurve(float input) const {
+   const float t = std::clamp(input, 0.0f, 1.0f);
+   const float inverse = 1.0f - t;
+   const float control1 = std::clamp(lookAtRecoveryCurveControl1, 0.0f, 1.0f);
+   const float control2 = std::clamp(lookAtRecoveryCurveControl2, 0.0f, 1.0f);
+   const float value =
+      3.0f * inverse * inverse * t * control1
+      + 3.0f * inverse * t * t * control2
+      + t * t * t;
+   return std::clamp(value, 0.0f, 1.0f);
+}
+
 /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
 /// @details LookAt の up には補間済み重力Upを使用する。
 ///          cachedRight_ / cachedUp_ は外部（UI など）で参照されるため確定させる。
@@ -857,15 +922,23 @@ void PlayerRearFollowCamera::ApplyLookAt(GameEngine::CameraState& state,
    // これにより、垂直落下から着地してcrossが復活した瞬間の180度ロールを防ぐ。
    Vector3 candidateRight = requestedUp.Cross(zaxis);
    float candidateRightLen = candidateRight.Length();
+   lastLookAtCandidateRightLength_ = candidateRightLen;
+   lastLookAtRecoveryInput_ = std::clamp(
+      candidateRightLen / std::max(lookAtRecoveryRange, 1e-4f),
+      0.0f,
+      1.0f);
+   lastLookAtRecoveryBlend_ = EvaluateLookAtRecoveryCurve(lastLookAtRecoveryInput_);
    if (candidateRightLen > 1e-6f) {
       candidateRight = candidateRight * (1.0f / candidateRightLen);
    }
 
    Vector3 targetRight = previousRight;
    if (candidateRightLen > 1e-6f) {
-      float normalRightBlend = SmoothStep01(candidateRightLen / kLookAtDegenerateBlendRange);
       float signedRoll = SignedAngleAroundAxis(previousRight, candidateRight, zaxis, 1.0f);
-      targetRight = RotateAroundAxisUnit(previousRight, zaxis, signedRoll * normalRightBlend);
+      targetRight = RotateAroundAxisUnit(
+         previousRight,
+         zaxis,
+         signedRoll * lastLookAtRecoveryBlend_);
    }
 
    targetRight = NormalizeOrFallback(targetRight - zaxis * zaxis.Dot(targetRight), previousRight);
@@ -1129,6 +1202,10 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    cachedRight_ = { 1.0f, 0.0f, 0.0f };
    cachedUp_ = { 0.0f, 1.0f, 0.0f };
    cachedForward_ = { 0.0f, 0.0f, 1.0f };
+   lastLookAtCandidateRightLength_ = 1.0f;
+   lastLookAtRecoveryInput_ = 1.0f;
+   lastLookAtRecoveryBlend_ = 1.0f;
+   ClearCameraMeasurement();
    currentViewRotation_ = GameEngine::Quaternion::Identity();
    isViewRotationInitialized_ = false;
    lastEyePlanarDirection_ = { 0.0f, 0.0f, -1.0f };
@@ -1157,6 +1234,551 @@ void PlayerRearFollowCamera::SetLandingPrediction(
    predictedLandingSeconds_ = std::max(0.0f, secondsToImpact);
    landingPredictionValid_ = true;
 }
+
+void PlayerRearFollowCamera::StartCameraMeasurement(const std::string& testName) {
+   ClearCameraMeasurement();
+   cameraMeasurementTestName_ = testName.empty() ? "camera_live" : testName;
+   cameraMeasurementSamples_.reserve(3600);
+   cameraMeasurementPreviousGravityUp_ = currentGravityUp_;
+   cameraMeasurementPreviousRight_ = cachedRight_;
+   cameraMeasurementPreviousUp_ = cachedUp_;
+   cameraMeasurementPreviousForward_ = cachedForward_;
+   cameraMeasurementHasPrevious_ = true;
+   cameraMeasurementActive_ = true;
+   Logger::Info(
+      "Camera measurement started: " + cameraMeasurementTestName_,
+      Logger::LogChannel::Game);
+}
+
+bool PlayerRearFollowCamera::StopCameraMeasurement(bool saveToFile) {
+   cameraMeasurementActive_ = false;
+   if (!saveToFile) {
+      return true;
+   }
+   return SaveCameraMeasurementFiles();
+}
+
+void PlayerRearFollowCamera::ClearCameraMeasurement() {
+   cameraMeasurementActive_ = false;
+   cameraMeasurementHasPrevious_ = false;
+   cameraMeasurementElapsedSeconds_ = 0.0f;
+   cameraMeasurementNextFrame_ = 0;
+   cameraMeasurementLastGameFrame_ = UINT64_MAX;
+   cameraMeasurementSamples_.clear();
+   cameraMeasurementMaxGravityUpStepDegrees_ = 0.0f;
+   cameraMeasurementMaxRightStepDegrees_ = 0.0f;
+   cameraMeasurementMaxUpStepDegrees_ = 0.0f;
+   cameraMeasurementMaxForwardStepDegrees_ = 0.0f;
+   cameraMeasurementMaxOrthogonalityError_ = 0.0f;
+   cameraMeasurementMaxLengthError_ = 0.0f;
+   cameraMeasurementInvalidCount_ = 0;
+   lastCameraMeasurementPath_.clear();
+}
+
+void PlayerRearFollowCamera::RecordCameraMeasurementSample(float) {
+   if (!cameraMeasurementActive_) {
+      return;
+   }
+
+   const uint64_t gameFrame = GameEngine::EngineContext::GetGameFrameNumber();
+   if (cameraMeasurementLastGameFrame_ == gameFrame) {
+      return;
+   }
+   cameraMeasurementLastGameFrame_ = gameFrame;
+
+   CameraMeasurementSample sample{};
+   const float safeDeltaTime = std::max(0.0f, GameEngine::EngineContext::GetDeltaTime());
+   cameraMeasurementElapsedSeconds_ += safeDeltaTime;
+   sample.frame = cameraMeasurementNextFrame_++;
+   sample.timeSeconds = cameraMeasurementElapsedSeconds_;
+   sample.deltaTimeSeconds = safeDeltaTime;
+   sample.targetGravityUp = gravityUp_;
+   sample.currentGravityUp = currentGravityUp_;
+   sample.cameraRight = cachedRight_;
+   sample.cameraUp = cachedUp_;
+   sample.cameraForward = cachedForward_;
+
+   if (cameraMeasurementHasPrevious_) {
+      sample.gravityUpStepDegrees = AngleDegrees(
+         cameraMeasurementPreviousGravityUp_,
+         currentGravityUp_);
+      sample.cameraRightStepDegrees = AngleDegrees(
+         cameraMeasurementPreviousRight_,
+         cachedRight_);
+      sample.cameraUpStepDegrees = AngleDegrees(
+         cameraMeasurementPreviousUp_,
+         cachedUp_);
+      sample.cameraForwardStepDegrees = AngleDegrees(
+         cameraMeasurementPreviousForward_,
+         cachedForward_);
+   }
+
+   sample.targetGravityUpErrorDegrees = AngleDegrees(currentGravityUp_, gravityUp_);
+   sample.cameraForwardGravityUpAbsDot = std::abs(cachedForward_.Dot(currentGravityUp_));
+   sample.rightLength = cachedRight_.Length();
+   sample.upLength = cachedUp_.Length();
+   sample.forwardLength = cachedForward_.Length();
+   sample.rightUpAbsDot = std::abs(cachedRight_.Dot(cachedUp_));
+   sample.upForwardAbsDot = std::abs(cachedUp_.Dot(cachedForward_));
+   sample.forwardRightAbsDot = std::abs(cachedForward_.Dot(cachedRight_));
+   sample.lookAtCandidateRightLength = lastLookAtCandidateRightLength_;
+   sample.lookAtRecoveryInput = lastLookAtRecoveryInput_;
+   sample.lookAtRecoveryBlend = lastLookAtRecoveryBlend_;
+   sample.preLandingBlend = currentPreLandingBlend_;
+   sample.predictedImpactSeconds = predictedLandingSeconds_;
+   sample.airborne = isAirborne_;
+   sample.landingPredictionValid = landingPredictionValid_;
+   sample.invalid =
+      !std::isfinite(safeDeltaTime)
+      || !IsFiniteVector(gravityUp_)
+      || !IsFiniteVector(currentGravityUp_)
+      || !IsFiniteVector(cachedRight_)
+      || !IsFiniteVector(cachedUp_)
+      || !IsFiniteVector(cachedForward_)
+      || !std::isfinite(sample.gravityUpStepDegrees)
+      || !std::isfinite(sample.cameraRightStepDegrees)
+      || !std::isfinite(sample.cameraUpStepDegrees)
+      || !std::isfinite(sample.cameraForwardStepDegrees);
+
+   cameraMeasurementMaxGravityUpStepDegrees_ = std::max(
+      cameraMeasurementMaxGravityUpStepDegrees_,
+      sample.gravityUpStepDegrees);
+   cameraMeasurementMaxRightStepDegrees_ = std::max(
+      cameraMeasurementMaxRightStepDegrees_,
+      sample.cameraRightStepDegrees);
+   cameraMeasurementMaxUpStepDegrees_ = std::max(
+      cameraMeasurementMaxUpStepDegrees_,
+      sample.cameraUpStepDegrees);
+   cameraMeasurementMaxForwardStepDegrees_ = std::max(
+      cameraMeasurementMaxForwardStepDegrees_,
+      sample.cameraForwardStepDegrees);
+   cameraMeasurementMaxOrthogonalityError_ = std::max({
+      cameraMeasurementMaxOrthogonalityError_,
+      sample.rightUpAbsDot,
+      sample.upForwardAbsDot,
+      sample.forwardRightAbsDot });
+   cameraMeasurementMaxLengthError_ = std::max({
+      cameraMeasurementMaxLengthError_,
+      std::abs(sample.rightLength - 1.0f),
+      std::abs(sample.upLength - 1.0f),
+      std::abs(sample.forwardLength - 1.0f) });
+   if (sample.invalid) {
+      ++cameraMeasurementInvalidCount_;
+   }
+
+   cameraMeasurementSamples_.push_back(sample);
+   cameraMeasurementPreviousGravityUp_ = currentGravityUp_;
+   cameraMeasurementPreviousRight_ = cachedRight_;
+   cameraMeasurementPreviousUp_ = cachedUp_;
+   cameraMeasurementPreviousForward_ = cachedForward_;
+   cameraMeasurementHasPrevious_ = true;
+
+   if (cameraMeasurementSamples_.size() >= kMaxCameraMeasurementSamples) {
+      cameraMeasurementActive_ = false;
+      SaveCameraMeasurementFiles();
+   }
+}
+
+bool PlayerRearFollowCamera::SaveCameraMeasurementFiles() {
+   if (cameraMeasurementSamples_.empty()) {
+      Logger::Warning("Camera measurement contains no samples.", Logger::LogChannel::Game);
+      return false;
+   }
+
+   const std::filesystem::path directory(kCameraMeasurementDirectory);
+   std::error_code error;
+   std::filesystem::create_directories(directory, error);
+   if (error) {
+      Logger::Warning(
+         "Camera measurement directory could not be created: " + error.message(),
+         Logger::LogChannel::Game);
+      return false;
+   }
+
+   const std::string fileStem =
+      BuildMeasurementTimestamp() + "_" + SanitizeMeasurementName(cameraMeasurementTestName_);
+   const std::filesystem::path csvPath = directory / (fileStem + ".csv");
+   const std::filesystem::path summaryPath = directory / (fileStem + ".summary.json");
+   std::ofstream csv(csvPath, std::ios::out | std::ios::trunc);
+   if (!csv.is_open()) {
+      Logger::Warning(
+         "Camera measurement CSV could not be opened: " + csvPath.generic_string(),
+         Logger::LogChannel::Game);
+      return false;
+   }
+
+   csv << "frame,time_s,delta_time_s,gravity_up_step_deg,camera_right_step_deg,"
+          "camera_up_step_deg,camera_forward_step_deg,target_gravity_up_error_deg,"
+          "camera_forward_gravity_up_abs_dot,right_length,up_length,forward_length,"
+          "right_up_abs_dot,up_forward_abs_dot,forward_right_abs_dot,"
+          "lookat_candidate_right_length,lookat_recovery_input,lookat_recovery_blend,"
+          "prelanding_blend,predicted_impact_s,airborne,landing_prediction_valid,invalid,"
+          "target_up_x,target_up_y,target_up_z,current_up_x,current_up_y,current_up_z,"
+          "camera_right_x,camera_right_y,camera_right_z,camera_up_x,camera_up_y,camera_up_z,"
+          "camera_forward_x,camera_forward_y,camera_forward_z\n";
+   csv << std::fixed << std::setprecision(7);
+   for (const CameraMeasurementSample& sample : cameraMeasurementSamples_) {
+      csv
+         << sample.frame << ','
+         << sample.timeSeconds << ','
+         << sample.deltaTimeSeconds << ','
+         << sample.gravityUpStepDegrees << ','
+         << sample.cameraRightStepDegrees << ','
+         << sample.cameraUpStepDegrees << ','
+         << sample.cameraForwardStepDegrees << ','
+         << sample.targetGravityUpErrorDegrees << ','
+         << sample.cameraForwardGravityUpAbsDot << ','
+         << sample.rightLength << ','
+         << sample.upLength << ','
+         << sample.forwardLength << ','
+         << sample.rightUpAbsDot << ','
+         << sample.upForwardAbsDot << ','
+         << sample.forwardRightAbsDot << ','
+         << sample.lookAtCandidateRightLength << ','
+         << sample.lookAtRecoveryInput << ','
+         << sample.lookAtRecoveryBlend << ','
+         << sample.preLandingBlend << ','
+         << sample.predictedImpactSeconds << ','
+         << (sample.airborne ? 1 : 0) << ','
+         << (sample.landingPredictionValid ? 1 : 0) << ','
+         << (sample.invalid ? 1 : 0) << ','
+         << sample.targetGravityUp.x << ','
+         << sample.targetGravityUp.y << ','
+         << sample.targetGravityUp.z << ','
+         << sample.currentGravityUp.x << ','
+         << sample.currentGravityUp.y << ','
+         << sample.currentGravityUp.z << ','
+         << sample.cameraRight.x << ','
+         << sample.cameraRight.y << ','
+         << sample.cameraRight.z << ','
+         << sample.cameraUp.x << ','
+         << sample.cameraUp.y << ','
+         << sample.cameraUp.z << ','
+         << sample.cameraForward.x << ','
+         << sample.cameraForward.y << ','
+         << sample.cameraForward.z << '\n';
+   }
+   csv.close();
+   if (!csv) {
+      Logger::Warning(
+         "Camera measurement CSV write failed: " + csvPath.generic_string(),
+         Logger::LogChannel::Game);
+      return false;
+   }
+
+   const float theoreticalGravityUpDegreesPerFrameAt60Fps =
+      std::max(0.0f, gravityUpLerpSpeed) * kRadiansToDegrees / 60.0f;
+   const float averageFps = cameraMeasurementElapsedSeconds_ > 1e-6f
+      ? static_cast<float>(cameraMeasurementSamples_.size()) / cameraMeasurementElapsedSeconds_
+      : 0.0f;
+   nlohmann::json summary{
+      { "formatVersion", 1 },
+      { "testName", cameraMeasurementTestName_ },
+      { "csvFile", csvPath.filename().generic_string() },
+      { "definitions", {
+         { "settingValue", "gravityUpLerpSpeed is a maximum angular speed in rad/s" },
+         { "calculatedValue", "gravityUpLerpSpeed * 180 / pi / 60 is the 60 FPS upper bound in deg/frame" },
+         { "measuredValue", "angle between consecutive finalized camera basis vectors" },
+         { "invalidFrame", "any non-finite finalized axis or angular sample" },
+      } },
+      { "settings", {
+         { "gravityUpLerpSpeedRadPerSecond", gravityUpLerpSpeed },
+         { "theoreticalGravityUpDegreesPerFrameAt60Fps", theoreticalGravityUpDegreesPerFrameAt60Fps },
+         { "rotationLerpSpeed", rotationLerpSpeed },
+         { "lookAtRecoveryRange", lookAtRecoveryRange },
+         { "lookAtRecoveryCurveControl1", lookAtRecoveryCurveControl1 },
+         { "lookAtRecoveryCurveControl2", lookAtRecoveryCurveControl2 },
+         { "takeoffFramingBlendSeconds", takeoffFramingBlendSeconds },
+         { "landingFramingBlendSeconds", landingFramingBlendSeconds },
+         { "preLandingPredictionSeconds", preLandingPredictionSeconds },
+         { "preLandingFullBlendSeconds", preLandingFullBlendSeconds },
+         { "landingRearLerpRampSeconds", landingRearLerpRampSeconds },
+      } },
+      { "summary", {
+         { "frames", cameraMeasurementSamples_.size() },
+         { "durationSeconds", cameraMeasurementElapsedSeconds_ },
+         { "averageFps", averageFps },
+         { "maxGravityUpStepDegrees", cameraMeasurementMaxGravityUpStepDegrees_ },
+         { "maxCameraRightStepDegrees", cameraMeasurementMaxRightStepDegrees_ },
+         { "maxCameraUpStepDegrees", cameraMeasurementMaxUpStepDegrees_ },
+         { "maxCameraForwardStepDegrees", cameraMeasurementMaxForwardStepDegrees_ },
+         { "maxBasisAbsDot", cameraMeasurementMaxOrthogonalityError_ },
+         { "maxAxisLengthError", cameraMeasurementMaxLengthError_ },
+         { "invalidFrameCount", cameraMeasurementInvalidCount_ },
+      } },
+   };
+
+   std::ofstream summaryFile(summaryPath, std::ios::out | std::ios::trunc);
+   if (!summaryFile.is_open()) {
+      Logger::Warning(
+         "Camera measurement summary could not be opened: " + summaryPath.generic_string(),
+         Logger::LogChannel::Game);
+      return false;
+   }
+   summaryFile << summary.dump(3);
+   summaryFile.close();
+   if (!summaryFile) {
+      Logger::Warning(
+         "Camera measurement summary write failed: " + summaryPath.generic_string(),
+         Logger::LogChannel::Game);
+      return false;
+   }
+
+   lastCameraMeasurementPath_ = csvPath.generic_string();
+   Logger::Info(
+      "Camera measurement saved: " + lastCameraMeasurementPath_,
+      Logger::LogChannel::Game);
+   return true;
+}
+
+void PlayerRearFollowCamera::DrawCameraMeasurementOverlay() const {
+   if (!showCameraMeasurementOverlay || cameraMeasurementSamples_.empty()) {
+      return;
+   }
+
+   const CameraMeasurementSample& latest = cameraMeasurementSamples_.back();
+   GameEngine::TextStyle shadowStyle{};
+   shadowStyle.fontId = "arial";
+   shadowStyle.fontSize = 20;
+   shadowStyle.color = { 0.0f, 0.0f, 0.0f, 0.92f };
+   shadowStyle.sortingOrder = 910;
+   GameEngine::TextStyle style = shadowStyle;
+   style.color = cameraMeasurementActive_
+      ? GameEngine::Vector4{ 1.0f, 0.75f, 0.12f, 1.0f }
+      : GameEngine::Vector4{ 0.55f, 1.0f, 0.65f, 1.0f };
+   style.sortingOrder = 911;
+
+   auto DrawLine = [&](const std::string& text, float y) {
+      GameEngine::EngineContext::DrawUIText(text, { 26.0f, y + 2.0f }, shadowStyle);
+      GameEngine::EngineContext::DrawUIText(text, { 24.0f, y }, style);
+   };
+
+   char text[192]{};
+   std::snprintf(
+      text,
+      sizeof(text),
+      "CAMERA MEASUREMENT %s  frames=%llu  time=%.2fs",
+      cameraMeasurementActive_ ? "REC" : "STOP",
+      static_cast<unsigned long long>(cameraMeasurementSamples_.size()),
+      cameraMeasurementElapsedSeconds_);
+   DrawLine(text, 176.0f);
+   std::snprintf(
+      text,
+      sizeof(text),
+      "Up direction deg/frame current=%.3f  max=%.3f  60FPS limit=%.3f",
+      latest.gravityUpStepDegrees,
+      cameraMeasurementMaxGravityUpStepDegrees_,
+      std::max(0.0f, gravityUpLerpSpeed) * kRadiansToDegrees / 60.0f);
+   DrawLine(text, 202.0f);
+   std::snprintf(
+      text,
+      sizeof(text),
+      "Horizontal deg/frame current=%.3f  max=%.3f  stability=%.3f",
+      latest.cameraRightStepDegrees,
+      cameraMeasurementMaxRightStepDegrees_,
+      latest.lookAtRecoveryBlend);
+   DrawLine(text, 228.0f);
+   std::snprintf(
+      text,
+      sizeof(text),
+      "axis alignment error=%.7f  axis length error=%.7f  invalid=%llu",
+      cameraMeasurementMaxOrthogonalityError_,
+      cameraMeasurementMaxLengthError_,
+      static_cast<unsigned long long>(cameraMeasurementInvalidCount_));
+   DrawLine(text, 254.0f);
+}
+
+#ifdef USE_IMGUI
+void PlayerRearFollowCamera::DrawCameraEvidenceWindow() {
+   if (!showCameraEvidenceWindow) {
+      return;
+   }
+
+   ImGui::SetNextWindowPos(ImVec2(350.0f, 12.0f), ImGuiCond_Always);
+   ImGui::SetNextWindowSize(ImVec2(660.0f, 535.0f), ImGuiCond_Always);
+   ImGui::SetNextWindowFocus();
+   if (!ImGui::Begin("カメラの調整と計測", &showCameraEvidenceWindow)) {
+      ImGui::End();
+      return;
+   }
+
+   ImGui::TextUnformatted("横向きを通常へ戻す形");
+   ImGui::SliderFloat("戻り始め", &lookAtRecoveryCurveControl1, 0.0f, 1.0f, "%.2f");
+   ImGui::SliderFloat("戻り終わり", &lookAtRecoveryCurveControl2, 0.0f, 1.0f, "%.2f");
+
+   float recoveryCurvePreview[65]{};
+   for (int index = 0; index < 65; ++index) {
+      recoveryCurvePreview[index] = EvaluateLookAtRecoveryCurve(
+         static_cast<float>(index) / 64.0f);
+   }
+   ImGui::PlotLines(
+      "##PresentationRecoveryCurve",
+      recoveryCurvePreview,
+      65,
+      0,
+      "横向きが安定するほど、通常の向きへ戻す割合",
+      0.0f,
+      1.0f,
+      ImVec2(-1.0f, 105.0f));
+
+   ImGui::Separator();
+   ImGui::TextUnformatted("ゲーム中の計測");
+   if (ImGui::Button("現在の動きを計測し直す")) {
+      StartCameraMeasurement("manual_current_settings");
+   }
+   ImGui::SameLine();
+   if (ImGui::Button("上方向を180度変える固定条件で確認")) {
+      RunFixedGravityUpVerification();
+   }
+   ImGui::Text(
+      "状態: %s　記録: %lluフレーム　経過: %.2f秒",
+      cameraMeasurementActive_ ? "計測中" : "停止",
+      static_cast<unsigned long long>(cameraMeasurementSamples_.size()),
+      cameraMeasurementElapsedSeconds_);
+   ImGui::Text(
+      "上方向の最大変化: %.3f度/フレーム　横向きの最大変化: %.3f度/フレーム",
+      cameraMeasurementMaxGravityUpStepDegrees_,
+      cameraMeasurementMaxRightStepDegrees_);
+   ImGui::Text(
+      "計算失敗: %llu件",
+      static_cast<unsigned long long>(cameraMeasurementInvalidCount_));
+
+   if (!cameraMeasurementSamples_.empty()) {
+      const size_t historyCount = std::min<size_t>(cameraMeasurementSamples_.size(), 360);
+      const size_t historyStart = cameraMeasurementSamples_.size() - historyCount;
+      std::vector<float> upwardHistory(historyCount);
+      std::vector<float> horizontalHistory(historyCount);
+      for (size_t index = 0; index < historyCount; ++index) {
+         const CameraMeasurementSample& sample = cameraMeasurementSamples_[historyStart + index];
+         upwardHistory[index] = sample.gravityUpStepDegrees;
+         horizontalHistory[index] = sample.cameraRightStepDegrees;
+      }
+
+      char upwardOverlay[96]{};
+      char horizontalOverlay[96]{};
+      std::snprintf(
+         upwardOverlay,
+         sizeof(upwardOverlay),
+         "上方向の変化　最大 %.3f度/フレーム",
+         cameraMeasurementMaxGravityUpStepDegrees_);
+      std::snprintf(
+         horizontalOverlay,
+         sizeof(horizontalOverlay),
+         "横向きの変化　最大 %.3f度/フレーム",
+         cameraMeasurementMaxRightStepDegrees_);
+
+      ImGui::PlotLines(
+         "##PresentationUpwardHistory",
+         upwardHistory.data(),
+         static_cast<int>(upwardHistory.size()),
+         0,
+         upwardOverlay,
+         0.0f,
+         std::max(1.0f, cameraMeasurementMaxGravityUpStepDegrees_ * 1.1f),
+         ImVec2(-1.0f, 95.0f));
+      ImGui::PlotLines(
+         "##PresentationHorizontalHistory",
+         horizontalHistory.data(),
+         static_cast<int>(horizontalHistory.size()),
+         0,
+         horizontalOverlay,
+         0.0f,
+         std::max(1.0f, cameraMeasurementMaxRightStepDegrees_ * 1.1f),
+         ImVec2(-1.0f, 95.0f));
+   }
+
+   ImGui::End();
+}
+
+void PlayerRearFollowCamera::RunFixedGravityUpVerification() {
+   ClearCameraMeasurement();
+   cameraMeasurementTestName_ = "fixed_180_gravity_up_60fps";
+
+   constexpr float fixedDeltaTime = 1.0f / 60.0f;
+   const GameEngine::Vector3 targetUp = { 0.0f, -1.0f, 0.0f };
+   const GameEngine::Vector3 cameraRight = { 1.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 currentUp = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 previousCameraUp = currentUp;
+   GameEngine::Vector3 previousCameraForward = cameraRight.Cross(currentUp);
+   const float maxRadiansDelta = std::max(0.0f, gravityUpLerpSpeed) * fixedDeltaTime;
+
+   for (uint64_t frame = 0; frame < 240; ++frame) {
+      const GameEngine::Vector3 previousGravityUp = currentUp;
+      currentUp = RotateTowardsUnit(
+         currentUp,
+         targetUp,
+         maxRadiansDelta,
+         cameraRight);
+      const GameEngine::Vector3 cameraForward = NormalizeOrFallback(
+         cameraRight.Cross(currentUp),
+         previousCameraForward);
+
+      CameraMeasurementSample sample{};
+      sample.frame = frame;
+      sample.timeSeconds = static_cast<float>(frame + 1) * fixedDeltaTime;
+      sample.deltaTimeSeconds = fixedDeltaTime;
+      sample.gravityUpStepDegrees = AngleDegrees(previousGravityUp, currentUp);
+      sample.cameraRightStepDegrees = 0.0f;
+      sample.cameraUpStepDegrees = AngleDegrees(previousCameraUp, currentUp);
+      sample.cameraForwardStepDegrees = AngleDegrees(previousCameraForward, cameraForward);
+      sample.targetGravityUpErrorDegrees = AngleDegrees(currentUp, targetUp);
+      sample.cameraForwardGravityUpAbsDot = std::abs(cameraForward.Dot(currentUp));
+      sample.rightLength = cameraRight.Length();
+      sample.upLength = currentUp.Length();
+      sample.forwardLength = cameraForward.Length();
+      sample.rightUpAbsDot = std::abs(cameraRight.Dot(currentUp));
+      sample.upForwardAbsDot = std::abs(currentUp.Dot(cameraForward));
+      sample.forwardRightAbsDot = std::abs(cameraForward.Dot(cameraRight));
+      sample.lookAtCandidateRightLength = 1.0f;
+      sample.lookAtRecoveryInput = 1.0f;
+      sample.lookAtRecoveryBlend = 1.0f;
+      sample.targetGravityUp = targetUp;
+      sample.currentGravityUp = currentUp;
+      sample.cameraRight = cameraRight;
+      sample.cameraUp = currentUp;
+      sample.cameraForward = cameraForward;
+      sample.invalid =
+         !IsFiniteVector(currentUp)
+         || !IsFiniteVector(cameraForward)
+         || !std::isfinite(sample.gravityUpStepDegrees);
+
+      cameraMeasurementSamples_.push_back(sample);
+      cameraMeasurementMaxGravityUpStepDegrees_ = std::max(
+         cameraMeasurementMaxGravityUpStepDegrees_,
+         sample.gravityUpStepDegrees);
+      cameraMeasurementMaxUpStepDegrees_ = std::max(
+         cameraMeasurementMaxUpStepDegrees_,
+         sample.cameraUpStepDegrees);
+      cameraMeasurementMaxForwardStepDegrees_ = std::max(
+         cameraMeasurementMaxForwardStepDegrees_,
+         sample.cameraForwardStepDegrees);
+      cameraMeasurementMaxOrthogonalityError_ = std::max({
+         cameraMeasurementMaxOrthogonalityError_,
+         sample.rightUpAbsDot,
+         sample.upForwardAbsDot,
+         sample.forwardRightAbsDot });
+      cameraMeasurementMaxLengthError_ = std::max({
+         cameraMeasurementMaxLengthError_,
+         std::abs(sample.rightLength - 1.0f),
+         std::abs(sample.upLength - 1.0f),
+         std::abs(sample.forwardLength - 1.0f) });
+      if (sample.invalid) {
+         ++cameraMeasurementInvalidCount_;
+      }
+
+      previousCameraUp = currentUp;
+      previousCameraForward = cameraForward;
+      if (sample.targetGravityUpErrorDegrees <= 1e-4f) {
+         break;
+      }
+   }
+
+   cameraMeasurementElapsedSeconds_ =
+      static_cast<float>(cameraMeasurementSamples_.size()) * fixedDeltaTime;
+   cameraMeasurementNextFrame_ = cameraMeasurementSamples_.size();
+   SaveCameraMeasurementFiles();
+}
+#endif
 
 void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    bool justLanded = wasAirborneLastFrame_ && !isAirborne_;
@@ -1238,6 +1860,13 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    // ⑨ LookAt 行列を構築してカメラ状態へ反映する（補間済み eye を使用）
    ApplyLookAt(state, eye, up, deltaTime);
 
+   // 描画へ渡す3軸が確定した後で記録し、設定値や途中値ではなく最終出力を実測する。
+   RecordCameraMeasurementSample(deltaTime);
+   DrawCameraMeasurementOverlay();
+#ifdef USE_IMGUI
+   DrawCameraEvidenceWindow();
+#endif
+
    wasAirborneLastFrame_ = isAirborne_;
 }
 
@@ -1285,6 +1914,11 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
       { "positionLerpSpeed", positionLerpSpeed },
       { "eyeDirectionMaxAngularSpeed", eyeDirectionMaxAngularSpeed },
       { "rotationLerpSpeed", rotationLerpSpeed },
+      { "lookAtRecoveryRange", lookAtRecoveryRange },
+      { "lookAtRecoveryCurveControl1", lookAtRecoveryCurveControl1 },
+      { "lookAtRecoveryCurveControl2", lookAtRecoveryCurveControl2 },
+      { "showCameraMeasurementOverlay", showCameraMeasurementOverlay },
+      { "showCameraEvidenceWindow", showCameraEvidenceWindow },
    };
 }
 
@@ -1373,6 +2007,25 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
 	  0.0f,
 	  ReadFloat(data, "eyeDirectionMaxAngularSpeed", eyeDirectionMaxAngularSpeed));
    rotationLerpSpeed = ReadFloat(data, "rotationLerpSpeed", rotationLerpSpeed);
+   lookAtRecoveryRange = std::max(
+      1e-4f,
+      ReadFloat(data, "lookAtRecoveryRange", lookAtRecoveryRange));
+   lookAtRecoveryCurveControl1 = std::clamp(
+      ReadFloat(data, "lookAtRecoveryCurveControl1", lookAtRecoveryCurveControl1),
+      0.0f,
+      1.0f);
+   lookAtRecoveryCurveControl2 = std::clamp(
+      ReadFloat(data, "lookAtRecoveryCurveControl2", lookAtRecoveryCurveControl2),
+      0.0f,
+      1.0f);
+   showCameraMeasurementOverlay = ReadBool(
+      data,
+      "showCameraMeasurementOverlay",
+      showCameraMeasurementOverlay);
+   showCameraEvidenceWindow = ReadBool(
+      data,
+      "showCameraEvidenceWindow",
+      showCameraEvidenceWindow);
    autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
 
    ResetRuntimeState();
@@ -1539,6 +2192,124 @@ void PlayerRearFollowCamera::DrawInspector() {
       ImGui::DragFloat(Tr("最終ロールの追従速度", "Final Roll Follow"), &rotationLerpSpeed, 0.5f, 0.1f, 100.0f);
       DrawHelp("カメラの視線をプレイヤーへ固定したまま、最終的なRight/Up（ロール）だけを滑らかにします。重力Up補間とは処理段階が異なります。",
          "Smooths only final Right/Up roll while keeping the view aimed at the player; it is downstream from gravity-Up tracking.");
+      ImGui::DragFloat(Tr("横向きを戻す範囲", "Horizontal Recovery Range"), &lookAtRecoveryRange, 0.005f, 0.001f, 1.0f, "%.3f");
+      DrawHelp("横向きを決めにくい状態から抜けた後、通常の向きへ戻す範囲です。大きくすると、広い範囲を使ってゆっくり戻ります。",
+         "Controls how widely the camera eases back to its normal horizontal direction.");
+      ImGui::SliderFloat(Tr("戻り始め", "Recovery Start"), &lookAtRecoveryCurveControl1, 0.0f, 1.0f, "%.2f");
+      ImGui::SliderFloat(Tr("戻り終わり", "Recovery End"), &lookAtRecoveryCurveControl2, 0.0f, 1.0f, "%.2f");
+      float recoveryCurvePreview[65]{};
+      for (int index = 0; index < 65; ++index) {
+         recoveryCurvePreview[index] = EvaluateLookAtRecoveryCurve(
+            static_cast<float>(index) / 64.0f);
+      }
+      ImGui::PlotLines(
+         "##LookAtRecoveryCurve",
+         recoveryCurvePreview,
+         65,
+         0,
+         Tr("横向きが安定するほど、通常の向きへ戻す割合",
+            "Return to the normal direction as horizontal stability recovers"),
+         0.0f,
+         1.0f,
+         ImVec2(-1.0f, 100.0f));
+      ImGui::Text("%s: %.3f　%s: %.3f",
+         Tr("現在の安定度", "Current Stability"),
+         lastLookAtRecoveryInput_,
+         Tr("通常へ戻す割合", "Return Amount"),
+         lastLookAtRecoveryBlend_);
+   }
+
+   if (ImGui::CollapsingHeader(Tr("カメラ計測", "Camera Measurement"), ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Checkbox(Tr("ゲーム画面へ計測値を表示", "Show Measurement Overlay"), &showCameraMeasurementOverlay);
+      ImGui::Checkbox(Tr("調整と計測の別画面を表示", "Show Tuning and Measurement Window"), &showCameraEvidenceWindow);
+      if (ImGui::Button(Tr("計測開始", "Start Measurement"))) {
+         StartCameraMeasurement("manual_current_settings");
+      }
+      ImGui::SameLine();
+      if (ImGui::Button(Tr("停止してCSV保存", "Stop and Save CSV"))) {
+         StopCameraMeasurement(true);
+      }
+      ImGui::SameLine();
+      if (ImGui::Button(Tr("履歴を消去", "Clear History"))) {
+         ClearCameraMeasurement();
+      }
+      if (ImGui::Button(Tr("60フレーム/秒で上方向を180度変える", "Run 60 FPS 180-degree Up Test"))) {
+         RunFixedGravityUpVerification();
+      }
+      DrawHelp("実ゲームと同じ向きの変え方を一定間隔で再現し、1フレームの上限と到達までのフレーム数を保存します。",
+         "Repeats the in-game direction change at a fixed interval and saves the per-frame limit and arrival frame count.");
+
+      ImGui::Text("%s: %s  %s: %llu  %s: %.3fs",
+         Tr("状態", "State"),
+         cameraMeasurementActive_ ? Tr("計測中", "Recording") : Tr("停止", "Stopped"),
+         Tr("フレーム", "Frames"),
+         static_cast<unsigned long long>(cameraMeasurementSamples_.size()),
+         Tr("経過", "Elapsed"),
+         cameraMeasurementElapsedSeconds_);
+      ImGui::Text("%s %.3f度/フレーム　%s %.3f度/フレーム",
+         Tr("上方向の最大変化", "Maximum Upward Change"),
+         cameraMeasurementMaxGravityUpStepDegrees_,
+         Tr("横向きの最大変化", "Maximum Horizontal Change"),
+         cameraMeasurementMaxRightStepDegrees_);
+      ImGui::Text("%s: %llu件",
+         Tr("計算失敗", "Calculation Failures"),
+         static_cast<unsigned long long>(cameraMeasurementInvalidCount_));
+
+      if (!cameraMeasurementSamples_.empty()) {
+         const size_t historyCount = std::min<size_t>(cameraMeasurementSamples_.size(), 360);
+         const size_t historyStart = cameraMeasurementSamples_.size() - historyCount;
+         std::vector<float> gravityUpHistory(historyCount);
+         std::vector<float> rightHistory(historyCount);
+         std::vector<float> targetErrorHistory(historyCount);
+         for (size_t index = 0; index < historyCount; ++index) {
+            const CameraMeasurementSample& sample = cameraMeasurementSamples_[historyStart + index];
+            gravityUpHistory[index] = sample.gravityUpStepDegrees;
+            rightHistory[index] = sample.cameraRightStepDegrees;
+            targetErrorHistory[index] = sample.targetGravityUpErrorDegrees;
+         }
+         char gravityOverlay[96]{};
+         char rightOverlay[96]{};
+         std::snprintf(
+            gravityOverlay,
+            sizeof(gravityOverlay),
+            "上方向の変化　最大 %.3f度/フレーム",
+            cameraMeasurementMaxGravityUpStepDegrees_);
+         std::snprintf(
+            rightOverlay,
+            sizeof(rightOverlay),
+            "横向きの変化　最大 %.3f度/フレーム",
+            cameraMeasurementMaxRightStepDegrees_);
+         ImGui::PlotLines(
+            "##GravityUpStepHistory",
+            gravityUpHistory.data(),
+            static_cast<int>(gravityUpHistory.size()),
+            0,
+            gravityOverlay,
+            0.0f,
+            std::max(1.0f, cameraMeasurementMaxGravityUpStepDegrees_ * 1.1f),
+            ImVec2(-1.0f, 90.0f));
+         ImGui::PlotLines(
+            "##RightStepHistory",
+            rightHistory.data(),
+            static_cast<int>(rightHistory.size()),
+            0,
+            rightOverlay,
+            0.0f,
+            std::max(1.0f, cameraMeasurementMaxRightStepDegrees_ * 1.1f),
+            ImVec2(-1.0f, 90.0f));
+         ImGui::PlotLines(
+            "##GravityUpTargetErrorHistory",
+            targetErrorHistory.data(),
+            static_cast<int>(targetErrorHistory.size()),
+            0,
+            Tr("目標の上方向まで残っている角度", "Angle Remaining to the Target Up Direction"),
+            0.0f,
+            180.0f,
+            ImVec2(-1.0f, 90.0f));
+      }
+      if (!lastCameraMeasurementPath_.empty()) {
+         ImGui::TextWrapped("%s: %s", Tr("保存先", "Saved To"), lastCameraMeasurementPath_.c_str());
+      }
    }
 
    ImGui::Separator();

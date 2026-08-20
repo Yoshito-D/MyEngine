@@ -138,6 +138,15 @@ private:
    /// @brief 発表用動画として保存した連番PNGの枚数
    uint32_t presentationVideoFrameIndex_ = 0;
 
+   /// @brief 発表用自動撮影と同じ条件でカメラ計測を開始済みか
+   bool presentationMeasurementStarted_ = false;
+
+   /// @brief 発表用自動撮影のカメラ計測を保存済みか
+   bool presentationMeasurementSaved_ = false;
+
+   /// @brief カメラ更新のウォームアップ後にジャンプ計測へ履歴を切り替え済みか
+   bool presentationMeasurementResetForJump_ = false;
+
    std::string gravityFollowCameraId_ = "GravityFollowCamera";
    std::string playerRearFollowCameraId_ = "PlayerRearFollowCamera";
    std::string planetLeashCameraId_ = "PlanetLeashCamera";

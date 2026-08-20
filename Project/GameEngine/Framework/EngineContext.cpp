@@ -21,6 +21,7 @@ GameEngine::CameraManager* sCameraManager_ = nullptr;
 GameEngine::LightManager* sLightManager_ = nullptr;
 float sGameDeltaTime_ = 0.0f;
 bool sHasGameDeltaTimeOverride_ = false;
+uint64_t sGameFrameNumber_ = 0;
 #ifdef USE_IMGUI
 GameEngine::PlayModeController* sPlayModeController_ = nullptr;
 #endif
@@ -289,6 +290,14 @@ float EngineContext::GetUnscaledDeltaTime() {
 void EngineContext::SetGameDeltaTime(float deltaTime) {
    sGameDeltaTime_ = deltaTime;
    sHasGameDeltaTimeOverride_ = true;
+}
+
+uint64_t EngineContext::GetGameFrameNumber() {
+   return sGameFrameNumber_;
+}
+
+void EngineContext::AdvanceGameFrameNumber() {
+   ++sGameFrameNumber_;
 }
 
 float EngineContext::GetFPS() {

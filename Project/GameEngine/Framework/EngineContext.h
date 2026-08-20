@@ -294,6 +294,12 @@ public:
    /// @param deltaTime ゲーム用デルタタイム（秒）
    static void SetGameDeltaTime(float deltaTime);
 
+   /// @brief 現在のゲーム更新フレーム番号を取得する
+   static uint64_t GetGameFrameNumber();
+
+   /// @brief ゲーム更新を始める直前にフレーム番号を1つ進める
+   static void AdvanceGameFrameNumber();
+
 #ifdef USE_IMGUI
    /// @brief エディターのプレイ状態を管理するコントローラーを接続する
    static void SetPlayModeController(PlayModeController* controller);
