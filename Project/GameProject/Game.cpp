@@ -114,10 +114,12 @@ void Game::Update() {
    }
    sceneManager_->EditorUpdate();
    if (playModeController_->ShouldRunRuntimeUpdate()) {
+      GameEngine::EngineContext::AdvanceGameFrameNumber();
       sceneManager_->RuntimeUpdate();
    }
 #else
    Framework::Update();
+   GameEngine::EngineContext::AdvanceGameFrameNumber();
    sceneManager_->Update();
 #endif
 }

@@ -100,7 +100,7 @@ private:
     Vector3 pivotTarget_ = { 0.0f, 0.0f, 0.0f };
 
     float rotateSpeed_ = 0.01f;
-    float scrollSpeed_ = 1.0f / 120.0f;
+    float scrollSpeed_ = 1.0f / 20.0f;
     float moveSpeed_ = 0.0008f;
 
     Matrix4x4 rotationMatrix_ = MakeIdentity4x4();

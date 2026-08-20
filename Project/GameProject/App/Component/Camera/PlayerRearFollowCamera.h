@@ -1,6 +1,10 @@
 #pragma once
 #include "Scene/Camera/Core/ICinemachineComponent.h"
 #include "Scene/Camera/Core/CameraState.h"
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 namespace App {
 
@@ -80,6 +84,27 @@ public:
 
 	/// @brief 直近更新時のカメラ前方を取得する
 	GameEngine::Vector3 GetCameraForward() const { return cachedForward_; }
+
+	/// @brief カメラ3軸のフレーム計測を開始する
+	/// @param testName CSVへ記録する検証条件名
+	void StartCameraMeasurement(const std::string& testName = "camera_live");
+
+	/// @brief カメラ3軸のフレーム計測を停止する
+	/// @param saveToFile trueならCSVと要約JSONを保存する
+	/// @return 保存を要求しなかった場合、または保存に成功した場合はtrue
+	bool StopCameraMeasurement(bool saveToFile = true);
+
+	/// @brief 記録済みのカメラ計測履歴と集計値を消去する
+	void ClearCameraMeasurement();
+
+	/// @brief カメラ計測中かを返す
+	bool IsCameraMeasurementActive() const { return cameraMeasurementActive_; }
+
+	/// @brief 現在保持しているカメラ計測フレーム数を返す
+	size_t GetCameraMeasurementSampleCount() const { return cameraMeasurementSamples_.size(); }
+
+	/// @brief 最後に保存したカメラ計測CSVのパスを返す
+	const std::string& GetLastCameraMeasurementPath() const { return lastCameraMeasurementPath_; }
 
 	/// @brief カメラ設定をシリアライズする
 	nlohmann::json Serialize() const override;
@@ -223,7 +248,54 @@ public:
 	///        値が大きいほど素早く目標姿勢へ戻り、小さいほどロールをゆっくり補間する
 	float rotationLerpSpeed = 12.0f;
 
+	/// @brief LookAt特異点から通常Rightへ戻し始める外積長の範囲
+	float lookAtRecoveryRange = 0.15f;
+
+	/// @brief Right回復カーブの1つ目の制御点Y（Xは1/3で固定）
+	float lookAtRecoveryCurveControl1 = 0.0f;
+
+	/// @brief Right回復カーブの2つ目の制御点Y（Xは2/3で固定）
+	float lookAtRecoveryCurveControl2 = 1.0f;
+
+	/// @brief 計測中の主要値をゲーム画面へ重ねて表示するか
+	bool showCameraMeasurementOverlay = true;
+
+	/// @brief 調整用の曲線と実測履歴をエディタ画面へ表示するか
+	bool showCameraEvidenceWindow = false;
+
 private:
+	/// @brief 1フレーム分のカメラ計測値
+	struct CameraMeasurementSample {
+		uint64_t frame = 0;
+		float timeSeconds = 0.0f;
+		float deltaTimeSeconds = 0.0f;
+		float gravityUpStepDegrees = 0.0f;
+		float cameraRightStepDegrees = 0.0f;
+		float cameraUpStepDegrees = 0.0f;
+		float cameraForwardStepDegrees = 0.0f;
+		float targetGravityUpErrorDegrees = 0.0f;
+		float cameraForwardGravityUpAbsDot = 0.0f;
+		float rightLength = 1.0f;
+		float upLength = 1.0f;
+		float forwardLength = 1.0f;
+		float rightUpAbsDot = 0.0f;
+		float upForwardAbsDot = 0.0f;
+		float forwardRightAbsDot = 0.0f;
+		float lookAtCandidateRightLength = 1.0f;
+		float lookAtRecoveryInput = 1.0f;
+		float lookAtRecoveryBlend = 1.0f;
+		float preLandingBlend = 0.0f;
+		float predictedImpactSeconds = 0.0f;
+		bool airborne = false;
+		bool landingPredictionValid = false;
+		bool invalid = false;
+		GameEngine::Vector3 targetGravityUp = { 0.0f, 1.0f, 0.0f };
+		GameEngine::Vector3 currentGravityUp = { 0.0f, 1.0f, 0.0f };
+		GameEngine::Vector3 cameraRight = { 1.0f, 0.0f, 0.0f };
+		GameEngine::Vector3 cameraUp = { 0.0f, 1.0f, 0.0f };
+		GameEngine::Vector3 cameraForward = { 0.0f, 0.0f, 1.0f };
+	};
+
 	/// @brief 目標の重力Up（惑星ごとに変わる）
 	GameEngine::Vector3 gravityUp_ = { 0.0f, 1.0f, 0.0f };
 
@@ -364,6 +436,72 @@ private:
 	/// @brief 直近計算のカメラ前方
 	mutable GameEngine::Vector3 cachedForward_ = { 0.0f, 0.0f, 1.0f };
 
+	/// @brief LookAtで算出したRight候補の正規化前の長さ
+	float lastLookAtCandidateRightLength_ = 1.0f;
+
+	/// @brief Right回復カーブへ入力した退化回復率
+	float lastLookAtRecoveryInput_ = 1.0f;
+
+	/// @brief Right回復カーブから得た混合率
+	float lastLookAtRecoveryBlend_ = 1.0f;
+
+	/// @brief カメラ計測中か
+	bool cameraMeasurementActive_ = false;
+
+	/// @brief カメラ計測で前フレーム軸を取得済みか
+	bool cameraMeasurementHasPrevious_ = false;
+
+	/// @brief カメラ計測の経過秒数
+	float cameraMeasurementElapsedSeconds_ = 0.0f;
+
+	/// @brief カメラ計測の次フレーム番号
+	uint64_t cameraMeasurementNextFrame_ = 0;
+
+	/// @brief 最後に計測したゲーム更新フレーム番号
+	uint64_t cameraMeasurementLastGameFrame_ = UINT64_MAX;
+
+	/// @brief カメラ計測条件名
+	std::string cameraMeasurementTestName_ = "camera_live";
+
+	/// @brief 最後に保存したCSVパス
+	std::string lastCameraMeasurementPath_;
+
+	/// @brief 計測開始前フレームの補間済みGravityUp
+	GameEngine::Vector3 cameraMeasurementPreviousGravityUp_ = { 0.0f, 1.0f, 0.0f };
+
+	/// @brief 計測開始前フレームのカメラRight
+	GameEngine::Vector3 cameraMeasurementPreviousRight_ = { 1.0f, 0.0f, 0.0f };
+
+	/// @brief 計測開始前フレームのカメラUp
+	GameEngine::Vector3 cameraMeasurementPreviousUp_ = { 0.0f, 1.0f, 0.0f };
+
+	/// @brief 計測開始前フレームのカメラ前方
+	GameEngine::Vector3 cameraMeasurementPreviousForward_ = { 0.0f, 0.0f, 1.0f };
+
+	/// @brief 記録済みのフレーム計測値
+	std::vector<CameraMeasurementSample> cameraMeasurementSamples_;
+
+	/// @brief 計測中のGravityUp最大1フレーム角度
+	float cameraMeasurementMaxGravityUpStepDegrees_ = 0.0f;
+
+	/// @brief 計測中のRight最大1フレーム角度
+	float cameraMeasurementMaxRightStepDegrees_ = 0.0f;
+
+	/// @brief 計測中のUp最大1フレーム角度
+	float cameraMeasurementMaxUpStepDegrees_ = 0.0f;
+
+	/// @brief 計測中のForward最大1フレーム角度
+	float cameraMeasurementMaxForwardStepDegrees_ = 0.0f;
+
+	/// @brief 計測中の基底軸間の最大絶対内積
+	float cameraMeasurementMaxOrthogonalityError_ = 0.0f;
+
+	/// @brief 計測中の単位長からの最大誤差
+	float cameraMeasurementMaxLengthError_ = 0.0f;
+
+	/// @brief 計測中に検出した非有限値フレーム数
+	uint64_t cameraMeasurementInvalidCount_ = 0;
+
 	/// @brief 補間済みのカメラ回転
 	GameEngine::Quaternion currentViewRotation_ = GameEngine::Quaternion::Identity();
 
@@ -447,6 +585,29 @@ private:
 					 const GameEngine::Vector3& eye,
 					 const GameEngine::Vector3& up,
 					 float deltaTime);
+
+	/// @brief 編集可能な3次ベジェでRight回復量を求める
+	/// @param input 退化状態からの回復率 [0, 1]
+	/// @return Rightを通常計算へ戻す割合 [0, 1]
+	float EvaluateLookAtRecoveryCurve(float input) const;
+
+	/// @brief 現在フレームの確定済みカメラ3軸を計測履歴へ追加する
+	void RecordCameraMeasurementSample(float);
+
+	/// @brief 記録済み計測値をCSVと要約JSONへ保存する
+	/// @return 両ファイルを保存できた場合はtrue
+	bool SaveCameraMeasurementFiles();
+
+	/// @brief 計測中の主要値をゲーム画面へ描画する
+	void DrawCameraMeasurementOverlay() const;
+
+#ifdef USE_IMGUI
+	/// @brief 現在のGravityUp角速度設定を固定60FPS・180度反転で検証する
+	void RunFixedGravityUpVerification();
+
+	/// @brief 調整用の曲線と実測履歴を、説明用の平易な表現でエディタへ表示する
+	void DrawCameraEvidenceWindow();
+#endif
 
 	/// @brief プレイヤー速度に応じた FOV ブーストと加速度合いを計算して返す
 	/// @details FOV 拡大と距離ブーストを共通の boostAlpha から算出するため、
