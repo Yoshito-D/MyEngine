@@ -207,7 +207,7 @@
                      "speedChangeDistanceKickMax": 4.0,
                      "speedChangeFovKickMax": 0.004999999888241291,
                      "springDamping": 20.0,
-                     "springStiffness": 30.0,
+                     "springStiffness": 20.0,
                      "takeoffFramingBlendSeconds": 0.4000000059604645
                   },
                   "enabled": true
@@ -3866,8 +3866,8 @@
                      ],
                      "translation": [
                         -54.7059326171875,
-                        32.02520751953125,
-                        340.37152099609375
+                        17.91018295288086,
+                        294.52294921875
                      ]
                   },
                   "enabled": true,
