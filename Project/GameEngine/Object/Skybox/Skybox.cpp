@@ -37,7 +37,11 @@ Skybox::Skybox() {
 }
 
 Skybox::~Skybox() {
-   auto it = std::find(sRegisteredSkyboxes_.begin(), sRegisteredSkyboxes_.end(), this);
+   UnregisterSkybox(this);
+}
+
+void Skybox::UnregisterSkybox(Skybox* skybox) {
+   auto it = std::find(sRegisteredSkyboxes_.begin(), sRegisteredSkyboxes_.end(), skybox);
    if (it != sRegisteredSkyboxes_.end()) {
 	  sRegisteredSkyboxes_.erase(it);
    }

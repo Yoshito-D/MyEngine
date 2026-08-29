@@ -1,0 +1,86 @@
+{
+   "debugCamera": {
+      "active": true,
+      "components": [
+         {
+            "componentName": "OrbitalBody",
+            "data": {
+               "distance": 75.0,
+               "moveSpeed": 0.0007999999797903001,
+               "pitch": -0.7850000262260437,
+               "pivotTarget": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "rotateSpeed": 0.009999999776482582,
+               "scrollSpeed": 0.05000000074505806,
+               "yaw": 3.1415927410125732
+            },
+            "enabled": true
+         }
+      ],
+      "followTargetId": "",
+      "lookAtTargetId": "",
+      "name": "DebugCamera",
+      "priority": -1,
+      "state": {
+         "farClip": 10000.0,
+         "fov": 0.44999998807907104,
+         "hasViewMatrixOverride": true,
+         "nearClip": 0.009999999776482582,
+         "transform": {
+            "rotation": [
+               0.0,
+               0.0,
+               0.0
+            ],
+            "rotationQuaternion": [
+               0.0,
+               0.0,
+               0.0,
+               1.0
+            ],
+            "rotationSource": "quaternion",
+            "scale": [
+               1.0,
+               1.0,
+               1.0
+            ],
+            "translation": [
+               -4.638138307200279e-06,
+               53.01189041137695,
+               -53.054115295410156
+            ]
+         },
+         "viewMatrixOverride": [
+            [
+               1.0,
+               6.17926190216167e-08,
+               6.184184542235016e-08,
+               0.0
+            ],
+            [
+               3.552713678800501e-15,
+               0.7073882222175598,
+               -0.7068251967430115,
+               0.0
+            ],
+            [
+               -8.742277657347586e-08,
+               0.7068251967430115,
+               0.7073882222175598,
+               0.0
+            ],
+            [
+               4.547473508864641e-13,
+               -3.814697265625e-06,
+               75.0,
+               1.0
+            ]
+         ]
+      }
+   },
+   "sceneName": "Tutorial",
+   "version": 1
+}

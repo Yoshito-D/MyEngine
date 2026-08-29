@@ -206,6 +206,35 @@ void CreateUITextCommand::Undo(EditorSceneContext& context) {
    context.GetObjectStore().DeleteObject(objectId_);
 }
 
+bool CreateSkyboxCommand::Execute(EditorSceneContext& context) {
+   Object* object = nullptr;
+   if (!snapshot_.is_null() && snapshot_.is_object()) {
+      object = context.GetObjectStore().RestoreObject(snapshot_);
+   } else {
+      object = context.GetObjectStore().CreateSkybox();
+   }
+
+   if (!object) {
+      return false;
+   }
+
+   objectId_ = context.GetObjectStore().GetId(object);
+   context.SelectObject(object);
+   return true;
+}
+
+void CreateSkyboxCommand::Undo(EditorSceneContext& context) {
+   if (objectId_.empty()) {
+      return;
+   }
+
+   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
+      context.SelectObject(nullptr);
+   }
+   context.GetObjectStore().DeleteObject(objectId_);
+}
+
 CreateParticleSystemCommand::CreateParticleSystemCommand(std::string assetId, Transform initialTransform)
    : assetId_(std::move(assetId))
    , initialTransform_(initialTransform) {

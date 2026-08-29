@@ -3,7 +3,8 @@
    "scenes": {
       "EngineTest": "game/scenes/EngineTest.json",
       "GameTest": "game/scenes/GameTest.json",
-      "Title": "game/scenes/Title.json"
+      "Title": "game/scenes/Title.json",
+      "Tutorial": "game/scenes/Tutorial.json"
    },
    "version": 1
 }

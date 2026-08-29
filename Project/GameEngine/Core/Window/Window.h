@@ -13,6 +13,11 @@ public:
    static const int32_t kResolutionWidth = 1920;
    static const int32_t kResolutionHeight = 1080;
 
+   /// @brief UI配置の基準とする論理画面幅
+   static constexpr int32_t kUiReferenceWidth = kWindowWidth;
+   /// @brief UI配置の基準とする論理画面高
+   static constexpr int32_t kUiReferenceHeight = kWindowHeight;
+
 public:
    /// @brief ウィンドウの生成
    /// @param title タイトル 

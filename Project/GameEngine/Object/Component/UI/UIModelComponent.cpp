@@ -91,9 +91,13 @@ void UIModelComponent::ApplyLayout(const Camera& camera, uint32_t screenWidth, u
    if (projectionType == ProjectionType::Perspective) {
       const float halfHeight = safeDepth * std::tan(camera.GetFovY() * 0.5f);
       const float halfWidth = halfHeight * camera.GetAspectRatio();
+      // 基準UI領域が視野内に収まる一様倍率で、アンカーとオフセットを同じ比率のまま投影する。
+      const float worldUnitsPerUiPixel = std::min(
+         2.0f * halfWidth / width,
+         2.0f * halfHeight / height);
       anchorPosition = {
-         anchorDirection.x * halfWidth + screenOffset.x * (2.0f * halfWidth / width),
-         anchorDirection.y * halfHeight + screenOffset.y * (2.0f * halfHeight / height),
+         (anchorDirection.x * width * 0.5f + screenOffset.x) * worldUnitsPerUiPixel,
+         (anchorDirection.y * height * 0.5f + screenOffset.y) * worldUnitsPerUiPixel,
          safeDepth
       };
    } else {

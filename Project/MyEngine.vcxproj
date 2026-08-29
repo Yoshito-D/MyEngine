@@ -485,6 +485,7 @@
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
@@ -747,6 +748,7 @@
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.h" />
     <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />

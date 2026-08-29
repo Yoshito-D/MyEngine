@@ -644,7 +644,7 @@
                      ],
                      "translation": [
                         0.0,
-                        145.0,
+                        130.0,
                         1.0
                      ]
                   },
@@ -660,26 +660,29 @@
                         1.0
                      ],
                      "fontId": "851Gkktt",
-                     "fontSize": 42,
+                     "fontSize": 34,
                      "horizontalAlignment": "Center",
-                     "lineSpacing": 1.0,
-                     "maxWidth": 900.0,
+                     "lineSpacing": 1.2000000476837158,
+                     "maxWidth": 1100.0,
                      "pivot": [
                         0.5,
                         0.5
                      ],
                      "screenAnchor": "MiddleCenter",
                      "sortingOrder": 110,
-                     "text": "PRESS A / SPACE TO START"
+                     "text": "> チュートリアルから あそぶ"
                   },
                   "enabled": true,
                   "typeName": "UITextComponent"
                },
                {
                   "data": {
-                     "nextScene": "GameTest",
                      "reactionDuration": 0.4000000059604645,
-                     "reactionEndScale": 1.399999976158142
+                     "reactionEndScale": 1.399999976158142,
+                     "stageOptionObjectId": "UIText:StageStartPrompt",
+                     "stageScene": "GameTest",
+                     "tutorialOptionObjectId": "UIText:StartPrompt",
+                     "tutorialScene": "Tutorial"
                   },
                   "enabled": true,
                   "typeName": "TitleStartComponent"
@@ -690,6 +693,77 @@
             "parentId": ""
          },
          "sceneKey": "UIText:StartPrompt"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "StageStartPrompt"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        0.0,
+                        170.0,
+                        1.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fontId": "851Gkktt",
+                     "fontSize": 34,
+                     "horizontalAlignment": "Center",
+                     "lineSpacing": 1.2000000476837158,
+                     "maxWidth": 1100.0,
+                     "pivot": [
+                        0.5,
+                        0.5
+                     ],
+                     "screenAnchor": "MiddleCenter",
+                     "sortingOrder": 110,
+                     "text": "  ステージから あそぶ"
+                  },
+                  "enabled": true,
+                  "typeName": "UITextComponent"
+               }
+            ],
+            "id": "UIText:StageStartPrompt",
+            "objectType": "UIText",
+            "parentId": ""
+         },
+         "sceneKey": "UIText:StageStartPrompt"
       }
    ],
    "sceneParticleSystems": [],

@@ -235,16 +235,28 @@ bool UsesScreenRenderSpace(const Object* object) {
 }
 
 Vector2 GetEditorScreenCameraSize(float viewportWidth, float viewportHeight) {
-   // スクリーン空間オブジェクトはゲーム解像度基準なので、ドッキング後のプレビュー領域よりBackBuffer寸法を優先する。
+   float outputWidth = std::max(viewportWidth, 1.0f);
+   float outputHeight = std::max(viewportHeight, 1.0f);
+   // スクリーン空間オブジェクトはバックバッファへ描画されるため、実出力の縦横比を使う。
    if (auto* graphicsDevice = EngineContext::GetGraphicsDevice()) {
       const uint32_t width = graphicsDevice->GetBackBufferWidth();
       const uint32_t height = graphicsDevice->GetBackBufferHeight();
       if (width > 0 && height > 0) {
-         return Vector2(static_cast<float>(width), static_cast<float>(height));
+         outputWidth = static_cast<float>(width);
+         outputHeight = static_cast<float>(height);
       }
    }
 
-   return Vector2(std::max(viewportWidth, 1.0f), std::max(viewportHeight, 1.0f));
+   const float referenceWidth = static_cast<float>(Window::kUiReferenceWidth);
+   const float referenceHeight = static_cast<float>(Window::kUiReferenceHeight);
+   const float outputScale = std::min(outputWidth / referenceWidth, outputHeight / referenceHeight);
+   return Vector2(outputWidth / outputScale, outputHeight / outputScale);
+}
+
+Vector2 GetEditorScreenLayoutSize() {
+   return Vector2(
+      static_cast<float>(Window::kUiReferenceWidth),
+      static_cast<float>(Window::kUiReferenceHeight));
 }
 
 Vector3 CalculateScreenAnchorOffset(Sprite::AnchorPoint anchorPoint, const Vector2& screenSize) {
@@ -761,6 +773,10 @@ void EditorSceneContext::CreateUIText() {
    commandStack_.Execute(std::make_unique<CreateUITextCommand>(BuildScreenSpacePlacementTransform()), *this);
 }
 
+void EditorSceneContext::CreateSkybox() {
+   commandStack_.Execute(std::make_unique<CreateSkyboxCommand>(), *this);
+}
+
 void EditorSceneContext::CreateDirectionalLight() {
    const Transform placement = BuildPlacementTransformInFrontOfCamera();
    if (Object* entity = objectStore_.CreateGenericObject(&placement)) {
@@ -1077,7 +1093,9 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
    // UITextは左上原点のY下向き座標で頂点化されるため、SpriteのY上向き投影と分ける。
    const bool useUITextCoordinates = useScreenSpace && dynamic_cast<UIText*>(selectedObject_) != nullptr;
    const Vector2 screenSize = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
-   const Vector3 screenRenderOffset = useScreenSpace ? GetScreenRenderOffset(selectedObject_, screenSize) : Vector3(0.0f, 0.0f, 0.0f);
+   const Vector3 screenRenderOffset = useScreenSpace
+      ? GetScreenRenderOffset(selectedObject_, GetEditorScreenLayoutSize())
+      : Vector3(0.0f, 0.0f, 0.0f);
 
    Transform gizmoTransform = transformComponent->transform;
    if (useScreenSpace) {
@@ -1227,6 +1245,7 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
    constexpr float kMinPickRadiusPixels = 24.0f;
    constexpr float kMaxPickRadiusPixels = 220.0f;
    const Vector2 screenSize = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
+   const Vector2 screenLayoutSize = GetEditorScreenLayoutSize();
    const Matrix4x4 screenViewProjection = MakeScreenSpaceProjectionMatrix(screenSize);
    const Matrix4x4 uiTextScreenViewProjection = MakeScreenSpaceProjectionMatrix(screenSize, true);
 
@@ -1243,7 +1262,9 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
 
       const bool useScreenSpace = UsesScreenRenderSpace(object);
       const bool useUITextCoordinates = useScreenSpace && dynamic_cast<const UIText*>(object) != nullptr;
-      const Vector3 screenRenderOffset = useScreenSpace ? GetScreenRenderOffset(object, screenSize) : Vector3(0.0f, 0.0f, 0.0f);
+      const Vector3 screenRenderOffset = useScreenSpace
+         ? GetScreenRenderOffset(object, screenLayoutSize)
+         : Vector3(0.0f, 0.0f, 0.0f);
       const Matrix4x4 viewProjection = useScreenSpace
          ? (useUITextCoordinates ? uiTextScreenViewProjection : screenViewProjection)
          : camera->GetViewProjectionMatrix();

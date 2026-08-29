@@ -464,6 +464,10 @@ void RendererEditorController::ShowHierarchyWindow() {
          editorContext->CreateUIText();
       }
 
+      if (ImGui::MenuItem(Tr("スカイボックス", "Skybox"))) {
+         editorContext->CreateSkybox();
+      }
+
       if (ImGui::BeginMenu(Tr("ライト", "Light"))) {
          if (ImGui::MenuItem(Tr("ディレクショナル", "Directional"))) {
             editorContext->CreateDirectionalLight();

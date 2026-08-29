@@ -643,8 +643,8 @@ public:
 	  Sprite::AnchorPoint anchorPoint = Sprite::AnchorPoint::TopLeft,
 	  std::optional<BlendMode> blendMode = std::nullopt,
 	  bool applyPostProcess = true,
-	  uint32_t screenWidth = Window::kResolutionWidth,
-	  uint32_t screenHeight = Window::kResolutionHeight
+	  uint32_t screenWidth = Window::kUiReferenceWidth,
+	  uint32_t screenHeight = Window::kUiReferenceHeight
    );
 
    /// @brief UTF-8文字列をスクリーンUIとして描画する

@@ -151,6 +151,21 @@ private:
    nlohmann::json snapshot_;
 };
 
+/// @brief スカイボックスの作成をUndo/Redo可能にするコマンド
+class CreateSkyboxCommand final : public IEditorCommand {
+public:
+   /// @copydoc IEditorCommand::Execute
+   bool Execute(EditorSceneContext& context) override;
+   /// @copydoc IEditorCommand::Undo
+   void Undo(EditorSceneContext& context) override;
+   /// @copydoc IEditorCommand::GetName
+   const char* GetName() const override { return "Create Skybox"; }
+
+private:
+   std::string objectId_;
+   nlohmann::json snapshot_;
+};
+
 /// @brief JSONアセットからパーティクルシステムを作成し、Undoで削除するコマンド
 class CreateParticleSystemCommand final : public IEditorCommand {
 public:

@@ -455,6 +455,23 @@ void InputActionService::BuildFallbackDefaults() {
    InputBinding tab = space;
    tab.key = KeyCode::Tab;
    addAction("Gameplay", "Camera.Next", InputActionType::Button, { tab });
+
+   InputBinding navigateKeys = steerKeys;
+   navigateKeys.negativeKey = KeyCode::W;
+   navigateKeys.positiveKey = KeyCode::S;
+   InputBinding navigateUp = gamePadA;
+   navigateUp.gamePadButton = GamePadButton::DPadUp;
+   navigateUp.scale = -1.0f;
+   InputBinding navigateDown = gamePadA;
+   navigateDown.gamePadButton = GamePadButton::DPadDown;
+   InputBinding navigateStick = leftStick;
+   navigateStick.axis = InputBindingAxis::Y;
+   navigateStick.scale = -1.0f;
+   addAction(
+      "UI",
+      "UI.Navigate",
+      InputActionType::Axis1D,
+      { navigateKeys, navigateUp, navigateDown, navigateStick });
    addAction("UI", "UI.Confirm", InputActionType::Button, { space, gamePadA });
 }
 

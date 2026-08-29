@@ -222,8 +222,7 @@ void Renderer::SyncRenderTargetSizeToDevice() {
 	  return;
    }
 
-   // 3D描画面とピクセル座標ベースのUIカメラを同じサイズへ更新し、
-   // リサイズ後も合成位置とクリップ空間変換を一致させる。
+   // 3D描画面は実サイズに追従させ、UIは基準解像度を維持したまま一様拡大する。
    const uint32_t width = device_->GetBackBufferWidth();
    const uint32_t height = device_->GetBackBufferHeight();
    offscreenRenderTarget_->Resize(width, height);
@@ -432,7 +431,6 @@ void Renderer::DrawUI(Sprite* sprite, Texture* texture,
    assert(texture != nullptr);
 
    // UI専用カメラとライトをセット、テクスチャ座標も更新
-   SyncUICameraToRenderTarget(screenWidth, screenHeight);
    sprite->UpdateMatrixForUI(uiCamera_.get(), texture, anchorPoint, screenWidth, screenHeight);
 
    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle = texture->GetTextureSrvHandleGPU();
@@ -467,8 +465,10 @@ void Renderer::DrawUIText(std::string_view text, const Vector2& position, const 
       style,
       transform,
       UITextComponent::kShowAllGlyphs,
-      device_->GetBackBufferWidth(),
-      device_->GetBackBufferHeight());
+      Window::kUiReferenceWidth,
+      Window::kUiReferenceHeight,
+      uiViewportSize_.x,
+      uiViewportSize_.y);
    for (const TextDrawData& textData : drawDataList) {
       SubmitDrawCommand(DrawCommand::CreateText(textData, RenderPass::PostProcess));
    }
@@ -835,8 +835,8 @@ void Renderer::DrawAutoRegisteredModels() {
          Camera* uiModelCamera = uiModelComponent->projectionType == UIModelComponent::ProjectionType::Perspective
             ? perspectiveUiCamera_.get()
             : uiCamera_.get();
-         const uint32_t screenWidth = device_ ? device_->GetBackBufferWidth() : Window::kResolutionWidth;
-         const uint32_t screenHeight = device_ ? device_->GetBackBufferHeight() : Window::kResolutionHeight;
+         const uint32_t screenWidth = Window::kUiReferenceWidth;
+         const uint32_t screenHeight = Window::kUiReferenceHeight;
          uiModelComponent->ApplyLayout(*uiModelCamera, screenWidth, screenHeight);
          DrawModelWithCamera(
             model,
@@ -892,8 +892,8 @@ void Renderer::DrawAutoRegisteredSprites() {
 	  }
 
 	  if (renderComponent->renderSpace == RenderComponent::RenderSpace::Screen) {
-		 const uint32_t screenWidth = device_ ? device_->GetBackBufferWidth() : Window::kResolutionWidth;
-		 const uint32_t screenHeight = device_ ? device_->GetBackBufferHeight() : Window::kResolutionHeight;
+		 const uint32_t screenWidth = Window::kUiReferenceWidth;
+		 const uint32_t screenHeight = Window::kUiReferenceHeight;
 		 DrawUI(sprite, texture, sprite->GetScreenAnchorPoint(), std::nullopt, renderComponent->applyPostProcess, screenWidth, screenHeight);
 	  } else {
 		 Draw(sprite, texture, std::nullopt, renderComponent->applyPostProcess);
@@ -953,8 +953,10 @@ void Renderer::DrawAutoRegisteredTexts() {
          textComponent->GetStyle(),
          transformComponent->transform,
          textComponent->GetVisibleGlyphCount(),
-         device_->GetBackBufferWidth(),
-         device_->GetBackBufferHeight());
+         Window::kUiReferenceWidth,
+         Window::kUiReferenceHeight,
+         uiViewportSize_.x,
+         uiViewportSize_.y);
       for (const TextDrawData& textData : drawDataList) {
          SubmitDrawCommand(DrawCommand::CreateText(textData, RenderPass::PostProcess));
       }
@@ -1067,7 +1069,18 @@ void Renderer::SyncUICameraToRenderTarget(uint32_t screenWidth, uint32_t screenH
 	  return;
    }
 
-   uiCamera_->SetOrthographicSize(static_cast<float>(screenWidth), static_cast<float>(screenHeight));
+   const float referenceWidth = static_cast<float>(Window::kUiReferenceWidth);
+   const float referenceHeight = static_cast<float>(Window::kUiReferenceHeight);
+   // 画面内に基準UI領域が収まる一様倍率を選び、余った軸だけ論理ビューポートを広げる。
+   const float outputScale = std::min(
+      static_cast<float>(screenWidth) / referenceWidth,
+      static_cast<float>(screenHeight) / referenceHeight);
+   uiViewportSize_ = {
+      static_cast<float>(screenWidth) / outputScale,
+      static_cast<float>(screenHeight) / outputScale
+   };
+
+   uiCamera_->SetOrthographicSize(uiViewportSize_.x, uiViewportSize_.y);
    perspectiveUiCamera_->SetAspectRatio(static_cast<float>(screenWidth) / static_cast<float>(screenHeight));
    perspectiveUiCamera_->Update();
 }
