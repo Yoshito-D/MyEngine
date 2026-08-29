@@ -2,6 +2,7 @@
 
 #include "Object/Component/IObjectComponent.h"
 #include "Utility/VectorMath.h"
+#include <array>
 #include <string>
 
 namespace GameEngine {
@@ -11,7 +12,7 @@ class UITextComponent;
 
 namespace App {
 
-/// @brief タイトル画面の決定入力と開始リアクションを制御する
+/// @brief タイトル画面の開始経路選択と決定リアクションを制御する
 class TitleStartComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "TitleStartComponent";
@@ -29,11 +30,11 @@ public:
    /// @param deltaTime ゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
-   /// @brief 遷移先とリアクション設定をJSONへ保存する
+   /// @brief 選択肢の遷移先とリアクション設定をJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;
 
-   /// @brief JSONから遷移先とリアクション設定を読み込む
+   /// @brief JSONから選択肢の遷移先とリアクション設定を読み込む
    /// @param data 設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
@@ -43,19 +44,30 @@ public:
 #endif
 
 private:
-   bool CaptureBaseVisualState();
-   void ApplyStartReaction(
-      GameEngine::UITextComponent& text,
-      GameEngine::TransformComponent& transform);
+   bool ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld);
+   bool CaptureBaseVisualStates();
+   void RefreshSelectionText();
+   const std::string& GetSelectedSceneName() const;
+   void ApplyStartReaction(size_t optionIndex);
 
-   std::string nextScene_ = "GameTest";
+   std::string tutorialOptionObjectId_ = "UIText:StartPrompt";
+   std::string stageOptionObjectId_ = "UIText:StageStartPrompt";
+   std::string tutorialScene_ = "Tutorial";
+   std::string stageScene_ = "GameTest";
    float reactionDuration_ = 0.4f;
    float reactionEndScale_ = 1.4f;
    float reactionElapsed_ = 0.0f;
-   GameEngine::Vector3 baseScale_ = { 1.0f, 1.0f, 1.0f };
-   float baseOpacity_ = 1.0f;
+   std::array<GameEngine::UITextComponent*, 2> optionTexts_ = {};
+   std::array<GameEngine::TransformComponent*, 2> optionTransforms_ = {};
+   std::array<GameEngine::Vector3, 2> baseScales_ = {
+      GameEngine::Vector3{ 1.0f, 1.0f, 1.0f },
+      GameEngine::Vector3{ 1.0f, 1.0f, 1.0f }
+   };
+   std::array<float, 2> baseOpacities_ = { 1.0f, 1.0f };
+   int selectedOption_ = 0;
    bool startRequested_ = false;
-   bool hasBaseVisualState_ = false;
+   bool navigationLatched_ = false;
+   bool hasBaseVisualStates_ = false;
 };
 
 } // namespace App

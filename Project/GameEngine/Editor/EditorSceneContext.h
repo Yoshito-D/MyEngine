@@ -141,6 +141,8 @@ public:
    void CreateSpriteFromTexture(const std::string& textureAssetId);
    /// @brief ビューポート中央に編集可能なUIテキストを作成する
    void CreateUIText();
+   /// @brief 編集可能なスカイボックスを作成する
+   void CreateSkybox();
    /// @brief Directional Light Entityを作成する
    void CreateDirectionalLight();
    /// @brief Point Light Entityを作成する

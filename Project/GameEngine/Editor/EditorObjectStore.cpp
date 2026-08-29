@@ -200,6 +200,22 @@ Object* EditorObjectStore::CreateUIText(const Transform* initialTransform, const
    return rawText;
 }
 
+Object* EditorObjectStore::CreateSkybox(const std::string& requestedId) {
+   GraphicsDevice* graphicsDevice = EngineContext::GetGraphicsDevice();
+   if (!graphicsDevice) {
+      return nullptr;
+   }
+
+   auto skybox = std::make_unique<Skybox>();
+   Skybox* rawSkybox = skybox.get();
+   rawSkybox->Create(graphicsDevice);
+
+   const std::string id = AllocateId(requestedId);
+   RegisterObject(id, rawSkybox);
+   skyboxes_.push_back(std::move(skybox));
+   return rawSkybox;
+}
+
 ParticleSystem* EditorObjectStore::CreateParticleSystem(const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
    auto particleSystem = std::make_unique<ParticleSystem>();
    ParticleSystem* rawParticleSystem = particleSystem.get();
@@ -244,6 +260,17 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
    if (objectType == "UIText") {
       const std::string id = objectData.value("id", "");
       Object* object = CreateUIText(nullptr, id);
+      if (!object) {
+         return nullptr;
+      }
+
+      ApplyObjectState(object, objectData);
+      return object;
+   }
+
+   if (objectType == "Skybox") {
+      const std::string id = objectData.value("id", "");
+      Object* object = CreateSkybox(id);
       if (!object) {
          return nullptr;
       }
@@ -362,6 +389,24 @@ bool EditorObjectStore::DeleteObject(const std::string& objectId) {
       return true;
    }
 
+   if (auto* skyboxTarget = dynamic_cast<Skybox*>(target)) {
+      auto vecIt = std::find_if(skyboxes_.begin(), skyboxes_.end(),
+         [skyboxTarget](const std::unique_ptr<Skybox>& skybox) {
+            return skybox.get() == skyboxTarget;
+         });
+
+      if (vecIt == skyboxes_.end()) {
+         return false;
+      }
+
+      UnregisterObject(target);
+      UnregisterOwnedRuntimeSystems(target);
+      Skybox::UnregisterSkybox(skyboxTarget);
+      deferredDeleteSkyboxes_.push_back(std::move(*vecIt));
+      skyboxes_.erase(vecIt);
+      return true;
+   }
+
    auto genericIt = std::find_if(genericObjects_.begin(), genericObjects_.end(),
       [target](const std::unique_ptr<Object>& object) {
          return object.get() == target;
@@ -406,6 +451,7 @@ void EditorObjectStore::FlushDeferredDeletes() {
    deferredDeleteGenericObjects_.clear();
    deferredDeleteParticleSystems_.clear();
    deferredDeleteUITexts_.clear();
+   deferredDeleteSkyboxes_.clear();
    deferredDeleteSprites_.clear();
    deferredDeleteModels_.clear();
 }
@@ -439,6 +485,13 @@ void EditorObjectStore::Clear() {
          deferredDeleteUITexts_.push_back(std::move(uiText));
       }
    }
+   for (auto& skybox : skyboxes_) {
+      if (skybox) {
+         UnregisterOwnedRuntimeSystems(skybox.get());
+         Skybox::UnregisterSkybox(skybox.get());
+         deferredDeleteSkyboxes_.push_back(std::move(skybox));
+      }
+   }
    for (auto& particleSystem : particleSystems_) {
       if (particleSystem) {
          ParticleSystem::UnregisterParticleSystem(particleSystem.get());
@@ -452,6 +505,7 @@ void EditorObjectStore::Clear() {
    idToParticleSystem_.clear();
    particleSystemAssetIds_.clear();
    particleSystems_.clear();
+   skyboxes_.clear();
    uiTexts_.clear();
    sprites_.clear();
    models_.clear();
@@ -706,6 +760,19 @@ nlohmann::json EditorObjectStore::SerializeAll() const {
       }
 
       const std::string id = GetId(uiText.get());
+      if (id.empty()) {
+         continue;
+      }
+
+      objects.push_back(SerializeObject(id));
+   }
+
+   for (const auto& skybox : skyboxes_) {
+      if (!skybox) {
+         continue;
+      }
+
+      const std::string id = GetId(skybox.get());
       if (id.empty()) {
          continue;
       }

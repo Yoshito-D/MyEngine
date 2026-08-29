@@ -48,15 +48,18 @@ std::vector<TextDrawData> TextRenderer::QueueText(
    const TextStyle& style,
    const Transform& transform,
    size_t visibleGlyphCount,
-   uint32_t screenWidth,
-   uint32_t screenHeight) {
+   uint32_t layoutWidth,
+   uint32_t layoutHeight,
+   float viewportWidth,
+   float viewportHeight) {
    std::vector<TextDrawData> drawDataList;
-   if (layout.glyphs.empty() || screenWidth == 0 || screenHeight == 0) {
+   if (layout.glyphs.empty() || layoutWidth == 0 || layoutHeight == 0 ||
+      viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
       return drawDataList;
    }
 
-   screenWidth_ = screenWidth;
-   screenHeight_ = screenHeight;
+   viewportWidth_ = viewportWidth;
+   viewportHeight_ = viewportHeight;
    struct PageGeometry {
       D3D12_GPU_DESCRIPTOR_HANDLE atlasSrv = {};
       Vector4 atlasParameters = {};
@@ -64,7 +67,10 @@ std::vector<TextDrawData> TextRenderer::QueueText(
       std::vector<uint32_t> indices;
    };
 
-   const Vector2 anchorPosition = CalculateAnchorPosition(style.screenAnchor, screenWidth, screenHeight);
+   Vector2 anchorPosition = CalculateAnchorPosition(style.screenAnchor, layoutWidth, layoutHeight);
+   // 異なるアスペクト比では基準UI領域を中央に置き、サイズと縦横比を維持する。
+   anchorPosition.x += (viewportWidth - static_cast<float>(layoutWidth)) * 0.5f;
+   anchorPosition.y += (viewportHeight - static_cast<float>(layoutHeight)) * 0.5f;
    // アンカーは画面上の基準点、pivotはレイアウト矩形内の基準点として別々に扱う。
    // Transformの平行移動はアンカーからのオフセットになる。
    const Vector2 pivotOffset = { layout.size.x * style.pivot.x, layout.size.y * style.pivot.y };
@@ -183,7 +189,7 @@ bool TextRenderer::UploadBuffers() {
       Logger::Error("[TextRenderer] Failed to map the viewport buffer.");
       return false;
    }
-   viewportData->size = { static_cast<float>(screenWidth_), static_cast<float>(screenHeight_) };
+   viewportData->size = { viewportWidth_, viewportHeight_ };
    // シェーダー側でピクセル座標をクリップ空間へ変換するため両方を渡す。
    viewportData->inverseSize = { 1.0f / viewportData->size.x, 1.0f / viewportData->size.y };
    viewportBuffer_->Unmap(0, nullptr);

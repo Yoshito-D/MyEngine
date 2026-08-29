@@ -12,6 +12,7 @@ namespace GameEngine {
 class Model;
 class Object;
 class ParticleSystem;
+class Skybox;
 class Sprite;
 class UIText;
 
@@ -43,6 +44,10 @@ public:
    /// @param requestedId 復元時に使用するオブジェクトID
    /// @return 作成したUIテキスト。作成できなかった場合はnullptr
    Object* CreateUIText(const Transform* initialTransform = nullptr, const std::string& requestedId = {});
+   /// @brief エディター管理のスカイボックスを作成する
+   /// @param requestedId 復元時に使用するオブジェクトID
+   /// @return 作成したスカイボックス。作成できなかった場合はnullptr
+   Object* CreateSkybox(const std::string& requestedId = {});
    /// @brief JSONアセットを読み込んだParticleSystemを作成して再生する
    /// @param assetId resources相対のパーティクルID
    /// @param requestedId 復元時に再利用するID
@@ -141,6 +146,9 @@ public:
    /// @brief エディターが所有するUIテキスト一覧を取得する
    /// @return UIテキスト一覧
    const std::vector<std::unique_ptr<UIText>>& GetUITexts() const { return uiTexts_; }
+   /// @brief エディタが所有するスカイボックス一覧を取得する
+   /// @return スカイボックス一覧
+   const std::vector<std::unique_ptr<Skybox>>& GetSkyboxes() const { return skyboxes_; }
    /// @brief エディタが所有するParticleSystem一覧を取得する
    /// @return ParticleSystem一覧
    const std::vector<std::unique_ptr<ParticleSystem>>& GetParticleSystems() const { return particleSystems_; }
@@ -163,11 +171,13 @@ private:
    std::vector<std::unique_ptr<Model>> models_;
    std::vector<std::unique_ptr<Sprite>> sprites_;
    std::vector<std::unique_ptr<UIText>> uiTexts_;
+   std::vector<std::unique_ptr<Skybox>> skyboxes_;
    std::vector<std::unique_ptr<ParticleSystem>> particleSystems_;
    std::vector<std::unique_ptr<Object>> deferredDeleteGenericObjects_;
    std::vector<std::unique_ptr<Model>> deferredDeleteModels_;
    std::vector<std::unique_ptr<Sprite>> deferredDeleteSprites_;
    std::vector<std::unique_ptr<UIText>> deferredDeleteUITexts_;
+   std::vector<std::unique_ptr<Skybox>> deferredDeleteSkyboxes_;
    std::vector<std::unique_ptr<ParticleSystem>> deferredDeleteParticleSystems_;
    std::unordered_map<std::string, Object*> idToObject_;
    std::unordered_map<std::string, ParticleSystem*> idToParticleSystem_;

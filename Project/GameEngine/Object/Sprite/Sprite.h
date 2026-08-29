@@ -142,7 +142,7 @@ public:
    /// @param screenWidth 画面幅
    /// @param screenHeight 画面高さ
    /// @details Renderer::DrawUI()で使用。transform_.translationはスクリーン座標のオフセットとして扱われる
-   void UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anchorPoint = AnchorPoint::TopLeft, uint32_t screenWidth = Window::kResolutionWidth, uint32_t screenHeight = Window::kResolutionHeight);
+   void UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anchorPoint = AnchorPoint::TopLeft, uint32_t screenWidth = Window::kUiReferenceWidth, uint32_t screenHeight = Window::kUiReferenceHeight);
 private:
    AnchorPoint screenAnchorPoint_ = AnchorPoint::MiddleCenter;
 

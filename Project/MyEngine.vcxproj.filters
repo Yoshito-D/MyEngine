@@ -201,6 +201,9 @@
     <Filter Include="GameProject\App\Component\Title">
       <UniqueIdentifier>{cb34e569-4eee-4f33-b99b-00e396e3ff6c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameProject\App\Component\Tutorial">
+      <UniqueIdentifier>{a15ed63f-f1bd-4218-9eed-2d2cf50d8890}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameProject\App\Component\Vehicle">
       <UniqueIdentifier>{9de63006-b954-4c86-9af0-ca89b106175d}</UniqueIdentifier>
     </Filter>
@@ -564,6 +567,7 @@
     <ClCompile Include="GameProject\App\Component\Race\RaceTimeTextComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.cpp"><Filter>GameProject\App\Component\Race</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp"><Filter>GameProject\App\Component\Title</Filter></ClCompile>
+    <ClCompile Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.cpp"><Filter>GameProject\App\Component\Tutorial</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp"><Filter>GameProject\App\Component\Vehicle</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp"><Filter>GameProject\App\Component\Vehicle</Filter></ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp"><Filter>GameProject\App\Component\Vehicle</Filter></ClCompile>
@@ -895,6 +899,7 @@
     <ClInclude Include="GameProject\App\Component\Race\RaceTimeTextComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.h"><Filter>GameProject\App\Component\Race</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h"><Filter>GameProject\App\Component\Title</Filter></ClInclude>
+    <ClInclude Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.h"><Filter>GameProject\App\Component\Tutorial</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h"><Filter>GameProject\App\Component\Vehicle</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h"><Filter>GameProject\App\Component\Vehicle</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h"><Filter>GameProject\App\Component\Vehicle</Filter></ClInclude>

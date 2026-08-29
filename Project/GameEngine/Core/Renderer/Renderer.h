@@ -109,8 +109,8 @@ public:
 	  Sprite::AnchorPoint anchorPoint = Sprite::AnchorPoint::TopLeft,
 	  std::optional<BlendMode> blendMode = std::nullopt,
 	  bool applyPostProcess = true,
-	  uint32_t screenWidth = Window::kResolutionWidth,
-	  uint32_t screenHeight = Window::kResolutionHeight
+	  uint32_t screenWidth = Window::kUiReferenceWidth,
+	  uint32_t screenHeight = Window::kUiReferenceHeight
    );
 
    /// @brief UTF-8文字列をスクリーンUIとして描画する
@@ -291,6 +291,10 @@ private:
    // UI描画専用カメラ
    std::unique_ptr<Camera> uiCamera_ = std::make_unique<Camera>();
    std::unique_ptr<Camera> perspectiveUiCamera_ = std::make_unique<Camera>();
+   Vector2 uiViewportSize_ = {
+      static_cast<float>(Window::kUiReferenceWidth),
+      static_cast<float>(Window::kUiReferenceHeight)
+   };
 
    // 描画コマンドリスト（レンダーパス別）
     std::vector<std::unique_ptr<IDrawCommand>> opaqueCommands_;       // 不透明オブジェクト

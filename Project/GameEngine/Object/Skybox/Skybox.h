@@ -29,6 +29,10 @@ public:
    /// @brief 登録済みスカイボックスの一覧を取得する
    static const std::vector<Skybox*>& GetRegisteredSkyboxes();
 
+   /// @brief 指定したスカイボックスを描画レジストリから解除する
+   /// @param skybox 解除対象
+   static void UnregisterSkybox(Skybox* skybox);
+
    /// @brief シーン終了時に描画レジストリを空にする
    static void ClearRegisteredSkyboxes() { sRegisteredSkyboxes_.clear(); }
 

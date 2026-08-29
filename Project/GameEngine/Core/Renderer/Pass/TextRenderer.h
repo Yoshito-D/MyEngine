@@ -33,16 +33,20 @@ public:
    /// @param style 文字色、アンカー、ピボットなどの表示設定
    /// @param transform UI文字オブジェクトのTransform
    /// @param visibleGlyphCount 先頭から表示するグリフ数
-   /// @param screenWidth 描画対象幅
-   /// @param screenHeight 描画対象高さ
+   /// @param layoutWidth UIを配置する論理画面幅
+   /// @param layoutHeight UIを配置する論理画面高
+   /// @param viewportWidth 出力の縦横比を考慮した論理ビューポート幅
+   /// @param viewportHeight 出力の縦横比を考慮した論理ビューポート高
    /// @return アトラスページごとの描画コマンドデータ
    std::vector<TextDrawData> QueueText(
       const TextLayoutResult& layout,
       const TextStyle& style,
       const Transform& transform,
       size_t visibleGlyphCount,
-      uint32_t screenWidth,
-      uint32_t screenHeight);
+      uint32_t layoutWidth,
+      uint32_t layoutHeight,
+      float viewportWidth,
+      float viewportHeight);
 
    /// @brief CPU上で構築した頂点とインデックスをGPU可視バッファへ反映する
    /// @return 転送に成功した場合はtrue
@@ -82,8 +86,8 @@ private:
    std::vector<uint32_t> indices_;
    size_t vertexCapacity_ = 0;
    size_t indexCapacity_ = 0;
-   uint32_t screenWidth_ = 1;
-   uint32_t screenHeight_ = 1;
+   float viewportWidth_ = 1.0f;
+   float viewportHeight_ = 1.0f;
 };
 
 } // namespace GameEngine
