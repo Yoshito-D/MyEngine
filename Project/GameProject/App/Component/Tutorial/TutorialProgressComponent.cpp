@@ -3,9 +3,10 @@
 #include "../Character/CharacterJump.h"
 #include "../Character/CharacterLanding.h"
 #include "../Gravity/PlanetSwitcher.h"
+#include "../Vehicle/VehicleInputComponent.h"
 #include "../Vehicle/VehicleLandingBoost.h"
-#include "Framework/EngineContext.h"
 #include "Object/Component/UI/UITextComponent.h"
+#include "Object/Component/UI/UIAnimationTypes.h"
 #include "Object/Object.h"
 #include "Scene/BaseScene.h"
 #include "Scene/SceneWorld.h"
@@ -22,6 +23,7 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
    characterJump_ = nullptr;
    characterLanding_ = nullptr;
    planetSwitcher_ = nullptr;
+   vehicleInput_ = nullptr;
    landingBoost_ = nullptr;
    guideText_ = HasOwner()
       ? GetOwner().GetComponent<GameEngine::UITextComponent>()
@@ -31,8 +33,10 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
       characterJump_ = playerObject->GetComponent<CharacterJump>();
       characterLanding_ = playerObject->GetComponent<CharacterLanding>();
       planetSwitcher_ = playerObject->GetComponent<PlanetSwitcher>();
+      vehicleInput_ = playerObject->GetComponent<VehicleInputComponent>();
       landingBoost_ = playerObject->GetComponent<VehicleLandingBoost>();
    }
+   NormalizeTargetPlanetIndex();
 
    phase_ = Phase::Steering;
    completionElapsed_ = 0.0f;
@@ -42,28 +46,33 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
    sceneChangeRequested_ = false;
    landingFeedback_.clear();
    displayedText_.clear();
-   UpdateGuideText();
+   pendingText_.clear();
+   guideBaseOpacity_ = guideText_ ? guideText_->GetStyle().color.w : 1.0f;
+   guideVisibility_ = 1.0f;
+   guideFadeState_ = GuideFadeState::Visible;
+   UpdateGuideText(0.0f);
 }
 
 void TutorialProgressComponent::Update(float deltaTime) {
-   if (!guideText_ || !characterJump_ || !characterLanding_ || !planetSwitcher_ || !landingBoost_) {
+   if (!guideText_ || !characterJump_ || !characterLanding_ || !planetSwitcher_ ||
+      !vehicleInput_ || !landingBoost_) {
       return;
    }
+   // 編集中に候補数が変わっても、比較に無効なインデックスを使わない。
+   NormalizeTargetPlanetIndex();
 
    const bool isGrounded = characterLanding_->IsGrounded();
    const bool isAirborne = characterJump_->IsJumping();
    const bool landedThisFrame = isGrounded && !wasGrounded_;
 
-   const auto& steerAction =
-      GameEngine::EngineContext::GetInputActionState("Gameplay", "Vehicle.Steer", 0);
-   const auto& pitchAction =
-      GameEngine::EngineContext::GetInputActionState("Gameplay", "Vehicle.Pitch", 0);
-   const auto& rollAction =
-      GameEngine::EngineContext::GetInputActionState("Gameplay", "Vehicle.Roll", 0);
+   // 車両と同じ入力境界を通し、設定済みプレイヤースロットと無効状態を尊重する。
+   const float steerInput = vehicleInput_->GetSteerInput();
+   const float pitchInput = vehicleInput_->GetPitchInput();
+   const float rollInput = vehicleInput_->GetRollInput();
 
    switch (phase_) {
       case Phase::Steering:
-         if (std::abs(steerAction.value.x) >= 0.35f) {
+         if (std::abs(steerInput) >= 0.35f) {
             SetPhase(Phase::Jump);
          }
          break;
@@ -74,8 +83,8 @@ void TutorialProgressComponent::Update(float deltaTime) {
          break;
       case Phase::AirControl:
          if (isAirborne) {
-            usedPitch_ = usedPitch_ || std::abs(pitchAction.value.x) >= 0.35f;
-            usedRoll_ = usedRoll_ || std::abs(rollAction.value.x) >= 0.35f;
+            usedPitch_ = usedPitch_ || std::abs(pitchInput) >= 0.35f;
+            usedRoll_ = usedRoll_ || std::abs(rollInput) >= 0.35f;
             if (usedPitch_ && usedRoll_) {
                SetPhase(Phase::PlanetTransfer);
             }
@@ -99,15 +108,16 @@ void TutorialProgressComponent::Update(float deltaTime) {
    }
 
    wasGrounded_ = isGrounded;
-   UpdateGuideText();
+   UpdateGuideText(deltaTime);
 }
 
 nlohmann::json TutorialProgressComponent::Serialize() const {
    return nlohmann::json{
       { "playerObjectId", playerObjectId_ },
-      { "targetPlanetIndex", targetPlanetIndex_ },
+      { "targetPlanetIndex", GetNormalizedTargetPlanetIndex() },
       { "nextScene", nextScene_ },
-      { "completionDelay", completionDelay_ }
+      { "completionDelay", completionDelay_ },
+      { "guideFadeDuration", guideFadeDuration_ }
    };
 }
 
@@ -127,6 +137,9 @@ void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("completionDelay") && data.at("completionDelay").is_number()) {
       completionDelay_ = std::max(data.at("completionDelay").get<float>(), 0.0f);
    }
+   if (data.contains("guideFadeDuration") && data.at("guideFadeDuration").is_number()) {
+      guideFadeDuration_ = std::max(data.at("guideFadeDuration").get<float>(), 0.0001f);
+   }
 }
 
 void TutorialProgressComponent::SetPhase(Phase phase) {
@@ -137,26 +150,84 @@ void TutorialProgressComponent::SetPhase(Phase phase) {
    if (phase_ == Phase::Complete) {
       completionElapsed_ = 0.0f;
    }
-   displayedText_.clear();
 }
 
-void TutorialProgressComponent::UpdateGuideText() {
+int TutorialProgressComponent::GetNormalizedTargetPlanetIndex() const {
+   if (!planetSwitcher_) {
+      return std::max(targetPlanetIndex_, 0);
+   }
+   const int planetCount = planetSwitcher_->GetPlanetCount();
+   return planetCount > 0
+      ? std::clamp(targetPlanetIndex_, 0, planetCount - 1)
+      : 0;
+}
+
+void TutorialProgressComponent::NormalizeTargetPlanetIndex() {
+   targetPlanetIndex_ = GetNormalizedTargetPlanetIndex();
+}
+
+void TutorialProgressComponent::UpdateGuideText(float deltaTime) {
    if (!guideText_) {
       return;
    }
    const std::string guide = BuildGuideText();
-   if (guide == displayedText_) {
+
+   if (displayedText_.empty()) {
+      guideText_->SetText(guide);
+      displayedText_ = guide;
+      pendingText_.clear();
+      guideVisibility_ = 1.0f;
+      guideFadeState_ = GuideFadeState::Visible;
+      ApplyGuideOpacity();
       return;
    }
-   guideText_->SetText(guide);
-   displayedText_ = guide;
+
+   if (guide != displayedText_) {
+      // フェード中に案内内容が再更新された場合は、最新の文面だけを表示対象にする。
+      pendingText_ = guide;
+      if (guideFadeState_ != GuideFadeState::FadingOut) {
+         guideFadeState_ = GuideFadeState::FadingOut;
+      }
+   } else if (guideFadeState_ == GuideFadeState::FadingOut) {
+      // 文面が元へ戻った場合も現在の透明度から滑らかに復帰させる。
+      pendingText_.clear();
+      guideFadeState_ = GuideFadeState::FadingIn;
+   }
+
+   const float visibilityStep =
+      std::max(deltaTime, 0.0f) / std::max(guideFadeDuration_, 0.0001f);
+   if (guideFadeState_ == GuideFadeState::FadingOut) {
+      guideVisibility_ = std::max(guideVisibility_ - visibilityStep, 0.0f);
+      if (guideVisibility_ <= 0.0f) {
+         guideText_->SetText(pendingText_);
+         displayedText_ = std::move(pendingText_);
+         pendingText_.clear();
+         guideFadeState_ = GuideFadeState::FadingIn;
+      }
+   } else if (guideFadeState_ == GuideFadeState::FadingIn) {
+      guideVisibility_ = std::min(guideVisibility_ + visibilityStep, 1.0f);
+      if (guideVisibility_ >= 1.0f) {
+         guideFadeState_ = GuideFadeState::Visible;
+      }
+   }
+   ApplyGuideOpacity();
+}
+
+void TutorialProgressComponent::ApplyGuideOpacity() {
+   if (!guideText_) {
+      return;
+   }
+   const float easedVisibility = GameEngine::EvaluateUIEasing(
+      guideVisibility_,
+      GameEngine::UIEasingType::EaseInOutSine);
+   guideText_->SetOpacity(guideBaseOpacity_ * easedVisibility);
 }
 
 void TutorialProgressComponent::HandleLandingResult() {
    const int landedPlanetIndex = planetSwitcher_->GetCurrentPlanetIndex();
    if (phase_ == Phase::PlanetTransfer && landedPlanetIndex != targetPlanetIndex_) {
       landingFeedback_ =
-         "元の惑星に戻りました。正面の青い惑星へ向けて、もう一度ジャンプしましょう。";
+         "元の惑星に戻りました。正面の目標惑星へ向けて、もう一度ジャンプしましょう。";
       return;
    }
 
@@ -189,7 +260,7 @@ std::string TutorialProgressComponent::BuildGuideText() const {
       case Phase::Jump:
          return
             "チュートリアル  2 / 4　ジャンプ\n"
-            "正面の青い惑星へ向かい、SPACE または A ボタンでジャンプしてください。";
+            "正面の目標惑星へ向かい、SPACE または A ボタンでジャンプしてください。";
       case Phase::AirControl: {
          const std::string pitchStatus = usedPitch_ ? "OK" : "未操作";
          const std::string rollStatus = usedRoll_ ? "OK" : "未操作";
@@ -204,7 +275,7 @@ std::string TutorialProgressComponent::BuildGuideText() const {
             : "\n" + landingFeedback_;
          return
             "チュートリアル  4 / 4　惑星間ジャンプと着地\n"
-            "青い惑星へ着地します。機体の上方向を地表の外側へそろえると SUCCESS です。" +
+            "目標の惑星へ着地します。機体の上方向を地表の外側へそろえると SUCCESS です。" +
             retryText;
       }
       case Phase::LandingPractice:
@@ -241,12 +312,19 @@ void TutorialProgressComponent::DrawInspector() {
    ImGui::Text("Player Object ID: %s", playerObjectId_.c_str());
    ImGui::Text("Next Scene: %s", nextScene_.c_str());
    ImGui::Text("Phase: %s", GetPhaseName());
-   ImGui::DragInt("Target Planet Index", &targetPlanetIndex_, 1.0f, 0, 64);
+   const int maxPlanetIndex = planetSwitcher_
+      ? std::max(planetSwitcher_->GetPlanetCount() - 1, 0)
+      : 0;
+   if (ImGui::DragInt("Target Planet Index", &targetPlanetIndex_, 1.0f, 0, maxPlanetIndex)) {
+      NormalizeTargetPlanetIndex();
+   }
    ImGui::DragFloat("Completion Delay", &completionDelay_, 0.1f, 0.0f, 10.0f, "%.1f s");
-   ImGui::Text("Resolved: Jump=%s Landing=%s Switcher=%s Boost=%s Text=%s",
+   ImGui::DragFloat("Guide Fade Duration", &guideFadeDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
+   ImGui::Text("Resolved: Jump=%s Landing=%s Switcher=%s Input=%s Boost=%s Text=%s",
       characterJump_ ? "true" : "false",
       characterLanding_ ? "true" : "false",
       planetSwitcher_ ? "true" : "false",
+      vehicleInput_ ? "true" : "false",
       landingBoost_ ? "true" : "false",
       guideText_ ? "true" : "false");
 }

@@ -13,7 +13,8 @@
       "MainAreaLight",
       "Skybox:Skybox",
       "UIText:TitleText",
-      "UIText:StartPrompt"
+      "UIText:StartPrompt",
+      "UIText:StageStartPrompt"
    ],
    "objects": [],
    "renderSettings": {

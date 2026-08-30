@@ -25,7 +25,8 @@ void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    optionTexts_.fill(nullptr);
    optionTransforms_.fill(nullptr);
    ResolveOptionVisuals(sceneWorld);
-   CaptureBaseVisualStates();
+   hasBaseVisualStates_ = CaptureBaseVisualStates();
+   SelectInitialOption();
    RefreshSelectionText();
 }
 
@@ -44,8 +45,7 @@ void TitleStartComponent::Update(float deltaTime) {
          navigationLatched_ = false;
       } else if (!navigationLatched_) {
          // 押し続けで選択が往復しないよう、軸が中立へ戻るまで次の移動を受け付けない。
-         constexpr int kOptionCount = 2;
-         selectedOption_ = (selectedOption_ + navigationDirection + kOptionCount) % kOptionCount;
+         MoveSelection(navigationDirection);
          navigationLatched_ = true;
          RefreshSelectionText();
       }
@@ -65,7 +65,7 @@ void TitleStartComponent::Update(float deltaTime) {
    }
 
    reactionElapsed_ += std::max(deltaTime, 0.0f);
-   ApplyStartReaction(static_cast<size_t>(selectedOption_));
+   ApplyStartReaction(static_cast<std::size_t>(selectedOption_));
 }
 
 nlohmann::json TitleStartComponent::Serialize() const {
@@ -83,6 +83,7 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+   legacySingleOption_ = false;
    if (data.contains("tutorialOptionObjectId") && data.at("tutorialOptionObjectId").is_string()) {
       tutorialOptionObjectId_ = data.at("tutorialOptionObjectId").get<std::string>();
    }
@@ -95,8 +96,15 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("stageScene") && data.at("stageScene").is_string()) {
       stageScene_ = data.at("stageScene").get<std::string>();
    } else if (data.contains("nextScene") && data.at("nextScene").is_string()) {
-      // 旧タイトルデータの単一遷移先は、通常ステージ側として引き継ぐ。
+      // 旧タイトルのオーナー表示を単一のステージ選択肢として引き継ぐ。
       stageScene_ = data.at("nextScene").get<std::string>();
+      if (!data.contains("stageOptionObjectId")) {
+         stageOptionObjectId_ = HasOwner()
+            ? GetOwner().GetEntityId()
+            : tutorialOptionObjectId_;
+      }
+      tutorialOptionObjectId_.clear();
+      legacySingleOption_ = true;
    }
    if (data.contains("reactionDuration") && data.at("reactionDuration").is_number()) {
       reactionDuration_ = std::max(data.at("reactionDuration").get<float>(), 0.0001f);
@@ -106,59 +114,104 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    }
 }
 
-bool TitleStartComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld) {
+void TitleStartComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld) {
    const std::array<std::string, 2> objectIds = {
       tutorialOptionObjectId_,
       stageOptionObjectId_
    };
-   for (size_t optionIndex = 0; optionIndex < objectIds.size(); ++optionIndex) {
-      GameEngine::Object* optionObject = sceneWorld.FindObjectById(objectIds[optionIndex]);
-      // 旧シーンやID変更中でも、チュートリアル側はオーナーから復元できるようにする。
-      if (!optionObject && optionIndex == 0 && HasOwner()) {
-         optionObject = &GetOwner();
+   std::array<GameEngine::Object*, 2> optionObjects = {};
+   for (std::size_t optionIndex = 0; optionIndex < objectIds.size(); ++optionIndex) {
+      optionObjects[optionIndex] = sceneWorld.FindObjectById(objectIds[optionIndex]);
+   }
+
+   if (HasOwner()) {
+      GameEngine::Object* owner = &GetOwner();
+      // nextScene形式ではオーナー自身が単一のステージ表示だった。
+      if (legacySingleOption_ && !optionObjects[1]) {
+         optionObjects[1] = owner;
+      } else if (!optionObjects[0] && !tutorialOptionObjectId_.empty() && optionObjects[1] != owner) {
+         // チュートリアル側のID変更中だけはオーナーから復元する。
+         optionObjects[0] = owner;
       }
+   }
+
+   for (std::size_t optionIndex = 0; optionIndex < optionObjects.size(); ++optionIndex) {
+      GameEngine::Object* optionObject = optionObjects[optionIndex];
       if (!optionObject) {
          continue;
       }
       optionTexts_[optionIndex] = optionObject->GetComponent<GameEngine::UITextComponent>();
       optionTransforms_[optionIndex] = optionObject->GetComponent<GameEngine::TransformComponent>();
    }
-   return std::all_of(optionTexts_.begin(), optionTexts_.end(), [](const auto* text) { return text != nullptr; }) &&
-      std::all_of(optionTransforms_.begin(), optionTransforms_.end(), [](const auto* transform) { return transform != nullptr; });
 }
 
 bool TitleStartComponent::CaptureBaseVisualStates() {
-   for (size_t optionIndex = 0; optionIndex < optionTexts_.size(); ++optionIndex) {
+   bool capturedAny = false;
+   for (std::size_t optionIndex = 0; optionIndex < optionTexts_.size(); ++optionIndex) {
       const auto* text = optionTexts_[optionIndex];
       const auto* transform = optionTransforms_[optionIndex];
       if (!text || !transform) {
-         return false;
+         continue;
       }
       baseOpacities_[optionIndex] = text->GetStyle().color.w;
       baseScales_[optionIndex] = transform->transform.scale;
+      capturedAny = true;
    }
+   return capturedAny;
+}
 
-   hasBaseVisualStates_ = true;
-   return true;
+bool TitleStartComponent::IsOptionAvailable(std::size_t optionIndex) const {
+   return optionIndex < optionTexts_.size() &&
+      optionTexts_[optionIndex] != nullptr && optionTransforms_[optionIndex] != nullptr;
+}
+
+bool TitleStartComponent::SelectInitialOption() {
+   for (std::size_t optionIndex = 0; optionIndex < optionTexts_.size(); ++optionIndex) {
+      if (IsOptionAvailable(optionIndex)) {
+         selectedOption_ = static_cast<int>(optionIndex);
+         return true;
+      }
+   }
+   return false;
+}
+
+void TitleStartComponent::MoveSelection(int direction) {
+   constexpr int kOptionCount = 2;
+   int candidate = selectedOption_;
+   for (int attempt = 0; attempt < kOptionCount; ++attempt) {
+      candidate = (candidate + direction + kOptionCount) % kOptionCount;
+      if (IsOptionAvailable(static_cast<std::size_t>(candidate))) {
+         selectedOption_ = candidate;
+         return;
+      }
+   }
 }
 
 void TitleStartComponent::RefreshSelectionText() {
-   if (!optionTexts_[0] || !optionTexts_[1]) {
+   // 旧シーンの単一プロンプトは、作者が設定した文言をそのまま保つ。
+   if (legacySingleOption_) {
       return;
    }
-   optionTexts_[0]->SetText(
-      std::string(selectedOption_ == 0 ? "> " : "  ") + "チュートリアルから あそぶ");
-   optionTexts_[1]->SetText(
-      std::string(selectedOption_ == 1 ? "> " : "  ") + "ステージから あそぶ");
+   if (IsOptionAvailable(0)) {
+      optionTexts_[0]->SetText(
+         std::string(selectedOption_ == 0 ? "> " : "  ") + "チュートリアルから あそぶ");
+   }
+   if (IsOptionAvailable(1)) {
+      optionTexts_[1]->SetText(
+         std::string(selectedOption_ == 1 ? "> " : "  ") + "ステージから あそぶ");
+   }
 }
 
 const std::string& TitleStartComponent::GetSelectedSceneName() const {
+   static const std::string kEmptySceneName;
+   if (!IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
+      return kEmptySceneName;
+   }
    return selectedOption_ == 0 ? tutorialScene_ : stageScene_;
 }
 
-void TitleStartComponent::ApplyStartReaction(size_t optionIndex) {
-   if (optionIndex >= optionTexts_.size() ||
-      !optionTexts_[optionIndex] || !optionTransforms_[optionIndex]) {
+void TitleStartComponent::ApplyStartReaction(std::size_t optionIndex) {
+   if (!IsOptionAvailable(optionIndex)) {
       return;
    }
 

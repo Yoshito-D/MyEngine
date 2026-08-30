@@ -103,8 +103,9 @@ public:
    /// @param anchorPoint アンカーポイント（描画基準点）
    /// @param blendMode ブレンドモード（std::nulloptの場合は現在設定されているモードを使用）
    /// @param applyPostProcess ポストプロセスを適用するかどうか
-   /// @param screenWidth 画面幅（デフォルト：1280）
-   /// @param screenHeight 画面高さ（デフォルト：720）
+   /// @param screenWidth UI配置に使う論理画面幅（デフォルト：1280）
+   /// @param screenHeight UI配置に使う論理画面高（デフォルト：720）
+   /// @details 論理画面の縦横比とサイズを保ち、実際の出力中央へ一様拡大して描画する。
    void DrawUI(Sprite* sprite, Texture* texture,
 	  Sprite::AnchorPoint anchorPoint = Sprite::AnchorPoint::TopLeft,
 	  std::optional<BlendMode> blendMode = std::nullopt,

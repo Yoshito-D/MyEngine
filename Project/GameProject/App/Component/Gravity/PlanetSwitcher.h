@@ -36,6 +36,10 @@ public:
    /// @brief 現在選択中の惑星インデックスを返す
    int GetCurrentPlanetIndex() const { return currentIndex_; }
 
+   /// @brief 切り替え候補として登録された惑星数を返す
+   /// @return 登録済みの惑星候補数
+   int GetPlanetCount() const { return static_cast<int>(entries_.size()); }
+
    /// @brief 直近フレームで惑星が切り替わったかどうかを返す
    bool HasSwitched() const { return switched_; }
 
