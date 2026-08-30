@@ -90,6 +90,7 @@ public:
    bool BeginRebind(const std::string& actionMap, const std::string& actionId, size_t bindingIndex);
 
    /// @brief 指定アクションへバインドを適用する
+   /// @details 物理入力の競合は同一アクションマップ内でのみ検出・置換する。
    /// @return 競合がないか置換が許可された場合はtrue
    bool ApplyBinding(
       const std::string& actionMap,

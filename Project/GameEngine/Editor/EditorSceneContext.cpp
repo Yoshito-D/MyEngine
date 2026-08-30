@@ -511,6 +511,8 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
    commandStack_.Clear();
    RegisterSceneOwnedKeys();
    objectStore_.Clear();
+   // 同じスナップショット内の安定IDを再利用するため、旧Store所有物をグローバルEntity索引からも先に解放する。
+   objectStore_.FlushDeferredDeletes();
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
    hiddenSceneObjectKeys_.clear();
@@ -519,6 +521,16 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
 
    if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
       for (const auto& objectData : sceneData.at("objects")) {
+         // DataDrivenSceneではobjectsもSceneWorldが既に所有するため、Reload時は同じSkyboxを更新して二重所有を避ける。
+         if (objectData.is_object() && objectData.value("objectType", "") == "Skybox") {
+            const std::string objectId = objectData.value("id", "");
+            if (auto* sceneWorld = SceneWorld::GetCurrent()) {
+               if (auto* existingSkybox = dynamic_cast<Skybox*>(sceneWorld->FindObjectById(objectId))) {
+                  objectStore_.ApplyObjectState(existingSkybox, objectData);
+                  continue;
+               }
+            }
+         }
          objectStore_.RestoreObject(objectData);
       }
    }
@@ -774,6 +786,17 @@ void EditorSceneContext::CreateUIText() {
 }
 
 void EditorSceneContext::CreateSkybox() {
+   // Skyboxは不透明な全画面背景で登録順の最後だけが見えるため、既存物があれば新規競合を作らず編集対象にする。
+   const auto& registeredSkyboxes = Skybox::GetRegisteredSkyboxes();
+   for (auto it = registeredSkyboxes.rbegin(); it != registeredSkyboxes.rend(); ++it) {
+      Skybox* skybox = *it;
+      if (skybox && IsObjectAlive(skybox)) {
+         SelectObject(skybox);
+         SetStatus("Selected existing skybox");
+         return;
+      }
+   }
+
    commandStack_.Execute(std::make_unique<CreateSkyboxCommand>(), *this);
 }
 
@@ -847,6 +870,12 @@ void EditorSceneContext::DuplicateSelectedObject() {
    }
 
    if (!selectedObject_) {
+      return;
+   }
+
+   // 複数Skyboxは描画順だけで勝者が変わるため、保存後に見た目が反転する構成をエディターから作らせない。
+   if (dynamic_cast<Skybox*>(selectedObject_)) {
+      SetStatus("Duplicate failed: a scene can contain only one skybox");
       return;
    }
 

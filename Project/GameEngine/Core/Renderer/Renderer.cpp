@@ -430,8 +430,28 @@ void Renderer::DrawUI(Sprite* sprite, Texture* texture,
    assert(sprite != nullptr);
    assert(texture != nullptr);
 
-   // UI専用カメラとライトをセット、テクスチャ座標も更新
+   // 基準レイアウト以外も、現在の出力アスペクト比へ一様フィットさせる。
+   // 行列構築後に共有カメラを戻し、後続の基準UIの投影を変えない。
+   const bool usesReferenceLayout =
+      screenWidth == static_cast<uint32_t>(Window::kUiReferenceWidth) &&
+      screenHeight == static_cast<uint32_t>(Window::kUiReferenceHeight);
+   bool restoreReferenceViewport = false;
+   if (!usesReferenceLayout && screenWidth > 0 && screenHeight > 0) {
+      const float layoutScale = std::min(
+         uiViewportSize_.x / static_cast<float>(screenWidth),
+         uiViewportSize_.y / static_cast<float>(screenHeight));
+      const Vector2 layoutViewportSize = {
+         uiViewportSize_.x / layoutScale,
+         uiViewportSize_.y / layoutScale
+      };
+      uiCamera_->SetOrthographicSize(layoutViewportSize.x, layoutViewportSize.y);
+      restoreReferenceViewport = true;
+   }
+
    sprite->UpdateMatrixForUI(uiCamera_.get(), texture, anchorPoint, screenWidth, screenHeight);
+   if (restoreReferenceViewport) {
+      uiCamera_->SetOrthographicSize(uiViewportSize_.x, uiViewportSize_.y);
+   }
 
    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle = texture->GetTextureSrvHandleGPU();
 

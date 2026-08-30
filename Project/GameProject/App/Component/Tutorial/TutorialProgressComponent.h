@@ -13,6 +13,7 @@ namespace App {
 class CharacterJump;
 class CharacterLanding;
 class PlanetSwitcher;
+class VehicleInputComponent;
 class VehicleLandingBoost;
 
 /// @brief 基本操作から惑星間ジャンプと成功着地までを段階的に案内する
@@ -36,11 +37,11 @@ public:
    /// @param deltaTime ゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
-   /// @brief 対象プレイヤー、目標惑星、完了後遷移をJSONへ保存する
+   /// @brief 対象プレイヤー、目標惑星、表示フェード、完了後遷移をJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;
 
-   /// @brief JSONから対象プレイヤー、目標惑星、完了後遷移を読み込む
+   /// @brief JSONから対象プレイヤー、目標惑星、表示フェード、完了後遷移を読み込む
    /// @param data 設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
@@ -59,8 +60,17 @@ private:
       Complete,
    };
 
+   enum class GuideFadeState {
+      Visible,
+      FadingOut,
+      FadingIn,
+   };
+
    void SetPhase(Phase phase);
-   void UpdateGuideText();
+   int GetNormalizedTargetPlanetIndex() const;
+   void NormalizeTargetPlanetIndex();
+   void UpdateGuideText(float deltaTime);
+   void ApplyGuideOpacity();
    void HandleLandingResult();
    std::string BuildGuideText() const;
    const char* GetPhaseName() const;
@@ -69,15 +79,21 @@ private:
    std::string nextScene_ = "GameTest";
    int targetPlanetIndex_ = 1;
    float completionDelay_ = 2.5f;
+   float guideFadeDuration_ = 0.2f;
    float completionElapsed_ = 0.0f;
    Phase phase_ = Phase::Steering;
+   GuideFadeState guideFadeState_ = GuideFadeState::Visible;
    CharacterJump* characterJump_ = nullptr;
    CharacterLanding* characterLanding_ = nullptr;
    PlanetSwitcher* planetSwitcher_ = nullptr;
+   VehicleInputComponent* vehicleInput_ = nullptr;
    VehicleLandingBoost* landingBoost_ = nullptr;
    GameEngine::UITextComponent* guideText_ = nullptr;
    std::string displayedText_;
+   std::string pendingText_;
    std::string landingFeedback_;
+   float guideBaseOpacity_ = 1.0f;
+   float guideVisibility_ = 1.0f;
    bool usedPitch_ = false;
    bool usedRoll_ = false;
    bool wasGrounded_ = true;

@@ -3,6 +3,7 @@
 #include "Object/Component/IObjectComponent.h"
 #include "Utility/VectorMath.h"
 #include <array>
+#include <cstddef>
 #include <string>
 
 namespace GameEngine {
@@ -44,11 +45,14 @@ public:
 #endif
 
 private:
-   bool ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld);
+   void ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld);
    bool CaptureBaseVisualStates();
+   bool IsOptionAvailable(std::size_t optionIndex) const;
+   bool SelectInitialOption();
+   void MoveSelection(int direction);
    void RefreshSelectionText();
    const std::string& GetSelectedSceneName() const;
-   void ApplyStartReaction(size_t optionIndex);
+   void ApplyStartReaction(std::size_t optionIndex);
 
    std::string tutorialOptionObjectId_ = "UIText:StartPrompt";
    std::string stageOptionObjectId_ = "UIText:StageStartPrompt";
@@ -68,6 +72,7 @@ private:
    bool startRequested_ = false;
    bool navigationLatched_ = false;
    bool hasBaseVisualStates_ = false;
+   bool legacySingleOption_ = false;
 };
 
 } // namespace App

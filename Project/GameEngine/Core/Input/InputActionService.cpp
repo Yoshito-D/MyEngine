@@ -287,6 +287,11 @@ bool SharesPhysicalControl(const InputBinding& left, const InputBinding& right) 
    });
 }
 
+bool ContainsPhysicalControl(const InputBinding& binding, const PhysicalControl& target) {
+   const auto controls = GetPhysicalControls(binding);
+   return std::find(controls.begin(), controls.end(), target) != controls.end();
+}
+
 bool FindSingleChangedControl(
    const InputBinding& previous,
    const InputBinding& replacement,
@@ -675,12 +680,20 @@ bool InputActionService::ApplyBinding(
    const bool changesSingleControl = FindSingleChangedControl(
       previousTargetBinding, binding, previousControl, replacementControl);
 
-   // マップをまたいで同じ物理入力が二重登録されないよう、全アクションを走査する。
+   // アクションマップは利用コンテキストの境界であり、UIとGameplayのように
+   // 同じ物理入力を共有できるため、競合解決は同一マップ内だけに限定する。
    for (auto& [key, action] : actions_) {
       (void)key;
+      if (action.map != target->map) {
+         continue;
+      }
       for (InputBinding& existing : action.bindings) {
          const bool isTarget = &action == target && &existing == &target->bindings[bindingIndex];
-         if (!isTarget && SharesPhysicalControl(existing, binding)) {
+         // 複合軸の片側変更時は、変更していない側の既存共有を競合としない。
+         const bool conflictsWithReplacement = changesSingleControl
+            ? ContainsPhysicalControl(existing, replacementControl)
+            : SharesPhysicalControl(existing, binding);
+         if (!isTarget && conflictsWithReplacement) {
             if (!replaceConflict) { return false; }
             if (!changesSingleControl ||
                 !ReplacePhysicalControl(existing, replacementControl, previousControl)) {

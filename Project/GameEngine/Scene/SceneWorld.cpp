@@ -221,12 +221,23 @@ void SceneWorld::RestoreLegacyEntries(const nlohmann::json& sceneData) {
    // 旧sceneObjectsは削除差分も含む。完全スナップショットへ移行する際は
    // deleted項目を生成せず、生存エントリーの埋め込み本体だけを復元する。
    if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
+      // 現行objectsのSkyboxを優先し、後から読む旧差分が全画面背景を上書きしないようにする。
+      const bool hasCurrentFormatSkybox = !skyboxes_.empty();
       for (const auto& entry : sceneData.at("sceneObjects")) {
          if (!entry.is_object() || entry.value("deleted", false) ||
             !entry.contains("object") || !entry.at("object").is_object()) {
             continue;
          }
-         RestoreObjectEntry(entry.at("object"), entry.value("sceneKey", ""));
+
+         const auto& objectData = entry.at("object");
+         const std::string sceneKey = entry.value("sceneKey", "");
+         const bool isSkybox = objectData.value("objectType", "") == "Skybox" ||
+            sceneKey.rfind("Skybox:", 0) == 0;
+         if (hasCurrentFormatSkybox && isSkybox) {
+            continue;
+         }
+
+         RestoreObjectEntry(objectData, sceneKey);
       }
    }
 
