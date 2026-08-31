@@ -12,6 +12,8 @@
 #endif
 
 namespace {
+// シーン JSON の型名からコンポーネントを生成できるよう、起動時にファクトリーを登録する。
+// 対象を UIText に限定し、互換性のないオブジェクトへエディターから追加されることを防ぐ。
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::UITextComponent::kTypeName,
    [](GameEngine::Object& object) -> GameEngine::IObjectComponent* { return object.AddComponent<GameEngine::UITextComponent>(); },
@@ -19,6 +21,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText));
 
 const char* ToAnchorName(GameEngine::UIAnchor anchor) {
+   // 列挙値そのものではなく意味のある文字列で保存し、JSON の可読性と値追加時の互換性を保つ。
    static constexpr const char* kNames[] = {
       "TopLeft", "TopCenter", "TopRight", "MiddleLeft", "MiddleCenter",
       "MiddleRight", "BottomLeft", "BottomCenter", "BottomRight"
@@ -75,20 +78,27 @@ void UITextComponent::SetText(std::string text) {
       return;
    }
    text_ = std::move(text);
+   // レイアウトの作り直しとは別に版数も進め、タイプライター等が本文変更だけを検出できるようにする。
    ++textRevision_;
    InvalidateLayout();
 }
 
 void UITextComponent::SetText(std::u8string_view text) {
+   // エンジン内部の本文は UTF-8 バイト列を std::string で保持する。
+   // ここでは文字コード変換を行わず、char8_t の所有権だけを通常文字列へコピーする。
    SetText(std::string(reinterpret_cast<const char*>(text.data()), text.size()));
 }
 
 void UITextComponent::SetStyle(const TextStyle& style) {
+   // 0 サイズや非正の行間はグリフ配置を成立させないため、外部入力の入口で安全域へ補正する。
+   // アルファ値も描画側のブレンド計算が想定する正規化範囲に限定する。
    TextStyle sanitizedStyle = style;
    sanitizedStyle.fontSize = std::max(sanitizedStyle.fontSize, 1u);
    sanitizedStyle.lineSpacing = std::max(sanitizedStyle.lineSpacing, 0.1f);
    sanitizedStyle.color.w = std::clamp(sanitizedStyle.color.w, 0.0f, 1.0f);
 
+   // 色・アンカー・描画順は既存のグリフ形状を再利用できる。
+   // フォント選択や折り返し条件など、字形配置へ影響する項目だけでキャッシュを無効化する。
    const bool layoutChanged =
       style_.fontId != sanitizedStyle.fontId ||
       style_.fontSize != sanitizedStyle.fontSize ||
@@ -154,6 +164,8 @@ nlohmann::json UITextComponent::Serialize() const {
 }
 
 void UITextComponent::Deserialize(const nlohmann::json& data) {
+   // 欠落キーは現在値を残す部分更新として扱い、古いシーンや最小設定の JSON も読み込めるようにする。
+   // 最後に SetStyle を一度だけ通すことで、値の補正とレイアウト無効化判定を通常更新と共通化する。
    TextStyle style = style_;
    if (data.contains("text") && data.at("text").is_string()) {
       SetText(data.at("text").get<std::string>());
@@ -201,6 +213,8 @@ void UITextComponent::DrawInspector() {
       return;
    }
 
+   // 複数ウィジェットの編集結果を一時値へ集約し、フレーム末尾に一括適用する。
+   // これにより、途中状態ごとにレイアウトキャッシュを何度も破棄せずに済む。
    TextStyle editedStyle = style_;
    std::string editedText = text_;
    if (ImGuiHelper::DrawMultilineText(ImGuiHelper::Localize({ "テキスト", "Text" }), editedText, 4096)) {

@@ -230,11 +230,6 @@ void Renderer::SyncRenderTargetSizeToDevice() {
 }
 
 void Renderer::BeginFrame() {
-   // コマンド生成時には最新のGPUハンドルを参照できるよう、ライトを先にGPUレイアウトへ詰める。
-   if (lightManager_) {
-	  lightManager_->UpdateStructureBuffer();
-   }
-
    // 各パスのキューはフレーム単位。テキストだけは全コマンド確定後に一括アップロードするため、
    // CPU側の頂点・インデックス蓄積もここで開始する。
    opaqueCommands_.clear();
@@ -242,12 +237,20 @@ void Renderer::BeginFrame() {
    postProcessCommands_.clear();
    textRenderer_->BeginFrame();
 
-   // 以降の登録処理と即時描画は、最終バックバッファではなくHDR中間面へ積む。
-   offscreenRenderTarget_->PreDraw(true);
-
 #ifdef USE_IMGUI
    imGuiManager_->BeginFrame();
+   if (editorController_) {
+	  editorController_->BeginEditorFrame();
+   }
 #endif
+
+   // エディターの遅延操作を反映した最新状態をGPUレイアウトへ詰める。
+   if (lightManager_) {
+	  lightManager_->UpdateStructureBuffer();
+   }
+
+   // 以降の登録処理と即時描画は、最終バックバッファではなくHDR中間面へ積む。
+   offscreenRenderTarget_->PreDraw(true);
 
    // 初期パイプライン設定（パイプライン名とブレンドモードをリセット）
    currentPipelineName_ = "";
@@ -723,7 +726,6 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 void Renderer::EndFrame() {
 #ifdef USE_IMGUI
    if (editorController_) {
-	  editorController_->BeginEditorFrame();
 	  editorController_->ShowPlayModeToolbar();
 	  editorController_->ShowAssetWindow();
 	  editorController_->ShowInspectorWindow();

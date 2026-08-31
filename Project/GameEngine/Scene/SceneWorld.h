@@ -39,6 +39,11 @@ public:
    /// @return 対応するオブジェクト。存在しない場合はnullptr
    Object* FindObjectById(const std::string& objectId) const;
 
+   /// @brief 安定IDからパーティクルシステムを検索する
+   /// @param objectId JSONに保存されたオブジェクトID
+   /// @return 対応するパーティクルシステム。存在しない場合はnullptr
+   ParticleSystem* FindParticleSystemById(const std::string& objectId) const;
+
    /// @brief 表示名からオブジェクトを検索する
    /// @param objectName ObjectNameComponentの名前
    /// @return 最初に一致したオブジェクト。存在しない場合はnullptr

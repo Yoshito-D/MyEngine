@@ -20,6 +20,8 @@ constexpr float kInspectorColumnWidth = 140.0f;
 namespace App {
 
 void RaceGateComponent::OnAttach() {
+   // 形状による重なり判定とEnter/Exitの生成は汎用TriggerVolumeへ委譲し、
+   // このコンポーネントはレース固有イベントへの変換だけを担当する。
    auto* trigger = GetOwner().AddComponent<GameEngine::TriggerVolumeComponent>();
    if (trigger && trigger->GetTargetObjectId().empty()) {
       // GameTestでは追加直後からゴールとして使え、他シーンではJSONから上書きできる既定値にする。
@@ -28,6 +30,7 @@ void RaceGateComponent::OnAttach() {
 }
 
 void RaceGateComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   // シーン再読み込み後に以前のRaceManagerを参照しないよう、保存済みIDから解決し直す。
    raceManager_ = nullptr;
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
@@ -68,6 +71,7 @@ void RaceGateComponent::Update(float deltaTime) {
 }
 
 nlohmann::json RaceGateComponent::Serialize() const {
+   // enumの整数値ではなく安定した名前を保存し、列挙順の変更で既存シーンの意味が変わらないようにする。
    const char* gateTypeName = "Finish";
    switch (gateType_) {
       case GateType::Start: gateTypeName = "Start"; break;
@@ -86,6 +90,7 @@ void RaceGateComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+   // 各項目を独立して検証し、欠落・型不一致なら既定値または現在値を維持する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }
@@ -98,9 +103,11 @@ void RaceGateComponent::Deserialize(const nlohmann::json& data) {
       } else if (gateType == "StartFinish") {
          gateType_ = GateType::StartFinish;
       } else {
+         // 旧データや未知の名前は従来の既定動作であるFinishとして扱う。
          gateType_ = GateType::Finish;
       }
    }
+   // 負値をsize_tへ変換して巨大なチェックポイント番号にしないよう、unsignedだけを受理する。
    if (data.contains("checkpointIndex") && data.at("checkpointIndex").is_number_unsigned()) {
       checkpointIndex_ = data.at("checkpointIndex").get<size_t>();
    }

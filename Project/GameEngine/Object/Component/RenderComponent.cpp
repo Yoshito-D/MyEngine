@@ -9,6 +9,7 @@
 #endif
 
 namespace {
+   // 描画可能な基底オブジェクトだけへ追加できるよう型マスクを限定し、シーン復元用ファクトリーへ登録する。
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       GameEngine::RenderComponent::kTypeName,
       [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::RenderComponent>(); },
@@ -17,6 +18,7 @@ namespace {
    );
 
    const char* ToRenderSpaceName(GameEngine::RenderComponent::RenderSpace renderSpace) {
+      // 保存形式には列挙値の番号ではなく名前を使い、C++ 側の定義順を変更しても既存シーンを壊さない。
       switch (renderSpace) {
          case GameEngine::RenderComponent::RenderSpace::Screen:
             return "Screen";
@@ -56,6 +58,7 @@ const char* RenderComponent::GetTypeName() const {
 }
 
 nlohmann::json RenderComponent::Serialize() const {
+   // 描画キューの振り分けに関わる設定だけを保存し、フレームごとの一時的な描画状態は持ち込まない。
    return nlohmann::json{
       { "visible", visible },
       { "autoRender", autoRender },
@@ -65,6 +68,7 @@ nlohmann::json RenderComponent::Serialize() const {
 }
 
 void RenderComponent::Deserialize(const nlohmann::json& data) {
+   // キーごとの部分更新として扱い、旧シーンに存在しない項目は現在の既定値を維持する。
    if (data.contains("visible") && data.at("visible").is_boolean()) {
       visible = data.at("visible").get<bool>();
    }
@@ -94,6 +98,7 @@ void RenderComponent::DrawInspector() {
       ImGuiHelper::Localize({ "ワールド", "World" }),
       ImGuiHelper::Localize({ "スクリーン", "Screen" })
    };
+   // UI 上の並びを列挙値へ暗黙依存させず、表示項目との対応をここで明示する。
    int renderSpaceIndex = (renderSpace == RenderSpace::Screen) ? 1 : 0;
    if (ImGui::Combo(ImGuiHelper::Localize({ "描画空間", "Render Space" }), &renderSpaceIndex, renderSpaceItems, 2)) {
       renderSpace = (renderSpaceIndex == 1) ? RenderSpace::Screen : RenderSpace::World;

@@ -30,6 +30,8 @@ GameEngine::Vector3 GetWorldPosition(const GameEngine::Object& object) {
 namespace App {
 
 void RaceGoalDistanceTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   // シーンをまたいで無効になる参照を先に破棄し、それぞれの保存済みIDから独立して解決する。
+   // 一部を解決できない場合はUpdate側の表示条件で安全に非表示へ退避する。
    raceManager_ = nullptr;
    playerObject_ = nullptr;
    goalObject_ = nullptr;
@@ -40,6 +42,7 @@ void RaceGoalDistanceTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneW
    playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
    goalObject_ = sceneWorld.FindObjectById(goalObjectId_);
 
+   // 再読み込み直後に前シーンの距離文字列が残らないよう、状態評価前はいったん空表示にする。
    if (HasOwner()) {
       if (auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>()) {
          text->SetText("");
@@ -66,6 +69,8 @@ void RaceGoalDistanceTextComponent::Update(float deltaTime) {
       return;
    }
 
+   // コース上の経路長ではなく、両オブジェクト間のワールド空間上の直線距離を
+   // シーン構成に依存しない簡潔な残距離指標として使用する。
    const float distanceMeters =
       (GetWorldPosition(*goalObject_) - GetWorldPosition(*playerObject_)).Length();
    // 不正なTransform値を文字列化してUIへ伝播させず、そのフレームだけ非表示にする。
@@ -73,10 +78,12 @@ void RaceGoalDistanceTextComponent::Update(float deltaTime) {
       text->SetText("");
       return;
    }
+   // 小数距離はformatの丸めに任せ、HUDでは読み取りやすい整数メートルへ統一する。
    text->SetText(std::format("{:.0f}m", std::max(distanceMeters, 0.0f)));
 }
 
 nlohmann::json RaceGoalDistanceTextComponent::Serialize() const {
+   // 実行時ポインターはシーン再構築後に無効となるため、再解決に必要なIDだけを保存する。
    return nlohmann::json{
       { "raceManagerId", raceManagerId_ },
       { "playerObjectId", playerObjectId_ },
@@ -88,6 +95,7 @@ void RaceGoalDistanceTextComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+   // 参照IDは個別に読み込み、欠落・型不一致の項目では既定値または現在値を維持する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }

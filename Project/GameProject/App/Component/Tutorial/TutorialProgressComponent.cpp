@@ -20,6 +20,8 @@
 namespace App {
 
 void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   // シーン再読み込み前の参照を残さず、同じプレイヤーに属する一連の状態提供元を
+   // 設定IDからまとめて解決する。案内先UITextだけはこのコンポーネントの所有者から取得する。
    characterJump_ = nullptr;
    characterLanding_ = nullptr;
    planetSwitcher_ = nullptr;
@@ -36,17 +38,21 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
       vehicleInput_ = playerObject->GetComponent<VehicleInputComponent>();
       landingBoost_ = playerObject->GetComponent<VehicleLandingBoost>();
    }
+   // 惑星候補はシーン読み込み後に確定するため、この時点で設定値を実在範囲へ補正する。
    NormalizeTargetPlanetIndex();
 
+   // 進行状況はシーン設定ではなくプレイ中だけの状態として扱い、再読み込み時は最初から開始する。
    phase_ = Phase::Steering;
    completionElapsed_ = 0.0f;
    usedPitch_ = false;
    usedRoll_ = false;
+   // 現在の接地状態を基準にして、読み込み直後の接地を新規着地と誤判定しないようにする。
    wasGrounded_ = characterLanding_ ? characterLanding_->IsGrounded() : true;
    sceneChangeRequested_ = false;
    landingFeedback_.clear();
    displayedText_.clear();
    pendingText_.clear();
+   // シーンで設定された元のアルファを最大不透明度として保持し、フェードで上書きしない。
    guideBaseOpacity_ = guideText_ ? guideText_->GetStyle().color.w : 1.0f;
    guideVisibility_ = 1.0f;
    guideFadeState_ = GuideFadeState::Visible;
@@ -54,6 +60,8 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
 }
 
 void TutorialProgressComponent::Update(float deltaTime) {
+   // いずれかの状態提供元が欠けた構成では一部条件だけで進行させず、
+   // 誤った完了やシーン遷移を防ぐためチュートリアル全体を停止する。
    if (!guideText_ || !characterJump_ || !characterLanding_ || !planetSwitcher_ ||
       !vehicleInput_ || !landingBoost_) {
       return;
@@ -72,6 +80,7 @@ void TutorialProgressComponent::Update(float deltaTime) {
 
    switch (phase_) {
       case Phase::Steering:
+         // 小さなスティックドリフトを操作達成として扱わないようデッドゾーンを設ける。
          if (std::abs(steerInput) >= 0.35f) {
             SetPhase(Phase::Jump);
          }
@@ -83,6 +92,7 @@ void TutorialProgressComponent::Update(float deltaTime) {
          break;
       case Phase::AirControl:
          if (isAirborne) {
+            // ピッチとロールは同一フレームで行う必要がないため、空中での達成を個別に保持する。
             usedPitch_ = usedPitch_ || std::abs(pitchInput) >= 0.35f;
             usedRoll_ = usedRoll_ || std::abs(rollInput) >= 0.35f;
             if (usedPitch_ && usedRoll_) {
@@ -92,12 +102,14 @@ void TutorialProgressComponent::Update(float deltaTime) {
          break;
       case Phase::PlanetTransfer:
       case Phase::LandingPractice:
+         // 接地中の毎フレームではなく空中から接地へ変わった瞬間だけ、直近の着地結果を評価する。
          if (landedThisFrame) {
             HandleLandingResult();
          }
          break;
       case Phase::Complete:
          completionElapsed_ += std::max(deltaTime, 0.0f);
+         // 遷移要求は一度だけ発行し、遅延中は完了メッセージを読める時間を確保する。
          if (!sceneChangeRequested_ && !nextScene_.empty() && completionElapsed_ >= completionDelay_) {
             sceneChangeRequested_ = true;
             GameEngine::BaseScene::SetNextSceneName(nextScene_);
@@ -112,6 +124,8 @@ void TutorialProgressComponent::Update(float deltaTime) {
 }
 
 nlohmann::json TutorialProgressComponent::Serialize() const {
+   // 実行時の達成状況は保存せず、再開時に最初から案内できるよう設定値だけを永続化する。
+   // 目標惑星は現在の候補数に合わせた値を保存し、無効なインデックスをシーンへ残さない。
    return nlohmann::json{
       { "playerObjectId", playerObjectId_ },
       { "targetPlanetIndex", GetNormalizedTargetPlanetIndex() },
@@ -125,6 +139,7 @@ void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+   // 各設定を独立して検証し、欠落または型不一致なら既定値・現在値を維持する。
    if (data.contains("playerObjectId") && data.at("playerObjectId").is_string()) {
       playerObjectId_ = data.at("playerObjectId").get<std::string>();
    }
@@ -138,6 +153,7 @@ void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
       completionDelay_ = std::max(data.at("completionDelay").get<float>(), 0.0f);
    }
    if (data.contains("guideFadeDuration") && data.at("guideFadeDuration").is_number()) {
+      // フェード時間は後段の除数になるため、0以下を許可しない。
       guideFadeDuration_ = std::max(data.at("guideFadeDuration").get<float>(), 0.0001f);
    }
 }
@@ -148,12 +164,14 @@ void TutorialProgressComponent::SetPhase(Phase phase) {
    }
    phase_ = phase;
    if (phase_ == Phase::Complete) {
+      // 完了フェーズへ入った瞬間を遷移待ち時間の起点にする。
       completionElapsed_ = 0.0f;
    }
 }
 
 int TutorialProgressComponent::GetNormalizedTargetPlanetIndex() const {
    if (!planetSwitcher_) {
+      // 参照解決前でも負値だけは除外し、シリアライズやインスペクターから安全に利用できるようにする。
       return std::max(targetPlanetIndex_, 0);
    }
    const int planetCount = planetSwitcher_->GetPlanetCount();
@@ -173,6 +191,7 @@ void TutorialProgressComponent::UpdateGuideText(float deltaTime) {
    const std::string guide = BuildGuideText();
 
    if (displayedText_.empty()) {
+      // 初回表示は空文字からのフェードを挟まず、読み込み直後から案内を読める状態にする。
       guideText_->SetText(guide);
       displayedText_ = guide;
       pendingText_.clear();
@@ -199,6 +218,7 @@ void TutorialProgressComponent::UpdateGuideText(float deltaTime) {
    if (guideFadeState_ == GuideFadeState::FadingOut) {
       guideVisibility_ = std::max(guideVisibility_ - visibilityStep, 0.0f);
       if (guideVisibility_ <= 0.0f) {
+         // 文面の差し替えを完全透明時に限定し、異なる案内が途中で瞬間的に切り替わるのを隠す。
          guideText_->SetText(pendingText_);
          displayedText_ = std::move(pendingText_);
          pendingText_.clear();
@@ -220,17 +240,22 @@ void TutorialProgressComponent::ApplyGuideOpacity() {
    const float easedVisibility = GameEngine::EvaluateUIEasing(
       guideVisibility_,
       GameEngine::UIEasingType::EaseInOutSine);
+   // シーン側で調整された基準アルファを保ったまま、遷移分の係数だけを掛ける。
    guideText_->SetOpacity(guideBaseOpacity_ * easedVisibility);
 }
 
 void TutorialProgressComponent::HandleLandingResult() {
    const int landedPlanetIndex = planetSwitcher_->GetCurrentPlanetIndex();
+   // 惑星間移動の課題では着地品質より先に着地先を検証する。
+   // 元の惑星へ戻った場合は最終課題のまま再挑戦させ、成功着地でも完了扱いにしない。
    if (phase_ == Phase::PlanetTransfer && landedPlanetIndex != targetPlanetIndex_) {
       landingFeedback_ =
          "元の惑星に戻りました。正面の目標惑星へ向けて、もう一度ジャンプしましょう。";
       return;
    }
 
+   // VehicleLandingBoostが同じ着地イベントで確定した結果を使い、
+   // 成功時だけ完了へ進め、未達時は具体的な修正点を示す練習フェーズへ移す。
    switch (landingBoost_->GetLastLandingResult()) {
       case LandingResult::Success:
          landingFeedback_.clear();

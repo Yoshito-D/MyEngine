@@ -22,18 +22,28 @@ public:
    static constexpr const char* kTypeName = "VehicleSpeedGaugeUIComponent";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両速度ゲージ", "Vehicle Speed Gauge" };
 
+   /// @brief コンポーネント型名を取得する
+   /// @return VehicleSpeedGaugeUIComponent
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief プレイヤー、レース、枠、速度テキストへの参照を解決する
+   /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 速度比率に応じてゲージの幅とUV範囲を更新する
+   /// @param deltaTime ゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
+   /// @brief 参照先、ゲージ寸法、応答速度、単位変換係数をJSONへ保存する
+   /// @return 保存用JSON
    nlohmann::json Serialize() const override;
+
+   /// @brief JSONから参照先とゲージ表示設定を読み込む
+   /// @param data ゲージ設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+   /// @brief ゲージ設定と参照解決状態をインスペクターへ表示する
    void DrawInspector() override;
 #endif
 

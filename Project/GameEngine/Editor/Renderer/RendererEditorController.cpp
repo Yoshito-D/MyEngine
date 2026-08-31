@@ -226,11 +226,21 @@ void RendererEditorController::Initialize(AssetManager* assetManager) {
 void RendererEditorController::BeginEditorFrame() {
    auto* editorContext = GetActiveEditorContext();
    if (!editorContext) {
+      editorSceneReloadRequested_ = false;
+      editorSceneReloadFilePath_.clear();
       return;
    }
 
    // 前フレームのUIが参照し終えた後で、遅延削除されたオブジェクトを安全に破棄する。
    editorContext->GetObjectStore().FlushDeferredDeletes();
+   if (editorSceneReloadRequested_) {
+      const bool reloadsActiveScene = editorSceneReloadFilePath_ == editorContext->GetSceneFilePath();
+      editorSceneReloadRequested_ = false;
+      editorSceneReloadFilePath_.clear();
+      if (reloadsActiveScene) {
+         editorContext->Load();
+      }
+   }
    editorContext->HandleEditorShortcuts();
 }
 
@@ -299,7 +309,9 @@ void RendererEditorController::ShowAssetWindow() {
       }
       ImGui::SameLine();
       if (ImGui::Button(Tr("シーンを再読み込み", "Reload Scene"))) {
-         editorContext->Load();
+         // 描画コマンドが保持するポインターを破棄しないよう、次フレーム開始まで再読込を遅延する。
+         editorSceneReloadRequested_ = true;
+         editorSceneReloadFilePath_ = editorContext->GetSceneFilePath();
       }
       ImGui::EndDisabled();
       ImGui::SameLine();

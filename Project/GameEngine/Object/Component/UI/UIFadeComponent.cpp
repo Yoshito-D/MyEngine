@@ -11,6 +11,7 @@
 #endif
 
 namespace {
+// フェードは UIText の不透明度を操作するコンポーネントなので、登録先の型も UIText に限定する。
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::UIFadeComponent::kTypeName,
    [](GameEngine::Object& object) -> GameEngine::IObjectComponent* { return object.AddComponent<GameEngine::UIFadeComponent>(); },
@@ -25,6 +26,8 @@ const char* UIFadeComponent::GetTypeName() const {
 }
 
 void UIFadeComponent::OnAttach() {
+   // 生成直後から有効なオブジェクトでは OnEnable が別途呼ばれない経路もあるため、
+   // アタッチ時と再有効化時の双方で自動再生条件を評価する。
    if (playOnEnable) {
       Restart();
    }
@@ -40,6 +43,7 @@ void UIFadeComponent::Update(float deltaTime) {
    if (!playing_) {
       return;
    }
+   // 時計の巻き戻りや異常な負値でアニメーション位相が逆行しないよう、加算値を 0 以上に制限する。
    elapsed_ += std::max(deltaTime, 0.0f);
    // 共通評価器を通し、TransformTweenと同じLoop/PingPongの時間規則を使う。
    const UIPlaybackSample sample = EvaluateUIPlayback(elapsed_, delay, duration, playbackMode);
@@ -50,6 +54,7 @@ void UIFadeComponent::Update(float deltaTime) {
 }
 
 void UIFadeComponent::Play() {
+   // Play は一時停止位置からの再開、Restart は先頭からの再生として役割を分ける。
    playing_ = true;
 }
 
@@ -60,6 +65,7 @@ void UIFadeComponent::Pause() {
 void UIFadeComponent::Restart() {
    elapsed_ = 0.0f;
    playing_ = true;
+   // delay 中も開始値が確実に表示されるよう、次回 Update を待たずに初期状態を反映する。
    Apply(0.0f);
 }
 
@@ -76,6 +82,8 @@ nlohmann::json UIFadeComponent::Serialize() const {
 }
 
 void UIFadeComponent::Deserialize(const nlohmann::json& data) {
+   // JSON はエディター外からも編集できるため、補間器が前提とする範囲へ復元時に正規化する。
+   // duration は 0 除算を避けられる最小正値を保証し、列挙値は定義済み範囲から出さない。
    startOpacity = std::clamp(data.value("startOpacity", startOpacity), 0.0f, 1.0f);
    endOpacity = std::clamp(data.value("endOpacity", endOpacity), 0.0f, 1.0f);
    delay = std::max(data.value("delay", delay), 0.0f);
@@ -95,6 +103,8 @@ void UIFadeComponent::Deserialize(const nlohmann::json& data) {
 }
 
 void UIFadeComponent::Apply(float progress) {
+   // 登録対象を UIText に限定しているため、テキスト側のアルファ setter を唯一の反映経路にする。
+   // setter を通すことで最終的な 0～1 の制約もコンポーネント境界で維持される。
    if (auto* textComponent = GetOwner().GetComponent<UITextComponent>()) {
       textComponent->SetOpacity(startOpacity + (endOpacity - startOpacity) * progress);
    }

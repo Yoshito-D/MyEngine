@@ -11,6 +11,7 @@
 #endif
 
 namespace {
+// Transform を持つ UI オブジェクトだけへ追加できるよう、Sprite と UIText の型マスクで登録する。
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::UITransformTweenComponent::kTypeName,
    [](GameEngine::Object& object) -> GameEngine::IObjectComponent* { return object.AddComponent<GameEngine::UITransformTweenComponent>(); },
@@ -25,6 +26,7 @@ const char* UITransformTweenComponent::GetTypeName() const {
 }
 
 void UITransformTweenComponent::OnAttach() {
+   // 初期状態ですでに有効な生成経路と、後から再有効化される経路の両方で playOnEnable を成立させる。
    if (playOnEnable) {
       Restart();
    }
@@ -40,6 +42,7 @@ void UITransformTweenComponent::Update(float deltaTime) {
    if (!playing_) {
       return;
    }
+   // 負の deltaTime で再生位置が巻き戻らないよう、実時間は前進方向だけに積算する。
    elapsed_ += std::max(deltaTime, 0.0f);
    // Fadeなど他のUIアニメーションと同じ再生規則を使い、Loop/PingPongの位相を揃える。
    const UIPlaybackSample sample = EvaluateUIPlayback(elapsed_, delay, duration, playbackMode);
@@ -50,6 +53,7 @@ void UITransformTweenComponent::Update(float deltaTime) {
 }
 
 void UITransformTweenComponent::Play() {
+   // 一時停止からの継続を担うため elapsed_ は保持する。先頭へ戻す操作は Restart が担当する。
    playing_ = true;
 }
 
@@ -60,6 +64,7 @@ void UITransformTweenComponent::Pause() {
 void UITransformTweenComponent::Restart() {
    elapsed_ = 0.0f;
    playing_ = true;
+   // delay 中も直前の姿勢を残さず、イージングを適用した正しい開始姿勢へ即座に戻す。
    Apply(EvaluateUIEasing(0.0f, easing));
 }
 
@@ -83,6 +88,8 @@ nlohmann::json UITransformTweenComponent::Serialize() const {
 }
 
 void UITransformTweenComponent::Deserialize(const nlohmann::json& data) {
+   // 保存形式は項目ごとの部分更新として読み、未保存の新規項目には現在値を使う。
+   // 時間と列挙値は評価関数の前提範囲へ制限し、不正 JSON による 0 除算や未定義モードを防ぐ。
    animatePosition = data.value("animatePosition", animatePosition);
    animateScale = data.value("animateScale", animateScale);
    animateRotation = data.value("animateRotation", animateRotation);
@@ -121,6 +128,7 @@ void UITransformTweenComponent::Apply(float progress) {
    if (!transformComponent) {
       return;
    }
+   // 有効化された軸だけを書き換え、別コンポーネントが管理する Transform 要素は保持する。
    Transform& transform = transformComponent->transform;
    if (animatePosition) {
       const Vector2 value = startPosition + (endPosition - startPosition) * progress;
