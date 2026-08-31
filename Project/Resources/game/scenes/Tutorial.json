@@ -260,8 +260,8 @@
                   ],
                   "translation": [
                      0.0,
-                     58.599998474121094,
-                     -16.100000381469727
+                     80.5,
+                     -67.80000305175781
                   ]
                },
                "viewMatrixOverride": [
@@ -2356,6 +2356,7 @@
                {
                   "data": {
                      "completionDelay": 2.5,
+                     "guideFadeDuration": 0.20000000298023224,
                      "nextScene": "GameTest",
                      "playerObjectId": "Model:Player",
                      "targetPlanetIndex": 1

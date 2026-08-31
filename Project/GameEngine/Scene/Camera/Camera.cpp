@@ -7,6 +7,8 @@
 
 namespace GameEngine {
 namespace {
+// 全カメラが同じ GraphicsDevice を利用するため、カメラ生成時に毎回依存を渡さず共有する。
+// 初期化順序は Framework が保証し、最初に登録されたデバイスをプロセス中維持する。
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
 constexpr float kMinFovY = 0.017453292f;  // 1 degree
@@ -16,6 +18,7 @@ float ClampFovY(float fovY) {
 	if (!std::isfinite(fovY)) {
 		return Camera::kDefaultFovY;
 	}
+	// 0 度／180 度付近では透視投影の tan が退化するため、実用上安全な開区間へ収める。
 	return std::clamp(fovY, kMinFovY, kMaxFovY);
 }
 }
@@ -27,6 +30,7 @@ void Camera::InitializeGraphicsDevice(GraphicsDevice* device) {
 }
 
 void Camera::Initialize(const Transform& transform, ProjectionType projectionType) {
+	// 未指定項目はウィンドウ解像度とエンジン既定値から構成し、どちらの投影方式でも即座に使用可能にする。
 	transform_ = transform;
 	fovY_ = kDefaultFovY;
 	aspectRatio_ = static_cast<float>(Window::kResolutionWidth) / static_cast<float>(Window::kResolutionHeight);
@@ -36,6 +40,7 @@ void Camera::Initialize(const Transform& transform, ProjectionType projectionTyp
 	orthographicHeight_ = static_cast<float>(Window::kResolutionHeight);
 	projectionType_ = projectionType;
 
+	// カメラ位置は毎フレーム更新するため、アップロードバッファを永続マップしたまま保持する。
 	cameraResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(CameraForGPU));
 	cameraResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGpuData_));
 
@@ -53,6 +58,7 @@ void Camera::Update() {
 	Matrix4x4 translateMatrix = MakeTranslateMatrix(transform_.translation);
 	Matrix4x4 worldMatrix = scaleMatrix * rotationMatrix * translateMatrix;
 
+	// カメラ自身のワールド変換の逆行列が、ワールドをカメラ空間へ移すビュー行列となる。
 	Matrix4x4 viewMatrix = worldMatrix.Inverse();
 	Matrix4x4 projectionMatrix = {};
 
@@ -62,6 +68,7 @@ void Camera::Update() {
 			break;
 
 		case ProjectionType::Orthographic:
+			// UI 座標の上方向を正に保つため、上端・下端をこのエンジンの画面座標規約に合わせて渡す。
 			projectionMatrix = MakeOrthographicMatrix(
 				-orthographicWidth_ * 0.5f,
 				orthographicHeight_ * 0.5f,
@@ -73,6 +80,7 @@ void Camera::Update() {
 			break;
 	}
 
+	// エンジンの行ベクトル規約に合わせて View * Projection の順に合成する。
 	viewMatrix_ = viewMatrix;
 	viewProjectionMatrix_ = viewMatrix * projectionMatrix;
 
@@ -80,6 +88,7 @@ void Camera::Update() {
 }
 
 void Camera::SetOrthographicSize(float width, float height) {
+	// 0 以下の寸法は射影行列の除算を成立させないため、現在の有効設定を維持する。
 	if (width <= 0.0f || height <= 0.0f) {
 		return;
 	}
@@ -91,6 +100,7 @@ void Camera::SetOrthographicSize(float width, float height) {
 }
 
 Matrix4x4 Camera::GetProjectionMatrix() const {
+	// 射影方式やクリップ設定の現在値から再構築し、キャッシュされた ViewProjection からの逆算を避ける。
 	switch (projectionType_) {
 		case ProjectionType::Perspective:
 			return MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
@@ -110,10 +120,12 @@ Matrix4x4 Camera::GetProjectionMatrix() const {
 
 void Camera::SetCameraForGpuData() {
 	if (cameraForGpuData_ == nullptr) return;
+	// 行列は描画コマンド側で別途バインドし、この定数バッファにはライティング等が使う視点位置だけを置く。
 	cameraForGpuData_->worldPosition = transform_.translation;
 }
 
 Vector3 Camera::GetForward() const {
+	// 平行移動を含めず、現在選択中の Euler／Quaternion 回転源だけでローカル +Z 軸をワールド方向へ移す。
 	Matrix4x4 rotationMatrix = MakeRotateMatrix(transform_.GetActiveQuaternion());
 	Vector4 forward = TransformVectorByMatrix({ 0.0f, 0.0f, 1.0f, 1.0f }, rotationMatrix);
 	return { forward.x, forward.y, forward.z };

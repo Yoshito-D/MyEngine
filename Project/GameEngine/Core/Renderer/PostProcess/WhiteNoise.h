@@ -79,11 +79,11 @@ public:
    /// @return Current parameters.
    const WhiteNoiseParams& GetParams() const { return params_; }
 
-   /// @brief Sets the time passed to the black noise shader.
+   /// @brief Sets the time passed to the white noise shader.
    /// @param time Time in seconds.
    void SetTime(float time);
 
-   /// @brief Gets the time passed to the black noise shader.
+   /// @brief Gets the time passed to the white noise shader.
    /// @return Time in seconds.
    float GetTime() const { return params_.time; }
 

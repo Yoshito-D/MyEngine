@@ -78,6 +78,8 @@ private:
    std::string editorSelectedSceneName_;
    std::string editorReleaseStartSceneName_;
    std::string editorSceneCatalogStatus_;
+   bool editorSceneReloadRequested_ = false;
+   std::filesystem::path editorSceneReloadFilePath_;
    const Object* editorComponentSaveStatusObject_ = nullptr;
    std::string editorComponentSaveStatus_;
 

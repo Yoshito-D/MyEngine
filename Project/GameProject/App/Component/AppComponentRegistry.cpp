@@ -38,6 +38,8 @@ namespace {
 
 template <typename T>
 bool RegisterAppComponent(GameEngine::ObjectTypeMask supportedObjectTypes = GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)) {
+   // 各コンポーネントが公開する型名・表示名を共通のファクトリー形式へ束ねる。
+   // デフォルトを Model に限定し、対応型を明示していないゲームプレイ機能が不適切な UI 等へ付くのを防ぐ。
    return GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       T::kTypeName,
       [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
@@ -49,6 +51,7 @@ bool RegisterAppComponent(GameEngine::ObjectTypeMask supportedObjectTypes = Game
 
 // 静的初期化でゲーム固有型を登録し、シーン復元時に型名だけから生成できるようにする。
 const bool kRegisteredAppComponents[] = {
+   // UI 専用機能や管理オブジェクトは個別の型マスクを指定し、エディターの追加候補と JSON 復元を同じ制約に揃える。
    RegisterAppComponent<App::CameraGravityBridge>(),
    RegisterAppComponent<App::CameraModeSwitcher>(),
    RegisterAppComponent<App::ScreenSpaceBasis>(),

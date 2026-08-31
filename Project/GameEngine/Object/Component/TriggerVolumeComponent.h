@@ -11,12 +11,13 @@ class Object;
 class SceneWorld;
 
 /// @brief 指定オブジェクトの侵入・滞在・退出を検出する非物理トリガー
+/// @details 対象ObjectのTransform原点を点として判定する。両Objectのローカルtranslationを直接比較し、親行列・回転・スケールは合成しない。
 class TriggerVolumeComponent final : public IObjectComponent {
 public:
    /// @brief 対応するトリガー形状
    enum class Shape {
-      Sphere,
-      Aabb,
+      Sphere, ///< 中心と半径で判定する球
+      Aabb, ///< Transformの各座標軸に平行な半幅で判定する直方体
    };
 
    static constexpr const char* kTypeName = "TriggerVolumeComponent";
@@ -48,6 +49,7 @@ public:
 
    /// @brief 重なり判定の対象オブジェクトIDを設定する
    /// @param targetObjectId シーンJSON上の安定したオブジェクトID
+   /// @details 参照先は次回UpdateでSceneWorldから解決される
    void SetTargetObjectId(std::string targetObjectId) { targetObjectId_ = std::move(targetObjectId); }
 
    /// @brief 重なり判定の対象オブジェクトIDを取得する

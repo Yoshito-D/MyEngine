@@ -11,6 +11,8 @@
 
 namespace {
 
+// モデルごとに独立したマテリアルインスタンスを割り当てるためのプロセス内通番。
+// アセット名ではなくインスタンス名なので、同じモデルアセットを複数配置しても編集内容が混線しない。
 uint64_t sAutoModelMaterialCounter = 0;
 
 std::string BuildAutoModelMaterialName() {
@@ -18,6 +20,8 @@ std::string BuildAutoModelMaterialName() {
 }
 
 std::string BuildDefaultModelName(const std::vector<GameEngine::Model*>& registeredModels) {
+   // シーン内で参照しやすい表示名を付けるため、現在生存しているモデルとの重複だけを調べる。
+   // 削除済み番号は再利用できるため、単調増加カウンターより不要な番号の肥大化を避けられる。
    auto exists = [&registeredModels](const std::string& name) {
 	  for (const auto* model : registeredModels) {
 		 if (model && model->GetObjectName() == name) {
@@ -42,6 +46,8 @@ namespace GameEngine {
 std::vector<Model*> Model::sRegisteredModels_{};
 
 Model::Model() {
+   // Model が描画可能であるという前提をどの生成経路でも満たすよう、
+   // 変換・マテリアル・メッシュ・描画の必須コンポーネントをコンストラクタで揃える。
    auto* transformComponent = AddComponent<TransformComponent>();
    transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
    if (auto* materialComponent = AddComponent<MaterialComponent>()) {
@@ -62,6 +68,7 @@ void Model::UnregisterModel(Model* model) {
 	  return;
    }
 
+   // 登録はコンストラクタで一度だけ行うため、最初の一致を消せば一覧の整合性を回復できる。
    auto it = std::find(sRegisteredModels_.begin(), sRegisteredModels_.end(), model);
    if (it != sRegisteredModels_.end()) {
 	  sRegisteredModels_.erase(it);
@@ -101,6 +108,7 @@ Model& Model::Create() {
 }
 
 const Vector3& Model::GetPosition() const {
+   // 参照を返す API のため、コンポーネント欠落時も寿命が切れない静的既定値を返す。
    static const Vector3 zero = Vector3(0.0f, 0.0f, 0.0f);
    const auto* transformComponent = GetComponent<TransformComponent>();
 
@@ -178,9 +186,11 @@ void Model::SetUseQuaternion(bool use) {
 
    auto& transform = transformComponent->transform;
    if (use) {
+      // 現在の Euler 姿勢から Quaternion を作ってから参照元を切り替え、表示姿勢の跳ねを防ぐ。
 	  transform.SetRotationEuler(transform.rotation);
 	  transform.rotationSource = Transform::RotationSource::Quaternion;
    } else {
+      // Quaternion 側で更新された最終姿勢を Euler 表現へ写し、切り替え後も同じ向きを維持する。
 	  transform.rotation = transform.GetActiveEuler();
 	  transform.rotationSource = Transform::RotationSource::Euler;
    }
@@ -230,6 +240,8 @@ void Model::UpdateMatrix(Camera* camera) {
 	  return;
    }
 
+   // 通常はローカル Transform から組み立てるが、物理演算などが最終行列を供給した場合は
+   // その結果を優先し、二重にスケール・回転・平行移動を適用しない。
    Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->transform);
 
    if (transformComponent->HasWorldMatrixOverride()) {
@@ -239,12 +251,14 @@ void Model::UpdateMatrix(Camera* camera) {
    // modelAssetのrootNode.localMatrixを掛ける
    ModelAsset* modelAsset = GetComponent<MeshComponent>()->GetModelAsset();
    if (modelAsset) {
+      // スキニングモデルではボーン階層がルート変換を担うため、ここで再適用すると二重変換になる。
 	  if (!modelAsset->HasSkinningData()) {
 		 worldMatrix = modelAsset->GetRootNode().localMatrix * worldMatrix;
 	  }
    }
 
    if (transformComponent->useParentMatrix) {
+      // 親行列は World・WVP・法線変換の全てへ同じ順序で反映し、描画位置とライティングを一致させる。
 	  Matrix4x4 wVPMatrix = worldMatrix * transformComponent->parentMatrix * camera->GetViewProjectionMatrix();
 	  transformationMatrix->GetTransformationMatrixData()->world = worldMatrix * transformComponent->parentMatrix;
 	  transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;

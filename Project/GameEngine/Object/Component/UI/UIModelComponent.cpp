@@ -16,6 +16,7 @@
 #endif
 
 namespace {
+// 3D Model を UI として扱う付加コンポーネント。通常の Sprite／Text には適用しないため Model に限定する。
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::UIModelComponent::kTypeName,
    [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
@@ -25,6 +26,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model));
 
 const char* ToProjectionTypeName(GameEngine::UIModelComponent::ProjectionType projectionType) {
+   // 列挙値ではなく名前を永続化し、JSON を手編集しやすくするとともに値順の変更から保存形式を守る。
    return projectionType == GameEngine::UIModelComponent::ProjectionType::Perspective
       ? "Perspective"
       : "Orthographic";
@@ -47,6 +49,8 @@ const char* ToAnchorPointName(GameEngine::UIModelComponent::AnchorPoint anchorPo
 }
 
 GameEngine::Vector2 GetAnchorDirection(GameEngine::UIModelComponent::AnchorPoint anchorPoint) {
+   // 画面中心を原点とするため、各アンカーを -1／0／1 の方向係数へ変換する。
+   // 実際の位置は解像度の半分を掛けて算出し、解像度変更にも追従させる。
    using AnchorPoint = GameEngine::UIModelComponent::AnchorPoint;
    switch (anchorPoint) {
       case AnchorPoint::TopLeft: return { -1.0f, 1.0f };
@@ -71,6 +75,7 @@ const char* UIModelComponent::GetTypeName() const {
 
 void UIModelComponent::OnAttach() {
    if (auto* renderComponent = GetOwner().GetComponent<RenderComponent>()) {
+      // UI モデルは専用カメラの画面空間パスへ送り、ゲーム画面向けポストエフェクトの影響を受けないようにする。
       renderComponent->renderSpace = RenderComponent::RenderSpace::Screen;
       renderComponent->applyPostProcess = false;
    }
@@ -82,9 +87,11 @@ void UIModelComponent::ApplyLayout(const Camera& camera, uint32_t screenWidth, u
       return;
    }
 
+   // 画面サイズが変わるたびにアンカーを再計算し、固定ピクセルのオフセットだけを設定値として保持する。
    const Vector2 anchorDirection = GetAnchorDirection(anchorPoint);
    const float width = static_cast<float>(screenWidth);
    const float height = static_cast<float>(screenHeight);
+   // クリップ面と同じ深度では数値誤差で欠けるため、両面から小さな余白を取った可視範囲へ収める。
    const float safeDepth = std::clamp(depth, camera.GetNearClip() + 0.001f, camera.GetFarClip() - 0.001f);
    Vector3 anchorPosition{};
 
@@ -101,6 +108,7 @@ void UIModelComponent::ApplyLayout(const Camera& camera, uint32_t screenWidth, u
          safeDepth
       };
    } else {
+      // 平行投影では 1 UI ピクセルを 1 カメラ空間単位として扱い、解像度ベースの配置をそのまま使う。
       anchorPosition = {
          anchorDirection.x * width * 0.5f + screenOffset.x,
          anchorDirection.y * height * 0.5f + screenOffset.y,
@@ -133,6 +141,7 @@ void UIModelComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+   // キー単位の部分復元により、追加前の古いシーンではクラス既定値をそのまま利用する。
    if (data.contains("projectionType") && data.at("projectionType").is_string()) {
       projectionType = data.at("projectionType").get<std::string>() == "Perspective"
          ? ProjectionType::Perspective
@@ -161,6 +170,7 @@ void UIModelComponent::Deserialize(const nlohmann::json& data) {
       };
    }
    if (data.contains("depth") && data.at("depth").is_number()) {
+      // 実際の near／far への制限はカメラ依存なので ApplyLayout に任せ、ここでは正の距離だけ保証する。
       depth = std::max(data.at("depth").get<float>(), 0.001f);
    }
 }

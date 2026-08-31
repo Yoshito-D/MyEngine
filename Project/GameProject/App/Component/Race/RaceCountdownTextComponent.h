@@ -28,10 +28,10 @@ public:
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief レース状態に応じてカウントダウン文字列を更新する
-   /// @param deltaTime 未使用
+   /// @param deltaTime 回転・拡大・フェードの進行に使うゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
-   /// @brief 参照先とSTART文字列をJSONへ保存する
+   /// @brief 参照先、START文字列、表示アニメーション設定をJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;
 

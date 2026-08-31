@@ -64,6 +64,7 @@ public:
    /// @brief JSONからオブジェクト・パーティクル・カメラを復元する
    /// @param sceneData 読み込むシーンJSON
    /// @return 必要なシーン構造を適用できた場合はtrue
+   /// @note 描画コマンドが旧オブジェクトを参照していないフレーム境界で呼び出す
    bool LoadFromJson(const nlohmann::json& sceneData);
    /// @brief シーンJSONのヒエラルキー順を現在のオブジェクトへ適用する
    /// @param hierarchyOrderData オブジェクトIDの配列

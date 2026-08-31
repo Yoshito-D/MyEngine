@@ -292,6 +292,38 @@ bool ContainsPhysicalControl(const InputBinding& binding, const PhysicalControl&
    return std::find(controls.begin(), controls.end(), target) != controls.end();
 }
 
+bool SetPhysicalControlAtIndex(
+   InputBinding& binding,
+   size_t controlIndex,
+   const PhysicalControl& control) {
+   switch (binding.type) {
+      case InputBindingType::Key:
+         if (controlIndex != 0 || control.type != PhysicalControlType::Key) { return false; }
+         binding.key = static_cast<KeyCode>(control.value);
+         return true;
+      case InputBindingType::GamePadButton:
+         if (controlIndex != 0 || control.type != PhysicalControlType::GamePadButton) { return false; }
+         binding.gamePadButton = static_cast<GamePadButton>(control.value);
+         return true;
+      case InputBindingType::KeyAxis1D:
+         if (control.type != PhysicalControlType::Key) { return false; }
+         if (controlIndex == 0) { binding.negativeKey = static_cast<KeyCode>(control.value); return true; }
+         if (controlIndex == 1) { binding.positiveKey = static_cast<KeyCode>(control.value); return true; }
+         return false;
+      case InputBindingType::KeyAxis2D:
+         if (control.type != PhysicalControlType::Key) { return false; }
+         if (controlIndex == 0) { binding.leftKey = static_cast<KeyCode>(control.value); return true; }
+         if (controlIndex == 1) { binding.rightKey = static_cast<KeyCode>(control.value); return true; }
+         if (controlIndex == 2) { binding.upKey = static_cast<KeyCode>(control.value); return true; }
+         if (controlIndex == 3) { binding.downKey = static_cast<KeyCode>(control.value); return true; }
+         return false;
+      case InputBindingType::LeftStick:
+      case InputBindingType::RightStick:
+         return false;
+   }
+   return false;
+}
+
 bool FindSingleChangedControl(
    const InputBinding& previous,
    const InputBinding& replacement,
@@ -679,6 +711,23 @@ bool InputActionService::ApplyBinding(
    PhysicalControl replacementControl{};
    const bool changesSingleControl = FindSingleChangedControl(
       previousTargetBinding, binding, previousControl, replacementControl);
+   InputBinding resolvedTargetBinding = binding;
+
+   // 対象バインド自身は下の競合走査から除外されるため、変更先が複合軸の
+   // 未変更部分ですでに使われている場合はここで検出し、承認時は両方向を交換する。
+   if (changesSingleControl) {
+      const auto previousTargetControls = GetPhysicalControls(previousTargetBinding);
+      const auto selfConflict = std::find(
+         previousTargetControls.begin(), previousTargetControls.end(), replacementControl);
+      if (selfConflict != previousTargetControls.end()) {
+         if (!replaceConflict) { return false; }
+         const size_t selfConflictIndex = static_cast<size_t>(
+            std::distance(previousTargetControls.begin(), selfConflict));
+         if (!SetPhysicalControlAtIndex(resolvedTargetBinding, selfConflictIndex, previousControl)) {
+            return false;
+         }
+      }
+   }
 
    // アクションマップは利用コンテキストの境界であり、UIとGameplayのように
    // 同じ物理入力を共有できるため、競合解決は同一マップ内だけに限定する。
@@ -703,7 +752,7 @@ bool InputActionService::ApplyBinding(
          }
       }
    }
-   target->bindings[bindingIndex] = binding;
+   target->bindings[bindingIndex] = resolvedTargetBinding;
    return true;
 }
 

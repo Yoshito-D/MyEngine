@@ -20,6 +20,7 @@
 #include "Sprite/Sprite.h"
 #include "Text/UIText.h"
 #include "Utility/ImGuiHelper.h"
+#include "Utility/Logger.h"
 #include "ImGuizmo.h"
 #include "imgui.h"
 #include <cmath>
@@ -104,6 +105,16 @@ std::string GetSceneObjectTypeName(const Object* object) {
       return "Skybox";
    }
    return "Object";
+}
+
+bool DoesSceneObjectTypeMatch(const Object* object, const std::string& objectType) {
+   if (!object) {
+      return false;
+   }
+
+   const std::string existingObjectType = GetSceneObjectTypeName(object);
+   return existingObjectType == objectType ||
+      (existingObjectType == "Object" && objectType == "Generic");
 }
 
 std::string BuildSceneKey(const std::string& typeName, const std::string& objectName) {
@@ -521,12 +532,27 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
 
    if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
       for (const auto& objectData : sceneData.at("objects")) {
-         // DataDrivenSceneではobjectsもSceneWorldが既に所有するため、Reload時は同じSkyboxを更新して二重所有を避ける。
-         if (objectData.is_object() && objectData.value("objectType", "") == "Skybox") {
+         // DataDrivenSceneではobjectsもSceneWorldが既に所有するため、Reload時は同じ実体を更新して二重所有を避ける。
+         if (objectData.is_object()) {
             const std::string objectId = objectData.value("id", "");
+            const std::string objectType = objectData.value("objectType", "Model");
             if (auto* sceneWorld = SceneWorld::GetCurrent()) {
-               if (auto* existingSkybox = dynamic_cast<Skybox*>(sceneWorld->FindObjectById(objectId))) {
-                  objectStore_.ApplyObjectState(existingSkybox, objectData);
+               Object* existingObject = sceneWorld->FindObjectById(objectId);
+               ParticleSystem* existingParticleSystem = sceneWorld->FindParticleSystemById(objectId);
+               if (existingObject || existingParticleSystem) {
+                  const bool isParticleSystemData = objectType == "ParticleSystem";
+                  if (isParticleSystemData && existingParticleSystem && !existingObject) {
+                     // 新規復元と同じ初期状態に揃え、旧設定で生成済みの粒子を残さない。
+                     existingParticleSystem->Stop();
+                     if (objectStore_.ApplyParticleSystemState(existingParticleSystem, objectData)) {
+                        existingParticleSystem->Play();
+                     }
+                  } else if (!isParticleSystemData && existingObject && !existingParticleSystem &&
+                     DoesSceneObjectTypeMatch(existingObject, objectType)) {
+                     objectStore_.ApplyObjectState(existingObject, objectData);
+                  } else {
+                     Logger::EngineWarning("Scene reload skipped object with conflicting type or id: " + objectId);
+                  }
                   continue;
                }
             }
@@ -1708,7 +1734,11 @@ void EditorSceneContext::ApplySceneParticleSystems(const nlohmann::json& scenePa
          particleData = &entry;
       }
 
-      objectStore_.ApplyParticleSystemState(particleSystem, *particleData);
+      // 削除差分で停止していた場合も、保存済みの生存状態へ戻して旧粒子を残さず再開する。
+      particleSystem->Stop();
+      if (objectStore_.ApplyParticleSystemState(particleSystem, *particleData)) {
+         particleSystem->Play();
+      }
    }
 }
 

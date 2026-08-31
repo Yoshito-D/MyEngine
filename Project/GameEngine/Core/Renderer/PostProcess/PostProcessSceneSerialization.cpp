@@ -18,6 +18,9 @@
 namespace {
 using json = nlohmann::json;
 
+// シーンファイルは過去バージョンや手編集された部分設定も読み込むため、
+// 各値は「キーが有効なら採用し、それ以外は現在値を維持する」という規則で統一する。
+// 例外をこの境界で吸収しておくことで、1 項目の不正値がエフェクトスタック全体の復元を妨げない。
 float ReadFloat(const json& settings, const char* key, float fallback) {
    const auto it = settings.find(key);
    if (it == settings.end() || !it->is_number()) {
@@ -40,6 +43,7 @@ int32_t ReadInt32(const json& settings, const char* key, int32_t fallback) {
    }
 
    try {
+      // JSON の整数が int32_t の表現範囲を超える場合も、既存設定を壊さずに維持する。
       return it->get<int32_t>();
    } catch (const json::exception&) {
       return fallback;
@@ -102,6 +106,9 @@ void ReadFloat4(const json& settings, const char* key, float (&values)[4]) {
 
 namespace GameEngine {
 
+// 各エフェクトの Serialize／Deserialize は同じキー名を対にして管理する。
+// Deserialize は全フィールドを必須にせず、欠落した項目を現在値で補うことで旧シーンとの互換性を保つ。
+// 値の反映後は GPU 定数バッファも同期し、ロード直後の描画から復元結果が見える状態にする。
 nlohmann::json AntiAliasing::SerializeSettings() const {
    return {
       { "contrastThreshold", contrastThreshold_ },
@@ -200,6 +207,8 @@ bool Dissolve::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+   // 複数の関連パラメーターは一時コピーへ復元してから一括適用し、
+   // セッター側の検証と GPU 更新を一度だけ通す。
    DissolveParams params = params_;
    params.threshold = ReadFloat(settings, "threshold", params.threshold);
    params.edgeWidth = ReadFloat(settings, "edgeWidth", params.edgeWidth);
@@ -279,6 +288,7 @@ bool RadialBlur::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+   // SetParams を経由するため、CPU 側の保持値と定数バッファが同じタイミングで切り替わる。
    RadialBlurParams params = params_;
    params.center = ReadVector2(settings, "center", params.center);
    params.strength = ReadFloat(settings, "strength", params.strength);
@@ -404,6 +414,7 @@ bool WhiteNoise::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+   // 経過時間は保存データではなく実行時状態なので、ロード時に時計とともに再始動する。
    WhiteNoiseParams params = params_;
    params.time = 0.0f;
    params.noiseDensity = ReadFloat(settings, "noiseDensity", params.noiseDensity);

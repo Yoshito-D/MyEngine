@@ -17,6 +17,8 @@
 namespace App {
 
 void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   // 選択・入力ラッチ・決定演出はシーン内だけの状態として毎回初期化し、
+   // 再読み込み前のUIコンポーネントへの参照も配列から明示的に破棄する。
    selectedOption_ = 0;
    startRequested_ = false;
    navigationLatched_ = false;
@@ -24,6 +26,7 @@ void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    hasBaseVisualStates_ = false;
    optionTexts_.fill(nullptr);
    optionTransforms_.fill(nullptr);
+   // 参照解決後の見た目を演出の基準値として退避し、存在する先頭の選択肢から入力待ちを始める。
    ResolveOptionVisuals(sceneWorld);
    hasBaseVisualStates_ = CaptureBaseVisualStates();
    SelectInitialOption();
@@ -31,6 +34,8 @@ void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
 }
 
 void TitleStartComponent::Update(float deltaTime) {
+   // TextとTransformが揃う選択肢を一つも構築できない場合は、
+   // 画面に選択結果を示せないままシーン遷移だけを受け付けないよう停止する。
    if (!hasBaseVisualStates_) {
       return;
    }
@@ -41,6 +46,7 @@ void TitleStartComponent::Update(float deltaTime) {
       const int navigationDirection = navigationAction.value.x > 0.5f
          ? 1
          : (navigationAction.value.x < -0.5f ? -1 : 0);
+      // 閾値未満を中立として扱い、スティックの微小な揺れで選択が変わらないようにする。
       if (navigationDirection == 0) {
          navigationLatched_ = false;
       } else if (!navigationLatched_) {
@@ -53,6 +59,7 @@ void TitleStartComponent::Update(float deltaTime) {
       const auto& confirmAction =
          GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
       const std::string& selectedScene = GetSelectedSceneName();
+      // 解決不能な選択肢や空の遷移先は決定できない状態として扱う。
       if (!confirmAction.triggered || selectedScene.empty()) {
          return;
       }
@@ -64,11 +71,13 @@ void TitleStartComponent::Update(float deltaTime) {
       return;
    }
 
+   // 決定後は選択入力を処理せず、確定した項目だけを共通のシーン暗転中に演出する。
    reactionElapsed_ += std::max(deltaTime, 0.0f);
    ApplyStartReaction(static_cast<std::size_t>(selectedOption_));
 }
 
 nlohmann::json TitleStartComponent::Serialize() const {
+   // 現在の選択や遷移要求は保存せず、UI参照・遷移先・演出設定だけをシーン設定として残す。
    return nlohmann::json{
       { "tutorialOptionObjectId", tutorialOptionObjectId_ },
       { "stageOptionObjectId", stageOptionObjectId_ },
@@ -83,7 +92,9 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+   // 同じインスタンスへ再適用しても旧形式判定を持ち越さないよう、読み込みごとに解除する。
    legacySingleOption_ = false;
+   // 新形式の各項目は独立して検証し、欠落・型不一致なら既定値または現在値を維持する。
    if (data.contains("tutorialOptionObjectId") && data.at("tutorialOptionObjectId").is_string()) {
       tutorialOptionObjectId_ = data.at("tutorialOptionObjectId").get<std::string>();
    }
@@ -107,14 +118,17 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
       legacySingleOption_ = true;
    }
    if (data.contains("reactionDuration") && data.at("reactionDuration").is_number()) {
+      // 演出時間は進捗計算の除数になるため、0以下を許可しない。
       reactionDuration_ = std::max(data.at("reactionDuration").get<float>(), 0.0001f);
    }
    if (data.contains("reactionEndScale") && data.at("reactionEndScale").is_number()) {
+      // 決定リアクションを縮小演出へ反転させないよう、終端倍率は等倍以上に制限する。
       reactionEndScale_ = std::max(data.at("reactionEndScale").get<float>(), 1.0f);
    }
 }
 
 void TitleStartComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld) {
+   // 選択肢ごとの設定IDを同じ添字のText・Transform配列へ対応付ける。
    const std::array<std::string, 2> objectIds = {
       tutorialOptionObjectId_,
       stageOptionObjectId_
@@ -146,6 +160,8 @@ void TitleStartComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorl
 }
 
 bool TitleStartComponent::CaptureBaseVisualStates() {
+   // TextとTransformが両方ある項目だけを有効とし、作者が設定した透明度とスケールを
+   // 選択決定リアクションを毎フレーム計算するための基準値として保持する。
    bool capturedAny = false;
    for (std::size_t optionIndex = 0; optionIndex < optionTexts_.size(); ++optionIndex) {
       const auto* text = optionTexts_[optionIndex];
@@ -166,6 +182,7 @@ bool TitleStartComponent::IsOptionAvailable(std::size_t optionIndex) const {
 }
 
 bool TitleStartComponent::SelectInitialOption() {
+   // チュートリアルを優先しつつ、欠けている場合は最初に利用可能な項目へ安全にフォールバックする。
    for (std::size_t optionIndex = 0; optionIndex < optionTexts_.size(); ++optionIndex) {
       if (IsOptionAvailable(optionIndex)) {
          selectedOption_ = static_cast<int>(optionIndex);
@@ -178,6 +195,7 @@ bool TitleStartComponent::SelectInitialOption() {
 void TitleStartComponent::MoveSelection(int direction) {
    constexpr int kOptionCount = 2;
    int candidate = selectedOption_;
+   // 端では巡回し、未解決の項目を飛ばす。候補数までの試行に制限して全欠落時も終了させる。
    for (int attempt = 0; attempt < kOptionCount; ++attempt) {
       candidate = (candidate + direction + kOptionCount) % kOptionCount;
       if (IsOptionAvailable(static_cast<std::size_t>(candidate))) {
@@ -203,6 +221,7 @@ void TitleStartComponent::RefreshSelectionText() {
 }
 
 const std::string& TitleStartComponent::GetSelectedSceneName() const {
+   // 参照戻り値を安全に保ちつつ、無効な選択肢からの遷移を空文字で抑止する。
    static const std::string kEmptySceneName;
    if (!IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
       return kEmptySceneName;

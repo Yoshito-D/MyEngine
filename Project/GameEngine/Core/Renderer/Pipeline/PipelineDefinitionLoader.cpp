@@ -13,6 +13,8 @@ std::string WStringToString(const std::wstring& wstr) {
       return std::string();
    }
 
+   // Windows の UTF-16 パスを JSON／ログで共通利用する UTF-8 へ変換する。
+   // 先に必要バイト数を問い合わせ、マルチバイト文字を途中で切らない正確な領域を確保する。
    int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
    std::string value(static_cast<size_t>(sizeNeeded), 0);
    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), &value[0], sizeNeeded, nullptr, nullptr);
@@ -23,6 +25,7 @@ std::string WStringToString(const std::wstring& wstr) {
 namespace GameEngine {
 
 bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFilePath, std::vector<std::string>& rootSignaturePaths, std::vector<std::string>& pipelinePaths) const {
+   // 呼び出し元の古い結果を混ぜないよう、読み込みの成否にかかわらず今回検証できた項目だけを返す。
    rootSignaturePaths.clear();
    pipelinePaths.clear();
 
@@ -45,6 +48,8 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
          return false;
       }
 
+      // 配列全体を走査して不備をまとめて報告する。エラー後も有効な項目は output に残し、
+      // 設定修正時に利用可能な定義と壊れている定義をログから一度に判別できるようにする。
       bool allSucceeded = true;
       const auto loadPathArray = [&](const json& paths, const char* label, std::vector<std::string>& output) {
          size_t index = 0;
@@ -74,6 +79,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
       loadPathArray(registryJson["pipelines"], "pipelines", pipelinePaths);
 
       if (rootSignaturePaths.empty()) {
+         // 配列自体が存在しても有効な定義が 0 件なら描画基盤を構築できないため、全体を失敗扱いにする。
          Logger::Error("[PipelineDefinitionLoader] Pipeline registry did not provide any valid root signature paths.");
          allSucceeded = false;
       }
@@ -84,6 +90,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
 
       return allSucceeded;
    } catch (const std::exception& e) {
+      // JSON 構文、型変換、ファイル I/O の例外を API 境界で bool と診断ログへ変換し、起動処理へ伝播させない。
       Logger::Error("[PipelineDefinitionLoader] Exception loading pipeline registry: " + std::string(e.what()));
       return false;
    } catch (...) {

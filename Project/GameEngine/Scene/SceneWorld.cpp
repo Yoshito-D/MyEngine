@@ -107,6 +107,13 @@ Object* SceneWorld::FindObjectById(const std::string& objectId) const {
    return objectStore_.FindById(objectId);
 }
 
+ParticleSystem* SceneWorld::FindParticleSystemById(const std::string& objectId) const {
+   if (objectId.empty()) {
+      return nullptr;
+   }
+   return objectStore_.FindParticleById(objectId);
+}
+
 Object* SceneWorld::FindObjectByName(const std::string& objectName) const {
    if (objectName.empty()) {
       return nullptr;
