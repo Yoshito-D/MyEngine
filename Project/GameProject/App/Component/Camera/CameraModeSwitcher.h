@@ -33,6 +33,11 @@ public:
    /// @return カメラが見つかり切り替えられた場合はtrue
    bool SwitchToCamera(const std::string& cameraId);
 
+   /// @brief 選択中の仮想カメラを返す。未解決の場合はnullptr。
+   GameEngine::VirtualCamera* GetSelectedCamera() const {
+      return currentIndex_ < cameras_.size() ? cameras_[currentIndex_] : nullptr;
+   }
+
    /// @brief カメラ順序と初期モードをJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;

@@ -566,15 +566,15 @@
                         0.0,
                         1.0
                      ],
-                     "rotationSource": "euler",
+                     "rotationSource": "quaternion",
                      "scale": [
                         1.0,
                         1.0,
                         1.0
                      ],
                      "translation": [
-                        0.0,
-                        -110.0,
+                        -245.78684997558594,
+                        -115.08606719970703,
                         1.0
                      ]
                   },
@@ -590,7 +590,7 @@
                         1.0
                      ],
                      "fontId": "851Gkktt",
-                     "fontSize": 128,
+                     "fontSize": 211,
                      "horizontalAlignment": "Center",
                      "lineSpacing": 1.0,
                      "maxWidth": 1000.0,
@@ -637,15 +637,15 @@
                         0.0,
                         1.0
                      ],
-                     "rotationSource": "euler",
+                     "rotationSource": "quaternion",
                      "scale": [
                         1.0,
                         1.0,
                         1.0
                      ],
                      "translation": [
-                        0.0,
-                        130.0,
+                        292.52685546875,
+                        128.30462646484375,
                         1.0
                      ]
                   },
@@ -679,7 +679,11 @@
                {
                   "data": {
                      "reactionDuration": 0.4000000059604645,
-                     "reactionEndScale": 1.399999976158142,
+                     "reactionEndScale": 1.2000000476837158,
+                     "selectionPulseDuration": 1.7999999523162842,
+                     "selectionPulseScale": 1.100000023841858,
+                     "selectionSwitchDuration": 0.1599999964237213,
+                     "selectionSwitchScale": 0.8199999928474426,
                      "stageOptionObjectId": "UIText:StageStartPrompt",
                      "stageScene": "GameTest",
                      "tutorialOptionObjectId": "UIText:StartPrompt",
@@ -720,15 +724,15 @@
                         0.0,
                         1.0
                      ],
-                     "rotationSource": "euler",
+                     "rotationSource": "quaternion",
                      "scale": [
                         1.0,
                         1.0,
                         1.0
                      ],
                      "translation": [
-                        0.0,
-                        170.0,
+                        242.2744598388672,
+                        219.16546630859375,
                         1.0
                      ]
                   },

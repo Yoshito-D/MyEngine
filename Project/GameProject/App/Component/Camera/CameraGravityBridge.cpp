@@ -1,4 +1,5 @@
 #include "CameraGravityBridge.h"
+#include "CameraModeSwitcher.h"
 #include "../Character/CharacterLanding.h"
 #include "../Character/CharacterJump.h"
 #include "../Gravity/GravityBody.h"
@@ -451,6 +452,13 @@ void CameraGravityBridge::Update(float deltaTime) {
    auto* jump = GetOwner().GetComponent<CharacterJump>();
    auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
 
+   // 全候補の追従入力を新しく保ち、画面固有のシェイク・撮影だけを選択先へ限定する。
+   const auto* cameraMode = GetOwner().GetComponent<CameraModeSwitcher>();
+   const auto IsSelectedCamera = [cameraMode](const GameEngine::ICinemachineComponent* component) {
+      return component && (!cameraMode || component->GetOwnerCamera() == cameraMode->GetSelectedCamera());
+   };
+   const bool rearCameraSelected = IsSelectedCamera(playerRearFollowCamera_);
+
    // 惑星中心→自身方向を正規化して重力Upを作る
    GameEngine::Vector3 toSelf = transform->transform.translation - planetCenter_;
    float len = toSelf.Length();
@@ -545,7 +553,7 @@ void CameraGravityBridge::Update(float deltaTime) {
       const float backwardReversalDot =
          actualMotionBackward.Dot(actualPlanetGuideBackward);
 
-      if (debugDrawPresentationGuides) {
+      if (rearCameraSelected && debugDrawPresentationGuides) {
          // 反転条件を先に選び、同時成立時も発表用ガイドの意味を一意に保つ。
          int conditionPreviewMode = 0;
          const GameEngine::Vector3 actualCameraForward = NormalizeOrFallback(
@@ -574,7 +582,7 @@ void CameraGravityBridge::Update(float deltaTime) {
             conditionPreviewMode);
       }
 
-      if (autoCapturePresentationSequence) {
+      if (rearCameraSelected && autoCapturePresentationSequence) {
 #ifdef USE_IMGUI
          // 発表素材にはエディタUIを含めず、ゲーム画面とガイドだけを記録する。
          GameEngine::EngineContext::SetDockSpaceVisible(false);
@@ -707,7 +715,7 @@ void CameraGravityBridge::Update(float deltaTime) {
 
    if (landing) {
       const bool isGrounded = landing->IsGrounded();
-      if (autoCapturePresentationSequence && presentationJumpTriggered_) {
+      if (rearCameraSelected && autoCapturePresentationSequence && presentationJumpTriggered_) {
          // 接地の立ち上がりを接触瞬間とし、その後は姿勢が落ち着くまで別タイマーで待つ。
          if (isGrounded && !wasGrounded_ && !presentationContactCaptured_) {
             RequestPresentationScreenshot("04_contact.png", debugDrawPresentationGuides);
@@ -731,7 +739,7 @@ void CameraGravityBridge::Update(float deltaTime) {
       }
       if (enableLandingShake && isGrounded && !wasGrounded_) {
          // 接地中の連続発火を避け、各カメラ固有の画面Upに沿って同じ衝撃を与える。
-         if (gravityFollowCamera_) {
+         if (IsSelectedCamera(gravityFollowCamera_)) {
             TriggerDirectionalShake(
                gravityFollowCamera_,
                NormalizeOrFallback(gravityFollowCamera_->GetCameraUp(), gravityUp),
@@ -739,7 +747,7 @@ void CameraGravityBridge::Update(float deltaTime) {
                landingShakeFrequency,
                landingShakeDuration);
          }
-         if (playerRearFollowCamera_) {
+         if (IsSelectedCamera(playerRearFollowCamera_)) {
             TriggerDirectionalShake(
                playerRearFollowCamera_,
                NormalizeOrFallback(playerRearFollowCamera_->GetCameraUp(), gravityUp),
@@ -747,7 +755,7 @@ void CameraGravityBridge::Update(float deltaTime) {
                landingShakeFrequency,
                landingShakeDuration);
          }
-         if (planetLeashCamera_) {
+         if (IsSelectedCamera(planetLeashCamera_)) {
             TriggerDirectionalShake(
                planetLeashCamera_,
                NormalizeOrFallback(planetLeashCamera_->GetCameraUp(), gravityUp),

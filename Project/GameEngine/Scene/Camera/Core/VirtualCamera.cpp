@@ -278,11 +278,15 @@ ICinemachineComponent* VirtualCamera::FindComponentByName(const std::string& com
 }
 
 void VirtualCamera::SortComponents() {
-    // Body → Aim → NoiseのStage順を保証し、追加順によるカメラ結果の違いをなくす。
-    std::sort(components_.begin(), components_.end(),
+    // ステージ内でも依存する計算の順序を明示できるようにする。
+    // 同じ順序値の既存コンポーネントは追加順を保ち、無関係な処理の並び替えを避ける。
+    std::stable_sort(components_.begin(), components_.end(),
         [](const std::unique_ptr<ICinemachineComponent>& a,
            const std::unique_ptr<ICinemachineComponent>& b) {
-            return static_cast<int>(a->GetStage()) < static_cast<int>(b->GetStage());
+            if (a->GetStage() != b->GetStage()) {
+                return static_cast<int>(a->GetStage()) < static_cast<int>(b->GetStage());
+            }
+            return a->GetExecutionOrder() < b->GetExecutionOrder();
         });
 }
 

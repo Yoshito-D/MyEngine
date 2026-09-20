@@ -1,9 +1,6 @@
 #include "CameraModeSwitcher.h"
 
-#include "CameraGravityBridge.h"
 #include "GravityFollowCamera.h"
-#include "PlanetLeashCamera.h"
-#include "PlayerRearFollowCamera.h"
 #include "Object/Object.h"
 #include "Scene/Camera/Core/VirtualCamera.h"
 #include "Scene/SceneWorld.h"
@@ -92,15 +89,7 @@ void CameraModeSwitcher::ApplyMode() {
 
    auto* selectedCamera = cameras_[currentIndex_];
    auto* gravityFollow = selectedCamera ? selectedCamera->GetComponent<GravityFollowCamera>() : nullptr;
-   auto* rearFollow = selectedCamera ? selectedCamera->GetComponent<PlayerRearFollowCamera>() : nullptr;
-   auto* planetLeash = selectedCamera ? selectedCamera->GetComponent<PlanetLeashCamera>() : nullptr;
-
-   // 重力方向や車両姿勢を補正する側にも、Brainと同じアクティブカメラの部品を渡す。
-   if (auto* bridge = GetOwner().GetComponent<CameraGravityBridge>()) {
-      bridge->SetGravityFollowCamera(gravityFollow);
-      bridge->SetPlayerRearFollowCamera(rearFollow);
-      bridge->SetPlanetLeashCamera(planetLeash);
-   }
+   // Bridgeは非選択カメラにも入力を供給する。車両の操作基準だけを選択に合わせる。
    if (auto* controller = GetOwner().GetComponent<VehicleController>()) {
       controller->SetGravityFollowCamera(gravityFollow);
    }
