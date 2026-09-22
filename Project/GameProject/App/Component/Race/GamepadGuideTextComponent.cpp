@@ -7,6 +7,7 @@
 #include "Scene/SceneWorld.h"
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
@@ -27,7 +28,7 @@ constexpr const char* kAirGuideText =
 
 /// @brief シーン設定のオブジェクトIDから表示条件に必要なコンポーネントを解決する
 /// @param sceneWorld 検索対象のシーンワールド
-void GamepadGuideTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void GamepadGuideTextComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // シーン再読み込み時に以前のシーンを指すポインターを残さないよう、
    // 新しい参照を検索する前に必ず解決状態を初期化する。
    raceManager_ = nullptr;
@@ -100,8 +101,8 @@ void GamepadGuideTextComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGui::Text("Race Manager ID: %s", raceManagerId_.c_str());
-   ImGui::Text("Player Object ID: %s", playerObjectId_.c_str());
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
+   GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    ImGui::Text("Resolved: Race=%s Player Jump=%s",
       raceManager_ ? "true" : "false",
       characterJump_ ? "true" : "false");

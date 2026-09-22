@@ -13,6 +13,18 @@
 #include <filesystem>
 
 namespace GameEngine {
+namespace {
+Object* ResolveCommandObject(EditorSceneContext& context, const std::string& id, Object* fallback) {
+   // 遅延削除されたEntityはグローバル索引に残るため、現シーンの編集対象だけを調べる。
+   // IDがある履歴では直接参照へフォールバックせず、削除済みEntityを誤操作しない。
+   for (Object* object : context.CollectEditableObjects()) {
+      if (object && (id.empty() ? object == fallback : object->GetEntityId() == id)) {
+         return object;
+      }
+   }
+   return nullptr;
+}
+} // namespace
 
 bool EditorCommandStack::Execute(std::unique_ptr<IEditorCommand> command, EditorSceneContext& context) {
    if (!command) {
@@ -353,13 +365,7 @@ void TransformObjectCommand::Undo(EditorSceneContext& context) {
 }
 
 Object* TransformObjectCommand::ResolveObject(EditorSceneContext& context) const {
-   if (!objectId_.empty()) {
-      if (Object* object = context.GetObjectStore().FindById(objectId_)) {
-         return object;
-      }
-   }
-   // シーン本体が所有するオブジェクトはEditorObjectStoreにIDがないため、生存中の直接参照を使う。
-   return fallbackObject_;
+   return ResolveCommandObject(context, objectId_, fallbackObject_);
 }
 
 void TransformObjectCommand::Apply(EditorSceneContext& context, const Transform& transform) const {
@@ -488,12 +494,7 @@ void SetModelAssetCommand::Undo(EditorSceneContext& context) {
 }
 
 Object* SetModelAssetCommand::ResolveObject(EditorSceneContext& context) const {
-   if (!objectId_.empty()) {
-      if (Object* object = context.GetObjectStore().FindById(objectId_)) {
-         return object;
-      }
-   }
-   return fallbackObject_;
+   return ResolveCommandObject(context, objectId_, fallbackObject_);
 }
 
 bool SetModelAssetCommand::Apply(EditorSceneContext& context, const std::string& assetId) const {
@@ -528,12 +529,7 @@ void SetMaterialTextureCommand::Undo(EditorSceneContext& context) {
 }
 
 Object* SetMaterialTextureCommand::ResolveObject(EditorSceneContext& context) const {
-   if (!objectId_.empty()) {
-      if (Object* object = context.GetObjectStore().FindById(objectId_)) {
-         return object;
-      }
-   }
-   return fallbackObject_;
+   return ResolveCommandObject(context, objectId_, fallbackObject_);
 }
 
 bool SetMaterialTextureCommand::Apply(EditorSceneContext& context, const std::string& textureId) const {
@@ -564,38 +560,27 @@ bool AddComponentCommand::Execute(EditorSceneContext& context) {
       return false;
    }
 
-   if (beforeSnapshot_.is_null() && !objectId_.empty()) {
+   if (beforeSnapshot_.is_null()) {
       // コンポーネント間の依存設定も戻せるよう、追加対象だけでなくオブジェクト全体を保存する。
-      beforeSnapshot_ = context.GetObjectStore().SerializeObject(objectId_);
+      objectId_ = object->GetEntityId();
+      beforeSnapshot_ = context.GetObjectStore().SerializeObjectState(object, objectId_);
    }
 
    return object->AddComponentByTypeName(typeName_) != nullptr;
 }
 
 void AddComponentCommand::Undo(EditorSceneContext& context) {
-   if (objectId_.empty() || beforeSnapshot_.is_null() || !beforeSnapshot_.is_object()) {
+   Object* object = ResolveObject(context);
+   if (!object || !beforeSnapshot_.is_object()) {
       return;
    }
 
-   // 依存Componentの自動追加・設定変更も含めて戻すため、単体削除ではなく保存済みObjectを再構築する。
-   Object* selectedObject = context.GetSelectedObject();
-   if (selectedObject == context.GetObjectStore().FindById(objectId_)) {
-      context.SelectObject(nullptr);
-   }
-   context.GetObjectStore().DeleteObject(objectId_);
-   Object* restored = context.GetObjectStore().RestoreObject(beforeSnapshot_);
-   if (restored) {
-      context.SelectObject(restored);
-   }
+   // 依存Componentの追加・設定変更も戻しつつ、EntityのID・親子関係・選択の実体を維持する。
+   context.GetObjectStore().ApplyObjectState(object, beforeSnapshot_);
 }
 
 Object* AddComponentCommand::ResolveObject(EditorSceneContext& context) const {
-   if (!objectId_.empty()) {
-      if (Object* object = context.GetObjectStore().FindById(objectId_)) {
-         return object;
-      }
-   }
-   return fallbackObject_;
+   return ResolveCommandObject(context, objectId_, fallbackObject_);
 }
 
 RemoveComponentCommand::RemoveComponentCommand(
@@ -649,12 +634,7 @@ void RemoveComponentCommand::Undo(EditorSceneContext& context) {
 }
 
 Object* RemoveComponentCommand::ResolveObject(EditorSceneContext& context) const {
-   if (!objectId_.empty()) {
-      if (Object* object = context.GetObjectStore().FindById(objectId_)) {
-         return object;
-      }
-   }
-   return fallbackObject_;
+   return ResolveCommandObject(context, objectId_, fallbackObject_);
 }
 
 } // namespace GameEngine

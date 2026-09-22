@@ -32,6 +32,8 @@ public:
    /// @brief チュートリアル対象のプレイヤー参照を解決して進行を初期化する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 操作・惑星切替・着地結果を監視してチュートリアルを進める
    /// @param deltaTime ゲーム用デルタタイム（秒）

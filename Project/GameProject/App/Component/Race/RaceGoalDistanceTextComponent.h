@@ -24,6 +24,8 @@ public:
    /// @brief レース、プレイヤー、ゴールへの参照を解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief レース中のゴール距離を整数メートルでUITextへ反映する
    /// @param deltaTime 未使用

@@ -25,6 +25,8 @@ public:
    /// @brief JSONに保存されたカメラ名から通知先を解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 惑星中心座標を設定する
    void SetPlanetCenter(const GameEngine::Vector3& center)    { planetCenter_        = center; }

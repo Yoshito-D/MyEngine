@@ -26,8 +26,10 @@ public:
    /// @brief UIの初期表示状態を保存して入力待ちへ戻す
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @brief 決定入力を検出し、遷移中の拡大フェードを更新する
+   /// @brief 選択表示アニメーションと決定入力後の拡大フェードを更新する
    /// @param deltaTime ゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
@@ -49,8 +51,9 @@ private:
    bool CaptureBaseVisualStates();
    bool IsOptionAvailable(std::size_t optionIndex) const;
    bool SelectInitialOption();
-   void MoveSelection(int direction);
+   bool MoveSelection(int direction);
    void RefreshSelectionText();
+   void UpdateSelectionAnimation(float deltaTime);
    const std::string& GetSelectedSceneName() const;
    void ApplyStartReaction(std::size_t optionIndex);
 
@@ -61,6 +64,13 @@ private:
    float reactionDuration_ = 0.4f;
    float reactionEndScale_ = 1.4f;
    float reactionElapsed_ = 0.0f;
+   GameEngine::Vector3 reactionStartScale_ = { 1.0f, 1.0f, 1.0f };
+   float selectionPulseDuration_ = 0.9f;
+   float selectionPulseScale_ = 1.1f;
+   float selectionSwitchDuration_ = 0.16f;
+   float selectionSwitchScale_ = 0.82f;
+   float selectionAnimationElapsed_ = 0.0f;
+   float selectionSwitchElapsed_ = 0.0f;
    std::array<GameEngine::UITextComponent*, 2> optionTexts_ = {};
    std::array<GameEngine::TransformComponent*, 2> optionTransforms_ = {};
    std::array<GameEngine::Vector3, 2> baseScales_ = {
@@ -73,6 +83,7 @@ private:
    bool navigationLatched_ = false;
    bool hasBaseVisualStates_ = false;
    bool legacySingleOption_ = false;
+   bool selectionSwitchActive_ = false;
 };
 
 } // namespace App

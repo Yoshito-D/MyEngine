@@ -26,6 +26,8 @@ public:
    /// @brief レース、プレイヤー、ゴールへの参照を解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief プレイヤーとゴールの位置から3D矢印の向きを更新する
    /// @param deltaTime ゲーム用デルタタイム（秒）

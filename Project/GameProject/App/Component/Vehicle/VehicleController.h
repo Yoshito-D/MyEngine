@@ -24,12 +24,10 @@ public:
    void Update(float deltaTime) override;
 
    /// @brief GravityFollowCamera 参照を設定する
-   void SetGravityFollowCamera(GravityFollowCamera* cam) { gravityFollowCamera_ = cam; }
+   void SetGravityFollowCamera(GravityFollowCamera* cam);
 
    /// @brief 直近の移動方向を取得する
-   GameEngine::Vector3 GetLastMoveDirection() const {
-	  return mover_ ? mover_->GetLastMoveDirection() : GameEngine::Vector3{ 0.0f, 0.0f, 1.0f };
-   }
+   GameEngine::Vector3 GetLastMoveDirection() const;
 
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
@@ -43,21 +41,8 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 private:
-   /// @brief 依存コンポーネント参照をキャッシュする
-   void  CacheComponents();
-
-private:
-   /// @brief ゲーム固有入力コンポーネント
-   VehicleInputComponent* input_ = nullptr;
-
-   /// @brief 車移動コンポーネント
-   VehicleMover*  mover_ = nullptr;
-
-   /// @brief ジャンプコンポーネント
-   CharacterJump* jump_  = nullptr;
-
-   /// @brief 重力追従カメラ（矢印キー・右スティックで操作）
-   GravityFollowCamera* gravityFollowCamera_ = nullptr;
+   /// @brief 選択中カメラの安定ID。削除されたComponentの生ポインターを保持しない
+   std::string gravityFollowCameraId_;
 };
 
 } // namespace App

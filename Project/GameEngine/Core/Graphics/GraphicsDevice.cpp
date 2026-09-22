@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <stdexcept>
 #include "GraphicsDevice.h"
 #include "ImGuiManager.h"
 #include <wincodec.h>
@@ -719,15 +720,33 @@ UINT GraphicsDevice::GetNextSrvIndex() const {
    if (!freeSrvIndices_.empty()) {
       return freeSrvIndices_.front();
    }
+   if (nextSrvIndex_ >= kShaderVisibleDescriptorCount) {
+      throw std::overflow_error("CBV/SRV/UAV descriptor heap is full");
+   }
    return nextSrvIndex_;
 }
 
 void GraphicsDevice::IncrementSrvIndex() {
+   (void)GetNextSrvIndex(); // Getを経由しない呼び出しでもヒープ容量を超えない。
    if (!freeSrvIndices_.empty()) {
       freeSrvIndices_.pop();
    } else {
       ++nextSrvIndex_;
    }
+}
+
+SrvDescriptorAllocation::~SrvDescriptorAllocation() {
+   if (device_) {
+      device_->ReleaseSrvIndex(index_);
+   }
+}
+
+std::shared_ptr<SrvDescriptorAllocation> GraphicsDevice::AllocateSrvDescriptor() {
+   // 共有所有権の確保が失敗しても未確保のスロットを返却しないよう、確定後にdeviceを渡す。
+   auto allocation = std::shared_ptr<SrvDescriptorAllocation>(new SrvDescriptorAllocation(GetNextSrvIndex()));
+   IncrementSrvIndex();
+   allocation->device_ = this;
+   return allocation;
 }
 
 void GraphicsDevice::ReleaseSrvIndex(UINT index) {

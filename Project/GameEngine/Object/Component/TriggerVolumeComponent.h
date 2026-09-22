@@ -30,6 +30,8 @@ public:
    /// @brief シーン参照を保存して対象IDを解決可能にする
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(SceneWorld& sceneWorld) override;
+   /// @copydoc IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(SceneWorld& sceneWorld) override { sceneWorld_ = &sceneWorld; }
 
    /// @brief 対象オブジェクトとの重なり状態を更新する
    /// @param deltaTime 未使用

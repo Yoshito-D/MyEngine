@@ -8,13 +8,21 @@
 #include "Scene/SceneWorld.h"
 #include "Utility/MathUtils.h"
 #include <algorithm>
+#include <cmath>
 #include <string>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
 namespace App {
+
+void TitleStartComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
+   optionTexts_.fill(nullptr);
+   optionTransforms_.fill(nullptr);
+   ResolveOptionVisuals(sceneWorld);
+}
 
 void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    // 選択・入力ラッチ・決定演出はシーン内だけの状態として毎回初期化し、
@@ -23,6 +31,10 @@ void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    startRequested_ = false;
    navigationLatched_ = false;
    reactionElapsed_ = 0.0f;
+   reactionStartScale_ = { 1.0f, 1.0f, 1.0f };
+   selectionAnimationElapsed_ = 0.0f;
+   selectionSwitchElapsed_ = 0.0f;
+   selectionSwitchActive_ = false;
    hasBaseVisualStates_ = false;
    optionTexts_.fill(nullptr);
    optionTransforms_.fill(nullptr);
@@ -41,6 +53,7 @@ void TitleStartComponent::Update(float deltaTime) {
    }
 
    if (!startRequested_) {
+      bool selectionChanged = false;
       const auto& navigationAction =
          GameEngine::EngineContext::GetInputActionState("UI", "UI.Navigate", 0);
       const int navigationDirection = navigationAction.value.x > 0.5f
@@ -51,10 +64,19 @@ void TitleStartComponent::Update(float deltaTime) {
          navigationLatched_ = false;
       } else if (!navigationLatched_) {
          // 押し続けで選択が往復しないよう、軸が中立へ戻るまで次の移動を受け付けない。
-         MoveSelection(navigationDirection);
+         if (MoveSelection(navigationDirection)) {
+            // 新しく選ばれた項目を押し込んだ状態から見せ、復帰後の反復へ時間軸をつなぐ。
+            selectionAnimationElapsed_ = 0.0f;
+            selectionSwitchElapsed_ = 0.0f;
+            selectionSwitchActive_ = true;
+            selectionChanged = true;
+         }
          navigationLatched_ = true;
          RefreshSelectionText();
       }
+
+      // 切り替えたフレームは縮小の開始値を必ず一度表示する。
+      UpdateSelectionAnimation(selectionChanged ? 0.0f : deltaTime);
 
       const auto& confirmAction =
          GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
@@ -67,6 +89,8 @@ void TitleStartComponent::Update(float deltaTime) {
       // 遷移要求を先に出し、次フレームから共通暗転とUIリアクションを同じ時間軸で重ねる。
       startRequested_ = true;
       reactionElapsed_ = 0.0f;
+      // 選択中の拡大・縮小から連続して決定演出へ入り、基準倍率へ跳ね戻らせない。
+      reactionStartScale_ = optionTransforms_[static_cast<std::size_t>(selectedOption_)]->transform.scale;
       GameEngine::BaseScene::SetNextSceneName(selectedScene);
       return;
    }
@@ -84,7 +108,11 @@ nlohmann::json TitleStartComponent::Serialize() const {
       { "tutorialScene", tutorialScene_ },
       { "stageScene", stageScene_ },
       { "reactionDuration", reactionDuration_ },
-      { "reactionEndScale", reactionEndScale_ }
+      { "reactionEndScale", reactionEndScale_ },
+      { "selectionPulseDuration", selectionPulseDuration_ },
+      { "selectionPulseScale", selectionPulseScale_ },
+      { "selectionSwitchDuration", selectionSwitchDuration_ },
+      { "selectionSwitchScale", selectionSwitchScale_ }
    };
 }
 
@@ -124,6 +152,18 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("reactionEndScale") && data.at("reactionEndScale").is_number()) {
       // 決定リアクションを縮小演出へ反転させないよう、終端倍率は等倍以上に制限する。
       reactionEndScale_ = std::max(data.at("reactionEndScale").get<float>(), 1.0f);
+   }
+   if (data.contains("selectionPulseDuration") && data.at("selectionPulseDuration").is_number()) {
+      selectionPulseDuration_ = std::max(data.at("selectionPulseDuration").get<float>(), 0.0001f);
+   }
+   if (data.contains("selectionPulseScale") && data.at("selectionPulseScale").is_number()) {
+      selectionPulseScale_ = std::max(data.at("selectionPulseScale").get<float>(), 1.0f);
+   }
+   if (data.contains("selectionSwitchDuration") && data.at("selectionSwitchDuration").is_number()) {
+      selectionSwitchDuration_ = std::max(data.at("selectionSwitchDuration").get<float>(), 0.0001f);
+   }
+   if (data.contains("selectionSwitchScale") && data.at("selectionSwitchScale").is_number()) {
+      selectionSwitchScale_ = std::clamp(data.at("selectionSwitchScale").get<float>(), 0.0f, 1.0f);
    }
 }
 
@@ -192,17 +232,19 @@ bool TitleStartComponent::SelectInitialOption() {
    return false;
 }
 
-void TitleStartComponent::MoveSelection(int direction) {
+bool TitleStartComponent::MoveSelection(int direction) {
    constexpr int kOptionCount = 2;
+   const int previousSelection = selectedOption_;
    int candidate = selectedOption_;
    // 端では巡回し、未解決の項目を飛ばす。候補数までの試行に制限して全欠落時も終了させる。
    for (int attempt = 0; attempt < kOptionCount; ++attempt) {
       candidate = (candidate + direction + kOptionCount) % kOptionCount;
       if (IsOptionAvailable(static_cast<std::size_t>(candidate))) {
          selectedOption_ = candidate;
-         return;
+         return selectedOption_ != previousSelection;
       }
    }
+   return false;
 }
 
 void TitleStartComponent::RefreshSelectionText() {
@@ -217,6 +259,46 @@ void TitleStartComponent::RefreshSelectionText() {
    if (IsOptionAvailable(1)) {
       optionTexts_[1]->SetText(
          std::string(selectedOption_ == 1 ? "> " : "  ") + "ステージから あそぶ");
+   }
+}
+
+void TitleStartComponent::UpdateSelectionAnimation(float deltaTime) {
+   const std::size_t selectedIndex = static_cast<std::size_t>(selectedOption_);
+   for (std::size_t optionIndex = 0; optionIndex < optionTransforms_.size(); ++optionIndex) {
+      if (!IsOptionAvailable(optionIndex)) {
+         continue;
+      }
+
+      const auto& baseScale = baseScales_[optionIndex];
+      float scaleMultiplier = 1.0f;
+      if (optionIndex == selectedIndex) {
+         if (selectionSwitchActive_) {
+            selectionSwitchElapsed_ += std::max(deltaTime, 0.0f);
+            const float switchProgress =
+               std::clamp(selectionSwitchElapsed_ / selectionSwitchDuration_, 0.0f, 1.0f);
+            scaleMultiplier = GameEngine::Easing::EaseOutCubic(
+               selectionSwitchScale_, 1.0f, switchProgress);
+            if (switchProgress >= 1.0f) {
+               selectionSwitchActive_ = false;
+               selectionAnimationElapsed_ = 0.0f;
+            }
+         } else {
+            selectionAnimationElapsed_ += std::max(deltaTime, 0.0f);
+            constexpr float kTwoPi = 6.28318530717958647692f;
+            const float pulsePhase =
+               std::fmod(selectionAnimationElapsed_, selectionPulseDuration_) / selectionPulseDuration_;
+            const float pulseProgress = 0.5f - 0.5f * std::cos(kTwoPi * pulsePhase);
+            scaleMultiplier = GameEngine::Easing::EaseInOutSine(
+               1.0f, selectionPulseScale_, pulseProgress);
+         }
+      }
+
+      // 未選択側も基準値から毎フレーム設定し、直前までの選択アニメーションを残さない。
+      optionTransforms_[optionIndex]->transform.scale = {
+         baseScale.x * scaleMultiplier,
+         baseScale.y * scaleMultiplier,
+         baseScale.z
+      };
    }
 }
 
@@ -237,13 +319,12 @@ void TitleStartComponent::ApplyStartReaction(std::size_t optionIndex) {
    auto& text = *optionTexts_[optionIndex];
    auto& transform = *optionTransforms_[optionIndex];
    const auto& baseScale = baseScales_[optionIndex];
-   // 毎フレーム基準値から計算し、スケールと透明度の補間誤差を蓄積させない。
+   // 決定時の表示倍率から終点へ補間し、反復計算による誤差を蓄積させない。
    const float progress = std::clamp(reactionElapsed_ / reactionDuration_, 0.0f, 1.0f);
-   const float scaleMultiplier =
-      GameEngine::Easing::EaseOutCubic(1.0f, reactionEndScale_, progress);
+   const float scaleProgress = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, progress);
    transform.transform.scale = {
-      baseScale.x * scaleMultiplier,
-      baseScale.y * scaleMultiplier,
+      reactionStartScale_.x + (baseScale.x * reactionEndScale_ - reactionStartScale_.x) * scaleProgress,
+      reactionStartScale_.y + (baseScale.y * reactionEndScale_ - reactionStartScale_.y) * scaleProgress,
       baseScale.z
    };
    text.SetOpacity(GameEngine::Easing::EaseInQuad(baseOpacities_[optionIndex], 0.0f, progress));
@@ -255,15 +336,19 @@ void TitleStartComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGui::Text("Tutorial Option Object ID: %s", tutorialOptionObjectId_.c_str());
-   ImGui::Text("Stage Option Object ID: %s", stageOptionObjectId_.c_str());
-   ImGui::Text("Tutorial Scene: %s", tutorialScene_.c_str());
-   ImGui::Text("Stage Scene: %s", stageScene_.c_str());
+   GameEngine::EditorUI::ObjectReference("Tutorial Option", tutorialOptionObjectId_, "UITextComponent");
+   GameEngine::EditorUI::ObjectReference("Stage Option", stageOptionObjectId_, "UITextComponent");
+   GameEngine::EditorUI::SceneReference("Tutorial Scene", tutorialScene_);
+   GameEngine::EditorUI::SceneReference("Stage Scene", stageScene_);
    ImGui::Text("Selected Option: %d", selectedOption_);
    ImGui::Text("Resolved Options: %s", hasBaseVisualStates_ ? "true" : "false");
    ImGui::Text("Start Requested: %s", startRequested_ ? "true" : "false");
    ImGui::DragFloat("Reaction Duration", &reactionDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
    ImGui::DragFloat("Reaction End Scale", &reactionEndScale_, 0.01f, 1.0f, 3.0f, "%.2f");
+   ImGui::DragFloat("Selection Pulse Duration", &selectionPulseDuration_, 0.01f, 0.01f, 3.0f, "%.2f s");
+   ImGui::DragFloat("Selection Pulse Scale", &selectionPulseScale_, 0.01f, 1.0f, 2.0f, "%.2f");
+   ImGui::DragFloat("Selection Switch Duration", &selectionSwitchDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
+   ImGui::DragFloat("Selection Switch Scale", &selectionSwitchScale_, 0.01f, 0.0f, 1.0f, "%.2f");
 }
 #endif
 

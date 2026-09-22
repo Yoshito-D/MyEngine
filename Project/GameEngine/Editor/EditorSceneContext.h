@@ -77,6 +77,9 @@ public:
    bool IsDirty() const { return isDirty_; }
    /// @brief 現在のシーンを保存が必要な状態にする
    void MarkDirty();
+   /// @brief 編集で変更された参照を再接続する
+   /// @param initializeRuntime trueなら未変更でも全Componentの実行時状態を初期化する
+   void RefreshReferences(bool initializeRuntime = false);
    /// @brief 保存済み状態として変更フラグを解除する
    void ClearDirty();
    /// @brief 直近の保存・読込操作の状態メッセージを取得する
@@ -265,6 +268,7 @@ private:
    std::string sceneName_ = "Scene";
    bool hasAutoLoaded_ = false;
    bool isDirty_ = false;
+   bool referencesDirty_ = true;
    std::string lastStatusMessage_;
    Object* selectedObject_ = nullptr;
    ParticleSystem* selectedParticleSystem_ = nullptr;

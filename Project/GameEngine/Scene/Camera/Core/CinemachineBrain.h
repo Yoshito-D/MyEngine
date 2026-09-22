@@ -2,7 +2,7 @@
 #include "CameraState.h"
 #include "VirtualCamera.h"
 #include <vector>
-#include <stack>
+#include <optional>
 #include <memory>
 #include <climits>
 
@@ -87,8 +87,8 @@ private:
 
     CameraState currentState_;
 
-    /// @brief ブレンドスタック（先頭が現在進行中のブレンド）
-    std::stack<BlendLayer> blendStack_;
+    /// @brief 現在の表示状態から最新の切り替え先へ進むブレンド
+    std::optional<BlendLayer> activeBlend_;
 
     float defaultBlendTime_ = 0.5f;
     bool cameraMotionPaused_ = false;

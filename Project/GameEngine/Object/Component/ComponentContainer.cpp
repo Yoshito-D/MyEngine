@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "imgui.h"
 #endif
 
@@ -155,12 +156,19 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
       }
       // コンポーネントごとにID空間を分け、同じ表示ラベルを使う編集項目同士の衝突を防ぐ。
       ImGui::PushID(component->GetTypeName());
+      const auto before = component->Serialize();
+      const bool wasEnabled = component->IsEnabled();
+      bool enabled = wasEnabled;
+      if (ImGui::Checkbox(LocalizeEditorText("有効", "Enabled"), &enabled)) component->SetEnabled(enabled);
 
       const ImVec2 headerPosition = ImGui::GetCursorScreenPos();
       const float headerWidth = ImGui::GetContentRegionAvail().x;
       // 各コンポーネントが最初に描くCollapsingHeaderへ、後描画の削除ボタンを重ねられるようにする。
       ImGui::SetNextItemAllowOverlap();
       component->DrawInspector();
+      if (before != component->Serialize() || wasEnabled != component->IsEnabled()) {
+         EditorUI::MarkChanged();
+      }
 
       const ImVec2 contentEndPosition = ImGui::GetCursorScreenPos();
       const ImGuiStyle& style = ImGui::GetStyle();

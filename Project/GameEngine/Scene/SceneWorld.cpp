@@ -14,10 +14,19 @@
 #include "Scene/Camera/Core/VirtualCamera.h"
 #include "Utility/Logger.h"
 #include <algorithm>
+#include <objbase.h>
+#ifdef USE_IMGUI
+#include "BaseScene.h"
+#include "Editor/EditorSceneContext.h"
+#endif
 
 namespace GameEngine {
 
-SceneWorld::SceneWorld() = default;
+SceneWorld::SceneWorld(CinemachineBrain* cameraBrain) : cameraBrain_(cameraBrain) {}
+
+CinemachineBrain* SceneWorld::GetCameraBrain() const {
+   return cameraBrain_ ? cameraBrain_ : EngineContext::GetActiveBrain();
+}
 
 SceneWorld::~SceneWorld() {
    Clear();
@@ -66,7 +75,7 @@ bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
 void SceneWorld::Clear() {
    // VirtualCamera はワールドが所有する一方、Brain は非所有ポインターを保持している。
    // unique_ptr を破棄する前に登録解除し、次フレームのダングリング参照を防ぐ。
-   if (auto* brain = EngineContext::GetActiveBrain()) {
+   if (auto* brain = GetCameraBrain()) {
       for (const auto& camera : virtualCameras_) {
          if (camera) {
             brain->UnregisterVirtualCamera(camera.get());
@@ -97,14 +106,22 @@ void SceneWorld::Update(float) {
 }
 
 Object* SceneWorld::FindObjectById(const std::string& objectId) const {
-   if (objectId.empty()) {
-      return nullptr;
+   if (objectId.empty()) return nullptr;
+   Object* object = objectStore_.FindById(objectId);
+   if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end()) object = it->second;
+#ifdef USE_IMGUI
+   if (sCurrent_ == this) {
+      if (auto* scene = BaseScene::GetCurrentScene()) {
+         if (auto* context = scene->GetEditorSceneContext()) {
+            if (!object) object = context->GetObjectStore().FindById(objectId);
+            // 非表示のシーン所有Entityと削除待ちEntityへ再接続しない。
+            const auto editable = context->CollectEditableObjects();
+            if (std::find(editable.begin(), editable.end(), object) == editable.end()) return nullptr;
+         }
+      }
    }
-   // Skyboxや旧形式の汎用ObjectはEditorObjectStore外で所有するため、両方の索引を調べる。
-   if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end()) {
-      return it->second;
-   }
-   return objectStore_.FindById(objectId);
+#endif
+   return object;
 }
 
 ParticleSystem* SceneWorld::FindParticleSystemById(const std::string& objectId) const {
@@ -139,6 +156,46 @@ VirtualCamera* SceneWorld::FindVirtualCamera(const std::string& cameraIdOrName) 
       }
    }
    return nullptr;
+}
+
+VirtualCamera* SceneWorld::CreateVirtualCamera(const std::string& name) {
+   auto* brain = GetCameraBrain();
+   if (!brain) return nullptr;
+   auto camera = std::make_unique<VirtualCamera>();
+   camera->Initialize();
+   camera->SetName(name.empty() ? "Virtual Camera" : name);
+   // 表示名を変更してもコンポーネントからの参照は変わらない。
+   GUID guid{};
+   if (FAILED(CoCreateGuid(&guid))) return nullptr;
+   wchar_t buffer[40]{};
+   StringFromGUID2(guid, buffer, 40);
+   // GUID表記はASCIIのみなので、文字幅の変換を明示する。
+   std::string id;
+   for (const wchar_t* character = buffer; *character; ++character) id.push_back(static_cast<char>(*character));
+   camera->SetId(id);
+   auto* result = camera.get();
+   virtualCameras_.push_back(std::move(camera));
+   virtualCamerasById_[id] = result;
+   brain->RegisterVirtualCamera(result);
+   return result;
+}
+
+bool SceneWorld::RemoveVirtualCamera(VirtualCamera* camera) {
+   const auto it = std::find_if(virtualCameras_.begin(), virtualCameras_.end(),
+      [camera](const auto& entry) { return entry.get() == camera; });
+   if (it == virtualCameras_.end()) return false;
+   if (auto* brain = GetCameraBrain()) brain->UnregisterVirtualCamera(camera);
+   virtualCamerasById_.erase(camera->GetId());
+   virtualCameras_.erase(it);
+   return true;
+}
+
+void SceneWorld::ApplyCameraConfiguration(const nlohmann::json& camerasData) {
+   if (!camerasData.is_object() || !camerasData.contains("virtualCameras") ||
+       !camerasData.at("virtualCameras").is_array()) return;
+   // 追加・削除も復元する。Component側の非所有参照は全Entityの復元後に再解決する。
+   while (!virtualCameras_.empty()) RemoveVirtualCamera(virtualCameras_.back().get());
+   RestoreCameras(nlohmann::json{ { "cameras", camerasData } });
 }
 
 std::string SceneWorld::GetObjectId(const Object* object) const {
@@ -307,7 +364,7 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
 
    // VirtualCameraはBrainへ登録されて初めて評価対象になる。Brain不在時に
    // 半端なカメラだけ所有しても機能しないため、まとめて読み飛ばす。
-   auto* brain = EngineContext::GetActiveBrain();
+   auto* brain = GetCameraBrain();
    if (!brain) {
       Logger::EngineWarning("Virtual cameras skipped because no active camera brain exists");
       return;
@@ -334,7 +391,7 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
       VirtualCamera* rawCamera = camera.get();
       rawCamera->Initialize();
       rawCamera->Deserialize(cameraData);
-      const std::string id = cameraData.value("id", rawCamera->GetName());
+      const std::string id = rawCamera->GetId();
       if (id.empty() || virtualCamerasById_.contains(id)) {
          Logger::EngineWarning("Virtual camera skipped because its id is empty or duplicated");
          continue;
@@ -349,9 +406,13 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
 }
 
 void SceneWorld::ResolveReferences() {
+   ResolveReferences(CollectObjects());
+}
+
+void SceneWorld::ResolveReferences(const std::vector<Object*>& objects, bool initializeRuntime) {
    // 全Entityの生成後に参照を結ぶ二段階ロード。デシリアライズ順に依存せず、
    // 子が親より先に記録されたJSONでも同じ結果になる。
-   for (Object* object : CollectObjects()) {
+   for (Object* object : objects) {
       if (!object) {
          continue;
       }
@@ -369,7 +430,9 @@ void SceneWorld::ResolveReferences() {
       // 親子関係など基礎参照を先に確定し、その後で各コンポーネント固有の参照を通知する。
       for (const auto& component : object->GetComponentContainer().GetAll()) {
          if (component) {
-            component->OnSceneLoaded(*this);
+            // 無効なComponentの参照は保持するが、レース停止やUI演出などの初期化は実行しない。
+            if (initializeRuntime && component->IsEnabled()) component->OnSceneLoaded(*this);
+            else component->OnReferencesChanged(*this);
          }
       }
    }

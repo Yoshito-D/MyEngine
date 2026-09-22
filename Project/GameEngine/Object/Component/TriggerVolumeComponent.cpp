@@ -10,6 +10,7 @@
 #include <cmath>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "Utility/ImGuiHelper.h"
 #include <imgui.h>
 #endif
@@ -150,11 +151,7 @@ void TriggerVolumeComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGuiHelper::DrawInputString(
-      "Target Object ID",
-      targetObjectId_,
-      ImGuiHelper::kDefaultTextBufferSize,
-      kInspectorColumnWidth);
+   GameEngine::EditorUI::ObjectReference("Target", targetObjectId_, "TransformComponent");
    const char* shapes[] = { "Sphere", "AABB" };
    int shapeIndex = shape_ == Shape::Sphere ? 0 : 1;
    if (ImGui::Combo("Shape", &shapeIndex, shapes, 2)) {

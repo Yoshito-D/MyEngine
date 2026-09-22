@@ -38,7 +38,7 @@ void CinemachineBrain::Update(float deltaTime) {
     }
 
     // ブレンド処理
-    if (!blendStack_.empty()) {
+    if (activeBlend_) {
         UpdateBlend(deltaTime);
     } else if (activeCamera_) {
         currentState_ = activeCamera_->GetState();
@@ -63,7 +63,7 @@ void CinemachineBrain::UpdateEditorPreview(float deltaTime, VirtualCamera* edito
         Cut(highestPriority);
     } else if (activeCamera_) {
         // ブレンド中にPausedへ入った場合は現在の見た目を保持し、通常時だけ編集後のstateを出力へ反映する。
-        if (blendStack_.empty()) {
+        if (!activeBlend_) {
             currentState_ = activeCamera_->GetState();
         }
     }
@@ -90,29 +90,29 @@ void CinemachineBrain::BlendToCamera(VirtualCamera* newCamera) {
     if (newCamera == nullptr) return;
 
     if (activeCamera_ != nullptr && defaultBlendTime_ > 0.0f) {
-        // 現在のcurrentState_を開始状態としてスタックに積む（連続ブレンド対応）
-        // 途中で再切り替えされても元VirtualCameraの古いstateへ戻らず、現在表示中の姿勢からつなぐ。
-        blendStack_.push({ currentState_, newCamera, defaultBlendTime_, 0.0f });
+        // 最新要求で置き換える。完了後に古い切り替えが再開しないよう、
+        // 現在表示中の姿勢だけを始点として保持する。
+        activeBlend_ = BlendLayer{ currentState_, newCamera, defaultBlendTime_, 0.0f };
     } else {
         // 前のカメラがないかブレンド時間が0の場合は即座に切り替え
         currentState_ = newCamera->GetState();
-        while (!blendStack_.empty()) { blendStack_.pop(); }
+        activeBlend_.reset();
     }
 
     activeCamera_ = newCamera;
 }
 
 void CinemachineBrain::UpdateBlend(float deltaTime) {
-    if (blendStack_.empty() || !activeCamera_) return;
+    if (!activeBlend_ || !activeCamera_) return;
 
-    // Stack最上段の切り替え要求だけをこのフレームで進め、各Layerが保持する開始stateから補間する。
-    BlendLayer& layer = blendStack_.top();
+    // 最後に要求された切り替えだけを、要求時に表示していたstateから進める。
+    BlendLayer& layer = *activeBlend_;
     layer.progress += deltaTime / layer.duration;
 
     if (layer.progress >= 1.0f) {
         // このレイヤーのブレンド完了
         currentState_ = layer.toCamera->GetState();
-        blendStack_.pop();
+        activeBlend_.reset();
     } else {
         // イーズイン・アウト補間 (Smoothstep)
         // Smoothstepで始端・終端の速度を0にし、カメラ切り替え時の速度段差を抑える。
@@ -158,6 +158,12 @@ void CinemachineBrain::UnregisterVirtualCamera(VirtualCamera* vcam) {
         std::remove(virtualCameras_.begin(), virtualCameras_.end(), vcam),
         virtualCameras_.end());
 
+    // fromStateは値だが切り替え先は非所有参照なので、所有者が破棄する前に外す。
+    // 無関係なカメラの解除では、現在進行中のブレンドを維持する。
+    if (activeBlend_ && activeBlend_->toCamera == vcam) {
+        activeBlend_.reset();
+    }
+
     // 選択中の候補が消えた場合は残りから即座に選び直し、破棄済みポインターを保持しない。
     if (activeCamera_ == vcam) {
         activeCamera_ = FindHighestPriorityCamera();
@@ -167,10 +173,10 @@ void CinemachineBrain::UnregisterVirtualCamera(VirtualCamera* vcam) {
 void CinemachineBrain::Cut(VirtualCamera* vcam) {
     if (vcam == nullptr) return;
 
-    // Cut後に古いBlendが再適用されないよう、出力状態と選択先を同時に更新してStackを空にする。
+    // Cut後に古いBlendが再適用されないよう、出力状態と選択先を更新して補間も解除する。
     activeCamera_ = vcam;
     currentState_ = vcam->GetState();
-    while (!blendStack_.empty()) { blendStack_.pop(); }
+    activeBlend_.reset();
 }
 
 } // namespace GameEngine

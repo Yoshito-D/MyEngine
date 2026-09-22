@@ -9,12 +9,13 @@
 #include <sstream>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
 namespace App {
 
-void RaceResultUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void RaceResultUIComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // シーン再読み込み後に破棄済みオブジェクトを参照しないよう、
    // 前回解決したポインターを捨てて保存済みIDから解決し直す。
    raceManager_ = nullptr;
@@ -89,7 +90,7 @@ void RaceResultUIComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGui::Text("Race Manager ID: %s", raceManagerId_.c_str());
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    ImGui::Text("Resolved: %s", raceManager_ ? "true" : "false");
 }
 #endif

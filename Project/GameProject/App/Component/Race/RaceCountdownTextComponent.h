@@ -26,6 +26,8 @@ public:
    /// @brief 表示対象のRaceManagerをIDから解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief レース状態に応じてカウントダウン文字列を更新する
    /// @param deltaTime 回転・拡大・フェードの進行に使うゲーム用デルタタイム（秒）

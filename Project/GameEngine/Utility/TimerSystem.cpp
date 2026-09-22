@@ -9,7 +9,7 @@ TimerSystem::TimerId TimerSystem::SetTimeout(float delaySec, std::function<void(
    t.remaining = (delaySec < 0.0f) ? 0.0f : delaySec;
    t.interval = 0.0f; // 一度きり
    t.repeat = 1;
-   t.callback = std::move(callback);
+   t.callback = std::make_shared<std::function<void()>>(std::move(callback));
    Timers().emplace(t.id, std::move(t));
    return t.id;
 }
@@ -21,7 +21,7 @@ TimerSystem::TimerId TimerSystem::SetInterval(float intervalSec, std::function<v
    t.remaining = clamped;
    t.interval = clamped;
    t.repeat = repeat; // -1: 無限
-   t.callback = std::move(callback);
+   t.callback = std::make_shared<std::function<void()>>(std::move(callback));
    Timers().emplace(t.id, std::move(t));
    return t.id;
 }
@@ -51,18 +51,31 @@ bool TimerSystem::Exists(TimerId id) {
 void TimerSystem::Update(float deltaTime) {
    if (Timers().empty()) return;
 
-   // 走査中に完了タイマーをeraseしてイテレータを壊さないよう、IDだけ後段へ集める。
-   std::vector<TimerId> toErase;
+   // コールバックによる削除・追加・rehashを許可するため、更新開始時のIDだけを走査する。
+   // 追加されたタイマーは次のUpdateから進め、再入したUpdateでは時間を二重に消費しない。
+   static bool updating = false;
+   if (updating) return;
+   updating = true;
+   struct UpdateGuard {
+      ~UpdateGuard() { updating = false; }
+   } guard;
 
-   for (auto& [id, t] : Timers()) {
+   std::vector<TimerId> timerIds;
+   timerIds.reserve(Timers().size());
+   for (const auto& [id, timer] : Timers()) {
+      (void)timer;
+      timerIds.push_back(id);
+   }
+
+   for (const auto id : timerIds) {
+      auto it = Timers().find(id);
+      if (it == Timers().end()) continue;
+      auto& t = it->second;
 	  if (t.paused) continue;
 
 	  float dt = (deltaTime < 0.0f) ? 0.0f : deltaTime;
 	  t.remaining -= dt;
 	  if (t.remaining > 0.0f) continue;
-
-	  // 発火
-	  if (t.callback) t.callback();
 
 	  // 回数消費
 	  if (t.repeat > 0) {
@@ -74,14 +87,14 @@ void TimerSystem::Update(float deltaTime) {
 		 // 超過時間を捨てず次回へ負債として繰り越し、長時間平均の周期ずれを抑える。
 		 // 周期継続（オーバー分も次へ繰越）
 		 t.remaining += t.interval;
-	  } else {
-		 // 完了
-		 toErase.push_back(id);
 	  }
-   }
-
-   for (auto id : toErase) {
-	  Timers().erase(id);
+      // 実行中に削除されても関数の寿命とmutableキャプチャの状態を保持する。
+      auto callback = t.callback;
+      if (t.interval <= 0.0f || t.repeat == 0) {
+         Timers().erase(it);
+      }
+      if (callback && *callback) (*callback)();
+      // ここから先では、コールバックが無効化し得るiterator/Timer参照を使わない。
    }
 }
 

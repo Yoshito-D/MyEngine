@@ -9,15 +9,13 @@
 #include <format>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #include "Utility/ImGuiHelper.h"
 #endif
 
 namespace {
 
-#ifdef USE_IMGUI
-constexpr float kInspectorColumnWidth = 150.0f;
-#endif
 
 GameEngine::Vector3 GetWorldPosition(const GameEngine::Object& object) {
    // 親子階層を含む最終位置を使うため、ローカルTransformではなくワールド行列から取り出す。
@@ -29,7 +27,7 @@ GameEngine::Vector3 GetWorldPosition(const GameEngine::Object& object) {
 
 namespace App {
 
-void RaceGoalDistanceTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void RaceGoalDistanceTextComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // シーンをまたいで無効になる参照を先に破棄し、それぞれの保存済みIDから独立して解決する。
    // 一部を解決できない場合はUpdate側の表示条件で安全に非表示へ退避する。
    raceManager_ = nullptr;
@@ -42,6 +40,10 @@ void RaceGoalDistanceTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneW
    playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
    goalObject_ = sceneWorld.FindObjectById(goalObjectId_);
 
+}
+
+void RaceGoalDistanceTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
    // 再読み込み直後に前シーンの距離文字列が残らないよう、状態評価前はいったん空表示にする。
    if (HasOwner()) {
       if (auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>()) {
@@ -113,21 +115,9 @@ void RaceGoalDistanceTextComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   GameEngine::ImGuiHelper::DrawInputString(
-      "Race Manager ID",
-      raceManagerId_,
-      GameEngine::ImGuiHelper::kDefaultTextBufferSize,
-      kInspectorColumnWidth);
-   GameEngine::ImGuiHelper::DrawInputString(
-      "Player Object ID",
-      playerObjectId_,
-      GameEngine::ImGuiHelper::kDefaultTextBufferSize,
-      kInspectorColumnWidth);
-   GameEngine::ImGuiHelper::DrawInputString(
-      "Goal Object ID",
-      goalObjectId_,
-      GameEngine::ImGuiHelper::kDefaultTextBufferSize,
-      kInspectorColumnWidth);
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
+   GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
+   GameEngine::EditorUI::ObjectReference("Goal", goalObjectId_, "TransformComponent");
    ImGui::Text("Resolved: Race=%s Player=%s Goal=%s",
       raceManager_ ? "true" : "false",
       playerObject_ ? "true" : "false",

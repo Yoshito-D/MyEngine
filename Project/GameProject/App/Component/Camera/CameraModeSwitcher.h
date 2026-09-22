@@ -24,6 +24,8 @@ public:
    /// @brief JSONのカメラIDを実体へ解決して初期モードを適用する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 非ReleaseビルドではTab入力で次のカメラへ切り替える
    void Update(float) override;
@@ -32,6 +34,11 @@ public:
    /// @param cameraId 切り替え先の仮想カメラIDまたは名前
    /// @return カメラが見つかり切り替えられた場合はtrue
    bool SwitchToCamera(const std::string& cameraId);
+
+   /// @brief 選択中の仮想カメラを返す。未解決の場合はnullptr。
+   GameEngine::VirtualCamera* GetSelectedCamera() const {
+      return currentIndex_ < cameras_.size() ? cameras_[currentIndex_] : nullptr;
+   }
 
    /// @brief カメラ順序と初期モードをJSONへ保存する
    /// @return 保存用JSON

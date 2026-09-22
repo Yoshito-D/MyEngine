@@ -7,12 +7,13 @@
 #include "Scene/SceneWorld.h"
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
 namespace App {
 
-void RaceTimeTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void RaceTimeTextComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    raceManager_ = nullptr;
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
@@ -61,7 +62,7 @@ void RaceTimeTextComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGui::Text("Race Manager ID: %s", raceManagerId_.c_str());
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    ImGui::Text("Resolved: %s", raceManager_ ? "true" : "false");
 }
 #endif

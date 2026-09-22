@@ -73,7 +73,7 @@ public:
    void SetTimeScale(float timeScale);
 
    /// @brief 新しいシーンを初期化する前にプレイモードを停止する
-   /// @details 通常の停止と異なり、再生開始時のシーンは復元しない
+   /// @details 開始時のシーン情報を保持し、初期化後の次フレームで元の再生状態へ戻る
    void StopForSceneInitialization();
 
 private:
@@ -102,6 +102,7 @@ private:
    float timeScale_ = 1.0f;
    float stepDeltaTime_ = 1.0f / 60.0f;
 
+   bool hasPlaySession_ = false;
    std::string playStartSceneName_;
    nlohmann::json editorSceneSnapshot_;
    bool hasEditorSceneSnapshot_ = false;

@@ -59,7 +59,11 @@ public:
 
    /// @brief シーン内の全オブジェクト生成後に参照を解決する
    /// @param sceneWorld このコンポーネントを所有するシーンワールド
-   virtual void OnSceneLoaded(SceneWorld& sceneWorld) { (void)sceneWorld; }
+   virtual void OnSceneLoaded(SceneWorld& sceneWorld) { OnReferencesChanged(sceneWorld); }
+
+   /// @brief 編集後に非所有参照だけを再解決する（ゲーム進行や保存設定は変更しない）
+   /// @param sceneWorld 現在のシーンワールド
+   virtual void OnReferencesChanged(SceneWorld& sceneWorld) { (void)sceneWorld; }
 
    /// @brief 更新処理（オーナーはGetOwner()で取得）
    virtual void Update([[maybe_unused]]float deltaTime) {};

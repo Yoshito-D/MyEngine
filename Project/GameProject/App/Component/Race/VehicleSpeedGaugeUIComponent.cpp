@@ -16,13 +16,14 @@
 #include <format>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #include "Utility/ImGuiHelper.h"
 #endif
 
 namespace App {
 
-void VehicleSpeedGaugeUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void VehicleSpeedGaugeUIComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // 再読み込み前のシーンを指す参照をすべて破棄し、現在の所有者と設定IDから再構築する。
    // 枠や速度テキストは任意要素なので、個別に解決して欠けた要素だけを無効化できるようにする。
    raceManager_ = nullptr;
@@ -44,6 +45,10 @@ void VehicleSpeedGaugeUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWo
       speedText_ = textObject->GetComponent<GameEngine::UITextComponent>();
    }
 
+}
+
+void VehicleSpeedGaugeUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
    if (gaugeSprite_) {
       gaugeSprite_->SetAnchorPoint({ 0.0f, 0.0f });
       // 右端を原点として画像を左右反転し、幅の増加を左方向へ伸ばす。
@@ -168,11 +173,10 @@ void VehicleSpeedGaugeUIComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   constexpr float kColumnWidth = 150.0f;
-   GameEngine::ImGuiHelper::DrawInputString("Race Manager ID", raceManagerId_, GameEngine::ImGuiHelper::kDefaultTextBufferSize, kColumnWidth);
-   GameEngine::ImGuiHelper::DrawInputString("Player Object ID", playerObjectId_, GameEngine::ImGuiHelper::kDefaultTextBufferSize, kColumnWidth);
-   GameEngine::ImGuiHelper::DrawInputString("Frame Object ID", frameObjectId_, GameEngine::ImGuiHelper::kDefaultTextBufferSize, kColumnWidth);
-   GameEngine::ImGuiHelper::DrawInputString("Speed Text Object ID", speedTextObjectId_, GameEngine::ImGuiHelper::kDefaultTextBufferSize, kColumnWidth);
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
+   GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
+   GameEngine::EditorUI::ObjectReference("Frame", frameObjectId_, "");
+   GameEngine::EditorUI::ObjectReference("Speed Text", speedTextObjectId_, "UITextComponent");
    ImGui::DragFloat("Gauge Width", &gaugeWidth_, 1.0f, 1.0f, 4096.0f);
    ImGui::DragFloat("Gauge Height", &gaugeHeight_, 1.0f, 1.0f, 4096.0f);
    ImGui::DragFloat("Response", &response_, 0.1f, 0.001f, 100.0f);

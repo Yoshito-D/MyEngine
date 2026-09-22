@@ -9,6 +9,7 @@
 #include <comdef.h>
 #include <locale>
 #include <codecvt>
+#include <memory>
 
 #pragma comment(lib, "xaudio2.lib")
 #pragma comment(lib, "mfplat.lib")
@@ -60,7 +61,8 @@ void Sound::Load(const std::wstring& filepath) {
 
    if (FAILED(result)) throw std::runtime_error("Failed to set media type.");
 
-   audioData_.clear();
+   // 再生中のVoiceが参照するメモリは保持し、新しいPCMを別領域で最後までデコードする。
+   std::vector<BYTE> newAudioData;
 
    // 交渉後の実フォーマットを取得し、後で作るSourceVoiceとPCMバイト列を一致させる。
    // フォーマット取得
@@ -73,8 +75,8 @@ void Sound::Load(const std::wstring& filepath) {
    result = MFCreateWaveFormatExFromMFMediaType(nativeType.Get(), &wf, &waveFormatSize);
    if (FAILED(result)) throw std::runtime_error("Failed to create wave format.");
 
-   memcpy(&waveFormat_, wf, sizeof(WAVEFORMATEX));
-   CoTaskMemFree(wf);
+   // 拡張形式のcbSize分も含め、SourceVoice作成までMFが返したフォーマット全体を保持する。
+   std::unique_ptr<WAVEFORMATEX, decltype(&CoTaskMemFree)> waveFormat(wf, &CoTaskMemFree);
 
    // サンプル読み込みループ
    while (true) {
@@ -98,14 +100,24 @@ void Sound::Load(const std::wstring& filepath) {
 		 if (FAILED(result)) throw std::runtime_error("Failed to lock buffer.");
 
 		 // Media Foundationのロック寿命を越えて再生するため、PCMデータを自前領域へ退避する。
-		 audioData_.insert(audioData_.end(), data, data + currentLen);
+		 try {
+            newAudioData.insert(newAudioData.end(), data, data + currentLen);
+         } catch (...) {
+            buffer->Unlock();
+            throw;
+         }
 
 		 result = buffer->Unlock();
 		 if (FAILED(result)) throw std::runtime_error("Failed to unlock buffer.");
 	  }
    }
 
-   // 新しいPCM形式でVoiceを作り直す前に、旧キューと旧フォーマットのVoiceを破棄する。
+   // 作成に失敗しても旧音声を再生できるよう、新しいVoiceを先に用意する。
+   IXAudio2SourceVoice* newVoice = nullptr;
+   result = sXAudio2_->CreateSourceVoice(&newVoice, waveFormat.get());
+   if (FAILED(result)) throw std::runtime_error("Failed to create source voice.");
+
+   // DestroyVoiceが旧バッファの参照を終了してから、PCM領域を入れ替える。
    // 既存のVoice破棄
    if (sourceVoice_) {
 	  sourceVoice_->Stop();
@@ -114,8 +126,11 @@ void Sound::Load(const std::wstring& filepath) {
 	  sourceVoice_ = nullptr;
    }
 
-   result = sXAudio2_->CreateSourceVoice(&sourceVoice_, (WAVEFORMATEX*)&waveFormat_);
-   if (FAILED(result)) throw std::runtime_error("Failed to create source voice.");
+   audioData_.swap(newAudioData);
+   sourceVoice_ = newVoice;
+   buffer_ = {};
+   isPlaying_ = false;
+   isLooping_ = false;
 }
 
 void Sound::Play(float volume, bool loop, bool restart) {

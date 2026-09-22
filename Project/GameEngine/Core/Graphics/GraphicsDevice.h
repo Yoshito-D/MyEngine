@@ -11,6 +11,28 @@
 #include <queue>
 
 namespace GameEngine {
+class GraphicsDevice;
+
+/// @brief 最後の所有者が破棄された時にSRV/UAVスロットを返却する共有所有権
+/// @note GraphicsDeviceより先に破棄し、GPUが参照していないフレーム境界で解放する
+class SrvDescriptorAllocation final {
+public:
+   /// @brief 所有するスロットを返却する
+   ~SrvDescriptorAllocation();
+   /// @brief ヒープ内のインデックスを取得する
+   UINT GetIndex() const { return index_; }
+   /// @brief スロット所有権の共有にはshared_ptrを使用し、実体のコピーを禁止する
+   SrvDescriptorAllocation(const SrvDescriptorAllocation&) = delete;
+   /// @brief スロット所有権を実体間で代入することを禁止する
+   SrvDescriptorAllocation& operator=(const SrvDescriptorAllocation&) = delete;
+
+private:
+   friend class GraphicsDevice;
+   explicit SrvDescriptorAllocation(UINT index) : index_(index) {}
+   GraphicsDevice* device_ = nullptr;
+   UINT index_;
+};
+
 /// @brief グラフィックスデバイスクラス
 class GraphicsDevice {
 public:
@@ -87,7 +109,13 @@ public:
 
    /// @brief 次のSRVインデックスを取得（フリーリストがあればそちらを優先）
    /// @return 次のSRVインデックス
+   /// @throws std::overflow_error ヒープに空きがない場合
    UINT GetNextSrvIndex() const;
+
+   /// @brief SRV/UAVスロットを確保し、コピー可能な共有所有権を返す
+   /// @return スロット所有権。破棄するとスロットを再利用できる
+   /// @throws std::overflow_error ヒープに空きがない場合
+   std::shared_ptr<SrvDescriptorAllocation> AllocateSrvDescriptor();
 
    /// @brief 使い終わったSRVインデックスをフリーリストに返却
    /// @param index 返却するインデックス

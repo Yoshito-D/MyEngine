@@ -9,6 +9,7 @@
 #include "Editor/EditorSceneContext.h"
 #include "Object/Object.h"
 #include "Component/TransformComponent.h"
+#include "Utility/JsonDataManager.h"
 #endif
 
 #include <algorithm>
@@ -126,44 +127,6 @@ bool LoadSceneJsonFile(const std::filesystem::path& filePath, nlohmann::json& sc
    return sceneData.is_object();
 }
 
-bool SaveSceneJsonFile(const std::filesystem::path& filePath, const nlohmann::json& sceneData) {
-   // 書き込みを始める前に全JSONを文字列化し、例外で既存ファイルへ触れないようにする。
-   std::string serializedSceneData;
-   try {
-      serializedSceneData = sceneData.dump(kSceneJsonIndentSize);
-   } catch (...) {
-      return false;
-   }
-
-   std::filesystem::path temporaryFilePath = filePath;
-   temporaryFilePath += ".component-save.tmp";
-
-   {
-      std::ofstream file(temporaryFilePath, std::ios::trunc);
-      if (!file.is_open()) {
-         return false;
-      }
-
-      file << serializedSceneData;
-      if (!file.good()) {
-         file.close();
-         std::error_code removeError;
-         std::filesystem::remove(temporaryFilePath, removeError);
-         return false;
-      }
-   }
-
-   // 書き込み途中のJSONで既存シーンを壊さないよう、完了した一時ファイルだけを置換する。
-   if (!MoveFileExW(
-      temporaryFilePath.c_str(),
-      filePath.c_str(),
-      MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-      std::error_code removeError;
-      std::filesystem::remove(temporaryFilePath, removeError);
-      return false;
-   }
-   return true;
-}
 } // namespace
 #endif
 
@@ -248,6 +211,10 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
       return reportFailure("editor scene context is not available");
    }
 
+   if (scene->GetEditorSceneName() != playStartSceneName_) {
+      return reportFailure("current scene differs from the play mode starting scene");
+   }
+
    // ディスクはPlay開始後に外部編集された可能性があるため、開始時Snapshotを丸ごと保存せず、
    // 最新ファイルへ対象Componentだけをパッチする。
    const std::filesystem::path sceneFilePath = editorContext->GetSceneFilePath();
@@ -269,7 +236,7 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
       return reportFailure("saved scene data is invalid");
    }
 
-   if (!SaveSceneJsonFile(sceneFilePath, savedSceneData)) {
+   if (!SaveJsonFileAtomically(sceneFilePath, savedSceneData, kSceneJsonIndentSize)) {
       return reportFailure("could not write " + sceneFilePath.generic_string());
    }
 
@@ -283,6 +250,12 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
 #endif
 
 void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
+#ifdef USE_IMGUI
+   // ゲーム更新より前に削除・差し替え済みComponentへのキャッシュを切り離す。
+   if (auto* scene = sceneManager.GetCurrentScene()) {
+      if (auto* context = scene->GetEditorSceneContext()) context->RefreshReferences();
+   }
+#endif
    // 毎フレーム既定値を「更新しない/時間0」に戻し、PlayingまたはStepが成立した場合だけ有効化する。
    shouldRunRuntimeUpdate_ = false;
    gameDeltaTime_ = 0.0f;
@@ -332,21 +305,25 @@ void PlayModeController::SetTimeScale(float timeScale) {
 }
 
 void PlayModeController::StopForSceneInitialization() {
-   const bool wasInPlayMode = mode_ != PlayMode::Edit;
+   const PlayMode previousMode = mode_;
    mode_ = PlayMode::Edit;
    shouldRunRuntimeUpdate_ = false;
    gameDeltaTime_ = 0.0f;
    ClearTransitionRequests();
    EngineContext::SetGameDeltaTime(gameDeltaTime_);
 
-   if (wasInPlayMode) {
-	  // 遷移先のシーンを保持するため、通常のStopのような開始シーン復元は行わない。
-	  ClearPlaySessionState();
-   }
+   // シーン遷移は同じPlayセッションの一部。開始Snapshotは明示的なStopまで保持する。
+   playRequested_ = previousMode != PlayMode::Edit;
+   pauseRequested_ = previousMode == PlayMode::Paused;
 }
 
 void PlayModeController::StartPlaying(SceneManager& sceneManager) {
    if (mode_ != PlayMode::Edit) {
+      return;
+   }
+
+   if (hasPlaySession_) {
+      mode_ = PlayMode::Playing;
       return;
    }
 
@@ -362,16 +339,19 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
          editorSceneSnapshot_ = editorContext->SerializeToJson();
          hasEditorSceneSnapshot_ = editorSceneSnapshot_.is_object();
          playStartSceneWasDirty_ = editorContext->IsDirty();
+         // UI演出やカメラ切替が変更する前に編集状態を退避しておく。
+         editorContext->RefreshReferences(true);
       }
    }
 #endif
 
+   hasPlaySession_ = true;
    // Snapshot取得後にPlayingへ移し、Serialize中の処理からはまだEdit状態として見えるようにする。
    mode_ = PlayMode::Playing;
 }
 
 void PlayModeController::StopPlaying(SceneManager& sceneManager) {
-   if (mode_ == PlayMode::Edit) {
+   if (mode_ == PlayMode::Edit && !hasPlaySession_) {
       return;
    }
 
@@ -410,6 +390,7 @@ void PlayModeController::ClearTransitionRequests() {
 }
 
 void PlayModeController::ClearPlaySessionState() {
+   hasPlaySession_ = false;
    playStartSceneName_.clear();
    editorSceneSnapshot_ = nlohmann::json();
    hasEditorSceneSnapshot_ = false;
