@@ -48,7 +48,11 @@ void PipelineState::CreatePipelineState(ID3D12Device* device) {
 
    // 実際に生成
    result = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(graphicsPipelineState_.GetAddressOf()));
-   assert(SUCCEEDED(result));
+   if (FAILED(result)) {
+      Logger::Error("[PipelineState] PSO creation failed: " + Logger::ConvertString(name_) +
+         ", HRESULT=" + std::to_string(result));
+      return;
+   }
 
    // PIXなどのデバッグ用にID3D12ObjectのSetNameで名前を登録
    if (SUCCEEDED(result) && !name_.empty()) {

@@ -290,22 +290,8 @@ void Renderer::DrawModelWithCamera(
    // 行列を更新
    model->UpdateMatrix(camera);
 
-   // ブレンド設定はマテリアル固有値を最優先し、呼び出し引数、Renderer既定値の順に解決する。
-   // 見た目をアセット側で固定しつつ、一時描画だけ引数で上書きできる規則にしている。
-   BlendMode effectiveBlendMode = currentBlendMode_;
-   if (const auto* mc = model->GetComponent<MaterialComponent>()) {
-      if (!mc->materials.empty() && mc->materials[0]) {
-         if (const auto matBlend = mc->materials[0]->GetBlendMode()) {
-            effectiveBlendMode = *matBlend;
-         } else {
-            effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-         }
-      } else {
-         effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-      }
-   } else {
-      effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-   }
+   // Per-slot blend overrides are resolved when the command is split into draw units.
+   const BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
 
    // 描画パスの決定
    RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
@@ -340,21 +326,7 @@ void Renderer::Draw(Model* model, const std::vector<Texture*>& textures, std::op
    // 行列を更新
    model->UpdateMatrix(activeCamera);
 
-   // MaterialComponent のブレンドモード優先解決
-   BlendMode effectiveBlendMode = currentBlendMode_;
-   if (const auto* mc = model->GetComponent<MaterialComponent>()) {
-      if (!mc->materials.empty() && mc->materials[0]) {
-         if (const auto matBlend = mc->materials[0]->GetBlendMode()) {
-            effectiveBlendMode = *matBlend;
-         } else {
-            effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-         }
-      } else {
-         effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-      }
-   } else {
-      effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-   }
+   const BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
 
    // 描画パスの決定
    RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
@@ -564,6 +536,25 @@ void Renderer::DrawSkybox(Skybox* skybox) {
 }
 
 void Renderer::SubmitDrawCommand(const DrawCommand& command) {
+   if (command.type == DrawCommandType::Model && command.modelData.model && !command.modelData.meshIndex) {
+      auto* mesh = command.modelData.model->GetComponent<MeshComponent>();
+      auto* material = command.modelData.model->GetComponent<MaterialComponent>();
+      const auto* asset = mesh ? mesh->GetModelAsset() : nullptr;
+      const size_t count = asset ? asset->GetMeshData().size() : 1;
+      for (size_t slot = 0; slot < count; ++slot) {
+         DrawCommand draw = command;
+         draw.modelData.meshIndex = slot;
+         auto* value = material ? material->GetMaterial(slot) : nullptr;
+         const std::string name = value && !value->GetPipelineName().empty() ? value->GetPipelineName() : "Object3D";
+         const std::string effectiveName = psoManager_->GetModelPipeline(name) ? name : "Object3D";
+         draw.blendMode = psoManager_->ResolveModelBlendMode(effectiveName,
+            value ? value->GetBlendMode().value_or(command.blendMode) : command.blendMode);
+         draw.modelData.blendMode = draw.blendMode;
+         draw.renderPass = DetermineRenderPass(draw.blendMode, command.renderPass != RenderPass::PostProcess);
+         RouteDrawCommand(draw);
+      }
+      return;
+   }
    RouteDrawCommand(command);
 }
 
@@ -1222,7 +1213,7 @@ void Renderer::InvalidatePipelineBinding() {
 }
 
 void Renderer::SetEnvironmentTexture(Texture* texture) {
-   if (texture) {
+   if (texture && texture->GetMetadata().IsCubemap()) {
 	  activeEnvironmentTextureSrvHandle_ = texture->GetTextureSrvHandleGPU();
    } else {
 	  activeEnvironmentTextureSrvHandle_ = {};

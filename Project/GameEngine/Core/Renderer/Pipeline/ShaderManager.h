@@ -49,6 +49,18 @@ struct ShaderResourceBindingInfo {
    UINT bindPoint = 0;
    UINT bindCount = 0;
    UINT space = 0;
+   D3D_SRV_DIMENSION dimension = D3D_SRV_DIMENSION_UNKNOWN;
+};
+
+/// @brief Reflected leaf field with a constant-buffer-relative offset.
+struct ShaderVariableInfo {
+   std::string name;
+   UINT offset = 0;
+   D3D_SHADER_VARIABLE_TYPE type = D3D_SVT_VOID;
+   D3D_SHADER_VARIABLE_CLASS variableClass = D3D_SVC_SCALAR;
+   UINT rows = 0;
+   UINT columns = 0;
+   UINT elements = 0;
 };
 
 /// @brief 定数バッファ情報
@@ -56,6 +68,7 @@ struct ShaderConstantBufferInfo {
    std::string name;
    UINT size = 0;
    UINT variableCount = 0;
+   std::vector<ShaderVariableInfo> variables;
 };
 
 /// @brief シェーダーリフレクション情報

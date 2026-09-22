@@ -27,7 +27,8 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
 
    if (!context.shaderManager->Initialize(context.device)) {
 	  Logger::Error("[RenderBootstrapper] Failed to initialize shaders from JSON registry.");
-	  return false;
+      if (!context.shaderManager->HasShader("Object3D", ShaderType::Vertex) ||
+         !context.shaderManager->HasShader("Object3D", ShaderType::Pixel)) return false;
    }
 
    context.psoManager->Initialize(context.device, context.shaderManager);
@@ -39,9 +40,9 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
 
    if (!context.psoManager->LoadPipelineDefinitions(L"resources/engine/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
       Logger::Error("[RenderBootstrapper] Failed to load pipeline definitions from JSON registry.");
-	  return false;
+      if (!context.psoManager->GetModelPipeline("Object3D")) return false;
    }
-   Logger::Info("Successfully loaded pipeline definitions from JSON");
+   Logger::Info("Pipeline definitions loaded; failed optional definitions are unavailable.");
 
    if (!context.textRenderer->Initialize(context.device, context.psoManager, context.assetManager->GetFontManager())) {
       Logger::Error("[RenderBootstrapper] Failed to initialize the text renderer.");

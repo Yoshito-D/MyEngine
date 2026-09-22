@@ -4,6 +4,7 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include <vector>
+#include <deque>
 
 using namespace Microsoft::WRL;
 
@@ -79,6 +80,6 @@ private:
    D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags_ = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
    
    // ディスクリプタレンジの動的配列
-   std::vector<D3D12_DESCRIPTOR_RANGE> descriptorRanges_;
+   std::deque<D3D12_DESCRIPTOR_RANGE> descriptorRanges_;
 };
 }

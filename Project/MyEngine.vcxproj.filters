@@ -430,6 +430,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\PipelineLibrary.cpp"><Filter>GameEngine\Core\Renderer\Pipeline</Filter></ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\PSOManager.cpp"><Filter>GameEngine\Core\Renderer\Pipeline</Filter></ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ReflectionValidationCoordinator.cpp"><Filter>GameEngine\Core\Renderer\Pipeline</Filter></ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ModelPipelineValidation.cpp"><Filter>GameEngine\Core\Renderer\Pipeline</Filter></ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ShaderManager.cpp"><Filter>GameEngine\Core\Renderer\Pipeline</Filter></ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.cpp"><Filter>GameEngine\Core\Renderer\PostProcess</Filter></ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Bloom.cpp"><Filter>GameEngine\Core\Renderer\PostProcess</Filter></ClCompile>
@@ -953,5 +954,13 @@
     <None Include="Tests\SceneAuthoring\SceneAuthoringTests.cpp"><Filter>Tests\SceneAuthoring</Filter></None>
     <None Include="Tests\SceneAuthoring\RunSceneAuthoringTests.ps1"><Filter>Tests\SceneAuthoring</Filter></None>
     <None Include="Tests\SceneAuthoring\README.md"><Filter>Tests\SceneAuthoring</Filter></None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tests\Shaders\ShaderRegressionTests.cpp" />
+    <None Include="Tests\Shaders\RunShaderTests.cjs" />
+    <None Include="Tests\Shaders\README.md" />
+    <None Include="Resources\engine\shaders\graphics\object3d\UnlitTint.PS.hlsl" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\unlit_tint_rootsig.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\unlit_tint_pipeline.json" />
   </ItemGroup>
 </Project>

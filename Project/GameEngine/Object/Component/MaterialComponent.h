@@ -9,6 +9,7 @@
 namespace GameEngine {
 class Material;
 class Texture;
+class PSOManager;
 
 /// @brief Objectのマテリアルスロットとテクスチャ参照を名前付きで永続化する
 class MaterialComponent final : public IObjectComponent {
@@ -78,6 +79,23 @@ public:
    /// @param materialNames 各スロットの保存名
    void AssignMaterials(const std::vector<Material*>& materials, const std::vector<std::string>& materialNames = {});
 
+   /// @brief Supply the shared pipeline catalog used for API validation and the inspector.
+   static void SetPipelineManager(PSOManager* manager);
+   /// @brief Read the effective slot material; an absent slot inherits slot zero.
+   Material* GetMaterial(size_t slot = 0) const;
+   /// @brief Create an object-owned deep copy on first edit. Returns nullptr for an invalid slot.
+   Material* EditMaterial(size_t slot = 0);
+   /// @brief Test whether the slot owns an independent material override.
+   bool IsOverridden(size_t slot = 0) const;
+   /// @brief Restore the shared material for this slot.
+   void ResetOverride(size_t slot = 0);
+   /// @brief Assign a shared material to one slot without changing other slots.
+   void SetSharedMaterial(size_t slot, Material* material, const std::string& name = {});
+   /// @brief Select a registered compatible pipeline and create a local override on success.
+   bool SetPipeline(const std::string& name, size_t slot = 0);
+   /// @brief Set a typed shader parameter on a local override; reject unknown names or component counts.
+   bool SetParameter(const std::string& name, const std::vector<float>& value, size_t slot = 0);
+
    /// @brief 各マテリアルスロットの保存名を取得する
    /// @return スロット順のマテリアル名
    const std::vector<std::string>& GetMaterialNames() const { return materialNames_; }
@@ -145,6 +163,15 @@ public:
 
 private:
    void SyncMaterialNamesSize();
+   static PSOManager* pipelineManager_;
+   std::vector<std::unique_ptr<Material>> overrides_;
+   std::vector<Material*> sharedMaterials_;
+#ifdef USE_IMGUI
+   size_t inspectorSlot_ = 0;
+   bool editShared_ = false;
+   nlohmann::json inspectorBefore_;
+   void DrawInspectorContent();
+#endif
 
    static MaterialResolver resolver_;
    static MaterialCreator creator_;

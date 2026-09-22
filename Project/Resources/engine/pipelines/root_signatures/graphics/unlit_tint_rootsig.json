@@ -1,0 +1,43 @@
+{
+  "name": "UnlitTint",
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Vertex",
+      "shaderRegister": 0,
+      "semantic": "transform"
+    },
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 1,
+      "semantic": "parameters"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "semantic": "texture"
+    },
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "semantic": "material"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Wrap",
+      "addressV": "Wrap",
+      "addressW": "Wrap",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}

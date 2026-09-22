@@ -9,6 +9,7 @@
 #include <cctype>
 #include <filesystem>
 #include <optional>
+#include <cmath>
 
 using json = nlohmann::json;
 
@@ -179,14 +180,14 @@ void PSOManager::Initialize(GraphicsDevice* device, ShaderManager* shaderManager
 bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath, DXGI_FORMAT rtvFormat) {
    std::vector<std::string> rootSignaturePaths;
    std::vector<std::string> pipelinePaths;
-   if (!definitionLoader_.LoadRegistryFile(definitionFilePath, rootSignaturePaths, pipelinePaths)) {
+   const bool registryValid = definitionLoader_.LoadRegistryFile(definitionFilePath, rootSignaturePaths, pipelinePaths);
+   if (!registryValid) {
 	  Logger::Error("[PSOManager] Failed to load pipeline registry.");
-	  return false;
    }
 
    // Pipeline生成は参照先RootSignatureが登録済みであることを前提とするため、
    // レジストリ上の記述順に依存せずルート定義をすべて先に処理する。
-   bool allSucceeded = true;
+   bool allSucceeded = registryValid;
    for (const auto& rootSignaturePath : rootSignaturePaths) {
 	  if (!LoadRootSignatureFromFile(rootSignaturePath)) {
 		 Logger::Error("[PSOManager] Failed to load root signature definition: " + rootSignaturePath);
@@ -357,7 +358,27 @@ bool PSOManager::LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT r
 	  definition.pixelShader = pipelineJson.value("pixelShader", "");
 	  definition.rootSignature = pipelineJson.value("rootSignature", "");
 	  definition.computeShader = pipelineJson.value("computeShader", "");
-	  definition.supportBlendModes = pipelineJson.value("supportBlendModes", false);
+      definition.modelCompatible = pipelineJson.value("modelCompatible", false);
+      if (pipelineJson.contains("materialParameters")) {
+         const auto& parameters = pipelineJson.at("materialParameters");
+         definition.model.parameterBufferSize = parameters.at("size").get<UINT>();
+         std::unordered_set<std::string> names;
+         for (const auto& entry : parameters.at("fields")) {
+            MaterialParameterDefinition field;
+            field.name = entry.at("name").get<std::string>();
+            field.offset = entry.at("offset").get<UINT>();
+            const std::string type = entry.at("type").get<std::string>();
+            const UINT count = type == "float" ? 1 : type == "float2" ? 2 : type == "float3" ? 3 : type == "float4" ? 4 : 0;
+            field.defaultValue = entry.at("default").get<std::vector<float>>();
+            if (count == 0 || field.defaultValue.size() != count || field.name.empty() ||
+               !names.insert(field.name).second ||
+               !std::all_of(field.defaultValue.begin(), field.defaultValue.end(), [](float v) { return std::isfinite(v); })) {
+               throw std::runtime_error("Invalid material parameter: " + field.name);
+            }
+            definition.model.parameters.push_back(std::move(field));
+         }
+      }
+      definition.supportBlendModes = pipelineJson.value("supportBlendModes", false);
 	  definition.defaultBlendMode = StringToBlendMode(pipelineJson.value("defaultBlendMode", "None"));
 	  definition.cullMode = StringToCullMode(pipelineJson.value("cullMode", "Back"));
 	  definition.fillMode = StringToFillMode(pipelineJson.value("fillMode", "Solid"));
@@ -440,6 +461,8 @@ bool PSOManager::CreateRootSignatureFromDefinition(const RootSignatureDefinition
    }
 
    rootSignature->CreateRootSignature(device_->GetDevice());
+   if (!rootSignature->GetRootSignature()) return false;
+   rootDefinitions_[definition.name] = definition;
    rootSignatures_[definition.name] = std::move(rootSignature);
    rootSignatureParameterCounts_[definition.name] = static_cast<uint32_t>(definition.parameters.size());
    rootSignatureSemanticSlots_[definition.name] = std::move(semanticSlots);
@@ -453,6 +476,9 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
       Logger::Error("Root signature not found for pipeline: " + definition.name + " (requires: " + definition.rootSignature + ")");
       return false;
    }
+
+   ModelPipelineDefinition modelContract;
+   if (definition.modelCompatible && !ValidateModelPipeline(definition, modelContract)) return false;
 
    // 通常は中間ターゲット形式を継承し、最終合成など明示指定されたPSOだけ形式を上書きする。
    const DXGI_FORMAT resolvedRtvFormat = definition.rtvFormatOverride != DXGI_FORMAT_UNKNOWN
@@ -551,6 +577,10 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
       RegisterPipelineSemanticSlots(MakeReversedFacePipelineName(definition.name), definition.rootSignature);
    }
 
+   if (definition.modelCompatible) {
+      modelPipelines_[definition.name] = std::move(modelContract);
+      if (!definition.supportBlendModes) fixedModelBlendModes_[definition.name] = definition.defaultBlendMode;
+   }
    return true;
 }
 
@@ -661,6 +691,7 @@ bool PSOManager::CreateCustomPipeline(const std::string& name, const PipelineCon
    // パイプラインの作成
    pipeline->CreatePipelineState(device_->GetDevice());
 
+   if (!pipeline->GetPipelineState()) return false;
    pipelineLibrary_.StoreGraphicsPipeline(name, std::move(pipeline));
    pipelineReflectionMetadata_[name] = reflectionMetadata;
    Logger::Info("Pipeline created and stored: " + name);
@@ -848,6 +879,9 @@ bool PSOManager::SaveValidationReportJson(const std::string& filePath) const {
 }
 
 void PSOManager::Clear() {
+   modelPipelines_.clear();
+   fixedModelBlendModes_.clear();
+   rootDefinitions_.clear();
    pipelineLibrary_.Clear();
    rootSignatures_.clear();
    pipelineReflectionMetadata_.clear();

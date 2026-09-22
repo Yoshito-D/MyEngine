@@ -110,6 +110,13 @@ public:
    /// @brief パイプライン向けのsemanticからルートパラメータスロットを解決
    std::optional<UINT> ResolvePipelineRootParameter(const std::string& pipelineName, const std::string& semantic) const;
 
+   /// @brief Return a validated model contract, or nullptr for an unavailable/incompatible pipeline.
+   const ModelPipelineDefinition* GetModelPipeline(const std::string& name) const;
+   /// @brief List successfully created model-compatible pipelines for the editor.
+   std::vector<std::string> GetModelPipelineNames() const;
+   /// @brief Resolve an available blend state without compiling a PSO.
+   BlendMode ResolveModelBlendMode(const std::string& name, BlendMode requested) const;
+
    /// @brief すべてのパイプラインをクリア
    void Clear();
 
@@ -136,6 +143,10 @@ private:
    ShaderManager* shaderManager_ = nullptr;
 
    PipelineLibrary pipelineLibrary_;
+   std::unordered_map<std::string, RootSignatureDefinition> rootDefinitions_;
+   std::unordered_map<std::string, ModelPipelineDefinition> modelPipelines_;
+   std::unordered_map<std::string, BlendMode> fixedModelBlendModes_;
+   bool ValidateModelPipeline(const PipelineDefinition& definition, ModelPipelineDefinition& model) const;
 
    // ルートシグネチャ格納用コンテナ
    std::unordered_map<std::string, std::unique_ptr<RootSignature>> rootSignatures_;
