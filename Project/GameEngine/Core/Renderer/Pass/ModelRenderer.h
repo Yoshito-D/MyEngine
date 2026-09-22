@@ -1,9 +1,11 @@
 #pragma once
 #include "DrawCommand.h"
 #include <d3d12.h>
+#include <unordered_set>
 
 namespace GameEngine {
 class GraphicsDevice;
+class SrvDescriptorAllocation;
 class PSOManager;
 class AssetManager;
 class Material;
@@ -33,6 +35,9 @@ public:
 		std::function<void(const std::string&, BlendMode)> setPipelineFunc);
 
 private:
+   std::shared_ptr<SrvDescriptorAllocation> nullCubeAllocation_;
+   D3D12_GPU_DESCRIPTOR_HANDLE nullCubeHandle_{};
+   std::unordered_set<std::string> reportedFailures_;
 	GraphicsDevice* device_ = nullptr;
 	PSOManager* psoManager_ = nullptr;
   AssetManager* assetManager_ = nullptr;

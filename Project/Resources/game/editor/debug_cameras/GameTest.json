@@ -20,7 +20,9 @@
             "enabled": true
          }
       ],
+      "componentsAreComplete": true,
       "followTargetId": "",
+      "id": "",
       "lookAtTargetId": "",
       "name": "DebugCamera",
       "priority": -1,

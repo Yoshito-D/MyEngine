@@ -3,6 +3,9 @@
 #include "ComponentRegistry.h"
 #include "Graphics/Texture.h"
 #include "Object.h"
+#include "PSOManager.h"
+#include "MeshComponent.h"
+#include <cmath>
 
 #include <algorithm>
 #include <cctype>
@@ -116,6 +119,7 @@ namespace {
       const auto blendMode = material->GetBlendMode();
       json["blendMode"] = blendMode.has_value() ? static_cast<int>(blendMode.value()) : -1;
       json["pipelineName"] = material->GetPipelineName();
+      json["parameters"] = material->GetParameters();
       return json;
    }
 
@@ -180,6 +184,18 @@ namespace {
       if (data.contains("pipelineName") && data.at("pipelineName").is_string()) {
          material->SetPipelineName(data.at("pipelineName").get<std::string>());
       }
+      material->ClearParameters();
+      if (data.contains("parameters") && data.at("parameters").is_object()) {
+         for (const auto& [name, value] : data.at("parameters").items()) {
+            try {
+               if (!value.is_array() || !material->SetParameter(name, value.get<std::vector<float>>())) {
+                  Logger::Warning("[MaterialComponent] Invalid parameter: " + name);
+               }
+            } catch (const std::exception& error) {
+               Logger::Warning("[MaterialComponent] Parameter " + name + ": " + error.what());
+            }
+         }
+      }
    }
 
    bool IsTextureFileExtension(std::string extension) {
@@ -209,6 +225,9 @@ namespace {
 #ifdef USE_IMGUI
 #include "Object.h"
 #include "imgui.h"
+#include "Scene/BaseScene.h"
+#include "EditorSceneContext.h"
+#include "EditorCommand.h"
 #include "Graphics/Texture.h"
 #include "Utility/ImGuiHelper.h"
 #include <cstring>
@@ -216,6 +235,7 @@ namespace {
 
 namespace GameEngine {
 
+PSOManager* MaterialComponent::pipelineManager_ = nullptr;
 MaterialComponent::MaterialResolver MaterialComponent::resolver_ = nullptr;
 MaterialComponent::MaterialCreator MaterialComponent::creator_ = nullptr;
 MaterialComponent::MaterialNamesProvider MaterialComponent::namesProvider_ = nullptr;
@@ -226,6 +246,82 @@ MaterialComponent::EnvironmentTextureNamesProvider MaterialComponent::environmen
 
 // Resolver群はAssetManagerへの依存を注入する境界である。ComponentをEditor/Runtimeの
 // どちらでも同じ形式のまま使い、所有権を持たないMaterial/Textureを名前から再解決する。
+
+void MaterialComponent::SetPipelineManager(PSOManager* manager) { pipelineManager_ = manager; }
+
+Material* MaterialComponent::GetMaterial(size_t slot) const {
+   return materials.empty() ? nullptr : (slot < materials.size() && materials[slot] ? materials[slot] : materials[0]);
+}
+
+bool MaterialComponent::IsOverridden(size_t slot) const {
+   return slot < overrides_.size() && slot < materials.size() && overrides_[slot] && materials[slot] == overrides_[slot].get();
+}
+
+Material* MaterialComponent::EditMaterial(size_t slot) {
+   if (slot >= 4096) return nullptr;
+   if (IsOverridden(slot)) return materials[slot];
+   Material* source = GetMaterial(slot);
+   // Persist the inherited asset reference as well as its local values, so ResetOverride
+   // returns to the same shared material after a scene reload.
+   const std::string sourceName = slot < materials.size() && materials[slot] && slot < materialNames_.size()
+      ? materialNames_[slot] : materialNames_.empty() ? std::string{} : materialNames_[0];
+   Material* shared = source;
+   for (size_t i = 0; i < overrides_.size(); ++i) {
+      if (overrides_[i].get() == source && i < sharedMaterials_.size()) shared = sharedMaterials_[i];
+   }
+   if (materials.size() <= slot) materials.resize(slot + 1, nullptr);
+   SyncMaterialNamesSize();
+   overrides_.resize(materials.size());
+   sharedMaterials_.resize(materials.size());
+   materialNames_[slot] = sourceName;
+   sharedMaterials_[slot] = shared;
+   overrides_[slot] = source ? source->Clone() : std::make_unique<Material>();
+   if (!source) overrides_[slot]->Create();
+   materials[slot] = overrides_[slot].get();
+   return materials[slot];
+}
+
+void MaterialComponent::ResetOverride(size_t slot) {
+   if (!IsOverridden(slot)) return;
+   materials[slot] = sharedMaterials_[slot];
+   overrides_[slot].reset();
+}
+
+void MaterialComponent::SetSharedMaterial(size_t slot, Material* material, const std::string& name) {
+   if (slot >= 4096) return;
+   if (materials.size() <= slot) materials.resize(slot + 1, nullptr);
+   overrides_.resize(materials.size());
+   sharedMaterials_.resize(materials.size());
+   overrides_[slot].reset();
+   materials[slot] = material;
+   sharedMaterials_[slot] = material;
+   SyncMaterialNamesSize();
+   materialNames_[slot] = name;
+}
+
+bool MaterialComponent::SetPipeline(const std::string& name, size_t slot) {
+   if (!pipelineManager_ || !pipelineManager_->GetModelPipeline(name)) {
+      Logger::Warning("[MaterialComponent] Unavailable model pipeline=" + name + ", slot=" + std::to_string(slot));
+      return false;
+   }
+   if (auto* material = EditMaterial(slot)) { material->SetPipelineName(name); return true; }
+   return false;
+}
+
+bool MaterialComponent::SetParameter(const std::string& name, const std::vector<float>& value, size_t slot) {
+   Material* material = GetMaterial(slot);
+   const auto* pipeline = pipelineManager_ && material ? pipelineManager_->GetModelPipeline(material->GetPipelineName()) : nullptr;
+   if (pipeline) {
+      const auto field = std::find_if(pipeline->parameters.begin(), pipeline->parameters.end(), [&](const auto& entry) { return entry.name == name; });
+      if (field != pipeline->parameters.end() && field->defaultValue.size() == value.size() &&
+         std::all_of(value.begin(), value.end(), [](float v) { return std::isfinite(v); })) {
+         material = EditMaterial(slot);
+         return material && material->SetParameter(name, value);
+      }
+   }
+   Logger::Warning("[MaterialComponent] Invalid parameter=" + name + ", slot=" + std::to_string(slot));
+   return false;
+}
 
 void MaterialComponent::SetMaterialResolver(MaterialResolver resolver) {
    resolver_ = std::move(resolver);
@@ -278,6 +374,8 @@ Material* MaterialComponent::EnsureMaterial(const std::string& name, uint32_t co
 }
 
 void MaterialComponent::AssignMaterial(Material* material, const std::string& materialName) {
+   overrides_.clear();
+   sharedMaterials_.clear();
    materials.clear();
    materialNames_.clear();
 
@@ -323,22 +421,21 @@ void MaterialComponent::AppendMaterial(Material* material, const std::string& ma
 }
 
 void MaterialComponent::AssignMaterials(const std::vector<Material*>& newMaterials, const std::vector<std::string>& materialNames) {
+   overrides_.clear();
+   sharedMaterials_.clear();
    materials = newMaterials;
    materialNames_ = materialNames;
    SyncMaterialNamesSize();
 }
 
 void MaterialComponent::SyncMaterialNamesSize() {
-   // material/name/textureは同じslot indexを共有する平行配列。常にMaterial数へ揃え、
-   // InspectorやRendererが別配列を同じindexで参照しても範囲外にならないようにする。
+   // Names follow explicit materials; textures may also override inherited submesh slots.
    if (materialNames_.size() < materials.size()) {
       materialNames_.resize(materials.size());
    } else if (materialNames_.size() > materials.size()) {
       materialNames_.resize(materials.size());
    }
    if (textureNames_.size() < materials.size()) {
-      textureNames_.resize(materials.size());
-   } else if (textureNames_.size() > materials.size()) {
       textureNames_.resize(materials.size());
    }
 }
@@ -358,6 +455,7 @@ const std::string& MaterialComponent::GetTextureName(size_t index) const {
 }
 
 void MaterialComponent::SetTextureName(size_t slot, const std::string& name) {
+   if (slot >= 4096) return;
    // 通常Texture2DスロットへCubemapを入れるとShaderのView次元と一致しないため、割り当てを拒否する。
    if (!name.empty() && textureResolver_) {
       if (Texture* texture = textureResolver_(name); texture && texture->GetMetadata().IsCubemap()) {
@@ -408,6 +506,7 @@ nlohmann::json MaterialComponent::Serialize() const {
    for (size_t slot = 0; slot < materialSlotCount; ++slot) {
       const Material* material = slot < materials.size() ? materials[slot] : nullptr;
       nlohmann::json slotData = SerializeMaterialProperties(material);
+      slotData["ownership"] = IsOverridden(slot) ? "local" : "shared";
       slotData["name"] = materialNames[slot];
       slotData["textureName"] = slot < textureNames_.size()
          ? MakeSerializedTextureName(textureNames_[slot])
@@ -425,7 +524,7 @@ nlohmann::json MaterialComponent::Serialize() const {
    return json;
 }
 
-void MaterialComponent::Deserialize(const nlohmann::json& data) {
+void MaterialComponent::Deserialize(const nlohmann::json& data) try {
    if (!data.is_object()) {
       return;
    }
@@ -445,7 +544,14 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
    }
 
    // 名前解決不能な旧データでも既存描画を維持できるよう、現在のslot実体をfallbackとして退避する。
-   const std::vector<Material*> previousMaterials = materials;
+   std::vector<Material*> previousMaterials = materials;
+   for (size_t i = 0; i < previousMaterials.size(); ++i) {
+      if (IsOverridden(i)) previousMaterials[i] = sharedMaterials_[i];
+   }
+   auto previousOverrides = std::move(overrides_);
+   const auto previousShared = sharedMaterials_;
+   const auto previousEffective = materials;
+   sharedMaterials_.clear();
    const std::vector<std::string> previousMaterialNames = materialNames_;
    const std::vector<std::string> previousTextureNames = textureNames_;
    auto resolveMaterial = [&previousMaterials](const std::string& name, size_t slot) -> Material* {
@@ -470,11 +576,11 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
    // 現行形式はslotごとにMaterialプロパティとTexture名を完結して保持するため最優先で読む。
    if (data.contains("materialSlots") && data.at("materialSlots").is_array()) {
       const auto& materialSlots = data.at("materialSlots");
-      materialNames_.reserve(materialSlots.size());
-      materials.reserve(materialSlots.size());
-      textureNames_.reserve(materialSlots.size());
+      materialNames_.reserve(std::min<size_t>(materialSlots.size(), 4096));
+      materials.reserve(std::min<size_t>(materialSlots.size(), 4096));
+      textureNames_.reserve(std::min<size_t>(materialSlots.size(), 4096));
 
-      for (size_t slot = 0; slot < materialSlots.size(); ++slot) {
+      for (size_t slot = 0; slot < std::min<size_t>(materialSlots.size(), 4096); ++slot) {
          const auto& slotData = materialSlots[slot];
          if (!slotData.is_object()) {
             materialNames_.emplace_back();
@@ -489,11 +595,13 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
          const std::string textureName = slotData.contains("textureName") && slotData.at("textureName").is_string()
             ? slotData.at("textureName").get<std::string>()
             : std::string{};
-         // 実体を解決してからプロパティを適用し、同名の共有Materialを保存値で復元する。
+         // Old scenes become local snapshots so loading one object never overwrites another shared material.
          Material* material = resolveMaterial(materialName, slot);
          materialNames_.push_back(materialName);
          materials.push_back(material);
          textureNames_.push_back(textureName);
+         const bool local = !slotData.contains("ownership") || slotData.at("ownership") != "shared";
+         if (local) material = EditMaterial(slot);
          DeserializeMaterialProperties(material, slotData);
       }
       return;
@@ -501,7 +609,9 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
 
    // materialSlotsも旧materialNamesもない部分データでは、現在の割り当てを破棄しない。
    if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
-      materials = previousMaterials;
+      materials = previousEffective;
+      overrides_ = std::move(previousOverrides);
+      sharedMaterials_ = previousShared;
       materialNames_ = previousMaterialNames;
       textureNames_ = previousTextureNames;
       SyncMaterialNamesSize();
@@ -520,6 +630,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
       }
    }
 
+   materialSlotCount = std::min<size_t>(materialSlotCount, 4096);
    materialNames_.reserve(materialSlotCount);
    materials.reserve(materialSlotCount);
    for (size_t slot = 0; slot < materialSlotCount; ++slot) {
@@ -539,12 +650,35 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) {
 
    // v1 のシーンJSONは第0スロットの値をコンポーネント直下に保持している。
    if (!materials.empty()) {
-      DeserializeMaterialProperties(materials[0], data);
+      DeserializeMaterialProperties(EditMaterial(0), data);
    }
+}
+
+catch (const std::exception& error) {
+   Logger::Warning("[MaterialComponent] Invalid scene data: " + std::string(error.what()));
 }
 
 #ifdef USE_IMGUI
 void MaterialComponent::DrawInspector() {
+   const auto before = Serialize();
+   DrawInspectorContent();
+   const auto after = Serialize();
+   if (before != after && inspectorBefore_.is_null()) inspectorBefore_ = before;
+   // A drag becomes one command when the active control is released.
+   if (!inspectorBefore_.is_null() && !ImGui::IsAnyItemActive()) {
+      if (HasOwner()) {
+         auto* scene = BaseScene::GetCurrentScene();
+         auto* context = scene ? scene->GetEditorSceneContext() : nullptr;
+         if (context && inspectorBefore_ != after) {
+            context->GetCommandStack().Execute(std::make_unique<SetMaterialSettingsCommand>(
+               GetOwner().GetEntityId(), &GetOwner(), inspectorBefore_, after), *context);
+         }
+      }
+      inspectorBefore_ = nullptr;
+   }
+}
+
+void MaterialComponent::DrawInspectorContent() {
    auto Tr = [](const char* japanese, const char* english) {
       return ImGuiHelper::Localize({ japanese, english });
    };
@@ -557,7 +691,22 @@ void MaterialComponent::DrawInspector() {
       return;
    }
 
-   if (materials.empty() || !materials[0] || !materials[0]->GetMaterialData()) {
+   size_t slotCount = std::max<size_t>(1, materials.size());
+   if (HasOwner()) {
+      if (auto* mesh = GetOwner().GetComponent<MeshComponent>(); mesh && mesh->GetModelAsset()) {
+         slotCount = std::max(slotCount, mesh->GetModelAsset()->GetMeshData().size());
+      }
+   }
+   inspectorSlot_ = std::min(inspectorSlot_, slotCount - 1);
+   const std::string slotLabel = std::to_string(inspectorSlot_);
+   if (ImGui::BeginCombo(Tr("マテリアルスロット", "Material Slot"), slotLabel.c_str())) {
+      for (size_t slot = 0; slot < slotCount; ++slot) {
+         const std::string label = std::to_string(slot);
+         if (ImGui::Selectable(label.c_str(), slot == inspectorSlot_)) { inspectorSlot_ = slot; editShared_ = false; }
+      }
+      ImGui::EndCombo();
+   }
+   if (!GetMaterial(inspectorSlot_) || !GetMaterial(inspectorSlot_)->GetMaterialData()) {
       ImGui::Text("%s", Tr("マテリアルなし", "No material"));
       if (namesProvider_ && resolver_) {
          const auto names = namesProvider_();
@@ -579,7 +728,7 @@ void MaterialComponent::DrawInspector() {
 
             if (ImGui::Button(Tr("マテリアルアセットを割り当て", "Assign Material Asset"))) {
                if (auto* selectedMaterial = resolver_(names[selectedIndex])) {
-                  AssignMaterial(selectedMaterial, names[selectedIndex]);
+                  SetSharedMaterial(inspectorSlot_, selectedMaterial, names[selectedIndex]);
                }
             }
          }
@@ -591,7 +740,7 @@ void MaterialComponent::DrawInspector() {
       const auto names = namesProvider_();
       if (!names.empty()) {
          int selectedIndex = 0;
-         const std::string currentName = materialNames_.empty() ? std::string() : materialNames_[0];
+         const std::string currentName = materialNames_.empty() ? std::string() : materialNames_[inspectorSlot_ < materialNames_.size() ? inspectorSlot_ : 0];
          for (size_t i = 0; i < names.size(); ++i) {
             if (names[i] == currentName) {
                selectedIndex = static_cast<int>(i);
@@ -605,7 +754,7 @@ void MaterialComponent::DrawInspector() {
                const bool selected = static_cast<int>(i) == selectedIndex;
                if (ImGui::Selectable(names[i].c_str(), selected)) {
                   if (auto* selectedMaterial = resolver_(names[i])) {
-                     AssignMaterial(selectedMaterial, names[i]);
+                     SetSharedMaterial(inspectorSlot_, selectedMaterial, names[i]);
                   }
                }
                if (selected) {
@@ -617,8 +766,17 @@ void MaterialComponent::DrawInspector() {
       }
    }
 
-   auto* material = materials[0];
+   ImGui::TextUnformatted(IsOverridden(inspectorSlot_) ? Tr("個別設定", "Local override") : Tr("共有設定を参照", "Shared material"));
+   if (IsOverridden(inspectorSlot_)) {
+      if (ImGui::Button(Tr("共有設定へ戻す", "Reset to shared"))) ResetOverride(inspectorSlot_);
+   } else {
+      if (ImGui::Button(Tr("このオブジェクトだけ編集", "Make local override"))) EditMaterial(inspectorSlot_);
+      ImGui::Checkbox(Tr("共有マテリアルを編集（全参照に反映）", "Edit shared material (all references)"), &editShared_);
+   }
+   auto* material = GetMaterial(inspectorSlot_);
+   if (!material || !material->GetMaterialData()) return;
    auto* data = material->GetMaterialData();
+
 
    // テクスチャスロット（マテリアルスロットごとに表示）
    if (textureNamesProvider_) {
@@ -626,7 +784,7 @@ void MaterialComponent::DrawInspector() {
       if (!texNames.empty()) {
          SyncMaterialNamesSize();
          ImGui::SeparatorText(Tr("テクスチャ", "Textures"));
-         for (size_t slot = 0; slot < materials.size(); ++slot) {
+         for (size_t slot = 0; slot < slotCount; ++slot) {
             ImGui::PushID(static_cast<int>(slot));
 
             const std::string currentTexName = slot < textureNames_.size() ? textureNames_[slot] : std::string();
@@ -696,6 +854,7 @@ void MaterialComponent::DrawInspector() {
    ImGui::DragFloat2(Tr("左上", "Left Top"), &textureLeftTop_.x, 0.1f, 0.0f, 16384.0f);
    ImGui::DragFloat2(Tr("サイズ", "Size"), &textureSize_.x, 0.1f, 0.0f, 16384.0f);
 
+   ImGui::BeginDisabled(!IsOverridden(inspectorSlot_) && !editShared_);
    Vector4 color = data->color;
    if (ImGui::ColorEdit4(Tr("色", "Color"), &color.x)) {
       material->SetColor(color);
@@ -784,16 +943,35 @@ void MaterialComponent::DrawInspector() {
       }
    }
 
-   // パイプライン名
-   {
-      std::string pipelineName = material->GetPipelineName();
-      char buf[128] = {};
-      pipelineName.copy(buf, sizeof(buf) - 1);
-      if (ImGui::InputText(Tr("パイプライン名", "Pipeline Name"), buf, sizeof(buf))) {
-         material->SetPipelineName(buf);
+   // Model choices come only from the validated registry, including custom parameter metadata.
+   if (pipelineManager_ && HasOwner() && GetOwner().GetComponent<MeshComponent>()) {
+      const std::string name = material->GetPipelineName().empty() ? "Object3D" : material->GetPipelineName();
+      if (ImGui::BeginCombo(Tr("シェーダー / パイプライン", "Shader / Pipeline"), name.c_str())) {
+         for (const auto& candidate : pipelineManager_->GetModelPipelineNames()) {
+            if (ImGui::Selectable(candidate.c_str(), candidate == name)) material->SetPipelineName(candidate);
+         }
+         ImGui::EndCombo();
       }
+      const auto* definition = pipelineManager_->GetModelPipeline(material->GetPipelineName());
+      if (!definition) ImGui::TextWrapped("%s", Tr("利用できない設定です。Object3Dへフォールバックします。", "Unavailable setting; drawing falls back to Object3D."));
+      if (definition && !definition->parameters.empty()) {
+         ImGui::SeparatorText(Tr("固有パラメーター", "Shader Parameters"));
+         for (const auto& field : definition->parameters) {
+            auto value = field.defaultValue;
+            const auto it = material->GetParameters().find(field.name);
+            if (it != material->GetParameters().end() && it->second.size() == value.size()) value = it->second;
+            if (ImGui::DragScalarN(field.name.c_str(), ImGuiDataType_Float, value.data(), static_cast<int>(value.size()), 0.01f)) {
+               material->SetParameter(field.name, value);
+            }
+         }
+         if (ImGui::Button(Tr("パラメーターを既定値へ", "Reset parameters"))) material->ClearParameters();
+      }
+   } else {
+      // Preserve the existing non-model pipeline editor.
+      char buf[128] = {};
+      material->GetPipelineName().copy(buf, sizeof(buf) - 1);
+      if (ImGui::InputText(Tr("パイプライン名", "Pipeline Name"), buf, sizeof(buf))) material->SetPipelineName(buf);
    }
-
    Vector2 uvScale = material->GetUVScale();
    float uvRotation = material->GetUVRotation();
    float uvRotationDegrees = ImGuiHelper::RadiansToDegrees(uvRotation);
@@ -858,6 +1036,7 @@ void MaterialComponent::DrawInspector() {
       material->SetEnvironmentTextureStrength(environmentCoefficient);
    }
 
+   ImGui::EndDisabled();
    ImGui::Spacing();
 }
 #endif

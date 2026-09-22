@@ -23,12 +23,13 @@ void RootSignature::CreateRootSignature(ID3D12Device* device) {
    // D3D12が検証済みの不変レイアウトとして生成する。
    result = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignatureBlob_, &errorBlob);
    if (FAILED(result)) {
-	  Logger::Info(Logger::ConvertString(reinterpret_cast<char*>(errorBlob->GetBufferPointer())));
-	  assert(false);
+      Logger::Error(errorBlob ? std::string(static_cast<const char*>(errorBlob->GetBufferPointer())) :
+         "[RootSignature] Serialization failed");
+      return;
    }
 
    result = device->CreateRootSignature(0, rootSignatureBlob_->GetBufferPointer(), rootSignatureBlob_->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-   assert(SUCCEEDED(result));
+   if (FAILED(result)) Logger::Error("[RootSignature] Creation failed: " + std::to_string(result));
 }
 
 void RootSignature::SetRootParameter(D3D12_ROOT_PARAMETER_TYPE type, D3D12_SHADER_VISIBILITY visibility, UINT shaderRegister, const D3D12_DESCRIPTOR_RANGE* descriptorRanges, UINT numDescriptorRanges, UINT num32BitValues) {
@@ -76,12 +77,7 @@ const D3D12_DESCRIPTOR_RANGE* RootSignature::CreateDescriptorRange(
    range.RegisterSpace = registerSpace;
    range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
    
-   // RootParameterはこのvector要素への生ポインタを保持するため、追加時の再配置頻度を
-   // 抑える意図で一定数ずつ余裕を持たせる。
-   if (descriptorRanges_.capacity() == descriptorRanges_.size()) {
-      descriptorRanges_.reserve(descriptorRanges_.capacity() + 10);
-   }
-   
+   // Root parameters retain pointers until serialization; deque keeps them stable.
    descriptorRanges_.push_back(range);
    return &descriptorRanges_.back();
 }

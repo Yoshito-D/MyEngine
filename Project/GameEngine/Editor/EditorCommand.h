@@ -32,6 +32,26 @@ public:
    virtual const char* GetName() const = 0;
 };
 
+/// @brief Undo/redo a material inspector edit, including local ownership and every slot.
+class SetMaterialSettingsCommand final : public IEditorCommand {
+public:
+   /// @brief Capture an already-applied inspector edit; the first Execute only records it.
+   SetMaterialSettingsCommand(std::string id, Object* fallback, nlohmann::json before, nlohmann::json after)
+      : id_(std::move(id)), fallback_(fallback), before_(std::move(before)), after_(std::move(after)) {}
+   /// @copydoc IEditorCommand::Execute
+   bool Execute(EditorSceneContext& context) override;
+   /// @copydoc IEditorCommand::Undo
+   void Undo(EditorSceneContext& context) override;
+   /// @copydoc IEditorCommand::GetName
+   const char* GetName() const override { return "Edit Material"; }
+private:
+   bool Apply(EditorSceneContext& context, const nlohmann::json& data);
+   std::string id_;
+   Object* fallback_ = nullptr;
+   nlohmann::json before_, after_;
+   bool alreadyApplied_ = true;
+};
+
 /// @brief 実行済み・取り消し済みコマンドを所有してUndo/Redo履歴を管理する
 class EditorCommandStack {
 public:

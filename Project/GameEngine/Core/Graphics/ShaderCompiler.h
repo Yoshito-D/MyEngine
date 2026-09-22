@@ -16,6 +16,7 @@ namespace ShaderCompiler {
 /// @param dxcUtils DXCユーティリティ
 /// @param dxcCompiler DXCコンパイラ
 /// @param includeHandler インクルードハンドラー
+/// @return Compiled object, or nullptr with diagnostics on load/compile failure.
 ComPtr<IDxcBlob> CompileShader(
    const std::wstring& filePath,
    const wchar_t* profile,

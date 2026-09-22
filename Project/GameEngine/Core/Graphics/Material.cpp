@@ -2,6 +2,8 @@
 #include "Material.h"
 #include "ResourceHelper.h"
 #include "GraphicsDevice.h"
+#include <cmath>
+#include <cstring>
 
 namespace GameEngine {
 namespace {
@@ -22,6 +24,7 @@ void Material::Create(unsigned int color, int32_t lightingMode, const Matrix4x4&
    materialResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(MaterialData));
    // 書き込むためのアドレスを取得
    materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
+   std::memset(materialData_, 0, sizeof(MaterialData));
    // 色
    materialData_->color = ConvertUIntToColor(color);
    // ライティングするか
@@ -38,6 +41,70 @@ void Material::Create(unsigned int color, int32_t lightingMode, const Matrix4x4&
    materialData_->rimLightPower = 4.0f;
    materialData_->fillLightColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
    materialData_->fillLightIntensity = 0.0f;
+}
+
+void Material::SetPipelineName(const std::string& name) {
+   if (pipelineName_ != name) parameters_.clear();
+   pipelineName_ = name;
+}
+
+bool Material::HasValidData() const {
+   if (!materialData_) return false;
+   const auto& data = *materialData_;
+   const auto finiteColor = [](const Vector4& color) {
+      return std::isfinite(color.x) && std::isfinite(color.y) && std::isfinite(color.z) && std::isfinite(color.w);
+   };
+   if (!finiteColor(data.color) || !finiteColor(data.rimLightColor) || !finiteColor(data.fillLightColor) ||
+      data.lightingMode < NONE || data.lightingMode > BLINNPHONG || !std::isfinite(data.environmentCoefficient) ||
+      !std::isfinite(data.shininess) || !std::isfinite(data.rimLightIntensity) || !std::isfinite(data.rimLightPower) ||
+      !std::isfinite(data.fillLightIntensity)) return false;
+   for (const auto& row : data.uvTransform.m) {
+      for (float value : row) if (!std::isfinite(value)) return false;
+   }
+   return true;
+}
+
+std::unique_ptr<Material> Material::Clone() const {
+   auto copy = std::make_unique<Material>();
+   copy->Create();
+   if (materialData_ && copy->materialData_) *copy->materialData_ = *materialData_;
+   copy->pipelineName_ = pipelineName_;
+   copy->blendMode_ = blendMode_;
+   copy->parameters_ = parameters_;
+   return copy;
+}
+
+bool Material::SetParameter(const std::string& name, const std::vector<float>& value) {
+   if (name.empty() || value.empty() || value.size() > 4 ||
+      !std::all_of(value.begin(), value.end(), [](float v) { return std::isfinite(v); })) {
+      Logger::Warning("[Material] Invalid parameter: pipeline=" + pipelineName_ + ", name=" + name);
+      return false;
+   }
+   parameters_[name] = value;
+   return true;
+}
+
+ID3D12Resource* Material::PrepareParameters(const ModelPipelineDefinition& definition) {
+   if (definition.parameterBufferSize == 0 || definition.parameterBufferSize > 4096 || !sDevice_) return nullptr;
+   for (const auto& [name, value] : parameters_) {
+      auto field = std::find_if(definition.parameters.begin(), definition.parameters.end(),
+         [&](const auto& entry) { return entry.name == name; });
+      if (field == definition.parameters.end() || field->defaultValue.size() != value.size()) return nullptr;
+   }
+   if (!parameterResource_) {
+      // Allocate once per material; shader/PSO creation never occurs here.
+      parameterResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), 4096);
+      if (!parameterResource_ || FAILED(parameterResource_->Map(0, nullptr, &parameterData_))) return nullptr;
+   }
+   if (!parameterData_) return nullptr;
+   std::memset(parameterData_, 0, definition.parameterBufferSize);
+   for (const auto& field : definition.parameters) {
+      const auto it = parameters_.find(field.name);
+      const auto& value = it == parameters_.end() ? field.defaultValue : it->second;
+      if (field.offset + value.size() * sizeof(float) > definition.parameterBufferSize) return nullptr;
+      std::memcpy(static_cast<char*>(parameterData_) + field.offset, value.data(), value.size() * sizeof(float));
+   }
+   return parameterResource_.Get();
 }
 
 // ========== プロパティアクセス関数の実装 ==========

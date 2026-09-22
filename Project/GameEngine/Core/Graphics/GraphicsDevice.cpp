@@ -45,6 +45,17 @@ void GraphicsDevice::Initialize(Window* window, int32_t backBufferWidth, int32_t
    CreateFence();
 }
 
+void GraphicsDevice::InitializeOffscreen(ID3D12Device* device) {
+   if (!device || device_) throw std::invalid_argument("InitializeOffscreen requires a device and an uninitialized GraphicsDevice");
+   device_ = device;
+   descriptorSizeCBVSRVUAV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+   descriptorSizeRTV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+   descriptorSizeDSV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+   InitializeCommand();
+   CreateSRVHeap();
+   CreateFence();
+}
+
 void GraphicsDevice::PreDraw() {
    // Present済みのバッファへ直接書き込めないため、このフレームが所有する
    // バックバッファだけをRENDER_TARGETへ遷移させる。

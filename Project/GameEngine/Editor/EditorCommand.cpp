@@ -26,6 +26,21 @@ Object* ResolveCommandObject(EditorSceneContext& context, const std::string& id,
 }
 } // namespace
 
+bool SetMaterialSettingsCommand::Execute(EditorSceneContext& context) {
+   if (alreadyApplied_) { alreadyApplied_ = false; return true; }
+   return Apply(context, after_);
+}
+
+void SetMaterialSettingsCommand::Undo(EditorSceneContext& context) { Apply(context, before_); }
+
+bool SetMaterialSettingsCommand::Apply(EditorSceneContext& context, const nlohmann::json& data) {
+   auto* object = ResolveCommandObject(context, id_, fallback_);
+   auto* material = object ? object->GetComponent<MaterialComponent>() : nullptr;
+   if (!material) return false;
+   material->Deserialize(data);
+   return true;
+}
+
 bool EditorCommandStack::Execute(std::unique_ptr<IEditorCommand> command, EditorSceneContext& context) {
    if (!command) {
       return false;

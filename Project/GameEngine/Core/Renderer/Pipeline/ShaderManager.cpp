@@ -496,6 +496,7 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
 		 binding.bindPoint = bindDesc.BindPoint;
 		 binding.bindCount = bindDesc.BindCount;
 		 binding.space = bindDesc.Space;
+         binding.dimension = bindDesc.Dimension;
 		 info.boundResources.push_back(std::move(binding));
 	  }
    }
@@ -515,6 +516,28 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
 		 }
 		 cbInfo.size = cbDesc.Size;
 		 cbInfo.variableCount = cbDesc.Variables;
+         // Flatten ConstantBuffer<Struct> and ordinary cbuffers into the same ABI description.
+         std::function<void(ID3D12ShaderReflectionType*, const std::string&, UINT)> visit;
+         visit = [&](ID3D12ShaderReflectionType* field, const std::string& name, UINT offset) {
+            D3D12_SHADER_TYPE_DESC desc{};
+            if (!field || FAILED(field->GetDesc(&desc))) return;
+            if (desc.Class == D3D_SVC_STRUCT && desc.Elements == 0) {
+               for (UINT member = 0; member < desc.Members; ++member) {
+                  auto* child = field->GetMemberTypeByIndex(member);
+                  D3D12_SHADER_TYPE_DESC childDesc{};
+                  if (child && SUCCEEDED(child->GetDesc(&childDesc))) {
+                     visit(child, field->GetMemberTypeName(member), offset + childDesc.Offset);
+                  }
+               }
+            } else {
+               cbInfo.variables.push_back({ name, offset, desc.Type, desc.Class, desc.Rows, desc.Columns, desc.Elements });
+            }
+         };
+         for (UINT variable = 0; variable < cbDesc.Variables; ++variable) {
+            auto* field = cb->GetVariableByIndex(variable);
+            D3D12_SHADER_VARIABLE_DESC desc{};
+            if (field && SUCCEEDED(field->GetDesc(&desc))) visit(field->GetType(), desc.Name, desc.StartOffset);
+         }
 		 info.constantBuffers.push_back(std::move(cbInfo));
 	  }
    }

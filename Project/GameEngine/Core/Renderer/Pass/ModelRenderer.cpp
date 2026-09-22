@@ -16,6 +16,7 @@
 #include "Component/Model/AnimationComponent.h"
 #include "Component/MaterialComponent.h"
 #include "Component/MeshComponent.h"
+#include "Graphics/Texture.h"
 
 namespace GameEngine {
 namespace {
@@ -42,6 +43,22 @@ void ModelRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager, A
    device_ = device;
    psoManager_ = psoManager;
    assetManager_ = assetManager;
+   MaterialComponent::SetPipelineManager(psoManager);
+   // A typed null cube reads zero and makes a missing environment map safe even when
+   // the pixel shader declares it. A zero descriptor handle is never bound.
+   nullCubeAllocation_ = device_->AllocateSrvDescriptor();
+   if (nullCubeAllocation_) {
+      const UINT index = nullCubeAllocation_->GetIndex();
+      CD3DX12_CPU_DESCRIPTOR_HANDLE cpu(device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), index, device_->GetDescriptorSizeCBVSRVUAV());
+      nullCubeHandle_ = CD3DX12_GPU_DESCRIPTOR_HANDLE(device_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), index, device_->GetDescriptorSizeCBVSRVUAV());
+      D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
+      desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+      desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      desc.TextureCube.MipLevels = 1;
+      device_->GetDevice()->CreateShaderResourceView(nullptr, &desc, cpu);
+   }
+
 }
 
 void ModelRenderer::DrawModel(const ModelDrawData& modelData,
@@ -49,21 +66,10 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    LightManager* lightManager,
    std::function<void(const std::string&, BlendMode)> setPipelineFunc) {
    Model* model = modelData.model;
+   if (!model || !device_ || !psoManager_) return;
    auto* materialComponent = model->GetComponent<MaterialComponent>();
    if (!materialComponent) {
 	  return;
-   }
-
-   std::vector<Material*> fallbackMaterials;
-   const std::vector<Material*>* effectiveMaterials = &materialComponent->materials;
-   if (effectiveMaterials->empty()) {
-      // マテリアル未割り当てでもプリミティブを表示できるよう、一時配列から既定材を参照する。
-      // Component自体は変更せず、描画だけのフォールバックに限定する。
-	  if (!defaultMaterial) {
-		 return;
-	  }
-	  fallbackMaterials.push_back(defaultMaterial);
-	  effectiveMaterials = &fallbackMaterials;
    }
 
    auto* cmdList = device_->GetCommandList();
@@ -76,21 +82,10 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  return;
    }
    const std::vector<MeshData>* modelMeshes = asset ? &asset->GetMeshData() : nullptr;
-   const auto& materials = *effectiveMaterials;
-
-   if (materials.empty()) {
-      Logger::Warning("[ModelRenderer] No materials assigned, skip draw");
-      return;
-   }
-   if (modelData.textures.empty()) {
-      Logger::Warning("[ModelRenderer] No textures assigned, skip draw");
-      return;
-   }
-
    Camera* camera = modelData.camera;
 
    // LightDataBufferを取得
-   LightDataBuffer* lightBuffer = lightManager->GetLightDataBuffer();
+   LightDataBuffer* lightBuffer = lightManager ? lightManager->GetLightDataBuffer() : nullptr;
 
    bool skinningEnabled = true;
    if (const auto* animationComponent = model->GetComponent<AnimationComponent>()) {
@@ -113,64 +108,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  skinningComputeRootSignature &&
 	  skinCluster->paletteSrvHandle.second.ptr != 0;
 
-   // マテリアルにパイプライン名が指定されていればそれを使用、なければデフォルト "Object3D"
-   const std::string& materialPipelineName = materials[0]->GetPipelineName();
-   const std::string defaultPipelineName = materialPipelineName.empty() ? "Object3D" : materialPipelineName;
-   const std::string pipelineName = meshComponent->IsReverseFaces()
-      ? PSOManager::MakeReversedFacePipelineName(defaultPipelineName)
-      : defaultPipelineName;
-
-   // マテリアルに blendMode が設定されていればそれを優先、なければ DrawCommand の blendMode を使用
-   const BlendMode resolvedBlendMode = materials[0]->GetBlendMode().value_or(modelData.blendMode);
-
-   PipelineState* graphicsPipeline = psoManager_ ? psoManager_->GetPipeline(pipelineName, resolvedBlendMode) : nullptr;
-   if (!graphicsPipeline && psoManager_) {
-	  graphicsPipeline = psoManager_->GetPipeline(pipelineName, BlendMode::kBlendModeNone);
-   }
-   if (!graphicsPipeline) {
-	  Logger::Error("[ModelRenderer] Failed to resolve graphics pipeline: " + pipelineName);
-	  return;
-   }
-
-   // Computeへ切り替える前に描画PSOも解決しておき、Dispatch後に確実に復帰できるようにする。
-   setPipelineFunc(pipelineName, resolvedBlendMode);
-
-   auto resolvePipelineSlot = [this, &pipelineName](const char* semantic) -> std::optional<UINT> {
-	  if (!psoManager_) {
-		 Logger::Error("[ModelRenderer] PSOManager is null while resolving root slot: " + std::string(semantic));
-		 return std::nullopt;
-	  }
-
-	  auto resolved = psoManager_->ResolvePipelineRootParameter(pipelineName, semantic);
-	  if (!resolved.has_value()) {
-		 Logger::Error("[ModelRenderer] Failed to resolve root slot: pipeline=" + pipelineName +
-			", semantic=" + semantic);
-	  }
-	  return resolved;
-   };
-
-   const auto materialSlot = resolvePipelineSlot("material");
-   const auto transformSlot = resolvePipelineSlot("transform");
-   const auto cameraSlot = resolvePipelineSlot("camera");
-   const auto lightCountSlot = resolvePipelineSlot("lightcount");
-   const auto directionalLightSlot = resolvePipelineSlot("directionallights");
-   const auto pointLightSlot = resolvePipelineSlot("pointlights");
-   const auto spotLightSlot = resolvePipelineSlot("spotlights");
-   const auto areaLightSlot = resolvePipelineSlot("arealights");
-   const auto textureSlot = resolvePipelineSlot("texture");
-   const auto environmentTextureSlot = resolvePipelineSlot("envmap");
-   if (!materialSlot || !transformSlot || !cameraSlot || !lightCountSlot ||
-	  !directionalLightSlot || !pointLightSlot || !spotLightSlot ||
-	  !areaLightSlot || !textureSlot || !environmentTextureSlot) {
-	  return;
-   }
-
    TransformationMatrix* transformationMatrix = model->GetTransformationMatrix();
-   if (!transformationMatrix) {
-	  Logger::Warning("[ModelRenderer] TransformationMatrix is missing, skip draw");
-	  return;
-   }
-
    if (useSkinning) {
       // ルートスロットをJSONの意味名から解決し、Computeルート定義の並び替えをC++から隠蔽する。
 	  const auto resolveComputeSlot = [this](const char* semantic) -> std::optional<UINT> {
@@ -195,6 +133,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  cmdList->SetPipelineState(skinningComputePipeline->pipelineState.Get());
 
 	  for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
+         if (modelData.meshIndex && *modelData.meshIndex != i) continue;
 		 if (!skinCluster->HasComputeSkinningResources(i) || i >= skinCluster->skinnedVertexResourceStates.size()) {
 			continue;
 		 }
@@ -231,51 +170,84 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 		 skinCluster->skinnedVertexResourceStates[i] = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 	  }
 
-	  // Compute DispatchでPSOが切り替わるため、以降のRoot Parameter設定前に描画PSOへ戻す。
-	  cmdList->SetGraphicsRootSignature(graphicsPipeline->GetRootSignature());
-	  cmdList->SetPipelineState(graphicsPipeline->GetPipelineState());
    }
 
-   // モデル内の全サブメッシュで不変な変換・カメラ・ライトはループ外で一度だけ束縛する。
-   // マテリアルとテクスチャだけをメッシュごとに差し替える。
-   // 共通バインディング（全メッシュで共通）
-   // Root Parameter 1: TransformationMatrix (Vertex Shader)
-   cmdList->SetGraphicsRootConstantBufferView(transformSlot.value(), transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
+   // Every draw resolves its own slot. Root signatures can differ, so all consumed resources
+   // are rebound after selecting the PSO (including after a compute skinning dispatch).
+   auto bindMaterial = [&](size_t slot) {
+      Material* material = materialComponent->GetMaterial(slot);
+      if (!material) material = defaultMaterial;
+      if (!material || !psoManager_) return false;
+      std::string name = material->GetPipelineName().empty() ? "Object3D" : material->GetPipelineName();
+      auto report = [&](const std::string& reason) {
+         const std::string key = model->GetObjectName() + ":" + std::to_string(slot) + ":" + name + ":" + reason;
+         if (reportedFailures_.insert(key).second) Logger::Warning("[ModelRenderer] object=" +
+            model->GetObjectName() + ", slot=" + std::to_string(slot) + ", pipeline=" + name + ": " + reason);
+      };
+      const auto* contract = psoManager_->GetModelPipeline(name);
+      if (!contract) {
+         report("unavailable or incompatible; using Object3D");
+         name = "Object3D";
+         contract = psoManager_->GetModelPipeline(name);
+      }
+      if (!contract) return false;
+      if (contract->parameters.empty() && !material->GetParameters().empty()) {
+         report("parameters supplied to a pipeline without a parameter schema; draw skipped");
+         return false;
+      }
+      const BlendMode blend = psoManager_->ResolveModelBlendMode(name, material->GetBlendMode().value_or(modelData.blendMode));
+      const std::string variant = meshComponent->IsReverseFaces() ? PSOManager::MakeReversedFacePipelineName(name) : name;
+      auto* pipeline = psoManager_->GetPipeline(variant, blend);
+      if (!pipeline || !pipeline->GetPipelineState()) { report("missing PSO; draw skipped"); return false; }
 
-   // Root Parameter 2: Camera (Pixel Shader)
-   cmdList->SetGraphicsRootConstantBufferView(cameraSlot.value(), camera->GetCameraResource()->GetGPUVirtualAddress());
-
-   // Root Parameter 3: LightCount (Pixel Shader)
-   cmdList->SetGraphicsRootConstantBufferView(lightCountSlot.value(), lightBuffer->GetLightCountResource()->GetGPUVirtualAddress());
-
-   // Root Parameter 4: DirectionalLights StructuredBuffer (t0)
-   cmdList->SetGraphicsRootDescriptorTable(directionalLightSlot.value(), lightBuffer->GetDirectionalLightSRV());
-
-   // Root Parameter 5: PointLights StructuredBuffer (t1)
-   cmdList->SetGraphicsRootDescriptorTable(pointLightSlot.value(), lightBuffer->GetPointLightSRV());
-
-   // Root Parameter 6: SpotLights StructuredBuffer (t2)
-   cmdList->SetGraphicsRootDescriptorTable(spotLightSlot.value(), lightBuffer->GetSpotLightSRV());
-
-   // Root Parameter 7: AreaLights StructuredBuffer (t3)
-   cmdList->SetGraphicsRootDescriptorTable(areaLightSlot.value(), lightBuffer->GetAreaLightSRV());
+      D3D12_GPU_DESCRIPTOR_HANDLE texture = modelData.textures.empty() ? D3D12_GPU_DESCRIPTOR_HANDLE{} :
+         modelData.textures[slot < modelData.textures.size() ? slot : 0];
+      if (!materialComponent->GetTextureName(slot).empty()) {
+         auto* overrideTexture = materialComponent->GetTexture(slot);
+         if (overrideTexture && !overrideTexture->GetMetadata().IsCubemap()) texture = overrideTexture->GetTextureSrvHandleGPU();
+         else report("unresolved/non-2D texture; using draw texture");
+      }
+      const auto environment = modelData.environmentTextureSrvHandle.ptr ? modelData.environmentTextureSrvHandle : nullCubeHandle_;
+      // Validate every required resource before emitting root bindings or a draw.
+      std::vector<D3D12_GPU_VIRTUAL_ADDRESS> buffers(contract->bindings.size());
+      std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> descriptors(contract->bindings.size());
+      for (size_t i = 0; i < contract->bindings.size(); ++i) {
+         const auto& binding = contract->bindings[i];
+         if (!binding.required) continue;
+         const auto& semantic = binding.semantic;
+         ID3D12Resource* resource = nullptr;
+         if (semantic == "material") resource = material->HasValidData() ? material->GetMaterialResource() : nullptr;
+         else if (semantic == "transform") resource = transformationMatrix ? transformationMatrix->GetTransformationMatrixResource() : nullptr;
+         else if (semantic == "camera") resource = camera ? camera->GetCameraResource() : nullptr;
+         else if (semantic == "lightcount") resource = lightBuffer ? lightBuffer->GetLightCountResource() : nullptr;
+         else if (semantic == "parameters") resource = material->PrepareParameters(*contract);
+         else if (semantic == "texture") descriptors[i] = texture;
+         else if (semantic == "envmap") descriptors[i] = environment;
+         else if (lightBuffer) {
+            if (semantic == "directionallights") descriptors[i] = lightBuffer->GetDirectionalLightSRV();
+            else if (semantic == "pointlights") descriptors[i] = lightBuffer->GetPointLightSRV();
+            else if (semantic == "spotlights") descriptors[i] = lightBuffer->GetSpotLightSRV();
+            else if (semantic == "arealights") descriptors[i] = lightBuffer->GetAreaLightSRV();
+         }
+         if (resource) buffers[i] = resource->GetGPUVirtualAddress();
+         if (!buffers[i] && !descriptors[i].ptr) {
+            report("missing/invalid resource or parameter: " + semantic + "; draw skipped");
+            return false;
+         }
+      }
+      setPipelineFunc(variant, blend);
+      // SetPipeline may cache the previous graphics PSO across a compute dispatch.
+      cmdList->SetGraphicsRootSignature(pipeline->GetRootSignature());
+      cmdList->SetPipelineState(pipeline->GetPipelineState());
+      for (UINT i = 0; i < static_cast<UINT>(contract->bindings.size()); ++i) {
+         if (buffers[i]) cmdList->SetGraphicsRootConstantBufferView(i, buffers[i]);
+         else if (descriptors[i].ptr) cmdList->SetGraphicsRootDescriptorTable(i, descriptors[i]);
+      }
+      return true;
+   };
 
    if (primitiveMesh) {
-      // エンジン生成プリミティブは単一メッシュ・単一材なので、ModelAssetのサブメッシュ走査を省く。
-      const Material* material = materials[0];
-      const D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = modelData.textures[0];
-      if (!material || textureHandle.ptr == 0) {
-         Logger::Warning("[ModelRenderer] Primitive mesh material or texture is invalid, skip draw");
-         return;
-      }
-
-      cmdList->SetGraphicsRootConstantBufferView(
-         materialSlot.value(), material->GetMaterialResource()->GetGPUVirtualAddress());
-      cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), textureHandle);
-      if (modelData.environmentTextureSrvHandle.ptr != 0) {
-         cmdList->SetGraphicsRootDescriptorTable(
-            environmentTextureSlot.value(), modelData.environmentTextureSrvHandle);
-      }
+      if (!bindMaterial(0)) return;
       cmdList->IASetVertexBuffers(0, 1, &primitiveMesh->GetVertexBufferView());
       cmdList->IASetIndexBuffer(&primitiveMesh->GetIndexBufferView());
       cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -283,34 +255,10 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
       return;
    }
 
-   // 各メッシュごとの描画。材質／テクスチャ数がメッシュ数より少ない旧アセットでは、
-   // 先頭要素を使い回して範囲外参照を避けつつ描画を継続する。
+   // Slots retain the existing submesh order; absent slots inherit slot zero.
    for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
-	  // --- マテリアル取得（不足分は先頭を使い回し） ---
-	  const Material* mat = (i < materials.size()) ? materials[i] : materials[0];
-	  if (!mat) {
-		 Logger::Warning("[ModelRenderer] Material is null at index " + std::to_string(i) + ", skip mesh");
-		 continue;
-	  }
-
-	  // --- テクスチャSRV取得（不足分は先頭を使い回し） ---
-	  D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = (i < modelData.textures.size()) ? modelData.textures[i] : modelData.textures[0];
-	  if (srvHandle.ptr == 0) {
-		 Logger::Warning("[ModelRenderer] Invalid texture SRV handle at index " + std::to_string(i) + ", skip mesh");
-		 continue;
-	  }
-
-	  // --- メッシュ固有のバインディング ---
-	  // Root Parameter 0: Material (Pixel Shader)
-	  cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), mat->GetMaterialResource()->GetGPUVirtualAddress());
-
-	  // Root Parameter 8: Texture (t4)
-	  cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), srvHandle);
-
-	  // EnvironmentTexture (t5): バインド (設定されている場合)
-   if (modelData.environmentTextureSrvHandle.ptr != 0) {
-		 cmdList->SetGraphicsRootDescriptorTable(environmentTextureSlot.value(), modelData.environmentTextureSrvHandle);
-	  }
+      if (modelData.meshIndex && *modelData.meshIndex != i) continue;
+      if (!bindMaterial(i)) continue;
 
      // 頂点バッファとプリミティブトポロジを設定
       // Compute出力があるメッシュだけ動的頂点を使い、未対応メッシュは元の頂点へ個別に戻す。

@@ -1,0 +1,39 @@
+{
+  "name": "UnlitTint",
+  "vertexShader": "Object3D",
+  "pixelShader": "UnlitTint",
+  "rootSignature": "UnlitTint",
+  "modelCompatible": true,
+  "supportBlendModes": true,
+  "defaultBlendMode": "None",
+  "cullMode": "Back",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "Zero",
+  "depthFunc": "LessEqual",
+  "topologyType": "Triangle",
+  "materialParameters": {
+    "size": 32,
+    "fields": [
+      {
+        "name": "tint",
+        "type": "float4",
+        "offset": 0,
+        "default": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "name": "intensity",
+        "type": "float",
+        "offset": 16,
+        "default": [
+          1
+        ]
+      }
+    ]
+  }
+}

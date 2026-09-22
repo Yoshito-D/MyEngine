@@ -16,6 +16,7 @@ struct RootParameterDefinition {
    UINT descriptorCount = 1; // DESCRIPTOR_TABLE用
    D3D12_DESCRIPTOR_RANGE_TYPE rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ディスクリプタテーブル用
    std::string semantic;
+   bool required = false; ///< Reflection marks resources actually consumed by the shader.
 };
 
 /// @brief サンプラー定義
@@ -48,13 +49,29 @@ struct InputElementDefinition {
    UINT instanceDataStepRate;
 };
 
+/// @brief A float vector parameter with an explicit HLSL byte offset.
+struct MaterialParameterDefinition {
+   std::string name;
+   UINT offset = 0;
+   std::vector<float> defaultValue;
+};
+
+/// @brief Validated model draw contract shared by all PSO variants.
+struct ModelPipelineDefinition {
+   std::vector<RootParameterDefinition> bindings;
+   UINT parameterBufferSize = 0;
+   std::vector<MaterialParameterDefinition> parameters;
+};
+
 /// @brief パイプライン定義構造体
 struct PipelineDefinition {
+   bool modelCompatible = false; ///< Validate the model vertex and resource contract before use.
    std::string name;
    std::string vertexShader;
    std::string pixelShader;
    std::string rootSignature;
    std::vector<InputElementDefinition> inputLayout;
+   ModelPipelineDefinition model;
    bool supportBlendModes = false;
    BlendMode defaultBlendMode = BlendMode::kBlendModeNone;
    D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK;

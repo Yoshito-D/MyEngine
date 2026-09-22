@@ -38,10 +38,12 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(
    // これからシェーダーをコンパイルする旨をログに出す
    Logger::Info(std::format(L"Begin CompileShader, path:{}, profile:{}", filePath, profile));
    // hlslファイルを読む
-   IDxcBlobEncoding* shaderSource = nullptr;
+   ComPtr<IDxcBlobEncoding> shaderSource;
    HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
-   // 読めなかったら止める
-   assert(SUCCEEDED(hr));
+   if (FAILED(hr) || !shaderSource) {
+      Logger::Error(L"[ShaderCompiler] Cannot read: " + filePath);
+      return nullptr;
+   }
    // 読み込んだファイルの内容を設定する
    DxcBuffer shaderSourceBuffer;
    shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
@@ -80,7 +82,7 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(
    }
 
    // 実際にShaderをコンパイルする
-   IDxcResult* shaderResult = nullptr;
+   ComPtr<IDxcResult> shaderResult;
    hr = dxcCompiler->Compile(
 	  &shaderSourceBuffer, // 読み込んだファイル
       arguments.data(),    // コンパイルオプション
@@ -88,31 +90,39 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(
 	  includeHandler,      // includeが含まれた諸々
 	  IID_PPV_ARGS(&shaderResult) // コンパイル結果
    );
-   // コンパイルエラーではなくdxcが起動できないなど致命的な状況
-   assert(SUCCEEDED(hr));
+   if (FAILED(hr) || !shaderResult) {
+      Logger::Error(L"[ShaderCompiler] DXC invocation failed: " + filePath);
+      return nullptr;
+   }
 
    // 3. 警告・エラーが出ていないか確認する
 
-   // 警告・エラーが出てたらログを出して止める
-   IDxcBlobUtf8* shaderError = nullptr;
+   // Diagnostics are recoverable; only DXC status decides whether a blob is usable.
+   ComPtr<IDxcBlobUtf8> shaderError;
    shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
-   if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-	  Logger::Info(shaderError->GetStringPointer());
-	  // 警告・エラーはダメ
-	  assert(false);
+   HRESULT status = E_FAIL;
+   const HRESULT statusResult = shaderResult->GetStatus(&status);
+   if (shaderError && shaderError->GetStringLength() != 0) {
+      if (FAILED(status)) Logger::Error(shaderError->GetStringPointer());
+      else Logger::Warning(shaderError->GetStringPointer());
+   }
+   if (FAILED(statusResult) || FAILED(status)) {
+      Logger::Error(L"[ShaderCompiler] Compilation failed: " + filePath);
+      return nullptr;
    }
 
    // 4. Compile結果を受け取って返す
 
    // コンパイル結果から実行用のバイナリ部分を取得
-   IDxcBlob* shaderBlob = nullptr;
+   ComPtr<IDxcBlob> shaderBlob;
    hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
-   assert(SUCCEEDED(hr));
+   if (FAILED(hr) || !shaderBlob) {
+      Logger::Error(L"[ShaderCompiler] DXC produced no object: " + filePath);
+      return nullptr;
+   }
    // 成功したログを出す
    Logger::Info(std::format(L"Compile Succeeded, path:{}, profile:{}", filePath, profile));
-   // もう使わないリソースを解放
-   shaderSource->Release();
-   shaderResult->Release();
+   // ComPtr releases source/result/diagnostics on both success and failure.
 
    // 実行用のバイナリを返却
    return shaderBlob;

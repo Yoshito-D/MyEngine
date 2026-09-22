@@ -4,6 +4,9 @@
 #include <wrl.h>
 #include <string>
 #include <optional>
+#include <memory>
+#include <map>
+#include "PipelineDescriptor.h"
 #include "IMaterialData.h"
 #include "Utility/VectorMath.h"
 #include "Utility/MathUtils.h"
@@ -58,6 +61,9 @@ public:
    /// @return マテリアルデータへのポインタ
    MaterialData* GetMaterialData() const { return materialData_; }
 
+   /// @brief Check that the standard material buffer contains finite values and a valid lighting mode.
+   bool HasValidData() const;
+
    /// @brief マテリアルリソースを取得
    /// @return マテリアルリソースへのポインタ
    ID3D12Resource* GetMaterialResource() const override { return materialResource_.Get(); }
@@ -86,7 +92,18 @@ public:
 
    /// @brief このマテリアルが使用するパイプライン名を設定
    /// @param name パイプライン名（空文字列の場合はデフォルト "Object3D" にフォールバック）
-   void SetPipelineName(const std::string& name) { pipelineName_ = name; }
+   void SetPipelineName(const std::string& name);
+
+   /// @brief Deep copy all values into independent GPU buffers.
+   std::unique_ptr<Material> Clone() const;
+   /// @brief Store a finite float vector (1-4 components); validate its layout before drawing.
+   bool SetParameter(const std::string& name, const std::vector<float>& value);
+   /// @brief Read explicitly overridden shader parameters.
+   const std::map<std::string, std::vector<float>>& GetParameters() const { return parameters_; }
+   /// @brief Clear overrides so the pipeline defaults are used.
+   void ClearParameters() { parameters_.clear(); }
+   /// @brief Validate and pack parameters; return nullptr on invalid data or an unavailable buffer.
+   ID3D12Resource* PrepareParameters(const ModelPipelineDefinition& definition);
 
    /// @brief このマテリアルが使用するパイプライン名を取得
    /// @return パイプライン名（空文字列 = デフォルト動作）
@@ -200,6 +217,9 @@ public:
    void ResetUVTransform();
 
 private:
+   std::map<std::string, std::vector<float>> parameters_;
+   ComPtr<ID3D12Resource> parameterResource_;
+   void* parameterData_ = nullptr;
    ComPtr<ID3D12Resource> materialResource_ = nullptr;
    MaterialData* materialData_ = nullptr;
    std::string pipelineName_;  ///< 使用するパイプライン名（空文字列 = デフォルト）

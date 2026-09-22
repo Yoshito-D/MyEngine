@@ -1,5 +1,6 @@
 {
   "shaders": [
+    { "name": "UnlitTint", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/object3d/UnlitTint.PS.hlsl", "entryPoint": "main" },
     { "name": "Object3D", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/object3d/Object3d.VS.hlsl", "entryPoint": "main" },
     { "name": "Object3D", "type": "Pixel", "filePath": "Resources/engine/shaders/graphics/object3d/Object3d.PS.hlsl", "entryPoint": "main" },
     { "name": "Text", "type": "Vertex", "filePath": "Resources/engine/shaders/graphics/text/Text.VS.hlsl", "entryPoint": "main" },

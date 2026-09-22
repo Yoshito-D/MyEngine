@@ -1,5 +1,6 @@
 {
   "name": "Object3D",
+  "modelCompatible": true,
   "vertexShader": "Object3D",
   "pixelShader": "Object3D",
   "rootSignature": "Object3D",

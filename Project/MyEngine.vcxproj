@@ -317,6 +317,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\SpriteRenderer.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\ParticleRenderer.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\UIRenderer.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ModelPipelineValidation.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ShaderManager.cpp" />
     <ClCompile Include="GameEngine\Core\TimeProfiler\TimeProfiler.cpp" />
     <ClCompile Include="GameEngine\Effect\Module\EmissionModule.cpp" />
@@ -856,5 +857,13 @@
     <None Include="Tests\SceneAuthoring\SceneAuthoringTests.cpp" />
     <None Include="Tests\SceneAuthoring\RunSceneAuthoringTests.ps1" />
     <None Include="Tests\SceneAuthoring\README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tests\Shaders\ShaderRegressionTests.cpp" />
+    <None Include="Tests\Shaders\RunShaderTests.cjs" />
+    <None Include="Tests\Shaders\README.md" />
+    <None Include="Resources\engine\shaders\graphics\object3d\UnlitTint.PS.hlsl" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\unlit_tint_rootsig.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\unlit_tint_pipeline.json" />
   </ItemGroup>
 </Project>
