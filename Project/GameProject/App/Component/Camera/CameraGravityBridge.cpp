@@ -19,6 +19,7 @@
 #include <vector>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
@@ -411,11 +412,22 @@ void TriggerDirectionalShake(
 }
 }
 
-void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
-   // シーンを跨いだポインタと撮影済みフラグを破棄し、新しいシーケンスとして解決し直す。
+void CameraGravityBridge::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    gravityFollowCamera_ = nullptr;
    playerRearFollowCamera_ = nullptr;
    planetLeashCamera_ = nullptr;
+   if (auto* camera = sceneWorld.FindVirtualCamera(gravityFollowCameraId_)) {
+      gravityFollowCamera_ = camera->GetComponent<GravityFollowCamera>();
+   }
+   if (auto* camera = sceneWorld.FindVirtualCamera(playerRearFollowCameraId_)) {
+      playerRearFollowCamera_ = camera->GetComponent<PlayerRearFollowCamera>();
+   }
+   if (auto* camera = sceneWorld.FindVirtualCamera(planetLeashCameraId_)) {
+      planetLeashCamera_ = camera->GetComponent<PlanetLeashCamera>();
+   }
+}
+void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
    presentationCaptureElapsed_ = 0.0f;
    presentationJumpTriggered_ = false;
    presentationGroundCaptured_ = false;
@@ -429,15 +441,6 @@ void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    presentationVideoFrameAccumulator_ = 0.0f;
    presentationVideoFrameIndex_ = 0;
 
-   if (auto* camera = sceneWorld.FindVirtualCamera(gravityFollowCameraId_)) {
-      gravityFollowCamera_ = camera->GetComponent<GravityFollowCamera>();
-   }
-   if (auto* camera = sceneWorld.FindVirtualCamera(playerRearFollowCameraId_)) {
-      playerRearFollowCamera_ = camera->GetComponent<PlayerRearFollowCamera>();
-   }
-   if (auto* camera = sceneWorld.FindVirtualCamera(planetLeashCameraId_)) {
-      planetLeashCamera_ = camera->GetComponent<PlanetLeashCamera>();
-   }
 }
 
 void CameraGravityBridge::Update(float deltaTime) {
@@ -785,6 +788,9 @@ void CameraGravityBridge::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
+   GameEngine::EditorUI::CameraReference("Gravity Follow Camera", gravityFollowCameraId_, "GravityFollowCamera");
+   GameEngine::EditorUI::CameraReference("Player Rear Follow Camera", playerRearFollowCameraId_, "PlayerRearFollowCamera");
+   GameEngine::EditorUI::CameraReference("Planet Leash Camera", planetLeashCameraId_, "PlanetLeashCamera");
    ImGui::Separator();
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("惑星中心", "Planet Center"),
       planetCenter_.x, planetCenter_.y, planetCenter_.z);

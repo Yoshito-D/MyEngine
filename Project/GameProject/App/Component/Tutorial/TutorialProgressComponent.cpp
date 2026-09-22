@@ -14,12 +14,13 @@
 #include <cmath>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
 namespace App {
 
-void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void TutorialProgressComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // シーン再読み込み前の参照を残さず、同じプレイヤーに属する一連の状態提供元を
    // 設定IDからまとめて解決する。案内先UITextだけはこのコンポーネントの所有者から取得する。
    characterJump_ = nullptr;
@@ -38,6 +39,10 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
       vehicleInput_ = playerObject->GetComponent<VehicleInputComponent>();
       landingBoost_ = playerObject->GetComponent<VehicleLandingBoost>();
    }
+}
+
+void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
    // 惑星候補はシーン読み込み後に確定するため、この時点で設定値を実在範囲へ補正する。
    NormalizeTargetPlanetIndex();
 
@@ -334,8 +339,8 @@ void TutorialProgressComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGui::Text("Player Object ID: %s", playerObjectId_.c_str());
-   ImGui::Text("Next Scene: %s", nextScene_.c_str());
+   GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
+   GameEngine::EditorUI::SceneReference("Next Scene", nextScene_);
    ImGui::Text("Phase: %s", GetPhaseName());
    const int maxPlanetIndex = planetSwitcher_
       ? std::max(planetSwitcher_->GetPlanetCount() - 1, 0)

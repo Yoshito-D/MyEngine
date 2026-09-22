@@ -17,7 +17,7 @@ public:
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 表示条件に使用するRaceManagerを解決する
-   void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief リザルト中だけ操作ガイドを非表示にする
    void Update(float deltaTime) override;

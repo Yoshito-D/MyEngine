@@ -14,6 +14,7 @@
 #include <cmath>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #include "Utility/ImGuiHelper.h"
 #endif
@@ -21,9 +22,6 @@
 namespace {
 constexpr float kDirectionEpsilonSquared = 1.0e-12f;
 constexpr float kPi = 3.14159265358979323846f;
-#ifdef USE_IMGUI
-constexpr float kInspectorColumnWidth = 150.0f;
-#endif
 
 GameEngine::Vector3 GetWorldPosition(const GameEngine::Object& object) {
    // Object の行列規約では最終行の xyz がワールド平行移動成分となる。
@@ -55,7 +53,7 @@ GameEngine::Quaternion MakeArrowRotation(const GameEngine::Vector3& normalizedDi
 
 namespace App {
 
-void RaceGoalDirectionHUDComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void RaceGoalDirectionHUDComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // 保存された安定 ID を実体ポインターへ解決するのは、全オブジェクトの復元が済んだこの時点で行う。
    // HUD 自身は Model を所有者とし、UIModelComponent が画面空間で描画する構成を必須とする。
    raceManager_ = nullptr;
@@ -85,6 +83,10 @@ void RaceGoalDirectionHUDComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneW
       Logger::Warning("Goal direction arrow requires a UIModelComponent.", Logger::LogChannel::Game);
    }
 
+}
+
+void RaceGoalDirectionHUDComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
    SetVisible(false);
 }
 
@@ -169,21 +171,9 @@ void RaceGoalDirectionHUDComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   GameEngine::ImGuiHelper::DrawInputString(
-      "Race Manager ID",
-      raceManagerId_,
-      GameEngine::ImGuiHelper::kDefaultTextBufferSize,
-      kInspectorColumnWidth);
-   GameEngine::ImGuiHelper::DrawInputString(
-      "Player Object ID",
-      playerObjectId_,
-      GameEngine::ImGuiHelper::kDefaultTextBufferSize,
-      kInspectorColumnWidth);
-   GameEngine::ImGuiHelper::DrawInputString(
-      "Goal Object ID",
-      goalObjectId_,
-      GameEngine::ImGuiHelper::kDefaultTextBufferSize,
-      kInspectorColumnWidth);
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
+   GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
+   GameEngine::EditorUI::ObjectReference("Goal", goalObjectId_, "TransformComponent");
    ImGui::Text("Resolved: Race=%s Player=%s Goal=%s Model=%s UI Model=%s",
       raceManager_ ? "true" : "false",
       playerObject_ ? "true" : "false",

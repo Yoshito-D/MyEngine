@@ -16,6 +16,8 @@
 #include <fstream>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
+#include "Utility/ImGuiHelper.h"
 #include "ImguiManager.h"
 #endif
 
@@ -61,14 +63,12 @@ void RaceManagerComponent::Update(float deltaTime) {
    }
 }
 
-void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void RaceManagerComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // 前シーンの参照を残さず、設定されたPlayerを起点に関連コンポーネントをまとめて解決する。
    vehicleController_ = nullptr;
    gravityBody_ = nullptr;
    cameraSwitcher_ = nullptr;
    speedPostEffectController_ = nullptr;
-   runtimeInitialized_ = false;
-   playerLocked_ = false;
 
    if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
       vehicleController_ = playerObject->GetComponent<VehicleController>();
@@ -79,23 +79,17 @@ void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
       Logger::Warning("Race player object was not found: " + playerObjectId_, Logger::LogChannel::Game);
    }
 
-   // RaceManagerがロックを所有するPlayerの必須コンポーネントは、解除時に必ず有効へ戻す。
-   // 以前のランタイムロックがシーンへ保存されていても、操作不能を次のセッションへ持ち越さない。
-   vehicleControllerEnabledWhenUnlocked_ = vehicleController_ != nullptr;
-   gravityBodyEnabledWhenUnlocked_ = gravityBody_ != nullptr;
+}
+
+void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
+   runtimeInitialized_ = false;
+   playerLocked_ = false;
+   // エディタで指定した有効状態を保存し、レース中の一時ロック解除で上書きしない。
+   vehicleControllerEnabledWhenUnlocked_ = vehicleController_ && vehicleController_->IsEnabled();
+   gravityBodyEnabledWhenUnlocked_ = gravityBody_ && gravityBody_->IsEnabled();
    cameraSwitcherEnabledWhenUnlocked_ = cameraSwitcher_ && cameraSwitcher_->IsEnabled();
    speedPostEffectEnabledWhenRacing_ = speedPostEffectController_ && speedPostEffectController_->IsEnabled();
-
-   if (vehicleController_ && !vehicleController_->IsEnabled()) {
-      Logger::Warning(
-         "Race player VehicleController was disabled in scene data; it will be restored when unlocked.",
-         Logger::LogChannel::Game);
-   }
-   if (gravityBody_ && !gravityBody_->IsEnabled()) {
-      Logger::Warning(
-         "Race player GravityBody was disabled in scene data; it will be restored when unlocked.",
-         Logger::LogChannel::Game);
-   }
 
    LoadBestTimes();
    Restart();
@@ -481,6 +475,22 @@ void RaceManagerComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
+   const char* startModes[] = { "Immediate", "Countdown", "Gate" };
+   int mode = static_cast<int>(startMode_);
+   if (ImGui::Combo("Start Mode", &mode, startModes, 3)) startMode_ = static_cast<StartMode>(mode);
+   ImGui::DragFloat("Countdown Seconds", &countdownSeconds_, 0.1f, 0.0f, 60.0f);
+   ImGui::DragFloat("Start Text Duration", &startTextDuration_, 0.05f, 0.0f, 60.0f);
+   int count = static_cast<int>(std::min(checkpointCount_, size_t{100000}));
+   if (ImGui::InputInt("Checkpoint Count", &count)) checkpointCount_ = static_cast<size_t>(std::max(count, 0));
+   GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
+   GameEngine::EditorUI::CameraReference("Finish Camera", finishCameraId_);
+   GameEngine::EditorUI::SceneReference("Restart Scene", restartScene_);
+   GameEngine::EditorUI::SceneReference("Next Scene", nextScene_);
+   GameEngine::ImGuiHelper::DrawInputString("Record Key", recordKey_);
+   GameEngine::ImGuiHelper::DrawInputString("Record File", recordFile_);
+   ImGui::Checkbox("Lock Player During Countdown", &lockPlayerDuringCountdown_);
+   ImGui::Checkbox("Lock Player On Finish", &lockPlayerOnFinish_);
+   ImGui::DragFloat("Finish Delay", &finishDelay_, 0.1f, 0.0f, 60.0f);
    static const char* stateNames[] = { "Waiting", "Countdown", "Running", "Finished" };
    ImGui::Text("State: %s", stateNames[static_cast<int>(state_)]);
    ImGui::Text("Time: %.3f", elapsedTime_);

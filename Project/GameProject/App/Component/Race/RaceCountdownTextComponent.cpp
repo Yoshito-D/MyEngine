@@ -10,17 +10,23 @@
 #include <cmath>
 
 #ifdef USE_IMGUI
+#include "Utility/ImGuiHelper.h"
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
 namespace App {
 
-void RaceCountdownTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void RaceCountdownTextComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // シーン再読み込み後に以前のRaceManagerを参照しないよう、保存済みIDから解決し直す。
    raceManager_ = nullptr;
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
+}
+
+void RaceCountdownTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
    // アニメーションで上書きする前の見た目を、シーンに設定された復元先として記録する。
    CaptureBaseVisualState();
    displayedText_.clear();
@@ -178,7 +184,8 @@ void RaceCountdownTextComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGui::Text("Race Manager ID: %s", raceManagerId_.c_str());
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
+   GameEngine::ImGuiHelper::DrawInputString("Start Text", startText_);
    ImGui::Text("Resolved: %s", raceManager_ ? "true" : "false");
    ImGui::DragFloat("Rotation Duration", &rotationDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
    ImGui::DragFloat("Fade Duration", &fadeDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");

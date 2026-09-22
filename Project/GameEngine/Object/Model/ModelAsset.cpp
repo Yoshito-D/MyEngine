@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstring>
 #include <string_view>
+#include <stdexcept>
 #include "MathUtils.h"
 
 namespace GameEngine {
@@ -47,10 +48,11 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateUavBufferResource(ID3D12Device* dev
    return resource;
 }
 
-std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> AllocateSrvUavDescriptor(GraphicsDevice* device) {
+std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> AllocateSrvUavDescriptor(GraphicsDevice* device, std::shared_ptr<SrvDescriptorAllocation>& allocation) {
    // 同じヒープ位置のCPU/GPUハンドルを対で返す。CPU側はView作成、GPU側は描画時の
    // ルートディスクリプタテーブル設定に使うため、indexを別々に進めてはならない。
-   const UINT index = device->GetNextSrvIndex();
+   auto descriptor = device->AllocateSrvDescriptor();
+   const UINT index = descriptor->GetIndex();
    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> handle;
    handle.first = CD3DX12_CPU_DESCRIPTOR_HANDLE(
 	  device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
@@ -60,7 +62,7 @@ std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> AllocateSrvU
 	  device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
 	  index,
 	  device->GetDescriptorSizeCBVSRVUAV());
-   device->IncrementSrvIndex();
+   allocation = std::move(descriptor);
    return handle;
 }
 
@@ -96,6 +98,8 @@ void CreateInputSkinningResourceViews(
 
    // メッシュ番号を各リソース配列の共通キーとして使うため、空メッシュも含めて
    // 元のメッシュ数と同じ長さを確保し、作成できない要素だけ空ハンドルのまま残す。
+   skinCluster.inputVertexDescriptors.assign(meshes.size(), nullptr);
+   skinCluster.influenceDescriptors.assign(meshes.size(), nullptr);
    skinCluster.inputVertexSrvHandles.clear();
    skinCluster.inputVertexSrvHandles.resize(meshes.size());
    skinCluster.influenceSrvHandles.clear();
@@ -112,7 +116,7 @@ void CreateInputSkinningResourceViews(
 	  }
 
       // Compute Skinningは元頂点とウェイトを独立したStructuredBufferとして読む。
-      skinCluster.inputVertexSrvHandles[meshIndex] = AllocateSrvUavDescriptor(device);
+      skinCluster.inputVertexSrvHandles[meshIndex] = AllocateSrvUavDescriptor(device, skinCluster.inputVertexDescriptors[meshIndex]);
 	  CreateStructuredBufferSrv(
 		 d3dDevice,
 		 vertexResources[meshIndex].Get(),
@@ -120,7 +124,7 @@ void CreateInputSkinningResourceViews(
 		 sizeof(Mesh::VertexData),
 		 skinCluster.inputVertexSrvHandles[meshIndex].first);
 
-	  skinCluster.influenceSrvHandles[meshIndex] = AllocateSrvUavDescriptor(device);
+	  skinCluster.influenceSrvHandles[meshIndex] = AllocateSrvUavDescriptor(device, skinCluster.influenceDescriptors[meshIndex]);
 	  CreateStructuredBufferSrv(
 		 d3dDevice,
 		 skinCluster.influenceResources[meshIndex].Get(),
@@ -135,6 +139,7 @@ void CreateOutputSkinningResources(GraphicsDevice* device, SkinCluster& skinClus
 
    // 出力頂点、VBV、UAV、定数バッファ、状態追跡を同じmeshIndexで参照できるよう、
    // 関連配列を一度すべて再構築する。インスタンスごとに出力先を共有しない設計である。
+   skinCluster.skinnedVertexDescriptors.assign(meshes.size(), nullptr);
    skinCluster.skinnedVertexResources.clear();
    skinCluster.skinnedVertexResources.resize(meshes.size());
    skinCluster.skinnedVertexBufferViews.clear();
@@ -164,7 +169,7 @@ void CreateOutputSkinningResources(GraphicsDevice* device, SkinCluster& skinClus
 	  skinCluster.skinnedVertexBufferViews[meshIndex].SizeInBytes = static_cast<UINT>(vertexBufferSize);
 	  skinCluster.skinnedVertexBufferViews[meshIndex].StrideInBytes = sizeof(Mesh::VertexData);
 
-	  skinCluster.skinnedVertexUavHandles[meshIndex] = AllocateSrvUavDescriptor(device);
+	  skinCluster.skinnedVertexUavHandles[meshIndex] = AllocateSrvUavDescriptor(device, skinCluster.skinnedVertexDescriptors[meshIndex]);
 	  CreateStructuredBufferUav(
 		 d3dDevice,
 		 skinCluster.skinnedVertexResources[meshIndex].Get(),
@@ -234,7 +239,7 @@ void ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, 
    }
 }
 
-std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() {
+std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() try {
    if (!hasSkinningData_ || !graphicsDevice_ || !skeleton_ || !skinCluster_) {
 	  return std::nullopt;
    }
@@ -249,15 +254,7 @@ std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() {
    instance.paletteResource->Map(0, nullptr, reinterpret_cast<void**>(&mappedPalette));
    instance.mappedPalette = { mappedPalette, skeleton_->joints.size() };
 
-   const UINT index = graphicsDevice_->GetNextSrvIndex();
-   instance.paletteSrvHandle.first = CD3DX12_CPU_DESCRIPTOR_HANDLE(
-	  graphicsDevice_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
-	  index,
-	  graphicsDevice_->GetDescriptorSizeCBVSRVUAV());
-   instance.paletteSrvHandle.second = CD3DX12_GPU_DESCRIPTOR_HANDLE(
-	  graphicsDevice_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
-	  index,
-	  graphicsDevice_->GetDescriptorSizeCBVSRVUAV());
+   instance.paletteSrvHandle = AllocateSrvUavDescriptor(graphicsDevice_, instance.paletteDescriptor);
 
    D3D12_SHADER_RESOURCE_VIEW_DESC paletteSrvDesc{};
    paletteSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -268,7 +265,6 @@ std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() {
    paletteSrvDesc.Buffer.NumElements = static_cast<UINT>(skeleton_->joints.size());
    paletteSrvDesc.Buffer.StructureByteStride = sizeof(WellForGPU);
    d3dDevice->CreateShaderResourceView(instance.paletteResource.Get(), &paletteSrvDesc, instance.paletteSrvHandle.first);
-   graphicsDevice_->IncrementSrvIndex();
 
    // アニメーション適用前でもBind Poseで正しく描ける初期Paletteを設定する。
    for (size_t jointIndex = 0; jointIndex < skeleton_->joints.size(); ++jointIndex) {
@@ -280,6 +276,9 @@ std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() {
    CreateOutputSkinningResources(graphicsDevice_, instance, modelData_.meshes);
 
    return instance;
+} catch (const std::overflow_error& error) {
+   Logger::EngineWarning("Could not create skin cluster instance: " + std::string(error.what()));
+   return std::nullopt;
 }
 
 ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std::string& filename) {
@@ -472,15 +471,7 @@ SkinCluster ModelAsset::CreateSkinCluster(GraphicsDevice* device, const Skeleton
 
    // 2) palette用SRVを作成
    {
-	  const UINT index = device->GetNextSrvIndex();
-	  skinCluster.paletteSrvHandle.first = CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		 device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
-		 index,
-         device->GetDescriptorSizeCBVSRVUAV());
-	  skinCluster.paletteSrvHandle.second = CD3DX12_GPU_DESCRIPTOR_HANDLE(
-         device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
-		 index,
-         device->GetDescriptorSizeCBVSRVUAV());
+      skinCluster.paletteSrvHandle = AllocateSrvUavDescriptor(device, skinCluster.paletteDescriptor);
 
 	  D3D12_SHADER_RESOURCE_VIEW_DESC paletteSrvDesc{};
 	  paletteSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -495,7 +486,6 @@ SkinCluster ModelAsset::CreateSkinCluster(GraphicsDevice* device, const Skeleton
 		 &paletteSrvDesc,
 		 skinCluster.paletteSrvHandle.first);
 
-      device->IncrementSrvIndex();
    }
 
    // 3) influence用Resourceを確保

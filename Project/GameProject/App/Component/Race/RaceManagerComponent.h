@@ -46,6 +46,8 @@ public:
    /// @brief シーン内のプレイヤー参照と記録を復元し、開始状態へリセットする
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief スタートゲート通過を通知する
    void NotifyStart();

@@ -21,6 +21,7 @@
 #include "Text/UIText.h"
 #include "Utility/ImGuiHelper.h"
 #include "Utility/Logger.h"
+#include "Utility/JsonDataManager.h"
 #include "ImGuizmo.h"
 #include "imgui.h"
 #include <cmath>
@@ -439,22 +440,17 @@ void EditorSceneContext::Clear() {
 
 bool EditorSceneContext::Save() {
    const std::filesystem::path filePath = GetSceneFilePath();
-   std::error_code error;
-   std::filesystem::create_directories(filePath.parent_path(), error);
-   if (error) {
-      SetStatus("Save failed: could not create directory " + filePath.parent_path().generic_string());
+   try {
+      if (!SaveJsonFileAtomically(filePath, SerializeToJson(), kJsonIndentSize)) {
+         SetStatus("Save failed: could not write " + filePath.generic_string());
+         return false;
+      }
+   } catch (const std::exception& error) {
+      SetStatus("Save failed: " + std::string(error.what()));
       return false;
    }
 
-   nlohmann::json sceneData = SerializeToJson();
-
-   std::ofstream file(filePath);
-   if (!file.is_open()) {
-      SetStatus("Save failed: could not open " + filePath.generic_string());
-      return false;
-   }
-
-   file << sceneData.dump(kJsonIndentSize);
+   // ディスクへの反映が完了してから未保存表示を解除する。
    ClearDirty();
    SetStatus("Saved scene: " + filePath.generic_string());
    return true;
@@ -611,6 +607,11 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
    }
    ApplyHierarchyOrder(sceneData.value("hierarchyOrder", nlohmann::json::array()));
 
+   // 全Entityとカメラの復元後に通知し、旧実体へのキャッシュやID参照を再構築する。
+   if (auto* sceneWorld = SceneWorld::GetCurrent()) {
+      sceneWorld->ResolveReferences(CollectEditableObjects());
+   }
+
    ClearDirty();
    SetStatus("Loaded scene snapshot");
    return true;
@@ -647,6 +648,15 @@ std::filesystem::path EditorSceneContext::GetSceneFilePath() const {
 
 void EditorSceneContext::MarkDirty() {
    isDirty_ = true;
+   referencesDirty_ = true;
+}
+
+void EditorSceneContext::RefreshReferences(bool initializeRuntime) {
+   if (!referencesDirty_ && !initializeRuntime) return;
+   if (auto* world = SceneWorld::GetCurrent()) {
+      world->ResolveReferences(CollectEditableObjects(), initializeRuntime);
+      referencesDirty_ = false;
+   }
 }
 
 void EditorSceneContext::ClearDirty() {
@@ -658,7 +668,7 @@ std::vector<Object*> EditorSceneContext::CollectEditableObjects() const {
    const auto& registeredObjects = Object::GetRegisteredObjects();
    objects.reserve(registeredObjects.size());
    for (Object* object : registeredObjects) {
-      if (object && !hiddenSceneObjects_.contains(object)) {
+      if (object && !hiddenSceneObjects_.contains(object) && !objectStore_.IsPendingDeletion(object)) {
          objects.push_back(object);
       }
    }
@@ -1743,67 +1753,7 @@ void EditorSceneContext::ApplySceneParticleSystems(const nlohmann::json& scenePa
 }
 
 void EditorSceneContext::ApplyCameras(const nlohmann::json& camerasData) {
-   if (!camerasData.is_object()) {
-      return;
-   }
-
-   CinemachineBrain* brain = EngineContext::GetActiveBrain();
-   if (!brain) {
-      return;
-   }
-
-   if (camerasData.contains("brain") && camerasData.at("brain").is_object()) {
-      const auto& brainData = camerasData.at("brain");
-      if (brainData.contains("defaultBlendTime") && brainData.at("defaultBlendTime").is_number()) {
-         brain->SetDefaultBlendTime(brainData.at("defaultBlendTime").get<float>());
-      }
-   }
-
-   if (!camerasData.contains("virtualCameras") || !camerasData.at("virtualCameras").is_array()) {
-      return;
-   }
-
-   const auto& registeredCameras = brain->GetVirtualCameras();
-   std::unordered_set<VirtualCamera*> appliedCameras;
-
-   for (const auto& cameraData : camerasData.at("virtualCameras")) {
-      if (!cameraData.is_object()) {
-         continue;
-      }
-
-      const std::string cameraName = cameraData.value("name", "");
-      if (cameraName == "DebugCamera") {
-         continue;
-      }
-
-      // 並び替えに強い名前一致を優先し、旧データや同名不在時だけ保存時のindexへフォールバックする。
-      VirtualCamera* targetCamera = nullptr;
-      if (!cameraName.empty()) {
-         for (VirtualCamera* camera : registeredCameras) {
-            if (camera && camera->GetName() == cameraName && camera->GetName() != "DebugCamera") {
-               targetCamera = camera;
-               break;
-            }
-         }
-      }
-
-      if (!targetCamera && cameraData.contains("index") && cameraData.at("index").is_number_unsigned()) {
-         const size_t index = cameraData.at("index").get<size_t>();
-         if (index < registeredCameras.size()) {
-            VirtualCamera* candidate = registeredCameras[index];
-            if (candidate && candidate->GetName() != "DebugCamera") {
-               targetCamera = candidate;
-            }
-         }
-      }
-
-      if (!targetCamera || appliedCameras.contains(targetCamera)) {
-         continue;
-      }
-
-      targetCamera->Deserialize(cameraData);
-      appliedCameras.insert(targetCamera);
-   }
+   if (auto* world = SceneWorld::GetCurrent()) world->ApplyCameraConfiguration(camerasData);
 }
 
 void EditorSceneContext::HideSceneOwnedObject(Object* object) {
@@ -1913,7 +1863,7 @@ Transform EditorSceneContext::BuildPlacementTransformInFrontOfCamera() const {
 }
 
 std::string EditorSceneContext::GetObjectIdForCommand(const Object* object) const {
-   return objectStore_.GetId(object);
+   return object ? object->GetEntityId() : std::string{};
 }
 
 std::string EditorSceneContext::GetParticleSystemIdForCommand(const ParticleSystem* particleSystem) const {

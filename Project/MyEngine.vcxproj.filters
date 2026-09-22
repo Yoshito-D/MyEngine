@@ -937,4 +937,21 @@
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h"><Filter>GameProject\App\Scene</Filter></ClInclude>
     <ClInclude Include="GameProject\App\Scene\SceneCatalog.h"><Filter>GameProject\App\Scene</Filter></ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Tests" />
+    <Filter Include="Tests\Regression" />
+    <None Include="Tests\Regression\EngineRegressionTests.cpp"><Filter>Tests\Regression</Filter></None>
+    <None Include="Tests\Regression\RunRegressionTests.ps1"><Filter>Tests\Regression</Filter></None>
+    <None Include="Tests\Regression\README.md"><Filter>Tests\Regression</Filter></None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameEngine\Editor\EditorReferenceWidgets.h"><Filter>GameEngine\Editor</Filter></ClInclude>
+    <ClCompile Include="GameEngine\Editor\EditorReferenceWidgets.cpp"><Filter>GameEngine\Editor</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Tests\SceneAuthoring" />
+    <None Include="Tests\SceneAuthoring\SceneAuthoringTests.cpp"><Filter>Tests\SceneAuthoring</Filter></None>
+    <None Include="Tests\SceneAuthoring\RunSceneAuthoringTests.ps1"><Filter>Tests\SceneAuthoring</Filter></None>
+    <None Include="Tests\SceneAuthoring\README.md"><Filter>Tests\SceneAuthoring</Filter></None>
+  </ItemGroup>
 </Project>

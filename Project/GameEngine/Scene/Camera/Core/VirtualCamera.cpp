@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "VirtualCamera.h"
 #include "Object/Object.h"
+#include "Scene/SceneWorld.h"
 #include <unordered_map>
 
 namespace GameEngine {
@@ -150,7 +151,9 @@ CameraState DeserializeCameraState(const nlohmann::json& data, const CameraState
 }
 
 Transform* ResolveEntityTransform(const std::string& entityId, Transform& resolvedTransform) {
-    Object* entity = Object::FindByEntityId(entityId);
+    // Editorで削除待ち、または非表示にしたEntityへ追従し続けない。
+    auto* world = SceneWorld::GetCurrent();
+    Object* entity = world ? world->FindObjectById(entityId) : Object::FindByEntityId(entityId);
     if (!entity) {
         return nullptr;
     }
@@ -245,6 +248,15 @@ bool VirtualCamera::RegisterComponentFactory(const std::string& componentName, C
     return true;
 }
 
+std::vector<std::string> VirtualCamera::GetRegisteredComponentNames() {
+    std::vector<std::string> names;
+    for (const auto& [name, factory] : ComponentFactories()) {
+        names.push_back(name);
+    }
+    std::sort(names.begin(), names.end());
+    return names;
+}
+
 ICinemachineComponent* VirtualCamera::AddComponentByName(const std::string& componentName) {
     if (componentName.empty()) {
         return nullptr;
@@ -307,13 +319,15 @@ nlohmann::json VirtualCamera::Serialize() const {
     }
 
     return nlohmann::json{
+        { "id", id_ },
         { "name", name_ },
         { "priority", priority_ },
         { "active", isActive_ },
         { "followTargetId", followTargetEntityId_ },
         { "lookAtTargetId", lookAtTargetEntityId_ },
         { "state", SerializeCameraState(state_) },
-        { "components", componentsData }
+        { "components", componentsData },
+        { "componentsAreComplete", true }
     };
 }
 
@@ -324,6 +338,11 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
 
     if (data.contains("name") && data.at("name").is_string()) {
         name_ = data.at("name").get<std::string>();
+    }
+    // 旧シーンでは表示名が参照キーだったため、最初の読み込みで安定IDへ移す。
+    if (id_.empty() && name_ != "DebugCamera") {
+        id_ = data.value("id", name_);
+        if (id_.empty()) id_ = name_;
     }
     if (data.contains("priority") && data.at("priority").is_number_integer()) {
         priority_ = data.at("priority").get<int>();
@@ -346,7 +365,7 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
     }
 
     // 既存Componentには状態を重ね、不足しているComponentだけFactoryで追加する。
-    // JSONにない既存ComponentはC++側の構成として残し、部分設定の読み込みを許容する。
+    // 旧形式はJSONにない依存部品を残し、完全スナップショットは最後に余剰分を削除する。
     for (const auto& componentData : data.at("components")) {
         if (!componentData.is_object()) {
             continue;
@@ -371,6 +390,15 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
         if (componentData.contains("data") && componentData.at("data").is_object()) {
             component->Deserialize(componentData.at("data"));
         }
+    }
+    if (data.value("componentsAreComplete", false)) {
+        // 旧形式だけはFactoryの依存部品補完を許可し、現行スナップショットは削除も復元する。
+        std::erase_if(components_, [&data](const auto& component) {
+            return std::none_of(data.at("components").begin(), data.at("components").end(),
+                [&component](const auto& entry) {
+                    return entry.is_object() && entry.value("componentName", "") == component->GetComponentName();
+                });
+        });
     }
 }
 

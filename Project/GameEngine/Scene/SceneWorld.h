@@ -13,12 +13,14 @@ class Object;
 class ParticleSystem;
 class Skybox;
 class VirtualCamera;
+class CinemachineBrain;
 
 /// @brief JSONシーンが所有するオブジェクトとカメラを管理する
 class SceneWorld final {
 public:
    /// @brief 空のシーンワールドを作成する
-   SceneWorld();
+   /// @param cameraBrain カメラ登録先。nullptrならEngineContextの現在のBrainを使用する
+   explicit SceneWorld(CinemachineBrain* cameraBrain = nullptr);
 
    /// @brief デストラクタ
    ~SceneWorld();
@@ -54,6 +56,17 @@ public:
    /// @return 対応する仮想カメラ。存在しない場合はnullptr
    VirtualCamera* FindVirtualCamera(const std::string& cameraIdOrName) const;
 
+   /// @brief 一意な安定IDを持つ仮想カメラを作成しBrainへ登録する
+   /// @param name 表示名。空ならVirtual Cameraを使用する
+   /// @return 作成したカメラ。Brainがない場合はnullptr
+   VirtualCamera* CreateVirtualCamera(const std::string& name);
+   /// @brief このワールドのカメラをBrainから解除して削除する
+   /// @return 管理対象のカメラを削除した場合はtrue
+   bool RemoveVirtualCamera(VirtualCamera* camera);
+   /// @brief 保存されたカメラ一覧へ構成を置き換える（DebugCameraは維持する）
+   /// @param camerasData シーンJSONのcamerasオブジェクト
+   void ApplyCameraConfiguration(const nlohmann::json& camerasData);
+
    /// @brief オブジェクトに割り当てられた安定IDを取得する
    /// @param object 対象オブジェクト
    /// @return 安定ID。管理対象外の場合は空文字列
@@ -67,7 +80,14 @@ public:
    /// @return Genericオブジェクト一覧
    const std::vector<std::unique_ptr<Object>>& GetGenericObjects() const { return genericObjects_; }
 
+   /// @brief 全要素を復元した後、指定Entity群の親子関係とComponent参照を再解決する
+   /// @param objects シーン所有分とエディター所有分を含む復元済みEntity
+   /// @param initializeRuntime falseなら参照だけを更新する
+   void ResolveReferences(const std::vector<Object*>& objects, bool initializeRuntime = true);
+
 private:
+   CinemachineBrain* GetCameraBrain() const;
+   CinemachineBrain* cameraBrain_ = nullptr;
    bool RestoreObjectEntry(const nlohmann::json& objectData, const std::string& legacySceneKey = {});
    void RestoreLegacyEntries(const nlohmann::json& sceneData);
    void RestoreLegacyLights(const nlohmann::json& sceneData);

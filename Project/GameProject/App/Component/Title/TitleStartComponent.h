@@ -26,6 +26,8 @@ public:
    /// @brief UIの初期表示状態を保存して入力待ちへ戻す
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 選択表示アニメーションと決定入力後の拡大フェードを更新する
    /// @param deltaTime ゲーム用デルタタイム（秒）

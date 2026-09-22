@@ -454,6 +454,7 @@ void EditorObjectStore::FlushDeferredDeletes() {
    deferredDeleteSkyboxes_.clear();
    deferredDeleteSprites_.clear();
    deferredDeleteModels_.clear();
+   pendingDeletionObjects_.clear();
 }
 
 void EditorObjectStore::Clear() {
@@ -804,7 +805,7 @@ std::string EditorObjectStore::AllocateId(const std::string& requestedId) {
 
    while (true) {
       const std::string id = "editor_object_" + std::to_string(nextObjectIndex_++);
-      if (!ContainsId(id)) {
+      if (!ContainsId(id) && !Object::FindByEntityId(id)) {
          return id;
       }
    }
@@ -893,6 +894,7 @@ void EditorObjectStore::UnregisterOwnedRuntimeSystems(Object* object) {
       return;
    }
 
+   pendingDeletionObjects_.insert(object);
    // 親Objectより長く静的描画リストへ残らないよう、Emitterが所有する実行時システムも先に解除する。
    if (auto* emitter = object->GetComponent<ParticleEmitterComponent>()) {
       emitter->UnregisterParticleSystemsForRender();

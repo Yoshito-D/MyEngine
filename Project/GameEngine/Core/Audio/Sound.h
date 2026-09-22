@@ -17,7 +17,7 @@ public:
 
    /// @brief Mp3ファイルを読み込む
    /// @param filepath 読み込むMP3ファイルのパスを表すワイド文字列参照
-   /// @param xAudio2 オーディオ処理に使用するIXAudio2インターフェイスへのポインタ
+   /// @note 失敗時は例外を送出し、読み込み前の音声と再生バッファを保持する
    void Load(const std::wstring& filepath);
 
    /// @brief 音声を再生
@@ -38,7 +38,6 @@ public:
 private:
    IXAudio2SourceVoice* sourceVoice_ = nullptr;
    std::vector<BYTE> audioData_;
-   WAVEFORMATEX waveFormat_{};
    bool isLooping_ = false;
    XAUDIO2_BUFFER buffer_{};
 

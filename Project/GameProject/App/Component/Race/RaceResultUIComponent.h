@@ -19,7 +19,7 @@ public:
 
    /// @brief 表示対象のRaceManagerをIDから解決する
    /// @param sceneWorld 所属するシーンワールド
-   void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 結果表示とリスタート入力を更新する
    /// @param deltaTime 未使用

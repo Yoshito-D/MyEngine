@@ -24,6 +24,8 @@ public:
    /// @brief JSONのカメラIDを実体へ解決して初期モードを適用する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 非ReleaseビルドではTab入力で次のカメラへ切り替える
    void Update(float) override;

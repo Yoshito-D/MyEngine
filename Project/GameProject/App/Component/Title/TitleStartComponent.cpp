@@ -12,10 +12,17 @@
 #include <string>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
 namespace App {
+
+void TitleStartComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
+   optionTexts_.fill(nullptr);
+   optionTransforms_.fill(nullptr);
+   ResolveOptionVisuals(sceneWorld);
+}
 
 void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    // 選択・入力ラッチ・決定演出はシーン内だけの状態として毎回初期化し、
@@ -329,10 +336,10 @@ void TitleStartComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   ImGui::Text("Tutorial Option Object ID: %s", tutorialOptionObjectId_.c_str());
-   ImGui::Text("Stage Option Object ID: %s", stageOptionObjectId_.c_str());
-   ImGui::Text("Tutorial Scene: %s", tutorialScene_.c_str());
-   ImGui::Text("Stage Scene: %s", stageScene_.c_str());
+   GameEngine::EditorUI::ObjectReference("Tutorial Option", tutorialOptionObjectId_, "UITextComponent");
+   GameEngine::EditorUI::ObjectReference("Stage Option", stageOptionObjectId_, "UITextComponent");
+   GameEngine::EditorUI::SceneReference("Tutorial Scene", tutorialScene_);
+   GameEngine::EditorUI::SceneReference("Stage Scene", stageScene_);
    ImGui::Text("Selected Option: %d", selectedOption_);
    ImGui::Text("Resolved Options: %s", hasBaseVisualStates_ ? "true" : "false");
    ImGui::Text("Start Requested: %s", startRequested_ ? "true" : "false");

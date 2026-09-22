@@ -51,6 +51,9 @@ public:
     /// @brief コンポーネント名からファクトリを登録
     static bool RegisterComponentFactory(const std::string& componentName, ComponentFactory factory);
 
+    /// @brief 登録済みカメラコンポーネント名を名前順に取得する
+    static std::vector<std::string> GetRegisteredComponentNames();
+
     /// @brief コンポーネント名から追加する（登録済みファクトリ経由）
     ICinemachineComponent* AddComponentByName(const std::string& componentName);
 
@@ -70,6 +73,10 @@ public:
 
     /// @brief 仮想カメラ名を取得する
     const std::string& GetName() const { return name_; }
+    /// @brief 名前変更に影響されないシーン内の安定IDを取得する
+    const std::string& GetId() const { return id_; }
+    /// @brief 所有ワールドへの登録前に安定IDを設定する
+    void SetId(const std::string& id) { id_ = id; }
     /// @brief 仮想カメラ名を設定する
     void SetName(const std::string& name) { name_ = name; }
 
@@ -130,6 +137,7 @@ protected:
     mutable Transform resolvedLookAtTarget_;
     CameraState state_;
     std::string name_;
+    std::string id_;
     int priority_ = 0;
     bool isActive_ = true;
 };

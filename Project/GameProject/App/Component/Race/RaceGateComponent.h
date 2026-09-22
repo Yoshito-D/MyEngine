@@ -31,7 +31,7 @@ public:
 
    /// @brief レース管理コンポーネントへの参照を解決する
    /// @param sceneWorld 所属するシーンワールド
-   void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief トリガーの侵入・退出をレース管理へ通知する
    /// @param deltaTime 未使用

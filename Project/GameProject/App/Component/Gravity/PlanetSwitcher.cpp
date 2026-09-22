@@ -13,21 +13,22 @@
 #include <cmath>
 #include <Model/Model.h>
 #include "SphericalGravityAttractor.h"
+#include "Scene/SceneWorld.h"
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #endif
 
 namespace App {
 
 namespace {
-constexpr const char* kSceneObjectPayload = "EDITOR_SCENE_OBJECT";
 
 GameEngine::Model* FindRegisteredModelByObjectName(const std::string& objectName) {
    const auto& models = GameEngine::Model::GetRegisteredModels();
    auto it = std::find_if(models.begin(), models.end(),
       [&objectName](const GameEngine::Model* model) {
-         return model && model->GetObjectName() == objectName;
+         return model && (model->GetEntityId() == objectName || model->GetObjectName() == objectName);
       });
    return it != models.end() ? *it : nullptr;
 }
@@ -267,10 +268,53 @@ void PlanetSwitcher::AddPlanet(std::string objectName) {
    }
 
    if (auto* model = FindRegisteredModelByObjectName(objectName)) {
+      objectName = model->GetEntityId();
+      if (HasPlanet(objectName)) return;
 	  GameEngine::Vector3 modelPos = model->GetPosition();
 	  float surfaceRadius = GetPlanetSurfaceRadius(objectName);
 	  entries_.push_back({ objectName, modelPos, surfaceRadius });
    }
+}
+
+void PlanetSwitcher::OnReferencesChanged(GameEngine::SceneWorld&) {
+   for (auto& entry : entries_) {
+      if (auto* model = FindRegisteredModelByObjectName(entry.objectName)) {
+         // 全Entityが生成された後なら旧形式の名前も安定IDへ移行できる。
+         entry.objectName = model->GetEntityId();
+         entry.center = GetPlanetCenter(entry.objectName);
+         entry.surfaceRadius = GetPlanetSurfaceRadius(entry.objectName);
+      }
+   }
+}
+
+bool PlanetSwitcher::RemovePlanet(size_t index) {
+   if (index >= entries_.size()) return false;
+   entries_.erase(entries_.begin() + index);
+   const auto remap = [index](int& selected) {
+      if (selected == static_cast<int>(index)) selected = -1;
+      else if (selected > static_cast<int>(index)) --selected;
+   };
+   remap(currentIndex_);
+   remap(pendingIndex_);
+   remap(activeGravityIndex_);
+   if (activeGravityIndex_ < 0 && HasOwner()) {
+      if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) link->SetAttractor(nullptr);
+      if (auto* body = GetOwner().GetComponent<GravityBody>()) body->SetGravity({});
+   }
+   return true;
+}
+
+bool PlanetSwitcher::MovePlanet(size_t from, size_t to) {
+   if (from >= entries_.size() || to >= entries_.size() || from == to) return false;
+   std::swap(entries_[from], entries_[to]);
+   const auto remap = [from, to](int& selected) {
+      if (selected == static_cast<int>(from)) selected = static_cast<int>(to);
+      else if (selected == static_cast<int>(to)) selected = static_cast<int>(from);
+   };
+   remap(currentIndex_);
+   remap(pendingIndex_);
+   remap(activeGravityIndex_);
+   return true;
 }
 
 bool PlanetSwitcher::TryGetLandingPlanet(GameEngine::Vector3& outCenter, float& outSurfaceRadius) const {
@@ -347,7 +391,7 @@ nlohmann::json PlanetSwitcher::Serialize() const {
 	  if (entry.objectName.empty()) {
 		 continue;
 	  }
-	  planets.push_back({ { "objectName", entry.objectName } });
+	  planets.push_back({ { "objectId", entry.objectName } });
    }
    json["planets"] = planets;
    return json;
@@ -380,6 +424,8 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
 	  // 旧形式の文字列配列と現行のobjectNameオブジェクトをどちらも受け付ける。
 	  if (planetData.is_string()) {
 		 objectName = planetData.get<std::string>();
+	  } else if (planetData.is_object() && planetData.contains("objectId") && planetData.at("objectId").is_string()) {
+         objectName = planetData.at("objectId").get<std::string>();
 	  } else if (planetData.is_object() && planetData.contains("objectName") && planetData.at("objectName").is_string()) {
 		 objectName = planetData.at("objectName").get<std::string>();
 	  }
@@ -405,34 +451,39 @@ void PlanetSwitcher::DrawInspector() {
    ImGui::DragFloat(Tr("切り替えヒステリシス", "Switch Hysteresis"), &switchHysteresis, 0.05f, 0.0f, 20.0f);
    ImGui::DragFloat3(Tr("OBB半径", "OBB Half Extents"), &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
 
-   // 登録済み惑星の情報を表示/編集
    for (size_t i = 0; i < entries_.size(); ++i) {
-	  auto& e = entries_[i];
-	  ImGui::PushID(static_cast<int>(i));
-	  ImGui::Text("%s: %s", Tr("オブジェクト名", "Object Name"), e.objectName.c_str());
-	  ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("中心", "Center"), e.center.x, e.center.y, e.center.z);
-	  ImGui::Text("%s: %.2f", Tr("地表半径", "Surface Radius"), e.surfaceRadius);
-	  ImGui::PopID();
+      ImGui::PushID(static_cast<int>(i));
+      const std::string previousId = entries_[i].objectName;
+      if (GameEngine::EditorUI::ObjectReference("Planet", entries_[i].objectName, "SphericalGravityAttractor")) {
+         if (entries_[i].objectName.empty()) {
+            ImGui::PopID();
+            RemovePlanet(i);
+            break;
+         }
+         for (size_t other = 0; other < entries_.size(); ++other) {
+            if (other != i && entries_[other].objectName == entries_[i].objectName) {
+               entries_[i].objectName = previousId;
+               break;
+            }
+         }
+      }
+      ImGui::BeginDisabled(i == 0);
+      const bool up = ImGui::SmallButton("Up");
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+      ImGui::BeginDisabled(i + 1 == entries_.size());
+      const bool down = ImGui::SmallButton("Down");
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+      const bool remove = ImGui::SmallButton("Remove");
+      ImGui::PopID();
+      if (remove) { RemovePlanet(i); break; }
+      if (up || down) { MovePlanet(i, up ? i - 1 : i + 1); break; }
    }
-
-   ImGui::SeparatorText(Tr("惑星を追加", "Add Planet"));
-   static char newObjectName[128] = "";
-   ImGui::InputText((std::string(Tr("オブジェクト名", "Object Name")) + "##PlanetSwitcherAddObjectName").c_str(), newObjectName, sizeof(newObjectName));
-   ImGui::SameLine();
-   if (ImGui::Button((std::string(Tr("追加", "Add")) + "##PlanetSwitcherAddByName").c_str()) && newObjectName[0] != '\0') {
-	  AddPlanet(newObjectName);
-	  newObjectName[0] = '\0';
-   }
-
-   ImGui::Button((std::string(Tr("ヒエラルキーのオブジェクトをここへドロップ", "Drop Hierarchy Object Here")) + "##PlanetSwitcherDropTarget").c_str(), ImVec2(-1.0f, 0.0f));
-   if (ImGui::BeginDragDropTarget()) {
-	  if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kSceneObjectPayload)) {
-		 const char* objectName = static_cast<const char*>(payload->Data);
-		 if (objectName && payload->DataSize > 1) {
-			AddPlanet(objectName);
-		 }
-	  }
-	  ImGui::EndDragDropTarget();
+   GameEngine::EditorUI::ObjectReference("Add Planet", newPlanetId_, "SphericalGravityAttractor");
+   if (ImGui::Button(Tr("追加", "Add")) && !newPlanetId_.empty()) {
+      AddPlanet(newPlanetId_);
+      newPlanetId_.clear();
    }
 }
 #endif

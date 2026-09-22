@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <cstdint>
 #include <vector>
@@ -45,6 +46,7 @@ public:
    static bool Exists(TimerId id);
 
    /// @brief 更新（デルタタイムを引数で渡す）
+   /// @note コールバック中の追加は次回から更新する。Updateへの再入は無視する
    static void Update(float deltaTime);
 
    /// @brief 簡易更新（EngineContext から delta を取得）
@@ -57,7 +59,7 @@ private:
 	  float interval{};         // 間隔（0 の場合は一度きり）
 	  int repeat{ -1 };           // 残り回数（-1 は無限）
 	  bool paused{ false };
-	  std::function<void()> callback{};
+	  std::shared_ptr<std::function<void()>> callback;
    };
 
    static TimerId NextId();

@@ -840,7 +840,21 @@
     <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
     <None Include="Resources\engine\shaders\shader_registry.json" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Tests\Regression\EngineRegressionTests.cpp" />
+    <None Include="Tests\Regression\RunRegressionTests.ps1" />
+    <None Include="Tests\Regression\README.md" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ItemGroup>
+    <ClInclude Include="GameEngine\Editor\EditorReferenceWidgets.h" />
+    <ClCompile Include="GameEngine\Editor\EditorReferenceWidgets.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tests\SceneAuthoring\SceneAuthoringTests.cpp" />
+    <None Include="Tests\SceneAuthoring\RunSceneAuthoringTests.ps1" />
+    <None Include="Tests\SceneAuthoring\README.md" />
+  </ItemGroup>
 </Project>

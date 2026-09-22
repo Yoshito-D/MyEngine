@@ -24,14 +24,20 @@ public:
 
    /// @brief 惑星1件分の切替情報
    struct PlanetEntry {
-	  std::string objectName; ///< オブジェクト名
+	  std::string objectName; ///< 安定Entity ID（旧データの名前は参照解決時に移行）
 	  GameEngine::Vector3 center = {};      ///< 惑星中心座標
 	  float surfaceRadius = 15.0f;  ///< 地表半径
    };
 
-   /// @brief 切り替え候補の惑星をオブジェクト名で追加する
-   /// @param objectName 追加する惑星オブジェクト名
+   /// @brief 切り替え候補の惑星を安定IDまたは旧オブジェクト名で追加する
+   /// @param objectName 追加する惑星のEntity IDまたは表示名
    void AddPlanet(std::string objectName);
+   /// @brief 候補を削除し、削除対象を指す選択・保留状態を解除する
+   bool RemovePlanet(size_t index);
+   /// @brief 候補を並べ替え、現在選択中の惑星との対応を維持する
+   bool MovePlanet(size_t from, size_t to);
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 現在選択中の惑星インデックスを返す
    int GetCurrentPlanetIndex() const { return currentIndex_; }
@@ -77,6 +83,9 @@ public:
 private:
    /// @brief 登録済み惑星候補
    std::vector<PlanetEntry> entries_;
+#ifdef USE_IMGUI
+   std::string newPlanetId_;
+#endif
 
    /// @brief 現在選択中インデックス
    int currentIndex_ = -1;

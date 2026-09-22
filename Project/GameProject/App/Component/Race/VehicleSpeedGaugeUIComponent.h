@@ -29,6 +29,8 @@ public:
    /// @brief プレイヤー、レース、枠、速度テキストへの参照を解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 速度比率に応じてゲージの幅とUV範囲を更新する
    /// @param deltaTime ゲーム用デルタタイム（秒）

@@ -12,9 +12,11 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <span>
+#include <memory>
 
 namespace GameEngine {
 class GraphicsDevice;
+class SrvDescriptorAllocation;
 
 /// @brief マテリアルアセットを表す構造体
 struct MaterialAsset {
@@ -63,6 +65,11 @@ struct SkinningInformationForGPU {
 };
 
 struct SkinCluster {
+   // 不変な入力はコピー間で共有し、Palette/出力を差し替える際には対応する所有権も置換する。
+   std::vector<std::shared_ptr<SrvDescriptorAllocation>> inputVertexDescriptors;
+   std::vector<std::shared_ptr<SrvDescriptorAllocation>> influenceDescriptors;
+   std::vector<std::shared_ptr<SrvDescriptorAllocation>> skinnedVertexDescriptors;
+   std::shared_ptr<SrvDescriptorAllocation> paletteDescriptor;
    std::vector<Matrix4x4> inverseBindPoseMatrices; // 逆バインドポーズ行列のリスト
    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> influenceResources; // メッシュごとの頂点影響リソース
    std::vector<D3D12_VERTEX_BUFFER_VIEW> influenceBufferViews; // メッシュごとの頂点バッファ

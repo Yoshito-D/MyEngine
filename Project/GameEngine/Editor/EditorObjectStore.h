@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace GameEngine {
@@ -94,6 +95,10 @@ public:
    bool DeleteParticleSystem(const std::string& objectId);
    /// @brief 前フレームに遅延削除した実体を破棄する
    void FlushDeferredDeletes();
+   /// @brief Objectが削除待ちで編集対象から外れているかを調べる
+   /// @param object 確認するObject。参照先のメモリは読み取らない
+   /// @return このストアで削除待ちの場合はtrue
+   bool IsPendingDeletion(const Object* object) const { return pendingDeletionObjects_.contains(object); }
    /// @brief 全所有物を登録解除して遅延削除へ移し、ID表を空にする
    void Clear();
 
@@ -179,6 +184,7 @@ private:
    std::vector<std::unique_ptr<UIText>> deferredDeleteUITexts_;
    std::vector<std::unique_ptr<Skybox>> deferredDeleteSkyboxes_;
    std::vector<std::unique_ptr<ParticleSystem>> deferredDeleteParticleSystems_;
+   std::unordered_set<const Object*> pendingDeletionObjects_;
    std::unordered_map<std::string, Object*> idToObject_;
    std::unordered_map<std::string, ParticleSystem*> idToParticleSystem_;
    std::unordered_map<const Object*, std::string> objectToId_;

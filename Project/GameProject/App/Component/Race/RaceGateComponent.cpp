@@ -7,14 +7,12 @@
 #include <algorithm>
 
 #ifdef USE_IMGUI
+#include "Editor/EditorReferenceWidgets.h"
 #include "ImguiManager.h"
 #include "Utility/ImGuiHelper.h"
 #endif
 
 namespace {
-#ifdef USE_IMGUI
-constexpr float kInspectorColumnWidth = 140.0f;
-#endif
 }
 
 namespace App {
@@ -29,7 +27,7 @@ void RaceGateComponent::OnAttach() {
    }
 }
 
-void RaceGateComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+void RaceGateComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // シーン再読み込み後に以前のRaceManagerを参照しないよう、保存済みIDから解決し直す。
    raceManager_ = nullptr;
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
@@ -119,11 +117,7 @@ void RaceGateComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   GameEngine::ImGuiHelper::DrawInputString(
-      "Race Manager ID",
-      raceManagerId_,
-      GameEngine::ImGuiHelper::kDefaultTextBufferSize,
-      kInspectorColumnWidth);
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    const char* gateTypes[] = { "Start", "Checkpoint", "Finish", "StartFinish" };
    int gateTypeIndex = static_cast<int>(gateType_);
    if (ImGui::Combo("Gate Type", &gateTypeIndex, gateTypes, 4)) {
