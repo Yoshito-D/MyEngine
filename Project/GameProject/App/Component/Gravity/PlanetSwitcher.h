@@ -7,6 +7,10 @@
 #include <string>
 #include <vector>
 
+namespace GameEngine {
+class Model;
+}
+
 namespace App {
 
 /// @brief プレイヤー位置に応じて有効惑星を選択し、関連コンポーネントを切り替える
@@ -58,6 +62,16 @@ public:
    /// @param outSurfaceRadius 地表半径の出力先
    /// @return 取得できた場合は true
    bool TryGetLandingPlanet(GameEngine::Vector3& outCenter, float& outSurfaceRadius) const;
+
+   /// @brief 影の受け面モデルと、同じ着地候補の中心・半径を取得する（宣言のみ）。
+   /// @param outReceiver 描画する惑星モデルの借用ポインター。失敗時はnullptr。
+   /// @param outCenter 惑星中心のワールド座標。失敗時はゼロ。
+   /// @param outSurfaceRadius 地表半径のワールド単位。失敗時はゼロ。
+   /// @return 同じ候補からすべての情報を取得できた場合true。
+   /// @note 実装時は既存の2引数版と同様にpendingIndex_を優先し、候補の安定IDからモデルを再解決する。
+   /// モデルが消えていた場合はfalseとし、古いモデル参照を保存しない。
+   bool TryGetLandingPlanet(GameEngine::Model*& outReceiver,
+      GameEngine::Vector3& outCenter, float& outSurfaceRadius) const;
 
    /// @brief 空中で保留していた惑星切り替えを着地時に確定する
    void CommitPendingSwitch();

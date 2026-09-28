@@ -94,7 +94,9 @@
                   "enabled": true
                }
             ],
+            "componentsAreComplete": true,
             "followTargetId": "",
+            "id": "GravityFollowCamera",
             "index": 1,
             "lookAtTargetId": "",
             "name": "GravityFollowCamera",
@@ -213,6 +215,51 @@
                   "enabled": true
                },
                {
+                  "componentName": "RearCameraTransition",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraGravityUp",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraPlanetGuide",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraDirectionTracker",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraSpeedEffects",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraPositionSolver",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraAimSolver",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraMeasurementRecorder",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraDebugView",
+                  "data": {},
+                  "enabled": true
+               },
+               {
                   "componentName": "PerlinNoise",
                   "data": {
                      "amplitudeGain": 0.0,
@@ -230,7 +277,9 @@
                   "enabled": true
                }
             ],
+            "componentsAreComplete": true,
             "followTargetId": "",
+            "id": "PlayerRearFollowCamera",
             "index": 2,
             "lookAtTargetId": "",
             "name": "PlayerRearFollowCamera",
@@ -323,7 +372,9 @@
                   "enabled": true
                }
             ],
+            "componentsAreComplete": true,
             "followTargetId": "",
+            "id": "PlanetLeashCamera",
             "index": 3,
             "lookAtTargetId": "",
             "name": "PlanetLeashCamera",
@@ -936,7 +987,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -959,7 +1010,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -976,6 +1027,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -1015,6 +1068,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -1198,7 +1252,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -1221,7 +1275,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -1238,6 +1292,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -1277,6 +1333,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -1500,6 +1557,8 @@
                            "fillLightIntensity": 0.6499999761581421,
                            "lightingMode": 4,
                            "name": "playerMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               0.9656862616539001,
@@ -1539,6 +1598,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         0.9656862616539001,
@@ -1679,10 +1739,10 @@
                      },
                      "planets": [
                         {
-                           "objectName": "Planet_1"
+                           "objectId": "Model:Planet_1"
                         },
                         {
-                           "objectName": "Planet_2"
+                           "objectId": "Model:Planet_2"
                         }
                      ],
                      "switchHysteresis": 0.5
@@ -2005,7 +2065,7 @@
                                  1.0,
                                  1.0
                               ],
-                              "simulationSpace": "Local"
+                              "simulationSpace": "World"
                            },
                            "autoPlay": false,
                            "jsonPath": "resources/game/particles/bonfire.json",
@@ -2033,7 +2093,7 @@
                                  1.0,
                                  1.0
                               ],
-                              "simulationSpace": "Local"
+                              "simulationSpace": "World"
                            },
                            "autoPlay": false,
                            "jsonPath": "resources/game/particles/bonfire.json",

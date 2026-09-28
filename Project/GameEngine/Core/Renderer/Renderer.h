@@ -49,6 +49,8 @@ class ParticleSystem;
 class Mesh;
 class AssetManager;
 class Skybox;
+class PlayerShadowPass;
+struct PlayerShadowFrameData;
 
 /// @brief 描画コマンドの収集・レンダーパス実行・エディター描画を統括する
 class Renderer {
@@ -71,6 +73,17 @@ public:
 
    /// @brief フレームの終了時の処理
    void EndFrame();
+
+   /// @brief 今フレームのプレイヤー影の対象を専用パスへ渡す。
+   /// @param frameData EndFrameの描画完了まで有効なモデル・カメラとワールド座標情報
+   /// @return パスへ渡せた場合true。パス未登録・初期化失敗時はfalse。
+   /// @note BeginFrame後、EndFrame前に毎フレーム呼ぶ。1体分を保持し、再設定時は最後の値を使う。
+   /// 通常描画と同じカメラのモデル行列とボーンを更新しておくこと。描画可否はパス実行時に検証する。
+   bool SetPlayerShadowFrameData(const PlayerShadowFrameData& frameData);
+
+   /// @brief 今フレームの影を取り消し、借用している対象参照を解除する。
+   /// @note フレーム途中で対象モデルやシーンを破棄する場合は、破棄前に呼ぶ。
+   void ClearPlayerShadowFrameData();
 
    /// @brief モデルを描画する
    /// @param model 描画するモデル
@@ -260,9 +273,11 @@ public:
    void AddPass(std::unique_ptr<IRenderPass> pass);
 
    /// @brief 登録済みのレンダーパスをすべてクリアする
+   /// @note GPUが既存パスの資源を使い終えたフレーム境界で呼ぶ。
    void ClearPasses();
 
-   /// @brief デフォルトのパス構成（Opaque→Transparent→PostEffect）を再構築する
+   /// @brief デフォルトのパス構成（Opaque→PlayerShadow→Transparent→PostEffect）を再構築する
+   /// @note GPU完了後に呼ぶ。影用資源の初期化に失敗した場合は影パスだけを省く。
    void BuildDefaultPasses();
 
 private:
@@ -333,8 +348,10 @@ private:
    std::unique_ptr<Material> defaultMaterial_ = nullptr;
    std::unique_ptr<RenderBootstrapper> renderBootstrapper_;
 
-   // レンダーパスリスト（Opaque -> Transparent -> PostEffect の順で実行）
+   // レンダーパスリスト（Opaque -> PlayerShadow -> Transparent -> PostEffect の順で実行）
    std::vector<std::unique_ptr<IRenderPass>> renderPasses_;
+   // 所有権はrenderPasses_。対象データの受け渡しにだけ使い、ClearPassesで必ず解除する。
+   PlayerShadowPass* playerShadowPass_ = nullptr;
 
    // 毎フレーム構築するフレームコンテキスト
    FrameContext frameCtx_;

@@ -601,6 +601,17 @@ public:
    // レンダラー
    //================================================================
 
+   /// @brief Rendererへ今フレームの影対象を渡す中継関数（宣言のみ）。
+   /// @param frameData 描画完了まで有効なモデル・カメラとワールド座標情報
+   /// @return Rendererと影パスが利用可能で、データを渡せた場合true。
+   /// @note 実装時はsRenderer_を確認し、Renderer::SetPlayerShadowFrameDataへ委譲する。
+   /// BeginFrame後、EndFrame前に呼ぶ。PlayerShadowFrameDataの定義はPass/PlayerShadowPass.hにある。
+   static bool SetPlayerShadowFrameData(const PlayerShadowFrameData& frameData);
+
+   /// @brief Rendererの影対象を解除する中継関数（宣言のみ）。
+   /// @note 実装時はsRenderer_の存在を確認して委譲する。シーンや対象モデルの破棄前にも呼ぶ。
+   static void ClearPlayerShadowFrameData();
+
    /// @brief モデルを描画する
    /// @param model 描画するモデル
    /// @param texture テクスチャ

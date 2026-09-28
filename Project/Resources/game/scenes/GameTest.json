@@ -94,7 +94,9 @@
                   "enabled": true
                }
             ],
+            "componentsAreComplete": true,
             "followTargetId": "",
+            "id": "GravityFollowCamera",
             "index": 1,
             "lookAtTargetId": "",
             "name": "GravityFollowCamera",
@@ -213,6 +215,51 @@
                   "enabled": true
                },
                {
+                  "componentName": "RearCameraTransition",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraGravityUp",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraPlanetGuide",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraDirectionTracker",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraSpeedEffects",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraPositionSolver",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraAimSolver",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraMeasurementRecorder",
+                  "data": {},
+                  "enabled": true
+               },
+               {
+                  "componentName": "RearCameraDebugView",
+                  "data": {},
+                  "enabled": true
+               },
+               {
                   "componentName": "PerlinNoise",
                   "data": {
                      "amplitudeGain": 0.0,
@@ -230,7 +277,9 @@
                   "enabled": true
                }
             ],
+            "componentsAreComplete": true,
             "followTargetId": "",
+            "id": "PlayerRearFollowCamera",
             "index": 2,
             "lookAtTargetId": "",
             "name": "PlayerRearFollowCamera",
@@ -323,7 +372,9 @@
                   "enabled": true
                }
             ],
+            "componentsAreComplete": true,
             "followTargetId": "",
+            "id": "PlanetLeashCamera",
             "index": 3,
             "lookAtTargetId": "",
             "name": "PlanetLeashCamera",
@@ -993,7 +1044,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -1016,7 +1067,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -1033,6 +1084,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -1072,6 +1125,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -1255,7 +1309,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -1278,7 +1332,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -1295,6 +1349,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -1334,6 +1390,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -1517,7 +1574,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -1540,7 +1597,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -1557,6 +1614,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -1596,6 +1655,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -1779,7 +1839,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -1802,7 +1862,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -1819,6 +1879,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -1858,6 +1920,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -2041,7 +2104,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -2064,7 +2127,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -2081,6 +2144,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -2120,6 +2185,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -2303,7 +2369,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -2326,7 +2392,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -2343,6 +2409,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -2382,6 +2450,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -2565,7 +2634,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -2588,7 +2657,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -2605,6 +2674,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -2644,6 +2715,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -2827,7 +2899,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -2850,7 +2922,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -2867,6 +2939,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -2906,6 +2980,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -3089,7 +3164,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -3112,7 +3187,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -3129,6 +3204,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -3168,6 +3245,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -3351,7 +3429,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -3374,7 +3452,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -3391,6 +3469,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -3430,6 +3510,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -3613,7 +3694,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -3636,7 +3717,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -3653,6 +3734,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -3692,6 +3775,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -3875,7 +3959,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -3898,7 +3982,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -3915,6 +3999,8 @@
                            "fillLightIntensity": 0.5699999928474426,
                            "lightingMode": 2,
                            "name": "planetMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -3954,6 +4040,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -4137,7 +4224,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -4160,7 +4247,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -4177,6 +4264,8 @@
                            "fillLightIntensity": 0.4300000071525574,
                            "lightingMode": 1,
                            "name": "GoalMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -4216,6 +4305,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -4439,7 +4529,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
+                     "blendMode": 0,
                      "color": [
                         1.0,
                         1.0,
@@ -4462,7 +4552,7 @@
                      ],
                      "materialSlots": [
                         {
-                           "blendMode": -1,
+                           "blendMode": 0,
                            "color": [
                               1.0,
                               1.0,
@@ -4479,6 +4569,8 @@
                            "fillLightIntensity": 0.6499999761581421,
                            "lightingMode": 4,
                            "name": "playerMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               0.9656862616539001,
@@ -4518,6 +4610,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         0.9656862616539001,
@@ -4658,40 +4751,40 @@
                      },
                      "planets": [
                         {
-                           "objectName": "Planet_1"
+                           "objectId": "Model:Planet_1"
                         },
                         {
-                           "objectName": "Planet_2"
+                           "objectId": "Model:Planet_2"
                         },
                         {
-                           "objectName": "Planet_3"
+                           "objectId": "Model:Planet_3"
                         },
                         {
-                           "objectName": "Planet_4"
+                           "objectId": "Model:Planet_4"
                         },
                         {
-                           "objectName": "Planet_5"
+                           "objectId": "Model:Planet_5"
                         },
                         {
-                           "objectName": "Planet_6"
+                           "objectId": "Model:Planet_6"
                         },
                         {
-                           "objectName": "Planet_7"
+                           "objectId": "editor_object_1"
                         },
                         {
-                           "objectName": "Planet_8"
+                           "objectId": "editor_object_2"
                         },
                         {
-                           "objectName": "Planet_9"
+                           "objectId": "editor_object_3"
                         },
                         {
-                           "objectName": "Planet_10"
+                           "objectId": "editor_object_4"
                         },
                         {
-                           "objectName": "Planet_11"
+                           "objectId": "editor_object_5"
                         },
                         {
-                           "objectName": "Planet_12"
+                           "objectId": "editor_object_6"
                         }
                      ],
                      "switchHysteresis": 0.75
@@ -5014,7 +5107,7 @@
                                  1.0,
                                  1.0
                               ],
-                              "simulationSpace": "Local"
+                              "simulationSpace": "World"
                            },
                            "autoPlay": false,
                            "jsonPath": "resources/game/particles/bonfire.json",
@@ -5042,7 +5135,7 @@
                                  1.0,
                                  1.0
                               ],
-                              "simulationSpace": "Local"
+                              "simulationSpace": "World"
                            },
                            "autoPlay": false,
                            "jsonPath": "resources/game/particles/bonfire.json",
@@ -5350,6 +5443,8 @@
                            "fillLightIntensity": 0.75,
                            "lightingMode": 2,
                            "name": "GoalDirectionHUDMaterial",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -5389,6 +5484,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -5981,6 +6077,8 @@
                            "fillLightIntensity": 0.0,
                            "lightingMode": 0,
                            "name": "",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -6020,6 +6118,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,
@@ -6253,6 +6352,8 @@
                            "fillLightIntensity": 0.0,
                            "lightingMode": 0,
                            "name": "",
+                           "ownership": "local",
+                           "parameters": {},
                            "pipelineName": "",
                            "rimLightColor": [
                               1.0,
@@ -6292,6 +6393,7 @@
                            ]
                         }
                      ],
+                     "parameters": {},
                      "pipelineName": "",
                      "rimLightColor": [
                         1.0,

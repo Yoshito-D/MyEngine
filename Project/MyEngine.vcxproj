@@ -248,6 +248,7 @@
     <ClCompile Include="GameEngine\Core\UI\Text\TextLayout.cpp" />
     <ClCompile Include="GameEngine\Core\UI\Text\Utf8Decoder.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\OpaquePass.cpp" />
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.cpp" />
@@ -569,6 +570,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\FrameContext.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\IRenderPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\OpaquePass.h" />
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\PostEffectPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
     <ClInclude Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.h" />
@@ -840,6 +842,11 @@
     <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
     <None Include="Resources\engine\shaders\shader_registry.json" />
+    <None Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass_Implementation.md" />
+    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_mask_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Tests\Regression\EngineRegressionTests.cpp" />
@@ -862,6 +869,9 @@
     <None Include="Tests\Shaders\ShaderRegressionTests.cpp" />
     <None Include="Tests\Shaders\RunShaderTests.cjs" />
     <None Include="Tests\Shaders\README.md" />
+    <None Include="Tests\Particle\ParticleDistortionTests.cpp" />
+    <None Include="Tests\Particle\RunParticleTests.ps1" />
+    <None Include="Tests\Particle\README.md" />
     <None Include="Resources\engine\shaders\graphics\object3d\UnlitTint.PS.hlsl" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\unlit_tint_rootsig.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\unlit_tint_pipeline.json" />

@@ -1,0 +1,15 @@
+{
+  "name": "PlayerShadowProject",
+  "modelCompatible": false,
+  "vertexShader": "PlayerShadowProject",
+  "pixelShader": "PlayerShadowProject",
+  "rootSignature": "PlayerShadowProject",
+  "supportBlendModes": false,
+  "defaultBlendMode": "Normal",
+  "cullMode": "Back",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "Zero",
+  "depthFunc": "Equal",
+  "topologyType": "Triangle"
+}

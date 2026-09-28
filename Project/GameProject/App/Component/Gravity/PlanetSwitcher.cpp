@@ -512,4 +512,51 @@ float PlanetSwitcher::GetPlanetSurfaceRadius(const std::string& objectName) cons
    return 0.0f;
 }
 
+bool PlanetSwitcher::TryGetLandingPlanet(
+   GameEngine::Model*& outReceiver,
+   GameEngine::Vector3& outCenter,
+   float& outSurfaceRadius) const {
+   // 失敗時に呼び出し側へ古い値を残さない。
+   outReceiver = nullptr;
+   outCenter = {};
+   outSurfaceRadius = 0.0f;
+
+   // 空中で次の着地候補が決まっている場合は、その惑星を優先する。
+   const int index =
+	  pendingIndex_ >= 0 ? pendingIndex_ : currentIndex_;
+
+   if (index < 0 ||
+	  index >= static_cast<int>(entries_.size())) {
+	  return false;
+   }
+
+   const auto& entry = entries_[index];
+
+   auto* receiver =
+	  FindRegisteredModelByObjectName(entry.objectName);
+
+   if (!receiver) {
+	  return false;
+   }
+
+   // 既存の着地判定と同じ規約で、
+   // 選択した惑星の中心・半径を取得する。
+   const auto center = GetPlanetCenter(entry.objectName);
+   const float radius =
+	  GetPlanetSurfaceRadius(entry.objectName);
+
+   if (!std::isfinite(center.x) ||
+	  !std::isfinite(center.y) ||
+	  !std::isfinite(center.z) ||
+	  !std::isfinite(radius) ||
+	  radius <= 0.0f) {
+	  return false;
+   }
+
+   outReceiver = receiver;
+   outCenter = center;
+   outSurfaceRadius = radius;
+   return true;
+}
+
 } // namespace App

@@ -681,6 +681,17 @@ bool EngineContext::ApplyLightingSceneState(const nlohmann::json& state) {
    return sLightManager_ && sLightManager_->ApplySceneState(state);
 }
 
+bool EngineContext::SetPlayerShadowFrameData(const PlayerShadowFrameData& frameData) {
+   return sRenderer_ &&
+      sRenderer_->SetPlayerShadowFrameData(frameData);
+}
+
+void EngineContext::ClearPlayerShadowFrameData() {
+   if (sRenderer_) {
+      sRenderer_->ClearPlayerShadowFrameData();
+   }
+}
+
 void EngineContext::Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
    if (!sRenderer_) return;
    if (model) {

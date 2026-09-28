@@ -30,6 +30,11 @@ public:
    /// @param useDSV 深度ステンシルビューを使用するかどうか
    void PreDrawWithoutClear(bool useDSV);
 
+   /// @brief 色・深度・ステンシルを保持して描画先、Viewport/Scissor、共有SRVヒープを再設定する。
+   /// @param useDSV trueなら既存の深度バッファを保持したまま束縛する
+   /// @note 描画途中に別のRTVを使うパスからの復帰用。クリアやバッファ交換は行わない。
+   void BindPreservingContents(bool useDSV);
+
    /// @brief 描画後の処理
    void PostDraw();
 

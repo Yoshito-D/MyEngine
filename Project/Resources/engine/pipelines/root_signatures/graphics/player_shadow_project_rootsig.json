@@ -1,0 +1,37 @@
+{
+  "name": "PlayerShadowProject",
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Vertex",
+      "shaderRegister": 0,
+      "semantic": "shadowprojectconstants"
+    },
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 1,
+      "semantic": "shadowparameters"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "semantic": "shadowmask"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Border",
+      "addressV": "Border",
+      "addressW": "Border",
+      "comparisonFunc": "Never",
+      "maxLOD": 0.0,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}
