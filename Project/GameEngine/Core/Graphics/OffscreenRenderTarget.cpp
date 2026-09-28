@@ -309,6 +309,45 @@ void OffscreenRenderTarget::PreDrawWithoutClear(bool useDSV) {
    commandList->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
 }
 
+void OffscreenRenderTarget::BindPreservingContents(bool useDSV) {
+   if (!device_ || !device_->GetCommandList() || !device_->GetSRVHeap() ||
+      !currentRenderTarget_.renderTarget || width_ == 0 || height_ == 0 ||
+      (useDSV && (!device_->GetDSVHeap() || !device_->GetDepthBufferResource()))) {
+      Logger::Warning("[OffscreenRenderTarget] Cannot restore an uninitialized render target or depth buffer.");
+      return;
+   }
+   auto commandList = device_->GetCommandList();
+
+   // マスク用RTVなどへの一時切替から戻り、既存のシーン色へ追加描画する。
+   // SRV状態のままRTVとして束縛しないよう、追跡中の状態から書込み状態へ戻す。
+   if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_RENDER_TARGET) {
+	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		 currentRenderTarget_.renderTarget.Get(),
+		 currentRenderTarget_.state,
+		 D3D12_RESOURCE_STATE_RENDER_TARGET);
+	  commandList->ResourceBarrier(1, &barrier);
+	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
+   }
+
+   // 影の深度EQUAL比較にはOpaquePassが書いた深度が必要。色・深度・ステンシルを消さず再束縛する。
+   if (useDSV) {
+	  device_->TransitionDepthStencilToWrite();
+	  CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
+	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, &dsvHandle);
+   } else {
+	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, nullptr);
+   }
+
+   // 直前のパスが設定したマスク解像度を引き継がず、シーンの描画範囲へ戻す。
+   CD3DX12_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(width_), static_cast<float>(height_));
+   commandList->RSSetViewports(1, &viewport);
+   CD3DX12_RECT scissorRect(0, 0, static_cast<LONG>(width_), static_cast<LONG>(height_));
+   commandList->RSSetScissorRects(1, &scissorRect);
+
+   ID3D12DescriptorHeap* descriptorHeaps[] = { device_->GetSRVHeap() };
+   commandList->SetDescriptorHeaps(1, descriptorHeaps);
+}
+
 void OffscreenRenderTarget::PostDraw() {
    auto commandList = device_->GetCommandList();
 

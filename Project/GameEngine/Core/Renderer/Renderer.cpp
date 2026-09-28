@@ -36,6 +36,7 @@
 #include "Component/UI/UITextComponent.h"
 #include "Component/UI/UIModelComponent.h"
 #include "Pass/OpaquePass.h"
+#include "Pass/PlayerShadowPass.h"
 #include "Pass/TransparentPass.h"
 #include "Pass/PostEffectPass.h"
 #include <nlohmann/json.hpp>
@@ -183,13 +184,38 @@ void Renderer::AddPass(std::unique_ptr<IRenderPass> pass) {
 }
 
 void Renderer::ClearPasses() {
+   ClearPlayerShadowFrameData();
+   playerShadowPass_ = nullptr;
    renderPasses_.clear();
 }
 
 void Renderer::BuildDefaultPasses() {
    ClearPasses();
-   // 色を書き込む順序そのものが合成結果を決めるため、不透明→透明→ポスト処理の順を固定する。
+   // 不透明描画の深度を使って影を合成し、その上へ透明物を重ねてからポスト処理する。
    AddPass(std::make_unique<OpaquePass>());
+   auto shadowPass = std::make_unique<PlayerShadowPass>();
+
+   PlayerShadowSettings settings{};
+
+   settings.maskWidth = 256;
+   settings.maskHeight = 256;
+
+   settings.projectionWidth = 4.0f;
+   settings.projectionHeight = 4.0f;
+
+   settings.cameraDistance = 4.0f;
+   settings.nearClip = 0.1f;
+   settings.farClip = 1000.0f;
+
+   settings.opacity = 0.7f;
+   settings.receiverRange = 10.0f;
+
+   // 既存のif文の初期化呼び出しを変更する。
+   if (shadowPass->Initialize(device_, settings)) {
+	  auto* ptr = shadowPass.get();
+	  AddPass(std::move(shadowPass));
+	  playerShadowPass_ = ptr;
+   }
    AddPass(std::make_unique<TransparentPass>());
    AddPass(std::make_unique<PostEffectPass>(offscreenRenderTarget_.get()));
 
@@ -217,6 +243,20 @@ void Renderer::BuildDefaultPasses() {
 	};
 }
 
+bool Renderer::SetPlayerShadowFrameData(const PlayerShadowFrameData& frameData) {
+   if (!playerShadowPass_) {
+      return false;
+   }
+   playerShadowPass_->SetFrameData(frameData);
+   return true;
+}
+
+void Renderer::ClearPlayerShadowFrameData() {
+   if (playerShadowPass_) {
+      playerShadowPass_->ClearFrameData();
+   }
+}
+
 void Renderer::SyncRenderTargetSizeToDevice() {
    if (!device_ || !offscreenRenderTarget_) {
 	  return;
@@ -230,6 +270,8 @@ void Renderer::SyncRenderTargetSizeToDevice() {
 }
 
 void Renderer::BeginFrame() {
+   // 前フレームの描画が中断されても、古いシーンやモデルへの参照を次のフレームへ持ち越さない。
+   ClearPlayerShadowFrameData();
    // 各パスのキューはフレーム単位。テキストだけは全コマンド確定後に一括アップロードするため、
    // CPU側の頂点・インデックス蓄積もここで開始する。
    opaqueCommands_.clear();
@@ -1026,6 +1068,8 @@ void Renderer::DrawLineInternal(const LineDrawData& lineData) {
 }
 
 void Renderer::Finalize() {
+   // 通常の終了経路ではPostDrawでGPU完了済み。GraphicsDeviceより先に影資源とSRVスロットを返す。
+   ClearPasses();
    if (sceneTransitionHorizontalConstantBuffer_ && sceneTransitionHorizontalConstants_) {
       sceneTransitionHorizontalConstantBuffer_->Unmap(0, nullptr);
    }

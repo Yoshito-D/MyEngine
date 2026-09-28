@@ -1,5 +1,7 @@
 #include "Game.h"
 #include "Utility/Logger.h"
+#include "App/Component/Vehicle/VehicleController.h"
+#include "Object/Model/Model.h"
 
 #ifdef USE_IMGUI
 #include <filesystem>
@@ -125,8 +127,38 @@ void Game::Update() {
 }
 
 void Game::Draw() {
-   if (sceneManager_) {
-      sceneManager_->Draw();
+   // このフレームに対象が見つからなければ、影を描かない。
+   GameEngine::EngineContext::ClearPlayerShadowFrameData();
+
+   if (!sceneManager_) {
+      return;
+   }
+
+   sceneManager_->Draw();
+
+   auto* camera =
+      GameEngine::EngineContext::GetActiveCamera();
+
+   if (!camera) {
+      return;
+   }
+
+   // VehicleControllerを持つプレイヤーが1体の構成。
+   for (auto* model : GameEngine::Model::GetRegisteredModels()) {
+      if (!model) {
+         continue;
+      }
+
+      auto* vehicle =
+         model->GetComponent<App::VehicleController>();
+
+      // レース中の操作ロックで無効になっていても、停止中の車体の影は描画する。
+      if (!vehicle) {
+         continue;
+      }
+
+      vehicle->SubmitPlayerShadow(camera);
+      break;
    }
 }
 

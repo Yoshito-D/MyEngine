@@ -45,7 +45,7 @@ void RaceManagerComponent::Update(float deltaTime) {
          }
          break;
       case State::Running:
-         elapsedTime_ += static_cast<double>(safeDeltaTime);
+         elapsedTime_ += safeDeltaTime;
          startBannerRemaining_ = std::max(startBannerRemaining_ - safeDeltaTime, 0.0f);
          break;
       case State::Finished:
@@ -159,7 +159,7 @@ void RaceManagerComponent::NotifyStartGateExit() {
 
 void RaceManagerComponent::Restart() {
    // レース進行と遷移要求を一括で初期化し、再試行を新規セッションと同じ状態に戻す。
-   elapsedTime_ = 0.0;
+   elapsedTime_ = 0.0f;
    countdownRemaining_ = countdownSeconds_;
    startBannerRemaining_ = 0.0f;
    nextCheckpointIndex_ = 0;
@@ -284,7 +284,7 @@ void RaceManagerComponent::BeginRace() {
    // カウントダウン時間は走行記録へ含めず、開始時点を0秒として計測し直す。
    state_ = State::Running;
    SetCameraMotionPaused(false);
-   elapsedTime_ = 0.0;
+   elapsedTime_ = 0.0f;
    startBannerRemaining_ = startTextDuration_;
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
@@ -325,8 +325,8 @@ void RaceManagerComponent::SetPlayerLocked(bool locked) {
    }
 }
 
-void RaceManagerComponent::AddBestTime(double timeSeconds) {
-   if (!std::isfinite(timeSeconds) || timeSeconds <= 0.0) {
+void RaceManagerComponent::AddBestTime(float timeSeconds) {
+   if (!std::isfinite(timeSeconds) || timeSeconds <= 0.0f) {
       return;
    }
    bestTimes_.push_back(timeSeconds);
@@ -375,7 +375,7 @@ bool RaceManagerComponent::LoadBestTimes() {
 
       for (const auto& value : raceData.at("bestTimes")) {
          if (value.is_number()) {
-            AddBestTime(value.get<double>());
+            AddBestTime(value.get<float>());
          }
       }
       return true;

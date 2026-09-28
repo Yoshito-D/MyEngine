@@ -1,0 +1,16 @@
+{
+  "name": "PlayerShadowMask",
+  "modelCompatible": false,
+  "vertexShader": "PlayerShadowMask",
+  "pixelShader": "PlayerShadowMask",
+  "rootSignature": "PlayerShadowMask",
+  "supportBlendModes": false,
+  "defaultBlendMode": "None",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": false,
+  "depthWriteMask": "Zero",
+  "depthFunc": "Always",
+  "topologyType": "Triangle",
+  "rtvFormat": "R8G8B8A8_UNORM"
+}

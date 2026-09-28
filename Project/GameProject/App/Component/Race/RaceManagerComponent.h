@@ -74,15 +74,15 @@ public:
 
    /// @brief 現在の計測時間を取得する
    /// @return 秒単位の経過時間
-   double GetElapsedTime() const { return elapsedTime_; }
+   float GetElapsedTime() const { return elapsedTime_; }
 
    /// @brief 現在のベストタイムを取得する
    /// @return 記録がない場合は0、記録がある場合は秒単位のタイム
-   double GetBestTime() const { return bestTimes_.empty() ? 0.0 : bestTimes_.front(); }
+   float GetBestTime() const { return bestTimes_.empty() ? 0.0f : bestTimes_.front(); }
 
    /// @brief 保存済みベストタイムを速い順で取得する
    /// @return 最大3件の秒単位タイム
-   const std::vector<double>& GetBestTimes() const { return bestTimes_; }
+   const std::vector<float>& GetBestTimes() const { return bestTimes_; }
 
    /// @brief カウントダウン残り時間を取得する
    /// @return 秒単位の残り時間
@@ -113,15 +113,15 @@ private:
    bool CanFinish() const;
    void SetPlayerLocked(bool locked);
    void SetCameraMotionPaused(bool paused);
-   void AddBestTime(double timeSeconds);
+   void AddBestTime(float timeSeconds);
    bool LoadBestTimes();
    bool SaveBestTimes() const;
    void LogRecordWarning(const std::string& message) const;
 
    State state_ = State::Waiting;
    StartMode startMode_ = StartMode::Countdown;
-   double elapsedTime_ = 0.0;
-   std::vector<double> bestTimes_;
+   float elapsedTime_ = 0.0f;
+   std::vector<float> bestTimes_;
    float countdownSeconds_ = 3.0f;
    float countdownRemaining_ = 3.0f;
    float startTextDuration_ = 0.8f;

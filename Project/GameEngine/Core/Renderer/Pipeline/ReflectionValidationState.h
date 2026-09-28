@@ -12,14 +12,14 @@ struct ValidationFailItem {
    std::string pipeline; ///< 対象パイプライン名
    std::string reason; ///< 検証に失敗した理由
    std::vector<std::string> missingSemantics; ///< ルートシグネチャーから解決できなかったセマンティクス
-   double stageMatchRate = 1.0; ///< 必要ステージと反映ステージの一致率
+   float stageMatchRate = 1.0f; ///< 必要ステージと反映ステージの一致率
 };
 
 /// @brief 前回レポートと現在レポートのパイプライン別差分
 struct PipelineDiffMetrics {
    int warningDelta = 0; ///< 警告数の増減
-   double fallbackRateDelta = 0.0; ///< フォールバック率の増減
-   double stageMatchRateDelta = 0.0; ///< ステージ一致率の増減
+   float fallbackRateDelta = 0.0f; ///< フォールバック率の増減
+   float stageMatchRateDelta = 0.0f; ///< ステージ一致率の増減
 };
 
 /// @brief 出力レポート自身に対するスキーマ検証結果
@@ -43,7 +43,7 @@ struct ReflectionValidationState {
    std::unordered_map<std::string, ResolveStats> frameStatsByPipeline; ///< 現在フレームのパイプライン別統計
 
    uint32_t latestValidationWarningCount = 0; ///< 最新検証の警告数
-   double latestFallbackRate = 0.0; ///< 最新検証のフォールバック率
+   float latestFallbackRate = 0.0f; ///< 最新検証のフォールバック率
    bool latestQualityGatePassed = true; ///< 最新検証が品質基準を満たしたか
 
    std::vector<std::string> latestQualityGateFailReasons; ///< 品質基準を満たさなかった理由

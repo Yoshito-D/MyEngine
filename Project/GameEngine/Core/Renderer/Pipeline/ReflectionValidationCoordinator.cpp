@@ -14,11 +14,11 @@ constexpr int kJsonIndentSize = 2;
 
 struct ValidationGateConfig {
    uint32_t warningThreshold = 5;
-   double fallbackRateThreshold = 0.30;
-   double minStageMatchRate = 0.60;
+   float fallbackRateThreshold = 0.30f;
+   float minStageMatchRate = 0.60f;
    uint32_t warningIncreaseThreshold = 1;
-   double fallbackRateIncreaseThreshold = 0.05;
-   double stageMatchRateDecreaseThreshold = 0.05;
+   float fallbackRateIncreaseThreshold = 0.05f;
+   float stageMatchRateDecreaseThreshold = 0.05f;
    std::string source = "internal_default";
 };
 
@@ -32,21 +32,21 @@ ValidationGateConfig LoadValidationGateConfig() {
    return ValidationGateConfig{};
 }
 
-double ComputeStageMatchRate(const GameEngine::PipelineStageMatchInfo& stageInfo) {
-   double sumRate = 0.0;
+float ComputeStageMatchRate(const GameEngine::PipelineStageMatchInfo& stageInfo) {
+   float sumRate = 0.0f;
    int stageCount = 0;
    auto accumulate = [&](const GameEngine::ShaderStageMatchInfo& info) {
       // リフレクションを持たない段階は失敗扱いにせず、検証可能な段階だけで平均する。
       if (!info.hasReflection || info.resourceCount == 0) {
          return;
       }
-      sumRate += static_cast<double>(info.matchedByName) / static_cast<double>(info.resourceCount);
+      sumRate += static_cast<float>(info.matchedByName) / static_cast<float>(info.resourceCount);
       ++stageCount;
    };
    accumulate(stageInfo.vertex);
    accumulate(stageInfo.pixel);
    // 検証対象ステージがないパイプラインを0%扱いにすると誤検知になるため、検証不能時は中立の100%とする。
-   return (stageCount > 0) ? (sumRate / static_cast<double>(stageCount)) : 1.0;
+   return (stageCount > 0) ? (sumRate / static_cast<float>(stageCount)) : 1.0f;
 }
 
 LocalSchemaValidationStatus ValidateReportWithSchema(const nlohmann::json& report) {
@@ -129,8 +129,8 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
    const auto stageMatchInfos = shaderManager->GetPipelineStageMatchInfos();
    state.latestValidationWarningCount = psoSummary.totalWarnings;
    state.latestFallbackRate = (state.frameResolveRequests > 0)
-      ? static_cast<double>(state.frameResolveFallbacks) / static_cast<double>(state.frameResolveRequests)
-      : 0.0;
+      ? static_cast<float>(state.frameResolveFallbacks) / static_cast<float>(state.frameResolveRequests)
+      : 0.0f;
 
    state.latestQualityGateFailReasons.clear();
    state.latestValidationFailItems.clear();
@@ -139,11 +139,11 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
 
    const ValidationGateConfig gateConfig = LoadValidationGateConfig();
    const uint32_t kWarningThreshold = gateConfig.warningThreshold;
-   const double kFallbackRateThreshold = gateConfig.fallbackRateThreshold;
-   const double kMinStageMatchRate = gateConfig.minStageMatchRate;
+   const float kFallbackRateThreshold = gateConfig.fallbackRateThreshold;
+   const float kMinStageMatchRate = gateConfig.minStageMatchRate;
    const uint32_t kWarningIncreaseThreshold = gateConfig.warningIncreaseThreshold;
-   const double kFallbackRateIncreaseThreshold = gateConfig.fallbackRateIncreaseThreshold;
-   const double kStageMatchRateDecreaseThreshold = gateConfig.stageMatchRateDecreaseThreshold;
+   const float kFallbackRateIncreaseThreshold = gateConfig.fallbackRateIncreaseThreshold;
+   const float kStageMatchRateDecreaseThreshold = gateConfig.stageMatchRateDecreaseThreshold;
 
    // 後段の前回値比較を単純化するため、指標ごとに現在値をパイプライン名で正規化する。
    std::unordered_map<std::string, uint32_t> currentWarningsByPipeline;
@@ -151,15 +151,15 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       currentWarningsByPipeline[pipelineName] = metadata.validationWarningCount;
    }
 
-   std::unordered_map<std::string, double> currentFallbackRateByPipeline;
+   std::unordered_map<std::string, float> currentFallbackRateByPipeline;
    for (const auto& [pipelineName, stats] : state.frameStatsByPipeline) {
-      const double rate = (stats.requests > 0)
-         ? static_cast<double>(stats.misses) / static_cast<double>(stats.requests)
-         : 0.0;
+      const float rate = (stats.requests > 0)
+         ? static_cast<float>(stats.misses) / static_cast<float>(stats.requests)
+         : 0.0f;
       currentFallbackRateByPipeline[pipelineName] = rate;
    }
 
-   std::unordered_map<std::string, double> currentStageMatchRateByPipeline;
+   std::unordered_map<std::string, float> currentStageMatchRateByPipeline;
    for (const auto& [pipelineName, stageInfo] : stageMatchInfos) {
       currentStageMatchRateByPipeline[pipelineName] = ComputeStageMatchRate(stageInfo);
    }
@@ -185,12 +185,12 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
    if (state.latestFallbackRate > kFallbackRateThreshold) {
       state.latestQualityGateFailReasons.push_back(
          "Fallback rate exceeded threshold (" +
-         std::to_string(static_cast<int>(state.latestFallbackRate * 100.0)) + "%/" +
-         std::to_string(static_cast<int>(kFallbackRateThreshold * 100.0)) + "%)");
+         std::to_string(static_cast<int>(state.latestFallbackRate * 100.0f)) + "%/" +
+         std::to_string(static_cast<int>(kFallbackRateThreshold * 100.0f)) + "%)");
    }
 
    for (const auto& [pipelineName, metadata] : validationMetadata) {
-      double stageMatchRate = 1.0;
+      float stageMatchRate = 1.0f;
       if (auto it = stageMatchInfos.find(pipelineName); it != stageMatchInfos.end()) {
          stageMatchRate = ComputeStageMatchRate(it->second);
       }
@@ -208,7 +208,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
          state.latestQualityGateFailReasons.push_back(
             "Pipeline " + pipelineName + " failed: missingSemantics=" +
             std::to_string(metadata.missingSemantics.size()) +
-            ", stageMatchRate=" + std::to_string(static_cast<int>(stageMatchRate * 100.0)) + "%");
+            ", stageMatchRate=" + std::to_string(static_cast<int>(stageMatchRate * 100.0f)) + "%");
       }
    }
 
@@ -228,36 +228,36 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
       return 0;
    };
 
-   auto getPreviousPipelineFallbackRate = [&](const std::string& pipelineName) -> double {
+   auto getPreviousPipelineFallbackRate = [&](const std::string& pipelineName) -> float {
       if (!hasPreviousReport || !previousReport.contains("renderer") || !previousReport["renderer"].contains("frameByPipeline")) {
-         return 0.0;
+         return 0.0f;
       }
       const auto& byPipeline = previousReport["renderer"]["frameByPipeline"];
       if (!byPipeline.contains(pipelineName)) {
-         return 0.0;
+         return 0.0f;
       }
-      return byPipeline[pipelineName].value("fallbackRate", 0.0);
+      return byPipeline[pipelineName].value("fallbackRate", 0.0f);
    };
 
-   auto getPreviousPipelineStageMatchRate = [&](const std::string& pipelineName) -> double {
+   auto getPreviousPipelineStageMatchRate = [&](const std::string& pipelineName) -> float {
       if (!hasPreviousReport || !previousReport.contains("shader") || !previousReport["shader"].contains("stageMatches")) {
-         return 1.0;
+         return 1.0f;
       }
       const auto& stageMatches = previousReport["shader"]["stageMatches"];
       if (!stageMatches.contains(pipelineName)) {
-         return 1.0;
+         return 1.0f;
       }
-      return stageMatches[pipelineName].value("averageMatchRate", 1.0);
+      return stageMatches[pipelineName].value("averageMatchRate", 1.0f);
    };
 
    // 絶対閾値内でも前回から急激に悪化した場合を検出するため、三つの指標を差分化する。
    nlohmann::json diffByPipeline = nlohmann::json::object();
    for (const auto& [pipelineName, currentWarningCount] : currentWarningsByPipeline) {
       const uint32_t previousWarningCount = getPreviousPipelineWarning(pipelineName);
-      const double currentFallbackRate = currentFallbackRateByPipeline.contains(pipelineName) ? currentFallbackRateByPipeline[pipelineName] : 0.0;
-      const double previousFallbackRate = getPreviousPipelineFallbackRate(pipelineName);
-      const double currentStageRate = currentStageMatchRateByPipeline.contains(pipelineName) ? currentStageMatchRateByPipeline[pipelineName] : 1.0;
-      const double previousStageRate = getPreviousPipelineStageMatchRate(pipelineName);
+      const float currentFallbackRate = currentFallbackRateByPipeline.contains(pipelineName) ? currentFallbackRateByPipeline[pipelineName] : 0.0f;
+      const float previousFallbackRate = getPreviousPipelineFallbackRate(pipelineName);
+      const float currentStageRate = currentStageMatchRateByPipeline.contains(pipelineName) ? currentStageMatchRateByPipeline[pipelineName] : 1.0f;
+      const float previousStageRate = getPreviousPipelineStageMatchRate(pipelineName);
 
       PipelineDiffMetrics diff{};
       diff.warningDelta = static_cast<int>(currentWarningCount) - static_cast<int>(previousWarningCount);
@@ -279,12 +279,12 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
             state.latestRegressionFailReasons.push_back(reason);
          }
          if (diff.fallbackRateDelta > kFallbackRateIncreaseThreshold) {
-            const std::string reason = "Pipeline " + pipelineName + " fallback regression: +" + std::to_string(static_cast<int>(diff.fallbackRateDelta * 100.0)) + "%";
+            const std::string reason = "Pipeline " + pipelineName + " fallback regression: +" + std::to_string(static_cast<int>(diff.fallbackRateDelta * 100.0f)) + "%";
             state.latestQualityGateFailReasons.push_back(reason);
             state.latestRegressionFailReasons.push_back(reason);
          }
          if ((-diff.stageMatchRateDelta) > kStageMatchRateDecreaseThreshold) {
-            const std::string reason = "Pipeline " + pipelineName + " stage match regression: " + std::to_string(static_cast<int>(diff.stageMatchRateDelta * 100.0)) + "%";
+            const std::string reason = "Pipeline " + pipelineName + " stage match regression: " + std::to_string(static_cast<int>(diff.stageMatchRateDelta * 100.0f)) + "%";
             state.latestQualityGateFailReasons.push_back(reason);
             state.latestRegressionFailReasons.push_back(reason);
          }
@@ -341,7 +341,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
    report["pso"] = psoManager->BuildValidationReportJson();
    nlohmann::json stageMatchesJson = nlohmann::json::object();
    for (const auto& [pipelineName, stageInfo] : stageMatchInfos) {
-      const double averageMatchRate = ComputeStageMatchRate(stageInfo);
+      const float averageMatchRate = ComputeStageMatchRate(stageInfo);
       stageMatchesJson[pipelineName] = {
          {"vertex", {
             {"hasReflection", stageInfo.vertex.hasReflection},
@@ -379,9 +379,9 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
 
    nlohmann::json rendererByPipeline = nlohmann::json::object();
    for (const auto& [pipelineName, stats] : state.frameStatsByPipeline) {
-      const double fallbackRate = (stats.requests > 0)
-         ? static_cast<double>(stats.misses) / static_cast<double>(stats.requests)
-         : 0.0;
+      const float fallbackRate = (stats.requests > 0)
+         ? static_cast<float>(stats.misses) / static_cast<float>(stats.requests)
+         : 0.0f;
       rendererByPipeline[pipelineName] = {
          {"requests", stats.requests},
          {"hits", stats.hits},
@@ -440,7 +440,7 @@ void ReflectionValidationCoordinator::DrawDebugWindow(PSOManager* psoManager, Sh
    ImGui::Separator();
    ImGui::Text("Quality Gate: %s", state.latestQualityGatePassed ? "PASS" : "FAIL");
    ImGui::Text("Validation Warnings: %u", state.latestValidationWarningCount);
-   ImGui::Text("Fallback Rate: %.2f%%", state.latestFallbackRate * 100.0);
+   ImGui::Text("Fallback Rate: %.2f%%", state.latestFallbackRate * 100.0f);
 
    if (!state.latestQualityGateFailReasons.empty()) {
       ImGui::Text("Fail Reasons:");
@@ -475,8 +475,8 @@ void ReflectionValidationCoordinator::DrawDebugWindow(PSOManager* psoManager, Sh
                const auto diffIt = state.latestPipelineDiffs.find(pipelineName);
                const PipelineDiffMetrics diff = (diffIt != state.latestPipelineDiffs.end()) ? diffIt->second : PipelineDiffMetrics{};
                const char* warningTrend = diff.warningDelta > 0 ? "↑" : (diff.warningDelta < 0 ? "↓" : "→");
-               const char* fallbackTrend = diff.fallbackRateDelta > 0.0 ? "↑" : (diff.fallbackRateDelta < 0.0 ? "↓" : "→");
-               const char* stageTrend = diff.stageMatchRateDelta > 0.0 ? "↑" : (diff.stageMatchRateDelta < 0.0 ? "↓" : "→");
+               const char* fallbackTrend = diff.fallbackRateDelta > 0.0f ? "↑" : (diff.fallbackRateDelta < 0.0f ? "↓" : "→");
+               const char* stageTrend = diff.stageMatchRateDelta > 0.0f ? "↑" : (diff.stageMatchRateDelta < 0.0f ? "↓" : "→");
 
                ImGui::TableSetColumnIndex(1); ImGui::Text("%llu", stats.requests);
                ImGui::TableSetColumnIndex(2); ImGui::Text("%llu %s", stats.hits, stageTrend);

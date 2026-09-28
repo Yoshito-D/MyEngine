@@ -141,11 +141,11 @@
     },
     "materialSettings": {
         "alphaCutoff": 0.0010000000474974513,
-        "brightness": 2.25,
+        "brightness": 10.949999809265137,
         "distortionBlend": 1.0,
-        "distortionStrength": 0.0,
+        "distortionStrength": 28.200000762939453,
         "distortionUseTextureFlow": false,
-        "softParticleDistance": 1.2510000467300415,
+        "softParticleDistance": 1.1710000038146973,
         "softParticles": true,
         "toonSteps": 0
     },
@@ -200,7 +200,7 @@
         "torusMinorSegments": 16
     },
     "rendererModule": {
-        "billboardType": 1,
+        "billboardType": 0,
         "cameraFadeEnabled": false,
         "cameraFadeFar": 1.0,
         "cameraFadeNear": 0.25,
@@ -238,9 +238,9 @@
         "enabled": true,
         "length": 0.5,
         "position": [
-            2.9909138679504395,
-            0.916295051574707,
-            -0.12522488832473755
+            -10.623549461364746,
+            1.9627244472503662,
+            -0.20592737197875977
         ],
         "radius": 0.15000000596046448,
         "rotation": [
@@ -264,13 +264,13 @@
             1.5
         ],
         "sizeMultiplier": {
-            "max": 0.4000000059604645,
-            "min": 0.27000001072883606,
+            "max": 0.5400000214576721,
+            "min": 0.3400000035762787,
             "randomize": true
         },
         "startSize": [
             0.4000000059604645,
-            1.0,
+            3.009999990463257,
             0.4000000059604645
         ]
     },
@@ -295,7 +295,7 @@
         "cycles": 1,
         "enabled": true,
         "frameCount": 16,
-        "frameOverTime": 10.0,
+        "frameOverTime": 29.899999618530273,
         "randomRow": false,
         "rowIndex": 0,
         "startFrame": 0,

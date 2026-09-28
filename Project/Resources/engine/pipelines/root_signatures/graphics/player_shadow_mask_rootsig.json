@@ -1,0 +1,12 @@
+{
+  "name": "PlayerShadowMask",
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Vertex",
+      "shaderRegister": 0,
+      "semantic": "shadowmaskconstants"
+    }
+  ],
+  "samplers": []
+}
