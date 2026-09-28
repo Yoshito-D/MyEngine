@@ -37,6 +37,15 @@ public:
    /// autoSpeed への回復は UpdateSpeed の指数平滑によって行われる。
    void AddVelocityImpulse(float impulse);
 
+   /// @brief 指定秒数だけ加速を禁止し、保留中の正の加速を破棄する
+   void BlockAcceleration(float seconds);
+
+   /// @brief 着地判定前に禁止時間を進める（空中も含めて移動更新ごとに1回）
+   void AdvanceAccelerationBlock(float deltaTime);
+
+   /// @brief ミニターボと自動加速が禁止されているか取得する
+   bool IsAccelerationBlocked() const { return accelerationBlockRemaining_ > 0.0f; }
+
    /// @brief 現在の前進実速度を取得する
    float GetCurrentSpeed() const { return currentSpeed_; }
 
@@ -96,6 +105,9 @@ private:
 
    /// @brief 外部から積まれた加速度（units/sec²）。UpdateSpeed で v += a * dt して毎フレームリセット
    float acceleration_ = 0.0f;
+
+   /// @brief 着地失敗による加速禁止の残り時間（秒）
+   float accelerationBlockRemaining_ = 0.0f;
 
    /// @brief 外部から積まれた瞬間速度変化（units/sec）。UpdateSpeed で直接加算してリセット
    float velocityImpulse_ = 0.0f;

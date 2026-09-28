@@ -54,7 +54,7 @@ public:
    bool IsDrifting() const { return isDrifting_; }
 
    /// @brief ミニターボが発動できるかどうかをかえす
-   bool CanFireMiniTurbo() const { return miniTurboEnabled && driftTimer_ >= miniTurboMinTime; }
+   bool CanFireMiniTurbo() const;
 
    /// @brief ミニターボが発動したか確認し、フラグを消費して返す（1フレームに1回だけ true）
    bool ConsumeMiniTurboFired() {

@@ -18,7 +18,7 @@ enum class LandingResult {
 /// - 着地角度（alignment）に応じて3段階の判定を行う
 ///   - alignment >= boostThreshold  → 成功: boostAmount を加算
 ///   - alignment >= normalThreshold → 普通: 速度変化なし
-///   - alignment <  normalThreshold → 失敗: penaltyAmount を減算
+///   - alignment <  normalThreshold → 失敗: penaltySpeed に減速し、一定時間加速を禁止
 /// - このコンポーネントを Object から外すだけでブーストを無効化できる
 class VehicleLandingBoost final : public GameEngine::IObjectComponent {
 public:
@@ -59,6 +59,9 @@ public:
 
    /// @brief 失敗着地の速度
    float penaltySpeed = 0.0f;
+
+   /// @brief 着地失敗後にミニターボと自動加速を禁止する時間（秒）
+   float penaltyDuration = 1.0f;
 
 private:
    /// @brief 直近の着地判定結果（エフェクトなどの後続処理で参照する）

@@ -77,13 +77,30 @@ void VehicleGroundMover::UpdateSpeed(float deltaTime) {
    // speedRecovery が大きいほど速く収束する。
    // clamp(speedRecovery * dt, 0, 1) で補間率が 0〜1 に収まることを保証し、
    // dt が大きくても currentSpeed_ が autoSpeed を行き過ぎないようにする。
-   currentSpeed_ += (autoSpeed - currentSpeed_) * std::clamp(speedRecovery * deltaTime, 0.0f, 1.0f);
+   // 禁止中も通常速度を超えた分の減衰は許可するが、速度回復は行わない。
+   if (!IsAccelerationBlocked() || currentSpeed_ > autoSpeed) {
+      currentSpeed_ += (autoSpeed - currentSpeed_) * std::clamp(speedRecovery * deltaTime, 0.0f, 1.0f);
+   }
 
    // maxSpeed を超えないように clamp する。これによりブーストやペナルティの極端な値も制限される。
    currentSpeed_ = std::clamp(currentSpeed_, -maxSpeed, maxSpeed);
 }
 
+void VehicleGroundMover::BlockAcceleration(float seconds) {
+   accelerationBlockRemaining_ = std::max(accelerationBlockRemaining_, std::max(0.0f, seconds));
+   if (!IsAccelerationBlocked()) { return; }
+
+   // 着地直前のミニターボなどが次フレームに持ち越されないようにする。
+   velocityImpulse_ = std::min(0.0f, velocityImpulse_);
+   acceleration_ = std::min(0.0f, acceleration_);
+}
+
+void VehicleGroundMover::AdvanceAccelerationBlock(float deltaTime) {
+   accelerationBlockRemaining_ = std::max(0.0f, accelerationBlockRemaining_ - std::max(0.0f, deltaTime));
+}
+
 void VehicleGroundMover::AddAcceleration(float accel) {
+   if (IsAccelerationBlocked() && accel > 0.0f) { return; }
    // currentSpeed_ が未初期化（負値）のときは autoSpeed を初期値として使う。
    if (currentSpeed_ < 0.0f) { currentSpeed_ = autoSpeed; }
    // 加速度を積み上げる。実際に速度へ返換されるのは次の UpdateSpeed。
@@ -91,6 +108,7 @@ void VehicleGroundMover::AddAcceleration(float accel) {
 }
 
 void VehicleGroundMover::AddVelocityImpulse(float impulse) {
+   if (IsAccelerationBlocked() && impulse > 0.0f) { return; }
    if (currentSpeed_ < 0.0f) { currentSpeed_ = autoSpeed; }
    // 速度に即座に加算する。autoSpeed への回復は UpdateSpeed の指数平滑に委ねる。
    velocityImpulse_ += impulse;

@@ -2,7 +2,7 @@
 
 ConstantBuffer<PlayerShadowMaskConstants> gMaskConstants : register(b0);
 
-/// @brief プレイヤー頂点を影用の正射影座標へ変換する（未実装）。
+/// @brief プレイヤー頂点を影用の正射影座標へ変換する。
 PlayerShadowMaskVertexOutput main(PlayerShadowVertexInput input) {
     PlayerShadowMaskVertexOutput output;
 
