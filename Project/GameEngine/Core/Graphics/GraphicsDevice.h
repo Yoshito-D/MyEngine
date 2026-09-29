@@ -46,8 +46,8 @@ public:
    /// @param enableDebugLayer デバッグレイヤーの有無 
    void Initialize(Window* window, int32_t backBufferWidth = Window::kWindowWidth, int32_t backBufferHeight = Window::kWindowHeight, bool enableDebugLayer = true);
 
-   /// @brief Initialize commands and descriptors for offscreen rendering on an injected device (for example WARP).
-   /// @param device Existing D3D12 device retained by this instance; no window or swap chain is created.
+   /// @brief 注入されたデバイス（例: WARP）でオフスクリーン描画用のコマンドとデスクリプターを初期化する。
+   /// @param device このインスタンスが保持する既存のD3D12デバイス。ウィンドウやスワップチェーンは作成しない。
    void InitializeOffscreen(ID3D12Device* device);
 
    /// @brief ループ開始時の処理

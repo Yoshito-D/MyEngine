@@ -94,10 +94,10 @@ Quaternion Slerp(const Quaternion& q0, const Quaternion& q1, float t) {
 	  dot = -dot;
    }
 
-   // --- 3. 非常に近い場合は Lerp にフォールバック ---
+   // --- 3. 非常に近い場合は線形補間へフォールバック ---
    const float epsilon = 1e-6f;
    if (1.0f - dot < epsilon) {
-	  // Lerp
+	  // 線形補間
 	  Quaternion result = Q0 * (1.0f - t) + Q1 * t;
 	  return result.Normalize();
    }

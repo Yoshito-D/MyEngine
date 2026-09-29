@@ -177,7 +177,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    const std::string& particleSystemName = particleSystem->GetName();
 
    // ========================================
-   // File Operations
+   // ファイル操作
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("ファイル操作", "File Operations"), "ParticleFileOperations").c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
 	  // name ごとにバッファを保持（初回のみ name から既定パスを生成）
@@ -204,7 +204,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 	  ImGui::Text("%s", Tr("パーティクル設定の保存 / 読み込み", "Save/Load Particle Configuration"));
 	  ImGui::Separator();
 
-	  // Save
+	  // 保存
 	  std::string saveInputID = "##SavePath_" + particleSystemName;
 	  ImGui::InputText((std::string(Tr("保存パス", "Save Path")) + saveInputID).c_str(), savePathBuffer.data(), savePathBuffer.size());
 	  std::string saveButtonID = ScopedLabel(Tr("設定を保存", "Save Configuration"), "SaveConfiguration_" + particleSystemName);
@@ -216,7 +216,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 		 }
 	  }
 
-	  // Load
+	  // 読み込み
 	  std::string loadInputID = "##LoadPath_" + particleSystemName;
 	  ImGui::InputText((std::string(Tr("読み込みパス", "Load Path")) + loadInputID).c_str(), loadPathBuffer.data(), loadPathBuffer.size());
 	  std::string loadButtonID = ScopedLabel(Tr("設定を読み込み", "Load Configuration"), "LoadConfiguration_" + particleSystemName);
@@ -228,7 +228,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 		 }
 	  }
 
-	  // Success/Failure Popups
+	  // 成功・失敗ポップアップ
 	  if (ImGui::BeginPopupModal(StableLabel(Tr("保存成功", "Save Success"), ("ParticleSaveSuccess_" + particleSystemName).c_str()).c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		 ImGui::Text("%s", Tr("設定を保存しました。", "Configuration saved successfully!"));
 		 if (ImGui::Button("OK", ImVec2(120, 0))) {
@@ -265,7 +265,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Playback Control
+   // 再生操作
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("再生制御", "Playback Control"), "ParticlePlaybackControl").c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
 	  bool isPlaying = particleSystem->IsPlaying();
@@ -292,7 +292,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Main Module
+   // メインモジュール
    // ========================================
    // Inspectorの並びを生成設定→運動→視覚→描画の実行依存順に揃え、上流設定から追って調整できるようにする。
    if (ImGui::CollapsingHeader(StableLabel(Tr("メインモジュール", "Main Module"), "ParticleMainModule").c_str())) {
@@ -304,7 +304,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Emission Module
+   // 放出モジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("エミッションモジュール", "Emission Module"), "ParticleEmissionModule").c_str())) {
 	  auto* emissionModule = particleSystem->GetEmissionModule();
@@ -315,7 +315,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Shape Module
+   // シェイプモジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("形状モジュール", "Shape Module"), "ParticleShapeModule").c_str())) {
 	  auto* shapeModule = particleSystem->GetShapeModule();
@@ -326,7 +326,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Velocity over Lifetime Module
+   // 生存期間中の速度モジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("寿命中の速度", "Velocity over Lifetime"), "ParticleVelocityOverLifetime").c_str())) {
 	  auto* module = particleSystem->GetVelocityOverLifetimeModule();
@@ -337,7 +337,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Limit Velocity over Lifetime Module
+   // 生存期間中の速度制限モジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("寿命中の速度制限", "Limit Velocity over Lifetime"), "ParticleLimitVelocityOverLifetime").c_str())) {
 	  auto* module = particleSystem->GetLimitVelocityModule();
@@ -348,7 +348,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Force over Lifetime Module
+   // 生存期間中の力モジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("寿命中の力", "Force over Lifetime"), "ParticleForceOverLifetime").c_str())) {
 	  auto* module = particleSystem->GetForceOverLifetimeModule();
@@ -359,7 +359,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Color over Lifetime Module
+   // 生存期間中の色モジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("寿命中の色", "Color over Lifetime"), "ParticleColorOverLifetime").c_str())) {
 	  auto* module = particleSystem->GetColorOverLifetimeModule();
@@ -370,7 +370,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Size over Lifetime Module
+   // 生存期間中のサイズモジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("寿命中のサイズ", "Size over Lifetime"), "ParticleSizeOverLifetime").c_str())) {
 	  auto* module = particleSystem->GetSizeOverLifetimeModule();
@@ -381,7 +381,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Rotation over Lifetime Module
+   // 生存期間中の回転モジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("寿命中の回転", "Rotation over Lifetime"), "ParticleRotationOverLifetime").c_str())) {
 	  auto* module = particleSystem->GetRotationOverLifetimeModule();
@@ -392,7 +392,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Noise Module
+   // ノイズモジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("ノイズモジュール", "Noise Module"), "ParticleNoiseModule").c_str())) {
 	  auto* module = particleSystem->GetNoiseModule();
@@ -403,7 +403,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // UV Transform Module
+   // UV変換モジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("UV変換モジュール", "UV Transform Module"), "ParticleUVTransformModule").c_str())) {
 	  auto* module = particleSystem->GetUVTransformModule();
@@ -414,7 +414,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Texture Sheet Animation Module
+   // テクスチャシートアニメーションモジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("テクスチャシートアニメーション", "Texture Sheet Animation Module"), "ParticleTextureSheetAnimationModule").c_str())) {
 	  auto* module = particleSystem->GetTextureSheetAnimationModule();
@@ -425,7 +425,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
    }
 
    // ========================================
-   // Renderer Module
+   // レンダラーモジュール
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("レンダラーモジュール", "Renderer Module"), "ParticleRendererModule").c_str())) {
 	  auto* rendererModule = particleSystem->GetRendererModule();
@@ -492,7 +492,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 	}
 
 	if (ImGui::CollapsingHeader(StableLabel(Tr("パーティクルマテリアル", "Particle Material"), "ParticleMaterialModule").c_str())) {
-			// Blend Mode
+			// ブレンドモード
 			ImGui::Text("%s:", Tr("ブレンドモード", "Blend Mode"));
 			{
 			   const char* blendModeNames[] = {
@@ -505,7 +505,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 				  Tr("スクリーン", "Screen")
 			   };
 			   auto currentBlend = particleSystem->GetBlendMode();
-			   // -1 = Default (nullopt), 0..5 = BlendMode enum
+			   // -1 = 既定値（nullopt）、0～5 = BlendMode列挙値
 			   int blendIndex = currentBlend.has_value() ? (static_cast<int>(currentBlend.value()) + 1) : 0;
 			   std::string blendComboID = "##BlendMode_" + particleSystemName;
 			   if (ImGui::Combo(blendComboID.c_str(), &blendIndex, blendModeNames, IM_ARRAYSIZE(blendModeNames))) {
@@ -564,7 +564,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 	}
 
 	if (ImGui::CollapsingHeader(StableLabel(Tr("出力設定", "Output Settings"), "ParticleOutputSettings").c_str())) {
-			// Post Process
+			// ポストプロセス
 			{
 			   bool usePostProcess = particleSystem->GetUsePostProcess();
 			   std::string ppCheckboxID = ScopedLabel(Tr("ポストプロセスを適用", "Apply Post Process"), "ApplyPostProcess_" + particleSystemName);
@@ -577,7 +577,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 	}
 
 	if (ImGui::CollapsingHeader(StableLabel(Tr("テクスチャとモデル", "Texture and Model"), "ParticleTextureAndModel").c_str())) {
-			// Texture Settings
+			// テクスチャ設定
 			ImGui::Text("%s:", Tr("テクスチャ", "Texture"));
 			{
 			   auto* currentTexture = particleSystem->GetTexture();
@@ -644,7 +644,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 	}
 
    // ========================================
-   // Debug Info
+   // デバッグ情報
    // ========================================
    if (ImGui::CollapsingHeader(StableLabel(Tr("デバッグ情報", "Debug Info"), "ParticleDebugInfo").c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
 	  ImGui::Text("%s: %u / %u",
@@ -662,7 +662,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 
 	  auto* shapeModule = particleSystem->GetShapeModule();
 
-	  // Shape Visualization
+	  // シェイプ可視化
 	  static bool showShape = true;
 	  static Vector4 shapeColor(1.0f, 1.0f, 0.0f, 1.0f);
 
@@ -675,7 +675,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 		 Vector3 scaleVec = shapeModule->GetScale();
 		 Quaternion shapeRotation = shapeModule->GetRotationQuaternion();
 
-		 // Shape-specific parameters
+		 // シェイプ固有のパラメーター
 		 auto shapeType = shapeModule->GetShapeType();
 
 		 switch (shapeType) {
@@ -717,7 +717,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			   break;
 			}
 			case GameEngine::ShapeModule::ShapeType::Point:
-			   // Point emission is a single world point.
+			   // 点放出ではワールド上の1点から放出する。
 			   GameEngine::EngineContext::DrawSphere(center, 0.1f, shapeColor);
 			   break;
 		 }

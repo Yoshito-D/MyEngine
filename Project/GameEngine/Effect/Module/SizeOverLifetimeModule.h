@@ -6,7 +6,7 @@
 
 namespace GameEngine {
 	// ============================================================
-	// Size over Lifetime Module
+// 生存期間中のサイズモジュール
 	// ============================================================
 	class SizeOverLifetimeModule : public ParticleModule {
 	public:

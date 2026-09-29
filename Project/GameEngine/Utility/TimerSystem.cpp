@@ -82,7 +82,7 @@ void TimerSystem::Update(float deltaTime) {
 		 t.repeat--;
 	  }
 
-	  // 継続 or 削除
+	  // 継続または削除
 	  if (t.interval > 0.0f && (t.repeat != 0)) {
 		 // 超過時間を捨てず次回へ負債として繰り越し、長時間平均の周期ずれを抑える。
 		 // 周期継続（オーバー分も次へ繰越）

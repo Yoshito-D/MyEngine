@@ -15,7 +15,7 @@ using namespace GameEngine;
 namespace App {
 
 // ================================================================
-// public
+   // 公開設定
 // ================================================================
 
 void VehicleDrift::Apply(bool driftInput, float steerInput,
@@ -240,7 +240,7 @@ void VehicleDrift::TryFireMiniTurbo() {
 }
 
 // ================================================================
-// ImGui / Serialize
+   // ImGui / シリアライズ
 // ================================================================
 
 #ifdef USE_IMGUI

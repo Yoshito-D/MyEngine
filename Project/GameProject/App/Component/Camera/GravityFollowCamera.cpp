@@ -22,8 +22,8 @@ namespace App {
 // =============================================================================
 
 constexpr float kDefaultSafeFov = 0.45f;
-constexpr float kMinSafeFov = 0.017453292f;  // 1 degree
-constexpr float kMaxSafeFov = 3.12413936f;   // 179 degrees
+constexpr float kMinSafeFov = 0.017453292f;  // 1度
+constexpr float kMaxSafeFov = 3.12413936f;   // 179度
 constexpr float kMaxSpringDeltaTime = 0.25f;
 constexpr float kMaxSpringStep = 1.0f / 120.0f;
 

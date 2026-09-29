@@ -6,7 +6,7 @@
 
 namespace GameEngine {
 // ============================================================
-// Force over Lifetime Module
+// 生存期間中の力モジュール
 // ============================================================
 class ForceOverLifetimeModule : public ParticleModule {
 public:

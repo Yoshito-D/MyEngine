@@ -573,8 +573,8 @@
                         1.0
                      ],
                      "translation": [
-                        -245.78684997558594,
-                        -115.08606719970703,
+                        -153.80780029296875,
+                        -111.69532012939453,
                         1.0
                      ]
                   },
@@ -590,17 +590,17 @@
                         1.0
                      ],
                      "fontId": "851Gkktt",
-                     "fontSize": 211,
+                     "fontSize": 91,
                      "horizontalAlignment": "Center",
-                     "lineSpacing": 1.0,
-                     "maxWidth": 1000.0,
+                     "lineSpacing": 0.9300000071525574,
+                     "maxWidth": 1795.0,
                      "pivot": [
                         0.5,
                         0.5
                      ],
                      "screenAnchor": "MiddleCenter",
                      "sortingOrder": 100,
-                     "text": "Title"
+                     "text": "GALAXY RACING"
                   },
                   "enabled": true,
                   "typeName": "UITextComponent"

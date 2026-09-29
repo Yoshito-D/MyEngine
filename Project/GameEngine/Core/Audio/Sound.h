@@ -12,7 +12,7 @@ class SoundClip;
 /// @brief サウンドクラス
 class Sound {
 public:
-   /// @brief Set the legacy voice device; call with nullptr before device shutdown.
+   /// @brief 旧Soundラッパーが使用するボイスデバイスを設定する。デバイス終了前にnullptrを渡す。
    static void Initialize(IXAudio2* xAudio2);
 
    /// @brief デストラクタ
@@ -23,7 +23,7 @@ public:
    /// @note 失敗時は例外を送出し、読み込み前の音声と再生バッファを保持する
    void Load(const std::wstring& filepath);
 
-   /// @brief Load a shared decoded clip while retaining the old voice on failure.
+   /// @brief 共有デコード済みクリップを読み込む。失敗時は以前のボイスを保持する。
    void LoadClip(std::shared_ptr<const SoundClip> clip);
 
    /// @brief 音声を再生

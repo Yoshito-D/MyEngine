@@ -77,7 +77,7 @@ const D3D12_DESCRIPTOR_RANGE* RootSignature::CreateDescriptorRange(
    range.RegisterSpace = registerSpace;
    range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
    
-   // Root parameters retain pointers until serialization; deque keeps them stable.
+   // ルートパラメーターはシリアライズまでポインターを保持するため、dequeでアドレスを安定させる。
    descriptorRanges_.push_back(range);
    return &descriptorRanges_.back();
 }

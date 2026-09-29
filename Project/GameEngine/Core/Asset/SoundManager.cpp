@@ -68,7 +68,7 @@ std::string SoundManager::NormalizeAssetId(const std::string& assetId) {
       if (relative.empty()) return {};
       const auto normalized = relative.generic_u8string();
       std::string result(normalized.begin(), normalized.end());
-      // Windows paths are case-insensitive; fold only ASCII so UTF-8 bytes stay intact.
+      // Windowsのパスは大文字小文字を区別しないため、UTF-8のバイト列を壊さないようASCIIだけを畳み込む。
       std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) {
          return c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : static_cast<char>(c);
       });

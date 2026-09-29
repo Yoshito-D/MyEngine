@@ -30,11 +30,11 @@ public:
    /// @brief サウンドを全削除
    void Clear();
 
-   /// @brief Resolve and decode a Resources-relative UTF-8 asset ID once.
-   /// @return Shared PCM clip, or nullptr for an invalid or unreadable asset.
+   /// @brief Resources基準のUTF-8アセットIDを解決して一度だけデコードする。
+   /// @return 共有PCMクリップ。無効または読み込めないアセットの場合はnullptr。
    std::shared_ptr<const SoundClip> GetClip(const std::string& assetId);
 
-   /// @brief Normalize a UTF-8 Resources-relative path, rejecting traversal.
+   /// @brief UTF-8のResources基準パスを正規化し、ディレクトリトラバーサルを拒否する。
    static std::string NormalizeAssetId(const std::string& assetId);
 
 private:

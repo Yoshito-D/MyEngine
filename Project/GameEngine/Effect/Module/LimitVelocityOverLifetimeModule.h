@@ -5,7 +5,7 @@
 
 namespace GameEngine {
 	// ============================================================
-	// Limit Velocity over Lifetime Module
+// 生存期間中の速度制限モジュール
 	// ============================================================
 	class LimitVelocityOverLifetimeModule : public ParticleModule {
 	public:

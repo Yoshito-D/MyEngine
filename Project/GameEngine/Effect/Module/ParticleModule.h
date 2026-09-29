@@ -23,7 +23,7 @@ public:
    virtual void FromJson(const nlohmann::json& json) = 0;
 
 #ifdef USE_IMGUI
-   /// @brief ImGui inspector for editor builds.
+   /// @brief エディタービルド用のImGui Inspector。
    virtual void DrawInspector() = 0;
 #endif
 

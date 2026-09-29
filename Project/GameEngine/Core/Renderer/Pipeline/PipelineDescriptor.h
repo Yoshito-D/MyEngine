@@ -16,7 +16,7 @@ struct RootParameterDefinition {
    UINT descriptorCount = 1; // DESCRIPTOR_TABLE用
    D3D12_DESCRIPTOR_RANGE_TYPE rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // ディスクリプタテーブル用
    std::string semantic;
-   bool required = false; ///< Reflection marks resources actually consumed by the shader.
+   bool required = false; ///< シェーダーが実際に使用するリソースであることをリフレクション結果で示す。
 };
 
 /// @brief サンプラー定義
@@ -49,14 +49,14 @@ struct InputElementDefinition {
    UINT instanceDataStepRate;
 };
 
-/// @brief A float vector parameter with an explicit HLSL byte offset.
+/// @brief HLSLのバイトオフセットを明示したfloatベクトルパラメーター。
 struct MaterialParameterDefinition {
    std::string name;
    UINT offset = 0;
    std::vector<float> defaultValue;
 };
 
-/// @brief Validated model draw contract shared by all PSO variants.
+/// @brief すべてのPSOバリエーションで共有する、検証済みモデル描画契約。
 struct ModelPipelineDefinition {
    std::vector<RootParameterDefinition> bindings;
    UINT parameterBufferSize = 0;
@@ -65,7 +65,7 @@ struct ModelPipelineDefinition {
 
 /// @brief パイプライン定義構造体
 struct PipelineDefinition {
-   bool modelCompatible = false; ///< Validate the model vertex and resource contract before use.
+   bool modelCompatible = false; ///< 使用前にモデルの頂点およびリソース契約を検証する。
    std::string name;
    std::string vertexShader;
    std::string pixelShader;

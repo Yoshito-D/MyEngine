@@ -51,6 +51,7 @@ void Audio::Finalize() {
 Audio::Entry* Audio::Find(AudioHandle handle) {
    if (handle.index >= entries_.size()) return nullptr;
    Entry& entry = entries_[handle.index];
+   // インデックスを再利用しても、世代番号が異なる古いハンドルは無効として扱う。
    return entry.generation == handle.generation && entry.clip ? &entry : nullptr;
 }
 const Audio::Entry* Audio::Find(AudioHandle handle) const {
@@ -69,7 +70,7 @@ AudioHandle Audio::Create(std::shared_ptr<const SoundClip> clip, AudioBus bus, f
    if (!IsAvailable() || !clip || clip->GetPcm().empty() || !ValidPitch(pitch) ||
        !std::isfinite(volume) || static_cast<size_t>(bus) >= busVolumes_.size() ||
        (gamePaused_ && !preview)) return {};
-   // Completed one-shots are reclaimed before enforcing the deterministic cap.
+   // 決定的な上限を適用する前に、完了したワンショットを回収する。
    Update(0.0f);
    if (GetVoiceCount() >= kMaxVoices) return {};
    for (uint32_t index = 0; index < entries_.size(); ++index) {
@@ -90,6 +91,7 @@ AudioHandle Audio::Create(std::shared_ptr<const SoundClip> clip, AudioBus bus, f
 
 bool Audio::Start(Entry& entry) {
    if (!entry.clip || !IsAvailable() || GetVoiceCount() >= kMaxVoices) return false;
+   // テスト時はXAudio2を使わず状態だけを進め、実機と同じハンドル検証を通す。
    if (testMode_) { entry.testVoice = true; entry.state = State::Playing; ++entry.startCount; return true; }
    if (!entry.voice && FAILED(xAudio2_->CreateSourceVoice(&entry.voice, entry.clip->GetFormat()))) return false;
    entry.buffer = {};
@@ -215,6 +217,7 @@ void Audio::SetMasterVolume(float volume) {
 void Audio::SetGamePaused(bool paused) {
    if (gamePaused_ == paused) return;
    gamePaused_ = paused;
+   // ゲーム一時停止で止めたボイスだけを再開し、ユーザーが個別に止めたボイスは維持する。
    for (auto& entry : entries_) {
       if (!entry.clip || entry.preview || (!entry.voice && !entry.testVoice)) continue;
       if (paused && entry.state == State::Playing) {
@@ -236,6 +239,7 @@ void Audio::StopPreviews() {
    for (auto& entry : entries_) if (entry.clip && entry.preview) Retire(entry);
 }
 void Audio::Update(float realSeconds) {
+   // XAudio2が自然終了を通知する前にキューを確認し、完了したワンショットを再利用可能にする。
    for (auto& entry : entries_) {
       if (!entry.clip || !entry.voice || entry.state != State::Playing || entry.loop) continue;
       XAUDIO2_VOICE_STATE state{};

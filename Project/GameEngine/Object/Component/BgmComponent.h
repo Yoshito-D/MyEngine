@@ -5,45 +5,45 @@
 #include <string>
 
 namespace GameEngine {
-/// @brief One scene BGM request; playback is owned by Audio's BgmPlayer.
+/// @brief 1シーン分のBGM要求。再生はAudioのBgmPlayerが所有する。
 class BgmComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "BgmComponent";
    static constexpr ComponentDisplayName kDisplayName{ "BGM", "BGM" };
-   /// @brief Release this component's BGM request.
+   /// @brief このコンポーネントのBGM要求を解放する。
    ~BgmComponent() override;
-   /// @brief Stable serialized type name.
+   /// @brief シリアライズで使用する安定した型名。
    const char* GetTypeName() const override { return kTypeName; }
-   /// @brief Prepare a configured clip without playback.
+   /// @brief 設定されたクリップを再生せずに準備する。
    void Prepare();
-   /// @brief Submit playOnStart once at actual runtime start.
+   /// @brief 実際のランタイム開始時にplayOnStartを1回だけ送信する。
    bool BeginRuntime();
-   /// @brief Whether this component has a playable configured startup track.
+   /// @brief このコンポーネントに再生可能な起動時トラックが設定されているかどうか。
    bool HasStartupTrack() const { return IsEnabled() && playOnStart && clip_ != nullptr; }
-   /// @brief Explicitly request this configured BGM without restarting the same track.
+   /// @brief 設定されたBGMを明示的に要求する。同じトラックは再起動しない。
    bool Play();
-   /// @brief Explicitly restart the configured BGM from the beginning.
+   /// @brief 設定されたBGMを先頭から明示的に再起動する。
    bool Restart();
-   /// @brief Release only this component's current BGM ownership request.
+   /// @brief このコンポーネントが現在所有するBGM要求だけを解放する。
    void Stop();
-   /// @brief Stop the owned BGM when disabled.
+   /// @brief 無効化されたとき、所有するBGMを停止する。
    void OnDisable() override { Stop(); }
-   /// @brief Remove ownership without affecting a later scene's request.
+   /// @brief 後続シーンの要求に影響を与えず、所有権だけを取り除く。
    void OnDetach() override { Stop(); }
-   /// @brief Resolve the clip only; editing never starts music.
+   /// @brief クリップの解決だけを行う。編集時に音楽は開始しない。
    void OnReferencesChanged(SceneWorld&) override { Prepare(); }
-   /// @brief Resolve the clip only; a later runtime event starts music.
+   /// @brief クリップの解決だけを行う。音楽は後続のランタイムイベントで開始する。
    void OnSceneLoaded(SceneWorld&) override { Prepare(); }
-   /// @brief Save settings only, never voice or fade state.
+   /// @brief 設定だけを保存し、ボイスやフェード状態は保存しない。
    nlohmann::json Serialize() const override;
-   /// @brief Restore checked settings and prepare the clip without playback.
+   /// @brief 検証済みの設定を復元し、再生せずにクリップを準備する。
    void Deserialize(const nlohmann::json& data) override;
 #ifdef MYPROJECT_NON_RELEASE
-   /// @brief Inject a decoded fixture with its asset ID for device-free tests.
+   /// @brief デバイス不要のテスト用に、アセットID付きのデコード済みフィクスチャを注入する。
    void SetClipForTesting(const std::string& assetId, std::shared_ptr<const SoundClip> clip);
 #endif
 #ifdef USE_IMGUI
-   /// @brief Edit BGM settings and invoke independent editor preview controls.
+   /// @brief BGM設定を編集し、独立したエディタープレビュー操作を呼び出す。
    void DrawInspector() override;
 #endif
    std::string clipAssetId;

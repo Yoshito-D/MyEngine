@@ -270,7 +270,7 @@ void CameraEditor::ShowCameraInspector(Camera* camera) {
     ImGui::Text("%s", Tr("カメラプロパティ", "Camera Properties"));
     ImGui::Separator();
 
-    // Transform
+      // トランスフォーム
     const std::string transformHeader = std::string(Tr("トランスフォーム", "Transform")) + "###CameraTransform";
     if (ImGui::CollapsingHeader(transformHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
         Transform transform = camera->GetTransform();
@@ -279,13 +279,13 @@ void CameraEditor::ShowCameraInspector(Camera* camera) {
         }
     }
 
-    // Projection
+      // 投影
     const std::string projectionHeader = std::string(Tr("投影", "Projection")) + "###CameraProjection";
     if (ImGui::CollapsingHeader(projectionHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
         EditProjectionSettings(camera);
     }
 
-    // Info
+      // 情報
     const std::string infoHeader = std::string(Tr("情報", "Info")) + "###CameraInfo";
     if (ImGui::CollapsingHeader(infoHeader.c_str())) {
         Vector3 forward = camera->GetForward();
@@ -595,7 +595,7 @@ bool CameraEditor::EditTransform(Transform& transform) {
 bool CameraEditor::EditProjectionSettings(Camera* camera) {
     bool changed = false;
 
-    // Projection Type
+      // 投影方式
     int projType = static_cast<int>(camera->GetProjectionType());
     const char* projTypes[] = { Tr("透視投影", "Perspective"), Tr("平行投影", "Orthographic") };
     const std::string projectionTypeLabel = std::string(Tr("投影タイプ", "Type")) + "##Projection";
@@ -604,7 +604,7 @@ bool CameraEditor::EditProjectionSettings(Camera* camera) {
         changed = true;
     }
 
-    // FOV
+      // 視野角
     float fov = camera->GetFovY();
     float fovDeg = fov * MathConstants::kRadiansToDegrees;
     const std::string fovLabel = std::string(Tr("視野角 (deg)", "FOV (deg)")) + "##CameraProjectionFov";
@@ -613,7 +613,7 @@ bool CameraEditor::EditProjectionSettings(Camera* camera) {
         changed = true;
     }
 
-    // Near/Far Clip
+      // ニア・ファークリップ
     float nearClip = camera->GetNearClip();
     float farClip = camera->GetFarClip();
 

@@ -392,7 +392,7 @@ bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
             vignetteColorB_ = blue;
          }
       } catch (const nlohmann::json::exception&) {
-         // Keep the previous color when a numeric conversion is out of range.
+         // 数値変換が範囲外の場合は、以前の色を維持する。
       }
    }
    intensity_ = ReadFloat(settings, "intensity", intensity_);
@@ -401,7 +401,7 @@ bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json WhiteNoise::SerializeSettings() const {
-   // Time is advanced by rendering and is intentionally excluded from authored scene state.
+   // 時間は描画処理で進むため、意図的にシーン作成データから除外する。
    return {
       { "noiseDensity", params_.noiseDensity },
       { "seedChangeRate", params_.seedChangeRate },

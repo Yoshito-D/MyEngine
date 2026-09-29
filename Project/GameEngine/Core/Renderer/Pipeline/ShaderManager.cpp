@@ -516,7 +516,7 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
 		 }
 		 cbInfo.size = cbDesc.Size;
 		 cbInfo.variableCount = cbDesc.Variables;
-         // Flatten ConstantBuffer<Struct> and ordinary cbuffers into the same ABI description.
+   // ConstantBuffer<Struct>と通常のcbufferを同じABI記述へ平坦化する。
          std::function<void(ID3D12ShaderReflectionType*, const std::string&, UINT)> visit;
          visit = [&](ID3D12ShaderReflectionType* field, const std::string& name, UINT offset) {
             D3D12_SHADER_TYPE_DESC desc{};

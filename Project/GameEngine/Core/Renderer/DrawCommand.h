@@ -8,7 +8,7 @@
 #include "Sprite/Sprite.h"
 #include "Window/Window.h"
 
-// Forward declarations
+// 前方宣言
 struct ID3D12GraphicsCommandList;
 
 namespace GameEngine {
@@ -38,7 +38,7 @@ enum class RenderPass {
 /// @brief モデル描画用データ
 struct ModelDrawData {
    Model* model;
-   std::optional<size_t> meshIndex; ///< Selected submesh; unset commands are split before queueing.
+   std::optional<size_t> meshIndex; ///< 選択されたサブメッシュ。未設定のコマンドはキュー投入前に分割する。
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textures;
    D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandle = {}; // 環境テクスチャSRV (ptr==0なら無効)
    Camera* camera;  // 描画時のカメラを保存

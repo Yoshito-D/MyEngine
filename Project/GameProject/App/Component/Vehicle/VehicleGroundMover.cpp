@@ -16,7 +16,7 @@ using namespace GameEngine;
 namespace App {
 
 // ---------------------------------------------------------------
-// public
+   // 公開設定
 // ---------------------------------------------------------------
 
 void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float deltaTime) {
@@ -55,7 +55,7 @@ void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float
 }
 
 // ---------------------------------------------------------------
-// private
+   // 内部設定
 // ---------------------------------------------------------------
 
 void VehicleGroundMover::UpdateSpeed(float deltaTime) {
@@ -217,7 +217,7 @@ Quaternion VehicleGroundMover::BasisToQuaternion(const Vector3& right,
 }
 
 // ---------------------------------------------------------------
-// ImGui / Serialize
+   // ImGui / シリアライズ
 // ---------------------------------------------------------------
 
 #ifdef USE_IMGUI

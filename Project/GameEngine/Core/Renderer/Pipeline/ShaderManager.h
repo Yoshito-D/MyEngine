@@ -52,7 +52,7 @@ struct ShaderResourceBindingInfo {
    D3D_SRV_DIMENSION dimension = D3D_SRV_DIMENSION_UNKNOWN;
 };
 
-/// @brief Reflected leaf field with a constant-buffer-relative offset.
+   /// @brief 定数バッファー内の相対オフセットを持つ、リフレクション結果の末端フィールド。
 struct ShaderVariableInfo {
    std::string name;
    UINT offset = 0;

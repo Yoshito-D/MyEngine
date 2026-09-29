@@ -92,7 +92,7 @@ ID3D12Resource* Material::PrepareParameters(const ModelPipelineDefinition& defin
       if (field == definition.parameters.end() || field->defaultValue.size() != value.size()) return nullptr;
    }
    if (!parameterResource_) {
-      // Allocate once per material; shader/PSO creation never occurs here.
+   // マテリアルごとに一度だけ確保し、ここではシェーダーやPSOを作成しない。
       parameterResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), 4096);
       if (!parameterResource_ || FAILED(parameterResource_->Map(0, nullptr, &parameterData_))) return nullptr;
    }

@@ -178,7 +178,7 @@ ParticleSystem::ParticleSystem() {
    quadMesh_ = std::make_unique<Mesh>();
    material_ = std::make_unique<ParticleMaterial>();
 
-   // Initialize all modules
+   // すべてのモジュールを初期化する。
    mainModule_ = std::make_unique<MainModule>();
    emissionModule_ = std::make_unique<EmissionModule>();
    shapeModule_ = std::make_unique<ShapeModule>();
@@ -198,7 +198,7 @@ ParticleSystem::ParticleSystem() {
    trailModule_ = std::make_unique<TrailModule>();
    particleMeshModule_ = std::make_unique<ParticleMeshModule>();
 
-   // Disable some modules by default
+   // 一部のモジュールは既定で無効にする。
    velocityOverLifetimeModule_->SetEnabled(false);
    colorOverLifetimeModule_->SetEnabled(false);
    sizeOverLifetimeModule_->SetEnabled(false);
@@ -360,7 +360,7 @@ void ParticleSystem::Create() {
 
    activeParticleCount_ = 0;
 
-   // Play on awake
+   // 有効化時に再生する。
    if (mainModule_->GetPlayOnAwake()) {
 	  Play();
    }
@@ -756,7 +756,7 @@ void ParticleSystem::Update(float deltaTime) {
    systemTime_ += deltaTime;
    UpdateDetachedRibbons(deltaTime);
 
-   // Check if emission should continue
+   // 放出を継続すべきか確認する。
    bool shouldEmit = mainModule_->IsLooping() || systemTime_ < mainModule_->GetDuration();
 
    // Emission処理
@@ -902,7 +902,7 @@ void ParticleSystem::Update(float deltaTime) {
 	  material_->SetUVTransform(MakeIdentity4x4());
    }
 
-   // Loop handling
+   // ループ処理
    if (!mainModule_->IsLooping() && systemTime_ >= mainModule_->GetDuration()) {
 	  if (activeParticleCount_ == 0 && detachedRibbons_.empty()) {
 		 Stop();
@@ -1760,7 +1760,7 @@ void ParticleSystem::EmitParticle() {
    const Transform emitterTransform = shapeModule_ ? shapeModule_->GetTransform() : Transform{};
    particle.simulationSpaceTransform = emitterTransform;
 
-   // Main Module settings with random support
+   // 乱数に対応したメインモジュール設定
    particle.lifeTime = mainModule_->GetStartLifetime().GetValue();
    particle.currentTime = 0.0f;
 
@@ -1822,7 +1822,7 @@ void ParticleSystem::EmitParticle() {
 	  return velocity;
    };
 
-   // Shape Module - position and direction
+   // シェイプモジュール - 位置と方向
    if (shapeModule_->IsEnabled()) {
 	  Vector3 emissionPos = shapeModule_->GetRandomEmissionPosition();
 	  Vector3 direction = shapeModule_->GetRandomEmissionDirection();
@@ -1874,7 +1874,7 @@ void ParticleSystem::EmitParticle() {
 }
 
 // ============================================================
-// JSON Serialization
+// JSONシリアライズ
 // ============================================================
 
 bool ParticleSystem::SaveToJson(const std::string& filePath) const {

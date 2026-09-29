@@ -6,7 +6,7 @@
 
 namespace GameEngine {
 	// ============================================================
-	// Velocity over Lifetime Module
+	// 生存期間中の速度モジュール
 	// ============================================================
 	class VelocityOverLifetimeModule : public ParticleModule {
 	public:

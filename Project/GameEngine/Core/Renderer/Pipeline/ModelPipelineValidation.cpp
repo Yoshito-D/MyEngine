@@ -21,7 +21,7 @@ bool MatchesField(const ShaderVariableInfo& field, UINT offset, UINT columns,
 }
 
 bool ValidateBuiltinBuffer(const std::string& semantic, const ShaderConstantBufferInfo& buffer) {
-   // These offsets are the CPU/GPU ABI. Size alone cannot detect reordered fields or changed types.
+   // これらのオフセットはCPU/GPU間ABIである。サイズだけではフィールド順や型の変更を検出できない。
    std::map<std::string, std::tuple<UINT, UINT, D3D_SHADER_VARIABLE_TYPE, UINT>> fields;
    UINT size = 0;
    if (semantic == "material") {

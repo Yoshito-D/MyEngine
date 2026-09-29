@@ -27,15 +27,15 @@ namespace GameEngine {
         void SetEnabled(bool enabled) { enabled_ = enabled; }
         bool IsEnabled() const { return enabled_; }
 
-        // Rate over Time
+        // 時間による放出率
         void SetRateOverTime(float rate) { rateOverTime_ = rate; }
         float GetRateOverTime() const { return rateOverTime_; }
 
-        // Rate over Distance
+        // 距離による放出率
         void SetRateOverDistance(float rate) { rateOverDistance_ = rate; }
         float GetRateOverDistance() const { return rateOverDistance_; }
 
-        // Bursts
+        // バースト
         void AddBurst(const Burst& burst) { bursts_.push_back(burst); }
         void ClearBursts() { bursts_.clear(); }
         const std::vector<Burst>& GetBursts() const { return bursts_; }
@@ -44,7 +44,7 @@ namespace GameEngine {
         /// @brief Burst の発火状態をリセット（Play/Stop 時に呼ぶ）
         void ResetBurstStates();
 
-        // JSON Serialization
+        // JSONシリアライズ
         nlohmann::json ToJson() const;
         void FromJson(const nlohmann::json& json);
 

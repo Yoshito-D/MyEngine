@@ -550,10 +550,10 @@ void EngineContext::ClearCameraUnits() {
 }
 
 //================================================================
-// Light Manager
+// ライトマネージャー
 //================================================================
 
-// DirectionalLight
+// ディレクショナルライト
 DirectionalLight* EngineContext::CreateDirectionalLight(const std::string& name, unsigned int color, const Vector3& direction, float intensity) {
    if (!sLightManager_) return nullptr;
    return sLightManager_->CreateDirectionalLight(name, color, direction, intensity);
@@ -579,7 +579,7 @@ std::vector<std::string> EngineContext::GetDirectionalLightNames() {
    return sLightManager_->GetDirectionalLightNames();
 }
 
-// PointLight
+// ポイントライト
 PointLight* EngineContext::CreatePointLight(const std::string& name, unsigned int color, const Vector3& position, float intensity, float radius, float decay) {
    if (!sLightManager_) return nullptr;
    return sLightManager_->CreatePointLight(name, color, position, intensity, radius, decay);
@@ -599,8 +599,7 @@ const std::vector<PointLight*>& EngineContext::GetPointLights() {
    static std::vector<PointLight*> emptyPointLights;
    if (!sLightManager_) return emptyPointLights;
    
-   // NOTE: This method is deprecated and only kept for compatibility
-   // It returns an empty vector since lights are now stored in a map
+   // 互換性のためだけに残した非推奨メソッド。現在はライトをmapで保持するため空配列を返す。
    emptyPointLights.clear();
    auto names = sLightManager_->GetPointLightNames();
    for (const auto& name : names) {
@@ -619,7 +618,7 @@ std::vector<std::string> EngineContext::GetPointLightNames() {
    return sLightManager_->GetPointLightNames();
 }
 
-// SpotLight
+// スポットライト
 SpotLight* EngineContext::CreateSpotLight(const std::string& name, unsigned int color, const Vector3& position, float intensity, const Vector3& direction, float distance, float decay, float cosAngle, float cosFalloffStart) {
    if (!sLightManager_) return nullptr;
    return sLightManager_->CreateSpotLight(name, color, position, intensity, direction, distance, decay, cosAngle, cosFalloffStart);
@@ -645,7 +644,7 @@ std::vector<std::string> EngineContext::GetSpotLightNames() {
    return sLightManager_->GetSpotLightNames();
 }
 
-// AreaLight
+// エリアライト
 AreaLight* EngineContext::CreateAreaLight(const std::string& name, const Vector3& position, const Vector3& normal, const Vector3& tangent, const Vector2& size, const Vector3& color, float intensity) {
    if (!sLightManager_) return nullptr;
    return sLightManager_->CreateAreaLight(name, position, normal, tangent, size, color, intensity);

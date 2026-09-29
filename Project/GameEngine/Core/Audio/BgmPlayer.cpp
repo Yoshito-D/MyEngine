@@ -31,9 +31,9 @@ void BgmPlayer::Request(uint64_t owner, const BgmRequest& request, bool restart)
       Fade(current_, 1.0f, request.fadeInSeconds);
       return;
    }
-   // A newer request replaces the oldest outgoing track, so rapid changes stay at two voices.
+   // 新しい要求は最も古い切り替え中トラックを置き換え、短時間の連続切り替えでも2ボイスに収める。
    Release(outgoing_);
-   // Reserve the replacement before fading the current track. At capacity, keep the music playing.
+   // 現在のトラックをフェードする前に置き換え先を確保する。上限時も再生中の音楽は維持する。
    AudioHandle nextHandle = audio_.Create(request.clip, AudioBus::Bgm, request.volume, 1.0f, request.loop);
    if (!nextHandle) return;
    outgoing_ = std::move(current_);

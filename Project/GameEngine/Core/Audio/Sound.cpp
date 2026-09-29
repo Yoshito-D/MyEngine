@@ -27,7 +27,7 @@ void Sound::LoadClip(std::shared_ptr<const SoundClip> nextClip) {
    IXAudio2SourceVoice* nextVoice = nullptr;
    if (FAILED(sXAudio2->CreateSourceVoice(&nextVoice, nextClip->GetFormat())))
       throw std::runtime_error("Failed to create source voice");
-   // Keep the old voice and its PCM intact until decode and voice creation succeed.
+   // デコードとボイス作成が成功するまで、以前のボイスとPCMを保持する。
    if (sourceVoice_) {
       sourceVoice_->Stop();
       sourceVoice_->FlushSourceBuffers();
@@ -74,7 +74,7 @@ void Sound::Play(float volume, bool loop, bool restart) {
 }
 
 void Sound::Stop() {
-   // Legacy Stop is a pause: retain the queued buffer and playback position.
+   // 旧仕様のStopは一時停止として扱い、キュー済みバッファと再生位置を保持する。
    if (sourceVoice_) sourceVoice_->Stop();
    isPlaying_ = false;
    isPaused_ = true;

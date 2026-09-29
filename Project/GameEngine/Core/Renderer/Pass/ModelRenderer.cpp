@@ -44,8 +44,8 @@ void ModelRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager, A
    psoManager_ = psoManager;
    assetManager_ = assetManager;
    MaterialComponent::SetPipelineManager(psoManager);
-   // A typed null cube reads zero and makes a missing environment map safe even when
-   // the pixel shader declares it. A zero descriptor handle is never bound.
+   // 型付きのnullキューブは0を返すため、ピクセルシェーダーが環境マップを宣言していても
+   // 欠落した環境マップを安全に扱える。0のデスクリプターハンドルはバインドしない。
    nullCubeAllocation_ = device_->AllocateSrvDescriptor();
    if (nullCubeAllocation_) {
       const UINT index = nullCubeAllocation_->GetIndex();
@@ -172,8 +172,8 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
    }
 
-   // Every draw resolves its own slot. Root signatures can differ, so all consumed resources
-   // are rebound after selecting the PSO (including after a compute skinning dispatch).
+   // 各描画は自身のスロットを解決する。ルートシグネチャは異なる可能性があるため、使用する全リソースを
+   // PSO選択後（コンピュートスキニングのディスパッチ後を含む）に再バインドする。
    auto bindMaterial = [&](size_t slot) {
       Material* material = materialComponent->GetMaterial(slot);
       if (!material) material = defaultMaterial;
@@ -208,7 +208,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
          else report("unresolved/non-2D texture; using draw texture");
       }
       const auto environment = modelData.environmentTextureSrvHandle.ptr ? modelData.environmentTextureSrvHandle : nullCubeHandle_;
-      // Validate every required resource before emitting root bindings or a draw.
+   // ルートバインドや描画を発行する前に、必要なリソースをすべて検証する。
       std::vector<D3D12_GPU_VIRTUAL_ADDRESS> buffers(contract->bindings.size());
       std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> descriptors(contract->bindings.size());
       for (size_t i = 0; i < contract->bindings.size(); ++i) {
@@ -236,7 +236,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
          }
       }
       setPipelineFunc(variant, blend);
-      // SetPipeline may cache the previous graphics PSO across a compute dispatch.
+   // SetPipelineはコンピュートディスパッチをまたいで以前のグラフィックスPSOをキャッシュする場合がある。
       cmdList->SetGraphicsRootSignature(pipeline->GetRootSignature());
       cmdList->SetPipelineState(pipeline->GetPipelineState());
       for (UINT i = 0; i < static_cast<UINT>(contract->bindings.size()); ++i) {
@@ -255,7 +255,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
       return;
    }
 
-   // Slots retain the existing submesh order; absent slots inherit slot zero.
+   // スロットは既存のサブメッシュ順を維持し、未設定スロットはスロット0を継承する。
    for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
       if (modelData.meshIndex && *modelData.meshIndex != i) continue;
       if (!bindMaterial(i)) continue;

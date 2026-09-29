@@ -97,7 +97,7 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(
 
    // 3. 警告・エラーが出ていないか確認する
 
-   // Diagnostics are recoverable; only DXC status decides whether a blob is usable.
+   // 診断情報の取得失敗は復旧可能とし、Blobの利用可否はDXCのステータスだけで判断する。
    ComPtr<IDxcBlobUtf8> shaderError;
    shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
    HRESULT status = E_FAIL;
@@ -122,7 +122,7 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(
    }
    // 成功したログを出す
    Logger::Info(std::format(L"Compile Succeeded, path:{}, profile:{}", filePath, profile));
-   // ComPtr releases source/result/diagnostics on both success and failure.
+   // ComPtrにより、成功時と失敗時のどちらでもソース・結果・診断情報を解放する。
 
    // 実行用のバイナリを返却
    return shaderBlob;

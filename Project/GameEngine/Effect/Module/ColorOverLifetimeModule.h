@@ -5,7 +5,7 @@
 
 namespace GameEngine {
 	// ============================================================
-	// Color over Lifetime Module
+// 生存期間中の色モジュール
 	// ============================================================
 	class ColorOverLifetimeModule : public ParticleModule {
 	public:

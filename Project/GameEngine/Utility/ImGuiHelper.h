@@ -25,7 +25,7 @@ inline constexpr float kDefaultMultilineTextHeight = 80.0f;
 /// @brief 利用可能な横幅全体を使うことを表すImGui幅指定
 inline constexpr float kFillAvailableWidth = -1.0f;
 
-// Language / localization ----------------------------------------------------
+// 言語・ローカライズ --------------------------------------------------------
 enum class EditorLanguage {
    Japanese,
    English
@@ -41,22 +41,22 @@ EditorLanguage GetLanguage();
 const char* Localize(const LocalizedText& text);
 const char* LanguageDisplayName(EditorLanguage language);
 
-// Angle conversion -----------------------------------------------------------
+// 角度変換 -------------------------------------------------------------------
 float RadiansToDegrees(float radians);
 float DegreesToRadians(float degrees);
 Vector3 RadiansToDegrees(const Vector3& radians);
 Vector3 DegreesToRadians(const Vector3& degrees);
 
-// Small utility UI -----------------------------------------------------------
+// 小さなUI補助 ----------------------------------------------------------------
 void HelpMarker(const char* desc);
 void Tooltip(const char* desc);
 void TextWithHelp(const std::string& text, const char* helpText);
 
-// Inspector sections ---------------------------------------------------------
+// Inspectorセクション --------------------------------------------------------
 bool BeginSection(const std::string& label, bool defaultOpen = true);
 void EndSection();
 
-// Basic property controls ----------------------------------------------------
+// 基本プロパティ操作 ----------------------------------------------------------
 bool DrawButton(const std::string& label, const std::string& buttonLabel, float columnWidth = kDefaultColumnWidth);
 bool DrawCheckbox(const std::string& label, bool& value, float columnWidth = kDefaultColumnWidth);
 bool DrawIntControl(
@@ -68,7 +68,7 @@ bool DrawIntControl(
    int minValue = 0,
    int maxValue = 0);
 
-// Numeric / vector controls --------------------------------------------------
+// 数値・ベクトル操作 ----------------------------------------------------------
 // Unity風に、ラベル列と入力列を分けて、小さなリセットボタンを入力の横に置きます。
 bool DrawFloatControl(
    const std::string& label,
@@ -160,7 +160,7 @@ bool DrawTransformControl(
    float columnWidth = kDefaultColumnWidth,
    bool rotationInDegrees = true);
 
-// Text controls --------------------------------------------------------------
+// テキスト操作 ----------------------------------------------------------------
 bool InputString(const std::string& label, std::string& text, size_t bufferSize = kDefaultTextBufferSize);
 bool DrawInputString(
    const std::string& label,
@@ -174,16 +174,16 @@ bool DrawMultilineText(
    float columnWidth = kDefaultColumnWidth,
    float height = kDefaultMultilineTextHeight);
 
-// Dropdown / enum controls ---------------------------------------------------
+// ドロップダウン・列挙値操作 --------------------------------------------------
 bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<std::string>& items, float columnWidth = kDefaultColumnWidth);
 bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<const char*>& items, float columnWidth = kDefaultColumnWidth);
 bool DrawLanguageCombo(const std::string& label, EditorLanguage& language, float columnWidth = kDefaultColumnWidth);
 
-// Color controls -------------------------------------------------------------
+// 色操作 ----------------------------------------------------------------------
 bool DrawColorEdit3(const std::string& label, Vector3& color, float columnWidth = kDefaultColumnWidth);
 bool DrawColorEdit4(const std::string& label, Vector4& color, float columnWidth = kDefaultColumnWidth);
 
-// Search / reference controls ------------------------------------------------
+// 検索・参照操作 --------------------------------------------------------------
 bool DrawSearchBox(
    std::string& filterText,
    const char* hint = "Search...",
