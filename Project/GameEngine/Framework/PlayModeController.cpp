@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "PlayModeController.h"
+#include "Object/Component/AudioSceneLifecycle.h"
+#include "Audio/Audio.h"
 
 #include "EngineContext.h"
 #include "SceneManager.h"
@@ -297,6 +299,7 @@ void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
 
    // EngineContext経由の全ゲーム処理へ、ここで確定した単一のDeltaTimeを配布する。
    EngineContext::SetGameDeltaTime(gameDeltaTime_);
+   if (auto* audio = EngineContext::GetAudio()) audio->SetGamePaused(mode_ == PlayMode::Paused || (mode_ == PlayMode::Edit && hasPlaySession_));
 }
 
 void PlayModeController::SetTimeScale(float timeScale) {
@@ -311,6 +314,7 @@ void PlayModeController::StopForSceneInitialization() {
    gameDeltaTime_ = 0.0f;
    ClearTransitionRequests();
    EngineContext::SetGameDeltaTime(gameDeltaTime_);
+   if (auto* audio = EngineContext::GetAudio()) audio->SetGamePaused(previousMode != PlayMode::Edit);
 
    // シーン遷移は同じPlayセッションの一部。開始Snapshotは明示的なStopまで保持する。
    playRequested_ = previousMode != PlayMode::Edit;
@@ -324,6 +328,8 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
 
    if (hasPlaySession_) {
       mode_ = PlayMode::Playing;
+      if (auto* audio = EngineContext::GetAudio()) audio->SetGamePaused(false);
+      BeginSceneAudio();
       return;
    }
 
@@ -348,6 +354,8 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
    hasPlaySession_ = true;
    // Snapshot取得後にPlayingへ移し、Serialize中の処理からはまだEdit状態として見えるようにする。
    mode_ = PlayMode::Playing;
+   if (auto* audio = EngineContext::GetAudio()) { audio->SetGamePaused(false); audio->StopPreviews(); }
+   BeginSceneAudio();
 }
 
 void PlayModeController::StopPlaying(SceneManager& sceneManager) {
@@ -357,6 +365,10 @@ void PlayModeController::StopPlaying(SceneManager& sceneManager) {
 
    // 復元処理がRuntime更新を誘発しないよう、シーンを戻す前にEditへ確定する。
    mode_ = PlayMode::Edit;
+   if (auto* audio = EngineContext::GetAudio()) {
+      audio->StopGameAudio();
+      audio->StopPreviews();
+   }
 
 #ifdef USE_IMGUI
    // 再生中に別シーンへ遷移していても開始シーンを作り直し、その新しいEditorContextへSnapshotを適用する。

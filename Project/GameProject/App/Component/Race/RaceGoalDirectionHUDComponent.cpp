@@ -92,10 +92,14 @@ void RaceGoalDirectionHUDComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneW
 
 void RaceGoalDirectionHUDComponent::Update(float deltaTime) {
    (void)deltaTime;
-   // レース進行中かつ全依存先が解決済みの場合だけ表示する。
+   // カウントダウン中も含め、レース開始前から全依存先が解決済みの場合に表示する。
    // 不完全なシーンでも前フレームの矢印が残らないよう、失敗経路では必ず非表示へ戻す。
-   const bool shouldShow = raceManager_ &&
-      raceManager_->GetState() == RaceManagerComponent::State::Running &&
+   const RaceManagerComponent::State raceState = raceManager_
+      ? raceManager_->GetState()
+      : RaceManagerComponent::State::Finished;
+   const bool isRaceStarted = raceState == RaceManagerComponent::State::Countdown ||
+      raceState == RaceManagerComponent::State::Running;
+   const bool shouldShow = isRaceStarted &&
       playerObject_ && goalObject_ && arrowModel_ && uiModelComponent_;
    if (!shouldShow) {
       SetVisible(false);

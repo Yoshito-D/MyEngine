@@ -32,6 +32,9 @@ class Object;
 class EngineContextInitializer {
 private:
    friend class Framework;
+#ifdef MYPROJECT_NON_RELEASE
+   friend int RunAudioSelfTests();
+#endif
 
    //================================================================
    // 初期化
@@ -430,6 +433,12 @@ public:
 
    /// @brief サウンドを全削除
    static void ClearSounds();
+
+   /// @brief Return the Framework-owned audio service, or nullptr during shutdown.
+   static Audio* GetAudio();
+
+   /// @brief Prepare and cache a Resources-relative audio clip during setup.
+   static std::shared_ptr<const SoundClip> GetSoundClip(const std::string& assetId);
 
    //================================================================
    // カメラマネージャー

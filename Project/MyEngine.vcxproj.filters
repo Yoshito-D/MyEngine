@@ -486,6 +486,8 @@
     <ClCompile Include="GameEngine\Core\Audio\Audio.cpp">
       <Filter>GameEngine\Core\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Audio\BgmPlayer.cpp"><Filter>GameEngine\Core\Audio</Filter></ClCompile>
+    <ClCompile Include="GameEngine\Core\Audio\SoundClip.cpp"><Filter>GameEngine\Core\Audio</Filter></ClCompile>
     <ClCompile Include="GameEngine\Core\Audio\Sound.cpp">
       <Filter>GameEngine\Core\Audio</Filter>
     </ClCompile>
@@ -672,6 +674,7 @@
     <ClCompile Include="GameEngine\Editor\EditorAssetRegistry.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Editor\AudioAssetWidget.cpp"><Filter>GameEngine\Editor</Filter></ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorCommand.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
@@ -798,6 +801,9 @@
     <ClCompile Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.cpp">
       <Filter>GameEngine\Object\Component\Particle</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\AudioSourceComponent.cpp"><Filter>GameEngine\Object\Component</Filter></ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\BgmComponent.cpp"><Filter>GameEngine\Object\Component</Filter></ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\AudioSceneLifecycle.cpp"><Filter>GameEngine\Object\Component</Filter></ClCompile>
     <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp">
       <Filter>GameEngine\Object\Component\Skybox</Filter>
     </ClCompile>
@@ -1169,6 +1175,8 @@
     <ClInclude Include="GameEngine\Core\Audio\Audio.h">
       <Filter>GameEngine\Core\Audio</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Core\Audio\BgmPlayer.h"><Filter>GameEngine\Core\Audio</Filter></ClInclude>
+    <ClInclude Include="GameEngine\Core\Audio\SoundClip.h"><Filter>GameEngine\Core\Audio</Filter></ClInclude>
     <ClInclude Include="GameEngine\Core\Audio\Sound.h">
       <Filter>GameEngine\Core\Audio</Filter>
     </ClInclude>
@@ -1370,6 +1378,7 @@
     <ClInclude Include="GameEngine\Editor\EditorAssetRegistry.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Editor\AudioAssetWidget.h"><Filter>GameEngine\Editor</Filter></ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorCommand.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
@@ -1508,6 +1517,9 @@
     <ClInclude Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.h">
       <Filter>GameEngine\Object\Component\Particle</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\AudioSourceComponent.h"><Filter>GameEngine\Object\Component</Filter></ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\BgmComponent.h"><Filter>GameEngine\Object\Component</Filter></ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\AudioSceneLifecycle.h"><Filter>GameEngine\Object\Component</Filter></ClInclude>
     <ClInclude Include="GameEngine\Object\Component\Skybox\SkyboxComponent.h">
       <Filter>GameEngine\Object\Component\Skybox</Filter>
     </ClInclude>

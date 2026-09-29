@@ -3,13 +3,16 @@
 #include <wrl.h>
 #include <vector>
 #include <string>
+#include <memory>
 
 using namespace Microsoft::WRL;
 
 namespace GameEngine {
+class SoundClip;
 /// @brief サウンドクラス
 class Sound {
 public:
+   /// @brief Set the legacy voice device; call with nullptr before device shutdown.
    static void Initialize(IXAudio2* xAudio2);
 
    /// @brief デストラクタ
@@ -19,6 +22,9 @@ public:
    /// @param filepath 読み込むMP3ファイルのパスを表すワイド文字列参照
    /// @note 失敗時は例外を送出し、読み込み前の音声と再生バッファを保持する
    void Load(const std::wstring& filepath);
+
+   /// @brief Load a shared decoded clip while retaining the old voice on failure.
+   void LoadClip(std::shared_ptr<const SoundClip> clip);
 
    /// @brief 音声を再生
    /// @param volume 再生音量。デフォルトは1.0f
@@ -37,7 +43,7 @@ public:
 
 private:
    IXAudio2SourceVoice* sourceVoice_ = nullptr;
-   std::vector<BYTE> audioData_;
+   std::shared_ptr<const SoundClip> clip_;
    bool isLooping_ = false;
    XAUDIO2_BUFFER buffer_{};
 

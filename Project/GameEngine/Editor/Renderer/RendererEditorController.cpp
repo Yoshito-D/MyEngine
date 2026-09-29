@@ -1228,6 +1228,9 @@ void RendererEditorController::EmitAssetDragPayload(const EditorAssetEntry& entr
       case EditorAssetType::Texture:
          payloadName = "EDITOR_ASSET_TEXTURE";
          break;
+      case EditorAssetType::Audio:
+         payloadName = "EDITOR_ASSET_AUDIO";
+         break;
       case EditorAssetType::Particle:
          payloadName = "EDITOR_ASSET_PARTICLE";
          break;

@@ -174,6 +174,8 @@ void Framework::Finalize() {
 
    if (assetManager_) {
 	  assetManager_.reset();
+      EngineContextInitializer initializer;
+      initializer.SetAssetManager(nullptr);
    }
 
    if (device_) {
@@ -184,6 +186,8 @@ void Framework::Finalize() {
    if (audio_) {
 	  audio_->Finalize();
 	  audio_.reset();
+      EngineContextInitializer initializer;
+      initializer.SetAudio(nullptr);
    }
 
    if (window_) {

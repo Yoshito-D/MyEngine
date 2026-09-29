@@ -124,6 +124,8 @@ void Game::Update() {
    GameEngine::EngineContext::AdvanceGameFrameNumber();
    sceneManager_->Update();
 #endif
+   if (auto* audio = GameEngine::EngineContext::GetAudio())
+      audio->Update(GameEngine::EngineContext::GetUnscaledDeltaTime());
 }
 
 void Game::Draw() {

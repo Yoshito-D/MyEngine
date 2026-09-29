@@ -518,6 +518,13 @@ void EngineContext::ClearSounds() {
    sAssetManager_->GetSoundManager()->Clear();
 }
 
+Audio* EngineContext::GetAudio() { return sAudio_; }
+
+std::shared_ptr<const SoundClip> EngineContext::GetSoundClip(const std::string& assetId) {
+   if (!sAssetManager_ || !sAssetManager_->GetSoundManager()) return nullptr;
+   return sAssetManager_->GetSoundManager()->GetClip(assetId);
+}
+
 Camera* EngineContext::GetActiveCamera() {
    if (!sCameraManager_) return nullptr;
    return sCameraManager_->GetActiveCamera();
