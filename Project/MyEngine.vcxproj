@@ -242,6 +242,8 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Audio\BgmPlayer.cpp" />
+    <ClCompile Include="GameEngine\Core\Audio\SoundClip.cpp" />
     <ClCompile Include="GameEngine\Core\Input\InputActionService.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\CommandDispatch.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Pass\TextRenderer.cpp" />
@@ -275,6 +277,9 @@
     <ClCompile Include="GameEngine\Object\Component\UI\UITransformTweenComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\IObjectComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\AudioSourceComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\BgmComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\AudioSceneLifecycle.cpp" />
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp" />
     <ClCompile Include="GameEngine\Core\Renderer\Light\LightDataBuffer.cpp" />
     <ClCompile Include="GameEngine\Core\Graphics\OffscreenRenderTarget.cpp">
@@ -312,6 +317,7 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\ModelRenderer.cpp" />
     <ClCompile Include="GameEngine\Editor\Renderer\RendererEditorController.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorAssetRegistry.cpp" />
+    <ClCompile Include="GameEngine\Editor\AudioAssetWidget.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorCommand.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorObjectStore.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorSceneContext.cpp" />
@@ -564,6 +570,8 @@
     <ClInclude Include="GameEngine\Core\Asset\SoundManager.h" />
     <ClInclude Include="GameEngine\Core\Asset\TextureManager.h" />
     <ClInclude Include="GameEngine\Core\Audio\Audio.h" />
+    <ClInclude Include="GameEngine\Core\Audio\BgmPlayer.h" />
+    <ClInclude Include="GameEngine\Core\Audio\SoundClip.h" />
     <ClInclude Include="GameEngine\Core\Graphics\IMaterialData.h" />
     <ClInclude Include="GameEngine\Core\Input\InputActionService.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Pass\CommandDispatch.h" />
@@ -592,6 +600,9 @@
     <ClInclude Include="GameEngine\Effect\Module\UVTransformModule.h" />
     <ClInclude Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\AudioSourceComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\BgmComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\AudioSceneLifecycle.h" />
     <ClInclude Include="GameEngine\Scene\Light\AreaLight.h" />
     <ClInclude Include="GameEngine\Core\Renderer\Light\LightDataBuffer.h" />
     <ClInclude Include="GameEngine\Core\Graphics\OffscreenRenderTarget.h" />
@@ -625,6 +636,7 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\ModelRenderer.h" />
     <ClInclude Include="GameEngine\Editor\Renderer\RendererEditorController.h" />
     <ClInclude Include="GameEngine\Editor\EditorAssetRegistry.h" />
+    <ClInclude Include="GameEngine\Editor\AudioAssetWidget.h" />
     <ClInclude Include="GameEngine\Editor\EditorCommand.h" />
     <ClInclude Include="GameEngine\Editor\EditorObjectStore.h" />
     <ClInclude Include="GameEngine\Editor\EditorSceneContext.h" />

@@ -404,6 +404,7 @@ void EditorSceneContext::AutoLoad() {
 }
 
 void EditorSceneContext::Clear() {
+   if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
    manipulatingObject_ = nullptr;
@@ -710,6 +711,7 @@ std::vector<ParticleSystem*> EditorSceneContext::CollectEditableParticleSystems(
 }
 
 void EditorSceneContext::SelectObject(Object* object) {
+   if (selectedObject_ != object) if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
    if (object && !IsObjectAlive(object)) {
       selectedObject_ = nullptr;
       return;
@@ -722,6 +724,7 @@ void EditorSceneContext::SelectObject(Object* object) {
 }
 
 void EditorSceneContext::SelectParticleSystem(ParticleSystem* particleSystem) {
+   if (selectedParticleSystem_ != particleSystem) if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
    if (particleSystem && !IsParticleSystemAlive(particleSystem)) {
       selectedParticleSystem_ = nullptr;
       return;
@@ -941,6 +944,7 @@ void EditorSceneContext::DeleteObject(Object* object) {
       // BaseSceneが所有する実体は破棄せず、シーン差分に削除墓標を残して更新と描画だけを停止する。
       HideSceneOwnedObject(object);
       if (selectedObject_ == object) {
+         if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
          selectedObject_ = nullptr;
       }
       return;
@@ -1084,6 +1088,7 @@ void EditorSceneContext::DrawGizmoInspectorControls() {
 
 void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
    if (selectedObject_ && !IsObjectAlive(selectedObject_)) {
+      if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
       selectedObject_ = nullptr;
    }
    if (selectedParticleSystem_ && !IsParticleSystemAlive(selectedParticleSystem_)) {

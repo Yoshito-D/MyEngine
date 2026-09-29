@@ -214,13 +214,20 @@ void VehicleDrift::ApplyPostDriftBleed(const Vector3& gravityUp, float deltaTime
    gravityBody->SetVelocity(forwardComp + slideComp + verticalComp);
 }
 
-void VehicleDrift::TryFireMiniTurbo() {
+bool VehicleDrift::CanFireMiniTurbo() const {
    // miniTurboEnabled = false のときはブーストしない。
-   if (!miniTurboEnabled) { return; }
+   if (!miniTurboEnabled) { return false; }
 
    // 継続時間が miniTurboMinTime に満たない場合もブーストしない。
    // 短時間ドリフトで速度が上がるのを防ぐための閾値。
-   if (driftTimer_ < miniTurboMinTime) { return; }
+   if (driftTimer_ < miniTurboMinTime || !HasOwner()) { return false; }
+   const auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
+   return groundMover && !groundMover->IsAccelerationBlocked();
+}
+
+void VehicleDrift::TryFireMiniTurbo() {
+   // 発動表示と実際の加速で同じ条件を使い、禁止中の空振りエフェクトも防ぐ。
+   if (!CanFireMiniTurbo()) { return; }
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
    if (!groundMover) { return; }

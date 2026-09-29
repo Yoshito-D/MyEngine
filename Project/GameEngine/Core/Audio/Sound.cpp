@@ -1,202 +1,95 @@
 #include "pch.h"
 #include "Sound.h"
+#include "SoundClip.h"
+#include <stdexcept>
 
-#include <mfapi.h>
-#include <mfobjects.h>
-#include <mfidl.h>
-#include <mfreadwrite.h>
-#include <mftransform.h>
-#include <comdef.h>
-#include <locale>
-#include <codecvt>
-#include <memory>
-
-#pragma comment(lib, "xaudio2.lib")
-#pragma comment(lib, "mfplat.lib")
-#pragma comment(lib, "mfreadwrite.lib")
-#pragma comment(lib, "mf.lib")
-#pragma comment(lib, "mfuuid.lib")
-
-namespace {
-IXAudio2* sXAudio2_ = nullptr;
-}
+namespace { IXAudio2* sXAudio2 = nullptr; }
 
 namespace GameEngine {
-void Sound::Initialize(IXAudio2* xAudio2) {
-   sXAudio2_ = xAudio2;
-   Logger::Info("Sound initialized.");
-}
+void Sound::Initialize(IXAudio2* xAudio2) { sXAudio2 = xAudio2; }
 
 Sound::~Sound() {
    if (sourceVoice_) {
-	  sourceVoice_->Stop();
-	  sourceVoice_->FlushSourceBuffers();
-	  sourceVoice_->DestroyVoice();
-	  sourceVoice_ = nullptr;
+      sourceVoice_->Stop();
+      sourceVoice_->FlushSourceBuffers();
+      sourceVoice_->DestroyVoice();
    }
 }
 
 void Sound::Load(const std::wstring& filepath) {
-   if (!sXAudio2_) return;
+   if (!sXAudio2) return;
+   LoadClip(SoundClip::Decode(filepath));
+}
 
-   Logger::Info("Loading sound: " + Logger::ConvertString(filepath));
-
-   HRESULT result = S_FALSE;
-
-   // SourceReaderにコンテナと圧縮形式の判別を任せ、以降はデコード済みサンプルだけを扱う。
-   // SourceReader作成
-   ComPtr<IMFSourceReader> sourceReader;
-   result = MFCreateSourceReaderFromURL(filepath.c_str(), nullptr, &sourceReader);
-   if (FAILED(result)) throw std::runtime_error("Failed to create source reader.");
-
-   // XAudio2へそのまま渡せる共通形式へ揃えるため、SourceReaderの出力をPCMへ交渉する。
-   // PCM形式での出力を指定
-   ComPtr<IMFMediaType> pcmType;
-   result = MFCreateMediaType(&pcmType);
-   if (FAILED(result)) throw std::runtime_error("Failed to create media type.");
-
-   result = pcmType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
-   result = pcmType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
-   result = sourceReader->SetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, pcmType.Get());
-
-   if (FAILED(result)) throw std::runtime_error("Failed to set media type.");
-
-   // 再生中のVoiceが参照するメモリは保持し、新しいPCMを別領域で最後までデコードする。
-   std::vector<BYTE> newAudioData;
-
-   // 交渉後の実フォーマットを取得し、後で作るSourceVoiceとPCMバイト列を一致させる。
-   // フォーマット取得
-   ComPtr<IMFMediaType> nativeType;
-   result = sourceReader->GetCurrentMediaType((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, &nativeType);
-   if (FAILED(result)) throw std::runtime_error("Failed to get current media type.");
-
-   UINT32 waveFormatSize = 0;
-   WAVEFORMATEX* wf = nullptr;
-   result = MFCreateWaveFormatExFromMFMediaType(nativeType.Get(), &wf, &waveFormatSize);
-   if (FAILED(result)) throw std::runtime_error("Failed to create wave format.");
-
-   // 拡張形式のcbSize分も含め、SourceVoice作成までMFが返したフォーマット全体を保持する。
-   std::unique_ptr<WAVEFORMATEX, decltype(&CoTaskMemFree)> waveFormat(wf, &CoTaskMemFree);
-
-   // サンプル読み込みループ
-   while (true) {
-	  DWORD streamIndex, flags;
-	  LONGLONG timestamp;
-	  ComPtr<IMFSample> sample;
-	  result = sourceReader->ReadSample((DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, &streamIndex, &flags, &timestamp, &sample);
-	  if (FAILED(result)) throw std::runtime_error("Failed to read sample.");
-
-	  if (flags & MF_SOURCE_READERF_ENDOFSTREAM) break;
-
-	  if (sample) {
-		 ComPtr<IMFMediaBuffer> buffer;
-		 // サンプルが複数バッファでも、連続領域へまとめてから所有ベクターへコピーする。
-		 result = sample->ConvertToContiguousBuffer(&buffer);
-		 if (FAILED(result)) throw std::runtime_error("Failed to get contiguous buffer.");
-
-		 BYTE* data = nullptr;
-		 DWORD maxLen = 0, currentLen = 0;
-		 result = buffer->Lock(&data, &maxLen, &currentLen);
-		 if (FAILED(result)) throw std::runtime_error("Failed to lock buffer.");
-
-		 // Media Foundationのロック寿命を越えて再生するため、PCMデータを自前領域へ退避する。
-		 try {
-            newAudioData.insert(newAudioData.end(), data, data + currentLen);
-         } catch (...) {
-            buffer->Unlock();
-            throw;
-         }
-
-		 result = buffer->Unlock();
-		 if (FAILED(result)) throw std::runtime_error("Failed to unlock buffer.");
-	  }
-   }
-
-   // 作成に失敗しても旧音声を再生できるよう、新しいVoiceを先に用意する。
-   IXAudio2SourceVoice* newVoice = nullptr;
-   result = sXAudio2_->CreateSourceVoice(&newVoice, waveFormat.get());
-   if (FAILED(result)) throw std::runtime_error("Failed to create source voice.");
-
-   // DestroyVoiceが旧バッファの参照を終了してから、PCM領域を入れ替える。
-   // 既存のVoice破棄
+void Sound::LoadClip(std::shared_ptr<const SoundClip> nextClip) {
+   if (!sXAudio2) return;
+   if (!nextClip || nextClip->GetPcm().empty()) throw std::runtime_error("Invalid decoded audio clip");
+   IXAudio2SourceVoice* nextVoice = nullptr;
+   if (FAILED(sXAudio2->CreateSourceVoice(&nextVoice, nextClip->GetFormat())))
+      throw std::runtime_error("Failed to create source voice");
+   // Keep the old voice and its PCM intact until decode and voice creation succeed.
    if (sourceVoice_) {
-	  sourceVoice_->Stop();
-	  sourceVoice_->FlushSourceBuffers();
-	  sourceVoice_->DestroyVoice();
-	  sourceVoice_ = nullptr;
+      sourceVoice_->Stop();
+      sourceVoice_->FlushSourceBuffers();
+      sourceVoice_->DestroyVoice();
    }
-
-   audioData_.swap(newAudioData);
-   sourceVoice_ = newVoice;
+   sourceVoice_ = nextVoice;
+   clip_ = std::move(nextClip);
    buffer_ = {};
    isPlaying_ = false;
+   isPaused_ = false;
    isLooping_ = false;
 }
 
 void Sound::Play(float volume, bool loop, bool restart) {
-   if (!sourceVoice_ || audioData_.empty()) return;
-
-   XAUDIO2_VOICE_STATE state = {};
+   if (!sourceVoice_ || !clip_) return;
+   XAUDIO2_VOICE_STATE state{};
    sourceVoice_->GetState(&state);
-
-   // 非同期再生完了をVoiceのキュー状態から取り込み、内部フラグの遅れを補正する。
-   if (state.BuffersQueued == 0) {
-	  isPlaying_ = false;
-   }
-
-   // 再生中で、再スタートしないなら volume と loop の更新だけ行う
+   if (!state.BuffersQueued) isPlaying_ = false;
    if (!restart && isPlaying_) {
-	  sourceVoice_->SetVolume(volume);
-	  isLooping_ = loop;  // ループ状態の更新（必要であれば）
-	  return;
+      sourceVoice_->SetVolume(volume);
+      isLooping_ = loop;
+      return;
    }
-
-   if (!restart && !isPlaying_) {
-	  sourceVoice_->SetVolume(volume);
-	  sourceVoice_->Start(0);
-	  isLooping_ = loop;  // ループ状態の更新（必要であれば）
-	  return;
+   if (!restart && state.BuffersQueued) {
+      sourceVoice_->SetVolume(volume);
+      sourceVoice_->Start();
+      isPlaying_ = true;
+      isPaused_ = false;
+      return;
    }
-
-   // 再生し直す
    sourceVoice_->Stop();
    sourceVoice_->FlushSourceBuffers();
-
    buffer_ = {};
-   buffer_.AudioBytes = static_cast<UINT32>(audioData_.size());
-   // XAudio2はデータをコピーしないため、再生中はメンバーvectorのアドレスを安定して保持する。
-   buffer_.pAudioData = audioData_.data();
+   buffer_.AudioBytes = static_cast<UINT32>(clip_->GetPcm().size());
+   buffer_.pAudioData = clip_->GetPcm().data();
    buffer_.Flags = XAUDIO2_END_OF_STREAM;
    buffer_.LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
-
-   sourceVoice_->SubmitSourceBuffer(&buffer_);
+   if (FAILED(sourceVoice_->SubmitSourceBuffer(&buffer_))) return;
    sourceVoice_->SetVolume(volume);
-   sourceVoice_->Start(0);
-
+   if (FAILED(sourceVoice_->Start())) return;
    isLooping_ = loop;
    isPlaying_ = true;
+   isPaused_ = false;
 }
 
-
 void Sound::Stop() {
-   if (sourceVoice_) {
-      // キューは残して停止するため、次のStartで同じ再生位置から再開できる。
-	  sourceVoice_->Stop();
-	  isPlaying_ = false;
-   }
+   // Legacy Stop is a pause: retain the queued buffer and playback position.
+   if (sourceVoice_) sourceVoice_->Stop();
+   isPlaying_ = false;
+   isPaused_ = true;
 }
 
 void Sound::Reset() {
    if (sourceVoice_) {
-      // 停止に加えてキューを破棄し、次回Submitを先頭から受け付ける状態へ戻す。
-	  sourceVoice_->Stop();
-	  sourceVoice_->FlushSourceBuffers();
+      sourceVoice_->Stop();
+      sourceVoice_->FlushSourceBuffers();
    }
+   isPlaying_ = false;
+   isPaused_ = false;
 }
 
 void Sound::SetVolume(float volume) {
-   if (sourceVoice_) {
-	  sourceVoice_->SetVolume(volume);
-   }
+   if (sourceVoice_) sourceVoice_->SetVolume(volume);
 }
 }

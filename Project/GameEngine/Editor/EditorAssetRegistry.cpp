@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include "Framework/EngineContext.h"
 
 namespace GameEngine {
 
@@ -28,7 +29,8 @@ bool IsSupportedTextureExtension(const std::filesystem::path& path) {
 }
 
 std::string ToGenericString(std::filesystem::path path) {
-   return path.lexically_normal().generic_string();
+   const auto utf8 = path.lexically_normal().generic_u8string();
+   return { utf8.begin(), utf8.end() };
 }
 
 std::string BuildDisplayName(const std::filesystem::path& path) {
@@ -36,7 +38,8 @@ std::string BuildDisplayName(const std::filesystem::path& path) {
       return path.filename().string();
    }
 
-   const std::string stem = path.stem().string();
+   const auto utf8Stem = path.stem().u8string();
+   const std::string stem(utf8Stem.begin(), utf8Stem.end());
    if (!stem.empty()) {
       return stem;
    }
@@ -50,6 +53,7 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
    modelAssets_.clear();
    particleAssets_.clear();
    textureAssets_.clear();
+   audioAssets_.clear();
 
    if (std::filesystem::exists(resourcesRoot)) {
       for (const auto& entry : std::filesystem::recursive_directory_iterator(resourcesRoot)) {
@@ -62,6 +66,7 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
          }
 
          assetEntry.assetId = NormalizeAssetId(path, resourcesRoot);
+         if (assetEntry.type == EditorAssetType::Audio && !EngineContext::GetSoundClip(assetEntry.assetId)) continue;
          assetEntry.displayName = BuildDisplayName(path);
          if (assetEntry.displayName.empty()) {
             assetEntry.displayName = assetEntry.assetId;
@@ -91,6 +96,8 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
             particleEntry.displayName = assetEntry.displayName;
             particleEntry.filePath = assetEntry.filePath;
             particleAssets_.push_back(std::move(particleEntry));
+         } else if (assetEntry.type == EditorAssetType::Audio) {
+            audioAssets_.push_back({ assetEntry.assetId, assetEntry.displayName, assetEntry.filePath });
          }
       }
    }
@@ -166,6 +173,8 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
       [](const EditorTextureAssetEntry& lhs, const EditorTextureAssetEntry& rhs) {
          return lhs.assetId < rhs.assetId;
       });
+   std::sort(audioAssets_.begin(), audioAssets_.end(),
+      [](const EditorAudioAssetEntry& lhs, const EditorAudioAssetEntry& rhs) { return lhs.assetId < rhs.assetId; });
 }
 
 const EditorAssetEntry* EditorAssetRegistry::FindAsset(const std::string& assetId) const {
@@ -218,6 +227,8 @@ const char* EditorAssetRegistry::GetAssetTypeLabel(EditorAssetType type) {
          return "Model";
       case EditorAssetType::Texture:
          return "Texture";
+      case EditorAssetType::Audio:
+         return "Audio";
       case EditorAssetType::Particle:
          return "Particle";
       case EditorAssetType::Scene:
@@ -248,6 +259,7 @@ EditorAssetType EditorAssetRegistry::ClassifyAsset(const std::filesystem::path& 
    }
 
    const std::string ext = ToLowerExtension(path);
+   if (ext == ".wav" || ext == ".mp3") return EditorAssetType::Audio;
    if (ext != ".json") {
       return EditorAssetType::Unknown;
    }

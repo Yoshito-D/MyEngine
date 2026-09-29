@@ -2,7 +2,7 @@
 
 ConstantBuffer<PlayerShadowProjectConstants> gProjectConstants : register(b0);
 
-/// @brief 惑星の画面座標と影の投影座標を生成する（未実装）。
+/// @brief 惑星の画面座標と影の投影座標を生成する。
 PlayerShadowProjectVertexOutput main(PlayerShadowVertexInput input) {
     PlayerShadowProjectVertexOutput output;
 

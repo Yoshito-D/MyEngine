@@ -30,6 +30,11 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    auto* transform = GetOwner().GetComponent<TransformComponent>();
    if (!transform) { return; }
 
+   // 着地で開始するタイマーを同フレームに消費せず、地上とドリフトで同じ禁止状態を使う。
+   // 空中でも時間を進め、ジャンプによって禁止時間が延びないようにする。
+   auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
+   if (groundMover) { groundMover->AdvanceAccelerationBlock(deltaTime); }
+
    // 現在フレームの回転クォータニオンを取得する。
    // 着地時の目標回転生成 (BuildAlignTargetRotation) と
    // 各サブコンポーネントへの転送のために必要。

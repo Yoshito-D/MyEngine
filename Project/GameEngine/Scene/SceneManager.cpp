@@ -4,6 +4,8 @@
 #include "SceneManager.h"
 #include <EngineContext.h>
 #include <algorithm>
+#include "Audio/BgmPlayer.h"
+#include "Object/Component/AudioSceneLifecycle.h"
 
 namespace GameEngine {
 bool SceneManager::ChangeScene(const std::string& name) {
@@ -33,6 +35,9 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
    }
 
    isChangingScene_ = true;
+   auto* audio = EngineContext::GetAudio();
+   if (audio) audio->StopPreviews();
+   if (audio && audio->IsAvailable()) audio->GetBgmPlayer().BeginSceneChange();
 
    // 新シーン生成にはCamera/Light等のグローバルManagerを再利用するため、旧シーンを完全に終了してから初期化する。
    if (currentScene_) {
@@ -49,6 +54,11 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
    // C++で基礎Objectを生成した後に保存JSONを重ねることで、Scene固有Entityへの差分を適用できる。
    currentScene_->Initialize();
    currentScene_->LoadSceneDataIfNeeded();
+
+   if (audio && audio->IsAvailable()) audio->GetBgmPlayer().EndSceneChange(HasSceneBgmRequest());
+#ifndef USE_IMGUI
+   BeginSceneAudio();
+#endif
 
    isChangingScene_ = false;
    BeginFadeIn();
@@ -75,6 +85,7 @@ void SceneManager::Draw() {
 }
 
 void SceneManager::Finalize() {
+   if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
    if (currentScene_) {
 	  currentScene_->Finalize();
 	  currentScene_.reset();

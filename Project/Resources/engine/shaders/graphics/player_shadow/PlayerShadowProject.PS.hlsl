@@ -4,7 +4,7 @@ ConstantBuffer<PlayerShadowParameters> gShadowParameters : register(b1);
 Texture2D<float4> gShadowMask : register(t0);
 SamplerState gShadowSampler : register(s0);
 
-/// @brief 惑星に投影されたシルエットを黒のα合成として出力する（未実装）。
+/// @brief 惑星に投影されたシルエットを黒のα合成として出力する。
 float4 main(PlayerShadowProjectVertexOutput input) : SV_TARGET0 {
     if (input.shadowPosition.w <= 0.0f)
     {

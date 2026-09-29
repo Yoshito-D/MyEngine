@@ -13,6 +13,7 @@ enum class EditorAssetType {
    Folder,   ///< フォルダー
    Model,    ///< モデルファイル
    Texture,  ///< テクスチャファイル
+   Audio,    ///< デコード可能なWAV/MP3
    Particle, ///< パーティクル設定
    Scene,    ///< シーン設定
    Material, ///< マテリアル設定
@@ -50,6 +51,13 @@ struct EditorTextureAssetEntry {
    std::filesystem::path filePath; ///< テクスチャファイルのパス
 };
 
+/// @brief Validated audio choice for both audio component inspectors.
+struct EditorAudioAssetEntry {
+   std::string assetId;
+   std::string displayName;
+   std::filesystem::path filePath;
+};
+
 /// @brief resources配下を走査してエディタ用の検索可能なアセット一覧を構築する
 class EditorAssetRegistry {
 public:
@@ -69,6 +77,8 @@ public:
    /// @brief テクスチャ選択用一覧を取得する
    /// @return アセットID順に並んだテクスチャ一覧
    const std::vector<EditorTextureAssetEntry>& GetTextureAssets() const { return textureAssets_; }
+   /// @brief Return decoded and validated WAV/MP3 entries.
+   const std::vector<EditorAudioAssetEntry>& GetAudioAssets() const { return audioAssets_; }
    /// @brief 共通一覧からアセットIDに一致する項目を検索する
    /// @param assetId resourcesルートからの相対ID
    /// @return 一致する項目。存在しない場合はnullptr
@@ -103,6 +113,7 @@ private:
    std::vector<EditorModelAssetEntry> modelAssets_;
    std::vector<EditorParticleAssetEntry> particleAssets_;
    std::vector<EditorTextureAssetEntry> textureAssets_;
+   std::vector<EditorAudioAssetEntry> audioAssets_;
 };
 
 } // namespace GameEngine

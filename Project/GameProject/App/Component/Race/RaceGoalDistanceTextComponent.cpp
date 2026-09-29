@@ -62,10 +62,14 @@ void RaceGoalDistanceTextComponent::Update(float deltaTime) {
       return;
    }
 
-   const bool shouldShow = raceManager_ &&
-      raceManager_->GetState() == RaceManagerComponent::State::Running &&
+   const RaceManagerComponent::State raceState = raceManager_
+      ? raceManager_->GetState()
+      : RaceManagerComponent::State::Finished;
+   const bool isRaceStarted = raceState == RaceManagerComponent::State::Countdown ||
+      raceState == RaceManagerComponent::State::Running;
+   const bool shouldShow = isRaceStarted &&
       playerObject_ && goalObject_;
-   // 待機・カウントダウン・結果中は専用UIと競合しないよう距離表示を消す。
+   // 待機・結果中は専用UIと競合しないよう距離表示を消す。
    if (!shouldShow) {
       text->SetText("");
       return;
