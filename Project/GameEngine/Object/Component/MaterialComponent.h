@@ -79,21 +79,21 @@ public:
    /// @param materialNames 各スロットの保存名
    void AssignMaterials(const std::vector<Material*>& materials, const std::vector<std::string>& materialNames = {});
 
-   /// @brief Supply the shared pipeline catalog used for API validation and the inspector.
+   /// @brief API検証とInspectorで使用する共有パイプラインカタログを設定する。
    static void SetPipelineManager(PSOManager* manager);
-   /// @brief Read the effective slot material; an absent slot inherits slot zero.
+   /// @brief 実効スロットマテリアルを取得する。存在しないスロットはスロット0を継承する。
    Material* GetMaterial(size_t slot = 0) const;
-   /// @brief Create an object-owned deep copy on first edit. Returns nullptr for an invalid slot.
+   /// @brief 初回編集時にObject所有のディープコピーを作成する。無効なスロットではnullptrを返す。
    Material* EditMaterial(size_t slot = 0);
-   /// @brief Test whether the slot owns an independent material override.
+   /// @brief スロットが独立したマテリアル上書きを所有しているか確認する。
    bool IsOverridden(size_t slot = 0) const;
-   /// @brief Restore the shared material for this slot.
+   /// @brief このスロットを共有マテリアルへ戻す。
    void ResetOverride(size_t slot = 0);
-   /// @brief Assign a shared material to one slot without changing other slots.
+   /// @brief 他のスロットを変更せず、1つのスロットへ共有マテリアルを割り当てる。
    void SetSharedMaterial(size_t slot, Material* material, const std::string& name = {});
-   /// @brief Select a registered compatible pipeline and create a local override on success.
+   /// @brief 登録済みの互換パイプラインを選択し、成功時にローカル上書きを作成する。
    bool SetPipeline(const std::string& name, size_t slot = 0);
-   /// @brief Set a typed shader parameter on a local override; reject unknown names or component counts.
+   /// @brief ローカル上書きへ型付きシェーダーパラメーターを設定する。未知の名前や成分数は拒否する。
    bool SetParameter(const std::string& name, const std::vector<float>& value, size_t slot = 0);
 
    /// @brief 各マテリアルスロットの保存名を取得する

@@ -11,8 +11,8 @@ namespace App::RearCameraMath {
 
 inline constexpr float kPlanetVisibilityGainFadeRange = 0.08f;
 inline constexpr float kDefaultSafeFov = 0.45f;
-inline constexpr float kMinSafeFov = 0.017453292f;  // 1 degree
-inline constexpr float kMaxSafeFov = 3.12413936f;   // 179 degrees
+inline constexpr float kMinSafeFov = 0.017453292f;  // 1度
+inline constexpr float kMaxSafeFov = 3.12413936f;   // 179度
 inline constexpr float kMaxSpringDeltaTime = 0.25f;
 inline constexpr float kMaxSpringStep = 1.0f / 120.0f;
 // 旧ターボ係数が最大になっていた速度差を統合後も基準として使う。

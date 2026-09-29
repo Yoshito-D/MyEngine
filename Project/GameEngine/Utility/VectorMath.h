@@ -8,6 +8,6 @@
 #include "Math/Transform.h"
 #include "Math/Quaternion.h"
 
-// For convenience, bring GameEngine types to global scope if needed
-// This can be removed if you want strict namespace usage
+// 必要に応じてGameEngineの型をグローバルスコープで扱うための補助。
+// 名前空間を厳密に使用する場合は、この記述を削除できる。
 // using namespace GameEngine;

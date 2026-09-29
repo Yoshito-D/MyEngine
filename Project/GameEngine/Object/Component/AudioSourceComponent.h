@@ -6,12 +6,12 @@
 #include <vector>
 
 namespace GameEngine {
-/// @brief Named sound slots on any playable Object. One component holds many sounds.
+/// @brief 再生可能なObject上の名前付きサウンドスロット。1コンポーネントで複数の音声を保持する。
 class AudioSourceComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "AudioSourceComponent";
    static constexpr ComponentDisplayName kDisplayName{ "音声ソース", "Audio Source" };
-   /// @brief Persisted slot settings; clip and handle are runtime-only.
+   /// @brief 保存対象のスロット設定。クリップとハンドルは実行時専用。
    struct Slot {
       std::string name;
       std::string clipAssetId;
@@ -21,56 +21,56 @@ public:
       bool loop = false;
       bool playOnStart = false;
    };
-   /// @brief Stop owned playback when destroyed even outside container Detach.
+   /// @brief コンテナのDetach外で破棄された場合も、所有する再生を停止する。
    ~AudioSourceComponent() override;
-   /// @brief Stable serialized component type.
+   /// @brief シリアライズで使用する安定したコンポーネント型。
    const char* GetTypeName() const override { return kTypeName; }
-   /// @brief Add a uniquely named slot; false on a duplicate or empty name.
+   /// @brief 一意な名前のスロットを追加する。重複名または空名ならfalseを返す。
    bool AddSlot(Slot slot);
-   /// @brief Remove one slot and stop its persistent voice.
+   /// @brief スロットを1つ削除し、その永続ボイスを停止する。
    bool RemoveSlot(const std::string& name);
-   /// @brief Read-only configured slots.
+   /// @brief 設定済みスロットを読み取り専用で取得する。
    const std::vector<Slot>& GetSlots() const { return slots_; }
-   /// @brief Replace one slot's clip and prepare it now, without auto-playing.
+   /// @brief 1つのスロットのクリップを置き換え、オート再生せずに準備する。
    bool SetClip(const std::string& name, const std::string& assetId);
-   /// @brief Prepare all clip references without starting playback.
+   /// @brief すべてのクリップ参照を、再生開始せずに準備する。
    void Prepare();
-   /// @brief Run playOnStart once for the current runtime activation.
+   /// @brief 現在のランタイム有効化に対してplayOnStartを1回実行する。
    void BeginRuntime();
-   /// @brief Play a named persistent slot; repeated calls do not overlap.
+   /// @brief 名前付きの永続スロットを再生する。繰り返し呼び出しても重複再生しない。
    bool Play(const std::string& name);
-   /// @brief Restart a named persistent slot from the beginning.
+   /// @brief 名前付きの永続スロットを先頭から再起動する。
    bool Restart(const std::string& name);
-   /// @brief Pause only the persistent voice for a named slot.
+   /// @brief 名前付きスロットの永続ボイスだけを一時停止する。
    bool Pause(const std::string& name);
-   /// @brief Resume only the persistent voice for a named slot.
+   /// @brief 名前付きスロットの永続ボイスだけを再開する。
    bool Resume(const std::string& name);
-   /// @brief Stop only the persistent voice for a named slot; one-shots continue.
+   /// @brief 名前付きスロットの永続ボイスだけを停止する。ワンショットは継続する。
    bool Stop(const std::string& name);
-   /// @brief Fire an independent, non-looping voice, regardless of slot.loop.
+   /// @brief slot.loopに関係なく、独立した非ループボイスを再生する。
    AudioHandle PlayOneShot(const std::string& name);
-   /// @brief Stop persistent and one-shot voices owned by this component.
+   /// @brief このコンポーネントが所有する永続ボイスとワンショットを停止する。
    void StopAll();
-   /// @brief Stop owned voices when disabled.
+   /// @brief 無効化されたとき、所有するボイスを停止する。
    void OnDisable() override { StopAll(); }
-   /// @brief Stop owned voices when detached.
+   /// @brief 切り離されたとき、所有するボイスを停止する。
    void OnDetach() override { StopAll(); }
-   /// @brief Resolve clips only; never auto-play during editing.
+   /// @brief クリップの解決だけを行い、編集中はオート再生しない。
    void OnReferencesChanged(SceneWorld&) override { Prepare(); }
-   /// @brief Resolve clips only; runtime start is an explicit later event.
+   /// @brief クリップの解決だけを行い、ランタイム開始は後続の明示的なイベントで行う。
    void OnSceneLoaded(SceneWorld&) override { Prepare(); }
-   /// @brief Save only slot settings.
+   /// @brief スロット設定だけを保存する。
    nlohmann::json Serialize() const override;
-   /// @brief Restore valid slot settings and prepare clips, without playback.
+   /// @brief 有効なスロット設定を復元し、再生せずにクリップを準備する。
    void Deserialize(const nlohmann::json& data) override;
 #ifdef MYPROJECT_NON_RELEASE
-   /// @brief Inject a decoded fixture into a named slot for device-free tests.
+   /// @brief デバイス不要のテスト用に、名前付きスロットへデコード済みフィクスチャを注入する。
    void SetClipForTesting(const std::string& name, std::shared_ptr<const SoundClip> clip);
-   /// @brief Inspect the persistent handle of a named slot in tests.
+   /// @brief テストで名前付きスロットの永続ハンドルを確認する。
    AudioHandle GetHandleForTesting(const std::string& name) const;
 #endif
 #ifdef USE_IMGUI
-   /// @brief Edit slots and preview audio without making the scene dirty for preview actions.
+   /// @brief スロットを編集し、プレビュー操作でシーンを変更済みにせず音声を確認する。
    void DrawInspector() override;
 #endif
 private:

@@ -7,21 +7,21 @@
 #include <cstdint>
 
 namespace GameEngine {
-/// @brief One decoded PCM asset shared by every playback voice.
+/// @brief すべての再生ボイスで共有するデコード済みPCMアセット。
 class SoundClip final {
 public:
-   /// @brief Decode WAV or MP3 through Media Foundation; throws on failure.
-   /// @param path Native filesystem path, including non-ASCII characters.
-   /// @return An immutable clip with a complete WAVEFORMATEX block.
+   /// @brief Media FoundationでWAVまたはMP3をデコードする。失敗時は例外を送出する。
+   /// @param path 非ASCII文字を含むネイティブファイルシステムパス。
+   /// @return 完全なWAVEFORMATEXブロックを持つ変更不可のクリップ。
    static std::shared_ptr<const SoundClip> Decode(const std::wstring& path);
 #ifdef MYPROJECT_NON_RELEASE
-   /// @brief Construct a small validated PCM fixture without Media Foundation for tests.
+   /// @brief テスト用に、Media Foundationを使わず検証済みの小さなPCMフィクスチャを作成する。
    static std::shared_ptr<const SoundClip> CreateForTesting(const WAVEFORMATEX& format, std::vector<BYTE> pcm);
 #endif
 
-   /// @brief Format block used to create XAudio2 source voices.
+   /// @brief XAudio2のソースボイス作成に使用するフォーマットブロック。
    const WAVEFORMATEX* GetFormat() const { return reinterpret_cast<const WAVEFORMATEX*>(formatWords_.data()); }
-   /// @brief PCM data kept alive while any voice references it.
+   /// @brief いずれかのボイスが参照している間保持されるPCMデータ。
    const std::vector<BYTE>& GetPcm() const { return pcm_; }
 
 private:

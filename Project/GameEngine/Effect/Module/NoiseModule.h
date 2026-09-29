@@ -5,7 +5,7 @@
 
 namespace GameEngine {
 	// ============================================================
-	// Noise Module
+// ノイズモジュール
 	// ============================================================
 	class NoiseModule : public ParticleModule {
 	public:

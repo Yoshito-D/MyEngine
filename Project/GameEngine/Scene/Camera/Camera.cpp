@@ -11,8 +11,8 @@ namespace {
 // 初期化順序は Framework が保証し、最初に登録されたデバイスをプロセス中維持する。
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
-constexpr float kMinFovY = 0.017453292f;  // 1 degree
-constexpr float kMaxFovY = 3.12413936f;   // 179 degrees
+constexpr float kMinFovY = 0.017453292f;  // 1度
+constexpr float kMaxFovY = 3.12413936f;   // 179度
 
 float ClampFovY(float fovY) {
 	if (!std::isfinite(fovY)) {

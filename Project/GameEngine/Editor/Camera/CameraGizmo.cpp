@@ -46,17 +46,17 @@ void CameraGizmo::DrawFrustum(Camera* camera, Camera* viewCamera) {
 
    // 視錐台のエッジを描画
    if (settings_.showFrustum) {
-      // Near plane edges
+      // ニアクリップ面の辺
       if (settings_.showNearPlane) {
          DrawQuad(corners[0], corners[1], corners[2], corners[3], settings_.nearPlaneColor, viewCamera);
       }
 
-      // Far plane edges
+      // ファークリップ面の辺
       if (settings_.showFarPlane) {
          DrawQuad(corners[4], corners[5], corners[6], corners[7], settings_.farPlaneColor, viewCamera);
       }
 
-      // Connecting edges (near to far)
+      // ニア面とファー面を結ぶ辺
       lineRenderer_->DrawLine(corners[0], corners[4], settings_.frustumColor, viewCamera);
       lineRenderer_->DrawLine(corners[1], corners[5], settings_.frustumColor, viewCamera);
       lineRenderer_->DrawLine(corners[2], corners[6], settings_.frustumColor, viewCamera);
@@ -84,17 +84,17 @@ void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera, floa
 
    // 視錐台のエッジを描画
    if (settings_.showFrustum) {
-      // Near plane edges
+      // ニアクリップ面の辺
       if (settings_.showNearPlane) {
          DrawQuad(corners[0], corners[1], corners[2], corners[3], settings_.nearPlaneColor, viewCamera);
       }
 
-      // Far plane edges
+      // ファークリップ面の辺
       if (settings_.showFarPlane) {
          DrawQuad(corners[4], corners[5], corners[6], corners[7], settings_.farPlaneColor, viewCamera);
       }
 
-      // Connecting edges (near to far)
+      // ニア面とファー面を結ぶ辺
       lineRenderer_->DrawLine(corners[0], corners[4], settings_.frustumColor, viewCamera);
       lineRenderer_->DrawLine(corners[1], corners[5], settings_.frustumColor, viewCamera);
       lineRenderer_->DrawLine(corners[2], corners[6], settings_.frustumColor, viewCamera);

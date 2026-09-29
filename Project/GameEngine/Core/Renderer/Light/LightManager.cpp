@@ -140,7 +140,7 @@ void LightManager::Initialize() {
 }
 
 //================================================================
-// DirectionalLight
+   // ディレクショナルライト
 //================================================================
 
 DirectionalLight* LightManager::CreateDirectionalLight(const std::string& name, unsigned int color, const Vector3& direction, float intensity) {
@@ -177,7 +177,7 @@ std::vector<std::string> LightManager::GetDirectionalLightNames() const {
 }
 
 //================================================================
-// PointLight
+   // ポイントライト
 //================================================================
 
 PointLight* LightManager::CreatePointLight(const std::string& name, unsigned int color, const Vector3& position, float intensity, float radius, float decay) {
@@ -214,7 +214,7 @@ std::vector<std::string> LightManager::GetPointLightNames() const {
 }
 
 //================================================================
-// SpotLight
+   // スポットライト
 //================================================================
 
 SpotLight* LightManager::CreateSpotLight(const std::string& name, unsigned int color, const Vector3& position, float intensity, const Vector3& direction, float distance, float decay, float cosAngle, float cosFalloffStart) {
@@ -251,7 +251,7 @@ std::vector<std::string> LightManager::GetSpotLightNames() const {
 }
 
 //================================================================
-// AreaLight
+   // エリアライト
 //================================================================
 
 AreaLight* LightManager::CreateAreaLight(const std::string& name, const Vector3& position, const Vector3& normal, const Vector3& tangent, const Vector2& size, const Vector3& color, float intensity) {
@@ -288,7 +288,7 @@ std::vector<std::string> LightManager::GetAreaLightNames() const {
 }
 
 //================================================================
-// Buffer & Debug
+   // バッファーとデバッグ
 //================================================================
 
 void LightManager::UpdateStructureBuffer() {
@@ -518,7 +518,7 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
          light.data.height = size.y;
          areaLights.push_back(std::move(light));
       } else {
-         // Unknown light types are ignored so newer scene files remain forward-compatible.
+         // 未知のライト種別は無視し、新しいシーンファイルとの前方互換性を保つ。
          Logger::EngineWarning("[LightManager] Scene references an unknown light type: " + type);
          continue;
       }

@@ -73,7 +73,7 @@ void GravityBody::SnapToUpVector(const Vector3& targetUp) {
    Vector3 fwd = right.Cross(newUp).Normalize();
 
    // right, newUp, fwd から回転行列→クォータニオン
-   // row-basis: x=right, y=newUp, z=fwd
+   // 行ベース: x=right、y=newUp、z=fwd
    float m00 = right.x, m10 = right.y, m20 = right.z;
    float m01 = newUp.x, m11 = newUp.y, m21 = newUp.z;
    float m02 = fwd.x, m12 = fwd.y, m22 = fwd.z;

@@ -434,10 +434,10 @@ public:
    /// @brief サウンドを全削除
    static void ClearSounds();
 
-   /// @brief Return the Framework-owned audio service, or nullptr during shutdown.
+   /// @brief Frameworkが所有するオーディオサービスを返す。終了処理中はnullptr。
    static Audio* GetAudio();
 
-   /// @brief Prepare and cache a Resources-relative audio clip during setup.
+   /// @brief セットアップ中にResources基準の音声クリップを準備してキャッシュする。
    static std::shared_ptr<const SoundClip> GetSoundClip(const std::string& assetId);
 
    //================================================================
@@ -465,7 +465,7 @@ public:
    //================================================================
 
    //----------------------------------------------------------------
-   // DirectionalLight
+   // ディレクショナルライト
    //----------------------------------------------------------------
    
    /// @brief ディレクショナルライトを作成
@@ -494,7 +494,7 @@ public:
    static std::vector<std::string> GetDirectionalLightNames();
 
    //----------------------------------------------------------------
-   // PointLight
+   // ポイントライト
    //----------------------------------------------------------------
    
    /// @brief ポイントライトを作成
@@ -528,7 +528,7 @@ public:
    static std::vector<std::string> GetPointLightNames();
 
    //----------------------------------------------------------------
-   // SpotLight
+   // スポットライト
    //----------------------------------------------------------------
    
    /// @brief スポットライトを作成
@@ -562,7 +562,7 @@ public:
    static std::vector<std::string> GetSpotLightNames();
 
    //----------------------------------------------------------------
-   // AreaLight
+   // エリアライト
    //----------------------------------------------------------------
    
    /// @brief エリアライトを作成
@@ -721,7 +721,7 @@ public:
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
    static void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10, int range = 100, bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
 
-   // Shape drawing for particle system debugging
+   // パーティクルシステムのデバッグ用シェイプ描画
    /// @brief 球を描画する
    /// @param center 中心
    /// @param radius 半径

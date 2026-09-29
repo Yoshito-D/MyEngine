@@ -119,35 +119,35 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 	// 変換・カメラ・ライト・テクスチャを意味名で解決済みのスロットへまとめて束縛する。
 	// Sprite PSOがObject3Dと似た資源構成でも、JSON上の並び順には依存しない。
 	// Object3Dルートシグネチャに合わせてルートパラメータを設定
-	// Root Parameter 0: Material (Pixel Shader)
+   // ルートパラメーター0: Material（ピクセルシェーダー）
  if (!spriteMaterial) {
 	 Logger::Warning("[SpriteRenderer] Material is null, skip draw");
 	 return;
  }
  cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());
 	
-	// Root Parameter 1: TransformationMatrix (Vertex Shader)
+   // ルートパラメーター1: TransformationMatrix（頂点シェーダー）
     cmdList->SetGraphicsRootConstantBufferView(transformSlot.value(), transformationMatrix->GetTransformationMatrixResource()->GetGPUVirtualAddress());
 	
-	// Root Parameter 2: Camera (Pixel Shader)
+   // ルートパラメーター2: Camera（ピクセルシェーダー）
  cmdList->SetGraphicsRootConstantBufferView(cameraSlot.value(), camera->GetCameraResource()->GetGPUVirtualAddress());
 	
-	// Root Parameter 3: LightCount (Pixel Shader)
+   // ルートパラメーター3: LightCount（ピクセルシェーダー）
     cmdList->SetGraphicsRootConstantBufferView(lightCountSlot.value(), lightBuffer->GetLightCountResource()->GetGPUVirtualAddress());
 	
-	// Root Parameter 4: DirectionalLights StructuredBuffer (t0)
+   // ルートパラメーター4: DirectionalLights StructuredBuffer（t0）
   cmdList->SetGraphicsRootDescriptorTable(directionalLightSlot.value(), lightBuffer->GetDirectionalLightSRV());
 	
-	// Root Parameter 5: PointLights StructuredBuffer (t1)
+   // ルートパラメーター5: PointLights StructuredBuffer（t1）
     cmdList->SetGraphicsRootDescriptorTable(pointLightSlot.value(), lightBuffer->GetPointLightSRV());
 	
-	// Root Parameter 6: SpotLights StructuredBuffer (t2)
+   // ルートパラメーター6: SpotLights StructuredBuffer（t2）
  cmdList->SetGraphicsRootDescriptorTable(spotLightSlot.value(), lightBuffer->GetSpotLightSRV());
 	
-	// Root Parameter 7: AreaLights StructuredBuffer (t3)
+   // ルートパラメーター7: AreaLights StructuredBuffer（t3）
  cmdList->SetGraphicsRootDescriptorTable(areaLightSlot.value(), lightBuffer->GetAreaLightSRV());
 	
-	// Root Parameter 8: Texture (t4)
+   // ルートパラメーター8: Texture（t4）
     cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), spriteData.textureSrvHandle);
 
 	// 描画

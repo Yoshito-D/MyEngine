@@ -5,64 +5,64 @@
 #include <d3d12.h>
 
 namespace GameEngine {
-/// @brief Runtime parameters for animated white noise.
+/// @brief アニメーションするホワイトノイズの実行時パラメーター。
 struct WhiteNoiseParams {
-   /// @brief Time used as the shader random seed source.
+   /// @brief シェーダーの乱数シードに使用する時間。
    float time = 0.0f;
 
-   /// @brief Number of procedural noise cells across UV space.
+   /// @brief UV空間に配置する手続き的ノイズセルの数。
    float noiseDensity = 320.0f;
 
-   /// @brief Number of random pattern changes per second.
+   /// @brief 1秒あたりのランダムパターン変更回数。
    float seedChangeRate = 24.0f;
 
-   /// @brief Random threshold that decides whether a cell becomes noise.
+   /// @brief セルをノイズ化するか決める乱数のしきい値。
    float noiseThreshold = 0.94f;
 
-   /// @brief Strength multiplier for selected noise cells.
+   /// @brief 選択されたノイズセルの強度倍率。
    float noiseIntensity = 0.85f;
 };
 
-/// @brief Multiplies the offscreen texture by animated white noise.
+/// @brief オフスクリーンテクスチャへアニメーションするホワイトノイズを乗算する。
 class WhiteNoise : public PostProcess {
 public:
-   /// @brief White noise constant buffer layout.
+   /// @brief ホワイトノイズ用定数バッファーのレイアウト。
    struct WhiteNoiseCB {
-	  /// @brief Time used as the shader random seed source.
+	  /// @brief シェーダーの乱数シードに使用する時間。
 	  float time;
 
-	  /// @brief Number of procedural noise cells across UV space.
+	  /// @brief UV空間に配置する手続き的ノイズセルの数。
 	  float noiseDensity;
 
-	  /// @brief Number of random pattern changes per second.
+	  /// @brief 1秒あたりのランダムパターン変更回数。
 	  float seedChangeRate;
 
-	  /// @brief Random threshold that decides whether a cell becomes noise.
+	  /// @brief セルをノイズ化するか決める乱数のしきい値。
 	  float noiseThreshold;
 
-	  /// @brief Strength multiplier for selected noise cells.
+	  /// @brief 選択されたノイズセルの強度倍率。
 	  float noiseIntensity;
 
-	  /// @brief Padding for constant-buffer register alignment.
+	  /// @brief 定数バッファーのレジスターアライメント用パディング。
 	  float padding[3];
    };
 
-   /// @brief Initializes GPU resources used by the white noise effect.
-   /// @param device Graphics device.
-   /// @param renderTarget Offscreen render target.
+   /// @brief ホワイトノイズエフェクトで使用するGPUリソースを初期化する。
+   /// @param device グラフィックスデバイス。
+   /// @param renderTarget オフスクリーンレンダーターゲット。
    void Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) override;
 
-   /// @brief Applies the effect to the supplied input texture.
-   /// @param inputSRV Input texture SRV.
+   /// @brief 指定された入力テクスチャへエフェクトを適用する。
+   /// @param inputSRV 入力テクスチャのSRV。
    void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) override;
 
 #ifdef USE_IMGUI
-   /// @brief Shows debug controls for the effect parameters.
+   /// @brief エフェクトパラメーターのデバッグ操作を表示する。
    void ImGuiEdit() override;
 #endif
 
-   /// @brief Gets the editor/debug display name.
-   /// @return Effect name.
+   /// @brief エディター・デバッグ表示名を取得する。
+   /// @return エフェクト名。
    const char* GetEffectName() const override { return "White Noise"; }
 
    /// @copydoc PostProcess::SerializeSettings
@@ -71,36 +71,36 @@ public:
    /// @copydoc PostProcess::DeserializeSettings
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
-   /// @brief Sets all white noise parameters.
-   /// @param params Parameters to apply.
+   /// @brief ホワイトノイズの全パラメーターを設定する。
+   /// @param params 適用するパラメーター。
    void SetParams(const WhiteNoiseParams& params);
 
-   /// @brief Gets the current white noise parameters.
-   /// @return Current parameters.
+   /// @brief 現在のホワイトノイズパラメーターを取得する。
+   /// @return 現在のパラメーター。
    const WhiteNoiseParams& GetParams() const { return params_; }
 
-   /// @brief Sets the time passed to the white noise shader.
-   /// @param time Time in seconds.
+   /// @brief ホワイトノイズシェーダーへ渡す経過時間を設定する。
+   /// @param time 秒単位の時間。
    void SetTime(float time);
 
-   /// @brief Gets the time passed to the white noise shader.
-   /// @return Time in seconds.
+   /// @brief ホワイトノイズシェーダーへ渡している経過時間を取得する。
+   /// @return 秒単位の時間。
    float GetTime() const { return params_.time; }
 
-   /// @brief Sets the procedural noise density.
-   /// @param value Number of noise cells across UV space.
+   /// @brief 手続き的ノイズの密度を設定する。
+   /// @param value UV空間に配置するノイズセル数。
    void SetNoiseDensity(float value) { auto params = params_; params.noiseDensity = value; SetParams(params); }
 
-   /// @brief Sets the seed change rate.
-   /// @param value Number of random pattern changes per second.
+   /// @brief シードの変更頻度を設定する。
+   /// @param value 1秒あたりのランダムパターン変更回数。
    void SetSeedChangeRate(float value) { auto params = params_; params.seedChangeRate = value; SetParams(params); }
 
-   /// @brief Sets the threshold used to choose noise cells.
-   /// @param value Threshold in the range 0.0 to 1.0.
+   /// @brief ノイズセルの選択に使用するしきい値を設定する。
+   /// @param value 0.0～1.0のしきい値。
    void SetNoiseThreshold(float value) { auto params = params_; params.noiseThreshold = value; SetParams(params); }
 
-   /// @brief Sets noise strength.
-   /// @param value Strength multiplier in the range 0.0 to 1.0.
+   /// @brief ノイズ強度を設定する。
+   /// @param value 0.0～1.0の強度倍率。
    void SetNoiseIntensity(float value) { auto params = params_; params.noiseIntensity = value; SetParams(params); }
 
 private:

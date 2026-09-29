@@ -21,7 +21,7 @@ using namespace GameEngine;
 namespace App {
 
 // ================================================================
-// public
+   // 公開設定
 // ================================================================
 
 void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput,
@@ -89,7 +89,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
 }
 
 // ================================================================
-// private
+   // 内部設定
 // ================================================================
 
 void VehicleMover::OnLanded(const Quaternion& currentRotation, const Vector3& gravityUp) {
@@ -177,7 +177,7 @@ Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotat
 }
 
 // ================================================================
-// ImGui / Serialize
+   // ImGui / シリアライズ
 // ================================================================
 
 #ifdef USE_IMGUI

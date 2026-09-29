@@ -110,11 +110,11 @@ public:
    /// @brief パイプライン向けのsemanticからルートパラメータスロットを解決
    std::optional<UINT> ResolvePipelineRootParameter(const std::string& pipelineName, const std::string& semantic) const;
 
-   /// @brief Return a validated model contract, or nullptr for an unavailable/incompatible pipeline.
+   /// @brief 検証済みのモデル契約を返す。利用不可または非互換のパイプラインならnullptr。
    const ModelPipelineDefinition* GetModelPipeline(const std::string& name) const;
-   /// @brief List successfully created model-compatible pipelines for the editor.
+   /// @brief 作成に成功したモデル互換パイプラインをエディター用に列挙する。
    std::vector<std::string> GetModelPipelineNames() const;
-   /// @brief Resolve an available blend state without compiling a PSO.
+   /// @brief PSOをコンパイルせず、利用可能なブレンド状態を解決する。
    BlendMode ResolveModelBlendMode(const std::string& name, BlendMode requested) const;
 
    /// @brief すべてのパイプラインをクリア

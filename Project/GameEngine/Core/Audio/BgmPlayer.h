@@ -3,7 +3,7 @@
 #include <string>
 
 namespace GameEngine {
-/// @brief Scene-owned BGM settings used only at runtime.
+/// @brief シーンが所有し、実行時だけ使用するBGM設定。
 struct BgmRequest {
    std::string clipAssetId;
    std::shared_ptr<const SoundClip> clip;
@@ -14,29 +14,29 @@ struct BgmRequest {
    bool continueAcrossScenes = false;
 };
 
-/// @brief At most two BGM voices, with owner tokens independent of scene addresses.
+/// @brief シーンのアドレスに依存しない所有者トークンで、最大2つのBGMボイスを管理する。
 class BgmPlayer {
 public:
-   /// @brief Bind to its owning audio service.
+   /// @brief 所有元のオーディオサービスへ紐付ける。
    explicit BgmPlayer(Audio& audio) : audio_(audio) {}
-   /// @brief Issue a unique ownership token for one component activation.
+   /// @brief コンポーネントの1回の有効化に対して一意な所有権トークンを発行する。
    uint64_t NewOwnerToken() { return ++nextOwner_; }
-   /// @brief Request a track; the same asset continues unless restart is explicit.
+   /// @brief トラックを要求する。同じアセットは明示的に再起動しない限り継続する。
    void Request(uint64_t owner, const BgmRequest& request, bool restart = false);
-   /// @brief Fade out only if this is still the active request owner.
+   /// @brief まだアクティブな要求元である場合だけフェードアウトする。
    void ReleaseOwner(uint64_t owner);
-   /// @brief Keep a departing scene's track until the next scene has been examined.
+   /// @brief 次のシーンを確認するまで、切り替え元シーンのトラックを保持する。
    void BeginSceneChange() { sceneChanging_ = true; }
-   /// @brief Apply the old track's continuation policy when no new BGM was requested.
+   /// @brief 新しいBGM要求がなかった場合に、以前のトラックの継続設定を適用する。
    void EndSceneChange(bool hasNewRequest);
-   /// @brief Advance fades in real seconds; caller freezes this during game pause.
+   /// @brief 実時間秒でフェードを進める。呼び出し側はゲーム一時停止中に更新を止める。
    void Update(float seconds);
-   /// @brief Stop both tracks and invalidate all owner tokens.
+   /// @brief 両方のトラックを停止し、すべての所有者トークンを無効化する。
    void StopImmediate();
-   /// @brief Current track ID for diagnostics and tests.
+   /// @brief 診断とテスト用に現在のトラックIDを取得する。
    const std::string& GetCurrentAssetId() const { return current_.assetId; }
 #ifdef MYPROJECT_NON_RELEASE
-   /// @brief Expose track identity to device-free tests only.
+   /// @brief デバイス不要のテストに限り、トラックの識別情報を公開する。
    AudioHandle GetCurrentHandleForTesting() const { return current_.handle; }
 #endif
 

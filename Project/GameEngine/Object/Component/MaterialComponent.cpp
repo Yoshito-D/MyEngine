@@ -216,7 +216,7 @@ namespace {
          return textureId;
       }
 
-      // Editor asset IDs are resource-relative paths; material save data keeps only the texture name.
+      // EditorのアセットIDはResources基準のパスだが、マテリアル保存データにはテクスチャ名だけを保持する。
       const std::string textureName = texturePath.stem().string();
       return textureName.empty() ? textureId : textureName;
    }
@@ -261,8 +261,8 @@ Material* MaterialComponent::EditMaterial(size_t slot) {
    if (slot >= 4096) return nullptr;
    if (IsOverridden(slot)) return materials[slot];
    Material* source = GetMaterial(slot);
-   // Persist the inherited asset reference as well as its local values, so ResetOverride
-   // returns to the same shared material after a scene reload.
+   // ローカル値だけでなく継承元アセット参照も保存し、シーン再読み込み後にResetOverrideで
+   // 同じ共有マテリアルへ戻れるようにする。
    const std::string sourceName = slot < materials.size() && materials[slot] && slot < materialNames_.size()
       ? materialNames_[slot] : materialNames_.empty() ? std::string{} : materialNames_[0];
    Material* shared = source;
@@ -429,7 +429,7 @@ void MaterialComponent::AssignMaterials(const std::vector<Material*>& newMateria
 }
 
 void MaterialComponent::SyncMaterialNamesSize() {
-   // Names follow explicit materials; textures may also override inherited submesh slots.
+   // 名前は明示されたマテリアルに従い、テクスチャは継承したサブメッシュスロットも上書きできる。
    if (materialNames_.size() < materials.size()) {
       materialNames_.resize(materials.size());
    } else if (materialNames_.size() > materials.size()) {
@@ -595,7 +595,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) try {
          const std::string textureName = slotData.contains("textureName") && slotData.at("textureName").is_string()
             ? slotData.at("textureName").get<std::string>()
             : std::string{};
-         // Old scenes become local snapshots so loading one object never overwrites another shared material.
+         // 旧シーンはローカルスナップショットへ変換し、1オブジェクトの読み込みで別の共有マテリアルを上書きしない。
          Material* material = resolveMaterial(materialName, slot);
          materialNames_.push_back(materialName);
          materials.push_back(material);
@@ -664,7 +664,7 @@ void MaterialComponent::DrawInspector() {
    DrawInspectorContent();
    const auto after = Serialize();
    if (before != after && inspectorBefore_.is_null()) inspectorBefore_ = before;
-   // A drag becomes one command when the active control is released.
+   // ドラッグ操作は、アクティブな操作部品を離した時点で1つのコマンドにまとめる。
    if (!inspectorBefore_.is_null() && !ImGui::IsAnyItemActive()) {
       if (HasOwner()) {
          auto* scene = BaseScene::GetCurrentScene();
@@ -943,7 +943,7 @@ void MaterialComponent::DrawInspectorContent() {
       }
    }
 
-   // Model choices come only from the validated registry, including custom parameter metadata.
+   // モデル候補はカスタムパラメーターのメタデータを含め、検証済みレジストリからのみ取得する。
    if (pipelineManager_ && HasOwner() && GetOwner().GetComponent<MeshComponent>()) {
       const std::string name = material->GetPipelineName().empty() ? "Object3D" : material->GetPipelineName();
       if (ImGui::BeginCombo(Tr("シェーダー / パイプライン", "Shader / Pipeline"), name.c_str())) {
@@ -967,7 +967,7 @@ void MaterialComponent::DrawInspectorContent() {
          if (ImGui::Button(Tr("パラメーターを既定値へ", "Reset parameters"))) material->ClearParameters();
       }
    } else {
-      // Preserve the existing non-model pipeline editor.
+      // 既存の非モデル用パイプラインエディターを維持する。
       char buf[128] = {};
       material->GetPipelineName().copy(buf, sizeof(buf) - 1);
       if (ImGui::InputText(Tr("パイプライン名", "Pipeline Name"), buf, sizeof(buf))) material->SetPipelineName(buf);

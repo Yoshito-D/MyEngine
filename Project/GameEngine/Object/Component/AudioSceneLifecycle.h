@@ -1,7 +1,7 @@
 #pragma once
 namespace GameEngine {
-/// @brief Whether the loaded scene has an enabled and prepared startup BGM.
+/// @brief 読み込んだシーンに有効な準備済み起動BGMがあるかどうか。
 bool HasSceneBgmRequest();
-/// @brief Start object audio once after all scene settings and references are ready.
+/// @brief シーンの設定と参照がすべて準備できた後、オブジェクト音声を1回開始する。
 void BeginSceneAudio();
 }

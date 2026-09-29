@@ -23,7 +23,7 @@ constexpr float kAngularVelocityEpsilon = 0.001f;
 } // namespace
 
 // ---------------------------------------------------------------
-// public
+   // 公開設定
 // ---------------------------------------------------------------
 
 void VehicleAirController::Apply(float rollInput, float pitchInput, float deltaTime) {
@@ -71,7 +71,7 @@ void VehicleAirController::Apply(float rollInput, float pitchInput, float deltaT
 }
 
 // ---------------------------------------------------------------
-// private
+   // 内部設定
 // ---------------------------------------------------------------
 
 void VehicleAirController::UpdateAngularVelocity(float input, float& angVel,
@@ -117,7 +117,7 @@ void VehicleAirController::ApplyRollRotation(GameEngine::Quaternion& rot,
 }
 
 // ---------------------------------------------------------------
-// ImGui / Serialize
+   // ImGui / シリアライズ
 // ---------------------------------------------------------------
 
 #ifdef USE_IMGUI

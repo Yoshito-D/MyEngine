@@ -51,7 +51,7 @@ struct EditorTextureAssetEntry {
    std::filesystem::path filePath; ///< テクスチャファイルのパス
 };
 
-/// @brief Validated audio choice for both audio component inspectors.
+/// @brief 両方の音声コンポーネントInspectorで使用する検証済み音声候補。
 struct EditorAudioAssetEntry {
    std::string assetId;
    std::string displayName;
@@ -77,7 +77,7 @@ public:
    /// @brief テクスチャ選択用一覧を取得する
    /// @return アセットID順に並んだテクスチャ一覧
    const std::vector<EditorTextureAssetEntry>& GetTextureAssets() const { return textureAssets_; }
-   /// @brief Return decoded and validated WAV/MP3 entries.
+   /// @brief デコードと検証が済んだWAV/MP3項目を取得する。
    const std::vector<EditorAudioAssetEntry>& GetAudioAssets() const { return audioAssets_; }
    /// @brief 共通一覧からアセットIDに一致する項目を検索する
    /// @param assetId resourcesルートからの相対ID

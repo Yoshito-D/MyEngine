@@ -61,7 +61,7 @@ public:
    /// @return マテリアルデータへのポインタ
    MaterialData* GetMaterialData() const { return materialData_; }
 
-   /// @brief Check that the standard material buffer contains finite values and a valid lighting mode.
+   /// @brief 標準マテリアルバッファが有限値と有効なライティングモードを持つことを検証する。
    bool HasValidData() const;
 
    /// @brief マテリアルリソースを取得
@@ -94,15 +94,15 @@ public:
    /// @param name パイプライン名（空文字列の場合はデフォルト "Object3D" にフォールバック）
    void SetPipelineName(const std::string& name);
 
-   /// @brief Deep copy all values into independent GPU buffers.
+   /// @brief すべての値を独立したGPUバッファへディープコピーする。
    std::unique_ptr<Material> Clone() const;
-   /// @brief Store a finite float vector (1-4 components); validate its layout before drawing.
+   /// @brief 有限値のfloatベクトル（1～4成分）を保存し、描画前にレイアウトを検証する。
    bool SetParameter(const std::string& name, const std::vector<float>& value);
-   /// @brief Read explicitly overridden shader parameters.
+   /// @brief 明示的に上書きされたシェーダーパラメーターを取得する。
    const std::map<std::string, std::vector<float>>& GetParameters() const { return parameters_; }
-   /// @brief Clear overrides so the pipeline defaults are used.
+   /// @brief 上書きを解除し、パイプラインの既定値を使用する。
    void ClearParameters() { parameters_.clear(); }
-   /// @brief Validate and pack parameters; return nullptr on invalid data or an unavailable buffer.
+   /// @brief パラメーターを検証・パックする。データ不正またはバッファ利用不可時はnullptrを返す。
    ID3D12Resource* PrepareParameters(const ModelPipelineDefinition& definition);
 
    /// @brief このマテリアルが使用するパイプライン名を取得

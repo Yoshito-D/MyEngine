@@ -3,7 +3,7 @@
 
 namespace GameEngine {
 // ============================================================
-// RandomFloat, RandomVector3, RandomColor Implementation
+// RandomFloat、RandomVector3、RandomColorの実装
 // ============================================================
 
 float RandomFloat::GetValue() const {
@@ -85,7 +85,7 @@ void RandomColor::FromJson(const nlohmann::json& json) {
 }
 
 // ============================================================
-// MainModule
+// メインモジュール
 // ============================================================
 
 MainModule::MainModule() = default;

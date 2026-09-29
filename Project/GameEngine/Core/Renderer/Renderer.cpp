@@ -332,7 +332,7 @@ void Renderer::DrawModelWithCamera(
    // 行列を更新
    model->UpdateMatrix(camera);
 
-   // Per-slot blend overrides are resolved when the command is split into draw units.
+   // スロットごとのブレンド上書きは、コマンドを描画単位へ分割する際に解決する。
    const BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
 
    // 描画パスの決定

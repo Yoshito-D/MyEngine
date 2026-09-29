@@ -10,90 +10,90 @@
 namespace GameEngine {
 class BgmPlayer;
 
-/// @brief Playback category; effective gain is Master * category * voice * fade.
+/// @brief 再生カテゴリ。実効音量はMaster * category * voice * fadeで決まる。
 enum class AudioBus { Bgm, Se, Ui };
 
-/// @brief Generation-checked playback identity. Invalid after completion or Release.
+/// @brief 世代番号で検証する再生識別子。完了またはRelease後は無効になる。
 struct AudioHandle {
    uint32_t index = UINT32_MAX;
    uint32_t generation = 0;
-   /// @brief Whether this has a syntactically valid index.
+   /// @brief 構文上有効なインデックスを持つかどうか。
    explicit operator bool() const { return index != UINT32_MAX; }
 };
 
-/// @brief Observable playback state for an owned handle.
+/// @brief 所有中のハンドルから取得できる再生状態。
 enum class AudioPlaybackState { Stopped, Playing, Paused };
 
-/// @brief Owner of the audio device, active voices, and scene BGM player.
+/// @brief オーディオデバイス、アクティブなボイス、シーンBGMプレイヤーの所有者。
 class Audio {
 public:
-   /// @brief Construct a silent audio service until Initialize is called.
+   /// @brief Initializeが呼ばれるまで無音状態で動作するオーディオサービスを構築する。
    Audio();
-   /// @brief Release device resources if the owner did not call Finalize.
+   /// @brief 所有者がFinalizeを呼ばなかった場合にデバイスリソースを解放する。
    ~Audio();
-   /// @brief Initialize Media Foundation and XAudio2; failures leave silent mode.
+   /// @brief Media FoundationとXAudio2を初期化する。失敗時は無音状態を維持する。
    void Initialize();
-   /// @brief Release all voices before device and Media Foundation shutdown. Idempotent.
+   /// @brief デバイスとMedia Foundationの終了前に全ボイスを解放する。複数回呼び出しても安全。
    void Finalize();
-   /// @brief Return the device only for the legacy Sound wrapper.
+   /// @brief 旧Soundラッパー専用にデバイスを返す。
    IXAudio2* GetXAudio2() const { return xAudio2_.Get(); }
-   /// @brief Whether a playback device was created.
+   /// @brief 再生デバイスが作成済みかどうか。
    bool IsAvailable() const { return masteringVoice_ != nullptr || testMode_; }
 
-   /// @brief Reserve and start a voice. Returns invalid when silent, paused, or full.
+   /// @brief ボイスを確保して再生を開始する。無音中、一時停止中、または上限時は無効値を返す。
    AudioHandle Create(std::shared_ptr<const SoundClip> clip, AudioBus bus, float volume = 1.0f,
       float pitch = 1.0f, bool loop = false, bool preview = false);
-   /// @brief Start a stopped handle at the beginning; playing and paused handles are unchanged.
+   /// @brief 停止中のハンドルを先頭から再生する。再生中・一時停止中のハンドルは変更しない。
    bool Play(AudioHandle handle);
-   /// @brief Restart a handle at the beginning, including a playing one.
+   /// @brief 再生中の場合も含め、ハンドルを先頭から再起動する。
    bool Restart(AudioHandle handle);
-   /// @brief Pause a handle at its current position.
+   /// @brief ハンドルを現在位置で一時停止する。
    bool Pause(AudioHandle handle);
-   /// @brief Resume an explicitly paused handle at its current position.
+   /// @brief 明示的に一時停止したハンドルを現在位置から再開する。
    bool Resume(AudioHandle handle);
-   /// @brief Stop and flush a handle. A later Play starts at the beginning.
+   /// @brief ハンドルを停止してバッファを破棄する。後続のPlayは先頭から開始する。
    bool Stop(AudioHandle handle);
-   /// @brief Release a handle and its PCM reference; stale copies can never address a new voice.
+   /// @brief ハンドルとPCM参照を解放する。古いコピーから新しいボイスへアクセスすることはできない。
    void Release(AudioHandle handle);
-   /// @brief Create an independent non-looping voice.
+   /// @brief 独立した非ループボイスを作成する。
    AudioHandle PlayOneShot(std::shared_ptr<const SoundClip> clip, AudioBus bus,
       float volume = 1.0f, float pitch = 1.0f, bool preview = false);
-   /// @brief Set a voice's individual gain.
+   /// @brief ボイス個別の音量を設定する。
    bool SetVolume(AudioHandle handle, float volume);
-   /// @brief Set a voice's pitch ratio.
+   /// @brief ボイスのピッチ倍率を設定する。
    bool SetPitch(AudioHandle handle, float pitch);
-   /// @brief Move a voice to another category and update its gain immediately.
+   /// @brief ボイスを別のカテゴリへ移し、音量を即時更新する。
    bool SetBus(AudioHandle handle, AudioBus bus);
-   /// @brief Set a voice's fade factor, from zero to one.
+   /// @brief ボイスのフェード係数を0から1の範囲で設定する。
    bool SetFade(AudioHandle handle, float fade);
-   /// @brief Set Master, BGM, SE, or UI gain; existing voices update immediately.
+   /// @brief Master、BGM、SE、UIの音量を設定し、既存ボイスを即時更新する。
    void SetBusVolume(AudioBus bus, float volume);
-   /// @brief Set Master gain; existing voices update immediately.
+   /// @brief Master音量を設定し、既存ボイスを即時更新する。
    void SetMasterVolume(float volume);
-   /// @brief Pause or unpause game audio without resuming individually paused voices.
+   /// @brief 個別に一時停止したボイスを再開せず、ゲーム音声全体を一時停止・再開する。
    void SetGamePaused(bool paused);
-   /// @brief Stop and release every game voice, preserving only editor previews.
+   /// @brief エディタープレビューだけを残し、ゲーム用の全ボイスを停止・解放する。
    void StopGameAudio();
-   /// @brief Stop and release every editor preview voice.
+   /// @brief エディタープレビュー用の全ボイスを停止・解放する。
    void StopPreviews();
-   /// @brief Reclaim completed voices and advance BGM fades using real seconds.
+   /// @brief 完了したボイスを回収し、実時間秒でBGMのフェードを進める。
    void Update(float realSeconds);
-   /// @brief Whether a handle still owns a playback entry.
+   /// @brief ハンドルが再生エントリを引き続き所有しているかどうか。
    bool IsValid(AudioHandle handle) const;
-   /// @brief Return a handle's state, or nullopt after completion or release.
+   /// @brief ハンドルの状態を返す。完了または解放後はnulloptを返す。
    std::optional<AudioPlaybackState> GetState(AudioHandle handle) const;
-   /// @brief Number of currently allocated source voices.
+   /// @brief 現在確保されているソースボイス数。
    size_t GetVoiceCount() const;
-   /// @brief The BGM controller owned by this audio service.
+   /// @brief このオーディオサービスが所有するBGMコントローラー。
    BgmPlayer& GetBgmPlayer();
 #ifdef MYPROJECT_NON_RELEASE
-   /// @brief Start a device-free backend for deterministic audio state tests.
+   /// @brief 決定的な音声状態テスト用に、デバイス不要のバックエンドを開始する。
    void InitializeForTesting();
-   /// @brief Simulate natural completion of a non-looping test voice.
+   /// @brief 非ループのテストボイスが自然終了した状態を再現する。
    void CompleteForTesting(AudioHandle handle);
-   /// @brief Inspect effective gain in device-free tests.
+   /// @brief デバイス不要のテストで実効音量を確認する。
    float GetEffectiveVolumeForTesting(AudioHandle handle) const;
-   /// @brief Count starts to distinguish Play from Restart in tests.
+   /// @brief テストでPlayとRestartを区別するため、開始回数を取得する。
    uint32_t GetStartCountForTesting(AudioHandle handle) const;
 #endif
 

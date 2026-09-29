@@ -179,7 +179,7 @@ Matrix4x4 MakeRotationMatrixFromTo(const Vector3& from, const Vector3& to) {
 	  // from と直交する適当な軸を回転軸にする（ここではX軸基準）
 	  Vector3 orthogonal = from.Cross(Vector3(1.0f, 0.0f, 0.0f));
 	  if (orthogonal.LengthSquared() < EPSILON) {
-		 orthogonal = from.Cross(Vector3(0.0f, 1.0f, 0.0f)); // fallback
+		 orthogonal = from.Cross(Vector3(0.0f, 1.0f, 0.0f)); // フォールバック
 	  }
 	  orthogonal.Normalize();
 	  return MakeRotationAxis(orthogonal, DirectX::XM_PI); // πラジアン = 180度

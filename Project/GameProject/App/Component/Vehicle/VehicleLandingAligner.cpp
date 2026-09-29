@@ -14,7 +14,7 @@ using namespace GameEngine;
 namespace App {
 
 // ---------------------------------------------------------------
-// public
+   // 公開設定
 // ---------------------------------------------------------------
 
 void VehicleLandingAligner::BeginAlign(const Quaternion& startRot,
@@ -43,7 +43,7 @@ void VehicleLandingAligner::Update(float deltaTime) {
 }
 
 // ---------------------------------------------------------------
-// private
+   // 内部設定
 // ---------------------------------------------------------------
 
 Quaternion VehicleLandingAligner::CalcBlendedRotation() const {
@@ -78,7 +78,7 @@ void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
 }
 
 // ---------------------------------------------------------------
-// ImGui / Serialize
+   // ImGui / シリアライズ
 // ---------------------------------------------------------------
 
 #ifdef USE_IMGUI

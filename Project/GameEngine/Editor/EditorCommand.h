@@ -32,10 +32,10 @@ public:
    virtual const char* GetName() const = 0;
 };
 
-/// @brief Undo/redo a material inspector edit, including local ownership and every slot.
+/// @brief ローカル所有権と全スロットを含むマテリアルInspector編集をUndo/Redoする。
 class SetMaterialSettingsCommand final : public IEditorCommand {
 public:
-   /// @brief Capture an already-applied inspector edit; the first Execute only records it.
+   /// @brief 適用済みのInspector編集を取り込む。最初のExecuteでは記録だけを行う。
    SetMaterialSettingsCommand(std::string id, Object* fallback, nlohmann::json before, nlohmann::json after)
       : id_(std::move(id)), fallback_(fallback), before_(std::move(before)), after_(std::move(after)) {}
    /// @copydoc IEditorCommand::Execute
