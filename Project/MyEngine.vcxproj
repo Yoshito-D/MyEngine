@@ -854,16 +854,10 @@
     <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
     <None Include="Resources\engine\shaders\shader_registry.json" />
-    <None Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass_Implementation.md" />
     <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_mask_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Tests\Regression\EngineRegressionTests.cpp" />
-    <None Include="Tests\Regression\RunRegressionTests.ps1" />
-    <None Include="Tests\Regression\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
@@ -873,18 +867,6 @@
     <ClCompile Include="GameEngine\Editor\EditorReferenceWidgets.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Tests\SceneAuthoring\SceneAuthoringTests.cpp" />
-    <None Include="Tests\SceneAuthoring\RunSceneAuthoringTests.ps1" />
-    <None Include="Tests\SceneAuthoring\README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Tests\Shaders\ShaderRegressionTests.cpp" />
-    <None Include="Tests\Shaders\RunShaderTests.cjs" />
-    <None Include="Tests\Shaders\README.md" />
-    <None Include="Tests\Particle\ParticleDistortionTests.cpp" />
-    <None Include="Tests\Particle\RunParticleTests.ps1" />
-    <None Include="Tests\Particle\README.md" />
-    <None Include="Resources\engine\shaders\graphics\object3d\UnlitTint.PS.hlsl" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\unlit_tint_rootsig.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\unlit_tint_pipeline.json" />
   </ItemGroup>

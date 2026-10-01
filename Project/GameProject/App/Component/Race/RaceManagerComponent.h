@@ -93,7 +93,8 @@ public:
    bool IsStartBannerVisible() const { return state_ == State::Running && startBannerRemaining_ > 0.0f; }
 
    /// @brief 設定されたレースシーンの完全な再読み込みを要求する
-   void RequestRestart();
+   /// @return シーン遷移要求を受け付けた場合はtrue
+   bool RequestRestart();
 
    /// @brief レース設定をJSONへ保存する
    /// @return 保存用JSON

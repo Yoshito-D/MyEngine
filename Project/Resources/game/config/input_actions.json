@@ -131,6 +131,36 @@
                }
             ]
          },
+         "UI.NavigateHorizontal": {
+            "type": "Axis1D",
+            "deadZone": 0.5,
+            "bindings": [
+               {
+                  "type": "KeyAxis1D",
+                  "negative": "A",
+                  "positive": "D"
+               },
+               {
+                  "type": "KeyAxis1D",
+                  "negative": "Left",
+                  "positive": "Right"
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "DPadLeft",
+                  "scale": -1.0
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "DPadRight",
+                  "scale": 1.0
+               },
+               {
+                  "type": "LeftStick",
+                  "axis": "X"
+               }
+            ]
+         },
          "UI.Confirm": {
             "type": "Button",
             "bindings": [

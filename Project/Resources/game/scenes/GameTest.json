@@ -464,6 +464,8 @@
       "UIText:RaceTimerText",
       "UIText:RaceCountdownText",
       "UIText:RaceResultUI",
+      "UIText:ResultTitlePrompt",
+      "UIText:ResultRestartPrompt",
       "Skybox:Skybox",
       "Sprite:SpeedGaugeFill",
       "Sprite:SpeedGaugeFrame",
@@ -5951,7 +5953,16 @@
                },
                {
                   "data": {
-                     "raceManagerId": "Object:RaceManager"
+                     "raceManagerId": "Object:RaceManager",
+                     "reactionDuration": 0.4000000059604645,
+                     "reactionEndScale": 1.2000000476837158,
+                     "restartOptionObjectId": "UIText:ResultRestartPrompt",
+                     "selectionPulseDuration": 1.7999999523162842,
+                     "selectionPulseScale": 1.100000023841858,
+                     "selectionSwitchDuration": 0.1599999964237213,
+                     "selectionSwitchScale": 0.8199999928474426,
+                     "titleOptionObjectId": "UIText:ResultTitlePrompt",
+                     "titleScene": "Title"
                   },
                   "enabled": true,
                   "typeName": "RaceResultUIComponent"
@@ -5962,6 +5973,148 @@
             "parentId": ""
          },
          "sceneKey": "UIText:RaceResultUI"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "ResultTitlePrompt"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        -180.0,
+                        300.0,
+                        1.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fontId": "851Gkktt",
+                     "fontSize": 48,
+                     "horizontalAlignment": "Center",
+                     "lineSpacing": 1.2000000476837158,
+                     "maxWidth": 500.0,
+                     "pivot": [
+                        0.5,
+                        0.5
+                     ],
+                     "screenAnchor": "MiddleCenter",
+                     "sortingOrder": 130,
+                     "text": ""
+                  },
+                  "enabled": true,
+                  "typeName": "UITextComponent"
+               }
+            ],
+            "id": "UIText:ResultTitlePrompt",
+            "objectType": "UIText",
+            "parentId": ""
+         },
+         "sceneKey": "UIText:ResultTitlePrompt"
+      },
+      {
+         "deleted": false,
+         "object": {
+            "components": [
+               {
+                  "data": {
+                     "name": "ResultRestartPrompt"
+                  },
+                  "enabled": true,
+                  "typeName": "ObjectNameComponent"
+               },
+               {
+                  "data": {
+                     "parentEntityId": "",
+                     "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                     ],
+                     "rotationQuaternion": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                     ],
+                     "rotationSource": "euler",
+                     "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "translation": [
+                        180.0,
+                        300.0,
+                        1.0
+                     ]
+                  },
+                  "enabled": true,
+                  "typeName": "TransformComponent"
+               },
+               {
+                  "data": {
+                     "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                     ],
+                     "fontId": "851Gkktt",
+                     "fontSize": 48,
+                     "horizontalAlignment": "Center",
+                     "lineSpacing": 1.2000000476837158,
+                     "maxWidth": 500.0,
+                     "pivot": [
+                        0.5,
+                        0.5
+                     ],
+                     "screenAnchor": "MiddleCenter",
+                     "sortingOrder": 130,
+                     "text": ""
+                  },
+                  "enabled": true,
+                  "typeName": "UITextComponent"
+               }
+            ],
+            "id": "UIText:ResultRestartPrompt",
+            "objectType": "UIText",
+            "parentId": ""
+         },
+         "sceneKey": "UIText:ResultRestartPrompt"
       },
       {
          "deleted": false,
