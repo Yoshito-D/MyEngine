@@ -1,283 +1,274 @@
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Externals">
-      <UniqueIdentifier>{398b2be7-9e69-4e86-bb01-8f28a69e281b}</UniqueIdentifier>
+      <UniqueIdentifier>{323e27c5-ff7c-4de8-836c-016534d6c441}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\assimp">
-      <UniqueIdentifier>{86932328-533d-4247-aafb-c7907b48119a}</UniqueIdentifier>
+      <UniqueIdentifier>{92069108-4e1f-49f1-ae6b-de4001fc0145}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\assimp\include">
-      <UniqueIdentifier>{b14fe41c-c926-4e1b-95dc-347d7a040e54}</UniqueIdentifier>
+      <UniqueIdentifier>{c620b7b0-4684-4ed7-bf8c-4f63546ee26a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\assimp\include\assimp">
-      <UniqueIdentifier>{0481e8f7-6d96-484f-b259-4cac55a7aa7b}</UniqueIdentifier>
+      <UniqueIdentifier>{745006b9-49f9-4005-8e22-a295c89cede5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\assimp\include\assimp\Compiler">
-      <UniqueIdentifier>{0501008c-3712-462a-a578-58779af5e62c}</UniqueIdentifier>
+      <UniqueIdentifier>{d7340928-84be-4e2a-92d0-899a21421e5e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\assimp\include\assimp\port">
-      <UniqueIdentifier>{8350b142-0b97-4633-9c97-d19e7bf4cad4}</UniqueIdentifier>
+      <UniqueIdentifier>{b58238d1-2b7c-4051-a008-158026e42f84}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\assimp\include\assimp\port\AndroidJNI">
-      <UniqueIdentifier>{54b3b9da-c336-4e53-ab59-c7bcac67e24a}</UniqueIdentifier>
+      <UniqueIdentifier>{e88440fb-fa4d-4cd0-89f6-8291724de230}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\DirectXTex">
-      <UniqueIdentifier>{4feee816-4564-4eef-972c-44c21afe7e49}</UniqueIdentifier>
+      <UniqueIdentifier>{152a911a-0d79-4883-98d3-b88c8afa3aaf}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\DirectXTex\Bin">
-      <UniqueIdentifier>{521d0d5a-0133-4f05-9f4a-425f1ec81d8d}</UniqueIdentifier>
+      <UniqueIdentifier>{006468a5-8323-421d-81c3-f4962d5c220d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\DirectXTex\Bin\Desktop_2022_Win10">
-      <UniqueIdentifier>{d9a9d75c-4f62-408a-b01c-f8fd661254ac}</UniqueIdentifier>
+      <UniqueIdentifier>{99f4f3c2-b90e-4073-8ad2-e28d61aad136}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\DirectXTex\Bin\Desktop_2022_Win10\x64">
-      <UniqueIdentifier>{8b1a78c2-ad96-43cb-945c-ce2ebbf65f7c}</UniqueIdentifier>
+      <UniqueIdentifier>{98eb2bfb-5634-4199-b7f7-71ecd11902c4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\DirectXTex\Bin\Desktop_2022_Win10\x64\Debug">
-      <UniqueIdentifier>{fd7229a2-fa96-45fe-904e-0c63d84b3279}</UniqueIdentifier>
+      <UniqueIdentifier>{8235e480-b4a0-4c30-b85e-ebbb325b4928}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\DirectXTex\Bin\Desktop_2022_Win10\x64\Development">
-      <UniqueIdentifier>{bb079f03-6742-4c9f-b104-885d386d8538}</UniqueIdentifier>
+      <UniqueIdentifier>{4db417ed-c994-427e-a9f5-d2ebec689a17}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\DirectXTex\Bin\Desktop_2022_Win10\x64\Release">
-      <UniqueIdentifier>{f9760fd7-15ba-4988-a2d7-d9f2918ecb22}</UniqueIdentifier>
+      <UniqueIdentifier>{dc62a9f4-6aed-4325-952c-7a95bb4117cc}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\imgui">
-      <UniqueIdentifier>{a8295ebe-e58d-4a27-86db-ad6535e0add7}</UniqueIdentifier>
+      <UniqueIdentifier>{12fd2ab8-1856-4346-95c4-5af983efa92e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\imgui\ImGuizmo">
-      <UniqueIdentifier>{6e7a834d-66f3-4cfb-a24a-b5997a1508e3}</UniqueIdentifier>
+      <UniqueIdentifier>{4f5d4d0b-aebe-400f-b066-35ca3fa1d3d5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\nlohmann">
-      <UniqueIdentifier>{2b533844-5478-44f7-9363-2ff4380608e2}</UniqueIdentifier>
+      <UniqueIdentifier>{1ccd2ab2-82ec-4c5c-8f81-c7d11ae1c7a1}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine">
-      <UniqueIdentifier>{6a985ebb-a5ab-4dc3-be61-1b5bb66bc8d5}</UniqueIdentifier>
+      <UniqueIdentifier>{4d8894ec-6324-450f-85ec-e4bdc99e5788}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Collision">
-      <UniqueIdentifier>{d66b0a0d-6ab5-4c97-8e37-61049b01699c}</UniqueIdentifier>
+      <UniqueIdentifier>{8030aa8a-2954-480d-8576-8482ccd41a39}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core">
-      <UniqueIdentifier>{4bcf5e90-3572-4ea8-8501-17ae09cf46c1}</UniqueIdentifier>
+      <UniqueIdentifier>{05501c90-725b-4975-824d-0927514f7a92}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Asset">
-      <UniqueIdentifier>{c2081c71-5acb-4e9c-87c1-a9dc0073fee7}</UniqueIdentifier>
+      <UniqueIdentifier>{e6224253-b64d-4885-b8eb-a21175d9b79a}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Asset\Font">
-      <UniqueIdentifier>{c4cbaf89-bdc8-4c13-8e99-a0c9c5226539}</UniqueIdentifier>
+      <UniqueIdentifier>{9cfd9252-d5c4-4786-b51e-3963209d7c01}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Audio">
-      <UniqueIdentifier>{c4e46ec0-5918-41fe-b8c6-7a2994185dc7}</UniqueIdentifier>
+      <UniqueIdentifier>{c2fc2ca6-3d6f-4926-8b6a-05440bb96d60}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Graphics">
-      <UniqueIdentifier>{40cb6301-ca6c-4179-9925-41e167b133e0}</UniqueIdentifier>
+      <UniqueIdentifier>{9431766d-85f4-4fcb-b204-2b8049b30558}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Input">
-      <UniqueIdentifier>{2a376a2d-b3b1-4ce6-a5ad-039ff1906079}</UniqueIdentifier>
+      <UniqueIdentifier>{a9d91647-04ae-4345-897c-8bac1a87acde}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Renderer">
-      <UniqueIdentifier>{3e74b4fd-4de3-419c-a907-3437a80fd7a7}</UniqueIdentifier>
+      <UniqueIdentifier>{861d34e0-e4ce-4ca4-b2cc-1593bdf9cc13}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Renderer\Light">
-      <UniqueIdentifier>{75735310-81ab-4999-9704-dca01573a7aa}</UniqueIdentifier>
+      <UniqueIdentifier>{8b7573ed-9e67-48c2-ba28-49cf23b7b4ac}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Renderer\Pass">
-      <UniqueIdentifier>{544be9d1-a134-4571-9c7d-59b5aba70163}</UniqueIdentifier>
+      <UniqueIdentifier>{64ddce66-4e2a-4e28-a539-71c449126911}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Renderer\Pipeline">
-      <UniqueIdentifier>{96840eb8-5d86-48c5-91ee-121be0e3bb17}</UniqueIdentifier>
+      <UniqueIdentifier>{3c544230-286b-4002-9185-c7909838070d}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Renderer\PostProcess">
-      <UniqueIdentifier>{f7a76be1-dd5b-492b-bb17-d4290e06fbb5}</UniqueIdentifier>
+      <UniqueIdentifier>{8d0381ce-3d81-4a41-a82f-248d8a853232}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\TimeProfiler">
-      <UniqueIdentifier>{82678185-0459-4b78-a553-0e3417d07942}</UniqueIdentifier>
+      <UniqueIdentifier>{d45e98b1-96ce-4361-b526-f03e5c7132d1}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\UI">
-      <UniqueIdentifier>{8196b569-2ff4-43c9-b4a2-29e34444a269}</UniqueIdentifier>
+      <UniqueIdentifier>{e6286eca-8521-42c1-a08c-371a29e608cb}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\UI\Text">
-      <UniqueIdentifier>{c212723e-dd84-4137-b5b9-6ab6f6378fc3}</UniqueIdentifier>
+      <UniqueIdentifier>{1aaf9eaf-fc10-4a0c-8e6f-ce8757055b0c}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Core\Window">
-      <UniqueIdentifier>{e203391e-5d40-4346-9a21-27f592e88773}</UniqueIdentifier>
+      <UniqueIdentifier>{f504f12e-dc70-4280-9bcc-efd522b84dc6}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Editor">
-      <UniqueIdentifier>{2e164193-b9c1-4b0b-9dce-7e9ec226ae2f}</UniqueIdentifier>
+      <UniqueIdentifier>{8f738561-b401-4d88-b9f5-f353806a78fb}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Editor\Camera">
-      <UniqueIdentifier>{562a96b1-cbc7-4958-a8bf-16a11d19abdc}</UniqueIdentifier>
+      <UniqueIdentifier>{493d2039-f782-4fbb-a89e-7521b5e1d3c3}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Editor\Particle">
-      <UniqueIdentifier>{6493a52c-cfa0-4fdf-aadf-b7ca58ab3a3a}</UniqueIdentifier>
+      <UniqueIdentifier>{5d675a3b-2a15-43ee-8314-7f4637e3783d}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Editor\Renderer">
-      <UniqueIdentifier>{dd6278e7-8323-4185-aa8b-7d9a796ab333}</UniqueIdentifier>
+      <UniqueIdentifier>{2206b36f-ed57-4f5a-a139-c8c3a2ffe9a2}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Effect">
-      <UniqueIdentifier>{7e7e1a40-2862-4470-be11-8b20d34877a9}</UniqueIdentifier>
+      <UniqueIdentifier>{c0a33596-3f9a-4a1c-be02-12c639454151}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Effect\Module">
-      <UniqueIdentifier>{c3fb2ea1-b0f3-40be-9c89-c87ea66738f3}</UniqueIdentifier>
+      <UniqueIdentifier>{8b8d789a-dd95-4f3a-879d-636957a36fa6}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Framework">
-      <UniqueIdentifier>{fa6f0c7e-75bc-469d-b245-044096d5a692}</UniqueIdentifier>
+      <UniqueIdentifier>{6635d666-0a61-406d-b135-6a2d680c0e47}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object">
-      <UniqueIdentifier>{30d22e98-bf49-497b-9a9c-54c353e33cc0}</UniqueIdentifier>
+      <UniqueIdentifier>{b5c42514-a12d-4d22-b8ab-83bb813b917f}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Component">
-      <UniqueIdentifier>{b1552182-68fc-410c-8a60-3eaf1880f48c}</UniqueIdentifier>
+      <UniqueIdentifier>{bd9ae8f7-1f67-4e6e-a2ca-f798773aa506}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Component\Model">
-      <UniqueIdentifier>{94fd27d8-81ce-4119-b29a-d5961ca8d029}</UniqueIdentifier>
+      <UniqueIdentifier>{5466740f-b3e1-4217-bf16-cadabcb51b9d}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Component\Particle">
-      <UniqueIdentifier>{1b2622bd-402a-4909-8d30-1d59fe93567a}</UniqueIdentifier>
+      <UniqueIdentifier>{43d39a0f-4a4f-4260-bf41-c5859788cf6b}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Component\Skybox">
-      <UniqueIdentifier>{40a40d6f-595e-4acd-a35a-813253247a62}</UniqueIdentifier>
+      <UniqueIdentifier>{c40b239c-570b-4b83-9c7d-9016afed8663}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Component\UI">
-      <UniqueIdentifier>{10775922-fce2-451a-9e9f-368f8809a35c}</UniqueIdentifier>
+      <UniqueIdentifier>{83aecbc0-8501-453c-b3c2-cc103f234b9e}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Model">
-      <UniqueIdentifier>{9866bd91-c21c-4c79-a400-8aa59cf5ec1c}</UniqueIdentifier>
+      <UniqueIdentifier>{eea150de-1468-4d16-bbae-13a9258070cb}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Skybox">
-      <UniqueIdentifier>{152672ce-0eb9-40bf-beb6-3cbcdfe94ade}</UniqueIdentifier>
+      <UniqueIdentifier>{a379c306-29b9-4ac2-b51a-96f65a7aad56}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Sprite">
-      <UniqueIdentifier>{8f8a374c-d32c-4743-a730-d1f603e05ae4}</UniqueIdentifier>
+      <UniqueIdentifier>{ac326a6f-560b-4696-9d02-dabfa33a1e0f}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Object\Text">
-      <UniqueIdentifier>{ac5d61b8-330a-44ed-a35e-47b19d1880eb}</UniqueIdentifier>
+      <UniqueIdentifier>{e2654999-3bde-4b45-8496-e1ed8fe74abe}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Scene">
-      <UniqueIdentifier>{f44c8b48-0cdc-4858-a8d3-ce9b2e62c03d}</UniqueIdentifier>
+      <UniqueIdentifier>{2a559785-b35e-4f9c-99ad-dd6941399eab}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Scene\Camera">
-      <UniqueIdentifier>{d8ca0d2a-feb8-452f-b7be-5fa8d3f4ad42}</UniqueIdentifier>
+      <UniqueIdentifier>{81607460-45b7-4a55-b28e-dd90031d24bb}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Scene\Camera\Components">
-      <UniqueIdentifier>{91dceaa8-6ed0-49d1-823e-13c21bab507a}</UniqueIdentifier>
+      <UniqueIdentifier>{a5467f7e-a801-4f65-a8f7-029fc2913a7a}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Scene\Camera\Core">
-      <UniqueIdentifier>{d9a3be2d-0e28-488e-8b6a-1331b25e2c88}</UniqueIdentifier>
+      <UniqueIdentifier>{14b26209-e5e9-44c5-a9ba-c8660fe6037c}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Scene\Light">
-      <UniqueIdentifier>{7720386f-8f98-487d-80b4-bed82b78b643}</UniqueIdentifier>
+      <UniqueIdentifier>{a008963e-11ba-4001-9fa4-44442f423a2e}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Utility">
-      <UniqueIdentifier>{2d9b6570-5c11-4c7d-8f71-3c25b87b95b4}</UniqueIdentifier>
+      <UniqueIdentifier>{c1463f07-f308-4cd8-b98e-ee5ae8bd49b3}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Utility\Math">
-      <UniqueIdentifier>{6abed763-b8f2-46c8-bded-11dea2048fcc}</UniqueIdentifier>
+      <UniqueIdentifier>{9d03ffed-3335-460d-a0c2-de0e2b7522a5}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameEngine\Utility\MathUtils">
-      <UniqueIdentifier>{5913e52f-8c9c-4fd9-b8f1-d3624ebf0624}</UniqueIdentifier>
+      <UniqueIdentifier>{9e9cbce3-8ccd-4cc7-bd11-c46fcfccdef3}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject">
-      <UniqueIdentifier>{aa9af5f4-2b5a-4908-b10a-a887f417cd44}</UniqueIdentifier>
+      <UniqueIdentifier>{eef37825-733a-4065-ba34-63b91d50c06d}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App">
-      <UniqueIdentifier>{51830282-220c-44df-bc8f-755d6563cb42}</UniqueIdentifier>
+      <UniqueIdentifier>{de3abbf8-8fa5-45e2-b296-e94c2c2304f5}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Component">
-      <UniqueIdentifier>{b82521e8-29e4-4b63-a023-699fedacf4c2}</UniqueIdentifier>
+      <UniqueIdentifier>{56d49f54-1641-4e48-95e9-9e43008d4aec}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Component\Camera">
-      <UniqueIdentifier>{6f5a3b37-d931-4447-a295-e2d9ceede4c1}</UniqueIdentifier>
+      <UniqueIdentifier>{cb287f17-9fe8-4d88-8210-5f363c4944d3}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Component\Character">
-      <UniqueIdentifier>{9ae95158-08be-42ba-83fc-0bea4a69f1b9}</UniqueIdentifier>
+      <UniqueIdentifier>{5778a505-15e6-48a2-9bec-aadc251c1ded}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Component\Gravity">
-      <UniqueIdentifier>{e3835da8-cb60-408e-938f-985719894b6d}</UniqueIdentifier>
+      <UniqueIdentifier>{b27b626f-18ae-4253-8129-00b97b803e0d}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Component\Race">
-      <UniqueIdentifier>{c143f44f-8ebb-4d4e-9ccb-e6dec485d352}</UniqueIdentifier>
+      <UniqueIdentifier>{01325f29-fd0b-40e0-9382-f767e803c07b}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Component\Title">
-      <UniqueIdentifier>{cb34e569-4eee-4f33-b99b-00e396e3ff6c}</UniqueIdentifier>
+      <UniqueIdentifier>{c7b5736b-d06f-493a-8e38-2dffc8ee4ce5}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Component\Tutorial">
-      <UniqueIdentifier>{a15ed63f-f1bd-4218-9eed-2d2cf50d8890}</UniqueIdentifier>
+      <UniqueIdentifier>{4a82d5e2-30b2-4a10-9a7f-74e00dc028c4}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Component\Vehicle">
-      <UniqueIdentifier>{9de63006-b954-4c86-9af0-ca89b106175d}</UniqueIdentifier>
+      <UniqueIdentifier>{f17c3399-b825-4f25-b333-feb1a674411b}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameProject\App\Scene">
-      <UniqueIdentifier>{7ca764d1-1e96-4294-8ea5-8a5d0de3dcca}</UniqueIdentifier>
+      <UniqueIdentifier>{43abb63a-2aeb-495b-b749-331ebc7073c4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources">
-      <UniqueIdentifier>{2404d8e3-5bd9-4a30-b012-a05e79fbf497}</UniqueIdentifier>
+      <UniqueIdentifier>{59b3bd5d-3cff-4cbe-91dc-bd7bb1c5c63a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine">
-      <UniqueIdentifier>{365b2344-8282-4f18-9b4c-2eb987499d86}</UniqueIdentifier>
+      <UniqueIdentifier>{f5190788-1659-4718-8691-d0641fa1b795}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\font">
-      <UniqueIdentifier>{8c3acb8b-c513-433d-af8a-029ae0432ca5}</UniqueIdentifier>
+      <UniqueIdentifier>{b63bf10a-dfcb-45b1-96f7-8650a1f71ef8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines">
-      <UniqueIdentifier>{f84fc656-b5c3-426c-bb74-fee960fd18ba}</UniqueIdentifier>
+      <UniqueIdentifier>{59b4fe0e-8ed1-4256-b838-4eeb3cad6093}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines\pso">
-      <UniqueIdentifier>{2c3b6d1d-5527-49bd-aa69-ba8a31fe19d5}</UniqueIdentifier>
+      <UniqueIdentifier>{6939fec3-6a7a-45c6-bb82-efd47a14ee19}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines\pso\compute">
-      <UniqueIdentifier>{e88a25be-ecc5-4442-9a6a-7eb809673dc9}</UniqueIdentifier>
+      <UniqueIdentifier>{efd2ad7b-2a2e-4c44-8ceb-ed77d6c7253d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines\pso\graphics">
-      <UniqueIdentifier>{211988ed-7ada-470a-aff7-c7c7e6ca607c}</UniqueIdentifier>
+      <UniqueIdentifier>{2da75d9a-0d8c-4fb1-99cf-fa6b7fe4ca20}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines\pso\postprocess">
-      <UniqueIdentifier>{f5c12d97-d8e2-4c3d-a3ed-4207ab9afd7f}</UniqueIdentifier>
+      <UniqueIdentifier>{967c9ee9-f9c0-461c-9ac4-6ba62b72cbeb}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines\root_signatures">
-      <UniqueIdentifier>{39edee3b-8ab7-49d5-8dd7-2137d1922e84}</UniqueIdentifier>
+      <UniqueIdentifier>{30191cf6-58ef-4b25-bd57-9c03363afac5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines\root_signatures\compute">
-      <UniqueIdentifier>{4ca3ea48-0005-44ec-b8d3-9b2b918e2c59}</UniqueIdentifier>
+      <UniqueIdentifier>{55d0cc39-cb67-46d2-b7d5-f23eb9a67c06}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines\root_signatures\graphics">
-      <UniqueIdentifier>{3556c122-9a87-4694-9982-6f245a166ac6}</UniqueIdentifier>
+      <UniqueIdentifier>{aa8d6f61-b1b4-4ac7-9648-f31352fc42a9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\pipelines\root_signatures\postprocess">
-      <UniqueIdentifier>{75d32014-1dbb-46db-9509-6ea70c83c029}</UniqueIdentifier>
+      <UniqueIdentifier>{2c4ace05-a307-4507-b640-0e0504bb3396}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\postprocess">
-      <UniqueIdentifier>{da2cfda6-934b-41a8-949f-c10c9f476827}</UniqueIdentifier>
+      <UniqueIdentifier>{ced91488-83bb-41fa-a649-f3cd51c21a2a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\engine\shaders">
-      <UniqueIdentifier>{68dd944e-3c4c-4f35-baf5-978e81c4e784}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\engine\shaders\graphics">
-      <UniqueIdentifier>{2daed868-4c44-49ef-9f65-c1b03d2035bc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resources\engine\shaders\graphics\player_shadow">
-      <UniqueIdentifier>{0bd4f57d-b078-48bf-8641-8d23b2532909}</UniqueIdentifier>
+      <UniqueIdentifier>{dcdccda4-44fb-4a8c-b8eb-316e08138f8b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\game">
-      <UniqueIdentifier>{82330812-4beb-4986-b435-3fcbd6e2dd13}</UniqueIdentifier>
+      <UniqueIdentifier>{7b5d4f62-5dfc-41e9-b0f8-50ce9c78eb4f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\game\config">
-      <UniqueIdentifier>{38417213-e3bc-43a8-823c-8352e80f73b7}</UniqueIdentifier>
+      <UniqueIdentifier>{afa9114e-d255-47a5-849e-397150accb62}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\game\editor">
-      <UniqueIdentifier>{853a1c0c-6d51-4ac5-b663-283c5245f198}</UniqueIdentifier>
+      <UniqueIdentifier>{d029a6b1-e3ca-423c-b35b-8e10dc6d837c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\game\editor\debug_cameras">
-      <UniqueIdentifier>{4f75e977-344d-4e2f-a4e7-a52ad321ee12}</UniqueIdentifier>
+      <UniqueIdentifier>{cd61d2d0-d847-4adc-ae1b-10c01bbcccdd}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\game\particles">
-      <UniqueIdentifier>{895bb36c-f3a9-484e-8453-07f96465b4d1}</UniqueIdentifier>
+      <UniqueIdentifier>{c113a404-1ca4-49f5-b91a-c01a32f98a94}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources\game\scenes">
-      <UniqueIdentifier>{e3f11f60-2188-4372-a369-3ba5a1f57d43}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Saved">
-      <UniqueIdentifier>{dc0d17a1-beed-45cc-af6b-629f3d01372b}</UniqueIdentifier>
+      <UniqueIdentifier>{2c3d0f0f-7a8e-4be9-b2af-9ca51f1d638d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -297,6 +288,12 @@
     <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json">
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_mask_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso\graphics</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso\graphics</Filter>
+    </None>
     <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json">
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
@@ -304,6 +301,9 @@
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso\graphics</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\unlit_tint_pipeline.json">
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\pso\postprocess\anti_aliasing_pipeline.json">
@@ -369,10 +369,19 @@
     <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
+    </None>
     <None Include="Resources\engine\pipelines\root_signatures\graphics\skybox_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\unlit_tint_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json">
@@ -392,21 +401,6 @@
     </None>
     <None Include="Resources\engine\shaders\shader_registry.json">
       <Filter>Resources\engine\shaders</Filter>
-    </None>
-    <None Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass_Implementation.md">
-      <Filter>GameEngine\Core\Renderer\Pass</Filter>
-    </None>
-    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_mask_pipeline.json">
-      <Filter>Resources\engine\pipelines\pso\graphics</Filter>
-    </None>
-    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json">
-      <Filter>Resources\engine\pipelines\pso\graphics</Filter>
-    </None>
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json">
-      <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
-    </None>
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json">
-      <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
     <None Include="Resources\game\config\input_actions.json">
       <Filter>Resources\game\config</Filter>
@@ -486,9 +480,13 @@
     <ClCompile Include="GameEngine\Core\Audio\Audio.cpp">
       <Filter>GameEngine\Core\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Audio\BgmPlayer.cpp"><Filter>GameEngine\Core\Audio</Filter></ClCompile>
-    <ClCompile Include="GameEngine\Core\Audio\SoundClip.cpp"><Filter>GameEngine\Core\Audio</Filter></ClCompile>
+    <ClCompile Include="GameEngine\Core\Audio\BgmPlayer.cpp">
+      <Filter>GameEngine\Core\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Core\Audio\Sound.cpp">
+      <Filter>GameEngine\Core\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Core\Audio\SoundClip.cpp">
       <Filter>GameEngine\Core\Audio</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Graphics\GraphicsDevice.cpp">
@@ -557,10 +555,10 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pass\OpaquePass.cpp">
       <Filter>GameEngine\Core\Renderer\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass.cpp">
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\ParticleRenderer.cpp">
       <Filter>GameEngine\Core\Renderer\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\ParticleRenderer.cpp">
+    <ClCompile Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass.cpp">
       <Filter>GameEngine\Core\Renderer\Pass</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp">
@@ -581,6 +579,9 @@
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\BindingLayoutResolver.cpp">
       <Filter>GameEngine\Core\Renderer\Pipeline</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ModelPipelineValidation.cpp">
+      <Filter>GameEngine\Core\Renderer\Pipeline</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\PipelineDefinitionLoader.cpp">
       <Filter>GameEngine\Core\Renderer\Pipeline</Filter>
     </ClCompile>
@@ -591,9 +592,6 @@
       <Filter>GameEngine\Core\Renderer\Pipeline</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ReflectionValidationCoordinator.cpp">
-      <Filter>GameEngine\Core\Renderer\Pipeline</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ModelPipelineValidation.cpp">
       <Filter>GameEngine\Core\Renderer\Pipeline</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ShaderManager.cpp">
@@ -671,14 +669,19 @@
     <ClCompile Include="GameEngine\Core\Window\Window.cpp">
       <Filter>GameEngine\Core\Window</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Editor\AudioAssetWidget.cpp">
+      <Filter>GameEngine\Editor</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorAssetRegistry.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Editor\AudioAssetWidget.cpp"><Filter>GameEngine\Editor</Filter></ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorCommand.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorObjectStore.cpp">
+      <Filter>GameEngine\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Editor\EditorReferenceWidgets.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorSceneContext.cpp">
@@ -765,6 +768,15 @@
     <ClCompile Include="GameEngine\Object\Object.cpp">
       <Filter>GameEngine\Object</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\AudioSceneLifecycle.cpp">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\AudioSourceComponent.cpp">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\BgmComponent.cpp">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp">
       <Filter>GameEngine\Object\Component</Filter>
     </ClCompile>
@@ -801,9 +813,6 @@
     <ClCompile Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.cpp">
       <Filter>GameEngine\Object\Component\Particle</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\AudioSourceComponent.cpp"><Filter>GameEngine\Object\Component</Filter></ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\BgmComponent.cpp"><Filter>GameEngine\Object\Component</Filter></ClCompile>
-    <ClCompile Include="GameEngine\Object\Component\AudioSceneLifecycle.cpp"><Filter>GameEngine\Object\Component</Filter></ClCompile>
     <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp">
       <Filter>GameEngine\Object\Component\Skybox</Filter>
     </ClCompile>
@@ -948,37 +957,37 @@
     <ClCompile Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraTransition.cpp">
+    <ClCompile Include="GameProject\App\Component\Camera\RearCameraAimSolver.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\RearCameraComponent.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraGravityUp.cpp">
+    <ClCompile Include="GameProject\App\Component\Camera\RearCameraComponentRegistry.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraComponentRegistry.cpp">
+    <ClCompile Include="GameProject\App\Component\Camera\RearCameraDebugView.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\RearCameraDirectionTracker.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraPlanetGuide.cpp">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraSpeedEffects.cpp">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraPositionSolver.cpp">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraAimSolver.cpp">
+    <ClCompile Include="GameProject\App\Component\Camera\RearCameraGravityUp.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\RearCameraMeasurementRecorder.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraDebugView.cpp">
+    <ClCompile Include="GameProject\App\Component\Camera\RearCameraPlanetGuide.cpp">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Camera\RearCameraPositionSolver.cpp">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Camera\RearCameraSpeedEffects.cpp">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Camera\RearCameraTransition.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\ScreenSpaceBasis.cpp">
@@ -1175,9 +1184,13 @@
     <ClInclude Include="GameEngine\Core\Audio\Audio.h">
       <Filter>GameEngine\Core\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Core\Audio\BgmPlayer.h"><Filter>GameEngine\Core\Audio</Filter></ClInclude>
-    <ClInclude Include="GameEngine\Core\Audio\SoundClip.h"><Filter>GameEngine\Core\Audio</Filter></ClInclude>
+    <ClInclude Include="GameEngine\Core\Audio\BgmPlayer.h">
+      <Filter>GameEngine\Core\Audio</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Core\Audio\Sound.h">
+      <Filter>GameEngine\Core\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Core\Audio\SoundClip.h">
       <Filter>GameEngine\Core\Audio</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Graphics\GraphicsDevice.h">
@@ -1255,10 +1268,10 @@
     <ClInclude Include="GameEngine\Core\Renderer\Pass\OpaquePass.h">
       <Filter>GameEngine\Core\Renderer\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass.h">
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\ParticleRenderer.h">
       <Filter>GameEngine\Core\Renderer\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\ParticleRenderer.h">
+    <ClInclude Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass.h">
       <Filter>GameEngine\Core\Renderer\Pass</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Core\Renderer\Pass\PostEffectPass.h">
@@ -1375,14 +1388,19 @@
     <ClInclude Include="GameEngine\Core\Window\Window.h">
       <Filter>GameEngine\Core\Window</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Editor\AudioAssetWidget.h">
+      <Filter>GameEngine\Editor</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorAssetRegistry.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Editor\AudioAssetWidget.h"><Filter>GameEngine\Editor</Filter></ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorCommand.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorObjectStore.h">
+      <Filter>GameEngine\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Editor\EditorReferenceWidgets.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorSceneContext.h">
@@ -1481,6 +1499,15 @@
     <ClInclude Include="GameEngine\Object\ObjectType.h">
       <Filter>GameEngine\Object</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\AudioSceneLifecycle.h">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\AudioSourceComponent.h">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\BgmComponent.h">
+      <Filter>GameEngine\Object\Component</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\ComponentContainer.h">
       <Filter>GameEngine\Object\Component</Filter>
     </ClInclude>
@@ -1517,9 +1544,6 @@
     <ClInclude Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.h">
       <Filter>GameEngine\Object\Component\Particle</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\AudioSourceComponent.h"><Filter>GameEngine\Object\Component</Filter></ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\BgmComponent.h"><Filter>GameEngine\Object\Component</Filter></ClInclude>
-    <ClInclude Include="GameEngine\Object\Component\AudioSceneLifecycle.h"><Filter>GameEngine\Object\Component</Filter></ClInclude>
     <ClInclude Include="GameEngine\Object\Component\Skybox\SkyboxComponent.h">
       <Filter>GameEngine\Object\Component\Skybox</Filter>
     </ClInclude>
@@ -1709,43 +1733,43 @@
     <ClInclude Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraTransition.h">
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraAimSolver.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\RearCameraComponent.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraGravityUp.h">
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraDebugView.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\RearCameraDirectionTracker.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraPlanetGuide.h">
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraFrameView.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraSpeedEffects.h">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraPositionSolver.h">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraAimSolver.h">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraMeasurementRecorder.h">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraDebugView.h">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraTypes.h">
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraGravityUp.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\RearCameraMath.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraFrameView.h">
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraMeasurementRecorder.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraPlanetGuide.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraPositionSolver.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraSpeedEffects.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraTransition.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\RearCameraTypes.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\ScreenSpaceBasis.h">
@@ -1852,59 +1876,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Tests" />
-    <Filter Include="Tests\Regression" />
-    <None Include="Tests\Regression\EngineRegressionTests.cpp">
-      <Filter>Tests\Regression</Filter>
-    </None>
-    <None Include="Tests\Regression\RunRegressionTests.ps1">
-      <Filter>Tests\Regression</Filter>
-    </None>
-    <None Include="Tests\Regression\README.md">
-      <Filter>Tests\Regression</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="GameEngine\Editor\EditorReferenceWidgets.h">
-      <Filter>GameEngine\Editor</Filter>
-    </ClInclude>
-    <ClCompile Include="GameEngine\Editor\EditorReferenceWidgets.cpp">
-      <Filter>GameEngine\Editor</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="Tests\SceneAuthoring" />
-    <None Include="Tests\SceneAuthoring\SceneAuthoringTests.cpp">
-      <Filter>Tests\SceneAuthoring</Filter>
-    </None>
-    <None Include="Tests\SceneAuthoring\RunSceneAuthoringTests.ps1">
-      <Filter>Tests\SceneAuthoring</Filter>
-    </None>
-    <None Include="Tests\SceneAuthoring\README.md">
-      <Filter>Tests\SceneAuthoring</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Tests\Shaders\ShaderRegressionTests.cpp" />
-    <None Include="Tests\Shaders\RunShaderTests.cjs" />
-    <None Include="Tests\Shaders\README.md" />
-    <None Include="Resources\engine\shaders\graphics\object3d\UnlitTint.PS.hlsl" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\unlit_tint_rootsig.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\unlit_tint_pipeline.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="Externals\imgui\LICENSE.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="Tests\Particle" />
-    <None Include="Tests\Particle\ParticleDistortionTests.cpp">
-      <Filter>Tests\Particle</Filter>
-    </None>
-    <None Include="Tests\Particle\RunParticleTests.ps1">
-      <Filter>Tests\Particle</Filter>
-    </None>
-    <None Include="Tests\Particle\README.md">
-      <Filter>Tests\Particle</Filter>
-    </None>
   </ItemGroup>
 </Project>

@@ -196,12 +196,13 @@ void RaceManagerComponent::Restart() {
    }
 }
 
-void RaceManagerComponent::RequestRestart() {
+bool RaceManagerComponent::RequestRestart() {
    if (state_ != State::Finished || restartRequested_ || restartScene_.empty()) {
-      return;
+      return false;
    }
    restartRequested_ = true;
    GameEngine::BaseScene::SetNextSceneName(restartScene_);
+   return true;
 }
 
 nlohmann::json RaceManagerComponent::Serialize() const {
