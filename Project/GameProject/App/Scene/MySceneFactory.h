@@ -1,6 +1,6 @@
 #pragma once
-#include "Scene/ISceneFactory.h"
-#include "SceneCatalog.h"
+#include "GameEngine/Scene/ISceneFactory.h"
+#include "GameProject/App/Scene/SceneCatalog.h"
 #include <memory>
 
 class MySceneFactory : public GameEngine::ISceneFactory {

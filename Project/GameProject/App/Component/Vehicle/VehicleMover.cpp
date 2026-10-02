@@ -1,19 +1,19 @@
-#include "VehicleMover.h"
-#include "VehicleGroundMover.h"
-#include "VehicleAirController.h"
-#include "VehicleLandingAligner.h"
-#include "VehicleLandingBoost.h"
-#include "VehicleDrift.h"
-#include "../Gravity/GravityBody.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Object.h"
-#include "Utility/MathUtils/QuaternionOperations.h"
+#include "GameProject/App/Component/Vehicle/VehicleMover.h"
+#include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
+#include "GameProject/App/Component/Vehicle/VehicleAirController.h"
+#include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
+#include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
+#include "GameProject/App/Component/Vehicle/VehicleDrift.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <cmath>
 #include <numbers>
-#include "Logger.h"
+#include "GameEngine/Utility/Logger.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 using namespace GameEngine;

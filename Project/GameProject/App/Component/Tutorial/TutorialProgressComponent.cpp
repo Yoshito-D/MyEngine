@@ -1,21 +1,21 @@
-#include "TutorialProgressComponent.h"
+#include "GameProject/App/Component/Tutorial/TutorialProgressComponent.h"
 
-#include "../Character/CharacterJump.h"
-#include "../Character/CharacterLanding.h"
-#include "../Gravity/PlanetSwitcher.h"
-#include "../Vehicle/VehicleInputComponent.h"
-#include "../Vehicle/VehicleLandingBoost.h"
-#include "Object/Component/UI/UITextComponent.h"
-#include "Object/Component/UI/UIAnimationTypes.h"
-#include "Object/Object.h"
-#include "Scene/BaseScene.h"
-#include "Scene/SceneWorld.h"
+#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
+#include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
+#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
+#include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
+#include "GameEngine/Object/Component/UI/UITextComponent.h"
+#include "GameEngine/Object/Component/UI/UIAnimationTypes.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include <algorithm>
 #include <cmath>
 
 #ifdef USE_IMGUI
-#include "Editor/EditorReferenceWidgets.h"
-#include "ImguiManager.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

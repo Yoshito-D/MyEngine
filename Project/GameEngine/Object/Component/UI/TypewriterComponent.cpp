@@ -1,15 +1,15 @@
-#include "pch.h"
-#include "TypewriterComponent.h"
-#include "Component/ComponentRegistry.h"
-#include "Component/UI/UITextComponent.h"
-#include "Core/UI/Text/Utf8Decoder.h"
-#include "Object.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Component/UI/TypewriterComponent.h"
+#include "GameEngine/Object/Component/Base/ComponentRegistry.h"
+#include "GameEngine/Object/Component/UI/UITextComponent.h"
+#include "GameEngine/UI/Text/Utf8Decoder.h"
+#include "GameEngine/Object/Object.h"
 #include <algorithm>
 #include <cmath>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
-#include "Utility/ImGuiHelper.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 namespace {

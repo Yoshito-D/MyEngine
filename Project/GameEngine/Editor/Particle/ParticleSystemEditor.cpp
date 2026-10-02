@@ -1,14 +1,14 @@
-#include "pch.h"
-#include "ParticleSystemEditor.h"
-#include "Effect/ParticleSystem.h"
-#include "Graphics/Texture.h"
-#include "Utility/VectorMath.h"
-#include "Framework/EngineContext.h"
-#include "Utility/MathUtils/MathConstants.h"
-#include "VectorMath.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Editor/Particle/ParticleSystemEditor.h"
+#include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Graphics/Resources/Texture.h"
+#include "GameEngine/Math/VectorMath.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
+#include "GameEngine/Math/VectorMath.h"
 
 #ifdef USE_IMGUI
-#include "Utility/ImGuiHelper.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include "imgui.h"
 #include <string>
 #include <map>

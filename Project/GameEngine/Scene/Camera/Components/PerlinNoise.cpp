@@ -1,7 +1,7 @@
-#include "pch.h"
-#include "PerlinNoise.h"
-#include "../Core/VirtualCamera.h"
-#include "Utility/MathUtils/MathConstants.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Camera/Components/PerlinNoise.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
 #include <cmath>
 #include <algorithm>
 

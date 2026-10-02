@@ -1,5 +1,5 @@
 #pragma once
-#include "../Core/ICinemachineComponent.h"
+#include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 
 namespace GameEngine {
 

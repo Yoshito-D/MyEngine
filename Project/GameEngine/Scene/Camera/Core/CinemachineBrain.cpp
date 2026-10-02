@@ -1,6 +1,6 @@
-#include "pch.h"
-#include "CinemachineBrain.h"
-#include "../Camera.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
+#include "GameEngine/Scene/Camera/Camera.h"
 #include <algorithm>
 
 namespace GameEngine {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MathUtils.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>

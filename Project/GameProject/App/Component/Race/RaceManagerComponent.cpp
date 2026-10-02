@@ -1,24 +1,24 @@
-#include "RaceManagerComponent.h"
+#include "GameProject/App/Component/Race/RaceManagerComponent.h"
 
-#include "../Camera/CameraModeSwitcher.h"
-#include "../Gravity/GravityBody.h"
-#include "../Vehicle/VehicleController.h"
-#include "../Vehicle/VehicleSpeedPostEffectController.h"
-#include "Logger.h"
-#include "Framework/EngineContext.h"
-#include "Object/Object.h"
-#include "Scene/BaseScene.h"
-#include "Scene/Camera/Core/CinemachineBrain.h"
-#include "Scene/SceneWorld.h"
+#include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
+#include "GameProject/App/Component/Vehicle/VehicleSpeedPostEffectController.h"
+#include "GameEngine/Utility/Logger.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 
 #ifdef USE_IMGUI
-#include "Editor/EditorReferenceWidgets.h"
-#include "Utility/ImGuiHelper.h"
-#include "ImguiManager.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace {

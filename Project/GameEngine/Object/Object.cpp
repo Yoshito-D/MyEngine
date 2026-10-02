@@ -1,8 +1,8 @@
-#include "pch.h"
-#include "Object.h"
-#include "Component/ComponentRegistry.h"
-#include "Component/ObjectNameComponent.h"
-#include "Component/TransformComponent.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Object/Component/Base/ComponentRegistry.h"
+#include "GameEngine/Object/Component/Base/ObjectNameComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include <algorithm>
 #include <atomic>
 #include <unordered_map>

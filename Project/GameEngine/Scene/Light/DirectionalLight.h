@@ -2,7 +2,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
-#include "Utility/VectorMath.h"
+#include "GameEngine/Math/VectorMath.h"
 
 using namespace Microsoft::WRL;
 

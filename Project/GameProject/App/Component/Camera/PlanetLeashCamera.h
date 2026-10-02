@@ -1,5 +1,5 @@
 #pragma once
-#include "Scene/Camera/Core/ICinemachineComponent.h"
+#include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include <algorithm>
 
 namespace App {

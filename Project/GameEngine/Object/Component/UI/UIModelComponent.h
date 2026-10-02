@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Component/IObjectComponent.h"
-#include "Utility/VectorMath.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Math/VectorMath.h"
 #include <cstdint>
 
 namespace GameEngine {

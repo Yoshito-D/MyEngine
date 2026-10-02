@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Object/Component/IObjectComponent.h"
-#include "Utility/Math/Vector3.h"
-#include "Scene/Camera/Camera.h"
-#include "Scene/Camera/Components/OrbitalBody.h"
-#include "GravityFollowCamera.h"
-#include "PlanetLeashCamera.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Math/Types/Vector3.h"
+#include "GameEngine/Scene/Camera/Camera.h"
+#include "GameEngine/Scene/Camera/Components/OrbitalBody.h"
+#include "GameProject/App/Component/Camera/GravityFollowCamera.h"
+#include "GameProject/App/Component/Camera/PlanetLeashCamera.h"
 
 namespace App {
 

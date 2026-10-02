@@ -1,13 +1,13 @@
-#include "pch.h"
-#include "UIFadeComponent.h"
-#include "Component/ComponentRegistry.h"
-#include "Component/UI/UITextComponent.h"
-#include "Object.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Component/UI/UIFadeComponent.h"
+#include "GameEngine/Object/Component/Base/ComponentRegistry.h"
+#include "GameEngine/Object/Component/UI/UITextComponent.h"
+#include "GameEngine/Object/Object.h"
 #include <algorithm>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
-#include "Utility/ImGuiHelper.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 namespace {

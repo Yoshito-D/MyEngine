@@ -1,6 +1,6 @@
-#include "SceneCatalog.h"
+#include "GameProject/App/Scene/SceneCatalog.h"
 
-#include "Utility/Logger.h"
+#include "GameEngine/Utility/Logger.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
 

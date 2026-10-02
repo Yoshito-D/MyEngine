@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Object/Component/IObjectComponent.h"
-#include "Utility/Math/Vector3.h"
-#include "../Gravity/GravityBody.h"
-#include "../Character/CharacterJump.h"
-#include "../Camera/GravityFollowCamera.h"
-#include "VehicleInputComponent.h"
-#include "VehicleMover.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Math/Types/Vector3.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Camera/GravityFollowCamera.h"
+#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
+#include "GameProject/App/Component/Vehicle/VehicleMover.h"
 
 namespace GameEngine {
 class Camera;

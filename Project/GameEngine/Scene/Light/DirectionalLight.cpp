@@ -1,8 +1,8 @@
-#include "pch.h"
-#include "DirectionalLight.h"
-#include "ResourceHelper.h"
-#include "MathUtils.h"
-#include "GraphicsDevice.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Light/DirectionalLight.h"
+#include "GameEngine/Graphics/Device/ResourceHelper.h"
+#include "GameEngine/Math/MathUtils.h"
+#include "GameEngine/Graphics/Device/GraphicsDevice.h"
 
 namespace GameEngine {
 namespace {

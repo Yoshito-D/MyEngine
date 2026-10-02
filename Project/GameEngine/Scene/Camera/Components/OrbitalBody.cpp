@@ -1,8 +1,8 @@
-#include "pch.h"
-#include "OrbitalBody.h"
-#include "../Core/VirtualCamera.h"
-#include "Utility/VectorMath.h"
-#include "Utility/MathUtils.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Camera/Components/OrbitalBody.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Math/VectorMath.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <algorithm>
 
 #ifdef USE_IMGUI

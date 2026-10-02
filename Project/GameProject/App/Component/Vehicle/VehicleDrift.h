@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Object/Component/IObjectComponent.h"
-#include "Utility/Math/Vector3.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Math/Types/Vector3.h"
 
 namespace App {
 

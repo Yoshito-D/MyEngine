@@ -1,8 +1,8 @@
 #pragma once
-#include "Utility/VectorMath.h"
-#include "Camera.h"
-#include "Window.h"
-#include "Object.h"
+#include "GameEngine/Math/VectorMath.h"
+#include "GameEngine/Scene/Camera/Camera.h"
+#include "GameEngine/Window/Window.h"
+#include "GameEngine/Object/Object.h"
 #include <vector>
 
 namespace GameEngine {

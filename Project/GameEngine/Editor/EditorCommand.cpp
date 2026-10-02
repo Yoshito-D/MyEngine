@@ -1,15 +1,15 @@
-#include "pch.h"
-#include "EditorCommand.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Editor/EditorCommand.h"
 
 #ifdef USE_IMGUI
 
-#include "Component/MaterialComponent.h"
-#include "Component/MeshComponent.h"
-#include "Component/TransformComponent.h"
-#include "EditorSceneContext.h"
-#include "Effect/ParticleSystem.h"
-#include "Framework/EngineContext.h"
-#include "Object.h"
+#include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
+#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Editor/EditorSceneContext.h"
+#include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Object.h"
 #include <filesystem>
 
 namespace GameEngine {

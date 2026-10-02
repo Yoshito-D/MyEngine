@@ -1,13 +1,13 @@
-#include "CharacterWalker.h"
-#include "../Camera/ScreenSpaceBasis.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Object.h"
-#include "Utility/MathUtils/QuaternionOperations.h"
+#include "GameProject/App/Component/Character/CharacterWalker.h"
+#include "GameProject/App/Component/Camera/ScreenSpaceBasis.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <cmath>
 #include <algorithm>
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 using namespace GameEngine;

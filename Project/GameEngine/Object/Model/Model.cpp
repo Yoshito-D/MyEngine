@@ -1,12 +1,12 @@
-#include "pch.h"
-#include "Model.h"
-#include "ResourceHelper.h"
-#include "Scene/Camera/Camera.h"
-#include "Component/TransformComponent.h"
-#include "Component/RenderComponent.h"
-#include "Component/MaterialComponent.h"
-#include "Component/Model/AnimationComponent.h"
-#include "Component/MeshComponent.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Model/Model.h"
+#include "GameEngine/Graphics/Device/ResourceHelper.h"
+#include "GameEngine/Scene/Camera/Camera.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Component/Rendering/RenderComponent.h"
+#include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
+#include "GameEngine/Object/Component/Animation/AnimationComponent.h"
+#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include <algorithm>
 
 namespace {

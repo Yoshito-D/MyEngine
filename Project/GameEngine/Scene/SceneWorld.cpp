@@ -1,23 +1,23 @@
-#include "pch.h"
-#include "SceneWorld.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/SceneWorld.h"
 
-#include "Component/TransformComponent.h"
-#include "Component/LightComponent.h"
-#include "Effect/ParticleSystem.h"
-#include "Framework/EngineContext.h"
-#include "Model/Model.h"
-#include "Object/Object.h"
-#include "Object/Skybox/Skybox.h"
-#include "Object/Sprite/Sprite.h"
-#include "Object/Text/UIText.h"
-#include "Scene/Camera/Core/CinemachineBrain.h"
-#include "Scene/Camera/Core/VirtualCamera.h"
-#include "Utility/Logger.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Component/Rendering/LightComponent.h"
+#include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Model/Model.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Object/Skybox/Skybox.h"
+#include "GameEngine/Object/Sprite/Sprite.h"
+#include "GameEngine/Object/Text/UIText.h"
+#include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Utility/Logger.h"
 #include <algorithm>
 #include <objbase.h>
 #ifdef USE_IMGUI
-#include "BaseScene.h"
-#include "Editor/EditorSceneContext.h"
+#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Editor/EditorSceneContext.h"
 #endif
 
 namespace GameEngine {

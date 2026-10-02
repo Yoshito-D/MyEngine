@@ -1,7 +1,7 @@
 #pragma once
 
-#include "BaseScene.h"
-#include "SceneWorld.h"
+#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include <filesystem>
 
 namespace GameEngine {

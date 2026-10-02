@@ -1,5 +1,5 @@
 #pragma once
-#include "Collider.h"
+#include "GameEngine/Collision/Collider.h"
 
 namespace GameEngine {
 

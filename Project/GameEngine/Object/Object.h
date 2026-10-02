@@ -1,8 +1,8 @@
 #pragma once
-#include "Component/ComponentContainer.h"
-#include "Component/IObjectComponent.h"
-#include "ObjectType.h"
-#include "Utility/MathUtils.h"
+#include "GameEngine/Object/Component/Base/ComponentContainer.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Object/ObjectType.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <memory>
 #include <string>
 #include <vector>

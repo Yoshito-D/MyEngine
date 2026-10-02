@@ -1,12 +1,12 @@
-#include "VehicleSpeedPostEffectController.h"
-#include "VehicleGroundMover.h"
-#include "Framework/EngineContext.h"
-#include "Object/Object.h"
+#include "GameProject/App/Component/Vehicle/VehicleSpeedPostEffectController.h"
+#include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Object.h"
 #include <algorithm>
 #include <cmath>
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace {

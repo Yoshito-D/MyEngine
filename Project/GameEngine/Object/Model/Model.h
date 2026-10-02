@@ -2,10 +2,10 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
-#include "Object.h"
-#include "../Utility/VectorMath.h"
-#include "ModelAsset.h"
-#include "Component/MeshComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Math/VectorMath.h"
+#include "GameEngine/Assets/Model/ModelAsset.h"
+#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include <vector>
 #include <optional>
 

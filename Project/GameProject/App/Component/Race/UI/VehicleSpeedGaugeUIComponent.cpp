@@ -1,0 +1,193 @@
+#include "GameProject/App/Component/Race/UI/VehicleSpeedGaugeUIComponent.h"
+
+#include "GameProject/App/Component/Race/RaceManagerComponent.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
+#include "GameEngine/Object/Component/Rendering/RenderComponent.h"
+#include "GameEngine/Object/Component/UI/UITextComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Object/Sprite/Sprite.h"
+#include "GameEngine/Scene/SceneWorld.h"
+#include "GameEngine/Graphics/Resources/Texture.h"
+#include <algorithm>
+#include <cmath>
+#include <format>
+
+#ifdef USE_IMGUI
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#endif
+
+namespace App {
+
+void VehicleSpeedGaugeUIComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
+   // 再読み込み前のシーンを指す参照をすべて破棄し、現在の所有者と設定IDから再構築する。
+   // 枠や速度テキストは任意要素なので、個別に解決して欠けた要素だけを無効化できるようにする。
+   raceManager_ = nullptr;
+   gravityBody_ = nullptr;
+   groundMover_ = nullptr;
+   gaugeSprite_ = HasOwner() ? dynamic_cast<GameEngine::Sprite*>(&GetOwner()) : nullptr;
+   gaugeRender_ = gaugeSprite_ ? gaugeSprite_->GetComponent<GameEngine::RenderComponent>() : nullptr;
+   frameObject_ = sceneWorld.FindObjectById(frameObjectId_);
+   speedText_ = nullptr;
+
+   if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
+      raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
+   }
+   if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
+      gravityBody_ = playerObject->GetComponent<GravityBody>();
+      groundMover_ = playerObject->GetComponent<VehicleGroundMover>();
+   }
+   if (auto* textObject = sceneWorld.FindObjectById(speedTextObjectId_)) {
+      speedText_ = textObject->GetComponent<GameEngine::UITextComponent>();
+   }
+
+}
+
+void VehicleSpeedGaugeUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
+   if (gaugeSprite_) {
+      gaugeSprite_->SetAnchorPoint({ 0.0f, 0.0f });
+      // 右端を原点として画像を左右反転し、幅の増加を左方向へ伸ばす。
+      gaugeSprite_->SetFlipX(true);
+      gaugeSprite_->SetSize({ gaugeWidth_, gaugeHeight_ });
+
+      // UV指定はテクセル寸法を使用するため、割り当て済みテクスチャの実寸を取得する。
+      // マテリアルやテクスチャが未設定なら保持中の安全な寸法を使い、更新処理自体は継続する。
+      if (const auto* material = gaugeSprite_->GetComponent<GameEngine::MaterialComponent>()) {
+         if (const auto* texture = GameEngine::EngineContext::GetTexture(material->GetTextureName())) {
+            textureWidth_ = static_cast<float>(texture->GetWidth());
+            textureHeight_ = static_cast<float>(texture->GetHeight());
+         }
+      }
+      gaugeSprite_->SetTextureUV({ 0.0f, 0.0f }, { textureWidth_, textureHeight_ });
+   }
+
+   // 最初の速度評価前に満量ゲージを見せないよう、補間状態を空から始めてHUDを隠す。
+   displayedRatio_ = 0.0f;
+   SetHudVisible(false);
+}
+
+void VehicleSpeedGaugeUIComponent::Update(float deltaTime) {
+   const bool isFinished = raceManager_ &&
+      raceManager_->GetState() == RaceManagerComponent::State::Finished;
+   // ゲージ本体と少なくとも一つの速度源がある場合だけ描画する。
+   // RaceManagerが設定されている場合は、リザルトUIとの重なりを避けるため終了時に隠す。
+   const bool canDisplay = gaugeSprite_ && (gravityBody_ || groundMover_) && !isFinished;
+   if (!canDisplay) {
+      SetHudVisible(false);
+      return;
+   }
+
+   // 空中の垂直速度も含む実移動速度を優先し、地上移動だけの値に固定されないようにする。
+   const float speed = gravityBody_
+      ? std::max(gravityBody_->GetVelocity().Length(), 0.0f)
+      : std::max(groundMover_->GetCurrentSpeed(), 0.0f);
+   const float maximumSpeed = groundMover_
+      ? std::max(groundMover_->maxSpeed, 0.001f)
+      : 40.0f;
+   const float targetRatio = std::clamp(speed / maximumSpeed, 0.0f, 1.0f);
+   // 指数応答を用いることでフレームレートに依存しにくい追従感にする。
+   // 負の応答値やデルタタイムは0として扱い、補間が逆方向へ発散するのを防ぐ。
+   const float interpolation = 1.0f - std::exp(-std::max(response_, 0.0f) * std::max(deltaTime, 0.0f));
+   displayedRatio_ += (targetRatio - displayedRatio_) * interpolation;
+   displayedRatio_ = std::clamp(displayedRatio_, 0.0f, 1.0f);
+
+   // Quad幅と参照UV幅を同じ比率にし、画像を潰さず左から右へ表示する。
+   // 0幅のQuadとUVを生成しないよう最小値を確保し、実際の非表示はRenderComponentで行う。
+   const float visibleRatio = std::max(displayedRatio_, 0.001f);
+   gaugeSprite_->SetSize({ gaugeWidth_ * visibleRatio, gaugeHeight_ });
+   gaugeSprite_->SetTextureUV(
+      { 0.0f, 0.0f },
+      { textureWidth_ * visibleRatio, textureHeight_ });
+
+   if (speedText_) {
+      speedText_->SetText(std::format("{:.0f} km/h", speed * unitToKmh_));
+   }
+   SetHudVisible(true);
+}
+
+void VehicleSpeedGaugeUIComponent::SetHudVisible(bool visible) {
+   // 背景枠はHUDの有効状態に従う一方、塗りゲージは速度がほぼ0なら隠して
+   // 最小幅として確保したQuadが細線として見えるのを防ぐ。
+   if (gaugeRender_) {
+      gaugeRender_->visible = visible && displayedRatio_ > 0.001f;
+   }
+   if (frameObject_) {
+      if (auto* render = frameObject_->GetComponent<GameEngine::RenderComponent>()) {
+         render->visible = visible;
+      }
+   }
+   if (speedText_ && !visible) {
+      speedText_->SetText("");
+   }
+}
+
+nlohmann::json VehicleSpeedGaugeUIComponent::Serialize() const {
+   // 解決済みポインターや補間途中の比率は保存せず、シーン再構築に必要な設定だけを残す。
+   return nlohmann::json{
+      { "raceManagerId", raceManagerId_ },
+      { "playerObjectId", playerObjectId_ },
+      { "frameObjectId", frameObjectId_ },
+      { "speedTextObjectId", speedTextObjectId_ },
+      { "gaugeWidth", gaugeWidth_ },
+      { "gaugeHeight", gaugeHeight_ },
+      { "response", response_ },
+      { "unitToKmh", unitToKmh_ }
+   };
+}
+
+void VehicleSpeedGaugeUIComponent::Deserialize(const nlohmann::json& data) {
+   if (!data.is_object()) {
+      return;
+   }
+   // 各項目を独立して検証し、欠落・型不一致の項目は既定値または現在値を維持する。
+   auto readString = [&data](const char* key, std::string& value) {
+      if (data.contains(key) && data.at(key).is_string()) {
+         value = data.at(key).get<std::string>();
+      }
+   };
+   auto readPositiveFloat = [&data](const char* key, float& value) {
+      if (data.contains(key) && data.at(key).is_number()) {
+         // 寸法だけでなく除算や指数応答に使う値も対象なので、0による退化を避ける。
+         value = std::max(data.at(key).get<float>(), 0.001f);
+      }
+   };
+
+   readString("raceManagerId", raceManagerId_);
+   readString("playerObjectId", playerObjectId_);
+   readString("frameObjectId", frameObjectId_);
+   readString("speedTextObjectId", speedTextObjectId_);
+   readPositiveFloat("gaugeWidth", gaugeWidth_);
+   readPositiveFloat("gaugeHeight", gaugeHeight_);
+   readPositiveFloat("response", response_);
+   readPositiveFloat("unitToKmh", unitToKmh_);
+}
+
+#ifdef USE_IMGUI
+void VehicleSpeedGaugeUIComponent::DrawInspector() {
+   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
+   if (!ImGui::CollapsingHeader(header.c_str())) {
+      return;
+   }
+   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
+   GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
+   GameEngine::EditorUI::ObjectReference("Frame", frameObjectId_, "");
+   GameEngine::EditorUI::ObjectReference("Speed Text", speedTextObjectId_, "UITextComponent");
+   ImGui::DragFloat("Gauge Width", &gaugeWidth_, 1.0f, 1.0f, 4096.0f);
+   ImGui::DragFloat("Gauge Height", &gaugeHeight_, 1.0f, 1.0f, 4096.0f);
+   ImGui::DragFloat("Response", &response_, 0.1f, 0.001f, 100.0f);
+   ImGui::DragFloat("Unit to km/h", &unitToKmh_, 0.1f, 0.001f, 100.0f);
+   ImGui::Text("Resolved: Body=%s Mover=%s Gauge=%s Frame=%s Text=%s",
+      gravityBody_ ? "true" : "false",
+      groundMover_ ? "true" : "false",
+      gaugeSprite_ ? "true" : "false",
+      frameObject_ ? "true" : "false",
+      speedText_ ? "true" : "false");
+}
+#endif
+
+} // namespace App

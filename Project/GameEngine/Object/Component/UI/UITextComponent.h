@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Component/IObjectComponent.h"
-#include "Core/UI/Text/TextTypes.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/UI/Text/TextTypes.h"
 #include <cstddef>
 #include <limits>
 #include <string>

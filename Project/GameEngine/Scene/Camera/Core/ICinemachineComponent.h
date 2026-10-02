@@ -1,5 +1,5 @@
 #pragma once
-#include "CameraState.h"
+#include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include <nlohmann/json.hpp>
 
 namespace GameEngine {

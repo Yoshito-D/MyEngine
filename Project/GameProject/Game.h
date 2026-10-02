@@ -1,11 +1,11 @@
 #pragma once
-#include "Framework.h"
-#include "EngineContext.h"
-#include "SceneManager.h"
-#include "App/Scene/MySceneFactory.h"
-#include "App/Scene/SceneCatalog.h"
+#include "GameEngine/Framework/Framework.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Scene/SceneManager.h"
+#include "GameProject/App/Scene/MySceneFactory.h"
+#include "GameProject/App/Scene/SceneCatalog.h"
 #ifdef USE_IMGUI
-#include "PlayModeController.h"
+#include "GameEngine/Framework/PlayModeController.h"
 #endif
 
 /// @brief エンジン基盤とゲーム固有のシーン遷移を結び付けるアプリケーション本体

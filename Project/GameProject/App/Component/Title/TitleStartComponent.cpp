@@ -1,19 +1,19 @@
-#include "TitleStartComponent.h"
+#include "GameProject/App/Component/Title/TitleStartComponent.h"
 
-#include "Framework/EngineContext.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Component/UI/UITextComponent.h"
-#include "Object/Object.h"
-#include "Scene/BaseScene.h"
-#include "Scene/SceneWorld.h"
-#include "Utility/MathUtils.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Component/UI/UITextComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/SceneWorld.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <algorithm>
 #include <cmath>
 #include <string>
 
 #ifdef USE_IMGUI
-#include "Editor/EditorReferenceWidgets.h"
-#include "ImguiManager.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

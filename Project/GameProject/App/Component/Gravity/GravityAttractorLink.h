@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Object/Component/IObjectComponent.h"
-#include "GravityAttractor.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameProject/App/Component/Gravity/GravityAttractor.h"
 #include <string>
 
 namespace App {

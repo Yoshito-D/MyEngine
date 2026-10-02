@@ -1,9 +1,9 @@
-#include "CharacterJump.h"
-#include "../Gravity/GravityBody.h"
-#include "Object/Object.h"
+#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameEngine/Object/Object.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

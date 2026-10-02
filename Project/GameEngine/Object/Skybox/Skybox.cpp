@@ -1,8 +1,8 @@
-#include "pch.h"
-#include "Skybox.h"
-#include "Component/Skybox/SkyboxComponent.h"
-#include "Graphics/GraphicsDevice.h"
-#include "Graphics/ResourceHelper.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Skybox/Skybox.h"
+#include "GameEngine/Object/Component/Rendering/SkyboxComponent.h"
+#include "GameEngine/Graphics/Device/GraphicsDevice.h"
+#include "GameEngine/Graphics/Device/ResourceHelper.h"
 #include <algorithm>
 
 namespace GameEngine {

@@ -1,17 +1,17 @@
-#include "pch.h"
-#include "PlayModeController.h"
-#include "Object/Component/AudioSceneLifecycle.h"
-#include "Audio/Audio.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Framework/PlayModeController.h"
+#include "GameEngine/Object/Component/Audio/AudioSceneLifecycle.h"
+#include "GameEngine/Audio/Audio.h"
 
-#include "EngineContext.h"
-#include "SceneManager.h"
-#include "BaseScene.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Scene/SceneManager.h"
+#include "GameEngine/Scene/BaseScene.h"
 
 #ifdef USE_IMGUI
-#include "Editor/EditorSceneContext.h"
-#include "Object/Object.h"
-#include "Component/TransformComponent.h"
-#include "Utility/JsonDataManager.h"
+#include "GameEngine/Editor/EditorSceneContext.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Utility/JsonFile.h"
 #endif
 
 #include <algorithm>

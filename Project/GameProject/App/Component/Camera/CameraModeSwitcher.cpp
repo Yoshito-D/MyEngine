@@ -1,16 +1,16 @@
-#include "CameraModeSwitcher.h"
+#include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
 
-#include "GravityFollowCamera.h"
-#include "Object/Object.h"
-#include "Scene/Camera/Core/VirtualCamera.h"
-#include "Scene/SceneWorld.h"
-#include "../Vehicle/VehicleController.h"
-#include "../Vehicle/VehicleInputComponent.h"
+#include "GameProject/App/Component/Camera/GravityFollowCamera.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Scene/SceneWorld.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
+#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include <algorithm>
 
 #ifdef USE_IMGUI
-#include "Editor/EditorReferenceWidgets.h"
-#include "ImguiManager.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

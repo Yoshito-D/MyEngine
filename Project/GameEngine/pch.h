@@ -16,8 +16,8 @@
 #endif
 
 // DirectX 12 の補助型とテクスチャ読み込み処理は、エンジン全体で頻繁に参照される。
-#include "../Externals/DirectXTex/d3dx12.h"
-#include "../Externals/DirectXTex/DirectXTex.h"
+#include "Externals/DirectXTex/d3dx12.h"
+#include "Externals/DirectXTex/DirectXTex.h"
 
 // 実装ファイルで広く使用する C++ 標準ライブラリ。
 #include <cstdint>
@@ -31,5 +31,5 @@
 #include <chrono>
 #include <numbers>
 
-#include "Utility/Logger.h"
-#include "Utility/VectorMath.h"
+#include "GameEngine/Utility/Logger.h"
+#include "GameEngine/Math/VectorMath.h"

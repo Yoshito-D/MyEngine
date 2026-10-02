@@ -1,8 +1,8 @@
-#include "pch.h"
-#include "UIText.h"
-#include "Component/RenderComponent.h"
-#include "Component/TransformComponent.h"
-#include "Component/UI/UITextComponent.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Text/UIText.h"
+#include "GameEngine/Object/Component/Rendering/RenderComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include <algorithm>
 
 namespace GameEngine {

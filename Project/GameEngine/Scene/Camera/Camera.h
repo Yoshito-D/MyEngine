@@ -1,7 +1,7 @@
 #pragma once
-#include "Utility/VectorMath.h"
-#include "Core/Window/Window.h"
-#include "GraphicsDevice.h"
+#include "GameEngine/Math/VectorMath.h"
+#include "GameEngine/Window/Window.h"
+#include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>

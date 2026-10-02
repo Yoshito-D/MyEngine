@@ -1,5 +1,5 @@
-#include "MySceneFactory.h"
-#include "Scene/DataDrivenScene.h"
+#include "GameProject/App/Scene/MySceneFactory.h"
+#include "GameEngine/Scene/DataDrivenScene.h"
 
 using namespace GameEngine;
 std::unique_ptr<BaseScene> MySceneFactory::CreateScene(const std::string& name) {

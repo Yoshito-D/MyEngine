@@ -1,14 +1,14 @@
-#include "pch.h"
-#include "PlanetLeashCamera.h"
-#include "Scene/Camera/Core/CameraState.h"
-#include "Scene/Camera/Core/VirtualCamera.h"
-#include "Utility/MathUtils/MatrixOperations.h"
+#include "GameEngine/pch.h"
+#include "GameProject/App/Component/Camera/PlanetLeashCamera.h"
+#include "GameEngine/Scene/Camera/Core/CameraState.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Math/Functions/MatrixOperations.h"
 #include <cmath>
 #include <algorithm>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
-#include "Object/Component/IObjectComponent.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #endif
 
 using namespace GameEngine;

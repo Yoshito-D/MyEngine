@@ -1,8 +1,8 @@
 #pragma once
-#include "BaseScene.h"
+#include "GameEngine/Scene/BaseScene.h"
 #include <memory>
 #include <string>
-#include "EngineContext.h"
+#include "GameEngine/Framework/EngineContext.h"
 
 namespace GameEngine {
 /// @brief シーンファクトリインターフェース

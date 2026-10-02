@@ -2,7 +2,7 @@
 
 #ifdef USE_IMGUI
 
-#include "MathUtils.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <cstddef>
 #include <memory>
 #include <nlohmann/json.hpp>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "GravityAttractor.h"
-#include "Object/Model/ModelAsset.h"
+#include "GameProject/App/Component/Gravity/GravityAttractor.h"
+#include "GameEngine/Assets/Model/ModelAsset.h"
 #include <memory>
 
 namespace App {

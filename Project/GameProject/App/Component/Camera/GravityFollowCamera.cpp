@@ -1,16 +1,16 @@
-#include "pch.h"
-#include "GravityFollowCamera.h"
-#include "Scene/Camera/Core/CameraState.h"
-#include "Scene/Camera/Core/VirtualCamera.h"
-#include "Utility/MathUtils/MathConstants.h"
-#include "Utility/MathUtils/MatrixOperations.h"
-#include "Utility/MathUtils/VectorOperations.h"
+#include "GameEngine/pch.h"
+#include "GameProject/App/Component/Camera/GravityFollowCamera.h"
+#include "GameEngine/Scene/Camera/Core/CameraState.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
+#include "GameEngine/Math/Functions/MatrixOperations.h"
+#include "GameEngine/Math/Functions/VectorOperations.h"
 #include <algorithm>
 #include <cmath>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
-#include "Object/Component/IObjectComponent.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #endif
 
 using namespace GameEngine;

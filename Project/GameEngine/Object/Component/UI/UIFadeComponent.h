@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Component/IObjectComponent.h"
-#include "UIAnimationTypes.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Object/Component/UI/UIAnimationTypes.h"
 
 namespace GameEngine {
 

@@ -1,13 +1,13 @@
-#include "pch.h"
-#include "UITransformTweenComponent.h"
-#include "Component/ComponentRegistry.h"
-#include "Component/TransformComponent.h"
-#include "Object.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Component/UI/UITransformTweenComponent.h"
+#include "GameEngine/Object/Component/Base/ComponentRegistry.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
 #include <algorithm>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
-#include "Utility/ImGuiHelper.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 namespace {

@@ -1,11 +1,11 @@
-#include "pch.h"
-#include "BaseScene.h"
-#include "ISceneFactory.h"
-#include "SceneManager.h"
-#include <EngineContext.h>
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/ISceneFactory.h"
+#include "GameEngine/Scene/SceneManager.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include <algorithm>
-#include "Audio/BgmPlayer.h"
-#include "Object/Component/AudioSceneLifecycle.h"
+#include "GameEngine/Audio/BgmPlayer.h"
+#include "GameEngine/Object/Component/Audio/AudioSceneLifecycle.h"
 
 namespace GameEngine {
 bool SceneManager::ChangeScene(const std::string& name) {

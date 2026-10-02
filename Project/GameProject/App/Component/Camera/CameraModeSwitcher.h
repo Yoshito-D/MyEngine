@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Object/Component/IObjectComponent.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include <cstddef>
 #include <string>
 #include <vector>

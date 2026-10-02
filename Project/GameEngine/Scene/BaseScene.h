@@ -1,15 +1,15 @@
 #pragma once
-#include "IScene.h"
-#include <EngineContext.h>
-#include "Camera/DebugCamera.h"
-#include "Camera/Core/CinemachineBrain.h"
-#include "Editor/Camera/CameraEditor.h"
-#include "Editor/EditorObjectStore.h"
+#include "GameEngine/Scene/IScene.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Scene/Camera/DebugCamera.h"
+#include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
+#include "GameEngine/Editor/Camera/CameraEditor.h"
+#include "GameEngine/Editor/EditorObjectStore.h"
 #include <filesystem>
 #include <memory>
 #include <vector>
 #ifdef USE_IMGUI
-#include "Editor/EditorSceneContext.h"
+#include "GameEngine/Editor/EditorSceneContext.h"
 #endif
 
 namespace GameEngine {

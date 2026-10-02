@@ -1,13 +1,13 @@
-#include "pch.h"
+#include "GameEngine/pch.h"
 
 #ifdef USE_IMGUI
 
-#include "CameraGizmo.h"
-#include "Scene/Camera/Camera.h"
-#include "Scene/Camera/Core/VirtualCamera.h"
-#include "Core/Renderer/Pass/LineRenderer.h"
-#include "Core/Window/Window.h"
-#include "Utility/MathUtils.h"
+#include "GameEngine/Editor/Camera/CameraGizmo.h"
+#include "GameEngine/Scene/Camera/Camera.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Graphics/Renderer/Pass/LineRenderer.h"
+#include "GameEngine/Window/Window.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <algorithm>
 #include <cmath>
 

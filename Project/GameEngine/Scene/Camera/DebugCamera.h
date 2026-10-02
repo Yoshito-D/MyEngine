@@ -1,6 +1,6 @@
 #pragma once
-#include "Core/VirtualCamera.h"
-#include "Components/OrbitalBody.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Scene/Camera/Components/OrbitalBody.h"
 
 namespace GameEngine {
 

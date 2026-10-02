@@ -1,6 +1,6 @@
 #pragma once
-#include "CameraState.h"
-#include "ICinemachineComponent.h"
+#include "GameEngine/Scene/Camera/Core/CameraState.h"
+#include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include <functional>
 #include <string>
 #include <unordered_map>

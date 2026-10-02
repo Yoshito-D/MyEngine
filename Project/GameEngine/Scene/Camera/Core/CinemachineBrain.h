@@ -1,6 +1,6 @@
 #pragma once
-#include "CameraState.h"
-#include "VirtualCamera.h"
+#include "GameEngine/Scene/Camera/Core/CameraState.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include <vector>
 #include <optional>
 #include <memory>

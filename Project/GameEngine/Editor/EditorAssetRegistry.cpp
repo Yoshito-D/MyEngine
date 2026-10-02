@@ -1,11 +1,11 @@
-#include "pch.h"
-#include "EditorAssetRegistry.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Editor/EditorAssetRegistry.h"
 
 #ifdef USE_IMGUI
 
 #include <algorithm>
 #include <cctype>
-#include "Framework/EngineContext.h"
+#include "GameEngine/Framework/EngineContext.h"
 
 namespace GameEngine {
 

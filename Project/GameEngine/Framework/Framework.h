@@ -1,18 +1,18 @@
 #pragma once
-#include "D3DResourceLeakChecker.h"
-#include "Window.h"
-#include "GraphicsDevice.h"
-#include "AssetManager.h"
-#include "Renderer.h"
-#include "Input.h"
-#include "InputActionService.h"
-#include "Audio.h"
-#include "Utility/MathUtils.h"
-#include "TimeProfiler.h"
+#include "GameEngine/Utility/D3DResourceLeakChecker.h"
+#include "GameEngine/Window/Window.h"
+#include "GameEngine/Graphics/Device/GraphicsDevice.h"
+#include "GameEngine/Assets/AssetManager.h"
+#include "GameEngine/Graphics/Renderer/Renderer.h"
+#include "GameEngine/Input/Input.h"
+#include "GameEngine/Input/InputActionService.h"
+#include "GameEngine/Audio/Audio.h"
+#include "GameEngine/Math/MathUtils.h"
+#include "GameEngine/Time/TimeProfiler.h"
 #include <memory>
-#include "EngineContext.h"
-#include "CameraManager.h"
-#include "LightManager.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Scene/Camera/CameraManager.h"
+#include "GameEngine/Graphics/Renderer/Light/LightManager.h"
 
 
 namespace GameEngine {

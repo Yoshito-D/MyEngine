@@ -1,6 +1,6 @@
-#include "CameraManager.h"
-#include "Scene/Camera/Core/CinemachineBrain.h"
-#include "Scene/Camera/Camera.h"
+#include "GameEngine/Scene/Camera/CameraManager.h"
+#include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
+#include "GameEngine/Scene/Camera/Camera.h"
 
 namespace GameEngine {
 

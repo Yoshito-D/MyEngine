@@ -1,16 +1,16 @@
-#include "pch.h"
-#include "EditorObjectStore.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Editor/EditorObjectStore.h"
 
-#include "Component/MeshComponent.h"
-#include "Component/MaterialComponent.h"
-#include "Component/Particle/ParticleEmitterComponent.h"
-#include "Component/TransformComponent.h"
-#include "Effect/ParticleSystem.h"
-#include "Framework/EngineContext.h"
-#include "Model/Model.h"
-#include "Object/Skybox/Skybox.h"
-#include "Sprite/Sprite.h"
-#include "Text/UIText.h"
+#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
+#include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
+#include "GameEngine/Object/Component/Effects/ParticleEmitterComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Model/Model.h"
+#include "GameEngine/Object/Skybox/Skybox.h"
+#include "GameEngine/Object/Sprite/Sprite.h"
+#include "GameEngine/Object/Text/UIText.h"
 #include <algorithm>
 #include <filesystem>
 

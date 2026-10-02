@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GravityAttractor.h"
+#include "GameProject/App/Component/Gravity/GravityAttractor.h"
 
 namespace App {
 
