@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/UI/Text/TextTypes.h"
-#include "Object.h"
+#include "GameEngine/UI/Text/TextTypes.h"
+#include "GameEngine/Object/Object.h"
 #include <string>
 #include <string_view>
 #include <vector>

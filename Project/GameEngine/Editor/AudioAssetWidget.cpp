@@ -1,9 +1,9 @@
-#include "pch.h"
-#include "AudioAssetWidget.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Editor/AudioAssetWidget.h"
 #ifdef USE_IMGUI
-#include "EditorSceneContext.h"
-#include "Scene/BaseScene.h"
-#include "Utility/ImGuiHelper.h"
+#include "GameEngine/Editor/EditorSceneContext.h"
+#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include <imgui.h>
 #include <cstring>
 

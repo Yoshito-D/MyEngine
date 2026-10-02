@@ -1,15 +1,15 @@
-#include "CharacterLanding.h"
-#include "CharacterJump.h"
-#include "CharacterWalker.h"
-#include "../Gravity/GravityBody.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Object.h"
-#include "Utility/MathUtils/QuaternionOperations.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
+#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Character/CharacterWalker.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <cmath>
-#include "../Gravity/PlanetSwitcher.h"
+#include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

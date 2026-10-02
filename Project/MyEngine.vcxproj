@@ -84,8 +84,8 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile>GameEngine/pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)GameEngine;$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -117,8 +117,8 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>false</TreatWarningAsError>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile>GameEngine/pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)GameEngine;$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -150,8 +150,8 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>false</TreatWarningAsError>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;$(ProjectDir)GameEngine;$(ProjectDir)GameEngine\Scene;$(ProjectDir)GameEngine\Core;$(ProjectDir)GameEngine\Core\Asset;$(ProjectDir)GameEngine\Core\Audio;$(ProjectDir)GameEngine\Core\Graphics;$(ProjectDir)GameEngine\Core\Input;$(ProjectDir)GameEngine\Core\Renderer;$(ProjectDir)GameEngine\Core\Renderer\Pipeline;$(ProjectDir)GameEngine\Core\Renderer\Pass;$(ProjectDir)GameEngine\Core\Renderer\Light;$(ProjectDir)GameEngine\Editor;$(ProjectDir)GameEngine\Core\Renderer\PostProcess;$(ProjectDir)GameEngine\Core\UI;$(ProjectDir)GameEngine\Core\TimeProfiler;$(ProjectDir)GameEngine\Core\Window;$(ProjectDir)GameEngine\Effect;$(ProjectDir)GameEngine\Line;$(ProjectDir)GameEngine\Object;$(ProjectDir)GameEngine\Object\Model;$(ProjectDir)GameEngine\Object\Sprite;$(ProjectDir)GameEngine\Collision;$(ProjectDir)GameEngine\Scene\Camera;$(ProjectDir)GameEngine\Scene\Light;$(ProjectDir)GameEngine\Utility;$(ProjectDir)GameEngine\Framework</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile>GameEngine/pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)GameEngine;$(ProjectDir)Externals\imgui\ImGuizmo;$(ProjectDir)Externals\imgui;$(ProjectDir)Externals;$(ProjectDir)Externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
@@ -218,148 +218,148 @@
     <ClCompile Include="Externals\imgui\imgui_widgets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Asset\AnimationAssetManager.cpp" />
-    <ClCompile Include="GameEngine\Core\Asset\Font\FontManager.cpp" />
-    <ClCompile Include="GameEngine\Core\Asset\Font\MsdfFont.cpp" />
-    <ClCompile Include="GameEngine\Core\Asset\AssetManager.cpp">
+    <ClCompile Include="GameEngine\Assets\Animation\AnimationAssetManager.cpp" />
+    <ClCompile Include="GameEngine\Assets\Font\FontManager.cpp" />
+    <ClCompile Include="GameEngine\Assets\Font\MsdfFont.cpp" />
+    <ClCompile Include="GameEngine\Assets\AssetManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Asset\MaterialManager.cpp">
+    <ClCompile Include="GameEngine\Assets\Material\MaterialManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Asset\ModelAssetManager.cpp">
+    <ClCompile Include="GameEngine\Assets\Model\ModelAssetManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Asset\SoundManager.cpp" />
-    <ClCompile Include="GameEngine\Core\Asset\TextureManager.cpp">
+    <ClCompile Include="GameEngine\Assets\Audio\SoundManager.cpp" />
+    <ClCompile Include="GameEngine\Assets\Texture\TextureManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Audio\Audio.cpp">
+    <ClCompile Include="GameEngine\Audio\Audio.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Audio\BgmPlayer.cpp" />
-    <ClCompile Include="GameEngine\Core\Audio\SoundClip.cpp" />
-    <ClCompile Include="GameEngine\Core\Input\InputActionService.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\CommandDispatch.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\TextRenderer.cpp" />
-    <ClCompile Include="GameEngine\Core\UI\Text\TextLayout.cpp" />
-    <ClCompile Include="GameEngine\Core\UI\Text\Utf8Decoder.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\OpaquePass.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\PostEffectPass.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\TransparentPass.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\WhiteNoise.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Dissolve.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\ParticleModuleInspectors.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\ColorOverLifetimeModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\ForceOverLifetimeModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\LimitVelocityOverLifetimeModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\NoiseModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\RotationOverLifetimeModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\SizeOverLifetimeModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\TextureSheetAnimationModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\UVTransformModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\ComponentRegistry.cpp" />
+    <ClCompile Include="GameEngine\Audio\BgmPlayer.cpp" />
+    <ClCompile Include="GameEngine\Audio\SoundClip.cpp" />
+    <ClCompile Include="GameEngine\Input\InputActionService.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\CommandDispatch.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\TextRenderer.cpp" />
+    <ClCompile Include="GameEngine\UI\Text\TextLayout.cpp" />
+    <ClCompile Include="GameEngine\UI\Text\Utf8Decoder.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\OpaquePass.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\PlayerShadowPass.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\PostEffectPass.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\TransparentPass.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\AntiAliasing.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\WhiteNoise.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\BoxFilter.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\Dissolve.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\LinearToSRGB.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\SpeedLine.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\ParticleModuleInspectors.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\ColorOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\ForceOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\LimitVelocityOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\NoiseModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\RotationOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\SizeOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\TextureSheetAnimationModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\UVTransformModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\VelocityOverLifetimeModule.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Base\ComponentRegistry.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\TypewriterComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\UIFadeComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\UIModelComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\UITextComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\UI\UITransformTweenComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\IObjectComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\AudioSourceComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\BgmComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\AudioSceneLifecycle.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Base\IObjectComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Effects\ParticleEmitterComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Audio\AudioSourceComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Audio\BgmComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Audio\AudioSceneLifecycle.cpp" />
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Light\LightDataBuffer.cpp" />
-    <ClCompile Include="GameEngine\Core\Graphics\OffscreenRenderTarget.cpp">
+    <ClCompile Include="GameEngine\Graphics\Renderer\Light\LightDataBuffer.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Device\OffscreenRenderTarget.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\Light\PointLight.cpp" />
     <ClCompile Include="GameEngine\Scene\Light\SpotLight.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\BindingLayoutResolver.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Pipeline\BindingLayoutResolver.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\CameraManager.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\DrawCommand.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Light\LightManager.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\PipelineDefinitionLoader.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\PipelineLibrary.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Bloom.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\EffectFactoryRegistry.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\PSOManager.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\ChromaticAberration.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\GaussFilter.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Grayscale.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Outline.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Pixelation.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcess.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcessManager.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\PostProcessSceneSerialization.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\RadialBlur.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\ShockWave.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\PostProcess\Vignette.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ReflectionValidationCoordinator.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\RenderBootstrapper.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Renderer.cpp">
+    <ClCompile Include="GameEngine\Graphics\Renderer\DrawCommand.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Light\LightManager.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Pipeline\PipelineDefinitionLoader.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Pipeline\PipelineLibrary.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\Bloom.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\EffectFactoryRegistry.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Pipeline\PSOManager.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\ChromaticAberration.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\GaussFilter.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\Grayscale.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\Outline.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\Pixelation.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\PostProcess.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\PostProcessManager.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\PostProcessSceneSerialization.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\RadialBlur.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\ShockWave.cpp" />
+    <ClCompile Include="GameEngine\Graphics\PostProcess\Vignette.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Pipeline\ReflectionValidationCoordinator.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\RenderBootstrapper.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Renderer.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\ModelRenderer.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\ModelRenderer.cpp" />
     <ClCompile Include="GameEngine\Editor\Renderer\RendererEditorController.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorAssetRegistry.cpp" />
     <ClCompile Include="GameEngine\Editor\AudioAssetWidget.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorCommand.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorObjectStore.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorSceneContext.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\SpriteRenderer.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\ParticleRenderer.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\UIRenderer.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ModelPipelineValidation.cpp" />
-    <ClCompile Include="GameEngine\Core\Renderer\Pipeline\ShaderManager.cpp" />
-    <ClCompile Include="GameEngine\Core\TimeProfiler\TimeProfiler.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\EmissionModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\LifetimeModules.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\MainModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\ParticleMeshModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\RendererModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\ShapeModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\Module\TrailModule.cpp" />
-    <ClCompile Include="GameEngine\Effect\ParticleMaterial.cpp" />
-    <ClCompile Include="GameEngine\Effect\ParticleSystem.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\SpriteRenderer.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\ParticleRenderer.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\UIRenderer.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Pipeline\ModelPipelineValidation.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Pipeline\ShaderManager.cpp" />
+    <ClCompile Include="GameEngine\Time\TimeProfiler.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\EmissionModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\LifetimeModules.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\MainModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\ParticleMeshModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\RendererModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\ShapeModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\Modules\TrailModule.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\ParticleMaterial.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\ParticleSystem.cpp" />
     <ClCompile Include="GameEngine\Editor\Particle\ParticleSystemEditor.cpp" />
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
     <ClCompile Include="GameEngine\Framework\Framework.cpp" />
     <ClCompile Include="GameEngine\Framework\PlayModeController.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\Model\AnimationComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\ComponentContainer.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\MaterialComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\MeshComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\ObjectNameComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\Skybox\SkyboxComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\RenderComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\TransformComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\LightComponent.cpp" />
-    <ClCompile Include="GameEngine\Object\Component\TriggerVolumeComponent.cpp" />
-    <ClCompile Include="GameEngine\Core\Graphics\Line.cpp">
+    <ClCompile Include="GameEngine\Object\Component\Animation\AnimationComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Base\ComponentContainer.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Rendering\MaterialComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Rendering\MeshComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Base\ObjectNameComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Rendering\SkyboxComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Rendering\RenderComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Base\TransformComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Rendering\LightComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Collision\TriggerVolumeComponent.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Resources\Line.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Renderer\Pass\LineRenderer.cpp">
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\LineRenderer.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Object\Model\AnimationAsset.cpp" />
-    <ClCompile Include="GameEngine\Object\Model\ModelAsset.cpp">
+    <ClCompile Include="GameEngine\Assets\Animation\AnimationAsset.cpp" />
+    <ClCompile Include="GameEngine\Assets\Model\ModelAsset.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
@@ -380,19 +380,19 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\UI\ImGuiManager.cpp">
+    <ClCompile Include="GameEngine\Editor\ImGui\ImGuiManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Input\Input.cpp">
+    <ClCompile Include="GameEngine\Input\Input.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Graphics\Material.cpp">
+    <ClCompile Include="GameEngine\Graphics\Resources\Material.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Graphics\Mesh.cpp">
+    <ClCompile Include="GameEngine\Graphics\Resources\Mesh.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
@@ -400,11 +400,11 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Graphics\PipelineState.cpp">
+    <ClCompile Include="GameEngine\Graphics\Pipeline\PipelineState.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Audio\Sound.cpp">
+    <ClCompile Include="GameEngine\Audio\Sound.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
@@ -424,7 +424,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Graphics\ShaderCompiler.cpp">
+    <ClCompile Include="GameEngine\Graphics\Pipeline\ShaderCompiler.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
@@ -433,24 +433,24 @@
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Text\UIText.cpp" />
-    <ClCompile Include="GameEngine\Core\Graphics\Texture.cpp">
+    <ClCompile Include="GameEngine\Graphics\Resources\Texture.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Graphics\TransformationMatrix.cpp">
+    <ClCompile Include="GameEngine\Graphics\Resources\TransformationMatrix.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Utility\JsonDataManager.cpp" />
-    <ClCompile Include="GameEngine\Utility\MathUtils\ColorUtils.cpp" />
-    <ClCompile Include="GameEngine\Utility\MathUtils\EasingFunctions.cpp" />
-    <ClCompile Include="GameEngine\Utility\MathUtils\MatrixOperations.cpp" />
-    <ClCompile Include="GameEngine\Utility\MathUtils\QuaternionOperations.cpp" />
-    <ClCompile Include="GameEngine\Utility\MathUtils\SplineUtils.cpp" />
-    <ClCompile Include="GameEngine\Utility\MathUtils\VectorOperations.cpp" />
-    <ClCompile Include="GameEngine\Utility\Math\Quaternion.cpp" />
+    <ClCompile Include="GameEngine\Utility\JsonFile.cpp" />
+    <ClCompile Include="GameEngine\Math\Functions\ColorUtils.cpp" />
+    <ClCompile Include="GameEngine\Math\Functions\EasingFunctions.cpp" />
+    <ClCompile Include="GameEngine\Math\Functions\MatrixOperations.cpp" />
+    <ClCompile Include="GameEngine\Math\Functions\QuaternionOperations.cpp" />
+    <ClCompile Include="GameEngine\Math\Functions\SplineUtils.cpp" />
+    <ClCompile Include="GameEngine\Math\Functions\VectorOperations.cpp" />
+    <ClCompile Include="GameEngine\Math\Types\Quaternion.cpp" />
     <ClCompile Include="GameEngine\Utility\StateMachine.cpp" />
-    <ClCompile Include="GameEngine\Utility\TimerSystem.cpp" />
+    <ClCompile Include="GameEngine\Time\TimerSystem.cpp" />
     <ClCompile Include="GameEngine\Utility\Logger.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -458,11 +458,11 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Graphics\GraphicsDevice.cpp">
+    <ClCompile Include="GameEngine\Graphics\Device\GraphicsDevice.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Graphics\ResourceHelper.cpp">
+    <ClCompile Include="GameEngine\Graphics\Device\ResourceHelper.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
@@ -471,18 +471,18 @@
     <ClCompile Include="GameProject\App\Component\Camera\CameraModeSwitcher.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\GravityFollowCamera.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\PlanetLeashCamera.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraTransition.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraComponent.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraGravityUp.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraComponentRegistry.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraDirectionTracker.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraPlanetGuide.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraSpeedEffects.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraPositionSolver.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraAimSolver.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraMeasurementRecorder.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearCameraDebugView.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\PlayerRearFollowCamera.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraTransition.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraGravityUp.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponentRegistry.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraDirectionTracker.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraPlanetGuide.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraSpeedEffects.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraPositionSolver.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraAimSolver.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraMeasurementRecorder.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraDebugView.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\ScreenSpaceBasis.cpp" />
     <ClCompile Include="GameProject\App\Component\Character\CharacterJump.cpp" />
     <ClCompile Include="GameProject\App\Component\Character\CharacterLanding.cpp" />
@@ -493,16 +493,16 @@
     <ClCompile Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\PlanetSwitcher.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\GamepadGuideTextComponent.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\RaceCountdownTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\GamepadGuideTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\RaceCountdownTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\RaceGoalDistanceTextComponent.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\RaceGoalDirectionHUDComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\RaceGoalDistanceTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\RaceGoalDirectionHUDComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceManagerComponent.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\RaceResultUIComponent.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\RaceTimeFormatting.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\RaceTimeTextComponent.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\RaceResultUIComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\RaceTimeFormatting.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\RaceTimeTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\VehicleSpeedGaugeUIComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
@@ -518,7 +518,7 @@
     <ClCompile Include="GameProject\Game.cpp" />
     <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp" />
     <ClCompile Include="GameProject\App\Scene\SceneCatalog.cpp" />
-    <ClCompile Include="GameEngine\Utility\ImGuiHelper.cpp" />
+    <ClCompile Include="GameEngine\Editor\ImGui\ImGuiHelper.cpp" />
     <ClCompile Include="main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -526,11 +526,11 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Window\Window.cpp">
+    <ClCompile Include="GameEngine\Window\Window.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Core\Graphics\RootSignature.cpp">
+    <ClCompile Include="GameEngine\Graphics\Pipeline\RootSignature.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
@@ -561,128 +561,128 @@
     <ClInclude Include="Externals\imgui\imstb_truetype.h" />
     <ClInclude Include="Externals\nlohmann\json.hpp" />
     <ClInclude Include="Externals\nlohmann\json_fwd.hpp" />
-    <ClInclude Include="GameEngine\Core\Asset\AnimationAssetManager.h" />
-    <ClInclude Include="GameEngine\Core\Asset\Font\FontManager.h" />
-    <ClInclude Include="GameEngine\Core\Asset\Font\MsdfFont.h" />
-    <ClInclude Include="GameEngine\Core\Asset\AssetManager.h" />
-    <ClInclude Include="GameEngine\Core\Asset\MaterialManager.h" />
-    <ClInclude Include="GameEngine\Core\Asset\ModelAssetManager.h" />
-    <ClInclude Include="GameEngine\Core\Asset\SoundManager.h" />
-    <ClInclude Include="GameEngine\Core\Asset\TextureManager.h" />
-    <ClInclude Include="GameEngine\Core\Audio\Audio.h" />
-    <ClInclude Include="GameEngine\Core\Audio\BgmPlayer.h" />
-    <ClInclude Include="GameEngine\Core\Audio\SoundClip.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\IMaterialData.h" />
-    <ClInclude Include="GameEngine\Core\Input\InputActionService.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\CommandDispatch.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\FrameContext.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\IRenderPass.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\OpaquePass.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\PlayerShadowPass.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\PostEffectPass.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\TransparentPass.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\AntiAliasing.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\WhiteNoise.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\BoxFilter.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Dissolve.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\LinearToSRGB.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\SpeedLine.h" />
-    <ClInclude Include="GameEngine\Effect\Module\ColorOverLifetimeModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\ForceOverLifetimeModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\LimitVelocityOverLifetimeModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\NoiseModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\ParticleMeshModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\RendererModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\RotationOverLifetimeModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\SizeOverLifetimeModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\TextureSheetAnimationModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\TrailModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\UVTransformModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\VelocityOverLifetimeModule.h" />
-    <ClInclude Include="GameEngine\Object\Component\Particle\ParticleEmitterComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\AudioSourceComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\BgmComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\AudioSceneLifecycle.h" />
+    <ClInclude Include="GameEngine\Assets\Animation\AnimationAssetManager.h" />
+    <ClInclude Include="GameEngine\Assets\Font\FontManager.h" />
+    <ClInclude Include="GameEngine\Assets\Font\MsdfFont.h" />
+    <ClInclude Include="GameEngine\Assets\AssetManager.h" />
+    <ClInclude Include="GameEngine\Assets\Material\MaterialManager.h" />
+    <ClInclude Include="GameEngine\Assets\Model\ModelAssetManager.h" />
+    <ClInclude Include="GameEngine\Assets\Audio\SoundManager.h" />
+    <ClInclude Include="GameEngine\Assets\Texture\TextureManager.h" />
+    <ClInclude Include="GameEngine\Audio\Audio.h" />
+    <ClInclude Include="GameEngine\Audio\BgmPlayer.h" />
+    <ClInclude Include="GameEngine\Audio\SoundClip.h" />
+    <ClInclude Include="GameEngine\Graphics\Resources\IMaterialData.h" />
+    <ClInclude Include="GameEngine\Input\InputActionService.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\CommandDispatch.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\FrameContext.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\IRenderPass.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\OpaquePass.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\PlayerShadowPass.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\PostEffectPass.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\TransparentPass.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\AntiAliasing.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\WhiteNoise.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\BoxFilter.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\Dissolve.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\LinearToSRGB.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\SpeedLine.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\ColorOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\ForceOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\LimitVelocityOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\NoiseModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\ParticleMeshModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\RendererModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\RotationOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\SizeOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\TextureSheetAnimationModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\TrailModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\UVTransformModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\VelocityOverLifetimeModule.h" />
+    <ClInclude Include="GameEngine\Object\Component\Effects\ParticleEmitterComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Audio\AudioSourceComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Audio\BgmComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Audio\AudioSceneLifecycle.h" />
     <ClInclude Include="GameEngine\Scene\Light\AreaLight.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Light\LightDataBuffer.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\OffscreenRenderTarget.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Light\LightDataBuffer.h" />
+    <ClInclude Include="GameEngine\Graphics\Device\OffscreenRenderTarget.h" />
     <ClInclude Include="GameEngine\Scene\Light\PointLight.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\ShaderCompiler.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\ShaderCompiler.h" />
     <ClInclude Include="GameEngine\Scene\Light\SpotLight.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\BindingLayoutResolver.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\BindingLayoutResolver.h" />
     <ClInclude Include="GameEngine\Scene\Camera\CameraManager.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\DrawCommand.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Light\LightManager.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\PipelineDefinitionLoader.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\PipelineDescriptor.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\PipelineLibrary.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Bloom.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\EffectFactoryRegistry.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\PSOManager.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\ChromaticAberration.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\GaussFilter.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Grayscale.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Outline.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Pixelation.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\PostProcess.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\PostProcessManager.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\RadialBlur.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\ShockWave.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\PostProcess\Vignette.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\ReflectionValidationCoordinator.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\ReflectionValidationState.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\RenderBootstrapper.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Renderer.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\ModelRenderer.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\DrawCommand.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Light\LightManager.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\PipelineDefinitionLoader.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\PipelineDescriptor.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\PipelineLibrary.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\Bloom.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\EffectFactoryRegistry.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\PSOManager.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\ChromaticAberration.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\GaussFilter.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\Grayscale.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\Outline.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\Pixelation.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\PostProcess.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\PostProcessManager.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\RadialBlur.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\ShockWave.h" />
+    <ClInclude Include="GameEngine\Graphics\PostProcess\Vignette.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\ReflectionValidationCoordinator.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\ReflectionValidationState.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\RenderBootstrapper.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Renderer.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\ModelRenderer.h" />
     <ClInclude Include="GameEngine\Editor\Renderer\RendererEditorController.h" />
     <ClInclude Include="GameEngine\Editor\EditorAssetRegistry.h" />
     <ClInclude Include="GameEngine\Editor\AudioAssetWidget.h" />
     <ClInclude Include="GameEngine\Editor\EditorCommand.h" />
     <ClInclude Include="GameEngine\Editor\EditorObjectStore.h" />
     <ClInclude Include="GameEngine\Editor\EditorSceneContext.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\RootBindingSlots.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\SpriteRenderer.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\ParticleRenderer.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\UIRenderer.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pipeline\ShaderManager.h" />
-    <ClInclude Include="GameEngine\Core\TimeProfiler\TimeProfiler.h" />
-    <ClInclude Include="GameEngine\Effect\Module\EmissionModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\LifetimeModules.h" />
-    <ClInclude Include="GameEngine\Effect\Module\MainModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\ParticleModule.h" />
-    <ClInclude Include="GameEngine\Effect\Module\ShapeModule.h" />
-    <ClInclude Include="GameEngine\Effect\Particle.h" />
-    <ClInclude Include="GameEngine\Effect\ParticleMaterial.h" />
-    <ClInclude Include="GameEngine\Effect\ParticleSystem.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\RootBindingSlots.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\SpriteRenderer.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\ParticleRenderer.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\UIRenderer.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\ShaderManager.h" />
+    <ClInclude Include="GameEngine\Time\TimeProfiler.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\EmissionModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\LifetimeModules.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\MainModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\ParticleModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Modules\ShapeModule.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\Particle.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\ParticleMaterial.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\ParticleSystem.h" />
     <ClInclude Include="GameEngine\Editor\Particle\ParticleSystemEditor.h" />
-    <ClInclude Include="GameEngine\Framework\D3DResourceLeakChecker.h" />
+    <ClInclude Include="GameEngine\Utility\D3DResourceLeakChecker.h" />
     <ClInclude Include="GameEngine\Framework\EngineContext.h" />
-    <ClInclude Include="GameEngine\Framework\ExportDump.h" />
+    <ClInclude Include="GameEngine\Utility\ExportDump.h" />
     <ClInclude Include="GameEngine\Framework\Framework.h" />
     <ClInclude Include="GameEngine\Framework\PlayModeController.h" />
-    <ClInclude Include="GameEngine\Object\Component\Model\AnimationComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\ComponentContainer.h" />
-    <ClInclude Include="GameEngine\Object\Component\ComponentRegistry.h" />
+    <ClInclude Include="GameEngine\Object\Component\Animation\AnimationComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Base\ComponentContainer.h" />
+    <ClInclude Include="GameEngine\Object\Component\Base\ComponentRegistry.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\TypewriterComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UIAnimationTypes.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UIFadeComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UIModelComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UITextComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\UI\UITransformTweenComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\IObjectComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\MaterialComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\MeshComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\ObjectNameComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\Skybox\SkyboxComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\RenderComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\TransformComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\LightComponent.h" />
-    <ClInclude Include="GameEngine\Object\Component\TriggerVolumeComponent.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\Line.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\LineRenderer.h" />
-    <ClInclude Include="GameEngine\Object\Model\AnimationAsset.h" />
-    <ClInclude Include="GameEngine\Object\Model\ModelAsset.h" />
-    <ClInclude Include="GameEngine\Object\Model\Skeleton.h" />
+    <ClInclude Include="GameEngine\Object\Component\Base\IObjectComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Rendering\MaterialComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Rendering\MeshComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Base\ObjectNameComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Rendering\SkyboxComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Rendering\RenderComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Base\TransformComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Rendering\LightComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Collision\TriggerVolumeComponent.h" />
+    <ClInclude Include="GameEngine\Graphics\Resources\Line.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\LineRenderer.h" />
+    <ClInclude Include="GameEngine\Assets\Animation\AnimationAsset.h" />
+    <ClInclude Include="GameEngine\Assets\Model\ModelAsset.h" />
+    <ClInclude Include="GameEngine\Assets\Animation\Skeleton.h" />
     <ClInclude Include="GameEngine\Object\Object.h" />
     <ClInclude Include="GameEngine\Object\ObjectType.h" />
     <ClInclude Include="GameEngine\Collision\Collider.h" />
@@ -693,13 +693,13 @@
     <ClInclude Include="GameEngine\Scene\SceneWorld.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Camera.h" />
     <ClInclude Include="GameEngine\Scene\Light\DirectionalLight.h" />
-    <ClInclude Include="GameEngine\Core\UI\ImGuiManager.h" />
-    <ClInclude Include="GameEngine\Core\Input\Input.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\Material.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\Mesh.h" />
+    <ClInclude Include="GameEngine\Editor\ImGui\ImGuiManager.h" />
+    <ClInclude Include="GameEngine\Input\Input.h" />
+    <ClInclude Include="GameEngine\Graphics\Resources\Material.h" />
+    <ClInclude Include="GameEngine\Graphics\Resources\Mesh.h" />
     <ClInclude Include="GameEngine\Object\Model\Model.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\PipelineState.h" />
-    <ClInclude Include="GameEngine\Core\Audio\Sound.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\PipelineState.h" />
+    <ClInclude Include="GameEngine\Audio\Sound.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Components\FollowBody.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Components\LookAtAim.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Components\OrbitalBody.h" />
@@ -716,56 +716,56 @@
     <ClInclude Include="GameEngine\Scene\SceneManager.h" />
     <ClInclude Include="GameEngine\Object\Sprite\Sprite.h" />
     <ClInclude Include="GameEngine\Object\Text\UIText.h" />
-    <ClInclude Include="GameEngine\Core\Renderer\Pass\TextRenderer.h" />
-    <ClInclude Include="GameEngine\Core\UI\Text\TextLayout.h" />
-    <ClInclude Include="GameEngine\Core\UI\Text\TextTypes.h" />
-    <ClInclude Include="GameEngine\Core\UI\Text\Utf8Decoder.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\Texture.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\TransformationMatrix.h" />
-    <ClInclude Include="GameEngine\Core\Window\Window.h" />
-    <ClInclude Include="GameEngine\Utility\JsonDataManager.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils\ColorUtils.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils\EasingFunctions.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils\MathConstants.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils\MatrixOperations.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils\QuaternionOperations.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils\RandomUtils.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils\SplineUtils.h" />
-    <ClInclude Include="GameEngine\Utility\MathUtils\VectorOperations.h" />
-    <ClInclude Include="GameEngine\Utility\Math\Matrix3x3.h" />
-    <ClInclude Include="GameEngine\Utility\Math\Matrix4x4.h" />
-    <ClInclude Include="GameEngine\Utility\Math\Quaternion.h" />
-    <ClInclude Include="GameEngine\Utility\Math\Transform.h" />
-    <ClInclude Include="GameEngine\Utility\Math\Vector2.h" />
-    <ClInclude Include="GameEngine\Utility\Math\Vector3.h" />
-    <ClInclude Include="GameEngine\Utility\Math\Vector4.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\TextRenderer.h" />
+    <ClInclude Include="GameEngine\UI\Text\TextLayout.h" />
+    <ClInclude Include="GameEngine\UI\Text\TextTypes.h" />
+    <ClInclude Include="GameEngine\UI\Text\Utf8Decoder.h" />
+    <ClInclude Include="GameEngine\Graphics\Resources\Texture.h" />
+    <ClInclude Include="GameEngine\Graphics\Resources\TransformationMatrix.h" />
+    <ClInclude Include="GameEngine\Window\Window.h" />
+    <ClInclude Include="GameEngine\Utility\JsonFile.h" />
+    <ClInclude Include="GameEngine\Math\MathUtils.h" />
+    <ClInclude Include="GameEngine\Math\Functions\ColorUtils.h" />
+    <ClInclude Include="GameEngine\Math\Functions\EasingFunctions.h" />
+    <ClInclude Include="GameEngine\Math\Functions\MathConstants.h" />
+    <ClInclude Include="GameEngine\Math\Functions\MatrixOperations.h" />
+    <ClInclude Include="GameEngine\Math\Functions\QuaternionOperations.h" />
+    <ClInclude Include="GameEngine\Math\Functions\RandomUtils.h" />
+    <ClInclude Include="GameEngine\Math\Functions\SplineUtils.h" />
+    <ClInclude Include="GameEngine\Math\Functions\VectorOperations.h" />
+    <ClInclude Include="GameEngine\Math\Types\Matrix3x3.h" />
+    <ClInclude Include="GameEngine\Math\Types\Matrix4x4.h" />
+    <ClInclude Include="GameEngine\Math\Types\Quaternion.h" />
+    <ClInclude Include="GameEngine\Math\Types\Transform.h" />
+    <ClInclude Include="GameEngine\Math\Types\Vector2.h" />
+    <ClInclude Include="GameEngine\Math\Types\Vector3.h" />
+    <ClInclude Include="GameEngine\Math\Types\Vector4.h" />
     <ClInclude Include="GameEngine\Utility\StateMachine.h" />
-    <ClInclude Include="GameEngine\Utility\TimerSystem.h" />
+    <ClInclude Include="GameEngine\Time\TimerSystem.h" />
     <ClInclude Include="GameEngine\Utility\Logger.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\GraphicsDevice.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\RootSignature.h" />
+    <ClInclude Include="GameEngine\Graphics\Device\GraphicsDevice.h" />
+    <ClInclude Include="GameEngine\Graphics\Pipeline\RootSignature.h" />
     <ClInclude Include="GameEngine\pch.h" />
-    <ClInclude Include="GameEngine\Core\Graphics\ResourceHelper.h" />
-    <ClInclude Include="GameEngine\Utility\VectorMath.h" />
+    <ClInclude Include="GameEngine\Graphics\Device\ResourceHelper.h" />
+    <ClInclude Include="GameEngine\Math\VectorMath.h" />
     <ClInclude Include="GameProject\App\Component\Camera\CameraGravityBridge.h" />
     <ClInclude Include="GameProject\App\Component\Camera\CameraModeSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Camera\GravityFollowCamera.h" />
     <ClInclude Include="GameProject\App\Component\Camera\PlanetLeashCamera.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\PlayerRearFollowCamera.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraTransition.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraComponent.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraGravityUp.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraDirectionTracker.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraPlanetGuide.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraSpeedEffects.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraPositionSolver.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraAimSolver.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraMeasurementRecorder.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraDebugView.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraTypes.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraMath.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearCameraFrameView.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\PlayerRearFollowCamera.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraTransition.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraGravityUp.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraDirectionTracker.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraPlanetGuide.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraSpeedEffects.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraPositionSolver.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraAimSolver.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraMeasurementRecorder.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraDebugView.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraTypes.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraMath.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraFrameView.h" />
     <ClInclude Include="GameProject\App\Component\Camera\ScreenSpaceBasis.h" />
     <ClInclude Include="GameProject\App\Component\Character\CharacterJump.h" />
     <ClInclude Include="GameProject\App\Component\Character\CharacterLanding.h" />
@@ -776,16 +776,16 @@
     <ClInclude Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\PlanetSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h" />
-    <ClInclude Include="GameProject\App\Component\Race\GamepadGuideTextComponent.h" />
-    <ClInclude Include="GameProject\App\Component\Race\RaceCountdownTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\GamepadGuideTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\RaceCountdownTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h" />
-    <ClInclude Include="GameProject\App\Component\Race\RaceGoalDistanceTextComponent.h" />
-    <ClInclude Include="GameProject\App\Component\Race\RaceGoalDirectionHUDComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\RaceGoalDistanceTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\RaceGoalDirectionHUDComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceManagerComponent.h" />
-    <ClInclude Include="GameProject\App\Component\Race\RaceResultUIComponent.h" />
-    <ClInclude Include="GameProject\App\Component\Race\RaceTimeFormatting.h" />
-    <ClInclude Include="GameProject\App\Component\Race\RaceTimeTextComponent.h" />
-    <ClInclude Include="GameProject\App\Component\Race\VehicleSpeedGaugeUIComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\RaceResultUIComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\RaceTimeFormatting.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\RaceTimeTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\VehicleSpeedGaugeUIComponent.h" />
     <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h" />
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
@@ -801,7 +801,7 @@
     <ClInclude Include="GameProject\Game.h" />
     <ClInclude Include="GameProject\App\Scene\MySceneFactory.h" />
     <ClInclude Include="GameProject\App\Scene\SceneCatalog.h" />
-    <ClInclude Include="GameEngine\Utility\ImGuiHelper.h" />
+    <ClInclude Include="GameEngine\Editor\ImGui\ImGuiHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Externals\imgui\LICENSE.txt" />
@@ -858,6 +858,13 @@
     <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Docs\FolderStructure.md" />
+    <None Include="Docs\Rendering\PlayerShadowPass_Implementation.md" />
+    <None Include="Docs\Camera\PlayerRearFollowCamera_FixFlow.md" />
+    <None Include="..\Tools\FilterAdjust.ps1" />
+    <None Include="..\Tools\RunFilterAdjust.bat" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

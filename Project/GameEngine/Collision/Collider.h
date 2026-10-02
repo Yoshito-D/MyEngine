@@ -1,5 +1,5 @@
 #pragma once
-#include "Utility/VectorMath.h"
+#include "GameEngine/Math/VectorMath.h"
 
 namespace GameEngine {
 /// @brief 衝突判定と簡易物理計算で共有する形状・状態データ。

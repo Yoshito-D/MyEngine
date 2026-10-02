@@ -1,16 +1,16 @@
-#include "VehicleEffectController.h"
+#include "GameProject/App/Component/Vehicle/VehicleEffectController.h"
 
-#include "VehicleDrift.h"
-#include "VehicleLandingBoost.h"
-#include "../Character/CharacterJump.h"
-#include "../Character/CharacterLanding.h"
-#include "Effect/Module/EmissionModule.h"
-#include "Effect/ParticleSystem.h"
-#include "Object/Component/Particle/ParticleEmitterComponent.h"
-#include "Object/Object.h"
+#include "GameProject/App/Component/Vehicle/VehicleDrift.h"
+#include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
+#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
+#include "GameEngine/Effects/Particles/Modules/EmissionModule.h"
+#include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Object/Component/Effects/ParticleEmitterComponent.h"
+#include "GameEngine/Object/Object.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

@@ -1,18 +1,18 @@
-#include "pch.h"
-#include "UIModelComponent.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Component/UI/UIModelComponent.h"
 
-#include "Component/ComponentRegistry.h"
-#include "Component/RenderComponent.h"
-#include "Component/TransformComponent.h"
-#include "Object.h"
-#include "Scene/Camera/Camera.h"
-#include "Utility/MathUtils/QuaternionOperations.h"
+#include "GameEngine/Object/Component/Base/ComponentRegistry.h"
+#include "GameEngine/Object/Component/Rendering/RenderComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/Camera/Camera.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <algorithm>
 #include <cmath>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
-#include "Utility/ImGuiHelper.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 namespace {

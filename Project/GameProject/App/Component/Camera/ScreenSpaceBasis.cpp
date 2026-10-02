@@ -1,9 +1,9 @@
-#include "ScreenSpaceBasis.h"
-#include "Framework/EngineContext.h"
-#include "Utility/MathUtils/QuaternionOperations.h"
+#include "GameProject/App/Component/Camera/ScreenSpaceBasis.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 using namespace GameEngine;

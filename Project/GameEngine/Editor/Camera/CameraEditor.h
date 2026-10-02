@@ -2,8 +2,8 @@
 
 #ifdef USE_IMGUI
 
-#include "Scene/Camera/Core/CameraState.h"
-#include "CameraGizmo.h"
+#include "GameEngine/Scene/Camera/Core/CameraState.h"
+#include "GameEngine/Editor/Camera/CameraGizmo.h"
 #include <functional>
 #include <string>
 #include <vector>

@@ -1,8 +1,8 @@
 #pragma once
-#include "Object.h"
-#include "Graphics/Mesh.h"
-#include "Graphics/TransformationMatrix.h"
-#include "Graphics/Texture.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Graphics/Resources/Mesh.h"
+#include "GameEngine/Graphics/Resources/TransformationMatrix.h"
+#include "GameEngine/Graphics/Resources/Texture.h"
 #include <d3d12.h>
 #include <wrl.h>
 #include <memory>

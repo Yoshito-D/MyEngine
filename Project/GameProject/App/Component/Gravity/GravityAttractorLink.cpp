@@ -1,10 +1,10 @@
-#include "GravityAttractorLink.h"
-#include "GravityBody.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Object.h"
+#include "GameProject/App/Component/Gravity/GravityAttractorLink.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

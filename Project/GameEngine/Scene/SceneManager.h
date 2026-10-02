@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "BaseScene.h"
+#include "GameEngine/Scene/BaseScene.h"
 
 namespace GameEngine {
 class BaseScene;

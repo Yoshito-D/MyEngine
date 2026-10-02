@@ -1,11 +1,11 @@
 #pragma once
-#include "EngineContext.h"
-#include "Input/Input.h"
-#include "Audio/Audio.h"
-#include "Graphics/GraphicsDevice.h"
-#include "Renderer/Renderer.h"
-#include "SceneManager.h"
-#include "Asset/AssetManager.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Input/Input.h"
+#include "GameEngine/Audio/Audio.h"
+#include "GameEngine/Graphics/Device/GraphicsDevice.h"
+#include "GameEngine/Graphics/Renderer/Renderer.h"
+#include "GameEngine/Scene/SceneManager.h"
+#include "GameEngine/Assets/AssetManager.h"
 #include <string>
 
 namespace GameEngine {

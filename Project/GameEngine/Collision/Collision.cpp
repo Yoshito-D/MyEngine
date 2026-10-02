@@ -1,5 +1,5 @@
-#include "pch.h"
-#include "Collision.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Collision/Collision.h"
 
 namespace GameEngine {
 bool Collision::IsCollision(const Collider::Sphere& sphere1, const Collider::Sphere& sphere2) {

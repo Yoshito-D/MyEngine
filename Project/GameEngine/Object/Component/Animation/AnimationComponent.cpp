@@ -1,0 +1,377 @@
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Component/Animation/AnimationComponent.h"
+#include "GameEngine/Object/Component/Base/ComponentRegistry.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Object.h"
+
+namespace {
+const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+   GameEngine::AnimationComponent::kTypeName,
+   [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::AnimationComponent>(); },
+   GameEngine::AnimationComponent::kDisplayName,
+   GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)
+);
+}
+#include "GameEngine/Object/Model/Model.h"
+#include "GameEngine/Assets/Model/ModelAsset.h"
+#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
+
+#include <algorithm>
+#include <cmath>
+
+#ifdef USE_IMGUI
+#include "imgui.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#include <cstring>
+#endif
+
+namespace GameEngine {
+
+const char* AnimationComponent::GetTypeName() const {
+   return "AnimationComponent";
+}
+
+nlohmann::json AnimationComponent::Serialize() const {
+   // 再生位置と再生可否も保存し、Editorで調整したプレビュー状態をそのまま復元できるようにする。
+   return nlohmann::json{
+	  { "animationName", animationName },
+	  { "clipName", clipName },
+	  { "targetNodeName", targetNodeName },
+	  { "currentTime", currentTime },
+	  { "playbackSpeed", playbackSpeed },
+	  { "loop", loop },
+	  { "playing", playing },
+	  { "applyTranslation", applyTranslation },
+	  { "applyRotation", applyRotation },
+	  { "applyScale", applyScale },
+	  { "useSkinning", useSkinning },
+	  { "debugDrawBones", debugDrawBones }
+   };
+}
+
+void AnimationComponent::Deserialize(const nlohmann::json& data) {
+   // Component単体保存や旧シーンを受け入れるため、存在して型が正しい項目だけを現在値へ重ねる。
+   if (data.contains("animationName") && data.at("animationName").is_string()) {
+	  animationName = data.at("animationName").get<std::string>();
+   }
+   if (data.contains("clipName") && data.at("clipName").is_string()) {
+	  clipName = data.at("clipName").get<std::string>();
+   }
+   if (data.contains("targetNodeName") && data.at("targetNodeName").is_string()) {
+	  targetNodeName = data.at("targetNodeName").get<std::string>();
+   }
+   if (data.contains("currentTime") && data.at("currentTime").is_number()) {
+	  currentTime = data.at("currentTime").get<float>();
+   }
+   if (data.contains("playbackSpeed") && data.at("playbackSpeed").is_number()) {
+	  playbackSpeed = data.at("playbackSpeed").get<float>();
+   }
+   if (data.contains("loop") && data.at("loop").is_boolean()) {
+	  loop = data.at("loop").get<bool>();
+   }
+   if (data.contains("playing") && data.at("playing").is_boolean()) {
+	  playing = data.at("playing").get<bool>();
+   }
+   if (data.contains("applyTranslation") && data.at("applyTranslation").is_boolean()) {
+	  applyTranslation = data.at("applyTranslation").get<bool>();
+   }
+   if (data.contains("applyRotation") && data.at("applyRotation").is_boolean()) {
+	  applyRotation = data.at("applyRotation").get<bool>();
+   }
+   if (data.contains("applyScale") && data.at("applyScale").is_boolean()) {
+	  applyScale = data.at("applyScale").get<bool>();
+   }
+   if (data.contains("useSkinning") && data.at("useSkinning").is_boolean()) {
+	  useSkinning = data.at("useSkinning").get<bool>();
+   }
+   if (data.contains("debugDrawBones") && data.at("debugDrawBones").is_boolean()) {
+	  debugDrawBones = data.at("debugDrawBones").get<bool>();
+   }
+}
+
+void AnimationComponent::Play() {
+   playing = true;
+   animator_.SetPlaying(true);
+}
+
+void AnimationComponent::Pause() {
+   playing = false;
+   animator_.SetPlaying(false);
+}
+
+void AnimationComponent::Stop() {
+   playing = false;
+   currentTime = 0.0f;
+   animator_.SetPlaying(false);
+
+   // 時刻0の姿勢まで即時適用し、次のUpdateを待たずに停止結果をViewportへ反映する。
+   if (const AnimationClip* selectedClip = PrepareSelectedClip()) {
+	  ApplyCurrentPose(*selectedClip);
+   }
+}
+
+const AnimationClip* AnimationComponent::PrepareSelectedClip() {
+   if (animationName.empty()) {
+	  return nullptr;
+   }
+
+   if (cachedAnimationName_ != animationName) {
+	  // アセット名変更時は旧クリップへの生ポインターも同時に破棄し、解放後参照を防ぐ。
+	  cachedAnimationAsset_.reset();
+	  cachedAnimationName_ = animationName;
+	  animator_.SetClip(nullptr);
+   }
+
+   // 毎フレームのManager検索を避けつつ、未ロード時は後のフレームで再試行できるようにする。
+   if (!cachedAnimationAsset_) {
+	  cachedAnimationAsset_ = EngineContext::GetAnimation(animationName);
+   }
+
+   if (!cachedAnimationAsset_) {
+	  return nullptr;
+   }
+
+   const AnimationClip* selectedClip = nullptr;
+   if (!clipName.empty()) {
+	  selectedClip = cachedAnimationAsset_->GetClip(clipName);
+   }
+   // クリップ名が空または旧データの名前と不一致でも、アセット既定のモーションを再生する。
+   if (!selectedClip) {
+	  selectedClip = cachedAnimationAsset_->GetDefaultClip();
+   }
+   if (!selectedClip) {
+	  return nullptr;
+   }
+
+   // Clip実体が変わった時だけAnimator内部参照を差し替え、同一Clipの再生状態を保つ。
+   if (animator_.GetClip() != selectedClip) {
+	  animator_.SetClip(selectedClip);
+   }
+
+   // 公開されたInspector/Serialize用状態をAnimatorへ同期し、AnimatorがClampした時刻を戻す。
+   animator_.SetLoop(loop);
+   animator_.SetPlaybackSpeed(playbackSpeed);
+   animator_.SetPlaying(playing);
+   animator_.SetCurrentTime(currentTime);
+   currentTime = animator_.GetPlaybackTime();
+
+   return selectedClip;
+}
+
+void AnimationComponent::Update(float deltaTime) {
+   const AnimationClip* selectedClip = PrepareSelectedClip();
+   if (selectedClip) {
+      if (playing && deltaTime > 0.0f) {
+         animator_.Update(deltaTime);
+		 currentTime = animator_.GetPlaybackTime();
+	  }
+
+      // Pause中も現在時刻の姿勢は適用し、Inspectorのスクラブや設定変更を表示できるようにする。
+      ApplyCurrentPose(*selectedClip);
+   }
+
+   DrawDebugBones();
+}
+
+void AnimationComponent::DrawDebugBones() const {
+   if (!debugDrawBones) {
+	  return;
+   }
+
+   if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
+	  EngineContext::DrawSkeleton(model);
+   }
+}
+
+void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
+
+   // SkinningはSkeleton全体をGPU Paletteへ書き、下段のNode AnimationはOwner Transformだけを更新する。
+   // 両方は独立設定なので、キャラクター本体移動とボーン変形を同時に適用できる。
+   if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
+	  auto* modelAssetComp = model->GetComponent<MeshComponent>();
+	  ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
+	  if (useSkinning && modelAsset && modelAsset->HasSkinningData()) {
+		 const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
+		 SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
+		 if (bindSkeleton && skinCluster && !bindSkeleton->joints.empty() && !skinCluster->mappedPalette.empty()) {
+			// 毎フレームBind Poseから評価し直し、前フレームの姿勢へ差分を重ねてドリフトさせない。
+			Skeleton skeletonPose = *bindSkeleton;
+			ApplyAnimation(skeletonPose, selectedClip, currentTime);
+			skeletonPose.Update();
+
+			const size_t jointCount = std::min({
+			   skeletonPose.joints.size(),
+			   skinCluster->inverseBindPoseMatrices.size(),
+			   skinCluster->mappedPalette.size()
+			   });
+
+			// CPU側配列とGPUパレットの最小範囲だけを書き、壊れたアセットでも範囲外参照を避ける。
+			for (size_t jointIndex = 0; jointIndex < jointCount; ++jointIndex) {
+			   const Matrix4x4 skinMatrix = skinCluster->inverseBindPoseMatrices[jointIndex] * skeletonPose.joints[jointIndex].skeletonSpaceMatrix;
+			   skinCluster->mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
+			   // 非一様スケール後も法線を正しく変換するため逆転置行列を別に保持する。
+			   skinCluster->mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
+			}
+		 }
+	  }
+   }
+
+   // targetNodeNameが空の場合の既定Node選択もAnimatorへ委ね、Assetごとの命名差を吸収する。
+   const NodeAnimation* nodeAnimation = animator_.ResolveNodeAnimation(targetNodeName);
+
+   if (!nodeAnimation) {
+	  return;
+   }
+
+   auto* transformComponent = GetOwner().GetComponent<TransformComponent>();
+   if (!transformComponent) {
+	  return;
+   }
+
+   // 各TRSチャンネルを個別に許可し、Root Motionだけ除外する等の用途を可能にする。
+   if (applyTranslation && !nodeAnimation->translation.keyframes.empty()) {
+	  transformComponent->transform.translation = CalculateValue(nodeAnimation->translation.keyframes, currentTime);
+   }
+
+   if (applyRotation && !nodeAnimation->rotation.keyframes.empty()) {
+	  const Quaternion quaternion = CalculateValue(nodeAnimation->rotation.keyframes, currentTime);
+	  transformComponent->transform.SetRotationQuaternion(quaternion);
+   }
+
+   if (applyScale && !nodeAnimation->scale.keyframes.empty()) {
+	  transformComponent->transform.scale = CalculateValue(nodeAnimation->scale.keyframes, currentTime);
+   }
+}
+
+#ifdef USE_IMGUI
+void AnimationComponent::DrawInspector() {
+   const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
+   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+	  return;
+   }
+
+   auto Tr = [](const char* ja, const char* en) {
+	  return ImGuiHelper::Localize({ ja, en });
+   };
+
+   if (ImGui::Button(Tr("再生", "Play"))) {
+	  Play();
+   }
+   ImGui::SameLine();
+   if (ImGui::Button(Tr("停止", "Stop"))) {
+	  Stop();
+   }
+   ImGui::SameLine();
+   if (ImGui::Button(Tr("ポーズ", "Pause"))) {
+	  Pause();
+   }
+
+   ImGui::Checkbox(ImGuiHelper::Localize({ "ループ", "Loop" }), &loop);
+   ImGui::DragFloat(ImGuiHelper::Localize({ "再生速度", "Playback Speed" }), &playbackSpeed, 0.01f, -4.0f, 4.0f);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "移動を適用", "Apply Translation" }), &applyTranslation);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "回転を適用", "Apply Rotation" }), &applyRotation);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "スケールを適用", "Apply Scale" }), &applyScale);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "スキニングを使用", "Use Skinning" }), &useSkinning);
+   ImGui::Checkbox(ImGuiHelper::Localize({ "ボーンをデバッグ描画", "Debug Draw Bones" }), &debugDrawBones);
+
+   const auto animationNames = EngineContext::GetAnimationNames();
+   const char* animationPreview = animationName.empty() ? Tr("<なし>", "<none>") : animationName.c_str();
+   if (ImGui::BeginCombo(Tr("アニメーションアセット", "Animation Asset"), animationPreview)) {
+         if (ImGui::Selectable(Tr("<なし>", "<none>"), animationName.empty())) {
+            // Asset参照・Clip参照・再生時刻を一組で破棄し、旧Assetの生ポインターを残さない。
+            animationName.clear();
+		 clipName.clear();
+		 currentTime = 0.0f;
+		 cachedAnimationName_.clear();
+		 cachedAnimationAsset_.reset();
+		 animator_.SetClip(nullptr);
+	  }
+
+	  for (size_t i = 0; i < animationNames.size(); ++i) {
+		 const auto& name = animationNames[i];
+		 ImGui::PushID(5300 + static_cast<int>(i));
+		 const bool isSelected = animationName == name;
+         if (ImGui::Selectable(name.c_str(), isSelected)) {
+            // Asset変更時は同名Clipでも別実体なので、選択とAnimatorキャッシュを初期化する。
+            animationName = name;
+			clipName.clear();
+			currentTime = 0.0f;
+			cachedAnimationName_.clear();
+			cachedAnimationAsset_.reset();
+			animator_.SetClip(nullptr);
+		 }
+		 if (isSelected) {
+			ImGui::SetItemDefaultFocus();
+		 }
+		 ImGui::PopID();
+	  }
+	  ImGui::EndCombo();
+   }
+
+   if (animationNames.empty()) {
+	  ImGui::TextDisabled("%s", Tr("ロード済みアニメーションなし", "No loaded animations"));
+   }
+
+   auto animationAsset = animationName.empty() ? nullptr : EngineContext::GetAnimation(animationName);
+   if (animationAsset && animationAsset->HasAnyClip()) {
+	  const auto clipNames = animationAsset->GetClipNames();
+	  std::string previewClip = clipName.empty() ? animationAsset->GetDefaultClipName() : clipName;
+	  if (previewClip.empty() && !clipNames.empty()) {
+		 previewClip = clipNames.front();
+	  }
+
+	  if (!previewClip.empty() && ImGui::BeginCombo(ImGuiHelper::Localize({ "アニメーションクリップ", "Animation Clip" }), previewClip.c_str())) {
+		 for (size_t i = 0; i < clipNames.size(); ++i) {
+			const auto& name = clipNames[i];
+			ImGui::PushID(5400 + static_cast<int>(i));
+			const bool isSelected = (clipName == name);
+			if (ImGui::Selectable(name.c_str(), isSelected)) {
+			   clipName = name;
+			   currentTime = 0.0f;
+			   animator_.SetClip(nullptr);
+			}
+			if (isSelected) {
+			   ImGui::SetItemDefaultFocus();
+			}
+			ImGui::PopID();
+		 }
+		 ImGui::EndCombo();
+	  }
+   }
+
+   char targetNodeBuffer[ImGuiHelper::kDefaultTextBufferSize]{};
+   const size_t targetNameSize = std::min(targetNodeName.size(), sizeof(targetNodeBuffer) - 1);
+   std::memcpy(targetNodeBuffer, targetNodeName.c_str(), targetNameSize);
+   if (ImGui::InputText(ImGuiHelper::Localize({ "対象ノード", "Target Node" }), targetNodeBuffer, sizeof(targetNodeBuffer))) {
+	  targetNodeName = targetNodeBuffer;
+   }
+
+   // スクラブ中はゲームUpdateを待たず、変更した時刻の姿勢をその場で評価する。
+   if (ImGui::DragFloat(ImGuiHelper::Localize({ "現在時間", "Current Time" }), &currentTime, 0.01f, 0.0f, 1000.0f)) {
+	  if (const AnimationClip* selectedClip = PrepareSelectedClip()) {
+		 ApplyCurrentPose(*selectedClip);
+	  }
+   }
+   ImGui::Spacing();
+}
+#endif
+
+Vector3 AnimationComponent::QuaternionToEuler_(const Quaternion& q) const {
+   const float sinrCosp = 2.0f * (q.w * q.x + q.y * q.z);
+   const float cosrCosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+   const float roll = std::atan2(sinrCosp, cosrCosp);
+
+   // asinの定義域を丸め誤差で越える±90度付近はcopysignで極値へ固定し、NaNを防ぐ。
+   const float sinp = 2.0f * (q.w * q.y - q.z * q.x);
+   const float pitch = std::abs(sinp) >= 1.0f ? std::copysign(MathConstants::kHalfPi, sinp) : std::asin(sinp);
+
+   const float sinyCosp = 2.0f * (q.w * q.z + q.x * q.y);
+   const float cosyCosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+   const float yaw = std::atan2(sinyCosp, cosyCosp);
+
+   return Vector3(roll, pitch, yaw);
+}
+
+}

@@ -1,17 +1,17 @@
-#include "CameraGravityBridge.h"
-#include "CameraModeSwitcher.h"
-#include "../Character/CharacterLanding.h"
-#include "../Character/CharacterJump.h"
-#include "../Gravity/GravityBody.h"
-#include "../Gravity/PlanetSwitcher.h"
-#include "../Vehicle/VehicleGroundMover.h"
-#include "Framework/EngineContext.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Object.h"
-#include "Scene/Camera/Components/PerlinNoise.h"
-#include "Scene/Camera/Core/VirtualCamera.h"
-#include "Scene/SceneWorld.h"
-#include "Utility/MathUtils/QuaternionOperations.h"
+#include "GameProject/App/Component/Camera/CameraGravityBridge.h"
+#include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
+#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
+#include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/Camera/Components/PerlinNoise.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Scene/SceneWorld.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -19,8 +19,8 @@
 #include <vector>
 
 #ifdef USE_IMGUI
-#include "Editor/EditorReferenceWidgets.h"
-#include "ImguiManager.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

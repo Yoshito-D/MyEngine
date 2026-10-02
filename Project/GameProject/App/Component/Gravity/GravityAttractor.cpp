@@ -1,4 +1,4 @@
-#include "GravityAttractor.h"
+#include "GameProject/App/Component/Gravity/GravityAttractor.h"
 
 /// @brief GravityBody に重力方向と加速度を適用する
 bool App::GravityAttractor::ApplyTo(GravityBody& gravityBody, const GameEngine::Vector3& objectPosition) const {

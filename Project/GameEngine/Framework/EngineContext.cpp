@@ -1,12 +1,12 @@
-#include "pch.h"
-#include "EngineContext.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include <nlohmann/json.hpp>
-#include "Model/Model.h"
-#include "ModelAsset.h"
-#include "BaseScene.h"
-#include "Component/RenderComponent.h"
-#include "Scene/Camera/Core/CinemachineBrain.h"
-#include "Object/Skybox/Skybox.h"
+#include "GameEngine/Object/Model/Model.h"
+#include "GameEngine/Assets/Model/ModelAsset.h"
+#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Object/Component/Rendering/RenderComponent.h"
+#include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
+#include "GameEngine/Object/Skybox/Skybox.h"
 #include <numbers>
 
 namespace {

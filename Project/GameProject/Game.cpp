@@ -1,7 +1,7 @@
-#include "Game.h"
-#include "Utility/Logger.h"
-#include "App/Component/Vehicle/VehicleController.h"
-#include "Object/Model/Model.h"
+#include "GameProject/Game.h"
+#include "GameEngine/Utility/Logger.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
+#include "GameEngine/Object/Model/Model.h"
 
 #ifdef USE_IMGUI
 #include <filesystem>

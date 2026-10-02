@@ -1,23 +1,23 @@
-#include "PlanetSwitcher.h"
-#include "GravityAttractorLink.h"
-#include "GravityBody.h"
-#include "../Character/CharacterLanding.h"
-#include "../Character/CharacterJump.h"
-#include "../Character/CharacterWalker.h"
-#include "../Camera/CameraGravityBridge.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Object.h"
-#include "Utility/MathUtils/QuaternionOperations.h"
+#include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
+#include "GameProject/App/Component/Gravity/GravityAttractorLink.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
+#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Character/CharacterWalker.h"
+#include "GameProject/App/Component/Camera/CameraGravityBridge.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <algorithm>
 #include <limits>
 #include <cmath>
-#include <Model/Model.h>
-#include "SphericalGravityAttractor.h"
-#include "Scene/SceneWorld.h"
+#include "GameEngine/Object/Model/Model.h"
+#include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
+#include "GameEngine/Scene/SceneWorld.h"
 
 #ifdef USE_IMGUI
-#include "Editor/EditorReferenceWidgets.h"
-#include "ImguiManager.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 namespace App {

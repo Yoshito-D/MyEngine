@@ -1,9 +1,9 @@
-#include "SphericalGravityAttractor.h"
+#include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
-#include "EngineContext.h"
-#include "Object/Component/IObjectComponent.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #endif
 
 namespace App {

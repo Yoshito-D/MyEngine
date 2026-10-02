@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Object/Component/IObjectComponent.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Object.h"
-#include "Utility/Math/Vector3.h"
-#include "GravityBody.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Math/Types/Vector3.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
 #include <vector>
 
 namespace App {

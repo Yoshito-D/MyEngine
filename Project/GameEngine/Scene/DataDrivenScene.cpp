@@ -1,7 +1,7 @@
-#include "pch.h"
-#include "DataDrivenScene.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/DataDrivenScene.h"
 
-#include "Utility/Logger.h"
+#include "GameEngine/Utility/Logger.h"
 #include <fstream>
 
 namespace GameEngine {

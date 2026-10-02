@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Object/Component/IObjectComponent.h"
-#include "Utility/VectorMath.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Math/VectorMath.h"
 #include <array>
 #include <cstddef>
 #include <string>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utility/MathUtils/MathConstants.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
 #include <algorithm>
 #include <cmath>
 

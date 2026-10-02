@@ -2,10 +2,10 @@
 
 #ifdef USE_IMGUI
 
-#include "EditorAssetRegistry.h"
-#include "EditorCommand.h"
-#include "EditorObjectStore.h"
-#include "MathUtils.h"
+#include "GameEngine/Editor/EditorAssetRegistry.h"
+#include "GameEngine/Editor/EditorCommand.h"
+#include "GameEngine/Editor/EditorObjectStore.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <cstddef>
 #include <filesystem>
 #include <string>

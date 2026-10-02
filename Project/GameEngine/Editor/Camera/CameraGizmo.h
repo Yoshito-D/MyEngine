@@ -2,7 +2,7 @@
 
 #ifdef USE_IMGUI
 
-#include "Scene/Camera/Core/CameraState.h"
+#include "GameEngine/Scene/Camera/Core/CameraState.h"
 
 namespace GameEngine {
 

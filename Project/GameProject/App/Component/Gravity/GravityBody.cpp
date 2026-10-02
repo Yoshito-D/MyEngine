@@ -1,14 +1,14 @@
-#include "GravityBody.h"
-#include "Object/Component/TransformComponent.h"
-#include "Object/Object.h"
-#include "Utility/MathUtils/MathConstants.h"
-#include "Utility/MathUtils/QuaternionOperations.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <algorithm>
 #include <cmath>
-#include "PlanetSwitcher.h"
+#include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 using namespace GameEngine;

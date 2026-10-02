@@ -1,0 +1,51 @@
+#include "GameEngine/pch.h"
+#include "GameEngine/Graphics/Renderer/Pass/PostEffectPass.h"
+#include "GameEngine/Graphics/Renderer/Pass/FrameContext.h"
+#include "GameEngine/Graphics/Renderer/Pass/CommandDispatch.h"
+#include "GameEngine/Graphics/Device/OffscreenRenderTarget.h"
+#include "GameEngine/Graphics/Device/GraphicsDevice.h"
+#include "GameEngine/Graphics/PostProcess/PostProcessManager.h"
+
+namespace GameEngine {
+
+void PostEffectPass::Execute(FrameContext& ctx) {
+	if (!offscreenRT_) {
+		return;
+	}
+
+	// メイン描画パスの終了：current を RTV→SRV に遷移させてエフェクトの入力として使えるようにする
+	offscreenRT_->PostDraw();
+
+	// 深度を参照するOutline等の間だけDSVをSRV状態へ変更する。
+	// エフェクト終了後はUI等が同じ深度バッファへ書ける状態へ戻す。
+	// --- 1. ポストプロセスエフェクトチェーンを適用 ---
+	if (ctx.postProcessMgr) {
+		if (ctx.device) {
+			ctx.device->TransitionDepthStencilToShaderResource();
+		}
+		ctx.postProcessMgr->ApplyEffects(offscreenRT_->GetSRVHandleGPU());
+		// エフェクトがRootSignature/PSOを直接変更するため、後続UIモデルで必ず再バインドさせる。
+		if (ctx.invalidatePipelineBindingFunc) {
+			ctx.invalidatePipelineBindingFunc();
+		}
+		if (ctx.device) {
+			ctx.device->TransitionDepthStencilToWrite();
+		}
+	}
+
+	// エフェクト済みの色を消さずにUI等を重ねる。直前の色・深度コピーは、
+	// この区間の屈折パーティクルが自己参照しないための入力となる。
+	// --- 2. ポストプロセス後コマンド（UI など）を実行 ---
+	if (ctx.postProcessCommands && !ctx.postProcessCommands->empty()) {
+		offscreenRT_->CaptureSceneTextures();
+		offscreenRT_->PreDrawWithoutClear(true);
+
+		for (const auto& icmd : *ctx.postProcessCommands) {
+			DispatchDrawCommand(icmd->GetDrawCommand(), ctx);
+		}
+
+		offscreenRT_->PostDraw();
+	}
+}
+
+} // namespace GameEngine

@@ -1,6 +1,6 @@
 #pragma once
-#include "../Core/ICinemachineComponent.h"
-#include "Utility/MathUtils/MathConstants.h"
+#include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
 #include <algorithm>
 
 namespace GameEngine {

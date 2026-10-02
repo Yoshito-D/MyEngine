@@ -1,0 +1,61 @@
+#pragma once
+#include <vector>
+#include <cstdint>
+#include <nlohmann/json.hpp>
+#include "GameEngine/Effects/Particles/Modules/ParticleModule.h"
+
+namespace GameEngine {
+    // ============================================================
+    // Emission Module (放出モジュール)
+    // パーティクルの生成方法を制御
+    // ============================================================
+    class EmissionModule {
+    public:
+        struct Burst {
+            float time;          // 発生時間
+            uint32_t count;      // 発生数
+            uint32_t cycles;     // 繰り返し回数（0 = 無限ループ）
+            float interval;      // 繰り返し間隔
+
+            // ---- 実行時状態（シリアライズ対象外） ----
+            uint32_t firedCount = 0;     // 発火済みサイクル数
+            float nextFireTime = -1.0f;  // 次回発火予定時刻（負値 = 未初期化）
+        };
+
+        EmissionModule();
+
+        void SetEnabled(bool enabled) { enabled_ = enabled; }
+        bool IsEnabled() const { return enabled_; }
+
+        // 時間による放出率
+        void SetRateOverTime(float rate) { rateOverTime_ = rate; }
+        float GetRateOverTime() const { return rateOverTime_; }
+
+        // 距離による放出率
+        void SetRateOverDistance(float rate) { rateOverDistance_ = rate; }
+        float GetRateOverDistance() const { return rateOverDistance_; }
+
+        // バースト
+        void AddBurst(const Burst& burst) { bursts_.push_back(burst); }
+        void ClearBursts() { bursts_.clear(); }
+        const std::vector<Burst>& GetBursts() const { return bursts_; }
+        std::vector<Burst>& GetBursts() { return bursts_; }
+
+        /// @brief Burst の発火状態をリセット（Play/Stop 時に呼ぶ）
+        void ResetBurstStates();
+
+        // JSONシリアライズ
+        nlohmann::json ToJson() const;
+        void FromJson(const nlohmann::json& json);
+
+#ifdef USE_IMGUI
+        void DrawInspector();
+#endif
+
+    private:
+        bool enabled_ = true;
+        float rateOverTime_ = 10.0f;
+        float rateOverDistance_ = 0.0f;
+        std::vector<Burst> bursts_;
+    };
+}

@@ -1,6 +1,6 @@
-#include "pch.h"
-#include "DebugCamera.h"
-#include <EngineContext.h>
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Camera/DebugCamera.h"
+#include "GameEngine/Framework/EngineContext.h"
 
 namespace GameEngine {
 

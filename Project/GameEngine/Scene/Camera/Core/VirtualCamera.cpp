@@ -1,7 +1,7 @@
-#include "pch.h"
-#include "VirtualCamera.h"
-#include "Object/Object.h"
-#include "Scene/SceneWorld.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include <unordered_map>
 
 namespace GameEngine {

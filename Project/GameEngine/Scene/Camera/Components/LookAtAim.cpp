@@ -1,7 +1,7 @@
-#include "pch.h"
-#include "LookAtAim.h"
-#include "../Core/VirtualCamera.h"
-#include "Utility/MathUtils.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Camera/Components/LookAtAim.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <cmath>
 
 #ifdef USE_IMGUI

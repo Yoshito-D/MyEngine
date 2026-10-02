@@ -1,7 +1,7 @@
-#include "pch.h"
-#include "Camera.h"
-#include "Utility/MathUtils.h"
-#include "ResourceHelper.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Camera/Camera.h"
+#include "GameEngine/Math/MathUtils.h"
+#include "GameEngine/Graphics/Device/ResourceHelper.h"
 #include <algorithm>
 #include <cmath>
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Object/Component/IObjectComponent.h"
-#include "Utility/Math/Vector3.h"
-#include "Utility/Math/Quaternion.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Math/Types/Vector3.h"
+#include "GameEngine/Math/Types/Quaternion.h"
 
 namespace App {
 

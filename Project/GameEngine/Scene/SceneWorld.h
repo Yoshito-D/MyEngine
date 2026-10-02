@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Editor/EditorObjectStore.h"
+#include "GameEngine/Editor/EditorObjectStore.h"
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>

@@ -1,12 +1,12 @@
-#include "pch.h"
-#include "Sprite.h"
-#include "Texture.h"
-#include "Component/MaterialComponent.h"
-#include "Component/MeshComponent.h"
-#include "Component/TransformComponent.h"
-#include "Component/RenderComponent.h"
-#include "Core/Graphics/Mesh.h"
-#include "Core/Graphics/TransformationMatrix.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Sprite/Sprite.h"
+#include "GameEngine/Graphics/Resources/Texture.h"
+#include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
+#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Component/Rendering/RenderComponent.h"
+#include "GameEngine/Graphics/Resources/Mesh.h"
+#include "GameEngine/Graphics/Resources/TransformationMatrix.h"
 #include <algorithm>
 
 namespace GameEngine {

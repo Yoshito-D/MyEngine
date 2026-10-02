@@ -1,15 +1,15 @@
-#include "RaceGateComponent.h"
+#include "GameProject/App/Component/Race/RaceGateComponent.h"
 
-#include "RaceManagerComponent.h"
-#include "Object/Component/TriggerVolumeComponent.h"
-#include "Object/Object.h"
-#include "Scene/SceneWorld.h"
+#include "GameProject/App/Component/Race/RaceManagerComponent.h"
+#include "GameEngine/Object/Component/Collision/TriggerVolumeComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include <algorithm>
 
 #ifdef USE_IMGUI
-#include "Editor/EditorReferenceWidgets.h"
-#include "ImguiManager.h"
-#include "Utility/ImGuiHelper.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 namespace {

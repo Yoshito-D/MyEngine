@@ -1,6 +1,6 @@
 #pragma once
-#include "../Core/ICinemachineComponent.h"
-#include "Utility/Math/Vector3.h"
+#include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
+#include "GameEngine/Math/Types/Vector3.h"
 
 namespace GameEngine {
 

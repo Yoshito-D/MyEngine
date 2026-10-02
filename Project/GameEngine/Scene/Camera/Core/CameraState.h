@@ -1,6 +1,6 @@
 #pragma once
-#include "Utility/VectorMath.h"
-#include "Utility/MathUtils.h"
+#include "GameEngine/Math/VectorMath.h"
+#include "GameEngine/Math/MathUtils.h"
 #include <cmath>
 
 namespace GameEngine {

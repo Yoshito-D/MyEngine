@@ -1,14 +1,14 @@
-#include "pch.h"
-#include "UITextComponent.h"
-#include "Asset/Font/FontManager.h"
-#include "Component/ComponentRegistry.h"
-#include "EngineContext.h"
-#include "Object.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Object/Component/UI/UITextComponent.h"
+#include "GameEngine/Assets/Font/FontManager.h"
+#include "GameEngine/Object/Component/Base/ComponentRegistry.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Object.h"
 #include <algorithm>
 
 #ifdef USE_IMGUI
 #include "imgui.h"
-#include "Utility/ImGuiHelper.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 namespace {

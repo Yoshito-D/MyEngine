@@ -1,8 +1,8 @@
-#include "MeshNormalGravityAttractor.h"
+#include "GameProject/App/Component/Gravity/MeshNormalGravityAttractor.h"
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
-#include "Object/Component/IObjectComponent.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
+#include "GameEngine/Object/Component/Base/IObjectComponent.h"
 
 namespace App {
 

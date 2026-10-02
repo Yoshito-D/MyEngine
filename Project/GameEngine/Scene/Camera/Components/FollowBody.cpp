@@ -1,6 +1,6 @@
-#include "pch.h"
-#include "FollowBody.h"
-#include "../Core/VirtualCamera.h"
+#include "GameEngine/pch.h"
+#include "GameEngine/Scene/Camera/Components/FollowBody.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include <cmath>
 
 #ifdef USE_IMGUI

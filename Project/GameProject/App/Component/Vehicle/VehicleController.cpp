@@ -1,21 +1,21 @@
-#include "VehicleController.h"
-#include "Object/Object.h"
-#include "Scene/SceneWorld.h"
-#include "Scene/Camera/Core/VirtualCamera.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/SceneWorld.h"
+#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 
-#include "Framework/EngineContext.h"
-#include "Core/Renderer/Pass/PlayerShadowPass.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Graphics/Renderer/Pass/PlayerShadowPass.h"
 
-#include "Object/Model/Model.h"
-#include "Object/Component/MeshComponent.h"
-#include "Object/Component/TransformComponent.h"
+#include "GameEngine/Object/Model/Model.h"
+#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
 
-#include "../Gravity/PlanetSwitcher.h"
+#include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 
 #include <cmath>
 
 #ifdef USE_IMGUI
-#include "ImguiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #endif
 
 using namespace GameEngine;

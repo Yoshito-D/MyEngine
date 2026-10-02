@@ -1,0 +1,52 @@
+#include "GameEngine/pch.h"
+#include "GameEngine/Effects/Particles/Modules/EmissionModule.h"
+
+namespace GameEngine {
+    EmissionModule::EmissionModule() = default;
+
+    void EmissionModule::ResetBurstStates() {
+        // firedCountとnextFireTimeは再生セッション固有で、設定JSONには含めず再生開始時に初期化する。
+        for (auto& burst : bursts_) {
+            burst.firedCount = 0;
+            burst.nextFireTime = -1.0f;
+        }
+    }
+
+    nlohmann::json EmissionModule::ToJson() const {
+        nlohmann::json j;
+        
+        j["enabled"] = enabled_;
+        j["rateOverTime"] = rateOverTime_;
+        j["rateOverDistance"] = rateOverDistance_;
+        
+        auto& burstsArray = j["bursts"] = nlohmann::json::array();
+        for (const auto& burst : bursts_) {
+            burstsArray.push_back({
+                {"time", burst.time},
+                {"count", burst.count},
+                {"cycles", burst.cycles},
+                {"interval", burst.interval}
+            });
+        }
+        
+        return j;
+    }
+
+    void EmissionModule::FromJson(const nlohmann::json& j) {
+        if (j.contains("enabled")) enabled_ = j["enabled"];
+        if (j.contains("rateOverTime")) rateOverTime_ = j["rateOverTime"];
+        if (j.contains("rateOverDistance")) rateOverDistance_ = j["rateOverDistance"];
+        
+        if (j.contains("bursts")) {
+            bursts_.clear();
+            for (const auto& burstJson : j["bursts"]) {
+                Burst burst;
+                burst.time = burstJson["time"];
+                burst.count = burstJson["count"];
+                burst.cycles = burstJson["cycles"];
+                burst.interval = burstJson["interval"];
+                bursts_.push_back(burst);
+            }
+        }
+    }
+}
