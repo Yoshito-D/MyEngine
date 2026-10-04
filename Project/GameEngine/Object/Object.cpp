@@ -3,6 +3,7 @@
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Object/Component/Base/ObjectNameComponent.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Component/Rendering/RenderComponent.h"
 #include <algorithm>
 #include <atomic>
 #include <unordered_map>
@@ -37,7 +38,7 @@ GameEngine::Matrix4x4 CalculateWorldMatrix(
 
    GameEngine::Matrix4x4 localMatrix = GameEngine::MakeIdentity4x4();
    if (const auto* transform = object->GetComponent<GameEngine::TransformComponent>()) {
-      localMatrix = GameEngine::MakeAffineMatrix(transform->transform);
+      localMatrix = GameEngine::MakeAffineMatrix(transform->GetLocalPose());
    }
 
    const std::string& parentId = object->GetParentEntityId();
@@ -62,7 +63,7 @@ GameEngine::Matrix4x4 CalculateWorldMatrix(
 namespace GameEngine {
 
 Object::Object()
-   : entityId_(AllocateRuntimeEntityId()) {
+   : components_(*this), entityId_(AllocateRuntimeEntityId()) {
    RegisteredObjects().push_back(this);
    RegisteredObjectIds()[entityId_] = this;
    // 全Objectがシリアライズ可能な名前を持つよう、生成時に必須コンポーネントを付与する。
@@ -196,27 +197,35 @@ void Object::SetObjectName(const std::string& name) {
    if (!objectNameComponent) {
 	  return;
    }
-   objectNameComponent->name = name;
+   {
+      auto settings = objectNameComponent->DescribeSettings();
+      settings.name = name;
+      objectNameComponent->Configure(settings);
+   }
 }
 
 std::string Object::GetObjectName() const {
    const auto* objectNameComponent = GetComponent<ObjectNameComponent>();
-   if (!objectNameComponent || objectNameComponent->name.empty()) {
+   if (!objectNameComponent || objectNameComponent->DescribeSettings().name.empty()) {
 	  // 旧データや削除済みコンポーネントでも、ヒエラルキーへ安定した表示名を返す。
 	  return "Object";
    }
-   return objectNameComponent->name;
+   return objectNameComponent->DescribeSettings().name;
 }
 
 IObjectComponent* Object::AddComponentByTypeName(const std::string& typeName) {
-   return components_.AddByTypeName(*this, typeName);
+   return components_.AddByTypeName(typeName);
 }
 
 bool Object::HasComponentByTypeName(const std::string& typeName) const {
    return components_.HasByTypeName(typeName);
 }
 
-IObjectComponent* Object::GetComponentByTypeName(const std::string& typeName) const {
+IObjectComponent* Object::GetComponentByTypeName(const std::string& typeName) {
+   return components_.GetByTypeName(typeName);
+}
+
+const IObjectComponent* Object::GetComponentByTypeName(const std::string& typeName) const {
    return components_.GetByTypeName(typeName);
 }
 
@@ -225,7 +234,7 @@ bool Object::RemoveComponentByTypeName(const std::string& typeName) {
 }
 
 bool Object::DeserializeComponents(const nlohmann::json& componentsData) {
-   return components_.Deserialize(*this, componentsData);
+   return components_.Deserialize(componentsData);
 }
 
 nlohmann::json Object::SerializeComponents() const {
@@ -234,6 +243,32 @@ nlohmann::json Object::SerializeComponents() const {
 
 void Object::UpdateComponents(float deltaTime) {
    components_.Update(deltaTime);
+}
+
+void Object::Activate() {
+   components_.Activate();
+   if (auto* renderComponent = GetComponent<RenderComponent>()) {
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.visible = true;
+         renderComponent->Configure(settings);
+      }
+   }
+}
+
+void Object::Deactivate() {
+   components_.Deactivate();
+   if (auto* renderComponent = GetComponent<RenderComponent>()) {
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.visible = false;
+         renderComponent->Configure(settings);
+      }
+   }
+}
+
+void Object::ResolveComponentReferences(SceneWorld& sceneWorld, bool initializeRuntime) {
+   components_.ResolveReferences(sceneWorld, initializeRuntime);
 }
 
 #ifdef USE_IMGUI

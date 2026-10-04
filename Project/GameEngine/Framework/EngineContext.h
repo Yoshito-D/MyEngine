@@ -445,8 +445,8 @@ public:
    //================================================================
 
    /// @brief CameraUnit（Brain+Cameraペア）を生成し登録する
-   /// @return 生成したCameraUnitのポインタ
-   static CameraUnit* CreateCameraUnit();
+   /// @return 出力カメラと一緒に登録した初期化済みBrain
+   static CinemachineBrain* CreateCameraUnit(std::unique_ptr<Camera> outputCamera);
 
    /// @brief アクティブなCinemachineBrainを取得する
    static CinemachineBrain* GetActiveBrain();

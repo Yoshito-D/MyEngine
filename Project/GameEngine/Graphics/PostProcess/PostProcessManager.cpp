@@ -77,7 +77,7 @@ std::string StableEditorLabel(const char* japanese, const char* english, const c
 
 namespace GameEngine {
 
-void PostProcessManager::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget, PSOManager* psoManager) {
+void PostProcessManager::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget, const PSOManager* psoManager) {
    device_ = device;
    renderTarget_ = renderTarget;
    psoManager_ = psoManager;
@@ -325,7 +325,7 @@ int PostProcessManager::GetEffectPriority(const std::string& name) const {
    return (it != effects_.end()) ? it->priority : -1;
 }
 
-PostProcess* PostProcessManager::GetEffect(const std::string& name) const {
+const PostProcess* PostProcessManager::GetEffect(const std::string& name) const {
    auto it = FindEffect(name);
    return (it != effects_.end()) ? it->effect.get() : nullptr;
 }
@@ -341,16 +341,11 @@ std::vector<std::string> PostProcessManager::GetEffectNames() const {
    return names;
 }
 
-std::vector<const PostProcessManager::EffectInfo*> PostProcessManager::GetSortedEffects() const {
-   std::vector<const EffectInfo*> sortedEffects;
-   sortedEffects.reserve(effects_.size());
-
-   for (const auto& effectInfo : effects_) {
-	  sortedEffects.push_back(&effectInfo);
-   }
-
-   return sortedEffects;
+PostProcess* PostProcessManager::GetEffect(const std::string& name) {
+   const auto it = FindEffect(name);
+   return it != effects_.end() ? it->effect.get() : nullptr;
 }
+
 
 nlohmann::json PostProcessManager::SerializeSceneState() const {
    // 表示名やパイプライン名ではなく安定IDを保存し、名称変更後も同じエフェクトへ復元する。

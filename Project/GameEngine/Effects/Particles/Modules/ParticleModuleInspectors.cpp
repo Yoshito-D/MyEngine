@@ -70,34 +70,19 @@ bool DrawRandomFloat(
    float minValue,
    float maxValue,
    float columnWidth = kInspectorColumnWidth) {
-   bool changed = false;
+   // UIでは作業値だけを編集し、関連する両端とモードを検証済み範囲として一括確定する。
+   bool randomized = value.IsRandomized();
+   auto low = value.Minimum(); auto high = value.Maximum();
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
-
-   bool randomize = value.randomize;
-   if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
-	  value.randomize = randomize;
-	  changed = true;
-   }
-
-   if (value.randomize) {
-	  float min = value.minValue;
-	  float max = value.maxValue;
-	  if (ImGuiHelper::DrawRangeFloat(L({ "範囲", "Range" }), min, max, minValue, maxValue, columnWidth, speed)) {
-		 value.minValue = min;
-		 value.maxValue = max;
-		 changed = true;
-	  }
+   bool changed = ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomized, columnWidth);
+   if (randomized) {
+      changed |= ImGuiHelper::DrawRangeFloat(L({ "範囲", "Range" }), low, high, minValue, maxValue, columnWidth, speed);
    } else {
-	  float scalar = value.minValue;
-	  if (ImGuiHelper::DrawFloatControl(L({ "値", "Value" }), scalar, value.minValue, columnWidth, speed, minValue, maxValue)) {
-		 // 固定モードでは両端を同期し、後からRandomへ切り替えた際に古いmax値が突然復活しないようにする。
-		 value.minValue = scalar;
-		 value.maxValue = scalar;
-		 changed = true;
-	  }
+      changed |= ImGuiHelper::DrawFloatControl(L({ "値", "Value" }), low, low, columnWidth, speed, minValue, maxValue);
+      high = low;
    }
-
+   if (changed) value = RandomFloat(low, high, randomized);
    ImGui::PopID();
    return changed;
 }
@@ -109,41 +94,20 @@ bool DrawRandomVector2(
    float minValue,
    float maxValue,
    float columnWidth = kInspectorColumnWidth) {
-   bool changed = false;
+   // UIでは作業値だけを編集し、関連する両端とモードを検証済み範囲として一括確定する。
+   bool randomized = value.IsRandomized();
+   auto low = value.Minimum(); auto high = value.Maximum();
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
-
-   bool randomize = value.randomize;
-   if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
-	  value.randomize = randomize;
-	  changed = true;
-   }
-
-   if (value.randomize) {
-	  Vector2 minVec = value.minValue;
-	  Vector2 maxVec = value.maxValue;
-	  // 片側ずつ編集するUIなので、その場で反対端へ制約して常に有効な成分別範囲を保つ。
-	  if (ImGuiHelper::DrawVec2Control(L({ "最小", "Min" }), minVec, 0.0f, columnWidth, speed, minValue, maxValue)) {
-		 if (minVec.x > maxVec.x) minVec.x = maxVec.x;
-		 if (minVec.y > maxVec.y) minVec.y = maxVec.y;
-		 value.minValue = minVec;
-		 changed = true;
-	  }
-	  if (ImGuiHelper::DrawVec2Control(L({ "最大", "Max" }), maxVec, 0.0f, columnWidth, speed, minValue, maxValue)) {
-		 if (maxVec.x < value.minValue.x) maxVec.x = value.minValue.x;
-		 if (maxVec.y < value.minValue.y) maxVec.y = value.minValue.y;
-		 value.maxValue = maxVec;
-		 changed = true;
-	  }
+   bool changed = ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomized, columnWidth);
+   if (randomized) {
+      changed |= ImGuiHelper::DrawVec2Control(L({ "最小", "Min" }), low, 0.0f, columnWidth, speed, minValue, maxValue);
+      changed |= ImGuiHelper::DrawVec2Control(L({ "最大", "Max" }), high, 0.0f, columnWidth, speed, minValue, maxValue);
    } else {
-	  Vector2 vectorValue = value.minValue;
-	  if (ImGuiHelper::DrawVec2Control(L({ "値", "Value" }), vectorValue, 0.0f, columnWidth, speed, minValue, maxValue)) {
-		 value.minValue = vectorValue;
-		 value.maxValue = vectorValue;
-		 changed = true;
-	  }
+      changed |= ImGuiHelper::DrawVec2Control(L({ "値", "Value" }), low, 0.0f, columnWidth, speed, minValue, maxValue);
+      high = low;
    }
-
+   if (changed) value = RandomVector2(low, high, randomized);
    ImGui::PopID();
    return changed;
 }
@@ -155,41 +119,20 @@ bool DrawRandomVector3(
    float minValue,
    float maxValue,
    float columnWidth = kInspectorColumnWidth) {
-   bool changed = false;
+   // UIでは作業値だけを編集し、関連する両端とモードを検証済み範囲として一括確定する。
+   bool randomized = value.IsRandomized();
+   auto low = value.Minimum(); auto high = value.Maximum();
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
-
-   bool randomize = value.randomize;
-   if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
-	  value.randomize = randomize;
-	  changed = true;
-   }
-
-   if (value.randomize) {
-	  Vector3 minVec = value.minValue;
-	  Vector3 maxVec = value.maxValue;
-	  if (ImGuiHelper::DrawVec3Control(L({ "最小", "Min" }), minVec, 0.0f, columnWidth, speed, minValue, maxValue)) {
-		 ClampRange(minVec, maxVec);
-		 value.minValue = minVec;
-		 changed = true;
-	  }
-	  if (ImGuiHelper::DrawVec3Control(L({ "最大", "Max" }), maxVec, 0.0f, columnWidth, speed, minValue, maxValue)) {
-		 Vector3 minCurrent = value.minValue;
-		 if (maxVec.x < minCurrent.x) maxVec.x = minCurrent.x;
-		 if (maxVec.y < minCurrent.y) maxVec.y = minCurrent.y;
-		 if (maxVec.z < minCurrent.z) maxVec.z = minCurrent.z;
-		 value.maxValue = maxVec;
-		 changed = true;
-	  }
+   bool changed = ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomized, columnWidth);
+   if (randomized) {
+      changed |= ImGuiHelper::DrawVec3Control(L({ "最小", "Min" }), low, 0.0f, columnWidth, speed, minValue, maxValue);
+      changed |= ImGuiHelper::DrawVec3Control(L({ "最大", "Max" }), high, 0.0f, columnWidth, speed, minValue, maxValue);
    } else {
-	  Vector3 vectorValue = value.minValue;
-	  if (ImGuiHelper::DrawVec3Control(L({ "値", "Value" }), vectorValue, 0.0f, columnWidth, speed, minValue, maxValue)) {
-		 value.minValue = vectorValue;
-		 value.maxValue = vectorValue;
-		 changed = true;
-	  }
+      changed |= ImGuiHelper::DrawVec3Control(L({ "値", "Value" }), low, 0.0f, columnWidth, speed, minValue, maxValue);
+      high = low;
    }
-
+   if (changed) value = RandomVector3(low, high, randomized);
    ImGui::PopID();
    return changed;
 }
@@ -201,43 +144,20 @@ bool DrawRandomEulerDegrees(
    float minDegrees = -360.0f,
    float maxDegrees = 360.0f,
    float columnWidth = kInspectorColumnWidth) {
-   bool changed = false;
+   // UIでは作業値だけを編集し、関連する両端とモードを検証済み範囲として一括確定する。
+   bool randomized = value.IsRandomized();
+   auto low = ImGuiHelper::RadiansToDegrees(value.Minimum()); auto high = ImGuiHelper::RadiansToDegrees(value.Maximum());
    ImGui::PushID(label.c_str());
    ImGui::SeparatorText(label.c_str());
-
-   bool randomize = value.randomize;
-   if (ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomize, columnWidth)) {
-	  value.randomize = randomize;
-	  changed = true;
-   }
-
-   // 保存・計算はradian、Inspectorだけdegreeへ変換し、編集しやすさと内部単位の一貫性を両立する。
-   if (value.randomize) {
-	  Vector3 minDeg = ImGuiHelper::RadiansToDegrees(value.minValue);
-	  Vector3 maxDeg = ImGuiHelper::RadiansToDegrees(value.maxValue);
-	  if (ImGuiHelper::DrawVec3Control(L({ "最小 (deg)", "Min (deg)" }), minDeg, 0.0f, columnWidth, speedDegrees, minDegrees, maxDegrees, "%.1f")) {
-		 ClampRange(minDeg, maxDeg);
-		 value.minValue = ImGuiHelper::DegreesToRadians(minDeg);
-		 changed = true;
-	  }
-	  if (ImGuiHelper::DrawVec3Control(L({ "最大 (deg)", "Max (deg)" }), maxDeg, 0.0f, columnWidth, speedDegrees, minDegrees, maxDegrees, "%.1f")) {
-		 Vector3 minCurrent = ImGuiHelper::RadiansToDegrees(value.minValue);
-		 if (maxDeg.x < minCurrent.x) maxDeg.x = minCurrent.x;
-		 if (maxDeg.y < minCurrent.y) maxDeg.y = minCurrent.y;
-		 if (maxDeg.z < minCurrent.z) maxDeg.z = minCurrent.z;
-		 value.maxValue = ImGuiHelper::DegreesToRadians(maxDeg);
-		 changed = true;
-	  }
+   bool changed = ImGuiHelper::DrawCheckbox(L({ "ランダム", "Random" }), randomized, columnWidth);
+   if (randomized) {
+      changed |= ImGuiHelper::DrawVec3Control(L({ "最小", "Min" }), low, 0.0f, columnWidth, speedDegrees, minDegrees, maxDegrees);
+      changed |= ImGuiHelper::DrawVec3Control(L({ "最大", "Max" }), high, 0.0f, columnWidth, speedDegrees, minDegrees, maxDegrees);
    } else {
-	  Vector3 eulerDegrees = ImGuiHelper::RadiansToDegrees(value.minValue);
-	  if (ImGuiHelper::DrawVec3Control(L({ "値 (deg)", "Value (deg)" }), eulerDegrees, 0.0f, columnWidth, speedDegrees, minDegrees, maxDegrees, "%.1f")) {
-		 Vector3 radians = ImGuiHelper::DegreesToRadians(eulerDegrees);
-		 value.minValue = radians;
-		 value.maxValue = radians;
-		 changed = true;
-	  }
+      changed |= ImGuiHelper::DrawVec3Control(L({ "値", "Value" }), low, 0.0f, columnWidth, speedDegrees, minDegrees, maxDegrees);
+      high = low;
    }
-
+   if (changed) value = RandomVector3(ImGuiHelper::DegreesToRadians(low), ImGuiHelper::DegreesToRadians(high), randomized);
    ImGui::PopID();
    return changed;
 }
@@ -407,7 +327,8 @@ void EmissionModule::DrawInspector() {
    ImGui::Separator();
    ImGui::Text("%s (%zu)", L({ "バースト", "Bursts" }), GetBursts().size());
 
-   auto& bursts = GetBursts();
+   auto bursts = GetBursts();
+   bool scheduleChanged = false;
    // 走査中のeraseで参照を無効化しないよう、削除対象だけ記録してループ後に反映する。
    int removeIndex = -1;
    for (int i = 0; i < static_cast<int>(bursts.size()); ++i) {
@@ -428,28 +349,28 @@ void EmissionModule::DrawInspector() {
 		 if (ImGuiHelper::DrawFloatControl(L({ "時間", "Time" }), time, 0.0f, kInspectorColumnWidth, 0.05f, 0.0f, 999.0f, "%.2f")) {
 			burst.time = time;
 			// 時刻設定の変更後は実行時カウンターを破棄し、新しいスケジュールを先頭から評価し直す。
-			ResetBurstStates();
+			scheduleChanged = true;
 		 }
 
 		 int count = static_cast<int>(burst.count);
 		 if (ImGuiHelper::DrawIntControl(L({ "数", "Count" }), count, 10, kInspectorColumnWidth, 1.0f, 1, 10000)) {
 			burst.count = static_cast<uint32_t>(std::max(count, 1));
-			ResetBurstStates();
+			scheduleChanged = true;
 		 }
 
 		 int cycles = static_cast<int>(burst.cycles);
 		 if (ImGuiHelper::DrawIntControl(L({ "回数", "Cycles" }), cycles, 1, kInspectorColumnWidth, 1.0f, 0, 1000)) {
 			burst.cycles = static_cast<uint32_t>(std::max(cycles, 0));
-			ResetBurstStates();
+			scheduleChanged = true;
 		 }
 
 		 float interval = burst.interval;
 		 if (ImGuiHelper::DrawFloatControl(L({ "間隔", "Interval" }), interval, 1.0f, kInspectorColumnWidth, 0.05f, 0.01f, 60.0f, "%.2f")) {
 			burst.interval = interval;
-			ResetBurstStates();
+			scheduleChanged = true;
 		 }
 
-		 ImGui::TextDisabled("firedCount: %u  nextFireTime: %.2f", burst.firedCount, burst.nextFireTime);
+		 ImGui::TextDisabled("firedCount: %llu  nextFireTime: %.2f", static_cast<unsigned long long>(burstStates_[i].firedCount), burstStates_[i].nextFireTime);
 		 ImGui::Unindent();
 	  }
 
@@ -458,7 +379,7 @@ void EmissionModule::DrawInspector() {
 
    if (removeIndex >= 0) {
 	  bursts.erase(bursts.begin() + removeIndex);
-	  ResetBurstStates();
+	  scheduleChanged = true;
    }
 
    if (ImGui::Button(L({ "+ バースト追加", "+ Add Burst" }))) {
@@ -467,13 +388,14 @@ void EmissionModule::DrawInspector() {
 	  burst.count = 10;
 	  burst.cycles = 1;
 	  burst.interval = 1.0f;
-	  AddBurst(burst);
-	  ResetBurstStates();
+	  bursts.push_back(burst);
+	  scheduleChanged = true;
    }
    ImGui::SameLine();
    if (ImGui::Button(L({ "バーストをクリア", "Clear Bursts" }))) {
-	  ClearBursts();
+	  bursts.clear(); scheduleChanged = true;
    }
+   if (scheduleChanged) ReplaceBurstSchedule(bursts);
 }
 
 void ShapeModule::DrawInspector() {
@@ -724,9 +646,7 @@ void RotationOverLifetimeModule::DrawInspector() {
 
    RandomVector3 angularVelocity{ GetAngularVelocityMin(), GetAngularVelocityMax(), GetAngularVelocityRandomize() };
    if (DrawRandomEulerDegrees(L({ "角速度", "Angular Velocity" }), angularVelocity, 1.0f, -360.0f, 360.0f)) {
-	  SetAngularVelocityMin(angularVelocity.minValue);
-	  SetAngularVelocityMax(angularVelocity.maxValue);
-	  SetAngularVelocityRandomize(angularVelocity.randomize);
+	  ConfigureAngularVelocity(angularVelocity);
    }
 }
 
@@ -801,11 +721,9 @@ void UVTransformModule::DrawInspector() {
 	  }
    } else if (GetRotationMode() == ValueMode::RandomBetweenTwoConstants) {
 	  RandomFloat value = GetRotationRandom();
-	  value.minValue = ImGuiHelper::RadiansToDegrees(value.minValue);
-	  value.maxValue = ImGuiHelper::RadiansToDegrees(value.maxValue);
+	  value = RandomFloat(ImGuiHelper::RadiansToDegrees(value.Minimum()), ImGuiHelper::RadiansToDegrees(value.Maximum()), value.IsRandomized());
 	  if (DrawRandomFloat(L({ "回転範囲 (deg)", "Rotation Range (deg)" }), value, 0.1f, -360.0f, 360.0f)) {
-		 value.minValue = ImGuiHelper::DegreesToRadians(value.minValue);
-		 value.maxValue = ImGuiHelper::DegreesToRadians(value.maxValue);
+		 value = RandomFloat(ImGuiHelper::DegreesToRadians(value.Minimum()), ImGuiHelper::DegreesToRadians(value.Maximum()), value.IsRandomized());
 		 SetRotationRandom(value);
 	  }
    } else {

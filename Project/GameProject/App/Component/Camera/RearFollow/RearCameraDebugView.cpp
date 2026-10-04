@@ -15,12 +15,14 @@ using namespace RearCameraMath;
 void RearCameraDebugView::MutateCameraState(GameEngine::CameraState&, float) {
    auto* camera = GetRearCamera();
    if (!camera) return;
-   const auto* recorder = owner_->GetComponent<RearCameraMeasurementRecorder>();
+   const auto* recorder = GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>();
    if (!recorder) return;
-   DrawCameraMeasurementOverlay(*camera, *recorder);
+   DrawCameraMeasurementOverlay(camera->DescribeSettings(), *recorder);
 #ifdef USE_IMGUI
    if (const auto frame = camera->GetFrameView()) {
-      DrawCameraEvidenceWindow(*camera, *frame, *owner_->GetComponent<RearCameraMeasurementRecorder>());
+      auto settings = camera->DescribeSettings();
+      DrawCameraEvidenceWindow(settings, *frame, *GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>());
+      camera->Configure(settings);
    }
 #endif
 }
@@ -195,12 +197,14 @@ void RearCameraDebugView::DrawInspector() {
    ImGui::PushID("DiagnosticsComponent");
    RearCameraComponent::DrawInspector();
    ImGui::PopID();
-   auto* camera = owner_ ? owner_->GetComponent<PlayerRearFollowCamera>() : nullptr;
-   auto* recorder = owner_ ? owner_->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
+   auto* camera = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<PlayerRearFollowCamera>() : nullptr;
+   auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
    if (!camera || !recorder) return;
    if (const auto frame = camera->GetFrameView()) {
       bool enabled = camera->IsEnabled();
-      DrawInspector(*camera, enabled, *frame, *recorder);
+      auto settings = camera->DescribeSettings();
+      DrawInspector(settings, enabled, *frame, *recorder);
+      camera->Configure(settings);
       camera->SetEnabled(enabled);
    }
 }

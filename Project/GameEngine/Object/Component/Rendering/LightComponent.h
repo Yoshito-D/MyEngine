@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/MathUtils.h"
@@ -58,6 +60,58 @@ public:
    void DrawInspector() override;
 #endif
 
+
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+   Vector4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; ///< リニア空間のライト色
+      float intensity = 1.0f; ///< ライト強度
+      float radius = 2.0f; ///< Point Lightの有効半径
+      float decay = 0.1f; ///< 距離減衰
+      float distance = 5.0f; ///< Spot Lightの到達距離
+      float cosAngle = 0.7f; ///< Spot Lightの外側コーン
+      float cosFalloffStart = 0.9f; ///< Spot Lightの減衰開始コーン
+   Vector2 areaSize{ 5.0f, 5.0f }; ///< Area Lightの幅と高さ
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.color = color;
+      settings.intensity = intensity;
+      settings.radius = radius;
+      settings.decay = decay;
+      settings.distance = distance;
+      settings.cosAngle = cosAngle;
+      settings.cosFalloffStart = cosFalloffStart;
+      settings.areaSize = areaSize;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.color.x)) settings.color.x = defaults.color.x;
+      if (!std::isfinite(settings.color.y)) settings.color.y = defaults.color.y;
+      if (!std::isfinite(settings.color.z)) settings.color.z = defaults.color.z;
+      if (!std::isfinite(settings.color.w)) settings.color.w = defaults.color.w;
+      if (!std::isfinite(settings.intensity)) settings.intensity = defaults.intensity;
+      if (!std::isfinite(settings.radius)) settings.radius = defaults.radius;
+      if (!std::isfinite(settings.decay)) settings.decay = defaults.decay;
+      if (!std::isfinite(settings.distance)) settings.distance = defaults.distance;
+      if (!std::isfinite(settings.cosAngle)) settings.cosAngle = defaults.cosAngle;
+      if (!std::isfinite(settings.cosFalloffStart)) settings.cosFalloffStart = defaults.cosFalloffStart;
+      if (!std::isfinite(settings.areaSize.x)) settings.areaSize.x = defaults.areaSize.x;
+      if (!std::isfinite(settings.areaSize.y)) settings.areaSize.y = defaults.areaSize.y;
+      color = settings.color;
+      intensity = settings.intensity;
+      radius = settings.radius;
+      decay = settings.decay;
+      distance = settings.distance;
+      cosAngle = settings.cosAngle;
+      cosFalloffStart = settings.cosFalloffStart;
+      areaSize = settings.areaSize;
+   }
+
+private:
    Vector4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; ///< リニア空間のライト色
    float intensity = 1.0f; ///< ライト強度
    float radius = 2.0f; ///< Point Lightの有効半径

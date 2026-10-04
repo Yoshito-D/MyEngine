@@ -21,7 +21,7 @@ void RearCameraMeasurementRecorder::MutateCameraState(GameEngine::CameraState&, 
    if (const auto frame = camera->GetFrameView()) {
       // 旧実装と同様、カメラ補間用dtではなくゲーム更新時刻で計測する。
       RecordCameraMeasurementSample(GameEngine::EngineContext::GetDeltaTime(),
-         GameEngine::EngineContext::GetGameFrameNumber(), *camera, *frame);
+         GameEngine::EngineContext::GetGameFrameNumber(), camera->DescribeSettings(), *frame);
    }
 }
 

@@ -21,6 +21,13 @@ enum class GridPlane {
 
 class LineRenderer {
 public:
+   /// @brief GPUデータを確保する前の状態を構築する。
+   LineRenderer() = default;
+   /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
+   LineRenderer(const LineRenderer&) = delete;
+   /// @brief GPUデータの暗黙な共有を禁止する。
+   LineRenderer& operator=(const LineRenderer&) = delete;
+
    struct LineInstance {
 	  Vector3 start;
 	  Vector3 end;
@@ -104,9 +111,8 @@ public:
    /// @return カメラとラインデータのマップ
    const std::unordered_map<Camera*, std::vector<LineInstance>>& GetCameraLineGroups() const { return cameraLineGroups_; }
 
-   /// @brief マップされたインスタンスバッファへのポインタを取得
-   /// @return マップされたバッファへのポインタ
-   UINT8* GetMappedInstanceBuffer() const { return mappedInstanceBuffer_; }
+   /// @brief 容量を検証し、描画するライン列をGPUバッファへ転送する。
+   bool UploadLines(const std::vector<LineInstance>& lines);
 
    /// @brief 現在のラインをクリア
    void Clear();

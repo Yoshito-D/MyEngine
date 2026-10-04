@@ -105,7 +105,7 @@ void SceneWorld::Update(float) {
    // ObjectコンポーネントはFrameworkの共通Entity更新経路で一度だけ更新する。
 }
 
-Object* SceneWorld::FindObjectById(const std::string& objectId) const {
+Object* SceneWorld::FindObjectById(const std::string& objectId) {
    if (objectId.empty()) return nullptr;
    Object* object = objectStore_.FindById(objectId);
    if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end()) object = it->second;
@@ -113,7 +113,11 @@ Object* SceneWorld::FindObjectById(const std::string& objectId) const {
    if (sCurrent_ == this) {
       if (auto* scene = BaseScene::GetCurrentScene()) {
          if (auto* context = scene->GetEditorSceneContext()) {
-            if (!object) object = context->GetObjectStore().FindById(objectId);
+            if (!object) {
+               for (auto* candidate : context->CollectEditableObjects()) {
+                  if (candidate && candidate->GetEntityId() == objectId) { object = candidate; break; }
+               }
+            }
             // 非表示のシーン所有Entityと削除待ちEntityへ再接続しない。
             const auto editable = context->CollectEditableObjects();
             if (std::find(editable.begin(), editable.end(), object) == editable.end()) return nullptr;
@@ -124,14 +128,44 @@ Object* SceneWorld::FindObjectById(const std::string& objectId) const {
    return object;
 }
 
-ParticleSystem* SceneWorld::FindParticleSystemById(const std::string& objectId) const {
+const Object* SceneWorld::FindObjectById(const std::string& objectId) const {
+   if (objectId.empty()) return nullptr;
+   const Object* object = objectStore_.FindById(objectId);
+   if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end()) object = it->second;
+#ifdef USE_IMGUI
+   if (sCurrent_ == this) {
+      if (auto* scene = BaseScene::GetCurrentScene()) {
+         if (auto* context = scene->GetEditorSceneContext()) {
+            if (!object) {
+               for (auto* candidate : context->CollectEditableObjects()) {
+                  if (candidate && candidate->GetEntityId() == objectId) { object = candidate; break; }
+               }
+            }
+            // 非表示のシーン所有Entityと削除待ちEntityへ再接続しない。
+            const auto editable = context->CollectEditableObjects();
+            if (std::find(editable.begin(), editable.end(), object) == editable.end()) return nullptr;
+         }
+      }
+   }
+#endif
+   return object;
+}
+
+ParticleSystem* SceneWorld::FindParticleSystemById(const std::string& objectId) {
    if (objectId.empty()) {
       return nullptr;
    }
    return objectStore_.FindParticleById(objectId);
 }
 
-Object* SceneWorld::FindObjectByName(const std::string& objectName) const {
+const ParticleSystem* SceneWorld::FindParticleSystemById(const std::string& objectId) const {
+   if (objectId.empty()) {
+      return nullptr;
+   }
+   return objectStore_.FindParticleById(objectId);
+}
+
+Object* SceneWorld::FindObjectByName(const std::string& objectName) {
    if (objectName.empty()) {
       return nullptr;
    }
@@ -143,7 +177,34 @@ Object* SceneWorld::FindObjectByName(const std::string& objectName) const {
    return it != objects.end() ? *it : nullptr;
 }
 
-VirtualCamera* SceneWorld::FindVirtualCamera(const std::string& cameraIdOrName) const {
+const Object* SceneWorld::FindObjectByName(const std::string& objectName) const {
+   if (objectName.empty()) {
+      return nullptr;
+   }
+   const auto objects = CollectObjects();
+   const auto it = std::find_if(objects.begin(), objects.end(),
+      [&objectName](const Object* object) {
+         return object && object->GetObjectName() == objectName;
+      });
+   return it != objects.end() ? *it : nullptr;
+}
+
+VirtualCamera* SceneWorld::FindVirtualCamera(const std::string& cameraIdOrName) {
+   if (cameraIdOrName.empty()) {
+      return nullptr;
+   }
+   if (auto it = virtualCamerasById_.find(cameraIdOrName); it != virtualCamerasById_.end()) {
+      return it->second;
+   }
+   for (const auto& camera : virtualCameras_) {
+      if (camera && camera->GetName() == cameraIdOrName) {
+         return camera.get();
+      }
+   }
+   return nullptr;
+}
+
+const VirtualCamera* SceneWorld::FindVirtualCamera(const std::string& cameraIdOrName) const {
    if (cameraIdOrName.empty()) {
       return nullptr;
    }
@@ -416,29 +477,12 @@ void SceneWorld::ResolveReferences(const std::vector<Object*>& objects, bool ini
       if (!object) {
          continue;
       }
-      // parentObjectNameは安定ID導入前の互換フィールド。解決できた時点でIDへ移し、
-      // 以後の保存で名前変更の影響を受けないよう旧参照を消す。
-      if (object->GetParentEntityId().empty()) {
-         if (auto* transform = object->GetComponent<TransformComponent>();
-            transform && !transform->parentObjectName.empty()) {
-            if (Object* parent = Object::FindByObjectName(transform->parentObjectName)) {
-               object->SetParentEntityId(parent->GetEntityId());
-               transform->parentObjectName.clear();
-            }
-         }
-      }
-      // 親子関係など基礎参照を先に確定し、その後で各コンポーネント固有の参照を通知する。
-      for (const auto& component : object->GetComponentContainer().GetAll()) {
-         if (component) {
-            // 無効なComponentの参照は保持するが、レース停止やUI演出などの初期化は実行しない。
-            if (initializeRuntime && component->IsEnabled()) component->OnSceneLoaded(*this);
-            else component->OnReferencesChanged(*this);
-         }
-      }
+      if (auto* transform = object->GetComponent<TransformComponent>()) transform->ResolveParentRelation();
+      object->ResolveComponentReferences(*this, initializeRuntime);
    }
 }
 
-std::vector<Object*> SceneWorld::CollectObjects() const {
+std::vector<Object*> SceneWorld::CollectObjects() {
    // 所有場所の違いを利用側へ漏らさないため、一時的な統合ビューを構築する。
    // ParticleSystemはObject継承ではないので、この一覧には意図的に含めない。
    std::vector<Object*> objects;
@@ -447,16 +491,45 @@ std::vector<Object*> SceneWorld::CollectObjects() const {
       objectStore_.GetUITexts().size() + objectStore_.GetGenericObjects().size() +
       genericObjects_.size() + skyboxes_.size());
    for (const auto& model : objectStore_.GetModels()) {
-      if (model) { objects.push_back(model.get()); }
+      if (model) { objects.push_back(model); }
    }
    for (const auto& sprite : objectStore_.GetSprites()) {
-      if (sprite) { objects.push_back(sprite.get()); }
+      if (sprite) { objects.push_back(sprite); }
    }
    for (const auto& text : objectStore_.GetUITexts()) {
-      if (text) { objects.push_back(text.get()); }
+      if (text) { objects.push_back(text); }
    }
    for (const auto& object : objectStore_.GetGenericObjects()) {
+      if (object) { objects.push_back(object); }
+   }
+   for (const auto& object : genericObjects_) {
       if (object) { objects.push_back(object.get()); }
+   }
+   for (const auto& skybox : skyboxes_) {
+      if (skybox) { objects.push_back(skybox.get()); }
+   }
+   return objects;
+}
+
+std::vector<const Object*> SceneWorld::CollectObjects() const {
+   // 所有場所の違いを利用側へ漏らさないため、一時的な統合ビューを構築する。
+   // ParticleSystemはObject継承ではないので、この一覧には意図的に含めない。
+   std::vector<const Object*> objects;
+   objects.reserve(
+      objectStore_.GetModels().size() + objectStore_.GetSprites().size() +
+      objectStore_.GetUITexts().size() + objectStore_.GetGenericObjects().size() +
+      genericObjects_.size() + skyboxes_.size());
+   for (const auto& model : objectStore_.GetModels()) {
+      if (model) { objects.push_back(model); }
+   }
+   for (const auto& sprite : objectStore_.GetSprites()) {
+      if (sprite) { objects.push_back(sprite); }
+   }
+   for (const auto& text : objectStore_.GetUITexts()) {
+      if (text) { objects.push_back(text); }
+   }
+   for (const auto& object : objectStore_.GetGenericObjects()) {
+      if (object) { objects.push_back(object); }
    }
    for (const auto& object : genericObjects_) {
       if (object) { objects.push_back(object.get()); }

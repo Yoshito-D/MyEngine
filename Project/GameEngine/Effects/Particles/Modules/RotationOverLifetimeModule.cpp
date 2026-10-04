@@ -13,42 +13,29 @@ namespace GameEngine {
 	}
 
 	Vector3 RotationOverLifetimeModule::GetRandomAngularVelocity() const {
-		if (!angularVelocityRandomize_) return angularVelocityMin_;
-		return Vector3(
-			RandomUtils::Random(angularVelocityMin_.x, angularVelocityMax_.x),
-			RandomUtils::Random(angularVelocityMin_.y, angularVelocityMax_.y),
-			RandomUtils::Random(angularVelocityMin_.z, angularVelocityMax_.z)
-		);
-	}
+      return angularVelocity_.GetValue();
+   }
 
 	nlohmann::json RotationOverLifetimeModule::ToJson() const {
 		nlohmann::json j;
 		j["enabled"] = enabled_;
-		j["angularVelocityMin"] = {angularVelocityMin_.x, angularVelocityMin_.y, angularVelocityMin_.z};
-		j["angularVelocityMax"] = {angularVelocityMax_.x, angularVelocityMax_.y, angularVelocityMax_.z};
-		j["angularVelocityRandomize"] = angularVelocityRandomize_;
+		j["angularVelocityMin"] = {angularVelocity_.Minimum().x, angularVelocity_.Minimum().y, angularVelocity_.Minimum().z};
+		j["angularVelocityMax"] = {angularVelocity_.Maximum().x, angularVelocity_.Maximum().y, angularVelocity_.Maximum().z};
+		j["angularVelocityRandomize"] = angularVelocity_.IsRandomized();
 		return j;
 	}
 
-	void RotationOverLifetimeModule::FromJson(const nlohmann::json& j) {
-		if (j.contains("enabled")) enabled_ = j["enabled"];
-		if (j.contains("angularVelocity") && j["angularVelocity"].is_array()) {
-			// 旧JSONの固定角速度を上下限が同じ範囲へ移行する。
-			auto arr = j["angularVelocity"];
-			angularVelocityMin_ = Vector3{arr[0], arr[1], arr[2]};
-			angularVelocityMax_ = angularVelocityMin_;
-			angularVelocityRandomize_ = false;
-		}
-		if (j.contains("angularVelocityMin") && j["angularVelocityMin"].is_array()) {
-			auto arr = j["angularVelocityMin"];
-			angularVelocityMin_ = Vector3{arr[0], arr[1], arr[2]};
-		}
-		if (j.contains("angularVelocityMax") && j["angularVelocityMax"].is_array()) {
-			auto arr = j["angularVelocityMax"];
-			angularVelocityMax_ = Vector3{arr[0], arr[1], arr[2]};
-		}
-		if (j.contains("angularVelocityRandomize")) {
-			angularVelocityRandomize_ = j["angularVelocityRandomize"];
-		}
-	}
+   void RotationOverLifetimeModule::FromJson(const nlohmann::json& j) {
+      if (j.contains("enabled")) enabled_ = j["enabled"];
+      auto low = angularVelocity_.Minimum(); auto high = angularVelocity_.Maximum();
+      bool randomized = angularVelocity_.IsRandomized();
+      auto readVector = [&](const char* name, Vector3& value) {
+         if (j.contains(name) && j[name].is_array() && j[name].size() >= 3)
+            value = Vector3{ j[name][0], j[name][1], j[name][2] };
+      };
+      if (j.contains("angularVelocity")) { readVector("angularVelocity", low); high = low; randomized = false; }
+      readVector("angularVelocityMin", low); readVector("angularVelocityMax", high);
+      randomized = j.value("angularVelocityRandomize", randomized);
+      ConfigureAngularVelocity(RandomVector3(low, high, randomized));
+   }
 }

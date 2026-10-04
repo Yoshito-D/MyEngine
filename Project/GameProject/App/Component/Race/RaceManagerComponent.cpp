@@ -307,7 +307,7 @@ void RaceManagerComponent::SetPlayerLocked(bool locked) {
    if (locked) {
       // 物理を止める前に残速度を消し、解除直後にロック前の慣性が再開しないようにする。
       if (gravityBody_) {
-         gravityBody_->SetVelocity({ 0.0f, 0.0f, 0.0f });
+         gravityBody_->StopMotion();
          gravityBody_->SetEnabled(false);
       }
       if (vehicleController_) {
@@ -318,7 +318,7 @@ void RaceManagerComponent::SetPlayerLocked(bool locked) {
 
    // 解除時にも速度を中立化してから、シーン本来の有効状態だけを復元する。
    if (gravityBody_) {
-      gravityBody_->SetVelocity({ 0.0f, 0.0f, 0.0f });
+      gravityBody_->StopMotion();
       gravityBody_->SetEnabled(gravityBodyEnabledWhenUnlocked_);
    }
    if (vehicleController_) {

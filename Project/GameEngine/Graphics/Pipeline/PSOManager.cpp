@@ -733,7 +733,7 @@ bool PSOManager::CreateComputePipeline(const std::string& name, const std::strin
    return true;
 }
 
-PipelineState* PSOManager::GetPipeline(const std::string& name, BlendMode blendMode) {
+const PipelineState* PSOManager::GetPipeline(const std::string& name, BlendMode blendMode) const {
    // 派生名を先に検索し、BlendModeを持たない単一PSO定義へ名前だけでフォールバックする。
    std::string key = CreatePipelineKey(name, blendMode);
    if (auto* pipeline = pipelineLibrary_.GetGraphicsPipeline(key)) {
@@ -800,7 +800,7 @@ std::optional<UINT> PSOManager::ResolvePipelineRootParameter(const std::string& 
    return std::nullopt;
 }
 
-RootSignature* PSOManager::GetRootSignature(const std::string& name) {
+const RootSignature* PSOManager::GetRootSignature(const std::string& name) const {
    auto it = rootSignatures_.find(name);
    return (it != rootSignatures_.end()) ? it->second.get() : nullptr;
 }

@@ -279,7 +279,7 @@ public:
 
    /// @brief 描画直前にCompute Shaderシミュレーションを実行する
    /// @param psoManager Computeパイプラインの取得元
-   void DispatchGpuSimulation(PSOManager* psoManager);
+   void DispatchGpuSimulation(const PSOManager* psoManager);
 
    // ============ JSON Serialization ============
    /// @brief パラメータをJSONファイルに保存
@@ -302,7 +302,7 @@ public:
 
    /// @brief パーティクル描画に使用する現在のメッシュを取得する
    /// @return クアッドまたは生成済み形状メッシュ
-   Mesh* GetMesh() const { return quadMesh_.get(); }
+   const Mesh* GetMesh() const { return quadMesh_.get(); }
    /// @brief CPUシミュレーション用インスタンスSRVを取得する
    /// @return インスタンシングバッファのGPUハンドル
    D3D12_GPU_DESCRIPTOR_HANDLE GetInstancingSrvHandleGPU() const;
@@ -314,9 +314,6 @@ public:
    /// @return 専用テクスチャ、未設定または無効な場合はパーティクル本体のテクスチャ
    Texture* GetRibbonTexture() const;
 
-   /// @brief 描画パスへ渡す内部マテリアルを取得する
-   /// @return パーティクル用マテリアル
-   Material* GetMaterialForRenderer() const;
    /// @brief CPU側で生存しているパーティクル数を取得する
    /// @return 生存パーティクル数
    uint32_t GetActiveParticleCount() const { return activeParticleCount_; }
@@ -326,10 +323,10 @@ public:
    uint32_t GetDrawParticleCount() const;
    /// @brief メッシュパーティクルへ使用するモデルアセットを取得する
    /// @return 設定中のモデル。未設定の場合はnullptr
-   ModelAsset* GetModelAsset() const { return modelAsset_; }
+   const ModelAsset* GetModelAsset() const { return modelAsset_; }
    /// @brief メッシュパーティクルへ使用するモデルアセットを設定する
    /// @param model 使用するモデル。nullptrで解除
-   void SetModelAsset(ModelAsset* model) { modelAsset_ = model; }
+   void SetModelAsset(const ModelAsset* model) { modelAsset_ = model; }
 
    /// @brief リボン描画用GPU頂点バッファビューを取得する
    const D3D12_VERTEX_BUFFER_VIEW& GetRibbonVertexBufferView() const { return gpuRibbonVertexBufferView_; }
@@ -473,7 +470,7 @@ private:
    uint32_t gpuRibbonIndexCount_ = 0;
 
    // レンダリング設定
-   ModelAsset* modelAsset_ = nullptr;
+   const ModelAsset* modelAsset_ = nullptr;
    Texture* texture_ = nullptr;
    std::string textureName_;
 
@@ -527,7 +524,7 @@ private:
    void EnsureGpuRibbonResources(uint32_t requiredSegmentCount);
 
    /// @brief リボン頂点・インデックス生成Compute Shaderを実行する
-   void DispatchGpuRibbon(PSOManager* psoManager);
+   void DispatchGpuRibbon(const PSOManager* psoManager);
 
    /// @brief サブエミッター生成を遅延イベントキューへ登録する
    void QueueSubEmitter(const std::string& effectPath, const Vector3& position);

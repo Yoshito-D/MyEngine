@@ -49,7 +49,11 @@ Model::Model() {
    // Model が描画可能であるという前提をどの生成経路でも満たすよう、
    // 変換・マテリアル・メッシュ・描画の必須コンポーネントをコンストラクタで揃える。
    auto* transformComponent = AddComponent<TransformComponent>();
-   transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
+   {
+      auto pose = transformComponent->GetLocalPose();
+      pose.scale = Vector3(1.0f, 1.0f, 1.0f);
+      transformComponent->ApplyLocalPose(pose);
+   }
    if (auto* materialComponent = AddComponent<MaterialComponent>()) {
       materialComponent->EnsureMaterial(BuildAutoModelMaterialName());
    }
@@ -101,7 +105,11 @@ Model& Model::Create() {
 
    auto* transformComponent = GetComponent<TransformComponent>();
    if (transformComponent) {
-	  transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
+	  {
+	     auto pose = transformComponent->GetLocalPose();
+	     pose.scale = Vector3(1.0f, 1.0f, 1.0f);
+	     transformComponent->ApplyLocalPose(pose);
+	  }
 	  transformComponent->EnsureTransformationMatrix();
    }
    return *this;
@@ -115,16 +123,16 @@ const Vector3& Model::GetPosition() const {
    if (!transformComponent) {
 	  return zero;
    }
-   return transformComponent->transform.translation;
+   return transformComponent->GetLocalPose().translation;
 }
 
-const Vector3& Model::GetRotation() const {
+Vector3 Model::GetRotation() const {
    static const Vector3 zero = Vector3(0.0f, 0.0f, 0.0f);
    const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return zero;
    }
-   return transformComponent->transform.rotation;
+   return transformComponent->GetLocalPose().GetActiveEuler();
 }
 
 const Vector3& Model::GetScale() const {
@@ -133,7 +141,7 @@ const Vector3& Model::GetScale() const {
    if (!transformComponent) {
 	  return one;
    }
-   return transformComponent->transform.scale;
+   return transformComponent->GetLocalPose().scale;
 }
 
 void Model::SetTransform(const Transform& transform) {
@@ -141,7 +149,7 @@ void Model::SetTransform(const Transform& transform) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform = transform;
+   transformComponent->ApplyLocalPose(transform);
 }
 
 void Model::SetPosition(const Vector3& translation) {
@@ -149,7 +157,11 @@ void Model::SetPosition(const Vector3& translation) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform.translation = translation;
+   {
+      auto pose = transformComponent->GetLocalPose();
+      pose.translation = translation;
+      transformComponent->ApplyLocalPose(pose);
+   }
 }
 
 void Model::SetRotation(const Vector3& rotation) {
@@ -157,7 +169,11 @@ void Model::SetRotation(const Vector3& rotation) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform.SetRotationEuler(rotation);
+   {
+      auto pose = transformComponent->GetLocalPose();
+      pose.SetRotationEuler(rotation);
+      transformComponent->ApplyLocalPose(pose);
+   }
 }
 
 void Model::SetRotationQuaternion(const Quaternion& quaternion) {
@@ -165,17 +181,21 @@ void Model::SetRotationQuaternion(const Quaternion& quaternion) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform.SetRotationQuaternion(quaternion);
+   {
+      auto pose = transformComponent->GetLocalPose();
+      pose.SetRotationQuaternion(quaternion);
+      transformComponent->ApplyLocalPose(pose);
+   }
 }
 
-const Quaternion& Model::GetRotationQuaternion() const {
+Quaternion Model::GetRotationQuaternion() const {
    static const Quaternion identity = Quaternion::Identity();
    const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
 	  return identity;
    }
 
-   return transformComponent->transform.rotationQuaternion;
+   return transformComponent->GetLocalPose().GetActiveQuaternion();
 }
 
 void Model::SetUseQuaternion(bool use) {
@@ -184,16 +204,10 @@ void Model::SetUseQuaternion(bool use) {
 	  return;
    }
 
-   auto& transform = transformComponent->transform;
-   if (use) {
-      // 現在の Euler 姿勢から Quaternion を作ってから参照元を切り替え、表示姿勢の跳ねを防ぐ。
-	  transform.SetRotationEuler(transform.rotation);
-	  transform.rotationSource = Transform::RotationSource::Quaternion;
-   } else {
-      // Quaternion 側で更新された最終姿勢を Euler 表現へ写し、切り替え後も同じ向きを維持する。
-	  transform.rotation = transform.GetActiveEuler();
-	  transform.rotationSource = Transform::RotationSource::Euler;
-   }
+   auto transform = transformComponent->GetLocalPose();
+   if (use) transform.SetRotationQuaternion(transform.GetActiveQuaternion());
+   else transform.SetRotationEuler(transform.GetActiveEuler());
+   transformComponent->ApplyLocalPose(transform);
 }
 
 bool Model::IsUsingQuaternion() const {
@@ -202,7 +216,7 @@ bool Model::IsUsingQuaternion() const {
 	  return false;
    }
 
-   return transformComponent->transform.IsUsingQuaternion();
+   return transformComponent->GetLocalPose().IsUsingQuaternion();
 }
 
 void Model::SetWorldMatrix(const Matrix4x4& worldMatrix) {
@@ -218,16 +232,13 @@ void Model::SetScale(const Vector3& scale) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform.scale = scale;
+   {
+      auto pose = transformComponent->GetLocalPose();
+      pose.scale = scale;
+      transformComponent->ApplyLocalPose(pose);
+   }
 }
 
-void Model::SetParentMatrix(const Matrix4x4& parentMatrix) {
-   auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-	  return;
-   }
-   transformComponent->parentMatrix = parentMatrix;
-}
 
 void Model::UpdateMatrix(Camera* camera) {
    auto* transformComponent = GetComponent<TransformComponent>();
@@ -242,14 +253,14 @@ void Model::UpdateMatrix(Camera* camera) {
 
    // 通常はローカル Transform から組み立てるが、物理演算などが最終行列を供給した場合は
    // その結果を優先し、二重にスケール・回転・平行移動を適用しない。
-   Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->transform);
+   Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->GetLocalPose());
 
    if (transformComponent->HasWorldMatrixOverride()) {
 	  worldMatrix = transformComponent->GetWorldMatrixOverride();
    }
 
    // modelAssetのrootNode.localMatrixを掛ける
-   ModelAsset* modelAsset = GetComponent<MeshComponent>()->GetModelAsset();
+   const ModelAsset* modelAsset = GetComponent<MeshComponent>()->GetModelAsset();
    if (modelAsset) {
       // スキニングモデルではボーン階層がルート変換を担うため、ここで再適用すると二重変換になる。
 	  if (!modelAsset->HasSkinningData()) {
@@ -257,18 +268,8 @@ void Model::UpdateMatrix(Camera* camera) {
 	  }
    }
 
-   if (transformComponent->useParentMatrix) {
-      // 親行列は World・WVP・法線変換の全てへ同じ順序で反映し、描画位置とライティングを一致させる。
-	  Matrix4x4 wVPMatrix = worldMatrix * transformComponent->parentMatrix * camera->GetViewProjectionMatrix();
-	  transformationMatrix->GetTransformationMatrixData()->world = worldMatrix * transformComponent->parentMatrix;
-	  transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;
-      transformationMatrix->GetTransformationMatrixData()->worldInverseTranspose = (worldMatrix * transformComponent->parentMatrix).Inverse().Transpose();
-   } else {
-	  Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
-	  transformationMatrix->GetTransformationMatrixData()->world = worldMatrix;
-	  transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;
-	  transformationMatrix->GetTransformationMatrixData()->worldInverseTranspose = worldMatrix.Inverse().Transpose();
-   }
+   worldMatrix = transformComponent->ComposeWorldMatrix(worldMatrix);
+   transformationMatrix->ApplyWorldTransform(worldMatrix, camera->GetViewProjectionMatrix());
 }
 
 TransformationMatrix* Model::GetTransformationMatrix() {

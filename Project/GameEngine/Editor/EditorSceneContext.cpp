@@ -243,7 +243,7 @@ bool UsesScreenRenderSpace(const Object* object) {
    }
 
    const auto* renderComponent = object->GetComponent<RenderComponent>();
-   return renderComponent && renderComponent->renderSpace == RenderComponent::RenderSpace::Screen;
+   return renderComponent && renderComponent->DescribeSettings().renderSpace == RenderComponent::RenderSpace::Screen;
 }
 
 Vector2 GetEditorScreenCameraSize(float viewportWidth, float viewportHeight) {
@@ -419,14 +419,7 @@ void EditorSceneContext::Clear() {
       if (!object) {
          continue;
       }
-      for (const auto& component : object->GetComponentContainer().GetAll()) {
-         if (component) {
-            component->SetEnabled(true);
-         }
-      }
-      if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
-         renderComponent->visible = true;
-      }
+      object->Activate();
    }
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
@@ -664,8 +657,16 @@ void EditorSceneContext::ClearDirty() {
    isDirty_ = false;
 }
 
-std::vector<Object*> EditorSceneContext::CollectEditableObjects() const {
-   std::vector<Object*> objects;
+std::vector<Object*> EditorSceneContext::CollectEditableObjects() {
+   const auto view = static_cast<const EditorSceneContext&>(*this).CollectEditableObjects();
+   std::vector<Object*> editable;
+   editable.reserve(view.size());
+   for (const auto* object : view) editable.push_back(const_cast<Object*>(object));
+   return editable;
+}
+
+std::vector<const Object*> EditorSceneContext::CollectEditableObjects() const {
+   std::vector<const Object*> objects;
    const auto& registeredObjects = Object::GetRegisteredObjects();
    objects.reserve(registeredObjects.size());
    for (Object* object : registeredObjects) {
@@ -698,8 +699,16 @@ std::vector<Object*> EditorSceneContext::CollectEditableObjects() const {
    return objects;
 }
 
-std::vector<ParticleSystem*> EditorSceneContext::CollectEditableParticleSystems() const {
-   std::vector<ParticleSystem*> particleSystems;
+std::vector<ParticleSystem*> EditorSceneContext::CollectEditableParticleSystems() {
+   const auto view = static_cast<const EditorSceneContext&>(*this).CollectEditableParticleSystems();
+   std::vector<ParticleSystem*> editable;
+   editable.reserve(view.size());
+   for (const auto* object : view) editable.push_back(const_cast<ParticleSystem*>(object));
+   return editable;
+}
+
+std::vector<const ParticleSystem*> EditorSceneContext::CollectEditableParticleSystems() const {
+   std::vector<const ParticleSystem*> particleSystems;
    const auto& registered = ParticleSystem::GetRegisteredParticleSystems();
    particleSystems.reserve(registered.size());
    for (auto* particleSystem : registered) {
@@ -1167,7 +1176,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
       ? GetScreenRenderOffset(selectedObject_, GetEditorScreenLayoutSize())
       : Vector3(0.0f, 0.0f, 0.0f);
 
-   Transform gizmoTransform = transformComponent->transform;
+   Transform gizmoTransform = transformComponent->GetLocalPose();
    if (useScreenSpace) {
       // 保存値はアンカー相対、ギズモは画面中心原点で扱うため、操作中だけ同じ座標系へ変換する。
       gizmoTransform.translation = ToEditorScreenWorldPosition(gizmoTransform.translation, screenRenderOffset);
@@ -1177,7 +1186,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
    Matrix4x4 viewMatrix = useScreenSpace ? MakeIdentity4x4() : camera->GetViewMatrix();
    Matrix4x4 projectionMatrix = useScreenSpace ? MakeScreenSpaceProjectionMatrix(screenSize, useUITextCoordinates) : camera->GetProjectionMatrix();
 
-   const Transform beforeCall = transformComponent->transform;
+   const Transform beforeCall = transformComponent->GetLocalPose();
 
    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
    ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
@@ -1201,7 +1210,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
       if (useScreenSpace) {
          manipulatedTransform.translation = FromEditorScreenWorldPosition(manipulatedTransform.translation, screenRenderOffset);
       }
-      transformComponent->transform = manipulatedTransform;
+      transformComponent->ApplyLocalPose(manipulatedTransform);
       return;
    }
 
@@ -1213,7 +1222,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
       if (manipulatedObject) {
          auto* manipulatedTransform = manipulatedObject->GetComponent<TransformComponent>();
          if (manipulatedTransform) {
-            SubmitTransformIfNeeded(transformBeforeManipulation_, manipulatedTransform->transform, manipulatedObject);
+            SubmitTransformIfNeeded(transformBeforeManipulation_, manipulatedTransform->GetLocalPose(), manipulatedObject);
          }
       }
    }
@@ -1339,8 +1348,8 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
          ? (useUITextCoordinates ? uiTextScreenViewProjection : screenViewProjection)
          : camera->GetViewProjectionMatrix();
       const Vector3 objectCenter = useScreenSpace
-         ? ToEditorScreenWorldPosition(transformComponent->transform.translation, screenRenderOffset)
-         : transformComponent->transform.translation;
+         ? ToEditorScreenWorldPosition(transformComponent->GetLocalPose().translation, screenRenderOffset)
+         : transformComponent->GetLocalPose().translation;
 
       const Vector3 screenPosition = Project(
          objectCenter,
@@ -1354,7 +1363,7 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
          continue;
       }
 
-      const Vector3 scale = transformComponent->transform.scale;
+      const Vector3 scale = transformComponent->GetLocalPose().scale;
       float worldRadius = std::max({ std::abs(scale.x), std::abs(scale.y), std::abs(scale.z), 1.0f }) * 0.5f;
       if (const auto* sprite = dynamic_cast<const Sprite*>(object); sprite && useScreenSpace) {
          const Vector2 size = sprite->GetSize();
@@ -1678,7 +1687,11 @@ void EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsDat
          if (object) {
             hiddenSceneObjects_.insert(object);
             if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
-               renderComponent->visible = false;
+               {
+                  auto settings = renderComponent->DescribeSettings();
+                  settings.visible = false;
+                  renderComponent->Configure(settings);
+               }
             }
          }
          continue;
@@ -1692,7 +1705,11 @@ void EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsDat
       hiddenSceneObjects_.erase(object);
       hiddenSceneObjectKeys_.erase(key);
       if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
-         renderComponent->visible = true;
+         {
+            auto settings = renderComponent->DescribeSettings();
+            settings.visible = true;
+            renderComponent->Configure(settings);
+         }
       }
 
       const nlohmann::json* objectData = nullptr;
@@ -1772,14 +1789,7 @@ void EditorSceneContext::HideSceneOwnedObject(Object* object) {
    }
    hiddenSceneObjects_.insert(object);
    // RenderComponentだけでなく更新系Componentも止め、削除済みEntityが副作用を発生させないようにする。
-   for (const auto& component : object->GetComponentContainer().GetAll()) {
-      if (component) {
-         component->SetEnabled(false);
-      }
-   }
-   if (auto* renderComponent = object->GetComponent<RenderComponent>()) {
-      renderComponent->visible = false;
-   }
+   object->Deactivate();
    MarkDirty();
 }
 
@@ -1921,6 +1931,12 @@ void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
       }
    }
 }
+
+bool EditorSceneContext::CommitEdit(std::unique_ptr<IEditorCommand> command) {
+   return commandStack_.Execute(std::move(command), *this);
+}
+void EditorSceneContext::FinishEditingFrame() { objectStore_.FlushDeferredDeletes(); }
+void EditorSceneContext::RefreshAssets() { assetRegistry_.Scan(); }
 
 } // namespace GameEngine
 

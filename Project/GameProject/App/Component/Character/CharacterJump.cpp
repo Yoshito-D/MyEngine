@@ -15,7 +15,7 @@ void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
    // 重力ボディへ上向き速度を加算
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    if (!gravityBody) { return; }
-   gravityBody->SetVelocity(gravityBody->GetVelocity() + gravityUp * jumpStrength);
+   gravityBody->AddVelocityImpulse(gravityUp * jumpStrength);
 
    // ジャンプ状態を記録
    isJumping_ = true;
@@ -31,6 +31,7 @@ void CharacterJump::DrawInspector() {
    ImGui::Separator();
    ImGui::DragFloat(Tr("ジャンプ力", "Jump Strength"), &jumpStrength, 0.1f, 0.0f, 30.0f);
    ImGui::Text("%s: %s", Tr("ジャンプ中", "Is Jumping"), isJumping_ ? Tr("はい", "true") : Tr("いいえ", "false"));
+   Configure(DescribeSettings());
 }
 #endif
 
@@ -42,6 +43,7 @@ nlohmann::json CharacterJump::Serialize() const {
 
 void CharacterJump::Deserialize(const nlohmann::json& data) {
    if (data.contains("jumpStrength")) { jumpStrength = data["jumpStrength"]; }
+   Configure(DescribeSettings());
 }
 
 } // namespace App

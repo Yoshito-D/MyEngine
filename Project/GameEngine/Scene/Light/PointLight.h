@@ -10,6 +10,13 @@ class GraphicsDevice;
 /// @brief ポイントライトクラス
 class PointLight {
 public:
+   /// @brief GPUデータを確保する前の状態を構築する。
+   PointLight() = default;
+   /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
+   PointLight(const PointLight&) = delete;
+   /// @brief GPUデータの暗黙な共有を禁止する。
+   PointLight& operator=(const PointLight&) = delete;
+
    /// @brief ポイントライトデータ構造体
    struct PointLightData {
 	  Vector4 color;
@@ -34,11 +41,14 @@ public:
 
    /// @brief ポイントライトデータを取得
    /// @return ポイントライトデータへのポインタ
-   PointLightData* GetPointLightData() const { return pointLightData_; }
+   const PointLightData* GetPointLightData() const { return pointLightData_; }
 
    /// @brief ポイントライトリソースを取得
    /// @return ポイントライトリソースへのポインタ
    ID3D12Resource* GetPointLightResource() const { return pointLightResource_.Get(); }
+
+   /// @brief 照明の記述を検証・正規化してからGPUデータへ一括反映する。
+   bool ApplyIllumination(const PointLightData& illumination);
 
 private:
    Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_ = nullptr;

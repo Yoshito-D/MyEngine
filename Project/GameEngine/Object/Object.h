@@ -65,7 +65,7 @@ public:
    /// @return 既に同型がある場合は既存インスタンス、それ以外は生成したインスタンス
    template <typename T, typename... Args>
    T* AddComponent(Args&&... args) {
-	  return components_.Add<T>(*this, std::forward<Args>(args)...);
+	  return components_.Add<T>(std::forward<Args>(args)...);
    }
 
    /// @brief 指定型のコンポーネントを取得する
@@ -104,7 +104,10 @@ public:
    /// @brief 型名からコンポーネントを取得する
    /// @param typeName コンポーネント型名
    /// @return 見つからない場合はnullptr
-   IObjectComponent* GetComponentByTypeName(const std::string& typeName) const;
+   IObjectComponent* GetComponentByTypeName(const std::string& typeName);
+   /// @brief 型名からコンポーネントを読み取り専用で取得する
+   /// @return 見つからない場合はnullptr
+   const IObjectComponent* GetComponentByTypeName(const std::string& typeName) const;
 
    /// @brief 型名を指定してコンポーネントを外す
    /// @param typeName コンポーネント型名
@@ -124,15 +127,19 @@ public:
    /// @brief 有効な全コンポーネントを更新する
    void UpdateComponents(float deltaTime);
 
+   /// @brief 全コンポーネントを有効化し、描画を再開する
+   void Activate();
+   /// @brief 所有権を維持したまま全コンポーネントと描画を停止する
+   void Deactivate();
+   /// @brief 所有するコンポーネントのシーン参照を解決する
+   /// @param sceneWorld 参照の解決先
+   /// @param initializeRuntime 有効なコンポーネントの実行時状態も初期化する場合はtrue
+   void ResolveComponentReferences(SceneWorld& sceneWorld, bool initializeRuntime);
+
    /// @brief オブジェクト名を設定する
    void SetObjectName(const std::string& name);
    /// @brief オブジェクト名を取得する
    std::string GetObjectName() const;
-
-   /// @brief コンポーネントコンテナへの直接アクセス
-   ComponentContainer& GetComponentContainer() { return components_; }
-   /// @brief コンポーネントコンテナへの読み取り専用アクセス
-   const ComponentContainer& GetComponentContainer() const { return components_; }
 
 #ifdef USE_IMGUI
    /// @brief コンポーネントのインスペクターを描画する

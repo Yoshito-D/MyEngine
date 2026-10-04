@@ -15,7 +15,7 @@ class PSOManager; // 前方宣言のみ
 
 /// @brief ポストプロセス効果の管理と制御を行うクラス
 class PostProcessManager {
-public:
+private:
    /// @brief ポストプロセス効果の情報
    struct EffectInfo {
 	  std::unique_ptr<PostProcess> effect;
@@ -32,6 +32,7 @@ public:
 		 : effect(std::move(eff)), id(effectId), name(effectName), priority(prio), pipelineName(pipeline) {}
    };
 
+public:
    /// @brief エフェクト定義構造体
    struct EffectDefinition {
 	  std::string id;
@@ -47,7 +48,7 @@ public:
    /// @param device グラフィックスデバイス
    /// @param renderTarget オフスクリーンレンダーターゲット
    /// @param pipelineManager パイプラインマネージャー（パイプライン取得用）
-   void Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget, PSOManager* psoManager);
+   void Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget, const PSOManager* psoManager);
 
    /// @brief JSON定義ファイルからエフェクトを読み込み
    /// @param definitionFilePath 定義ファイルのパス
@@ -90,15 +91,11 @@ public:
    /// @brief エフェクトを取得
    /// @param name エフェクト名
    /// @return ポストプロセス効果のポインタ（見つからない場合はnullptr）
-   PostProcess* GetEffect(const std::string& name) const;
+   const PostProcess* GetEffect(const std::string& name) const;
 
    /// @brief 登録されているエフェクト名のリストを取得
    /// @return エフェクト名のリスト
    std::vector<std::string> GetEffectNames() const;
-
-   /// @brief エフェクトの実行順序でソートされたエフェクト情報を取得
-   /// @return ソートされたエフェクト情報のリスト
-   std::vector<const EffectInfo*> GetSortedEffects() const;
 
    /// @brief シーンへ保存するポストプロセス状態を取得する
    /// @return ポストプロセススタックを格納したJSONオブジェクト
@@ -129,9 +126,11 @@ public:
 #endif
 
 private:
+   friend class EngineContext;
+   PostProcess* GetEffect(const std::string& name);
    GraphicsDevice* device_ = nullptr;
    OffscreenRenderTarget* renderTarget_ = nullptr;
-   PSOManager* psoManager_ = nullptr; // パイプラインマネージャーを追加
+   const PSOManager* psoManager_ = nullptr; // パイプラインマネージャーを追加
    std::vector<EffectInfo> effects_;
 
    /// @brief エフェクトを名前で検索

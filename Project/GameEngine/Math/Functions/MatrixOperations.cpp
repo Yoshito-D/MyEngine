@@ -35,7 +35,7 @@ Matrix3x3 MakeIdentity3x3() {
 Transform TransformInitialize() {
    Transform transform;
    transform.translation = Vector3(0.0f, 0.0f, 0.0f);
-   transform.rotation = Vector3(0.0f, 0.0f, 0.0f);
+   transform.SetRotationEuler({});
    transform.scale = Vector3(1.0f, 1.0f, 1.0f);
    return transform;
 }
@@ -91,13 +91,7 @@ Matrix4x4 MakeRotateZMatrix(float radian) {
 }
 
 Matrix4x4 MakeAffineMatrix(const Transform& transform) {
-   Matrix4x4 rotateXYZMatrix;
-   // Transformが保持する有効な回転表現を選び、EulerとQuaternionの二重適用を避ける。
-   if (transform.IsUsingQuaternion()) {
-	  rotateXYZMatrix = MakeRotateMatrix(transform.GetActiveQuaternion());
-   } else {
-	  rotateXYZMatrix = MakeRotateXMatrix(transform.rotation.x) * MakeRotateYMatrix(transform.rotation.y) * MakeRotateZMatrix(transform.rotation.z);
-   }
+   const Matrix4x4 rotateXYZMatrix = MakeRotateMatrix(transform.GetActiveQuaternion());
 
    // 行ベクトル規約に合わせ、各回転行へ対応軸のスケールを掛けて平行移動を最終行へ置く。
    Matrix4x4 result = {

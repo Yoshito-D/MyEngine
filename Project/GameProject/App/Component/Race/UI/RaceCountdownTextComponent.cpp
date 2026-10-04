@@ -122,11 +122,11 @@ void RaceCountdownTextComponent::CaptureBaseVisualState() {
    }
 
    baseOpacity_ = text->GetStyle().color.w;
-   baseScale_ = transform->transform.scale;
+   baseScale_ = transform->GetLocalPose().scale;
    // 元の回転表現を変えないよう、Euler値とQuaternion値の両方を退避する。
-   baseEuler_ = transform->transform.GetActiveEuler();
-   baseRotationQuaternion_ = transform->transform.GetActiveQuaternion();
-   baseUsesQuaternion_ = transform->transform.IsUsingQuaternion();
+   baseEuler_ = transform->GetLocalPose().GetActiveEuler();
+   baseRotationQuaternion_ = transform->GetLocalPose().GetActiveQuaternion();
+   baseUsesQuaternion_ = transform->GetLocalPose().IsUsingQuaternion();
    hasBaseVisualState_ = true;
 }
 
@@ -142,12 +142,14 @@ void RaceCountdownTextComponent::RestoreBaseVisualState(
    }
 
    text.SetOpacity(baseOpacity_);
-   transform.transform.scale = baseScale_;
+   auto pose = transform.GetLocalPose();
+   pose.scale = baseScale_;
    if (baseUsesQuaternion_) {
-      transform.transform.SetRotationQuaternion(baseRotationQuaternion_);
+      pose.SetRotationQuaternion(baseRotationQuaternion_);
    } else {
-      transform.transform.SetRotationEuler(baseEuler_);
+      pose.SetRotationEuler(baseEuler_);
    }
+   transform.ApplyLocalPose(pose);
 }
 
 void RaceCountdownTextComponent::ApplyAnimation(
@@ -162,7 +164,8 @@ void RaceCountdownTextComponent::ApplyAnimation(
    const float easedRotation = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, rotationProgress);
    GameEngine::Vector3 animatedEuler = baseEuler_;
    animatedEuler.z += GameEngine::MathConstants::kTwoPi * easedRotation;
-   transform.transform.SetRotationEuler(animatedEuler);
+   auto pose = transform.GetLocalPose();
+   pose.SetRotationEuler(animatedEuler);
 
    // 一回転を終えてから拡大と透明化を始め、数字ごとの動きを明確に分離する。
    const float fadeProgress = std::clamp(
@@ -170,12 +173,13 @@ void RaceCountdownTextComponent::ApplyAnimation(
       0.0f,
       1.0f);
    const float scaleMultiplier = GameEngine::Easing::EaseOutCubic(1.0f, fadeEndScale_, fadeProgress);
-   transform.transform.scale = {
+   pose.scale = {
       baseScale_.x * scaleMultiplier,
       baseScale_.y * scaleMultiplier,
       baseScale_.z
    };
    text.SetOpacity(GameEngine::Easing::EaseInQuad(baseOpacity_, 0.0f, fadeProgress));
+   transform.ApplyLocalPose(pose);
 }
 
 #ifdef USE_IMGUI

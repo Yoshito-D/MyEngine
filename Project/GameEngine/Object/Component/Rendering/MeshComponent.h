@@ -89,7 +89,7 @@ public:
 
    /// @brief 描画に使用するモデルアセットを取得する
    /// @return モデルファイルモードで読み込み済みの場合はアセット、それ以外はnullptr
-   ModelAsset* GetModelAsset() const;
+   const ModelAsset* GetModelAsset() const;
 
    /// @brief 設定されているモデルアセットIDを取得する
    /// @return resourcesからの相対アセットID
@@ -97,7 +97,7 @@ public:
 
    /// @brief モデルアセットハンドルを取得する
    /// @return 読み込み済みアセットの共有ハンドル
-   const std::shared_ptr<ModelAsset>& GetModelAssetHandle() const { return modelAsset_; }
+   std::shared_ptr<const ModelAsset> GetModelAssetHandle() const { return modelAsset_; }
 
    /// @brief モデル単位のスキンクラスタを取得する
    /// @return モデルファイルモードで利用可能な場合はスキンクラスタ、それ以外はnullptr
@@ -116,7 +116,9 @@ public:
 
    /// @brief 内部メッシュを取得する
    /// @return 内部メッシュ。未作成ならnullptr
-   Mesh* GetMesh() const { return mesh_.get(); }
+   Mesh* GetMesh() { return mesh_.get(); }
+   /// @brief 生成済みメッシュの読み取り用表示を取得する。
+   const Mesh* GetMesh() const { return mesh_.get(); }
 
    /// @brief 生成するプリミティブ形状を設定する
    /// @param primitiveType プリミティブ形状

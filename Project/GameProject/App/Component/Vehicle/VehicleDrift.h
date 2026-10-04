@@ -53,6 +53,11 @@ public:
    /// @brief ドリフト中かどうかを返す
    bool IsDrifting() const { return isDrifting_; }
 
+   /// @brief ドリフト状態と調整値に応じて地上操舵入力を計算する
+   /// @param steerInput 左右操舵入力（-1〜+1）
+   /// @return ドリフト中は倍率を適用して-1〜+1へ制限した入力、それ以外は元の入力
+   float CalculateSteeringInput(float steerInput) const;
+
    /// @brief ミニターボが発動できるかどうかをかえす
    bool CanFireMiniTurbo() const;
 
@@ -72,7 +77,7 @@ public:
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
-public:
+private:
    // ----------------------------------------------------------------
    // 調整パラメータ
    // ----------------------------------------------------------------

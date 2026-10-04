@@ -130,7 +130,7 @@ public:
 
    /// @brief Sprite描画で使用するメッシュを取得する
    /// @return MeshComponentが所有するメッシュ。未作成ならnullptr
-   Mesh* GetMesh() const;
+   const Mesh* GetMesh() const;
 
    /// @brief GPUへ送るトランスフォーメーションマトリックスを必要に応じて生成して取得する
    /// @return TransformComponentが所有する行列バッファ。TransformComponentがない場合はnullptr

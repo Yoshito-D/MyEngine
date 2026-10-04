@@ -534,9 +534,9 @@ GraphicsDevice* EngineContext::GetGraphicsDevice() {
    return sGraphicsDevice_;
 }
 
-CameraUnit* EngineContext::CreateCameraUnit() {
+CinemachineBrain* EngineContext::CreateCameraUnit(std::unique_ptr<Camera> outputCamera) {
    if (!sCameraManager_) return nullptr;
-   return sCameraManager_->CreateUnit();
+   return sCameraManager_->CreateUnit(std::move(outputCamera));
 }
 
 CinemachineBrain* EngineContext::GetActiveBrain() {
@@ -702,7 +702,7 @@ void EngineContext::Draw(Model* model, Texture* texture, std::optional<BlendMode
    if (!sRenderer_) return;
    if (model) {
       const auto* renderComponent = model->GetComponent<RenderComponent>();
-	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->autoRender) {
+	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->DescribeSettings().autoRender) {
 		 return;
 	  }
    }
@@ -713,7 +713,7 @@ void EngineContext::Draw(Model* model, const std::vector<Texture*>& textures, st
    if (!sRenderer_) return;
    if (model) {
       const auto* renderComponent = model->GetComponent<RenderComponent>();
-	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->autoRender) {
+	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->DescribeSettings().autoRender) {
 		 return;
 	  }
    }
@@ -724,7 +724,7 @@ void EngineContext::Draw(Sprite* sprite, Texture* texture, std::optional<BlendMo
    if (!sRenderer_) return;
    if (sprite) {
      const auto* renderComponent = sprite->GetComponent<RenderComponent>();
-	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->autoRender) {
+	  if (renderComponent && renderComponent->IsEnabled() && renderComponent->DescribeSettings().autoRender) {
 		 return;
 	  }
    }

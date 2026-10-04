@@ -1,7 +1,58 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Graphics/Resources/Mesh.h"
 #include "GameEngine/Effects/Particles/Modules/ParticleMeshModule.h"
 
 namespace GameEngine {
+bool ParticleMeshModule::RebuildMesh(Mesh& mesh) {
+   using MeshType = ParticleMeshModule::MeshType;
+   // Mesh Moduleを無効化した場合も描画経路を変えず、既定Quadへ戻して既存エフェクトの見た目を維持する。
+   const float meshOriginY = IsEnabled() ? GetOriginY() : 0.5f;
+   const MeshType meshType = IsEnabled() ? GetMeshType() : MeshType::Quad;
+   switch (meshType) {
+	  case MeshType::Quad:
+		 mesh.CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
+		 break;
+	  case MeshType::Ring:
+		 mesh.CreateRing(GetRingInnerRadius(), GetRingOuterRadius(), GetRingSegments());
+		 break;
+	  case MeshType::Sphere:
+		 mesh.CreateSphere(GetSphereRadius(), GetSphereStacks(), GetSphereSlices(), meshOriginY);
+		 break;
+	  case MeshType::Box: {
+		 auto s = GetBoxSize();
+		 mesh.CreateBox(s.x, s.y, s.z, meshOriginY);
+		 break;
+	  }
+	  case MeshType::Cylinder:
+		 mesh.CreateCylinderWithoutCaps(
+			GetCylinderTopRadius(), GetCylinderBottomRadius(),
+			GetCylinderHeight(), GetCylinderSegments(), meshOriginY);
+		 break;
+	  case MeshType::Cone:
+		 mesh.CreateCone(GetConeRadius(), GetConeHeight(), GetConeSegments(), meshOriginY);
+		 break;
+	  case MeshType::Circle:
+		 mesh.CreateCircle(GetCircleRadius(), GetCircleSegments());
+		 break;
+	  case MeshType::Plane:
+		 mesh.CreatePlane(GetPlaneWidth(), GetPlaneDepth());
+		 break;
+	  case MeshType::Torus:
+		 mesh.CreateTorus(GetTorusMajorRadius(), GetTorusMinorRadius(),
+			GetTorusMajorSegments(), GetTorusMinorSegments(), meshOriginY);
+		 break;
+	  case MeshType::Triangle:
+		 mesh.CreateTriangle();
+		 break;
+	  default:
+		 mesh.CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
+		 break;
+   }
+   if (!mesh.GetVertexBufferView().BufferLocation || !mesh.GetIndexCount()) return false;
+   meshDirty_ = false;
+   return true;
+}
+
 nlohmann::json ParticleMeshModule::ToJson() const {
    return {
 	  { "enabled", enabled_ },
@@ -34,7 +85,7 @@ nlohmann::json ParticleMeshModule::ToJson() const {
 }
 
 void ParticleMeshModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled")) enabled_ = j["enabled"];
+   if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
    if (j.contains("particleMeshType")) SetMeshType(static_cast<MeshType>(j["particleMeshType"].get<int>()));
    if (j.contains("meshOriginY")) SetOriginY(j["meshOriginY"].get<float>());
    if (j.contains("ringInnerRadius")) SetRingInnerRadius(j["ringInnerRadius"]);

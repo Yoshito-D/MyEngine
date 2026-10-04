@@ -25,14 +25,44 @@ public:
    /// @brief 目標Upへ即座に姿勢スナップする
    void SnapToUpVector(const GameEngine::Vector3& targetUp);
 
-   /// @brief 現在フレームの重力加速度を設定する
-   void SetGravity(const GameEngine::Vector3& gravity);
+   /// @brief 地表法線から姿勢目標と、このボディの設定に基づく重力を適用する
+   /// @param surfaceUp 地表の外向き法線。ゼロベクトルの場合は変更しない
+   void ApplyGravityFromSurface(const GameEngine::Vector3& surfaceUp);
+
+   /// @brief 重力源との接続を解除し、前フレームの加速度を破棄する
+   void ReleaseGravity();
+
+   /// @brief 仮の地表法線で重力を積分し、予測速度を返す（実際の状態は変更しない）
+   /// @param velocity 予測開始時の速度
+   /// @param surfaceUp 候補地表の単位法線
+   /// @param deltaTime 予測する時間（秒）
+   GameEngine::Vector3 PredictVelocity(const GameEngine::Vector3& velocity,
+      const GameEngine::Vector3& surfaceUp, float deltaTime) const;
 
    /// @brief 現在速度を取得する
    GameEngine::Vector3 GetVelocity() const { return velocity_; }
 
-   /// @brief 現在速度を設定する
-   void SetVelocity(const GameEngine::Vector3& velocity) { velocity_ = velocity; }
+   /// @brief ジャンプなどの瞬間的な速度変化を加える
+   /// @param impulse 加算する速度ベクトル
+   void AddVelocityImpulse(const GameEngine::Vector3& impulse);
+
+   /// @brief 重力法線方向の速度を保ちながら、地表に沿った移動速度を適用する
+   /// @param surfaceVelocity 地表に沿った速度ベクトル
+   /// @param surfaceUp 地表の単位法線
+   void ApplySurfaceVelocity(const GameEngine::Vector3& surfaceVelocity,
+      const GameEngine::Vector3& surfaceUp);
+
+   /// @brief 現在Upに沿う速度を保ち、地表に沿う速度だけを指数減衰させる
+   /// @param drag 減衰係数（per sec）
+   /// @param deltaTime フレーム時間（秒）
+   void ApplySurfaceDrag(float drag, float deltaTime);
+
+   /// @brief 着地時に法線方向の速度を除去し、地表に沿う速度を保持する
+   /// @param surfaceUp 地表の単位法線
+   void CancelNormalVelocity(const GameEngine::Vector3& surfaceUp);
+
+   /// @brief 移動を完全に停止する
+   void StopMotion();
 
    /// @brief 現在のUp方向を取得する
    GameEngine::Vector3 GetCurrentUpVector() const { return currentUpVector_; }
@@ -54,7 +84,7 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-public:
+private:
    /// @brief Up補間回転速度
    float rotationSpeed = 5.0f;
 

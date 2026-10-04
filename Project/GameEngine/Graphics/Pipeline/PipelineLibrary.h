@@ -28,7 +28,7 @@ public:
    /// @brief グラフィックスパイプラインを取得する
    /// @param name パイプラインの名前
    /// @return パイプラインステートのポインタ（存在しない場合はnullptr）
-   PipelineState* GetGraphicsPipeline(const std::string& name) const;
+   const PipelineState* GetGraphicsPipeline(const std::string& name) const;
 
    /// @brief コンピュートパイプラインを保存する
    /// @param definition コンピュートパイプラインの定義

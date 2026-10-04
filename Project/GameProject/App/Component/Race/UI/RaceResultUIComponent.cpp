@@ -201,7 +201,7 @@ bool RaceResultUIComponent::CaptureBaseVisualStates() {
          continue;
       }
       baseOpacities_[optionIndex] = text->GetStyle().color.w;
-      baseScales_[optionIndex] = transform->transform.scale;
+      baseScales_[optionIndex] = transform->GetLocalPose().scale;
       capturedAny = true;
    }
    return capturedAny;
@@ -269,11 +269,11 @@ void RaceResultUIComponent::UpdateSelectionAnimation(float deltaTime) {
       }
 
       // 未選択側も基準値から毎フレーム設定し、直前までの選択アニメーションを残さない。
-      optionTransforms_[optionIndex]->transform.scale = {
+      { auto pose = optionTransforms_[optionIndex]->GetLocalPose(); pose.scale = {
          baseScale.x * scaleMultiplier,
          baseScale.y * scaleMultiplier,
          baseScale.z
-      };
+      }; optionTransforms_[optionIndex]->ApplyLocalPose(pose); }
    }
 }
 
@@ -284,7 +284,11 @@ void RaceResultUIComponent::HideOptionVisuals() {
       }
       optionTexts_[optionIndex]->SetText("");
       optionTexts_[optionIndex]->SetOpacity(baseOpacities_[optionIndex]);
-      optionTransforms_[optionIndex]->transform.scale = baseScales_[optionIndex];
+      {
+         auto pose = optionTransforms_[optionIndex]->GetLocalPose();
+         pose.scale = baseScales_[optionIndex];
+         optionTransforms_[optionIndex]->ApplyLocalPose(pose);
+      }
    }
 }
 
@@ -298,12 +302,14 @@ void RaceResultUIComponent::ApplyResultReaction(std::size_t optionIndex) {
    const auto& baseScale = baseScales_[optionIndex];
    const float progress = std::clamp(reactionElapsed_ / reactionDuration_, 0.0f, 1.0f);
    const float scaleProgress = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, progress);
-   transform.transform.scale = {
+   auto pose = transform.GetLocalPose();
+   pose.scale = {
       reactionStartScale_.x + (baseScale.x * reactionEndScale_ - reactionStartScale_.x) * scaleProgress,
       reactionStartScale_.y + (baseScale.y * reactionEndScale_ - reactionStartScale_.y) * scaleProgress,
       baseScale.z
    };
    text.SetOpacity(GameEngine::Easing::EaseInQuad(baseOpacities_[optionIndex], 0.0f, progress));
+   transform.ApplyLocalPose(pose);
 }
 
 bool RaceResultUIComponent::ConfirmSelection() {
@@ -326,7 +332,7 @@ bool RaceResultUIComponent::ConfirmSelection() {
 
    resultRequested_ = true;
    reactionElapsed_ = 0.0f;
-   reactionStartScale_ = optionTransforms_[static_cast<std::size_t>(selectedOption_)]->transform.scale;
+   reactionStartScale_ = optionTransforms_[static_cast<std::size_t>(selectedOption_)]->GetLocalPose().scale;
    return true;
 }
 

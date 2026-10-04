@@ -63,7 +63,11 @@ void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
    if (!transform) { return; }
 
    // Transform に補間済み回転を書き込む。
-   transform->transform.SetRotationQuaternion(blended);
+   {
+      auto pose = transform->GetLocalPose();
+      pose.SetRotationQuaternion(blended);
+      transform->ApplyLocalPose(pose);
+   }
 
    // GravityBody の Up ベクトルも補間値に合わせて更新する。
    // GravityBody は「現在の Up」と「目標の Up」を両方持っており、

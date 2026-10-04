@@ -80,9 +80,9 @@ public:
    void AssignMaterials(const std::vector<Material*>& materials, const std::vector<std::string>& materialNames = {});
 
    /// @brief API検証とInspectorで使用する共有パイプラインカタログを設定する。
-   static void SetPipelineManager(PSOManager* manager);
+   static void SetPipelineManager(const PSOManager* manager);
    /// @brief 実効スロットマテリアルを取得する。存在しないスロットはスロット0を継承する。
-   Material* GetMaterial(size_t slot = 0) const;
+   const Material* GetMaterial(size_t slot = 0) const;
    /// @brief 初回編集時にObject所有のディープコピーを作成する。無効なスロットではnullptrを返す。
    Material* EditMaterial(size_t slot = 0);
    /// @brief スロットが独立したマテリアル上書きを所有しているか確認する。
@@ -155,6 +155,8 @@ public:
    void DrawInspector() override;
 #endif
 
+private:
+   /// 割り当て・複製・解除の操作だけが並行するスロット情報を更新する。
    /// 描画側がスロット順で参照するマテリアルポインター
    std::vector<Material*> materials;
 
@@ -163,7 +165,7 @@ public:
 
 private:
    void SyncMaterialNamesSize();
-   static PSOManager* pipelineManager_;
+   static const PSOManager* pipelineManager_;
    std::vector<std::unique_ptr<Material>> overrides_;
    std::vector<Material*> sharedMaterials_;
 #ifdef USE_IMGUI

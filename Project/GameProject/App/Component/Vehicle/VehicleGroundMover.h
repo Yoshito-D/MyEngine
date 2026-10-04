@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
@@ -25,8 +27,10 @@ public:
    /// @param deltaTime   フレーム時間
    void Apply(float steerInput, const GameEngine::Vector3& gravityUp, float deltaTime);
 
-   /// @brief 現在の前進実速度を設定する（着地ブーストから呼ばれる）
-   void SetCurrentSpeed(float speed) { currentSpeed_ = speed; }
+   /// @brief 着地失敗による減速と加速禁止を一括で適用する
+   /// @param speed ペナルティ適用直後の前進速度
+   /// @param duration 加速を禁止する時間（秒）
+   void ApplyLandingPenalty(float speed, float duration);
 
    /// @brief 加速度を積む（持続的な加速・減速用）
    /// 積まれた加速度は UpdateSpeed 内で v += a * dt として適用され、
@@ -36,9 +40,6 @@ public:
    /// @brief 速度を即座に加算する（着地ブースト・ペナルティなど瞬間的な速度変化用）
    /// autoSpeed への回復は UpdateSpeed の指数平滑によって行われる。
    void AddVelocityImpulse(float impulse);
-
-   /// @brief 指定秒数だけ加速を禁止し、保留中の正の加速を破棄する
-   void BlockAcceleration(float seconds);
 
    /// @brief 着地判定前に禁止時間を進める（空中も含めて移動更新ごとに1回）
    void AdvanceAccelerationBlock(float deltaTime);
@@ -62,18 +63,53 @@ public:
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
-public:
-   /// @brief 自動前進速度（units/sec）
-   float autoSpeed = 16.0f;
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief 自動前進速度（units/sec）
+      float autoSpeed = 16.0f;
+      /// @brief ステアリング角速度（deg/sec）
+      float steerSpeed = 120.0f;
+      /// @brief スピード回復速度（per sec）
+      float speedRecovery = 1.0f;
+      float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.autoSpeed = autoSpeed;
+      settings.steerSpeed = steerSpeed;
+      settings.speedRecovery = speedRecovery;
+      settings.maxSpeed = maxSpeed;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.autoSpeed)) settings.autoSpeed = defaults.autoSpeed;
+      if (!std::isfinite(settings.steerSpeed)) settings.steerSpeed = defaults.steerSpeed;
+      if (!std::isfinite(settings.speedRecovery)) settings.speedRecovery = defaults.speedRecovery;
+      if (!std::isfinite(settings.maxSpeed)) settings.maxSpeed = defaults.maxSpeed;
+      settings.maxSpeed = std::max(0.0f, settings.maxSpeed);
+      settings.autoSpeed = std::clamp(settings.autoSpeed, 0.0f, settings.maxSpeed);
+      settings.speedRecovery = std::max(0.0f, settings.speedRecovery);
+      autoSpeed = settings.autoSpeed;
+      steerSpeed = settings.steerSpeed;
+      speedRecovery = settings.speedRecovery;
+      maxSpeed = settings.maxSpeed;
+      if (currentSpeed_ >= 0.0f) currentSpeed_ = std::min(currentSpeed_, maxSpeed);
+   }
 
-   /// @brief ステアリング角速度（deg/sec）
-   float steerSpeed = 120.0f;
-
-   /// @brief スピード回復速度（per sec）
-   float speedRecovery = 1.0f;
-
-   float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限
 private:
+   float autoSpeed = 16.0f;
+   float steerSpeed = 120.0f;
+   float speedRecovery = 1.0f;
+   float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限
+
+private:
+   /// @brief 指定秒数だけ加速を禁止し、保留中の正の加速を破棄する
+   void BlockAcceleration(float seconds);
+
    /// @brief 速度を autoSpeed へ向けて回復させる
    void UpdateSpeed(float deltaTime);
 

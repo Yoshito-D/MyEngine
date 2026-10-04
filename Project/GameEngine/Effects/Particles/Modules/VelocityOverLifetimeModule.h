@@ -24,7 +24,7 @@ namespace GameEngine {
 		/// @brief 加算速度を固定値で設定する
 		void SetLinearVelocity(const Vector3& velocity) { linearVelocity_ = RandomVector3(velocity, velocity, false); }
 		/// @brief 加算速度の代表値を取得する
-		const Vector3& GetLinearVelocity() const { return linearVelocity_.minValue; }
+		const Vector3& GetLinearVelocity() const { return linearVelocity_.Minimum(); }
 		/// @brief 加算速度を乱数範囲で設定する
 		void SetLinearVelocityRange(const RandomVector3& velocity) { linearVelocity_ = velocity; }
 		/// @brief 加算速度の乱数範囲を取得する
@@ -33,7 +33,7 @@ namespace GameEngine {
 		/// @brief 速度倍率を固定値で設定する
 		void SetSpeedModifier(float modifier) { speedModifier_ = RandomFloat(modifier, modifier, false); }
 		/// @brief 速度倍率の代表値を取得する
-		float GetSpeedModifier() const { return speedModifier_.minValue; }
+		float GetSpeedModifier() const { return speedModifier_.Minimum(); }
 		/// @brief 速度倍率を乱数範囲で設定する
 		void SetSpeedModifierRange(const RandomFloat& modifier) { speedModifier_ = modifier; }
 		/// @brief 速度倍率の乱数範囲を取得する

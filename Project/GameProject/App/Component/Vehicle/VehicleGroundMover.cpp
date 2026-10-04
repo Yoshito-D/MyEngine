@@ -31,7 +31,7 @@ void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float
    // ---- ステアリング ----
    // 現在のクォータニオンから前方ベクトルを取得し、
    // ステア入力に応じた yaw 回転を重力Up 軸まわりに加える。
-   Quaternion currentRot   = transform->transform.GetActiveQuaternion();
+   Quaternion currentRot   = transform->GetLocalPose().GetActiveQuaternion();
    Vector3    localForward = RotateVector({ 0.0f, 0.0f, 1.0f }, currentRot);
    Vector3    steered      = ApplySteering(steerInput, localForward, gravityUp, deltaTime);
 
@@ -84,6 +84,12 @@ void VehicleGroundMover::UpdateSpeed(float deltaTime) {
 
    // maxSpeed を超えないように clamp する。これによりブーストやペナルティの極端な値も制限される。
    currentSpeed_ = std::clamp(currentSpeed_, -maxSpeed, maxSpeed);
+}
+
+void VehicleGroundMover::ApplyLandingPenalty(float speed, float duration) {
+   // 減速と加速禁止を同じ操作にし、着地直前の保留中ブーストも確実に破棄する。
+   currentSpeed_ = speed;
+   BlockAcceleration(duration);
 }
 
 void VehicleGroundMover::BlockAcceleration(float seconds) {
@@ -155,8 +161,7 @@ void VehicleGroundMover::ApplyVelocityToGravityBody(const Vector3& flatForward,
    // 既存の速度から重力方向成分（垂直速度）だけを取り出す。
    // Dot(gravityUp) で垂直方向の大きさを得て、gravityUp を掛けて垂直ベクトルを復元する。
    // これを足さないと、重力落下やジャンプの垂直成分が毎フレームリセットされてしまう。
-   float   verticalSpeed = gravityBody->GetVelocity().Dot(gravityUp);
-   gravityBody->SetVelocity(flatForward * currentSpeed_ + gravityUp * verticalSpeed);
+   gravityBody->ApplySurfaceVelocity(flatForward * currentSpeed_, gravityUp);
 }
 
 void VehicleGroundMover::RebuildPosture(const Vector3& flatForward, const Vector3& gravityUp) {
@@ -171,7 +176,11 @@ void VehicleGroundMover::RebuildPosture(const Vector3& flatForward, const Vector
    Vector3 fwdOut = right.Cross(gravityUp).Normalize();
 
    // 基底からクォータニオンを生成して transform に書き込む。
-   transform->transform.SetRotationQuaternion(BasisToQuaternion(right, gravityUp, fwdOut));
+   {
+      auto pose = transform->GetLocalPose();
+      pose.SetRotationQuaternion(BasisToQuaternion(right, gravityUp, fwdOut));
+      transform->ApplyLocalPose(pose);
+   }
 
    // GravityBody にも現在の Up 方向を通知する。
    // GravityBody は「重力から見た現在の上向き」を内部で持っており、
@@ -231,10 +240,11 @@ void VehicleGroundMover::DrawInspector() {
    ImGui::DragFloat(Tr("速度回復", "Speed Recovery"), &speedRecovery, 0.1f, 0.1f,  20.0f);
    ImGui::DragFloat(Tr("最大速度", "Max Speed"), &maxSpeed, 0.1f, 0.0f, 200.0f);
    ImGui::Spacing();
-   if (ImGui::Button(Tr("速度リセット", "Reset Speed"))) { SetCurrentSpeed(0.0f); }
+   if (ImGui::Button(Tr("速度リセット", "Reset Speed"))) { currentSpeed_ = 0.0f; }
    ImGui::Spacing();
    ImGui::Text("%s: %.2f", Tr("現在速度", "Current Speed"), currentSpeed_);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("水平前方向", "Flat Forward"), flatForward_.x, flatForward_.y, flatForward_.z);
+   Configure(DescribeSettings());
 }
 #endif
 
@@ -252,6 +262,7 @@ void VehicleGroundMover::Deserialize(const nlohmann::json& data) {
    if (data.contains("steerSpeed"))    { steerSpeed     = data["steerSpeed"]; }
    if (data.contains("speedRecovery")) { speedRecovery  = data["speedRecovery"]; }
    if (data.contains("maxSpeed")) { maxSpeed = data["maxSpeed"]; }
+   Configure(DescribeSettings());
 }
 
 } // namespace App

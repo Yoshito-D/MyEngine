@@ -179,13 +179,13 @@ void VirtualCamera::Update(float deltaTime) {
     state_ = CalculateState(deltaTime);
 }
 
-void VirtualCamera::SetFollowTarget(Transform* target) {
+void VirtualCamera::SetFollowTarget(const Transform* target) {
     // 直接ポインター指定とEntity ID指定は排他的にし、どちらを優先するかが曖昧にならないようにする。
     followTargetEntityId_.clear();
     followTarget_ = target;
 }
 
-void VirtualCamera::SetLookAtTarget(Transform* target) {
+void VirtualCamera::SetLookAtTarget(const Transform* target) {
     lookAtTargetEntityId_.clear();
     lookAtTarget_ = target;
 }
@@ -200,7 +200,7 @@ void VirtualCamera::SetLookAtTargetEntityId(const std::string& entityId) {
     lookAtTargetEntityId_ = entityId;
 }
 
-Transform* VirtualCamera::GetFollowTarget() const {
+const Transform* VirtualCamera::GetFollowTarget() const {
     if (!followTargetEntityId_.empty()) {
         // EntityはScene再ロードで置き換わり得るため、永続ID指定はアクセスごとに解決する。
         return ResolveEntityTransform(followTargetEntityId_, resolvedFollowTarget_);
@@ -208,7 +208,7 @@ Transform* VirtualCamera::GetFollowTarget() const {
     return followTarget_;
 }
 
-Transform* VirtualCamera::GetLookAtTarget() const {
+const Transform* VirtualCamera::GetLookAtTarget() const {
     if (!lookAtTargetEntityId_.empty()) {
         return ResolveEntityTransform(lookAtTargetEntityId_, resolvedLookAtTarget_);
     }
@@ -276,7 +276,7 @@ ICinemachineComponent* VirtualCamera::AddComponentByName(const std::string& comp
     return it->second(*this);
 }
 
-ICinemachineComponent* VirtualCamera::FindComponentByName(const std::string& componentName) const {
+ICinemachineComponent* VirtualCamera::FindComponentByName(const std::string& componentName) {
     if (componentName.empty()) {
         return nullptr;
     }
@@ -286,6 +286,11 @@ ICinemachineComponent* VirtualCamera::FindComponentByName(const std::string& com
             return component.get();
         }
     }
+    return nullptr;
+}
+
+const ICinemachineComponent* VirtualCamera::FindComponentByName(const std::string& name) const {
+    for (const auto& component : components_) if (name == component->GetComponentName()) return component.get();
     return nullptr;
 }
 

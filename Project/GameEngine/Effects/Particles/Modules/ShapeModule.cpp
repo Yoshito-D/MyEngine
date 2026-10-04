@@ -28,27 +28,7 @@ Vector3 ResolveSkinnedVertexPosition(
 	  vertices[vertexIndex].position.x,
 	  vertices[vertexIndex].position.y,
 	  vertices[vertexIndex].position.z);
-   if (!skinCluster || meshIndex >= skinCluster->mappedInfluenceData.size() ||
-	  !skinCluster->mappedInfluenceData[meshIndex]) {
-	  return basePosition;
-   }
-
-   const VertexInfluence& influence = skinCluster->mappedInfluenceData[meshIndex][vertexIndex];
-   Vector3 skinnedPosition(0.0f, 0.0f, 0.0f);
-   float totalWeight = 0.0f;
-   // GPUと同じ最大影響数だけを合成し、欠損・未正規化ウェイトは最後に補正する。
-   for (uint32_t influenceIndex = 0; influenceIndex < kNumMaxInfluence; ++influenceIndex) {
-	  const float weight = influence.weights[influenceIndex];
-	  const int32_t jointIndex = influence.jointIndices[influenceIndex];
-	  if (weight <= 0.0f || jointIndex < 0 || static_cast<size_t>(jointIndex) >= skinCluster->mappedPalette.size()) {
-		 continue;
-	  }
-	  skinnedPosition += TransformCoordinate(
-		 basePosition,
-		 skinCluster->mappedPalette[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix) * weight;
-	  totalWeight += weight;
-   }
-   return totalWeight > 0.0001f ? skinnedPosition / totalWeight : basePosition;
+   return skinCluster ? skinCluster->EvaluateSkinnedPosition(meshIndex, vertexIndex, basePosition) : basePosition;
 }
 }
 

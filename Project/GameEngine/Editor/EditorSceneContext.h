@@ -88,22 +88,30 @@ public:
 
    /// @brief 非表示指定を除くシーン・エディタ双方の編集可能オブジェクトを収集する
    /// @return 階層・選択UIへ表示できるオブジェクト一覧
-   std::vector<Object*> CollectEditableObjects() const;
+   std::vector<Object*> CollectEditableObjects();
+   /// @brief const Contextからは編集対象を読み取り専用で列挙する。
+   std::vector<const Object*> CollectEditableObjects() const;
    /// @brief 非表示指定を除く編集可能パーティクルシステムを収集する
    /// @return 階層・選択UIへ表示できるパーティクル一覧
-   std::vector<ParticleSystem*> CollectEditableParticleSystems() const;
+   std::vector<ParticleSystem*> CollectEditableParticleSystems();
+   /// @brief const Contextからは編集対象を読み取り専用で列挙する。
+   std::vector<const ParticleSystem*> CollectEditableParticleSystems() const;
    /// @brief 通常オブジェクトを単一選択し、パーティクル選択を解除する
    /// @param object 選択対象。nullptrで選択解除
    void SelectObject(Object* object);
    /// @brief 選択中の通常オブジェクトを取得する
    /// @return 選択対象。未選択の場合はnullptr
-   Object* GetSelectedObject() const { return selectedObject_; }
+   Object* GetSelectedObject() { return selectedObject_; }
+   /// @brief const Contextの選択状態を読み取り専用で参照する。
+   const Object* GetSelectedObject() const { return selectedObject_; }
    /// @brief パーティクルを単一選択し、通常オブジェクト選択を解除する
    /// @param particleSystem 選択対象。nullptrで選択解除
    void SelectParticleSystem(ParticleSystem* particleSystem);
    /// @brief 選択中のパーティクルシステムを取得する
    /// @return 選択対象。未選択の場合はnullptr
-   ParticleSystem* GetSelectedParticleSystem() const { return selectedParticleSystem_; }
+   ParticleSystem* GetSelectedParticleSystem() { return selectedParticleSystem_; }
+   /// @brief const Contextの選択状態を読み取り専用で参照する。
+   const ParticleSystem* GetSelectedParticleSystem() const { return selectedParticleSystem_; }
 
    /// @brief オブジェクトの親とヒエラルキー表示順を変更する
    /// @param movedObject 移動するオブジェクト
@@ -193,19 +201,23 @@ public:
 
    /// @brief アセット検索レジストリへの変更可能な参照を取得する
    /// @return このシーンが使用するレジストリ
-   EditorAssetRegistry& GetAssetRegistry() { return assetRegistry_; }
    /// @brief アセット検索レジストリへの読み取り専用参照を取得する
    /// @return このシーンが使用するレジストリ
    const EditorAssetRegistry& GetAssetRegistry() const { return assetRegistry_; }
    /// @brief エディタ生成オブジェクトストアへの変更可能な参照を取得する
    /// @return このシーンが使用するオブジェクトストア
-   EditorObjectStore& GetObjectStore() { return objectStore_; }
    /// @brief エディタ生成オブジェクトストアへの読み取り専用参照を取得する
    /// @return このシーンが使用するオブジェクトストア
    const EditorObjectStore& GetObjectStore() const { return objectStore_; }
    /// @brief Undo/Redoコマンドスタックを取得する
    /// @return このシーンが使用するコマンドスタック
-   EditorCommandStack& GetCommandStack() { return commandStack_; }
+
+   /// @brief 編集コマンドを実行し、Undo履歴とdirty状態を一緒に記録する。
+   bool CommitEdit(std::unique_ptr<IEditorCommand> command);
+   /// @brief フレーム中の編集が完了した後に遅延削除を確定する。
+   void FinishEditingFrame();
+   /// @brief アセット候補を再走査する。
+   void RefreshAssets();
 
    /// @brief 現在のギズモ操作種別を取得する
    /// @return 平行移動・回転・拡縮のいずれか
@@ -241,6 +253,23 @@ public:
    void HandleViewportClickSelection(float viewportX, float viewportY, float viewportWidth, float viewportHeight);
 
 private:
+   friend class SetMaterialSettingsCommand;
+   friend class CreateGenericObjectCommand;
+   friend class CreateModelCommand;
+   friend class CreateSpriteCommand;
+   friend class CreateUITextCommand;
+   friend class CreateSkyboxCommand;
+   friend class CreateParticleSystemCommand;
+   friend class DeleteObjectCommand;
+   friend class DeleteParticleSystemCommand;
+   friend class TransformObjectCommand;
+   friend class TransformParticleSystemCommand;
+   friend class RestoreObjectSnapshotCommand;
+   friend class SetModelAssetCommand;
+   friend class SetMaterialTextureCommand;
+   friend class AddComponentCommand;
+   friend class RemoveComponentCommand;
+   EditorObjectStore& CommandObjectStore() { return objectStore_; }
    bool IsObjectAlive(const Object* object) const;
    bool IsParticleSystemAlive(const ParticleSystem* particleSystem) const;
    void RegisterSceneOwnedKeys();

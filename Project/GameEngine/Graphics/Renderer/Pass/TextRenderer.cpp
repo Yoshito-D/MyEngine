@@ -23,7 +23,7 @@ size_t GrowCapacity(size_t required, size_t minimum) {
 }
 }
 
-bool TextRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager, FontManager* fontManager) {
+bool TextRenderer::Initialize(GraphicsDevice* device, const PSOManager* psoManager, FontManager* fontManager) {
    if (!device || !psoManager || !fontManager) {
       Logger::Error("[TextRenderer] Invalid initialization arguments.");
       return false;

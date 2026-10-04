@@ -76,6 +76,7 @@ void VehicleInputComponent::Deserialize(const nlohmann::json& data) {
    playerSlot = static_cast<uint32_t>(std::min(
 	  configuredSlot,
 	  static_cast<uint64_t>(GameEngine::InputActionService::kMaxPlayers - 1)));
+   Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
@@ -93,6 +94,7 @@ void VehicleInputComponent::DrawInspector() {
 	  static_cast<int>(GameEngine::InputActionService::kMaxPlayers - 1))) {
 	  playerSlot = static_cast<uint32_t>(slot);
    }
+   Configure(DescribeSettings());
 }
 #endif
 

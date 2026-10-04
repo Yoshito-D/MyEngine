@@ -61,7 +61,7 @@ void PipelineState::CreatePipelineState(ID3D12Device* device) {
 
 }
 
-void PipelineState::SetRootSignature(RootSignature* rootSignature) {
+void PipelineState::SetRootSignature(const RootSignature* rootSignature) {
    rootSignature_ = rootSignature;
 }
 

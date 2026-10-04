@@ -12,6 +12,13 @@ class GraphicsDevice;
 /// @brief ディレクショナルライトクラス
 class DirectionalLight {
 public:
+   /// @brief GPUデータを確保する前の状態を構築する。
+   DirectionalLight() = default;
+   /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
+   DirectionalLight(const DirectionalLight&) = delete;
+   /// @brief GPUデータの暗黙な共有を禁止する。
+   DirectionalLight& operator=(const DirectionalLight&) = delete;
+
    /// @brief ディレクショナルライトデータ構造体
    struct DirectionalLightData {
 	  Vector4 color; // ライトの色
@@ -33,11 +40,14 @@ public:
 
    /// @brief ディレクショナルライトデータへのポインタを取得
    /// @return directionalLightData_ メンバーへのポインタ
-   DirectionalLightData* GetDirectionalLightData() const { return directionalLightData_; }
+   const DirectionalLightData* GetDirectionalLightData() const { return directionalLightData_; }
 
    /// @brief ディレクショナルライトリソースを取得
    /// @return directionalLightResource_ メンバーへのポインタ
    ID3D12Resource* GetDirectionalLightResource() const { return directionalLightResource_.Get(); }
+
+   /// @brief 照明の記述を検証・正規化してからGPUデータへ一括反映する。
+   bool ApplyIllumination(const DirectionalLightData& illumination);
 
 private:
    ComPtr<ID3D12Resource> directionalLightResource_ = nullptr;

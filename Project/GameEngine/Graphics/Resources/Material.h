@@ -20,6 +20,13 @@ class GraphicsDevice;
 //// @brief マテリアルクラス
 class Material : public IMaterialData {
 public:
+   /// @brief GPUデータを確保する前の状態を構築する。
+   Material() = default;
+   /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
+   Material(const Material&) = delete;
+   /// @brief GPUデータの暗黙な共有を禁止する。
+   Material& operator=(const Material&) = delete;
+
    /// @brief マテリアルデータ構造体
    struct MaterialData {
 	  Vector4 color; // マテリアルの色
@@ -59,7 +66,7 @@ public:
 
    /// @brief マテリアルデータへのポインタを取得
    /// @return マテリアルデータへのポインタ
-   MaterialData* GetMaterialData() const { return materialData_; }
+   const MaterialData* GetMaterialData() const { return materialData_; }
 
    /// @brief 標準マテリアルバッファが有限値と有効なライティングモードを持つことを検証する。
    bool HasValidData() const;
@@ -103,7 +110,7 @@ public:
    /// @brief 上書きを解除し、パイプラインの既定値を使用する。
    void ClearParameters() { parameters_.clear(); }
    /// @brief パラメーターを検証・パックする。データ不正またはバッファ利用不可時はnullptrを返す。
-   ID3D12Resource* PrepareParameters(const ModelPipelineDefinition& definition);
+   ID3D12Resource* PrepareParameters(const ModelPipelineDefinition& definition) const;
 
    /// @brief このマテリアルが使用するパイプライン名を取得
    /// @return パイプライン名（空文字列 = デフォルト動作）
@@ -218,8 +225,8 @@ public:
 
 private:
    std::map<std::string, std::vector<float>> parameters_;
-   ComPtr<ID3D12Resource> parameterResource_;
-   void* parameterData_ = nullptr;
+   mutable ComPtr<ID3D12Resource> parameterResource_;
+   mutable void* parameterData_ = nullptr;
    ComPtr<ID3D12Resource> materialResource_ = nullptr;
    MaterialData* materialData_ = nullptr;
    std::string pipelineName_;  ///< 使用するパイプライン名（空文字列 = デフォルト）

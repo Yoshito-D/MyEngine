@@ -17,7 +17,7 @@ void PipelineLibrary::StoreGraphicsPipeline(const std::string& name, std::unique
 ///          未登録を例外にせずnullptrで表すことで、呼び出し側で派生名から基本名への探索を継続できる。
 /// @param name 検索するパイプライン名
 /// @return 登録済みのパイプライン。該当する名前がなければnullptr
-PipelineState* PipelineLibrary::GetGraphicsPipeline(const std::string& name) const {
+const PipelineState* PipelineLibrary::GetGraphicsPipeline(const std::string& name) const {
    auto it = graphicsPipelines_.find(name);
    return (it != graphicsPipelines_.end()) ? it->second.get() : nullptr;
 }

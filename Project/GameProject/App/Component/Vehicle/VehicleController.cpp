@@ -80,7 +80,7 @@ void VehicleController::Update(float deltaTime) {
 
 bool VehicleController::TryBuildPlayerShadowFrameData(
    GameEngine::Camera* camera,
-   GameEngine::PlayerShadowFrameData& outFrameData) const {
+   GameEngine::PlayerShadowFrameData& outFrameData) {
    outFrameData = {};
 
    // レース中の無効化は操作の停止であり、影の描画対象からは外さない。
@@ -169,11 +169,7 @@ void VehicleController::SubmitPlayerShadow(
 
       // 通常描画されないモデルにも、
       // 現在の親行列と描画カメラを反映する。
-      transform->useParentMatrix =
-         !model->GetParentEntityId().empty();
-
-      transform->parentMatrix =
-         model->GetParentWorldMatrix();
+      transform->ResolveParentRelation();
 
       model->UpdateMatrix(camera);
 

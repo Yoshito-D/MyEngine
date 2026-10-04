@@ -4,6 +4,7 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include <vector>
+#include <array>
 #include <string>
 #include "GameEngine/Math/VectorMath.h"
 
@@ -15,6 +16,13 @@ class GraphicsDevice;
 /// @brief メッシュクラス
 class Mesh {
 public:
+   /// @brief GPUデータを確保する前の状態を構築する。
+   Mesh() = default;
+   /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
+   Mesh(const Mesh&) = delete;
+   /// @brief GPUデータの暗黙な共有を禁止する。
+   Mesh& operator=(const Mesh&) = delete;
+
    enum class PlaneOrientation {
 	  XY,
 	  XZ,
@@ -135,7 +143,12 @@ public:
    const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView() const { return indexBufferView_; }
    UINT GetIndexCount() const { return indexCount_; }
 
-   VertexData* GetVertexData() const;
+   /// @brief 頂点の読み取り専用表示を参照する。
+   const VertexData* GetVertexData() const;
+   /// @brief 4頂点のQuadであることを確認し、矩形の座標を更新する。
+   bool UpdateQuadPositions(const std::array<Vector4, 4>& positions);
+   /// @brief 4頂点のQuadであることを確認し、AtlasのUVを更新する。
+   bool UpdateQuadTextureCoordinates(const std::array<Vector2, 4>& coordinates);
 private:
    ComPtr<ID3D12Resource> vertexResource_ = nullptr;
    ComPtr<ID3D12Resource> indexResource_ = nullptr;

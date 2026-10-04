@@ -10,10 +10,10 @@ using namespace RearCameraMath;
 void RearCameraGravityUp::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
    auto* camera = GetRearCamera();
    if (!camera) return;
-   const auto& transition = *owner_->GetComponent<RearCameraTransition>();
-   const auto& aim = *owner_->GetComponent<RearCameraAimSolver>();
-   auto& direction = *owner_->GetComponent<RearCameraDirectionTracker>();
-   SmoothGravityUp(camera->GetInput(), *camera, transition.GetState(), aim.GetState(), direction, deltaTime);
+   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
+   const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
+   auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
+   SmoothGravityUp(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), aim.GetState(), direction, deltaTime);
 }
 
 /// @brief 目標重力Up に向けて currentGravityUp を角速度制限付きで回転する

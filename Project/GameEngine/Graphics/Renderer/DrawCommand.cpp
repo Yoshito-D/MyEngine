@@ -101,7 +101,7 @@ std::optional<Vector3> DrawCommandWrapper::GetSortPosition() const {
         case DrawCommandType::Sprite:
             if (!cmd_.isUISprite && cmd_.spriteData.sprite) {
                 if (const auto* tc = cmd_.spriteData.sprite->GetComponent<TransformComponent>()) {
-                    return tc->transform.translation;
+                    return tc->GetLocalPose().translation;
                 }
             }
             break;

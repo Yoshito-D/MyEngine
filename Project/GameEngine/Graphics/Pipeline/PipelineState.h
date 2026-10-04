@@ -33,7 +33,7 @@ public:
 
    /// @brief ルートシグネチャを設定する
    /// @param rootSignature ルートシグネチャ
-   void SetRootSignature(RootSignature* rootSignature);
+   void SetRootSignature(const RootSignature* rootSignature);
 
    /// @brief 入力レイアウトを設定する
    /// @param semanticName セマンティック名
@@ -119,7 +119,7 @@ private:
    std::wstring name_{};
    ComPtr<IDxcBlob> vertexShaderBlob_ = nullptr;
    ComPtr<IDxcBlob> pixelShaderBlob_ = nullptr;
-   RootSignature* rootSignature_ = nullptr;
+   const RootSignature* rootSignature_ = nullptr;
    std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs_{};
    D3D12_BLEND_DESC blendDesc_{};
    D3D12_RASTERIZER_DESC rasterizerDesc_{};

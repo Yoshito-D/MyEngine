@@ -16,8 +16,8 @@ namespace GameEngine {
 	void LimitVelocityOverLifetimeModule::LimitVelocity(Particle& particle, const Transform&, bool) const {
 		if (!enabled_) return;
 		float speed = particle.velocity.Length();
-		float speedLimit = speedLimit_.randomize ? particle.limitVelocitySpeedLimit : speedLimit_.minValue;
-		float dampen = dampen_.randomize ? particle.limitVelocityDampen : dampen_.minValue;
+		float speedLimit = speedLimit_.IsRandomized() ? particle.limitVelocitySpeedLimit : speedLimit_.Minimum();
+		float dampen = dampen_.IsRandomized() ? particle.limitVelocityDampen : dampen_.Minimum();
 		if (speed > speedLimit) {
 			// 超過分の割合だけ速度ベクトルを縮め、方向を変えずに上限へ滑らかに近づける。
 			float excess = speed - speedLimit;

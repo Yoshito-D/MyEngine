@@ -23,7 +23,7 @@ public:
    /// @param device グラフィックスデバイス
    /// @param psoManager パイプライン管理
    /// @param fontManager フォントとアトラスの管理
-   bool Initialize(GraphicsDevice* device, PSOManager* psoManager, FontManager* fontManager);
+   bool Initialize(GraphicsDevice* device, const PSOManager* psoManager, FontManager* fontManager);
 
    /// @brief フレーム単位のCPU描画データをクリアする
    void BeginFrame();
@@ -75,7 +75,7 @@ private:
    static Vector2 TransformPoint(const Vector2& point, const Transform& transform, const Vector2& origin);
 
    GraphicsDevice* device_ = nullptr;
-   PSOManager* psoManager_ = nullptr;
+   const PSOManager* psoManager_ = nullptr;
    FontManager* fontManager_ = nullptr;
    Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
    Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_;

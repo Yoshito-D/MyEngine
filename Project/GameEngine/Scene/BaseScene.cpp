@@ -268,14 +268,7 @@ private:
             // C++側所有物はここでdeleteできないため、全Componentを停止し描画も明示的に隠す。
             // 所有者はそのまま保ちつつ、保存上の「削除」と同じ実行結果にする。
             if (object) {
-			   for (const auto& component : object->GetComponentContainer().GetAll()) {
-				  if (component) {
-					 component->SetEnabled(false);
-				  }
-			   }
-			   if (auto* renderComponent = object->GetComponent<GameEngine::RenderComponent>()) {
-				  renderComponent->visible = false;
-			   }
+               object->Deactivate();
 			}
 			continue;
 		 }
@@ -285,7 +278,11 @@ private:
 		 }
 
 		 if (auto* renderComponent = object->GetComponent<GameEngine::RenderComponent>()) {
-			renderComponent->visible = true;
+			{
+			   auto settings = renderComponent->DescribeSettings();
+			   settings.visible = true;
+			   renderComponent->Configure(settings);
+			}
 		 }
 
          // 旧形式は差分本体がobject内、現行形式はentry直下にあるため両方を受け付ける。
@@ -457,14 +454,22 @@ void BaseScene::Initialize() {
 		 entity->SetEntityId(entityId);
 		 entity->SetObjectName(entityId);
 		 auto* transform = entity->AddComponent<TransformComponent>();
-		 transform->transform.translation = position;
+		 {
+		    auto pose = transform->GetLocalPose();
+		    pose.translation = position;
+		    transform->ApplyLocalPose(pose);
+		 }
 		 if (type != LightComponent::Type::Point) {
-			transform->transform.SetRotationQuaternion(
-			   LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
+			{ auto pose = transform->GetLocalPose(); pose.SetRotationQuaternion(
+			   LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f))); transform->ApplyLocalPose(pose); }
 		 }
 		 auto* light = entity->AddComponent<LightComponent>();
 		 light->SetLightType(type);
-		 light->intensity = intensity;
+		 {
+		    auto settings = light->DescribeSettings();
+		    settings.intensity = intensity;
+		    light->Configure(settings);
+		 }
 		 sceneEntities_.push_back(std::move(entity));
 	  };
 
@@ -480,12 +485,11 @@ void BaseScene::Initialize() {
 
    // CameraUnitを生成（Brain+Cameraのペア）
    // CameraUnitが出力CameraとVirtualCamera選択用Brainの寿命を一括管理する。
-   CameraUnit* unit = EngineContext::CreateCameraUnit();
 
    auto mainCamera = std::make_unique<Camera>();
    mainCamera->Initialize();
    mainCamera->SetFarClip(kMainCameraFarClip);
-   unit->brain->Initialize(std::move(mainCamera));
+   auto* brain = EngineContext::CreateCameraUnit(std::move(mainCamera));
 
 #ifdef USE_IMGUI
    // DebugCameraは通常候補より低い優先度で常時登録し、F1時だけ優先度を上げて選択させる。
@@ -494,12 +498,12 @@ void BaseScene::Initialize() {
    debugCamera_->Initialize();
    debugCamera_->SetPriority(kInactiveDebugCameraPriority); // 通常時は選ばれない
    LoadDebugCameraState();
-   unit->brain->RegisterVirtualCamera(debugCamera_.get());
-   unit->brain->SetDefaultBlendTime(0.0f);
+   brain->RegisterVirtualCamera(debugCamera_.get());
+   brain->SetDefaultBlendTime(0.0f);
 
    cameraEditor_ = std::make_unique<CameraEditor>();
    cameraEditor_->Initialize(EngineContext::GetLineRenderer());
-   cameraEditor_->SetTargetBrain(unit->brain.get());
+   cameraEditor_->SetTargetBrain(brain);
 
    editorSceneContext_ = std::make_unique<EditorSceneContext>();
    editorSceneContext_->Initialize(editorSceneName_);

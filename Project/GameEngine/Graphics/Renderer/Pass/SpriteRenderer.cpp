@@ -14,7 +14,7 @@
 
 namespace GameEngine {
 
-void SpriteRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager) {
+void SpriteRenderer::Initialize(GraphicsDevice* device, const PSOManager* psoManager) {
 	device_ = device;
 	psoManager_ = psoManager;
 }
@@ -39,7 +39,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 		return;
 	}
 
-	Mesh* mesh = sprite->GetMesh();
+	const Mesh* mesh = sprite->GetMesh();
 	if (!mesh) {
 		Logger::Error("MeshComponent mesh is missing in DrawSprite");
 		return;
@@ -57,14 +57,15 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData,
 		return;
 	}
 
-   if (materialComponent->materials.empty()) {
+   if (!materialComponent->GetMaterial()) {
 		materialComponent->AssignMaterial(defaultMaterial);
 	}
 
 	// ワールド空間スプライトも面の色をそのまま表示するため、3Dライト計算は無効化する。
-   Material* spriteMaterial = materialComponent->materials.empty() ? nullptr : materialComponent->materials[0];
+   const Material* spriteMaterial = materialComponent->GetMaterial();
 	if (spriteMaterial) {
-		spriteMaterial->SetLightingMode(Material::LightingMode::NONE);
+		materialComponent->EditMaterial()->SetLightingMode(Material::LightingMode::NONE);
+      spriteMaterial = materialComponent->GetMaterial();
 		// マテリアルに blendMode が設定されていれば再設定
 		if (auto matBlend = spriteMaterial->GetBlendMode()) {
 			resolvedBlendMode = *matBlend;

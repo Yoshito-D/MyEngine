@@ -100,9 +100,9 @@ void PlanetSwitcher::Update(float) {
    // 現在位置を取得
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
    if (!transform) { return; }
-   const GameEngine::Vector3 pos = transform->transform.translation;
+   const GameEngine::Vector3 pos = transform->GetLocalPose().translation;
 
-   const GameEngine::Quaternion obbRot = transform->transform.GetActiveQuaternion();
+   const GameEngine::Quaternion obbRot = transform->GetLocalPose().GetActiveQuaternion();
    int newIndex = SelectBestPlanetIndex(pos, obbRot);
    if (newIndex < 0) {
 	  // 候補が全て削除・無効・圏外の場合、古い惑星の重力を持ち越さない。
@@ -112,7 +112,7 @@ void PlanetSwitcher::Update(float) {
 		 link->SetAttractor(nullptr);
 	  }
 	  if (auto* gravityBody = GetOwner().GetComponent<GravityBody>()) {
-		 gravityBody->SetGravity({ 0.0f, 0.0f, 0.0f });
+		 gravityBody->ReleaseGravity();
 	  }
 	  return;
    }
@@ -206,10 +206,10 @@ void PlanetSwitcher::ApplyPlanetIndex(int newIndex) {
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
    if (attractor && gravityBody && transform) {
-	  gravityApplied = attractor->ApplyTo(*gravityBody, transform->transform.translation);
+	  gravityApplied = attractor->ApplyTo(*gravityBody, transform->GetLocalPose().translation);
    }
    if (!gravityApplied && gravityBody) {
-	  gravityBody->SetGravity({ 0.0f, 0.0f, 0.0f });
+	  gravityBody->ReleaseGravity();
    }
 
    if (gravityApplied) {
@@ -257,7 +257,7 @@ void PlanetSwitcher::ApplyAirborneAttractorIndex(int newIndex, const GameEngine:
    } else {
 	  activeGravityIndex_ = -1;
 	  if (gravityBody) {
-		 gravityBody->SetGravity({ 0.0f, 0.0f, 0.0f });
+		 gravityBody->ReleaseGravity();
 	  }
    }
 }
@@ -299,7 +299,7 @@ bool PlanetSwitcher::RemovePlanet(size_t index) {
    remap(activeGravityIndex_);
    if (activeGravityIndex_ < 0 && HasOwner()) {
       if (auto* link = GetOwner().GetComponent<GravityAttractorLink>()) link->SetAttractor(nullptr);
-      if (auto* body = GetOwner().GetComponent<GravityBody>()) body->SetGravity({});
+      if (auto* body = GetOwner().GetComponent<GravityBody>()) body->ReleaseGravity();
    }
    return true;
 }
@@ -436,6 +436,7 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
 
 	  entries_.push_back({ objectName, GetPlanetCenter(objectName), GetPlanetSurfaceRadius(objectName) });
    }
+   Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
@@ -485,6 +486,7 @@ void PlanetSwitcher::DrawInspector() {
       AddPlanet(newPlanetId_);
       newPlanetId_.clear();
    }
+   Configure(DescribeSettings());
 }
 #endif
 

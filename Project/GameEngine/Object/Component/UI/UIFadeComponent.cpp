@@ -100,6 +100,7 @@ void UIFadeComponent::Deserialize(const nlohmann::json& data) {
    if (playOnEnable) {
       Restart();
    }
+   Configure(DescribeSettings());
 }
 
 void UIFadeComponent::Apply(float progress) {
@@ -131,6 +132,7 @@ void UIFadeComponent::DrawInspector() {
    const char* easings[] = { "Linear", "Ease In Out Sine", "Ease Out Cubic", "Ease Out Back" };
    if (ImGui::Combo("Easing", &easingIndex, easings, 4)) easing = static_cast<UIEasingType>(easingIndex);
    ImGui::Spacing();
+   Configure(DescribeSettings());
 }
 #endif
 

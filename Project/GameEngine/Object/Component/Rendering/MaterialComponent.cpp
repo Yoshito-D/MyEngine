@@ -235,7 +235,7 @@ namespace {
 
 namespace GameEngine {
 
-PSOManager* MaterialComponent::pipelineManager_ = nullptr;
+const PSOManager* MaterialComponent::pipelineManager_ = nullptr;
 MaterialComponent::MaterialResolver MaterialComponent::resolver_ = nullptr;
 MaterialComponent::MaterialCreator MaterialComponent::creator_ = nullptr;
 MaterialComponent::MaterialNamesProvider MaterialComponent::namesProvider_ = nullptr;
@@ -247,9 +247,9 @@ MaterialComponent::EnvironmentTextureNamesProvider MaterialComponent::environmen
 // Resolver群はAssetManagerへの依存を注入する境界である。ComponentをEditor/Runtimeの
 // どちらでも同じ形式のまま使い、所有権を持たないMaterial/Textureを名前から再解決する。
 
-void MaterialComponent::SetPipelineManager(PSOManager* manager) { pipelineManager_ = manager; }
+void MaterialComponent::SetPipelineManager(const PSOManager* manager) { pipelineManager_ = manager; }
 
-Material* MaterialComponent::GetMaterial(size_t slot) const {
+const Material* MaterialComponent::GetMaterial(size_t slot) const {
    return materials.empty() ? nullptr : (slot < materials.size() && materials[slot] ? materials[slot] : materials[0]);
 }
 
@@ -260,12 +260,12 @@ bool MaterialComponent::IsOverridden(size_t slot) const {
 Material* MaterialComponent::EditMaterial(size_t slot) {
    if (slot >= 4096) return nullptr;
    if (IsOverridden(slot)) return materials[slot];
-   Material* source = GetMaterial(slot);
+   const Material* source = GetMaterial(slot);
    // ローカル値だけでなく継承元アセット参照も保存し、シーン再読み込み後にResetOverrideで
    // 同じ共有マテリアルへ戻れるようにする。
    const std::string sourceName = slot < materials.size() && materials[slot] && slot < materialNames_.size()
       ? materialNames_[slot] : materialNames_.empty() ? std::string{} : materialNames_[0];
-   Material* shared = source;
+   Material* shared = materials.empty() ? nullptr : (slot < materials.size() && materials[slot] ? materials[slot] : materials[0]);
    for (size_t i = 0; i < overrides_.size(); ++i) {
       if (overrides_[i].get() == source && i < sharedMaterials_.size()) shared = sharedMaterials_[i];
    }
@@ -309,14 +309,14 @@ bool MaterialComponent::SetPipeline(const std::string& name, size_t slot) {
 }
 
 bool MaterialComponent::SetParameter(const std::string& name, const std::vector<float>& value, size_t slot) {
-   Material* material = GetMaterial(slot);
+   const Material* material = GetMaterial(slot);
    const auto* pipeline = pipelineManager_ && material ? pipelineManager_->GetModelPipeline(material->GetPipelineName()) : nullptr;
    if (pipeline) {
       const auto field = std::find_if(pipeline->parameters.begin(), pipeline->parameters.end(), [&](const auto& entry) { return entry.name == name; });
       if (field != pipeline->parameters.end() && field->defaultValue.size() == value.size() &&
          std::all_of(value.begin(), value.end(), [](float v) { return std::isfinite(v); })) {
-         material = EditMaterial(slot);
-         return material && material->SetParameter(name, value);
+         auto* local = EditMaterial(slot);
+         return local && local->SetParameter(name, value);
       }
    }
    Logger::Warning("[MaterialComponent] Invalid parameter=" + name + ", slot=" + std::to_string(slot));
@@ -670,8 +670,8 @@ void MaterialComponent::DrawInspector() {
          auto* scene = BaseScene::GetCurrentScene();
          auto* context = scene ? scene->GetEditorSceneContext() : nullptr;
          if (context && inspectorBefore_ != after) {
-            context->GetCommandStack().Execute(std::make_unique<SetMaterialSettingsCommand>(
-               GetOwner().GetEntityId(), &GetOwner(), inspectorBefore_, after), *context);
+            context->CommitEdit(std::make_unique<SetMaterialSettingsCommand>(
+               GetOwner().GetEntityId(), &GetOwner(), inspectorBefore_, after));
          }
       }
       inspectorBefore_ = nullptr;
@@ -773,7 +773,7 @@ void MaterialComponent::DrawInspectorContent() {
       if (ImGui::Button(Tr("このオブジェクトだけ編集", "Make local override"))) EditMaterial(inspectorSlot_);
       ImGui::Checkbox(Tr("共有マテリアルを編集（全参照に反映）", "Edit shared material (all references)"), &editShared_);
    }
-   auto* material = GetMaterial(inspectorSlot_);
+   auto* material = materials.empty() ? nullptr : (inspectorSlot_ < materials.size() && materials[inspectorSlot_] ? materials[inspectorSlot_] : materials[0]);
    if (!material || !material->GetMaterialData()) return;
    auto* data = material->GetMaterialData();
 

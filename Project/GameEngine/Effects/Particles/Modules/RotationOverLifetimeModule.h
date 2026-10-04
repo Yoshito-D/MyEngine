@@ -2,6 +2,7 @@
 #include "GameEngine/Effects/Particles/Modules/ParticleModule.h"
 #include "GameEngine/Math/VectorMath.h"
 #include "GameEngine/Math/MathUtils.h"
+#include "GameEngine/Effects/Particles/Modules/MainModule.h"
 #include <nlohmann/json.hpp>
 
 namespace GameEngine {
@@ -15,21 +16,12 @@ namespace GameEngine {
 
 		/// @brief パーティクルの回転を更新
 		void UpdateRotation(Particle& particle, float deltaTime) const;
-
-		/// @brief 角速度の乱数範囲下限を設定する
-		void SetAngularVelocityMin(const Vector3& minVal) { angularVelocityMin_ = minVal; }
 		/// @brief 角速度の乱数範囲下限を取得する
-		const Vector3& GetAngularVelocityMin() const { return angularVelocityMin_; }
-
-		/// @brief 角速度の乱数範囲上限を設定する
-		void SetAngularVelocityMax(const Vector3& maxVal) { angularVelocityMax_ = maxVal; }
+		Vector3 GetAngularVelocityMin() const { return angularVelocity_.Minimum(); }
 		/// @brief 角速度の乱数範囲上限を取得する
-		const Vector3& GetAngularVelocityMax() const { return angularVelocityMax_; }
-
-		/// @brief 粒子ごとに角速度をランダム化するか設定する
-		void SetAngularVelocityRandomize(bool randomize) { angularVelocityRandomize_ = randomize; }
+		Vector3 GetAngularVelocityMax() const { return angularVelocity_.Maximum(); }
 		/// @brief 角速度のランダム化が有効か取得する
-		bool GetAngularVelocityRandomize() const { return angularVelocityRandomize_; }
+		bool GetAngularVelocityRandomize() const { return angularVelocity_.IsRandomized(); }
 
 		/// @brief ランダムな角速度を取得
 		Vector3 GetRandomAngularVelocity() const;
@@ -44,9 +36,9 @@ namespace GameEngine {
 		void DrawInspector() override;
 #endif
 
+		/// @brief 検証済みの角速度範囲を粒子の初期値生成へ一括適用する
+		void ConfigureAngularVelocity(const RandomVector3& range) { angularVelocity_ = range; }
 	private:
-		Vector3 angularVelocityMin_{0.0f, 0.0f, 0.0f};
-		Vector3 angularVelocityMax_{0.0f, 0.0f, 0.0f};
-		bool angularVelocityRandomize_ = false;
+		RandomVector3 angularVelocity_;
 	};
 }

@@ -49,7 +49,6 @@ void WhiteNoise::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rende
 ///          ポストプロセススタックが選択した反対側のターゲットへフルスクリーン描画する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!enabled_) return;
    if (!pipeline_ || !rootSignature_) return;
 
    // シェーダーはfloor(time * seedChangeRate)を乱数シードに使うため、定数転送前に時刻を更新する。

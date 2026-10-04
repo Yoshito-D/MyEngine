@@ -141,7 +141,11 @@ void RaceGoalDirectionHUDComponent::SetVisible(bool visible) {
    }
    // コンポーネント自体は更新を続け、描画参加だけを切り替えることでレース状態やカメラ条件を次フレームにも再評価できる。
    if (auto* renderComponent = arrowModel_->GetComponent<GameEngine::RenderComponent>()) {
-      renderComponent->visible = visible;
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.visible = visible;
+         renderComponent->Configure(settings);
+      }
    }
 }
 

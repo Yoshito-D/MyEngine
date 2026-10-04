@@ -7,21 +7,21 @@
 
 namespace App {
 
-void RearCameraComponent::Initialize(GameEngine::VirtualCamera* owner) {
-   ICinemachineComponent::Initialize(owner);
+void RearCameraComponent::OnAttach() {
+   auto* owner = GetOwnerCamera();
    if (auto* camera = owner ? owner->GetComponent<PlayerRearFollowCamera>() : nullptr) {
-      Reset(*camera);
+      Reset(camera->DescribeSettings());
    }
 }
 
 void RearCameraComponent::Deserialize(const nlohmann::json&) {
-   if (auto* camera = owner_ ? owner_->GetComponent<PlayerRearFollowCamera>() : nullptr) {
-      Reset(*camera);
+   if (auto* camera = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<PlayerRearFollowCamera>() : nullptr) {
+      Reset(camera->DescribeSettings());
    }
 }
 
-PlayerRearFollowCamera* RearCameraComponent::GetRearCamera() const {
-   auto* camera = owner_ ? owner_->GetComponent<PlayerRearFollowCamera>() : nullptr;
+PlayerRearFollowCamera* RearCameraComponent::GetRearCamera() {
+   auto* camera = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<PlayerRearFollowCamera>() : nullptr;
    // 兄弟部品への永続ポインターを持たず、Inspectorから削除された場合も安全に停止する。
    return camera && camera->IsEnabled() && camera->HasRequiredComponents() ? camera : nullptr;
 }

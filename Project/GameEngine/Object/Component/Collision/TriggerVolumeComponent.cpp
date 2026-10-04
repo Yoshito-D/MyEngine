@@ -58,7 +58,7 @@ void TriggerVolumeComponent::Update(float deltaTime) {
    if (debugDraw_ && HasOwner()) {
       if (const auto* transform = GetOwner().GetComponent<TransformComponent>()) {
          // 判定と同じくOffsetはOwnerの平行移動へ直接加算し、回転・スケールは適用しない。
-         const Vector3 center = transform->transform.translation + centerOffset_;
+         const Vector3 center = transform->GetLocalPose().translation + centerOffset_;
          // DrawSphereでAABBの厳密な輪郭は描けないため、最大半幅を形状サイズの目安として可視化する。
          const float debugRadius = shape_ == Shape::Sphere
             ? radius_
@@ -130,8 +130,8 @@ bool TriggerVolumeComponent::CalculateOverlap(const Object& target) const {
    }
 
    // 現仕様は両Objectのローカルtranslationを直接比較し、親行列・回転・スケールを合成しない。Offsetも同じ座標成分へ加算する。
-   const Vector3 center = ownerTransform->transform.translation + centerOffset_;
-   const Vector3 targetPosition = targetTransform->transform.translation;
+   const Vector3 center = ownerTransform->GetLocalPose().translation + centerOffset_;
+   const Vector3 targetPosition = targetTransform->GetLocalPose().translation;
    // 現在は対象の原点を点として判定し、対象側の描画形状には依存させない。
    const Vector3 difference = targetPosition - center;
    if (shape_ == Shape::Sphere) {

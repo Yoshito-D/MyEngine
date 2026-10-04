@@ -131,6 +131,7 @@ void TypewriterComponent::Deserialize(const nlohmann::json& data) {
    if (playOnEnable) {
       Restart();
    }
+   Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
@@ -150,6 +151,7 @@ void TypewriterComponent::DrawInspector() {
    ImGui::Checkbox(ImGuiHelper::Localize({ "ループ", "Loop" }), &loop);
    ImGui::Checkbox(ImGuiHelper::Localize({ "文字変更時に再開", "Restart On Text Change" }), &restartOnTextChange);
    ImGui::Spacing();
+   Configure(DescribeSettings());
 }
 #endif
 

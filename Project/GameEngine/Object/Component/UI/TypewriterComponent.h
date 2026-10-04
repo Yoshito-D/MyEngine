@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include <cstddef>
@@ -56,6 +58,42 @@ public:
 #endif
 
    /// @brief 文字送り速度と再生設定
+
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief 文字送り速度と再生設定
+      float glyphsPerSecond = 20.0f;
+      float delay = 0.0f;
+      bool playOnEnable = true;
+      bool loop = false;
+      bool restartOnTextChange = true;
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.glyphsPerSecond = glyphsPerSecond;
+      settings.delay = delay;
+      settings.playOnEnable = playOnEnable;
+      settings.loop = loop;
+      settings.restartOnTextChange = restartOnTextChange;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.glyphsPerSecond)) settings.glyphsPerSecond = defaults.glyphsPerSecond;
+      if (!std::isfinite(settings.delay)) settings.delay = defaults.delay;
+      settings.glyphsPerSecond = std::max(0.0f, settings.glyphsPerSecond);
+      settings.delay = std::max(settings.delay, 0.0f);
+      glyphsPerSecond = settings.glyphsPerSecond;
+      delay = settings.delay;
+      playOnEnable = settings.playOnEnable;
+      loop = settings.loop;
+      restartOnTextChange = settings.restartOnTextChange;
+   }
+
+private:
    float glyphsPerSecond = 20.0f;
    float delay = 0.0f;
    bool playOnEnable = true;

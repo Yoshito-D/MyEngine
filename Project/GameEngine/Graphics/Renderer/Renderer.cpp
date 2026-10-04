@@ -72,30 +72,7 @@ void ResolveParentRelationForRender(GameEngine::Object* object) {
 	  return;
    }
 
-   if (object->GetParentEntityId().empty() && !transformComponent->parentObjectName.empty()) {
-      // 旧シーン形式の名前参照を、同名衝突に強いEntityId参照へ描画時に移行する。
-      // 解決できた場合だけ旧フィールドを消し、未解決データは後続フレームへ残す。
-	  if (auto* legacyParent = GameEngine::Object::FindByObjectName(transformComponent->parentObjectName)) {
-		 object->SetParentEntityId(legacyParent->GetEntityId());
-		 transformComponent->parentObjectName.clear();
-	  }
-   }
-
-   if (object->GetParentEntityId().empty()) {
-	  transformComponent->useParentMatrix = false;
-	  transformComponent->parentMatrix = GameEngine::MakeIdentity4x4();
-	  return;
-   }
-
-   if (!GameEngine::Object::FindByEntityId(object->GetParentEntityId())) {
-      // 親が削除済みでも前フレームの行列を使い続けないよう、親適用を明示的に解除する。
-	  transformComponent->useParentMatrix = false;
-	  transformComponent->parentMatrix = GameEngine::MakeIdentity4x4();
-	  return;
-   }
-
-   transformComponent->useParentMatrix = true;
-   transformComponent->parentMatrix = object->GetParentWorldMatrix();
+   transformComponent->ResolveParentRelation();
 }
 }
 
@@ -389,8 +366,8 @@ void Renderer::Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> b
    // MaterialComponent のブレンドモード優先解決
    BlendMode effectiveBlendMode = currentBlendMode_;
    if (const auto* mc = sprite->GetComponent<MaterialComponent>()) {
-      if (!mc->materials.empty() && mc->materials[0]) {
-         if (const auto matBlend = mc->materials[0]->GetBlendMode()) {
+      if (mc->GetMaterial()) {
+         if (const auto matBlend = mc->GetMaterial()->GetBlendMode()) {
             effectiveBlendMode = *matBlend;
          } else {
             effectiveBlendMode = blendMode.value_or(currentBlendMode_);
@@ -685,13 +662,13 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 	  return;
    }
 
-   ModelAsset* modelAsset = model->GetComponent<MeshComponent>()->GetModelAsset();
+   const ModelAsset* modelAsset = model->GetComponent<MeshComponent>()->GetModelAsset();
    if (!modelAsset) {
 	  return;
    }
 
    const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
-   if (!bindSkeleton || bindSkeleton->joints.empty()) {
+   if (!bindSkeleton || bindSkeleton->GetJoints().empty()) {
 	  return;
    }
 
@@ -700,21 +677,21 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
    Skeleton skeletonPose = *bindSkeleton;
 
    if (auto* animationComponent = model->GetComponent<AnimationComponent>()) {
-	  if (assetManager_ && !animationComponent->animationName.empty()) {
+	  if (assetManager_ && !animationComponent->DescribeSettings().animationName.empty()) {
 		 auto* animationManager = assetManager_->GetAnimationAssetManager();
 		 if (animationManager) {
-			auto animationAsset = animationManager->GetAnimation(animationComponent->animationName);
+			auto animationAsset = animationManager->GetAnimation(animationComponent->DescribeSettings().animationName);
 			if (animationAsset) {
 			   const AnimationClip* clip = nullptr;
-			   if (!animationComponent->clipName.empty()) {
-				  clip = animationAsset->GetClip(animationComponent->clipName);
+			   if (!animationComponent->DescribeSettings().clipName.empty()) {
+				  clip = animationAsset->GetClip(animationComponent->DescribeSettings().clipName);
 			   }
 			   if (!clip) {
 				  clip = animationAsset->GetDefaultClip();
 			   }
 
 			   if (clip) {
-				  ApplyAnimation(skeletonPose, *clip, animationComponent->currentTime);
+				  ApplyAnimation(skeletonPose, *clip, animationComponent->PlaybackTime());
 				  skeletonPose.Update();
 			   }
 			}
@@ -727,22 +704,20 @@ void Renderer::DrawSkeleton(Model* model, float jointRadius, const Vector4& join
 	  return;
    }
 
-   Matrix4x4 modelMatrix = MakeAffineMatrix(transformComponent->transform);
-   if (transformComponent->useParentMatrix) {
-	  modelMatrix = modelMatrix * transformComponent->parentMatrix;
-   }
+   Matrix4x4 modelMatrix = MakeAffineMatrix(transformComponent->GetLocalPose());
+   modelMatrix = transformComponent->ComposeWorldMatrix(modelMatrix);
 
    std::vector<Vector3> jointPositions;
-   jointPositions.resize(skeletonPose.joints.size());
+   jointPositions.resize(skeletonPose.GetJoints().size());
 
    // 全関節のモデル変換後位置を先に確定し、親子線の走査で親行列を再計算しない。
-   for (const Joint& joint : skeletonPose.joints) {
+   for (const Joint& joint : skeletonPose.GetJoints()) {
 	  const Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * modelMatrix;
 	  jointPositions[joint.index] = ExtractTranslation(jointWorldMatrix);
 	  DrawSphere(jointPositions[joint.index], jointRadius, jointColor, applyPostProcess);
    }
 
-   for (const Joint& joint : skeletonPose.joints) {
+   for (const Joint& joint : skeletonPose.GetJoints()) {
 	  if (!joint.parent) {
 		 continue;
 	  }
@@ -856,7 +831,7 @@ void Renderer::DrawAutoRegisteredModels() {
 
 	  ResolveParentRelationForRender(model);
 
-	  if (!renderComponent->IsEnabled() || !renderComponent->autoRender || !renderComponent->visible) {
+	  if (!renderComponent->IsEnabled() || !renderComponent->DescribeSettings().autoRender || !renderComponent->DescribeSettings().visible) {
 		 continue;
 	  }
 
@@ -887,7 +862,7 @@ void Renderer::DrawAutoRegisteredModels() {
 
       auto* uiModelComponent = model->GetComponent<UIModelComponent>();
       if (uiModelComponent && uiModelComponent->IsEnabled()) {
-         Camera* uiModelCamera = uiModelComponent->projectionType == UIModelComponent::ProjectionType::Perspective
+         Camera* uiModelCamera = uiModelComponent->DescribeSettings().projectionType == UIModelComponent::ProjectionType::Perspective
             ? perspectiveUiCamera_.get()
             : uiCamera_.get();
          const uint32_t screenWidth = Window::kUiReferenceWidth;
@@ -898,9 +873,9 @@ void Renderer::DrawAutoRegisteredModels() {
             texture,
             uiModelCamera,
             std::nullopt,
-            renderComponent->applyPostProcess);
+            renderComponent->DescribeSettings().applyPostProcess);
       } else {
-	     Draw(model, texture, std::nullopt, renderComponent->applyPostProcess);
+	     Draw(model, texture, std::nullopt, renderComponent->DescribeSettings().applyPostProcess);
       }
    }
 }
@@ -925,7 +900,7 @@ void Renderer::DrawAutoRegisteredSprites() {
 
 	  ResolveParentRelationForRender(sprite);
 
-	  if (!renderComponent->IsEnabled() || !renderComponent->autoRender || !renderComponent->visible) {
+	  if (!renderComponent->IsEnabled() || !renderComponent->DescribeSettings().autoRender || !renderComponent->DescribeSettings().visible) {
 		 continue;
 	  }
 
@@ -946,12 +921,12 @@ void Renderer::DrawAutoRegisteredSprites() {
 		 continue;
 	  }
 
-	  if (renderComponent->renderSpace == RenderComponent::RenderSpace::Screen) {
+	  if (renderComponent->DescribeSettings().renderSpace == RenderComponent::RenderSpace::Screen) {
 		 const uint32_t screenWidth = Window::kUiReferenceWidth;
 		 const uint32_t screenHeight = Window::kUiReferenceHeight;
-		 DrawUI(sprite, texture, sprite->GetScreenAnchorPoint(), std::nullopt, renderComponent->applyPostProcess, screenWidth, screenHeight);
+		 DrawUI(sprite, texture, sprite->GetScreenAnchorPoint(), std::nullopt, renderComponent->DescribeSettings().applyPostProcess, screenWidth, screenHeight);
 	  } else {
-		 Draw(sprite, texture, std::nullopt, renderComponent->applyPostProcess);
+		 Draw(sprite, texture, std::nullopt, renderComponent->DescribeSettings().applyPostProcess);
 	  }
    }
 }
@@ -998,7 +973,7 @@ void Renderer::DrawAutoRegisteredTexts() {
       auto* textComponent = text->GetComponent<UITextComponent>();
       const auto* transformComponent = text->GetComponent<TransformComponent>();
       if (!textComponent || !transformComponent ||
-         (renderComponent && (!renderComponent->visible || !renderComponent->autoRender))) {
+         (renderComponent && (!renderComponent->DescribeSettings().visible || !renderComponent->DescribeSettings().autoRender))) {
          continue;
       }
 
@@ -1006,7 +981,7 @@ void Renderer::DrawAutoRegisteredTexts() {
       const auto drawDataList = textRenderer_->QueueText(
          layout,
          textComponent->GetStyle(),
-         transformComponent->transform,
+         transformComponent->GetLocalPose(),
          textComponent->GetVisibleGlyphCount(),
          Window::kUiReferenceWidth,
          Window::kUiReferenceHeight,
@@ -1105,7 +1080,7 @@ void Renderer::SetSceneTransitionOpacity(float opacity) {
 void Renderer::InitializeUICamera() {
    Transform uiCameraTransform = {};
    uiCameraTransform.scale = Vector3(1.0f, 1.0f, 1.0f);
-   uiCameraTransform.rotation = Vector3(0.0f, 0.0f, 0.0f);
+   uiCameraTransform.SetRotationEuler({});
    uiCameraTransform.translation = Vector3(0.0f, 0.0f, 0.0f);
 
    uiCamera_->Initialize(uiCameraTransform, Camera::ProjectionType::Orthographic);
@@ -1219,7 +1194,7 @@ void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode)
    const std::string cacheKey = MakePipelineCacheKey(pipelineName, blendMode);
    auto it = pipelineCache_.find(cacheKey);
 
-   PipelineState* pipelineState = nullptr;
+   const PipelineState* pipelineState = nullptr;
 
    if (it != pipelineCache_.end() && it->second.resolved) {
 	  // キャッシュヒット
@@ -1301,10 +1276,7 @@ void Renderer::FlushLineRenderer(LineRenderer* renderer, RenderPass renderPass) 
 		 }
 
 		 // 実行順が確定した時点で共有インスタンスバッファへ転送し、直後のDrawInstancedで消費する。
-		 auto* mappedBuffer = lineRendererPtr->GetMappedInstanceBuffer();
-		 if (mappedBuffer) {
-			memcpy(mappedBuffer, capturedLines.data(), sizeof(LineRenderer::LineInstance) * lineCount);
-		 }
+      if (!lineRendererPtr->UploadLines(capturedLines)) return;
 
 		 Matrix4x4 world = MakeIdentity4x4();
 		 lineRendererPtr->UpdateMatrix(world, viewProjMatrix);

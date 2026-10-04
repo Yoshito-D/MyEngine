@@ -18,9 +18,9 @@ namespace GameEngine {
 
 	void NoiseModule::ApplyNoise(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) {
 		if (!enabled_) return;
-		float strength = strength_.randomize ? particle.noiseStrength : strength_.minValue;
-		float frequency = frequency_.randomize ? particle.noiseFrequency : frequency_.minValue;
-		float scrollSpeed = scrollSpeed_.randomize ? particle.noiseScrollSpeed : scrollSpeed_.minValue;
+		float strength = strength_.IsRandomized() ? particle.noiseStrength : strength_.Minimum();
+		float frequency = frequency_.IsRandomized() ? particle.noiseFrequency : frequency_.Minimum();
+		float scrollSpeed = scrollSpeed_.IsRandomized() ? particle.noiseScrollSpeed : scrollSpeed_.Minimum();
 
 		particle.noiseTime += scrollSpeed * deltaTime;
 

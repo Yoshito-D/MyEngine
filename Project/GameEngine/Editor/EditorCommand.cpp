@@ -105,16 +105,16 @@ bool CreateGenericObjectCommand::Execute(EditorSceneContext& context) {
    Object* object = nullptr;
    // 初回は新規作成し、RedoではUndo直前に保存した同一ID・同一設定のスナップショットを復元する。
    if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.GetObjectStore().RestoreObject(snapshot_);
+      object = context.CommandObjectStore().RestoreObject(snapshot_);
    } else {
-      object = context.GetObjectStore().CreateGenericObject(&initialTransform_);
+      object = context.CommandObjectStore().CreateGenericObject(&initialTransform_);
    }
 
    if (!object) {
       return false;
    }
 
-   objectId_ = context.GetObjectStore().GetId(object);
+   objectId_ = context.CommandObjectStore().GetId(object);
    context.SelectObject(object);
    return true;
 }
@@ -125,11 +125,11 @@ void CreateGenericObjectCommand::Undo(EditorSceneContext& context) {
    }
 
    // 削除前に現在状態を保存し、作成後に加えられた編集もRedoで同じ内容へ戻す。
-   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
+   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
       context.SelectObject(nullptr);
    }
-   context.GetObjectStore().DeleteObject(objectId_);
+   context.CommandObjectStore().DeleteObject(objectId_);
 }
 
 CreateModelCommand::CreateModelCommand(std::string assetId, Transform initialTransform)
@@ -140,16 +140,16 @@ CreateModelCommand::CreateModelCommand(std::string assetId, Transform initialTra
 bool CreateModelCommand::Execute(EditorSceneContext& context) {
    Object* object = nullptr;
    if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.GetObjectStore().RestoreObject(snapshot_);
+      object = context.CommandObjectStore().RestoreObject(snapshot_);
    } else {
-      object = context.GetObjectStore().CreateModel(assetId_, &initialTransform_);
+      object = context.CommandObjectStore().CreateModel(assetId_, &initialTransform_);
    }
 
    if (!object) {
       return false;
    }
 
-   objectId_ = context.GetObjectStore().GetId(object);
+   objectId_ = context.CommandObjectStore().GetId(object);
    context.SelectObject(object);
    return true;
 }
@@ -159,11 +159,11 @@ void CreateModelCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
-   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
+   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
       context.SelectObject(nullptr);
    }
-   context.GetObjectStore().DeleteObject(objectId_);
+   context.CommandObjectStore().DeleteObject(objectId_);
 }
 
 CreateSpriteCommand::CreateSpriteCommand(std::string textureAssetId, Transform initialTransform)
@@ -174,16 +174,16 @@ CreateSpriteCommand::CreateSpriteCommand(std::string textureAssetId, Transform i
 bool CreateSpriteCommand::Execute(EditorSceneContext& context) {
    Object* object = nullptr;
    if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.GetObjectStore().RestoreObject(snapshot_);
+      object = context.CommandObjectStore().RestoreObject(snapshot_);
    } else {
-      object = context.GetObjectStore().CreateSprite(textureAssetId_, &initialTransform_);
+      object = context.CommandObjectStore().CreateSprite(textureAssetId_, &initialTransform_);
    }
 
    if (!object) {
       return false;
    }
 
-   objectId_ = context.GetObjectStore().GetId(object);
+   objectId_ = context.CommandObjectStore().GetId(object);
    context.SelectObject(object);
    return true;
 }
@@ -193,11 +193,11 @@ void CreateSpriteCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
-   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
+   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
       context.SelectObject(nullptr);
    }
-   context.GetObjectStore().DeleteObject(objectId_);
+   context.CommandObjectStore().DeleteObject(objectId_);
 }
 
 CreateUITextCommand::CreateUITextCommand(Transform initialTransform)
@@ -207,16 +207,16 @@ CreateUITextCommand::CreateUITextCommand(Transform initialTransform)
 bool CreateUITextCommand::Execute(EditorSceneContext& context) {
    Object* object = nullptr;
    if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.GetObjectStore().RestoreObject(snapshot_);
+      object = context.CommandObjectStore().RestoreObject(snapshot_);
    } else {
-      object = context.GetObjectStore().CreateUIText(&initialTransform_);
+      object = context.CommandObjectStore().CreateUIText(&initialTransform_);
    }
 
    if (!object) {
       return false;
    }
 
-   objectId_ = context.GetObjectStore().GetId(object);
+   objectId_ = context.CommandObjectStore().GetId(object);
    context.SelectObject(object);
    return true;
 }
@@ -226,26 +226,26 @@ void CreateUITextCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
-   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
+   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
       context.SelectObject(nullptr);
    }
-   context.GetObjectStore().DeleteObject(objectId_);
+   context.CommandObjectStore().DeleteObject(objectId_);
 }
 
 bool CreateSkyboxCommand::Execute(EditorSceneContext& context) {
    Object* object = nullptr;
    if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.GetObjectStore().RestoreObject(snapshot_);
+      object = context.CommandObjectStore().RestoreObject(snapshot_);
    } else {
-      object = context.GetObjectStore().CreateSkybox();
+      object = context.CommandObjectStore().CreateSkybox();
    }
 
    if (!object) {
       return false;
    }
 
-   objectId_ = context.GetObjectStore().GetId(object);
+   objectId_ = context.CommandObjectStore().GetId(object);
    context.SelectObject(object);
    return true;
 }
@@ -255,11 +255,11 @@ void CreateSkyboxCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
-   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.GetObjectStore().FindById(objectId_)) {
+   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
       context.SelectObject(nullptr);
    }
-   context.GetObjectStore().DeleteObject(objectId_);
+   context.CommandObjectStore().DeleteObject(objectId_);
 }
 
 CreateParticleSystemCommand::CreateParticleSystemCommand(std::string assetId, Transform initialTransform)
@@ -270,16 +270,16 @@ CreateParticleSystemCommand::CreateParticleSystemCommand(std::string assetId, Tr
 bool CreateParticleSystemCommand::Execute(EditorSceneContext& context) {
    ParticleSystem* particleSystem = nullptr;
    if (!snapshot_.is_null() && snapshot_.is_object()) {
-      particleSystem = context.GetObjectStore().RestoreParticleSystem(snapshot_);
+      particleSystem = context.CommandObjectStore().RestoreParticleSystem(snapshot_);
    } else {
-      particleSystem = context.GetObjectStore().CreateParticleSystem(assetId_, {}, &initialTransform_);
+      particleSystem = context.CommandObjectStore().CreateParticleSystem(assetId_, {}, &initialTransform_);
    }
 
    if (!particleSystem) {
       return false;
    }
 
-   objectId_ = context.GetObjectStore().GetId(particleSystem);
+   objectId_ = context.CommandObjectStore().GetId(particleSystem);
    context.SelectObject(nullptr);
    context.SelectParticleSystem(particleSystem);
    return true;
@@ -290,11 +290,11 @@ void CreateParticleSystemCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
-   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedParticleSystem() == context.GetObjectStore().FindParticleById(objectId_)) {
+   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
+   if (context.GetSelectedParticleSystem() == context.CommandObjectStore().FindParticleById(objectId_)) {
       context.SelectParticleSystem(nullptr);
    }
-   context.GetObjectStore().DeleteParticleSystem(objectId_);
+   context.CommandObjectStore().DeleteParticleSystem(objectId_);
 }
 
 DeleteObjectCommand::DeleteObjectCommand(std::string objectId)
@@ -302,17 +302,17 @@ DeleteObjectCommand::DeleteObjectCommand(std::string objectId)
 }
 
 bool DeleteObjectCommand::Execute(EditorSceneContext& context) {
-   if (objectId_.empty() || !context.GetObjectStore().ContainsId(objectId_)) {
+   if (objectId_.empty() || !context.CommandObjectStore().ContainsId(objectId_)) {
       return false;
    }
 
-   Object* object = context.GetObjectStore().FindById(objectId_);
+   Object* object = context.CommandObjectStore().FindById(objectId_);
    // Storeの遅延削除へ移す前に完全な状態を確保し、Undoを実体ポインターの寿命へ依存させない。
-   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
+   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
    if (context.GetSelectedObject() == object) {
       context.SelectObject(nullptr);
    }
-   return context.GetObjectStore().DeleteObject(objectId_);
+   return context.CommandObjectStore().DeleteObject(objectId_);
 }
 
 void DeleteObjectCommand::Undo(EditorSceneContext& context) {
@@ -320,7 +320,7 @@ void DeleteObjectCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
-   Object* object = context.GetObjectStore().RestoreObject(snapshot_);
+   Object* object = context.CommandObjectStore().RestoreObject(snapshot_);
    if (object) {
       context.SelectObject(object);
    }
@@ -331,20 +331,20 @@ DeleteParticleSystemCommand::DeleteParticleSystemCommand(std::string objectId)
 }
 
 bool DeleteParticleSystemCommand::Execute(EditorSceneContext& context) {
-   if (objectId_.empty() || !context.GetObjectStore().ContainsId(objectId_)) {
+   if (objectId_.empty() || !context.CommandObjectStore().ContainsId(objectId_)) {
       return false;
    }
 
-   ParticleSystem* particleSystem = context.GetObjectStore().FindParticleById(objectId_);
+   ParticleSystem* particleSystem = context.CommandObjectStore().FindParticleById(objectId_);
    if (!particleSystem) {
       return false;
    }
 
-   snapshot_ = context.GetObjectStore().SerializeObject(objectId_);
+   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
    if (context.GetSelectedParticleSystem() == particleSystem) {
       context.SelectParticleSystem(nullptr);
    }
-   return context.GetObjectStore().DeleteParticleSystem(objectId_);
+   return context.CommandObjectStore().DeleteParticleSystem(objectId_);
 }
 
 void DeleteParticleSystemCommand::Undo(EditorSceneContext& context) {
@@ -352,7 +352,7 @@ void DeleteParticleSystemCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
-   ParticleSystem* particleSystem = context.GetObjectStore().RestoreParticleSystem(snapshot_);
+   ParticleSystem* particleSystem = context.CommandObjectStore().RestoreParticleSystem(snapshot_);
    if (particleSystem) {
       context.SelectObject(nullptr);
       context.SelectParticleSystem(particleSystem);
@@ -394,7 +394,7 @@ void TransformObjectCommand::Apply(EditorSceneContext& context, const Transform&
       return;
    }
 
-   transformComponent->transform = transform;
+   transformComponent->ApplyLocalPose(transform);
 }
 
 TransformParticleSystemCommand::TransformParticleSystemCommand(std::string objectId, ParticleSystem* fallbackParticleSystem, const Transform& before, const Transform& after)
@@ -419,7 +419,7 @@ void TransformParticleSystemCommand::Undo(EditorSceneContext& context) {
 
 ParticleSystem* TransformParticleSystemCommand::ResolveParticleSystem(EditorSceneContext& context) const {
    if (!objectId_.empty()) {
-      if (ParticleSystem* particleSystem = context.GetObjectStore().FindParticleById(objectId_)) {
+      if (ParticleSystem* particleSystem = context.CommandObjectStore().FindParticleById(objectId_)) {
          return particleSystem;
       }
    }
@@ -450,22 +450,22 @@ bool RestoreObjectSnapshotCommand::Execute(EditorSceneContext& context) {
    const std::string objectType = snapshot_.value("objectType", "Model");
    // ParticleSystemはObject階層外で別ストアに登録されるため、種別を見て復元経路を分ける。
    if (objectType == "ParticleSystem") {
-      ParticleSystem* particleSystem = context.GetObjectStore().RestoreParticleSystem(snapshot_);
+      ParticleSystem* particleSystem = context.CommandObjectStore().RestoreParticleSystem(snapshot_);
       if (!particleSystem) {
          return false;
       }
-      restoredObjectId_ = context.GetObjectStore().GetId(particleSystem);
+      restoredObjectId_ = context.CommandObjectStore().GetId(particleSystem);
       context.SelectObject(nullptr);
       context.SelectParticleSystem(particleSystem);
       return true;
    }
 
-   Object* object = context.GetObjectStore().RestoreObject(snapshot_);
+   Object* object = context.CommandObjectStore().RestoreObject(snapshot_);
    if (!object) {
       return false;
    }
 
-   restoredObjectId_ = context.GetObjectStore().GetId(object);
+   restoredObjectId_ = context.CommandObjectStore().GetId(object);
    context.SelectParticleSystem(nullptr);
    context.SelectObject(object);
    return true;
@@ -477,19 +477,19 @@ void RestoreObjectSnapshotCommand::Undo(EditorSceneContext& context) {
    }
 
    // 復元時にrequested IDが衝突すると別IDが採番されるため、snapshot内ではなく実際の登録IDで取り消す。
-   if (ParticleSystem* particleSystem = context.GetObjectStore().FindParticleById(restoredObjectId_)) {
+   if (ParticleSystem* particleSystem = context.CommandObjectStore().FindParticleById(restoredObjectId_)) {
       if (context.GetSelectedParticleSystem() == particleSystem) {
          context.SelectParticleSystem(nullptr);
       }
-      context.GetObjectStore().DeleteParticleSystem(restoredObjectId_);
+      context.CommandObjectStore().DeleteParticleSystem(restoredObjectId_);
       return;
    }
 
-   if (Object* object = context.GetObjectStore().FindById(restoredObjectId_)) {
+   if (Object* object = context.CommandObjectStore().FindById(restoredObjectId_)) {
       if (context.GetSelectedObject() == object) {
          context.SelectObject(nullptr);
       }
-      context.GetObjectStore().DeleteObject(restoredObjectId_);
+      context.CommandObjectStore().DeleteObject(restoredObjectId_);
    }
 }
 
@@ -578,7 +578,7 @@ bool AddComponentCommand::Execute(EditorSceneContext& context) {
    if (beforeSnapshot_.is_null()) {
       // コンポーネント間の依存設定も戻せるよう、追加対象だけでなくオブジェクト全体を保存する。
       objectId_ = object->GetEntityId();
-      beforeSnapshot_ = context.GetObjectStore().SerializeObjectState(object, objectId_);
+      beforeSnapshot_ = context.CommandObjectStore().SerializeObjectState(object, objectId_);
    }
 
    return object->AddComponentByTypeName(typeName_) != nullptr;
@@ -591,7 +591,7 @@ void AddComponentCommand::Undo(EditorSceneContext& context) {
    }
 
    // 依存Componentの追加・設定変更も戻しつつ、EntityのID・親子関係・選択の実体を維持する。
-   context.GetObjectStore().ApplyObjectState(object, beforeSnapshot_);
+   context.CommandObjectStore().ApplyObjectState(object, beforeSnapshot_);
 }
 
 Object* AddComponentCommand::ResolveObject(EditorSceneContext& context) const {

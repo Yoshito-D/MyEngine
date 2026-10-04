@@ -44,13 +44,21 @@ Sprite::Sprite() {
    // AddComponentは同型があれば既存実体を返すため、コンストラクターとCreateの両経路から安全に必須構成を保証できる。
    // MeshはCreateまで形状を持たないが、MaterialとRender設定は生成直後から編集・シリアライズ可能にしておく。
    auto* transformComponent = AddComponent<TransformComponent>();
-   transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
+   {
+      auto pose = transformComponent->GetLocalPose();
+      pose.scale = Vector3(1.0f, 1.0f, 1.0f);
+      transformComponent->ApplyLocalPose(pose);
+   }
    if (auto* materialComponent = AddComponent<MaterialComponent>()) {
       materialComponent->EnsureMaterial(BuildAutoSpriteMaterialName(), 0xffffffff, Material::LightingMode::NONE);
    }
    AddComponent<MeshComponent>();
    if (auto* renderComponent = AddComponent<RenderComponent>()) {
-      renderComponent->renderSpace = RenderComponent::RenderSpace::Screen;
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.renderSpace = RenderComponent::RenderSpace::Screen;
+         renderComponent->Configure(settings);
+      }
    }
    SetObjectName(BuildDefaultSpriteName(sRegisteredSprites_));
    // Rendererが所有権を持たずに自動描画対象を列挙するため、構築完了後のthisを静的一覧へ登録する。
@@ -96,14 +104,26 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
    }
 
    if (auto* renderComponent = AddComponent<RenderComponent>()) {
-      renderComponent->renderSpace = RenderComponent::RenderSpace::Screen;
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.renderSpace = RenderComponent::RenderSpace::Screen;
+         renderComponent->Configure(settings);
+      }
    }
 
    auto* transformComponent = GetComponent<TransformComponent>();
    if (transformComponent) {
-	  transformComponent->transform.scale = { 1.0f, 1.0f, 1.0f };
+	  {
+	     auto pose = transformComponent->GetLocalPose();
+	     pose.scale = { 1.0f, 1.0f, 1.0f };
+	     transformComponent->ApplyLocalPose(pose);
+	  }
 	  // 既定のUIカメラのNear=0より奥へ置き、生成直後からクリップ範囲内の深度を持たせる。
-	  transformComponent->transform.translation.z = 1.0f;
+	  {
+	     auto pose = transformComponent->GetLocalPose();
+	     pose.translation.z = 1.0f;
+	     transformComponent->ApplyLocalPose(pose);
+	  }
 	  // 描画時までGPU定数バッファを遅延できる設計だが、Create済みSpriteは即座に取得可能な状態へする。
 	  transformComponent->EnsureTransformationMatrix();
    }
@@ -131,10 +151,12 @@ void Sprite::SetScale(const Vector2& scale) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform.scale.x = scale.x;
-   transformComponent->transform.scale.y = scale.y;
+   auto pose = transformComponent->GetLocalPose();
+pose.scale.x = scale.x;
+   pose.scale.y = scale.y;
    // Quadに厚みはないが、2D入力によって未指定のZ軸まで0へ落とさないよう1を維持する。
-   transformComponent->transform.scale.z = 1.0f;
+   pose.scale.z = 1.0f;
+   transformComponent->ApplyLocalPose(pose);
 }
 
 void Sprite::SetPosition(const Vector2& position) {
@@ -142,10 +164,12 @@ void Sprite::SetPosition(const Vector2& position) {
    if (!transformComponent) {
 	  return;
    }
-   transformComponent->transform.translation.x = position.x;
-   transformComponent->transform.translation.y = position.y;
+   auto pose = transformComponent->GetLocalPose();
+pose.translation.x = position.x;
+   pose.translation.y = position.y;
    // 既定のScreen描画でUIカメラのクリップ範囲内に収まる深度を維持する。
-   transformComponent->transform.translation.z = 1.0f;
+   pose.translation.z = 1.0f;
+   transformComponent->ApplyLocalPose(pose);
 }
 
 void Sprite::SetRotation(float rotation) {
@@ -154,7 +178,11 @@ void Sprite::SetRotation(float rotation) {
 	  return;
    }
    // Quaternion setter経由でEuler側も同期し、描画・Inspector・シリアライズが同じZ回転を参照するようにする。
-   transformComponent->transform.SetRotationQuaternion(Vector3(0.0f, 0.0f, rotation).ToQuaternion().Normalize());
+   {
+      auto pose = transformComponent->GetLocalPose();
+      pose.SetRotationQuaternion(Vector3(0.0f, 0.0f, rotation).ToQuaternion().Normalize());
+      transformComponent->ApplyLocalPose(pose);
+   }
 }
 
 Vector2 Sprite::GetScale() const {
@@ -162,7 +190,7 @@ Vector2 Sprite::GetScale() const {
    if (!transformComponent) {
 	  return Vector2(1.0f, 1.0f);
    }
-   return Vector2{ transformComponent->transform.scale.x, transformComponent->transform.scale.y };
+   return Vector2{ transformComponent->GetLocalPose().scale.x, transformComponent->GetLocalPose().scale.y };
 }
 
 Vector2 Sprite::GetPosition() const {
@@ -170,7 +198,7 @@ Vector2 Sprite::GetPosition() const {
    if (!transformComponent) {
 	  return Vector2(0.0f, 0.0f);
    }
-   return Vector2{ transformComponent->transform.translation.x, transformComponent->transform.translation.y };
+   return Vector2{ transformComponent->GetLocalPose().translation.x, transformComponent->GetLocalPose().translation.y };
 }
 
 float Sprite::GetRotation() const {
@@ -178,7 +206,7 @@ float Sprite::GetRotation() const {
    if (!transformComponent) {
 	  return 0.0f;
    }
-   return transformComponent->transform.GetActiveEuler().z;
+   return transformComponent->GetLocalPose().GetActiveEuler().z;
 }
 
 Vector2 Sprite::GetSize() const {
@@ -256,7 +284,7 @@ Vector2 Sprite::GetTextureSize() const {
    return Vector2(0.0f, 0.0f);
 }
 
-Mesh* Sprite::GetMesh() const {
+const Mesh* Sprite::GetMesh() const {
    if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->GetMesh();
    }
@@ -288,16 +316,11 @@ void Sprite::Update(Camera* camera, Texture* texture) {
    UpdateTextureCoordinates(texture);
 
    // 行ベクトル規約に従いLocalの後へParentを合成し、階層化されたSpriteにも同じ描画経路を使う。
-   Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->transform);
-   if (transformComponent->useParentMatrix) {
-	  worldMatrix = worldMatrix * transformComponent->parentMatrix;
-   }
-   Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
+   Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->GetLocalPose());
+   worldMatrix = transformComponent->ComposeWorldMatrix(worldMatrix);
    // TransformationMatrixは永続Mapされており、この書込みが同フレームの頂点シェーダー定数へ直接反映される。
    // 共通Objectシェーダーのレイアウトに合わせ、2D SpriteでもWorldと法線用逆転置を揃えて更新する。
-   transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;
-   transformationMatrix->GetTransformationMatrixData()->world = worldMatrix;
-   transformationMatrix->GetTransformationMatrixData()->worldInverseTranspose = worldMatrix.Inverse().Transpose();
+   transformationMatrix->ApplyWorldTransform(worldMatrix, camera->GetViewProjectionMatrix());
 }
 
 void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) {
@@ -320,22 +343,17 @@ void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anc
    Vector3 anchorPos = CalculateAnchorPosition(anchorPoint, screenWidth, screenHeight);
 
    // 描画ごとの画面アンカーを永続Transformへ書き戻すと呼出しのたびにOffsetが累積するため、一時コピーだけを調整する。
-   Transform finalTransform = transformComponent->transform;
+   Transform finalTransform = transformComponent->GetLocalPose();
    finalTransform.translation.x += anchorPos.x;
    finalTransform.translation.y += anchorPos.y;
- finalTransform.translation.z = transformComponent->transform.translation.z;
+ finalTransform.translation.z = transformComponent->GetLocalPose().translation.z;
 
    // 画面アンカーを適用したLocalの後へParentを掛け、通常更新と同じ階層規約を保つ。
    Matrix4x4 worldMatrix = MakeAffineMatrix(finalTransform);
-   if (transformComponent->useParentMatrix) {
-	  worldMatrix = worldMatrix * transformComponent->parentMatrix;
-   }
+   worldMatrix = transformComponent->ComposeWorldMatrix(worldMatrix);
 
-   Matrix4x4 wVPMatrix = worldMatrix * camera->GetViewProjectionMatrix();
    // 描画キューが参照する定数バッファへ、今回のアンカーを含む行列一式をまとめて反映する。
-   transformationMatrix->GetTransformationMatrixData()->wVP = wVPMatrix;
-   transformationMatrix->GetTransformationMatrixData()->world = worldMatrix;
-   transformationMatrix->GetTransformationMatrixData()->worldInverseTranspose = worldMatrix.Inverse().Transpose();
+   transformationMatrix->ApplyWorldTransform(worldMatrix, camera->GetViewProjectionMatrix());
 }
 
 Vector3 Sprite::CalculateAnchorPosition(AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) const {

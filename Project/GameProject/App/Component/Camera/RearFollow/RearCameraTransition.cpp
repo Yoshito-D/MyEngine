@@ -10,12 +10,12 @@ void RearCameraTransition::MutateCameraState(GameEngine::CameraState&, float del
    auto* camera = GetRearCamera();
    if (!camera) return;
    const auto& input = camera->GetInput();
-   const auto& aim = *owner_->GetComponent<RearCameraAimSolver>();
+   const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
    events_ = BeginFrame(input, aim.GetState().lastLookTargetOffset);
-   UpdatePreLandingBlend(input, *camera, deltaTime);
+   UpdatePreLandingBlend(input, camera->DescribeSettings(), deltaTime);
    // この2つのブレンドはUp計算から独立しているため、同じ部品で先に確定できる。
-   UpdateAirborneBlend(input, *camera, deltaTime);
-   UpdatePlayerFramingBlend(input, *camera, deltaTime);
+   UpdateAirborneBlend(input, camera->DescribeSettings(), deltaTime);
+   UpdatePlayerFramingBlend(input, camera->DescribeSettings(), deltaTime);
    EndFrame(input.isAirborne);
 }
 

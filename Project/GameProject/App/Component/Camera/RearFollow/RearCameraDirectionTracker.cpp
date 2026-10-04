@@ -9,12 +9,12 @@ using namespace RearCameraMath;
 void RearCameraDirectionTracker::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
    auto* camera = GetRearCamera();
    if (!camera) return;
-   const auto& transition = *owner_->GetComponent<RearCameraTransition>();
-   const auto& gravity = *owner_->GetComponent<RearCameraGravityUp>();
-   const auto& aim = *owner_->GetComponent<RearCameraAimSolver>();
-   const auto& planet = *owner_->GetComponent<RearCameraPlanetGuide>();
+   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
+   const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
+   const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
+   const auto& planet = *GetOwnerCamera()->GetComponent<RearCameraPlanetGuide>();
    BeginLanding(transition.GetEvents().justLanded);
-   UpdateBackwardVector(camera->GetInput(), *camera, transition.GetState(), aim.GetState(), planet,
+   UpdateBackwardVector(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), aim.GetState(), planet,
       gravity.GetState().currentGravityUp, deltaTime);
 }
 

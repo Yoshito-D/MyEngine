@@ -89,6 +89,16 @@ void AnimationComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("debugDrawBones") && data.at("debugDrawBones").is_boolean()) {
 	  debugDrawBones = data.at("debugDrawBones").get<bool>();
    }
+   Configure(DescribeSettings());
+}
+
+void AnimationComponent::Seek(float seconds) {
+   if (!std::isfinite(seconds)) return;
+   currentTime = std::max(seconds, 0.0f);
+   if (const auto* clip = PrepareSelectedClip()) {
+      currentTime = std::min(currentTime, std::max(clip->duration, 0.0f));
+      if (HasOwner()) ApplyCurrentPose(*clip);
+   }
 }
 
 void AnimationComponent::Play() {
@@ -114,7 +124,10 @@ void AnimationComponent::Stop() {
 
 const AnimationClip* AnimationComponent::PrepareSelectedClip() {
    if (animationName.empty()) {
-	  return nullptr;
+      cachedAnimationAsset_.reset();
+      cachedAnimationName_.clear();
+      animator_.SetClip(nullptr);
+      return nullptr;
    }
 
    if (cachedAnimationName_ != animationName) {
@@ -175,7 +188,7 @@ void AnimationComponent::Update(float deltaTime) {
    DrawDebugBones();
 }
 
-void AnimationComponent::DrawDebugBones() const {
+void AnimationComponent::DrawDebugBones() {
    if (!debugDrawBones) {
 	  return;
    }
@@ -191,29 +204,17 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
    // 両方は独立設定なので、キャラクター本体移動とボーン変形を同時に適用できる。
    if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
 	  auto* modelAssetComp = model->GetComponent<MeshComponent>();
-	  ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
+	  const ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
 	  if (useSkinning && modelAsset && modelAsset->HasSkinningData()) {
 		 const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
 		 SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
-		 if (bindSkeleton && skinCluster && !bindSkeleton->joints.empty() && !skinCluster->mappedPalette.empty()) {
+		 if (bindSkeleton && skinCluster && !bindSkeleton->GetJoints().empty() && skinCluster->HasPalette()) {
 			// 毎フレームBind Poseから評価し直し、前フレームの姿勢へ差分を重ねてドリフトさせない。
 			Skeleton skeletonPose = *bindSkeleton;
 			ApplyAnimation(skeletonPose, selectedClip, currentTime);
 			skeletonPose.Update();
 
-			const size_t jointCount = std::min({
-			   skeletonPose.joints.size(),
-			   skinCluster->inverseBindPoseMatrices.size(),
-			   skinCluster->mappedPalette.size()
-			   });
-
-			// CPU側配列とGPUパレットの最小範囲だけを書き、壊れたアセットでも範囲外参照を避ける。
-			for (size_t jointIndex = 0; jointIndex < jointCount; ++jointIndex) {
-			   const Matrix4x4 skinMatrix = skinCluster->inverseBindPoseMatrices[jointIndex] * skeletonPose.joints[jointIndex].skeletonSpaceMatrix;
-			   skinCluster->mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
-			   // 非一様スケール後も法線を正しく変換するため逆転置行列を別に保持する。
-			   skinCluster->mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
-			}
+         skinCluster->ApplyPose(skeletonPose);
 		 }
 	  }
    }
@@ -230,19 +231,18 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 	  return;
    }
 
-   // 各TRSチャンネルを個別に許可し、Root Motionだけ除外する等の用途を可能にする。
+   // 許可したチャンネルを同じ作業姿勢へ評価し、全TRSを同時に反映する。
+   auto pose = transformComponent->GetLocalPose();
    if (applyTranslation && !nodeAnimation->translation.keyframes.empty()) {
-	  transformComponent->transform.translation = CalculateValue(nodeAnimation->translation.keyframes, currentTime);
+      pose.translation = CalculateValue(nodeAnimation->translation.keyframes, currentTime);
    }
-
    if (applyRotation && !nodeAnimation->rotation.keyframes.empty()) {
-	  const Quaternion quaternion = CalculateValue(nodeAnimation->rotation.keyframes, currentTime);
-	  transformComponent->transform.SetRotationQuaternion(quaternion);
+      pose.SetRotationQuaternion(CalculateValue(nodeAnimation->rotation.keyframes, currentTime));
    }
-
    if (applyScale && !nodeAnimation->scale.keyframes.empty()) {
-	  transformComponent->transform.scale = CalculateValue(nodeAnimation->scale.keyframes, currentTime);
+      pose.scale = CalculateValue(nodeAnimation->scale.keyframes, currentTime);
    }
+   transformComponent->ApplyLocalPose(pose);
 }
 
 #ifdef USE_IMGUI
@@ -355,6 +355,7 @@ void AnimationComponent::DrawInspector() {
 	  }
    }
    ImGui::Spacing();
+   Configure(DescribeSettings());
 }
 #endif
 

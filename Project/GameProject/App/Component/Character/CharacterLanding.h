@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
@@ -50,14 +52,39 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-public:
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief 原点（inertia中心）から着地点までの追加オフセット
+      /// surfaceRadius_ に加算され、実際のスナップ位置が決まる
+      float landingOffset = 0.0f;
+      /// @brief OBBの半サイズ（各軸を個別指定）
+      /// 地表スナップ時の支持半径計算に使用する
+      GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.landingOffset = landingOffset;
+      settings.obbHalfExtents = obbHalfExtents;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.landingOffset)) settings.landingOffset = defaults.landingOffset;
+      if (!std::isfinite(settings.obbHalfExtents.x)) settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
+      if (!std::isfinite(settings.obbHalfExtents.y)) settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
+      if (!std::isfinite(settings.obbHalfExtents.z)) settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
+      settings.obbHalfExtents.x = std::max(0.0f, settings.obbHalfExtents.x);
+      settings.obbHalfExtents.y = std::max(0.0f, settings.obbHalfExtents.y);
+      settings.obbHalfExtents.z = std::max(0.0f, settings.obbHalfExtents.z);
+      landingOffset = settings.landingOffset;
+      obbHalfExtents = settings.obbHalfExtents;
+   }
 
-   /// @brief 原点（inertia中心）から着地点までの追加オフセット
-   /// surfaceRadius_ に加算され、実際のスナップ位置が決まる
+private:
    float landingOffset = 0.0f;
-
-   /// @brief OBBの半サイズ（各軸を個別指定）
-   /// 地表スナップ時の支持半径計算に使用する
    GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
 
 private:

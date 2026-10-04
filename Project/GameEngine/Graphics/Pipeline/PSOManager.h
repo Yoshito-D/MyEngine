@@ -92,7 +92,7 @@ public:
    /// @param name パイプライン名
    /// @param blendMode ブレンドモード
    /// @return パイプラインステート、見つからない場合はnullptr
-   PipelineState* GetPipeline(const std::string& name, BlendMode blendMode = BlendMode::kBlendModeNone);
+   const PipelineState* GetPipeline(const std::string& name, BlendMode blendMode = BlendMode::kBlendModeNone) const;
 
    /// @brief 表裏反転用パイプラインの論理名を生成する
    /// @param name 元のパイプライン名
@@ -102,7 +102,7 @@ public:
    /// @brief ルートシグネチャを取得
    /// @param name ルートシグネチャ名
    /// @return ルートシグネチャ、見つからない場合はnullptr
-   RootSignature* GetRootSignature(const std::string& name);
+   const RootSignature* GetRootSignature(const std::string& name) const;
 
    /// @brief コンピュートパイプライン定義を取得
    const ComputePipelineDefinition* GetComputePipeline(const std::string& name) const;
@@ -121,7 +121,7 @@ public:
    void Clear();
 
    /// @brief シェーダーマネージャーを取得
-   ShaderManager* GetShaderManager() const { return shaderManager_; }
+   const ShaderManager* GetShaderManager() const { return shaderManager_; }
 
    /// @brief パイプライン反射メタデータを取得
    const PipelineReflectionMetadata* GetPipelineReflectionMetadata(const std::string& name) const;

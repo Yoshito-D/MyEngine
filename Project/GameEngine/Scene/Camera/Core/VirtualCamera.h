@@ -39,8 +39,8 @@ public:
     T* AddComponent(Args&&... args) {
         auto component = std::make_unique<T>(std::forward<Args>(args)...);
         T* ptr = component.get();
-        component->Initialize(this);
         components_.push_back(std::move(component));
+        ptr->Attach(*this);
         SortComponents();
         return ptr;
     }
@@ -58,15 +58,25 @@ public:
     ICinemachineComponent* AddComponentByName(const std::string& componentName);
 
     /// @brief コンポーネント名から取得する
-    ICinemachineComponent* FindComponentByName(const std::string& componentName) const;
+    ICinemachineComponent* FindComponentByName(const std::string& componentName);
+    /// @brief 名前から読み取り専用のコンポーネントを探す。
+    const ICinemachineComponent* FindComponentByName(const std::string& componentName) const;
 
     /// @brief コンポーネントを取得
     template<typename T>
-    T* GetComponent() const {
+    T* GetComponent() {
         for (const auto& comp : components_) {
             if (T* casted = dynamic_cast<T*>(comp.get())) {
                 return casted;
             }
+        }
+        return nullptr;
+    }
+
+    /// @brief 型から読み取り専用のコンポーネントを探す。
+    template<typename T> const T* GetComponent() const {
+        for (const auto& component : components_) {
+            if (const auto* typed = dynamic_cast<const T*>(component.get())) return typed;
         }
         return nullptr;
     }
@@ -81,9 +91,9 @@ public:
     void SetName(const std::string& name) { name_ = name; }
 
     /// @brief 位置追従対象を設定する
-    void SetFollowTarget(Transform* target);
+    void SetFollowTarget(const Transform* target);
     /// @brief 注視対象を設定する
-    void SetLookAtTarget(Transform* target);
+    void SetLookAtTarget(const Transform* target);
     /// @brief 位置追従対象を安定Entity IDで設定する
     /// @param entityId 追従対象。空文字列で解除する
     void SetFollowTargetEntityId(const std::string& entityId);
@@ -97,9 +107,9 @@ public:
     /// @return 旧ポインター指定時は空文字列
     const std::string& GetLookAtTargetEntityId() const { return lookAtTargetEntityId_; }
     /// @brief 位置追従対象を取得する
-    Transform* GetFollowTarget() const;
+    const Transform* GetFollowTarget() const;
     /// @brief 注視対象を取得する
-    Transform* GetLookAtTarget() const;
+    const Transform* GetLookAtTarget() const;
 
     /// @brief ブレンド選択に使用する優先度を取得する
     int GetPriority() const { return priority_; }
@@ -117,7 +127,17 @@ public:
     void SetState(const CameraState& state) { state_ = state; }
 
     /// @brief コンポーネント一覧を取得（読み取り専用）
-    const std::vector<std::unique_ptr<ICinemachineComponent>>& GetComponents() const { return components_; }
+    std::vector<ICinemachineComponent*> GetComponents() {
+        std::vector<ICinemachineComponent*> result;
+        for (auto& component : components_) result.push_back(component.get());
+        return result;
+    }
+    /// @brief 所有ポインターを公開せず読み取り用の部品一覧を作る。
+    std::vector<const ICinemachineComponent*> GetComponents() const {
+        std::vector<const ICinemachineComponent*> result;
+        for (const auto& component : components_) result.push_back(component.get());
+        return result;
+    }
 
     /// @brief 仮想カメラ設定を保存する
     nlohmann::json Serialize() const;
@@ -128,9 +148,11 @@ public:
 protected:
     void SortComponents();
 
+private:
     std::vector<std::unique_ptr<ICinemachineComponent>> components_;
-    Transform* followTarget_ = nullptr;
-    Transform* lookAtTarget_ = nullptr;
+protected:
+    const Transform* followTarget_ = nullptr;
+    const Transform* lookAtTarget_ = nullptr;
     std::string followTargetEntityId_;
     std::string lookAtTargetEntityId_;
     mutable Transform resolvedFollowTarget_;

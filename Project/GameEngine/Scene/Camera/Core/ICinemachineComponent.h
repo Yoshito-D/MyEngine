@@ -16,15 +16,20 @@ enum class CinemachineStage {
 /// @brief Cinemachineコンポーネントのインターフェース
 class ICinemachineComponent {
 public:
+   /// @brief 未接続・未確保の状態を構築する。
+   ICinemachineComponent() = default;
+   /// @brief 所有者への接続やGPU実行状態を別の実体へ複製することを禁止する。
+   ICinemachineComponent(const ICinemachineComponent&) = delete;
+   /// @brief 所有境界を迂回するコピー代入を禁止する。
+   ICinemachineComponent& operator=(const ICinemachineComponent&) = delete;
+
     /// @brief 派生コンポーネントを基底ポインター経由で安全に破棄する
     virtual ~ICinemachineComponent() = default;
 
-    /// @brief コンポーネントの初期化
-    /// @param owner 所有するVirtualCamera
-    virtual void Initialize(VirtualCamera* owner) { owner_ = owner; }
-
-    /// @brief 所有するVirtualCameraを取得
-    VirtualCamera* GetOwnerCamera() const { return owner_; }
+    /// @brief 所有カメラへの編集用アクセス。
+    VirtualCamera* GetOwnerCamera() { return owner_; }
+    /// @brief 所有カメラの読み取り用アクセス。
+    const VirtualCamera* GetOwnerCamera() const { return owner_; }
 
     /// @brief カメラ状態を変更する
     /// @param state 変更するカメラ状態
@@ -57,7 +62,13 @@ public:
 #endif
 
 protected:
+    /// @brief 所有登録後に呼び出される初期化フック。所有者の差し替えは行わない。
+    virtual void OnAttach() {}
+private:
+    friend class VirtualCamera;
+    void Attach(VirtualCamera& owner) { owner_ = &owner; OnAttach(); }
     VirtualCamera* owner_ = nullptr;
+protected:
     bool isEnabled_ = true;
 };
 

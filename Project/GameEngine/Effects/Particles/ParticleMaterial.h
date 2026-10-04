@@ -15,6 +15,11 @@ class GraphicsDevice;
 /// @brief パーティクル用マテリアル
 class ParticleMaterial : public IMaterialData {
 public:
+   /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
+   ParticleMaterial(const ParticleMaterial&) = delete;
+   /// @brief GPUデータの暗黙な共有を禁止する。
+   ParticleMaterial& operator=(const ParticleMaterial&) = delete;
+
    /// @brief マテリアルデータ（GPU送信用）
    struct MaterialData {
 	  Vector4 color;              // 基本カラー
@@ -103,7 +108,7 @@ public:
 
    /// @brief マテリアルデータを取得
    /// @return マテリアルデータへのポインタ
-   MaterialData* GetMaterialData() const { return materialData_; }
+   const MaterialData* GetMaterialData() const { return materialData_; }
 
    /// @brief マテリアルリソースを取得
    /// @return マテリアルリソースへのポインタ

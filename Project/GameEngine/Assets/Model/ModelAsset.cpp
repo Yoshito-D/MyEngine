@@ -89,7 +89,10 @@ void CreateStructuredBufferUav(ID3D12Device* device, ID3D12Resource* resource, U
    device->CreateUnorderedAccessView(resource, nullptr, &uavDesc, handle);
 }
 
-void CreateInputSkinningResourceViews(
+
+}
+
+void ModelAsset::CreateInputSkinningResourceViews(
    GraphicsDevice* device,
    SkinCluster& skinCluster,
    const std::vector<MeshData>& meshes,
@@ -134,7 +137,7 @@ void CreateInputSkinningResourceViews(
    }
 }
 
-void CreateOutputSkinningResources(GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes) {
+void ModelAsset::CreateOutputSkinningResources(GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes) {
    ID3D12Device* d3dDevice = device->GetDevice();
 
    // 出力頂点、VBV、UAV、定数バッファ、状態追跡を同じmeshIndexで参照できるよう、
@@ -189,7 +192,6 @@ void CreateOutputSkinningResources(GraphicsDevice* device, SkinCluster& skinClus
 	  }
    }
 }
-}
 
 void ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName) {
    assert(device);
@@ -234,25 +236,34 @@ void ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, 
    }
 
    // ボーンを持たないモデルではスキニング用ディスクリプタを消費しない。
-   if (hasSkinningData_ && skeleton_ && !skeleton_->joints.empty() && !modelData_.meshes.empty()) {
+   if (hasSkinningData_ && skeleton_ && !skeleton_->GetJoints().empty() && !modelData_.meshes.empty()) {
 	  skinCluster_ = CreateSkinCluster(device, *skeleton_, modelData_);
    }
 }
 
-std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() try {
+std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() const try {
    if (!hasSkinningData_ || !graphicsDevice_ || !skeleton_ || !skinCluster_) {
 	  return std::nullopt;
    }
 
    // テンプレートから不変な入力頂点・Influenceを共有しつつ、アニメーション姿勢で毎フレーム
    // 変化するPaletteとスキニング出力だけをインスタンス専用に差し替える。
-   SkinCluster instance = *skinCluster_;
+   SkinCluster instance;
+   // 読み取り専用の入力だけを共有し、出力リソースと遷移状態の別名を作らない。
+   instance.inverseBindPoseMatrices = skinCluster_->inverseBindPoseMatrices;
+   instance.influenceResources = skinCluster_->influenceResources;
+   instance.influenceBufferViews = skinCluster_->influenceBufferViews;
+   instance.mappedInfluenceData = skinCluster_->mappedInfluenceData;
+   instance.inputVertexSrvHandles = skinCluster_->inputVertexSrvHandles;
+   instance.influenceSrvHandles = skinCluster_->influenceSrvHandles;
+   instance.inputVertexDescriptors = skinCluster_->inputVertexDescriptors;
+   instance.influenceDescriptors = skinCluster_->influenceDescriptors;
    ID3D12Device* d3dDevice = graphicsDevice_->GetDevice();
 
-   instance.paletteResource = ResourceHelper::CreateBufferResource(d3dDevice, sizeof(WellForGPU) * skeleton_->joints.size());
+   instance.paletteResource = ResourceHelper::CreateBufferResource(d3dDevice, sizeof(WellForGPU) * skeleton_->GetJoints().size());
    WellForGPU* mappedPalette = nullptr;
    instance.paletteResource->Map(0, nullptr, reinterpret_cast<void**>(&mappedPalette));
-   instance.mappedPalette = { mappedPalette, skeleton_->joints.size() };
+   instance.mappedPalette = { mappedPalette, skeleton_->GetJoints().size() };
 
    instance.paletteSrvHandle = AllocateSrvUavDescriptor(graphicsDevice_, instance.paletteDescriptor);
 
@@ -262,13 +273,13 @@ std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() try {
    paletteSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
    paletteSrvDesc.Buffer.FirstElement = 0;
    paletteSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-   paletteSrvDesc.Buffer.NumElements = static_cast<UINT>(skeleton_->joints.size());
+   paletteSrvDesc.Buffer.NumElements = static_cast<UINT>(skeleton_->GetJoints().size());
    paletteSrvDesc.Buffer.StructureByteStride = sizeof(WellForGPU);
    d3dDevice->CreateShaderResourceView(instance.paletteResource.Get(), &paletteSrvDesc, instance.paletteSrvHandle.first);
 
    // アニメーション適用前でもBind Poseで正しく描ける初期Paletteを設定する。
-   for (size_t jointIndex = 0; jointIndex < skeleton_->joints.size(); ++jointIndex) {
-	  const Matrix4x4 skinMatrix = instance.inverseBindPoseMatrices[jointIndex] * skeleton_->joints[jointIndex].skeletonSpaceMatrix;
+   for (size_t jointIndex = 0; jointIndex < skeleton_->GetJoints().size(); ++jointIndex) {
+	  const Matrix4x4 skinMatrix = instance.inverseBindPoseMatrices[jointIndex] * skeleton_->GetJoints()[jointIndex].skeletonSpaceMatrix;
 	  instance.mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
 	  instance.mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
    }
@@ -420,13 +431,11 @@ Skeleton ModelAsset::CreateSkeleton(const Node& rootNode, const ModelData& model
    (void)modelData;
    Skeleton skeleton;
    // まず深さ優先で連続配列へ平坦化し、次に名前検索用MapとSkeleton空間行列を構築する。
-   skeleton.root = CreateJoint(rootNode, {}, skeleton.joints);
-
-   for (const Joint& joint : skeleton.joints) {
-	  skeleton.jointMap.emplace(joint.name, joint.index);
+   std::vector<Joint> joints;
+   const int32_t root = CreateJoint(rootNode, {}, joints);
+   if (!skeleton.BuildHierarchy(std::move(joints), root)) {
+      Logger::Warning("[ModelAsset] Invalid skeleton hierarchy.");
    }
-
-   skeleton.Update();
 
    return skeleton;
 }
@@ -464,10 +473,10 @@ SkinCluster ModelAsset::CreateSkinCluster(GraphicsDevice* device, const Skeleton
    }
 
    // 1) palette用Resourceを確保
-   skinCluster.paletteResource = ResourceHelper::CreateBufferResource(d3dDevice, sizeof(WellForGPU) * skeleton.joints.size());
+   skinCluster.paletteResource = ResourceHelper::CreateBufferResource(d3dDevice, sizeof(WellForGPU) * skeleton.GetJoints().size());
    WellForGPU* mappedPalette = nullptr;
    skinCluster.paletteResource->Map(0, nullptr, reinterpret_cast<void**>(&mappedPalette));
-   skinCluster.mappedPalette = { mappedPalette, skeleton.joints.size() };
+   skinCluster.mappedPalette = { mappedPalette, skeleton.GetJoints().size() };
 
    // 2) palette用SRVを作成
    {
@@ -479,7 +488,7 @@ SkinCluster ModelAsset::CreateSkinCluster(GraphicsDevice* device, const Skeleton
 	  paletteSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 	  paletteSrvDesc.Buffer.FirstElement = 0;
 	  paletteSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	  paletteSrvDesc.Buffer.NumElements = static_cast<UINT>(skeleton.joints.size());
+	  paletteSrvDesc.Buffer.NumElements = static_cast<UINT>(skeleton.GetJoints().size());
 	  paletteSrvDesc.Buffer.StructureByteStride = sizeof(WellForGPU);
       d3dDevice->CreateShaderResourceView(
 		 skinCluster.paletteResource.Get(),
@@ -522,14 +531,14 @@ SkinCluster ModelAsset::CreateSkinCluster(GraphicsDevice* device, const Skeleton
    CreateOutputSkinningResources(device, skinCluster, modelData.meshes);
 
    // 5) InverseBindPoseMatrixの保存領域を作成
-   skinCluster.inverseBindPoseMatrices.resize(skeleton.joints.size());
+   skinCluster.inverseBindPoseMatrices.resize(skeleton.GetJoints().size());
    std::generate(skinCluster.inverseBindPoseMatrices.begin(), skinCluster.inverseBindPoseMatrices.end(), MakeIdentity4x4);
 
    // 6) ModelDataのSkinCluster情報を解析してInfluenceの中身を埋める
    // Skeletonに存在しないBoneはインポート対象外ノードとして無視し、配列境界も個別に検証する。
    for (const auto& jointWeight : modelData.skinClusterData) {
-	  auto it = skeleton.jointMap.find(jointWeight.first);
-	  if (it == skeleton.jointMap.end()) {
+	  auto it = skeleton.GetJointMap().find(jointWeight.first);
+	  if (it == skeleton.GetJointMap().end()) {
 		 continue;
 	  }
 
@@ -593,12 +602,85 @@ SkinCluster ModelAsset::CreateSkinCluster(GraphicsDevice* device, const Skeleton
    }
 
    // 法線には平行移動を除き非一様スケールにも対応できる逆転置行列を別途渡す。
-   for (size_t jointIndex = 0; jointIndex < skeleton.joints.size(); ++jointIndex) {
-	  const Matrix4x4 skinMatrix = skinCluster.inverseBindPoseMatrices[jointIndex] * skeleton.joints[jointIndex].skeletonSpaceMatrix;
+   for (size_t jointIndex = 0; jointIndex < skeleton.GetJoints().size(); ++jointIndex) {
+	  const Matrix4x4 skinMatrix = skinCluster.inverseBindPoseMatrices[jointIndex] * skeleton.GetJoints()[jointIndex].skeletonSpaceMatrix;
 	  skinCluster.mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
 	  skinCluster.mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
    }
 
    return skinCluster;
 }
+bool SkinCluster::ApplyPose(const Skeleton& pose) {
+   const auto& joints = pose.GetJoints();
+   if (joints.size() != inverseBindPoseMatrices.size() || joints.size() != mappedPalette.size()) return false;
+   for (size_t i = 0; i < joints.size(); ++i) {
+      const Matrix4x4 skin = inverseBindPoseMatrices[i] * joints[i].skeletonSpaceMatrix;
+      mappedPalette[i] = { skin, skin.Inverse().Transpose() };
+   }
+   return true;
+}
+
+bool SkinCluster::CanSkinVertices(size_t meshIndex, size_t count) const {
+   return HasComputeSkinningResources(meshIndex) && count > 0 &&
+      count <= static_cast<size_t>(D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION) * 1024 &&
+      count == mappedSkinningInformationData[meshIndex]->numVertices &&
+      count <= skinnedVertexBufferViews[meshIndex].SizeInBytes / sizeof(Mesh::VertexData);
+}
+
+bool SkinCluster::DispatchSkinning(ID3D12GraphicsCommandList* commands, size_t index, const std::array<UINT, 5>& slots) {
+   if (!commands || !HasComputeSkinningResources(index)) return false;
+   const UINT count = mappedSkinningInformationData[index]->numVertices;
+   if (!CanSkinVertices(index, count)) return false;
+   // リソース状態と実際のBarrierを同じ所有側で記録し、描画パス間の重複管理を防ぐ。
+   auto transition = [&](D3D12_RESOURCE_STATES after) {
+      auto& before = skinnedVertexResourceStates[index];
+      if (before == after) return;
+      D3D12_RESOURCE_BARRIER barrier{};
+      barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+      barrier.Transition = { skinnedVertexResources[index].Get(), D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, before, after };
+      commands->ResourceBarrier(1, &barrier);
+      before = after;
+   };
+   transition(D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+   commands->SetComputeRootConstantBufferView(slots[0], skinningInformationResources[index]->GetGPUVirtualAddress());
+   commands->SetComputeRootDescriptorTable(slots[1], paletteSrvHandle.second);
+   commands->SetComputeRootDescriptorTable(slots[2], inputVertexSrvHandles[index].second);
+   commands->SetComputeRootDescriptorTable(slots[3], influenceSrvHandles[index].second);
+   commands->SetComputeRootDescriptorTable(slots[4], skinnedVertexUavHandles[index].second);
+   commands->Dispatch((count + 1023) / 1024, 1, 1);
+   transition(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+   return true;
+}
+
+Vector3 SkinCluster::EvaluateSkinnedPosition(size_t meshIndex, uint32_t vertexIndex, const Vector3& bindPosition) const {
+   if (meshIndex >= mappedSkinningInformationData.size() || !mappedSkinningInformationData[meshIndex] || vertexIndex >= mappedSkinningInformationData[meshIndex]->numVertices) return bindPosition;
+   if (meshIndex >= mappedInfluenceData.size() ||
+	  !mappedInfluenceData[meshIndex]) {
+	  return bindPosition;
+   }
+
+   const VertexInfluence& influence = mappedInfluenceData[meshIndex][vertexIndex];
+   Vector3 skinnedPosition(0.0f, 0.0f, 0.0f);
+   float totalWeight = 0.0f;
+   // GPUと同じ最大影響数だけを合成し、欠損・未正規化ウェイトは最後に補正する。
+   for (uint32_t influenceIndex = 0; influenceIndex < kNumMaxInfluence; ++influenceIndex) {
+	  const float weight = influence.weights[influenceIndex];
+	  const int32_t jointIndex = influence.jointIndices[influenceIndex];
+	  if (weight <= 0.0f || jointIndex < 0 || static_cast<size_t>(jointIndex) >= mappedPalette.size()) {
+		 continue;
+	  }
+	  skinnedPosition += TransformCoordinate(
+		 bindPosition,
+		 mappedPalette[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix) * weight;
+	  totalWeight += weight;
+   }
+   return totalWeight > 0.0001f ? skinnedPosition / totalWeight : bindPosition;
+}
+
+bool SkinCluster::TryResolveJointMatrix(size_t index, Matrix4x4& matrix) const {
+   if (index >= inverseBindPoseMatrices.size() || index >= mappedPalette.size()) return false;
+   matrix = inverseBindPoseMatrices[index].Inverse() * mappedPalette[index].skeletonSpaceMatrix;
+   return true;
+}
+
 }

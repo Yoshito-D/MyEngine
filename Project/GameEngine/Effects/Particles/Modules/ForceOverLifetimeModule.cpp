@@ -21,7 +21,7 @@ namespace GameEngine {
 
 	void ForceOverLifetimeModule::ApplyForce(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const {
 		if (!enabled_) return;
-		Vector3 force = force_.randomize ? particle.forceOverLifetimeForce : force_.minValue;
+		Vector3 force = force_.IsRandomized() ? particle.forceOverLifetimeForce : force_.Minimum();
 		if (useLocalSimulation) {
 			// ローカル設定値をWorld加速度へ変換してから、他モジュールと共有するaccelerationへ加算する。
 			force = RotateVector(force, simulationTransform.GetActiveQuaternion());
@@ -52,7 +52,7 @@ namespace GameEngine {
 		}
 
 		// 指数減衰によりフレームレートに依存しない空気抵抗にする。
-		const float drag = drag_.randomize ? particle.drag : drag_.minValue;
+		const float drag = drag_.IsRandomized() ? particle.drag : drag_.Minimum();
 		if (drag > 0.0f && deltaTime > 0.0f) {
 			particle.velocity = particle.velocity * std::exp(-drag * deltaTime);
 		}

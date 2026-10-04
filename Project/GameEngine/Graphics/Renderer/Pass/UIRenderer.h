@@ -23,7 +23,7 @@ public:
 	/// @param uiCamera UI描画専用カメラ
 	/// @param spriteRenderer スプライトレンダラー（内部で使用）
 	/// @param lightManager ライトマネージャー
-	void Initialize(GraphicsDevice* device, PSOManager* psoManager, Camera* uiCamera, SpriteRenderer* spriteRenderer, LightManager* lightManager);
+	void Initialize(GraphicsDevice* device, const PSOManager* psoManager, Camera* uiCamera, SpriteRenderer* spriteRenderer, LightManager* lightManager);
 
 	/// @brief UIスプライトを描画
 	/// @param uiSpriteData UIスプライト描画データ
@@ -39,7 +39,7 @@ public:
 
 private:
 	GraphicsDevice* device_ = nullptr;
-	PSOManager* psoManager_ = nullptr;
+	const PSOManager* psoManager_ = nullptr;
 	Camera* uiCamera_ = nullptr;
 	SpriteRenderer* spriteRenderer_ = nullptr;
 	LightManager* lightManager_ = nullptr;

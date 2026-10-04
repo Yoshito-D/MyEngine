@@ -25,7 +25,7 @@ class OffscreenRenderTarget;
 struct FrameContext {
 	// ----- インフラ -----
 	GraphicsDevice*      device          = nullptr;
-	PSOManager*          psoManager      = nullptr;
+	const PSOManager*          psoManager      = nullptr;
 	LightManager*        lightManager    = nullptr;
 	PostProcessManager*  postProcessMgr  = nullptr;
 	OffscreenRenderTarget* offscreenRenderTarget = nullptr;

@@ -9,12 +9,12 @@ using namespace RearCameraMath;
 void RearCameraPositionSolver::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    auto* camera = GetRearCamera();
    if (!camera) return;
-   const auto& transition = *owner_->GetComponent<RearCameraTransition>();
-   const auto& gravity = *owner_->GetComponent<RearCameraGravityUp>();
-   const auto& direction = *owner_->GetComponent<RearCameraDirectionTracker>();
-   const auto& speed = *owner_->GetComponent<RearCameraSpeedEffects>();
-   const auto& aim = *owner_->GetComponent<RearCameraAimSolver>();
-   state.transform.translation = Update(camera->GetInput(), *camera, transition.GetState(), direction.GetState(),
+   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
+   const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
+   const auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
+   const auto& speed = *GetOwnerCamera()->GetComponent<RearCameraSpeedEffects>();
+   const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
+   state.transform.translation = Update(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), direction.GetState(),
       speed.GetState(), aim.GetState(), state, gravity.GetState().currentGravityUp, speed.GetBoostAlpha(), deltaTime);
 }
 

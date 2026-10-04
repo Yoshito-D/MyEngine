@@ -76,8 +76,16 @@ const char* UIModelComponent::GetTypeName() const {
 void UIModelComponent::OnAttach() {
    if (auto* renderComponent = GetOwner().GetComponent<RenderComponent>()) {
       // UI モデルは専用カメラの画面空間パスへ送り、ゲーム画面向けポストエフェクトの影響を受けないようにする。
-      renderComponent->renderSpace = RenderComponent::RenderSpace::Screen;
-      renderComponent->applyPostProcess = false;
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.renderSpace = RenderComponent::RenderSpace::Screen;
+         renderComponent->Configure(settings);
+      }
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.applyPostProcess = false;
+         renderComponent->Configure(settings);
+      }
    }
 }
 
@@ -116,7 +124,7 @@ void UIModelComponent::ApplyLayout(const Camera& camera, uint32_t screenWidth, u
       };
    }
 
-   Transform& transform = transformComponent->transform;
+   auto transform = transformComponent->GetLocalPose();
    const Vector3 scaledPivot{
       localPivot.x * transform.scale.x,
       localPivot.y * transform.scale.y,
@@ -125,6 +133,7 @@ void UIModelComponent::ApplyLayout(const Camera& camera, uint32_t screenWidth, u
    // ピボットの回転後位置を引き、モデルの向きに依らず同じアンカーへ揃える。
    const Vector3 rotatedPivot = RotateVector(scaledPivot, transform.GetActiveQuaternion());
    transform.translation = anchorPosition - rotatedPivot;
+   transformComponent->ApplyLocalPose(transform);
 }
 
 nlohmann::json UIModelComponent::Serialize() const {
@@ -173,6 +182,7 @@ void UIModelComponent::Deserialize(const nlohmann::json& data) {
       // 実際の near／far への制限はカメラ依存なので ApplyLayout に任せ、ここでは正の距離だけ保証する。
       depth = std::max(data.at("depth").get<float>(), 0.001f);
    }
+   Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
@@ -203,6 +213,7 @@ void UIModelComponent::DrawInspector() {
    ImGui::DragFloat2(ImGuiHelper::Localize({ "画面オフセット", "Screen Offset" }), &screenOffset.x, 1.0f);
    ImGui::DragFloat3(ImGuiHelper::Localize({ "ローカルピボット", "Local Pivot" }), &localPivot.x, 0.01f);
    ImGui::DragFloat(ImGuiHelper::Localize({ "奥行き", "Depth" }), &depth, 0.01f, 0.001f, 100.0f);
+   Configure(DescribeSettings());
 }
 #endif
 

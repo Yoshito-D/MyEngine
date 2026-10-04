@@ -80,6 +80,7 @@ void BgmComponent::Deserialize(const nlohmann::json& data) {
    if (!std::isfinite(fadeOutSeconds) || fadeOutSeconds < 0.0f) fadeOutSeconds = 0.0f;
    clip_.reset();
    Prepare();
+   Configure(DescribeSettings());
 }
 #ifdef MYPROJECT_NON_RELEASE
 void BgmComponent::SetClipForTesting(const std::string& assetId, std::shared_ptr<const SoundClip> clip) {
@@ -110,6 +111,7 @@ void BgmComponent::DrawInspector() {
    ImGui::SameLine();
    if (ImGui::Button(Tr("試聴停止", "Stop Preview")))
       if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
+   Configure(DescribeSettings());
 }
 #endif
 }

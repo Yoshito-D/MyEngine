@@ -90,7 +90,7 @@ void TitleStartComponent::Update(float deltaTime) {
       startRequested_ = true;
       reactionElapsed_ = 0.0f;
       // 選択中の拡大・縮小から連続して決定演出へ入り、基準倍率へ跳ね戻らせない。
-      reactionStartScale_ = optionTransforms_[static_cast<std::size_t>(selectedOption_)]->transform.scale;
+      reactionStartScale_ = optionTransforms_[static_cast<std::size_t>(selectedOption_)]->GetLocalPose().scale;
       GameEngine::BaseScene::SetNextSceneName(selectedScene);
       return;
    }
@@ -210,7 +210,7 @@ bool TitleStartComponent::CaptureBaseVisualStates() {
          continue;
       }
       baseOpacities_[optionIndex] = text->GetStyle().color.w;
-      baseScales_[optionIndex] = transform->transform.scale;
+      baseScales_[optionIndex] = transform->GetLocalPose().scale;
       capturedAny = true;
    }
    return capturedAny;
@@ -294,11 +294,11 @@ void TitleStartComponent::UpdateSelectionAnimation(float deltaTime) {
       }
 
       // 未選択側も基準値から毎フレーム設定し、直前までの選択アニメーションを残さない。
-      optionTransforms_[optionIndex]->transform.scale = {
+      { auto pose = optionTransforms_[optionIndex]->GetLocalPose(); pose.scale = {
          baseScale.x * scaleMultiplier,
          baseScale.y * scaleMultiplier,
          baseScale.z
-      };
+      }; optionTransforms_[optionIndex]->ApplyLocalPose(pose); }
    }
 }
 
@@ -322,12 +322,14 @@ void TitleStartComponent::ApplyStartReaction(std::size_t optionIndex) {
    // 決定時の表示倍率から終点へ補間し、反復計算による誤差を蓄積させない。
    const float progress = std::clamp(reactionElapsed_ / reactionDuration_, 0.0f, 1.0f);
    const float scaleProgress = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, progress);
-   transform.transform.scale = {
+   auto pose = transform.GetLocalPose();
+   pose.scale = {
       reactionStartScale_.x + (baseScale.x * reactionEndScale_ - reactionStartScale_.x) * scaleProgress,
       reactionStartScale_.y + (baseScale.y * reactionEndScale_ - reactionStartScale_.y) * scaleProgress,
       baseScale.z
    };
    text.SetOpacity(GameEngine::Easing::EaseInQuad(baseOpacities_[optionIndex], 0.0f, progress));
+   transform.ApplyLocalPose(pose);
 }
 
 #ifdef USE_IMGUI

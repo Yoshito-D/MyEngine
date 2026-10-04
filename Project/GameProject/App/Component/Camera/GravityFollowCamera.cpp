@@ -590,6 +590,7 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
       state.fov = currentFov_;
       owner->SetState(state);
    }
+   Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
@@ -629,6 +630,7 @@ void GravityFollowCamera::DrawInspector() {
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("ピボット目標", "Pivot Target"), pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("水平前方向", "Flat Forward"), flatForward_.x, flatForward_.y, flatForward_.z);
    ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), playerSpeed_, Tr("現在FOV", "Current FOV"), currentFov_);
+   Configure(DescribeSettings());
 }
 #endif
 

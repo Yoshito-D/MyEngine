@@ -66,9 +66,10 @@ public:
     /// @param viewCamera ビューに使用するカメラ
     void DrawCameraIcon(const Vector3& position, const Quaternion& rotation, float scale, Camera* viewCamera);
 
-    /// @brief 設定を取得
-    Settings& GetSettings() { return settings_; }
-    const Settings& GetSettings() const { return settings_; }
+    /// @brief 編集用に描画設定の値をコピーする。
+    Settings DescribeSettings() const { return settings_; }
+    /// @brief 有限な色・倍率を確認して表示設定を一括適用する。
+    void Configure(const Settings& settings);
 
 private:
     /// @brief ViewProjection行列から視錐台の8頂点を計算

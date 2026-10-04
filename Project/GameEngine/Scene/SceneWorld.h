@@ -39,22 +39,30 @@ public:
    /// @brief 安定IDからオブジェクトを検索する
    /// @param objectId JSONに保存されたオブジェクトID
    /// @return 対応するオブジェクト。存在しない場合はnullptr
-   Object* FindObjectById(const std::string& objectId) const;
+   Object* FindObjectById(const std::string& objectId);
+   /// @brief 読み取り専用の対象を検索する。
+   const Object* FindObjectById(const std::string& objectId) const;
 
    /// @brief 安定IDからパーティクルシステムを検索する
    /// @param objectId JSONに保存されたオブジェクトID
    /// @return 対応するパーティクルシステム。存在しない場合はnullptr
-   ParticleSystem* FindParticleSystemById(const std::string& objectId) const;
+   ParticleSystem* FindParticleSystemById(const std::string& objectId);
+   /// @brief 読み取り専用の対象を検索する。
+   const ParticleSystem* FindParticleSystemById(const std::string& objectId) const;
 
    /// @brief 表示名からオブジェクトを検索する
    /// @param objectName ObjectNameComponentの名前
    /// @return 最初に一致したオブジェクト。存在しない場合はnullptr
-   Object* FindObjectByName(const std::string& objectName) const;
+   Object* FindObjectByName(const std::string& objectName);
+   /// @brief 読み取り専用の対象を検索する。
+   const Object* FindObjectByName(const std::string& objectName) const;
 
    /// @brief IDまたは名前から仮想カメラを検索する
    /// @param cameraIdOrName カメラIDまたは表示名
    /// @return 対応する仮想カメラ。存在しない場合はnullptr
-   VirtualCamera* FindVirtualCamera(const std::string& cameraIdOrName) const;
+   VirtualCamera* FindVirtualCamera(const std::string& cameraIdOrName);
+   /// @brief 読み取り専用の対象を検索する。
+   const VirtualCamera* FindVirtualCamera(const std::string& cameraIdOrName) const;
 
    /// @brief 一意な安定IDを持つ仮想カメラを作成しBrainへ登録する
    /// @param name 表示名。空ならVirtual Cameraを使用する
@@ -78,7 +86,17 @@ public:
 
    /// @brief Model等の描画オブジェクトとは別に所有するGenericオブジェクト一覧を取得する
    /// @return Genericオブジェクト一覧
-   const std::vector<std::unique_ptr<Object>>& GetGenericObjects() const { return genericObjects_; }
+   std::vector<Object*> GetGenericObjects() {
+      std::vector<Object*> view;
+      for (auto& entry : genericObjects_) view.push_back(entry.get());
+      return view;
+   }
+   /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
+   std::vector<const Object*> GetGenericObjects() const {
+      std::vector<const Object*> view;
+      for (const auto& entry : genericObjects_) view.push_back(entry.get());
+      return view;
+   }
 
    /// @brief 全要素を復元した後、指定Entity群の親子関係とComponent参照を再解決する
    /// @param objects シーン所有分とエディター所有分を含む復元済みEntity
@@ -93,7 +111,9 @@ private:
    void RestoreLegacyLights(const nlohmann::json& sceneData);
    void RestoreCameras(const nlohmann::json& sceneData);
    void ResolveReferences();
-   std::vector<Object*> CollectObjects() const;
+   std::vector<Object*> CollectObjects();
+   /// @brief シーン所有オブジェクトの読み取り用統合ビューを作る。
+   std::vector<const Object*> CollectObjects() const;
    void RegisterLooseObject(const std::string& id, Object* object);
 
    EditorObjectStore objectStore_;

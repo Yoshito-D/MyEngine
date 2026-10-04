@@ -125,11 +125,15 @@ public:
    /// @brief 安定IDからObjectを検索する
    /// @param objectId 検索するID
    /// @return 対応Object。未登録の場合はnullptr
-   Object* FindById(const std::string& objectId) const;
+   Object* FindById(const std::string& objectId);
+   /// @brief 読み取り専用の対象を検索する。
+   const Object* FindById(const std::string& objectId) const;
    /// @brief 安定IDからParticleSystemを検索する
    /// @param objectId 検索するID
    /// @return 対応ParticleSystem。未登録の場合はnullptr
-   ParticleSystem* FindParticleById(const std::string& objectId) const;
+   ParticleSystem* FindParticleById(const std::string& objectId);
+   /// @brief 読み取り専用の対象を検索する。
+   const ParticleSystem* FindParticleById(const std::string& objectId) const;
 
    /// @brief IDに対応するObjectまたはParticleSystemをシリアライズする
    /// @param objectId 対象ID
@@ -141,22 +145,82 @@ public:
 
    /// @brief エディターが所有するGenericオブジェクト一覧を取得する
    /// @return Genericオブジェクト一覧
-   const std::vector<std::unique_ptr<Object>>& GetGenericObjects() const { return genericObjects_; }
+   std::vector<Object*> GetGenericObjects() {
+      std::vector<Object*> view;
+      for (auto& entry : genericObjects_) view.push_back(entry.get());
+      return view;
+   }
+   /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
+   std::vector<const Object*> GetGenericObjects() const {
+      std::vector<const Object*> view;
+      for (const auto& entry : genericObjects_) view.push_back(entry.get());
+      return view;
+   }
    /// @brief エディタが所有するModel一覧を取得する
    /// @return Model一覧
-   const std::vector<std::unique_ptr<Model>>& GetModels() const { return models_; }
+   std::vector<Model*> GetModels() {
+      std::vector<Model*> view;
+      for (auto& entry : models_) view.push_back(entry.get());
+      return view;
+   }
+   /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
+   std::vector<const Model*> GetModels() const {
+      std::vector<const Model*> view;
+      for (const auto& entry : models_) view.push_back(entry.get());
+      return view;
+   }
    /// @brief エディタが所有するSprite一覧を取得する
    /// @return Sprite一覧
-   const std::vector<std::unique_ptr<Sprite>>& GetSprites() const { return sprites_; }
+   std::vector<Sprite*> GetSprites() {
+      std::vector<Sprite*> view;
+      for (auto& entry : sprites_) view.push_back(entry.get());
+      return view;
+   }
+   /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
+   std::vector<const Sprite*> GetSprites() const {
+      std::vector<const Sprite*> view;
+      for (const auto& entry : sprites_) view.push_back(entry.get());
+      return view;
+   }
    /// @brief エディターが所有するUIテキスト一覧を取得する
    /// @return UIテキスト一覧
-   const std::vector<std::unique_ptr<UIText>>& GetUITexts() const { return uiTexts_; }
+   std::vector<UIText*> GetUITexts() {
+      std::vector<UIText*> view;
+      for (auto& entry : uiTexts_) view.push_back(entry.get());
+      return view;
+   }
+   /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
+   std::vector<const UIText*> GetUITexts() const {
+      std::vector<const UIText*> view;
+      for (const auto& entry : uiTexts_) view.push_back(entry.get());
+      return view;
+   }
    /// @brief エディタが所有するスカイボックス一覧を取得する
    /// @return スカイボックス一覧
-   const std::vector<std::unique_ptr<Skybox>>& GetSkyboxes() const { return skyboxes_; }
+   std::vector<Skybox*> GetSkyboxes() {
+      std::vector<Skybox*> view;
+      for (auto& entry : skyboxes_) view.push_back(entry.get());
+      return view;
+   }
+   /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
+   std::vector<const Skybox*> GetSkyboxes() const {
+      std::vector<const Skybox*> view;
+      for (const auto& entry : skyboxes_) view.push_back(entry.get());
+      return view;
+   }
    /// @brief エディタが所有するParticleSystem一覧を取得する
    /// @return ParticleSystem一覧
-   const std::vector<std::unique_ptr<ParticleSystem>>& GetParticleSystems() const { return particleSystems_; }
+   std::vector<ParticleSystem*> GetParticleSystems() {
+      std::vector<ParticleSystem*> view;
+      for (auto& entry : particleSystems_) view.push_back(entry.get());
+      return view;
+   }
+   /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
+   std::vector<const ParticleSystem*> GetParticleSystems() const {
+      std::vector<const ParticleSystem*> view;
+      for (const auto& entry : particleSystems_) view.push_back(entry.get());
+      return view;
+   }
 
 private:
    std::string AllocateId(const std::string& requestedId);

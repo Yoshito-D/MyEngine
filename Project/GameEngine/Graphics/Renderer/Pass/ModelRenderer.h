@@ -22,7 +22,7 @@ public:
 	/// @param device グラフィックスデバイス
 	/// @param psoManager パイプライン状態管理
     /// @param assetManager アセット管理
-	void Initialize(GraphicsDevice* device, PSOManager* psoManager, AssetManager* assetManager);
+	void Initialize(GraphicsDevice* device, const PSOManager* psoManager, AssetManager* assetManager);
 
 	/// @brief モデルを描画
 	/// @param modelData モデル描画データ
@@ -39,7 +39,7 @@ private:
    D3D12_GPU_DESCRIPTOR_HANDLE nullCubeHandle_{};
    std::unordered_set<std::string> reportedFailures_;
 	GraphicsDevice* device_ = nullptr;
-	PSOManager* psoManager_ = nullptr;
+	const PSOManager* psoManager_ = nullptr;
   AssetManager* assetManager_ = nullptr;
 };
 

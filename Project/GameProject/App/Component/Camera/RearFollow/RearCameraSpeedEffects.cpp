@@ -9,8 +9,8 @@ using namespace RearCameraMath;
 void RearCameraSpeedEffects::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    auto* camera = GetRearCamera();
    if (!camera) return;
-   const auto& transition = *owner_->GetComponent<RearCameraTransition>();
-   boostAlpha_ = UpdateAccelerationEffect(camera->GetInput(), *camera, transition.GetState(), state, deltaTime);
+   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
+   boostAlpha_ = UpdateAccelerationEffect(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), state, deltaTime);
 }
 
 /// @brief プレイヤー速度に応じた FOV ブーストを補間し state.fov へ反映する

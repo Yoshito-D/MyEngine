@@ -32,6 +32,7 @@ void ObjectNameComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("name") && data.at("name").is_string()) {
       name = data.at("name").get<std::string>();
    }
+   Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
@@ -50,6 +51,7 @@ void ObjectNameComponent::DrawInspector() {
    }
 
    ImGui::Spacing();
+   Configure(DescribeSettings());
 }
 #endif
 

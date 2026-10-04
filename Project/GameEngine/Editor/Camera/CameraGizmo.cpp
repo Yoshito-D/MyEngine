@@ -31,6 +31,12 @@ Vector3 NormalizeOrDefault(const Vector3& value, const Vector3& fallback) {
 }
 } // namespace
 
+void CameraGizmo::Configure(const Settings& settings) {
+    if (!std::isfinite(settings.frustumColor.x) || !std::isfinite(settings.frustumColor.y) || !std::isfinite(settings.frustumColor.z) || !std::isfinite(settings.frustumColor.w) || !std::isfinite(settings.nearPlaneColor.x) || !std::isfinite(settings.nearPlaneColor.y) || !std::isfinite(settings.nearPlaneColor.z) || !std::isfinite(settings.nearPlaneColor.w) || !std::isfinite(settings.farPlaneColor.x) || !std::isfinite(settings.farPlaneColor.y) || !std::isfinite(settings.farPlaneColor.z) || !std::isfinite(settings.farPlaneColor.w) || !std::isfinite(settings.directionColor.x) || !std::isfinite(settings.directionColor.y) || !std::isfinite(settings.directionColor.z) || !std::isfinite(settings.directionColor.w) || !std::isfinite(settings.upVectorColor.x) || !std::isfinite(settings.upVectorColor.y) || !std::isfinite(settings.upVectorColor.z) || !std::isfinite(settings.upVectorColor.w) || !std::isfinite(settings.frustumScale)) return;
+    settings_ = settings;
+    settings_.frustumScale = std::max(0.0f, settings_.frustumScale);
+}
+
 void CameraGizmo::Initialize(LineRenderer* lineRenderer) {
    lineRenderer_ = lineRenderer;
 }

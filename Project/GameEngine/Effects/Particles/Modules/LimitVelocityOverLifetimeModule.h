@@ -23,7 +23,7 @@ namespace GameEngine {
 		/// @brief 制限速度を固定値で設定する
 		void SetSpeedLimit(float limit) { speedLimit_ = RandomFloat(limit, limit, false); }
 		/// @brief 制限速度の代表値を取得する
-		float GetSpeedLimit() const { return speedLimit_.minValue; }
+		float GetSpeedLimit() const { return speedLimit_.Minimum(); }
 		/// @brief 制限速度を乱数範囲で設定する
 		void SetSpeedLimitRange(const RandomFloat& limit) { speedLimit_ = limit; }
 		/// @brief 制限速度の乱数範囲を取得する
@@ -32,7 +32,7 @@ namespace GameEngine {
 		/// @brief 超過速度へ適用する減衰率を固定値で設定する
 		void SetDampen(float dampen) { dampen_ = RandomFloat(dampen, dampen, false); }
 		/// @brief 減衰率の代表値を取得する
-		float GetDampen() const { return dampen_.minValue; }
+		float GetDampen() const { return dampen_.Minimum(); }
 		/// @brief 減衰率を乱数範囲で設定する
 		void SetDampenRange(const RandomFloat& dampen) { dampen_ = dampen; }
 		/// @brief 減衰率の乱数範囲を取得する

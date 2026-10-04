@@ -36,6 +36,13 @@ private:
 /// @brief グラフィックスデバイスクラス
 class GraphicsDevice {
 public:
+   /// @brief 未接続・未確保の状態を構築する。
+   GraphicsDevice() = default;
+   /// @brief 所有者への接続やGPU実行状態を別の実体へ複製することを禁止する。
+   GraphicsDevice(const GraphicsDevice&) = delete;
+   /// @brief 所有境界を迂回するコピー代入を禁止する。
+   GraphicsDevice& operator=(const GraphicsDevice&) = delete;
+
    template<typename T>
    using ComPtr = Microsoft::WRL::ComPtr<T>;
 

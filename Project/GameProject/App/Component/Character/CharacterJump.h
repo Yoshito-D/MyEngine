@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
@@ -36,8 +38,26 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-public:
-   /// @brief ジャンプ初速の強さ
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief ジャンプ初速の強さ
+      float jumpStrength = 5.0f;
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.jumpStrength = jumpStrength;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.jumpStrength)) settings.jumpStrength = defaults.jumpStrength;
+      jumpStrength = settings.jumpStrength;
+   }
+
+private:
    float jumpStrength = 5.0f;
 
 private:

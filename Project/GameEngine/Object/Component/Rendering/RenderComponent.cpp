@@ -81,6 +81,7 @@ void RenderComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("renderSpace")) {
       renderSpace = ParseRenderSpace(data.at("renderSpace"), renderSpace);
    }
+   Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
@@ -105,6 +106,7 @@ void RenderComponent::DrawInspector() {
    }
 
    ImGui::Spacing();
+   Configure(DescribeSettings());
 }
 #endif
 

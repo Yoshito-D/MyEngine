@@ -10,6 +10,13 @@ class GraphicsDevice;
 /// @brief スポットライトクラス
 class SpotLight {
 public:
+   /// @brief GPUデータを確保する前の状態を構築する。
+   SpotLight() = default;
+   /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
+   SpotLight(const SpotLight&) = delete;
+   /// @brief GPUデータの暗黙な共有を禁止する。
+   SpotLight& operator=(const SpotLight&) = delete;
+
    /// @brief スポットライトデータ構造体
    struct SpotLightData {
 	  Vector4 color;
@@ -40,11 +47,14 @@ public:
 
    /// @brief スポットライトデータへのポインタを取得
    /// @return スポットライトデータへのポインタ
-   SpotLightData* GetSpotLightData() const { return spotLightData_; }
+   const SpotLightData* GetSpotLightData() const { return spotLightData_; }
 
    /// @brief スポットライトリソースを取得
    /// @return スポットライトリソースへのポインタ
    ID3D12Resource* GetSpotLightResource() const { return spotLightResource_.Get(); }
+
+   /// @brief 照明の記述を検証・正規化してからGPUデータへ一括反映する。
+   bool ApplyIllumination(const SpotLightData& illumination);
 
 private:
    Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_ = nullptr;

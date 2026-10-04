@@ -21,7 +21,7 @@ void PostProcess::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rend
 /// @details パイプライン構築と所有はPSO管理側へ集約されているため、本クラスは非所有ポインタのみを保持する。
 /// @param pipeline 描画に使用するパイプラインステート
 /// @param rootSignature パイプラインと対応するルートシグネチャ
-void PostProcess::SetPipeline(PipelineState* pipeline, RootSignature* rootSignature) {
+void PostProcess::SetPipeline(const PipelineState* pipeline, const RootSignature* rootSignature) {
    pipeline_ = pipeline;
    rootSignature_ = rootSignature;
 }

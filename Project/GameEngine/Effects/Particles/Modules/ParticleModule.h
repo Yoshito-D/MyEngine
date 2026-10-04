@@ -12,7 +12,7 @@ public:
    virtual ~ParticleModule() = default;
 
    /// @brief モジュールの処理を有効または無効にする
-   void SetEnabled(bool enabled) { enabled_ = enabled; }
+   virtual void SetEnabled(bool enabled) { enabled_ = enabled; }
    /// @brief モジュールが有効かを取得する
    bool IsEnabled() const { return enabled_; }
 
