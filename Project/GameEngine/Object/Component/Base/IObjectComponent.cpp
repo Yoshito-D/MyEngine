@@ -34,6 +34,7 @@ void IObjectComponent::Attach(Object& owner) {
 
 /// @brief コンポーネントをオブジェクトからデタッチする
 void IObjectComponent::Detach() {
+   SetEnabled(false);
    OnDetach();
    owner_ = nullptr;
 }
@@ -44,6 +45,7 @@ void IObjectComponent::SetEnabled(bool enabled) {
    }
 
    isEnabled_ = enabled;
+   if (!owner_) return;
    if (isEnabled_) {
 	  OnEnable();
    } else {

@@ -22,11 +22,11 @@ public:
 
    /// @brief テクスチャのリソースを取得する
    /// @return テクスチャリソース
-   const CD3DX12_GPU_DESCRIPTOR_HANDLE& GetTextureSrvHandleGPU() { return textureSrvHandleGPU_; }
+   const CD3DX12_GPU_DESCRIPTOR_HANDLE& GetTextureSrvHandleGPU() const { return textureSrvHandleGPU_; }
 
    /// @brief テクスチャのSRVハンドルをCPU側で取得する
    /// @return テクスチャのSRVハンドル（CPU側）
-   const CD3DX12_CPU_DESCRIPTOR_HANDLE& GetTextureSrvHandleCPU() { return textureSrvHandleCPU_; }
+   const CD3DX12_CPU_DESCRIPTOR_HANDLE& GetTextureSrvHandleCPU() const { return textureSrvHandleCPU_; }
 
    /// @brief テクスチャのリソースを取得する
    /// @return テクスチャの名前

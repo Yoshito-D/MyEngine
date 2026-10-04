@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector2.h"
@@ -47,23 +49,56 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-public:
-   /// @brief 最大移動速度（units/sec）
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief 最大移動速度（units/sec）
+      float moveSpeed       = 5.0f;
+      /// @brief 地上加速度（units/sec²）
+      float acceleration    = 20.0f;
+      /// @brief 地上減速度（units/sec²）
+      float friction        = 15.0f;
+      /// @brief 空中加速度（units/sec²）
+      float airAcceleration = 5.0f;
+      /// @brief 空中減速度（units/sec²）
+      float airFriction     = 0.0f;
+      /// @brief 旋回速度（rad/sec）
+      float turnSpeed       = 10.0f;
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.moveSpeed = moveSpeed;
+      settings.acceleration = acceleration;
+      settings.friction = friction;
+      settings.airAcceleration = airAcceleration;
+      settings.airFriction = airFriction;
+      settings.turnSpeed = turnSpeed;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.moveSpeed)) settings.moveSpeed = defaults.moveSpeed;
+      if (!std::isfinite(settings.acceleration)) settings.acceleration = defaults.acceleration;
+      if (!std::isfinite(settings.friction)) settings.friction = defaults.friction;
+      if (!std::isfinite(settings.airAcceleration)) settings.airAcceleration = defaults.airAcceleration;
+      if (!std::isfinite(settings.airFriction)) settings.airFriction = defaults.airFriction;
+      if (!std::isfinite(settings.turnSpeed)) settings.turnSpeed = defaults.turnSpeed;
+      moveSpeed = settings.moveSpeed;
+      acceleration = settings.acceleration;
+      friction = settings.friction;
+      airAcceleration = settings.airAcceleration;
+      airFriction = settings.airFriction;
+      turnSpeed = settings.turnSpeed;
+   }
+
+private:
    float moveSpeed       = 5.0f;
-
-   /// @brief 地上加速度（units/sec²）
    float acceleration    = 20.0f;
-
-   /// @brief 地上減速度（units/sec²）
    float friction        = 15.0f;
-
-   /// @brief 空中加速度（units/sec²）
    float airAcceleration = 5.0f;
-
-   /// @brief 空中減速度（units/sec²）
    float airFriction     = 0.0f;
-
-   /// @brief 旋回速度（rad/sec）
    float turnSpeed       = 10.0f;
 
 private:

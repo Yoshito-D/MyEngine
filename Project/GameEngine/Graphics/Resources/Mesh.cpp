@@ -809,7 +809,18 @@ void Mesh::CreateTriangle(const Vector3& v0, const Vector3& v1, const Vector3& v
    indexCount_ = 3;
 }
 
-Mesh::VertexData* Mesh::GetVertexData() const {
+const Mesh::VertexData* Mesh::GetVertexData() const {
    return vertexData_;
 }
+bool Mesh::UpdateQuadPositions(const std::array<Vector4, 4>& positions) {
+   if (!vertexData_ || vertexBufferView_.SizeInBytes != sizeof(VertexData) * 4 || indexCount_ != 6) return false;
+   for (size_t i = 0; i < 4; ++i) vertexData_[i].position = positions[i];
+   return true;
+}
+bool Mesh::UpdateQuadTextureCoordinates(const std::array<Vector2, 4>& coordinates) {
+   if (!vertexData_ || vertexBufferView_.SizeInBytes != sizeof(VertexData) * 4 || indexCount_ != 6) return false;
+   for (size_t i = 0; i < 4; ++i) vertexData_[i].texCoord = coordinates[i];
+   return true;
+}
+
 }

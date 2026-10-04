@@ -116,14 +116,22 @@ bool LightComponent::DeserializeLegacy(const nlohmann::json& data) {
    areaSize = ReadVector2(data, "size", areaSize);
 
    if (auto* transform = GetOwner().GetComponent<TransformComponent>()) {
-      transform->transform.translation = ReadVector3(data, "position", transform->transform.translation);
+      {
+         auto pose = transform->GetLocalPose();
+         pose.translation = ReadVector3(data, "position", transform->GetLocalPose().translation);
+         transform->ApplyLocalPose(pose);
+      }
       // Area Lightだけ旧フィールド名がnormalで、それ以外はdirectionを使用していた。
       const Vector3 direction = type_ == Type::Area
          ? ReadVector3(data, "normal", Vector3(0.0f, -1.0f, 0.0f))
          : ReadVector3(data, "direction", Vector3(0.0f, -1.0f, 0.0f));
       // Point Lightには方向がないため回転を変更せず、既存Entityの姿勢を保つ。
       if (type_ == Type::Directional || type_ == Type::Spot || type_ == Type::Area) {
-         transform->transform.SetRotationQuaternion(LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
+         {
+            auto pose = transform->GetLocalPose();
+            pose.SetRotationQuaternion(LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
+            transform->ApplyLocalPose(pose);
+         }
       }
    }
    return true;
@@ -179,6 +187,7 @@ void LightComponent::Deserialize(const nlohmann::json& data) {
    cosFalloffStart = ReadFloat(data, "cosFalloffStart", cosFalloffStart);
    // sizeは旧形式との互換名。現行areaSizeがあれば必ずそちらを優先する。
    areaSize = ReadVector2(data, "areaSize", ReadVector2(data, "size", areaSize));
+   Configure(DescribeSettings());
 }
 
 void LightComponent::SynchronizeRuntimeLight() {
@@ -215,10 +224,11 @@ void LightComponent::SynchronizeRuntimeLight() {
          light = EngineContext::CreateDirectionalLight(runtimeKey);
       }
       if (light && light->GetDirectionalLightData()) {
-         auto& data = *light->GetDirectionalLightData();
+         auto data = *light->GetDirectionalLightData();
          data.color = color;
          data.direction = forward;
          data.intensity = intensity;
+         light->ApplyIllumination(data);
       }
       break;
    }
@@ -228,13 +238,14 @@ void LightComponent::SynchronizeRuntimeLight() {
          light = EngineContext::CreatePointLight(runtimeKey);
       }
       if (light && light->GetPointLightData()) {
-         auto& data = *light->GetPointLightData();
+         auto data = *light->GetPointLightData();
          data.color = color;
          data.position = position;
          data.intensity = intensity;
          // 負値は減衰式を不安定にするため、GPUへ渡す境界で物理量を0以上に制限する。
          data.radius = std::max(radius, 0.0f);
          data.decay = std::max(decay, 0.0f);
+         light->ApplyIllumination(data);
       }
       break;
    }
@@ -244,7 +255,7 @@ void LightComponent::SynchronizeRuntimeLight() {
          light = EngineContext::CreateSpotLight(runtimeKey);
       }
       if (light && light->GetSpotLightData()) {
-         auto& data = *light->GetSpotLightData();
+         auto data = *light->GetSpotLightData();
          data.color = color;
          data.position = position;
          data.intensity = intensity;
@@ -253,6 +264,7 @@ void LightComponent::SynchronizeRuntimeLight() {
          data.decay = std::max(decay, 0.0f);
          data.cosAngle = cosAngle;
          data.cosFalloffStart = cosFalloffStart;
+         light->ApplyIllumination(data);
       }
       break;
    }
@@ -262,7 +274,7 @@ void LightComponent::SynchronizeRuntimeLight() {
          light = EngineContext::CreateAreaLight(runtimeKey);
       }
       if (light && light->GetAreaLightData()) {
-         auto& data = *light->GetAreaLightData();
+         auto data = *light->GetAreaLightData();
          data.color = color;
          data.position = position;
          data.intensity = intensity;
@@ -271,6 +283,7 @@ void LightComponent::SynchronizeRuntimeLight() {
          data.tangent = right;
          data.width = std::max(areaSize.x, 0.0f);
          data.height = std::max(areaSize.y, 0.0f);
+         light->ApplyIllumination(data);
       }
       break;
    }
@@ -364,6 +377,7 @@ void LightComponent::DrawInspector() {
 
    // Edit停止中でもInspector操作の結果を同じフレームのViewportへ反映する。
    SynchronizeRuntimeLight();
+   Configure(DescribeSettings());
 }
 #endif
 

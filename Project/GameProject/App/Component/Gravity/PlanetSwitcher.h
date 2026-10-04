@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
@@ -77,11 +79,9 @@ public:
    void CommitPendingSwitch();
 
    /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
-   float switchHysteresis = 1.0f;
 
    /// @brief 車体OBBの半サイズ（各軸を個別指定）
    /// Transformのscaleではなくこの値を距離判定に使用する
-   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
 
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
@@ -93,6 +93,37 @@ public:
 
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
+
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
+      float switchHysteresis = 1.0f;
+      /// @brief 車体OBBの半サイズ（各軸を個別指定）
+      /// Transformのscaleではなくこの値を距離判定に使用する
+      GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.switchHysteresis = switchHysteresis;
+      settings.obbHalfExtents = obbHalfExtents;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.switchHysteresis)) settings.switchHysteresis = defaults.switchHysteresis;
+      if (!std::isfinite(settings.obbHalfExtents.x)) settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
+      if (!std::isfinite(settings.obbHalfExtents.y)) settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
+      if (!std::isfinite(settings.obbHalfExtents.z)) settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
+      switchHysteresis = settings.switchHysteresis;
+      obbHalfExtents = settings.obbHalfExtents;
+   }
+
+private:
+   float switchHysteresis = 1.0f;
+   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
 
 private:
    /// @brief 登録済み惑星候補

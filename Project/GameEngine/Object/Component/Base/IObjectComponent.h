@@ -6,6 +6,7 @@
 namespace GameEngine {
 class Object;
 class SceneWorld;
+class ComponentContainer;
 
 /// @brief コンポーネント型のエディター表示名
 struct ComponentDisplayName {
@@ -22,6 +23,13 @@ std::string MakeObjectComponentHeaderLabel(const char* typeName);
 /// @brief Objectへアタッチできるコンポーネントの共通インターフェース
 class IObjectComponent {
 public:
+   /// @brief 未接続・未確保の状態を構築する。
+   IObjectComponent() = default;
+   /// @brief 所有者への接続やGPU実行状態を別の実体へ複製することを禁止する。
+   IObjectComponent(const IObjectComponent&) = delete;
+   /// @brief 所有境界を迂回するコピー代入を禁止する。
+   IObjectComponent& operator=(const IObjectComponent&) = delete;
+
    /// @brief 派生コンポーネントを基底ポインター経由で安全に破棄する
    virtual ~IObjectComponent() = default;
 
@@ -29,16 +37,12 @@ public:
    virtual const char* GetTypeName() const = 0;
 
    /// @brief オーナーオブジェクトへの参照を取得する
-   Object& GetOwner() const { return *owner_; }
+   Object& GetOwner() { return *owner_; }
+   /// @brief オーナーオブジェクトへの読み取り専用参照を取得する
+   const Object& GetOwner() const { return *owner_; }
 
    /// @brief オーナーが設定されているか確認する
    bool HasOwner() const { return owner_ != nullptr; }
-
-   /// @brief コンポーネントをオブジェクトにアタッチする
-   void Attach(Object& owner);
-
-   /// @brief コンポーネントをオブジェクトからデタッチする
-   void Detach();
 
    /// @brief コンポーネントが更新対象として有効か取得する
    bool IsEnabled() const {
@@ -80,6 +84,14 @@ public:
 #endif
 
 private:
+   // 所有コンテナとowner_の対応を保つため、付け外しはコンテナだけに許可する。
+   friend class ComponentContainer;
+
+   /// @brief コンポーネントをオブジェクトにアタッチする
+   void Attach(Object& owner);
+   /// @brief コンポーネントをオブジェクトからデタッチする
+   void Detach();
+
    Object* owner_ = nullptr;
    bool isEnabled_ = true;
 };

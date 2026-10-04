@@ -24,7 +24,6 @@ void Outline::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTa
 ///          定数バッファをそれぞれ意味名から解決済みのスロットへ束縛し、1回のフルスクリーンパスで処理する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void Outline::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!enabled_) return;
    if (!pipeline_ || !rootSignature_) return;
 
    const D3D12_GPU_DESCRIPTOR_HANDLE depthSRV = device_->GetDepthSRVHandleGPU();

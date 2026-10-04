@@ -62,8 +62,11 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
    }
 
    // 水平速度で位置更新
-   transform->transform.translation =
-      transform->transform.translation + horizontalVelocity_ * deltaTime;
+   {
+      auto pose = transform->GetLocalPose();
+      pose.translation = transform->GetLocalPose().translation + horizontalVelocity_ * deltaTime;
+      transform->ApplyLocalPose(pose);
+   }
 
    // 移動方向が無ければ向き補間は不要
    if (lastMoveDirection_.LengthSquared() < 1e-6f) { return; }
@@ -76,7 +79,7 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
    };
 
    // 現在前方と目標前方の平面内角度を計算
-   Quaternion currentRotation = transform->transform.GetActiveQuaternion();
+   Quaternion currentRotation = transform->GetLocalPose().GetActiveQuaternion();
    Vector3    currentForward  = RotateVector({ 0.0f, 0.0f, 1.0f }, currentRotation);
    Vector3    curFlat         = projectOnPlane(currentForward);
    Vector3    tgtFlat         = projectOnPlane(lastMoveDirection_);
@@ -89,7 +92,11 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
          float      sign     = gravityUp.Dot(curFlat.Cross(tgtFlat)) >= 0.0f ? 1.0f : -1.0f;
          float      step     = std::clamp(turnSpeed * deltaTime, 0.0f, angle);
          Quaternion yawDelta = MakeRotateAxisAngleQuaternion(gravityUp, sign * step);
-         transform->transform.SetRotationQuaternion((yawDelta * currentRotation).Normalize());
+         {
+            auto pose = transform->GetLocalPose();
+            pose.SetRotationQuaternion((yawDelta * currentRotation).Normalize());
+            transform->ApplyLocalPose(pose);
+         }
       }
    }
 }
@@ -111,6 +118,7 @@ void CharacterWalker::DrawInspector() {
    ImGui::Spacing();
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("水平速度", "Horizontal Velocity"),
       horizontalVelocity_.x, horizontalVelocity_.y, horizontalVelocity_.z);
+   Configure(DescribeSettings());
 }
 #endif
 
@@ -132,6 +140,7 @@ void CharacterWalker::Deserialize(const nlohmann::json& data) {
    if (data.contains("airAcceleration")) { airAcceleration = data["airAcceleration"]; }
    if (data.contains("airFriction"))     { airFriction     = data["airFriction"]; }
    if (data.contains("turnSpeed"))       { turnSpeed       = data["turnSpeed"]; }
+   Configure(DescribeSettings());
 }
 
 } // namespace App

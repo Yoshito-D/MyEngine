@@ -179,6 +179,7 @@ void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
    followSpeed = ReadFloat(data, "followSpeed", followSpeed);
    minPlanetDistance = ReadFloat(data, "minPlanetDistance", minPlanetDistance);
    useGravityUp = ReadBool(data, "useGravityUp", useGravityUp);
+   Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
@@ -200,6 +201,7 @@ void PlanetLeashCamera::DrawInspector() {
    if (ImGui::Button(Tr("初期化をリセット", "Reset Initialization"))) {
       isInitialized_ = false;
    }
+   Configure(DescribeSettings());
 }
 #endif
 

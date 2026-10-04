@@ -187,7 +187,7 @@ bool MeshComponent::SetModelAssetByAssetId(const std::string& assetId) {
    return true;
 }
 
-ModelAsset* MeshComponent::GetModelAsset() const {
+const ModelAsset* MeshComponent::GetModelAsset() const {
    return sourceType_ == SourceType::ModelFile ? modelAsset_.get() : nullptr;
 }
 
@@ -195,12 +195,11 @@ SkinCluster* MeshComponent::GetSkinCluster() {
    if (sourceType_ != SourceType::ModelFile) {
       return nullptr;
    }
-   // 通常はInstance固有Clusterを返す。生成できなかった場合だけAsset側のBind Poseを
-   // 読み取り用途のフォールバックとして公開する。
+   // 姿勢の更新先はObject固有Instanceだけに限定し、共有アセットを変更しない。
    if (skinCluster_) {
       return &(*skinCluster_);
    }
-   return modelAsset_ ? modelAsset_->GetSkinCluster() : nullptr;
+   return nullptr;
 }
 
 const SkinCluster* MeshComponent::GetSkinCluster() const {
@@ -657,10 +656,7 @@ void MeshComponent::ApplyToMesh(Mesh* mesh) const {
       bottom = -bottom;
    }
 
-   vertexData[0].position = Vector4(left, bottom, 0.0f, 1.0f);
-   vertexData[1].position = Vector4(left, top, 0.0f, 1.0f);
-   vertexData[2].position = Vector4(right, bottom, 0.0f, 1.0f);
-   vertexData[3].position = Vector4(right, top, 0.0f, 1.0f);
+   mesh->UpdateQuadPositions({ Vector4(left, bottom, 0.0f, 1.0f), Vector4(left, top, 0.0f, 1.0f), Vector4(right, bottom, 0.0f, 1.0f), Vector4(right, top, 0.0f, 1.0f) });
 }
 
 void MeshComponent::ApplyTextureCoordinates(Texture* texture, const Vector2& leftTop, const Vector2& size) {
@@ -697,11 +693,7 @@ void MeshComponent::ApplyTextureCoordinates(Texture* texture, const Vector2& lef
    const float texTop = actualTextureLeftTop.y / static_cast<float>(metadata.height);
    const float texBottom = (actualTextureLeftTop.y + actualTextureSize.y) / static_cast<float>(metadata.height);
 
-   auto* vertexData = mesh->GetVertexData();
-   vertexData[0].texCoord = Vector2(texLeft, texBottom);
-   vertexData[1].texCoord = Vector2(texLeft, texTop);
-   vertexData[2].texCoord = Vector2(texRight, texBottom);
-   vertexData[3].texCoord = Vector2(texRight, texTop);
+   mesh->UpdateQuadTextureCoordinates({ Vector2(texLeft, texBottom), Vector2(texLeft, texTop), Vector2(texRight, texBottom), Vector2(texRight, texTop) });
 }
 
 }

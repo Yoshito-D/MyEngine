@@ -19,14 +19,6 @@ bool ContainsEffectName(const std::string& path, const char* effectName) {
    return path.find(effectName) != std::string::npos;
 }
 
-void SetEmission(GameEngine::ParticleEmitterComponent::EmitterSlot& slot, bool enabled) {
-   if (slot.particleSystem) {
-      if (auto* emission = slot.particleSystem->GetEmissionModule()) {
-         emission->SetEnabled(enabled);
-      }
-   }
-}
-
 GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
    const GameEngine::Vector3 localUp{ 0.0f, 1.0f, 0.0f };
    const GameEngine::Vector3 surfaceNormal = normal.Normalize();
@@ -86,26 +78,26 @@ void VehicleEffectController::Update(float deltaTime) {
 
    // 共通エミッタ内のスロットをJSONパスで役割分けし、各ゲーム状態へ結び付ける。
    for (int slotIndex = 0; slotIndex < emitter->GetSlotCount(); ++slotIndex) {
-      auto* slot = emitter->GetSlot(slotIndex);
+      auto* slot = emitter->DescribeSlot(slotIndex);
       if (!slot) {
          continue;
       }
       if (ContainsEffectName(slot->jsonPath, "tire_dust")) {
-         SetEmission(*slot, isDrifting && !isJumping);
+         emitter->EnableEmission(slotIndex, isDrifting && !isJumping);
       } else if (ContainsEffectName(slot->jsonPath, "miniturbo")) {
-         SetEmission(*slot, canFireMiniTurbo && !isJumping);
+         emitter->EnableEmission(slotIndex, canFireMiniTurbo && !isJumping);
       } else if (ContainsEffectName(slot->jsonPath, "sonicBoom") && miniTurboFired) {
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "bonfire")) {
          if (!isGrounded) {
             // 空中へ移った時点で既存粒子も消し、車体に追従して見え続けるのを防ぐ。
-            SetEmission(*slot, false);
+            emitter->EnableEmission(slotIndex, false);
             if (emitter->IsPlaying(slotIndex) ||
-               (slot->particleSystem && slot->particleSystem->GetActiveParticleCount() > 0)) {
+               emitter->HasLivingParticles(slotIndex)) {
                emitter->Stop(slotIndex);
             }
          } else if (miniTurboFired) {
-            SetEmission(*slot, true);
+            emitter->EnableEmission(slotIndex, true);
             emitter->Play(slotIndex);
          }
       } else if (ContainsEffectName(slot->jsonPath, "landingRing") && landedThisFrame) {

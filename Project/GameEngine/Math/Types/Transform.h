@@ -8,8 +8,7 @@
 namespace GameEngine {
 
 /// @brief 3次元オブジェクトの拡大縮小・回転・平行移動をまとめた変換情報。
-/// @details 回転はEuler角とQuaternionの両方を保持し、rotationSourceで選択した表現を正として利用する。
-///          公開メンバーを直接変更しても他方の回転表現は同期されないため、回転の切り替えにはSetRotation系を使用する。
+/// @details 姿勢は正規化済みQuaternionだけを正本として保持し、Euler角は表示時に導出する。
 struct Transform {
    /// @brief 現在の姿勢を決定する回転表現。
    enum class RotationSource {
@@ -17,69 +16,33 @@ struct Transform {
       Quaternion //!< rotationQuaternionを使用する
    };
 
-   Vector3 scale; //!< 各ローカル軸に適用する拡大率
-   Vector3 rotation; //!< ラジアン単位のXYZ Euler角
-   Vector3 translation; //!< 変換へ適用する平行移動量
-   Quaternion rotationQuaternion; //!< Quaternion形式で保持する姿勢
-   RotationSource rotationSource; //!< 変換行列の構築時に優先する回転表現
-
-   /// @brief 単位スケール・無回転・原点位置の恒等変換を生成する。
-   /// @details 初期状態ではEuler角を有効な回転表現とする。
-   Transform()
-      : scale(1.0f, 1.0f, 1.0f)
-      , rotation(0.0f, 0.0f, 0.0f)
-      , translation(0.0f, 0.0f, 0.0f)
-      , rotationQuaternion(Quaternion::Identity())
-      , rotationSource(RotationSource::Euler) {
-   }
-
-   /// @brief Euler角を有効な回転として設定する。
-   /// @param euler ラジアン単位のXYZ Euler角。
-   /// @details Quaternion側も同じ姿勢へ同期し、後から表現を参照・切り替えた際の不整合を防ぐ。
+   Vector3 scale{ 1.0f, 1.0f, 1.0f }; //!< ローカル軸の拡大率
+   Vector3 translation{}; //!< 平行移動量
+   /// @brief 恒等変換を生成する。
+   Transform() = default;
+   /// @brief 有限なEuler角を姿勢へ変換して適用する。
    void SetRotationEuler(const Vector3& euler) {
-      // シリアライズや編集UIがどちらの表現を読んでも同じ姿勢になるよう、非選択側も更新する。
-      rotation = euler;
-      rotationQuaternion = EulerToQuaternion(euler);
-      rotationSource = RotationSource::Euler;
+      if (!std::isfinite(euler.x) || !std::isfinite(euler.y) || !std::isfinite(euler.z)) return;
+      orientation_ = EulerToQuaternion(euler);
+      serializeAsQuaternion_ = false;
    }
-
-   /// @brief Quaternionを有効な回転として設定する。
-   /// @param quaternion 設定する姿勢。非単位Quaternionは内部で正規化される。
-   /// @details Euler角側も同じ姿勢へ同期し、保存や編集UIが参照する値を最新に保つ。
+   /// @brief 有限かつ非零のQuaternionを正規化して姿勢へ適用する。
    void SetRotationQuaternion(const Quaternion& quaternion) {
-      // 回転としての大きさを1に固定してから、表示・保存用のEuler角へ変換する。
-      rotationQuaternion = quaternion.Normalize();
-      rotation = QuaternionToEuler(rotationQuaternion);
-      rotationSource = RotationSource::Quaternion;
+      const float squared = quaternion.x * quaternion.x + quaternion.y * quaternion.y + quaternion.z * quaternion.z + quaternion.w * quaternion.w;
+      if (!std::isfinite(squared) || squared < 1.0e-12f) return;
+      orientation_ = quaternion.Normalize();
+      serializeAsQuaternion_ = true;
    }
-
-   /// @brief Quaternionが現在の有効な回転表現かを調べる。
-   /// @return rotationQuaternionを使用する場合はtrue、rotationを使用する場合はfalse。
-   bool IsUsingQuaternion() const {
-      return rotationSource == RotationSource::Quaternion;
-   }
-
-   /// @brief 現在有効な姿勢を単位Quaternionとして取得する。
-   /// @return 選択中の回転表現から得た正規化済みQuaternion。
-   Quaternion GetActiveQuaternion() const {
-      if (rotationSource == RotationSource::Quaternion) {
-         return rotationQuaternion.Normalize();
-      }
-      // 公開のrotationが直接編集される場合があるため、保存済みQuaternionではなく現在値から再構築する。
-      return EulerToQuaternion(rotation);
-   }
-
-   /// @brief 現在有効な姿勢をEuler角として取得する。
-   /// @return ラジアン単位のXYZ Euler角。
-   Vector3 GetActiveEuler() const {
-      if (rotationSource == RotationSource::Quaternion) {
-         // Quaternion側を正として変換し、同期後にrotationだけが古くなっていても姿勢へ影響させない。
-         return QuaternionToEuler(rotationQuaternion);
-      }
-      return rotation;
-   }
+   /// @brief 保存時にQuaternion表現を優先するか調べる。計算の正本は常にQuaternion。
+   bool IsUsingQuaternion() const { return serializeAsQuaternion_; }
+   /// @brief 正規化済みの姿勢を読み取る。
+   Quaternion GetActiveQuaternion() const { return orientation_; }
+   /// @brief 表示用Euler角を姿勢から導出する。
+   Vector3 GetActiveEuler() const { return QuaternionToEuler(orientation_); }
 
 private:
+   Quaternion orientation_ = Quaternion::Identity();
+   bool serializeAsQuaternion_ = false;
    static Quaternion EulerToQuaternion(const Vector3& eulerAngles) {
       return eulerAngles.ToQuaternion().Normalize();
    }

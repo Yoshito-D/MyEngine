@@ -9,7 +9,7 @@
 
 namespace GameEngine {
 
-void ParticleRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager) {
+void ParticleRenderer::Initialize(GraphicsDevice* device, const PSOManager* psoManager) {
 	device_ = device;
 	psoManager_ = psoManager;
 }
@@ -115,7 +115,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	cmdList->SetGraphicsRootDescriptorTable(instancingSlot.value(), particleSystem->GetInstancingSrvHandleGPU());
 
 	// メッシュ設定（Billboard用Quad または Model）
-	ModelAsset* modelAsset = particleSystem->GetModelAsset();
+	const ModelAsset* modelAsset = particleSystem->GetModelAsset();
 	if (modelAsset) {
 		// Modelモードは各頂点をactiveCount回インスタンス化し、粒子データはSRVから引く。
 		const auto& meshes = modelAsset->GetMeshData();
@@ -126,7 +126,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 		}
 	} else {
 		// Billboardモードは共有Quadのインデックスを使い、頂点数を抑える。
-		Mesh* mesh = particleSystem->GetMesh();
+		const Mesh* mesh = particleSystem->GetMesh();
 		if (mesh) {
 			cmdList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
 			cmdList->IASetIndexBuffer(&mesh->GetIndexBufferView());

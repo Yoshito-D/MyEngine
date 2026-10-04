@@ -11,20 +11,24 @@
 
 namespace GameEngine {
 
-IObjectComponent* ComponentContainer::AddByTypeName(Object& owner, const std::string& typeName) {
+IObjectComponent* ComponentContainer::AddByTypeName(const std::string& typeName) {
    if (typeName.empty()) {
       return nullptr;
    }
 
    // 文字列から具象型を生成する責務はRegistryへ集約し、JSON復元側が各Componentを知らずに済むようにする。
-   return ComponentRegistry::GetInstance().CreateComponent(owner, typeName);
+   return ComponentRegistry::GetInstance().CreateComponent(owner_, typeName);
 }
 
 bool ComponentContainer::HasByTypeName(const std::string& typeName) const {
    return GetByTypeName(typeName) != nullptr;
 }
 
-IObjectComponent* ComponentContainer::GetByTypeName(const std::string& typeName) const {
+IObjectComponent* ComponentContainer::GetByTypeName(const std::string& typeName) {
+   return const_cast<IObjectComponent*>(std::as_const(*this).GetByTypeName(typeName));
+}
+
+const IObjectComponent* ComponentContainer::GetByTypeName(const std::string& typeName) const {
    if (typeName.empty()) {
       return nullptr;
    }
@@ -70,6 +74,31 @@ void ComponentContainer::Clear() {
    typeIndex_.clear();
 }
 
+void ComponentContainer::Activate() {
+   ChangeEnabledState(true);
+}
+
+void ComponentContainer::Deactivate() {
+   ChangeEnabledState(false);
+}
+
+void ComponentContainer::ChangeEnabledState(bool enabled) {
+   for (auto& component : components_) {
+      if (component) {
+         component->SetEnabled(enabled);
+      }
+   }
+}
+
+void ComponentContainer::ResolveReferences(SceneWorld& sceneWorld, bool initializeRuntime) {
+   for (auto& component : components_) {
+      if (!component) { continue; }
+      // 無効なComponentの参照は保持するが、レース停止やUI演出などの初期化は実行しない。
+      if (initializeRuntime && component->IsEnabled()) component->OnSceneLoaded(sceneWorld);
+      else component->OnReferencesChanged(sceneWorld);
+   }
+}
+
 nlohmann::json ComponentContainer::Serialize() const {
    // 型名・有効状態・型固有データを共通Envelopeへ包み、Component追加時もシーン形式を変えずに済ませる。
    nlohmann::json componentsData = nlohmann::json::array();
@@ -90,7 +119,7 @@ nlohmann::json ComponentContainer::Serialize() const {
    return componentsData;
 }
 
-bool ComponentContainer::Deserialize(Object& owner, const nlohmann::json& componentsData) {
+bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
    if (!componentsData.is_array()) {
       return false;
    }
@@ -129,7 +158,7 @@ bool ComponentContainer::Deserialize(Object& owner, const nlohmann::json& compon
       }
 
       // AddByTypeNameは同型が既にあれば既存実体を返すため、新規作成と状態上書きを同じ経路で処理できる。
-      auto* component = AddByTypeName(owner, typeName);
+      auto* component = AddByTypeName(typeName);
       if (!component) {
          continue;
       }

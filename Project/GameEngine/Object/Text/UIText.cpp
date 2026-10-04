@@ -27,13 +27,25 @@ std::string BuildDefaultTextName(const std::vector<UIText*>& registeredTexts) {
 UIText::UIText() {
    // UIText単体で編集・レイアウト・描画できる最小コンポーネント構成を自動で保証する。
    auto* transformComponent = AddComponent<TransformComponent>();
-   transformComponent->transform.scale = Vector3(1.0f, 1.0f, 1.0f);
+   {
+      auto pose = transformComponent->GetLocalPose();
+      pose.scale = Vector3(1.0f, 1.0f, 1.0f);
+      transformComponent->ApplyLocalPose(pose);
+   }
    SetObjectName(BuildDefaultTextName(sRegisteredTexts_));
    AddComponent<UITextComponent>();
    if (auto* renderComponent = AddComponent<RenderComponent>()) {
-      renderComponent->renderSpace = RenderComponent::RenderSpace::Screen;
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.renderSpace = RenderComponent::RenderSpace::Screen;
+         renderComponent->Configure(settings);
+      }
       // HUD文字はシーンのポストエフェクトでにじませず、最終画面へ直接重ねる。
-      renderComponent->applyPostProcess = false;
+      {
+         auto settings = renderComponent->DescribeSettings();
+         settings.applyPostProcess = false;
+         renderComponent->Configure(settings);
+      }
    }
    sRegisteredTexts_.push_back(this);
 }

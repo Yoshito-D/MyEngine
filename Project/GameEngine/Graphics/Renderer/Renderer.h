@@ -249,22 +249,30 @@ public:
 
    /// @brief PostProcessManagerを取得
    /// @return PostProcessManagerのポインタ
-   PostProcessManager* GetPostProcessManager() const { return postProcessManager_.get(); }
+   const PostProcessManager* GetPostProcessManager() const { return postProcessManager_.get(); }
+   /// @brief 編集・更新操作に使用するサービスへのアクセス。
+   PostProcessManager* GetPostProcessManager() { return postProcessManager_.get(); }
 
    /// @brief ShaderManagerを取得
    /// @return ShaderManagerのポインタ
-   ShaderManager* GetShaderManager() const { return shaderManager_.get(); }
+   const ShaderManager* GetShaderManager() const { return shaderManager_.get(); }
 
    /// @brief PSOManagerを取得
    /// @return PSOManagerのポインタ
-   PSOManager* GetPSOManager() const { return psoManager_.get(); }
+   const PSOManager* GetPSOManager() const { return psoManager_.get(); }
 
-   CameraManager* GetCameraManager() const { return cameraManager_; }
-   LightManager* GetLightManager() const { return lightManager_; }
+   const CameraManager* GetCameraManager() const { return cameraManager_; }
+   /// @brief 編集・更新操作に使用するサービスへのアクセス。
+   CameraManager* GetCameraManager() { return cameraManager_; }
+   const LightManager* GetLightManager() const { return lightManager_; }
+   /// @brief 編集・更新操作に使用するサービスへのアクセス。
+   LightManager* GetLightManager() { return lightManager_; }
 
    /// @brief LineRendererを取得
    /// @return LineRendererのポインタ
-   LineRenderer* GetLineRenderer() const { return lineRenderer_.get(); }
+   const LineRenderer* GetLineRenderer() const { return lineRenderer_.get(); }
+   /// @brief 編集・更新操作に使用するサービスへのアクセス。
+   LineRenderer* GetLineRenderer() { return lineRenderer_.get(); }
 
    // ========== RenderGraph API ==========
 
@@ -335,7 +343,7 @@ private:
 
    /// @brief パイプライン名+ブレンドモードをキーにした解決済みキャッシュ
    struct PipelineHandle {
-      PipelineState* pso = nullptr;    ///< 起動時に解決済みのポインタ
+      const PipelineState* pso = nullptr;    ///< 起動時に解決済みのポインタ
       bool resolved = false;           ///< 一度でも解決を試みたか
    };
    std::unordered_map<std::string, PipelineHandle> pipelineCache_;

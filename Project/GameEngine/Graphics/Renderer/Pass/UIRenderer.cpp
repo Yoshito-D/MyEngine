@@ -9,7 +9,7 @@
 
 namespace GameEngine {
 
-void UIRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager, Camera* uiCamera, SpriteRenderer* spriteRenderer, LightManager* lightManager) {
+void UIRenderer::Initialize(GraphicsDevice* device, const PSOManager* psoManager, Camera* uiCamera, SpriteRenderer* spriteRenderer, LightManager* lightManager) {
 	device_ = device;
 	psoManager_ = psoManager;
 	uiCamera_ = uiCamera;

@@ -91,7 +91,7 @@ bool PredictLanding(
    float landingOffset,
    const GameEngine::Vector3& obbHalfExtents,
    const GameEngine::Quaternion& playerRotation,
-   float gravityStrength,
+   const GravityBody& gravityBody,
    float predictionHorizon,
    const GameEngine::Vector3& fallbackForward,
    const GameEngine::Vector3& fallbackRight,
@@ -137,8 +137,7 @@ bool PredictLanding(
 	  GameEngine::Vector3 previousPosition = simulatedPosition;
 
 	  // GravityBody と同じ半陰的オイラー順序で、候補惑星の放射重力だけを短時間先読みする。
-	  simulatedVelocity +=
-		 surfaceUp * (-std::max(0.0f, gravityStrength) * step);
+	  simulatedVelocity = gravityBody.PredictVelocity(simulatedVelocity, surfaceUp, step);
 	  simulatedPosition += simulatedVelocity * step;
 	  outPrediction.trajectoryPoints.push_back(simulatedPosition);
 
@@ -463,11 +462,11 @@ void CameraGravityBridge::Update(float deltaTime) {
    const bool rearCameraSelected = IsSelectedCamera(playerRearFollowCamera_);
 
    // 惑星中心→自身方向を正規化して重力Upを作る
-   GameEngine::Vector3 toSelf = transform->transform.translation - planetCenter_;
+   GameEngine::Vector3 toSelf = transform->GetLocalPose().translation - planetCenter_;
    float len = toSelf.Length();
    if (len < 1e-4f) { return; }
    GameEngine::Vector3 gravityUp = toSelf * (1.0f / len);
-   GameEngine::Vector3 pos       = transform->transform.translation;
+   GameEngine::Vector3 pos       = transform->GetLocalPose().translation;
    GameEngine::Vector3 cameraPlanetCenter = planetCenter_;
    float cameraPlanetSurfaceRadius = 0.0f;
    bool hasCameraPlanet = false;
@@ -486,7 +485,7 @@ void CameraGravityBridge::Update(float deltaTime) {
    // PlayerRearFollowCamera 側へ重力Up・注視対象・近傍惑星・前方・空中状態を同期
    if (playerRearFollowCamera_) {
       GameEngine::Vector3 forward = { 0.0f, 0.0f, 1.0f };
-      GameEngine::Quaternion rotation = transform->transform.GetActiveQuaternion();
+      GameEngine::Quaternion rotation = transform->GetLocalPose().GetActiveQuaternion();
       forward = GameEngine::RotateVector(forward, rotation);
 
       bool isAirborne = false;
@@ -523,17 +522,15 @@ void CameraGravityBridge::Update(float deltaTime) {
 		 float predictionHorizon = std::max(
 			0.0f,
 			playerRearFollowCamera_->GetPreLandingPredictionHorizon());
-		 float predictionGravity =
-			gravityBody->useGravity ? gravityBody->gravityStrength : 0.0f;
 		 hasLandingPrediction = PredictLanding(
 			pos,
 			playerVelocity,
 			cameraPlanetCenter,
 			cameraPlanetSurfaceRadius,
-			landing->landingOffset,
-			landing->obbHalfExtents,
+			landing->DescribeSettings().landingOffset,
+			landing->DescribeSettings().obbHalfExtents,
 			rotation,
-			predictionGravity,
+			*gravityBody,
 			predictionHorizon,
 			forward,
 			playerRearFollowCamera_->GetCameraRight(),
@@ -698,7 +695,7 @@ void CameraGravityBridge::Update(float deltaTime) {
    float autoSpeed = 13.0f;
    if (auto* mover = GetOwner().GetComponent<VehicleGroundMover>()) {
       speed     = mover->GetCurrentSpeed();
-      autoSpeed = mover->autoSpeed;
+      autoSpeed = mover->DescribeSettings().autoSpeed;
    }
    if (gravityFollowCamera_) {
       gravityFollowCamera_->SetPlayerSpeed(speed);
@@ -843,6 +840,7 @@ void CameraGravityBridge::DrawInspector() {
       0.0f,
       60.0f);
    ImGui::Text("%s: %s", Tr("接地していた", "Was Grounded"), wasGrounded_ ? Tr("はい", "true") : Tr("いいえ", "false"));
+   Configure(DescribeSettings());
 }
 #endif
 
@@ -916,6 +914,7 @@ void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
          0.0f,
          data.at("presentationVideoCaptureDuration").get<float>());
    }
+   Configure(DescribeSettings());
 }
 
 } // namespace App

@@ -16,6 +16,10 @@ public:
    static constexpr const char* kTypeName = "ParticleEmitterComponent";
    static constexpr ComponentDisplayName kDisplayName{ "パーティクルエミッター", "Particle Emitter" };
    const char* GetTypeName() const override;
+   /// @brief 所有Systemを持たないエミッターを構築する。
+   ParticleEmitterComponent();
+   /// @brief 所有Systemを確実に停止・破棄する。
+   ~ParticleEmitterComponent() override;
 
    // ── 追従・オフセット設定 ──────────────────────────
 
@@ -38,19 +42,13 @@ public:
 
    // ── エミッタースロット ────────────────────────────
 
-   /// @brief 1スロット分のエフェクト設定と再生状態を保持する構造体
-   struct EmitterSlot {
-	  std::string        jsonPath;              ///< エフェクト JSON ファイルパス
-	  AttachmentConfig   attachConfig;          ///< 追従設定（スロット個別）
-	  bool               autoPlay = true;   ///< スロット有効化時に自動再生
-	  bool               loop = true;   ///< ループ再生するか
-	  bool               playOnceAndDestroy = false;  ///< 終了後にスロットを除去するか
-
-	  /// @brief スロット終了時に呼ばれるコールバック
-	  std::function<void(int slotIndex)> onFinished;
-
-	  /// @brief 管理している ParticleSystem（実行時に生成される）
-	  std::shared_ptr<ParticleSystem> particleSystem;
+   /// @brief 保存・編集するスロット設定。実行中のSystemは含まない。
+   struct SlotConfiguration {
+      std::string jsonPath;
+      AttachmentConfig attachConfig;
+      bool autoPlay = true;
+      bool loop = true;
+      bool playOnceAndDestroy = false;
    };
 
    // ── ライフサイクル ────────────────────────────────
@@ -89,22 +87,19 @@ public:
    /// @brief スロット数を取得する
    int  GetSlotCount() const { return static_cast<int>(slots_.size()); }
 
-   /// @brief スロットを取得する（書き込み可）
-   EmitterSlot* GetSlot(int slotIndex);
-
-   /// @brief スロットを取得する（読み取り専用）
-   const EmitterSlot* GetSlot(int slotIndex) const;
+   /// @brief 実体を公開せず、指定スロットの設定を参照する。
+   const SlotConfiguration* DescribeSlot(int slotIndex) const;
+   /// @brief 設定の置換とSystemの読み込み・追従・再生の同期を完了する。
+   bool ConfigureSlot(int slotIndex, const SlotConfiguration& configuration);
+   /// @brief 生存粒子を維持したまま、指定スロットの新規放出を切り替える。
+   void EnableEmission(int slotIndex, bool enabled);
+   /// @brief 指定スロットが表示中の粒子を持つか調べる。
+   bool HasLivingParticles(int slotIndex) const;
 
    // ── 後方互換ヘルパー（スロット 0 を操作） ────────
 
    /// @brief JSON ファイルからエフェクトを読み込み、スロット 0 に設定する
    bool LoadEffect(const std::string& jsonPath);
-
-   /// @brief 外部から生成済みの ParticleSystem をスロット 0 に注入する
-   void SetParticleSystem(std::shared_ptr<ParticleSystem> ps);
-
-   /// @brief スロット 0 の ParticleSystem を取得する
-   ParticleSystem* GetParticleSystem() const;
 
    // ── 一括再生制御（全スロット） ────────────────────
    /// @brief 全スロットの再生を開始する
@@ -155,6 +150,26 @@ public:
 	  const Quaternion& rotation,
 	  const Vector3& scale = { 1.0f, 1.0f, 1.0f });
 
+   // ── シリアライズ ──────────────────────────────────
+   /// @copydoc IObjectComponent::Serialize
+   nlohmann::json Serialize() const override;
+   /// @copydoc IObjectComponent::Deserialize
+   void Deserialize(const nlohmann::json& data) override;
+
+#ifdef USE_IMGUI
+   /// @copydoc IObjectComponent::DrawInspector
+   void DrawInspector() override;
+#endif
+
+private:
+   struct EmitterSlot : SlotConfiguration {
+      std::function<void(int)> onFinished;
+      std::unique_ptr<ParticleSystem> particleSystem;
+   };
+   EmitterSlot* GetSlot(int slotIndex);
+   const EmitterSlot* GetSlot(int slotIndex) const;
+   bool LoadSlot(EmitterSlot& slot);
+   static SlotConfiguration ValidateConfiguration(SlotConfiguration configuration);
    // ── コールバック（全スロット終了時） ──────────────
    /// @brief 全スロットが終了したとき（IsFinished() が true になったとき）に呼ばれる
    std::function<void()> onFinished;
@@ -163,21 +178,6 @@ public:
    float maxCullDistance = 0.0f;  ///< カリング距離（0 = 無効）
    bool debugDrawAttachments = true; ///< ジョイントのアタッチ位置をデバッグ描画するか
 
-   // ── シリアライズ ──────────────────────────────────
-   /// @copydoc IObjectComponent::Serialize
-   nlohmann::json Serialize() const override;
-   /// @copydoc IObjectComponent::Deserialize
-   void Deserialize(const nlohmann::json& data) override;
-
-   /// @brief 指定スロットの ParticleSystem を再生成する（loop / autoPlay 変更後に呼ぶ）
-   bool LoadSlot(EmitterSlot& slot);
-
-#ifdef USE_IMGUI
-   /// @copydoc IObjectComponent::DrawInspector
-   void DrawInspector() override;
-#endif
-
-private:
    /// @brief 指定ジョイントの現在のワールド行列を取得する
    bool TryComputeJointWorldMatrix(const std::string& jointName, Matrix4x4& jointWorldMatrix) const;
 

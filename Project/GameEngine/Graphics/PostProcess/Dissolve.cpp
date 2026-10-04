@@ -51,7 +51,6 @@ void Dissolve::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderT
 ///          タイリングを含めて1回のフルスクリーンパスで処理する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void Dissolve::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!enabled_) return;
    if (!pipeline_ || !rootSignature_) return;
 
    D3D12_GPU_DESCRIPTOR_HANDLE maskSRV = inputSRV;

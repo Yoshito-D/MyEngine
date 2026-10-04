@@ -52,8 +52,8 @@ void GravityAttractorLink::Update(float) {
 
    // 接続先が削除・無効化・圏外になった場合、前フレームの加速度を残さない。
    auto* attractor = ResolveAttractor();
-   if (!attractor || !attractor->ApplyTo(*gravityBody, transform->transform.translation)) {
-      gravityBody->SetGravity({ 0.0f, 0.0f, 0.0f });
+   if (!attractor || !attractor->ApplyTo(*gravityBody, transform->GetLocalPose().translation)) {
+      gravityBody->ReleaseGravity();
    }
 }
 

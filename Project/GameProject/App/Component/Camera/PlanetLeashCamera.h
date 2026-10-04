@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include <algorithm>
 
@@ -49,17 +51,43 @@ public:
    void DrawInspector() override;
 #endif
 
-public:
-   /// @brief 追従開始距離（この距離を超えた分を追う）
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief 追従開始距離（この距離を超えた分を追う）
+      float maxFollowDistance  = 8.0f;
+      /// @brief 追従速度
+      float followSpeed        = 6.0f;
+      /// @brief 惑星中心からの最小許容距離
+      float minPlanetDistance  = 7.0f;
+      /// @brief 重力Up使用フラグ（将来拡張向け）
+      bool  useGravityUp       = true;
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.maxFollowDistance = maxFollowDistance;
+      settings.followSpeed = followSpeed;
+      settings.minPlanetDistance = minPlanetDistance;
+      settings.useGravityUp = useGravityUp;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.maxFollowDistance)) settings.maxFollowDistance = defaults.maxFollowDistance;
+      if (!std::isfinite(settings.followSpeed)) settings.followSpeed = defaults.followSpeed;
+      if (!std::isfinite(settings.minPlanetDistance)) settings.minPlanetDistance = defaults.minPlanetDistance;
+      maxFollowDistance = settings.maxFollowDistance;
+      followSpeed = settings.followSpeed;
+      minPlanetDistance = settings.minPlanetDistance;
+      useGravityUp = settings.useGravityUp;
+   }
+
+private:
    float maxFollowDistance  = 8.0f;
-
-   /// @brief 追従速度
    float followSpeed        = 6.0f;
-
-   /// @brief 惑星中心からの最小許容距離
    float minPlanetDistance  = 7.0f;
-
-   /// @brief 重力Up使用フラグ（将来拡張向け）
    bool  useGravityUp       = true;
 
 private:

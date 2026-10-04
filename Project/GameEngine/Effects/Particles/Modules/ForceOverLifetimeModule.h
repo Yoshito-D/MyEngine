@@ -31,7 +31,7 @@ public:
    /// @brief 加える力を固定値で設定する
    void SetForce(const Vector3& force) { force_ = RandomVector3(force, force, false); }
    /// @brief 加える力の代表値を取得する
-   const Vector3& GetForce() const { return force_.minValue; }
+   const Vector3& GetForce() const { return force_.Minimum(); }
    /// @brief 加える力を乱数範囲で設定する
    void SetForceRange(const RandomVector3& force) { force_ = force; }
    /// @brief 加える力の乱数範囲を取得する
@@ -41,7 +41,7 @@ public:
    void SetDrag(float drag) { drag_ = RandomFloat(std::max(drag, 0.0f)); }
 
    /// @brief 空気抵抗係数を取得する
-   float GetDrag() const { return drag_.minValue; }
+   float GetDrag() const { return drag_.Minimum(); }
 
    /// @brief 粒子ごとの空気抵抗範囲を設定する
    void SetDragRange(const RandomFloat& drag) { drag_ = drag; }

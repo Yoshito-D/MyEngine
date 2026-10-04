@@ -106,8 +106,8 @@ private:
       size_t meshIndex = 0;
    };
    struct ShadowBindings {
-      PipelineState* maskPipeline = nullptr;
-      PipelineState* projectPipeline = nullptr;
+      const PipelineState* maskPipeline = nullptr;
+      const PipelineState* projectPipeline = nullptr;
       UINT maskConstants = 0;
       UINT projectConstants = 0;
       UINT parameters = 0;

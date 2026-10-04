@@ -84,7 +84,7 @@ bool Material::SetParameter(const std::string& name, const std::vector<float>& v
    return true;
 }
 
-ID3D12Resource* Material::PrepareParameters(const ModelPipelineDefinition& definition) {
+ID3D12Resource* Material::PrepareParameters(const ModelPipelineDefinition& definition) const {
    if (definition.parameterBufferSize == 0 || definition.parameterBufferSize > 4096 || !sDevice_) return nullptr;
    for (const auto& [name, value] : parameters_) {
       auto field = std::find_if(definition.parameters.begin(), definition.parameters.end(),

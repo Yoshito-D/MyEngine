@@ -40,7 +40,7 @@ public:
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
-public:
+private:
    /// @brief 姿勢補正にかける時間（秒）
    float alignTime = 0.1f;
 

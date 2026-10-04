@@ -37,9 +37,9 @@ float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
 } // namespace
 
 void LookAtAim::MutateCameraState(CameraState& state, float deltaTime) {
-    if (owner_ == nullptr) return;
+    if (GetOwnerCamera() == nullptr) return;
 
-    Transform* target = owner_->GetLookAtTarget();
+    const Transform* target = GetOwnerCamera()->GetLookAtTarget();
     if (target == nullptr) return;
 
     // ターゲット方向を計算

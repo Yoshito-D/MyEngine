@@ -7,20 +7,20 @@ namespace GameEngine {
 // ============================================================
 
 float RandomFloat::GetValue() const {
-   if (!randomize || minValue == maxValue) return minValue;
-   return RandomUtils::Random(minValue, maxValue);
+   if (!randomized_ || minimum_ == maximum_) return minimum_;
+   return RandomUtils::Random(minimum_, maximum_);
 }
 
 Vector2 RandomVector2::GetValue() const {
-   if (!randomize) return minValue;
+   if (!randomized_) return minimum_;
    // 各成分を独立抽選し、矩形範囲内の任意の組み合わせを生成できるようにする。
-   return Vector2{ RandomUtils::Random(minValue.x, maxValue.x), RandomUtils::Random(minValue.y, maxValue.y) };
+   return Vector2{ RandomUtils::Random(minimum_.x, maximum_.x), RandomUtils::Random(minimum_.y, maximum_.y) };
 }
 
 Vector3 RandomVector3::GetValue() const {
-   if (!randomize) return minValue;
+   if (!randomized_) return minimum_;
    // 一つの補間率を共有せず、軸ごとの最小・最大で直方体の乱数分布を作る。
-   return Vector3(RandomUtils::Random(minValue.x, maxValue.x), RandomUtils::Random(minValue.y, maxValue.y), RandomUtils::Random(minValue.z, maxValue.z));
+   return Vector3(RandomUtils::Random(minimum_.x, maximum_.x), RandomUtils::Random(minimum_.y, maximum_.y), RandomUtils::Random(minimum_.z, maximum_.z));
 }
 
 uint32_t RandomColor::GetValue() const {
@@ -29,49 +29,55 @@ uint32_t RandomColor::GetValue() const {
 }
 
 nlohmann::json RandomFloat::ToJson() const {
-   return { {"min", minValue}, {"max", maxValue}, {"randomize", randomize} };
+   return { {"min", minimum_}, {"max", maximum_}, {"randomize", randomized_} };
 }
 
 void RandomFloat::FromJson(const nlohmann::json& json) {
-   if (json.contains("min")) minValue = json["min"];
-   if (json.contains("max")) maxValue = json["max"];
-   if (json.contains("randomize")) randomize = json["randomize"];
+   *this = RandomFloat(json.value("min", minimum_), json.value("max", maximum_), json.value("randomize", randomized_));
 }
 
 nlohmann::json RandomVector2::ToJson() const {
    return {
-	   {"min", {minValue.x, minValue.y}},
-	   {"max", {maxValue.x, maxValue.y}},
-	   {"randomize", randomize}
+	   {"min", {minimum_.x, minimum_.y}},
+	   {"max", {maximum_.x, maximum_.y}},
+	   {"randomize", randomized_}
    };
 }
 
 void RandomVector2::FromJson(const nlohmann::json& json) {
+   auto low = minimum_; auto high = maximum_;
    if (json.contains("min") && json["min"].is_array() && json["min"].size() >= 2) {
-	  minValue.x = json["min"][0]; minValue.y = json["min"][1];
+      low.x = json["min"][0].get<float>();
+      low.y = json["min"][1].get<float>();
    }
    if (json.contains("max") && json["max"].is_array() && json["max"].size() >= 2) {
-	  maxValue.x = json["max"][0]; maxValue.y = json["max"][1];
+      high.x = json["max"][0].get<float>();
+      high.y = json["max"][1].get<float>();
    }
-   if (json.contains("randomize")) randomize = json["randomize"];
+   *this = RandomVector2(low, high, json.value("randomize", randomized_));
 }
 
 nlohmann::json RandomVector3::ToJson() const {
    return {
-	   {"min", {minValue.x, minValue.y, minValue.z}},
-	   {"max", {maxValue.x, maxValue.y, maxValue.z}},
-	   {"randomize", randomize}
+	   {"min", {minimum_.x, minimum_.y, minimum_.z}},
+	   {"max", {maximum_.x, maximum_.y, maximum_.z}},
+	   {"randomize", randomized_}
    };
 }
 
 void RandomVector3::FromJson(const nlohmann::json& json) {
+   auto low = minimum_; auto high = maximum_;
    if (json.contains("min") && json["min"].is_array() && json["min"].size() >= 3) {
-	  minValue.x = json["min"][0]; minValue.y = json["min"][1]; minValue.z = json["min"][2];
+      low.x = json["min"][0].get<float>();
+      low.y = json["min"][1].get<float>();
+      low.z = json["min"][2].get<float>();
    }
    if (json.contains("max") && json["max"].is_array() && json["max"].size() >= 3) {
-	  maxValue.x = json["max"][0]; maxValue.y = json["max"][1]; maxValue.z = json["max"][2];
+      high.x = json["max"][0].get<float>();
+      high.y = json["max"][1].get<float>();
+      high.z = json["max"][2].get<float>();
    }
-   if (json.contains("randomize")) randomize = json["randomize"];
+   *this = RandomVector3(low, high, json.value("randomize", randomized_));
 }
 
 nlohmann::json RandomColor::ToJson() const {

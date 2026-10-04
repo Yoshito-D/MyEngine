@@ -5,6 +5,9 @@
 
 namespace GameEngine {
 
+CinemachineBrain::CinemachineBrain() = default;
+CinemachineBrain::~CinemachineBrain() = default;
+
 void CinemachineBrain::Initialize(std::unique_ptr<Camera> outputCamera) {
     outputCamera_ = std::move(outputCamera);
 }
@@ -125,23 +128,7 @@ void CinemachineBrain::UpdateBlend(float deltaTime) {
 void CinemachineBrain::ApplyStateToOutputCamera() {
     if (outputCamera_ == nullptr) return;
 
-    outputCamera_->SetFovY(currentState_.fov);
-    outputCamera_->SetNearClip(currentState_.nearClip);
-    outputCamera_->SetFarClip(currentState_.farClip);
-
-    if (currentState_.hasViewMatrixOverride) {
-        // ビュー行列が直接指定されている場合はそのまま使用
-        // 通常のCamera::UpdateはTransformからViewを再計算するため、Override時はProjectionとの合成と
-        // GPU定数更新までをここで明示的に完了する。
-        Matrix4x4 projectionMatrix = outputCamera_->GetProjectionMatrix();
-        outputCamera_->SetViewMatrix(currentState_.viewMatrixOverride);
-        outputCamera_->SetViewProjectionMatrix(currentState_.viewMatrixOverride * projectionMatrix);
-        outputCamera_->SetPosition(currentState_.transform.translation);
-        outputCamera_->SetCameraForGpuData();
-    } else {
-        outputCamera_->SetTransform(currentState_.transform);
-        outputCamera_->Update();
-    }
+    outputCamera_->ApplyState(currentState_);
 }
 
 void CinemachineBrain::RegisterVirtualCamera(VirtualCamera* vcam) {

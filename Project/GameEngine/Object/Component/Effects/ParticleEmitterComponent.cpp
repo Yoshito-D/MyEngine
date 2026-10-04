@@ -5,6 +5,7 @@
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Effects/Particles/Modules/EmissionModule.h"
 #include "GameEngine/Math/MathUtils.h"
 #include "GameEngine/Framework/EngineContext.h"
 
@@ -196,7 +197,7 @@ void ParticleEmitterComponent::ApplyEmitterToShapeModule(ParticleSystem* ps, con
 int ParticleEmitterComponent::AddSlot(const std::string& jsonPath, const AttachmentConfig& config) {
    EmitterSlot slot;
    slot.jsonPath = jsonPath;
-   slot.attachConfig = config;
+   slot.attachConfig = ValidateConfiguration(SlotConfiguration{ jsonPath, config }).attachConfig;
    const int idx = static_cast<int>(slots_.size());
    slots_.push_back(std::move(slot));
 
@@ -234,6 +235,33 @@ void ParticleEmitterComponent::UnregisterParticleSystemsForRender() {
    }
 }
 
+ParticleEmitterComponent::ParticleEmitterComponent() = default;
+
+ParticleEmitterComponent::~ParticleEmitterComponent() { ClearSlots(); }
+
+const ParticleEmitterComponent::SlotConfiguration* ParticleEmitterComponent::DescribeSlot(int index) const {
+   return GetSlot(index);
+}
+
+bool ParticleEmitterComponent::ConfigureSlot(int index, const SlotConfiguration& configuration) {
+   auto* slot = GetSlot(index);
+   if (!slot) return false;
+   static_cast<SlotConfiguration&>(*slot) = ValidateConfiguration(configuration);
+   return !HasOwner() || LoadSlot(*slot);
+}
+
+void ParticleEmitterComponent::EnableEmission(int index, bool enabled) {
+   auto* slot = GetSlot(index);
+   if (slot && slot->particleSystem) {
+      if (auto* emission = slot->particleSystem->GetEmissionModule()) emission->SetEnabled(enabled);
+   }
+}
+
+bool ParticleEmitterComponent::HasLivingParticles(int index) const {
+   const auto* slot = GetSlot(index);
+   return slot && slot->particleSystem && slot->particleSystem->GetActiveParticleCount() > 0;
+}
+
 ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(int slotIndex) {
    if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size())) return nullptr;
    return &slots_[slotIndex];
@@ -255,28 +283,6 @@ bool ParticleEmitterComponent::LoadEffect(const std::string& jsonPath) {
    // スロット 0 を上書き
    slots_[0].jsonPath = jsonPath;
    return LoadSlot(slots_[0]);
-}
-
-void ParticleEmitterComponent::SetParticleSystem(std::shared_ptr<ParticleSystem> ps) {
-   if (ps) {
-	  ps->SetEditorInspectable(false);
-   }
-
-   if (slots_.empty()) {
-	  EmitterSlot slot;
-	  slot.particleSystem = std::move(ps);
-	  slots_.push_back(std::move(slot));
-	  return;
-   }
-   if (slots_[0].particleSystem) {
-	  slots_[0].particleSystem->Stop();
-   }
-   slots_[0].particleSystem = std::move(ps);
-}
-
-ParticleSystem* ParticleEmitterComponent::GetParticleSystem() const {
-   if (slots_.empty()) return nullptr;
-   return slots_[0].particleSystem.get();
 }
 
 // ============================================================
@@ -403,32 +409,24 @@ bool ParticleEmitterComponent::TryComputeJointWorldMatrix(
 	  return false;
    }
 
-   const auto jointIt = skeleton->jointMap.find(jointName);
-   if (jointIt == skeleton->jointMap.end()) {
+   const auto jointIt = skeleton->GetJointMap().find(jointName);
+   if (jointIt == skeleton->GetJointMap().end()) {
 	  return false;
    }
 
    const int32_t jointIndex = jointIt->second;
-   if (jointIndex < 0 || static_cast<size_t>(jointIndex) >= skeleton->joints.size()) {
+   if (jointIndex < 0 || static_cast<size_t>(jointIndex) >= skeleton->GetJoints().size()) {
 	  return false;
    }
 
-   Matrix4x4 jointSkeletonMatrix = skeleton->joints[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix;
-   if (const SkinCluster* skinCluster = meshComponent->GetSkinCluster();
-	  skinCluster &&
-	  static_cast<size_t>(jointIndex) < skinCluster->inverseBindPoseMatrices.size() &&
-	  static_cast<size_t>(jointIndex) < skinCluster->mappedPalette.size()) {
-	  // GPUパレットから逆バインドを戻し、描画中のアニメーション姿勢と同じジョイント行列を得る。
-	  jointSkeletonMatrix =
-		 skinCluster->inverseBindPoseMatrices[static_cast<size_t>(jointIndex)].Inverse() *
-		 skinCluster->mappedPalette[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix;
+   Matrix4x4 jointSkeletonMatrix = skeleton->GetJoints()[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix;
+   if (const SkinCluster* skinCluster = meshComponent->GetSkinCluster()) {
+      skinCluster->TryResolveJointMatrix(jointIndex, jointSkeletonMatrix);
    }
 
    if (const auto* transformComponent = GetOwner().GetComponent<TransformComponent>()) {
-	  Matrix4x4 modelWorld = MakeAffineMatrix(transformComponent->transform);
-	  if (transformComponent->useParentMatrix) {
-		 modelWorld = modelWorld * transformComponent->parentMatrix;
-	  }
+	  Matrix4x4 modelWorld = MakeAffineMatrix(transformComponent->GetLocalPose());
+	  modelWorld = transformComponent->ComposeWorldMatrix(modelWorld);
 	  jointWorldMatrix = jointSkeletonMatrix * modelWorld;
    } else {
 	  jointWorldMatrix = jointSkeletonMatrix;
@@ -446,8 +444,8 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
    } else {
 	  auto* tc = GetOwner().GetComponent<TransformComponent>();
 	  if (tc) {
-		 base = MakeAffineMatrix(tc->transform);
-		 if (tc->useParentMatrix) base = base * tc->parentMatrix;
+		 base = MakeAffineMatrix(tc->GetLocalPose());
+		 base = tc->ComposeWorldMatrix(base);
 	  }
    }
 
@@ -558,10 +556,24 @@ void ParticleEmitterComponent::DrawDebugAttachments() const {
 // 内部ヘルパー
 // ============================================================
 
+ParticleEmitterComponent::SlotConfiguration ParticleEmitterComponent::ValidateConfiguration(SlotConfiguration configuration) {
+   auto finiteVector = [](const Vector3& requested, const Vector3& fallback) {
+      return Vector3{ std::isfinite(requested.x) ? requested.x : fallback.x,
+         std::isfinite(requested.y) ? requested.y : fallback.y,
+         std::isfinite(requested.z) ? requested.z : fallback.z };
+   };
+   auto& attachment = configuration.attachConfig;
+   attachment.positionOffset = finiteVector(attachment.positionOffset, {});
+   attachment.rotationOffset = finiteVector(attachment.rotationOffset, {});
+   attachment.scaleOffset = finiteVector(attachment.scaleOffset, { 1, 1, 1 });
+   return configuration;
+}
+
 bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
-   std::shared_ptr<ParticleSystem> ps = slot.particleSystem;
+   static_cast<SlotConfiguration&>(slot) = ValidateConfiguration(slot);
+   std::unique_ptr<ParticleSystem> ps = std::move(slot.particleSystem);
    if (!ps) {
-	  ps = std::make_shared<ParticleSystem>();
+	  ps = std::make_unique<ParticleSystem>();
    } else {
 	  ps->Stop();
    }
@@ -847,7 +859,7 @@ void ParticleEmitterComponent::DrawInspector() {
 
 		 bool hasSelectedJoint =
 			slot.attachConfig.boneName.empty() ||
-			(ownerSkeleton && ownerSkeleton->jointMap.contains(slot.attachConfig.boneName));
+			(ownerSkeleton && ownerSkeleton->GetJointMap().contains(slot.attachConfig.boneName));
 		 std::string jointPreview = slot.attachConfig.boneName.empty()
 			? Tr("<ルートTransform>", "<Root Transform>")
 			: slot.attachConfig.boneName;
@@ -866,16 +878,16 @@ void ParticleEmitterComponent::DrawInspector() {
 			}
 
 			if (ownerSkeleton) {
-			   for (const Joint& joint : ownerSkeleton->joints) {
+			   for (const Joint& joint : ownerSkeleton->GetJoints()) {
 				  size_t hierarchyDepth = 0;
 				  std::optional<int32_t> parentIndex = joint.parent;
-				  while (parentIndex && hierarchyDepth < ownerSkeleton->joints.size()) {
+				  while (parentIndex && hierarchyDepth < ownerSkeleton->GetJoints().size()) {
 					 ++hierarchyDepth;
 					 const int32_t index = *parentIndex;
-					 if (index < 0 || static_cast<size_t>(index) >= ownerSkeleton->joints.size()) {
+					 if (index < 0 || static_cast<size_t>(index) >= ownerSkeleton->GetJoints().size()) {
 						break;
 					 }
-					 parentIndex = ownerSkeleton->joints[static_cast<size_t>(index)].parent;
+					 parentIndex = ownerSkeleton->GetJoints()[static_cast<size_t>(index)].parent;
 				  }
 
 				  const std::string jointLabel = std::string(hierarchyDepth * 2, ' ') + joint.name;
@@ -897,7 +909,7 @@ void ParticleEmitterComponent::DrawInspector() {
 		 }
 
 		 if (ownerSkeleton) {
-			ImGui::TextDisabled("%s: %zu", Tr("ジョイント数", "Joint Count"), ownerSkeleton->joints.size());
+			ImGui::TextDisabled("%s: %zu", Tr("ジョイント数", "Joint Count"), ownerSkeleton->GetJoints().size());
 		 }
 		 if (!hasSelectedJoint) {
 			ImGui::TextColored(

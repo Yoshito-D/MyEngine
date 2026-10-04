@@ -47,7 +47,7 @@ public:
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
-public:
+private:
    /// @brief 着地ブーストの加算量（units/sec）
    float boostAmount = 0.0f;
 

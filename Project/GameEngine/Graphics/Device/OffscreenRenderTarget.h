@@ -11,6 +11,13 @@ class GraphicsDevice;
 /// @brief オフスクリーンレンダリングターゲットクラス
 class OffscreenRenderTarget {
 public:
+   /// @brief 未接続・未確保の状態を構築する。
+   OffscreenRenderTarget() = default;
+   /// @brief 所有者への接続やGPU実行状態を別の実体へ複製することを禁止する。
+   OffscreenRenderTarget(const OffscreenRenderTarget&) = delete;
+   /// @brief 所有境界を迂回するコピー代入を禁止する。
+   OffscreenRenderTarget& operator=(const OffscreenRenderTarget&) = delete;
+
    /// @brief オフスクリーンレンダリングターゲットの初期化
    /// @param device グラフィックスデバイス
    /// @param width ウィンドウの幅

@@ -84,9 +84,13 @@ void LineRenderer::End() {
 }
 
 void LineRenderer::UpdateMatrix(const Matrix4x4& world, const Matrix4x4& viewProj) {
-   auto* data = transformationMatrix_.GetTransformationMatrixData();
-   data->world = world;
-   data->wVP = world * viewProj;
+   transformationMatrix_.ApplyWorldTransform(world, viewProj);
+}
+
+bool LineRenderer::UploadLines(const std::vector<LineInstance>& lines) {
+   if (!mappedInstanceBuffer_ || lines.size() > maxLines_) return false;
+   std::memcpy(mappedInstanceBuffer_, lines.data(), sizeof(LineInstance) * lines.size());
+   return true;
 }
 
 void LineRenderer::Draw(ID3D12GraphicsCommandList* cmdList, UINT transformRootParameterIndex) {

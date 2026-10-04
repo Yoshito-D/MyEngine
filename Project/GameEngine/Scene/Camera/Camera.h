@@ -9,8 +9,16 @@
 namespace GameEngine {
 
 /// @brief カメラクラス（GPUリソース管理とマトリックス計算）
+struct CameraState;
 class Camera {
 public:
+   /// @brief GPU定数を確保する前のカメラを構築する。
+   Camera() = default;
+   /// @brief 視点定数バッファの暗黙な共有を禁止する。
+   Camera(const Camera&) = delete;
+   /// @brief 異なる姿勢から同じGPU定数を書き換えるコピー代入を禁止する。
+   Camera& operator=(const Camera&) = delete;
+
 	/// @brief 透視投影カメラの既定垂直FOV（ラジアン）
 	static constexpr float kDefaultFovY = 0.45f;
 	/// @brief カメラの既定ニアクリップ距離
@@ -40,38 +48,40 @@ public:
 
 	/// @brief 更新（ビュープロジェクション行列を再計算）
 	void Update();
+   /// @brief 計算済みの姿勢・投影設定・ビュー上書きを検証して行列とGPUへ一括反映する。
+   void ApplyState(const CameraState& state);
 
 	/// @brief カメラの位置・回転・拡縮をまとめて設定する
 	/// @param transform 新しいトランスフォーム
-	void SetTransform(const Transform& transform) { transform_ = transform; }
+	void SetTransform(const Transform& transform) { transform_ = transform; Update(); }
 	/// @brief カメラのトランスフォームを取得する
 	/// @return 現在のトランスフォーム
 	const Transform& GetTransform() const { return transform_; }
 
 	/// @brief カメラのワールド位置を設定する
 	/// @param position ワールド位置
-	void SetPosition(const Vector3& position) { transform_.translation = position; }
+	void SetPosition(const Vector3& position) { transform_.translation = position; Update(); }
 	/// @brief カメラのワールド位置を取得する
 	/// @return ワールド位置
 	Vector3 GetPosition() const { return transform_.translation; }
 
 	/// @brief カメラ回転をEuler角で設定する
 	/// @param rotation XYZ回転（ラジアン）
-	void SetRotation(const Vector3& rotation) { transform_.SetRotationEuler(rotation); }
+	void SetRotation(const Vector3& rotation) { transform_.SetRotationEuler(rotation); Update(); }
 	/// @brief カメラ回転をEuler角で取得する
 	/// @return XYZ回転（ラジアン）
 	Vector3 GetRotation() const { return transform_.GetActiveEuler(); }
 
 	/// @brief カメラ回転をQuaternionで設定する
 	/// @param quaternion ワールド回転
-	void SetQuaternion(const Quaternion& quaternion) { transform_.SetRotationQuaternion(quaternion); }
+	void SetQuaternion(const Quaternion& quaternion) { transform_.SetRotationQuaternion(quaternion); Update(); }
 	/// @brief カメラ回転をQuaternionで取得する
 	/// @return ワールド回転
 	Quaternion GetQuaternion() const { return transform_.GetActiveQuaternion(); }
 
 	/// @brief カメラのスケールを設定する
 	/// @param scale 各軸のスケール
-	void SetScale(const Vector3& scale) { transform_.scale = scale; }
+	void SetScale(const Vector3& scale) { transform_.scale = scale; Update(); }
 	/// @brief カメラのスケールを取得する
 	/// @return 各軸のスケール
 	Vector3 GetScale() const { return transform_.scale; }
@@ -87,28 +97,28 @@ public:
 
 	/// @brief 投影面のアスペクト比を設定する
 	/// @param aspectRatio 幅を高さで割った比率
-	void SetAspectRatio(float aspectRatio) { aspectRatio_ = aspectRatio; }
+	void SetAspectRatio(float aspectRatio) { aspectRatio_ = aspectRatio; Update(); }
 	/// @brief 投影面のアスペクト比を取得する
 	/// @return 幅を高さで割った比率
 	float GetAspectRatio() const { return aspectRatio_; }
 
 	/// @brief ニアクリップ距離を設定する
 	/// @param nearClip カメラから近平面までの距離
-	void SetNearClip(float nearClip) { nearClip_ = nearClip; }
+	void SetNearClip(float nearClip) { nearClip_ = nearClip; Update(); }
 	/// @brief ニアクリップ距離を取得する
 	/// @return カメラから近平面までの距離
 	float GetNearClip() const { return nearClip_; }
 
 	/// @brief ファークリップ距離を設定する
 	/// @param farClip カメラから遠平面までの距離
-	void SetFarClip(float farClip) { farClip_ = farClip; }
+	void SetFarClip(float farClip) { farClip_ = farClip; Update(); }
 	/// @brief ファークリップ距離を取得する
 	/// @return カメラから遠平面までの距離
 	float GetFarClip() const { return farClip_; }
 
 	/// @brief 透視投影または平行投影へ切り替える
 	/// @param type 使用する投影方式
-	void SetProjectionType(ProjectionType type) { projectionType_ = type; }
+	void SetProjectionType(ProjectionType type) { projectionType_ = type; Update(); }
 	/// @brief 現在の投影方式を取得する
 	/// @return 透視投影または平行投影
 	ProjectionType GetProjectionType() const { return projectionType_; }
@@ -121,18 +131,12 @@ public:
 	/// @brief 現在のビュー・プロジェクション合成行列を取得する
 	/// @return ビュープロジェクション行列
 	Matrix4x4 GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
-	/// @brief 外部計算したビュー・プロジェクション行列で上書きする
-	/// @param matrix 設定する合成行列
-	void SetViewProjectionMatrix(const Matrix4x4& matrix) { viewProjectionMatrix_ = matrix; }
 	/// @brief 現在のビュー行列を取得する
 	/// @return ワールドからカメラ空間への行列
 	Matrix4x4 GetViewMatrix() const { return viewMatrix_; }
 	/// @brief ImGuizmoへ渡す変更可能なCameraのビュー行列値を取得する
 	/// @return ワールドからカメラ空間への行列
 	Matrix4x4 GetViewMatrixForImGuizmo() { return viewMatrix_; }
-	/// @brief 外部計算したビュー行列で上書きする
-	/// @param matrix ワールドからカメラ空間への行列
-	void SetViewMatrix(const Matrix4x4& matrix) { viewMatrix_ = matrix; }
 	/// @brief 現在の設定から投影行列を構築する
 	/// @return 投影方式に対応するプロジェクション行列
 	Matrix4x4 GetProjectionMatrix() const;
@@ -145,9 +149,10 @@ public:
 	/// @return CameraForGPU用定数バッファ
 	ID3D12Resource* GetCameraResource() const { return cameraResource_.Get(); }
 	/// @brief 現在のワールド位置をGPU定数バッファへ反映する
-	void SetCameraForGpuData();
+
 
 private:
+   void SetCameraForGpuData();
 	Transform transform_;
 	float fovY_ = kDefaultFovY;
 	float aspectRatio_ = 0.0f;

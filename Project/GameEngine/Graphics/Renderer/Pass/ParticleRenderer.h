@@ -12,7 +12,7 @@ public:
 	/// @brief 初期化
 	/// @param device グラフィックスデバイス
 	/// @param psoManager パイプライン状態管理
-	void Initialize(GraphicsDevice* device, PSOManager* psoManager);
+	void Initialize(GraphicsDevice* device, const PSOManager* psoManager);
 
 	/// @brief パーティクルを描画
 	/// @param particleData パーティクル描画データ
@@ -26,7 +26,7 @@ public:
 
 private:
 	GraphicsDevice* device_ = nullptr;
-	PSOManager* psoManager_ = nullptr;
+	const PSOManager* psoManager_ = nullptr;
 };
 
 } // namespace GameEngine

@@ -7,7 +7,7 @@
 
 namespace GameEngine {
 class ModelAsset;
-struct SkinCluster;
+class SkinCluster;
 /// @brief パーティクルの発生位置と初期方向を幾何形状から生成する
 class ShapeModule {
 public:
@@ -135,7 +135,7 @@ public:
    /// @brief スキンメッシュ発生に使用するモデルと現在姿勢を設定する
    /// @param modelAsset 頂点・インデックスを持つモデル
    /// @param skinCluster 現在のスキニング行列。nullptrなら静的頂点を使用
-   void SetSkinnedMeshSource(ModelAsset* modelAsset, const SkinCluster* skinCluster) {
+   void SetSkinnedMeshSource(const ModelAsset* modelAsset, const SkinCluster* skinCluster) {
 	  skinnedMeshModel_ = modelAsset;
 	  skinnedMeshSkinCluster_ = skinCluster;
    }
@@ -179,7 +179,7 @@ private:
    float torusMajorRadius_ = 1.0f;
 
    Transform transform_{};
-   ModelAsset* skinnedMeshModel_ = nullptr;
+   const ModelAsset* skinnedMeshModel_ = nullptr;
    const SkinCluster* skinnedMeshSkinCluster_ = nullptr;
    mutable Vector3 lastEmissionDirection_{ 0.0f, 1.0f, 0.0f };
 };

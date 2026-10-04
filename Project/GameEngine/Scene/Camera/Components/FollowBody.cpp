@@ -32,9 +32,9 @@ Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) 
 } // namespace
 
 void FollowBody::MutateCameraState(CameraState& state, float deltaTime) {
-    if (owner_ == nullptr) return;
+    if (GetOwnerCamera() == nullptr) return;
 
-    Transform* target = owner_->GetFollowTarget();
+    const Transform* target = GetOwnerCamera()->GetFollowTarget();
     if (target == nullptr) return;
 
     // ターゲットのワールド位置 + オフセット

@@ -11,6 +11,13 @@ namespace GameEngine {
 /// @brief ポストプロセスクラス
 class PostProcess {
 public:
+   /// @brief 未初期化のエフェクトを構築する。
+   PostProcess() = default;
+   /// @brief 派生エフェクトのGPU定数バッファを暗黙に共有するコピーを禁止する。
+   PostProcess(const PostProcess&) = delete;
+   /// @brief 別のエフェクトから同じGPU定数を書き換えるコピー代入を禁止する。
+   PostProcess& operator=(const PostProcess&) = delete;
+
    /// @brief デストラクタ
    virtual ~PostProcess() = default;
 
@@ -23,29 +30,10 @@ public:
    /// @param inputSRV 入力SRV
    virtual void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) = 0;
 
-   /// @brief パイプラインとルートシグネチャを設定（外部から）
-   /// @param pipeline パイプラインステート
-   /// @param rootSignature ルートシグネチャ
-   void SetPipeline(PipelineState* pipeline, RootSignature* rootSignature);
-
-   /// @brief 入力SRV/定数バッファのルートパラメータスロットを設定
-   void SetBindingSlots(UINT constantBufferSlot, UINT inputTextureSlot);
-
-   /// @brief 深度SRVのルートパラメータスロットを設定
-   void SetDepthTextureRootSlot(UINT depthTextureSlot);
-
-   /// @brief マスクSRVのルートパラメータスロットを設定
-   void SetMaskTextureRootSlot(UINT maskTextureSlot);
-
 #ifdef USE_IMGUI
    /// @brief エフェクト固有のImGui編集項目を描画する
    virtual void ImGuiEdit() {}
 #endif
-
-   /// @brief エフェクトの有効状態を設定する
-   virtual void SetEnabled(bool enabled) { enabled_ = enabled; }
-   /// @brief エフェクトが有効か取得する
-   virtual bool IsEnabled() const { return enabled_; }
 
    /// @brief エディター表示と保存識別に使用するエフェクト名を取得する
    virtual const char* GetEffectName() const { return "Unknown"; }
@@ -59,15 +47,31 @@ public:
    /// @return 設定を適用できた場合はtrue
    virtual bool DeserializeSettings(const nlohmann::json& settings);
 
+private:
+   friend class PostProcessManager;
+   /// @brief パイプラインとルートシグネチャを設定（外部から）
+   /// @param pipeline パイプラインステート
+   /// @param rootSignature ルートシグネチャ
+   void SetPipeline(const PipelineState* pipeline, const RootSignature* rootSignature);
+
+   /// @brief 入力SRV/定数バッファのルートパラメータスロットを設定
+   void SetBindingSlots(UINT constantBufferSlot, UINT inputTextureSlot);
+
+   /// @brief 深度SRVのルートパラメータスロットを設定
+   void SetDepthTextureRootSlot(UINT depthTextureSlot);
+
+   /// @brief マスクSRVのルートパラメータスロットを設定
+   void SetMaskTextureRootSlot(UINT maskTextureSlot);
+
+
 protected:
    GraphicsDevice* device_ = nullptr;
    OffscreenRenderTarget* renderTarget_ = nullptr;
 
    // パイプラインは外部から設定される
-   PipelineState* pipeline_ = nullptr;
-   RootSignature* rootSignature_ = nullptr;
+   const PipelineState* pipeline_ = nullptr;
+   const RootSignature* rootSignature_ = nullptr;
 
-   bool enabled_ = true;
    UINT constantBufferRootSlot_ = 0;
    UINT inputTextureRootSlot_ = 1;
    UINT depthTextureRootSlot_ = 2;

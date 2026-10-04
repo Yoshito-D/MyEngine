@@ -127,51 +127,7 @@ void ParticleSystem::RebuildParticleMesh() {
    auto* meshModule = particleMeshModule_.get();
    if (!meshModule) return;
 
-   using MeshType = ParticleMeshModule::MeshType;
-   // Mesh Moduleを無効化した場合も描画経路を変えず、既定Quadへ戻して既存エフェクトの見た目を維持する。
-   const float meshOriginY = meshModule->IsEnabled() ? meshModule->GetOriginY() : 0.5f;
-   const MeshType meshType = meshModule->IsEnabled() ? meshModule->GetMeshType() : MeshType::Quad;
-   switch (meshType) {
-	  case MeshType::Quad:
-		 quadMesh_->CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
-		 break;
-	  case MeshType::Ring:
-		 quadMesh_->CreateRing(meshModule->GetRingInnerRadius(), meshModule->GetRingOuterRadius(), meshModule->GetRingSegments());
-		 break;
-	  case MeshType::Sphere:
-		 quadMesh_->CreateSphere(meshModule->GetSphereRadius(), meshModule->GetSphereStacks(), meshModule->GetSphereSlices(), meshOriginY);
-		 break;
-	  case MeshType::Box: {
-		 auto s = meshModule->GetBoxSize();
-		 quadMesh_->CreateBox(s.x, s.y, s.z, meshOriginY);
-		 break;
-	  }
-	  case MeshType::Cylinder:
-		 quadMesh_->CreateCylinderWithoutCaps(
-			meshModule->GetCylinderTopRadius(), meshModule->GetCylinderBottomRadius(),
-			meshModule->GetCylinderHeight(), meshModule->GetCylinderSegments(), meshOriginY);
-		 break;
-	  case MeshType::Cone:
-		 quadMesh_->CreateCone(meshModule->GetConeRadius(), meshModule->GetConeHeight(), meshModule->GetConeSegments(), meshOriginY);
-		 break;
-	  case MeshType::Circle:
-		 quadMesh_->CreateCircle(meshModule->GetCircleRadius(), meshModule->GetCircleSegments());
-		 break;
-	  case MeshType::Plane:
-		 quadMesh_->CreatePlane(meshModule->GetPlaneWidth(), meshModule->GetPlaneDepth());
-		 break;
-	  case MeshType::Torus:
-		 quadMesh_->CreateTorus(meshModule->GetTorusMajorRadius(), meshModule->GetTorusMinorRadius(),
-			meshModule->GetTorusMajorSegments(), meshModule->GetTorusMinorSegments(), meshOriginY);
-		 break;
-	  case MeshType::Triangle:
-		 quadMesh_->CreateTriangle();
-		 break;
-	  default:
-		 quadMesh_->CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
-		 break;
-   }
-	 meshModule->ClearDirty();
+   meshModule->RebuildMesh(*quadMesh_);
 }
 
 ParticleSystem::ParticleSystem() {
@@ -679,7 +635,7 @@ void ParticleSystem::EnsureGpuRibbonResources(uint32_t requiredSegmentCount) {
    gpuRibbonSegmentCapacity_ = newCapacity;
 }
 
-void ParticleSystem::DispatchGpuRibbon(PSOManager* psoManager) {
+void ParticleSystem::DispatchGpuRibbon(const PSOManager* psoManager) {
    if (!psoManager || !sDevice_ || gpuRibbonSegmentCount_ == 0 || !gpuRibbonVertexResource_ || !gpuRibbonIndexResource_) {
 	  return;
    }
@@ -788,25 +744,10 @@ void ParticleSystem::Update(float deltaTime) {
 	  previousEmitterPosition_ = emitterPosition;
 	  hasPreviousEmitterPosition_ = true;
 
-	  // Burst emission（フラグ管理で確実に発火、cycles==0 は無限ループ）
-	  for (auto& burst : emissionModule_->GetBursts()) {
-		 // 初回：nextFireTime が未初期化（負値）であれば burst.time で初期化
-		 if (burst.nextFireTime < 0.0f) {
-			burst.nextFireTime = burst.time;
-		 }
+	  // 放出スケジュールの実行状態はEmissionModuleが進める。生成はプール容量内に制限する。
+      const uint32_t burstCount = std::min(emissionModule_->AdvanceBursts(systemTime_), kMaxParticles);
+      for (uint32_t i = 0; i < burstCount; ++i) EmitParticle();
 
-		 // cycles == 0 は無限ループ、それ以外は指定回数まで
-		 const bool isInfinite = (burst.cycles == 0);
-		 // 1フレームで複数intervalを跨いだ場合も、未発火分を同じ更新内で追いつかせる。
-		 while (systemTime_ >= burst.nextFireTime &&
-			(isInfinite || burst.firedCount < burst.cycles)) {
-			for (uint32_t i = 0; i < burst.count; ++i) {
-			   EmitParticle();
-			}
-			burst.firedCount++;
-			burst.nextFireTime += burst.interval > 0.0f ? burst.interval : FLT_MAX;
-		 }
-	  }
    }
 
    // パーティクル更新
@@ -1452,10 +1393,6 @@ Texture* ParticleSystem::GetRibbonTexture() const {
    return ribbonTexture;
 }
 
-Material* ParticleSystem::GetMaterialForRenderer() const {
-   return nullptr;
-}
-
 D3D12_GPU_DESCRIPTOR_HANDLE ParticleSystem::GetInstancingSrvHandleGPU() const {
    return gpuOutputSrvHandleGPU_;
 }
@@ -1549,7 +1486,7 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
 	  0.0f);
 }
 
-void ParticleSystem::DispatchGpuSimulation(PSOManager* psoManager) {
+void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
    if (!psoManager || !sDevice_ || !CanUseGpuSimulation()) return;
 
    ID3D12GraphicsCommandList* commandList = sDevice_->GetCommandList();

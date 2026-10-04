@@ -37,8 +37,7 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
 	  return lastLandingResult_;
    }
    // 失敗: 大きく傾いた着地なので速度を penaltySpeed に設定する。
-   groundMover->SetCurrentSpeed(penaltySpeed);
-   groundMover->BlockAcceleration(penaltyDuration);
+   groundMover->ApplyLandingPenalty(penaltySpeed, penaltyDuration);
    lastLandingResult_ = LandingResult::Failure;
    return lastLandingResult_;
 }

@@ -21,7 +21,9 @@ public:
     void SetDistance(float distance);
 
     /// @brief OrbitalBodyコンポーネントを取得
-    OrbitalBody* GetOrbitalBody() const { return orbitalBody_; }
+    OrbitalBody* GetOrbitalBody() { return orbitalBody_; }
+    /// @brief constカメラの周回設定を読み取り専用で参照する。
+    const OrbitalBody* GetOrbitalBody() const { return orbitalBody_; }
 
 private:
     OrbitalBody* orbitalBody_ = nullptr;

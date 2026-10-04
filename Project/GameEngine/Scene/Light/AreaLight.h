@@ -10,6 +10,13 @@ class GraphicsDevice;
 /// @brief エリアライトクラス
 class AreaLight {
 public:
+   /// @brief GPUデータを確保する前の状態を構築する。
+   AreaLight() = default;
+   /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
+   AreaLight(const AreaLight&) = delete;
+   /// @brief GPUデータの暗黙な共有を禁止する。
+   AreaLight& operator=(const AreaLight&) = delete;
+
    /// @brief エリアライトデータ構造体
    struct AreaLightData {
 	  Vector4 color;           // ライトの色
@@ -43,11 +50,14 @@ public:
 
    /// @brief エリアライトデータを取得
    /// @return エリアライトデータへのポインタ
-   AreaLightData* GetAreaLightData() const { return areaLightData_; }
+   const AreaLightData* GetAreaLightData() const { return areaLightData_; }
 
    /// @brief エリアライトリソースを取得
    /// @return エリアライトリソースへのポインタ
    ID3D12Resource* GetAreaLightResource() const { return areaLightResource_.Get(); }
+
+   /// @brief 照明の記述を検証・正規化してからGPUデータへ一括反映する。
+   bool ApplyIllumination(const AreaLightData& illumination);
 
 private:
    Microsoft::WRL::ComPtr<ID3D12Resource> areaLightResource_ = nullptr;

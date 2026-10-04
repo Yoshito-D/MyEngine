@@ -213,18 +213,20 @@ Quaternion CalculateValue(const std::vector<KeyframeQuaternion>& keyframes, floa
    return (*keyframes.rbegin()).value;
 }
 void ApplyAnimation(Skeleton& skeleton, const AnimationClip& clip, float animationTime) {
-   for (Joint& joint : skeleton.joints) {
+   for (const Joint& joint : skeleton.GetJoints()) {
     if (auto it = clip.nodeAnimations.find(joint.name); it != clip.nodeAnimations.end()) {
 		 const NodeAnimation& rootNodeAnimation = (*it).second;
+       auto pose = joint.transform;
        if (!rootNodeAnimation.translation.keyframes.empty()) {
-			joint.transform.translation = CalculateValue(rootNodeAnimation.translation.keyframes, animationTime);
+			pose.translation = CalculateValue(rootNodeAnimation.translation.keyframes, animationTime);
 		 }
 		 if (!rootNodeAnimation.rotation.keyframes.empty()) {
-			joint.transform.SetRotationQuaternion(CalculateValue(rootNodeAnimation.rotation.keyframes, animationTime));
+			pose.SetRotationQuaternion(CalculateValue(rootNodeAnimation.rotation.keyframes, animationTime));
 		 }
 		 if (!rootNodeAnimation.scale.keyframes.empty()) {
-			joint.transform.scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
+			pose.scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
 		 }
+         skeleton.ApplyJointPose(joint.index, pose);
 	  }
    }
 }

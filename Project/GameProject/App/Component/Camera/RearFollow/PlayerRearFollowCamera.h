@@ -17,20 +17,23 @@ namespace App {
 ///       空中時は速度の反対方向へ徐々に補間する。
 ///       プレイヤーが加速すると FOV 拡大・カメラ後退距離増加で加速感を演出する。
 /// @details 外部入力と旧設定の互換性を管理し、各計算部品はVirtualCameraが所有・更新する。
-///          設定の継承は既存の camera.distance などの直接アクセスを維持するため。
-class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent, public RearCameraSettings {
+///          設定値は一括検証して適用し、実行中の設定への直接アクセスを許可しない。
+class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent, private RearCameraSettings {
 public:
 	/// @brief 後方追従カメラを既定の補間設定で生成する
 	PlayerRearFollowCamera() = default;
 	/// @brief カメラコンポーネントを破棄する
 	~PlayerRearFollowCamera() override = default;
 
-   /// @brief 旧シーンでも必要な計算・表示コンポーネントを所有カメラへ追加する。
-   void Initialize(GameEngine::VirtualCamera* owner) override;
+
    /// @brief 設定・入力部品を同じBodyステージの計算部品より先に配置する。
    int GetExecutionOrder() const override { return -1000; }
    /// @brief 計算に必要な全コンポーネントが所有カメラ上に揃っているかを返す。
    bool HasRequiredComponents() const;
+   /// @brief 編集用の設定値をコピーする。
+   RearCameraSettings DescribeSettings() const { return *this; }
+   /// @brief 関連する追従設定を検証して一括適用する。
+   void Configure(const RearCameraSettings& requested);
    /// @brief 外部から渡された追従入力を読み取り専用で返す。
    const RearCameraInput& GetInput() const { return input_; }
    /// @brief 計測・UI用の非所有ビューを返す。必要な計算部品が欠ける場合は空。
@@ -133,6 +136,10 @@ public:
 	/// @brief デバッグ表示（Inspector）
 	void DrawInspector() override;
 #endif
+
+protected:
+   /// @brief 旧シーンでも必要な計算・表示コンポーネントを所有カメラへ追加する。
+   void OnAttach() override;
 
 private:
    /// @brief 外部公開形式と補間履歴の初期化を橋渡しする。

@@ -361,7 +361,7 @@ void CameraEditor::ShowVirtualCameraInspector(VirtualCamera* vcam) {
         } else {
             for (auto& comp : components) {
                 if (!comp) continue;
-                ImGui::PushID(comp.get());
+                ImGui::PushID(comp);
 
                 bool enabled = comp->IsEnabled();
                 if (ImGui::Checkbox("##componentEnabled", &enabled)) comp->SetEnabled(enabled);
@@ -373,7 +373,7 @@ void CameraEditor::ShowVirtualCameraInspector(VirtualCamera* vcam) {
                 // DebugCameraの入力部品はエディタが所有し、生存中は構成を固定する。
                 ImGui::BeginDisabled(vcam->GetId().empty());
                 if (ImGui::SmallButton("x")) {
-                    toRemove = comp.get();
+                    toRemove = comp;
                 }
                 ImGui::EndDisabled();
 
@@ -682,7 +682,7 @@ void CameraEditor::ShowGizmoSettings() {
     ImGui::Text("%s", Tr("ギズモ設定", "Gizmo Settings"));
     ImGui::Separator();
 
-    auto& settings = gizmo_.GetSettings();
+    auto settings = gizmo_.DescribeSettings();
 
     ImGui::Checkbox(Tr("視錐台を表示", "Show Frustum"), &settings.showFrustum);
     ImGui::Checkbox(Tr("方向を表示", "Show Direction"), &settings.showDirection);
@@ -701,6 +701,7 @@ void CameraEditor::ShowGizmoSettings() {
     }
 
     ImGui::EndChild();
+    gizmo_.Configure(settings);
 }
 
 bool CameraEditor::DrawTransformGizmo(Transform& transform, Camera* viewCamera, float viewportX, float viewportY, float viewportWidth, float viewportHeight, const char* id) {

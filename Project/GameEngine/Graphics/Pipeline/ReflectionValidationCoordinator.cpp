@@ -117,7 +117,7 @@ void ReflectionValidationCoordinator::EndFrame(ShaderManager* shaderManager, Ref
    }
 }
 
-void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const {
+void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const {
    if (!psoManager || !shaderManager) {
       return;
    }
@@ -428,7 +428,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(PSOManager* psoMana
 }
 
 #ifdef USE_IMGUI
-void ReflectionValidationCoordinator::DrawDebugWindow(PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const {
+void ReflectionValidationCoordinator::DrawDebugWindow(const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const {
    if (!psoManager || !shaderManager) {
       return;
    }

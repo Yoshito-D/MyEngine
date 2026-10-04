@@ -64,7 +64,8 @@ struct SkinningInformationForGPU {
    uint32_t padding[3] = {};
 };
 
-struct SkinCluster {
+class SkinCluster {
+   friend class ModelAsset;
    // 不変な入力はコピー間で共有し、Palette/出力を差し替える際には対応する所有権も置換する。
    std::vector<std::shared_ptr<SrvDescriptorAllocation>> inputVertexDescriptors;
    std::vector<std::shared_ptr<SrvDescriptorAllocation>> influenceDescriptors;
@@ -86,11 +87,36 @@ struct SkinCluster {
    std::span<WellForGPU> mappedPalette; // マップされたスケルトン行列データへのスパン
    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle; // パレット用のCPU/GPUディスクリプタハンドル
 
+public:
+   /// @brief 未確保のスキニング状態を構築する。
+   SkinCluster() = default;
+   /// @brief 同じ出力GPUリソースを別の遷移状態で管理するコピーを禁止する。
+   SkinCluster(const SkinCluster&) = delete;
+   /// @brief コピー代入によるGPU実行状態の別名を禁止する。
+   SkinCluster& operator=(const SkinCluster&) = delete;
+   /// @brief 確保済みリソースと対応する実行状態の所有権をまとめて移す。
+   SkinCluster(SkinCluster&&) noexcept = default;
+   /// @brief リソースと実行状態を同じ所有者へ移動代入する。
+   SkinCluster& operator=(SkinCluster&&) noexcept = default;
+
+   /// @brief バインド行列と同じ階層の姿勢を、法線用逆転置と共にGPUパレットへ反映する。
+   bool ApplyPose(const Skeleton& pose);
+   /// @brief GPUと同じウェイト・パレットで1頂点の現在位置を評価する。
+   Vector3 EvaluateSkinnedPosition(size_t meshIndex, uint32_t vertexIndex, const Vector3& bindPosition) const;
+   /// @brief パレットの逆バインドを戻し、現在のジョイント姿勢を取得する。
+   bool TryResolveJointMatrix(size_t jointIndex, Matrix4x4& matrix) const;
+   /// @brief Computeの入出力を検証し、遷移・Dispatch・頂点入力への復帰を同じ操作で完了する。
+   bool DispatchSkinning(ID3D12GraphicsCommandList* commands, size_t meshIndex, const std::array<UINT, 5>& slots);
+   /// @brief パレットのリソースとディスクリプターが利用可能か調べる。
+   bool HasPalette() const { return paletteResource && paletteSrvHandle.second.ptr != 0 && !mappedPalette.empty(); }
+   /// @brief サブメッシュの頂点数が確保済み出力と一致するか確認する。
+   bool CanSkinVertices(size_t meshIndex, size_t count) const;
+
    /// @brief 指定メッシュのCompute Skinning用リソースがそろっているか
    /// @param meshIndex メッシュ番号
    /// @return 必要なSRV/UAV/CBV/VBVが利用可能ならtrue
    bool HasComputeSkinningResources(size_t meshIndex) const {
-	  return meshIndex < inputVertexSrvHandles.size() &&
+	  return HasPalette() && meshIndex < skinnedVertexResourceStates.size() && meshIndex < mappedSkinningInformationData.size() && mappedSkinningInformationData[meshIndex] && meshIndex < inputVertexSrvHandles.size() &&
 		 meshIndex < influenceSrvHandles.size() &&
 		 meshIndex < skinnedVertexResources.size() &&
 		 meshIndex < skinnedVertexBufferViews.size() &&
@@ -142,7 +168,7 @@ public:
    void LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName);
 
    /// @brief モデル単位で利用するスキンクラスタを生成する
-   std::optional<SkinCluster> CreateSkinClusterInstance();
+   std::optional<SkinCluster> CreateSkinClusterInstance() const;
 
    /// @brief 指定インデックスの頂点バッファビューを取得する 
    /// @param index メッシュ番号（省略時は0）
@@ -215,9 +241,7 @@ public:
    }
 
    /// @brief スキンクラスタを取得する
-   SkinCluster* GetSkinCluster() {
-	  return skinCluster_ ? &(*skinCluster_) : nullptr;
-   }
+
 
    /// @brief スキンクラスタを取得する
    const SkinCluster* GetSkinCluster() const {
@@ -230,6 +254,8 @@ public:
    }
 
 private:
+   static void CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes, const std::vector<ComPtr<ID3D12Resource>>& vertices);
+   static void CreateOutputSkinningResources(GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes);
    std::string assetId_;
    ModelData modelData_;
    std::vector<ComPtr<ID3D12Resource>> vertexResources_;            // 複数リソース

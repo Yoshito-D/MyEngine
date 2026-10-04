@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 #include "GameEngine/Effects/Particles/Modules/ParticleModule.h"
 #include <algorithm>
+#include <cmath>
 
 namespace GameEngine {
 // ============================================================
@@ -12,92 +13,101 @@ namespace GameEngine {
 
 /// @brief ランダム範囲を表す構造体（浮動小数点数）
 struct RandomFloat {
-   float minValue = 0.0f; ///< 固定値または乱数範囲の下限
-   float maxValue = 0.0f; ///< 乱数範囲の上限
-   bool randomize = false; ///< minValueとmaxValueの間から抽選する場合はtrue
-
-   /// @brief 0を返す固定範囲を構築する
+   /// @brief ゼロを返す固定範囲を構築する
    RandomFloat() = default;
-   /// @brief 指定値を常に返す固定範囲を構築する
-   /// @param value 固定値
-   RandomFloat(float value) : minValue(value), maxValue(value), randomize(false) {}
-   /// @brief 下限・上限と抽選有無を指定して構築する
-   /// @param minVal 範囲の下限
-   /// @param maxVal 範囲の上限
-   /// @param enableRandom 範囲から抽選する場合はtrue
-   RandomFloat(float minVal, float maxVal, bool enableRandom = true)
-	  : minValue(minVal), maxValue(maxVal), randomize(enableRandom) {}
-
-   /// @brief 固定値または範囲内の乱数を取得する
-   /// @return randomizeがtrueなら抽選値、それ以外はminValue
+   /// @brief 指定値を有限値として保持する固定範囲を構築する
+   RandomFloat(float value) : RandomFloat(value, value, false) {}
+   /// @brief 両端と抽選有無をまとめて検証し、無効な途中状態を持たない範囲を構築する
+   RandomFloat(float low, float high, bool randomize = true) : randomized_(randomize) {
+      minimum_ = std::isfinite(low) ? low : 0.0f;
+      maximum_ = std::isfinite(high) ? high : minimum_;
+      if (maximum_ < minimum_) std::swap(minimum_, maximum_);
+   }
+   /// @brief 検証済みの下限を値として観測する
+   float Minimum() const { return minimum_; }
+   /// @brief 検証済みの上限を値として観測する
+   float Maximum() const { return maximum_; }
+   /// @brief 固定値ではなく範囲内から抽選するか確認する
+   bool IsRandomized() const { return randomized_; }
+   /// @brief 検証済み範囲から初期値を生成する
    float GetValue() const;
-
    /// @brief 範囲設定をJSONへ変換する
-   /// @return min・max・randomizeを含むJSON
    nlohmann::json ToJson() const;
-   /// @brief JSONに含まれる範囲設定を反映する
-   /// @param json 読み込む設定
+   /// @brief JSONを検証済み範囲として一括復元する
    void FromJson(const nlohmann::json& json);
+private:
+   float minimum_ = 0.0f;
+   float maximum_ = 0.0f;
+   bool randomized_ = false;
 };
 
 /// @brief ランダム範囲を表す構造体（Vector2）
 struct RandomVector2 {
-   Vector2 minValue = Vector2{ 0.0f, 0.0f }; ///< 固定値または成分別乱数範囲の下限
-   Vector2 maxValue = Vector2{ 0.0f, 0.0f }; ///< 成分別乱数範囲の上限
-   bool randomize = false;                    ///< 各成分を範囲から抽選する場合はtrue
-
-   /// @brief ゼロベクトルを返す固定範囲を構築する
+   /// @brief ゼロを返す固定範囲を構築する
    RandomVector2() = default;
-   /// @brief 指定ベクトルを常に返す固定範囲を構築する
-   /// @param value 固定値
-   RandomVector2(const Vector2& value) : minValue(value), maxValue(value), randomize(false) {}
-   /// @brief 成分別の下限・上限と抽選有無を指定して構築する
-   /// @param minVal 範囲の下限
-   /// @param maxVal 範囲の上限
-   /// @param enableRandom 各成分を範囲から抽選する場合はtrue
-   RandomVector2(const Vector2& minVal, const Vector2& maxVal, bool enableRandom = true)
-	  : minValue(minVal), maxValue(maxVal), randomize(enableRandom) {}
-
-   /// @brief 固定ベクトルまたは成分別の乱数を取得する
-   /// @return randomizeがtrueなら抽選値、それ以外はminValue
+   /// @brief 指定値を有限値として保持する固定範囲を構築する
+   RandomVector2(const Vector2& value) : RandomVector2(value, value, false) {}
+   /// @brief 両端と抽選有無をまとめて検証し、無効な途中状態を持たない範囲を構築する
+   RandomVector2(const Vector2& low, const Vector2& high, bool randomize = true) : randomized_(randomize) {
+      minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
+      maximum_.x = std::isfinite(high.x) ? high.x : minimum_.x;
+      if (maximum_.x < minimum_.x) std::swap(minimum_.x, maximum_.x);
+      minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
+      maximum_.y = std::isfinite(high.y) ? high.y : minimum_.y;
+      if (maximum_.y < minimum_.y) std::swap(minimum_.y, maximum_.y);
+   }
+   /// @brief 検証済みの下限を値として観測する
+   Vector2 Minimum() const { return minimum_; }
+   /// @brief 検証済みの上限を値として観測する
+   Vector2 Maximum() const { return maximum_; }
+   /// @brief 固定値ではなく範囲内から抽選するか確認する
+   bool IsRandomized() const { return randomized_; }
+   /// @brief 検証済み範囲から初期値を生成する
    Vector2 GetValue() const;
-
    /// @brief 範囲設定をJSONへ変換する
-   /// @return min・max・randomizeを含むJSON
    nlohmann::json ToJson() const;
-   /// @brief JSONに含まれる範囲設定を反映する
-   /// @param json 読み込む設定
+   /// @brief JSONを検証済み範囲として一括復元する
    void FromJson(const nlohmann::json& json);
+private:
+   Vector2 minimum_ = Vector2{ 0.0f, 0.0f };
+   Vector2 maximum_ = Vector2{ 0.0f, 0.0f };
+   bool randomized_ = false;
 };
 
 /// @brief ランダム範囲を表す構造体（Vector3）
 struct RandomVector3 {
-   Vector3 minValue = Vector3(0.0f, 0.0f, 0.0f); ///< 固定値または成分別乱数範囲の下限
-   Vector3 maxValue = Vector3(0.0f, 0.0f, 0.0f); ///< 成分別乱数範囲の上限
-   bool randomize = false;                         ///< 各成分を範囲から抽選する場合はtrue
-
-   /// @brief ゼロベクトルを返す固定範囲を構築する
+   /// @brief ゼロを返す固定範囲を構築する
    RandomVector3() = default;
-   /// @brief 指定ベクトルを常に返す固定範囲を構築する
-   /// @param value 固定値
-   RandomVector3(const Vector3& value) : minValue(value), maxValue(value), randomize(false) {}
-   /// @brief 成分別の下限・上限と抽選有無を指定して構築する
-   /// @param minVal 範囲の下限
-   /// @param maxVal 範囲の上限
-   /// @param enableRandom 各成分を範囲から抽選する場合はtrue
-   RandomVector3(const Vector3& minVal, const Vector3& maxVal, bool enableRandom = true)
-	  : minValue(minVal), maxValue(maxVal), randomize(enableRandom) {}
-
-   /// @brief 固定ベクトルまたは成分別の乱数を取得する
-   /// @return randomizeがtrueなら抽選値、それ以外はminValue
+   /// @brief 指定値を有限値として保持する固定範囲を構築する
+   RandomVector3(const Vector3& value) : RandomVector3(value, value, false) {}
+   /// @brief 両端と抽選有無をまとめて検証し、無効な途中状態を持たない範囲を構築する
+   RandomVector3(const Vector3& low, const Vector3& high, bool randomize = true) : randomized_(randomize) {
+      minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
+      maximum_.x = std::isfinite(high.x) ? high.x : minimum_.x;
+      if (maximum_.x < minimum_.x) std::swap(minimum_.x, maximum_.x);
+      minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
+      maximum_.y = std::isfinite(high.y) ? high.y : minimum_.y;
+      if (maximum_.y < minimum_.y) std::swap(minimum_.y, maximum_.y);
+      minimum_.z = std::isfinite(low.z) ? low.z : 0.0f;
+      maximum_.z = std::isfinite(high.z) ? high.z : minimum_.z;
+      if (maximum_.z < minimum_.z) std::swap(minimum_.z, maximum_.z);
+   }
+   /// @brief 検証済みの下限を値として観測する
+   Vector3 Minimum() const { return minimum_; }
+   /// @brief 検証済みの上限を値として観測する
+   Vector3 Maximum() const { return maximum_; }
+   /// @brief 固定値ではなく範囲内から抽選するか確認する
+   bool IsRandomized() const { return randomized_; }
+   /// @brief 検証済み範囲から初期値を生成する
    Vector3 GetValue() const;
-
    /// @brief 範囲設定をJSONへ変換する
-   /// @return min・max・randomizeを含むJSON
    nlohmann::json ToJson() const;
-   /// @brief JSONに含まれる範囲設定を反映する
-   /// @param json 読み込む設定
+   /// @brief JSONを検証済み範囲として一括復元する
    void FromJson(const nlohmann::json& json);
+private:
+   Vector3 minimum_ = Vector3{ 0.0f, 0.0f, 0.0f };
+   Vector3 maximum_ = Vector3{ 0.0f, 0.0f, 0.0f };
+   bool randomized_ = false;
 };
 
 /// @brief ランダム範囲を表す構造体（色）
@@ -167,15 +177,6 @@ public:
    /// @brief 生成時の寿命範囲を取得する
    /// @return 寿命範囲（秒）
    const RandomFloat& GetStartLifetime() const { return startLifetime_; }
-   /// @brief 生成時寿命の下限を設定する
-   /// @param min 下限（秒）
-   void SetStartLifetimeMin(float min) { startLifetime_.minValue = min; }
-   /// @brief 生成時寿命の上限を設定する
-   /// @param max 上限（秒）
-   void SetStartLifetimeMax(float max) { startLifetime_.maxValue = max; }
-   /// @brief 寿命を範囲から抽選するか設定する
-   /// @param randomize 抽選する場合はtrue
-   void SetStartLifetimeRandomize(bool randomize) { startLifetime_.randomize = randomize; }
 
    /// @brief 放出方向へ掛ける初速範囲を設定する
    /// @param speed スカラー速度範囲
@@ -189,15 +190,6 @@ public:
    /// @brief 放出方向へ掛ける初速範囲を取得する
    /// @return スカラー速度範囲
    const RandomFloat& GetStartSpeed() const { return startSpeed_; }
-   /// @brief スカラー初速の下限を設定する
-   /// @param min 下限速度
-   void SetStartSpeedMin(float min) { startSpeed_.minValue = min; }
-   /// @brief スカラー初速の上限を設定する
-   /// @param max 上限速度
-   void SetStartSpeedMax(float max) { startSpeed_.maxValue = max; }
-   /// @brief スカラー初速を範囲から抽選するか設定する
-   /// @param randomize 抽選する場合はtrue
-   void SetStartSpeedRandomize(bool randomize) { startSpeed_.randomize = randomize; }
    /// @brief 初速の算出方法を設定する
    /// @param mode 放出方向またはXYZ直接指定
    void SetStartSpeedMode(StartSpeedMode mode) { startSpeedMode_ = mode; }
@@ -216,15 +208,6 @@ public:
    /// @brief 互換名でXYZ初速範囲を取得する
    /// @return 成分別の速度範囲
    const RandomVector3& GetStartSpeedVector() const { return startVelocity_; }
-   /// @brief XYZ初速の下限を設定してVector3モードへ切り替える
-   /// @param min 成分別の下限速度
-   void SetStartVelocityMin(const Vector3& min) { startVelocity_.minValue = min; startSpeedMode_ = StartSpeedMode::Vector3; }
-   /// @brief XYZ初速の上限を設定してVector3モードへ切り替える
-   /// @param max 成分別の上限速度
-   void SetStartVelocityMax(const Vector3& max) { startVelocity_.maxValue = max; startSpeedMode_ = StartSpeedMode::Vector3; }
-   /// @brief XYZ初速を範囲から抽選するか設定する
-   /// @param randomize 抽選する場合はtrue
-   void SetStartVelocityRandomize(bool randomize) { startVelocity_.randomize = randomize; startSpeedMode_ = StartSpeedMode::Vector3; }
 
    /// @brief 生成時のXYZスケール範囲を設定する
    /// @param size 成分別のスケール範囲
@@ -232,15 +215,6 @@ public:
    /// @brief 生成時のXYZスケール範囲を取得する
    /// @return 成分別のスケール範囲
    const RandomVector3& GetStartSize() const { return startSize_; }
-   /// @brief 生成時スケールの下限を設定する
-   /// @param min 成分別の下限
-   void SetStartSizeMin(const Vector3& min) { startSize_.minValue = min; }
-   /// @brief 生成時スケールの上限を設定する
-   /// @param max 成分別の上限
-   void SetStartSizeMax(const Vector3& max) { startSize_.maxValue = max; }
-   /// @brief 生成時スケールを範囲から抽選するか設定する
-   /// @param randomize 抽選する場合はtrue
-   void SetStartSizeRandomize(bool randomize) { startSize_.randomize = randomize; }
 
    /// @brief 生成時のXYZ回転範囲を設定する
    /// @param rotation 成分別の回転範囲
@@ -248,15 +222,6 @@ public:
    /// @brief 生成時のXYZ回転範囲を取得する
    /// @return 成分別の回転範囲
    const RandomVector3& GetStartRotation() const { return startRotation_; }
-   /// @brief 生成時回転の下限を設定する
-   /// @param min 成分別の下限
-   void SetStartRotationMin(const Vector3& min) { startRotation_.minValue = min; }
-   /// @brief 生成時回転の上限を設定する
-   /// @param max 成分別の上限
-   void SetStartRotationMax(const Vector3& max) { startRotation_.maxValue = max; }
-   /// @brief 生成時回転を範囲から抽選するか設定する
-   /// @param randomize 抽選する場合はtrue
-   void SetStartRotationRandomize(bool randomize) { startRotation_.randomize = randomize; }
 
    /// @brief 生成時のRGBA8色範囲を設定する
    /// @param color 色範囲
@@ -264,22 +229,13 @@ public:
    /// @brief 生成時のRGBA8色範囲を取得する
    /// @return 色範囲
    const RandomColor& GetStartColor() const { return startColor_; }
-   /// @brief 生成時色の成分別下限を設定する
-   /// @param min RGBA8形式の下限色
-   void SetStartColorMin(uint32_t min) { startColor_.minValue = min; }
-   /// @brief 生成時色の成分別上限を設定する
-   /// @param max RGBA8形式の上限色
-   void SetStartColorMax(uint32_t max) { startColor_.maxValue = max; }
-   /// @brief 生成時色を範囲から抽選するか設定する
-   /// @param randomize 抽選する場合はtrue
-   void SetStartColorRandomize(bool randomize) { startColor_.randomize = randomize; }
 
    /// @brief 全パーティクルで共通の重力倍率を設定する
    /// @param modifier 重力加速度へ掛ける倍率
    void SetGravityModifier(float modifier) { gravityModifier_ = RandomFloat(modifier, modifier, false); }
    /// @brief 固定設定時の重力倍率を取得する
    /// @return 重力倍率範囲の下限
-   float GetGravityModifier() const { return gravityModifier_.minValue; }
+   float GetGravityModifier() const { return gravityModifier_.Minimum(); }
 
    /// @brief 粒子ごとの重力倍率範囲を設定する
    void SetGravityModifierRange(const RandomFloat& modifier) { gravityModifier_ = modifier; }

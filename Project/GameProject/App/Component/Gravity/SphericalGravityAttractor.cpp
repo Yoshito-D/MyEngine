@@ -46,11 +46,14 @@ void SphericalGravityAttractor::DrawInspector() {
    // 現在の中心座標を表示
    if (HasOwner()) {
       if (auto* t = GetOwner().GetComponent<GameEngine::TransformComponent>()) {
-         auto& pos = t->transform.translation;
+         auto pose = t->GetLocalPose();
+         auto& pos = pose.translation;
          ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("中心", "Center"), pos.x, pos.y, pos.z);
+         t->ApplyLocalPose(pose);
       }
    }
 
+   Configure(DescribeSettings());
 }
 #endif
 

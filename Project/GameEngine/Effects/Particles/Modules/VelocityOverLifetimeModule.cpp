@@ -15,7 +15,7 @@ namespace GameEngine {
 
 	void VelocityOverLifetimeModule::ApplyVelocity(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const {
 		if (!enabled_) return;
-		Vector3 linearVelocity = linearVelocity_.randomize ? particle.velocityOverLifetimeLinearVelocity : linearVelocity_.minValue;
+		Vector3 linearVelocity = linearVelocity_.IsRandomized() ? particle.velocityOverLifetimeLinearVelocity : linearVelocity_.Minimum();
 		if (useLocalSimulation) {
 			// 設定値はエミッターのローカル方向として解釈し、加算前にワールド方向へ回転する。
 			linearVelocity = RotateVector(linearVelocity, simulationTransform.GetActiveQuaternion());
@@ -23,7 +23,7 @@ namespace GameEngine {
 
 		particle.velocity += linearVelocity * deltaTime;
 
-		float speedModifier = speedModifier_.randomize ? particle.velocityOverLifetimeSpeedModifier : speedModifier_.minValue;
+		float speedModifier = speedModifier_.IsRandomized() ? particle.velocityOverLifetimeSpeedModifier : speedModifier_.Minimum();
 		if (speedModifier != 1.0f) {
 			particle.velocity = particle.velocity * speedModifier;
 		}

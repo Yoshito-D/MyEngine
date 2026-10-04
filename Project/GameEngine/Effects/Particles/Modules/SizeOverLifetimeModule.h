@@ -19,7 +19,7 @@ namespace GameEngine {
 		/// @brief 粒子ごとのサイズ倍率を固定値で設定する
 		void SetSizeMultiplier(float multiplier) { sizeMultiplier_ = RandomFloat(multiplier); }
 		/// @brief サイズ倍率の代表値を取得する
-		float GetSizeMultiplier() const { return sizeMultiplier_.minValue; }
+		float GetSizeMultiplier() const { return sizeMultiplier_.Minimum(); }
 		/// @brief 粒子ごとのサイズ倍率を乱数範囲で設定する
 		void SetSizeMultiplierRange(const RandomFloat& multiplier) { sizeMultiplier_ = multiplier; }
 		/// @brief サイズ倍率の乱数範囲を取得する

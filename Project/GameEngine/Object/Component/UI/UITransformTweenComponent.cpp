@@ -121,6 +121,7 @@ void UITransformTweenComponent::Deserialize(const nlohmann::json& data) {
    if (playOnEnable) {
       Restart();
    }
+   Configure(DescribeSettings());
 }
 
 void UITransformTweenComponent::Apply(float progress) {
@@ -129,7 +130,7 @@ void UITransformTweenComponent::Apply(float progress) {
       return;
    }
    // 有効化された軸だけを書き換え、別コンポーネントが管理する Transform 要素は保持する。
-   Transform& transform = transformComponent->transform;
+   auto transform = transformComponent->GetLocalPose();
    if (animatePosition) {
       const Vector2 value = startPosition + (endPosition - startPosition) * progress;
       transform.translation.x = value.x;
@@ -146,6 +147,7 @@ void UITransformTweenComponent::Apply(float progress) {
       euler.z = startRotation + (endRotation - startRotation) * progress;
       transform.SetRotationEuler(euler);
    }
+   transformComponent->ApplyLocalPose(transform);
 }
 
 #ifdef USE_IMGUI
@@ -182,6 +184,7 @@ void UITransformTweenComponent::DrawInspector() {
    const char* easings[] = { "Linear", "Ease In Out Sine", "Ease Out Cubic", "Ease Out Back" };
    if (ImGui::Combo("Easing", &easingIndex, easings, 4)) easing = static_cast<UIEasingType>(easingIndex);
    ImGui::Spacing();
+   Configure(DescribeSettings());
 }
 #endif
 

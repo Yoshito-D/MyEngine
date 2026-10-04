@@ -182,12 +182,10 @@ void VehicleDrift::ApplySlideVelocity(float steerInput,
    // 前方成分 : 速度の (1 - slideRatio) 分を前方に残す。
    // 横方向成分: slideLateralSpeed_ を flatRight 方向に加える。
    // 垂直成分  : 重力加速やジャンプの垂直速度を保持する（なければ落下が壊れる）。
-   float   verticalSpeed = gravityBody->GetVelocity().Dot(gravityUp);
    Vector3 forwardComp   = flatForward * (speed * (1.0f - slideRatio));
    Vector3 slideComp     = flatRight   * slideLateralSpeed_;
-   Vector3 verticalComp  = gravityUp   * verticalSpeed;
 
-   gravityBody->SetVelocity(forwardComp + slideComp + verticalComp);
+   gravityBody->ApplySurfaceVelocity(forwardComp + slideComp, gravityUp);
 }
 
 void VehicleDrift::ApplyPostDriftBleed(const Vector3& gravityUp, float deltaTime) {
@@ -206,12 +204,14 @@ void VehicleDrift::ApplyPostDriftBleed(const Vector3& gravityUp, float deltaTime
    if (std::abs(slideLateralSpeed_) < 0.01f) { slideLateralSpeed_ = 0.0f; }
 
    float   speed         = groundMover->GetCurrentSpeed();
-   float   verticalSpeed = gravityBody->GetVelocity().Dot(gravityUp);
    Vector3 forwardComp   = flatForward * speed;
    Vector3 slideComp     = flatRight   * slideLateralSpeed_;
-   Vector3 verticalComp  = gravityUp   * verticalSpeed;
 
-   gravityBody->SetVelocity(forwardComp + slideComp + verticalComp);
+   gravityBody->ApplySurfaceVelocity(forwardComp + slideComp, gravityUp);
+}
+
+float VehicleDrift::CalculateSteeringInput(float steerInput) const {
+   return isDrifting_ ? std::clamp(steerInput * driftSteerMult, -1.0f, 1.0f) : steerInput;
 }
 
 bool VehicleDrift::CanFireMiniTurbo() const {

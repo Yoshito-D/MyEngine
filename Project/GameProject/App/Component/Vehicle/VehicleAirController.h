@@ -39,7 +39,7 @@ public:
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
-public:
+private:
    /// @brief ロール角速度（deg/sec）
    float rollSpeed     = 285.0f;
 

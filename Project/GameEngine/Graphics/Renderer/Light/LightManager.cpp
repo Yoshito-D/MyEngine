@@ -538,22 +538,22 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
 
    for (const auto& source : directionalLights) {
       if (auto* light = CreateDirectionalLight(source.id)) {
-         *light->GetDirectionalLightData() = source.data;
+         light->ApplyIllumination(source.data);
       }
    }
    for (const auto& source : pointLights) {
       if (auto* light = CreatePointLight(source.id)) {
-         *light->GetPointLightData() = source.data;
+         light->ApplyIllumination(source.data);
       }
    }
    for (const auto& source : spotLights) {
       if (auto* light = CreateSpotLight(source.id)) {
-         *light->GetSpotLightData() = source.data;
+         light->ApplyIllumination(source.data);
       }
    }
    for (const auto& source : areaLights) {
       if (auto* light = CreateAreaLight(source.id)) {
-         *light->GetAreaLightData() = source.data;
+         light->ApplyIllumination(source.data);
       }
    }
    // 復元直後のフレームからGPU側の件数と内容を一致させる。
@@ -580,7 +580,8 @@ bool LightManager::DebugDraw() {
          for (auto& pair : directionalLights_) {
             ImGui::PushID(pair.first.c_str());
             if (ImGui::TreeNode(pair.first.c_str())) {
-               auto data = pair.second->GetDirectionalLightData();
+               auto edited = *pair.second->GetDirectionalLightData();
+               auto* data = &edited;
                ImGui::ColorEdit4(LocalizeEditorText("色", "Color"), &data->color.x);
                if (ImGui::DragFloat3(LocalizeEditorText("方向", "Direction"), &data->direction.x, 0.01f)) {
                   data->direction = Normalize(data->direction);
@@ -590,6 +591,7 @@ bool LightManager::DebugDraw() {
                   toRemove.push_back(pair.first);
                }
                
+               pair.second->ApplyIllumination(edited);
                ImGui::TreePop();
             }
             ImGui::PopID();
@@ -626,7 +628,8 @@ bool LightManager::DebugDraw() {
          for (auto& pair : pointLights_) {
             ImGui::PushID(pair.first.c_str());
             if (ImGui::TreeNode(pair.first.c_str())) {
-               auto data = pair.second->GetPointLightData();
+               auto edited = *pair.second->GetPointLightData();
+               auto* data = &edited;
                ImGui::ColorEdit4(LocalizeEditorText("色", "Color"), &data->color.x);
                ImGui::DragFloat3(LocalizeEditorText("位置", "Position"), &data->position.x, 0.1f);
                ImGui::DragFloat(LocalizeEditorText("強度", "Intensity"), &data->intensity, 0.01f);
@@ -637,6 +640,7 @@ bool LightManager::DebugDraw() {
                   toRemove.push_back(pair.first);
                }
                
+               pair.second->ApplyIllumination(edited);
                ImGui::TreePop();
             }
             ImGui::PopID();
@@ -673,7 +677,8 @@ bool LightManager::DebugDraw() {
          for (auto& pair : spotLights_) {
             ImGui::PushID(pair.first.c_str());
             if (ImGui::TreeNode(pair.first.c_str())) {
-               auto data = pair.second->GetSpotLightData();
+               auto edited = *pair.second->GetSpotLightData();
+               auto* data = &edited;
                ImGui::ColorEdit4(LocalizeEditorText("色", "Color"), &data->color.x);
                ImGui::DragFloat3(LocalizeEditorText("位置", "Position"), &data->position.x, 0.1f);
                ImGui::DragFloat(LocalizeEditorText("強度", "Intensity"), &data->intensity, 0.01f);
@@ -698,6 +703,7 @@ bool LightManager::DebugDraw() {
                   toRemove.push_back(pair.first);
                }
                
+               pair.second->ApplyIllumination(edited);
                ImGui::TreePop();
             }
             ImGui::PopID();
@@ -734,7 +740,8 @@ bool LightManager::DebugDraw() {
          for (auto& pair : areaLights_) {
             ImGui::PushID(pair.first.c_str());
             if (ImGui::TreeNode(pair.first.c_str())) {
-               auto data = pair.second->GetAreaLightData();
+               auto edited = *pair.second->GetAreaLightData();
+               auto* data = &edited;
                ImGui::ColorEdit4(LocalizeEditorText("色", "Color"), &data->color.x);
                ImGui::DragFloat3(LocalizeEditorText("位置", "Position"), &data->position.x, 0.1f);
                ImGui::DragFloat(LocalizeEditorText("強度", "Intensity"), &data->intensity, 0.01f);
@@ -751,6 +758,7 @@ bool LightManager::DebugDraw() {
                   toRemove.push_back(pair.first);
                }
                
+               pair.second->ApplyIllumination(edited);
                ImGui::TreePop();
             }
             ImGui::PopID();

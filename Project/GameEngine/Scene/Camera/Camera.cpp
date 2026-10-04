@@ -1,5 +1,6 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Scene/Camera/Camera.h"
+#include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameEngine/Math/MathUtils.h"
 #include "GameEngine/Graphics/Device/ResourceHelper.h"
 #include <algorithm>
@@ -49,9 +50,24 @@ void Camera::Initialize(const Transform& transform, ProjectionType projectionTyp
 
 void Camera::SetFovY(float fovY) {
 	fovY_ = ClampFovY(fovY);
+   Update();
 }
 
 void Camera::Update() {
+   // 投影の関連値を同じ境界で検証し、変更操作の終了時にキャッシュを一致させる。
+   fovY_ = ClampFovY(fovY_);
+   if (!std::isfinite(aspectRatio_) || aspectRatio_ <= 0.0f) aspectRatio_ = 1.0f;
+   if (!std::isfinite(nearClip_) || nearClip_ <= 0.0f) nearClip_ = kDefaultNearClip;
+   if (!std::isfinite(farClip_) || farClip_ <= nearClip_) farClip_ = nearClip_ + kDefaultFarClip;
+   if (!std::isfinite(farClip_) || farClip_ <= nearClip_ || !std::isfinite(nearClip_ * farClip_)) {
+      nearClip_ = kDefaultNearClip;
+      farClip_ = kDefaultFarClip;
+   }
+   auto finiteOr = [](float value, float fallback) { return std::isfinite(value) ? value : fallback; };
+   transform_.translation = { finiteOr(transform_.translation.x, 0.0f), finiteOr(transform_.translation.y, 0.0f), finiteOr(transform_.translation.z, 0.0f) };
+   auto invertibleScale = [&](float value) { return std::abs(value) > 1.0e-6f ? finiteOr(value, 1.0f) : 1.0f; };
+   transform_.scale = { invertibleScale(transform_.scale.x), invertibleScale(transform_.scale.y), invertibleScale(transform_.scale.z) };
+
 	// TransformのrotationSourceに基づいてワールド行列を計算
 	Matrix4x4 scaleMatrix = MakeScaleMatrix(transform_.scale);
 	Matrix4x4 rotationMatrix = MakeRotateMatrix(transform_.GetActiveQuaternion());
@@ -87,9 +103,29 @@ void Camera::Update() {
 	SetCameraForGpuData();
 }
 
+void Camera::ApplyState(const CameraState& state) {
+   fovY_ = state.fov;
+   nearClip_ = state.nearClip;
+   farClip_ = state.farClip;
+   if (state.hasViewMatrixOverride) {
+      // 明示ビューでは従来どおり状態の位置をGPUへ渡し、回転・拡縮の解釈は変更しない。
+      transform_.translation = state.transform.translation;
+   } else {
+      transform_ = state.transform;
+   }
+   Update();
+   bool validOverride = state.hasViewMatrixOverride;
+   for (const auto& row : state.viewMatrixOverride.m) for (float element : row) validOverride &= std::isfinite(element);
+   if (validOverride) {
+      viewMatrix_ = state.viewMatrixOverride;
+      viewProjectionMatrix_ = viewMatrix_ * GetProjectionMatrix();
+      SetCameraForGpuData();
+   }
+}
+
 void Camera::SetOrthographicSize(float width, float height) {
 	// 0 以下の寸法は射影行列の除算を成立させないため、現在の有効設定を維持する。
-	if (width <= 0.0f || height <= 0.0f) {
+	if (!std::isfinite(width) || !std::isfinite(height) || width <= 0.0f || height <= 0.0f) {
 		return;
 	}
 

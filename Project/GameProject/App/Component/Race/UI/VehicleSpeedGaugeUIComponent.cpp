@@ -87,7 +87,7 @@ void VehicleSpeedGaugeUIComponent::Update(float deltaTime) {
       ? std::max(gravityBody_->GetVelocity().Length(), 0.0f)
       : std::max(groundMover_->GetCurrentSpeed(), 0.0f);
    const float maximumSpeed = groundMover_
-      ? std::max(groundMover_->maxSpeed, 0.001f)
+      ? std::max(groundMover_->DescribeSettings().maxSpeed, 0.001f)
       : 40.0f;
    const float targetRatio = std::clamp(speed / maximumSpeed, 0.0f, 1.0f);
    // 指数応答を用いることでフレームレートに依存しにくい追従感にする。
@@ -114,11 +114,19 @@ void VehicleSpeedGaugeUIComponent::SetHudVisible(bool visible) {
    // 背景枠はHUDの有効状態に従う一方、塗りゲージは速度がほぼ0なら隠して
    // 最小幅として確保したQuadが細線として見えるのを防ぐ。
    if (gaugeRender_) {
-      gaugeRender_->visible = visible && displayedRatio_ > 0.001f;
+      {
+         auto settings = gaugeRender_->DescribeSettings();
+         settings.visible = visible && displayedRatio_ > 0.001f;
+         gaugeRender_->Configure(settings);
+      }
    }
    if (frameObject_) {
       if (auto* render = frameObject_->GetComponent<GameEngine::RenderComponent>()) {
-         render->visible = visible;
+         {
+            auto settings = render->DescribeSettings();
+            settings.visible = visible;
+            render->Configure(settings);
+         }
       }
    }
    if (speedText_ && !visible) {

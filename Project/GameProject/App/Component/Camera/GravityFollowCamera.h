@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include <algorithm>
 
@@ -74,54 +76,117 @@ public:
    void DrawInspector() override;
 #endif
 
-public:
-   /// @brief 入力回転感度
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief 入力回転感度
+      float rotateSpeed = 0.005f;
+      /// @brief ホイールズーム感度
+      float scrollSpeed = 1.0f / 120.0f;
+      /// @brief 惑星切り替え時の重力Up補間速度（大きいほど速く追従）
+      float gravityUpLerpSpeed = 5.0f;
+      /// @brief 通常時の FOV（ラジアン相当）
+      float fovDefault = 0.45f;
+      /// @brief 加速時に加算される最大 FOV 量（視野を広げて速度感を演出）
+      float fovBoostMax = 0.08f;
+      /// @brief FOV が加速ブーストに追従する補間速度
+      float fovLerpSpeed = 4.0f;
+      /// @brief 加速演出を開始するプレイヤー速度の閾値
+      float speedBoostThreshold = 5.0f;
+      /// @brief 加速演出が最大になるプレイヤー速度
+      float speedBoostMax = 25.0f;
+      /// @brief 通常加速時にカメラが後退する最大追加距離
+      float distanceBoostMax = 2.5f;
+      /// @brief Spring の剛性（大きいほど目標へ強く引っ張る）
+      float springStiffness = 85.0f;
+      /// @brief Spring の減衰（大きいほど揺れが早く収束）
+      float springDamping = 18.0f;
+      /// @brief 速度変化量（加速度）を FOV キックへ変換する係数
+      float accelToFovKick = 0.0025f;
+      /// @brief 速度変化量（加速度）を距離キックへ変換する係数
+      float accelToDistanceKick = 0.04f;
+      /// @brief ミニターボ時に上乗せする FOV キック最大量
+      float turboFovKickMax = 0.06f;
+      /// @brief ミニターボ時に上乗せする距離キック最大量
+      float turboDistanceKickMax = 2.0f;
+      /// @brief カメラ位置（eye）の追従速度
+      ///        値が大きいほど素早く追従し、小さいほどふわりとした遅延になる
+      float positionLerpSpeed = 12.0f;
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.rotateSpeed = rotateSpeed;
+      settings.scrollSpeed = scrollSpeed;
+      settings.gravityUpLerpSpeed = gravityUpLerpSpeed;
+      settings.fovDefault = fovDefault;
+      settings.fovBoostMax = fovBoostMax;
+      settings.fovLerpSpeed = fovLerpSpeed;
+      settings.speedBoostThreshold = speedBoostThreshold;
+      settings.speedBoostMax = speedBoostMax;
+      settings.distanceBoostMax = distanceBoostMax;
+      settings.springStiffness = springStiffness;
+      settings.springDamping = springDamping;
+      settings.accelToFovKick = accelToFovKick;
+      settings.accelToDistanceKick = accelToDistanceKick;
+      settings.turboFovKickMax = turboFovKickMax;
+      settings.turboDistanceKickMax = turboDistanceKickMax;
+      settings.positionLerpSpeed = positionLerpSpeed;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.rotateSpeed)) settings.rotateSpeed = defaults.rotateSpeed;
+      if (!std::isfinite(settings.scrollSpeed)) settings.scrollSpeed = defaults.scrollSpeed;
+      if (!std::isfinite(settings.gravityUpLerpSpeed)) settings.gravityUpLerpSpeed = defaults.gravityUpLerpSpeed;
+      if (!std::isfinite(settings.fovDefault)) settings.fovDefault = defaults.fovDefault;
+      if (!std::isfinite(settings.fovBoostMax)) settings.fovBoostMax = defaults.fovBoostMax;
+      if (!std::isfinite(settings.fovLerpSpeed)) settings.fovLerpSpeed = defaults.fovLerpSpeed;
+      if (!std::isfinite(settings.speedBoostThreshold)) settings.speedBoostThreshold = defaults.speedBoostThreshold;
+      if (!std::isfinite(settings.speedBoostMax)) settings.speedBoostMax = defaults.speedBoostMax;
+      if (!std::isfinite(settings.distanceBoostMax)) settings.distanceBoostMax = defaults.distanceBoostMax;
+      if (!std::isfinite(settings.springStiffness)) settings.springStiffness = defaults.springStiffness;
+      if (!std::isfinite(settings.springDamping)) settings.springDamping = defaults.springDamping;
+      if (!std::isfinite(settings.accelToFovKick)) settings.accelToFovKick = defaults.accelToFovKick;
+      if (!std::isfinite(settings.accelToDistanceKick)) settings.accelToDistanceKick = defaults.accelToDistanceKick;
+      if (!std::isfinite(settings.turboFovKickMax)) settings.turboFovKickMax = defaults.turboFovKickMax;
+      if (!std::isfinite(settings.turboDistanceKickMax)) settings.turboDistanceKickMax = defaults.turboDistanceKickMax;
+      if (!std::isfinite(settings.positionLerpSpeed)) settings.positionLerpSpeed = defaults.positionLerpSpeed;
+      rotateSpeed = settings.rotateSpeed;
+      scrollSpeed = settings.scrollSpeed;
+      gravityUpLerpSpeed = settings.gravityUpLerpSpeed;
+      fovDefault = settings.fovDefault;
+      fovBoostMax = settings.fovBoostMax;
+      fovLerpSpeed = settings.fovLerpSpeed;
+      speedBoostThreshold = settings.speedBoostThreshold;
+      speedBoostMax = settings.speedBoostMax;
+      distanceBoostMax = settings.distanceBoostMax;
+      springStiffness = settings.springStiffness;
+      springDamping = settings.springDamping;
+      accelToFovKick = settings.accelToFovKick;
+      accelToDistanceKick = settings.accelToDistanceKick;
+      turboFovKickMax = settings.turboFovKickMax;
+      turboDistanceKickMax = settings.turboDistanceKickMax;
+      positionLerpSpeed = settings.positionLerpSpeed;
+   }
+
+private:
    float rotateSpeed = 0.005f;
-
-   /// @brief ホイールズーム感度
    float scrollSpeed = 1.0f / 120.0f;
-
-   /// @brief 惑星切り替え時の重力Up補間速度（大きいほど速く追従）
    float gravityUpLerpSpeed = 5.0f;
-
-   /// @brief 通常時の FOV（ラジアン相当）
    float fovDefault = 0.45f;
-
-   /// @brief 加速時に加算される最大 FOV 量（視野を広げて速度感を演出）
    float fovBoostMax = 0.08f;
-
-   /// @brief FOV が加速ブーストに追従する補間速度
    float fovLerpSpeed = 4.0f;
-
-   /// @brief 加速演出を開始するプレイヤー速度の閾値
    float speedBoostThreshold = 5.0f;
-
-   /// @brief 加速演出が最大になるプレイヤー速度
    float speedBoostMax = 25.0f;
-
-   /// @brief 通常加速時にカメラが後退する最大追加距離
    float distanceBoostMax = 2.5f;
-
-   /// @brief Spring の剛性（大きいほど目標へ強く引っ張る）
    float springStiffness = 85.0f;
-
-   /// @brief Spring の減衰（大きいほど揺れが早く収束）
    float springDamping = 18.0f;
-
-   /// @brief 速度変化量（加速度）を FOV キックへ変換する係数
    float accelToFovKick = 0.0025f;
-
-   /// @brief 速度変化量（加速度）を距離キックへ変換する係数
    float accelToDistanceKick = 0.04f;
-
-   /// @brief ミニターボ時に上乗せする FOV キック最大量
    float turboFovKickMax = 0.06f;
-
-   /// @brief ミニターボ時に上乗せする距離キック最大量
    float turboDistanceKickMax = 2.0f;
-
-   /// @brief カメラ位置（eye）の追従速度
-   ///        値が大きいほど素早く追従し、小さいほどふわりとした遅延になる
    float positionLerpSpeed = 12.0f;
 
 private:

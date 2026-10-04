@@ -60,7 +60,7 @@ private:
    /// @note PlanetSwitcherの3引数版で同じ候補のモデル・中心・半径を取得する。
    /// 位置は親変換を含むワールド座標にそろえ、入力収集の段階ではGPU定数を書き換えない。
    bool TryBuildPlayerShadowFrameData(GameEngine::Camera* camera,
-      GameEngine::PlayerShadowFrameData& outFrameData) const;
+      GameEngine::PlayerShadowFrameData& outFrameData);
 
    /// @brief 選択中カメラの安定ID。削除されたComponentの生ポインターを保持しない
    std::string gravityFollowCameraId_;

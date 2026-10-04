@@ -8,7 +8,6 @@
 namespace GameEngine {
 
 void LinearToSRGB::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!enabled_) return;
    if (!pipeline_ || !rootSignature_) return;
 
    renderTarget_->PreDraw(false);

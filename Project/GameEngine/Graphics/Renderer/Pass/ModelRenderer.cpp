@@ -21,25 +21,10 @@
 namespace GameEngine {
 namespace {
 constexpr const char* kSkinningComputePipelineName = "SkinningCompute";
-constexpr UINT kSkinningThreadGroupSize = 1024;
 
-void TransitionResource(
-   ID3D12GraphicsCommandList* cmdList,
-   ID3D12Resource* resource,
-   D3D12_RESOURCE_STATES before,
-   D3D12_RESOURCE_STATES after) {
-   if (!resource || before == after) {
-	  return;
-   }
-
-   // ComputeのUAV出力とInput Assemblerの頂点読み取りは同じリソースを共有するため、
-   // 用途を切り替える境界で明示的に可視化する。
-   CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource, before, after);
-   cmdList->ResourceBarrier(1, &barrier);
-}
 }
 
-void ModelRenderer::Initialize(GraphicsDevice* device, PSOManager* psoManager, AssetManager* assetManager) {
+void ModelRenderer::Initialize(GraphicsDevice* device, const PSOManager* psoManager, AssetManager* assetManager) {
    device_ = device;
    psoManager_ = psoManager;
    assetManager_ = assetManager;
@@ -74,7 +59,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
    auto* cmdList = device_->GetCommandList();
    auto* meshComponent = model->GetComponent<MeshComponent>();
-   ModelAsset* asset = meshComponent ? meshComponent->GetModelAsset() : nullptr;
+   const ModelAsset* asset = meshComponent ? meshComponent->GetModelAsset() : nullptr;
    Mesh* primitiveMesh = meshComponent && meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive
       ? meshComponent->EnsureMesh()
       : nullptr;
@@ -89,7 +74,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
    bool skinningEnabled = true;
    if (const auto* animationComponent = model->GetComponent<AnimationComponent>()) {
-	  skinningEnabled = animationComponent->useSkinning;
+	  skinningEnabled = animationComponent->DescribeSettings().useSkinning;
    }
 
    SkinCluster* skinCluster = meshComponent ? meshComponent->GetSkinCluster() : nullptr;
@@ -106,7 +91,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 	  skinningComputePipeline &&
 	  skinningComputePipeline->pipelineState &&
 	  skinningComputeRootSignature &&
-	  skinCluster->paletteSrvHandle.second.ptr != 0;
+	  skinCluster->HasPalette();
 
    TransformationMatrix* transformationMatrix = model->GetTransformationMatrix();
    if (useSkinning) {
@@ -134,40 +119,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
 
 	  for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
          if (modelData.meshIndex && *modelData.meshIndex != i) continue;
-		 if (!skinCluster->HasComputeSkinningResources(i) || i >= skinCluster->skinnedVertexResourceStates.size()) {
-			continue;
-		 }
-
-		 // 前フレームに頂点入力だった出力バッファをUAVへ戻してから、同じメッシュ番号の
-		 // 元頂点・ウェイト・パレットを使って上書きする。
-		 ID3D12Resource* skinnedVertexResource = skinCluster->skinnedVertexResources[i].Get();
-		 TransitionResource(
-			cmdList,
-			skinnedVertexResource,
-			skinCluster->skinnedVertexResourceStates[i],
-			D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		 skinCluster->skinnedVertexResourceStates[i] = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-
-		 cmdList->SetComputeRootConstantBufferView(
-			skinningInfoSlot.value(),
-			skinCluster->skinningInformationResources[i]->GetGPUVirtualAddress());
-		 cmdList->SetComputeRootDescriptorTable(paletteSlot.value(), skinCluster->paletteSrvHandle.second);
-		 cmdList->SetComputeRootDescriptorTable(inputVerticesSlot.value(), skinCluster->inputVertexSrvHandles[i].second);
-		 cmdList->SetComputeRootDescriptorTable(influencesSlot.value(), skinCluster->influenceSrvHandles[i].second);
-		 cmdList->SetComputeRootDescriptorTable(outputVerticesSlot.value(), skinCluster->skinnedVertexUavHandles[i].second);
-
-		 const UINT vertexCount = static_cast<UINT>((*modelMeshes)[i].vertices.size());
-		 // 端数頂点も処理するため切り上げ除算し、シェーダー側の範囲判定へ余剰スレッドを委ねる。
-		 const UINT dispatchCount = (vertexCount + kSkinningThreadGroupSize - 1) / kSkinningThreadGroupSize;
-		 cmdList->Dispatch(dispatchCount, 1, 1);
-
-		 // Dispatch完了後のUAV書き込みを頂点フェッチから可視にし、直後のGraphics描画へ接続する。
-		 TransitionResource(
-			cmdList,
-			skinnedVertexResource,
-			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-			D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-		 skinCluster->skinnedVertexResourceStates[i] = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+         skinCluster->DispatchSkinning(cmdList, i, { *skinningInfoSlot, *paletteSlot, *inputVerticesSlot, *influencesSlot, *outputVerticesSlot });
 	  }
 
    }
@@ -175,7 +127,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData,
    // 各描画は自身のスロットを解決する。ルートシグネチャは異なる可能性があるため、使用する全リソースを
    // PSO選択後（コンピュートスキニングのディスパッチ後を含む）に再バインドする。
    auto bindMaterial = [&](size_t slot) {
-      Material* material = materialComponent->GetMaterial(slot);
+      const Material* material = materialComponent->GetMaterial(slot);
       if (!material) material = defaultMaterial;
       if (!material || !psoManager_) return false;
       std::string name = material->GetPipelineName().empty() ? "Object3D" : material->GetPipelineName();

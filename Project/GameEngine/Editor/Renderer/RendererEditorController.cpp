@@ -232,7 +232,7 @@ void RendererEditorController::BeginEditorFrame() {
    }
 
    // 前フレームのUIが参照し終えた後で、遅延削除されたオブジェクトを安全に破棄する。
-   editorContext->GetObjectStore().FlushDeferredDeletes();
+   editorContext->FinishEditingFrame();
    if (editorSceneReloadRequested_) {
       const bool reloadsActiveScene = editorSceneReloadFilePath_ == editorContext->GetSceneFilePath();
       editorSceneReloadRequested_ = false;
@@ -316,7 +316,7 @@ void RendererEditorController::ShowAssetWindow() {
       ImGui::EndDisabled();
       ImGui::SameLine();
       if (ImGui::Button(Tr("アセット再スキャン", "Rescan Assets"))) {
-         editorContext->GetAssetRegistry().Scan();
+         editorContext->RefreshAssets();
       }
       ImGui::TextDisabled("%s", editorContext->GetSceneFilePath().generic_string().c_str());
       if (!editorContext->GetLastStatusMessage().empty()) {
@@ -1346,34 +1346,7 @@ void RendererEditorController::ResolveParentRelation(Object* object, const std::
       return;
    }
 
-   // 旧シーンの表示名参照を一度だけ安定したEntity IDへ移行する。
-   if (object->GetParentEntityId().empty() && !transformComponent->parentObjectName.empty()) {
-      const auto legacyParent = std::find_if(sceneObjects.begin(), sceneObjects.end(),
-         [object, transformComponent](const Object* candidate) {
-            return candidate && candidate != object &&
-               candidate->GetObjectName() == transformComponent->parentObjectName;
-         });
-      if (legacyParent != sceneObjects.end()) {
-         object->SetParentEntityId((*legacyParent)->GetEntityId());
-         transformComponent->parentObjectName.clear();
-      }
-   }
-
-   if (object->GetParentEntityId().empty()) {
-      transformComponent->useParentMatrix = false;
-      transformComponent->parentMatrix = MakeIdentity4x4();
-      return;
-   }
-
-   if (!Object::FindByEntityId(object->GetParentEntityId())) {
-      // 親が未ロード・削除済みでも前フレームの行列を使い続けないよう、親行列を明示的に解除する。
-      transformComponent->useParentMatrix = false;
-      transformComponent->parentMatrix = MakeIdentity4x4();
-      return;
-   }
-
-   transformComponent->useParentMatrix = true;
-   transformComponent->parentMatrix = object->GetParentWorldMatrix();
+   transformComponent->ResolveParentRelation(sceneObjects);
 }
 
 std::string RendererEditorController::BuildUniqueObjectName(const std::string& baseName, const std::vector<Object*>& sceneObjects) const {

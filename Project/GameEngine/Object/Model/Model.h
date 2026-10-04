@@ -67,7 +67,7 @@ public:
 
    /// @brief モデルの回転を取得する
    /// @return 回転
-   const Vector3& GetRotation() const;
+   Vector3 GetRotation() const;
 
    /// @brief モデルのスケールを取得する
    /// @return スケール
@@ -95,7 +95,7 @@ public:
 
    /// @brief Quaternionを取得する
    /// @return 現在のQuaternion
-   const Quaternion& GetRotationQuaternion() const;
+   Quaternion GetRotationQuaternion() const;
 
    /// @brief Quaternionを使用するかどうかを設定する
    /// @param use trueならQuaternion、falseならEuler角を使用
@@ -111,7 +111,6 @@ public:
 
    /// @brief 親のワールド行列を設定する
    /// @param parentWorldMatrix 親のワールド行列
-   void SetParentMatrix(const Matrix4x4& parentMatrix);
 
    /// @brief 行列の更新
    /// @param camera カメラ

@@ -12,7 +12,7 @@ namespace GameEngine {
 		if (!enabled_) return;
 		float t = particle.GetLifeProgress();
 		// ランダム倍率は生成時の値を再利用し、寿命中にサイズがちらつかないようにする。
-		const float multiplier = sizeMultiplier_.randomize ? particle.sizeOverLifetimeMultiplier : sizeMultiplier_.minValue;
+		const float multiplier = sizeMultiplier_.IsRandomized() ? particle.sizeOverLifetimeMultiplier : sizeMultiplier_.Minimum();
 		Vector3 size = (startSize_ + (endSize_ - startSize_) * t) * multiplier;
 		particle.currentSize = size;
 		particle.transform.scale = size;

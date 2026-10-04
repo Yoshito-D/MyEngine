@@ -9,10 +9,10 @@ using namespace RearCameraMath;
 void RearCameraPlanetGuide::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
    auto* camera = GetRearCamera();
    if (!camera) return;
-   const auto& transition = *owner_->GetComponent<RearCameraTransition>();
-   const auto& direction = *owner_->GetComponent<RearCameraDirectionTracker>();
-   AdvanceTakeoffTimer(camera->GetInput(), *camera, transition.GetEvents(), direction.GetState().currentBackward, deltaTime);
-   UpdatePlanetDirectionGuide(camera->GetInput(), *camera, direction.GetState().currentBackward, deltaTime);
+   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
+   const auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
+   AdvanceTakeoffTimer(camera->GetInput(), camera->DescribeSettings(), transition.GetEvents(), direction.GetState().currentBackward, deltaTime);
+   UpdatePlanetDirectionGuide(camera->GetInput(), camera->DescribeSettings(), direction.GetState().currentBackward, deltaTime);
 }
 
 /// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向と係数を更新する

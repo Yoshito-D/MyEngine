@@ -18,7 +18,6 @@
 namespace GameEngine {
 namespace {
 constexpr float kDirectionEpsilon = 1e-8f;
-constexpr UINT kSkinningGroupSize = 1024; // Skinning.CS.hlslのnumthreadsと対応する。
 constexpr const char* kSkinningPipeline = "SkinningCompute";
 
 bool IsFinite(const Vector3& value) {
@@ -73,7 +72,7 @@ const TransformationMatrix::TransformationMatrixData* GetModelMatrices(Model* mo
 bool UsesSkinning(Model* model, MeshComponent* mesh) {
    auto* animation = model->GetComponent<AnimationComponent>();
    const auto* asset = mesh->GetModelAsset();
-   return asset && asset->HasSkinningData() && (!animation || animation->useSkinning);
+   return asset && asset->HasSkinningData() && (!animation || animation->DescribeSettings().useSkinning);
 }
 
 bool IsValidVertexView(const D3D12_VERTEX_BUFFER_VIEW& view) {
@@ -364,7 +363,7 @@ bool PlayerShadowPass::PreparePlayerVertices(FrameContext& ctx) {
    const auto* asset = mesh->GetModelAsset();
    const auto* compute = ctx.psoManager->GetComputePipeline(kSkinningPipeline);
    auto* root = compute ? ctx.psoManager->GetRootSignature(compute->rootSignatureName) : nullptr;
-   if (!skin || !skin->paletteResource || skin->paletteSrvHandle.second.ptr == 0 ||
+   if (!skin || !skin->HasPalette() ||
       !compute || !compute->pipelineState || !root || !root->GetRootSignature()) {
       return ReportFailure("Skinning resources are incomplete; skipping the shadow instead of using a stale pose.");
    }
@@ -379,14 +378,9 @@ bool PlayerShadowPass::PreparePlayerVertices(FrameContext& ctx) {
    // 途中のサブメッシュで失敗して半更新になることを避け、Dispatch前に全資源を確認する。
    for (const auto& draw : playerGeometry_) {
       const size_t i = draw.meshIndex;
-      if (!skin->HasComputeSkinningResources(i) || i >= skin->skinnedVertexResourceStates.size() ||
-         i >= skin->mappedSkinningInformationData.size() || !skin->mappedSkinningInformationData[i] ||
-         !IsValidVertexView(skin->skinnedVertexBufferViews[i])) return ReportFailure("Invalid skinned submesh buffers.");
       const size_t vertexCount = asset->GetMeshData()[i].vertices.size();
-      if (!vertexCount || vertexCount > static_cast<size_t>(D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION) * kSkinningGroupSize ||
-         skin->mappedSkinningInformationData[i]->numVertices != vertexCount ||
-         vertexCount > skin->skinnedVertexBufferViews[i].SizeInBytes / sizeof(Mesh::VertexData)) {
-         return ReportFailure("Skinning vertex count does not match its output buffer.");
+      if (!skin->CanSkinVertices(i, vertexCount) || !IsValidVertexView(*skin->GetSkinnedVertexBufferView(i))) {
+         return ReportFailure("Invalid skinned submesh buffers or vertex count.");
       }
    }
 
@@ -397,19 +391,8 @@ bool PlayerShadowPass::PreparePlayerVertices(FrameContext& ctx) {
    // 画面外で通常描画されなかったプレイヤーにも現在のポーズを使う。ボーンPalette自体の更新はゲーム側。
    for (auto& draw : playerGeometry_) {
       const size_t i = draw.meshIndex;
-      TransitionResource(commands, skin->skinnedVertexResources[i].Get(),
-         skin->skinnedVertexResourceStates[i], D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-      commands->SetComputeRootConstantBufferView(*information, skin->skinningInformationResources[i]->GetGPUVirtualAddress());
-      commands->SetComputeRootDescriptorTable(*palette, skin->paletteSrvHandle.second);
-      commands->SetComputeRootDescriptorTable(*vertices, skin->inputVertexSrvHandles[i].second);
-      commands->SetComputeRootDescriptorTable(*influences, skin->influenceSrvHandles[i].second);
-      commands->SetComputeRootDescriptorTable(*output, skin->skinnedVertexUavHandles[i].second);
-      const UINT vertexCount = static_cast<UINT>(asset->GetMeshData()[i].vertices.size());
-      commands->Dispatch((vertexCount + kSkinningGroupSize - 1) / kSkinningGroupSize, 1, 1);
-      // UAV書込みを、後続のInput Assemblerの頂点フェッチから見える状態へ戻す。
-      TransitionResource(commands, skin->skinnedVertexResources[i].Get(),
-         skin->skinnedVertexResourceStates[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-      draw.vertexView = skin->skinnedVertexBufferViews[i];
+      if (!skin->DispatchSkinning(commands, i, { *information, *palette, *vertices, *influences, *output })) return false;
+      draw.vertexView = *skin->GetSkinnedVertexBufferView(i);
    }
    return true;
 }

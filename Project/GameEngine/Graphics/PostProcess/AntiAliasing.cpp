@@ -24,7 +24,6 @@ void AntiAliasing::Initialize(GraphicsDevice* device, OffscreenRenderTarget* ren
 ///          頂点入力を持たない1回のフルスクリーンパスでFXAA系の平滑化を行う。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!enabled_) return;
    if (!pipeline_ || !rootSignature_) return;
 
    UpdateConstantBuffer();

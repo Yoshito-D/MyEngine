@@ -36,6 +36,7 @@ TransformationMatrix* TransformComponent::EnsureTransformationMatrix() {
 
 void TransformComponent::SetWorldMatrixOverride(const Matrix4x4& worldMatrix) {
    // Animation等が計算済みWorld行列を供給する場合に、通常のTRS/親子合成を一時的に迂回する。
+   for (const auto& row : worldMatrix.m) for (float element : row) if (!std::isfinite(element)) return;
    worldMatrixOverride_ = worldMatrix;
    hasWorldMatrixOverride_ = true;
 }
@@ -43,6 +44,34 @@ void TransformComponent::SetWorldMatrixOverride(const Matrix4x4& worldMatrix) {
 void TransformComponent::ClearWorldMatrixOverride() {
    worldMatrixOverride_ = MakeIdentity4x4();
    hasWorldMatrixOverride_ = false;
+}
+
+bool TransformComponent::ApplyLocalPose(const Transform& pose) {
+   if (!std::isfinite(pose.translation.x) || !std::isfinite(pose.translation.y) || !std::isfinite(pose.translation.z) ||
+       !std::isfinite(pose.scale.x) || !std::isfinite(pose.scale.y) || !std::isfinite(pose.scale.z)) return false;
+   transform = pose;
+   ClearWorldMatrixOverride();
+   return true;
+}
+
+void TransformComponent::ResolveParentRelation() {
+   if (!HasOwner() || !GetOwner().GetParentEntityId().empty() || parentObjectName.empty()) return;
+   if (const auto* parent = Object::FindByObjectName(parentObjectName)) {
+      if (GetOwner().SetParentEntityId(parent->GetEntityId())) parentObjectName.clear();
+   }
+}
+void TransformComponent::ResolveParentRelation(std::span<Object* const> sceneObjects) {
+   if (!HasOwner() || !GetOwner().GetParentEntityId().empty() || parentObjectName.empty()) return;
+   // エディタの旧データ移行では別シーンの同名オブジェクトを検索対象へ広げない。
+   for (const auto* candidate : sceneObjects) {
+      if (candidate && candidate != &GetOwner() && candidate->GetObjectName() == parentObjectName) {
+         if (GetOwner().SetParentEntityId(candidate->GetEntityId())) parentObjectName.clear();
+         return;
+      }
+   }
+}
+Matrix4x4 TransformComponent::ComposeWorldMatrix(const Matrix4x4& local) const {
+   return HasOwner() ? local * GetOwner().GetParentWorldMatrix() : local;
 }
 
 nlohmann::json TransformComponent::Serialize() const {
@@ -79,9 +108,9 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 	  };
 
    Vector3 translation = transform.translation;
-   Vector3 rotationEuler = transform.rotation;
+   Vector3 rotationEuler = transform.GetActiveEuler();
    Vector3 scale = transform.scale;
-   Quaternion rotationQuaternion = transform.rotationQuaternion;
+   Quaternion rotationQuaternion = transform.GetActiveQuaternion();
    bool hasRotationEuler = false;
    bool hasRotationQuaternion = false;
    // rotationSourceのない旧データはEulerを正本として扱う。
@@ -118,37 +147,35 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 	  }
    }
 
-   transform.translation = translation;
-   transform.scale = scale;
+   Transform pose = transform;
+   pose.translation = translation;
+   pose.scale = scale;
 
-   // 指定された正本だけをsetterへ渡し、setter側でEuler/Quaternionのキャッシュを同期する。
+   // 保存された回転表現を単一の姿勢へ変換し、TRS全体の検証後に適用する。
    if (rotationSource == Transform::RotationSource::Quaternion) {
 	  if (hasRotationQuaternion) {
-		 transform.SetRotationQuaternion(rotationQuaternion);
+		 pose.SetRotationQuaternion(rotationQuaternion);
       } else if (hasRotationEuler) {
          // 移行途中のデータでQuaternion本体が欠けていても、Eulerから姿勢を復元して
          // 以後はQuaternion正本として扱える状態へ整える。
-         transform.SetRotationEuler(rotationEuler);
-		 transform.rotationSource = Transform::RotationSource::Quaternion;
+         pose.SetRotationEuler(rotationEuler);
+		 pose.SetRotationQuaternion(pose.GetActiveQuaternion());
 	  }
    } else if (hasRotationEuler) {
-	  transform.SetRotationEuler(rotationEuler);
+	  pose.SetRotationEuler(rotationEuler);
    }
 
-   if (data.contains("useParentMatrix") && data.at("useParentMatrix").is_boolean()) {
-	  useParentMatrix = data.at("useParentMatrix").get<bool>();
-   }
+
+   ApplyLocalPose(pose);
 
    // parentObjectNameは安定Entity ID導入前の互換フィールド。Sceneロード後の参照解決でIDへ移行する。
    if (data.contains("parentObjectName") && data.at("parentObjectName").is_string()) {
 	  parentObjectName = data.at("parentObjectName").get<std::string>();
-	  useParentMatrix = !parentObjectName.empty();
    }
 
    // 現行IDが存在する場合は旧名前参照より優先し、Owner側の循環検査を通して設定する。
    if (data.contains("parentEntityId") && data.at("parentEntityId").is_string() && HasOwner()) {
 	  GetOwner().SetParentEntityId(data.at("parentEntityId").get<std::string>());
-	  useParentMatrix = !GetOwner().GetParentEntityId().empty();
    }
 }
 
@@ -158,8 +185,9 @@ void TransformComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
 	  return;
    }
-   Vector3& scale = transform.scale;
-   ImGuiHelper::DrawVec3Control(
+   Transform pose = transform;
+   Vector3& scale = pose.scale;
+   bool changed = ImGuiHelper::DrawVec3Control(
       ImGuiHelper::Localize({ "スケール", "Scale" }),
       scale,
       1.0f,
@@ -168,24 +196,27 @@ void TransformComponent::DrawInspector() {
       0.1f,
       10.0f);
 
-   Vector3 rotationEuler = transform.GetActiveEuler();
+   Vector3 rotationEuler = pose.GetActiveEuler();
    if (ImGuiHelper::DrawEulerDegreesControl(
       ImGuiHelper::Localize({ "回転 (deg)", "Rotation (deg)" }),
       rotationEuler,
       0.0f,
       ImGuiHelper::kDefaultColumnWidth,
       0.1f)) {
-	  // TransformはEuler/Quaternionのどちらを描画に使うかを保持しているため、setter経由で両方を同期する。
-	  transform.SetRotationQuaternion(rotationEuler.ToQuaternion().Normalize());
+	  // 表示用Euler角を正規化されたQuaternionへ変換する。
+	  pose.SetRotationEuler(rotationEuler);
+      changed = true;
    }
 
-   Vector3& position = transform.translation;
-   ImGuiHelper::DrawVec3Control(
+   Vector3& position = pose.translation;
+   changed |= ImGuiHelper::DrawVec3Control(
       ImGuiHelper::Localize({ "位置", "Position" }),
       position,
       0.0f,
       ImGuiHelper::kDefaultColumnWidth,
       0.1f);
+
+   if (changed) ApplyLocalPose(pose);
 
    // Transform InspectorとGizmoの座標系/スナップ設定を同じ欄へまとめる。
    if (auto* currentScene = BaseScene::GetCurrentScene()) {
@@ -201,8 +232,7 @@ void TransformComponent::DrawInspector() {
    std::string parentEntityId = HasOwner() ? GetOwner().GetParentEntityId() : std::string();
    bool parentEnabled = !parentEntityId.empty();
    if (ImGuiHelper::DrawCheckbox(ImGuiHelper::Localize({ "親を使用", "Use Parent" }), parentEnabled)) {
-	  useParentMatrix = parentEnabled;
-      if (!useParentMatrix) {
+      if (!parentEnabled) {
          // 親を無効化した時点で新旧両方の参照を消し、後のScene解決で再接続されないようにする。
          if (HasOwner()) {
 			GetOwner().SetParentEntityId({});
@@ -215,7 +245,6 @@ void TransformComponent::DrawInspector() {
       ImGuiHelper::Localize({ "親Entity ID", "Parent Entity ID" }),
       parentEntityId) && HasOwner()) {
 	  if (GetOwner().SetParentEntityId(parentEntityId)) {
-		 useParentMatrix = !parentEntityId.empty();
 		 parentObjectName.clear();
 	  }
    }

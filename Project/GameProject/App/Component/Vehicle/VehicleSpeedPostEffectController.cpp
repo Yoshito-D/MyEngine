@@ -122,6 +122,7 @@ void VehicleSpeedPostEffectController::DrawInspector() {
    ImGui::SliderInt(Tr("放射ブラーサンプル数", "Radial Samples"), &radialBlurSampleCount, 2, 32);
    ImGui::DragFloat(Tr("放射ブラー表示しきい値", "Radial Visible Threshold"), &radialBlurVisibleThreshold, 0.001f, 0.0f, 1.0f);
    ImGui::Text("%s: %.3f", Tr("エフェクト量", "Effect Amount"), effectAmount_);
+   Configure(DescribeSettings());
 }
 #endif
 
@@ -154,7 +155,7 @@ void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
 	  float baseSpeed = minimumEffectSpeed;
 	  if (HasOwner()) {
 		 if (auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>()) {
-			baseSpeed = groundMover->autoSpeed;
+			baseSpeed = groundMover->DescribeSettings().autoSpeed;
 		 }
 	  }
 	  minimumEffectSpeed = baseSpeed + std::max(data["activationMargin"].get<float>(), 0.0f);
@@ -176,6 +177,7 @@ void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
    if (data.contains("radialBlurMaxStrength")) { radialBlurMaxStrength = data["radialBlurMaxStrength"]; }
    if (data.contains("radialBlurSampleCount")) { radialBlurSampleCount = data["radialBlurSampleCount"]; }
    if (data.contains("radialBlurVisibleThreshold")) { radialBlurVisibleThreshold = data["radialBlurVisibleThreshold"]; }
+   Configure(DescribeSettings());
 }
 
 void VehicleSpeedPostEffectController::ApplyNeutralEffect() {

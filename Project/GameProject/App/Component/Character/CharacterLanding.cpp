@@ -34,19 +34,18 @@ void CharacterLanding::Update(float) {
    }
 
    // 惑星中心からの距離と重力Upを算出
-   GameEngine::Vector3 toSelf = transform->transform.translation - landingCenter;
+   GameEngine::Vector3 toSelf = transform->GetLocalPose().translation - landingCenter;
    float dist = toSelf.Length();
    if (dist < 1e-4f) { return; }
 
    GameEngine::Vector3 gravityUp = toSelf * (1.0f / dist);
-   GameEngine::Vector3 vel = gravityBody->GetVelocity();
-   float upComp = vel.Dot(gravityUp);
+   float upComp = gravityBody->GetVelocity().Dot(gravityUp);
 
    // OBBの支持半径を計算：重力Down方向へのOBBの最大射影長
    // = |dot(axisX, -gravityUp)| * halfX + |dot(axisY, -gravityUp)| * halfY + |dot(axisZ, -gravityUp)| * halfZ
    float obbSupportRadius = 0.0f;
    {
-	  const GameEngine::Quaternion rot = transform->transform.GetActiveQuaternion();
+	  const GameEngine::Quaternion rot = transform->GetLocalPose().GetActiveQuaternion();
 	  const GameEngine::Vector3    half = obbHalfExtents;
 
 	  // OBBの3軸をワールド空間に変換
@@ -70,7 +69,11 @@ void CharacterLanding::Update(float) {
 		 }
 
 		 // 位置を地表にスナップ
-		 transform->transform.translation = landingCenter + gravityUp * snapRadius;
+		 {
+		    auto pose = transform->GetLocalPose();
+		    pose.translation = landingCenter + gravityUp * snapRadius;
+		    transform->ApplyLocalPose(pose);
+		 }
 
 		 // OBB の下端が惑星と接した点と、その地点の外向き法線を保存する。
 		 // landingOffset は実際の接地面として扱われているため接触点にも反映する。
@@ -80,8 +83,7 @@ void CharacterLanding::Update(float) {
 		 hasLandingContact_ = true;
 
 		 // 垂直速度のみ除去し、水平成分は維持
-		 vel = vel - gravityUp * upComp;
-		 gravityBody->SetVelocity(vel);
+		 gravityBody->CancelNormalVelocity(gravityUp);
 		 // PlanetSwitcher の確定は GravityAttractorLink の更新後に起きるため、
 		 // 同フレームの着地結果判定が古い惑星法線を参照しないよう同期する。
 		 gravityBody->SetTargetUpVector(gravityUp);
@@ -106,8 +108,12 @@ void CharacterLanding::Update(float) {
 	  }
    } else {
 	  // 非ジャンプ時は常に地表へ固定し、速度を完全停止
-	  transform->transform.translation = landingCenter + gravityUp * snapRadius;
-	  gravityBody->SetVelocity({ 0.0f, 0.0f, 0.0f });
+	  {
+	     auto pose = transform->GetLocalPose();
+	     pose.translation = landingCenter + gravityUp * snapRadius;
+	     transform->ApplyLocalPose(pose);
+	  }
+	  gravityBody->StopMotion();
 
 	  if (switcher) {
 		 if (switcher->HasSwitched()) {
@@ -133,6 +139,7 @@ void CharacterLanding::DrawInspector() {
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("惑星中心", "Planet Center"),
 	  planetCenter_.x, planetCenter_.y, planetCenter_.z);
    ImGui::Text("%s: %s", Tr("接地中", "Is Grounded"), isGrounded_ ? Tr("はい", "true") : Tr("いいえ", "false"));
+   Configure(DescribeSettings());
 }
 #endif
 
@@ -155,6 +162,7 @@ void CharacterLanding::Deserialize(const nlohmann::json& data) {
 	  if (h.contains("y")) { obbHalfExtents.y = h["y"]; }
 	  if (h.contains("z")) { obbHalfExtents.z = h["z"]; }
    }
+   Configure(DescribeSettings());
 }
 
 } // namespace App

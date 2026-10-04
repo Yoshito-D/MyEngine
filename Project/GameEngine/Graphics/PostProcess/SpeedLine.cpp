@@ -30,7 +30,6 @@ void GameEngine::SpeedLine::Initialize(GraphicsDevice* device, OffscreenRenderTa
 /// @brief エフェクトを適用
 /// @param inputSRV 入力SRV
 void GameEngine::SpeedLine::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!enabled_) return;
    if (!pipeline_ || !rootSignature_) return;
 
    renderTarget_->PreDraw(false);

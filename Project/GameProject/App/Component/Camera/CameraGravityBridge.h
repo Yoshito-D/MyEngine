@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
@@ -42,40 +44,28 @@ public:
 
 public:
    /// @brief 着地時の縦シェイクを有効にするか
-   bool enableLandingShake = true;
 
    /// @brief 着地シェイクの振幅
-   float landingShakeAmplitude = 0.15f;
 
    /// @brief 着地シェイクの周波数
-   float landingShakeFrequency = 14.0f;
 
    /// @brief 着地シェイクの持続時間
-   float landingShakeDuration = 0.1f;
 
    /// @brief 発表用スクリーンショットにカメラ軸と着地予測を表示するか
-   bool debugDrawPresentationGuides = false;
 
    /// @brief 発表用デバッグ矢印の長さ
-   float presentationGuideLength = 8.0f;
 
    /// @brief 発表用のジャンプ・着地スクリーンショットを自動保存するか
-   bool autoCapturePresentationSequence = false;
 
    /// @brief 自動撮影を開始してからジャンプするまでの待ち時間
-   float presentationCaptureJumpDelay = 1.25f;
 
    /// @brief 発表用動画へ変換する連番PNGを自動保存するか
-   bool autoCapturePresentationVideoFrames = false;
 
    /// @brief 発表用動画の連番PNGを保存するフレームレート
-   float presentationVideoFrameRate = 10.0f;
 
    /// @brief 発表用動画の連番PNGを保存し始めるまでの待ち時間
-   float presentationVideoCaptureStartDelay = 3.25f;
 
    /// @brief 発表用動画として保存する時間
-   float presentationVideoCaptureDuration = 8.0f;
 
 #ifdef USE_IMGUI
    /// @brief デバッグ表示（Inspector）
@@ -87,6 +77,90 @@ public:
 
    /// @brief デシリアライズ
    void Deserialize(const nlohmann::json& data) override;
+
+   /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
+   struct Settings {
+      /// @brief 着地時の縦シェイクを有効にするか
+      bool enableLandingShake = true;
+      /// @brief 着地シェイクの振幅
+      float landingShakeAmplitude = 0.15f;
+      /// @brief 着地シェイクの周波数
+      float landingShakeFrequency = 14.0f;
+      /// @brief 着地シェイクの持続時間
+      float landingShakeDuration = 0.1f;
+      /// @brief 発表用スクリーンショットにカメラ軸と着地予測を表示するか
+      bool debugDrawPresentationGuides = false;
+      /// @brief 発表用デバッグ矢印の長さ
+      float presentationGuideLength = 8.0f;
+      /// @brief 発表用のジャンプ・着地スクリーンショットを自動保存するか
+      bool autoCapturePresentationSequence = false;
+      /// @brief 自動撮影を開始してからジャンプするまでの待ち時間
+      float presentationCaptureJumpDelay = 1.25f;
+      /// @brief 発表用動画へ変換する連番PNGを自動保存するか
+      bool autoCapturePresentationVideoFrames = false;
+      /// @brief 発表用動画の連番PNGを保存するフレームレート
+      float presentationVideoFrameRate = 10.0f;
+      /// @brief 発表用動画の連番PNGを保存し始めるまでの待ち時間
+      float presentationVideoCaptureStartDelay = 3.25f;
+      /// @brief 発表用動画として保存する時間
+      float presentationVideoCaptureDuration = 8.0f;
+   };
+   /// @brief 表示・編集用の設定値をコピーする。
+   Settings DescribeSettings() const {
+      Settings settings;
+      settings.enableLandingShake = enableLandingShake;
+      settings.landingShakeAmplitude = landingShakeAmplitude;
+      settings.landingShakeFrequency = landingShakeFrequency;
+      settings.landingShakeDuration = landingShakeDuration;
+      settings.debugDrawPresentationGuides = debugDrawPresentationGuides;
+      settings.presentationGuideLength = presentationGuideLength;
+      settings.autoCapturePresentationSequence = autoCapturePresentationSequence;
+      settings.presentationCaptureJumpDelay = presentationCaptureJumpDelay;
+      settings.autoCapturePresentationVideoFrames = autoCapturePresentationVideoFrames;
+      settings.presentationVideoFrameRate = presentationVideoFrameRate;
+      settings.presentationVideoCaptureStartDelay = presentationVideoCaptureStartDelay;
+      settings.presentationVideoCaptureDuration = presentationVideoCaptureDuration;
+      return settings;
+   }
+   /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
+   void Configure(const Settings& requested) {
+      auto settings = requested;
+      [[maybe_unused]] const Settings defaults;
+      if (!std::isfinite(settings.landingShakeAmplitude)) settings.landingShakeAmplitude = defaults.landingShakeAmplitude;
+      if (!std::isfinite(settings.landingShakeFrequency)) settings.landingShakeFrequency = defaults.landingShakeFrequency;
+      if (!std::isfinite(settings.landingShakeDuration)) settings.landingShakeDuration = defaults.landingShakeDuration;
+      if (!std::isfinite(settings.presentationGuideLength)) settings.presentationGuideLength = defaults.presentationGuideLength;
+      if (!std::isfinite(settings.presentationCaptureJumpDelay)) settings.presentationCaptureJumpDelay = defaults.presentationCaptureJumpDelay;
+      if (!std::isfinite(settings.presentationVideoFrameRate)) settings.presentationVideoFrameRate = defaults.presentationVideoFrameRate;
+      if (!std::isfinite(settings.presentationVideoCaptureStartDelay)) settings.presentationVideoCaptureStartDelay = defaults.presentationVideoCaptureStartDelay;
+      if (!std::isfinite(settings.presentationVideoCaptureDuration)) settings.presentationVideoCaptureDuration = defaults.presentationVideoCaptureDuration;
+      enableLandingShake = settings.enableLandingShake;
+      landingShakeAmplitude = settings.landingShakeAmplitude;
+      landingShakeFrequency = settings.landingShakeFrequency;
+      landingShakeDuration = settings.landingShakeDuration;
+      debugDrawPresentationGuides = settings.debugDrawPresentationGuides;
+      presentationGuideLength = settings.presentationGuideLength;
+      autoCapturePresentationSequence = settings.autoCapturePresentationSequence;
+      presentationCaptureJumpDelay = settings.presentationCaptureJumpDelay;
+      autoCapturePresentationVideoFrames = settings.autoCapturePresentationVideoFrames;
+      presentationVideoFrameRate = settings.presentationVideoFrameRate;
+      presentationVideoCaptureStartDelay = settings.presentationVideoCaptureStartDelay;
+      presentationVideoCaptureDuration = settings.presentationVideoCaptureDuration;
+   }
+
+private:
+   bool enableLandingShake = true;
+   float landingShakeAmplitude = 0.15f;
+   float landingShakeFrequency = 14.0f;
+   float landingShakeDuration = 0.1f;
+   bool debugDrawPresentationGuides = false;
+   float presentationGuideLength = 8.0f;
+   bool autoCapturePresentationSequence = false;
+   float presentationCaptureJumpDelay = 1.25f;
+   bool autoCapturePresentationVideoFrames = false;
+   float presentationVideoFrameRate = 10.0f;
+   float presentationVideoCaptureStartDelay = 3.25f;
+   float presentationVideoCaptureDuration = 8.0f;
 
 private:
    /// @brief 重力方向を算出するための惑星中心

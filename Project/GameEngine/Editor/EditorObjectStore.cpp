@@ -100,7 +100,7 @@ Object* EditorObjectStore::CreateGenericObject(const Transform* initialTransform
    Object* rawObject = object.get();
    auto* transformComponent = rawObject->AddComponent<TransformComponent>();
    if (initialTransform && transformComponent) {
-      transformComponent->transform = *initialTransform;
+      transformComponent->ApplyLocalPose(*initialTransform);
    }
    rawObject->SetObjectName(BuildUniqueObjectName("EmptyObject"));
 
@@ -165,7 +165,7 @@ Object* EditorObjectStore::CreateSprite(const std::string& textureAssetId, const
 
    if (initialTransform) {
       if (auto* transformComponent = rawSprite->GetComponent<TransformComponent>()) {
-         transformComponent->transform = *initialTransform;
+         transformComponent->ApplyLocalPose(*initialTransform);
       }
    }
 
@@ -190,7 +190,7 @@ Object* EditorObjectStore::CreateUIText(const Transform* initialTransform, const
 
    if (initialTransform) {
       if (auto* transformComponent = rawText->GetComponent<TransformComponent>()) {
-         transformComponent->transform = *initialTransform;
+         transformComponent->ApplyLocalPose(*initialTransform);
       }
    }
 
@@ -543,7 +543,7 @@ std::string EditorObjectStore::GetId(const ParticleSystem* particleSystem) const
    return it->second;
 }
 
-Object* EditorObjectStore::FindById(const std::string& objectId) const {
+Object* EditorObjectStore::FindById(const std::string& objectId) {
    auto it = idToObject_.find(objectId);
    if (it == idToObject_.end()) {
       return nullptr;
@@ -551,7 +551,23 @@ Object* EditorObjectStore::FindById(const std::string& objectId) const {
    return it->second;
 }
 
-ParticleSystem* EditorObjectStore::FindParticleById(const std::string& objectId) const {
+const Object* EditorObjectStore::FindById(const std::string& objectId) const {
+   auto it = idToObject_.find(objectId);
+   if (it == idToObject_.end()) {
+      return nullptr;
+   }
+   return it->second;
+}
+
+ParticleSystem* EditorObjectStore::FindParticleById(const std::string& objectId) {
+   auto it = idToParticleSystem_.find(objectId);
+   if (it == idToParticleSystem_.end()) {
+      return nullptr;
+   }
+   return it->second;
+}
+
+const ParticleSystem* EditorObjectStore::FindParticleById(const std::string& objectId) const {
    auto it = idToParticleSystem_.find(objectId);
    if (it == idToParticleSystem_.end()) {
       return nullptr;

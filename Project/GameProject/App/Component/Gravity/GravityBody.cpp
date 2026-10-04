@@ -35,9 +35,44 @@ void GravityBody::SetTargetUpVector(const Vector3& targetUp) {
    targetUpVector_ = targetUp.Normalize();
 }
 
-void GravityBody::SetGravity(const Vector3& gravity) {
-   // 外部計算済み重力加速度を保持
-   gravityAcceleration_ = gravity;
+void GravityBody::ApplyGravityFromSurface(const Vector3& surfaceUp) {
+   if (surfaceUp.LengthSquared() < 1e-8f) { return; }
+   targetUpVector_ = surfaceUp.Normalize();
+   gravityAcceleration_ = -targetUpVector_ * gravityStrength;
+}
+
+void GravityBody::ReleaseGravity() {
+   gravityAcceleration_ = { 0.0f, 0.0f, 0.0f };
+}
+
+Vector3 GravityBody::PredictVelocity(const Vector3& velocity, const Vector3& surfaceUp, float deltaTime) const {
+   // 予測は候補惑星の法線を使うため、保持中の重力源と実行時速度には触れない。
+   if (!useGravity) { return velocity; }
+   return velocity - surfaceUp * (std::max(0.0f, gravityStrength) * deltaTime);
+}
+
+void GravityBody::AddVelocityImpulse(const Vector3& impulse) {
+   velocity_ += impulse;
+}
+
+void GravityBody::ApplySurfaceVelocity(const Vector3& surfaceVelocity, const Vector3& surfaceUp) {
+   // 水平移動・ドリフトの更新で、ジャンプや落下の法線速度を上書きしない。
+   const Vector3 normalVelocity = surfaceUp * velocity_.Dot(surfaceUp);
+   velocity_ = surfaceVelocity + normalVelocity;
+}
+
+void GravityBody::ApplySurfaceDrag(float drag, float deltaTime) {
+   const Vector3 normalVelocity = currentUpVector_ * velocity_.Dot(currentUpVector_);
+   const Vector3 surfaceVelocity = velocity_ - normalVelocity;
+   velocity_ = surfaceVelocity * std::exp(-drag * deltaTime) + normalVelocity;
+}
+
+void GravityBody::CancelNormalVelocity(const Vector3& surfaceUp) {
+   velocity_ = velocity_ - surfaceUp * velocity_.Dot(surfaceUp);
+}
+
+void GravityBody::StopMotion() {
+   velocity_ = { 0.0f, 0.0f, 0.0f };
 }
 
 void GravityBody::SnapToUpVector(const Vector3& targetUp) {
@@ -52,7 +87,7 @@ void GravityBody::SnapToUpVector(const Vector3& targetUp) {
    targetUpVector_ = newUp;
 
    // 現在のforwardをold upで平面投影してnew upで再構築
-   Quaternion cur = transform->transform.GetActiveQuaternion();
+   Quaternion cur = transform->GetLocalPose().GetActiveQuaternion();
    Vector3 forward = RotateVector({ 0.0f, 0.0f, 1.0f }, cur);
    Vector3 flatFwd = forward - oldUp * oldUp.Dot(forward);
    float flatLen = flatFwd.Length();
@@ -104,7 +139,11 @@ void GravityBody::SnapToUpVector(const Vector3& targetUp) {
 	  q.y = (m12 + m21) / s;
 	  q.z = 0.25f * s;
    }
-   transform->transform.SetRotationQuaternion(q.Normalize());
+   {
+      auto pose = transform->GetLocalPose();
+      pose.SetRotationQuaternion(q.Normalize());
+      transform->ApplyLocalPose(pose);
+   }
 }
 
 void GravityBody::UpdateRotation(float deltaTime) {
@@ -136,8 +175,12 @@ void GravityBody::UpdateRotation(float deltaTime) {
 	  if (axis.LengthSquared() < 1e-6f) { return; }
 	  axis = axis.Normalize();
 	  Quaternion rotDelta = MakeRotateAxisAngleQuaternion(axis, MathConstants::kPi);
-	  Quaternion cur = transform->transform.GetActiveQuaternion();
-	  transform->transform.SetRotationQuaternion((rotDelta * cur).Normalize());
+	  Quaternion cur = transform->GetLocalPose().GetActiveQuaternion();
+	  {
+	     auto pose = transform->GetLocalPose();
+	     pose.SetRotationQuaternion((rotDelta * cur).Normalize());
+	     transform->ApplyLocalPose(pose);
+	  }
 	  currentUpVector_ = target;
 	  return;
    }
@@ -154,8 +197,12 @@ void GravityBody::UpdateRotation(float deltaTime) {
    // rotationSpeed に基づき段階的に回転
    float t = std::clamp(rotationSpeed * deltaTime, 0.0f, 1.0f);
    Quaternion rotDelta = MakeRotateAxisAngleQuaternion(rotAxis, angle * t);
-   Quaternion cur = transform->transform.GetActiveQuaternion();
-   transform->transform.SetRotationQuaternion((rotDelta * cur).Normalize());
+   Quaternion cur = transform->GetLocalPose().GetActiveQuaternion();
+   {
+      auto pose = transform->GetLocalPose();
+      pose.SetRotationQuaternion((rotDelta * cur).Normalize());
+      transform->ApplyLocalPose(pose);
+   }
 
    // 現在Upも補間更新
    if (t >= 0.9999f) {
@@ -172,7 +219,11 @@ void GravityBody::UpdatePhysics(float deltaTime) {
 
    // 重力で速度積分し、速度で位置積分
    velocity_ += gravityAcceleration_ * deltaTime;
-   transform->transform.translation = transform->transform.translation + velocity_ * deltaTime;
+   {
+      auto pose = transform->GetLocalPose();
+      pose.translation = transform->GetLocalPose().translation + velocity_ * deltaTime;
+      transform->ApplyLocalPose(pose);
+   }
 }
 
 #ifdef USE_IMGUI

@@ -12,7 +12,6 @@ bool App::GravityAttractor::ApplyTo(GravityBody& gravityBody, const GameEngine::
     GameEngine::Vector3 upVector = GetUpVectorFor(objectPosition);
     if (upVector.LengthSquared() < 1e-8f) { return false; }
     upVector = upVector.Normalize();
-    gravityBody.SetTargetUpVector(upVector);
-    gravityBody.SetGravity(-upVector * gravityBody.gravityStrength);
+    gravityBody.ApplyGravityFromSurface(upVector);
     return true;
 }

@@ -38,7 +38,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    // 現在フレームの回転クォータニオンを取得する。
    // 着地時の目標回転生成 (BuildAlignTargetRotation) と
    // 各サブコンポーネントへの転送のために必要。
-   Quaternion currentRotation = transform->transform.GetActiveQuaternion();
+   Quaternion currentRotation = transform->GetLocalPose().GetActiveQuaternion();
 
    // ----------------------------------------------------------------
    // 着地遷移の検出
@@ -62,10 +62,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
 		 // ドリフト中はステアリング感度を driftSteerMult 倍にする。
 		 // これにより、ドリフト中に向きの細かい調整がしやすくなる。
 		 auto* drift = GetOwner().GetComponent<VehicleDrift>();
-		 float effectiveSteer = steerInput;
-		 if (drift && drift->IsDrifting()) {
-			effectiveSteer = std::clamp(steerInput * drift->driftSteerMult, -1.0f, 1.0f);
-		 }
+		 const float effectiveSteer = drift ? drift->CalculateSteeringInput(steerInput) : steerInput;
 
 		 ground->Apply(effectiveSteer, gravityUp, deltaTime);
 		 // lastMoveDirection_ は VehicleController::GetLastMoveDirection() 経由で

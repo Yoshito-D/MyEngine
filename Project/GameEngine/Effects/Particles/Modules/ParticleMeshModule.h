@@ -4,6 +4,7 @@
 #include <algorithm>
 
 namespace GameEngine {
+class Mesh;
 /// @brief パーティクル本体に使用するプロシージャルメッシュ設定を管理する
 class ParticleMeshModule final : public ParticleModule {
 public:
@@ -142,8 +143,10 @@ public:
 
    /// @brief メッシュ再構築が必要か取得する
    bool IsDirty() const { return meshDirty_; }
-   /// @brief メッシュ再構築済みとして扱う
-   void ClearDirty() { meshDirty_ = false; }
+   /// @brief 設定からメッシュを構築し、生成と再生成要求の解除を一緒に行う
+   bool RebuildMesh(Mesh& mesh);
+   /// @brief 有効状態が変わった場合も描画形状を再構築する
+   void SetEnabled(bool enabled) override { if (enabled_ != enabled) meshDirty_ = true; ParticleModule::SetEnabled(enabled); }
 
    /// @brief メッシュ設定をJSONへ変換する
    nlohmann::json ToJson() const override;

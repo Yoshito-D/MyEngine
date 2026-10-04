@@ -70,7 +70,9 @@ public:
     void SetTargetBrain(CinemachineBrain* brain);
 
     /// @brief ギズモ設定を取得
-    CameraGizmo::Settings& GetGizmoSettings() { return gizmo_.GetSettings(); }
+    CameraGizmo::Settings GetGizmoSettings() const { return gizmo_.DescribeSettings(); }
+    /// @brief カメラギズモの描画設定を検証して適用する。
+    void ConfigureGizmos(const CameraGizmo::Settings& settings) { gizmo_.Configure(settings); }
 
     /// @brief ギズモを表示するかどうか
     void SetShowGizmo(bool show) { showGizmo_ = show; }
