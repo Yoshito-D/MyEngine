@@ -4,7 +4,6 @@
 #include "GameEngine/Math/VectorMath.h"
 #include <functional>
 #include <string>
-#include <vector>
 
 namespace GameEngine {
 class Texture;
@@ -17,17 +16,11 @@ public:
 
    /// @brief Asset名から非所有のTexture参照を取得するコールバック
    using TextureResolver = std::function<Texture*(const std::string&)>;
-   /// @brief Inspectorへ表示するCubemap名一覧を取得するコールバック
-   using TextureNamesProvider = std::function<std::vector<std::string>()>;
 
    /// @brief キューブマップ名からテクスチャを解決する関数を設定する
    /// @param resolver 全インスタンスで共有する名前解決関数。空関数で解決を無効化する
    /// @note resolverが参照するサービスはSkyboxComponentからの呼出し中、生存している必要がある
    static void SetTextureResolver(TextureResolver resolver);
-
-   /// @brief 選択可能なキューブマップ名を提供する関数を設定する
-   /// @param provider 全インスタンスで共有する候補取得関数。空関数で候補表示を無効化する
-   static void SetTextureNamesProvider(TextureNamesProvider provider);
 
    /// @brief コンポーネントの型名を取得する
    /// @return SkyboxComponent
@@ -75,7 +68,6 @@ public:
 
 private:
    static TextureResolver textureResolver_;
-   static TextureNamesProvider textureNamesProvider_;
 
    mutable Texture* texture_ = nullptr;
    std::string textureName_;

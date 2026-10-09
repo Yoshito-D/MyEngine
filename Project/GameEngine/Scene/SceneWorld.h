@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameEngine/Editor/EditorObjectStore.h"
+#include "GameEngine/Scene/SceneObjectStore.h"
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -116,7 +116,7 @@ private:
    std::vector<const Object*> CollectObjects() const;
    void RegisterLooseObject(const std::string& id, Object* object);
 
-   EditorObjectStore objectStore_;
+   SceneObjectStore objectStore_;
    std::vector<std::unique_ptr<Object>> genericObjects_;
    std::vector<std::unique_ptr<Skybox>> skyboxes_;
    std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_;

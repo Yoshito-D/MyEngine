@@ -7,7 +7,7 @@
 #include <limits>
 
 #ifdef USE_IMGUI
-#include "GameEngine/Editor/AudioAssetWidget.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include <imgui.h>
 #include <cstring>
@@ -176,7 +176,10 @@ void AudioSourceComponent::DrawInspector() {
          if (ImGui::InputText(Tr("名前", "Name"), name, sizeof(name)) && name[0] &&
              (name == slot.name || FindSlot(name) == slots_.size())) slot.name = name;
          std::string clipId = slot.clipAssetId;
-         if (DrawAudioAssetWidget(Tr("音声", "Clip"), clipId)) SetClip(slot.name, clipId);
+         if (EditorUI::AssetReference(Tr("音声", "Clip"), clipId, EditorAssetType::Audio)) {
+            if (clipId.empty() || EngineContext::GetSoundClip(clipId)) SetClip(slot.name, clipId);
+            else Logger::Warning("[AudioSourceComponent] Audio asset could not be loaded: " + clipId);
+         }
          if (!slot.clipAssetId.empty() && !runtime_[i].clip) ImGui::TextUnformatted(Tr("音声が見つかりません", "Unresolved audio asset"));
          int bus = slot.bus == AudioBus::Ui ? 1 : 0;
          if (ImGui::Combo(Tr("区分", "Bus"), &bus, "SE\0UI\0")) {

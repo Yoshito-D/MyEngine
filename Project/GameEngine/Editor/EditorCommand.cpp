@@ -3,43 +3,25 @@
 
 #ifdef USE_IMGUI
 
-#include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
-#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
+#include "GameEngine/Object/Component/Rendering/LightComponent.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Editor/EditorSceneContext.h"
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
-#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Object.h"
-#include <filesystem>
 
 namespace GameEngine {
 namespace {
-Object* ResolveCommandObject(EditorSceneContext& context, const std::string& id, Object* fallback) {
+Object* ResolveCommandObject(EditorSceneContext& context, const std::string& id) {
    // 遅延削除されたEntityはグローバル索引に残るため、現シーンの編集対象だけを調べる。
-   // IDがある履歴では直接参照へフォールバックせず、削除済みEntityを誤操作しない。
+   // 履歴はIDだけを保持し、削除済みEntityや同じ名前の別Entityを誤操作しない。
    for (Object* object : context.CollectEditableObjects()) {
-      if (object && (id.empty() ? object == fallback : object->GetEntityId() == id)) {
+      if (object && !id.empty() && object->GetEntityId() == id) {
          return object;
       }
    }
    return nullptr;
 }
 } // namespace
-
-bool SetMaterialSettingsCommand::Execute(EditorSceneContext& context) {
-   if (alreadyApplied_) { alreadyApplied_ = false; return true; }
-   return Apply(context, after_);
-}
-
-void SetMaterialSettingsCommand::Undo(EditorSceneContext& context) { Apply(context, before_); }
-
-bool SetMaterialSettingsCommand::Apply(EditorSceneContext& context, const nlohmann::json& data) {
-   auto* object = ResolveCommandObject(context, id_, fallback_);
-   auto* material = object ? object->GetComponent<MaterialComponent>() : nullptr;
-   if (!material) return false;
-   material->Deserialize(data);
-   return true;
-}
 
 bool EditorCommandStack::Execute(std::unique_ptr<IEditorCommand> command, EditorSceneContext& context) {
    if (!command) {
@@ -54,6 +36,7 @@ bool EditorCommandStack::Execute(std::unique_ptr<IEditorCommand> command, Editor
    undoStack_.push_back(std::move(command));
    redoStack_.clear();
    context.MarkDirty();
+   ++context.editRevision_;
    return true;
 }
 
@@ -68,6 +51,7 @@ void EditorCommandStack::Undo(EditorSceneContext& context) {
    command->Undo(context);
    redoStack_.push_back(std::move(command));
    context.MarkDirty();
+   ++context.editRevision_;
 }
 
 void EditorCommandStack::Redo(EditorSceneContext& context) {
@@ -81,6 +65,7 @@ void EditorCommandStack::Redo(EditorSceneContext& context) {
    if (command->Execute(context)) {
       undoStack_.push_back(std::move(command));
       context.MarkDirty();
+      ++context.editRevision_;
    }
 }
 
@@ -97,204 +82,131 @@ const char* EditorCommandStack::GetRedoName() const {
    return redoStack_.empty() ? "" : redoStack_.back()->GetName();
 }
 
-CreateGenericObjectCommand::CreateGenericObjectCommand(Transform initialTransform)
-   : initialTransform_(initialTransform) {
+CreateObjectCommand::CreateObjectCommand(Kind kind, Transform transform, std::string assetId, std::string parentId)
+   : kind_(kind), initialTransform_(transform), assetId_(std::move(assetId)), parentId_(std::move(parentId)) {
 }
 
-bool CreateGenericObjectCommand::Execute(EditorSceneContext& context) {
+const char* CreateObjectCommand::GetName() const {
+   switch (kind_) {
+      case Kind::Model: return "Create Model";
+      case Kind::Sprite: return "Create Sprite";
+      case Kind::UIText: return "Create UI Text";
+      case Kind::Skybox: return "Create Skybox";
+      case Kind::Particle: return "Create Particle System";
+      case Kind::DirectionalLight: return "Create Directional Light";
+      case Kind::PointLight: return "Create Point Light";
+      case Kind::SpotLight: return "Create Spot Light";
+      case Kind::AreaLight: return "Create Area Light";
+      default: return "Create Empty Object";
+   }
+}
+
+bool CreateObjectCommand::Execute(EditorSceneContext& context) {
+   auto& store = context.CommandObjectStore();
+   if (kind_ == Kind::Particle) {
+      ParticleSystem* particle = snapshot_.is_object()
+         ? store.RestoreParticleSystem(snapshot_)
+         : store.CreateParticleSystem(assetId_, {}, &initialTransform_);
+      if (!particle) return false;
+      objectId_ = store.GetId(particle);
+      context.SelectParticleSystem(particle);
+      return true;
+   }
+
    Object* object = nullptr;
-   // 初回は新規作成し、RedoではUndo直前に保存した同一ID・同一設定のスナップショットを復元する。
-   if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.CommandObjectStore().RestoreObject(snapshot_);
+   if (snapshot_.is_object()) {
+      object = store.RestoreObject(snapshot_);
    } else {
-      object = context.CommandObjectStore().CreateGenericObject(&initialTransform_);
+      switch (kind_) {
+         case Kind::Model: object = store.CreateModel(assetId_, &initialTransform_); break;
+         case Kind::Sprite: object = store.CreateSprite(assetId_, &initialTransform_); break;
+         case Kind::UIText: object = store.CreateUIText(&initialTransform_); break;
+         case Kind::Skybox: object = store.CreateSkybox(); break;
+         default: object = store.CreateGenericObject(&initialTransform_); break;
+      }
+      if (object && !parentId_.empty()) {
+         // 親が削除済みなら別のEntityを親にせず、生成自体を取り消す。
+         if (!ResolveCommandObject(context, parentId_) || !object->SetParentEntityId(parentId_)) {
+            store.DeleteObject(store.GetId(object));
+            return false;
+         }
+      }
+      if (object && kind_ >= Kind::DirectionalLight) {
+         auto* light = object->AddComponent<LightComponent>();
+         if (!light) {
+            store.DeleteObject(store.GetId(object));
+            return false;
+         }
+         const auto type = kind_ == Kind::DirectionalLight ? LightComponent::Type::Directional
+            : kind_ == Kind::PointLight ? LightComponent::Type::Point
+            : kind_ == Kind::SpotLight ? LightComponent::Type::Spot : LightComponent::Type::Area;
+         light->SetLightType(type);
+         object->SetObjectName(std::string(GetName() + 7));
+      }
    }
-
-   if (!object) {
-      return false;
-   }
-
-   objectId_ = context.CommandObjectStore().GetId(object);
+   if (!object) return false;
+   objectId_ = store.GetId(object);
    context.SelectObject(object);
    return true;
 }
 
-void CreateGenericObjectCommand::Undo(EditorSceneContext& context) {
-   if (objectId_.empty()) {
-      return;
-   }
-
-   // 削除前に現在状態を保存し、作成後に加えられた編集もRedoで同じ内容へ戻す。
-   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
-      context.SelectObject(nullptr);
-   }
-   context.CommandObjectStore().DeleteObject(objectId_);
-}
-
-CreateModelCommand::CreateModelCommand(std::string assetId, Transform initialTransform)
-   : assetId_(std::move(assetId))
-   , initialTransform_(initialTransform) {
-}
-
-bool CreateModelCommand::Execute(EditorSceneContext& context) {
-   Object* object = nullptr;
-   if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.CommandObjectStore().RestoreObject(snapshot_);
+void CreateObjectCommand::Undo(EditorSceneContext& context) {
+   auto& store = context.CommandObjectStore();
+   if (!store.ContainsId(objectId_)) return;
+   // Undo前の全状態を保持し、Redoも初回と同じID・設定・親を復元する。
+   snapshot_ = store.SerializeObject(objectId_);
+   if (kind_ == Kind::Particle) {
+      if (context.GetSelectedParticleSystem() == store.FindParticleById(objectId_)) context.SelectParticleSystem(nullptr);
+      store.DeleteParticleSystem(objectId_);
    } else {
-      object = context.CommandObjectStore().CreateModel(assetId_, &initialTransform_);
+      if (context.GetSelectedObject() == store.FindById(objectId_)) context.SelectObject(nullptr);
+      store.DeleteObject(objectId_);
    }
+}
 
-   if (!object) {
-      return false;
+EditObjectStateCommand::EditObjectStateCommand(std::string id, nlohmann::json before, nlohmann::json after, bool particle, std::string name)
+   : id_(std::move(id)), name_(std::move(name)), before_(std::move(before)), after_(std::move(after)), particle_(particle) {
+}
+
+bool EditObjectStateCommand::Execute(EditorSceneContext& context) {
+   if (before_ == after_) return false;
+   if (alreadyApplied_) {
+      if (particle_ ? context.FindParticleForCommand(id_) == nullptr : ResolveCommandObject(context, id_) == nullptr) return false;
+      alreadyApplied_ = false;
+      return true;
    }
+   return Apply(context, after_);
+}
 
-   objectId_ = context.CommandObjectStore().GetId(object);
-   context.SelectObject(object);
+void EditObjectStateCommand::Undo(EditorSceneContext& context) { Apply(context, before_); }
+
+bool EditObjectStateCommand::Apply(EditorSceneContext& context, const nlohmann::json& snapshot) {
+   if (particle_) {
+      auto* particle = context.FindParticleForCommand(id_);
+      return particle && context.CommandObjectStore().ApplyParticleSystemState(particle, snapshot);
+   }
+   auto* object = ResolveCommandObject(context, id_);
+   return object && context.CommandObjectStore().ApplyObjectState(object, snapshot);
+}
+
+ReorderObjectCommand::ReorderObjectCommand(std::string id, std::string beforeParent, std::string afterParent,
+   std::vector<std::string> beforeOrder, std::vector<std::string> afterOrder)
+   : id_(std::move(id)), beforeParent_(std::move(beforeParent)), afterParent_(std::move(afterParent)),
+     beforeOrder_(std::move(beforeOrder)), afterOrder_(std::move(afterOrder)) {
+}
+
+bool ReorderObjectCommand::Execute(EditorSceneContext& context) {
+   if (beforeParent_ == afterParent_ && beforeOrder_ == afterOrder_) return false;
+   return Apply(context, afterParent_, afterOrder_);
+}
+
+void ReorderObjectCommand::Undo(EditorSceneContext& context) { Apply(context, beforeParent_, beforeOrder_); }
+
+bool ReorderObjectCommand::Apply(EditorSceneContext& context, const std::string& parent, const std::vector<std::string>& order) {
+   auto* object = ResolveCommandObject(context, id_);
+   if (!object || (!parent.empty() && !ResolveCommandObject(context, parent)) || !object->SetParentEntityId(parent)) return false;
+   context.ApplyHierarchyOrder(order);
    return true;
-}
-
-void CreateModelCommand::Undo(EditorSceneContext& context) {
-   if (objectId_.empty()) {
-      return;
-   }
-
-   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
-      context.SelectObject(nullptr);
-   }
-   context.CommandObjectStore().DeleteObject(objectId_);
-}
-
-CreateSpriteCommand::CreateSpriteCommand(std::string textureAssetId, Transform initialTransform)
-   : textureAssetId_(std::move(textureAssetId))
-   , initialTransform_(initialTransform) {
-}
-
-bool CreateSpriteCommand::Execute(EditorSceneContext& context) {
-   Object* object = nullptr;
-   if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.CommandObjectStore().RestoreObject(snapshot_);
-   } else {
-      object = context.CommandObjectStore().CreateSprite(textureAssetId_, &initialTransform_);
-   }
-
-   if (!object) {
-      return false;
-   }
-
-   objectId_ = context.CommandObjectStore().GetId(object);
-   context.SelectObject(object);
-   return true;
-}
-
-void CreateSpriteCommand::Undo(EditorSceneContext& context) {
-   if (objectId_.empty()) {
-      return;
-   }
-
-   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
-      context.SelectObject(nullptr);
-   }
-   context.CommandObjectStore().DeleteObject(objectId_);
-}
-
-CreateUITextCommand::CreateUITextCommand(Transform initialTransform)
-   : initialTransform_(initialTransform) {
-}
-
-bool CreateUITextCommand::Execute(EditorSceneContext& context) {
-   Object* object = nullptr;
-   if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.CommandObjectStore().RestoreObject(snapshot_);
-   } else {
-      object = context.CommandObjectStore().CreateUIText(&initialTransform_);
-   }
-
-   if (!object) {
-      return false;
-   }
-
-   objectId_ = context.CommandObjectStore().GetId(object);
-   context.SelectObject(object);
-   return true;
-}
-
-void CreateUITextCommand::Undo(EditorSceneContext& context) {
-   if (objectId_.empty()) {
-      return;
-   }
-
-   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
-      context.SelectObject(nullptr);
-   }
-   context.CommandObjectStore().DeleteObject(objectId_);
-}
-
-bool CreateSkyboxCommand::Execute(EditorSceneContext& context) {
-   Object* object = nullptr;
-   if (!snapshot_.is_null() && snapshot_.is_object()) {
-      object = context.CommandObjectStore().RestoreObject(snapshot_);
-   } else {
-      object = context.CommandObjectStore().CreateSkybox();
-   }
-
-   if (!object) {
-      return false;
-   }
-
-   objectId_ = context.CommandObjectStore().GetId(object);
-   context.SelectObject(object);
-   return true;
-}
-
-void CreateSkyboxCommand::Undo(EditorSceneContext& context) {
-   if (objectId_.empty()) {
-      return;
-   }
-
-   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == context.CommandObjectStore().FindById(objectId_)) {
-      context.SelectObject(nullptr);
-   }
-   context.CommandObjectStore().DeleteObject(objectId_);
-}
-
-CreateParticleSystemCommand::CreateParticleSystemCommand(std::string assetId, Transform initialTransform)
-   : assetId_(std::move(assetId))
-   , initialTransform_(initialTransform) {
-}
-
-bool CreateParticleSystemCommand::Execute(EditorSceneContext& context) {
-   ParticleSystem* particleSystem = nullptr;
-   if (!snapshot_.is_null() && snapshot_.is_object()) {
-      particleSystem = context.CommandObjectStore().RestoreParticleSystem(snapshot_);
-   } else {
-      particleSystem = context.CommandObjectStore().CreateParticleSystem(assetId_, {}, &initialTransform_);
-   }
-
-   if (!particleSystem) {
-      return false;
-   }
-
-   objectId_ = context.CommandObjectStore().GetId(particleSystem);
-   context.SelectObject(nullptr);
-   context.SelectParticleSystem(particleSystem);
-   return true;
-}
-
-void CreateParticleSystemCommand::Undo(EditorSceneContext& context) {
-   if (objectId_.empty()) {
-      return;
-   }
-
-   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedParticleSystem() == context.CommandObjectStore().FindParticleById(objectId_)) {
-      context.SelectParticleSystem(nullptr);
-   }
-   context.CommandObjectStore().DeleteParticleSystem(objectId_);
 }
 
 DeleteObjectCommand::DeleteObjectCommand(std::string objectId)
@@ -302,26 +214,43 @@ DeleteObjectCommand::DeleteObjectCommand(std::string objectId)
 }
 
 bool DeleteObjectCommand::Execute(EditorSceneContext& context) {
-   if (objectId_.empty() || !context.CommandObjectStore().ContainsId(objectId_)) {
-      return false;
+   auto* object = ResolveCommandObject(context, objectId_);
+   if (!object) return false;
+   sceneOwned_ = !context.CommandObjectStore().Contains(object);
+   snapshot_ = context.CommandObjectStore().SerializeObjectState(object, objectId_);
+   childIds_.clear();
+   for (auto* child : context.CollectEditableObjects()) {
+      if (child && child->GetParentEntityId() == objectId_) childIds_.push_back(child->GetEntityId());
    }
-
-   Object* object = context.CommandObjectStore().FindById(objectId_);
-   // Storeの遅延削除へ移す前に完全な状態を確保し、Undoを実体ポインターの寿命へ依存させない。
-   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedObject() == object) {
-      context.SelectObject(nullptr);
+   if (context.GetSelectedObject() == object) context.SelectObject(nullptr);
+   if (sceneOwned_) {
+      sceneKey_ = context.EnsureSceneObjectKey(object);
+      context.HideSceneOwnedObject(object);
+      for (const auto& id : childIds_) {
+         if (auto* child = ResolveCommandObject(context, id)) child->SetParentEntityId({});
+      }
+      return true;
    }
    return context.CommandObjectStore().DeleteObject(objectId_);
 }
 
 void DeleteObjectCommand::Undo(EditorSceneContext& context) {
-   if (snapshot_.is_null() || !snapshot_.is_object()) {
-      return;
+   if (!snapshot_.is_object()) return;
+   Object* object = nullptr;
+   if (sceneOwned_) {
+      object = context.FindSceneObjectByKey(sceneKey_);
+      if (object && context.CommandObjectStore().ApplyObjectState(object, snapshot_)) {
+         context.hiddenSceneObjects_.erase(object);
+         context.hiddenSceneObjectKeys_.erase(sceneKey_);
+      } else return;
+   } else {
+      object = context.CommandObjectStore().RestoreObject(snapshot_);
    }
-
-   Object* object = context.CommandObjectStore().RestoreObject(snapshot_);
    if (object) {
+      // 遅延破棄が解除した子の親IDも戻し、削除前と同じ階層を一回のUndoで復元する。
+      for (const auto& id : childIds_) {
+         if (auto* child = ResolveCommandObject(context, id)) child->SetParentEntityId(object->GetEntityId());
+      }
       context.SelectObject(object);
    }
 }
@@ -331,37 +260,38 @@ DeleteParticleSystemCommand::DeleteParticleSystemCommand(std::string objectId)
 }
 
 bool DeleteParticleSystemCommand::Execute(EditorSceneContext& context) {
-   if (objectId_.empty() || !context.CommandObjectStore().ContainsId(objectId_)) {
-      return false;
-   }
-
-   ParticleSystem* particleSystem = context.CommandObjectStore().FindParticleById(objectId_);
-   if (!particleSystem) {
-      return false;
-   }
-
-   snapshot_ = context.CommandObjectStore().SerializeObject(objectId_);
-   if (context.GetSelectedParticleSystem() == particleSystem) {
-      context.SelectParticleSystem(nullptr);
+   auto* particle = context.FindParticleForCommand(objectId_);
+   if (!particle || !context.IsParticleSystemAlive(particle)) return false;
+   sceneOwned_ = !context.CommandObjectStore().Contains(particle);
+   snapshot_ = context.GetParticleSnapshot(particle);
+   wasPlaying_ = particle->IsPlaying();
+   if (context.GetSelectedParticleSystem() == particle) context.SelectParticleSystem(nullptr);
+   if (sceneOwned_) {
+      context.HideSceneOwnedParticleSystem(particle);
+      return true;
    }
    return context.CommandObjectStore().DeleteParticleSystem(objectId_);
 }
 
 void DeleteParticleSystemCommand::Undo(EditorSceneContext& context) {
-   if (snapshot_.is_null() || !snapshot_.is_object()) {
-      return;
+   if (!snapshot_.is_object()) return;
+   ParticleSystem* particle = nullptr;
+   if (sceneOwned_) {
+      particle = context.FindSceneParticleSystemByKey(objectId_);
+      if (!particle || !context.CommandObjectStore().ApplyParticleSystemState(particle, snapshot_)) return;
+      context.hiddenParticleSystems_.erase(particle);
+      context.hiddenParticleSystemKeys_.erase(objectId_);
+   } else {
+      particle = context.CommandObjectStore().RestoreParticleSystem(snapshot_);
    }
-
-   ParticleSystem* particleSystem = context.CommandObjectStore().RestoreParticleSystem(snapshot_);
-   if (particleSystem) {
-      context.SelectObject(nullptr);
-      context.SelectParticleSystem(particleSystem);
+   if (particle) {
+      if (wasPlaying_) particle->Play(); else particle->Stop();
+      context.SelectParticleSystem(particle);
    }
 }
 
-TransformObjectCommand::TransformObjectCommand(std::string objectId, Object* fallbackObject, const Transform& before, const Transform& after)
+TransformObjectCommand::TransformObjectCommand(std::string objectId, const Transform& before, const Transform& after)
    : objectId_(std::move(objectId))
-   , fallbackObject_(fallbackObject)
    , before_(before)
    , after_(after) {
 }
@@ -380,7 +310,7 @@ void TransformObjectCommand::Undo(EditorSceneContext& context) {
 }
 
 Object* TransformObjectCommand::ResolveObject(EditorSceneContext& context) const {
-   return ResolveCommandObject(context, objectId_, fallbackObject_);
+   return ResolveCommandObject(context, objectId_);
 }
 
 void TransformObjectCommand::Apply(EditorSceneContext& context, const Transform& transform) const {
@@ -397,9 +327,8 @@ void TransformObjectCommand::Apply(EditorSceneContext& context, const Transform&
    transformComponent->ApplyLocalPose(transform);
 }
 
-TransformParticleSystemCommand::TransformParticleSystemCommand(std::string objectId, ParticleSystem* fallbackParticleSystem, const Transform& before, const Transform& after)
+TransformParticleSystemCommand::TransformParticleSystemCommand(std::string objectId, const Transform& before, const Transform& after)
    : objectId_(std::move(objectId))
-   , fallbackParticleSystem_(fallbackParticleSystem)
    , before_(before)
    , after_(after) {
 }
@@ -418,13 +347,7 @@ void TransformParticleSystemCommand::Undo(EditorSceneContext& context) {
 }
 
 ParticleSystem* TransformParticleSystemCommand::ResolveParticleSystem(EditorSceneContext& context) const {
-   if (!objectId_.empty()) {
-      if (ParticleSystem* particleSystem = context.CommandObjectStore().FindParticleById(objectId_)) {
-         return particleSystem;
-      }
-   }
-   // BaseScene所有のParticleSystemはStore IDを持たないため、シーン内で生存している直接参照を利用する。
-   return fallbackParticleSystem_;
+   return context.FindParticleForCommand(objectId_);
 }
 
 void TransformParticleSystemCommand::Apply(EditorSceneContext& context, const Transform& transform) const {
@@ -455,6 +378,7 @@ bool RestoreObjectSnapshotCommand::Execute(EditorSceneContext& context) {
          return false;
       }
       restoredObjectId_ = context.CommandObjectStore().GetId(particleSystem);
+      snapshot_ = context.CommandObjectStore().SerializeObject(restoredObjectId_);
       context.SelectObject(nullptr);
       context.SelectParticleSystem(particleSystem);
       return true;
@@ -466,6 +390,8 @@ bool RestoreObjectSnapshotCommand::Execute(EditorSceneContext& context) {
    }
 
    restoredObjectId_ = context.CommandObjectStore().GetId(object);
+   // 初回に採番された実IDを次回の復元入力にも保持し、複製のRedoで参照先IDを変えない。
+   snapshot_ = context.CommandObjectStore().SerializeObject(restoredObjectId_);
    context.SelectParticleSystem(nullptr);
    context.SelectObject(object);
    return true;
@@ -476,7 +402,8 @@ void RestoreObjectSnapshotCommand::Undo(EditorSceneContext& context) {
       return;
    }
 
-   // 復元時にrequested IDが衝突すると別IDが採番されるため、snapshot内ではなく実際の登録IDで取り消す。
+   // Undo直前の状態を保存し、実際の登録IDで取り消す。
+   snapshot_ = context.CommandObjectStore().SerializeObject(restoredObjectId_);
    if (ParticleSystem* particleSystem = context.CommandObjectStore().FindParticleById(restoredObjectId_)) {
       if (context.GetSelectedParticleSystem() == particleSystem) {
          context.SelectParticleSystem(nullptr);
@@ -493,163 +420,21 @@ void RestoreObjectSnapshotCommand::Undo(EditorSceneContext& context) {
    }
 }
 
-SetModelAssetCommand::SetModelAssetCommand(std::string objectId, Object* fallbackObject, std::string beforeAssetId, std::string afterAssetId)
-   : objectId_(std::move(objectId))
-   , fallbackObject_(fallbackObject)
-   , beforeAssetId_(std::move(beforeAssetId))
-   , afterAssetId_(std::move(afterAssetId)) {
+ModifyComponentCommand::ModifyComponentCommand(std::string objectId, std::string typeName, bool add)
+   : objectId_(std::move(objectId)), typeName_(std::move(typeName)), add_(add) {
 }
 
-bool SetModelAssetCommand::Execute(EditorSceneContext& context) {
-   return Apply(context, afterAssetId_);
+bool ModifyComponentCommand::Execute(EditorSceneContext& context) {
+   auto* object = ResolveCommandObject(context, objectId_);
+   if (!object || typeName_.empty() || object->HasComponentByTypeName(typeName_) == add_) return false;
+   // 依存Componentの追加・削除も含めて戻せるよう、操作前のObject全体を一度だけ保存する。
+   if (beforeSnapshot_.is_null()) beforeSnapshot_ = context.GetObjectSnapshot(object);
+   return add_ ? object->AddComponentByTypeName(typeName_) != nullptr : object->RemoveComponentByTypeName(typeName_);
 }
 
-void SetModelAssetCommand::Undo(EditorSceneContext& context) {
-   Apply(context, beforeAssetId_);
-}
-
-Object* SetModelAssetCommand::ResolveObject(EditorSceneContext& context) const {
-   return ResolveCommandObject(context, objectId_, fallbackObject_);
-}
-
-bool SetModelAssetCommand::Apply(EditorSceneContext& context, const std::string& assetId) const {
-   Object* object = ResolveObject(context);
-   if (!object) {
-      return false;
-   }
-
-   auto* meshComponent = object->GetComponent<MeshComponent>();
-   if (!meshComponent) {
-      return false;
-   }
-
-   // アセット解決失敗をCommand失敗として返し、不成立の変更をUndo履歴へ積まない。
-   return meshComponent->SetModelAssetByAssetId(assetId);
-}
-
-SetMaterialTextureCommand::SetMaterialTextureCommand(std::string objectId, Object* fallbackObject, size_t slot, std::string beforeTextureId, std::string afterTextureId)
-   : objectId_(std::move(objectId))
-   , fallbackObject_(fallbackObject)
-   , slot_(slot)
-   , beforeTextureId_(std::move(beforeTextureId))
-   , afterTextureId_(std::move(afterTextureId)) {
-}
-
-bool SetMaterialTextureCommand::Execute(EditorSceneContext& context) {
-   return Apply(context, afterTextureId_);
-}
-
-void SetMaterialTextureCommand::Undo(EditorSceneContext& context) {
-   Apply(context, beforeTextureId_);
-}
-
-Object* SetMaterialTextureCommand::ResolveObject(EditorSceneContext& context) const {
-   return ResolveCommandObject(context, objectId_, fallbackObject_);
-}
-
-bool SetMaterialTextureCommand::Apply(EditorSceneContext& context, const std::string& textureId) const {
-   Object* object = ResolveObject(context);
-   if (!object) {
-      return false;
-   }
-
-   auto* materialComponent = object->GetComponent<MaterialComponent>();
-   if (!materialComponent) {
-      return false;
-   }
-
-   // 空文字列も「テクスチャ解除」という有効な履歴値なので、そのままComponentへ渡す。
-   materialComponent->SetTextureName(slot_, textureId);
-   return true;
-}
-
-AddComponentCommand::AddComponentCommand(std::string objectId, Object* fallbackObject, std::string typeName)
-   : objectId_(std::move(objectId))
-   , fallbackObject_(fallbackObject)
-   , typeName_(std::move(typeName)) {
-}
-
-bool AddComponentCommand::Execute(EditorSceneContext& context) {
-   Object* object = ResolveObject(context);
-   if (!object || typeName_.empty() || object->HasComponentByTypeName(typeName_)) {
-      return false;
-   }
-
-   if (beforeSnapshot_.is_null()) {
-      // コンポーネント間の依存設定も戻せるよう、追加対象だけでなくオブジェクト全体を保存する。
-      objectId_ = object->GetEntityId();
-      beforeSnapshot_ = context.CommandObjectStore().SerializeObjectState(object, objectId_);
-   }
-
-   return object->AddComponentByTypeName(typeName_) != nullptr;
-}
-
-void AddComponentCommand::Undo(EditorSceneContext& context) {
-   Object* object = ResolveObject(context);
-   if (!object || !beforeSnapshot_.is_object()) {
-      return;
-   }
-
-   // 依存Componentの追加・設定変更も戻しつつ、EntityのID・親子関係・選択の実体を維持する。
-   context.CommandObjectStore().ApplyObjectState(object, beforeSnapshot_);
-}
-
-Object* AddComponentCommand::ResolveObject(EditorSceneContext& context) const {
-   return ResolveCommandObject(context, objectId_, fallbackObject_);
-}
-
-RemoveComponentCommand::RemoveComponentCommand(
-   std::string objectId,
-   Object* fallbackObject,
-   std::string typeName
-)
-   : objectId_(std::move(objectId))
-   , fallbackObject_(fallbackObject)
-   , typeName_(std::move(typeName)) {
-}
-
-bool RemoveComponentCommand::Execute(EditorSceneContext& context) {
-   Object* object = ResolveObject(context);
-   if (!object || typeName_.empty()) {
-      return false;
-   }
-
-   IObjectComponent* component = object->GetComponentByTypeName(typeName_);
-   if (!component) {
-      return false;
-   }
-
-   if (removedComponentData_.is_null()) {
-      // Undoで有効状態と固有設定を両方戻せる最小スナップショットを初回実行時だけ保存する。
-      removedComponentData_ = nlohmann::json{
-         { "enabled", component->IsEnabled() },
-         { "data", component->Serialize() }
-      };
-   }
-   return object->RemoveComponentByTypeName(typeName_);
-}
-
-void RemoveComponentCommand::Undo(EditorSceneContext& context) {
-   Object* object = ResolveObject(context);
-   if (!object || removedComponentData_.is_null()) {
-      return;
-   }
-
-   IObjectComponent* component = object->AddComponentByTypeName(typeName_);
-   if (!component) {
-      return;
-   }
-   // 生成直後の既定状態へ、保存した有効状態と固有データを順に重ねて削除前の状態を復元する。
-   if (removedComponentData_.contains("enabled") && removedComponentData_.at("enabled").is_boolean()) {
-      component->SetEnabled(removedComponentData_.at("enabled").get<bool>());
-   }
-   if (removedComponentData_.contains("data") && removedComponentData_.at("data").is_object()) {
-      component->Deserialize(removedComponentData_.at("data"));
-   }
-}
-
-Object* RemoveComponentCommand::ResolveObject(EditorSceneContext& context) const {
-   return ResolveCommandObject(context, objectId_, fallbackObject_);
+void ModifyComponentCommand::Undo(EditorSceneContext& context) {
+   auto* object = ResolveCommandObject(context, objectId_);
+   if (object && beforeSnapshot_.is_object()) context.CommandObjectStore().ApplyObjectState(object, beforeSnapshot_);
 }
 
 } // namespace GameEngine

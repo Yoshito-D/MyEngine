@@ -20,6 +20,7 @@
 #include "GameEngine/Graphics/Resources/Texture.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Math/Functions/ColorUtils.h"
 
 #include "imgui.h"
@@ -934,24 +935,14 @@ void TrailModule::DrawInspector() {
 	  SetMode(mode);
 	}
 
-      // index 0を空のtextureNameへ対応させ、粒子本体のTextureを継承する状態を明示的に選べるようにする。
-      std::vector<std::string> textureOptions{ L({ "パーティクルと同じ", "Same as Particle" }) };
-      int selectedTextureIndex = 0;
-      for (const std::string& textureName : EngineContext::GetTextureNames()) {
-         Texture* texture = EngineContext::GetTexture(textureName);
-         if (texture && texture->GetMetadata().IsCubemap()) {
-            continue;
-         }
-         textureOptions.push_back(textureName);
-         if (textureName == GetTextureName()) {
-            selectedTextureIndex = static_cast<int>(textureOptions.size() - 1);
-         }
-      }
-      if (ImGuiHelper::DrawCombo(
-         L({ "トレイル画像", "Trail Texture" }), selectedTextureIndex, textureOptions, kInspectorColumnWidth)) {
-         SetTextureName(selectedTextureIndex == 0 ? std::string() : textureOptions[selectedTextureIndex]);
-      }
-
+      std::string nextTextureId = GetTextureName();
+      const auto acceptsTexture2D = [](const EditorAssetEntry& entry) {
+         Texture* texture = EngineContext::GetTexture(entry.assetId);
+         return texture && !texture->GetMetadata().IsCubemap();
+      };
+      if (EditorUI::AssetReference(L({ "トレイル画像", "Trail Texture" }), nextTextureId,
+         EditorAssetType::Texture, acceptsTexture2D)) SetTextureName(nextTextureId);
+      if (nextTextureId.empty()) ImGui::TextDisabled("%s", L({ "パーティクルと同じ", "Same as Particle" }));
       Vector4 color = GetColor();
       if (ImGuiHelper::DrawColorEdit4(L({ "トレイル色", "Trail Color" }), color, kInspectorColumnWidth)) {
          SetColor(color);

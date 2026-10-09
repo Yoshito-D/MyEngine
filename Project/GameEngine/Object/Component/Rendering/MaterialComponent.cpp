@@ -8,8 +8,6 @@
 #include <cmath>
 
 #include <algorithm>
-#include <cctype>
-#include <filesystem>
 
 namespace {
    const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
@@ -198,39 +196,14 @@ namespace {
       }
    }
 
-   bool IsTextureFileExtension(std::string extension) {
-      std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
-         return static_cast<char>(std::tolower(c));
-      });
-      return extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".dds";
-   }
-
-   std::string MakeSerializedTextureName(const std::string& textureId) {
-      if (textureId.empty()) {
-         return {};
-      }
-
-      // 既に論理名だけならそのまま保持し、Editorの相対パスIDだけを拡張子なしのRuntime名へ正規化する。
-      const std::filesystem::path texturePath(textureId);
-      if (!texturePath.has_parent_path() && !IsTextureFileExtension(texturePath.extension().string())) {
-         return textureId;
-      }
-
-      // EditorのアセットIDはResources基準のパスだが、マテリアル保存データにはテクスチャ名だけを保持する。
-      const std::string textureName = texturePath.stem().string();
-      return textureName.empty() ? textureId : textureName;
-   }
 }
 
 #ifdef USE_IMGUI
 #include "GameEngine/Object/Object.h"
 #include "imgui.h"
-#include "GameEngine/Scene/BaseScene.h"
-#include "GameEngine/Editor/EditorSceneContext.h"
-#include "GameEngine/Editor/EditorCommand.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
-#include <cstring>
 #endif
 
 namespace GameEngine {
@@ -240,9 +213,7 @@ MaterialComponent::MaterialResolver MaterialComponent::resolver_ = nullptr;
 MaterialComponent::MaterialCreator MaterialComponent::creator_ = nullptr;
 MaterialComponent::MaterialNamesProvider MaterialComponent::namesProvider_ = nullptr;
 MaterialComponent::TextureResolver MaterialComponent::textureResolver_ = nullptr;
-MaterialComponent::TextureNamesProvider MaterialComponent::textureNamesProvider_ = nullptr;
 MaterialComponent::EnvironmentTextureResolver MaterialComponent::environmentTextureResolver_ = nullptr;
-MaterialComponent::EnvironmentTextureNamesProvider MaterialComponent::environmentTextureNamesProvider_ = nullptr;
 
 // Resolver群はAssetManagerへの依存を注入する境界である。ComponentをEditor/Runtimeの
 // どちらでも同じ形式のまま使い、所有権を持たないMaterial/Textureを名前から再解決する。
@@ -339,16 +310,8 @@ void MaterialComponent::SetTextureResolver(TextureResolver resolver) {
    textureResolver_ = std::move(resolver);
 }
 
-void MaterialComponent::SetTextureNamesProvider(TextureNamesProvider provider) {
-   textureNamesProvider_ = std::move(provider);
-}
-
 void MaterialComponent::SetEnvironmentTextureResolver(EnvironmentTextureResolver resolver) {
    environmentTextureResolver_ = std::move(resolver);
-}
-
-void MaterialComponent::SetEnvironmentTextureNamesProvider(EnvironmentTextureNamesProvider provider) {
-   environmentTextureNamesProvider_ = std::move(provider);
 }
 
 Material* MaterialComponent::EnsureMaterial(const std::string& name, uint32_t color, int32_t lightingMode, const Matrix4x4& uvTransform) {
@@ -483,44 +446,24 @@ nlohmann::json MaterialComponent::Serialize() const {
    // 一時的にMaterial解決が失敗していても名前やTexture割り当てを失わないよう、
    // 3配列の最大長を保存スロット数として採用する。
    const size_t materialSlotCount = std::max({ materials.size(), materialNames_.size(), textureNames_.size() });
-   std::vector<std::string> materialNames = materialNames_;
-   materialNames.resize(materialSlotCount);
-   json["materialNames"] = materialNames;
-   json["materialCount"] = materialSlotCount;
-   json["environmentTextureName"] = MakeSerializedTextureName(environmentTextureName_);
+   // フルIDを保存し、別フォルダーの同名Textureを再読込後も区別する。
+   json["environmentTextureName"] = environmentTextureName_;
    json["textureLeftTop"] = { textureLeftTop_.x, textureLeftTop_.y };
    json["textureSize"] = { textureSize_.x, textureSize_.y };
 
-   // テクスチャ名（マテリアルスロット並行）
-   {
-      std::vector<std::string> texNames = textureNames_;
-      texNames.resize(materialSlotCount);
-      for (auto& textureName : texNames) {
-         textureName = MakeSerializedTextureName(textureName);
-      }
-      json["textureNames"] = texNames;
-   }
-
-   // 旧形式との互換性を保ちながら、複数スロットを欠落なく保存する。
+   // 各スロットへ参照・所有方式・値をまとめ、同じ設定を別配列へ重複保存しない。
    json["materialSlots"] = nlohmann::json::array();
    for (size_t slot = 0; slot < materialSlotCount; ++slot) {
       const Material* material = slot < materials.size() ? materials[slot] : nullptr;
       nlohmann::json slotData = SerializeMaterialProperties(material);
       slotData["ownership"] = IsOverridden(slot) ? "local" : "shared";
-      slotData["name"] = materialNames[slot];
+      slotData["name"] = slot < materialNames_.size() ? materialNames_[slot] : std::string{};
       slotData["textureName"] = slot < textureNames_.size()
-         ? MakeSerializedTextureName(textureNames_[slot])
+         ? textureNames_[slot]
          : std::string{};
       json["materialSlots"].push_back(std::move(slotData));
    }
 
-   // v1 Reader向けに第0スロットを直下にも複製する。現行ReaderはmaterialSlotsを優先する。
-   if (!materials.empty()) {
-      const nlohmann::json firstMaterial = SerializeMaterialProperties(materials[0]);
-      for (auto it = firstMaterial.begin(); it != firstMaterial.end(); ++it) {
-         json[it.key()] = it.value();
-      }
-   }
    return json;
 }
 
@@ -543,24 +486,21 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) try {
       environmentTextureName_ = data.at("environmentTextureName").get<std::string>();
    }
 
-   // 名前解決不能な旧データでも既存描画を維持できるよう、現在のslot実体をfallbackとして退避する。
+   // UVなどの部分設定では既存スロットを保持し、現行スロット形式だけを読込経路とする。
+   if (!data.contains("materialSlots") || !data.at("materialSlots").is_array()) return;
    std::vector<Material*> previousMaterials = materials;
    for (size_t i = 0; i < previousMaterials.size(); ++i) {
       if (IsOverridden(i)) previousMaterials[i] = sharedMaterials_[i];
    }
-   auto previousOverrides = std::move(overrides_);
-   const auto previousShared = sharedMaterials_;
-   const auto previousEffective = materials;
+   overrides_.clear();
    sharedMaterials_.clear();
-   const std::vector<std::string> previousMaterialNames = materialNames_;
-   const std::vector<std::string> previousTextureNames = textureNames_;
    auto resolveMaterial = [&previousMaterials](const std::string& name, size_t slot) -> Material* {
       Material* material = nullptr;
       if (!name.empty() && resolver_) {
          material = resolver_(name);
       }
       if (!material && !name.empty() && creator_) {
-         // シーン固有マテリアルは旧シーンクラスに依存せず、保存データから再生成する。
+         // シーン固有マテリアルは保存済みの名前から再生成する。
          material = creator_(name, 0xffffffff, Material::LightingMode::HALFLAMBERT, MakeIdentity4x4());
       }
       if (!material && slot < previousMaterials.size()) {
@@ -573,84 +513,34 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) try {
    materials.clear();
    textureNames_.clear();
 
-   // 現行形式はslotごとにMaterialプロパティとTexture名を完結して保持するため最優先で読む。
-   if (data.contains("materialSlots") && data.at("materialSlots").is_array()) {
-      const auto& materialSlots = data.at("materialSlots");
-      materialNames_.reserve(std::min<size_t>(materialSlots.size(), 4096));
-      materials.reserve(std::min<size_t>(materialSlots.size(), 4096));
-      textureNames_.reserve(std::min<size_t>(materialSlots.size(), 4096));
+   const auto& materialSlots = data.at("materialSlots");
+   materialNames_.reserve(std::min<size_t>(materialSlots.size(), 4096));
+   materials.reserve(std::min<size_t>(materialSlots.size(), 4096));
+   textureNames_.reserve(std::min<size_t>(materialSlots.size(), 4096));
 
-      for (size_t slot = 0; slot < std::min<size_t>(materialSlots.size(), 4096); ++slot) {
-         const auto& slotData = materialSlots[slot];
-         if (!slotData.is_object()) {
-            materialNames_.emplace_back();
-            materials.push_back(slot < previousMaterials.size() ? previousMaterials[slot] : nullptr);
-            textureNames_.emplace_back();
-            continue;
-         }
-
-         const std::string materialName = slotData.contains("name") && slotData.at("name").is_string()
-            ? slotData.at("name").get<std::string>()
-            : std::string{};
-         const std::string textureName = slotData.contains("textureName") && slotData.at("textureName").is_string()
-            ? slotData.at("textureName").get<std::string>()
-            : std::string{};
-         // 旧シーンはローカルスナップショットへ変換し、1オブジェクトの読み込みで別の共有マテリアルを上書きしない。
-         Material* material = resolveMaterial(materialName, slot);
-         materialNames_.push_back(materialName);
-         materials.push_back(material);
-         textureNames_.push_back(textureName);
-         const bool local = !slotData.contains("ownership") || slotData.at("ownership") != "shared";
-         if (local) material = EditMaterial(slot);
-         DeserializeMaterialProperties(material, slotData);
+   for (size_t slot = 0; slot < std::min<size_t>(materialSlots.size(), 4096); ++slot) {
+      const auto& slotData = materialSlots[slot];
+      if (!slotData.is_object()) {
+         materialNames_.emplace_back();
+         materials.push_back(slot < previousMaterials.size() ? previousMaterials[slot] : nullptr);
+         textureNames_.emplace_back();
+         continue;
       }
-      return;
-   }
 
-   // materialSlotsも旧materialNamesもない部分データでは、現在の割り当てを破棄しない。
-   if (!data.contains("materialNames") || !data.at("materialNames").is_array()) {
-      materials = previousEffective;
-      overrides_ = std::move(previousOverrides);
-      sharedMaterials_ = previousShared;
-      materialNames_ = previousMaterialNames;
-      textureNames_ = previousTextureNames;
-      SyncMaterialNamesSize();
-      return;
-   }
-
-   const auto& serializedNames = data.at("materialNames");
-   // v1では空slotをmaterialCountだけで表せるため、名前配列と明示Countの大きい方を復元する。
-   size_t materialSlotCount = serializedNames.size();
-   if (data.contains("materialCount") && data.at("materialCount").is_number_unsigned()) {
-      materialSlotCount = std::max(materialSlotCount, data.at("materialCount").get<size_t>());
-   } else if (data.contains("materialCount") && data.at("materialCount").is_number_integer()) {
-      const int64_t serializedSlotCount = data.at("materialCount").get<int64_t>();
-      if (serializedSlotCount >= 0) {
-         materialSlotCount = std::max(materialSlotCount, static_cast<size_t>(serializedSlotCount));
-      }
-   }
-
-   materialSlotCount = std::min<size_t>(materialSlotCount, 4096);
-   materialNames_.reserve(materialSlotCount);
-   materials.reserve(materialSlotCount);
-   for (size_t slot = 0; slot < materialSlotCount; ++slot) {
-      const std::string materialName = slot < serializedNames.size() && serializedNames[slot].is_string()
-         ? serializedNames[slot].get<std::string>()
+      const std::string materialName = slotData.contains("name") && slotData.at("name").is_string()
+         ? slotData.at("name").get<std::string>()
          : std::string{};
+      const std::string textureName = slotData.contains("textureName") && slotData.at("textureName").is_string()
+         ? slotData.at("textureName").get<std::string>()
+         : std::string{};
+      // ローカル値はObject所有の実体へ復元し、共有設定と区別する。
+      Material* material = resolveMaterial(materialName, slot);
       materialNames_.push_back(materialName);
-      materials.push_back(resolveMaterial(materialName, slot));
-   }
-
-   if (data.contains("textureNames") && data.at("textureNames").is_array()) {
-      for (const auto& textureName : data.at("textureNames")) {
-         textureNames_.push_back(textureName.is_string() ? textureName.get<std::string>() : std::string{});
-      }
-   }
-   textureNames_.resize(materialSlotCount);
-
-   // v1 のシーンJSONは第0スロットの値をコンポーネント直下に保持している。
-   if (!materials.empty()) {
-      DeserializeMaterialProperties(EditMaterial(0), data);
+      materials.push_back(material);
+      textureNames_.push_back(textureName);
+      const bool local = !slotData.contains("ownership") || slotData.at("ownership") != "shared";
+      if (local) material = EditMaterial(slot);
+      DeserializeMaterialProperties(material, slotData);
    }
 }
 
@@ -660,25 +550,6 @@ catch (const std::exception& error) {
 
 #ifdef USE_IMGUI
 void MaterialComponent::DrawInspector() {
-   const auto before = Serialize();
-   DrawInspectorContent();
-   const auto after = Serialize();
-   if (before != after && inspectorBefore_.is_null()) inspectorBefore_ = before;
-   // ドラッグ操作は、アクティブな操作部品を離した時点で1つのコマンドにまとめる。
-   if (!inspectorBefore_.is_null() && !ImGui::IsAnyItemActive()) {
-      if (HasOwner()) {
-         auto* scene = BaseScene::GetCurrentScene();
-         auto* context = scene ? scene->GetEditorSceneContext() : nullptr;
-         if (context && inspectorBefore_ != after) {
-            context->CommitEdit(std::make_unique<SetMaterialSettingsCommand>(
-               GetOwner().GetEntityId(), &GetOwner(), inspectorBefore_, after));
-         }
-      }
-      inspectorBefore_ = nullptr;
-   }
-}
-
-void MaterialComponent::DrawInspectorContent() {
    auto Tr = [](const char* japanese, const char* english) {
       return ImGuiHelper::Localize({ japanese, english });
    };
@@ -778,78 +649,31 @@ void MaterialComponent::DrawInspectorContent() {
    auto* data = material->GetMaterialData();
 
 
-   // テクスチャスロット（マテリアルスロットごとに表示）
-   if (textureNamesProvider_) {
-      const auto texNames = textureNamesProvider_();
-      if (!texNames.empty()) {
-         SyncMaterialNamesSize();
-         ImGui::SeparatorText(Tr("テクスチャ", "Textures"));
-         for (size_t slot = 0; slot < slotCount; ++slot) {
-            ImGui::PushID(static_cast<int>(slot));
-
-            const std::string currentTexName = slot < textureNames_.size() ? textureNames_[slot] : std::string();
-            int texSelectedIndex = 0;
-            for (size_t i = 0; i < texNames.size(); ++i) {
-               if (texNames[i] == currentTexName) {
-                  texSelectedIndex = static_cast<int>(i);
-                  break;
-               }
-            }
-
-            const std::string label = std::string(Tr("スロット", "Slot")) + " " + std::to_string(slot);
-            const char* texPreview = currentTexName.empty() ? Tr("<なし>", "<none>") : currentTexName.c_str();
-            if (ImGui::BeginCombo(label.c_str(), texPreview)) {
-               if (ImGui::Selectable(Tr("<なし>", "<none>"), currentTexName.empty())) {
-                  if (textureNames_.size() <= slot) textureNames_.resize(slot + 1);
-                  textureNames_[slot].clear();
-               }
-               for (size_t i = 0; i < texNames.size(); ++i) {
-                  if (textureResolver_) {
-                     // Shader Resourceの次元が異なるCubemapは2D候補一覧から除外する。
-                     if (Texture* candidate = textureResolver_(texNames[i]); candidate && candidate->GetMetadata().IsCubemap()) {
-                        continue;
-                     }
-                  }
-                  const bool sel = (static_cast<int>(i) == texSelectedIndex && !currentTexName.empty());
-                  if (ImGui::Selectable(texNames[i].c_str(), sel)) {
-                     if (textureNames_.size() <= slot) textureNames_.resize(slot + 1);
-                     textureNames_[slot] = texNames[i];
-                  }
-                  if (sel) { ImGui::SetItemDefaultFocus(); }
-               }
-               ImGui::EndCombo();
-            }
-
-            // テクスチャプレビュー
-            if (textureResolver_ && !currentTexName.empty()) {
-               if (Texture* tex = textureResolver_(currentTexName)) {
-                  if (tex->GetMetadata().IsCubemap()) {
-                     ImGui::TextDisabled("%s", Tr("TextureCube は 2D スロットではプレビューできません", "TextureCube cannot be previewed in a 2D slot"));
-                     ImGui::PopID();
-                     continue;
-                  }
-                  // 縦横比を保ったまま最大96pxへ収め、Inspector幅を大きなTexture寸法へ依存させない。
-                  const float maxSize = 96.0f;
-                  const float w = static_cast<float>(tex->GetWidth());
-                  const float h = static_cast<float>(tex->GetHeight());
-                  const float scale = (w > h) ? (maxSize / w) : (maxSize / h);
-                  const ImVec2 displaySize(w * scale, h * scale);
-                  // ImGuiバックエンドが要求するImTextureIDへGPU descriptor値のビット列を安全に移す。
-                  ImU64 texId{};
-                  const UINT64 gpuPtr = tex->GetTextureSrvHandleGPU().ptr;
-                  static_assert(sizeof(texId) == sizeof(gpuPtr), "ImTextureID size mismatch");
-                  std::memcpy(&texId, &gpuPtr, sizeof(texId));
-                  ImGui::Image(ImTextureRef(texId), displaySize);
-                  ImGui::SameLine();
-                  ImGui::TextDisabled("%ux%u", tex->GetWidth(), tex->GetHeight());
-               }
-            }
-
-            ImGui::PopID();
+   // 候補情報はProjectと同じレジストリから取得し、選択時だけ用途別のTexture次元を検証する。
+   ImGui::SeparatorText(Tr("テクスチャ", "Textures"));
+   const auto acceptsTexture2D = [](const EditorAssetEntry& entry) {
+      Texture* texture = textureResolver_ ? textureResolver_(entry.assetId) : nullptr;
+      return texture && !texture->GetMetadata().IsCubemap();
+   };
+   for (size_t slot = 0; slot < slotCount; ++slot) {
+      ImGui::PushID(static_cast<int>(slot));
+      std::string nextTextureId = GetTextureName(slot);
+      const std::string label = std::string(Tr("スロット", "Slot")) + " " + std::to_string(slot);
+      if (EditorUI::AssetReference(label.c_str(), nextTextureId, EditorAssetType::Texture, acceptsTexture2D)) {
+         SetTextureName(slot, nextTextureId);
+      }
+      if (Texture* texture = GetTexture(slot); texture && !texture->GetMetadata().IsCubemap()) {
+         const float width = static_cast<float>(texture->GetWidth());
+         const float height = static_cast<float>(texture->GetHeight());
+         const float maxSize = std::min(96.0f * ImGui::GetFontSize() / 13.0f, ImGui::GetContentRegionAvail().x);
+         if (width > 0.0f && height > 0.0f && maxSize > 0.0f) {
+            const float scale = maxSize / std::max(width, height);
+            ImGui::Image(ImTextureRef(texture->GetTextureSrvHandleGPU().ptr), ImVec2(width * scale, height * scale));
+            ImGui::TextDisabled("%ux%u", texture->GetWidth(), texture->GetHeight());
          }
       }
+      ImGui::PopID();
    }
-
    ImGui::SeparatorText(Tr("テクスチャ矩形", "Texture Rect"));
    ImGui::DragFloat2(Tr("左上", "Left Top"), &textureLeftTop_.x, 0.1f, 0.0f, 16384.0f);
    ImGui::DragFloat2(Tr("サイズ", "Size"), &textureSize_.x, 0.1f, 0.0f, 16384.0f);
@@ -991,46 +815,18 @@ void MaterialComponent::DrawInspectorContent() {
    ImGui::Spacing();
    ImGui::SeparatorText(Tr("環境テクスチャ", "Environment Texture"));
 
-   if (environmentTextureNamesProvider_) {
-      const auto texNames = environmentTextureNamesProvider_();
-      if (!texNames.empty()) {
-         int envSelectedIndex = 0;
-         for (size_t i = 0; i < texNames.size(); ++i) {
-            if (texNames[i] == environmentTextureName_) {
-               envSelectedIndex = static_cast<int>(i);
-               break;
-            }
-         }
-         const char* envPreview = environmentTextureName_.empty() ? Tr("<なし>", "<none>") : environmentTextureName_.c_str();
-         if (ImGui::BeginCombo(Tr("環境テクスチャ", "Environment Texture"), envPreview)) {
-            if (ImGui::Selectable(Tr("<なし>", "<none>"), environmentTextureName_.empty())) {
-               environmentTextureName_.clear();
-            }
-            for (size_t i = 0; i < texNames.size(); ++i) {
-               const bool sel = (static_cast<int>(i) == envSelectedIndex && !environmentTextureName_.empty());
-               if (ImGui::Selectable(texNames[i].c_str(), sel)) {
-                  environmentTextureName_ = texNames[i];
-               }
-               if (sel) {
-                  ImGui::SetItemDefaultFocus();
-               }
-            }
-            ImGui::EndCombo();
-         }
-
-         if (!environmentTextureName_.empty() && environmentTextureResolver_) {
-            if (auto* envTex = environmentTextureResolver_(environmentTextureName_)) {
-               const auto& meta = envTex->GetMetadata();
-               ImGui::Indent();
-               ImGui::TextDisabled("%s  %ux%u  mips:%zu",
-                  Tr("キューブマップ", "Cubemap"),
-                  envTex->GetWidth(), envTex->GetHeight(), meta.mipLevels);
-               ImGui::Unindent();
-            }
-         }
+   const auto acceptsCubemap = [](const EditorAssetEntry& entry) {
+      Texture* texture = environmentTextureResolver_ ? environmentTextureResolver_(entry.assetId) : nullptr;
+      return texture && texture->GetMetadata().IsCubemap();
+   };
+   std::string nextEnvironmentId = environmentTextureName_;
+   if (EditorUI::AssetReference(Tr("キューブマップ", "Cubemap"), nextEnvironmentId,
+      EditorAssetType::Texture, acceptsCubemap)) environmentTextureName_ = nextEnvironmentId;
+   if (!environmentTextureName_.empty() && environmentTextureResolver_) {
+      if (Texture* texture = environmentTextureResolver_(environmentTextureName_)) {
+         ImGui::TextDisabled("%ux%u  mips:%zu", texture->GetWidth(), texture->GetHeight(), texture->GetMetadata().mipLevels);
       }
    }
-
    float environmentCoefficient = data->environmentCoefficient;
    if (ImGui::DragFloat(Tr("環境反射係数", "Environment Coefficient"), &environmentCoefficient, 0.01f, 0.0f, 1.0f)) {
       material->SetEnvironmentTextureStrength(environmentCoefficient);

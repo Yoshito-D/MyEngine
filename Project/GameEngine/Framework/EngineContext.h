@@ -691,6 +691,13 @@ public:
    static bool GetIsDockSpaceVisible();
    /// @brief エディターのドックスペース表示を切り替える
    static void SetDockSpaceVisible(bool visible);
+
+   /// @brief エディタの共通メニューと閉じるボタンで共有する表示状態を取得する。
+   /// @param stableId ウィンドウの固定ID。
+   /// @param label メニューの日本語・英語ラベル（文字列リテラル）。
+   /// @param defaultVisible 初回登録時の表示状態。
+   /// @return 表示状態へのポインター。レンダラーがない場合はnullptr。
+   static bool* GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
 #endif // USE_IMGUI
 
    /// @brief LineRendererを取得

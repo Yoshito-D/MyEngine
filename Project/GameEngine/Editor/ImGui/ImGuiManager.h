@@ -7,6 +7,7 @@
 #include "imgui_impl_win32.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include <functional>
+#include <map>
 
 namespace GameEngine {
 class GraphicsDevice;
@@ -36,13 +37,27 @@ public:
    /// @brief DockSpaceを表示
    void ShowDockSpace();
 
+   /// @brief 上部メニューバーに共通のウィンドウ表示メニューを描画する。
+   /// @param menuCallback ファイルなどの追加メニューを描画する処理。
+   void ShowMainMenuBar(const std::function<void()>& menuCallback = {});
+
+   /// @brief ウィンドウメニューと閉じるボタンで共有する表示状態を取得する。
+   /// @param stableId 言語やシーンが変わっても同じウィンドウを識別するID。
+   /// @param label メニューに表示する日本語・英語のラベル（文字列リテラル）。
+   /// @param defaultVisible 初回登録時の表示状態。
+   /// @return マネージャーの寿命中有効な表示状態の参照。
+   bool& GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
+
    /// @brief ビューポートを表示
    /// @param renderTarget オフスクリーンレンダーターゲット
    /// @param isSceneHovered シーンがホバーされているかの出力
+   /// @param overlayCallback Sceneの画像上に描画する編集操作
+   /// @param gameView trueなら編集操作なしのGameタブとして共有レンダー結果を表示する
    void ShowViewport(
       OffscreenRenderTarget* renderTarget,
       bool& isSceneHovered,
-      const std::function<void(float, float, float, float)>& overlayCallback = {});
+      const std::function<void(float, float, float, float)>& overlayCallback = {},
+      bool gameView = false);
 
    /// @brief エンジン設定ウィンドウを表示
    /// @param isDockSpaceVisible ドッキングスペース表示フラグの参照
@@ -73,8 +88,16 @@ public:
    void SetLanguage(ImGuiHelper::EditorLanguage language);
 
 private:
+   struct EditorWindowState {
+      ImGuiHelper::LocalizedText label;
+      bool visible;
+   };
+   std::map<std::string, EditorWindowState> editorWindows_;
    bool isDockSpaceVisible_ = true;     // ドッキングスペース表示フラグ
    bool multiViewportEnabled_ = true;   // マルチビューポート有効フラグ
+   bool resetLayoutRequested_ = false;
+   HWND windowHandle_ = nullptr;        // Windowが所有する非所有ハンドル
+   float uiScale_ = 1.0f;
    ImGuiHelper::EditorLanguage language_ = ImGuiHelper::EditorLanguage::Japanese;
 };
 }

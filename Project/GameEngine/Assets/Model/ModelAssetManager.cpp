@@ -1,5 +1,6 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Assets/Model/ModelAssetManager.h"
+#include "GameEngine/Assets/ResourceAssetPath.h"
 #include "GameEngine/Assets/Animation/AnimationAssetManager.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include <cassert>
@@ -9,11 +10,19 @@
 
 namespace {
 bool HasGltfExtension(const std::string& fileName) {
-   std::string extension = std::filesystem::path(fileName).extension().string();
+   std::string extension = GameEngine::ResourcePathToUtf8(std::filesystem::path(std::u8string(fileName.begin(), fileName.end())).extension());
    std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char character) {
       return static_cast<char>(std::tolower(character));
    });
    return extension == ".gltf";
+}
+
+bool IsSupportedModelExtension(const std::filesystem::path& path) {
+   std::string extension = GameEngine::ResourcePathToUtf8(path.extension());
+   std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char character) {
+      return static_cast<char>(std::tolower(character));
+   });
+   return extension == ".obj" || extension == ".gltf" || extension == ".fbx";
 }
 }
 
@@ -26,20 +35,19 @@ void ModelAssetManager::Initialize(GraphicsDevice* device, AnimationAssetManager
 }
 
 ModelAssetManager::ModelHandle ModelAssetManager::LoadModel(const std::string& modelPath, const std::string& modelName) {
-   // モデルがキャッシュ済みでもglTF内アニメーションの登録機会を失わないよう先に連携する。
-   RegisterGltfAnimation(modelPath, modelName);
-
    auto it = modelAssets_.find(modelName);
    if (it != modelAssets_.end()) {
+	  RegisterGltfAnimation(modelPath, modelName);
 	  Logger::Info("Model already loaded: " + modelName);
     return it->second;
    }
 
    const std::string assetId = BuildAssetId(modelPath, modelName);
    auto idIt = modelAssetsById_.find(assetId);
-   if (idIt != modelAssetsById_.end()) {
+   if (!assetId.empty() && idIt != modelAssetsById_.end()) {
       // 短いモデル名でも同じアセットIDなら共有し、GPUリソースを二重ロードしない。
       modelAssets_[modelName] = idIt->second;
+      RegisterGltfAnimation(modelPath, modelName);
       return idIt->second;
    }
 
@@ -47,33 +55,30 @@ ModelAssetManager::ModelHandle ModelAssetManager::LoadModel(const std::string& m
 }
 
 ModelAssetManager::ModelHandle ModelAssetManager::LoadModelByAssetId(const std::string& assetId) {
-   const std::string normalizedAssetId = NormalizeAssetId(assetId);
-   // resources相対IDを、既存LoadFile APIが要求するディレクトリとファイル名へ分解する。
-   const std::filesystem::path relativePath(normalizedAssetId);
-   const std::filesystem::path directory = std::filesystem::path("resources") / relativePath.parent_path();
-   const std::string modelName = relativePath.filename().string();
-   if (modelName.empty()) {
-      return {};
-   }
-
-   RegisterGltfAnimation(directory.generic_string(), modelName);
-
-   auto idIt = modelAssetsById_.find(normalizedAssetId);
+   const auto relativePath = ResourceAssetIdPath(assetId);
+   if (relativePath.empty() || !IsSupportedModelExtension(relativePath)) return {};
+   auto idIt = modelAssetsById_.find(assetId);
    if (idIt != modelAssetsById_.end()) {
       return idIt->second;
    }
-
-   return LoadModelInternal(directory.generic_string(), modelName, normalizedAssetId);
+   const auto path = ResolveResourceAssetPath(assetId);
+   if (path.empty()) {
+      Logger::Error("Model asset is missing or outside resources: " + assetId);
+      return {};
+   }
+   // 永続化IDは維持し、検証済みの実際のパスだけをAssimpへ渡す。
+   return LoadModelInternal(ResourcePathToUtf8(path.parent_path()), ResourcePathToUtf8(path.filename()), assetId);
 }
 
 ModelAssetManager::ModelHandle ModelAssetManager::LoadModelInternal(const std::string& modelPath, const std::string& modelName, const std::string& assetId) {
    auto model = std::make_shared<ModelAsset>();
    model->SetAssetId(assetId);
-   model->LoadFile(device_, modelPath, modelName);
+   if (!model->LoadFile(device_, modelPath, modelName)) return {};
 
-   // 表示用の短い名前と永続化用IDの両方から、同じshared_ptrへ到達できるよう登録する。
-   modelAssets_[modelName] = std::move(model);
-   modelAssetsById_[assetId] = modelAssets_[modelName];
+   // ゲームコード用の論理名と、永続化用の完全IDは同じアセットを共有する。
+   modelAssets_[modelName] = model;
+   if (!assetId.empty()) modelAssetsById_[assetId] = model;
+   RegisterGltfAnimation(modelPath, modelName);
    Logger::Info("Model loaded: " + modelName);
    return modelAssets_[modelName];
 }
@@ -88,8 +93,9 @@ ModelAssetManager::ModelHandle ModelAssetManager::GetModel(const std::string& mo
 }
 
 ModelAssetManager::ModelHandle ModelAssetManager::GetModelByAssetId(const std::string& assetId) {
-   const std::string normalizedAssetId = NormalizeAssetId(assetId);
-   auto it = modelAssetsById_.find(normalizedAssetId);
+   const auto path = ResourceAssetIdPath(assetId);
+   if (path.empty() || !IsSupportedModelExtension(path)) return {};
+   auto it = modelAssetsById_.find(assetId);
    if (it != modelAssetsById_.end()) {
     return it->second;
    }
@@ -113,19 +119,16 @@ std::vector<std::string> ModelAssetManager::GetModelNames() const {
    return names;
 }
 
-std::string ModelAssetManager::NormalizeAssetId(const std::string& path) {
-   std::filesystem::path normalizedPath(path);
-   std::string result = normalizedPath.lexically_normal().generic_string();
-   constexpr const char* kResourcesPrefix = "resources/";
-   if (result.rfind(kResourcesPrefix, 0) == 0) {
-      // 呼び出し側が絶対寄りのパスを渡しても、保存時はresources相対IDへ統一する。
-      result = result.substr(std::char_traits<char>::length(kResourcesPrefix));
-   }
-   return result;
-}
-
 std::string ModelAssetManager::BuildAssetId(const std::string& modelPath, const std::string& modelName) {
-   return NormalizeAssetId((std::filesystem::path(modelPath) / modelName).generic_string());
+   std::error_code error;
+   const auto root = std::filesystem::absolute("resources", error);
+   if (error) return {};
+   const std::filesystem::path directory(std::u8string(modelPath.begin(), modelPath.end()));
+   const std::filesystem::path filename(std::u8string(modelName.begin(), modelName.end()));
+   const auto path = std::filesystem::absolute(directory / filename, error);
+   if (error) return {};
+   const auto assetId = ResourcePathToUtf8(path.lexically_normal().lexically_relative(root.lexically_normal()));
+   return ResourceAssetIdPath(assetId).empty() ? std::string{} : assetId;
 }
 
 void ModelAssetManager::RegisterGltfAnimation(const std::string& modelPath, const std::string& modelName) {

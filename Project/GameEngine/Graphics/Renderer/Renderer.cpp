@@ -261,6 +261,11 @@ void Renderer::BeginFrame() {
    if (editorController_) {
 	  editorController_->BeginEditorFrame();
    }
+   // メニューバーが確保した作業領域にDockSpaceを配置し、上端の重なりを防ぐ。
+   imGuiManager_->ShowMainMenuBar([this]() {
+      if (editorController_) editorController_->ShowMainMenuItems();
+   });
+   if (imGuiManager_->IsDockSpaceVisible()) imGuiManager_->ShowDockSpace();
 #endif
 
    // エディターの遅延操作を反映した最新状態をGPUレイアウトへ詰める。
@@ -736,8 +741,10 @@ void Renderer::EndFrame() {
    if (editorController_) {
 	  editorController_->ShowPlayModeToolbar();
 	  editorController_->ShowAssetWindow();
+	  editorController_->ShowSceneManagementWindow();
 	  editorController_->ShowInspectorWindow();
 	  editorController_->ShowHierarchyWindow();
+	  editorController_->ShowSceneDialogs();
    }
 #endif
    // ラインレンダラーを終了
@@ -751,8 +758,6 @@ void Renderer::EndFrame() {
    DrawAutoRegisteredParticles();
    DrawAutoRegisteredTexts();
 
-   if (FontManager* fontManager = assetManager_ ? assetManager_->GetFontManager() : nullptr) {
-   }
    textRenderer_->UploadBuffers();
 
    // ポストエフェクト対象のラインと対象外ラインを別キューへ送り、合成前後の位置を固定する。
@@ -791,6 +796,8 @@ void Renderer::EndFrame() {
 			   editorController_->ShowSceneOverlay(viewportX, viewportY, viewportWidth, viewportHeight);
 			}
 		 });
+	  bool gameHovered = false;
+      imGuiManager_->ShowViewport(offscreenRenderTarget_.get(), gameHovered, {}, true);
 	  if (postProcessManager_->ShowImGuiControls() && editorController_) {
 		 editorController_->MarkActiveSceneDirty();
 	  }

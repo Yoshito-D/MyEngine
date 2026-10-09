@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+struct ImTextureRef;
+
 namespace GameEngine {
 namespace ImGuiHelper {
 
@@ -51,6 +53,14 @@ Vector3 DegreesToRadians(const Vector3& degrees);
 void HelpMarker(const char* desc);
 void Tooltip(const char* desc);
 void TextWithHelp(const std::string& text, const char* helpText);
+
+/// @brief 画像付きフォルダーノードを描き、通常の開閉状態をImGuiへ任せる。
+/// @param label 表示するフォルダー名。呼び出し側で安定IDをPushIDする。
+/// @param selected 現在のフォルダーとして選択表示する場合true。
+/// @param revealAncestor 明示的な移動先の祖先を今回だけ開く場合true。
+/// @param icon フォルダー画像。未解決ならラベルだけ描く。
+/// @return 開いている場合true。呼び出し側で子を描画しTreePopする。
+bool DrawFolderTreeNode(const char* label, bool selected, bool revealAncestor, ImTextureRef icon);
 
 // Inspectorセクション --------------------------------------------------------
 bool BeginSection(const std::string& label, bool defaultOpen = true);

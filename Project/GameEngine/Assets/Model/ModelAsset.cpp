@@ -193,14 +193,19 @@ void ModelAsset::CreateOutputSkinningResources(GraphicsDevice* device, SkinClust
    }
 }
 
-void ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName) {
-   assert(device);
+bool ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName) {
+   auto modelData = LoadModelFile(modelPath, modelName);
+   if (modelData.meshes.empty()) return false;
+   if (!device || !device->GetDevice()) {
+      Logger::Error("Model load requires a graphics device: " + modelPath + "/" + modelName);
+      return false;
+   }
    graphicsDevice_ = device;
    ID3D12Device* d3dDevice = device->GetDevice();
 
    // 再ロード時に旧モデルの骨情報やGPUリソースを引き継がないよう、CPUデータから作り直す。
-   hasSkinningData_ = false;
-   modelData_ = LoadModelFile(modelPath, modelName);
+   modelData_ = std::move(modelData);
+   hasSkinningData_ = !modelData_.skinClusterData.empty();
    skeleton_ = CreateSkeleton(modelData_.rootNode, modelData_);
    skinCluster_.reset();
 
@@ -239,6 +244,7 @@ void ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, 
    if (hasSkinningData_ && skeleton_ && !skeleton_->GetJoints().empty() && !modelData_.meshes.empty()) {
 	  skinCluster_ = CreateSkinCluster(device, *skeleton_, modelData_);
    }
+   return true;
 }
 
 std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() const try {
@@ -303,22 +309,26 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
 	  aiProcess_FlipWindingOrder |
 	  aiProcess_FlipUVs |
 	  aiProcess_GenSmoothNormals |
-	  aiProcess_Triangulate
+	  aiProcess_Triangulate |
+      aiProcess_ValidateDataStructure
    );
-   // パス不一致や壊れたファイルはAssimpがnullptrを返すため、診断を残して空アセットとして扱う。
+   // 壊れたデータはGPU確保やアセット登録より前に失敗として返す。
    if (!scene) {
 	  Logger::Error("Model import failed: " + filePath + " (" + importer.GetErrorString() + ")");
 	  return modelData;
    }
-   if (!scene->HasMeshes()) {
-	  Logger::Error("Model import produced no meshes: " + filePath);
+   if (!scene->HasMeshes() || !scene->mRootNode) {
+	  Logger::Error("Model import produced no meshes or root node: " + filePath);
 	  return modelData;
    }
 
    for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 	  aiMesh* mesh = scene->mMeshes[meshIndex];
-	  assert(mesh->HasNormals());
-	  hasSkinningData_ = hasSkinningData_ || mesh->HasBones();
+      // 三角形描画とスキニングが前提とする配列を、デコード結果に対して確認する。
+      if (!mesh || !mesh->HasPositions() || !mesh->HasNormals() || !mesh->HasFaces()) {
+         Logger::Error("Model mesh requires vertices, normals and triangle faces: " + filePath);
+         return {};
+      }
 
 	  MeshData meshData;
 	  meshData.materialIndex = mesh->mMaterialIndex;
@@ -348,9 +358,16 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
 
 	  for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
 		 aiFace& face = mesh->mFaces[faceIndex];
-		 assert(face.mNumIndices == 3);
+         if (face.mNumIndices != 3 || !face.mIndices) {
+            Logger::Error("Model contains a non-triangle face: " + filePath);
+            return {};
+         }
 
 		 for (uint32_t element = 0; element < face.mNumIndices; ++element) {
+            if (face.mIndices[element] >= mesh->mNumVertices) {
+               Logger::Error("Model contains an invalid vertex index: " + filePath);
+               return {};
+            }
 			meshData.indices.push_back(face.mIndices[element]);
 		 }
 	  }
@@ -361,6 +378,10 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
       // これによりCreateSkinClusterで対応するInfluenceバッファへ振り分けられる。
       for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
 		 aiBone* bone = mesh->mBones[boneIndex];
+         if (!bone || (bone->mNumWeights && !bone->mWeights)) {
+            Logger::Error("Model contains invalid bone data: " + filePath);
+            return {};
+         }
 		 std::string jointName = bone->mName.C_Str();
 		 JointWeightData& jointWeightData = modelData.skinClusterData[jointName];
 
@@ -378,6 +399,10 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
 		 jointWeightData.inverseBindPoseMatrix = bindPoseMatrix.Inverse();
 
         for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex) {
+            if (bone->mWeights[weightIndex].mVertexId >= mesh->mNumVertices) {
+               Logger::Error("Model contains an invalid bone vertex index: " + filePath);
+               return {};
+            }
 			jointWeightData.vertexWeights.push_back({
 			   bone->mWeights[weightIndex].mWeight,
 			   bone->mWeights[weightIndex].mVertexId,

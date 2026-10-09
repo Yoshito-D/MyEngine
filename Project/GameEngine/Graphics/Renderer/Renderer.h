@@ -147,6 +147,15 @@ public:
    bool GetIsSceneHovered() const { return isSceneHovered_; }
    bool GetIsDockSpaceVisible() const { return imGuiManager_->IsDockSpaceVisible(); }
    void SetDockSpaceVisible(bool visible) { imGuiManager_->SetDockSpaceVisible(visible); }
+
+   /// @brief エディタの共通メニューと閉じるボタンで共有する表示状態を取得する。
+   /// @param stableId ウィンドウの固定ID。
+   /// @param label メニューの日本語・英語ラベル（文字列リテラル）。
+   /// @param defaultVisible 初回登録時の表示状態。
+   /// @return 表示状態へのポインター。マネージャーがない場合はnullptr。
+   bool* GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true) {
+      return imGuiManager_ ? &imGuiManager_->GetEditorWindowVisibility(stableId, label, defaultVisible) : nullptr;
+   }
 #endif
 
    /// @brief 線を描画する（LineRendererに委任）

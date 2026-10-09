@@ -91,14 +91,16 @@ void RearCameraDebugView::DrawCameraEvidenceWindow(
    RearCameraSettings& settings,
    const RearCameraFrameView& frame,
    RearCameraMeasurementRecorder& recorder) {
-   if (!settings.showCameraEvidenceWindow) {
-      return;
-   }
+   bool* visible = GameEngine::EngineContext::GetEditorWindowVisibility("RearCameraEvidence", { "カメラの調整と計測", "Camera Tuning and Measurement" }, settings.showCameraEvidenceWindow);
+   if (!visible) return;
+   settings.showCameraEvidenceWindow = *visible;
+   if (!*visible) return;
 
-   ImGui::SetNextWindowPos(ImVec2(350.0f, 12.0f), ImGuiCond_Always);
-   ImGui::SetNextWindowSize(ImVec2(660.0f, 535.0f), ImGuiCond_Always);
-   ImGui::SetNextWindowFocus();
-   if (!ImGui::Begin("カメラの調整と計測", &settings.showCameraEvidenceWindow)) {
+   ImGui::SetNextWindowPos(ImVec2(350.0f, 32.0f), ImGuiCond_FirstUseEver);
+   ImGui::SetNextWindowSize(ImVec2(660.0f, 535.0f), ImGuiCond_FirstUseEver);
+   const bool drawContents = ImGui::Begin("カメラの調整と計測", visible);
+   settings.showCameraEvidenceWindow = *visible;
+   if (!drawContents) {
       ImGui::End();
       return;
    }
@@ -402,7 +404,10 @@ void RearCameraDebugView::DrawInspector(
 
    if (ImGui::CollapsingHeader(Tr("カメラ計測", "Camera Measurement"), ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox(Tr("ゲーム画面へ計測値を表示", "Show Measurement Overlay"), &settings.showCameraMeasurementOverlay);
-      ImGui::Checkbox(Tr("調整と計測の別画面を表示", "Show Tuning and Measurement Window"), &settings.showCameraEvidenceWindow);
+      if (bool* visible = GameEngine::EngineContext::GetEditorWindowVisibility("RearCameraEvidence", { "カメラの調整と計測", "Camera Tuning and Measurement" }, settings.showCameraEvidenceWindow)) {
+         ImGui::Checkbox(Tr("調整と計測の別画面を表示", "Show Tuning and Measurement Window"), visible);
+         settings.showCameraEvidenceWindow = *visible;
+      }
       if (ImGui::Button(Tr("計測開始", "Start Measurement"))) {
          recorder.StartCameraMeasurement("manual_current_settings", frame);
       }

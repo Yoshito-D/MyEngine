@@ -43,15 +43,11 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	// Particleパイプラインを設定
 	// マテリアルに blendMode が設定されていればそれを優先、なければ加算ブレンド
 	auto* earlyMaterial = particleSystem->GetMaterial();
-	// 背景屈折は通常の加算では背景色を保持できないため、アルファ合成PSOへ強制する。
-	// 非屈折粒子だけがマテリアル指定または既定の加算ブレンドを使う。
-	const bool usesSceneRefraction = earlyMaterial && std::fabs(earlyMaterial->GetDistortionStrength()) > 0.0001f;
-	const BlendMode resolvedBlendMode = usesSceneRefraction
-		? BlendMode::kBlendModeNormal
-		: (earlyMaterial && earlyMaterial->GetBlendMode().has_value())
-			? earlyMaterial->GetBlendMode().value()
-			: BlendMode::kBlendModeAdd;
-	setPipelineFunc("Particle", resolvedBlendMode);
+	const bool usesSceneRefraction = earlyMaterial && sceneColorHandle.ptr != 0 &&
+		std::fabs(earlyMaterial->GetDistortionStrength()) > 0.0001f && earlyMaterial->GetDistortionBlend() > 0.0f;
+	const BlendMode resolvedBlendMode = earlyMaterial && earlyMaterial->GetBlendMode().has_value()
+		? earlyMaterial->GetBlendMode().value()
+		: BlendMode::kBlendModeAdd;
 
 	auto* cmdList = device_->GetCommandList();
 
@@ -73,67 +69,81 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 	const auto textureSlot = resolveSlot("texture");
 	const auto sceneColorSlot = resolveSlot("scenecolor");
 	const auto sceneDepthSlot = resolveSlot("scenedepth");
-	if (!materialSlot || !instancingSlot || !textureSlot || !sceneColorSlot || !sceneDepthSlot) {
+	const auto particleDrawSlot = resolveSlot("particledraw");
+	if (!materialSlot || !instancingSlot || !textureSlot || !sceneColorSlot || !sceneDepthSlot || !particleDrawSlot) {
 		return;
 	}
 
-	// マテリアル設定（ParticleMaterial）
-	auto* material = particleSystem->GetMaterial();
-	if (material && material->GetMaterialResource()) {
-     cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), material->GetMaterialResource()->GetGPUVirtualAddress());
-	}
+	// 共有マテリアルのMap領域をパス間で書き換えると、GPUには最後の値しか届かない。
+	// 描画モードはルート定数に記録し、同じ粒子・リボンを屈折と本体色の順に描画する。
+	const auto drawPass = [&](BlendMode blendMode, UINT refractionPass) {
+		setPipelineFunc("Particle", blendMode);
+		cmdList->SetGraphicsRoot32BitConstant(particleDrawSlot.value(), refractionPass, 0);
 
-	if (sceneColorHandle.ptr != 0) {
-		// 透明パス開始時に固定した色・深度を参照し、現在書き込み中のRTVとの自己依存を避ける。
-		cmdList->SetGraphicsRootDescriptorTable(sceneColorSlot.value(), sceneColorHandle);
-	}
-	if (sceneDepthHandle.ptr != 0) {
-		cmdList->SetGraphicsRootDescriptorTable(sceneDepthSlot.value(), sceneDepthHandle);
-	}
-
-	// トレイルは本体を置き換えず、先に独立した履歴メッシュとして描画する。
-	if (hasRibbon) {
-		if (Texture* ribbonTexture = particleSystem->GetRibbonTexture()) {
-			cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), ribbonTexture->GetTextureSrvHandleGPU());
+		// マテリアル設定（ParticleMaterial）
+		auto* material = particleSystem->GetMaterial();
+		if (material && material->GetMaterialResource()) {
+			cmdList->SetGraphicsRootConstantBufferView(materialSlot.value(), material->GetMaterialResource()->GetGPUVirtualAddress());
 		}
-		cmdList->SetGraphicsRootDescriptorTable(
-			instancingSlot.value(), particleSystem->GetRibbonInstancingSrvHandleGPU());
-		const auto& vertexBufferView = particleSystem->GetRibbonVertexBufferView();
-		const auto& indexBufferView = particleSystem->GetRibbonIndexBufferView();
-		cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
-		cmdList->IASetIndexBuffer(&indexBufferView);
-		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		cmdList->DrawIndexedInstanced(particleSystem->GetRibbonIndexCount(), 1, 0, 0, 0);
-	}
 
-	if (activeCount == 0) return;
+		if (sceneColorHandle.ptr != 0) {
+			// 描画前にコピーした色を参照し、現在書き込み中のRTVとの自己依存を避ける。
+			cmdList->SetGraphicsRootDescriptorTable(sceneColorSlot.value(), sceneColorHandle);
+		}
+		if (sceneDepthHandle.ptr != 0) {
+			cmdList->SetGraphicsRootDescriptorTable(sceneDepthSlot.value(), sceneDepthHandle);
+		}
 
-	// 本体は常にGPUシミュレーション出力を使い、トレイルの有無とは独立して描画する。
-	if (Texture* texture = particleSystem->GetTexture()) {
-		cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), texture->GetTextureSrvHandleGPU());
-	}
-	cmdList->SetGraphicsRootDescriptorTable(instancingSlot.value(), particleSystem->GetInstancingSrvHandleGPU());
-
-	// メッシュ設定（Billboard用Quad または Model）
-	const ModelAsset* modelAsset = particleSystem->GetModelAsset();
-	if (modelAsset) {
-		// Modelモードは各頂点をactiveCount回インスタンス化し、粒子データはSRVから引く。
-		const auto& meshes = modelAsset->GetMeshData();
-		for (size_t i = 0; i < meshes.size(); ++i) {
-			cmdList->IASetVertexBuffers(0, 1, &modelAsset->GetVertexBufferView(i));
+		// トレイルは本体を置き換えず、先に独立した履歴メッシュとして描画する。
+		if (hasRibbon) {
+			if (Texture* ribbonTexture = particleSystem->GetRibbonTexture()) {
+				cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), ribbonTexture->GetTextureSrvHandleGPU());
+			}
+			cmdList->SetGraphicsRootDescriptorTable(
+				instancingSlot.value(), particleSystem->GetRibbonInstancingSrvHandleGPU());
+			const auto& vertexBufferView = particleSystem->GetRibbonVertexBufferView();
+			const auto& indexBufferView = particleSystem->GetRibbonIndexBufferView();
+			cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
+			cmdList->IASetIndexBuffer(&indexBufferView);
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->DrawInstanced(static_cast<UINT>(meshes[i].vertices.size()), activeCount, 0, 0);
+			cmdList->DrawIndexedInstanced(particleSystem->GetRibbonIndexCount(), 1, 0, 0, 0);
 		}
-	} else {
-		// Billboardモードは共有Quadのインデックスを使い、頂点数を抑える。
-		const Mesh* mesh = particleSystem->GetMesh();
-		if (mesh) {
-			cmdList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
-			cmdList->IASetIndexBuffer(&mesh->GetIndexBufferView());
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->DrawIndexedInstanced(mesh->GetIndexCount(), activeCount, 0, 0, 0);
+
+		if (activeCount == 0) return;
+
+		// 本体は常にGPUシミュレーション出力を使い、トレイルの有無とは独立して描画する。
+		if (Texture* texture = particleSystem->GetTexture()) {
+			cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), texture->GetTextureSrvHandleGPU());
 		}
+		cmdList->SetGraphicsRootDescriptorTable(instancingSlot.value(), particleSystem->GetInstancingSrvHandleGPU());
+
+		// メッシュ設定（Billboard用Quad または Model）
+		const ModelAsset* modelAsset = particleSystem->GetModelAsset();
+		if (modelAsset) {
+			// Modelモードは各頂点をactiveCount回インスタンス化し、粒子データはSRVから引く。
+			const auto& meshes = modelAsset->GetMeshData();
+			for (size_t i = 0; i < meshes.size(); ++i) {
+				cmdList->IASetVertexBuffers(0, 1, &modelAsset->GetVertexBufferView(i));
+				cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				cmdList->DrawInstanced(static_cast<UINT>(meshes[i].vertices.size()), activeCount, 0, 0);
+			}
+		} else {
+			// Billboardモードは共有Quadのインデックスを使い、頂点数を抑える。
+			const Mesh* mesh = particleSystem->GetMesh();
+			if (mesh) {
+				cmdList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
+				cmdList->IASetIndexBuffer(&mesh->GetIndexBufferView());
+				cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				cmdList->DrawIndexedInstanced(mesh->GetIndexCount(), activeCount, 0, 0, 0);
+			}
+		}
+	};
+
+	// 背景だけをNormalブレンドで歪ませ、本体色には設定済みの輝度とブレンドを維持する。
+	if (usesSceneRefraction) {
+		drawPass(BlendMode::kBlendModeNormal, 1);
 	}
+	drawPass(resolvedBlendMode, 0);
 }
 
 } // namespace GameEngine

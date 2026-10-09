@@ -119,3 +119,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\FilterAdjust.ps1
 
 - [プレイヤーのシルエット影](../Project/Docs/Rendering/PlayerShadowPass_Implementation.md)
 - [追従カメラの修正履歴](../Project/Docs/Camera/PlayerRearFollowCamera_FixFlow.md)
+
+## エディタの所有と編集経路
+
+`GameEngine/Scene/SceneObjectStore`はランタイムとエディタ共通の生成・所有・復元を担当する。
+`GameEngine/Editor`はアセット一覧、パネル、参照欄、編集履歴を担当する。
+詳細と操作・制約は[EditorWorkflow](../Project/Docs/Editor/EditorWorkflow.md)を参照。

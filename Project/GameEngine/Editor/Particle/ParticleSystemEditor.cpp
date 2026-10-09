@@ -9,12 +9,12 @@
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "imgui.h"
 #include <string>
 #include <map>
 #include <array>
 #include <vector>
-#include <cstring>
 #include <cmath>
 #endif
 
@@ -462,21 +462,9 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 			auto& subEmitters = particleSystem->GetSubEmitterSettings();
 			ImGui::Checkbox(ScopedLabel(Tr("サブエミッター", "Sub Emitters"), "ParticleSubEmitters_" + particleSystemName).c_str(), &subEmitters.enabled);
 			if (subEmitters.enabled) {
-			   char deathPath[ImGuiHelper::kDefaultPathBufferSize]{};
-			   std::memcpy(deathPath, subEmitters.spawnOnDeathPath.c_str(), std::min(subEmitters.spawnOnDeathPath.size(), sizeof(deathPath) - 1));
-			   if (ImGui::InputText(ScopedLabel(Tr("死亡時エフェクト", "Spawn On Death"), "ParticleDeathEmitter_" + particleSystemName).c_str(), deathPath, sizeof(deathPath))) {
-				  subEmitters.spawnOnDeathPath = deathPath;
-			   }
-			   char updatePath[ImGuiHelper::kDefaultPathBufferSize]{};
-			   std::memcpy(updatePath, subEmitters.spawnOnUpdatePath.c_str(), std::min(subEmitters.spawnOnUpdatePath.size(), sizeof(updatePath) - 1));
-			   if (ImGui::InputText(ScopedLabel(Tr("更新時エフェクト", "Spawn On Update"), "ParticleUpdateEmitter_" + particleSystemName).c_str(), updatePath, sizeof(updatePath))) {
-				  subEmitters.spawnOnUpdatePath = updatePath;
-			   }
-			   char collisionPath[ImGuiHelper::kDefaultPathBufferSize]{};
-			   std::memcpy(collisionPath, subEmitters.spawnOnCollisionPath.c_str(), std::min(subEmitters.spawnOnCollisionPath.size(), sizeof(collisionPath) - 1));
-			   if (ImGui::InputText(ScopedLabel(Tr("衝突時エフェクト", "Spawn On Collision"), "ParticleCollisionEmitter_" + particleSystemName).c_str(), collisionPath, sizeof(collisionPath))) {
-				  subEmitters.spawnOnCollisionPath = collisionPath;
-			   }
+			   EditorUI::AssetFileReference(Tr("死亡時エフェクト", "Spawn On Death"), subEmitters.spawnOnDeathPath, EditorAssetType::Particle);
+			   EditorUI::AssetFileReference(Tr("更新時エフェクト", "Spawn On Update"), subEmitters.spawnOnUpdatePath, EditorAssetType::Particle);
+			   EditorUI::AssetFileReference(Tr("衝突時エフェクト", "Spawn On Collision"), subEmitters.spawnOnCollisionPath, EditorAssetType::Particle);
 			   ImGui::DragFloat(ScopedLabel(Tr("更新発生間隔", "Update Spawn Interval"), "ParticleSubInterval_" + particleSystemName).c_str(), &subEmitters.updateInterval, 0.01f, 0.001f, 60.0f);
 			   int maxEvents = static_cast<int>(subEmitters.maxEventsPerFrame);
 			   if (ImGui::DragInt(ScopedLabel(Tr("毎フレーム上限", "Events Per Frame"), "ParticleSubLimit_" + particleSystemName).c_str(), &maxEvents, 1.0f, 1, 1024)) {
@@ -577,63 +565,23 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 	}
 
 	if (ImGui::CollapsingHeader(StableLabel(Tr("テクスチャとモデル", "Texture and Model"), "ParticleTextureAndModel").c_str())) {
-			// テクスチャ設定
-			ImGui::Text("%s:", Tr("テクスチャ", "Texture"));
-			{
-			   auto* currentTexture = particleSystem->GetTexture();
-			   std::string currentTexName = particleSystem->GetTextureName().empty() ? Tr("(なし)", "(None)") : particleSystem->GetTextureName();
-
-			   // テクスチャ選択コンボ
-			   std::vector<std::string> texNames = GameEngine::EngineContext::GetTextureNames();
-			   std::string comboID = "##TextureSelect_" + particleSystemName;
-			   if (ImGui::BeginCombo(comboID.c_str(), currentTexName.c_str())) {
-				  bool noneSelected = particleSystem->GetTextureName().empty();
-				  std::string noneID = ScopedLabel(Tr("(なし)", "(None)"), "TexNone_" + particleSystemName);
-				  if (ImGui::Selectable(noneID.c_str(), noneSelected)) {
-					 particleSystem->SetTextureName("");
-				  }
-				  for (const auto& texName : texNames) {
-					 if (auto* candidate = GameEngine::EngineContext::GetTexture(texName)) {
-						if (candidate->GetMetadata().IsCubemap()) {
-						   continue;
-						}
-					 }
-					 bool selected = (particleSystem->GetTextureName() == texName);
-					 std::string selID = texName + "##TexSel_" + particleSystemName;
-					 if (ImGui::Selectable(selID.c_str(), selected)) {
-						particleSystem->SetTextureName(texName);
-					 }
-					 if (selected) {
-						ImGui::SetItemDefaultFocus();
-					 }
-				  }
-				  ImGui::EndCombo();
-			   }
-
-			   // テクスチャプレビュー
-			   auto* previewTex = currentTexture;
-			   if (previewTex) {
-				  if (previewTex->GetMetadata().IsCubemap()) {
-					 ImGui::TextDisabled("%s", Tr("TextureCube はパーティクルのテクスチャ枠ではプレビューできません", "TextureCube cannot be previewed in Particle texture slot"));
-				  } else {
-					 ImGui::Text("%s (%ux%u)", previewTex->GetName().c_str(),
-						previewTex->GetWidth(), previewTex->GetHeight());
-
-					 // アスペクト比を保ちながら最大128pxでプレビュー
-					 const float kPreviewMax = 128.0f;
-					 float w = static_cast<float>(previewTex->GetWidth());
-					 float h = static_cast<float>(previewTex->GetHeight());
-					 float scale = (w > h) ? (kPreviewMax / w) : (kPreviewMax / h);
-					 ImVec2 previewSize(w * scale, h * scale);
-
-					 ImTextureID texId = (ImTextureID)(previewTex->GetTextureSrvHandleGPU().ptr);
-					 ImGui::Image(texId, previewSize);
-				  }
-			   } else {
-				  ImGui::TextDisabled("%s", Tr("テクスチャ未設定", "No texture assigned"));
-			   }
-			}
-
+         std::string nextTextureId = particleSystem->GetTextureName();
+         const auto acceptsTexture2D = [](const EditorAssetEntry& entry) {
+            Texture* texture = EngineContext::GetTexture(entry.assetId);
+            return texture && !texture->GetMetadata().IsCubemap();
+         };
+         if (EditorUI::AssetReference(Tr("テクスチャ", "Texture"), nextTextureId,
+            EditorAssetType::Texture, acceptsTexture2D)) particleSystem->SetTextureName(nextTextureId);
+         if (Texture* texture = particleSystem->GetTexture(); texture && !texture->GetMetadata().IsCubemap()) {
+            const float width = static_cast<float>(texture->GetWidth());
+            const float height = static_cast<float>(texture->GetHeight());
+            const float maxSize = std::min(128.0f * ImGui::GetFontSize() / 13.0f, ImGui::GetContentRegionAvail().x);
+            if (width > 0.0f && height > 0.0f && maxSize > 0.0f) {
+               const float scale = maxSize / std::max(width, height);
+               ImGui::Image(ImTextureRef(texture->GetTextureSrvHandleGPU().ptr), ImVec2(width * scale, height * scale));
+               ImGui::TextDisabled("%ux%u", texture->GetWidth(), texture->GetHeight());
+            }
+         }
 			auto* modelAsset = particleSystem->GetModelAsset();
 			if (modelAsset) {
 			   ImGui::Text("%s: %s", Tr("モデル", "Model"), Tr("読み込み済み", "Loaded"));

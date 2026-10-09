@@ -353,9 +353,6 @@
     <ClCompile Include="GameEngine\Collision\Collision.cpp">
       <Filter>GameEngine\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Editor\AudioAssetWidget.cpp">
-      <Filter>GameEngine\Editor</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Editor\Camera\CameraEditor.cpp">
       <Filter>GameEngine\Editor\Camera</Filter>
     </ClCompile>
@@ -368,8 +365,8 @@
     <ClCompile Include="GameEngine\Editor\EditorCommand.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Editor\EditorObjectStore.cpp">
-      <Filter>GameEngine\Editor</Filter>
+    <ClCompile Include="GameEngine\Scene\SceneObjectStore.cpp">
+      <Filter>GameEngine\Scene</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorReferenceWidgets.cpp">
       <Filter>GameEngine\Editor</Filter>
@@ -1022,6 +1019,9 @@
     <ClInclude Include="GameEngine\Assets\AssetManager.h">
       <Filter>GameEngine\Assets</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Assets\ResourceAssetPath.h">
+      <Filter>GameEngine\Assets</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Assets\Audio\SoundManager.h">
       <Filter>GameEngine\Assets\Audio</Filter>
     </ClInclude>
@@ -1061,9 +1061,6 @@
     <ClInclude Include="GameEngine\Collision\Collision.h">
       <Filter>GameEngine\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Editor\AudioAssetWidget.h">
-      <Filter>GameEngine\Editor</Filter>
-    </ClInclude>
     <ClInclude Include="GameEngine\Editor\Camera\CameraEditor.h">
       <Filter>GameEngine\Editor\Camera</Filter>
     </ClInclude>
@@ -1076,8 +1073,8 @@
     <ClInclude Include="GameEngine\Editor\EditorCommand.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Editor\EditorObjectStore.h">
-      <Filter>GameEngine\Editor</Filter>
+    <ClInclude Include="GameEngine\Scene\SceneObjectStore.h">
+      <Filter>GameEngine\Scene</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorReferenceWidgets.h">
       <Filter>GameEngine\Editor</Filter>
@@ -1891,5 +1888,16 @@
     <Text Include="Externals\imgui\LICENSE.txt">
       <Filter>Externals\imgui</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tests\EditorAssetRegistryTests.cpp" />
+    <None Include="..\Tests\ParticleDistortionTests.cpp" />
+    <None Include="..\Tests\ParticleRandomRangeTests.cpp" />
+    <None Include="Tests\EditorSceneContextTests.cpp" />
+    <None Include="Tests\EditorImGuiLayoutTests.cpp" />
+    <None Include="..\Tests\EditorWindowTests.cpp" />
+    <None Include="..\Tests\RunEditorWindowTests.ps1" />
+    <None Include="Tests\TexturePathTests.cpp" />
+    <None Include="Docs\Editor\EditorWorkflow.md" />
   </ItemGroup>
 </Project>

@@ -134,7 +134,7 @@ GameEngine::Mesh::PlaneOrientation ToMeshPlaneOrientation(
 
 #ifdef USE_IMGUI
 #include "imgui.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
@@ -390,27 +390,10 @@ void MeshComponent::DrawInspector() {
             modelAsset_->HasSkinningData() ? Tr("あり", "Available") : Tr("なし", "None"));
       }
 
-      const std::string dropLabel = assetId_.empty()
-         ? Tr("モデルアセットをここへドロップ", "Drop Model Asset Here")
-         : assetId_;
-      ImGui::Button((dropLabel + "##MeshModelAssetDrop").c_str(), ImVec2(-1.0f, 0.0f));
-      // EditorContext経由ならUndo/Dirty管理も同時に更新し、Context不在のRuntime UIでは直接適用する。
-      if (ImGui::BeginDragDropTarget()) {
-         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_MODEL")) {
-            const char* assetId = static_cast<const char*>(payload->Data);
-            if (assetId && payload->DataSize > 1) {
-               if (auto* currentScene = BaseScene::GetCurrentScene()) {
-                  if (auto* editorContext = currentScene->GetEditorSceneContext()) {
-                     editorContext->SetModelAsset(&GetOwner(), assetId);
-                  } else {
-                     SetModelAssetByAssetId(assetId);
-                  }
-               } else {
-                  SetModelAssetByAssetId(assetId);
-               }
-            }
-         }
-         ImGui::EndDragDropTarget();
+      std::string nextAssetId = assetId_;
+      if (EditorUI::AssetReference(Tr("モデル", "Model"), nextAssetId, EditorAssetType::Model)) {
+         // 編集全体のUndoはInspectorのスナップショット経路へ集約する。
+         if (!SetModelAssetByAssetId(nextAssetId)) Logger::Warning("[MeshComponent] Model asset could not be loaded: " + nextAssetId);
       }
       ImGui::Spacing();
       return;

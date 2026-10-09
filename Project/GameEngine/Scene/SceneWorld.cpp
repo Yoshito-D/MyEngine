@@ -92,7 +92,7 @@ void SceneWorld::Clear() {
    looseObjectsById_.clear();
    skyboxes_.clear();
    genericObjects_.clear();
-   // EditorObjectStore は削除を遅延できる。Clear後に必ずフラッシュし、
+   // SceneObjectStore は削除を遅延できる。Clear後に必ずフラッシュし、
    // 旧シーンのEntityがグローバル検索へ残らない状態まで確定させる。
    objectStore_.Clear();
    objectStore_.FlushDeferredDeletes();
@@ -299,7 +299,7 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
       objectData["objectType"] = objectType;
    }
 
-   // 汎用ObjectとSkyboxはEditorObjectStoreの型別コンテナに入らないため、
+   // 汎用ObjectとSkyboxはSceneObjectStoreの型別コンテナに入らないため、
    // SceneWorld自身が所有し、loose object用の双方向索引へ登録する。
    if (objectType == "Generic" || objectType == "Object") {
       auto object = std::make_unique<Object>();

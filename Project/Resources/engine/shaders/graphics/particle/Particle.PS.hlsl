@@ -16,6 +16,10 @@ struct PixelShaderOutput
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
+cbuffer ParticleDrawParameters : register(b1)
+{
+    uint gRefractionPass;
+};
 Texture2D<float4> gTexture : register(t0);
 Texture2D<float4> gSceneColor : register(t1);
 Texture2D<float> gSceneDepth : register(t2);
@@ -71,14 +75,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     // カスタムストリーム z はカメラ近接フェードとして標準マテリアルで利用する。
     output.color.a *= input.customData.z;
 
-    float toonSteps = gMaterial.renderingParams.z;
-    if (toonSteps >= 2.0f)
-    {
-        output.color.rgb = floor(saturate(output.color.rgb) * (toonSteps - 1.0f) + 0.5f) / (toonSteps - 1.0f);
-    }
-    output.color.rgb *= gMaterial.renderingParams.x;
-
-    if (abs(gMaterial.effectParams.z) > 0.0001f)
+    if (gRefractionPass != 0)
     {
         // 通常画像は中心から放射状に歪ませ、明示指定されたRGフローマップだけを方向として解釈する。
         // 色から用途を推測しないことで、同じテクスチャがフレームごとに異なる方向へ歪むのを防ぐ。
@@ -98,13 +95,20 @@ PixelShaderOutput main(VertexShaderOutput input)
         float2 distortedUV = clamp(screenUV + distortionOffset, halfTexel, 1.0f - halfTexel);
         float4 distortedScene = gSceneColor.SampleLevel(gSampler, distortedUV, 0.0f);
         float distortionWeight = saturate(visibility * gMaterial.effectParams.w);
-        float3 emissiveColor = textureColor.rgb * input.color.rgb * gMaterial.color.rgb *
-            max(gMaterial.renderingParams.x - 1.0f, 0.0f);
         // 背景コピーはシステム内で共有されるため、元背景と混ぜて不透明出力すると
         // 透明な粒子まで先に描いた粒子・リボンの歪みを消してしまう。
         // 現在の描画先との合成はNormalブレンドに任せ、フェードと混合率をalphaに保持する。
-        // RGBは未乗算で渡す。発光にも固定機能でalphaが掛かるため、ここでは二重に掛けない。
-        output.color = float4(distortedScene.rgb + emissiveColor, distortionWeight);
+        // 粒子本体の色・輝度は別パスで元のブレンドを使い、屈折の有無や混合率から独立させる。
+        output.color = float4(distortedScene.rgb, distortionWeight);
+    }
+    else
+    {
+        float toonSteps = gMaterial.renderingParams.z;
+        if (toonSteps >= 2.0f)
+        {
+            output.color.rgb = floor(saturate(output.color.rgb) * (toonSteps - 1.0f) + 0.5f) / (toonSteps - 1.0f);
+        }
+        output.color.rgb *= gMaterial.renderingParams.x;
     }
      
     if (output.color.a <= gMaterial.renderingParams.y)

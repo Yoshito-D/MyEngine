@@ -5,7 +5,6 @@
 #include <unordered_set>
 
 #ifdef USE_IMGUI
-#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "imgui.h"
 #endif
 
@@ -179,28 +178,33 @@ bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
 #ifdef USE_IMGUI
 ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent) {
    ComponentInspectorAction action;
+   const ImGuiStyle& style = ImGui::GetStyle();
+   // チェックボックスの幅だけを固定し、見出しと内容には残りの幅を渡す。
+   // SameLineの折返しや表示言語のラベル幅に、Component行の配置を依存させない。
+   if (!ImGui::BeginTable("##ComponentInspector", 2,
+      ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoPadOuterX)) return action;
+   ImGui::TableSetupColumn("##Enabled", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight());
+   ImGui::TableSetupColumn("##Content", ImGuiTableColumnFlags_WidthStretch);
    for (auto& component : components_) {
       if (!component) {
          continue;
       }
       // コンポーネントごとにID空間を分け、同じ表示ラベルを使う編集項目同士の衝突を防ぐ。
       ImGui::PushID(component->GetTypeName());
-      const auto before = component->Serialize();
-      const bool wasEnabled = component->IsEnabled();
-      bool enabled = wasEnabled;
-      if (ImGui::Checkbox(LocalizeEditorText("有効", "Enabled"), &enabled)) component->SetEnabled(enabled);
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      bool enabled = component->IsEnabled();
+      if (ImGui::Checkbox("##Enabled", &enabled)) component->SetEnabled(enabled);
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", LocalizeEditorText("有効", "Enabled"));
 
+      ImGui::TableSetColumnIndex(1);
       const ImVec2 headerPosition = ImGui::GetCursorScreenPos();
       const float headerWidth = ImGui::GetContentRegionAvail().x;
       // 各コンポーネントが最初に描くCollapsingHeaderへ、後描画の削除ボタンを重ねられるようにする。
       ImGui::SetNextItemAllowOverlap();
       component->DrawInspector();
-      if (before != component->Serialize() || wasEnabled != component->IsEnabled()) {
-         EditorUI::MarkChanged();
-      }
 
       const ImVec2 contentEndPosition = ImGui::GetCursorScreenPos();
-      const ImGuiStyle& style = ImGui::GetStyle();
       const float removeButtonWidth = ImGui::CalcTextSize("X").x + style.FramePadding.x * 2.0f;
       const float removeButtonX =
          headerPosition.x + std::max(headerWidth - removeButtonWidth - style.FramePadding.x, 0.0f);
@@ -242,8 +246,11 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
       }
       // 絶対座標へ一時移動したカーソルを戻し、次のコンポーネントのレイアウトを維持する。
       ImGui::SetCursorScreenPos(contentEndPosition);
+      // Tableのセル終端では、カーソルの復元位置も内容の境界として確定させる。
+      ImGui::Dummy(ImVec2(0.0f, 0.0f));
       ImGui::PopID();
    }
+   ImGui::EndTable();
    return action;
 }
 #endif

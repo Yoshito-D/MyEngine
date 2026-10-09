@@ -1,5 +1,5 @@
 #include "GameEngine/pch.h"
-#include "GameEngine/Editor/EditorObjectStore.h"
+#include "GameEngine/Scene/SceneObjectStore.h"
 
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
@@ -21,7 +21,8 @@ std::string BuildNameFromAssetId(const std::string& assetId) {
    if (assetId.empty()) {
       return "EditorModel";
    }
-   return std::filesystem::path(assetId).stem().string();
+   const auto name = std::filesystem::path(std::u8string(assetId.begin(), assetId.end())).stem().u8string();
+   return std::string(reinterpret_cast<const char*>(name.data()), name.size());
 }
 
 const char* ToSpriteAnchorPointName(Sprite::AnchorPoint anchorPoint) {
@@ -80,22 +81,16 @@ Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::
       if (name == "BottomRight") {
          return Sprite::AnchorPoint::BottomRight;
       }
-   } else if (value.is_number_integer()) {
-      // 旧シーンの整数値も有効範囲内だけ受け入れて後方互換性を保つ。
-      const int index = value.get<int>();
-      if (index >= static_cast<int>(Sprite::AnchorPoint::TopLeft) &&
-         index <= static_cast<int>(Sprite::AnchorPoint::BottomRight)) {
-         return static_cast<Sprite::AnchorPoint>(index);
-      }
    }
 
    return fallback;
 }
 } // namespace
 
-EditorObjectStore::~EditorObjectStore() = default;
+SceneObjectStore::SceneObjectStore() = default;
+SceneObjectStore::~SceneObjectStore() = default;
 
-Object* EditorObjectStore::CreateGenericObject(const Transform* initialTransform, const std::string& requestedId) {
+Object* SceneObjectStore::CreateGenericObject(const Transform* initialTransform, const std::string& requestedId) {
    auto object = std::make_unique<Object>();
    Object* rawObject = object.get();
    auto* transformComponent = rawObject->AddComponent<TransformComponent>();
@@ -110,7 +105,7 @@ Object* EditorObjectStore::CreateGenericObject(const Transform* initialTransform
    return rawObject;
 }
 
-Object* EditorObjectStore::CreateModel(const std::string& assetId, const Transform* initialTransform, const std::string& requestedId) {
+Object* SceneObjectStore::CreateModel(const std::string& assetId, const Transform* initialTransform, const std::string& requestedId) {
    std::shared_ptr<ModelAsset> modelAsset;
    // 読み込み失敗時に空のModelを各レジストリへ残さないよう、所有オブジェクト生成より先にアセットを解決する。
    if (!assetId.empty()) {
@@ -138,21 +133,16 @@ Object* EditorObjectStore::CreateModel(const std::string& assetId, const Transfo
    return rawModel;
 }
 
-Object* EditorObjectStore::CreateSprite(const std::string& textureAssetId, const Transform* initialTransform, const std::string& requestedId) {
+Object* SceneObjectStore::CreateSprite(const std::string& textureAssetId, const Transform* initialTransform, const std::string& requestedId) {
    if (textureAssetId.empty()) {
       return nullptr;
    }
 
-   EnsureTextureLoaded(textureAssetId);
-
-   // 未ロード時にも編集可能な既定寸法を使い、利用可能なら実テクスチャのピクセル寸法へ合わせる。
-   Vector2 spriteSize(128.0f, 128.0f);
-   if (Texture* texture = EngineContext::GetTexture(textureAssetId)) {
-      if (texture->GetMetadata().IsCubemap()) {
-         return nullptr;
-      }
-      spriteSize = Vector2(static_cast<float>(texture->GetWidth()), static_cast<float>(texture->GetHeight()));
+   Texture* texture = EngineContext::GetTexture(textureAssetId);
+   if (!texture || texture->GetMetadata().IsCubemap()) {
+      return nullptr;
    }
+   const Vector2 spriteSize(static_cast<float>(texture->GetWidth()), static_cast<float>(texture->GetHeight()));
 
    auto sprite = std::make_unique<Sprite>();
    Sprite* rawSprite = sprite.get();
@@ -175,7 +165,7 @@ Object* EditorObjectStore::CreateSprite(const std::string& textureAssetId, const
    return rawSprite;
 }
 
-Object* EditorObjectStore::CreateUIText(const Transform* initialTransform, const std::string& requestedId) {
+Object* SceneObjectStore::CreateUIText(const Transform* initialTransform, const std::string& requestedId) {
    auto uiText = std::make_unique<UIText>();
    UIText* rawText = uiText.get();
 
@@ -200,7 +190,7 @@ Object* EditorObjectStore::CreateUIText(const Transform* initialTransform, const
    return rawText;
 }
 
-Object* EditorObjectStore::CreateSkybox(const std::string& requestedId) {
+Object* SceneObjectStore::CreateSkybox(const std::string& requestedId) {
    GraphicsDevice* graphicsDevice = EngineContext::GetGraphicsDevice();
    if (!graphicsDevice) {
       return nullptr;
@@ -216,13 +206,15 @@ Object* EditorObjectStore::CreateSkybox(const std::string& requestedId) {
    return rawSkybox;
 }
 
-ParticleSystem* EditorObjectStore::CreateParticleSystem(const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
+ParticleSystem* SceneObjectStore::CreateParticleSystem(const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
    auto particleSystem = std::make_unique<ParticleSystem>();
    ParticleSystem* rawParticleSystem = particleSystem.get();
    rawParticleSystem->Create();
    rawParticleSystem->SetName(BuildUniqueObjectName(assetId.empty() ? "ParticleSystem" : BuildNameFromAssetId(assetId)));
    if (!assetId.empty()) {
-      rawParticleSystem->LoadFromJson((std::filesystem::path("resources") / assetId).generic_string());
+      if (!rawParticleSystem->LoadFromJson((std::filesystem::path("resources") / assetId).generic_string())) {
+         return nullptr;
+      }
    }
    // アセット内のShape位置よりユーザーがドロップした配置を優先するため、JSON読込後にTransformを上書きする。
    if (initialTransform && rawParticleSystem->GetShapeModule()) {
@@ -236,7 +228,7 @@ ParticleSystem* EditorObjectStore::CreateParticleSystem(const std::string& asset
    return rawParticleSystem;
 }
 
-Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
+Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
    if (!objectData.is_object()) {
       return nullptr;
    }
@@ -309,14 +301,17 @@ Object* EditorObjectStore::RestoreObject(const nlohmann::json& objectData) {
    return object;
 }
 
-ParticleSystem* EditorObjectStore::RestoreParticleSystem(const nlohmann::json& objectData) {
+ParticleSystem* SceneObjectStore::RestoreParticleSystem(const nlohmann::json& objectData) {
    if (!objectData.is_object()) {
       return nullptr;
    }
 
    const std::string assetId = objectData.value("assetId", "");
    const std::string id = objectData.value("id", "");
-   ParticleSystem* particleSystem = CreateParticleSystem(assetId, id);
+   const bool hasSnapshot = objectData.contains("data") && objectData.at("data").is_object();
+   // 完全な保存状態があれば元テンプレートの再読込を省き、ファイルの削除後でもUndo可能にする。
+   ParticleSystem* particleSystem = CreateParticleSystem(hasSnapshot ? std::string{} : assetId, id);
+   if (particleSystem) particleSystemAssetIds_[particleSystem] = assetId;
    // assetIdはテンプレート生成用、dataは保存時点の完全な編集状態なので後者を最後に適用する。
    if (particleSystem && objectData.contains("data") && objectData.at("data").is_object()) {
       particleSystem->FromJson(objectData.at("data"));
@@ -327,7 +322,7 @@ ParticleSystem* EditorObjectStore::RestoreParticleSystem(const nlohmann::json& o
    return particleSystem;
 }
 
-bool EditorObjectStore::DeleteObject(const std::string& objectId) {
+bool SceneObjectStore::DeleteObject(const std::string& objectId) {
    auto mapIt = idToObject_.find(objectId);
    if (mapIt == idToObject_.end()) {
       return false;
@@ -422,7 +417,7 @@ bool EditorObjectStore::DeleteObject(const std::string& objectId) {
    return false;
 }
 
-bool EditorObjectStore::DeleteParticleSystem(const std::string& objectId) {
+bool SceneObjectStore::DeleteParticleSystem(const std::string& objectId) {
    auto mapIt = idToParticleSystem_.find(objectId);
    if (mapIt == idToParticleSystem_.end()) {
       return false;
@@ -446,7 +441,7 @@ bool EditorObjectStore::DeleteParticleSystem(const std::string& objectId) {
    return true;
 }
 
-void EditorObjectStore::FlushDeferredDeletes() {
+void SceneObjectStore::FlushDeferredDeletes() {
    // UI・描画側が前フレームの一覧を使い終えたフレーム先頭で実体を破棄する。
    deferredDeleteGenericObjects_.clear();
    deferredDeleteParticleSystems_.clear();
@@ -457,7 +452,7 @@ void EditorObjectStore::FlushDeferredDeletes() {
    pendingDeletionObjects_.clear();
 }
 
-void EditorObjectStore::Clear() {
+void SceneObjectStore::Clear() {
    // 各具象型の静的レジストリを解除してからunique_ptrを遅延キューへ移し、列挙中の破棄を避ける。
    for (auto& object : genericObjects_) {
       if (object) {
@@ -513,21 +508,21 @@ void EditorObjectStore::Clear() {
    genericObjects_.clear();
 }
 
-bool EditorObjectStore::Contains(const Object* object) const {
+bool SceneObjectStore::Contains(const Object* object) const {
    return object && objectToId_.contains(object);
 }
 
-bool EditorObjectStore::Contains(const ParticleSystem* particleSystem) const {
+bool SceneObjectStore::Contains(const ParticleSystem* particleSystem) const {
    return particleSystem && particleSystemToId_.contains(particleSystem);
 }
 
-bool EditorObjectStore::ContainsId(const std::string& objectId) const {
+bool SceneObjectStore::ContainsId(const std::string& objectId) const {
    // BaseScene所有EntityともID空間を共有するため、Store外のグローバルEntity IDまで衝突判定へ含める。
    return idToObject_.contains(objectId) || idToParticleSystem_.contains(objectId) ||
       Object::FindByEntityId(objectId) != nullptr;
 }
 
-std::string EditorObjectStore::GetId(const Object* object) const {
+std::string SceneObjectStore::GetId(const Object* object) const {
    auto it = objectToId_.find(object);
    if (it == objectToId_.end()) {
       return {};
@@ -535,7 +530,7 @@ std::string EditorObjectStore::GetId(const Object* object) const {
    return it->second;
 }
 
-std::string EditorObjectStore::GetId(const ParticleSystem* particleSystem) const {
+std::string SceneObjectStore::GetId(const ParticleSystem* particleSystem) const {
    auto it = particleSystemToId_.find(particleSystem);
    if (it == particleSystemToId_.end()) {
       return {};
@@ -543,7 +538,7 @@ std::string EditorObjectStore::GetId(const ParticleSystem* particleSystem) const
    return it->second;
 }
 
-Object* EditorObjectStore::FindById(const std::string& objectId) {
+Object* SceneObjectStore::FindById(const std::string& objectId) {
    auto it = idToObject_.find(objectId);
    if (it == idToObject_.end()) {
       return nullptr;
@@ -551,7 +546,7 @@ Object* EditorObjectStore::FindById(const std::string& objectId) {
    return it->second;
 }
 
-const Object* EditorObjectStore::FindById(const std::string& objectId) const {
+const Object* SceneObjectStore::FindById(const std::string& objectId) const {
    auto it = idToObject_.find(objectId);
    if (it == idToObject_.end()) {
       return nullptr;
@@ -559,7 +554,7 @@ const Object* EditorObjectStore::FindById(const std::string& objectId) const {
    return it->second;
 }
 
-ParticleSystem* EditorObjectStore::FindParticleById(const std::string& objectId) {
+ParticleSystem* SceneObjectStore::FindParticleById(const std::string& objectId) {
    auto it = idToParticleSystem_.find(objectId);
    if (it == idToParticleSystem_.end()) {
       return nullptr;
@@ -567,7 +562,7 @@ ParticleSystem* EditorObjectStore::FindParticleById(const std::string& objectId)
    return it->second;
 }
 
-const ParticleSystem* EditorObjectStore::FindParticleById(const std::string& objectId) const {
+const ParticleSystem* SceneObjectStore::FindParticleById(const std::string& objectId) const {
    auto it = idToParticleSystem_.find(objectId);
    if (it == idToParticleSystem_.end()) {
       return nullptr;
@@ -575,7 +570,7 @@ const ParticleSystem* EditorObjectStore::FindParticleById(const std::string& obj
    return it->second;
 }
 
-nlohmann::json EditorObjectStore::SerializeObject(const std::string& objectId) const {
+nlohmann::json SceneObjectStore::SerializeObject(const std::string& objectId) const {
    auto objectIt = idToObject_.find(objectId);
    if (objectIt == idToObject_.end()) {
       auto particleIt = idToParticleSystem_.find(objectId);
@@ -598,7 +593,7 @@ nlohmann::json EditorObjectStore::SerializeObject(const std::string& objectId) c
    return SerializeObjectState(objectIt->second, objectId);
 }
 
-nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, const std::string& id) const {
+nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, const std::string& id) const {
    if (!object) {
       return nlohmann::json::object();
    }
@@ -667,7 +662,7 @@ nlohmann::json EditorObjectStore::SerializeObjectState(const Object* object, con
    };
 }
 
-bool EditorObjectStore::ApplyObjectState(Object* object, const nlohmann::json& objectData) const {
+bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& objectData) const {
    if (!object || !objectData.is_object()) {
       return false;
    }
@@ -703,7 +698,7 @@ bool EditorObjectStore::ApplyObjectState(Object* object, const nlohmann::json& o
    return true;
 }
 
-nlohmann::json EditorObjectStore::SerializeParticleSystemState(const ParticleSystem* particleSystem, const std::string& id, const std::string& assetId) const {
+nlohmann::json SceneObjectStore::SerializeParticleSystemState(const ParticleSystem* particleSystem, const std::string& id, const std::string& assetId) const {
    if (!particleSystem) {
       return nlohmann::json::object();
    }
@@ -717,7 +712,7 @@ nlohmann::json EditorObjectStore::SerializeParticleSystemState(const ParticleSys
    };
 }
 
-bool EditorObjectStore::ApplyParticleSystemState(ParticleSystem* particleSystem, const nlohmann::json& objectData) const {
+bool SceneObjectStore::ApplyParticleSystemState(ParticleSystem* particleSystem, const nlohmann::json& objectData) const {
    if (!particleSystem || !objectData.is_object()) {
       return false;
    }
@@ -732,7 +727,7 @@ bool EditorObjectStore::ApplyParticleSystemState(ParticleSystem* particleSystem,
    return true;
 }
 
-nlohmann::json EditorObjectStore::SerializeAll() const {
+nlohmann::json SceneObjectStore::SerializeAll() const {
    nlohmann::json objects = nlohmann::json::array();
    // 所有コンテナは具象型ごとに分かれているが、復元側がobjectTypeで振り分けられる単一配列へ正規化する。
    for (const auto& object : genericObjects_) {
@@ -812,8 +807,8 @@ nlohmann::json EditorObjectStore::SerializeAll() const {
    return objects;
 }
 
-std::string EditorObjectStore::AllocateId(const std::string& requestedId) {
-   if (!requestedId.empty() && !ContainsId(requestedId)) {
+std::string SceneObjectStore::AllocateId(const std::string& requestedId) {
+   if (!requestedId.empty() && !ContainsId(requestedId) && !Object::FindByEntityId(requestedId)) {
       // 復元IDの番号を採用した後に自動採番が衝突しないようカウンターも追従させる。
       BumpCounterFromId(requestedId);
       return requestedId;
@@ -827,7 +822,7 @@ std::string EditorObjectStore::AllocateId(const std::string& requestedId) {
    }
 }
 
-std::string EditorObjectStore::BuildUniqueObjectName(const std::string& baseName) const {
+std::string SceneObjectStore::BuildUniqueObjectName(const std::string& baseName) const {
    const std::string base = baseName.empty() ? "EditorObject" : baseName;
 
    auto exists = [](const std::string& name) {
@@ -858,7 +853,7 @@ std::string EditorObjectStore::BuildUniqueObjectName(const std::string& baseName
    }
 }
 
-void EditorObjectStore::RegisterObject(const std::string& id, Object* object) {
+void SceneObjectStore::RegisterObject(const std::string& id, Object* object) {
    if (!object || id.empty()) {
       return;
    }
@@ -869,7 +864,7 @@ void EditorObjectStore::RegisterObject(const std::string& id, Object* object) {
    object->SetEntityId(id);
 }
 
-void EditorObjectStore::RegisterParticleSystem(const std::string& id, ParticleSystem* particleSystem, const std::string& assetId) {
+void SceneObjectStore::RegisterParticleSystem(const std::string& id, ParticleSystem* particleSystem, const std::string& assetId) {
    if (!particleSystem || id.empty()) {
       return;
    }
@@ -880,19 +875,30 @@ void EditorObjectStore::RegisterParticleSystem(const std::string& id, ParticleSy
    particleSystemAssetIds_[particleSystem] = assetId;
 }
 
-void EditorObjectStore::UnregisterObject(Object* object) {
+void SceneObjectStore::UnregisterObject(Object* object) {
    if (!object) {
       return;
    }
 
    auto objectIt = objectToId_.find(object);
    if (objectIt != objectToId_.end()) {
-      idToObject_.erase(objectIt->second);
+      const std::string oldId = objectIt->second;
+      idToObject_.erase(oldId);
       objectToId_.erase(objectIt);
+      // 実体は描画フレーム末まで残すが、Undoは同じ安定IDを即座に復元できる必要がある。
+      // 子は先にルートへ戻し、一時IDの伝播や旧実体の破棄による再解除を防ぐ。
+      for (auto* child : Object::GetRegisteredObjects()) {
+         if (child && child != object && child->GetParentEntityId() == oldId) child->SetParentEntityId({});
+      }
+      std::string retiredId;
+      do {
+         retiredId = "pending_delete_" + oldId + "_" + std::to_string(nextObjectIndex_++);
+      } while (Object::FindByEntityId(retiredId));
+      object->SetEntityId(retiredId);
    }
 }
 
-void EditorObjectStore::UnregisterParticleSystem(ParticleSystem* particleSystem) {
+void SceneObjectStore::UnregisterParticleSystem(ParticleSystem* particleSystem) {
    if (!particleSystem) {
       return;
    }
@@ -905,7 +911,7 @@ void EditorObjectStore::UnregisterParticleSystem(ParticleSystem* particleSystem)
    particleSystemAssetIds_.erase(particleSystem);
 }
 
-void EditorObjectStore::UnregisterOwnedRuntimeSystems(Object* object) {
+void SceneObjectStore::UnregisterOwnedRuntimeSystems(Object* object) {
    if (!object) {
       return;
    }
@@ -917,7 +923,7 @@ void EditorObjectStore::UnregisterOwnedRuntimeSystems(Object* object) {
    }
 }
 
-void EditorObjectStore::BumpCounterFromId(const std::string& id) {
+void SceneObjectStore::BumpCounterFromId(const std::string& id) {
    constexpr const char* kPrefix = "editor_object_";
    const std::string prefix = kPrefix;
    if (id.rfind(prefix, 0) != 0) {
@@ -937,7 +943,7 @@ void EditorObjectStore::BumpCounterFromId(const std::string& id) {
    }
 }
 
-nlohmann::json EditorObjectStore::SerializeSpriteData(const Sprite* sprite) {
+nlohmann::json SceneObjectStore::SerializeSpriteData(const Sprite* sprite) {
    if (!sprite) {
       return nlohmann::json::object();
    }
@@ -947,53 +953,15 @@ nlohmann::json EditorObjectStore::SerializeSpriteData(const Sprite* sprite) {
    };
 }
 
-void EditorObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::json& data) const {
+void SceneObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::json& data) const {
    if (!sprite || !data.is_object()) {
       return;
    }
 
-   // 現行SerializeではComponent側が保持する項目も、旧専用spriteブロックからは引き続き復元する。
-   if (data.contains("size") && data.at("size").is_array() && data.at("size").size() == 2) {
-      sprite->SetSize(Vector2(data.at("size")[0].get<float>(), data.at("size")[1].get<float>()));
-   }
-
-   if (data.contains("anchor") && data.at("anchor").is_array() && data.at("anchor").size() == 2) {
-      sprite->SetAnchorPoint(Vector2(data.at("anchor")[0].get<float>(), data.at("anchor")[1].get<float>()));
-   }
-
+   // Sprite専用状態はスクリーンアンカーだけで、寸法・反転・UVはComponentが復元する。
    if (data.contains("screenAnchorPoint")) {
       sprite->SetScreenAnchorPoint(ParseSpriteAnchorPoint(data.at("screenAnchorPoint"), sprite->GetScreenAnchorPoint()));
    }
-
-   if (data.contains("flipX") && data.at("flipX").is_boolean()) {
-      sprite->SetFlipX(data.at("flipX").get<bool>());
-   }
-   if (data.contains("flipY") && data.at("flipY").is_boolean()) {
-      sprite->SetFlipY(data.at("flipY").get<bool>());
-   }
-
-   if (data.contains("textureLeftTop") && data.at("textureLeftTop").is_array() && data.at("textureLeftTop").size() == 2) {
-      sprite->SetTextureLeftTop(Vector2(data.at("textureLeftTop")[0].get<float>(), data.at("textureLeftTop")[1].get<float>()));
-   }
-
-   if (data.contains("textureSize") && data.at("textureSize").is_array() && data.at("textureSize").size() == 2) {
-      sprite->SetTextureSize(Vector2(data.at("textureSize")[0].get<float>(), data.at("textureSize")[1].get<float>()));
-   }
-}
-
-bool EditorObjectStore::EnsureTextureLoaded(const std::string& textureAssetId) const {
-   if (textureAssetId.empty()) {
-      return false;
-   }
-
-   if (EngineContext::GetTexture(textureAssetId)) {
-      return true;
-   }
-
-   // Texture管理側に相対パス、stem、ファイル名のいずれで登録されていても既存リソースを再利用する。
-   const std::filesystem::path texturePath(textureAssetId);
-   return EngineContext::GetTexture(texturePath.stem().string()) != nullptr ||
-      EngineContext::GetTexture(texturePath.filename().string()) != nullptr;
 }
 
 } // namespace GameEngine
