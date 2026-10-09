@@ -11,9 +11,8 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
-#include <cstring>
-#include <filesystem>
 #endif
 
 namespace {
@@ -780,30 +779,19 @@ void ParticleEmitterComponent::DrawInspector() {
 	  }
 
 	  if (open) {
-		 // JSON パス
-		 char pathBuf[ImGuiHelper::kDefaultPathBufferSize]{};
-		 const size_t pathLen = std::min(slot.jsonPath.size(), sizeof(pathBuf) - 1);
-		 std::memcpy(pathBuf, slot.jsonPath.c_str(), pathLen);
-		 if (ImGui::InputText(Tr("JSONパス", "JSON Path"), pathBuf, sizeof(pathBuf))) {
-			slot.jsonPath = pathBuf;
-		 }
-		 if (ImGui::BeginDragDropTarget()) {
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_PARTICLE")) {
-			   const char* assetId = static_cast<const char*>(payload->Data);
-			   if (assetId && payload->DataSize > 1) {
-				  slot.jsonPath = (std::filesystem::path("resources") / assetId).generic_string();
-				  LoadSlot(slot);
-			   }
+		 std::string nextPath = slot.jsonPath;
+		 if (EditorUI::AssetFileReference(Tr("パーティクル", "Particle"), nextPath, EditorAssetType::Particle)) {
+			const std::string previousPath = slot.jsonPath;
+			auto previousSystem = std::move(slot.particleSystem);
+			slot.jsonPath = nextPath;
+			// 読込失敗時は旧参照と実体を両方維持し、見た目だけ変更済みの状態を残さない。
+			if (nextPath.empty()) {
+			   if (previousSystem) previousSystem->Stop();
+			} else if (!LoadSlot(slot)) {
+			   slot.jsonPath = previousPath;
+			   slot.particleSystem = std::move(previousSystem);
 			}
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_JSON")) {
-			   slot.jsonPath = static_cast<const char*>(payload->Data);
-			   LoadSlot(slot);
-			}
-			ImGui::EndDragDropTarget();
 		 }
-		 ImGui::SameLine();
-		 if (ImGui::Button(Tr("読み込み", "Load"))) { LoadSlot(slot); }
-		 ImGui::SameLine();
 		 if (ImGui::Button(Tr("再読み込み", "Reload"))) {
 			if (slot.particleSystem && !slot.jsonPath.empty()) {
 			   slot.particleSystem->LoadFromJson(slot.jsonPath);

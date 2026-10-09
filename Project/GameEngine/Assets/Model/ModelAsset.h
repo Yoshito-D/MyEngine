@@ -158,14 +158,17 @@ struct ModelData {
 /// @brief モデルアセットクラス
 class ModelAsset {
 public:
+   /// @brief 永続化と参照解決で使用する完全なアセットIDを設定する。
    void SetAssetId(const std::string& assetId) { assetId_ = assetId; }
+   /// @brief このモデルの完全なアセットIDを取得する。
    const std::string& GetAssetId() const { return assetId_; }
 
-   /// @brief objファイルをロードする
+   /// @brief モデルを検証してからCPUデータとGPUリソースをロードする。
    /// @param device グラフィックスデバイス
    /// @param modelPath モデルファイルのパス
    /// @param modelName モデル名
-   void LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName);
+   /// @return 読込成功時はtrue。無効なモデルやデバイスでは既存データを変更せずfalse。
+   bool LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName);
 
    /// @brief モデル単位で利用するスキンクラスタを生成する
    std::optional<SkinCluster> CreateSkinClusterInstance() const;

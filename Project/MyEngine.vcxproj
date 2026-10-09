@@ -316,10 +316,11 @@
     </ClCompile>
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\ModelRenderer.cpp" />
     <ClCompile Include="GameEngine\Editor\Renderer\RendererEditorController.cpp" />
-    <ClCompile Include="GameEngine\Editor\EditorAssetRegistry.cpp" />
-    <ClCompile Include="GameEngine\Editor\AudioAssetWidget.cpp" />
+    <ClCompile Include="GameEngine\Editor\EditorAssetRegistry.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorCommand.cpp" />
-    <ClCompile Include="GameEngine\Editor\EditorObjectStore.cpp" />
+    <ClCompile Include="GameEngine\Scene\SceneObjectStore.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorSceneContext.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\SpriteRenderer.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\ParticleRenderer.cpp" />
@@ -565,6 +566,7 @@
     <ClInclude Include="GameEngine\Assets\Font\FontManager.h" />
     <ClInclude Include="GameEngine\Assets\Font\MsdfFont.h" />
     <ClInclude Include="GameEngine\Assets\AssetManager.h" />
+    <ClInclude Include="GameEngine\Assets\ResourceAssetPath.h" />
     <ClInclude Include="GameEngine\Assets\Material\MaterialManager.h" />
     <ClInclude Include="GameEngine\Assets\Model\ModelAssetManager.h" />
     <ClInclude Include="GameEngine\Assets\Audio\SoundManager.h" />
@@ -636,9 +638,8 @@
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\ModelRenderer.h" />
     <ClInclude Include="GameEngine\Editor\Renderer\RendererEditorController.h" />
     <ClInclude Include="GameEngine\Editor\EditorAssetRegistry.h" />
-    <ClInclude Include="GameEngine\Editor\AudioAssetWidget.h" />
     <ClInclude Include="GameEngine\Editor\EditorCommand.h" />
-    <ClInclude Include="GameEngine\Editor\EditorObjectStore.h" />
+    <ClInclude Include="GameEngine\Scene\SceneObjectStore.h" />
     <ClInclude Include="GameEngine\Editor\EditorSceneContext.h" />
     <ClInclude Include="GameEngine\Graphics\Pipeline\RootBindingSlots.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\SpriteRenderer.h" />
@@ -876,5 +877,16 @@
   <ItemGroup>
     <None Include="Resources\engine\pipelines\root_signatures\graphics\unlit_tint_rootsig.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\unlit_tint_pipeline.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tests\EditorAssetRegistryTests.cpp" />
+    <None Include="..\Tests\ParticleDistortionTests.cpp" />
+    <None Include="..\Tests\ParticleRandomRangeTests.cpp" />
+    <None Include="Tests\EditorSceneContextTests.cpp" />
+    <None Include="Tests\EditorImGuiLayoutTests.cpp" />
+    <None Include="..\Tests\EditorWindowTests.cpp" />
+    <None Include="..\Tests\RunEditorWindowTests.ps1" />
+    <None Include="Tests\TexturePathTests.cpp" />
+    <None Include="Docs\Editor\EditorWorkflow.md" />
   </ItemGroup>
 </Project>

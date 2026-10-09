@@ -10,6 +10,7 @@
 #include <numbers>
 #include <random>
 #include <algorithm>
+#include <filesystem>
 
 namespace GameEngine {
 
@@ -1817,10 +1818,10 @@ void ParticleSystem::EmitParticle() {
 bool ParticleSystem::SaveToJson(const std::string& filePath) const {
    try {
 	  nlohmann::json j = ToJson();
-	  std::ofstream ofs(filePath);
+	  std::ofstream ofs(std::filesystem::path(std::u8string(filePath.begin(), filePath.end())));
 	  if (!ofs.is_open()) return false;
 	  ofs << j.dump(kJsonIndentSize);
-	  return true;
+	  return static_cast<bool>(ofs);
    }
    catch (...) {
 	  return false;
@@ -1829,7 +1830,7 @@ bool ParticleSystem::SaveToJson(const std::string& filePath) const {
 
 bool ParticleSystem::LoadFromJson(const std::string& filePath) {
    try {
-	  std::ifstream ifs(filePath);
+	  std::ifstream ifs(std::filesystem::path(std::u8string(filePath.begin(), filePath.end())));
 	  if (!ifs.is_open()) return false;
 	  nlohmann::json j;
 	  ifs >> j;

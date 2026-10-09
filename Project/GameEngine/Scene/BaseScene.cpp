@@ -1,7 +1,7 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Scene/BaseScene.h"
 #include "GameEngine/Framework/EngineContext.h"
-#include "GameEngine/Editor/EditorObjectStore.h"
+#include "GameEngine/Scene/SceneObjectStore.h"
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
@@ -105,7 +105,7 @@ void DrawEditorComponentDebug() {
 
 class RuntimeSceneApplier {
 public:
-   explicit RuntimeSceneApplier(GameEngine::EditorObjectStore& objectStore)
+   explicit RuntimeSceneApplier(GameEngine::SceneObjectStore& objectStore)
 	  : objectStore_(objectStore) {}
 
    bool Apply(const nlohmann::json& sceneData) {
@@ -429,7 +429,7 @@ private:
 	  }
    }
 
-   GameEngine::EditorObjectStore& objectStore_;
+   GameEngine::SceneObjectStore& objectStore_;
    std::unordered_map<const GameEngine::Object*, std::string> sceneObjectKeys_;
    std::unordered_map<const GameEngine::ParticleSystem*, std::string> sceneParticleSystemKeys_;
 };
@@ -642,7 +642,9 @@ void BaseScene::LoadSceneDataIfNeeded() {
 }
 
 void BaseScene::LoadRuntimeSceneIfNeeded() {
-   const std::filesystem::path filePath = std::filesystem::path("resources") / "game" / "scenes" / (editorSceneName_ + ".json");
+   const std::string filename = editorSceneName_ + ".json";
+   const std::filesystem::path filePath = std::filesystem::path("resources") / "game" / "scenes" /
+      std::filesystem::path(std::u8string(filename.begin(), filename.end()));
    if (!std::filesystem::exists(filePath)) {
 	  return;
    }
@@ -662,7 +664,7 @@ void BaseScene::LoadRuntimeSceneIfNeeded() {
 
    // Runtimeでも既存の復元ロジックを再利用するためStoreを所有コンテナとして使う。
    // 適用失敗時は部分生成されたObjectごと破棄し、C++生成シーンだけで継続する。
-   runtimeSceneObjectStore_ = std::make_unique<EditorObjectStore>();
+   runtimeSceneObjectStore_ = std::make_unique<SceneObjectStore>();
    RuntimeSceneApplier applier(*runtimeSceneObjectStore_);
    if (!applier.Apply(sceneData)) {
 	  runtimeSceneObjectStore_.reset();
@@ -677,7 +679,9 @@ void BaseScene::LoadEditorSceneIfNeeded() {
 }
 
 std::filesystem::path BaseScene::GetDebugCameraStateFilePath() const {
-   return std::filesystem::path("resources") / "game" / "editor" / "debug_cameras" / (editorSceneName_ + ".json");
+   const std::string filename = editorSceneName_ + ".json";
+   return std::filesystem::path("resources") / "game" / "editor" / "debug_cameras" /
+      std::filesystem::path(std::u8string(filename.begin(), filename.end()));
 }
 
 void BaseScene::LoadDebugCameraState() {

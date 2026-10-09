@@ -4,7 +4,7 @@
 
 #include "GameEngine/Editor/EditorAssetRegistry.h"
 #include "GameEngine/Editor/EditorCommand.h"
-#include "GameEngine/Editor/EditorObjectStore.h"
+#include "GameEngine/Scene/SceneObjectStore.h"
 #include "GameEngine/Math/MathUtils.h"
 #include <cstddef>
 #include <filesystem>
@@ -64,6 +64,7 @@ public:
    /// @brief JSONからオブジェクト・パーティクル・カメラを復元する
    /// @param sceneData 読み込むシーンJSON
    /// @return 必要なシーン構造を適用できた場合はtrue
+   /// @note 失敗時は保存前の状態と安定IDによる選択・履歴を復元する。旧リソースの復元失敗は状態メッセージで通知する。
    /// @note 描画コマンドが旧オブジェクトを参照していないフレーム境界で呼び出す
    bool LoadFromJson(const nlohmann::json& sceneData);
    /// @brief シーンJSONのヒエラルキー順を現在のオブジェクトへ適用する
@@ -101,17 +102,17 @@ public:
    void SelectObject(Object* object);
    /// @brief 選択中の通常オブジェクトを取得する
    /// @return 選択対象。未選択の場合はnullptr
-   Object* GetSelectedObject() { return selectedObject_; }
+   Object* GetSelectedObject() { return IsObjectAlive(selectedObject_) ? selectedObject_ : nullptr; }
    /// @brief const Contextの選択状態を読み取り専用で参照する。
-   const Object* GetSelectedObject() const { return selectedObject_; }
+   const Object* GetSelectedObject() const { return IsObjectAlive(selectedObject_) ? selectedObject_ : nullptr; }
    /// @brief パーティクルを単一選択し、通常オブジェクト選択を解除する
    /// @param particleSystem 選択対象。nullptrで選択解除
    void SelectParticleSystem(ParticleSystem* particleSystem);
    /// @brief 選択中のパーティクルシステムを取得する
    /// @return 選択対象。未選択の場合はnullptr
-   ParticleSystem* GetSelectedParticleSystem() { return selectedParticleSystem_; }
+   ParticleSystem* GetSelectedParticleSystem() { return IsParticleSystemAlive(selectedParticleSystem_) ? selectedParticleSystem_ : nullptr; }
    /// @brief const Contextの選択状態を読み取り専用で参照する。
-   const ParticleSystem* GetSelectedParticleSystem() const { return selectedParticleSystem_; }
+   const ParticleSystem* GetSelectedParticleSystem() const { return IsParticleSystemAlive(selectedParticleSystem_) ? selectedParticleSystem_ : nullptr; }
 
    /// @brief オブジェクトの親とヒエラルキー表示順を変更する
    /// @param movedObject 移動するオブジェクト
@@ -145,9 +146,6 @@ public:
 
    /// @brief ビューポート前方に描画コンポーネントを持たない空オブジェクトを作成する
    void CreateEmptyObject();
-   /// @brief モデルアセットをビューポート前方へUndo可能な形で配置する
-   /// @param assetId モデルのアセットID
-   void CreateModelFromAsset(const std::string& assetId);
    /// @brief テクスチャを使うスプライトをビューポート前方へ配置する
    /// @param textureAssetId テクスチャのアセットID
    void CreateSpriteFromTexture(const std::string& textureAssetId);
@@ -163,10 +161,6 @@ public:
    void CreateSpotLight();
    /// @brief Area Light Entityを作成する
    void CreateAreaLight();
-   /// @brief パーティクルアセットをビューポート前方へUndo可能な形で配置する
-   /// @param assetId パーティクルJSONのアセットID
-   /// @return 作成したパーティクル。失敗した場合はnullptr
-   ParticleSystem* CreateParticleSystemFromAsset(const std::string& assetId);
    /// @brief 選択対象のスナップショットを複製し、重ならないよう位置をずらす
    void DuplicateSelectedObject();
    /// @brief 通常オブジェクトをUndo可能な形で削除または非表示にする
@@ -185,32 +179,42 @@ public:
    /// @brief 選択中オブジェクトから指定コンポーネントをUndo可能な形で外す
    /// @param typeName 外すコンポーネント型名
    void RemoveComponentFromSelectedObject(const std::string& typeName);
-   /// @brief モデル参照をUndo可能な形で差し替える
-   /// @param object 変更対象
-   /// @param assetId 新しいモデルのアセットID
-   void SetModelAsset(Object* object, const std::string& assetId);
-   /// @brief マテリアルスロットのテクスチャをUndo可能な形で差し替える
-   /// @param object 変更対象
-   /// @param slot マテリアルスロット番号
-   /// @param textureAssetId 新しいテクスチャのアセットID
-   void SetMaterialTexture(Object* object, size_t slot, const std::string& textureAssetId);
    /// @brief 最新の編集コマンドを取り消す
    void Undo();
    /// @brief 最新の取り消し済み編集コマンドを再実行する
    void Redo();
 
-   /// @brief アセット検索レジストリへの変更可能な参照を取得する
-   /// @return このシーンが使用するレジストリ
-   /// @brief アセット検索レジストリへの読み取り専用参照を取得する
-   /// @return このシーンが使用するレジストリ
+   /// @brief 明示的なProject操作から再走査・ファイル操作を実行する。
+   EditorAssetRegistry& GetAssetRegistry() { return assetRegistry_; }
+   /// @brief スキャン済みアセット情報を読み取り専用で参照する。
    const EditorAssetRegistry& GetAssetRegistry() const { return assetRegistry_; }
-   /// @brief エディタ生成オブジェクトストアへの変更可能な参照を取得する
-   /// @return このシーンが使用するオブジェクトストア
-   /// @brief エディタ生成オブジェクトストアへの読み取り専用参照を取得する
-   /// @return このシーンが使用するオブジェクトストア
-   const EditorObjectStore& GetObjectStore() const { return objectStore_; }
-   /// @brief Undo/Redoコマンドスタックを取得する
-   /// @return このシーンが使用するコマンドスタック
+   /// @brief 編集所有物とシーン実体のシリアライズ経路を参照する。
+   const SceneObjectStore& GetObjectStore() const { return objectStore_; }
+   /// @brief 安定IDを含む現在のObject状態を取得する。
+   nlohmann::json GetObjectSnapshot(const Object* object);
+   /// @brief 安定IDを含む現在のParticle状態を取得する。
+   nlohmann::json GetParticleSnapshot(const ParticleSystem* particleSystem);
+   /// @brief 適用済みInspector編集を一回のUndoとして確定する。
+   /// @param id スナップショットに含まれる安定ID。
+   /// @param before 操作開始時点の状態。
+   /// @param after 操作終了時点の状態。
+   /// @param name 履歴へ表示する操作名。
+   bool CommitObjectEdit(const std::string& id, const nlohmann::json& before, const nlohmann::json& after, std::string name = "Edit Object");
+   /// @brief 適用済みParticle編集を一回のUndoとして確定する。
+   /// @copydetails CommitObjectEdit
+   bool CommitParticleEdit(const std::string& id, const nlohmann::json& before, const nlohmann::json& after, std::string name = "Edit Particle System");
+   /// @brief 入れ子の編集をInspectorから二重記録しないため、成功した履歴変更の番号を返す。
+   size_t GetEditRevision() const { return editRevision_; }
+   /// @brief Undo/Redo内に古いアセットIDを保持する履歴があるか調べる。
+   bool HasEditHistory() const { return commandStack_.CanUndo() || commandStack_.CanRedo(); }
+   /// @brief 正式IDのモデル・パーティクルを一操作として配置する。
+   /// @param assetId スキャン済みリソース相対ID。
+   /// @param parent モデルの親。nullptrでカメラ前方8単位のルート配置。Particleは親を持てない。
+   /// @return 型・ロード・親検証が成功して配置された場合true。
+   bool PlaceAsset(const std::string& assetId, Object* parent = nullptr);
+   /// @brief 選択中のObjectまたはParticleの名前を一操作として変更する。
+   /// @param name 空でない新しい名前。
+   bool RenameSelectedObject(const std::string& name);
 
    /// @brief 編集コマンドを実行し、Undo履歴とdirty状態を一緒に記録する。
    bool CommitEdit(std::unique_ptr<IEditorCommand> command);
@@ -241,10 +245,8 @@ public:
    /// @param viewportWidth ビューポート幅
    /// @param viewportHeight ビューポート高さ
    void DrawTransformGizmo(float viewportX, float viewportY, float viewportWidth, float viewportHeight);
-   /// @brief ビューポートへのモデルアセットドロップを受け付けて配置する
-   void AcceptModelAssetDrop();
-   /// @brief Undo・Redo・複製・削除などのエディタショートカットを処理する
-   void HandleEditorShortcuts();
+   /// @brief ビューポートへの型検証済みモデル・パーティクルアセットドロップを受け付ける
+   void AcceptViewportAssetDrop();
    /// @brief ビューポートクリック位置から描画IDを読み、対象を選択する
    /// @param viewportX ビューポート左上のX座標
    /// @param viewportY ビューポート左上のY座標
@@ -253,23 +255,17 @@ public:
    void HandleViewportClickSelection(float viewportX, float viewportY, float viewportWidth, float viewportHeight);
 
 private:
-   friend class SetMaterialSettingsCommand;
-   friend class CreateGenericObjectCommand;
-   friend class CreateModelCommand;
-   friend class CreateSpriteCommand;
-   friend class CreateUITextCommand;
-   friend class CreateSkyboxCommand;
-   friend class CreateParticleSystemCommand;
+   friend class EditorCommandStack;
+   friend class CreateObjectCommand;
+   friend class EditObjectStateCommand;
+   friend class ReorderObjectCommand;
    friend class DeleteObjectCommand;
    friend class DeleteParticleSystemCommand;
    friend class TransformObjectCommand;
    friend class TransformParticleSystemCommand;
    friend class RestoreObjectSnapshotCommand;
-   friend class SetModelAssetCommand;
-   friend class SetMaterialTextureCommand;
-   friend class AddComponentCommand;
-   friend class RemoveComponentCommand;
-   EditorObjectStore& CommandObjectStore() { return objectStore_; }
+   friend class ModifyComponentCommand;
+   SceneObjectStore& CommandObjectStore() { return objectStore_; }
    bool IsObjectAlive(const Object* object) const;
    bool IsParticleSystemAlive(const ParticleSystem* particleSystem) const;
    void RegisterSceneOwnedKeys();
@@ -280,8 +276,9 @@ private:
    nlohmann::json SerializeSceneObjects();
    nlohmann::json SerializeSceneParticleSystems();
    nlohmann::json SerializeCameras() const;
-   void ApplySceneObjects(const nlohmann::json& sceneObjectsData);
-   void ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData);
+   bool ApplySceneSnapshot(const nlohmann::json& sceneData, bool& entitiesChanged);
+   bool ApplySceneObjects(const nlohmann::json& sceneObjectsData);
+   bool ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData);
    void ApplyCameras(const nlohmann::json& camerasData);
    void HideSceneOwnedObject(Object* object);
    void HideSceneOwnedParticleSystem(ParticleSystem* particleSystem);
@@ -290,7 +287,8 @@ private:
    void SubmitParticleTransformIfNeeded(const Transform& before, const Transform& after, ParticleSystem* particleSystem);
    Transform BuildPlacementTransformInFrontOfCamera() const;
    std::string GetObjectIdForCommand(const Object* object) const;
-   std::string GetParticleSystemIdForCommand(const ParticleSystem* particleSystem) const;
+   std::string GetParticleSystemIdForCommand(const ParticleSystem* particleSystem);
+   ParticleSystem* FindParticleForCommand(const std::string& id) const;
    void SetStatus(std::string message);
    void ApplyDuplicateOffset(nlohmann::json& snapshot) const;
 
@@ -302,8 +300,9 @@ private:
    Object* selectedObject_ = nullptr;
    ParticleSystem* selectedParticleSystem_ = nullptr;
    EditorAssetRegistry assetRegistry_;
-   EditorObjectStore objectStore_;
+   SceneObjectStore objectStore_;
    EditorCommandStack commandStack_;
+   size_t editRevision_ = 0;
    std::unordered_set<const Object*> hiddenSceneObjects_;
    std::unordered_set<const ParticleSystem*> hiddenParticleSystems_;
    std::unordered_set<std::string> hiddenSceneObjectKeys_;

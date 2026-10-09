@@ -17,11 +17,13 @@ class Skybox;
 class Sprite;
 class UIText;
 
-/// @brief エディタが動的生成した各Object型を所有し、安定IDと遅延削除を管理する
-class EditorObjectStore {
+/// @brief 保存シーンから生成する各Object型を所有し、安定IDと遅延削除を管理する。
+class SceneObjectStore {
 public:
-   /// @brief 所有するエディター生成オブジェクトを破棄する
-   ~EditorObjectStore();
+   /// @brief 空の所有ストアを作成する。具象型の寿命は実装側で管理する。
+   SceneObjectStore();
+   /// @brief 所有するシーンオブジェクトを破棄する。
+   ~SceneObjectStore();
 
    /// @brief 描画機能を持たないGenericオブジェクトを作成する
    /// @param initialTransform 初期トランスフォーム。省略時は既定値
@@ -232,7 +234,6 @@ private:
    void UnregisterOwnedRuntimeSystems(Object* object);
    void BumpCounterFromId(const std::string& id);
    void DeserializeSpriteData(Sprite* sprite, const nlohmann::json& data) const;
-   bool EnsureTextureLoaded(const std::string& textureAssetId) const;
 
    static nlohmann::json SerializeSpriteData(const Sprite* sprite);
 

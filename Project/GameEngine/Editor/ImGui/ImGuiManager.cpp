@@ -8,6 +8,8 @@
 #include "GameEngine/Framework/EngineContext.h"
 
 #include <filesystem>
+#include <algorithm>
+#include "imgui_internal.h"
 
 namespace fs = std::filesystem;
 
@@ -29,6 +31,7 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    DXGI_SWAP_CHAIN_DESC swapChainDesc;
    device->GetSwapChain()->GetDesc(&swapChainDesc);
 
+   windowHandle_ = hwnd;
    IMGUI_CHECKVERSION();
    ImGui::CreateContext();
    ImGui::StyleColorsDark();
@@ -47,7 +50,16 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
 
    auto& style = ImGui::GetStyle();
 
-   ImGui::StyleColorsDark();
+   style.WindowPadding = ImVec2(8, 8);
+   style.FramePadding = ImVec2(6, 4);
+   style.ItemSpacing = ImVec2(8, 4);
+   style.WindowMinSize = ImVec2(120, 100);
+   style.FrameRounding = 3;
+   style.TabRounding = 3;
+   style.Colors[ImGuiCol_WindowBg] = ImVec4(0.16f, 0.16f, 0.16f, 1);
+   style.Colors[ImGuiCol_Header] = ImVec4(0.20f, 0.38f, 0.56f, 1);
+   style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.45f, 0.64f, 1);
+   style.Colors[ImGuiCol_DragDropTarget] = ImVec4(0.35f, 0.70f, 1.0f, 1);
 
    // マルチビューポート有効時のスタイル調整
    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -109,13 +121,31 @@ void ImGuiManager::BeginFrame() {
    // 両バックエンドの入力・GPU状態を更新してからImGui本体とGizmoのフレームを開始する。
    ImGui_ImplDX12_NewFrame();
    ImGui_ImplWin32_NewFrame();
+   const float scale = std::max(1.0f, static_cast<float>(GetDpiForWindow(windowHandle_)) / 96.0f);
+   if (scale != uiScale_) { ImGui::GetStyle().ScaleAllSizes(scale / uiScale_); ImGui::GetIO().FontGlobalScale = scale; uiScale_ = scale; }
    ImGui::NewFrame();
    ImGuizmo::BeginFrame();
+}
 
-   // DockSpaceが有効な場合は表示
-   if (isDockSpaceVisible_) {
-	  ShowDockSpace();
+bool& ImGuiManager::GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible) {
+   // 初回の既定値だけを採用し、毎フレームの登録で閉じたウィンドウを開き直さない。
+   const auto entry = editorWindows_.try_emplace(stableId, EditorWindowState{ label, defaultVisible }).first;
+   entry->second.label = label;
+   return entry->second.visible;
+}
+
+void ImGuiManager::ShowMainMenuBar(const std::function<void()>& menuCallback) {
+   if (!ImGui::BeginMainMenuBar()) return;
+   if (menuCallback) menuCallback();
+   if (ImGui::BeginMenu(Tr("ウィンドウ", "Window"))) {
+      for (auto& [id, window] : editorWindows_) {
+         ImGui::PushID(id.c_str());
+         ImGui::MenuItem(ImGuiHelper::Localize(window.label), nullptr, &window.visible);
+         ImGui::PopID();
+      }
+      ImGui::EndMenu();
    }
+   ImGui::EndMainMenuBar();
 }
 
 void ImGuiManager::EndFrame(ID3D12GraphicsCommandList* commandList) {
@@ -171,6 +201,25 @@ void ImGuiManager::ShowDockSpace() {
 
    // DockSpace作成（バーなし、背景のみ）
    ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+   if (resetLayoutRequested_ || !ImGui::DockBuilderGetNode(dockspace_id)) {
+      resetLayoutRequested_ = false;
+      ImGui::DockBuilderRemoveNode(dockspace_id);
+      ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+      ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->WorkSize);
+      ImGuiID center = dockspace_id;
+      const auto toolbar = ImGui::DockBuilderSplitNode(center, ImGuiDir_Up, 0.14f, nullptr, &center);
+      const auto project = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.35f, nullptr, &center);
+      const auto hierarchy = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.20f, nullptr, &center);
+      const auto inspector = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.28f, nullptr, &center);
+      ImGui::DockBuilderDockWindow("Toolbar###PlayModeToolbar", toolbar);
+      ImGui::DockBuilderDockWindow("Hierarchy###Hierarchy", hierarchy);
+      ImGui::DockBuilderDockWindow("Project###Assets", project);
+      ImGui::DockBuilderDockWindow("Engine Settings###EngineSettings", inspector);
+      ImGui::DockBuilderDockWindow("Inspector###Inspector", inspector);
+      ImGui::DockBuilderDockWindow("Game###Game", center);
+      ImGui::DockBuilderDockWindow("Scene###Scene", center);
+      ImGui::DockBuilderFinish(dockspace_id);
+   }
    ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
    ImGui::End();
@@ -179,17 +228,25 @@ void ImGuiManager::ShowDockSpace() {
 void ImGuiManager::ShowViewport(
    OffscreenRenderTarget* renderTarget,
    bool& isSceneHovered,
-   const std::function<void(float, float, float, float)>& overlayCallback) {
-   const std::string windowLabel = StableWindowLabel(Tr("シーン", "Scene"), "Scene");
+   const std::function<void(float, float, float, float)>& overlayCallback, bool gameView) {
+   const std::string windowLabel = gameView ? StableWindowLabel(Tr("ゲーム", "Game"), "Game") : StableWindowLabel(Tr("シーン", "Scene"), "Scene");
    ImGui::Begin(windowLabel.c_str());
 
-   isSceneHovered = ImGui::IsWindowHovered();
+   if (!gameView) isSceneHovered = ImGui::IsWindowHovered();
 
+   if (!renderTarget || renderTarget->GetWidth() == 0 || renderTarget->GetHeight() == 0) {
+      if (!gameView) isSceneHovered = false;
+      ImGui::TextUnformatted("Render target unavailable");
+      ImGui::End();
+      return;
+   }
    D3D12_GPU_DESCRIPTOR_HANDLE handle = renderTarget->GetSRVHandleGPU();
    // DX12バックエンドではGPUディスクリプタ値をImTextureIDとして渡す。
    ImTextureID texId = (ImTextureID)(handle.ptr);
 
-   ImVec2 availSize = ImGui::GetContentRegionAvail(); // ウィンドウ内の空きサイズ
+   ImVec2 availSize = ImGui::GetContentRegionAvail();
+   availSize.x = std::max(1.0f, availSize.x);
+   availSize.y = std::max(1.0f, availSize.y); // ウィンドウ内の空きサイズ
 
    float texWidth = static_cast<float>(renderTarget->GetWidth());
    float texHeight = static_cast<float>(renderTarget->GetHeight());
@@ -219,7 +276,7 @@ void ImGuiManager::ShowViewport(
 
    ImVec2 imageMin = ImGui::GetCursorScreenPos();
    ImGui::Image(texId, imageSize);
-   if (overlayCallback) {
+   if (!gameView && overlayCallback) {
 	  // オーバーレイ側が画像と同じ座標系を使えるよう、中央寄せ後の画面矩形を通知する。
 	  overlayCallback(imageMin.x, imageMin.y, imageSize.x, imageSize.y);
    }
@@ -228,8 +285,10 @@ void ImGuiManager::ShowViewport(
 }
 
 void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
+   bool& visible = GetEditorWindowVisibility("EngineSettings", { "エンジン設定", "Engine Settings" });
+   if (!visible) return;
    const std::string windowLabel = StableWindowLabel(Tr("エンジン設定", "Engine Settings"), "EngineSettings");
-   ImGui::Begin(windowLabel.c_str());
+   if (!ImGui::Begin(windowLabel.c_str(), &visible)) { ImGui::End(); return; }
 
    // FPS等を表示
    ImGui::Text("%s: %.4f", Tr("デルタタイム", "Delta Time"), EngineContext::GetDeltaTime());
@@ -246,6 +305,9 @@ void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
    if (ImGui::Checkbox(Tr("DockSpaceを表示", "Show DockSpace"), &isDockSpaceVisible)) {
 	  isDockSpaceVisible_ = isDockSpaceVisible;
    }
+
+   if (ImGui::Button(Tr("初期配置に戻す", "Reset Layout"))) resetLayoutRequested_ = true;
+   if (ImGui::Button(Tr("配置を保存", "Save Layout")) && ImGui::GetIO().IniFilename) ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
 
    // Multi-Viewport setting
    if (ImGui::Checkbox(Tr("マルチビューポートを有効化", "Enable Multi-Viewport"), &multiViewportEnabled_)) {

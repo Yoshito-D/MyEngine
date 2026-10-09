@@ -4,19 +4,14 @@
 
 #include <cstddef>
 #include <filesystem>
-#include <memory>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
+#include <nlohmann/json.hpp>
 
 namespace GameEngine {
 class AssetManager;
 class EditorSceneContext;
 class Object;
-class Model;
-class Sprite;
-class ParticleSystem;
 enum class EditorAssetType;
 struct EditorAssetEntry;
 
@@ -28,10 +23,16 @@ public:
 
    /// @brief フレーム開始時に遅延操作と選択状態を同期する
    void BeginEditorFrame();
+   /// @brief 上部メニューバー内のファイル・設定メニューを描画する。
+   void ShowMainMenuItems();
+   /// @brief 各ウィンドウの表示状態に依存せず未保存シーンの確認を描画する。
+   void ShowSceneDialogs();
    /// @brief 再生・停止・一時停止用ツールバーを描画する
    void ShowPlayModeToolbar();
    /// @brief アセット一覧ウィンドウを描画する
    void ShowAssetWindow();
+   /// @brief シーン切替・保存・作成・開始シーン設定をまとめた管理ウィンドウを描画する。
+   void ShowSceneManagementWindow();
    /// @brief シーン階層ウィンドウを描画する
    void ShowHierarchyWindow();
    /// @brief 選択中オブジェクトのインスペクターを描画する
@@ -47,12 +48,17 @@ private:
    std::vector<Object*> CollectSceneObjects() const;
    void DrawAssetEntry(EditorSceneContext& editorContext, const EditorAssetEntry& entry);
    void DrawAssetTree(EditorSceneContext& editorContext);
+   void NavigateToFolder(const std::string& folderId);
    void EmitAssetDragPayload(const EditorAssetEntry& entry) const;
-   bool EnsureTextureLoaded(const std::string& textureAssetId);
-   void DrawSelectedObjectAssetDropTargets(EditorSceneContext& editorContext, Object* selectedObject);
-   void DrawParticleAssetDropTarget(EditorSceneContext& editorContext, ParticleSystem* particleSystem);
-   void ResolveParentRelation(Object* object, const std::vector<Object*>& sceneObjects) const;
-   std::string BuildUniqueObjectName(const std::string& baseName, const std::vector<Object*>& sceneObjects) const;
+   void DrawAssetContextMenu(EditorSceneContext& context, const EditorAssetEntry& entry);
+   void DrawAssetDialogs(EditorSceneContext& context);
+   void AcceptAssetMove(EditorSceneContext& context, const std::string& folder);
+   void CheckAssetOperations(EditorSceneContext& context, const std::string& id);
+   void RequestSceneOpen(const std::string& sceneName, bool reload = false);
+   void DrawUnsavedSceneDialog(EditorSceneContext& context);
+   void HandlePanelShortcuts(EditorSceneContext& context, bool projectPanel);
+   void FinishInspectorEdit(EditorSceneContext& context);
+   void SelectAsset(EditorSceneContext& context, const std::string& id);
    void RefreshSceneCatalog();
    bool CreateEditorScene(const std::string& sceneName);
    bool SetReleaseStartScene(const std::string& sceneName);
@@ -63,16 +69,29 @@ private:
    AssetManager* assetManager_ = nullptr;
 
    bool editorAssetIconView_ = true;
-   std::string editorNewModelName_ = "NewModel";
-   std::string editorNewSpriteName_ = "NewSprite";
-   std::string editorNewMaterialName_ = "NewMaterial";
-   int editorSelectedModelAssetIndex_ = 0;
-   int editorSelectedMaterialIndex_ = 0;
-   int editorSelectedAssetMaterialIndex_ = 0;
-   int editorNewMaterialLightingMode_ = 2;
-   float editorNewMaterialColor_[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+   float editorThumbnailSize_ = 64.0f;
+   float editorFolderPaneWidth_ = 190.0f;
+   std::string editorCurrentFolder_;
+   std::string editorTreeRevealFolder_;
+   std::string editorSelectedAssetId_;
+   char editorAssetSearch_[256]{};
+   int editorAssetTypeFilter_ = 0;
+   bool editorSearchAllFolders_ = false;
+   bool editorRevealAsset_ = false;
+   std::string editorAssetQueryKey_;
+   std::vector<std::string> editorVisibleAssets_;
+   std::string editorAssetStatus_;
+   std::string editorAssetOperation_;
+   std::string editorAssetOperationId_;
+   std::string editorAssetMoveDestination_;
+   char editorAssetName_[256]{};
+   std::string editorAssetCheckKey_;
+   std::string editorAssetRenameReason_;
+   std::string editorAssetDuplicateReason_;
+   std::string editorAssetDeleteReason_;
+   std::vector<std::string> editorAssetDeleteReferences_;
+   bool editorAssetDeleteReferencesLoaded_ = false;
    int editorSelectedAddComponentIndex_ = 0;
-   std::filesystem::path editorSceneFilePath_ = "resources/game/scenes/editor_scene.json";
    char editorNewSceneName_[kSceneNameBufferSize] = "NewScene";
    std::vector<std::string> editorSceneNames_;
    std::string editorSelectedSceneName_;
@@ -80,12 +99,17 @@ private:
    std::string editorSceneCatalogStatus_;
    bool editorSceneReloadRequested_ = false;
    std::filesystem::path editorSceneReloadFilePath_;
-   const Object* editorComponentSaveStatusObject_ = nullptr;
+   std::string editorPendingSceneName_;
+   bool editorPendingSceneReload_ = false;
+   bool editorUnsavedDialogRequested_ = false;
+   std::filesystem::path editorActiveScenePath_;
+   std::string editorInspectorEntityId_;
+   bool editorInspectorParticle_ = false;
+   nlohmann::json editorInspectorBefore_;
+   nlohmann::json editorInspectorAfter_;
+   bool editorFocusName_ = false;
+   std::string editorComponentSaveStatusEntityId_;
    std::string editorComponentSaveStatus_;
-
-   std::unordered_map<const Model*, std::string> editorModelAssetNames_;
-   std::unordered_map<const Model*, std::string> editorModelMaterialNames_;
-   std::unordered_set<std::string> editorLoadedTextureAssets_;
 };
 
 } // namespace GameEngine

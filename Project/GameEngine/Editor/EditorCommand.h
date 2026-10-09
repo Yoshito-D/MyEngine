@@ -32,26 +32,6 @@ public:
    virtual const char* GetName() const = 0;
 };
 
-/// @brief ローカル所有権と全スロットを含むマテリアルInspector編集をUndo/Redoする。
-class SetMaterialSettingsCommand final : public IEditorCommand {
-public:
-   /// @brief 適用済みのInspector編集を取り込む。最初のExecuteでは記録だけを行う。
-   SetMaterialSettingsCommand(std::string id, Object* fallback, nlohmann::json before, nlohmann::json after)
-      : id_(std::move(id)), fallback_(fallback), before_(std::move(before)), after_(std::move(after)) {}
-   /// @copydoc IEditorCommand::Execute
-   bool Execute(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::Undo
-   void Undo(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Edit Material"; }
-private:
-   bool Apply(EditorSceneContext& context, const nlohmann::json& data);
-   std::string id_;
-   Object* fallback_ = nullptr;
-   nlohmann::json before_, after_;
-   bool alreadyApplied_ = true;
-};
-
 /// @brief 実行済み・取り消し済みコマンドを所有してUndo/Redo履歴を管理する
 class EditorCommandStack {
 public:
@@ -87,125 +67,61 @@ private:
    std::vector<std::unique_ptr<IEditorCommand>> redoStack_;
 };
 
-/// @brief 描画コンポーネントを持たない汎用オブジェクトの作成をUndo/Redo可能にするコマンド
-class CreateGenericObjectCommand final : public IEditorCommand {
+/// @brief 作成、Redo復元、選択、Undo削除を一つの生成経路にまとめる。
+class CreateObjectCommand final : public IEditorCommand {
 public:
-   /// @brief 空オブジェクト作成コマンドを構築する
-   /// @param initialTransform 初期トランスフォーム
-   explicit CreateGenericObjectCommand(Transform initialTransform = Transform());
-
+   /// @brief 生成する具象型。パーティクルだけはObject継承外の所有経路を使う。
+   enum class Kind { Empty, Model, Sprite, UIText, Skybox, Particle, DirectionalLight, PointLight, SpotLight, AreaLight };
+   /// @brief 初期配置と参照ID、親IDをまとめて一操作として保存する。
+   CreateObjectCommand(Kind kind, Transform transform = Transform(), std::string assetId = {}, std::string parentId = {});
    /// @copydoc IEditorCommand::Execute
    bool Execute(EditorSceneContext& context) override;
    /// @copydoc IEditorCommand::Undo
    void Undo(EditorSceneContext& context) override;
    /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Create Empty Object"; }
-
+   const char* GetName() const override;
 private:
+   Kind kind_;
    Transform initialTransform_{};
-   std::string objectId_;
+   std::string assetId_, parentId_, objectId_;
    nlohmann::json snapshot_;
 };
 
-/// @brief モデルアセットからオブジェクトを作成し、Undoで削除するコマンド
-class CreateModelCommand final : public IEditorCommand {
+/// @brief Inspectorで適用した一操作を安定IDと前後スナップショットで記録する。
+class EditObjectStateCommand final : public IEditorCommand {
 public:
-   /// @brief モデル作成コマンドを構築する
-   /// @param assetId 読み込むモデルのアセットID
-   /// @param initialTransform 初期トランスフォーム
-   explicit CreateModelCommand(std::string assetId, Transform initialTransform = Transform());
-
+   /// @brief 適用済み編集を取り込み、Undo/Redoでは既存実体へ復元する。
+   EditObjectStateCommand(std::string id, nlohmann::json before, nlohmann::json after, bool particle, std::string name);
    /// @copydoc IEditorCommand::Execute
    bool Execute(EditorSceneContext& context) override;
    /// @copydoc IEditorCommand::Undo
    void Undo(EditorSceneContext& context) override;
    /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Create Model"; }
-
+   const char* GetName() const override { return name_.c_str(); }
 private:
-   std::string assetId_;
-   Transform initialTransform_{};
-   std::string objectId_;
-   nlohmann::json snapshot_;
+   bool Apply(EditorSceneContext& context, const nlohmann::json& snapshot);
+   std::string id_, name_;
+   nlohmann::json before_, after_;
+   bool particle_ = false;
+   bool alreadyApplied_ = true;
 };
 
-/// @brief テクスチャからスプライトを作成し、Undoで削除するコマンド
-class CreateSpriteCommand final : public IEditorCommand {
+/// @brief 親とHierarchy順を同時に変更し、一回のUndoで戻す。
+class ReorderObjectCommand final : public IEditorCommand {
 public:
-   /// @brief スプライト作成コマンドを構築する
-   /// @param textureAssetId 使用するテクスチャのアセットID
-   /// @param initialTransform 初期トランスフォーム
-   explicit CreateSpriteCommand(std::string textureAssetId, Transform initialTransform = Transform());
-
+   /// @brief 対象の安定ID、親IDと表示順の前後を保存する。
+   ReorderObjectCommand(std::string id, std::string beforeParent, std::string afterParent,
+      std::vector<std::string> beforeOrder, std::vector<std::string> afterOrder);
    /// @copydoc IEditorCommand::Execute
    bool Execute(EditorSceneContext& context) override;
    /// @copydoc IEditorCommand::Undo
    void Undo(EditorSceneContext& context) override;
    /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Create Sprite"; }
-
+   const char* GetName() const override { return "Reparent / Reorder Object"; }
 private:
-   std::string textureAssetId_;
-   Transform initialTransform_{};
-   std::string objectId_;
-   nlohmann::json snapshot_;
-};
-
-/// @brief UIテキストの作成をUndo/Redo可能にするコマンド
-class CreateUITextCommand final : public IEditorCommand {
-public:
-   /// @brief UIテキスト作成コマンドを構築する
-   /// @param initialTransform 初期スクリーン座標
-   explicit CreateUITextCommand(Transform initialTransform = Transform());
-
-   /// @copydoc IEditorCommand::Execute
-   bool Execute(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::Undo
-   void Undo(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Create UI Text"; }
-
-private:
-   Transform initialTransform_{};
-   std::string objectId_;
-   nlohmann::json snapshot_;
-};
-
-/// @brief スカイボックスの作成をUndo/Redo可能にするコマンド
-class CreateSkyboxCommand final : public IEditorCommand {
-public:
-   /// @copydoc IEditorCommand::Execute
-   bool Execute(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::Undo
-   void Undo(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Create Skybox"; }
-
-private:
-   std::string objectId_;
-   nlohmann::json snapshot_;
-};
-
-/// @brief JSONアセットからパーティクルシステムを作成し、Undoで削除するコマンド
-class CreateParticleSystemCommand final : public IEditorCommand {
-public:
-   /// @brief パーティクル作成コマンドを構築する
-   /// @param assetId 読み込むパーティクルのアセットID
-   /// @param initialTransform 初期トランスフォーム
-   explicit CreateParticleSystemCommand(std::string assetId, Transform initialTransform = Transform());
-
-   /// @copydoc IEditorCommand::Execute
-   bool Execute(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::Undo
-   void Undo(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Create Particle System"; }
-
-private:
-   std::string assetId_;
-   Transform initialTransform_{};
-   std::string objectId_;
-   nlohmann::json snapshot_;
+   bool Apply(EditorSceneContext& context, const std::string& parent, const std::vector<std::string>& order);
+   std::string id_, beforeParent_, afterParent_;
+   std::vector<std::string> beforeOrder_, afterOrder_;
 };
 
 /// @brief エディタ所有オブジェクトをスナップショット付きで削除するコマンド
@@ -225,6 +141,9 @@ public:
 private:
    std::string objectId_;
    nlohmann::json snapshot_;
+   bool sceneOwned_ = false;
+   std::string sceneKey_;
+   std::vector<std::string> childIds_;
 };
 
 /// @brief エディタ所有パーティクルをスナップショット付きで削除するコマンド
@@ -244,17 +163,18 @@ public:
 private:
    std::string objectId_;
    nlohmann::json snapshot_;
+   bool sceneOwned_ = false;
+   bool wasPlaying_ = false;
 };
 
 /// @brief オブジェクトの変形前後を保持してギズモ操作をUndo可能にするコマンド
 class TransformObjectCommand final : public IEditorCommand {
 public:
    /// @brief オブジェクト変形コマンドを構築する
-   /// @param objectId エディタ所有オブジェクトのID。シーン所有時は空文字
-   /// @param fallbackObject IDで解決できないシーン所有オブジェクト
+   /// @param objectId 現在のシーン内の安定Entity ID
    /// @param before 操作前のトランスフォーム
    /// @param after 操作後のトランスフォーム
-   TransformObjectCommand(std::string objectId, Object* fallbackObject, const Transform& before, const Transform& after);
+   TransformObjectCommand(std::string objectId, const Transform& before, const Transform& after);
 
    /// @copydoc IEditorCommand::Execute
    bool Execute(EditorSceneContext& context) override;
@@ -268,7 +188,6 @@ private:
    void Apply(EditorSceneContext& context, const Transform& transform) const;
 
    std::string objectId_;
-   Object* fallbackObject_ = nullptr;
    Transform before_{};
    Transform after_{};
 };
@@ -277,11 +196,10 @@ private:
 class TransformParticleSystemCommand final : public IEditorCommand {
 public:
    /// @brief パーティクル変形コマンドを構築する
-   /// @param objectId エディタ所有パーティクルのID。シーン所有時は空文字
-   /// @param fallbackParticleSystem IDで解決できないシーン所有パーティクル
+   /// @param objectId Store IDまたはシーン所有パーティクルの安定キー
    /// @param before 操作前のトランスフォーム
    /// @param after 操作後のトランスフォーム
-   TransformParticleSystemCommand(std::string objectId, ParticleSystem* fallbackParticleSystem, const Transform& before, const Transform& after);
+   TransformParticleSystemCommand(std::string objectId, const Transform& before, const Transform& after);
 
    /// @copydoc IEditorCommand::Execute
    bool Execute(EditorSceneContext& context) override;
@@ -295,7 +213,6 @@ private:
    void Apply(EditorSceneContext& context, const Transform& transform) const;
 
    std::string objectId_;
-   ParticleSystem* fallbackParticleSystem_ = nullptr;
    Transform before_{};
    Transform after_{};
 };
@@ -321,112 +238,24 @@ private:
    std::string commandName_;
 };
 
-/// @brief モデルオブジェクトの参照アセット切り替えをUndo可能にするコマンド
-class SetModelAssetCommand final : public IEditorCommand {
+/// @brief Component追加・削除と依存設定の復元を一操作として扱う。
+class ModifyComponentCommand final : public IEditorCommand {
 public:
-   /// @brief モデルアセット変更コマンドを構築する
-   /// @param objectId エディタ所有オブジェクトのID。シーン所有時は空文字
-   /// @param fallbackObject IDで解決できないシーン所有オブジェクト
-   /// @param beforeAssetId 変更前のモデルアセットID
-   /// @param afterAssetId 変更後のモデルアセットID
-   SetModelAssetCommand(std::string objectId, Object* fallbackObject, std::string beforeAssetId, std::string afterAssetId);
-
+   /// @brief 安定IDのObjectに対し、指定型を追加または削除する。
+   /// @param objectId 現在のシーン内の安定Entity ID。
+   /// @param typeName 登録されたComponent型名。
+   /// @param add trueなら追加、falseなら削除。
+   ModifyComponentCommand(std::string objectId, std::string typeName, bool add);
    /// @copydoc IEditorCommand::Execute
    bool Execute(EditorSceneContext& context) override;
    /// @copydoc IEditorCommand::Undo
    void Undo(EditorSceneContext& context) override;
    /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Set Model Asset"; }
-
+   const char* GetName() const override { return add_ ? "Add Component" : "Remove Component"; }
 private:
-   Object* ResolveObject(EditorSceneContext& context) const;
-   bool Apply(EditorSceneContext& context, const std::string& assetId) const;
-
-   std::string objectId_;
-   Object* fallbackObject_ = nullptr;
-   std::string beforeAssetId_;
-   std::string afterAssetId_;
-};
-
-/// @brief マテリアルスロットのテクスチャ切り替えをUndo可能にするコマンド
-class SetMaterialTextureCommand final : public IEditorCommand {
-public:
-   /// @brief テクスチャ変更コマンドを構築する
-   /// @param objectId エディタ所有オブジェクトのID。シーン所有時は空文字
-   /// @param fallbackObject IDで解決できないシーン所有オブジェクト
-   /// @param slot 変更するマテリアルスロット
-   /// @param beforeTextureId 変更前のテクスチャアセットID
-   /// @param afterTextureId 変更後のテクスチャアセットID
-   SetMaterialTextureCommand(std::string objectId, Object* fallbackObject, size_t slot, std::string beforeTextureId, std::string afterTextureId);
-
-   /// @copydoc IEditorCommand::Execute
-   bool Execute(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::Undo
-   void Undo(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Set Texture"; }
-
-private:
-   Object* ResolveObject(EditorSceneContext& context) const;
-   bool Apply(EditorSceneContext& context, const std::string& textureId) const;
-
-   std::string objectId_;
-   Object* fallbackObject_ = nullptr;
-   size_t slot_ = 0;
-   std::string beforeTextureId_;
-   std::string afterTextureId_;
-};
-
-/// @brief オブジェクトへのコンポーネント追加をUndo可能にするコマンド
-class AddComponentCommand final : public IEditorCommand {
-public:
-   /// @brief コンポーネント追加コマンドを構築する
-   /// @param objectId エディタ所有オブジェクトのID。シーン所有時は空文字
-   /// @param fallbackObject IDで解決できないシーン所有オブジェクト
-   /// @param typeName 追加するコンポーネント型名
-   AddComponentCommand(std::string objectId, Object* fallbackObject, std::string typeName);
-
-   /// @copydoc IEditorCommand::Execute
-   bool Execute(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::Undo
-   void Undo(EditorSceneContext& context) override;
-   /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Add Component"; }
-
-private:
-   Object* ResolveObject(EditorSceneContext& context) const;
-
-   std::string objectId_;
-   Object* fallbackObject_ = nullptr;
-   std::string typeName_;
+   std::string objectId_, typeName_;
+   bool add_ = true;
    nlohmann::json beforeSnapshot_;
-};
-
-/// @brief オブジェクトからコンポーネントを外し、Undoで設定ごと復元するコマンド
-class RemoveComponentCommand final : public IEditorCommand {
-public:
-   /// @brief コンポーネント削除コマンドを構築する
-   /// @param objectId エディタ所有オブジェクトのID。シーン所有時は空文字
-   /// @param fallbackObject IDで解決できないシーン所有オブジェクト
-   /// @param typeName 外すコンポーネント型名
-   RemoveComponentCommand(std::string objectId, Object* fallbackObject, std::string typeName);
-
-   /// @copydoc IEditorCommand::Execute
-   bool Execute(EditorSceneContext& context) override;
-
-   /// @copydoc IEditorCommand::Undo
-   void Undo(EditorSceneContext& context) override;
-
-   /// @copydoc IEditorCommand::GetName
-   const char* GetName() const override { return "Remove Component"; }
-
-private:
-   Object* ResolveObject(EditorSceneContext& context) const;
-
-   std::string objectId_;
-   Object* fallbackObject_ = nullptr;
-   std::string typeName_;
-   nlohmann::json removedComponentData_;
 };
 
 } // namespace GameEngine

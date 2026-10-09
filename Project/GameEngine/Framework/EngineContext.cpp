@@ -781,6 +781,10 @@ void EngineContext::SetDockSpaceVisible(bool visible) {
    sRenderer_->SetDockSpaceVisible(visible);
 }
 
+bool* EngineContext::GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible) {
+   return sRenderer_ ? sRenderer_->GetEditorWindowVisibility(stableId, label, defaultVisible) : nullptr;
+}
+
 #endif // USE_IMGUI
 
 LineRenderer* EngineContext::GetLineRenderer() {

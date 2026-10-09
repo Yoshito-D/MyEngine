@@ -7,6 +7,7 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "GameEngine/Framework/EngineContext.h"
 #endif
 
 namespace {
@@ -433,7 +434,9 @@ void ReflectionValidationCoordinator::DrawDebugWindow(const PSOManager* psoManag
       return;
    }
 
-   ImGui::Begin("Reflection Binding Debug");
+   bool* visible = EngineContext::GetEditorWindowVisibility("ReflectionBindingDebug", { "Reflection Binding Debug", "Reflection Binding Debug" });
+   if (!visible || !*visible) return;
+   if (!ImGui::Begin("Reflection Binding Debug", visible)) { ImGui::End(); return; }
    ImGui::Text("Frame Resolve Requests : %llu", state.frameResolveRequests);
    ImGui::Text("Frame Resolve Hits     : %llu", state.frameResolveHits);
    ImGui::Text("Frame Fallbacks        : %llu", state.frameResolveFallbacks);

@@ -2,6 +2,7 @@
 #ifdef USE_IMGUI
 #include "imgui.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#include "GameEngine/Framework/EngineContext.h"
 #endif
 #include "GameEngine/Scene/Light/DirectionalLight.h"
 #include "GameEngine/Scene/Light/PointLight.h"
@@ -563,9 +564,11 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
 
 bool LightManager::DebugDraw() {
 #ifdef USE_IMGUI
+   bool* visible = EngineContext::GetEditorWindowVisibility("LightManager", { "ライト", "Light Manager" });
+   if (!visible || !*visible) return false;
    const nlohmann::json stateBeforeEditing = SerializeSceneState();
    const std::string windowLabel = StableEditorLabel("ライト", "Light Manager", "LightManager");
-   if (ImGui::Begin(windowLabel.c_str())) {
+   if (ImGui::Begin(windowLabel.c_str(), visible)) {
       // ディレクショナルライト
       const std::string directionalLabel = StableEditorLabel(
          "ディレクショナルライト", "Directional Light", "DirectionalLightSection");

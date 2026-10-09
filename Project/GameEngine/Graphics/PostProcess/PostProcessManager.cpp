@@ -27,6 +27,7 @@
 #ifdef USE_IMGUI
 #include <imgui/imgui.h>
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#include "GameEngine/Framework/EngineContext.h"
 #endif
 
 using json = nlohmann::json;
@@ -471,10 +472,12 @@ void PostProcessManager::DisableAllEffects() {
 
 #ifdef USE_IMGUI
 bool PostProcessManager::ShowImGuiControls() {
+   bool* visible = EngineContext::GetEditorWindowVisibility("PostProcessManager", { "ポストプロセス", "Post Process Manager" });
+   if (!visible || !*visible) return false;
    const nlohmann::json stateBeforeEditing = SerializeSceneState();
    const std::string windowLabel = StableEditorLabel(
       "ポストプロセス", "Post Process Manager", "PostProcessManager");
-   ImGui::Begin(windowLabel.c_str());
+   if (!ImGui::Begin(windowLabel.c_str(), visible)) { ImGui::End(); return false; }
 
    ImGui::Text("%s", LocalizeEditorText("ポストプロセス設定", "Post Process Control Panel"));
    ImGui::Separator();

@@ -9,7 +9,8 @@
     { "type": "DescriptorTable", "visibility": "Vertex", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 0, "semantic": "instancing" },
     { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 0, "semantic": "texture" },
     { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 1, "semantic": "scenecolor" },
-    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 2, "semantic": "scenedepth" }
+    { "type": "DescriptorTable", "visibility": "Pixel", "descriptorCount": 1, "rangeType": "SRV", "shaderRegister": 2, "semantic": "scenedepth" },
+    { "type": "32BitConstants", "visibility": "Pixel", "descriptorCount": 1, "shaderRegister": 1, "semantic": "particledraw" }
   ],
   "samplers": [
     {

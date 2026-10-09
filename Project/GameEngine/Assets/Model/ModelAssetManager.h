@@ -26,6 +26,7 @@ public:
 
    /// @brief resources からの相対 assetId でモデルをロード
    /// @param assetId 例: game/models/cube/AnimatedCube.gltf
+   /// @return 読込成功時のモデル。ID・ファイル・モデルが無効なら空ハンドル。
    ModelHandle LoadModelByAssetId(const std::string& assetId);
 
    /// @brief モデルを取得
@@ -42,7 +43,6 @@ public:
    /// @brief 読み込み済みモデル名一覧を取得
    std::vector<std::string> GetModelNames() const;
 private:
-   static std::string NormalizeAssetId(const std::string& path);
    static std::string BuildAssetId(const std::string& modelPath, const std::string& modelName);
    void RegisterGltfAnimation(const std::string& modelPath, const std::string& modelName);
    ModelHandle LoadModelInternal(const std::string& modelPath, const std::string& modelName, const std::string& assetId);

@@ -17,10 +17,11 @@ struct RandomFloat {
    RandomFloat() = default;
    /// @brief 指定値を有限値として保持する固定範囲を構築する
    RandomFloat(float value) : RandomFloat(value, value, false) {}
-   /// @brief 両端と抽選有無をまとめて検証し、無効な途中状態を持たない範囲を構築する
+   /// @brief 固定値ではlowだけを保持し、抽選時だけ範囲の両端を検証する
    RandomFloat(float low, float high, bool randomize = true) : randomized_(randomize) {
       minimum_ = std::isfinite(low) ? low : 0.0f;
-      maximum_ = std::isfinite(high) ? high : minimum_;
+      // 固定値では未使用の上限を破棄し、範囲の並べ替えによる指定値の変化を防ぐ。
+      maximum_ = randomized_ && std::isfinite(high) ? high : minimum_;
       if (maximum_ < minimum_) std::swap(minimum_, maximum_);
    }
    /// @brief 検証済みの下限を値として観測する
@@ -47,13 +48,13 @@ struct RandomVector2 {
    RandomVector2() = default;
    /// @brief 指定値を有限値として保持する固定範囲を構築する
    RandomVector2(const Vector2& value) : RandomVector2(value, value, false) {}
-   /// @brief 両端と抽選有無をまとめて検証し、無効な途中状態を持たない範囲を構築する
+   /// @brief 固定値ではlowだけを保持し、抽選時だけ範囲の両端を検証する
    RandomVector2(const Vector2& low, const Vector2& high, bool randomize = true) : randomized_(randomize) {
       minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
-      maximum_.x = std::isfinite(high.x) ? high.x : minimum_.x;
+      maximum_.x = randomized_ && std::isfinite(high.x) ? high.x : minimum_.x;
       if (maximum_.x < minimum_.x) std::swap(minimum_.x, maximum_.x);
       minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
-      maximum_.y = std::isfinite(high.y) ? high.y : minimum_.y;
+      maximum_.y = randomized_ && std::isfinite(high.y) ? high.y : minimum_.y;
       if (maximum_.y < minimum_.y) std::swap(minimum_.y, maximum_.y);
    }
    /// @brief 検証済みの下限を値として観測する
@@ -80,16 +81,16 @@ struct RandomVector3 {
    RandomVector3() = default;
    /// @brief 指定値を有限値として保持する固定範囲を構築する
    RandomVector3(const Vector3& value) : RandomVector3(value, value, false) {}
-   /// @brief 両端と抽選有無をまとめて検証し、無効な途中状態を持たない範囲を構築する
+   /// @brief 固定値ではlowだけを保持し、抽選時だけ範囲の両端を検証する
    RandomVector3(const Vector3& low, const Vector3& high, bool randomize = true) : randomized_(randomize) {
       minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
-      maximum_.x = std::isfinite(high.x) ? high.x : minimum_.x;
+      maximum_.x = randomized_ && std::isfinite(high.x) ? high.x : minimum_.x;
       if (maximum_.x < minimum_.x) std::swap(minimum_.x, maximum_.x);
       minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
-      maximum_.y = std::isfinite(high.y) ? high.y : minimum_.y;
+      maximum_.y = randomized_ && std::isfinite(high.y) ? high.y : minimum_.y;
       if (maximum_.y < minimum_.y) std::swap(minimum_.y, maximum_.y);
       minimum_.z = std::isfinite(low.z) ? low.z : 0.0f;
-      maximum_.z = std::isfinite(high.z) ? high.z : minimum_.z;
+      maximum_.z = randomized_ && std::isfinite(high.z) ? high.z : minimum_.z;
       if (maximum_.z < minimum_.z) std::swap(minimum_.z, maximum_.z);
    }
    /// @brief 検証済みの下限を値として観測する

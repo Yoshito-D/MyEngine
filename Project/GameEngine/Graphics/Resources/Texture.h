@@ -17,7 +17,7 @@ public:
    /// @brief テクスチャをロードする
    /// @param device グラフィックスデバイス
    /// @param filePath テクスチャファイルのパス
-   /// @return ロードされたテクスチャリソース
+   /// @return GPUコピー完了まで保持するUPLOADリソース。画像が不正・非対応の場合はnullptr。
    [[nodiscard]] ComPtr<ID3D12Resource> LoadTexture(GraphicsDevice* device, const std::string& filePath);
 
    /// @brief テクスチャのリソースを取得する
@@ -56,7 +56,7 @@ private:
    uint32_t width_ = 0;   // テクスチャの幅
    uint32_t height_ = 0;  // テクスチャの高さ
 
-   DirectX::TexMetadata metadata_;
+   DirectX::TexMetadata metadata_{};
 private:
    /// @brief ミップマップを含むテクスチャをロードする
    /// @param filePath テクスチャファイルのパス

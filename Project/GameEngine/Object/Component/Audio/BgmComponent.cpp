@@ -8,7 +8,7 @@
 #include <cmath>
 
 #ifdef USE_IMGUI
-#include "GameEngine/Editor/AudioAssetWidget.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include <imgui.h>
 #endif
@@ -94,10 +94,15 @@ void BgmComponent::DrawInspector() {
    auto Tr = [](const char* ja, const char* en) { return ImGuiHelper::Localize({ ja, en }); };
    if (!ImGui::CollapsingHeader(MakeObjectComponentHeaderLabel(GetTypeName()).c_str())) return;
    std::string nextId = clipAssetId;
-   if (DrawAudioAssetWidget(Tr("音声", "Clip"), nextId)) {
-      clipAssetId = nextId;
-      clip_.reset();
-      Prepare();
+   if (EditorUI::AssetReference(Tr("音声", "Clip"), nextId, EditorAssetType::Audio)) {
+      auto nextClip = nextId.empty() ? std::shared_ptr<const SoundClip>() : EngineContext::GetSoundClip(nextId);
+      if (nextId.empty() || nextClip) {
+         clipAssetId = nextId;
+         preparedAssetId_ = nextId;
+         clip_ = std::move(nextClip);
+      } else {
+         Logger::Warning("[BgmComponent] Audio asset could not be loaded: " + nextId);
+      }
    }
    if (!clipAssetId.empty() && !clip_) ImGui::TextUnformatted(Tr("音声が見つかりません", "Unresolved audio asset"));
    if (ImGui::SliderFloat(Tr("音量", "Volume"), &volume, 0.0f, 1.0f) && ownerToken_) Play();

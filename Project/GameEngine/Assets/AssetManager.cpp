@@ -25,20 +25,11 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    MaterialComponent::SetEnvironmentTextureResolver([this](const std::string& name) -> Texture* {
       return textureManager_ ? textureManager_->GetTexture(name) : nullptr;
    });
-   MaterialComponent::SetEnvironmentTextureNamesProvider([this]() {
-      return textureManager_ ? textureManager_->GetCubemapTextureNames() : std::vector<std::string>{};
-   });
    MaterialComponent::SetTextureResolver([this](const std::string& name) -> Texture* {
       return textureManager_ ? textureManager_->GetTexture(name) : nullptr;
    });
-   MaterialComponent::SetTextureNamesProvider([this]() {
-      return textureManager_ ? textureManager_->GetTextureNames() : std::vector<std::string>{};
-   });
    SkyboxComponent::SetTextureResolver([this](const std::string& name) -> Texture* {
       return textureManager_ ? textureManager_->GetTexture(name) : nullptr;
-   });
-   SkyboxComponent::SetTextureNamesProvider([this]() {
-      return textureManager_ ? textureManager_->GetCubemapTextureNames() : std::vector<std::string>{};
    });
 
    // 各マネージャーを利用側へ公開する前にGPU/音声デバイスとの接続と既定アセット読込を完了する。

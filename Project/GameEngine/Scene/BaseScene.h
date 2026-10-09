@@ -4,7 +4,7 @@
 #include "GameEngine/Scene/Camera/DebugCamera.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Editor/Camera/CameraEditor.h"
-#include "GameEngine/Editor/EditorObjectStore.h"
+#include "GameEngine/Scene/SceneObjectStore.h"
 #include <filesystem>
 #include <memory>
 #include <vector>
@@ -127,7 +127,7 @@ private:
 
    bool isFinished_ = false;
    std::string editorSceneName_ = "Scene";
-   std::unique_ptr<EditorObjectStore> runtimeSceneObjectStore_ = nullptr;
+   std::unique_ptr<SceneObjectStore> runtimeSceneObjectStore_ = nullptr;
    std::vector<std::unique_ptr<Object>> sceneEntities_;
 };
 }

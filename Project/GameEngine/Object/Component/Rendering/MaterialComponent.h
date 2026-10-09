@@ -26,12 +26,8 @@ public:
    using MaterialNamesProvider = std::function<std::vector<std::string>()>;
    /// @brief 名前からテクスチャを解決する関数型
    using TextureResolver = std::function<Texture*(const std::string&)>;
-   /// @brief 選択可能なテクスチャ名一覧を返す関数型
-   using TextureNamesProvider = std::function<std::vector<std::string>()>;
    /// @brief 名前から環境テクスチャを解決する関数型
    using EnvironmentTextureResolver = std::function<Texture*(const std::string&)>;
-   /// @brief 選択可能な環境テクスチャ名一覧を返す関数型
-   using EnvironmentTextureNamesProvider = std::function<std::vector<std::string>()>;
 
    /// @brief 全MaterialComponentが使用するマテリアル解決関数を設定する
    /// @param resolver 名前から既存マテリアルを返す関数
@@ -45,15 +41,9 @@ public:
    /// @brief 全MaterialComponentが使用するテクスチャ解決関数を設定する
    /// @param resolver 名前からテクスチャを返す関数
    static void SetTextureResolver(TextureResolver resolver);
-   /// @brief エディタのテクスチャ候補供給関数を設定する
-   /// @param provider 名前一覧を返す関数
-   static void SetTextureNamesProvider(TextureNamesProvider provider);
    /// @brief 全MaterialComponentが使用する環境テクスチャ解決関数を設定する
    /// @param resolver 名前から環境テクスチャを返す関数
    static void SetEnvironmentTextureResolver(EnvironmentTextureResolver resolver);
-   /// @brief エディタの環境テクスチャ候補供給関数を設定する
-   /// @param provider 名前一覧を返す関数
-   static void SetEnvironmentTextureNamesProvider(EnvironmentTextureNamesProvider provider);
 
    /// @brief 名前付きマテリアルを解決し、存在しなければ指定初期値で作成する
    /// @param name 共有マテリアル名
@@ -171,17 +161,13 @@ private:
 #ifdef USE_IMGUI
    size_t inspectorSlot_ = 0;
    bool editShared_ = false;
-   nlohmann::json inspectorBefore_;
-   void DrawInspectorContent();
 #endif
 
    static MaterialResolver resolver_;
    static MaterialCreator creator_;
    static MaterialNamesProvider namesProvider_;
    static TextureResolver textureResolver_;
-   static TextureNamesProvider textureNamesProvider_;
    static EnvironmentTextureResolver environmentTextureResolver_;
-   static EnvironmentTextureNamesProvider environmentTextureNamesProvider_;
    std::vector<std::string> materialNames_;
    std::vector<std::string> textureNames_;
    Vector2 textureLeftTop_ = { 0.0f, 0.0f };

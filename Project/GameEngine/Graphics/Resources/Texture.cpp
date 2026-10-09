@@ -2,12 +2,30 @@
 #include "GameEngine/Graphics/Resources/Texture.h"
 #include "GameEngine/Graphics/Device/ResourceHelper.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
 
 namespace GameEngine {
 ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::string& filePath) {
+   if (!device || !device->GetDevice() || !device->GetCommandList()) return nullptr;
    name_ = filePath.substr(filePath.find_last_of("/\\") + 1);
    DirectX::ScratchImage mipImages = LoadTextureWithMipmaps(filePath);
+   if (!mipImages.GetImageCount()) return nullptr;
    metadata_ = mipImages.GetMetadata();
+   if (metadata_.dimension != DirectX::TEX_DIMENSION_TEXTURE2D || !metadata_.width || !metadata_.height ||
+      metadata_.width > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION || metadata_.height > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION ||
+      !metadata_.mipLevels || metadata_.mipLevels > D3D12_REQ_MIP_LEVELS ||
+      (metadata_.IsCubemap() ? metadata_.arraySize != 6 : metadata_.arraySize != 1)) {
+      Logger::Warning("Unsupported texture dimensions: " + filePath);
+      return nullptr;
+   }
+   D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport{ metadata_.format };
+   if (FAILED(device->GetDevice()->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatSupport, sizeof(formatSupport))) ||
+      !(formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TEXTURE2D) || !(formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)) {
+      Logger::Warning("Unsupported texture format: " + filePath);
+      return nullptr;
+   }
 
    // テクスチャのサイズ情報を保存
    width_ = static_cast<uint32_t>(metadata_.width);
@@ -56,16 +74,21 @@ DirectX::ScratchImage Texture::LoadTextureWithMipmaps(const std::string& filePat
    DirectX::ScratchImage image{};
    std::wstring filePathW = Logger::ConvertString(filePath);
 
-   HRESULT hr;
+   HRESULT hr = S_OK;
 
-   if (filePathW.ends_with(L".dds")) {
+   std::string extension = std::filesystem::path(std::u8string(filePath.begin(), filePath.end())).extension().string();
+   std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+   if (extension == ".dds") {
       // DDSは既存の圧縮形式やキューブ面を保持し、一般画像は色空間をsRGBとして読み込む。
 	  hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
    } else {
 	  hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
    }
 
-   assert(SUCCEEDED(hr));
+   if (FAILED(hr)) {
+      Logger::Warning("Texture could not be decoded: " + filePath);
+      return {};
+   }
 
    const DirectX::TexMetadata& metadata = image.GetMetadata();
 

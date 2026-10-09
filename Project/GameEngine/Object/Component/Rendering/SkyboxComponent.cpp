@@ -7,6 +7,7 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
@@ -24,16 +25,10 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
 namespace GameEngine {
 
 SkyboxComponent::TextureResolver SkyboxComponent::textureResolver_ = nullptr;
-SkyboxComponent::TextureNamesProvider SkyboxComponent::textureNamesProvider_ = nullptr;
 
 void SkyboxComponent::SetTextureResolver(TextureResolver resolver) {
    // AssetManagerへの直接依存を避けるため、全SkyboxComponentが共有する名前解決窓口だけを注入する。
    textureResolver_ = std::move(resolver);
-}
-
-void SkyboxComponent::SetTextureNamesProvider(TextureNamesProvider provider) {
-   // Inspectorを開いた時点のAsset一覧を取得できるよう、固定リストではなくProvider自体を保持する。
-   textureNamesProvider_ = std::move(provider);
 }
 
 const char* SkyboxComponent::GetTypeName() const {
@@ -106,45 +101,13 @@ void SkyboxComponent::DrawInspector() {
       color_ = Vector4(color[0], color[1], color[2], color[3]);
    }
 
-   const char* preview = textureName_.empty() ? Tr("<なし>", "<none>") : textureName_.c_str();
-   if (ImGui::BeginCombo(Tr("キューブマップ", "Cubemap"), preview)) {
-      if (ImGui::Selectable(Tr("<なし>", "<none>"), textureName_.empty())) {
-         SetTextureName({});
-      }
-      if (textureNamesProvider_) {
-         // TextureManagerの再読込や追加を即時反映するため、Comboを開くたびに候補を取り直す。
-         const auto textureNames = textureNamesProvider_();
-         for (const auto& textureName : textureNames) {
-            const bool selected = textureName == textureName_;
-            if (ImGui::Selectable(textureName.c_str(), selected)) {
-               SetTextureName(textureName);
-            }
-            if (selected) {
-               ImGui::SetItemDefaultFocus();
-            }
-         }
-      }
-      ImGui::EndCombo();
-   }
-
-   const std::string dropLabel = textureName_.empty()
-      ? Tr("DDSキューブマップをここへドロップ", "Drop DDS Cubemap Here")
-      : textureName_;
-   ImGui::Button((dropLabel + "##SkyboxCubemapDrop").c_str(), ImVec2(-1.0f, 0.0f));
-   if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_ASSET_TEXTURE")) {
-         const char* textureAssetId = static_cast<const char*>(payload->Data);
-         if (textureAssetId && payload->DataSize > 1 && textureResolver_) {
-            Texture* candidate = textureResolver_(textureAssetId);
-            // 無効なDropでは現在選択を維持し、Cubemap確認後に名前とキャッシュを同時に確定する。
-            if (candidate && candidate->GetMetadata().IsCubemap()) {
-               textureName_ = textureAssetId;
-               texture_ = candidate;
-            }
-         }
-      }
-      ImGui::EndDragDropTarget();
-   }
+   std::string nextTextureId = textureName_;
+   const auto acceptsCubemap = [](const EditorAssetEntry& entry) {
+      Texture* texture = textureResolver_ ? textureResolver_(entry.assetId) : nullptr;
+      return texture && texture->GetMetadata().IsCubemap();
+   };
+   if (EditorUI::AssetReference(Tr("キューブマップ", "Cubemap"), nextTextureId,
+      EditorAssetType::Texture, acceptsCubemap)) SetTextureName(nextTextureId);
 }
 #endif
 

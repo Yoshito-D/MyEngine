@@ -11,6 +11,29 @@
 
 namespace GameEngine {
 namespace ImGuiHelper {
+bool DrawFolderTreeNode(const char* label, bool selected, bool revealAncestor, ImTextureRef icon) {
+   if (revealAncestor) ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
+   if (selected) flags |= ImGuiTreeNodeFlags_Selected;
+   const ImVec2 position = ImGui::GetCursorScreenPos();
+   const bool open = ImGui::TreeNodeEx("##Folder", flags);
+   const ImVec2 rowMin = ImGui::GetItemRectMin();
+   const ImVec2 rowMax = ImGui::GetItemRectMax();
+   auto* draw = ImGui::GetWindowDrawList();
+   draw->PushClipRect(rowMin, rowMax, true);
+   float textX = position.x + ImGui::GetTreeNodeToLabelSpacing();
+   const float iconSize = ImGui::GetFontSize();
+   if (icon.GetTexID()) {
+      const float iconY = rowMin.y + (rowMax.y - rowMin.y - iconSize) * 0.5f;
+      draw->AddImage(icon, ImVec2(textX, iconY), ImVec2(textX + iconSize, iconY + iconSize));
+      textX += iconSize + ImGui::GetStyle().ItemInnerSpacing.x;
+   }
+   draw->AddText(ImVec2(textX, rowMin.y + (rowMax.y - rowMin.y - ImGui::GetFontSize()) * 0.5f),
+      ImGui::GetColorU32(ImGuiCol_Text), label);
+   draw->PopClipRect();
+   return open;
+}
+
 namespace {
 
 EditorLanguage gLanguage = EditorLanguage::Japanese;
@@ -31,16 +54,23 @@ void DrawVisibleLabel(const std::string& label) {
    const char* end = hiddenIdPos == std::string::npos ? nullptr : begin + hiddenIdPos;
 
    ImGui::AlignTextToFramePadding();
+   ImGui::PushTextWrapPos(0.0f);
    ImGui::TextUnformatted(begin, end);
+   ImGui::PopTextWrapPos();
 }
 
 void BeginPropertyRow(const std::string& label, float columnWidth, bool pushItemWidth = true) {
    // 同じ表示名を持つ別プロパティが衝突しないよう、行全体をラベルIDのスコープへ入れる。
    ImGui::PushID(label.c_str());
-   ImGui::Columns(2, nullptr, false);
-   ImGui::SetColumnWidth(0, columnWidth);
+   const float availableWidth = ImGui::GetContentRegionAvail().x;
+   const float fontScale = ImGui::GetFontSize() / 13.0f;
+   const float minimumInputWidth = ImGui::GetFrameHeight() * 3.0f;
+   const bool columns = availableWidth >= minimumInputWidth * 2.0f;
+   // 小幅のInspectorではラベルを上へ移し、固定ラベル幅が入力欄を押し出すことを防ぐ。
+   ImGui::Columns(columns ? 2 : 1, nullptr, false);
+   if (columns) ImGui::SetColumnWidth(0, std::min(columnWidth * fontScale, availableWidth * 0.45f));
    DrawVisibleLabel(label);
-   ImGui::NextColumn();
+   if (columns) ImGui::NextColumn();
 
    if (pushItemWidth) {
       // 負の幅で第2列の残り領域を使い切り、呼び出し側ごとの幅計算を不要にする。
@@ -97,8 +127,10 @@ bool DrawVectorControl(
    const float lineHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2;
    const ImVec2 buttonSize = { lineHeight, lineHeight };
    const float availableWidth = ImGui::CalcItemWidth();
-   // 各成分のリセットボタンを差し引いた残りを均等分配し、狭いパネルでも入力欄を保つ。
-   const float widthEach = std::max(42.0f, (availableWidth - buttonSize.x * componentCount) / componentCount);
+   // 成分を並べる余裕がなければ縦に並べ、入力の最小幅によるパネル外へのはみ出しを防ぐ。
+   const bool inlineComponents = availableWidth >= componentCount * (buttonSize.x + ImGui::GetFontSize() * 3.0f);
+   const int componentsPerRow = inlineComponents ? componentCount : 1;
+   const float widthEach = std::max(1.0f, (availableWidth - buttonSize.x * componentsPerRow) / componentsPerRow);
 
    for (int i = 0; i < componentCount; ++i) {
       const VectorComponent& component = components[i];
@@ -109,8 +141,9 @@ bool DrawVectorControl(
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, component.activeColor);
 
       if (ImGui::Button(component.label, buttonSize)) {
+         const float before = *component.value;
          *component.value = component.resetValue;
-         valueChanged = true;
+         valueChanged |= before != *component.value;
       }
 
       ImGui::PopStyleColor(3);
@@ -123,7 +156,7 @@ bool DrawVectorControl(
 
       ImGui::PopItemWidth();
 
-      if (i + 1 < componentCount) {
+      if (inlineComponents && i + 1 < componentCount) {
          ImGui::SameLine();
       }
 

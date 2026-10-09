@@ -5,6 +5,7 @@
 #include <list>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "GameEngine/Graphics/Resources/Texture.h"
 
@@ -24,9 +25,13 @@ public:
    /// @brief ディレクトリ配下のテクスチャを再帰的にロード
    void LoadTexturesFromDirectory(const std::filesystem::path& directoryPath, const std::filesystem::path& resourcesRoot = "resources");
 
-   /// @brief テクスチャを取得
-   /// @param name 取得するテクスチャの名前
+   /// @brief 登録済み名を解決し、未読込の正規化済みresources相対IDなら必要時にロードする。
+   /// @param name 登録済み名、またはresourcesルート内のスラッシュ区切り相対ID。
+   /// @return 読込済みTexture。無効なID・非対応画像・読込失敗の場合はnullptr。
+   /// @note GPUアップロードを記録できるフレームまたは初期化処理中に呼び出す。
    Texture* GetTexture(const std::string& name);
+   /// @brief 再走査後に失敗したIDの再試行を許可する。成功済みTextureは保持する。
+   void RefreshFailedLoads();
 
    /// @brief 読み込み済みテクスチャ名一覧を取得
    std::vector<std::string> GetTextureNames() const;
@@ -49,6 +54,8 @@ private:
    GraphicsDevice* device_ = nullptr;
    std::unordered_map<std::string, std::unique_ptr<Texture>> textures_;
    std::unordered_map<std::string, Texture*> textureAliases_;
+   // 失敗した参照を描画のたびに再読込しない。明示再走査かClearで再試行する。
+   std::unordered_set<std::string> failedTextureNames_;
    std::list<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResource_;
    std::string lastCubemapName_;
 };
