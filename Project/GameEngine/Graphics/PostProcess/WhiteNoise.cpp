@@ -49,19 +49,19 @@ void WhiteNoise::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rende
 ///          ポストプロセススタックが選択した反対側のターゲットへフルスクリーン描画する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!pipeline_ || !rootSignature_) return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    // シェーダーはfloor(time * seedChangeRate)を乱数シードに使うため、定数転送前に時刻を更新する。
    AdvanceTime();
    UpdateConstantBuffer();
 
    // 色だけを扱う後処理なのでDSVを束縛せず、深度リソースとの不要な競合を避ける。
-   renderTarget_->PreDraw(false);
+   GetRenderTarget()->PreDraw(false);
 
-   auto cmdList = device_->GetCommandList();
+   auto cmdList = GetDevice()->GetCommandList();
 
-   cmdList->SetPipelineState(pipeline_->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(rootSignature_->GetRootSignature());
+   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
+   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
    // 物理スロット番号はルートシグネチャ定義の意味名から解決済みであり、並び順を固定値で仮定しない。
    if (constantBuffer_) {
@@ -75,7 +75,7 @@ void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    cmdList->DrawInstanced(3, 1, 0, 0);
 
    // 後続エフェクトが今回の出力をSRVとして読める状態へ遷移する。
-   renderTarget_->PostDraw();
+   GetRenderTarget()->PostDraw();
 }
 
 #ifdef USE_IMGUI
@@ -144,7 +144,7 @@ void WhiteNoise::SetTime(float time) {
 /// @brief CPUから毎フレーム更新できるホワイトノイズ定数バッファを作成する。
 /// @details ResourceHelperのUPLOADヒープを一度だけMapし、以後はconstantBufferData_を介して直接更新する。
 void WhiteNoise::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(WhiteNoiseCB));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(GetDevice()->GetDevice(), sizeof(WhiteNoiseCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 

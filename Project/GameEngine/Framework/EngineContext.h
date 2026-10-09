@@ -696,8 +696,14 @@ public:
    /// @param stableId ウィンドウの固定ID。
    /// @param label メニューの日本語・英語ラベル（文字列リテラル）。
    /// @param defaultVisible 初回登録時の表示状態。
-   /// @return 表示状態へのポインター。レンダラーがない場合はnullptr。
-   static bool* GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
+   /// @return 現在の表示状態。レンダラーがない場合はfalse。
+   static bool GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
+
+   /// @brief 登録済みエディターウィンドウの表示状態を設定する。
+   /// @param stableId 登録済みウィンドウの固定ID。
+   /// @param visible 表示する場合はtrue。
+   /// @return レンダラーがない、またはIDが未登録の場合はfalse。
+   static bool SetEditorWindowVisibility(const char* stableId, bool visible);
 #endif // USE_IMGUI
 
    /// @brief LineRendererを取得

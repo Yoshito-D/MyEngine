@@ -63,8 +63,6 @@ private:
    /// @brief マスクSRVのルートパラメータスロットを設定
    void SetMaskTextureRootSlot(UINT maskTextureSlot);
 
-
-protected:
    GraphicsDevice* device_ = nullptr;
    OffscreenRenderTarget* renderTarget_ = nullptr;
 
@@ -77,9 +75,22 @@ protected:
    UINT depthTextureRootSlot_ = 2;
    UINT maskTextureRootSlot_ = 2;
 
+protected:
+   /// @brief 初期化時に関連付けた非所有デバイスを取得する。
+   GraphicsDevice* GetDevice() const { return device_; }
+   /// @brief 初期化時に関連付けた非所有描画先を取得する。
+   OffscreenRenderTarget* GetRenderTarget() const { return renderTarget_; }
+   /// @brief 管理側が設定した読み取り専用パイプラインを取得する。
+   const PipelineState* GetPipeline() const { return pipeline_; }
+   /// @brief 管理側が設定した読み取り専用ルートシグネチャを取得する。
+   const RootSignature* GetRootSignature() const { return rootSignature_; }
+   /// @brief 定数バッファの検証済みバインド番号を取得する。
    UINT GetConstantBufferRootSlot() const { return constantBufferRootSlot_; }
+   /// @brief 入力カラーの検証済みバインド番号を取得する。
    UINT GetInputTextureRootSlot() const { return inputTextureRootSlot_; }
+   /// @brief 深度テクスチャの検証済みバインド番号を取得する。
    UINT GetDepthTextureRootSlot() const { return depthTextureRootSlot_; }
+   /// @brief マスクテクスチャの検証済みバインド番号を取得する。
    UINT GetMaskTextureRootSlot() const { return maskTextureRootSlot_; }
 
    // ImGuiの固有ID管理

@@ -28,7 +28,8 @@ PlayerRearFollowCamera* RearCameraComponent::GetRearCamera() {
 
 #ifdef USE_IMGUI
 void RearCameraComponent::DrawInspector() {
-   ImGui::Checkbox("Enabled", &isEnabled_);
+   bool enabled = IsEnabled();
+   if (ImGui::Checkbox("Enabled", &enabled)) SetEnabled(enabled);
    ImGui::Text("Execution order: %d", GetExecutionOrder());
 }
 #endif

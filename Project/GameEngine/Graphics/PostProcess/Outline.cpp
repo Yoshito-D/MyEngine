@@ -24,9 +24,9 @@ void Outline::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTa
 ///          定数バッファをそれぞれ意味名から解決済みのスロットへ束縛し、1回のフルスクリーンパスで処理する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void Outline::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!pipeline_ || !rootSignature_) return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
-   const D3D12_GPU_DESCRIPTOR_HANDLE depthSRV = device_->GetDepthSRVHandleGPU();
+   const D3D12_GPU_DESCRIPTOR_HANDLE depthSRV = GetDevice()->GetDepthSRVHandleGPU();
    // Prewittフィルターには深度近傍値が必須なため、無効ハンドルで色だけを描くフォールバックは行わない。
    if (depthSRV.ptr == 0) {
 	  return;
@@ -36,12 +36,12 @@ void Outline::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    UpdateConstantBuffer();
 
    // 深度はSRVとして読むためDSVを同時束縛せず、色出力だけをping-pong先へ書き込む。
-   renderTarget_->PreDraw(false);
+   GetRenderTarget()->PreDraw(false);
 
-   auto cmdList = device_->GetCommandList();
+   auto cmdList = GetDevice()->GetCommandList();
 
-   cmdList->SetPipelineState(pipeline_->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(rootSignature_->GetRootSignature());
+   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
+   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
    // Outline専用ルートシグネチャのCBV・カラーSRV・深度SRVは、物理番号ではなく解決済みスロットを使う。
    if (constantBuffer_) {
@@ -55,7 +55,7 @@ void Outline::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
 
-   renderTarget_->PostDraw();
+   GetRenderTarget()->PostDraw();
 }
 
 /// @brief 輪郭の合成色を設定してGPU定数へ即時反映する。
@@ -98,7 +98,7 @@ void Outline::SetIntensity(float intensity) {
 
 /// @brief CPUから直接更新するOutline定数バッファを作成し、永続Mapする。
 void Outline::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(OutlineCB));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(GetDevice()->GetDevice(), sizeof(OutlineCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 
@@ -106,7 +106,7 @@ void Outline::CreateConstantBuffer() {
 /// @details 1テクセルのUV幅を解像度から算出することで、thicknessを画面サイズに依存しない
 ///          ピクセル単位の近傍間隔として扱える。ゼロ寸法では除算せず0を渡す。
 void Outline::UpdateConstantBuffer() {
-   if (!constantBufferData_ || !renderTarget_) {
+   if (!constantBufferData_ || !GetRenderTarget()) {
 	  return;
    }
 
@@ -115,8 +115,8 @@ void Outline::UpdateConstantBuffer() {
    constantBufferData_->outlineColor[2] = outlineColor_[2];
    constantBufferData_->outlineColor[3] = outlineColor_[3];
 
-   const float width = static_cast<float>(renderTarget_->GetWidth());
-   const float height = static_cast<float>(renderTarget_->GetHeight());
+   const float width = static_cast<float>(GetRenderTarget()->GetWidth());
+   const float height = static_cast<float>(GetRenderTarget()->GetHeight());
    // ピクセル単位の近傍サンプルを解像度に依存させないため、UVの1テクセル幅を渡す。
    constantBufferData_->texelSize[0] = width > 0.0f ? 1.0f / width : 0.0f;
    constantBufferData_->texelSize[1] = height > 0.0f ? 1.0f / height : 0.0f;

@@ -17,7 +17,7 @@ namespace GameEngine {
 	}
 
 	void NoiseModule::ApplyNoise(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) {
-		if (!enabled_) return;
+		if (!IsEnabled()) return;
 		float strength = strength_.IsRandomized() ? particle.noiseStrength : strength_.Minimum();
 		float frequency = frequency_.IsRandomized() ? particle.noiseFrequency : frequency_.Minimum();
 		float scrollSpeed = scrollSpeed_.IsRandomized() ? particle.noiseScrollSpeed : scrollSpeed_.Minimum();
@@ -48,7 +48,7 @@ namespace GameEngine {
 
 	nlohmann::json NoiseModule::ToJson() const {
 		nlohmann::json j;
-		j["enabled"] = enabled_;
+		j["enabled"] = IsEnabled();
 		j["strength"] = strength_.ToJson();
 		j["frequency"] = frequency_.ToJson();
 		j["scrollSpeed"] = scrollSpeed_.ToJson();
@@ -56,7 +56,7 @@ namespace GameEngine {
 	}
 
 	void NoiseModule::FromJson(const nlohmann::json& j) {
-		if (j.contains("enabled")) enabled_ = j["enabled"];
+		if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
 		if (j.contains("strength")) {
 			if (j["strength"].is_object()) {
 				strength_.FromJson(j["strength"]);

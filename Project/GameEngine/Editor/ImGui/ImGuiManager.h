@@ -45,8 +45,14 @@ public:
    /// @param stableId 言語やシーンが変わっても同じウィンドウを識別するID。
    /// @param label メニューに表示する日本語・英語のラベル（文字列リテラル）。
    /// @param defaultVisible 初回登録時の表示状態。
-   /// @return マネージャーの寿命中有効な表示状態の参照。
-   bool& GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
+   /// @return 初回だけ既定値を登録し、現在の表示状態を値で返す。
+   bool GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
+
+   /// @brief 登録済みウィンドウの表示状態を設定する。
+   /// @param stableId GetEditorWindowVisibilityで登録した固定ID。
+   /// @param visible 表示する場合はtrue。
+   /// @return IDが未登録の場合はfalse。未登録ウィンドウは追加しない。
+   bool SetEditorWindowVisibility(const char* stableId, bool visible);
 
    /// @brief ビューポートを表示
    /// @param renderTarget オフスクリーンレンダーターゲット

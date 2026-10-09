@@ -1891,12 +1891,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Tests\EditorAssetRegistryTests.cpp" />
-    <None Include="..\Tests\ParticleDistortionTests.cpp" />
-    <None Include="..\Tests\ParticleRandomRangeTests.cpp" />
     <None Include="Tests\EditorSceneContextTests.cpp" />
     <None Include="Tests\EditorImGuiLayoutTests.cpp" />
     <None Include="..\Tests\EditorWindowTests.cpp" />
-    <None Include="..\Tests\RunEditorWindowTests.ps1" />
     <None Include="Tests\TexturePathTests.cpp" />
     <None Include="Docs\Editor\EditorWorkflow.md" />
   </ItemGroup>

@@ -564,11 +564,13 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
 
 bool LightManager::DebugDraw() {
 #ifdef USE_IMGUI
-   bool* visible = EngineContext::GetEditorWindowVisibility("LightManager", { "ライト", "Light Manager" });
-   if (!visible || !*visible) return false;
+   bool visible = EngineContext::GetEditorWindowVisibility("LightManager", { "ライト", "Light Manager" });
+   if (!visible) return false;
    const nlohmann::json stateBeforeEditing = SerializeSceneState();
    const std::string windowLabel = StableEditorLabel("ライト", "Light Manager", "LightManager");
-   if (ImGui::Begin(windowLabel.c_str(), visible)) {
+   const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
+   EngineContext::SetEditorWindowVisibility("LightManager", visible);
+   if (drawContents) {
       // ディレクショナルライト
       const std::string directionalLabel = StableEditorLabel(
          "ディレクショナルライト", "Directional Light", "DirectionalLightSection");

@@ -459,22 +459,26 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
 	}
 
 	if (ImGui::CollapsingHeader(StableLabel(Tr("サブエミッターモジュール", "Sub Emitter Module"), "ParticleSubEmitterModule").c_str())) {
-			auto& subEmitters = particleSystem->GetSubEmitterSettings();
-			ImGui::Checkbox(ScopedLabel(Tr("サブエミッター", "Sub Emitters"), "ParticleSubEmitters_" + particleSystemName).c_str(), &subEmitters.enabled);
+			auto subEmitters = particleSystem->GetSubEmitterSettings();
+			bool changed = ImGui::Checkbox(ScopedLabel(Tr("サブエミッター", "Sub Emitters"), "ParticleSubEmitters_" + particleSystemName).c_str(), &subEmitters.enabled);
 			if (subEmitters.enabled) {
-			   EditorUI::AssetFileReference(Tr("死亡時エフェクト", "Spawn On Death"), subEmitters.spawnOnDeathPath, EditorAssetType::Particle);
-			   EditorUI::AssetFileReference(Tr("更新時エフェクト", "Spawn On Update"), subEmitters.spawnOnUpdatePath, EditorAssetType::Particle);
-			   EditorUI::AssetFileReference(Tr("衝突時エフェクト", "Spawn On Collision"), subEmitters.spawnOnCollisionPath, EditorAssetType::Particle);
-			   ImGui::DragFloat(ScopedLabel(Tr("更新発生間隔", "Update Spawn Interval"), "ParticleSubInterval_" + particleSystemName).c_str(), &subEmitters.updateInterval, 0.01f, 0.001f, 60.0f);
+			   changed |= EditorUI::AssetFileReference(Tr("死亡時エフェクト", "Spawn On Death"), subEmitters.spawnOnDeathPath, EditorAssetType::Particle);
+			   changed |= EditorUI::AssetFileReference(Tr("更新時エフェクト", "Spawn On Update"), subEmitters.spawnOnUpdatePath, EditorAssetType::Particle);
+			   changed |= EditorUI::AssetFileReference(Tr("衝突時エフェクト", "Spawn On Collision"), subEmitters.spawnOnCollisionPath, EditorAssetType::Particle);
+			   changed |= ImGui::DragFloat(ScopedLabel(Tr("更新発生間隔", "Update Spawn Interval"), "ParticleSubInterval_" + particleSystemName).c_str(), &subEmitters.updateInterval, 0.01f, 0.001f, 60.0f);
 			   int maxEvents = static_cast<int>(subEmitters.maxEventsPerFrame);
 			   if (ImGui::DragInt(ScopedLabel(Tr("毎フレーム上限", "Events Per Frame"), "ParticleSubLimit_" + particleSystemName).c_str(), &maxEvents, 1.0f, 1, 1024)) {
 				  subEmitters.maxEventsPerFrame = static_cast<uint32_t>(std::max(maxEvents, 1));
+				  changed = true;
 			   }
 			   if (!subEmitters.spawnOnCollisionPath.empty()) {
-				  ImGui::DragFloat3(ScopedLabel(Tr("衝突平面法線", "Collision Plane Normal"), "ParticleCollisionNormal_" + particleSystemName).c_str(), &subEmitters.collisionPlaneNormal.x, 0.01f, -1.0f, 1.0f);
-				  ImGui::DragFloat(ScopedLabel(Tr("衝突平面距離", "Collision Plane Distance"), "ParticleCollisionDistance_" + particleSystemName).c_str(), &subEmitters.collisionPlaneDistance, 0.05f, -10000.0f, 10000.0f);
-				  ImGui::SliderFloat(ScopedLabel(Tr("反発係数", "Restitution"), "ParticleCollisionRestitution_" + particleSystemName).c_str(), &subEmitters.collisionRestitution, 0.0f, 1.0f);
+				  changed |= ImGui::DragFloat3(ScopedLabel(Tr("衝突平面法線", "Collision Plane Normal"), "ParticleCollisionNormal_" + particleSystemName).c_str(), &subEmitters.collisionPlaneNormal.x, 0.01f, -1.0f, 1.0f);
+				  changed |= ImGui::DragFloat(ScopedLabel(Tr("衝突平面距離", "Collision Plane Distance"), "ParticleCollisionDistance_" + particleSystemName).c_str(), &subEmitters.collisionPlaneDistance, 0.05f, -10000.0f, 10000.0f);
+				  changed |= ImGui::SliderFloat(ScopedLabel(Tr("反発係数", "Restitution"), "ParticleCollisionRestitution_" + particleSystemName).c_str(), &subEmitters.collisionRestitution, 0.0f, 1.0f);
 			   }
+			}
+			if (changed && !particleSystem->ConfigureSubEmitters(subEmitters)) {
+			   ImGui::TextDisabled("%s", Tr("設定値が不正なため変更を適用できません", "Invalid settings; changes were not applied"));
 			}
 			ImGui::Separator();
 	}

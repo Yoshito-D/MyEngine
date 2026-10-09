@@ -249,7 +249,8 @@ void RendererEditorController::BeginEditorFrame() {
       editorSearchAllFolders_ = false;
       SelectAsset(*context, reveal);
       editorRevealAsset_ = true;
-      if (bool* visible = EngineContext::GetEditorWindowVisibility("Assets", { "プロジェクト", "Project" })) *visible = true;
+      EngineContext::GetEditorWindowVisibility("Assets", { "プロジェクト", "Project" });
+      EngineContext::SetEditorWindowVisibility("Assets", true);
    }
 }
 
@@ -293,10 +294,12 @@ void RendererEditorController::ShowSceneDialogs() {
 }
 
 void RendererEditorController::ShowPlayModeToolbar() {
-   bool* visible = EngineContext::GetEditorWindowVisibility("PlayModeToolbar", { "再生", "Toolbar" });
-   if (!visible || !*visible) return;
+   bool visible = EngineContext::GetEditorWindowVisibility("PlayModeToolbar", { "再生", "Toolbar" });
+   if (!visible) return;
    const std::string label = StableWindowLabel(Tr("再生", "Toolbar"), "PlayModeToolbar");
-   if (!ImGui::Begin(label.c_str(), visible)) { ImGui::End(); return; }
+   const bool drawContents = ImGui::Begin(label.c_str(), &visible);
+   EngineContext::SetEditorWindowVisibility("PlayModeToolbar", visible);
+   if (!drawContents) { ImGui::End(); return; }
    auto* context = GetActiveEditorContext();
    const PlayMode mode = EngineContext::GetPlayMode();
    ImGui::BeginDisabled(mode == PlayMode::Playing);
@@ -325,8 +328,8 @@ void RendererEditorController::ShowPlayModeToolbar() {
 }
 
 void RendererEditorController::ShowSceneManagementWindow() {
-   bool* visible = EngineContext::GetEditorWindowVisibility("SceneManagement", { "シーン管理", "Scene Management" });
-   if (!visible || !*visible) return;
+   bool visible = EngineContext::GetEditorWindowVisibility("SceneManagement", { "シーン管理", "Scene Management" });
+   if (!visible) return;
    const std::string label = StableWindowLabel(Tr("シーン管理", "Scene Management"), "SceneManagement");
    const auto* viewport = ImGui::GetMainViewport();
    const float scale = ImGui::GetFontSize() / 13.0f;
@@ -335,7 +338,9 @@ void RendererEditorController::ShowSceneManagementWindow() {
    ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
       viewport->WorkPos.y + viewport->WorkSize.y * 0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
    // 初期表示だけ浮動位置を指定し、その後のドッキングと保存済み配置はImGuiに任せる。
-   if (!ImGui::Begin(label.c_str(), visible)) { ImGui::End(); return; }
+   const bool drawContents = ImGui::Begin(label.c_str(), &visible);
+   EngineContext::SetEditorWindowVisibility("SceneManagement", visible);
+   if (!drawContents) { ImGui::End(); return; }
    auto* context = GetActiveEditorContext();
    const auto* scene = BaseScene::GetCurrentScene();
    const bool editable = context && EngineContext::IsPlayModeEdit();
@@ -398,10 +403,12 @@ void RendererEditorController::ShowSceneManagementWindow() {
 }
 
 void RendererEditorController::ShowAssetWindow() {
-   bool* visible = EngineContext::GetEditorWindowVisibility("Assets", { "プロジェクト", "Project" });
-   if (!visible || !*visible) return;
+   bool visible = EngineContext::GetEditorWindowVisibility("Assets", { "プロジェクト", "Project" });
+   if (!visible) return;
    const std::string label = StableWindowLabel(Tr("プロジェクト", "Project"), "Assets");
-   if (!ImGui::Begin(label.c_str(), visible)) { ImGui::End(); return; }
+   const bool drawContents = ImGui::Begin(label.c_str(), &visible);
+   EngineContext::SetEditorWindowVisibility("Assets", visible);
+   if (!drawContents) { ImGui::End(); return; }
    auto* context = GetActiveEditorContext();
    if (!context) { ImGui::TextUnformatted("No editor scene"); ImGui::End(); return; }
    HandlePanelShortcuts(*context, true);

@@ -150,7 +150,6 @@ protected:
 
 private:
     std::vector<std::unique_ptr<ICinemachineComponent>> components_;
-protected:
     const Transform* followTarget_ = nullptr;
     const Transform* lookAtTarget_ = nullptr;
     std::string followTargetEntityId_;

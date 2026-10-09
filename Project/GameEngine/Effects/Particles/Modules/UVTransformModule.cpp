@@ -13,7 +13,7 @@ float UVTransformModule::LerpFloat(float a, float b, float t) {
 }
 
 void UVTransformModule::InitializeParticle(Particle& particle) const {
-	if (!enabled_) return;
+	if (!IsEnabled()) return;
 
 	// ランダム値は生成時に一度だけ確定し、フレームごとのちらつきを防ぐ。
 	switch (scrollMode_) {
@@ -56,7 +56,7 @@ void UVTransformModule::InitializeParticle(Particle& particle) const {
 }
 
 void UVTransformModule::UpdateUV(Particle& particle, float deltaTime) const {
-	if (!enabled_) return;
+	if (!IsEnabled()) return;
 
 	const float t = particle.GetLifeProgress();
 	Vector2 currentScroll = particle.uvScroll;
@@ -96,7 +96,7 @@ void UVTransformModule::UpdateUV(Particle& particle, float deltaTime) const {
 
 nlohmann::json UVTransformModule::ToJson() const {
 	nlohmann::json j;
-	j["enabled"] = enabled_;
+	j["enabled"] = IsEnabled();
 	j["scrollMode"] = static_cast<int>(scrollMode_);
 	j["scrollConstant"] = {scrollConstant_.x, scrollConstant_.y};
 	j["scrollRandom"] = scrollRandom_.ToJson();
@@ -116,7 +116,7 @@ nlohmann::json UVTransformModule::ToJson() const {
 }
 
 void UVTransformModule::FromJson(const nlohmann::json& j) {
-	if (j.contains("enabled")) enabled_ = j["enabled"];
+	if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
 	if (j.contains("scrollMode")) scrollMode_ = static_cast<ValueMode>(j["scrollMode"].get<int>());
 	if (j.contains("scrollConstant") && j["scrollConstant"].is_array() && j["scrollConstant"].size() >= 2) {
 		auto arr = j["scrollConstant"];

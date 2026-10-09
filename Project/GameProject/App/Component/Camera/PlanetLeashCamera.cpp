@@ -185,7 +185,8 @@ void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void PlanetLeashCamera::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
-   if (ImGui::Checkbox(Tr("有効", "Enabled"), &isEnabled_)) {}
+   bool enabled = IsEnabled();
+   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled)) SetEnabled(enabled);
 
    ImGui::DragFloat(Tr("最大追従距離", "Max Follow Distance"), &maxFollowDistance, 0.1f, 0.1f, 100.0f);
    ImGui::DragFloat(Tr("追従速度", "Follow Speed"),        &followSpeed,       0.1f, 0.0f, 50.0f);

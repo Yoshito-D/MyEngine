@@ -596,7 +596,8 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void GravityFollowCamera::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
-   if (ImGui::Checkbox(Tr("有効", "Enabled"), &isEnabled_)) {}
+   bool enabled = IsEnabled();
+   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled)) SetEnabled(enabled);
 
    ImGui::DragFloat(Tr("距離", "Distance"),         &distance_,          0.1f,   0.5f,  200.0f);
    float rotateSpeedDeg = rotateSpeed * MathConstants::kRadiansToDegrees;

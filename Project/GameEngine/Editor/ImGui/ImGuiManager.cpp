@@ -127,11 +127,18 @@ void ImGuiManager::BeginFrame() {
    ImGuizmo::BeginFrame();
 }
 
-bool& ImGuiManager::GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible) {
+bool ImGuiManager::GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible) {
    // 初回の既定値だけを採用し、毎フレームの登録で閉じたウィンドウを開き直さない。
    const auto entry = editorWindows_.try_emplace(stableId, EditorWindowState{ label, defaultVisible }).first;
    entry->second.label = label;
    return entry->second.visible;
+}
+
+bool ImGuiManager::SetEditorWindowVisibility(const char* stableId, bool visible) {
+   const auto entry = editorWindows_.find(stableId);
+   if (entry == editorWindows_.end()) return false;
+   entry->second.visible = visible;
+   return true;
 }
 
 void ImGuiManager::ShowMainMenuBar(const std::function<void()>& menuCallback) {
@@ -285,10 +292,12 @@ void ImGuiManager::ShowViewport(
 }
 
 void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
-   bool& visible = GetEditorWindowVisibility("EngineSettings", { "エンジン設定", "Engine Settings" });
+   bool visible = GetEditorWindowVisibility("EngineSettings", { "エンジン設定", "Engine Settings" });
    if (!visible) return;
    const std::string windowLabel = StableWindowLabel(Tr("エンジン設定", "Engine Settings"), "EngineSettings");
-   if (!ImGui::Begin(windowLabel.c_str(), &visible)) { ImGui::End(); return; }
+   const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
+   SetEditorWindowVisibility("EngineSettings", visible);
+   if (!drawContents) { ImGui::End(); return; }
 
    // FPS等を表示
    ImGui::Text("%s: %.4f", Tr("デルタタイム", "Delta Time"), EngineContext::GetDeltaTime());

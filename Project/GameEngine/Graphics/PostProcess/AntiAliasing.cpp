@@ -24,17 +24,17 @@ void AntiAliasing::Initialize(GraphicsDevice* device, OffscreenRenderTarget* ren
 ///          頂点入力を持たない1回のフルスクリーンパスでFXAA系の平滑化を行う。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!pipeline_ || !rootSignature_) return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    UpdateConstantBuffer();
 
    // 深度を使わない色フィルターなのでDSVを束縛せず、スタックのping-pong出力面だけを更新する。
-   renderTarget_->PreDraw(false);
+   GetRenderTarget()->PreDraw(false);
 
-   auto cmdList = device_->GetCommandList();
+   auto cmdList = GetDevice()->GetCommandList();
 
-   cmdList->SetPipelineState(pipeline_->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(rootSignature_->GetRootSignature());
+   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
+   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
    // ルートパラメータの物理番号はPSO定義から解決されるため、b0/t0の並びをC++側で固定しない。
    if (constantBuffer_) {
@@ -48,12 +48,12 @@ void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    cmdList->DrawInstanced(3, 1, 0, 0);
 
    // 次のポストプロセスが今回の出力を入力SRVとして使用できる状態へ戻す。
-   renderTarget_->PostDraw();
+   GetRenderTarget()->PostDraw();
 }
 
 /// @brief CPUから直接更新するアンチエイリアシング定数バッファを作成し、永続Mapする。
 void AntiAliasing::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(AntiAliasingCB));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(GetDevice()->GetDevice(), sizeof(AntiAliasingCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 

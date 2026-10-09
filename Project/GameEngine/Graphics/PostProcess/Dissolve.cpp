@@ -51,7 +51,7 @@ void Dissolve::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderT
 ///          タイリングを含めて1回のフルスクリーンパスで処理する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void Dissolve::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!pipeline_ || !rootSignature_) return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    D3D12_GPU_DESCRIPTOR_HANDLE maskSRV = inputSRV;
    // マスク未解決時も有効なSRVを束縛し、ルートテーブルの未設定によるGPUエラーを避ける。
@@ -62,12 +62,12 @@ void Dissolve::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    UpdateConstantBuffer();
 
    // 深度を使わない色フィルターなのでDSVを束縛せず、スタックのping-pong出力面だけを更新する。
-   renderTarget_->PreDraw(false);
+   GetRenderTarget()->PreDraw(false);
 
-   auto cmdList = device_->GetCommandList();
+   auto cmdList = GetDevice()->GetCommandList();
 
-   cmdList->SetPipelineState(pipeline_->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(rootSignature_->GetRootSignature());
+   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
+   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
    // constantbuffer・inputtexture・masktextureの意味名から解決済みの物理スロットへ各リソースを設定する。
    if (constantBuffer_) {
@@ -81,7 +81,7 @@ void Dissolve::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
 
-   renderTarget_->PostDraw();
+   GetRenderTarget()->PostDraw();
 }
 
 /// @brief ディゾルブの全数値パラメーターを正規化して反映する。
@@ -127,7 +127,7 @@ void Dissolve::SetMaskTextureName(const std::string& textureName) {
 
 /// @brief CPUから直接更新するディゾルブ定数バッファを作成し、永続Mapする。
 void Dissolve::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(DissolveCB));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(GetDevice()->GetDevice(), sizeof(DissolveCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 
