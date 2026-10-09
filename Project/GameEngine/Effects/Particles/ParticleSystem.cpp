@@ -11,6 +11,7 @@
 #include <random>
 #include <algorithm>
 #include <filesystem>
+#include <cmath>
 
 namespace GameEngine {
 
@@ -1944,6 +1945,24 @@ nlohmann::json ParticleSystem::ToJson() const {
    return j;
 }
 
+bool ParticleSystem::ConfigureSubEmitters(const SubEmitterSettings& settings) {
+   const float normalLength = std::hypot(settings.collisionPlaneNormal.x,
+      settings.collisionPlaneNormal.y, settings.collisionPlaneNormal.z);
+   if (!std::isfinite(settings.updateInterval) || settings.updateInterval < 0.001f ||
+      settings.maxEventsPerFrame < 1 || settings.maxEventsPerFrame > 1024 ||
+      !std::isfinite(normalLength) || normalLength <= 1.0e-4f ||
+      !std::isfinite(settings.collisionPlaneDistance) ||
+      !std::isfinite(settings.collisionRestitution) ||
+      settings.collisionRestitution < 0.0f || settings.collisionRestitution > 1.0f) {
+      return false;
+   }
+   // 関連する値を検証してから確定し、不正な入力で設定の一部だけが変わることを防ぐ。
+   auto validated = settings;
+   validated.collisionPlaneNormal = settings.collisionPlaneNormal / normalLength;
+   subEmitterSettings_ = std::move(validated);
+   return true;
+}
+
 void ParticleSystem::FromJson(const nlohmann::json& j) {
    if (j.contains("textureName")) {
 	  SetTextureName(j["textureName"].get<std::string>());
@@ -1961,19 +1980,33 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
 	  usePostProcess_ = j["usePostProcess"].get<bool>();
    }
    // 旧gpuSimulation値は互換性のため読み飛ばす。シミュレーション経路は常にGPUで固定する。
-   if (j.contains("subEmitters") && j["subEmitters"].is_object()) {
-	  const auto& settings = j["subEmitters"];
-	  if (settings.contains("enabled")) subEmitterSettings_.enabled = settings["enabled"];
-	  if (settings.contains("spawnOnDeathPath")) subEmitterSettings_.spawnOnDeathPath = settings["spawnOnDeathPath"];
-	  if (settings.contains("spawnOnUpdatePath")) subEmitterSettings_.spawnOnUpdatePath = settings["spawnOnUpdatePath"];
-	  if (settings.contains("spawnOnCollisionPath")) subEmitterSettings_.spawnOnCollisionPath = settings["spawnOnCollisionPath"];
-	  if (settings.contains("updateInterval")) subEmitterSettings_.updateInterval = std::max(settings["updateInterval"].get<float>(), 0.001f);
-	  if (settings.contains("maxEventsPerFrame")) subEmitterSettings_.maxEventsPerFrame = settings["maxEventsPerFrame"];
-	  if (settings.contains("collisionPlaneNormal") && settings["collisionPlaneNormal"].is_array() && settings["collisionPlaneNormal"].size() >= 3) {
-		 subEmitterSettings_.collisionPlaneNormal = Vector3(settings["collisionPlaneNormal"][0], settings["collisionPlaneNormal"][1], settings["collisionPlaneNormal"][2]);
-	  }
-	  if (settings.contains("collisionPlaneDistance")) subEmitterSettings_.collisionPlaneDistance = settings["collisionPlaneDistance"];
-	  if (settings.contains("collisionRestitution")) subEmitterSettings_.collisionRestitution = std::clamp(settings["collisionRestitution"].get<float>(), 0.0f, 1.0f);
+   if (j.contains("subEmitters")) {
+      try {
+         const auto& data = j.at("subEmitters");
+         auto settings = GetSubEmitterSettings();
+         // 負値や巨大なJSON整数をuint32_tへ変換する前に範囲を確認する。
+         const bool validEventLimit = !data.contains("maxEventsPerFrame") ||
+            (data.at("maxEventsPerFrame").is_number_integer() &&
+             data.at("maxEventsPerFrame").get<double>() >= 1.0 &&
+             data.at("maxEventsPerFrame").get<double>() <= 1024.0);
+         if (data.contains("enabled")) settings.enabled = data.at("enabled").get<bool>();
+         if (data.contains("spawnOnDeathPath")) settings.spawnOnDeathPath = data.at("spawnOnDeathPath").get<std::string>();
+         if (data.contains("spawnOnUpdatePath")) settings.spawnOnUpdatePath = data.at("spawnOnUpdatePath").get<std::string>();
+         if (data.contains("spawnOnCollisionPath")) settings.spawnOnCollisionPath = data.at("spawnOnCollisionPath").get<std::string>();
+         if (data.contains("updateInterval")) settings.updateInterval = data.at("updateInterval").get<float>();
+         if (validEventLimit && data.contains("maxEventsPerFrame")) settings.maxEventsPerFrame = data.at("maxEventsPerFrame").get<uint32_t>();
+         if (data.contains("collisionPlaneNormal")) {
+            const auto normal = data.at("collisionPlaneNormal").get<std::array<float, 3>>();
+            settings.collisionPlaneNormal = { normal[0], normal[1], normal[2] };
+         }
+         if (data.contains("collisionPlaneDistance")) settings.collisionPlaneDistance = data.at("collisionPlaneDistance").get<float>();
+         if (data.contains("collisionRestitution")) settings.collisionRestitution = data.at("collisionRestitution").get<float>();
+         if (!data.is_object() || !validEventLimit || !ConfigureSubEmitters(settings)) {
+            Logger::Warning("[ParticleSystem] Invalid sub-emitter settings; keeping the current settings.");
+         }
+      } catch (const nlohmann::json::exception& exception) {
+         Logger::Warning(std::string("[ParticleSystem] Invalid sub-emitter settings: ") + exception.what());
+      }
    }
 
    if (j.contains("materialSettings") && j["materialSettings"].is_object() && material_) {

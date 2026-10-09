@@ -204,7 +204,8 @@ const std::string& PlayerRearFollowCamera::GetLastCameraMeasurementPath() const 
 
 #ifdef USE_IMGUI
 void PlayerRearFollowCamera::DrawInspector() {
-   ImGui::Checkbox("Enabled", &isEnabled_);
+   bool enabled = IsEnabled();
+   if (ImGui::Checkbox("Enabled", &enabled)) SetEnabled(enabled);
    ImGui::TextDisabled("Settings: RearCameraDebugView");
    if (!HasRequiredComponents()) {
       ImGui::TextDisabled("A required rear camera component is missing.");

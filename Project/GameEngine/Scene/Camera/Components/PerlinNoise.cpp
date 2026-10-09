@@ -145,7 +145,8 @@ void PerlinNoise::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void PerlinNoise::DrawInspector() {
-    if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+    bool enabled = IsEnabled();
+    if (ImGui::Checkbox("Enabled", &enabled)) SetEnabled(enabled);
 
     ImGui::Text("Shaking: %s", IsShaking() ? "Yes" : "No");
 

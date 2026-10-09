@@ -434,9 +434,11 @@ void ReflectionValidationCoordinator::DrawDebugWindow(const PSOManager* psoManag
       return;
    }
 
-   bool* visible = EngineContext::GetEditorWindowVisibility("ReflectionBindingDebug", { "Reflection Binding Debug", "Reflection Binding Debug" });
-   if (!visible || !*visible) return;
-   if (!ImGui::Begin("Reflection Binding Debug", visible)) { ImGui::End(); return; }
+   bool visible = EngineContext::GetEditorWindowVisibility("ReflectionBindingDebug", { "Reflection Binding Debug", "Reflection Binding Debug" });
+   if (!visible) return;
+   const bool drawContents = ImGui::Begin("Reflection Binding Debug", &visible);
+   EngineContext::SetEditorWindowVisibility("ReflectionBindingDebug", visible);
+   if (!drawContents) { ImGui::End(); return; }
    ImGui::Text("Frame Resolve Requests : %llu", state.frameResolveRequests);
    ImGui::Text("Frame Resolve Hits     : %llu", state.frameResolveHits);
    ImGui::Text("Frame Fallbacks        : %llu", state.frameResolveFallbacks);

@@ -129,7 +129,8 @@ void OrbitalBody::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void OrbitalBody::DrawInspector() {
-   if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+   bool enabled = IsEnabled();
+   if (ImGui::Checkbox("Enabled", &enabled)) SetEnabled(enabled);
 
    if (ImGui::DragFloat("Distance", &distance_, 0.1f, 0.5f, 1000.0f)) {
 	  distance_ = std::max(0.5f, distance_);

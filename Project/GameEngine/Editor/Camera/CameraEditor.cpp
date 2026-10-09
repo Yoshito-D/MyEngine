@@ -93,11 +93,13 @@ void CameraEditor::ShowEditorWindow() {
             selectedVirtualCameraIndex_ = -1;
         }
     }
-    bool* visible = EngineContext::GetEditorWindowVisibility("CameraEditor", { "カメラエディタ", "Camera Editor" });
-    if (!visible || !*visible) return;
+    bool visible = EngineContext::GetEditorWindowVisibility("CameraEditor", { "カメラエディタ", "Camera Editor" });
+    if (!visible) return;
     const float blendBefore = targetBrain_ ? targetBrain_->GetDefaultBlendTime() : 0.0f;
     const std::string windowLabel = StableWindowLabel(Tr("カメラエディタ", "Camera Editor"), "CameraEditor");
-    if (!ImGui::Begin(windowLabel.c_str(), visible)) {
+    const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
+    EngineContext::SetEditorWindowVisibility("CameraEditor", visible);
+    if (!drawContents) {
         ImGui::End();
         return;
     }

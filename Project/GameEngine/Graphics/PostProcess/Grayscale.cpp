@@ -8,14 +8,14 @@
 namespace GameEngine {
 
 void Grayscale::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!pipeline_ || !rootSignature_) return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
-   renderTarget_->PreDraw(false);
+   GetRenderTarget()->PreDraw(false);
 
-   auto cmdList = device_->GetCommandList();
+   auto cmdList = GetDevice()->GetCommandList();
 
-   cmdList->SetPipelineState(pipeline_->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(rootSignature_->GetRootSignature());
+   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
+   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
    // このエフェクトは定数バッファを使用しないので、ルートパラメータ0はスキップ
    // SRVをルートパラメータ1にセット
@@ -25,7 +25,7 @@ void Grayscale::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
 
-   renderTarget_->PostDraw();
+   GetRenderTarget()->PostDraw();
 }
 
 #ifdef USE_IMGUI

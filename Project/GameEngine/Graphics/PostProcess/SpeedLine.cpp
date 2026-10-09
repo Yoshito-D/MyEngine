@@ -30,14 +30,14 @@ void GameEngine::SpeedLine::Initialize(GraphicsDevice* device, OffscreenRenderTa
 /// @brief エフェクトを適用
 /// @param inputSRV 入力SRV
 void GameEngine::SpeedLine::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!pipeline_ || !rootSignature_) return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
-   renderTarget_->PreDraw(false);
+   GetRenderTarget()->PreDraw(false);
 
-   auto cmdList = device_->GetCommandList();
+   auto cmdList = GetDevice()->GetCommandList();
 
-   cmdList->SetPipelineState(pipeline_->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(rootSignature_->GetRootSignature());
+   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
+   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
    if (constantBuffer_) {
 	  cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
@@ -48,7 +48,7 @@ void GameEngine::SpeedLine::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
 
-   renderTarget_->PostDraw();
+   GetRenderTarget()->PostDraw();
 }
 
 #ifdef USE_IMGUI
@@ -86,7 +86,7 @@ void GameEngine::SpeedLine::SetParams(const SpeedLineParams& params) {
 }
 
 void GameEngine::SpeedLine::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(SpeedLineCB));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(GetDevice()->GetDevice(), sizeof(SpeedLineCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 

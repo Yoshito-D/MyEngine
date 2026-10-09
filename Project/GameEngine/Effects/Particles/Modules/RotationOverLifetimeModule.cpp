@@ -18,7 +18,7 @@ namespace GameEngine {
 
 	nlohmann::json RotationOverLifetimeModule::ToJson() const {
 		nlohmann::json j;
-		j["enabled"] = enabled_;
+		j["enabled"] = IsEnabled();
 		j["angularVelocityMin"] = {angularVelocity_.Minimum().x, angularVelocity_.Minimum().y, angularVelocity_.Minimum().z};
 		j["angularVelocityMax"] = {angularVelocity_.Maximum().x, angularVelocity_.Maximum().y, angularVelocity_.Maximum().z};
 		j["angularVelocityRandomize"] = angularVelocity_.IsRandomized();
@@ -26,7 +26,7 @@ namespace GameEngine {
 	}
 
    void RotationOverLifetimeModule::FromJson(const nlohmann::json& j) {
-      if (j.contains("enabled")) enabled_ = j["enabled"];
+      if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
       auto low = angularVelocity_.Minimum(); auto high = angularVelocity_.Maximum();
       bool randomized = angularVelocity_.IsRandomized();
       auto readVector = [&](const char* name, Vector3& value) {

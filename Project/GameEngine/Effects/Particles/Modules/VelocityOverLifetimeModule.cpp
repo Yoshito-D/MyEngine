@@ -14,7 +14,7 @@ namespace GameEngine {
 	}
 
 	void VelocityOverLifetimeModule::ApplyVelocity(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const {
-		if (!enabled_) return;
+		if (!IsEnabled()) return;
 		Vector3 linearVelocity = linearVelocity_.IsRandomized() ? particle.velocityOverLifetimeLinearVelocity : linearVelocity_.Minimum();
 		if (useLocalSimulation) {
 			// 設定値はエミッターのローカル方向として解釈し、加算前にワールド方向へ回転する。
@@ -31,14 +31,14 @@ namespace GameEngine {
 
 	nlohmann::json VelocityOverLifetimeModule::ToJson() const {
 		nlohmann::json j;
-		j["enabled"] = enabled_;
+		j["enabled"] = IsEnabled();
 		j["linearVelocity"] = linearVelocity_.ToJson();
 		j["speedModifier"] = speedModifier_.ToJson();
 		return j;
 	}
 
 	void VelocityOverLifetimeModule::FromJson(const nlohmann::json& j) {
-		if (j.contains("enabled")) enabled_ = j["enabled"];
+		if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
 		if (j.contains("linearVelocity")) {
 			if (j["linearVelocity"].is_object()) {
 				linearVelocity_.FromJson(j["linearVelocity"]);

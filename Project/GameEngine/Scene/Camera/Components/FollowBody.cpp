@@ -71,7 +71,8 @@ void FollowBody::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void FollowBody::DrawInspector() {
-    if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+    bool enabled = IsEnabled();
+    if (ImGui::Checkbox("Enabled", &enabled)) SetEnabled(enabled);
 
     float off[3] = { offset_.x, offset_.y, offset_.z };
     if (ImGui::DragFloat3("Offset", off, 0.1f)) {

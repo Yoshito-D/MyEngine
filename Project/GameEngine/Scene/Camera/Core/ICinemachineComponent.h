@@ -68,7 +68,6 @@ private:
     friend class VirtualCamera;
     void Attach(VirtualCamera& owner) { owner_ = &owner; OnAttach(); }
     VirtualCamera* owner_ = nullptr;
-protected:
     bool isEnabled_ = true;
 };
 

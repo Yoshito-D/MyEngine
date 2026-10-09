@@ -9,7 +9,7 @@ namespace GameEngine {
 	}
 
 	void SizeOverLifetimeModule::UpdateSize(Particle& particle) const {
-		if (!enabled_) return;
+		if (!IsEnabled()) return;
 		float t = particle.GetLifeProgress();
 		// ランダム倍率は生成時の値を再利用し、寿命中にサイズがちらつかないようにする。
 		const float multiplier = sizeMultiplier_.IsRandomized() ? particle.sizeOverLifetimeMultiplier : sizeMultiplier_.Minimum();
@@ -20,7 +20,7 @@ namespace GameEngine {
 
 	nlohmann::json SizeOverLifetimeModule::ToJson() const {
 		nlohmann::json j;
-		j["enabled"] = enabled_;
+		j["enabled"] = IsEnabled();
 		j["sizeMultiplier"] = sizeMultiplier_.ToJson();
 		j["startSize"] = {startSize_.x, startSize_.y, startSize_.z};
 		j["endSize"] = {endSize_.x, endSize_.y, endSize_.z};
@@ -28,7 +28,7 @@ namespace GameEngine {
 	}
 
 	void SizeOverLifetimeModule::FromJson(const nlohmann::json& j) {
-		if (j.contains("enabled")) enabled_ = j["enabled"];
+		if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
 		if (j.contains("sizeMultiplier")) {
 			if (j["sizeMultiplier"].is_object()) sizeMultiplier_.FromJson(j["sizeMultiplier"]);
 			else SetSizeMultiplier(j["sizeMultiplier"]);

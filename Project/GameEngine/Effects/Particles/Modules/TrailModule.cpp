@@ -4,7 +4,7 @@
 namespace GameEngine {
 nlohmann::json TrailModule::ToJson() const {
 	return {
-	  { "enabled", enabled_ },
+	  { "enabled", IsEnabled() },
 	  { "mode", static_cast<int>(mode_) },
 	  { "width", width_.ToJson() },
 	  { "maxPoints", maxPoints_ },
@@ -19,8 +19,8 @@ nlohmann::json TrailModule::ToJson() const {
 
 void TrailModule::FromJson(const nlohmann::json& j) {
    // 旧RendererModuleでは有効フラグだけがribbonEnabledだったため、こちらを優先する。
-	if (j.contains("ribbonEnabled")) enabled_ = j["ribbonEnabled"];
-	else if (j.contains("enabled")) enabled_ = j["enabled"];
+	if (j.contains("ribbonEnabled")) SetEnabled(j["ribbonEnabled"].get<bool>());
+	else if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
 	if (j.contains("mode")) {
 	  const int mode = j["mode"].get<int>();
 	  if (mode >= static_cast<int>(TrailMode::ParticlePath) &&

@@ -33,14 +33,14 @@ void RadialBlur::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rende
 }
 
 void RadialBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!pipeline_ || !rootSignature_) return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
-   renderTarget_->PreDraw(false);
+   GetRenderTarget()->PreDraw(false);
 
-   auto cmdList = device_->GetCommandList();
+   auto cmdList = GetDevice()->GetCommandList();
 
-   cmdList->SetPipelineState(pipeline_->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(rootSignature_->GetRootSignature());
+   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
+   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
@@ -54,11 +54,11 @@ void RadialBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
    cmdList->DrawInstanced(3, 1, 0, 0);
 
-   renderTarget_->PostDraw();
+   GetRenderTarget()->PostDraw();
 }
 
 void RadialBlur::CreateConstantBuffer() {
-   constantBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(RadialBlurCB));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(GetDevice()->GetDevice(), sizeof(RadialBlurCB));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 

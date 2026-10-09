@@ -3,6 +3,7 @@
 #include "GameProject/App/Component/Gravity/GravityAttractor.h"
 #include "GameEngine/Assets/Model/ModelAsset.h"
 #include <memory>
+#include <cmath>
 
 namespace App {
 
@@ -29,9 +30,11 @@ public:
       return fallbackUpVector_;
    }
 
-   /// @brief 法線取得失敗時の代替Upを設定する
+   /// @brief 有限かつ非ゼロの代替Upを正規化して設定する。不正値では現在値を保持する。
    void SetFallbackUpVector(const GameEngine::Vector3& up) {
-      if (up.LengthSquared() > 1e-8f) { fallbackUpVector_ = up.Normalize(); }
+      const float length = std::hypot(up.x, up.y, up.z);
+      if (!std::isfinite(length) || length <= 1.0e-4f) return;
+      fallbackUpVector_ = up / length;
    }
 
    /// @brief fallbackUp をシリアライズする
@@ -44,8 +47,11 @@ public:
    /// @brief fallbackUp をデシリアライズする
    void Deserialize(const nlohmann::json& data) override {
       if (data.contains("fallbackUp")) {
-         auto up = data["fallbackUp"];
-         fallbackUpVector_ = { up[0], up[1], up[2] };
+         const auto& up = data.at("fallbackUp");
+         if (up.is_array() && up.size() == 3 &&
+            up[0].is_number() && up[1].is_number() && up[2].is_number()) {
+            SetFallbackUpVector({ up[0].get<float>(), up[1].get<float>(), up[2].get<float>() });
+         }
       }
    }
 
@@ -60,7 +66,7 @@ protected:
       return { 0.0f, 0.0f, 0.0f };
    }
 
-protected:
+private:
    /// @brief 法線取得不能時の代替Up
    GameEngine::Vector3 fallbackUpVector_ = { 0.0f, 1.0f, 0.0f };
 };

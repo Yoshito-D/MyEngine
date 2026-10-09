@@ -472,12 +472,14 @@ void PostProcessManager::DisableAllEffects() {
 
 #ifdef USE_IMGUI
 bool PostProcessManager::ShowImGuiControls() {
-   bool* visible = EngineContext::GetEditorWindowVisibility("PostProcessManager", { "ポストプロセス", "Post Process Manager" });
-   if (!visible || !*visible) return false;
+   bool visible = EngineContext::GetEditorWindowVisibility("PostProcessManager", { "ポストプロセス", "Post Process Manager" });
+   if (!visible) return false;
    const nlohmann::json stateBeforeEditing = SerializeSceneState();
    const std::string windowLabel = StableEditorLabel(
       "ポストプロセス", "Post Process Manager", "PostProcessManager");
-   if (!ImGui::Begin(windowLabel.c_str(), visible)) { ImGui::End(); return false; }
+   const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
+   EngineContext::SetEditorWindowVisibility("PostProcessManager", visible);
+   if (!drawContents) { ImGui::End(); return false; }
 
    ImGui::Text("%s", LocalizeEditorText("ポストプロセス設定", "Post Process Control Panel"));
    ImGui::Separator();

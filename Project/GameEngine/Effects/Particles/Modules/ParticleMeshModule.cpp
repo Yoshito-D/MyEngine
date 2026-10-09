@@ -55,7 +55,7 @@ bool ParticleMeshModule::RebuildMesh(Mesh& mesh) {
 
 nlohmann::json ParticleMeshModule::ToJson() const {
    return {
-	  { "enabled", enabled_ },
+	  { "enabled", IsEnabled() },
 	  { "particleMeshType", static_cast<int>(meshType_) },
 	  { "meshOriginY", originY_ },
 	  { "ringInnerRadius", ringInnerRadius_ },

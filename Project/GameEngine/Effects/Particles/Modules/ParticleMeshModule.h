@@ -146,7 +146,7 @@ public:
    /// @brief 設定からメッシュを構築し、生成と再生成要求の解除を一緒に行う
    bool RebuildMesh(Mesh& mesh);
    /// @brief 有効状態が変わった場合も描画形状を再構築する
-   void SetEnabled(bool enabled) override { if (enabled_ != enabled) meshDirty_ = true; ParticleModule::SetEnabled(enabled); }
+   void SetEnabled(bool enabled) override { if (IsEnabled() != enabled) meshDirty_ = true; ParticleModule::SetEnabled(enabled); }
 
    /// @brief メッシュ設定をJSONへ変換する
    nlohmann::json ToJson() const override;

@@ -27,7 +27,7 @@ public:
    virtual void DrawInspector() = 0;
 #endif
 
-protected:
+private:
    bool enabled_ = true;
 };
 }

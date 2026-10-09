@@ -20,7 +20,7 @@ namespace GameEngine {
 	}
 
 	void ForceOverLifetimeModule::ApplyForce(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const {
-		if (!enabled_) return;
+		if (!IsEnabled()) return;
 		Vector3 force = force_.IsRandomized() ? particle.forceOverLifetimeForce : force_.Minimum();
 		if (useLocalSimulation) {
 			// ローカル設定値をWorld加速度へ変換してから、他モジュールと共有するaccelerationへ加算する。
@@ -60,7 +60,7 @@ namespace GameEngine {
 
 	nlohmann::json ForceOverLifetimeModule::ToJson() const {
 		nlohmann::json j;
-		j["enabled"] = enabled_;
+		j["enabled"] = IsEnabled();
 		j["force"] = force_.ToJson();
 		j["drag"] = drag_.ToJson();
 		j["attractorEnabled"] = attractorEnabled_;
@@ -72,7 +72,7 @@ namespace GameEngine {
 	}
 
 	void ForceOverLifetimeModule::FromJson(const nlohmann::json& j) {
-		if (j.contains("enabled")) enabled_ = j["enabled"];
+		if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
 		if (j.contains("force")) {
 			if (j["force"].is_object()) {
 				force_.FromJson(j["force"]);

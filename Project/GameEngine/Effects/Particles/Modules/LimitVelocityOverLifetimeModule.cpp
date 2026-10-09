@@ -14,7 +14,7 @@ namespace GameEngine {
 	}
 
 	void LimitVelocityOverLifetimeModule::LimitVelocity(Particle& particle, const Transform&, bool) const {
-		if (!enabled_) return;
+		if (!IsEnabled()) return;
 		float speed = particle.velocity.Length();
 		float speedLimit = speedLimit_.IsRandomized() ? particle.limitVelocitySpeedLimit : speedLimit_.Minimum();
 		float dampen = dampen_.IsRandomized() ? particle.limitVelocityDampen : dampen_.Minimum();
@@ -27,14 +27,14 @@ namespace GameEngine {
 
 	nlohmann::json LimitVelocityOverLifetimeModule::ToJson() const {
 		nlohmann::json j;
-		j["enabled"] = enabled_;
+		j["enabled"] = IsEnabled();
 		j["speedLimit"] = speedLimit_.ToJson();
 		j["dampen"] = dampen_.ToJson();
 		return j;
 	}
 
 	void LimitVelocityOverLifetimeModule::FromJson(const nlohmann::json& j) {
-		if (j.contains("enabled")) enabled_ = j["enabled"];
+		if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
 		if (j.contains("speedLimit")) {
 			if (j["speedLimit"].is_object()) {
 				speedLimit_.FromJson(j["speedLimit"]);

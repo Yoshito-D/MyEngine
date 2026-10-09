@@ -46,7 +46,7 @@ uint32_t TextureSheetAnimationModule::GetPlayableFrameCount() const {
 }
 
 void TextureSheetAnimationModule::InitializeParticle(Particle& particle) const {
-	if (!enabled_) return;
+	if (!IsEnabled()) return;
 	const uint32_t safeTilesY = std::max(tilesY_, 1u);
 	particle.sheetFrame = static_cast<int>(startFrame_);
 	particle.sheetRow = randomRow_ ? RandomUtils::Random<int>(0, static_cast<int>(safeTilesY - 1u)) : static_cast<int>(std::min(rowIndex_, safeTilesY - 1u));
@@ -75,13 +75,13 @@ uint32_t TextureSheetAnimationModule::ResolveFrame(const Particle& particle) con
 }
 
 void TextureSheetAnimationModule::UpdateAnimation(Particle& particle, float) const {
-	if (!enabled_) return;
+	if (!IsEnabled()) return;
 	particle.sheetFrame = static_cast<int>(ResolveFrame(particle));
 }
 
 nlohmann::json TextureSheetAnimationModule::ToJson() const {
 	nlohmann::json j;
-	j["enabled"] = enabled_;
+	j["enabled"] = IsEnabled();
 	j["tilesX"] = tilesX_;
 	j["tilesY"] = tilesY_;
 	j["frameOverTime"] = frameOverTime_;
@@ -95,7 +95,7 @@ nlohmann::json TextureSheetAnimationModule::ToJson() const {
 }
 
 void TextureSheetAnimationModule::FromJson(const nlohmann::json& j) {
-	if (j.contains("enabled")) enabled_ = j["enabled"];
+	if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
 	if (j.contains("tilesX")) tilesX_ = j["tilesX"].get<uint32_t>();
 	if (j.contains("tilesY")) tilesY_ = j["tilesY"].get<uint32_t>();
 	if (j.contains("frameOverTime")) frameOverTime_ = j["frameOverTime"];

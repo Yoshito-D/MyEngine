@@ -78,7 +78,8 @@ void LookAtAim::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void LookAtAim::DrawInspector() {
-    if (ImGui::Checkbox("Enabled", &isEnabled_)) {}
+    bool enabled = IsEnabled();
+    if (ImGui::Checkbox("Enabled", &enabled)) SetEnabled(enabled);
 
     if (ImGui::DragFloat("Damping", &damping_, 0.1f, 0.0f, 50.0f)) {}
 

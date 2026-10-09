@@ -17,10 +17,6 @@ public:
    void LoadSceneDataIfNeeded() override;
 
    /// @brief このシーンが所有するSceneWorldを取得する
-   /// @return SceneWorldへの参照
-   SceneWorld& GetSceneWorld() { return sceneWorld_; }
-
-   /// @brief このシーンが所有するSceneWorldを取得する
    /// @return SceneWorldへの読み取り専用参照
    const SceneWorld& GetSceneWorld() const { return sceneWorld_; }
 

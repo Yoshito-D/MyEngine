@@ -267,8 +267,10 @@ public:
    /// @brief ポストプロセスを適用するか取得
    bool GetUsePostProcess() const { return usePostProcess_; }
 
-   /// @brief サブエミッター設定を取得する
-   SubEmitterSettings& GetSubEmitterSettings() { return subEmitterSettings_; }
+   /// @brief 設定を検証し、衝突法線を正規化して一括適用する。
+   /// @param settings 間隔は0.001秒以上、イベント上限は1～1024、反発係数は0～1。
+   /// @return 不正な値がある場合はfalseを返し、現在の設定を保持する。
+   bool ConfigureSubEmitters(const SubEmitterSettings& settings);
 
    /// @brief サブエミッター設定を読み取り専用で取得する
    const SubEmitterSettings& GetSubEmitterSettings() const { return subEmitterSettings_; }
