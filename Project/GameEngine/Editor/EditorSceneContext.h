@@ -6,6 +6,7 @@
 #include "GameEngine/Editor/EditorCommand.h"
 #include "GameEngine/Scene/SceneObjectStore.h"
 #include "GameEngine/Math/MathUtils.h"
+#include "GameEngine/Utility/Logger.h"
 #include <cstddef>
 #include <filesystem>
 #include <string>
@@ -289,7 +290,7 @@ private:
    std::string GetObjectIdForCommand(const Object* object) const;
    std::string GetParticleSystemIdForCommand(const ParticleSystem* particleSystem);
    ParticleSystem* FindParticleForCommand(const std::string& id) const;
-   void SetStatus(std::string message);
+   void SetStatus(std::string message, Logger::LogLevel level = Logger::LogLevel::Info);
    void ApplyDuplicateOffset(nlohmann::json& snapshot) const;
 
    std::string sceneName_ = "Scene";

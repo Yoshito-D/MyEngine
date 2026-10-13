@@ -484,11 +484,11 @@ bool EditorSceneContext::Save() {
    const std::filesystem::path filePath = GetSceneFilePath();
    try {
       if (!SaveJsonFileAtomically(filePath, SerializeToJson(), kJsonIndentSize)) {
-         SetStatus("Save failed: could not write " + filePath.generic_string());
+         SetStatus("Save failed: could not write " + filePath.generic_string(), Logger::LogLevel::Error);
          return false;
       }
    } catch (const std::exception& error) {
-      SetStatus("Save failed: " + std::string(error.what()));
+      SetStatus("Save failed: " + std::string(error.what()), Logger::LogLevel::Error);
       return false;
    }
 
@@ -507,7 +507,7 @@ bool EditorSceneContext::Load() {
 
    std::ifstream file(filePath);
    if (!file.is_open()) {
-      SetStatus("Load failed: could not open " + filePath.generic_string());
+      SetStatus("Load failed: could not open " + filePath.generic_string(), Logger::LogLevel::Error);
       return false;
    }
 
@@ -515,7 +515,7 @@ bool EditorSceneContext::Load() {
    try {
       file >> sceneData;
    } catch (...) {
-      SetStatus("Load failed: invalid json " + filePath.generic_string());
+      SetStatus("Load failed: invalid json " + filePath.generic_string(), Logger::LogLevel::Error);
       return false;
    }
 
@@ -550,7 +550,7 @@ nlohmann::json EditorSceneContext::SerializeToJson() {
 
 bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
    if (!IsValidSceneSnapshot(sceneData)) {
-      SetStatus("Load failed: invalid scene structure or reference type");
+      SetStatus("Load failed: invalid scene structure or reference type", Logger::LogLevel::Error);
       return false;
    }
 
@@ -593,10 +593,10 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
          if (object && object->GetEntityId() == selectedObjectId) { selectedObject_ = object; break; }
       }
       selectedParticleSystem_ = FindParticleForCommand(selectedParticleId);
-      SetStatus(failure.empty() ? "Load failed: scene could not be restored" : std::move(failure));
+      SetStatus(failure.empty() ? "Load failed: scene could not be restored" : std::move(failure), Logger::LogLevel::Error);
    } else {
       MarkDirty();
-      SetStatus(failure + "; recovery failed because previous resources could not be restored");
+      SetStatus(failure + "; recovery failed because previous resources could not be restored", Logger::LogLevel::Error);
    }
    return false;
 }
@@ -605,7 +605,7 @@ bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, boo
    // Rendererは自身の設定を検証する。Entityを破棄する前に適用可否を確定させる。
    if (sceneData.contains("renderSettings") && !sceneData.at("renderSettings").empty() &&
       !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
-      SetStatus("Load failed: invalid render settings");
+      SetStatus("Load failed: invalid render settings", Logger::LogLevel::Error);
       return false;
    }
    entitiesChanged = true;
@@ -646,7 +646,7 @@ bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, boo
                      DoesSceneObjectTypeMatch(existingObject, objectType)) {
                      if (!objectStore_.ApplyObjectState(existingObject, objectData)) return false;
                   } else {
-                     SetStatus("Load failed: conflicting object type or id " + objectId);
+                     SetStatus("Load failed: conflicting object type or id " + objectId, Logger::LogLevel::Error);
                      return false;
                   }
                   continue;
@@ -655,7 +655,7 @@ bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, boo
          }
          const bool isParticle = objectData.value("objectType", "Model") == "ParticleSystem";
          if (isParticle ? objectStore_.RestoreParticleSystem(objectData) == nullptr : objectStore_.RestoreObject(objectData) == nullptr) {
-            SetStatus("Load failed: could not restore asset for object " + objectData.value("id", ""));
+            SetStatus("Load failed: could not restore asset for object " + objectData.value("id", ""), Logger::LogLevel::Error);
             return false;
          }
       }
@@ -663,13 +663,13 @@ bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, boo
 
    if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
       if (!ApplySceneObjects(sceneData.at("sceneObjects"))) {
-         SetStatus("Load failed: scene-owned object state has conflicting type");
+         SetStatus("Load failed: scene-owned object state has conflicting type", Logger::LogLevel::Error);
          return false;
       }
    }
    if (sceneData.contains("sceneParticleSystems") && sceneData.at("sceneParticleSystems").is_array()) {
       if (!ApplySceneParticleSystems(sceneData.at("sceneParticleSystems"))) {
-         SetStatus("Load failed: scene-owned particle state could not be applied");
+         SetStatus("Load failed: scene-owned particle state could not be applied", Logger::LogLevel::Error);
          return false;
       }
    }
@@ -940,22 +940,22 @@ void EditorSceneContext::CreateAreaLight() {
 bool EditorSceneContext::PlaceAsset(const std::string& assetId, Object* parent) {
    const auto* entry = assetRegistry_.FindAsset(assetId);
    if (!entry || (entry->type != EditorAssetType::Model && entry->type != EditorAssetType::Particle)) {
-      SetStatus("Placement failed: only registered models and particles can be placed");
+      SetStatus("Placement failed: only registered models and particles can be placed", Logger::LogLevel::Warning);
       return false;
    }
    if (parent && !IsObjectAlive(parent)) {
-      SetStatus("Placement failed: parent no longer exists");
+      SetStatus("Placement failed: parent no longer exists", Logger::LogLevel::Warning);
       return false;
    }
    if (parent && entry->type == EditorAssetType::Particle) {
-      SetStatus("Placement failed: particle systems have no Entity parent; drop on Hierarchy background");
+      SetStatus("Placement failed: particle systems have no Entity parent; drop on Hierarchy background", Logger::LogLevel::Warning);
       return false;
    }
    const auto kind = entry->type == EditorAssetType::Model ? CreateObjectCommand::Kind::Model : CreateObjectCommand::Kind::Particle;
    const Transform placement = parent ? Transform{} : BuildPlacementTransformInFrontOfCamera();
    const bool created = CommitEdit(std::make_unique<CreateObjectCommand>(kind, placement, entry->assetId,
       parent ? parent->GetEntityId() : std::string{}));
-   if (!created) SetStatus("Placement failed: could not load " + assetId);
+   if (!created) SetStatus("Placement failed: could not load " + assetId, Logger::LogLevel::Error);
    return created;
 }
 
@@ -970,7 +970,7 @@ void EditorSceneContext::DuplicateSelectedObject() {
       }
 
       if (!snapshot.is_object() || snapshot.empty()) {
-         SetStatus("Duplicate failed: selected particle cannot be duplicated");
+         SetStatus("Duplicate failed: selected particle cannot be duplicated", Logger::LogLevel::Warning);
          return;
       }
 
@@ -989,7 +989,7 @@ void EditorSceneContext::DuplicateSelectedObject() {
 
    // 複数Skyboxは描画順だけで勝者が変わるため、保存後に見た目が反転する構成をエディターから作らせない。
    if (dynamic_cast<Skybox*>(selectedObject_)) {
-      SetStatus("Duplicate failed: a scene can contain only one skybox");
+      SetStatus("Duplicate failed: a scene can contain only one skybox", Logger::LogLevel::Warning);
       return;
    }
 
@@ -1001,7 +1001,7 @@ void EditorSceneContext::DuplicateSelectedObject() {
    }
 
    if (!snapshot.is_object() || snapshot.empty()) {
-      SetStatus("Duplicate failed: selected object cannot be duplicated");
+      SetStatus("Duplicate failed: selected object cannot be duplicated", Logger::LogLevel::Warning);
       return;
    }
 
@@ -1637,7 +1637,7 @@ bool EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsDat
       }
 
       if (!object) {
-         SetStatus("Load warning: scene object not found for key " + key);
+         SetStatus("Load warning: scene object not found for key " + key, Logger::LogLevel::Warning);
          continue;
       }
 
@@ -1677,7 +1677,7 @@ bool EditorSceneContext::ApplySceneParticleSystems(const nlohmann::json& scenePa
       }
 
       if (!particleSystem) {
-         SetStatus("Load warning: scene particle system not found for key " + key);
+         SetStatus("Load warning: scene particle system not found for key " + key, Logger::LogLevel::Warning);
          continue;
       }
 
@@ -1805,10 +1805,10 @@ ParticleSystem* EditorSceneContext::FindParticleForCommand(const std::string& id
    return FindSceneParticleSystemByKey(id);
 }
 
-void EditorSceneContext::SetStatus(std::string message) {
+void EditorSceneContext::SetStatus(std::string message, Logger::LogLevel level) {
    lastStatusMessage_ = std::move(message);
    if (!lastStatusMessage_.empty()) {
-      Logger::Info("[Editor] " + lastStatusMessage_);
+      Logger::GetInstance().Log("[Editor] " + lastStatusMessage_, level, Logger::LogChannel::Editor);
    }
 }
 

@@ -28,8 +28,8 @@ public:
    void DrawInspector() override;
 #endif
 
-   /// @brief シリアライズ（参照のみのため保存項目なし）
-   nlohmann::json Serialize() const override  { return {}; }
+   /// @brief シリアライズ（参照のみのため保存項目なし。共通保存形式に合わせて空オブジェクトを返す）
+   nlohmann::json Serialize() const override  { return nlohmann::json::object(); }
 
    /// @brief デシリアライズ（保存項目なしのため処理なし）
    void Deserialize(const nlohmann::json&) override {}
