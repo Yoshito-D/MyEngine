@@ -370,7 +370,9 @@ bool PSOManager::LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT r
             const std::string type = entry.at("type").get<std::string>();
             const UINT count = type == "float" ? 1 : type == "float2" ? 2 : type == "float3" ? 3 : type == "float4" ? 4 : 0;
             field.defaultValue = entry.at("default").get<std::vector<float>>();
+            field.checkbox = entry.value("checkbox", false);
             if (count == 0 || field.defaultValue.size() != count || field.name.empty() ||
+               (field.checkbox && count != 1) ||
                !names.insert(field.name).second ||
                !std::all_of(field.defaultValue.begin(), field.defaultValue.end(), [](float v) { return std::isfinite(v); })) {
                throw std::runtime_error("Invalid material parameter: " + field.name);

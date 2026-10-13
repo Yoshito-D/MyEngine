@@ -1,0 +1,25 @@
+{
+  "name": "Object3DTriplanar",
+  "modelCompatible": true,
+  "vertexShader": "Object3D",
+  "pixelShader": "Object3DTriplanar",
+  "rootSignature": "Object3DTriplanar",
+  "supportBlendModes": true,
+  "defaultBlendMode": "None",
+  "cullMode": "Back",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "All",
+  "depthFunc": "LessEqual",
+  "topologyType": "Triangle",
+  "materialParameters": {
+    "size": 32,
+    "fields": [
+      { "name": "triplanarScale", "offset": 0, "type": "float", "default": [8.0] },
+      { "name": "triplanarSharpness", "offset": 4, "type": "float", "default": [4.0] },
+      { "name": "triplanarSampleX", "offset": 8, "type": "float", "default": [1.0], "checkbox": true },
+      { "name": "triplanarSampleY", "offset": 12, "type": "float", "default": [1.0], "checkbox": true },
+      { "name": "triplanarSampleZ", "offset": 16, "type": "float", "default": [1.0], "checkbox": true }
+    ]
+  }
+}

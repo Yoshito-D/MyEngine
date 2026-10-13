@@ -1,10 +1,12 @@
 // Object3DのVSからPSへ渡す補間契約。
-// 法線と位置はPSの各種ライト計算・視線計算がそのまま利用するため、どちらもワールド空間で渡す。
+// 照明用の法線と位置はワールド空間、テクスチャ投影用はローカル空間で渡す。
 struct VertexShaderOutput {
     float32_t4 position : SV_POSITION;  // ラスタライザーへ渡すクリップ座標
     float32_t2 texCoord : TEXCOORD0;    // マテリアルUV変換前のメッシュUV
     float32_t3 normal : NORMAL0;        // 逆転置行列で変換したワールド法線
     float32_t3 worldPosition : POSITION0; // 点・スポット・エリアライトおよび視線計算用のワールド位置
+    float32_t3 localPosition : TEXCOORD1; // 移動・回転に追従するテクスチャ投影用の位置
+    float32_t3 localNormal : TEXCOORD2;    // ローカル空間の投影面を選ぶ法線
 };
 
 // 数値はCPU側 Material::LightingMode と共有するGPU ABIであり、列挙順を独立に変更してはならない。

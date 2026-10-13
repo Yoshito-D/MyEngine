@@ -1763,6 +1763,9 @@
     <None Include="Resources\engine\pipelines\pso\graphics\object3d_pipeline.json">
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\object3d_triplanar_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso\graphics</Filter>
+    </None>
     <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json">
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
@@ -1839,6 +1842,9 @@
       <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_triplanar_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json">
