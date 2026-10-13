@@ -57,8 +57,10 @@ void VehicleEffectController::Update(float deltaTime) {
    const bool isGrounded = landing && landing->IsGrounded();
    const bool isDrifting = drift && drift->IsDrifting();
    const bool canFireMiniTurbo = drift && drift->CanFireMiniTurbo();
-   // 発火通知はイベントとして一度だけ消費し、複数フレームの重複再生を防ぐ。
-   const bool miniTurboFired = drift && drift->ConsumeMiniTurboFired();
+   // カメラ演出と通知を奪い合わず、各発動につき一度だけパーティクルを再生する。
+   const uint64_t miniTurboFireCount = drift ? drift->GetMiniTurboFireCount() : 0;
+   const bool miniTurboFired = drift && miniTurboFireCount != lastMiniTurboFireCount_;
+   lastMiniTurboFireCount_ = miniTurboFireCount;
    // 継続状態から立ち上がりを抽出し、ジャンプ・着地系の単発エフェクトへ変換する。
    const bool jumpedThisFrame = isJumping && !wasJumping_;
    const bool landedThisFrame = isGrounded && !wasGrounded_;

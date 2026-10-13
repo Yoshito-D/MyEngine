@@ -120,14 +120,20 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    }
 
    // 惑星内部へ侵入しないよう最小半径でクランプ
-   Vector3 fromCenter = eyePos_ - sphereCenter_;
-   float fromCenterDist = fromCenter.Length();
-   if (fromCenterDist < minPlanetDistance && fromCenterDist > 1e-6f) {
-      eyePos_ = sphereCenter_ + fromCenter * (minPlanetDistance / fromCenterDist);
-   }
+   const auto ClampToPlanetRadius = [this](const Vector3& eye) {
+      const Vector3 fromCenter = eye - sphereCenter_;
+      const float fromCenterDist = fromCenter.Length();
+      return fromCenterDist < minPlanetDistance && fromCenterDist > 1e-6f
+         ? sphereCenter_ + fromCenter * (minPlanetDistance / fromCenterDist)
+         : eye;
+   };
+   eyePos_ = ClampToPlanetRadius(eyePos_);
+
+   // 内部の追従位置を保ったまま表示位置を近づけ、停止中のドリフト終了でも元へ戻せるようにする。
+   const Vector3 eye = ClampToPlanetRadius(pivotTarget_ + (eyePos_ - pivotTarget_) * driftDistanceScale_);
 
    // LookAt用の視線方向を算出
-   Vector3 lookDir = pivotTarget_ - eyePos_;
+   Vector3 lookDir = pivotTarget_ - eye;
    float lookLen = lookDir.Length();
    if (lookLen < 1e-6f) { return; }
    Vector3 lookDirN = lookDir * (1.0f / lookLen);
@@ -157,8 +163,8 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    }
 
    // カメラ状態へ最終反映
-   state.transform.translation = eyePos_;
-   state.SetViewMatrix(MakeLookAtMatrix(eyePos_, pivotTarget_, eyeRelUp_));
+   state.transform.translation = eye;
+   state.SetViewMatrix(MakeLookAtMatrix(eye, pivotTarget_, eyeRelUp_));
 }
 
 nlohmann::json PlanetLeashCamera::Serialize() const {
@@ -179,6 +185,7 @@ void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
    followSpeed = ReadFloat(data, "followSpeed", followSpeed);
    minPlanetDistance = ReadFloat(data, "minPlanetDistance", minPlanetDistance);
    useGravityUp = ReadBool(data, "useGravityUp", useGravityUp);
+   driftDistanceScale_ = 1.0f;
    Configure(DescribeSettings());
 }
 

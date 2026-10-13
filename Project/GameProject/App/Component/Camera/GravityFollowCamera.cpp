@@ -266,7 +266,7 @@ void GravityFollowCamera::ComputeEyeAndUp(const Vector3& up,
    if (pfLen > 1e-6f) pitchedForward = pitchedForward * (1.0f / pfLen);
 
    // eye = pivot の後方（−前方）に distance 分離れた位置
-   outEye = pivotTarget_ + pitchedForward * (-distance_);
+   outEye = pivotTarget_ + pitchedForward * (-std::max(0.5f, distance_ * driftDistanceScale_));
 
    // cameraUp = 重力Upをピッチ軸（right）周りに同量回転させたベクトル
    // ピッチに合わせて Up もチルトさせることで、カメラが自然な傾きを保つ
@@ -584,6 +584,7 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
    springDistanceVelocity_ = 0.0f;
    previousPlayerSpeed_ = playerSpeed_;
    isSpeedInitialized_ = false;
+   driftDistanceScale_ = 1.0f;
 
    if (auto* owner = GetOwnerCamera()) {
       CameraState state = owner->GetState();

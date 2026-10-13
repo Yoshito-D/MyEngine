@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include <cstdint>
 
 namespace App {
 
@@ -32,6 +33,7 @@ public:
 #endif
 
 private:
+   uint64_t lastMiniTurboFireCount_ = 0;
    bool wasJumping_ = false;
    bool wasGrounded_ = true;
 };

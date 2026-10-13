@@ -68,7 +68,7 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    }
 
    ImFontConfig config = {};
-   config.SizePixels = 13.0f;
+   config.SizePixels = 12.0f;
 
    const char* fontPath = "C:/Windows/Fonts/YuGothB.ttc";
 

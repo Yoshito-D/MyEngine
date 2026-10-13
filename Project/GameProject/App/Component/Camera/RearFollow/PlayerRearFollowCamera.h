@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <algorithm>
+#include <cmath>
 
 namespace App {
 
@@ -70,6 +72,9 @@ public:
 	/// @brief プレイヤーの現在速度を設定する（加速演出に使用）
 	/// @param speed 速度の大きさ（単位は任意。加速感の判定に使用）
 	void SetPlayerSpeed(float speed) { input_.playerSpeed = speed; }
+
+	/// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
+	void SetDriftDistanceScale(float scale) { input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
 
 	/// @brief プレイヤーの現在速度ベクトルを設定する（空中カメラ方向補間に使用）
 	/// @param velocity ワールド空間の速度

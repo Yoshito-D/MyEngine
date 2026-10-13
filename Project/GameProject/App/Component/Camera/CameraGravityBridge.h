@@ -88,6 +88,20 @@ public:
       float landingShakeFrequency = 14.0f;
       /// @brief 着地シェイクの持続時間
       float landingShakeDuration = 0.1f;
+      /// @brief ミニターボ発動時の縦・横シェイクを有効にするか
+      bool enableMiniTurboShake = true;
+      /// @brief ミニターボシェイクの横揺れ振幅
+      float miniTurboShakeHorizontalAmplitude = 0.2f;
+      /// @brief ミニターボシェイクの縦揺れ振幅
+      float miniTurboShakeVerticalAmplitude = 0.15f;
+      /// @brief ミニターボシェイクの周波数
+      float miniTurboShakeFrequency = 18.0f;
+      /// @brief ミニターボシェイクの持続時間（秒）
+      float miniTurboShakeDuration = 0.2f;
+      /// @brief ドリフト中に通常のカメラ距離を短縮する割合（0.1で10%）
+      float driftCameraDistanceReduction = 0.1f;
+      /// @brief ドリフト開始・終了時の距離倍率の補間速度
+      float driftCameraLerpSpeed = 6.0f;
       /// @brief 発表用スクリーンショットにカメラ軸と着地予測を表示するか
       bool debugDrawPresentationGuides = false;
       /// @brief 発表用デバッグ矢印の長さ
@@ -112,6 +126,13 @@ public:
       settings.landingShakeAmplitude = landingShakeAmplitude;
       settings.landingShakeFrequency = landingShakeFrequency;
       settings.landingShakeDuration = landingShakeDuration;
+      settings.enableMiniTurboShake = enableMiniTurboShake;
+      settings.miniTurboShakeHorizontalAmplitude = miniTurboShakeHorizontalAmplitude;
+      settings.miniTurboShakeVerticalAmplitude = miniTurboShakeVerticalAmplitude;
+      settings.miniTurboShakeFrequency = miniTurboShakeFrequency;
+      settings.miniTurboShakeDuration = miniTurboShakeDuration;
+      settings.driftCameraDistanceReduction = driftCameraDistanceReduction;
+      settings.driftCameraLerpSpeed = driftCameraLerpSpeed;
       settings.debugDrawPresentationGuides = debugDrawPresentationGuides;
       settings.presentationGuideLength = presentationGuideLength;
       settings.autoCapturePresentationSequence = autoCapturePresentationSequence;
@@ -129,6 +150,18 @@ public:
       if (!std::isfinite(settings.landingShakeAmplitude)) settings.landingShakeAmplitude = defaults.landingShakeAmplitude;
       if (!std::isfinite(settings.landingShakeFrequency)) settings.landingShakeFrequency = defaults.landingShakeFrequency;
       if (!std::isfinite(settings.landingShakeDuration)) settings.landingShakeDuration = defaults.landingShakeDuration;
+      if (!std::isfinite(settings.miniTurboShakeHorizontalAmplitude)) settings.miniTurboShakeHorizontalAmplitude = defaults.miniTurboShakeHorizontalAmplitude;
+      if (!std::isfinite(settings.miniTurboShakeVerticalAmplitude)) settings.miniTurboShakeVerticalAmplitude = defaults.miniTurboShakeVerticalAmplitude;
+      if (!std::isfinite(settings.miniTurboShakeFrequency)) settings.miniTurboShakeFrequency = defaults.miniTurboShakeFrequency;
+      if (!std::isfinite(settings.miniTurboShakeDuration)) settings.miniTurboShakeDuration = defaults.miniTurboShakeDuration;
+      settings.miniTurboShakeHorizontalAmplitude = std::max(0.0f, settings.miniTurboShakeHorizontalAmplitude);
+      settings.miniTurboShakeVerticalAmplitude = std::max(0.0f, settings.miniTurboShakeVerticalAmplitude);
+      settings.miniTurboShakeFrequency = std::max(0.1f, settings.miniTurboShakeFrequency);
+      settings.miniTurboShakeDuration = std::max(0.0f, settings.miniTurboShakeDuration);
+      if (!std::isfinite(settings.driftCameraDistanceReduction)) settings.driftCameraDistanceReduction = defaults.driftCameraDistanceReduction;
+      if (!std::isfinite(settings.driftCameraLerpSpeed)) settings.driftCameraLerpSpeed = defaults.driftCameraLerpSpeed;
+      settings.driftCameraDistanceReduction = std::clamp(settings.driftCameraDistanceReduction, 0.0f, 0.5f);
+      settings.driftCameraLerpSpeed = std::max(0.1f, settings.driftCameraLerpSpeed);
       if (!std::isfinite(settings.presentationGuideLength)) settings.presentationGuideLength = defaults.presentationGuideLength;
       if (!std::isfinite(settings.presentationCaptureJumpDelay)) settings.presentationCaptureJumpDelay = defaults.presentationCaptureJumpDelay;
       if (!std::isfinite(settings.presentationVideoFrameRate)) settings.presentationVideoFrameRate = defaults.presentationVideoFrameRate;
@@ -138,6 +171,13 @@ public:
       landingShakeAmplitude = settings.landingShakeAmplitude;
       landingShakeFrequency = settings.landingShakeFrequency;
       landingShakeDuration = settings.landingShakeDuration;
+      enableMiniTurboShake = settings.enableMiniTurboShake;
+      miniTurboShakeHorizontalAmplitude = settings.miniTurboShakeHorizontalAmplitude;
+      miniTurboShakeVerticalAmplitude = settings.miniTurboShakeVerticalAmplitude;
+      miniTurboShakeFrequency = settings.miniTurboShakeFrequency;
+      miniTurboShakeDuration = settings.miniTurboShakeDuration;
+      driftCameraDistanceReduction = settings.driftCameraDistanceReduction;
+      driftCameraLerpSpeed = settings.driftCameraLerpSpeed;
       debugDrawPresentationGuides = settings.debugDrawPresentationGuides;
       presentationGuideLength = settings.presentationGuideLength;
       autoCapturePresentationSequence = settings.autoCapturePresentationSequence;
@@ -153,6 +193,13 @@ private:
    float landingShakeAmplitude = 0.15f;
    float landingShakeFrequency = 14.0f;
    float landingShakeDuration = 0.1f;
+   bool enableMiniTurboShake = true;
+   float miniTurboShakeHorizontalAmplitude = 0.2f;
+   float miniTurboShakeVerticalAmplitude = 0.15f;
+   float miniTurboShakeFrequency = 18.0f;
+   float miniTurboShakeDuration = 0.2f;
+   float driftCameraDistanceReduction = 0.1f;
+   float driftCameraLerpSpeed = 6.0f;
    bool debugDrawPresentationGuides = false;
    float presentationGuideLength = 8.0f;
    bool autoCapturePresentationSequence = false;
@@ -177,6 +224,12 @@ private:
 
    /// @brief 着地遷移検出用の前フレーム接地状態
    bool wasGrounded_ = true;
+
+   /// @brief カメラが最後に処理したミニターボ発動の連番
+   uint64_t lastMiniTurboFireCount_ = 0;
+
+   /// @brief ドリフト状態に応じて補間したカメラ距離倍率
+   float currentDriftDistanceScale_ = 1.0f;
 
    /// @brief 発表用自動撮影の開始後経過時間
    float presentationCaptureElapsed_ = 0.0f;

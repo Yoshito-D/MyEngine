@@ -83,13 +83,18 @@
                      "frequencyGain": 14.0,
                      "initialAmplitude": 0.15000000596046448,
                      "remainingTime": 0.0,
+                     "screenSpaceWeights": [
+                        0.0,
+                        0.0
+                     ],
                      "shakeDirection": [
                         -0.7179657816886902,
                         0.5787301063537598,
                         0.38677722215652466
                      ],
                      "time": 34.356101989746094,
-                     "useDirectionalShake": true
+                     "useDirectionalShake": true,
+                     "useScreenSpaceShake": false
                   },
                   "enabled": true
                }
@@ -266,13 +271,18 @@
                      "frequencyGain": 14.0,
                      "initialAmplitude": 0.15000000596046448,
                      "remainingTime": 0.0,
+                     "screenSpaceWeights": [
+                        0.0,
+                        0.0
+                     ],
                      "shakeDirection": [
                         0.1666543036699295,
                         0.5790373682975769,
                         0.7980865240097046
                      ],
                      "time": 34.356101989746094,
-                     "useDirectionalShake": true
+                     "useDirectionalShake": true,
+                     "useScreenSpaceShake": false
                   },
                   "enabled": true
                }
@@ -361,13 +371,18 @@
                      "frequencyGain": 14.0,
                      "initialAmplitude": 0.15000000596046448,
                      "remainingTime": 0.0,
+                     "screenSpaceWeights": [
+                        0.0,
+                        0.0
+                     ],
                      "shakeDirection": [
                         -0.5443564653396606,
                         0.10376232862472534,
                         -0.8324118852615356
                      ],
                      "time": 34.356101989746094,
-                     "useDirectionalShake": true
+                     "useDirectionalShake": true,
+                     "useScreenSpaceShake": false
                   },
                   "enabled": true
                }
@@ -1046,27 +1061,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -1127,53 +1122,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "coast_sand_05_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -1311,27 +1266,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -1392,53 +1327,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "rust_coarse_01_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -1576,27 +1471,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -1657,53 +1532,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "aerial_grass_rock_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -1841,27 +1676,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -1922,53 +1737,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "painted_concrete_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -2106,27 +1881,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -2187,53 +1942,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "plywood_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -2371,27 +2086,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -2452,53 +2147,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "sandstone_cracks_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -2636,27 +2291,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -2717,53 +2352,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "concrete_floor_01_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -2901,27 +2496,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -2982,53 +2557,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "rusty_metal_02_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -3166,27 +2701,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -3247,53 +2762,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "fine_grained_wood_col_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -3431,27 +2906,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -3512,53 +2967,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "green_metal_rust_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -3696,27 +3111,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -3777,53 +3172,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "aerial_beach_01_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -3961,27 +3316,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.5699999928474426,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "planetMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -4042,53 +3377,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.41999998688697815,
-                     "rimLightPower": 12.510000228881836,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "concrete_floor_02_diff_2k"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -4226,27 +3521,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.4300000071525574,
-                     "lightingMode": 1,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "GoalMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -4307,53 +3582,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.0,
-                     "rimLightPower": 4.0,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "colormap"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -4531,27 +3766,7 @@
                },
                {
                   "data": {
-                     "blendMode": 0,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "space_2048px",
-                     "environmentTextureStrength": 0.699999988079071,
-                     "fillLightColor": [
-                        0.9607843160629272,
-                        0.8987267017364502,
-                        0.8854286670684814,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.6499999761581421,
-                     "lightingMode": 4,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "playerMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": 0,
@@ -4612,53 +3827,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        0.9656862616539001,
-                        0.9136149287223816,
-                        0.9136149287223816,
-                        1.0
-                     ],
-                     "rimLightIntensity": 1.9700000286102295,
-                     "rimLightPower": 10.300000190734863,
-                     "shininess": 42.20000076293945,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "color_palette"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -4860,6 +4035,7 @@
                      "boostAmount": 0.0,
                      "boostThreshold": 0.949999988079071,
                      "normalThreshold": 0.6499999761581421,
+                     "penaltyDuration": 1.0,
                      "penaltySpeed": 20.0
                   },
                   "enabled": true,
@@ -5322,11 +4498,18 @@
                      "autoCapturePresentationSequence": false,
                      "autoCapturePresentationVideoFrames": false,
                      "debugDrawPresentationGuides": false,
+                     "driftCameraDistanceReduction": 0.25,
+                     "driftCameraLerpSpeed": 8.0,
                      "enableLandingShake": true,
+                     "enableMiniTurboShake": true,
                      "gravityFollowCameraId": "GravityFollowCamera",
-                     "landingShakeAmplitude": 0.15000000596046448,
-                     "landingShakeDuration": 0.10000000149011612,
-                     "landingShakeFrequency": 14.0,
+                     "landingShakeAmplitude": 0.699999988079071,
+                     "landingShakeDuration": 0.25,
+                     "landingShakeFrequency": 10.0,
+                     "miniTurboShakeDuration": 0.20000000298023224,
+                     "miniTurboShakeFrequency": 8.0,
+                     "miniTurboShakeHorizontalAmplitude": 0.15000000596046448,
+                     "miniTurboShakeVerticalAmplitude": 0.15000000596046448,
                      "planetLeashCameraId": "PlanetLeashCamera",
                      "playerRearFollowCameraId": "PlayerRearFollowCamera",
                      "presentationCaptureJumpDelay": 1.25,
@@ -5405,27 +4588,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.75,
-                     "lightingMode": 2,
-                     "materialCount": 1,
-                     "materialNames": [
-                        "GoalDirectionHUDMaterial"
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": -1,
@@ -5486,53 +4649,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 8.239999771118164,
-                     "rimLightPower": 4.0,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        ""
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -6190,27 +5313,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.0,
-                     "lightingMode": 0,
-                     "materialCount": 1,
-                     "materialNames": [
-                        ""
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": -1,
@@ -6271,53 +5374,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.0,
-                     "rimLightPower": 4.0,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "speed_gauge_triangle"
-                     ],
                      "textureSize": [
                         2161.0,
                         728.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,
@@ -6465,27 +5528,7 @@
                },
                {
                   "data": {
-                     "blendMode": -1,
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
                      "environmentTextureName": "",
-                     "environmentTextureStrength": 0.0,
-                     "fillLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fillLightIntensity": 0.0,
-                     "lightingMode": 0,
-                     "materialCount": 1,
-                     "materialNames": [
-                        ""
-                     ],
                      "materialSlots": [
                         {
                            "blendMode": -1,
@@ -6546,53 +5589,13 @@
                            ]
                         }
                      ],
-                     "parameters": {},
-                     "pipelineName": "",
-                     "rimLightColor": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "rimLightIntensity": 0.0,
-                     "rimLightPower": 4.0,
-                     "shininess": 40.0,
                      "textureLeftTop": [
                         0.0,
                         0.0
                      ],
-                     "textureNames": [
-                        "speed_gauge_triangle_frame"
-                     ],
                      "textureSize": [
                         0.0,
                         0.0
-                     ],
-                     "uvTransform": [
-                        [
-                           1.0,
-                           0.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           1.0,
-                           0.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           1.0,
-                           0.0
-                        ],
-                        [
-                           0.0,
-                           0.0,
-                           0.0,
-                           1.0
-                        ]
                      ]
                   },
                   "enabled": true,

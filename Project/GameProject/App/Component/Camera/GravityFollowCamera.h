@@ -41,6 +41,9 @@ public:
    /// @param speed 速度の大きさ（単位は任意。加速感の判定に使用）
    void SetPlayerSpeed(float speed) { playerSpeed_ = speed; }
 
+   /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
+   void SetDriftDistanceScale(float scale) { driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
+
    /// @brief 通常走行速度（autoSpeed）を設定する
    /// @details これを下回った場合のみ減速演出を発火させる
    void SetAutoSpeed(float speed) { autoSpeed_ = speed; }
@@ -210,6 +213,9 @@ private:
 
    /// @brief プレイヤー現在速度（外部から毎フレーム供給）
    float playerSpeed_ = 0.0f;
+
+   /// @brief 外部から供給されるドリフト接近演出の距離倍率
+   float driftDistanceScale_ = 1.0f;
 
    /// @brief 通常走行速度。これを下回ったときのみ減速演出を発火する
    float autoSpeed_ = 13.0f;

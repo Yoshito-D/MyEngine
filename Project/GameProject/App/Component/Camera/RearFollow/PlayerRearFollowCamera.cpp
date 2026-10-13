@@ -85,6 +85,7 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    input_.predictedLandingContact = { 0.0f, 0.0f, 0.0f };
    input_.predictedLandingSeconds = 0.0f;
    input_.playerSpeed = 0.0f;
+   input_.driftDistanceScale = 1.0f;
    input_.playerVelocity = { 0.0f, 0.0f, 0.0f };
    if (auto* owner = GetOwnerCamera()) {
       for (const auto& component : owner->GetComponents()) {

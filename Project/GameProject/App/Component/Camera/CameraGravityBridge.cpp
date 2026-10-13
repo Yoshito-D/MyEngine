@@ -5,6 +5,7 @@
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
+#include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -386,28 +387,33 @@ void DrawPresentationGuides(
    DrawPresentationLegendEntry("GREEN: landing Up", 96.0f, landingUpColor);
 }
 
+GameEngine::PerlinNoise* GetOrAddShakeNoise(GameEngine::ICinemachineComponent* cameraComponent) {
+   if (!cameraComponent) {
+      return nullptr;
+   }
+
+   auto* virtualCamera = cameraComponent->GetOwnerCamera();
+   if (!virtualCamera) {
+      return nullptr;
+   }
+
+   auto* noise = virtualCamera->GetComponent<GameEngine::PerlinNoise>();
+   if (!noise) {
+      // シェイク未設定のカメラでも演出を受けられるよう、必要時だけ追加する。
+      noise = virtualCamera->AddComponent<GameEngine::PerlinNoise>();
+   }
+   return noise;
+}
+
 void TriggerDirectionalShake(
    GameEngine::ICinemachineComponent* cameraComponent,
    const GameEngine::Vector3& direction,
    float amplitude,
    float frequency,
    float duration) {
-   if (!cameraComponent) {
-      return;
+   if (auto* noise = GetOrAddShakeNoise(cameraComponent)) {
+      noise->ShakeDirectional(direction, amplitude, frequency, duration);
    }
-
-   auto* virtualCamera = cameraComponent->GetOwnerCamera();
-   if (!virtualCamera) {
-      return;
-   }
-
-   auto* noise = virtualCamera->GetComponent<GameEngine::PerlinNoise>();
-   if (!noise) {
-      // シェイク未設定のカメラでも着地演出を受けられるよう、必要時だけ追加する。
-      noise = virtualCamera->AddComponent<GameEngine::PerlinNoise>();
-   }
-
-   noise->ShakeDirectional(direction, amplitude, frequency, duration);
 }
 }
 
@@ -427,6 +433,9 @@ void CameraGravityBridge::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld
 }
 void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
+   const auto* drift = HasOwner() ? GetOwner().GetComponent<VehicleDrift>() : nullptr;
+   lastMiniTurboFireCount_ = drift ? drift->GetMiniTurboFireCount() : 0;
+   currentDriftDistanceScale_ = 1.0f;
    presentationCaptureElapsed_ = 0.0f;
    presentationJumpTriggered_ = false;
    presentationGroundCaptured_ = false;
@@ -453,6 +462,18 @@ void CameraGravityBridge::Update(float deltaTime) {
    auto* landing = GetOwner().GetComponent<CharacterLanding>();
    auto* jump = GetOwner().GetComponent<CharacterJump>();
    auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
+   const auto* drift = GetOwner().GetComponent<VehicleDrift>();
+
+   // 空中ではドリフト更新が止まるため、保持されたフラグだけで接近演出を続けない。
+   const bool isDrifting = drift && drift->IsEnabled() && drift->IsDrifting()
+      && (!landing || landing->IsGrounded()) && (!jump || !jump->IsJumping());
+   const float targetDriftDistanceScale = isDrifting ? 1.0f - driftCameraDistanceReduction : 1.0f;
+   const float driftBlend = 1.0f - std::exp(-driftCameraLerpSpeed * std::max(0.0f, deltaTime));
+   currentDriftDistanceScale_ += (targetDriftDistanceScale - currentDriftDistanceScale_) * driftBlend;
+   // 保存用の基準距離を上書きせず、どのカメラへ切り替えても同じ接近率を入力する。
+   if (gravityFollowCamera_) { gravityFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_); }
+   if (playerRearFollowCamera_) { playerRearFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_); }
+   if (planetLeashCamera_) { planetLeashCamera_->SetDriftDistanceScale(currentDriftDistanceScale_); }
 
    // 全候補の追従入力を新しく保ち、画面固有のシェイク・撮影だけを選択先へ限定する。
    const auto* cameraMode = GetOwner().GetComponent<CameraModeSwitcher>();
@@ -767,6 +788,29 @@ void CameraGravityBridge::Update(float deltaTime) {
       wasGrounded_ = isGrounded;
    }
 
+   const uint64_t miniTurboFireCount = drift ? drift->GetMiniTurboFireCount() : 0;
+   const bool miniTurboFired = drift && miniTurboFireCount != lastMiniTurboFireCount_;
+   // 無効中の通知も記録し、設定を再び有効にした瞬間の遅延発火を防ぐ。
+   lastMiniTurboFireCount_ = miniTurboFireCount;
+   if (enableMiniTurboShake && miniTurboFired && miniTurboShakeDuration > 0.0f
+      && (miniTurboShakeHorizontalAmplitude > 0.0f || miniTurboShakeVerticalAmplitude > 0.0f)) {
+      // 同フレームに着地してもミニターボの縦横シェイクを優先する。
+      for (GameEngine::ICinemachineComponent* cameraComponent : {
+         static_cast<GameEngine::ICinemachineComponent*>(gravityFollowCamera_),
+         static_cast<GameEngine::ICinemachineComponent*>(playerRearFollowCamera_),
+         static_cast<GameEngine::ICinemachineComponent*>(planetLeashCamera_) }) {
+         if (IsSelectedCamera(cameraComponent)) {
+            if (auto* noise = GetOrAddShakeNoise(cameraComponent)) {
+               noise->ShakeScreenSpace(
+                  miniTurboShakeHorizontalAmplitude,
+                  miniTurboShakeVerticalAmplitude,
+                  miniTurboShakeFrequency,
+                  miniTurboShakeDuration);
+            }
+         }
+      }
+   }
+
    if (autoCapturePresentationSequence
       && presentationMeasurementStarted_
       && !presentationMeasurementSaved_
@@ -799,6 +843,15 @@ void CameraGravityBridge::DrawInspector() {
    ImGui::DragFloat(Tr("シェイク振幅", "Shake Amplitude"), &landingShakeAmplitude, 0.01f, 0.0f, 5.0f);
    ImGui::DragFloat(Tr("シェイク周波数", "Shake Frequency"), &landingShakeFrequency, 0.1f, 0.1f, 60.0f);
    ImGui::DragFloat(Tr("シェイク時間", "Shake Duration"), &landingShakeDuration, 0.01f, 0.0f, 3.0f);
+   ImGui::Separator();
+   ImGui::Checkbox(Tr("ミニターボシェイク", "Mini Turbo Shake"), &enableMiniTurboShake);
+   ImGui::DragFloat(Tr("ミニターボ横揺れ振幅", "Mini Turbo Horizontal Amplitude"), &miniTurboShakeHorizontalAmplitude, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("ミニターボ縦揺れ振幅", "Mini Turbo Vertical Amplitude"), &miniTurboShakeVerticalAmplitude, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("ミニターボシェイク周波数", "Mini Turbo Shake Frequency"), &miniTurboShakeFrequency, 0.1f, 0.1f, 60.0f);
+   ImGui::DragFloat(Tr("ミニターボシェイク時間", "Mini Turbo Shake Duration"), &miniTurboShakeDuration, 0.01f, 0.0f, 3.0f);
+   ImGui::Separator();
+   ImGui::DragFloat(Tr("ドリフト時の距離短縮率", "Drift Distance Reduction"), &driftCameraDistanceReduction, 0.01f, 0.0f, 0.5f);
+   ImGui::DragFloat(Tr("ドリフト距離の補間速度", "Drift Distance Lerp Speed"), &driftCameraLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::Separator();
    ImGui::Checkbox(
       Tr("発表用カメラガイド", "Presentation Camera Guides"),
@@ -853,6 +906,13 @@ nlohmann::json CameraGravityBridge::Serialize() const {
    json["landingShakeAmplitude"] = landingShakeAmplitude;
    json["landingShakeFrequency"] = landingShakeFrequency;
    json["landingShakeDuration"] = landingShakeDuration;
+   json["enableMiniTurboShake"] = enableMiniTurboShake;
+   json["miniTurboShakeHorizontalAmplitude"] = miniTurboShakeHorizontalAmplitude;
+   json["miniTurboShakeVerticalAmplitude"] = miniTurboShakeVerticalAmplitude;
+   json["miniTurboShakeFrequency"] = miniTurboShakeFrequency;
+   json["miniTurboShakeDuration"] = miniTurboShakeDuration;
+   json["driftCameraDistanceReduction"] = driftCameraDistanceReduction;
+   json["driftCameraLerpSpeed"] = driftCameraLerpSpeed;
    json["debugDrawPresentationGuides"] = debugDrawPresentationGuides;
    json["presentationGuideLength"] = presentationGuideLength;
    json["autoCapturePresentationSequence"] = autoCapturePresentationSequence;
@@ -878,6 +938,27 @@ void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
    if (data.contains("landingShakeAmplitude")) { landingShakeAmplitude = data["landingShakeAmplitude"]; }
    if (data.contains("landingShakeFrequency")) { landingShakeFrequency = data["landingShakeFrequency"]; }
    if (data.contains("landingShakeDuration")) { landingShakeDuration = data["landingShakeDuration"]; }
+   if (data.contains("enableMiniTurboShake") && data.at("enableMiniTurboShake").is_boolean()) {
+      enableMiniTurboShake = data.at("enableMiniTurboShake").get<bool>();
+   }
+   if (data.contains("miniTurboShakeHorizontalAmplitude") && data.at("miniTurboShakeHorizontalAmplitude").is_number()) {
+      miniTurboShakeHorizontalAmplitude = data.at("miniTurboShakeHorizontalAmplitude").get<float>();
+   }
+   if (data.contains("miniTurboShakeVerticalAmplitude") && data.at("miniTurboShakeVerticalAmplitude").is_number()) {
+      miniTurboShakeVerticalAmplitude = data.at("miniTurboShakeVerticalAmplitude").get<float>();
+   }
+   if (data.contains("miniTurboShakeFrequency") && data.at("miniTurboShakeFrequency").is_number()) {
+      miniTurboShakeFrequency = data.at("miniTurboShakeFrequency").get<float>();
+   }
+   if (data.contains("miniTurboShakeDuration") && data.at("miniTurboShakeDuration").is_number()) {
+      miniTurboShakeDuration = data.at("miniTurboShakeDuration").get<float>();
+   }
+   if (data.contains("driftCameraDistanceReduction") && data.at("driftCameraDistanceReduction").is_number()) {
+      driftCameraDistanceReduction = data.at("driftCameraDistanceReduction").get<float>();
+   }
+   if (data.contains("driftCameraLerpSpeed") && data.at("driftCameraLerpSpeed").is_number()) {
+      driftCameraLerpSpeed = data.at("driftCameraLerpSpeed").get<float>();
+   }
    if (data.contains("debugDrawPresentationGuides") && data.at("debugDrawPresentationGuides").is_boolean()) {
       debugDrawPresentationGuides = data.at("debugDrawPresentationGuides").get<bool>();
    }
