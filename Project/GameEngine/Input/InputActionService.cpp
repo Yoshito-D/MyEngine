@@ -758,7 +758,7 @@ bool InputActionService::ApplyBinding(
 
 bool InputActionService::LoadOverrides() {
    if (!std::filesystem::exists(overridePath_)) {
-      Logger::Warning("Input override file is missing; defaults are active: " + overridePath_.generic_string());
+      Logger::Info("Input override file is missing; defaults are active: " + overridePath_.generic_string());
       return false;
    }
    if (!LoadDefinitions(overridePath_, false)) {

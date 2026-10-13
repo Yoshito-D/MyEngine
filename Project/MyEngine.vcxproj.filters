@@ -1781,9 +1781,6 @@
     <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json">
       <Filter>Resources\engine\pipelines\pso\graphics</Filter>
     </None>
-    <None Include="Resources\engine\pipelines\pso\graphics\unlit_tint_pipeline.json">
-      <Filter>Resources\engine\pipelines\pso\graphics</Filter>
-    </None>
     <None Include="Resources\engine\pipelines\pso\postprocess\anti_aliasing_pipeline.json">
       <Filter>Resources\engine\pipelines\pso\postprocess</Filter>
     </None>
@@ -1857,9 +1854,6 @@
       <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json">
-      <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
-    </None>
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\unlit_tint_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures\graphics</Filter>
     </None>
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json">

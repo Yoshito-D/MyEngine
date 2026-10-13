@@ -1,6 +1,5 @@
 {
   "rootSignatures": [
-    "resources/engine/pipelines/root_signatures/graphics/unlit_tint_rootsig.json",
     "resources/engine/pipelines/root_signatures/graphics/object3d_rootsig.json",
     "resources/engine/pipelines/root_signatures/graphics/player_shadow_mask_rootsig.json",
     "resources/engine/pipelines/root_signatures/graphics/player_shadow_project_rootsig.json",
@@ -20,7 +19,6 @@
     "resources/engine/pipelines/root_signatures/graphics/skybox_rootsig.json"
   ],
   "pipelines": [
-    "resources/engine/pipelines/pso/graphics/unlit_tint_pipeline.json",
     "resources/engine/pipelines/pso/graphics/object3d_pipeline.json",
     "resources/engine/pipelines/pso/graphics/player_shadow_mask_pipeline.json",
     "resources/engine/pipelines/pso/graphics/player_shadow_project_pipeline.json",

@@ -282,15 +282,20 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
       Logger::EngineWarning("Scene object skipped because it has no stable id");
       return false;
    }
-   // シーン初期化コードが先に生成したEntityと同じIDなら、新規生成せず保存状態だけを重ねる。
-   // FindObjectByIdで当ワールド未登録であることも確認し、重複エントリーとの区別を保つ。
-   if (Object* existingEntity = Object::FindByEntityId(id);
-      existingEntity && !FindObjectById(id)) {
-      return objectStore_.ApplyObjectState(existingEntity, objectData);
-   }
-   if (FindObjectById(id) || objectStore_.FindParticleById(id)) {
+   // FindObjectByIdはEditor経由でBaseSceneのEntityも返すため、重複判定には
+   // このワールドで復元済みのID索引だけを使う。非表示状態にも左右されない。
+   if (looseObjectsById_.contains(id) || objectStore_.FindById(id) || objectStore_.FindParticleById(id)) {
       Logger::EngineWarning("Duplicate scene object id skipped: " + id);
       return false;
+   }
+   // 既定ライトなど、シーン初期化コードが生成済みのEntityへ保存状態を重ねる。
+   // 非所有索引にも登録し、同じファイル内で再び現れたIDは重複として検出する。
+   if (Object* existingEntity = Object::FindByEntityId(id)) {
+      if (!objectStore_.ApplyObjectState(existingEntity, objectData)) {
+         return false;
+      }
+      RegisterLooseObject(id, existingEntity);
+      return true;
    }
 
    // 古いファイルにはSkybox専用typeがなく、sceneKeyの接頭辞だけが識別情報だった。

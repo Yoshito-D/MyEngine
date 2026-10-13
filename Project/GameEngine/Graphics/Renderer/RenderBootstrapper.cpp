@@ -41,8 +41,10 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    if (!context.psoManager->LoadPipelineDefinitions(L"resources/engine/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
       Logger::Error("[RenderBootstrapper] Failed to load pipeline definitions from JSON registry.");
       if (!context.psoManager->GetModelPipeline("Object3D")) return false;
+      Logger::Warning("[RenderBootstrapper] Continuing with available pipelines; some definitions failed.");
+   } else {
+      Logger::Info("Pipeline definitions loaded.");
    }
-   Logger::Info("Pipeline definitions loaded; failed optional definitions are unavailable.");
 
    if (!context.textRenderer->Initialize(context.device, context.psoManager, context.assetManager->GetFontManager())) {
       Logger::Error("[RenderBootstrapper] Failed to initialize the text renderer.");

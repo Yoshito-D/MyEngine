@@ -3915,7 +3915,7 @@
                   "typeName": "RenderComponent"
                },
                {
-                  "data": null,
+                  "data": {},
                   "enabled": true,
                   "typeName": "GravityAttractorLink"
                },
