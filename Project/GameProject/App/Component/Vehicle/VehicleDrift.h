@@ -2,6 +2,7 @@
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
+#include <cstdint>
 
 namespace App {
 
@@ -61,11 +62,8 @@ public:
    /// @brief ミニターボが発動できるかどうかをかえす
    bool CanFireMiniTurbo() const;
 
-   /// @brief ミニターボが発動したか確認し、フラグを消費して返す（1フレームに1回だけ true）
-   bool ConsumeMiniTurboFired() {
-      if (miniTurboJustFired_) { miniTurboJustFired_ = false; return true; }
-      return false;
-   }
+   /// @brief ミニターボの累計発動回数を返す。各演出が独立して新しい発動を検出できる。
+   uint64_t GetMiniTurboFireCount() const { return miniTurboFireCount_; }
 
 #ifdef USE_IMGUI
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
@@ -156,8 +154,8 @@ private:
    /// @brief 現在ドリフト中かどうか
    bool  isDrifting_ = false;
 
-   /// @brief ミニターボが発動したフレームに true になる（ConsumeMiniTurboFired で消費）
-   bool  miniTurboJustFired_ = false;
+   /// @brief カメラとパーティクルの更新順に依存しない発動通知の連番
+   uint64_t miniTurboFireCount_ = 0;
 
    /// @brief ドリフト継続時間（秒）。開始時にリセットされる。
    float driftTimer_ = 0.0f;

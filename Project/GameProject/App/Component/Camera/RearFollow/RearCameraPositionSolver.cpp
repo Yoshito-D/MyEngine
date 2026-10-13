@@ -35,7 +35,7 @@ GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(
    float boostAlpha) const {
    // 加速と空中状態の後退量を合成する。
    float boostedDistance =
-	  settings.distance
+	  settings.distance * input.driftDistanceScale
 	  + settings.distanceBoostMax * boostAlpha
 	  + speed.springDistanceOffset
 	  + settings.airborneDistanceOffset * transition.currentAirborneBlend;
@@ -50,8 +50,8 @@ GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(
 	  safeBackward * safeRearDistance
 	  + orthogonalUp * settings.height;
 
-   // settings.distance はカメラの基準距離なので、速度Springや方向合成の結果でも下回らせない。
-   float minimumEyeDistance = std::max(1.0f, settings.distance);
+   // ドリフト中は縮めた基準距離を下限にし、接近演出を通常距離のクランプで打ち消さない。
+   float minimumEyeDistance = std::max(1.0f, settings.distance * input.driftDistanceScale);
    float eyeOffsetLength = eyeOffset.Length();
    if (eyeOffsetLength < minimumEyeDistance) {
 	  GameEngine::Vector3 fallbackDirection =
@@ -115,7 +115,7 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(
    float currentLength = state_.currentEyeOffset.Length();
    float targetLength = targetOffset.Length();
    float smoothedLength = currentLength + (targetLength - currentLength) * t;
-   smoothedLength = std::max(smoothedLength, std::max(1.0f, settings.distance));
+   smoothedLength = std::max(smoothedLength, std::max(1.0f, settings.distance * input.driftDistanceScale));
    Vector3 currentDir =
 	  currentLength > 1e-4f
 	  ? state_.currentEyeOffset * (1.0f / currentLength)
@@ -162,7 +162,7 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(
       // 高さ補正は負のUp成分を打ち消すため、先に確保した距離を短くすることがある。
       // 最終候補でも距離を守り、保存位置が基準面の下でもプレイヤーへ急接近させない。
       float correctedLength = state_.currentEyeOffset.Length();
-      const float minimumDistance = std::max(1.0f, settings.distance);
+      const float minimumDistance = std::max(1.0f, settings.distance * input.driftDistanceScale);
       const Vector3 correctedDirection = NormalizeOrFallback(state_.currentEyeOffset, safeUp);
       if (correctedLength < minimumDistance) {
          correctedLength = minimumDistance;

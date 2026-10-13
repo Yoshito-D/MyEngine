@@ -35,6 +35,9 @@ public:
    /// @brief 重力Upを設定する
    void SetGravityUp(const GameEngine::Vector3& up) { gravityUp_ = up; }
 
+   /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
+   void SetDriftDistanceScale(float scale) { driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
+
    /// @brief 直近計算のカメラUpを取得する
    GameEngine::Vector3 GetCameraUp()    const { return cachedUp_; }
 
@@ -102,6 +105,9 @@ private:
 
    /// @brief カメラの現在位置
    GameEngine::Vector3 eyePos_        = { 0.0f, 5.0f, -15.0f };
+
+   /// @brief レアッシュの通常位置から表示位置だけを近づける距離倍率
+   float driftDistanceScale_ = 1.0f;
 
    /// @brief 初期化実施済みフラグ
    bool                isInitialized_ = false;

@@ -66,7 +66,18 @@ void PerlinNoise::MutateCameraState(CameraState& state, float deltaTime) {
 
     // ノイズを位置に適用
     Vector3 shake = {};
-    if (useDirectionalShake_) {
+    if (useScreenSpaceShake_) {
+        // 惑星上でカメラが回転しても、画面の縦横に揺れるよう最新のビュー基底を使う。
+        const Matrix4x4 worldMatrix = state.GetViewMatrix().Inverse();
+        const Vector3 right = NormalizeOrDefault(
+            { worldMatrix.m[0][0], worldMatrix.m[0][1], worldMatrix.m[0][2] },
+            { 1.0f, 0.0f, 0.0f });
+        const Vector3 up = NormalizeOrDefault(
+            { worldMatrix.m[1][0], worldMatrix.m[1][1], worldMatrix.m[1][2] },
+            { 0.0f, 1.0f, 0.0f });
+        shake = right * (Noise(time_) * screenSpaceWeights_.x * currentAmplitude)
+              + up * (Noise(time_ * 1.3f + 100.0f) * screenSpaceWeights_.y * currentAmplitude);
+    } else if (useDirectionalShake_) {
         shake = shakeDirection_ * (Noise(time_ * 1.0f) * currentAmplitude);
     } else {
         shake = {
@@ -93,6 +104,7 @@ void PerlinNoise::Shake(float amplitude, float frequency, float duration) {
     frequencyGain_ = frequency;
     remainingTime_ = duration;
     useDirectionalShake_ = false;
+    useScreenSpaceShake_ = false;
 }
 
 void PerlinNoise::ShakeDirectional(const Vector3& direction, float amplitude, float frequency, float duration) {
@@ -102,6 +114,20 @@ void PerlinNoise::ShakeDirectional(const Vector3& direction, float amplitude, fl
     remainingTime_ = duration;
     shakeDirection_ = NormalizeOrDefault(direction, { 0.0f, 1.0f, 0.0f });
     useDirectionalShake_ = true;
+    useScreenSpaceShake_ = false;
+}
+
+void PerlinNoise::ShakeScreenSpace(float horizontalAmplitude, float verticalAmplitude, float frequency, float duration) {
+    horizontalAmplitude = std::isfinite(horizontalAmplitude) ? std::max(0.0f, horizontalAmplitude) : 0.0f;
+    verticalAmplitude = std::isfinite(verticalAmplitude) ? std::max(0.0f, verticalAmplitude) : 0.0f;
+    const float amplitude = std::max(horizontalAmplitude, verticalAmplitude);
+    Shake(duration > 0.0f && std::isfinite(duration) ? amplitude : 0.0f,
+          std::isfinite(frequency) ? std::max(0.0f, frequency) : 0.0f,
+          std::isfinite(duration) ? std::max(0.0f, duration) : 0.0f);
+    screenSpaceWeights_ = amplitude > 0.0f
+        ? Vector2{ horizontalAmplitude / amplitude, verticalAmplitude / amplitude }
+        : Vector2{};
+    useScreenSpaceShake_ = true;
 }
 
 float PerlinNoise::Noise(float t) const {
@@ -119,7 +145,9 @@ nlohmann::json PerlinNoise::Serialize() const {
         { "remainingTime", remainingTime_ },
         { "initialAmplitude", initialAmplitude_ },
         { "shakeDirection", SerializeVector3(shakeDirection_) },
-        { "useDirectionalShake", useDirectionalShake_ }
+        { "useDirectionalShake", useDirectionalShake_ },
+        { "screenSpaceWeights", nlohmann::json::array({ screenSpaceWeights_.x, screenSpaceWeights_.y }) },
+        { "useScreenSpaceShake", useScreenSpaceShake_ }
     };
 }
 
@@ -140,6 +168,14 @@ void PerlinNoise::Deserialize(const nlohmann::json& data) {
     }
     if (data.contains("useDirectionalShake") && data.at("useDirectionalShake").is_boolean()) {
         useDirectionalShake_ = data.at("useDirectionalShake").get<bool>();
+    }
+    if (data.contains("screenSpaceWeights") && data.at("screenSpaceWeights").is_array()
+        && data.at("screenSpaceWeights").size() == 2) {
+        screenSpaceWeights_ = { data.at("screenSpaceWeights")[0].get<float>(),
+                               data.at("screenSpaceWeights")[1].get<float>() };
+    }
+    if (data.contains("useScreenSpaceShake") && data.at("useScreenSpaceShake").is_boolean()) {
+        useScreenSpaceShake_ = data.at("useScreenSpaceShake").get<bool>();
     }
 }
 

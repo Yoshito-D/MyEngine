@@ -223,6 +223,9 @@ struct RearCameraInput {
 	/// @brief プレイヤー現在速度（外部から毎フレーム供給）
 	float playerSpeed = 0.0f;
 
+	/// @brief ドリフト接近演出の距離倍率（通常時は1.0）
+	float driftDistanceScale = 1.0f;
+
 	/// @brief プレイヤー現在速度ベクトル（外部から毎フレーム供給）
 	GameEngine::Vector3 playerVelocity = { 0.0f, 0.0f, 0.0f };
 

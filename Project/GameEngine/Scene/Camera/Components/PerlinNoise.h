@@ -32,6 +32,13 @@ public:
     /// @param duration 持続時間
     void ShakeDirectional(const Vector3& direction, float amplitude, float frequency, float duration);
 
+    /// @brief 更新時のカメラの縦・横方向へ独立したシェイクを開始する
+    /// @param horizontalAmplitude 横揺れの振幅
+    /// @param verticalAmplitude 縦揺れの振幅
+    /// @param frequency 周波数
+    /// @param duration 持続時間（0以下なら停止）
+    void ShakeScreenSpace(float horizontalAmplitude, float verticalAmplitude, float frequency, float duration);
+
     /// @brief 振幅を設定
     void SetAmplitude(float amplitude) { amplitudeGain_ = amplitude; }
     /// @brief 周波数を設定
@@ -60,6 +67,8 @@ private:
     float initialAmplitude_ = 0.0f;
     Vector3 shakeDirection_ = { 0.0f, 1.0f, 0.0f };
     bool useDirectionalShake_ = false;
+    Vector2 screenSpaceWeights_ = {};
+    bool useScreenSpaceShake_ = false;
 };
 
 } // namespace GameEngine
