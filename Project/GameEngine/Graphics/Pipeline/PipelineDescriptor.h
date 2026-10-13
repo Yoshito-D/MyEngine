@@ -54,6 +54,7 @@ struct MaterialParameterDefinition {
    std::string name;
    UINT offset = 0;
    std::vector<float> defaultValue;
+   bool checkbox = false; ///< 単一floatを0/1のチェックボックスで編集する。
 };
 
 /// @brief すべてのPSOバリエーションで共有する、検証済みモデル描画契約。

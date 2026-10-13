@@ -27,5 +27,8 @@ VertexShaderOutput main(VertexShaderInput input) {
     output.normal = normalize(mul(input.normal, (float32_t3x3) gTransformationMatrix.worldInverseTranspose));
     // 平行移動を含むworld変換後の位置を、距離減衰・視線・環境反射計算用にPSへ渡す。
     output.worldPosition = mul(input.position, gTransformationMatrix.world).xyz;
+    // テクスチャ投影をオブジェクトに固定し、惑星の移動・回転で模様が滑らないようにする。
+    output.localPosition = input.position.xyz;
+    output.localNormal = input.normal;
     return output;
 }

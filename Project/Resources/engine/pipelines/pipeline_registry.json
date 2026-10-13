@@ -1,6 +1,7 @@
 {
   "rootSignatures": [
     "resources/engine/pipelines/root_signatures/graphics/object3d_rootsig.json",
+    "resources/engine/pipelines/root_signatures/graphics/object3d_triplanar_rootsig.json",
     "resources/engine/pipelines/root_signatures/graphics/player_shadow_mask_rootsig.json",
     "resources/engine/pipelines/root_signatures/graphics/player_shadow_project_rootsig.json",
     "resources/engine/pipelines/root_signatures/graphics/text_rootsig.json",
@@ -20,6 +21,7 @@
   ],
   "pipelines": [
     "resources/engine/pipelines/pso/graphics/object3d_pipeline.json",
+    "resources/engine/pipelines/pso/graphics/object3d_triplanar_pipeline.json",
     "resources/engine/pipelines/pso/graphics/player_shadow_mask_pipeline.json",
     "resources/engine/pipelines/pso/graphics/player_shadow_project_pipeline.json",
     "resources/engine/pipelines/pso/graphics/text_pipeline.json",

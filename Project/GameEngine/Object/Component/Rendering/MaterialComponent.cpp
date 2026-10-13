@@ -784,7 +784,13 @@ void MaterialComponent::DrawInspector() {
             auto value = field.defaultValue;
             const auto it = material->GetParameters().find(field.name);
             if (it != material->GetParameters().end() && it->second.size() == value.size()) value = it->second;
-            if (ImGui::DragScalarN(field.name.c_str(), ImGuiDataType_Float, value.data(), static_cast<int>(value.size()), 0.01f)) {
+            if (field.checkbox) {
+               // GPUへのfloatパックとシーン保存は共通処理を使い、UIでのみ0/1を切り替える。
+               bool checked = value[0] > 0.5f;
+               if (ImGui::Checkbox(field.name.c_str(), &checked)) {
+                  material->SetParameter(field.name, { checked ? 1.0f : 0.0f });
+               }
+            } else if (ImGui::DragScalarN(field.name.c_str(), ImGuiDataType_Float, value.data(), static_cast<int>(value.size()), 0.01f)) {
                material->SetParameter(field.name, value);
             }
          }

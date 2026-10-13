@@ -822,6 +822,7 @@
     <None Include="Resources\engine\pipelines\pso\postprocess\scene_transition_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\line3d_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\object3d_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\object3d_triplanar_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json" />
     <None Include="Resources\engine\pipelines\pipeline_registry.json" />
@@ -844,6 +845,7 @@
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\line3d_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_triplanar_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_dissolve_rootsig.json" />

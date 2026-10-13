@@ -1082,8 +1082,15 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarScale": [
+                                 1.0
+                              ],
+                              "triplanarSharpness": [
+                                 4.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -1093,7 +1100,7 @@
                            "rimLightIntensity": 0.41999998688697815,
                            "rimLightPower": 12.510000228881836,
                            "shininess": 40.0,
-                           "textureName": "coast_sand_05_diff_2k",
+                           "textureName": "game/textures/ground/coast_sand_05_diff_2k.jpg",
                            "uvTransform": [
                               [
                                  1.0,
@@ -1287,8 +1294,18 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarSampleY": [
+                                 1.0
+                              ],
+                              "triplanarSampleZ": [
+                                 1.0
+                              ],
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -1492,8 +1509,12 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -1697,8 +1718,12 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -1902,8 +1927,21 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarSampleY": [
+                                 0.0
+                              ],
+                              "triplanarSampleZ": [
+                                 0.0
+                              ],
+                              "triplanarScale": [
+                                 1.0
+                              ],
+                              "triplanarSharpness": [
+                                 0.25
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -1913,7 +1951,7 @@
                            "rimLightIntensity": 0.41999998688697815,
                            "rimLightPower": 12.510000228881836,
                            "shininess": 40.0,
-                           "textureName": "plywood_diff_2k",
+                           "textureName": "game/textures/ground/plywood_diff_2k.jpg",
                            "uvTransform": [
                               [
                                  1.0,
@@ -2107,8 +2145,12 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -2312,8 +2354,12 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -2501,9 +2547,9 @@
                         {
                            "blendMode": 0,
                            "color": [
-                              1.0,
-                              1.0,
-                              1.0,
+                              0.6988847255706787,
+                              0.6988847255706787,
+                              0.6988847255706787,
                               1.0
                            ],
                            "environmentTextureStrength": 0.0,
@@ -2517,18 +2563,28 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarSampleY": [
+                                 1.0
+                              ],
+                              "triplanarSampleZ": [
+                                 1.0
+                              ],
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
                               1.0,
                               1.0
                            ],
-                           "rimLightIntensity": 0.41999998688697815,
+                           "rimLightIntensity": 0.5799999833106995,
                            "rimLightPower": 12.510000228881836,
                            "shininess": 40.0,
-                           "textureName": "rusty_metal_02_diff_2k",
+                           "textureName": "game/textures/ground/rusty_metal_02_diff_2k.jpg",
                            "uvTransform": [
                               [
                                  1.0,
@@ -2722,8 +2778,21 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarSampleX": [
+                                 1.0
+                              ],
+                              "triplanarSampleY": [
+                                 1.0
+                              ],
+                              "triplanarSampleZ": [
+                                 1.0
+                              ],
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -2927,8 +2996,12 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -3132,8 +3205,12 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -3337,8 +3414,12 @@
                            "lightingMode": 2,
                            "name": "planetMaterial",
                            "ownership": "local",
-                           "parameters": {},
-                           "pipelineName": "",
+                           "parameters": {
+                              "triplanarScale": [
+                                 1.0
+                              ]
+                           },
+                           "pipelineName": "Object3DTriplanar",
                            "rimLightColor": [
                               1.0,
                               1.0,
@@ -4078,7 +4159,7 @@
                      "lineDensity": 140.0,
                      "maxIntensity": 0.800000011920929,
                      "maximumEffectSpeed": 35.0,
-                     "minimumEffectSpeed": 15.0,
+                     "minimumEffectSpeed": 27.5,
                      "outerRadius": 2.5,
                      "radialBlurMaxStrength": 0.0,
                      "radialBlurSampleCount": 16,
@@ -4499,11 +4580,11 @@
                      "autoCapturePresentationVideoFrames": false,
                      "debugDrawPresentationGuides": false,
                      "driftCameraDistanceReduction": 0.25,
-                     "driftCameraLerpSpeed": 8.0,
+                     "driftCameraLerpSpeed": 4.0,
                      "enableLandingShake": true,
                      "enableMiniTurboShake": true,
                      "gravityFollowCameraId": "GravityFollowCamera",
-                     "landingShakeAmplitude": 0.699999988079071,
+                     "landingShakeAmplitude": 0.6000000238418579,
                      "landingShakeDuration": 0.25,
                      "landingShakeFrequency": 10.0,
                      "miniTurboShakeDuration": 0.20000000298023224,
