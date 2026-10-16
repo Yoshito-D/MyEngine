@@ -129,11 +129,13 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    };
    eyePos_ = ClampToPlanetRadius(eyePos_);
 
-   // 内部の追従位置を保ったまま表示位置を近づけ、停止中のドリフト終了でも元へ戻せるようにする。
-   const Vector3 eye = ClampToPlanetRadius(pivotTarget_ + (eyePos_ - pivotTarget_) * driftDistanceScale_);
+   // 内部の追従位置を保ったまま距離と高さを変え、停止中のドリフト終了でも元へ戻せるようにする。
+   const Vector3 eye = ClampToPlanetRadius(pivotTarget_ + (eyePos_ - pivotTarget_) * driftDistanceScale_
+      + gravityUp_ * driftCameraHeightOffset_);
+   const Vector3 lookTarget = pivotTarget_ + gravityUp_ * driftLookTargetHeightOffset_;
 
    // LookAt用の視線方向を算出
-   Vector3 lookDir = pivotTarget_ - eye;
+   Vector3 lookDir = lookTarget - eye;
    float lookLen = lookDir.Length();
    if (lookLen < 1e-6f) { return; }
    Vector3 lookDirN = lookDir * (1.0f / lookLen);
@@ -164,7 +166,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
 
    // カメラ状態へ最終反映
    state.transform.translation = eye;
-   state.SetViewMatrix(MakeLookAtMatrix(eye, pivotTarget_, eyeRelUp_));
+   state.SetViewMatrix(MakeLookAtMatrix(eye, lookTarget, eyeRelUp_));
 }
 
 nlohmann::json PlanetLeashCamera::Serialize() const {
@@ -186,6 +188,8 @@ void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
    minPlanetDistance = ReadFloat(data, "minPlanetDistance", minPlanetDistance);
    useGravityUp = ReadBool(data, "useGravityUp", useGravityUp);
    driftDistanceScale_ = 1.0f;
+   driftCameraHeightOffset_ = 0.0f;
+   driftLookTargetHeightOffset_ = 0.0f;
    Configure(DescribeSettings());
 }
 

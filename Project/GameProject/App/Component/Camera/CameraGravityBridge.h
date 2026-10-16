@@ -98,9 +98,15 @@ public:
       float miniTurboShakeFrequency = 18.0f;
       /// @brief ミニターボシェイクの持続時間（秒）
       float miniTurboShakeDuration = 0.2f;
-      /// @brief ドリフト中に通常のカメラ距離を短縮する割合（0.1で10%）
+      /// @brief 横入力中のカメラ接近演出（距離と高さ）を有効にするか
+      bool enableDriftCameraApproach = true;
+      /// @brief 横入力中に通常のカメラ距離を短縮する割合（0.1で10%）
       float driftCameraDistanceReduction = 0.1f;
-      /// @brief ドリフト開始・終了時の距離倍率の補間速度
+      /// @brief 横入力中に通常のカメラ高さへ加える量（重力Up方向）
+      float driftCameraHeightOffset = 0.0f;
+      /// @brief 横入力中に通常の注視点高さへ加える量（重力Up方向）
+      float driftLookTargetHeightOffset = 0.0f;
+      /// @brief 横入力の開始・終了時の距離倍率と高さの補間速度
       float driftCameraLerpSpeed = 6.0f;
       /// @brief 発表用スクリーンショットにカメラ軸と着地予測を表示するか
       bool debugDrawPresentationGuides = false;
@@ -131,7 +137,10 @@ public:
       settings.miniTurboShakeVerticalAmplitude = miniTurboShakeVerticalAmplitude;
       settings.miniTurboShakeFrequency = miniTurboShakeFrequency;
       settings.miniTurboShakeDuration = miniTurboShakeDuration;
+      settings.enableDriftCameraApproach = enableDriftCameraApproach;
       settings.driftCameraDistanceReduction = driftCameraDistanceReduction;
+      settings.driftCameraHeightOffset = driftCameraHeightOffset;
+      settings.driftLookTargetHeightOffset = driftLookTargetHeightOffset;
       settings.driftCameraLerpSpeed = driftCameraLerpSpeed;
       settings.debugDrawPresentationGuides = debugDrawPresentationGuides;
       settings.presentationGuideLength = presentationGuideLength;
@@ -159,6 +168,8 @@ public:
       settings.miniTurboShakeFrequency = std::max(0.1f, settings.miniTurboShakeFrequency);
       settings.miniTurboShakeDuration = std::max(0.0f, settings.miniTurboShakeDuration);
       if (!std::isfinite(settings.driftCameraDistanceReduction)) settings.driftCameraDistanceReduction = defaults.driftCameraDistanceReduction;
+      if (!std::isfinite(settings.driftCameraHeightOffset)) settings.driftCameraHeightOffset = defaults.driftCameraHeightOffset;
+      if (!std::isfinite(settings.driftLookTargetHeightOffset)) settings.driftLookTargetHeightOffset = defaults.driftLookTargetHeightOffset;
       if (!std::isfinite(settings.driftCameraLerpSpeed)) settings.driftCameraLerpSpeed = defaults.driftCameraLerpSpeed;
       settings.driftCameraDistanceReduction = std::clamp(settings.driftCameraDistanceReduction, 0.0f, 0.5f);
       settings.driftCameraLerpSpeed = std::max(0.1f, settings.driftCameraLerpSpeed);
@@ -176,7 +187,10 @@ public:
       miniTurboShakeVerticalAmplitude = settings.miniTurboShakeVerticalAmplitude;
       miniTurboShakeFrequency = settings.miniTurboShakeFrequency;
       miniTurboShakeDuration = settings.miniTurboShakeDuration;
+      enableDriftCameraApproach = settings.enableDriftCameraApproach;
       driftCameraDistanceReduction = settings.driftCameraDistanceReduction;
+      driftCameraHeightOffset = settings.driftCameraHeightOffset;
+      driftLookTargetHeightOffset = settings.driftLookTargetHeightOffset;
       driftCameraLerpSpeed = settings.driftCameraLerpSpeed;
       debugDrawPresentationGuides = settings.debugDrawPresentationGuides;
       presentationGuideLength = settings.presentationGuideLength;
@@ -198,7 +212,10 @@ private:
    float miniTurboShakeVerticalAmplitude = 0.15f;
    float miniTurboShakeFrequency = 18.0f;
    float miniTurboShakeDuration = 0.2f;
+   bool enableDriftCameraApproach = true;
    float driftCameraDistanceReduction = 0.1f;
+   float driftCameraHeightOffset = 0.0f;
+   float driftLookTargetHeightOffset = 0.0f;
    float driftCameraLerpSpeed = 6.0f;
    bool debugDrawPresentationGuides = false;
    float presentationGuideLength = 8.0f;
@@ -228,8 +245,14 @@ private:
    /// @brief カメラが最後に処理したミニターボ発動の連番
    uint64_t lastMiniTurboFireCount_ = 0;
 
-   /// @brief ドリフト状態に応じて補間したカメラ距離倍率
+   /// @brief 横入力状態に応じて補間したカメラ距離倍率
    float currentDriftDistanceScale_ = 1.0f;
+
+   /// @brief 横入力状態に応じて補間したカメラ高さの追加量
+   float currentDriftCameraHeightOffset_ = 0.0f;
+
+   /// @brief 横入力状態に応じて補間した注視点高さの追加量
+   float currentDriftLookTargetHeightOffset_ = 0.0f;
 
    /// @brief 発表用自動撮影の開始後経過時間
    float presentationCaptureElapsed_ = 0.0f;

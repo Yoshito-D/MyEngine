@@ -6,6 +6,7 @@
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
+#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -436,6 +437,8 @@ void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    const auto* drift = HasOwner() ? GetOwner().GetComponent<VehicleDrift>() : nullptr;
    lastMiniTurboFireCount_ = drift ? drift->GetMiniTurboFireCount() : 0;
    currentDriftDistanceScale_ = 1.0f;
+   currentDriftCameraHeightOffset_ = 0.0f;
+   currentDriftLookTargetHeightOffset_ = 0.0f;
    presentationCaptureElapsed_ = 0.0f;
    presentationJumpTriggered_ = false;
    presentationGroundCaptured_ = false;
@@ -463,17 +466,33 @@ void CameraGravityBridge::Update(float deltaTime) {
    auto* jump = GetOwner().GetComponent<CharacterJump>();
    auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
    const auto* drift = GetOwner().GetComponent<VehicleDrift>();
+   const auto* input = GetOwner().GetComponent<VehicleInputComponent>();
 
-   // 空中ではドリフト更新が止まるため、保持されたフラグだけで接近演出を続けない。
-   const bool isDrifting = drift && drift->IsEnabled() && drift->IsDrifting()
+   // ドリフト成立を待たず、デッドゾーン処理済みの横入力で接近を始める。
+   // 空中のロール入力では接近させず、地上の横入力中だけ演出を有効にする。
+   const bool isDriftCameraActive = enableDriftCameraApproach
+      && drift && drift->IsEnabled() && input && input->GetSteerInput() != 0.0f
       && (!landing || landing->IsGrounded()) && (!jump || !jump->IsJumping());
-   const float targetDriftDistanceScale = isDrifting ? 1.0f - driftCameraDistanceReduction : 1.0f;
+   const float targetDriftDistanceScale = isDriftCameraActive ? 1.0f - driftCameraDistanceReduction : 1.0f;
+   const float targetDriftCameraHeightOffset = isDriftCameraActive ? driftCameraHeightOffset : 0.0f;
+   const float targetDriftLookTargetHeightOffset = isDriftCameraActive ? driftLookTargetHeightOffset : 0.0f;
    const float driftBlend = 1.0f - std::exp(-driftCameraLerpSpeed * std::max(0.0f, deltaTime));
    currentDriftDistanceScale_ += (targetDriftDistanceScale - currentDriftDistanceScale_) * driftBlend;
-   // 保存用の基準距離を上書きせず、どのカメラへ切り替えても同じ接近率を入力する。
-   if (gravityFollowCamera_) { gravityFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_); }
-   if (playerRearFollowCamera_) { playerRearFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_); }
-   if (planetLeashCamera_) { planetLeashCamera_->SetDriftDistanceScale(currentDriftDistanceScale_); }
+   currentDriftCameraHeightOffset_ += (targetDriftCameraHeightOffset - currentDriftCameraHeightOffset_) * driftBlend;
+   currentDriftLookTargetHeightOffset_ += (targetDriftLookTargetHeightOffset - currentDriftLookTargetHeightOffset_) * driftBlend;
+   // 保存用の基準設定を上書きせず、どのカメラへ切り替えても同じドリフト演出を入力する。
+   if (gravityFollowCamera_) {
+      gravityFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
+      gravityFollowCamera_->SetDriftHeightOffsets(currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
+   }
+   if (playerRearFollowCamera_) {
+      playerRearFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
+      playerRearFollowCamera_->SetDriftHeightOffsets(currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
+   }
+   if (planetLeashCamera_) {
+      planetLeashCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
+      planetLeashCamera_->SetDriftHeightOffsets(currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
+   }
 
    // 全候補の追従入力を新しく保ち、画面固有のシェイク・撮影だけを選択先へ限定する。
    const auto* cameraMode = GetOwner().GetComponent<CameraModeSwitcher>();
@@ -850,8 +869,12 @@ void CameraGravityBridge::DrawInspector() {
    ImGui::DragFloat(Tr("ミニターボシェイク周波数", "Mini Turbo Shake Frequency"), &miniTurboShakeFrequency, 0.1f, 0.1f, 60.0f);
    ImGui::DragFloat(Tr("ミニターボシェイク時間", "Mini Turbo Shake Duration"), &miniTurboShakeDuration, 0.01f, 0.0f, 3.0f);
    ImGui::Separator();
+   ImGui::Checkbox(Tr("横入力時にカメラを近づける", "Camera Approach on Steering"), &enableDriftCameraApproach);
    ImGui::DragFloat(Tr("ドリフト時の距離短縮率", "Drift Distance Reduction"), &driftCameraDistanceReduction, 0.01f, 0.0f, 0.5f);
-   ImGui::DragFloat(Tr("ドリフト距離の補間速度", "Drift Distance Lerp Speed"), &driftCameraLerpSpeed, 0.1f, 0.1f, 30.0f);
+   ImGui::DragFloat(Tr("ドリフト時のカメラ高さ追加量", "Drift Camera Height Offset"), &driftCameraHeightOffset, 0.05f, -20.0f, 20.0f);
+   ImGui::DragFloat(Tr("ドリフト時の注視点高さ追加量", "Drift Look Target Height Offset"), &driftLookTargetHeightOffset, 0.05f, -10.0f, 10.0f);
+   ImGui::TextDisabled("%s", Tr("高さは通常時への加算量です（正: 上、負: 下）。", "Height offsets are added to normal height (positive: up, negative: down)."));
+   ImGui::DragFloat(Tr("ドリフトカメラの補間速度", "Drift Camera Lerp Speed"), &driftCameraLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::Separator();
    ImGui::Checkbox(
       Tr("発表用カメラガイド", "Presentation Camera Guides"),
@@ -911,7 +934,10 @@ nlohmann::json CameraGravityBridge::Serialize() const {
    json["miniTurboShakeVerticalAmplitude"] = miniTurboShakeVerticalAmplitude;
    json["miniTurboShakeFrequency"] = miniTurboShakeFrequency;
    json["miniTurboShakeDuration"] = miniTurboShakeDuration;
+   json["enableDriftCameraApproach"] = enableDriftCameraApproach;
    json["driftCameraDistanceReduction"] = driftCameraDistanceReduction;
+   json["driftCameraHeightOffset"] = driftCameraHeightOffset;
+   json["driftLookTargetHeightOffset"] = driftLookTargetHeightOffset;
    json["driftCameraLerpSpeed"] = driftCameraLerpSpeed;
    json["debugDrawPresentationGuides"] = debugDrawPresentationGuides;
    json["presentationGuideLength"] = presentationGuideLength;
@@ -953,8 +979,17 @@ void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
    if (data.contains("miniTurboShakeDuration") && data.at("miniTurboShakeDuration").is_number()) {
       miniTurboShakeDuration = data.at("miniTurboShakeDuration").get<float>();
    }
+   if (data.contains("enableDriftCameraApproach") && data.at("enableDriftCameraApproach").is_boolean()) {
+      enableDriftCameraApproach = data.at("enableDriftCameraApproach").get<bool>();
+   }
    if (data.contains("driftCameraDistanceReduction") && data.at("driftCameraDistanceReduction").is_number()) {
       driftCameraDistanceReduction = data.at("driftCameraDistanceReduction").get<float>();
+   }
+   if (data.contains("driftCameraHeightOffset") && data.at("driftCameraHeightOffset").is_number()) {
+      driftCameraHeightOffset = data.at("driftCameraHeightOffset").get<float>();
+   }
+   if (data.contains("driftLookTargetHeightOffset") && data.at("driftLookTargetHeightOffset").is_number()) {
+      driftLookTargetHeightOffset = data.at("driftLookTargetHeightOffset").get<float>();
    }
    if (data.contains("driftCameraLerpSpeed") && data.at("driftCameraLerpSpeed").is_number()) {
       driftCameraLerpSpeed = data.at("driftCameraLerpSpeed").get<float>();

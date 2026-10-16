@@ -48,7 +48,7 @@ GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(
    float safeRearDistance = std::max(0.0f, boostedDistance);
    GameEngine::Vector3 eyeOffset =
 	  safeBackward * safeRearDistance
-	  + orthogonalUp * settings.height;
+	  + orthogonalUp * (settings.height + input.driftCameraHeightOffset);
 
    // ドリフト中は縮めた基準距離を下限にし、接近演出を通常距離のクランプで打ち消さない。
    float minimumEyeDistance = std::max(1.0f, settings.distance * input.driftDistanceScale);
@@ -62,16 +62,15 @@ GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(
    }
    GameEngine::Vector3 eye = input.pivotTarget + eyeOffset;
 
-   // 着地前は予測地表の外向き法線に対して最低限の高さを確保する。
-   // これにより、速度後方から着地接線後方へ移る途中でもカメラがプレイヤーと惑星の間へ入らない。
-   if (input.isAirborne && transition.currentPreLandingBlend > 1e-4f) {
-	  GameEngine::Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, up);
-	  float minimumOutwardHeight =
-		 std::max(0.0f, settings.preLandingMinOutwardHeight) * transition.currentPreLandingBlend;
-	  float outwardHeight = (eye - input.pivotTarget).Dot(landingUp);
-	  if (outwardHeight < minimumOutwardHeight) {
-		 eye += landingUp * (minimumOutwardHeight - outwardHeight);
-	  }
+   // 着地前は速度後方から着地接線後方へ移る間に、予測地表の外側へ徐々に寄せる。
+   // 最低高さだけをブレンドすると負の外向き高さを一度に打ち消すため、補正量全体をブレンドする。
+   const float landingBlend = std::clamp(transition.currentPreLandingBlend, 0.0f, 1.0f);
+   if (input.isAirborne && landingBlend > 0.0f) {
+	  const GameEngine::Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, up);
+	  const float minimumOutwardHeight = std::max(0.0f, settings.preLandingMinOutwardHeight);
+	  const float outwardHeight = (eye - input.pivotTarget).Dot(landingUp);
+	  const float correction = std::max(0.0f, minimumOutwardHeight - outwardHeight) * landingBlend;
+	  eye += landingUp * correction;
    }
 
    return eye;
@@ -147,13 +146,15 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(
       heightCorrected = true;
    }
 
-   if (input.isAirborne && transition.currentPreLandingBlend > 1e-4f) {
-	  Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, safeUp);
-	  float minimumOutwardHeight =
-		 std::max(0.0f, settings.preLandingMinOutwardHeight) * transition.currentPreLandingBlend;
-	  float outwardHeight = state_.currentEyeOffset.Dot(landingUp);
-	  if (outwardHeight < minimumOutwardHeight) {
-		 state_.currentEyeOffset += landingUp * (minimumOutwardHeight - outwardHeight);
+   // 補間後の高さ補正も補正量全体をブレンドし、予測開始時の急な押し出しを避ける。
+   const float landingBlend = std::clamp(transition.currentPreLandingBlend, 0.0f, 1.0f);
+   if (input.isAirborne && landingBlend > 0.0f) {
+	  const Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, safeUp);
+	  const float minimumOutwardHeight = std::max(0.0f, settings.preLandingMinOutwardHeight);
+	  const float outwardHeight = state_.currentEyeOffset.Dot(landingUp);
+	  const float correction = std::max(0.0f, minimumOutwardHeight - outwardHeight) * landingBlend;
+	  if (correction > 0.0f) {
+		 state_.currentEyeOffset += landingUp * correction;
          heightCorrected = true;
 	  }
    }

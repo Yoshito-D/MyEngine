@@ -16,8 +16,8 @@ public:
    /// @brief シーン保存とFactory登録に使う名前を返す。
    const char* GetComponentName() const override { return "RearCameraSpeedEffects"; }
 
-   /// @brief プレイヤー速度に応じた FOV ブーストを補間し state.fov へ反映する
-   /// @details GravityFollowCamera と同じ考え方で FOV を広げて速度感を演出する。
+   /// @brief 通常FOVと演出による追加FOVを合成し state.fov へ反映する
+   /// @details 通常FOVの編集は直接反映し、速度・空中演出の追加量だけを補間する。
    ///          加えて、boostAlpha を返すことで距離ブースト（ComputeEye）と
    ///          同じ速度スケールを共有できるようにする。
    /// @return boostAlpha [0, 1]（加速の強さ。距離ブーストにも流用）

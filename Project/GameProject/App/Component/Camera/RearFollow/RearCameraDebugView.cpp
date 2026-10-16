@@ -334,14 +334,14 @@ void RearCameraDebugView::DrawInspector(
 
    if (ImGui::CollapsingHeader(Tr("速度演出", "Speed Effects"), ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::DragFloat(Tr("通常FOV", "Base FOV"), &settings.fovDefault, 0.001f, 0.1f, 1.5f, "%.3f");
-      DrawHelp("空中・速度演出を加える前の基準FOVです。",
-         "Base FOV before airborne and speed effects are added.");
+      DrawHelp("空中・速度演出を加える前の基準FOVです。編集した値は次のカメラ更新で直接反映します。",
+         "Base FOV before airborne and speed effects; edits apply directly on the next camera update.");
       ImGui::DragFloat(Tr("高速時の追加FOV最大", "High-speed Extra FOV"), &settings.fovBoostMax, 0.001f, 0.0f, 0.5f, "%.3f");
       DrawHelp("速度しきい値を超えて走り続けている間に加えるFOVの最大量です。瞬間キックとは異なる持続演出です。",
          "Maximum sustained FOV added while speed remains high; unlike the momentary kick, this persists.");
-      ImGui::DragFloat(Tr("FOV出力追従速度", "FOV Output Follow Speed"), &settings.fovLerpSpeed, 0.1f, 0.1f, 20.0f);
-      DrawHelp("通常・空中・高速・瞬間キックを合成した目標FOVへ、最終FOVが追従する速度です。",
-         "How quickly final FOV follows the target composed from base, airborne, high-speed, and kick effects.");
+      ImGui::DragFloat(Tr("FOV演出の追従速度", "FOV Effect Follow Speed"), &settings.fovLerpSpeed, 0.1f, 0.1f, 20.0f);
+      DrawHelp("空中・高速・瞬間キックによる追加FOVの追従速度です。通常FOVの編集には影響しません。",
+         "How quickly added FOV follows airborne, high-speed, and kick effects; base FOV edits are applied directly.");
       ImGui::DragFloat(Tr("高速時の追加距離最大", "High-speed Extra Distance"), &settings.distanceBoostMax, 0.1f, 0.0f, 30.0f);
       DrawHelp("速度しきい値を超えて走り続けている間に追加する後方距離の最大量です。瞬間キックとは異なる持続演出です。",
          "Maximum sustained rear settings.distance added while speed remains high; separate from the momentary kick.");
