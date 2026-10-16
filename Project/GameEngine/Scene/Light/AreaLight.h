@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -12,22 +13,24 @@ class AreaLight {
 public:
    /// @brief GPUデータを確保する前の状態を構築する。
    AreaLight() = default;
+
    /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
    AreaLight(const AreaLight&) = delete;
+
    /// @brief GPUデータの暗黙な共有を禁止する。
    AreaLight& operator=(const AreaLight&) = delete;
 
    /// @brief エリアライトデータ構造体
    struct AreaLightData {
-	  Vector4 color;           // ライトの色
-	  Vector3 position;        // 中心座標
-	  float intensity;         // 強度
-	  Vector3 normal;          // 照射方向
-	  float width;             // 幅
-	  Vector3 tangent;         // ライトの右方向ベクトル
-	  float height;            // 高さ
-	  Vector3 padding;         // パディング
-	  float padding2;          // パディング
+      Vector4 color;    // ライトの色
+      Vector3 position; // 中心座標
+      float intensity;  // 強度
+      Vector3 normal;   // 照射方向
+      float width;      // 幅
+      Vector3 tangent;  // ライトの右方向ベクトル
+      float height;     // 高さ
+      Vector3 padding;  // パディング
+      float padding2;   // パディング
    };
 
    /// @brief デバイスを取得して初期化
@@ -41,12 +44,9 @@ public:
    /// @param size 幅と高さ
    /// @param color 光の色
    /// @param intensity 強度
-   void Create(const Vector3& position = { 0.0f, 0.0f, 0.0f },
-              const Vector3& normal = { 0.0f, 0.0f, -1.0f },
-              const Vector3& tangent = { 1.0f, 0.0f, 0.0f },
-              const Vector2& size = { 1.0f, 1.0f },
-              const Vector3& color = { 1.0f, 1.0f, 1.0f },
-              float intensity = 1.0f);
+   void Create(const Vector3& position = {0.0f, 0.0f, 0.0f}, const Vector3& normal = {0.0f, 0.0f, -1.0f},
+      const Vector3& tangent = {1.0f, 0.0f, 0.0f}, const Vector2& size = {1.0f, 1.0f},
+      const Vector3& color = {1.0f, 1.0f, 1.0f}, float intensity = 1.0f);
 
    /// @brief エリアライトデータを取得
    /// @return エリアライトデータへのポインタ

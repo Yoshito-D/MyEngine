@@ -30,7 +30,8 @@ void GameEngine::SpeedLine::Initialize(GraphicsDevice* device, OffscreenRenderTa
 /// @brief エフェクトを適用
 /// @param inputSRV 入力SRV
 void GameEngine::SpeedLine::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -40,7 +41,7 @@ void GameEngine::SpeedLine::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
    if (constantBuffer_) {
-	  cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
@@ -56,24 +57,25 @@ void GameEngine::SpeedLine::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("集中線のパラメータ", "Speed Line Parameters"))) {
-	  bool changed = false;
-	  SpeedLineParams params = params_;
-	  changed |= ImGui::SliderFloat2(LocalizeEditorText("中心", "Center"), &params.center.x, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &params.intensity, 0.0f, 3.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("密度", "Density"), &params.lineDensity, 16.0f, 512.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("太さ", "Thickness"), &params.thickness, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("内側半径", "Inner Radius"), &params.innerRadius, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("外側半径", "Outer Radius"), &params.outerRadius, 0.0f, 2.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("ランダムシード", "Random Seed"), &params.randomSeed, 0.0f, 100.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("流れる速度", "Flow Speed"), &params.flowSpeed, 0.0f, 5.0f);
-	  changed |= ImGui::DragFloat(LocalizeEditorText("時間", "Time"), &params.time, 0.01f);
+          LocalizeEditorText("集中線のパラメータ", "Speed Line Parameters"))) {
+      bool changed = false;
+      SpeedLineParams params = params_;
+      changed |= ImGui::SliderFloat2(LocalizeEditorText("中心", "Center"), &params.center.x, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &params.intensity, 0.0f, 3.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("密度", "Density"), &params.lineDensity, 16.0f, 512.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("太さ", "Thickness"), &params.thickness, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("内側半径", "Inner Radius"), &params.innerRadius, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("外側半径", "Outer Radius"), &params.outerRadius, 0.0f, 2.0f);
+      changed |=
+         ImGui::SliderFloat(LocalizeEditorText("ランダムシード", "Random Seed"), &params.randomSeed, 0.0f, 100.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("流れる速度", "Flow Speed"), &params.flowSpeed, 0.0f, 5.0f);
+      changed |= ImGui::DragFloat(LocalizeEditorText("時間", "Time"), &params.time, 0.01f);
 
-	  if (changed) {
-		 SetParams(params);
-	  }
+      if (changed) {
+         SetParams(params);
+      }
 
-	  ImGui::TreePop();
+      ImGui::TreePop();
    }
 
    ImGui::PopID();
@@ -90,11 +92,9 @@ void GameEngine::SpeedLine::CreateConstantBuffer() {
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 
-void GameEngine::SpeedLine::UpdateConstantBuffer()
-{
-   if (!constantBufferData_)
-   {
-	  return;
+void GameEngine::SpeedLine::UpdateConstantBuffer() {
+   if (!constantBufferData_) {
+      return;
    }
 
    constantBufferData_->center = params_.center;

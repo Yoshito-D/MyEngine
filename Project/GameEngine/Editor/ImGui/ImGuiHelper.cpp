@@ -12,9 +12,12 @@
 namespace GameEngine {
 namespace ImGuiHelper {
 bool DrawFolderTreeNode(const char* label, bool selected, bool revealAncestor, ImTextureRef icon) {
-   if (revealAncestor) ImGui::SetNextItemOpen(true, ImGuiCond_Always);
-   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
-   if (selected) flags |= ImGuiTreeNodeFlags_Selected;
+   if (revealAncestor)
+      ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+   ImGuiTreeNodeFlags flags =
+      ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
+   if (selected)
+      flags |= ImGuiTreeNodeFlags_Selected;
    const ImVec2 position = ImGui::GetCursorScreenPos();
    const bool open = ImGui::TreeNodeEx("##Folder", flags);
    const ImVec2 rowMin = ImGui::GetItemRectMin();
@@ -66,11 +69,14 @@ void BeginPropertyRow(const std::string& label, float columnWidth, bool pushItem
    const float fontScale = ImGui::GetFontSize() / 13.0f;
    const float minimumInputWidth = ImGui::GetFrameHeight() * 3.0f;
    const bool columns = availableWidth >= minimumInputWidth * 2.0f;
+
    // 小幅のInspectorではラベルを上へ移し、固定ラベル幅が入力欄を押し出すことを防ぐ。
    ImGui::Columns(columns ? 2 : 1, nullptr, false);
-   if (columns) ImGui::SetColumnWidth(0, std::min(columnWidth * fontScale, availableWidth * 0.45f));
+   if (columns)
+      ImGui::SetColumnWidth(0, std::min(columnWidth * fontScale, availableWidth * 0.45f));
    DrawVisibleLabel(label);
-   if (columns) ImGui::NextColumn();
+   if (columns)
+      ImGui::NextColumn();
 
    if (pushItemWidth) {
       // 負の幅で第2列の残り領域を使い切り、呼び出し側ごとの幅計算を不要にする。
@@ -102,31 +108,25 @@ std::vector<char> MakeTextBuffer(const std::string& text, size_t bufferSize) {
 }
 
 bool DrawResetButton(const char* label, const ImVec2& buttonSize) {
-   ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.35f, 0.35f, 0.35f, 1.0f });
-   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.47f, 0.47f, 0.47f, 1.0f });
-   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f });
+   ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.35f, 0.35f, 0.35f, 1.0f});
+   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.47f, 0.47f, 0.47f, 1.0f});
+   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
    const bool clicked = ImGui::Button(label, buttonSize);
    ImGui::PopStyleColor(3);
    return clicked;
 }
 
-bool DrawVectorControl(
-   const std::string& label,
-   const VectorComponent* components,
-   int componentCount,
-   float columnWidth,
-   float speed,
-   float minValue,
-   float maxValue,
-   const char* format) {
+bool DrawVectorControl(const std::string& label, const VectorComponent* components, int componentCount,
+   float columnWidth, float speed, float minValue, float maxValue, const char* format) {
    bool valueChanged = false;
    BeginPropertyRow(label, columnWidth);
 
-   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0.0f, 0.0f });
+   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0.0f, 0.0f});
 
    const float lineHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2;
-   const ImVec2 buttonSize = { lineHeight, lineHeight };
+   const ImVec2 buttonSize = {lineHeight, lineHeight};
    const float availableWidth = ImGui::CalcItemWidth();
+
    // 成分を並べる余裕がなければ縦に並べ、入力の最小幅によるパネル外へのはみ出しを防ぐ。
    const bool inlineComponents = availableWidth >= componentCount * (buttonSize.x + ImGui::GetFontSize() * 3.0f);
    const int componentsPerRow = inlineComponents ? componentCount : 1;
@@ -196,12 +196,12 @@ const char* Localize(const LocalizedText& text) {
 
 const char* LanguageDisplayName(EditorLanguage language) {
    switch (language) {
-   case EditorLanguage::Japanese:
-      return "日本語";
-   case EditorLanguage::English:
-      return "English";
-   default:
-      return "";
+      case EditorLanguage::Japanese:
+         return "日本語";
+      case EditorLanguage::English:
+         return "English";
+      default:
+         return "";
    }
 }
 
@@ -214,17 +214,11 @@ float DegreesToRadians(float degrees) {
 }
 
 Vector3 RadiansToDegrees(const Vector3& radians) {
-   return Vector3(
-      RadiansToDegrees(radians.x),
-      RadiansToDegrees(radians.y),
-      RadiansToDegrees(radians.z));
+   return Vector3(RadiansToDegrees(radians.x), RadiansToDegrees(radians.y), RadiansToDegrees(radians.z));
 }
 
 Vector3 DegreesToRadians(const Vector3& degrees) {
-   return Vector3(
-      DegreesToRadians(degrees.x),
-      DegreesToRadians(degrees.y),
-      DegreesToRadians(degrees.z));
+   return Vector3(DegreesToRadians(degrees.x), DegreesToRadians(degrees.y), DegreesToRadians(degrees.z));
 }
 
 void HelpMarker(const char* desc) {
@@ -285,20 +279,14 @@ bool DrawCheckbox(const std::string& label, bool& value, float columnWidth) {
 }
 
 bool DrawIntControl(
-   const std::string& label,
-   int& value,
-   int resetValue,
-   float columnWidth,
-   float speed,
-   int minValue,
-   int maxValue) {
+   const std::string& label, int& value, int resetValue, float columnWidth, float speed, int minValue, int maxValue) {
    bool valueChanged = false;
    BeginPropertyRow(label, columnWidth);
 
-   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0.0f, 0.0f });
+   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0.0f, 0.0f});
 
    const float lineHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2.0f;
-   const ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
+   const ImVec2 buttonSize = {lineHeight + 3.0f, lineHeight};
 
    if (DrawResetButton("R", buttonSize)) {
       value = resetValue;
@@ -315,22 +303,15 @@ bool DrawIntControl(
    return valueChanged;
 }
 
-bool DrawFloatControl(
-   const std::string& label,
-   float& value,
-   float resetValue,
-   float columnWidth,
-   float speed,
-   float minValue,
-   float maxValue,
-   const char* format) {
+bool DrawFloatControl(const std::string& label, float& value, float resetValue, float columnWidth, float speed,
+   float minValue, float maxValue, const char* format) {
    bool valueChanged = false;
    BeginPropertyRow(label, columnWidth);
 
-   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0.0f, 0.0f });
+   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0.0f, 0.0f});
 
    const float lineHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2.0f;
-   const ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
+   const ImVec2 buttonSize = {lineHeight + 3.0f, lineHeight};
 
    if (DrawResetButton("R", buttonSize)) {
       value = resetValue;
@@ -348,38 +329,19 @@ bool DrawFloatControl(
 }
 
 bool DrawSliderFloat(
-   const std::string& label,
-   float& value,
-   float minValue,
-   float maxValue,
-   float columnWidth,
-   const char* format) {
+   const std::string& label, float& value, float minValue, float maxValue, float columnWidth, const char* format) {
    BeginPropertyRow(label, columnWidth);
    const bool changed = ImGui::SliderFloat("##Value", &value, minValue, maxValue, format);
    EndPropertyRow();
    return changed;
 }
 
-bool DrawRangeFloat(
-   const std::string& label,
-   float& minValue,
-   float& maxValue,
-   float limitMin,
-   float limitMax,
-   float columnWidth,
-   float speed,
-   const char* format) {
+bool DrawRangeFloat(const std::string& label, float& minValue, float& maxValue, float limitMin, float limitMax,
+   float columnWidth, float speed, const char* format) {
    BeginPropertyRow(label, columnWidth);
 
-   const bool changed = ImGui::DragFloatRange2(
-      "##Range",
-      &minValue,
-      &maxValue,
-      speed,
-      limitMin,
-      limitMax,
-      format,
-      format);
+   const bool changed =
+      ImGui::DragFloatRange2("##Range", &minValue, &maxValue, speed, limitMin, limitMax, format, format);
 
    if (minValue > maxValue) {
       // 数値入力で両端が交差しても、利用側へは常に昇順の範囲を返す。
@@ -390,80 +352,68 @@ bool DrawRangeFloat(
    return changed;
 }
 
-bool DrawVec2Control(
-   const std::string& label,
-   Vector2& values,
-   float resetValue,
-   float columnWidth,
-   float speed,
-   float minValue,
-   float maxValue,
-   const char* format) {
+bool DrawVec2Control(const std::string& label, Vector2& values, float resetValue, float columnWidth, float speed,
+   float minValue, float maxValue, const char* format) {
    const std::array<VectorComponent, 2> components = {
-      VectorComponent{ "X", &values.x, resetValue, { 0.80f, 0.12f, 0.16f, 1.0f }, { 0.93f, 0.23f, 0.24f, 1.0f }, { 0.65f, 0.08f, 0.12f, 1.0f } },
-      VectorComponent{ "Y", &values.y, resetValue, { 0.20f, 0.68f, 0.22f, 1.0f }, { 0.30f, 0.80f, 0.32f, 1.0f }, { 0.14f, 0.52f, 0.16f, 1.0f } }
-   };
+      VectorComponent{"X", &values.x, resetValue, {0.80f, 0.12f, 0.16f, 1.0f}, {0.93f, 0.23f, 0.24f, 1.0f},
+         {0.65f, 0.08f, 0.12f, 1.0f}},
+      VectorComponent{"Y", &values.y, resetValue, {0.20f, 0.68f, 0.22f, 1.0f}, {0.30f, 0.80f, 0.32f, 1.0f},
+         {0.14f, 0.52f, 0.16f, 1.0f}}};
 
-   return DrawVectorControl(label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
+   return DrawVectorControl(
+      label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
 }
 
-bool DrawVec3Control(
-   const std::string& label,
-   Vector3& values,
-   float resetValue,
-   float columnWidth,
-   float speed,
-   float minValue,
-   float maxValue,
-   const char* format) {
+bool DrawVec3Control(const std::string& label, Vector3& values, float resetValue, float columnWidth, float speed,
+   float minValue, float maxValue, const char* format) {
    const std::array<VectorComponent, 3> components = {
-      VectorComponent{ "X", &values.x, resetValue, { 0.80f, 0.12f, 0.16f, 1.0f }, { 0.93f, 0.23f, 0.24f, 1.0f }, { 0.65f, 0.08f, 0.12f, 1.0f } },
-      VectorComponent{ "Y", &values.y, resetValue, { 0.20f, 0.68f, 0.22f, 1.0f }, { 0.30f, 0.80f, 0.32f, 1.0f }, { 0.14f, 0.52f, 0.16f, 1.0f } },
-      VectorComponent{ "Z", &values.z, resetValue, { 0.12f, 0.28f, 0.82f, 1.0f }, { 0.22f, 0.40f, 0.95f, 1.0f }, { 0.08f, 0.20f, 0.68f, 1.0f } }
-   };
+      VectorComponent{"X", &values.x, resetValue, {0.80f, 0.12f, 0.16f, 1.0f}, {0.93f, 0.23f, 0.24f, 1.0f},
+         {0.65f, 0.08f, 0.12f, 1.0f}},
+      VectorComponent{"Y", &values.y, resetValue, {0.20f, 0.68f, 0.22f, 1.0f}, {0.30f, 0.80f, 0.32f, 1.0f},
+         {0.14f, 0.52f, 0.16f, 1.0f}},
+      VectorComponent{"Z", &values.z, resetValue, {0.12f, 0.28f, 0.82f, 1.0f}, {0.22f, 0.40f, 0.95f, 1.0f},
+         {0.08f, 0.20f, 0.68f, 1.0f}}};
 
-   return DrawVectorControl(label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
+   return DrawVectorControl(
+      label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
 }
 
-bool DrawVec4Control(
-   const std::string& label,
-   Vector4& values,
-   float resetValue,
-   float columnWidth,
-   float speed,
-   float minValue,
-   float maxValue,
-   const char* format) {
+bool DrawVec4Control(const std::string& label, Vector4& values, float resetValue, float columnWidth, float speed,
+   float minValue, float maxValue, const char* format) {
    const std::array<VectorComponent, 4> components = {
-      VectorComponent{ "X", &values.x, resetValue, { 0.80f, 0.12f, 0.16f, 1.0f }, { 0.93f, 0.23f, 0.24f, 1.0f }, { 0.65f, 0.08f, 0.12f, 1.0f } },
-      VectorComponent{ "Y", &values.y, resetValue, { 0.20f, 0.68f, 0.22f, 1.0f }, { 0.30f, 0.80f, 0.32f, 1.0f }, { 0.14f, 0.52f, 0.16f, 1.0f } },
-      VectorComponent{ "Z", &values.z, resetValue, { 0.12f, 0.28f, 0.82f, 1.0f }, { 0.22f, 0.40f, 0.95f, 1.0f }, { 0.08f, 0.20f, 0.68f, 1.0f } },
-      VectorComponent{ "W", &values.w, resetValue, { 0.72f, 0.58f, 0.12f, 1.0f }, { 0.86f, 0.70f, 0.18f, 1.0f }, { 0.58f, 0.45f, 0.08f, 1.0f } }
-   };
+      VectorComponent{"X", &values.x, resetValue, {0.80f, 0.12f, 0.16f, 1.0f}, {0.93f, 0.23f, 0.24f, 1.0f},
+         {0.65f, 0.08f, 0.12f, 1.0f}},
+      VectorComponent{"Y", &values.y, resetValue, {0.20f, 0.68f, 0.22f, 1.0f}, {0.30f, 0.80f, 0.32f, 1.0f},
+         {0.14f, 0.52f, 0.16f, 1.0f}},
+      VectorComponent{"Z", &values.z, resetValue, {0.12f, 0.28f, 0.82f, 1.0f}, {0.22f, 0.40f, 0.95f, 1.0f},
+         {0.08f, 0.20f, 0.68f, 1.0f}},
+      VectorComponent{"W", &values.w, resetValue, {0.72f, 0.58f, 0.12f, 1.0f}, {0.86f, 0.70f, 0.18f, 1.0f},
+         {0.58f, 0.45f, 0.08f, 1.0f}}};
 
-   return DrawVectorControl(label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
+   return DrawVectorControl(
+      label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
 }
 
 bool DrawQuaternionControl(
-   const std::string& label,
-   Quaternion& value,
-   float columnWidth,
-   float speed,
-   bool normalizeOnEdit) {
-   Vector4 components = { value.x, value.y, value.z, value.w };
+   const std::string& label, Quaternion& value, float columnWidth, float speed, bool normalizeOnEdit) {
+   Vector4 components = {value.x, value.y, value.z, value.w};
 
    const std::array<VectorComponent, 4> vectorComponents = {
-      VectorComponent{ "X", &components.x, 0.0f, { 0.80f, 0.12f, 0.16f, 1.0f }, { 0.93f, 0.23f, 0.24f, 1.0f }, { 0.65f, 0.08f, 0.12f, 1.0f } },
-      VectorComponent{ "Y", &components.y, 0.0f, { 0.20f, 0.68f, 0.22f, 1.0f }, { 0.30f, 0.80f, 0.32f, 1.0f }, { 0.14f, 0.52f, 0.16f, 1.0f } },
-      VectorComponent{ "Z", &components.z, 0.0f, { 0.12f, 0.28f, 0.82f, 1.0f }, { 0.22f, 0.40f, 0.95f, 1.0f }, { 0.08f, 0.20f, 0.68f, 1.0f } },
-      VectorComponent{ "W", &components.w, 1.0f, { 0.72f, 0.58f, 0.12f, 1.0f }, { 0.86f, 0.70f, 0.18f, 1.0f }, { 0.58f, 0.45f, 0.08f, 1.0f } }
-   };
+      VectorComponent{"X", &components.x, 0.0f, {0.80f, 0.12f, 0.16f, 1.0f}, {0.93f, 0.23f, 0.24f, 1.0f},
+         {0.65f, 0.08f, 0.12f, 1.0f}},
+      VectorComponent{"Y", &components.y, 0.0f, {0.20f, 0.68f, 0.22f, 1.0f}, {0.30f, 0.80f, 0.32f, 1.0f},
+         {0.14f, 0.52f, 0.16f, 1.0f}},
+      VectorComponent{"Z", &components.z, 0.0f, {0.12f, 0.28f, 0.82f, 1.0f}, {0.22f, 0.40f, 0.95f, 1.0f},
+         {0.08f, 0.20f, 0.68f, 1.0f}},
+      VectorComponent{"W", &components.w, 1.0f, {0.72f, 0.58f, 0.12f, 1.0f}, {0.86f, 0.70f, 0.18f, 1.0f},
+         {0.58f, 0.45f, 0.08f, 1.0f}}};
 
-   if (!DrawVectorControl(label, vectorComponents.data(), static_cast<int>(vectorComponents.size()), columnWidth, speed, 0.0f, 0.0f, "%.3f")) {
+   if (!DrawVectorControl(label, vectorComponents.data(), static_cast<int>(vectorComponents.size()), columnWidth, speed,
+          0.0f, 0.0f, "%.3f")) {
       return false;
    }
 
-   value = Quaternion{ components.x, components.y, components.z, components.w };
+   value = Quaternion{components.x, components.y, components.z, components.w};
    if (normalizeOnEdit) {
       // 回転用途では単位長を維持し、編集値による拡縮成分の混入を防ぐ。
       value = value.Normalize();
@@ -472,15 +422,8 @@ bool DrawQuaternionControl(
    return true;
 }
 
-bool DrawEulerDegreesControl(
-   const std::string& label,
-   Vector3& eulerRadians,
-   float resetDegrees,
-   float columnWidth,
-   float speedDegrees,
-   float minDegrees,
-   float maxDegrees,
-   const char* format) {
+bool DrawEulerDegreesControl(const std::string& label, Vector3& eulerRadians, float resetDegrees, float columnWidth,
+   float speedDegrees, float minDegrees, float maxDegrees, const char* format) {
    // エンジン内部のラジアンを一時的に度へ変換し、編集が確定した場合だけ書き戻す。
    Vector3 eulerDegrees = RadiansToDegrees(eulerRadians);
 
@@ -492,14 +435,8 @@ bool DrawEulerDegreesControl(
    return true;
 }
 
-bool DrawQuaternionAsEulerDegrees(
-   const std::string& label,
-   Quaternion& value,
-   float columnWidth,
-   float speedDegrees,
-   float minDegrees,
-   float maxDegrees,
-   const char* format) {
+bool DrawQuaternionAsEulerDegrees(const std::string& label, Quaternion& value, float columnWidth, float speedDegrees,
+   float minDegrees, float maxDegrees, const char* format) {
    Vector3 eulerRadians = value.ToEuler();
 
    if (!DrawEulerDegreesControl(label, eulerRadians, 0.0f, columnWidth, speedDegrees, minDegrees, maxDegrees, format)) {
@@ -510,23 +447,21 @@ bool DrawQuaternionAsEulerDegrees(
    return true;
 }
 
-bool DrawTransformControl(
-   const std::string& label,
-   Transform& transform,
-   float columnWidth,
-   bool rotationInDegrees) {
+bool DrawTransformControl(const std::string& label, Transform& transform, float columnWidth, bool rotationInDegrees) {
    if (!BeginSection(label, true)) {
       return false;
    }
 
    bool changed = false;
-   changed |= DrawVec3Control(Localize({ "位置", "Position" }), transform.translation, 0.0f, columnWidth, 0.05f);
+   changed |= DrawVec3Control(Localize({"位置", "Position"}), transform.translation, 0.0f, columnWidth, 0.05f);
 
    Vector3 euler = transform.GetActiveEuler();
+
    // Transformがどちらの回転表現を保持していても、現在有効な姿勢を編集開始値にする。
-   const bool rotationChanged = rotationInDegrees
-      ? DrawEulerDegreesControl(Localize({ "回転 (deg)", "Rotation (deg)" }), euler, 0.0f, columnWidth, 0.1f)
-      : DrawVec3Control(Localize({ "回転 (rad)", "Rotation (rad)" }), euler, 0.0f, columnWidth, 0.01f);
+   const bool rotationChanged =
+      rotationInDegrees
+         ? DrawEulerDegreesControl(Localize({"回転 (deg)", "Rotation (deg)"}), euler, 0.0f, columnWidth, 0.1f)
+         : DrawVec3Control(Localize({"回転 (rad)", "Rotation (rad)"}), euler, 0.0f, columnWidth, 0.01f);
 
    if (rotationChanged) {
       // 編集後はQuaternionへ統一してジンバル角の累積加算を避ける。
@@ -534,7 +469,8 @@ bool DrawTransformControl(
       changed = true;
    }
 
-   changed |= DrawVec3Control(Localize({ "スケール", "Scale" }), transform.scale, 1.0f, columnWidth, 0.01f, 0.001f, 1000.0f);
+   changed |=
+      DrawVec3Control(Localize({"スケール", "Scale"}), transform.scale, 1.0f, columnWidth, 0.01f, 0.001f, 1000.0f);
 
    EndSection();
    return changed;
@@ -565,11 +501,7 @@ bool DrawInputString(const std::string& label, std::string& text, size_t bufferS
 }
 
 bool DrawMultilineText(
-   const std::string& label,
-   std::string& text,
-   size_t bufferSize,
-   float columnWidth,
-   float height) {
+   const std::string& label, std::string& text, size_t bufferSize, float columnWidth, float height) {
    BeginPropertyRow(label, columnWidth);
    std::vector<char> buffer = MakeTextBuffer(text, bufferSize);
    const bool changed = ImGui::InputTextMultiline("##Value", buffer.data(), buffer.size(), ImVec2(-FLT_MIN, height));
@@ -601,7 +533,7 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<co
    if (items.empty()) {
       // 選択肢消失時は古いインデックスを無効化し、再追加時の範囲外参照を防ぐ。
       currentIndex = -1;
-      ImGui::TextDisabled("%s", Localize({ "項目なし", "No items" }));
+      ImGui::TextDisabled("%s", Localize({"項目なし", "No items"}));
       EndPropertyRow();
       return false;
    }
@@ -638,9 +570,7 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<co
 bool DrawLanguageCombo(const std::string& label, EditorLanguage& language, float columnWidth) {
    int currentIndex = language == EditorLanguage::Japanese ? 0 : 1;
    const std::vector<const char*> items = {
-      LanguageDisplayName(EditorLanguage::Japanese),
-      LanguageDisplayName(EditorLanguage::English)
-   };
+      LanguageDisplayName(EditorLanguage::Japanese), LanguageDisplayName(EditorLanguage::English)};
 
    if (!DrawCombo(label, currentIndex, items, columnWidth)) {
       return false;
@@ -689,7 +619,7 @@ bool DrawReadOnlyText(const std::string& label, const std::string& text, float c
    BeginPropertyRow(label, columnWidth, false);
 
    if (text.empty()) {
-      ImGui::TextDisabled("%s", Localize({ "なし", "None" }));
+      ImGui::TextDisabled("%s", Localize({"なし", "None"}));
    } else {
       ImGui::TextWrapped("%s", text.c_str());
    }
@@ -699,21 +629,19 @@ bool DrawReadOnlyText(const std::string& label, const std::string& text, float c
 }
 
 bool DrawPathControl(
-   const std::string& label,
-   std::string& path,
-   size_t bufferSize,
-   float columnWidth,
-   bool showClearButton) {
+   const std::string& label, std::string& path, size_t bufferSize, float columnWidth, bool showClearButton) {
    BeginPropertyRow(label, columnWidth, false);
 
    bool changed = false;
    std::vector<char> buffer = MakeTextBuffer(path, bufferSize);
 
    if (showClearButton) {
-      const char* clearLabel = Localize({ "クリア", "Clear" });
+      const char* clearLabel = Localize({"クリア", "Clear"});
       const float buttonWidth = ImGui::CalcTextSize(clearLabel).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+
       // クリアボタン分を先に確保し、残りを入力欄へ割り当てて狭いInspectorでも両方を保つ。
-      const float inputWidth = std::max(48.0f, ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
+      const float inputWidth =
+         std::max(48.0f, ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
 
       ImGui::PushItemWidth(inputWidth);
       if (ImGui::InputText("##Path", buffer.data(), buffer.size())) {

@@ -14,40 +14,44 @@ namespace App {
 Vector3 ScreenSpaceBasis::ProjectOnPlane(const Vector3& v, const Vector3& normal) {
    Vector3 proj = v - normal * v.Dot(normal);
    float len = proj.Length();
-   return len > 1e-4f ? proj * (1.0f / len) : Vector3{ 0.0f, 0.0f, 0.0f };
+   return len > 1e-4f ? proj * (1.0f / len) : Vector3{0.0f, 0.0f, 0.0f};
 }
 
 void ScreenSpaceBasis::UpdateBasis(const Vector3& gravityUp) {
    // 既定軸（参照なし時のフォールバック）
-   Vector3 screenUp    = { 0.0f, 1.0f, 0.0f };
-   Vector3 screenRight = { 1.0f, 0.0f, 0.0f };
+   Vector3 screenUp = {0.0f, 1.0f, 0.0f};
+   Vector3 screenRight = {1.0f, 0.0f, 0.0f};
 
    // 利用可能なカメラ情報を優先順位で取得
    if (gravityFollowCamera_) {
-      screenUp    = gravityFollowCamera_->GetCameraUp();
+      screenUp = gravityFollowCamera_->GetCameraUp();
       screenRight = gravityFollowCamera_->GetCameraRight();
    } else if (planetLeashCamera_) {
-      screenUp    = planetLeashCamera_->GetCameraUp();
+      screenUp = planetLeashCamera_->GetCameraUp();
       screenRight = planetLeashCamera_->GetCameraRight();
    } else if (orbitalBody_) {
-      screenUp    = orbitalBody_->GetCameraUp();
+      screenUp = orbitalBody_->GetCameraUp();
       screenRight = orbitalBody_->GetCameraRight();
    } else if (camera_) {
       Quaternion q = camera_->GetQuaternion();
-      screenUp    = RotateVector({ 0.0f, 1.0f, 0.0f }, q);
-      screenRight = RotateVector({ 1.0f, 0.0f, 0.0f }, q);
+      screenUp = RotateVector({0.0f, 1.0f, 0.0f}, q);
+      screenRight = RotateVector({1.0f, 0.0f, 0.0f}, q);
    } else if (auto* active = EngineContext::GetActiveCamera()) {
       Quaternion q = active->GetQuaternion();
-      screenUp    = RotateVector({ 0.0f, 1.0f, 0.0f }, q);
-      screenRight = RotateVector({ 1.0f, 0.0f, 0.0f }, q);
+      screenUp = RotateVector({0.0f, 1.0f, 0.0f}, q);
+      screenRight = RotateVector({1.0f, 0.0f, 0.0f}, q);
    }
 
    // 重力平面へ投影した移動基底を更新
-   Vector3 fProj = ProjectOnPlane(screenUp,    gravityUp);
+   Vector3 fProj = ProjectOnPlane(screenUp, gravityUp);
    Vector3 rProj = ProjectOnPlane(screenRight, gravityUp);
 
-   if (fProj.LengthSquared() > 1e-6f) { cachedForward_ = fProj; }
-   if (rProj.LengthSquared() > 1e-6f) { cachedRight_   = rProj; }
+   if (fProj.LengthSquared() > 1e-6f) {
+      cachedForward_ = fProj;
+   }
+   if (rProj.LengthSquared() > 1e-6f) {
+      cachedRight_ = rProj;
+   }
 }
 
 Vector3 ScreenSpaceBasis::GetForwardBasis(const Vector3& gravityUp) const {
@@ -70,8 +74,10 @@ void ScreenSpaceBasis::DrawInspector() {
       return;
    }
    ImGui::Separator();
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("投影前方", "Projected Forward"), cachedForward_.x, cachedForward_.y, cachedForward_.z);
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("投影右方向", "Projected Right"), cachedRight_.x,   cachedRight_.y,   cachedRight_.z);
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("投影前方", "Projected Forward"), cachedForward_.x, cachedForward_.y,
+      cachedForward_.z);
+   ImGui::Text(
+      "%s: (%.2f, %.2f, %.2f)", Tr("投影右方向", "Projected Right"), cachedRight_.x, cachedRight_.y, cachedRight_.z);
 }
 #endif
 

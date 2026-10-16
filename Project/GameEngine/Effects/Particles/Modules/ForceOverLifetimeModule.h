@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Effects/Particles/Modules/ParticleModule.h"
 #include "GameEngine/Effects/Particles/Modules/MainModule.h"
 #include "GameEngine/Math/VectorMath.h"
@@ -18,6 +19,7 @@ public:
 
    /// @brief パーティクルに力を適用
    void ApplyForce(Particle& particle) const;
+
    /// @brief シミュレーション空間を考慮して力を適用する
    void ApplyForce(Particle& particle, const Transform& simulationTransform, bool useLocalSimulation) const;
 
@@ -26,14 +28,18 @@ public:
    /// @param deltaTime シミュレーションのデルタタイム
    /// @param simulationTransform ローカル空間の基準トランスフォーム
    /// @param useLocalSimulation ローカル空間として解釈するか
-   void ApplyForce(Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const;
+   void ApplyForce(
+      Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const;
 
    /// @brief 加える力を固定値で設定する
    void SetForce(const Vector3& force) { force_ = RandomVector3(force, force, false); }
+
    /// @brief 加える力の代表値を取得する
    const Vector3& GetForce() const { return force_.Minimum(); }
+
    /// @brief 加える力を乱数範囲で設定する
    void SetForceRange(const RandomVector3& force) { force_ = force; }
+
    /// @brief 加える力の乱数範囲を取得する
    const RandomVector3& GetForceRange() const { return force_; }
 
@@ -83,19 +89,21 @@ public:
 
    /// @copydoc ParticleModule::ToJson
    nlohmann::json ToJson() const override;
+
    /// @copydoc ParticleModule::FromJson
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
+
    /// @copydoc ParticleModule::DrawInspector
    void DrawInspector() override;
 #endif
 
 private:
-   RandomVector3 force_{ Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false };
-   RandomFloat drag_{ 0.0f, 0.0f, false };
+   RandomVector3 force_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false};
+   RandomFloat drag_{0.0f, 0.0f, false};
    bool attractorEnabled_ = false;
-   Vector3 attractorPosition_{ 0.0f, 0.0f, 0.0f };
+   Vector3 attractorPosition_{0.0f, 0.0f, 0.0f};
    float attractorStrength_ = 0.0f;
    float attractorRadius_ = 0.0f;
    float attractorFalloff_ = 1.0f;

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxcapi.h>
 #include <dxgi1_6.h>
@@ -10,6 +11,7 @@ using namespace Microsoft::WRL;
 
 namespace GameEngine {
 namespace ResourceHelper {
+
 /// @brief バッファリソースを作成する
 /// @param device デバイス
 /// @param sizeInBytes バッファのサイズ（バイト単位）
@@ -35,6 +37,7 @@ ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(ID3D12Device* device, i
 /// @param device デバイス
 /// @param commandList コマンドリスト
 /// @return アップロードされたテクスチャリソース
-[[nodiscard]] ComPtr<ID3D12Resource> UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages, ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+[[nodiscard]] ComPtr<ID3D12Resource> UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages,
+   ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 }
 }

@@ -8,14 +8,16 @@ using namespace RearCameraMath;
 
 void RearCameraPositionSolver::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    auto* camera = GetRearCamera();
-   if (!camera) return;
+   if (!camera)
+      return;
    const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
    const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
    const auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
    const auto& speed = *GetOwnerCamera()->GetComponent<RearCameraSpeedEffects>();
    const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
-   state.transform.translation = Update(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), direction.GetState(),
-      speed.GetState(), aim.GetState(), state, gravity.GetState().currentGravityUp, speed.GetBoostAlpha(), deltaTime);
+   state.transform.translation = Update(camera->GetInput(), camera->DescribeSettings(), transition.GetState(),
+      direction.GetState(), speed.GetState(), aim.GetState(), state, gravity.GetState().currentGravityUp,
+      speed.GetBoostAlpha(), deltaTime);
 }
 
 /// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
@@ -25,20 +27,14 @@ void RearCameraPositionSolver::MutateCameraState(GameEngine::CameraState& state,
 ///          空中では currentAirborneBlend に応じてさらに後退し、周囲を広く映す。
 /// @param up カメラ位置の高さ方向
 /// @param boostAlpha 加速度合い [0,1]
-GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(
-   const RearCameraInput& input,
-   const RearCameraSettings& settings,
-   const RearCameraTransitionState& transition,
-   const RearCameraDirectionState& direction,
-   const RearCameraSpeedState& speed,
-   const GameEngine::Vector3& up,
+GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(const RearCameraInput& input,
+   const RearCameraSettings& settings, const RearCameraTransitionState& transition,
+   const RearCameraDirectionState& direction, const RearCameraSpeedState& speed, const GameEngine::Vector3& up,
    float boostAlpha) const {
    // 加速と空中状態の後退量を合成する。
-   float boostedDistance =
-	  settings.distance * input.driftDistanceScale
-	  + settings.distanceBoostMax * boostAlpha
-	  + speed.springDistanceOffset
-	  + settings.airborneDistanceOffset * transition.currentAirborneBlend;
+   float boostedDistance = settings.distance * input.driftDistanceScale + settings.distanceBoostMax * boostAlpha +
+                           speed.springDistanceOffset +
+                           settings.airborneDistanceOffset * transition.currentAirborneBlend;
 
    // 高さを後方ベクトルへそのまま加えると、上昇中に backward と Up が逆向きになった場面で
    // settings.distance と settings.height が相殺し、カメラがプレイヤーへ急接近する。
@@ -47,18 +43,15 @@ GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(
    GameEngine::Vector3 orthogonalUp = up - safeBackward * up.Dot(safeBackward);
    float safeRearDistance = std::max(0.0f, boostedDistance);
    GameEngine::Vector3 eyeOffset =
-	  safeBackward * safeRearDistance
-	  + orthogonalUp * (settings.height + input.driftCameraHeightOffset);
+      safeBackward * safeRearDistance + orthogonalUp * (settings.height + input.driftCameraHeightOffset);
 
    // ドリフト中は縮めた基準距離を下限にし、接近演出を通常距離のクランプで打ち消さない。
    float minimumEyeDistance = std::max(1.0f, settings.distance * input.driftDistanceScale);
    float eyeOffsetLength = eyeOffset.Length();
    if (eyeOffsetLength < minimumEyeDistance) {
-	  GameEngine::Vector3 fallbackDirection =
-		 eyeOffsetLength > 1e-4f
-		 ? eyeOffset * (1.0f / eyeOffsetLength)
-		 : safeBackward;
-	  eyeOffset = fallbackDirection * minimumEyeDistance;
+      GameEngine::Vector3 fallbackDirection =
+         eyeOffsetLength > 1e-4f ? eyeOffset * (1.0f / eyeOffsetLength) : safeBackward;
+      eyeOffset = fallbackDirection * minimumEyeDistance;
    }
    GameEngine::Vector3 eye = input.pivotTarget + eyeOffset;
 
@@ -66,11 +59,11 @@ GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(
    // 最低高さだけをブレンドすると負の外向き高さを一度に打ち消すため、補正量全体をブレンドする。
    const float landingBlend = std::clamp(transition.currentPreLandingBlend, 0.0f, 1.0f);
    if (input.isAirborne && landingBlend > 0.0f) {
-	  const GameEngine::Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, up);
-	  const float minimumOutwardHeight = std::max(0.0f, settings.preLandingMinOutwardHeight);
-	  const float outwardHeight = (eye - input.pivotTarget).Dot(landingUp);
-	  const float correction = std::max(0.0f, minimumOutwardHeight - outwardHeight) * landingBlend;
-	  eye += landingUp * correction;
+      const GameEngine::Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, up);
+      const float minimumOutwardHeight = std::max(0.0f, settings.preLandingMinOutwardHeight);
+      const float outwardHeight = (eye - input.pivotTarget).Dot(landingUp);
+      const float correction = std::max(0.0f, minimumOutwardHeight - outwardHeight) * landingBlend;
+      eye += landingUp * correction;
    }
 
    return eye;
@@ -87,25 +80,20 @@ GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(
 ///          ここでは通常の方向変化へ遅延を足さず、急変時だけ最大角速度を制限する。
 ///          ピボット相対距離は指数平滑で目標へ近づける。
 ///          補間後はUp方向の高さ下限を適用し、カメラが基準面より下へ沈みすぎることを防ぐ。
-GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(
-   const RearCameraInput& input,
-   const RearCameraSettings& settings,
-   const RearCameraTransitionState& transition,
-   const RearCameraAimState& aim,
-   const GameEngine::Vector3& targetEye,
-   const GameEngine::Vector3& up,
-   float deltaTime) {
+GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(const RearCameraInput& input,
+   const RearCameraSettings& settings, const RearCameraTransitionState& transition, const RearCameraAimState& aim,
+   const GameEngine::Vector3& targetEye, const GameEngine::Vector3& up, float deltaTime) {
    using namespace GameEngine;
 
    // ピボットから見た理想オフセット
    Vector3 targetOffset = targetEye - input.pivotTarget;
-   Vector3 safeUp = NormalizeOrFallback(up, { 0.0f, 1.0f, 0.0f });
+   Vector3 safeUp = NormalizeOrFallback(up, {0.0f, 1.0f, 0.0f});
 
    if (!state_.isEyeInitialized) {
-	  // 初回はスナップ（補間履歴なし）
-	  state_.currentEyeOffset = targetOffset;
-	  state_.isEyeInitialized = true;
-	  return input.pivotTarget + state_.currentEyeOffset;
+      // 初回はスナップ（補間履歴なし）
+      state_.currentEyeOffset = targetOffset;
+      state_.isEyeInitialized = true;
+      return input.pivotTarget + state_.currentEyeOffset;
    }
 
    // ピボット相対オフセットの距離を補間する。
@@ -115,21 +103,17 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(
    float targetLength = targetOffset.Length();
    float smoothedLength = currentLength + (targetLength - currentLength) * t;
    smoothedLength = std::max(smoothedLength, std::max(1.0f, settings.distance * input.driftDistanceScale));
-   Vector3 currentDir =
-	  currentLength > 1e-4f
-	  ? state_.currentEyeOffset * (1.0f / currentLength)
-	  : safeUp;
+   Vector3 currentDir = currentLength > 1e-4f ? state_.currentEyeOffset * (1.0f / currentLength) : safeUp;
    Vector3 targetDir = targetLength > 1e-4f ? targetOffset * (1.0f / targetLength) : safeUp;
 
    // 低いジャンプでは空中後方と着地後方が短時間に往復する。
    // targetDirを即採用すると最終eye位置だけが大きく旋回するため、通常の小さな変化はそのまま通し、
    // 1フレームの方向変化が上限を超える場合だけ角速度を制限する。
    float targetAngle = std::acos(std::clamp(currentDir.Dot(targetDir), -1.0f, 1.0f));
-   float maxAngularDelta =
-	  std::max(0.0f, settings.eyeDirectionMaxAngularSpeed) * std::max(0.0f, deltaTime);
+   float maxAngularDelta = std::max(0.0f, settings.eyeDirectionMaxAngularSpeed) * std::max(0.0f, deltaTime);
    Vector3 outputDir = targetAngle <= maxAngularDelta
-	  ? targetDir
-	  : RotateTowardsUnit(currentDir, targetDir, maxAngularDelta, aim.cachedRight);
+                          ? targetDir
+                          : RotateTowardsUnit(currentDir, targetDir, maxAngularDelta, aim.cachedRight);
    state_.currentEyeOffset = outputDir * smoothedLength;
 
    // 現在の settings.height をそのまま扱い、一定以下にならないように制限をかける
@@ -141,22 +125,22 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(
 
    // currentHeight が制限値を下回っていたら押し上げる
    if (currentHeight < minHeightLimit) {
-	  // 足りない高さの分だけ、Up方向へ加算する
-	  state_.currentEyeOffset += safeUp * (minHeightLimit - currentHeight);
+      // 足りない高さの分だけ、Up方向へ加算する
+      state_.currentEyeOffset += safeUp * (minHeightLimit - currentHeight);
       heightCorrected = true;
    }
 
    // 補間後の高さ補正も補正量全体をブレンドし、予測開始時の急な押し出しを避ける。
    const float landingBlend = std::clamp(transition.currentPreLandingBlend, 0.0f, 1.0f);
    if (input.isAirborne && landingBlend > 0.0f) {
-	  const Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, safeUp);
-	  const float minimumOutwardHeight = std::max(0.0f, settings.preLandingMinOutwardHeight);
-	  const float outwardHeight = state_.currentEyeOffset.Dot(landingUp);
-	  const float correction = std::max(0.0f, minimumOutwardHeight - outwardHeight) * landingBlend;
-	  if (correction > 0.0f) {
-		 state_.currentEyeOffset += landingUp * correction;
+      const Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, safeUp);
+      const float minimumOutwardHeight = std::max(0.0f, settings.preLandingMinOutwardHeight);
+      const float outwardHeight = state_.currentEyeOffset.Dot(landingUp);
+      const float correction = std::max(0.0f, minimumOutwardHeight - outwardHeight) * landingBlend;
+      if (correction > 0.0f) {
+         state_.currentEyeOffset += landingUp * correction;
          heightCorrected = true;
-	  }
+      }
    }
 
    if (heightCorrected) {
@@ -174,8 +158,8 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(
       // 距離と連続回転を優先して安全側の候補へ戻す（途中の高さは即時に強制しない）。
       const float correctedAngle = std::acos(std::clamp(currentDir.Dot(correctedDirection), -1.0f, 1.0f));
       if (correctedAngle > maxAngularDelta + 1e-5f) {
-         state_.currentEyeOffset = RotateTowardsUnit(currentDir, correctedDirection, maxAngularDelta, aim.cachedRight)
-            * std::max(smoothedLength, correctedLength);
+         state_.currentEyeOffset = RotateTowardsUnit(currentDir, correctedDirection, maxAngularDelta, aim.cachedRight) *
+                                   std::max(smoothedLength, correctedLength);
       }
    }
 
@@ -183,17 +167,10 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(
    return input.pivotTarget + state_.currentEyeOffset;
 }
 
-GameEngine::Vector3 RearCameraPositionSolver::Update(
-   const RearCameraInput& input,
-   const RearCameraSettings& settings,
-   const RearCameraTransitionState& transition,
-   const RearCameraDirectionState& direction,
-   const RearCameraSpeedState& speed,
-   const RearCameraAimState& aim,
-   GameEngine::CameraState& state,
-   const GameEngine::Vector3& up,
-   float boostAlpha,
-   float deltaTime) {
+GameEngine::Vector3 RearCameraPositionSolver::Update(const RearCameraInput& input, const RearCameraSettings& settings,
+   const RearCameraTransitionState& transition, const RearCameraDirectionState& direction,
+   const RearCameraSpeedState& speed, const RearCameraAimState& aim, GameEngine::CameraState& state,
+   const GameEngine::Vector3& up, float boostAlpha, float deltaTime) {
    // ⑦ 加速ブーストと空中距離を加味した eye 位置を算出する
    //    → 加速中はカメラが後退して視野が広がり、速度感が増す
    GameEngine::Vector3 eye = ComputeEye(input, settings, transition, direction, speed, up, boostAlpha);
@@ -201,19 +178,19 @@ GameEngine::Vector3 RearCameraPositionSolver::Update(
    // ⑧ 初回はシーンに保存された配置を追従補間の始点にする。
    //    ここで理想位置へスナップすると、カウントダウン開始時点で編集時の配置からずれる。
    if (!state_.isEyeInitialized) {
-	  state_.currentEyeOffset = state.transform.translation - input.pivotTarget;
-	  state_.isEyeInitialized = true;
-	  eye = state.transform.translation;
+      state_.currentEyeOffset = state.transform.translation - input.pivotTarget;
+      state_.isEyeInitialized = true;
+      eye = state.transform.translation;
    } else {
-	  // ピボット相対距離を補間し、方向は急変時だけ最大角速度を制限する。
-	  eye = SmoothEye(input, settings, transition, aim, eye, up, deltaTime);
+      // ピボット相対距離を補間し、方向は急変時だけ最大角速度を制限する。
+      eye = SmoothEye(input, settings, transition, aim, eye, up, deltaTime);
    }
 
    return eye;
 }
 
 void RearCameraPositionSolver::Reset(const RearCameraSettings& settings) {
-   state_.currentEyeOffset = { 0.0f, settings.height, -settings.distance };
+   state_.currentEyeOffset = {0.0f, settings.height, -settings.distance};
    state_.isEyeInitialized = false;
 }
 

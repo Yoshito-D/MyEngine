@@ -68,9 +68,7 @@ public:
    /// @param defaultPath 既定アクション設定
    /// @param overridePath ユーザー上書き設定
    void Initialize(
-      IInputBackend& backend,
-      const std::filesystem::path& defaultPath,
-      const std::filesystem::path& overridePath);
+      IInputBackend& backend, const std::filesystem::path& defaultPath, const std::filesystem::path& overridePath);
 
    /// @brief 入力アクションを1フレーム進める
    void Update();
@@ -81,9 +79,7 @@ public:
    /// @param playerSlot プレイヤースロット
    /// @return 見つからない場合はゼロ状態
    const InputActionState& GetActionState(
-      const std::string& actionMap,
-      const std::string& actionId,
-      uint32_t playerSlot = 0) const;
+      const std::string& actionMap, const std::string& actionId, uint32_t playerSlot = 0) const;
 
    /// @brief 入力再割り当ての待受を開始する
    /// @return アクションが存在する場合はtrue
@@ -92,12 +88,8 @@ public:
    /// @brief 指定アクションへバインドを適用する
    /// @details 物理入力の競合は同一アクションマップ内でのみ検出・置換する。
    /// @return 競合がないか置換が許可された場合はtrue
-   bool ApplyBinding(
-      const std::string& actionMap,
-      const std::string& actionId,
-      size_t bindingIndex,
-      const InputBinding& binding,
-      bool replaceConflict);
+   bool ApplyBinding(const std::string& actionMap, const std::string& actionId, size_t bindingIndex,
+      const InputBinding& binding, bool replaceConflict);
 
    /// @brief ユーザー上書き設定を読み込む
    /// @return ファイル全体が正常だった場合はtrue
@@ -111,6 +103,7 @@ public:
    void ResetToDefaults();
 
 #ifdef USE_IMGUI
+
    /// @brief 入力設定パネルを描画する
    void DrawImGui();
 #endif
@@ -148,10 +141,7 @@ private:
    ActionDefinition* FindAction(const std::string& actionMap, const std::string& actionId);
    const ActionDefinition* FindAction(const std::string& actionMap, const std::string& actionId) const;
    bool BeginRebindPart(
-      const std::string& actionMap,
-      const std::string& actionId,
-      size_t bindingIndex,
-      RebindPart part);
+      const std::string& actionMap, const std::string& actionId, size_t bindingIndex, RebindPart part);
    Vector2 EvaluateBinding(const InputBinding& binding, uint32_t playerSlot, float deadZone) const;
    static std::string MakeKey(const std::string& actionMap, const std::string& actionId);
 

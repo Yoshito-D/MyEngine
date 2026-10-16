@@ -14,7 +14,8 @@ namespace App {
 class VehicleLandingAligner final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleLandingAligner";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両着地姿勢合わせ", "Vehicle Landing Aligner" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両着地姿勢合わせ", "Vehicle Landing Aligner"};
+
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
@@ -24,19 +25,20 @@ public:
    /// @brief 着地補正を開始する
    /// @param startRot  着地した瞬間の回転
    /// @param targetRot gravityUp に合わせた目標回転
-   void BeginAlign(const GameEngine::Quaternion& startRot,
-				   const GameEngine::Quaternion& targetRot);
+   void BeginAlign(const GameEngine::Quaternion& startRot, const GameEngine::Quaternion& targetRot);
 
    /// @brief 補正中かどうかを返す
    bool IsAligning() const { return alignTimer_ > 0.0f; }
 
 #ifdef USE_IMGUI
+
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
    /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
@@ -52,8 +54,8 @@ private:
    void ApplyBlendedRotation(const GameEngine::Quaternion& blended);
 
    float alignTimer_ = 0.0f;
-   GameEngine::Quaternion alignStart_  = { 0.0f, 0.0f, 0.0f, 1.0f };
-   GameEngine::Quaternion alignTarget_ = { 0.0f, 0.0f, 0.0f, 1.0f };
+   GameEngine::Quaternion alignStart_ = {0.0f, 0.0f, 0.0f, 1.0f};
+   GameEngine::Quaternion alignTarget_ = {0.0f, 0.0f, 0.0f, 1.0f};
 };
 
 } // namespace App

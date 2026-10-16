@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <unordered_map>
 #include <memory>
@@ -21,7 +22,7 @@ public:
 
    /// @brief モデルをロード
    /// @param modelPath モデルのパス
-   /// @param modelName モデルの名前	
+   /// @param modelName モデルの名前
    ModelHandle LoadModel(const std::string& modelPath, const std::string& modelName);
 
    /// @brief resources からの相対 assetId でモデルをロード
@@ -42,10 +43,12 @@ public:
 
    /// @brief 読み込み済みモデル名一覧を取得
    std::vector<std::string> GetModelNames() const;
+
 private:
    static std::string BuildAssetId(const std::string& modelPath, const std::string& modelName);
    void RegisterGltfAnimation(const std::string& modelPath, const std::string& modelName);
-   ModelHandle LoadModelInternal(const std::string& modelPath, const std::string& modelName, const std::string& assetId);
+   ModelHandle LoadModelInternal(
+      const std::string& modelPath, const std::string& modelName, const std::string& assetId);
 
    GraphicsDevice* device_ = nullptr;
    AnimationAssetManager* animationAssetManager_ = nullptr;

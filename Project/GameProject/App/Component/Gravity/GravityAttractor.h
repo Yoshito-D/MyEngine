@@ -21,7 +21,6 @@ public:
    /// @brief GravityBody に重力方向と加速度を適用する
    /// @return 有効かつ影響範囲内で、正常な重力方向を適用できた場合は true
    bool ApplyTo(GravityBody& gravityBody, const GameEngine::Vector3& objectPosition) const;
-
 };
 
 } // namespace App

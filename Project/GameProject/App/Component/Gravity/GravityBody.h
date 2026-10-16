@@ -11,7 +11,7 @@ class GravityBody final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "GravityBody";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "重力ボディ", "Gravity Body" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"重力ボディ", "Gravity Body"};
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
@@ -36,8 +36,8 @@ public:
    /// @param velocity 予測開始時の速度
    /// @param surfaceUp 候補地表の単位法線
    /// @param deltaTime 予測する時間（秒）
-   GameEngine::Vector3 PredictVelocity(const GameEngine::Vector3& velocity,
-      const GameEngine::Vector3& surfaceUp, float deltaTime) const;
+   GameEngine::Vector3 PredictVelocity(
+      const GameEngine::Vector3& velocity, const GameEngine::Vector3& surfaceUp, float deltaTime) const;
 
    /// @brief 現在速度を取得する
    GameEngine::Vector3 GetVelocity() const { return velocity_; }
@@ -49,8 +49,7 @@ public:
    /// @brief 重力法線方向の速度を保ちながら、地表に沿った移動速度を適用する
    /// @param surfaceVelocity 地表に沿った速度ベクトル
    /// @param surfaceUp 地表の単位法線
-   void ApplySurfaceVelocity(const GameEngine::Vector3& surfaceVelocity,
-      const GameEngine::Vector3& surfaceUp);
+   void ApplySurfaceVelocity(const GameEngine::Vector3& surfaceVelocity, const GameEngine::Vector3& surfaceUp);
 
    /// @brief 現在Upに沿う速度を保ち、地表に沿う速度だけを指数減衰させる
    /// @param drag 減衰係数（per sec）
@@ -74,6 +73,7 @@ public:
    void SetCurrentUpVector(const GameEngine::Vector3& up) { currentUpVector_ = up.Normalize(); }
 
 #ifdef USE_IMGUI
+
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
@@ -92,7 +92,7 @@ private:
    float gravityStrength = 9.8f;
 
    /// @brief 重力適用フラグ
-   bool  useGravity = true;
+   bool useGravity = true;
 
 private:
    /// @brief 現在Upから目標Upへ姿勢を補間する
@@ -103,16 +103,16 @@ private:
 
 private:
    /// @brief 現在のUpベクトル
-   GameEngine::Vector3 currentUpVector_ = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 currentUpVector_ = {0.0f, 1.0f, 0.0f};
 
    /// @brief 次に向かうUpベクトル
-   GameEngine::Vector3 targetUpVector_ = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 targetUpVector_ = {0.0f, 1.0f, 0.0f};
 
    /// @brief 現在の重力加速度
-   GameEngine::Vector3 gravityAcceleration_ = { 0.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 gravityAcceleration_ = {0.0f, 0.0f, 0.0f};
 
    /// @brief 現在の速度
-   GameEngine::Vector3 velocity_ = { 0.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 velocity_ = {0.0f, 0.0f, 0.0f};
 };
 
 } // namespace App

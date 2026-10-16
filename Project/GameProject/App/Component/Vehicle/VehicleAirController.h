@@ -16,7 +16,8 @@ class GravityBody;
 class VehicleAirController final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleAirController";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両空中制御", "Vehicle Air Controller" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両空中制御", "Vehicle Air Controller"};
+
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
@@ -27,24 +28,29 @@ public:
    void Apply(float rollInput, float pitchInput, float deltaTime);
 
    /// @brief 着地時に角速度をリセットする
-   void ResetAngularVelocity() { angularVelRoll_ = 0.0f; angularVelPitch_ = 0.0f; }
+   void ResetAngularVelocity() {
+      angularVelRoll_ = 0.0f;
+      angularVelPitch_ = 0.0f;
+   }
 
 #ifdef USE_IMGUI
+
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
    /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 private:
    /// @brief ロール角速度（deg/sec）
-   float rollSpeed     = 285.0f;
+   float rollSpeed = 285.0f;
 
    /// @brief ピッチ角速度（deg/sec）
-   float pitchSpeed     = 285.0f;
+   float pitchSpeed = 285.0f;
 
    /// @brief 空中回転の減衰係数（大きいほど慣性が少ない）
    float angularDamping = 2.5f;
@@ -55,18 +61,15 @@ private:
 
 private:
    /// @brief アナログ入力を考慮して角速度の加速・反転・慣性減衰を更新する
-   void UpdateAngularVelocity(float input, float& angVel,
-                              float targetVel, float deltaTime) const;
+   void UpdateAngularVelocity(float input, float& angVel, float targetVel, float deltaTime) const;
 
    /// @brief pitch 角速度を回転クォータニオンへ反映する
-   void ApplyPitchRotation(GameEngine::Quaternion& rot,
-                           const GameEngine::Vector3& localRight, float deltaTime) const;
+   void ApplyPitchRotation(GameEngine::Quaternion& rot, const GameEngine::Vector3& localRight, float deltaTime) const;
 
    /// @brief roll 角速度を回転クォータニオンへ反映する
-   void ApplyRollRotation(GameEngine::Quaternion& rot,
-	                      const GameEngine::Vector3& localForward, float deltaTime) const;
+   void ApplyRollRotation(GameEngine::Quaternion& rot, const GameEngine::Vector3& localForward, float deltaTime) const;
 
-   float angularVelRoll_  = 0.0f;
+   float angularVelRoll_ = 0.0f;
    float angularVelPitch_ = 0.0f;
 };
 

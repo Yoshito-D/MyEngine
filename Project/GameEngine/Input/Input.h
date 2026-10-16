@@ -1,4 +1,5 @@
 #pragma once
+
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <wrl.h>
@@ -10,6 +11,7 @@
 using namespace Microsoft::WRL;
 
 namespace GameEngine {
+
 /// @brief キーボードキー列挙型
 enum class KeyCode : uint8_t {
    // アルファベット
@@ -368,7 +370,6 @@ public:
    /// @param rightMotor 右モーターの強さ（0.0f～1.0f）
    void SetVibration(uint32_t index, float leftMotor, float rightMotor);
 
-
 private:
    static constexpr size_t kKeyboardKeyCount = 256;
    static constexpr BYTE kPressedStateMask = 0x80;
@@ -386,6 +387,7 @@ private:
    XINPUT_STATE prevGamePadState_[XUSER_MAX_COUNT]{};
 
    HWND hwnd_ = nullptr;
+
 private:
    /// @brief キーボードの状態を更新
    void KeyboardUpdate();

@@ -2,54 +2,56 @@
 #include "GameEngine/Effects/Particles/Modules/LimitVelocityOverLifetimeModule.h"
 
 namespace GameEngine {
-	LimitVelocityOverLifetimeModule::LimitVelocityOverLifetimeModule() = default;
+LimitVelocityOverLifetimeModule::LimitVelocityOverLifetimeModule() = default;
 
-	void LimitVelocityOverLifetimeModule::InitializeParticle(Particle& particle) const {
-		particle.limitVelocitySpeedLimit = speedLimit_.GetValue();
-		particle.limitVelocityDampen = dampen_.GetValue();
-	}
+void LimitVelocityOverLifetimeModule::InitializeParticle(Particle& particle) const {
+   particle.limitVelocitySpeedLimit = speedLimit_.GetValue();
+   particle.limitVelocityDampen = dampen_.GetValue();
+}
 
-	void LimitVelocityOverLifetimeModule::LimitVelocity(Particle& particle) const {
-		LimitVelocity(particle, Transform{}, false);
-	}
+void LimitVelocityOverLifetimeModule::LimitVelocity(Particle& particle) const {
+   LimitVelocity(particle, Transform{}, false);
+}
 
-	void LimitVelocityOverLifetimeModule::LimitVelocity(Particle& particle, const Transform&, bool) const {
-		if (!IsEnabled()) return;
-		float speed = particle.velocity.Length();
-		float speedLimit = speedLimit_.IsRandomized() ? particle.limitVelocitySpeedLimit : speedLimit_.Minimum();
-		float dampen = dampen_.IsRandomized() ? particle.limitVelocityDampen : dampen_.Minimum();
-		if (speed > speedLimit) {
-			// 超過分の割合だけ速度ベクトルを縮め、方向を変えずに上限へ滑らかに近づける。
-			float excess = speed - speedLimit;
-			particle.velocity = particle.velocity * (1.0f - dampen * excess / speed);
-		}
-	}
+void LimitVelocityOverLifetimeModule::LimitVelocity(Particle& particle, const Transform&, bool) const {
+   if (!IsEnabled())
+      return;
+   float speed = particle.velocity.Length();
+   float speedLimit = speedLimit_.IsRandomized() ? particle.limitVelocitySpeedLimit : speedLimit_.Minimum();
+   float dampen = dampen_.IsRandomized() ? particle.limitVelocityDampen : dampen_.Minimum();
+   if (speed > speedLimit) {
+      // 超過分の割合だけ速度ベクトルを縮め、方向を変えずに上限へ滑らかに近づける。
+      float excess = speed - speedLimit;
+      particle.velocity = particle.velocity * (1.0f - dampen * excess / speed);
+   }
+}
 
-	nlohmann::json LimitVelocityOverLifetimeModule::ToJson() const {
-		nlohmann::json j;
-		j["enabled"] = IsEnabled();
-		j["speedLimit"] = speedLimit_.ToJson();
-		j["dampen"] = dampen_.ToJson();
-		return j;
-	}
+nlohmann::json LimitVelocityOverLifetimeModule::ToJson() const {
+   nlohmann::json j;
+   j["enabled"] = IsEnabled();
+   j["speedLimit"] = speedLimit_.ToJson();
+   j["dampen"] = dampen_.ToJson();
+   return j;
+}
 
-	void LimitVelocityOverLifetimeModule::FromJson(const nlohmann::json& j) {
-		if (j.contains("enabled")) SetEnabled(j["enabled"].get<bool>());
-		if (j.contains("speedLimit")) {
-			if (j["speedLimit"].is_object()) {
-				speedLimit_.FromJson(j["speedLimit"]);
-			} else {
-				float value = j["speedLimit"];
-				speedLimit_ = RandomFloat(value, value, false);
-			}
-		}
-		if (j.contains("dampen")) {
-			if (j["dampen"].is_object()) {
-				dampen_.FromJson(j["dampen"]);
-			} else {
-				float value = j["dampen"];
-				dampen_ = RandomFloat(value, value, false);
-			}
-		}
-	}
+void LimitVelocityOverLifetimeModule::FromJson(const nlohmann::json& j) {
+   if (j.contains("enabled"))
+      SetEnabled(j["enabled"].get<bool>());
+   if (j.contains("speedLimit")) {
+      if (j["speedLimit"].is_object()) {
+         speedLimit_.FromJson(j["speedLimit"]);
+      } else {
+         float value = j["speedLimit"];
+         speedLimit_ = RandomFloat(value, value, false);
+      }
+   }
+   if (j.contains("dampen")) {
+      if (j["dampen"].is_object()) {
+         dampen_.FromJson(j["dampen"]);
+      } else {
+         float value = j["dampen"];
+         dampen_ = RandomFloat(value, value, false);
+      }
+   }
+}
 }

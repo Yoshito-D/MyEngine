@@ -8,7 +8,8 @@
 namespace GameEngine {
 
 void Grayscale::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -19,7 +20,7 @@ void Grayscale::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // このエフェクトは定数バッファを使用しないので、ルートパラメータ0はスキップ
    // SRVをルートパラメータ1にセット
-    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
+   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -33,8 +34,8 @@ void Grayscale::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("グレースケールのパラメータ", "Grayscale Parameters"))) {
-	  ImGui::TreePop();
+          LocalizeEditorText("グレースケールのパラメータ", "Grayscale Parameters"))) {
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

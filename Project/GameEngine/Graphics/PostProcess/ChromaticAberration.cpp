@@ -15,7 +15,8 @@ void ChromaticAberration::Initialize(GraphicsDevice* device, OffscreenRenderTarg
 }
 
 void ChromaticAberration::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -26,11 +27,11 @@ void ChromaticAberration::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
-     cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    // SRVをルートパラメータ1にセット
-    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
+   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -46,14 +47,14 @@ void ChromaticAberration::CreateConstantBuffer() {
 
 void ChromaticAberration::UpdateConstantBuffer() {
    if (constantBufferData_) {
-	  constantBufferData_->centerX = centerX_;
-	  constantBufferData_->centerY = centerY_;
-	  constantBufferData_->pixelShift = pixelShift_;
-	  constantBufferData_->useFixedDirection = useFixedDirection_;
-	  constantBufferData_->fixedDirectionX = fixedDirectionX_;
-	  constantBufferData_->fixedDirectionY = fixedDirectionY_;
-	  constantBufferData_->texSizeX = 1280.0f; // デフォルト値
-	  constantBufferData_->texSizeY = 720.0f;  // デフォルト値
+      constantBufferData_->centerX = centerX_;
+      constantBufferData_->centerY = centerY_;
+      constantBufferData_->pixelShift = pixelShift_;
+      constantBufferData_->useFixedDirection = useFixedDirection_;
+      constantBufferData_->fixedDirectionX = fixedDirectionX_;
+      constantBufferData_->fixedDirectionY = fixedDirectionY_;
+      constantBufferData_->texSizeX = 1280.0f; // デフォルト値
+      constantBufferData_->texSizeY = 720.0f;  // デフォルト値
    }
 }
 
@@ -62,18 +63,18 @@ void ChromaticAberration::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("色収差のパラメータ", "Chromatic Aberration Parameters"))) {
+          LocalizeEditorText("色収差のパラメータ", "Chromatic Aberration Parameters"))) {
 
-	  bool changed = false;
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("ピクセルずれ", "Pixel Shift"), &pixelShift_, 0.0f, 20.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &centerX_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &centerY_, 0.0f, 1.0f);
+      bool changed = false;
+      changed |= ImGui::SliderFloat(LocalizeEditorText("ピクセルずれ", "Pixel Shift"), &pixelShift_, 0.0f, 20.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &centerX_, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &centerY_, 0.0f, 1.0f);
 
-	  if (changed) {
-		 UpdateConstantBuffer();
-	  }
+      if (changed) {
+         UpdateConstantBuffer();
+      }
 
-	  ImGui::TreePop();
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

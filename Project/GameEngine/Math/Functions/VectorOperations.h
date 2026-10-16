@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Math/VectorMath.h"
 
 namespace GameEngine {
@@ -47,5 +48,6 @@ Vector3 Normalize(const Vector3& vec);
 /// @param viewportHeight ビューポート高さ
 /// @param viewProjectionMatrix ビュープロジェクション行列
 /// @return スクリーン座標
-Vector3 Project(const Vector3& worldPosition, float viewportX, float viewportY, float viewportWidth, float viewportHeight, const Matrix4x4& viewProjectionMatrix);
+Vector3 Project(const Vector3& worldPosition, float viewportX, float viewportY, float viewportWidth,
+   float viewportHeight, const Matrix4x4& viewProjectionMatrix);
 } // namespace GameEngine

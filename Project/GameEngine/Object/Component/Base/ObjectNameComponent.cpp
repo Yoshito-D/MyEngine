@@ -11,11 +11,12 @@
 #endif
 
 namespace {
-   const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
-      GameEngine::ObjectNameComponent::kTypeName,
-      [](GameEngine::Object& o) -> GameEngine::IObjectComponent* { return o.AddComponent<GameEngine::ObjectNameComponent>(); },
-      GameEngine::ObjectNameComponent::kDisplayName
-   );
+const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+   GameEngine::ObjectNameComponent::kTypeName,
+   [](GameEngine::Object& o) -> GameEngine::IObjectComponent* {
+      return o.AddComponent<GameEngine::ObjectNameComponent>();
+   },
+   GameEngine::ObjectNameComponent::kDisplayName);
 }
 
 namespace GameEngine {
@@ -25,7 +26,7 @@ const char* ObjectNameComponent::GetTypeName() const {
 }
 
 nlohmann::json ObjectNameComponent::Serialize() const {
-   return nlohmann::json{ { "name", name } };
+   return nlohmann::json{{"name", name}};
 }
 
 void ObjectNameComponent::Deserialize(const nlohmann::json& data) {
@@ -43,10 +44,11 @@ void ObjectNameComponent::DrawInspector() {
    }
 
    char nameBuffer[ImGuiHelper::kDefaultTextBufferSize]{};
+
    // ImGuiの固定長バッファへ収まる範囲だけコピーし、必ず末尾NULを残す。
    const size_t nameSize = std::min(name.size(), sizeof(nameBuffer) - 1);
    std::memcpy(nameBuffer, name.c_str(), nameSize);
-   if (ImGui::InputText(ImGuiHelper::Localize({ "名前", "Name" }), nameBuffer, sizeof(nameBuffer))) {
+   if (ImGui::InputText(ImGuiHelper::Localize({"名前", "Name"}), nameBuffer, sizeof(nameBuffer))) {
       name = nameBuffer;
    }
 

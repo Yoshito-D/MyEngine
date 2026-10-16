@@ -24,12 +24,14 @@ void Outline::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTa
 ///          定数バッファをそれぞれ意味名から解決済みのスロットへ束縛し、1回のフルスクリーンパスで処理する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void Outline::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    const D3D12_GPU_DESCRIPTOR_HANDLE depthSRV = GetDevice()->GetDepthSRVHandleGPU();
+
    // Prewittフィルターには深度近傍値が必須なため、無効ハンドルで色だけを描くフォールバックは行わない。
    if (depthSRV.ptr == 0) {
-	  return;
+      return;
    }
 
    // リサイズで1テクセル幅が変化し得るため、描画直前にrenderTarget_の現在サイズから定数を再計算する。
@@ -45,7 +47,7 @@ void Outline::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // Outline専用ルートシグネチャのCBV・カラーSRV・深度SRVは、物理番号ではなく解決済みスロットを使う。
    if (constantBuffer_) {
-	  cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
@@ -107,7 +109,7 @@ void Outline::CreateConstantBuffer() {
 ///          ピクセル単位の近傍間隔として扱える。ゼロ寸法では除算せず0を渡す。
 void Outline::UpdateConstantBuffer() {
    if (!constantBufferData_ || !GetRenderTarget()) {
-	  return;
+      return;
    }
 
    constantBufferData_->outlineColor[0] = outlineColor_[0];
@@ -117,6 +119,7 @@ void Outline::UpdateConstantBuffer() {
 
    const float width = static_cast<float>(GetRenderTarget()->GetWidth());
    const float height = static_cast<float>(GetRenderTarget()->GetHeight());
+
    // ピクセル単位の近傍サンプルを解像度に依存させないため、UVの1テクセル幅を渡す。
    constantBufferData_->texelSize[0] = width > 0.0f ? 1.0f / width : 0.0f;
    constantBufferData_->texelSize[1] = height > 0.0f ? 1.0f / height : 0.0f;
@@ -129,24 +132,26 @@ void Outline::UpdateConstantBuffer() {
 }
 
 #ifdef USE_IMGUI
+
 /// @brief アウトラインの色、検出範囲、感度、強度をエディターへ表示する。
 /// @details 同一フレームの複数変更をまとめ、値が変わった場合だけ定数バッファを更新する。
 void Outline::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("アウトラインのパラメータ", "Outline Parameters"))) {
-	  bool changed = false;
-	  changed |= ImGui::ColorEdit4(LocalizeEditorText("アウトライン色", "Outline Color"), outlineColor_);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("太さ", "Thickness"), &thickness_, 0.5f, 5.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("深度しきい値", "Depth Threshold"), &depthThreshold_, 0.0001f, 1.0f, "%.4f");
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
+          LocalizeEditorText("アウトラインのパラメータ", "Outline Parameters"))) {
+      bool changed = false;
+      changed |= ImGui::ColorEdit4(LocalizeEditorText("アウトライン色", "Outline Color"), outlineColor_);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("太さ", "Thickness"), &thickness_, 0.5f, 5.0f);
+      changed |= ImGui::SliderFloat(
+         LocalizeEditorText("深度しきい値", "Depth Threshold"), &depthThreshold_, 0.0001f, 1.0f, "%.4f");
+      changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
 
-	  if (changed) {
-		 UpdateConstantBuffer();
-	  }
+      if (changed) {
+         UpdateConstantBuffer();
+      }
 
-	  ImGui::TreePop();
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

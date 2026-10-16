@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -12,19 +13,21 @@ class PointLight {
 public:
    /// @brief GPUデータを確保する前の状態を構築する。
    PointLight() = default;
+
    /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
    PointLight(const PointLight&) = delete;
+
    /// @brief GPUデータの暗黙な共有を禁止する。
    PointLight& operator=(const PointLight&) = delete;
 
    /// @brief ポイントライトデータ構造体
    struct PointLightData {
-	  Vector4 color;
-	  Vector3 position;
-	  float intensity;
-	  float radius;
-	  float decay;
-	  float padding[2];
+      Vector4 color;
+      Vector3 position;
+      float intensity;
+      float radius;
+      float decay;
+      float padding[2];
    };
 
    /// @brief デバイスを取得して初期化
@@ -33,11 +36,12 @@ public:
 
    /// @brief ポイントライトを作成
    /// @param color 色
-   /// @param position 位置 
+   /// @param position 位置
    /// @param intensity 強度
    /// @param radius 半径
    /// @param decay 減衰
-   void Create(unsigned int color = 0xffffffff, const Vector3& position = { 0.0f,0.0f,0.0f }, float intensity = 1.0f, float radius = 2.0f, float decay = 0.2f);
+   void Create(unsigned int color = 0xffffffff, const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f,
+      float radius = 2.0f, float decay = 0.2f);
 
    /// @brief ポイントライトデータを取得
    /// @return ポイントライトデータへのポインタ
@@ -53,6 +57,5 @@ public:
 private:
    Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_ = nullptr;
    PointLightData* pointLightData_ = nullptr;
-
 };
 }

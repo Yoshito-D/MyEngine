@@ -27,6 +27,7 @@ void RaceCountdownTextComponent::OnReferencesChanged(GameEngine::SceneWorld& sce
 
 void RaceCountdownTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
+
    // アニメーションで上書きする前の見た目を、シーンに設定された復元先として記録する。
    CaptureBaseVisualState();
    displayedText_.clear();
@@ -76,19 +77,15 @@ void RaceCountdownTextComponent::Update(float deltaTime) {
 
 nlohmann::json RaceCountdownTextComponent::Serialize() const {
    // 表示中の文字や経過時間は保存せず、再読み込み時にレース状態から再構築できる設定だけを残す。
-   return nlohmann::json{
-      { "raceManagerId", raceManagerId_ },
-      { "startText", startText_ },
-      { "rotationDuration", rotationDuration_ },
-      { "fadeDuration", fadeDuration_ },
-      { "fadeEndScale", fadeEndScale_ }
-   };
+   return nlohmann::json{{"raceManagerId", raceManagerId_}, {"startText", startText_},
+      {"rotationDuration", rotationDuration_}, {"fadeDuration", fadeDuration_}, {"fadeEndScale", fadeEndScale_}};
 }
 
 void RaceCountdownTextComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+
    // 各項目を独立して検証し、欠落・型不一致の項目は既定値または現在値を維持する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
@@ -96,6 +93,7 @@ void RaceCountdownTextComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("startText") && data.at("startText").is_string()) {
       startText_ = data.at("startText").get<std::string>();
    }
+
    // 両時間はアニメーション進捗の除数になるため、0以下を許可しない。
    if (data.contains("rotationDuration") && data.at("rotationDuration").is_number()) {
       rotationDuration_ = std::max(data.at("rotationDuration").get<float>(), 0.0001f);
@@ -123,6 +121,7 @@ void RaceCountdownTextComponent::CaptureBaseVisualState() {
 
    baseOpacity_ = text->GetStyle().color.w;
    baseScale_ = transform->GetLocalPose().scale;
+
    // 元の回転表現を変えないよう、Euler値とQuaternion値の両方を退避する。
    baseEuler_ = transform->GetLocalPose().GetActiveEuler();
    baseRotationQuaternion_ = transform->GetLocalPose().GetActiveQuaternion();
@@ -131,8 +130,7 @@ void RaceCountdownTextComponent::CaptureBaseVisualState() {
 }
 
 void RaceCountdownTextComponent::RestoreBaseVisualState(
-   GameEngine::UITextComponent& text,
-   GameEngine::TransformComponent& transform) {
+   GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform) {
    if (!hasBaseVisualState_) {
       // シーンロード順などで未取得なら、利用時点で一度だけ現在の見た目を退避する。
       CaptureBaseVisualState();
@@ -153,13 +151,13 @@ void RaceCountdownTextComponent::RestoreBaseVisualState(
 }
 
 void RaceCountdownTextComponent::ApplyAnimation(
-   GameEngine::UITextComponent& text,
-   GameEngine::TransformComponent& transform) {
+   GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform) {
    if (!hasBaseVisualState_) {
       return;
    }
 
    const float rotationProgress = std::clamp(animationElapsed_ / rotationDuration_, 0.0f, 1.0f);
+
    // 基準姿勢へ毎フレーム加算し、前フレームの回転誤差を累積させない。
    const float easedRotation = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, rotationProgress);
    GameEngine::Vector3 animatedEuler = baseEuler_;
@@ -168,16 +166,9 @@ void RaceCountdownTextComponent::ApplyAnimation(
    pose.SetRotationEuler(animatedEuler);
 
    // 一回転を終えてから拡大と透明化を始め、数字ごとの動きを明確に分離する。
-   const float fadeProgress = std::clamp(
-      (animationElapsed_ - rotationDuration_) / fadeDuration_,
-      0.0f,
-      1.0f);
+   const float fadeProgress = std::clamp((animationElapsed_ - rotationDuration_) / fadeDuration_, 0.0f, 1.0f);
    const float scaleMultiplier = GameEngine::Easing::EaseOutCubic(1.0f, fadeEndScale_, fadeProgress);
-   pose.scale = {
-      baseScale_.x * scaleMultiplier,
-      baseScale_.y * scaleMultiplier,
-      baseScale_.z
-   };
+   pose.scale = {baseScale_.x * scaleMultiplier, baseScale_.y * scaleMultiplier, baseScale_.z};
    text.SetOpacity(GameEngine::Easing::EaseInQuad(baseOpacity_, 0.0f, fadeProgress));
    transform.ApplyLocalPose(pose);
 }

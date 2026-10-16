@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Assets/Material/MaterialManager.h"
 #include "GameEngine/Assets/Model/ModelAssetManager.h"
 #include "GameEngine/Assets/Texture/TextureManager.h"
@@ -11,6 +12,7 @@ namespace GameEngine {
 
 class GraphicsDevice;
 class Audio;
+
 /// @brief アセットマネージャークラス
 class AssetManager {
 public:
@@ -42,6 +44,7 @@ public:
    /// @brief フォントマネージャーを取得
    /// @return フォントマネージャー
    FontManager* GetFontManager() { return fontManager_.get(); }
+
 private:
    std::unique_ptr<MaterialManager> materialManager_ = std::make_unique<MaterialManager>();
    std::unique_ptr<ModelAssetManager> modelAssetManager_ = std::make_unique<ModelAssetManager>();

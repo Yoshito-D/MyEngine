@@ -12,7 +12,7 @@ class Texture;
 class SkyboxComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "SkyboxComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "スカイボックス", "Skybox" };
+   static constexpr ComponentDisplayName kDisplayName{"スカイボックス", "Skybox"};
 
    /// @brief Asset名から非所有のTexture参照を取得するコールバック
    using TextureResolver = std::function<Texture*(const std::string&)>;
@@ -62,6 +62,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief スカイボックス設定のインスペクターを描画する
    void DrawInspector() override;
 #endif
@@ -71,7 +72,7 @@ private:
 
    mutable Texture* texture_ = nullptr;
    std::string textureName_;
-   Vector4 color_ = { 1.0f, 1.0f, 1.0f, 1.0f };
+   Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 };
 
 } // namespace GameEngine

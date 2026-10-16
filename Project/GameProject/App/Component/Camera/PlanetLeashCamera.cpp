@@ -17,7 +17,7 @@ namespace App {
 
 namespace {
 nlohmann::json SerializeVector3(const Vector3& value) {
-   return nlohmann::json::array({ value.x, value.y, value.z });
+   return nlohmann::json::array({value.x, value.y, value.z});
 }
 
 Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
@@ -35,9 +35,8 @@ bool ReadBool(const nlohmann::json& data, const char* key, bool fallback) {
    return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
 }
 
-const bool kRegistered = VirtualCamera::RegisterComponentFactory(
-   "PlanetLeashCamera",
-   [](VirtualCamera& camera) -> ICinemachineComponent* {
+const bool kRegistered =
+   VirtualCamera::RegisterComponentFactory("PlanetLeashCamera", [](VirtualCamera& camera) -> ICinemachineComponent* {
       if (auto* existing = camera.GetComponent<PlanetLeashCamera>()) {
          return existing;
       }
@@ -51,19 +50,16 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       const float initialMaxDistance = std::max(maxFollowDistance, 0.1f);
       Vector3 initialOffset = state.transform.translation - pivotTarget_;
       const float initialDistance = initialOffset.Length();
-      const bool hasValidInitialOffset =
-         std::isfinite(initialOffset.x) &&
-         std::isfinite(initialOffset.y) &&
-         std::isfinite(initialOffset.z) &&
-         std::isfinite(initialDistance) &&
-         initialDistance > 1e-6f;
+      const bool hasValidInitialOffset = std::isfinite(initialOffset.x) && std::isfinite(initialOffset.y) &&
+                                         std::isfinite(initialOffset.z) && std::isfinite(initialDistance) &&
+                                         initialDistance > 1e-6f;
 
       if (!hasValidInitialOffset) {
          // 保存座標が退化している場合は重力Upを視点方向に使い、最大距離上へ安全に配置する。
          initialOffset = gravityUp_;
          float fallbackLength = initialOffset.Length();
          if (!std::isfinite(fallbackLength) || fallbackLength <= 1e-6f) {
-            initialOffset = { 0.0f, 1.0f, 0.0f };
+            initialOffset = {0.0f, 1.0f, 0.0f};
             fallbackLength = 1.0f;
          }
          eyePos_ = pivotTarget_ + initialOffset * (initialMaxDistance / fallbackLength);
@@ -74,7 +70,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
          eyePos_ = state.transform.translation;
       }
       prevGravityUp_ = gravityUp_;
-      eyeRelUp_      = gravityUp_;
+      eyeRelUp_ = gravityUp_;
       isInitialized_ = true;
    }
 
@@ -102,7 +98,8 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
                eyePos_ = pivotTarget_ + rodrigues(r);
                eyeRelUp_ = rodrigues(eyeRelUp_);
                float upNLen = eyeRelUp_.Length();
-               if (upNLen > 1e-6f) eyeRelUp_ = eyeRelUp_ * (1.0f / upNLen);
+               if (upNLen > 1e-6f)
+                  eyeRelUp_ = eyeRelUp_ * (1.0f / upNLen);
             }
          }
       }
@@ -124,20 +121,22 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       const Vector3 fromCenter = eye - sphereCenter_;
       const float fromCenterDist = fromCenter.Length();
       return fromCenterDist < minPlanetDistance && fromCenterDist > 1e-6f
-         ? sphereCenter_ + fromCenter * (minPlanetDistance / fromCenterDist)
-         : eye;
+                ? sphereCenter_ + fromCenter * (minPlanetDistance / fromCenterDist)
+                : eye;
    };
    eyePos_ = ClampToPlanetRadius(eyePos_);
 
    // 内部の追従位置を保ったまま距離と高さを変え、停止中のドリフト終了でも元へ戻せるようにする。
-   const Vector3 eye = ClampToPlanetRadius(pivotTarget_ + (eyePos_ - pivotTarget_) * driftDistanceScale_
-      + gravityUp_ * driftCameraHeightOffset_);
+   const Vector3 eye = ClampToPlanetRadius(
+      pivotTarget_ + (eyePos_ - pivotTarget_) * driftDistanceScale_ + gravityUp_ * driftCameraHeightOffset_);
    const Vector3 lookTarget = pivotTarget_ + gravityUp_ * driftLookTargetHeightOffset_;
 
    // LookAt用の視線方向を算出
    Vector3 lookDir = lookTarget - eye;
    float lookLen = lookDir.Length();
-   if (lookLen < 1e-6f) { return; }
+   if (lookLen < 1e-6f) {
+      return;
+   }
    Vector3 lookDirN = lookDir * (1.0f / lookLen);
 
    // eyeRelUp を視線直交面に再投影して安定化
@@ -148,8 +147,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
          eyeRelUp_ = projected * (1.0f / pLen);
       } else {
          // 視線とUpが平行な特異点では、平行になりにくい軸から直交Upを作り直す。
-         Vector3 tmp = (std::abs(lookDirN.x) < 0.9f) ? Vector3{ 1.0f, 0.0f, 0.0f }
-                                                       : Vector3{ 0.0f, 1.0f, 0.0f };
+         Vector3 tmp = (std::abs(lookDirN.x) < 0.9f) ? Vector3{1.0f, 0.0f, 0.0f} : Vector3{0.0f, 1.0f, 0.0f};
          tmp = tmp - lookDirN * tmp.Dot(lookDirN);
          eyeRelUp_ = tmp * (1.0f / tmp.Length());
       }
@@ -161,7 +159,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    float xLen = xaxis.Length();
    if (xLen > 1e-6f) {
       cachedRight_ = xaxis * (1.0f / xLen);
-      cachedUp_    = zaxis.Cross(cachedRight_);
+      cachedUp_ = zaxis.Cross(cachedRight_);
    }
 
    // カメラ状態へ最終反映
@@ -171,10 +169,10 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
 
 nlohmann::json PlanetLeashCamera::Serialize() const {
    return nlohmann::json{
-      { "maxFollowDistance", maxFollowDistance },
-      { "followSpeed", followSpeed },
-      { "minPlanetDistance", minPlanetDistance },
-      { "useGravityUp", useGravityUp },
+      {"maxFollowDistance", maxFollowDistance},
+      {"followSpeed", followSpeed},
+      {"minPlanetDistance", minPlanetDistance},
+      {"useGravityUp", useGravityUp},
    };
 }
 
@@ -197,10 +195,11 @@ void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
 void PlanetLeashCamera::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled)) SetEnabled(enabled);
+   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled))
+      SetEnabled(enabled);
 
    ImGui::DragFloat(Tr("最大追従距離", "Max Follow Distance"), &maxFollowDistance, 0.1f, 0.1f, 100.0f);
-   ImGui::DragFloat(Tr("追従速度", "Follow Speed"),        &followSpeed,       0.1f, 0.0f, 50.0f);
+   ImGui::DragFloat(Tr("追従速度", "Follow Speed"), &followSpeed, 0.1f, 0.0f, 50.0f);
    ImGui::DragFloat(Tr("惑星最小距離", "Min Planet Distance"), &minPlanetDistance, 0.1f, 0.0f, 100.0f);
    ImGui::Checkbox(Tr("Gravity Upを使用", "Use Gravity Up"), &useGravityUp);
 
@@ -208,7 +207,8 @@ void PlanetLeashCamera::DrawInspector() {
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("視点位置", "Eye Pos"), eyePos_.x, eyePos_.y, eyePos_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("Gravity Up", "Gravity Up"), gravityUp_.x, gravityUp_.y, gravityUp_.z);
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("ピボット", "Pivot"), pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("球中心", "Sphere Center"), sphereCenter_.x, sphereCenter_.y, sphereCenter_.z);
+   ImGui::Text(
+      "%s: (%.2f, %.2f, %.2f)", Tr("球中心", "Sphere Center"), sphereCenter_.x, sphereCenter_.y, sphereCenter_.z);
 
    if (ImGui::Button(Tr("初期化をリセット", "Reset Initialization"))) {
       isInitialized_ = false;

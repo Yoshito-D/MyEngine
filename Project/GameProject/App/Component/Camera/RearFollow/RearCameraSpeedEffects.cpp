@@ -8,9 +8,11 @@ using namespace RearCameraMath;
 
 void RearCameraSpeedEffects::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    auto* camera = GetRearCamera();
-   if (!camera) return;
+   if (!camera)
+      return;
    const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
-   boostAlpha_ = UpdateAccelerationEffect(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), state, deltaTime);
+   boostAlpha_ =
+      UpdateAccelerationEffect(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), state, deltaTime);
 }
 
 /// @brief 通常FOVと演出による追加FOVを合成し state.fov へ反映する
@@ -18,17 +20,13 @@ void RearCameraSpeedEffects::MutateCameraState(GameEngine::CameraState& state, f
 ///          加えて、boostAlpha を返すことで距離ブースト（ComputeEye）と
 ///          同じ速度スケールを共有できるようにする。
 /// @return boostAlpha [0, 1]（加速の強さ。距離ブーストにも流用）
-float RearCameraSpeedEffects::UpdateAccelerationEffect(
-   const RearCameraInput& input,
-   const RearCameraSettings& settings,
-   const RearCameraTransitionState& transition,
-   GameEngine::CameraState& state,
-   float deltaTime) {
+float RearCameraSpeedEffects::UpdateAccelerationEffect(const RearCameraInput& input, const RearCameraSettings& settings,
+   const RearCameraTransitionState& transition, GameEngine::CameraState& state, float deltaTime) {
    // 速度が [settings.speedBoostThreshold, settings.speedBoostMax] の範囲にどれだけ入っているかを正規化する
    float speedRange = settings.speedBoostMax - settings.speedBoostThreshold;
    float boostAlpha = 0.0f;
    if (speedRange > 1e-4f) {
-	  boostAlpha = std::clamp((input.playerSpeed - settings.speedBoostThreshold) / speedRange, 0.0f, 1.0f);
+      boostAlpha = std::clamp((input.playerSpeed - settings.speedBoostThreshold) / speedRange, 0.0f, 1.0f);
    }
 
    // ─────────────────────────────────────────────────────────────
@@ -48,48 +46,49 @@ float RearCameraSpeedEffects::UpdateAccelerationEffect(
    // ─────────────────────────────────────────────────────────────
    float speedDelta = 0.0f;
    if (!state_.isSpeedInitialized) {
-	  state_.previousPlayerSpeed = input.playerSpeed;
-	  state_.isSpeedInitialized = true;
+      state_.previousPlayerSpeed = input.playerSpeed;
+      state_.isSpeedInitialized = true;
    } else {
-	  speedDelta = input.playerSpeed - state_.previousPlayerSpeed;
-	  state_.previousPlayerSpeed = input.playerSpeed;
+      speedDelta = input.playerSpeed - state_.previousPlayerSpeed;
+      state_.previousPlayerSpeed = input.playerSpeed;
    }
 
-	if (speedDelta > 0.0f) {
-	  // 同じ速度差へ係数とターボ量を二重加算せず、最大キック量だけで強さを決める。
-	  float kickAlpha = std::clamp(speedDelta / kSpeedDeltaForMaxKick, 0.0f, 1.0f);
-	  float fovImpulse = kickAlpha * std::max(0.0f, settings.speedChangeFovKickMax);
-	  float distImpulse = kickAlpha * std::max(0.0f, settings.speedChangeDistanceKickMax);
+   if (speedDelta > 0.0f) {
+      // 同じ速度差へ係数とターボ量を二重加算せず、最大キック量だけで強さを決める。
+      float kickAlpha = std::clamp(speedDelta / kSpeedDeltaForMaxKick, 0.0f, 1.0f);
+      float fovImpulse = kickAlpha * std::max(0.0f, settings.speedChangeFovKickMax);
+      float distImpulse = kickAlpha * std::max(0.0f, settings.speedChangeDistanceKickMax);
 
-	  state_.springFovVelocity += fovImpulse * settings.springStiffness;
-	  state_.springDistanceVelocity += distImpulse * settings.springStiffness;
-	} else if (speedDelta < 0.0f && input.playerSpeed < input.autoSpeed) {
-	  // input.autoSpeed 以下に落ちたときのみ逆向きキックを与え、FOV を絞りつつカメラを近づける
-	  // ブースト後の autoSpeed への自然回復中は発火しない
-	  float decel = -speedDelta;
-	  float kickAlpha = std::clamp(decel / kSpeedDeltaForMaxKick, 0.0f, 1.0f);
-	  float fovImpulse = kickAlpha * std::max(0.0f, settings.speedChangeFovKickMax);
-	  float distImpulse = kickAlpha * std::max(0.0f, settings.speedChangeDistanceKickMax);
+      state_.springFovVelocity += fovImpulse * settings.springStiffness;
+      state_.springDistanceVelocity += distImpulse * settings.springStiffness;
+   } else if (speedDelta < 0.0f && input.playerSpeed < input.autoSpeed) {
+      // input.autoSpeed 以下に落ちたときのみ逆向きキックを与え、FOV を絞りつつカメラを近づける
+      // ブースト後の autoSpeed への自然回復中は発火しない
+      float decel = -speedDelta;
+      float kickAlpha = std::clamp(decel / kSpeedDeltaForMaxKick, 0.0f, 1.0f);
+      float fovImpulse = kickAlpha * std::max(0.0f, settings.speedChangeFovKickMax);
+      float distImpulse = kickAlpha * std::max(0.0f, settings.speedChangeDistanceKickMax);
 
-	  state_.springFovVelocity -= fovImpulse * settings.springStiffness;
-	  state_.springDistanceVelocity -= distImpulse * settings.springStiffness;
+      state_.springFovVelocity -= fovImpulse * settings.springStiffness;
+      state_.springDistanceVelocity -= distImpulse * settings.springStiffness;
    }
 
    // 目標は常に 0（自然長）。Spring の復元力と減衰で収束させる。
-   StepSpring1D(0.0f, settings.springStiffness, settings.springDamping, deltaTime, state_.springFovOffset, state_.springFovVelocity);
-   StepSpring1D(0.0f, settings.springStiffness, settings.springDamping, deltaTime, state_.springDistanceOffset, state_.springDistanceVelocity);
+   StepSpring1D(0.0f, settings.springStiffness, settings.springDamping, deltaTime, state_.springFovOffset,
+      state_.springFovVelocity);
+   StepSpring1D(0.0f, settings.springStiffness, settings.springDamping, deltaTime, state_.springDistanceOffset,
+      state_.springDistanceVelocity);
 
    // 通常FOVは直接使い、速度比例ブースト・空中ブースト・Springキックだけを補間する。
    float baseFov = ClampCameraFov(settings.fovDefault);
-   float targetFovOffset =
-	  std::max(0.0f, settings.fovBoostMax) * boostAlpha
-	  + std::max(0.0f, settings.airborneFovOffset) * transition.currentAirborneBlend
-	  + state_.springFovOffset;
+   float targetFovOffset = std::max(0.0f, settings.fovBoostMax) * boostAlpha +
+                           std::max(0.0f, settings.airborneFovOffset) * transition.currentAirborneBlend +
+                           state_.springFovOffset;
    targetFovOffset = ClampCameraFov(baseFov + targetFovOffset) - baseFov;
 
    // 基準値の編集を遅い演出補間に混ぜず、演出の履歴を保ったまま次の更新で画角へ反映する。
    if (!std::isfinite(state_.currentFovOffset)) {
-	  state_.currentFovOffset = 0.0f;
+      state_.currentFovOffset = 0.0f;
    }
    float t = ExpSmoothingFactor(settings.fovLerpSpeed, deltaTime);
    state_.currentFovOffset += (targetFovOffset - state_.currentFovOffset) * t;

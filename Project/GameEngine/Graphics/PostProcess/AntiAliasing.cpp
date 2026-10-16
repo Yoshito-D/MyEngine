@@ -24,7 +24,8 @@ void AntiAliasing::Initialize(GraphicsDevice* device, OffscreenRenderTarget* ren
 ///          頂点入力を持たない1回のフルスクリーンパスでFXAA系の平滑化を行う。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    UpdateConstantBuffer();
 
@@ -38,7 +39,7 @@ void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // ルートパラメータの物理番号はPSO定義から解決されるため、b0/t0の並びをC++側で固定しない。
    if (constantBuffer_) {
-	  cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
@@ -61,7 +62,7 @@ void AntiAliasing::CreateConstantBuffer() {
 /// @details メンバーの並びをシェーダー側の4つのfloatと一致させ、1レジスター分を一括して更新する。
 void AntiAliasing::UpdateConstantBuffer() {
    if (!constantBufferData_) {
-	  return;
+      return;
    }
 
    constantBufferData_->contrastThreshold = contrastThreshold_;
@@ -71,24 +72,29 @@ void AntiAliasing::UpdateConstantBuffer() {
 }
 
 #ifdef USE_IMGUI
+
 /// @brief アンチエイリアシングの検出感度と平滑化量をエディターへ表示する。
 /// @details UI範囲はシェーダーで有効な正値・正規化値へ制限し、複数項目の変更後に定数を一度だけ転送する。
 void AntiAliasing::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("アンチエイリアシングのパラメータ", "Anti Aliasing Parameters"))) {
-	  bool changed = false;
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("コントラストしきい値", "Contrast Threshold"), &contrastThreshold_, 0.001f, 0.2f, "%.4f");
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("相対しきい値", "Relative Threshold"), &relativeThreshold_, 0.0312f, 0.333f, "%.4f");
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("サブピクセルブレンド", "Subpixel Blending"), &subpixelBlending_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("エッジ探索ステップ数", "Edge Search Steps"), &edgeSearchSteps_, 1.0f, 16.0f, "%.0f");
+          LocalizeEditorText("アンチエイリアシングのパラメータ", "Anti Aliasing Parameters"))) {
+      bool changed = false;
+      changed |= ImGui::SliderFloat(
+         LocalizeEditorText("コントラストしきい値", "Contrast Threshold"), &contrastThreshold_, 0.001f, 0.2f, "%.4f");
+      changed |= ImGui::SliderFloat(
+         LocalizeEditorText("相対しきい値", "Relative Threshold"), &relativeThreshold_, 0.0312f, 0.333f, "%.4f");
+      changed |= ImGui::SliderFloat(
+         LocalizeEditorText("サブピクセルブレンド", "Subpixel Blending"), &subpixelBlending_, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(
+         LocalizeEditorText("エッジ探索ステップ数", "Edge Search Steps"), &edgeSearchSteps_, 1.0f, 16.0f, "%.0f");
 
-	  if (changed) {
-		 UpdateConstantBuffer();
-	  }
+      if (changed) {
+         UpdateConstantBuffer();
+      }
 
-	  ImGui::TreePop();
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

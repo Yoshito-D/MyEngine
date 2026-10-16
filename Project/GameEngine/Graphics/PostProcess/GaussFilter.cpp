@@ -15,7 +15,8 @@ void GaussFilter::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rend
 }
 
 void GaussFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -26,11 +27,11 @@ void GaussFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
-     cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    // SRVをルートパラメータ1にセット
-    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
+   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -46,10 +47,10 @@ void GaussFilter::CreateConstantBuffer() {
 
 void GaussFilter::UpdateConstantBuffer() {
    if (constantBufferData_) {
-	  constantBufferData_->intensity = intensity_;
-	  constantBufferData_->kernelSize = kernelSize_;
-	  constantBufferData_->sigma = sigma_;
-	  constantBufferData_->padding = 0.0f;
+      constantBufferData_->intensity = intensity_;
+      constantBufferData_->kernelSize = kernelSize_;
+      constantBufferData_->sigma = sigma_;
+      constantBufferData_->padding = 0.0f;
    }
 }
 
@@ -58,19 +59,20 @@ void GaussFilter::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("ガウシアンフィルターのパラメータ", "Gauss Filter Parameters"))) {
+          LocalizeEditorText("ガウシアンフィルターのパラメータ", "Gauss Filter Parameters"))) {
 
-	  bool changed = false;
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderInt(LocalizeEditorText("カーネル半径", "Kernel Radius"), &kernelSize_, 1, 32);
-	  ImGui::Text("%s: %dx%d", LocalizeEditorText("カーネルサイズ", "Kernel Size"), kernelSize_ * 2 + 1, kernelSize_ * 2 + 1);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("シグマ", "Sigma"), &sigma_, 0.1f, 5.0f);
+      bool changed = false;
+      changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
+      changed |= ImGui::SliderInt(LocalizeEditorText("カーネル半径", "Kernel Radius"), &kernelSize_, 1, 32);
+      ImGui::Text(
+         "%s: %dx%d", LocalizeEditorText("カーネルサイズ", "Kernel Size"), kernelSize_ * 2 + 1, kernelSize_ * 2 + 1);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("シグマ", "Sigma"), &sigma_, 0.1f, 5.0f);
 
-	  if (changed) {
-		 UpdateConstantBuffer();
-	  }
+      if (changed) {
+         UpdateConstantBuffer();
+      }
 
-	  ImGui::TreePop();
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

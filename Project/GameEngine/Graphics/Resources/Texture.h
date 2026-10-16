@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -42,7 +43,7 @@ public:
 
    /// @brief テクスチャのサイズを取得する
    /// @return テクスチャのサイズ（幅、高さ）
-   std::pair<uint32_t, uint32_t> GetSize() const { return { width_, height_ }; }
+   std::pair<uint32_t, uint32_t> GetSize() const { return {width_, height_}; }
 
    /// @brief テクスチャのメタデータを取得する
    /// @return テクスチャのメタデータ
@@ -53,10 +54,11 @@ private:
    CD3DX12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU_;
    CD3DX12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU_;
    std::string name_;
-   uint32_t width_ = 0;   // テクスチャの幅
-   uint32_t height_ = 0;  // テクスチャの高さ
+   uint32_t width_ = 0;  // テクスチャの幅
+   uint32_t height_ = 0; // テクスチャの高さ
 
    DirectX::TexMetadata metadata_{};
+
 private:
    /// @brief ミップマップを含むテクスチャをロードする
    /// @param filePath テクスチャファイルのパス

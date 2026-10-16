@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Math/VectorMath.h"
 #include "GameEngine/Math/MathUtils.h"
 #include "GameEngine/Effects/Particles/Particle.h"
@@ -19,6 +20,7 @@
 #include <deque>
 #include <optional>
 #include <stack>
+#include <type_traits>
 #include <memory>
 #include <vector>
 #include <wrl.h>
@@ -35,15 +37,15 @@ public:
 
    /// @brief 親粒子イベントから生成する子エフェクト設定
    struct SubEmitterSettings {
-	  bool enabled = false;
-	  std::string spawnOnDeathPath;
-	  std::string spawnOnUpdatePath;
-	  std::string spawnOnCollisionPath;
-	  float updateInterval = 0.1f;
-	  uint32_t maxEventsPerFrame = 32;
-	  Vector3 collisionPlaneNormal{ 0.0f, 1.0f, 0.0f };
-	  float collisionPlaneDistance = 0.0f;
-	  float collisionRestitution = 0.0f;
+      bool enabled = false;
+      std::string spawnOnDeathPath;
+      std::string spawnOnUpdatePath;
+      std::string spawnOnCollisionPath;
+      float updateInterval = 0.1f;
+      uint32_t maxEventsPerFrame = 32;
+      Vector3 collisionPlaneNormal{0.0f, 1.0f, 0.0f};
+      float collisionPlaneDistance = 0.0f;
+      float collisionRestitution = 0.0f;
    };
 
    /// @brief 自動更新・描画対象として登録された全システムを取得する
@@ -62,82 +64,82 @@ public:
 
    /// @brief GPU送信用パーティクルデータ
    struct ParticleForGPU {
-	  Matrix4x4 wvp;
-	  Matrix4x4 world;
-	  Matrix4x4 uvTransform;
-	  Vector4 color;
-	  Vector4 customData;
+      Matrix4x4 wvp;
+      Matrix4x4 world;
+      Matrix4x4 uvTransform;
+      Vector4 color;
+      Vector4 customData;
    };
 
    /// @brief Compute Shader が更新する最小シミュレーション状態
    struct GpuParticleState {
-	  Vector4 positionAndActive;
-	  Vector4 velocityAndLifetime;
-	  uint32_t ownerParticleIndex = UINT_MAX;
-	  float age = 0.0f;
-	  float initialLifetime = 0.0f;
-	  uint32_t padding = 0;
+      Vector4 positionAndActive;
+      Vector4 velocityAndLifetime;
+      uint32_t ownerParticleIndex = UINT_MAX;
+      float age = 0.0f;
+      float initialLifetime = 0.0f;
+      uint32_t padding = 0;
    };
 
    /// @brief Update CSが粒子ごとに参照する永続的な運動パラメータ
    struct GpuParticleMotion {
-	  Vector4 forceAndDrag;
-	  Vector4 velocityAndSpeedModifier;
-	  Vector4 limitAndGravity;
-	  Vector4 noiseParams;
+      Vector4 forceAndDrag;
+      Vector4 velocityAndSpeedModifier;
+      Vector4 limitAndGravity;
+      Vector4 noiseParams;
    };
 
    /// @brief CPUで初期化した粒子固有値をGPUシミュレーションへ渡す属性
    struct GpuParticleAttributes {
-	  Matrix4x4 uvTransform;
-	  Vector4 color;
-	  Vector4 sizeAndRotation;
-	  Vector4 rotationQuaternion;
-	  Vector4 customData;
-	  uint32_t stateIndex = 0; // 圧縮済み描画属性から永続GPU状態を引くための元粒子番号
-	  uint32_t padding[3]{};
+      Matrix4x4 uvTransform;
+      Vector4 color;
+      Vector4 sizeAndRotation;
+      Vector4 rotationQuaternion;
+      Vector4 customData;
+      uint32_t stateIndex = 0; // 圧縮済み描画属性から永続GPU状態を引くための元粒子番号
+      uint32_t padding[3]{};
    };
 
    /// @brief Emitter CSへ渡す生成または状態上書き要求
    struct GpuSpawnRequest {
-	  GpuParticleState state;
-	  GpuParticleMotion motion;
-	  uint32_t operation = 0; // 0: FreeListから生成、1: 既存所有粒子を上書き
-	  uint32_t padding[3]{};
+      GpuParticleState state;
+      GpuParticleMotion motion;
+      uint32_t operation = 0; // 0: FreeListから生成、1: 既存所有粒子を上書き
+      uint32_t padding[3]{};
    };
 
    /// @brief GPUシミュレーションのフレーム定数
    struct GpuSimulationSettings {
-	  Matrix4x4 viewProjection;
-	  Vector4 cameraPosition;
-	  Vector4 cameraRight;
-	  Vector4 cameraUp;
-	  Vector4 cameraForward;
-	  Vector4 renderParams;
-	  Vector4 cameraFadeParams;
-	  Vector4 attractorPosition;
-	  Vector4 attractorParams;
-	  Vector4 simulationOriginAndLocal;
-	  Vector4 simulationRotation;
-	  uint32_t particleCount = 0;
-	  uint32_t particleCapacity = 0;
-	  uint32_t spawnRequestCount = 0;
-	  uint32_t initializationStartIndex = 0;
+      Matrix4x4 viewProjection;
+      Vector4 cameraPosition;
+      Vector4 cameraRight;
+      Vector4 cameraUp;
+      Vector4 cameraForward;
+      Vector4 renderParams;
+      Vector4 cameraFadeParams;
+      Vector4 attractorPosition;
+      Vector4 attractorParams;
+      Vector4 simulationOriginAndLocal;
+      Vector4 simulationRotation;
+      uint32_t particleCount = 0;
+      uint32_t particleCapacity = 0;
+      uint32_t spawnRequestCount = 0;
+      uint32_t initializationStartIndex = 0;
    };
 
    /// @brief リボン1区間をCompute Shaderへ渡す入力
    struct GpuRibbonSegment {
-	  Vector4 startAndWidth;
-	  Vector4 endAndWidth;
-	  Vector4 startTangentAndV;
-	  Vector4 endTangentAndV;
-	  Vector4 alphaAndPadding;
+      Vector4 startAndWidth;
+      Vector4 endAndWidth;
+      Vector4 startTangentAndV;
+      Vector4 endTangentAndV;
+      Vector4 alphaAndPadding;
    };
 
    /// @brief シミュレーション空間
    enum class SimulationSpace {
-	  World,  // ワールド空間
-	  Local   // ローカル空間
+      World, // ワールド空間
+      Local  // ローカル空間
    };
 
    /// @brief 初期化（静的リソース）
@@ -179,55 +181,115 @@ public:
    bool IsFinished() const;
 
    /// @brief 寿命・初期値・再生条件を管理するメインモジュールを取得する
-   /// @return 常に有効なメインモジュール
-   MainModule* GetMainModule() { return mainModule_.get(); }
+   /// @return 内部の変更権限を持たないメインモジュール
+   MainModule DescribeMainModule() const { return *mainModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const MainModule& configuration);
+
    /// @brief 時間・距離・バースト放出を管理するモジュールを取得する
-   /// @return 常に有効な放出モジュール
-   EmissionModule* GetEmissionModule() { return emissionModule_.get(); }
+   /// @return 内部の変更権限を持たない放出モジュール
+   EmissionModule DescribeEmissionModule() const { return *emissionModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const EmissionModule& configuration);
+
    /// @brief 放出位置と初期方向を管理する形状モジュールを取得する
-   /// @return 常に有効な形状モジュール
-   ShapeModule* GetShapeModule() { return shapeModule_.get(); }
+   /// @return 内部の変更権限を持たない形状モジュール
+   ShapeModule DescribeShapeModule() const { return *shapeModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const ShapeModule& configuration);
 
    /// @brief 寿命中の速度変更モジュールを取得する
    /// @return 速度モジュール
-   VelocityOverLifetimeModule* GetVelocityOverLifetimeModule() { return velocityOverLifetimeModule_.get(); }
+   VelocityOverLifetimeModule DescribeVelocityOverLifetimeModule() const { return *velocityOverLifetimeModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const VelocityOverLifetimeModule& configuration);
+
    /// @brief 寿命中の色変更モジュールを取得する
    /// @return 色モジュール
-   ColorOverLifetimeModule* GetColorOverLifetimeModule() { return colorOverLifetimeModule_.get(); }
+   ColorOverLifetimeModule DescribeColorOverLifetimeModule() const { return *colorOverLifetimeModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const ColorOverLifetimeModule& configuration);
+
    /// @brief 寿命中のサイズ変更モジュールを取得する
    /// @return サイズモジュール
-   SizeOverLifetimeModule* GetSizeOverLifetimeModule() { return sizeOverLifetimeModule_.get(); }
+   SizeOverLifetimeModule DescribeSizeOverLifetimeModule() const { return *sizeOverLifetimeModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const SizeOverLifetimeModule& configuration);
+
    /// @brief 寿命中の回転変更モジュールを取得する
    /// @return 回転モジュール
-   RotationOverLifetimeModule* GetRotationOverLifetimeModule() { return rotationOverLifetimeModule_.get(); }
+   RotationOverLifetimeModule DescribeRotationOverLifetimeModule() const { return *rotationOverLifetimeModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const RotationOverLifetimeModule& configuration);
 
    /// @brief 寿命中に力を加えるモジュールを取得する
    /// @return 力モジュール
-   ForceOverLifetimeModule* GetForceOverLifetimeModule() { return forceOverLifetimeModule_.get(); }
+   ForceOverLifetimeModule DescribeForceOverLifetimeModule() const { return *forceOverLifetimeModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const ForceOverLifetimeModule& configuration);
+
    /// @brief 速度上限モジュールを取得する
    /// @return 速度上限モジュール
-   LimitVelocityOverLifetimeModule* GetLimitVelocityModule() { return limitVelocityModule_.get(); }
+   LimitVelocityOverLifetimeModule DescribeLimitVelocityModule() const { return *limitVelocityModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const LimitVelocityOverLifetimeModule& configuration);
+
    /// @brief 擬似ノイズによる揺らぎモジュールを取得する
    /// @return ノイズモジュール
-   NoiseModule* GetNoiseModule() { return noiseModule_.get(); }
+   NoiseModule DescribeNoiseModule() const { return *noiseModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const NoiseModule& configuration);
+
    /// @brief UV移動・回転・拡縮モジュールを取得する
    /// @return UV変換モジュール
-   UVTransformModule* GetUVTransformModule() { return uvTransformModule_.get(); }
+   UVTransformModule DescribeUVTransformModule() const { return *uvTransformModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const UVTransformModule& configuration);
+
    /// @brief テクスチャシート再生モジュールを取得する
    /// @return シートアニメーションモジュール
-   TextureSheetAnimationModule* GetTextureSheetAnimationModule() { return textureSheetAnimationModule_.get(); }
+   TextureSheetAnimationModule DescribeTextureSheetAnimationModule() const { return *textureSheetAnimationModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const TextureSheetAnimationModule& configuration);
 
    /// @brief ビルボード・ソートなどの描画設定モジュールを取得する
    /// @return 描画モジュール
-   RendererModule* GetRendererModule() { return rendererModule_.get(); }
+   RendererModule DescribeRendererModule() const { return *rendererModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const RendererModule& configuration);
 
    /// @brief トレイル設定モジュールを取得する
    /// @return トレイル設定モジュール
-   TrailModule* GetTrailModule() { return trailModule_.get(); }
+   TrailModule DescribeTrailModule() const { return *trailModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const TrailModule& configuration);
 
    /// @brief パーティクルメッシュ設定モジュールを取得する
    /// @return パーティクルメッシュ設定モジュール
-   ParticleMeshModule* GetParticleMeshModule() { return particleMeshModule_.get(); }
+   ParticleMeshModule DescribeParticleMeshModule() const { return *particleMeshModule_; }
+
+   /// @brief 編集用コピーの設定だけを検証・適用する。再生状態やGPU更新順は維持する。
+   bool ConfigureModule(const ParticleMeshModule& configuration);
+
+   /// @brief 放出元の姿勢を有限値として一括適用する。不正値では以前の姿勢を維持する。
+   bool ApplyEmitterPose(const Transform& pose);
+
+   /// @brief スキンメッシュ放出で参照するモデルと現在姿勢をまとめて接続する。
+   void BindEmissionMesh(const ModelAsset* model, const SkinCluster* skinCluster);
 
    /// @brief マテリアルを取得
    ParticleMaterial* GetMaterial() { return material_.get(); }
@@ -244,6 +306,7 @@ public:
    /// @brief エディタとデバッグ表示に使うシステム名を取得する
    /// @return システム名
    const std::string& GetName() const { return name_; }
+
    /// @brief エディタとデバッグ表示に使うシステム名を設定する
    /// @param name 新しいシステム名
    void SetName(const std::string& name) { name_ = name; }
@@ -251,12 +314,16 @@ public:
    /// @brief エディタのヒエラルキーとインスペクターへ公開するか取得する
    /// @return エディタで編集可能な場合はtrue
    bool IsEditorInspectable() const { return isEditorInspectable_; }
+
    /// @brief エディタのヒエラルキーとインスペクターへの公開可否を設定する
    /// @param inspectable 公開する場合はtrue
    void SetEditorInspectable(bool inspectable) { isEditorInspectable_ = inspectable; }
 
    /// @brief ブレンドモードを設定（マテリアルに委譲）
-   void SetBlendMode(std::optional<BlendMode> mode) { if (material_) material_->SetBlendMode(mode); }
+   void SetBlendMode(std::optional<BlendMode> mode) {
+      if (material_)
+         material_->SetBlendMode(mode);
+   }
 
    /// @brief ブレンドモードを取得（マテリアルに委譲）
    std::optional<BlendMode> GetBlendMode() const { return material_ ? material_->GetBlendMode() : std::nullopt; }
@@ -284,6 +351,7 @@ public:
    void DispatchGpuSimulation(const PSOManager* psoManager);
 
    // ============ JSON Serialization ============
+
    /// @brief パラメータをJSONファイルに保存
    /// @param filePath 保存先のファイルパス
    /// @return 成功したかどうか
@@ -305,9 +373,11 @@ public:
    /// @brief パーティクル描画に使用する現在のメッシュを取得する
    /// @return クアッドまたは生成済み形状メッシュ
    const Mesh* GetMesh() const { return quadMesh_.get(); }
+
    /// @brief CPUシミュレーション用インスタンスSRVを取得する
    /// @return インスタンシングバッファのGPUハンドル
    D3D12_GPU_DESCRIPTOR_HANDLE GetInstancingSrvHandleGPU() const;
+
    /// @brief パーティクル本体のテクスチャを取得する
    /// @return 設定中のテクスチャ
    Texture* GetTexture() const;
@@ -323,9 +393,11 @@ public:
    /// @brief GPUシミュレーションが生成した描画インスタンス数を取得する
    /// @return 描画に使用するGPU出力要素数
    uint32_t GetDrawParticleCount() const;
+
    /// @brief メッシュパーティクルへ使用するモデルアセットを取得する
    /// @return 設定中のモデル。未設定の場合はnullptr
    const ModelAsset* GetModelAsset() const { return modelAsset_; }
+
    /// @brief メッシュパーティクルへ使用するモデルアセットを設定する
    /// @param model 使用するモデル。nullptrで解除
    void SetModelAsset(const ModelAsset* model) { modelAsset_ = model; }
@@ -342,15 +414,16 @@ public:
 
    /// @brief リボン描画用インデックス数を取得する
    uint32_t GetRibbonIndexCount() const { return gpuRibbonIndexCount_; }
+
    // ========================================================
 
 private:
    /// @brief 親粒子の消滅後に末尾から巻き取るリボン履歴
    struct DetachedRibbon {
-	  std::vector<Vector3> points;
-	  float width = 0.5f;
-	  float age = 0.0f;
-	  float retractionDuration = 0.5f;
+      std::vector<Vector3> points;
+      float width = 0.5f;
+      float age = 0.0f;
+      float retractionDuration = 0.5f;
    };
 
    // パーティクル管理
@@ -363,6 +436,39 @@ private:
    std::stack<uint32_t> freeParticleIndices_;
 
    // ============ Unity-like Modules ============
+   static bool HasFiniteSettings(const nlohmann::json& settings);
+
+   template <class Module> bool ApplyModuleConfiguration(Module& target, const Module& configuration) {
+      const auto settings = configuration.ToJson();
+      if (!HasFiniteSettings(settings))
+         return false;
+      if constexpr (std::is_same_v<Module, MainModule>) {
+         if (configuration.GetMaxParticles() == 0 || configuration.GetMaxParticles() > kMaxParticles ||
+             configuration.GetDuration() < 0.0f)
+            return false;
+      }
+      const auto before = target.ToJson();
+      if (before == settings)
+         return true;
+      if constexpr (std::is_same_v<Module, EmissionModule>) {
+         // 放出率・有効状態の編集では進行済みカーソルを保持し、スケジュール変更時だけ再構築する。
+         if (before.at("bursts") != settings.at("bursts"))
+            target.ReplaceBurstSchedule(configuration.GetBursts());
+         target.SetEnabled(configuration.IsEnabled());
+         target.SetRateOverTime(configuration.GetRateOverTime());
+         target.SetRateOverDistance(configuration.GetRateOverDistance());
+      } else if constexpr (std::is_same_v<Module, ShapeModule>) {
+         return target.ApplyConfiguration(configuration);
+      } else if constexpr (std::is_same_v<Module, ParticleMeshModule>) {
+         // 編集コピーのdirty状態は信用せず、所有するメッシュの再構築を要求する。
+         target.FromJson(settings);
+      } else {
+         // その他のモジュールは設定値だけを持つため、保存形式へ往復させずに適用する。
+         target = configuration;
+      }
+      return true;
+   }
+
    std::unique_ptr<MainModule> mainModule_ = nullptr;
    std::unique_ptr<EmissionModule> emissionModule_ = nullptr;
    std::unique_ptr<ShapeModule> shapeModule_ = nullptr;
@@ -381,6 +487,7 @@ private:
    std::unique_ptr<RendererModule> rendererModule_ = nullptr;
    std::unique_ptr<TrailModule> trailModule_ = nullptr;
    std::unique_ptr<ParticleMeshModule> particleMeshModule_ = nullptr;
+
    // ============================================
 
    std::unique_ptr<ParticleMaterial> material_ = nullptr;
@@ -390,22 +497,22 @@ private:
    ParticleForGPU* instancingData_ = nullptr;
    D3D12_CPU_DESCRIPTOR_HANDLE instancingSrvHandleCPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU_{};
-   UINT instancingSrvIndex_ = UINT_MAX;  // 解放用に記録
+   UINT instancingSrvIndex_ = UINT_MAX; // 解放用に記録
 
    enum GpuDescriptorSlot : size_t {
-	  kGpuStateUavDescriptor,
-	  kGpuStateSrvDescriptor,
-	  kGpuAttributesSrvDescriptor,
-	  kGpuOutputUavDescriptor,
-	  kGpuOutputSrvDescriptor,
-	  kGpuMotionUavDescriptor,
-	  kGpuSpawnRequestSrvDescriptor,
-	  kGpuAliveUavDescriptor,
-	  kGpuFreeListUavDescriptor,
-	  kGpuFreeCountUavDescriptor,
-	  kGpuOwnerMappingUavDescriptor,
-	  kGpuOwnerMappingSrvDescriptor,
-	  kGpuDescriptorCount
+      kGpuStateUavDescriptor,
+      kGpuStateSrvDescriptor,
+      kGpuAttributesSrvDescriptor,
+      kGpuOutputUavDescriptor,
+      kGpuOutputSrvDescriptor,
+      kGpuMotionUavDescriptor,
+      kGpuSpawnRequestSrvDescriptor,
+      kGpuAliveUavDescriptor,
+      kGpuFreeListUavDescriptor,
+      kGpuFreeCountUavDescriptor,
+      kGpuOwnerMappingUavDescriptor,
+      kGpuOwnerMappingSrvDescriptor,
+      kGpuDescriptorCount
    };
 
    Microsoft::WRL::ComPtr<ID3D12Resource> gpuStateResource_ = nullptr;
@@ -418,6 +525,7 @@ private:
    Microsoft::WRL::ComPtr<ID3D12Resource> gpuAttributesResource_ = nullptr;
    Microsoft::WRL::ComPtr<ID3D12Resource> gpuOutputResource_ = nullptr;
    Microsoft::WRL::ComPtr<ID3D12Resource> gpuSettingsResource_ = nullptr;
+
    // CPUソートは前フレームのGPU位置を非同期Readbackし、描画中のGPU待機を発生させない。
    Microsoft::WRL::ComPtr<ID3D12Resource> gpuStateReadbackResource_ = nullptr;
    GpuSpawnRequest* gpuSpawnRequestData_ = nullptr;
@@ -437,10 +545,10 @@ private:
    D3D12_GPU_DESCRIPTOR_HANDLE gpuOutputUavHandleGPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE gpuOutputSrvHandleGPU_{};
    std::array<UINT, kGpuDescriptorCount> gpuDescriptorIndices_ = [] {
-	  std::array<UINT, kGpuDescriptorCount> indices{};
-	  indices.fill(UINT_MAX);
-	  return indices;
-	  }();
+      std::array<UINT, kGpuDescriptorCount> indices{};
+      indices.fill(UINT_MAX);
+      return indices;
+   }();
    D3D12_RESOURCE_STATES gpuStateResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    D3D12_RESOURCE_STATES gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    D3D12_RESOURCE_STATES gpuOutputResourceState_ = D3D12_RESOURCE_STATE_COMMON;
@@ -462,7 +570,7 @@ private:
    D3D12_GPU_DESCRIPTOR_HANDLE gpuRibbonInputSrvHandleGPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE gpuRibbonVertexUavHandleGPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE gpuRibbonIndexUavHandleGPU_{};
-   std::array<UINT, 3> gpuRibbonDescriptorIndices_{ UINT_MAX, UINT_MAX, UINT_MAX };
+   std::array<UINT, 3> gpuRibbonDescriptorIndices_{UINT_MAX, UINT_MAX, UINT_MAX};
    D3D12_VERTEX_BUFFER_VIEW gpuRibbonVertexBufferView_{};
    D3D12_INDEX_BUFFER_VIEW gpuRibbonIndexBufferView_{};
    D3D12_RESOURCE_STATES gpuRibbonVertexState_ = D3D12_RESOURCE_STATE_COMMON;
@@ -485,7 +593,7 @@ private:
    float emissionTimer_ = 0.0f;
    float emissionAccumulator_ = 0.0f;
    float emissionDistanceAccumulator_ = 0.0f;
-   Vector3 previousEmitterPosition_{ 0.0f, 0.0f, 0.0f };
+   Vector3 previousEmitterPosition_{0.0f, 0.0f, 0.0f};
    bool hasPreviousEmitterPosition_ = false;
    float systemTime_ = 0.0f;
 
@@ -494,10 +602,12 @@ private:
    std::string name_;
 
    static std::vector<ParticleSystem*> sRegisteredParticleSystems_;
+
    struct PendingSubEmitterEvent {
-	  std::string effectPath;
-	  Vector3 position;
+      std::string effectPath;
+      Vector3 position;
    };
+
    static std::vector<PendingSubEmitterEvent> sPendingSubEmitterEvents_;
    static std::vector<std::shared_ptr<ParticleSystem>> sRuntimeSubEmitters_;
 

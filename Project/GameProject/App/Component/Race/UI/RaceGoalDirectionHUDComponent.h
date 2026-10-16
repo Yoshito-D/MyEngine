@@ -17,7 +17,7 @@ class RaceManagerComponent;
 class RaceGoalDirectionHUDComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "RaceGoalDirectionHUDComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "ゴール方向3D矢印", "Goal Direction 3D Arrow" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"ゴール方向3D矢印", "Goal Direction 3D Arrow"};
 
    /// @brief コンポーネント型名を取得する
    /// @return RaceGoalDirectionHUDComponent
@@ -26,6 +26,7 @@ public:
    /// @brief レース、プレイヤー、ゴールへの参照を解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -42,6 +43,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief HUD設定と参照状態をインスペクターへ表示する
    void DrawInspector() override;
 #endif

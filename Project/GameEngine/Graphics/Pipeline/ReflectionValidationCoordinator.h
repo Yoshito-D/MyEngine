@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Graphics/Pipeline/ReflectionValidationState.h"
 
 namespace GameEngine {
@@ -23,14 +24,17 @@ public:
    /// @param psoManager パイプラインステートマネージャー
    /// @param shaderManager シェーダーマネージャー
    /// @param state 更新する反射検証状態
-   void UpdateValidationReport(const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const;
+   void UpdateValidationReport(
+      const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const;
 
 #ifdef USE_IMGUI
+
    /// @brief 検証結果と再検証操作を提供するデバッグウィンドウを描画する
    /// @param psoManager パイプラインステートマネージャー
    /// @param shaderManager シェーダーマネージャー
    /// @param state 反射検証状態
-   void DrawDebugWindow(const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const;
+   void DrawDebugWindow(
+      const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const;
 #endif
 };
 

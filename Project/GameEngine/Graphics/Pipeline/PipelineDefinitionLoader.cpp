@@ -15,7 +15,8 @@ std::string WStringToString(const std::wstring& wstr) {
 
    // Windows の UTF-16 パスを JSON／ログで共通利用する UTF-8 へ変換する。
    // 先に必要バイト数を問い合わせ、マルチバイト文字を途中で切らない正確な領域を確保する。
-   int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+   int sizeNeeded =
+      WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
    std::string value(static_cast<size_t>(sizeNeeded), 0);
    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), &value[0], sizeNeeded, nullptr, nullptr);
    return value;
@@ -24,14 +25,16 @@ std::string WStringToString(const std::wstring& wstr) {
 
 namespace GameEngine {
 
-bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFilePath, std::vector<std::string>& rootSignaturePaths, std::vector<std::string>& pipelinePaths) const {
+bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFilePath,
+   std::vector<std::string>& rootSignaturePaths, std::vector<std::string>& pipelinePaths) const {
    // 呼び出し元の古い結果を混ぜないよう、読み込みの成否にかかわらず今回検証できた項目だけを返す。
    rootSignaturePaths.clear();
    pipelinePaths.clear();
 
    std::ifstream file(WStringToString(registryFilePath));
    if (!file.is_open()) {
-      Logger::Error("[PipelineDefinitionLoader] Failed to open pipeline registry: " + WStringToString(registryFilePath));
+      Logger::Error(
+         "[PipelineDefinitionLoader] Failed to open pipeline registry: " + WStringToString(registryFilePath));
       return false;
    }
 
@@ -65,7 +68,8 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
 
             const std::string path = pathJson.get<std::string>();
             if (!std::filesystem::exists(path)) {
-               Logger::Error("[PipelineDefinitionLoader] Registry path does not exist: " + path + " (" + entryLabel + ")");
+               Logger::Error(
+                  "[PipelineDefinitionLoader] Registry path does not exist: " + path + " (" + entryLabel + ")");
                allSucceeded = false;
                continue;
             }

@@ -21,21 +21,22 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
    if (!groundMover) {
-	  lastLandingResult_ = LandingResult::Normal;
-	  return lastLandingResult_;
+      lastLandingResult_ = LandingResult::Normal;
+      return lastLandingResult_;
    }
 
    if (alignment >= boostThreshold) {
-	  // 成功: 綺麗に着地したのでブーストを加算する。
-	  groundMover->AddVelocityImpulse(boostAmount);
-	  lastLandingResult_ = LandingResult::Success;
-	  return lastLandingResult_;
+      // 成功: 綺麗に着地したのでブーストを加算する。
+      groundMover->AddVelocityImpulse(boostAmount);
+      lastLandingResult_ = LandingResult::Success;
+      return lastLandingResult_;
    }
    if (alignment >= normalThreshold) {
-	  // 普通: 多少傾いた着地なので速度は変化させない。
-	  lastLandingResult_ = LandingResult::Normal;
-	  return lastLandingResult_;
+      // 普通: 多少傾いた着地なので速度は変化させない。
+      lastLandingResult_ = LandingResult::Normal;
+      return lastLandingResult_;
    }
+
    // 失敗: 大きく傾いた着地なので速度を penaltySpeed に設定する。
    groundMover->ApplyLandingPenalty(penaltySpeed, penaltyDuration);
    lastLandingResult_ = LandingResult::Failure;
@@ -46,13 +47,16 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
 void VehicleLandingBoost::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
+   if (!ImGui::CollapsingHeader(header.c_str())) {
+      return;
+   }
    ImGui::Separator();
    ImGui::DragFloat(Tr("ブースト量", "Boost Amount"), &boostAmount, 0.1f, 0.0f, 200.0f);
    ImGui::DragFloat(Tr("ブーストしきい値", "Boost Threshold"), &boostThreshold, 0.01f, 0.0f, 1.0f);
    ImGui::DragFloat(Tr("法線しきい値", "Normal Threshold"), &normalThreshold, 0.01f, 0.0f, 1.0f);
    ImGui::DragFloat(Tr("ペナルティ速度", "Penalty Speed"), &penaltySpeed, 0.1f, 0.0f, 200.0f);
-   ImGui::DragFloat(Tr("加速禁止時間（秒）", "Acceleration Block Duration (sec)"), &penaltyDuration, 0.05f, 0.0f, 10.0f);
+   ImGui::DragFloat(
+      Tr("加速禁止時間（秒）", "Acceleration Block Duration (sec)"), &penaltyDuration, 0.05f, 0.0f, 10.0f);
 }
 #endif
 
@@ -67,11 +71,21 @@ nlohmann::json VehicleLandingBoost::Serialize() const {
 }
 
 void VehicleLandingBoost::Deserialize(const nlohmann::json& data) {
-   if (data.contains("boostAmount")) { boostAmount = data["boostAmount"]; }
-   if (data.contains("boostThreshold")) { boostThreshold = data["boostThreshold"]; }
-   if (data.contains("normalThreshold")) { normalThreshold = data["normalThreshold"]; }
-   if (data.contains("penaltySpeed")) { penaltySpeed = data["penaltySpeed"]; }
-   if (data.contains("penaltyDuration")) { penaltyDuration = std::max(0.0f, data["penaltyDuration"].get<float>()); }
+   if (data.contains("boostAmount")) {
+      boostAmount = data["boostAmount"];
+   }
+   if (data.contains("boostThreshold")) {
+      boostThreshold = data["boostThreshold"];
+   }
+   if (data.contains("normalThreshold")) {
+      normalThreshold = data["normalThreshold"];
+   }
+   if (data.contains("penaltySpeed")) {
+      penaltySpeed = data["penaltySpeed"];
+   }
+   if (data.contains("penaltyDuration")) {
+      penaltyDuration = std::max(0.0f, data["penaltyDuration"].get<float>());
+   }
 }
 
 } // namespace App

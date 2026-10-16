@@ -23,20 +23,28 @@ public:
 
    /// @brief フレーム開始時に遅延操作と選択状態を同期する
    void BeginEditorFrame();
+
    /// @brief 上部メニューバー内のファイル・設定メニューを描画する。
    void ShowMainMenuItems();
+
    /// @brief 各ウィンドウの表示状態に依存せず未保存シーンの確認を描画する。
    void ShowSceneDialogs();
+
    /// @brief 再生・停止・一時停止用ツールバーを描画する
    void ShowPlayModeToolbar();
+
    /// @brief アセット一覧ウィンドウを描画する
    void ShowAssetWindow();
+
    /// @brief シーン切替・保存・作成・開始シーン設定をまとめた管理ウィンドウを描画する。
    void ShowSceneManagementWindow();
+
    /// @brief シーン階層ウィンドウを描画する
    void ShowHierarchyWindow();
+
    /// @brief 選択中オブジェクトのインスペクターを描画する
    void ShowInspectorWindow();
+
    /// @brief シーンビューポート上の操作UIを描画する
    void ShowSceneOverlay(float viewportX, float viewportY, float viewportWidth, float viewportHeight);
 

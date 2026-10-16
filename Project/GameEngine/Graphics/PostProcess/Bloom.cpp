@@ -9,77 +9,78 @@
 namespace GameEngine {
 
 void Bloom::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarget) {
-	PostProcess::Initialize(device, renderTarget);
-	CreateConstantBuffer();
-	UpdateConstantBuffer();
+   PostProcess::Initialize(device, renderTarget);
+   CreateConstantBuffer();
+   UpdateConstantBuffer();
 }
 
 void Bloom::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-	if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
-	GetRenderTarget()->PreDraw(false);
+   GetRenderTarget()->PreDraw(false);
 
-	auto cmdList = GetDevice()->GetCommandList();
+   auto cmdList = GetDevice()->GetCommandList();
 
-	cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-	cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
+   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
+   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
 
-	// 定数バッファをルートパラメータ0にセット
-	if (constantBuffer_) {
-     cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-	}
+   // 定数バッファをルートパラメータ0にセット
+   if (constantBuffer_) {
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+   }
 
-	// SRVをルートパラメータ1にセット
+   // SRVをルートパラメータ1にセット
    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
-	// フルスクリーントライアングル描画
-	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	cmdList->DrawInstanced(3, 1, 0, 0);
+   // フルスクリーントライアングル描画
+   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+   cmdList->DrawInstanced(3, 1, 0, 0);
 
-	GetRenderTarget()->PostDraw();
+   GetRenderTarget()->PostDraw();
 }
 
 void Bloom::CreateConstantBuffer() {
-	constantBuffer_ = ResourceHelper::CreateBufferResource(GetDevice()->GetDevice(), sizeof(BloomCB));
-	constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
+   constantBuffer_ = ResourceHelper::CreateBufferResource(GetDevice()->GetDevice(), sizeof(BloomCB));
+   constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 
 void Bloom::UpdateConstantBuffer() {
-	if (constantBufferData_) {
-		constantBufferData_->threshold = threshold_;
-		constantBufferData_->intensity = intensity_;
-		constantBufferData_->blurRadius = blurRadius_;
-		constantBufferData_->softThreshold = softThreshold_;
-	}
+   if (constantBufferData_) {
+      constantBufferData_->threshold = threshold_;
+      constantBufferData_->intensity = intensity_;
+      constantBufferData_->blurRadius = blurRadius_;
+      constantBufferData_->softThreshold = softThreshold_;
+   }
 }
 
 #ifdef USE_IMGUI
 void Bloom::ImGuiEdit() {
-	ImGui::PushID(GetImGuiID());
+   ImGui::PushID(GetImGuiID());
 
-	if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-		LocalizeEditorText("ブルームのパラメータ", "Bloom Parameters"))) {
+   if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
+          LocalizeEditorText("ブルームのパラメータ", "Bloom Parameters"))) {
 
-		bool changed = false;
-		changed |= ImGui::SliderFloat(LocalizeEditorText("しきい値", "Threshold"), &threshold_, 0.0f, 2.0f);
-		changed |= ImGui::SliderFloat(LocalizeEditorText("ソフトしきい値", "Soft Threshold"), &softThreshold_, 0.0f, 1.0f);
-		changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 5.0f);
-		changed |= ImGui::SliderFloat(LocalizeEditorText("ブラー半径", "Blur Radius"), &blurRadius_, 0.5f, 10.0f);
+      bool changed = false;
+      changed |= ImGui::SliderFloat(LocalizeEditorText("しきい値", "Threshold"), &threshold_, 0.0f, 2.0f);
+      changed |=
+         ImGui::SliderFloat(LocalizeEditorText("ソフトしきい値", "Soft Threshold"), &softThreshold_, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 5.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("ブラー半径", "Blur Radius"), &blurRadius_, 0.5f, 10.0f);
 
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("%s", LocalizeEditorText(
-				"ブルームしきい値の遷移の滑らかさを調整します",
-				"Controls the smoothness of the bloom threshold transition"));
-		}
+      if (ImGui::IsItemHovered()) {
+         ImGui::SetTooltip("%s", LocalizeEditorText("ブルームしきい値の遷移の滑らかさを調整します",
+                                    "Controls the smoothness of the bloom threshold transition"));
+      }
 
-		if (changed) {
-			UpdateConstantBuffer();
-		}
+      if (changed) {
+         UpdateConstantBuffer();
+      }
 
-		ImGui::TreePop();
-	}
+      ImGui::TreePop();
+   }
 
-	ImGui::PopID();
+   ImGui::PopID();
 }
 #endif
 

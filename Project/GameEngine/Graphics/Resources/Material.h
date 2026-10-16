@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -22,35 +23,37 @@ class Material : public IMaterialData {
 public:
    /// @brief GPUデータを確保する前の状態を構築する。
    Material() = default;
+
    /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
    Material(const Material&) = delete;
+
    /// @brief GPUデータの暗黙な共有を禁止する。
    Material& operator=(const Material&) = delete;
 
    /// @brief マテリアルデータ構造体
    struct MaterialData {
-	  Vector4 color; // マテリアルの色
-	  int32_t lightingMode; // ライティングを有効にするかどうか
-	  float  environmentCoefficient; // 環境マップの強度
-	  float  padding[2]; // パディング（uvTransformの16バイト境界アライメント用）
-	  Matrix4x4 uvTransform; // UV座標に適用する変換行列
-	  float shininess; // 光沢度
-	  float rimLightIntensity; // リムライトの強度
-	  float rimLightPower; // リムライトの減衰指数
-	  float fillLightIntensity; // フィルライトの強度
-	  Vector4 rimLightColor; // リムライトの色
-	  Vector4 fillLightColor; // フィルライトの色
+      Vector4 color;                // マテリアルの色
+      int32_t lightingMode;         // ライティングを有効にするかどうか
+      float environmentCoefficient; // 環境マップの強度
+      float padding[2];             // パディング（uvTransformの16バイト境界アライメント用）
+      Matrix4x4 uvTransform;        // UV座標に適用する変換行列
+      float shininess;              // 光沢度
+      float rimLightIntensity;      // リムライトの強度
+      float rimLightPower;          // リムライトの減衰指数
+      float fillLightIntensity;     // フィルライトの強度
+      Vector4 rimLightColor;        // リムライトの色
+      Vector4 fillLightColor;       // フィルライトの色
    };
 
    static_assert(sizeof(MaterialData) == 144, "MaterialData must match the HLSL constant-buffer layout");
 
    /// @brief ライティングモード列挙体
    enum LightingMode {
-	  NONE = 0,
-	  LAMBERT = 1,
-	  HALFLAMBERT = 2,
-	  PHONG = 3,
-	  BLINNPHONG = 4
+      NONE = 0,
+      LAMBERT = 1,
+      HALFLAMBERT = 2,
+      PHONG = 3,
+      BLINNPHONG = 4
    };
 
    /// @brief デバイスを取得して初期化
@@ -62,7 +65,8 @@ public:
    /// @param color オブジェクトの色。デフォルトは 0xffffffff（白）
    /// @param enableLightingMode ライティングモード。デフォルトは LightingMode::HALFLAMBERT
    /// @param uvTransform UV座標に適用する 4x4 行列。デフォルトは単位行列
-   void Create(unsigned int color = 0xffffffff, int32_t lightingMode = LightingMode::HALFLAMBERT, const Matrix4x4& uvTransform = MakeIdentity4x4(), float shininess = 40.0f);
+   void Create(unsigned int color = 0xffffffff, int32_t lightingMode = LightingMode::HALFLAMBERT,
+      const Matrix4x4& uvTransform = MakeIdentity4x4(), float shininess = 40.0f);
 
    /// @brief マテリアルデータへのポインタを取得
    /// @return マテリアルデータへのポインタ
@@ -103,12 +107,16 @@ public:
 
    /// @brief すべての値を独立したGPUバッファへディープコピーする。
    std::unique_ptr<Material> Clone() const;
+
    /// @brief 有限値のfloatベクトル（1～4成分）を保存し、描画前にレイアウトを検証する。
    bool SetParameter(const std::string& name, const std::vector<float>& value);
+
    /// @brief 明示的に上書きされたシェーダーパラメーターを取得する。
    const std::map<std::string, std::vector<float>>& GetParameters() const { return parameters_; }
+
    /// @brief 上書きを解除し、パイプラインの既定値を使用する。
    void ClearParameters() { parameters_.clear(); }
+
    /// @brief パラメーターを検証・パックする。データ不正またはバッファ利用不可時はnullptrを返す。
    ID3D12Resource* PrepareParameters(const ModelPipelineDefinition& definition) const;
 
@@ -229,8 +237,8 @@ private:
    mutable void* parameterData_ = nullptr;
    ComPtr<ID3D12Resource> materialResource_ = nullptr;
    MaterialData* materialData_ = nullptr;
-   std::string pipelineName_;  ///< 使用するパイプライン名（空文字列 = デフォルト）
-   std::optional<BlendMode> blendMode_;  ///< 優先ブレンドモード（nullopt = DrawCommand 依存）
+   std::string pipelineName_;           ///< 使用するパイプライン名（空文字列 = デフォルト）
+   std::optional<BlendMode> blendMode_; ///< 優先ブレンドモード（nullopt = DrawCommand 依存）
 
    /// @brief 現在のUVTransformからスケール、回転、平行移動を分解
    /// @param outScale 出力：スケール

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include "GameEngine/Graphics/Pipeline/PipelineState.h"
 #include "GameEngine/Graphics/Device/OffscreenRenderTarget.h"
@@ -63,7 +64,8 @@ public:
    /// @param cameraManager カメラ管理
    /// @param lightManager ライト管理
    /// @param assetManager アセット管理（テクスチャマネージャーを取得するため）
-   void Initialize(GraphicsDevice* device, Window* window, CameraManager* cameraManager, LightManager* lightManager, AssetManager* assetManager = nullptr);
+   void Initialize(GraphicsDevice* device, Window* window, CameraManager* cameraManager, LightManager* lightManager,
+      AssetManager* assetManager = nullptr);
 
    /// @brief フレームの開始時の処理
    void BeginFrame();
@@ -90,21 +92,24 @@ public:
    /// @param texture テクスチャ
    /// @param blendMode ブレンドモード（std::nulloptの場合は現在設定されているモードを使用）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
+   void Draw(
+      Model* model, Texture* texture, std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
 
    /// @brief モデルを描画する（複数テクスチャ）
    /// @param model 描画するモデル
    /// @param textures テクスチャ配列
    /// @param blendMode ブレンドモード（std::nulloptの場合は現在設定されているモードを使用）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void Draw(Model* model, const std::vector<Texture*>& textures, std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
+   void Draw(Model* model, const std::vector<Texture*>& textures, std::optional<BlendMode> blendMode = std::nullopt,
+      bool applyPostProcess = true);
 
    /// @brief スプライトを描画する
    /// @param sprite 描画するスプライト
    /// @param texture テクスチャ
    /// @param blendMode ブレンドモード（std::nulloptの場合は現在設定されているモードを使用）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
+   void Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> blendMode = std::nullopt,
+      bool applyPostProcess = true);
 
    /// @brief パーティクルシステムを描画する
    /// @param particleSystem 描画するパーティクルシステム
@@ -119,13 +124,9 @@ public:
    /// @param screenWidth UI配置に使う論理画面幅（デフォルト：1280）
    /// @param screenHeight UI配置に使う論理画面高（デフォルト：720）
    /// @details 論理画面の縦横比とサイズを保ち、実際の出力中央へ一様拡大して描画する。
-   void DrawUI(Sprite* sprite, Texture* texture,
-	  Sprite::AnchorPoint anchorPoint = Sprite::AnchorPoint::TopLeft,
-	  std::optional<BlendMode> blendMode = std::nullopt,
-	  bool applyPostProcess = true,
-	  uint32_t screenWidth = Window::kUiReferenceWidth,
-	  uint32_t screenHeight = Window::kUiReferenceHeight
-   );
+   void DrawUI(Sprite* sprite, Texture* texture, Sprite::AnchorPoint anchorPoint = Sprite::AnchorPoint::TopLeft,
+      std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true,
+      uint32_t screenWidth = Window::kUiReferenceWidth, uint32_t screenHeight = Window::kUiReferenceHeight);
 
    /// @brief UTF-8文字列をスクリーンUIとして描画する
    /// @param text UTF-8文字列
@@ -145,7 +146,9 @@ public:
 
 #ifdef USE_IMGUI
    bool GetIsSceneHovered() const { return isSceneHovered_; }
+
    bool GetIsDockSpaceVisible() const { return imGuiManager_->IsDockSpaceVisible(); }
+
    void SetDockSpaceVisible(bool visible) { imGuiManager_->SetDockSpaceVisible(visible); }
 
    /// @brief エディタの共通メニューと閉じるボタンで共有する表示状態を取得する。
@@ -156,6 +159,7 @@ public:
    bool GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true) {
       return imGuiManager_ && imGuiManager_->GetEditorWindowVisibility(stableId, label, defaultVisible);
    }
+
    /// @brief 登録済みエディターウィンドウの表示状態を設定する。
    /// @param stableId 登録済みウィンドウの固定ID。
    /// @param visible 表示する場合はtrue。
@@ -177,7 +181,8 @@ public:
    /// @param color 色
    /// @param segmentCount セグメント数
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void DrawSpline(const std::vector<Vector3>& controlPoints, const Vector4& color, size_t segmentCount = 10, bool applyPostProcess = true);
+   void DrawSpline(const std::vector<Vector3>& controlPoints, const Vector4& color, size_t segmentCount = 10,
+      bool applyPostProcess = true);
 
    /// @brief グリッドを描画する（LineRendererに委任）
    /// @param plane 描画する平面（デフォルト：XZ平面）
@@ -187,7 +192,8 @@ public:
    /// @param enableFade カメラからの距離に応じてフェードアウトするか（デフォルト：true）
    /// @param fadeDistance フェードアウトを開始する距離（デフォルト：50.0f、enableFadeがtrueの場合のみ有効）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10, int range = 100, bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
+   void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10, int range = 100,
+      bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
 
    /// @brief 球を描画する
    /// @param center 中心
@@ -202,7 +208,8 @@ public:
    /// @param up 上方向
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void DrawHemisphere(const Vector3& center, float radius, const Vector3& up, const Vector4& color, bool applyPostProcess = true);
+   void DrawHemisphere(
+      const Vector3& center, float radius, const Vector3& up, const Vector4& color, bool applyPostProcess = true);
 
    /// @brief 円錐を描画する
    /// @param apex 円錐の頂点
@@ -211,7 +218,8 @@ public:
    /// @param direction 円錐の向き
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void DrawCone(const Vector3& apex, float radius, float height, const Vector3& direction, const Vector4& color, bool applyPostProcess = true);
+   void DrawCone(const Vector3& apex, float radius, float height, const Vector3& direction, const Vector4& color,
+      bool applyPostProcess = true);
 
    /// @brief ボックスを描画する
    /// @param center 中心
@@ -226,7 +234,8 @@ public:
    /// @param normal 法線
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void DrawCircle(const Vector3& center, float radius, const Vector3& normal, const Vector4& color, bool applyPostProcess = true);
+   void DrawCircle(
+      const Vector3& center, float radius, const Vector3& normal, const Vector4& color, bool applyPostProcess = true);
 
    /// @brief モデルのスケルトンをデバッグ描画する
    /// @param model 描画対象モデル
@@ -234,11 +243,9 @@ public:
    /// @param jointColor ジョイント球の色
    /// @param boneColor ジョイント接続線の色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void DrawSkeleton(Model* model,
-	  float jointRadius = 0.03f,
-	  const Vector4& jointColor = Vector4(1.0f, 0.2f, 0.2f, 1.0f),
-	  const Vector4& boneColor = Vector4(0.2f, 1.0f, 1.0f, 1.0f),
-      bool applyPostProcess = false);
+   void DrawSkeleton(Model* model, float jointRadius = 0.03f,
+      const Vector4& jointColor = Vector4(1.0f, 0.2f, 0.2f, 1.0f),
+      const Vector4& boneColor = Vector4(0.2f, 1.0f, 1.0f, 1.0f), bool applyPostProcess = false);
 
    /// @brief 外部システムから描画コマンドを投入する
    /// @param command 描画コマンド
@@ -266,6 +273,7 @@ public:
    /// @brief PostProcessManagerを取得
    /// @return PostProcessManagerのポインタ
    const PostProcessManager* GetPostProcessManager() const { return postProcessManager_.get(); }
+
    /// @brief 編集・更新操作に使用するサービスへのアクセス。
    PostProcessManager* GetPostProcessManager() { return postProcessManager_.get(); }
 
@@ -278,15 +286,19 @@ public:
    const PSOManager* GetPSOManager() const { return psoManager_.get(); }
 
    const CameraManager* GetCameraManager() const { return cameraManager_; }
+
    /// @brief 編集・更新操作に使用するサービスへのアクセス。
    CameraManager* GetCameraManager() { return cameraManager_; }
+
    const LightManager* GetLightManager() const { return lightManager_; }
+
    /// @brief 編集・更新操作に使用するサービスへのアクセス。
    LightManager* GetLightManager() { return lightManager_; }
 
    /// @brief LineRendererを取得
    /// @return LineRendererのポインタ
    const LineRenderer* GetLineRenderer() const { return lineRenderer_.get(); }
+
    /// @brief 編集・更新操作に使用するサービスへのアクセス。
    LineRenderer* GetLineRenderer() { return lineRenderer_.get(); }
 
@@ -332,14 +344,12 @@ private:
    std::unique_ptr<Camera> uiCamera_ = std::make_unique<Camera>();
    std::unique_ptr<Camera> perspectiveUiCamera_ = std::make_unique<Camera>();
    Vector2 uiViewportSize_ = {
-      static_cast<float>(Window::kUiReferenceWidth),
-      static_cast<float>(Window::kUiReferenceHeight)
-   };
+      static_cast<float>(Window::kUiReferenceWidth), static_cast<float>(Window::kUiReferenceHeight)};
 
    // 描画コマンドリスト（レンダーパス別）
-    std::vector<std::unique_ptr<IDrawCommand>> opaqueCommands_;       // 不透明オブジェクト
-   std::vector<std::unique_ptr<IDrawCommand>> transparentCommands_;  // 半透明オブジェクト
-   std::vector<std::unique_ptr<IDrawCommand>> postProcessCommands_;  // ポストプロセス後の描画
+   std::vector<std::unique_ptr<IDrawCommand>> opaqueCommands_;      // 不透明オブジェクト
+   std::vector<std::unique_ptr<IDrawCommand>> transparentCommands_; // 半透明オブジェクト
+   std::vector<std::unique_ptr<IDrawCommand>> postProcessCommands_; // ポストプロセス後の描画
 
    BlendMode currentBlendMode_ = BlendMode::kBlendModeNormal;
    std::string currentPipelineName_;
@@ -351,6 +361,7 @@ private:
       float blurDirection[2] = {};
       uint32_t applyComposite = 0;
    };
+
    Microsoft::WRL::ComPtr<ID3D12Resource> sceneTransitionHorizontalConstantBuffer_;
    SceneTransitionConstants* sceneTransitionHorizontalConstants_ = nullptr;
    Microsoft::WRL::ComPtr<ID3D12Resource> sceneTransitionConstantBuffer_;
@@ -359,9 +370,10 @@ private:
 
    /// @brief パイプライン名+ブレンドモードをキーにした解決済みキャッシュ
    struct PipelineHandle {
-      const PipelineState* pso = nullptr;    ///< 起動時に解決済みのポインタ
-      bool resolved = false;           ///< 一度でも解決を試みたか
+      const PipelineState* pso = nullptr; ///< 起動時に解決済みのポインタ
+      bool resolved = false;              ///< 一度でも解決を試みたか
    };
+
    std::unordered_map<std::string, PipelineHandle> pipelineCache_;
 
    /// @brief pipelineCache_ のキーを生成
@@ -374,6 +386,7 @@ private:
 
    // レンダーパスリスト（Opaque -> PlayerShadow -> Transparent -> PostEffect の順で実行）
    std::vector<std::unique_ptr<IRenderPass>> renderPasses_;
+
    // 所有権はrenderPasses_。対象データの受け渡しにだけ使い、ClearPassesで必ず解除する。
    PlayerShadowPass* playerShadowPass_ = nullptr;
 
@@ -381,8 +394,8 @@ private:
    FrameContext frameCtx_;
 
 #ifdef USE_IMGUI
-    std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();
-	std::unique_ptr<RendererEditorController> editorController_;
+   std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();
+   std::unique_ptr<RendererEditorController> editorController_;
    bool isSceneHovered_ = false;
 #endif
 
@@ -395,11 +408,7 @@ private:
 
    /// @brief 指定カメラでモデル描画コマンドを登録する
    void DrawModelWithCamera(
-      Model* model,
-      Texture* texture,
-      Camera* camera,
-      std::optional<BlendMode> blendMode,
-      bool applyPostProcess);
+      Model* model, Texture* texture, Camera* camera, std::optional<BlendMode> blendMode, bool applyPostProcess);
 
    /// @brief 描画コマンドを実行する
    /// @param commands 実行する描画コマンドリスト
@@ -445,6 +454,5 @@ private:
 
    /// @brief 半透明コマンドをカメラ距離でソート
    void SortTransparentCommands();
-
 };
 }

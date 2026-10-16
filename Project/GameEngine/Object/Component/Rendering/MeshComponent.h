@@ -16,33 +16,33 @@ class Texture;
 class MeshComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "MeshComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "メッシュ", "Mesh" };
+   static constexpr ComponentDisplayName kDisplayName{"メッシュ", "Mesh"};
 
    /// @brief メッシュデータの入力元
    enum class SourceType {
       ModelFile = 0, ///< 外部モデルファイル
-      Primitive, ///< エンジン標準プリミティブ
+      Primitive,     ///< エンジン標準プリミティブ
    };
 
    /// @brief プリミティブメッシュの形状タイプ
    enum class PrimitiveType {
       Quad = 0, ///< 4頂点の矩形メッシュ
-      Ring, ///< 中央に穴があるリング
-      Sphere, ///< UV球
-      Box, ///< 直方体
+      Ring,     ///< 中央に穴があるリング
+      Sphere,   ///< UV球
+      Box,      ///< 直方体
       Cylinder, ///< 上下に蓋がある円柱
-      Cone, ///< 円錐
-      Circle, ///< 塗りつぶし円
-      Plane, ///< 分割可能な平面
-      Torus, ///< ドーナツ形状
+      Cone,     ///< 円錐
+      Circle,   ///< 塗りつぶし円
+      Plane,    ///< 分割可能な平面
+      Torus,    ///< ドーナツ形状
       Triangle, ///< 3頂点の三角形
    };
 
    /// @brief 2D形状を生成する基準平面
    enum class PlaneOrientation {
       XY = 0, ///< XY平面
-      XZ, ///< XZ平面
-      YZ, ///< YZ平面
+      XZ,     ///< XZ平面
+      YZ,     ///< YZ平面
    };
 
    /// @brief コンポーネントの型名を取得する
@@ -58,6 +58,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief メッシュ設定のインスペクターを描画する
    void DrawInspector() override;
 #endif
@@ -117,6 +118,7 @@ public:
    /// @brief 内部メッシュを取得する
    /// @return 内部メッシュ。未作成ならnullptr
    Mesh* GetMesh() { return mesh_.get(); }
+
    /// @brief 生成済みメッシュの読み取り用表示を取得する。
    const Mesh* GetMesh() const { return mesh_.get(); }
 
@@ -184,8 +186,8 @@ private:
    std::optional<SkinCluster> skinCluster_;
    PrimitiveType primitiveType_ = PrimitiveType::Quad;
    PlaneOrientation planeOrientation_ = PlaneOrientation::XY;
-   Vector2 quadSize_ = { 128.0f, 128.0f };
-   Vector2 quadAnchorPoint_ = { 0.0f, 0.0f };
+   Vector2 quadSize_ = {128.0f, 128.0f};
+   Vector2 quadAnchorPoint_ = {0.0f, 0.0f};
    bool flipX_ = false;
    bool flipY_ = false;
    float originY_ = 0.5f;
@@ -195,7 +197,7 @@ private:
    float sphereRadius_ = 0.5f;
    uint32_t sphereStacks_ = 16;
    uint32_t sphereSlices_ = 32;
-   Vector3 boxSize_ = { 1.0f, 1.0f, 1.0f };
+   Vector3 boxSize_ = {1.0f, 1.0f, 1.0f};
    float cylinderTopRadius_ = 0.5f;
    float cylinderBottomRadius_ = 0.5f;
    float cylinderHeight_ = 1.0f;
@@ -213,9 +215,9 @@ private:
    float torusMinorRadius_ = 0.2f;
    uint32_t torusMajorSegments_ = 32;
    uint32_t torusMinorSegments_ = 16;
-   Vector3 triangleV0_ = { -0.5f, 0.0f, 0.0f };
-   Vector3 triangleV1_ = { 0.0f, 1.0f, 0.0f };
-   Vector3 triangleV2_ = { 0.5f, 0.0f, 0.0f };
+   Vector3 triangleV0_ = {-0.5f, 0.0f, 0.0f};
+   Vector3 triangleV1_ = {0.0f, 1.0f, 0.0f};
+   Vector3 triangleV2_ = {0.5f, 0.0f, 0.0f};
    std::unique_ptr<Mesh> mesh_;
 };
 } // namespace GameEngine

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Effects/Particles/Modules/ParticleModule.h"
 #include "GameEngine/Effects/Particles/Modules/MainModule.h"
 #include "GameEngine/Math/VectorMath.h"
@@ -6,13 +7,14 @@
 #include <string>
 
 namespace GameEngine {
+
 /// @brief パーティクルの移動履歴をトレイルとして描画する設定を管理する
 class TrailModule final : public ParticleModule {
 public:
    /// @brief トレイルを生成する位置の扱い
    enum class TrailMode {
-	  ParticlePath = 0,
-	  EmitterToParticle
+      ParticlePath = 0,
+      EmitterToParticle
    };
 
    /// @brief トレイルモジュールを既定値で構築する
@@ -99,17 +101,18 @@ public:
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
+
    /// @brief トレイル専用インスペクターを描画する
    void DrawInspector() override;
 #endif
 
 private:
    TrailMode mode_ = TrailMode::ParticlePath;
-   RandomFloat width_{ 0.5f, 0.5f, false };
+   RandomFloat width_{0.5f, 0.5f, false};
    uint32_t maxPoints_ = 16;
    float minDistance_ = 0.1f;
    std::string textureName_;
-   Vector4 color_{ 1.0f, 1.0f, 1.0f, 1.0f };
+   Vector4 color_{1.0f, 1.0f, 1.0f, 1.0f};
    float retractionDuration_ = 0.5f;
    float tailWidthScale_ = 0.0f;
    float textureTiling_ = 1.0f;

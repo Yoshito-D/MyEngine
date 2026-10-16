@@ -7,6 +7,7 @@
 #include <cstdint>
 
 namespace GameEngine {
+
 /// @brief すべての再生ボイスで共有するデコード済みPCMアセット。
 class SoundClip final {
 public:
@@ -15,12 +16,14 @@ public:
    /// @return 完全なWAVEFORMATEXブロックを持つ変更不可のクリップ。
    static std::shared_ptr<const SoundClip> Decode(const std::wstring& path);
 #ifdef MYPROJECT_NON_RELEASE
+
    /// @brief テスト用に、Media Foundationを使わず検証済みの小さなPCMフィクスチャを作成する。
    static std::shared_ptr<const SoundClip> CreateForTesting(const WAVEFORMATEX& format, std::vector<BYTE> pcm);
 #endif
 
    /// @brief XAudio2のソースボイス作成に使用するフォーマットブロック。
    const WAVEFORMATEX* GetFormat() const { return reinterpret_cast<const WAVEFORMATEX*>(formatWords_.data()); }
+
    /// @brief いずれかのボイスが参照している間保持されるPCMデータ。
    const std::vector<BYTE>& GetPcm() const { return pcm_; }
 

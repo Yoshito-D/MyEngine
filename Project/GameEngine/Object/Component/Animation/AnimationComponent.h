@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 
@@ -14,7 +15,8 @@ namespace GameEngine {
 class AnimationComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "AnimationComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "アニメーション", "Animation" };
+   static constexpr ComponentDisplayName kDisplayName{"アニメーション", "Animation"};
+
    /// @copydoc IObjectComponent::GetTypeName
    const char* GetTypeName() const override;
 
@@ -38,8 +40,10 @@ public:
 
    /// @brief 再生中かを観察する。
    bool IsPlaying() const { return playing; }
+
    /// @brief 現在の再生位置を秒で観察する。
    float PlaybackTime() const { return currentTime; }
+
    /// @brief クリップ内の位置へ移動し、時間と表示姿勢を同時に反映する。
    void Seek(float seconds);
 
@@ -47,24 +51,25 @@ public:
    void DrawDebugBones();
 
 #ifdef USE_IMGUI
+
    /// @copydoc IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
-
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
-      std::string animationName; ///< 再生するアニメーションアセットID
-      std::string clipName; ///< アセット内で選択するクリップ名
-      std::string targetNodeName; ///< スキニングを使わない場合の適用先ノード名
-      float playbackSpeed = 1.0f; ///< 再生速度倍率
-      bool loop = true; ///< クリップ終端でループするか
+      std::string animationName;     ///< 再生するアニメーションアセットID
+      std::string clipName;          ///< アセット内で選択するクリップ名
+      std::string targetNodeName;    ///< スキニングを使わない場合の適用先ノード名
+      float playbackSpeed = 1.0f;    ///< 再生速度倍率
+      bool loop = true;              ///< クリップ終端でループするか
       bool applyTranslation = false; ///< ノードの平行移動を適用するか
-      bool applyRotation = false; ///< ノードの回転を適用するか
-      bool applyScale = false; ///< ノードの拡縮を適用するか
-      bool useSkinning = true; ///< スケルトン全体へスキニング姿勢を適用するか
-      bool debugDrawBones = true; ///< 現在のボーン姿勢をデバッグ描画するか
+      bool applyRotation = false;    ///< ノードの回転を適用するか
+      bool applyScale = false;       ///< ノードの拡縮を適用するか
+      bool useSkinning = true;       ///< スケルトン全体へスキニング姿勢を適用するか
+      bool debugDrawBones = true;    ///< 現在のボーン姿勢をデバッグ描画するか
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
@@ -80,11 +85,13 @@ public:
       settings.debugDrawBones = debugDrawBones;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.playbackSpeed)) settings.playbackSpeed = defaults.playbackSpeed;
+      if (!std::isfinite(settings.playbackSpeed))
+         settings.playbackSpeed = defaults.playbackSpeed;
       animationName = settings.animationName;
       clipName = settings.clipName;
       targetNodeName = settings.targetNodeName;
@@ -95,23 +102,24 @@ public:
       applyScale = settings.applyScale;
       useSkinning = settings.useSkinning;
       debugDrawBones = settings.debugDrawBones;
-      if (!std::isfinite(currentTime)) currentTime = 0.0f;
+      if (!std::isfinite(currentTime))
+         currentTime = 0.0f;
       Seek(currentTime);
    }
 
 private:
-   std::string animationName; ///< 再生するアニメーションアセットID
-   std::string clipName; ///< アセット内で選択するクリップ名
-   std::string targetNodeName; ///< スキニングを使わない場合の適用先ノード名
-   float playbackSpeed = 1.0f; ///< 再生速度倍率
-   bool loop = true; ///< クリップ終端でループするか
+   std::string animationName;     ///< 再生するアニメーションアセットID
+   std::string clipName;          ///< アセット内で選択するクリップ名
+   std::string targetNodeName;    ///< スキニングを使わない場合の適用先ノード名
+   float playbackSpeed = 1.0f;    ///< 再生速度倍率
+   bool loop = true;              ///< クリップ終端でループするか
    bool applyTranslation = false; ///< ノードの平行移動を適用するか
-   bool applyRotation = false; ///< ノードの回転を適用するか
-   bool applyScale = false; ///< ノードの拡縮を適用するか
-   bool useSkinning = true; ///< スケルトン全体へスキニング姿勢を適用するか
-   bool debugDrawBones = true; ///< 現在のボーン姿勢をデバッグ描画するか
-   float currentTime = 0.0f; ///< 現在の再生位置（秒）
-   bool playing = true; ///< 時間を進める再生状態か
+   bool applyRotation = false;    ///< ノードの回転を適用するか
+   bool applyScale = false;       ///< ノードの拡縮を適用するか
+   bool useSkinning = true;       ///< スケルトン全体へスキニング姿勢を適用するか
+   bool debugDrawBones = true;    ///< 現在のボーン姿勢をデバッグ描画するか
+   float currentTime = 0.0f;      ///< 現在の再生位置（秒）
+   bool playing = true;           ///< 時間を進める再生状態か
 
 private:
    const AnimationClip* PrepareSelectedClip();

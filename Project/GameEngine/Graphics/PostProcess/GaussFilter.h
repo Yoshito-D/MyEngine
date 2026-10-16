@@ -1,18 +1,20 @@
 #pragma once
+
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include <wrl.h>
 #include <d3d12.h>
 
 namespace GameEngine {
+
 /// @brief ガウシアンブラー効果
 class GaussFilter : public PostProcess {
 public:
    /// @brief ブラー効果のパラメータ構造体
    struct GaussFilterCB {
-	  float intensity;
-	  int32_t kernelSize;
-	  float sigma;
-	  float padding;
+      float intensity;
+      int32_t kernelSize;
+      float sigma;
+      float padding;
    };
 
    /// @brief 初期化（パイプラインは外部から設定される）
@@ -31,17 +33,29 @@ public:
 
    /// @copydoc PostProcess::SerializeSettings
    nlohmann::json SerializeSettings() const override;
+
    /// @copydoc PostProcess::DeserializeSettings
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetBlurStrength(float strength) { intensity_ = strength; UpdateConstantBuffer(); }
-   void SetKernelSize(int32_t size) { kernelSize_ = size; UpdateConstantBuffer(); }
-   void SetSigma(float sigma) { sigma_ = sigma; UpdateConstantBuffer(); }
+   void SetBlurStrength(float strength) {
+      intensity_ = strength;
+      UpdateConstantBuffer();
+   }
+
+   void SetKernelSize(int32_t size) {
+      kernelSize_ = size;
+      UpdateConstantBuffer();
+   }
+
+   void SetSigma(float sigma) {
+      sigma_ = sigma;
+      UpdateConstantBuffer();
+   }
 
 private:
    float intensity_ = 0.8f;
-   int32_t kernelSize_  = 1;
+   int32_t kernelSize_ = 1;
    float sigma_ = 1.0f;
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;

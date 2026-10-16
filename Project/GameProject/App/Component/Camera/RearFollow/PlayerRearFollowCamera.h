@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraPositionSolver.h"
@@ -22,132 +23,138 @@ namespace App {
 ///          設定値は一括検証して適用し、実行中の設定への直接アクセスを許可しない。
 class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent, private RearCameraSettings {
 public:
-	/// @brief 後方追従カメラを既定の補間設定で生成する
-	PlayerRearFollowCamera() = default;
-	/// @brief カメラコンポーネントを破棄する
-	~PlayerRearFollowCamera() override = default;
+   /// @brief 後方追従カメラを既定の補間設定で生成する
+   PlayerRearFollowCamera() = default;
 
+   /// @brief カメラコンポーネントを破棄する
+   ~PlayerRearFollowCamera() override = default;
 
    /// @brief 設定・入力部品を同じBodyステージの計算部品より先に配置する。
    int GetExecutionOrder() const override { return -1000; }
+
    /// @brief 計算に必要な全コンポーネントが所有カメラ上に揃っているかを返す。
    bool HasRequiredComponents() const;
+
    /// @brief 編集用の設定値をコピーする。
    RearCameraSettings DescribeSettings() const { return *this; }
+
    /// @brief 関連する追従設定を検証して一括適用する。
    void Configure(const RearCameraSettings& requested);
+
    /// @brief 外部から渡された追従入力を読み取り専用で返す。
    const RearCameraInput& GetInput() const { return input_; }
+
    /// @brief 計測・UI用の非所有ビューを返す。必要な計算部品が欠ける場合は空。
    std::optional<RearCameraFrameView> GetFrameView() const;
 
-	/// @brief 入力と設定だけを保持し、計算は後続コンポーネントへ委譲する。
-	void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
+   /// @brief 入力と設定だけを保持し、計算は後続コンポーネントへ委譲する。
+   void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
 
-	/// @brief 実行ステージ（Body）を返す
-	GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Body; }
+   /// @brief 実行ステージ（Body）を返す
+   GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Body; }
 
-	/// @brief コンポーネント名を返す
-	const char* GetComponentName() const override { return "PlayerRearFollowCamera"; }
+   /// @brief コンポーネント名を返す
+   const char* GetComponentName() const override { return "PlayerRearFollowCamera"; }
 
-	/// @brief 重力Upを設定する（目標値。実際の描画には補間済み値を使用）
-	void SetGravityUp(const GameEngine::Vector3& up) { input_.gravityUp = up; }
+   /// @brief 重力Upを設定する（目標値。実際の描画には補間済み値を使用）
+   void SetGravityUp(const GameEngine::Vector3& up) { input_.gravityUp = up; }
 
-	/// @brief 注視対象（ピボット）を設定する
-	void SetPivotTarget(const GameEngine::Vector3& target) { input_.pivotTarget = target; }
+   /// @brief 注視対象（ピボット）を設定する
+   void SetPivotTarget(const GameEngine::Vector3& target) { input_.pivotTarget = target; }
 
-	/// @brief 空中時に画面へ入れたい近傍惑星の中心を設定する
-	void SetPlanetCenter(const GameEngine::Vector3& center) { input_.planetCenter = center; }
+   /// @brief 空中時に画面へ入れたい近傍惑星の中心を設定する
+   void SetPlanetCenter(const GameEngine::Vector3& center) { input_.planetCenter = center; }
 
-	/// @brief プレイヤー前方を設定する
-	void SetFollowForward(const GameEngine::Vector3& forward) { input_.followForward = forward; }
+   /// @brief プレイヤー前方を設定する
+   void SetFollowForward(const GameEngine::Vector3& forward) { input_.followForward = forward; }
 
-	/// @brief 空中で速度が小さいときに使う補助進行方向を設定する
-	/// @param forward 重力水平面上の進行方向
-	void SetAirborneMoveForward(const GameEngine::Vector3& forward) { input_.airborneMoveForward = forward; }
+   /// @brief 空中で速度が小さいときに使う補助進行方向を設定する
+   /// @param forward 重力水平面上の進行方向
+   void SetAirborneMoveForward(const GameEngine::Vector3& forward) { input_.airborneMoveForward = forward; }
 
-	/// @brief 空中フラグを設定する
-	void SetAirborne(bool isAirborne) { input_.isAirborne = isAirborne; }
+   /// @brief 空中フラグを設定する
+   void SetAirborne(bool isAirborne) { input_.isAirborne = isAirborne; }
 
-	/// @brief プレイヤーの現在速度を設定する（加速演出に使用）
-	/// @param speed 速度の大きさ（単位は任意。加速感の判定に使用）
-	void SetPlayerSpeed(float speed) { input_.playerSpeed = speed; }
+   /// @brief プレイヤーの現在速度を設定する（加速演出に使用）
+   /// @param speed 速度の大きさ（単位は任意。加速感の判定に使用）
+   void SetPlayerSpeed(float speed) { input_.playerSpeed = speed; }
 
-	/// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
-	void SetDriftDistanceScale(float scale) { input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
+   /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
+   void SetDriftDistanceScale(float scale) {
+      input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
+   }
 
-	/// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
-	/// @param cameraHeightOffset カメラ高さへ加える量。正の値はUp方向、負の値は下方向。
-	/// @param lookTargetHeightOffset 注視点高さへ加える量。正の値はUp方向、負の値は下方向。
-	void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
-		input_.driftCameraHeightOffset = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
-		input_.driftLookTargetHeightOffset = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
-	}
+   /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
+   /// @param cameraHeightOffset カメラ高さへ加える量。正の値はUp方向、負の値は下方向。
+   /// @param lookTargetHeightOffset 注視点高さへ加える量。正の値はUp方向、負の値は下方向。
+   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
+      input_.driftCameraHeightOffset = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
+      input_.driftLookTargetHeightOffset = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
+   }
 
-	/// @brief プレイヤーの現在速度ベクトルを設定する（空中カメラ方向補間に使用）
-	/// @param velocity ワールド空間の速度
-	void SetPlayerVelocity(const GameEngine::Vector3& velocity) { input_.playerVelocity = velocity; }
+   /// @brief プレイヤーの現在速度ベクトルを設定する（空中カメラ方向補間に使用）
+   /// @param velocity ワールド空間の速度
+   void SetPlayerVelocity(const GameEngine::Vector3& velocity) { input_.playerVelocity = velocity; }
 
-	/// @brief 予測した着地情報を設定する
-	/// @param up 予測接触地点の外向き法線
-	/// @param backward 着地後に進む接線方向の反対方向
-	/// @param contactPoint 予測接触地点
-	/// @param secondsToImpact 予測接触までの残り秒数
-	void SetLandingPrediction(const GameEngine::Vector3& up,
-							  const GameEngine::Vector3& backward,
-							  const GameEngine::Vector3& contactPoint,
-							  float secondsToImpact);
+   /// @brief 予測した着地情報を設定する
+   /// @param up 予測接触地点の外向き法線
+   /// @param backward 着地後に進む接線方向の反対方向
+   /// @param contactPoint 予測接触地点
+   /// @param secondsToImpact 予測接触までの残り秒数
+   void SetLandingPrediction(const GameEngine::Vector3& up, const GameEngine::Vector3& backward,
+      const GameEngine::Vector3& contactPoint, float secondsToImpact);
 
-	/// @brief 今フレームに有効な着地予測がないことを通知する
-	void ClearLandingPrediction() { input_.landingPredictionValid = false; }
+   /// @brief 今フレームに有効な着地予測がないことを通知する
+   void ClearLandingPrediction() { input_.landingPredictionValid = false; }
 
-	/// @brief 着地予測を探索する最大秒数を返す
-	float GetPreLandingPredictionHorizon() const { return preLandingPredictionSeconds; }
+   /// @brief 着地予測を探索する最大秒数を返す
+   float GetPreLandingPredictionHorizon() const { return preLandingPredictionSeconds; }
 
-	/// @brief 通常走行速度（autoSpeed）を設定する
-	/// @details これを下回った場合のみ減速演出を発火させる
-	void SetAutoSpeed(float speed) { input_.autoSpeed = speed; }
+   /// @brief 通常走行速度（autoSpeed）を設定する
+   /// @details これを下回った場合のみ減速演出を発火させる
+   void SetAutoSpeed(float speed) { input_.autoSpeed = speed; }
 
-	/// @brief 直近更新時のカメラUpを取得する
-	GameEngine::Vector3 GetCameraUp() const;
+   /// @brief 直近更新時のカメラUpを取得する
+   GameEngine::Vector3 GetCameraUp() const;
 
-	/// @brief 直近更新時のカメラRightを取得する
-	GameEngine::Vector3 GetCameraRight() const;
+   /// @brief 直近更新時のカメラRightを取得する
+   GameEngine::Vector3 GetCameraRight() const;
 
-	/// @brief 直近更新時のカメラ前方を取得する
-	GameEngine::Vector3 GetCameraForward() const;
+   /// @brief 直近更新時のカメラ前方を取得する
+   GameEngine::Vector3 GetCameraForward() const;
 
-	/// @brief カメラ3軸のフレーム計測を開始する
-	/// @param testName CSVへ記録する検証条件名
-	void StartCameraMeasurement(const std::string& testName = "camera_live");
+   /// @brief カメラ3軸のフレーム計測を開始する
+   /// @param testName CSVへ記録する検証条件名
+   void StartCameraMeasurement(const std::string& testName = "camera_live");
 
-	/// @brief カメラ3軸のフレーム計測を停止する
-	/// @param saveToFile trueならCSVと要約JSONを保存する
-	/// @return 保存を要求しなかった場合、または保存に成功した場合はtrue
-	bool StopCameraMeasurement(bool saveToFile = true);
+   /// @brief カメラ3軸のフレーム計測を停止する
+   /// @param saveToFile trueならCSVと要約JSONを保存する
+   /// @return 保存を要求しなかった場合、または保存に成功した場合はtrue
+   bool StopCameraMeasurement(bool saveToFile = true);
 
-	/// @brief 記録済みのカメラ計測履歴と集計値を消去する
-	void ClearCameraMeasurement();
+   /// @brief 記録済みのカメラ計測履歴と集計値を消去する
+   void ClearCameraMeasurement();
 
-	/// @brief カメラ計測中かを返す
-	bool IsCameraMeasurementActive() const;
+   /// @brief カメラ計測中かを返す
+   bool IsCameraMeasurementActive() const;
 
-	/// @brief 現在保持しているカメラ計測フレーム数を返す
-	size_t GetCameraMeasurementSampleCount() const;
+   /// @brief 現在保持しているカメラ計測フレーム数を返す
+   size_t GetCameraMeasurementSampleCount() const;
 
-	/// @brief 最後に保存したカメラ計測CSVのパスを返す
-	const std::string& GetLastCameraMeasurementPath() const;
+   /// @brief 最後に保存したカメラ計測CSVのパスを返す
+   const std::string& GetLastCameraMeasurementPath() const;
 
-	/// @brief カメラ設定をシリアライズする
-	nlohmann::json Serialize() const override;
+   /// @brief カメラ設定をシリアライズする
+   nlohmann::json Serialize() const override;
 
-	/// @brief カメラ設定をデシリアライズし、ランタイム補間状態を初期化する
-	/// @param data 読み込むJSONデータ
-	void Deserialize(const nlohmann::json& data) override;
+   /// @brief カメラ設定をデシリアライズし、ランタイム補間状態を初期化する
+   /// @param data 読み込むJSONデータ
+   void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-	/// @brief デバッグ表示（Inspector）
-	void DrawInspector() override;
+
+   /// @brief デバッグ表示（Inspector）
+   void DrawInspector() override;
 #endif
 
 protected:

@@ -5,6 +5,7 @@
 
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Component/Rendering/RenderComponent.h"
+#include "GameEngine/Object/Component/Rendering/LightComponent.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
 #include "GameEngine/Framework/EngineContext.h"
@@ -46,76 +47,94 @@ bool HasOptionalJsonType(const nlohmann::json& data, const char* key, nlohmann::
 }
 
 bool IsValidComponentState(const nlohmann::json& data, const char* typeKey) {
-   return data.is_object() &&
-      HasOptionalJsonType(data, typeKey, nlohmann::json::value_t::string) &&
-      HasOptionalJsonType(data, "enabled", nlohmann::json::value_t::boolean) &&
-      HasOptionalJsonType(data, "data", nlohmann::json::value_t::object);
+   return data.is_object() && HasOptionalJsonType(data, typeKey, nlohmann::json::value_t::string) &&
+          HasOptionalJsonType(data, "enabled", nlohmann::json::value_t::boolean) &&
+          HasOptionalJsonType(data, "data", nlohmann::json::value_t::object);
 }
 
 bool IsValidObjectState(const nlohmann::json& data) {
-   if (!data.is_object()) return false;
-   for (const auto* key : { "id", "parentId", "objectType", "assetId", "name" }) {
-      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::string)) return false;
+   if (!data.is_object())
+      return false;
+   for (const auto* key : {"id", "parentId", "objectType", "assetId", "name"}) {
+      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::string))
+         return false;
    }
-   for (const auto* key : { "data", "sprite" }) {
-      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::object)) return false;
+   for (const auto* key : {"data", "sprite"}) {
+      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::object))
+         return false;
    }
-   if (!HasOptionalJsonType(data, "components", nlohmann::json::value_t::array)) return false;
+   if (!HasOptionalJsonType(data, "components", nlohmann::json::value_t::array))
+      return false;
    if (data.contains("components")) {
       for (const auto& component : data.at("components")) {
-         if (!IsValidComponentState(component, "typeName")) return false;
+         if (!IsValidComponentState(component, "typeName"))
+            return false;
       }
    }
    return true;
 }
 
 bool IsValidSceneSnapshot(const nlohmann::json& data) {
-   if (!data.is_object()) return false;
+   if (!data.is_object())
+      return false;
+
    // 復元前にコンテナと参照キーを検証し、型違反で既存の選択・履歴・所有物を失わないようにする。
-   for (const auto* key : { "objects", "sceneObjects", "sceneParticleSystems", "hierarchyOrder" }) {
-      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::array)) return false;
+   for (const auto* key : {"objects", "sceneObjects", "sceneParticleSystems", "hierarchyOrder"}) {
+      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::array))
+         return false;
    }
-   for (const auto* key : { "cameras", "environment", "renderSettings" }) {
-      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::object)) return false;
+   for (const auto* key : {"cameras", "environment", "renderSettings"}) {
+      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::object))
+         return false;
    }
    if (data.contains("objects")) {
-      for (const auto& object : data.at("objects")) if (!IsValidObjectState(object)) return false;
+      for (const auto& object : data.at("objects"))
+         if (!IsValidObjectState(object))
+            return false;
    }
-   for (const auto* key : { "sceneObjects", "sceneParticleSystems" }) {
-      if (!data.contains(key)) continue;
+   for (const auto* key : {"sceneObjects", "sceneParticleSystems"}) {
+      if (!data.contains(key))
+         continue;
       const char* payloadKey = std::string_view(key) == "sceneObjects" ? "object" : "particleSystem";
       for (const auto& entry : data.at(key)) {
-         if (!entry.is_object() ||
-            !HasOptionalJsonType(entry, "sceneKey", nlohmann::json::value_t::string) ||
-            !HasOptionalJsonType(entry, "deleted", nlohmann::json::value_t::boolean) ||
-            (entry.contains(payloadKey) && !IsValidObjectState(entry.at(payloadKey)))) return false;
+         if (!entry.is_object() || !HasOptionalJsonType(entry, "sceneKey", nlohmann::json::value_t::string) ||
+             !HasOptionalJsonType(entry, "deleted", nlohmann::json::value_t::boolean) ||
+             (entry.contains(payloadKey) && !IsValidObjectState(entry.at(payloadKey))))
+            return false;
       }
    }
    if (data.contains("cameras")) {
       const auto& cameras = data.at("cameras");
       if (!HasOptionalJsonType(cameras, "virtualCameras", nlohmann::json::value_t::array) ||
-         !HasOptionalJsonType(cameras, "brain", nlohmann::json::value_t::object)) return false;
+          !HasOptionalJsonType(cameras, "brain", nlohmann::json::value_t::object))
+         return false;
       if (cameras.contains("virtualCameras")) {
          for (const auto& camera : cameras.at("virtualCameras")) {
-            if (!camera.is_object()) return false;
-            for (const auto* key : { "name", "id", "followTargetId", "lookAtTargetId" }) {
-               if (!HasOptionalJsonType(camera, key, nlohmann::json::value_t::string)) return false;
+            if (!camera.is_object())
+               return false;
+            for (const auto* key : {"name", "id", "followTargetId", "lookAtTargetId"}) {
+               if (!HasOptionalJsonType(camera, key, nlohmann::json::value_t::string))
+                  return false;
             }
             if (!HasOptionalJsonType(camera, "components", nlohmann::json::value_t::array) ||
-               !HasOptionalJsonType(camera, "state", nlohmann::json::value_t::object) ||
-               !HasOptionalJsonType(camera, "active", nlohmann::json::value_t::boolean) ||
-               !HasOptionalJsonType(camera, "componentsAreComplete", nlohmann::json::value_t::boolean) ||
-               (camera.contains("priority") && !camera.at("priority").is_number_integer())) return false;
+                !HasOptionalJsonType(camera, "state", nlohmann::json::value_t::object) ||
+                !HasOptionalJsonType(camera, "active", nlohmann::json::value_t::boolean) ||
+                !HasOptionalJsonType(camera, "componentsAreComplete", nlohmann::json::value_t::boolean) ||
+                (camera.contains("priority") && !camera.at("priority").is_number_integer()))
+               return false;
             if (camera.contains("components")) {
                for (const auto& component : camera.at("components")) {
-                  if (!IsValidComponentState(component, "componentName")) return false;
+                  if (!IsValidComponentState(component, "componentName"))
+                     return false;
                }
             }
          }
       }
    }
    if (data.contains("hierarchyOrder")) {
-      for (const auto& id : data.at("hierarchyOrder")) if (!id.is_string()) return false;
+      for (const auto& id : data.at("hierarchyOrder"))
+         if (!id.is_string())
+            return false;
    }
    return true;
 }
@@ -158,11 +177,10 @@ Transform MatrixToTransform(const Matrix4x4& matrix) {
    Transform transform{};
    transform.translation = Vector3(translation[0], translation[1], translation[2]);
    transform.scale = Vector3(scale[0], scale[1], scale[2]);
+
    // ImGuizmoのEuler角は表示上の中間値に留め、エンジン側では合成時に安定するQuaternionを正規化して保持する。
-   const Vector3 eulerRadians = Vector3(
-      ToRadians(rotationDegrees[0]),
-      ToRadians(rotationDegrees[1]),
-      ToRadians(rotationDegrees[2]));
+   const Vector3 eulerRadians =
+      Vector3(ToRadians(rotationDegrees[0]), ToRadians(rotationDegrees[1]), ToRadians(rotationDegrees[2]));
    transform.SetRotationQuaternion(eulerRadians.ToQuaternion().Normalize());
    return transform;
 }
@@ -193,8 +211,7 @@ bool DoesSceneObjectTypeMatch(const Object* object, const std::string& objectTyp
    }
 
    const std::string existingObjectType = GetSceneObjectTypeName(object);
-   return existingObjectType == objectType ||
-      (existingObjectType == "Object" && objectType == "Generic");
+   return existingObjectType == objectType || (existingObjectType == "Object" && objectType == "Generic");
 }
 
 std::string BuildSceneKey(const std::string& typeName, const std::string& objectName) {
@@ -220,9 +237,7 @@ bool IsRegisteredParticleSystem(const ParticleSystem* particleSystem) {
 }
 
 bool IsEditableSceneParticleSystem(const ParticleSystem* particleSystem) {
-   return particleSystem &&
-      particleSystem->IsEditorInspectable() &&
-      IsRegisteredParticleSystem(particleSystem);
+   return particleSystem && particleSystem->IsEditorInspectable() && IsRegisteredParticleSystem(particleSystem);
 }
 
 bool IsFiniteVector(const Vector3& value) {
@@ -264,20 +279,20 @@ bool IsProjectedInsideCamera(const Camera* camera, const Vector3& worldPosition)
    }
 
    const Vector4 clip = TransformVectorByMatrix(
-      Vector4(worldPosition.x, worldPosition.y, worldPosition.z, 1.0f),
-      camera->GetViewProjectionMatrix());
+      Vector4(worldPosition.x, worldPosition.y, worldPosition.z, 1.0f), camera->GetViewProjectionMatrix());
    if (!std::isfinite(clip.x) || !std::isfinite(clip.y) || !std::isfinite(clip.z) || !std::isfinite(clip.w) ||
-      std::abs(clip.w) < kHomogeneousCoordinateEpsilon) {
+       std::abs(clip.w) < kHomogeneousCoordinateEpsilon) {
       return false;
    }
 
    const float ndcX = clip.x / clip.w;
    const float ndcY = clip.y / clip.w;
    const float ndcZ = clip.z / clip.w;
+
    // クリップ境界ぎりぎりを避け、生成直後のオブジェクトが確実に選択できる余白を残す。
    return ndcX >= -kSafeNormalizedDeviceCoordinateLimit && ndcX <= kSafeNormalizedDeviceCoordinateLimit &&
-      ndcY >= -kSafeNormalizedDeviceCoordinateLimit && ndcY <= kSafeNormalizedDeviceCoordinateLimit &&
-      ndcZ >= 0.0f && ndcZ <= 1.0f;
+          ndcY >= -kSafeNormalizedDeviceCoordinateLimit && ndcY <= kSafeNormalizedDeviceCoordinateLimit &&
+          ndcZ >= 0.0f && ndcZ <= 1.0f;
 }
 
 bool UsesScreenRenderSpace(const Object* object) {
@@ -297,6 +312,7 @@ bool UsesScreenRenderSpace(const Object* object) {
 Vector2 GetEditorScreenCameraSize(float viewportWidth, float viewportHeight) {
    float outputWidth = std::max(viewportWidth, 1.0f);
    float outputHeight = std::max(viewportHeight, 1.0f);
+
    // スクリーン空間オブジェクトはバックバッファへ描画されるため、実出力の縦横比を使う。
    if (auto* graphicsDevice = EngineContext::GetGraphicsDevice()) {
       const uint32_t width = graphicsDevice->GetBackBufferWidth();
@@ -314,9 +330,7 @@ Vector2 GetEditorScreenCameraSize(float viewportWidth, float viewportHeight) {
 }
 
 Vector2 GetEditorScreenLayoutSize() {
-   return Vector2(
-      static_cast<float>(Window::kUiReferenceWidth),
-      static_cast<float>(Window::kUiReferenceHeight));
+   return Vector2(static_cast<float>(Window::kUiReferenceWidth), static_cast<float>(Window::kUiReferenceHeight));
 }
 
 Vector3 CalculateScreenAnchorOffset(Sprite::AnchorPoint anchorPoint, const Vector2& screenSize) {
@@ -390,28 +404,17 @@ Vector3 GetScreenRenderOffset(const Object* object, const Vector2& screenSize) {
 
 Vector3 ToEditorScreenWorldPosition(const Vector3& screenTranslation, const Vector3& anchorOffset) {
    return Vector3(
-      anchorOffset.x + screenTranslation.x,
-      anchorOffset.y + screenTranslation.y,
-      anchorOffset.z + screenTranslation.z);
+      anchorOffset.x + screenTranslation.x, anchorOffset.y + screenTranslation.y, anchorOffset.z + screenTranslation.z);
 }
 
 Vector3 FromEditorScreenWorldPosition(const Vector3& worldPosition, const Vector3& anchorOffset) {
-   return Vector3(
-      worldPosition.x - anchorOffset.x,
-      worldPosition.y - anchorOffset.y,
-      worldPosition.z - anchorOffset.z);
+   return Vector3(worldPosition.x - anchorOffset.x, worldPosition.y - anchorOffset.y, worldPosition.z - anchorOffset.z);
 }
 
 Matrix4x4 MakeScreenSpaceProjectionMatrix(const Vector2& screenSize, bool useDownwardYAxis = false) {
    const float top = useDownwardYAxis ? -screenSize.y * 0.5f : screenSize.y * 0.5f;
    const float bottom = -top;
-   return MakeOrthographicMatrix(
-      -screenSize.x * 0.5f,
-      top,
-      screenSize.x * 0.5f,
-      bottom,
-      0.0f,
-      kScreenSpaceFarClip);
+   return MakeOrthographicMatrix(-screenSize.x * 0.5f, top, screenSize.x * 0.5f, bottom, 0.0f, kScreenSpaceFarClip);
 }
 
 Transform BuildScreenSpacePlacementTransform() {
@@ -429,6 +432,7 @@ void EditorSceneContext::Initialize(std::string sceneName) {
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
    commandStack_.Clear();
+
    // 前シーンの非所有ポインターや安定キーを持ち越すと別シーンのEntityへ誤適用されるため一括で破棄する。
    hiddenSceneObjects_.clear();
    hiddenParticleSystems_.clear();
@@ -446,13 +450,15 @@ void EditorSceneContext::AutoLoad() {
    }
 
    hasAutoLoaded_ = true;
+
    // JSONを適用する前にBaseSceneが生成した実体へキーを割り当て、保存済み状態との対応を固定する。
    RegisterSceneOwnedKeys();
    Load();
 }
 
 void EditorSceneContext::Clear() {
-   if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
+   if (auto* audio = EngineContext::GetAudio())
+      audio->StopPreviews();
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
    manipulatingObject_ = nullptr;
@@ -461,6 +467,7 @@ void EditorSceneContext::Clear() {
    isManipulatingParticleSystem_ = false;
    commandStack_.Clear();
    objectStore_.Clear();
+
    // シーン所有EntityはStoreから破棄できないため、コンテキスト終了時に一時的な非表示状態だけを元へ戻す。
    for (const Object* hiddenObject : hiddenSceneObjects_) {
       Object* object = const_cast<Object*>(hiddenObject);
@@ -531,6 +538,7 @@ nlohmann::json EditorSceneContext::SerializeToJson() {
    nlohmann::json sceneData = nlohmann::json::object();
    sceneData["version"] = kCurrentSceneFormatVersion;
    sceneData["sceneName"] = sceneName_;
+
    // Editor生成物とBaseScene所有物は寿命が異なるため、復元可能な所有物と差分適用対象を別配列へ保存する。
    sceneData["objects"] = objectStore_.SerializeAll();
    sceneData["sceneObjects"] = SerializeSceneObjects();
@@ -542,6 +550,7 @@ nlohmann::json EditorSceneContext::SerializeToJson() {
       }
    }
    sceneData["cameras"] = SerializeCameras();
+
    // シーンライトはLightComponentとしてobjects/sceneObjectsへ保存し、環境設定との二重所有を避ける。
    sceneData["environment"] = nlohmann::json::object();
    sceneData["renderSettings"] = EngineContext::SerializePostProcessSceneState();
@@ -590,13 +599,18 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
       referencesDirty_ = wereReferencesDirty;
       selectedObject_ = nullptr;
       for (auto* object : CollectEditableObjects()) {
-         if (object && object->GetEntityId() == selectedObjectId) { selectedObject_ = object; break; }
+         if (object && object->GetEntityId() == selectedObjectId) {
+            selectedObject_ = object;
+            break;
+         }
       }
       selectedParticleSystem_ = FindParticleForCommand(selectedParticleId);
-      SetStatus(failure.empty() ? "Load failed: scene could not be restored" : std::move(failure), Logger::LogLevel::Error);
+      SetStatus(
+         failure.empty() ? "Load failed: scene could not be restored" : std::move(failure), Logger::LogLevel::Error);
    } else {
       MarkDirty();
-      SetStatus(failure + "; recovery failed because previous resources could not be restored", Logger::LogLevel::Error);
+      SetStatus(
+         failure + "; recovery failed because previous resources could not be restored", Logger::LogLevel::Error);
    }
    return false;
 }
@@ -604,11 +618,12 @@ bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
 bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, bool& entitiesChanged) {
    // Rendererは自身の設定を検証する。Entityを破棄する前に適用可否を確定させる。
    if (sceneData.contains("renderSettings") && !sceneData.at("renderSettings").empty() &&
-      !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
+       !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
       SetStatus("Load failed: invalid render settings", Logger::LogLevel::Error);
       return false;
    }
    entitiesChanged = true;
+
    // Storeの再構築でポインターが無効になり得るため、選択と履歴を先に切り離してから状態を入れ替える。
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
@@ -618,6 +633,7 @@ bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, boo
    isManipulatingParticleSystem_ = false;
    RegisterSceneOwnedKeys();
    objectStore_.Clear();
+
    // 同じスナップショット内の安定IDを再利用するため、旧Store所有物をグローバルEntity索引からも先に解放する。
    objectStore_.FlushDeferredDeletes();
    hiddenSceneObjects_.clear();
@@ -640,11 +656,13 @@ bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, boo
                   if (isParticleSystemData && existingParticleSystem && !existingObject) {
                      // 新規復元と同じ初期状態に揃え、旧設定で生成済みの粒子を残さない。
                      existingParticleSystem->Stop();
-                     if (!objectStore_.ApplyParticleSystemState(existingParticleSystem, objectData)) return false;
+                     if (!objectStore_.ApplyParticleSystemState(existingParticleSystem, objectData))
+                        return false;
                      existingParticleSystem->Play();
                   } else if (!isParticleSystemData && existingObject && !existingParticleSystem &&
-                     DoesSceneObjectTypeMatch(existingObject, objectType)) {
-                     if (!objectStore_.ApplyObjectState(existingObject, objectData)) return false;
+                             DoesSceneObjectTypeMatch(existingObject, objectType)) {
+                     if (!objectStore_.ApplyObjectState(existingObject, objectData))
+                        return false;
                   } else {
                      SetStatus("Load failed: conflicting object type or id " + objectId, Logger::LogLevel::Error);
                      return false;
@@ -654,8 +672,10 @@ bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, boo
             }
          }
          const bool isParticle = objectData.value("objectType", "Model") == "ParticleSystem";
-         if (isParticle ? objectStore_.RestoreParticleSystem(objectData) == nullptr : objectStore_.RestoreObject(objectData) == nullptr) {
-            SetStatus("Load failed: could not restore asset for object " + objectData.value("id", ""), Logger::LogLevel::Error);
+         if (isParticle ? objectStore_.RestoreParticleSystem(objectData) == nullptr
+                        : objectStore_.RestoreObject(objectData) == nullptr) {
+            SetStatus("Load failed: could not restore asset for object " + objectData.value("id", ""),
+               Logger::LogLevel::Error);
             return false;
          }
       }
@@ -698,6 +718,7 @@ void EditorSceneContext::ApplyHierarchyOrder(const nlohmann::json& hierarchyOrde
          registeredIds.insert(object->GetEntityId());
       }
    }
+
    // 削除済みIDと重複IDを除外し、壊れた保存データが現在のヒエラルキーへ混入しないようにする。
    for (const auto& objectId : hierarchyOrderData) {
       if (!objectId.is_string()) {
@@ -705,7 +726,7 @@ void EditorSceneContext::ApplyHierarchyOrder(const nlohmann::json& hierarchyOrde
       }
       const std::string id = objectId.get<std::string>();
       if (registeredIds.contains(id) &&
-         std::find(hierarchyOrder_.begin(), hierarchyOrder_.end(), id) == hierarchyOrder_.end()) {
+          std::find(hierarchyOrder_.begin(), hierarchyOrder_.end(), id) == hierarchyOrder_.end()) {
          hierarchyOrder_.push_back(id);
       }
    }
@@ -714,7 +735,7 @@ void EditorSceneContext::ApplyHierarchyOrder(const nlohmann::json& hierarchyOrde
 std::filesystem::path EditorSceneContext::GetSceneFilePath() const {
    const auto filename = sceneName_ + ".json";
    return std::filesystem::path("resources") / "game" / "scenes" /
-      std::filesystem::path(std::u8string(filename.begin(), filename.end()));
+          std::filesystem::path(std::u8string(filename.begin(), filename.end()));
 }
 
 void EditorSceneContext::MarkDirty() {
@@ -723,7 +744,8 @@ void EditorSceneContext::MarkDirty() {
 }
 
 void EditorSceneContext::RefreshReferences(bool initializeRuntime) {
-   if (!referencesDirty_ && !initializeRuntime) return;
+   if (!referencesDirty_ && !initializeRuntime)
+      return;
    if (auto* world = SceneWorld::GetCurrent()) {
       world->ResolveReferences(CollectEditableObjects(), initializeRuntime);
       referencesDirty_ = false;
@@ -738,7 +760,8 @@ std::vector<Object*> EditorSceneContext::CollectEditableObjects() {
    const auto view = static_cast<const EditorSceneContext&>(*this).CollectEditableObjects();
    std::vector<Object*> editable;
    editable.reserve(view.size());
-   for (const auto* object : view) editable.push_back(const_cast<Object*>(object));
+   for (const auto* object : view)
+      editable.push_back(const_cast<Object*>(object));
    return editable;
 }
 
@@ -760,17 +783,16 @@ std::vector<const Object*> EditorSceneContext::CollectEditableObjects() const {
       }
 
       // 未登録の新規オブジェクトは生成順のまま末尾へ残し、既存順だけを安定して復元する。
-      std::stable_sort(objects.begin(), objects.end(),
-         [&hierarchyRanks](const Object* lhs, const Object* rhs) {
-            const auto lhsRank = lhs ? hierarchyRanks.find(lhs->GetEntityId()) : hierarchyRanks.end();
-            const auto rhsRank = rhs ? hierarchyRanks.find(rhs->GetEntityId()) : hierarchyRanks.end();
-            const bool lhsOrdered = lhsRank != hierarchyRanks.end();
-            const bool rhsOrdered = rhsRank != hierarchyRanks.end();
-            if (lhsOrdered != rhsOrdered) {
-               return lhsOrdered;
-            }
-            return lhsOrdered && lhsRank->second < rhsRank->second;
-         });
+      std::stable_sort(objects.begin(), objects.end(), [&hierarchyRanks](const Object* lhs, const Object* rhs) {
+         const auto lhsRank = lhs ? hierarchyRanks.find(lhs->GetEntityId()) : hierarchyRanks.end();
+         const auto rhsRank = rhs ? hierarchyRanks.find(rhs->GetEntityId()) : hierarchyRanks.end();
+         const bool lhsOrdered = lhsRank != hierarchyRanks.end();
+         const bool rhsOrdered = rhsRank != hierarchyRanks.end();
+         if (lhsOrdered != rhsOrdered) {
+            return lhsOrdered;
+         }
+         return lhsOrdered && lhsRank->second < rhsRank->second;
+      });
    }
 
    return objects;
@@ -780,7 +802,8 @@ std::vector<ParticleSystem*> EditorSceneContext::CollectEditableParticleSystems(
    const auto view = static_cast<const EditorSceneContext&>(*this).CollectEditableParticleSystems();
    std::vector<ParticleSystem*> editable;
    editable.reserve(view.size());
-   for (const auto* object : view) editable.push_back(const_cast<ParticleSystem*>(object));
+   for (const auto* object : view)
+      editable.push_back(const_cast<ParticleSystem*>(object));
    return editable;
 }
 
@@ -797,12 +820,15 @@ std::vector<const ParticleSystem*> EditorSceneContext::CollectEditableParticleSy
 }
 
 void EditorSceneContext::SelectObject(Object* object) {
-   if (selectedObject_ != object) if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
+   if (selectedObject_ != object)
+      if (auto* audio = EngineContext::GetAudio())
+         audio->StopPreviews();
    if (object && !IsObjectAlive(object)) {
       selectedObject_ = nullptr;
       return;
    }
    selectedObject_ = object;
+
    // ObjectとParticleSystemは別インスペクター経路なので、選択は常に排他的に保つ。
    if (selectedObject_) {
       selectedParticleSystem_ = nullptr;
@@ -810,7 +836,9 @@ void EditorSceneContext::SelectObject(Object* object) {
 }
 
 void EditorSceneContext::SelectParticleSystem(ParticleSystem* particleSystem) {
-   if (selectedParticleSystem_ != particleSystem) if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
+   if (selectedParticleSystem_ != particleSystem)
+      if (auto* audio = EngineContext::GetAudio())
+         audio->StopPreviews();
    if (particleSystem && !IsParticleSystemAlive(particleSystem)) {
       selectedParticleSystem_ = nullptr;
       return;
@@ -821,26 +849,21 @@ void EditorSceneContext::SelectParticleSystem(ParticleSystem* particleSystem) {
    }
 }
 
-bool EditorSceneContext::ReorderObject(
-   Object* movedObject,
-   Object* targetObject,
-   HierarchyDropPosition dropPosition) {
-   if (!IsObjectAlive(movedObject) ||
-      (targetObject && !IsObjectAlive(targetObject)) ||
-      movedObject == targetObject) {
+bool EditorSceneContext::ReorderObject(Object* movedObject, Object* targetObject, HierarchyDropPosition dropPosition) {
+   if (!IsObjectAlive(movedObject) || (targetObject && !IsObjectAlive(targetObject)) || movedObject == targetObject) {
       return false;
    }
 
    const std::string beforeParentId = movedObject->GetParentEntityId();
    std::vector<std::string> beforeOrder;
    for (const auto* object : CollectEditableObjects()) {
-      if (object) beforeOrder.push_back(object->GetEntityId());
+      if (object)
+         beforeOrder.push_back(object->GetEntityId());
    }
-   const std::string targetParentId = !targetObject
-      ? std::string{}
-      : (dropPosition == HierarchyDropPosition::Into
-         ? targetObject->GetEntityId()
-         : targetObject->GetParentEntityId());
+   const std::string targetParentId =
+      !targetObject ? std::string{}
+                    : (dropPosition == HierarchyDropPosition::Into ? targetObject->GetEntityId()
+                                                                   : targetObject->GetParentEntityId());
    const std::string movedId = movedObject->GetEntityId();
    std::vector<std::string> orderedIds;
    for (const Object* object : CollectEditableObjects()) {
@@ -851,8 +874,7 @@ bool EditorSceneContext::ReorderObject(
 
    auto insertionPoint = orderedIds.end();
    if (targetObject) {
-      const auto targetIt = std::find(
-         orderedIds.begin(), orderedIds.end(), targetObject->GetEntityId());
+      const auto targetIt = std::find(orderedIds.begin(), orderedIds.end(), targetObject->GetEntityId());
       if (targetIt == orderedIds.end()) {
          return false;
       }
@@ -888,22 +910,25 @@ bool EditorSceneContext::CanDeleteObject(const Object* object) const {
 }
 
 bool EditorSceneContext::CanDeleteParticleSystem(const ParticleSystem* particleSystem) const {
-   return particleSystem &&
-      IsParticleSystemAlive(particleSystem) &&
-      (objectStore_.Contains(particleSystem) || IsEditableSceneParticleSystem(particleSystem));
+   return particleSystem && IsParticleSystemAlive(particleSystem) &&
+          (objectStore_.Contains(particleSystem) || IsEditableSceneParticleSystem(particleSystem));
 }
 
 void EditorSceneContext::CreateEmptyObject() {
-   CommitEdit(std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::Empty, BuildPlacementTransformInFrontOfCamera()));
+   CommitEdit(std::make_unique<CreateObjectCommand>(
+      CreateObjectCommand::Kind::Empty, BuildPlacementTransformInFrontOfCamera()));
 }
 
 void EditorSceneContext::CreateSpriteFromTexture(const std::string& textureAssetId) {
-   if (!assetRegistry_.FindAsset(textureAssetId, EditorAssetType::Texture)) return;
-   CommitEdit(std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::Sprite, BuildScreenSpacePlacementTransform(), textureAssetId));
+   if (!assetRegistry_.FindAsset(textureAssetId, EditorAssetType::Texture))
+      return;
+   CommitEdit(std::make_unique<CreateObjectCommand>(
+      CreateObjectCommand::Kind::Sprite, BuildScreenSpacePlacementTransform(), textureAssetId));
 }
 
 void EditorSceneContext::CreateUIText() {
-   CommitEdit(std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::UIText, BuildScreenSpacePlacementTransform()));
+   CommitEdit(
+      std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::UIText, BuildScreenSpacePlacementTransform()));
 }
 
 void EditorSceneContext::CreateSkybox() {
@@ -922,19 +947,23 @@ void EditorSceneContext::CreateSkybox() {
 }
 
 void EditorSceneContext::CreateDirectionalLight() {
-   CommitEdit(std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::DirectionalLight, BuildPlacementTransformInFrontOfCamera()));
+   CommitEdit(std::make_unique<CreateObjectCommand>(
+      CreateObjectCommand::Kind::DirectionalLight, BuildPlacementTransformInFrontOfCamera()));
 }
 
 void EditorSceneContext::CreatePointLight() {
-   CommitEdit(std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::PointLight, BuildPlacementTransformInFrontOfCamera()));
+   CommitEdit(std::make_unique<CreateObjectCommand>(
+      CreateObjectCommand::Kind::PointLight, BuildPlacementTransformInFrontOfCamera()));
 }
 
 void EditorSceneContext::CreateSpotLight() {
-   CommitEdit(std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::SpotLight, BuildPlacementTransformInFrontOfCamera()));
+   CommitEdit(std::make_unique<CreateObjectCommand>(
+      CreateObjectCommand::Kind::SpotLight, BuildPlacementTransformInFrontOfCamera()));
 }
 
 void EditorSceneContext::CreateAreaLight() {
-   CommitEdit(std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::AreaLight, BuildPlacementTransformInFrontOfCamera()));
+   CommitEdit(std::make_unique<CreateObjectCommand>(
+      CreateObjectCommand::Kind::AreaLight, BuildPlacementTransformInFrontOfCamera()));
 }
 
 bool EditorSceneContext::PlaceAsset(const std::string& assetId, Object* parent) {
@@ -948,14 +977,17 @@ bool EditorSceneContext::PlaceAsset(const std::string& assetId, Object* parent) 
       return false;
    }
    if (parent && entry->type == EditorAssetType::Particle) {
-      SetStatus("Placement failed: particle systems have no Entity parent; drop on Hierarchy background", Logger::LogLevel::Warning);
+      SetStatus("Placement failed: particle systems have no Entity parent; drop on Hierarchy background",
+         Logger::LogLevel::Warning);
       return false;
    }
-   const auto kind = entry->type == EditorAssetType::Model ? CreateObjectCommand::Kind::Model : CreateObjectCommand::Kind::Particle;
+   const auto kind =
+      entry->type == EditorAssetType::Model ? CreateObjectCommand::Kind::Model : CreateObjectCommand::Kind::Particle;
    const Transform placement = parent ? Transform{} : BuildPlacementTransformInFrontOfCamera();
-   const bool created = CommitEdit(std::make_unique<CreateObjectCommand>(kind, placement, entry->assetId,
-      parent ? parent->GetEntityId() : std::string{}));
-   if (!created) SetStatus("Placement failed: could not load " + assetId, Logger::LogLevel::Error);
+   const bool created = CommitEdit(std::make_unique<CreateObjectCommand>(
+      kind, placement, entry->assetId, parent ? parent->GetEntityId() : std::string{}));
+   if (!created)
+      SetStatus("Placement failed: could not load " + assetId, Logger::LogLevel::Error);
    return created;
 }
 
@@ -1058,47 +1090,40 @@ void EditorSceneContext::RemoveComponentFromSelectedObject(const std::string& ty
 }
 
 void EditorSceneContext::Undo() {
-   commandStack_.Undo(*this);
+   CommandOperations operations(*this);
+   FinishCommand(commandStack_.Undo(operations));
 }
 
 void EditorSceneContext::Redo() {
-   commandStack_.Redo(*this);
+   CommandOperations operations(*this);
+   FinishCommand(commandStack_.Redo(operations));
 }
 
 void EditorSceneContext::DrawGizmoInspectorControls() {
    ImGui::SeparatorText("Guizmo");
 
-   const char* operationLabels[] = {
-      ImGuiHelper::Localize({ "移動", "Move" }),
-      ImGuiHelper::Localize({ "回転", "Rotate" }),
-      ImGuiHelper::Localize({ "拡縮", "Scale" })
-   };
+   const char* operationLabels[] = {ImGuiHelper::Localize({"移動", "Move"}), ImGuiHelper::Localize({"回転", "Rotate"}),
+      ImGuiHelper::Localize({"拡縮", "Scale"})};
    int operation = static_cast<int>(gizmoOperation_);
-   if (ImGui::Combo(
-      ImGuiHelper::Localize({ "操作", "Operation" }),
-      &operation,
-      operationLabels,
-      static_cast<int>(std::size(operationLabels)))) {
+   if (ImGui::Combo(ImGuiHelper::Localize({"操作", "Operation"}), &operation, operationLabels,
+          static_cast<int>(std::size(operationLabels)))) {
       gizmoOperation_ = static_cast<GizmoOperation>(operation);
    }
 
    const char* modeLabels[] = {
-      ImGuiHelper::Localize({ "ローカル", "Local" }),
-      ImGuiHelper::Localize({ "ワールド", "World" })
-   };
+      ImGuiHelper::Localize({"ローカル", "Local"}), ImGuiHelper::Localize({"ワールド", "World"})};
    int mode = static_cast<int>(gizmoMode_);
    if (ImGui::Combo(
-      ImGuiHelper::Localize({ "空間", "Mode" }),
-      &mode,
-      modeLabels,
-      static_cast<int>(std::size(modeLabels)))) {
+          ImGuiHelper::Localize({"空間", "Mode"}), &mode, modeLabels, static_cast<int>(std::size(modeLabels)))) {
       gizmoMode_ = static_cast<GizmoMode>(mode);
    }
 }
 
-void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
+void EditorSceneContext::DrawTransformGizmo(
+   float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
    if (selectedObject_ && !IsObjectAlive(selectedObject_)) {
-      if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
+      if (auto* audio = EngineContext::GetAudio())
+         audio->StopPreviews();
       selectedObject_ = nullptr;
    }
    if (selectedParticleSystem_ && !IsParticleSystemAlive(selectedParticleSystem_)) {
@@ -1115,10 +1140,8 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
    }
 
    if (selectedParticleSystem_) {
-      auto* shapeModule = selectedParticleSystem_->GetShapeModule();
-      if (!shapeModule) {
-         return;
-      }
+      const auto shapeSettings = selectedParticleSystem_->DescribeShapeModule();
+      const auto* shapeModule = &shapeSettings;
 
       Matrix4x4 worldMatrix = MakeAffineMatrix(shapeModule->GetTransform());
       Matrix4x4 viewMatrix = camera->GetViewMatrix();
@@ -1129,12 +1152,8 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
       ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
       ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
       ImGuizmo::SetOrthographic(camera->GetProjectionType() == Camera::ProjectionType::Orthographic);
-      ImGuizmo::Manipulate(
-         &viewMatrix.m[0][0],
-         &projectionMatrix.m[0][0],
-         ToImGuizmoOperation(gizmoOperation_),
-         ToImGuizmoMode(gizmoMode_),
-         &worldMatrix.m[0][0]);
+      ImGuizmo::Manipulate(&viewMatrix.m[0][0], &projectionMatrix.m[0][0], ToImGuizmoOperation(gizmoOperation_),
+         ToImGuizmoMode(gizmoMode_), &worldMatrix.m[0][0]);
 
       if (ImGuizmo::IsUsing()) {
          if (!isManipulatingParticleSystem_ || manipulatingParticleSystem_ != selectedParticleSystem_) {
@@ -1144,7 +1163,7 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
             isManipulatingParticleSystem_ = true;
          }
 
-         shapeModule->SetTransform(MatrixToTransform(worldMatrix));
+         selectedParticleSystem_->ApplyEmitterPose(MatrixToTransform(worldMatrix));
          return;
       }
 
@@ -1154,11 +1173,9 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
          manipulatingParticleSystem_ = nullptr;
          isManipulatingParticleSystem_ = false;
 
-         if (manipulatedParticleSystem && manipulatedParticleSystem->GetShapeModule()) {
-            SubmitParticleTransformIfNeeded(
-               particleTransformBeforeManipulation_,
-               manipulatedParticleSystem->GetShapeModule()->GetTransform(),
-               manipulatedParticleSystem);
+         if (manipulatedParticleSystem) {
+            SubmitParticleTransformIfNeeded(particleTransformBeforeManipulation_,
+               manipulatedParticleSystem->DescribeShapeModule().GetTransform(), manipulatedParticleSystem);
          }
       }
       return;
@@ -1170,12 +1187,12 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
    }
 
    const bool useScreenSpace = UsesScreenRenderSpace(selectedObject_);
+
    // UITextは左上原点のY下向き座標で頂点化されるため、SpriteのY上向き投影と分ける。
    const bool useUITextCoordinates = useScreenSpace && dynamic_cast<UIText*>(selectedObject_) != nullptr;
    const Vector2 screenSize = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
-   const Vector3 screenRenderOffset = useScreenSpace
-      ? GetScreenRenderOffset(selectedObject_, GetEditorScreenLayoutSize())
-      : Vector3(0.0f, 0.0f, 0.0f);
+   const Vector3 screenRenderOffset =
+      useScreenSpace ? GetScreenRenderOffset(selectedObject_, GetEditorScreenLayoutSize()) : Vector3(0.0f, 0.0f, 0.0f);
 
    Transform gizmoTransform = transformComponent->GetLocalPose();
    if (useScreenSpace) {
@@ -1185,19 +1202,16 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
 
    Matrix4x4 worldMatrix = MakeAffineMatrix(gizmoTransform);
    Matrix4x4 viewMatrix = useScreenSpace ? MakeIdentity4x4() : camera->GetViewMatrix();
-   Matrix4x4 projectionMatrix = useScreenSpace ? MakeScreenSpaceProjectionMatrix(screenSize, useUITextCoordinates) : camera->GetProjectionMatrix();
+   Matrix4x4 projectionMatrix = useScreenSpace ? MakeScreenSpaceProjectionMatrix(screenSize, useUITextCoordinates)
+                                               : camera->GetProjectionMatrix();
 
    const Transform beforeCall = transformComponent->GetLocalPose();
 
    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
    ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
    ImGuizmo::SetOrthographic(useScreenSpace || camera->GetProjectionType() == Camera::ProjectionType::Orthographic);
-   ImGuizmo::Manipulate(
-      &viewMatrix.m[0][0],
-      &projectionMatrix.m[0][0],
-      ToImGuizmoOperation(gizmoOperation_, useUITextCoordinates),
-      ToImGuizmoMode(gizmoMode_),
-      &worldMatrix.m[0][0]);
+   ImGuizmo::Manipulate(&viewMatrix.m[0][0], &projectionMatrix.m[0][0],
+      ToImGuizmoOperation(gizmoOperation_, useUITextCoordinates), ToImGuizmoMode(gizmoMode_), &worldMatrix.m[0][0]);
 
    if (ImGuizmo::IsUsing()) {
       if (!isManipulating_ || manipulatingObject_ != selectedObject_) {
@@ -1209,7 +1223,8 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
 
       Transform manipulatedTransform = MatrixToTransform(worldMatrix);
       if (useScreenSpace) {
-         manipulatedTransform.translation = FromEditorScreenWorldPosition(manipulatedTransform.translation, screenRenderOffset);
+         manipulatedTransform.translation =
+            FromEditorScreenWorldPosition(manipulatedTransform.translation, screenRenderOffset);
       }
       transformComponent->ApplyLocalPose(manipulatedTransform);
       return;
@@ -1223,23 +1238,26 @@ void EditorSceneContext::DrawTransformGizmo(float viewportX, float viewportY, fl
       if (manipulatedObject) {
          auto* manipulatedTransform = manipulatedObject->GetComponent<TransformComponent>();
          if (manipulatedTransform) {
-            SubmitTransformIfNeeded(transformBeforeManipulation_, manipulatedTransform->GetLocalPose(), manipulatedObject);
+            SubmitTransformIfNeeded(
+               transformBeforeManipulation_, manipulatedTransform->GetLocalPose(), manipulatedObject);
          }
       }
    }
 }
 
 void EditorSceneContext::AcceptViewportAssetDrop() {
-   if (!ImGui::BeginDragDropTarget()) return;
+   if (!ImGui::BeginDragDropTarget())
+      return;
    if (const auto* entry = EditorUI::AcceptAssetDrop(EditorAssetType::Unknown, [](const EditorAssetEntry& entry) {
-      return entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle;
-   })) {
+          return entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle;
+       })) {
       PlaceAsset(entry->assetId);
    }
    ImGui::EndDragDropTarget();
 }
 
-void EditorSceneContext::HandleViewportClickSelection(float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
+void EditorSceneContext::HandleViewportClickSelection(
+   float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
    if (viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
       return;
    }
@@ -1253,8 +1271,8 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
    }
 
    ImVec2 mouse = ImGui::GetMousePos();
-   if (mouse.x < viewportX || mouse.x > viewportX + viewportWidth ||
-      mouse.y < viewportY || mouse.y > viewportY + viewportHeight) {
+   if (mouse.x < viewportX || mouse.x > viewportX + viewportWidth || mouse.y < viewportY ||
+       mouse.y > viewportY + viewportHeight) {
       return;
    }
 
@@ -1285,48 +1303,36 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
 
       const bool useScreenSpace = UsesScreenRenderSpace(object);
       const bool useUITextCoordinates = useScreenSpace && dynamic_cast<const UIText*>(object) != nullptr;
-      const Vector3 screenRenderOffset = useScreenSpace
-         ? GetScreenRenderOffset(object, screenLayoutSize)
-         : Vector3(0.0f, 0.0f, 0.0f);
+      const Vector3 screenRenderOffset =
+         useScreenSpace ? GetScreenRenderOffset(object, screenLayoutSize) : Vector3(0.0f, 0.0f, 0.0f);
       const Matrix4x4 viewProjection = useScreenSpace
-         ? (useUITextCoordinates ? uiTextScreenViewProjection : screenViewProjection)
-         : camera->GetViewProjectionMatrix();
-      const Vector3 objectCenter = useScreenSpace
-         ? ToEditorScreenWorldPosition(transformComponent->GetLocalPose().translation, screenRenderOffset)
-         : transformComponent->GetLocalPose().translation;
+                                          ? (useUITextCoordinates ? uiTextScreenViewProjection : screenViewProjection)
+                                          : camera->GetViewProjectionMatrix();
+      const Vector3 objectCenter =
+         useScreenSpace
+            ? ToEditorScreenWorldPosition(transformComponent->GetLocalPose().translation, screenRenderOffset)
+            : transformComponent->GetLocalPose().translation;
 
-      const Vector3 screenPosition = Project(
-         objectCenter,
-         viewportX,
-         viewportY,
-         viewportWidth,
-         viewportHeight,
-         viewProjection);
+      const Vector3 screenPosition =
+         Project(objectCenter, viewportX, viewportY, viewportWidth, viewportHeight, viewProjection);
 
       if (screenPosition.z < 0.0f || screenPosition.z > 1.0f) {
          continue;
       }
 
       const Vector3 scale = transformComponent->GetLocalPose().scale;
-      float worldRadius = std::max({ std::abs(scale.x), std::abs(scale.y), std::abs(scale.z), 1.0f }) * 0.5f;
+      float worldRadius = std::max({std::abs(scale.x), std::abs(scale.y), std::abs(scale.z), 1.0f}) * 0.5f;
       if (const auto* sprite = dynamic_cast<const Sprite*>(object); sprite && useScreenSpace) {
          const Vector2 size = sprite->GetSize();
-         worldRadius = std::max({
-            std::abs(size.x * scale.x),
-            std::abs(size.y * scale.y),
-            1.0f
-         }) * 0.5f;
+         worldRadius = std::max({std::abs(size.x * scale.x), std::abs(size.y * scale.y), 1.0f}) * 0.5f;
       } else if (const auto* uiText = dynamic_cast<const UIText*>(object); uiText && useScreenSpace) {
          if (const auto* textComponent = uiText->GetComponent<UITextComponent>()) {
             const Vector2 size = EngineContext::MeasureText(textComponent->GetText(), textComponent->GetStyle());
-            worldRadius = std::max({
-               std::abs(size.x * scale.x),
-               std::abs(size.y * scale.y),
-               1.0f
-            }) * 0.5f;
+            worldRadius = std::max({std::abs(size.x * scale.x), std::abs(size.y * scale.y), 1.0f}) * 0.5f;
          }
       }
       float pickRadiusPixels = kMinPickRadiusPixels;
+
       // 三軸を投影してPerspectiveや非一様スケールをピクセル半径へ近似する。
       const Vector3 sampleOffsets[] = {
          Vector3(worldRadius, 0.0f, 0.0f),
@@ -1335,13 +1341,8 @@ void EditorSceneContext::HandleViewportClickSelection(float viewportX, float vie
       };
 
       for (const auto& offset : sampleOffsets) {
-         const Vector3 sample = Project(
-            objectCenter + offset,
-            viewportX,
-            viewportY,
-            viewportWidth,
-            viewportHeight,
-            viewProjection);
+         const Vector3 sample =
+            Project(objectCenter + offset, viewportX, viewportY, viewportWidth, viewportHeight, viewProjection);
          if (sample.z < 0.0f || sample.z > 1.0f) {
             continue;
          }
@@ -1393,14 +1394,15 @@ void EditorSceneContext::RegisterSceneOwnedKeys() {
    }
 
    auto registerObject = [&](Object* object) {
-      if (!object || objectStore_.Contains(object) || objectStore_.IsPendingDeletion(object) || sceneObjectKeys_.contains(object)) {
+      if (!object || objectStore_.Contains(object) || objectStore_.IsPendingDeletion(object) ||
+          sceneObjectKeys_.contains(object)) {
          return;
       }
 
       const std::string& entityId = object->GetEntityId();
       const std::string baseKey = entityId.rfind("runtime_entity_", 0) == 0
-         ? BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName())
-         : entityId;
+                                     ? BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName())
+                                     : entityId;
       std::string key = baseKey;
       int suffix = 2;
       while (usedObjectKeys.contains(key)) {
@@ -1427,9 +1429,8 @@ void EditorSceneContext::RegisterSceneOwnedKeys() {
    }
 
    for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
-      if (!IsEditableSceneParticleSystem(particleSystem) ||
-         objectStore_.Contains(particleSystem) ||
-         sceneParticleSystemKeys_.contains(particleSystem)) {
+      if (!IsEditableSceneParticleSystem(particleSystem) || objectStore_.Contains(particleSystem) ||
+          sceneParticleSystemKeys_.contains(particleSystem)) {
          continue;
       }
 
@@ -1495,9 +1496,8 @@ ParticleSystem* EditorSceneContext::FindSceneParticleSystemByKey(const std::stri
    }
 
    for (const auto& [particleSystem, particleKey] : sceneParticleSystemKeys_) {
-      if (particleKey == key &&
-         IsEditableSceneParticleSystem(particleSystem) &&
-         !objectStore_.Contains(particleSystem)) {
+      if (particleKey == key && IsEditableSceneParticleSystem(particleSystem) &&
+          !objectStore_.Contains(particleSystem)) {
          return const_cast<ParticleSystem*>(particleSystem);
       }
    }
@@ -1533,10 +1533,7 @@ nlohmann::json EditorSceneContext::SerializeSceneObjects() {
       if (key.empty() || emittedKeys.contains(key)) {
          continue;
       }
-      sceneObjects.push_back(nlohmann::json{
-         { "sceneKey", key },
-         { "deleted", true }
-      });
+      sceneObjects.push_back(nlohmann::json{{"sceneKey", key}, {"deleted", true}});
    }
 
    return sceneObjects;
@@ -1570,10 +1567,7 @@ nlohmann::json EditorSceneContext::SerializeSceneParticleSystems() {
       if (key.empty() || emittedKeys.contains(key)) {
          continue;
       }
-      sceneParticleSystems.push_back(nlohmann::json{
-         { "sceneKey", key },
-         { "deleted", true }
-      });
+      sceneParticleSystems.push_back(nlohmann::json{{"sceneKey", key}, {"deleted", true}});
    }
 
    return sceneParticleSystems;
@@ -1587,9 +1581,7 @@ nlohmann::json EditorSceneContext::SerializeCameras() const {
       return camerasData;
    }
 
-   camerasData["brain"] = nlohmann::json{
-      { "defaultBlendTime", brain->GetDefaultBlendTime() }
-   };
+   camerasData["brain"] = nlohmann::json{{"defaultBlendTime", brain->GetDefaultBlendTime()}};
 
    nlohmann::json virtualCameras = nlohmann::json::array();
    const auto& registeredCameras = brain->GetVirtualCameras();
@@ -1630,6 +1622,7 @@ bool EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsDat
          hiddenSceneObjectKeys_.insert(key);
          if (object) {
             hiddenSceneObjects_.insert(object);
+
             // 保存済みの削除もUI削除と同じく全Componentを停止する。ライトや音声の副作用も解除する。
             object->Deactivate();
          }
@@ -1644,7 +1637,8 @@ bool EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsDat
       hiddenSceneObjects_.erase(object);
       hiddenSceneObjectKeys_.erase(key);
       if (entry.contains("object") && entry.at("object").is_object()) {
-         if (!objectStore_.ApplyObjectState(object, entry.at("object"))) return false;
+         if (!objectStore_.ApplyObjectState(object, entry.at("object")))
+            return false;
       }
    }
    return true;
@@ -1687,7 +1681,8 @@ bool EditorSceneContext::ApplySceneParticleSystems(const nlohmann::json& scenePa
       if (entry.contains("particleSystem") && entry.at("particleSystem").is_object()) {
          // 削除差分で停止していた場合も、保存済みの生存状態へ戻して旧粒子を残さず再開する。
          particleSystem->Stop();
-         if (!objectStore_.ApplyParticleSystemState(particleSystem, entry.at("particleSystem"))) return false;
+         if (!objectStore_.ApplyParticleSystemState(particleSystem, entry.at("particleSystem")))
+            return false;
          particleSystem->Play();
       }
    }
@@ -1695,7 +1690,8 @@ bool EditorSceneContext::ApplySceneParticleSystems(const nlohmann::json& scenePa
 }
 
 void EditorSceneContext::ApplyCameras(const nlohmann::json& camerasData) {
-   if (auto* world = SceneWorld::GetCurrent()) world->ApplyCameraConfiguration(camerasData);
+   if (auto* world = SceneWorld::GetCurrent())
+      world->ApplyCameraConfiguration(camerasData);
 }
 
 void EditorSceneContext::HideSceneOwnedObject(Object* object) {
@@ -1708,6 +1704,7 @@ void EditorSceneContext::HideSceneOwnedObject(Object* object) {
       hiddenSceneObjectKeys_.insert(key);
    }
    hiddenSceneObjects_.insert(object);
+
    // RenderComponentだけでなく更新系Componentも止め、削除済みEntityが副作用を発生させないようにする。
    object->Deactivate();
 }
@@ -1730,16 +1727,12 @@ bool EditorSceneContext::HasTransformChanged(const Transform& lhs, const Transfo
    constexpr float kEpsilon = 0.0001f;
    const Vector3 lhsRotation = lhs.GetActiveEuler();
    const Vector3 rhsRotation = rhs.GetActiveEuler();
-   return
-      AbsDiff(lhs.translation.x, rhs.translation.x) > kEpsilon ||
-      AbsDiff(lhs.translation.y, rhs.translation.y) > kEpsilon ||
-      AbsDiff(lhs.translation.z, rhs.translation.z) > kEpsilon ||
-      AbsDiff(lhsRotation.x, rhsRotation.x) > kEpsilon ||
-      AbsDiff(lhsRotation.y, rhsRotation.y) > kEpsilon ||
-      AbsDiff(lhsRotation.z, rhsRotation.z) > kEpsilon ||
-      AbsDiff(lhs.scale.x, rhs.scale.x) > kEpsilon ||
-      AbsDiff(lhs.scale.y, rhs.scale.y) > kEpsilon ||
-      AbsDiff(lhs.scale.z, rhs.scale.z) > kEpsilon;
+   return AbsDiff(lhs.translation.x, rhs.translation.x) > kEpsilon ||
+          AbsDiff(lhs.translation.y, rhs.translation.y) > kEpsilon ||
+          AbsDiff(lhs.translation.z, rhs.translation.z) > kEpsilon ||
+          AbsDiff(lhsRotation.x, rhsRotation.x) > kEpsilon || AbsDiff(lhsRotation.y, rhsRotation.y) > kEpsilon ||
+          AbsDiff(lhsRotation.z, rhsRotation.z) > kEpsilon || AbsDiff(lhs.scale.x, rhs.scale.x) > kEpsilon ||
+          AbsDiff(lhs.scale.y, rhs.scale.y) > kEpsilon || AbsDiff(lhs.scale.z, rhs.scale.z) > kEpsilon;
 }
 
 void EditorSceneContext::SubmitTransformIfNeeded(const Transform& before, const Transform& after, Object* object) {
@@ -1750,12 +1743,14 @@ void EditorSceneContext::SubmitTransformIfNeeded(const Transform& before, const 
    CommitEdit(std::make_unique<TransformObjectCommand>(GetObjectIdForCommand(object), before, after));
 }
 
-void EditorSceneContext::SubmitParticleTransformIfNeeded(const Transform& before, const Transform& after, ParticleSystem* particleSystem) {
+void EditorSceneContext::SubmitParticleTransformIfNeeded(
+   const Transform& before, const Transform& after, ParticleSystem* particleSystem) {
    if (!particleSystem || !HasTransformChanged(before, after)) {
       return;
    }
 
-   CommitEdit(std::make_unique<TransformParticleSystemCommand>(GetParticleSystemIdForCommand(particleSystem), before, after));
+   CommitEdit(
+      std::make_unique<TransformParticleSystemCommand>(GetParticleSystemIdForCommand(particleSystem), before, after));
 }
 
 Transform EditorSceneContext::BuildPlacementTransformInFrontOfCamera() const {
@@ -1801,7 +1796,8 @@ std::string EditorSceneContext::GetParticleSystemIdForCommand(const ParticleSyst
 }
 
 ParticleSystem* EditorSceneContext::FindParticleForCommand(const std::string& id) const {
-   if (auto* particle = const_cast<ParticleSystem*>(objectStore_.FindParticleById(id))) return particle;
+   if (auto* particle = const_cast<ParticleSystem*>(objectStore_.FindParticleById(id)))
+      return particle;
    return FindSceneParticleSystemByKey(id);
 }
 
@@ -1824,7 +1820,8 @@ void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
             continue;
          }
          auto& data = componentData["data"];
-         if (!data.is_object() || !data.contains("translation") || !data.at("translation").is_array() || data.at("translation").size() != 3) {
+         if (!data.is_object() || !data.contains("translation") || !data.at("translation").is_array() ||
+             data.at("translation").size() != 3) {
             continue;
          }
          data["translation"][0] = data["translation"][0].get<float>() + kDuplicatePositionOffset;
@@ -1841,10 +1838,8 @@ void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
       }
    }
 
-   if (snapshot.value("objectType", "") == "ParticleSystem" &&
-      snapshot.contains("data") &&
-      snapshot.at("data").contains("shapeModule") &&
-      snapshot.at("data").at("shapeModule").contains("position")) {
+   if (snapshot.value("objectType", "") == "ParticleSystem" && snapshot.contains("data") &&
+       snapshot.at("data").contains("shapeModule") && snapshot.at("data").at("shapeModule").contains("position")) {
       auto& position = snapshot["data"]["shapeModule"]["position"];
       if (position.is_array() && position.size() == 3) {
          position[0] = position[0].get<float>() + kDuplicatePositionOffset;
@@ -1858,49 +1853,309 @@ nlohmann::json EditorSceneContext::GetObjectSnapshot(const Object* object) {
 }
 
 nlohmann::json EditorSceneContext::GetParticleSnapshot(const ParticleSystem* particleSystem) {
-   if (!IsParticleSystemAlive(particleSystem)) return nlohmann::json::object();
+   if (!IsParticleSystemAlive(particleSystem))
+      return nlohmann::json::object();
    const auto id = GetParticleSystemIdForCommand(particleSystem);
-   if (objectStore_.Contains(particleSystem)) return objectStore_.SerializeObject(id);
+   if (objectStore_.Contains(particleSystem))
+      return objectStore_.SerializeObject(id);
    return objectStore_.SerializeParticleSystemState(particleSystem, id);
 }
 
-bool EditorSceneContext::CommitObjectEdit(const std::string& id, const nlohmann::json& before, const nlohmann::json& after, std::string name) {
-   if (id.empty() || !before.is_object() || !after.is_object() || before == after) return false;
+bool EditorSceneContext::CommitObjectEdit(
+   const std::string& id, const nlohmann::json& before, const nlohmann::json& after, std::string name) {
+   if (id.empty() || !before.is_object() || !after.is_object() || before == after)
+      return false;
    return CommitEdit(std::make_unique<EditObjectStateCommand>(id, before, after, false, std::move(name)));
 }
 
-bool EditorSceneContext::CommitParticleEdit(const std::string& id, const nlohmann::json& before, const nlohmann::json& after, std::string name) {
-   if (id.empty() || !before.is_object() || !after.is_object() || before == after) return false;
+bool EditorSceneContext::CommitParticleEdit(
+   const std::string& id, const nlohmann::json& before, const nlohmann::json& after, std::string name) {
+   if (id.empty() || !before.is_object() || !after.is_object() || before == after)
+      return false;
    return CommitEdit(std::make_unique<EditObjectStateCommand>(id, before, after, true, std::move(name)));
 }
 
 bool EditorSceneContext::RenameSelectedObject(const std::string& name) {
-   if (name.empty()) return false;
+   if (name.empty())
+      return false;
    if (selectedObject_ && IsObjectAlive(selectedObject_)) {
       const auto before = GetObjectSnapshot(selectedObject_);
       selectedObject_->SetObjectName(name);
-      return CommitObjectEdit(selectedObject_->GetEntityId(), before, GetObjectSnapshot(selectedObject_), "Rename Object");
+      return CommitObjectEdit(
+         selectedObject_->GetEntityId(), before, GetObjectSnapshot(selectedObject_), "Rename Object");
    }
    if (selectedParticleSystem_ && IsParticleSystemAlive(selectedParticleSystem_)) {
       const auto before = GetParticleSnapshot(selectedParticleSystem_);
       selectedParticleSystem_->SetName(name);
-      return CommitParticleEdit(before.value("id", ""), before, GetParticleSnapshot(selectedParticleSystem_), "Rename Particle System");
+      return CommitParticleEdit(
+         before.value("id", ""), before, GetParticleSnapshot(selectedParticleSystem_), "Rename Particle System");
    }
    return false;
 }
 
-bool EditorSceneContext::CommitEdit(std::unique_ptr<IEditorCommand> command) {
-   return commandStack_.Execute(std::move(command), *this);
+Object* EditorSceneContext::CommandOperations::ResolveObject(const std::string& id) const {
+   // 遅延削除されたEntityはグローバル索引に残るため、現シーンの編集対象だけを調べる。
+   // 履歴はIDだけを保持し、削除済みEntityや同じ名前の別Entityを誤操作しない。
+   for (auto* object : owner_.CollectEditableObjects()) {
+      if (object && !id.empty() && object->GetEntityId() == id)
+         return object;
+   }
+   return nullptr;
 }
+
+bool EditorSceneContext::CommandOperations::Contains(const std::string& id, bool particle) const {
+   if (!particle)
+      return ResolveObject(id) != nullptr;
+   const auto* found = owner_.FindParticleForCommand(id);
+   return found && owner_.IsParticleSystemAlive(found);
+}
+
+nlohmann::json EditorSceneContext::CommandOperations::Capture(const std::string& id, bool particle) {
+   if (particle) {
+      auto* found = owner_.FindParticleForCommand(id);
+      return found ? owner_.GetParticleSnapshot(found) : nlohmann::json{};
+   }
+   auto* found = ResolveObject(id);
+   return found ? owner_.GetObjectSnapshot(found) : nlohmann::json{};
+}
+
+nlohmann::json EditorSceneContext::CommandOperations::Create(CreateObjectCommand::Kind kind, const Transform& pose,
+   const std::string& assetId, const std::string& parentId, const nlohmann::json& snapshot) {
+   if (!pose.IsFinite())
+      return {};
+   using Kind = CreateObjectCommand::Kind;
+   auto& store = owner_.objectStore_;
+   if (kind == Kind::Particle) {
+      auto* particle =
+         snapshot.is_object() ? store.RestoreParticleSystem(snapshot) : store.CreateParticleSystem(assetId, {}, &pose);
+      if (!particle)
+         return {};
+      owner_.SelectParticleSystem(particle);
+      return owner_.GetParticleSnapshot(particle);
+   }
+   Object* object = nullptr;
+   if (snapshot.is_object())
+      object = store.RestoreObject(snapshot);
+   else {
+      switch (kind) {
+         case Kind::Model:
+            object = store.CreateModel(assetId, &pose);
+            break;
+         case Kind::Sprite:
+            object = store.CreateSprite(assetId, &pose);
+            break;
+         case Kind::UIText:
+            object = store.CreateUIText(&pose);
+            break;
+         case Kind::Skybox:
+            object = store.CreateSkybox();
+            break;
+         default:
+            object = store.CreateGenericObject(&pose);
+            break;
+      }
+      if (object && !parentId.empty()) {
+         // 親が削除済みなら別のEntityを親にせず、生成自体を取り消す。
+         if (!ResolveObject(parentId) || !object->SetParentEntityId(parentId)) {
+            store.DeleteObject(store.GetId(object));
+            return {};
+         }
+      }
+      if (object && kind >= Kind::DirectionalLight) {
+         auto* light = object->AddComponent<LightComponent>();
+         if (!light) {
+            store.DeleteObject(store.GetId(object));
+            return {};
+         }
+         const auto type = kind == Kind::DirectionalLight ? LightComponent::Type::Directional
+                           : kind == Kind::PointLight     ? LightComponent::Type::Point
+                           : kind == Kind::SpotLight      ? LightComponent::Type::Spot
+                                                          : LightComponent::Type::Area;
+         light->SetLightType(type);
+         const char* name = kind == Kind::DirectionalLight ? "Directional Light"
+                            : kind == Kind::PointLight     ? "Point Light"
+                            : kind == Kind::SpotLight      ? "Spot Light"
+                                                           : "Area Light";
+         object->SetObjectName(name);
+      }
+   }
+   if (!object)
+      return {};
+   owner_.SelectObject(object);
+   return owner_.GetObjectSnapshot(object);
+}
+
+bool EditorSceneContext::CommandOperations::Remove(const std::string& id, bool particle, RemovedEditorEntity& removed) {
+   if (!Contains(id, particle))
+      return false;
+   removed = {};
+   removed.snapshot = Capture(id, particle);
+   if (particle) {
+      auto* found = owner_.FindParticleForCommand(id);
+      removed.sceneOwned = !owner_.objectStore_.Contains(found);
+      removed.wasPlaying = found->IsPlaying();
+      if (owner_.GetSelectedParticleSystem() == found)
+         owner_.SelectParticleSystem(nullptr);
+      if (!removed.sceneOwned)
+         return owner_.objectStore_.DeleteParticleSystem(id);
+      removed.sceneKey = owner_.EnsureSceneParticleSystemKey(found);
+      owner_.HideSceneOwnedParticleSystem(found);
+      return true;
+   }
+   auto* object = ResolveObject(id);
+   removed.sceneOwned = !owner_.objectStore_.Contains(object);
+   for (auto* child : owner_.CollectEditableObjects()) {
+      if (child && child->GetParentEntityId() == id)
+         removed.childIds.push_back(child->GetEntityId());
+   }
+   if (owner_.GetSelectedObject() == object)
+      owner_.SelectObject(nullptr);
+   if (!removed.sceneOwned)
+      return owner_.objectStore_.DeleteObject(id);
+   removed.sceneKey = owner_.EnsureSceneObjectKey(object);
+   owner_.HideSceneOwnedObject(object);
+   for (const auto& childId : removed.childIds)
+      if (auto* child = ResolveObject(childId))
+         child->SetParentEntityId({});
+   return true;
+}
+
+bool EditorSceneContext::CommandOperations::Restore(const RemovedEditorEntity& removed, bool particle) {
+   if (!removed.snapshot.is_object())
+      return false;
+   if (particle) {
+      ParticleSystem* found = nullptr;
+      if (removed.sceneOwned) {
+         found = owner_.FindSceneParticleSystemByKey(removed.sceneKey);
+         if (!found || !owner_.objectStore_.ApplyParticleSystemState(found, removed.snapshot))
+            return false;
+         owner_.hiddenParticleSystems_.erase(found);
+         owner_.hiddenParticleSystemKeys_.erase(removed.sceneKey);
+      } else
+         found = owner_.objectStore_.RestoreParticleSystem(removed.snapshot);
+      if (!found)
+         return false;
+      if (removed.wasPlaying)
+         found->Play();
+      else
+         found->Stop();
+      owner_.SelectParticleSystem(found);
+      return true;
+   }
+   Object* object = nullptr;
+   if (removed.sceneOwned) {
+      object = owner_.FindSceneObjectByKey(removed.sceneKey);
+      if (!object || !owner_.objectStore_.ApplyObjectState(object, removed.snapshot))
+         return false;
+      owner_.hiddenSceneObjects_.erase(object);
+      owner_.hiddenSceneObjectKeys_.erase(removed.sceneKey);
+   } else
+      object = owner_.objectStore_.RestoreObject(removed.snapshot);
+   if (!object)
+      return false;
+
+   // 遅延破棄が解除した子の親IDも戻し、削除前と同じ階層を一回のUndoで復元する。
+   for (const auto& childId : removed.childIds) {
+      if (auto* child = ResolveObject(childId))
+         child->SetParentEntityId(object->GetEntityId());
+   }
+   owner_.SelectObject(object);
+   return true;
+}
+
+bool EditorSceneContext::CommandOperations::ApplySnapshot(
+   const std::string& id, const nlohmann::json& snapshot, bool particle) {
+   if (particle) {
+      auto* found = owner_.FindParticleForCommand(id);
+      return found && owner_.objectStore_.ApplyParticleSystemState(found, snapshot);
+   }
+   auto* found = ResolveObject(id);
+   return found && owner_.objectStore_.ApplyObjectState(found, snapshot);
+}
+
+bool EditorSceneContext::CommandOperations::ApplyPose(const std::string& id, const Transform& pose, bool particle) {
+   if (!pose.IsFinite())
+      return false;
+   if (particle) {
+      auto* found = owner_.FindParticleForCommand(id);
+
+      // ParticleSystemの配置はObject Transformではなく放出ShapeのTransformが正本になっている。
+      return found && found->ApplyEmitterPose(pose);
+   }
+   auto* found = ResolveObject(id);
+   auto* transform = found ? found->GetComponent<TransformComponent>() : nullptr;
+   return transform && transform->ApplyLocalPose(pose);
+}
+
+bool EditorSceneContext::CommandOperations::Reorder(
+   const std::string& id, const std::string& parent, const std::vector<std::string>& order) {
+   auto* object = ResolveObject(id);
+   if (!object || (!parent.empty() && !ResolveObject(parent)) || !object->SetParentEntityId(parent))
+      return false;
+   owner_.ApplyHierarchyOrder(order);
+   return true;
+}
+
+nlohmann::json EditorSceneContext::CommandOperations::RestoreSnapshot(const nlohmann::json& snapshot) {
+   // ParticleSystemはObject階層外で別ストアに登録されるため、種別を見て復元経路を分ける。
+   if (snapshot.value("objectType", "Model") == "ParticleSystem") {
+      auto* found = owner_.objectStore_.RestoreParticleSystem(snapshot);
+      if (!found)
+         return {};
+      owner_.SelectObject(nullptr);
+      owner_.SelectParticleSystem(found);
+      return owner_.GetParticleSnapshot(found);
+   }
+   auto* found = owner_.objectStore_.RestoreObject(snapshot);
+   if (!found)
+      return {};
+   owner_.SelectParticleSystem(nullptr);
+   owner_.SelectObject(found);
+   return owner_.GetObjectSnapshot(found);
+}
+
+bool EditorSceneContext::CommandOperations::ModifyComponent(
+   const std::string& id, const std::string& typeName, bool add) {
+   auto* object = ResolveObject(id);
+   if (!object || typeName.empty() || object->HasComponentByTypeName(typeName) == add)
+      return false;
+   return add ? object->AddComponentByTypeName(typeName) != nullptr : object->RemoveComponentByTypeName(typeName);
+}
+
+void EditorSceneContext::FinishCommand(bool changed) {
+   if (!changed)
+      return;
+   MarkDirty();
+   ++editRevision_;
+}
+
+bool EditorSceneContext::CommitEdit(std::unique_ptr<IEditorCommand> command) {
+   CommandOperations operations(*this);
+   const bool changed = commandStack_.Execute(std::move(command), operations);
+   FinishCommand(changed);
+   return changed;
+}
+
 void EditorSceneContext::FinishEditingFrame() {
    // 外部のシーン更新で登録解除された対象も、破棄前にUIの参照から切り離す。
-   if (!IsObjectAlive(selectedObject_)) selectedObject_ = nullptr;
-   if (!IsParticleSystemAlive(selectedParticleSystem_)) selectedParticleSystem_ = nullptr;
-   if (!IsObjectAlive(manipulatingObject_)) { manipulatingObject_ = nullptr; isManipulating_ = false; }
-   if (!IsParticleSystemAlive(manipulatingParticleSystem_)) { manipulatingParticleSystem_ = nullptr; isManipulatingParticleSystem_ = false; }
+   if (!IsObjectAlive(selectedObject_))
+      selectedObject_ = nullptr;
+   if (!IsParticleSystemAlive(selectedParticleSystem_))
+      selectedParticleSystem_ = nullptr;
+   if (!IsObjectAlive(manipulatingObject_)) {
+      manipulatingObject_ = nullptr;
+      isManipulating_ = false;
+   }
+   if (!IsParticleSystemAlive(manipulatingParticleSystem_)) {
+      manipulatingParticleSystem_ = nullptr;
+      isManipulatingParticleSystem_ = false;
+   }
    objectStore_.FlushDeferredDeletes();
 }
-void EditorSceneContext::RefreshAssets() { assetRegistry_.Scan(); }
+
+void EditorSceneContext::RefreshAssets() {
+   assetRegistry_.Scan();
+}
 
 } // namespace GameEngine
 

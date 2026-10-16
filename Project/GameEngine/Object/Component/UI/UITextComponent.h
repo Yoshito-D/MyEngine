@@ -14,7 +14,7 @@ class FontManager;
 class UITextComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "UITextComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "UIテキスト", "UI Text" };
+   static constexpr ComponentDisplayName kDisplayName{"UIテキスト", "UI Text"};
    static constexpr size_t kShowAllGlyphs = (std::numeric_limits<size_t>::max)();
 
    /// @brief コンポーネントの型名を取得する
@@ -83,6 +83,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief エディタのインスペクターを描画する
    void DrawInspector() override;
 #endif

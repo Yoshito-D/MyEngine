@@ -1,8 +1,10 @@
 #pragma once
+
 #include <Windows.h>
 #include <cstdint>
 
 namespace GameEngine {
+
 /// @brief ウィンドウクラス
 class Window {
 public:
@@ -15,16 +17,18 @@ public:
 
    /// @brief UI配置の基準とする論理画面幅
    static constexpr int32_t kUiReferenceWidth = kWindowWidth;
+
    /// @brief UI配置の基準とする論理画面高
    static constexpr int32_t kUiReferenceHeight = kWindowHeight;
 
 public:
    /// @brief ウィンドウの生成
-   /// @param title タイトル 
+   /// @param title タイトル
    /// @param windowStyle ウィンドウのスタイル
    /// @param clientWidth ウィンドウの幅
-   /// @param clientHeight ウィンドウの高さ 
-   void CreateGameWindow(const wchar_t* title = L"DirectX12", UINT windowStyle = WS_OVERLAPPEDWINDOW, int32_t clientWidth = kWindowWidth, int32_t clientHeight = kWindowHeight);
+   /// @param clientHeight ウィンドウの高さ
+   void CreateGameWindow(const wchar_t* title = L"DirectX12", UINT windowStyle = WS_OVERLAPPEDWINDOW,
+      int32_t clientWidth = kWindowWidth, int32_t clientHeight = kWindowHeight);
 
    /// @brief ウィンドウの破棄
    void DestroyGameWindow();
@@ -49,6 +53,7 @@ public:
 
    /// @brief フルスクリーン状態を取得
    bool IsFullscreen() const { return isFullscreen_; }
+
 private:
    HWND hwnd_ = nullptr;   // ウィンドウハンドル
    WNDCLASSEX wndClass_{}; // ウィンドウクラス
@@ -60,13 +65,12 @@ private:
    LONG windowedExStyle_ = 0;
 
 private:
-
    /// @brief ウィンドウプロシージャ
    /// @param ウィンドウハンドル
    /// @param メッセージ
    /// @param パラメータ
    /// @param パラメータ
-   /// @return 
+   /// @return
    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 };
 }

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Graphics/Renderer/Pass/IRenderPass.h"
 #include <d3d12.h>
 
@@ -10,19 +11,21 @@ class OffscreenRenderTarget;
 /// 2. postProcessCommands（ポストプロセス後描画）を実行する
 class PostEffectPass final : public IRenderPass {
 public:
-	/// @brief コンストラクタ
-	/// @param offscreenRT オフスクリーンレンダーターゲット（ping-pong バッファ管理用）
-	explicit PostEffectPass(OffscreenRenderTarget* offscreenRT) : offscreenRT_(offscreenRT) {}
+   /// @brief コンストラクタ
+   /// @param offscreenRT オフスクリーンレンダーターゲット（ping-pong バッファ管理用）
+   explicit PostEffectPass(OffscreenRenderTarget* offscreenRT) : offscreenRT_(offscreenRT) {}
 
-	/// @copydoc IRenderPass::Execute
-	void Execute(FrameContext& ctx) override;
-	/// @copydoc IRenderPass::GetName
-	std::string_view GetName() const override { return "PostEffectPass"; }
-	/// @copydoc IRenderPass::GetPassType
-	RenderPassType GetPassType() const override { return RenderPassType::PostEffect; }
+   /// @copydoc IRenderPass::Execute
+   void Execute(FrameContext& ctx) override;
+
+   /// @copydoc IRenderPass::GetName
+   std::string_view GetName() const override { return "PostEffectPass"; }
+
+   /// @copydoc IRenderPass::GetPassType
+   RenderPassType GetPassType() const override { return RenderPassType::PostEffect; }
 
 private:
-	OffscreenRenderTarget* offscreenRT_ = nullptr;
+   OffscreenRenderTarget* offscreenRT_ = nullptr;
 };
 
 } // namespace GameEngine

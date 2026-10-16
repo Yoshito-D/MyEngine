@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 
@@ -11,7 +12,7 @@ namespace GameEngine {
 class UIFadeComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "UIFadeComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "UIフェード", "UI Fade" };
+   static constexpr ComponentDisplayName kDisplayName{"UIフェード", "UI Fade"};
 
    /// @brief コンポーネントの型名を取得する
    /// @return 型名
@@ -49,6 +50,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief エディタのインスペクターを描画する
    void DrawInspector() override;
 #endif
@@ -57,6 +59,7 @@ public:
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
+
       /// @brief 不透明度の補間範囲と再生設定
       float startOpacity = 0.0f;
       float endOpacity = 1.0f;
@@ -66,6 +69,7 @@ public:
       UIPlaybackMode playbackMode = UIPlaybackMode::Once;
       UIEasingType easing = UIEasingType::EaseInOutSine;
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
@@ -78,14 +82,19 @@ public:
       settings.easing = easing;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.startOpacity)) settings.startOpacity = defaults.startOpacity;
-      if (!std::isfinite(settings.endOpacity)) settings.endOpacity = defaults.endOpacity;
-      if (!std::isfinite(settings.delay)) settings.delay = defaults.delay;
-      if (!std::isfinite(settings.duration)) settings.duration = defaults.duration;
+      if (!std::isfinite(settings.startOpacity))
+         settings.startOpacity = defaults.startOpacity;
+      if (!std::isfinite(settings.endOpacity))
+         settings.endOpacity = defaults.endOpacity;
+      if (!std::isfinite(settings.delay))
+         settings.delay = defaults.delay;
+      if (!std::isfinite(settings.duration))
+         settings.duration = defaults.duration;
       settings.startOpacity = std::clamp(settings.startOpacity, 0.0f, 1.0f);
       settings.endOpacity = std::clamp(settings.endOpacity, 0.0f, 1.0f);
       settings.duration = std::max(settings.duration, 0.001f);

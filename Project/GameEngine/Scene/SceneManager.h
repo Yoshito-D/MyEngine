@@ -1,4 +1,5 @@
 #pragma once
+
 #include <memory>
 #include <string>
 #include "GameEngine/Scene/BaseScene.h"
@@ -13,8 +14,7 @@ public:
    /// @brief コンストラクタ
    /// @param factory シーンファクトリー
    /// @param context エンジンコンテキスト
-   SceneManager(ISceneFactory* factory)
-	  : factory_(factory) {}
+   SceneManager(ISceneFactory* factory) : factory_(factory) {}
 
    ~SceneManager() = default;
 
@@ -45,6 +45,7 @@ public:
    void CheckSceneChange();
 
    BaseScene* GetCurrentScene() const { return currentScene_.get(); }
+
    const std::string& GetCurrentSceneName() const { return currentSceneName_; }
 
 private:

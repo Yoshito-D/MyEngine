@@ -11,7 +11,7 @@ class GravityAttractorLink final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "GravityAttractorLink";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "重力アトラクターリンク", "Gravity Attractor Link" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"重力アトラクターリンク", "Gravity Attractor Link"};
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
@@ -24,12 +24,13 @@ public:
    void SetAttractor(GravityAttractor* attractor);
 
 #ifdef USE_IMGUI
+
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
 
    /// @brief シリアライズ（参照のみのため保存項目なし。共通保存形式に合わせて空オブジェクトを返す）
-   nlohmann::json Serialize() const override  { return nlohmann::json::object(); }
+   nlohmann::json Serialize() const override { return nlohmann::json::object(); }
 
    /// @brief デシリアライズ（保存項目なしのため処理なし）
    void Deserialize(const nlohmann::json&) override {}

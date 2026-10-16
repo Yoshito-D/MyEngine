@@ -43,12 +43,16 @@ GravityAttractor* GravityAttractorLink::ResolveAttractor() const {
 }
 
 void GravityAttractorLink::Update(float) {
-   if (!HasOwner()) { return; }
+   if (!HasOwner()) {
+      return;
+   }
 
    // 適用対象の GravityBody と現在位置を取得
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   auto* transform   = GetOwner().GetComponent<GameEngine::TransformComponent>();
-   if (!gravityBody || !transform) { return; }
+   auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
+   if (!gravityBody || !transform) {
+      return;
+   }
 
    // 接続先が削除・無効化・圏外になった場合、前フレームの加速度を残さない。
    auto* attractor = ResolveAttractor();
@@ -65,7 +69,8 @@ void GravityAttractorLink::DrawInspector() {
       return;
    }
    ImGui::Separator();
-   ImGui::Text("%s: %s", Tr("アトラクター", "Attractor"), ResolveAttractor() ? Tr("設定済み", "Set") : Tr("なし", "None"));
+   ImGui::Text(
+      "%s: %s", Tr("アトラクター", "Attractor"), ResolveAttractor() ? Tr("設定済み", "Set") : Tr("なし", "None"));
 }
 #endif
 

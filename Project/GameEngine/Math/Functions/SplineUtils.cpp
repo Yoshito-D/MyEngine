@@ -38,12 +38,12 @@ Vector3 CatmullRomPosition(const std::vector<Vector3>& controlPoints, float t) {
    size_t index3 = index + 2;
 
    if (index == 0) {
-	  // 端点では隣接制御点を複製し、4点必要な式を範囲外参照なしで評価する。
-	  index0 = index1;
+      // 端点では隣接制御点を複製し、4点必要な式を範囲外参照なしで評価する。
+      index0 = index1;
    }
 
    if (index3 >= controlPoints.size()) {
-	  index3 = index2;
+      index3 = index2;
    }
 
    const Vector3& p0 = controlPoints[index0];

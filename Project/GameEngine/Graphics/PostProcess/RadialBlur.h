@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include "GameEngine/Math/Types/Vector2.h"
 #include <wrl.h>
@@ -7,7 +8,7 @@
 
 namespace GameEngine {
 struct RadialBlurParams {
-   Vector2 center = { 0.5f, 0.5f };
+   Vector2 center = {0.5f, 0.5f};
    float strength = 0.0f;
    int32_t sampleCount = 15;
 };
@@ -17,10 +18,10 @@ class RadialBlur : public PostProcess {
 public:
    /// @brief ラジアルブラー用定数バッファ構造体
    struct RadialBlurCB {
-	  float centerX;
-	  float centerY;
-	  float strength;
-	  int32_t sampleCount;
+      float centerX;
+      float centerY;
+      float strength;
+      int32_t sampleCount;
    };
 
    /// @brief 初期化（パイプラインは外部から設定される）
@@ -39,16 +40,32 @@ public:
 
    /// @copydoc PostProcess::SerializeSettings
    nlohmann::json SerializeSettings() const override;
+
    /// @copydoc PostProcess::DeserializeSettings
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    void SetParams(const RadialBlurParams& params);
+
    const RadialBlurParams& GetParams() const { return params_; }
 
    // パラメータ設定
-   void SetBlurStrength(float strength) { auto params = params_; params.strength = strength; SetParams(params); }
-   void SetCenter(float x, float y) { auto params = params_; params.center = { x, y }; SetParams(params); }
-   void SetSampleCount(int32_t count) { auto params = params_; params.sampleCount = count; SetParams(params); }
+   void SetBlurStrength(float strength) {
+      auto params = params_;
+      params.strength = strength;
+      SetParams(params);
+   }
+
+   void SetCenter(float x, float y) {
+      auto params = params_;
+      params.center = {x, y};
+      SetParams(params);
+   }
+
+   void SetSampleCount(int32_t count) {
+      auto params = params_;
+      params.sampleCount = count;
+      SetParams(params);
+   }
 
 private:
    RadialBlurParams params_;

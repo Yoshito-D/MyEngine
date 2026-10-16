@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -54,12 +55,12 @@ public:
 
 private:
    struct Timer {
-	  TimerId id{};
-	  float remaining{};        // 次発火までの残り時間
-	  float interval{};         // 間隔（0 の場合は一度きり）
-	  int repeat{ -1 };           // 残り回数（-1 は無限）
-	  bool paused{ false };
-	  std::shared_ptr<std::function<void()>> callback;
+      TimerId id{};
+      float remaining{}; // 次発火までの残り時間
+      float interval{};  // 間隔（0 の場合は一度きり）
+      int repeat{-1};    // 残り回数（-1 は無限）
+      bool paused{false};
+      std::shared_ptr<std::function<void()>> callback;
    };
 
    static TimerId NextId();

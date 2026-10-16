@@ -15,7 +15,8 @@ void Vignette::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderT
 }
 
 void Vignette::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -26,11 +27,11 @@ void Vignette::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
-     cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    // SRVをルートパラメータ1にセット
-    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
+   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -46,14 +47,14 @@ void Vignette::CreateConstantBuffer() {
 
 void Vignette::UpdateConstantBuffer() {
    if (constantBufferData_) {
-	  constantBufferData_->centerX = centerX_;
-	  constantBufferData_->centerY = centerY_;
-	  constantBufferData_->radius = radius_;
-	  constantBufferData_->softness = softness_;
-	  constantBufferData_->vignetteColorR = vignetteColorR_;
-	  constantBufferData_->vignetteColorG = vignetteColorG_;
-	  constantBufferData_->vignetteColorB = vignetteColorB_;
-	  constantBufferData_->intensity = intensity_;
+      constantBufferData_->centerX = centerX_;
+      constantBufferData_->centerY = centerY_;
+      constantBufferData_->radius = radius_;
+      constantBufferData_->softness = softness_;
+      constantBufferData_->vignetteColorR = vignetteColorR_;
+      constantBufferData_->vignetteColorG = vignetteColorG_;
+      constantBufferData_->vignetteColorB = vignetteColorB_;
+      constantBufferData_->intensity = intensity_;
    }
 }
 
@@ -62,20 +63,22 @@ void Vignette::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("ビネットのパラメータ", "Vignette Parameters"))) {
+          LocalizeEditorText("ビネットのパラメータ", "Vignette Parameters"))) {
 
-	  bool changed = false;
-	  // ImGuiのColorPicker3はRGBの順番でカラーを扱うため、vignetteColorR_からvignetteColorB_までをまとめて渡す
-	  changed |= ImGui::ColorEdit3(LocalizeEditorText("ビネット色", "Vignette Color"), reinterpret_cast<float*>(&vignetteColorR_));
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("柔らかさ", "Softness"), &softness_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("半径", "Radius"), &radius_, 0.0f, 2.0f);
+      bool changed = false;
 
-	  if (changed) {
-		 UpdateConstantBuffer();
-	  }
+      // ImGuiのColorPicker3はRGBの順番でカラーを扱うため、vignetteColorR_からvignetteColorB_までをまとめて渡す
+      changed |= ImGui::ColorEdit3(
+         LocalizeEditorText("ビネット色", "Vignette Color"), reinterpret_cast<float*>(&vignetteColorR_));
+      changed |= ImGui::SliderFloat(LocalizeEditorText("強度", "Intensity"), &intensity_, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("柔らかさ", "Softness"), &softness_, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("半径", "Radius"), &radius_, 0.0f, 2.0f);
 
-	  ImGui::TreePop();
+      if (changed) {
+         UpdateConstantBuffer();
+      }
+
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

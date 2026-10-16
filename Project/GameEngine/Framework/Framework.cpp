@@ -27,7 +27,8 @@ void Framework::Initialize() {
 
    // ウィンドウの初期化
    window_ = std::make_unique<Window>();
-   window_->CreateGameWindow(L"GALAXY RACING", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+   window_->CreateGameWindow(
+      L"GALAXY RACING", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
 
    // デバイスの初期化
    device_ = std::make_unique<GraphicsDevice>();
@@ -67,7 +68,7 @@ void Framework::Initialize() {
    // アセットマネージャーの初期化（オーディオシステムを渡す）
    assetManager_ = std::make_unique<AssetManager>();
    assetManager_->Initialize(device_.get(), audio_.get());
-   
+
    // CameraManagerとLightManagerのインスタンスを生成
    cameraManager_ = std::make_unique<CameraManager>();
    lightManager_ = std::make_unique<LightManager>();
@@ -85,27 +86,15 @@ void Framework::Initialize() {
 
    // 物理入力とゲームロジックの間にアクション層を置き、キー割り当てを一元管理する。
    inputActionService_ = std::make_unique<InputActionService>();
-   inputActionService_->Initialize(
-      *input_,
-      "Resources/game/config/input_actions.json",
-      "Saved/input_actions.json");
+   inputActionService_->Initialize(*input_, "Resources/game/config/input_actions.json", "Saved/input_actions.json");
 
    // タイムプロファイラーの初期化
    timeProfiler_ = std::make_unique<TimeProfiler>();
 
    // EngineContextの初期化
    std::unique_ptr<EngineContextInitializer> initializer = std::make_unique<EngineContextInitializer>();
-   initializer->Initialize(
-	  device_.get(),
-	  input_.get(),
-	  inputActionService_.get(),
-	  audio_.get(),
-	  renderer_.get(),
-	  assetManager_.get(),
-	  timeProfiler_.get(),
-	  cameraManager_.get(),
-	  lightManager_.get()
-   );
+   initializer->Initialize(device_.get(), input_.get(), inputActionService_.get(), audio_.get(), renderer_.get(),
+      assetManager_.get(), timeProfiler_.get(), cameraManager_.get(), lightManager_.get());
 }
 
 void Framework::BeginFrame() {
@@ -121,13 +110,15 @@ void Framework::BeginFrame() {
    const bool isEnterTriggered = input_->IsKeyTriggered(KeyCode::Enter) || input_->IsKeyTriggered(KeyCode::NumpadEnter);
 
    if (isAltPressed && isEnterTriggered) {
-	  device_->ToggleFullscreen();
+      device_->ToggleFullscreen();
    }
 
    // バックバッファサイズをウィンドウサイズに同期
    device_->SyncBackBufferSizeToWindow();
+
    // レンダーターゲットサイズをデバイスに同期
    renderer_->SyncRenderTargetSizeToDevice();
+
    // フレーム開始処理
    renderer_->BeginFrame();
 }
@@ -135,6 +126,7 @@ void Framework::BeginFrame() {
 void Framework::EndFrame() {
    // フレーム終了処理
    renderer_->EndFrame();
+
    // 中間リソースの解放
    assetManager_->GetTextureManager()->ReleaseIntermediateResources();
    assetManager_->GetFontManager()->ReleaseIntermediateResources();
@@ -147,20 +139,23 @@ void Framework::Update() {
    // 機能種別ごとの静的レジストリではなく、全Entityに共通する経路でComponentを一度だけ更新する。
    const auto registeredObjects = Object::GetRegisteredObjects();
    for (auto* object : registeredObjects) {
-	  if (!object) { continue; }
-	  object->UpdateComponents(deltaTime);
+      if (!object) {
+         continue;
+      }
+      object->UpdateComponents(deltaTime);
    }
 
    // 登録されている全てのパーティクルシステムを更新
    for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
-	  if (!particleSystem) { continue; }
-	  particleSystem->Update(deltaTime);
+      if (!particleSystem) {
+         continue;
+      }
+      particleSystem->Update(deltaTime);
    }
    ParticleSystem::ProcessPendingSubEmitters();
 }
 
 void Framework::Draw() {
-
 }
 
 void Framework::Finalize() {
@@ -168,31 +163,31 @@ void Framework::Finalize() {
    input_.reset();
 
    if (renderer_) {
-	  renderer_->Finalize();
-	  renderer_.reset();
+      renderer_->Finalize();
+      renderer_.reset();
    }
 
    if (assetManager_) {
-	  assetManager_.reset();
+      assetManager_.reset();
       EngineContextInitializer initializer;
       initializer.SetAssetManager(nullptr);
    }
 
    if (device_) {
-	  device_->Finalize();
-	  device_.reset();
+      device_->Finalize();
+      device_.reset();
    }
 
    if (audio_) {
-	  audio_->Finalize();
-	  audio_.reset();
+      audio_->Finalize();
+      audio_.reset();
       EngineContextInitializer initializer;
       initializer.SetAudio(nullptr);
    }
 
    if (window_) {
-	  window_->DestroyGameWindow();
-	  window_.reset();
+      window_->DestroyGameWindow();
+      window_.reset();
    }
 }
 
@@ -202,17 +197,17 @@ void Framework::Run() {
 
    // メインループ
    while (window_->ProcessMessage() == 0) {
-	  // フレーム開始処理
-	  BeginFrame();
+      // フレーム開始処理
+      BeginFrame();
 
-	  // 更新処理
-	  Update();
+      // 更新処理
+      Update();
 
-	  // 描画処理
-	  Draw();
+      // 描画処理
+      Draw();
 
-	  // フレーム終了処理
-	  EndFrame();
+      // フレーム終了処理
+      EndFrame();
    }
 
    // 終了処理

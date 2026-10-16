@@ -23,12 +23,8 @@ namespace GameEngine {
 namespace {
 constexpr int kSceneJsonIndentSize = 3;
 
-bool PatchObjectComponentData(
-   nlohmann::json& objectData,
-   const std::string& fallbackObjectId,
-   const std::string& objectId,
-   const std::string& componentTypeName,
-   const nlohmann::json& componentData,
+bool PatchObjectComponentData(nlohmann::json& objectData, const std::string& fallbackObjectId,
+   const std::string& objectId, const std::string& componentTypeName, const nlohmann::json& componentData,
    const std::string& parentEntityId) {
    if (!objectData.is_object()) {
       return false;
@@ -40,16 +36,14 @@ bool PatchObjectComponentData(
    if (serializedObjectId.empty()) {
       serializedObjectId = fallbackObjectId;
    }
-   if (serializedObjectId != objectId ||
-      !objectData.contains("components") ||
-      !objectData.at("components").is_array()) {
+   if (serializedObjectId != objectId || !objectData.contains("components") ||
+       !objectData.at("components").is_array()) {
       return false;
    }
 
    // 対象Componentの型固有dataだけを差し替え、他Componentと有効状態はPlay開始時の値を保つ。
    for (auto& componentEntry : objectData["components"]) {
-      if (!componentEntry.is_object() ||
-         componentEntry.value("typeName", "") != componentTypeName) {
+      if (!componentEntry.is_object() || componentEntry.value("typeName", "") != componentTypeName) {
          continue;
       }
 
@@ -65,12 +59,8 @@ bool PatchObjectComponentData(
    return false;
 }
 
-bool PatchSceneComponentData(
-   nlohmann::json& sceneData,
-   const std::string& objectId,
-   const std::string& componentTypeName,
-   const nlohmann::json& componentData,
-   const std::string& parentEntityId) {
+bool PatchSceneComponentData(nlohmann::json& sceneData, const std::string& objectId,
+   const std::string& componentTypeName, const nlohmann::json& componentData, const std::string& parentEntityId) {
    if (!sceneData.is_object()) {
       return false;
    }
@@ -80,13 +70,9 @@ bool PatchSceneComponentData(
    bool patched = false;
    if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
       for (auto& objectData : sceneData["objects"]) {
-         patched = PatchObjectComponentData(
-            objectData,
-            {},
-            objectId,
-            componentTypeName,
-            componentData,
-            parentEntityId) || patched;
+         patched =
+            PatchObjectComponentData(objectData, {}, objectId, componentTypeName, componentData, parentEntityId) ||
+            patched;
       }
    }
 
@@ -97,18 +83,15 @@ bool PatchSceneComponentData(
          }
 
          const std::string sceneKey = sceneObjectEntry.value("sceneKey", "");
+
          // 旧版はobjectラッパー内、移行後はentry直下に本体があるため形を吸収する。
          nlohmann::json* objectData = &sceneObjectEntry;
          if (sceneObjectEntry.contains("object") && sceneObjectEntry.at("object").is_object()) {
             objectData = &sceneObjectEntry["object"];
          }
          patched = PatchObjectComponentData(
-            *objectData,
-            sceneKey,
-            objectId,
-            componentTypeName,
-            componentData,
-            parentEntityId) || patched;
+                      *objectData, sceneKey, objectId, componentTypeName, componentData, parentEntityId) ||
+                   patched;
       }
    }
 
@@ -172,9 +155,7 @@ void PlayModeController::RequestStep() {
 #ifdef USE_IMGUI
 bool PlayModeController::SaveComponent(Object& object, const std::string& componentTypeName) {
    auto reportFailure = [](const std::string& reason) {
-      Logger::Warning(
-         "Play mode component save failed: " + reason,
-         Logger::LogChannel::Editor);
+      Logger::Warning("Play mode component save failed: " + reason, Logger::LogChannel::Editor);
       return false;
    };
 
@@ -196,11 +177,7 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
    try {
       componentData = component->Serialize();
       if (!PatchSceneComponentData(
-         patchedSnapshot,
-         object.GetEntityId(),
-         componentTypeName,
-         componentData,
-         object.GetParentEntityId())) {
+             patchedSnapshot, object.GetEntityId(), componentTypeName, componentData, object.GetParentEntityId())) {
          return reportFailure("component was not present when play mode started");
       }
    } catch (...) {
@@ -227,11 +204,7 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
 
    try {
       if (!PatchSceneComponentData(
-         savedSceneData,
-         object.GetEntityId(),
-         componentTypeName,
-         componentData,
-         object.GetParentEntityId())) {
+             savedSceneData, object.GetEntityId(), componentTypeName, componentData, object.GetParentEntityId())) {
          return reportFailure("component was not found in " + sceneFilePath.generic_string());
       }
    } catch (...) {
@@ -245,8 +218,7 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
    // ディスク保存が成功してから停止時の復元元を更新し、両者の不整合を避ける。
    editorSceneSnapshot_ = std::move(patchedSnapshot);
    Logger::Info(
-      "Play mode component saved: " + object.GetEntityId() + "/" + componentTypeName,
-      Logger::LogChannel::Editor);
+      "Play mode component saved: " + object.GetEntityId() + "/" + componentTypeName, Logger::LogChannel::Editor);
    return true;
 }
 #endif
@@ -255,7 +227,8 @@ void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
 #ifdef USE_IMGUI
    // ゲーム更新より前に削除・差し替え済みComponentへのキャッシュを切り離す。
    if (auto* scene = sceneManager.GetCurrentScene()) {
-      if (auto* context = scene->GetEditorSceneContext()) context->RefreshReferences();
+      if (auto* context = scene->GetEditorSceneContext())
+         context->RefreshReferences();
    }
 #endif
    // 毎フレーム既定値を「更新しない/時間0」に戻し、PlayingまたはStepが成立した場合だけ有効化する。
@@ -299,7 +272,8 @@ void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
 
    // EngineContext経由の全ゲーム処理へ、ここで確定した単一のDeltaTimeを配布する。
    EngineContext::SetGameDeltaTime(gameDeltaTime_);
-   if (auto* audio = EngineContext::GetAudio()) audio->SetGamePaused(mode_ == PlayMode::Paused || (mode_ == PlayMode::Edit && hasPlaySession_));
+   if (auto* audio = EngineContext::GetAudio())
+      audio->SetGamePaused(mode_ == PlayMode::Paused || (mode_ == PlayMode::Edit && hasPlaySession_));
 }
 
 void PlayModeController::SetTimeScale(float timeScale) {
@@ -314,7 +288,8 @@ void PlayModeController::StopForSceneInitialization() {
    gameDeltaTime_ = 0.0f;
    ClearTransitionRequests();
    EngineContext::SetGameDeltaTime(gameDeltaTime_);
-   if (auto* audio = EngineContext::GetAudio()) audio->SetGamePaused(previousMode != PlayMode::Edit);
+   if (auto* audio = EngineContext::GetAudio())
+      audio->SetGamePaused(previousMode != PlayMode::Edit);
 
    // シーン遷移は同じPlayセッションの一部。開始Snapshotは明示的なStopまで保持する。
    playRequested_ = previousMode != PlayMode::Edit;
@@ -328,7 +303,8 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
 
    if (hasPlaySession_) {
       mode_ = PlayMode::Playing;
-      if (auto* audio = EngineContext::GetAudio()) audio->SetGamePaused(false);
+      if (auto* audio = EngineContext::GetAudio())
+         audio->SetGamePaused(false);
       BeginSceneAudio();
       return;
    }
@@ -345,6 +321,7 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
          editorSceneSnapshot_ = editorContext->SerializeToJson();
          hasEditorSceneSnapshot_ = editorSceneSnapshot_.is_object();
          playStartSceneWasDirty_ = editorContext->IsDirty();
+
          // UI演出やカメラ切替が変更する前に編集状態を退避しておく。
          editorContext->RefreshReferences(true);
       }
@@ -352,9 +329,13 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
 #endif
 
    hasPlaySession_ = true;
+
    // Snapshot取得後にPlayingへ移し、Serialize中の処理からはまだEdit状態として見えるようにする。
    mode_ = PlayMode::Playing;
-   if (auto* audio = EngineContext::GetAudio()) { audio->SetGamePaused(false); audio->StopPreviews(); }
+   if (auto* audio = EngineContext::GetAudio()) {
+      audio->SetGamePaused(false);
+      audio->StopPreviews();
+   }
    BeginSceneAudio();
 }
 
@@ -377,8 +358,8 @@ void PlayModeController::StopPlaying(SceneManager& sceneManager) {
          if (BaseScene* scene = sceneManager.GetCurrentScene()) {
             if (EditorSceneContext* editorContext = scene->GetEditorSceneContext()) {
                if (editorContext->LoadFromJson(editorSceneSnapshot_)) {
-                   // Snapshot内容だけでなく保存済み/未保存の表示状態もPlay開始前へ戻す。
-                   if (playStartSceneWasDirty_) {
+                  // Snapshot内容だけでなく保存済み/未保存の表示状態もPlay開始前へ戻す。
+                  if (playStartSceneWasDirty_) {
                      editorContext->MarkDirty();
                   } else {
                      editorContext->ClearDirty();

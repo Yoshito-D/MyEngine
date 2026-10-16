@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <string>
 #include <unordered_map>
@@ -86,7 +87,8 @@ public:
    bool CreateCustomPipeline(const std::string& name, const PipelineConfig& config);
 
    /// @brief コンピュートパイプライン定義を登録
-   bool CreateComputePipeline(const std::string& name, const std::string& computeShaderName, const std::string& rootSignatureName);
+   bool CreateComputePipeline(
+      const std::string& name, const std::string& computeShaderName, const std::string& rootSignatureName);
 
    /// @brief パイプラインを取得（文字列とブレンドモード指定）
    /// @param name パイプライン名
@@ -112,8 +114,10 @@ public:
 
    /// @brief 検証済みのモデル契約を返す。利用不可または非互換のパイプラインならnullptr。
    const ModelPipelineDefinition* GetModelPipeline(const std::string& name) const;
+
    /// @brief 作成に成功したモデル互換パイプラインをエディター用に列挙する。
    std::vector<std::string> GetModelPipelineNames() const;
+
    /// @brief PSOをコンパイルせず、利用可能なブレンド状態を解決する。
    BlendMode ResolveModelBlendMode(const std::string& name, BlendMode requested) const;
 
@@ -127,7 +131,9 @@ public:
    const PipelineReflectionMetadata* GetPipelineReflectionMetadata(const std::string& name) const;
 
    /// @brief すべてのパイプライン反射メタデータを取得
-   std::unordered_map<std::string, PipelineReflectionMetadata> GetAllPipelineReflectionMetadata() const { return pipelineReflectionMetadata_; }
+   std::unordered_map<std::string, PipelineReflectionMetadata> GetAllPipelineReflectionMetadata() const {
+      return pipelineReflectionMetadata_;
+   }
 
    /// @brief 全パイプラインの検証結果サマリーを取得（テスト足場）
    ValidationSummary GetValidationSummary() const;
@@ -185,18 +191,15 @@ private:
    void LogValidationMessage(const std::string& dedupeKey, const std::string& message, Logger::LogLevel level);
 
    /// @brief 頂点シェーダー反射情報から入力レイアウトを構築
-   std::vector<InputElementDefinition> BuildInputLayoutFromVertexShaderReflection(const std::string& vertexShaderName) const;
+   std::vector<InputElementDefinition> BuildInputLayoutFromVertexShaderReflection(
+      const std::string& vertexShaderName) const;
 
    /// @brief 反射パラメータをDXGI_FORMATへ変換
    DXGI_FORMAT ConvertReflectionInputToFormat(BYTE mask, D3D_REGISTER_COMPONENT_TYPE componentType) const;
 
-   std::optional<UINT> ResolveShaderRegisterBySemantic(
-      const std::string& semantic,
-      D3D12_ROOT_PARAMETER_TYPE parameterType,
-      D3D12_SHADER_VISIBILITY visibility,
-      D3D12_DESCRIPTOR_RANGE_TYPE rangeType,
-      const std::string& vertexShader,
-      const std::string& pixelShader,
+   std::optional<UINT> ResolveShaderRegisterBySemantic(const std::string& semantic,
+      D3D12_ROOT_PARAMETER_TYPE parameterType, D3D12_SHADER_VISIBILITY visibility,
+      D3D12_DESCRIPTOR_RANGE_TYPE rangeType, const std::string& vertexShader, const std::string& pixelShader,
       const std::string& computeShader) const;
 
    void RegisterPipelineSemanticSlots(const std::string& pipelineName, const std::string& rootSignatureName);

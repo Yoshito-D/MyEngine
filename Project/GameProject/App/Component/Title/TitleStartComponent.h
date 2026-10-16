@@ -17,7 +17,7 @@ namespace App {
 class TitleStartComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "TitleStartComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "タイトル開始UI", "Title Start UI" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"タイトル開始UI", "Title Start UI"};
 
    /// @brief コンポーネント型名を取得する
    /// @return TitleStartComponent
@@ -26,6 +26,7 @@ public:
    /// @brief UIの初期表示状態を保存して入力待ちへ戻す
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -42,6 +43,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief タイトル開始設定をインスペクターへ表示する
    void DrawInspector() override;
 #endif
@@ -64,7 +66,7 @@ private:
    float reactionDuration_ = 0.4f;
    float reactionEndScale_ = 1.4f;
    float reactionElapsed_ = 0.0f;
-   GameEngine::Vector3 reactionStartScale_ = { 1.0f, 1.0f, 1.0f };
+   GameEngine::Vector3 reactionStartScale_ = {1.0f, 1.0f, 1.0f};
    float selectionPulseDuration_ = 0.9f;
    float selectionPulseScale_ = 1.1f;
    float selectionSwitchDuration_ = 0.16f;
@@ -74,10 +76,8 @@ private:
    std::array<GameEngine::UITextComponent*, 2> optionTexts_ = {};
    std::array<GameEngine::TransformComponent*, 2> optionTransforms_ = {};
    std::array<GameEngine::Vector3, 2> baseScales_ = {
-      GameEngine::Vector3{ 1.0f, 1.0f, 1.0f },
-      GameEngine::Vector3{ 1.0f, 1.0f, 1.0f }
-   };
-   std::array<float, 2> baseOpacities_ = { 1.0f, 1.0f };
+      GameEngine::Vector3{1.0f, 1.0f, 1.0f}, GameEngine::Vector3{1.0f, 1.0f, 1.0f}};
+   std::array<float, 2> baseOpacities_ = {1.0f, 1.0f};
    int selectedOption_ = 0;
    bool startRequested_ = false;
    bool navigationLatched_ = false;

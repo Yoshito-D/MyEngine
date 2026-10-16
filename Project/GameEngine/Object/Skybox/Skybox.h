@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Graphics/Resources/Mesh.h"
 #include "GameEngine/Graphics/Resources/TransformationMatrix.h"
@@ -19,6 +20,7 @@ class Skybox : public Object {
 public:
    /// @brief 空のスカイボックスを生成して描画レジストリへ登録する
    Skybox();
+
    /// @brief 描画レジストリから解除してGPUリソースを破棄する
    ~Skybox() override;
 
@@ -83,7 +85,6 @@ private:
 
    ComPtr<ID3D12Resource> materialResource_ = nullptr;
    SkyboxMaterialData* materialData_ = nullptr;
-
 };
 
 } // namespace GameEngine

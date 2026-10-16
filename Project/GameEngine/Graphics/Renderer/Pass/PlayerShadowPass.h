@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Graphics/Renderer/Pass/IRenderPass.h"
 #include "GameEngine/Math/VectorMath.h"
 #include <cstdint>
@@ -18,8 +19,8 @@ class SrvDescriptorAllocation;
 /// @brief プレイヤーのシルエット影に使用する初期設定。距離の単位はワールド座標と同じ。
 /// @note 現在は不透明なプレイヤー1体と、変形しない球形惑星1個を対象とする。
 struct PlayerShadowSettings {
-   uint32_t maskWidth = 256;       ///< マスク画像の幅
-   uint32_t maskHeight = 256;      ///< マスク画像の高さ
+   uint32_t maskWidth = 256;      ///< マスク画像の幅
+   uint32_t maskHeight = 256;     ///< マスク画像の高さ
    float projectionWidth = 4.0f;  ///< 正射影の横幅。全ポーズが収まる値へ調整する
    float projectionHeight = 4.0f; ///< 正射影の縦幅
    float cameraDistance = 4.0f;   ///< プレイヤーから影用カメラまでの距離
@@ -48,10 +49,13 @@ class PlayerShadowPass final : public IRenderPass {
 public:
    /// @brief 未初期化の描画パスを作る。
    PlayerShadowPass() = default;
+
    /// @brief GPU完了後に専用資源とSRVスロットを解放する。
    ~PlayerShadowPass() override;
+
    /// @brief Map済み領域とGPU資源を二重所有しないためコピーを禁止する。
    PlayerShadowPass(const PlayerShadowPass&) = delete;
+
    /// @brief Map済み領域とGPU資源を二重所有しないためコピー代入を禁止する。
    PlayerShadowPass& operator=(const PlayerShadowPass&) = delete;
 
@@ -74,26 +78,33 @@ public:
 
    /// @copydoc IRenderPass::GetName
    std::string_view GetName() const override { return "PlayerShadowPass"; }
+
    /// @brief 不透明シーンへの追加描画として分類する。実行順はRendererの登録順で決まる。
    RenderPassType GetPassType() const override { return RenderPassType::Opaque; }
+
    /// @brief デバッグ表示用のマスクSRVを返す。初回のマスク描画前は未定義画像を読ませないためptrが0。
-   D3D12_GPU_DESCRIPTOR_HANDLE GetMaskSRVHandleGPU() const { return maskReady_ ? maskSrvHandle_ : D3D12_GPU_DESCRIPTOR_HANDLE{}; }
+   D3D12_GPU_DESCRIPTOR_HANDLE GetMaskSRVHandleGPU() const {
+      return maskReady_ ? maskSrvHandle_ : D3D12_GPU_DESCRIPTOR_HANDLE{};
+   }
 
 private:
    // PlayerShadow.hlsliと同じ配列順・サイズ。CBVの確保サイズは別途256バイトへ切り上げる。
    struct MaskConstants {
       Matrix4x4 playerShadowWVP{};
    };
+
    struct ProjectConstants {
       Matrix4x4 worldViewProjection{};
       Matrix4x4 world{};
       Matrix4x4 worldInverseTranspose{};
       Matrix4x4 shadowViewProjection{};
    };
+
    struct ShadowParameters {
-      Vector4 shadowUpAndOpacity{};      // xyz: 惑星の外向き、w: 濃さ
-      Vector4 groundPositionAndRange{};  // xyz: 投影中心、w: 受け面の許可範囲
+      Vector4 shadowUpAndOpacity{};     // xyz: 惑星の外向き、w: 濃さ
+      Vector4 groundPositionAndRange{}; // xyz: 投影中心、w: 受け面の許可範囲
    };
+
    static_assert(sizeof(MaskConstants) == 64);
    static_assert(sizeof(ProjectConstants) == 256);
    static_assert(sizeof(ShadowParameters) == 32);
@@ -105,6 +116,7 @@ private:
       UINT indexCount = 0;
       size_t meshIndex = 0;
    };
+
    struct ShadowBindings {
       const PipelineState* maskPipeline = nullptr;
       const PipelineState* projectPipeline = nullptr;
@@ -116,31 +128,43 @@ private:
 
    /// @brief 初期化失敗時またはGPU完了後に専用資源を破棄する。
    void ReleaseResources();
+
    /// @brief 同じ失敗が続く場合のログ重複を抑制し、falseを返す。
    bool ReportFailure(const std::string& reason);
+
    /// @brief GPU状態を変更する前に専用PSOと各Root indexを解決する。
    bool PrepareBindings(FrameContext& ctx);
+
    /// @brief プリミティブまたはアセットの描画情報を収集・検証する。
    bool CollectGeometry(Model* model, std::vector<DrawGeometry>& geometry);
+
    /// @brief 検証済みの頂点・インデックスを設定し、全サブメッシュを描く。
    void DrawGeometryList(const std::vector<DrawGeometry>& geometry);
 
    /// @brief 黒でクリアするRGBA8テクスチャとRTV/SRVを確保する。
    bool CreateMaskResources();
+
    /// @brief 通常描画の行列を上書きしない専用定数バッファを確保する。
    bool CreateConstantBuffers();
+
    /// @brief 対象・有限値・半径・投影設定が描画に使用できるか確認する。
    bool ValidateFrameData() const;
+
    /// @brief 重力方向、地表位置、連続した接線方向と正射影行列を求める。
    bool UpdateShadowProjection();
+
    /// @brief 今フレームのスキニング済み頂点をマスク描画から参照可能にする。
    bool PreparePlayerVertices(FrameContext& ctx);
+
    /// @brief CPU側の行列と影設定を各GPU定数バッファへ転送する。
    bool UpdateConstantBuffers();
+
    /// @brief マスクを黒でクリアし、全サブメッシュのシルエットを描画する。
    void DrawPlayerMask(FrameContext& ctx);
+
    /// @brief シーンの色・深度を保持して描画先、ビューポート、シザーを戻す。
    void RestoreSceneTarget(FrameContext& ctx);
+
    /// @brief 通常シーンと同じ惑星メッシュに、深度EQUAL・深度書込なしで影を合成する。
    void DrawReceiverShadow(FrameContext& ctx);
 
@@ -157,7 +181,7 @@ private:
 
    Vector3 shadowUp_{};
    Vector3 groundPosition_{};
-   Vector3 previousTangentUp_{ 0.0f, 0.0f, 1.0f };
+   Vector3 previousTangentUp_{0.0f, 0.0f, 1.0f};
    Matrix4x4 shadowViewProjection_{};
 
    Microsoft::WRL::ComPtr<ID3D12Resource> maskTexture_;

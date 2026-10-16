@@ -11,7 +11,7 @@ class RaceManagerComponent;
 class RaceTimeTextComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "RaceTimeTextComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "レースタイム表示", "Race Time Text" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"レースタイム表示", "Race Time Text"};
 
    /// @brief コンポーネント型名を取得する
    /// @return RaceTimeTextComponent
@@ -34,6 +34,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief 参照状態をインスペクターへ表示する
    void DrawInspector() override;
 #endif

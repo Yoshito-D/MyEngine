@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxcapi.h>
 #include <dxgi1_6.h>
@@ -11,19 +12,19 @@
 
 using namespace Microsoft::WRL;
 
-
 /// @brief ブレンドモードを定義する列挙型
 enum class BlendMode {
-   kBlendModeNone,// ブレンドなし
-   kBlendModeNormal,// 通常ブレンド
-   kBlendModeAdd,// 加算ブレンド
-   kBlendModeSubtract,// 減算ブレンド
-   kBlendModeMultiply,// 乗算ブレンド
-   kBlendModeScreen,// スクリーンブレンド
-   kCount// カウント
+   kBlendModeNone,     // ブレンドなし
+   kBlendModeNormal,   // 通常ブレンド
+   kBlendModeAdd,      // 加算ブレンド
+   kBlendModeSubtract, // 減算ブレンド
+   kBlendModeMultiply, // 乗算ブレンド
+   kBlendModeScreen,   // スクリーンブレンド
+   kCount              // カウント
 };
 
 namespace GameEngine {
+
 /// @brief パイプラインステートクラス
 class PipelineState {
 public:
@@ -43,15 +44,10 @@ public:
    /// @param inputSlot 入力スロット
    /// @param inputSlotClass 入力スロットクラス
    /// @param instanceDataStepRate インスタンスデータステップレート
-   void SetInputLayOut(
-	  const char* semanticName,
-	  UINT semanticIndex,
-	  DXGI_FORMAT format,
-	  UINT alignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT,
-	  UINT inputSlot = 0,
-	  D3D12_INPUT_CLASSIFICATION inputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
-	  UINT instanceDataStepRate = 0
-   );
+   void SetInputLayOut(const char* semanticName, UINT semanticIndex, DXGI_FORMAT format,
+      UINT alignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT, UINT inputSlot = 0,
+      D3D12_INPUT_CLASSIFICATION inputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
+      UINT instanceDataStepRate = 0);
 
    /// @brief ブレンドステートを設定する
    /// @param blendMode ブレンドモード
@@ -69,25 +65,19 @@ public:
    /// @param antialiasedLineEnable アンチエイリアスライン有効
    /// @param forcedSampleCount 強制サンプル数
    /// @param conservativeRasterizationMode 保守的ラスタライズモード
-   void SetRasterizer(
-	  D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK,
-	  D3D12_FILL_MODE fillMode = D3D12_FILL_MODE_SOLID,
-	  BOOL frontCounterClockwise = FALSE,
-	  INT depthBias = D3D12_DEFAULT_DEPTH_BIAS,
-	  FLOAT depthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
-	  FLOAT slopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
-	  BOOL depthClipEnable = TRUE,
-	  BOOL multisampleEnable = FALSE,
-	  BOOL antialiasedLineEnable = FALSE,
-	  UINT forcedSampleCount = 0,
-	  D3D12_CONSERVATIVE_RASTERIZATION_MODE conservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
-   );
+   void SetRasterizer(D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK, D3D12_FILL_MODE fillMode = D3D12_FILL_MODE_SOLID,
+      BOOL frontCounterClockwise = FALSE, INT depthBias = D3D12_DEFAULT_DEPTH_BIAS,
+      FLOAT depthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+      FLOAT slopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS, BOOL depthClipEnable = TRUE,
+      BOOL multisampleEnable = FALSE, BOOL antialiasedLineEnable = FALSE, UINT forcedSampleCount = 0,
+      D3D12_CONSERVATIVE_RASTERIZATION_MODE conservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 
    /// @brief 深度ステンシルステートを設定する
    /// @param depthEnable 深度テストを有効にするか
    /// @param writeMask 深度書き込みマスク
    /// @param depthFunc 深度比較関数
-   void SetDepthStencil(BOOL depthEnable = TRUE, D3D12_DEPTH_WRITE_MASK writeMask = D3D12_DEPTH_WRITE_MASK_ALL, D3D12_COMPARISON_FUNC depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL);
+   void SetDepthStencil(BOOL depthEnable = TRUE, D3D12_DEPTH_WRITE_MASK writeMask = D3D12_DEPTH_WRITE_MASK_ALL,
+      D3D12_COMPARISON_FUNC depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL);
 
    /// @brief シェーダーを設定する
    /// @param vertexShader 頂点シェーダー

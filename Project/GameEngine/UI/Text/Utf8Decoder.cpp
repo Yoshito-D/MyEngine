@@ -12,6 +12,7 @@ bool IsContinuationByte(uint8_t value) {
 
 std::vector<char32_t> DecodeUtf8(std::string_view text) {
    std::vector<char32_t> result;
+
    // ASCIIだけの場合の最大要素数を先に確保し、デコード中の再確保を避ける。
    result.reserve(text.size());
 
@@ -47,6 +48,7 @@ std::vector<char32_t> DecodeUtf8(std::string_view text) {
       }
 
       bool valid = true;
+
       // 継続バイトを6ビットずつ連結してUnicodeコードポイントを復元する。
       for (size_t index = 1; index < sequenceLength; ++index) {
          const uint8_t continuation = static_cast<uint8_t>(text[offset + index]);
@@ -57,16 +59,15 @@ std::vector<char32_t> DecodeUtf8(std::string_view text) {
          codePoint = (codePoint << 6u) | (continuation & 0x3Fu);
       }
 
-      const bool isOverlong =
-         (sequenceLength == 2 && codePoint < 0x80) ||
-         (sequenceLength == 3 && codePoint < 0x800) ||
-         (sequenceLength == 4 && codePoint < 0x10000);
+      const bool isOverlong = (sequenceLength == 2 && codePoint < 0x80) || (sequenceLength == 3 && codePoint < 0x800) ||
+                              (sequenceLength == 4 && codePoint < 0x10000);
       const bool isSurrogate = codePoint >= 0xD800 && codePoint <= 0xDFFF;
       const bool isOutOfRange = codePoint > 0x10FFFF;
 
       // 最短形式でない符号化、UTF-16専用領域、Unicode上限外は妥当なUTF-8として受理しない。
       if (!valid || isOverlong || isSurrogate || isOutOfRange) {
          result.push_back(kReplacementCharacter);
+
          // 壊れた先頭バイトだけを消費し、次の正しい文字境界へ早く再同期する。
          ++offset;
          continue;
@@ -81,10 +82,10 @@ std::vector<char32_t> DecodeUtf8(std::string_view text) {
 
 size_t CountRenderableCodePoints(std::string_view text) {
    const auto codePoints = DecodeUtf8(text);
+
    // 改行コードは配置数から除外する一方、空白や置換文字は描画進行に必要なので数える。
-   return static_cast<size_t>(std::count_if(codePoints.begin(), codePoints.end(), [](char32_t codePoint) {
-      return codePoint != U'\n' && codePoint != U'\r';
-   }));
+   return static_cast<size_t>(std::count_if(codePoints.begin(), codePoints.end(),
+      [](char32_t codePoint) { return codePoint != U'\n' && codePoint != U'\r'; }));
 }
 
 } // namespace GameEngine

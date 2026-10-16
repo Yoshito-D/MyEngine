@@ -68,12 +68,13 @@ bool PostProcess::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 #ifdef USE_IMGUI
+
 /// @brief エディターの現在言語に対応するラベルを選択する。
 /// @param japanese 日本語表示時に使用する文字列
 /// @param english 英語表示時に使用する文字列
 /// @return 現在の言語設定に対応する入力文字列
 const char* PostProcess::LocalizeEditorText(const char* japanese, const char* english) {
-   return ImGuiHelper::Localize({ japanese, english });
+   return ImGuiHelper::Localize({japanese, english});
 }
 #endif
 

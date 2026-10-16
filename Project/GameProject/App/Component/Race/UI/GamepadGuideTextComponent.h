@@ -12,7 +12,7 @@ class RaceManagerComponent;
 class GamepadGuideTextComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "GamepadGuideTextComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "ゲームパッド操作ガイド", "Gamepad Guide Text" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"ゲームパッド操作ガイド", "Gamepad Guide Text"};
 
    const char* GetTypeName() const override { return kTypeName; }
 

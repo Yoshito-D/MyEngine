@@ -20,22 +20,17 @@ bool ContainsEffectName(const std::string& path, const char* effectName) {
 }
 
 GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
-   const GameEngine::Vector3 localUp{ 0.0f, 1.0f, 0.0f };
+   const GameEngine::Vector3 localUp{0.0f, 1.0f, 0.0f};
    const GameEngine::Vector3 surfaceNormal = normal.Normalize();
    const float dot = localUp.Dot(surfaceNormal);
 
    // 真下だけは回転軸が一意に決まらないため、X軸周りの180度回転を使う。
    if (dot < -0.9999f) {
-      return { 1.0f, 0.0f, 0.0f, 0.0f };
+      return {1.0f, 0.0f, 0.0f, 0.0f};
    }
 
    const GameEngine::Vector3 axis = localUp.Cross(surfaceNormal);
-   return GameEngine::Quaternion{
-      axis.x,
-      axis.y,
-      axis.z,
-      1.0f + dot
-   }.Normalize();
+   return GameEngine::Quaternion{axis.x, axis.y, axis.z, 1.0f + dot}.Normalize();
 }
 }
 
@@ -57,25 +52,25 @@ void VehicleEffectController::Update(float deltaTime) {
    const bool isGrounded = landing && landing->IsGrounded();
    const bool isDrifting = drift && drift->IsDrifting();
    const bool canFireMiniTurbo = drift && drift->CanFireMiniTurbo();
+
    // カメラ演出と通知を奪い合わず、各発動につき一度だけパーティクルを再生する。
    const uint64_t miniTurboFireCount = drift ? drift->GetMiniTurboFireCount() : 0;
    const bool miniTurboFired = drift && miniTurboFireCount != lastMiniTurboFireCount_;
    lastMiniTurboFireCount_ = miniTurboFireCount;
+
    // 継続状態から立ち上がりを抽出し、ジャンプ・着地系の単発エフェクトへ変換する。
    const bool jumpedThisFrame = isJumping && !wasJumping_;
    const bool landedThisFrame = isGrounded && !wasGrounded_;
    const bool failedLandingThisFrame =
-	  landedThisFrame && landingBoost &&
-	  landingBoost->GetLastLandingResult() == LandingResult::Failure;
+      landedThisFrame && landingBoost && landingBoost->GetLastLandingResult() == LandingResult::Failure;
 
    GameEngine::Vector3 landingContactPoint{};
    GameEngine::Quaternion landingRotation = GameEngine::Quaternion::Identity();
-   const bool hasLandingTransform =
-	  landedThisFrame && landing && landing->HasLandingContact();
+   const bool hasLandingTransform = landedThisFrame && landing && landing->HasLandingContact();
    if (hasLandingTransform) {
-	  // 車体中心ではなく実際の接触点・法線へ配置し、球面上でも地表に沿わせる。
-	  landingContactPoint = landing->GetLastLandingContactPoint();
-	  landingRotation = AlignUpToNormal(landing->GetLastLandingNormal());
+      // 車体中心ではなく実際の接触点・法線へ配置し、球面上でも地表に沿わせる。
+      landingContactPoint = landing->GetLastLandingContactPoint();
+      landingRotation = AlignUpToNormal(landing->GetLastLandingNormal());
    }
 
    // 共通エミッタ内のスロットをJSONパスで役割分けし、各ゲーム状態へ結び付ける。
@@ -94,8 +89,7 @@ void VehicleEffectController::Update(float deltaTime) {
          if (!isGrounded) {
             // 空中へ移った時点で既存粒子も消し、車体に追従して見え続けるのを防ぐ。
             emitter->EnableEmission(slotIndex, false);
-            if (emitter->IsPlaying(slotIndex) ||
-               emitter->HasLivingParticles(slotIndex)) {
+            if (emitter->IsPlaying(slotIndex) || emitter->HasLivingParticles(slotIndex)) {
                emitter->Stop(slotIndex);
             }
          } else if (miniTurboFired) {
@@ -105,19 +99,13 @@ void VehicleEffectController::Update(float deltaTime) {
       } else if (ContainsEffectName(slot->jsonPath, "landingRing") && landedThisFrame) {
          if (hasLandingTransform) {
             emitter->SetSlotWorldTransform(
-               slotIndex,
-               landingContactPoint,
-               landingRotation,
-               slot->attachConfig.scaleOffset);
+               slotIndex, landingContactPoint, landingRotation, slot->attachConfig.scaleOffset);
          }
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "landingDust") && landedThisFrame) {
          if (hasLandingTransform) {
             emitter->SetSlotWorldTransform(
-               slotIndex,
-               landingContactPoint,
-               landingRotation,
-               slot->attachConfig.scaleOffset);
+               slotIndex, landingContactPoint, landingRotation, slot->attachConfig.scaleOffset);
          }
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "landing_failure") && failedLandingThisFrame) {
@@ -128,6 +116,7 @@ void VehicleEffectController::Update(float deltaTime) {
    }
 
    wasJumping_ = isJumping;
+
    // 次フレームのエッジ判定に使うため、全スロット処理後に状態を更新する。
    wasGrounded_ = isGrounded;
 }

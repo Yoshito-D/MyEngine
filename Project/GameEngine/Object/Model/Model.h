@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -17,10 +18,11 @@ class Material;
 class TransformationMatrix;
 
 /// @brief モデルクラス
-class Model :public Object {
+class Model : public Object {
 public:
    /// @brief 空のモデルを生成して描画レジストリへ登録する
    Model();
+
    /// @brief 描画レジストリから解除して破棄する
    ~Model() override;
 
@@ -52,13 +54,14 @@ public:
 
    /// @brief スキンクラスタを取得する（MeshComponent への便利アクセス）
    SkinCluster* GetSkinCluster() {
-	  auto* c = GetComponent<MeshComponent>();
-	  return c ? c->GetSkinCluster() : nullptr;
+      auto* c = GetComponent<MeshComponent>();
+      return c ? c->GetSkinCluster() : nullptr;
    }
+
    /// @brief スキンクラスタを読み取り専用で取得する
    const SkinCluster* GetSkinCluster() const {
-	  const auto* c = GetComponent<MeshComponent>();
-	  return c ? c->GetSkinCluster() : nullptr;
+      const auto* c = GetComponent<MeshComponent>();
+      return c ? c->GetSkinCluster() : nullptr;
    }
 
    /// @brief モデルの位置を取得する

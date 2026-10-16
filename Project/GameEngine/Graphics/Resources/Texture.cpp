@@ -8,21 +8,26 @@
 
 namespace GameEngine {
 ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::string& filePath) {
-   if (!device || !device->GetDevice() || !device->GetCommandList()) return nullptr;
+   if (!device || !device->GetDevice() || !device->GetCommandList())
+      return nullptr;
    name_ = filePath.substr(filePath.find_last_of("/\\") + 1);
    DirectX::ScratchImage mipImages = LoadTextureWithMipmaps(filePath);
-   if (!mipImages.GetImageCount()) return nullptr;
+   if (!mipImages.GetImageCount())
+      return nullptr;
    metadata_ = mipImages.GetMetadata();
    if (metadata_.dimension != DirectX::TEX_DIMENSION_TEXTURE2D || !metadata_.width || !metadata_.height ||
-      metadata_.width > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION || metadata_.height > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION ||
-      !metadata_.mipLevels || metadata_.mipLevels > D3D12_REQ_MIP_LEVELS ||
-      (metadata_.IsCubemap() ? metadata_.arraySize != 6 : metadata_.arraySize != 1)) {
+       metadata_.width > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION ||
+       metadata_.height > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION || !metadata_.mipLevels ||
+       metadata_.mipLevels > D3D12_REQ_MIP_LEVELS ||
+       (metadata_.IsCubemap() ? metadata_.arraySize != 6 : metadata_.arraySize != 1)) {
       Logger::Warning("Unsupported texture dimensions: " + filePath);
       return nullptr;
    }
-   D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport{ metadata_.format };
-   if (FAILED(device->GetDevice()->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatSupport, sizeof(formatSupport))) ||
-      !(formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TEXTURE2D) || !(formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)) {
+   D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport{metadata_.format};
+   if (FAILED(device->GetDevice()->CheckFeatureSupport(
+          D3D12_FEATURE_FORMAT_SUPPORT, &formatSupport, sizeof(formatSupport))) ||
+       !(formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TEXTURE2D) ||
+       !(formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)) {
       Logger::Warning("Unsupported texture format: " + filePath);
       return nullptr;
    }
@@ -34,7 +39,8 @@ ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::s
    // DEFAULTヒープの実体へコピーを記録し、中間UPLOADリソースを呼び出し元へ返す。
    // コマンド完了前に中間リソースが破棄されないよう、寿命管理を外側へ委ねている。
    textureResource_ = ResourceHelper::CreateTextureResource(device->GetDevice(), metadata_);
-   ComPtr<ID3D12Resource> intermediateResource = ResourceHelper::UploadTextureData(textureResource_.Get(), mipImages, device->GetDevice(), device->GetCommandList());
+   ComPtr<ID3D12Resource> intermediateResource = ResourceHelper::UploadTextureData(
+      textureResource_.Get(), mipImages, device->GetDevice(), device->GetCommandList());
 
    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
    srvDesc.Format = metadata_.format;
@@ -43,13 +49,13 @@ ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::s
    if (metadata_.IsCubemap()) {
       // DDSの6面配列はTexture2DArrayではなくTextureCubeとして公開し、
       // シェーダー側が方向ベクトルでサンプリングできるようにする。
-	  srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-	  srvDesc.TextureCube.MostDetailedMip = 0;
-	  srvDesc.TextureCube.MipLevels = UINT_MAX;
-	  srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+      srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+      srvDesc.TextureCube.MostDetailedMip = 0;
+      srvDesc.TextureCube.MipLevels = UINT_MAX;
+      srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
    } else {
-	  srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	  srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata_.mipLevels);
+      srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+      srvDesc.Texture2D.MipLevels = static_cast<UINT>(metadata_.mipLevels);
    }
 
    // CPU/GPUハンドルは同じディスクリプタ番号を指す。CPU側でビューを書き込み、
@@ -57,10 +63,10 @@ ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::s
    UINT index = device->GetNextSrvIndex();
 
    textureSrvHandleCPU_ = CD3DX12_CPU_DESCRIPTOR_HANDLE(
-	  device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), index, device->GetDescriptorSizeCBVSRVUAV());
+      device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), index, device->GetDescriptorSizeCBVSRVUAV());
 
    textureSrvHandleGPU_ = CD3DX12_GPU_DESCRIPTOR_HANDLE(
-	  device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), index, device->GetDescriptorSizeCBVSRVUAV());
+      device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), index, device->GetDescriptorSizeCBVSRVUAV());
 
    // SRVの生成
    device->GetDevice()->CreateShaderResourceView(textureResource_.Get(), &srvDesc, textureSrvHandleCPU_);
@@ -77,12 +83,13 @@ DirectX::ScratchImage Texture::LoadTextureWithMipmaps(const std::string& filePat
    HRESULT hr = S_OK;
 
    std::string extension = std::filesystem::path(std::u8string(filePath.begin(), filePath.end())).extension().string();
-   std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+   std::transform(extension.begin(), extension.end(), extension.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
    if (extension == ".dds") {
       // DDSは既存の圧縮形式やキューブ面を保持し、一般画像は色空間をsRGBとして読み込む。
-	  hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
+      hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
    } else {
-	  hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+      hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
    }
 
    if (FAILED(hr)) {
@@ -94,29 +101,23 @@ DirectX::ScratchImage Texture::LoadTextureWithMipmaps(const std::string& filePat
 
    // ミップマップが生成できるサイズかチェック
    if (metadata.width <= 1 && metadata.height <= 1) {
-	  // 1x1など、ミップマップ不要（または生成できない）場合はそのまま返す
-	  return image;
+      // 1x1など、ミップマップ不要（または生成できない）場合はそのまま返す
+      return image;
    }
 
    DirectX::ScratchImage mipImages{};
 
    if (DirectX::IsCompressed(image.GetMetadata().format)) {
       // BC圧縮画像をCPUで再生成すると形式と既存mipを失うため、そのままGPUへ送る。
-	  mipImages = std::move(image); // 圧縮テクスチャは元画像をそのまま使用
+      mipImages = std::move(image); // 圧縮テクスチャは元画像をそのまま使用
    } else {
-	  hr = DirectX::GenerateMipMaps(
-		 image.GetImages(),
-		 image.GetImageCount(),
-		 metadata,
-		 DirectX::TEX_FILTER_SRGB,
-		 4,
-		 mipImages
-	  );
+      hr = DirectX::GenerateMipMaps(
+         image.GetImages(), image.GetImageCount(), metadata, DirectX::TEX_FILTER_SRGB, 4, mipImages);
    }
 
    if (FAILED(hr)) {
-	  Logger::Error("MipMap generation failed for: " + filePath);
-	  return image; // ミップマップ生成に失敗した場合、元画像を返す
+      Logger::Error("MipMap generation failed for: " + filePath);
+      return image; // ミップマップ生成に失敗した場合、元画像を返す
    }
 
    return mipImages;

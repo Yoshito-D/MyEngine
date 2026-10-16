@@ -39,9 +39,9 @@ enum class TextAtlasType : uint32_t {
 struct TextStyle {
    std::string fontId;
    uint32_t fontSize = 32;
-   Vector4 color = { 1.0f, 1.0f, 1.0f, 1.0f };
+   Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};
    UIAnchor screenAnchor = UIAnchor::TopLeft;
-   Vector2 pivot = { 0.0f, 0.0f };
+   Vector2 pivot = {0.0f, 0.0f};
    TextHorizontalAlignment horizontalAlignment = TextHorizontalAlignment::Left;
    float maxWidth = 0.0f;
    float lineSpacing = 1.0f;
@@ -50,15 +50,15 @@ struct TextStyle {
 
 /// @brief グリフアトラスに登録された文字の描画情報
 struct GlyphInfo {
-   Vector2 uvMin = { 0.0f, 0.0f };
-   Vector2 uvMax = { 0.0f, 0.0f };
-   Vector2 bitmapSize = { 0.0f, 0.0f };
-   Vector2 bearing = { 0.0f, 0.0f };
+   Vector2 uvMin = {0.0f, 0.0f};
+   Vector2 uvMax = {0.0f, 0.0f};
+   Vector2 bitmapSize = {0.0f, 0.0f};
+   Vector2 bearing = {0.0f, 0.0f};
    float advance = 0.0f;
    uint32_t glyphIndex = 0;
    uint32_t atlasPage = 0;
    D3D12_GPU_DESCRIPTOR_HANDLE atlasSrv = {};
-   Vector2 atlasSize = { 1.0f, 1.0f };
+   Vector2 atlasSize = {1.0f, 1.0f};
    float distanceRange = 0.0f;
    TextAtlasType atlasType = TextAtlasType::Bitmap;
 };
@@ -73,13 +73,13 @@ struct FontMetrics {
 /// @brief レイアウト済みグリフのローカル座標
 struct GlyphPlacement {
    GlyphInfo glyph;
-   Vector2 position = { 0.0f, 0.0f };
+   Vector2 position = {0.0f, 0.0f};
 };
 
 /// @brief テキスト全体のレイアウト結果
 struct TextLayoutResult {
    std::vector<GlyphPlacement> glyphs;
-   Vector2 size = { 0.0f, 0.0f };
+   Vector2 size = {0.0f, 0.0f};
    float baseline = 0.0f;
 };
 

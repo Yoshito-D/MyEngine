@@ -22,20 +22,20 @@ std::string BuildAutoSpriteMaterialName() {
 std::string BuildDefaultSpriteName(const std::vector<Sprite*>& registeredSprites) {
    // 生存中の表示名と衝突しない最小番号を選び、削除済み番号は再利用して名前の無制限な増加を避ける。
    auto exists = [&registeredSprites](const std::string& name) {
-	  for (const auto* sprite : registeredSprites) {
-		 if (sprite && sprite->GetObjectName() == name) {
-			return true;
-		 }
-	  }
-	  return false;
+      for (const auto* sprite : registeredSprites) {
+         if (sprite && sprite->GetObjectName() == name) {
+            return true;
+         }
+      }
+      return false;
    };
 
    uint32_t index = 1;
    while (true) {
-	  const std::string candidate = "Sprite_" + std::to_string(index++);
-	  if (!exists(candidate)) {
-		 return candidate;
-	  }
+      const std::string candidate = "Sprite_" + std::to_string(index++);
+      if (!exists(candidate)) {
+         return candidate;
+      }
    }
 }
 }
@@ -61,6 +61,7 @@ Sprite::Sprite() {
       }
    }
    SetObjectName(BuildDefaultSpriteName(sRegisteredSprites_));
+
    // Rendererが所有権を持たずに自動描画対象を列挙するため、構築完了後のthisを静的一覧へ登録する。
    sRegisteredSprites_.push_back(this);
 }
@@ -72,13 +73,13 @@ Sprite::~Sprite() {
 
 void Sprite::UnregisterSprite(Sprite* sprite) {
    if (!sprite) {
-	  return;
+      return;
    }
 
    // Editorは描画一覧から先に外して実体を遅延破棄するため、デストラクターから再度呼ばれても何もしない冪等操作とする。
    auto it = std::find(sRegisteredSprites_.begin(), sRegisteredSprites_.end(), sprite);
    if (it != sRegisteredSprites_.end()) {
-	  sRegisteredSprites_.erase(it);
+      sRegisteredSprites_.erase(it);
    }
 }
 
@@ -99,8 +100,8 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
    if (material) {
       // nullptrならコンストラクターで作成したSprite専用Materialを維持し、明示指定時だけ外部Materialへ差し替える。
       if (auto* materialComponent = GetComponent<MaterialComponent>()) {
-		 materialComponent->AssignMaterial(material);
-	  }
+         materialComponent->AssignMaterial(material);
+      }
    }
 
    if (auto* renderComponent = AddComponent<RenderComponent>()) {
@@ -113,19 +114,21 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
 
    auto* transformComponent = GetComponent<TransformComponent>();
    if (transformComponent) {
-	  {
-	     auto pose = transformComponent->GetLocalPose();
-	     pose.scale = { 1.0f, 1.0f, 1.0f };
-	     transformComponent->ApplyLocalPose(pose);
-	  }
-	  // 既定のUIカメラのNear=0より奥へ置き、生成直後からクリップ範囲内の深度を持たせる。
-	  {
-	     auto pose = transformComponent->GetLocalPose();
-	     pose.translation.z = 1.0f;
-	     transformComponent->ApplyLocalPose(pose);
-	  }
-	  // 描画時までGPU定数バッファを遅延できる設計だが、Create済みSpriteは即座に取得可能な状態へする。
-	  transformComponent->EnsureTransformationMatrix();
+      {
+         auto pose = transformComponent->GetLocalPose();
+         pose.scale = {1.0f, 1.0f, 1.0f};
+         transformComponent->ApplyLocalPose(pose);
+      }
+
+      // 既定のUIカメラのNear=0より奥へ置き、生成直後からクリップ範囲内の深度を持たせる。
+      {
+         auto pose = transformComponent->GetLocalPose();
+         pose.translation.z = 1.0f;
+         transformComponent->ApplyLocalPose(pose);
+      }
+
+      // 描画時までGPU定数バッファを遅延できる設計だが、Create済みSpriteは即座に取得可能な状態へする。
+      transformComponent->EnsureTransformationMatrix();
    }
 
    UpdateVertexPositions();
@@ -134,6 +137,7 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
 void Sprite::SetAnchorPoint(const Vector2& anchorPoint) {
    if (auto* primitiveMeshComponent = GetMeshComponent()) {
       primitiveMeshComponent->SetQuadAnchorPoint(anchorPoint);
+
       // Mesh作成済みなら、永続MapされたUPLOADヒープへ4頂点の位置だけを即時反映する。
       primitiveMeshComponent->ApplyToMesh();
    }
@@ -149,11 +153,12 @@ void Sprite::SetSize(const Vector2& size) {
 void Sprite::SetScale(const Vector2& scale) {
    auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
-	  return;
+      return;
    }
    auto pose = transformComponent->GetLocalPose();
-pose.scale.x = scale.x;
+   pose.scale.x = scale.x;
    pose.scale.y = scale.y;
+
    // Quadに厚みはないが、2D入力によって未指定のZ軸まで0へ落とさないよう1を維持する。
    pose.scale.z = 1.0f;
    transformComponent->ApplyLocalPose(pose);
@@ -162,11 +167,12 @@ pose.scale.x = scale.x;
 void Sprite::SetPosition(const Vector2& position) {
    auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
-	  return;
+      return;
    }
    auto pose = transformComponent->GetLocalPose();
-pose.translation.x = position.x;
+   pose.translation.x = position.x;
    pose.translation.y = position.y;
+
    // 既定のScreen描画でUIカメラのクリップ範囲内に収まる深度を維持する。
    pose.translation.z = 1.0f;
    transformComponent->ApplyLocalPose(pose);
@@ -175,8 +181,9 @@ pose.translation.x = position.x;
 void Sprite::SetRotation(float rotation) {
    auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
-	  return;
+      return;
    }
+
    // Quaternion setter経由でEuler側も同期し、描画・Inspector・シリアライズが同じZ回転を参照するようにする。
    {
       auto pose = transformComponent->GetLocalPose();
@@ -188,23 +195,23 @@ void Sprite::SetRotation(float rotation) {
 Vector2 Sprite::GetScale() const {
    const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
-	  return Vector2(1.0f, 1.0f);
+      return Vector2(1.0f, 1.0f);
    }
-   return Vector2{ transformComponent->GetLocalPose().scale.x, transformComponent->GetLocalPose().scale.y };
+   return Vector2{transformComponent->GetLocalPose().scale.x, transformComponent->GetLocalPose().scale.y};
 }
 
 Vector2 Sprite::GetPosition() const {
    const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
-	  return Vector2(0.0f, 0.0f);
+      return Vector2(0.0f, 0.0f);
    }
-   return Vector2{ transformComponent->GetLocalPose().translation.x, transformComponent->GetLocalPose().translation.y };
+   return Vector2{transformComponent->GetLocalPose().translation.x, transformComponent->GetLocalPose().translation.y};
 }
 
 float Sprite::GetRotation() const {
    const auto* transformComponent = GetComponent<TransformComponent>();
    if (!transformComponent) {
-	  return 0.0f;
+      return 0.0f;
    }
    return transformComponent->GetLocalPose().GetActiveEuler().z;
 }
@@ -296,15 +303,16 @@ TransformationMatrix* Sprite::GetTransformationMatrix() {
    if (!transformComponent) {
       return nullptr;
    }
+
    // CPUから直接更新できる永続Map済み定数バッファを、実際に要求された時点で初めて確保する。
    return transformComponent->EnsureTransformationMatrix();
 }
 
 void Sprite::Update(Camera* camera, Texture* texture) {
    auto* transformComponent = GetTransformComponent();
-	if (!transformComponent || !camera) {
-	   return;
-	}
+   if (!transformComponent || !camera) {
+      return;
+   }
 
    auto* transformationMatrix = transformComponent->EnsureTransformationMatrix();
    if (!transformationMatrix) {
@@ -318,16 +326,18 @@ void Sprite::Update(Camera* camera, Texture* texture) {
    // 行ベクトル規約に従いLocalの後へParentを合成し、階層化されたSpriteにも同じ描画経路を使う。
    Matrix4x4 worldMatrix = MakeAffineMatrix(transformComponent->GetLocalPose());
    worldMatrix = transformComponent->ComposeWorldMatrix(worldMatrix);
+
    // TransformationMatrixは永続Mapされており、この書込みが同フレームの頂点シェーダー定数へ直接反映される。
    // 共通Objectシェーダーのレイアウトに合わせ、2D SpriteでもWorldと法線用逆転置を揃えて更新する。
    transformationMatrix->ApplyWorldTransform(worldMatrix, camera->GetViewProjectionMatrix());
 }
 
-void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) {
+void Sprite::UpdateMatrixForUI(
+   Camera* camera, Texture* texture, AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) {
    auto* transformComponent = GetTransformComponent();
-	if (!transformComponent || !camera) {
-	   return;
-	}
+   if (!transformComponent || !camera) {
+      return;
+   }
 
    auto* transformationMatrix = transformComponent->EnsureTransformationMatrix();
    if (!transformationMatrix) {
@@ -338,7 +348,6 @@ void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anc
    UpdateVertexPositions();
    UpdateTextureCoordinates(texture);
 
-
    // UIカメラは画面中心原点・上向きYなので、論理画面の半幅・半高から選択アンカーの基準位置を求める。
    Vector3 anchorPos = CalculateAnchorPosition(anchorPoint, screenWidth, screenHeight);
 
@@ -346,7 +355,7 @@ void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anc
    Transform finalTransform = transformComponent->GetLocalPose();
    finalTransform.translation.x += anchorPos.x;
    finalTransform.translation.y += anchorPos.y;
- finalTransform.translation.z = transformComponent->GetLocalPose().translation.z;
+   finalTransform.translation.z = transformComponent->GetLocalPose().translation.z;
 
    // 画面アンカーを適用したLocalの後へParentを掛け、通常更新と同じ階層規約を保つ。
    Matrix4x4 worldMatrix = MakeAffineMatrix(finalTransform);
@@ -357,49 +366,49 @@ void Sprite::UpdateMatrixForUI(Camera* camera, Texture* texture, AnchorPoint anc
 }
 
 Vector3 Sprite::CalculateAnchorPosition(AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) const {
-   Vector3 position = { 0.0f, 0.0f, 0.0f };
+   Vector3 position = {0.0f, 0.0f, 0.0f};
 
    // 入力寸法はピクセルそのものではなくRendererが選んだ論理UI領域で、中心から各辺までの距離へ変換する。
    float halfWidth = screenWidth * 0.5f;
    float halfHeight = screenHeight * 0.5f;
 
    switch (anchorPoint) {
-	  case AnchorPoint::TopLeft:
-		 position.x = -halfWidth;
-		 position.y = halfHeight;  // 上部なのでプラス
-		 break;
-	  case AnchorPoint::TopCenter:
-		 position.x = 0.0f;
-		 position.y = halfHeight;  // 上部なのでプラス
-		 break;
-	  case AnchorPoint::TopRight:
-		 position.x = halfWidth;
-		 position.y = halfHeight;  // 上部なのでプラス
-		 break;
-	  case AnchorPoint::MiddleLeft:
-		 position.x = -halfWidth;
-		 position.y = 0.0f;
-		 break;
-	  case AnchorPoint::MiddleCenter:
-		 position.x = 0.0f;
-		 position.y = 0.0f;
-		 break;
-	  case AnchorPoint::MiddleRight:
-		 position.x = halfWidth;
-		 position.y = 0.0f;
-		 break;
-	  case AnchorPoint::BottomLeft:
-		 position.x = -halfWidth;
-		 position.y = -halfHeight;  // 下部なのでマイナス
-		 break;
-	  case AnchorPoint::BottomCenter:
-		 position.x = 0.0f;
-		 position.y = -halfHeight;  // 下部なのでマイナス
-		 break;
-	  case AnchorPoint::BottomRight:
-		 position.x = halfWidth;
-		 position.y = -halfHeight;  // 下部なのでマイナス
-		 break;
+      case AnchorPoint::TopLeft:
+         position.x = -halfWidth;
+         position.y = halfHeight; // 上部なのでプラス
+         break;
+      case AnchorPoint::TopCenter:
+         position.x = 0.0f;
+         position.y = halfHeight; // 上部なのでプラス
+         break;
+      case AnchorPoint::TopRight:
+         position.x = halfWidth;
+         position.y = halfHeight; // 上部なのでプラス
+         break;
+      case AnchorPoint::MiddleLeft:
+         position.x = -halfWidth;
+         position.y = 0.0f;
+         break;
+      case AnchorPoint::MiddleCenter:
+         position.x = 0.0f;
+         position.y = 0.0f;
+         break;
+      case AnchorPoint::MiddleRight:
+         position.x = halfWidth;
+         position.y = 0.0f;
+         break;
+      case AnchorPoint::BottomLeft:
+         position.x = -halfWidth;
+         position.y = -halfHeight; // 下部なのでマイナス
+         break;
+      case AnchorPoint::BottomCenter:
+         position.x = 0.0f;
+         position.y = -halfHeight; // 下部なのでマイナス
+         break;
+      case AnchorPoint::BottomRight:
+         position.x = halfWidth;
+         position.y = -halfHeight; // 下部なのでマイナス
+         break;
    }
 
    return position;

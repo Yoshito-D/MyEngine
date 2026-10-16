@@ -29,12 +29,14 @@ bool FontManager::LoadMsdfFont(const std::string& fontId, const std::filesystem:
    }
 
    auto font = std::make_unique<MsdfFont>();
+
    // 新フォントを完全にロードしてから同じIDへ差し替え、失敗時は既存フォントを残す。
    if (!font->Load(device_, jsonPath)) {
       return false;
    }
 
    msdfFonts_[fontId] = std::move(font);
+
    // UIText側のレイアウトキャッシュへフォント差し替えを通知する世代番号を進める。
    ++revision_;
    Logger::Info("[FontManager] Loaded MSDF font: " + fontId + " <- " + jsonPath.generic_string());
@@ -49,10 +51,9 @@ size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& dire
 
    size_t loadedCount = 0;
    std::filesystem::recursive_directory_iterator iterator(
-      directory,
-      std::filesystem::directory_options::skip_permission_denied,
-      error);
+      directory, std::filesystem::directory_options::skip_permission_denied, error);
    const std::filesystem::recursive_directory_iterator end;
+
    // error_code版を使い、アクセス不能な項目を例外で全走査失敗にしない。
    while (iterator != end) {
       if (error) {
@@ -65,9 +66,8 @@ size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& dire
       const std::filesystem::directory_entry& entry = *iterator;
       if (entry.is_regular_file(error)) {
          std::string extension = entry.path().extension().string();
-         std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char character) {
-            return static_cast<char>(std::tolower(character));
-         });
+         std::transform(extension.begin(), extension.end(), extension.begin(),
+            [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
          if (extension == ".json") {
             std::filesystem::path relativePath = std::filesystem::relative(entry.path(), directory, error);
             if (error) {
@@ -75,6 +75,7 @@ size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& dire
                relativePath = entry.path().filename();
             }
             relativePath.replace_extension();
+
             // ディレクトリ相対パスをIDにして、同名フォントをサブフォルダーで共存させる。
             if (LoadMsdfFont(relativePath.generic_string(), entry.path())) {
                ++loadedCount;
@@ -132,6 +133,7 @@ void FontManager::ReleaseIntermediateResources() {
 void FontManager::Clear() {
    msdfFonts_.clear();
    device_ = nullptr;
+
    // 全フォント消失も既存テキストの再レイアウト対象になるため、世代を更新する。
    ++revision_;
 }

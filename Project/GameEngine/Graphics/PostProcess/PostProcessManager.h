@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <vector>
 #include <memory>
@@ -18,30 +19,31 @@ class PostProcessManager {
 private:
    /// @brief ポストプロセス効果の情報
    struct EffectInfo {
-	  std::unique_ptr<PostProcess> effect;
-	  bool enabled = true;
-	  int priority = 0; // 数値が小さいほど先に実行される
-	  std::string id;
-	  std::string name;
-	  std::string pipelineName; // パイプライン名を追加
-	  bool defaultEnabled = true;
-	  int defaultPriority = 0;
-	  nlohmann::json defaultSettings = nlohmann::json::object();
+      std::unique_ptr<PostProcess> effect;
+      bool enabled = true;
+      int priority = 0; // 数値が小さいほど先に実行される
+      std::string id;
+      std::string name;
+      std::string pipelineName; // パイプライン名を追加
+      bool defaultEnabled = true;
+      int defaultPriority = 0;
+      nlohmann::json defaultSettings = nlohmann::json::object();
 
-	  EffectInfo(std::unique_ptr<PostProcess> eff, const std::string& effectId, const std::string& effectName, int prio = 0, const std::string& pipeline = "")
-		 : effect(std::move(eff)), id(effectId), name(effectName), priority(prio), pipelineName(pipeline) {}
+      EffectInfo(std::unique_ptr<PostProcess> eff, const std::string& effectId, const std::string& effectName,
+         int prio = 0, const std::string& pipeline = "")
+         : effect(std::move(eff)), id(effectId), name(effectName), priority(prio), pipelineName(pipeline) {}
    };
 
 public:
    /// @brief エフェクト定義構造体
    struct EffectDefinition {
-	  std::string id;
-	  std::string name;
-	  std::string className;
-	  int priority = 0;
-	  bool enabled = true;
-	  std::string pipelineName; // パイプライン名を追加
-	  std::string rootSignatureName;
+      std::string id;
+      std::string name;
+      std::string className;
+      int priority = 0;
+      bool enabled = true;
+      std::string pipelineName; // パイプライン名を追加
+      std::string rootSignatureName;
    };
 
    /// @brief 初期化
@@ -62,7 +64,8 @@ public:
    /// @param enabled 初期有効状態
    /// @param pipelineName パイプライン名
    /// @param id シーン保存に使用する不変ID
-   void RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority = 0, bool enabled = true, const std::string& pipelineName = "", const std::string& id = "");
+   void RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority = 0,
+      bool enabled = true, const std::string& pipelineName = "", const std::string& id = "");
 
    /// @brief 全てのエフェクトを適用
    /// @param inputSRV 入力SRV
@@ -120,6 +123,7 @@ public:
    void DisableAllEffects();
 
 #ifdef USE_IMGUI
+
    /// @brief ImGuiコントロールを表示
    /// @return シーンへ保存すべき設定が変更された場合はtrue
    bool ShowImGuiControls();
@@ -149,7 +153,8 @@ private:
 
    void RegisterDefaultEffectFactories();
 
-   bool ConfigureEffectPipeline(PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName);
+   bool ConfigureEffectPipeline(
+      PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName);
 
    EffectFactoryRegistry effectFactoryRegistry_;
    bool effectFactoriesRegistered_ = false;

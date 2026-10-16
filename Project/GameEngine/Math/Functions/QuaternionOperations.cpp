@@ -7,39 +7,30 @@ Quaternion MakeRotateAxisAngleQuaternion(const Vector3& axis, float angle) {
    Vector3 n = axis.Normalize();
    float halfAngle = angle * 0.5f;
    float s = std::sin(halfAngle);
-   Quaternion result = {
-	   n.x * s,
-	   n.y * s,
-	   n.z * s,
-	   std::cos(halfAngle)
-   };
+   Quaternion result = {n.x * s, n.y * s, n.z * s, std::cos(halfAngle)};
    return result;
 }
 
 Vector3 RotateVector(const Vector3& vector, const Quaternion& quaternion) {
-   Quaternion p = { vector.x, vector.y, vector.z, 0.0f };
+   Quaternion p = {vector.x, vector.y, vector.z, 0.0f};
    Quaternion qConjugate = quaternion.Conjugate();
    Quaternion rotatedP = quaternion * p * qConjugate;
-   Vector3 result = { rotatedP.x, rotatedP.y, rotatedP.z };
+   Vector3 result = {rotatedP.x, rotatedP.y, rotatedP.z};
    return result;
 }
 
 Matrix4x4 MakeRotateMatrix(const Quaternion& quaternion) {
    Matrix4x4 result = {
-	   std::powf(quaternion.w,2) + std::powf(quaternion.x,2) - std::powf(quaternion.y,2) - std::powf(quaternion.z,2),
-	   2.0f * (quaternion.x * quaternion.y + quaternion.w * quaternion.z),
-	   2.0f * (quaternion.x * quaternion.z - quaternion.w * quaternion.y),
-	   0.0f,
-	   2.0f * (quaternion.x * quaternion.y - quaternion.w * quaternion.z),
-	   std::powf(quaternion.w,2) - std::powf(quaternion.x,2) + std::powf(quaternion.y,2) - std::powf(quaternion.z,2),
-	   2.0f * (quaternion.y * quaternion.z + quaternion.w * quaternion.x),
-	   0.0f,
-	   2.0f * (quaternion.x * quaternion.z + quaternion.w * quaternion.y),
-	   2.0f * (quaternion.y * quaternion.z - quaternion.w * quaternion.x),
-	   std::powf(quaternion.w,2) - std::powf(quaternion.x,2) - std::powf(quaternion.y,2) + std::powf(quaternion.z,2),
-	   0.0f,
-	   0.0f, 0.0f, 0.0f, 1.0f
-   };
+      std::powf(quaternion.w, 2) + std::powf(quaternion.x, 2) - std::powf(quaternion.y, 2) - std::powf(quaternion.z, 2),
+      2.0f * (quaternion.x * quaternion.y + quaternion.w * quaternion.z),
+      2.0f * (quaternion.x * quaternion.z - quaternion.w * quaternion.y), 0.0f,
+      2.0f * (quaternion.x * quaternion.y - quaternion.w * quaternion.z),
+      std::powf(quaternion.w, 2) - std::powf(quaternion.x, 2) + std::powf(quaternion.y, 2) - std::powf(quaternion.z, 2),
+      2.0f * (quaternion.y * quaternion.z + quaternion.w * quaternion.x), 0.0f,
+      2.0f * (quaternion.x * quaternion.z + quaternion.w * quaternion.y),
+      2.0f * (quaternion.y * quaternion.z - quaternion.w * quaternion.x),
+      std::powf(quaternion.w, 2) - std::powf(quaternion.x, 2) - std::powf(quaternion.y, 2) + std::powf(quaternion.z, 2),
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return result;
 }
 
@@ -49,29 +40,29 @@ Quaternion MatrixToQuaternion(const Matrix4x4& m) {
 
    // トレースまたは最大対角成分を基準に分岐し、差し引きで小さな値を割る数値不安定を避ける。
    if (trace > 0.0f) {
-	  float s = std::sqrt(trace + 1.0f) * 2.0f;
-	  q.w = 0.25f * s;
-	  q.x = (m.m[2][1] - m.m[1][2]) / s;
-	  q.y = (m.m[0][2] - m.m[2][0]) / s;
-	  q.z = (m.m[1][0] - m.m[0][1]) / s;
+      float s = std::sqrt(trace + 1.0f) * 2.0f;
+      q.w = 0.25f * s;
+      q.x = (m.m[2][1] - m.m[1][2]) / s;
+      q.y = (m.m[0][2] - m.m[2][0]) / s;
+      q.z = (m.m[1][0] - m.m[0][1]) / s;
    } else if (m.m[0][0] > m.m[1][1] && m.m[0][0] > m.m[2][2]) {
-	  float s = std::sqrt(1.0f + m.m[0][0] - m.m[1][1] - m.m[2][2]) * 2.0f;
-	  q.w = (m.m[2][1] - m.m[1][2]) / s;
-	  q.x = 0.25f * s;
-	  q.y = (m.m[0][1] + m.m[1][0]) / s;
-	  q.z = (m.m[0][2] + m.m[2][0]) / s;
+      float s = std::sqrt(1.0f + m.m[0][0] - m.m[1][1] - m.m[2][2]) * 2.0f;
+      q.w = (m.m[2][1] - m.m[1][2]) / s;
+      q.x = 0.25f * s;
+      q.y = (m.m[0][1] + m.m[1][0]) / s;
+      q.z = (m.m[0][2] + m.m[2][0]) / s;
    } else if (m.m[1][1] > m.m[2][2]) {
-	  float s = std::sqrt(1.0f + m.m[1][1] - m.m[0][0] - m.m[2][2]) * 2.0f;
-	  q.w = (m.m[0][2] - m.m[2][0]) / s;
-	  q.x = (m.m[0][1] + m.m[1][0]) / s;
-	  q.y = 0.25f * s;
-	  q.z = (m.m[1][2] + m.m[2][1]) / s;
+      float s = std::sqrt(1.0f + m.m[1][1] - m.m[0][0] - m.m[2][2]) * 2.0f;
+      q.w = (m.m[0][2] - m.m[2][0]) / s;
+      q.x = (m.m[0][1] + m.m[1][0]) / s;
+      q.y = 0.25f * s;
+      q.z = (m.m[1][2] + m.m[2][1]) / s;
    } else {
-	  float s = std::sqrt(1.0f + m.m[2][2] - m.m[0][0] - m.m[1][1]) * 2.0f;
-	  q.w = (m.m[1][0] - m.m[0][1]) / s;
-	  q.x = (m.m[0][2] + m.m[2][0]) / s;
-	  q.y = (m.m[1][2] + m.m[2][1]) / s;
-	  q.z = 0.25f * s;
+      float s = std::sqrt(1.0f + m.m[2][2] - m.m[0][0] - m.m[1][1]) * 2.0f;
+      q.w = (m.m[1][0] - m.m[0][1]) / s;
+      q.x = (m.m[0][2] + m.m[2][0]) / s;
+      q.y = (m.m[1][2] + m.m[2][1]) / s;
+      q.z = 0.25f * s;
    }
 
    return q.Normalize();
@@ -90,16 +81,16 @@ Quaternion Slerp(const Quaternion& q0, const Quaternion& q1, float t) {
 
    // --- 2. 反転補正（最短経路） ---
    if (dot < 0.0f) {
-	  Q1 = -Q1;
-	  dot = -dot;
+      Q1 = -Q1;
+      dot = -dot;
    }
 
    // --- 3. 非常に近い場合は線形補間へフォールバック ---
    const float epsilon = 1e-6f;
    if (1.0f - dot < epsilon) {
-	  // 線形補間
-	  Quaternion result = Q0 * (1.0f - t) + Q1 * t;
-	  return result.Normalize();
+      // 線形補間
+      Quaternion result = Q0 * (1.0f - t) + Q1 * t;
+      return result.Normalize();
    }
 
    // --- 4. 通常の Slerp ---
@@ -119,42 +110,38 @@ Quaternion Vector3ToQuaternion(const Vector3& eulerAngles) {
 
 Quaternion LookRotation(const Vector3& forward, const Vector3& up) {
    Vector3 f = forward;
+
    // 退化した入力でも回転行列を構築できるよう、前方とUpを既定軸へ段階的に退避する。
    if (f.LengthSquared() < 1e-6f)
-	  f = Vector3(0, 0, 1);
+      f = Vector3(0, 0, 1);
    else
-	  f.Normalize();
+      f.Normalize();
 
    Vector3 u = up;
    if (u.LengthSquared() < 1e-6f)
-	  u = Vector3(0, 1, 0);
+      u = Vector3(0, 1, 0);
    else
-	  u.Normalize();
+      u.Normalize();
 
    // forward と up が平行なら別の up ベクトルに差し替え
    if (fabs(f.Dot(u)) > 0.999f) {
-	  if (fabs(f.y) < 0.99f)
-		 u = Vector3(0, 1, 0);
-	  else
-		 u = Vector3(1, 0, 0);
+      if (fabs(f.y) < 0.99f)
+         u = Vector3(0, 1, 0);
+      else
+         u = Vector3(1, 0, 0);
    }
 
    // 左手系: right = up × forward
    Vector3 r = u.Cross(f);
    if (r.LengthSquared() < 1e-6f)
-	  r = Vector3(1, 0, 0);
+      r = Vector3(1, 0, 0);
    else
-	  r.Normalize();
+      r.Normalize();
 
    // 直交 up 再計算（左手系） up = forward × right
    u = f.Cross(r);
 
-   Matrix4x4 m = {
-	   r.x, r.y, r.z, 0.0f,
-	   u.x, u.y, u.z, 0.0f,
-	   f.x, f.y, f.z, 0.0f,
-	   0.0f,0.0f,0.0f, 1.0f
-   };
+   Matrix4x4 m = {r.x, r.y, r.z, 0.0f, u.x, u.y, u.z, 0.0f, f.x, f.y, f.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return MatrixToQuaternion(m);
 }
 

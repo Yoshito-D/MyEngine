@@ -1,24 +1,26 @@
 #pragma once
+
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include <wrl.h>
 #include <d3d12.h>
 
 namespace GameEngine {
+
 /// @brief ショックウェーブ効果
 class ShockWave : public PostProcess {
 public:
    /// @brief ショックウェーブ用定数バッファ構造体
    struct ShockWaveCB {
-	  float centerX;
-	  float centerY;
-	  float aspectRatioX;
-	  float aspectRatioY;
-	  float waveRadius;
-	  float waveThickness;
-	  float distortionStrength;
-	  float fadeOutRadius;
-	  float highlightIntensity;
-	  float padding[3];
+      float centerX;
+      float centerY;
+      float aspectRatioX;
+      float aspectRatioY;
+      float waveRadius;
+      float waveThickness;
+      float distortionStrength;
+      float fadeOutRadius;
+      float highlightIntensity;
+      float padding[3];
    };
 
    /// @brief 初期化（パイプラインは外部から設定される）
@@ -37,14 +39,31 @@ public:
 
    /// @copydoc PostProcess::SerializeSettings
    nlohmann::json SerializeSettings() const override;
+
    /// @copydoc PostProcess::DeserializeSettings
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetCenter(float x, float y) { centerX_ = x; centerY_ = y; UpdateConstantBuffer(); }
-   void SetStrength(float strength) { distortionStrength_ = strength; UpdateConstantBuffer(); }
-   void SetWaveRadius(float radius) { waveRadius_ = radius; UpdateConstantBuffer(); }
-   void SetWaveThickness(float thickness) { waveThickness_ = thickness; UpdateConstantBuffer(); }
+   void SetCenter(float x, float y) {
+      centerX_ = x;
+      centerY_ = y;
+      UpdateConstantBuffer();
+   }
+
+   void SetStrength(float strength) {
+      distortionStrength_ = strength;
+      UpdateConstantBuffer();
+   }
+
+   void SetWaveRadius(float radius) {
+      waveRadius_ = radius;
+      UpdateConstantBuffer();
+   }
+
+   void SetWaveThickness(float thickness) {
+      waveThickness_ = thickness;
+      UpdateConstantBuffer();
+   }
 
 private:
    float centerX_ = 0.5f;

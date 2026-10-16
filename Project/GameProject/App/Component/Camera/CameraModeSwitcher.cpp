@@ -18,6 +18,7 @@ namespace App {
 void CameraModeSwitcher::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    cameras_.clear();
    cameras_.reserve(cameraIds_.size());
+
    // ID順を保持することで、シリアライズされた初期インデックスと入力による巡回順を一致させる。
    for (const auto& cameraId : cameraIds_) {
       cameras_.push_back(sceneWorld.FindVirtualCamera(cameraId));
@@ -65,10 +66,7 @@ bool CameraModeSwitcher::SwitchToCamera(const std::string& cameraId) {
 }
 
 nlohmann::json CameraModeSwitcher::Serialize() const {
-   return nlohmann::json{
-      { "cameraIds", cameraIds_ },
-      { "initialIndex", initialIndex_ }
-   };
+   return nlohmann::json{{"cameraIds", cameraIds_}, {"initialIndex", initialIndex_}};
 }
 
 void CameraModeSwitcher::Deserialize(const nlohmann::json& data) {
@@ -101,6 +99,7 @@ void CameraModeSwitcher::ApplyMode() {
 
    auto* selectedCamera = GetSelectedCamera();
    auto* gravityFollow = selectedCamera ? selectedCamera->GetComponent<GravityFollowCamera>() : nullptr;
+
    // Bridgeは非選択カメラにも入力を供給する。車両の操作基準だけを選択に合わせる。
    if (auto* controller = GetOwner().GetComponent<VehicleController>()) {
       controller->SetGravityFollowCamera(gravityFollow);
@@ -116,7 +115,8 @@ void CameraModeSwitcher::DrawInspector() {
    for (size_t index = 0; index < cameraIds_.size(); ++index) {
       ImGui::PushID(static_cast<int>(index));
       GameEngine::EditorUI::CameraReference("Camera", cameraIds_[index]);
-      if (ImGui::RadioButton("Initial Camera", initialIndex_ == index)) initialIndex_ = index;
+      if (ImGui::RadioButton("Initial Camera", initialIndex_ == index))
+         initialIndex_ = index;
       ImGui::BeginDisabled(index == 0);
       const bool up = ImGui::SmallButton("Up");
       ImGui::EndDisabled();
@@ -130,18 +130,23 @@ void CameraModeSwitcher::DrawInspector() {
       if (up || down) {
          const size_t other = up ? index - 1 : index + 1;
          std::swap(cameraIds_[index], cameraIds_[other]);
-         if (initialIndex_ == index) initialIndex_ = other;
-         else if (initialIndex_ == other) initialIndex_ = index;
+         if (initialIndex_ == index)
+            initialIndex_ = other;
+         else if (initialIndex_ == other)
+            initialIndex_ = index;
          break;
       }
       if (remove) {
          cameraIds_.erase(cameraIds_.begin() + index);
-         if (initialIndex_ > index) --initialIndex_;
-         if (initialIndex_ >= cameraIds_.size()) initialIndex_ = 0;
+         if (initialIndex_ > index)
+            --initialIndex_;
+         if (initialIndex_ >= cameraIds_.size())
+            initialIndex_ = 0;
          break;
       }
    }
-   if (ImGui::Button("Add Camera")) cameraIds_.emplace_back();
+   if (ImGui::Button("Add Camera"))
+      cameraIds_.emplace_back();
    ImGui::Text("Camera: %zu / %zu", cameras_.empty() ? 0 : currentIndex_ + 1, cameras_.size());
 }
 #endif

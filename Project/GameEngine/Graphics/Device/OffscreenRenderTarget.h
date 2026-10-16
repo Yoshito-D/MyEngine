@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <wrl.h>
 #include <cstdint>
@@ -13,8 +14,10 @@ class OffscreenRenderTarget {
 public:
    /// @brief 未接続・未確保の状態を構築する。
    OffscreenRenderTarget() = default;
+
    /// @brief 所有者への接続やGPU実行状態を別の実体へ複製することを禁止する。
    OffscreenRenderTarget(const OffscreenRenderTarget&) = delete;
+
    /// @brief 所有境界を迂回するコピー代入を禁止する。
    OffscreenRenderTarget& operator=(const OffscreenRenderTarget&) = delete;
 
@@ -22,7 +25,8 @@ public:
    /// @param device グラフィックスデバイス
    /// @param width ウィンドウの幅
    /// @param height ウィンドウの高さ
-   void Initialize(GraphicsDevice* device, uint32_t width = Window::kResolutionWidth, uint32_t height = Window::kResolutionHeight);
+   void Initialize(
+      GraphicsDevice* device, uint32_t width = Window::kResolutionWidth, uint32_t height = Window::kResolutionHeight);
 
    /// @brief オフスクリーンレンダリングターゲットを指定サイズへリサイズ
    /// @param width 新しい幅
@@ -71,9 +75,7 @@ public:
    ID3D12Resource* GetPreviousResource() const { return previousRenderTarget_.renderTarget.Get(); }
 
    /// @brief レンダーターゲットを交換
-   void SwapBuffers() {
-	  std::swap(currentRenderTarget_, previousRenderTarget_);
-   }
+   void SwapBuffers() { std::swap(currentRenderTarget_, previousRenderTarget_); }
 
    /// @brief オフスクリーンレンダリングターゲットの幅を取得
    uint32_t GetWidth() const { return width_; }
@@ -88,19 +90,19 @@ public:
 private:
    /// @brief レンダーターゲットの情報をまとめた構造体
    struct RenderTargetInfo {
-	  Microsoft::WRL::ComPtr<ID3D12Resource> renderTarget;
-	  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-	  D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
-	  D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
-	  UINT srvIndex = static_cast<UINT>(-1);
-	  D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+      Microsoft::WRL::ComPtr<ID3D12Resource> renderTarget;
+      D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+      D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
+      D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
+      UINT srvIndex = static_cast<UINT>(-1);
+      D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    };
 
    GraphicsDevice* device_ = nullptr;
 
    uint32_t width_ = 0;
    uint32_t height_ = 0;
-   float clearColor_[4] = { 0.1f,0.25f,0.5f,1.0f };
+   float clearColor_[4] = {0.1f, 0.25f, 0.5f, 1.0f};
 
    // レンダーターゲット情報
    RenderTargetInfo currentRenderTarget_;
@@ -118,7 +120,8 @@ private:
    RenderTargetInfo CreateRenderTargetInfo(int index, UINT srvIndex = static_cast<UINT>(-1));
 
    /// @brief 描画先を持たないシーン参照用テクスチャを作成する
-   RenderTargetInfo CreateSnapshotInfo(DXGI_FORMAT resourceFormat, DXGI_FORMAT srvFormat, UINT srvIndex = static_cast<UINT>(-1));
+   RenderTargetInfo CreateSnapshotInfo(
+      DXGI_FORMAT resourceFormat, DXGI_FORMAT srvFormat, UINT srvIndex = static_cast<UINT>(-1));
 
    /// @brief 現在の深度をソフトパーティクル用テクスチャへコピーする
    void CaptureSceneDepth();

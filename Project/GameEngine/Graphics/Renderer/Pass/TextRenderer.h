@@ -38,15 +38,9 @@ public:
    /// @param viewportWidth 出力の縦横比を考慮した論理ビューポート幅
    /// @param viewportHeight 出力の縦横比を考慮した論理ビューポート高
    /// @return アトラスページごとの描画コマンドデータ
-   std::vector<TextDrawData> QueueText(
-      const TextLayoutResult& layout,
-      const TextStyle& style,
-      const Transform& transform,
-      size_t visibleGlyphCount,
-      uint32_t layoutWidth,
-      uint32_t layoutHeight,
-      float viewportWidth,
-      float viewportHeight);
+   std::vector<TextDrawData> QueueText(const TextLayoutResult& layout, const TextStyle& style,
+      const Transform& transform, size_t visibleGlyphCount, uint32_t layoutWidth, uint32_t layoutHeight,
+      float viewportWidth, float viewportHeight);
 
    /// @brief CPU上で構築した頂点とインデックスをGPU可視バッファへ反映する
    /// @return 転送に成功した場合はtrue
@@ -56,8 +50,7 @@ public:
    /// @param textData QueueTextが返した描画範囲
    /// @param setPipelineFunc Renderer共通のパイプライン設定関数
    void DrawUIText(
-      const TextDrawData& textData,
-      const std::function<void(const std::string&, BlendMode)>& setPipelineFunc);
+      const TextDrawData& textData, const std::function<void(const std::string&, BlendMode)>& setPipelineFunc);
 
    /// @brief 保持しているGPUリソースを破棄する
    void Finalize();

@@ -1,4 +1,5 @@
 #pragma once
+
 #ifdef USE_IMGUI
 #include <d3d12.h>
 #include <Windows.h>
@@ -59,11 +60,8 @@ public:
    /// @param isSceneHovered シーンがホバーされているかの出力
    /// @param overlayCallback Sceneの画像上に描画する編集操作
    /// @param gameView trueなら編集操作なしのGameタブとして共有レンダー結果を表示する
-   void ShowViewport(
-      OffscreenRenderTarget* renderTarget,
-      bool& isSceneHovered,
-      const std::function<void(float, float, float, float)>& overlayCallback = {},
-      bool gameView = false);
+   void ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSceneHovered,
+      const std::function<void(float, float, float, float)>& overlayCallback = {}, bool gameView = false);
 
    /// @brief エンジン設定ウィンドウを表示
    /// @param isDockSpaceVisible ドッキングスペース表示フラグの参照
@@ -98,11 +96,12 @@ private:
       ImGuiHelper::LocalizedText label;
       bool visible;
    };
+
    std::map<std::string, EditorWindowState> editorWindows_;
-   bool isDockSpaceVisible_ = true;     // ドッキングスペース表示フラグ
-   bool multiViewportEnabled_ = true;   // マルチビューポート有効フラグ
+   bool isDockSpaceVisible_ = true;   // ドッキングスペース表示フラグ
+   bool multiViewportEnabled_ = true; // マルチビューポート有効フラグ
    bool resetLayoutRequested_ = false;
-   HWND windowHandle_ = nullptr;        // Windowが所有する非所有ハンドル
+   HWND windowHandle_ = nullptr; // Windowが所有する非所有ハンドル
    float uiScale_ = 1.0f;
    ImGuiHelper::EditorLanguage language_ = ImGuiHelper::EditorLanguage::Japanese;
 };

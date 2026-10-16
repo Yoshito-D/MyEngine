@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxcapi.h>
 #include <dxgi1_6.h>
@@ -18,22 +19,24 @@ class Mesh {
 public:
    /// @brief GPUデータを確保する前の状態を構築する。
    Mesh() = default;
+
    /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
    Mesh(const Mesh&) = delete;
+
    /// @brief GPUデータの暗黙な共有を禁止する。
    Mesh& operator=(const Mesh&) = delete;
 
    enum class PlaneOrientation {
-	  XY,
-	  XZ,
-	  YZ,
+      XY,
+      XZ,
+      YZ,
    };
 
    /// @brief 頂点データ構造体
    struct VertexData {
-	  Vector4 position; // 頂点位置
-	  Vector2 texCoord; // テクスチャ座標
-	  Vector3 normal; // 法線ベクトル
+      Vector4 position; // 頂点位置
+      Vector2 texCoord; // テクスチャ座標
+      Vector3 normal;   // 法線ベクトル
    };
 
    /// @brief デバイスを取得して初期化
@@ -51,7 +54,8 @@ public:
    /// @param height 高さ
    /// @param orientation 生成平面（デフォルトはXY）
    /// @param originY 縦方向の原点位置（0.0=下端, 0.5=中央, 1.0=上端）
-   void CreateParticleQuad(float width, float height, PlaneOrientation orientation = PlaneOrientation::XY, float originY = 0.5f);
+   void CreateParticleQuad(
+      float width, float height, PlaneOrientation orientation = PlaneOrientation::XY, float originY = 0.5f);
 
    /// @brief スカイボックス用のキューブメッシュを作成
    void CreateSkybox();
@@ -61,7 +65,8 @@ public:
    /// @param outerRadius 外半径
    /// @param segmentCount セグメント数（リングの滑らかさを決定、デフォルトは32）
    /// @param orientation 生成平面（デフォルトはXY）
-   void CreateRing(float innerRadius = 0.4f, float outerRadius = 0.5f, uint32_t segmentCount = 32, PlaneOrientation orientation = PlaneOrientation::XY);
+   void CreateRing(float innerRadius = 0.4f, float outerRadius = 0.5f, uint32_t segmentCount = 32,
+      PlaneOrientation orientation = PlaneOrientation::XY);
 
    /// @brief 平面メッシュを作成
    /// @param width 幅
@@ -69,13 +74,15 @@ public:
    /// @param widthSegments 幅方向の分割数（デフォルトは1）
    /// @param depthSegments 奥行き方向の分割数（デフォルトは1）
    /// @param orientation 生成平面（デフォルトはXZ）
-   void CreatePlane(float width = 1.0f, float depth = 1.0f, uint32_t widthSegments = 1, uint32_t depthSegments = 1, PlaneOrientation orientation = PlaneOrientation::XZ);
+   void CreatePlane(float width = 1.0f, float depth = 1.0f, uint32_t widthSegments = 1, uint32_t depthSegments = 1,
+      PlaneOrientation orientation = PlaneOrientation::XZ);
 
    /// @brief 円形メッシュを作成
    /// @param radius 半径
    /// @param segmentCount セグメント数（デフォルトは32）
    /// @param orientation 生成平面（デフォルトはXY）
-   void CreateCircle(float radius = 0.5f, uint32_t segmentCount = 32, PlaneOrientation orientation = PlaneOrientation::XY);
+   void CreateCircle(
+      float radius = 0.5f, uint32_t segmentCount = 32, PlaneOrientation orientation = PlaneOrientation::XY);
 
    /// @brief ボックスメッシュを作成
    /// @param width 幅
@@ -97,7 +104,8 @@ public:
    /// @param majorSegments 主方向の分割数（デフォルトは32）
    /// @param minorSegments チューブ断面の分割数（デフォルトは16）
    /// @param originY 縦方向の原点位置（0.0=下端, 0.5=中央, 1.0=上端）
-   void CreateTorus(float majorRadius = 0.5f, float minorRadius = 0.2f, uint32_t majorSegments = 32, uint32_t minorSegments = 16, float originY = 0.5f);
+   void CreateTorus(float majorRadius = 0.5f, float minorRadius = 0.2f, uint32_t majorSegments = 32,
+      uint32_t minorSegments = 16, float originY = 0.5f);
 
    /// @brief シリンダーメッシュを作成
    /// @param topRadius 上面の半径
@@ -105,7 +113,8 @@ public:
    /// @param height 高さ
    /// @param segmentCount 側面の分割数（デフォルトは32）
    /// @param originY 縦方向の原点位置（0.0=底面, 0.5=中央, 1.0=上面）
-   void CreateCylinder(float topRadius = 0.5f, float bottomRadius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
+   void CreateCylinder(float topRadius = 0.5f, float bottomRadius = 0.5f, float height = 1.0f,
+      uint32_t segmentCount = 32, float originY = 0.5f);
 
    /// @brief 底面と上面のないシリンダーメッシュを作成
    /// @param topRadius 上面の半径
@@ -113,7 +122,8 @@ public:
    /// @param height 高さ
    /// @param segmentCount 側面の分割数（デフォルトは32）
    /// @param originY 縦方向の原点位置（0.0=底面, 0.5=中央, 1.0=上面）
-   void CreateCylinderWithoutCaps(float topRadius = 0.5f, float bottomRadius = 0.5f, float height = 1.0f, uint32_t segmentCount = 32, float originY = 0.5f);
+   void CreateCylinderWithoutCaps(float topRadius = 0.5f, float bottomRadius = 0.5f, float height = 1.0f,
+      uint32_t segmentCount = 32, float originY = 0.5f);
 
    /// @brief コーンメッシュを作成
    /// @param radius 底面の半径
@@ -127,7 +137,8 @@ public:
    /// @param v1 頂点1の位置
    /// @param v2 頂点2の位置
    /// @param orientation 生成平面（デフォルトはXY）
-   void CreateTriangle(const Vector3& v0 = {-0.5f, 0.0f, 0.0f}, const Vector3& v1 = {0.0f, 1.0f, 0.0f}, const Vector3& v2 = {0.5f, 0.0f, 0.0f}, PlaneOrientation orientation = PlaneOrientation::XY);
+   void CreateTriangle(const Vector3& v0 = {-0.5f, 0.0f, 0.0f}, const Vector3& v1 = {0.0f, 1.0f, 0.0f},
+      const Vector3& v2 = {0.5f, 0.0f, 0.0f}, PlaneOrientation orientation = PlaneOrientation::XY);
 
    /// @brief 毎フレーム更新可能な動的メッシュ領域を確保する
    /// @param maxVertexCount 最大頂点数
@@ -140,15 +151,20 @@ public:
    void UpdateDynamic(const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices);
 
    const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView() const { return vertexBufferView_; }
+
    const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView() const { return indexBufferView_; }
+
    UINT GetIndexCount() const { return indexCount_; }
 
    /// @brief 頂点の読み取り専用表示を参照する。
    const VertexData* GetVertexData() const;
+
    /// @brief 4頂点のQuadであることを確認し、矩形の座標を更新する。
    bool UpdateQuadPositions(const std::array<Vector4, 4>& positions);
+
    /// @brief 4頂点のQuadであることを確認し、AtlasのUVを更新する。
    bool UpdateQuadTextureCoordinates(const std::array<Vector2, 4>& coordinates);
+
 private:
    ComPtr<ID3D12Resource> vertexResource_ = nullptr;
    ComPtr<ID3D12Resource> indexResource_ = nullptr;

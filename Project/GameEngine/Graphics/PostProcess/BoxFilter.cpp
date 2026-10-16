@@ -15,7 +15,8 @@ void BoxFilter::Initialize(GraphicsDevice* device, OffscreenRenderTarget* render
 }
 
 void BoxFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -26,7 +27,7 @@ void BoxFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
-	  cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    // SRVをルートパラメータ1にセット
@@ -46,10 +47,10 @@ void BoxFilter::CreateConstantBuffer() {
 
 void BoxFilter::UpdateConstantBuffer() {
    if (constantBufferData_) {
-	  constantBufferData_->kernelRadius = kernelRadius_;
-	  constantBufferData_->padding[0] = 0.0f;
-	  constantBufferData_->padding[1] = 0.0f;
-	  constantBufferData_->padding[2] = 0.0f;
+      constantBufferData_->kernelRadius = kernelRadius_;
+      constantBufferData_->padding[0] = 0.0f;
+      constantBufferData_->padding[1] = 0.0f;
+      constantBufferData_->padding[2] = 0.0f;
    }
 }
 
@@ -58,18 +59,20 @@ void BoxFilter::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("ボックスフィルターのパラメータ", "Box Filter Parameters"))) {
+          LocalizeEditorText("ボックスフィルターのパラメータ", "Box Filter Parameters"))) {
 
-	  bool changed = false;
-	  // 1=3x3, 2=5x5, 3=7x7
-	  changed |= ImGui::SliderInt(LocalizeEditorText("カーネル半径", "Kernel Radius"), &kernelRadius_, 1, 7);
-	  ImGui::Text("%s: %dx%d", LocalizeEditorText("カーネルサイズ", "Kernel Size"), kernelRadius_ * 2 + 1, kernelRadius_ * 2 + 1);
+      bool changed = false;
 
-	  if (changed) {
-		 UpdateConstantBuffer();
-	  }
+      // 1=3x3, 2=5x5, 3=7x7
+      changed |= ImGui::SliderInt(LocalizeEditorText("カーネル半径", "Kernel Radius"), &kernelRadius_, 1, 7);
+      ImGui::Text("%s: %dx%d", LocalizeEditorText("カーネルサイズ", "Kernel Size"), kernelRadius_ * 2 + 1,
+         kernelRadius_ * 2 + 1);
 
-	  ImGui::TreePop();
+      if (changed) {
+         UpdateConstantBuffer();
+      }
+
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

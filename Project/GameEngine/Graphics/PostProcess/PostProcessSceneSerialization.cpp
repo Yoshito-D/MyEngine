@@ -62,8 +62,7 @@ std::string ReadString(const json& settings, const char* key, const std::string&
 
 GameEngine::Vector2 ReadVector2(const json& settings, const char* key, const GameEngine::Vector2& fallback) {
    const auto it = settings.find(key);
-   if (it == settings.end() || !it->is_array() || it->size() != 2 ||
-      !(*it)[0].is_number() || !(*it)[1].is_number()) {
+   if (it == settings.end() || !it->is_array() || it->size() != 2 || !(*it)[0].is_number() || !(*it)[1].is_number()) {
       return fallback;
    }
 
@@ -110,12 +109,8 @@ namespace GameEngine {
 // Deserialize は全フィールドを必須にせず、欠落した項目を現在値で補うことで旧シーンとの互換性を保つ。
 // 値の反映後は GPU 定数バッファも同期し、ロード直後の描画から復元結果が見える状態にする。
 nlohmann::json AntiAliasing::SerializeSettings() const {
-   return {
-      { "contrastThreshold", contrastThreshold_ },
-      { "relativeThreshold", relativeThreshold_ },
-      { "subpixelBlending", subpixelBlending_ },
-      { "edgeSearchSteps", edgeSearchSteps_ }
-   };
+   return {{"contrastThreshold", contrastThreshold_}, {"relativeThreshold", relativeThreshold_},
+      {"subpixelBlending", subpixelBlending_}, {"edgeSearchSteps", edgeSearchSteps_}};
 }
 
 bool AntiAliasing::DeserializeSettings(const nlohmann::json& settings) {
@@ -131,12 +126,8 @@ bool AntiAliasing::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json Bloom::SerializeSettings() const {
-   return {
-      { "threshold", threshold_ },
-      { "softThreshold", softThreshold_ },
-      { "intensity", intensity_ },
-      { "blurRadius", blurRadius_ }
-   };
+   return {{"threshold", threshold_}, {"softThreshold", softThreshold_}, {"intensity", intensity_},
+      {"blurRadius", blurRadius_}};
 }
 
 bool Bloom::DeserializeSettings(const nlohmann::json& settings) {
@@ -152,7 +143,7 @@ bool Bloom::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json BoxFilter::SerializeSettings() const {
-   return { { "kernelRadius", kernelRadius_ } };
+   return {{"kernelRadius", kernelRadius_}};
 }
 
 bool BoxFilter::DeserializeSettings(const nlohmann::json& settings) {
@@ -165,12 +156,8 @@ bool BoxFilter::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json ChromaticAberration::SerializeSettings() const {
-   return {
-      { "center", { centerX_, centerY_ } },
-      { "pixelShift", pixelShift_ },
-      { "useFixedDirection", useFixedDirection_ != 0 },
-      { "fixedDirection", { fixedDirectionX_, fixedDirectionY_ } }
-   };
+   return {{"center", {centerX_, centerY_}}, {"pixelShift", pixelShift_},
+      {"useFixedDirection", useFixedDirection_ != 0}, {"fixedDirection", {fixedDirectionX_, fixedDirectionY_}}};
 }
 
 bool ChromaticAberration::DeserializeSettings(const nlohmann::json& settings) {
@@ -190,23 +177,20 @@ bool ChromaticAberration::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json Dissolve::SerializeSettings() const {
-   return {
-      { "threshold", params_.threshold },
-      { "edgeWidth", params_.edgeWidth },
-      { "edgeIntensity", params_.edgeIntensity },
-      { "maskContrast", params_.maskContrast },
-      { "maskTiling", { params_.maskTiling.x, params_.maskTiling.y } },
-      { "maskOffset", { params_.maskOffset.x, params_.maskOffset.y } },
-      { "edgeColor", { params_.edgeColor[0], params_.edgeColor[1], params_.edgeColor[2], params_.edgeColor[3] } },
-      { "dissolveColor", { params_.dissolveColor[0], params_.dissolveColor[1], params_.dissolveColor[2], params_.dissolveColor[3] } },
-      { "maskTexture", maskTextureName_ }
-   };
+   return {{"threshold", params_.threshold}, {"edgeWidth", params_.edgeWidth}, {"edgeIntensity", params_.edgeIntensity},
+      {"maskContrast", params_.maskContrast}, {"maskTiling", {params_.maskTiling.x, params_.maskTiling.y}},
+      {"maskOffset", {params_.maskOffset.x, params_.maskOffset.y}},
+      {"edgeColor", {params_.edgeColor[0], params_.edgeColor[1], params_.edgeColor[2], params_.edgeColor[3]}},
+      {"dissolveColor",
+         {params_.dissolveColor[0], params_.dissolveColor[1], params_.dissolveColor[2], params_.dissolveColor[3]}},
+      {"maskTexture", maskTextureName_}};
 }
 
 bool Dissolve::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    // 複数の関連パラメーターは一時コピーへ復元してから一括適用し、
    // セッター側の検証と GPU 更新を一度だけ通す。
    DissolveParams params = params_;
@@ -224,11 +208,7 @@ bool Dissolve::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json GaussFilter::SerializeSettings() const {
-   return {
-      { "intensity", intensity_ },
-      { "kernelSize", kernelSize_ },
-      { "sigma", sigma_ }
-   };
+   return {{"intensity", intensity_}, {"kernelSize", kernelSize_}, {"sigma", sigma_}};
 }
 
 bool GaussFilter::DeserializeSettings(const nlohmann::json& settings) {
@@ -243,12 +223,8 @@ bool GaussFilter::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json Outline::SerializeSettings() const {
-   return {
-      { "outlineColor", { outlineColor_[0], outlineColor_[1], outlineColor_[2], outlineColor_[3] } },
-      { "thickness", thickness_ },
-      { "depthThreshold", depthThreshold_ },
-      { "intensity", intensity_ }
-   };
+   return {{"outlineColor", {outlineColor_[0], outlineColor_[1], outlineColor_[2], outlineColor_[3]}},
+      {"thickness", thickness_}, {"depthThreshold", depthThreshold_}, {"intensity", intensity_}};
 }
 
 bool Outline::DeserializeSettings(const nlohmann::json& settings) {
@@ -264,7 +240,7 @@ bool Outline::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json Pixelation::SerializeSettings() const {
-   return { { "pixelSize", pixelSize_ } };
+   return {{"pixelSize", pixelSize_}};
 }
 
 bool Pixelation::DeserializeSettings(const nlohmann::json& settings) {
@@ -277,17 +253,15 @@ bool Pixelation::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json RadialBlur::SerializeSettings() const {
-   return {
-      { "center", { params_.center.x, params_.center.y } },
-      { "strength", params_.strength },
-      { "sampleCount", params_.sampleCount }
-   };
+   return {{"center", {params_.center.x, params_.center.y}}, {"strength", params_.strength},
+      {"sampleCount", params_.sampleCount}};
 }
 
 bool RadialBlur::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    // SetParams を経由するため、CPU 側の保持値と定数バッファが同じタイミングで切り替わる。
    RadialBlurParams params = params_;
    params.center = ReadVector2(settings, "center", params.center);
@@ -298,15 +272,9 @@ bool RadialBlur::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json ShockWave::SerializeSettings() const {
-   return {
-      { "center", { centerX_, centerY_ } },
-      { "aspectRatio", { aspectRatioX_, aspectRatioY_ } },
-      { "waveRadius", waveRadius_ },
-      { "waveThickness", waveThickness_ },
-      { "distortionStrength", distortionStrength_ },
-      { "fadeOutRadius", fadeOutRadius_ },
-      { "highlightIntensity", highlightIntensity_ }
-   };
+   return {{"center", {centerX_, centerY_}}, {"aspectRatio", {aspectRatioX_, aspectRatioY_}},
+      {"waveRadius", waveRadius_}, {"waveThickness", waveThickness_}, {"distortionStrength", distortionStrength_},
+      {"fadeOutRadius", fadeOutRadius_}, {"highlightIntensity", highlightIntensity_}};
 }
 
 bool ShockWave::DeserializeSettings(const nlohmann::json& settings) {
@@ -329,17 +297,10 @@ bool ShockWave::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json SpeedLine::SerializeSettings() const {
-   return {
-      { "center", { params_.center.x, params_.center.y } },
-      { "intensity", params_.intensity },
-      { "lineDensity", params_.lineDensity },
-      { "thickness", params_.thickness },
-      { "innerRadius", params_.innerRadius },
-      { "outerRadius", params_.outerRadius },
-      { "time", params_.time },
-      { "randomSeed", params_.randomSeed },
-      { "flowSpeed", params_.flowSpeed }
-   };
+   return {{"center", {params_.center.x, params_.center.y}}, {"intensity", params_.intensity},
+      {"lineDensity", params_.lineDensity}, {"thickness", params_.thickness}, {"innerRadius", params_.innerRadius},
+      {"outerRadius", params_.outerRadius}, {"time", params_.time}, {"randomSeed", params_.randomSeed},
+      {"flowSpeed", params_.flowSpeed}};
 }
 
 bool SpeedLine::DeserializeSettings(const nlohmann::json& settings) {
@@ -361,13 +322,8 @@ bool SpeedLine::DeserializeSettings(const nlohmann::json& settings) {
 }
 
 nlohmann::json Vignette::SerializeSettings() const {
-   return {
-      { "center", { centerX_, centerY_ } },
-      { "radius", radius_ },
-      { "softness", softness_ },
-      { "color", { vignetteColorR_, vignetteColorG_, vignetteColorB_ } },
-      { "intensity", intensity_ }
-   };
+   return {{"center", {centerX_, centerY_}}, {"radius", radius_}, {"softness", softness_},
+      {"color", {vignetteColorR_, vignetteColorG_, vignetteColorB_}}, {"intensity", intensity_}};
 }
 
 bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
@@ -380,8 +336,8 @@ bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
    radius_ = ReadFloat(settings, "radius", radius_);
    softness_ = ReadFloat(settings, "softness", softness_);
    const auto color = settings.find("color");
-   if (color != settings.end() && color->is_array() && color->size() == 3 &&
-      (*color)[0].is_number() && (*color)[1].is_number() && (*color)[2].is_number()) {
+   if (color != settings.end() && color->is_array() && color->size() == 3 && (*color)[0].is_number() &&
+       (*color)[1].is_number() && (*color)[2].is_number()) {
       try {
          const float red = (*color)[0].get<float>();
          const float green = (*color)[1].get<float>();
@@ -402,18 +358,15 @@ bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
 
 nlohmann::json WhiteNoise::SerializeSettings() const {
    // 時間は描画処理で進むため、意図的にシーン作成データから除外する。
-   return {
-      { "noiseDensity", params_.noiseDensity },
-      { "seedChangeRate", params_.seedChangeRate },
-      { "noiseThreshold", params_.noiseThreshold },
-      { "noiseIntensity", params_.noiseIntensity }
-   };
+   return {{"noiseDensity", params_.noiseDensity}, {"seedChangeRate", params_.seedChangeRate},
+      {"noiseThreshold", params_.noiseThreshold}, {"noiseIntensity", params_.noiseIntensity}};
 }
 
 bool WhiteNoise::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    // 経過時間は保存データではなく実行時状態なので、ロード時に時計とともに再始動する。
    WhiteNoiseParams params = params_;
    params.time = 0.0f;

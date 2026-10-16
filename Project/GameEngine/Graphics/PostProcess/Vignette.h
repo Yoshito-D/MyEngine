@@ -1,22 +1,24 @@
 #pragma once
+
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include <wrl.h>
 #include <d3d12.h>
 
 namespace GameEngine {
+
 /// @brief ビネット効果
 class Vignette : public PostProcess {
 public:
    /// @brief ビネット効果用パラメータ構造体
    struct VignetteCB {
-	  float centerX;
-	  float centerY;
-	  float radius;
-	  float softness;
-	  float vignetteColorR;
-	  float vignetteColorG;
-	  float vignetteColorB;
-	  float intensity;
+      float centerX;
+      float centerY;
+      float radius;
+      float softness;
+      float vignetteColorR;
+      float vignetteColorG;
+      float vignetteColorB;
+      float intensity;
    };
 
    /// @brief 初期化（パイプラインは外部から設定される）
@@ -35,13 +37,25 @@ public:
 
    /// @copydoc PostProcess::SerializeSettings
    nlohmann::json SerializeSettings() const override;
+
    /// @copydoc PostProcess::DeserializeSettings
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetIntensity(float intensity) { intensity_ = intensity; UpdateConstantBuffer(); }
-   void SetSoftness(float softness) { softness_ = softness; UpdateConstantBuffer(); }
-   void SetRadius(float radius) { radius_ = radius; UpdateConstantBuffer(); }
+   void SetIntensity(float intensity) {
+      intensity_ = intensity;
+      UpdateConstantBuffer();
+   }
+
+   void SetSoftness(float softness) {
+      softness_ = softness;
+      UpdateConstantBuffer();
+   }
+
+   void SetRadius(float radius) {
+      radius_ = radius;
+      UpdateConstantBuffer();
+   }
 
 private:
    float intensity_ = 0.5f;

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 
@@ -13,7 +14,7 @@ class Camera;
 class UIModelComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "UIModelComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "UIモデル", "UI Model" };
+   static constexpr ComponentDisplayName kDisplayName{"UIモデル", "UI Model"};
 
    /// @brief UIモデルに使用する投影方式
    enum class ProjectionType {
@@ -53,6 +54,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @copydoc IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
@@ -60,11 +62,12 @@ public:
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
       ProjectionType projectionType = ProjectionType::Orthographic; ///< UIカメラの投影方式
-      AnchorPoint anchorPoint = AnchorPoint::MiddleCenter; ///< 画面上のアンカー
-   Vector2 screenOffset{}; ///< アンカーからのピクセル移動量（+Yは上）
-   Vector3 localPivot{}; ///< アンカーへ合わせるモデルのローカル座標
-      float depth = 1.0f; ///< UIカメラからの奥行き
+      AnchorPoint anchorPoint = AnchorPoint::MiddleCenter;          ///< 画面上のアンカー
+      Vector2 screenOffset{};                                       ///< アンカーからのピクセル移動量（+Yは上）
+      Vector3 localPivot{};                                         ///< アンカーへ合わせるモデルのローカル座標
+      float depth = 1.0f;                                           ///< UIカメラからの奥行き
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
@@ -75,16 +78,23 @@ public:
       settings.depth = depth;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.screenOffset.x)) settings.screenOffset.x = defaults.screenOffset.x;
-      if (!std::isfinite(settings.screenOffset.y)) settings.screenOffset.y = defaults.screenOffset.y;
-      if (!std::isfinite(settings.localPivot.x)) settings.localPivot.x = defaults.localPivot.x;
-      if (!std::isfinite(settings.localPivot.y)) settings.localPivot.y = defaults.localPivot.y;
-      if (!std::isfinite(settings.localPivot.z)) settings.localPivot.z = defaults.localPivot.z;
-      if (!std::isfinite(settings.depth)) settings.depth = defaults.depth;
+      if (!std::isfinite(settings.screenOffset.x))
+         settings.screenOffset.x = defaults.screenOffset.x;
+      if (!std::isfinite(settings.screenOffset.y))
+         settings.screenOffset.y = defaults.screenOffset.y;
+      if (!std::isfinite(settings.localPivot.x))
+         settings.localPivot.x = defaults.localPivot.x;
+      if (!std::isfinite(settings.localPivot.y))
+         settings.localPivot.y = defaults.localPivot.y;
+      if (!std::isfinite(settings.localPivot.z))
+         settings.localPivot.z = defaults.localPivot.z;
+      if (!std::isfinite(settings.depth))
+         settings.depth = defaults.depth;
       projectionType = settings.projectionType;
       anchorPoint = settings.anchorPoint;
       screenOffset = settings.screenOffset;
@@ -94,11 +104,10 @@ public:
 
 private:
    ProjectionType projectionType = ProjectionType::Orthographic; ///< UIカメラの投影方式
-   AnchorPoint anchorPoint = AnchorPoint::MiddleCenter; ///< 画面上のアンカー
-   Vector2 screenOffset{}; ///< アンカーからのピクセル移動量（+Yは上）
-   Vector3 localPivot{}; ///< アンカーへ合わせるモデルのローカル座標
-   float depth = 1.0f; ///< UIカメラからの奥行き
-
+   AnchorPoint anchorPoint = AnchorPoint::MiddleCenter;          ///< 画面上のアンカー
+   Vector2 screenOffset{};                                       ///< アンカーからのピクセル移動量（+Yは上）
+   Vector3 localPivot{};                                         ///< アンカーへ合わせるモデルのローカル座標
+   float depth = 1.0f;                                           ///< UIカメラからの奥行き
 };
 
 } // namespace GameEngine

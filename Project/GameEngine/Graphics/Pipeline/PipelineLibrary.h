@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <wrl.h>
 #include <string>
@@ -11,10 +12,10 @@ class PipelineState;
 
 /// @brief コンピュートパイプラインの識別情報と生成済みPSOをまとめた定義
 struct ComputePipelineDefinition {
-   std::string name;                                             ///< パイプラインの一意名
-   std::string rootSignatureName;                                ///< 使用するルートシグネチャ名
-   std::string computeShaderName;                                ///< 使用するコンピュートシェーダー名
-   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;    ///< 生成済みパイプラインステート
+   std::string name;                                          ///< パイプラインの一意名
+   std::string rootSignatureName;                             ///< 使用するルートシグネチャ名
+   std::string computeShaderName;                             ///< 使用するコンピュートシェーダー名
+   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState; ///< 生成済みパイプラインステート
 };
 
 /// @brief 名前からグラフィックス・コンピュートPSOを参照する所有コンテナ

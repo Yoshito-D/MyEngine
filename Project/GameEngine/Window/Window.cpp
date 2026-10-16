@@ -37,23 +37,13 @@ void Window::CreateGameWindow(const wchar_t* title, UINT windowStyle, int32_t cl
    windowStyle_ = windowStyle;
    aspectRatio_ = static_cast<float>(clientWidth) / static_cast<float>(clientHeight);
 
-   RECT wrc = { 0, 0, clientWidth, clientHeight };
+   RECT wrc = {0, 0, clientWidth, clientHeight};
+
    // 指定値をクライアント領域として確保できるよう、枠・タイトルバー分を外寸へ加える。
    AdjustWindowRect(&wrc, windowStyle_, false);
 
-   hwnd_ = CreateWindow(
-      wndClass_.lpszClassName,
-      title,
-      windowStyle_,
-      CW_USEDEFAULT,
-      CW_USEDEFAULT,
-      wrc.right - wrc.left,
-      wrc.bottom - wrc.top,
-      nullptr,
-      nullptr,
-      wndClass_.hInstance,
-      nullptr
-   );
+   hwnd_ = CreateWindow(wndClass_.lpszClassName, title, windowStyle_, CW_USEDEFAULT, CW_USEDEFAULT,
+      wrc.right - wrc.left, wrc.bottom - wrc.top, nullptr, nullptr, wndClass_.hInstance, nullptr);
 
    ShowWindow(hwnd_, SW_SHOW);
 }
@@ -73,6 +63,7 @@ void Window::DestroyGameWindow() {
 
 bool Window::ProcessMessage() {
    MSG msg{};
+
    // キューを空になるまで処理し、入力やリサイズを残したまま次フレームへ進めない。
    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
@@ -102,33 +93,25 @@ void Window::SetFullscreen(bool fullscreen) {
 
       MONITORINFO monitorInfo{};
       monitorInfo.cbSize = sizeof(MONITORINFO);
+
       // 複数モニター環境では現在のウィンドウに最も近い画面だけを覆う。
       GetMonitorInfo(MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST), &monitorInfo);
 
-      SetWindowLong(hwnd_, GWL_STYLE, windowedStyle_ & ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU));
-      SetWindowLong(hwnd_, GWL_EXSTYLE, windowedExStyle_ & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
-      SetWindowPos(
-         hwnd_,
-         HWND_TOP,
-         monitorInfo.rcMonitor.left,
-         monitorInfo.rcMonitor.top,
+      SetWindowLong(hwnd_, GWL_STYLE,
+         windowedStyle_ & ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU));
+      SetWindowLong(
+         hwnd_, GWL_EXSTYLE, windowedExStyle_ & ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+      SetWindowPos(hwnd_, HWND_TOP, monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top,
          monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
          monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+
          // スタイル変更後の非クライアント領域を即時再計算させる。
-         SWP_NOOWNERZORDER | SWP_FRAMECHANGED
-      );
+         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
    } else {
       SetWindowLong(hwnd_, GWL_STYLE, windowedStyle_);
       SetWindowLong(hwnd_, GWL_EXSTYLE, windowedExStyle_);
-      SetWindowPos(
-         hwnd_,
-         nullptr,
-         windowedRect_.left,
-         windowedRect_.top,
-         windowedRect_.right - windowedRect_.left,
-         windowedRect_.bottom - windowedRect_.top,
-         SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED
-      );
+      SetWindowPos(hwnd_, nullptr, windowedRect_.left, windowedRect_.top, windowedRect_.right - windowedRect_.left,
+         windowedRect_.bottom - windowedRect_.top, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
    }
 
    isFullscreen_ = fullscreen;
@@ -144,22 +127,22 @@ LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM l
 #endif
 
    switch (msg) {
-   case WM_SYSKEYDOWN:
-      // Alt+Enterの既定システム動作だけを抑え、フルスクリーン切替は上位の入力処理へ委ねる。
-      if (wparam == VK_RETURN && (lparam & (1 << 29))) {
+      case WM_SYSKEYDOWN:
+         // Alt+Enterの既定システム動作だけを抑え、フルスクリーン切替は上位の入力処理へ委ねる。
+         if (wparam == VK_RETURN && (lparam & (1 << 29))) {
+            return 0;
+         }
+         break;
+      case WM_SYSCHAR:
+         if (wparam == VK_RETURN) {
+            return 0;
+         }
+         break;
+      case WM_DESTROY:
+         PostQuitMessage(0);
          return 0;
-      }
-      break;
-   case WM_SYSCHAR:
-      if (wparam == VK_RETURN) {
-         return 0;
-      }
-      break;
-   case WM_DESTROY:
-      PostQuitMessage(0);
-      return 0;
-   default:
-      return DefWindowProc(hwnd, msg, wparam, lparam);
+      default:
+         return DefWindowProc(hwnd, msg, wparam, lparam);
    }
 
    return DefWindowProc(hwnd, msg, wparam, lparam);

@@ -49,7 +49,8 @@ void WhiteNoise::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rende
 ///          ポストプロセススタックが選択した反対側のターゲットへフルスクリーン描画する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    // シェーダーはfloor(time * seedChangeRate)を乱数シードに使うため、定数転送前に時刻を更新する。
    AdvanceTime();
@@ -65,7 +66,7 @@ void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 物理スロット番号はルートシグネチャ定義の意味名から解決済みであり、並び順を固定値で仮定しない。
    if (constantBuffer_) {
-	  cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
@@ -79,6 +80,7 @@ void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 }
 
 #ifdef USE_IMGUI
+
 /// @brief ホワイトノイズの実行時パラメーターをエディターへ表示する。
 /// @details 編集中は一時コピーを更新し、変更があったフレームだけSetParamsを通すことで、
 ///          範囲正規化とGPU定数の反映を一度にまとめる。
@@ -86,36 +88,24 @@ void WhiteNoise::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("ホワイトノイズのパラメータ", "White Noise Parameters"))) {
-	  bool changed = false;
-	  WhiteNoiseParams params = params_;
-	  changed |= ImGui::DragFloat(LocalizeEditorText("時間", "Time"), &params.time, 0.01f, kTimeMin);
-	  changed |= ImGui::SliderFloat(
-		 LocalizeEditorText("ノイズ密度", "Noise Density"),
-		 &params.noiseDensity,
-		 kNoiseDensityMin,
-		 kNoiseDensityMax);
-	  changed |= ImGui::SliderFloat(
-		 LocalizeEditorText("シード更新頻度", "Seed Change Rate"),
-		 &params.seedChangeRate,
-		 kSeedChangeRateMin,
-		 kSeedChangeRateMax);
-	  changed |= ImGui::SliderFloat(
-		 LocalizeEditorText("ノイズしきい値", "Noise Threshold"),
-		 &params.noiseThreshold,
-		 kNormalizedParameterMin,
-		 kNormalizedParameterMax);
-	  changed |= ImGui::SliderFloat(
-		 LocalizeEditorText("ノイズ強度", "Noise Intensity"),
-		 &params.noiseIntensity,
-		 kNormalizedParameterMin,
-		 kNormalizedParameterMax);
+          LocalizeEditorText("ホワイトノイズのパラメータ", "White Noise Parameters"))) {
+      bool changed = false;
+      WhiteNoiseParams params = params_;
+      changed |= ImGui::DragFloat(LocalizeEditorText("時間", "Time"), &params.time, 0.01f, kTimeMin);
+      changed |= ImGui::SliderFloat(
+         LocalizeEditorText("ノイズ密度", "Noise Density"), &params.noiseDensity, kNoiseDensityMin, kNoiseDensityMax);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("シード更新頻度", "Seed Change Rate"), &params.seedChangeRate,
+         kSeedChangeRateMin, kSeedChangeRateMax);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("ノイズしきい値", "Noise Threshold"), &params.noiseThreshold,
+         kNormalizedParameterMin, kNormalizedParameterMax);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("ノイズ強度", "Noise Intensity"), &params.noiseIntensity,
+         kNormalizedParameterMin, kNormalizedParameterMax);
 
-	  if (changed) {
-		 SetParams(params);
-	  }
+      if (changed) {
+         SetParams(params);
+      }
 
-	  ImGui::TreePop();
+      ImGui::TreePop();
    }
 
    ImGui::PopID();
@@ -152,7 +142,7 @@ void WhiteNoise::CreateConstantBuffer() {
 /// @details 末尾パディングも明示的に初期化し、定数バッファレジスター境界の未定義値を残さない。
 void WhiteNoise::UpdateConstantBuffer() {
    if (!constantBufferData_) {
-	  return;
+      return;
    }
 
    constantBufferData_->time = params_.time;
@@ -171,9 +161,9 @@ void WhiteNoise::UpdateConstantBuffer() {
 void WhiteNoise::AdvanceTime() {
    const auto now = std::chrono::steady_clock::now();
    if (!hasPreviousTime_) {
-	  previousTime_ = now;
-	  hasPreviousTime_ = true;
-	  return;
+      previousTime_ = now;
+      hasPreviousTime_ = true;
+      return;
    }
 
    const std::chrono::duration<float> delta = now - previousTime_;

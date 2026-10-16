@@ -17,7 +17,7 @@ class RaceManagerComponent;
 class RaceCountdownTextComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "RaceCountdownTextComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "レースカウントダウン表示", "Race Countdown Text" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"レースカウントダウン表示", "Race Countdown Text"};
 
    /// @brief コンポーネント型名を取得する
    /// @return RaceCountdownTextComponent
@@ -26,6 +26,7 @@ public:
    /// @brief 表示対象のRaceManagerをIDから解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -42,18 +43,15 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief 参照状態をインスペクターへ表示する
    void DrawInspector() override;
 #endif
 
 private:
    void CaptureBaseVisualState();
-   void RestoreBaseVisualState(
-      GameEngine::UITextComponent& text,
-      GameEngine::TransformComponent& transform);
-   void ApplyAnimation(
-      GameEngine::UITextComponent& text,
-      GameEngine::TransformComponent& transform);
+   void RestoreBaseVisualState(GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform);
+   void ApplyAnimation(GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform);
 
    std::string raceManagerId_;
    std::string startText_ = "START";
@@ -63,7 +61,7 @@ private:
    float rotationDuration_ = 0.45f;
    float fadeDuration_ = 0.45f;
    float fadeEndScale_ = 1.6f;
-   GameEngine::Vector3 baseScale_ = { 1.0f, 1.0f, 1.0f };
+   GameEngine::Vector3 baseScale_ = {1.0f, 1.0f, 1.0f};
    GameEngine::Vector3 baseEuler_ = {};
    GameEngine::Quaternion baseRotationQuaternion_ = GameEngine::Quaternion::Identity();
    float baseOpacity_ = 1.0f;

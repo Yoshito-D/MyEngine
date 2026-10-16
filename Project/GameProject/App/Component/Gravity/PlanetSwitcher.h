@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 
@@ -20,7 +21,7 @@ class PlanetSwitcher final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "PlanetSwitcher";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "惑星切り替え", "Planet Switcher" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"惑星切り替え", "Planet Switcher"};
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
@@ -30,18 +31,21 @@ public:
 
    /// @brief 惑星1件分の切替情報
    struct PlanetEntry {
-	  std::string objectName; ///< 安定Entity ID（旧データの名前は参照解決時に移行）
-	  GameEngine::Vector3 center = {};      ///< 惑星中心座標
-	  float surfaceRadius = 15.0f;  ///< 地表半径
+      std::string objectName;          ///< 安定Entity ID（旧データの名前は参照解決時に移行）
+      GameEngine::Vector3 center = {}; ///< 惑星中心座標
+      float surfaceRadius = 15.0f;     ///< 地表半径
    };
 
    /// @brief 切り替え候補の惑星を安定IDまたは旧オブジェクト名で追加する
    /// @param objectName 追加する惑星のEntity IDまたは表示名
    void AddPlanet(std::string objectName);
+
    /// @brief 候補を削除し、削除対象を指す選択・保留状態を解除する
    bool RemovePlanet(size_t index);
+
    /// @brief 候補を並べ替え、現在選択中の惑星との対応を維持する
    bool MovePlanet(size_t from, size_t to);
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -72,8 +76,8 @@ public:
    /// @return 同じ候補からすべての情報を取得できた場合true。
    /// @note 実装時は既存の2引数版と同様にpendingIndex_を優先し、候補の安定IDからモデルを再解決する。
    /// モデルが消えていた場合はfalseとし、古いモデル参照を保存しない。
-   bool TryGetLandingPlanet(GameEngine::Model*& outReceiver,
-      GameEngine::Vector3& outCenter, float& outSurfaceRadius) const;
+   bool TryGetLandingPlanet(
+      GameEngine::Model*& outReceiver, GameEngine::Vector3& outCenter, float& outSurfaceRadius) const;
 
    /// @brief 空中で保留していた惑星切り替えを着地時に確定する
    void CommitPendingSwitch();
@@ -84,6 +88,7 @@ public:
    /// Transformのscaleではなくこの値を距離判定に使用する
 
 #ifdef USE_IMGUI
+
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
@@ -96,12 +101,15 @@ public:
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
+
       /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
       float switchHysteresis = 1.0f;
+
       /// @brief 車体OBBの半サイズ（各軸を個別指定）
       /// Transformのscaleではなくこの値を距離判定に使用する
-      GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
+      GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f};
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
@@ -109,21 +117,26 @@ public:
       settings.obbHalfExtents = obbHalfExtents;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.switchHysteresis)) settings.switchHysteresis = defaults.switchHysteresis;
-      if (!std::isfinite(settings.obbHalfExtents.x)) settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
-      if (!std::isfinite(settings.obbHalfExtents.y)) settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
-      if (!std::isfinite(settings.obbHalfExtents.z)) settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
+      if (!std::isfinite(settings.switchHysteresis))
+         settings.switchHysteresis = defaults.switchHysteresis;
+      if (!std::isfinite(settings.obbHalfExtents.x))
+         settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
+      if (!std::isfinite(settings.obbHalfExtents.y))
+         settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
+      if (!std::isfinite(settings.obbHalfExtents.z))
+         settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
       switchHysteresis = settings.switchHysteresis;
       obbHalfExtents = settings.obbHalfExtents;
    }
 
 private:
    float switchHysteresis = 1.0f;
-   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
+   GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f};
 
 private:
    /// @brief 登録済み惑星候補
@@ -145,8 +158,7 @@ private:
    bool switched_ = false;
 
 private:
-   int SelectBestPlanetIndex(const GameEngine::Vector3& pos,
-	  const GameEngine::Quaternion& obbRot);
+   int SelectBestPlanetIndex(const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot);
 
    void ApplyPlanetIndex(int newIndex);
 

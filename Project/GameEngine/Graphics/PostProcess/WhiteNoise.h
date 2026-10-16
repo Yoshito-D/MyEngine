@@ -1,12 +1,15 @@
 #pragma once
+
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include <chrono>
 #include <wrl.h>
 #include <d3d12.h>
 
 namespace GameEngine {
+
 /// @brief アニメーションするホワイトノイズの実行時パラメーター。
 struct WhiteNoiseParams {
+
    /// @brief シェーダーの乱数シードに使用する時間。
    float time = 0.0f;
 
@@ -28,23 +31,24 @@ class WhiteNoise : public PostProcess {
 public:
    /// @brief ホワイトノイズ用定数バッファーのレイアウト。
    struct WhiteNoiseCB {
-	  /// @brief シェーダーの乱数シードに使用する時間。
-	  float time;
 
-	  /// @brief UV空間に配置する手続き的ノイズセルの数。
-	  float noiseDensity;
+      /// @brief シェーダーの乱数シードに使用する時間。
+      float time;
 
-	  /// @brief 1秒あたりのランダムパターン変更回数。
-	  float seedChangeRate;
+      /// @brief UV空間に配置する手続き的ノイズセルの数。
+      float noiseDensity;
 
-	  /// @brief セルをノイズ化するか決める乱数のしきい値。
-	  float noiseThreshold;
+      /// @brief 1秒あたりのランダムパターン変更回数。
+      float seedChangeRate;
 
-	  /// @brief 選択されたノイズセルの強度倍率。
-	  float noiseIntensity;
+      /// @brief セルをノイズ化するか決める乱数のしきい値。
+      float noiseThreshold;
 
-	  /// @brief 定数バッファーのレジスターアライメント用パディング。
-	  float padding[3];
+      /// @brief 選択されたノイズセルの強度倍率。
+      float noiseIntensity;
+
+      /// @brief 定数バッファーのレジスターアライメント用パディング。
+      float padding[3];
    };
 
    /// @brief ホワイトノイズエフェクトで使用するGPUリソースを初期化する。
@@ -57,6 +61,7 @@ public:
    void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) override;
 
 #ifdef USE_IMGUI
+
    /// @brief エフェクトパラメーターのデバッグ操作を表示する。
    void ImGuiEdit() override;
 #endif
@@ -89,19 +94,35 @@ public:
 
    /// @brief 手続き的ノイズの密度を設定する。
    /// @param value UV空間に配置するノイズセル数。
-   void SetNoiseDensity(float value) { auto params = params_; params.noiseDensity = value; SetParams(params); }
+   void SetNoiseDensity(float value) {
+      auto params = params_;
+      params.noiseDensity = value;
+      SetParams(params);
+   }
 
    /// @brief シードの変更頻度を設定する。
    /// @param value 1秒あたりのランダムパターン変更回数。
-   void SetSeedChangeRate(float value) { auto params = params_; params.seedChangeRate = value; SetParams(params); }
+   void SetSeedChangeRate(float value) {
+      auto params = params_;
+      params.seedChangeRate = value;
+      SetParams(params);
+   }
 
    /// @brief ノイズセルの選択に使用するしきい値を設定する。
    /// @param value 0.0～1.0のしきい値。
-   void SetNoiseThreshold(float value) { auto params = params_; params.noiseThreshold = value; SetParams(params); }
+   void SetNoiseThreshold(float value) {
+      auto params = params_;
+      params.noiseThreshold = value;
+      SetParams(params);
+   }
 
    /// @brief ノイズ強度を設定する。
    /// @param value 0.0～1.0の強度倍率。
-   void SetNoiseIntensity(float value) { auto params = params_; params.noiseIntensity = value; SetParams(params); }
+   void SetNoiseIntensity(float value) {
+      auto params = params_;
+      params.noiseIntensity = value;
+      SetParams(params);
+   }
 
 private:
    WhiteNoiseParams params_;

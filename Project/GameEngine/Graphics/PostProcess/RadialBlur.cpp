@@ -33,7 +33,8 @@ void RadialBlur::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rende
 }
 
 void RadialBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -44,11 +45,11 @@ void RadialBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
-     cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    // SRVをルートパラメータ1にセット
-    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
+   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -64,10 +65,10 @@ void RadialBlur::CreateConstantBuffer() {
 
 void RadialBlur::UpdateConstantBuffer() {
    if (constantBufferData_) {
-	  constantBufferData_->centerX = params_.center.x;
-	  constantBufferData_->centerY = params_.center.y;
-	  constantBufferData_->strength = params_.strength;
-	  constantBufferData_->sampleCount = params_.sampleCount;
+      constantBufferData_->centerX = params_.center.x;
+      constantBufferData_->centerY = params_.center.y;
+      constantBufferData_->strength = params_.strength;
+      constantBufferData_->sampleCount = params_.sampleCount;
    }
 }
 
@@ -76,36 +77,24 @@ void RadialBlur::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("放射ブラーのパラメータ", "Radial Blur Parameters"))) {
+          LocalizeEditorText("放射ブラーのパラメータ", "Radial Blur Parameters"))) {
 
-	  bool changed = false;
-	  RadialBlurParams params = params_;
-	  changed |= ImGui::SliderFloat(
-		 LocalizeEditorText("ブラー強度", "Blur Strength"),
-		 &params.strength,
-		 kBlurStrengthMin,
-		 kBlurStrengthMax);
-	  changed |= ImGui::SliderFloat(
-		 LocalizeEditorText("中心 X", "Center X"),
-		 &params.center.x,
-		 kNormalizedCoordinateMin,
-		 kNormalizedCoordinateMax);
-	  changed |= ImGui::SliderFloat(
-		 LocalizeEditorText("中心 Y", "Center Y"),
-		 &params.center.y,
-		 kNormalizedCoordinateMin,
-		 kNormalizedCoordinateMax);
-	  changed |= ImGui::SliderInt(
-		 LocalizeEditorText("サンプル数", "Sample Count"),
-		 &params.sampleCount,
-		 kSampleCountMin,
-		 kSampleCountMax);
+      bool changed = false;
+      RadialBlurParams params = params_;
+      changed |= ImGui::SliderFloat(
+         LocalizeEditorText("ブラー強度", "Blur Strength"), &params.strength, kBlurStrengthMin, kBlurStrengthMax);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &params.center.x,
+         kNormalizedCoordinateMin, kNormalizedCoordinateMax);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &params.center.y,
+         kNormalizedCoordinateMin, kNormalizedCoordinateMax);
+      changed |= ImGui::SliderInt(
+         LocalizeEditorText("サンプル数", "Sample Count"), &params.sampleCount, kSampleCountMin, kSampleCountMax);
 
-	  if (changed) {
-		 SetParams(params);
-	  }
+      if (changed) {
+         SetParams(params);
+      }
 
-	  ImGui::TreePop();
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

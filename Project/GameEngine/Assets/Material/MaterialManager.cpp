@@ -8,11 +8,12 @@ void MaterialManager::Initialize(ID3D12Device* device) {
    device_ = device;
 }
 
-void* MaterialManager::CreateMaterial(const std::string& name, uint32_t color, int32_t enableLighting, const Matrix4x4& uvTransform) {
+void* MaterialManager::CreateMaterial(
+   const std::string& name, uint32_t color, int32_t enableLighting, const Matrix4x4& uvTransform) {
    auto it = materials_.find(name);
    if (it != materials_.end()) {
-	  // 名前をマテリアルの共有キーとし、同一設定要求で定数バッファを重複生成しない。
-	  return it->second.get();
+      // 名前をマテリアルの共有キーとし、同一設定要求で定数バッファを重複生成しない。
+      return it->second.get();
    }
 
    auto material = std::make_unique<Material>();
@@ -36,8 +37,8 @@ std::vector<std::string> MaterialManager::GetMaterialNames() const {
    std::vector<std::string> names;
    names.reserve(materials_.size());
    for (const auto& [name, material] : materials_) {
-	  (void)material;
-	  names.push_back(name);
+      (void)material;
+      names.push_back(name);
    }
    std::sort(names.begin(), names.end());
    return names;

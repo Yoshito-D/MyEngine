@@ -29,8 +29,7 @@ std::string LoadLastEditorSceneName(const SceneCatalog& sceneCatalog) {
       file >> sessionState;
    } catch (const nlohmann::json::exception& exception) {
       Logger::Warning(
-         "Editor session state contains invalid JSON: " + std::string(exception.what()),
-         Logger::LogChannel::Editor);
+         "Editor session state contains invalid JSON: " + std::string(exception.what()), Logger::LogChannel::Editor);
       return {};
    }
 
@@ -39,6 +38,7 @@ std::string LoadLastEditorSceneName(const SceneCatalog& sceneCatalog) {
    }
 
    const std::string sceneName = sessionState.value("lastSceneName", "");
+
    // 削除・改名済みのシーンで起動不能にならないよう、現在のカタログを正とする。
    return sceneCatalog.Contains(sceneName) ? sceneName : std::string();
 }
@@ -53,23 +53,20 @@ void SaveLastEditorSceneName(const std::string& sceneName) {
    std::error_code error;
    std::filesystem::create_directories(filePath.parent_path(), error);
    if (error) {
-      Logger::Warning(
-         "Editor session directory could not be created: " + error.message(),
-         Logger::LogChannel::Editor);
+      Logger::Warning("Editor session directory could not be created: " + error.message(), Logger::LogChannel::Editor);
       return;
    }
 
    std::ofstream file(filePath);
    if (!file.is_open()) {
       Logger::Warning(
-         "Editor session state could not be saved: " + filePath.generic_string(),
-         Logger::LogChannel::Editor);
+         "Editor session state could not be saved: " + filePath.generic_string(), Logger::LogChannel::Editor);
       return;
    }
 
    const nlohmann::json sessionState = {
-      { "version", kEditorSessionStateFormatVersion },
-      { "lastSceneName", sceneName },
+      {"version", kEditorSessionStateFormatVersion},
+      {"lastSceneName", sceneName},
    };
    file << sessionState.dump(kEditorSessionStateJsonIndentSize);
 }
@@ -101,7 +98,6 @@ void Game::Initialize() {
    }
 #endif
    sceneManager_->ChangeScene(initialSceneName);
-
 }
 
 void Game::Update() {
@@ -138,8 +134,7 @@ void Game::Draw() {
 
    sceneManager_->Draw();
 
-   auto* camera =
-      GameEngine::EngineContext::GetActiveCamera();
+   auto* camera = GameEngine::EngineContext::GetActiveCamera();
 
    if (!camera) {
       return;
@@ -151,8 +146,7 @@ void Game::Draw() {
          continue;
       }
 
-      auto* vehicle =
-         model->GetComponent<App::VehicleController>();
+      auto* vehicle = model->GetComponent<App::VehicleController>();
 
       // レース中の操作ロックで無効になっていても、停止中の車体の影は描画する。
       if (!vehicle) {

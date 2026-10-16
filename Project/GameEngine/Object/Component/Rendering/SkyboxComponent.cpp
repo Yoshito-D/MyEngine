@@ -18,8 +18,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
       return object.AddComponent<GameEngine::SkyboxComponent>();
    },
-   GameEngine::SkyboxComponent::kDisplayName,
-   GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Skybox));
+   GameEngine::SkyboxComponent::kDisplayName, GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Skybox));
 }
 
 namespace GameEngine {
@@ -40,6 +39,7 @@ void SkyboxComponent::SetTexture(Texture* texture) {
    if (texture && !texture->GetMetadata().IsCubemap()) {
       texture = nullptr;
    }
+
    // Textureの所有権はTextureManagerに残し、Componentは描画用の非所有参照と永続化用の名前だけを同期する。
    texture_ = texture;
    textureName_ = texture ? texture->GetName() : std::string();
@@ -47,6 +47,7 @@ void SkyboxComponent::SetTexture(Texture* texture) {
 
 void SkyboxComponent::SetTextureName(const std::string& textureName) {
    textureName_ = textureName;
+
    // 名前変更後に旧Textureを返さないようキャッシュを必ず破棄する。Resolver未設定でも名前は残り、後から遅延解決できる。
    texture_ = nullptr;
    GetTexture();
@@ -56,6 +57,7 @@ Texture* SkyboxComponent::GetTexture() const {
    // シーン読込時に未ロードでも、描画時点で名前から遅延解決できるようにする。
    if (!texture_ && !textureName_.empty() && textureResolver_) {
       Texture* resolvedTexture = textureResolver_(textureName_);
+
       // 名前が2D Textureを指していてもキャッシュせず、Skybox用SRVの次元不一致を描画まで持ち込まない。
       if (resolvedTexture && resolvedTexture->GetMetadata().IsCubemap()) {
          texture_ = resolvedTexture;
@@ -66,10 +68,7 @@ Texture* SkyboxComponent::GetTexture() const {
 
 nlohmann::json SkyboxComponent::Serialize() const {
    // 生ポインターではなくAsset名だけを保存し、次回ロード時は現在のTextureManagerから解決し直す。
-   return nlohmann::json{
-      { "textureName", textureName_ },
-      { "color", { color_.x, color_.y, color_.z, color_.w } }
-   };
+   return nlohmann::json{{"textureName", textureName_}, {"color", {color_.x, color_.y, color_.z, color_.w}}};
 }
 
 void SkyboxComponent::Deserialize(const nlohmann::json& data) {
@@ -87,16 +86,14 @@ void SkyboxComponent::Deserialize(const nlohmann::json& data) {
 
 #ifdef USE_IMGUI
 void SkyboxComponent::DrawInspector() {
-   auto Tr = [](const char* japanese, const char* english) {
-      return ImGuiHelper::Localize({ japanese, english });
-   };
+   auto Tr = [](const char* japanese, const char* english) { return ImGuiHelper::Localize({japanese, english}); };
 
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
 
-   float color[4] = { color_.x, color_.y, color_.z, color_.w };
+   float color[4] = {color_.x, color_.y, color_.z, color_.w};
    if (ImGui::ColorEdit4(Tr("カラー", "Color"), color)) {
       color_ = Vector4(color[0], color[1], color[2], color[3]);
    }
@@ -106,8 +103,9 @@ void SkyboxComponent::DrawInspector() {
       Texture* texture = textureResolver_ ? textureResolver_(entry.assetId) : nullptr;
       return texture && texture->GetMetadata().IsCubemap();
    };
-   if (EditorUI::AssetReference(Tr("キューブマップ", "Cubemap"), nextTextureId,
-      EditorAssetType::Texture, acceptsCubemap)) SetTextureName(nextTextureId);
+   if (EditorUI::AssetReference(
+          Tr("キューブマップ", "Cubemap"), nextTextureId, EditorAssetType::Texture, acceptsCubemap))
+      SetTextureName(nextTextureId);
 }
 #endif
 

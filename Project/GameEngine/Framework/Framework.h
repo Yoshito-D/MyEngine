@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Utility/D3DResourceLeakChecker.h"
 #include "GameEngine/Window/Window.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
@@ -13,7 +14,6 @@
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/Camera/CameraManager.h"
 #include "GameEngine/Graphics/Renderer/Light/LightManager.h"
-
 
 namespace GameEngine {
 class Framework {
@@ -39,6 +39,7 @@ public:
    /// @brief 終了処理
    virtual void Finalize();
    void Run();
+
 private:
 #ifdef _DEBUG
    D3DResourceLeakChecker resourceLeakChecker;

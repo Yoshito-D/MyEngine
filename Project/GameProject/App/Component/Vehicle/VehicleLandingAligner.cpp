@@ -14,41 +14,49 @@ using namespace GameEngine;
 namespace App {
 
 // ---------------------------------------------------------------
-   // 公開設定
+// 公開設定
 // ---------------------------------------------------------------
 
-void VehicleLandingAligner::BeginAlign(const Quaternion& startRot,
-									   const Quaternion& targetRot) {
+void VehicleLandingAligner::BeginAlign(const Quaternion& startRot, const Quaternion& targetRot) {
    // 補正の開始姿勢・目標姿勢・残り時間を設定する。
    // alignTime 秒かけて startRot → targetRot へ Slerp 補間する。
    // 既に補正中の場合も現在地から再スタートするため、スムーズに繋がる。
-   alignStart_  = startRot;
+   alignStart_ = startRot;
    alignTarget_ = targetRot;
-   alignTimer_  = alignTime;
+   alignTimer_ = alignTime;
 }
 
 void VehicleLandingAligner::Update(float deltaTime) {
    // タイマーがゼロ以下なら補正は終了しているので何もしない。
-   if (alignTimer_ <= 0.0f) { return; }
+   if (alignTimer_ <= 0.0f) {
+      return;
+   }
 
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) { alignTimer_ = 0.0f; return; }
+   if (!transform) {
+      alignTimer_ = 0.0f;
+      return;
+   }
 
    // タイマーを減算する。負にならないようクランプしてから使う。
    alignTimer_ -= deltaTime;
-   if (alignTimer_ <= 0.0f) { alignTimer_ = 0.0f; }
+   if (alignTimer_ <= 0.0f) {
+      alignTimer_ = 0.0f;
+   }
 
    // 補間比率を計算して姿勢を更新する。
    ApplyBlendedRotation(CalcBlendedRotation());
 }
 
 // ---------------------------------------------------------------
-   // 内部設定
+// 内部設定
 // ---------------------------------------------------------------
 
 Quaternion VehicleLandingAligner::CalcBlendedRotation() const {
    // タイマーが残り 0 なら目標姿勢をそのまま返す。
-   if (alignTimer_ <= 0.0f) { return alignTarget_; }
+   if (alignTimer_ <= 0.0f) {
+      return alignTarget_;
+   }
 
    // t = 1 - (残り時間 / 総時間) で 0→1 に変化する補間パラメータを計算する。
    // 開始直後は t ≈ 0 (= startRot 側)、終了直前は t ≈ 1 (= targetRot 側)。
@@ -60,7 +68,9 @@ Quaternion VehicleLandingAligner::CalcBlendedRotation() const {
 
 void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) { return; }
+   if (!transform) {
+      return;
+   }
 
    // Transform に補間済み回転を書き込む。
    {
@@ -75,28 +85,27 @@ void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
    // ランディングアライナーの補正と干渉してしまう。
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    if (gravityBody) {
-	  Vector3 blendedUp = RotateVector({ 0.0f, 1.0f, 0.0f }, blended);
-	  gravityBody->SetCurrentUpVector(blendedUp);
-	  gravityBody->SetTargetUpVector(blendedUp);
+      Vector3 blendedUp = RotateVector({0.0f, 1.0f, 0.0f}, blended);
+      gravityBody->SetCurrentUpVector(blendedUp);
+      gravityBody->SetTargetUpVector(blendedUp);
    }
 }
 
 // ---------------------------------------------------------------
-   // ImGui / シリアライズ
+// ImGui / シリアライズ
 // ---------------------------------------------------------------
 
 #ifdef USE_IMGUI
 void VehicleLandingAligner::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
+   if (!ImGui::CollapsingHeader(header.c_str())) {
+      return;
+   }
    ImGui::Separator();
    ImGui::DragFloat(Tr("姿勢合わせ時間", "Align Time"), &alignTime, 0.01f, 0.05f, 2.0f);
    ImGui::Spacing();
-   ImGui::Text("%s: %.2f  %s: %s",
-      Tr("姿勢合わせタイマー", "Align Timer"),
-      alignTimer_,
-      Tr("姿勢合わせ中", "Aligning"),
+   ImGui::Text("%s: %.2f  %s: %s", Tr("姿勢合わせタイマー", "Align Timer"), alignTimer_, Tr("姿勢合わせ中", "Aligning"),
       IsAligning() ? Tr("はい", "yes") : Tr("いいえ", "no"));
 }
 #endif
@@ -108,7 +117,9 @@ nlohmann::json VehicleLandingAligner::Serialize() const {
 }
 
 void VehicleLandingAligner::Deserialize(const nlohmann::json& data) {
-   if (data.contains("alignTime")) { alignTime = data["alignTime"]; }
+   if (data.contains("alignTime")) {
+      alignTime = data["alignTime"];
+   }
 }
 
 } // namespace App
