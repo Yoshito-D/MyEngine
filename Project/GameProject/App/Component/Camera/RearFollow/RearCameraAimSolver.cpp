@@ -28,7 +28,8 @@ GameEngine::Vector3 RearCameraAimSolver::ComputeLookTarget(
    const GameEngine::Vector3& up) const {
    // 構図専用ブレンドを使い、距離やFOVの空中補間速度から独立して
    // 地上下側と空中中央の切り替え時間を調整できるようにする。
-   float targetHeight = settings.groundedTargetHeight * (1.0f - transition.GetState().currentPlayerFramingBlend);
+   float targetHeight = (settings.groundedTargetHeight + input.driftLookTargetHeightOffset)
+      * (1.0f - transition.GetState().currentPlayerFramingBlend);
    GameEngine::Vector3 lookTarget = input.pivotTarget + up * targetHeight;
 
    float preLandingGuideBlend = transition.ComputePreLandingGuideBlend(input);
@@ -48,7 +49,16 @@ GameEngine::Vector3 RearCameraAimSolver::ComputeLookTarget(
 	  float terrainBlend =
 		 std::clamp(settings.preLandingTerrainLookBlend, 0.0f, 1.0f)
 		 * transition.GetState().currentPreLandingBlend;
-	  lookTarget = lookTarget + (terrainTarget - lookTarget) * terrainBlend;
+
+	  // 遠い着地点でも注視点が車体から離れすぎないよう、地形側へのオフセットを制限する。
+	  // ブレンド前に制限することで、予測開始直後も補間量に応じて徐々に注視点を移す。
+	  GameEngine::Vector3 terrainOffset = terrainTarget - lookTarget;
+	  const float maxTerrainOffset = 2.0f;
+	  const float offsetLength = terrainOffset.Length();
+	  if (offsetLength > maxTerrainOffset) {
+		 terrainOffset = terrainOffset * (maxTerrainOffset / offsetLength);
+	  }
+	  lookTarget += terrainOffset * terrainBlend;
    }
 
    return lookTarget;

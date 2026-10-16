@@ -38,6 +38,14 @@ public:
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
    void SetDriftDistanceScale(float scale) { driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
 
+   /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
+   /// @param cameraHeightOffset カメラ高さへ加える量。正の値は重力Up方向、負の値は下方向。
+   /// @param lookTargetHeightOffset 注視点高さへ加える量。正の値は重力Up方向、負の値は下方向。
+   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
+      driftCameraHeightOffset_ = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
+      driftLookTargetHeightOffset_ = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
+   }
+
    /// @brief 直近計算のカメラUpを取得する
    GameEngine::Vector3 GetCameraUp()    const { return cachedUp_; }
 
@@ -108,6 +116,12 @@ private:
 
    /// @brief レアッシュの通常位置から表示位置だけを近づける距離倍率
    float driftDistanceScale_ = 1.0f;
+
+   /// @brief 通常の表示位置へ加えるドリフト演出のカメラ高さ
+   float driftCameraHeightOffset_ = 0.0f;
+
+   /// @brief 通常の注視点へ加えるドリフト演出の高さ
+   float driftLookTargetHeightOffset_ = 0.0f;
 
    /// @brief 初期化実施済みフラグ
    bool                isInitialized_ = false;

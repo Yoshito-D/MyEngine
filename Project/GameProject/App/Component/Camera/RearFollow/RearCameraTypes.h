@@ -101,7 +101,7 @@ struct RearCameraSettings {
 	/// @brief 加速時に加算される最大 FOV 量（視野を広げて速度感を演出）
 	float fovBoostMax = 0.00f;
 
-	/// @brief FOV が加速ブーストに追従する補間速度
+	/// @brief 速度・空中演出の追加FOVが目標へ追従する補間速度（通常FOVは直接反映）
 	float fovLerpSpeed = 4.0f;
 
 	/// @brief 加速時にカメラが後退する最大追加距離（加速感の演出）
@@ -226,6 +226,12 @@ struct RearCameraInput {
 	/// @brief ドリフト接近演出の距離倍率（通常時は1.0）
 	float driftDistanceScale = 1.0f;
 
+	/// @brief ドリフト演出で通常のカメラ高さへ加える量（通常時は0）
+	float driftCameraHeightOffset = 0.0f;
+
+	/// @brief ドリフト演出で地上の注視点高さへ加える量（通常時は0）
+	float driftLookTargetHeightOffset = 0.0f;
+
 	/// @brief プレイヤー現在速度ベクトル（外部から毎フレーム供給）
 	GameEngine::Vector3 playerVelocity = { 0.0f, 0.0f, 0.0f };
 
@@ -311,8 +317,11 @@ struct RearCameraPlanetState {
 
 /// @brief 速度による演出の履歴。担当クラスが所有し、参照側には読み取りだけを許可する。
 struct RearCameraSpeedState {
-	/// @brief 現在の FOV 補間値（加速演出で変動する）
+	/// @brief 通常FOVと補間済みの演出追加量を合成した現在のFOV
 	float currentFov = 0.45f;
+
+	/// @brief 通常FOVへ加える、速度・空中・Spring演出の補間済み追加量
+	float currentFovOffset = 0.0f;
 
 	/// @brief Spring による FOV オフセット状態
 	float springFovOffset = 0.0f;

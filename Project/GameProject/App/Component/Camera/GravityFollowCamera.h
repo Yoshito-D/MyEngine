@@ -44,6 +44,14 @@ public:
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
    void SetDriftDistanceScale(float scale) { driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
 
+   /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
+   /// @param cameraHeightOffset カメラ高さへ加える量。正の値は重力Up方向、負の値は下方向。
+   /// @param lookTargetHeightOffset 注視点高さへ加える量。正の値は重力Up方向、負の値は下方向。
+   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
+      driftCameraHeightOffset_ = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
+      driftLookTargetHeightOffset_ = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
+   }
+
    /// @brief 通常走行速度（autoSpeed）を設定する
    /// @details これを下回った場合のみ減速演出を発火させる
    void SetAutoSpeed(float speed) { autoSpeed_ = speed; }
@@ -216,6 +224,12 @@ private:
 
    /// @brief 外部から供給されるドリフト接近演出の距離倍率
    float driftDistanceScale_ = 1.0f;
+
+   /// @brief 外部から供給されるドリフト演出のカメラ高さの追加量
+   float driftCameraHeightOffset_ = 0.0f;
+
+   /// @brief 外部から供給されるドリフト演出の注視点高さの追加量
+   float driftLookTargetHeightOffset_ = 0.0f;
 
    /// @brief 通常走行速度。これを下回ったときのみ減速演出を発火する
    float autoSpeed_ = 13.0f;

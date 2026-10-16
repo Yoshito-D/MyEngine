@@ -76,6 +76,14 @@ public:
 	/// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
 	void SetDriftDistanceScale(float scale) { input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
 
+	/// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
+	/// @param cameraHeightOffset カメラ高さへ加える量。正の値はUp方向、負の値は下方向。
+	/// @param lookTargetHeightOffset 注視点高さへ加える量。正の値はUp方向、負の値は下方向。
+	void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
+		input_.driftCameraHeightOffset = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
+		input_.driftLookTargetHeightOffset = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
+	}
+
 	/// @brief プレイヤーの現在速度ベクトルを設定する（空中カメラ方向補間に使用）
 	/// @param velocity ワールド空間の速度
 	void SetPlayerVelocity(const GameEngine::Vector3& velocity) { input_.playerVelocity = velocity; }

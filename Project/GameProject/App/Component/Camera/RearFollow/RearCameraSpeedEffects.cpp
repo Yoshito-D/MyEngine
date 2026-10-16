@@ -13,8 +13,8 @@ void RearCameraSpeedEffects::MutateCameraState(GameEngine::CameraState& state, f
    boostAlpha_ = UpdateAccelerationEffect(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), state, deltaTime);
 }
 
-/// @brief プレイヤー速度に応じた FOV ブーストを補間し state.fov へ反映する
-/// @details GravityFollowCamera と同じ考え方で FOV を広げて速度感を演出する。
+/// @brief 通常FOVと演出による追加FOVを合成し state.fov へ反映する
+/// @details 通常FOVの編集は直接反映し、速度・空中演出の追加量だけを補間する。
 ///          加えて、boostAlpha を返すことで距離ブースト（ComputeEye）と
 ///          同じ速度スケールを共有できるようにする。
 /// @return boostAlpha [0, 1]（加速の強さ。距離ブーストにも流用）
@@ -79,22 +79,21 @@ float RearCameraSpeedEffects::UpdateAccelerationEffect(
    StepSpring1D(0.0f, settings.springStiffness, settings.springDamping, deltaTime, state_.springFovOffset, state_.springFovVelocity);
    StepSpring1D(0.0f, settings.springStiffness, settings.springDamping, deltaTime, state_.springDistanceOffset, state_.springDistanceVelocity);
 
-   // 目標 FOV = 通常 FOV + 速度比例ブースト + 空中ブースト + Springキック
+   // 通常FOVは直接使い、速度比例ブースト・空中ブースト・Springキックだけを補間する。
    float baseFov = ClampCameraFov(settings.fovDefault);
-   float targetFov =
-	  baseFov
-	  + std::max(0.0f, settings.fovBoostMax) * boostAlpha
+   float targetFovOffset =
+	  std::max(0.0f, settings.fovBoostMax) * boostAlpha
 	  + std::max(0.0f, settings.airborneFovOffset) * transition.currentAirborneBlend
 	  + state_.springFovOffset;
-   targetFov = ClampCameraFov(targetFov);
+   targetFovOffset = ClampCameraFov(baseFov + targetFovOffset) - baseFov;
 
-   // FOV を滑らかに補間（急変させず視覚的に自然に追従）
-   if (!std::isfinite(state_.currentFov)) {
-	  state_.currentFov = baseFov;
+   // 基準値の編集を遅い演出補間に混ぜず、演出の履歴を保ったまま次の更新で画角へ反映する。
+   if (!std::isfinite(state_.currentFovOffset)) {
+	  state_.currentFovOffset = 0.0f;
    }
    float t = ExpSmoothingFactor(settings.fovLerpSpeed, deltaTime);
-   state_.currentFov = state_.currentFov + (targetFov - state_.currentFov) * t;
-   state_.currentFov = ClampCameraFov(state_.currentFov);
+   state_.currentFovOffset += (targetFovOffset - state_.currentFovOffset) * t;
+   state_.currentFov = ClampCameraFov(baseFov + state_.currentFovOffset);
    state.fov = state_.currentFov;
 
    return boostAlpha;
@@ -103,6 +102,7 @@ float RearCameraSpeedEffects::UpdateAccelerationEffect(
 void RearCameraSpeedEffects::Reset(const RearCameraSettings& settings) {
    boostAlpha_ = 0.0f;
    state_.currentFov = ClampCameraFov(settings.fovDefault);
+   state_.currentFovOffset = 0.0f;
    state_.springFovOffset = 0.0f;
    state_.springFovVelocity = 0.0f;
    state_.springDistanceOffset = 0.0f;

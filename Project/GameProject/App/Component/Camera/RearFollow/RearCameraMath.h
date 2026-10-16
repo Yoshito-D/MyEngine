@@ -144,6 +144,7 @@ inline GameEngine::Vector3 RotateTowardsUnit(const GameEngine::Vector3& current,
 		 axis = c.Cross(fallbackAxis);
 		 axisLen = axis.Length();
 	  }
+
 	  axis = axisLen > 1e-6f
 		 ? axis * (1.0f / axisLen)
 		 : Vector3{ 0.0f, 0.0f, 1.0f };

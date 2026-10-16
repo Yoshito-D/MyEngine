@@ -266,7 +266,8 @@ void GravityFollowCamera::ComputeEyeAndUp(const Vector3& up,
    if (pfLen > 1e-6f) pitchedForward = pitchedForward * (1.0f / pfLen);
 
    // eye = pivot の後方（−前方）に distance 分離れた位置
-   outEye = pivotTarget_ + pitchedForward * (-std::max(0.5f, distance_ * driftDistanceScale_));
+   outEye = pivotTarget_ + pitchedForward * (-std::max(0.5f, distance_ * driftDistanceScale_))
+      + up * driftCameraHeightOffset_;
 
    // cameraUp = 重力Upをピッチ軸（right）周りに同量回転させたベクトル
    // ピッチに合わせて Up もチルトさせることで、カメラが自然な傾きを保つ
@@ -283,7 +284,8 @@ void GravityFollowCamera::ApplyLookAt(CameraState& state,
                                       const Vector3& eye,
                                       const Vector3& cameraUp) {
    // z 軸 = pivot → eye 方向（ビュー前方）
-   Vector3 zaxis = pivotTarget_ - eye;
+   const Vector3 lookTarget = pivotTarget_ + currentGravityUp_ * driftLookTargetHeightOffset_;
+   Vector3 zaxis = lookTarget - eye;
    float zLen = zaxis.Length();
    if (zLen > 1e-6f) zaxis = zaxis * (1.0f / zLen);
 
@@ -299,7 +301,7 @@ void GravityFollowCamera::ApplyLookAt(CameraState& state,
 
    // カメラ位置とビュー行列をカメラ状態へ反映
    state.transform.translation = eye;
-   state.SetViewMatrix(MakeLookAtMatrix(eye, pivotTarget_, cameraUp));
+   state.SetViewMatrix(MakeLookAtMatrix(eye, lookTarget, cameraUp));
 }
 
 /// @brief プレイヤー速度に応じた FOV ブーストを補間し state.fov へ反映する
@@ -585,6 +587,8 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
    previousPlayerSpeed_ = playerSpeed_;
    isSpeedInitialized_ = false;
    driftDistanceScale_ = 1.0f;
+   driftCameraHeightOffset_ = 0.0f;
+   driftLookTargetHeightOffset_ = 0.0f;
 
    if (auto* owner = GetOwnerCamera()) {
       CameraState state = owner->GetState();

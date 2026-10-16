@@ -134,7 +134,7 @@
     },
     "materialSettings": {
         "alphaCutoff": 0.0010000000474974513,
-        "brightness": 2.0,
+        "brightness": 8.350000381469727,
         "distortionBlend": 1.0,
         "distortionStrength": 0.0,
         "distortionUseTextureFlow": false,
@@ -231,9 +231,9 @@
         "enabled": true,
         "length": 0.5,
         "position": [
-            0.8238213658332825,
-            -3.2871882915496826,
-            1.7838373184204102
+            24.947864532470703,
+            16.15389633178711,
+            12.056041717529297
         ],
         "radius": 0.10000000149011612,
         "rotation": [
