@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Scene/IScene.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/Camera/DebugCamera.h"
@@ -63,6 +64,7 @@ public:
    virtual void LoadSceneDataIfNeeded();
 
 #ifdef USE_IMGUI
+
    /// @brief エディタ用シーンコンテキストを取得する
    /// @return エディタ用シーンコンテキスト。未初期化の場合は nullptr
    EditorSceneContext* GetEditorSceneContext() { return editorSceneContext_.get(); }
@@ -101,7 +103,6 @@ protected:
    virtual void OnFinalize() {}
 
 private:
-
    /// @brief デバッグカメラの更新
    void UpdateDebugCamera();
 
@@ -123,7 +124,7 @@ private:
    static inline std::string sNextSceneName_ = "";
    static inline std::string sPendingSceneName_ = "";
    static inline bool sIsWaitingForFadeOut_ = false;
-   static inline BaseScene* sCurrentScene_ = nullptr;  // 現在のシーンインスタンス
+   static inline BaseScene* sCurrentScene_ = nullptr; // 現在のシーンインスタンス
 
    bool isFinished_ = false;
    std::string editorSceneName_ = "Scene";

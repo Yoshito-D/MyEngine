@@ -34,12 +34,13 @@ class VehicleDrift final : public GameEngine::IObjectComponent {
 public:
    /// @brief ドリフト移行方式
    enum class DriftMode : int {
-	  ButtonMode     = 0,  ///< 専用ボタンを押し続けることでドリフト開始
-	  SustainedSteer = 1,  ///< 同方向ステアを一定時間継続することでドリフト開始
+      ButtonMode = 0,     ///< 専用ボタンを押し続けることでドリフト開始
+      SustainedSteer = 1, ///< 同方向ステアを一定時間継続することでドリフト開始
    };
 
    static constexpr const char* kTypeName = "VehicleDrift";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両ドリフト", "Vehicle Drift" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両ドリフト", "Vehicle Drift"};
+
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
@@ -48,8 +49,7 @@ public:
    /// @param steerInput  左右入力（-1〜+1）
    /// @param gravityUp   現在の重力Up方向（速度の垂直成分を保持するために必要）
    /// @param deltaTime   フレーム時間
-   void Apply(bool driftInput, float steerInput,
-			  const GameEngine::Vector3& gravityUp, float deltaTime);
+   void Apply(bool driftInput, float steerInput, const GameEngine::Vector3& gravityUp, float deltaTime);
 
    /// @brief ドリフト中かどうかを返す
    bool IsDrifting() const { return isDrifting_; }
@@ -66,12 +66,14 @@ public:
    uint64_t GetMiniTurboFireCount() const { return miniTurboFireCount_; }
 
 #ifdef USE_IMGUI
+
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
    /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
@@ -152,7 +154,7 @@ private:
    // ----------------------------------------------------------------
 
    /// @brief 現在ドリフト中かどうか
-   bool  isDrifting_ = false;
+   bool isDrifting_ = false;
 
    /// @brief カメラとパーティクルの更新順に依存しない発動通知の連番
    uint64_t miniTurboFireCount_ = 0;
@@ -161,7 +163,7 @@ private:
    float driftTimer_ = 0.0f;
 
    /// @brief ドリフトしている方向の符号（+1 右 / -1 左）。速度・継続判定に使用。
-   float driftSign_  = 0.0f;
+   float driftSign_ = 0.0f;
 
    /// @brief 現在の横速度（units/sec）。ドリフト中に蓄積し終了後に減衰する。
    float slideLateralSpeed_ = 0.0f;

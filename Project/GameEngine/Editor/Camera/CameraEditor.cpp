@@ -28,736 +28,723 @@ constexpr float kMinimumClipDistance = 0.001f;
 constexpr float kMaximumFarClipDistance = 100000.0f;
 
 const char* Tr(const char* japanese, const char* english) {
-    return ImGuiHelper::Localize({ japanese, english });
+   return ImGuiHelper::Localize({japanese, english});
 }
 
 std::string StableWindowLabel(const char* visibleLabel, const char* stableId) {
-    return std::string(visibleLabel) + "###" + stableId;
+   return std::string(visibleLabel) + "###" + stableId;
 }
 
 ImGuizmo::OPERATION ToImGuizmoOperation(CameraEditor::GizmoOperation operation) {
-    switch (operation) {
-    case CameraEditor::GizmoOperation::Rotate:
-        return ImGuizmo::ROTATE;
-    case CameraEditor::GizmoOperation::Scale:
-        return ImGuizmo::SCALE;
-    case CameraEditor::GizmoOperation::Translate:
-    default:
-        return ImGuizmo::TRANSLATE;
-    }
+   switch (operation) {
+      case CameraEditor::GizmoOperation::Rotate:
+         return ImGuizmo::ROTATE;
+      case CameraEditor::GizmoOperation::Scale:
+         return ImGuizmo::SCALE;
+      case CameraEditor::GizmoOperation::Translate:
+      default:
+         return ImGuizmo::TRANSLATE;
+   }
 }
 
 ImGuizmo::MODE ToImGuizmoMode(CameraEditor::GizmoMode mode) {
-    return mode == CameraEditor::GizmoMode::World ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
+   return mode == CameraEditor::GizmoMode::World ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
 }
 
 Transform MatrixToTransform(const Matrix4x4& matrix) {
-    float translation[3]{};
-    float rotationDegrees[3]{};
-    float scale[3]{};
-    ImGuizmo::DecomposeMatrixToComponents(&matrix.m[0][0], translation, rotationDegrees, scale);
+   float translation[3]{};
+   float rotationDegrees[3]{};
+   float scale[3]{};
+   ImGuizmo::DecomposeMatrixToComponents(&matrix.m[0][0], translation, rotationDegrees, scale);
 
-    Transform transform{};
-    transform.translation = Vector3(translation[0], translation[1], translation[2]);
-    transform.scale = Vector3(scale[0], scale[1], scale[2]);
-    const Vector3 eulerRadians(
-        rotationDegrees[0] * MathConstants::kDegreesToRadians,
-        rotationDegrees[1] * MathConstants::kDegreesToRadians,
-        rotationDegrees[2] * MathConstants::kDegreesToRadians);
-    transform.SetRotationQuaternion(eulerRadians.ToQuaternion().Normalize());
-    return transform;
+   Transform transform{};
+   transform.translation = Vector3(translation[0], translation[1], translation[2]);
+   transform.scale = Vector3(scale[0], scale[1], scale[2]);
+   const Vector3 eulerRadians(rotationDegrees[0] * MathConstants::kDegreesToRadians,
+      rotationDegrees[1] * MathConstants::kDegreesToRadians, rotationDegrees[2] * MathConstants::kDegreesToRadians);
+   transform.SetRotationQuaternion(eulerRadians.ToQuaternion().Normalize());
+   return transform;
 }
 
 } // namespace
 
 void CameraEditor::Initialize(LineRenderer* lineRenderer) {
-    gizmo_.Initialize(lineRenderer);
+   gizmo_.Initialize(lineRenderer);
 }
 
 void CameraEditor::SetTargetBrain(CinemachineBrain* brain) {
-    targetBrain_ = brain;
-    // BrainがCameraを所有しているのでtargetCamera_を自動設定
-    targetCamera_ = brain ? brain->GetOutputCamera() : nullptr;
-    // brain変更時は選択状態をリセット
-    // VirtualCameraの所有Registryが切り替わるため、以前のindexと生ポインターを新しい一覧へ持ち越さない。
-    targetVirtualCamera_ = nullptr;
-    selectedVirtualCameraIndex_ = -1;
+   targetBrain_ = brain;
+
+   // BrainがCameraを所有しているのでtargetCamera_を自動設定
+   targetCamera_ = brain ? brain->GetOutputCamera() : nullptr;
+
+   // brain変更時は選択状態をリセット
+   // VirtualCameraの所有Registryが切り替わるため、以前のindexと生ポインターを新しい一覧へ持ち越さない。
+   targetVirtualCamera_ = nullptr;
+   selectedVirtualCameraIndex_ = -1;
 }
 
 void CameraEditor::ShowEditorWindow() {
-    // Reload/Stopでカメラ一覧が再構築されても、別タブのギズモから旧実体へ触れない。
-    if (targetBrain_ && targetVirtualCamera_) {
-        const auto& cameras = targetBrain_->GetVirtualCameras();
-        if (std::find(cameras.begin(), cameras.end(), targetVirtualCamera_) == cameras.end()) {
-            targetVirtualCamera_ = nullptr;
-            selectedVirtualCameraIndex_ = -1;
-        }
-    }
-    bool visible = EngineContext::GetEditorWindowVisibility("CameraEditor", { "カメラエディタ", "Camera Editor" });
-    if (!visible) return;
-    const float blendBefore = targetBrain_ ? targetBrain_->GetDefaultBlendTime() : 0.0f;
-    const std::string windowLabel = StableWindowLabel(Tr("カメラエディタ", "Camera Editor"), "CameraEditor");
-    const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
-    EngineContext::SetEditorWindowVisibility("CameraEditor", visible);
-    if (!drawContents) {
-        ImGui::End();
-        return;
-    }
+   // Reload/Stopでカメラ一覧が再構築されても、別タブのギズモから旧実体へ触れない。
+   if (targetBrain_ && targetVirtualCamera_) {
+      const auto& cameras = targetBrain_->GetVirtualCameras();
+      if (std::find(cameras.begin(), cameras.end(), targetVirtualCamera_) == cameras.end()) {
+         targetVirtualCamera_ = nullptr;
+         selectedVirtualCameraIndex_ = -1;
+      }
+   }
+   bool visible = EngineContext::GetEditorWindowVisibility("CameraEditor", {"カメラエディタ", "Camera Editor"});
+   if (!visible)
+      return;
+   const float blendBefore = targetBrain_ ? targetBrain_->GetDefaultBlendTime() : 0.0f;
+   const std::string windowLabel = StableWindowLabel(Tr("カメラエディタ", "Camera Editor"), "CameraEditor");
+   const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
+   EngineContext::SetEditorWindowVisibility("CameraEditor", visible);
+   if (!drawContents) {
+      ImGui::End();
+      return;
+   }
 
-    // ギズモ表示設定
-    ImGui::Checkbox(Tr("ギズモ表示", "Show Gizmo"), &showGizmo_);
-    ImGui::SameLine();
-    ImGui::Checkbox(Tr("ImGuizmoを使用", "Use ImGuizmo"), &useImGuizmo_);
-    ImGui::SameLine();
-    if (ImGui::Button(Tr("ギズモ設定", "Gizmo Settings"))) {
-        showGizmoSettings_ = !showGizmoSettings_;
-    }
+   // ギズモ表示設定
+   ImGui::Checkbox(Tr("ギズモ表示", "Show Gizmo"), &showGizmo_);
+   ImGui::SameLine();
+   ImGui::Checkbox(Tr("ImGuizmoを使用", "Use ImGuizmo"), &useImGuizmo_);
+   ImGui::SameLine();
+   if (ImGui::Button(Tr("ギズモ設定", "Gizmo Settings"))) {
+      showGizmoSettings_ = !showGizmoSettings_;
+   }
 
-    if (showGizmoSettings_) {
-        ShowGizmoSettings();
-    }
+   if (showGizmoSettings_) {
+      ShowGizmoSettings();
+   }
 
-    if (useImGuizmo_) {
-        ShowImGuizmoControls();
-    }
+   if (useImGuizmo_) {
+      ShowImGuizmoControls();
+   }
 
-    ImGui::Separator();
+   ImGui::Separator();
 
-    // タブでカメラ種別を切り替え
-    if (ImGui::BeginTabBar("CameraEditorTabs")) {
-        // メインカメラタブ
-        const std::string mainCameraTab = std::string(Tr("メインカメラ", "Main Camera")) + "###MainCameraTab";
-        if (ImGui::BeginTabItem(mainCameraTab.c_str())) {
-            if (targetCamera_) {
-                ShowCameraInspector(targetCamera_);
-            } else {
-                ImGui::TextDisabled("%s", Tr("カメラが選択されていません", "No camera selected"));
-            }
-            ImGui::EndTabItem();
-        }
+   // タブでカメラ種別を切り替え
+   if (ImGui::BeginTabBar("CameraEditorTabs")) {
+      // メインカメラタブ
+      const std::string mainCameraTab = std::string(Tr("メインカメラ", "Main Camera")) + "###MainCameraTab";
+      if (ImGui::BeginTabItem(mainCameraTab.c_str())) {
+         if (targetCamera_) {
+            ShowCameraInspector(targetCamera_);
+         } else {
+            ImGui::TextDisabled("%s", Tr("カメラが選択されていません", "No camera selected"));
+         }
+         ImGui::EndTabItem();
+      }
 
-        // VirtualCameraタブ
-        const std::string virtualCameraTab = std::string(Tr("仮想カメラ", "Virtual Camera")) + "###VirtualCameraTab";
-        if (ImGui::BeginTabItem(virtualCameraTab.c_str())) {
-            ShowVirtualCameraTab();
-            ImGui::EndTabItem();
-        }
+      // VirtualCameraタブ
+      const std::string virtualCameraTab = std::string(Tr("仮想カメラ", "Virtual Camera")) + "###VirtualCameraTab";
+      if (ImGui::BeginTabItem(virtualCameraTab.c_str())) {
+         ShowVirtualCameraTab();
+         ImGui::EndTabItem();
+      }
 
-        // Brainタブ
-        const std::string brainTab = std::string(Tr("Cinemachineブレイン", "Cinemachine Brain")) + "###CinemachineBrainTab";
-        if (ImGui::BeginTabItem(brainTab.c_str())) {
-            if (targetBrain_) {
-                ShowBrainInspector(targetBrain_);
-            } else {
-                ImGui::TextDisabled("%s", Tr("ブレインが選択されていません", "No brain selected"));
-            }
-            ImGui::EndTabItem();
-        }
+      // Brainタブ
+      const std::string brainTab =
+         std::string(Tr("Cinemachineブレイン", "Cinemachine Brain")) + "###CinemachineBrainTab";
+      if (ImGui::BeginTabItem(brainTab.c_str())) {
+         if (targetBrain_) {
+            ShowBrainInspector(targetBrain_);
+         } else {
+            ImGui::TextDisabled("%s", Tr("ブレインが選択されていません", "No brain selected"));
+         }
+         ImGui::EndTabItem();
+      }
 
-        ImGui::EndTabBar();
-    }
+      ImGui::EndTabBar();
+   }
 
-    if (targetBrain_ && blendBefore != targetBrain_->GetDefaultBlendTime()) EditorUI::MarkChanged();
-    ImGui::End();
+   if (targetBrain_ && blendBefore != targetBrain_->GetDefaultBlendTime())
+      EditorUI::MarkChanged();
+   ImGui::End();
 }
 
 void CameraEditor::ShowVirtualCameraTab() {
-    // Brainが設定されている場合は登録一覧からVirtualCameraを選択
-    if (targetBrain_) {
-        const auto& vcams = targetBrain_->GetVirtualCameras();
+   // Brainが設定されている場合は登録一覧からVirtualCameraを選択
+   if (targetBrain_) {
+      const auto& vcams = targetBrain_->GetVirtualCameras();
 
-        // 選択状態を毎フレーム検証
-        // Scene切替などでBrain側から削除されたCameraをInspectorが参照し続けないようにする。
-        if (targetVirtualCamera_) {
-            int foundIndex = -1;
-            for (size_t i = 0; i < vcams.size(); ++i) {
-                if (vcams[i] == targetVirtualCamera_) {
-                    foundIndex = static_cast<int>(i);
-                    break;
-                }
+      // 選択状態を毎フレーム検証
+      // Scene切替などでBrain側から削除されたCameraをInspectorが参照し続けないようにする。
+      if (targetVirtualCamera_) {
+         int foundIndex = -1;
+         for (size_t i = 0; i < vcams.size(); ++i) {
+            if (vcams[i] == targetVirtualCamera_) {
+               foundIndex = static_cast<int>(i);
+               break;
             }
-            if (foundIndex == -1) {
-                targetVirtualCamera_ = nullptr;
-                selectedVirtualCameraIndex_ = -1;
-            } else {
-                selectedVirtualCameraIndex_ = foundIndex;
+         }
+         if (foundIndex == -1) {
+            targetVirtualCamera_ = nullptr;
+            selectedVirtualCameraIndex_ = -1;
+         } else {
+            selectedVirtualCameraIndex_ = foundIndex;
+         }
+      }
+
+      ImGui::BeginDisabled(EngineContext::IsInPlayMode());
+      if (ImGui::Button(Tr("カメラを作成", "Create Camera"))) {
+         if (auto* world = SceneWorld::GetCurrent()) {
+            if (auto* camera = world->CreateVirtualCamera("Virtual Camera")) {
+               // 現在のビューを初期構図として使い、空シーンでも配置場所が分かるようにする。
+               CameraState state;
+               if (targetCamera_) {
+                  state.transform = targetCamera_->GetTransform();
+                  state.fov = targetCamera_->GetFovY();
+                  state.nearClip = targetCamera_->GetNearClip();
+                  state.farClip = targetCamera_->GetFarClip();
+               }
+               camera->SetState(state);
+               targetVirtualCamera_ = camera;
+               selectedVirtualCameraIndex_ = static_cast<int>(vcams.size()) - 1;
+               EditorUI::MarkChanged();
             }
-        }
-
-        ImGui::BeginDisabled(EngineContext::IsInPlayMode());
-        if (ImGui::Button(Tr("カメラを作成", "Create Camera"))) {
-            if (auto* world = SceneWorld::GetCurrent()) {
-                if (auto* camera = world->CreateVirtualCamera("Virtual Camera")) {
-                    // 現在のビューを初期構図として使い、空シーンでも配置場所が分かるようにする。
-                    CameraState state;
-                    if (targetCamera_) {
-                        state.transform = targetCamera_->GetTransform();
-                        state.fov = targetCamera_->GetFovY();
-                        state.nearClip = targetCamera_->GetNearClip();
-                        state.farClip = targetCamera_->GetFarClip();
-                    }
-                    camera->SetState(state);
-                    targetVirtualCamera_ = camera;
-                    selectedVirtualCameraIndex_ = static_cast<int>(vcams.size()) - 1;
-                    EditorUI::MarkChanged();
-                }
+         }
+      }
+      ImGui::SameLine();
+      ImGui::BeginDisabled(!targetVirtualCamera_ || targetVirtualCamera_->GetId().empty());
+      if (ImGui::Button(Tr("カメラを削除", "Delete Camera"))) {
+         if (auto* world = SceneWorld::GetCurrent()) {
+            if (world->RemoveVirtualCamera(targetVirtualCamera_)) {
+               targetVirtualCamera_ = nullptr;
+               selectedVirtualCameraIndex_ = -1;
+               EditorUI::MarkChanged();
             }
-        }
-        ImGui::SameLine();
-        ImGui::BeginDisabled(!targetVirtualCamera_ || targetVirtualCamera_->GetId().empty());
-        if (ImGui::Button(Tr("カメラを削除", "Delete Camera"))) {
-            if (auto* world = SceneWorld::GetCurrent()) {
-                if (world->RemoveVirtualCamera(targetVirtualCamera_)) {
-                    targetVirtualCamera_ = nullptr;
-                    selectedVirtualCameraIndex_ = -1;
-                    EditorUI::MarkChanged();
-                }
-            }
-        }
-        ImGui::EndDisabled();
-        ImGui::EndDisabled();
+         }
+      }
+      ImGui::EndDisabled();
+      ImGui::EndDisabled();
 
-        // 左ペイン：カメラ一覧
-        ImGui::BeginChild("VCamList", ImVec2(180, 0), true);
-        ImGui::Text("%s (%zu)", Tr("仮想カメラ", "Virtual Cameras"), vcams.size());
-        ImGui::Separator();
+      // 左ペイン：カメラ一覧
+      ImGui::BeginChild("VCamList", ImVec2(180, 0), true);
+      ImGui::Text("%s (%zu)", Tr("仮想カメラ", "Virtual Cameras"), vcams.size());
+      ImGui::Separator();
 
-        for (size_t i = 0; i < vcams.size(); ++i) {
-            VirtualCamera* vcam = vcams[i];
-            if (!vcam) continue;
+      for (size_t i = 0; i < vcams.size(); ++i) {
+         VirtualCamera* vcam = vcams[i];
+         if (!vcam)
+            continue;
 
-            bool isActive = (vcam == targetBrain_->GetActiveCamera());
-            ImGui::PushID(static_cast<int>(i));
+         bool isActive = (vcam == targetBrain_->GetActiveCamera());
+         ImGui::PushID(static_cast<int>(i));
 
-            char label[128];
-            const std::string& vcamName = vcam->GetName();
-            if (vcamName.empty()) {
-                snprintf(label, sizeof(label), "[%zu] P:%d%s", i, vcam->GetPriority(), isActive ? " *" : "");
-            } else {
-                snprintf(label, sizeof(label), "%s%s", vcamName.c_str(), isActive ? " *" : "");
-            }
+         char label[128];
+         const std::string& vcamName = vcam->GetName();
+         if (vcamName.empty()) {
+            snprintf(label, sizeof(label), "[%zu] P:%d%s", i, vcam->GetPriority(), isActive ? " *" : "");
+         } else {
+            snprintf(label, sizeof(label), "%s%s", vcamName.c_str(), isActive ? " *" : "");
+         }
 
-            if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<int>(i))) {
-                selectedVirtualCameraIndex_ = static_cast<int>(i);
-                targetVirtualCamera_ = vcam;
-            }
+         if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<int>(i))) {
+            selectedVirtualCameraIndex_ = static_cast<int>(i);
+            targetVirtualCamera_ = vcam;
+         }
 
-            ImGui::PopID();
-        }
+         ImGui::PopID();
+      }
 
-        ImGui::EndChild();
+      ImGui::EndChild();
 
-        ImGui::SameLine();
+      ImGui::SameLine();
 
-        // 右ペイン：選択中VirtualCameraの詳細
-        ImGui::BeginChild("VCamInspector", ImVec2(0, 0), false);
-        if (targetVirtualCamera_) {
-            ShowVirtualCameraInspector(targetVirtualCamera_);
-        } else {
-            ImGui::TextDisabled("%s", Tr("リストから仮想カメラを選択してください", "Select a virtual camera from the list"));
-        }
-        ImGui::EndChild();
+      // 右ペイン：選択中VirtualCameraの詳細
+      ImGui::BeginChild("VCamInspector", ImVec2(0, 0), false);
+      if (targetVirtualCamera_) {
+         ShowVirtualCameraInspector(targetVirtualCamera_);
+      } else {
+         ImGui::TextDisabled(
+            "%s", Tr("リストから仮想カメラを選択してください", "Select a virtual camera from the list"));
+      }
+      ImGui::EndChild();
 
-    } else {
-        // Brainなし：単一のVirtualCameraを直接表示
-        if (targetVirtualCamera_) {
-            ShowVirtualCameraInspector(targetVirtualCamera_);
-        } else {
-            ImGui::TextDisabled("%s", Tr("仮想カメラが選択されていません", "No virtual camera selected"));
-        }
-    }
+   } else {
+      // Brainなし：単一のVirtualCameraを直接表示
+      if (targetVirtualCamera_) {
+         ShowVirtualCameraInspector(targetVirtualCamera_);
+      } else {
+         ImGui::TextDisabled("%s", Tr("仮想カメラが選択されていません", "No virtual camera selected"));
+      }
+   }
 }
 
 void CameraEditor::ShowCameraInspector(Camera* camera) {
-    if (!camera) return;
+   if (!camera)
+      return;
 
-    ImGui::Text("%s", Tr("カメラプロパティ", "Camera Properties"));
-    ImGui::Separator();
+   ImGui::Text("%s", Tr("カメラプロパティ", "Camera Properties"));
+   ImGui::Separator();
 
-      // トランスフォーム
-    const std::string transformHeader = std::string(Tr("トランスフォーム", "Transform")) + "###CameraTransform";
-    if (ImGui::CollapsingHeader(transformHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        Transform transform = camera->GetTransform();
-        if (EditTransform(transform)) {
-            camera->SetTransform(transform);
-        }
-    }
+   // トランスフォーム
+   const std::string transformHeader = std::string(Tr("トランスフォーム", "Transform")) + "###CameraTransform";
+   if (ImGui::CollapsingHeader(transformHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      Transform transform = camera->GetTransform();
+      if (EditTransform(transform)) {
+         camera->SetTransform(transform);
+      }
+   }
 
-      // 投影
-    const std::string projectionHeader = std::string(Tr("投影", "Projection")) + "###CameraProjection";
-    if (ImGui::CollapsingHeader(projectionHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        EditProjectionSettings(camera);
-    }
+   // 投影
+   const std::string projectionHeader = std::string(Tr("投影", "Projection")) + "###CameraProjection";
+   if (ImGui::CollapsingHeader(projectionHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      EditProjectionSettings(camera);
+   }
 
-      // 情報
-    const std::string infoHeader = std::string(Tr("情報", "Info")) + "###CameraInfo";
-    if (ImGui::CollapsingHeader(infoHeader.c_str())) {
-        Vector3 forward = camera->GetForward();
-        ImGui::Text("%s: (%.3f, %.3f, %.3f)", Tr("前方", "Forward"), forward.x, forward.y, forward.z);
+   // 情報
+   const std::string infoHeader = std::string(Tr("情報", "Info")) + "###CameraInfo";
+   if (ImGui::CollapsingHeader(infoHeader.c_str())) {
+      Vector3 forward = camera->GetForward();
+      ImGui::Text("%s: (%.3f, %.3f, %.3f)", Tr("前方", "Forward"), forward.x, forward.y, forward.z);
 
-        Matrix4x4 vp = camera->GetViewProjectionMatrix();
-        (void)vp;
-        ImGui::Text("%s", Tr("ViewProjection 行列設定済み", "ViewProjection Matrix set"));
-    }
+      Matrix4x4 vp = camera->GetViewProjectionMatrix();
+      (void)vp;
+      ImGui::Text("%s", Tr("ViewProjection 行列設定済み", "ViewProjection Matrix set"));
+   }
 }
 
 void CameraEditor::ShowVirtualCameraInspector(VirtualCamera* vcam) {
-    if (!vcam) return;
-    const auto before = vcam->Serialize();
+   if (!vcam)
+      return;
+   const auto before = vcam->Serialize();
 
-    ImGui::Text("%s", Tr("仮想カメラプロパティ", "Virtual Camera Properties"));
-    ImGui::Separator();
+   ImGui::Text("%s", Tr("仮想カメラプロパティ", "Virtual Camera Properties"));
+   ImGui::Separator();
 
-    // 基本設定
-    const std::string settingsHeader = std::string(Tr("設定", "Settings")) + "###VirtualCameraSettings";
-    if (ImGui::CollapsingHeader(settingsHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        // 名前編集
-        char nameBuf[128];
-        const std::string& currentName = vcam->GetName();
-        snprintf(nameBuf, sizeof(nameBuf), "%s", currentName.c_str());
-        ImGui::BeginDisabled(vcam->GetId().empty());
-        if (ImGui::InputText(Tr("名前", "Name"), nameBuf, sizeof(nameBuf))) {
-            if (nameBuf[0] && std::string(nameBuf) != "DebugCamera" && !vcam->GetId().empty()) vcam->SetName(nameBuf);
-        }
-        ImGui::EndDisabled();
+   // 基本設定
+   const std::string settingsHeader = std::string(Tr("設定", "Settings")) + "###VirtualCameraSettings";
+   if (ImGui::CollapsingHeader(settingsHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      // 名前編集
+      char nameBuf[128];
+      const std::string& currentName = vcam->GetName();
+      snprintf(nameBuf, sizeof(nameBuf), "%s", currentName.c_str());
+      ImGui::BeginDisabled(vcam->GetId().empty());
+      if (ImGui::InputText(Tr("名前", "Name"), nameBuf, sizeof(nameBuf))) {
+         if (nameBuf[0] && std::string(nameBuf) != "DebugCamera" && !vcam->GetId().empty())
+            vcam->SetName(nameBuf);
+      }
+      ImGui::EndDisabled();
 
-        int priority = vcam->GetPriority();
-        if (ImGui::DragInt(Tr("優先度", "Priority"), &priority)) {
-            vcam->SetPriority(priority);
-        }
+      int priority = vcam->GetPriority();
+      if (ImGui::DragInt(Tr("優先度", "Priority"), &priority)) {
+         vcam->SetPriority(priority);
+      }
 
-        bool active = vcam->IsActive();
-        if (ImGui::Checkbox(Tr("有効", "Active"), &active)) {
-            vcam->SetActive(active);
-        }
-    }
+      bool active = vcam->IsActive();
+      if (ImGui::Checkbox(Tr("有効", "Active"), &active)) {
+         vcam->SetActive(active);
+      }
+   }
 
-    // カメラ状態
-    const std::string stateHeader = std::string(Tr("カメラ状態", "Camera State")) + "###VirtualCameraState";
-    if (ImGui::CollapsingHeader(stateHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        CameraState state = vcam->GetState();
-        if (EditCameraState(state)) {
-            vcam->SetState(state);
-        }
-    }
+   // カメラ状態
+   const std::string stateHeader = std::string(Tr("カメラ状態", "Camera State")) + "###VirtualCameraState";
+   if (ImGui::CollapsingHeader(stateHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      CameraState state = vcam->GetState();
+      if (EditCameraState(state)) {
+         vcam->SetState(state);
+      }
+   }
 
-    // ターゲット情報
-    const std::string targetsHeader = std::string(Tr("ターゲット", "Targets")) + "###VirtualCameraTargets";
-    if (ImGui::CollapsingHeader(targetsHeader.c_str())) {
-        std::string followId = vcam->GetFollowTargetEntityId();
-        std::string lookAtId = vcam->GetLookAtTargetEntityId();
-        if (EditorUI::ObjectReference(Tr("追従ターゲット", "Follow Target"), followId, "TransformComponent")) {
-            vcam->SetFollowTargetEntityId(followId);
-        }
-        if (EditorUI::ObjectReference(Tr("注視ターゲット", "LookAt Target"), lookAtId, "TransformComponent")) {
-            vcam->SetLookAtTargetEntityId(lookAtId);
-        }
-    }
+   // ターゲット情報
+   const std::string targetsHeader = std::string(Tr("ターゲット", "Targets")) + "###VirtualCameraTargets";
+   if (ImGui::CollapsingHeader(targetsHeader.c_str())) {
+      std::string followId = vcam->GetFollowTargetEntityId();
+      std::string lookAtId = vcam->GetLookAtTargetEntityId();
+      if (EditorUI::ObjectReference(Tr("追従ターゲット", "Follow Target"), followId, "TransformComponent")) {
+         vcam->SetFollowTargetEntityId(followId);
+      }
+      if (EditorUI::ObjectReference(Tr("注視ターゲット", "LookAt Target"), lookAtId, "TransformComponent")) {
+         vcam->SetLookAtTargetEntityId(lookAtId);
+      }
+   }
 
-    // コンポーネント（各コンポーネントが自身を描画）
-    const std::string componentsHeader = std::string(Tr("コンポーネント", "Components")) + "###VirtualCameraComponents";
-    if (ImGui::CollapsingHeader(componentsHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        const auto& components = vcam->GetComponents();
-        ICinemachineComponent* toRemove = nullptr;
+   // コンポーネント（各コンポーネントが自身を描画）
+   const std::string componentsHeader = std::string(Tr("コンポーネント", "Components")) + "###VirtualCameraComponents";
+   if (ImGui::CollapsingHeader(componentsHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      const auto& components = vcam->GetComponents();
+      const ICinemachineComponent* toRemove = nullptr;
 
-        if (components.empty()) {
-            ImGui::TextDisabled("%s", Tr("コンポーネントなし", "No components"));
-        } else {
-            for (auto& comp : components) {
-                if (!comp) continue;
-                ImGui::PushID(comp);
+      if (components.empty()) {
+         ImGui::TextDisabled("%s", Tr("コンポーネントなし", "No components"));
+      } else {
+         for (auto& comp : components) {
+            if (!comp)
+               continue;
+            ImGui::PushID(comp);
 
-                bool enabled = comp->IsEnabled();
-                if (ImGui::Checkbox("##componentEnabled", &enabled)) comp->SetEnabled(enabled);
-                ImGui::SameLine();
-                bool open = ImGui::TreeNode(comp->GetComponentName());
-
-                // 削除ボタン（TreeNode と同じ行）
-                ImGui::SameLine(ImGui::GetContentRegionAvail().x - 14.0f);
-                // DebugCameraの入力部品はエディタが所有し、生存中は構成を固定する。
-                ImGui::BeginDisabled(vcam->GetId().empty());
-                if (ImGui::SmallButton("x")) {
-                    toRemove = comp;
-                }
-                ImGui::EndDisabled();
-
-                if (open) {
-                    comp->DrawInspector();
-                    ImGui::TreePop();
-                }
-
-                ImGui::PopID();
-            }
-        }
-
-        // 描画中のcomponentsを直接eraseせず、走査後に削除してiteratorの無効化を避ける。
-        if (toRemove) {
-            vcam->RemoveComponent(toRemove);
-        }
-
-        ImGui::Separator();
-        ImGui::BeginDisabled(vcam->GetId().empty());
-        ShowAddComponentPopup(vcam);
-        ImGui::EndDisabled();
-    }
-    if (!vcam->GetId().empty() && before != vcam->Serialize()) EditorUI::MarkChanged();
-}
-
-void CameraEditor::ShowAddComponentPopup(VirtualCamera* vcam) {
-    if (ImGui::Button(Tr("+ コンポーネント追加", "+ Add Component"))) {
-        ImGui::OpenPopup("AddComponentPopup");
-    }
-
-    if (ImGui::BeginPopup("AddComponentPopup")) {
-        for (const auto& name : VirtualCamera::GetRegisteredComponentNames()) {
-            if (vcam->FindComponentByName(name)) continue;
-            if (ImGui::MenuItem(name.c_str())) {
-                vcam->AddComponentByName(name);
-                ImGui::CloseCurrentPopup();
-            }
-        }
-
-        if (!externalFactories_.empty()) {
-            ImGui::Separator();
-            ImGui::Text("%s", Tr("アプリコンポーネント", "App Components"));
-            ImGui::Separator();
-            for (auto& entry : externalFactories_) {
-                if (ImGui::MenuItem(entry.displayName.c_str())) {
-                    entry.factory(vcam);
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-        }
-
-        ImGui::EndPopup();
-    }
-}
-
-void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
-    if (!brain) return;
-
-    ImGui::Text("%s", Tr("Cinemachine ブレイン", "Cinemachine Brain"));
-    ImGui::Separator();
-
-    // ブレンド設定
-    const std::string blendHeader = std::string(Tr("ブレンド設定", "Blend Settings")) + "###BrainBlendSettings";
-    if (ImGui::CollapsingHeader(blendHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        float blendTime = brain->GetDefaultBlendTime();
-        if (ImGui::DragFloat(Tr("デフォルトブレンド時間", "Default Blend Time"), &blendTime, 0.01f, 0.0f, 5.0f, "%.2f s")) {
-            brain->SetDefaultBlendTime(blendTime);
-        }
-    }
-
-    // 現在の状態
-    const std::string currentStateHeader = std::string(Tr("現在の状態", "Current State")) + "###BrainCurrentState";
-    if (ImGui::CollapsingHeader(currentStateHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        const CameraState& state = brain->GetCurrentState();
-        ImGui::Text("%s: (%.2f, %.2f, %.2f)",
-            Tr("位置", "Position"),
-            state.transform.translation.x, state.transform.translation.y, state.transform.translation.z);
-        ImGui::Text("%s: %.1f deg", Tr("視野角", "FOV"), state.fov * MathConstants::kRadiansToDegrees);
-        ImGui::Text("%s: %.2f / %.2f", Tr("Near/Far", "Near/Far"), state.nearClip, state.farClip);
-
-        VirtualCamera* activeVcam = brain->GetActiveCamera();
-        if (activeVcam) {
-            ImGui::Text("%s: %d", Tr("アクティブカメラ優先度", "Active Camera Priority"), activeVcam->GetPriority());
-        } else {
-            ImGui::TextDisabled("%s", Tr("アクティブカメラなし", "No active camera"));
-        }
-    }
-
-    // 登録されたVirtualCamera一覧
-    const std::string registeredHeader = std::string(Tr("登録済みカメラ", "Registered Cameras")) + "###BrainRegisteredCameras";
-    if (ImGui::CollapsingHeader(registeredHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        const auto& vcams = brain->GetVirtualCameras();
-
-        // 選択状態の検証・同期
-        if (targetVirtualCamera_) {
-            int foundIndex = -1;
-            for (size_t i = 0; i < vcams.size(); ++i) {
-                if (vcams[i] == targetVirtualCamera_) {
-                    foundIndex = static_cast<int>(i);
-                    break;
-                }
-            }
-            if (foundIndex == -1) {
-                targetVirtualCamera_ = nullptr;
-                selectedVirtualCameraIndex_ = -1;
-            } else {
-                selectedVirtualCameraIndex_ = foundIndex;
-            }
-        }
-
-        ImGui::Text("%s: %zu", Tr("数", "Count"), vcams.size());
-        ImGui::Separator();
-
-        for (size_t i = 0; i < vcams.size(); ++i) {
-            VirtualCamera* vcam = vcams[i];
-            if (!vcam) continue;
-
-            bool isActive = (vcam == brain->GetActiveCamera());
-            ImGui::PushID(static_cast<int>(i));
-
-            char label[64];
-            snprintf(label, sizeof(label), "[%zu] %s:%d%s",
-                i,
-                Tr("優先度", "Priority"),
-                vcam->GetPriority(),
-                isActive ? Tr(" [有効]", " [ACTIVE]") : "");
-
-            if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<int>(i))) {
-                selectedVirtualCameraIndex_ = static_cast<int>(i);
-                targetVirtualCamera_ = vcam;
-            }
-
+            bool enabled = comp->IsEnabled();
+            if (ImGui::Checkbox("##componentEnabled", &enabled))
+               vcam->EnableComponent(comp, enabled);
             ImGui::SameLine();
-            bool active = vcam->IsActive();
-            if (ImGui::Checkbox("##enabled", &active)) {
-                vcam->SetActive(active);
-                if (!vcam->GetId().empty()) EditorUI::MarkChanged();
+            bool open = ImGui::TreeNode(comp->GetComponentName());
+
+            // 削除ボタン（TreeNode と同じ行）
+            ImGui::SameLine(ImGui::GetContentRegionAvail().x - 14.0f);
+
+            // DebugCameraの入力部品はエディタが所有し、生存中は構成を固定する。
+            ImGui::BeginDisabled(vcam->GetId().empty());
+            if (ImGui::SmallButton("x")) {
+               toRemove = comp;
+            }
+            ImGui::EndDisabled();
+
+            if (open) {
+               vcam->DrawComponentInspector(comp);
+               ImGui::TreePop();
             }
 
             ImGui::PopID();
-        }
-    }
+         }
+      }
+
+      // 描画中のcomponentsを直接eraseせず、走査後に削除してiteratorの無効化を避ける。
+      if (toRemove) {
+         vcam->RemoveComponent(toRemove);
+      }
+
+      ImGui::Separator();
+      ImGui::BeginDisabled(vcam->GetId().empty());
+      ShowAddComponentPopup(vcam);
+      ImGui::EndDisabled();
+   }
+   if (!vcam->GetId().empty() && before != vcam->Serialize())
+      EditorUI::MarkChanged();
+}
+
+void CameraEditor::ShowAddComponentPopup(VirtualCamera* vcam) {
+   if (ImGui::Button(Tr("+ コンポーネント追加", "+ Add Component"))) {
+      ImGui::OpenPopup("AddComponentPopup");
+   }
+
+   if (ImGui::BeginPopup("AddComponentPopup")) {
+      for (const auto& name : VirtualCamera::GetRegisteredComponentNames()) {
+         if (vcam->FindComponentByName(name))
+            continue;
+         if (ImGui::MenuItem(name.c_str())) {
+            vcam->AddComponentByName(name);
+            ImGui::CloseCurrentPopup();
+         }
+      }
+
+      if (!externalFactories_.empty()) {
+         ImGui::Separator();
+         ImGui::Text("%s", Tr("アプリコンポーネント", "App Components"));
+         ImGui::Separator();
+         for (auto& entry : externalFactories_) {
+            if (ImGui::MenuItem(entry.displayName.c_str())) {
+               entry.factory(vcam);
+               ImGui::CloseCurrentPopup();
+            }
+         }
+      }
+
+      ImGui::EndPopup();
+   }
+}
+
+void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
+   if (!brain)
+      return;
+
+   ImGui::Text("%s", Tr("Cinemachine ブレイン", "Cinemachine Brain"));
+   ImGui::Separator();
+
+   // ブレンド設定
+   const std::string blendHeader = std::string(Tr("ブレンド設定", "Blend Settings")) + "###BrainBlendSettings";
+   if (ImGui::CollapsingHeader(blendHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      float blendTime = brain->GetDefaultBlendTime();
+      if (ImGui::DragFloat(
+             Tr("デフォルトブレンド時間", "Default Blend Time"), &blendTime, 0.01f, 0.0f, 5.0f, "%.2f s")) {
+         brain->SetDefaultBlendTime(blendTime);
+      }
+   }
+
+   // 現在の状態
+   const std::string currentStateHeader = std::string(Tr("現在の状態", "Current State")) + "###BrainCurrentState";
+   if (ImGui::CollapsingHeader(currentStateHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      const CameraState& state = brain->GetCurrentState();
+      ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("位置", "Position"), state.transform.translation.x,
+         state.transform.translation.y, state.transform.translation.z);
+      ImGui::Text("%s: %.1f deg", Tr("視野角", "FOV"), state.fov * MathConstants::kRadiansToDegrees);
+      ImGui::Text("%s: %.2f / %.2f", Tr("Near/Far", "Near/Far"), state.nearClip, state.farClip);
+
+      VirtualCamera* activeVcam = brain->GetActiveCamera();
+      if (activeVcam) {
+         ImGui::Text("%s: %d", Tr("アクティブカメラ優先度", "Active Camera Priority"), activeVcam->GetPriority());
+      } else {
+         ImGui::TextDisabled("%s", Tr("アクティブカメラなし", "No active camera"));
+      }
+   }
+
+   // 登録されたVirtualCamera一覧
+   const std::string registeredHeader =
+      std::string(Tr("登録済みカメラ", "Registered Cameras")) + "###BrainRegisteredCameras";
+   if (ImGui::CollapsingHeader(registeredHeader.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      const auto& vcams = brain->GetVirtualCameras();
+
+      // 選択状態の検証・同期
+      if (targetVirtualCamera_) {
+         int foundIndex = -1;
+         for (size_t i = 0; i < vcams.size(); ++i) {
+            if (vcams[i] == targetVirtualCamera_) {
+               foundIndex = static_cast<int>(i);
+               break;
+            }
+         }
+         if (foundIndex == -1) {
+            targetVirtualCamera_ = nullptr;
+            selectedVirtualCameraIndex_ = -1;
+         } else {
+            selectedVirtualCameraIndex_ = foundIndex;
+         }
+      }
+
+      ImGui::Text("%s: %zu", Tr("数", "Count"), vcams.size());
+      ImGui::Separator();
+
+      for (size_t i = 0; i < vcams.size(); ++i) {
+         VirtualCamera* vcam = vcams[i];
+         if (!vcam)
+            continue;
+
+         bool isActive = (vcam == brain->GetActiveCamera());
+         ImGui::PushID(static_cast<int>(i));
+
+         char label[64];
+         snprintf(label, sizeof(label), "[%zu] %s:%d%s", i, Tr("優先度", "Priority"), vcam->GetPriority(),
+            isActive ? Tr(" [有効]", " [ACTIVE]") : "");
+
+         if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<int>(i))) {
+            selectedVirtualCameraIndex_ = static_cast<int>(i);
+            targetVirtualCamera_ = vcam;
+         }
+
+         ImGui::SameLine();
+         bool active = vcam->IsActive();
+         if (ImGui::Checkbox("##enabled", &active)) {
+            vcam->SetActive(active);
+            if (!vcam->GetId().empty())
+               EditorUI::MarkChanged();
+         }
+
+         ImGui::PopID();
+      }
+   }
 }
 
 void CameraEditor::DrawGizmos(Camera* viewCamera) {
-    if (!showGizmo_ || !viewCamera) return;
+   if (!showGizmo_ || !viewCamera)
+      return;
 
-    // ImGuizmo と同じ対象だけを表示し、複数カメラの視錐台で編集対象を見失わないようにする。
-    if (targetVirtualCamera_) {
-        gizmo_.DrawFrustum(targetVirtualCamera_, viewCamera);
-        return;
-    }
+   // ImGuizmo と同じ対象だけを表示し、複数カメラの視錐台で編集対象を見失わないようにする。
+   if (targetVirtualCamera_) {
+      gizmo_.DrawFrustum(targetVirtualCamera_, viewCamera);
+      return;
+   }
 
-    // VirtualCameraが未選択の場合のみ、直接指定されたCameraの視錐台を描画
-    if (targetCamera_ && targetCamera_ != viewCamera) {
-        gizmo_.DrawFrustum(targetCamera_, viewCamera);
-    }
+   // VirtualCameraが未選択の場合のみ、直接指定されたCameraの視錐台を描画
+   if (targetCamera_ && targetCamera_ != viewCamera) {
+      gizmo_.DrawFrustum(targetCamera_, viewCamera);
+   }
 }
 
-void CameraEditor::DrawSceneGizmos(Camera* viewCamera, float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
-    if (!showGizmo_ || !useImGuizmo_ || !viewCamera || viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
-        return;
-    }
+void CameraEditor::DrawSceneGizmos(
+   Camera* viewCamera, float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
+   if (!showGizmo_ || !useImGuizmo_ || !viewCamera || viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
+      return;
+   }
 
-    if (targetVirtualCamera_) {
-        CameraState state = targetVirtualCamera_->GetState();
-        if (DrawTransformGizmo(state.transform, viewCamera, viewportX, viewportY, viewportWidth, viewportHeight, "VirtualCamera")) {
-            // 手動Transformを正本へ戻し、以前のView行列Overrideが編集結果を上書きしないようにする。
-            state.hasViewMatrixOverride = false;
-            targetVirtualCamera_->SetState(state);
-            if (!targetVirtualCamera_->GetId().empty()) EditorUI::MarkChanged();
-        }
-        return;
-    }
+   if (targetVirtualCamera_) {
+      CameraState state = targetVirtualCamera_->GetState();
+      if (DrawTransformGizmo(
+             state.transform, viewCamera, viewportX, viewportY, viewportWidth, viewportHeight, "VirtualCamera")) {
+         // 手動Transformを正本へ戻し、以前のView行列Overrideが編集結果を上書きしないようにする。
+         state.hasViewMatrixOverride = false;
+         targetVirtualCamera_->SetState(state);
+         if (!targetVirtualCamera_->GetId().empty())
+            EditorUI::MarkChanged();
+      }
+      return;
+   }
 
-    if (targetCamera_ && targetCamera_ != viewCamera) {
-        Transform transform = targetCamera_->GetTransform();
-        if (DrawTransformGizmo(transform, viewCamera, viewportX, viewportY, viewportWidth, viewportHeight, "MainCamera")) {
-            targetCamera_->SetTransform(transform);
-            // 同じフレームの視錐台とプレビューへ操作結果を反映するため、行列更新を遅延させない。
-            targetCamera_->Update();
-        }
-    }
+   if (targetCamera_ && targetCamera_ != viewCamera) {
+      Transform transform = targetCamera_->GetTransform();
+      if (DrawTransformGizmo(
+             transform, viewCamera, viewportX, viewportY, viewportWidth, viewportHeight, "MainCamera")) {
+         targetCamera_->SetTransform(transform);
+
+         // 同じフレームの視錐台とプレビューへ操作結果を反映するため、行列更新を遅延させない。
+         targetCamera_->Update();
+      }
+   }
 }
 
 bool CameraEditor::EditTransform(Transform& transform) {
-    bool changed = false;
+   bool changed = false;
 
-    changed |= ImGuiHelper::DrawVec3Control(
-        Tr("位置", "Position"),
-        transform.translation,
-        0.0f,
-        ImGuiHelper::kDefaultColumnWidth,
-        0.1f);
+   changed |= ImGuiHelper::DrawVec3Control(
+      Tr("位置", "Position"), transform.translation, 0.0f, ImGuiHelper::kDefaultColumnWidth, 0.1f);
 
-    Vector3 euler = transform.GetActiveEuler();
-    if (ImGuiHelper::DrawEulerDegreesControl(
-        Tr("回転 (deg)", "Rotation (deg)"),
-        euler,
-        0.0f,
-        ImGuiHelper::kDefaultColumnWidth,
-        0.1f)) {
-        transform.SetRotationQuaternion(euler.ToQuaternion().Normalize());
-        changed = true;
-    }
+   Vector3 euler = transform.GetActiveEuler();
+   if (ImGuiHelper::DrawEulerDegreesControl(
+          Tr("回転 (deg)", "Rotation (deg)"), euler, 0.0f, ImGuiHelper::kDefaultColumnWidth, 0.1f)) {
+      transform.SetRotationQuaternion(euler.ToQuaternion().Normalize());
+      changed = true;
+   }
 
-    changed |= ImGuiHelper::DrawVec3Control(
-        Tr("スケール", "Scale"),
-        transform.scale,
-        1.0f,
-        ImGuiHelper::kDefaultColumnWidth,
-        0.01f,
-        0.01f,
-        100.0f);
+   changed |= ImGuiHelper::DrawVec3Control(
+      Tr("スケール", "Scale"), transform.scale, 1.0f, ImGuiHelper::kDefaultColumnWidth, 0.01f, 0.01f, 100.0f);
 
-    return changed;
+   return changed;
 }
 
 bool CameraEditor::EditProjectionSettings(Camera* camera) {
-    bool changed = false;
+   bool changed = false;
 
-      // 投影方式
-    int projType = static_cast<int>(camera->GetProjectionType());
-    const char* projTypes[] = { Tr("透視投影", "Perspective"), Tr("平行投影", "Orthographic") };
-    const std::string projectionTypeLabel = std::string(Tr("投影タイプ", "Type")) + "##Projection";
-    if (ImGui::Combo(projectionTypeLabel.c_str(), &projType, projTypes, 2)) {
-        camera->SetProjectionType(static_cast<Camera::ProjectionType>(projType));
-        changed = true;
-    }
+   // 投影方式
+   int projType = static_cast<int>(camera->GetProjectionType());
+   const char* projTypes[] = {Tr("透視投影", "Perspective"), Tr("平行投影", "Orthographic")};
+   const std::string projectionTypeLabel = std::string(Tr("投影タイプ", "Type")) + "##Projection";
+   if (ImGui::Combo(projectionTypeLabel.c_str(), &projType, projTypes, 2)) {
+      camera->SetProjectionType(static_cast<Camera::ProjectionType>(projType));
+      changed = true;
+   }
 
-      // 視野角
-    float fov = camera->GetFovY();
-    float fovDeg = fov * MathConstants::kRadiansToDegrees;
-    const std::string fovLabel = std::string(Tr("視野角 (deg)", "FOV (deg)")) + "##CameraProjectionFov";
-    if (ImGui::SliderFloat(fovLabel.c_str(), &fovDeg, 1.0f, 179.0f)) {
-        camera->SetFovY(fovDeg * MathConstants::kDegreesToRadians);
-        changed = true;
-    }
+   // 視野角
+   float fov = camera->GetFovY();
+   float fovDeg = fov * MathConstants::kRadiansToDegrees;
+   const std::string fovLabel = std::string(Tr("視野角 (deg)", "FOV (deg)")) + "##CameraProjectionFov";
+   if (ImGui::SliderFloat(fovLabel.c_str(), &fovDeg, 1.0f, 179.0f)) {
+      camera->SetFovY(fovDeg * MathConstants::kDegreesToRadians);
+      changed = true;
+   }
 
-      // ニア・ファークリップ
-    float nearClip = camera->GetNearClip();
-    float farClip = camera->GetFarClip();
+   // ニア・ファークリップ
+   float nearClip = camera->GetNearClip();
+   float farClip = camera->GetFarClip();
 
-    const std::string nearClipLabel = std::string(Tr("Near クリップ", "Near Clip")) + "##CameraProjectionNear";
-    if (ImGui::DragFloat(
-        nearClipLabel.c_str(),
-        &nearClip,
-        0.01f,
-        kMinimumClipDistance,
-        farClip - kMinimumClipDistance)) {
-        camera->SetNearClip(nearClip);
-        changed = true;
-    }
+   const std::string nearClipLabel = std::string(Tr("Near クリップ", "Near Clip")) + "##CameraProjectionNear";
+   if (ImGui::DragFloat(
+          nearClipLabel.c_str(), &nearClip, 0.01f, kMinimumClipDistance, farClip - kMinimumClipDistance)) {
+      camera->SetNearClip(nearClip);
+      changed = true;
+   }
 
-    const std::string farClipLabel = std::string(Tr("Far クリップ", "Far Clip")) + "##CameraProjectionFar";
-    if (ImGui::DragFloat(
-        farClipLabel.c_str(),
-        &farClip,
-        1.0f,
-        nearClip + kMinimumClipDistance,
-        kMaximumFarClipDistance)) {
-        camera->SetFarClip(farClip);
-        changed = true;
-    }
+   const std::string farClipLabel = std::string(Tr("Far クリップ", "Far Clip")) + "##CameraProjectionFar";
+   if (ImGui::DragFloat(
+          farClipLabel.c_str(), &farClip, 1.0f, nearClip + kMinimumClipDistance, kMaximumFarClipDistance)) {
+      camera->SetFarClip(farClip);
+      changed = true;
+   }
 
-    return changed;
+   return changed;
 }
 
 bool CameraEditor::EditCameraState(CameraState& state) {
-    bool changed = false;
+   bool changed = false;
 
-    changed |= EditTransform(state.transform);
+   changed |= EditTransform(state.transform);
 
-    float fovDeg = state.fov * MathConstants::kRadiansToDegrees;
-    const std::string fovLabel = std::string(Tr("視野角 (deg)", "FOV (deg)")) + "##CameraStateFov";
-    if (ImGui::SliderFloat(fovLabel.c_str(), &fovDeg, 1.0f, 179.0f)) {
-        state.fov = fovDeg * MathConstants::kDegreesToRadians;
-        changed = true;
-    }
+   float fovDeg = state.fov * MathConstants::kRadiansToDegrees;
+   const std::string fovLabel = std::string(Tr("視野角 (deg)", "FOV (deg)")) + "##CameraStateFov";
+   if (ImGui::SliderFloat(fovLabel.c_str(), &fovDeg, 1.0f, 179.0f)) {
+      state.fov = fovDeg * MathConstants::kDegreesToRadians;
+      changed = true;
+   }
 
-    const std::string nearClipLabel = std::string(Tr("Near クリップ", "Near Clip")) + "##CameraStateNear";
-    if (ImGui::DragFloat(
-        nearClipLabel.c_str(),
-        &state.nearClip,
-        0.01f,
-        kMinimumClipDistance,
-        state.farClip - kMinimumClipDistance)) {
-        changed = true;
-    }
+   const std::string nearClipLabel = std::string(Tr("Near クリップ", "Near Clip")) + "##CameraStateNear";
+   if (ImGui::DragFloat(
+          nearClipLabel.c_str(), &state.nearClip, 0.01f, kMinimumClipDistance, state.farClip - kMinimumClipDistance)) {
+      changed = true;
+   }
 
-    const std::string farClipLabel = std::string(Tr("Far クリップ", "Far Clip")) + "##CameraStateFar";
-    if (ImGui::DragFloat(
-        farClipLabel.c_str(),
-        &state.farClip,
-        1.0f,
-        state.nearClip + kMinimumClipDistance,
-        kMaximumFarClipDistance)) {
-        changed = true;
-    }
+   const std::string farClipLabel = std::string(Tr("Far クリップ", "Far Clip")) + "##CameraStateFar";
+   if (ImGui::DragFloat(
+          farClipLabel.c_str(), &state.farClip, 1.0f, state.nearClip + kMinimumClipDistance, kMaximumFarClipDistance)) {
+      changed = true;
+   }
 
-    return changed;
+   return changed;
 }
 
 void CameraEditor::ShowGizmoSettings() {
-    ImGui::BeginChild("GizmoSettings", ImVec2(0, 150), true);
-    ImGui::Text("%s", Tr("ギズモ設定", "Gizmo Settings"));
-    ImGui::Separator();
+   ImGui::BeginChild("GizmoSettings", ImVec2(0, 150), true);
+   ImGui::Text("%s", Tr("ギズモ設定", "Gizmo Settings"));
+   ImGui::Separator();
 
-    auto settings = gizmo_.DescribeSettings();
+   auto settings = gizmo_.DescribeSettings();
 
-    ImGui::Checkbox(Tr("視錐台を表示", "Show Frustum"), &settings.showFrustum);
-    ImGui::Checkbox(Tr("方向を表示", "Show Direction"), &settings.showDirection);
-    ImGui::Checkbox(Tr("上方向を表示", "Show Up Vector"), &settings.showUpVector);
-    ImGui::Checkbox(Tr("Near 面を表示", "Show Near Plane"), &settings.showNearPlane);
-    ImGui::Checkbox(Tr("Far 面を表示", "Show Far Plane"), &settings.showFarPlane);
+   ImGui::Checkbox(Tr("視錐台を表示", "Show Frustum"), &settings.showFrustum);
+   ImGui::Checkbox(Tr("方向を表示", "Show Direction"), &settings.showDirection);
+   ImGui::Checkbox(Tr("上方向を表示", "Show Up Vector"), &settings.showUpVector);
+   ImGui::Checkbox(Tr("Near 面を表示", "Show Near Plane"), &settings.showNearPlane);
+   ImGui::Checkbox(Tr("Far 面を表示", "Show Far Plane"), &settings.showFarPlane);
 
-    const std::string colorsLabel = std::string(Tr("色", "Colors")) + "###CameraGizmoColors";
-    if (ImGui::TreeNode(colorsLabel.c_str())) {
-        ImGui::ColorEdit4(Tr("視錐台", "Frustum"), &settings.frustumColor.x);
-        ImGui::ColorEdit4(Tr("Near 面", "Near Plane"), &settings.nearPlaneColor.x);
-        ImGui::ColorEdit4(Tr("Far 面", "Far Plane"), &settings.farPlaneColor.x);
-        ImGui::ColorEdit4(Tr("方向", "Direction"), &settings.directionColor.x);
-        ImGui::ColorEdit4(Tr("上方向", "Up Vector"), &settings.upVectorColor.x);
-        ImGui::TreePop();
-    }
+   const std::string colorsLabel = std::string(Tr("色", "Colors")) + "###CameraGizmoColors";
+   if (ImGui::TreeNode(colorsLabel.c_str())) {
+      ImGui::ColorEdit4(Tr("視錐台", "Frustum"), &settings.frustumColor.x);
+      ImGui::ColorEdit4(Tr("Near 面", "Near Plane"), &settings.nearPlaneColor.x);
+      ImGui::ColorEdit4(Tr("Far 面", "Far Plane"), &settings.farPlaneColor.x);
+      ImGui::ColorEdit4(Tr("方向", "Direction"), &settings.directionColor.x);
+      ImGui::ColorEdit4(Tr("上方向", "Up Vector"), &settings.upVectorColor.x);
+      ImGui::TreePop();
+   }
 
-    ImGui::EndChild();
-    gizmo_.Configure(settings);
+   ImGui::EndChild();
+   gizmo_.Configure(settings);
 }
 
-bool CameraEditor::DrawTransformGizmo(Transform& transform, Camera* viewCamera, float viewportX, float viewportY, float viewportWidth, float viewportHeight, const char* id) {
-    Matrix4x4 worldMatrix = MakeAffineMatrix(transform);
-    Matrix4x4 viewMatrix = viewCamera->GetViewMatrix();
-    Matrix4x4 projectionMatrix = viewCamera->GetProjectionMatrix();
+bool CameraEditor::DrawTransformGizmo(Transform& transform, Camera* viewCamera, float viewportX, float viewportY,
+   float viewportWidth, float viewportHeight, const char* id) {
+   Matrix4x4 worldMatrix = MakeAffineMatrix(transform);
+   Matrix4x4 viewMatrix = viewCamera->GetViewMatrix();
+   Matrix4x4 projectionMatrix = viewCamera->GetProjectionMatrix();
 
-    ImGui::PushID(id ? id : "CameraTransformGizmo");
-    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
-    ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
-    ImGuizmo::SetOrthographic(viewCamera->GetProjectionType() == Camera::ProjectionType::Orthographic);
-    ImGuizmo::Manipulate(
-        &viewMatrix.m[0][0],
-        &projectionMatrix.m[0][0],
-        ToImGuizmoOperation(gizmoOperation_),
-        ToImGuizmoMode(gizmoMode_),
-        &worldMatrix.m[0][0]);
+   ImGui::PushID(id ? id : "CameraTransformGizmo");
+   ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+   ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
+   ImGuizmo::SetOrthographic(viewCamera->GetProjectionType() == Camera::ProjectionType::Orthographic);
+   ImGuizmo::Manipulate(&viewMatrix.m[0][0], &projectionMatrix.m[0][0], ToImGuizmoOperation(gizmoOperation_),
+      ToImGuizmoMode(gizmoMode_), &worldMatrix.m[0][0]);
 
-    if (!ImGuizmo::IsUsing()) {
-        ImGui::PopID();
-        return false;
-    }
+   if (!ImGuizmo::IsUsing()) {
+      ImGui::PopID();
+      return false;
+   }
 
-    transform = MatrixToTransform(worldMatrix);
-    ImGui::PopID();
-    return true;
+   transform = MatrixToTransform(worldMatrix);
+   ImGui::PopID();
+   return true;
 }
 
 void CameraEditor::ShowImGuizmoControls() {
-    ImGui::BeginChild("CameraImGuizmoControls", ImVec2(0, 74), true);
-    ImGui::Text("ImGuizmo");
+   ImGui::BeginChild("CameraImGuizmoControls", ImVec2(0, 74), true);
+   ImGui::Text("ImGuizmo");
 
-    int operation = static_cast<int>(gizmoOperation_);
-    const char* operations[] = { Tr("移動", "Translate"), Tr("回転", "Rotate"), Tr("スケール", "Scale") };
-    const std::string operationLabel = std::string(Tr("操作", "Operation")) + "##CameraImGuizmo";
-    if (ImGui::Combo(operationLabel.c_str(), &operation, operations, IM_ARRAYSIZE(operations))) {
-        gizmoOperation_ = static_cast<GizmoOperation>(operation);
-    }
+   int operation = static_cast<int>(gizmoOperation_);
+   const char* operations[] = {Tr("移動", "Translate"), Tr("回転", "Rotate"), Tr("スケール", "Scale")};
+   const std::string operationLabel = std::string(Tr("操作", "Operation")) + "##CameraImGuizmo";
+   if (ImGui::Combo(operationLabel.c_str(), &operation, operations, IM_ARRAYSIZE(operations))) {
+      gizmoOperation_ = static_cast<GizmoOperation>(operation);
+   }
 
-    int mode = static_cast<int>(gizmoMode_);
-    const char* modes[] = { Tr("ローカル", "Local"), Tr("ワールド", "World") };
-    const std::string modeLabel = std::string(Tr("空間", "Mode")) + "##CameraImGuizmo";
-    if (ImGui::Combo(modeLabel.c_str(), &mode, modes, IM_ARRAYSIZE(modes))) {
-        gizmoMode_ = static_cast<GizmoMode>(mode);
-    }
+   int mode = static_cast<int>(gizmoMode_);
+   const char* modes[] = {Tr("ローカル", "Local"), Tr("ワールド", "World")};
+   const std::string modeLabel = std::string(Tr("空間", "Mode")) + "##CameraImGuizmo";
+   if (ImGui::Combo(modeLabel.c_str(), &mode, modes, IM_ARRAYSIZE(modes))) {
+      gizmoMode_ = static_cast<GizmoMode>(mode);
+   }
 
-    ImGui::EndChild();
+   ImGui::EndChild();
 }
 
-void CameraEditor::RegisterComponentFactory(const std::string& displayName,
-                                            std::function<ICinemachineComponent*(VirtualCamera*)> factory) {
-    externalFactories_.push_back({ displayName, std::move(factory) });
+void CameraEditor::RegisterComponentFactory(
+   const std::string& displayName, std::function<ICinemachineComponent*(VirtualCamera*)> factory) {
+   externalFactories_.push_back({displayName, std::move(factory)});
 }
 
 } // namespace GameEngine

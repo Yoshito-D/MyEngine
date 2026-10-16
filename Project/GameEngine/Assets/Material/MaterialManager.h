@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <unordered_map>
 #include <memory>
@@ -6,6 +7,7 @@
 #include "GameEngine/Graphics/Resources/Material.h"
 
 namespace GameEngine {
+
 /// @brief マテリアルマネージャークラス
 class MaterialManager {
 public:
@@ -19,7 +21,7 @@ public:
    /// @param enableLighting ライティングを有効にするかどうか。デフォルトはtrue（有効）
    /// @param uvTransform UV座標に適用する変換行列。デフォルトは単位行列
    void* CreateMaterial(const std::string& name, uint32_t color = 0xffffffff,
-	  int32_t lightingMode = Material::LightingMode::HALFLAMBERT, const Matrix4x4& uvTransform = MakeIdentity4x4());
+      int32_t lightingMode = Material::LightingMode::HALFLAMBERT, const Matrix4x4& uvTransform = MakeIdentity4x4());
 
    /// @brief マテリアルを取得
    /// @param name 取得するマテリアルの名前

@@ -9,11 +9,13 @@
 #include <span>
 
 namespace GameEngine {
+
 /// @brief Objectのローカル変換・親行列・GPU変換バッファを管理する
 class TransformComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "TransformComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "トランスフォーム", "Transform" };
+   static constexpr ComponentDisplayName kDisplayName{"トランスフォーム", "Transform"};
+
    /// @copydoc IObjectComponent::GetTypeName
    const char* GetTypeName() const override;
 
@@ -24,6 +26,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @copydoc IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
@@ -57,13 +60,17 @@ public:
 
    /// @brief 計算・表示用にローカル姿勢を読み取る。
    const Transform& GetLocalPose() const { return transform; }
+
    /// @brief 有限なローカル姿勢を一括適用し、外部行列の上書きを解除する。
    bool ApplyLocalPose(const Transform& pose);
+
    /// @brief 旧シーンの名前参照を検証済みの親Entity接続へ移行する。
    void ResolveParentRelation();
+
    /// @brief 旧シーンの親名を指定されたシーン内だけで解決してEntity接続へ移行する。
    /// @param sceneObjects 従来の検索順を維持した、そのシーンの非所有オブジェクト一覧。
    void ResolveParentRelation(std::span<Object* const> sceneObjects);
+
    /// @brief 所有Objectの現在の親を解決してローカル行列へ合成する。
    Matrix4x4 ComposeWorldMatrix(const Matrix4x4& local) const;
 

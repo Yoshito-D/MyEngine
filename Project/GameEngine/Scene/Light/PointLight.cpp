@@ -13,13 +13,15 @@ bool sIsInitialized_ = false;
 }
 
 void PointLight::Initialize(GraphicsDevice* device) {
-   if (sIsInitialized_) return;
+   if (sIsInitialized_)
+      return;
    sDevice_ = device;
    sIsInitialized_ = true;
 }
 
 void PointLight::Create(unsigned int color, const Vector3& position, float intensity, float radius, float decay) {
-   if (!sIsInitialized_)return;
+   if (!sIsInitialized_)
+      return;
    pointLightResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(PointLightData));
 
    // 書き込むためのアドレスを取得
@@ -35,8 +37,14 @@ void PointLight::Create(unsigned int color, const Vector3& position, float inten
    *pointLightData_ = {};
    ApplyIllumination(requested);
 }
+
 bool PointLight::ApplyIllumination(const PointLightData& illumination) {
-   if (!pointLightData_ || !std::isfinite(illumination.color.x) || !std::isfinite(illumination.color.y) || !std::isfinite(illumination.color.z) || !std::isfinite(illumination.color.w) || !std::isfinite(illumination.intensity) || !std::isfinite(illumination.radius) || !std::isfinite(illumination.decay) || !std::isfinite(illumination.position.x) || !std::isfinite(illumination.position.y) || !std::isfinite(illumination.position.z)) return false;
+   if (!pointLightData_ || !std::isfinite(illumination.color.x) || !std::isfinite(illumination.color.y) ||
+       !std::isfinite(illumination.color.z) || !std::isfinite(illumination.color.w) ||
+       !std::isfinite(illumination.intensity) || !std::isfinite(illumination.radius) ||
+       !std::isfinite(illumination.decay) || !std::isfinite(illumination.position.x) ||
+       !std::isfinite(illumination.position.y) || !std::isfinite(illumination.position.z))
+      return false;
    auto data = illumination;
    data.intensity = std::max(data.intensity, 0.0f);
    data.radius = std::max(data.radius, 0.0f);

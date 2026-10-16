@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -13,21 +14,18 @@ public:
 
    /// @brief 状態構造体
    struct State {
-	  std::function<void()> onEnter;   // 状態切替時に1回
-	  std::function<void()> onUpdate;  // 状態中は毎フレーム
-	  std::function<void()> onExit;   // 状態切替時に1回
+      std::function<void()> onEnter;  // 状態切替時に1回
+      std::function<void()> onUpdate; // 状態中は毎フレーム
+      std::function<void()> onExit;   // 状態切替時に1回
    };
 
    /// @brief 状態を登録
    /// @param name 状態名
    /// @param onEnter 状態に入ったときに呼ばれる関数
    /// @param onUpdate 状態中に毎フレーム呼ばれる関数
-	  /// @param onExit 状態から出るときに呼ばれる関数
-   void AddState(const std::string& name,
-	  std::function<void()> onEnter = nullptr,
-	  std::function<void()> onUpdate = nullptr,
-	  std::function<void()> onExit = nullptr
-   );
+   /// @param onExit 状態から出るときに呼ばれる関数
+   void AddState(const std::string& name, std::function<void()> onEnter = nullptr,
+      std::function<void()> onUpdate = nullptr, std::function<void()> onExit = nullptr);
 
    /// @brief 状態変更時の通知コールバックを設定
    /// @param callback 旧状態名と新状態名を受け取る関数

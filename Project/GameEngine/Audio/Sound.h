@@ -1,4 +1,5 @@
 #pragma once
+
 #include <xaudio2.h>
 #include <wrl.h>
 #include <vector>
@@ -9,6 +10,7 @@ using namespace Microsoft::WRL;
 
 namespace GameEngine {
 class SoundClip;
+
 /// @brief サウンドクラス
 class Sound {
 public:

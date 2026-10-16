@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Math/VectorMath.h"
 #include <array>
 
@@ -7,19 +8,17 @@ namespace GameEngine {
 /// @brief 線分クラス
 class Line {
 public:
-
    /// @brief 頂点構造体
    struct Vertex {
-	  Vector3 position;
-	  Vector4 color;
+      Vector3 position;
+      Vector4 color;
    };
 
    /// @brief コンストラクタ
    /// @param start スタート位置
    /// @param end エンド位置
    /// @param color 線の色
-   Line(const Vector3& start, const Vector3& end, const Vector4& color)
-	  : start_(start), end_(end), color_(color) {}
+   Line(const Vector3& start, const Vector3& end, const Vector4& color) : start_(start), end_(end), color_(color) {}
 
    /// @brief デストラクタ
    ~Line() = default;

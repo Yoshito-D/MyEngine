@@ -36,6 +36,7 @@ void RaceManagerComponent::Update(float deltaTime) {
    }
 
    const float safeDeltaTime = std::max(deltaTime, 0.0f);
+
    // 状態ごとに進める時計を分離し、カウントダウンや結果待機を走行時間へ混ぜない。
    switch (state_) {
       case State::Countdown:
@@ -78,13 +79,13 @@ void RaceManagerComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorl
    } else if (!playerObjectId_.empty()) {
       Logger::Warning("Race player object was not found: " + playerObjectId_, Logger::LogChannel::Game);
    }
-
 }
 
 void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
    runtimeInitialized_ = false;
    playerLocked_ = false;
+
    // エディタで指定した有効状態を保存し、レース中の一時ロック解除で上書きしない。
    vehicleControllerEnabledWhenUnlocked_ = vehicleController_ && vehicleController_->IsEnabled();
    gravityBodyEnabledWhenUnlocked_ = gravityBody_ && gravityBody_->IsEnabled();
@@ -212,21 +213,11 @@ nlohmann::json RaceManagerComponent::Serialize() const {
    } else if (startMode_ == StartMode::Gate) {
       startModeName = "Gate";
    }
-   return nlohmann::json{
-      { "startMode", startModeName },
-      { "countdownSeconds", countdownSeconds_ },
-      { "startTextDuration", startTextDuration_ },
-      { "checkpointCount", checkpointCount_ },
-      { "playerObjectId", playerObjectId_ },
-      { "finishCameraId", finishCameraId_ },
-      { "restartScene", restartScene_ },
-      { "recordKey", recordKey_ },
-      { "recordFile", recordFile_ },
-      { "lockPlayerDuringCountdown", lockPlayerDuringCountdown_ },
-      { "lockPlayerOnFinish", lockPlayerOnFinish_ },
-      { "nextScene", nextScene_ },
-      { "finishDelay", finishDelay_ }
-   };
+   return nlohmann::json{{"startMode", startModeName}, {"countdownSeconds", countdownSeconds_},
+      {"startTextDuration", startTextDuration_}, {"checkpointCount", checkpointCount_},
+      {"playerObjectId", playerObjectId_}, {"finishCameraId", finishCameraId_}, {"restartScene", restartScene_},
+      {"recordKey", recordKey_}, {"recordFile", recordFile_}, {"lockPlayerDuringCountdown", lockPlayerDuringCountdown_},
+      {"lockPlayerOnFinish", lockPlayerOnFinish_}, {"nextScene", nextScene_}, {"finishDelay", finishDelay_}};
 }
 
 void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
@@ -331,6 +322,7 @@ void RaceManagerComponent::AddBestTime(float timeSeconds) {
       return;
    }
    bestTimes_.push_back(timeSeconds);
+
    // 保存・表示の双方が先頭から最速順を仮定するため、追加時点で固定件数へ正規化する。
    std::sort(bestTimes_.begin(), bestTimes_.end());
    if (bestTimes_.size() > kBestTimeCount) {
@@ -365,6 +357,7 @@ bool RaceManagerComponent::LoadBestTimes() {
       }
 
       const auto& races = root.at("races");
+
       // 1ファイルを複数コースで共有するため、現在のrecordKeyだけを取り出す。
       if (!races.contains(recordKey_) || !races.at(recordKey_).is_object()) {
          return true;
@@ -427,6 +420,7 @@ bool RaceManagerComponent::SaveBestTimes() const {
 
    std::filesystem::path temporaryPath = recordPath;
    temporaryPath += ".tmp";
+
    // 書き込み途中の本番ファイルを残さないよう、一時ファイルを完成させてから置換する。
    try {
       std::ofstream output(temporaryPath, std::ios::out | std::ios::trunc);
@@ -447,10 +441,7 @@ bool RaceManagerComponent::SaveBestTimes() const {
 
 #ifdef _WIN32
    // Windowsでは置換とディスク反映を同じAPIで要求し、既存ファイルも安全に更新する。
-   if (!MoveFileExW(
-      temporaryPath.c_str(),
-      recordPath.c_str(),
-      MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+   if (!MoveFileExW(temporaryPath.c_str(), recordPath.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
       LogRecordWarning("could not replace record file (Win32 error " + std::to_string(GetLastError()) + ")");
       std::filesystem::remove(temporaryPath, error);
       return false;
@@ -476,13 +467,15 @@ void RaceManagerComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) {
       return;
    }
-   const char* startModes[] = { "Immediate", "Countdown", "Gate" };
+   const char* startModes[] = {"Immediate", "Countdown", "Gate"};
    int mode = static_cast<int>(startMode_);
-   if (ImGui::Combo("Start Mode", &mode, startModes, 3)) startMode_ = static_cast<StartMode>(mode);
+   if (ImGui::Combo("Start Mode", &mode, startModes, 3))
+      startMode_ = static_cast<StartMode>(mode);
    ImGui::DragFloat("Countdown Seconds", &countdownSeconds_, 0.1f, 0.0f, 60.0f);
    ImGui::DragFloat("Start Text Duration", &startTextDuration_, 0.05f, 0.0f, 60.0f);
    int count = static_cast<int>(std::min(checkpointCount_, size_t{100000}));
-   if (ImGui::InputInt("Checkpoint Count", &count)) checkpointCount_ = static_cast<size_t>(std::max(count, 0));
+   if (ImGui::InputInt("Checkpoint Count", &count))
+      checkpointCount_ = static_cast<size_t>(std::max(count, 0));
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    GameEngine::EditorUI::CameraReference("Finish Camera", finishCameraId_);
    GameEngine::EditorUI::SceneReference("Restart Scene", restartScene_);
@@ -492,7 +485,7 @@ void RaceManagerComponent::DrawInspector() {
    ImGui::Checkbox("Lock Player During Countdown", &lockPlayerDuringCountdown_);
    ImGui::Checkbox("Lock Player On Finish", &lockPlayerOnFinish_);
    ImGui::DragFloat("Finish Delay", &finishDelay_, 0.1f, 0.0f, 60.0f);
-   static const char* stateNames[] = { "Waiting", "Countdown", "Running", "Finished" };
+   static const char* stateNames[] = {"Waiting", "Countdown", "Running", "Finished"};
    ImGui::Text("State: %s", stateNames[static_cast<int>(state_)]);
    ImGui::Text("Time: %.3f", elapsedTime_);
    ImGui::Text("Checkpoint: %zu / %zu", nextCheckpointIndex_, checkpointCount_);

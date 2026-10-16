@@ -19,7 +19,7 @@ class RaceManagerComponent;
 class RaceResultUIComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "RaceResultUIComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "レース結果UI", "Race Result UI" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"レース結果UI", "Race Result UI"};
 
    /// @brief コンポーネント型名を取得する
    /// @return RaceResultUIComponent
@@ -46,6 +46,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief 参照状態をインスペクターへ表示する
    void DrawInspector() override;
 #endif
@@ -77,14 +78,12 @@ private:
    float reactionElapsed_ = 0.0f;
    float selectionAnimationElapsed_ = 0.0f;
    float selectionSwitchElapsed_ = 0.0f;
-   GameEngine::Vector3 reactionStartScale_ = { 1.0f, 1.0f, 1.0f };
+   GameEngine::Vector3 reactionStartScale_ = {1.0f, 1.0f, 1.0f};
    std::array<GameEngine::UITextComponent*, kOptionCount> optionTexts_ = {};
    std::array<GameEngine::TransformComponent*, kOptionCount> optionTransforms_ = {};
    std::array<GameEngine::Vector3, kOptionCount> baseScales_ = {
-      GameEngine::Vector3{ 1.0f, 1.0f, 1.0f },
-      GameEngine::Vector3{ 1.0f, 1.0f, 1.0f }
-   };
-   std::array<float, kOptionCount> baseOpacities_ = { 1.0f, 1.0f };
+      GameEngine::Vector3{1.0f, 1.0f, 1.0f}, GameEngine::Vector3{1.0f, 1.0f, 1.0f}};
+   std::array<float, kOptionCount> baseOpacities_ = {1.0f, 1.0f};
    RaceManagerComponent* raceManager_ = nullptr;
    int selectedOption_ = 1;
    bool resultRequested_ = false;

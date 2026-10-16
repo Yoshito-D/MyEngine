@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include <functional>
@@ -13,154 +14,174 @@ namespace GameEngine {
 /// @brief 仮想カメラの基底クラス
 class VirtualCamera {
 public:
-    /// @brief カメラコンポーネントを生成して所有権を登録するファクトリ
-    using ComponentFactory = std::function<ICinemachineComponent*(VirtualCamera&)>;
+   /// @brief カメラコンポーネントを生成して所有権を登録するファクトリ
+   using ComponentFactory = std::function<ICinemachineComponent*(VirtualCamera&)>;
 
-    /// @brief 空の仮想カメラを生成する
-    VirtualCamera() = default;
-    /// @brief 所有するカメラコンポーネントとともに破棄する
-    virtual ~VirtualCamera() = default;
+   /// @brief 空の仮想カメラを生成する
+   VirtualCamera() = default;
 
-    /// @brief 初期化
-    /// @param initialState 初期カメラ状態
-    virtual void Initialize(const CameraState& initialState = CameraState());
+   /// @brief 所有するカメラコンポーネントとともに破棄する
+   virtual ~VirtualCamera() = default;
 
-    /// @brief 更新処理
-    /// @param deltaTime フレーム時間
-    virtual void Update(float deltaTime);
+   /// @brief 初期化
+   /// @param initialState 初期カメラ状態
+   virtual void Initialize(const CameraState& initialState = CameraState());
 
-    /// @brief カメラ状態を計算
-    /// @param deltaTime フレーム時間
-    /// @return 計算されたカメラ状態
-    CameraState CalculateState(float deltaTime);
+   /// @brief 更新処理
+   /// @param deltaTime フレーム時間
+   virtual void Update(float deltaTime);
 
-    /// @brief コンポーネントを追加
-    template<typename T, typename... Args>
-    T* AddComponent(Args&&... args) {
-        auto component = std::make_unique<T>(std::forward<Args>(args)...);
-        T* ptr = component.get();
-        components_.push_back(std::move(component));
-        ptr->Attach(*this);
-        SortComponents();
-        return ptr;
-    }
+   /// @brief カメラ状態を計算
+   /// @param deltaTime フレーム時間
+   /// @return 計算されたカメラ状態
+   CameraState CalculateState(float deltaTime);
 
-    /// @brief コンポーネントを削除
-    void RemoveComponent(ICinemachineComponent* component);
+   /// @brief コンポーネントを追加
+   template <typename T, typename... Args> T* AddComponent(Args&&... args) {
+      auto component = std::make_unique<T>(std::forward<Args>(args)...);
+      T* ptr = component.get();
+      components_.push_back(std::move(component));
+      ptr->Attach(*this);
+      SortComponents();
+      return ptr;
+   }
 
-    /// @brief コンポーネント名からファクトリを登録
-    static bool RegisterComponentFactory(const std::string& componentName, ComponentFactory factory);
+   /// @brief コンポーネントを削除
+   void RemoveComponent(const ICinemachineComponent* component);
 
-    /// @brief 登録済みカメラコンポーネント名を名前順に取得する
-    static std::vector<std::string> GetRegisteredComponentNames();
+   /// @brief 所有する部品の有効状態を変更する。他のカメラの部品は受け入れない。
+   bool EnableComponent(const ICinemachineComponent* component, bool enabled);
 
-    /// @brief コンポーネント名から追加する（登録済みファクトリ経由）
-    ICinemachineComponent* AddComponentByName(const std::string& componentName);
+   /// @brief 所有する部品へ、指定部品に関係する補間履歴のリセットを通知する。
+   void ResetComponents(const ICinemachineComponent& source);
+#ifdef USE_IMGUI
 
-    /// @brief コンポーネント名から取得する
-    ICinemachineComponent* FindComponentByName(const std::string& componentName);
-    /// @brief 名前から読み取り専用のコンポーネントを探す。
-    const ICinemachineComponent* FindComponentByName(const std::string& componentName) const;
+   /// @brief 所有確認の後に部品のInspector編集を実行する。
+   void DrawComponentInspector(const ICinemachineComponent* component);
+#endif
 
-    /// @brief コンポーネントを取得
-    template<typename T>
-    T* GetComponent() {
-        for (const auto& comp : components_) {
-            if (T* casted = dynamic_cast<T*>(comp.get())) {
-                return casted;
-            }
-        }
-        return nullptr;
-    }
+   /// @brief コンポーネント名からファクトリを登録
+   static bool RegisterComponentFactory(const std::string& componentName, ComponentFactory factory);
 
-    /// @brief 型から読み取り専用のコンポーネントを探す。
-    template<typename T> const T* GetComponent() const {
-        for (const auto& component : components_) {
-            if (const auto* typed = dynamic_cast<const T*>(component.get())) return typed;
-        }
-        return nullptr;
-    }
+   /// @brief 登録済みカメラコンポーネント名を名前順に取得する
+   static std::vector<std::string> GetRegisteredComponentNames();
 
-    /// @brief 仮想カメラ名を取得する
-    const std::string& GetName() const { return name_; }
-    /// @brief 名前変更に影響されないシーン内の安定IDを取得する
-    const std::string& GetId() const { return id_; }
-    /// @brief 所有ワールドへの登録前に安定IDを設定する
-    void SetId(const std::string& id) { id_ = id; }
-    /// @brief 仮想カメラ名を設定する
-    void SetName(const std::string& name) { name_ = name; }
+   /// @brief コンポーネント名から追加する（登録済みファクトリ経由）
+   ICinemachineComponent* AddComponentByName(const std::string& componentName);
 
-    /// @brief 位置追従対象を設定する
-    void SetFollowTarget(const Transform* target);
-    /// @brief 注視対象を設定する
-    void SetLookAtTarget(const Transform* target);
-    /// @brief 位置追従対象を安定Entity IDで設定する
-    /// @param entityId 追従対象。空文字列で解除する
-    void SetFollowTargetEntityId(const std::string& entityId);
-    /// @brief 注視対象を安定Entity IDで設定する
-    /// @param entityId 注視対象。空文字列で解除する
-    void SetLookAtTargetEntityId(const std::string& entityId);
-    /// @brief 位置追従対象の安定Entity IDを取得する
-    /// @return 旧ポインター指定時は空文字列
-    const std::string& GetFollowTargetEntityId() const { return followTargetEntityId_; }
-    /// @brief 注視対象の安定Entity IDを取得する
-    /// @return 旧ポインター指定時は空文字列
-    const std::string& GetLookAtTargetEntityId() const { return lookAtTargetEntityId_; }
-    /// @brief 位置追従対象を取得する
-    const Transform* GetFollowTarget() const;
-    /// @brief 注視対象を取得する
-    const Transform* GetLookAtTarget() const;
+   /// @brief コンポーネント名から取得する
+   ICinemachineComponent* FindComponentByName(const std::string& componentName);
 
-    /// @brief ブレンド選択に使用する優先度を取得する
-    int GetPriority() const { return priority_; }
-    /// @brief ブレンド選択に使用する優先度を設定する
-    void SetPriority(int priority) { priority_ = priority; }
+   /// @brief 名前から読み取り専用のコンポーネントを探す。
+   const ICinemachineComponent* FindComponentByName(const std::string& componentName) const;
 
-    /// @brief カメラがブレンド候補として有効かを取得する
-    bool IsActive() const { return isActive_; }
-    /// @brief カメラをブレンド候補として有効または無効にする
-    void SetActive(bool active) { isActive_ = active; }
+   /// @brief コンポーネントを取得
+   template <typename T> T* GetComponent() {
+      for (const auto& comp : components_) {
+         if (T* casted = dynamic_cast<T*>(comp.get())) {
+            return casted;
+         }
+      }
+      return nullptr;
+   }
 
-    /// @brief 最後に計算したカメラ状態を取得する
-    const CameraState& GetState() const { return state_; }
-    /// @brief カメラ状態を外部から設定する
-    void SetState(const CameraState& state) { state_ = state; }
+   /// @brief 型から読み取り専用のコンポーネントを探す。
+   template <typename T> const T* GetComponent() const {
+      for (const auto& component : components_) {
+         if (const auto* typed = dynamic_cast<const T*>(component.get()))
+            return typed;
+      }
+      return nullptr;
+   }
 
-    /// @brief コンポーネント一覧を取得（読み取り専用）
-    std::vector<ICinemachineComponent*> GetComponents() {
-        std::vector<ICinemachineComponent*> result;
-        for (auto& component : components_) result.push_back(component.get());
-        return result;
-    }
-    /// @brief 所有ポインターを公開せず読み取り用の部品一覧を作る。
-    std::vector<const ICinemachineComponent*> GetComponents() const {
-        std::vector<const ICinemachineComponent*> result;
-        for (const auto& component : components_) result.push_back(component.get());
-        return result;
-    }
+   /// @brief 仮想カメラ名を取得する
+   const std::string& GetName() const { return name_; }
 
-    /// @brief 仮想カメラ設定を保存する
-    nlohmann::json Serialize() const;
+   /// @brief 名前変更に影響されないシーン内の安定IDを取得する
+   const std::string& GetId() const { return id_; }
 
-    /// @brief 仮想カメラ設定を読み込む
-    void Deserialize(const nlohmann::json& data);
+   /// @brief 所有ワールドへの登録前に安定IDを設定する
+   void SetId(const std::string& id) { id_ = id; }
+
+   /// @brief 仮想カメラ名を設定する
+   void SetName(const std::string& name) { name_ = name; }
+
+   /// @brief 位置追従対象を設定する
+   void SetFollowTarget(const Transform* target);
+
+   /// @brief 注視対象を設定する
+   void SetLookAtTarget(const Transform* target);
+
+   /// @brief 位置追従対象を安定Entity IDで設定する
+   /// @param entityId 追従対象。空文字列で解除する
+   void SetFollowTargetEntityId(const std::string& entityId);
+
+   /// @brief 注視対象を安定Entity IDで設定する
+   /// @param entityId 注視対象。空文字列で解除する
+   void SetLookAtTargetEntityId(const std::string& entityId);
+
+   /// @brief 位置追従対象の安定Entity IDを取得する
+   /// @return 旧ポインター指定時は空文字列
+   const std::string& GetFollowTargetEntityId() const { return followTargetEntityId_; }
+
+   /// @brief 注視対象の安定Entity IDを取得する
+   /// @return 旧ポインター指定時は空文字列
+   const std::string& GetLookAtTargetEntityId() const { return lookAtTargetEntityId_; }
+
+   /// @brief 位置追従対象を取得する
+   const Transform* GetFollowTarget() const;
+
+   /// @brief 注視対象を取得する
+   const Transform* GetLookAtTarget() const;
+
+   /// @brief ブレンド選択に使用する優先度を取得する
+   int GetPriority() const { return priority_; }
+
+   /// @brief ブレンド選択に使用する優先度を設定する
+   void SetPriority(int priority) { priority_ = priority; }
+
+   /// @brief カメラがブレンド候補として有効かを取得する
+   bool IsActive() const { return isActive_; }
+
+   /// @brief カメラをブレンド候補として有効または無効にする
+   void SetActive(bool active) { isActive_ = active; }
+
+   /// @brief 最後に計算したカメラ状態を取得する
+   const CameraState& GetState() const { return state_; }
+
+   /// @brief カメラ状態を外部から設定する
+   void SetState(const CameraState& state) { state_ = state; }
+
+   /// @brief 所有ポインターを公開せず読み取り用の部品一覧を作る。
+   std::vector<const ICinemachineComponent*> GetComponents() const {
+      std::vector<const ICinemachineComponent*> result;
+      for (const auto& component : components_)
+         result.push_back(component.get());
+      return result;
+   }
+
+   /// @brief 仮想カメラ設定を保存する
+   nlohmann::json Serialize() const;
+
+   /// @brief 仮想カメラ設定を読み込む
+   void Deserialize(const nlohmann::json& data);
 
 protected:
-    void SortComponents();
+   void SortComponents();
 
 private:
-    std::vector<std::unique_ptr<ICinemachineComponent>> components_;
-    const Transform* followTarget_ = nullptr;
-    const Transform* lookAtTarget_ = nullptr;
-    std::string followTargetEntityId_;
-    std::string lookAtTargetEntityId_;
-    mutable Transform resolvedFollowTarget_;
-    mutable Transform resolvedLookAtTarget_;
-    CameraState state_;
-    std::string name_;
-    std::string id_;
-    int priority_ = 0;
-    bool isActive_ = true;
+   std::vector<std::unique_ptr<ICinemachineComponent>> components_;
+   const Transform* followTarget_ = nullptr;
+   const Transform* lookAtTarget_ = nullptr;
+   std::string followTargetEntityId_;
+   std::string lookAtTargetEntityId_;
+   mutable Transform resolvedFollowTarget_;
+   mutable Transform resolvedLookAtTarget_;
+   CameraState state_;
+   std::string name_;
+   std::string id_;
+   int priority_ = 0;
+   bool isActive_ = true;
 };
 
 } // namespace GameEngine

@@ -10,7 +10,7 @@ namespace GameEngine {
 
 #ifdef USE_IMGUI
 const char* LocalizeEditorText(const char* japanese, const char* english) {
-   return ImGuiHelper::Localize({ japanese, english });
+   return ImGuiHelper::Localize({japanese, english});
 }
 
 std::string LocalizeObjectComponentTypeName(const char* typeName) {
@@ -41,15 +41,16 @@ void IObjectComponent::Detach() {
 
 void IObjectComponent::SetEnabled(bool enabled) {
    if (isEnabled_ == enabled) {
-	  return;
+      return;
    }
 
    isEnabled_ = enabled;
-   if (!owner_) return;
+   if (!owner_)
+      return;
    if (isEnabled_) {
-	  OnEnable();
+      OnEnable();
    } else {
-	  OnDisable();
+      OnDisable();
    }
 }
 

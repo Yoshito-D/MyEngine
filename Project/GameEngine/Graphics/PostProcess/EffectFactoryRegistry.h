@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include <memory>
 #include <string>
@@ -18,6 +19,7 @@ public:
    /// @param className シリアライズにも使用する安定したクラス名
    /// @param factory 新しいインスタンスを返すファクトリ
    void RegisterFactory(const std::string& className, Factory factory);
+
    /// @brief 登録済みクラス名からポストプロセスを生成する
    /// @param className 生成対象のクラス名
    /// @return 生成したエフェクト。未登録の場合はnullptr

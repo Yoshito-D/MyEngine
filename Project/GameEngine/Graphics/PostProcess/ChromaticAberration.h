@@ -1,22 +1,24 @@
 #pragma once
+
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include <wrl.h>
 #include <d3d12.h>
 
 namespace GameEngine {
+
 /// @brief 色収差効果
 class ChromaticAberration : public PostProcess {
 public:
    /// @brief 色収差効果のパラメータ構造体
    struct ParamsCB {
-	  float centerX;
-	  float centerY;
-	  float pixelShift;
-	  int32_t useFixedDirection;
-	  float fixedDirectionX;
-	  float fixedDirectionY;
-	  float texSizeX;
-	  float texSizeY;
+      float centerX;
+      float centerY;
+      float pixelShift;
+      int32_t useFixedDirection;
+      float fixedDirectionX;
+      float fixedDirectionY;
+      float texSizeX;
+      float texSizeY;
    };
 
    /// @brief 初期化（パイプラインは外部から設定される）
@@ -35,12 +37,21 @@ public:
 
    /// @copydoc PostProcess::SerializeSettings
    nlohmann::json SerializeSettings() const override;
+
    /// @copydoc PostProcess::DeserializeSettings
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetStrength(float strength) { pixelShift_ = strength; UpdateConstantBuffer(); }
-   void SetCenter(float x, float y) { centerX_ = x; centerY_ = y; UpdateConstantBuffer(); }
+   void SetStrength(float strength) {
+      pixelShift_ = strength;
+      UpdateConstantBuffer();
+   }
+
+   void SetCenter(float x, float y) {
+      centerX_ = x;
+      centerY_ = y;
+      UpdateConstantBuffer();
+   }
 
 private:
    float centerX_ = 0.5f;

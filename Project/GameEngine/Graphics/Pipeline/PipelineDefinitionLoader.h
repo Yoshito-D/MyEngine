@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <vector>
 
@@ -11,7 +12,8 @@ public:
    /// @param rootSignaturePaths ルートシグネチャのパスを格納するベクター
    /// @param pipelinePaths パイプライン定義のパスを格納するベクター
    /// @return レジストリと参照先ファイルをすべて読み取れた場合はtrue
-   bool LoadRegistryFile(const std::wstring& registryFilePath, std::vector<std::string>& rootSignaturePaths, std::vector<std::string>& pipelinePaths) const;
+   bool LoadRegistryFile(const std::wstring& registryFilePath, std::vector<std::string>& rootSignaturePaths,
+      std::vector<std::string>& pipelinePaths) const;
 };
 
 }

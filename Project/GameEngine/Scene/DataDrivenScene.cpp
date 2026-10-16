@@ -6,8 +6,7 @@
 
 namespace GameEngine {
 
-DataDrivenScene::DataDrivenScene(std::filesystem::path sceneFilePath)
-   : sceneFilePath_(std::move(sceneFilePath)) {
+DataDrivenScene::DataDrivenScene(std::filesystem::path sceneFilePath) : sceneFilePath_(std::move(sceneFilePath)) {
 }
 
 void DataDrivenScene::LoadSceneDataIfNeeded() {
@@ -40,8 +39,7 @@ void DataDrivenScene::LoadSceneDataIfNeeded() {
 #ifdef USE_IMGUI
    if (auto* editorContext = GetEditorSceneContext()) {
       // データ駆動シーンはBaseSceneの自動読込を通らないため、表示順だけを重複生成なしで渡す。
-      editorContext->ApplyHierarchyOrder(
-         sceneData.value("hierarchyOrder", nlohmann::json::array()));
+      editorContext->ApplyHierarchyOrder(sceneData.value("hierarchyOrder", nlohmann::json::array()));
    }
 #endif
 }

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Input/Input.h"
 #include "GameEngine/Audio/Audio.h"
@@ -9,10 +10,10 @@
 #include <string>
 
 namespace GameEngine {
+
 /// @brief シーンのインターフェース
 class IScene {
 public:
-
    /// @brief デストラクタ
    virtual ~IScene() = default;
 

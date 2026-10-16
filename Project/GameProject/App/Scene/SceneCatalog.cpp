@@ -33,7 +33,7 @@ bool SceneCatalog::Load(const std::filesystem::path& catalogPath) {
          // カタログのパスをresources相対に限定し、実行ディレクトリからの解決規則を統一する。
          const std::string relativePath = scenePath.get<std::string>();
          scenes_[sceneName] = std::filesystem::path("resources") /
-            std::filesystem::path(std::u8string(relativePath.begin(), relativePath.end()));
+                              std::filesystem::path(std::u8string(relativePath.begin(), relativePath.end()));
       }
    }
 

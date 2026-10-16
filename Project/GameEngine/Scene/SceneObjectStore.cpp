@@ -105,8 +105,10 @@ Object* SceneObjectStore::CreateGenericObject(const Transform* initialTransform,
    return rawObject;
 }
 
-Object* SceneObjectStore::CreateModel(const std::string& assetId, const Transform* initialTransform, const std::string& requestedId) {
+Object* SceneObjectStore::CreateModel(
+   const std::string& assetId, const Transform* initialTransform, const std::string& requestedId) {
    std::shared_ptr<ModelAsset> modelAsset;
+
    // 読み込み失敗時に空のModelを各レジストリへ残さないよう、所有オブジェクト生成より先にアセットを解決する。
    if (!assetId.empty()) {
       modelAsset = EngineContext::LoadModelByAssetId(assetId);
@@ -133,7 +135,8 @@ Object* SceneObjectStore::CreateModel(const std::string& assetId, const Transfor
    return rawModel;
 }
 
-Object* SceneObjectStore::CreateSprite(const std::string& textureAssetId, const Transform* initialTransform, const std::string& requestedId) {
+Object* SceneObjectStore::CreateSprite(
+   const std::string& textureAssetId, const Transform* initialTransform, const std::string& requestedId) {
    if (textureAssetId.empty()) {
       return nullptr;
    }
@@ -170,6 +173,7 @@ Object* SceneObjectStore::CreateUIText(const Transform* initialTransform, const 
    UIText* rawText = uiText.get();
 
    TextStyle style{};
+
    // 空のFont IDで生成に失敗しないよう、現在登録済みの先頭フォントを初期値にする。
    const auto fontIds = EngineContext::GetFontIds();
    if (!fontIds.empty()) {
@@ -206,19 +210,22 @@ Object* SceneObjectStore::CreateSkybox(const std::string& requestedId) {
    return rawSkybox;
 }
 
-ParticleSystem* SceneObjectStore::CreateParticleSystem(const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
+ParticleSystem* SceneObjectStore::CreateParticleSystem(
+   const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
    auto particleSystem = std::make_unique<ParticleSystem>();
    ParticleSystem* rawParticleSystem = particleSystem.get();
    rawParticleSystem->Create();
-   rawParticleSystem->SetName(BuildUniqueObjectName(assetId.empty() ? "ParticleSystem" : BuildNameFromAssetId(assetId)));
+   rawParticleSystem->SetName(
+      BuildUniqueObjectName(assetId.empty() ? "ParticleSystem" : BuildNameFromAssetId(assetId)));
    if (!assetId.empty()) {
       if (!rawParticleSystem->LoadFromJson((std::filesystem::path("resources") / assetId).generic_string())) {
          return nullptr;
       }
    }
+
    // アセット内のShape位置よりユーザーがドロップした配置を優先するため、JSON読込後にTransformを上書きする。
-   if (initialTransform && rawParticleSystem->GetShapeModule()) {
-      rawParticleSystem->GetShapeModule()->SetTransform(*initialTransform);
+   if (initialTransform) {
+      rawParticleSystem->ApplyEmitterPose(*initialTransform);
    }
    rawParticleSystem->Play();
 
@@ -234,6 +241,7 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
    }
 
    const std::string objectType = objectData.value("objectType", "Model");
+
    // 派生型ごとの必須リソースを先に生成してから、共通コンポーネント状態を上書きする。
    if (objectType == "ParticleSystem") {
       RestoreParticleSystem(objectData);
@@ -309,9 +317,12 @@ ParticleSystem* SceneObjectStore::RestoreParticleSystem(const nlohmann::json& ob
    const std::string assetId = objectData.value("assetId", "");
    const std::string id = objectData.value("id", "");
    const bool hasSnapshot = objectData.contains("data") && objectData.at("data").is_object();
+
    // 完全な保存状態があれば元テンプレートの再読込を省き、ファイルの削除後でもUndo可能にする。
    ParticleSystem* particleSystem = CreateParticleSystem(hasSnapshot ? std::string{} : assetId, id);
-   if (particleSystem) particleSystemAssetIds_[particleSystem] = assetId;
+   if (particleSystem)
+      particleSystemAssetIds_[particleSystem] = assetId;
+
    // assetIdはテンプレート生成用、dataは保存時点の完全な編集状態なので後者を最後に適用する。
    if (particleSystem && objectData.contains("data") && objectData.at("data").is_object()) {
       particleSystem->FromJson(objectData.at("data"));
@@ -329,12 +340,11 @@ bool SceneObjectStore::DeleteObject(const std::string& objectId) {
    }
 
    Object* target = mapIt->second;
+
    // 描画レジストリから先に解除し、フレーム中に残った生ポインターが破棄済みメモリを参照しないようにする。
    if (auto* textTarget = dynamic_cast<UIText*>(target)) {
       auto vecIt = std::find_if(uiTexts_.begin(), uiTexts_.end(),
-         [textTarget](const std::unique_ptr<UIText>& text) {
-            return text.get() == textTarget;
-         });
+         [textTarget](const std::unique_ptr<UIText>& text) { return text.get() == textTarget; });
 
       if (vecIt == uiTexts_.end()) {
          return false;
@@ -350,9 +360,7 @@ bool SceneObjectStore::DeleteObject(const std::string& objectId) {
 
    if (auto* modelTarget = dynamic_cast<Model*>(target)) {
       auto vecIt = std::find_if(models_.begin(), models_.end(),
-         [modelTarget](const std::unique_ptr<Model>& model) {
-            return model.get() == modelTarget;
-         });
+         [modelTarget](const std::unique_ptr<Model>& model) { return model.get() == modelTarget; });
 
       if (vecIt == models_.end()) {
          return false;
@@ -368,9 +376,7 @@ bool SceneObjectStore::DeleteObject(const std::string& objectId) {
 
    if (auto* spriteTarget = dynamic_cast<Sprite*>(target)) {
       auto vecIt = std::find_if(sprites_.begin(), sprites_.end(),
-         [spriteTarget](const std::unique_ptr<Sprite>& sprite) {
-            return sprite.get() == spriteTarget;
-         });
+         [spriteTarget](const std::unique_ptr<Sprite>& sprite) { return sprite.get() == spriteTarget; });
 
       if (vecIt == sprites_.end()) {
          return false;
@@ -386,9 +392,7 @@ bool SceneObjectStore::DeleteObject(const std::string& objectId) {
 
    if (auto* skyboxTarget = dynamic_cast<Skybox*>(target)) {
       auto vecIt = std::find_if(skyboxes_.begin(), skyboxes_.end(),
-         [skyboxTarget](const std::unique_ptr<Skybox>& skybox) {
-            return skybox.get() == skyboxTarget;
-         });
+         [skyboxTarget](const std::unique_ptr<Skybox>& skybox) { return skybox.get() == skyboxTarget; });
 
       if (vecIt == skyboxes_.end()) {
          return false;
@@ -403,9 +407,7 @@ bool SceneObjectStore::DeleteObject(const std::string& objectId) {
    }
 
    auto genericIt = std::find_if(genericObjects_.begin(), genericObjects_.end(),
-      [target](const std::unique_ptr<Object>& object) {
-         return object.get() == target;
-      });
+      [target](const std::unique_ptr<Object>& object) { return object.get() == target; });
    if (genericIt != genericObjects_.end()) {
       UnregisterObject(target);
       UnregisterOwnedRuntimeSystems(target);
@@ -425,9 +427,7 @@ bool SceneObjectStore::DeleteParticleSystem(const std::string& objectId) {
 
    ParticleSystem* target = mapIt->second;
    auto vecIt = std::find_if(particleSystems_.begin(), particleSystems_.end(),
-      [target](const std::unique_ptr<ParticleSystem>& particleSystem) {
-         return particleSystem.get() == target;
-      });
+      [target](const std::unique_ptr<ParticleSystem>& particleSystem) { return particleSystem.get() == target; });
 
    if (vecIt == particleSystems_.end()) {
       return false;
@@ -519,7 +519,7 @@ bool SceneObjectStore::Contains(const ParticleSystem* particleSystem) const {
 bool SceneObjectStore::ContainsId(const std::string& objectId) const {
    // BaseScene所有EntityともID空間を共有するため、Store外のグローバルEntity IDまで衝突判定へ含める。
    return idToObject_.contains(objectId) || idToParticleSystem_.contains(objectId) ||
-      Object::FindByEntityId(objectId) != nullptr;
+          Object::FindByEntityId(objectId) != nullptr;
 }
 
 std::string SceneObjectStore::GetId(const Object* object) const {
@@ -603,12 +603,8 @@ nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, cons
 
    if (const auto* uiText = dynamic_cast<const UIText*>(object)) {
       // 復元前に正しい具象型を生成できるよう、Object共通データとは別に安定した種別名を保存する。
-      return nlohmann::json{
-         { "id", stableId },
-         { "parentId", parentId },
-         { "objectType", "UIText" },
-         { "components", uiText->SerializeComponents() }
-      };
+      return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "UIText"},
+         {"components", uiText->SerializeComponents()}};
    }
 
    if (const auto* sprite = dynamic_cast<const Sprite*>(object)) {
@@ -617,33 +613,20 @@ nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, cons
          textureAssetId = materialComponent->GetTextureName();
       }
 
-      return nlohmann::json{
-         { "id", stableId },
-         { "parentId", parentId },
-         { "objectType", "Sprite" },
-         { "assetId", textureAssetId },
-         { "components", sprite->SerializeComponents() },
-         { "sprite", SerializeSpriteData(sprite) }
-      };
+      return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Sprite"},
+         {"assetId", textureAssetId}, {"components", sprite->SerializeComponents()},
+         {"sprite", SerializeSpriteData(sprite)}};
    }
 
    if (const auto* skybox = dynamic_cast<const Skybox*>(object)) {
-      return nlohmann::json{
-         { "id", stableId },
-         { "parentId", parentId },
-         { "objectType", "Skybox" },
-         { "components", skybox->SerializeComponents() }
-      };
+      return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Skybox"},
+         {"components", skybox->SerializeComponents()}};
    }
 
    const auto* model = dynamic_cast<const Model*>(object);
    if (!model) {
-      return nlohmann::json{
-         { "id", stableId },
-         { "parentId", parentId },
-         { "objectType", "Generic" },
-         { "components", object->SerializeComponents() }
-      };
+      return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Generic"},
+         {"components", object->SerializeComponents()}};
    }
 
    std::string assetId;
@@ -653,13 +636,8 @@ nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, cons
       }
    }
 
-   return nlohmann::json{
-      { "id", stableId },
-      { "parentId", parentId },
-      { "objectType", "Model" },
-      { "assetId", assetId },
-      { "components", model->SerializeComponents() }
-   };
+   return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Model"}, {"assetId", assetId},
+      {"components", model->SerializeComponents()}};
 }
 
 bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& objectData) const {
@@ -668,6 +646,7 @@ bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& ob
    }
 
    const std::string objectType = objectData.value("objectType", "Object");
+
    // 異なる具象型へスナップショットを適用すると専用データが欠落するため、先に型整合性を検証する。
    if (objectType == "Model" && dynamic_cast<Model*>(object) == nullptr) {
       return false;
@@ -698,21 +677,18 @@ bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& ob
    return true;
 }
 
-nlohmann::json SceneObjectStore::SerializeParticleSystemState(const ParticleSystem* particleSystem, const std::string& id, const std::string& assetId) const {
+nlohmann::json SceneObjectStore::SerializeParticleSystemState(
+   const ParticleSystem* particleSystem, const std::string& id, const std::string& assetId) const {
    if (!particleSystem) {
       return nlohmann::json::object();
    }
 
-   return nlohmann::json{
-      { "id", id },
-      { "objectType", "ParticleSystem" },
-      { "name", particleSystem->GetName() },
-      { "assetId", assetId },
-      { "data", particleSystem->ToJson() }
-   };
+   return nlohmann::json{{"id", id}, {"objectType", "ParticleSystem"}, {"name", particleSystem->GetName()},
+      {"assetId", assetId}, {"data", particleSystem->ToJson()}};
 }
 
-bool SceneObjectStore::ApplyParticleSystemState(ParticleSystem* particleSystem, const nlohmann::json& objectData) const {
+bool SceneObjectStore::ApplyParticleSystemState(
+   ParticleSystem* particleSystem, const nlohmann::json& objectData) const {
    if (!particleSystem || !objectData.is_object()) {
       return false;
    }
@@ -729,6 +705,7 @@ bool SceneObjectStore::ApplyParticleSystemState(ParticleSystem* particleSystem, 
 
 nlohmann::json SceneObjectStore::SerializeAll() const {
    nlohmann::json objects = nlohmann::json::array();
+
    // 所有コンテナは具象型ごとに分かれているが、復元側がobjectTypeで振り分けられる単一配列へ正規化する。
    for (const auto& object : genericObjects_) {
       if (!object) {
@@ -864,7 +841,8 @@ void SceneObjectStore::RegisterObject(const std::string& id, Object* object) {
    object->SetEntityId(id);
 }
 
-void SceneObjectStore::RegisterParticleSystem(const std::string& id, ParticleSystem* particleSystem, const std::string& assetId) {
+void SceneObjectStore::RegisterParticleSystem(
+   const std::string& id, ParticleSystem* particleSystem, const std::string& assetId) {
    if (!particleSystem || id.empty()) {
       return;
    }
@@ -885,10 +863,12 @@ void SceneObjectStore::UnregisterObject(Object* object) {
       const std::string oldId = objectIt->second;
       idToObject_.erase(oldId);
       objectToId_.erase(objectIt);
+
       // 実体は描画フレーム末まで残すが、Undoは同じ安定IDを即座に復元できる必要がある。
       // 子は先にルートへ戻し、一時IDの伝播や旧実体の破棄による再解除を防ぐ。
       for (auto* child : Object::GetRegisteredObjects()) {
-         if (child && child != object && child->GetParentEntityId() == oldId) child->SetParentEntityId({});
+         if (child && child != object && child->GetParentEntityId() == oldId)
+            child->SetParentEntityId({});
       }
       std::string retiredId;
       do {
@@ -917,6 +897,7 @@ void SceneObjectStore::UnregisterOwnedRuntimeSystems(Object* object) {
    }
 
    pendingDeletionObjects_.insert(object);
+
    // 親Objectより長く静的描画リストへ残らないよう、Emitterが所有する実行時システムも先に解除する。
    if (auto* emitter = object->GetComponent<ParticleEmitterComponent>()) {
       emitter->UnregisterParticleSystemsForRender();
@@ -948,9 +929,7 @@ nlohmann::json SceneObjectStore::SerializeSpriteData(const Sprite* sprite) {
       return nlohmann::json::object();
    }
 
-   return nlohmann::json{
-      { "screenAnchorPoint", ToSpriteAnchorPointName(sprite->GetScreenAnchorPoint()) }
-   };
+   return nlohmann::json{{"screenAnchorPoint", ToSpriteAnchorPointName(sprite->GetScreenAnchorPoint())}};
 }
 
 void SceneObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::json& data) const {
@@ -960,7 +939,8 @@ void SceneObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::jso
 
    // Sprite専用状態はスクリーンアンカーだけで、寸法・反転・UVはComponentが復元する。
    if (data.contains("screenAnchorPoint")) {
-      sprite->SetScreenAnchorPoint(ParseSpriteAnchorPoint(data.at("screenAnchorPoint"), sprite->GetScreenAnchorPoint()));
+      sprite->SetScreenAnchorPoint(
+         ParseSpriteAnchorPoint(data.at("screenAnchorPoint"), sprite->GetScreenAnchorPoint()));
    }
 }
 

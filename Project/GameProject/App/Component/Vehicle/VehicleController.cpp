@@ -29,11 +29,13 @@ void VehicleController::SetGravityFollowCamera(GravityFollowCamera* camera) {
 
 Vector3 VehicleController::GetLastMoveDirection() const {
    const auto* mover = HasOwner() ? GetOwner().GetComponent<VehicleMover>() : nullptr;
-   return mover ? mover->GetLastMoveDirection() : Vector3{ 0.0f, 0.0f, 1.0f };
+   return mover ? mover->GetLastMoveDirection() : Vector3{0.0f, 0.0f, 1.0f};
 }
 
 void VehicleController::Update(float deltaTime) {
-   if (!HasOwner()) { return; }
+   if (!HasOwner()) {
+      return;
+   }
 
    // Inspectorで依存Componentが削除・再追加されるため、利用する更新ごとに解決する。
    auto* input = GetOwner().GetComponent<VehicleInputComponent>();
@@ -42,8 +44,10 @@ void VehicleController::Update(float deltaTime) {
 
    // 現在の重力Upを取得（無ければワールドUp）
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   Vector3 gravityUp = { 0.0f, 1.0f, 0.0f };
-   if (gravityBody) { gravityUp = gravityBody->GetTargetUpVector(); }
+   Vector3 gravityUp = {0.0f, 1.0f, 0.0f};
+   if (gravityBody) {
+      gravityUp = gravityBody->GetTargetUpVector();
+   }
 
    // 制御側は物理キーを知らず、意味付け済みの入力だけを消費する。
    // カメラやその部品をInspectorで削除しても、次の入力で旧メモリへアクセスしない。
@@ -54,8 +58,7 @@ void VehicleController::Update(float deltaTime) {
       const Vector2 camInput = input->GetCameraLookInput();
       if (camInput.x != 0.0f || camInput.y != 0.0f) {
          constexpr float kCamRotateScale = 150.0f;
-         Vector2 delta = { camInput.x * kCamRotateScale * deltaTime,
-                           camInput.y * kCamRotateScale * deltaTime };
+         Vector2 delta = {camInput.x * kCamRotateScale * deltaTime, camInput.y * kCamRotateScale * deltaTime};
          gravityFollowCamera->ProcessInput(delta, 0, true);
       }
    }
@@ -65,22 +68,21 @@ void VehicleController::Update(float deltaTime) {
 
    // ジャンプ入力
    if (jump && input && input->IsJumpTriggered()) {
-	  jump->Jump(gravityUp);
+      jump->Jump(gravityUp);
    }
 
    // 移動・姿勢入力を VehicleMover へ委譲
    if (mover) {
-	  const float steerInput = input ? input->GetSteerInput() : 0.0f;
-	  const float rollInput = input ? input->GetRollInput() : 0.0f;
-	  const float pitchInput = input ? input->GetPitchInput() : 0.0f;
-	  const bool driftInput = input && input->IsDriftHeld();
-	  mover->ApplyMovement(steerInput, rollInput, pitchInput, driftInput, isGrounded, gravityUp, deltaTime);
+      const float steerInput = input ? input->GetSteerInput() : 0.0f;
+      const float rollInput = input ? input->GetRollInput() : 0.0f;
+      const float pitchInput = input ? input->GetPitchInput() : 0.0f;
+      const bool driftInput = input && input->IsDriftHeld();
+      mover->ApplyMovement(steerInput, rollInput, pitchInput, driftInput, isGrounded, gravityUp, deltaTime);
    }
 }
 
 bool VehicleController::TryBuildPlayerShadowFrameData(
-   GameEngine::Camera* camera,
-   GameEngine::PlayerShadowFrameData& outFrameData) {
+   GameEngine::Camera* camera, GameEngine::PlayerShadowFrameData& outFrameData) {
    outFrameData = {};
 
    // レース中の無効化は操作の停止であり、影の描画対象からは外さない。
@@ -88,11 +90,9 @@ bool VehicleController::TryBuildPlayerShadowFrameData(
       return false;
    }
 
-   auto* player =
-      dynamic_cast<GameEngine::Model*>(&GetOwner());
+   auto* player = dynamic_cast<GameEngine::Model*>(&GetOwner());
 
-   auto* switcher =
-      GetOwner().GetComponent<PlanetSwitcher>();
+   auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
 
    if (!player || !switcher || !switcher->IsEnabled()) {
       return false;
@@ -102,24 +102,16 @@ bool VehicleController::TryBuildPlayerShadowFrameData(
    GameEngine::Vector3 center{};
    float radius = 0.0f;
 
-   if (!switcher->TryGetLandingPlanet(
-      receiver, center, radius) ||
-      receiver == player) {
+   if (!switcher->TryGetLandingPlanet(receiver, center, radius) || receiver == player) {
       return false;
    }
 
    // プレイヤーの位置は、親の変換を含むワールド位置を使用する。
    const auto world = player->GetWorldMatrix();
 
-   const GameEngine::Vector3 position{
-       world.m[3][0],
-       world.m[3][1],
-       world.m[3][2]
-   };
+   const GameEngine::Vector3 position{world.m[3][0], world.m[3][1], world.m[3][2]};
 
-   if (!std::isfinite(position.x) ||
-      !std::isfinite(position.y) ||
-      !std::isfinite(position.z)) {
+   if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) {
       return false;
    }
 
@@ -133,8 +125,7 @@ bool VehicleController::TryBuildPlayerShadowFrameData(
    return true;
 }
 
-void VehicleController::SubmitPlayerShadow(
-   GameEngine::Camera* camera) {
+void VehicleController::SubmitPlayerShadow(GameEngine::Camera* camera) {
    GameEngine::PlayerShadowFrameData data{};
 
    if (!TryBuildPlayerShadowFrameData(camera, data)) {
@@ -142,13 +133,10 @@ void VehicleController::SubmitPlayerShadow(
       return;
    }
 
-   const auto prepareModel =
-      [camera](GameEngine::Model* model) {
-      auto* mesh =
-         model->GetComponent<GameEngine::MeshComponent>();
+   const auto prepareModel = [camera](GameEngine::Model* model) {
+      auto* mesh = model->GetComponent<GameEngine::MeshComponent>();
 
-      auto* transform =
-         model->GetComponent<GameEngine::TransformComponent>();
+      auto* transform = model->GetComponent<GameEngine::TransformComponent>();
 
       if (!mesh || !transform) {
          return false;
@@ -156,8 +144,7 @@ void VehicleController::SubmitPlayerShadow(
 
       // プリミティブは必要に応じてメッシュを生成する。
       // ファイルモデルは読み込み済みのアセットを使用する。
-      if (mesh->GetSourceType() ==
-         GameEngine::MeshComponent::SourceType::Primitive) {
+      if (mesh->GetSourceType() == GameEngine::MeshComponent::SourceType::Primitive) {
          if (!mesh->EnsureMesh()) {
             return false;
          }
@@ -174,10 +161,9 @@ void VehicleController::SubmitPlayerShadow(
       model->UpdateMatrix(camera);
 
       return transform->GetTransformationMatrix() != nullptr;
-      };
+   };
 
-   if (!prepareModel(data.player) ||
-      !prepareModel(data.receiver)) {
+   if (!prepareModel(data.player) || !prepareModel(data.receiver)) {
       GameEngine::EngineContext::ClearPlayerShadowFrameData();
       return;
    }
@@ -189,9 +175,12 @@ void VehicleController::SubmitPlayerShadow(
 void VehicleController::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
+   if (!ImGui::CollapsingHeader(header.c_str())) {
+      return;
+   }
    ImGui::Separator();
-   ImGui::TextUnformatted(Tr("入力は VehicleInputComponent から取得します", "Input is provided by VehicleInputComponent"));
+   ImGui::TextUnformatted(
+      Tr("入力は VehicleInputComponent から取得します", "Input is provided by VehicleInputComponent"));
 }
 #endif
 

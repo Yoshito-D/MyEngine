@@ -10,11 +10,15 @@ namespace App {
 
 void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
    // 空中での多重ジャンプを防止
-   if (isJumping_) { return; }
+   if (isJumping_) {
+      return;
+   }
 
    // 重力ボディへ上向き速度を加算
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   if (!gravityBody) { return; }
+   if (!gravityBody) {
+      return;
+   }
    gravityBody->AddVelocityImpulse(gravityUp * jumpStrength);
 
    // ジャンプ状態を記録
@@ -42,7 +46,9 @@ nlohmann::json CharacterJump::Serialize() const {
 }
 
 void CharacterJump::Deserialize(const nlohmann::json& data) {
-   if (data.contains("jumpStrength")) { jumpStrength = data["jumpStrength"]; }
+   if (data.contains("jumpStrength")) {
+      jumpStrength = data["jumpStrength"];
+   }
    Configure(DescribeSettings());
 }
 

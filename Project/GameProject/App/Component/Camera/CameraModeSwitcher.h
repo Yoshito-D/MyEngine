@@ -15,7 +15,7 @@ namespace App {
 class CameraModeSwitcher final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "CameraModeSwitcher";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "カメラモード切替", "Camera Mode Switcher" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"カメラモード切替", "Camera Mode Switcher"};
 
    /// @brief コンポーネント型名を取得する
    /// @return CameraModeSwitcher
@@ -24,6 +24,7 @@ public:
    /// @brief JSONのカメラIDを実体へ解決して初期モードを適用する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -54,6 +55,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief 現在のカメラモードを表示する
    void DrawInspector() override;
 #endif

@@ -20,7 +20,7 @@ float Lerp(float from, float to, float t) {
 
 float SmoothTowards(float current, float target, float responseSpeed, float deltaTime) {
    if (responseSpeed <= 0.0f || deltaTime <= 0.0f) {
-	  return target;
+      return target;
    }
 
    // 指数応答にするとフレームレートが変わっても同じ時間感覚で目標値へ追従できる。
@@ -31,7 +31,7 @@ float SmoothTowards(float current, float target, float responseSpeed, float delt
 float CalculateEffectAmount(float currentSpeed, float minimumEffectSpeed, float maximumEffectSpeed) {
    const float speedRange = maximumEffectSpeed - minimumEffectSpeed;
    if (speedRange <= 1e-4f) {
-	  return currentSpeed >= minimumEffectSpeed ? 1.0f : 0.0f;
+      return currentSpeed >= minimumEffectSpeed ? 1.0f : 0.0f;
    }
 
    return Saturate((currentSpeed - minimumEffectSpeed) / speedRange);
@@ -47,14 +47,14 @@ VehicleSpeedPostEffectController::~VehicleSpeedPostEffectController() {
 
 void VehicleSpeedPostEffectController::Update(float deltaTime) {
    if (!HasOwner()) {
-	  ApplyNeutralEffect();
-	  return;
+      ApplyNeutralEffect();
+      return;
    }
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
    if (!groundMover) {
-	  ApplyNeutralEffect();
-	  return;
+      ApplyNeutralEffect();
+      return;
    }
 
    time_ += std::max(deltaTime * 10.0f, 0.0f);
@@ -66,7 +66,7 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
 
    // 速度由来の同じ係数を共有し、スピードラインと放射ブラーの立ち上がりを同期させる。
    GameEngine::SpeedLineParams params{};
-   params.center = { 0.5f, 0.5f };
+   params.center = {0.5f, 0.5f};
    params.intensity = maxIntensity * effectAmount_;
    params.lineDensity = lineDensity;
    params.thickness = thickness;
@@ -77,17 +77,21 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
    params.flowSpeed = Lerp(idleFlowSpeed, activeFlowSpeed, effectAmount_);
 
    GameEngine::EngineContext::SetSpeedLineParams(params);
+
    // ごく弱い値では描画パス自体を止め、見えないポストエフェクトの負荷を避ける。
-   GameEngine::EngineContext::SetPostProcessEffectEnabled("Speed Line", effectAmount_ >= std::max(visibleThreshold, 0.0f));
+   GameEngine::EngineContext::SetPostProcessEffectEnabled(
+      "Speed Line", effectAmount_ >= std::max(visibleThreshold, 0.0f));
 
    GameEngine::RadialBlurParams radialParams{};
-   radialParams.center = { 0.5f, 0.5f };
+   radialParams.center = {0.5f, 0.5f};
    radialParams.strength = radialBlurMaxStrength * effectAmount_;
    radialParams.sampleCount = radialBlurSampleCount;
 
    GameEngine::EngineContext::SetRadialBlurParams(radialParams);
+
    // 放射ブラーは別しきい値を持たせ、ラインより遅い立ち上がりも調整可能にする。
-   GameEngine::EngineContext::SetPostProcessEffectEnabled("Radial Blur", effectAmount_ >= std::max(radialBlurVisibleThreshold, 0.0f));
+   GameEngine::EngineContext::SetPostProcessEffectEnabled(
+      "Radial Blur", effectAmount_ >= std::max(radialBlurVisibleThreshold, 0.0f));
 }
 
 void VehicleSpeedPostEffectController::OnDetach() {
@@ -102,7 +106,9 @@ void VehicleSpeedPostEffectController::OnDisable() {
 void VehicleSpeedPostEffectController::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
+   if (!ImGui::CollapsingHeader(header.c_str())) {
+      return;
+   }
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("演出最低速度", "Minimum Effect Speed"), &minimumEffectSpeed, 0.1f, 0.0f, 200.0f);
@@ -120,7 +126,8 @@ void VehicleSpeedPostEffectController::DrawInspector() {
    ImGui::DragFloat(Tr("ランダムシード", "Random Seed"), &randomSeed, 0.1f, 0.0f, 100.0f);
    ImGui::DragFloat(Tr("放射ブラー最大値", "Radial Blur Max"), &radialBlurMaxStrength, 0.001f, 0.0f, 0.1f, "%.3f");
    ImGui::SliderInt(Tr("放射ブラーサンプル数", "Radial Samples"), &radialBlurSampleCount, 2, 32);
-   ImGui::DragFloat(Tr("放射ブラー表示しきい値", "Radial Visible Threshold"), &radialBlurVisibleThreshold, 0.001f, 0.0f, 1.0f);
+   ImGui::DragFloat(
+      Tr("放射ブラー表示しきい値", "Radial Visible Threshold"), &radialBlurVisibleThreshold, 0.001f, 0.0f, 1.0f);
    ImGui::Text("%s: %.3f", Tr("エフェクト量", "Effect Amount"), effectAmount_);
    Configure(DescribeSettings());
 }
@@ -148,35 +155,68 @@ nlohmann::json VehicleSpeedPostEffectController::Serialize() const {
 }
 
 void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
-   if (data.contains("minimumEffectSpeed")) { minimumEffectSpeed = data["minimumEffectSpeed"]; }
-   if (data.contains("maximumEffectSpeed")) { maximumEffectSpeed = data["maximumEffectSpeed"]; }
+   if (data.contains("minimumEffectSpeed")) {
+      minimumEffectSpeed = data["minimumEffectSpeed"];
+   }
+   if (data.contains("maximumEffectSpeed")) {
+      maximumEffectSpeed = data["maximumEffectSpeed"];
+   }
+
    // 旧シーンの相対指定を絶対速度へ移行し、保存済みデータとの互換性を維持する。
    if (!data.contains("minimumEffectSpeed") && data.contains("activationMargin")) {
-	  float baseSpeed = minimumEffectSpeed;
-	  if (HasOwner()) {
-		 if (auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>()) {
-			baseSpeed = groundMover->DescribeSettings().autoSpeed;
-		 }
-	  }
-	  minimumEffectSpeed = baseSpeed + std::max(data["activationMargin"].get<float>(), 0.0f);
+      float baseSpeed = minimumEffectSpeed;
+      if (HasOwner()) {
+         if (auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>()) {
+            baseSpeed = groundMover->DescribeSettings().autoSpeed;
+         }
+      }
+      minimumEffectSpeed = baseSpeed + std::max(data["activationMargin"].get<float>(), 0.0f);
    }
    if (!data.contains("maximumEffectSpeed") && data.contains("effectSpeedRange")) {
-	  maximumEffectSpeed = minimumEffectSpeed + std::max(data["effectSpeedRange"].get<float>(), 0.01f);
+      maximumEffectSpeed = minimumEffectSpeed + std::max(data["effectSpeedRange"].get<float>(), 0.01f);
    }
-   if (data.contains("responseSpeed")) { responseSpeed = data["responseSpeed"]; }
-   if (data.contains("visibleThreshold")) { visibleThreshold = data["visibleThreshold"]; }
-   if (data.contains("idleInnerRadius")) { idleInnerRadius = data["idleInnerRadius"]; }
-   if (data.contains("activeInnerRadius")) { activeInnerRadius = data["activeInnerRadius"]; }
-   if (data.contains("outerRadius")) { outerRadius = data["outerRadius"]; }
-   if (data.contains("maxIntensity")) { maxIntensity = data["maxIntensity"]; }
-   if (data.contains("idleFlowSpeed")) { idleFlowSpeed = data["idleFlowSpeed"]; }
-   if (data.contains("activeFlowSpeed")) { activeFlowSpeed = data["activeFlowSpeed"]; }
-   if (data.contains("lineDensity")) { lineDensity = data["lineDensity"]; }
-   if (data.contains("thickness")) { thickness = data["thickness"]; }
-   if (data.contains("randomSeed")) { randomSeed = data["randomSeed"]; }
-   if (data.contains("radialBlurMaxStrength")) { radialBlurMaxStrength = data["radialBlurMaxStrength"]; }
-   if (data.contains("radialBlurSampleCount")) { radialBlurSampleCount = data["radialBlurSampleCount"]; }
-   if (data.contains("radialBlurVisibleThreshold")) { radialBlurVisibleThreshold = data["radialBlurVisibleThreshold"]; }
+   if (data.contains("responseSpeed")) {
+      responseSpeed = data["responseSpeed"];
+   }
+   if (data.contains("visibleThreshold")) {
+      visibleThreshold = data["visibleThreshold"];
+   }
+   if (data.contains("idleInnerRadius")) {
+      idleInnerRadius = data["idleInnerRadius"];
+   }
+   if (data.contains("activeInnerRadius")) {
+      activeInnerRadius = data["activeInnerRadius"];
+   }
+   if (data.contains("outerRadius")) {
+      outerRadius = data["outerRadius"];
+   }
+   if (data.contains("maxIntensity")) {
+      maxIntensity = data["maxIntensity"];
+   }
+   if (data.contains("idleFlowSpeed")) {
+      idleFlowSpeed = data["idleFlowSpeed"];
+   }
+   if (data.contains("activeFlowSpeed")) {
+      activeFlowSpeed = data["activeFlowSpeed"];
+   }
+   if (data.contains("lineDensity")) {
+      lineDensity = data["lineDensity"];
+   }
+   if (data.contains("thickness")) {
+      thickness = data["thickness"];
+   }
+   if (data.contains("randomSeed")) {
+      randomSeed = data["randomSeed"];
+   }
+   if (data.contains("radialBlurMaxStrength")) {
+      radialBlurMaxStrength = data["radialBlurMaxStrength"];
+   }
+   if (data.contains("radialBlurSampleCount")) {
+      radialBlurSampleCount = data["radialBlurSampleCount"];
+   }
+   if (data.contains("radialBlurVisibleThreshold")) {
+      radialBlurVisibleThreshold = data["radialBlurVisibleThreshold"];
+   }
    Configure(DescribeSettings());
 }
 
@@ -185,7 +225,7 @@ void VehicleSpeedPostEffectController::ApplyNeutralEffect() {
 
    // コンポーネントの寿命よりエフェクトスタックの方が長いため、無効化時に共有状態を明示的に戻す。
    GameEngine::SpeedLineParams params{};
-   params.center = { 0.5f, 0.5f };
+   params.center = {0.5f, 0.5f};
    params.intensity = 0.0f;
    params.lineDensity = lineDensity;
    params.thickness = thickness;
@@ -199,7 +239,7 @@ void VehicleSpeedPostEffectController::ApplyNeutralEffect() {
    GameEngine::EngineContext::SetPostProcessEffectEnabled("Speed Line", false);
 
    GameEngine::RadialBlurParams radialParams{};
-   radialParams.center = { 0.5f, 0.5f };
+   radialParams.center = {0.5f, 0.5f};
    radialParams.strength = 0.0f;
    radialParams.sampleCount = radialBlurSampleCount;
 

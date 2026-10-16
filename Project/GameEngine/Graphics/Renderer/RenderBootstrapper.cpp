@@ -22,13 +22,13 @@ constexpr size_t kLineRendererCapacity = 100000;
 
 bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const {
    // 後続パスが参照する描画形式を確定するため、オフスクリーンターゲットを最初に生成する。
-   context.offscreenRenderTarget->Initialize(
-	  context.device);
+   context.offscreenRenderTarget->Initialize(context.device);
 
    if (!context.shaderManager->Initialize(context.device)) {
-	  Logger::Error("[RenderBootstrapper] Failed to initialize shaders from JSON registry.");
+      Logger::Error("[RenderBootstrapper] Failed to initialize shaders from JSON registry.");
       if (!context.shaderManager->HasShader("Object3D", ShaderType::Vertex) ||
-         !context.shaderManager->HasShader("Object3D", ShaderType::Pixel)) return false;
+          !context.shaderManager->HasShader("Object3D", ShaderType::Pixel))
+         return false;
    }
 
    context.psoManager->Initialize(context.device, context.shaderManager);
@@ -38,9 +38,11 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    context.spriteRenderer->Initialize(context.device, context.psoManager);
    context.particleRenderer->Initialize(context.device, context.psoManager);
 
-   if (!context.psoManager->LoadPipelineDefinitions(L"resources/engine/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
+   if (!context.psoManager->LoadPipelineDefinitions(
+          L"resources/engine/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
       Logger::Error("[RenderBootstrapper] Failed to load pipeline definitions from JSON registry.");
-      if (!context.psoManager->GetModelPipeline("Object3D")) return false;
+      if (!context.psoManager->GetModelPipeline("Object3D"))
+         return false;
       Logger::Warning("[RenderBootstrapper] Continuing with available pipelines; some definitions failed.");
    } else {
       Logger::Info("Pipeline definitions loaded.");
@@ -54,14 +56,15 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    context.lineRenderer->Initialize(context.device->GetDevice(), kLineRendererCapacity);
    context.postProcessLineRenderer->Initialize(context.device->GetDevice(), kLineRendererCapacity);
 
-   context.uiRenderer->Initialize(context.device, context.psoManager, context.uiCamera, context.spriteRenderer, context.lightManager);
+   context.uiRenderer->Initialize(
+      context.device, context.psoManager, context.uiCamera, context.spriteRenderer, context.lightManager);
 
    context.postProcessManager->Initialize(context.device, context.offscreenRenderTarget, context.psoManager);
 
    // ポストプロセスはPSOと中間ターゲットの両方を必要とするため、共通描画基盤の後にレジストリを読む。
    if (!context.postProcessManager->LoadEffectsFromJson(L"resources/engine/postprocess/postprocess_registry.json")) {
       Logger::Error("[RenderBootstrapper] Failed to load post-process effects from JSON registry.");
-	  return false;
+      return false;
    }
    Logger::Info("Successfully loaded post-process effects from JSON");
 

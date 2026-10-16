@@ -14,9 +14,8 @@ std::string BuildDefaultTextName(const std::vector<UIText*>& registeredTexts) {
    uint32_t index = 1;
    while (true) {
       const std::string candidate = "UIText_" + std::to_string(index++);
-      const bool exists = std::any_of(registeredTexts.begin(), registeredTexts.end(), [&candidate](const UIText* text) {
-         return text && text->GetObjectName() == candidate;
-      });
+      const bool exists = std::any_of(registeredTexts.begin(), registeredTexts.end(),
+         [&candidate](const UIText* text) { return text && text->GetObjectName() == candidate; });
       if (!exists) {
          return candidate;
       }
@@ -40,6 +39,7 @@ UIText::UIText() {
          settings.renderSpace = RenderComponent::RenderSpace::Screen;
          renderComponent->Configure(settings);
       }
+
       // HUD文字はシーンのポストエフェクトでにじませず、最終画面へ直接重ねる。
       {
          auto settings = renderComponent->DescribeSettings();

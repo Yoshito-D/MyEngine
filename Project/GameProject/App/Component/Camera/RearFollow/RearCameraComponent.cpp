@@ -7,6 +7,11 @@
 
 namespace App {
 
+void RearCameraComponent::OnCameraReset(const GameEngine::ICinemachineComponent& source) {
+   if (const auto* camera = dynamic_cast<const PlayerRearFollowCamera*>(&source))
+      Reset(camera->DescribeSettings());
+}
+
 void RearCameraComponent::OnAttach() {
    auto* owner = GetOwnerCamera();
    if (auto* camera = owner ? owner->GetComponent<PlayerRearFollowCamera>() : nullptr) {
@@ -22,6 +27,7 @@ void RearCameraComponent::Deserialize(const nlohmann::json&) {
 
 PlayerRearFollowCamera* RearCameraComponent::GetRearCamera() {
    auto* camera = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<PlayerRearFollowCamera>() : nullptr;
+
    // 兄弟部品への永続ポインターを持たず、Inspectorから削除された場合も安全に停止する。
    return camera && camera->IsEnabled() && camera->HasRequiredComponents() ? camera : nullptr;
 }
@@ -29,7 +35,8 @@ PlayerRearFollowCamera* RearCameraComponent::GetRearCamera() {
 #ifdef USE_IMGUI
 void RearCameraComponent::DrawInspector() {
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox("Enabled", &enabled)) SetEnabled(enabled);
+   if (ImGui::Checkbox("Enabled", &enabled))
+      SetEnabled(enabled);
    ImGui::Text("Execution order: %d", GetExecutionOrder());
 }
 #endif

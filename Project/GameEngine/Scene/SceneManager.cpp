@@ -11,18 +11,18 @@ namespace GameEngine {
 bool SceneManager::ChangeScene(const std::string& name) {
    // 切り替え処理中の再入を拒否し、Finalize/InitializeからのChangeSceneで所有権が二重に動くのを防ぐ。
    if (!factory_ || name.empty() || isChangingScene_) {
-	  return false;
+      return false;
    }
 
    auto newScene = factory_->CreateScene(name);
    if (!newScene) {
-	  return false;
+      return false;
    }
 
    // Initializeより先にデータ名を渡し、EditorContextやDebugCamera状態が正しいファイルを参照できるようにする。
    newScene->SetEditorSceneName(name);
    if (!ChangeScene(std::move(newScene))) {
-	  return false;
+      return false;
    }
 
    currentSceneName_ = name;
@@ -31,18 +31,20 @@ bool SceneManager::ChangeScene(const std::string& name) {
 
 bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
    if (!newScene || isChangingScene_) {
-	  return false;
+      return false;
    }
 
    isChangingScene_ = true;
    auto* audio = EngineContext::GetAudio();
-   if (audio) audio->StopPreviews();
-   if (audio && audio->IsAvailable()) audio->GetBgmPlayer().BeginSceneChange();
+   if (audio)
+      audio->StopPreviews();
+   if (audio && audio->IsAvailable())
+      audio->BeginBgmSceneChange();
 
    // 新シーン生成にはCamera/Light等のグローバルManagerを再利用するため、旧シーンを完全に終了してから初期化する。
    if (currentScene_) {
-	  currentScene_->Finalize();
-	  currentScene_.reset();
+      currentScene_->Finalize();
+      currentScene_.reset();
    }
 
 #ifdef USE_IMGUI
@@ -51,11 +53,13 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
 #endif
 
    currentScene_ = std::move(newScene);
+
    // C++で基礎Objectを生成した後に保存JSONを重ねることで、Scene固有Entityへの差分を適用できる。
    currentScene_->Initialize();
    currentScene_->LoadSceneDataIfNeeded();
 
-   if (audio && audio->IsAvailable()) audio->GetBgmPlayer().EndSceneChange(HasSceneBgmRequest());
+   if (audio && audio->IsAvailable())
+      audio->EndBgmSceneChange(HasSceneBgmRequest());
 #ifndef USE_IMGUI
    BeginSceneAudio();
 #endif
@@ -68,27 +72,35 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
 void SceneManager::Update() {
    // フェードはPauseやtimeScaleの影響を受けないUI時間で進める。
    UpdateTransition(EngineContext::GetUnscaledDeltaTime());
-   if (currentScene_) { currentScene_->Update(); }
+   if (currentScene_) {
+      currentScene_->Update();
+   }
 }
 
 void SceneManager::EditorUpdate() {
    UpdateTransition(EngineContext::GetUnscaledDeltaTime());
-   if (currentScene_) { currentScene_->EditorUpdate(); }
+   if (currentScene_) {
+      currentScene_->EditorUpdate();
+   }
 }
 
 void SceneManager::RuntimeUpdate() {
-   if (currentScene_) { currentScene_->RuntimeUpdate(); }
+   if (currentScene_) {
+      currentScene_->RuntimeUpdate();
+   }
 }
 
 void SceneManager::Draw() {
-   if (currentScene_) currentScene_->Draw();
+   if (currentScene_)
+      currentScene_->Draw();
 }
 
 void SceneManager::Finalize() {
-   if (auto* audio = EngineContext::GetAudio()) audio->StopPreviews();
+   if (auto* audio = EngineContext::GetAudio())
+      audio->StopPreviews();
    if (currentScene_) {
-	  currentScene_->Finalize();
-	  currentScene_.reset();
+      currentScene_->Finalize();
+      currentScene_.reset();
    }
    pendingSceneName_.clear();
    transitionState_ = TransitionState::Idle;
@@ -98,11 +110,12 @@ void SceneManager::Finalize() {
 }
 
 void SceneManager::CheckSceneChange() {
-   if (!currentScene_ || isChangingScene_) return;
+   if (!currentScene_ || isChangingScene_)
+      return;
 
    std::string nextSceneName = currentScene_->GetNextSceneName();
    if (nextSceneName.empty()) {
-	  return;
+      return;
    }
 
    // 既にフェード中なら最初の要求を維持し、毎フレーム遷移先が書き換わるのを防ぐ。
@@ -164,6 +177,7 @@ void SceneManager::StartFadeOut(const std::string& nextSceneName) {
    pendingSceneName_ = nextSceneName;
    BaseScene::SetNextSceneName("");
    transitionState_ = TransitionState::FadingOut;
+
    // フェードイン中の再要求でも現在の明るさから連続して暗転させる。
    transitionElapsed_ = transitionOpacity_ * kTransitionDuration;
    EngineContext::SetSceneTransitionOpacity(transitionOpacity_);

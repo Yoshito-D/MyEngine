@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 
@@ -18,7 +19,7 @@ class VehicleInputComponent final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "VehicleInputComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両入力", "Vehicle Input" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両入力", "Vehicle Input"};
 
    /// @brief コンポーネント型名を取得する
    /// @return VehicleInputComponent
@@ -62,21 +63,25 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief 入力対象のプレイヤースロットを編集する
    void DrawInspector() override;
 #endif
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
+
       /// @brief 入力を読み取るプレイヤースロット
       uint32_t playerSlot = 0;
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
       settings.playerSlot = playerSlot;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;

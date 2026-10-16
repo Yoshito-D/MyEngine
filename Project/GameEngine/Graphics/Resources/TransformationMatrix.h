@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -10,21 +11,24 @@ using namespace Microsoft::WRL;
 
 namespace GameEngine {
 class GraphicsDevice;
+
 /// @brief トランスフォーメーションマトリックスクラス
 class TransformationMatrix {
 public:
    /// @brief GPUデータを確保する前の状態を構築する。
    TransformationMatrix() = default;
+
    /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
    TransformationMatrix(const TransformationMatrix&) = delete;
+
    /// @brief GPUデータの暗黙な共有を禁止する。
    TransformationMatrix& operator=(const TransformationMatrix&) = delete;
 
    /// @brief トランスフォーメーションマトリックスのデータ構造
    struct TransformationMatrixData {
-	  Matrix4x4 wVP;// ワールド・ビュー・プロジェクション行列
-	  Matrix4x4 world;// ワールド行列
-	  Matrix4x4 worldInverseTranspose;// ワールド行列の逆行列の転置行列
+      Matrix4x4 wVP;                   // ワールド・ビュー・プロジェクション行列
+      Matrix4x4 world;                 // ワールド行列
+      Matrix4x4 worldInverseTranspose; // ワールド行列の逆行列の転置行列
    };
 
    /// @brief デバイスを取得して初期化

@@ -37,16 +37,14 @@
 namespace {
 
 template <typename T>
-bool RegisterAppComponent(GameEngine::ObjectTypeMask supportedObjectTypes = GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)) {
+bool RegisterAppComponent(
+   GameEngine::ObjectTypeMask supportedObjectTypes = GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)) {
    // 各コンポーネントが公開する型名・表示名を共通のファクトリー形式へ束ねる。
    // デフォルトを Model に限定し、対応型を明示していないゲームプレイ機能が不適切な UI 等へ付くのを防ぐ。
    return GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
       T::kTypeName,
-      [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
-         return object.AddComponent<T>();
-      },
-      T::kDisplayName,
-      supportedObjectTypes);
+      [](GameEngine::Object& object) -> GameEngine::IObjectComponent* { return object.AddComponent<T>(); },
+      T::kDisplayName, supportedObjectTypes);
 }
 
 // 静的初期化でゲーム固有型を登録し、シーン復元時に型名だけから生成できるようにする。
@@ -68,11 +66,14 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::RaceGateComponent>(
       GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite),
    RegisterAppComponent<App::RaceCountdownTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
-   RegisterAppComponent<App::RaceGoalDirectionHUDComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)),
-   RegisterAppComponent<App::RaceGoalDistanceTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
+   RegisterAppComponent<App::RaceGoalDirectionHUDComponent>(
+      GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)),
+   RegisterAppComponent<App::RaceGoalDistanceTextComponent>(
+      GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::RaceResultUIComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::RaceTimeTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
-   RegisterAppComponent<App::VehicleSpeedGaugeUIComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Sprite)),
+   RegisterAppComponent<App::VehicleSpeedGaugeUIComponent>(
+      GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Sprite)),
    RegisterAppComponent<App::TitleStartComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::TutorialProgressComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleAirController>(),

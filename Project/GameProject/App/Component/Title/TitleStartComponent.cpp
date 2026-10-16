@@ -31,13 +31,14 @@ void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    startRequested_ = false;
    navigationLatched_ = false;
    reactionElapsed_ = 0.0f;
-   reactionStartScale_ = { 1.0f, 1.0f, 1.0f };
+   reactionStartScale_ = {1.0f, 1.0f, 1.0f};
    selectionAnimationElapsed_ = 0.0f;
    selectionSwitchElapsed_ = 0.0f;
    selectionSwitchActive_ = false;
    hasBaseVisualStates_ = false;
    optionTexts_.fill(nullptr);
    optionTransforms_.fill(nullptr);
+
    // 参照解決後の見た目を演出の基準値として退避し、存在する先頭の選択肢から入力待ちを始める。
    ResolveOptionVisuals(sceneWorld);
    hasBaseVisualStates_ = CaptureBaseVisualStates();
@@ -54,11 +55,9 @@ void TitleStartComponent::Update(float deltaTime) {
 
    if (!startRequested_) {
       bool selectionChanged = false;
-      const auto& navigationAction =
-         GameEngine::EngineContext::GetInputActionState("UI", "UI.Navigate", 0);
-      const int navigationDirection = navigationAction.value.x > 0.5f
-         ? 1
-         : (navigationAction.value.x < -0.5f ? -1 : 0);
+      const auto& navigationAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Navigate", 0);
+      const int navigationDirection = navigationAction.value.x > 0.5f ? 1 : (navigationAction.value.x < -0.5f ? -1 : 0);
+
       // 閾値未満を中立として扱い、スティックの微小な揺れで選択が変わらないようにする。
       if (navigationDirection == 0) {
          navigationLatched_ = false;
@@ -78,9 +77,9 @@ void TitleStartComponent::Update(float deltaTime) {
       // 切り替えたフレームは縮小の開始値を必ず一度表示する。
       UpdateSelectionAnimation(selectionChanged ? 0.0f : deltaTime);
 
-      const auto& confirmAction =
-         GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
+      const auto& confirmAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
       const std::string& selectedScene = GetSelectedSceneName();
+
       // 解決不能な選択肢や空の遷移先は決定できない状態として扱う。
       if (!confirmAction.triggered || selectedScene.empty()) {
          return;
@@ -89,6 +88,7 @@ void TitleStartComponent::Update(float deltaTime) {
       // 遷移要求を先に出し、次フレームから共通暗転とUIリアクションを同じ時間軸で重ねる。
       startRequested_ = true;
       reactionElapsed_ = 0.0f;
+
       // 選択中の拡大・縮小から連続して決定演出へ入り、基準倍率へ跳ね戻らせない。
       reactionStartScale_ = optionTransforms_[static_cast<std::size_t>(selectedOption_)]->GetLocalPose().scale;
       GameEngine::BaseScene::SetNextSceneName(selectedScene);
@@ -102,26 +102,21 @@ void TitleStartComponent::Update(float deltaTime) {
 
 nlohmann::json TitleStartComponent::Serialize() const {
    // 現在の選択や遷移要求は保存せず、UI参照・遷移先・演出設定だけをシーン設定として残す。
-   return nlohmann::json{
-      { "tutorialOptionObjectId", tutorialOptionObjectId_ },
-      { "stageOptionObjectId", stageOptionObjectId_ },
-      { "tutorialScene", tutorialScene_ },
-      { "stageScene", stageScene_ },
-      { "reactionDuration", reactionDuration_ },
-      { "reactionEndScale", reactionEndScale_ },
-      { "selectionPulseDuration", selectionPulseDuration_ },
-      { "selectionPulseScale", selectionPulseScale_ },
-      { "selectionSwitchDuration", selectionSwitchDuration_ },
-      { "selectionSwitchScale", selectionSwitchScale_ }
-   };
+   return nlohmann::json{{"tutorialOptionObjectId", tutorialOptionObjectId_},
+      {"stageOptionObjectId", stageOptionObjectId_}, {"tutorialScene", tutorialScene_}, {"stageScene", stageScene_},
+      {"reactionDuration", reactionDuration_}, {"reactionEndScale", reactionEndScale_},
+      {"selectionPulseDuration", selectionPulseDuration_}, {"selectionPulseScale", selectionPulseScale_},
+      {"selectionSwitchDuration", selectionSwitchDuration_}, {"selectionSwitchScale", selectionSwitchScale_}};
 }
 
 void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+
    // 同じインスタンスへ再適用しても旧形式判定を持ち越さないよう、読み込みごとに解除する。
    legacySingleOption_ = false;
+
    // 新形式の各項目は独立して検証し、欠落・型不一致なら既定値または現在値を維持する。
    if (data.contains("tutorialOptionObjectId") && data.at("tutorialOptionObjectId").is_string()) {
       tutorialOptionObjectId_ = data.at("tutorialOptionObjectId").get<std::string>();
@@ -138,9 +133,7 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
       // 旧タイトルのオーナー表示を単一のステージ選択肢として引き継ぐ。
       stageScene_ = data.at("nextScene").get<std::string>();
       if (!data.contains("stageOptionObjectId")) {
-         stageOptionObjectId_ = HasOwner()
-            ? GetOwner().GetEntityId()
-            : tutorialOptionObjectId_;
+         stageOptionObjectId_ = HasOwner() ? GetOwner().GetEntityId() : tutorialOptionObjectId_;
       }
       tutorialOptionObjectId_.clear();
       legacySingleOption_ = true;
@@ -169,10 +162,7 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
 
 void TitleStartComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld) {
    // 選択肢ごとの設定IDを同じ添字のText・Transform配列へ対応付ける。
-   const std::array<std::string, 2> objectIds = {
-      tutorialOptionObjectId_,
-      stageOptionObjectId_
-   };
+   const std::array<std::string, 2> objectIds = {tutorialOptionObjectId_, stageOptionObjectId_};
    std::array<GameEngine::Object*, 2> optionObjects = {};
    for (std::size_t optionIndex = 0; optionIndex < objectIds.size(); ++optionIndex) {
       optionObjects[optionIndex] = sceneWorld.FindObjectById(objectIds[optionIndex]);
@@ -180,6 +170,7 @@ void TitleStartComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorl
 
    if (HasOwner()) {
       GameEngine::Object* owner = &GetOwner();
+
       // nextScene形式ではオーナー自身が単一のステージ表示だった。
       if (legacySingleOption_ && !optionObjects[1]) {
          optionObjects[1] = owner;
@@ -217,8 +208,8 @@ bool TitleStartComponent::CaptureBaseVisualStates() {
 }
 
 bool TitleStartComponent::IsOptionAvailable(std::size_t optionIndex) const {
-   return optionIndex < optionTexts_.size() &&
-      optionTexts_[optionIndex] != nullptr && optionTransforms_[optionIndex] != nullptr;
+   return optionIndex < optionTexts_.size() && optionTexts_[optionIndex] != nullptr &&
+          optionTransforms_[optionIndex] != nullptr;
 }
 
 bool TitleStartComponent::SelectInitialOption() {
@@ -236,6 +227,7 @@ bool TitleStartComponent::MoveSelection(int direction) {
    constexpr int kOptionCount = 2;
    const int previousSelection = selectedOption_;
    int candidate = selectedOption_;
+
    // 端では巡回し、未解決の項目を飛ばす。候補数までの試行に制限して全欠落時も終了させる。
    for (int attempt = 0; attempt < kOptionCount; ++attempt) {
       candidate = (candidate + direction + kOptionCount) % kOptionCount;
@@ -253,12 +245,10 @@ void TitleStartComponent::RefreshSelectionText() {
       return;
    }
    if (IsOptionAvailable(0)) {
-      optionTexts_[0]->SetText(
-         std::string(selectedOption_ == 0 ? "> " : "  ") + "チュートリアルから あそぶ");
+      optionTexts_[0]->SetText(std::string(selectedOption_ == 0 ? "> " : "  ") + "チュートリアルから あそぶ");
    }
    if (IsOptionAvailable(1)) {
-      optionTexts_[1]->SetText(
-         std::string(selectedOption_ == 1 ? "> " : "  ") + "ステージから あそぶ");
+      optionTexts_[1]->SetText(std::string(selectedOption_ == 1 ? "> " : "  ") + "ステージから あそぶ");
    }
 }
 
@@ -274,10 +264,8 @@ void TitleStartComponent::UpdateSelectionAnimation(float deltaTime) {
       if (optionIndex == selectedIndex) {
          if (selectionSwitchActive_) {
             selectionSwitchElapsed_ += std::max(deltaTime, 0.0f);
-            const float switchProgress =
-               std::clamp(selectionSwitchElapsed_ / selectionSwitchDuration_, 0.0f, 1.0f);
-            scaleMultiplier = GameEngine::Easing::EaseOutCubic(
-               selectionSwitchScale_, 1.0f, switchProgress);
+            const float switchProgress = std::clamp(selectionSwitchElapsed_ / selectionSwitchDuration_, 0.0f, 1.0f);
+            scaleMultiplier = GameEngine::Easing::EaseOutCubic(selectionSwitchScale_, 1.0f, switchProgress);
             if (switchProgress >= 1.0f) {
                selectionSwitchActive_ = false;
                selectionAnimationElapsed_ = 0.0f;
@@ -288,17 +276,16 @@ void TitleStartComponent::UpdateSelectionAnimation(float deltaTime) {
             const float pulsePhase =
                std::fmod(selectionAnimationElapsed_, selectionPulseDuration_) / selectionPulseDuration_;
             const float pulseProgress = 0.5f - 0.5f * std::cos(kTwoPi * pulsePhase);
-            scaleMultiplier = GameEngine::Easing::EaseInOutSine(
-               1.0f, selectionPulseScale_, pulseProgress);
+            scaleMultiplier = GameEngine::Easing::EaseInOutSine(1.0f, selectionPulseScale_, pulseProgress);
          }
       }
 
       // 未選択側も基準値から毎フレーム設定し、直前までの選択アニメーションを残さない。
-      { auto pose = optionTransforms_[optionIndex]->GetLocalPose(); pose.scale = {
-         baseScale.x * scaleMultiplier,
-         baseScale.y * scaleMultiplier,
-         baseScale.z
-      }; optionTransforms_[optionIndex]->ApplyLocalPose(pose); }
+      {
+         auto pose = optionTransforms_[optionIndex]->GetLocalPose();
+         pose.scale = {baseScale.x * scaleMultiplier, baseScale.y * scaleMultiplier, baseScale.z};
+         optionTransforms_[optionIndex]->ApplyLocalPose(pose);
+      }
    }
 }
 
@@ -319,15 +306,13 @@ void TitleStartComponent::ApplyStartReaction(std::size_t optionIndex) {
    auto& text = *optionTexts_[optionIndex];
    auto& transform = *optionTransforms_[optionIndex];
    const auto& baseScale = baseScales_[optionIndex];
+
    // 決定時の表示倍率から終点へ補間し、反復計算による誤差を蓄積させない。
    const float progress = std::clamp(reactionElapsed_ / reactionDuration_, 0.0f, 1.0f);
    const float scaleProgress = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, progress);
    auto pose = transform.GetLocalPose();
-   pose.scale = {
-      reactionStartScale_.x + (baseScale.x * reactionEndScale_ - reactionStartScale_.x) * scaleProgress,
-      reactionStartScale_.y + (baseScale.y * reactionEndScale_ - reactionStartScale_.y) * scaleProgress,
-      baseScale.z
-   };
+   pose.scale = {reactionStartScale_.x + (baseScale.x * reactionEndScale_ - reactionStartScale_.x) * scaleProgress,
+      reactionStartScale_.y + (baseScale.y * reactionEndScale_ - reactionStartScale_.y) * scaleProgress, baseScale.z};
    text.SetOpacity(GameEngine::Easing::EaseInQuad(baseOpacities_[optionIndex], 0.0f, progress));
    transform.ApplyLocalPose(pose);
 }

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <memory>
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
@@ -8,13 +9,16 @@
 #include <nlohmann/json_fwd.hpp>
 
 namespace GameEngine {
+
 /// @brief ポストプロセスクラス
 class PostProcess {
 public:
    /// @brief 未初期化のエフェクトを構築する。
    PostProcess() = default;
+
    /// @brief 派生エフェクトのGPU定数バッファを暗黙に共有するコピーを禁止する。
    PostProcess(const PostProcess&) = delete;
+
    /// @brief 別のエフェクトから同じGPU定数を書き換えるコピー代入を禁止する。
    PostProcess& operator=(const PostProcess&) = delete;
 
@@ -31,6 +35,7 @@ public:
    virtual void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) = 0;
 
 #ifdef USE_IMGUI
+
    /// @brief エフェクト固有のImGui編集項目を描画する
    virtual void ImGuiEdit() {}
 #endif
@@ -49,6 +54,7 @@ public:
 
 private:
    friend class PostProcessManager;
+
    /// @brief パイプラインとルートシグネチャを設定（外部から）
    /// @param pipeline パイプラインステート
    /// @param rootSignature ルートシグネチャ
@@ -78,24 +84,31 @@ private:
 protected:
    /// @brief 初期化時に関連付けた非所有デバイスを取得する。
    GraphicsDevice* GetDevice() const { return device_; }
+
    /// @brief 初期化時に関連付けた非所有描画先を取得する。
    OffscreenRenderTarget* GetRenderTarget() const { return renderTarget_; }
+
    /// @brief 管理側が設定した読み取り専用パイプラインを取得する。
    const PipelineState* GetPipeline() const { return pipeline_; }
+
    /// @brief 管理側が設定した読み取り専用ルートシグネチャを取得する。
    const RootSignature* GetRootSignature() const { return rootSignature_; }
+
    /// @brief 定数バッファの検証済みバインド番号を取得する。
    UINT GetConstantBufferRootSlot() const { return constantBufferRootSlot_; }
+
    /// @brief 入力カラーの検証済みバインド番号を取得する。
    UINT GetInputTextureRootSlot() const { return inputTextureRootSlot_; }
+
    /// @brief 深度テクスチャの検証済みバインド番号を取得する。
    UINT GetDepthTextureRootSlot() const { return depthTextureRootSlot_; }
+
    /// @brief マスクテクスチャの検証済みバインド番号を取得する。
    UINT GetMaskTextureRootSlot() const { return maskTextureRootSlot_; }
 
    // ImGuiの固有ID管理
 #ifdef USE_IMGUI
-		// 各エフェクトインスタンス用の固有IDを生成
+   // 各エフェクトインスタンス用の固有IDを生成
    const void* GetImGuiID() const { return static_cast<const void*>(this); }
 
    /// @brief エディタの現在言語に対応する表示文字列を取得する

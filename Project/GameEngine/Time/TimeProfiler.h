@@ -1,7 +1,9 @@
 #pragma once
+
 #include <chrono>
 
 namespace GameEngine {
+
 /// @brief 時間計測クラス
 class TimeProfiler {
 public:

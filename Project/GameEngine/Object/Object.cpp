@@ -29,8 +29,7 @@ std::string AllocateRuntimeEntityId() {
 }
 
 GameEngine::Matrix4x4 CalculateWorldMatrix(
-   const GameEngine::Object* object,
-   std::unordered_set<const GameEngine::Object*>& visiting) {
+   const GameEngine::Object* object, std::unordered_set<const GameEngine::Object*>& visiting) {
    // visitingは現在の再帰経路だけを保持し、壊れたデータに循環があっても無限再帰を防ぐ。
    if (!object || !visiting.insert(object).second) {
       return GameEngine::MakeIdentity4x4();
@@ -62,10 +61,10 @@ GameEngine::Matrix4x4 CalculateWorldMatrix(
 
 namespace GameEngine {
 
-Object::Object()
-   : components_(*this), entityId_(AllocateRuntimeEntityId()) {
+Object::Object() : components_(*this), entityId_(AllocateRuntimeEntityId()) {
    RegisteredObjects().push_back(this);
    RegisteredObjectIds()[entityId_] = this;
+
    // 全Objectがシリアライズ可能な名前を持つよう、生成時に必須コンポーネントを付与する。
    AddComponent<ObjectNameComponent>();
 }
@@ -77,11 +76,11 @@ Object::~Object() {
          object->SetParentEntityId({});
       }
    }
+
    // RegistryからOwnerを外す前にComponentへDetachを通知し、外部Manager登録を解除させる。
    components_.Clear();
    auto& objectsById = RegisteredObjectIds();
-   if (const auto idIt = objectsById.find(entityId_);
-      idIt != objectsById.end() && idIt->second == this) {
+   if (const auto idIt = objectsById.find(entityId_); idIt != objectsById.end() && idIt->second == this) {
       objectsById.erase(idIt);
    }
    auto& objects = RegisteredObjects();
@@ -168,9 +167,7 @@ Object* Object::FindByObjectName(const std::string& objectName) {
    }
    const auto& objects = RegisteredObjects();
    const auto it = std::find_if(objects.begin(), objects.end(),
-      [&objectName](const Object* object) {
-         return object && object->GetObjectName() == objectName;
-      });
+      [&objectName](const Object* object) { return object && object->GetObjectName() == objectName; });
    return it != objects.end() ? *it : nullptr;
 }
 
@@ -195,7 +192,7 @@ bool Object::WouldCreateParentCycle(const std::string& parentEntityId) const {
 void Object::SetObjectName(const std::string& name) {
    auto* objectNameComponent = AddComponent<ObjectNameComponent>();
    if (!objectNameComponent) {
-	  return;
+      return;
    }
    {
       auto settings = objectNameComponent->DescribeSettings();
@@ -207,8 +204,8 @@ void Object::SetObjectName(const std::string& name) {
 std::string Object::GetObjectName() const {
    const auto* objectNameComponent = GetComponent<ObjectNameComponent>();
    if (!objectNameComponent || objectNameComponent->DescribeSettings().name.empty()) {
-	  // 旧データや削除済みコンポーネントでも、ヒエラルキーへ安定した表示名を返す。
-	  return "Object";
+      // 旧データや削除済みコンポーネントでも、ヒエラルキーへ安定した表示名を返す。
+      return "Object";
    }
    return objectNameComponent->DescribeSettings().name;
 }

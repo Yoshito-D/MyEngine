@@ -1,26 +1,21 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Input/Input.h"
 
-#pragma comment(lib,"dinput8.lib")
-#pragma comment(lib,"dxguid.lib")
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "xinput.lib")
 
 namespace GameEngine {
 Input::~Input() {
    // アプリ終了後にコントローラーが振動し続けないよう、保持している出力を明示的に停止する。
    for (size_t i = 0; i < GetConnectedGamePadCount(); ++i) {
-	  SetVibration(static_cast<int32_t>(i), 0.0f, 0.0f);
+      SetVibration(static_cast<int32_t>(i), 0.0f, 0.0f);
    }
 }
 
 void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
-   HRESULT result = DirectInput8Create(
-	  hInstance,
-	  DIRECTINPUT_VERSION,
-	  IID_IDirectInput8,
-	  reinterpret_cast<void**>(directInput_.GetAddressOf()),
-	  nullptr
-   );
+   HRESULT result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
+      reinterpret_cast<void**>(directInput_.GetAddressOf()), nullptr);
 
    assert(SUCCEEDED(result));
 
@@ -32,10 +27,7 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
    result = keyboard_->SetDataFormat(&c_dfDIKeyboard);
    assert(SUCCEEDED(result));
 
-   result = keyboard_->SetCooperativeLevel(
-	  hwnd,
-	  DISCL_FOREGROUND | DISCL_NONEXCLUSIVE
-   );
+   result = keyboard_->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 
    // マウスにもキーボードと同じ協調レベルを設定し、ウィンドウのフォーカス規則を統一する。
    // マウスデバイスの初期化
@@ -45,10 +37,7 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
    result = mouse_->SetDataFormat(&c_dfDIMouse);
    assert(SUCCEEDED(result));
 
-   result = mouse_->SetCooperativeLevel(
-	  hwnd,
-	  DISCL_FOREGROUND | DISCL_NONEXCLUSIVE
-   );
+   result = mouse_->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 
    hwnd_ = hwnd;
 }
@@ -80,10 +69,10 @@ void Input::MouseUpdate() {
 void Input::GamePadUpdate() {
    // 未接続ポートもゼロ状態へ更新し、切断したフレームにReleaseエッジを生成できるようにする。
    for (uint32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
-	  prevGamePadState_[i] = gamePadState_[i];
+      prevGamePadState_[i] = gamePadState_[i];
 
-	  ZeroMemory(&gamePadState_[i], sizeof(XINPUT_STATE));
-	  XInputGetState(i, &gamePadState_[i]);
+      ZeroMemory(&gamePadState_[i], sizeof(XINPUT_STATE));
+      XInputGetState(i, &gamePadState_[i]);
    }
 }
 
@@ -104,8 +93,7 @@ bool Input::IsKeyNotPressed(KeyCode key) {
 }
 
 bool Input::IsKeyTriggered(uint8_t key) {
-   return (key_[key] & kPressedStateMask) != 0 &&
-	  (prevKey_[key] & kPressedStateMask) == 0;
+   return (key_[key] & kPressedStateMask) != 0 && (prevKey_[key] & kPressedStateMask) == 0;
 }
 
 bool Input::IsKeyTriggered(KeyCode key) {
@@ -113,8 +101,7 @@ bool Input::IsKeyTriggered(KeyCode key) {
 }
 
 bool Input::IsKeyReleased(uint8_t key) {
-   return (key_[key] & kPressedStateMask) == 0 &&
-	  (prevKey_[key] & kPressedStateMask) != 0;
+   return (key_[key] & kPressedStateMask) == 0 && (prevKey_[key] & kPressedStateMask) != 0;
 }
 
 bool Input::IsKeyReleased(KeyCode key) {
@@ -139,7 +126,7 @@ bool Input::IsMouseNotPressed(MouseButton button) {
 
 bool Input::IsMouseTriggered(uint8_t button) {
    return (mouseState_.rgbButtons[button] & kPressedStateMask) != 0 &&
-	  (prevMouseState_.rgbButtons[button] & kPressedStateMask) == 0;
+          (prevMouseState_.rgbButtons[button] & kPressedStateMask) == 0;
 }
 
 bool Input::IsMouseTriggered(MouseButton button) {
@@ -148,7 +135,7 @@ bool Input::IsMouseTriggered(MouseButton button) {
 
 bool Input::IsMouseReleased(uint8_t button) {
    return (mouseState_.rgbButtons[button] & kPressedStateMask) == 0 &&
-	  (prevMouseState_.rgbButtons[button] & kPressedStateMask) != 0;
+          (prevMouseState_.rgbButtons[button] & kPressedStateMask) != 0;
 }
 
 bool Input::IsMouseReleased(MouseButton button) {
@@ -160,14 +147,11 @@ Vector2 Input::GetMouseScreenPosition() const {
    POINT pt{};
    GetCursorPos(&pt);
    ScreenToClient(hwnd_, &pt);
-   return Vector2{ static_cast<float>(pt.x), static_cast<float>(pt.y) };
+   return Vector2{static_cast<float>(pt.x), static_cast<float>(pt.y)};
 }
 
 Vector2 Input::GetMouseDelta() const {
-   return Vector2{
-	   static_cast<float>(mouseState_.lX),
-	   static_cast<float>(mouseState_.lY)
-   };
+   return Vector2{static_cast<float>(mouseState_.lX), static_cast<float>(mouseState_.lY)};
 }
 
 int32_t Input::GetMouseWheelDelta() const {
@@ -184,11 +168,11 @@ uint32_t Input::GetConnectedGamePadCount() const {
    uint32_t count = 0;
 
    for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i) {
-	  XINPUT_STATE state = {};
-	  DWORD result = XInputGetState(i, &state);
-	  if (result == ERROR_SUCCESS) {
-		 ++count;
-	  }
+      XINPUT_STATE state = {};
+      DWORD result = XInputGetState(i, &state);
+      if (result == ERROR_SUCCESS) {
+         ++count;
+      }
    }
 
    return count;
@@ -211,9 +195,8 @@ bool Input::IsGamePadButtonNotPressed(GamePadButton button, uint32_t index) cons
 }
 
 bool Input::IsGamePadButtonTriggered(WORD button, uint32_t index) const {
-   return (index < XUSER_MAX_COUNT) &&
-	  (gamePadState_[index].Gamepad.wButtons & button) &&
-	  !(prevGamePadState_[index].Gamepad.wButtons & button);
+   return (index < XUSER_MAX_COUNT) && (gamePadState_[index].Gamepad.wButtons & button) &&
+          !(prevGamePadState_[index].Gamepad.wButtons & button);
 }
 
 bool Input::IsGamePadButtonTriggered(GamePadButton button, uint32_t index) const {
@@ -221,9 +204,8 @@ bool Input::IsGamePadButtonTriggered(GamePadButton button, uint32_t index) const
 }
 
 bool Input::IsGamePadButtonReleased(WORD button, uint32_t index) const {
-   return (index < XUSER_MAX_COUNT) &&
-	  !(gamePadState_[index].Gamepad.wButtons & button) &&
-	  (prevGamePadState_[index].Gamepad.wButtons & button);
+   return (index < XUSER_MAX_COUNT) && !(gamePadState_[index].Gamepad.wButtons & button) &&
+          (prevGamePadState_[index].Gamepad.wButtons & button);
 }
 
 bool Input::IsGamePadButtonReleased(GamePadButton button, uint32_t index) const {
@@ -231,7 +213,8 @@ bool Input::IsGamePadButtonReleased(GamePadButton button, uint32_t index) const 
 }
 
 Vector2 Input::GetLeftStick(uint32_t index, float deadZone) const {
-   if (index >= 4) return Vector2(0.0f, 0.0f);
+   if (index >= 4)
+      return Vector2(0.0f, 0.0f);
 
    const auto& state = gamePadState_[index];
    float x = static_cast<float>(state.Gamepad.sThumbLX);
@@ -243,9 +226,11 @@ Vector2 Input::GetLeftStick(uint32_t index, float deadZone) const {
    float length = std::sqrt(normX * normX + normY * normY);
 
    // ゼロ長とデッドゾーン上限では除算できないため、先に中立値を返す。
-   if (!std::isfinite(deadZone) || deadZone >= 1.0f) return Vector2(0.0f, 0.0f);
+   if (!std::isfinite(deadZone) || deadZone >= 1.0f)
+      return Vector2(0.0f, 0.0f);
    deadZone = std::max(0.0f, deadZone);
-   if (length <= deadZone) return Vector2(0.0f, 0.0f);
+   if (length <= deadZone)
+      return Vector2(0.0f, 0.0f);
 
    // デッドゾーン外の残り区間を0～1へ再マップし、境界で値が急にdeadZone分跳ねないようにする。
    float scale = (length - deadZone) / (1.0f - deadZone);
@@ -255,7 +240,8 @@ Vector2 Input::GetLeftStick(uint32_t index, float deadZone) const {
 }
 
 Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
-   if (index >= 4) return Vector2(0.0f, 0.0f);
+   if (index >= 4)
+      return Vector2(0.0f, 0.0f);
 
    const auto& state = gamePadState_[index];
    float x = static_cast<float>(state.Gamepad.sThumbRX);
@@ -267,9 +253,11 @@ Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
    float length = std::sqrt(normX * normX + normY * normY);
 
    // ゼロ長とデッドゾーン上限では除算できないため、先に中立値を返す。
-   if (!std::isfinite(deadZone) || deadZone >= 1.0f) return Vector2(0.0f, 0.0f);
+   if (!std::isfinite(deadZone) || deadZone >= 1.0f)
+      return Vector2(0.0f, 0.0f);
    deadZone = std::max(0.0f, deadZone);
-   if (length <= deadZone) return Vector2(0.0f, 0.0f);
+   if (length <= deadZone)
+      return Vector2(0.0f, 0.0f);
 
    float scale = (length - deadZone) / (1.0f - deadZone);
    scale = std::clamp(scale, 0.0f, 1.0f);
@@ -278,22 +266,26 @@ Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
 }
 
 float Input::GetLeftTrigger(uint32_t index, float deadZone) const {
-   if (index >= 4 || !std::isfinite(deadZone) || deadZone >= 1.0f) return 0.0f;
+   if (index >= 4 || !std::isfinite(deadZone) || deadZone >= 1.0f)
+      return 0.0f;
    deadZone = std::max(0.0f, deadZone);
+
    // 8bit入力を正規化し、デッドゾーンより上の範囲を再び0～1へ広げる。
    float value = gamePadState_[index].Gamepad.bLeftTrigger / 255.0f;
    return (value < deadZone) ? 0.0f : (value - deadZone) / (1.0f - deadZone);
 }
 
 float Input::GetRightTrigger(uint32_t index, float deadZone) const {
-   if (index >= 4 || !std::isfinite(deadZone) || deadZone >= 1.0f) return 0.0f;
+   if (index >= 4 || !std::isfinite(deadZone) || deadZone >= 1.0f)
+      return 0.0f;
    deadZone = std::max(0.0f, deadZone);
    float value = gamePadState_[index].Gamepad.bRightTrigger / 255.0f;
    return (value < deadZone) ? 0.0f : (value - deadZone) / (1.0f - deadZone);
 }
 
 void Input::SetVibration(uint32_t index, float leftMotor, float rightMotor) {
-   if (index >= 4) return;
+   if (index >= 4)
+      return;
 
    // 範囲外のゲーム側パラメーターを先にClampし、WORDへの変換時の折り返しを防ぐ。
    // 0.0f～1.0f → 0～65535 に変換

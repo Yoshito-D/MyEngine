@@ -17,16 +17,22 @@ void TimeProfiler::Update() {
    elapsedTime_ += deltaTime_;
 
    if (elapsedTime_ >= 1.0f) {
-	  // ちょうど1秒とは限らないため、実際の累積時間で割ってフレーム落ち時の偏りを抑える。
-	  fps_ = static_cast<float>(frameCount_) / elapsedTime_;
-	  frameCount_ = 0;
-	  elapsedTime_ = 0.0f;
+      // ちょうど1秒とは限らないため、実際の累積時間で割ってフレーム落ち時の偏りを抑える。
+      fps_ = static_cast<float>(frameCount_) / elapsedTime_;
+      frameCount_ = 0;
+      elapsedTime_ = 0.0f;
    }
 }
 
-float TimeProfiler::GetFPS() const { return fps_; }
+float TimeProfiler::GetFPS() const {
+   return fps_;
+}
 
-float TimeProfiler::GetDeltaTime() const { return deltaTime_; }
+float TimeProfiler::GetDeltaTime() const {
+   return deltaTime_;
+}
 
-float TimeProfiler::GetFrameTimeMs() const { return deltaTime_ * 1000.0f; }
+float TimeProfiler::GetFrameTimeMs() const {
+   return deltaTime_ * 1000.0f;
+}
 }

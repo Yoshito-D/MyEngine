@@ -15,7 +15,8 @@ void ShockWave::Initialize(GraphicsDevice* device, OffscreenRenderTarget* render
 }
 
 void ShockWave::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -26,11 +27,11 @@ void ShockWave::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    // 定数バッファをルートパラメータ0にセット
    if (constantBuffer_) {
-     cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
+      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
    }
 
    // SRVをルートパラメータ1にセット
-    cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
+   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // フルスクリーントライアングル描画
    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -46,18 +47,18 @@ void ShockWave::CreateConstantBuffer() {
 
 void ShockWave::UpdateConstantBuffer() {
    if (constantBufferData_) {
-	  constantBufferData_->centerX = centerX_;
-	  constantBufferData_->centerY = centerY_;
-	  constantBufferData_->aspectRatioX = aspectRatioX_;
-	  constantBufferData_->aspectRatioY = aspectRatioY_;
-	  constantBufferData_->waveRadius = waveRadius_;
-	  constantBufferData_->waveThickness = waveThickness_;
-	  constantBufferData_->distortionStrength = distortionStrength_;
-	  constantBufferData_->fadeOutRadius = fadeOutRadius_;
-	  constantBufferData_->highlightIntensity = highlightIntensity_;
-	  constantBufferData_->padding[0] = 0.0f;
-	  constantBufferData_->padding[1] = 0.0f;
-	  constantBufferData_->padding[2] = 0.0f;
+      constantBufferData_->centerX = centerX_;
+      constantBufferData_->centerY = centerY_;
+      constantBufferData_->aspectRatioX = aspectRatioX_;
+      constantBufferData_->aspectRatioY = aspectRatioY_;
+      constantBufferData_->waveRadius = waveRadius_;
+      constantBufferData_->waveThickness = waveThickness_;
+      constantBufferData_->distortionStrength = distortionStrength_;
+      constantBufferData_->fadeOutRadius = fadeOutRadius_;
+      constantBufferData_->highlightIntensity = highlightIntensity_;
+      constantBufferData_->padding[0] = 0.0f;
+      constantBufferData_->padding[1] = 0.0f;
+      constantBufferData_->padding[2] = 0.0f;
    }
 }
 
@@ -66,22 +67,24 @@ void ShockWave::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("ショックウェーブのパラメータ", "Shock Wave Parameters"))) {
+          LocalizeEditorText("ショックウェーブのパラメータ", "Shock Wave Parameters"))) {
 
-	  bool changed = false;
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &centerX_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &centerY_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("波紋半径", "Wave Radius"), &waveRadius_, 0.0f, 1.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("波紋幅", "Wave Thickness"), &waveThickness_, 0.01f, 0.5f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("歪み強度", "Distortion Strength"), &distortionStrength_, 0.0f, 0.5f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("フェード範囲", "Fade Out Radius"), &fadeOutRadius_, 0.5f, 2.0f);
-	  changed |= ImGui::SliderFloat(LocalizeEditorText("ハイライト強度", "Highlight Intensity"), &highlightIntensity_, 0.0f, 1.0f);
+      bool changed = false;
+      changed |= ImGui::SliderFloat(LocalizeEditorText("中心 X", "Center X"), &centerX_, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("中心 Y", "Center Y"), &centerY_, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("波紋半径", "Wave Radius"), &waveRadius_, 0.0f, 1.0f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("波紋幅", "Wave Thickness"), &waveThickness_, 0.01f, 0.5f);
+      changed |=
+         ImGui::SliderFloat(LocalizeEditorText("歪み強度", "Distortion Strength"), &distortionStrength_, 0.0f, 0.5f);
+      changed |= ImGui::SliderFloat(LocalizeEditorText("フェード範囲", "Fade Out Radius"), &fadeOutRadius_, 0.5f, 2.0f);
+      changed |= ImGui::SliderFloat(
+         LocalizeEditorText("ハイライト強度", "Highlight Intensity"), &highlightIntensity_, 0.0f, 1.0f);
 
-	  if (changed) {
-		 UpdateConstantBuffer();
-	  }
+      if (changed) {
+         UpdateConstantBuffer();
+      }
 
-	  ImGui::TreePop();
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

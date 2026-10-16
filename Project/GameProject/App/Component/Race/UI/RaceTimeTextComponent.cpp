@@ -31,9 +31,9 @@ void RaceTimeTextComponent::Update(float deltaTime) {
    }
 
    const RaceManagerComponent::State raceState = raceManager_->GetState();
+
    // カウントダウンとリザルトには専用UIがあるため、同じ位置で文字が重ならないよう隠す。
-   if (raceState == RaceManagerComponent::State::Countdown ||
-      raceState == RaceManagerComponent::State::Finished) {
+   if (raceState == RaceManagerComponent::State::Countdown || raceState == RaceManagerComponent::State::Finished) {
       text->SetText("");
       return;
    }
@@ -47,7 +47,7 @@ void RaceTimeTextComponent::Update(float deltaTime) {
 }
 
 nlohmann::json RaceTimeTextComponent::Serialize() const {
-   return nlohmann::json{ { "raceManagerId", raceManagerId_ } };
+   return nlohmann::json{{"raceManagerId", raceManagerId_}};
 }
 
 void RaceTimeTextComponent::Deserialize(const nlohmann::json& data) {

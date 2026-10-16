@@ -31,7 +31,8 @@ public:
    };
 
    static constexpr const char* kTypeName = "RaceManagerComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "レース管理", "Race Manager" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"レース管理", "Race Manager"};
+
    /// @brief 保存・表示するベストタイムの最大件数
    static constexpr size_t kBestTimeCount = 3;
 
@@ -46,6 +47,7 @@ public:
    /// @brief シーン内のプレイヤー参照と記録を復元し、開始状態へリセットする
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -105,6 +107,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief レース状態と設定をインスペクターへ表示する
    void DrawInspector() override;
 #endif

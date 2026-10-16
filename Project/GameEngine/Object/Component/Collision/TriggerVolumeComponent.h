@@ -17,11 +17,11 @@ public:
    /// @brief 対応するトリガー形状
    enum class Shape {
       Sphere, ///< 中心と半径で判定する球
-      Aabb, ///< Transformの各座標軸に平行な半幅で判定する直方体
+      Aabb,   ///< Transformの各座標軸に平行な半幅で判定する直方体
    };
 
    static constexpr const char* kTypeName = "TriggerVolumeComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "トリガーボリューム", "Trigger Volume" };
+   static constexpr ComponentDisplayName kDisplayName{"トリガーボリューム", "Trigger Volume"};
 
    /// @brief コンポーネント型名を取得する
    /// @return TriggerVolumeComponent
@@ -30,6 +30,7 @@ public:
    /// @brief シーン参照を保存して対象IDを解決可能にする
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(SceneWorld& sceneWorld) override;
+
    /// @copydoc IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(SceneWorld& sceneWorld) override { sceneWorld_ = &sceneWorld; }
 
@@ -67,6 +68,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief トリガー設定をインスペクターへ表示する
    void DrawInspector() override;
 #endif
@@ -79,7 +81,7 @@ private:
    std::string targetObjectId_;
    Shape shape_ = Shape::Aabb;
    Vector3 centerOffset_{};
-   Vector3 halfExtents_ = { 1.0f, 1.0f, 1.0f };
+   Vector3 halfExtents_ = {1.0f, 1.0f, 1.0f};
    float radius_ = 1.0f;
    bool debugDraw_ = false;
    bool isInside_ = false;

@@ -24,6 +24,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
    }
 
    const FontMetrics metrics = fontManager.GetMetrics(style.fontId, style.fontSize);
+
    // 不完全なフォントメタデータでも文字を重ねないよう、指定サイズを行高と基準線の代替にする。
    const float lineHeight = metrics.lineHeight > 0.0f ? metrics.lineHeight : static_cast<float>(style.fontSize);
    const float lineAdvance = lineHeight * std::max(style.lineSpacing, 0.1f);
@@ -38,10 +39,11 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
 
    const auto finishLine = [&]() {
       // 空行も範囲として残し、改行数を最終レイアウト高へ正しく反映する。
-      lines.push_back({ lineBegin, result.glyphs.size(), penX });
+      lines.push_back({lineBegin, result.glyphs.size(), penX});
       maximumLineWidth = std::max(maximumLineWidth, penX);
       lineBegin = result.glyphs.size();
       penX = 0.0f;
+
       // カーニングは行境界をまたがないため、直前グリフをリセットする。
       previousGlyphIndex = 0;
    };
@@ -62,11 +64,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
          continue;
       }
 
-      float kerning = fontManager.GetKerning(
-         style.fontId,
-         previousGlyphIndex,
-         glyph->glyphIndex,
-         style.fontSize);
+      float kerning = fontManager.GetKerning(style.fontId, previousGlyphIndex, glyph->glyphIndex, style.fontSize);
       if (style.maxWidth > 0.0f && penX > 0.0f && penX + kerning + glyph->advance > style.maxWidth) {
          // 単語情報を持たない単純レイアウトなので、幅を超える直前のグリフ境界で折り返す。
          // グリフを追加する前に折り返し、次行先頭ではカーニングを適用しない。
@@ -76,17 +74,17 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
       }
 
       penX += kerning;
-      result.glyphs.push_back({
-         *glyph,
+      result.glyphs.push_back({*glyph,
+
          // bearingはベースライン基準なので、上向き量をY座標から差し引く。
-         { penX + glyph->bearing.x, baseline - glyph->bearing.y }
-      });
+         {penX + glyph->bearing.x, baseline - glyph->bearing.y}});
       penX += glyph->advance;
       previousGlyphIndex = glyph->glyphIndex;
    }
    finishLine();
 
    const float layoutWidth = style.maxWidth > 0.0f ? style.maxWidth : maximumLineWidth;
+
    // 行が確定して幅が分かった後に、各行だけを横方向へ移動して整列する。
    for (const LineRange& line : lines) {
       float offsetX = 0.0f;

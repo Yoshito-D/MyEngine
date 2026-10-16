@@ -10,12 +10,11 @@ Vector3 Easing::Slerp(const Vector3& start, const Vector3& end, float t) {
    float sinTheta = std::sin(theta);
 
    if (std::abs(sinTheta) < 1e-5f) {
-	  // ほぼ平行な方向では除算が不安定になるため、線形補間してから正規化する。
-	  return (start * (1.0f - t) + end * t).Normalize();
+      // ほぼ平行な方向では除算が不安定になるため、線形補間してから正規化する。
+      return (start * (1.0f - t) + end * t).Normalize();
    }
 
-   return start * std::sin((1.0f - t) * theta) / sinTheta
-	  + end * std::sin(t * theta) / sinTheta;
+   return start * std::sin((1.0f - t) * theta) / sinTheta + end * std::sin(t * theta) / sinTheta;
 }
 
 uint32_t Easing::LerpRGBAColor(uint32_t colorA, uint32_t colorB, float t) {

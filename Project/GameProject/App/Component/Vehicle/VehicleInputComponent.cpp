@@ -25,8 +25,8 @@ constexpr const char* kNextCameraAction = "Camera.Next";
 const GameEngine::InputActionState& VehicleInputComponent::GetActionState(const char* actionId) const {
    static const GameEngine::InputActionState emptyState{};
    if (!IsEnabled()) {
-	  // 無効化中は入力サービスの状態を漏らさず、全アクションを中立値として扱う。
-	  return emptyState;
+      // 無効化中は入力サービスの状態を漏らさず、全アクションを中立値として扱う。
+      return emptyState;
    }
    return GameEngine::EngineContext::GetInputActionState(kGameplayActionMap, actionId, playerSlot);
 }
@@ -64,18 +64,18 @@ bool VehicleInputComponent::IsNextCameraTriggered() const {
 }
 
 nlohmann::json VehicleInputComponent::Serialize() const {
-   return nlohmann::json{ { "playerSlot", playerSlot } };
+   return nlohmann::json{{"playerSlot", playerSlot}};
 }
 
 void VehicleInputComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object() || !data.contains("playerSlot") || !data.at("playerSlot").is_number_unsigned()) {
-	  return;
+      return;
    }
    const uint64_t configuredSlot = data.at("playerSlot").get<uint64_t>();
+
    // 外部編集されたJSONでも入力サービスの固定プレイヤー配列を範囲外参照させない。
-   playerSlot = static_cast<uint32_t>(std::min(
-	  configuredSlot,
-	  static_cast<uint64_t>(GameEngine::InputActionService::kMaxPlayers - 1)));
+   playerSlot = static_cast<uint32_t>(
+      std::min(configuredSlot, static_cast<uint64_t>(GameEngine::InputActionService::kMaxPlayers - 1)));
    Configure(DescribeSettings());
 }
 
@@ -83,16 +83,13 @@ void VehicleInputComponent::Deserialize(const nlohmann::json& data) {
 void VehicleInputComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
    if (!ImGui::CollapsingHeader(header.c_str())) {
-	  return;
+      return;
    }
 
    int slot = static_cast<int>(playerSlot);
-   if (ImGui::SliderInt(
-	  GameEngine::LocalizeEditorText("プレイヤースロット", "Player Slot"),
-	  &slot,
-	  0,
-	  static_cast<int>(GameEngine::InputActionService::kMaxPlayers - 1))) {
-	  playerSlot = static_cast<uint32_t>(slot);
+   if (ImGui::SliderInt(GameEngine::LocalizeEditorText("プレイヤースロット", "Player Slot"), &slot, 0,
+          static_cast<int>(GameEngine::InputActionService::kMaxPlayers - 1))) {
+      playerSlot = static_cast<uint32_t>(slot);
    }
    Configure(DescribeSettings());
 }

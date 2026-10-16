@@ -7,17 +7,13 @@
 #endif
 
 namespace GameEngine {
-bool ComponentRegistry::RegisterFactory(
-   const std::string& typeName,
-   Factory factory,
-   ComponentDisplayName displayName,
-   ObjectTypeMask supportedObjectTypes
-) {
+bool ComponentRegistry::RegisterFactory(const std::string& typeName, Factory factory, ComponentDisplayName displayName,
+   ObjectTypeMask supportedObjectTypes) {
    if (typeName.empty() || !factory || supportedObjectTypes == 0) {
-	  return false;
+      return false;
    }
 
-   registrations_[typeName] = Registration{ std::move(factory), supportedObjectTypes };
+   registrations_[typeName] = Registration{std::move(factory), supportedObjectTypes};
 #ifdef USE_IMGUI
    if ((displayName.japanese && displayName.japanese[0] != '\0') ||
        (displayName.english && displayName.english[0] != '\0')) {
@@ -49,7 +45,7 @@ std::vector<std::string> ComponentRegistry::GetRegisteredTypeNames() const {
    std::vector<std::string> names;
    names.reserve(registrations_.size());
    for (const auto& [typeName, registration] : registrations_) {
-	  (void)registration;
+      (void)registration;
       names.push_back(typeName);
    }
 
@@ -78,7 +74,7 @@ std::string ComponentRegistry::GetDisplayName(const std::string& typeName) const
       return typeName;
    }
 
-   return ImGuiHelper::Localize({ it->second.japanese, it->second.english });
+   return ImGuiHelper::Localize({it->second.japanese, it->second.english});
 }
 #endif
 }

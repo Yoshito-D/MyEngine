@@ -46,6 +46,7 @@ float ComputeStageMatchRate(const GameEngine::PipelineStageMatchInfo& stageInfo)
    };
    accumulate(stageInfo.vertex);
    accumulate(stageInfo.pixel);
+
    // 検証対象ステージがないパイプラインを0%扱いにすると誤検知になるため、検証不能時は中立の100%とする。
    return (stageCount > 0) ? (sumRate / static_cast<float>(stageCount)) : 1.0f;
 }
@@ -54,12 +55,9 @@ LocalSchemaValidationStatus ValidateReportWithSchema(const nlohmann::json& repor
    LocalSchemaValidationStatus status{};
    status.schemaFile = "internal_schema";
 
-   const nlohmann::json schema = {
-      {"type", "object"},
-      {"required", nlohmann::json::array({
-         "version", "schemaVersion", "compatibilityPolicy", "schema", "schemaValidation", "qualityGate", "diff", "pso", "shader", "renderer"
-      })}
-   };
+   const nlohmann::json schema = {{"type", "object"},
+      {"required", nlohmann::json::array({"version", "schemaVersion", "compatibilityPolicy", "schema",
+                      "schemaValidation", "qualityGate", "diff", "pso", "shader", "renderer"})}};
 
    if (!report.is_object()) {
       status.failedKeys.push_back("$report:type");
@@ -118,7 +116,8 @@ void ReflectionValidationCoordinator::EndFrame(ShaderManager* shaderManager, Ref
    }
 }
 
-void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const {
+void ReflectionValidationCoordinator::UpdateValidationReport(
+   const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const {
    if (!psoManager || !shaderManager) {
       return;
    }
@@ -129,9 +128,9 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
    const auto validationMetadata = psoManager->GetAllPipelineReflectionMetadata();
    const auto stageMatchInfos = shaderManager->GetPipelineStageMatchInfos();
    state.latestValidationWarningCount = psoSummary.totalWarnings;
-   state.latestFallbackRate = (state.frameResolveRequests > 0)
-      ? static_cast<float>(state.frameResolveFallbacks) / static_cast<float>(state.frameResolveRequests)
-      : 0.0f;
+   state.latestFallbackRate = (state.frameResolveRequests > 0) ? static_cast<float>(state.frameResolveFallbacks) /
+                                                                    static_cast<float>(state.frameResolveRequests)
+                                                               : 0.0f;
 
    state.latestQualityGateFailReasons.clear();
    state.latestValidationFailItems.clear();
@@ -154,9 +153,8 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
 
    std::unordered_map<std::string, float> currentFallbackRateByPipeline;
    for (const auto& [pipelineName, stats] : state.frameStatsByPipeline) {
-      const float rate = (stats.requests > 0)
-         ? static_cast<float>(stats.misses) / static_cast<float>(stats.requests)
-         : 0.0f;
+      const float rate =
+         (stats.requests > 0) ? static_cast<float>(stats.misses) / static_cast<float>(stats.requests) : 0.0f;
       currentFallbackRateByPipeline[pipelineName] = rate;
    }
 
@@ -167,6 +165,7 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
 
    nlohmann::json previousReport;
    bool hasPreviousReport = false;
+
    // 直前レポートをベースラインにして、絶対値だけでなく品質の悪化もゲート対象にする。
    try {
       std::ifstream ifs("reports/reflection_validation_report.json");
@@ -179,15 +178,14 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
    }
 
    if (state.latestValidationWarningCount > kWarningThreshold) {
-      state.latestQualityGateFailReasons.push_back(
-         "Validation warnings exceeded threshold (" +
-         std::to_string(state.latestValidationWarningCount) + "/" + std::to_string(kWarningThreshold) + ")");
+      state.latestQualityGateFailReasons.push_back("Validation warnings exceeded threshold (" +
+                                                   std::to_string(state.latestValidationWarningCount) + "/" +
+                                                   std::to_string(kWarningThreshold) + ")");
    }
    if (state.latestFallbackRate > kFallbackRateThreshold) {
       state.latestQualityGateFailReasons.push_back(
-         "Fallback rate exceeded threshold (" +
-         std::to_string(static_cast<int>(state.latestFallbackRate * 100.0f)) + "%/" +
-         std::to_string(static_cast<int>(kFallbackRateThreshold * 100.0f)) + "%)");
+         "Fallback rate exceeded threshold (" + std::to_string(static_cast<int>(state.latestFallbackRate * 100.0f)) +
+         "%/" + std::to_string(static_cast<int>(kFallbackRateThreshold * 100.0f)) + "%)");
    }
 
    for (const auto& [pipelineName, metadata] : validationMetadata) {
@@ -202,20 +200,21 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
          item.missingSemantics = metadata.missingSemantics;
          item.stageMatchRate = stageMatchRate;
          item.reason = "pipeline=" + pipelineName +
-            ", missingSemantics=" + std::to_string(metadata.missingSemantics.size()) +
-            ", stageMatchRate=" + std::to_string(stageMatchRate);
+                       ", missingSemantics=" + std::to_string(metadata.missingSemantics.size()) +
+                       ", stageMatchRate=" + std::to_string(stageMatchRate);
          state.latestValidationFailItems.push_back(item);
 
          state.latestQualityGateFailReasons.push_back(
-            "Pipeline " + pipelineName + " failed: missingSemantics=" +
-            std::to_string(metadata.missingSemantics.size()) +
+            "Pipeline " + pipelineName +
+            " failed: missingSemantics=" + std::to_string(metadata.missingSemantics.size()) +
             ", stageMatchRate=" + std::to_string(static_cast<int>(stageMatchRate * 100.0f)) + "%");
       }
    }
 
    // 旧レポートに項目がない場合は互換既定値を返し、スキーマ追加後も比較処理を継続する。
    auto getPreviousPipelineWarning = [&](const std::string& pipelineName) -> uint32_t {
-      if (!hasPreviousReport || !previousReport.contains("pso") || !previousReport["pso"].contains("pipelines") || !previousReport["pso"]["pipelines"].is_array()) {
+      if (!hasPreviousReport || !previousReport.contains("pso") || !previousReport["pso"].contains("pipelines") ||
+          !previousReport["pso"]["pipelines"].is_array()) {
          return 0;
       }
       for (const auto& entry : previousReport["pso"]["pipelines"]) {
@@ -230,7 +229,8 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
    };
 
    auto getPreviousPipelineFallbackRate = [&](const std::string& pipelineName) -> float {
-      if (!hasPreviousReport || !previousReport.contains("renderer") || !previousReport["renderer"].contains("frameByPipeline")) {
+      if (!hasPreviousReport || !previousReport.contains("renderer") ||
+          !previousReport["renderer"].contains("frameByPipeline")) {
          return 0.0f;
       }
       const auto& byPipeline = previousReport["renderer"]["frameByPipeline"];
@@ -241,7 +241,8 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
    };
 
    auto getPreviousPipelineStageMatchRate = [&](const std::string& pipelineName) -> float {
-      if (!hasPreviousReport || !previousReport.contains("shader") || !previousReport["shader"].contains("stageMatches")) {
+      if (!hasPreviousReport || !previousReport.contains("shader") ||
+          !previousReport["shader"].contains("stageMatches")) {
          return 1.0f;
       }
       const auto& stageMatches = previousReport["shader"]["stageMatches"];
@@ -255,9 +256,11 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
    nlohmann::json diffByPipeline = nlohmann::json::object();
    for (const auto& [pipelineName, currentWarningCount] : currentWarningsByPipeline) {
       const uint32_t previousWarningCount = getPreviousPipelineWarning(pipelineName);
-      const float currentFallbackRate = currentFallbackRateByPipeline.contains(pipelineName) ? currentFallbackRateByPipeline[pipelineName] : 0.0f;
+      const float currentFallbackRate =
+         currentFallbackRateByPipeline.contains(pipelineName) ? currentFallbackRateByPipeline[pipelineName] : 0.0f;
       const float previousFallbackRate = getPreviousPipelineFallbackRate(pipelineName);
-      const float currentStageRate = currentStageMatchRateByPipeline.contains(pipelineName) ? currentStageMatchRateByPipeline[pipelineName] : 1.0f;
+      const float currentStageRate =
+         currentStageMatchRateByPipeline.contains(pipelineName) ? currentStageMatchRateByPipeline[pipelineName] : 1.0f;
       const float previousStageRate = getPreviousPipelineStageMatchRate(pipelineName);
 
       PipelineDiffMetrics diff{};
@@ -266,26 +269,26 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
       diff.stageMatchRateDelta = currentStageRate - previousStageRate;
       state.latestPipelineDiffs[pipelineName] = diff;
 
-      diffByPipeline[pipelineName] = {
-         {"warningDelta", diff.warningDelta},
-         {"fallbackRateDelta", diff.fallbackRateDelta},
-         {"stageMatchRateDelta", diff.stageMatchRateDelta}
-      };
+      diffByPipeline[pipelineName] = {{"warningDelta", diff.warningDelta},
+         {"fallbackRateDelta", diff.fallbackRateDelta}, {"stageMatchRateDelta", diff.stageMatchRateDelta}};
 
       if (hasPreviousReport) {
          // 初回実行には比較対象がないため、回帰判定は既存レポートがある場合だけ行う。
          if (diff.warningDelta > static_cast<int>(kWarningIncreaseThreshold)) {
-            const std::string reason = "Pipeline " + pipelineName + " warning regression: +" + std::to_string(diff.warningDelta);
+            const std::string reason =
+               "Pipeline " + pipelineName + " warning regression: +" + std::to_string(diff.warningDelta);
             state.latestQualityGateFailReasons.push_back(reason);
             state.latestRegressionFailReasons.push_back(reason);
          }
          if (diff.fallbackRateDelta > kFallbackRateIncreaseThreshold) {
-            const std::string reason = "Pipeline " + pipelineName + " fallback regression: +" + std::to_string(static_cast<int>(diff.fallbackRateDelta * 100.0f)) + "%";
+            const std::string reason = "Pipeline " + pipelineName + " fallback regression: +" +
+                                       std::to_string(static_cast<int>(diff.fallbackRateDelta * 100.0f)) + "%";
             state.latestQualityGateFailReasons.push_back(reason);
             state.latestRegressionFailReasons.push_back(reason);
          }
          if ((-diff.stageMatchRateDelta) > kStageMatchRateDecreaseThreshold) {
-            const std::string reason = "Pipeline " + pipelineName + " stage match regression: " + std::to_string(static_cast<int>(diff.stageMatchRateDelta * 100.0f)) + "%";
+            const std::string reason = "Pipeline " + pipelineName + " stage match regression: " +
+                                       std::to_string(static_cast<int>(diff.stageMatchRateDelta * 100.0f)) + "%";
             state.latestQualityGateFailReasons.push_back(reason);
             state.latestRegressionFailReasons.push_back(reason);
          }
@@ -299,119 +302,78 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
    report["version"] = "1.1.0";
    report["schemaVersion"] = "1.1.0";
    report["compatibilityPolicy"] = {
-      {"backwardCompatibleRange", ">=1.0.0 <2.0.0"},
-      {"note", "Minor version upgrades remain backward compatible."}
-   };
+      {"backwardCompatibleRange", ">=1.0.0 <2.0.0"}, {"note", "Minor version upgrades remain backward compatible."}};
    report["schema"] = {
-      {"requiredTopLevelFields", nlohmann::json::array({"version", "schemaVersion", "compatibilityPolicy", "schema", "schemaValidation", "qualityGate", "diff", "pso", "shader", "renderer"})},
-      {"qualityGateRequiredFields", nlohmann::json::array({"passed", "warningThreshold", "fallbackRateThreshold", "warningCount", "fallbackRate", "failReasons"})}
-   };
-   report["diff"] = {
-      {"previousReportFound", hasPreviousReport},
+      {"requiredTopLevelFields", nlohmann::json::array({"version", "schemaVersion", "compatibilityPolicy", "schema",
+                                    "schemaValidation", "qualityGate", "diff", "pso", "shader", "renderer"})},
+      {"qualityGateRequiredFields", nlohmann::json::array({"passed", "warningThreshold", "fallbackRateThreshold",
+                                       "warningCount", "fallbackRate", "failReasons"})}};
+   report["diff"] = {{"previousReportFound", hasPreviousReport},
       {"warningIncreaseThreshold", kWarningIncreaseThreshold},
       {"fallbackRateIncreaseThreshold", kFallbackRateIncreaseThreshold},
-      {"stageMatchRateDecreaseThreshold", kStageMatchRateDecreaseThreshold},
-      {"byPipeline", diffByPipeline}
-   };
-   report["qualityGate"] = {
-      {"passed", state.latestQualityGatePassed},
-      {"warningThreshold", kWarningThreshold},
-      {"fallbackRateThreshold", kFallbackRateThreshold},
-      {"minStageMatchRate", kMinStageMatchRate},
+      {"stageMatchRateDecreaseThreshold", kStageMatchRateDecreaseThreshold}, {"byPipeline", diffByPipeline}};
+   report["qualityGate"] = {{"passed", state.latestQualityGatePassed}, {"warningThreshold", kWarningThreshold},
+      {"fallbackRateThreshold", kFallbackRateThreshold}, {"minStageMatchRate", kMinStageMatchRate},
       {"warningIncreaseThreshold", kWarningIncreaseThreshold},
       {"fallbackRateIncreaseThreshold", kFallbackRateIncreaseThreshold},
-      {"stageMatchRateDecreaseThreshold", kStageMatchRateDecreaseThreshold},
-      {"configSource", gateConfig.source},
-      {"warningCount", state.latestValidationWarningCount},
-      {"fallbackRate", state.latestFallbackRate},
+      {"stageMatchRateDecreaseThreshold", kStageMatchRateDecreaseThreshold}, {"configSource", gateConfig.source},
+      {"warningCount", state.latestValidationWarningCount}, {"fallbackRate", state.latestFallbackRate},
       {"failReasons", state.latestQualityGateFailReasons},
       {"failItems", [&]() {
-         nlohmann::json items = nlohmann::json::array();
-         for (const auto& item : state.latestValidationFailItems) {
-            items.push_back({
-               {"pipeline", item.pipeline},
-               {"reason", item.reason},
-               {"missingSemantics", item.missingSemantics},
-               {"stageMatchRate", item.stageMatchRate}
-            });
-         }
-         return items;
-      }()}
-   };
+          nlohmann::json items = nlohmann::json::array();
+          for (const auto& item : state.latestValidationFailItems) {
+             items.push_back({{"pipeline", item.pipeline}, {"reason", item.reason},
+                {"missingSemantics", item.missingSemantics}, {"stageMatchRate", item.stageMatchRate}});
+          }
+          return items;
+       }()}};
 
    report["pso"] = psoManager->BuildValidationReportJson();
    nlohmann::json stageMatchesJson = nlohmann::json::object();
    for (const auto& [pipelineName, stageInfo] : stageMatchInfos) {
       const float averageMatchRate = ComputeStageMatchRate(stageInfo);
-      stageMatchesJson[pipelineName] = {
-         {"vertex", {
-            {"hasReflection", stageInfo.vertex.hasReflection},
-            {"resourceCount", stageInfo.vertex.resourceCount},
-            {"matchedByName", stageInfo.vertex.matchedByName}
-         }},
-         {"pixel", {
-            {"hasReflection", stageInfo.pixel.hasReflection},
-            {"resourceCount", stageInfo.pixel.resourceCount},
-            {"matchedByName", stageInfo.pixel.matchedByName}
-         }},
-         {"averageMatchRate", averageMatchRate}
-      };
+      stageMatchesJson[pipelineName] = {{"vertex", {{"hasReflection", stageInfo.vertex.hasReflection},
+                                                      {"resourceCount", stageInfo.vertex.resourceCount},
+                                                      {"matchedByName", stageInfo.vertex.matchedByName}}},
+         {"pixel", {{"hasReflection", stageInfo.pixel.hasReflection}, {"resourceCount", stageInfo.pixel.resourceCount},
+                      {"matchedByName", stageInfo.pixel.matchedByName}}},
+         {"averageMatchRate", averageMatchRate}};
    }
 
    const auto resolveStats = shaderManager->GetResolveStats();
    nlohmann::json pipelineResolveStatsJson = nlohmann::json::object();
    for (const auto& [pipelineName, stats] : shaderManager->GetPipelineResolveStats()) {
       pipelineResolveStatsJson[pipelineName] = {
-         {"requests", stats.requests},
-         {"hits", stats.hits},
-         {"misses", stats.misses}
-      };
+         {"requests", stats.requests}, {"hits", stats.hits}, {"misses", stats.misses}};
    }
 
-   report["shader"] = {
-      {"stageMatches", stageMatchesJson},
-      {"resolveStats", {
-         {"requests", resolveStats.requests},
-         {"hits", resolveStats.hits},
-         {"misses", resolveStats.misses}
-      }},
-      {"pipelineResolveStats", pipelineResolveStatsJson}
-   };
+   report["shader"] = {{"stageMatches", stageMatchesJson},
+      {"resolveStats",
+         {{"requests", resolveStats.requests}, {"hits", resolveStats.hits}, {"misses", resolveStats.misses}}},
+      {"pipelineResolveStats", pipelineResolveStatsJson}};
 
    nlohmann::json rendererByPipeline = nlohmann::json::object();
    for (const auto& [pipelineName, stats] : state.frameStatsByPipeline) {
-      const float fallbackRate = (stats.requests > 0)
-         ? static_cast<float>(stats.misses) / static_cast<float>(stats.requests)
-         : 0.0f;
-      rendererByPipeline[pipelineName] = {
-         {"requests", stats.requests},
-         {"hits", stats.hits},
-         {"fallbacks", stats.misses},
-         {"fallbackRate", fallbackRate}
-      };
+      const float fallbackRate =
+         (stats.requests > 0) ? static_cast<float>(stats.misses) / static_cast<float>(stats.requests) : 0.0f;
+      rendererByPipeline[pipelineName] = {{"requests", stats.requests}, {"hits", stats.hits},
+         {"fallbacks", stats.misses}, {"fallbackRate", fallbackRate}};
    }
-   report["renderer"] = {
-      {"frameResolveRequests", state.frameResolveRequests},
-      {"frameResolveHits", state.frameResolveHits},
-      {"frameFallbacks", state.frameResolveFallbacks},
-      {"frameByPipeline", rendererByPipeline}
-   };
+   report["renderer"] = {{"frameResolveRequests", state.frameResolveRequests},
+      {"frameResolveHits", state.frameResolveHits}, {"frameFallbacks", state.frameResolveFallbacks},
+      {"frameByPipeline", rendererByPipeline}};
 
    report["schemaValidation"] = {
-      {"passed", true},
-      {"schemaFile", "internal_schema"},
-      {"failedKeys", nlohmann::json::array()}
-   };
+      {"passed", true}, {"schemaFile", "internal_schema"}, {"failedKeys", nlohmann::json::array()}};
+
    // 出力直前に必須キーを自己検証し、壊れたレポートをCIが成功扱いしないようにする。
    const auto localSchemaStatus = ValidateReportWithSchema(report);
    state.latestSchemaValidationStatus.passed = localSchemaStatus.passed;
    state.latestSchemaValidationStatus.schemaFile = localSchemaStatus.schemaFile;
    state.latestSchemaValidationStatus.failedKeys = localSchemaStatus.failedKeys;
-   report["schemaValidation"] = {
-      {"passed", state.latestSchemaValidationStatus.passed},
+   report["schemaValidation"] = {{"passed", state.latestSchemaValidationStatus.passed},
       {"schemaFile", state.latestSchemaValidationStatus.schemaFile},
-      {"failedKeys", state.latestSchemaValidationStatus.failedKeys}
-   };
+      {"failedKeys", state.latestSchemaValidationStatus.failedKeys}};
 
    // PSO単体レポートと統合レポートを分け、低レイヤーだけの調査にも使えるようにする。
    psoManager->SaveValidationReportJson("resources/engine/reports/pso_validation_report.json");
@@ -429,16 +391,22 @@ void ReflectionValidationCoordinator::UpdateValidationReport(const PSOManager* p
 }
 
 #ifdef USE_IMGUI
-void ReflectionValidationCoordinator::DrawDebugWindow(const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const {
+void ReflectionValidationCoordinator::DrawDebugWindow(
+   const PSOManager* psoManager, ShaderManager* shaderManager, ReflectionValidationState& state) const {
    if (!psoManager || !shaderManager) {
       return;
    }
 
-   bool visible = EngineContext::GetEditorWindowVisibility("ReflectionBindingDebug", { "Reflection Binding Debug", "Reflection Binding Debug" });
-   if (!visible) return;
+   bool visible = EngineContext::GetEditorWindowVisibility(
+      "ReflectionBindingDebug", {"Reflection Binding Debug", "Reflection Binding Debug"});
+   if (!visible)
+      return;
    const bool drawContents = ImGui::Begin("Reflection Binding Debug", &visible);
    EngineContext::SetEditorWindowVisibility("ReflectionBindingDebug", visible);
-   if (!drawContents) { ImGui::End(); return; }
+   if (!drawContents) {
+      ImGui::End();
+      return;
+   }
    ImGui::Text("Frame Resolve Requests : %llu", state.frameResolveRequests);
    ImGui::Text("Frame Resolve Hits     : %llu", state.frameResolveHits);
    ImGui::Text("Frame Fallbacks        : %llu", state.frameResolveFallbacks);
@@ -476,16 +444,23 @@ void ReflectionValidationCoordinator::DrawDebugWindow(const PSOManager* psoManag
 
             for (const auto& [pipelineName, stats] : state.frameStatsByPipeline) {
                ImGui::TableNextRow();
-               ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(pipelineName.c_str());
+               ImGui::TableSetColumnIndex(0);
+               ImGui::TextUnformatted(pipelineName.c_str());
                const auto diffIt = state.latestPipelineDiffs.find(pipelineName);
-               const PipelineDiffMetrics diff = (diffIt != state.latestPipelineDiffs.end()) ? diffIt->second : PipelineDiffMetrics{};
+               const PipelineDiffMetrics diff =
+                  (diffIt != state.latestPipelineDiffs.end()) ? diffIt->second : PipelineDiffMetrics{};
                const char* warningTrend = diff.warningDelta > 0 ? "↑" : (diff.warningDelta < 0 ? "↓" : "→");
-               const char* fallbackTrend = diff.fallbackRateDelta > 0.0f ? "↑" : (diff.fallbackRateDelta < 0.0f ? "↓" : "→");
-               const char* stageTrend = diff.stageMatchRateDelta > 0.0f ? "↑" : (diff.stageMatchRateDelta < 0.0f ? "↓" : "→");
+               const char* fallbackTrend =
+                  diff.fallbackRateDelta > 0.0f ? "↑" : (diff.fallbackRateDelta < 0.0f ? "↓" : "→");
+               const char* stageTrend =
+                  diff.stageMatchRateDelta > 0.0f ? "↑" : (diff.stageMatchRateDelta < 0.0f ? "↓" : "→");
 
-               ImGui::TableSetColumnIndex(1); ImGui::Text("%llu", stats.requests);
-               ImGui::TableSetColumnIndex(2); ImGui::Text("%llu %s", stats.hits, stageTrend);
-               ImGui::TableSetColumnIndex(3); ImGui::Text("%llu %s", stats.misses, fallbackTrend);
+               ImGui::TableSetColumnIndex(1);
+               ImGui::Text("%llu", stats.requests);
+               ImGui::TableSetColumnIndex(2);
+               ImGui::Text("%llu %s", stats.hits, stageTrend);
+               ImGui::TableSetColumnIndex(3);
+               ImGui::Text("%llu %s", stats.misses, fallbackTrend);
                ImGui::TableSetColumnIndex(4);
                const auto* metadata = psoManager->GetPipelineReflectionMetadata(pipelineName);
                ImGui::Text("%u %s", metadata ? metadata->validationWarningCount : 0, warningTrend);

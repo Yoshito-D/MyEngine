@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <string>
 #include <vector>
@@ -38,17 +39,18 @@ struct Node {
 };
 
 struct VertexWeightData {
-   float weight;      // ウェイト値
-   uint32_t vertexId; // 頂点ID
+   float weight;       // ウェイト値
+   uint32_t vertexId;  // 頂点ID
    uint32_t meshIndex; // メッシュID
 };
 
 struct JointWeightData {
-   Matrix4x4 inverseBindPoseMatrix; // 逆バインドポーズ行列
+   Matrix4x4 inverseBindPoseMatrix;             // 逆バインドポーズ行列
    std::vector<VertexWeightData> vertexWeights; // このジョイントに影響を受
 };
 
 const uint32_t kNumMaxInfluence = 4; // 頂点が影響を受ける最大ジョイント数
+
 struct VertexInfluence {
    std::array<float, kNumMaxInfluence> weights;
    std::array<int32_t, kNumMaxInfluence> jointIndices;
@@ -66,15 +68,16 @@ struct SkinningInformationForGPU {
 
 class SkinCluster {
    friend class ModelAsset;
+
    // 不変な入力はコピー間で共有し、Palette/出力を差し替える際には対応する所有権も置換する。
    std::vector<std::shared_ptr<SrvDescriptorAllocation>> inputVertexDescriptors;
    std::vector<std::shared_ptr<SrvDescriptorAllocation>> influenceDescriptors;
    std::vector<std::shared_ptr<SrvDescriptorAllocation>> skinnedVertexDescriptors;
    std::shared_ptr<SrvDescriptorAllocation> paletteDescriptor;
-   std::vector<Matrix4x4> inverseBindPoseMatrices; // 逆バインドポーズ行列のリスト
+   std::vector<Matrix4x4> inverseBindPoseMatrices;                         // 逆バインドポーズ行列のリスト
    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> influenceResources; // メッシュごとの頂点影響リソース
-   std::vector<D3D12_VERTEX_BUFFER_VIEW> influenceBufferViews; // メッシュごとの頂点バッファ
-   std::vector<VertexInfluence*> mappedInfluenceData; // メッシュごとのマップ済み頂点影響データ
+   std::vector<D3D12_VERTEX_BUFFER_VIEW> influenceBufferViews;             // メッシュごとの頂点バッファ
+   std::vector<VertexInfluence*> mappedInfluenceData;                      // メッシュごとのマップ済み頂点影響データ
    std::vector<std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>> inputVertexSrvHandles;
    std::vector<std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>> influenceSrvHandles;
    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> skinnedVertexResources;
@@ -85,30 +88,40 @@ class SkinCluster {
    std::vector<D3D12_RESOURCE_STATES> skinnedVertexResourceStates;
    Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource;
    std::span<WellForGPU> mappedPalette; // マップされたスケルトン行列データへのスパン
-   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle; // パレット用のCPU/GPUディスクリプタハンドル
+   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>
+      paletteSrvHandle; // パレット用のCPU/GPUディスクリプタハンドル
 
 public:
    /// @brief 未確保のスキニング状態を構築する。
    SkinCluster() = default;
+
    /// @brief 同じ出力GPUリソースを別の遷移状態で管理するコピーを禁止する。
    SkinCluster(const SkinCluster&) = delete;
+
    /// @brief コピー代入によるGPU実行状態の別名を禁止する。
    SkinCluster& operator=(const SkinCluster&) = delete;
+
    /// @brief 確保済みリソースと対応する実行状態の所有権をまとめて移す。
    SkinCluster(SkinCluster&&) noexcept = default;
+
    /// @brief リソースと実行状態を同じ所有者へ移動代入する。
    SkinCluster& operator=(SkinCluster&&) noexcept = default;
 
    /// @brief バインド行列と同じ階層の姿勢を、法線用逆転置と共にGPUパレットへ反映する。
    bool ApplyPose(const Skeleton& pose);
+
    /// @brief GPUと同じウェイト・パレットで1頂点の現在位置を評価する。
    Vector3 EvaluateSkinnedPosition(size_t meshIndex, uint32_t vertexIndex, const Vector3& bindPosition) const;
+
    /// @brief パレットの逆バインドを戻し、現在のジョイント姿勢を取得する。
    bool TryResolveJointMatrix(size_t jointIndex, Matrix4x4& matrix) const;
+
    /// @brief Computeの入出力を検証し、遷移・Dispatch・頂点入力への復帰を同じ操作で完了する。
    bool DispatchSkinning(ID3D12GraphicsCommandList* commands, size_t meshIndex, const std::array<UINT, 5>& slots);
+
    /// @brief パレットのリソースとディスクリプターが利用可能か調べる。
    bool HasPalette() const { return paletteResource && paletteSrvHandle.second.ptr != 0 && !mappedPalette.empty(); }
+
    /// @brief サブメッシュの頂点数が確保済み出力と一致するか確認する。
    bool CanSkinVertices(size_t meshIndex, size_t count) const;
 
@@ -116,43 +129,40 @@ public:
    /// @param meshIndex メッシュ番号
    /// @return 必要なSRV/UAV/CBV/VBVが利用可能ならtrue
    bool HasComputeSkinningResources(size_t meshIndex) const {
-	  return HasPalette() && meshIndex < skinnedVertexResourceStates.size() && meshIndex < mappedSkinningInformationData.size() && mappedSkinningInformationData[meshIndex] && meshIndex < inputVertexSrvHandles.size() &&
-		 meshIndex < influenceSrvHandles.size() &&
-		 meshIndex < skinnedVertexResources.size() &&
-		 meshIndex < skinnedVertexBufferViews.size() &&
-		 meshIndex < skinnedVertexUavHandles.size() &&
-		 meshIndex < skinningInformationResources.size() &&
-		 inputVertexSrvHandles[meshIndex].second.ptr != 0 &&
-		 influenceSrvHandles[meshIndex].second.ptr != 0 &&
-		 skinnedVertexResources[meshIndex] &&
-		 skinnedVertexUavHandles[meshIndex].second.ptr != 0 &&
-		 skinningInformationResources[meshIndex];
+      return HasPalette() && meshIndex < skinnedVertexResourceStates.size() &&
+             meshIndex < mappedSkinningInformationData.size() && mappedSkinningInformationData[meshIndex] &&
+             meshIndex < inputVertexSrvHandles.size() && meshIndex < influenceSrvHandles.size() &&
+             meshIndex < skinnedVertexResources.size() && meshIndex < skinnedVertexBufferViews.size() &&
+             meshIndex < skinnedVertexUavHandles.size() && meshIndex < skinningInformationResources.size() &&
+             inputVertexSrvHandles[meshIndex].second.ptr != 0 && influenceSrvHandles[meshIndex].second.ptr != 0 &&
+             skinnedVertexResources[meshIndex] && skinnedVertexUavHandles[meshIndex].second.ptr != 0 &&
+             skinningInformationResources[meshIndex];
    }
 
    /// @brief 指定メッシュのCompute Skinning済み頂点バッファビューを取得する
    /// @param meshIndex メッシュ番号
    /// @return 利用可能な場合は頂点バッファビュー、範囲外ならnullptr
    const D3D12_VERTEX_BUFFER_VIEW* GetSkinnedVertexBufferView(size_t meshIndex) const {
-	  if (meshIndex >= skinnedVertexBufferViews.size()) {
-		 return nullptr;
-	  }
-	  return &skinnedVertexBufferViews[meshIndex];
+      if (meshIndex >= skinnedVertexBufferViews.size()) {
+         return nullptr;
+      }
+      return &skinnedVertexBufferViews[meshIndex];
    }
 
    const D3D12_VERTEX_BUFFER_VIEW* GetInfluenceBufferView(size_t meshIndex) const {
-	  if (meshIndex >= influenceBufferViews.size()) {
-		 return nullptr;
-	  }
-	  return &influenceBufferViews[meshIndex];
+      if (meshIndex >= influenceBufferViews.size()) {
+         return nullptr;
+      }
+      return &influenceBufferViews[meshIndex];
    }
 };
 
 /// @brief モデルデータを表す構造体
 struct ModelData {
    std::map<std::string, JointWeightData> skinClusterData;
-   std::vector<MeshData> meshes;               // 複数メッシュ対応
-   std::vector<MaterialAsset> materials;       // 複数マテリアル対応
-   Node rootNode;                             // ルートノード
+   std::vector<MeshData> meshes;         // 複数メッシュ対応
+   std::vector<MaterialAsset> materials; // 複数マテリアル対応
+   Node rootNode;                        // ルートノード
 };
 
 /// @brief モデルアセットクラス
@@ -160,6 +170,7 @@ class ModelAsset {
 public:
    /// @brief 永続化と参照解決で使用する完全なアセットIDを設定する。
    void SetAssetId(const std::string& assetId) { assetId_ = assetId; }
+
    /// @brief このモデルの完全なアセットIDを取得する。
    const std::string& GetAssetId() const { return assetId_; }
 
@@ -173,104 +184,92 @@ public:
    /// @brief モデル単位で利用するスキンクラスタを生成する
    std::optional<SkinCluster> CreateSkinClusterInstance() const;
 
-   /// @brief 指定インデックスの頂点バッファビューを取得する 
+   /// @brief 指定インデックスの頂点バッファビューを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return 頂点バッファビュー
    const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView(size_t index = 0) const {
-	  assert(index < vertexBufferViews_.size());
-	  return vertexBufferViews_[index];
+      assert(index < vertexBufferViews_.size());
+      return vertexBufferViews_[index];
    }
 
    /// @brief 指定インデックスの頂点バッファを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return 頂点バッファリソース
    ID3D12Resource* GetVertexBuffer(size_t index = 0) const {
-	  assert(index < vertexResources_.size());
-	  return vertexResources_[index].Get();
+      assert(index < vertexResources_.size());
+      return vertexResources_[index].Get();
    }
 
    /// @brief 指定インデックスのインデックスバッファビューを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return インデックスバッファビュー
    const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView(size_t index = 0) const {
-	  assert(index < indexBufferViews_.size());
-	  return indexBufferViews_[index];
+      assert(index < indexBufferViews_.size());
+      return indexBufferViews_[index];
    }
 
    /// @brief 指定インデックスのインデックスデータを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return インデックスデータの参照
    const std::vector<uint32_t>& GetIndices(size_t index = 0) const {
-	  assert(index < modelData_.meshes.size());
-	  return modelData_.meshes[index].indices;
+      assert(index < modelData_.meshes.size());
+      return modelData_.meshes[index].indices;
    }
-
 
    /// @brief 指定インデックスの頂点データを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return 頂点データの参照
    const std::vector<Mesh::VertexData>& GetVertices(size_t index = 0) const {
-	  assert(index < modelData_.meshes.size());
-	  return modelData_.meshes[index].vertices;
+      assert(index < modelData_.meshes.size());
+      return modelData_.meshes[index].vertices;
    }
 
    /// @brief 指定インデックスのマテリアルを取得する
    /// @param index マテリアル番号（省略時は0）
    /// @return マテリアルアセット
    const MaterialAsset& GetMaterialAsset(size_t index = 0) const {
-	  assert(index < modelData_.materials.size());
-	  return modelData_.materials[index];
+      assert(index < modelData_.materials.size());
+      return modelData_.materials[index];
    }
-
 
    /// @brief メッシュデータ一覧を取得する
-   const std::vector<MeshData>& GetMeshData() const {
-	  return modelData_.meshes;
-   }
+   const std::vector<MeshData>& GetMeshData() const { return modelData_.meshes; }
 
    /// @brief マテリアルアセット一覧を取得する
-   const std::vector<MaterialAsset>& GetMaterialAssets() const {
-	  return modelData_.materials;
-   }
+   const std::vector<MaterialAsset>& GetMaterialAssets() const { return modelData_.materials; }
 
    /// @brief ルートノードを取得する
-   const Node& GetRootNode() const {
-	  return modelData_.rootNode;
-   }
+   const Node& GetRootNode() const { return modelData_.rootNode; }
 
    /// @brief バインドポーズのスケルトンを取得する
-   const Skeleton* GetBindSkeleton() const {
-	  return skeleton_ ? &(*skeleton_) : nullptr;
-   }
+   const Skeleton* GetBindSkeleton() const { return skeleton_ ? &(*skeleton_) : nullptr; }
 
    /// @brief スキンクラスタを取得する
 
-
    /// @brief スキンクラスタを取得する
-   const SkinCluster* GetSkinCluster() const {
-	  return skinCluster_ ? &(*skinCluster_) : nullptr;
-   }
+   const SkinCluster* GetSkinCluster() const { return skinCluster_ ? &(*skinCluster_) : nullptr; }
 
    /// @brief スキニングボーン情報を含むモデルか
-   bool HasSkinningData() const {
-	  return hasSkinningData_;
-   }
+   bool HasSkinningData() const { return hasSkinningData_; }
 
 private:
-   static void CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes, const std::vector<ComPtr<ID3D12Resource>>& vertices);
-   static void CreateOutputSkinningResources(GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes);
+   static void CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCluster& skinCluster,
+      const std::vector<MeshData>& meshes, const std::vector<ComPtr<ID3D12Resource>>& vertices);
+   static void CreateOutputSkinningResources(
+      GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes);
    std::string assetId_;
    ModelData modelData_;
-   std::vector<ComPtr<ID3D12Resource>> vertexResources_;            // 複数リソース
-   std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews_;        // 複数ビュー
-   std::vector<Mesh::VertexData*> mappedVertexData_;                // 複数マップデータ
-   std::vector<ComPtr<ID3D12Resource>> indexResources_;             // 複数インデックスバッファ
-   std::vector<D3D12_INDEX_BUFFER_VIEW> indexBufferViews_;          // 複数インデックスビュー
-   std::vector<uint32_t*> mappedIndexData_;                         // 複数インデックスマップデータ
-   std::optional<Skeleton> skeleton_; // スケルトン（オプション）
+   std::vector<ComPtr<ID3D12Resource>> vertexResources_;     // 複数リソース
+   std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews_; // 複数ビュー
+   std::vector<Mesh::VertexData*> mappedVertexData_;         // 複数マップデータ
+   std::vector<ComPtr<ID3D12Resource>> indexResources_;      // 複数インデックスバッファ
+   std::vector<D3D12_INDEX_BUFFER_VIEW> indexBufferViews_;   // 複数インデックスビュー
+   std::vector<uint32_t*> mappedIndexData_;                  // 複数インデックスマップデータ
+   std::optional<Skeleton> skeleton_;                        // スケルトン（オプション）
    std::optional<SkinCluster> skinCluster_;
    GraphicsDevice* graphicsDevice_ = nullptr;
    bool hasSkinningData_ = false;
+
 private:
    ModelData LoadModelFile(const std::string& directoryPath, const std::string& filename);
 

@@ -20,7 +20,7 @@ public:
    };
 
    static constexpr const char* kTypeName = "RaceGateComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "レースゴール／ゲート", "Race Goal / Gate" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"レースゴール／ゲート", "Race Goal / Gate"};
 
    /// @brief コンポーネント型名を取得する
    /// @return RaceGateComponent
@@ -46,6 +46,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief ゲート設定をインスペクターへ表示する
    void DrawInspector() override;
 #endif

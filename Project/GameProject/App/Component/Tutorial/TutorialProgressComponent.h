@@ -20,10 +20,7 @@ class VehicleLandingBoost;
 class TutorialProgressComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "TutorialProgressComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{
-      "チュートリアル進行",
-      "Tutorial Progress"
-   };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"チュートリアル進行", "Tutorial Progress"};
 
    /// @brief コンポーネント型名を取得する
    /// @return TutorialProgressComponent
@@ -32,6 +29,7 @@ public:
    /// @brief チュートリアル対象のプレイヤー参照を解決して進行を初期化する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -48,6 +46,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief チュートリアル設定と現在の進行状態をインスペクターへ表示する
    void DrawInspector() override;
 #endif

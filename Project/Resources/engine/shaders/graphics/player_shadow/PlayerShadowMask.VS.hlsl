@@ -4,12 +4,12 @@ ConstantBuffer<PlayerShadowMaskConstants> gMaskConstants : register(b0);
 
 /// @brief プレイヤー頂点を影用の正射影座標へ変換する。
 PlayerShadowMaskVertexOutput main(PlayerShadowVertexInput input) {
-    PlayerShadowMaskVertexOutput output;
+   PlayerShadowMaskVertexOutput output;
 
-    // ローカル座標 → ワールド座標 → 影用カメラのクリップ座標。
-    // CPU側ですでに合成された行列を使う。
-    output.position = mul(input.position, gMaskConstants.playerShadowWVP);
+   // ローカル座標 → ワールド座標 → 影用カメラのクリップ座標。
+   // CPU側ですでに合成された行列を使う。
+   output.position = mul(input.position, gMaskConstants.playerShadowWVP);
 
-    output.texCoord = input.texCoord;
-    return output;
+   output.texCoord = input.texCoord;
+   return output;
 }

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
@@ -14,6 +15,7 @@ class GravityFollowCamera : public GameEngine::ICinemachineComponent {
 public:
    /// @brief 追従カメラを既定の補間設定で生成する
    GravityFollowCamera() = default;
+
    /// @brief カメラコンポーネントを破棄する
    ~GravityFollowCamera() override = default;
 
@@ -42,7 +44,9 @@ public:
    void SetPlayerSpeed(float speed) { playerSpeed_ = speed; }
 
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
-   void SetDriftDistanceScale(float scale) { driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
+   void SetDriftDistanceScale(float scale) {
+      driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
+   }
 
    /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
    /// @param cameraHeightOffset カメラ高さへ加える量。正の値は重力Up方向、負の値は下方向。
@@ -63,66 +67,85 @@ public:
    const GameEngine::Vector3& GetPivotTarget() const { return pivotTarget_; }
 
    /// @brief 現在のピッチ角（ラジアン）を取得する
-   float GetPitch()    const { return pitch_; }
+   float GetPitch() const { return pitch_; }
 
    /// @brief 現在のカメラ距離を取得する
    float GetDistance() const { return distance_; }
 
    /// @brief カメラ距離を設定する（下限あり）
-   void  SetDistance(float d) { distance_ = std::max(0.5f, d); }
+   void SetDistance(float d) { distance_ = std::max(0.5f, d); }
 
    /// @brief 直近更新時のカメラUpを取得する
-   GameEngine::Vector3 GetCameraUp()    const;
+   GameEngine::Vector3 GetCameraUp() const;
 
    /// @brief 直近更新時のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const;
 
    /// @copydoc GameEngine::ICinemachineComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc GameEngine::ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
+
       /// @brief 入力回転感度
       float rotateSpeed = 0.005f;
+
       /// @brief ホイールズーム感度
       float scrollSpeed = 1.0f / 120.0f;
+
       /// @brief 惑星切り替え時の重力Up補間速度（大きいほど速く追従）
       float gravityUpLerpSpeed = 5.0f;
+
       /// @brief 通常時の FOV（ラジアン相当）
       float fovDefault = 0.45f;
+
       /// @brief 加速時に加算される最大 FOV 量（視野を広げて速度感を演出）
       float fovBoostMax = 0.08f;
+
       /// @brief FOV が加速ブーストに追従する補間速度
       float fovLerpSpeed = 4.0f;
+
       /// @brief 加速演出を開始するプレイヤー速度の閾値
       float speedBoostThreshold = 5.0f;
+
       /// @brief 加速演出が最大になるプレイヤー速度
       float speedBoostMax = 25.0f;
+
       /// @brief 通常加速時にカメラが後退する最大追加距離
       float distanceBoostMax = 2.5f;
+
       /// @brief Spring の剛性（大きいほど目標へ強く引っ張る）
       float springStiffness = 85.0f;
+
       /// @brief Spring の減衰（大きいほど揺れが早く収束）
       float springDamping = 18.0f;
+
       /// @brief 速度変化量（加速度）を FOV キックへ変換する係数
       float accelToFovKick = 0.0025f;
+
       /// @brief 速度変化量（加速度）を距離キックへ変換する係数
       float accelToDistanceKick = 0.04f;
+
       /// @brief ミニターボ時に上乗せする FOV キック最大量
       float turboFovKickMax = 0.06f;
+
       /// @brief ミニターボ時に上乗せする距離キック最大量
       float turboDistanceKickMax = 2.0f;
+
       /// @brief カメラ位置（eye）の追従速度
       ///        値が大きいほど素早く追従し、小さいほどふわりとした遅延になる
       float positionLerpSpeed = 12.0f;
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
@@ -144,26 +167,43 @@ public:
       settings.positionLerpSpeed = positionLerpSpeed;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.rotateSpeed)) settings.rotateSpeed = defaults.rotateSpeed;
-      if (!std::isfinite(settings.scrollSpeed)) settings.scrollSpeed = defaults.scrollSpeed;
-      if (!std::isfinite(settings.gravityUpLerpSpeed)) settings.gravityUpLerpSpeed = defaults.gravityUpLerpSpeed;
-      if (!std::isfinite(settings.fovDefault)) settings.fovDefault = defaults.fovDefault;
-      if (!std::isfinite(settings.fovBoostMax)) settings.fovBoostMax = defaults.fovBoostMax;
-      if (!std::isfinite(settings.fovLerpSpeed)) settings.fovLerpSpeed = defaults.fovLerpSpeed;
-      if (!std::isfinite(settings.speedBoostThreshold)) settings.speedBoostThreshold = defaults.speedBoostThreshold;
-      if (!std::isfinite(settings.speedBoostMax)) settings.speedBoostMax = defaults.speedBoostMax;
-      if (!std::isfinite(settings.distanceBoostMax)) settings.distanceBoostMax = defaults.distanceBoostMax;
-      if (!std::isfinite(settings.springStiffness)) settings.springStiffness = defaults.springStiffness;
-      if (!std::isfinite(settings.springDamping)) settings.springDamping = defaults.springDamping;
-      if (!std::isfinite(settings.accelToFovKick)) settings.accelToFovKick = defaults.accelToFovKick;
-      if (!std::isfinite(settings.accelToDistanceKick)) settings.accelToDistanceKick = defaults.accelToDistanceKick;
-      if (!std::isfinite(settings.turboFovKickMax)) settings.turboFovKickMax = defaults.turboFovKickMax;
-      if (!std::isfinite(settings.turboDistanceKickMax)) settings.turboDistanceKickMax = defaults.turboDistanceKickMax;
-      if (!std::isfinite(settings.positionLerpSpeed)) settings.positionLerpSpeed = defaults.positionLerpSpeed;
+      if (!std::isfinite(settings.rotateSpeed))
+         settings.rotateSpeed = defaults.rotateSpeed;
+      if (!std::isfinite(settings.scrollSpeed))
+         settings.scrollSpeed = defaults.scrollSpeed;
+      if (!std::isfinite(settings.gravityUpLerpSpeed))
+         settings.gravityUpLerpSpeed = defaults.gravityUpLerpSpeed;
+      if (!std::isfinite(settings.fovDefault))
+         settings.fovDefault = defaults.fovDefault;
+      if (!std::isfinite(settings.fovBoostMax))
+         settings.fovBoostMax = defaults.fovBoostMax;
+      if (!std::isfinite(settings.fovLerpSpeed))
+         settings.fovLerpSpeed = defaults.fovLerpSpeed;
+      if (!std::isfinite(settings.speedBoostThreshold))
+         settings.speedBoostThreshold = defaults.speedBoostThreshold;
+      if (!std::isfinite(settings.speedBoostMax))
+         settings.speedBoostMax = defaults.speedBoostMax;
+      if (!std::isfinite(settings.distanceBoostMax))
+         settings.distanceBoostMax = defaults.distanceBoostMax;
+      if (!std::isfinite(settings.springStiffness))
+         settings.springStiffness = defaults.springStiffness;
+      if (!std::isfinite(settings.springDamping))
+         settings.springDamping = defaults.springDamping;
+      if (!std::isfinite(settings.accelToFovKick))
+         settings.accelToFovKick = defaults.accelToFovKick;
+      if (!std::isfinite(settings.accelToDistanceKick))
+         settings.accelToDistanceKick = defaults.accelToDistanceKick;
+      if (!std::isfinite(settings.turboFovKickMax))
+         settings.turboFovKickMax = defaults.turboFovKickMax;
+      if (!std::isfinite(settings.turboDistanceKickMax))
+         settings.turboDistanceKickMax = defaults.turboDistanceKickMax;
+      if (!std::isfinite(settings.positionLerpSpeed))
+         settings.positionLerpSpeed = defaults.positionLerpSpeed;
       rotateSpeed = settings.rotateSpeed;
       scrollSpeed = settings.scrollSpeed;
       gravityUpLerpSpeed = settings.gravityUpLerpSpeed;
@@ -208,16 +248,16 @@ private:
    float distance_ = 10.0f;
 
    /// @brief 重力平面上の基準前方ベクトル
-   GameEngine::Vector3 flatForward_ = { 0.0f, 0.0f, 1.0f };
+   GameEngine::Vector3 flatForward_ = {0.0f, 0.0f, 1.0f};
 
    /// @brief 外部から供給される目標重力Up（惑星ごとに変わる）
-   GameEngine::Vector3 gravityUp_ = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 gravityUp_ = {0.0f, 1.0f, 0.0f};
 
    /// @brief 補間中の現在重力Up（惑星切り替え時のロール急変を防ぐ）
-   GameEngine::Vector3 currentGravityUp_ = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 currentGravityUp_ = {0.0f, 1.0f, 0.0f};
 
    /// @brief 注視対象座標
-   GameEngine::Vector3 pivotTarget_ = { 0.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 pivotTarget_ = {0.0f, 0.0f, 0.0f};
 
    /// @brief プレイヤー現在速度（外部から毎フレーム供給）
    float playerSpeed_ = 0.0f;
@@ -252,16 +292,16 @@ private:
    /// @brief 補間済みの eye オフセット（ピボット相対）
    ///        絶対座標ではなくピボットからのオフセットを保持することで、
    ///        ピボットが移動しても常にプレイヤーの後方に留まることを保証する
-   GameEngine::Vector3 currentEyeOffset_ = { 0.0f, 0.0f, -10.0f };
+   GameEngine::Vector3 currentEyeOffset_ = {0.0f, 0.0f, -10.0f};
 
    /// @brief eye 位置が初期化済みかどうか（初回フレームはスナップ）
    bool isEyeInitialized_ = false;
 
    /// @brief 直近計算のカメラRight
-   mutable GameEngine::Vector3 cachedRight_ = { 1.0f, 0.0f, 0.0f };
+   mutable GameEngine::Vector3 cachedRight_ = {1.0f, 0.0f, 0.0f};
 
    /// @brief 直近計算のカメラUp
-   mutable GameEngine::Vector3 cachedUp_ = { 0.0f, 1.0f, 0.0f };
+   mutable GameEngine::Vector3 cachedUp_ = {0.0f, 1.0f, 0.0f};
 
    // -----------------------------------------------------------------------
    // 処理を分担するプライベートメソッド群
@@ -282,18 +322,15 @@ private:
    /// @param right 正規化済み右方向
    /// @param[out] outEye カメラ位置
    /// @param[out] outCameraUp カメラの上方向
-   void ComputeEyeAndUp(const GameEngine::Vector3& up,
-                        const GameEngine::Vector3& right,
-                        GameEngine::Vector3& outEye,
-                        GameEngine::Vector3& outCameraUp) const;
+   void ComputeEyeAndUp(const GameEngine::Vector3& up, const GameEngine::Vector3& right, GameEngine::Vector3& outEye,
+      GameEngine::Vector3& outCameraUp) const;
 
    /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
    /// @param state 書き込み先のカメラ状態
    /// @param eye カメラ位置
    /// @param cameraUp カメラの上方向
-   void ApplyLookAt(GameEngine::CameraState& state,
-                    const GameEngine::Vector3& eye,
-                    const GameEngine::Vector3& cameraUp);
+   void ApplyLookAt(
+      GameEngine::CameraState& state, const GameEngine::Vector3& eye, const GameEngine::Vector3& cameraUp);
 
    /// @brief プレイヤー速度に応じた FOV ブーストを補間し state.fov へ反映する
    /// @details 加速度が高いほど FOV を広げることで「速度感・加速感」を演出する。

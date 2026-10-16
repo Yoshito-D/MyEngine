@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Graphics/Resources/Material.h"
 #include <functional>
@@ -16,31 +17,41 @@ class MaterialComponent final : public IObjectComponent {
 public:
    /// @brief シリアライズ時に使用するコンポーネント型名
    static constexpr const char* kTypeName = "MaterialComponent";
+
    /// @brief エディタへ表示するローカライズ済み名称
-   static constexpr ComponentDisplayName kDisplayName{ "マテリアル", "Material" };
+   static constexpr ComponentDisplayName kDisplayName{"マテリアル", "Material"};
+
    /// @brief 名前から既存マテリアルを解決する関数型
    using MaterialResolver = std::function<Material*(const std::string&)>;
+
    /// @brief 名前と初期値からマテリアルを作成する関数型
    using MaterialCreator = std::function<Material*(const std::string&, uint32_t, int32_t, const Matrix4x4&)>;
+
    /// @brief 選択可能なマテリアル名一覧を返す関数型
    using MaterialNamesProvider = std::function<std::vector<std::string>()>;
+
    /// @brief 名前からテクスチャを解決する関数型
    using TextureResolver = std::function<Texture*(const std::string&)>;
+
    /// @brief 名前から環境テクスチャを解決する関数型
    using EnvironmentTextureResolver = std::function<Texture*(const std::string&)>;
 
    /// @brief 全MaterialComponentが使用するマテリアル解決関数を設定する
    /// @param resolver 名前から既存マテリアルを返す関数
    static void SetMaterialResolver(MaterialResolver resolver);
+
    /// @brief 全MaterialComponentが使用するマテリアル生成関数を設定する
    /// @param creator 名前と初期値からマテリアルを生成する関数
    static void SetMaterialCreator(MaterialCreator creator);
+
    /// @brief エディタのマテリアル候補供給関数を設定する
    /// @param provider 名前一覧を返す関数
    static void SetMaterialNamesProvider(MaterialNamesProvider provider);
+
    /// @brief 全MaterialComponentが使用するテクスチャ解決関数を設定する
    /// @param resolver 名前からテクスチャを返す関数
    static void SetTextureResolver(TextureResolver resolver);
+
    /// @brief 全MaterialComponentが使用する環境テクスチャ解決関数を設定する
    /// @param resolver 名前から環境テクスチャを返す関数
    static void SetEnvironmentTextureResolver(EnvironmentTextureResolver resolver);
@@ -51,19 +62,19 @@ public:
    /// @param lightingMode 初期ライティング方式
    /// @param uvTransform 初期UV変換
    /// @return 解決または作成したマテリアル。サービス未設定時はnullptr
-   Material* EnsureMaterial(const std::string& name,
-      uint32_t color = 0xffffffff,
-      int32_t lightingMode = Material::LightingMode::HALFLAMBERT,
-      const Matrix4x4& uvTransform = MakeIdentity4x4());
+   Material* EnsureMaterial(const std::string& name, uint32_t color = 0xffffffff,
+      int32_t lightingMode = Material::LightingMode::HALFLAMBERT, const Matrix4x4& uvTransform = MakeIdentity4x4());
 
    /// @brief 全スロットを破棄して先頭へ1マテリアルを割り当てる
    /// @param material 割り当てるマテリアル
    /// @param materialName シーン保存に使う名前
    void AssignMaterial(Material* material, const std::string& materialName = {});
+
    /// @brief 末尾へマテリアルスロットを追加する
    /// @param material 追加するマテリアル
    /// @param materialName シーン保存に使う名前
    void AppendMaterial(Material* material, const std::string& materialName = {});
+
    /// @brief マテリアルスロットと保存名をまとめて置き換える
    /// @param materials 新しいマテリアル一覧
    /// @param materialNames 各スロットの保存名
@@ -71,31 +82,41 @@ public:
 
    /// @brief API検証とInspectorで使用する共有パイプラインカタログを設定する。
    static void SetPipelineManager(const PSOManager* manager);
+
    /// @brief 実効スロットマテリアルを取得する。存在しないスロットはスロット0を継承する。
    const Material* GetMaterial(size_t slot = 0) const;
+
    /// @brief 初回編集時にObject所有のディープコピーを作成する。無効なスロットではnullptrを返す。
    Material* EditMaterial(size_t slot = 0);
+
    /// @brief スロットが独立したマテリアル上書きを所有しているか確認する。
    bool IsOverridden(size_t slot = 0) const;
+
    /// @brief このスロットを共有マテリアルへ戻す。
    void ResetOverride(size_t slot = 0);
+
    /// @brief 他のスロットを変更せず、1つのスロットへ共有マテリアルを割り当てる。
    void SetSharedMaterial(size_t slot, Material* material, const std::string& name = {});
+
    /// @brief 登録済みの互換パイプラインを選択し、成功時にローカル上書きを作成する。
    bool SetPipeline(const std::string& name, size_t slot = 0);
+
    /// @brief ローカル上書きへ型付きシェーダーパラメーターを設定する。未知の名前や成分数は拒否する。
    bool SetParameter(const std::string& name, const std::vector<float>& value, size_t slot = 0);
 
    /// @brief 各マテリアルスロットの保存名を取得する
    /// @return スロット順のマテリアル名
    const std::vector<std::string>& GetMaterialNames() const { return materialNames_; }
+
    /// @brief 各マテリアルスロットのテクスチャ名を取得する
    /// @return スロット順のテクスチャ名
    const std::vector<std::string>& GetTextureNames() const { return textureNames_; }
+
    /// @brief 指定スロットのテクスチャを名前から解決して取得する
    /// @param index スロット番号
    /// @return 解決したテクスチャ。範囲外または未解決の場合はnullptr
    Texture* GetTexture(size_t index = 0) const;
+
    /// @brief 指定スロットの保存用テクスチャ名を取得する
    /// @param index スロット番号
    /// @return テクスチャ名。範囲外の場合は空文字列
@@ -103,6 +124,7 @@ public:
 
    /// @brief 指定スロットのテクスチャ名をコードから設定する
    void SetTextureName(size_t slot, const std::string& name);
+
    /// @brief スロット 0 のテクスチャ名を設定する（ショートハンド）
    void SetTextureName(const std::string& name) { SetTextureName(0, name); }
 
@@ -141,6 +163,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @copydoc IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
@@ -170,7 +193,7 @@ private:
    static EnvironmentTextureResolver environmentTextureResolver_;
    std::vector<std::string> materialNames_;
    std::vector<std::string> textureNames_;
-   Vector2 textureLeftTop_ = { 0.0f, 0.0f };
-   Vector2 textureSize_ = { 0.0f, 0.0f };
+   Vector2 textureLeftTop_ = {0.0f, 0.0f};
+   Vector2 textureSize_ = {0.0f, 0.0f};
 };
 }

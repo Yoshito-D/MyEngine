@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
@@ -10,7 +11,8 @@ namespace App {
 class PlanetLeashCamera : public GameEngine::ICinemachineComponent {
 public:
    /// @brief レアッシュカメラを既定の追従設定で生成する
-   PlanetLeashCamera()  = default;
+   PlanetLeashCamera() = default;
+
    /// @brief カメラコンポーネントを破棄する
    ~PlanetLeashCamera() override = default;
 
@@ -30,13 +32,18 @@ public:
    void SetSphereCenter(const GameEngine::Vector3& center) { sphereCenter_ = center; }
 
    /// @brief 初期カメラ位置を設定し、初期化済みにする
-   void SetInitialEyePosition(const GameEngine::Vector3& eye) { eyePos_ = eye; isInitialized_ = true; }
+   void SetInitialEyePosition(const GameEngine::Vector3& eye) {
+      eyePos_ = eye;
+      isInitialized_ = true;
+   }
 
    /// @brief 重力Upを設定する
    void SetGravityUp(const GameEngine::Vector3& up) { gravityUp_ = up; }
 
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
-   void SetDriftDistanceScale(float scale) { driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f); }
+   void SetDriftDistanceScale(float scale) {
+      driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
+   }
 
    /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
    /// @param cameraHeightOffset カメラ高さへ加える量。正の値は重力Up方向、負の値は下方向。
@@ -47,32 +54,39 @@ public:
    }
 
    /// @brief 直近計算のカメラUpを取得する
-   GameEngine::Vector3 GetCameraUp()    const { return cachedUp_; }
+   GameEngine::Vector3 GetCameraUp() const { return cachedUp_; }
 
    /// @brief 直近計算のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const { return cachedRight_; }
 
    /// @copydoc GameEngine::ICinemachineComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc GameEngine::ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
+
       /// @brief 追従開始距離（この距離を超えた分を追う）
-      float maxFollowDistance  = 8.0f;
+      float maxFollowDistance = 8.0f;
+
       /// @brief 追従速度
-      float followSpeed        = 6.0f;
+      float followSpeed = 6.0f;
+
       /// @brief 惑星中心からの最小許容距離
-      float minPlanetDistance  = 7.0f;
+      float minPlanetDistance = 7.0f;
+
       /// @brief 重力Up使用フラグ（将来拡張向け）
-      bool  useGravityUp       = true;
+      bool useGravityUp = true;
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
@@ -82,13 +96,17 @@ public:
       settings.useGravityUp = useGravityUp;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.maxFollowDistance)) settings.maxFollowDistance = defaults.maxFollowDistance;
-      if (!std::isfinite(settings.followSpeed)) settings.followSpeed = defaults.followSpeed;
-      if (!std::isfinite(settings.minPlanetDistance)) settings.minPlanetDistance = defaults.minPlanetDistance;
+      if (!std::isfinite(settings.maxFollowDistance))
+         settings.maxFollowDistance = defaults.maxFollowDistance;
+      if (!std::isfinite(settings.followSpeed))
+         settings.followSpeed = defaults.followSpeed;
+      if (!std::isfinite(settings.minPlanetDistance))
+         settings.minPlanetDistance = defaults.minPlanetDistance;
       maxFollowDistance = settings.maxFollowDistance;
       followSpeed = settings.followSpeed;
       minPlanetDistance = settings.minPlanetDistance;
@@ -96,23 +114,23 @@ public:
    }
 
 private:
-   float maxFollowDistance  = 8.0f;
-   float followSpeed        = 6.0f;
-   float minPlanetDistance  = 7.0f;
-   bool  useGravityUp       = true;
+   float maxFollowDistance = 8.0f;
+   float followSpeed = 6.0f;
+   float minPlanetDistance = 7.0f;
+   bool useGravityUp = true;
 
 private:
    /// @brief 注視対象座標
-   GameEngine::Vector3 pivotTarget_  = { 0.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 pivotTarget_ = {0.0f, 0.0f, 0.0f};
 
    /// @brief 惑星中心座標
-   GameEngine::Vector3 sphereCenter_ = { 0.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 sphereCenter_ = {0.0f, 0.0f, 0.0f};
 
    /// @brief 外部から供給される重力Up
-   GameEngine::Vector3 gravityUp_    = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 gravityUp_ = {0.0f, 1.0f, 0.0f};
 
    /// @brief カメラの現在位置
-   GameEngine::Vector3 eyePos_        = { 0.0f, 5.0f, -15.0f };
+   GameEngine::Vector3 eyePos_ = {0.0f, 5.0f, -15.0f};
 
    /// @brief レアッシュの通常位置から表示位置だけを近づける距離倍率
    float driftDistanceScale_ = 1.0f;
@@ -124,19 +142,19 @@ private:
    float driftLookTargetHeightOffset_ = 0.0f;
 
    /// @brief 初期化実施済みフラグ
-   bool                isInitialized_ = false;
+   bool isInitialized_ = false;
 
    /// @brief 前フレームの重力Up
-   GameEngine::Vector3 prevGravityUp_ = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 prevGravityUp_ = {0.0f, 1.0f, 0.0f};
 
    /// @brief カメラ相対Up（ロール安定用）
-   GameEngine::Vector3 eyeRelUp_      = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 eyeRelUp_ = {0.0f, 1.0f, 0.0f};
 
    /// @brief 直近計算のカメラRight
-   mutable GameEngine::Vector3 cachedRight_ = { 1.0f, 0.0f, 0.0f };
+   mutable GameEngine::Vector3 cachedRight_ = {1.0f, 0.0f, 0.0f};
 
    /// @brief 直近計算のカメラUp
-   mutable GameEngine::Vector3 cachedUp_    = { 0.0f, 1.0f, 0.0f };
+   mutable GameEngine::Vector3 cachedUp_ = {0.0f, 1.0f, 0.0f};
 };
 
 } // namespace App

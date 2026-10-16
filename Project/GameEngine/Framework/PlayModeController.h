@@ -37,6 +37,7 @@ public:
    void RequestStep();
 
 #ifdef USE_IMGUI
+
    /// @brief プレイ中の指定コンポーネントだけを開始時スナップショットとシーンファイルへ保存する
    /// @param object 保存対象コンポーネントを所有するEntity
    /// @param componentTypeName 保存対象のコンポーネント型名

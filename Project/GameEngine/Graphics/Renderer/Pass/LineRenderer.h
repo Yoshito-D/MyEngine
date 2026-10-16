@@ -1,9 +1,10 @@
-#pragma once  
-#include <vector>  
-#include <wrl.h>  
-#include <d3d12.h>  
-#include "GameEngine/Graphics/Resources/Line.h" 
-#include "GameEngine/Graphics/Resources/TransformationMatrix.h"  
+#pragma once
+
+#include <vector>
+#include <wrl.h>
+#include <d3d12.h>
+#include "GameEngine/Graphics/Resources/Line.h"
+#include "GameEngine/Graphics/Resources/TransformationMatrix.h"
 #include <unordered_map>
 
 using namespace Microsoft::WRL;
@@ -14,24 +15,26 @@ class Camera;
 
 /// @brief グリッド描画の平面タイプ
 enum class GridPlane {
-   XZ,  // XZ平面（Y軸が上）
-   XY,  // XY平面（Z軸が上）
-   YZ   // YZ平面（X軸が上）
+   XZ, // XZ平面（Y軸が上）
+   XY, // XY平面（Z軸が上）
+   YZ  // YZ平面（X軸が上）
 };
 
 class LineRenderer {
 public:
    /// @brief GPUデータを確保する前の状態を構築する。
    LineRenderer() = default;
+
    /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
    LineRenderer(const LineRenderer&) = delete;
+
    /// @brief GPUデータの暗黙な共有を禁止する。
    LineRenderer& operator=(const LineRenderer&) = delete;
 
    struct LineInstance {
-	  Vector3 start;
-	  Vector3 end;
-	  Vector4 color;
+      Vector3 start;
+      Vector3 end;
+      Vector4 color;
    };
 
    void Initialize(ID3D12Device* device, size_t maxLines);
@@ -52,7 +55,8 @@ public:
    /// @param color 色
    /// @param segmentCount セグメント数（デフォルト：10）
    /// @param camera カメラ（描画コマンドに登録）
-   void DrawSpline(const std::vector<Vector3>& controlPoints, const Vector4& color, size_t segmentCount, Camera* camera);
+   void DrawSpline(
+      const std::vector<Vector3>& controlPoints, const Vector4& color, size_t segmentCount, Camera* camera);
 
    /// @brief グリッドを描画する
    /// @param camera アクティブカメラ（カメラ位置に基づいてグリッドを生成し、描画コマンドに登録）
@@ -62,7 +66,8 @@ public:
    /// @param range カメラからの範囲（グリッド数、デフォルト：100）
    /// @param enableFade カメラからの距離に応じてフェードアウトするか（デフォルト：true）
    /// @param fadeDistance フェードアウトを開始する距離（デフォルト：50.0f、enableFadeがtrueの場合のみ有効）
-   void DrawGrid(Camera* camera, GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10, int range = 100, bool enableFade = true, float fadeDistance = 50.0f);
+   void DrawGrid(Camera* camera, GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10,
+      int range = 100, bool enableFade = true, float fadeDistance = 50.0f);
 
    /// @brief 球を描画する
    /// @param center 中心
@@ -86,7 +91,8 @@ public:
    /// @param direction 円錐の向き
    /// @param color 色
    /// @param camera カメラ（描画コマンドに登録）
-   void DrawCone(const Vector3& apex, float radius, float height, const Vector3& direction, const Vector4& color, Camera* camera);
+   void DrawCone(
+      const Vector3& apex, float radius, float height, const Vector3& direction, const Vector4& color, Camera* camera);
 
    /// @brief ボックスを描画する
    /// @param center 中心
@@ -109,7 +115,9 @@ public:
 
    /// @brief カメラごとのライン描画情報を取得
    /// @return カメラとラインデータのマップ
-   const std::unordered_map<Camera*, std::vector<LineInstance>>& GetCameraLineGroups() const { return cameraLineGroups_; }
+   const std::unordered_map<Camera*, std::vector<LineInstance>>& GetCameraLineGroups() const {
+      return cameraLineGroups_;
+   }
 
    /// @brief 容量を検証し、描画するライン列をGPUバッファへ転送する。
    bool UploadLines(const std::vector<LineInstance>& lines);

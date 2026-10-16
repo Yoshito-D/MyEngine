@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 
@@ -17,7 +18,8 @@ namespace App {
 class VehicleGroundMover final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleGroundMover";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両地上移動", "Vehicle Ground Mover" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両地上移動", "Vehicle Ground Mover"};
+
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
@@ -54,25 +56,31 @@ public:
    GameEngine::Vector3 GetFlatForward() const { return flatForward_; }
 
 #ifdef USE_IMGUI
+
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
    /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
+
       /// @brief 自動前進速度（units/sec）
       float autoSpeed = 16.0f;
+
       /// @brief ステアリング角速度（deg/sec）
       float steerSpeed = 120.0f;
+
       /// @brief スピード回復速度（per sec）
       float speedRecovery = 1.0f;
       float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
@@ -82,14 +90,19 @@ public:
       settings.maxSpeed = maxSpeed;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.autoSpeed)) settings.autoSpeed = defaults.autoSpeed;
-      if (!std::isfinite(settings.steerSpeed)) settings.steerSpeed = defaults.steerSpeed;
-      if (!std::isfinite(settings.speedRecovery)) settings.speedRecovery = defaults.speedRecovery;
-      if (!std::isfinite(settings.maxSpeed)) settings.maxSpeed = defaults.maxSpeed;
+      if (!std::isfinite(settings.autoSpeed))
+         settings.autoSpeed = defaults.autoSpeed;
+      if (!std::isfinite(settings.steerSpeed))
+         settings.steerSpeed = defaults.steerSpeed;
+      if (!std::isfinite(settings.speedRecovery))
+         settings.speedRecovery = defaults.speedRecovery;
+      if (!std::isfinite(settings.maxSpeed))
+         settings.maxSpeed = defaults.maxSpeed;
       settings.maxSpeed = std::max(0.0f, settings.maxSpeed);
       settings.autoSpeed = std::clamp(settings.autoSpeed, 0.0f, settings.maxSpeed);
       settings.speedRecovery = std::max(0.0f, settings.speedRecovery);
@@ -97,7 +110,8 @@ public:
       steerSpeed = settings.steerSpeed;
       speedRecovery = settings.speedRecovery;
       maxSpeed = settings.maxSpeed;
-      if (currentSpeed_ >= 0.0f) currentSpeed_ = std::min(currentSpeed_, maxSpeed);
+      if (currentSpeed_ >= 0.0f)
+         currentSpeed_ = std::min(currentSpeed_, maxSpeed);
    }
 
 private:
@@ -114,27 +128,22 @@ private:
    void UpdateSpeed(float deltaTime);
 
    /// @brief ステアリング入力を反映した前方ベクトルを返す
-   GameEngine::Vector3 ApplySteering(float steerInput,
-	  const GameEngine::Vector3& localForward,
-	  const GameEngine::Vector3& gravityUp,
-	  float deltaTime) const;
+   GameEngine::Vector3 ApplySteering(float steerInput, const GameEngine::Vector3& localForward,
+      const GameEngine::Vector3& gravityUp, float deltaTime) const;
 
    /// @brief 方向ベクトルを gravityUp 平面に投影して正規化する
-   GameEngine::Vector3 ProjectToHorizontalPlane(const GameEngine::Vector3& dir,
-	  const GameEngine::Vector3& gravityUp) const;
+   GameEngine::Vector3 ProjectToHorizontalPlane(
+      const GameEngine::Vector3& dir, const GameEngine::Vector3& gravityUp) const;
 
    /// @brief GravityBody の水平速度を flatForward * currentSpeed_ に更新する
-   void ApplyVelocityToGravityBody(const GameEngine::Vector3& flatForward,
-	  const GameEngine::Vector3& gravityUp);
+   void ApplyVelocityToGravityBody(const GameEngine::Vector3& flatForward, const GameEngine::Vector3& gravityUp);
 
    /// @brief (gravityUp, flatForward) から姿勢クォータニオンを再構築して適用する
-   void RebuildPosture(const GameEngine::Vector3& flatForward,
-	  const GameEngine::Vector3& gravityUp);
+   void RebuildPosture(const GameEngine::Vector3& flatForward, const GameEngine::Vector3& gravityUp);
 
    /// @brief right / up / fwd 基底からクォータニオンを生成する
-   static GameEngine::Quaternion BasisToQuaternion(const GameEngine::Vector3& right,
-	  const GameEngine::Vector3& up,
-	  const GameEngine::Vector3& fwd);
+   static GameEngine::Quaternion BasisToQuaternion(
+      const GameEngine::Vector3& right, const GameEngine::Vector3& up, const GameEngine::Vector3& fwd);
 
    /// @brief 現在の前進実速度（負値は未初期化を示す）
    float currentSpeed_ = -1.0f;
@@ -149,7 +158,7 @@ private:
    float velocityImpulse_ = 0.0f;
 
    /// @brief 直近の水平前方ベクトル
-   GameEngine::Vector3 flatForward_ = { 0.0f, 0.0f, 1.0f };
+   GameEngine::Vector3 flatForward_ = {0.0f, 0.0f, 1.0f};
 
    const float kInitialSpeed = 15.0f;
 };

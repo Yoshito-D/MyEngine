@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Graphics/Renderer/DrawCommand.h"
 #include "GameEngine/Graphics/Pipeline/PSOManager.h"
 #include <vector>
@@ -23,30 +24,31 @@ class OffscreenRenderTarget;
 /// Renderer から各パスへ毎フレーム渡される。
 /// ポインタはすべて借用（所有権なし）。
 struct FrameContext {
-	// ----- インフラ -----
-	GraphicsDevice*      device          = nullptr;
-	const PSOManager*          psoManager      = nullptr;
-	LightManager*        lightManager    = nullptr;
-	PostProcessManager*  postProcessMgr  = nullptr;
-	OffscreenRenderTarget* offscreenRenderTarget = nullptr;
-	Material*            defaultMaterial = nullptr;
+   // ----- インフラ -----
+   GraphicsDevice* device = nullptr;
+   const PSOManager* psoManager = nullptr;
+   LightManager* lightManager = nullptr;
+   PostProcessManager* postProcessMgr = nullptr;
+   OffscreenRenderTarget* offscreenRenderTarget = nullptr;
+   Material* defaultMaterial = nullptr;
 
-	// ----- 専門レンダラー -----
-	ModelRenderer*    modelRenderer    = nullptr;
-	SpriteRenderer*   spriteRenderer   = nullptr;
-	ParticleRenderer* particleRenderer = nullptr;
-	UIRenderer*       uiRenderer       = nullptr;
-	TextRenderer*     textRenderer     = nullptr;
+   // ----- 専門レンダラー -----
+   ModelRenderer* modelRenderer = nullptr;
+   SpriteRenderer* spriteRenderer = nullptr;
+   ParticleRenderer* particleRenderer = nullptr;
+   UIRenderer* uiRenderer = nullptr;
+   TextRenderer* textRenderer = nullptr;
 
-	// ----- コマンドキュー（レンダーパス別）-----
-	std::vector<std::unique_ptr<IDrawCommand>>* opaqueCommands      = nullptr;
-	std::vector<std::unique_ptr<IDrawCommand>>* transparentCommands = nullptr;
-	std::vector<std::unique_ptr<IDrawCommand>>* postProcessCommands = nullptr;
+   // ----- コマンドキュー（レンダーパス別）-----
+   std::vector<std::unique_ptr<IDrawCommand>>* opaqueCommands = nullptr;
+   std::vector<std::unique_ptr<IDrawCommand>>* transparentCommands = nullptr;
+   std::vector<std::unique_ptr<IDrawCommand>>* postProcessCommands = nullptr;
 
-	// ----- パイプライン設定関数（Renderer::SetPipeline を経由させる）-----
-	std::function<void(const std::string&, BlendMode)> setPipelineFunc;
-	// CSなどがコマンドリストのPSOを直接変更した際にRendererのキャッシュを無効化する。
-	std::function<void()> invalidatePipelineBindingFunc;
+   // ----- パイプライン設定関数（Renderer::SetPipeline を経由させる）-----
+   std::function<void(const std::string&, BlendMode)> setPipelineFunc;
+
+   // CSなどがコマンドリストのPSOを直接変更した際にRendererのキャッシュを無効化する。
+   std::function<void()> invalidatePipelineBindingFunc;
 };
 
 } // namespace GameEngine

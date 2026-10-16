@@ -8,7 +8,8 @@
 namespace GameEngine {
 
 void LinearToSRGB::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature()) return;
+   if (!GetPipeline() || !GetRootSignature())
+      return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -33,8 +34,8 @@ void LinearToSRGB::ImGuiEdit() {
    ImGui::PushID(GetImGuiID());
 
    if (ImGui::TreeNodeEx("Parameters", ImGuiTreeNodeFlags_None, "%s",
-      LocalizeEditorText("リニアからsRGBのパラメータ", "Linear to sRGB Parameters"))) {
-	  ImGui::TreePop();
+          LocalizeEditorText("リニアからsRGBのパラメータ", "Linear to sRGB Parameters"))) {
+      ImGui::TreePop();
    }
 
    ImGui::PopID();

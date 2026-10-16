@@ -20,9 +20,8 @@ std::string FormatRaceTime(float seconds) {
 
    // setwは最小幅の指定なので、100分以上のタイムも上位桁を失わず表示できる。
    std::ostringstream stream;
-   stream << std::setfill('0') << std::setw(2) << minutes << ':'
-      << std::setw(2) << wholeSeconds << '.'
-      << std::setw(3) << milliseconds;
+   stream << std::setfill('0') << std::setw(2) << minutes << ':' << std::setw(2) << wholeSeconds << '.' << std::setw(3)
+          << milliseconds;
    return stream.str();
 }
 

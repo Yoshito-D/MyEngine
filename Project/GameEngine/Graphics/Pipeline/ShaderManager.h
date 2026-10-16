@@ -1,4 +1,5 @@
 #pragma once
+
 #include <d3d12.h>
 #include <dxcapi.h>
 #include <wrl.h>
@@ -52,7 +53,7 @@ struct ShaderResourceBindingInfo {
    D3D_SRV_DIMENSION dimension = D3D_SRV_DIMENSION_UNKNOWN;
 };
 
-   /// @brief 定数バッファー内の相対オフセットを持つ、リフレクション結果の末端フィールド。
+/// @brief 定数バッファー内の相対オフセットを持つ、リフレクション結果の末端フィールド。
 struct ShaderVariableInfo {
    std::string name;
    UINT offset = 0;
@@ -132,42 +133,48 @@ public:
    /// @param filePath HLSLファイルパス
    /// @param defines マクロ定義（オプション）
    /// @return コンパイル成功時はtrue
-   bool LoadVertexShader(const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
+   bool LoadVertexShader(
+      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
 
    /// @brief ピクセルシェーダーをコンパイルして登録
    /// @param name シェーダー名
    /// @param filePath HLSLファイルパス
    /// @param defines マクロ定義（オプション）
    /// @return コンパイル成功時はtrue
-   bool LoadPixelShader(const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
+   bool LoadPixelShader(
+      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
 
    /// @brief コンピューティングシェーダーをコンパイルして登録
    /// @param name シェーダー名
    /// @param filePath HLSLファイルパス
    /// @param defines マクロ定義（オプション）
    /// @return コンパイル成功時はtrue
-   bool LoadComputeShader(const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
+   bool LoadComputeShader(
+      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
 
    /// @brief ジオメトリシェーダーをコンパイルして登録
    /// @param name シェーダー名
    /// @param filePath HLSLファイルパス
    /// @param defines マクロ定義（オプション）
    /// @return コンパイル成功時はtrue
-   bool LoadGeometryShader(const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
+   bool LoadGeometryShader(
+      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
 
    /// @brief ハルシェーダーをコンパイルして登録
    /// @param name シェーダー名
    /// @param filePath HLSLファイルパス
    /// @param defines マクロ定義（オプション）
    /// @return コンパイル成功時はtrue
-   bool LoadHullShader(const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
+   bool LoadHullShader(
+      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
 
    /// @brief ドメインシェーダーをコンパイルして登録
    /// @param name シェーダー名
    /// @param filePath HLSLファイルパス
    /// @param defines マクロ定義（オプション）
    /// @return コンパイル成功時はtrue
-   bool LoadDomainShader(const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
+   bool LoadDomainShader(
+      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
 
    /// @brief シェーダーを読み込み（タイプ指定）
    /// @param info シェーダー情報
@@ -223,7 +230,8 @@ public:
    std::optional<UINT> ResolveObject3DRootParameter(const std::string& semanticName) const;
 
    /// @brief 互換用テーブルから任意パイプライン向けの意味名を解決
-   std::optional<UINT> ResolvePipelineRootParameter(const std::string& pipelineName, const std::string& semanticName) const;
+   std::optional<UINT> ResolvePipelineRootParameter(
+      const std::string& pipelineName, const std::string& semanticName) const;
 
    /// @brief 互換用の任意パイプライン向け解決テーブルを取得
    const PipelineRootParameterTable* GetPipelineRootParameterTable(const std::string& pipelineName) const;
@@ -285,12 +293,8 @@ private:
    /// @param profile シェーダープロファイル
    /// @param defines マクロ定義
    /// @return コンパイル済みシェーダーブロブ
-   ComPtr<IDxcBlob> CompileShader(
-	  const std::wstring& filePath,
-	  const wchar_t* profile,
-    const std::wstring& entryPoint = L"main",
-	  const std::vector<std::string>& defines = {}
-   );
+   ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile,
+      const std::wstring& entryPoint = L"main", const std::vector<std::string>& defines = {});
 
    /// @brief シェーダーリフレクション情報を抽出
    ShaderReflectionInfo ExtractReflectionInfo(IDxcBlob* shaderBlob, ShaderType type) const;

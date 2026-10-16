@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -17,8 +18,7 @@ public:
    /// @brief 固定ルートパラメータテーブルを作らず、出力先をクリアする
    /// @param output 出力先のマップ
    /// @param getReflection 互換用の反射取得関数
-   void BuildPipelineRootParameterTables(
-      std::unordered_map<std::string, PipelineRootParameterTable>& output,
+   void BuildPipelineRootParameterTables(std::unordered_map<std::string, PipelineRootParameterTable>& output,
       const std::function<const ShaderReflectionInfo*(const std::string&, ShaderType)>& getReflection) const;
 };
 

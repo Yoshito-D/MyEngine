@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Window/Window.h"
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -19,16 +20,21 @@ class SrvDescriptorAllocation final {
 public:
    /// @brief 所有するスロットを返却する
    ~SrvDescriptorAllocation();
+
    /// @brief ヒープ内のインデックスを取得する
    UINT GetIndex() const { return index_; }
+
    /// @brief スロット所有権の共有にはshared_ptrを使用し、実体のコピーを禁止する
    SrvDescriptorAllocation(const SrvDescriptorAllocation&) = delete;
+
    /// @brief スロット所有権を実体間で代入することを禁止する
    SrvDescriptorAllocation& operator=(const SrvDescriptorAllocation&) = delete;
 
 private:
    friend class GraphicsDevice;
+
    explicit SrvDescriptorAllocation(UINT index) : index_(index) {}
+
    GraphicsDevice* device_ = nullptr;
    UINT index_;
 };
@@ -38,20 +44,22 @@ class GraphicsDevice {
 public:
    /// @brief 未接続・未確保の状態を構築する。
    GraphicsDevice() = default;
+
    /// @brief 所有者への接続やGPU実行状態を別の実体へ複製することを禁止する。
    GraphicsDevice(const GraphicsDevice&) = delete;
+
    /// @brief 所有境界を迂回するコピー代入を禁止する。
    GraphicsDevice& operator=(const GraphicsDevice&) = delete;
 
-   template<typename T>
-   using ComPtr = Microsoft::WRL::ComPtr<T>;
+   template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
    /// @brief デバイスなどの初期化
-   /// @param window ウィンドウ 
+   /// @param window ウィンドウ
    /// @param backBufferWidth ウィンドウの幅
-   /// @param backBufferHeight ウィンドウの高さ 
-   /// @param enableDebugLayer デバッグレイヤーの有無 
-   void Initialize(Window* window, int32_t backBufferWidth = Window::kWindowWidth, int32_t backBufferHeight = Window::kWindowHeight, bool enableDebugLayer = true);
+   /// @param backBufferHeight ウィンドウの高さ
+   /// @param enableDebugLayer デバッグレイヤーの有無
+   void Initialize(Window* window, int32_t backBufferWidth = Window::kWindowWidth,
+      int32_t backBufferHeight = Window::kWindowHeight, bool enableDebugLayer = true);
 
    /// @brief 注入されたデバイス（例: WARP）でオフスクリーン描画用のコマンドとデスクリプターを初期化する。
    /// @param device このインスタンスが保持する既存のD3D12デバイス。ウィンドウやスワップチェーンは作成しない。
@@ -161,7 +169,6 @@ public:
    uint32_t GetBackBufferHeight() const { return static_cast<uint32_t>(backBufferHeight_); }
 
 private:
-
    Window* window_ = nullptr;
 
    ComPtr<IDXGIFactory7> dxgiFactory_ = nullptr;
@@ -194,6 +201,7 @@ private:
    DXGI_FORMAT rtvFormat_ = DXGI_FORMAT_R8G8B8A8_UNORM;
 
    std::chrono::steady_clock::time_point reference_;
+
 private:
    /// @brief デバッグレイヤーを有効
    void EnableDebugLayer();
@@ -227,7 +235,8 @@ private:
    void UpdateFixFPS();
 
    /// @brief コマンドリストを実行し、完了を待機
-   ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
+   ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
+      ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
 
    /// @brief スワップチェーン関連リソースを指定サイズへリサイズ
    void ResizeSwapChainResources(uint32_t width, uint32_t height);

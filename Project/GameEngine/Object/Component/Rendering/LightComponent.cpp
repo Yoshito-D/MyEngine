@@ -29,55 +29,32 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
       }
       return object.AddComponent<GameEngine::LightComponent>();
    },
-   GameEngine::LightComponent::kDisplayName,
-   GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model);
+   GameEngine::LightComponent::kDisplayName, GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model);
 
-GameEngine::Vector3 ReadVector3(
-   const nlohmann::json& data,
-   const char* key,
-   const GameEngine::Vector3& fallback) {
+GameEngine::Vector3 ReadVector3(const nlohmann::json& data, const char* key, const GameEngine::Vector3& fallback) {
    if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 3) {
       return fallback;
    }
-   return {
-      data.at(key)[0].get<float>(),
-      data.at(key)[1].get<float>(),
-      data.at(key)[2].get<float>()
-   };
+   return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>(), data.at(key)[2].get<float>()};
 }
 
-GameEngine::Vector4 ReadVector4(
-   const nlohmann::json& data,
-   const char* key,
-   const GameEngine::Vector4& fallback) {
+GameEngine::Vector4 ReadVector4(const nlohmann::json& data, const char* key, const GameEngine::Vector4& fallback) {
    if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 4) {
       return fallback;
    }
-   return {
-      data.at(key)[0].get<float>(),
-      data.at(key)[1].get<float>(),
-      data.at(key)[2].get<float>(),
-      data.at(key)[3].get<float>()
-   };
+   return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>(), data.at(key)[2].get<float>(),
+      data.at(key)[3].get<float>()};
 }
 
-GameEngine::Vector2 ReadVector2(
-   const nlohmann::json& data,
-   const char* key,
-   const GameEngine::Vector2& fallback) {
+GameEngine::Vector2 ReadVector2(const nlohmann::json& data, const char* key, const GameEngine::Vector2& fallback) {
    if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 2) {
       return fallback;
    }
-   return {
-      data.at(key)[0].get<float>(),
-      data.at(key)[1].get<float>()
-   };
+   return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>()};
 }
 
 float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
-   return data.contains(key) && data.at(key).is_number()
-      ? data.at(key).get<float>()
-      : fallback;
+   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
 }
 }
 
@@ -87,6 +64,7 @@ void LightComponent::SetLightType(Type type) {
    if (type_ == type) {
       return;
    }
+
    // LightManagerは種類別コンテナを持つ。同じキーのまま型だけ変えると旧コンテナにも
    // 登録が残るため、型を書き換える前に現在のRuntimeライトを解除する。
    ReleaseRuntimeLight();
@@ -121,10 +99,11 @@ bool LightComponent::DeserializeLegacy(const nlohmann::json& data) {
          pose.translation = ReadVector3(data, "position", transform->GetLocalPose().translation);
          transform->ApplyLocalPose(pose);
       }
+
       // Area Lightだけ旧フィールド名がnormalで、それ以外はdirectionを使用していた。
-      const Vector3 direction = type_ == Type::Area
-         ? ReadVector3(data, "normal", Vector3(0.0f, -1.0f, 0.0f))
-         : ReadVector3(data, "direction", Vector3(0.0f, -1.0f, 0.0f));
+      const Vector3 direction = type_ == Type::Area ? ReadVector3(data, "normal", Vector3(0.0f, -1.0f, 0.0f))
+                                                    : ReadVector3(data, "direction", Vector3(0.0f, -1.0f, 0.0f));
+
       // Point Lightには方向がないため回転を変更せず、既存Entityの姿勢を保つ。
       if (type_ == Type::Directional || type_ == Type::Spot || type_ == Type::Area) {
          {
@@ -156,17 +135,9 @@ void LightComponent::OnDetach() {
 }
 
 nlohmann::json LightComponent::Serialize() const {
-   return nlohmann::json{
-      { "lightType", TypeToString(type_) },
-      { "color", { color.x, color.y, color.z, color.w } },
-      { "intensity", intensity },
-      { "radius", radius },
-      { "decay", decay },
-      { "distance", distance },
-      { "cosAngle", cosAngle },
-      { "cosFalloffStart", cosFalloffStart },
-      { "areaSize", { areaSize.x, areaSize.y } }
-   };
+   return nlohmann::json{{"lightType", TypeToString(type_)}, {"color", {color.x, color.y, color.z, color.w}},
+      {"intensity", intensity}, {"radius", radius}, {"decay", decay}, {"distance", distance}, {"cosAngle", cosAngle},
+      {"cosFalloffStart", cosFalloffStart}, {"areaSize", {areaSize.x, areaSize.y}}};
 }
 
 void LightComponent::Deserialize(const nlohmann::json& data) {
@@ -185,6 +156,7 @@ void LightComponent::Deserialize(const nlohmann::json& data) {
    distance = ReadFloat(data, "distance", distance);
    cosAngle = ReadFloat(data, "cosAngle", cosAngle);
    cosFalloffStart = ReadFloat(data, "cosFalloffStart", cosFalloffStart);
+
    // sizeは旧形式との互換名。現行areaSizeがあれば必ずそちらを優先する。
    areaSize = ReadVector2(data, "areaSize", ReadVector2(data, "size", areaSize));
    Configure(DescribeSettings());
@@ -200,9 +172,9 @@ void LightComponent::SynchronizeRuntimeLight() {
    if (runtimeKey.empty()) {
       return;
    }
+
    // Entity IDの変更またはライト型変更があれば、旧キー/旧型の登録を先に削除する。
-   if (!runtimeLightKey_.empty() &&
-      (runtimeLightKey_ != runtimeKey || registeredType_ != type_)) {
+   if (!runtimeLightKey_.empty() && (runtimeLightKey_ != runtimeKey || registeredType_ != type_)) {
       ReleaseRuntimeLight();
    }
 
@@ -218,75 +190,77 @@ void LightComponent::SynchronizeRuntimeLight() {
    runtimeLightKey_ = runtimeKey;
    registeredType_ = type_;
    switch (type_) {
-   case Type::Directional: {
-      auto* light = EngineContext::GetDirectionalLight(runtimeKey);
-      if (!light) {
-         light = EngineContext::CreateDirectionalLight(runtimeKey);
+      case Type::Directional: {
+         auto* light = EngineContext::GetDirectionalLight(runtimeKey);
+         if (!light) {
+            light = EngineContext::CreateDirectionalLight(runtimeKey);
+         }
+         if (light && light->GetDirectionalLightData()) {
+            auto data = *light->GetDirectionalLightData();
+            data.color = color;
+            data.direction = forward;
+            data.intensity = intensity;
+            light->ApplyIllumination(data);
+         }
+         break;
       }
-      if (light && light->GetDirectionalLightData()) {
-         auto data = *light->GetDirectionalLightData();
-         data.color = color;
-         data.direction = forward;
-         data.intensity = intensity;
-         light->ApplyIllumination(data);
+      case Type::Point: {
+         auto* light = EngineContext::GetPointLight(runtimeKey);
+         if (!light) {
+            light = EngineContext::CreatePointLight(runtimeKey);
+         }
+         if (light && light->GetPointLightData()) {
+            auto data = *light->GetPointLightData();
+            data.color = color;
+            data.position = position;
+            data.intensity = intensity;
+
+            // 負値は減衰式を不安定にするため、GPUへ渡す境界で物理量を0以上に制限する。
+            data.radius = std::max(radius, 0.0f);
+            data.decay = std::max(decay, 0.0f);
+            light->ApplyIllumination(data);
+         }
+         break;
       }
-      break;
-   }
-   case Type::Point: {
-      auto* light = EngineContext::GetPointLight(runtimeKey);
-      if (!light) {
-         light = EngineContext::CreatePointLight(runtimeKey);
+      case Type::Spot: {
+         auto* light = EngineContext::GetSpotLight(runtimeKey);
+         if (!light) {
+            light = EngineContext::CreateSpotLight(runtimeKey);
+         }
+         if (light && light->GetSpotLightData()) {
+            auto data = *light->GetSpotLightData();
+            data.color = color;
+            data.position = position;
+            data.intensity = intensity;
+            data.direction = forward;
+            data.distance = std::max(distance, 0.0f);
+            data.decay = std::max(decay, 0.0f);
+            data.cosAngle = cosAngle;
+            data.cosFalloffStart = cosFalloffStart;
+            light->ApplyIllumination(data);
+         }
+         break;
       }
-      if (light && light->GetPointLightData()) {
-         auto data = *light->GetPointLightData();
-         data.color = color;
-         data.position = position;
-         data.intensity = intensity;
-         // 負値は減衰式を不安定にするため、GPUへ渡す境界で物理量を0以上に制限する。
-         data.radius = std::max(radius, 0.0f);
-         data.decay = std::max(decay, 0.0f);
-         light->ApplyIllumination(data);
+      case Type::Area: {
+         auto* light = EngineContext::GetAreaLight(runtimeKey);
+         if (!light) {
+            light = EngineContext::CreateAreaLight(runtimeKey);
+         }
+         if (light && light->GetAreaLightData()) {
+            auto data = *light->GetAreaLightData();
+            data.color = color;
+            data.position = position;
+            data.intensity = intensity;
+
+            // Area Lightは面法線にforward、面内方向にrightを用い、Transform回転へ追従させる。
+            data.normal = forward;
+            data.tangent = right;
+            data.width = std::max(areaSize.x, 0.0f);
+            data.height = std::max(areaSize.y, 0.0f);
+            light->ApplyIllumination(data);
+         }
+         break;
       }
-      break;
-   }
-   case Type::Spot: {
-      auto* light = EngineContext::GetSpotLight(runtimeKey);
-      if (!light) {
-         light = EngineContext::CreateSpotLight(runtimeKey);
-      }
-      if (light && light->GetSpotLightData()) {
-         auto data = *light->GetSpotLightData();
-         data.color = color;
-         data.position = position;
-         data.intensity = intensity;
-         data.direction = forward;
-         data.distance = std::max(distance, 0.0f);
-         data.decay = std::max(decay, 0.0f);
-         data.cosAngle = cosAngle;
-         data.cosFalloffStart = cosFalloffStart;
-         light->ApplyIllumination(data);
-      }
-      break;
-   }
-   case Type::Area: {
-      auto* light = EngineContext::GetAreaLight(runtimeKey);
-      if (!light) {
-         light = EngineContext::CreateAreaLight(runtimeKey);
-      }
-      if (light && light->GetAreaLightData()) {
-         auto data = *light->GetAreaLightData();
-         data.color = color;
-         data.position = position;
-         data.intensity = intensity;
-         // Area Lightは面法線にforward、面内方向にrightを用い、Transform回転へ追従させる。
-         data.normal = forward;
-         data.tangent = right;
-         data.width = std::max(areaSize.x, 0.0f);
-         data.height = std::max(areaSize.y, 0.0f);
-         light->ApplyIllumination(data);
-      }
-      break;
-   }
    }
 }
 
@@ -298,18 +272,18 @@ void LightComponent::ReleaseRuntimeLight() {
    // type_ではなく実際に登録した型を使う。SetLightTypeは解除後にtype_を更新するため、
    // ここで現在値を見ると別のManagerへ削除要求を送る可能性がある。
    switch (registeredType_) {
-   case Type::Directional:
-      EngineContext::RemoveDirectionalLight(runtimeLightKey_);
-      break;
-   case Type::Point:
-      EngineContext::RemovePointLight(runtimeLightKey_);
-      break;
-   case Type::Spot:
-      EngineContext::RemoveSpotLight(runtimeLightKey_);
-      break;
-   case Type::Area:
-      EngineContext::RemoveAreaLight(runtimeLightKey_);
-      break;
+      case Type::Directional:
+         EngineContext::RemoveDirectionalLight(runtimeLightKey_);
+         break;
+      case Type::Point:
+         EngineContext::RemovePointLight(runtimeLightKey_);
+         break;
+      case Type::Spot:
+         EngineContext::RemoveSpotLight(runtimeLightKey_);
+         break;
+      case Type::Area:
+         EngineContext::RemoveAreaLight(runtimeLightKey_);
+         break;
    }
    runtimeLightKey_.clear();
 }
@@ -320,10 +294,14 @@ std::string LightComponent::ResolveRuntimeKey() const {
 
 const char* LightComponent::TypeToString(Type type) {
    switch (type) {
-   case Type::Directional: return "directional";
-   case Type::Point: return "point";
-   case Type::Spot: return "spot";
-   case Type::Area: return "area";
+      case Type::Directional:
+         return "directional";
+      case Type::Point:
+         return "point";
+      case Type::Spot:
+         return "spot";
+      case Type::Area:
+         return "area";
    }
    return "directional";
 }
@@ -355,7 +333,7 @@ void LightComponent::DrawInspector() {
       return;
    }
 
-   const char* types[] = { "Directional", "Point", "Spot", "Area" };
+   const char* types[] = {"Directional", "Point", "Spot", "Area"};
    int selectedType = static_cast<int>(type_);
    if (ImGui::Combo("Type", &selectedType, types, IM_ARRAYSIZE(types))) {
       SetLightType(static_cast<Type>(selectedType));

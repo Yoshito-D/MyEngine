@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Math/VectorMath.h"
 #include "GameEngine/Math/MathUtils.h"
 #include "GameEngine/Graphics/Resources/IMaterialData.h"
@@ -17,17 +18,18 @@ class ParticleMaterial : public IMaterialData {
 public:
    /// @brief マップ領域の共有による別オブジェクトからの書き換えを禁止する。
    ParticleMaterial(const ParticleMaterial&) = delete;
+
    /// @brief GPUデータの暗黙な共有を禁止する。
    ParticleMaterial& operator=(const ParticleMaterial&) = delete;
 
    /// @brief マテリアルデータ（GPU送信用）
    struct MaterialData {
-	  Vector4 color;              // 基本カラー
-	  Matrix4x4 uvTransform;      // UV変換行列
-	  Vector4 renderingParams;    // x: 輝度、y: アルファ閾値、z: トゥーン階調数
-	  Vector4 effectParams;       // x: ソフト有効、y: 距離、z: 歪みピクセル、w: 歪み混合率
-	  Vector4 sceneParams;        // x: 幅、y: 高さ、z: near、w: far
-	  Vector4 projectionParams;   // x: 平行投影フラグ、y: 歪みにRGフローマップを使用
+      Vector4 color;            // 基本カラー
+      Matrix4x4 uvTransform;    // UV変換行列
+      Vector4 renderingParams;  // x: 輝度、y: アルファ閾値、z: トゥーン階調数
+      Vector4 effectParams;     // x: ソフト有効、y: 距離、z: 歪みピクセル、w: 歪み混合率
+      Vector4 sceneParams;      // x: 幅、y: 高さ、z: near、w: far
+      Vector4 projectionParams; // x: 平行投影フラグ、y: 歪みにRGフローマップを使用
    };
 
    ParticleMaterial();
@@ -130,8 +132,8 @@ private:
    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
    MaterialData* materialData_ = nullptr;
    Texture* texture_ = nullptr;
-   std::string pipelineName_ = "Particle";  ///< 使用するパイプライン名
-   std::optional<BlendMode> blendMode_;     ///< 優先ブレンドモード（nullopt = 加算）
+   std::string pipelineName_ = "Particle"; ///< 使用するパイプライン名
+   std::optional<BlendMode> blendMode_;    ///< 優先ブレンドモード（nullopt = 加算）
    float brightness_ = 1.0f;
    float alphaCutoff_ = 0.001f;
    uint32_t toonSteps_ = 0;

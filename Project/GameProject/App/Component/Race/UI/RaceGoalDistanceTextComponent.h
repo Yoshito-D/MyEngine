@@ -15,7 +15,7 @@ class RaceManagerComponent;
 class RaceGoalDistanceTextComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "RaceGoalDistanceTextComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "ゴール距離表示", "Goal Distance Text" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"ゴール距離表示", "Goal Distance Text"};
 
    /// @brief コンポーネント型名を取得する
    /// @return RaceGoalDistanceTextComponent
@@ -24,6 +24,7 @@ public:
    /// @brief レース、プレイヤー、ゴールへの参照を解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -40,6 +41,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief 参照IDと解決状態をインスペクターへ表示する
    void DrawInspector() override;
 #endif

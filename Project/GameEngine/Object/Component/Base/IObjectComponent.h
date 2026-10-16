@@ -25,8 +25,10 @@ class IObjectComponent {
 public:
    /// @brief 未接続・未確保の状態を構築する。
    IObjectComponent() = default;
+
    /// @brief 所有者への接続やGPU実行状態を別の実体へ複製することを禁止する。
    IObjectComponent(const IObjectComponent&) = delete;
+
    /// @brief 所有境界を迂回するコピー代入を禁止する。
    IObjectComponent& operator=(const IObjectComponent&) = delete;
 
@@ -38,6 +40,7 @@ public:
 
    /// @brief オーナーオブジェクトへの参照を取得する
    Object& GetOwner() { return *owner_; }
+
    /// @brief オーナーオブジェクトへの読み取り専用参照を取得する
    const Object& GetOwner() const { return *owner_; }
 
@@ -45,19 +48,20 @@ public:
    bool HasOwner() const { return owner_ != nullptr; }
 
    /// @brief コンポーネントが更新対象として有効か取得する
-   bool IsEnabled() const {
-      return isEnabled_;
-   }
+   bool IsEnabled() const { return isEnabled_; }
 
    /// @brief 有効状態を変更し、必要なライフサイクル通知を行う
    void SetEnabled(bool enabled);
 
    /// @brief オブジェクトへアタッチされた直後に呼ばれる
    virtual void OnAttach() {}
+
    /// @brief オブジェクトからデタッチされる直前に呼ばれる
    virtual void OnDetach() {}
+
    /// @brief コンポーネントが有効化された直後に呼ばれる
    virtual void OnEnable() {}
+
    /// @brief コンポーネントが無効化された直後に呼ばれる
    virtual void OnDisable() {}
 
@@ -70,7 +74,7 @@ public:
    virtual void OnReferencesChanged(SceneWorld& sceneWorld) { (void)sceneWorld; }
 
    /// @brief 更新処理（オーナーはGetOwner()で取得）
-   virtual void Update([[maybe_unused]]float deltaTime) {};
+   virtual void Update([[maybe_unused]] float deltaTime) {};
 
    /// @brief コンポーネント設定をJSONへ変換する
    virtual nlohmann::json Serialize() const = 0;
@@ -79,6 +83,7 @@ public:
    virtual void Deserialize(const nlohmann::json& data) = 0;
 
 #ifdef USE_IMGUI
+
    /// @brief インスペクター描画（オーナーはGetOwner()で取得）
    virtual void DrawInspector() {}
 #endif
@@ -89,6 +94,7 @@ private:
 
    /// @brief コンポーネントをオブジェクトにアタッチする
    void Attach(Object& owner);
+
    /// @brief コンポーネントをオブジェクトからデタッチする
    void Detach();
 

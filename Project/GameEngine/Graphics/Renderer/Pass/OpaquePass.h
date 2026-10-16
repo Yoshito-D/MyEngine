@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Graphics/Renderer/Pass/IRenderPass.h"
 
 namespace GameEngine {
@@ -7,12 +8,14 @@ namespace GameEngine {
 /// FrameContext の opaqueCommands を順番に実行する。
 class OpaquePass final : public IRenderPass {
 public:
-	/// @copydoc IRenderPass::Execute
-	void Execute(FrameContext& ctx) override;
-	/// @copydoc IRenderPass::GetName
-	std::string_view GetName() const override { return "OpaquePass"; }
-	/// @copydoc IRenderPass::GetPassType
-	RenderPassType GetPassType() const override { return RenderPassType::Opaque; }
+   /// @copydoc IRenderPass::Execute
+   void Execute(FrameContext& ctx) override;
+
+   /// @copydoc IRenderPass::GetName
+   std::string_view GetName() const override { return "OpaquePass"; }
+
+   /// @copydoc IRenderPass::GetPassType
+   RenderPassType GetPassType() const override { return RenderPassType::Opaque; }
 };
 
 } // namespace GameEngine

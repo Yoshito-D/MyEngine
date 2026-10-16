@@ -43,6 +43,7 @@ void TriggerVolumeComponent::OnSceneLoaded(SceneWorld& sceneWorld) {
 
 void TriggerVolumeComponent::Update(float deltaTime) {
    (void)deltaTime;
+
    // Enter/Exitは状態ではなく1フレームだけのエッジなので、対象が消えたフレームも含め毎回先に落とす。
    enteredThisFrame_ = false;
    exitedThisFrame_ = false;
@@ -50,6 +51,7 @@ void TriggerVolumeComponent::Update(float deltaTime) {
    // Scene内Objectは編集・再読込で差し替わり得るため、生ポインターをキャッシュせず安定IDから毎フレーム解決する。
    Object* target = ResolveTarget();
    const bool overlaps = target && CalculateOverlap(*target);
+
    // 前フレームの状態との差分から、1フレームだけ有効なEnter/Exitイベントを作る。
    enteredThisFrame_ = overlaps && !isInside_;
    exitedThisFrame_ = !overlaps && isInside_;
@@ -59,13 +61,11 @@ void TriggerVolumeComponent::Update(float deltaTime) {
       if (const auto* transform = GetOwner().GetComponent<TransformComponent>()) {
          // 判定と同じくOffsetはOwnerの平行移動へ直接加算し、回転・スケールは適用しない。
          const Vector3 center = transform->GetLocalPose().translation + centerOffset_;
+
          // DrawSphereでAABBの厳密な輪郭は描けないため、最大半幅を形状サイズの目安として可視化する。
-         const float debugRadius = shape_ == Shape::Sphere
-            ? radius_
-            : std::max({ halfExtents_.x, halfExtents_.y, halfExtents_.z });
-         const Vector4 color = isInside_
-            ? Vector4(0.2f, 1.0f, 0.2f, 1.0f)
-            : Vector4(1.0f, 0.8f, 0.1f, 1.0f);
+         const float debugRadius =
+            shape_ == Shape::Sphere ? radius_ : std::max({halfExtents_.x, halfExtents_.y, halfExtents_.z});
+         const Vector4 color = isInside_ ? Vector4(0.2f, 1.0f, 0.2f, 1.0f) : Vector4(1.0f, 0.8f, 0.1f, 1.0f);
          EngineContext::DrawSphere(center, debugRadius, color, false);
       }
    }
@@ -73,20 +73,17 @@ void TriggerVolumeComponent::Update(float deltaTime) {
 
 nlohmann::json TriggerVolumeComponent::Serialize() const {
    // enum値ではなく名前を保存して列挙順の変更に耐えさせ、フレーム依存の接触状態は次回ロードへ持ち越さない。
-   return nlohmann::json{
-      { "targetObjectId", targetObjectId_ },
-      { "shape", shape_ == Shape::Sphere ? "Sphere" : "AABB" },
-      { "centerOffset", { centerOffset_.x, centerOffset_.y, centerOffset_.z } },
-      { "halfExtents", { halfExtents_.x, halfExtents_.y, halfExtents_.z } },
-      { "radius", radius_ },
-      { "debugDraw", debugDraw_ }
-   };
+   return nlohmann::json{{"targetObjectId", targetObjectId_}, {"shape", shape_ == Shape::Sphere ? "Sphere" : "AABB"},
+      {"centerOffset", {centerOffset_.x, centerOffset_.y, centerOffset_.z}},
+      {"halfExtents", {halfExtents_.x, halfExtents_.y, halfExtents_.z}}, {"radius", radius_},
+      {"debugDraw", debugDraw_}};
 }
 
 void TriggerVolumeComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+
    // 各項目を独立した部分更新として読み、旧データで欠けている設定は現在値を維持する。
    if (data.contains("targetObjectId") && data.at("targetObjectId").is_string()) {
       targetObjectId_ = data.at("targetObjectId").get<std::string>();
@@ -97,10 +94,7 @@ void TriggerVolumeComponent::Deserialize(const nlohmann::json& data) {
 
    auto readVector = [&data](const char* key, Vector3& value) {
       if (data.contains(key) && data.at(key).is_array() && data.at(key).size() == 3) {
-         value = Vector3(
-            data.at(key)[0].get<float>(),
-            data.at(key)[1].get<float>(),
-            data.at(key)[2].get<float>());
+         value = Vector3(data.at(key)[0].get<float>(), data.at(key)[1].get<float>(), data.at(key)[2].get<float>());
       }
    };
    readVector("centerOffset", centerOffset_);
@@ -132,6 +126,7 @@ bool TriggerVolumeComponent::CalculateOverlap(const Object& target) const {
    // 現仕様は両Objectのローカルtranslationを直接比較し、親行列・回転・スケールを合成しない。Offsetも同じ座標成分へ加算する。
    const Vector3 center = ownerTransform->GetLocalPose().translation + centerOffset_;
    const Vector3 targetPosition = targetTransform->GetLocalPose().translation;
+
    // 現在は対象の原点を点として判定し、対象側の描画形状には依存させない。
    const Vector3 difference = targetPosition - center;
    if (shape_ == Shape::Sphere) {
@@ -140,9 +135,8 @@ bool TriggerVolumeComponent::CalculateOverlap(const Object& target) const {
    }
 
    // AABBはtranslationの各座標軸に平行で、halfExtentsの各成分が非負であることを前提とする。
-   return std::abs(difference.x) <= halfExtents_.x &&
-      std::abs(difference.y) <= halfExtents_.y &&
-      std::abs(difference.z) <= halfExtents_.z;
+   return std::abs(difference.x) <= halfExtents_.x && std::abs(difference.y) <= halfExtents_.y &&
+          std::abs(difference.z) <= halfExtents_.z;
 }
 
 #ifdef USE_IMGUI
@@ -152,7 +146,7 @@ void TriggerVolumeComponent::DrawInspector() {
       return;
    }
    GameEngine::EditorUI::ObjectReference("Target", targetObjectId_, "TransformComponent");
-   const char* shapes[] = { "Sphere", "AABB" };
+   const char* shapes[] = {"Sphere", "AABB"};
    int shapeIndex = shape_ == Shape::Sphere ? 0 : 1;
    if (ImGui::Combo("Shape", &shapeIndex, shapes, 2)) {
       shape_ = shapeIndex == 0 ? Shape::Sphere : Shape::Aabb;

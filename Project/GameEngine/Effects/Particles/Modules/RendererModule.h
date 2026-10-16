@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Effects/Particles/Modules/ParticleModule.h"
 #include <algorithm>
 #include <nlohmann/json.hpp>
@@ -7,24 +8,24 @@ namespace GameEngine {
 class RendererModule : public ParticleModule {
 public:
    enum class RotationSpace {
-	  World = 0,
-	  Local = 1
+      World = 0,
+      Local = 1
    };
 
    enum class BillboardType {
-	  None = 0,
-	  View,
-	  Horizontal,
-	  Vertical,
-	  Velocity
+      None = 0,
+      View,
+      Horizontal,
+      Vertical,
+      Velocity
    };
 
    /// @brief 透明パーティクルの描画順序
    enum class SortMode {
-	  Auto = 0,
-	  None,
-	  BackToFront,
-	  FrontToBack
+      Auto = 0,
+      None,
+      BackToFront,
+      FrontToBack
    };
 
    /// @brief パーティクル描画設定を既定値で初期化する
@@ -32,21 +33,25 @@ public:
 
    /// @brief 粒子回転を解釈する座標空間を設定する
    void SetRotationSpace(RotationSpace space) { rotationSpace_ = space; }
+
    /// @brief 粒子回転を解釈する座標空間を取得する
    RotationSpace GetRotationSpace() const { return rotationSpace_; }
 
    /// @brief ビルボードの向き合わせ方式を設定する
    void SetBillboardType(BillboardType type) { billboardType_ = type; }
+
    /// @brief ビルボードの向き合わせ方式を取得する
    BillboardType GetBillboardType() const { return billboardType_; }
 
    /// @brief 速度ストレッチへ使用する速度倍率を設定する
    void SetSpeedScale(float scale) { speedScale_ = scale; }
+
    /// @brief 速度ストレッチへ使用する速度倍率を取得する
    float GetSpeedScale() const { return speedScale_; }
 
    /// @brief 速度ストレッチの長さ倍率を設定する
    void SetLengthScale(float scale) { lengthScale_ = scale; }
+
    /// @brief 速度ストレッチの長さ倍率を取得する
    float GetLengthScale() const { return lengthScale_; }
 
@@ -84,10 +89,12 @@ public:
 
    /// @copydoc ParticleModule::ToJson
    nlohmann::json ToJson() const override;
+
    /// @copydoc ParticleModule::FromJson
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
+
    /// @copydoc ParticleModule::DrawInspector
    void DrawInspector() override;
 #endif

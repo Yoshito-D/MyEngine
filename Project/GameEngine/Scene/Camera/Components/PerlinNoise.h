@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
 
@@ -7,68 +8,74 @@ namespace GameEngine {
 /// @brief パーリンノイズベースのカメラシェイク
 class PerlinNoise : public ICinemachineComponent {
 public:
-    /// @brief 停止状態のノイズコンポーネントを生成する
-    PerlinNoise() = default;
-    /// @brief カメラコンポーネントを破棄する
-    ~PerlinNoise() override = default;
+   /// @brief 停止状態のノイズコンポーネントを生成する
+   PerlinNoise() = default;
 
-    /// @copydoc ICinemachineComponent::MutateCameraState
-    void MutateCameraState(CameraState& state, float deltaTime) override;
-    /// @copydoc ICinemachineComponent::GetStage
-    CinemachineStage GetStage() const override { return CinemachineStage::Noise; }
-    /// @copydoc ICinemachineComponent::GetComponentName
-    const char* GetComponentName() const override { return "PerlinNoise"; }
+   /// @brief カメラコンポーネントを破棄する
+   ~PerlinNoise() override = default;
 
-    /// @brief シェイクを開始
-    /// @param amplitude 振幅
-    /// @param frequency 周波数
-    /// @param duration 持続時間
-    void Shake(float amplitude, float frequency, float duration);
+   /// @copydoc ICinemachineComponent::MutateCameraState
+   void MutateCameraState(CameraState& state, float deltaTime) override;
 
-    /// @brief 指定方向だけにシェイクを開始
-    /// @param direction シェイク方向
-    /// @param amplitude 振幅
-    /// @param frequency 周波数
-    /// @param duration 持続時間
-    void ShakeDirectional(const Vector3& direction, float amplitude, float frequency, float duration);
+   /// @copydoc ICinemachineComponent::GetStage
+   CinemachineStage GetStage() const override { return CinemachineStage::Noise; }
 
-    /// @brief 更新時のカメラの縦・横方向へ独立したシェイクを開始する
-    /// @param horizontalAmplitude 横揺れの振幅
-    /// @param verticalAmplitude 縦揺れの振幅
-    /// @param frequency 周波数
-    /// @param duration 持続時間（0以下なら停止）
-    void ShakeScreenSpace(float horizontalAmplitude, float verticalAmplitude, float frequency, float duration);
+   /// @copydoc ICinemachineComponent::GetComponentName
+   const char* GetComponentName() const override { return "PerlinNoise"; }
 
-    /// @brief 振幅を設定
-    void SetAmplitude(float amplitude) { amplitudeGain_ = amplitude; }
-    /// @brief 周波数を設定
-    void SetFrequency(float frequency) { frequencyGain_ = frequency; }
+   /// @brief シェイクを開始
+   /// @param amplitude 振幅
+   /// @param frequency 周波数
+   /// @param duration 持続時間
+   void Shake(float amplitude, float frequency, float duration);
 
-    /// @brief シェイク中かどうか
-    bool IsShaking() const { return remainingTime_ > 0.0f; }
+   /// @brief 指定方向だけにシェイクを開始
+   /// @param direction シェイク方向
+   /// @param amplitude 振幅
+   /// @param frequency 周波数
+   /// @param duration 持続時間
+   void ShakeDirectional(const Vector3& direction, float amplitude, float frequency, float duration);
 
-    /// @copydoc ICinemachineComponent::Serialize
-    nlohmann::json Serialize() const override;
-    /// @copydoc ICinemachineComponent::Deserialize
-    void Deserialize(const nlohmann::json& data) override;
+   /// @brief 更新時のカメラの縦・横方向へ独立したシェイクを開始する
+   /// @param horizontalAmplitude 横揺れの振幅
+   /// @param verticalAmplitude 縦揺れの振幅
+   /// @param frequency 周波数
+   /// @param duration 持続時間（0以下なら停止）
+   void ShakeScreenSpace(float horizontalAmplitude, float verticalAmplitude, float frequency, float duration);
+
+   /// @brief 振幅を設定
+   void SetAmplitude(float amplitude) { amplitudeGain_ = amplitude; }
+
+   /// @brief 周波数を設定
+   void SetFrequency(float frequency) { frequencyGain_ = frequency; }
+
+   /// @brief シェイク中かどうか
+   bool IsShaking() const { return remainingTime_ > 0.0f; }
+
+   /// @copydoc ICinemachineComponent::Serialize
+   nlohmann::json Serialize() const override;
+
+   /// @copydoc ICinemachineComponent::Deserialize
+   void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-    /// @copydoc ICinemachineComponent::DrawInspector
-    void DrawInspector() override;
+
+   /// @copydoc ICinemachineComponent::DrawInspector
+   void DrawInspector() override;
 #endif
 
 private:
-    float Noise(float t) const;
+   float Noise(float t) const;
 
-    float amplitudeGain_ = 0.0f;
-    float frequencyGain_ = 1.0f;
-    float time_ = 0.0f;
-    float remainingTime_ = 0.0f;
-    float initialAmplitude_ = 0.0f;
-    Vector3 shakeDirection_ = { 0.0f, 1.0f, 0.0f };
-    bool useDirectionalShake_ = false;
-    Vector2 screenSpaceWeights_ = {};
-    bool useScreenSpaceShake_ = false;
+   float amplitudeGain_ = 0.0f;
+   float frequencyGain_ = 1.0f;
+   float time_ = 0.0f;
+   float remainingTime_ = 0.0f;
+   float initialAmplitude_ = 0.0f;
+   Vector3 shakeDirection_ = {0.0f, 1.0f, 0.0f};
+   bool useDirectionalShake_ = false;
+   Vector2 screenSpaceWeights_ = {};
+   bool useScreenSpaceShake_ = false;
 };
 
 } // namespace GameEngine

@@ -16,16 +16,15 @@ namespace {
 // 対象を UIText に限定し、互換性のないオブジェクトへエディターから追加されることを防ぐ。
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::UITextComponent::kTypeName,
-   [](GameEngine::Object& object) -> GameEngine::IObjectComponent* { return object.AddComponent<GameEngine::UITextComponent>(); },
-   GameEngine::UITextComponent::kDisplayName,
-   GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText));
+   [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
+      return object.AddComponent<GameEngine::UITextComponent>();
+   },
+   GameEngine::UITextComponent::kDisplayName, GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText));
 
 const char* ToAnchorName(GameEngine::UIAnchor anchor) {
    // 列挙値そのものではなく意味のある文字列で保存し、JSON の可読性と値追加時の互換性を保つ。
-   static constexpr const char* kNames[] = {
-      "TopLeft", "TopCenter", "TopRight", "MiddleLeft", "MiddleCenter",
-      "MiddleRight", "BottomLeft", "BottomCenter", "BottomRight"
-   };
+   static constexpr const char* kNames[] = {"TopLeft", "TopCenter", "TopRight", "MiddleLeft", "MiddleCenter",
+      "MiddleRight", "BottomLeft", "BottomCenter", "BottomRight"};
    const size_t index = static_cast<size_t>(anchor);
    return index < std::size(kNames) ? kNames[index] : kNames[0];
 }
@@ -46,23 +45,28 @@ GameEngine::UIAnchor ParseAnchor(const nlohmann::json& value, GameEngine::UIAnch
 
 const char* ToAlignmentName(GameEngine::TextHorizontalAlignment alignment) {
    switch (alignment) {
-      case GameEngine::TextHorizontalAlignment::Center: return "Center";
-      case GameEngine::TextHorizontalAlignment::Right: return "Right";
+      case GameEngine::TextHorizontalAlignment::Center:
+         return "Center";
+      case GameEngine::TextHorizontalAlignment::Right:
+         return "Right";
       case GameEngine::TextHorizontalAlignment::Left:
-      default: return "Left";
+      default:
+         return "Left";
    }
 }
 
 GameEngine::TextHorizontalAlignment ParseAlignment(
-   const nlohmann::json& value,
-   GameEngine::TextHorizontalAlignment fallback) {
+   const nlohmann::json& value, GameEngine::TextHorizontalAlignment fallback) {
    if (!value.is_string()) {
       return fallback;
    }
    const std::string name = value.get<std::string>();
-   if (name == "Center") return GameEngine::TextHorizontalAlignment::Center;
-   if (name == "Right") return GameEngine::TextHorizontalAlignment::Right;
-   if (name == "Left") return GameEngine::TextHorizontalAlignment::Left;
+   if (name == "Center")
+      return GameEngine::TextHorizontalAlignment::Center;
+   if (name == "Right")
+      return GameEngine::TextHorizontalAlignment::Right;
+   if (name == "Left")
+      return GameEngine::TextHorizontalAlignment::Left;
    return fallback;
 }
 }
@@ -78,6 +82,7 @@ void UITextComponent::SetText(std::string text) {
       return;
    }
    text_ = std::move(text);
+
    // レイアウトの作り直しとは別に版数も進め、タイプライター等が本文変更だけを検出できるようにする。
    ++textRevision_;
    InvalidateLayout();
@@ -99,12 +104,10 @@ void UITextComponent::SetStyle(const TextStyle& style) {
 
    // 色・アンカー・描画順は既存のグリフ形状を再利用できる。
    // フォント選択や折り返し条件など、字形配置へ影響する項目だけでキャッシュを無効化する。
-   const bool layoutChanged =
-      style_.fontId != sanitizedStyle.fontId ||
-      style_.fontSize != sanitizedStyle.fontSize ||
-      style_.horizontalAlignment != sanitizedStyle.horizontalAlignment ||
-      style_.maxWidth != sanitizedStyle.maxWidth ||
-      style_.lineSpacing != sanitizedStyle.lineSpacing;
+   const bool layoutChanged = style_.fontId != sanitizedStyle.fontId || style_.fontSize != sanitizedStyle.fontSize ||
+                              style_.horizontalAlignment != sanitizedStyle.horizontalAlignment ||
+                              style_.maxWidth != sanitizedStyle.maxWidth ||
+                              style_.lineSpacing != sanitizedStyle.lineSpacing;
    style_ = std::move(sanitizedStyle);
    if (layoutChanged) {
       InvalidateLayout();
@@ -140,7 +143,7 @@ void UITextComponent::SetOpacity(float opacity) {
 const TextLayoutResult& UITextComponent::GetLayout(FontManager& fontManager) const {
    // フォントが文字設定後に登録された場合も、空キャッシュを固定しない。
    if (layoutDirty_ || layoutFontRevision_ != fontManager.GetRevision() ||
-      (!text_.empty() && cachedLayout_.glyphs.empty())) {
+       (!text_.empty() && cachedLayout_.glyphs.empty())) {
       cachedLayout_ = fontManager.LayoutText(text_, style_);
       layoutFontRevision_ = fontManager.GetRevision();
       layoutDirty_ = false;
@@ -149,18 +152,11 @@ const TextLayoutResult& UITextComponent::GetLayout(FontManager& fontManager) con
 }
 
 nlohmann::json UITextComponent::Serialize() const {
-   return nlohmann::json{
-      { "text", text_ },
-      { "fontId", style_.fontId },
-      { "fontSize", style_.fontSize },
-      { "color", { style_.color.x, style_.color.y, style_.color.z, style_.color.w } },
-      { "screenAnchor", ToAnchorName(style_.screenAnchor) },
-      { "pivot", { style_.pivot.x, style_.pivot.y } },
-      { "horizontalAlignment", ToAlignmentName(style_.horizontalAlignment) },
-      { "maxWidth", style_.maxWidth },
-      { "lineSpacing", style_.lineSpacing },
-      { "sortingOrder", style_.sortingOrder }
-   };
+   return nlohmann::json{{"text", text_}, {"fontId", style_.fontId}, {"fontSize", style_.fontSize},
+      {"color", {style_.color.x, style_.color.y, style_.color.z, style_.color.w}},
+      {"screenAnchor", ToAnchorName(style_.screenAnchor)}, {"pivot", {style_.pivot.x, style_.pivot.y}},
+      {"horizontalAlignment", ToAlignmentName(style_.horizontalAlignment)}, {"maxWidth", style_.maxWidth},
+      {"lineSpacing", style_.lineSpacing}, {"sortingOrder", style_.sortingOrder}};
 }
 
 void UITextComponent::Deserialize(const nlohmann::json& data) {
@@ -178,14 +174,14 @@ void UITextComponent::Deserialize(const nlohmann::json& data) {
    }
    if (data.contains("color") && data.at("color").is_array() && data.at("color").size() >= 4) {
       const auto& color = data.at("color");
-      style.color = { color[0].get<float>(), color[1].get<float>(), color[2].get<float>(), color[3].get<float>() };
+      style.color = {color[0].get<float>(), color[1].get<float>(), color[2].get<float>(), color[3].get<float>()};
    }
    if (data.contains("screenAnchor")) {
       style.screenAnchor = ParseAnchor(data.at("screenAnchor"), style.screenAnchor);
    }
    if (data.contains("pivot") && data.at("pivot").is_array() && data.at("pivot").size() >= 2) {
       const auto& pivot = data.at("pivot");
-      style.pivot = { pivot[0].get<float>(), pivot[1].get<float>() };
+      style.pivot = {pivot[0].get<float>(), pivot[1].get<float>()};
    }
    if (data.contains("horizontalAlignment")) {
       style.horizontalAlignment = ParseAlignment(data.at("horizontalAlignment"), style.horizontalAlignment);
@@ -217,41 +213,44 @@ void UITextComponent::DrawInspector() {
    // これにより、途中状態ごとにレイアウトキャッシュを何度も破棄せずに済む。
    TextStyle editedStyle = style_;
    std::string editedText = text_;
-   if (ImGuiHelper::DrawMultilineText(ImGuiHelper::Localize({ "テキスト", "Text" }), editedText, 4096)) {
+   if (ImGuiHelper::DrawMultilineText(ImGuiHelper::Localize({"テキスト", "Text"}), editedText, 4096)) {
       SetText(std::move(editedText));
    }
 
    const auto fontIds = EngineContext::GetFontIds();
    const char* preview = editedStyle.fontId.empty() ? "<none>" : editedStyle.fontId.c_str();
-   if (ImGui::BeginCombo(ImGuiHelper::Localize({ "フォント", "Font" }), preview)) {
+   if (ImGui::BeginCombo(ImGuiHelper::Localize({"フォント", "Font"}), preview)) {
       for (const std::string& fontId : fontIds) {
          const bool selected = fontId == editedStyle.fontId;
          if (ImGui::Selectable(fontId.c_str(), selected)) {
             editedStyle.fontId = fontId;
          }
-         if (selected) ImGui::SetItemDefaultFocus();
+         if (selected)
+            ImGui::SetItemDefaultFocus();
       }
       ImGui::EndCombo();
    }
 
    int fontSize = static_cast<int>(editedStyle.fontSize);
-   ImGui::DragInt(ImGuiHelper::Localize({ "文字サイズ", "Font Size" }), &fontSize, 1.0f, 1, 512);
+   ImGui::DragInt(ImGuiHelper::Localize({"文字サイズ", "Font Size"}), &fontSize, 1.0f, 1, 512);
    editedStyle.fontSize = static_cast<uint32_t>(std::max(fontSize, 1));
-   ImGui::ColorEdit4(ImGuiHelper::Localize({ "文字色", "Color" }), &editedStyle.color.x);
-   ImGui::DragFloat2(ImGuiHelper::Localize({ "ピボット", "Pivot" }), &editedStyle.pivot.x, 0.01f, 0.0f, 1.0f);
-   ImGui::DragFloat(ImGuiHelper::Localize({ "最大幅", "Max Width" }), &editedStyle.maxWidth, 1.0f, 0.0f, 10000.0f);
-   ImGui::DragFloat(ImGuiHelper::Localize({ "行間", "Line Spacing" }), &editedStyle.lineSpacing, 0.01f, 0.1f, 10.0f);
-   ImGui::DragInt(ImGuiHelper::Localize({ "描画順", "Sorting Order" }), &editedStyle.sortingOrder);
+   ImGui::ColorEdit4(ImGuiHelper::Localize({"文字色", "Color"}), &editedStyle.color.x);
+   ImGui::DragFloat2(ImGuiHelper::Localize({"ピボット", "Pivot"}), &editedStyle.pivot.x, 0.01f, 0.0f, 1.0f);
+   ImGui::DragFloat(ImGuiHelper::Localize({"最大幅", "Max Width"}), &editedStyle.maxWidth, 1.0f, 0.0f, 10000.0f);
+   ImGui::DragFloat(ImGuiHelper::Localize({"行間", "Line Spacing"}), &editedStyle.lineSpacing, 0.01f, 0.1f, 10.0f);
+   ImGui::DragInt(ImGuiHelper::Localize({"描画順", "Sorting Order"}), &editedStyle.sortingOrder);
 
-   const char* anchorNames[] = { "Top Left", "Top Center", "Top Right", "Middle Left", "Middle Center", "Middle Right", "Bottom Left", "Bottom Center", "Bottom Right" };
+   const char* anchorNames[] = {"Top Left", "Top Center", "Top Right", "Middle Left", "Middle Center", "Middle Right",
+      "Bottom Left", "Bottom Center", "Bottom Right"};
    int anchorIndex = static_cast<int>(editedStyle.screenAnchor);
-   if (ImGui::Combo(ImGuiHelper::Localize({ "画面アンカー", "Screen Anchor" }), &anchorIndex, anchorNames, static_cast<int>(std::size(anchorNames)))) {
+   if (ImGui::Combo(ImGuiHelper::Localize({"画面アンカー", "Screen Anchor"}), &anchorIndex, anchorNames,
+          static_cast<int>(std::size(anchorNames)))) {
       editedStyle.screenAnchor = static_cast<UIAnchor>(anchorIndex);
    }
 
-   const char* alignmentNames[] = { "Left", "Center", "Right" };
+   const char* alignmentNames[] = {"Left", "Center", "Right"};
    int alignmentIndex = static_cast<int>(editedStyle.horizontalAlignment);
-   if (ImGui::Combo(ImGuiHelper::Localize({ "水平揃え", "Horizontal Alignment" }), &alignmentIndex, alignmentNames, 3)) {
+   if (ImGui::Combo(ImGuiHelper::Localize({"水平揃え", "Horizontal Alignment"}), &alignmentIndex, alignmentNames, 3)) {
       editedStyle.horizontalAlignment = static_cast<TextHorizontalAlignment>(alignmentIndex);
    }
 

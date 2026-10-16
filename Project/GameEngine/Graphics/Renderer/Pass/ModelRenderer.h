@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Graphics/Renderer/DrawCommand.h"
 #include <d3d12.h>
 #include <unordered_set>
@@ -18,29 +19,27 @@ class AreaLight;
 /// @brief 3Dモデル描画を担当するクラス
 class ModelRenderer {
 public:
-	/// @brief 初期化
-	/// @param device グラフィックスデバイス
-	/// @param psoManager パイプライン状態管理
-    /// @param assetManager アセット管理
-	void Initialize(GraphicsDevice* device, const PSOManager* psoManager, AssetManager* assetManager);
+   /// @brief 初期化
+   /// @param device グラフィックスデバイス
+   /// @param psoManager パイプライン状態管理
+   /// @param assetManager アセット管理
+   void Initialize(GraphicsDevice* device, const PSOManager* psoManager, AssetManager* assetManager);
 
-	/// @brief モデルを描画
-	/// @param modelData モデル描画データ
-	/// @param defaultMaterial デフォルトマテリアル
-	/// @param lightManager ライトマネージャー
-	/// @param setPipelineFunc パイプライン設定関数（外部から渡される）
-	void DrawModel(const ModelDrawData& modelData,
-		Material* defaultMaterial,
-		LightManager* lightManager,
-		std::function<void(const std::string&, BlendMode)> setPipelineFunc);
+   /// @brief モデルを描画
+   /// @param modelData モデル描画データ
+   /// @param defaultMaterial デフォルトマテリアル
+   /// @param lightManager ライトマネージャー
+   /// @param setPipelineFunc パイプライン設定関数（外部から渡される）
+   void DrawModel(const ModelDrawData& modelData, Material* defaultMaterial, LightManager* lightManager,
+      std::function<void(const std::string&, BlendMode)> setPipelineFunc);
 
 private:
    std::shared_ptr<SrvDescriptorAllocation> nullCubeAllocation_;
    D3D12_GPU_DESCRIPTOR_HANDLE nullCubeHandle_{};
    std::unordered_set<std::string> reportedFailures_;
-	GraphicsDevice* device_ = nullptr;
-	const PSOManager* psoManager_ = nullptr;
-  AssetManager* assetManager_ = nullptr;
+   GraphicsDevice* device_ = nullptr;
+   const PSOManager* psoManager_ = nullptr;
+   AssetManager* assetManager_ = nullptr;
 };
 
 } // namespace GameEngine

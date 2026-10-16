@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
 #include <algorithm>
@@ -9,101 +10,114 @@ namespace GameEngine {
 /// DebugCameraの動作を再現
 class OrbitalBody : public ICinemachineComponent {
 public:
-    /// @brief 既定の旋回角度と距離で生成する
-    OrbitalBody() = default;
-    /// @brief カメラコンポーネントを破棄する
-    ~OrbitalBody() override = default;
+   /// @brief 既定の旋回角度と距離で生成する
+   OrbitalBody() = default;
 
-    /// @copydoc ICinemachineComponent::MutateCameraState
-    void MutateCameraState(CameraState& state, float) override;
-    /// @copydoc ICinemachineComponent::GetStage
-    CinemachineStage GetStage() const override { return CinemachineStage::Body; }
+   /// @brief カメラコンポーネントを破棄する
+   ~OrbitalBody() override = default;
 
-    /// @brief 入力処理
-    /// @param mouseDelta マウス移動量
-    /// @param wheelDelta マウスホイール量
-    /// @param isDragging ドラッグ中かどうか
-    /// @param isShiftPressed シフトキーが押されているか
-    void ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta, bool isDragging, bool isShiftPressed);
+   /// @copydoc ICinemachineComponent::MutateCameraState
+   void MutateCameraState(CameraState& state, float) override;
 
-    /// @brief 距離を設定
-    void SetDistance(float distance) { distance_ = std::max(0.5f, distance); }
-    /// @brief ピボットからの距離を取得する
-    float GetDistance() const { return distance_; }
+   /// @copydoc ICinemachineComponent::GetStage
+   CinemachineStage GetStage() const override { return CinemachineStage::Body; }
 
-    /// @brief ピボットターゲットを設定
-    void SetPivotTarget(const Vector3& target) { pivotTarget_ = target; }
-    /// @brief ピボットターゲットを取得する
-    const Vector3& GetPivotTarget() const { return pivotTarget_; }
+   /// @brief 入力処理
+   /// @param mouseDelta マウス移動量
+   /// @param wheelDelta マウスホイール量
+   /// @param isDragging ドラッグ中かどうか
+   /// @param isShiftPressed シフトキーが押されているか
+   void ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta, bool isDragging, bool isShiftPressed);
 
-    /// @brief 回転速度を設定
-    void SetRotateSpeed(float speed) { rotateSpeed_ = speed; }
-    /// @brief スクロール速度を設定
-    void SetScrollSpeed(float speed) { scrollSpeed_ = speed; }
-    /// @brief 移動速度を設定
-    void SetMoveSpeed(float speed) { moveSpeed_ = speed; }
+   /// @brief 距離を設定
+   void SetDistance(float distance) { distance_ = std::max(0.5f, distance); }
 
-    /// @brief Yaw角度を取得
-    float GetYaw() const { return yaw_; }
-    /// @brief Pitch角度を取得
-    float GetPitch() const { return pitch_; }
-    /// @brief Yaw角度を設定
-    void SetYaw(float yaw) { yaw_ = yaw; }
-    /// @brief Pitch角度を設定
-    void SetPitch(float pitch) { pitch_ = pitch; }
+   /// @brief ピボットからの距離を取得する
+   float GetDistance() const { return distance_; }
 
-    /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの前方ベクトルを返す
-    Vector3 GetCameraForward() const {
-        float cosP = std::cos(pitch_);
-        float sinP = std::sin(pitch_);
-        float cosY = std::cos(yaw_);
-        float sinY = std::sin(yaw_);
-        Vector3 offset = { cosP * sinY, -sinP, cosP * cosY };
-        return (-offset).Normalize();
-    }
+   /// @brief ピボットターゲットを設定
+   void SetPivotTarget(const Vector3& target) { pivotTarget_ = target; }
 
-    /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの上ベクトルを返す（スクリーン上方向）
-    Vector3 GetCameraUp() const {
-        float cosP = std::cos(pitch_);
-        float sinP = std::sin(pitch_);
-        float cosY = std::cos(yaw_);
-        float sinY = std::sin(yaw_);
-        // rotationMatrix_ = Rx(pitch)*Ry(yaw) の行1 = TransformNormal({0,1,0}, matrix)
-        return { sinP * sinY, cosP, sinP * cosY };
-    }
+   /// @brief ピボットターゲットを取得する
+   const Vector3& GetPivotTarget() const { return pivotTarget_; }
 
-    /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの右ベクトルを返す（スクリーン右方向）
-    Vector3 GetCameraRight() const {
-        float cosY = std::cos(yaw_);
-        float sinY = std::sin(yaw_);
-        // LookAtMatrix の xaxis = up.Cross(zaxis) の解析解
-        return { -cosY, 0.0f, sinY };
-    }
+   /// @brief 回転速度を設定
+   void SetRotateSpeed(float speed) { rotateSpeed_ = speed; }
 
-    /// @copydoc ICinemachineComponent::GetComponentName
-    const char* GetComponentName() const override { return "OrbitalBody"; }
+   /// @brief スクロール速度を設定
+   void SetScrollSpeed(float speed) { scrollSpeed_ = speed; }
 
-    /// @copydoc ICinemachineComponent::Serialize
-    nlohmann::json Serialize() const override;
-    /// @copydoc ICinemachineComponent::Deserialize
-    void Deserialize(const nlohmann::json& data) override;
+   /// @brief 移動速度を設定
+   void SetMoveSpeed(float speed) { moveSpeed_ = speed; }
+
+   /// @brief Yaw角度を取得
+   float GetYaw() const { return yaw_; }
+
+   /// @brief Pitch角度を取得
+   float GetPitch() const { return pitch_; }
+
+   /// @brief Yaw角度を設定
+   void SetYaw(float yaw) { yaw_ = yaw; }
+
+   /// @brief Pitch角度を設定
+   void SetPitch(float pitch) { pitch_ = pitch; }
+
+   /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの前方ベクトルを返す
+   Vector3 GetCameraForward() const {
+      float cosP = std::cos(pitch_);
+      float sinP = std::sin(pitch_);
+      float cosY = std::cos(yaw_);
+      float sinY = std::sin(yaw_);
+      Vector3 offset = {cosP * sinY, -sinP, cosP * cosY};
+      return (-offset).Normalize();
+   }
+
+   /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの上ベクトルを返す（スクリーン上方向）
+   Vector3 GetCameraUp() const {
+      float cosP = std::cos(pitch_);
+      float sinP = std::sin(pitch_);
+      float cosY = std::cos(yaw_);
+      float sinY = std::sin(yaw_);
+
+      // rotationMatrix_ = Rx(pitch)*Ry(yaw) の行1 = TransformNormal({0,1,0}, matrix)
+      return {sinP * sinY, cosP, sinP * cosY};
+   }
+
+   /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの右ベクトルを返す（スクリーン右方向）
+   Vector3 GetCameraRight() const {
+      float cosY = std::cos(yaw_);
+      float sinY = std::sin(yaw_);
+
+      // LookAtMatrix の xaxis = up.Cross(zaxis) の解析解
+      return {-cosY, 0.0f, sinY};
+   }
+
+   /// @copydoc ICinemachineComponent::GetComponentName
+   const char* GetComponentName() const override { return "OrbitalBody"; }
+
+   /// @copydoc ICinemachineComponent::Serialize
+   nlohmann::json Serialize() const override;
+
+   /// @copydoc ICinemachineComponent::Deserialize
+   void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-    /// @copydoc ICinemachineComponent::DrawInspector
-    void DrawInspector() override;
+
+   /// @copydoc ICinemachineComponent::DrawInspector
+   void DrawInspector() override;
 #endif
 
 private:
-    float yaw_ = MathConstants::kPi;
-    float pitch_ = -0.785f; // -45度
-    float distance_ = 75.0f;
-    Vector3 pivotTarget_ = { 0.0f, 0.0f, 0.0f };
+   float yaw_ = MathConstants::kPi;
+   float pitch_ = -0.785f; // -45度
+   float distance_ = 75.0f;
+   Vector3 pivotTarget_ = {0.0f, 0.0f, 0.0f};
 
-    float rotateSpeed_ = 0.01f;
-    float scrollSpeed_ = 1.0f / 20.0f;
-    float moveSpeed_ = 0.0008f;
+   float rotateSpeed_ = 0.01f;
+   float scrollSpeed_ = 1.0f / 20.0f;
+   float moveSpeed_ = 0.0008f;
 
-    Matrix4x4 rotationMatrix_ = MakeIdentity4x4();
+   Matrix4x4 rotationMatrix_ = MakeIdentity4x4();
 };
 
 } // namespace GameEngine

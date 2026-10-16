@@ -20,7 +20,7 @@ class VehicleController final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "VehicleController";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両制御", "Vehicle Controller" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両制御", "Vehicle Controller"};
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
@@ -42,6 +42,7 @@ public:
    void SubmitPlayerShadow(GameEngine::Camera* camera);
 
 #ifdef USE_IMGUI
+
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
@@ -59,8 +60,7 @@ private:
    /// @return 有効な車両モデルと惑星モデル、正の半径を取得できた場合true。
    /// @note PlanetSwitcherの3引数版で同じ候補のモデル・中心・半径を取得する。
    /// 位置は親変換を含むワールド座標にそろえ、入力収集の段階ではGPU定数を書き換えない。
-   bool TryBuildPlayerShadowFrameData(GameEngine::Camera* camera,
-      GameEngine::PlayerShadowFrameData& outFrameData);
+   bool TryBuildPlayerShadowFrameData(GameEngine::Camera* camera, GameEngine::PlayerShadowFrameData& outFrameData);
 
    /// @brief 選択中カメラの安定ID。削除されたComponentの生ポインターを保持しない
    std::string gravityFollowCameraId_;

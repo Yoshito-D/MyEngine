@@ -9,7 +9,7 @@ namespace App {
 class VehicleEffectController final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleEffectController";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両エフェクト制御", "Vehicle Effect Controller" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両エフェクト制御", "Vehicle Effect Controller"};
 
    /// @brief コンポーネント型名を取得する
    /// @return VehicleEffectController
@@ -28,6 +28,7 @@ public:
    void Deserialize(const nlohmann::json& data) override { (void)data; }
 
 #ifdef USE_IMGUI
+
    /// @brief 現在の遷移検出状態を表示する
    void DrawInspector() override;
 #endif

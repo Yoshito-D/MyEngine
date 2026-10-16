@@ -1,20 +1,22 @@
 #pragma once
+
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include <d3d12.h>
 #include <wrl.h>
 
 namespace GameEngine {
+
 /// @brief 深度バッファを使ったアウトライン効果
 class Outline : public PostProcess {
 public:
    /// @brief HLSLのOutlineParamsと同じ定数バッファレイアウト
    struct OutlineCB {
-	  float outlineColor[4]; ///< 輪郭のRGB色と寄与率として使うアルファ
-	  float texelSize[2];    ///< 出力解像度における1テクセルのUV幅
-	  float thickness;       ///< 深度近傍のサンプリング間隔倍率
-	  float depthThreshold;  ///< 深度勾配を輪郭強度へ正規化するしきい値
-	  float intensity;       ///< 輪郭全体の合成強度
-	  float padding[3];      ///< 定数バッファレジスター境界へ合わせるパディング
+      float outlineColor[4]; ///< 輪郭のRGB色と寄与率として使うアルファ
+      float texelSize[2];    ///< 出力解像度における1テクセルのUV幅
+      float thickness;       ///< 深度近傍のサンプリング間隔倍率
+      float depthThreshold;  ///< 深度勾配を輪郭強度へ正規化するしきい値
+      float intensity;       ///< 輪郭全体の合成強度
+      float padding[3];      ///< 定数バッファレジスター境界へ合わせるパディング
    };
 
    /// @brief 共有描画環境とアウトライン用定数バッファを初期化する。
@@ -27,6 +29,7 @@ public:
    void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) override;
 
 #ifdef USE_IMGUI
+
    /// @brief アウトライン設定のエディターUIを描画する。
    void ImGuiEdit() override;
 #endif
@@ -37,6 +40,7 @@ public:
 
    /// @copydoc PostProcess::SerializeSettings
    nlohmann::json SerializeSettings() const override;
+
    /// @copydoc PostProcess::DeserializeSettings
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
@@ -60,7 +64,7 @@ public:
    void SetIntensity(float intensity);
 
 private:
-   float outlineColor_[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
+   float outlineColor_[4] = {0.1f, 0.1f, 0.1f, 1.0f};
    float thickness_ = 1.4f;
    float depthThreshold_ = 0.6f;
    float intensity_ = 0.7f;

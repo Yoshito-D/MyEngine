@@ -12,8 +12,7 @@
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
-namespace {
-}
+namespace {}
 
 namespace App {
 
@@ -72,22 +71,27 @@ nlohmann::json RaceGateComponent::Serialize() const {
    // enumの整数値ではなく安定した名前を保存し、列挙順の変更で既存シーンの意味が変わらないようにする。
    const char* gateTypeName = "Finish";
    switch (gateType_) {
-      case GateType::Start: gateTypeName = "Start"; break;
-      case GateType::Checkpoint: gateTypeName = "Checkpoint"; break;
-      case GateType::StartFinish: gateTypeName = "StartFinish"; break;
-      default: break;
+      case GateType::Start:
+         gateTypeName = "Start";
+         break;
+      case GateType::Checkpoint:
+         gateTypeName = "Checkpoint";
+         break;
+      case GateType::StartFinish:
+         gateTypeName = "StartFinish";
+         break;
+      default:
+         break;
    }
    return nlohmann::json{
-      { "raceManagerId", raceManagerId_ },
-      { "gateType", gateTypeName },
-      { "checkpointIndex", checkpointIndex_ }
-   };
+      {"raceManagerId", raceManagerId_}, {"gateType", gateTypeName}, {"checkpointIndex", checkpointIndex_}};
 }
 
 void RaceGateComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+
    // 各項目を独立して検証し、欠落・型不一致なら既定値または現在値を維持する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
@@ -105,6 +109,7 @@ void RaceGateComponent::Deserialize(const nlohmann::json& data) {
          gateType_ = GateType::Finish;
       }
    }
+
    // 負値をsize_tへ変換して巨大なチェックポイント番号にしないよう、unsignedだけを受理する。
    if (data.contains("checkpointIndex") && data.at("checkpointIndex").is_number_unsigned()) {
       checkpointIndex_ = data.at("checkpointIndex").get<size_t>();
@@ -118,7 +123,7 @@ void RaceGateComponent::DrawInspector() {
       return;
    }
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
-   const char* gateTypes[] = { "Start", "Checkpoint", "Finish", "StartFinish" };
+   const char* gateTypes[] = {"Start", "Checkpoint", "Finish", "StartFinish"};
    int gateTypeIndex = static_cast<int>(gateType_);
    if (ImGui::Combo("Gate Type", &gateTypeIndex, gateTypes, 4)) {
       gateType_ = static_cast<GateType>(gateTypeIndex);

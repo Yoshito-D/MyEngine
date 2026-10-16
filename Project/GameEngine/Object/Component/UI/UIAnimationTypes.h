@@ -33,11 +33,7 @@ struct UIPlaybackSample {
 /// @param duration 片道の再生秒
 /// @param mode 繰り返し方法
 /// @return 正規化進捗と完了状態
-inline UIPlaybackSample EvaluateUIPlayback(
-   float elapsed,
-   float delay,
-   float duration,
-   UIPlaybackMode mode) {
+inline UIPlaybackSample EvaluateUIPlayback(float elapsed, float delay, float duration, UIPlaybackMode mode) {
    if (elapsed <= delay) {
       return {};
    }
@@ -46,14 +42,14 @@ inline UIPlaybackSample EvaluateUIPlayback(
    const float cycles = (elapsed - std::max(delay, 0.0f)) / safeDuration;
    switch (mode) {
       case UIPlaybackMode::Loop:
-         return { cycles - std::floor(cycles), false };
+         return {cycles - std::floor(cycles), false};
       case UIPlaybackMode::PingPong: {
          const float phase = std::fmod(cycles, 2.0f);
-         return { phase <= 1.0f ? phase : 2.0f - phase, false };
+         return {phase <= 1.0f ? phase : 2.0f - phase, false};
       }
       case UIPlaybackMode::Once:
       default:
-         return { std::min(cycles, 1.0f), cycles >= 1.0f };
+         return {std::min(cycles, 1.0f), cycles >= 1.0f};
    }
 }
 

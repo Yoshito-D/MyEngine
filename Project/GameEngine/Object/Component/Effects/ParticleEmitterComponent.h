@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/VectorMath.h"
 #include <functional>
@@ -14,10 +15,12 @@ class ParticleSystem;
 class ParticleEmitterComponent final : public IObjectComponent {
 public:
    static constexpr const char* kTypeName = "ParticleEmitterComponent";
-   static constexpr ComponentDisplayName kDisplayName{ "パーティクルエミッター", "Particle Emitter" };
+   static constexpr ComponentDisplayName kDisplayName{"パーティクルエミッター", "Particle Emitter"};
    const char* GetTypeName() const override;
+
    /// @brief 所有Systemを持たないエミッターを構築する。
    ParticleEmitterComponent();
+
    /// @brief 所有Systemを確実に停止・破棄する。
    ~ParticleEmitterComponent() override;
 
@@ -25,19 +28,22 @@ public:
 
    /// @brief 追従・オフセット設定をまとめた構造体
    struct AttachmentConfig {
-	  bool followPosition = true;   ///< 位置を追従するか
-	  bool followRotation = true;   ///< 回転を追従するか
-	  bool followScale = true;  ///< スケールを追従するか（デフォルト on）
+      bool followPosition = true; ///< 位置を追従するか
+      bool followRotation = true; ///< 回転を追従するか
+      bool followScale = true;    ///< スケールを追従するか（デフォルト on）
 
-	  Vector3 positionOffset = { 0.0f, 0.0f, 0.0f };  ///< 位置オフセット
-	  Vector3 rotationOffset = { 0.0f, 0.0f, 0.0f };  ///< 回転オフセット（ラジアン）
-	  Vector3 scaleOffset = { 1.0f, 1.0f, 1.0f };  ///< スケールオフセット
+      Vector3 positionOffset = {0.0f, 0.0f, 0.0f}; ///< 位置オフセット
+      Vector3 rotationOffset = {0.0f, 0.0f, 0.0f}; ///< 回転オフセット（ラジアン）
+      Vector3 scaleOffset = {1.0f, 1.0f, 1.0f};    ///< スケールオフセット
 
-	  /// @brief シミュレーション空間
-	  enum class Space { World, Local } simulationSpace = Space::World;
+      /// @brief シミュレーション空間
+      enum class Space {
+         World,
+         Local
+      } simulationSpace = Space::World;
 
-	  /// @brief 追従するボーン名（空文字列 = ルート TransformComponent を使用）
-	  std::string boneName;
+      /// @brief 追従するボーン名（空文字列 = ルート TransformComponent を使用）
+      std::string boneName;
    };
 
    // ── エミッタースロット ────────────────────────────
@@ -52,14 +58,19 @@ public:
    };
 
    // ── ライフサイクル ────────────────────────────────
+
    /// @copydoc IObjectComponent::OnAttach
    void OnAttach() override;
+
    /// @copydoc IObjectComponent::OnDetach
    void OnDetach() override;
+
    /// @copydoc IObjectComponent::OnEnable
    void OnEnable() override;
+
    /// @copydoc IObjectComponent::OnDisable
    void OnDisable() override;
+
    /// @copydoc IObjectComponent::Update
    void Update(float) override;
 
@@ -72,7 +83,7 @@ public:
    /// @param jsonPath エフェクト JSON ファイルパス
    /// @param config   追従設定（省略時はデフォルト）
    /// @return 追加したスロットのインデックス
-   int  AddSlot(const std::string& jsonPath, const AttachmentConfig& config = {});
+   int AddSlot(const std::string& jsonPath, const AttachmentConfig& config = {});
 
    /// @brief スロットを削除する
    /// @param slotIndex 削除するスロットのインデックス
@@ -85,14 +96,17 @@ public:
    void UnregisterParticleSystemsForRender();
 
    /// @brief スロット数を取得する
-   int  GetSlotCount() const { return static_cast<int>(slots_.size()); }
+   int GetSlotCount() const { return static_cast<int>(slots_.size()); }
 
    /// @brief 実体を公開せず、指定スロットの設定を参照する。
    const SlotConfiguration* DescribeSlot(int slotIndex) const;
+
    /// @brief 設定の置換とSystemの読み込み・追従・再生の同期を完了する。
    bool ConfigureSlot(int slotIndex, const SlotConfiguration& configuration);
+
    /// @brief 生存粒子を維持したまま、指定スロットの新規放出を切り替える。
    void EnableEmission(int slotIndex, bool enabled);
+
    /// @brief 指定スロットが表示中の粒子を持つか調べる。
    bool HasLivingParticles(int slotIndex) const;
 
@@ -102,39 +116,51 @@ public:
    bool LoadEffect(const std::string& jsonPath);
 
    // ── 一括再生制御（全スロット） ────────────────────
+
    /// @brief 全スロットの再生を開始する
    void Play();
+
    /// @brief 全スロットを停止し、再生位置を先頭へ戻す
    void Stop();
+
    /// @brief 再生中の全スロットを一時停止する
    void Pause();
+
    /// @brief 一時停止中の全スロットを再開する
    void Resume();
+
    /// @brief 全スロットを先頭から再生し直す
    void Restart();
 
    /// @brief いずれかのスロットが再生中かを判定する
    /// @return 少なくとも1スロットが再生中の場合はtrue
-   bool IsPlaying()  const;  ///< 少なくとも 1 スロットが再生中なら true
+   bool IsPlaying() const; ///< 少なくとも 1 スロットが再生中なら true
+
    /// @brief 全スロットが再生を完了したかを判定する
    /// @return 全スロットが完了している場合はtrue
-   bool IsFinished() const;  ///< 全スロットが終了していれば true
+   bool IsFinished() const; ///< 全スロットが終了していれば true
 
    // ── 個別スロット再生制御 ──────────────────────────
+
    /// @brief 指定スロットの再生を開始する
    void Play(int slotIndex);
+
    /// @brief 指定スロットを停止し、再生位置を先頭へ戻す
    void Stop(int slotIndex);
+
    /// @brief 指定スロットを一時停止する
    void Pause(int slotIndex);
+
    /// @brief 指定スロットの一時停止を解除する
    void Resume(int slotIndex);
+
    /// @brief 指定スロットを先頭から再生し直す
    void Restart(int slotIndex);
 
    /// @brief 指定スロットが再生中かを判定する
    /// @return スロットが存在し再生中の場合はtrue
    bool IsPlaying(int slotIndex) const;
+
    /// @brief 指定スロットが再生を完了したかを判定する
    /// @return スロットが存在し完了している場合はtrue
    bool IsFinished(int slotIndex) const;
@@ -145,18 +171,18 @@ public:
    /// @param rotation ワールド回転
    /// @param scale ワールドスケール
    void SetSlotWorldTransform(
-	  int slotIndex,
-	  const Vector3& position,
-	  const Quaternion& rotation,
-	  const Vector3& scale = { 1.0f, 1.0f, 1.0f });
+      int slotIndex, const Vector3& position, const Quaternion& rotation, const Vector3& scale = {1.0f, 1.0f, 1.0f});
 
    // ── シリアライズ ──────────────────────────────────
+
    /// @copydoc IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @copydoc IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
@@ -166,16 +192,19 @@ private:
       std::function<void(int)> onFinished;
       std::unique_ptr<ParticleSystem> particleSystem;
    };
+
    EmitterSlot* GetSlot(int slotIndex);
    const EmitterSlot* GetSlot(int slotIndex) const;
    bool LoadSlot(EmitterSlot& slot);
    static SlotConfiguration ValidateConfiguration(SlotConfiguration configuration);
+
    // ── コールバック（全スロット終了時） ──────────────
+
    /// @brief 全スロットが終了したとき（IsFinished() が true になったとき）に呼ばれる
    std::function<void()> onFinished;
 
    // ── コンポーネント共通オプション ─────────────────
-   float maxCullDistance = 0.0f;  ///< カリング距離（0 = 無効）
+   float maxCullDistance = 0.0f;     ///< カリング距離（0 = 無効）
    bool debugDrawAttachments = true; ///< ジョイントのアタッチ位置をデバッグ描画するか
 
    /// @brief 指定ジョイントの現在のワールド行列を取得する

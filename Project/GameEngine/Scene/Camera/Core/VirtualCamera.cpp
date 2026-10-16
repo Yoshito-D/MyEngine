@@ -8,403 +8,403 @@ namespace GameEngine {
 
 namespace {
 std::unordered_map<std::string, VirtualCamera::ComponentFactory>& ComponentFactories() {
-    // 静的初期化順序の影響を避けるため、Registryは初回利用時に関数ローカルで構築する。
-    static std::unordered_map<std::string, VirtualCamera::ComponentFactory> factories;
-    return factories;
+   // 静的初期化順序の影響を避けるため、Registryは初回利用時に関数ローカルで構築する。
+   static std::unordered_map<std::string, VirtualCamera::ComponentFactory> factories;
+   return factories;
 }
 
 nlohmann::json SerializeVector3(const Vector3& value) {
-    return nlohmann::json::array({ value.x, value.y, value.z });
+   return nlohmann::json::array({value.x, value.y, value.z});
 }
 
 Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
-    if (!data.is_array() || data.size() != 3) {
-        return fallback;
-    }
-    return Vector3(
-        data[0].get<float>(),
-        data[1].get<float>(),
-        data[2].get<float>());
+   if (!data.is_array() || data.size() != 3) {
+      return fallback;
+   }
+   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
 }
 
 nlohmann::json SerializeQuaternion(const Quaternion& value) {
-    return nlohmann::json::array({ value.x, value.y, value.z, value.w });
+   return nlohmann::json::array({value.x, value.y, value.z, value.w});
 }
 
 Quaternion DeserializeQuaternion(const nlohmann::json& data, const Quaternion& fallback) {
-    if (!data.is_array() || data.size() != 4) {
-        return fallback;
-    }
-    return Quaternion{
-        data[0].get<float>(),
-        data[1].get<float>(),
-        data[2].get<float>(),
-        data[3].get<float>() };
+   if (!data.is_array() || data.size() != 4) {
+      return fallback;
+   }
+   return Quaternion{data[0].get<float>(), data[1].get<float>(), data[2].get<float>(), data[3].get<float>()};
 }
 
 nlohmann::json SerializeMatrix4x4(const Matrix4x4& matrix) {
-    nlohmann::json rows = nlohmann::json::array();
-    for (int row = 0; row < 4; ++row) {
-        nlohmann::json columns = nlohmann::json::array();
-        for (int column = 0; column < 4; ++column) {
-            columns.push_back(matrix.m[row][column]);
-        }
-        rows.push_back(std::move(columns));
-    }
-    return rows;
+   nlohmann::json rows = nlohmann::json::array();
+   for (int row = 0; row < 4; ++row) {
+      nlohmann::json columns = nlohmann::json::array();
+      for (int column = 0; column < 4; ++column) {
+         columns.push_back(matrix.m[row][column]);
+      }
+      rows.push_back(std::move(columns));
+   }
+   return rows;
 }
 
 Matrix4x4 DeserializeMatrix4x4(const nlohmann::json& data, const Matrix4x4& fallback) {
-    if (!data.is_array() || data.size() != 4) {
-        return fallback;
-    }
+   if (!data.is_array() || data.size() != 4) {
+      return fallback;
+   }
 
-    // 一行でも形が不正なら行列全体をfallbackへ戻す。部分更新されたView行列は
-    // 逆行列計算やカメラ姿勢を壊すため、要素単位の復元は行わない。
-    Matrix4x4 matrix = fallback;
-    for (int row = 0; row < 4; ++row) {
-        if (!data[row].is_array() || data[row].size() != 4) {
-            return fallback;
-        }
-        for (int column = 0; column < 4; ++column) {
-            matrix.m[row][column] = data[row][column].get<float>();
-        }
-    }
-    return matrix;
+   // 一行でも形が不正なら行列全体をfallbackへ戻す。部分更新されたView行列は
+   // 逆行列計算やカメラ姿勢を壊すため、要素単位の復元は行わない。
+   Matrix4x4 matrix = fallback;
+   for (int row = 0; row < 4; ++row) {
+      if (!data[row].is_array() || data[row].size() != 4) {
+         return fallback;
+      }
+      for (int column = 0; column < 4; ++column) {
+         matrix.m[row][column] = data[row][column].get<float>();
+      }
+   }
+   return matrix;
 }
 
 nlohmann::json SerializeTransform(const Transform& transform) {
-    // Euler角とQuaternionを両方保存し、rotationSourceでどちらを正とするかを記録する。
-    // Editor表示用Eulerと補間用Quaternionを相互変換した際の丸め誤差を避けるためである。
-    const Quaternion activeQuaternion = transform.GetActiveQuaternion();
-    const Vector3 activeEuler = transform.GetActiveEuler();
-    return nlohmann::json{
-        { "translation", SerializeVector3(transform.translation) },
-        { "rotation", SerializeVector3(activeEuler) },
-        { "rotationQuaternion", SerializeQuaternion(activeQuaternion) },
-        { "rotationSource", transform.IsUsingQuaternion() ? "quaternion" : "euler" },
-        { "scale", SerializeVector3(transform.scale) }
-    };
+   // Euler角とQuaternionを両方保存し、rotationSourceでどちらを正とするかを記録する。
+   // Editor表示用Eulerと補間用Quaternionを相互変換した際の丸め誤差を避けるためである。
+   const Quaternion activeQuaternion = transform.GetActiveQuaternion();
+   const Vector3 activeEuler = transform.GetActiveEuler();
+   return nlohmann::json{{"translation", SerializeVector3(transform.translation)},
+      {"rotation", SerializeVector3(activeEuler)}, {"rotationQuaternion", SerializeQuaternion(activeQuaternion)},
+      {"rotationSource", transform.IsUsingQuaternion() ? "quaternion" : "euler"},
+      {"scale", SerializeVector3(transform.scale)}};
 }
 
 Transform DeserializeTransform(const nlohmann::json& data, const Transform& fallback) {
-    if (!data.is_object()) {
-        return fallback;
-    }
+   if (!data.is_object()) {
+      return fallback;
+   }
 
-    Transform transform = fallback;
-    transform.translation = data.contains("translation")
-        ? DeserializeVector3(data.at("translation"), transform.translation)
-        : transform.translation;
-    transform.scale = data.contains("scale")
-        ? DeserializeVector3(data.at("scale"), transform.scale)
-        : transform.scale;
+   Transform transform = fallback;
+   transform.translation = data.contains("translation")
+                              ? DeserializeVector3(data.at("translation"), transform.translation)
+                              : transform.translation;
+   transform.scale = data.contains("scale") ? DeserializeVector3(data.at("scale"), transform.scale) : transform.scale;
 
-    // rotationSourceのない旧データはEuler形式として読み、互換性を保つ。
-    const std::string rotationSource = data.value("rotationSource", "euler");
-    if (rotationSource == "quaternion" && data.contains("rotationQuaternion")) {
-        transform.SetRotationQuaternion(DeserializeQuaternion(data.at("rotationQuaternion"), transform.GetActiveQuaternion()));
-    } else if (data.contains("rotation")) {
-        transform.SetRotationEuler(DeserializeVector3(data.at("rotation"), transform.GetActiveEuler()));
-    }
+   // rotationSourceのない旧データはEuler形式として読み、互換性を保つ。
+   const std::string rotationSource = data.value("rotationSource", "euler");
+   if (rotationSource == "quaternion" && data.contains("rotationQuaternion")) {
+      transform.SetRotationQuaternion(
+         DeserializeQuaternion(data.at("rotationQuaternion"), transform.GetActiveQuaternion()));
+   } else if (data.contains("rotation")) {
+      transform.SetRotationEuler(DeserializeVector3(data.at("rotation"), transform.GetActiveEuler()));
+   }
 
-    return transform;
+   return transform;
 }
 
 nlohmann::json SerializeCameraState(const CameraState& state) {
-    return nlohmann::json{
-        { "transform", SerializeTransform(state.transform) },
-        { "fov", state.fov },
-        { "nearClip", state.nearClip },
-        { "farClip", state.farClip },
-        { "hasViewMatrixOverride", state.hasViewMatrixOverride },
-        { "viewMatrixOverride", SerializeMatrix4x4(state.viewMatrixOverride) }
-    };
+   return nlohmann::json{{"transform", SerializeTransform(state.transform)}, {"fov", state.fov},
+      {"nearClip", state.nearClip}, {"farClip", state.farClip}, {"hasViewMatrixOverride", state.hasViewMatrixOverride},
+      {"viewMatrixOverride", SerializeMatrix4x4(state.viewMatrixOverride)}};
 }
 
 CameraState DeserializeCameraState(const nlohmann::json& data, const CameraState& fallback) {
-    if (!data.is_object()) {
-        return fallback;
-    }
+   if (!data.is_object()) {
+      return fallback;
+   }
 
-    // 欠けている項目は現在値を維持し、旧バージョンの部分的なCameraStateも適用できるようにする。
-    CameraState state = fallback;
-    if (data.contains("transform")) {
-        state.transform = DeserializeTransform(data.at("transform"), state.transform);
-    }
-    if (data.contains("fov") && data.at("fov").is_number()) {
-        state.fov = data.at("fov").get<float>();
-    }
-    if (data.contains("nearClip") && data.at("nearClip").is_number()) {
-        state.nearClip = data.at("nearClip").get<float>();
-    }
-    if (data.contains("farClip") && data.at("farClip").is_number()) {
-        state.farClip = data.at("farClip").get<float>();
-    }
-    if (data.contains("hasViewMatrixOverride") && data.at("hasViewMatrixOverride").is_boolean()) {
-        state.hasViewMatrixOverride = data.at("hasViewMatrixOverride").get<bool>();
-    }
-    if (data.contains("viewMatrixOverride")) {
-        state.viewMatrixOverride = DeserializeMatrix4x4(data.at("viewMatrixOverride"), state.viewMatrixOverride);
-    }
-    return state;
+   // 欠けている項目は現在値を維持し、旧バージョンの部分的なCameraStateも適用できるようにする。
+   CameraState state = fallback;
+   if (data.contains("transform")) {
+      state.transform = DeserializeTransform(data.at("transform"), state.transform);
+   }
+   if (data.contains("fov") && data.at("fov").is_number()) {
+      state.fov = data.at("fov").get<float>();
+   }
+   if (data.contains("nearClip") && data.at("nearClip").is_number()) {
+      state.nearClip = data.at("nearClip").get<float>();
+   }
+   if (data.contains("farClip") && data.at("farClip").is_number()) {
+      state.farClip = data.at("farClip").get<float>();
+   }
+   if (data.contains("hasViewMatrixOverride") && data.at("hasViewMatrixOverride").is_boolean()) {
+      state.hasViewMatrixOverride = data.at("hasViewMatrixOverride").get<bool>();
+   }
+   if (data.contains("viewMatrixOverride")) {
+      state.viewMatrixOverride = DeserializeMatrix4x4(data.at("viewMatrixOverride"), state.viewMatrixOverride);
+   }
+   return state;
 }
 
 Transform* ResolveEntityTransform(const std::string& entityId, Transform& resolvedTransform) {
-    // Editorで削除待ち、または非表示にしたEntityへ追従し続けない。
-    auto* world = SceneWorld::GetCurrent();
-    Object* entity = world ? world->FindObjectById(entityId) : Object::FindByEntityId(entityId);
-    if (!entity) {
-        return nullptr;
-    }
+   // Editorで削除待ち、または非表示にしたEntityへ追従し続けない。
+   auto* world = SceneWorld::GetCurrent();
+   Object* entity = world ? world->FindObjectById(entityId) : Object::FindByEntityId(entityId);
+   if (!entity) {
+      return nullptr;
+   }
 
-    // Cinemachine Componentが必要とするのは追従点のWorld位置である。
-    // OwnerのローカルTransformを直接返すと親子階層の移動が反映されないため、作業Transformへ抽出する。
-    const Matrix4x4 worldMatrix = entity->GetWorldMatrix();
-    resolvedTransform.translation = {
-        worldMatrix.m[3][0],
-        worldMatrix.m[3][1],
-        worldMatrix.m[3][2]
-    };
-    return &resolvedTransform;
+   // Cinemachine Componentが必要とするのは追従点のWorld位置である。
+   // OwnerのローカルTransformを直接返すと親子階層の移動が反映されないため、作業Transformへ抽出する。
+   const Matrix4x4 worldMatrix = entity->GetWorldMatrix();
+   resolvedTransform.translation = {worldMatrix.m[3][0], worldMatrix.m[3][1], worldMatrix.m[3][2]};
+   return &resolvedTransform;
 }
 } // namespace
 
 void VirtualCamera::Initialize(const CameraState& initialState) {
-    state_ = initialState;
+   state_ = initialState;
 }
 
 void VirtualCamera::Update(float deltaTime) {
-    // 前フレームのstate_を入力として全Componentを評価し、完成した状態だけを公開する。
-    state_ = CalculateState(deltaTime);
+   // 前フレームのstate_を入力として全Componentを評価し、完成した状態だけを公開する。
+   state_ = CalculateState(deltaTime);
 }
 
 void VirtualCamera::SetFollowTarget(const Transform* target) {
-    // 直接ポインター指定とEntity ID指定は排他的にし、どちらを優先するかが曖昧にならないようにする。
-    followTargetEntityId_.clear();
-    followTarget_ = target;
+   // 直接ポインター指定とEntity ID指定は排他的にし、どちらを優先するかが曖昧にならないようにする。
+   followTargetEntityId_.clear();
+   followTarget_ = target;
 }
 
 void VirtualCamera::SetLookAtTarget(const Transform* target) {
-    lookAtTargetEntityId_.clear();
-    lookAtTarget_ = target;
+   lookAtTargetEntityId_.clear();
+   lookAtTarget_ = target;
 }
 
 void VirtualCamera::SetFollowTargetEntityId(const std::string& entityId) {
-    followTarget_ = nullptr;
-    followTargetEntityId_ = entityId;
+   followTarget_ = nullptr;
+   followTargetEntityId_ = entityId;
 }
 
 void VirtualCamera::SetLookAtTargetEntityId(const std::string& entityId) {
-    lookAtTarget_ = nullptr;
-    lookAtTargetEntityId_ = entityId;
+   lookAtTarget_ = nullptr;
+   lookAtTargetEntityId_ = entityId;
 }
 
 const Transform* VirtualCamera::GetFollowTarget() const {
-    if (!followTargetEntityId_.empty()) {
-        // EntityはScene再ロードで置き換わり得るため、永続ID指定はアクセスごとに解決する。
-        return ResolveEntityTransform(followTargetEntityId_, resolvedFollowTarget_);
-    }
-    return followTarget_;
+   if (!followTargetEntityId_.empty()) {
+      // EntityはScene再ロードで置き換わり得るため、永続ID指定はアクセスごとに解決する。
+      return ResolveEntityTransform(followTargetEntityId_, resolvedFollowTarget_);
+   }
+   return followTarget_;
 }
 
 const Transform* VirtualCamera::GetLookAtTarget() const {
-    if (!lookAtTargetEntityId_.empty()) {
-        return ResolveEntityTransform(lookAtTargetEntityId_, resolvedLookAtTarget_);
-    }
-    return lookAtTarget_;
+   if (!lookAtTargetEntityId_.empty()) {
+      return ResolveEntityTransform(lookAtTargetEntityId_, resolvedLookAtTarget_);
+   }
+   return lookAtTarget_;
 }
 
 CameraState VirtualCamera::CalculateState(float deltaTime) {
-    // 各Stageは一つ前のStageの結果を受け取るため、state_のコピーを作業値として順次更新する。
-    CameraState result = state_;
+   // 各Stageは一つ前のStageの結果を受け取るため、state_のコピーを作業値として順次更新する。
+   CameraState result = state_;
 
-    // Body -> Aim -> Noise の順でコンポーネントを適用
-    for (const auto& component : components_) {
-        if (component && component->IsEnabled()) {
-            component->MutateCameraState(result, deltaTime);
-        }
-    }
+   // Body -> Aim -> Noise の順でコンポーネントを適用
+   for (const auto& component : components_) {
+      if (component && component->IsEnabled()) {
+         component->MutateCameraState(result, deltaTime);
+      }
+   }
 
-    return result;
+   return result;
 }
 
-void VirtualCamera::RemoveComponent(ICinemachineComponent* component) {
-    components_.erase(
-        std::remove_if(components_.begin(), components_.end(),
-            [component](const std::unique_ptr<ICinemachineComponent>& c) {
-                return c.get() == component;
-            }),
-        components_.end());
+void VirtualCamera::RemoveComponent(const ICinemachineComponent* component) {
+   components_.erase(std::remove_if(components_.begin(), components_.end(),
+                        [component](const std::unique_ptr<ICinemachineComponent>& c) { return c.get() == component; }),
+      components_.end());
 }
+
+bool VirtualCamera::EnableComponent(const ICinemachineComponent* component, bool enabled) {
+   for (const auto& owned : components_) {
+      if (owned.get() == component) {
+         owned->SetEnabled(enabled);
+         return true;
+      }
+   }
+   return false;
+}
+
+void VirtualCamera::ResetComponents(const ICinemachineComponent& source) {
+   // 他のカメラの部品から通知されても、このカメラの補間履歴をリセットしない。
+   const bool ownsSource = std::any_of(
+      components_.begin(), components_.end(), [&source](const auto& owned) { return owned.get() == &source; });
+   if (!ownsSource)
+      return;
+   for (const auto& owned : components_)
+      owned->OnCameraReset(source);
+}
+
+#ifdef USE_IMGUI
+void VirtualCamera::DrawComponentInspector(const ICinemachineComponent* component) {
+   for (const auto& owned : components_) {
+      if (owned.get() == component) {
+         owned->DrawInspector();
+         return;
+      }
+   }
+}
+#endif
 
 bool VirtualCamera::RegisterComponentFactory(const std::string& componentName, ComponentFactory factory) {
-    if (componentName.empty() || !factory) {
-        return false;
-    }
+   if (componentName.empty() || !factory) {
+      return false;
+   }
 
-    // 同名登録は最新Factoryで上書きし、静的登録の再実行や実装差し替えを冪等に扱う。
-    ComponentFactories()[componentName] = std::move(factory);
-    return true;
+   // 同名登録は最新Factoryで上書きし、静的登録の再実行や実装差し替えを冪等に扱う。
+   ComponentFactories()[componentName] = std::move(factory);
+   return true;
 }
 
 std::vector<std::string> VirtualCamera::GetRegisteredComponentNames() {
-    std::vector<std::string> names;
-    for (const auto& [name, factory] : ComponentFactories()) {
-        names.push_back(name);
-    }
-    std::sort(names.begin(), names.end());
-    return names;
+   std::vector<std::string> names;
+   for (const auto& [name, factory] : ComponentFactories()) {
+      names.push_back(name);
+   }
+   std::sort(names.begin(), names.end());
+   return names;
 }
 
 ICinemachineComponent* VirtualCamera::AddComponentByName(const std::string& componentName) {
-    if (componentName.empty()) {
-        return nullptr;
-    }
+   if (componentName.empty()) {
+      return nullptr;
+   }
 
-    // 同種Componentを複数追加するとSerialize時に名前で区別できないため、既存実体を返す。
-    if (auto* existing = FindComponentByName(componentName)) {
-        return existing;
-    }
+   // 同種Componentを複数追加するとSerialize時に名前で区別できないため、既存実体を返す。
+   if (auto* existing = FindComponentByName(componentName)) {
+      return existing;
+   }
 
-    const auto& factories = ComponentFactories();
-    const auto it = factories.find(componentName);
-    if (it == factories.end()) {
-        return nullptr;
-    }
+   const auto& factories = ComponentFactories();
+   const auto it = factories.find(componentName);
+   if (it == factories.end()) {
+      return nullptr;
+   }
 
-    return it->second(*this);
+   return it->second(*this);
 }
 
 ICinemachineComponent* VirtualCamera::FindComponentByName(const std::string& componentName) {
-    if (componentName.empty()) {
-        return nullptr;
-    }
+   if (componentName.empty()) {
+      return nullptr;
+   }
 
-    for (const auto& component : components_) {
-        if (component && componentName == component->GetComponentName()) {
-            return component.get();
-        }
-    }
-    return nullptr;
+   for (const auto& component : components_) {
+      if (component && componentName == component->GetComponentName()) {
+         return component.get();
+      }
+   }
+   return nullptr;
 }
 
 const ICinemachineComponent* VirtualCamera::FindComponentByName(const std::string& name) const {
-    for (const auto& component : components_) if (name == component->GetComponentName()) return component.get();
-    return nullptr;
+   for (const auto& component : components_)
+      if (name == component->GetComponentName())
+         return component.get();
+   return nullptr;
 }
 
 void VirtualCamera::SortComponents() {
-    // ステージ内でも依存する計算の順序を明示できるようにする。
-    // 同じ順序値の既存コンポーネントは追加順を保ち、無関係な処理の並び替えを避ける。
-    std::stable_sort(components_.begin(), components_.end(),
-        [](const std::unique_ptr<ICinemachineComponent>& a,
-           const std::unique_ptr<ICinemachineComponent>& b) {
-            if (a->GetStage() != b->GetStage()) {
-                return static_cast<int>(a->GetStage()) < static_cast<int>(b->GetStage());
-            }
-            return a->GetExecutionOrder() < b->GetExecutionOrder();
-        });
+   // ステージ内でも依存する計算の順序を明示できるようにする。
+   // 同じ順序値の既存コンポーネントは追加順を保ち、無関係な処理の並び替えを避ける。
+   std::stable_sort(components_.begin(), components_.end(),
+      [](const std::unique_ptr<ICinemachineComponent>& a, const std::unique_ptr<ICinemachineComponent>& b) {
+         if (a->GetStage() != b->GetStage()) {
+            return static_cast<int>(a->GetStage()) < static_cast<int>(b->GetStage());
+         }
+         return a->GetExecutionOrder() < b->GetExecutionOrder();
+      });
 }
 
 nlohmann::json VirtualCamera::Serialize() const {
-    // Componentの具象型はcomponentNameだけを保存し、復元時はFactory Registryから再生成する。
-    // これによりVirtualCamera本体が各Component型へ直接依存しない。
-    nlohmann::json componentsData = nlohmann::json::array();
-    for (const auto& component : components_) {
-        if (!component) {
-            continue;
-        }
+   // Componentの具象型はcomponentNameだけを保存し、復元時はFactory Registryから再生成する。
+   // これによりVirtualCamera本体が各Component型へ直接依存しない。
+   nlohmann::json componentsData = nlohmann::json::array();
+   for (const auto& component : components_) {
+      if (!component) {
+         continue;
+      }
 
-        componentsData.push_back(nlohmann::json{
-            { "componentName", component->GetComponentName() },
-            { "enabled", component->IsEnabled() },
-            { "data", component->Serialize() }
-        });
-    }
+      componentsData.push_back(nlohmann::json{{"componentName", component->GetComponentName()},
+         {"enabled", component->IsEnabled()}, {"data", component->Serialize()}});
+   }
 
-    return nlohmann::json{
-        { "id", id_ },
-        { "name", name_ },
-        { "priority", priority_ },
-        { "active", isActive_ },
-        { "followTargetId", followTargetEntityId_ },
-        { "lookAtTargetId", lookAtTargetEntityId_ },
-        { "state", SerializeCameraState(state_) },
-        { "components", componentsData },
-        { "componentsAreComplete", true }
-    };
+   return nlohmann::json{{"id", id_}, {"name", name_}, {"priority", priority_}, {"active", isActive_},
+      {"followTargetId", followTargetEntityId_}, {"lookAtTargetId", lookAtTargetEntityId_},
+      {"state", SerializeCameraState(state_)}, {"components", componentsData}, {"componentsAreComplete", true}};
 }
 
 void VirtualCamera::Deserialize(const nlohmann::json& data) {
-    if (!data.is_object()) {
-        return;
-    }
+   if (!data.is_object()) {
+      return;
+   }
 
-    if (data.contains("name") && data.at("name").is_string()) {
-        name_ = data.at("name").get<std::string>();
-    }
-    // 旧シーンでは表示名が参照キーだったため、最初の読み込みで安定IDへ移す。
-    if (id_.empty() && name_ != "DebugCamera") {
-        id_ = data.value("id", name_);
-        if (id_.empty()) id_ = name_;
-    }
-    if (data.contains("priority") && data.at("priority").is_number_integer()) {
-        priority_ = data.at("priority").get<int>();
-    }
-    if (data.contains("active") && data.at("active").is_boolean()) {
-        isActive_ = data.at("active").get<bool>();
-    }
-    if (data.contains("followTargetId") && data.at("followTargetId").is_string()) {
-        SetFollowTargetEntityId(data.at("followTargetId").get<std::string>());
-    }
-    if (data.contains("lookAtTargetId") && data.at("lookAtTargetId").is_string()) {
-        SetLookAtTargetEntityId(data.at("lookAtTargetId").get<std::string>());
-    }
-    if (data.contains("state") && data.at("state").is_object()) {
-        state_ = DeserializeCameraState(data.at("state"), state_);
-    }
+   if (data.contains("name") && data.at("name").is_string()) {
+      name_ = data.at("name").get<std::string>();
+   }
 
-    if (!data.contains("components") || !data.at("components").is_array()) {
-        return;
-    }
+   // 旧シーンでは表示名が参照キーだったため、最初の読み込みで安定IDへ移す。
+   if (id_.empty() && name_ != "DebugCamera") {
+      id_ = data.value("id", name_);
+      if (id_.empty())
+         id_ = name_;
+   }
+   if (data.contains("priority") && data.at("priority").is_number_integer()) {
+      priority_ = data.at("priority").get<int>();
+   }
+   if (data.contains("active") && data.at("active").is_boolean()) {
+      isActive_ = data.at("active").get<bool>();
+   }
+   if (data.contains("followTargetId") && data.at("followTargetId").is_string()) {
+      SetFollowTargetEntityId(data.at("followTargetId").get<std::string>());
+   }
+   if (data.contains("lookAtTargetId") && data.at("lookAtTargetId").is_string()) {
+      SetLookAtTargetEntityId(data.at("lookAtTargetId").get<std::string>());
+   }
+   if (data.contains("state") && data.at("state").is_object()) {
+      state_ = DeserializeCameraState(data.at("state"), state_);
+   }
 
-    // 既存Componentには状態を重ね、不足しているComponentだけFactoryで追加する。
-    // 旧形式はJSONにない依存部品を残し、完全スナップショットは最後に余剰分を削除する。
-    for (const auto& componentData : data.at("components")) {
-        if (!componentData.is_object()) {
-            continue;
-        }
+   if (!data.contains("components") || !data.at("components").is_array()) {
+      return;
+   }
 
-        const std::string componentName = componentData.value("componentName", "");
-        if (componentName.empty()) {
-            continue;
-        }
+   // 既存Componentには状態を重ね、不足しているComponentだけFactoryで追加する。
+   // 旧形式はJSONにない依存部品を残し、完全スナップショットは最後に余剰分を削除する。
+   for (const auto& componentData : data.at("components")) {
+      if (!componentData.is_object()) {
+         continue;
+      }
 
-        ICinemachineComponent* component = FindComponentByName(componentName);
-        if (!component) {
-            component = AddComponentByName(componentName);
-        }
-        if (!component) {
-            continue;
-        }
+      const std::string componentName = componentData.value("componentName", "");
+      if (componentName.empty()) {
+         continue;
+      }
 
-        if (componentData.contains("enabled") && componentData.at("enabled").is_boolean()) {
-            component->SetEnabled(componentData.at("enabled").get<bool>());
-        }
-        if (componentData.contains("data") && componentData.at("data").is_object()) {
-            component->Deserialize(componentData.at("data"));
-        }
-    }
-    if (data.value("componentsAreComplete", false)) {
-        // 旧形式だけはFactoryの依存部品補完を許可し、現行スナップショットは削除も復元する。
-        std::erase_if(components_, [&data](const auto& component) {
-            return std::none_of(data.at("components").begin(), data.at("components").end(),
-                [&component](const auto& entry) {
-                    return entry.is_object() && entry.value("componentName", "") == component->GetComponentName();
-                });
-        });
-    }
+      ICinemachineComponent* component = FindComponentByName(componentName);
+      if (!component) {
+         component = AddComponentByName(componentName);
+      }
+      if (!component) {
+         continue;
+      }
+
+      if (componentData.contains("enabled") && componentData.at("enabled").is_boolean()) {
+         component->SetEnabled(componentData.at("enabled").get<bool>());
+      }
+      if (componentData.contains("data") && componentData.at("data").is_object()) {
+         component->Deserialize(componentData.at("data"));
+      }
+   }
+   if (data.value("componentsAreComplete", false)) {
+      // 旧形式だけはFactoryの依存部品補完を許可し、現行スナップショットは削除も復元する。
+      std::erase_if(components_, [&data](const auto& component) {
+         return std::none_of(
+            data.at("components").begin(), data.at("components").end(), [&component](const auto& entry) {
+               return entry.is_object() && entry.value("componentName", "") == component->GetComponentName();
+            });
+      });
+   }
 }
 
 } // namespace GameEngine

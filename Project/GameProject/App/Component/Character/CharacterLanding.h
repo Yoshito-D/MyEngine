@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 
@@ -15,7 +16,7 @@ class CharacterLanding final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterLanding";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "キャラクター着地", "Character Landing" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"キャラクター着地", "Character Landing"};
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
@@ -42,6 +43,7 @@ public:
    bool HasLandingContact() const { return hasLandingContact_; }
 
 #ifdef USE_IMGUI
+
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
@@ -54,13 +56,16 @@ public:
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
+
       /// @brief 原点（inertia中心）から着地点までの追加オフセット
       /// surfaceRadius_ に加算され、実際のスナップ位置が決まる
       float landingOffset = 0.0f;
+
       /// @brief OBBの半サイズ（各軸を個別指定）
       /// 地表スナップ時の支持半径計算に使用する
-      GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
+      GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f};
    };
+
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const {
       Settings settings;
@@ -68,14 +73,19 @@ public:
       settings.obbHalfExtents = obbHalfExtents;
       return settings;
    }
+
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.landingOffset)) settings.landingOffset = defaults.landingOffset;
-      if (!std::isfinite(settings.obbHalfExtents.x)) settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
-      if (!std::isfinite(settings.obbHalfExtents.y)) settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
-      if (!std::isfinite(settings.obbHalfExtents.z)) settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
+      if (!std::isfinite(settings.landingOffset))
+         settings.landingOffset = defaults.landingOffset;
+      if (!std::isfinite(settings.obbHalfExtents.x))
+         settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
+      if (!std::isfinite(settings.obbHalfExtents.y))
+         settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
+      if (!std::isfinite(settings.obbHalfExtents.z))
+         settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
       settings.obbHalfExtents.x = std::max(0.0f, settings.obbHalfExtents.x);
       settings.obbHalfExtents.y = std::max(0.0f, settings.obbHalfExtents.y);
       settings.obbHalfExtents.z = std::max(0.0f, settings.obbHalfExtents.z);
@@ -85,23 +95,23 @@ public:
 
 private:
    float landingOffset = 0.0f;
-   GameEngine::Vector3 obbHalfExtents = { 0.35f, 0.175f, 0.75f };
+   GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f};
 
 private:
    /// @brief 惑星地表の半径
    float surfaceRadius_ = 15.0f;
 
    /// @brief 惑星中心座標
-   GameEngine::Vector3 planetCenter_ = { 0.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 planetCenter_ = {0.0f, 0.0f, 0.0f};
 
    /// @brief 接地フラグ
    bool isGrounded_ = true;
 
    /// @brief 直近の着地接触点（ワールド座標）
-   GameEngine::Vector3 lastLandingContactPoint_ = { 0.0f, 0.0f, 0.0f };
+   GameEngine::Vector3 lastLandingContactPoint_ = {0.0f, 0.0f, 0.0f};
 
    /// @brief 直近の着地面法線（惑星外向き）
-   GameEngine::Vector3 lastLandingNormal_ = { 0.0f, 1.0f, 0.0f };
+   GameEngine::Vector3 lastLandingNormal_ = {0.0f, 1.0f, 0.0f};
 
    /// @brief 直近の着地接触情報が有効か
    bool hasLandingContact_ = false;

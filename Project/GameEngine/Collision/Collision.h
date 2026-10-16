@@ -1,10 +1,12 @@
 #pragma once
+
 #include "GameEngine/Collision/Collider.h"
 
 namespace GameEngine {
 
 /// @brief 衝突判定関数群
 namespace Collision {
+
 /// @brief 球と球の衝突判定
 /// @param sphere1 球1
 /// @param sphere2 球2
@@ -67,7 +69,7 @@ bool IsCollision(const Collider::AABB& aabb1, const Collider::AABB& aabb2);
 
 /// @brief AABBと球の衝突判定
 /// @param aabb AABB
-/// @param sphere 
+/// @param sphere
 /// @return 衝突しているかどうか
 bool IsCollision(const Collider::AABB& aabb, const Collider::Sphere& sphere);
 

@@ -15,14 +15,12 @@ namespace App {
 namespace {
 
 /// @brief 地上走行中に表示する基本操作ガイド
-constexpr const char* kGroundGuideText =
-   "左スティック：旋回 / ドリフト\n"
-   "A：ジャンプ";
+constexpr const char* kGroundGuideText = "左スティック：旋回 / ドリフト\n"
+                                         "A：ジャンプ";
 
 /// @brief ジャンプ中に表示する空中姿勢制御の操作ガイド
-constexpr const char* kAirGuideText =
-   "左スティック上下：ピッチ\n"
-   "LB / RB：ロール";
+constexpr const char* kAirGuideText = "左スティック上下：ピッチ\n"
+                                      "LB / RB：ロール";
 
 } // namespace
 
@@ -53,8 +51,8 @@ void GamepadGuideTextComponent::Update(float deltaTime) {
       return;
    }
 
-   const bool isShowingResult = raceManager_ &&
-      raceManager_->GetState() == RaceManagerComponent::State::Finished;
+   const bool isShowingResult = raceManager_ && raceManager_->GetState() == RaceManagerComponent::State::Finished;
+
    // リザルト画面では走行中の入力説明が誤解を招くため、
    // ジャンプ状態よりもレース終了判定を優先して表示を消す。
    if (isShowingResult) {
@@ -64,18 +62,13 @@ void GamepadGuideTextComponent::Update(float deltaTime) {
 
    // CharacterJumpを解決できない構成でもガイド自体は維持し、
    // 空中状態を確認できた場合に限って空中操作へ切り替える。
-   text->SetText(characterJump_ && characterJump_->IsJumping()
-      ? kAirGuideText
-      : kGroundGuideText);
+   text->SetText(characterJump_ && characterJump_->IsJumping() ? kAirGuideText : kGroundGuideText);
 }
 
 /// @brief 参照先を再解決するためのオブジェクトIDをJSONへ保存する
 /// @return レース管理オブジェクトとプレイヤーオブジェクトのIDを格納したJSON
 nlohmann::json GamepadGuideTextComponent::Serialize() const {
-   return nlohmann::json{
-      { "raceManagerId", raceManagerId_ },
-      { "playerObjectId", playerObjectId_ }
-   };
+   return nlohmann::json{{"raceManagerId", raceManagerId_}, {"playerObjectId", playerObjectId_}};
 }
 
 /// @brief JSONに含まれる有効なオブジェクトID設定を読み込む
@@ -84,6 +77,7 @@ void GamepadGuideTextComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) {
       return;
    }
+
    // 欠落または型不一致の項目では現在値を維持し、
    // 古いシーンデータや部分的な設定データも読み込めるようにする。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
@@ -95,6 +89,7 @@ void GamepadGuideTextComponent::Deserialize(const nlohmann::json& data) {
 }
 
 #ifdef USE_IMGUI
+
 /// @brief 設定IDと実行時の参照解決状況をインスペクターへ表示する
 void GamepadGuideTextComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
@@ -103,9 +98,7 @@ void GamepadGuideTextComponent::DrawInspector() {
    }
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
-   ImGui::Text("Resolved: Race=%s Player Jump=%s",
-      raceManager_ ? "true" : "false",
-      characterJump_ ? "true" : "false");
+   ImGui::Text("Resolved: Race=%s Player Jump=%s", raceManager_ ? "true" : "false", characterJump_ ? "true" : "false");
 }
 #endif
 

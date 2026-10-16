@@ -14,21 +14,12 @@ float ToDegrees(float radians) {
 }
 
 Matrix4x4 MakeIdentity4x4() {
-   Matrix4x4 matrix = {
-	   1.0f,0.0f,0.0f,0.0f,
-	   0.0f,1.0f,0.0f,0.0f,
-	   0.0f,0.0f,1.0f,0.0f,
-	   0.0f,0.0f,0.0f,1.0f
-   };
+   Matrix4x4 matrix = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return matrix;
 }
 
 Matrix3x3 MakeIdentity3x3() {
-   Matrix3x3 matrix = {
-	   1.0f,0.0f,0.0f,
-	   0.0f,1.0f,0.0f,
-	   0.0f,0.0f,1.0f
-   };
+   Matrix3x3 matrix = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return matrix;
 }
 
@@ -42,51 +33,31 @@ Transform TransformInitialize() {
 
 Matrix4x4 MakeScaleMatrix(const Vector3& scale) {
    Matrix4x4 result = {
-	   scale.x,0.0f,0.0f,0.0f,
-	   0.0f,scale.y,0.0f,0.0f,
-	   0.0f,0.0f,scale.z,0.0f,
-	   0.0f,0.0f,0.0f,1.0f
-   };
+      scale.x, 0.0f, 0.0f, 0.0f, 0.0f, scale.y, 0.0f, 0.0f, 0.0f, 0.0f, scale.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return result;
 }
 
 Matrix4x4 MakeTranslateMatrix(const Vector3& translate) {
-   Matrix4x4 result = {
-	   1.0f,0.0f,0.0f,0.0f,
-	   0.0f,1.0f,0.0f,0.0f,
-	   0.0f,0.0f,1.0f,0.0f,
-	   translate.x,translate.y,translate.z,1.0f
-   };
+   Matrix4x4 result = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, translate.x, translate.y,
+      translate.z, 1.0f};
    return result;
 }
 
 Matrix4x4 MakeRotateXMatrix(float radian) {
-   Matrix4x4 result = {
-	   1.0f,0.0f,0.0f,0.0f,
-	   0.0f,std::cos(radian),std::sin(radian),0.0f,
-	   0.0f,-std::sin(radian),std::cos(radian),0.0f,
-	   0.0f,0.0f,0.0f,1.0f
-   };
+   Matrix4x4 result = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, std::cos(radian), std::sin(radian), 0.0f, 0.0f, -std::sin(radian),
+      std::cos(radian), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return result;
 }
 
 Matrix4x4 MakeRotateYMatrix(float radian) {
-   Matrix4x4 result = {
-	   std::cos(radian),0.0f,-std::sin(radian),0.0f,
-	   0.0f,1.0f,0.0f,0.0f,
-	   std::sin(radian),0.0f,std::cos(radian),0.0f,
-	   0.0f,0.0f,0.0f,1.0f
-   };
+   Matrix4x4 result = {std::cos(radian), 0.0f, -std::sin(radian), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, std::sin(radian), 0.0f,
+      std::cos(radian), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return result;
 }
 
 Matrix4x4 MakeRotateZMatrix(float radian) {
-   Matrix4x4 result = {
-	   std::cos(radian),std::sin(radian),0.0f,0.0f,
-	   -std::sin(radian),std::cos(radian),0.0f,0.0f,
-	   0.0f,0.0f,1.0f,0.0f,
-	   0.0f,0.0f,0.0f,1.0f
-   };
+   Matrix4x4 result = {std::cos(radian), std::sin(radian), 0.0f, 0.0f, -std::sin(radian), std::cos(radian), 0.0f, 0.0f,
+      0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return result;
 }
 
@@ -94,12 +65,12 @@ Matrix4x4 MakeAffineMatrix(const Transform& transform) {
    const Matrix4x4 rotateXYZMatrix = MakeRotateMatrix(transform.GetActiveQuaternion());
 
    // 行ベクトル規約に合わせ、各回転行へ対応軸のスケールを掛けて平行移動を最終行へ置く。
-   Matrix4x4 result = {
-	   transform.scale.x * rotateXYZMatrix.m[0][0],transform.scale.x * rotateXYZMatrix.m[0][1],transform.scale.x * rotateXYZMatrix.m[0][2],0.0f,
-	   transform.scale.y * rotateXYZMatrix.m[1][0],transform.scale.y * rotateXYZMatrix.m[1][1],transform.scale.y * rotateXYZMatrix.m[1][2],0.0f,
-	   transform.scale.z * rotateXYZMatrix.m[2][0],transform.scale.z * rotateXYZMatrix.m[2][1],transform.scale.z * rotateXYZMatrix.m[2][2],0.0f,
-	   transform.translation.x,transform.translation.y,transform.translation.z,1.0f
-   };
+   Matrix4x4 result = {transform.scale.x * rotateXYZMatrix.m[0][0], transform.scale.x * rotateXYZMatrix.m[0][1],
+      transform.scale.x * rotateXYZMatrix.m[0][2], 0.0f, transform.scale.y * rotateXYZMatrix.m[1][0],
+      transform.scale.y * rotateXYZMatrix.m[1][1], transform.scale.y * rotateXYZMatrix.m[1][2], 0.0f,
+      transform.scale.z * rotateXYZMatrix.m[2][0], transform.scale.z * rotateXYZMatrix.m[2][1],
+      transform.scale.z * rotateXYZMatrix.m[2][2], 0.0f, transform.translation.x, transform.translation.y,
+      transform.translation.z, 1.0f};
    return result;
 }
 
@@ -147,12 +118,8 @@ Matrix4x4 MakeRotateAxisAngle(const Vector3& axis, float angle) {
    float s = std::sin(angle);
    float t = 1.0f - c;
 
-   Matrix4x4 result = {
-	   t * x * x + c,        t * x * y + s * z,    t * x * z - s * y,    0.0f,
-	   t * x * y - s * z,    t * y * y + c,        t * y * z + s * x,    0.0f,
-	   t * x * z + s * y,    t * y * z - s * x,    t * z * z + c,        0.0f,
-	   0.0f,                 0.0f,                 0.0f,                 1.0f
-   };
+   Matrix4x4 result = {t * x * x + c, t * x * y + s * z, t * x * z - s * y, 0.0f, t * x * y - s * z, t * y * y + c,
+      t * y * z + s * x, 0.0f, t * x * z + s * y, t * y * z - s * x, t * z * z + c, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return result;
 }
 
@@ -166,17 +133,18 @@ Matrix4x4 MakeRotationMatrixFromTo(const Vector3& from, const Vector3& to) {
    // 外積が退化する平行・反平行だけを先に分離し、通常経路の回転軸を有効に保つ。
    // 同じ方向
    if (cosTheta > 1.0f - EPSILON) {
-	  return MakeIdentity4x4();
+      return MakeIdentity4x4();
    }
+
    // 反対方向（180度回転）
    if (cosTheta < -1.0f + EPSILON) {
-	  // from と直交する適当な軸を回転軸にする（ここではX軸基準）
-	  Vector3 orthogonal = from.Cross(Vector3(1.0f, 0.0f, 0.0f));
-	  if (orthogonal.LengthSquared() < EPSILON) {
-		 orthogonal = from.Cross(Vector3(0.0f, 1.0f, 0.0f)); // フォールバック
-	  }
-	  orthogonal.Normalize();
-	  return MakeRotationAxis(orthogonal, DirectX::XM_PI); // πラジアン = 180度
+      // from と直交する適当な軸を回転軸にする（ここではX軸基準）
+      Vector3 orthogonal = from.Cross(Vector3(1.0f, 0.0f, 0.0f));
+      if (orthogonal.LengthSquared() < EPSILON) {
+         orthogonal = from.Cross(Vector3(0.0f, 1.0f, 0.0f)); // フォールバック
+      }
+      orthogonal.Normalize();
+      return MakeRotationAxis(orthogonal, DirectX::XM_PI); // πラジアン = 180度
    }
 
    Vector3 axis = f.Cross(t).Normalize();
@@ -191,22 +159,23 @@ Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to) {
    float cosTheta = std::clamp(f.Dot(t), -1.0f, 1.0f);
 
    if (cosTheta > 0.999999f) {
-	  return Matrix4x4::Identity();
+      return Matrix4x4::Identity();
    }
 
    if (cosTheta < -0.999999f) {
-	  Vector3 orthogonal;
-	  // 最小成分の基準軸を選ぶとfromとの平行を避けやすく、180度回転軸を安定して作れる。
-	  if (fabsf(f.x) < fabsf(f.y) && fabsf(f.x) < fabsf(f.z)) {
-		 orthogonal = Vector3{ 1.0f, 0.0f, 0.0f };
-	  } else if (fabsf(f.y) < fabsf(f.z)) {
-		 orthogonal = Vector3{ 0.0f, 1.0f, 0.0f };
-	  } else {
-		 orthogonal = Vector3{ 0.0f, 0.0f, 1.0f };
-	  }
+      Vector3 orthogonal;
 
-	  Vector3 axis = f.Cross(orthogonal).Normalize();
-	  return MakeRotateAxisAngle(axis, DirectX::XM_PI);
+      // 最小成分の基準軸を選ぶとfromとの平行を避けやすく、180度回転軸を安定して作れる。
+      if (fabsf(f.x) < fabsf(f.y) && fabsf(f.x) < fabsf(f.z)) {
+         orthogonal = Vector3{1.0f, 0.0f, 0.0f};
+      } else if (fabsf(f.y) < fabsf(f.z)) {
+         orthogonal = Vector3{0.0f, 1.0f, 0.0f};
+      } else {
+         orthogonal = Vector3{0.0f, 0.0f, 1.0f};
+      }
+
+      Vector3 axis = f.Cross(orthogonal).Normalize();
+      return MakeRotateAxisAngle(axis, DirectX::XM_PI);
    }
 
    Vector3 axis = f.Cross(t).Normalize();
@@ -216,33 +185,23 @@ Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to) {
 
 Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
    // DirectXの左手系・深度0～1と行ベクトル規約に合わせた透視射影を構成する。
-   Matrix4x4 result = {
-	   1.0f / aspectRatio * (std::cos(fovY * 0.5f) / std::sin(fovY * 0.5f)),0.0f,0.0f,0.0f,
-	   0.0f,std::cos(fovY * 0.5f) / std::sin(fovY * 0.5f),0.0f,0.0f,
-	   0.0f,0.0f,farClip / (farClip - nearClip),1.0f,
-	   0.0f,0.0f,(-nearClip * farClip) / (farClip - nearClip),0.0f
-   };
+   Matrix4x4 result = {1.0f / aspectRatio * (std::cos(fovY * 0.5f) / std::sin(fovY * 0.5f)), 0.0f, 0.0f, 0.0f, 0.0f,
+      std::cos(fovY * 0.5f) / std::sin(fovY * 0.5f), 0.0f, 0.0f, 0.0f, 0.0f, farClip / (farClip - nearClip), 1.0f, 0.0f,
+      0.0f, (-nearClip * farClip) / (farClip - nearClip), 0.0f};
    return result;
 }
 
 Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) {
-   Matrix4x4 result = {
-	   2.0f / (right - left),0.0f,0.0f,0.0f,
-	   0.0f,2.0f / (top - bottom),0.0f,0.0f,
-	   0.0f,0.0f,1.0f / (farClip - nearClip),0.0f,
-	   (left + right) / (left - right),(top + bottom) / (bottom - top),nearClip / (nearClip - farClip),1.0f
-   };
+   Matrix4x4 result = {2.0f / (right - left), 0.0f, 0.0f, 0.0f, 0.0f, 2.0f / (top - bottom), 0.0f, 0.0f, 0.0f, 0.0f,
+      1.0f / (farClip - nearClip), 0.0f, (left + right) / (left - right), (top + bottom) / (bottom - top),
+      nearClip / (nearClip - farClip), 1.0f};
    return result;
 }
 
 Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth) {
    // NDCの上向きYを画面座標の下向きYへ反転し、中心移動と深度範囲変換を同時に行う。
-   Matrix4x4 result = {
-	   width * 0.5f,0.0f,0.0f,0.0f,
-	   0.0f,-height * 0.5f,0.0f,0.0f,
-	   0.0f,0.0f,maxDepth - minDepth,0.0f,
-	   left + width * 0.5f,top + height * 0.5f,minDepth,1.0f
-   };
+   Matrix4x4 result = {width * 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -height * 0.5f, 0.0f, 0.0f, 0.0f, 0.0f,
+      maxDepth - minDepth, 0.0f, left + width * 0.5f, top + height * 0.5f, minDepth, 1.0f};
    return result;
 }
 
@@ -290,24 +249,24 @@ Vector3 MatrixToEulerXYZ(const Matrix4x4& m) {
    float roll, pitch, yaw;
 
    if (fabs(m.m[2][1]) < 1.0f) {
-	  pitch = asin(m.m[2][1]);
-	  roll = atan2(-m.m[2][0], m.m[2][2]);
-	  yaw = atan2(-m.m[0][1], m.m[1][1]);
+      pitch = asin(m.m[2][1]);
+      roll = atan2(-m.m[2][0], m.m[2][2]);
+      yaw = atan2(-m.m[0][1], m.m[1][1]);
    } else {
-	  // pitchが±90度ではrollとyawを一意に分離できないため、rollを0へ固定して解を選ぶ。
-	  pitch = (m.m[2][1] > 0) ? DirectX::XM_PI * 0.5f : -DirectX::XM_PI * 0.5f;
-	  roll = 0.0f;
-	  yaw = atan2(m.m[1][0], m.m[0][0]);
+      // pitchが±90度ではrollとyawを一意に分離できないため、rollを0へ固定して解を選ぶ。
+      pitch = (m.m[2][1] > 0) ? DirectX::XM_PI * 0.5f : -DirectX::XM_PI * 0.5f;
+      roll = 0.0f;
+      yaw = atan2(m.m[1][0], m.m[0][0]);
    }
 
-   return { roll, pitch, yaw };
+   return {roll, pitch, yaw};
 }
 
 Vector3 ExtractYawPitchRoll(const Matrix4x4& m) {
    Vector3 angles{};
 
    // forward ベクトル（Z軸）
-   Vector3 forward{ m.m[2][0], m.m[2][1], m.m[2][2] };
+   Vector3 forward{m.m[2][0], m.m[2][1], m.m[2][2]};
 
    // yaw (Y回転)
    angles.y = std::atan2(forward.x, forward.z);
@@ -317,7 +276,7 @@ Vector3 ExtractYawPitchRoll(const Matrix4x4& m) {
    angles.x = std::atan2(-forward.y, len);
 
    // roll (Z回転) は Up ベクトルから計算する
-   Vector3 up{ m.m[1][0], m.m[1][1], m.m[1][2] };
+   Vector3 up{m.m[1][0], m.m[1][1], m.m[1][2]};
    angles.z = std::atan2(m.m[0][1], m.m[1][1]);
 
    return angles;

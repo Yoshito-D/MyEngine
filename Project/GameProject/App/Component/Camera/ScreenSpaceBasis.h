@@ -14,7 +14,7 @@ class ScreenSpaceBasis final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "ScreenSpaceBasis";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "スクリーンスペース基準", "Screen Space Basis" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"スクリーンスペース基準", "Screen Space Basis"};
 
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
@@ -29,30 +29,31 @@ public:
    void UpdateBasis(const GameEngine::Vector3& gravityUp);
 
    /// @brief 参照カメラを設定する
-   void SetCamera(GameEngine::Camera* camera)                     { camera_              = camera; }
+   void SetCamera(GameEngine::Camera* camera) { camera_ = camera; }
 
    /// @brief OrbitalBody 参照を設定する
-   void SetOrbitalBody(GameEngine::OrbitalBody* body)             { orbitalBody_         = body; }
+   void SetOrbitalBody(GameEngine::OrbitalBody* body) { orbitalBody_ = body; }
 
    /// @brief GravityFollowCamera 参照を設定する
-   void SetGravityFollowCamera(GravityFollowCamera* cam)          { gravityFollowCamera_ = cam; }
+   void SetGravityFollowCamera(GravityFollowCamera* cam) { gravityFollowCamera_ = cam; }
 
    /// @brief PlanetLeashCamera 参照を設定する
-   void SetPlanetLeashCamera(PlanetLeashCamera* cam)              { planetLeashCamera_   = cam; }
+   void SetPlanetLeashCamera(PlanetLeashCamera* cam) { planetLeashCamera_ = cam; }
 
    /// @brief キャッシュ済み前方を取得する
    GameEngine::Vector3 GetCachedForward() const { return cachedForward_; }
 
    /// @brief キャッシュ済み右方向を取得する
-   GameEngine::Vector3 GetCachedRight()   const { return cachedRight_; }
+   GameEngine::Vector3 GetCachedRight() const { return cachedRight_; }
 
 #ifdef USE_IMGUI
+
    /// @brief デバッグ表示（Inspector）
    void DrawInspector() override;
 #endif
 
    /// @brief シリアライズ（参照のみのため保存項目なし）
-   nlohmann::json Serialize() const override  { return {}; }
+   nlohmann::json Serialize() const override { return {}; }
 
    /// @brief デシリアライズ（保存項目なしのため処理なし）
    void Deserialize(const nlohmann::json&) override {}
@@ -63,22 +64,22 @@ private:
 
 private:
    /// @brief 参照カメラ
-   GameEngine::Camera*      camera_              = nullptr;
+   GameEngine::Camera* camera_ = nullptr;
 
    /// @brief Orbit系カメラ成分
-   GameEngine::OrbitalBody* orbitalBody_         = nullptr;
+   GameEngine::OrbitalBody* orbitalBody_ = nullptr;
 
    /// @brief 重力追従カメラ成分
-   GravityFollowCamera*     gravityFollowCamera_ = nullptr;
+   GravityFollowCamera* gravityFollowCamera_ = nullptr;
 
    /// @brief レアッシュカメラ成分
-   PlanetLeashCamera*       planetLeashCamera_   = nullptr;
+   PlanetLeashCamera* planetLeashCamera_ = nullptr;
 
    /// @brief キャッシュされた前方基底
-   mutable GameEngine::Vector3 cachedForward_ = { 0.0f, 0.0f, 1.0f };
+   mutable GameEngine::Vector3 cachedForward_ = {0.0f, 0.0f, 1.0f};
 
    /// @brief キャッシュされた右基底
-   mutable GameEngine::Vector3 cachedRight_   = { 1.0f, 0.0f, 0.0f };
+   mutable GameEngine::Vector3 cachedRight_ = {1.0f, 0.0f, 0.0f};
 };
 
 } // namespace App

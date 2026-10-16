@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include <memory>
 #include <map>
@@ -19,16 +20,17 @@ public:
    void Initialize();
 
    //================================================================
-    // ディレクショナルライト
+   // ディレクショナルライト
    //================================================================
-   
+
    /// @brief ディレクショナルライトを作成
    /// @param name ライト名
    /// @param color ライトの色（デフォルト：白）
    /// @param direction ライトの向き（デフォルト：下向き）
    /// @param intensity 輝度（デフォルト：2.0f）
    /// @return 作成されたライトへのポインタ
-   DirectionalLight* CreateDirectionalLight(const std::string& name, unsigned int color = 0xffffffff, const Vector3& direction = { 0.0f,-1.0f,0.0f }, float intensity = 2.0f);
+   DirectionalLight* CreateDirectionalLight(const std::string& name, unsigned int color = 0xffffffff,
+      const Vector3& direction = {0.0f, -1.0f, 0.0f}, float intensity = 2.0f);
 
    /// @brief ディレクショナルライトを取得
    /// @param name ライト名
@@ -48,9 +50,9 @@ public:
    std::vector<std::string> GetDirectionalLightNames() const;
 
    //================================================================
-    // ポイントライト
+   // ポイントライト
    //================================================================
-   
+
    /// @brief ポイントライトを作成
    /// @param name ライト名
    /// @param color 色（デフォルト：白）
@@ -59,7 +61,8 @@ public:
    /// @param radius 半径（デフォルト：2.0f）
    /// @param decay 減衰（デフォルト：0.1f）
    /// @return 作成されたライトへのポインタ
-   PointLight* CreatePointLight(const std::string& name, unsigned int color = 0xffffffff, const Vector3& position = { 0.0f,0.0f,0.0f }, float intensity = 1.0f, float radius = 2.0f, float decay = 0.1f);
+   PointLight* CreatePointLight(const std::string& name, unsigned int color = 0xffffffff,
+      const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f, float radius = 2.0f, float decay = 0.1f);
 
    /// @brief ポイントライトを取得
    /// @param name ライト名
@@ -79,9 +82,9 @@ public:
    std::vector<std::string> GetPointLightNames() const;
 
    //================================================================
-    // スポットライト
+   // スポットライト
    //================================================================
-   
+
    /// @brief スポットライトを作成
    /// @param name ライト名
    /// @param color 色（デフォルト：白）
@@ -93,7 +96,10 @@ public:
    /// @param cosAngle スポットライトの角度の余弦（デフォルト：0.7f）
    /// @param cosFalloffStart スポットライトの減衰開始角度の余弦（デフォルト：0.9f）
    /// @return 作成されたライトへのポインタ
-   SpotLight* CreateSpotLight(const std::string& name, unsigned int color = 0xffffffff, const Vector3& position = Vector3(), float intensity = 1.0f, const Vector3& direction = Vector3(0.0f, -1.0f, 0.0f), float distance = 5.0f, float decay = 0.1f, float cosAngle = 0.7f, float cosFalloffStart = 0.9f);
+   SpotLight* CreateSpotLight(const std::string& name, unsigned int color = 0xffffffff,
+      const Vector3& position = Vector3(), float intensity = 1.0f,
+      const Vector3& direction = Vector3(0.0f, -1.0f, 0.0f), float distance = 5.0f, float decay = 0.1f,
+      float cosAngle = 0.7f, float cosFalloffStart = 0.9f);
 
    /// @brief スポットライトを取得
    /// @param name ライト名
@@ -113,9 +119,9 @@ public:
    std::vector<std::string> GetSpotLightNames() const;
 
    //================================================================
-    // エリアライト
+   // エリアライト
    //================================================================
-   
+
    /// @brief エリアライトを作成
    /// @param name ライト名
    /// @param position 中心座標（デフォルト：原点）
@@ -125,7 +131,9 @@ public:
    /// @param color 光の色（デフォルト：白）
    /// @param intensity 強度（デフォルト：1.0f）
    /// @return 作成されたライトへのポインタ
-   AreaLight* CreateAreaLight(const std::string& name, const Vector3& position = { 0.0f, 0.0f, 0.0f }, const Vector3& normal = { 0.0f, -1.0f, 0.0f }, const Vector3& tangent = { 1.0f, 0.0f, 0.0f }, const Vector2& size = { 5.0f, 5.0f }, const Vector3& color = { 1.0f, 1.0f, 1.0f }, float intensity = 1.0f);
+   AreaLight* CreateAreaLight(const std::string& name, const Vector3& position = {0.0f, 0.0f, 0.0f},
+      const Vector3& normal = {0.0f, -1.0f, 0.0f}, const Vector3& tangent = {1.0f, 0.0f, 0.0f},
+      const Vector2& size = {5.0f, 5.0f}, const Vector3& color = {1.0f, 1.0f, 1.0f}, float intensity = 1.0f);
 
    /// @brief エリアライトを取得
    /// @param name ライト名
@@ -145,9 +153,9 @@ public:
    std::vector<std::string> GetAreaLightNames() const;
 
    //================================================================
-    // バッファーとデバッグ
+   // バッファーとデバッグ
    //================================================================
-   
+
    /// @brief LightDataBufferを取得
    /// @return LightDataBufferのポインタ
    LightDataBuffer* GetLightDataBuffer() const { return lightDataBuffer_.get(); }

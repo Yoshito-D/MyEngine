@@ -20,7 +20,7 @@ class VehicleGroundMover;
 class VehicleSpeedGaugeUIComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleSpeedGaugeUIComponent";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両速度ゲージ", "Vehicle Speed Gauge" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両速度ゲージ", "Vehicle Speed Gauge"};
 
    /// @brief コンポーネント型名を取得する
    /// @return VehicleSpeedGaugeUIComponent
@@ -29,6 +29,7 @@ public:
    /// @brief プレイヤー、レース、枠、速度テキストへの参照を解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
    /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
@@ -45,6 +46,7 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
+
    /// @brief ゲージ設定と参照解決状態をインスペクターへ表示する
    void DrawInspector() override;
 #endif

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <string_view>
 #include <cstdint>
@@ -24,6 +25,7 @@
 #include "GameEngine/Graphics/Renderer/Light/LightManager.h"
 #include "GameEngine/Framework/PlayModeController.h"
 #include <nlohmann/json_fwd.hpp>
+
 namespace GameEngine {
 class Framework;
 class Skybox;
@@ -40,17 +42,9 @@ private:
    // 初期化
    //================================================================
 
-   void Initialize(
-	  GraphicsDevice* graphicsDevice,
-	  Input* input,
-	  InputActionService* inputActionService,
-	  Audio* audio,
-	  Renderer* renderer,
-	  AssetManager* assetManager,
-	  TimeProfiler* timeProfiler,
-	  CameraManager* cameraManager,
-	  LightManager* lightManager
-   );
+   void Initialize(GraphicsDevice* graphicsDevice, Input* input, InputActionService* inputActionService, Audio* audio,
+      Renderer* renderer, AssetManager* assetManager, TimeProfiler* timeProfiler, CameraManager* cameraManager,
+      LightManager* lightManager);
 
    void SetGraphicsDevice(GraphicsDevice* graphicsDevice);
    void SetInput(Input* input);
@@ -67,7 +61,6 @@ class CinemachineBrain;
 
 class EngineContext {
 public:
-
    //================================================================
    // 入力
    //================================================================
@@ -257,9 +250,7 @@ public:
    /// @param playerSlot プレイヤースロット
    /// @return 指定アクションの現在フレーム状態。未登録時はゼロ状態
    static const InputActionState& GetInputActionState(
-      const std::string& actionMap,
-      const std::string& actionId,
-      uint32_t playerSlot = 0);
+      const std::string& actionMap, const std::string& actionId, uint32_t playerSlot = 0);
 
    //================================================================
    // シーン切り換え
@@ -304,36 +295,52 @@ public:
    static void AdvanceGameFrameNumber();
 
 #ifdef USE_IMGUI
+
    /// @brief エディターのプレイ状態を管理するコントローラーを接続する
    static void SetPlayModeController(PlayModeController* controller);
+
    /// @brief 現在のプレイモードを取得する
    static PlayMode GetPlayMode();
+
    /// @brief 現在のプレイモード名を取得する
    static const char* GetPlayModeName();
+
    /// @brief 編集モードかを判定する
    static bool IsPlayModeEdit();
+
    /// @brief 編集モード以外かを判定する
    static bool IsInPlayMode();
+
    /// @brief 再生中かを判定する
    static bool IsPlaying();
+
    /// @brief 一時停止中かを判定する
    static bool IsPaused();
+
    /// @brief 現在のフレームでランタイム更新を実行すべきか判定する
    static bool ShouldRunRuntimeUpdate();
+
    /// @brief プレイ状態とタイムスケールを反映したデルタタイムを取得する
    static float GetGameDeltaTime();
+
    /// @brief ゲーム時間へ適用する倍率を取得する
    static float GetTimeScale();
+
    /// @brief ゲーム時間へ適用する倍率を設定する
    static void SetTimeScale(float timeScale);
+
    /// @brief プレイモードの開始を予約する
    static void RequestPlayModeStart();
+
    /// @brief プレイモードの停止を予約する
    static void RequestPlayModeStop();
+
    /// @brief プレイモードの一時停止を予約する
    static void RequestPlayModePause();
+
    /// @brief プレイモードの再開を予約する
    static void RequestPlayModeResume();
+
    /// @brief 一時停止中の1フレーム実行を予約する
    static void RequestPlayModeStep();
 
@@ -413,7 +420,7 @@ public:
    /// @param uvTransform UV変換行列（デフォルトは単位行列）
    /// @return 作成されたマテリアルへのポインタ
    static void CreateMaterial(const std::string& name, uint32_t color = 0xffffffff,
-	  int32_t lightingMode = Material::LightingMode::HALFLAMBERT, const Matrix4x4& uvTransform = MakeIdentity4x4());
+      int32_t lightingMode = Material::LightingMode::HALFLAMBERT, const Matrix4x4& uvTransform = MakeIdentity4x4());
 
    /// @brief マテリアルを取得する
    /// @param name マテリアル名
@@ -467,14 +474,15 @@ public:
    //----------------------------------------------------------------
    // ディレクショナルライト
    //----------------------------------------------------------------
-   
+
    /// @brief ディレクショナルライトを作成
    /// @param name ライト名
    /// @param color ライトの色（デフォルト：白）
    /// @param direction ライトの向き（デフォルト：下向き）
    /// @param intensity 輝度（デフォルト：1.0f）
    /// @return 作成されたライトへのポインタ
-   static DirectionalLight* CreateDirectionalLight(const std::string& name, unsigned int color = 0xffffffff, const Vector3& direction = { 0.0f,-1.0f,0.0f }, float intensity = 1.0f);
+   static DirectionalLight* CreateDirectionalLight(const std::string& name, unsigned int color = 0xffffffff,
+      const Vector3& direction = {0.0f, -1.0f, 0.0f}, float intensity = 1.0f);
 
    /// @brief ディレクショナルライトを取得する
    /// @param name ライト名
@@ -496,7 +504,7 @@ public:
    //----------------------------------------------------------------
    // ポイントライト
    //----------------------------------------------------------------
-   
+
    /// @brief ポイントライトを作成
    /// @param name ライト名
    /// @param color 色（デフォルト：白）
@@ -505,7 +513,8 @@ public:
    /// @param radius 半径（デフォルト：2.0f）
    /// @param decay 減衰（デフォルト：0.1f）
    /// @return 作成されたライトへのポインタ
-   static PointLight* CreatePointLight(const std::string& name, unsigned int color = 0xffffffff, const Vector3& position = { 0.0f,0.0f,0.0f }, float intensity = 1.0f, float radius = 2.0f, float decay = 0.1f);
+   static PointLight* CreatePointLight(const std::string& name, unsigned int color = 0xffffffff,
+      const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f, float radius = 2.0f, float decay = 0.1f);
 
    /// @brief ポイントライトを取得する
    /// @param name ライト名
@@ -530,7 +539,7 @@ public:
    //----------------------------------------------------------------
    // スポットライト
    //----------------------------------------------------------------
-   
+
    /// @brief スポットライトを作成
    /// @param name ライト名
    /// @param color 色（デフォルト：白）
@@ -542,7 +551,10 @@ public:
    /// @param cosAngle スポットライトの角度の余弦（デフォルト：0.7f）
    /// @param cosFalloffStart スポットライトの減衰開始角度の余弦（デフォルト：0.9f）
    /// @return 作成されたライトへのポインタ
-   static SpotLight* CreateSpotLight(const std::string& name, unsigned int color = 0xffffffff, const Vector3& position = Vector3(), float intensity = 1.0f, const Vector3& direction = Vector3(0.0f, -1.0f, 0.0f), float distance = 5.0f, float decay = 0.1f, float cosAngle = 0.7f, float cosFalloffStart = 0.9f);
+   static SpotLight* CreateSpotLight(const std::string& name, unsigned int color = 0xffffffff,
+      const Vector3& position = Vector3(), float intensity = 1.0f,
+      const Vector3& direction = Vector3(0.0f, -1.0f, 0.0f), float distance = 5.0f, float decay = 0.1f,
+      float cosAngle = 0.7f, float cosFalloffStart = 0.9f);
 
    /// @brief スポットライトを取得する
    /// @param name ライト名
@@ -564,7 +576,7 @@ public:
    //----------------------------------------------------------------
    // エリアライト
    //----------------------------------------------------------------
-   
+
    /// @brief エリアライトを作成
    /// @param name ライト名
    /// @param position 中心座標（デフォルト：原点）
@@ -574,7 +586,9 @@ public:
    /// @param color 光の色（デフォルト：白）
    /// @param intensity 強度（デフォルト：1.0f）
    /// @return 作成されたライトへのポインタ
-   static AreaLight* CreateAreaLight(const std::string& name, const Vector3& position = { 0.0f, 0.0f, 0.0f }, const Vector3& normal = { 0.0f, -1.0f, 0.0f }, const Vector3& tangent = { 1.0f, 0.0f, 0.0f }, const Vector2& size = { 5.0f, 5.0f }, const Vector3& color = { 1.0f, 1.0f, 1.0f }, float intensity = 1.0f);
+   static AreaLight* CreateAreaLight(const std::string& name, const Vector3& position = {0.0f, 0.0f, 0.0f},
+      const Vector3& normal = {0.0f, -1.0f, 0.0f}, const Vector3& tangent = {1.0f, 0.0f, 0.0f},
+      const Vector2& size = {5.0f, 5.0f}, const Vector3& color = {1.0f, 1.0f, 1.0f}, float intensity = 1.0f);
 
    /// @brief エリアライトを取得する
    /// @param name ライト名
@@ -626,21 +640,24 @@ public:
    /// @param texture テクスチャ
    /// @param blendMode ブレンドモード（std::nulloptの場合は現在設定されているモードを使用）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
+   static void Draw(
+      Model* model, Texture* texture, std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
 
    /// @brief モデルを描画する（複数テクスチャ）
    /// @param model 描画するモデル
    /// @param textures テクスチャ配列
    /// @param blendMode ブレンドモード（std::nulloptの場合は現在設定されているモードを使用）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void Draw(Model* model, const std::vector<Texture*>& textures, std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
+   static void Draw(Model* model, const std::vector<Texture*>& textures,
+      std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
 
    /// @brief スプライトを描画する
    /// @param sprite 描画するスプライト
    /// @param texture テクスチャ
    /// @param blendMode ブレンドモード（std::nulloptの場合は現在設定されているモードを使用）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true);
+   static void Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> blendMode = std::nullopt,
+      bool applyPostProcess = true);
 
    /// @brief パーティクルシステムを描画する
    /// @param particleSystem 描画するパーティクルシステム
@@ -660,13 +677,9 @@ public:
    /// @param screenWidth UI配置に使う論理画面幅（デフォルト：1280）
    /// @param screenHeight UI配置に使う論理画面高（デフォルト：720）
    /// @details 論理画面の縦横比とサイズを保ち、実際の出力中央へ一様拡大して描画する。
-   static void DrawUI(Sprite* sprite, Texture* texture,
-	  Sprite::AnchorPoint anchorPoint = Sprite::AnchorPoint::TopLeft,
-	  std::optional<BlendMode> blendMode = std::nullopt,
-	  bool applyPostProcess = true,
-	  uint32_t screenWidth = Window::kUiReferenceWidth,
-	  uint32_t screenHeight = Window::kUiReferenceHeight
-   );
+   static void DrawUI(Sprite* sprite, Texture* texture, Sprite::AnchorPoint anchorPoint = Sprite::AnchorPoint::TopLeft,
+      std::optional<BlendMode> blendMode = std::nullopt, bool applyPostProcess = true,
+      uint32_t screenWidth = Window::kUiReferenceWidth, uint32_t screenHeight = Window::kUiReferenceHeight);
 
    /// @brief UTF-8文字列をスクリーンUIとして描画する
    /// @param text UTF-8文字列
@@ -685,10 +698,13 @@ public:
    static void RequestScreenshot(const std::filesystem::path& outputPath);
 
 #ifdef USE_IMGUI
+
    /// @brief シーンビューへマウスカーソルが重なっているか取得する
    static bool GetIsSceneHovered();
+
    /// @brief エディターのドックスペースが表示中か取得する
    static bool GetIsDockSpaceVisible();
+
    /// @brief エディターのドックスペース表示を切り替える
    static void SetDockSpaceVisible(bool visible);
 
@@ -697,7 +713,8 @@ public:
    /// @param label メニューの日本語・英語ラベル（文字列リテラル）。
    /// @param defaultVisible 初回登録時の表示状態。
    /// @return 現在の表示状態。レンダラーがない場合はfalse。
-   static bool GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
+   static bool GetEditorWindowVisibility(
+      const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
 
    /// @brief 登録済みエディターウィンドウの表示状態を設定する。
    /// @param stableId 登録済みウィンドウの固定ID。
@@ -715,14 +732,16 @@ public:
    /// @param end 終了点
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f), bool applyPostProcess = true);
+   static void DrawLine(const Vector3& start, const Vector3& end,
+      const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f), bool applyPostProcess = true);
 
    /// @brief スプライン曲線を描画する
    /// @param controlPoints 制御点のリスト
    /// @param color 色
    /// @param segmentCount セグメント数
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawSpline(const std::vector<Vector3>& controlPoints, const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f), size_t segmentCount = 100, bool applyPostProcess = true);
+   static void DrawSpline(const std::vector<Vector3>& controlPoints,
+      const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f), size_t segmentCount = 100, bool applyPostProcess = true);
 
    /// @brief グリッドを描画する
    /// @param plane 描画する平面（デフォルト：XZ平面）
@@ -732,15 +751,18 @@ public:
    /// @param enableFade カメラからの距離に応じてフェードアウトするか（デフォルト：true）
    /// @param fadeDistance フェードアウトを開始する距離（デフォルト：50.0f、enableFadeがtrueの場合のみ有効）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10, int range = 100, bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
+   static void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10,
+      int range = 100, bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
 
    // パーティクルシステムのデバッグ用シェイプ描画
+
    /// @brief 球を描画する
    /// @param center 中心
    /// @param radius 半径
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawSphere(const Vector3& center, float radius, const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
+   static void DrawSphere(const Vector3& center, float radius, const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f),
+      bool applyPostProcess = true);
 
    /// @brief 半球を描画する
    /// @param center 中心
@@ -748,7 +770,8 @@ public:
    /// @param up 上方向
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawHemisphere(const Vector3& center, float radius, const Vector3& up, const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
+   static void DrawHemisphere(const Vector3& center, float radius, const Vector3& up,
+      const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
 
    /// @brief 円錐を描画する
    /// @param apex 円錐の頂点
@@ -757,14 +780,16 @@ public:
    /// @param direction 円錐の向き
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawCone(const Vector3& apex, float radius, float height, const Vector3& direction, const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
+   static void DrawCone(const Vector3& apex, float radius, float height, const Vector3& direction,
+      const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
 
    /// @brief ボックスを描画する
    /// @param center 中心
    /// @param size サイズ
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawBox(const Vector3& center, const Vector3& size, const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
+   static void DrawBox(const Vector3& center, const Vector3& size,
+      const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
 
    /// @brief 円を描画する
    /// @param center 中心
@@ -772,7 +797,8 @@ public:
    /// @param normal 法線
    /// @param color 色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawCircle(const Vector3& center, float radius, const Vector3& normal, const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
+   static void DrawCircle(const Vector3& center, float radius, const Vector3& normal,
+      const Vector4& color = Vector4(1.0f, 1.0f, 0.0f, 1.0f), bool applyPostProcess = true);
 
    /// @brief モデルのスケルトンをデバッグ描画する
    /// @param model 描画対象モデル
@@ -780,11 +806,9 @@ public:
    /// @param jointColor ジョイント球の色
    /// @param boneColor ジョイント接続線の色
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawSkeleton(Model* model,
-	  float jointRadius = 0.03f,
-	  const Vector4& jointColor = Vector4(1.0f, 0.2f, 0.2f, 1.0f),
-	  const Vector4& boneColor = Vector4(0.2f, 1.0f, 1.0f, 1.0f),
-      bool applyPostProcess = false);
+   static void DrawSkeleton(Model* model, float jointRadius = 0.03f,
+      const Vector4& jointColor = Vector4(1.0f, 0.2f, 0.2f, 1.0f),
+      const Vector4& boneColor = Vector4(0.2f, 1.0f, 1.0f, 1.0f), bool applyPostProcess = false);
 
    /// @brief ブレンドモードを設定する（次の描画に使用）
    /// @param blendMode ブレンドモード

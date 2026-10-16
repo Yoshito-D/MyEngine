@@ -22,7 +22,8 @@
 
 namespace GameEngine {
 
-SceneWorld::SceneWorld(CinemachineBrain* cameraBrain) : cameraBrain_(cameraBrain) {}
+SceneWorld::SceneWorld(CinemachineBrain* cameraBrain) : cameraBrain_(cameraBrain) {
+}
 
 CinemachineBrain* SceneWorld::GetCameraBrain() const {
    return cameraBrain_ ? cameraBrain_ : EngineContext::GetActiveBrain();
@@ -57,10 +58,11 @@ bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
    RestoreLegacyEntries(sceneData);
    RestoreLegacyLights(sceneData);
    RestoreCameras(sceneData);
+
    // 描画設定もシーンの一部として扱う。不正な設定を黙って既定値にすると
    // 見た目だけ異なるシーンが成立してしまうため、ワールド全体の読み込み失敗とする。
    if (sceneData.contains("renderSettings") &&
-      !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
+       !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
       Logger::Error("SceneWorld load failed: invalid render settings");
       return false;
    }
@@ -81,6 +83,7 @@ void SceneWorld::Clear() {
             brain->UnregisterVirtualCamera(camera.get());
          }
       }
+
       // レースのカウントダウン中にシーンが破棄されても、停止状態を次シーンへ持ち越さない。
       brain->SetCameraMotionPaused(false);
    }
@@ -92,6 +95,7 @@ void SceneWorld::Clear() {
    looseObjectsById_.clear();
    skyboxes_.clear();
    genericObjects_.clear();
+
    // SceneObjectStore は削除を遅延できる。Clear後に必ずフラッシュし、
    // 旧シーンのEntityがグローバル検索へ残らない状態まで確定させる。
    objectStore_.Clear();
@@ -106,21 +110,28 @@ void SceneWorld::Update(float) {
 }
 
 Object* SceneWorld::FindObjectById(const std::string& objectId) {
-   if (objectId.empty()) return nullptr;
+   if (objectId.empty())
+      return nullptr;
    Object* object = objectStore_.FindById(objectId);
-   if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end()) object = it->second;
+   if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end())
+      object = it->second;
 #ifdef USE_IMGUI
    if (sCurrent_ == this) {
       if (auto* scene = BaseScene::GetCurrentScene()) {
          if (auto* context = scene->GetEditorSceneContext()) {
             if (!object) {
                for (auto* candidate : context->CollectEditableObjects()) {
-                  if (candidate && candidate->GetEntityId() == objectId) { object = candidate; break; }
+                  if (candidate && candidate->GetEntityId() == objectId) {
+                     object = candidate;
+                     break;
+                  }
                }
             }
+
             // 非表示のシーン所有Entityと削除待ちEntityへ再接続しない。
             const auto editable = context->CollectEditableObjects();
-            if (std::find(editable.begin(), editable.end(), object) == editable.end()) return nullptr;
+            if (std::find(editable.begin(), editable.end(), object) == editable.end())
+               return nullptr;
          }
       }
    }
@@ -129,21 +140,28 @@ Object* SceneWorld::FindObjectById(const std::string& objectId) {
 }
 
 const Object* SceneWorld::FindObjectById(const std::string& objectId) const {
-   if (objectId.empty()) return nullptr;
+   if (objectId.empty())
+      return nullptr;
    const Object* object = objectStore_.FindById(objectId);
-   if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end()) object = it->second;
+   if (auto it = looseObjectsById_.find(objectId); it != looseObjectsById_.end())
+      object = it->second;
 #ifdef USE_IMGUI
    if (sCurrent_ == this) {
       if (auto* scene = BaseScene::GetCurrentScene()) {
          if (auto* context = scene->GetEditorSceneContext()) {
             if (!object) {
                for (auto* candidate : context->CollectEditableObjects()) {
-                  if (candidate && candidate->GetEntityId() == objectId) { object = candidate; break; }
+                  if (candidate && candidate->GetEntityId() == objectId) {
+                     object = candidate;
+                     break;
+                  }
                }
             }
+
             // 非表示のシーン所有Entityと削除待ちEntityへ再接続しない。
             const auto editable = context->CollectEditableObjects();
-            if (std::find(editable.begin(), editable.end(), object) == editable.end()) return nullptr;
+            if (std::find(editable.begin(), editable.end(), object) == editable.end())
+               return nullptr;
          }
       }
    }
@@ -171,9 +189,7 @@ Object* SceneWorld::FindObjectByName(const std::string& objectName) {
    }
    const auto objects = CollectObjects();
    const auto it = std::find_if(objects.begin(), objects.end(),
-      [&objectName](const Object* object) {
-         return object && object->GetObjectName() == objectName;
-      });
+      [&objectName](const Object* object) { return object && object->GetObjectName() == objectName; });
    return it != objects.end() ? *it : nullptr;
 }
 
@@ -183,9 +199,7 @@ const Object* SceneWorld::FindObjectByName(const std::string& objectName) const 
    }
    const auto objects = CollectObjects();
    const auto it = std::find_if(objects.begin(), objects.end(),
-      [&objectName](const Object* object) {
-         return object && object->GetObjectName() == objectName;
-      });
+      [&objectName](const Object* object) { return object && object->GetObjectName() == objectName; });
    return it != objects.end() ? *it : nullptr;
 }
 
@@ -221,18 +235,23 @@ const VirtualCamera* SceneWorld::FindVirtualCamera(const std::string& cameraIdOr
 
 VirtualCamera* SceneWorld::CreateVirtualCamera(const std::string& name) {
    auto* brain = GetCameraBrain();
-   if (!brain) return nullptr;
+   if (!brain)
+      return nullptr;
    auto camera = std::make_unique<VirtualCamera>();
    camera->Initialize();
    camera->SetName(name.empty() ? "Virtual Camera" : name);
+
    // 表示名を変更してもコンポーネントからの参照は変わらない。
    GUID guid{};
-   if (FAILED(CoCreateGuid(&guid))) return nullptr;
+   if (FAILED(CoCreateGuid(&guid)))
+      return nullptr;
    wchar_t buffer[40]{};
    StringFromGUID2(guid, buffer, 40);
+
    // GUID表記はASCIIのみなので、文字幅の変換を明示する。
    std::string id;
-   for (const wchar_t* character = buffer; *character; ++character) id.push_back(static_cast<char>(*character));
+   for (const wchar_t* character = buffer; *character; ++character)
+      id.push_back(static_cast<char>(*character));
    camera->SetId(id);
    auto* result = camera.get();
    virtualCameras_.push_back(std::move(camera));
@@ -242,10 +261,12 @@ VirtualCamera* SceneWorld::CreateVirtualCamera(const std::string& name) {
 }
 
 bool SceneWorld::RemoveVirtualCamera(VirtualCamera* camera) {
-   const auto it = std::find_if(virtualCameras_.begin(), virtualCameras_.end(),
-      [camera](const auto& entry) { return entry.get() == camera; });
-   if (it == virtualCameras_.end()) return false;
-   if (auto* brain = GetCameraBrain()) brain->UnregisterVirtualCamera(camera);
+   const auto it = std::find_if(
+      virtualCameras_.begin(), virtualCameras_.end(), [camera](const auto& entry) { return entry.get() == camera; });
+   if (it == virtualCameras_.end())
+      return false;
+   if (auto* brain = GetCameraBrain())
+      brain->UnregisterVirtualCamera(camera);
    virtualCamerasById_.erase(camera->GetId());
    virtualCameras_.erase(it);
    return true;
@@ -253,10 +274,13 @@ bool SceneWorld::RemoveVirtualCamera(VirtualCamera* camera) {
 
 void SceneWorld::ApplyCameraConfiguration(const nlohmann::json& camerasData) {
    if (!camerasData.is_object() || !camerasData.contains("virtualCameras") ||
-       !camerasData.at("virtualCameras").is_array()) return;
+       !camerasData.at("virtualCameras").is_array())
+      return;
+
    // 追加・削除も復元する。Component側の非所有参照は全Entityの復元後に再解決する。
-   while (!virtualCameras_.empty()) RemoveVirtualCamera(virtualCameras_.back().get());
-   RestoreCameras(nlohmann::json{ { "cameras", camerasData } });
+   while (!virtualCameras_.empty())
+      RemoveVirtualCamera(virtualCameras_.back().get());
+   RestoreCameras(nlohmann::json{{"cameras", camerasData}});
 }
 
 std::string SceneWorld::GetObjectId(const Object* object) const {
@@ -282,12 +306,14 @@ bool SceneWorld::RestoreObjectEntry(const nlohmann::json& sourceData, const std:
       Logger::EngineWarning("Scene object skipped because it has no stable id");
       return false;
    }
+
    // FindObjectByIdはEditor経由でBaseSceneのEntityも返すため、重複判定には
    // このワールドで復元済みのID索引だけを使う。非表示状態にも左右されない。
    if (looseObjectsById_.contains(id) || objectStore_.FindById(id) || objectStore_.FindParticleById(id)) {
       Logger::EngineWarning("Duplicate scene object id skipped: " + id);
       return false;
    }
+
    // 既定ライトなど、シーン初期化コードが生成済みのEntityへ保存状態を重ねる。
    // 非所有索引にも登録し、同じファイル内で再び現れたIDは重複として検出する。
    if (Object* existingEntity = Object::FindByEntityId(id)) {
@@ -354,15 +380,14 @@ void SceneWorld::RestoreLegacyEntries(const nlohmann::json& sceneData) {
       // 現行objectsのSkyboxを優先し、後から読む旧差分が全画面背景を上書きしないようにする。
       const bool hasCurrentFormatSkybox = !skyboxes_.empty();
       for (const auto& entry : sceneData.at("sceneObjects")) {
-         if (!entry.is_object() || entry.value("deleted", false) ||
-            !entry.contains("object") || !entry.at("object").is_object()) {
+         if (!entry.is_object() || entry.value("deleted", false) || !entry.contains("object") ||
+             !entry.at("object").is_object()) {
             continue;
          }
 
          const auto& objectData = entry.at("object");
          const std::string sceneKey = entry.value("sceneKey", "");
-         const bool isSkybox = objectData.value("objectType", "") == "Skybox" ||
-            sceneKey.rfind("Skybox:", 0) == 0;
+         const bool isSkybox = objectData.value("objectType", "") == "Skybox" || sceneKey.rfind("Skybox:", 0) == 0;
          if (hasCurrentFormatSkybox && isSkybox) {
             continue;
          }
@@ -373,8 +398,8 @@ void SceneWorld::RestoreLegacyEntries(const nlohmann::json& sceneData) {
 
    if (sceneData.contains("sceneParticleSystems") && sceneData.at("sceneParticleSystems").is_array()) {
       for (const auto& entry : sceneData.at("sceneParticleSystems")) {
-         if (!entry.is_object() || entry.value("deleted", false) ||
-            !entry.contains("particleSystem") || !entry.at("particleSystem").is_object()) {
+         if (!entry.is_object() || entry.value("deleted", false) || !entry.contains("particleSystem") ||
+             !entry.at("particleSystem").is_object()) {
             continue;
          }
          RestoreObjectEntry(entry.at("particleSystem"), entry.value("sceneKey", ""));
@@ -482,7 +507,8 @@ void SceneWorld::ResolveReferences(const std::vector<Object*>& objects, bool ini
       if (!object) {
          continue;
       }
-      if (auto* transform = object->GetComponent<TransformComponent>()) transform->ResolveParentRelation();
+      if (auto* transform = object->GetComponent<TransformComponent>())
+         transform->ResolveParentRelation();
       object->ResolveComponentReferences(*this, initializeRuntime);
    }
 }
@@ -491,27 +517,38 @@ std::vector<Object*> SceneWorld::CollectObjects() {
    // 所有場所の違いを利用側へ漏らさないため、一時的な統合ビューを構築する。
    // ParticleSystemはObject継承ではないので、この一覧には意図的に含めない。
    std::vector<Object*> objects;
-   objects.reserve(
-      objectStore_.GetModels().size() + objectStore_.GetSprites().size() +
-      objectStore_.GetUITexts().size() + objectStore_.GetGenericObjects().size() +
-      genericObjects_.size() + skyboxes_.size());
+   objects.reserve(objectStore_.GetModels().size() + objectStore_.GetSprites().size() +
+                   objectStore_.GetUITexts().size() + objectStore_.GetGenericObjects().size() + genericObjects_.size() +
+                   skyboxes_.size());
    for (const auto& model : objectStore_.GetModels()) {
-      if (model) { objects.push_back(model); }
+      if (model) {
+         objects.push_back(model);
+      }
    }
    for (const auto& sprite : objectStore_.GetSprites()) {
-      if (sprite) { objects.push_back(sprite); }
+      if (sprite) {
+         objects.push_back(sprite);
+      }
    }
    for (const auto& text : objectStore_.GetUITexts()) {
-      if (text) { objects.push_back(text); }
+      if (text) {
+         objects.push_back(text);
+      }
    }
    for (const auto& object : objectStore_.GetGenericObjects()) {
-      if (object) { objects.push_back(object); }
+      if (object) {
+         objects.push_back(object);
+      }
    }
    for (const auto& object : genericObjects_) {
-      if (object) { objects.push_back(object.get()); }
+      if (object) {
+         objects.push_back(object.get());
+      }
    }
    for (const auto& skybox : skyboxes_) {
-      if (skybox) { objects.push_back(skybox.get()); }
+      if (skybox) {
+         objects.push_back(skybox.get());
+      }
    }
    return objects;
 }
@@ -520,27 +557,38 @@ std::vector<const Object*> SceneWorld::CollectObjects() const {
    // 所有場所の違いを利用側へ漏らさないため、一時的な統合ビューを構築する。
    // ParticleSystemはObject継承ではないので、この一覧には意図的に含めない。
    std::vector<const Object*> objects;
-   objects.reserve(
-      objectStore_.GetModels().size() + objectStore_.GetSprites().size() +
-      objectStore_.GetUITexts().size() + objectStore_.GetGenericObjects().size() +
-      genericObjects_.size() + skyboxes_.size());
+   objects.reserve(objectStore_.GetModels().size() + objectStore_.GetSprites().size() +
+                   objectStore_.GetUITexts().size() + objectStore_.GetGenericObjects().size() + genericObjects_.size() +
+                   skyboxes_.size());
    for (const auto& model : objectStore_.GetModels()) {
-      if (model) { objects.push_back(model); }
+      if (model) {
+         objects.push_back(model);
+      }
    }
    for (const auto& sprite : objectStore_.GetSprites()) {
-      if (sprite) { objects.push_back(sprite); }
+      if (sprite) {
+         objects.push_back(sprite);
+      }
    }
    for (const auto& text : objectStore_.GetUITexts()) {
-      if (text) { objects.push_back(text); }
+      if (text) {
+         objects.push_back(text);
+      }
    }
    for (const auto& object : objectStore_.GetGenericObjects()) {
-      if (object) { objects.push_back(object); }
+      if (object) {
+         objects.push_back(object);
+      }
    }
    for (const auto& object : genericObjects_) {
-      if (object) { objects.push_back(object.get()); }
+      if (object) {
+         objects.push_back(object.get());
+      }
    }
    for (const auto& skybox : skyboxes_) {
-      if (skybox) { objects.push_back(skybox.get()); }
+      if (skybox) {
+         objects.push_back(skybox.get());
+      }
    }
    return objects;
 }
@@ -549,6 +597,7 @@ void SceneWorld::RegisterLooseObject(const std::string& id, Object* object) {
    if (id.empty() || !object) {
       return;
    }
+
    // ID→Objectは参照解決、Object→IDは保存処理で使用するため、必ず同時に更新する。
    looseObjectsById_[id] = object;
    looseObjectIds_[object] = id;

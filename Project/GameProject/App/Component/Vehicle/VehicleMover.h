@@ -22,7 +22,8 @@ namespace App {
 class VehicleMover final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleMover";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両移動", "Vehicle Mover" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両移動", "Vehicle Mover"};
+
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
@@ -35,44 +36,42 @@ public:
    /// @param gravityUp   現在の重力Up方向
    /// @param deltaTime   フレーム時間
    void ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput, bool isGrounded,
-					  const GameEngine::Vector3& gravityUp, float deltaTime);
+      const GameEngine::Vector3& gravityUp, float deltaTime);
 
    /// @brief 直近の移動方向を取得する
    GameEngine::Vector3 GetLastMoveDirection() const { return lastMoveDirection_; }
 
 #ifdef USE_IMGUI
+
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
    /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
 private:
    /// @brief 着地遷移時に各サブコンポーネントへ通知する
-   void OnLanded(const GameEngine::Quaternion& currentRotation,
-				 const GameEngine::Vector3& gravityUp);
+   void OnLanded(const GameEngine::Quaternion& currentRotation, const GameEngine::Vector3& gravityUp);
 
    /// @brief VehicleLandingBoost へブースト試行を通知する
-   void NotifyLandingBoost(const GameEngine::Vector3& localUp,
-						   const GameEngine::Vector3& gravityUp);
+   void NotifyLandingBoost(const GameEngine::Vector3& localUp, const GameEngine::Vector3& gravityUp);
 
    /// @brief VehicleAirController の角速度をリセットする
    void ResetAirAngularVelocity();
 
    /// @brief VehicleLandingAligner へ補正開始を通知する
-   void NotifyLandingAligner(const GameEngine::Quaternion& currentRotation,
-							 const GameEngine::Vector3& gravityUp);
+   void NotifyLandingAligner(const GameEngine::Quaternion& currentRotation, const GameEngine::Vector3& gravityUp);
 
    /// @brief gravityUp に合わせた着地目標クォータニオンを生成する
    GameEngine::Quaternion BuildAlignTargetRotation(
-	  const GameEngine::Quaternion& currentRotation,
-	  const GameEngine::Vector3& gravityUp) const;
+      const GameEngine::Quaternion& currentRotation, const GameEngine::Vector3& gravityUp) const;
 
    /// @brief 直近の移動方向
-   GameEngine::Vector3 lastMoveDirection_ = { 0.0f, 0.0f, 1.0f };
+   GameEngine::Vector3 lastMoveDirection_ = {0.0f, 0.0f, 1.0f};
 
    /// @brief 前フレームの接地状態（着地遷移検出用）
    bool wasGrounded_ = true;

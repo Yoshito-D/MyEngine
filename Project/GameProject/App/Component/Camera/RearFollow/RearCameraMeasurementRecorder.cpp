@@ -17,7 +17,8 @@ using namespace RearCameraMath;
 
 void RearCameraMeasurementRecorder::MutateCameraState(GameEngine::CameraState&, float) {
    auto* camera = GetRearCamera();
-   if (!camera) return;
+   if (!camera)
+      return;
    if (const auto frame = camera->GetFrameView()) {
       // 旧実装と同様、カメラ補間用dtではなくゲーム更新時刻で計測する。
       RecordCameraMeasurementSample(GameEngine::EngineContext::GetDeltaTime(),
@@ -50,8 +51,8 @@ inline std::string BuildMeasurementTimestamp() {
    return stream.str();
 }
 
-
-void RearCameraMeasurementRecorder::StartCameraMeasurement(const std::string& testName, const RearCameraFrameView& frame) {
+void RearCameraMeasurementRecorder::StartCameraMeasurement(
+   const std::string& testName, const RearCameraFrameView& frame) {
    ClearCameraMeasurement();
    state_.cameraMeasurementTestName = testName.empty() ? "camera_live" : testName;
    state_.cameraMeasurementSamples.reserve(3600);
@@ -61,9 +62,7 @@ void RearCameraMeasurementRecorder::StartCameraMeasurement(const std::string& te
    state_.cameraMeasurementPreviousForward = frame.aim.GetState().cachedForward;
    state_.cameraMeasurementHasPrevious = true;
    state_.cameraMeasurementActive = true;
-   Logger::Info(
-      "Camera measurement started: " + state_.cameraMeasurementTestName,
-      Logger::LogChannel::Game);
+   Logger::Info("Camera measurement started: " + state_.cameraMeasurementTestName, Logger::LogChannel::Game);
 }
 
 bool RearCameraMeasurementRecorder::StopCameraMeasurement(bool saveToFile, const RearCameraSettings& settings) {
@@ -92,10 +91,7 @@ void RearCameraMeasurementRecorder::ClearCameraMeasurement() {
 }
 
 void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
-   float deltaTime,
-   uint64_t gameFrame,
-   const RearCameraSettings& settings,
-   const RearCameraFrameView& frame) {
+   float deltaTime, uint64_t gameFrame, const RearCameraSettings& settings, const RearCameraFrameView& frame) {
    if (!state_.cameraMeasurementActive) {
       return;
    }
@@ -118,22 +114,18 @@ void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
    sample.cameraForward = frame.aim.GetState().cachedForward;
 
    if (state_.cameraMeasurementHasPrevious) {
-      sample.gravityUpStepDegrees = AngleDegrees(
-         state_.cameraMeasurementPreviousGravityUp,
-         frame.gravity.GetState().currentGravityUp);
-      sample.cameraRightStepDegrees = AngleDegrees(
-         state_.cameraMeasurementPreviousRight,
-         frame.aim.GetState().cachedRight);
-      sample.cameraUpStepDegrees = AngleDegrees(
-         state_.cameraMeasurementPreviousUp,
-         frame.aim.GetState().cachedUp);
-      sample.cameraForwardStepDegrees = AngleDegrees(
-         state_.cameraMeasurementPreviousForward,
-         frame.aim.GetState().cachedForward);
+      sample.gravityUpStepDegrees =
+         AngleDegrees(state_.cameraMeasurementPreviousGravityUp, frame.gravity.GetState().currentGravityUp);
+      sample.cameraRightStepDegrees =
+         AngleDegrees(state_.cameraMeasurementPreviousRight, frame.aim.GetState().cachedRight);
+      sample.cameraUpStepDegrees = AngleDegrees(state_.cameraMeasurementPreviousUp, frame.aim.GetState().cachedUp);
+      sample.cameraForwardStepDegrees =
+         AngleDegrees(state_.cameraMeasurementPreviousForward, frame.aim.GetState().cachedForward);
    }
 
    sample.targetGravityUpErrorDegrees = AngleDegrees(frame.gravity.GetState().currentGravityUp, frame.input.gravityUp);
-   sample.cameraForwardGravityUpAbsDot = std::abs(frame.aim.GetState().cachedForward.Dot(frame.gravity.GetState().currentGravityUp));
+   sample.cameraForwardGravityUpAbsDot =
+      std::abs(frame.aim.GetState().cachedForward.Dot(frame.gravity.GetState().currentGravityUp));
    sample.rightLength = frame.aim.GetState().cachedRight.Length();
    sample.upLength = frame.aim.GetState().cachedUp.Length();
    sample.forwardLength = frame.aim.GetState().cachedForward.Length();
@@ -148,39 +140,24 @@ void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
    sample.airborne = frame.input.isAirborne;
    sample.landingPredictionValid = frame.input.landingPredictionValid;
    sample.invalid =
-      !std::isfinite(safeDeltaTime)
-      || !IsFiniteVector(frame.input.gravityUp)
-      || !IsFiniteVector(frame.gravity.GetState().currentGravityUp)
-      || !IsFiniteVector(frame.aim.GetState().cachedRight)
-      || !IsFiniteVector(frame.aim.GetState().cachedUp)
-      || !IsFiniteVector(frame.aim.GetState().cachedForward)
-      || !std::isfinite(sample.gravityUpStepDegrees)
-      || !std::isfinite(sample.cameraRightStepDegrees)
-      || !std::isfinite(sample.cameraUpStepDegrees)
-      || !std::isfinite(sample.cameraForwardStepDegrees);
+      !std::isfinite(safeDeltaTime) || !IsFiniteVector(frame.input.gravityUp) ||
+      !IsFiniteVector(frame.gravity.GetState().currentGravityUp) || !IsFiniteVector(frame.aim.GetState().cachedRight) ||
+      !IsFiniteVector(frame.aim.GetState().cachedUp) || !IsFiniteVector(frame.aim.GetState().cachedForward) ||
+      !std::isfinite(sample.gravityUpStepDegrees) || !std::isfinite(sample.cameraRightStepDegrees) ||
+      !std::isfinite(sample.cameraUpStepDegrees) || !std::isfinite(sample.cameraForwardStepDegrees);
 
-   state_.cameraMeasurementMaxGravityUpStepDegrees = std::max(
-      state_.cameraMeasurementMaxGravityUpStepDegrees,
-      sample.gravityUpStepDegrees);
-   state_.cameraMeasurementMaxRightStepDegrees = std::max(
-      state_.cameraMeasurementMaxRightStepDegrees,
-      sample.cameraRightStepDegrees);
-   state_.cameraMeasurementMaxUpStepDegrees = std::max(
-      state_.cameraMeasurementMaxUpStepDegrees,
-      sample.cameraUpStepDegrees);
-   state_.cameraMeasurementMaxForwardStepDegrees = std::max(
-      state_.cameraMeasurementMaxForwardStepDegrees,
-      sample.cameraForwardStepDegrees);
-   state_.cameraMeasurementMaxOrthogonalityError = std::max({
-      state_.cameraMeasurementMaxOrthogonalityError,
-      sample.rightUpAbsDot,
-      sample.upForwardAbsDot,
-      sample.forwardRightAbsDot });
-   state_.cameraMeasurementMaxLengthError = std::max({
-      state_.cameraMeasurementMaxLengthError,
-      std::abs(sample.rightLength - 1.0f),
-      std::abs(sample.upLength - 1.0f),
-      std::abs(sample.forwardLength - 1.0f) });
+   state_.cameraMeasurementMaxGravityUpStepDegrees =
+      std::max(state_.cameraMeasurementMaxGravityUpStepDegrees, sample.gravityUpStepDegrees);
+   state_.cameraMeasurementMaxRightStepDegrees =
+      std::max(state_.cameraMeasurementMaxRightStepDegrees, sample.cameraRightStepDegrees);
+   state_.cameraMeasurementMaxUpStepDegrees =
+      std::max(state_.cameraMeasurementMaxUpStepDegrees, sample.cameraUpStepDegrees);
+   state_.cameraMeasurementMaxForwardStepDegrees =
+      std::max(state_.cameraMeasurementMaxForwardStepDegrees, sample.cameraForwardStepDegrees);
+   state_.cameraMeasurementMaxOrthogonalityError = std::max({state_.cameraMeasurementMaxOrthogonalityError,
+      sample.rightUpAbsDot, sample.upForwardAbsDot, sample.forwardRightAbsDot});
+   state_.cameraMeasurementMaxLengthError = std::max({state_.cameraMeasurementMaxLengthError,
+      std::abs(sample.rightLength - 1.0f), std::abs(sample.upLength - 1.0f), std::abs(sample.forwardLength - 1.0f)});
    if (sample.invalid) {
       ++state_.cameraMeasurementInvalidCount;
    }
@@ -209,8 +186,7 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
    std::filesystem::create_directories(directory, error);
    if (error) {
       Logger::Warning(
-         "Camera measurement directory could not be created: " + error.message(),
-         Logger::LogChannel::Game);
+         "Camera measurement directory could not be created: " + error.message(), Logger::LogChannel::Game);
       return false;
    }
 
@@ -221,8 +197,7 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
    std::ofstream csv(csvPath, std::ios::out | std::ios::trunc);
    if (!csv.is_open()) {
       Logger::Warning(
-         "Camera measurement CSV could not be opened: " + csvPath.generic_string(),
-         Logger::LogChannel::Game);
+         "Camera measurement CSV could not be opened: " + csvPath.generic_string(), Logger::LogChannel::Game);
       return false;
    }
 
@@ -237,116 +212,88 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
           "camera_forward_x,camera_forward_y,camera_forward_z\n";
    csv << std::fixed << std::setprecision(7);
    for (const CameraMeasurementSample& sample : state_.cameraMeasurementSamples) {
-      csv
-         << sample.frame << ','
-         << sample.timeSeconds << ','
-         << sample.deltaTimeSeconds << ','
-         << sample.gravityUpStepDegrees << ','
-         << sample.cameraRightStepDegrees << ','
-         << sample.cameraUpStepDegrees << ','
-         << sample.cameraForwardStepDegrees << ','
-         << sample.targetGravityUpErrorDegrees << ','
-         << sample.cameraForwardGravityUpAbsDot << ','
-         << sample.rightLength << ','
-         << sample.upLength << ','
-         << sample.forwardLength << ','
-         << sample.rightUpAbsDot << ','
-         << sample.upForwardAbsDot << ','
-         << sample.forwardRightAbsDot << ','
-         << sample.lookAtCandidateRightLength << ','
-         << sample.lookAtRecoveryInput << ','
-         << sample.lookAtRecoveryBlend << ','
-         << sample.preLandingBlend << ','
-         << sample.predictedImpactSeconds << ','
-         << (sample.airborne ? 1 : 0) << ','
-         << (sample.landingPredictionValid ? 1 : 0) << ','
-         << (sample.invalid ? 1 : 0) << ','
-         << sample.targetGravityUp.x << ','
-         << sample.targetGravityUp.y << ','
-         << sample.targetGravityUp.z << ','
-         << sample.currentGravityUp.x << ','
-         << sample.currentGravityUp.y << ','
-         << sample.currentGravityUp.z << ','
-         << sample.cameraRight.x << ','
-         << sample.cameraRight.y << ','
-         << sample.cameraRight.z << ','
-         << sample.cameraUp.x << ','
-         << sample.cameraUp.y << ','
-         << sample.cameraUp.z << ','
-         << sample.cameraForward.x << ','
-         << sample.cameraForward.y << ','
-         << sample.cameraForward.z << '\n';
+      csv << sample.frame << ',' << sample.timeSeconds << ',' << sample.deltaTimeSeconds << ','
+          << sample.gravityUpStepDegrees << ',' << sample.cameraRightStepDegrees << ',' << sample.cameraUpStepDegrees
+          << ',' << sample.cameraForwardStepDegrees << ',' << sample.targetGravityUpErrorDegrees << ','
+          << sample.cameraForwardGravityUpAbsDot << ',' << sample.rightLength << ',' << sample.upLength << ','
+          << sample.forwardLength << ',' << sample.rightUpAbsDot << ',' << sample.upForwardAbsDot << ','
+          << sample.forwardRightAbsDot << ',' << sample.lookAtCandidateRightLength << ',' << sample.lookAtRecoveryInput
+          << ',' << sample.lookAtRecoveryBlend << ',' << sample.preLandingBlend << ',' << sample.predictedImpactSeconds
+          << ',' << (sample.airborne ? 1 : 0) << ',' << (sample.landingPredictionValid ? 1 : 0) << ','
+          << (sample.invalid ? 1 : 0) << ',' << sample.targetGravityUp.x << ',' << sample.targetGravityUp.y << ','
+          << sample.targetGravityUp.z << ',' << sample.currentGravityUp.x << ',' << sample.currentGravityUp.y << ','
+          << sample.currentGravityUp.z << ',' << sample.cameraRight.x << ',' << sample.cameraRight.y << ','
+          << sample.cameraRight.z << ',' << sample.cameraUp.x << ',' << sample.cameraUp.y << ',' << sample.cameraUp.z
+          << ',' << sample.cameraForward.x << ',' << sample.cameraForward.y << ',' << sample.cameraForward.z << '\n';
    }
    csv.close();
    if (!csv) {
-      Logger::Warning(
-         "Camera measurement CSV write failed: " + csvPath.generic_string(),
-         Logger::LogChannel::Game);
+      Logger::Warning("Camera measurement CSV write failed: " + csvPath.generic_string(), Logger::LogChannel::Game);
       return false;
    }
 
    const float theoreticalGravityUpDegreesPerFrameAt60Fps =
       std::max(0.0f, settings.gravityUpLerpSpeed) * kRadiansToDegrees / 60.0f;
-   const float averageFps = state_.cameraMeasurementElapsedSeconds > 1e-6f
-      ? static_cast<float>(state_.cameraMeasurementSamples.size()) / state_.cameraMeasurementElapsedSeconds
-      : 0.0f;
+   const float averageFps =
+      state_.cameraMeasurementElapsedSeconds > 1e-6f
+         ? static_cast<float>(state_.cameraMeasurementSamples.size()) / state_.cameraMeasurementElapsedSeconds
+         : 0.0f;
    nlohmann::json summary{
-      { "formatVersion", 1 },
-      { "testName", state_.cameraMeasurementTestName },
-      { "csvFile", csvPath.filename().generic_string() },
-      { "definitions", {
-         { "settingValue", "settings.gravityUpLerpSpeed is a maximum angular speed in rad/s" },
-         { "calculatedValue", "settings.gravityUpLerpSpeed * 180 / pi / 60 is the 60 FPS upper bound in deg/frame" },
-         { "measuredValue", "angle between consecutive finalized camera basis vectors" },
-         { "invalidFrame", "any non-finite finalized axis or angular sample" },
-      } },
-      { "settings", {
-         { "gravityUpLerpSpeedRadPerSecond", settings.gravityUpLerpSpeed },
-         { "theoreticalGravityUpDegreesPerFrameAt60Fps", theoreticalGravityUpDegreesPerFrameAt60Fps },
-         { "settings.rotationLerpSpeed", settings.rotationLerpSpeed },
-         { "settings.lookAtRecoveryRange", settings.lookAtRecoveryRange },
-         { "settings.lookAtRecoveryCurveControl1", settings.lookAtRecoveryCurveControl1 },
-         { "settings.lookAtRecoveryCurveControl2", settings.lookAtRecoveryCurveControl2 },
-         { "settings.takeoffFramingBlendSeconds", settings.takeoffFramingBlendSeconds },
-         { "settings.landingFramingBlendSeconds", settings.landingFramingBlendSeconds },
-         { "settings.preLandingPredictionSeconds", settings.preLandingPredictionSeconds },
-         { "settings.preLandingFullBlendSeconds", settings.preLandingFullBlendSeconds },
-         { "settings.landingRearLerpRampSeconds", settings.landingRearLerpRampSeconds },
-      } },
-      { "summary", {
-         { "frames", state_.cameraMeasurementSamples.size() },
-         { "durationSeconds", state_.cameraMeasurementElapsedSeconds },
-         { "averageFps", averageFps },
-         { "maxGravityUpStepDegrees", state_.cameraMeasurementMaxGravityUpStepDegrees },
-         { "maxCameraRightStepDegrees", state_.cameraMeasurementMaxRightStepDegrees },
-         { "maxCameraUpStepDegrees", state_.cameraMeasurementMaxUpStepDegrees },
-         { "maxCameraForwardStepDegrees", state_.cameraMeasurementMaxForwardStepDegrees },
-         { "maxBasisAbsDot", state_.cameraMeasurementMaxOrthogonalityError },
-         { "maxAxisLengthError", state_.cameraMeasurementMaxLengthError },
-         { "invalidFrameCount", state_.cameraMeasurementInvalidCount },
-      } },
+      {"formatVersion", 1},
+      {"testName", state_.cameraMeasurementTestName},
+      {"csvFile", csvPath.filename().generic_string()},
+      {"definitions",
+         {
+            {"settingValue", "settings.gravityUpLerpSpeed is a maximum angular speed in rad/s"},
+            {"calculatedValue", "settings.gravityUpLerpSpeed * 180 / pi / 60 is the 60 FPS upper bound in deg/frame"},
+            {"measuredValue", "angle between consecutive finalized camera basis vectors"},
+            {"invalidFrame", "any non-finite finalized axis or angular sample"},
+         }},
+      {"settings",
+         {
+            {"gravityUpLerpSpeedRadPerSecond", settings.gravityUpLerpSpeed},
+            {"theoreticalGravityUpDegreesPerFrameAt60Fps", theoreticalGravityUpDegreesPerFrameAt60Fps},
+            {"settings.rotationLerpSpeed", settings.rotationLerpSpeed},
+            {"settings.lookAtRecoveryRange", settings.lookAtRecoveryRange},
+            {"settings.lookAtRecoveryCurveControl1", settings.lookAtRecoveryCurveControl1},
+            {"settings.lookAtRecoveryCurveControl2", settings.lookAtRecoveryCurveControl2},
+            {"settings.takeoffFramingBlendSeconds", settings.takeoffFramingBlendSeconds},
+            {"settings.landingFramingBlendSeconds", settings.landingFramingBlendSeconds},
+            {"settings.preLandingPredictionSeconds", settings.preLandingPredictionSeconds},
+            {"settings.preLandingFullBlendSeconds", settings.preLandingFullBlendSeconds},
+            {"settings.landingRearLerpRampSeconds", settings.landingRearLerpRampSeconds},
+         }},
+      {"summary",
+         {
+            {"frames", state_.cameraMeasurementSamples.size()},
+            {"durationSeconds", state_.cameraMeasurementElapsedSeconds},
+            {"averageFps", averageFps},
+            {"maxGravityUpStepDegrees", state_.cameraMeasurementMaxGravityUpStepDegrees},
+            {"maxCameraRightStepDegrees", state_.cameraMeasurementMaxRightStepDegrees},
+            {"maxCameraUpStepDegrees", state_.cameraMeasurementMaxUpStepDegrees},
+            {"maxCameraForwardStepDegrees", state_.cameraMeasurementMaxForwardStepDegrees},
+            {"maxBasisAbsDot", state_.cameraMeasurementMaxOrthogonalityError},
+            {"maxAxisLengthError", state_.cameraMeasurementMaxLengthError},
+            {"invalidFrameCount", state_.cameraMeasurementInvalidCount},
+         }},
    };
 
    std::ofstream summaryFile(summaryPath, std::ios::out | std::ios::trunc);
    if (!summaryFile.is_open()) {
       Logger::Warning(
-         "Camera measurement summary could not be opened: " + summaryPath.generic_string(),
-         Logger::LogChannel::Game);
+         "Camera measurement summary could not be opened: " + summaryPath.generic_string(), Logger::LogChannel::Game);
       return false;
    }
    summaryFile << summary.dump(3);
    summaryFile.close();
    if (!summaryFile) {
       Logger::Warning(
-         "Camera measurement summary write failed: " + summaryPath.generic_string(),
-         Logger::LogChannel::Game);
+         "Camera measurement summary write failed: " + summaryPath.generic_string(), Logger::LogChannel::Game);
       return false;
    }
 
    state_.lastCameraMeasurementPath = csvPath.generic_string();
-   Logger::Info(
-      "Camera measurement saved: " + state_.lastCameraMeasurementPath,
-      Logger::LogChannel::Game);
+   Logger::Info("Camera measurement saved: " + state_.lastCameraMeasurementPath, Logger::LogChannel::Game);
    return true;
 }
 
@@ -355,23 +302,18 @@ void RearCameraMeasurementRecorder::RunFixedGravityUpVerification(const RearCame
    state_.cameraMeasurementTestName = "fixed_180_gravity_up_60fps";
 
    constexpr float fixedDeltaTime = 1.0f / 60.0f;
-   const GameEngine::Vector3 targetUp = { 0.0f, -1.0f, 0.0f };
-   const GameEngine::Vector3 cameraRight = { 1.0f, 0.0f, 0.0f };
-   GameEngine::Vector3 currentUp = { 0.0f, 1.0f, 0.0f };
+   const GameEngine::Vector3 targetUp = {0.0f, -1.0f, 0.0f};
+   const GameEngine::Vector3 cameraRight = {1.0f, 0.0f, 0.0f};
+   GameEngine::Vector3 currentUp = {0.0f, 1.0f, 0.0f};
    GameEngine::Vector3 previousCameraUp = currentUp;
    GameEngine::Vector3 previousCameraForward = cameraRight.Cross(currentUp);
    const float maxRadiansDelta = std::max(0.0f, settings.gravityUpLerpSpeed) * fixedDeltaTime;
 
    for (uint64_t frame = 0; frame < 240; ++frame) {
       const GameEngine::Vector3 previousGravityUp = currentUp;
-      currentUp = RotateTowardsUnit(
-         currentUp,
-         targetUp,
-         maxRadiansDelta,
-         cameraRight);
-      const GameEngine::Vector3 cameraForward = NormalizeOrFallback(
-         cameraRight.Cross(currentUp),
-         previousCameraForward);
+      currentUp = RotateTowardsUnit(currentUp, targetUp, maxRadiansDelta, cameraRight);
+      const GameEngine::Vector3 cameraForward =
+         NormalizeOrFallback(cameraRight.Cross(currentUp), previousCameraForward);
 
       CameraMeasurementSample sample{};
       sample.frame = frame;
@@ -398,30 +340,19 @@ void RearCameraMeasurementRecorder::RunFixedGravityUpVerification(const RearCame
       sample.cameraUp = currentUp;
       sample.cameraForward = cameraForward;
       sample.invalid =
-         !IsFiniteVector(currentUp)
-         || !IsFiniteVector(cameraForward)
-         || !std::isfinite(sample.gravityUpStepDegrees);
+         !IsFiniteVector(currentUp) || !IsFiniteVector(cameraForward) || !std::isfinite(sample.gravityUpStepDegrees);
 
       state_.cameraMeasurementSamples.push_back(sample);
-      state_.cameraMeasurementMaxGravityUpStepDegrees = std::max(
-         state_.cameraMeasurementMaxGravityUpStepDegrees,
-         sample.gravityUpStepDegrees);
-      state_.cameraMeasurementMaxUpStepDegrees = std::max(
-         state_.cameraMeasurementMaxUpStepDegrees,
-         sample.cameraUpStepDegrees);
-      state_.cameraMeasurementMaxForwardStepDegrees = std::max(
-         state_.cameraMeasurementMaxForwardStepDegrees,
-         sample.cameraForwardStepDegrees);
-      state_.cameraMeasurementMaxOrthogonalityError = std::max({
-         state_.cameraMeasurementMaxOrthogonalityError,
-         sample.rightUpAbsDot,
-         sample.upForwardAbsDot,
-         sample.forwardRightAbsDot });
-      state_.cameraMeasurementMaxLengthError = std::max({
-         state_.cameraMeasurementMaxLengthError,
-         std::abs(sample.rightLength - 1.0f),
-         std::abs(sample.upLength - 1.0f),
-         std::abs(sample.forwardLength - 1.0f) });
+      state_.cameraMeasurementMaxGravityUpStepDegrees =
+         std::max(state_.cameraMeasurementMaxGravityUpStepDegrees, sample.gravityUpStepDegrees);
+      state_.cameraMeasurementMaxUpStepDegrees =
+         std::max(state_.cameraMeasurementMaxUpStepDegrees, sample.cameraUpStepDegrees);
+      state_.cameraMeasurementMaxForwardStepDegrees =
+         std::max(state_.cameraMeasurementMaxForwardStepDegrees, sample.cameraForwardStepDegrees);
+      state_.cameraMeasurementMaxOrthogonalityError = std::max({state_.cameraMeasurementMaxOrthogonalityError,
+         sample.rightUpAbsDot, sample.upForwardAbsDot, sample.forwardRightAbsDot});
+      state_.cameraMeasurementMaxLengthError = std::max({state_.cameraMeasurementMaxLengthError,
+         std::abs(sample.rightLength - 1.0f), std::abs(sample.upLength - 1.0f), std::abs(sample.forwardLength - 1.0f)});
       if (sample.invalid) {
          ++state_.cameraMeasurementInvalidCount;
       }
@@ -433,8 +364,7 @@ void RearCameraMeasurementRecorder::RunFixedGravityUpVerification(const RearCame
       }
    }
 
-   state_.cameraMeasurementElapsedSeconds =
-      static_cast<float>(state_.cameraMeasurementSamples.size()) * fixedDeltaTime;
+   state_.cameraMeasurementElapsedSeconds = static_cast<float>(state_.cameraMeasurementSamples.size()) * fixedDeltaTime;
    state_.cameraMeasurementNextFrame = state_.cameraMeasurementSamples.size();
    SaveCameraMeasurementFiles(settings);
 }

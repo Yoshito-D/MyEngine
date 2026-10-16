@@ -21,19 +21,22 @@ using namespace GameEngine;
 namespace App {
 
 // ================================================================
-   // 公開設定
+// 公開設定
 // ================================================================
 
-void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput,
-								 bool isGrounded,
-								 const Vector3& gravityUp, float deltaTime) {
+void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput, bool isGrounded,
+   const Vector3& gravityUp, float deltaTime) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) { return; }
+   if (!transform) {
+      return;
+   }
 
    // 着地で開始するタイマーを同フレームに消費せず、地上とドリフトで同じ禁止状態を使う。
    // 空中でも時間を進め、ジャンプによって禁止時間が延びないようにする。
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
-   if (groundMover) { groundMover->AdvanceAccelerationBlock(deltaTime); }
+   if (groundMover) {
+      groundMover->AdvanceAccelerationBlock(deltaTime);
+   }
 
    // 現在フレームの回転クォータニオンを取得する。
    // 着地時の目標回転生成 (BuildAlignTargetRotation) と
@@ -47,8 +50,8 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    // この瞬間に OnLanded() を呼んでブーストや姿勢補正を開始する。
    // ----------------------------------------------------------------
    if (isGrounded && !wasGrounded_) {
-	  Logger::GameInfo("OnLanded");
-	  OnLanded(currentRotation, gravityUp);
+      Logger::GameInfo("OnLanded");
+      OnLanded(currentRotation, gravityUp);
    }
    wasGrounded_ = isGrounded;
 
@@ -57,42 +60,45 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    // 同一フレームで両方を動かすことはない（着地した瞬間から接地処理を使う）。
    // ----------------------------------------------------------------
    if (isGrounded) {
-	  auto* ground = GetOwner().GetComponent<VehicleGroundMover>();
-	  if (ground) {
-		 // ドリフト中はステアリング感度を driftSteerMult 倍にする。
-		 // これにより、ドリフト中に向きの細かい調整がしやすくなる。
-		 auto* drift = GetOwner().GetComponent<VehicleDrift>();
-		 const float effectiveSteer = drift ? drift->CalculateSteeringInput(steerInput) : steerInput;
+      auto* ground = GetOwner().GetComponent<VehicleGroundMover>();
+      if (ground) {
+         // ドリフト中はステアリング感度を driftSteerMult 倍にする。
+         // これにより、ドリフト中に向きの細かい調整がしやすくなる。
+         auto* drift = GetOwner().GetComponent<VehicleDrift>();
+         const float effectiveSteer = drift ? drift->CalculateSteeringInput(steerInput) : steerInput;
 
-		 ground->Apply(effectiveSteer, gravityUp, deltaTime);
-		 // lastMoveDirection_ は VehicleController::GetLastMoveDirection() 経由で
-		 // カメラ追従などに使われる。
-		 lastMoveDirection_ = ground->GetFlatForward();
-	  }
+         ground->Apply(effectiveSteer, gravityUp, deltaTime);
 
-	  // ドリフトコンポーネントへステア・ドリフト入力を転送する。
-	  // VehicleDrift は速度横滑りや状態管理を担当しており、
-	  // 毎フレーム Apply() を呼ぶことで内部タイマーが正しく動作する。
-	  auto* drift = GetOwner().GetComponent<VehicleDrift>();
-	  if (drift) {
-		 drift->Apply(driftInput, steerInput, gravityUp, deltaTime);
-	  }
+         // lastMoveDirection_ は VehicleController::GetLastMoveDirection() 経由で
+         // カメラ追従などに使われる。
+         lastMoveDirection_ = ground->GetFlatForward();
+      }
+
+      // ドリフトコンポーネントへステア・ドリフト入力を転送する。
+      // VehicleDrift は速度横滑りや状態管理を担当しており、
+      // 毎フレーム Apply() を呼ぶことで内部タイマーが正しく動作する。
+      auto* drift = GetOwner().GetComponent<VehicleDrift>();
+      if (drift) {
+         drift->Apply(driftInput, steerInput, gravityUp, deltaTime);
+      }
    } else {
-	  // 空中では地上操舵を使わず、専用の roll/pitch 入力だけを姿勢へ反映する。
-	  // ドリフトは接地中のみ有効なので空中では呼ばない。
-	  auto* air = GetOwner().GetComponent<VehicleAirController>();
-	  if (air) { air->Apply(rollInput, pitchInput, deltaTime); }
+      // 空中では地上操舵を使わず、専用の roll/pitch 入力だけを姿勢へ反映する。
+      // ドリフトは接地中のみ有効なので空中では呼ばない。
+      auto* air = GetOwner().GetComponent<VehicleAirController>();
+      if (air) {
+         air->Apply(rollInput, pitchInput, deltaTime);
+      }
    }
 }
 
 // ================================================================
-   // 内部設定
+// 内部設定
 // ================================================================
 
 void VehicleMover::OnLanded(const Quaternion& currentRotation, const Vector3& gravityUp) {
    // 着地時の localUp を一度だけ計算してブースト判定と姿勢補正で共用する。
    // RotateVector は Y 軸 (0,1,0) を現在のクォータニオンで回した「車の上方向」を返す。
-   Vector3 localUp = RotateVector({ 0.0f, 1.0f, 0.0f }, currentRotation);
+   Vector3 localUp = RotateVector({0.0f, 1.0f, 0.0f}, currentRotation);
    NotifyLandingBoost(localUp, gravityUp);
    ResetAirAngularVelocity();
    NotifyLandingAligner(currentRotation, gravityUp);
@@ -102,20 +108,25 @@ void VehicleMover::NotifyLandingBoost(const Vector3& localUp, const Vector3& gra
    // VehicleLandingBoost は Optional コンポーネントなので
    // アタッチされていないとき (nullptr) は何もしない。
    auto* boost = GetOwner().GetComponent<VehicleLandingBoost>();
-   if (boost) { boost->TryBoost(localUp, gravityUp); }
+   if (boost) {
+      boost->TryBoost(localUp, gravityUp);
+   }
 }
 
 void VehicleMover::ResetAirAngularVelocity() {
    // 空中で蓄積した roll/pitch 角速度を着地時にゼロに戻す。
    // リセットしないと着地後も慣性で回転し続けてしまう。
    auto* air = GetOwner().GetComponent<VehicleAirController>();
-   if (air) { air->ResetAngularVelocity(); }
+   if (air) {
+      air->ResetAngularVelocity();
+   }
 }
 
-void VehicleMover::NotifyLandingAligner(const Quaternion& currentRotation,
-										const Vector3& gravityUp) {
+void VehicleMover::NotifyLandingAligner(const Quaternion& currentRotation, const Vector3& gravityUp) {
    auto* aligner = GetOwner().GetComponent<VehicleLandingAligner>();
-   if (!aligner) { return; }
+   if (!aligner) {
+      return;
+   }
 
    // 目標回転（gravityUp に正立した姿勢）を生成してから
    // BeginAlign() で Slerp 補間を開始する。
@@ -125,67 +136,81 @@ void VehicleMover::NotifyLandingAligner(const Quaternion& currentRotation,
    aligner->BeginAlign(currentRotation, targetRot);
 }
 
-Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotation,
-												  const Vector3& gravityUp) const {
+Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotation, const Vector3& gravityUp) const {
    // ---- ステップ 1: 前方ベクトルを重力平面に投影する ----
    // 現在の回転から localForward（車の前方向）を取り出す。
-   Vector3 localForward = RotateVector({ 0.0f, 0.0f, 1.0f }, currentRotation);
+   Vector3 localForward = RotateVector({0.0f, 0.0f, 1.0f}, currentRotation);
 
    // gravityUp とほぼ平行な場合（真上・真下から着地）は投影長がゼロになるため
    // フォールバックとして別方向を使ってゼロ除算を避ける。
    Vector3 fwdFlat = localForward - gravityUp * gravityUp.Dot(localForward);
-   float   fwdLen  = fwdFlat.Length();
+   float fwdLen = fwdFlat.Length();
    if (fwdLen < 1e-4f) {
-	  Vector3 tmp = (std::abs(gravityUp.x) < 0.9f) ? Vector3{1,0,0} : Vector3{0,0,1};
-	  fwdFlat = tmp - gravityUp * gravityUp.Dot(tmp);
-	  fwdLen  = fwdFlat.Length();
+      Vector3 tmp = (std::abs(gravityUp.x) < 0.9f) ? Vector3{1, 0, 0} : Vector3{0, 0, 1};
+      fwdFlat = tmp - gravityUp * gravityUp.Dot(tmp);
+      fwdLen = fwdFlat.Length();
    }
    fwdFlat = fwdFlat * (1.0f / fwdLen);
 
    // ---- ステップ 2: 正規直交基底を構築する ----
    // right = gravityUp × fwdFlat（右方向）
    // fwdOut = right × gravityUp（再計算した前方。直交性を保証するため）
-   Vector3 right  = gravityUp.Cross(fwdFlat).Normalize();
+   Vector3 right = gravityUp.Cross(fwdFlat).Normalize();
    Vector3 fwdOut = right.Cross(gravityUp).Normalize();
 
    // ---- ステップ 3: 回転行列 → クォータニオン変換（Shepperd の方法）----
    // 列順: [right | gravityUp | fwdOut]
    // トレースの正負と最大対角成分に応じて 4 つの場合分けをするのは、
    // sqrt の引数が負にならないよう数値的に安定した分岐を選ぶため。
-   float m00=right.x, m10=right.y, m20=right.z;
-   float m01=gravityUp.x, m11=gravityUp.y, m21=gravityUp.z;
-   float m02=fwdOut.x,    m12=fwdOut.y,    m22=fwdOut.z;
+   float m00 = right.x, m10 = right.y, m20 = right.z;
+   float m01 = gravityUp.x, m11 = gravityUp.y, m21 = gravityUp.z;
+   float m02 = fwdOut.x, m12 = fwdOut.y, m22 = fwdOut.z;
    float trace = m00 + m11 + m22;
    Quaternion q;
    if (trace > 0.0f) {
-	  float s = 0.5f / std::sqrt(trace + 1.0f);
-	  q.w=(0.25f/s); q.x=(m21-m12)*s; q.y=(m02-m20)*s; q.z=(m10-m01)*s;
+      float s = 0.5f / std::sqrt(trace + 1.0f);
+      q.w = (0.25f / s);
+      q.x = (m21 - m12) * s;
+      q.y = (m02 - m20) * s;
+      q.z = (m10 - m01) * s;
    } else if (m00 > m11 && m00 > m22) {
-	  float s = 2.0f * std::sqrt(1.0f + m00 - m11 - m22);
-	  q.w=(m21-m12)/s; q.x=0.25f*s; q.y=(m01+m10)/s; q.z=(m02+m20)/s;
+      float s = 2.0f * std::sqrt(1.0f + m00 - m11 - m22);
+      q.w = (m21 - m12) / s;
+      q.x = 0.25f * s;
+      q.y = (m01 + m10) / s;
+      q.z = (m02 + m20) / s;
    } else if (m11 > m22) {
-	  float s = 2.0f * std::sqrt(1.0f + m11 - m00 - m22);
-	  q.w=(m02-m20)/s; q.x=(m01+m10)/s; q.y=0.25f*s; q.z=(m12+m21)/s;
+      float s = 2.0f * std::sqrt(1.0f + m11 - m00 - m22);
+      q.w = (m02 - m20) / s;
+      q.x = (m01 + m10) / s;
+      q.y = 0.25f * s;
+      q.z = (m12 + m21) / s;
    } else {
-	  float s = 2.0f * std::sqrt(1.0f + m22 - m00 - m11);
-	  q.w=(m10-m01)/s; q.x=(m02+m20)/s; q.y=(m12+m21)/s; q.z=0.25f*s;
+      float s = 2.0f * std::sqrt(1.0f + m22 - m00 - m11);
+      q.w = (m10 - m01) / s;
+      q.x = (m02 + m20) / s;
+      q.y = (m12 + m21) / s;
+      q.z = 0.25f * s;
    }
    return q.Normalize();
 }
 
 // ================================================================
-   // ImGui / シリアライズ
+// ImGui / シリアライズ
 // ================================================================
 
 #ifdef USE_IMGUI
 void VehicleMover::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) { return; }
+   if (!ImGui::CollapsingHeader(header.c_str())) {
+      return;
+   }
    ImGui::Separator();
-   ImGui::Text("%s", Tr("コーディネーター: サブコンポーネントへ処理を委譲します。", "Coordinator: delegates to sub-components."));
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("最後の移動方向", "Last Move Direction"),
-	  lastMoveDirection_.x, lastMoveDirection_.y, lastMoveDirection_.z);
+   ImGui::Text("%s",
+      Tr("コーディネーター: サブコンポーネントへ処理を委譲します。", "Coordinator: delegates to sub-components."));
+   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("最後の移動方向", "Last Move Direction"), lastMoveDirection_.x,
+      lastMoveDirection_.y, lastMoveDirection_.z);
    ImGui::Text("%s: %s", Tr("接地していた", "Was Grounded"), wasGrounded_ ? Tr("はい", "yes") : Tr("いいえ", "no"));
 }
 #endif

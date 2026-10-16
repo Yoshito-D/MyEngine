@@ -18,11 +18,11 @@ void OffscreenRenderTarget::Initialize(GraphicsDevice* device, uint32_t width, u
 
 void OffscreenRenderTarget::Resize(uint32_t width, uint32_t height) {
    if (!device_ || width == 0 || height == 0) {
-	  return;
+      return;
    }
 
    if (width_ == width && height_ == height) {
-	  return;
+      return;
    }
 
    const UINT currentSrvIndex = currentRenderTarget_.srvIndex;
@@ -43,7 +43,8 @@ void OffscreenRenderTarget::Resize(uint32_t width, uint32_t height) {
    currentRenderTarget_ = CreateRenderTargetInfo(0, currentSrvIndex);
    previousRenderTarget_ = CreateRenderTargetInfo(1, previousSrvIndex);
    sceneColorSnapshot_ = CreateSnapshotInfo(format_, format_, sceneColorSrvIndex);
-   sceneDepthSnapshot_ = CreateSnapshotInfo(DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, sceneDepthSrvIndex);
+   sceneDepthSnapshot_ =
+      CreateSnapshotInfo(DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, sceneDepthSrvIndex);
 }
 
 OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTargetInfo(int index, UINT srvIndex) {
@@ -69,10 +70,8 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
 
    // 初期状態をSRVにそろえることで、生成直後やSwapBuffers直後の面を入力として扱える。
    // 描画開始時だけPreDrawがRTVへ遷移させる。
-   HRESULT hr = device_->GetDevice()->CreateCommittedResource(
-	  &heapProps, D3D12_HEAP_FLAG_NONE, &texDesc,
-	  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &clearValue,
-	  IID_PPV_ARGS(&info.renderTarget));
+   HRESULT hr = device_->GetDevice()->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &texDesc,
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &clearValue, IID_PPV_ARGS(&info.renderTarget));
    assert(SUCCEEDED(hr));
 
    // RTV作成
@@ -80,23 +79,22 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
    UINT rtvDescriptorSize = device_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
    info.rtvHandle = rtvHeapStart;
+
    // 0,1番はスワップチェーン用としてGraphicsDeviceが所有する。
-   info.rtvHandle.ptr += rtvDescriptorSize * (2 + index);  // RTV heap内の位置（例：2,3番目）
+   info.rtvHandle.ptr += rtvDescriptorSize * (2 + index); // RTV heap内の位置（例：2,3番目）
 
    device_->GetDevice()->CreateRenderTargetView(info.renderTarget.Get(), nullptr, info.rtvHandle);
 
    // SRV作成
    const bool allocateSrvIndex = srvIndex == static_cast<UINT>(-1);
    if (allocateSrvIndex) {
-	  srvIndex = device_->GetNextSrvIndex();
+      srvIndex = device_->GetNextSrvIndex();
    }
    info.srvIndex = srvIndex;
    info.srvHandleCPU = CD3DX12_CPU_DESCRIPTOR_HANDLE(
-	  device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), srvIndex,
-	  device_->GetDescriptorSizeCBVSRVUAV());
+      device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), srvIndex, device_->GetDescriptorSizeCBVSRVUAV());
    info.srvHandleGPU = CD3DX12_GPU_DESCRIPTOR_HANDLE(
-	  device_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), srvIndex,
-	  device_->GetDescriptorSizeCBVSRVUAV());
+      device_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), srvIndex, device_->GetDescriptorSizeCBVSRVUAV());
 
    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -106,7 +104,7 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
 
    device_->GetDevice()->CreateShaderResourceView(info.renderTarget.Get(), &srvDesc, info.srvHandleCPU);
    if (allocateSrvIndex) {
-	  device_->IncrementSrvIndex();
+      device_->IncrementSrvIndex();
    }
 
    return info;
@@ -131,28 +129,19 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateSnapshotInf
 
    D3D12_HEAP_PROPERTIES heapProperties{};
    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-   const HRESULT result = device_->GetDevice()->CreateCommittedResource(
-	  &heapProperties,
-	  D3D12_HEAP_FLAG_NONE,
-	  &textureDesc,
-	  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-	  nullptr,
-	  IID_PPV_ARGS(&info.renderTarget));
+   const HRESULT result = device_->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
+      &textureDesc, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, nullptr, IID_PPV_ARGS(&info.renderTarget));
    assert(SUCCEEDED(result));
 
    const bool allocateSrvIndex = srvIndex == static_cast<UINT>(-1);
    if (allocateSrvIndex) {
-	  srvIndex = device_->GetNextSrvIndex();
+      srvIndex = device_->GetNextSrvIndex();
    }
    info.srvIndex = srvIndex;
    info.srvHandleCPU = CD3DX12_CPU_DESCRIPTOR_HANDLE(
-	  device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
-	  srvIndex,
-	  device_->GetDescriptorSizeCBVSRVUAV());
+      device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), srvIndex, device_->GetDescriptorSizeCBVSRVUAV());
    info.srvHandleGPU = CD3DX12_GPU_DESCRIPTOR_HANDLE(
-	  device_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
-	  srvIndex,
-	  device_->GetDescriptorSizeCBVSRVUAV());
+      device_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), srvIndex, device_->GetDescriptorSizeCBVSRVUAV());
 
    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -161,7 +150,7 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateSnapshotInf
    srvDesc.Texture2D.MipLevels = 1;
    device_->GetDevice()->CreateShaderResourceView(info.renderTarget.Get(), &srvDesc, info.srvHandleCPU);
    if (allocateSrvIndex) {
-	  device_->IncrementSrvIndex();
+      device_->IncrementSrvIndex();
    }
    info.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    return info;
@@ -174,60 +163,63 @@ void OffscreenRenderTarget::CaptureSceneTextures() {
 
 void OffscreenRenderTarget::CaptureSceneColor() {
    if (!device_ || !currentRenderTarget_.renderTarget || !sceneColorSnapshot_.renderTarget) {
-	  return;
+      return;
    }
 
    auto* commandList = device_->GetCommandList();
+
    // 呼び出し時点の描画状態を保存し、コピー後に同じ用途へ戻す。
    // 透明パス途中でも後続描画を継続できることが重要になる。
    const D3D12_RESOURCE_STATES previousColorState = currentRenderTarget_.state;
    if (previousColorState != D3D12_RESOURCE_STATE_COPY_SOURCE) {
-	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 currentRenderTarget_.renderTarget.Get(), previousColorState, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	  commandList->ResourceBarrier(1, &barrier);
+      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         currentRenderTarget_.renderTarget.Get(), previousColorState, D3D12_RESOURCE_STATE_COPY_SOURCE);
+      commandList->ResourceBarrier(1, &barrier);
    }
    {
-	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 sceneColorSnapshot_.renderTarget.Get(), sceneColorSnapshot_.state, D3D12_RESOURCE_STATE_COPY_DEST);
-	  commandList->ResourceBarrier(1, &barrier);
-	  sceneColorSnapshot_.state = D3D12_RESOURCE_STATE_COPY_DEST;
+      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         sceneColorSnapshot_.renderTarget.Get(), sceneColorSnapshot_.state, D3D12_RESOURCE_STATE_COPY_DEST);
+      commandList->ResourceBarrier(1, &barrier);
+      sceneColorSnapshot_.state = D3D12_RESOURCE_STATE_COPY_DEST;
    }
+
    // 同一サイズ・同一形式で作成しているため、サブリソース指定なしの全体コピーを使える。
    commandList->CopyResource(sceneColorSnapshot_.renderTarget.Get(), currentRenderTarget_.renderTarget.Get());
    {
-	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 sceneColorSnapshot_.renderTarget.Get(), sceneColorSnapshot_.state, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	  commandList->ResourceBarrier(1, &barrier);
-	  sceneColorSnapshot_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         sceneColorSnapshot_.renderTarget.Get(), sceneColorSnapshot_.state, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+      commandList->ResourceBarrier(1, &barrier);
+      sceneColorSnapshot_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    }
    if (previousColorState != D3D12_RESOURCE_STATE_COPY_SOURCE) {
-	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 currentRenderTarget_.renderTarget.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, previousColorState);
-	  commandList->ResourceBarrier(1, &barrier);
+      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         currentRenderTarget_.renderTarget.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, previousColorState);
+      commandList->ResourceBarrier(1, &barrier);
    }
 }
 
 void OffscreenRenderTarget::CaptureSceneDepth() {
    if (!device_ || !sceneDepthSnapshot_.renderTarget || !device_->GetDepthBufferResource()) {
-	  return;
+      return;
    }
 
    auto* commandList = device_->GetCommandList();
+
    // 深度本体は通常DSVとして使用中なので、コピー元へ遷移させた区間だけ描画を止める。
    // コピー先をSRVへ戻してから本体もDEPTH_WRITEへ復帰させる。
    device_->TransitionDepthStencilToCopySource();
    {
-	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 sceneDepthSnapshot_.renderTarget.Get(), sceneDepthSnapshot_.state, D3D12_RESOURCE_STATE_COPY_DEST);
-	  commandList->ResourceBarrier(1, &barrier);
-	  sceneDepthSnapshot_.state = D3D12_RESOURCE_STATE_COPY_DEST;
+      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         sceneDepthSnapshot_.renderTarget.Get(), sceneDepthSnapshot_.state, D3D12_RESOURCE_STATE_COPY_DEST);
+      commandList->ResourceBarrier(1, &barrier);
+      sceneDepthSnapshot_.state = D3D12_RESOURCE_STATE_COPY_DEST;
    }
    commandList->CopyResource(sceneDepthSnapshot_.renderTarget.Get(), device_->GetDepthBufferResource());
    {
-	  const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 sceneDepthSnapshot_.renderTarget.Get(), sceneDepthSnapshot_.state, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	  commandList->ResourceBarrier(1, &barrier);
-	  sceneDepthSnapshot_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         sceneDepthSnapshot_.renderTarget.Get(), sceneDepthSnapshot_.state, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+      commandList->ResourceBarrier(1, &barrier);
+      sceneDepthSnapshot_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    }
    device_->TransitionDepthStencilToWrite();
 }
@@ -237,25 +229,23 @@ void OffscreenRenderTarget::PreDraw(bool useDSV) {
 
    // ping-pongで直前まで入力だった面を、次のエフェクトの出力先へ切り替える。
    if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_RENDER_TARGET) {
-	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 currentRenderTarget_.renderTarget.Get(),
-		 currentRenderTarget_.state,
-		 D3D12_RESOURCE_STATE_RENDER_TARGET);
-	  commandList->ResourceBarrier(1, &barrier);
-	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
+      CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         currentRenderTarget_.renderTarget.Get(), currentRenderTarget_.state, D3D12_RESOURCE_STATE_RENDER_TARGET);
+      commandList->ResourceBarrier(1, &barrier);
+      currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
    }
 
    // シーン描画ではDSVもクリアするが、色だけを処理するポストエフェクトでは
    // 深度を束縛せず、別途保存した深度SRVとの競合を避ける。
    if (useDSV) {
-	  device_->TransitionDepthStencilToWrite();
-	  CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
-	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, &dsvHandle);
+      device_->TransitionDepthStencilToWrite();
+      CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
+      commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, &dsvHandle);
 
-	  // DSVクリア（重要：深度バッファを確実にクリア）
-	  commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+      // DSVクリア（重要：深度バッファを確実にクリア）
+      commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
    } else {
-	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, nullptr);
+      commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, nullptr);
    }
 
    // RTVクリア
@@ -269,7 +259,7 @@ void OffscreenRenderTarget::PreDraw(bool useDSV) {
    commandList->RSSetScissorRects(1, &scissorRect);
 
    // SRVヒープの設定
-   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = { device_->GetSRVHeap() };
+   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = {device_->GetSRVHeap()};
    commandList->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
 }
 
@@ -278,23 +268,21 @@ void OffscreenRenderTarget::PreDrawWithoutClear(bool useDSV) {
 
    // ポストプロセス済みの色へUI等を重ねる経路なので、RTV状態へ戻しても色は消去しない。
    if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_RENDER_TARGET) {
-	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 currentRenderTarget_.renderTarget.Get(),
-		 currentRenderTarget_.state,
-		 D3D12_RESOURCE_STATE_RENDER_TARGET);
-	  commandList->ResourceBarrier(1, &barrier);
-	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
+      CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         currentRenderTarget_.renderTarget.Get(), currentRenderTarget_.state, D3D12_RESOURCE_STATE_RENDER_TARGET);
+      commandList->ResourceBarrier(1, &barrier);
+      currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
    }
 
    if (useDSV) {
-	  device_->TransitionDepthStencilToWrite();
-	  CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
-	  commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+      device_->TransitionDepthStencilToWrite();
+      CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
+      commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	  // DSVクリア
-	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, &dsvHandle);
+      // DSVクリア
+      commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, &dsvHandle);
    } else {
-	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, nullptr);
+      commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, nullptr);
    }
 
    // ビューポートとシザー設定
@@ -305,14 +293,13 @@ void OffscreenRenderTarget::PreDrawWithoutClear(bool useDSV) {
    commandList->RSSetScissorRects(1, &scissorRect);
 
    // SRVヒープの設定
-   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = { device_->GetSRVHeap() };
+   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = {device_->GetSRVHeap()};
    commandList->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
 }
 
 void OffscreenRenderTarget::BindPreservingContents(bool useDSV) {
-   if (!device_ || !device_->GetCommandList() || !device_->GetSRVHeap() ||
-      !currentRenderTarget_.renderTarget || width_ == 0 || height_ == 0 ||
-      (useDSV && (!device_->GetDSVHeap() || !device_->GetDepthBufferResource()))) {
+   if (!device_ || !device_->GetCommandList() || !device_->GetSRVHeap() || !currentRenderTarget_.renderTarget ||
+       width_ == 0 || height_ == 0 || (useDSV && (!device_->GetDSVHeap() || !device_->GetDepthBufferResource()))) {
       Logger::Warning("[OffscreenRenderTarget] Cannot restore an uninitialized render target or depth buffer.");
       return;
    }
@@ -321,21 +308,19 @@ void OffscreenRenderTarget::BindPreservingContents(bool useDSV) {
    // マスク用RTVなどへの一時切替から戻り、既存のシーン色へ追加描画する。
    // SRV状態のままRTVとして束縛しないよう、追跡中の状態から書込み状態へ戻す。
    if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_RENDER_TARGET) {
-	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 currentRenderTarget_.renderTarget.Get(),
-		 currentRenderTarget_.state,
-		 D3D12_RESOURCE_STATE_RENDER_TARGET);
-	  commandList->ResourceBarrier(1, &barrier);
-	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
+      CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         currentRenderTarget_.renderTarget.Get(), currentRenderTarget_.state, D3D12_RESOURCE_STATE_RENDER_TARGET);
+      commandList->ResourceBarrier(1, &barrier);
+      currentRenderTarget_.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
    }
 
    // 影の深度EQUAL比較にはOpaquePassが書いた深度が必要。色・深度・ステンシルを消さず再束縛する。
    if (useDSV) {
-	  device_->TransitionDepthStencilToWrite();
-	  CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
-	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, &dsvHandle);
+      device_->TransitionDepthStencilToWrite();
+      CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(device_->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
+      commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, &dsvHandle);
    } else {
-	  commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, nullptr);
+      commandList->OMSetRenderTargets(1, &currentRenderTarget_.rtvHandle, FALSE, nullptr);
    }
 
    // 直前のパスが設定したマスク解像度を引き継がず、シーンの描画範囲へ戻す。
@@ -344,7 +329,7 @@ void OffscreenRenderTarget::BindPreservingContents(bool useDSV) {
    CD3DX12_RECT scissorRect(0, 0, static_cast<LONG>(width_), static_cast<LONG>(height_));
    commandList->RSSetScissorRects(1, &scissorRect);
 
-   ID3D12DescriptorHeap* descriptorHeaps[] = { device_->GetSRVHeap() };
+   ID3D12DescriptorHeap* descriptorHeaps[] = {device_->GetSRVHeap()};
    commandList->SetDescriptorHeaps(1, descriptorHeaps);
 }
 
@@ -353,12 +338,10 @@ void OffscreenRenderTarget::PostDraw() {
 
    // 次のポストエフェクトまたは最終合成がこの面を読むため、書き込み完了後にSRVへ戻す。
    if (currentRenderTarget_.state != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) {
-	  CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-		 currentRenderTarget_.renderTarget.Get(),
-		 currentRenderTarget_.state,
-		 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	  commandList->ResourceBarrier(1, &barrier);
-	  currentRenderTarget_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+      CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(currentRenderTarget_.renderTarget.Get(),
+         currentRenderTarget_.state, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+      commandList->ResourceBarrier(1, &barrier);
+      currentRenderTarget_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    }
 }
 }

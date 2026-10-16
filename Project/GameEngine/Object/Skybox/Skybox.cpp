@@ -14,20 +14,20 @@ std::string BuildDefaultSkyboxName(const std::vector<Skybox*>& registeredSkyboxe
    // エディター上で安定して識別できるよう、生存中の Skybox と衝突しない最小番号を選ぶ。
    // 削除済みの番号は再利用し、表示名が不必要に増え続けることを避ける。
    auto exists = [&registeredSkyboxes](const std::string& name) {
-	  for (const auto* skybox : registeredSkyboxes) {
-		 if (skybox && skybox->GetObjectName() == name) {
-			return true;
-		 }
-	  }
-	  return false;
+      for (const auto* skybox : registeredSkyboxes) {
+         if (skybox && skybox->GetObjectName() == name) {
+            return true;
+         }
+      }
+      return false;
    };
 
    uint32_t index = 1;
    while (true) {
-	  const std::string candidate = "Skybox_" + std::to_string(index++);
-	  if (!exists(candidate)) {
-		 return candidate;
-	  }
+      const std::string candidate = "Skybox_" + std::to_string(index++);
+      if (!exists(candidate)) {
+         return candidate;
+      }
    }
 }
 }
@@ -47,7 +47,7 @@ void Skybox::UnregisterSkybox(Skybox* skybox) {
    // 破棄済みポインターを静的一覧へ残さず、名前生成やエディター列挙から参照されないようにする。
    auto it = std::find(sRegisteredSkyboxes_.begin(), sRegisteredSkyboxes_.end(), skybox);
    if (it != sRegisteredSkyboxes_.end()) {
-	  sRegisteredSkyboxes_.erase(it);
+      sRegisteredSkyboxes_.erase(it);
    }
 }
 
@@ -62,6 +62,7 @@ void Skybox::Create(GraphicsDevice* device) {
 
    transformResource_ = ResourceHelper::CreateBufferResource(device->GetDevice(), sizeof(SkyboxTransformData));
    transformResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformData_));
+
    // 最初の UpdateTransform より前に参照されても未初期化値を GPU へ送らないよう、単位行列で初期化する。
    transformData_->wVP = MakeIdentity4x4();
    transformData_->world = MakeIdentity4x4();
@@ -91,7 +92,7 @@ void Skybox::SetColor(const Vector4& color) {
       skyboxComponent->SetColor(color);
    }
    if (materialData_) {
-	  materialData_->color = color;
+      materialData_->color = color;
    }
 }
 
@@ -111,11 +112,11 @@ void Skybox::UpdateTransform(const Matrix4x4& viewProjectionMatrix) {
       }
    }
    if (transformData_) {
-	  // VSシェーダーは wVP のみ使用する
-	  // Skybox 固有のローカル変換は持たず、呼び出し側で平行移動を除いたビュー射影行列を供給する。
-	  transformData_->wVP = viewProjectionMatrix;
-	  transformData_->world = MakeIdentity4x4();
-	  transformData_->worldInverseTranspose = MakeIdentity4x4();
+      // VSシェーダーは wVP のみ使用する
+      // Skybox 固有のローカル変換は持たず、呼び出し側で平行移動を除いたビュー射影行列を供給する。
+      transformData_->wVP = viewProjectionMatrix;
+      transformData_->world = MakeIdentity4x4();
+      transformData_->worldInverseTranspose = MakeIdentity4x4();
    }
 }
 

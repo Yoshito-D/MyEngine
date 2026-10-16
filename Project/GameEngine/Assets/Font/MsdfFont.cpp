@@ -17,17 +17,10 @@ uint64_t BuildKerningKey(uint32_t leftGlyph, uint32_t rightGlyph) {
    return (static_cast<uint64_t>(leftGlyph) << 32u) | rightGlyph;
 }
 
-bool ReadBounds(
-   const nlohmann::json& value,
-   float& left,
-   float& bottom,
-   float& right,
-   float& top) {
-   if (!value.is_object() ||
-      !value.contains("left") || !value.at("left").is_number() ||
-      !value.contains("bottom") || !value.at("bottom").is_number() ||
-      !value.contains("right") || !value.at("right").is_number() ||
-      !value.contains("top") || !value.at("top").is_number()) {
+bool ReadBounds(const nlohmann::json& value, float& left, float& bottom, float& right, float& top) {
+   if (!value.is_object() || !value.contains("left") || !value.at("left").is_number() || !value.contains("bottom") ||
+       !value.at("bottom").is_number() || !value.contains("right") || !value.at("right").is_number() ||
+       !value.contains("top") || !value.at("top").is_number()) {
       return false;
    }
 
@@ -64,9 +57,8 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
       return false;
    }
 
-   if (!root.contains("atlas") || !root.at("atlas").is_object() ||
-      !root.contains("metrics") || !root.at("metrics").is_object() ||
-      !root.contains("glyphs") || !root.at("glyphs").is_array()) {
+   if (!root.contains("atlas") || !root.at("atlas").is_object() || !root.contains("metrics") ||
+       !root.at("metrics").is_object() || !root.contains("glyphs") || !root.at("glyphs").is_array()) {
       Logger::Error("[MsdfFont] Required atlas, metrics, or glyphs section is missing.");
       return false;
    }
@@ -97,20 +89,13 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
       SourceGlyph glyph{};
       glyph.codePoint = glyphData.at("unicode").get<uint32_t>();
       glyph.advance = glyphData.value("advance", 0.0f);
+
       // 空白文字などは画像境界なしでもadvanceを保持し、レイアウト幅へ反映する。
       if (glyphData.contains("planeBounds") && glyphData.contains("atlasBounds")) {
-         glyph.hasImage = ReadBounds(
-            glyphData.at("planeBounds"),
-            glyph.planeLeft,
-            glyph.planeBottom,
-            glyph.planeRight,
-            glyph.planeTop) &&
-            ReadBounds(
-               glyphData.at("atlasBounds"),
-               glyph.atlasLeft,
-               glyph.atlasBottom,
-               glyph.atlasRight,
-               glyph.atlasTop);
+         glyph.hasImage = ReadBounds(glyphData.at("planeBounds"), glyph.planeLeft, glyph.planeBottom, glyph.planeRight,
+                             glyph.planeTop) &&
+                          ReadBounds(glyphData.at("atlasBounds"), glyph.atlasLeft, glyph.atlasBottom, glyph.atlasRight,
+                             glyph.atlasTop);
       }
       sourceGlyphs[glyph.codePoint] = glyph;
    }
@@ -123,14 +108,13 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
    if (root.contains("kerning") && root.at("kerning").is_array()) {
       // カーニングは任意節として扱い、未出力のアトラスでも等幅配置を継続できるようにする。
       for (const auto& kerningData : root.at("kerning")) {
-         if (!kerningData.is_object() ||
-            !kerningData.contains("unicode1") || !kerningData.at("unicode1").is_number_unsigned() ||
-            !kerningData.contains("unicode2") || !kerningData.at("unicode2").is_number_unsigned() ||
-            !kerningData.contains("advance") || !kerningData.at("advance").is_number()) {
+         if (!kerningData.is_object() || !kerningData.contains("unicode1") ||
+             !kerningData.at("unicode1").is_number_unsigned() || !kerningData.contains("unicode2") ||
+             !kerningData.at("unicode2").is_number_unsigned() || !kerningData.contains("advance") ||
+             !kerningData.at("advance").is_number()) {
             continue;
          }
-         kerningPairs[BuildKerningKey(
-            kerningData.at("unicode1").get<uint32_t>(),
+         kerningPairs[BuildKerningKey(kerningData.at("unicode1").get<uint32_t>(),
             kerningData.at("unicode2").get<uint32_t>())] = kerningData.at("advance").get<float>();
       }
    }
@@ -139,15 +123,10 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
    imagePath.replace_extension(".png");
    DirectX::ScratchImage image;
    const DirectX::WIC_FLAGS wicFlags = static_cast<DirectX::WIC_FLAGS>(
-      DirectX::WIC_FLAGS_FORCE_RGB |
-      DirectX::WIC_FLAGS_IGNORE_SRGB |
-      DirectX::WIC_FLAGS_FORCE_LINEAR);
+      DirectX::WIC_FLAGS_FORCE_RGB | DirectX::WIC_FLAGS_IGNORE_SRGB | DirectX::WIC_FLAGS_FORCE_LINEAR);
+
    // 距離値を色としてガンマ補正すると輪郭位置がずれるため、アトラスは必ず線形値で読み込む。
-   HRESULT result = DirectX::LoadFromWICFile(
-      imagePath.wstring().c_str(),
-      wicFlags,
-      nullptr,
-      image);
+   HRESULT result = DirectX::LoadFromWICFile(imagePath.wstring().c_str(), wicFlags, nullptr, image);
    if (FAILED(result)) {
       Logger::Error("[MsdfFont] Failed to load atlas PNG: " + imagePath.generic_string());
       return false;
@@ -156,14 +135,8 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
    if (image.GetMetadata().format != DXGI_FORMAT_R8G8B8A8_UNORM) {
       // シェーダーが想定する4チャンネル線形形式へ統一し、入力画像形式の差を描画側へ持ち込まない。
       DirectX::ScratchImage convertedImage;
-      result = DirectX::Convert(
-         image.GetImages(),
-         image.GetImageCount(),
-         image.GetMetadata(),
-         DXGI_FORMAT_R8G8B8A8_UNORM,
-         DirectX::TEX_FILTER_DEFAULT,
-         DirectX::TEX_THRESHOLD_DEFAULT,
-         convertedImage);
+      result = DirectX::Convert(image.GetImages(), image.GetImageCount(), image.GetMetadata(),
+         DXGI_FORMAT_R8G8B8A8_UNORM, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, convertedImage);
       if (FAILED(result)) {
          Logger::Error("[MsdfFont] Failed to convert atlas PNG to linear RGBA8.");
          return false;
@@ -183,11 +156,8 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
       Logger::Error("[MsdfFont] Failed to create the atlas texture.");
       return false;
    }
-   auto intermediateResource = ResourceHelper::UploadTextureData(
-      atlasTexture.Get(),
-      image,
-      device->GetDevice(),
-      device->GetCommandList());
+   auto intermediateResource =
+      ResourceHelper::UploadTextureData(atlasTexture.Get(), image, device->GetDevice(), device->GetCommandList());
    if (!intermediateResource) {
       Logger::Error("[MsdfFont] Failed to upload the atlas texture.");
       return false;
@@ -195,14 +165,10 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
 
    // SRV番号は全検証とアップロード準備後に確保し、失敗経路でヒープ枠を消費しない。
    const UINT descriptorIndex = device->GetNextSrvIndex();
-   const CD3DX12_CPU_DESCRIPTOR_HANDLE srvCpu(
-      device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
-      descriptorIndex,
-      device->GetDescriptorSizeCBVSRVUAV());
-   const CD3DX12_GPU_DESCRIPTOR_HANDLE srvGpu(
-      device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
-      descriptorIndex,
-      device->GetDescriptorSizeCBVSRVUAV());
+   const CD3DX12_CPU_DESCRIPTOR_HANDLE srvCpu(device->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(),
+      descriptorIndex, device->GetDescriptorSizeCBVSRVUAV());
+   const CD3DX12_GPU_DESCRIPTOR_HANDLE srvGpu(device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(),
+      descriptorIndex, device->GetDescriptorSizeCBVSRVUAV());
    D3D12_SHADER_RESOURCE_VIEW_DESC srvDescription{};
    srvDescription.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
    srvDescription.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -238,6 +204,7 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
    }
 
    const SourceGlyph* source = FindSourceGlyph(codePoint);
+
    // 未収録文字は置換文字、次にASCIIの疑問符へフォールバックして文字列全体の描画を継続する。
    if (!source) {
       source = FindSourceGlyph(0xFFFD);
@@ -250,6 +217,7 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
    }
 
    const uint64_t cacheKey = BuildGlyphCacheKey(pixelSize, source->codePoint);
+
    // 元データはem単位なので、同じサイズの繰り返しレイアウトでは拡大済み値を再利用する。
    if (const auto iterator = scaledGlyphs_.find(cacheKey); iterator != scaledGlyphs_.end()) {
       return &iterator->second;
@@ -257,25 +225,22 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
 
    const float scale = static_cast<float>(pixelSize);
    GlyphInfo glyph{};
+
    // msdf-atlas-genのplaneBoundsはem単位なので、要求ピクセルサイズを倍率として実寸へ変換する。
    glyph.advance = source->advance * scale;
    glyph.glyphIndex = source->codePoint;
    glyph.atlasSrv = atlasSrv_;
-   glyph.atlasSize = { static_cast<float>(atlasWidth_), static_cast<float>(atlasHeight_) };
+   glyph.atlasSize = {static_cast<float>(atlasWidth_), static_cast<float>(atlasHeight_)};
    glyph.distanceRange = distanceRange_;
    glyph.atlasType = atlasType_;
 
    if (source->hasImage) {
       glyph.bitmapSize = {
-         (source->planeRight - source->planeLeft) * scale,
-         (source->planeTop - source->planeBottom) * scale
-      };
-      glyph.bearing = {
-         source->planeLeft * scale,
-         source->planeTop * scale
-      };
+         (source->planeRight - source->planeLeft) * scale, (source->planeTop - source->planeBottom) * scale};
+      glyph.bearing = {source->planeLeft * scale, source->planeTop * scale};
       glyph.uvMin.x = source->atlasLeft / static_cast<float>(atlasWidth_);
       glyph.uvMax.x = source->atlasRight / static_cast<float>(atlasWidth_);
+
       // msdf-atlas-genのyOrigin設定をDirectXの上原点UVへ揃える。
       if (bottomOrigin_) {
          glyph.uvMin.y = (static_cast<float>(atlasHeight_) - source->atlasTop) / static_cast<float>(atlasHeight_);
@@ -293,11 +258,7 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
 
 FontMetrics MsdfFont::GetMetrics(uint32_t pixelSize) const {
    const float scale = static_cast<float>(pixelSize);
-   return {
-      ascender_ * scale,
-      descender_ * scale,
-      lineHeight_ * scale
-   };
+   return {ascender_ * scale, descender_ * scale, lineHeight_ * scale};
 }
 
 float MsdfFont::GetKerning(uint32_t leftGlyph, uint32_t rightGlyph, uint32_t pixelSize) const {

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameEngine/Math/VectorMath.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
 #include <algorithm>
@@ -9,16 +10,15 @@
 namespace GameEngine {
 namespace Easing {
 
-template<typename T>
+template <typename T>
 concept Interpolatable = requires(T a, T b, float t) {
    { b - a } -> std::convertible_to<T>;
-   { (b - a)* t } -> std::convertible_to<T>;
+   { (b - a) * t } -> std::convertible_to<T>;
    { a + ((b - a) * t) } -> std::convertible_to<T>;
 };
 
 /// @brief イージング関数の型
-template<typename T>
-using EasingFunc = std::function<T(const T&, const T&, float)>;
+template <typename T> using EasingFunc = std::function<T(const T&, const T&, float)>;
 
 // ===== 基本的な補間関数 =====
 
@@ -28,8 +28,7 @@ using EasingFunc = std::function<T(const T&, const T&, float)>;
 /// @param end 補間の終了値
 /// @param t 補間係数（通常0.0から1.0の範囲）
 /// @return startとendの間をtで線形補間した値
-template<Interpolatable T>
-constexpr T Lerp(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T Lerp(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    return static_cast<T>(start + (end - start) * t);
 }
@@ -44,24 +43,21 @@ Vector3 Slerp(const Vector3& start, const Vector3& end, float t);
 // ===== Sine系イージング =====
 
 /// @brief サインイーズイン
-template<Interpolatable T>
-constexpr T EaseInSine(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInSine(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = 1.0f - std::cos(t * MathConstants::kHalfPi);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief サインイーズアウト
-template<Interpolatable T>
-constexpr T EaseOutSine(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutSine(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = std::sin(t * MathConstants::kHalfPi);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief サインイーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutSine(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutSine(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = -(std::cos(MathConstants::kPi * t) - 1.0f) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
@@ -70,24 +66,21 @@ constexpr T EaseInOutSine(const T& start, const T& end, float t) {
 // ===== Quad系イージング（2乗） =====
 
 /// @brief 2次関数イーズイン
-template<Interpolatable T>
-constexpr T EaseInQuad(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInQuad(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t * t;
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 2次関数イーズアウト
-template<Interpolatable T>
-constexpr T EaseOutQuad(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutQuad(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = 1.0f - (1.0f - t) * (1.0f - t);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 2次関数イーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutQuad(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutQuad(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t < 0.5f ? 2.0f * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
@@ -96,24 +89,21 @@ constexpr T EaseInOutQuad(const T& start, const T& end, float t) {
 // ===== Cubic系イージング（3乗） =====
 
 /// @brief 3次関数イーズイン
-template<Interpolatable T>
-constexpr T EaseInCubic(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInCubic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t * t * t;
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 3次関数イーズアウト
-template<Interpolatable T>
-constexpr T EaseOutCubic(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutCubic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = 1.0f - std::pow(1.0f - t, 3.0f);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 3次関数イーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutCubic(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutCubic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t < 0.5f ? 4.0f * t * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 3.0f) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
@@ -122,24 +112,21 @@ constexpr T EaseInOutCubic(const T& start, const T& end, float t) {
 // ===== Quart系イージング（4乗） =====
 
 /// @brief 4次関数イーズイン
-template<Interpolatable T>
-constexpr T EaseInQuart(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInQuart(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t * t * t * t;
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 4次関数イーズアウト
-template<Interpolatable T>
-constexpr T EaseOutQuart(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutQuart(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = 1.0f - std::pow(1.0f - t, 4.0f);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 4次関数イーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutQuart(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutQuart(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t < 0.5f ? 8.0f * t * t * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 4.0f) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
@@ -148,24 +135,21 @@ constexpr T EaseInOutQuart(const T& start, const T& end, float t) {
 // ===== Quint系イージング（5乗） =====
 
 /// @brief 5次関数イーズイン
-template<Interpolatable T>
-constexpr T EaseInQuint(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInQuint(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t * t * t * t * t;
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 5次関数イーズアウト
-template<Interpolatable T>
-constexpr T EaseOutQuint(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutQuint(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = 1.0f - std::pow(1.0f - t, 5.0f);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 5次関数イーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutQuint(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutQuint(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t < 0.5f ? 16.0f * t * t * t * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 5.0f) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
@@ -174,24 +158,21 @@ constexpr T EaseInOutQuint(const T& start, const T& end, float t) {
 // ===== Expo系イージング（指数関数） =====
 
 /// @brief 指数関数イーズイン
-template<Interpolatable T>
-constexpr T EaseInExpo(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInExpo(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t == 0.0f ? 0.0f : std::pow(2.0f, 10.0f * t - 10.0f);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 指数関数イーズアウト
-template<Interpolatable T>
-constexpr T EaseOutExpo(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutExpo(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t == 1.0f ? 1.0f : 1.0f - std::pow(2.0f, -10.0f * t);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 指数関数イーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutExpo(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutExpo(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT;
    if (t == 0.0f) {
@@ -209,44 +190,38 @@ constexpr T EaseInOutExpo(const T& start, const T& end, float t) {
 // ===== Circ系イージング（円形） =====
 
 /// @brief 円形イーズイン
-template<Interpolatable T>
-constexpr T EaseInCirc(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInCirc(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = 1.0f - std::sqrt(1.0f - t * t);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 円形イーズアウト
-template<Interpolatable T>
-constexpr T EaseOutCirc(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutCirc(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = std::sqrt(1.0f - std::pow(t - 1.0f, 2.0f));
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief 円形イーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutCirc(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutCirc(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
-   float easedT = t < 0.5f
-      ? (1.0f - std::sqrt(1.0f - std::pow(2.0f * t, 2.0f))) / 2.0f
-      : (std::sqrt(1.0f - std::pow(-2.0f * t + 2.0f, 2.0f)) + 1.0f) / 2.0f;
+   float easedT = t < 0.5f ? (1.0f - std::sqrt(1.0f - std::pow(2.0f * t, 2.0f))) / 2.0f
+                           : (std::sqrt(1.0f - std::pow(-2.0f * t + 2.0f, 2.0f)) + 1.0f) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 // ===== Back系イージング（バックオーバーシュート） =====
 
 /// @brief バックイーズイン
-template<Interpolatable T>
-constexpr T EaseInBack(const T& start, const T& end, float t, float overshoot = 1.70158f) {
+template <Interpolatable T> constexpr T EaseInBack(const T& start, const T& end, float t, float overshoot = 1.70158f) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = (overshoot + 1.0f) * t * t * t - overshoot * t * t;
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief バックイーズアウト
-template<Interpolatable T>
-constexpr T EaseOutBack(T start, T end, float t, float overshoot = 1.70158f) {
+template <Interpolatable T> constexpr T EaseOutBack(T start, T end, float t, float overshoot = 1.70158f) {
    t = std::clamp(t, 0.0f, 1.0f);
    float x = t - 1.0f;
    float easedT = x * x * ((overshoot + 1.0f) * x + overshoot) + 1.0f;
@@ -254,7 +229,7 @@ constexpr T EaseOutBack(T start, T end, float t, float overshoot = 1.70158f) {
 }
 
 /// @brief バックイーズインアウト
-template<Interpolatable T>
+template <Interpolatable T>
 constexpr T EaseInOutBack(const T& start, const T& end, float t, float overshoot = 1.70158f) {
    t = std::clamp(t, 0.0f, 1.0f);
    float c2 = overshoot * 1.525f;
@@ -271,8 +246,7 @@ constexpr T EaseInOutBack(const T& start, const T& end, float t, float overshoot
 // ===== Elastic系イージング（弾性） =====
 
 /// @brief エラスティックイーズイン
-template<Interpolatable T>
-constexpr T EaseInElastic(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInElastic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    const float c4 = MathConstants::kTwoPi / 3.0f;
    float easedT;
@@ -287,8 +261,7 @@ constexpr T EaseInElastic(const T& start, const T& end, float t) {
 }
 
 /// @brief エラスティックイーズアウト
-template<Interpolatable T>
-constexpr T EaseOutElastic(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutElastic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    const float c4 = MathConstants::kTwoPi / 3.0f;
    float easedT;
@@ -303,8 +276,7 @@ constexpr T EaseOutElastic(const T& start, const T& end, float t) {
 }
 
 /// @brief エラスティックイーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutElastic(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutElastic(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    const float c5 = MathConstants::kTwoPi / 4.5f;
    float easedT;
@@ -326,7 +298,7 @@ constexpr T EaseInOutElastic(const T& start, const T& end, float t) {
 inline float BounceOut(float t) {
    const float n1 = 7.5625f;
    const float d1 = 2.75f;
-   
+
    if (t < 1.0f / d1) {
       return n1 * t * t;
    } else if (t < 2.0f / d1) {
@@ -342,28 +314,23 @@ inline float BounceOut(float t) {
 }
 
 /// @brief バウンスイーズイン
-template<Interpolatable T>
-constexpr T EaseInBounce(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInBounce(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = 1.0f - BounceOut(1.0f - t);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief バウンスイーズアウト
-template<Interpolatable T>
-constexpr T EaseOutBounce(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseOutBounce(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = BounceOut(t);
    return static_cast<T>(start + (end - start) * easedT);
 }
 
 /// @brief バウンスイーズインアウト
-template<Interpolatable T>
-constexpr T EaseInOutBounce(const T& start, const T& end, float t) {
+template <Interpolatable T> constexpr T EaseInOutBounce(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
-   float easedT = t < 0.5f
-      ? (1.0f - BounceOut(1.0f - 2.0f * t)) / 2.0f
-      : (1.0f + BounceOut(2.0f * t - 1.0f)) / 2.0f;
+   float easedT = t < 0.5f ? (1.0f - BounceOut(1.0f - 2.0f * t)) / 2.0f : (1.0f + BounceOut(2.0f * t - 1.0f)) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
 }
 
@@ -371,23 +338,21 @@ constexpr T EaseInOutBounce(const T& start, const T& end, float t) {
 
 /// @brief 開始値から終了値まで、指定したべき乗（power）でイーズイン・イーズアウト補間を行います
 /// @deprecated EaseInOutQuad, EaseInOutCubic などを使用してください
-template<Interpolatable T>
-constexpr T EaseInOut(T start, T end, float t, float power) {
+template <Interpolatable T> constexpr T EaseInOut(T start, T end, float t, float power) {
    t = std::clamp(t, 0.0f, 1.0f);
 
    if (t < 0.5f) {
-	  float scaledT = std::pow(t * 2.0f, power) * 0.5f;
-	  return static_cast<T>(start + (end - start) * scaledT);
+      float scaledT = std::pow(t * 2.0f, power) * 0.5f;
+      return static_cast<T>(start + (end - start) * scaledT);
    } else {
-	  float scaledT = 1.0f - std::pow((1.0f - t) * 2.0f, power) * 0.5f;
-	  return static_cast<T>(start + (end - start) * scaledT);
+      float scaledT = 1.0f - std::pow((1.0f - t) * 2.0f, power) * 0.5f;
+      return static_cast<T>(start + (end - start) * scaledT);
    }
 }
 
 /// @brief 開始値から終了値まで、指定したべき乗（power）でイーズアウト補間する
 /// @deprecated EaseOutQuad, EaseOutCubic などを使用してください
-template<Interpolatable T>
-constexpr T EaseOut(T start, T end, float t, float power) {
+template <Interpolatable T> constexpr T EaseOut(T start, T end, float t, float power) {
    t = std::clamp(t, 0.0f, 1.0f);
    float scaledT = 1.0f - std::pow(1.0f - t, power);
    return static_cast<T>(start + (end - start) * scaledT);
@@ -395,8 +360,7 @@ constexpr T EaseOut(T start, T end, float t, float power) {
 
 /// @brief 開始値から終了値まで、指定したべき乗（power）でイーズイン補間する
 /// @deprecated EaseInQuad, EaseInCubic などを使用してください
-template<Interpolatable T>
-constexpr T EaseIn(T start, T end, float t, float power) {
+template <Interpolatable T> constexpr T EaseIn(T start, T end, float t, float power) {
    t = std::clamp(t, 0.0f, 1.0f);
    float scaledT = std::pow(t, power);
    return static_cast<T>(start + (end - start) * scaledT);
@@ -413,18 +377,12 @@ constexpr T EaseIn(T start, T end, float t, float power) {
 /// @param secondEasing 後半で使用するイージング関数
 /// @param splitPoint 切り替え点（デフォルト0.5）
 /// @return 複合イージングで補間された値
-template<Interpolatable T>
-constexpr T CompoundEasing(
-   const T& start,
-   const T& end,
-   float t,
-   EasingFunc<T> firstEasing,
-   EasingFunc<T> secondEasing,
-   float splitPoint = 0.5f
-) {
+template <Interpolatable T>
+constexpr T CompoundEasing(const T& start, const T& end, float t, EasingFunc<T> firstEasing, EasingFunc<T> secondEasing,
+   float splitPoint = 0.5f) {
    t = std::clamp(t, 0.0f, 1.0f);
    splitPoint = std::clamp(splitPoint, 0.0f, 1.0f);
-   
+
    if (t < splitPoint) {
       // 前半: 0.0 ～ splitPoint を 0.0 ～ 1.0 にマッピング
       float normalizedT = t / splitPoint;

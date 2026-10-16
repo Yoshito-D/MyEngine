@@ -22,7 +22,7 @@
 // 実装ファイルで広く使用する C++ 標準ライブラリ。
 #include <cstdint>
 #include <cassert>
-#include <cstdlib>	
+#include <cstdlib>
 #include <vector>
 #include <string>
 #include <memory>

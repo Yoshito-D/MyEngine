@@ -3,7 +3,8 @@
 
 namespace GameEngine {
 
-AnimationAssetManager::AnimationHandle AnimationAssetManager::LoadAnimation(const std::string& animationPath, const std::string& animationName) {
+AnimationAssetManager::AnimationHandle AnimationAssetManager::LoadAnimation(
+   const std::string& animationPath, const std::string& animationName) {
    auto it = animationAssets_.find(animationName);
    if (it != animationAssets_.end()) {
       // 同名アニメーションは共有し、Assimp解析とキーフレーム保持を重複させない。
@@ -36,6 +37,7 @@ std::vector<std::string> AnimationAssetManager::GetAnimationNames() const {
       (void)animationAsset;
       names.push_back(name);
    }
+
    // unordered_mapの反復順を公開せず、エディタの選択肢を毎回同じ順序にする。
    std::sort(names.begin(), names.end());
    return names;

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <array>
 #include <chrono>
 #include <cstddef>
@@ -45,7 +46,8 @@ public:
    /// @param channel 出力チャンネル
    /// @param location 呼び出し元情報
    template <class Message>
-   static void Trace(const Message& message, LogChannel channel = LogChannel::Engine, std::source_location location = std::source_location::current()) {
+   static void Trace(const Message& message, LogChannel channel = LogChannel::Engine,
+      std::source_location location = std::source_location::current()) {
       WriteLogEntry(message, LogLevel::Trace, channel, location);
    }
 
@@ -54,7 +56,8 @@ public:
    /// @param channel 出力チャンネル
    /// @param location 呼び出し元情報
    template <class Message>
-   static void Debug(const Message& message, LogChannel channel = LogChannel::Engine, std::source_location location = std::source_location::current()) {
+   static void Debug(const Message& message, LogChannel channel = LogChannel::Engine,
+      std::source_location location = std::source_location::current()) {
       WriteLogEntry(message, LogLevel::Debug, channel, location);
    }
 
@@ -63,7 +66,8 @@ public:
    /// @param channel 出力チャンネル
    /// @param location 呼び出し元情報
    template <class Message>
-   static void Info(const Message& message, LogChannel channel = LogChannel::Engine, std::source_location location = std::source_location::current()) {
+   static void Info(const Message& message, LogChannel channel = LogChannel::Engine,
+      std::source_location location = std::source_location::current()) {
       WriteLogEntry(message, LogLevel::Info, channel, location);
    }
 
@@ -72,7 +76,8 @@ public:
    /// @param channel 出力チャンネル
    /// @param location 呼び出し元情報
    template <class Message>
-   static void Warning(const Message& message, LogChannel channel = LogChannel::Engine, std::source_location location = std::source_location::current()) {
+   static void Warning(const Message& message, LogChannel channel = LogChannel::Engine,
+      std::source_location location = std::source_location::current()) {
       WriteLogEntry(message, LogLevel::Warning, channel, location);
    }
 
@@ -81,7 +86,8 @@ public:
    /// @param channel 出力チャンネル
    /// @param location 呼び出し元情報
    template <class Message>
-   static void Error(const Message& message, LogChannel channel = LogChannel::Engine, std::source_location location = std::source_location::current()) {
+   static void Error(const Message& message, LogChannel channel = LogChannel::Engine,
+      std::source_location location = std::source_location::current()) {
       WriteLogEntry(message, LogLevel::Error, channel, location);
    }
 
@@ -90,7 +96,8 @@ public:
    /// @param channel 出力チャンネル
    /// @param location 呼び出し元情報
    template <class Message>
-   static void Critical(const Message& message, LogChannel channel = LogChannel::Engine, std::source_location location = std::source_location::current()) {
+   static void Critical(const Message& message, LogChannel channel = LogChannel::Engine,
+      std::source_location location = std::source_location::current()) {
       WriteLogEntry(message, LogLevel::Critical, channel, location);
    }
 
@@ -114,27 +121,31 @@ public:
    /// @param message メッセージ
    /// @param level ログレベル
    /// @param location 呼び出し元情報
-   void Log(const std::string& message, LogLevel level = LogLevel::Info, std::source_location location = std::source_location::current());
+   void Log(const std::string& message, LogLevel level = LogLevel::Info,
+      std::source_location location = std::source_location::current());
 
    /// @brief ログをログファイルに書き出す
    /// @param message メッセージ
    /// @param level ログレベル
    /// @param location 呼び出し元情報
-   void Log(const std::wstring& message, LogLevel level = LogLevel::Info, std::source_location location = std::source_location::current());
+   void Log(const std::wstring& message, LogLevel level = LogLevel::Info,
+      std::source_location location = std::source_location::current());
 
    /// @brief 指定チャンネルのログファイルにログを書き出す
    /// @param message メッセージ
    /// @param level ログレベル
    /// @param channel 出力チャンネル
    /// @param location 呼び出し元情報
-   void Log(const std::string& message, LogLevel level, LogChannel channel, std::source_location location = std::source_location::current());
+   void Log(const std::string& message, LogLevel level, LogChannel channel,
+      std::source_location location = std::source_location::current());
 
    /// @brief 指定チャンネルのログファイルにログを書き出す
    /// @param message メッセージ
    /// @param level ログレベル
    /// @param channel 出力チャンネル
    /// @param location 呼び出し元情報
-   void Log(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location = std::source_location::current());
+   void Log(const std::wstring& message, LogLevel level, LogChannel channel,
+      std::source_location location = std::source_location::current());
 
    // ↓ Utilityクラスなどをつくって移動させる //
 
@@ -161,20 +172,23 @@ private:
    std::filesystem::path currentLogDirectory_;
    std::mutex logMutex_;
    bool isInitialized_ = false;
+
 private:
    Logger() = default;
    ~Logger() = default;
    Logger(const Logger&) = delete;
    const Logger& operator=(const Logger&) = delete;
 
-   static void WriteLogEntry(const std::string& message, LogLevel level, LogChannel channel, std::source_location location);
-   static void WriteLogEntry(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location);
+   static void WriteLogEntry(
+      const std::string& message, LogLevel level, LogChannel channel, std::source_location location);
+   static void WriteLogEntry(
+      const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location);
 
    void InitializeInternal();
 
    /// @brief ファイルに書き出す
-   /// @param ファイル 
-   /// @param メッセージ 
+   /// @param ファイル
+   /// @param メッセージ
    void WriteToFile(std::ostream& os, const std::string& logMessage);
 
    void CloseStreams();
@@ -182,11 +196,12 @@ private:
    void WriteLog(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location);
    size_t GetLogChannelIndex(LogChannel channel) const;
    std::ofstream& GetLogChannelStream(LogChannel channel);
-   std::wstring FormatLogMessage(const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location);
+   std::wstring FormatLogMessage(
+      const std::wstring& message, LogLevel level, LogChannel channel, std::source_location location);
    std::string GetSourceLocationString(std::source_location location) const;
 
-   /// @brief ログレベルを文字列に変換 
-   /// @param ログレベル 
+   /// @brief ログレベルを文字列に変換
+   /// @param ログレベル
    /// @return ログレベル
    std::wstring GetLogLevelString(LogLevel level);
 

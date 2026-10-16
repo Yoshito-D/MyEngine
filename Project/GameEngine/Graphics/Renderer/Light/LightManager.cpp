@@ -20,15 +20,15 @@ namespace {
 using json = nlohmann::json;
 
 json SerializeVector2(const GameEngine::Vector2& value) {
-   return json::array({ value.x, value.y });
+   return json::array({value.x, value.y});
 }
 
 json SerializeVector3(const GameEngine::Vector3& value) {
-   return json::array({ value.x, value.y, value.z });
+   return json::array({value.x, value.y, value.z});
 }
 
 json SerializeVector4(const GameEngine::Vector4& value) {
-   return json::array({ value.x, value.y, value.z, value.w });
+   return json::array({value.x, value.y, value.z, value.w});
 }
 
 bool ReadFloat(const json& source, const char* key, float& destination) {
@@ -38,6 +38,7 @@ bool ReadFloat(const json& source, const char* key, float& destination) {
    }
    try {
       destination = it->get<float>();
+
       // JSONとして数値でもNaN/Infは行列・照明計算を伝播して画面全体を壊すため拒否する。
       return std::isfinite(destination);
    } catch (const json::exception&) {
@@ -47,8 +48,7 @@ bool ReadFloat(const json& source, const char* key, float& destination) {
 
 bool ReadVector2(const json& source, const char* key, GameEngine::Vector2& destination) {
    const auto it = source.find(key);
-   if (it == source.end() || !it->is_array() || it->size() != 2 ||
-      !(*it)[0].is_number() || !(*it)[1].is_number()) {
+   if (it == source.end() || !it->is_array() || it->size() != 2 || !(*it)[0].is_number() || !(*it)[1].is_number()) {
       return false;
    }
    try {
@@ -61,18 +61,13 @@ bool ReadVector2(const json& source, const char* key, GameEngine::Vector2& desti
 
 bool ReadVector3(const json& source, const char* key, GameEngine::Vector3& destination) {
    const auto it = source.find(key);
-   if (it == source.end() || !it->is_array() || it->size() != 3 ||
-      !(*it)[0].is_number() || !(*it)[1].is_number() || !(*it)[2].is_number()) {
+   if (it == source.end() || !it->is_array() || it->size() != 3 || !(*it)[0].is_number() || !(*it)[1].is_number() ||
+       !(*it)[2].is_number()) {
       return false;
    }
    try {
-      destination = GameEngine::Vector3(
-         (*it)[0].get<float>(),
-         (*it)[1].get<float>(),
-         (*it)[2].get<float>());
-      return std::isfinite(destination.x) &&
-         std::isfinite(destination.y) &&
-         std::isfinite(destination.z);
+      destination = GameEngine::Vector3((*it)[0].get<float>(), (*it)[1].get<float>(), (*it)[2].get<float>());
+      return std::isfinite(destination.x) && std::isfinite(destination.y) && std::isfinite(destination.z);
    } catch (const json::exception&) {
       return false;
    }
@@ -80,21 +75,15 @@ bool ReadVector3(const json& source, const char* key, GameEngine::Vector3& desti
 
 bool ReadVector4(const json& source, const char* key, GameEngine::Vector4& destination) {
    const auto it = source.find(key);
-   if (it == source.end() || !it->is_array() || it->size() != 4 ||
-      !(*it)[0].is_number() || !(*it)[1].is_number() ||
-      !(*it)[2].is_number() || !(*it)[3].is_number()) {
+   if (it == source.end() || !it->is_array() || it->size() != 4 || !(*it)[0].is_number() || !(*it)[1].is_number() ||
+       !(*it)[2].is_number() || !(*it)[3].is_number()) {
       return false;
    }
    try {
       destination = GameEngine::Vector4(
-         (*it)[0].get<float>(),
-         (*it)[1].get<float>(),
-         (*it)[2].get<float>(),
-         (*it)[3].get<float>());
-      return std::isfinite(destination.x) &&
-         std::isfinite(destination.y) &&
-         std::isfinite(destination.z) &&
-         std::isfinite(destination.w);
+         (*it)[0].get<float>(), (*it)[1].get<float>(), (*it)[2].get<float>(), (*it)[3].get<float>());
+      return std::isfinite(destination.x) && std::isfinite(destination.y) && std::isfinite(destination.z) &&
+             std::isfinite(destination.w);
    } catch (const json::exception&) {
       return false;
    }
@@ -122,7 +111,7 @@ struct AreaSceneLight {
 
 #ifdef USE_IMGUI
 const char* LocalizeEditorText(const char* japanese, const char* english) {
-   return GameEngine::ImGuiHelper::Localize({ japanese, english });
+   return GameEngine::ImGuiHelper::Localize({japanese, english});
 }
 
 std::string StableEditorLabel(const char* japanese, const char* english, const char* id) {
@@ -141,10 +130,11 @@ void LightManager::Initialize() {
 }
 
 //================================================================
-   // ディレクショナルライト
+// ディレクショナルライト
 //================================================================
 
-DirectionalLight* LightManager::CreateDirectionalLight(const std::string& name, unsigned int color, const Vector3& direction, float intensity) {
+DirectionalLight* LightManager::CreateDirectionalLight(
+   const std::string& name, unsigned int color, const Vector3& direction, float intensity) {
    auto light = std::make_unique<DirectionalLight>();
    light->Create(color, direction, intensity);
    auto* ptr = light.get();
@@ -178,10 +168,11 @@ std::vector<std::string> LightManager::GetDirectionalLightNames() const {
 }
 
 //================================================================
-   // ポイントライト
+// ポイントライト
 //================================================================
 
-PointLight* LightManager::CreatePointLight(const std::string& name, unsigned int color, const Vector3& position, float intensity, float radius, float decay) {
+PointLight* LightManager::CreatePointLight(
+   const std::string& name, unsigned int color, const Vector3& position, float intensity, float radius, float decay) {
    auto light = std::make_unique<PointLight>();
    light->Create(color, position, intensity, radius, decay);
    auto* ptr = light.get();
@@ -215,10 +206,11 @@ std::vector<std::string> LightManager::GetPointLightNames() const {
 }
 
 //================================================================
-   // スポットライト
+// スポットライト
 //================================================================
 
-SpotLight* LightManager::CreateSpotLight(const std::string& name, unsigned int color, const Vector3& position, float intensity, const Vector3& direction, float distance, float decay, float cosAngle, float cosFalloffStart) {
+SpotLight* LightManager::CreateSpotLight(const std::string& name, unsigned int color, const Vector3& position,
+   float intensity, const Vector3& direction, float distance, float decay, float cosAngle, float cosFalloffStart) {
    auto light = std::make_unique<SpotLight>();
    light->Create(color, position, intensity, direction, distance, decay, cosAngle, cosFalloffStart);
    auto* ptr = light.get();
@@ -252,10 +244,11 @@ std::vector<std::string> LightManager::GetSpotLightNames() const {
 }
 
 //================================================================
-   // エリアライト
+// エリアライト
 //================================================================
 
-AreaLight* LightManager::CreateAreaLight(const std::string& name, const Vector3& position, const Vector3& normal, const Vector3& tangent, const Vector2& size, const Vector3& color, float intensity) {
+AreaLight* LightManager::CreateAreaLight(const std::string& name, const Vector3& position, const Vector3& normal,
+   const Vector3& tangent, const Vector2& size, const Vector3& color, float intensity) {
    auto light = std::make_unique<AreaLight>();
    light->Create(position, normal, tangent, size, color, intensity);
    auto* ptr = light.get();
@@ -289,11 +282,12 @@ std::vector<std::string> LightManager::GetAreaLightNames() const {
 }
 
 //================================================================
-   // バッファーとデバッグ
+// バッファーとデバッグ
 //================================================================
 
 void LightManager::UpdateStructureBuffer() {
-   if (!lightDataBuffer_) return;
+   if (!lightDataBuffer_)
+      return;
 
    // ゲームオブジェクト側のライト構造体を、HLSL StructuredBufferと一致する
    // GPU専用レイアウトへ型別に詰め直す。明示paddingもここで初期化する。
@@ -372,64 +366,39 @@ nlohmann::json LightManager::SerializeSceneState() const {
          continue;
       }
       const auto& data = *light->GetDirectionalLightData();
-      lights.push_back({
-         { "id", id },
-         { "type", "directional" },
-         { "color", SerializeVector4(data.color) },
-         { "direction", SerializeVector3(data.direction) },
-         { "intensity", data.intensity }
-      });
+      lights.push_back({{"id", id}, {"type", "directional"}, {"color", SerializeVector4(data.color)},
+         {"direction", SerializeVector3(data.direction)}, {"intensity", data.intensity}});
    }
    for (const auto& [id, light] : pointLights_) {
       if (!light || !light->GetPointLightData()) {
          continue;
       }
       const auto& data = *light->GetPointLightData();
-      lights.push_back({
-         { "id", id },
-         { "type", "point" },
-         { "color", SerializeVector4(data.color) },
-         { "position", SerializeVector3(data.position) },
-         { "intensity", data.intensity },
-         { "radius", data.radius },
-         { "decay", data.decay }
-      });
+      lights.push_back({{"id", id}, {"type", "point"}, {"color", SerializeVector4(data.color)},
+         {"position", SerializeVector3(data.position)}, {"intensity", data.intensity}, {"radius", data.radius},
+         {"decay", data.decay}});
    }
    for (const auto& [id, light] : spotLights_) {
       if (!light || !light->GetSpotLightData()) {
          continue;
       }
       const auto& data = *light->GetSpotLightData();
-      lights.push_back({
-         { "id", id },
-         { "type", "spot" },
-         { "color", SerializeVector4(data.color) },
-         { "position", SerializeVector3(data.position) },
-         { "intensity", data.intensity },
-         { "direction", SerializeVector3(data.direction) },
-         { "distance", data.distance },
-         { "decay", data.decay },
-         { "cosAngle", data.cosAngle },
-         { "cosFalloffStart", data.cosFalloffStart }
-      });
+      lights.push_back({{"id", id}, {"type", "spot"}, {"color", SerializeVector4(data.color)},
+         {"position", SerializeVector3(data.position)}, {"intensity", data.intensity},
+         {"direction", SerializeVector3(data.direction)}, {"distance", data.distance}, {"decay", data.decay},
+         {"cosAngle", data.cosAngle}, {"cosFalloffStart", data.cosFalloffStart}});
    }
    for (const auto& [id, light] : areaLights_) {
       if (!light || !light->GetAreaLightData()) {
          continue;
       }
       const auto& data = *light->GetAreaLightData();
-      lights.push_back({
-         { "id", id },
-         { "type", "area" },
-         { "color", SerializeVector4(data.color) },
-         { "position", SerializeVector3(data.position) },
-         { "intensity", data.intensity },
-         { "normal", SerializeVector3(data.normal) },
-         { "tangent", SerializeVector3(data.tangent) },
-         { "size", SerializeVector2(Vector2(data.width, data.height)) }
-      });
+      lights.push_back({{"id", id}, {"type", "area"}, {"color", SerializeVector4(data.color)},
+         {"position", SerializeVector3(data.position)}, {"intensity", data.intensity},
+         {"normal", SerializeVector3(data.normal)}, {"tangent", SerializeVector3(data.tangent)},
+         {"size", SerializeVector2(Vector2(data.width, data.height))}});
    }
-   return nlohmann::json{ { "lights", std::move(lights) } };
+   return nlohmann::json{{"lights", std::move(lights)}};
 }
 
 bool LightManager::ApplySceneState(const nlohmann::json& state) {
@@ -458,12 +427,12 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
       }
       const auto idIt = entry.find("id");
       const auto typeIt = entry.find("type");
-      if (idIt == entry.end() || !idIt->is_string() ||
-         typeIt == entry.end() || !typeIt->is_string()) {
+      if (idIt == entry.end() || !idIt->is_string() || typeIt == entry.end() || !typeIt->is_string()) {
          return false;
       }
       const std::string id = idIt->get<std::string>();
       const std::string type = typeIt->get<std::string>();
+
       // idは型ごとの名前空間なので、異なるライト型では同名を許可する。
       if (id.empty() || !lightKeys.insert(type + ":" + id).second) {
          return false;
@@ -472,34 +441,29 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
       if (type == "directional") {
          DirectionalSceneLight light;
          light.id = id;
-         if (!ReadVector4(entry, "color", light.data.color) ||
-            !ReadVector3(entry, "direction", light.data.direction) ||
-            !ReadFloat(entry, "intensity", light.data.intensity)) {
+         if (!ReadVector4(entry, "color", light.data.color) || !ReadVector3(entry, "direction", light.data.direction) ||
+             !ReadFloat(entry, "intensity", light.data.intensity)) {
             return false;
          }
          directionalLights.push_back(std::move(light));
       } else if (type == "point") {
          PointSceneLight light;
          light.id = id;
-         if (!ReadVector4(entry, "color", light.data.color) ||
-            !ReadVector3(entry, "position", light.data.position) ||
-            !ReadFloat(entry, "intensity", light.data.intensity) ||
-            !ReadFloat(entry, "radius", light.data.radius) ||
-            !ReadFloat(entry, "decay", light.data.decay)) {
+         if (!ReadVector4(entry, "color", light.data.color) || !ReadVector3(entry, "position", light.data.position) ||
+             !ReadFloat(entry, "intensity", light.data.intensity) || !ReadFloat(entry, "radius", light.data.radius) ||
+             !ReadFloat(entry, "decay", light.data.decay)) {
             return false;
          }
          pointLights.push_back(std::move(light));
       } else if (type == "spot") {
          SpotSceneLight light;
          light.id = id;
-         if (!ReadVector4(entry, "color", light.data.color) ||
-            !ReadVector3(entry, "position", light.data.position) ||
-            !ReadFloat(entry, "intensity", light.data.intensity) ||
-            !ReadVector3(entry, "direction", light.data.direction) ||
-            !ReadFloat(entry, "distance", light.data.distance) ||
-            !ReadFloat(entry, "decay", light.data.decay) ||
-            !ReadFloat(entry, "cosAngle", light.data.cosAngle) ||
-            !ReadFloat(entry, "cosFalloffStart", light.data.cosFalloffStart)) {
+         if (!ReadVector4(entry, "color", light.data.color) || !ReadVector3(entry, "position", light.data.position) ||
+             !ReadFloat(entry, "intensity", light.data.intensity) ||
+             !ReadVector3(entry, "direction", light.data.direction) ||
+             !ReadFloat(entry, "distance", light.data.distance) || !ReadFloat(entry, "decay", light.data.decay) ||
+             !ReadFloat(entry, "cosAngle", light.data.cosAngle) ||
+             !ReadFloat(entry, "cosFalloffStart", light.data.cosFalloffStart)) {
             return false;
          }
          spotLights.push_back(std::move(light));
@@ -507,12 +471,9 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
          AreaSceneLight light;
          light.id = id;
          Vector2 size;
-         if (!ReadVector4(entry, "color", light.data.color) ||
-            !ReadVector3(entry, "position", light.data.position) ||
-            !ReadFloat(entry, "intensity", light.data.intensity) ||
-            !ReadVector3(entry, "normal", light.data.normal) ||
-            !ReadVector3(entry, "tangent", light.data.tangent) ||
-            !ReadVector2(entry, "size", size)) {
+         if (!ReadVector4(entry, "color", light.data.color) || !ReadVector3(entry, "position", light.data.position) ||
+             !ReadFloat(entry, "intensity", light.data.intensity) || !ReadVector3(entry, "normal", light.data.normal) ||
+             !ReadVector3(entry, "tangent", light.data.tangent) || !ReadVector2(entry, "size", size)) {
             return false;
          }
          light.data.width = size.x;
@@ -525,8 +486,7 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
       }
    }
 
-   if (directionalLights.size() > 1 || pointLights.size() > 32 ||
-      spotLights.size() > 32 || areaLights.size() > 16) {
+   if (directionalLights.size() > 1 || pointLights.size() > 32 || spotLights.size() > 32 || areaLights.size() > 16) {
       // LightDataBufferの固定容量を越えるデータは切り捨てず、保存内容と描画結果の不一致を防ぐため拒否する。
       return false;
    }
@@ -557,6 +517,7 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
          light->ApplyIllumination(source.data);
       }
    }
+
    // 復元直後のフレームからGPU側の件数と内容を一致させる。
    UpdateStructureBuffer();
    return true;
@@ -564,19 +525,20 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
 
 bool LightManager::DebugDraw() {
 #ifdef USE_IMGUI
-   bool visible = EngineContext::GetEditorWindowVisibility("LightManager", { "ライト", "Light Manager" });
-   if (!visible) return false;
+   bool visible = EngineContext::GetEditorWindowVisibility("LightManager", {"ライト", "Light Manager"});
+   if (!visible)
+      return false;
    const nlohmann::json stateBeforeEditing = SerializeSceneState();
    const std::string windowLabel = StableEditorLabel("ライト", "Light Manager", "LightManager");
    const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
    EngineContext::SetEditorWindowVisibility("LightManager", visible);
    if (drawContents) {
       // ディレクショナルライト
-      const std::string directionalLabel = StableEditorLabel(
-         "ディレクショナルライト", "Directional Light", "DirectionalLightSection");
+      const std::string directionalLabel =
+         StableEditorLabel("ディレクショナルライト", "Directional Light", "DirectionalLightSection");
       if (ImGui::TreeNode(directionalLabel.c_str())) {
          if (directionalLights_.empty() &&
-            ImGui::Button(LocalizeEditorText("ディレクショナルライトを追加", "Add Directional Light"))) {
+             ImGui::Button(LocalizeEditorText("ディレクショナルライトを追加", "Add Directional Light"))) {
             CreateDirectionalLight("DirectionalLight");
          }
 
@@ -595,39 +557,36 @@ bool LightManager::DebugDraw() {
                if (ImGui::Button(LocalizeEditorText("削除", "Remove"))) {
                   toRemove.push_back(pair.first);
                }
-               
+
                pair.second->ApplyIllumination(edited);
                ImGui::TreePop();
             }
             ImGui::PopID();
          }
-         
+
          for (const auto& name : toRemove) {
             RemoveDirectionalLight(name);
          }
-         
+
          ImGui::TreePop();
       }
 
       // ポイントライト
-      const std::string pointLabel = StableEditorLabel(
-         "ポイントライト", "Point Lights", "PointLightSection");
+      const std::string pointLabel = StableEditorLabel("ポイントライト", "Point Lights", "PointLightSection");
       if (ImGui::TreeNode(pointLabel.c_str())) {
          static char newPointLightName[128] = "";
-         const std::string pointNameLabel = StableEditorLabel(
-            "新規名", "New Name", "PointLightName");
+         const std::string pointNameLabel = StableEditorLabel("新規名", "New Name", "PointLightName");
          ImGui::InputText(pointNameLabel.c_str(), newPointLightName, sizeof(newPointLightName));
          ImGui::SameLine();
-         const std::string addPointLabel = StableEditorLabel(
-            "追加", "Add", "AddPointLight");
+         const std::string addPointLabel = StableEditorLabel("追加", "Add", "AddPointLight");
          if (ImGui::Button(addPointLabel.c_str())) {
             if (strlen(newPointLightName) > 0) {
                CreatePointLight(newPointLightName);
                newPointLightName[0] = '\0';
             }
          }
-         
-          ImGui::Separator();
+
+         ImGui::Separator();
 
          std::vector<std::string> toRemove;
          for (auto& pair : pointLights_) {
@@ -640,43 +599,40 @@ bool LightManager::DebugDraw() {
                ImGui::DragFloat(LocalizeEditorText("強度", "Intensity"), &data->intensity, 0.01f);
                ImGui::DragFloat(LocalizeEditorText("半径", "Radius"), &data->radius, 0.1f);
                ImGui::DragFloat(LocalizeEditorText("減衰", "Decay"), &data->decay, 0.01f);
-               
+
                if (ImGui::Button(LocalizeEditorText("削除", "Remove"))) {
                   toRemove.push_back(pair.first);
                }
-               
+
                pair.second->ApplyIllumination(edited);
                ImGui::TreePop();
             }
             ImGui::PopID();
          }
-         
+
          for (const auto& name : toRemove) {
             RemovePointLight(name);
          }
-         
+
          ImGui::TreePop();
       }
 
       // スポットライト
-      const std::string spotLabel = StableEditorLabel(
-         "スポットライト", "Spot Lights", "SpotLightSection");
+      const std::string spotLabel = StableEditorLabel("スポットライト", "Spot Lights", "SpotLightSection");
       if (ImGui::TreeNode(spotLabel.c_str())) {
          static char newSpotLightName[128] = "";
-         const std::string spotNameLabel = StableEditorLabel(
-            "新規名", "New Name", "SpotLightName");
+         const std::string spotNameLabel = StableEditorLabel("新規名", "New Name", "SpotLightName");
          ImGui::InputText(spotNameLabel.c_str(), newSpotLightName, sizeof(newSpotLightName));
          ImGui::SameLine();
-         const std::string addSpotLabel = StableEditorLabel(
-            "追加", "Add", "AddSpotLight");
+         const std::string addSpotLabel = StableEditorLabel("追加", "Add", "AddSpotLight");
          if (ImGui::Button(addSpotLabel.c_str())) {
             if (strlen(newSpotLightName) > 0) {
                CreateSpotLight(newSpotLightName);
                newSpotLightName[0] = '\0';
             }
          }
-         
-          ImGui::Separator();
+
+         ImGui::Separator();
 
          std::vector<std::string> toRemove;
          for (auto& pair : spotLights_) {
@@ -693,53 +649,51 @@ bool LightManager::DebugDraw() {
                ImGui::DragFloat(LocalizeEditorText("距離", "Distance"), &data->distance, 0.1f);
                ImGui::DragFloat(LocalizeEditorText("減衰", "Decay"), &data->decay, 0.01f);
                float angleDegrees = ImGuiHelper::RadiansToDegrees(std::acos(std::clamp(data->cosAngle, -1.0f, 1.0f)));
-               if (ImGui::DragFloat(LocalizeEditorText("角度 (度)", "Angle (deg)"), &angleDegrees, 0.1f, 0.0f, 180.0f)) {
+               if (ImGui::DragFloat(
+                      LocalizeEditorText("角度 (度)", "Angle (deg)"), &angleDegrees, 0.1f, 0.0f, 180.0f)) {
                   data->cosAngle = std::cos(ImGuiHelper::DegreesToRadians(angleDegrees));
                }
 
-               float falloffStartDegrees = ImGuiHelper::RadiansToDegrees(std::acos(std::clamp(data->cosFalloffStart, -1.0f, 1.0f)));
-               if (ImGui::DragFloat(
-                  LocalizeEditorText("減衰開始角度 (度)", "Falloff Start (deg)"),
-                  &falloffStartDegrees, 0.1f, 0.0f, 180.0f)) {
+               float falloffStartDegrees =
+                  ImGuiHelper::RadiansToDegrees(std::acos(std::clamp(data->cosFalloffStart, -1.0f, 1.0f)));
+               if (ImGui::DragFloat(LocalizeEditorText("減衰開始角度 (度)", "Falloff Start (deg)"),
+                      &falloffStartDegrees, 0.1f, 0.0f, 180.0f)) {
                   data->cosFalloffStart = std::cos(ImGuiHelper::DegreesToRadians(falloffStartDegrees));
                }
-               
+
                if (ImGui::Button(LocalizeEditorText("削除", "Remove"))) {
                   toRemove.push_back(pair.first);
                }
-               
+
                pair.second->ApplyIllumination(edited);
                ImGui::TreePop();
             }
             ImGui::PopID();
          }
-         
+
          for (const auto& name : toRemove) {
             RemoveSpotLight(name);
          }
-         
+
          ImGui::TreePop();
       }
 
       // エリアライト
-      const std::string areaLabel = StableEditorLabel(
-         "エリアライト", "Area Lights", "AreaLightSection");
+      const std::string areaLabel = StableEditorLabel("エリアライト", "Area Lights", "AreaLightSection");
       if (ImGui::TreeNode(areaLabel.c_str())) {
          static char newAreaLightName[128] = "";
-         const std::string areaNameLabel = StableEditorLabel(
-            "新規名", "New Name", "AreaLightName");
+         const std::string areaNameLabel = StableEditorLabel("新規名", "New Name", "AreaLightName");
          ImGui::InputText(areaNameLabel.c_str(), newAreaLightName, sizeof(newAreaLightName));
          ImGui::SameLine();
-         const std::string addAreaLabel = StableEditorLabel(
-            "追加", "Add", "AddAreaLight");
+         const std::string addAreaLabel = StableEditorLabel("追加", "Add", "AddAreaLight");
          if (ImGui::Button(addAreaLabel.c_str())) {
             if (strlen(newAreaLightName) > 0) {
                CreateAreaLight(newAreaLightName);
                newAreaLightName[0] = '\0';
             }
          }
-         
-          ImGui::Separator();
+
+         ImGui::Separator();
 
          std::vector<std::string> toRemove;
          for (auto& pair : areaLights_) {
@@ -758,21 +712,21 @@ bool LightManager::DebugDraw() {
                   data->tangent = Normalize(data->tangent);
                }
                ImGui::DragFloat(LocalizeEditorText("高さ", "Height"), &data->height, 0.1f);
-               
+
                if (ImGui::Button(LocalizeEditorText("削除", "Remove"))) {
                   toRemove.push_back(pair.first);
                }
-               
+
                pair.second->ApplyIllumination(edited);
                ImGui::TreePop();
             }
             ImGui::PopID();
          }
-         
+
          for (const auto& name : toRemove) {
             RemoveAreaLight(name);
          }
-         
+
          ImGui::TreePop();
       }
    }

@@ -23,7 +23,8 @@ enum class LandingResult {
 class VehicleLandingBoost final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "VehicleLandingBoost";
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{ "車両着地ブースト", "Vehicle Landing Boost" };
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両着地ブースト", "Vehicle Landing Boost"};
+
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
    const char* GetTypeName() const override { return kTypeName; }
 
@@ -31,19 +32,20 @@ public:
    /// @param localUp   着地瞬間の車体上方ベクトル
    /// @param gravityUp 現在の重力Up方向
    /// @return 着地判定結果
-   LandingResult TryBoost(const GameEngine::Vector3& localUp,
-						  const GameEngine::Vector3& gravityUp);
+   LandingResult TryBoost(const GameEngine::Vector3& localUp, const GameEngine::Vector3& gravityUp);
 
    /// @brief 直近の着地判定結果を取得する
    LandingResult GetLastLandingResult() const { return lastLandingResult_; }
 
 #ifdef USE_IMGUI
+
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
 #endif
 
    /// @copydoc GameEngine::IObjectComponent::Serialize
    nlohmann::json Serialize() const override;
+
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
@@ -55,7 +57,7 @@ private:
    float boostThreshold = 0.95f;
 
    /// @brief 普通と失敗の境界となる平行度の閾値
-   float normalThreshold =/* 0.65f*/0.0f;
+   float normalThreshold = /* 0.65f*/ 0.0f;
 
    /// @brief 失敗着地の速度
    float penaltySpeed = 0.0f;
