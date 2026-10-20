@@ -27,13 +27,13 @@ namespace App {
 void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput, bool isGrounded,
    const Vector3& gravityUp, float deltaTime) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    // 着地で開始するタイマーを同フレームに消費せず、地上とドリフトで同じ禁止状態を使う。
    // 空中でも時間を進め、ジャンプによって禁止時間が延びないようにする。
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
+
    if (groundMover) {
       groundMover->AdvanceAccelerationBlock(deltaTime);
    }
@@ -53,6 +53,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
       Logger::GameInfo("OnLanded");
       OnLanded(currentRotation, gravityUp);
    }
+
    wasGrounded_ = isGrounded;
 
    // ----------------------------------------------------------------
@@ -61,6 +62,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    // ----------------------------------------------------------------
    if (isGrounded) {
       auto* ground = GetOwner().GetComponent<VehicleGroundMover>();
+
       if (ground) {
          // ドリフト中はステアリング感度を driftSteerMult 倍にする。
          // これにより、ドリフト中に向きの細かい調整がしやすくなる。
@@ -78,6 +80,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
       // VehicleDrift は速度横滑りや状態管理を担当しており、
       // 毎フレーム Apply() を呼ぶことで内部タイマーが正しく動作する。
       auto* drift = GetOwner().GetComponent<VehicleDrift>();
+
       if (drift) {
          drift->Apply(driftInput, steerInput, gravityUp, deltaTime);
       }
@@ -85,6 +88,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
       // 空中では地上操舵を使わず、専用の roll/pitch 入力だけを姿勢へ反映する。
       // ドリフトは接地中のみ有効なので空中では呼ばない。
       auto* air = GetOwner().GetComponent<VehicleAirController>();
+
       if (air) {
          air->Apply(rollInput, pitchInput, deltaTime);
       }
@@ -108,6 +112,7 @@ void VehicleMover::NotifyLandingBoost(const Vector3& localUp, const Vector3& gra
    // VehicleLandingBoost は Optional コンポーネントなので
    // アタッチされていないとき (nullptr) は何もしない。
    auto* boost = GetOwner().GetComponent<VehicleLandingBoost>();
+
    if (boost) {
       boost->TryBoost(localUp, gravityUp);
    }
@@ -117,6 +122,7 @@ void VehicleMover::ResetAirAngularVelocity() {
    // 空中で蓄積した roll/pitch 角速度を着地時にゼロに戻す。
    // リセットしないと着地後も慣性で回転し続けてしまう。
    auto* air = GetOwner().GetComponent<VehicleAirController>();
+
    if (air) {
       air->ResetAngularVelocity();
    }
@@ -124,9 +130,8 @@ void VehicleMover::ResetAirAngularVelocity() {
 
 void VehicleMover::NotifyLandingAligner(const Quaternion& currentRotation, const Vector3& gravityUp) {
    auto* aligner = GetOwner().GetComponent<VehicleLandingAligner>();
-   if (!aligner) {
-      return;
-   }
+
+   if (!aligner) return;
 
    // 目標回転（gravityUp に正立した姿勢）を生成してから
    // BeginAlign() で Slerp 補間を開始する。
@@ -145,11 +150,13 @@ Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotat
    // フォールバックとして別方向を使ってゼロ除算を避ける。
    Vector3 fwdFlat = localForward - gravityUp * gravityUp.Dot(localForward);
    float fwdLen = fwdFlat.Length();
+
    if (fwdLen < 1e-4f) {
       Vector3 tmp = (std::abs(gravityUp.x) < 0.9f) ? Vector3{1, 0, 0} : Vector3{0, 0, 1};
       fwdFlat = tmp - gravityUp * gravityUp.Dot(tmp);
       fwdLen = fwdFlat.Length();
    }
+
    fwdFlat = fwdFlat * (1.0f / fwdLen);
 
    // ---- ステップ 2: 正規直交基底を構築する ----
@@ -167,6 +174,7 @@ Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotat
    float m02 = fwdOut.x, m12 = fwdOut.y, m22 = fwdOut.z;
    float trace = m00 + m11 + m22;
    Quaternion q;
+
    if (trace > 0.0f) {
       float s = 0.5f / std::sqrt(trace + 1.0f);
       q.w = (0.25f / s);
@@ -192,6 +200,7 @@ Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotat
       q.y = (m12 + m21) / s;
       q.z = 0.25f * s;
    }
+
    return q.Normalize();
 }
 
@@ -203,9 +212,9 @@ Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotat
 void VehicleMover::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::Text("%s",
       Tr("コーディネーター: サブコンポーネントへ処理を委譲します。", "Coordinator: delegates to sub-components."));

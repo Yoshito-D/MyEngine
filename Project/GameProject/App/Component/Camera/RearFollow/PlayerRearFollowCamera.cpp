@@ -14,96 +14,182 @@ const bool kRegistered = GameEngine::VirtualCamera::RegisterComponentFactory(
       if (auto* existing = camera.GetComponent<PlayerRearFollowCamera>()) {
          return existing;
       }
+
       return camera.AddComponent<PlayerRearFollowCamera>();
    });
 
 void PlayerRearFollowCamera::Configure(const RearCameraSettings& requested) {
    auto settings = requested;
    const RearCameraSettings defaults;
-   if (!std::isfinite(settings.distance))
+
+   if (!std::isfinite(settings.distance)) {
       settings.distance = defaults.distance;
-   if (!std::isfinite(settings.height))
+   }
+
+   if (!std::isfinite(settings.height)) {
       settings.height = defaults.height;
-   if (!std::isfinite(settings.groundedTargetHeight))
+   }
+
+   if (!std::isfinite(settings.groundedTargetHeight)) {
       settings.groundedTargetHeight = defaults.groundedTargetHeight;
-   if (!std::isfinite(settings.takeoffFramingBlendSeconds))
+   }
+
+   if (!std::isfinite(settings.takeoffFramingBlendSeconds)) {
       settings.takeoffFramingBlendSeconds = defaults.takeoffFramingBlendSeconds;
-   if (!std::isfinite(settings.landingFramingBlendSeconds))
+   }
+
+   if (!std::isfinite(settings.landingFramingBlendSeconds)) {
       settings.landingFramingBlendSeconds = defaults.landingFramingBlendSeconds;
-   if (!std::isfinite(settings.airborneDistanceOffset))
+   }
+
+   if (!std::isfinite(settings.airborneDistanceOffset)) {
       settings.airborneDistanceOffset = defaults.airborneDistanceOffset;
-   if (!std::isfinite(settings.airborneFovOffset))
+   }
+
+   if (!std::isfinite(settings.airborneFovOffset)) {
       settings.airborneFovOffset = defaults.airborneFovOffset;
-   if (!std::isfinite(settings.airbornePlanetDirectionBlend))
+   }
+
+   if (!std::isfinite(settings.airbornePlanetDirectionBlend)) {
       settings.airbornePlanetDirectionBlend = defaults.airbornePlanetDirectionBlend;
-   if (!std::isfinite(settings.airbornePlanetDirectionLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.airbornePlanetDirectionLerpSpeed)) {
       settings.airbornePlanetDirectionLerpSpeed = defaults.airbornePlanetDirectionLerpSpeed;
-   if (!std::isfinite(settings.jumpPlanetDirectionDelaySeconds))
+   }
+
+   if (!std::isfinite(settings.jumpPlanetDirectionDelaySeconds)) {
       settings.jumpPlanetDirectionDelaySeconds = defaults.jumpPlanetDirectionDelaySeconds;
-   if (!std::isfinite(settings.jumpPlanetDirectionRestoreSeconds))
+   }
+
+   if (!std::isfinite(settings.jumpPlanetDirectionRestoreSeconds)) {
       settings.jumpPlanetDirectionRestoreSeconds = defaults.jumpPlanetDirectionRestoreSeconds;
-   if (!std::isfinite(settings.airborneGravityDirectionBoostThreshold))
+   }
+
+   if (!std::isfinite(settings.airborneGravityDirectionBoostThreshold)) {
       settings.airborneGravityDirectionBoostThreshold = defaults.airborneGravityDirectionBoostThreshold;
-   if (!std::isfinite(settings.airborneGravityDirectionBoostFullThreshold))
+   }
+
+   if (!std::isfinite(settings.airborneGravityDirectionBoostFullThreshold)) {
       settings.airborneGravityDirectionBoostFullThreshold = defaults.airborneGravityDirectionBoostFullThreshold;
-   if (!std::isfinite(settings.airborneGravityDirectionBoostBias))
+   }
+
+   if (!std::isfinite(settings.airborneGravityDirectionBoostBias)) {
       settings.airborneGravityDirectionBoostBias = defaults.airborneGravityDirectionBoostBias;
-   if (!std::isfinite(settings.airborneBlendLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.airborneBlendLerpSpeed)) {
       settings.airborneBlendLerpSpeed = defaults.airborneBlendLerpSpeed;
-   if (!std::isfinite(settings.preLandingPredictionSeconds))
+   }
+
+   if (!std::isfinite(settings.preLandingPredictionSeconds)) {
       settings.preLandingPredictionSeconds = defaults.preLandingPredictionSeconds;
-   if (!std::isfinite(settings.preLandingFullBlendSeconds))
+   }
+
+   if (!std::isfinite(settings.preLandingFullBlendSeconds)) {
       settings.preLandingFullBlendSeconds = defaults.preLandingFullBlendSeconds;
-   if (!std::isfinite(settings.preLandingBlendLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.preLandingBlendLerpSpeed)) {
       settings.preLandingBlendLerpSpeed = defaults.preLandingBlendLerpSpeed;
-   if (!std::isfinite(settings.preLandingReleaseLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.preLandingReleaseLerpSpeed)) {
       settings.preLandingReleaseLerpSpeed = defaults.preLandingReleaseLerpSpeed;
-   if (!std::isfinite(settings.preLandingTerrainLookAhead))
+   }
+
+   if (!std::isfinite(settings.preLandingTerrainLookAhead)) {
       settings.preLandingTerrainLookAhead = defaults.preLandingTerrainLookAhead;
-   if (!std::isfinite(settings.preLandingTerrainLookBlend))
+   }
+
+   if (!std::isfinite(settings.preLandingTerrainLookBlend)) {
       settings.preLandingTerrainLookBlend = defaults.preLandingTerrainLookBlend;
-   if (!std::isfinite(settings.preLandingMinOutwardHeight))
+   }
+
+   if (!std::isfinite(settings.preLandingMinOutwardHeight)) {
       settings.preLandingMinOutwardHeight = defaults.preLandingMinOutwardHeight;
-   if (!std::isfinite(settings.airborneForwardLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.airborneForwardLerpSpeed)) {
       settings.airborneForwardLerpSpeed = defaults.airborneForwardLerpSpeed;
-   if (!std::isfinite(settings.rearLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.rearLerpSpeed)) {
       settings.rearLerpSpeed = defaults.rearLerpSpeed;
-   if (!std::isfinite(settings.landingRearLerpRampSeconds))
+   }
+
+   if (!std::isfinite(settings.landingRearLerpRampSeconds)) {
       settings.landingRearLerpRampSeconds = defaults.landingRearLerpRampSeconds;
-   if (!std::isfinite(settings.gravityUpLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.gravityUpLerpSpeed)) {
       settings.gravityUpLerpSpeed = defaults.gravityUpLerpSpeed;
-   if (!std::isfinite(settings.fovDefault))
+   }
+
+   if (!std::isfinite(settings.fovDefault)) {
       settings.fovDefault = defaults.fovDefault;
-   if (!std::isfinite(settings.fovBoostMax))
+   }
+
+   if (!std::isfinite(settings.fovBoostMax)) {
       settings.fovBoostMax = defaults.fovBoostMax;
-   if (!std::isfinite(settings.fovLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.fovLerpSpeed)) {
       settings.fovLerpSpeed = defaults.fovLerpSpeed;
-   if (!std::isfinite(settings.distanceBoostMax))
+   }
+
+   if (!std::isfinite(settings.distanceBoostMax)) {
       settings.distanceBoostMax = defaults.distanceBoostMax;
-   if (!std::isfinite(settings.springStiffness))
+   }
+
+   if (!std::isfinite(settings.springStiffness)) {
       settings.springStiffness = defaults.springStiffness;
-   if (!std::isfinite(settings.springDamping))
+   }
+
+   if (!std::isfinite(settings.springDamping)) {
       settings.springDamping = defaults.springDamping;
-   if (!std::isfinite(settings.speedChangeFovKickMax))
+   }
+
+   if (!std::isfinite(settings.speedChangeFovKickMax)) {
       settings.speedChangeFovKickMax = defaults.speedChangeFovKickMax;
-   if (!std::isfinite(settings.speedChangeDistanceKickMax))
+   }
+
+   if (!std::isfinite(settings.speedChangeDistanceKickMax)) {
       settings.speedChangeDistanceKickMax = defaults.speedChangeDistanceKickMax;
-   if (!std::isfinite(settings.speedBoostThreshold))
+   }
+
+   if (!std::isfinite(settings.speedBoostThreshold)) {
       settings.speedBoostThreshold = defaults.speedBoostThreshold;
-   if (!std::isfinite(settings.speedBoostMax))
+   }
+
+   if (!std::isfinite(settings.speedBoostMax)) {
       settings.speedBoostMax = defaults.speedBoostMax;
-   if (!std::isfinite(settings.positionLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.positionLerpSpeed)) {
       settings.positionLerpSpeed = defaults.positionLerpSpeed;
-   if (!std::isfinite(settings.eyeDirectionMaxAngularSpeed))
+   }
+
+   if (!std::isfinite(settings.eyeDirectionMaxAngularSpeed)) {
       settings.eyeDirectionMaxAngularSpeed = defaults.eyeDirectionMaxAngularSpeed;
-   if (!std::isfinite(settings.rotationLerpSpeed))
+   }
+
+   if (!std::isfinite(settings.rotationLerpSpeed)) {
       settings.rotationLerpSpeed = defaults.rotationLerpSpeed;
-   if (!std::isfinite(settings.lookAtRecoveryRange))
+   }
+
+   if (!std::isfinite(settings.lookAtRecoveryRange)) {
       settings.lookAtRecoveryRange = defaults.lookAtRecoveryRange;
-   if (!std::isfinite(settings.lookAtRecoveryCurveControl1))
+   }
+
+   if (!std::isfinite(settings.lookAtRecoveryCurveControl1)) {
       settings.lookAtRecoveryCurveControl1 = defaults.lookAtRecoveryCurveControl1;
-   if (!std::isfinite(settings.lookAtRecoveryCurveControl2))
+   }
+
+   if (!std::isfinite(settings.lookAtRecoveryCurveControl2)) {
       settings.lookAtRecoveryCurveControl2 = defaults.lookAtRecoveryCurveControl2;
+   }
+
    settings.distance = std::max(settings.distance, 0.0f);
    settings.fovDefault = std::clamp(settings.fovDefault, 0.017453292f, 3.12413936f);
    settings.speedBoostMax = std::max(settings.speedBoostThreshold + 0.001f, settings.speedBoostMax);
@@ -131,8 +217,10 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    input_.driftCameraHeightOffset = 0.0f;
    input_.driftLookTargetHeightOffset = 0.0f;
    input_.playerVelocity = {0.0f, 0.0f, 0.0f};
+
    if (auto* owner = GetOwnerCamera()) {
       owner->ResetComponents(*this);
+
       if (const auto* speed = owner->GetComponent<RearCameraSpeedEffects>()) {
          GameEngine::CameraState state = owner->GetState();
          state.fov = speed->GetState().currentFov;
@@ -152,28 +240,46 @@ void PlayerRearFollowCamera::SetLandingPrediction(const GameEngine::Vector3& up,
 
 void PlayerRearFollowCamera::OnAttach() {
    auto* owner = GetOwnerCamera();
-   if (!owner)
-      return;
+
+   if (!owner) return;
 
    // シーン内の従来の単一エントリを、その場で実際の独立コンポーネントへ展開する。
-   if (!owner->GetComponent<RearCameraTransition>())
+   if (!owner->GetComponent<RearCameraTransition>()) {
       owner->AddComponent<RearCameraTransition>();
-   if (!owner->GetComponent<RearCameraGravityUp>())
+   }
+
+   if (!owner->GetComponent<RearCameraGravityUp>()) {
       owner->AddComponent<RearCameraGravityUp>();
-   if (!owner->GetComponent<RearCameraPlanetGuide>())
+   }
+
+   if (!owner->GetComponent<RearCameraPlanetGuide>()) {
       owner->AddComponent<RearCameraPlanetGuide>();
-   if (!owner->GetComponent<RearCameraDirectionTracker>())
+   }
+
+   if (!owner->GetComponent<RearCameraDirectionTracker>()) {
       owner->AddComponent<RearCameraDirectionTracker>();
-   if (!owner->GetComponent<RearCameraSpeedEffects>())
+   }
+
+   if (!owner->GetComponent<RearCameraSpeedEffects>()) {
       owner->AddComponent<RearCameraSpeedEffects>();
-   if (!owner->GetComponent<RearCameraPositionSolver>())
+   }
+
+   if (!owner->GetComponent<RearCameraPositionSolver>()) {
       owner->AddComponent<RearCameraPositionSolver>();
-   if (!owner->GetComponent<RearCameraAimSolver>())
+   }
+
+   if (!owner->GetComponent<RearCameraAimSolver>()) {
       owner->AddComponent<RearCameraAimSolver>();
-   if (!owner->GetComponent<RearCameraMeasurementRecorder>())
+   }
+
+   if (!owner->GetComponent<RearCameraMeasurementRecorder>()) {
       owner->AddComponent<RearCameraMeasurementRecorder>();
-   if (!owner->GetComponent<RearCameraDebugView>())
+   }
+
+   if (!owner->GetComponent<RearCameraDebugView>()) {
       owner->AddComponent<RearCameraDebugView>();
+   }
+
    ResetRuntimeState();
 }
 
@@ -186,8 +292,10 @@ bool PlayerRearFollowCamera::HasRequiredComponents() const {
 }
 
 std::optional<RearCameraFrameView> PlayerRearFollowCamera::GetFrameView() const {
-   if (!HasRequiredComponents())
+   if (!HasRequiredComponents()) {
       return std::nullopt;
+   }
+
    const auto* owner = GetOwnerCamera();
    return RearCameraFrameView{input_, *owner->GetComponent<RearCameraTransition>(),
       *owner->GetComponent<RearCameraDirectionTracker>(), *owner->GetComponent<RearCameraPlanetGuide>(),
@@ -216,9 +324,11 @@ GameEngine::Vector3 PlayerRearFollowCamera::GetCameraForward() const {
 
 void PlayerRearFollowCamera::StartCameraMeasurement(const std::string& testName) {
    auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
+
    if (recorder) {
-      if (const auto frame = GetFrameView())
+      if (const auto frame = GetFrameView()) {
          recorder->StartCameraMeasurement(testName, *frame);
+      }
    }
 }
 
@@ -252,12 +362,17 @@ const std::string& PlayerRearFollowCamera::GetLastCameraMeasurementPath() const 
 #ifdef USE_IMGUI
 void PlayerRearFollowCamera::DrawInspector() {
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox("Enabled", &enabled))
+
+   if (ImGui::Checkbox("Enabled", &enabled)) {
       SetEnabled(enabled);
+   }
+
    ImGui::TextDisabled("Settings: RearCameraDebugView");
+
    if (!HasRequiredComponents()) {
       ImGui::TextDisabled("A required rear camera component is missing.");
    }
+
    Configure(DescribeSettings());
 }
 #endif
@@ -315,9 +430,7 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 }
 
 void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    distance = ReadFloat(data, "distance", distance);
    height = ReadFloat(data, "height", height);

@@ -50,6 +50,7 @@ public:
 
       const std::type_index type = std::type_index(typeid(T));
       auto it = typeIndex_.find(type);
+
       if (it != typeIndex_.end()) {
          return static_cast<T*>(it->second);
       }
@@ -68,9 +69,11 @@ public:
 
       const std::type_index type = std::type_index(typeid(T));
       auto it = typeIndex_.find(type);
+
       if (it == typeIndex_.end()) {
          return nullptr;
       }
+
       return static_cast<T*>(it->second);
    }
 

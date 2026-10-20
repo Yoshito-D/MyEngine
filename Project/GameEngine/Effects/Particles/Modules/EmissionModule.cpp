@@ -19,8 +19,11 @@ void EmissionModule::AddBurst(const Burst& burst) {
 
 void EmissionModule::ReplaceBurstSchedule(const std::vector<Burst>& bursts) {
    bursts_.clear();
-   for (auto burst : bursts)
+
+   for (auto burst : bursts) {
       bursts_.push_back(ValidateBurst(burst));
+   }
+
    ResetBurstStates();
 }
 
@@ -30,14 +33,20 @@ void EmissionModule::ResetBurstStates() {
 }
 
 uint32_t EmissionModule::AdvanceBursts(float time) {
-   if (!enabled_ || !std::isfinite(time))
+   if (!enabled_ || !std::isfinite(time)) {
       return 0;
+   }
+
    uint64_t count = 0;
+
    for (size_t i = 0; i < bursts_.size(); ++i) {
       const auto& burst = bursts_[i];
       auto& cursor = burstStates_[i];
-      if (cursor.nextFireTime < 0.0f)
+
+      if (cursor.nextFireTime < 0.0f) {
          cursor.nextFireTime = burst.time;
+      }
+
       const bool isInfinite = burst.cycles == 0;
 
       // 既存のfloat加算と発火順を維持し、カーソル更新だけを所有側へ移す。
@@ -47,6 +56,7 @@ uint32_t EmissionModule::AdvanceBursts(float time) {
          cursor.nextFireTime += burst.interval > 0.0f ? burst.interval : std::numeric_limits<float>::max();
       }
    }
+
    return static_cast<uint32_t>(count);
 }
 
@@ -58,6 +68,7 @@ nlohmann::json EmissionModule::ToJson() const {
    j["rateOverDistance"] = rateOverDistance_;
 
    auto& burstsArray = j["bursts"] = nlohmann::json::array();
+
    for (const auto& burst : bursts_) {
       burstsArray.push_back(
          {{"time", burst.time}, {"count", burst.count}, {"cycles", burst.cycles}, {"interval", burst.interval}});
@@ -67,15 +78,21 @@ nlohmann::json EmissionModule::ToJson() const {
 }
 
 void EmissionModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       enabled_ = j["enabled"];
-   if (j.contains("rateOverTime"))
+   }
+
+   if (j.contains("rateOverTime")) {
       SetRateOverTime(j["rateOverTime"]);
-   if (j.contains("rateOverDistance"))
+   }
+
+   if (j.contains("rateOverDistance")) {
       SetRateOverDistance(j["rateOverDistance"]);
+   }
 
    if (j.contains("bursts")) {
       ClearBursts();
+
       for (const auto& burstJson : j["bursts"]) {
          Burst burst;
          burst.time = burstJson["time"];

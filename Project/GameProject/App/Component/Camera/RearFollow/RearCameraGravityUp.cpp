@@ -9,8 +9,9 @@ using namespace RearCameraMath;
 
 void RearCameraGravityUp::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
    auto* camera = GetRearCamera();
-   if (!camera)
-      return;
+
+   if (!camera) return;
+
    const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
    const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
    auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
@@ -31,6 +32,7 @@ GameEngine::Vector3 RearCameraGravityUp::SmoothGravityUp(const RearCameraInput& 
    // 着地候補惑星へ接近している間は、接触前から予測着地法線へ基準Upを移す。
    // 惑星切替の確定を待つと接触フレームで目標Upが変わり、急なロールの原因になる。
    Vector3 targetUp = input.gravityUp;
+
    if (input.isAirborne && transition.currentPreLandingBlend > 1e-4f) {
       targetUp = BlendUnitDirectionSafely(
          targetUp, input.predictedLandingUp, transition.currentPreLandingBlend, targetUp, aim.cachedRight);
@@ -38,17 +40,21 @@ GameEngine::Vector3 RearCameraGravityUp::SmoothGravityUp(const RearCameraInput& 
 
    // 目標 up を正規化
    float targetLen = targetUp.Length();
-   if (targetLen < 1e-6f)
+
+   if (targetLen < 1e-6f) {
       targetUp = {0.0f, 1.0f, 0.0f};
-   else
+   } else {
       targetUp = targetUp * (1.0f / targetLen);
+   }
 
    // 現在 up も正規化（数値誤差が蓄積しないよう毎フレーム実施）
    float curLen = state_.currentGravityUp.Length();
-   if (curLen < 1e-6f)
+
+   if (curLen < 1e-6f) {
       state_.currentGravityUp = targetUp;
-   else
+   } else {
       state_.currentGravityUp = state_.currentGravityUp * (1.0f / curLen);
+   }
 
    // 回転前の Up を保存しておく（後でデルタ回転を算出するため）
    Vector3 oldUp = state_.currentGravityUp;
@@ -61,6 +67,7 @@ GameEngine::Vector3 RearCameraGravityUp::SmoothGravityUp(const RearCameraInput& 
    if (direction.IsEnabled()) {
       direction.TransportWithGravity(oldUp, state_.currentGravityUp);
    }
+
    return state_.currentGravityUp;
 }
 

@@ -8,12 +8,14 @@
 namespace App {
 
 void RearCameraComponent::OnCameraReset(const GameEngine::ICinemachineComponent& source) {
-   if (const auto* camera = dynamic_cast<const PlayerRearFollowCamera*>(&source))
+   if (const auto* camera = dynamic_cast<const PlayerRearFollowCamera*>(&source)) {
       Reset(camera->DescribeSettings());
+   }
 }
 
 void RearCameraComponent::OnAttach() {
    auto* owner = GetOwnerCamera();
+
    if (auto* camera = owner ? owner->GetComponent<PlayerRearFollowCamera>() : nullptr) {
       Reset(camera->DescribeSettings());
    }
@@ -35,8 +37,11 @@ PlayerRearFollowCamera* RearCameraComponent::GetRearCamera() {
 #ifdef USE_IMGUI
 void RearCameraComponent::DrawInspector() {
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox("Enabled", &enabled))
+
+   if (ImGui::Checkbox("Enabled", &enabled)) {
       SetEnabled(enabled);
+   }
+
    ImGui::Text("Execution order: %d", GetExecutionOrder());
 }
 #endif

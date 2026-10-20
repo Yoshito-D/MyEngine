@@ -19,19 +19,21 @@ void SoundManager::Initialize(Audio* audio) {
 
 void SoundManager::LoadSound(const std::string& filePath, const std::string& name) {
    // 既にロード済みの場合は何もしない
-   if (sounds_.find(name) != sounds_.end()) {
-      return;
-   }
+   if (sounds_.find(name) != sounds_.end()) return;
 
    // 新しいサウンドを作成
    auto sound = std::make_unique<Sound>();
 
    const auto legacyPath = Utf8Path(filePath);
    const auto first = legacyPath.begin();
+
    if (first != legacyPath.end() && (*first == L"Resources" || *first == L"resources")) {
       auto clip = GetClip(filePath);
-      if (!clip)
+
+      if (!clip) {
          throw std::runtime_error("Failed to load sound asset");
+      }
+
       sound->LoadClip(std::move(clip));
    } else {
       sound->Load(legacyPath.wstring());
@@ -43,9 +45,11 @@ void SoundManager::LoadSound(const std::string& filePath, const std::string& nam
 
 Sound* SoundManager::GetSound(const std::string& name) {
    auto it = sounds_.find(name);
+
    if (it != sounds_.end()) {
       return it->second.get();
    }
+
    return nullptr;
 }
 
@@ -56,23 +60,37 @@ void SoundManager::Clear() {
 }
 
 std::string SoundManager::NormalizeAssetId(const std::string& assetId) {
-   if (assetId.empty())
+   if (assetId.empty()) {
       return {};
+   }
+
    try {
       auto path = Utf8Path(assetId).lexically_normal();
-      if (path.is_absolute() || path.has_root_name())
+
+      if (path.is_absolute() || path.has_root_name()) {
          return {};
+      }
+
       auto first = path.begin();
-      if (first != path.end() && (*first == L"resources" || *first == L"Resources"))
+
+      if (first != path.end() && (*first == L"resources" || *first == L"Resources")) {
          ++first;
+      }
+
       std::filesystem::path relative;
+
       for (; first != path.end(); ++first) {
-         if (*first == L".." || *first == L".")
+         if (*first == L".." || *first == L".") {
             return {};
+         }
+
          relative /= *first;
       }
-      if (relative.empty())
+
+      if (relative.empty()) {
          return {};
+      }
+
       const auto normalized = relative.generic_u8string();
       std::string result(normalized.begin(), normalized.end());
 
@@ -88,16 +106,24 @@ std::string SoundManager::NormalizeAssetId(const std::string& assetId) {
 
 std::shared_ptr<const SoundClip> SoundManager::GetClip(const std::string& assetId) {
    const std::string id = NormalizeAssetId(assetId);
-   if (id.empty())
+
+   if (id.empty()) {
       return nullptr;
-   if (auto found = clips_.find(id); found != clips_.end())
+   }
+
+   if (auto found = clips_.find(id); found != clips_.end()) {
       return found->second;
+   }
+
    const auto path = std::filesystem::path(L"Resources") / Utf8Path(id);
    std::error_code pathError;
    const auto modified = std::filesystem::last_write_time(path, pathError);
    const std::optional<std::filesystem::file_time_type> stamp = pathError ? std::nullopt : std::optional(modified);
-   if (auto failed = failedClips_.find(id); failed != failedClips_.end() && failed->second == stamp)
+
+   if (auto failed = failedClips_.find(id); failed != failedClips_.end() && failed->second == stamp) {
       return nullptr;
+   }
+
    try {
       auto clip = SoundClip::Decode(path.wstring());
       clips_.emplace(id, clip);

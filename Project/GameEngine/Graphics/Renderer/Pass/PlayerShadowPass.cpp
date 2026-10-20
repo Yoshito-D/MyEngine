@@ -27,10 +27,12 @@ bool IsFinite(const Vector3& value) {
 bool IsFinite(const Matrix4x4& matrix) {
    for (const auto& row : matrix.m) {
       for (float value : row) {
-         if (!std::isfinite(value))
+         if (!std::isfinite(value)) {
             return false;
+         }
       }
    }
+
    return true;
 }
 
@@ -50,8 +52,8 @@ bool IsValidSettings(const PlayerShadowSettings& settings) {
 
 void TransitionResource(ID3D12GraphicsCommandList* commands, ID3D12Resource* resource, D3D12_RESOURCE_STATES& state,
    D3D12_RESOURCE_STATES nextState) {
-   if (state == nextState)
-      return;
+   if (state == nextState) return;
+
    D3D12_RESOURCE_BARRIER barrier{};
    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
    barrier.Transition.pResource = resource;
@@ -93,16 +95,23 @@ bool PlayerShadowPass::ReportFailure(const std::string& reason) {
       Logger::Warning("[PlayerShadowPass] " + reason);
       lastFailure_ = reason;
    }
+
    return false;
 }
 
 void PlayerShadowPass::ReleaseResources() {
-   if (maskConstantBuffer_ && mappedMaskConstants_)
+   if (maskConstantBuffer_ && mappedMaskConstants_) {
       maskConstantBuffer_->Unmap(0, nullptr);
-   if (projectConstantBuffer_ && mappedProjectConstants_)
+   }
+
+   if (projectConstantBuffer_ && mappedProjectConstants_) {
       projectConstantBuffer_->Unmap(0, nullptr);
-   if (parameterConstantBuffer_ && mappedParameters_)
+   }
+
+   if (parameterConstantBuffer_ && mappedParameters_) {
       parameterConstantBuffer_->Unmap(0, nullptr);
+   }
+
    mappedMaskConstants_ = nullptr;
    mappedProjectConstants_ = nullptr;
    mappedParameters_ = nullptr;
@@ -122,8 +131,10 @@ void PlayerShadowPass::ReleaseResources() {
 }
 
 bool PlayerShadowPass::Initialize(GraphicsDevice* device, const PlayerShadowSettings& settings) {
-   if (initialized_)
+   if (initialized_) {
       return ReportFailure("Already initialized; recreate the pass after GPU completion.");
+   }
+
    if (!device || !device->GetDevice() || !device->GetSRVHeap() || !IsValidSettings(settings)) {
       return ReportFailure("Invalid device or shadow settings.");
    }
@@ -180,23 +191,31 @@ bool PlayerShadowPass::CreateMaskResources() {
    auto* gpu = device_->GetDevice();
    HRESULT result = gpu->CreateCommittedResource(
       &heap, D3D12_HEAP_FLAG_NONE, &desc, maskState_, &clearValue, IID_PPV_ARGS(maskTexture_.GetAddressOf()));
-   if (FAILED(result))
+
+   if (FAILED(result)) {
       return ReportFailure("Mask texture creation failed: " + std::to_string(result));
+   }
 
    // シーンのRTVヒープは既存の4スロットを使い切るため、マスク用には専用の1スロットを持つ。
    D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc{};
    rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
    rtvHeapDesc.NumDescriptors = 1;
    result = gpu->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(maskRtvHeap_.GetAddressOf()));
-   if (FAILED(result))
+
+   if (FAILED(result)) {
       return ReportFailure("Mask RTV heap creation failed: " + std::to_string(result));
+   }
+
    maskRtvHandle_ = maskRtvHeap_->GetCPUDescriptorHandleForHeapStart();
    gpu->CreateRenderTargetView(maskTexture_.Get(), nullptr, maskRtvHandle_);
 
    // SRVはシーンと同じshader-visibleヒープへ作る。別ヒープへの切替で他のSRVを失効させない。
    maskSrvAllocation_ = device_->AllocateSrvDescriptor();
-   if (!maskSrvAllocation_)
+
+   if (!maskSrvAllocation_) {
       return ReportFailure("Mask SRV allocation failed.");
+   }
+
    const UINT index = maskSrvAllocation_->GetIndex();
    const UINT stride = device_->GetDescriptorSizeCBVSRVUAV();
    auto cpuHandle = device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart();
@@ -230,12 +249,18 @@ bool PlayerShadowPass::CreateConstantBuffers() {
       desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
       HRESULT result = device_->GetDevice()->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc,
          D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(resource.GetAddressOf()));
-      if (FAILED(result))
+
+      if (FAILED(result)) {
          return ReportFailure("Constant buffer creation failed: " + std::to_string(result));
+      }
+
       const D3D12_RANGE noCpuRead{0, 0};
       result = resource->Map(0, &noCpuRead, mapped);
-      if (FAILED(result) || !*mapped)
+
+      if (FAILED(result) || !*mapped) {
          return ReportFailure("Constant buffer Map failed: " + std::to_string(result));
+      }
+
       std::memset(*mapped, 0, static_cast<size_t>(desc.Width));
       return true;
    };
@@ -252,13 +277,16 @@ bool PlayerShadowPass::CreateConstantBuffers() {
 bool PlayerShadowPass::ValidateFrameData() const {
    if (!hasFrameData_ || !frameData_.player || !frameData_.receiver || !frameData_.camera ||
        frameData_.player == frameData_.receiver || !IsFinite(frameData_.playerPosition) ||
-       !IsFinite(frameData_.planetCenter) || !IsPositive(frameData_.planetRadius))
+       !IsFinite(frameData_.planetCenter) || !IsPositive(frameData_.planetRadius)) {
       return false;
+   }
 
    const Vector3 offset = frameData_.playerPosition - frameData_.planetCenter;
    const float distanceSquared = offset.LengthSquared();
-   if (!IsFinite(offset) || !std::isfinite(distanceSquared) || distanceSquared < kDirectionEpsilon)
+
+   if (!IsFinite(offset) || !std::isfinite(distanceSquared) || distanceSquared < kDirectionEpsilon) {
       return false;
+   }
 
    auto* playerMesh = frameData_.player->GetComponent<MeshComponent>();
    auto* receiverMesh = frameData_.receiver->GetComponent<MeshComponent>();
@@ -274,32 +302,39 @@ bool PlayerShadowPass::ValidateFrameData() const {
 bool PlayerShadowPass::UpdateShadowProjection() {
    const Vector3 offset = frameData_.playerPosition - frameData_.planetCenter;
    const float lengthSquared = offset.LengthSquared();
+
    if (!IsFinite(offset) || !std::isfinite(lengthSquared) || lengthSquared < kDirectionEpsilon ||
-       !IsPositive(frameData_.planetRadius) || !IsValidSettings(settings_))
+       !IsPositive(frameData_.planetRadius) || !IsValidSettings(settings_)) {
       return false;
+   }
 
    const float distance = std::sqrt(lengthSquared);
    const float groundDepth = settings_.cameraDistance + distance - frameData_.planetRadius;
 
    // 地表より内側、または真下の地表が投影範囲外なら影を描かない。
    if (distance < frameData_.planetRadius || !std::isfinite(groundDepth) || groundDepth < settings_.nearClip ||
-       groundDepth > settings_.farClip)
+       groundDepth > settings_.farClip) {
       return false;
+   }
 
    shadowUp_ = offset * (1.0f / distance);
    groundPosition_ = frameData_.planetCenter + shadowUp_ * frameData_.planetRadius;
 
    // 世界のY軸を固定すると極でLookAtが退化する。前フレームの軸を接平面に移して連続性を保つ。
    Vector3 tangent = previousTangentUp_ - shadowUp_ * previousTangentUp_.Dot(shadowUp_);
+
    if (!IsFinite(tangent) || tangent.LengthSquared() < kDirectionEpsilon) {
       const Vector3 reference = std::abs(shadowUp_.y) < 0.9f ? Vector3{0.0f, 1.0f, 0.0f} : Vector3{1.0f, 0.0f, 0.0f};
       tangent = reference - shadowUp_ * reference.Dot(shadowUp_);
    }
+
    tangent = tangent.Normalize();
    const Vector3 eye = frameData_.playerPosition + shadowUp_ * settings_.cameraDistance;
+
    if (!IsFinite(eye) || !IsFinite(groundPosition_) ||
-       (frameData_.playerPosition - eye).LengthSquared() < kDirectionEpsilon)
+       (frameData_.playerPosition - eye).LengthSquared() < kDirectionEpsilon) {
       return false;
+   }
 
    const Matrix4x4 view = MakeLookAtMatrix(eye, frameData_.playerPosition, tangent);
 
@@ -308,8 +343,11 @@ bool PlayerShadowPass::UpdateShadowProjection() {
       MakeOrthographicMatrix(-settings_.projectionWidth * 0.5f, settings_.projectionHeight * 0.5f,
          settings_.projectionWidth * 0.5f, -settings_.projectionHeight * 0.5f, settings_.nearClip, settings_.farClip);
    shadowViewProjection_ = view * projection;
-   if (!IsFinite(shadowViewProjection_))
+
+   if (!IsFinite(shadowViewProjection_)) {
       return false;
+   }
+
    previousTangentUp_ = tangent;
    return true;
 }
@@ -317,17 +355,21 @@ bool PlayerShadowPass::UpdateShadowProjection() {
 bool PlayerShadowPass::CollectGeometry(Model* model, std::vector<DrawGeometry>& geometry) {
    geometry.clear();
    auto* component = model->GetComponent<MeshComponent>();
-   if (!component)
+
+   if (!component) {
       return ReportFailure("Missing MeshComponent.");
+   }
 
    const auto append = [this, &geometry](const D3D12_VERTEX_BUFFER_VIEW& vertices,
                           const D3D12_INDEX_BUFFER_VIEW& indices, size_t indexCount, size_t meshIndex) {
       const UINT indexSize =
          indices.Format == DXGI_FORMAT_R32_UINT ? 4u : (indices.Format == DXGI_FORMAT_R16_UINT ? 2u : 0u);
+
       if (!IsValidVertexView(vertices) || !indices.BufferLocation || !indexSize || !indexCount || indexCount % 3 != 0 ||
           indexCount > std::numeric_limits<UINT>::max() || indexCount > indices.SizeInBytes / indexSize) {
          return ReportFailure("Invalid triangle mesh buffers.");
       }
+
       geometry.push_back({vertices, indices, static_cast<UINT>(indexCount), meshIndex});
       return true;
    };
@@ -339,16 +381,24 @@ bool PlayerShadowPass::CollectGeometry(Model* model, std::vector<DrawGeometry>& 
    }
 
    const auto* asset = component->GetModelAsset();
-   if (!asset)
+
+   if (!asset) {
       return ReportFailure("Model asset is not ready.");
+   }
+
    const auto& meshes = asset->GetMeshData();
    geometry.reserve(meshes.size());
+
    for (size_t i = 0; i < meshes.size(); ++i) {
-      if (meshes[i].indices.empty())
+      if (meshes[i].indices.empty()) {
          continue;
-      if (!append(asset->GetVertexBufferView(i), asset->GetIndexBufferView(i), meshes[i].indices.size(), i))
+      }
+
+      if (!append(asset->GetVertexBufferView(i), asset->GetIndexBufferView(i), meshes[i].indices.size(), i)) {
          return false;
+      }
    }
+
    return !geometry.empty();
 }
 
@@ -359,6 +409,7 @@ bool PlayerShadowPass::PrepareBindings(FrameContext& ctx) {
                                       : "PlayerShadowProject";
    bindings_.maskPipeline = ctx.psoManager->GetPipeline("PlayerShadowMask", BlendMode::kBlendModeNone);
    bindings_.projectPipeline = ctx.psoManager->GetPipeline(projectName, BlendMode::kBlendModeNormal);
+
    if (!bindings_.maskPipeline || !bindings_.projectPipeline || !bindings_.maskPipeline->GetPipelineState() ||
        !bindings_.projectPipeline->GetPipelineState()) {
       return ReportFailure("Register PlayerShadowMask and PlayerShadowProject pipelines before enabling this pass.");
@@ -369,8 +420,11 @@ bool PlayerShadowPass::PrepareBindings(FrameContext& ctx) {
    const auto project = ctx.psoManager->ResolvePipelineRootParameter(projectName, "shadowprojectconstants");
    const auto parameters = ctx.psoManager->ResolvePipelineRootParameter(projectName, "shadowparameters");
    const auto texture = ctx.psoManager->ResolvePipelineRootParameter(projectName, "shadowmask");
-   if (!mask || !project || !parameters || !texture)
+
+   if (!mask || !project || !parameters || !texture) {
       return ReportFailure("Missing shadow root semantics.");
+   }
+
    bindings_.maskConstants = *mask;
    bindings_.projectConstants = *project;
    bindings_.parameters = *parameters;
@@ -380,13 +434,16 @@ bool PlayerShadowPass::PrepareBindings(FrameContext& ctx) {
 
 bool PlayerShadowPass::PreparePlayerVertices(FrameContext& ctx) {
    auto* mesh = frameData_.player->GetComponent<MeshComponent>();
-   if (!UsesSkinning(frameData_.player, mesh))
+
+   if (!UsesSkinning(frameData_.player, mesh)) {
       return true;
+   }
 
    auto* skin = mesh->GetSkinCluster();
    const auto* asset = mesh->GetModelAsset();
    const auto* compute = ctx.psoManager->GetComputePipeline(kSkinningPipeline);
    auto* root = compute ? ctx.psoManager->GetRootSignature(compute->rootSignatureName) : nullptr;
+
    if (!skin || !skin->HasPalette() || !compute || !compute->pipelineState || !root || !root->GetRootSignature()) {
       return ReportFailure("Skinning resources are incomplete; skipping the shadow instead of using a stale pose.");
    }
@@ -396,13 +453,16 @@ bool PlayerShadowPass::PreparePlayerVertices(FrameContext& ctx) {
    const auto vertices = ctx.psoManager->ResolvePipelineRootParameter(kSkinningPipeline, "inputvertices");
    const auto influences = ctx.psoManager->ResolvePipelineRootParameter(kSkinningPipeline, "influences");
    const auto output = ctx.psoManager->ResolvePipelineRootParameter(kSkinningPipeline, "outputvertices");
-   if (!information || !palette || !vertices || !influences || !output)
+
+   if (!information || !palette || !vertices || !influences || !output) {
       return ReportFailure("Missing skinning root semantics.");
+   }
 
    // 途中のサブメッシュで失敗して半更新になることを避け、Dispatch前に全資源を確認する。
    for (const auto& draw : playerGeometry_) {
       const size_t i = draw.meshIndex;
       const size_t vertexCount = asset->GetMeshData()[i].vertices.size();
+
       if (!skin->CanSkinVertices(i, vertexCount) || !IsValidVertexView(*skin->GetSkinnedVertexBufferView(i))) {
          return ReportFailure("Invalid skinned submesh buffers or vertex count.");
       }
@@ -416,10 +476,14 @@ bool PlayerShadowPass::PreparePlayerVertices(FrameContext& ctx) {
    // 画面外で通常描画されなかったプレイヤーにも現在のポーズを使う。ボーンPalette自体の更新はゲーム側。
    for (auto& draw : playerGeometry_) {
       const size_t i = draw.meshIndex;
-      if (!skin->DispatchSkinning(commands, i, {*information, *palette, *vertices, *influences, *output}))
+
+      if (!skin->DispatchSkinning(commands, i, {*information, *palette, *vertices, *influences, *output})) {
          return false;
+      }
+
       draw.vertexView = *skin->GetSkinnedVertexBufferView(i);
    }
+
    return true;
 }
 
@@ -427,8 +491,10 @@ bool PlayerShadowPass::UpdateConstantBuffers() {
    const auto* player = GetModelMatrices(frameData_.player);
    const auto* receiver = GetModelMatrices(frameData_.receiver);
    const Matrix4x4 shadowWVP = player->world * shadowViewProjection_;
-   if (!IsFinite(shadowWVP))
+
+   if (!IsFinite(shadowWVP)) {
       return ReportFailure("Player shadow matrix contains non-finite values.");
+   }
 
    // 親行列・モデルルート変換を含む通常描画のWorldを使う。EQUAL比較の受け面WVPは再計算せずコピーする。
    mappedMaskConstants_->playerShadowWVP = shadowWVP;
@@ -445,6 +511,7 @@ bool PlayerShadowPass::UpdateConstantBuffers() {
 void PlayerShadowPass::DrawGeometryList(const std::vector<DrawGeometry>& geometry) {
    auto* commands = device_->GetCommandList();
    commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
    for (const auto& draw : geometry) {
       commands->IASetVertexBuffers(0, 1, &draw.vertexView);
       commands->IASetIndexBuffer(&draw.indexView);
@@ -500,8 +567,8 @@ void PlayerShadowPass::Execute(FrameContext& ctx) {
    try {
       // 早期returnをこのラムダ内に閉じ込め、外側で必ずキャッシュ無効化と借用参照の解除を行う。
       const auto render = [&]() {
-         if (!hasFrameData_)
-            return;
+         if (!hasFrameData_) return;
+
          if (!initialized_ || ctx.device != device_ || !ctx.psoManager || !ctx.offscreenRenderTarget ||
              !ctx.invalidatePipelineBindingFunc || !device_->GetCommandList() || !device_->GetSRVHeap() ||
              !device_->GetDSVHeap() || !device_->GetDepthBufferResource() ||
@@ -511,14 +578,17 @@ void PlayerShadowPass::Execute(FrameContext& ctx) {
             ReportFailure("Pass or frame context is not ready.");
             return;
          }
+
          if (!ValidateFrameData()) {
             ReportFailure("Invalid frame data, missing current model matrices, or a deforming receiver.");
             return;
          }
+
          if (!UpdateShadowProjection()) {
             ReportFailure("Cannot project onto the planet with the current camera range.");
             return;
          }
+
          if (!PrepareBindings(ctx) || !CollectGeometry(frameData_.player, playerGeometry_) ||
              !CollectGeometry(frameData_.receiver, receiverGeometry_) || !UpdateConstantBuffers())
             return;
@@ -527,8 +597,9 @@ void PlayerShadowPass::Execute(FrameContext& ctx) {
          gpuStateChanged = true;
          auto* heap = device_->GetSRVHeap();
          device_->GetCommandList()->SetDescriptorHeaps(1, &heap);
-         if (!PreparePlayerVertices(ctx))
-            return;
+
+         if (!PreparePlayerVertices(ctx)) return;
+
          maskTargetBound = true;
          DrawPlayerMask(ctx);
          RestoreSceneTarget(ctx);
@@ -542,10 +613,14 @@ void PlayerShadowPass::Execute(FrameContext& ctx) {
    }
 
    // マスク描画後の終了経路でも、次のTransparentPassを256x256の描画先に置き去りにしない。
-   if (maskTargetBound)
+   if (maskTargetBound) {
       RestoreSceneTarget(ctx);
-   if (gpuStateChanged && ctx.invalidatePipelineBindingFunc)
+   }
+
+   if (gpuStateChanged && ctx.invalidatePipelineBindingFunc) {
       ctx.invalidatePipelineBindingFunc();
+   }
+
    ClearFrameData();
 }
 

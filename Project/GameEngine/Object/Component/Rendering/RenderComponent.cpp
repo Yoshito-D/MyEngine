@@ -32,21 +32,26 @@ GameEngine::RenderComponent::RenderSpace ParseRenderSpace(
    // 現行の可読な文字列と旧シーンの整数列挙値の両方を受け付ける。
    if (value.is_string()) {
       const std::string name = value.get<std::string>();
+
       if (name == "Screen") {
          return GameEngine::RenderComponent::RenderSpace::Screen;
       }
+
       if (name == "World") {
          return GameEngine::RenderComponent::RenderSpace::World;
       }
    } else if (value.is_number_integer()) {
       const int index = value.get<int>();
+
       if (index == static_cast<int>(GameEngine::RenderComponent::RenderSpace::Screen)) {
          return GameEngine::RenderComponent::RenderSpace::Screen;
       }
+
       if (index == static_cast<int>(GameEngine::RenderComponent::RenderSpace::World)) {
          return GameEngine::RenderComponent::RenderSpace::World;
       }
    }
+
    return fallback;
 }
 }
@@ -68,24 +73,27 @@ void RenderComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("visible") && data.at("visible").is_boolean()) {
       visible = data.at("visible").get<bool>();
    }
+
    if (data.contains("autoRender") && data.at("autoRender").is_boolean()) {
       autoRender = data.at("autoRender").get<bool>();
    }
+
    if (data.contains("applyPostProcess") && data.at("applyPostProcess").is_boolean()) {
       applyPostProcess = data.at("applyPostProcess").get<bool>();
    }
+
    if (data.contains("renderSpace")) {
       renderSpace = ParseRenderSpace(data.at("renderSpace"), renderSpace);
    }
+
    Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
 void RenderComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    ImGui::Checkbox(ImGuiHelper::Localize({"表示", "Visible"}), &visible);
    ImGui::Checkbox(ImGuiHelper::Localize({"自動描画", "Auto Render"}), &autoRender);
@@ -96,6 +104,7 @@ void RenderComponent::DrawInspector() {
 
    // UI 上の並びを列挙値へ暗黙依存させず、表示項目との対応をここで明示する。
    int renderSpaceIndex = (renderSpace == RenderSpace::Screen) ? 1 : 0;
+
    if (ImGui::Combo(ImGuiHelper::Localize({"描画空間", "Render Space"}), &renderSpaceIndex, renderSpaceItems, 2)) {
       renderSpace = (renderSpaceIndex == 1) ? RenderSpace::Screen : RenderSpace::World;
    }

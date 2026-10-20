@@ -25,12 +25,12 @@ void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const s
    Assimp::Importer importer;
    std::string filePath = directoryPath + "/" + filename;
    const aiScene* scene = importer.ReadFile(filePath.c_str(), 0);
-   if (!scene || scene->mNumAnimations == 0) {
-      return;
-   }
+
+   if (!scene || scene->mNumAnimations == 0) return;
 
    for (uint32_t animationIndex = 0; animationIndex < scene->mNumAnimations; ++animationIndex) {
       aiAnimation* animationAssimp = scene->mAnimations[animationIndex];
+
       if (!animationAssimp) {
          continue;
       }
@@ -40,20 +40,24 @@ void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const s
 
       // Assimpのtick時刻をここで秒へ統一し、以降の再生処理をエンジン時間だけで扱えるようにする。
       AnimationClip clip;
+
       if (animationAssimp->mName.length > 0) {
          clip.name = animationAssimp->mName.C_Str();
       } else {
          clip.name = filename + "#" + std::to_string(animationIndex);
       }
+
       clip.duration = static_cast<float>(animationAssimp->mDuration / ticksPerSecond);
 
       for (uint32_t channelIndex = 0; channelIndex < animationAssimp->mNumChannels; ++channelIndex) {
          aiNodeAnim* nodeAnimationAssimp = animationAssimp->mChannels[channelIndex];
+
          if (!nodeAnimationAssimp) {
             continue;
          }
 
          NodeAnimation& nodeAnimation = clip.nodeAnimations[nodeAnimationAssimp->mNodeName.C_Str()];
+
          for (uint32_t keyIndex = 0; keyIndex < nodeAnimationAssimp->mNumPositionKeys; ++keyIndex) {
             aiVectorKey& keyAssimp = nodeAnimationAssimp->mPositionKeys[keyIndex];
             KeyframeVector3 keyframe;
@@ -87,6 +91,7 @@ void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const s
       if (defaultClipName_.empty()) {
          defaultClipName_ = clip.name;
       }
+
       clips_[clip.name] = std::move(clip);
    }
 }
@@ -101,9 +106,11 @@ const AnimationClip* AnimationAsset::GetDefaultClip() const {
 
 const AnimationClip* AnimationAsset::GetClip(const std::string& clipName) const {
    auto it = clips_.find(clipName);
+
    if (it == clips_.end()) {
       return nullptr;
    }
+
    return &it->second;
 }
 
@@ -114,10 +121,12 @@ bool AnimationAsset::HasClip(const std::string& clipName) const {
 std::vector<std::string> AnimationAsset::GetClipNames() const {
    std::vector<std::string> names;
    names.reserve(clips_.size());
+
    for (const auto& [name, clip] : clips_) {
       (void)clip;
       names.push_back(name);
    }
+
    return names;
 }
 
@@ -140,6 +149,7 @@ void Animator::SetCurrentTime(float currentTime) {
    if (loop_) {
       // fmodの負値を正規化し、逆再生でも常に[0, duration)へ循環させる。
       currentTime_ = std::fmod(currentTime, clip_->duration);
+
       if (currentTime_ < 0.0f) {
          currentTime_ += clip_->duration;
       }
@@ -149,9 +159,7 @@ void Animator::SetCurrentTime(float currentTime) {
 }
 
 void Animator::Update(float deltaTime) {
-   if (!clip_ || !playing_ || clip_->duration <= 0.0f) {
-      return;
-   }
+   if (!clip_ || !playing_ || clip_->duration <= 0.0f) return;
 
    SetCurrentTime(currentTime_ + deltaTime * playbackSpeed_);
 
@@ -168,6 +176,7 @@ const NodeAnimation* Animator::ResolveNodeAnimation(const std::string& nodeName)
 
    if (!nodeName.empty()) {
       auto it = clip_->nodeAnimations.find(nodeName);
+
       if (it != clip_->nodeAnimations.end()) {
          return &it->second;
       }
@@ -183,12 +192,14 @@ const NodeAnimation* Animator::ResolveNodeAnimation(const std::string& nodeName)
 
 Vector3 CalculateValue(const std::vector<KeyframeVector3>& keyframes, float time) {
    assert(!keyframes.empty());
+
    if (keyframes.size() == 1 || time <= keyframes[0].time) {
       return keyframes[0].value;
    }
 
    for (size_t index = 0; index < keyframes.size() - 1; ++index) {
       size_t nextIndex = index + 1;
+
       if (keyframes[index].time <= time && time <= keyframes[nextIndex].time) {
          // 隣接キーの区間へ時刻を正規化してから値を補間する。
          float t = (time - keyframes[index].time) / (keyframes[nextIndex].time - keyframes[index].time);
@@ -201,17 +212,21 @@ Vector3 CalculateValue(const std::vector<KeyframeVector3>& keyframes, float time
 
 Quaternion CalculateValue(const std::vector<KeyframeQuaternion>& keyframes, float time) {
    assert(!keyframes.empty());
+
    if (keyframes.size() == 1 || time <= keyframes[0].time) {
       return keyframes[0].value;
    }
+
    for (size_t index = 0; index < keyframes.size() - 1; ++index) {
       size_t nextIndex = index + 1;
+
       if (keyframes[index].time <= time && time <= keyframes[nextIndex].time) {
          // 回転速度が不自然に変化しないようQuaternionは球面線形補間する。
          float t = (time - keyframes[index].time) / (keyframes[nextIndex].time - keyframes[index].time);
          return Quaternion::Slerp(keyframes[index].value, keyframes[nextIndex].value, t);
       }
    }
+
    return (*keyframes.rbegin()).value;
 }
 
@@ -220,15 +235,19 @@ void ApplyAnimation(Skeleton& skeleton, const AnimationClip& clip, float animati
       if (auto it = clip.nodeAnimations.find(joint.name); it != clip.nodeAnimations.end()) {
          const NodeAnimation& rootNodeAnimation = (*it).second;
          auto pose = joint.transform;
+
          if (!rootNodeAnimation.translation.keyframes.empty()) {
             pose.translation = CalculateValue(rootNodeAnimation.translation.keyframes, animationTime);
          }
+
          if (!rootNodeAnimation.rotation.keyframes.empty()) {
             pose.SetRotationQuaternion(CalculateValue(rootNodeAnimation.rotation.keyframes, animationTime));
          }
+
          if (!rootNodeAnimation.scale.keyframes.empty()) {
             pose.scale = CalculateValue(rootNodeAnimation.scale.keyframes, animationTime);
          }
+
          skeleton.ApplyJointPose(joint.index, pose);
       }
    }

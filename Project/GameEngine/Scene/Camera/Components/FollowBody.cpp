@@ -15,6 +15,7 @@ const bool kRegistered =
       if (auto* existing = camera.GetComponent<FollowBody>()) {
          return existing;
       }
+
       return camera.AddComponent<FollowBody>();
    });
 
@@ -26,17 +27,17 @@ Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) 
    if (!data.is_array() || data.size() != 3) {
       return fallback;
    }
+
    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
 }
 } // namespace
 
 void FollowBody::MutateCameraState(CameraState& state, float deltaTime) {
-   if (GetOwnerCamera() == nullptr)
-      return;
+   if (GetOwnerCamera() == nullptr) return;
 
    const Transform* target = GetOwnerCamera()->GetFollowTarget();
-   if (target == nullptr)
-      return;
+
+   if (target == nullptr) return;
 
    // ターゲットのワールド位置 + オフセット
    Vector3 targetPosition = target->translation + offset_;
@@ -56,12 +57,12 @@ nlohmann::json FollowBody::Serialize() const {
 }
 
 void FollowBody::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
+
    if (data.contains("offset")) {
       offset_ = DeserializeVector3(data.at("offset"), offset_);
    }
+
    if (data.contains("damping")) {
       damping_ = DeserializeVector3(data.at("damping"), damping_);
    }
@@ -70,15 +71,19 @@ void FollowBody::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void FollowBody::DrawInspector() {
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox("Enabled", &enabled))
+
+   if (ImGui::Checkbox("Enabled", &enabled)) {
       SetEnabled(enabled);
+   }
 
    float off[3] = {offset_.x, offset_.y, offset_.z};
+
    if (ImGui::DragFloat3("Offset", off, 0.1f)) {
       offset_ = {off[0], off[1], off[2]};
    }
 
    float damp[3] = {damping_.x, damping_.y, damping_.z};
+
    if (ImGui::DragFloat3("Damping", damp, 0.1f, 0.0f, 50.0f)) {
       damping_ = {damp[0], damp[1], damp[2]};
    }

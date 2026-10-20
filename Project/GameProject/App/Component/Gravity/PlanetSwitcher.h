@@ -122,14 +122,23 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.switchHysteresis))
+
+      if (!std::isfinite(settings.switchHysteresis)) {
          settings.switchHysteresis = defaults.switchHysteresis;
-      if (!std::isfinite(settings.obbHalfExtents.x))
+      }
+
+      if (!std::isfinite(settings.obbHalfExtents.x)) {
          settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
-      if (!std::isfinite(settings.obbHalfExtents.y))
+      }
+
+      if (!std::isfinite(settings.obbHalfExtents.y)) {
          settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
-      if (!std::isfinite(settings.obbHalfExtents.z))
+      }
+
+      if (!std::isfinite(settings.obbHalfExtents.z)) {
          settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
+      }
+
       switchHysteresis = settings.switchHysteresis;
       obbHalfExtents = settings.obbHalfExtents;
    }

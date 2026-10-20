@@ -21,6 +21,7 @@ void DispatchDrawCommand(const DrawCommand& cmd, FrameContext& ctx) {
          if (ctx.modelRenderer) {
             ctx.modelRenderer->DrawModel(cmd.modelData, ctx.defaultMaterial, ctx.lightManager, ctx.setPipelineFunc);
          }
+
          break;
 
       case DrawCommandType::Sprite:
@@ -34,6 +35,7 @@ void DispatchDrawCommand(const DrawCommand& cmd, FrameContext& ctx) {
                   cmd.spriteData, ctx.defaultMaterial, ctx.lightManager, ctx.setPipelineFunc);
             }
          }
+
          break;
 
       case DrawCommandType::Particle:
@@ -42,33 +44,39 @@ void DispatchDrawCommand(const DrawCommand& cmd, FrameContext& ctx) {
             // これによりポストプロセス除外オブジェクトの上でもクリアカラーへ抜けない。
             if (ctx.offscreenRenderTarget && cmd.particleData.particleSystem) {
                const auto* material = cmd.particleData.particleSystem->GetMaterial();
+
                if (material && std::fabs(material->GetDistortionStrength()) > 0.0001f) {
                   ctx.offscreenRenderTarget->CaptureSceneColor();
                }
             }
+
             ctx.particleRenderer->DrawParticle(cmd.particleData, ctx.setPipelineFunc, ctx.invalidatePipelineBindingFunc,
                ctx.offscreenRenderTarget ? ctx.offscreenRenderTarget->GetSceneColorSRVHandleGPU()
                                          : D3D12_GPU_DESCRIPTOR_HANDLE{},
                ctx.offscreenRenderTarget ? ctx.offscreenRenderTarget->GetSceneDepthSRVHandleGPU()
                                          : D3D12_GPU_DESCRIPTOR_HANDLE{});
          }
+
          break;
 
       case DrawCommandType::Text:
          if (ctx.textRenderer) {
             ctx.textRenderer->DrawUIText(cmd.textData, ctx.setPipelineFunc);
          }
+
          break;
 
       case DrawCommandType::Line:
          if (cmd.lineData.drawFunc && ctx.device) {
             auto* linePso = ctx.psoManager ? ctx.psoManager->GetPipeline("Line3D") : nullptr;
+
             if (linePso) {
                ctx.device->GetCommandList()->SetPipelineState(linePso->GetPipelineState());
                ctx.device->GetCommandList()->SetGraphicsRootSignature(linePso->GetRootSignature());
                cmd.lineData.drawFunc(ctx.device->GetCommandList(), cmd.lineData.viewProjectionMatrix);
             }
          }
+
          break;
 
       default:

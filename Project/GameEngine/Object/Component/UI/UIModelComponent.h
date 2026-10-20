@@ -83,18 +83,31 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.screenOffset.x))
+
+      if (!std::isfinite(settings.screenOffset.x)) {
          settings.screenOffset.x = defaults.screenOffset.x;
-      if (!std::isfinite(settings.screenOffset.y))
+      }
+
+      if (!std::isfinite(settings.screenOffset.y)) {
          settings.screenOffset.y = defaults.screenOffset.y;
-      if (!std::isfinite(settings.localPivot.x))
+      }
+
+      if (!std::isfinite(settings.localPivot.x)) {
          settings.localPivot.x = defaults.localPivot.x;
-      if (!std::isfinite(settings.localPivot.y))
+      }
+
+      if (!std::isfinite(settings.localPivot.y)) {
          settings.localPivot.y = defaults.localPivot.y;
-      if (!std::isfinite(settings.localPivot.z))
+      }
+
+      if (!std::isfinite(settings.localPivot.z)) {
          settings.localPivot.z = defaults.localPivot.z;
-      if (!std::isfinite(settings.depth))
+      }
+
+      if (!std::isfinite(settings.depth)) {
          settings.depth = defaults.depth;
+      }
+
       projectionType = settings.projectionType;
       anchorPoint = settings.anchorPoint;
       screenOffset = settings.screenOffset;

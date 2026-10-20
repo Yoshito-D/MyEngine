@@ -16,16 +16,13 @@ namespace App {
 
 void CharacterLanding::Update(float) {
    // オーナー不在時は処理しない
-   if (!HasOwner()) {
-      return;
-   }
+   if (!HasOwner()) return;
 
    // 必須コンポーネント取得
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   if (!transform || !gravityBody) {
-      return;
-   }
+
+   if (!transform || !gravityBody) return;
 
    auto* jump = GetOwner().GetComponent<CharacterJump>();
    bool isJumping = jump && jump->IsJumping();
@@ -33,6 +30,7 @@ void CharacterLanding::Update(float) {
 
    GameEngine::Vector3 landingCenter = planetCenter_;
    float landingSurfaceRadius = surfaceRadius_;
+
    if (isJumping && switcher) {
       switcher->TryGetLandingPlanet(landingCenter, landingSurfaceRadius);
    }
@@ -40,9 +38,8 @@ void CharacterLanding::Update(float) {
    // 惑星中心からの距離と重力Upを算出
    GameEngine::Vector3 toSelf = transform->GetLocalPose().translation - landingCenter;
    float dist = toSelf.Length();
-   if (dist < 1e-4f) {
-      return;
-   }
+
+   if (dist < 1e-4f) return;
 
    GameEngine::Vector3 gravityUp = toSelf * (1.0f / dist);
    float upComp = gravityBody->GetVelocity().Dot(gravityUp);
@@ -136,9 +133,9 @@ void CharacterLanding::Update(float) {
 void CharacterLanding::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::DragFloat(Tr("地表半径", "Surface Radius"), &surfaceRadius_, 0.1f, 0.0f, 1000.0f);
    ImGui::DragFloat(Tr("着地オフセット", "Landing Offset"), &landingOffset, 0.01f, -100.0f, 100.0f);
@@ -164,21 +161,27 @@ void CharacterLanding::Deserialize(const nlohmann::json& data) {
    if (data.contains("surfaceRadius")) {
       surfaceRadius_ = data["surfaceRadius"];
    }
+
    if (data.contains("landingOffset")) {
       landingOffset = data["landingOffset"];
    }
+
    if (data.contains("obbHalfExtents")) {
       const auto& h = data["obbHalfExtents"];
+
       if (h.contains("x")) {
          obbHalfExtents.x = h["x"];
       }
+
       if (h.contains("y")) {
          obbHalfExtents.y = h["y"];
       }
+
       if (h.contains("z")) {
          obbHalfExtents.z = h["z"];
       }
    }
+
    Configure(DescribeSettings());
 }
 

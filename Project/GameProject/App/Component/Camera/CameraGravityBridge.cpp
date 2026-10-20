@@ -37,11 +37,13 @@ constexpr const char* kPresentationCleanCaptureDirectory = "../Generated/Present
 GameEngine::Vector3 NormalizeOrFallback(const GameEngine::Vector3& value, const GameEngine::Vector3& fallback) {
    // デバッグ描画やカメラ基底へNaNを渡さないよう、候補を段階的に退避させる。
    const float length = value.Length();
+
    if (length > 1e-5f) {
       return value * (1.0f / length);
    }
 
    const float fallbackLength = fallback.Length();
+
    if (fallbackLength > 1e-5f) {
       return fallback * (1.0f / fallbackLength);
    }
@@ -80,6 +82,7 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
    const GravityBody& gravityBody, float predictionHorizon, const GameEngine::Vector3& fallbackForward,
    const GameEngine::Vector3& fallbackRight, LandingPrediction& outPrediction) {
    float horizon = std::clamp(predictionHorizon, 0.0f, 5.0f);
+
    if (horizon <= 1e-4f || surfaceRadius <= 1e-4f) {
       return false;
    }
@@ -92,6 +95,7 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
    outPrediction.trajectoryPoints.push_back(position);
    GameEngine::Vector3 initialToSelf = simulatedPosition - planetCenter;
    float initialDistance = initialToSelf.Length();
+
    if (initialDistance <= 1e-4f) {
       return false;
    }
@@ -102,15 +106,18 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
    float initialSnapRadius =
       surfaceRadius + landingOffset + ComputeObbSupportRadius(playerRotation, obbHalfExtents, initialUp);
    float previousClearance = initialDistance - initialSnapRadius;
+
    if (previousClearance <= 0.0f) {
       return false;
    }
 
    float elapsed = 0.0f;
+
    while (elapsed < horizon) {
       float step = std::min(kLandingPredictionStepSeconds, horizon - elapsed);
       GameEngine::Vector3 toSelf = simulatedPosition - planetCenter;
       float distance = toSelf.Length();
+
       if (distance <= 1e-4f) {
          return false;
       }
@@ -126,9 +133,11 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
 
       GameEngine::Vector3 nextToSelf = simulatedPosition - planetCenter;
       float nextDistance = nextToSelf.Length();
+
       if (nextDistance <= 1e-4f) {
          return false;
       }
+
       GameEngine::Vector3 nextUp = nextToSelf * (1.0f / nextDistance);
       float nextSnapRadius =
          surfaceRadius + landingOffset + ComputeObbSupportRadius(playerRotation, obbHalfExtents, nextUp);
@@ -148,14 +157,17 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
          }
 
          GameEngine::Vector3 landingForward = hitVelocity - hitUp * hitVelocity.Dot(hitUp);
+
          if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
             landingForward = fallbackForward - hitUp * fallbackForward.Dot(hitUp);
          }
+
          if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
             // 真上・真下を向いた垂直着地では機首投影も退化するため、
             // 表示中のカメラRightから画面上の前方を復元して方位を維持する。
             landingForward = fallbackRight.Cross(hitUp);
          }
+
          if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
             return false;
          }
@@ -216,6 +228,7 @@ void DrawPresentationGuides(const GameEngine::Vector3& playerPosition, const Gam
    const GameEngine::Vector3 safeMotionBackward = NormalizeOrFallback(motionBackward, -safeTargetUp);
    const GameEngine::Vector3 safePlanetGuideBackward = NormalizeOrFallback(planetGuideBackward, safeTargetUp);
    const GameEngine::Vector3 safeCameraForward = NormalizeOrFallback(cameraForward, -safeMotionBackward);
+
    if (conditionPreviewMode == 1) {
       // 後方ベクトルが反転する条件では、比較する2軸を並べて角度差を可視化する。
       const GameEngine::Vector3 guideOrigin = playerPosition + safeTargetUp * safeGuideLength * 0.45f;
@@ -231,6 +244,7 @@ void DrawPresentationGuides(const GameEngine::Vector3& playerPosition, const Gam
       DrawPresentationLegendEntry(conditionText, 104.0f, {1.0f, 1.0f, 1.0f, 1.0f});
       return;
    }
+
    if (conditionPreviewMode == 2) {
       // 視線が重力軸へ寄る条件では、重なりを避けた平行配置で実測方向を示す。
       const GameEngine::Vector3 gravityDown = -safeTargetUp;
@@ -246,9 +260,7 @@ void DrawPresentationGuides(const GameEngine::Vector3& playerPosition, const Gam
       return;
    }
 
-   if (!prediction) {
-      return;
-   }
+   if (!prediction) return;
 
    const std::vector<GameEngine::Vector3>& points = prediction->trajectoryPoints;
 
@@ -258,6 +270,7 @@ void DrawPresentationGuides(const GameEngine::Vector3& playerPosition, const Gam
    }
 
    const float trajectoryPointRadius = safeGuideLength * 0.025f;
+
    for (size_t index = 0; index < points.size(); index += 8) {
       GameEngine::EngineContext::DrawSphere(points[index], trajectoryPointRadius, trajectoryColor, false);
    }
@@ -279,15 +292,18 @@ GameEngine::PerlinNoise* GetOrAddShakeNoise(GameEngine::ICinemachineComponent* c
    }
 
    auto* virtualCamera = cameraComponent->GetOwnerCamera();
+
    if (!virtualCamera) {
       return nullptr;
    }
 
    auto* noise = virtualCamera->GetComponent<GameEngine::PerlinNoise>();
+
    if (!noise) {
       // シェイク未設定のカメラでも演出を受けられるよう、必要時だけ追加する。
       noise = virtualCamera->AddComponent<GameEngine::PerlinNoise>();
    }
+
    return noise;
 }
 
@@ -303,12 +319,15 @@ void CameraGravityBridge::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld
    gravityFollowCamera_ = nullptr;
    playerRearFollowCamera_ = nullptr;
    planetLeashCamera_ = nullptr;
+
    if (auto* camera = sceneWorld.FindVirtualCamera(gravityFollowCameraId_)) {
       gravityFollowCamera_ = camera->GetComponent<GravityFollowCamera>();
    }
+
    if (auto* camera = sceneWorld.FindVirtualCamera(playerRearFollowCameraId_)) {
       playerRearFollowCamera_ = camera->GetComponent<PlayerRearFollowCamera>();
    }
+
    if (auto* camera = sceneWorld.FindVirtualCamera(planetLeashCameraId_)) {
       planetLeashCamera_ = camera->GetComponent<PlanetLeashCamera>();
    }
@@ -337,15 +356,13 @@ void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
 
 void CameraGravityBridge::Update(float deltaTime) {
    // オーナー不在時は更新しない
-   if (!HasOwner()) {
-      return;
-   }
+   if (!HasOwner()) return;
 
    // ワールド座標の取得元（Transform）を参照
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
+
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    auto* landing = GetOwner().GetComponent<CharacterLanding>();
    auto* jump = GetOwner().GetComponent<CharacterJump>();
@@ -372,11 +389,13 @@ void CameraGravityBridge::Update(float deltaTime) {
       gravityFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
       gravityFollowCamera_->SetDriftHeightOffsets(currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
    }
+
    if (playerRearFollowCamera_) {
       playerRearFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
       playerRearFollowCamera_->SetDriftHeightOffsets(
          currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
    }
+
    if (planetLeashCamera_) {
       planetLeashCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
       planetLeashCamera_->SetDriftHeightOffsets(currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
@@ -392,14 +411,15 @@ void CameraGravityBridge::Update(float deltaTime) {
    // 惑星中心→自身方向を正規化して重力Upを作る
    GameEngine::Vector3 toSelf = transform->GetLocalPose().translation - planetCenter_;
    float len = toSelf.Length();
-   if (len < 1e-4f) {
-      return;
-   }
+
+   if (len < 1e-4f) return;
+
    GameEngine::Vector3 gravityUp = toSelf * (1.0f / len);
    GameEngine::Vector3 pos = transform->GetLocalPose().translation;
    GameEngine::Vector3 cameraPlanetCenter = planetCenter_;
    float cameraPlanetSurfaceRadius = 0.0f;
    bool hasCameraPlanet = false;
+
    if (switcher) {
       // 空中切替中は確定惑星ではなく保留中の着地先を使い、予測と重力先を一致させる。
       hasCameraPlanet = switcher->TryGetLandingPlanet(cameraPlanetCenter, cameraPlanetSurfaceRadius);
@@ -418,12 +438,14 @@ void CameraGravityBridge::Update(float deltaTime) {
       forward = GameEngine::RotateVector(forward, rotation);
 
       bool isAirborne = false;
+
       if (jump) {
          isAirborne = jump->IsJumping();
       }
 
       GameEngine::Vector3 airborneMoveForward = forward;
       GameEngine::Vector3 playerVelocity = {0.0f, 0.0f, 0.0f};
+
       if (gravityBody) {
          GameEngine::Vector3 velocity = gravityBody->GetVelocity();
          playerVelocity = velocity;
@@ -431,6 +453,7 @@ void CameraGravityBridge::Update(float deltaTime) {
          // 重力方向成分を除いた進行方向を使い、上下速度だけでカメラが真上/真下を向くのを避ける。
          GameEngine::Vector3 horizontalVelocity = velocity - gravityUp * velocity.Dot(gravityUp);
          float horizontalSpeed = horizontalVelocity.Length();
+
          if (horizontalSpeed > 1e-4f) {
             airborneMoveForward = horizontalVelocity * (1.0f / horizontalSpeed);
          }
@@ -448,11 +471,13 @@ void CameraGravityBridge::Update(float deltaTime) {
       playerRearFollowCamera_->ClearLandingPrediction();
       LandingPrediction prediction{};
       bool hasLandingPrediction = false;
+
       if (isAirborne && hasCameraPlanet && gravityBody && landing) {
          float predictionHorizon = std::max(0.0f, playerRearFollowCamera_->GetPreLandingPredictionHorizon());
          hasLandingPrediction = PredictLanding(pos, playerVelocity, cameraPlanetCenter, cameraPlanetSurfaceRadius,
             landing->DescribeSettings().landingOffset, landing->DescribeSettings().obbHalfExtents, rotation,
             *gravityBody, predictionHorizon, forward, playerRearFollowCamera_->GetCameraRight(), prediction);
+
          if (hasLandingPrediction) {
             playerRearFollowCamera_->SetLandingPrediction(
                prediction.up, prediction.backward, prediction.contactPoint, prediction.secondsToImpact);
@@ -469,11 +494,13 @@ void CameraGravityBridge::Update(float deltaTime) {
          const GameEngine::Vector3 actualCameraForward =
             NormalizeOrFallback(playerRearFollowCamera_->GetCameraForward(), forward);
          const float cameraForwardGravityAxisDot = std::abs(actualCameraForward.Dot(gravityUp));
+
          if (isAirborne && playerVelocity.Length() > 0.5f && backwardReversalDot <= kPresentationBackwardReversalDot) {
             conditionPreviewMode = 1;
          } else if (isAirborne && cameraForwardGravityAxisDot >= kPresentationCameraForwardGravityAxisDot) {
             conditionPreviewMode = 2;
          }
+
          DrawPresentationGuides(pos, actualMotionBackward, actualPlanetGuideBackward, gravityUp, actualCameraForward,
             playerRearFollowCamera_->GetCameraRight(), hasLandingPrediction ? &prediction : nullptr,
             presentationGuideLength, conditionPreviewMode);
@@ -489,18 +516,22 @@ void CameraGravityBridge::Update(float deltaTime) {
             playerRearFollowCamera_->StartCameraMeasurement("presentation_sequence_warmup");
             presentationMeasurementStarted_ = true;
          }
+
          presentationCaptureElapsed_ += std::max(0.0f, deltaTime);
+
          if (autoCapturePresentationVideoFrames) {
             // 実フレームレートとは独立した累積時間で、指定レートの連番画像へ間引く。
             const float frameRate = std::max(1.0f, presentationVideoFrameRate);
             const float captureStart = std::max(0.0f, presentationVideoCaptureStartDelay);
             const float captureDuration = std::max(0.0f, presentationVideoCaptureDuration);
             const uint32_t maxFrameCount = static_cast<uint32_t>(std::ceil(captureDuration * frameRate));
+
             if (presentationCaptureElapsed_ >= captureStart &&
                 presentationCaptureElapsed_ <= captureStart + captureDuration &&
                 presentationVideoFrameIndex_ < maxFrameCount) {
                const float frameInterval = 1.0f / frameRate;
                presentationVideoFrameAccumulator_ += std::max(0.0f, deltaTime);
+
                if (presentationVideoFrameIndex_ == 0 || presentationVideoFrameAccumulator_ >= frameInterval) {
                   char filename[96]{};
                   std::snprintf(
@@ -513,6 +544,7 @@ void CameraGravityBridge::Update(float deltaTime) {
                }
             }
          }
+
          const float groundCaptureTime = std::max(0.75f, presentationCaptureJumpDelay - 0.5f);
 
          // ジャンプ前後の節目を一度ずつ記録し、同じ状態が続いても重複撮影しない。
@@ -535,6 +567,7 @@ void CameraGravityBridge::Update(float deltaTime) {
             RequestPresentationScreenshot("02_prediction_start.png", debugDrawPresentationGuides);
             presentationPredictionCaptured_ = true;
          }
+
          if (hasLandingPrediction && !presentationBeforeContactCaptured_ && prediction.secondsToImpact <= 0.18f) {
             RequestPresentationScreenshot("03_contact_before.png", debugDrawPresentationGuides);
             presentationBeforeContactCaptured_ = true;
@@ -542,11 +575,13 @@ void CameraGravityBridge::Update(float deltaTime) {
 
          const GameEngine::Vector3 cameraForward =
             NormalizeOrFallback(playerRearFollowCamera_->GetCameraForward(), forward);
+
          if (isAirborne && !presentationBackwardReversalCaptured_ && playerVelocity.Length() > 0.5f &&
              backwardReversalDot <= kPresentationBackwardReversalDot) {
             RequestPresentationScreenshot("condition_backward_reversal.png", debugDrawPresentationGuides);
             presentationBackwardReversalCaptured_ = true;
          }
+
          if (isAirborne && !presentationStraightDownCaptured_ &&
              std::abs(cameraForward.Dot(gravityUp)) >= kPresentationCameraForwardGravityAxisDot) {
             RequestPresentationScreenshot("condition_straight_down.png", debugDrawPresentationGuides);
@@ -558,14 +593,17 @@ void CameraGravityBridge::Update(float deltaTime) {
    // VehicleGroundMover から速度と autoSpeed を取得し、両カメラへ供給する
    float speed = 0.0f;
    float autoSpeed = 13.0f;
+
    if (auto* mover = GetOwner().GetComponent<VehicleGroundMover>()) {
       speed = mover->GetCurrentSpeed();
       autoSpeed = mover->DescribeSettings().autoSpeed;
    }
+
    if (gravityFollowCamera_) {
       gravityFollowCamera_->SetPlayerSpeed(speed);
       gravityFollowCamera_->SetAutoSpeed(autoSpeed);
    }
+
    if (playerRearFollowCamera_) {
       playerRearFollowCamera_->SetPlayerSpeed(speed);
       playerRearFollowCamera_->SetAutoSpeed(autoSpeed);
@@ -580,6 +618,7 @@ void CameraGravityBridge::Update(float deltaTime) {
 
    if (landing) {
       const bool isGrounded = landing->IsGrounded();
+
       if (rearCameraSelected && autoCapturePresentationSequence && presentationJumpTriggered_) {
          // 接地の立ち上がりを接触瞬間とし、その後は姿勢が落ち着くまで別タイマーで待つ。
          if (isGrounded && !wasGrounded_ && !presentationContactCaptured_) {
@@ -588,9 +627,11 @@ void CameraGravityBridge::Update(float deltaTime) {
             presentationAfterLandingElapsed_ = 0.0f;
          } else if (presentationContactCaptured_ && !presentationAfterLandingCaptured_) {
             presentationAfterLandingElapsed_ += std::max(0.0f, deltaTime);
+
             if (presentationAfterLandingElapsed_ >= 0.45f) {
                RequestPresentationScreenshot("05_after_landing.png", debugDrawPresentationGuides);
                presentationAfterLandingCaptured_ = true;
+
                if (presentationMeasurementStarted_ && presentationMeasurementResetForJump_ &&
                    !presentationMeasurementSaved_) {
                   presentationMeasurementSaved_ = playerRearFollowCamera_->StopCameraMeasurement(true);
@@ -598,6 +639,7 @@ void CameraGravityBridge::Update(float deltaTime) {
             }
          }
       }
+
       if (enableLandingShake && isGrounded && !wasGrounded_) {
          // 接地中の連続発火を避け、各カメラ固有の画面Upに沿って同じ衝撃を与える。
          if (IsSelectedCamera(gravityFollowCamera_)) {
@@ -605,17 +647,20 @@ void CameraGravityBridge::Update(float deltaTime) {
                NormalizeOrFallback(gravityFollowCamera_->GetCameraUp(), gravityUp), landingShakeAmplitude,
                landingShakeFrequency, landingShakeDuration);
          }
+
          if (IsSelectedCamera(playerRearFollowCamera_)) {
             TriggerDirectionalShake(playerRearFollowCamera_,
                NormalizeOrFallback(playerRearFollowCamera_->GetCameraUp(), gravityUp), landingShakeAmplitude,
                landingShakeFrequency, landingShakeDuration);
          }
+
          if (IsSelectedCamera(planetLeashCamera_)) {
             TriggerDirectionalShake(planetLeashCamera_,
                NormalizeOrFallback(planetLeashCamera_->GetCameraUp(), gravityUp), landingShakeAmplitude,
                landingShakeFrequency, landingShakeDuration);
          }
       }
+
       wasGrounded_ = isGrounded;
    }
 
@@ -624,6 +669,7 @@ void CameraGravityBridge::Update(float deltaTime) {
 
    // 無効中の通知も記録し、設定を再び有効にした瞬間の遅延発火を防ぐ。
    lastMiniTurboFireCount_ = miniTurboFireCount;
+
    if (enableMiniTurboShake && miniTurboFired && miniTurboShakeDuration > 0.0f &&
        (miniTurboShakeHorizontalAmplitude > 0.0f || miniTurboShakeVerticalAmplitude > 0.0f)) {
       // 同フレームに着地してもミニターボの縦横シェイクを優先する。
@@ -651,9 +697,9 @@ void CameraGravityBridge::Update(float deltaTime) {
 void CameraGravityBridge::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::CameraReference("Gravity Follow Camera", gravityFollowCameraId_, "GravityFollowCamera");
    GameEngine::EditorUI::CameraReference(
       "Player Rear Follow Camera", playerRearFollowCameraId_, "PlayerRearFollowCamera");
@@ -743,80 +789,105 @@ void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
    if (data.contains("gravityFollowCameraId") && data.at("gravityFollowCameraId").is_string()) {
       gravityFollowCameraId_ = data.at("gravityFollowCameraId").get<std::string>();
    }
+
    if (data.contains("playerRearFollowCameraId") && data.at("playerRearFollowCameraId").is_string()) {
       playerRearFollowCameraId_ = data.at("playerRearFollowCameraId").get<std::string>();
    }
+
    if (data.contains("planetLeashCameraId") && data.at("planetLeashCameraId").is_string()) {
       planetLeashCameraId_ = data.at("planetLeashCameraId").get<std::string>();
    }
+
    if (data.contains("enableLandingShake")) {
       enableLandingShake = data["enableLandingShake"];
    }
+
    if (data.contains("landingShakeAmplitude")) {
       landingShakeAmplitude = data["landingShakeAmplitude"];
    }
+
    if (data.contains("landingShakeFrequency")) {
       landingShakeFrequency = data["landingShakeFrequency"];
    }
+
    if (data.contains("landingShakeDuration")) {
       landingShakeDuration = data["landingShakeDuration"];
    }
+
    if (data.contains("enableMiniTurboShake") && data.at("enableMiniTurboShake").is_boolean()) {
       enableMiniTurboShake = data.at("enableMiniTurboShake").get<bool>();
    }
+
    if (data.contains("miniTurboShakeHorizontalAmplitude") && data.at("miniTurboShakeHorizontalAmplitude").is_number()) {
       miniTurboShakeHorizontalAmplitude = data.at("miniTurboShakeHorizontalAmplitude").get<float>();
    }
+
    if (data.contains("miniTurboShakeVerticalAmplitude") && data.at("miniTurboShakeVerticalAmplitude").is_number()) {
       miniTurboShakeVerticalAmplitude = data.at("miniTurboShakeVerticalAmplitude").get<float>();
    }
+
    if (data.contains("miniTurboShakeFrequency") && data.at("miniTurboShakeFrequency").is_number()) {
       miniTurboShakeFrequency = data.at("miniTurboShakeFrequency").get<float>();
    }
+
    if (data.contains("miniTurboShakeDuration") && data.at("miniTurboShakeDuration").is_number()) {
       miniTurboShakeDuration = data.at("miniTurboShakeDuration").get<float>();
    }
+
    if (data.contains("enableDriftCameraApproach") && data.at("enableDriftCameraApproach").is_boolean()) {
       enableDriftCameraApproach = data.at("enableDriftCameraApproach").get<bool>();
    }
+
    if (data.contains("driftCameraDistanceReduction") && data.at("driftCameraDistanceReduction").is_number()) {
       driftCameraDistanceReduction = data.at("driftCameraDistanceReduction").get<float>();
    }
+
    if (data.contains("driftCameraHeightOffset") && data.at("driftCameraHeightOffset").is_number()) {
       driftCameraHeightOffset = data.at("driftCameraHeightOffset").get<float>();
    }
+
    if (data.contains("driftLookTargetHeightOffset") && data.at("driftLookTargetHeightOffset").is_number()) {
       driftLookTargetHeightOffset = data.at("driftLookTargetHeightOffset").get<float>();
    }
+
    if (data.contains("driftCameraLerpSpeed") && data.at("driftCameraLerpSpeed").is_number()) {
       driftCameraLerpSpeed = data.at("driftCameraLerpSpeed").get<float>();
    }
+
    if (data.contains("debugDrawPresentationGuides") && data.at("debugDrawPresentationGuides").is_boolean()) {
       debugDrawPresentationGuides = data.at("debugDrawPresentationGuides").get<bool>();
    }
+
    if (data.contains("presentationGuideLength") && data.at("presentationGuideLength").is_number()) {
       presentationGuideLength = std::max(1.0f, data.at("presentationGuideLength").get<float>());
    }
+
    if (data.contains("autoCapturePresentationSequence") && data.at("autoCapturePresentationSequence").is_boolean()) {
       autoCapturePresentationSequence = data.at("autoCapturePresentationSequence").get<bool>();
    }
+
    if (data.contains("presentationCaptureJumpDelay") && data.at("presentationCaptureJumpDelay").is_number()) {
       presentationCaptureJumpDelay = std::max(0.0f, data.at("presentationCaptureJumpDelay").get<float>());
    }
+
    if (data.contains("autoCapturePresentationVideoFrames") &&
        data.at("autoCapturePresentationVideoFrames").is_boolean()) {
       autoCapturePresentationVideoFrames = data.at("autoCapturePresentationVideoFrames").get<bool>();
    }
+
    if (data.contains("presentationVideoFrameRate") && data.at("presentationVideoFrameRate").is_number()) {
       presentationVideoFrameRate = std::clamp(data.at("presentationVideoFrameRate").get<float>(), 1.0f, 60.0f);
    }
+
    if (data.contains("presentationVideoCaptureStartDelay") &&
        data.at("presentationVideoCaptureStartDelay").is_number()) {
       presentationVideoCaptureStartDelay = std::max(0.0f, data.at("presentationVideoCaptureStartDelay").get<float>());
    }
+
    if (data.contains("presentationVideoCaptureDuration") && data.at("presentationVideoCaptureDuration").is_number()) {
       presentationVideoCaptureDuration = std::max(0.0f, data.at("presentationVideoCaptureDuration").get<float>());
    }
+
    Configure(DescribeSettings());
 }
 

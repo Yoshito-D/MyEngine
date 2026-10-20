@@ -29,6 +29,7 @@ inline float ClampCameraFov(float fov) {
    if (!std::isfinite(fov)) {
       return kDefaultSafeFov;
    }
+
    return std::clamp(fov, kMinSafeFov, kMaxSafeFov);
 }
 
@@ -52,11 +53,13 @@ inline bool ReadBool(const nlohmann::json& data, const char* key, bool fallback)
 /// @brief 微小ベクトルでは代替方向を使い、正規化可能な方向を返す。
 inline GameEngine::Vector3 NormalizeOrFallback(const GameEngine::Vector3& value, const GameEngine::Vector3& fallback) {
    float len = value.Length();
+
    if (len > 1e-5f) {
       return value * (1.0f / len);
    }
 
    float fallbackLen = fallback.Length();
+
    if (fallbackLen > 1e-5f) {
       return fallback * (1.0f / fallbackLen);
    }
@@ -68,8 +71,8 @@ inline GameEngine::Vector3 NormalizeOrFallback(const GameEngine::Vector3& value,
 inline void StepSpring1D(
    float target, float stiffness, float damping, float deltaTime, float& inOutValue, float& inOutVelocity) {
    float dt = std::clamp(deltaTime, 0.0f, kMaxSpringDeltaTime);
-   if (dt <= 0.0f)
-      return;
+
+   if (dt <= 0.0f) return;
 
    float k = std::max(0.0f, stiffness);
    float c = std::max(0.0f, damping);
@@ -77,6 +80,7 @@ inline void StepSpring1D(
    if (!std::isfinite(inOutValue)) {
       inOutValue = target;
    }
+
    if (!std::isfinite(inOutVelocity)) {
       inOutVelocity = 0.0f;
    }
@@ -106,25 +110,31 @@ inline GameEngine::Vector3 RotateTowardsUnit(const GameEngine::Vector3& current,
 
    Vector3 c = current;
    float cLen = c.Length();
-   if (cLen < 1e-6f)
+
+   if (cLen < 1e-6f) {
       c = {0.0f, 1.0f, 0.0f};
-   else
+   } else {
       c = c * (1.0f / cLen);
+   }
 
    Vector3 t = target;
    float tLen = t.Length();
-   if (tLen < 1e-6f)
+
+   if (tLen < 1e-6f) {
       t = {0.0f, 1.0f, 0.0f};
-   else
+   } else {
       t = t * (1.0f / tLen);
+   }
 
    float dot = std::clamp(c.Dot(t), -1.0f, 1.0f);
    float angle = std::acos(dot);
+
    if (angle < 1e-6f) {
       return t;
    }
 
    float step = std::max(0.0f, maxRadiansDelta);
+
    if (step >= angle) {
       return t;
    }
@@ -134,6 +144,7 @@ inline GameEngine::Vector3 RotateTowardsUnit(const GameEngine::Vector3& current,
       // 任意のワールド軸が選ばれて急なロール経路へ入ることを防ぐ。
       Vector3 axis = preferredAntipodalAxis - c * c.Dot(preferredAntipodalAxis);
       float axisLen = axis.Length();
+
       if (axisLen < 1e-6f) {
          Vector3 fallbackAxis = (std::abs(c.x) < 0.9f) ? Vector3{1.0f, 0.0f, 0.0f} : Vector3{0.0f, 1.0f, 0.0f};
          axis = c.Cross(fallbackAxis);
@@ -167,9 +178,11 @@ inline GameEngine::Vector3 BlendUnitDirectionSafely(const GameEngine::Vector3& c
    GameEngine::Vector3 from = NormalizeOrFallback(current, fallback);
    GameEngine::Vector3 to = NormalizeOrFallback(target, from);
    float t = std::clamp(blend, 0.0f, 1.0f);
+
    if (t <= 0.0f) {
       return from;
    }
+
    if (t >= 1.0f) {
       return to;
    }
@@ -198,9 +211,11 @@ inline float SignedAngleAroundAxis(const GameEngine::Vector3& from, const GameEn
    GameEngine::Vector3 safeAxis = NormalizeOrFallback(axis, {0.0f, 1.0f, 0.0f});
    float cosine = std::clamp(safeFrom.Dot(safeTo), -1.0f, 1.0f);
    float sine = safeAxis.Dot(safeFrom.Cross(safeTo));
+
    if (std::abs(sine) <= 1e-5f && cosine < -0.9999f) {
       return antipodalSign < 0.0f ? -GameEngine::MathConstants::kPi : GameEngine::MathConstants::kPi;
    }
+
    return std::atan2(sine, cosine);
 }
 
@@ -214,9 +229,11 @@ inline float SmoothStep01(float value) {
 inline float AngleDegrees(const GameEngine::Vector3& from, const GameEngine::Vector3& to) {
    float fromLength = from.Length();
    float toLength = to.Length();
+
    if (fromLength <= 1e-6f || toLength <= 1e-6f) {
       return 0.0f;
    }
+
    float dot = from.Dot(to) / (fromLength * toLength);
    return std::acos(std::clamp(dot, -1.0f, 1.0f)) * kRadiansToDegrees;
 }
@@ -253,6 +270,7 @@ inline GameEngine::Vector3 ProjectOnPlaneNorm(
 
    Vector3 proj = v - up * up.Dot(v);
    float len = proj.Length();
+
    if (len > 1e-4f) {
       return proj * (1.0f / len);
    }
@@ -260,6 +278,7 @@ inline GameEngine::Vector3 ProjectOnPlaneNorm(
    // v がほぼ up と平行 → fallback を投影して使う
    Vector3 fb = fallback - up * up.Dot(fallback);
    float fbLen = fb.Length();
+
    if (fbLen > 1e-4f) {
       return fb * (1.0f / fbLen);
    }

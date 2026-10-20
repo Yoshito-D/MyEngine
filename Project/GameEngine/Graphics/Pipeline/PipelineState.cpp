@@ -16,6 +16,7 @@ void PipelineState::CreatePipelineState(ID3D12Device* device) {
    // 描画時はこの組み合わせを丸ごと切り替え、個別状態の不整合を避ける。
    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
    graphicsPipelineStateDesc.pRootSignature = rootSignature_->GetRootSignature();
+
    if (!inputElementDescs_.empty()) {
       graphicsPipelineStateDesc.InputLayout.pInputElementDescs = inputElementDescs_.data();
       graphicsPipelineStateDesc.InputLayout.NumElements = static_cast<UINT>(inputElementDescs_.size());
@@ -23,6 +24,7 @@ void PipelineState::CreatePipelineState(ID3D12Device* device) {
       graphicsPipelineStateDesc.InputLayout.pInputElementDescs = nullptr;
       graphicsPipelineStateDesc.InputLayout.NumElements = 0;
    }
+
    graphicsPipelineStateDesc.VS = {vertexShaderBlob_->GetBufferPointer(), vertexShaderBlob_->GetBufferSize()};
    graphicsPipelineStateDesc.PS = {pixelShaderBlob_->GetBufferPointer(), pixelShaderBlob_->GetBufferSize()};
    graphicsPipelineStateDesc.BlendState = blendDesc_;
@@ -53,6 +55,7 @@ void PipelineState::CreatePipelineState(ID3D12Device* device) {
    // 実際に生成
    result = device->CreateGraphicsPipelineState(
       &graphicsPipelineStateDesc, IID_PPV_ARGS(graphicsPipelineState_.GetAddressOf()));
+
    if (FAILED(result)) {
       Logger::Error("[PipelineState] PSO creation failed: " + Logger::ConvertString(name_) +
                     ", HRESULT=" + std::to_string(result));

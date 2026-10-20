@@ -27,17 +27,20 @@ public:
    /// @brief 指定位置の法線を重力Upとして返す（失敗時はfallback）
    GameEngine::Vector3 GetUpVectorFor(const GameEngine::Vector3& objectPosition) const override {
       GameEngine::Vector3 normal = FindSurfaceNormal(objectPosition);
+
       if (normal.LengthSquared() > 1e-8f) {
          return normal.Normalize();
       }
+
       return fallbackUpVector_;
    }
 
    /// @brief 有限かつ非ゼロの代替Upを正規化して設定する。不正値では現在値を保持する。
    void SetFallbackUpVector(const GameEngine::Vector3& up) {
       const float length = std::hypot(up.x, up.y, up.z);
-      if (!std::isfinite(length) || length <= 1.0e-4f)
-         return;
+
+      if (!std::isfinite(length) || length <= 1.0e-4f) return;
+
       fallbackUpVector_ = up / length;
    }
 
@@ -52,6 +55,7 @@ public:
    void Deserialize(const nlohmann::json& data) override {
       if (data.contains("fallbackUp")) {
          const auto& up = data.at("fallbackUp");
+
          if (up.is_array() && up.size() == 3 && up[0].is_number() && up[1].is_number() && up[2].is_number()) {
             SetFallbackUpVector({up[0].get<float>(), up[1].get<float>(), up[2].get<float>()});
          }

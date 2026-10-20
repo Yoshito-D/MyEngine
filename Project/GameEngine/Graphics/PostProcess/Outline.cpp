@@ -24,15 +24,12 @@ void Outline::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTa
 ///          定数バッファをそれぞれ意味名から解決済みのスロットへ束縛し、1回のフルスクリーンパスで処理する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void Outline::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature())
-      return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    const D3D12_GPU_DESCRIPTOR_HANDLE depthSRV = GetDevice()->GetDepthSRVHandleGPU();
 
    // Prewittフィルターには深度近傍値が必須なため、無効ハンドルで色だけを描くフォールバックは行わない。
-   if (depthSRV.ptr == 0) {
-      return;
-   }
+   if (depthSRV.ptr == 0) return;
 
    // リサイズで1テクセル幅が変化し得るため、描画直前にrenderTarget_の現在サイズから定数を再計算する。
    UpdateConstantBuffer();
@@ -108,9 +105,7 @@ void Outline::CreateConstantBuffer() {
 /// @details 1テクセルのUV幅を解像度から算出することで、thicknessを画面サイズに依存しない
 ///          ピクセル単位の近傍間隔として扱える。ゼロ寸法では除算せず0を渡す。
 void Outline::UpdateConstantBuffer() {
-   if (!constantBufferData_ || !GetRenderTarget()) {
-      return;
-   }
+   if (!constantBufferData_ || !GetRenderTarget()) return;
 
    constantBufferData_->outlineColor[0] = outlineColor_[0];
    constantBufferData_->outlineColor[1] = outlineColor_[1];

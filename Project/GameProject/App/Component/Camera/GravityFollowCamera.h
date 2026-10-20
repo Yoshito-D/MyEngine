@@ -172,38 +172,71 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.rotateSpeed))
+
+      if (!std::isfinite(settings.rotateSpeed)) {
          settings.rotateSpeed = defaults.rotateSpeed;
-      if (!std::isfinite(settings.scrollSpeed))
+      }
+
+      if (!std::isfinite(settings.scrollSpeed)) {
          settings.scrollSpeed = defaults.scrollSpeed;
-      if (!std::isfinite(settings.gravityUpLerpSpeed))
+      }
+
+      if (!std::isfinite(settings.gravityUpLerpSpeed)) {
          settings.gravityUpLerpSpeed = defaults.gravityUpLerpSpeed;
-      if (!std::isfinite(settings.fovDefault))
+      }
+
+      if (!std::isfinite(settings.fovDefault)) {
          settings.fovDefault = defaults.fovDefault;
-      if (!std::isfinite(settings.fovBoostMax))
+      }
+
+      if (!std::isfinite(settings.fovBoostMax)) {
          settings.fovBoostMax = defaults.fovBoostMax;
-      if (!std::isfinite(settings.fovLerpSpeed))
+      }
+
+      if (!std::isfinite(settings.fovLerpSpeed)) {
          settings.fovLerpSpeed = defaults.fovLerpSpeed;
-      if (!std::isfinite(settings.speedBoostThreshold))
+      }
+
+      if (!std::isfinite(settings.speedBoostThreshold)) {
          settings.speedBoostThreshold = defaults.speedBoostThreshold;
-      if (!std::isfinite(settings.speedBoostMax))
+      }
+
+      if (!std::isfinite(settings.speedBoostMax)) {
          settings.speedBoostMax = defaults.speedBoostMax;
-      if (!std::isfinite(settings.distanceBoostMax))
+      }
+
+      if (!std::isfinite(settings.distanceBoostMax)) {
          settings.distanceBoostMax = defaults.distanceBoostMax;
-      if (!std::isfinite(settings.springStiffness))
+      }
+
+      if (!std::isfinite(settings.springStiffness)) {
          settings.springStiffness = defaults.springStiffness;
-      if (!std::isfinite(settings.springDamping))
+      }
+
+      if (!std::isfinite(settings.springDamping)) {
          settings.springDamping = defaults.springDamping;
-      if (!std::isfinite(settings.accelToFovKick))
+      }
+
+      if (!std::isfinite(settings.accelToFovKick)) {
          settings.accelToFovKick = defaults.accelToFovKick;
-      if (!std::isfinite(settings.accelToDistanceKick))
+      }
+
+      if (!std::isfinite(settings.accelToDistanceKick)) {
          settings.accelToDistanceKick = defaults.accelToDistanceKick;
-      if (!std::isfinite(settings.turboFovKickMax))
+      }
+
+      if (!std::isfinite(settings.turboFovKickMax)) {
          settings.turboFovKickMax = defaults.turboFovKickMax;
-      if (!std::isfinite(settings.turboDistanceKickMax))
+      }
+
+      if (!std::isfinite(settings.turboDistanceKickMax)) {
          settings.turboDistanceKickMax = defaults.turboDistanceKickMax;
-      if (!std::isfinite(settings.positionLerpSpeed))
+      }
+
+      if (!std::isfinite(settings.positionLerpSpeed)) {
          settings.positionLerpSpeed = defaults.positionLerpSpeed;
+      }
+
       rotateSpeed = settings.rotateSpeed;
       scrollSpeed = settings.scrollSpeed;
       gravityUpLerpSpeed = settings.gravityUpLerpSpeed;

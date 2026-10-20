@@ -18,8 +18,8 @@ void NoiseModule::ApplyNoise(Particle& particle, float deltaTime) {
 
 void NoiseModule::ApplyNoise(
    Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) {
-   if (!IsEnabled())
-      return;
+   if (!IsEnabled()) return;
+
    float strength = strength_.IsRandomized() ? particle.noiseStrength : strength_.Minimum();
    float frequency = frequency_.IsRandomized() ? particle.noiseFrequency : frequency_.Minimum();
    float scrollSpeed = scrollSpeed_.IsRandomized() ? particle.noiseScrollSpeed : scrollSpeed_.Minimum();
@@ -28,6 +28,7 @@ void NoiseModule::ApplyNoise(
 
    Vector3 samplePosition = particle.transform.translation;
    Quaternion simulationRotation = simulationTransform.GetActiveQuaternion();
+
    if (useLocalSimulation) {
       // エミッターと一緒にノイズ場を移動させるため、サンプル位置をローカル空間へ戻す。
       samplePosition = RotateVector(samplePosition - simulationTransform.translation, simulationRotation.Inverse());
@@ -56,8 +57,10 @@ nlohmann::json NoiseModule::ToJson() const {
 }
 
 void NoiseModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
+   }
+
    if (j.contains("strength")) {
       if (j["strength"].is_object()) {
          strength_.FromJson(j["strength"]);
@@ -67,6 +70,7 @@ void NoiseModule::FromJson(const nlohmann::json& j) {
          strength_ = RandomFloat(value, value, false);
       }
    }
+
    if (j.contains("frequency")) {
       if (j["frequency"].is_object()) {
          frequency_.FromJson(j["frequency"]);
@@ -75,6 +79,7 @@ void NoiseModule::FromJson(const nlohmann::json& j) {
          frequency_ = RandomFloat(value, value, false);
       }
    }
+
    if (j.contains("scrollSpeed")) {
       if (j["scrollSpeed"].is_object()) {
          scrollSpeed_.FromJson(j["scrollSpeed"]);

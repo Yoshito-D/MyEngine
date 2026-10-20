@@ -16,6 +16,7 @@ const bool kRegistered =
       if (auto* existing = camera.GetComponent<LookAtAim>()) {
          return existing;
       }
+
       return camera.AddComponent<LookAtAim>();
    });
 
@@ -27,6 +28,7 @@ Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) 
    if (!data.is_array() || data.size() != 3) {
       return fallback;
    }
+
    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
 }
 
@@ -36,19 +38,17 @@ float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
 } // namespace
 
 void LookAtAim::MutateCameraState(CameraState& state, float deltaTime) {
-   if (GetOwnerCamera() == nullptr)
-      return;
+   if (GetOwnerCamera() == nullptr) return;
 
    const Transform* target = GetOwnerCamera()->GetLookAtTarget();
-   if (target == nullptr)
-      return;
+
+   if (target == nullptr) return;
 
    // ターゲット方向を計算
    Vector3 lookAtPosition = target->translation + offset_;
    Vector3 direction = lookAtPosition - state.transform.translation;
 
-   if (direction.LengthSquared() < 1e-6f)
-      return;
+   if (direction.LengthSquared() < 1e-6f) return;
 
    direction = direction.Normalize();
 
@@ -66,10 +66,10 @@ nlohmann::json LookAtAim::Serialize() const {
 }
 
 void LookAtAim::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
+
    damping_ = ReadFloat(data, "damping", damping_);
+
    if (data.contains("offset")) {
       offset_ = DeserializeVector3(data.at("offset"), offset_);
    }
@@ -78,13 +78,16 @@ void LookAtAim::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void LookAtAim::DrawInspector() {
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox("Enabled", &enabled))
+
+   if (ImGui::Checkbox("Enabled", &enabled)) {
       SetEnabled(enabled);
+   }
 
    if (ImGui::DragFloat("Damping", &damping_, 0.1f, 0.0f, 50.0f)) {
    }
 
    float off[3] = {offset_.x, offset_.y, offset_.z};
+
    if (ImGui::DragFloat3("Offset", off, 0.1f)) {
       offset_ = {off[0], off[1], off[2]};
    }

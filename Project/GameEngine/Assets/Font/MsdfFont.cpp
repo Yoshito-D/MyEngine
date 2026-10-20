@@ -39,6 +39,7 @@ MsdfFont::~MsdfFont() {
 bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPath) {
    // 再読込時に旧SRVとキャッシュを先に返し、同じインスタンスへ新アトラスを構築する。
    Clear();
+
    if (!device || !device->GetDevice() || !std::filesystem::is_regular_file(jsonPath)) {
       Logger::Error("[MsdfFont] Invalid load request: " + jsonPath.generic_string());
       return false;
@@ -47,10 +48,12 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
    nlohmann::json root;
    try {
       std::ifstream stream(jsonPath);
+
       if (!stream) {
          Logger::Error("[MsdfFont] Failed to open JSON: " + jsonPath.generic_string());
          return false;
       }
+
       stream >> root;
    } catch (const std::exception& exception) {
       Logger::Error("[MsdfFont] Failed to parse JSON: " + std::string(exception.what()));
@@ -65,6 +68,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
 
    const auto& atlas = root.at("atlas");
    const std::string atlasTypeName = atlas.value("type", "");
+
    if (atlasTypeName != "msdf" && atlasTypeName != "mtsdf") {
       Logger::Error("[MsdfFont] Unsupported atlas type: " + atlasTypeName);
       return false;
@@ -73,6 +77,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
    const uint32_t atlasWidth = atlas.value("width", 0u);
    const uint32_t atlasHeight = atlas.value("height", 0u);
    const float distanceRange = atlas.value("distanceRange", 0.0f);
+
    if (atlasWidth == 0 || atlasHeight == 0 || distanceRange <= 0.0f) {
       Logger::Error("[MsdfFont] Invalid atlas dimensions or distance range.");
       return false;
@@ -80,6 +85,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
 
    // GPU生成まで成功する前はローカル領域へ組み立て、途中失敗で半端なフォント状態を公開しない。
    std::unordered_map<uint32_t, SourceGlyph> sourceGlyphs;
+
    for (const auto& glyphData : root.at("glyphs")) {
       // 壊れた1グリフは読み飛ばし、残りの有効な文字までロード不能にしない。
       if (!glyphData.is_object() || !glyphData.contains("unicode") || !glyphData.at("unicode").is_number_unsigned()) {
@@ -97,14 +103,17 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
                           ReadBounds(glyphData.at("atlasBounds"), glyph.atlasLeft, glyph.atlasBottom, glyph.atlasRight,
                              glyph.atlasTop);
       }
+
       sourceGlyphs[glyph.codePoint] = glyph;
    }
+
    if (sourceGlyphs.empty()) {
       Logger::Error("[MsdfFont] No Unicode glyphs were found.");
       return false;
    }
 
    std::unordered_map<uint64_t, float> kerningPairs;
+
    if (root.contains("kerning") && root.at("kerning").is_array()) {
       // カーニングは任意節として扱い、未出力のアトラスでも等幅配置を継続できるようにする。
       for (const auto& kerningData : root.at("kerning")) {
@@ -114,6 +123,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
              !kerningData.at("advance").is_number()) {
             continue;
          }
+
          kerningPairs[BuildKerningKey(kerningData.at("unicode1").get<uint32_t>(),
             kerningData.at("unicode2").get<uint32_t>())] = kerningData.at("advance").get<float>();
       }
@@ -127,6 +137,7 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
 
    // 距離値を色としてガンマ補正すると輪郭位置がずれるため、アトラスは必ず線形値で読み込む。
    HRESULT result = DirectX::LoadFromWICFile(imagePath.wstring().c_str(), wicFlags, nullptr, image);
+
    if (FAILED(result)) {
       Logger::Error("[MsdfFont] Failed to load atlas PNG: " + imagePath.generic_string());
       return false;
@@ -137,14 +148,17 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
       DirectX::ScratchImage convertedImage;
       result = DirectX::Convert(image.GetImages(), image.GetImageCount(), image.GetMetadata(),
          DXGI_FORMAT_R8G8B8A8_UNORM, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, convertedImage);
+
       if (FAILED(result)) {
          Logger::Error("[MsdfFont] Failed to convert atlas PNG to linear RGBA8.");
          return false;
       }
+
       image = std::move(convertedImage);
    }
 
    const auto& metadata = image.GetMetadata();
+
    if (metadata.width != atlasWidth || metadata.height != atlasHeight) {
       // JSONのピクセル座標と画像寸法が食い違う場合、誤ったUVで別グリフを読むためロードを中止する。
       Logger::Error("[MsdfFont] JSON and PNG atlas dimensions do not match.");
@@ -152,12 +166,15 @@ bool MsdfFont::Load(GraphicsDevice* device, const std::filesystem::path& jsonPat
    }
 
    auto atlasTexture = ResourceHelper::CreateTextureResource(device->GetDevice(), metadata);
+
    if (!atlasTexture) {
       Logger::Error("[MsdfFont] Failed to create the atlas texture.");
       return false;
    }
+
    auto intermediateResource =
       ResourceHelper::UploadTextureData(atlasTexture.Get(), image, device->GetDevice(), device->GetCommandList());
+
    if (!intermediateResource) {
       Logger::Error("[MsdfFont] Failed to upload the atlas texture.");
       return false;
@@ -209,9 +226,11 @@ const GlyphInfo* MsdfFont::GetGlyph(uint32_t pixelSize, char32_t codePoint) {
    if (!source) {
       source = FindSourceGlyph(0xFFFD);
    }
+
    if (!source) {
       source = FindSourceGlyph(U'?');
    }
+
    if (!source) {
       return nullptr;
    }
@@ -265,6 +284,7 @@ float MsdfFont::GetKerning(uint32_t leftGlyph, uint32_t rightGlyph, uint32_t pix
    if (leftGlyph == 0 || rightGlyph == 0 || pixelSize == 0) {
       return 0.0f;
    }
+
    const auto iterator = kerningPairs_.find(BuildKerningKey(leftGlyph, rightGlyph));
    return iterator != kerningPairs_.end() ? iterator->second * static_cast<float>(pixelSize) : 0.0f;
 }
@@ -280,10 +300,12 @@ void MsdfFont::Clear() {
    kerningPairs_.clear();
    intermediateResource_.Reset();
    atlasTexture_.Reset();
+
    if (device_ && descriptorIndex_ != UINT_MAX) {
       // GraphicsDeviceの再利用可能SRV番号へ返し、フォントの再読込でヒープを消費し続けないようにする。
       device_->ReleaseSrvIndex(descriptorIndex_);
    }
+
    device_ = nullptr;
    descriptorIndex_ = UINT_MAX;
    atlasSrv_ = {};

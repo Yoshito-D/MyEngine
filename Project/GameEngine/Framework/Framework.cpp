@@ -138,10 +138,12 @@ void Framework::Update() {
 
    // 機能種別ごとの静的レジストリではなく、全Entityに共通する経路でComponentを一度だけ更新する。
    const auto registeredObjects = Object::GetRegisteredObjects();
+
    for (auto* object : registeredObjects) {
       if (!object) {
          continue;
       }
+
       object->UpdateComponents(deltaTime);
    }
 
@@ -150,8 +152,10 @@ void Framework::Update() {
       if (!particleSystem) {
          continue;
       }
+
       particleSystem->Update(deltaTime);
    }
+
    ParticleSystem::ProcessPendingSubEmitters();
 }
 

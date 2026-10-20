@@ -23,6 +23,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET {
 
    float4 originalColor = gInputTexture.Sample(gSampler, uv);
    float4 blurredColor = originalColor * kGaussianWeights[0];
+
    for (int offsetIndex = 1; offsetIndex <= kKernelRadius; ++offsetIndex) {
       const float2 sampleOffset = gBlurDirection * texelSize * float(offsetIndex);
       const float weight = kGaussianWeights[offsetIndex];
@@ -31,6 +32,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET {
    }
 
    float4 color = lerp(originalColor, blurredColor, effectStrength);
+
    if (gApplyComposite == 0) {
       return color;
    }

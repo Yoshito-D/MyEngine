@@ -8,8 +8,9 @@ using namespace RearCameraMath;
 
 void RearCameraSpeedEffects::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    auto* camera = GetRearCamera();
-   if (!camera)
-      return;
+
+   if (!camera) return;
+
    const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
    boostAlpha_ =
       UpdateAccelerationEffect(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), state, deltaTime);
@@ -25,6 +26,7 @@ float RearCameraSpeedEffects::UpdateAccelerationEffect(const RearCameraInput& in
    // 速度が [settings.speedBoostThreshold, settings.speedBoostMax] の範囲にどれだけ入っているかを正規化する
    float speedRange = settings.speedBoostMax - settings.speedBoostThreshold;
    float boostAlpha = 0.0f;
+
    if (speedRange > 1e-4f) {
       boostAlpha = std::clamp((input.playerSpeed - settings.speedBoostThreshold) / speedRange, 0.0f, 1.0f);
    }
@@ -45,6 +47,7 @@ float RearCameraSpeedEffects::UpdateAccelerationEffect(const RearCameraInput& in
    //   ミニターボ特有の「瞬間的に広がって徐々に戻る」演出が得られる。
    // ─────────────────────────────────────────────────────────────
    float speedDelta = 0.0f;
+
    if (!state_.isSpeedInitialized) {
       state_.previousPlayerSpeed = input.playerSpeed;
       state_.isSpeedInitialized = true;
@@ -90,6 +93,7 @@ float RearCameraSpeedEffects::UpdateAccelerationEffect(const RearCameraInput& in
    if (!std::isfinite(state_.currentFovOffset)) {
       state_.currentFovOffset = 0.0f;
    }
+
    float t = ExpSmoothingFactor(settings.fovLerpSpeed, deltaTime);
    state_.currentFovOffset += (targetFovOffset - state_.currentFovOffset) * t;
    state_.currentFov = ClampCameraFov(baseFov + state_.currentFovOffset);

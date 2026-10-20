@@ -155,8 +155,10 @@ bool DrawEnumCombo(const std::string& label, Enum& value, const std::vector<std:
    labels.reserve(items.size());
 
    int currentIndex = 0;
+
    for (int i = 0; i < static_cast<int>(items.size()); ++i) {
       labels.emplace_back(items[i].second);
+
       if (items[i].first == value) {
          currentIndex = i;
       }

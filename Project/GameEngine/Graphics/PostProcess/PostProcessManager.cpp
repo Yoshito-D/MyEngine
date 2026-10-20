@@ -35,8 +35,10 @@ using json = nlohmann::json;
 namespace {
 // wstringからstringへの変換
 std::string WStringToString(const std::wstring& wstr) {
-   if (wstr.empty())
+   if (wstr.empty()) {
       return std::string();
+   }
+
    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
    std::string strTo(size_needed, 0);
    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
@@ -80,9 +82,7 @@ void PostProcessManager::Initialize(
 }
 
 void PostProcessManager::RegisterDefaultEffectFactories() {
-   if (effectFactoriesRegistered_) {
-      return;
-   }
+   if (effectFactoriesRegistered_) return;
 
    // JSONはC++型を直接生成できないため、安定したclassNameから所有権付きインスタンスを作る
    // ファクトリー表を一度だけ登録する。
@@ -109,6 +109,7 @@ void PostProcessManager::RegisterDefaultEffectFactories() {
 bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFilePath) {
    std::string path = WStringToString(definitionFilePath);
    std::ifstream file(path);
+
    if (!file.is_open()) {
       Logger::Error("[PostProcessManager] Failed to open post-process registry: " + path);
       return false;
@@ -128,6 +129,7 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
       bool allSucceeded = true;
       size_t effectIndex = 0;
       std::unordered_set<std::string> loadedEffectIds;
+
       for (const auto& effectDef : effectsJson["postProcessEffects"]) {
          const std::string entryLabel = path + "#postProcessEffects[" + std::to_string(effectIndex) + "]";
          ++effectIndex;
@@ -153,6 +155,7 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
             allSucceeded = false;
             continue;
          }
+
          if (!loadedEffectIds.insert(definition.id).second) {
             // 表示名は翻訳等で変わり得るため、シーン保存に使う安定IDだけを一意制約とする。
             Logger::Error("[PostProcessManager] Duplicate post-process effect id: " + definition.id);
@@ -162,6 +165,7 @@ bool PostProcessManager::LoadEffectsFromJson(const std::wstring& definitionFileP
 
          // クラス名からエフェクトインスタンスを作成
          auto effect = CreateEffectByClassName(definition.className);
+
          if (!effect) {
             Logger::Error("[PostProcessManager] Unknown post-process effect class: " + definition.className);
             allSucceeded = false;
@@ -206,6 +210,7 @@ bool PostProcessManager::ConfigureEffectPipeline(
 
    auto* pipeline = psoManager_->GetPipeline(pipelineName);
    auto* rootSignature = psoManager_->GetRootSignature(rootSignatureName);
+
    if (!pipeline || !rootSignature) {
       Logger::Error("[PostProcessManager] Pipeline or root signature not found: pipeline=" + pipelineName +
                     ", rootSignature=" + rootSignatureName);
@@ -217,6 +222,7 @@ bool PostProcessManager::ConfigureEffectPipeline(
    // ルート引数の物理番号はJSON定義へ閉じ込め、エフェクト側には意味名から解決した番号だけを渡す。
    const auto cbSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "constantbuffer");
    const auto inputSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "inputtexture");
+
    if (!cbSlot.has_value() || !inputSlot.has_value()) {
       Logger::Error("[PostProcessManager] Required post-process binding slots are missing: pipeline=" + pipelineName);
       return false;
@@ -225,22 +231,27 @@ bool PostProcessManager::ConfigureEffectPipeline(
    // 深度とマスクは一部エフェクトだけの任意入力だが、対応するRootSignatureを選んだ場合は必須とする。
    const auto depthSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "depthtexture");
    const auto maskSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "masktexture");
+
    if (rootSignatureName == "PostProcessOutline" && !depthSlot.has_value()) {
       Logger::Error("[PostProcessManager] Outline post-process binding slot is missing: depthtexture");
       return false;
    }
+
    if (rootSignatureName == "PostProcessDissolve" && !maskSlot.has_value()) {
       Logger::Error("[PostProcessManager] Dissolve post-process binding slot is missing: masktexture");
       return false;
    }
 
    effect->SetBindingSlots(cbSlot.value(), inputSlot.value());
+
    if (depthSlot.has_value()) {
       effect->SetDepthTextureRootSlot(depthSlot.value());
    }
+
    if (maskSlot.has_value()) {
       effect->SetMaskTextureRootSlot(maskSlot.value());
    }
+
    return true;
 }
 
@@ -263,21 +274,18 @@ void PostProcessManager::RegisterEffect(std::unique_ptr<PostProcess> effect, con
 }
 
 void PostProcessManager::ApplyEffects(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (effects_.empty()) {
-      return;
-   }
+   if (effects_.empty()) return;
 
    // 実行中にenabled判定やnull判定を繰り返さないよう、現在有効な順序付きビューを先に作る。
    std::vector<EffectInfo*> enabledEffects;
+
    for (auto& effectInfo : effects_) {
       if (effectInfo.enabled && effectInfo.effect) {
          enabledEffects.push_back(&effectInfo);
       }
    }
 
-   if (enabledEffects.empty()) {
-      return;
-   }
+   if (enabledEffects.empty()) return;
 
    // 最初はシーン色、以降は直前の出力SRVを入力にする。各ApplyはSwapBuffers後の
    // 別面へ書くため、同じテクスチャをSRVとRTVへ同時束縛しない。
@@ -301,6 +309,7 @@ void PostProcessManager::ApplyEffects(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
 void PostProcessManager::SetEffectEnabled(const std::string& name, bool enabled) {
    auto it = FindEffect(name);
+
    if (it != effects_.end()) {
       it->enabled = enabled;
    }
@@ -313,6 +322,7 @@ bool PostProcessManager::IsEffectEnabled(const std::string& name) const {
 
 void PostProcessManager::SetEffectPriority(const std::string& name, int priority) {
    auto it = FindEffect(name);
+
    if (it != effects_.end()) {
       it->priority = priority;
       SortEffectsByPriority();
@@ -348,13 +358,16 @@ PostProcess* PostProcessManager::GetEffect(const std::string& name) {
 nlohmann::json PostProcessManager::SerializeSceneState() const {
    // 表示名やパイプライン名ではなく安定IDを保存し、名称変更後も同じエフェクトへ復元する。
    nlohmann::json stack = nlohmann::json::array();
+
    for (const auto& effectInfo : effects_) {
       if (!effectInfo.effect) {
          continue;
       }
+
       stack.push_back(nlohmann::json{{"id", effectInfo.id}, {"enabled", effectInfo.enabled},
          {"order", effectInfo.priority}, {"settings", effectInfo.effect->SerializeSettings()}});
    }
+
    return nlohmann::json{{"postProcessStack", std::move(stack)}};
 }
 
@@ -362,10 +375,13 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
    if (!state.is_object()) {
       return false;
    }
+
    const auto stackIt = state.find("postProcessStack");
+
    if (stackIt == state.end()) {
       return true;
    }
+
    if (!stackIt->is_array()) {
       return false;
    }
@@ -377,20 +393,27 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
       if (!entry.is_object()) {
          return false;
       }
+
       const auto idIt = entry.find("id");
+
       if (idIt == entry.end() || !idIt->is_string()) {
          return false;
       }
+
       const std::string id = idIt->get<std::string>();
+
       if (id.empty() || entriesById.contains(id)) {
          return false;
       }
+
       if (const auto enabledIt = entry.find("enabled"); enabledIt != entry.end() && !enabledIt->is_boolean()) {
          return false;
       }
+
       if (const auto orderIt = entry.find("order"); orderIt != entry.end() && !orderIt->is_number_integer()) {
          return false;
       }
+
       if (const auto orderIt = entry.find("order"); orderIt != entry.end()) {
          try {
             (void)orderIt->get<int>();
@@ -398,29 +421,36 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
             return false;
          }
       }
+
       if (const auto settingsIt = entry.find("settings"); settingsIt != entry.end() && !settingsIt->is_object()) {
          return false;
       }
+
       entriesById.emplace(id, &entry);
    }
 
    std::unordered_set<std::string> appliedIds;
+
    for (auto& effectInfo : effects_) {
       // シーンに記載のない項目は前シーン値を引き継がず、レジストリ既定値へ戻す。
       effectInfo.enabled = effectInfo.defaultEnabled;
       effectInfo.priority = effectInfo.defaultPriority;
+
       if (effectInfo.effect && !effectInfo.effect->DeserializeSettings(effectInfo.defaultSettings)) {
          return false;
       }
 
       const auto entryIt = entriesById.find(effectInfo.id);
+
       if (entryIt == entriesById.end()) {
          continue;
       }
+
       const nlohmann::json& entry = *entryIt->second;
       appliedIds.insert(effectInfo.id);
       effectInfo.enabled = entry.value("enabled", effectInfo.defaultEnabled);
       effectInfo.priority = entry.value("order", effectInfo.defaultPriority);
+
       if (effectInfo.effect && entry.contains("settings") &&
           !effectInfo.effect->DeserializeSettings(entry.at("settings"))) {
          return false;
@@ -429,17 +459,20 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
 
    for (const auto& [id, entry] : entriesById) {
       (void)entry;
+
       if (!appliedIds.contains(id)) {
          // 新しい／削除済みエフェクトIDは無視して、異なるバージョンのシーンを読み進められるようにする。
          Logger::EngineWarning("[PostProcessManager] Scene references an unknown effect: " + id);
       }
    }
+
    SortEffectsByPriority();
    return true;
 }
 
 void PostProcessManager::RemoveEffect(const std::string& name) {
    auto it = FindEffect(name);
+
    if (it != effects_.end()) {
       effects_.erase(it);
    }
@@ -465,12 +498,16 @@ void PostProcessManager::DisableAllEffects() {
 bool PostProcessManager::ShowImGuiControls() {
    bool visible =
       EngineContext::GetEditorWindowVisibility("PostProcessManager", {"ポストプロセス", "Post Process Manager"});
-   if (!visible)
+
+   if (!visible) {
       return false;
+   }
+
    const nlohmann::json stateBeforeEditing = SerializeSceneState();
    const std::string windowLabel = StableEditorLabel("ポストプロセス", "Post Process Manager", "PostProcessManager");
    const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
    EngineContext::SetEditorWindowVisibility("PostProcessManager", visible);
+
    if (!drawContents) {
       ImGui::End();
       return false;
@@ -483,7 +520,9 @@ bool PostProcessManager::ShowImGuiControls() {
    if (ImGui::Button(LocalizeEditorText("すべて有効", "Enable All"))) {
       EnableAllEffects();
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button(LocalizeEditorText("すべて無効", "Disable All"))) {
       DisableAllEffects();
    }
@@ -492,16 +531,19 @@ bool PostProcessManager::ShowImGuiControls() {
 
    // 各エフェクトの制御
    bool shouldSortEffects = false;
+
    for (auto& effectInfo : effects_) {
       ImGui::PushID(effectInfo.effect.get());
 
       const std::string effectLabel = std::string(LocalizeEffectName(effectInfo.id, effectInfo.name)) + "###Effect";
+
       if (ImGui::TreeNode(effectLabel.c_str())) {
          // 有効/無効チェックボックス
          ImGui::Checkbox(LocalizeEditorText("有効", "Enabled"), &effectInfo.enabled);
 
          // 優先度設定
          int priority = effectInfo.priority;
+
          if (ImGui::SliderInt(LocalizeEditorText("実行順", "Priority"), &priority, 0, 100)) {
             effectInfo.priority = priority;
             shouldSortEffects = true;
@@ -521,6 +563,7 @@ bool PostProcessManager::ShowImGuiControls() {
    if (shouldSortEffects) {
       SortEffectsByPriority();
    }
+
    ImGui::End();
    return stateBeforeEditing != SerializeSceneState();
 }

@@ -49,9 +49,7 @@ void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
 void TitleStartComponent::Update(float deltaTime) {
    // TextとTransformが揃う選択肢を一つも構築できない場合は、
    // 画面に選択結果を示せないままシーン遷移だけを受け付けないよう停止する。
-   if (!hasBaseVisualStates_) {
-      return;
-   }
+   if (!hasBaseVisualStates_) return;
 
    if (!startRequested_) {
       bool selectionChanged = false;
@@ -70,6 +68,7 @@ void TitleStartComponent::Update(float deltaTime) {
             selectionSwitchActive_ = true;
             selectionChanged = true;
          }
+
          navigationLatched_ = true;
          RefreshSelectionText();
       }
@@ -81,9 +80,7 @@ void TitleStartComponent::Update(float deltaTime) {
       const std::string& selectedScene = GetSelectedSceneName();
 
       // 解決不能な選択肢や空の遷移先は決定できない状態として扱う。
-      if (!confirmAction.triggered || selectedScene.empty()) {
-         return;
-      }
+      if (!confirmAction.triggered || selectedScene.empty()) return;
 
       // 遷移要求を先に出し、次フレームから共通暗転とUIリアクションを同じ時間軸で重ねる。
       startRequested_ = true;
@@ -110,9 +107,7 @@ nlohmann::json TitleStartComponent::Serialize() const {
 }
 
 void TitleStartComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // 同じインスタンスへ再適用しても旧形式判定を持ち越さないよう、読み込みごとに解除する。
    legacySingleOption_ = false;
@@ -121,40 +116,51 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("tutorialOptionObjectId") && data.at("tutorialOptionObjectId").is_string()) {
       tutorialOptionObjectId_ = data.at("tutorialOptionObjectId").get<std::string>();
    }
+
    if (data.contains("stageOptionObjectId") && data.at("stageOptionObjectId").is_string()) {
       stageOptionObjectId_ = data.at("stageOptionObjectId").get<std::string>();
    }
+
    if (data.contains("tutorialScene") && data.at("tutorialScene").is_string()) {
       tutorialScene_ = data.at("tutorialScene").get<std::string>();
    }
+
    if (data.contains("stageScene") && data.at("stageScene").is_string()) {
       stageScene_ = data.at("stageScene").get<std::string>();
    } else if (data.contains("nextScene") && data.at("nextScene").is_string()) {
       // 旧タイトルのオーナー表示を単一のステージ選択肢として引き継ぐ。
       stageScene_ = data.at("nextScene").get<std::string>();
+
       if (!data.contains("stageOptionObjectId")) {
          stageOptionObjectId_ = HasOwner() ? GetOwner().GetEntityId() : tutorialOptionObjectId_;
       }
+
       tutorialOptionObjectId_.clear();
       legacySingleOption_ = true;
    }
+
    if (data.contains("reactionDuration") && data.at("reactionDuration").is_number()) {
       // 演出時間は進捗計算の除数になるため、0以下を許可しない。
       reactionDuration_ = std::max(data.at("reactionDuration").get<float>(), 0.0001f);
    }
+
    if (data.contains("reactionEndScale") && data.at("reactionEndScale").is_number()) {
       // 決定リアクションを縮小演出へ反転させないよう、終端倍率は等倍以上に制限する。
       reactionEndScale_ = std::max(data.at("reactionEndScale").get<float>(), 1.0f);
    }
+
    if (data.contains("selectionPulseDuration") && data.at("selectionPulseDuration").is_number()) {
       selectionPulseDuration_ = std::max(data.at("selectionPulseDuration").get<float>(), 0.0001f);
    }
+
    if (data.contains("selectionPulseScale") && data.at("selectionPulseScale").is_number()) {
       selectionPulseScale_ = std::max(data.at("selectionPulseScale").get<float>(), 1.0f);
    }
+
    if (data.contains("selectionSwitchDuration") && data.at("selectionSwitchDuration").is_number()) {
       selectionSwitchDuration_ = std::max(data.at("selectionSwitchDuration").get<float>(), 0.0001f);
    }
+
    if (data.contains("selectionSwitchScale") && data.at("selectionSwitchScale").is_number()) {
       selectionSwitchScale_ = std::clamp(data.at("selectionSwitchScale").get<float>(), 0.0f, 1.0f);
    }
@@ -164,6 +170,7 @@ void TitleStartComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorl
    // 選択肢ごとの設定IDを同じ添字のText・Transform配列へ対応付ける。
    const std::array<std::string, 2> objectIds = {tutorialOptionObjectId_, stageOptionObjectId_};
    std::array<GameEngine::Object*, 2> optionObjects = {};
+
    for (std::size_t optionIndex = 0; optionIndex < objectIds.size(); ++optionIndex) {
       optionObjects[optionIndex] = sceneWorld.FindObjectById(objectIds[optionIndex]);
    }
@@ -182,9 +189,11 @@ void TitleStartComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorl
 
    for (std::size_t optionIndex = 0; optionIndex < optionObjects.size(); ++optionIndex) {
       GameEngine::Object* optionObject = optionObjects[optionIndex];
+
       if (!optionObject) {
          continue;
       }
+
       optionTexts_[optionIndex] = optionObject->GetComponent<GameEngine::UITextComponent>();
       optionTransforms_[optionIndex] = optionObject->GetComponent<GameEngine::TransformComponent>();
    }
@@ -194,16 +203,20 @@ bool TitleStartComponent::CaptureBaseVisualStates() {
    // TextとTransformが両方ある項目だけを有効とし、作者が設定した透明度とスケールを
    // 選択決定リアクションを毎フレーム計算するための基準値として保持する。
    bool capturedAny = false;
+
    for (std::size_t optionIndex = 0; optionIndex < optionTexts_.size(); ++optionIndex) {
       const auto* text = optionTexts_[optionIndex];
       const auto* transform = optionTransforms_[optionIndex];
+
       if (!text || !transform) {
          continue;
       }
+
       baseOpacities_[optionIndex] = text->GetStyle().color.w;
       baseScales_[optionIndex] = transform->GetLocalPose().scale;
       capturedAny = true;
    }
+
    return capturedAny;
 }
 
@@ -220,6 +233,7 @@ bool TitleStartComponent::SelectInitialOption() {
          return true;
       }
    }
+
    return false;
 }
 
@@ -231,22 +245,24 @@ bool TitleStartComponent::MoveSelection(int direction) {
    // 端では巡回し、未解決の項目を飛ばす。候補数までの試行に制限して全欠落時も終了させる。
    for (int attempt = 0; attempt < kOptionCount; ++attempt) {
       candidate = (candidate + direction + kOptionCount) % kOptionCount;
+
       if (IsOptionAvailable(static_cast<std::size_t>(candidate))) {
          selectedOption_ = candidate;
          return selectedOption_ != previousSelection;
       }
    }
+
    return false;
 }
 
 void TitleStartComponent::RefreshSelectionText() {
    // 旧シーンの単一プロンプトは、作者が設定した文言をそのまま保つ。
-   if (legacySingleOption_) {
-      return;
-   }
+   if (legacySingleOption_) return;
+
    if (IsOptionAvailable(0)) {
       optionTexts_[0]->SetText(std::string(selectedOption_ == 0 ? "> " : "  ") + "チュートリアルから あそぶ");
    }
+
    if (IsOptionAvailable(1)) {
       optionTexts_[1]->SetText(std::string(selectedOption_ == 1 ? "> " : "  ") + "ステージから あそぶ");
    }
@@ -254,6 +270,7 @@ void TitleStartComponent::RefreshSelectionText() {
 
 void TitleStartComponent::UpdateSelectionAnimation(float deltaTime) {
    const std::size_t selectedIndex = static_cast<std::size_t>(selectedOption_);
+
    for (std::size_t optionIndex = 0; optionIndex < optionTransforms_.size(); ++optionIndex) {
       if (!IsOptionAvailable(optionIndex)) {
          continue;
@@ -261,11 +278,13 @@ void TitleStartComponent::UpdateSelectionAnimation(float deltaTime) {
 
       const auto& baseScale = baseScales_[optionIndex];
       float scaleMultiplier = 1.0f;
+
       if (optionIndex == selectedIndex) {
          if (selectionSwitchActive_) {
             selectionSwitchElapsed_ += std::max(deltaTime, 0.0f);
             const float switchProgress = std::clamp(selectionSwitchElapsed_ / selectionSwitchDuration_, 0.0f, 1.0f);
             scaleMultiplier = GameEngine::Easing::EaseOutCubic(selectionSwitchScale_, 1.0f, switchProgress);
+
             if (switchProgress >= 1.0f) {
                selectionSwitchActive_ = false;
                selectionAnimationElapsed_ = 0.0f;
@@ -292,16 +311,16 @@ void TitleStartComponent::UpdateSelectionAnimation(float deltaTime) {
 const std::string& TitleStartComponent::GetSelectedSceneName() const {
    // 参照戻り値を安全に保ちつつ、無効な選択肢からの遷移を空文字で抑止する。
    static const std::string kEmptySceneName;
+
    if (!IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
       return kEmptySceneName;
    }
+
    return selectedOption_ == 0 ? tutorialScene_ : stageScene_;
 }
 
 void TitleStartComponent::ApplyStartReaction(std::size_t optionIndex) {
-   if (!IsOptionAvailable(optionIndex)) {
-      return;
-   }
+   if (!IsOptionAvailable(optionIndex)) return;
 
    auto& text = *optionTexts_[optionIndex];
    auto& transform = *optionTransforms_[optionIndex];
@@ -320,9 +339,9 @@ void TitleStartComponent::ApplyStartReaction(std::size_t optionIndex) {
 #ifdef USE_IMGUI
 void TitleStartComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Tutorial Option", tutorialOptionObjectId_, "UITextComponent");
    GameEngine::EditorUI::ObjectReference("Stage Option", stageOptionObjectId_, "UITextComponent");
    GameEngine::EditorUI::SceneReference("Tutorial Scene", tutorialScene_);

@@ -40,6 +40,7 @@ inline UIPlaybackSample EvaluateUIPlayback(float elapsed, float delay, float dur
 
    const float safeDuration = std::max(duration, 0.0001f);
    const float cycles = (elapsed - std::max(delay, 0.0f)) / safeDuration;
+
    switch (mode) {
       case UIPlaybackMode::Loop:
          return {cycles - std::floor(cycles), false};
@@ -59,6 +60,7 @@ inline UIPlaybackSample EvaluateUIPlayback(float elapsed, float delay, float dur
 /// @return 補間後の進捗
 inline float EvaluateUIEasing(float progress, UIEasingType easing) {
    const float t = (std::clamp)(progress, 0.0f, 1.0f);
+
    switch (easing) {
       case UIEasingType::EaseInOutSine:
          return -(std::cos(MathConstants::kPi * t) - 1.0f) * 0.5f;

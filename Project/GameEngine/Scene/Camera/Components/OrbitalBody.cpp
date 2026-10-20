@@ -17,6 +17,7 @@ const bool kRegistered =
       if (auto* existing = camera.GetComponent<OrbitalBody>()) {
          return existing;
       }
+
       return camera.AddComponent<OrbitalBody>();
    });
 
@@ -28,6 +29,7 @@ Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) 
    if (!data.is_array() || data.size() != 3) {
       return fallback;
    }
+
    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
 }
 
@@ -62,11 +64,13 @@ void OrbitalBody::ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta, bo
 
          Vector3 forward = (-offset).Normalize();
          Vector3 right = Vector3(0.0f, 1.0f, 0.0f).Cross(forward);
+
          if (right.LengthSquared() > 1e-6f) {
             right = right.Normalize();
          } else {
             right = {1.0f, 0.0f, 0.0f};
          }
+
          Vector3 up = forward.Cross(right).Normalize();
 
          float actualMoveSpeed = moveSpeed_ * distance_;
@@ -100,16 +104,16 @@ nlohmann::json OrbitalBody::Serialize() const {
 }
 
 void OrbitalBody::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    yaw_ = ReadFloat(data, "yaw", yaw_);
    pitch_ = ReadFloat(data, "pitch", pitch_);
    SetDistance(ReadFloat(data, "distance", distance_));
+
    if (data.contains("pivotTarget")) {
       pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
    }
+
    rotateSpeed_ = ReadFloat(data, "rotateSpeed", rotateSpeed_);
    scrollSpeed_ = ReadFloat(data, "scrollSpeed", scrollSpeed_);
    moveSpeed_ = ReadFloat(data, "moveSpeed", moveSpeed_);
@@ -120,24 +124,29 @@ void OrbitalBody::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void OrbitalBody::DrawInspector() {
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox("Enabled", &enabled))
+
+   if (ImGui::Checkbox("Enabled", &enabled)) {
       SetEnabled(enabled);
+   }
 
    if (ImGui::DragFloat("Distance", &distance_, 0.1f, 0.5f, 1000.0f)) {
       distance_ = std::max(0.5f, distance_);
    }
 
    float yawDeg = yaw_ * MathConstants::kRadiansToDegrees;
+
    if (ImGui::SliderFloat("Yaw (deg)", &yawDeg, -180.0f, 180.0f)) {
       yaw_ = yawDeg * MathConstants::kDegreesToRadians;
    }
 
    float pitchDeg = pitch_ * MathConstants::kRadiansToDegrees;
+
    if (ImGui::SliderFloat("Pitch (deg)", &pitchDeg, -89.0f, 89.0f)) {
       pitch_ = pitchDeg * MathConstants::kDegreesToRadians;
    }
 
    float piv[3] = {pivotTarget_.x, pivotTarget_.y, pivotTarget_.z};
+
    if (ImGui::DragFloat3("Pivot Target", piv, 0.1f)) {
       pivotTarget_ = {piv[0], piv[1], piv[2]};
    }

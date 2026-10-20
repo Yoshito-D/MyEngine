@@ -40,13 +40,12 @@ void IObjectComponent::Detach() {
 }
 
 void IObjectComponent::SetEnabled(bool enabled) {
-   if (isEnabled_ == enabled) {
-      return;
-   }
+   if (isEnabled_ == enabled) return;
 
    isEnabled_ = enabled;
-   if (!owner_)
-      return;
+
+   if (!owner_) return;
+
    if (isEnabled_) {
       OnEnable();
    } else {

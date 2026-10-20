@@ -8,8 +8,10 @@ CameraManager::CameraManager() = default;
 CameraManager::~CameraManager() = default;
 
 CinemachineBrain* CameraManager::CreateUnit(std::unique_ptr<Camera> outputCamera) {
-   if (!outputCamera)
+   if (!outputCamera) {
       return nullptr;
+   }
+
    auto unit = std::make_unique<CameraUnit>();
    unit->brain = std::make_unique<CinemachineBrain>();
    unit->brain->Initialize(std::move(outputCamera));
@@ -21,19 +23,25 @@ CinemachineBrain* CameraManager::CreateUnit(std::unique_ptr<Camera> outputCamera
       // 明示選択前でもカメラAPIが利用できるよう、最初のユニットを既定出力にする。
       activeUnit_ = ptr;
    }
+
    return ptr->brain.get();
 }
 
 CinemachineBrain* CameraManager::GetActiveBrain() {
-   if (!activeUnit_)
+   if (!activeUnit_) {
       return nullptr;
+   }
+
    return activeUnit_->brain.get();
 }
 
 Camera* CameraManager::GetActiveCamera() {
    CinemachineBrain* brain = GetActiveBrain();
-   if (!brain)
+
+   if (!brain) {
       return nullptr;
+   }
+
    return brain->GetOutputCamera();
 }
 

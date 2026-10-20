@@ -175,6 +175,7 @@ template <Interpolatable T> constexpr T EaseOutExpo(const T& start, const T& end
 template <Interpolatable T> constexpr T EaseInOutExpo(const T& start, const T& end, float t) {
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT;
+
    if (t == 0.0f) {
       easedT = 0.0f;
    } else if (t == 1.0f) {
@@ -184,6 +185,7 @@ template <Interpolatable T> constexpr T EaseInOutExpo(const T& start, const T& e
    } else {
       easedT = (2.0f - std::pow(2.0f, -20.0f * t + 10.0f)) / 2.0f;
    }
+
    return static_cast<T>(start + (end - start) * easedT);
 }
 
@@ -234,12 +236,14 @@ constexpr T EaseInOutBack(const T& start, const T& end, float t, float overshoot
    t = std::clamp(t, 0.0f, 1.0f);
    float c2 = overshoot * 1.525f;
    float easedT;
+
    if (t < 0.5f) {
       easedT = (std::pow(2.0f * t, 2.0f) * ((c2 + 1.0f) * 2.0f * t - c2)) / 2.0f;
    } else {
       float x = 2.0f * t - 2.0f;
       easedT = (std::pow(x, 2.0f) * ((c2 + 1.0f) * x + c2) + 2.0f) / 2.0f;
    }
+
    return static_cast<T>(start + (end - start) * easedT);
 }
 
@@ -250,6 +254,7 @@ template <Interpolatable T> constexpr T EaseInElastic(const T& start, const T& e
    t = std::clamp(t, 0.0f, 1.0f);
    const float c4 = MathConstants::kTwoPi / 3.0f;
    float easedT;
+
    if (t == 0.0f) {
       easedT = 0.0f;
    } else if (t == 1.0f) {
@@ -257,6 +262,7 @@ template <Interpolatable T> constexpr T EaseInElastic(const T& start, const T& e
    } else {
       easedT = -std::pow(2.0f, 10.0f * t - 10.0f) * std::sin((t * 10.0f - 10.75f) * c4);
    }
+
    return static_cast<T>(start + (end - start) * easedT);
 }
 
@@ -265,6 +271,7 @@ template <Interpolatable T> constexpr T EaseOutElastic(const T& start, const T& 
    t = std::clamp(t, 0.0f, 1.0f);
    const float c4 = MathConstants::kTwoPi / 3.0f;
    float easedT;
+
    if (t == 0.0f) {
       easedT = 0.0f;
    } else if (t == 1.0f) {
@@ -272,6 +279,7 @@ template <Interpolatable T> constexpr T EaseOutElastic(const T& start, const T& 
    } else {
       easedT = std::pow(2.0f, -10.0f * t) * std::sin((t * 10.0f - 0.75f) * c4) + 1.0f;
    }
+
    return static_cast<T>(start + (end - start) * easedT);
 }
 
@@ -280,6 +288,7 @@ template <Interpolatable T> constexpr T EaseInOutElastic(const T& start, const T
    t = std::clamp(t, 0.0f, 1.0f);
    const float c5 = MathConstants::kTwoPi / 4.5f;
    float easedT;
+
    if (t == 0.0f) {
       easedT = 0.0f;
    } else if (t == 1.0f) {
@@ -289,6 +298,7 @@ template <Interpolatable T> constexpr T EaseInOutElastic(const T& start, const T
    } else {
       easedT = (std::pow(2.0f, -20.0f * t + 10.0f) * std::sin((20.0f * t - 11.125f) * c5)) / 2.0f + 1.0f;
    }
+
    return static_cast<T>(start + (end - start) * easedT);
 }
 

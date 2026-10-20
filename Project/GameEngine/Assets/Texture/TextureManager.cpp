@@ -25,9 +25,11 @@ std::string NormalizeAssetId(const std::filesystem::path& path, const std::files
 
    // 保存IDはresources相対を優先し、相対化不能な別ボリューム等では元パスを失わない。
    std::filesystem::path relative = std::filesystem::relative(path, resourcesRoot, error);
+
    if (error) {
       relative = path;
    }
+
    return ToGenericString(relative);
 }
 
@@ -47,14 +49,13 @@ void TextureManager::Initialize(GraphicsDevice* device) {
 }
 
 void TextureManager::LoadTexture(const std::string& filePath, const std::string& name) {
-   if (textures_.find(name) != textures_.end()) {
-      return;
-   }
-   if (!device_ || failedTextureNames_.contains(name))
-      return;
+   if (textures_.find(name) != textures_.end()) return;
+
+   if (!device_ || failedTextureNames_.contains(name)) return;
 
    auto texture = std::make_unique<Texture>();
    Microsoft::WRL::ComPtr<ID3D12Resource> intermediate = texture->LoadTexture(device_, filePath);
+
    if (!intermediate || !texture->GetWidth() || !texture->GetHeight()) {
       failedTextureNames_.insert(name);
       return;
@@ -64,15 +65,18 @@ void TextureManager::LoadTexture(const std::string& filePath, const std::string&
    intermediateResource_.push_back(intermediate);
 
    textures_[name] = std::move(texture);
+
    if (textures_[name]->GetMetadata().IsCubemap()) {
       lastCubemapName_ = name;
    }
+
    Logger::Info("Texture loaded: " + name);
 }
 
 void TextureManager::LoadTexturesFromDirectory(
    const std::filesystem::path& directoryPath, const std::filesystem::path& resourcesRoot) {
    std::error_code error;
+
    if (!std::filesystem::is_directory(directoryPath, error)) {
       Logger::Warning("Texture directory not found: " + directoryPath.generic_string());
       return;
@@ -82,14 +86,17 @@ void TextureManager::LoadTexturesFromDirectory(
    std::filesystem::recursive_directory_iterator iterator(
       directoryPath, std::filesystem::directory_options::skip_permission_denied, error);
    const std::filesystem::recursive_directory_iterator end;
+
    for (; !error && iterator != end; iterator.increment(error)) {
       const auto& entry = *iterator;
+
       if (!entry.is_regular_file(error)) {
          error.clear();
          continue;
       }
 
       const auto& path = entry.path();
+
       if (!IsSupportedTextureExtension(path)) {
          continue;
       }
@@ -101,24 +108,31 @@ void TextureManager::LoadTexturesFromDirectory(
       RegisterAlias(ToGenericString(path.stem()), assetId);
       RegisterAlias(ToGenericString(path.filename()), assetId);
    }
-   if (error)
+
+   if (error) {
       Logger::Warning("Texture directory scan failed: " + directoryPath.generic_string());
+   }
 }
 
 Texture* TextureManager::GetTexture(const std::string& name) {
    auto it = textures_.find(name);
+
    if (it != textures_.end()) {
       return it->second.get();
    }
 
    auto aliasIt = textureAliases_.find(name);
+
    if (aliasIt != textureAliases_.end()) {
       return aliasIt->second;
    }
 
-   if (!device_ || failedTextureNames_.contains(name))
+   if (!device_ || failedTextureNames_.contains(name)) {
       return nullptr;
+   }
+
    const auto path = ResolveResourceTexturePath(name);
+
    if (path.empty()) {
       failedTextureNames_.insert(name);
       return nullptr;
@@ -137,6 +151,7 @@ void TextureManager::RefreshFailedLoads() {
 std::vector<std::string> TextureManager::GetTextureNames() const {
    std::vector<std::string> names;
    names.reserve(textures_.size());
+
    for (const auto& [name, texture] : textures_) {
       (void)texture;
       names.push_back(name);
@@ -149,11 +164,13 @@ std::vector<std::string> TextureManager::GetTextureNames() const {
 
 std::vector<std::string> TextureManager::GetCubemapTextureNames() const {
    std::vector<std::string> names;
+
    for (const auto& [name, texture] : textures_) {
       if (texture && texture->GetMetadata().IsCubemap()) {
          names.push_back(name);
       }
    }
+
    std::sort(names.begin(), names.end());
    return names;
 }
@@ -162,19 +179,20 @@ Texture* TextureManager::GetLastCubemapTexture() const {
    if (lastCubemapName_.empty()) {
       return nullptr;
    }
+
    auto it = textures_.find(lastCubemapName_);
    return (it != textures_.end()) ? it->second.get() : nullptr;
 }
 
 void TextureManager::ReleaseIntermediateResources() {
-   if (intermediateResource_.empty())
-      return;
+   if (intermediateResource_.empty()) return;
 
    for (auto& resource : intermediateResource_) {
       if (resource) {
          resource.Reset();
       }
    }
+
    intermediateResource_.clear();
    Logger::Info("Intermediate resources released.");
 }
@@ -189,14 +207,11 @@ void TextureManager::Clear() {
 }
 
 void TextureManager::RegisterAlias(const std::string& alias, const std::string& ownerName) {
-   if (alias.empty() || alias == ownerName) {
-      return;
-   }
+   if (alias.empty() || alias == ownerName) return;
 
    auto ownerIt = textures_.find(ownerName);
-   if (ownerIt == textures_.end()) {
-      return;
-   }
+
+   if (ownerIt == textures_.end()) return;
 
    if (textures_.contains(alias) || textureAliases_.contains(alias)) {
       // 同名ファイルが別フォルダーにある場合、曖昧な短縮名を後勝ちで変化させない。

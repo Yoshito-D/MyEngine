@@ -183,44 +183,79 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.landingShakeAmplitude))
+
+      if (!std::isfinite(settings.landingShakeAmplitude)) {
          settings.landingShakeAmplitude = defaults.landingShakeAmplitude;
-      if (!std::isfinite(settings.landingShakeFrequency))
+      }
+
+      if (!std::isfinite(settings.landingShakeFrequency)) {
          settings.landingShakeFrequency = defaults.landingShakeFrequency;
-      if (!std::isfinite(settings.landingShakeDuration))
+      }
+
+      if (!std::isfinite(settings.landingShakeDuration)) {
          settings.landingShakeDuration = defaults.landingShakeDuration;
-      if (!std::isfinite(settings.miniTurboShakeHorizontalAmplitude))
+      }
+
+      if (!std::isfinite(settings.miniTurboShakeHorizontalAmplitude)) {
          settings.miniTurboShakeHorizontalAmplitude = defaults.miniTurboShakeHorizontalAmplitude;
-      if (!std::isfinite(settings.miniTurboShakeVerticalAmplitude))
+      }
+
+      if (!std::isfinite(settings.miniTurboShakeVerticalAmplitude)) {
          settings.miniTurboShakeVerticalAmplitude = defaults.miniTurboShakeVerticalAmplitude;
-      if (!std::isfinite(settings.miniTurboShakeFrequency))
+      }
+
+      if (!std::isfinite(settings.miniTurboShakeFrequency)) {
          settings.miniTurboShakeFrequency = defaults.miniTurboShakeFrequency;
-      if (!std::isfinite(settings.miniTurboShakeDuration))
+      }
+
+      if (!std::isfinite(settings.miniTurboShakeDuration)) {
          settings.miniTurboShakeDuration = defaults.miniTurboShakeDuration;
+      }
+
       settings.miniTurboShakeHorizontalAmplitude = std::max(0.0f, settings.miniTurboShakeHorizontalAmplitude);
       settings.miniTurboShakeVerticalAmplitude = std::max(0.0f, settings.miniTurboShakeVerticalAmplitude);
       settings.miniTurboShakeFrequency = std::max(0.1f, settings.miniTurboShakeFrequency);
       settings.miniTurboShakeDuration = std::max(0.0f, settings.miniTurboShakeDuration);
-      if (!std::isfinite(settings.driftCameraDistanceReduction))
+
+      if (!std::isfinite(settings.driftCameraDistanceReduction)) {
          settings.driftCameraDistanceReduction = defaults.driftCameraDistanceReduction;
-      if (!std::isfinite(settings.driftCameraHeightOffset))
+      }
+
+      if (!std::isfinite(settings.driftCameraHeightOffset)) {
          settings.driftCameraHeightOffset = defaults.driftCameraHeightOffset;
-      if (!std::isfinite(settings.driftLookTargetHeightOffset))
+      }
+
+      if (!std::isfinite(settings.driftLookTargetHeightOffset)) {
          settings.driftLookTargetHeightOffset = defaults.driftLookTargetHeightOffset;
-      if (!std::isfinite(settings.driftCameraLerpSpeed))
+      }
+
+      if (!std::isfinite(settings.driftCameraLerpSpeed)) {
          settings.driftCameraLerpSpeed = defaults.driftCameraLerpSpeed;
+      }
+
       settings.driftCameraDistanceReduction = std::clamp(settings.driftCameraDistanceReduction, 0.0f, 0.5f);
       settings.driftCameraLerpSpeed = std::max(0.1f, settings.driftCameraLerpSpeed);
-      if (!std::isfinite(settings.presentationGuideLength))
+
+      if (!std::isfinite(settings.presentationGuideLength)) {
          settings.presentationGuideLength = defaults.presentationGuideLength;
-      if (!std::isfinite(settings.presentationCaptureJumpDelay))
+      }
+
+      if (!std::isfinite(settings.presentationCaptureJumpDelay)) {
          settings.presentationCaptureJumpDelay = defaults.presentationCaptureJumpDelay;
-      if (!std::isfinite(settings.presentationVideoFrameRate))
+      }
+
+      if (!std::isfinite(settings.presentationVideoFrameRate)) {
          settings.presentationVideoFrameRate = defaults.presentationVideoFrameRate;
-      if (!std::isfinite(settings.presentationVideoCaptureStartDelay))
+      }
+
+      if (!std::isfinite(settings.presentationVideoCaptureStartDelay)) {
          settings.presentationVideoCaptureStartDelay = defaults.presentationVideoCaptureStartDelay;
-      if (!std::isfinite(settings.presentationVideoCaptureDuration))
+      }
+
+      if (!std::isfinite(settings.presentationVideoCaptureDuration)) {
          settings.presentationVideoCaptureDuration = defaults.presentationVideoCaptureDuration;
+      }
+
       enableLandingShake = settings.enableLandingShake;
       landingShakeAmplitude = settings.landingShakeAmplitude;
       landingShakeFrequency = settings.landingShakeFrequency;

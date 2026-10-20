@@ -37,14 +37,18 @@ void TimerSystem::ClearAll() {
 
 void TimerSystem::Pause(TimerId id) {
    auto it = Timers().find(id);
-   if (it != Timers().end())
+
+   if (it != Timers().end()) {
       it->second.paused = true;
+   }
 }
 
 void TimerSystem::Resume(TimerId id) {
    auto it = Timers().find(id);
-   if (it != Timers().end())
+
+   if (it != Timers().end()) {
       it->second.paused = false;
+   }
 }
 
 bool TimerSystem::Exists(TimerId id) {
@@ -52,14 +56,14 @@ bool TimerSystem::Exists(TimerId id) {
 }
 
 void TimerSystem::Update(float deltaTime) {
-   if (Timers().empty())
-      return;
+   if (Timers().empty()) return;
 
    // コールバックによる削除・追加・rehashを許可するため、更新開始時のIDだけを走査する。
    // 追加されたタイマーは次のUpdateから進め、再入したUpdateでは時間を二重に消費しない。
    static bool updating = false;
-   if (updating)
-      return;
+
+   if (updating) return;
+
    updating = true;
 
    struct UpdateGuard {
@@ -68,6 +72,7 @@ void TimerSystem::Update(float deltaTime) {
 
    std::vector<TimerId> timerIds;
    timerIds.reserve(Timers().size());
+
    for (const auto& [id, timer] : Timers()) {
       (void)timer;
       timerIds.push_back(id);
@@ -75,16 +80,23 @@ void TimerSystem::Update(float deltaTime) {
 
    for (const auto id : timerIds) {
       auto it = Timers().find(id);
-      if (it == Timers().end())
+
+      if (it == Timers().end()) {
          continue;
+      }
+
       auto& t = it->second;
-      if (t.paused)
+
+      if (t.paused) {
          continue;
+      }
 
       float dt = (deltaTime < 0.0f) ? 0.0f : deltaTime;
       t.remaining -= dt;
-      if (t.remaining > 0.0f)
+
+      if (t.remaining > 0.0f) {
          continue;
+      }
 
       // 回数消費
       if (t.repeat > 0) {
@@ -100,11 +112,14 @@ void TimerSystem::Update(float deltaTime) {
 
       // 実行中に削除されても関数の寿命とmutableキャプチャの状態を保持する。
       auto callback = t.callback;
+
       if (t.interval <= 0.0f || t.repeat == 0) {
          Timers().erase(it);
       }
-      if (callback && *callback)
+
+      if (callback && *callback) {
          (*callback)();
+      }
 
       // ここから先では、コールバックが無効化し得るiterator/Timer参照を使わない。
    }

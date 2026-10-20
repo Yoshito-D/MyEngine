@@ -47,6 +47,7 @@ void HSVtoRGB(float h, float s, float v, uint8_t& outR, uint8_t& outG, uint8_t& 
    float m = v - c;
 
    float r, g, b;
+
    if (h < 60.0f) {
       r = c;
       g = x;
@@ -81,8 +82,10 @@ void HSVtoRGB(float h, float s, float v, uint8_t& outR, uint8_t& outG, uint8_t& 
 uint32_t GetLoopingHueColor(float t, float saturation, float value, uint8_t alpha) {
    // fmodが負値を返す場合も加算して、任意のtを連続な0～1周期へ折り返す。
    t = fmod(t, 1.0f); // 0〜1 にループ
-   if (t < 0.0f)
+
+   if (t < 0.0f) {
       t += 1.0f;
+   }
 
    float hue = t * 360.0f; // 色相に変換（0〜360°）
 

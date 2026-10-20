@@ -5,8 +5,8 @@ namespace GameEngine {
 ColorOverLifetimeModule::ColorOverLifetimeModule() = default;
 
 void ColorOverLifetimeModule::UpdateColor(Particle& particle) const {
-   if (!IsEnabled())
-      return;
+   if (!IsEnabled()) return;
+
    float t = particle.GetLifeProgress();
 
    // RGBAを同じ寿命進行度で補間し、色相と透明度の変化を同期させる。
@@ -25,12 +25,15 @@ nlohmann::json ColorOverLifetimeModule::ToJson() const {
 }
 
 void ColorOverLifetimeModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
+   }
+
    if (j.contains("startColor")) {
       auto arr = j["startColor"];
       startColor_ = Vector4{arr[0], arr[1], arr[2], arr[3]};
    }
+
    if (j.contains("endColor")) {
       auto arr = j["endColor"];
       endColor_ = Vector4{arr[0], arr[1], arr[2], arr[3]};

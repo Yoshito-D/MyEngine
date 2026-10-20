@@ -33,24 +33,28 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData, Material* defa
    setPipelineFunc("Sprite", resolvedBlendMode);
 
    Sprite* sprite = spriteData.sprite;
+
    if (!sprite) {
       Logger::Error("Sprite is null in DrawSprite");
       return;
    }
 
    const Mesh* mesh = sprite->GetMesh();
+
    if (!mesh) {
       Logger::Error("MeshComponent mesh is missing in DrawSprite");
       return;
    }
 
    TransformationMatrix* transformationMatrix = sprite->GetTransformationMatrix();
+
    if (!transformationMatrix) {
       Logger::Error("TransformationMatrix is missing in DrawSprite");
       return;
    }
 
    auto* materialComponent = sprite->GetComponent<MaterialComponent>();
+
    if (!materialComponent) {
       Logger::Error("MaterialComponent is missing in DrawSprite");
       return;
@@ -62,6 +66,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData, Material* defa
 
    // ワールド空間スプライトも面の色をそのまま表示するため、3Dライト計算は無効化する。
    const Material* spriteMaterial = materialComponent->GetMaterial();
+
    if (spriteMaterial) {
       materialComponent->EditMaterial()->SetLightingMode(Material::LightingMode::NONE);
       spriteMaterial = materialComponent->GetMaterial();
@@ -91,10 +96,12 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData, Material* defa
       }
 
       auto resolved = psoManager_->ResolvePipelineRootParameter("Sprite", semantic);
+
       if (!resolved.has_value()) {
          Logger::Error(
             "[SpriteRenderer] Failed to resolve root slot: pipeline=Sprite, semantic=" + std::string(semantic));
       }
+
       return resolved;
    };
 
@@ -107,10 +114,10 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData, Material* defa
    const auto spotLightSlot = resolveSlot("spotlights");
    const auto areaLightSlot = resolveSlot("arealights");
    const auto textureSlot = resolveSlot("texture");
+
    if (!materialSlot || !transformSlot || !cameraSlot || !lightCountSlot || !directionalLightSlot || !pointLightSlot ||
-       !spotLightSlot || !areaLightSlot || !textureSlot) {
+       !spotLightSlot || !areaLightSlot || !textureSlot)
       return;
-   }
 
    // 頂点バッファとインデックスバッファを設定
    cmdList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
@@ -125,6 +132,7 @@ void SpriteRenderer::DrawSprite(const SpriteDrawData& spriteData, Material* defa
       Logger::Warning("[SpriteRenderer] Material is null, skip draw");
       return;
    }
+
    cmdList->SetGraphicsRootConstantBufferView(
       materialSlot.value(), spriteMaterial->GetMaterialResource()->GetGPUVirtualAddress());
 

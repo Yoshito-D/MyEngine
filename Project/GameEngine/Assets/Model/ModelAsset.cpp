@@ -100,6 +100,7 @@ void ModelAsset::CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCl
 
    for (size_t meshIndex = 0; meshIndex < meshes.size(); ++meshIndex) {
       const auto& mesh = meshes[meshIndex];
+
       if (mesh.vertices.empty() || meshIndex >= vertexResources.size() ||
           meshIndex >= skinCluster.influenceResources.size() || !vertexResources[meshIndex] ||
           !skinCluster.influenceResources[meshIndex]) {
@@ -142,6 +143,7 @@ void ModelAsset::CreateOutputSkinningResources(
 
    for (size_t meshIndex = 0; meshIndex < meshes.size(); ++meshIndex) {
       const auto& mesh = meshes[meshIndex];
+
       if (mesh.vertices.empty()) {
          continue;
       }
@@ -167,6 +169,7 @@ void ModelAsset::CreateOutputSkinningResources(
          ResourceHelper::CreateBufferResource(d3dDevice, AlignConstantBufferSize(sizeof(SkinningInformationForGPU)));
       skinCluster.skinningInformationResources[meshIndex]->Map(
          0, nullptr, reinterpret_cast<void**>(&skinCluster.mappedSkinningInformationData[meshIndex]));
+
       if (skinCluster.mappedSkinningInformationData[meshIndex]) {
          skinCluster.mappedSkinningInformationData[meshIndex]->numVertices =
             static_cast<uint32_t>(mesh.vertices.size());
@@ -176,12 +179,16 @@ void ModelAsset::CreateOutputSkinningResources(
 
 bool ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, const std::string& modelName) {
    auto modelData = LoadModelFile(modelPath, modelName);
-   if (modelData.meshes.empty())
+
+   if (modelData.meshes.empty()) {
       return false;
+   }
+
    if (!device || !device->GetDevice()) {
       Logger::Error("Model load requires a graphics device: " + modelPath + "/" + modelName);
       return false;
    }
+
    graphicsDevice_ = device;
    ID3D12Device* d3dDevice = device->GetDevice();
 
@@ -228,6 +235,7 @@ bool ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, 
    if (hasSkinningData_ && skeleton_ && !skeleton_->GetJoints().empty() && !modelData_.meshes.empty()) {
       skinCluster_ = CreateSkinCluster(device, *skeleton_, modelData_);
    }
+
    return true;
 }
 
@@ -304,6 +312,7 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
       Logger::Error("Model import failed: " + filePath + " (" + importer.GetErrorString() + ")");
       return modelData;
    }
+
    if (!scene->HasMeshes() || !scene->mRootNode) {
       Logger::Error("Model import produced no meshes or root node: " + filePath);
       return modelData;
@@ -322,6 +331,7 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
       meshData.materialIndex = mesh->mMaterialIndex;
 
       meshData.vertices.reserve(mesh->mNumVertices);
+
       for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
          aiVector3D& position = mesh->mVertices[vertexIndex];
          aiVector3D& normal = mesh->mNormals[vertexIndex];
@@ -346,6 +356,7 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
 
       for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
          aiFace& face = mesh->mFaces[faceIndex];
+
          if (face.mNumIndices != 3 || !face.mIndices) {
             Logger::Error("Model contains a non-triangle face: " + filePath);
             return {};
@@ -356,6 +367,7 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
                Logger::Error("Model contains an invalid vertex index: " + filePath);
                return {};
             }
+
             meshData.indices.push_back(face.mIndices[element]);
          }
       }
@@ -366,10 +378,12 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
       // これによりCreateSkinClusterで対応するInfluenceバッファへ振り分けられる。
       for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
          aiBone* bone = mesh->mBones[boneIndex];
+
          if (!bone || (bone->mNumWeights && !bone->mWeights)) {
             Logger::Error("Model contains invalid bone data: " + filePath);
             return {};
          }
+
          std::string jointName = bone->mName.C_Str();
          JointWeightData& jointWeightData = modelData.skinClusterData[jointName];
 
@@ -391,6 +405,7 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
                Logger::Error("Model contains an invalid bone vertex index: " + filePath);
                return {};
             }
+
             jointWeightData.vertexWeights.push_back(
                {bone->mWeights[weightIndex].mWeight, bone->mWeights[weightIndex].mVertexId, meshIndex});
          }
@@ -400,11 +415,13 @@ ModelData ModelAsset::LoadModelFile(const std::string& directoryPath, const std:
    for (uint32_t materialIndex = 0; materialIndex < scene->mNumMaterials; ++materialIndex) {
       MaterialAsset materialAsset{};
       aiMaterial* material = scene->mMaterials[materialIndex];
+
       if (material->GetTextureCount(aiTextureType_DIFFUSE) != 0) {
          aiString textureFilePath;
          material->GetTexture(aiTextureType_DIFFUSE, 0, &textureFilePath);
          materialAsset.textureFilePath = directoryPath + "/" + textureFilePath.C_Str();
       }
+
       modelData.materials.push_back(materialAsset);
    }
 
@@ -431,9 +448,11 @@ Node ModelAsset::ReadNode(aiNode* node) {
 
    // Assimpの木構造と順序を保ち、後段で親Indexを安定して割り当てられるよう再帰コピーする。
    result.children.resize(node->mNumChildren);
+
    for (uint32_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex) {
       result.children[childIndex] = ReadNode(node->mChildren[childIndex]);
    }
+
    return result;
 }
 
@@ -444,6 +463,7 @@ Skeleton ModelAsset::CreateSkeleton(const Node& rootNode, const ModelData& model
    // まず深さ優先で連続配列へ平坦化し、次に名前検索用MapとSkeleton空間行列を構築する。
    std::vector<Joint> joints;
    const int32_t root = CreateJoint(rootNode, {}, joints);
+
    if (!skeleton.BuildHierarchy(std::move(joints), root)) {
       Logger::Warning("[ModelAsset] Invalid skeleton hierarchy.");
    }
@@ -462,6 +482,7 @@ int32_t ModelAsset::CreateJoint(const Node& node, const std::optional<int32_t>& 
    joint.index = static_cast<int32_t>(joints.size());
    joint.parent = parent;
    joints.push_back(joint);
+
    for (const Node& child : node.children) {
       int32_t childIndex = CreateJoint(child, joint.index, joints);
       joints[joint.index].children.push_back(childIndex);
@@ -552,11 +573,13 @@ SkinCluster ModelAsset::CreateSkinCluster(
    // Skeletonに存在しないBoneはインポート対象外ノードとして無視し、配列境界も個別に検証する。
    for (const auto& jointWeight : modelData.skinClusterData) {
       auto it = skeleton.GetJointMap().find(jointWeight.first);
+
       if (it == skeleton.GetJointMap().end()) {
          continue;
       }
 
       const int32_t jointIndex = it->second;
+
       if (jointIndex < 0 || static_cast<size_t>(jointIndex) >= skinCluster.inverseBindPoseMatrices.size()) {
          continue;
       }
@@ -569,11 +592,13 @@ SkinCluster ModelAsset::CreateSkinCluster(
          }
 
          const auto& mesh = modelData.meshes[vertexWeight.meshIndex];
+
          if (vertexWeight.vertexId >= mesh.vertices.size()) {
             continue;
          }
 
          VertexInfluence* mappedInfluence = skinCluster.mappedInfluenceData[vertexWeight.meshIndex];
+
          if (!mappedInfluence) {
             continue;
          }
@@ -596,6 +621,7 @@ SkinCluster ModelAsset::CreateSkinCluster(
    for (size_t meshIndex = 0; meshIndex < modelData.meshes.size(); ++meshIndex) {
       const auto& mesh = modelData.meshes[meshIndex];
       VertexInfluence* mappedInfluence = skinCluster.mappedInfluenceData[meshIndex];
+
       if (!mappedInfluence) {
          continue;
       }
@@ -603,12 +629,14 @@ SkinCluster ModelAsset::CreateSkinCluster(
       for (size_t vertexIndex = 0; vertexIndex < mesh.vertices.size(); ++vertexIndex) {
          auto& influence = mappedInfluence[vertexIndex];
          float totalWeight = 0.0f;
+
          for (float weight : influence.weights) {
             totalWeight += weight;
          }
 
          if (totalWeight > 0.0f) {
             const float invWeight = 1.0f / totalWeight;
+
             for (float& weight : influence.weights) {
                weight *= invWeight;
             }
@@ -629,12 +657,16 @@ SkinCluster ModelAsset::CreateSkinCluster(
 
 bool SkinCluster::ApplyPose(const Skeleton& pose) {
    const auto& joints = pose.GetJoints();
-   if (joints.size() != inverseBindPoseMatrices.size() || joints.size() != mappedPalette.size())
+
+   if (joints.size() != inverseBindPoseMatrices.size() || joints.size() != mappedPalette.size()) {
       return false;
+   }
+
    for (size_t i = 0; i < joints.size(); ++i) {
       const Matrix4x4 skin = inverseBindPoseMatrices[i] * joints[i].skeletonSpaceMatrix;
       mappedPalette[i] = {skin, skin.Inverse().Transpose()};
    }
+
    return true;
 }
 
@@ -647,17 +679,22 @@ bool SkinCluster::CanSkinVertices(size_t meshIndex, size_t count) const {
 
 bool SkinCluster::DispatchSkinning(
    ID3D12GraphicsCommandList* commands, size_t index, const std::array<UINT, 5>& slots) {
-   if (!commands || !HasComputeSkinningResources(index))
+   if (!commands || !HasComputeSkinningResources(index)) {
       return false;
+   }
+
    const UINT count = mappedSkinningInformationData[index]->numVertices;
-   if (!CanSkinVertices(index, count))
+
+   if (!CanSkinVertices(index, count)) {
       return false;
+   }
 
    // リソース状態と実際のBarrierを同じ所有側で記録し、描画パス間の重複管理を防ぐ。
    auto transition = [&](D3D12_RESOURCE_STATES after) {
       auto& before = skinnedVertexResourceStates[index];
-      if (before == after)
-         return;
+
+      if (before == after) return;
+
       D3D12_RESOURCE_BARRIER barrier{};
       barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
       barrier.Transition = {
@@ -679,8 +716,10 @@ bool SkinCluster::DispatchSkinning(
 Vector3 SkinCluster::EvaluateSkinnedPosition(
    size_t meshIndex, uint32_t vertexIndex, const Vector3& bindPosition) const {
    if (meshIndex >= mappedSkinningInformationData.size() || !mappedSkinningInformationData[meshIndex] ||
-       vertexIndex >= mappedSkinningInformationData[meshIndex]->numVertices)
+       vertexIndex >= mappedSkinningInformationData[meshIndex]->numVertices) {
       return bindPosition;
+   }
+
    if (meshIndex >= mappedInfluenceData.size() || !mappedInfluenceData[meshIndex]) {
       return bindPosition;
    }
@@ -693,19 +732,24 @@ Vector3 SkinCluster::EvaluateSkinnedPosition(
    for (uint32_t influenceIndex = 0; influenceIndex < kNumMaxInfluence; ++influenceIndex) {
       const float weight = influence.weights[influenceIndex];
       const int32_t jointIndex = influence.jointIndices[influenceIndex];
+
       if (weight <= 0.0f || jointIndex < 0 || static_cast<size_t>(jointIndex) >= mappedPalette.size()) {
          continue;
       }
+
       skinnedPosition +=
          TransformCoordinate(bindPosition, mappedPalette[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix) * weight;
       totalWeight += weight;
    }
+
    return totalWeight > 0.0001f ? skinnedPosition / totalWeight : bindPosition;
 }
 
 bool SkinCluster::TryResolveJointMatrix(size_t index, Matrix4x4& matrix) const {
-   if (index >= inverseBindPoseMatrices.size() || index >= mappedPalette.size())
+   if (index >= inverseBindPoseMatrices.size() || index >= mappedPalette.size()) {
       return false;
+   }
+
    matrix = inverseBindPoseMatrices[index].Inverse() * mappedPalette[index].skeletonSpaceMatrix;
    return true;
 }

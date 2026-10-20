@@ -8,8 +8,9 @@ using namespace RearCameraMath;
 
 void RearCameraTransition::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
    auto* camera = GetRearCamera();
-   if (!camera)
-      return;
+
+   if (!camera) return;
+
    const auto& input = camera->GetInput();
    const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
    events_ = BeginFrame(input, aim.GetState().lastLookTargetOffset);
@@ -38,6 +39,7 @@ void RearCameraTransition::UpdateAirborneBlend(
 void RearCameraTransition::UpdatePlayerFramingBlend(
    const RearCameraInput& input, const RearCameraSettings& settings, float deltaTime) {
    float targetBlend = input.isAirborne ? 1.0f : 0.0f;
+
    if (std::abs(targetBlend - state_.playerFramingBlendTarget) > 1e-4f) {
       state_.playerFramingBlendStart = state_.currentPlayerFramingBlend;
       state_.playerFramingBlendTarget = targetBlend;
@@ -74,10 +76,12 @@ void RearCameraTransition::UpdatePlayerFramingBlend(
 void RearCameraTransition::UpdatePreLandingBlend(
    const RearCameraInput& input, const RearCameraSettings& settings, float deltaTime) {
    float targetBlend = 0.0f;
+
    if (settings.enablePreLandingCamera && input.isAirborne && input.landingPredictionValid) {
       float startSeconds = std::max(0.0f, settings.preLandingPredictionSeconds);
       float fullSeconds = std::clamp(settings.preLandingFullBlendSeconds, 0.0f, std::max(0.0f, startSeconds - 0.001f));
       float blendDuration = startSeconds - fullSeconds;
+
       if (blendDuration <= 1e-4f) {
          targetBlend = input.predictedLandingSeconds <= fullSeconds ? 1.0f : 0.0f;
       } else {
@@ -91,8 +95,10 @@ void RearCameraTransition::UpdatePreLandingBlend(
    float blendT = ExpSmoothingFactor(followSpeed, deltaTime);
    state_.currentPreLandingBlend =
       std::clamp(state_.currentPreLandingBlend + (targetBlend - state_.currentPreLandingBlend) * blendT, 0.0f, 1.0f);
+
    if (state_.currentPreLandingBlend < 1e-4f) {
       state_.currentPreLandingBlend = 0.0f;
+
       if (!input.isAirborne) {
          state_.isLandingReleaseActive = false;
          state_.landingReleaseBlendStart = 0.0f;
@@ -122,6 +128,7 @@ float RearCameraTransition::ComputePreLandingGuideBlend(const RearCameraInput& i
       float startBlend = std::max(state_.landingReleaseBlendStart, 1e-4f);
       return std::clamp(state_.currentPreLandingBlend / startBlend, 0.0f, 1.0f);
    }
+
    return std::clamp(state_.currentPreLandingBlend, 0.0f, 1.0f);
 }
 

@@ -41,9 +41,7 @@ void UIFadeComponent::OnEnable() {
 }
 
 void UIFadeComponent::Update(float deltaTime) {
-   if (!playing_) {
-      return;
-   }
+   if (!playing_) return;
 
    // 時計の巻き戻りや異常な負値でアニメーション位相が逆行しないよう、加算値を 0 以上に制限する。
    elapsed_ += std::max(deltaTime, 0.0f);
@@ -51,6 +49,7 @@ void UIFadeComponent::Update(float deltaTime) {
    // 共通評価器を通し、TransformTweenと同じLoop/PingPongの時間規則を使う。
    const UIPlaybackSample sample = EvaluateUIPlayback(elapsed_, delay, duration, playbackMode);
    Apply(EvaluateUIEasing(sample.progress, easing));
+
    if (sample.finished) {
       playing_ = false;
    }
@@ -91,9 +90,11 @@ void UIFadeComponent::Deserialize(const nlohmann::json& data) {
       static_cast<int>(UIPlaybackMode::Once), static_cast<int>(UIPlaybackMode::PingPong)));
    easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<int>(easing)),
       static_cast<int>(UIEasingType::Linear), static_cast<int>(UIEasingType::EaseOutBack)));
+
    if (playOnEnable) {
       Restart();
    }
+
    Configure(DescribeSettings());
 }
 
@@ -108,16 +109,25 @@ void UIFadeComponent::Apply(float progress) {
 #ifdef USE_IMGUI
 void UIFadeComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str()))
-      return;
-   if (ImGui::Button(ImGuiHelper::Localize({"再生", "Play"})))
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
+   if (ImGui::Button(ImGuiHelper::Localize({"再生", "Play"}))) {
       Play();
+   }
+
    ImGui::SameLine();
-   if (ImGui::Button(ImGuiHelper::Localize({"一時停止", "Pause"})))
+
+   if (ImGui::Button(ImGuiHelper::Localize({"一時停止", "Pause"}))) {
       Pause();
+   }
+
    ImGui::SameLine();
-   if (ImGui::Button(ImGuiHelper::Localize({"リスタート", "Restart"})))
+
+   if (ImGui::Button(ImGuiHelper::Localize({"リスタート", "Restart"}))) {
       Restart();
+   }
+
    ImGui::SliderFloat(ImGuiHelper::Localize({"開始不透明度", "Start Opacity"}), &startOpacity, 0.0f, 1.0f);
    ImGui::SliderFloat(ImGuiHelper::Localize({"終了不透明度", "End Opacity"}), &endOpacity, 0.0f, 1.0f);
    ImGui::DragFloat(ImGuiHelper::Localize({"遅延", "Delay"}), &delay, 0.01f, 0.0f);
@@ -125,12 +135,18 @@ void UIFadeComponent::DrawInspector() {
    ImGui::Checkbox(ImGuiHelper::Localize({"有効化時に再生", "Play On Enable"}), &playOnEnable);
    int mode = static_cast<int>(playbackMode);
    const char* modes[] = {"Once", "Loop", "Ping Pong"};
-   if (ImGui::Combo("Playback", &mode, modes, 3))
+
+   if (ImGui::Combo("Playback", &mode, modes, 3)) {
       playbackMode = static_cast<UIPlaybackMode>(mode);
+   }
+
    int easingIndex = static_cast<int>(easing);
    const char* easings[] = {"Linear", "Ease In Out Sine", "Ease Out Cubic", "Ease Out Back"};
-   if (ImGui::Combo("Easing", &easingIndex, easings, 4))
+
+   if (ImGui::Combo("Easing", &easingIndex, easings, 4)) {
       easing = static_cast<UIEasingType>(easingIndex);
+   }
+
    ImGui::Spacing();
    Configure(DescribeSettings());
 }

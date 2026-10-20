@@ -32,6 +32,7 @@ float4 main(PlayerShadowProjectVertexOutput input) : SV_TARGET0 {
 
    // 真下の地表付近だけに投影を許可する。
    float3 offset = input.worldPosition - groundPosition;
+
    if (dot(offset, offset) > receiverRange * receiverRange) {
       discard;
    }

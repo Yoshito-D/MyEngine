@@ -39,9 +39,8 @@ float3 SafeNormalize(float3 value, float3 fallbackValue) {
 
 [numthreads(64, 1, 1)] void main(uint3 dispatchThreadId : SV_DispatchThreadID) {
    uint segmentIndex = dispatchThreadId.x;
-   if (segmentIndex >= gSegmentCount) {
-      return;
-   }
+
+   if (segmentIndex >= gSegmentCount) return;
 
    RibbonSegment segment = gSegments[segmentIndex];
    float3 start = segment.startAndWidth.xyz;

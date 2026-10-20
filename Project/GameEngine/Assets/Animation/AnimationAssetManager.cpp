@@ -6,6 +6,7 @@ namespace GameEngine {
 AnimationAssetManager::AnimationHandle AnimationAssetManager::LoadAnimation(
    const std::string& animationPath, const std::string& animationName) {
    auto it = animationAssets_.find(animationName);
+
    if (it != animationAssets_.end()) {
       // 同名アニメーションは共有し、Assimp解析とキーフレーム保持を重複させない。
       return it->second;
@@ -20,9 +21,11 @@ AnimationAssetManager::AnimationHandle AnimationAssetManager::LoadAnimation(
 
 AnimationAssetManager::AnimationHandle AnimationAssetManager::GetAnimation(const std::string& animationName) {
    auto it = animationAssets_.find(animationName);
+
    if (it == animationAssets_.end()) {
       return {};
    }
+
    return it->second;
 }
 
@@ -33,6 +36,7 @@ void AnimationAssetManager::Clear() {
 std::vector<std::string> AnimationAssetManager::GetAnimationNames() const {
    std::vector<std::string> names;
    names.reserve(animationAssets_.size());
+
    for (const auto& [name, animationAsset] : animationAssets_) {
       (void)animationAsset;
       names.push_back(name);

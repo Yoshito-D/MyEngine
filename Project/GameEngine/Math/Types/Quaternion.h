@@ -28,6 +28,7 @@ struct Quaternion {
       if (start.Dot(target) < 0.0f) {
          target = -target;
       }
+
       return (start * (1.0f - t) + target * t).Normalize();
    }
 
@@ -115,6 +116,7 @@ struct Quaternion {
       if (norm < 1e-8f) {
          return Identity();
       }
+
       return Quaternion{x / norm, y / norm, z / norm, w / norm};
    }
 
@@ -129,6 +131,7 @@ struct Quaternion {
       if (normSq < 1e-8f) {
          return Identity();
       }
+
       return Quaternion{conj.x / normSq, conj.y / normSq, conj.z / normSq, conj.w / normSq};
    }
 

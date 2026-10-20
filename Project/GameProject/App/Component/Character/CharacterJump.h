@@ -58,8 +58,11 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.jumpStrength))
+
+      if (!std::isfinite(settings.jumpStrength)) {
          settings.jumpStrength = defaults.jumpStrength;
+      }
+
       jumpStrength = settings.jumpStrength;
    }
 

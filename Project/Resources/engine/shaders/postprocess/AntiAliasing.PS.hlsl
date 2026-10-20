@@ -53,6 +53,7 @@ float4 main(VSOutput input) : SV_TARGET {
    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
    float lumaRange = lumaMax - lumaMin;
    float edgeThreshold = max(gParams.contrastThreshold, lumaMax * gParams.relativeThreshold);
+
    if (lumaRange < edgeThreshold) {
       return sampleM;
    }

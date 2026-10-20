@@ -33,21 +33,22 @@ void ObjectNameComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("name") && data.at("name").is_string()) {
       name = data.at("name").get<std::string>();
    }
+
    Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
 void ObjectNameComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    char nameBuffer[ImGuiHelper::kDefaultTextBufferSize]{};
 
    // ImGuiの固定長バッファへ収まる範囲だけコピーし、必ず末尾NULを残す。
    const size_t nameSize = std::min(name.size(), sizeof(nameBuffer) - 1);
    std::memcpy(nameBuffer, name.c_str(), nameSize);
+
    if (ImGui::InputText(ImGuiHelper::Localize({"名前", "Name"}), nameBuffer, sizeof(nameBuffer))) {
       name = nameBuffer;
    }

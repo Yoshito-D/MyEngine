@@ -20,6 +20,7 @@ void RaceGateComponent::OnAttach() {
    // 形状による重なり判定とEnter/Exitの生成は汎用TriggerVolumeへ委譲し、
    // このコンポーネントはレース固有イベントへの変換だけを担当する。
    auto* trigger = GetOwner().AddComponent<GameEngine::TriggerVolumeComponent>();
+
    if (trigger && trigger->GetTargetObjectId().empty()) {
       // GameTestでは追加直後からゴールとして使え、他シーンではJSONから上書きできる既定値にする。
       trigger->SetTargetObjectId("Model:Player");
@@ -29,6 +30,7 @@ void RaceGateComponent::OnAttach() {
 void RaceGateComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // シーン再読み込み後に以前のRaceManagerを参照しないよう、保存済みIDから解決し直す。
    raceManager_ = nullptr;
+
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
@@ -36,13 +38,12 @@ void RaceGateComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) 
 
 void RaceGateComponent::Update(float deltaTime) {
    (void)deltaTime;
-   if (!raceManager_ || !HasOwner()) {
-      return;
-   }
+
+   if (!raceManager_ || !HasOwner()) return;
+
    const auto* trigger = GetOwner().GetComponent<GameEngine::TriggerVolumeComponent>();
-   if (!trigger) {
-      return;
-   }
+
+   if (!trigger) return;
 
    // 接触中ではなく進入エッジだけを通知し、滞在中のチェックポイント連打を避ける。
    if (trigger->WasEnteredThisFrame()) {
@@ -61,6 +62,7 @@ void RaceGateComponent::Update(float deltaTime) {
             break;
       }
    }
+
    if (gateType_ == GateType::StartFinish && trigger->WasExitedThisFrame()) {
       // 共用ゲートは一度外へ出た事実を記録し、スタート直後の進入をゴールと区別する。
       raceManager_->NotifyStartGateExit();
@@ -70,6 +72,7 @@ void RaceGateComponent::Update(float deltaTime) {
 nlohmann::json RaceGateComponent::Serialize() const {
    // enumの整数値ではなく安定した名前を保存し、列挙順の変更で既存シーンの意味が変わらないようにする。
    const char* gateTypeName = "Finish";
+
    switch (gateType_) {
       case GateType::Start:
          gateTypeName = "Start";
@@ -83,21 +86,22 @@ nlohmann::json RaceGateComponent::Serialize() const {
       default:
          break;
    }
+
    return nlohmann::json{
       {"raceManagerId", raceManagerId_}, {"gateType", gateTypeName}, {"checkpointIndex", checkpointIndex_}};
 }
 
 void RaceGateComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // 各項目を独立して検証し、欠落・型不一致なら既定値または現在値を維持する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }
+
    if (data.contains("gateType") && data.at("gateType").is_string()) {
       const std::string gateType = data.at("gateType").get<std::string>();
+
       if (gateType == "Start") {
          gateType_ = GateType::Start;
       } else if (gateType == "Checkpoint") {
@@ -119,21 +123,25 @@ void RaceGateComponent::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void RaceGateComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    const char* gateTypes[] = {"Start", "Checkpoint", "Finish", "StartFinish"};
    int gateTypeIndex = static_cast<int>(gateType_);
+
    if (ImGui::Combo("Gate Type", &gateTypeIndex, gateTypes, 4)) {
       gateType_ = static_cast<GateType>(gateTypeIndex);
    }
+
    if (gateType_ == GateType::Checkpoint) {
       int checkpointIndex = static_cast<int>(checkpointIndex_);
+
       if (ImGui::DragInt("Checkpoint Index", &checkpointIndex, 1.0f, 0)) {
          checkpointIndex_ = static_cast<size_t>(std::max(checkpointIndex, 0));
       }
    }
+
    ImGui::TextDisabled("Trigger Volume is added automatically.");
 }
 #endif

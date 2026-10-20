@@ -13,8 +13,7 @@ float UVTransformModule::LerpFloat(float a, float b, float t) {
 }
 
 void UVTransformModule::InitializeParticle(Particle& particle) const {
-   if (!IsEnabled())
-      return;
+   if (!IsEnabled()) return;
 
    // ランダム値は生成時に一度だけ確定し、フレームごとのちらつきを防ぐ。
    switch (scrollMode_) {
@@ -57,8 +56,7 @@ void UVTransformModule::InitializeParticle(Particle& particle) const {
 }
 
 void UVTransformModule::UpdateUV(Particle& particle, float deltaTime) const {
-   if (!IsEnabled())
-      return;
+   if (!IsEnabled()) return;
 
    const float t = particle.GetLifeProgress();
    Vector2 currentScroll = particle.uvScroll;
@@ -118,46 +116,71 @@ nlohmann::json UVTransformModule::ToJson() const {
 }
 
 void UVTransformModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
-   if (j.contains("scrollMode"))
+   }
+
+   if (j.contains("scrollMode")) {
       scrollMode_ = static_cast<ValueMode>(j["scrollMode"].get<int>());
+   }
+
    if (j.contains("scrollConstant") && j["scrollConstant"].is_array() && j["scrollConstant"].size() >= 2) {
       auto arr = j["scrollConstant"];
       scrollConstant_ = Vector2{arr[0], arr[1]};
    }
-   if (j.contains("scrollRandom") && j["scrollRandom"].is_object())
+
+   if (j.contains("scrollRandom") && j["scrollRandom"].is_object()) {
       scrollRandom_.FromJson(j["scrollRandom"]);
+   }
+
    if (j.contains("scrollCurveStart") && j["scrollCurveStart"].is_array() && j["scrollCurveStart"].size() >= 2) {
       auto arr = j["scrollCurveStart"];
       scrollCurveStart_ = Vector2{arr[0], arr[1]};
    }
+
    if (j.contains("scrollCurveEnd") && j["scrollCurveEnd"].is_array() && j["scrollCurveEnd"].size() >= 2) {
       auto arr = j["scrollCurveEnd"];
       scrollCurveEnd_ = Vector2{arr[0], arr[1]};
    }
-   if (j.contains("rotationMode"))
+
+   if (j.contains("rotationMode")) {
       rotationMode_ = static_cast<ValueMode>(j["rotationMode"].get<int>());
-   if (j.contains("rotationConstant"))
+   }
+
+   if (j.contains("rotationConstant")) {
       rotationConstant_ = j["rotationConstant"];
-   if (j.contains("rotationRandom") && j["rotationRandom"].is_object())
+   }
+
+   if (j.contains("rotationRandom") && j["rotationRandom"].is_object()) {
       rotationRandom_.FromJson(j["rotationRandom"]);
-   if (j.contains("rotationCurveStart"))
+   }
+
+   if (j.contains("rotationCurveStart")) {
       rotationCurveStart_ = j["rotationCurveStart"];
-   if (j.contains("rotationCurveEnd"))
+   }
+
+   if (j.contains("rotationCurveEnd")) {
       rotationCurveEnd_ = j["rotationCurveEnd"];
-   if (j.contains("scaleMode"))
+   }
+
+   if (j.contains("scaleMode")) {
       scaleMode_ = static_cast<ValueMode>(j["scaleMode"].get<int>());
+   }
+
    if (j.contains("scaleConstant") && j["scaleConstant"].is_array() && j["scaleConstant"].size() >= 2) {
       auto arr = j["scaleConstant"];
       scaleConstant_ = Vector2{arr[0], arr[1]};
    }
-   if (j.contains("scaleRandom") && j["scaleRandom"].is_object())
+
+   if (j.contains("scaleRandom") && j["scaleRandom"].is_object()) {
       scaleRandom_.FromJson(j["scaleRandom"]);
+   }
+
    if (j.contains("scaleCurveStart") && j["scaleCurveStart"].is_array() && j["scaleCurveStart"].size() >= 2) {
       auto arr = j["scaleCurveStart"];
       scaleCurveStart_ = Vector2{arr[0], arr[1]};
    }
+
    if (j.contains("scaleCurveEnd") && j["scaleCurveEnd"].is_array() && j["scaleCurveEnd"].size() >= 2) {
       auto arr = j["scaleCurveEnd"];
       scaleCurveEnd_ = Vector2{arr[0], arr[1]};

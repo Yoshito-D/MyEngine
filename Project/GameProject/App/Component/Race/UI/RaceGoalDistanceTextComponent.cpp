@@ -36,6 +36,7 @@ void RaceGoalDistanceTextComponent::OnReferencesChanged(GameEngine::SceneWorld& 
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
+
    playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
    goalObject_ = sceneWorld.FindObjectById(goalObjectId_);
 }
@@ -53,13 +54,12 @@ void RaceGoalDistanceTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneW
 
 void RaceGoalDistanceTextComponent::Update(float deltaTime) {
    (void)deltaTime;
-   if (!HasOwner()) {
-      return;
-   }
+
+   if (!HasOwner()) return;
+
    auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
-   if (!text) {
-      return;
-   }
+
+   if (!text) return;
 
    const RaceManagerComponent::State raceState =
       raceManager_ ? raceManager_->GetState() : RaceManagerComponent::State::Finished;
@@ -94,17 +94,17 @@ nlohmann::json RaceGoalDistanceTextComponent::Serialize() const {
 }
 
 void RaceGoalDistanceTextComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // 参照IDは個別に読み込み、欠落・型不一致の項目では既定値または現在値を維持する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }
+
    if (data.contains("playerObjectId") && data.at("playerObjectId").is_string()) {
       playerObjectId_ = data.at("playerObjectId").get<std::string>();
    }
+
    if (data.contains("goalObjectId") && data.at("goalObjectId").is_string()) {
       goalObjectId_ = data.at("goalObjectId").get<std::string>();
    }
@@ -113,9 +113,9 @@ void RaceGoalDistanceTextComponent::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void RaceGoalDistanceTextComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    GameEngine::EditorUI::ObjectReference("Goal", goalObjectId_, "TransformComponent");

@@ -45,7 +45,9 @@ float32_t4 SampleTriplanar(float32_t3 localPosition, float32_t3 localNormal) {
    float enabledCount = enabled.x + enabled.y + enabled.z;
 
    // 全方向オフは色テクスチャを読まず、呼び出し元のマテリアル色を使用する。
-   [branch] if (enabledCount == 0.0f) return float32_t4(1.0f, 1.0f, 1.0f, 1.0f);
+   [branch] if (enabledCount == 0.0f) {
+      return float32_t4(1.0f, 1.0f, 1.0f, 1.0f);
+   }
 
    float32_t3 position = localPosition * max(gTriplanar.triplanarScale, 0.001f);
    float32_t3 normal = localNormal * rsqrt(max(dot(localNormal, localNormal), 0.00000001f));
@@ -68,9 +70,18 @@ float32_t4 SampleTriplanar(float32_t3 localPosition, float32_t3 localNormal) {
    float32_t4 color = float32_t4(0.0f, 0.0f, 0.0f, 0.0f);
 
    // 重みを0にするだけでなく、無効な方向のテクスチャ取得自体を省く。
-   [branch] if (enabled.x > 0.0f) color += gTexture.SampleGrad(gSampler, uvX, dxX, dyX) * weights.x;
-   [branch] if (enabled.y > 0.0f) color += gTexture.SampleGrad(gSampler, uvY, dxY, dyY) * weights.y;
-   [branch] if (enabled.z > 0.0f) color += gTexture.SampleGrad(gSampler, uvZ, dxZ, dyZ) * weights.z;
+   [branch] if (enabled.x > 0.0f) {
+      color += gTexture.SampleGrad(gSampler, uvX, dxX, dyX) * weights.x;
+   }
+
+   [branch] if (enabled.y > 0.0f) {
+      color += gTexture.SampleGrad(gSampler, uvY, dxY, dyY) * weights.y;
+   }
+
+   [branch] if (enabled.z > 0.0f) {
+      color += gTexture.SampleGrad(gSampler, uvZ, dxZ, dyZ) * weights.z;
+   }
+
    return color;
 }
 #endif
@@ -88,8 +99,9 @@ PixelShaderOutput main(VertexShaderOutput input) {
    float32_t3 albedo = gMaterial.color.rgb * textureColor.rgb;
 
    // αテスト
-   if (textureColor.a <= 0.001f)
+   if (textureColor.a <= 0.001f) {
       discard;
+   }
 
    // 共通データの準備
    float32_t3 normal = normalize(input.normal);
@@ -223,8 +235,9 @@ PixelShaderOutput main(VertexShaderOutput input) {
    output.color.a = gMaterial.color.a * textureColor.a;
 
    // 最終αチェック
-   if (output.color.a <= 0.001f)
+   if (output.color.a <= 0.001f) {
       discard;
+   }
 
    return output;
 }

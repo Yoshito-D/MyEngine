@@ -28,8 +28,10 @@ float4 main(PixelShaderInput input) : SV_TARGET0 {
 
    float4 outputColor = input.color;
    outputColor.a *= coverage;
+
    if (outputColor.a <= 0.001f) {
       discard;
    }
+
    return outputColor;
 }

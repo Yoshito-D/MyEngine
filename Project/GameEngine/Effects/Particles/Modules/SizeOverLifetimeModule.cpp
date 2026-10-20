@@ -9,8 +9,8 @@ void SizeOverLifetimeModule::InitializeParticle(Particle& particle) const {
 }
 
 void SizeOverLifetimeModule::UpdateSize(Particle& particle) const {
-   if (!IsEnabled())
-      return;
+   if (!IsEnabled()) return;
+
    float t = particle.GetLifeProgress();
 
    // ランダム倍率は生成時の値を再利用し、寿命中にサイズがちらつかないようにする。
@@ -31,14 +31,18 @@ nlohmann::json SizeOverLifetimeModule::ToJson() const {
 }
 
 void SizeOverLifetimeModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
-   if (j.contains("sizeMultiplier")) {
-      if (j["sizeMultiplier"].is_object())
-         sizeMultiplier_.FromJson(j["sizeMultiplier"]);
-      else
-         SetSizeMultiplier(j["sizeMultiplier"]);
    }
+
+   if (j.contains("sizeMultiplier")) {
+      if (j["sizeMultiplier"].is_object()) {
+         sizeMultiplier_.FromJson(j["sizeMultiplier"]);
+      } else {
+         SetSizeMultiplier(j["sizeMultiplier"]);
+      }
+   }
+
    if (j.contains("startSize")) {
       if (j["startSize"].is_array()) {
          auto arr = j["startSize"];
@@ -49,6 +53,7 @@ void SizeOverLifetimeModule::FromJson(const nlohmann::json& j) {
          startSize_ = Vector3(value, value, value);
       }
    }
+
    if (j.contains("endSize")) {
       if (j["endSize"].is_array()) {
          auto arr = j["endSize"];

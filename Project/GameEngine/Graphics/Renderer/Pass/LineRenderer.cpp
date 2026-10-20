@@ -51,14 +51,12 @@ void LineRenderer::Begin() {
 }
 
 void LineRenderer::AddLine(Camera* camera, const Line& line) {
-   if (!camera)
-      return;
+   if (!camera) return;
 
    // ViewProjectionが異なる線を同じDrawInstancedへ混ぜられないため、カメラ単位でまとめる。
    auto& lines = cameraLineGroups_[camera];
-   if (lines.size() >= maxLines_) {
-      return;
-   }
+
+   if (lines.size() >= maxLines_) return;
 
    auto verts = line.GetVertices();
    LineInstance instance = {};
@@ -78,8 +76,10 @@ void LineRenderer::UpdateMatrix(const Matrix4x4& world, const Matrix4x4& viewPro
 }
 
 bool LineRenderer::UploadLines(const std::vector<LineInstance>& lines) {
-   if (!mappedInstanceBuffer_ || lines.size() > maxLines_)
+   if (!mappedInstanceBuffer_ || lines.size() > maxLines_) {
       return false;
+   }
+
    std::memcpy(mappedInstanceBuffer_, lines.data(), sizeof(LineInstance) * lines.size());
    return true;
 }
@@ -102,15 +102,14 @@ void LineRenderer::Draw(ID3D12GraphicsCommandList* cmdList, UINT transformRootPa
 }
 
 void LineRenderer::DrawLine(const Vector3& start, const Vector3& end, const Vector4& color, Camera* camera) {
-   if (!camera)
-      return;
+   if (!camera) return;
+
    AddLine(camera, Line(start, end, color));
 }
 
 void LineRenderer::DrawSpline(
    const std::vector<Vector3>& controlPoints, const Vector4& color, size_t segmentCount, Camera* camera) {
-   if (!camera || controlPoints.size() < 4 || segmentCount <= 0)
-      return;
+   if (!camera || controlPoints.size() < 4 || segmentCount <= 0) return;
 
    std::vector<Vector3> pointsDrawing;
    pointsDrawing.clear();
@@ -129,8 +128,7 @@ void LineRenderer::DrawSpline(
 
 void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int thickLineInterval, int range,
    bool enableFade, float fadeDistance) {
-   if (!camera)
-      return;
+   if (!camera) return;
 
    Vector3 cameraPos = camera->GetTransform().translation;
 
@@ -209,6 +207,7 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
       // 原点の線は軸の色
       if (std::abs(pos1) < 0.001f) {
          color = axis2Color;
+
          if (enableFade) {
             color.w *= fadeFactor;
          }
@@ -229,6 +228,7 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
 
       // 平面に応じて線を描画
       Vector3 lineStart, lineEnd;
+
       switch (plane) {
          case GridPlane::XZ:
             lineStart = Vector3(pos1, 0.0f, start2);
@@ -263,6 +263,7 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
       // 原点の線は軸の色
       if (std::abs(pos2) < 0.001f) {
          color = axis1Color;
+
          if (enableFade) {
             color.w *= fadeFactor;
          }
@@ -283,6 +284,7 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
 
       // 平面に応じて線を描画
       Vector3 lineStart, lineEnd;
+
       switch (plane) {
          case GridPlane::XZ:
             lineStart = Vector3(start1, 0.0f, pos2);
@@ -303,8 +305,7 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
 }
 
 void LineRenderer::DrawSphere(const Vector3& center, float radius, const Vector4& color, Camera* camera) {
-   if (!camera)
-      return;
+   if (!camera) return;
 
    const int segments = 16;
    const int rings = 8;
@@ -351,8 +352,7 @@ void LineRenderer::DrawSphere(const Vector3& center, float radius, const Vector4
 
 void LineRenderer::DrawHemisphere(
    const Vector3& center, float radius, const Vector3& up, const Vector4& color, Camera* camera) {
-   if (!camera)
-      return;
+   if (!camera) return;
 
    const int segments = 16;
    const int rings = 8;
@@ -383,8 +383,7 @@ void LineRenderer::DrawHemisphere(
 
 void LineRenderer::DrawCone(
    const Vector3& apex, float radius, float height, const Vector3& direction, const Vector4& color, Camera* camera) {
-   if (!camera)
-      return;
+   if (!camera) return;
 
    const int segments = 16;
    Vector3 dir = direction.Normalize();
@@ -412,8 +411,7 @@ void LineRenderer::DrawCone(
 }
 
 void LineRenderer::DrawBox(const Vector3& center, const Vector3& size, const Vector4& color, Camera* camera) {
-   if (!camera)
-      return;
+   if (!camera) return;
 
    Vector3 halfSize = size * 0.5f;
 
@@ -446,8 +444,7 @@ void LineRenderer::DrawBox(const Vector3& center, const Vector3& size, const Vec
 
 void LineRenderer::DrawCircle(
    const Vector3& center, float radius, const Vector3& normal, const Vector4& color, Camera* camera) {
-   if (!camera)
-      return;
+   if (!camera) return;
 
    const int segments = 32;
    Vector3 n = normal.Normalize();

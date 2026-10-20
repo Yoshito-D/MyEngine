@@ -112,11 +112,13 @@ void ImGuiManager::BeginFrame() {
    ImGui_ImplDX12_NewFrame();
    ImGui_ImplWin32_NewFrame();
    const float scale = std::max(1.0f, static_cast<float>(GetDpiForWindow(windowHandle_)) / 96.0f);
+
    if (scale != uiScale_) {
       ImGui::GetStyle().ScaleAllSizes(scale / uiScale_);
       ImGui::GetIO().FontGlobalScale = scale;
       uiScale_ = scale;
    }
+
    ImGui::NewFrame();
    ImGuizmo::BeginFrame();
 }
@@ -131,25 +133,32 @@ bool ImGuiManager::GetEditorWindowVisibility(
 
 bool ImGuiManager::SetEditorWindowVisibility(const char* stableId, bool visible) {
    const auto entry = editorWindows_.find(stableId);
-   if (entry == editorWindows_.end())
+
+   if (entry == editorWindows_.end()) {
       return false;
+   }
+
    entry->second.visible = visible;
    return true;
 }
 
 void ImGuiManager::ShowMainMenuBar(const std::function<void()>& menuCallback) {
-   if (!ImGui::BeginMainMenuBar())
-      return;
-   if (menuCallback)
+   if (!ImGui::BeginMainMenuBar()) return;
+
+   if (menuCallback) {
       menuCallback();
+   }
+
    if (ImGui::BeginMenu(Tr("ウィンドウ", "Window"))) {
       for (auto& [id, window] : editorWindows_) {
          ImGui::PushID(id.c_str());
          ImGui::MenuItem(ImGuiHelper::Localize(window.label), nullptr, &window.visible);
          ImGui::PopID();
       }
+
       ImGui::EndMenu();
    }
+
    ImGui::EndMainMenuBar();
 }
 
@@ -160,6 +169,7 @@ void ImGuiManager::EndFrame(ID3D12GraphicsCommandList* commandList) {
    // サブウィンドウのPresent はメインウィンドウのPresent(PostDraw)より後に
    // PresentPlatformWindows() で行うため、ここでは UpdatePlatformWindows のみ呼ぶ
    ImGuiIO& io = ImGui::GetIO();
+
    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
       ImGui::UpdatePlatformWindows();
    }
@@ -169,6 +179,7 @@ void ImGuiManager::PresentPlatformWindows() {
    // メインウィンドウの Present(PostDraw) が完了した後に呼ぶことで
    // DWM 合成タイミングを揃え、重なり部分の描画ズレを解消する
    ImGuiIO& io = ImGui::GetIO();
+
    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
       ImGui::RenderPlatformWindowsDefault();
    }
@@ -207,6 +218,7 @@ void ImGuiManager::ShowDockSpace() {
 
    // DockSpace作成（バーなし、背景のみ）
    ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+
    if (resetLayoutRequested_ || !ImGui::DockBuilderGetNode(dockspace_id)) {
       resetLayoutRequested_ = false;
       ImGui::DockBuilderRemoveNode(dockspace_id);
@@ -226,6 +238,7 @@ void ImGuiManager::ShowDockSpace() {
       ImGui::DockBuilderDockWindow("Scene###Scene", center);
       ImGui::DockBuilderFinish(dockspace_id);
    }
+
    ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
    ImGui::End();
@@ -237,16 +250,20 @@ void ImGuiManager::ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSce
       gameView ? StableWindowLabel(Tr("ゲーム", "Game"), "Game") : StableWindowLabel(Tr("シーン", "Scene"), "Scene");
    ImGui::Begin(windowLabel.c_str());
 
-   if (!gameView)
+   if (!gameView) {
       isSceneHovered = ImGui::IsWindowHovered();
+   }
 
    if (!renderTarget || renderTarget->GetWidth() == 0 || renderTarget->GetHeight() == 0) {
-      if (!gameView)
+      if (!gameView) {
          isSceneHovered = false;
+      }
+
       ImGui::TextUnformatted("Render target unavailable");
       ImGui::End();
       return;
    }
+
    D3D12_GPU_DESCRIPTOR_HANDLE handle = renderTarget->GetSRVHandleGPU();
 
    // DX12バックエンドではGPUディスクリプタ値をImTextureIDとして渡す。
@@ -264,6 +281,7 @@ void ImGuiManager::ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSce
    ImVec2 imageSize;
 
    float availAspect = availSize.x / availSize.y;
+
    if (availAspect > aspectRatio) {
       // 横に余裕あり → 高さに合わせる
       imageSize.y = availSize.y;
@@ -282,6 +300,7 @@ void ImGuiManager::ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSce
 
    ImVec2 imageMin = ImGui::GetCursorScreenPos();
    ImGui::Image(texId, imageSize);
+
    if (!gameView && overlayCallback) {
       // オーバーレイ側が画像と同じ座標系を使えるよう、中央寄せ後の画面矩形を通知する。
       overlayCallback(imageMin.x, imageMin.y, imageSize.x, imageSize.y);
@@ -292,11 +311,13 @@ void ImGuiManager::ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSce
 
 void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
    bool visible = GetEditorWindowVisibility("EngineSettings", {"エンジン設定", "Engine Settings"});
-   if (!visible)
-      return;
+
+   if (!visible) return;
+
    const std::string windowLabel = StableWindowLabel(Tr("エンジン設定", "Engine Settings"), "EngineSettings");
    const bool drawContents = ImGui::Begin(windowLabel.c_str(), &visible);
    SetEditorWindowVisibility("EngineSettings", visible);
+
    if (!drawContents) {
       ImGui::End();
       return;
@@ -318,14 +339,18 @@ void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
       isDockSpaceVisible_ = isDockSpaceVisible;
    }
 
-   if (ImGui::Button(Tr("初期配置に戻す", "Reset Layout")))
+   if (ImGui::Button(Tr("初期配置に戻す", "Reset Layout"))) {
       resetLayoutRequested_ = true;
-   if (ImGui::Button(Tr("配置を保存", "Save Layout")) && ImGui::GetIO().IniFilename)
+   }
+
+   if (ImGui::Button(Tr("配置を保存", "Save Layout")) && ImGui::GetIO().IniFilename) {
       ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+   }
 
    // Multi-Viewport setting
    if (ImGui::Checkbox(Tr("マルチビューポートを有効化", "Enable Multi-Viewport"), &multiViewportEnabled_)) {
       ImGuiIO& io = ImGui::GetIO();
+
       if (multiViewportEnabled_) {
          io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
          io.ConfigViewportsNoAutoMerge = true;
@@ -335,6 +360,7 @@ void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
          io.ConfigViewportsNoAutoMerge = false;
          io.ConfigViewportsNoDefaultParent = false;
       }
+
       ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s",
          Tr("反映には再起動が必要な場合があります", "Restart may be required for changes to take effect"));
    }

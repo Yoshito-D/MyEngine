@@ -146,6 +146,7 @@ public:
       if (meshIndex >= skinnedVertexBufferViews.size()) {
          return nullptr;
       }
+
       return &skinnedVertexBufferViews[meshIndex];
    }
 
@@ -153,6 +154,7 @@ public:
       if (meshIndex >= influenceBufferViews.size()) {
          return nullptr;
       }
+
       return &influenceBufferViews[meshIndex];
    }
 };

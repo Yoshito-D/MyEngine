@@ -90,21 +90,25 @@ void TutorialProgressComponent::Update(float deltaTime) {
          if (std::abs(steerInput) >= 0.35f) {
             SetPhase(Phase::Jump);
          }
+
          break;
       case Phase::Jump:
          if (isAirborne) {
             SetPhase(Phase::AirControl);
          }
+
          break;
       case Phase::AirControl:
          if (isAirborne) {
             // ピッチとロールは同一フレームで行う必要がないため、空中での達成を個別に保持する。
             usedPitch_ = usedPitch_ || std::abs(pitchInput) >= 0.35f;
             usedRoll_ = usedRoll_ || std::abs(rollInput) >= 0.35f;
+
             if (usedPitch_ && usedRoll_) {
                SetPhase(Phase::PlanetTransfer);
             }
          }
+
          break;
       case Phase::PlanetTransfer:
       case Phase::LandingPractice:
@@ -112,6 +116,7 @@ void TutorialProgressComponent::Update(float deltaTime) {
          if (landedThisFrame) {
             HandleLandingResult();
          }
+
          break;
       case Phase::Complete:
          completionElapsed_ += std::max(deltaTime, 0.0f);
@@ -121,6 +126,7 @@ void TutorialProgressComponent::Update(float deltaTime) {
             sceneChangeRequested_ = true;
             GameEngine::BaseScene::SetNextSceneName(nextScene_);
          }
+
          break;
       default:
          break;
@@ -138,23 +144,25 @@ nlohmann::json TutorialProgressComponent::Serialize() const {
 }
 
 void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // 各設定を独立して検証し、欠落または型不一致なら既定値・現在値を維持する。
    if (data.contains("playerObjectId") && data.at("playerObjectId").is_string()) {
       playerObjectId_ = data.at("playerObjectId").get<std::string>();
    }
+
    if (data.contains("targetPlanetIndex") && data.at("targetPlanetIndex").is_number_integer()) {
       targetPlanetIndex_ = std::max(data.at("targetPlanetIndex").get<int>(), 0);
    }
+
    if (data.contains("nextScene") && data.at("nextScene").is_string()) {
       nextScene_ = data.at("nextScene").get<std::string>();
    }
+
    if (data.contains("completionDelay") && data.at("completionDelay").is_number()) {
       completionDelay_ = std::max(data.at("completionDelay").get<float>(), 0.0f);
    }
+
    if (data.contains("guideFadeDuration") && data.at("guideFadeDuration").is_number()) {
       // フェード時間は後段の除数になるため、0以下を許可しない。
       guideFadeDuration_ = std::max(data.at("guideFadeDuration").get<float>(), 0.0001f);
@@ -162,10 +170,10 @@ void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
 }
 
 void TutorialProgressComponent::SetPhase(Phase phase) {
-   if (phase_ == phase) {
-      return;
-   }
+   if (phase_ == phase) return;
+
    phase_ = phase;
+
    if (phase_ == Phase::Complete) {
       // 完了フェーズへ入った瞬間を遷移待ち時間の起点にする。
       completionElapsed_ = 0.0f;
@@ -177,6 +185,7 @@ int TutorialProgressComponent::GetNormalizedTargetPlanetIndex() const {
       // 参照解決前でも負値だけは除外し、シリアライズやインスペクターから安全に利用できるようにする。
       return std::max(targetPlanetIndex_, 0);
    }
+
    const int planetCount = planetSwitcher_->GetPlanetCount();
    return planetCount > 0 ? std::clamp(targetPlanetIndex_, 0, planetCount - 1) : 0;
 }
@@ -186,9 +195,8 @@ void TutorialProgressComponent::NormalizeTargetPlanetIndex() {
 }
 
 void TutorialProgressComponent::UpdateGuideText(float deltaTime) {
-   if (!guideText_) {
-      return;
-   }
+   if (!guideText_) return;
+
    const std::string guide = BuildGuideText();
 
    if (displayedText_.empty()) {
@@ -205,6 +213,7 @@ void TutorialProgressComponent::UpdateGuideText(float deltaTime) {
    if (guide != displayedText_) {
       // フェード中に案内内容が再更新された場合は、最新の文面だけを表示対象にする。
       pendingText_ = guide;
+
       if (guideFadeState_ != GuideFadeState::FadingOut) {
          guideFadeState_ = GuideFadeState::FadingOut;
       }
@@ -215,8 +224,10 @@ void TutorialProgressComponent::UpdateGuideText(float deltaTime) {
    }
 
    const float visibilityStep = std::max(deltaTime, 0.0f) / std::max(guideFadeDuration_, 0.0001f);
+
    if (guideFadeState_ == GuideFadeState::FadingOut) {
       guideVisibility_ = std::max(guideVisibility_ - visibilityStep, 0.0f);
+
       if (guideVisibility_ <= 0.0f) {
          // 文面の差し替えを完全透明時に限定し、異なる案内が途中で瞬間的に切り替わるのを隠す。
          guideText_->SetText(pendingText_);
@@ -226,17 +237,18 @@ void TutorialProgressComponent::UpdateGuideText(float deltaTime) {
       }
    } else if (guideFadeState_ == GuideFadeState::FadingIn) {
       guideVisibility_ = std::min(guideVisibility_ + visibilityStep, 1.0f);
+
       if (guideVisibility_ >= 1.0f) {
          guideFadeState_ = GuideFadeState::Visible;
       }
    }
+
    ApplyGuideOpacity();
 }
 
 void TutorialProgressComponent::ApplyGuideOpacity() {
-   if (!guideText_) {
-      return;
-   }
+   if (!guideText_) return;
+
    const float easedVisibility =
       GameEngine::EvaluateUIEasing(guideVisibility_, GameEngine::UIEasingType::EaseInOutSine);
 
@@ -328,16 +340,18 @@ const char* TutorialProgressComponent::GetPhaseName() const {
 #ifdef USE_IMGUI
 void TutorialProgressComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    GameEngine::EditorUI::SceneReference("Next Scene", nextScene_);
    ImGui::Text("Phase: %s", GetPhaseName());
    const int maxPlanetIndex = planetSwitcher_ ? std::max(planetSwitcher_->GetPlanetCount() - 1, 0) : 0;
+
    if (ImGui::DragInt("Target Planet Index", &targetPlanetIndex_, 1.0f, 0, maxPlanetIndex)) {
       NormalizeTargetPlanetIndex();
    }
+
    ImGui::DragFloat("Completion Delay", &completionDelay_, 0.1f, 0.0f, 10.0f, "%.1f s");
    ImGui::DragFloat("Guide Fade Duration", &guideFadeDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
    ImGui::Text("Resolved: Jump=%s Landing=%s Switcher=%s Input=%s Boost=%s Text=%s", characterJump_ ? "true" : "false",

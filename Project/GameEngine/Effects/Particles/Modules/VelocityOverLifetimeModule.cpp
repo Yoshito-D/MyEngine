@@ -15,10 +15,11 @@ void VelocityOverLifetimeModule::ApplyVelocity(Particle& particle, float deltaTi
 
 void VelocityOverLifetimeModule::ApplyVelocity(
    Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const {
-   if (!IsEnabled())
-      return;
+   if (!IsEnabled()) return;
+
    Vector3 linearVelocity =
       linearVelocity_.IsRandomized() ? particle.velocityOverLifetimeLinearVelocity : linearVelocity_.Minimum();
+
    if (useLocalSimulation) {
       // 設定値はエミッターのローカル方向として解釈し、加算前にワールド方向へ回転する。
       linearVelocity = RotateVector(linearVelocity, simulationTransform.GetActiveQuaternion());
@@ -28,6 +29,7 @@ void VelocityOverLifetimeModule::ApplyVelocity(
 
    float speedModifier =
       speedModifier_.IsRandomized() ? particle.velocityOverLifetimeSpeedModifier : speedModifier_.Minimum();
+
    if (speedModifier != 1.0f) {
       particle.velocity = particle.velocity * speedModifier;
    }
@@ -42,8 +44,10 @@ nlohmann::json VelocityOverLifetimeModule::ToJson() const {
 }
 
 void VelocityOverLifetimeModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
+   }
+
    if (j.contains("linearVelocity")) {
       if (j["linearVelocity"].is_object()) {
          linearVelocity_.FromJson(j["linearVelocity"]);
@@ -54,6 +58,7 @@ void VelocityOverLifetimeModule::FromJson(const nlohmann::json& j) {
          linearVelocity_ = RandomVector3(value, value, false);
       }
    }
+
    if (j.contains("speedModifier")) {
       if (j["speedModifier"].is_object()) {
          speedModifier_.FromJson(j["speedModifier"]);

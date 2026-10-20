@@ -17,14 +17,17 @@ const bool kRegistered =
       if (auto* existing = camera.GetComponent<PerlinNoise>()) {
          return existing;
       }
+
       return camera.AddComponent<PerlinNoise>();
    });
 
 Vector3 NormalizeOrDefault(const Vector3& value, const Vector3& fallback) {
    float length = value.Length();
+
    if (length > 1e-5f) {
       return value * (1.0f / length);
    }
+
    return fallback;
 }
 
@@ -36,6 +39,7 @@ Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) 
    if (!data.is_array() || data.size() != 3) {
       return fallback;
    }
+
    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
 }
 
@@ -45,8 +49,7 @@ float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
 }
 
 void PerlinNoise::MutateCameraState(CameraState& state, float deltaTime) {
-   if (remainingTime_ <= 0.0f && amplitudeGain_ <= 0.0f)
-      return;
+   if (remainingTime_ <= 0.0f && amplitudeGain_ <= 0.0f) return;
 
    time_ += deltaTime * frequencyGain_;
 
@@ -66,6 +69,7 @@ void PerlinNoise::MutateCameraState(CameraState& state, float deltaTime) {
 
    // ノイズを位置に適用
    Vector3 shake = {};
+
    if (useScreenSpaceShake_) {
       // 惑星上でカメラが回転しても、画面の縦横に揺れるよう最新のビュー基底を使う。
       const Matrix4x4 worldMatrix = state.GetViewMatrix().Inverse();
@@ -140,27 +144,29 @@ nlohmann::json PerlinNoise::Serialize() const {
 }
 
 void PerlinNoise::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    amplitudeGain_ = ReadFloat(data, "amplitudeGain", amplitudeGain_);
    frequencyGain_ = ReadFloat(data, "frequencyGain", frequencyGain_);
    time_ = ReadFloat(data, "time", time_);
    remainingTime_ = ReadFloat(data, "remainingTime", remainingTime_);
    initialAmplitude_ = ReadFloat(data, "initialAmplitude", initialAmplitude_);
+
    if (data.contains("shakeDirection")) {
       shakeDirection_ =
          NormalizeOrDefault(DeserializeVector3(data.at("shakeDirection"), shakeDirection_), {0.0f, 1.0f, 0.0f});
    }
+
    if (data.contains("useDirectionalShake") && data.at("useDirectionalShake").is_boolean()) {
       useDirectionalShake_ = data.at("useDirectionalShake").get<bool>();
    }
+
    if (data.contains("screenSpaceWeights") && data.at("screenSpaceWeights").is_array() &&
        data.at("screenSpaceWeights").size() == 2) {
       screenSpaceWeights_ = {
          data.at("screenSpaceWeights")[0].get<float>(), data.at("screenSpaceWeights")[1].get<float>()};
    }
+
    if (data.contains("useScreenSpaceShake") && data.at("useScreenSpaceShake").is_boolean()) {
       useScreenSpaceShake_ = data.at("useScreenSpaceShake").get<bool>();
    }
@@ -169,8 +175,10 @@ void PerlinNoise::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void PerlinNoise::DrawInspector() {
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox("Enabled", &enabled))
+
+   if (ImGui::Checkbox("Enabled", &enabled)) {
       SetEnabled(enabled);
+   }
 
    ImGui::Text("Shaking: %s", IsShaking() ? "Yes" : "No");
 

@@ -13,16 +13,16 @@ bool sIsInitialized_ = false;
 }
 
 void SpotLight::Initialize(GraphicsDevice* device) {
-   if (sIsInitialized_)
-      return;
+   if (sIsInitialized_) return;
+
    sDevice_ = device;
    sIsInitialized_ = true;
 }
 
 void SpotLight::Create(unsigned int color, const Vector3& position, float intensity, const Vector3& direction,
    float distance, float decay, float cosAngle, float cosFalloffStart) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
+
    spotLightResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(SpotLightData));
 
    // 書き込むためのアドレスを取得
@@ -50,8 +50,10 @@ bool SpotLight::ApplyIllumination(const SpotLightData& illumination) {
        !std::isfinite(illumination.cosFalloffStart) || !std::isfinite(illumination.position.x) ||
        !std::isfinite(illumination.position.y) || !std::isfinite(illumination.position.z) ||
        !std::isfinite(illumination.direction.x) || !std::isfinite(illumination.direction.y) ||
-       !std::isfinite(illumination.direction.z))
+       !std::isfinite(illumination.direction.z)) {
       return false;
+   }
+
    auto data = illumination;
    data.intensity = std::max(data.intensity, 0.0f);
    data.distance = std::max(data.distance, 0.0f);

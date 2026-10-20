@@ -17,9 +17,7 @@ namespace App {
 
 void GravityBody::Update(float deltaTime) {
    // オーナー不在時は更新不可
-   if (!HasOwner()) {
-      return;
-   }
+   if (!HasOwner()) return;
 
    // 目標Up方向へ姿勢を追従
    UpdateRotation(deltaTime);
@@ -36,9 +34,8 @@ void GravityBody::SetTargetUpVector(const Vector3& targetUp) {
 }
 
 void GravityBody::ApplyGravityFromSurface(const Vector3& surfaceUp) {
-   if (surfaceUp.LengthSquared() < 1e-8f) {
-      return;
-   }
+   if (surfaceUp.LengthSquared() < 1e-8f) return;
+
    targetUpVector_ = surfaceUp.Normalize();
    gravityAcceleration_ = -targetUpVector_ * gravityStrength;
 }
@@ -52,6 +49,7 @@ Vector3 GravityBody::PredictVelocity(const Vector3& velocity, const Vector3& sur
    if (!useGravity) {
       return velocity;
    }
+
    return velocity - surfaceUp * (std::max(0.0f, gravityStrength) * deltaTime);
 }
 
@@ -81,14 +79,12 @@ void GravityBody::StopMotion() {
 
 void GravityBody::SnapToUpVector(const Vector3& targetUp) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    Vector3 newUp = targetUp.Normalize();
-   if (newUp.LengthSquared() < 1e-8f) {
-      return;
-   }
+
+   if (newUp.LengthSquared() < 1e-8f) return;
 
    Vector3 oldUp = currentUpVector_.Normalize();
    currentUpVector_ = newUp;
@@ -99,22 +95,23 @@ void GravityBody::SnapToUpVector(const Vector3& targetUp) {
    Vector3 forward = RotateVector({0.0f, 0.0f, 1.0f}, cur);
    Vector3 flatFwd = forward - oldUp * oldUp.Dot(forward);
    float flatLen = flatFwd.Length();
+
    if (flatLen < 1e-4f) {
       Vector3 tmp = (std::abs(newUp.x) < 0.9f) ? Vector3{1, 0, 0} : Vector3{0, 0, 1};
       flatFwd = tmp - newUp * newUp.Dot(tmp);
       flatLen = flatFwd.Length();
    }
-   if (flatLen < 1e-4f) {
-      return;
-   }
+
+   if (flatLen < 1e-4f) return;
+
    flatFwd = flatFwd * (1.0f / flatLen);
 
    // flatFwd を new up 平面に投影
    flatFwd = flatFwd - newUp * newUp.Dot(flatFwd);
    flatLen = flatFwd.Length();
-   if (flatLen < 1e-4f) {
-      return;
-   }
+
+   if (flatLen < 1e-4f) return;
+
    flatFwd = flatFwd * (1.0f / flatLen);
 
    Vector3 right = newUp.Cross(flatFwd).Normalize();
@@ -127,6 +124,7 @@ void GravityBody::SnapToUpVector(const Vector3& targetUp) {
    float m02 = fwd.x, m12 = fwd.y, m22 = fwd.z;
    float trace = m00 + m11 + m22;
    Quaternion q;
+
    if (trace > 0.0f) {
       float s = 0.5f / std::sqrt(trace + 1.0f);
       q.w = 0.25f / s;
@@ -152,6 +150,7 @@ void GravityBody::SnapToUpVector(const Vector3& targetUp) {
       q.y = (m12 + m21) / s;
       q.z = 0.25f * s;
    }
+
    {
       auto pose = transform->GetLocalPose();
       pose.SetRotationQuaternion(q.Normalize());
@@ -163,15 +162,13 @@ void GravityBody::UpdateRotation(float deltaTime) {
 
    // 惑星が切り替わった場合は回転補間を行わない
    auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
-   if (!switcher || switcher->HasSwitched()) {
-      return;
-   }
+
+   if (!switcher || switcher->HasSwitched()) return;
 
    // 回転対象Transformを取得
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    // 現在Upと目標Upを正規化
    Vector3 current = currentUpVector_.Normalize();
@@ -181,6 +178,7 @@ void GravityBody::UpdateRotation(float deltaTime) {
       current = Vector3{0.0f, 1.0f, 0.0f};
       currentUpVector_ = current;
    }
+
    if (target.LengthSquared() < 1e-8f) {
       target = Vector3{0.0f, 1.0f, 0.0f};
       targetUpVector_ = target;
@@ -188,22 +186,23 @@ void GravityBody::UpdateRotation(float deltaTime) {
 
    // 方向差が小さい場合は補間不要
    float dot = current.Dot(target);
-   if (dot > 0.9999f) {
-      return;
-   }
+
+   if (dot > 0.9999f) return;
 
    // ほぼ逆向きの場合は180度回転の特別処理
    if (dot < -0.9999f) {
       Vector3 axis = Vector3{1.0f, 0.0f, 0.0f}.Cross(current);
+
       if (axis.LengthSquared() < 1e-6f) {
          axis = Vector3{0.0f, 1.0f, 0.0f}.Cross(current);
       }
+
       if (axis.LengthSquared() < 1e-6f) {
          axis = Vector3{0.0f, 0.0f, 1.0f}.Cross(current);
       }
-      if (axis.LengthSquared() < 1e-6f) {
-         return;
-      }
+
+      if (axis.LengthSquared() < 1e-6f) return;
+
       axis = axis.Normalize();
       Quaternion rotDelta = MakeRotateAxisAngleQuaternion(axis, MathConstants::kPi);
       Quaternion cur = transform->GetLocalPose().GetActiveQuaternion();
@@ -218,16 +217,15 @@ void GravityBody::UpdateRotation(float deltaTime) {
 
    // 回転軸を求める
    Vector3 rotAxis = current.Cross(target);
-   if (rotAxis.LengthSquared() < 1e-6f) {
-      return;
-   }
+
+   if (rotAxis.LengthSquared() < 1e-6f) return;
+
    rotAxis = rotAxis.Normalize();
 
    // 角度差を算出
    float angle = std::acos(std::clamp(dot, -1.0f, 1.0f));
-   if (std::abs(angle) < 1e-6f) {
-      return;
-   }
+
+   if (std::abs(angle) < 1e-6f) return;
 
    // rotationSpeed に基づき段階的に回転
    float t = std::clamp(rotationSpeed * deltaTime, 0.0f, 1.0f);
@@ -250,9 +248,8 @@ void GravityBody::UpdateRotation(float deltaTime) {
 void GravityBody::UpdatePhysics(float deltaTime) {
    // 位置更新対象Transformを取得
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    // 重力で速度積分し、速度で位置積分
    velocity_ += gravityAcceleration_ * deltaTime;
@@ -267,9 +264,9 @@ void GravityBody::UpdatePhysics(float deltaTime) {
 void GravityBody::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::Checkbox(Tr("重力を使用", "Use Gravity"), &useGravity);
    ImGui::DragFloat(Tr("回転追従速度", "Rotation Follow Speed"), &rotationSpeed, 0.1f, 0.1f, 20.0f);
@@ -293,9 +290,11 @@ void GravityBody::Deserialize(const nlohmann::json& data) {
    if (data.contains("rotationSpeed")) {
       rotationSpeed = data["rotationSpeed"];
    }
+
    if (data.contains("gravityStrength")) {
       gravityStrength = data["gravityStrength"];
    }
+
    if (data.contains("useGravity")) {
       useGravity = data["useGravity"];
    }

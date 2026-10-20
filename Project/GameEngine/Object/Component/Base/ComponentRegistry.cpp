@@ -25,6 +25,7 @@ bool ComponentRegistry::RegisterFactory(const std::string& typeName, Factory fac
 
 IObjectComponent* ComponentRegistry::CreateComponent(Object& owner, const std::string& typeName) const {
    auto it = registrations_.find(typeName);
+
    if (it == registrations_.end()) {
       return nullptr;
    }
@@ -44,6 +45,7 @@ bool ComponentRegistry::HasFactory(const std::string& typeName) const {
 std::vector<std::string> ComponentRegistry::GetRegisteredTypeNames() const {
    std::vector<std::string> names;
    names.reserve(registrations_.size());
+
    for (const auto& [typeName, registration] : registrations_) {
       (void)registration;
       names.push_back(typeName);
@@ -57,6 +59,7 @@ std::vector<std::string> ComponentRegistry::GetRegisteredTypeNames(const Object&
    std::vector<std::string> names;
    names.reserve(registrations_.size());
    const ObjectTypeMask ownerType = ToObjectTypeMask(owner.GetObjectType());
+
    for (const auto& [typeName, registration] : registrations_) {
       if ((registration.supportedObjectTypes & ownerType) != 0) {
          names.push_back(typeName);
@@ -70,6 +73,7 @@ std::vector<std::string> ComponentRegistry::GetRegisteredTypeNames(const Object&
 #ifdef USE_IMGUI
 std::string ComponentRegistry::GetDisplayName(const std::string& typeName) const {
    const auto it = displayNames_.find(typeName);
+
    if (it == displayNames_.end()) {
       return typeName;
    }

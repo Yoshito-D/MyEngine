@@ -75,6 +75,7 @@ bool Collision::IsCollision(const Collider::Triangle& triangle, const Collider::
    }
 
    float t = (triangle.vertices[0] - segment.origin).Dot(normal) / segment.diff.Dot(normal);
+
    if (t < 0.0f || t > 1.0f) {
       return false;
    }
@@ -103,6 +104,7 @@ bool Collision::IsCollision(const Collider::Triangle& triangle, const Collider::
    }
 
    float t = (triangle.vertices[0] - ray.origin).Dot(normal) / ray.diff.Dot(normal);
+
    if (t < 0.0f) {
       return false;
    }
@@ -138,6 +140,7 @@ bool Collision::IsCollision(const Collider::Triangle& triangle, const Collider::
    if (cross01.Dot(normal) >= 0.0f && cross12.Dot(normal) >= 0.0f && cross20.Dot(normal) >= 0.0f) {
       return true;
    }
+
    return false;
 }
 

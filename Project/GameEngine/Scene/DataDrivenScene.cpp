@@ -16,6 +16,7 @@ void DataDrivenScene::LoadSceneDataIfNeeded() {
    }
 
    std::ifstream file(sceneFilePath_);
+
    if (!file.is_open()) {
       Logger::Error("DataDrivenScene could not open: " + sceneFilePath_.generic_string());
       return;
@@ -31,6 +32,7 @@ void DataDrivenScene::LoadSceneDataIfNeeded() {
 
    // 構築に失敗した場合は未ロードのままにし、呼び出し側が再試行できる状態を残す。
    isLoaded_ = sceneWorld_.LoadFromJson(sceneData);
+
    if (!isLoaded_) {
       Logger::Error("DataDrivenScene failed to build: " + sceneFilePath_.generic_string());
       return;

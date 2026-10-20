@@ -37,6 +37,7 @@ void VehicleDrift::Apply(bool driftInput, float steerInput, const Vector3& gravi
          // 実際の横速度をそのまま引き継ぎ lateralBuildupRate で滑らかに目標値へ近づける。
          auto* gravBody = GetOwner().GetComponent<GravityBody>();
          auto* gndMover = GetOwner().GetComponent<VehicleGroundMover>();
+
          if (gravBody && gndMover) {
             Vector3 fwd = gndMover->GetFlatForward();
             Vector3 right = gravityUp.Cross(fwd).Normalize();
@@ -119,6 +120,7 @@ bool VehicleDrift::ShouldStartDrift(bool driftInput, float steerInput) const {
          // sustainedTimer_ は同方向ステアが継続している間だけ加算されている（Apply 参照）。
          return (sustainedTimer_ >= sustainedSteerTime);
    }
+
    return false;
 }
 
@@ -138,6 +140,7 @@ bool VehicleDrift::ShouldContinueDrift(bool driftInput, float steerInput) const 
             return (steerSign == driftSign_);
          }
    }
+
    return false;
 }
 
@@ -149,13 +152,12 @@ void VehicleDrift::ApplySlideVelocity(float steerInput, const Vector3& gravityUp
    (void)steerInput;
 
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   if (!gravityBody) {
-      return;
-   }
+
+   if (!gravityBody) return;
+
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
-   if (!groundMover) {
-      return;
-   }
+
+   if (!groundMover) return;
 
    // ---- 水平方向ベクトルの取得 ----
    // flatForward は VehicleGroundMover が毎フレーム更新する水平前進方向。
@@ -178,6 +180,7 @@ void VehicleDrift::ApplySlideVelocity(float steerInput, const Vector3& gravityUp
    // 毎フレーム lateralBuildupRate の速さで目標値へ lerp する。
    float maxStep = lateralBuildupRate * deltaTime;
    float diff = targetLateral - slideLateralSpeed_;
+
    if (std::abs(diff) <= maxStep) {
       slideLateralSpeed_ = targetLateral; // 十分近ければスナップ
    } else {
@@ -196,13 +199,12 @@ void VehicleDrift::ApplySlideVelocity(float steerInput, const Vector3& gravityUp
 
 void VehicleDrift::ApplyPostDriftBleed(const Vector3& gravityUp, float deltaTime) {
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   if (!gravityBody) {
-      return;
-   }
+
+   if (!gravityBody) return;
+
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
-   if (!groundMover) {
-      return;
-   }
+
+   if (!groundMover) return;
 
    Vector3 flatForward = groundMover->GetFlatForward();
    Vector3 flatRight = gravityUp.Cross(flatForward).Normalize();
@@ -211,6 +213,7 @@ void VehicleDrift::ApplyPostDriftBleed(const Vector3& gravityUp, float deltaTime
    // exp(-rate * dt) は時定数 1/rate の厳密解で dt に対して無条件安定。
    // postDriftBleedRate が大きいほど素早くグリップが戻る。
    slideLateralSpeed_ *= std::exp(-postDriftBleedRate * deltaTime);
+
    if (std::abs(slideLateralSpeed_) < 0.01f) {
       slideLateralSpeed_ = 0.0f;
    }
@@ -237,20 +240,18 @@ bool VehicleDrift::CanFireMiniTurbo() const {
    if (driftTimer_ < miniTurboMinTime || !HasOwner()) {
       return false;
    }
+
    const auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
    return groundMover && !groundMover->IsAccelerationBlocked();
 }
 
 void VehicleDrift::TryFireMiniTurbo() {
    // 発動表示と実際の加速で同じ条件を使い、禁止中の空振りエフェクトも防ぐ。
-   if (!CanFireMiniTurbo()) {
-      return;
-   }
+   if (!CanFireMiniTurbo()) return;
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
-   if (!groundMover) {
-      return;
-   }
+
+   if (!groundMover) return;
 
    // 現在の速度に miniTurboBoost を impulse として加算する。
    // 直接上書きではなく加算にすることで、加速後は UpdateSpeed の減衰により
@@ -267,25 +268,29 @@ void VehicleDrift::TryFireMiniTurbo() {
 void VehicleDrift::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
 
    const char* modeNames[] = {Tr("ボタン入力", "ButtonMode"), Tr("継続ステア", "SustainedSteer")};
    int modeIdx = static_cast<int>(driftMode);
+
    if (ImGui::Combo(Tr("ドリフトモード", "Drift Mode"), &modeIdx, modeNames, 2)) {
       driftMode = static_cast<DriftMode>(modeIdx);
    }
+
    ImGui::DragFloat(Tr("スライド比率", "Slide Ratio"), &slideRatio, 0.01f, 0.0f, 1.0f);
    ImGui::DragFloat(Tr("横滑り蓄積速度", "Lateral Buildup Rate"), &lateralBuildupRate, 0.1f, 0.5f, 20.0f);
    ImGui::DragFloat(Tr("ドリフト後減衰速度", "Post Drift Bleed Rate"), &postDriftBleedRate, 0.1f, 0.5f, 20.0f);
    ImGui::DragFloat(Tr("ドリフト操舵倍率", "Drift Steer Mult"), &driftSteerMult, 0.05f, 0.5f, 5.0f);
    ImGui::Checkbox(Tr("ミニターボ有効", "Mini Turbo Enabled"), &miniTurboEnabled);
+
    if (miniTurboEnabled) {
       ImGui::DragFloat(Tr("ミニターボ加速", "Mini Turbo Boost"), &miniTurboBoost, 0.1f, 0.0f, 200.0f);
       ImGui::DragFloat(Tr("ミニターボ最小時間", "Mini Turbo Min Time"), &miniTurboMinTime, 0.05f, 0.0f, 5.0f);
    }
+
    ImGui::DragFloat(Tr("継続ステア時間", "Sustained Steer Time"), &sustainedSteerTime, 0.05f, 0.1f, 3.0f);
    ImGui::DragFloat(Tr("ドリフト操舵デッドゾーン", "Drift Steer DeadZone"), &driftSteerDeadZone, 0.01f, 0.0f, 1.0f);
    ImGui::Spacing();
@@ -315,30 +320,39 @@ void VehicleDrift::Deserialize(const nlohmann::json& data) {
    if (data.contains("driftMode")) {
       driftMode = static_cast<DriftMode>(data["driftMode"].get<int>());
    }
+
    if (data.contains("slideRatio")) {
       slideRatio = data["slideRatio"];
    }
+
    if (data.contains("lateralBuildupRate")) {
       lateralBuildupRate = data["lateralBuildupRate"];
    }
+
    if (data.contains("postDriftBleedRate")) {
       postDriftBleedRate = data["postDriftBleedRate"];
    }
+
    if (data.contains("driftSteerMult")) {
       driftSteerMult = data["driftSteerMult"];
    }
+
    if (data.contains("miniTurboEnabled")) {
       miniTurboEnabled = data["miniTurboEnabled"];
    }
+
    if (data.contains("miniTurboBoost")) {
       miniTurboBoost = data["miniTurboBoost"];
    }
+
    if (data.contains("miniTurboMinTime")) {
       miniTurboMinTime = data["miniTurboMinTime"];
    }
+
    if (data.contains("sustainedSteerTime")) {
       sustainedSteerTime = data["sustainedSteerTime"];
    }
+
    if (data.contains("driftSteerDeadZone")) {
       driftSteerDeadZone = data["driftSteerDeadZone"];
    }

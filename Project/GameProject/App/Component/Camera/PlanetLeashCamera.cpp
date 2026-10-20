@@ -24,6 +24,7 @@ Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) 
    if (!data.is_array() || data.size() != 3) {
       return fallback;
    }
+
    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
 }
 
@@ -40,6 +41,7 @@ const bool kRegistered =
       if (auto* existing = camera.GetComponent<PlanetLeashCamera>()) {
          return existing;
       }
+
       return camera.AddComponent<PlanetLeashCamera>();
    });
 } // namespace
@@ -58,10 +60,12 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
          // 保存座標が退化している場合は重力Upを視点方向に使い、最大距離上へ安全に配置する。
          initialOffset = gravityUp_;
          float fallbackLength = initialOffset.Length();
+
          if (!std::isfinite(fallbackLength) || fallbackLength <= 1e-6f) {
             initialOffset = {0.0f, 1.0f, 0.0f};
             fallbackLength = 1.0f;
          }
+
          eyePos_ = pivotTarget_ + initialOffset * (initialMaxDistance / fallbackLength);
       } else if (initialDistance > initialMaxDistance) {
          // 初回だけでもレアッシュ外に描画されないよう、既存方向を保って上限へ収める。
@@ -69,6 +73,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       } else {
          eyePos_ = state.transform.translation;
       }
+
       prevGravityUp_ = gravityUp_;
       eyeRelUp_ = gravityUp_;
       isInitialized_ = true;
@@ -79,14 +84,17 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
       Vector3 up0 = prevGravityUp_;
       Vector3 up1 = gravityUp_;
       float u0Len = up0.Length(), u1Len = up1.Length();
+
       if (u0Len > 1e-6f && u1Len > 1e-6f) {
          up0 = up0 * (1.0f / u0Len);
          up1 = up1 * (1.0f / u1Len);
          float cosA = std::clamp(up0.Dot(up1), -1.0f, 1.0f);
+
          if (cosA < 1.0f - 1e-7f) {
             // Upの変化量だけ視点オフセットも回し、惑星切替で画面方位が急にねじれないようにする。
             Vector3 axis = up0.Cross(up1);
             float axLen = axis.Length();
+
             if (axLen > 1e-6f) {
                axis = axis * (1.0f / axLen);
                float angle = std::acos(cosA);
@@ -98,17 +106,21 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
                eyePos_ = pivotTarget_ + rodrigues(r);
                eyeRelUp_ = rodrigues(eyeRelUp_);
                float upNLen = eyeRelUp_.Length();
-               if (upNLen > 1e-6f)
+
+               if (upNLen > 1e-6f) {
                   eyeRelUp_ = eyeRelUp_ * (1.0f / upNLen);
+               }
             }
          }
       }
+
       prevGravityUp_ = gravityUp_;
    }
 
    // レアッシュ: ピボットから遠すぎる場合だけ最大距離まで追従
    Vector3 toTarget = pivotTarget_ - eyePos_;
    float dist = toTarget.Length();
+
    if (dist > maxFollowDistance) {
       // 超過分だけを移動上限にすることで、目標を追い越さずレアッシュ境界へ収束させる。
       float over = dist - maxFollowDistance;
@@ -134,15 +146,16 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    // LookAt用の視線方向を算出
    Vector3 lookDir = lookTarget - eye;
    float lookLen = lookDir.Length();
-   if (lookLen < 1e-6f) {
-      return;
-   }
+
+   if (lookLen < 1e-6f) return;
+
    Vector3 lookDirN = lookDir * (1.0f / lookLen);
 
    // eyeRelUp を視線直交面に再投影して安定化
    {
       Vector3 projected = eyeRelUp_ - lookDirN * eyeRelUp_.Dot(lookDirN);
       float pLen = projected.Length();
+
       if (pLen > 1e-6f) {
          eyeRelUp_ = projected * (1.0f / pLen);
       } else {
@@ -157,6 +170,7 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
    Vector3 zaxis = lookDirN;
    Vector3 xaxis = eyeRelUp_.Cross(zaxis);
    float xLen = xaxis.Length();
+
    if (xLen > 1e-6f) {
       cachedRight_ = xaxis * (1.0f / xLen);
       cachedUp_ = zaxis.Cross(cachedRight_);
@@ -177,9 +191,7 @@ nlohmann::json PlanetLeashCamera::Serialize() const {
 }
 
 void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    maxFollowDistance = ReadFloat(data, "maxFollowDistance", maxFollowDistance);
    followSpeed = ReadFloat(data, "followSpeed", followSpeed);
@@ -195,8 +207,10 @@ void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
 void PlanetLeashCamera::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled))
+
+   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled)) {
       SetEnabled(enabled);
+   }
 
    ImGui::DragFloat(Tr("最大追従距離", "Max Follow Distance"), &maxFollowDistance, 0.1f, 0.1f, 100.0f);
    ImGui::DragFloat(Tr("追従速度", "Follow Speed"), &followSpeed, 0.1f, 0.0f, 50.0f);
@@ -213,6 +227,7 @@ void PlanetLeashCamera::DrawInspector() {
    if (ImGui::Button(Tr("初期化をリセット", "Reset Initialization"))) {
       isInitialized_ = false;
    }
+
    Configure(DescribeSettings());
 }
 #endif

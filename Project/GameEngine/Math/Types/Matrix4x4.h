@@ -17,9 +17,11 @@ struct Matrix4x4 {
    /// @return 対角成分が1、それ以外が0の4x4行列。
    static Matrix4x4 Identity() {
       Matrix4x4 result = {};
+
       for (int i = 0; i < 4; ++i) {
          result.m[i][i] = 1.0f;
       }
+
       return result;
    }
 
@@ -28,11 +30,13 @@ struct Matrix4x4 {
    /// @return result.m[i][j] = m[i][j] + matrix.m[i][j]で求めた行列。
    Matrix4x4 operator+(const Matrix4x4& matrix) const {
       Matrix4x4 result;
+
       for (int i = 0; i < 4; i++) {
          for (int j = 0; j < 4; j++) {
             result.m[i][j] = m[i][j] + matrix.m[i][j];
          }
       }
+
       return result;
    }
 
@@ -41,11 +45,13 @@ struct Matrix4x4 {
    /// @return result.m[i][j] = m[i][j] - matrix.m[i][j]で求めた行列。
    Matrix4x4 operator-(const Matrix4x4& matrix) const {
       Matrix4x4 result;
+
       for (int i = 0; i < 4; i++) {
          for (int j = 0; j < 4; j++) {
             result.m[i][j] = m[i][j] - matrix.m[i][j];
          }
       }
+
       return result;
    }
 
@@ -55,14 +61,17 @@ struct Matrix4x4 {
    /// @details エンジンの行ベクトル規約では、変換A * BはベクトルへA、Bの順で適用される。行列積は交換可能ではない。
    Matrix4x4 operator*(const Matrix4x4& matrix) const {
       Matrix4x4 result;
+
       for (int i = 0; i < 4; i++) {
          for (int j = 0; j < 4; j++) {
             result.m[i][j] = 0;
+
             for (int k = 0; k < 4; k++) {
                result.m[i][j] += m[i][k] * matrix.m[k][j];
             }
          }
       }
+
       return result;
    }
 
@@ -78,6 +87,7 @@ struct Matrix4x4 {
             }
          }
       }
+
       return false; // 行列が同じ場合
    }
 
@@ -88,14 +98,17 @@ struct Matrix4x4 {
    /// @note 一般的な複合代入演算子と異なり、戻り値は参照ではない。
    Matrix4x4 operator*=(const Matrix4x4& matrix) {
       Matrix4x4 result;
+
       for (int i = 0; i < 4; i++) {
          for (int j = 0; j < 4; j++) {
             result.m[i][j] = 0;
+
             for (int k = 0; k < 4; k++) {
                result.m[i][j] += m[i][k] * matrix.m[k][j];
             }
          }
       }
+
       *this = result; // 元の行列を更新
       return *this;
    }
@@ -114,11 +127,15 @@ struct Matrix4x4 {
       for (int i = 0; i < 4; ++i) {
          // 部分行列を作成
          float subMat[3][3];
+
          for (int sub_i = 1; sub_i < 4; ++sub_i) {
             int sub_j = 0;
+
             for (int sub_k = 0; sub_k < 4; ++sub_k) {
-               if (sub_k == i)
+               if (sub_k == i) {
                   continue;
+               }
+
                subMat[sub_i - 1][sub_j] = mat.m[sub_i][sub_k];
                ++sub_j;
             }
@@ -138,15 +155,21 @@ struct Matrix4x4 {
          for (int j = 0; j < 4; ++j) {
             // 部分行列を作成
             float subMat[3][3];
+
             for (int sub_i = 0, row = 0; sub_i < 4; ++sub_i) {
-               if (sub_i == i)
+               if (sub_i == i) {
                   continue;
+               }
+
                for (int sub_j = 0, col = 0; sub_j < 4; ++sub_j) {
-                  if (sub_j == j)
+                  if (sub_j == j) {
                      continue;
+                  }
+
                   subMat[row][col] = mat.m[sub_i][sub_j];
                   ++col;
                }
+
                ++row;
             }
 
@@ -167,11 +190,13 @@ struct Matrix4x4 {
    /// @return result.m[i][j] = m[j][i]で求めた行列。
    Matrix4x4 Transpose() const {
       Matrix4x4 result;
+
       for (int i = 0; i < 4; ++i) {
          for (int j = 0; j < 4; ++j) {
             result.m[i][j] = m[j][i];
          }
       }
+
       return result;
    }
 };

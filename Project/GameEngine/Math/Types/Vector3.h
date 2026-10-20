@@ -156,6 +156,7 @@ struct Vector3 {
       if (length < 1e-8f) {
          return {0.0f, 0.0f, 0.0f};
       }
+
       return {x / length, y / length, z / length};
    }
 
@@ -174,6 +175,7 @@ struct Vector3 {
       if (x != 0.0f || y != 0.0f) {
          return {-y, x, 0.0f};
       }
+
       return {0.0f, -z, y};
    }
 

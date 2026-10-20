@@ -7,22 +7,26 @@ namespace GameEngine {
 // ============================================================
 
 float RandomFloat::GetValue() const {
-   if (!randomized_ || minimum_ == maximum_)
+   if (!randomized_ || minimum_ == maximum_) {
       return minimum_;
+   }
+
    return RandomUtils::Random(minimum_, maximum_);
 }
 
 Vector2 RandomVector2::GetValue() const {
-   if (!randomized_)
+   if (!randomized_) {
       return minimum_;
+   }
 
    // 各成分を独立抽選し、矩形範囲内の任意の組み合わせを生成できるようにする。
    return Vector2{RandomUtils::Random(minimum_.x, maximum_.x), RandomUtils::Random(minimum_.y, maximum_.y)};
 }
 
 Vector3 RandomVector3::GetValue() const {
-   if (!randomized_)
+   if (!randomized_) {
       return minimum_;
+   }
 
    // 一つの補間率を共有せず、軸ごとの最小・最大で直方体の乱数分布を作る。
    return Vector3(RandomUtils::Random(minimum_.x, maximum_.x), RandomUtils::Random(minimum_.y, maximum_.y),
@@ -30,8 +34,10 @@ Vector3 RandomVector3::GetValue() const {
 }
 
 uint32_t RandomColor::GetValue() const {
-   if (!randomize || minValue == maxValue)
+   if (!randomize || minValue == maxValue) {
       return minValue;
+   }
+
    return RandomLerpRGBAColor(minValue, maxValue);
 }
 
@@ -50,14 +56,17 @@ nlohmann::json RandomVector2::ToJson() const {
 void RandomVector2::FromJson(const nlohmann::json& json) {
    auto low = minimum_;
    auto high = maximum_;
+
    if (json.contains("min") && json["min"].is_array() && json["min"].size() >= 2) {
       low.x = json["min"][0].get<float>();
       low.y = json["min"][1].get<float>();
    }
+
    if (json.contains("max") && json["max"].is_array() && json["max"].size() >= 2) {
       high.x = json["max"][0].get<float>();
       high.y = json["max"][1].get<float>();
    }
+
    *this = RandomVector2(low, high, json.value("randomize", randomized_));
 }
 
@@ -69,16 +78,19 @@ nlohmann::json RandomVector3::ToJson() const {
 void RandomVector3::FromJson(const nlohmann::json& json) {
    auto low = minimum_;
    auto high = maximum_;
+
    if (json.contains("min") && json["min"].is_array() && json["min"].size() >= 3) {
       low.x = json["min"][0].get<float>();
       low.y = json["min"][1].get<float>();
       low.z = json["min"][2].get<float>();
    }
+
    if (json.contains("max") && json["max"].is_array() && json["max"].size() >= 3) {
       high.x = json["max"][0].get<float>();
       high.y = json["max"][1].get<float>();
       high.z = json["max"][2].get<float>();
    }
+
    *this = RandomVector3(low, high, json.value("randomize", randomized_));
 }
 
@@ -87,12 +99,17 @@ nlohmann::json RandomColor::ToJson() const {
 }
 
 void RandomColor::FromJson(const nlohmann::json& json) {
-   if (json.contains("min"))
+   if (json.contains("min")) {
       minValue = json["min"];
-   if (json.contains("max"))
+   }
+
+   if (json.contains("max")) {
       maxValue = json["max"];
-   if (json.contains("randomize"))
+   }
+
+   if (json.contains("randomize")) {
       randomize = json["randomize"];
+   }
 }
 
 // ============================================================
@@ -124,10 +141,13 @@ nlohmann::json MainModule::ToJson() const {
 }
 
 void MainModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("duration"))
+   if (j.contains("duration")) {
       duration_ = j["duration"];
-   if (j.contains("looping"))
+   }
+
+   if (j.contains("looping")) {
       looping_ = j["looping"];
+   }
 
    if (j.contains("startLifetime")) {
       if (j["startLifetime"].is_object()) {
@@ -139,17 +159,21 @@ void MainModule::FromJson(const nlohmann::json& j) {
    }
 
    const bool hasStartSpeedMode = j.contains("startSpeedMode");
+
    if (hasStartSpeedMode) {
       startSpeedMode_ = static_cast<StartSpeedMode>(j["startSpeedMode"].get<int>());
    }
 
    if (j.contains("startSpeed")) {
       const auto& startSpeedJson = j["startSpeed"];
+
       if (startSpeedJson.is_object()) {
          // 旧形式ではstartSpeedキーにVector範囲も格納されたため、minの型から移行先を判定する。
          const bool isVectorRange = startSpeedJson.contains("min") && startSpeedJson["min"].is_array();
+
          if (isVectorRange) {
             startVelocity_.FromJson(startSpeedJson);
+
             if (!hasStartSpeedMode) {
                startSpeedMode_ = StartSpeedMode::Vector3;
             }
@@ -159,6 +183,7 @@ void MainModule::FromJson(const nlohmann::json& j) {
       } else if (startSpeedJson.is_array() && startSpeedJson.size() >= 3) {
          Vector3 value{startSpeedJson[0], startSpeedJson[1], startSpeedJson[2]};
          startVelocity_ = RandomVector3(value, value, false);
+
          if (!hasStartSpeedMode) {
             startSpeedMode_ = StartSpeedMode::Vector3;
          }
@@ -176,6 +201,7 @@ void MainModule::FromJson(const nlohmann::json& j) {
          Vector3 value{arr[0], arr[1], arr[2]};
          startVelocity_ = RandomVector3(value, value, false);
       }
+
       if (!hasStartSpeedMode) {
          startSpeedMode_ = StartSpeedMode::Vector3;
       }
@@ -212,18 +238,27 @@ void MainModule::FromJson(const nlohmann::json& j) {
    }
 
    if (j.contains("gravityModifier")) {
-      if (j["gravityModifier"].is_object())
+      if (j["gravityModifier"].is_object()) {
          gravityModifier_.FromJson(j["gravityModifier"]);
-      else
+      } else {
          SetGravityModifier(j["gravityModifier"]);
+      }
    }
-   if (j.contains("timeScale"))
+
+   if (j.contains("timeScale")) {
       SetTimeScale(j["timeScale"]);
-   if (j.contains("simulationSpace"))
+   }
+
+   if (j.contains("simulationSpace")) {
       simulationSpace_ = static_cast<SimulationSpace>(j["simulationSpace"].get<int>());
-   if (j.contains("playOnAwake"))
+   }
+
+   if (j.contains("playOnAwake")) {
       playOnAwake_ = j["playOnAwake"];
-   if (j.contains("maxParticles"))
+   }
+
+   if (j.contains("maxParticles")) {
       maxParticles_ = j["maxParticles"];
+   }
 }
 }

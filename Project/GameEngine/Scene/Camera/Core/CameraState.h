@@ -31,6 +31,7 @@ struct CameraState {
       if (hasViewMatrixOverride) {
          return viewMatrixOverride;
       }
+
       return GetWorldMatrix().Inverse();
    }
 
@@ -51,9 +52,13 @@ struct CameraState {
          // ビュー行列の回転部分はワールド回転行列の転置（= 列に軸がある形式）なので、
          // ビュー行列の3x3部分を直接 MatrixToQuaternion に渡すことで正しいクォータニオンが得られる。
          Matrix4x4 rotMatrix = MakeIdentity4x4();
-         for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
+
+         for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
                rotMatrix.m[i][j] = viewMatrix.m[i][j];
+            }
+         }
+
          transform.SetRotationQuaternion(MatrixToQuaternion(rotMatrix));
 
          return transform;

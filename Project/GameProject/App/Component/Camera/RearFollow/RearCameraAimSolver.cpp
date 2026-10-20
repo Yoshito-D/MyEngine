@@ -8,8 +8,9 @@ using namespace RearCameraMath;
 
 void RearCameraAimSolver::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    auto* camera = GetRearCamera();
-   if (!camera)
-      return;
+
+   if (!camera) return;
+
    const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
    const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
    const auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
@@ -31,6 +32,7 @@ GameEngine::Vector3 RearCameraAimSolver::ComputeLookTarget(const RearCameraInput
    GameEngine::Vector3 lookTarget = input.pivotTarget + up * targetHeight;
 
    float preLandingGuideBlend = transition.ComputePreLandingGuideBlend(input);
+
    if (!input.isAirborne && transition.GetState().isLandingReleaseActive && preLandingGuideBlend > 1e-4f) {
       // 接地時に表示していた注視点をピボット相対で保持する。
       // ワールド着地点を保持しないため、地上移動しても古い地点へカメラが引かれない。
@@ -49,9 +51,11 @@ GameEngine::Vector3 RearCameraAimSolver::ComputeLookTarget(const RearCameraInput
       GameEngine::Vector3 terrainOffset = terrainTarget - lookTarget;
       const float maxTerrainOffset = 2.0f;
       const float offsetLength = terrainOffset.Length();
+
       if (offsetLength > maxTerrainOffset) {
          terrainOffset = terrainOffset * (maxTerrainOffset / offsetLength);
       }
+
       lookTarget += terrainOffset * terrainBlend;
    }
 
@@ -82,6 +86,7 @@ void RearCameraAimSolver::ApplyLookAt(const RearCameraInput& input, const RearCa
    // zaxis = 注視点を向く方向（カメラ前方）
    Vector3 zaxis = lookTarget - eye;
    float zLen = zaxis.Length();
+
    if (zLen > 1e-6f) {
       zaxis = zaxis * (1.0f / zLen);
    } else {
@@ -91,6 +96,7 @@ void RearCameraAimSolver::ApplyLookAt(const RearCameraInput& input, const RearCa
    // 前フレームのRightを現在の視線平面へ平行移動し、特異点を跨いでも方位を維持する。
    Vector3 previousRight = state_.cachedRight - zaxis * zaxis.Dot(state_.cachedRight);
    float previousRightLen = previousRight.Length();
+
    if (previousRightLen > 1e-6f) {
       previousRight = previousRight * (1.0f / previousRightLen);
    } else {
@@ -107,11 +113,13 @@ void RearCameraAimSolver::ApplyLookAt(const RearCameraInput& input, const RearCa
    state_.lastLookAtRecoveryInput =
       std::clamp(candidateRightLen / std::max(settings.lookAtRecoveryRange, 1e-4f), 0.0f, 1.0f);
    state_.lastLookAtRecoveryBlend = EvaluateLookAtRecoveryCurve(settings, state_.lastLookAtRecoveryInput);
+
    if (candidateRightLen > 1e-6f) {
       candidateRight = candidateRight * (1.0f / candidateRightLen);
    }
 
    Vector3 targetRight = previousRight;
+
    if (candidateRightLen > 1e-6f) {
       float signedRoll = SignedAngleAroundAxis(previousRight, candidateRight, zaxis, 1.0f);
       targetRight = RotateAroundAxisUnit(previousRight, zaxis, signedRoll * state_.lastLookAtRecoveryBlend);

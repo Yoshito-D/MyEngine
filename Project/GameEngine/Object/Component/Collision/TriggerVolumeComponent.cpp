@@ -80,14 +80,13 @@ nlohmann::json TriggerVolumeComponent::Serialize() const {
 }
 
 void TriggerVolumeComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // 各項目を独立した部分更新として読み、旧データで欠けている設定は現在値を維持する。
    if (data.contains("targetObjectId") && data.at("targetObjectId").is_string()) {
       targetObjectId_ = data.at("targetObjectId").get<std::string>();
    }
+
    if (data.contains("shape") && data.at("shape").is_string()) {
       shape_ = data.at("shape").get<std::string>() == "Sphere" ? Shape::Sphere : Shape::Aabb;
    }
@@ -99,10 +98,12 @@ void TriggerVolumeComponent::Deserialize(const nlohmann::json& data) {
    };
    readVector("centerOffset", centerOffset_);
    readVector("halfExtents", halfExtents_);
+
    if (data.contains("radius") && data.at("radius").is_number()) {
       // 負の半径は幾何学的な意味を持たず、二乗すると正値として誤判定するため0へ制限する。
       radius_ = std::max(data.at("radius").get<float>(), 0.0f);
    }
+
    if (data.contains("debugDraw") && data.at("debugDraw").is_boolean()) {
       debugDraw_ = data.at("debugDraw").get<bool>();
    }
@@ -117,8 +118,10 @@ bool TriggerVolumeComponent::CalculateOverlap(const Object& target) const {
    if (!HasOwner()) {
       return false;
    }
+
    const auto* ownerTransform = GetOwner().GetComponent<TransformComponent>();
    const auto* targetTransform = target.GetComponent<TransformComponent>();
+
    if (!ownerTransform || !targetTransform) {
       return false;
    }
@@ -129,6 +132,7 @@ bool TriggerVolumeComponent::CalculateOverlap(const Object& target) const {
 
    // 現在は対象の原点を点として判定し、対象側の描画形状には依存させない。
    const Vector3 difference = targetPosition - center;
+
    if (shape_ == Shape::Sphere) {
       // 平方根を取らず半径の2乗と比較し、境界上もInsideとして扱う。
       return difference.LengthSquared() <= radius_ * radius_;
@@ -142,21 +146,25 @@ bool TriggerVolumeComponent::CalculateOverlap(const Object& target) const {
 #ifdef USE_IMGUI
 void TriggerVolumeComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Target", targetObjectId_, "TransformComponent");
    const char* shapes[] = {"Sphere", "AABB"};
    int shapeIndex = shape_ == Shape::Sphere ? 0 : 1;
+
    if (ImGui::Combo("Shape", &shapeIndex, shapes, 2)) {
       shape_ = shapeIndex == 0 ? Shape::Sphere : Shape::Aabb;
    }
+
    ImGui::DragFloat3("Center Offset", &centerOffset_.x, 0.1f);
+
    if (shape_ == Shape::Sphere) {
       ImGui::DragFloat("Radius", &radius_, 0.1f, 0.0f, 10000.0f);
    } else {
       ImGui::DragFloat3("Half Extents", &halfExtents_.x, 0.1f, 0.0f, 10000.0f);
    }
+
    ImGui::Checkbox("Debug Draw", &debugDraw_);
    ImGui::Text("Inside: %s", isInside_ ? "true" : "false");
 }

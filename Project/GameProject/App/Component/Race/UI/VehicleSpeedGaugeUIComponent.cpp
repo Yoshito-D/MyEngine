@@ -37,10 +37,12 @@ void VehicleSpeedGaugeUIComponent::OnReferencesChanged(GameEngine::SceneWorld& s
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
+
    if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
       gravityBody_ = playerObject->GetComponent<GravityBody>();
       groundMover_ = playerObject->GetComponent<VehicleGroundMover>();
    }
+
    if (auto* textObject = sceneWorld.FindObjectById(speedTextObjectId_)) {
       speedText_ = textObject->GetComponent<GameEngine::UITextComponent>();
    }
@@ -48,6 +50,7 @@ void VehicleSpeedGaugeUIComponent::OnReferencesChanged(GameEngine::SceneWorld& s
 
 void VehicleSpeedGaugeUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
+
    if (gaugeSprite_) {
       gaugeSprite_->SetAnchorPoint({0.0f, 0.0f});
 
@@ -63,6 +66,7 @@ void VehicleSpeedGaugeUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWo
             textureHeight_ = static_cast<float>(texture->GetHeight());
          }
       }
+
       gaugeSprite_->SetTextureUV({0.0f, 0.0f}, {textureWidth_, textureHeight_});
    }
 
@@ -77,6 +81,7 @@ void VehicleSpeedGaugeUIComponent::Update(float deltaTime) {
    // ゲージ本体と少なくとも一つの速度源がある場合だけ描画する。
    // RaceManagerが設定されている場合は、リザルトUIとの重なりを避けるため終了時に隠す。
    const bool canDisplay = gaugeSprite_ && (gravityBody_ || groundMover_) && !isFinished;
+
    if (!canDisplay) {
       SetHudVisible(false);
       return;
@@ -103,6 +108,7 @@ void VehicleSpeedGaugeUIComponent::Update(float deltaTime) {
    if (speedText_) {
       speedText_->SetText(std::format("{:.0f} km/h", speed * unitToKmh_));
    }
+
    SetHudVisible(true);
 }
 
@@ -116,6 +122,7 @@ void VehicleSpeedGaugeUIComponent::SetHudVisible(bool visible) {
          gaugeRender_->Configure(settings);
       }
    }
+
    if (frameObject_) {
       if (auto* render = frameObject_->GetComponent<GameEngine::RenderComponent>()) {
          {
@@ -125,6 +132,7 @@ void VehicleSpeedGaugeUIComponent::SetHudVisible(bool visible) {
          }
       }
    }
+
    if (speedText_ && !visible) {
       speedText_->SetText("");
    }
@@ -138,9 +146,7 @@ nlohmann::json VehicleSpeedGaugeUIComponent::Serialize() const {
 }
 
 void VehicleSpeedGaugeUIComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // 各項目を独立して検証し、欠落・型不一致の項目は既定値または現在値を維持する。
    auto readString = [&data](const char* key, std::string& value) {
@@ -168,9 +174,9 @@ void VehicleSpeedGaugeUIComponent::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void VehicleSpeedGaugeUIComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    GameEngine::EditorUI::ObjectReference("Frame", frameObjectId_, "");

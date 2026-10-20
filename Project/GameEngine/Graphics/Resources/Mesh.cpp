@@ -82,27 +82,30 @@ void Mesh::UpdateDynamic(const std::vector<VertexData>& vertices, const std::vec
       const uint32_t indexCapacity = std::max(static_cast<uint32_t>(indices.size()), dynamicIndexCapacity_ * 2u);
       CreateDynamic(vertexCapacity, indexCapacity);
    }
+
    if (!vertices.empty()) {
       std::memcpy(vertexData_, vertices.data(), sizeof(VertexData) * vertices.size());
    }
+
    if (!indices.empty()) {
       std::memcpy(dynamicIndexData_, indices.data(), sizeof(uint32_t) * indices.size());
    }
+
    vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * vertices.size());
    indexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(uint32_t) * indices.size());
    indexCount_ = static_cast<UINT>(indices.size());
 }
 
 void Mesh::Initialize(GraphicsDevice* device) {
-   if (sIsInitialized_)
-      return;
+   if (sIsInitialized_) return;
+
    sDevice_ = device;
    sIsInitialized_ = true;
 }
 
 void Mesh::CreateSprite(float width, float height, PlaneOrientation orientation) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
+
    vertexResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(VertexData) * 4);
    vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
    vertexBufferView_.SizeInBytes = sizeof(VertexData) * 4;
@@ -166,8 +169,7 @@ void Mesh::CreateSprite(float width, float height, PlaneOrientation orientation)
 }
 
 void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orientation, float originY) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    vertexResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(VertexData) * 4);
    vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
@@ -233,8 +235,7 @@ void Mesh::CreateParticleQuad(float width, float height, PlaneOrientation orient
 }
 
 void Mesh::CreateSkybox() {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    // カメラが立方体内部から見るため、巻き順と法線を通常のBoxとは逆向きにする。
    // 角を共有すると面ごとのUVと法線を保持できないため、各面4頂点に分離する。
@@ -297,6 +298,7 @@ void Mesh::CreateSkybox() {
          vertexData_[idx].texCoord = kFaces[face][v].uv;
          vertexData_[idx].normal = kFaces[face][v].norm;
       }
+
       uint32_t base = face * 4;
       uint32_t i = face * 6;
       indexData[i + 0] = base + 0;
@@ -311,8 +313,7 @@ void Mesh::CreateSkybox() {
 }
 
 void Mesh::CreateRing(float innerRadius, float outerRadius, uint32_t segmentCount, PlaneOrientation orientation) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    const uint32_t kVertexCount = segmentCount * 2;
    const uint32_t kIndexCount = segmentCount * 6;
@@ -365,8 +366,7 @@ void Mesh::CreateRing(float innerRadius, float outerRadius, uint32_t segmentCoun
 
 void Mesh::CreatePlane(
    float width, float depth, uint32_t widthSegments, uint32_t depthSegments, PlaneOrientation orientation) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    const uint32_t kCols = widthSegments + 1;
    const uint32_t kRows = depthSegments + 1;
@@ -395,6 +395,7 @@ void Mesh::CreatePlane(
 
    // 各セルを同じ対角線で二分し、平面全体の巻き順を一定に保つ。
    uint32_t idx = 0;
+
    for (uint32_t row = 0; row < depthSegments; ++row) {
       for (uint32_t col = 0; col < widthSegments; ++col) {
          uint32_t a = row * kCols + col;
@@ -412,8 +413,7 @@ void Mesh::CreatePlane(
 }
 
 void Mesh::CreateCircle(float radius, uint32_t segmentCount, PlaneOrientation orientation) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    const uint32_t kVertexCount = segmentCount + 1; // 中心 + 外周
    const uint32_t kIndexCount = segmentCount * 3;
@@ -448,8 +448,7 @@ void Mesh::CreateCircle(float radius, uint32_t segmentCount, PlaneOrientation or
 }
 
 void Mesh::CreateBox(float width, float height, float depth, float originY) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    // 面間で頂点を共有せず、各面に一定法線を持たせて角をハードエッジとして描画する。
    // 同じ分離により、各面へ独立した0..1 UVも割り当てられる。
@@ -506,6 +505,7 @@ void Mesh::CreateBox(float width, float height, float depth, float originY) {
          vertexData_[idx].texCoord = kFaces[face][v].uv;
          vertexData_[idx].normal = kFaces[face][v].norm;
       }
+
       uint32_t base = face * 4, i = face * 6;
       indexData[i + 0] = base + 0;
       indexData[i + 1] = base + 1;
@@ -519,8 +519,7 @@ void Mesh::CreateBox(float width, float height, float depth, float originY) {
 }
 
 void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, float originY) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    const uint32_t kVertexCount = (stackCount + 1) * (sliceCount + 1);
    const uint32_t kIndexCount = stackCount * sliceCount * 6;
@@ -535,6 +534,7 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, 
    for (uint32_t stack = 0; stack <= stackCount; ++stack) {
       float phi = MathConstants::kPi * static_cast<float>(stack) / static_cast<float>(stackCount);
       float v = static_cast<float>(stack) / static_cast<float>(stackCount);
+
       for (uint32_t slice = 0; slice <= sliceCount; ++slice) {
          float theta = MathConstants::kTwoPi * static_cast<float>(slice) / static_cast<float>(sliceCount);
          float u = static_cast<float>(slice) / static_cast<float>(sliceCount);
@@ -550,6 +550,7 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, 
 
    // (sliceCount + 1)を行幅として、上下の緯度リング間を四角形単位で接続する。
    uint32_t idx = 0;
+
    for (uint32_t stack = 0; stack < stackCount; ++stack) {
       for (uint32_t slice = 0; slice < sliceCount; ++slice) {
          uint32_t a = stack * (sliceCount + 1) + slice;
@@ -568,8 +569,7 @@ void Mesh::CreateSphere(float radius, uint32_t stackCount, uint32_t sliceCount, 
 
 void Mesh::CreateTorus(
    float majorRadius, float minorRadius, uint32_t majorSegments, uint32_t minorSegments, float originY) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    const uint32_t kVertexCount = (majorSegments + 1) * (minorSegments + 1);
    const uint32_t kIndexCount = majorSegments * minorSegments * 6;
@@ -585,6 +585,7 @@ void Mesh::CreateTorus(
       float phi = MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(majorSegments);
       float cosPhi = std::cosf(phi);
       float sinPhi = std::sinf(phi);
+
       for (uint32_t j = 0; j <= minorSegments; ++j) {
          float theta = MathConstants::kTwoPi * static_cast<float>(j) / static_cast<float>(minorSegments);
          float cosTheta = std::cosf(theta);
@@ -605,6 +606,7 @@ void Mesh::CreateTorus(
    }
 
    uint32_t idx = 0;
+
    for (uint32_t i = 0; i < majorSegments; ++i) {
       for (uint32_t j = 0; j < minorSegments; ++j) {
          uint32_t a = i * (minorSegments + 1) + j;
@@ -622,8 +624,7 @@ void Mesh::CreateTorus(
 }
 
 void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uint32_t segmentCount, float originY) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    // 側面頂点: (segmentCount+1) × 2 + 中心頂点 2 個 + 上下外周各 segmentCount 個
    // 構造: [側面頂点] [上蓋中心] [上蓋外周] [下蓋中心] [下蓋外周]
@@ -677,6 +678,7 @@ void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uin
    vertexData_[topBase].position = {0.0f, hh + yOffset, 0.0f, 1.0f};
    vertexData_[topBase].texCoord = {0.5f, 0.5f};
    vertexData_[topBase].normal = {0.0f, 1.0f, 0.0f};
+
    for (uint32_t i = 0; i < segmentCount; ++i) {
       float theta = kStep * static_cast<float>(i);
       float cos = std::cosf(theta);
@@ -694,6 +696,7 @@ void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uin
    vertexData_[botBase].position = {0.0f, -hh + yOffset, 0.0f, 1.0f};
    vertexData_[botBase].texCoord = {0.5f, 0.5f};
    vertexData_[botBase].normal = {0.0f, -1.0f, 0.0f};
+
    for (uint32_t i = 0; i < segmentCount; ++i) {
       float theta = kStep * static_cast<float>(i);
       float cos = std::cosf(theta);
@@ -711,8 +714,7 @@ void Mesh::CreateCylinder(float topRadius, float bottomRadius, float height, uin
 
 void Mesh::CreateCylinderWithoutCaps(
    float topRadius, float bottomRadius, float height, uint32_t segmentCount, float originY) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    const uint32_t kVertexCount = (segmentCount + 1) * 2;
    const uint32_t kIndexCount = segmentCount * 6;
@@ -755,8 +757,7 @@ void Mesh::CreateCylinderWithoutCaps(
 }
 
 void Mesh::CreateCone(float radius, float height, uint32_t segmentCount, float originY) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    // 側面: 頂点 1 + 底面外周 segmentCount
    // 底蓋: 中心 1 + 外周 segmentCount
@@ -800,6 +801,7 @@ void Mesh::CreateCone(float radius, float height, uint32_t segmentCount, float o
    vertexData_[botBase].position = {0.0f, -hh + yOffset, 0.0f, 1.0f};
    vertexData_[botBase].texCoord = {0.5f, 0.5f};
    vertexData_[botBase].normal = {0.0f, -1.0f, 0.0f};
+
    for (uint32_t i = 0; i < segmentCount; ++i) {
       float theta = kStep * static_cast<float>(i);
       float cos = std::cosf(theta);
@@ -818,8 +820,7 @@ void Mesh::CreateCone(float radius, float height, uint32_t segmentCount, float o
 }
 
 void Mesh::CreateTriangle(const Vector3& v0, const Vector3& v1, const Vector3& v2, PlaneOrientation orientation) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    uint32_t* indexData = nullptr;
    AllocateMesh(3, 3, vertexResource_, vertexBufferView_, vertexData_, indexResource_, indexBufferView_, indexData);
@@ -835,6 +836,7 @@ void Mesh::CreateTriangle(const Vector3& v0, const Vector3& v1, const Vector3& v
    Vector3 norm = {edge1.y * edge2.z - edge1.z * edge2.y, edge1.z * edge2.x - edge1.x * edge2.z,
       edge1.x * edge2.y - edge1.y * edge2.x};
    float len = std::sqrtf(norm.x * norm.x + norm.y * norm.y + norm.z * norm.z);
+
    if (len > 0.0f) {
       norm.x /= len;
       norm.y /= len;
@@ -863,18 +865,26 @@ const Mesh::VertexData* Mesh::GetVertexData() const {
 }
 
 bool Mesh::UpdateQuadPositions(const std::array<Vector4, 4>& positions) {
-   if (!vertexData_ || vertexBufferView_.SizeInBytes != sizeof(VertexData) * 4 || indexCount_ != 6)
+   if (!vertexData_ || vertexBufferView_.SizeInBytes != sizeof(VertexData) * 4 || indexCount_ != 6) {
       return false;
-   for (size_t i = 0; i < 4; ++i)
+   }
+
+   for (size_t i = 0; i < 4; ++i) {
       vertexData_[i].position = positions[i];
+   }
+
    return true;
 }
 
 bool Mesh::UpdateQuadTextureCoordinates(const std::array<Vector2, 4>& coordinates) {
-   if (!vertexData_ || vertexBufferView_.SizeInBytes != sizeof(VertexData) * 4 || indexCount_ != 6)
+   if (!vertexData_ || vertexBufferView_.SizeInBytes != sizeof(VertexData) * 4 || indexCount_ != 6) {
       return false;
-   for (size_t i = 0; i < 4; ++i)
+   }
+
+   for (size_t i = 0; i < 4; ++i) {
       vertexData_[i].texCoord = coordinates[i];
+   }
+
    return true;
 }
 

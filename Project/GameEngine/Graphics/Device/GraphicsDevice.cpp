@@ -45,8 +45,10 @@ void GraphicsDevice::Initialize(
 }
 
 void GraphicsDevice::InitializeOffscreen(ID3D12Device* device) {
-   if (!device || device_)
+   if (!device || device_) {
       throw std::invalid_argument("InitializeOffscreen requires a device and an uninitialized GraphicsDevice");
+   }
+
    device_ = device;
    descriptorSizeCBVSRVUAV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
    descriptorSizeRTV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -210,6 +212,7 @@ void GraphicsDevice::PostDraw() {
       void* mappedData = nullptr;
       const D3D12_RANGE readRange = {0, static_cast<SIZE_T>(screenshotBufferSize)};
       result = screenshotReadback->Map(0, &readRange, &mappedData);
+
       if (SUCCEEDED(result) && mappedData) {
          DirectX::Image image{};
          image.width = static_cast<size_t>(screenshotSourceDesc.Width);
@@ -224,6 +227,7 @@ void GraphicsDevice::PostDraw() {
          const HRESULT saveResult = directoryError ? HRESULT_FROM_WIN32(directoryError.value())
                                                    : DirectX::SaveToWICFile(image, DirectX::WIC_FLAGS_FORCE_SRGB,
                                                         GUID_ContainerFormatPng, screenshotPath->c_str());
+
          if (SUCCEEDED(saveResult)) {
             Logger::Info("Screenshot saved: " + screenshotPath->generic_string());
          } else {
@@ -256,8 +260,10 @@ void GraphicsDevice::Finalize() {
       // ここを省くと終了時だけGPUが解放済みバックバッファを参照し得る。
       fenceValue_++;
       commandQueue_->Signal(fence_.Get(), fenceValue_);
+
       if (fence_->GetCompletedValue() < fenceValue_) {
          HANDLE eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
          if (eventHandle) {
             fence_->SetEventOnCompletion(fenceValue_, eventHandle);
             WaitForSingleObject(eventHandle, INFINITE);
@@ -269,6 +275,7 @@ void GraphicsDevice::Finalize() {
    for (auto& backBuffer : backBuffers_) {
       backBuffer.Reset();
    }
+
    backBuffers_.clear();
 
    depthBuffer_.Reset();
@@ -288,6 +295,7 @@ void GraphicsDevice::Finalize() {
 void GraphicsDevice::EnableDebugLayer() {
 #ifdef _DEBUG
    Microsoft::WRL::ComPtr<ID3D12Debug1> debugController;
+
    if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.GetAddressOf())))) {
       // デバッグレイヤーを有効化する
       debugController->EnableDebugLayer();
@@ -317,11 +325,13 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
 
       DXGI_ADAPTER_DESC3 desc;
       adapter->GetDesc3(&desc);
+
       if (!(desc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)) {
          Logger::Info(std::format(L"Use Adapter: {}", desc.Description));
          break;
       }
    }
+
    assert(adapter != nullptr);
 
    // 機能レベルとログ出力用の文字列
@@ -344,6 +354,7 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
 
 #ifdef _DEBUG
    Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue;
+
    if (SUCCEEDED(device_->QueryInterface(IID_PPV_ARGS(infoQueue.GetAddressOf())))) {
       // ヤバイエラー時に止まる
       infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
@@ -437,6 +448,7 @@ void GraphicsDevice::CreateRenderTargetViews() {
    }
 
    backBuffers_.resize(swcDesc.BufferCount);
+
    for (int i = 0; i < backBuffers_.size(); i++) {
       // スワップチェーンからバッファを取得
       result = swapChain_->GetBuffer(i, IID_PPV_ARGS(backBuffers_[i].ReleaseAndGetAddressOf()));
@@ -527,9 +539,7 @@ void GraphicsDevice::CreateFence() {
 }
 
 void GraphicsDevice::TransitionDepthStencilToShaderResource() {
-   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) {
-      return;
-   }
+   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) return;
 
    // 呼び出し側が直前の用途を意識せずに済むよう、追跡中の実状態をbeforeに使う。
    CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -539,9 +549,7 @@ void GraphicsDevice::TransitionDepthStencilToShaderResource() {
 }
 
 void GraphicsDevice::TransitionDepthStencilToWrite() {
-   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_DEPTH_WRITE) {
-      return;
-   }
+   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_DEPTH_WRITE) return;
 
    CD3DX12_RESOURCE_BARRIER barrier =
       CD3DX12_RESOURCE_BARRIER::Transition(depthBuffer_.Get(), depthBufferState_, D3D12_RESOURCE_STATE_DEPTH_WRITE);
@@ -550,9 +558,7 @@ void GraphicsDevice::TransitionDepthStencilToWrite() {
 }
 
 void GraphicsDevice::TransitionDepthStencilToCopySource() {
-   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_COPY_SOURCE) {
-      return;
-   }
+   if (!depthBuffer_ || depthBufferState_ == D3D12_RESOURCE_STATE_COPY_SOURCE) return;
 
    CD3DX12_RESOURCE_BARRIER barrier =
       CD3DX12_RESOURCE_BARRIER::Transition(depthBuffer_.Get(), depthBufferState_, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -625,41 +631,31 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GraphicsDevice::CreateDescriptorHea
 }
 
 void GraphicsDevice::ToggleFullscreen() {
-   if (!window_) {
-      return;
-   }
+   if (!window_) return;
 
    window_->ToggleFullscreen();
    SyncBackBufferSizeToWindow();
 }
 
 void GraphicsDevice::SyncBackBufferSizeToWindow() {
-   if (!window_ || !window_->GetHwnd()) {
-      return;
-   }
+   if (!window_ || !window_->GetHwnd()) return;
 
    RECT clientRect{};
-   if (!::GetClientRect(window_->GetHwnd(), &clientRect)) {
-      return;
-   }
+
+   if (!::GetClientRect(window_->GetHwnd(), &clientRect)) return;
 
    const LONG width = clientRect.right - clientRect.left;
    const LONG height = clientRect.bottom - clientRect.top;
-   if (width <= 0 || height <= 0) {
-      return;
-   }
+
+   if (width <= 0 || height <= 0) return;
 
    ResizeSwapChainResources(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 }
 
 void GraphicsDevice::ResizeSwapChainResources(uint32_t width, uint32_t height) {
-   if (!swapChain_) {
-      return;
-   }
+   if (!swapChain_) return;
 
-   if (backBufferWidth_ == static_cast<int32_t>(width) && backBufferHeight_ == static_cast<int32_t>(height)) {
-      return;
-   }
+   if (backBufferWidth_ == static_cast<int32_t>(width) && backBufferHeight_ == static_cast<int32_t>(height)) return;
 
    // ResizeBuffersはキューから参照中のバックバッファに対して実行できないため、
    // 先にコマンドを完了させてから全参照を解放する。
@@ -668,6 +664,7 @@ void GraphicsDevice::ResizeSwapChainResources(uint32_t width, uint32_t height) {
    for (auto& backBuffer : backBuffers_) {
       backBuffer.Reset();
    }
+
    depthBuffer_.Reset();
 
    HRESULT hr = swapChain_->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
@@ -686,14 +683,17 @@ UINT GraphicsDevice::GetNextSrvIndex() const {
    if (!freeSrvIndices_.empty()) {
       return freeSrvIndices_.front();
    }
+
    if (nextSrvIndex_ >= kShaderVisibleDescriptorCount) {
       throw std::overflow_error("CBV/SRV/UAV descriptor heap is full");
    }
+
    return nextSrvIndex_;
 }
 
 void GraphicsDevice::IncrementSrvIndex() {
    (void)GetNextSrvIndex(); // Getを経由しない呼び出しでもヒープ容量を超えない。
+
    if (!freeSrvIndices_.empty()) {
       freeSrvIndices_.pop();
    } else {

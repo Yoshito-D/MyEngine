@@ -9,9 +9,9 @@ namespace App {
 void MeshNormalGravityAttractor::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
 
    // 法線取得失敗時に使われる代替Upを表示

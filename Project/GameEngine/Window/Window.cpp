@@ -68,6 +68,7 @@ bool Window::ProcessMessage() {
    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
+
       if (msg.message == WM_QUIT) {
          return true;
       }
@@ -81,9 +82,7 @@ void Window::ToggleFullscreen() {
 }
 
 void Window::SetFullscreen(bool fullscreen) {
-   if (!hwnd_ || fullscreen == isFullscreen_) {
-      return;
-   }
+   if (!hwnd_ || fullscreen == isFullscreen_) return;
 
    if (fullscreen) {
       // 復帰時に元の配置を完全再現できるよう、枠を外す前のスタイルと外接矩形を保存する。
@@ -132,11 +131,13 @@ LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM l
          if (wparam == VK_RETURN && (lparam & (1 << 29))) {
             return 0;
          }
+
          break;
       case WM_SYSCHAR:
          if (wparam == VK_RETURN) {
             return 0;
          }
+
          break;
       case WM_DESTROY:
          PostQuitMessage(0);

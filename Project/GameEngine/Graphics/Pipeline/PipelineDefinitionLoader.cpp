@@ -32,6 +32,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
    pipelinePaths.clear();
 
    std::ifstream file(WStringToString(registryFilePath));
+
    if (!file.is_open()) {
       Logger::Error(
          "[PipelineDefinitionLoader] Failed to open pipeline registry: " + WStringToString(registryFilePath));
@@ -46,6 +47,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
          Logger::Error("[PipelineDefinitionLoader] Pipeline registry is missing required array: rootSignatures");
          return false;
       }
+
       if (!registryJson.contains("pipelines") || !registryJson["pipelines"].is_array()) {
          Logger::Error("[PipelineDefinitionLoader] Pipeline registry is missing required array: pipelines");
          return false;
@@ -56,6 +58,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
       bool allSucceeded = true;
       const auto loadPathArray = [&](const json& paths, const char* label, std::vector<std::string>& output) {
          size_t index = 0;
+
          for (const auto& pathJson : paths) {
             const std::string entryLabel = std::string(label) + "[" + std::to_string(index) + "]";
             ++index;
@@ -67,6 +70,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
             }
 
             const std::string path = pathJson.get<std::string>();
+
             if (!std::filesystem::exists(path)) {
                Logger::Error(
                   "[PipelineDefinitionLoader] Registry path does not exist: " + path + " (" + entryLabel + ")");
@@ -87,6 +91,7 @@ bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFile
          Logger::Error("[PipelineDefinitionLoader] Pipeline registry did not provide any valid root signature paths.");
          allSucceeded = false;
       }
+
       if (pipelinePaths.empty()) {
          Logger::Error("[PipelineDefinitionLoader] Pipeline registry did not provide any valid pipeline paths.");
          allSucceeded = false;

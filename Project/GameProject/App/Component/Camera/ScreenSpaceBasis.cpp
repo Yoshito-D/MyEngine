@@ -49,6 +49,7 @@ void ScreenSpaceBasis::UpdateBasis(const Vector3& gravityUp) {
    if (fProj.LengthSquared() > 1e-6f) {
       cachedForward_ = fProj;
    }
+
    if (rProj.LengthSquared() > 1e-6f) {
       cachedRight_ = rProj;
    }
@@ -70,9 +71,9 @@ Vector3 ScreenSpaceBasis::GetRightBasis(const Vector3& gravityUp) const {
 void ScreenSpaceBasis::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("投影前方", "Projected Forward"), cachedForward_.x, cachedForward_.y,
       cachedForward_.z);

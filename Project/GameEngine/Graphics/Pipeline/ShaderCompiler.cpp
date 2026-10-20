@@ -10,15 +10,18 @@ std::wstring Utf8ToWString(const std::string& str) {
    }
 
    const int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+
    if (size <= 0) {
       return {};
    }
 
    std::wstring result(static_cast<size_t>(size), L'\0');
    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, result.data(), size);
+
    if (!result.empty() && result.back() == L'\0') {
       result.pop_back();
    }
+
    return result;
 }
 }
@@ -35,6 +38,7 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(const std::wstring& filePath, con
    // hlslファイルを読む
    ComPtr<IDxcBlobEncoding> shaderSource;
    HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
+
    if (FAILED(hr) || !shaderSource) {
       Logger::Error(L"[ShaderCompiler] Cannot read: " + filePath);
       return nullptr;
@@ -53,10 +57,12 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(const std::wstring& filePath, con
    // UTF-8のJSON defineをDXC引数用のUTF-16文字列へ変換し、argumentsが参照する実体を
    // コンパイル完了まで別vectorで保持する。
    defineArguments.reserve(defines.size());
+
    for (const auto& define : defines) {
       if (define.empty()) {
          continue;
       }
+
       defineArguments.push_back(L"-D" + Utf8ToWString(define));
    }
 
@@ -87,6 +93,7 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(const std::wstring& filePath, con
       includeHandler,                             // includeが含まれた諸々
       IID_PPV_ARGS(&shaderResult)                 // コンパイル結果
    );
+
    if (FAILED(hr) || !shaderResult) {
       Logger::Error(L"[ShaderCompiler] DXC invocation failed: " + filePath);
       return nullptr;
@@ -99,12 +106,15 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(const std::wstring& filePath, con
    shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
    HRESULT status = E_FAIL;
    const HRESULT statusResult = shaderResult->GetStatus(&status);
+
    if (shaderError && shaderError->GetStringLength() != 0) {
-      if (FAILED(status))
+      if (FAILED(status)) {
          Logger::Error(shaderError->GetStringPointer());
-      else
+      } else {
          Logger::Warning(shaderError->GetStringPointer());
+      }
    }
+
    if (FAILED(statusResult) || FAILED(status)) {
       Logger::Error(L"[ShaderCompiler] Compilation failed: " + filePath);
       return nullptr;
@@ -115,6 +125,7 @@ ComPtr<IDxcBlob> ShaderCompiler::CompileShader(const std::wstring& filePath, con
    // コンパイル結果から実行用のバイナリ部分を取得
    ComPtr<IDxcBlob> shaderBlob;
    hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
+
    if (FAILED(hr) || !shaderBlob) {
       Logger::Error(L"[ShaderCompiler] DXC produced no object: " + filePath);
       return nullptr;

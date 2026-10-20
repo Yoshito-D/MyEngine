@@ -35,9 +35,11 @@ GameEngine::Quaternion MakeArrowRotation(const GameEngine::Vector3& normalizedDi
 
    // 浮動小数点誤差で acos の定義域を外れないよう、内積を正規化範囲へ制限する。
    const float directionDot = std::clamp(kModelForward.Dot(normalizedDirection), -1.0f, 1.0f);
+
    if (directionDot > 1.0f - 1.0e-6f) {
       return GameEngine::Quaternion::Identity();
    }
+
    if (directionDot < -1.0f + 1.0e-6f) {
       // 真後ろでは外積から回転軸を決められないため、モデルの上方向を明示して 180 度回転させる。
       return GameEngine::MakeRotateAxisAngleQuaternion({0.0f, 1.0f, 0.0f}, kPi);
@@ -64,20 +66,26 @@ void RaceGoalDirectionHUDComponent::OnReferencesChanged(GameEngine::SceneWorld& 
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
+
    playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
    goalObject_ = sceneWorld.FindObjectById(goalObjectId_);
+
    if (!raceManager_) {
       Logger::Warning("Goal direction arrow race manager was not found: " + raceManagerId_, Logger::LogChannel::Game);
    }
+
    if (!playerObject_) {
       Logger::Warning("Goal direction arrow player was not found: " + playerObjectId_, Logger::LogChannel::Game);
    }
+
    if (!goalObject_) {
       Logger::Warning("Goal direction arrow goal was not found: " + goalObjectId_, Logger::LogChannel::Game);
    }
+
    if (!arrowModel_) {
       Logger::Warning("Goal direction arrow must be attached to a Model.", Logger::LogChannel::Game);
    }
+
    if (!uiModelComponent_) {
       Logger::Warning("Goal direction arrow requires a UIModelComponent.", Logger::LogChannel::Game);
    }
@@ -98,12 +106,14 @@ void RaceGoalDirectionHUDComponent::Update(float deltaTime) {
    const bool isRaceStarted =
       raceState == RaceManagerComponent::State::Countdown || raceState == RaceManagerComponent::State::Running;
    const bool shouldShow = isRaceStarted && playerObject_ && goalObject_ && arrowModel_ && uiModelComponent_;
+
    if (!shouldShow) {
       SetVisible(false);
       return;
    }
 
    const auto* camera = GameEngine::EngineContext::GetActiveCamera();
+
    if (!camera) {
       SetVisible(false);
       return;
@@ -111,6 +121,7 @@ void RaceGoalDirectionHUDComponent::Update(float deltaTime) {
 
    const GameEngine::Vector3 playerPosition = GetWorldPosition(*playerObject_);
    const GameEngine::Vector3 directionToGoal = GetWorldPosition(*goalObject_) - playerPosition;
+
    if (directionToGoal.LengthSquared() < kDirectionEpsilonSquared) {
       // 始点と終点がほぼ同じ場合は方向が定義できず、正規化すると数値誤差を増幅するため描画しない。
       SetVisible(false);
@@ -124,18 +135,18 @@ void RaceGoalDirectionHUDComponent::Update(float deltaTime) {
    const GameEngine::Vector4 viewDirection = GameEngine::TransformVectorByMatrix(
       {normalizedGoalDirection.x, normalizedGoalDirection.y, normalizedGoalDirection.z, 0.0f}, camera->GetViewMatrix());
    const GameEngine::Vector3 uiGoalDirection{viewDirection.x, viewDirection.y, viewDirection.z};
+
    if (uiGoalDirection.LengthSquared() < kDirectionEpsilonSquared) {
       SetVisible(false);
       return;
    }
+
    arrowModel_->SetRotationQuaternion(MakeArrowRotation(uiGoalDirection.Normalize()));
    SetVisible(true);
 }
 
 void RaceGoalDirectionHUDComponent::SetVisible(bool visible) {
-   if (!arrowModel_) {
-      return;
-   }
+   if (!arrowModel_) return;
 
    // コンポーネント自体は更新を続け、描画参加だけを切り替えることでレース状態やカメラ条件を次フレームにも再評価できる。
    if (auto* renderComponent = arrowModel_->GetComponent<GameEngine::RenderComponent>()) {
@@ -153,17 +164,17 @@ nlohmann::json RaceGoalDirectionHUDComponent::Serialize() const {
 }
 
 void RaceGoalDirectionHUDComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // キーごとの部分更新にして、旧シーンで未保存の参照 ID はクラス既定値のまま利用する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }
+
    if (data.contains("playerObjectId") && data.at("playerObjectId").is_string()) {
       playerObjectId_ = data.at("playerObjectId").get<std::string>();
    }
+
    if (data.contains("goalObjectId") && data.at("goalObjectId").is_string()) {
       goalObjectId_ = data.at("goalObjectId").get<std::string>();
    }
@@ -172,9 +183,9 @@ void RaceGoalDirectionHUDComponent::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void RaceGoalDirectionHUDComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    GameEngine::EditorUI::ObjectReference("Goal", goalObjectId_, "TransformComponent");

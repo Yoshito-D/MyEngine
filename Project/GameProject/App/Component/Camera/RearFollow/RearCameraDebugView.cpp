@@ -14,11 +14,13 @@ using namespace RearCameraMath;
 
 void RearCameraDebugView::MutateCameraState(GameEngine::CameraState&, float) {
    auto* camera = GetRearCamera();
-   if (!camera)
-      return;
+
+   if (!camera) return;
+
    const auto* recorder = GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>();
-   if (!recorder)
-      return;
+
+   if (!recorder) return;
+
    DrawCameraMeasurementOverlay(camera->DescribeSettings(), *recorder);
 #ifdef USE_IMGUI
    if (const auto frame = camera->GetFrameView()) {
@@ -31,9 +33,7 @@ void RearCameraDebugView::MutateCameraState(GameEngine::CameraState&, float) {
 
 void RearCameraDebugView::DrawCameraMeasurementOverlay(
    const RearCameraSettings& settings, const RearCameraMeasurementRecorder& recorder) {
-   if (!settings.showCameraMeasurementOverlay || recorder.GetState().cameraMeasurementSamples.empty()) {
-      return;
-   }
+   if (!settings.showCameraMeasurementOverlay || recorder.GetState().cameraMeasurementSamples.empty()) return;
 
    const CameraMeasurementSample& latest = recorder.GetState().cameraMeasurementSamples.back();
    GameEngine::TextStyle shadowStyle{};
@@ -77,14 +77,15 @@ void RearCameraDebugView::DrawCameraEvidenceWindow(
    bool visible = GameEngine::EngineContext::GetEditorWindowVisibility(
       "RearCameraEvidence", {"カメラの調整と計測", "Camera Tuning and Measurement"}, settings.showCameraEvidenceWindow);
    settings.showCameraEvidenceWindow = visible;
-   if (!visible)
-      return;
+
+   if (!visible) return;
 
    ImGui::SetNextWindowPos(ImVec2(350.0f, 32.0f), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowSize(ImVec2(660.0f, 535.0f), ImGuiCond_FirstUseEver);
    const bool drawContents = ImGui::Begin("カメラの調整と計測", &visible);
    GameEngine::EngineContext::SetEditorWindowVisibility("RearCameraEvidence", visible);
    settings.showCameraEvidenceWindow = visible;
+
    if (!drawContents) {
       ImGui::End();
       return;
@@ -95,21 +96,27 @@ void RearCameraDebugView::DrawCameraEvidenceWindow(
    ImGui::SliderFloat("戻り終わり", &settings.lookAtRecoveryCurveControl2, 0.0f, 1.0f, "%.2f");
 
    float recoveryCurvePreview[65]{};
+
    for (int index = 0; index < 65; ++index) {
       recoveryCurvePreview[index] = frame.aim.EvaluateLookAtRecoveryCurve(settings, static_cast<float>(index) / 64.0f);
    }
+
    ImGui::PlotLines("##PresentationRecoveryCurve", recoveryCurvePreview, 65, 0,
       "横向きが安定するほど、通常の向きへ戻す割合", 0.0f, 1.0f, ImVec2(-1.0f, 105.0f));
 
    ImGui::Separator();
    ImGui::TextUnformatted("ゲーム中の計測");
+
    if (ImGui::Button("現在の動きを計測し直す")) {
       recorder.StartCameraMeasurement("manual_current_settings", frame);
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button("上方向を180度変える固定条件で確認")) {
       recorder.RunFixedGravityUpVerification(settings);
    }
+
    ImGui::Text("状態: %s　記録: %lluフレーム　経過: %.2f秒",
       recorder.GetState().cameraMeasurementActive ? "計測中" : "停止",
       static_cast<unsigned long long>(recorder.GetState().cameraMeasurementSamples.size()),
@@ -124,6 +131,7 @@ void RearCameraDebugView::DrawCameraEvidenceWindow(
       const size_t historyStart = recorder.GetState().cameraMeasurementSamples.size() - historyCount;
       std::vector<float> upwardHistory(historyCount);
       std::vector<float> horizontalHistory(historyCount);
+
       for (size_t index = 0; index < historyCount; ++index) {
          const CameraMeasurementSample& sample = recorder.GetState().cameraMeasurementSamples[historyStart + index];
          upwardHistory[index] = sample.gravityUpStepDegrees;
@@ -156,8 +164,9 @@ void RearCameraDebugView::DrawInspector() {
    ImGui::PopID();
    auto* camera = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<PlayerRearFollowCamera>() : nullptr;
    auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
-   if (!camera || !recorder)
-      return;
+
+   if (!camera || !recorder) return;
+
    if (const auto frame = camera->GetFrameView()) {
       bool enabled = camera->IsEnabled();
       auto settings = camera->DescribeSettings();
@@ -173,6 +182,7 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
    auto DrawHelp = [Tr](const char* japanese, const char* english) {
       ImGui::SameLine();
       ImGui::TextDisabled("(?)");
+
       if (ImGui::IsItemHovered()) {
          ImGui::SetTooltip("%s", Tr(japanese, english));
       }
@@ -380,10 +390,12 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
       ImGui::SliderFloat(Tr("戻り始め", "Recovery Start"), &settings.lookAtRecoveryCurveControl1, 0.0f, 1.0f, "%.2f");
       ImGui::SliderFloat(Tr("戻り終わり", "Recovery End"), &settings.lookAtRecoveryCurveControl2, 0.0f, 1.0f, "%.2f");
       float recoveryCurvePreview[65]{};
+
       for (int index = 0; index < 65; ++index) {
          recoveryCurvePreview[index] =
             frame.aim.EvaluateLookAtRecoveryCurve(settings, static_cast<float>(index) / 64.0f);
       }
+
       ImGui::PlotLines("##LookAtRecoveryCurve", recoveryCurvePreview, 65, 0,
          Tr("横向きが安定するほど、通常の向きへ戻す割合",
             "Return to the normal direction as horizontal stability recovers"),
@@ -398,24 +410,33 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
          Tr("ゲーム画面へ計測値を表示", "Show Measurement Overlay"), &settings.showCameraMeasurementOverlay);
       bool visible = GameEngine::EngineContext::GetEditorWindowVisibility("RearCameraEvidence",
          {"カメラの調整と計測", "Camera Tuning and Measurement"}, settings.showCameraEvidenceWindow);
+
       if (ImGui::Checkbox(Tr("調整と計測の別画面を表示", "Show Tuning and Measurement Window"), &visible)) {
          GameEngine::EngineContext::SetEditorWindowVisibility("RearCameraEvidence", visible);
       }
+
       settings.showCameraEvidenceWindow = visible;
+
       if (ImGui::Button(Tr("計測開始", "Start Measurement"))) {
          recorder.StartCameraMeasurement("manual_current_settings", frame);
       }
+
       ImGui::SameLine();
+
       if (ImGui::Button(Tr("停止してCSV保存", "Stop and Save CSV"))) {
          recorder.StopCameraMeasurement(true, settings);
       }
+
       ImGui::SameLine();
+
       if (ImGui::Button(Tr("履歴を消去", "Clear History"))) {
          recorder.ClearCameraMeasurement();
       }
+
       if (ImGui::Button(Tr("60フレーム/秒で上方向を180度変える", "Run 60 FPS 180-degree Up Test"))) {
          recorder.RunFixedGravityUpVerification(settings);
       }
+
       DrawHelp("実ゲームと同じ向きの変え方を一定間隔で再現し、1フレームの上限と到達までのフレーム数を保存します。",
          "Repeats the in-game direction change at a fixed interval and saves the per-frame limit and arrival frame count.");
 
@@ -435,12 +456,14 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
          std::vector<float> gravityUpHistory(historyCount);
          std::vector<float> rightHistory(historyCount);
          std::vector<float> targetErrorHistory(historyCount);
+
          for (size_t index = 0; index < historyCount; ++index) {
             const CameraMeasurementSample& sample = recorder.GetState().cameraMeasurementSamples[historyStart + index];
             gravityUpHistory[index] = sample.gravityUpStepDegrees;
             rightHistory[index] = sample.cameraRightStepDegrees;
             targetErrorHistory[index] = sample.targetGravityUpErrorDegrees;
          }
+
          char gravityOverlay[96]{};
          char rightOverlay[96]{};
          std::snprintf(gravityOverlay, sizeof(gravityOverlay), "上方向の変化　最大 %.3f度/フレーム",
@@ -458,6 +481,7 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
             Tr("目標の上方向まで残っている角度", "Angle Remaining to the Target Up Direction"), 0.0f, 180.0f,
             ImVec2(-1.0f, 90.0f));
       }
+
       if (!recorder.GetState().lastCameraMeasurementPath.empty()) {
          ImGui::TextWrapped("%s: %s", Tr("保存先", "Saved To"), recorder.GetState().lastCameraMeasurementPath.c_str());
       }

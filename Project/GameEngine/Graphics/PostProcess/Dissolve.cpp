@@ -26,6 +26,7 @@ GameEngine::DissolveParams NormalizeDissolveParams(const GameEngine::DissolvePar
    for (float& value : params.edgeColor) {
       value = std::clamp(value, 0.0f, 1.0f);
    }
+
    for (float& value : params.dissolveColor) {
       value = std::clamp(value, 0.0f, 1.0f);
    }
@@ -52,8 +53,7 @@ void Dissolve::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderT
 ///          タイリングを含めて1回のフルスクリーンパスで処理する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void Dissolve::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature())
-      return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    D3D12_GPU_DESCRIPTOR_HANDLE maskSRV = inputSRV;
 
@@ -119,9 +119,7 @@ void Dissolve::SetEdgeWidth(float edgeWidth) {
 ///          空名または未登録名の場合はResolveMaskTextureが既定ノイズ名を順に検索する。
 /// @param textureName EngineContextへ登録されたテクスチャ名
 void Dissolve::SetMaskTextureName(const std::string& textureName) {
-   if (maskTextureName_ == textureName) {
-      return;
-   }
+   if (maskTextureName_ == textureName) return;
 
    maskTextureName_ = textureName;
    maskTexture_ = nullptr;
@@ -138,9 +136,7 @@ void Dissolve::CreateConstantBuffer() {
 /// @details Vector2と2組のfloat4を含むレイアウトをフィールド単位でコピーし、SetParams後の値を
 ///          次の描画から確実に参照できるようにする。
 void Dissolve::UpdateConstantBuffer() {
-   if (!constantBufferData_) {
-      return;
-   }
+   if (!constantBufferData_) return;
 
    constantBufferData_->threshold = params_.threshold;
    constantBufferData_->edgeWidth = params_.edgeWidth;
@@ -167,6 +163,7 @@ Texture* Dissolve::ResolveMaskTexture() {
 
    maskTextureLookupDirty_ = false;
    maskTexture_ = EngineContext::GetTexture(maskTextureName_);
+
    if (maskTexture_) {
       return maskTexture_;
    }
@@ -177,6 +174,7 @@ Texture* Dissolve::ResolveMaskTexture() {
    // 旧プロジェクトで使われた短縮名・ファイル名・正規IDの順に既定ノイズを探す。
    for (const char* textureName : kDefaultMaskNames) {
       maskTexture_ = EngineContext::GetTexture(textureName);
+
       if (maskTexture_) {
          return maskTexture_;
       }
@@ -215,21 +213,26 @@ void Dissolve::ImGuiEdit() {
       const auto textureNames = EngineContext::GetTextureNames();
       const char* texturePreview =
          maskTextureName_.empty() ? LocalizeEditorText("なし", "<none>") : maskTextureName_.c_str();
+
       if (ImGui::BeginCombo(LocalizeEditorText("マスクテクスチャ", "Mask Texture"), texturePreview)) {
          for (const auto& textureName : textureNames) {
             Texture* candidate = EngineContext::GetTexture(textureName);
+
             if (candidate && candidate->GetMetadata().IsCubemap()) {
                continue;
             }
 
             const bool selected = (textureName == maskTextureName_);
+
             if (ImGui::Selectable(textureName.c_str(), selected)) {
                SetMaskTextureName(textureName);
             }
+
             if (selected) {
                ImGui::SetItemDefaultFocus();
             }
          }
+
          ImGui::EndCombo();
       }
 
@@ -244,6 +247,7 @@ void Dissolve::ImGuiEdit() {
             constexpr float kPreviewMax = 128.0f;
             const float width = static_cast<float>(previewTexture->GetWidth());
             const float height = static_cast<float>(previewTexture->GetHeight());
+
             if (width > 0.0f && height > 0.0f) {
                // 長辺だけを上限へ合わせ、非正方形マスクも歪めずに確認できるようにする。
                const float scale = (width > height) ? (kPreviewMax / width) : (kPreviewMax / height);

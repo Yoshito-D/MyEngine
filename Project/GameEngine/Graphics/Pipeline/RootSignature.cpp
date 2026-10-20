@@ -23,6 +23,7 @@ void RootSignature::CreateRootSignature(ID3D12Device* device) {
    // D3D12が検証済みの不変レイアウトとして生成する。
    result = D3D12SerializeRootSignature(
       &descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignatureBlob_, &errorBlob);
+
    if (FAILED(result)) {
       Logger::Error(errorBlob ? std::string(static_cast<const char*>(errorBlob->GetBufferPointer()))
                               : "[RootSignature] Serialization failed");
@@ -31,8 +32,10 @@ void RootSignature::CreateRootSignature(ID3D12Device* device) {
 
    result = device->CreateRootSignature(0, rootSignatureBlob_->GetBufferPointer(), rootSignatureBlob_->GetBufferSize(),
       IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-   if (FAILED(result))
+
+   if (FAILED(result)) {
       Logger::Error("[RootSignature] Creation failed: " + std::to_string(result));
+   }
 }
 
 void RootSignature::SetRootParameter(D3D12_ROOT_PARAMETER_TYPE type, D3D12_SHADER_VISIBILITY visibility,

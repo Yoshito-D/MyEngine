@@ -87,14 +87,23 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.startOpacity))
+
+      if (!std::isfinite(settings.startOpacity)) {
          settings.startOpacity = defaults.startOpacity;
-      if (!std::isfinite(settings.endOpacity))
+      }
+
+      if (!std::isfinite(settings.endOpacity)) {
          settings.endOpacity = defaults.endOpacity;
-      if (!std::isfinite(settings.delay))
+      }
+
+      if (!std::isfinite(settings.delay)) {
          settings.delay = defaults.delay;
-      if (!std::isfinite(settings.duration))
+      }
+
+      if (!std::isfinite(settings.duration)) {
          settings.duration = defaults.duration;
+      }
+
       settings.startOpacity = std::clamp(settings.startOpacity, 0.0f, 1.0f);
       settings.endOpacity = std::clamp(settings.endOpacity, 0.0f, 1.0f);
       settings.duration = std::max(settings.duration, 0.001f);

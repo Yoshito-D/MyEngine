@@ -44,6 +44,7 @@ void CameraGizmo::Configure(const Settings& settings) {
        !std::isfinite(settings.upVectorColor.z) || !std::isfinite(settings.upVectorColor.w) ||
        !std::isfinite(settings.frustumScale))
       return;
+
    settings_ = settings;
    settings_.frustumScale = std::max(0.0f, settings_.frustumScale);
 }
@@ -53,8 +54,7 @@ void CameraGizmo::Initialize(LineRenderer* lineRenderer) {
 }
 
 void CameraGizmo::DrawFrustum(Camera* camera, Camera* viewCamera) {
-   if (!camera || !viewCamera || !lineRenderer_)
-      return;
+   if (!camera || !viewCamera || !lineRenderer_) return;
 
    const float farClip = NormalizeFarClip(camera->GetNearClip(), camera->GetFarClip());
    const Matrix4x4 projectionMatrix = MakeCameraProjectionMatrix(*camera, farClip);
@@ -90,8 +90,7 @@ void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera) {
 }
 
 void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera, float aspectRatio) {
-   if (!lineRenderer_ || !viewCamera)
-      return;
+   if (!lineRenderer_ || !viewCamera) return;
 
    const float farClip = NormalizeFarClip(state.nearClip, state.farClip);
    const Matrix4x4 viewMatrix = state.GetViewMatrix();
@@ -124,15 +123,14 @@ void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera, floa
 }
 
 void CameraGizmo::DrawFrustum(VirtualCamera* vcam, Camera* viewCamera) {
-   if (!vcam)
-      return;
+   if (!vcam) return;
+
    const float aspectRatio = viewCamera ? viewCamera->GetAspectRatio() : kDefaultAspectRatio;
    DrawFrustum(vcam->GetState(), viewCamera, aspectRatio);
 }
 
 void CameraGizmo::DrawCameraIcon(const Vector3& position, const Quaternion& rotation, float scale, Camera* viewCamera) {
-   if (!lineRenderer_ || !viewCamera)
-      return;
+   if (!lineRenderer_ || !viewCamera) return;
 
    Matrix4x4 rotMatrix = MakeRotateMatrix(rotation);
 
@@ -176,6 +174,7 @@ void CameraGizmo::DrawCameraIcon(const Vector3& position, const Quaternion& rota
 
    // レンズの円周を描画
    constexpr int segments = 8;
+
    for (int i = 0; i < segments; ++i) {
       float angle1 = (float)i / segments * MathConstants::kTwoPi;
       float angle2 = (float)(i + 1) / segments * MathConstants::kTwoPi;
@@ -191,8 +190,7 @@ void CameraGizmo::DrawCameraIcon(const Vector3& position, const Quaternion& rota
 void CameraGizmo::CalculateFrustumCorners(
    const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix, Vector3 outCorners[8]) const {
 
-   if (!outCorners)
-      return;
+   if (!outCorners) return;
 
    const Matrix4x4 inverseViewProjection = (viewMatrix * projectionMatrix).Inverse();
 
@@ -227,15 +225,16 @@ Matrix4x4 CameraGizmo::MakeCameraStateProjectionMatrix(
 
 Vector3 CameraGizmo::UnprojectClipPoint(const Vector4& clipPoint, const Matrix4x4& inverseViewProjection) const {
    const Vector4 world = TransformVectorByMatrix(clipPoint, inverseViewProjection);
+
    if (std::abs(world.w) < kHomogeneousEpsilon) {
       return {world.x, world.y, world.z};
    }
+
    return {world.x / world.w, world.y / world.w, world.z / world.w};
 }
 
 void CameraGizmo::DrawOrientationVectors(const Matrix4x4& viewMatrix, Camera* viewCamera) {
-   if (!lineRenderer_ || !viewCamera)
-      return;
+   if (!lineRenderer_ || !viewCamera) return;
 
    const Matrix4x4 worldMatrix = viewMatrix.Inverse();
    const Vector3 position = {worldMatrix.m[3][0], worldMatrix.m[3][1], worldMatrix.m[3][2]};

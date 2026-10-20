@@ -6,8 +6,9 @@
 namespace GameEngine {
 
 bool EditorCommandStack::Execute(std::unique_ptr<IEditorCommand> command, EditorCommandTarget& context) {
-   if (!command || !command->Execute(context))
+   if (!command || !command->Execute(context)) {
       return false;
+   }
 
    // 新しい分岐を実行した時点で以前のRedo履歴は到達不能になるため破棄する。
    undoStack_.push_back(std::move(command));
@@ -16,8 +17,9 @@ bool EditorCommandStack::Execute(std::unique_ptr<IEditorCommand> command, Editor
 }
 
 bool EditorCommandStack::Undo(EditorCommandTarget& context) {
-   if (undoStack_.empty())
+   if (undoStack_.empty()) {
       return false;
+   }
 
    // Command自身がUndo中にRedo用スナップショットを更新できるため、同じインスタンスを反対側のStackへ移す。
    auto command = std::move(undoStack_.back());
@@ -28,14 +30,18 @@ bool EditorCommandStack::Undo(EditorCommandTarget& context) {
 }
 
 bool EditorCommandStack::Redo(EditorCommandTarget& context) {
-   if (redoStack_.empty())
+   if (redoStack_.empty()) {
       return false;
+   }
+
    auto command = std::move(redoStack_.back());
    redoStack_.pop_back();
 
    // 再実行に失敗したCommandは現在状態と整合しないため、Undo履歴へ戻さずこの分岐を打ち切る。
-   if (!command->Execute(context))
+   if (!command->Execute(context)) {
       return false;
+   }
+
    undoStack_.push_back(std::move(command));
    return true;
 }
@@ -84,16 +90,19 @@ const char* CreateObjectCommand::GetName() const {
 
 bool CreateObjectCommand::Execute(EditorCommandTarget& context) {
    snapshot_ = context.Create(kind_, initialTransform_, assetId_, parentId_, snapshot_);
-   if (!snapshot_.is_object())
+
+   if (!snapshot_.is_object()) {
       return false;
+   }
+
    objectId_ = snapshot_.value("id", "");
    return !objectId_.empty();
 }
 
 void CreateObjectCommand::Undo(EditorCommandTarget& context) {
    const bool particle = kind_ == Kind::Particle;
-   if (!context.Contains(objectId_, particle))
-      return;
+
+   if (!context.Contains(objectId_, particle)) return;
 
    // Undo前の全状態を保持し、Redoも初回と同じID・設定・親を復元する。
    snapshot_ = context.Capture(objectId_, particle);
@@ -108,14 +117,19 @@ EditObjectStateCommand::EditObjectStateCommand(
 }
 
 bool EditObjectStateCommand::Execute(EditorCommandTarget& context) {
-   if (before_ == after_)
+   if (before_ == after_) {
       return false;
+   }
+
    if (alreadyApplied_) {
-      if (!context.Contains(id_, particle_))
+      if (!context.Contains(id_, particle_)) {
          return false;
+      }
+
       alreadyApplied_ = false;
       return true;
    }
+
    return Apply(context, after_);
 }
 
@@ -134,8 +148,10 @@ ReorderObjectCommand::ReorderObjectCommand(std::string id, std::string beforePar
 }
 
 bool ReorderObjectCommand::Execute(EditorCommandTarget& context) {
-   if (beforeParent_ == afterParent_ && beforeOrder_ == afterOrder_)
+   if (beforeParent_ == afterParent_ && beforeOrder_ == afterOrder_) {
       return false;
+   }
+
    return Apply(context, afterParent_, afterOrder_);
 }
 
@@ -208,11 +224,15 @@ RestoreObjectSnapshotCommand::RestoreObjectSnapshotCommand(nlohmann::json snapsh
 }
 
 bool RestoreObjectSnapshotCommand::Execute(EditorCommandTarget& context) {
-   if (!snapshot_.is_object())
+   if (!snapshot_.is_object()) {
       return false;
+   }
+
    snapshot_ = context.RestoreSnapshot(snapshot_);
-   if (!snapshot_.is_object())
+
+   if (!snapshot_.is_object()) {
       return false;
+   }
 
    // 初回に採番された実IDを次回の復元入力にも保持し、複製のRedoで参照先IDを変えない。
    restoredObjectId_ = snapshot_.value("id", "");
@@ -221,8 +241,8 @@ bool RestoreObjectSnapshotCommand::Execute(EditorCommandTarget& context) {
 
 void RestoreObjectSnapshotCommand::Undo(EditorCommandTarget& context) {
    const bool particle = snapshot_.value("objectType", "Model") == "ParticleSystem";
-   if (!context.Contains(restoredObjectId_, particle))
-      return;
+
+   if (!context.Contains(restoredObjectId_, particle)) return;
 
    // Undo直前の状態を保存し、実際の登録IDで取り消す。
    snapshot_ = context.Capture(restoredObjectId_, particle);
@@ -235,18 +255,22 @@ ModifyComponentCommand::ModifyComponentCommand(std::string objectId, std::string
 }
 
 bool ModifyComponentCommand::Execute(EditorCommandTarget& context) {
-   if (!context.Contains(objectId_, false) || typeName_.empty())
+   if (!context.Contains(objectId_, false) || typeName_.empty()) {
       return false;
+   }
 
    // 依存Componentの追加・削除も含めて戻せるよう、操作前のObject全体を一度だけ保存する。
-   if (beforeSnapshot_.is_null())
+   if (beforeSnapshot_.is_null()) {
       beforeSnapshot_ = context.Capture(objectId_, false);
+   }
+
    return context.ModifyComponent(objectId_, typeName_, add_);
 }
 
 void ModifyComponentCommand::Undo(EditorCommandTarget& context) {
-   if (beforeSnapshot_.is_object())
+   if (beforeSnapshot_.is_object()) {
       context.ApplySnapshot(objectId_, beforeSnapshot_, false);
+   }
 }
 
 } // namespace GameEngine
