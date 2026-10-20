@@ -1,4 +1,5 @@
 #include "GameEngine/Time/TimerSystem.h"
+#include <cstdint>
 
 namespace GameEngine {
 
@@ -15,7 +16,7 @@ TimerSystem::TimerId TimerSystem::SetTimeout(float delaySec, std::function<void(
    return t.id;
 }
 
-TimerSystem::TimerId TimerSystem::SetInterval(float intervalSec, std::function<void()> callback, int repeat) {
+TimerSystem::TimerId TimerSystem::SetInterval(float intervalSec, std::function<void()> callback, std::int32_t repeat) {
    Timer t{};
    t.id = NextId();
    float clamped = (intervalSec < 0.0f) ? 0.0f : intervalSec;

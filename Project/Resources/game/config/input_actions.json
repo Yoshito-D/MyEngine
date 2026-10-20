@@ -42,12 +42,12 @@
                {
                   "type": "GamePadButton",
                   "button": "LeftShoulder",
-                  "scale": -1.0
+                  "scale": -1
                },
                {
                   "type": "GamePadButton",
                   "button": "RightShoulder",
-                  "scale": 1.0
+                  "scale": 1
                }
             ]
          },
@@ -117,17 +117,17 @@
                {
                   "type": "GamePadButton",
                   "button": "DPadUp",
-                  "scale": -1.0
+                  "scale": -1
                },
                {
                   "type": "GamePadButton",
                   "button": "DPadDown",
-                  "scale": 1.0
+                  "scale": 1
                },
                {
                   "type": "LeftStick",
                   "axis": "Y",
-                  "scale": -1.0
+                  "scale": -1
                }
             ]
          },
@@ -148,12 +148,12 @@
                {
                   "type": "GamePadButton",
                   "button": "DPadLeft",
-                  "scale": -1.0
+                  "scale": -1
                },
                {
                   "type": "GamePadButton",
                   "button": "DPadRight",
-                  "scale": 1.0
+                  "scale": 1
                },
                {
                   "type": "LeftStick",

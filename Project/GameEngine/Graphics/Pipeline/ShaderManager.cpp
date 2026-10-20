@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Pipeline/ShaderManager.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Graphics/Pipeline/ShaderCompiler.h"
@@ -21,7 +22,7 @@ std::wstring Utf8ToWString(const std::string& str) {
 
    // JSONはUTF-8、DXCとWindowsファイルAPIはUTF-16を受け取るため、終端を含む必要長を
    // 先に取得してから変換する。戻り値からはstd::wstring自身の終端要素を除く。
-   const int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+   const std::int32_t size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
 
    if (size <= 0) {
       return {};
@@ -79,13 +80,6 @@ bool TryParseShaderType(const std::string& text, GameEngine::ShaderType& outType
    return false;
 }
 
-std::string NormalizePipelineName(std::string pipelineName) {
-   if (pipelineName.rfind("PostProcess_", 0) == 0) {
-      pipelineName = pipelineName.substr(std::string("PostProcess_").size());
-   }
-
-   return pipelineName;
-}
 }
 
 namespace GameEngine {
@@ -98,7 +92,6 @@ bool ShaderManager::Initialize(GraphicsDevice* device) {
       return false;
    }
 
-   BuildPipelineRootParameterTables();
    return true;
 }
 
@@ -205,7 +198,6 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
          return false;
       }
 
-      BuildPipelineRootParameterTables();
       return allSucceeded;
    } catch (const std::exception& e) {
       Logger::Error("[ShaderManager] Exception loading shader registry " + registryPath + ": " + std::string(e.what()));
@@ -301,123 +293,6 @@ const ShaderReflectionInfo* ShaderManager::GetShaderReflection(const std::string
    return &it->second.reflection;
 }
 
-std::optional<UINT> ShaderManager::ResolveObject3DRootParameter(const std::string& semanticName) const {
-   return ResolvePipelineRootParameter("Object3D", semanticName);
-}
-
-const PipelineRootParameterTable& ShaderManager::GetObject3DRootParameterTable() const {
-   static const PipelineRootParameterTable kEmptyTable{};
-   const auto* table = GetPipelineRootParameterTable("Object3D");
-   return table ? *table : kEmptyTable;
-}
-
-std::optional<UINT> ShaderManager::ResolvePipelineRootParameter(
-   const std::string& pipelineName, const std::string& semanticName) const {
-   // 解決統計は実行時の不足スロットや過剰検索を可視化する診断用で、結果の選択には影響しない。
-   ++resolveStats_.requests;
-   const std::string normalizedPipeline = NormalizePipelineName(pipelineName);
-   ResolveStats& pipelineStats = pipelineResolveStats_[normalizedPipeline];
-   ++pipelineStats.requests;
-
-   const auto* table = GetPipelineRootParameterTable(pipelineName);
-
-   if (!table) {
-      ++resolveStats_.misses;
-      ++pipelineStats.misses;
-      return std::nullopt;
-   }
-
-   const std::string key = ToLowerString(semanticName);
-   auto it = table->slotBySemanticName.find(key);
-
-   if (it == table->slotBySemanticName.end()) {
-      ++resolveStats_.misses;
-      ++pipelineStats.misses;
-      return std::nullopt;
-   }
-
-   ++resolveStats_.hits;
-   ++pipelineStats.hits;
-
-   return it->second;
-}
-
-const PipelineRootParameterTable* ShaderManager::GetPipelineRootParameterTable(const std::string& pipelineName) const {
-   const std::string normalized = NormalizePipelineName(pipelineName);
-
-   auto it = pipelineRootTables_.find(normalized);
-
-   if (it != pipelineRootTables_.end()) {
-      return &it->second;
-   }
-
-   return nullptr;
-}
-
-void ShaderManager::LogRootParameterTablesDebug() const {
-   const auto stageInfos = GetPipelineStageMatchInfos();
-
-   Logger::Info("[ShaderManager] Root parameter table debug dump begin");
-
-   if (pipelineRootTables_.empty()) {
-      Logger::Info("[ShaderManager] Root parameter tables are supplied by PSO JSON definitions.");
-   }
-
-   for (const auto& [pipelineName, table] : pipelineRootTables_) {
-
-      Logger::Info("[ShaderManager] " + pipelineName +
-                   ": hasReflectionData=" + std::string(table.hasReflectionData ? "true" : "false") +
-                   ", entries=" + std::to_string(table.slotBySemanticName.size()));
-
-      auto stageIt = stageInfos.find(pipelineName);
-
-      if (stageIt != stageInfos.end()) {
-         const auto& info = stageIt->second;
-         Logger::Info("  [VS] reflection=" + std::string(info.vertex.hasReflection ? "present" : "missing") +
-                      ", resources=" + std::to_string(info.vertex.resourceCount) +
-                      ", matchedByName=" + std::to_string(info.vertex.matchedByName));
-         Logger::Info("  [PS] reflection=" + std::string(info.pixel.hasReflection ? "present" : "missing") +
-                      ", resources=" + std::to_string(info.pixel.resourceCount) +
-                      ", matchedByName=" + std::to_string(info.pixel.matchedByName));
-      }
-
-      for (const auto& [semantic, slot] : table.slotBySemanticName) {
-         Logger::Info("  - " + semantic + " -> " + std::to_string(slot));
-      }
-   }
-
-   Logger::Info("[ShaderManager] Root parameter table debug dump end");
-}
-
-std::unordered_map<std::string, PipelineStageMatchInfo> ShaderManager::GetPipelineStageMatchInfos() const {
-   std::unordered_map<std::string, PipelineStageMatchInfo> results;
-
-   for (const auto& [pipelineName, table] : pipelineRootTables_) {
-      PipelineStageMatchInfo info{};
-
-      const auto fillStage = [&](ShaderType stage, ShaderStageMatchInfo& out) {
-         const auto* reflection = GetShaderReflection(pipelineName, stage);
-
-         if (!reflection || !reflection->isValid) return;
-
-         out.hasReflection = true;
-         out.resourceCount = static_cast<uint32_t>(reflection->boundResources.size());
-
-         for (const auto& resource : reflection->boundResources) {
-            if (!resource.name.empty() && table.slotBySemanticName.contains(ToLowerString(resource.name))) {
-               ++out.matchedByName;
-            }
-         }
-      };
-
-      fillStage(ShaderType::Vertex, info.vertex);
-      fillStage(ShaderType::Pixel, info.pixel);
-      results[pipelineName] = info;
-   }
-
-   return results;
-}
-
 bool ShaderManager::HasShader(const std::string& name, ShaderType type) const {
    std::string key = CreateShaderKey(name, type);
    return shaders_.find(key) != shaders_.end();
@@ -425,9 +300,6 @@ bool ShaderManager::HasShader(const std::string& name, ShaderType type) const {
 
 void ShaderManager::Clear() {
    shaders_.clear();
-   pipelineRootTables_.clear();
-   resolveStats_ = {};
-   pipelineResolveStats_.clear();
 }
 
 void ShaderManager::UnloadShader(const std::string& name, ShaderType type) {
@@ -457,7 +329,6 @@ bool ShaderManager::ReloadShader(const std::string& name, ShaderType type) {
    it->second.blob = newBlob;
    it->second.reflection = ExtractReflectionInfo(newBlob.Get(), oldShader.type);
    it->second.fileTimestamp = GetFileTimestamp(oldShader.filePath);
-   BuildPipelineRootParameterTables();
 
    return true;
 }
@@ -473,8 +344,6 @@ void ShaderManager::ReloadAllShaders() {
          shader.fileTimestamp = GetFileTimestamp(shader.filePath);
       }
    }
-
-   BuildPipelineRootParameterTables();
 }
 
 void ShaderManager::InitializeDXC() {
@@ -626,18 +495,8 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
    return info;
 }
 
-void ShaderManager::BuildObject3DRootParameterTable() {
-   BuildPipelineRootParameterTables();
-}
-
-void ShaderManager::BuildPipelineRootParameterTables() {
-   // ルートスロットの正本はPSO JSONへ移行済み。旧来の反射ベース表を残すと
-   // 定義順と食い違うため、互換APIには空表を明示する。
-   pipelineRootTables_.clear();
-}
-
 std::string ShaderManager::CreateShaderKey(const std::string& name, ShaderType type) const {
-   return name + "_" + std::to_string(static_cast<int>(type));
+   return name + "_" + std::to_string(static_cast<std::int32_t>(type));
 }
 
 const wchar_t* ShaderManager::GetShaderProfile(ShaderType type) const {

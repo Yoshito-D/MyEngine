@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include <cmath>
 #include <algorithm>
 #include "GameEngine/Scene/Light/DirectionalLight.h"
@@ -19,7 +20,7 @@ void DirectionalLight::Initialize(GraphicsDevice* device) {
    sIsInitialized_ = true;
 }
 
-void DirectionalLight::Create(unsigned int color, const Vector3& direction, float intensity) {
+void DirectionalLight::Create(std::uint32_t color, const Vector3& direction, float intensity) {
    if (!sIsInitialized_) return;
 
    directionalLightResource_ =

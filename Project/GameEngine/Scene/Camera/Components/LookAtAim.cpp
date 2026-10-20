@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Scene/Camera/Components/LookAtAim.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Math/MathUtils.h"
@@ -20,21 +21,6 @@ const bool kRegistered =
       return camera.AddComponent<LookAtAim>();
    });
 
-nlohmann::json SerializeVector3(const Vector3& value) {
-   return nlohmann::json::array({value.x, value.y, value.z});
-}
-
-Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
-   if (!data.is_array() || data.size() != 3) {
-      return fallback;
-   }
-
-   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
-}
-
-float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
-   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
-}
 } // namespace
 
 void LookAtAim::MutateCameraState(CameraState& state, float deltaTime) {
@@ -62,16 +48,16 @@ void LookAtAim::MutateCameraState(CameraState& state, float deltaTime) {
 }
 
 nlohmann::json LookAtAim::Serialize() const {
-   return nlohmann::json{{"damping", damping_}, {"offset", SerializeVector3(offset_)}};
+   return nlohmann::json{{"damping", damping_}, {"offset", GameEngine::JsonValue::WriteVector3(offset_)}};
 }
 
 void LookAtAim::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   damping_ = ReadFloat(data, "damping", damping_);
+   damping_ = GameEngine::JsonValue::ReadFloat(data, "damping", damping_);
 
    if (data.contains("offset")) {
-      offset_ = DeserializeVector3(data.at("offset"), offset_);
+      offset_ = GameEngine::JsonValue::ReadVector3(data.at("offset"), offset_);
    }
 }
 

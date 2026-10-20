@@ -30,11 +30,7 @@ public:
    static void RestartSequence(uint32_t seed) { Engine().seed(seed); }
 
 private:
-   static std::mt19937& Engine() {
-      static std::random_device rd;
-      static std::mt19937 engine(rd());
-      return engine;
-   }
+   static std::mt19937& Engine();
 };
 
 /// @brief 指定された範囲内のランダムな浮動小数点数を生成

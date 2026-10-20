@@ -24,26 +24,7 @@ void Pixelation::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rende
 void Pixelation::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!GetPipeline() || !GetRootSignature()) return;
 
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // 定数バッファをルートパラメータ0にセット
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // フルスクリーントライアングル描画
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 void Pixelation::CreateConstantBuffer() {
@@ -87,3 +68,18 @@ void Pixelation::ImGuiEdit() {
 #endif
 
 }
+
+namespace GameEngine {
+
+void Pixelation::SetPixelSize(float size) {
+   pixelSize_ = size;
+   UpdateConstantBuffer();
+}
+
+void Pixelation::SetScreenSize(float width, float height) {
+   screenSizeX_ = width;
+   screenSizeY_ = height;
+   UpdateConstantBuffer();
+}
+
+} // namespace GameEngine

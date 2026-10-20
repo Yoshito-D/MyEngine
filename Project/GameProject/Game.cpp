@@ -1,4 +1,5 @@
 #include "GameProject/Game.h"
+#include <cstdint>
 #include "GameEngine/Utility/Logger.h"
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameEngine/Object/Model/Model.h"
@@ -9,8 +10,8 @@
 #include <nlohmann/json.hpp>
 
 namespace {
-constexpr int kEditorSessionStateFormatVersion = 1;
-constexpr int kEditorSessionStateJsonIndentSize = 3;
+constexpr std::int32_t kEditorSessionStateFormatVersion = 1;
+constexpr std::int32_t kEditorSessionStateJsonIndentSize = 3;
 
 std::filesystem::path GetEditorSessionStateFilePath() {
    return std::filesystem::path("resources") / "game" / "editor" / "session_state.json";

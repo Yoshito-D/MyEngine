@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/Animation/AnimationComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Framework/EngineContext.h"
@@ -43,7 +44,7 @@ nlohmann::json AnimationComponent::Serialize() const {
 }
 
 void AnimationComponent::Deserialize(const nlohmann::json& data) {
-   // Component単体保存や旧シーンを受け入れるため、存在して型が正しい項目だけを現在値へ重ねる。
+   // Component単体設定を適用するため、存在して型が正しい項目だけを現在値へ重ねる。
    if (data.contains("animationName") && data.at("animationName").is_string()) {
       animationName = data.at("animationName").get<std::string>();
    }
@@ -306,7 +307,7 @@ void AnimationComponent::DrawInspector() {
 
       for (size_t i = 0; i < animationNames.size(); ++i) {
          const auto& name = animationNames[i];
-         ImGui::PushID(5300 + static_cast<int>(i));
+         ImGui::PushID(5300 + static_cast<std::int32_t>(i));
          const bool isSelected = animationName == name;
 
          if (ImGui::Selectable(name.c_str(), isSelected)) {
@@ -347,7 +348,7 @@ void AnimationComponent::DrawInspector() {
           ImGui::BeginCombo(ImGuiHelper::Localize({"アニメーションクリップ", "Animation Clip"}), previewClip.c_str())) {
          for (size_t i = 0; i < clipNames.size(); ++i) {
             const auto& name = clipNames[i];
-            ImGui::PushID(5400 + static_cast<int>(i));
+            ImGui::PushID(5400 + static_cast<std::int32_t>(i));
             const bool isSelected = (clipName == name);
 
             if (ImGui::Selectable(name.c_str(), isSelected)) {
@@ -405,3 +406,48 @@ Vector3 AnimationComponent::QuaternionToEuler_(const Quaternion& q) const {
 }
 
 }
+
+namespace GameEngine {
+
+AnimationComponent::Settings AnimationComponent::DescribeSettings() const {
+   Settings settings;
+   settings.animationName = animationName;
+   settings.clipName = clipName;
+   settings.targetNodeName = targetNodeName;
+   settings.playbackSpeed = playbackSpeed;
+   settings.loop = loop;
+   settings.applyTranslation = applyTranslation;
+   settings.applyRotation = applyRotation;
+   settings.applyScale = applyScale;
+   settings.useSkinning = useSkinning;
+   settings.debugDrawBones = debugDrawBones;
+   return settings;
+}
+
+void AnimationComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.playbackSpeed)) {
+      settings.playbackSpeed = defaults.playbackSpeed;
+   }
+
+   animationName = settings.animationName;
+   clipName = settings.clipName;
+   targetNodeName = settings.targetNodeName;
+   playbackSpeed = settings.playbackSpeed;
+   loop = settings.loop;
+   applyTranslation = settings.applyTranslation;
+   applyRotation = settings.applyRotation;
+   applyScale = settings.applyScale;
+   useSkinning = settings.useSkinning;
+   debugDrawBones = settings.debugDrawBones;
+
+   if (!std::isfinite(currentTime)) {
+      currentTime = 0.0f;
+   }
+
+   Seek(currentTime);
+}
+
+} // namespace GameEngine

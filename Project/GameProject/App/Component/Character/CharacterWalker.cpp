@@ -170,3 +170,54 @@ void CharacterWalker::Deserialize(const nlohmann::json& data) {
 }
 
 } // namespace App
+
+namespace App {
+
+CharacterWalker::Settings CharacterWalker::DescribeSettings() const {
+   Settings settings;
+   settings.moveSpeed = moveSpeed;
+   settings.acceleration = acceleration;
+   settings.friction = friction;
+   settings.airAcceleration = airAcceleration;
+   settings.airFriction = airFriction;
+   settings.turnSpeed = turnSpeed;
+   return settings;
+}
+
+void CharacterWalker::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.moveSpeed)) {
+      settings.moveSpeed = defaults.moveSpeed;
+   }
+
+   if (!std::isfinite(settings.acceleration)) {
+      settings.acceleration = defaults.acceleration;
+   }
+
+   if (!std::isfinite(settings.friction)) {
+      settings.friction = defaults.friction;
+   }
+
+   if (!std::isfinite(settings.airAcceleration)) {
+      settings.airAcceleration = defaults.airAcceleration;
+   }
+
+   if (!std::isfinite(settings.airFriction)) {
+      settings.airFriction = defaults.airFriction;
+   }
+
+   if (!std::isfinite(settings.turnSpeed)) {
+      settings.turnSpeed = defaults.turnSpeed;
+   }
+
+   moveSpeed = settings.moveSpeed;
+   acceleration = settings.acceleration;
+   friction = settings.friction;
+   airAcceleration = settings.airAcceleration;
+   airFriction = settings.airFriction;
+   turnSpeed = settings.turnSpeed;
+}
+
+} // namespace App

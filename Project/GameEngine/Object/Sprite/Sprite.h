@@ -192,6 +192,6 @@ private:
    const TransformComponent* GetTransformComponent() const;
 
 private:
-   inline static std::vector<Sprite*> sRegisteredSprites_{};
+   static std::vector<Sprite*> sRegisteredSprites_;
 };
 }

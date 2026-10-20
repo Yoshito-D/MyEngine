@@ -35,11 +35,6 @@ public:
    /// @return Directional、Point、Spot、Areaのいずれか
    Type GetLightType() const { return type_; }
 
-   /// @brief 旧environment.lights形式の1要素をEntity設定へ移行する
-   /// @param data 旧ライトJSON
-   /// @return 対応するライト形式を適用できた場合はtrue
-   bool DeserializeLegacy(const nlohmann::json& data);
-
    /// @brief GPUライトを現在のEntity状態へ同期する
    /// @param deltaTime 未使用
    void Update(float deltaTime) override;
@@ -80,81 +75,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.color = color;
-      settings.intensity = intensity;
-      settings.radius = radius;
-      settings.decay = decay;
-      settings.distance = distance;
-      settings.cosAngle = cosAngle;
-      settings.cosFalloffStart = cosFalloffStart;
-      settings.areaSize = areaSize;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.color.x)) {
-         settings.color.x = defaults.color.x;
-      }
-
-      if (!std::isfinite(settings.color.y)) {
-         settings.color.y = defaults.color.y;
-      }
-
-      if (!std::isfinite(settings.color.z)) {
-         settings.color.z = defaults.color.z;
-      }
-
-      if (!std::isfinite(settings.color.w)) {
-         settings.color.w = defaults.color.w;
-      }
-
-      if (!std::isfinite(settings.intensity)) {
-         settings.intensity = defaults.intensity;
-      }
-
-      if (!std::isfinite(settings.radius)) {
-         settings.radius = defaults.radius;
-      }
-
-      if (!std::isfinite(settings.decay)) {
-         settings.decay = defaults.decay;
-      }
-
-      if (!std::isfinite(settings.distance)) {
-         settings.distance = defaults.distance;
-      }
-
-      if (!std::isfinite(settings.cosAngle)) {
-         settings.cosAngle = defaults.cosAngle;
-      }
-
-      if (!std::isfinite(settings.cosFalloffStart)) {
-         settings.cosFalloffStart = defaults.cosFalloffStart;
-      }
-
-      if (!std::isfinite(settings.areaSize.x)) {
-         settings.areaSize.x = defaults.areaSize.x;
-      }
-
-      if (!std::isfinite(settings.areaSize.y)) {
-         settings.areaSize.y = defaults.areaSize.y;
-      }
-
-      color = settings.color;
-      intensity = settings.intensity;
-      radius = settings.radius;
-      decay = settings.decay;
-      distance = settings.distance;
-      cosAngle = settings.cosAngle;
-      cosFalloffStart = settings.cosFalloffStart;
-      areaSize = settings.areaSize;
-   }
+   void Configure(const Settings& requested);
 
 private:
    Vector4 color{1.0f, 1.0f, 1.0f, 1.0f}; ///< リニア空間のライト色

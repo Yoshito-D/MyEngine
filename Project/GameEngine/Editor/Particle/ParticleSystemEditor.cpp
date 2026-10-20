@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Editor/Particle/ParticleSystemEditor.h"
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
@@ -50,12 +51,12 @@ void DrawShapeLine(const Vector3& localA, const Vector3& localB, const Vector3& 
 void DrawShapeEllipse(const Vector3& center, const Quaternion& rotation, const Vector3& localCenter,
    const Vector3& axisA, const Vector3& axisB, float radiusA, float radiusB, float startAngle, float endAngle,
    const Vector4& color, bool drawRadials) {
-   constexpr int kSegments = 48;
+   constexpr std::int32_t kSegments = 48;
    const float angleSpan = endAngle - startAngle;
    Vector3 first{};
    Vector3 prev{};
 
-   for (int i = 0; i <= kSegments; ++i) {
+   for (std::int32_t i = 0; i <= kSegments; ++i) {
       float t = static_cast<float>(i) / static_cast<float>(kSegments);
       float angle = startAngle + angleSpan * t;
       Vector3 localPoint = localCenter + axisA * (radiusA * std::cos(angle)) + axisB * (radiusB * std::sin(angle));
@@ -90,11 +91,11 @@ void DrawShapeEllipsoid(
 
 void DrawShapeHemisphere(
    const Vector3& center, const Quaternion& rotation, const Vector3& scale, float radius, const Vector4& color) {
-   constexpr int kRings = 5;
-   constexpr int kMeridians = 8;
-   constexpr int kSegments = 16;
+   constexpr std::int32_t kRings = 5;
+   constexpr std::int32_t kMeridians = 8;
+   constexpr std::int32_t kSegments = 16;
 
-   for (int ring = 1; ring <= kRings; ++ring) {
+   for (std::int32_t ring = 1; ring <= kRings; ++ring) {
       float phi = GameEngine::MathConstants::kHalfPi * static_cast<float>(ring) / static_cast<float>(kRings);
       float y = radius * std::cos(phi) * scale.y;
       float ringRadius = radius * std::sin(phi);
@@ -102,11 +103,11 @@ void DrawShapeHemisphere(
          ringRadius * scale.x, ringRadius * scale.z, 0.0f, GameEngine::MathConstants::kTwoPi, color, false);
    }
 
-   for (int meridian = 0; meridian < kMeridians; ++meridian) {
+   for (std::int32_t meridian = 0; meridian < kMeridians; ++meridian) {
       float theta = GameEngine::MathConstants::kTwoPi * static_cast<float>(meridian) / static_cast<float>(kMeridians);
       Vector3 prev(0.0f, radius * scale.y, 0.0f);
 
-      for (int i = 1; i <= kSegments; ++i) {
+      for (std::int32_t i = 1; i <= kSegments; ++i) {
          float phi = GameEngine::MathConstants::kHalfPi * static_cast<float>(i) / static_cast<float>(kSegments);
          Vector3 localPoint(radius * std::sin(phi) * std::cos(theta) * scale.x, radius * std::cos(phi) * scale.y,
             radius * std::sin(phi) * std::sin(theta) * scale.z);
@@ -130,7 +131,7 @@ void DrawShapeBox(
       Vector3(-half.x, half.y, half.z),
    };
 
-   const int edges[][2] = {
+   const std::int32_t edges[][2] = {
       {0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
 
    for (const auto& edge : edges) {
@@ -140,7 +141,7 @@ void DrawShapeBox(
 
 void DrawShapeCone(const Vector3& center, const Quaternion& rotation, const Vector3& scale, float angleDegrees,
    float length, const Vector4& color) {
-   constexpr int kSideLines = 8;
+   constexpr std::int32_t kSideLines = 8;
    const float angle = angleDegrees * GameEngine::MathConstants::kDegreesToRadians;
    const float baseY = std::cos(angle) * length * scale.y;
    const float baseRadiusX = std::sin(angle) * length * scale.x;
@@ -150,7 +151,7 @@ void DrawShapeCone(const Vector3& center, const Quaternion& rotation, const Vect
    DrawShapeEllipse(center, rotation, localBaseCenter, Vector3(1.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f),
       baseRadiusX, baseRadiusZ, 0.0f, GameEngine::MathConstants::kTwoPi, color, false);
 
-   for (int i = 0; i < kSideLines; ++i) {
+   for (std::int32_t i = 0; i < kSideLines; ++i) {
       float theta = GameEngine::MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(kSideLines);
       Vector3 basePoint(baseRadiusX * std::cos(theta), baseY, baseRadiusZ * std::sin(theta));
       DrawShapeLine(Vector3(0.0f, 0.0f, 0.0f), basePoint, center, rotation, color);
@@ -511,7 +512,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
             ScopedLabel(Tr("更新発生間隔", "Update Spawn Interval"), "ParticleSubInterval_" + particleSystemName)
                .c_str(),
             &subEmitters.updateInterval, 0.01f, 0.001f, 60.0f);
-         int maxEvents = static_cast<int>(subEmitters.maxEventsPerFrame);
+         std::int32_t maxEvents = static_cast<std::int32_t>(subEmitters.maxEventsPerFrame);
 
          if (ImGui::DragInt(
                 ScopedLabel(Tr("毎フレーム上限", "Events Per Frame"), "ParticleSubLimit_" + particleSystemName).c_str(),
@@ -554,7 +555,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
          auto currentBlend = particleSystem->GetBlendMode();
 
          // -1 = 既定値（nullopt）、0～5 = BlendMode列挙値
-         int blendIndex = currentBlend.has_value() ? (static_cast<int>(currentBlend.value()) + 1) : 0;
+         std::int32_t blendIndex = currentBlend.has_value() ? (static_cast<std::int32_t>(currentBlend.value()) + 1) : 0;
          std::string blendComboID = "##BlendMode_" + particleSystemName;
 
          if (ImGui::Combo(blendComboID.c_str(), &blendIndex, blendModeNames, IM_ARRAYSIZE(blendModeNames))) {
@@ -582,7 +583,7 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
             particleMaterial->SetAlphaCutoff(alphaCutoff);
          }
 
-         int toonSteps = static_cast<int>(particleMaterial->GetToonSteps());
+         std::int32_t toonSteps = static_cast<std::int32_t>(particleMaterial->GetToonSteps());
 
          if (ImGui::DragInt(ScopedLabel(Tr("トゥーン階調 (0=無効)", "Toon Steps (0=Off)"),
                                "ParticleToonSteps_" + particleSystemName)

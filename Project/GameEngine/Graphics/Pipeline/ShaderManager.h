@@ -80,29 +80,6 @@ struct ShaderReflectionInfo {
    std::vector<ShaderConstantBufferInfo> constantBuffers;
 };
 
-/// @brief パイプライン向けルートパラメータ解決テーブル
-struct PipelineRootParameterTable {
-   bool hasReflectionData = false;
-   std::unordered_map<std::string, UINT> slotBySemanticName;
-};
-
-struct ResolveStats {
-   uint64_t requests = 0;
-   uint64_t hits = 0;
-   uint64_t misses = 0;
-};
-
-struct ShaderStageMatchInfo {
-   bool hasReflection = false;
-   uint32_t resourceCount = 0;
-   uint32_t matchedByName = 0;
-};
-
-struct PipelineStageMatchInfo {
-   ShaderStageMatchInfo vertex;
-   ShaderStageMatchInfo pixel;
-};
-
 /// @brief コンパイル済みシェーダー
 struct CompiledShader {
    ComPtr<IDxcBlob> blob;
@@ -223,31 +200,6 @@ public:
    /// @return リフレクション情報、見つからない場合はnullptr
    const ShaderReflectionInfo* GetShaderReflection(const std::string& name, ShaderType type) const;
 
-   /// @brief 互換用の空ルートパラメータ解決テーブルを取得
-   const PipelineRootParameterTable& GetObject3DRootParameterTable() const;
-
-   /// @brief 互換用テーブルからObject3D向けの意味名を解決
-   std::optional<UINT> ResolveObject3DRootParameter(const std::string& semanticName) const;
-
-   /// @brief 互換用テーブルから任意パイプライン向けの意味名を解決
-   std::optional<UINT> ResolvePipelineRootParameter(
-      const std::string& pipelineName, const std::string& semanticName) const;
-
-   /// @brief 互換用の任意パイプライン向け解決テーブルを取得
-   const PipelineRootParameterTable* GetPipelineRootParameterTable(const std::string& pipelineName) const;
-
-   /// @brief 解決統計を取得
-   ResolveStats GetResolveStats() const { return resolveStats_; }
-
-   /// @brief パイプライン別の解決統計を取得
-   std::unordered_map<std::string, ResolveStats> GetPipelineResolveStats() const { return pipelineResolveStats_; }
-
-   /// @brief 主要パイプライン解決テーブルをログ出力
-   void LogRootParameterTablesDebug() const;
-
-   /// @brief パイプライン別ステージ一致情報を取得
-   std::unordered_map<std::string, PipelineStageMatchInfo> GetPipelineStageMatchInfos() const;
-
    /// @brief シェーダーが存在するか確認
    /// @param name シェーダー名
    /// @param type シェーダータイプ
@@ -281,9 +233,6 @@ private:
 
    // シェーダー格納用コンテナ（統一管理）
    std::unordered_map<std::string, CompiledShader> shaders_;
-   std::unordered_map<std::string, PipelineRootParameterTable> pipelineRootTables_;
-   mutable ResolveStats resolveStats_{};
-   mutable std::unordered_map<std::string, ResolveStats> pipelineResolveStats_;
 
    /// @brief DXCコンポーネントの初期化
    void InitializeDXC();
@@ -298,12 +247,6 @@ private:
 
    /// @brief シェーダーリフレクション情報を抽出
    ShaderReflectionInfo ExtractReflectionInfo(IDxcBlob* shaderBlob, ShaderType type) const;
-
-   /// @brief 互換用ルートパラメータ解決テーブルをクリア
-   void BuildObject3DRootParameterTable();
-
-   /// @brief パイプライン向け互換解決テーブルをクリア
-   void BuildPipelineRootParameterTables();
 
    /// @brief シェーダーキーを生成
    /// @param name シェーダー名

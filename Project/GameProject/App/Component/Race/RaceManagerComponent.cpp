@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
+#include <cstdint>
 
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
@@ -22,8 +23,8 @@
 #endif
 
 namespace {
-constexpr int kRecordFormatVersion = 1;
-constexpr int kJsonIndentSize = 3;
+constexpr std::int32_t kRecordFormatVersion = 1;
+constexpr std::int32_t kJsonIndentSize = 3;
 }
 
 namespace App {
@@ -509,7 +510,7 @@ void RaceManagerComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    const char* startModes[] = {"Immediate", "Countdown", "Gate"};
-   int mode = static_cast<int>(startMode_);
+   std::int32_t mode = static_cast<std::int32_t>(startMode_);
 
    if (ImGui::Combo("Start Mode", &mode, startModes, 3)) {
       startMode_ = static_cast<StartMode>(mode);
@@ -517,7 +518,7 @@ void RaceManagerComponent::DrawInspector() {
 
    ImGui::DragFloat("Countdown Seconds", &countdownSeconds_, 0.1f, 0.0f, 60.0f);
    ImGui::DragFloat("Start Text Duration", &startTextDuration_, 0.05f, 0.0f, 60.0f);
-   int count = static_cast<int>(std::min(checkpointCount_, size_t{100000}));
+   std::int32_t count = static_cast<std::int32_t>(std::min(checkpointCount_, size_t{100000}));
 
    if (ImGui::InputInt("Checkpoint Count", &count)) {
       checkpointCount_ = static_cast<size_t>(std::max(count, 0));
@@ -533,7 +534,7 @@ void RaceManagerComponent::DrawInspector() {
    ImGui::Checkbox("Lock Player On Finish", &lockPlayerOnFinish_);
    ImGui::DragFloat("Finish Delay", &finishDelay_, 0.1f, 0.0f, 60.0f);
    static const char* stateNames[] = {"Waiting", "Countdown", "Running", "Finished"};
-   ImGui::Text("State: %s", stateNames[static_cast<int>(state_)]);
+   ImGui::Text("State: %s", stateNames[static_cast<std::int32_t>(state_)]);
    ImGui::Text("Time: %.3f", elapsedTime_);
    ImGui::Text("Checkpoint: %zu / %zu", nextCheckpointIndex_, checkpointCount_);
 

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #ifdef USE_IMGUI
 
 #include "GameEngine/Editor/EditorAssetRegistry.h"
 #include "GameEngine/Editor/EditorCommand.h"
-#include "GameEngine/Scene/SceneObjectStore.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Math/MathUtils.h"
 #include "GameEngine/Utility/Logger.h"
 #include <cstddef>
@@ -23,7 +24,10 @@ class ParticleSystem;
 class EditorSceneContext {
 public:
    /// @brief 新規保存するシーンJSONの現在の形式バージョン
-   static constexpr int kCurrentSceneFormatVersion = 6;
+   static constexpr std::int32_t kCurrentSceneFormatVersion = SceneWorld::kFormatVersion;
+
+   /// @brief 編集するWorldを関連付け、所有権はシーンに残す。
+   explicit EditorSceneContext(SceneWorld& world) : world_(world) {}
 
    /// @brief ギズモで編集するトランスフォーム要素
    enum class GizmoOperation {
@@ -49,10 +53,7 @@ public:
    /// @param sceneName 保存ファイル名の基準となるシーン名
    void Initialize(std::string sceneName);
 
-   /// @brief 初回だけ保存済みエディタシーンを自動読込する
-   void AutoLoad();
-
-   /// @brief 選択・履歴・エディタ所有オブジェクトを破棄して初期状態へ戻す
+   /// @brief 選択と編集履歴を破棄して初期状態へ戻す
    void Clear();
 
    /// @brief 現在の編集状態をシーンJSONへ保存する
@@ -63,7 +64,7 @@ public:
    /// @return 読み込みと復元に成功した場合はtrue
    bool Load();
 
-   /// @brief シーン所有分とエディタ所有分を統合したJSONを構築する
+   /// @brief World全体の完全スナップショットを構築する
    /// @return 保存可能なシーンJSON
    nlohmann::json SerializeToJson();
 
@@ -100,7 +101,7 @@ public:
    /// @return エディタ表示用メッセージ
    const std::string& GetLastStatusMessage() const { return lastStatusMessage_; }
 
-   /// @brief 非表示指定を除くシーン・エディタ双方の編集可能オブジェクトを収集する
+   /// @brief Worldが所有する編集可能オブジェクトを収集する
    /// @return 階層・選択UIへ表示できるオブジェクト一覧
    std::vector<Object*> CollectEditableObjects();
 
@@ -131,14 +132,10 @@ public:
 
    /// @brief 選択中のパーティクルシステムを取得する
    /// @return 選択対象。未選択の場合はnullptr
-   ParticleSystem* GetSelectedParticleSystem() {
-      return IsParticleSystemAlive(selectedParticleSystem_) ? selectedParticleSystem_ : nullptr;
-   }
+   ParticleSystem* GetSelectedParticleSystem();
 
    /// @brief const Contextの選択状態を読み取り専用で参照する。
-   const ParticleSystem* GetSelectedParticleSystem() const {
-      return IsParticleSystemAlive(selectedParticleSystem_) ? selectedParticleSystem_ : nullptr;
-   }
+   const ParticleSystem* GetSelectedParticleSystem() const;
 
    /// @brief オブジェクトの親とヒエラルキー表示順を変更する
    /// @param movedObject 移動するオブジェクト
@@ -146,16 +143,6 @@ public:
    /// @param dropPosition 対象の前・子・後ろのいずれへ配置するか
    /// @return 並び替えを適用できた場合はtrue
    bool ReorderObject(Object* movedObject, Object* targetObject, HierarchyDropPosition dropPosition);
-
-   /// @brief オブジェクトがエディタの動的ストアに所有されているか調べる
-   /// @param object 確認するオブジェクト
-   /// @return エディタ所有の場合はtrue
-   bool IsEditorOwned(const Object* object) const { return objectStore_.Contains(object); }
-
-   /// @brief パーティクルがエディタの動的ストアに所有されているか調べる
-   /// @param particleSystem 確認するパーティクル
-   /// @return エディタ所有の場合はtrue
-   bool IsEditorOwned(const ParticleSystem* particleSystem) const { return objectStore_.Contains(particleSystem); }
 
    /// @brief 現在の選択対象を削除操作で扱えるか調べる
    /// @return 削除可能な選択がある場合はtrue
@@ -234,7 +221,7 @@ public:
    const EditorAssetRegistry& GetAssetRegistry() const { return assetRegistry_; }
 
    /// @brief 編集所有物とシーン実体のシリアライズ経路を参照する。
-   const SceneObjectStore& GetObjectStore() const { return objectStore_; }
+   const SceneObjectStore& GetObjectStore() const { return Store(); }
 
    /// @brief 安定IDを含む現在のObject状態を取得する。
    nlohmann::json GetObjectSnapshot(const Object* object);
@@ -361,20 +348,6 @@ private:
    void FinishCommand(bool changed);
    bool IsObjectAlive(const Object* object) const;
    bool IsParticleSystemAlive(const ParticleSystem* particleSystem) const;
-   void RegisterSceneOwnedKeys();
-   std::string EnsureSceneObjectKey(const Object* object);
-   std::string EnsureSceneParticleSystemKey(const ParticleSystem* particleSystem);
-   Object* FindSceneObjectByKey(const std::string& key) const;
-   ParticleSystem* FindSceneParticleSystemByKey(const std::string& key) const;
-   nlohmann::json SerializeSceneObjects();
-   nlohmann::json SerializeSceneParticleSystems();
-   nlohmann::json SerializeCameras() const;
-   bool ApplySceneSnapshot(const nlohmann::json& sceneData, bool& entitiesChanged);
-   bool ApplySceneObjects(const nlohmann::json& sceneObjectsData);
-   bool ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData);
-   void ApplyCameras(const nlohmann::json& camerasData);
-   void HideSceneOwnedObject(Object* object);
-   void HideSceneOwnedParticleSystem(ParticleSystem* particleSystem);
    bool HasTransformChanged(const Transform& lhs, const Transform& rhs) const;
    void SubmitTransformIfNeeded(const Transform& before, const Transform& after, Object* object);
    void SubmitParticleTransformIfNeeded(
@@ -387,22 +360,20 @@ private:
    void ApplyDuplicateOffset(nlohmann::json& snapshot) const;
 
    std::string sceneName_ = "Scene";
-   bool hasAutoLoaded_ = false;
    bool isDirty_ = false;
    bool referencesDirty_ = true;
    std::string lastStatusMessage_;
    Object* selectedObject_ = nullptr;
    ParticleSystem* selectedParticleSystem_ = nullptr;
    EditorAssetRegistry assetRegistry_;
-   SceneObjectStore objectStore_;
+   SceneWorld& world_;
+
+   SceneObjectStore& Store() { return world_.GetObjectStore(); }
+
+   const SceneObjectStore& Store() const { return world_.GetObjectStore(); }
+
    EditorCommandStack commandStack_;
    size_t editRevision_ = 0;
-   std::unordered_set<const Object*> hiddenSceneObjects_;
-   std::unordered_set<const ParticleSystem*> hiddenParticleSystems_;
-   std::unordered_set<std::string> hiddenSceneObjectKeys_;
-   std::unordered_set<std::string> hiddenParticleSystemKeys_;
-   std::unordered_map<const Object*, std::string> sceneObjectKeys_;
-   std::unordered_map<const ParticleSystem*, std::string> sceneParticleSystemKeys_;
    std::vector<std::string> hierarchyOrder_;
 
    GizmoOperation gizmoOperation_ = GizmoOperation::Translate;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -65,7 +66,7 @@ public:
    /// @param color オブジェクトの色。デフォルトは 0xffffffff（白）
    /// @param enableLightingMode ライティングモード。デフォルトは LightingMode::HALFLAMBERT
    /// @param uvTransform UV座標に適用する 4x4 行列。デフォルトは単位行列
-   void Create(unsigned int color = 0xffffffff, int32_t lightingMode = LightingMode::HALFLAMBERT,
+   void Create(std::uint32_t color = 0xffffffff, int32_t lightingMode = LightingMode::HALFLAMBERT,
       const Matrix4x4& uvTransform = MakeIdentity4x4(), float shininess = 40.0f);
 
    /// @brief マテリアルデータへのポインタを取得
@@ -87,7 +88,7 @@ public:
 
    /// @brief マテリアルの色を設定
    /// @param color 色（unsigned int形式）
-   void SetColor(unsigned int color);
+   void SetColor(std::uint32_t color);
 
    /// @brief マテリアルの色を取得
    /// @return 色（Vector4形式）

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include <string>
 
@@ -68,7 +69,7 @@ private:
    };
 
    void SetPhase(Phase phase);
-   int GetNormalizedTargetPlanetIndex() const;
+   std::int32_t GetNormalizedTargetPlanetIndex() const;
    void NormalizeTargetPlanetIndex();
    void UpdateGuideText(float deltaTime);
    void ApplyGuideOpacity();
@@ -78,7 +79,7 @@ private:
 
    std::string playerObjectId_ = "Model:Player";
    std::string nextScene_ = "GameTest";
-   int targetPlanetIndex_ = 1;
+   std::int32_t targetPlanetIndex_ = 1;
    float completionDelay_ = 2.5f;
    float guideFadeDuration_ = 0.2f;
    float completionElapsed_ = 0.0f;

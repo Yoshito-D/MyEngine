@@ -180,3 +180,54 @@ Vector3 Camera::GetForward() const {
 }
 
 } // namespace GameEngine
+
+namespace GameEngine {
+
+void Camera::SetTransform(const Transform& transform) {
+   if (transform.IsFinite()) {
+      transform_ = transform;
+      Update();
+   }
+}
+
+void Camera::SetPosition(const Vector3& position) {
+   transform_.translation = position;
+   Update();
+}
+
+void Camera::SetRotation(const Vector3& rotation) {
+   transform_.SetRotationEuler(rotation);
+   Update();
+}
+
+void Camera::SetQuaternion(const Quaternion& quaternion) {
+   transform_.SetRotationQuaternion(quaternion);
+   Update();
+}
+
+void Camera::SetScale(const Vector3& scale) {
+   transform_.scale = scale;
+   Update();
+}
+
+void Camera::SetAspectRatio(float aspectRatio) {
+   aspectRatio_ = aspectRatio;
+   Update();
+}
+
+void Camera::SetNearClip(float nearClip) {
+   nearClip_ = nearClip;
+   Update();
+}
+
+void Camera::SetFarClip(float farClip) {
+   farClip_ = farClip;
+   Update();
+}
+
+void Camera::SetProjectionType(ProjectionType type) {
+   projectionType_ = type;
+   Update();
+}
+
+} // namespace GameEngine

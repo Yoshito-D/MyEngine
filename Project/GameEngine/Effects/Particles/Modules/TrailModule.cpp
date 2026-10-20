@@ -1,84 +1,60 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Effects/Particles/Modules/TrailModule.h"
 
 namespace GameEngine {
 nlohmann::json TrailModule::ToJson() const {
-   return {{"enabled", IsEnabled()}, {"mode", static_cast<int>(mode_)}, {"width", width_.ToJson()},
+   return {{"enabled", IsEnabled()}, {"mode", static_cast<std::int32_t>(mode_)}, {"width", width_.ToJson()},
       {"maxPoints", maxPoints_}, {"minDistance", minDistance_}, {"textureName", textureName_},
       {"color", {color_.x, color_.y, color_.z, color_.w}}, {"retractionDuration", retractionDuration_},
       {"tailWidthScale", tailWidthScale_}, {"textureTiling", textureTiling_}};
 }
 
 void TrailModule::FromJson(const nlohmann::json& j) {
-   // 旧RendererModuleでは有効フラグだけがribbonEnabledだったため、こちらを優先する。
-   if (j.contains("ribbonEnabled")) {
-      SetEnabled(j["ribbonEnabled"].get<bool>());
-   } else if (j.contains("enabled")) {
-      SetEnabled(j["enabled"].get<bool>());
+   if (j.contains("enabled")) {
+      SetEnabled(j.at("enabled").get<bool>());
    }
 
    if (j.contains("mode")) {
-      const int mode = j["mode"].get<int>();
+      const std::int32_t mode = j.at("mode").get<std::int32_t>();
 
-      if (mode >= static_cast<int>(TrailMode::ParticlePath) && mode <= static_cast<int>(TrailMode::EmitterToParticle)) {
+      if (mode >= static_cast<std::int32_t>(TrailMode::ParticlePath) &&
+          mode <= static_cast<std::int32_t>(TrailMode::EmitterToParticle)) {
          SetMode(static_cast<TrailMode>(mode));
       }
-   } else {
-      // モード項目が存在しない旧設定は、従来と同じ移動軌跡として読み込む。
-      SetMode(TrailMode::ParticlePath);
    }
 
-   const char* widthKey = j.contains("width") ? "width" : "ribbonWidth";
-
-   if (j.contains(widthKey)) {
-      if (j[widthKey].is_object()) {
-         width_.FromJson(j[widthKey]);
-      } else {
-         width_ = RandomFloat(j[widthKey].get<float>());
-      }
+   if (j.contains("width")) {
+      width_.FromJson(j.at("width"));
    }
 
    if (j.contains("maxPoints")) {
-      SetMaxPoints(j["maxPoints"]);
-   } else if (j.contains("ribbonMaxPoints")) {
-      SetMaxPoints(j["ribbonMaxPoints"]);
+      SetMaxPoints(j.at("maxPoints"));
    }
 
    if (j.contains("minDistance")) {
-      SetMinDistance(j["minDistance"]);
-   } else if (j.contains("ribbonMinDistance")) {
-      SetMinDistance(j["ribbonMinDistance"]);
+      SetMinDistance(j.at("minDistance"));
    }
 
    if (j.contains("textureName")) {
-      SetTextureName(j["textureName"].get<std::string>());
-   } else if (j.contains("ribbonTextureName")) {
-      SetTextureName(j["ribbonTextureName"].get<std::string>());
+      SetTextureName(j.at("textureName").get<std::string>());
    }
 
-   const char* colorKey = j.contains("color") ? "color" : "ribbonColor";
-
-   if (j.contains(colorKey) && j[colorKey].is_array() && j[colorKey].size() >= 4) {
-      const auto& color = j[colorKey];
+   if (j.contains("color") && j.at("color").is_array() && j.at("color").size() == 4) {
+      const auto& color = j.at("color");
       SetColor(Vector4(color[0], color[1], color[2], color[3]));
    }
 
    if (j.contains("retractionDuration")) {
-      SetRetractionDuration(j["retractionDuration"]);
-   } else if (j.contains("ribbonFadeDuration")) {
-      SetRetractionDuration(j["ribbonFadeDuration"]);
+      SetRetractionDuration(j.at("retractionDuration"));
    }
 
    if (j.contains("tailWidthScale")) {
-      SetTailWidthScale(j["tailWidthScale"]);
-   } else if (j.contains("ribbonTailWidthScale")) {
-      SetTailWidthScale(j["ribbonTailWidthScale"]);
+      SetTailWidthScale(j.at("tailWidthScale"));
    }
 
    if (j.contains("textureTiling")) {
-      SetTextureTiling(j["textureTiling"]);
-   } else if (j.contains("ribbonTextureTiling")) {
-      SetTextureTiling(j["ribbonTextureTiling"]);
+      SetTextureTiling(j.at("textureTiling"));
    }
 }
 }

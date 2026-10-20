@@ -17,26 +17,7 @@ void ChromaticAberration::Initialize(GraphicsDevice* device, OffscreenRenderTarg
 void ChromaticAberration::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!GetPipeline() || !GetRootSignature()) return;
 
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // 定数バッファをルートパラメータ0にセット
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // フルスクリーントライアングル描画
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 void ChromaticAberration::CreateConstantBuffer() {
@@ -81,3 +62,18 @@ void ChromaticAberration::ImGuiEdit() {
 #endif
 
 }
+
+namespace GameEngine {
+
+void ChromaticAberration::SetStrength(float strength) {
+   pixelShift_ = strength;
+   UpdateConstantBuffer();
+}
+
+void ChromaticAberration::SetCenter(float x, float y) {
+   centerX_ = x;
+   centerY_ = y;
+   UpdateConstantBuffer();
+}
+
+} // namespace GameEngine

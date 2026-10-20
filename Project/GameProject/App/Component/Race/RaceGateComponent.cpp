@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Race/RaceGateComponent.h"
+#include <cstdint>
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameEngine/Object/Component/Collision/TriggerVolumeComponent.h"
@@ -128,14 +129,14 @@ void RaceGateComponent::DrawInspector() {
 
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    const char* gateTypes[] = {"Start", "Checkpoint", "Finish", "StartFinish"};
-   int gateTypeIndex = static_cast<int>(gateType_);
+   std::int32_t gateTypeIndex = static_cast<std::int32_t>(gateType_);
 
    if (ImGui::Combo("Gate Type", &gateTypeIndex, gateTypes, 4)) {
       gateType_ = static_cast<GateType>(gateTypeIndex);
    }
 
    if (gateType_ == GateType::Checkpoint) {
-      int checkpointIndex = static_cast<int>(checkpointIndex_);
+      std::int32_t checkpointIndex = static_cast<std::int32_t>(checkpointIndex_);
 
       if (ImGui::DragInt("Checkpoint Index", &checkpointIndex, 1.0f, 0)) {
          checkpointIndex_ = static_cast<size_t>(std::max(checkpointIndex, 0));

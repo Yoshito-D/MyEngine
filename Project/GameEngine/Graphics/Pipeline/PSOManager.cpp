@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Pipeline/PSOManager.h"
 #include "GameEngine/Graphics/Pipeline/ShaderManager.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
@@ -15,7 +16,7 @@ using json = nlohmann::json;
 
 namespace {
 constexpr const char* kReversedFacePipelineSuffix = "_ReversedFace";
-constexpr int kJsonIndentSize = 2;
+constexpr std::int32_t kJsonIndentSize = 2;
 
 // 文字列からD3D12列挙型への変換ヘルパー
 D3D12_CULL_MODE StringToCullMode(const std::string& str) {
@@ -356,9 +357,9 @@ std::string WStringToString(const std::wstring& wstr) {
       return std::string();
    }
 
-   int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+   std::int32_t size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (std::int32_t)wstr.size(), NULL, 0, NULL, NULL);
    std::string strTo(size_needed, 0);
-   WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+   WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (std::int32_t)wstr.size(), &strTo[0], size_needed, NULL, NULL);
    return strTo;
 }
 }
@@ -473,7 +474,7 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
                   paramDef.rangeType = StringToRangeType(param["rangeType"].get<std::string>());
                   Logger::Info("  Parameter " + std::to_string(definition.parameters.size()) +
                                ": DescriptorTable with rangeType=" + param["rangeType"].get<std::string>() +
-                               " (value=" + std::to_string(static_cast<int>(paramDef.rangeType)) + ")");
+                               " (value=" + std::to_string(static_cast<std::int32_t>(paramDef.rangeType)) + ")");
                } else {
                   Logger::Error("DescriptorTable parameter is missing rangeType in root signature: " + definition.name +
                                 " parameter=" + std::to_string(parameterIndex));
@@ -1108,7 +1109,7 @@ void PSOManager::Clear() {
 }
 
 std::string PSOManager::CreatePipelineKey(const std::string& name, BlendMode blendMode) const {
-   return name + "_" + std::to_string(static_cast<int>(blendMode));
+   return name + "_" + std::to_string(static_cast<std::int32_t>(blendMode));
 }
 
 std::vector<InputElementDefinition> PSOManager::BuildInputLayoutFromVertexShaderReflection(
@@ -1308,3 +1309,11 @@ void PSOManager::RegisterPipelineSemanticSlots(const std::string& pipelineName, 
 }
 
 }
+
+namespace GameEngine {
+
+std::unordered_map<std::string, PipelineReflectionMetadata> PSOManager::GetAllPipelineReflectionMetadata() const {
+   return pipelineReflectionMetadata_;
+}
+
+} // namespace GameEngine

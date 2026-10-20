@@ -3,11 +3,8 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{80565c4b-5450-48c3-9dc3-bcb9cc77c848}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Docs\Camera">
-      <UniqueIdentifier>{77d618d2-c9f5-4d7f-ae0f-6b3c94496444}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Docs\Rendering">
-      <UniqueIdentifier>{6aeaf0d6-88d1-4cbc-90cf-e382d136d8a8}</UniqueIdentifier>
+    <Filter Include="Docs\Editor">
+      <UniqueIdentifier>{8578880b-4c02-496f-a9e8-475cdae841f8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals">
       <UniqueIdentifier>{323e27c5-ff7c-4de8-836c-016534d6c441}</UniqueIdentifier>
@@ -222,6 +219,9 @@
     <Filter Include="GameProject\App\Scene">
       <UniqueIdentifier>{43abb63a-2aeb-495b-b749-331ebc7073c4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameProject\App\UI">
+      <UniqueIdentifier>{90de3755-1cfc-4a97-b447-bd4cffa4abc2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resources">
       <UniqueIdentifier>{59b3bd5d-3cff-4cbe-91dc-bd7bb1c5c63a}</UniqueIdentifier>
     </Filter>
@@ -264,14 +264,14 @@
     <Filter Include="Resources\game\config">
       <UniqueIdentifier>{afa9114e-d255-47a5-849e-397150accb62}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Tests">
+      <UniqueIdentifier>{33ebd051-4688-46f8-9453-5e858834f383}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Tools">
       <UniqueIdentifier>{87fa68d2-337e-4805-9063-f758d5112926}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Externals\imgui\imgui.cpp">
-      <Filter>Externals\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="Externals\imgui\imgui_demo.cpp">
       <Filter>Externals\imgui</Filter>
     </ClCompile>
@@ -288,6 +288,9 @@
       <Filter>Externals\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Externals\imgui\imgui_widgets.cpp">
+      <Filter>Externals\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\imgui\imgui.cpp">
       <Filter>Externals\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Externals\imgui\ImGuizmo\GraphEditor.cpp">
@@ -314,6 +317,9 @@
     <ClCompile Include="GameEngine\Assets\Animation\AnimationAssetManager.cpp">
       <Filter>GameEngine\Assets\Animation</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Assets\Animation\Skeleton.cpp">
+      <Filter>GameEngine\Assets\Animation</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Assets\AssetManager.cpp">
       <Filter>GameEngine\Assets</Filter>
     </ClCompile>
@@ -334,6 +340,9 @@
     </ClCompile>
     <ClCompile Include="GameEngine\Assets\Model\ModelAssetManager.cpp">
       <Filter>GameEngine\Assets\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Assets\ResourceAssetPath.cpp">
+      <Filter>GameEngine\Assets</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Assets\Texture\TextureManager.cpp">
       <Filter>GameEngine\Assets\Texture</Filter>
@@ -365,9 +374,6 @@
     <ClCompile Include="GameEngine\Editor\EditorCommand.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Scene\SceneObjectStore.cpp">
-      <Filter>GameEngine\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorReferenceWidgets.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
@@ -393,9 +399,6 @@
       <Filter>GameEngine\Effects\Particles\Modules</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Effects\Particles\Modules\ForceOverLifetimeModule.cpp">
-      <Filter>GameEngine\Effects\Particles\Modules</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Effects\Particles\Modules\LifetimeModules.cpp">
       <Filter>GameEngine\Effects\Particles\Modules</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Effects\Particles\Modules\LimitVelocityOverLifetimeModule.cpp">
@@ -437,6 +440,9 @@
     <ClCompile Include="GameEngine\Effects\Particles\Modules\VelocityOverLifetimeModule.cpp">
       <Filter>GameEngine\Effects\Particles\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Effects\Particles\Particle.cpp">
+      <Filter>GameEngine\Effects\Particles</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Effects\Particles\ParticleMaterial.cpp">
       <Filter>GameEngine\Effects\Particles</Filter>
     </ClCompile>
@@ -461,9 +467,6 @@
     <ClCompile Include="GameEngine\Graphics\Device\ResourceHelper.cpp">
       <Filter>GameEngine\Graphics\Device</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Graphics\Pipeline\BindingLayoutResolver.cpp">
-      <Filter>GameEngine\Graphics\Pipeline</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Graphics\Pipeline\ModelPipelineValidation.cpp">
       <Filter>GameEngine\Graphics\Pipeline</Filter>
     </ClCompile>
@@ -477,9 +480,6 @@
       <Filter>GameEngine\Graphics\Pipeline</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Graphics\Pipeline\PSOManager.cpp">
-      <Filter>GameEngine\Graphics\Pipeline</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Graphics\Pipeline\ReflectionValidationCoordinator.cpp">
       <Filter>GameEngine\Graphics\Pipeline</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Graphics\Pipeline\RootSignature.cpp">
@@ -629,13 +629,31 @@
     <ClCompile Include="GameEngine\Math\Functions\QuaternionOperations.cpp">
       <Filter>GameEngine\Math\Functions</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Math\Functions\RandomUtils.cpp">
+      <Filter>GameEngine\Math\Functions</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Math\Functions\SplineUtils.cpp">
       <Filter>GameEngine\Math\Functions</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Math\Functions\VectorOperations.cpp">
       <Filter>GameEngine\Math\Functions</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Math\Types\Matrix4x4.cpp">
+      <Filter>GameEngine\Math\Types</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Math\Types\Quaternion.cpp">
+      <Filter>GameEngine\Math\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Math\Types\Transform.cpp">
+      <Filter>GameEngine\Math\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Math\Types\Vector2.cpp">
+      <Filter>GameEngine\Math\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Math\Types\Vector3.cpp">
+      <Filter>GameEngine\Math\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Math\Types\Vector4.cpp">
       <Filter>GameEngine\Math\Types</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\Animation\AnimationComponent.cpp">
@@ -689,6 +707,9 @@
     <ClCompile Include="GameEngine\Object\Component\UI\TypewriterComponent.cpp">
       <Filter>GameEngine\Object\Component\UI</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\UI\UIAnimationTypes.cpp">
+      <Filter>GameEngine\Object\Component\UI</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\UI\UIFadeComponent.cpp">
       <Filter>GameEngine\Object\Component\UI</Filter>
     </ClCompile>
@@ -740,7 +761,13 @@
     <ClCompile Include="GameEngine\Scene\Camera\Components\PerlinNoise.cpp">
       <Filter>GameEngine\Scene\Camera\Components</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Scene\Camera\Core\CameraState.cpp">
+      <Filter>GameEngine\Scene\Camera\Core</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Scene\Camera\Core\CinemachineBrain.cpp">
+      <Filter>GameEngine\Scene\Camera\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Scene\Camera\Core\ICinemachineComponent.cpp">
       <Filter>GameEngine\Scene\Camera\Core</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\Camera\Core\VirtualCamera.cpp">
@@ -767,6 +794,9 @@
     <ClCompile Include="GameEngine\Scene\SceneManager.cpp">
       <Filter>GameEngine\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Scene\SceneObjectStore.cpp">
+      <Filter>GameEngine\Scene</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Scene\SceneWorld.cpp">
       <Filter>GameEngine\Scene</Filter>
     </ClCompile>
@@ -782,7 +812,16 @@
     <ClCompile Include="GameEngine\UI\Text\Utf8Decoder.cpp">
       <Filter>GameEngine\UI\Text</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Utility\D3DResourceLeakChecker.cpp">
+      <Filter>GameEngine\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Utility\ExportDump.cpp">
+      <Filter>GameEngine\Utility</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Utility\JsonFile.cpp">
+      <Filter>GameEngine\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Utility\JsonValue.cpp">
       <Filter>GameEngine\Utility</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Utility\Logger.cpp">
@@ -828,6 +867,9 @@
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraGravityUp.cpp">
+      <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraMath.cpp">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraMeasurementRecorder.cpp">
@@ -947,6 +989,9 @@
     <ClCompile Include="GameProject\App\Scene\SceneCatalog.cpp">
       <Filter>GameProject\App\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\UI\MenuAnimation.cpp">
+      <Filter>GameProject\App\UI</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\Game.cpp">
       <Filter>GameProject</Filter>
     </ClCompile>
@@ -956,9 +1001,6 @@
     <ClInclude Include="Externals\imgui\imconfig.h">
       <Filter>Externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\imgui\imgui.h">
-      <Filter>Externals\imgui</Filter>
-    </ClInclude>
     <ClInclude Include="Externals\imgui\imgui_impl_dx12.h">
       <Filter>Externals\imgui</Filter>
     </ClInclude>
@@ -966,6 +1008,9 @@
       <Filter>Externals\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Externals\imgui\imgui_internal.h">
+      <Filter>Externals\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\imgui\imgui.h">
       <Filter>Externals\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Externals\imgui\ImGuizmo\GraphEditor.h">
@@ -1001,10 +1046,10 @@
     <ClInclude Include="Externals\imgui\imstb_truetype.h">
       <Filter>Externals\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\nlohmann\json.hpp">
+    <ClInclude Include="Externals\nlohmann\json_fwd.hpp">
       <Filter>Externals\nlohmann</Filter>
     </ClInclude>
-    <ClInclude Include="Externals\nlohmann\json_fwd.hpp">
+    <ClInclude Include="Externals\nlohmann\json.hpp">
       <Filter>Externals\nlohmann</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Assets\Animation\AnimationAsset.h">
@@ -1017,9 +1062,6 @@
       <Filter>GameEngine\Assets\Animation</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Assets\AssetManager.h">
-      <Filter>GameEngine\Assets</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Assets\ResourceAssetPath.h">
       <Filter>GameEngine\Assets</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Assets\Audio\SoundManager.h">
@@ -1039,6 +1081,9 @@
     </ClInclude>
     <ClInclude Include="GameEngine\Assets\Model\ModelAssetManager.h">
       <Filter>GameEngine\Assets\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Assets\ResourceAssetPath.h">
+      <Filter>GameEngine\Assets</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Assets\Texture\TextureManager.h">
       <Filter>GameEngine\Assets\Texture</Filter>
@@ -1073,9 +1118,6 @@
     <ClInclude Include="GameEngine\Editor\EditorCommand.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Scene\SceneObjectStore.h">
-      <Filter>GameEngine\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorReferenceWidgets.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
@@ -1101,9 +1143,6 @@
       <Filter>GameEngine\Effects\Particles\Modules</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Effects\Particles\Modules\ForceOverLifetimeModule.h">
-      <Filter>GameEngine\Effects\Particles\Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Effects\Particles\Modules\LifetimeModules.h">
       <Filter>GameEngine\Effects\Particles\Modules</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Effects\Particles\Modules\LimitVelocityOverLifetimeModule.h">
@@ -1172,9 +1211,6 @@
     <ClInclude Include="GameEngine\Graphics\Device\ResourceHelper.h">
       <Filter>GameEngine\Graphics\Device</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Graphics\Pipeline\BindingLayoutResolver.h">
-      <Filter>GameEngine\Graphics\Pipeline</Filter>
-    </ClInclude>
     <ClInclude Include="GameEngine\Graphics\Pipeline\PipelineDefinitionLoader.h">
       <Filter>GameEngine\Graphics\Pipeline</Filter>
     </ClInclude>
@@ -1188,12 +1224,6 @@
       <Filter>GameEngine\Graphics\Pipeline</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Graphics\Pipeline\PSOManager.h">
-      <Filter>GameEngine\Graphics\Pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Graphics\Pipeline\ReflectionValidationCoordinator.h">
-      <Filter>GameEngine\Graphics\Pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Graphics\Pipeline\ReflectionValidationState.h">
       <Filter>GameEngine\Graphics\Pipeline</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Graphics\Pipeline\RootBindingSlots.h">
@@ -1538,6 +1568,9 @@
     <ClInclude Include="GameEngine\Scene\SceneManager.h">
       <Filter>GameEngine\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Scene\SceneObjectStore.h">
+      <Filter>GameEngine\Scene</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Scene\SceneWorld.h">
       <Filter>GameEngine\Scene</Filter>
     </ClInclude>
@@ -1563,6 +1596,9 @@
       <Filter>GameEngine\Utility</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Utility\JsonFile.h">
+      <Filter>GameEngine\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Utility\JsonValue.h">
       <Filter>GameEngine\Utility</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Utility\Logger.h">
@@ -1730,6 +1766,9 @@
     <ClInclude Include="GameProject\App\Scene\SceneCatalog.h">
       <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="GameProject\App\UI\MenuAnimation.h">
+      <Filter>GameProject\App\UI</Filter>
+    </ClInclude>
     <ClInclude Include="GameProject\Game.h">
       <Filter>GameProject</Filter>
     </ClInclude>
@@ -1745,6 +1784,9 @@
       <Filter>Tools</Filter>
     </None>
     <None Include="AGENTS.md" />
+    <None Include="Docs\Editor\EditorWorkflow.md">
+      <Filter>Docs\Editor</Filter>
+    </None>
     <None Include="Resources\engine\pipelines\pipeline_registry.json">
       <Filter>Resources\engine\pipelines</Filter>
     </None>
@@ -1877,17 +1919,22 @@
     <None Include="Resources\game\config\input_actions.json">
       <Filter>Resources\game\config</Filter>
     </None>
+    <None Include="Tests\EditorAssetRegistryTests.cpp">
+      <Filter>Tests</Filter>
+    </None>
+    <None Include="Tests\EditorImGuiLayoutTests.cpp">
+      <Filter>Tests</Filter>
+    </None>
+    <None Include="Tests\EditorSceneContextTests.cpp">
+      <Filter>Tests</Filter>
+    </None>
+    <None Include="Tests\TexturePathTests.cpp">
+      <Filter>Tests</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Externals\imgui\LICENSE.txt">
       <Filter>Externals\imgui</Filter>
     </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Tests\EditorAssetRegistryTests.cpp" />
-    <None Include="Tests\EditorSceneContextTests.cpp" />
-    <None Include="Tests\EditorImGuiLayoutTests.cpp" />
-    <None Include="Tests\TexturePathTests.cpp" />
-    <None Include="Docs\Editor\EditorWorkflow.md" />
   </ItemGroup>
 </Project>

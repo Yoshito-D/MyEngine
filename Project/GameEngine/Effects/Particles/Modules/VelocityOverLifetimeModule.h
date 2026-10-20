@@ -28,7 +28,7 @@ public:
    void SetLinearVelocity(const Vector3& velocity) { linearVelocity_ = RandomVector3(velocity, velocity, false); }
 
    /// @brief 加算速度の代表値を取得する
-   const Vector3& GetLinearVelocity() const { return linearVelocity_.Minimum(); }
+   Vector3 GetLinearVelocity() const { return linearVelocity_.Minimum(); }
 
    /// @brief 加算速度を乱数範囲で設定する
    void SetLinearVelocityRange(const RandomVector3& velocity) { linearVelocity_ = velocity; }

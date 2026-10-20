@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
@@ -128,7 +129,7 @@ bool DrawResetButton(const char* label, const ImVec2& buttonSize) {
    return clicked;
 }
 
-bool DrawVectorControl(const std::string& label, const VectorComponent* components, int componentCount,
+bool DrawVectorControl(const std::string& label, const VectorComponent* components, std::int32_t componentCount,
    float columnWidth, float speed, float minValue, float maxValue, const char* format) {
    bool valueChanged = false;
    BeginPropertyRow(label, columnWidth);
@@ -141,10 +142,10 @@ bool DrawVectorControl(const std::string& label, const VectorComponent* componen
 
    // 成分を並べる余裕がなければ縦に並べ、入力の最小幅によるパネル外へのはみ出しを防ぐ。
    const bool inlineComponents = availableWidth >= componentCount * (buttonSize.x + ImGui::GetFontSize() * 3.0f);
-   const int componentsPerRow = inlineComponents ? componentCount : 1;
+   const std::int32_t componentsPerRow = inlineComponents ? componentCount : 1;
    const float widthEach = std::max(1.0f, (availableWidth - buttonSize.x * componentsPerRow) / componentsPerRow);
 
-   for (int i = 0; i < componentCount; ++i) {
+   for (std::int32_t i = 0; i < componentCount; ++i) {
       const VectorComponent& component = components[i];
 
       ImGui::PushID(component.label);
@@ -290,8 +291,8 @@ bool DrawCheckbox(const std::string& label, bool& value, float columnWidth) {
    return changed;
 }
 
-bool DrawIntControl(
-   const std::string& label, int& value, int resetValue, float columnWidth, float speed, int minValue, int maxValue) {
+bool DrawIntControl(const std::string& label, std::int32_t& value, std::int32_t resetValue, float columnWidth,
+   float speed, std::int32_t minValue, std::int32_t maxValue) {
    bool valueChanged = false;
    BeginPropertyRow(label, columnWidth);
 
@@ -374,8 +375,8 @@ bool DrawVec2Control(const std::string& label, Vector2& values, float resetValue
       VectorComponent{"Y", &values.y, resetValue, {0.20f, 0.68f, 0.22f, 1.0f}, {0.30f, 0.80f, 0.32f, 1.0f},
          {0.14f, 0.52f, 0.16f, 1.0f}}};
 
-   return DrawVectorControl(
-      label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
+   return DrawVectorControl(label, components.data(), static_cast<std::int32_t>(components.size()), columnWidth, speed,
+      minValue, maxValue, format);
 }
 
 bool DrawVec3Control(const std::string& label, Vector3& values, float resetValue, float columnWidth, float speed,
@@ -388,8 +389,8 @@ bool DrawVec3Control(const std::string& label, Vector3& values, float resetValue
       VectorComponent{"Z", &values.z, resetValue, {0.12f, 0.28f, 0.82f, 1.0f}, {0.22f, 0.40f, 0.95f, 1.0f},
          {0.08f, 0.20f, 0.68f, 1.0f}}};
 
-   return DrawVectorControl(
-      label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
+   return DrawVectorControl(label, components.data(), static_cast<std::int32_t>(components.size()), columnWidth, speed,
+      minValue, maxValue, format);
 }
 
 bool DrawVec4Control(const std::string& label, Vector4& values, float resetValue, float columnWidth, float speed,
@@ -404,8 +405,8 @@ bool DrawVec4Control(const std::string& label, Vector4& values, float resetValue
       VectorComponent{"W", &values.w, resetValue, {0.72f, 0.58f, 0.12f, 1.0f}, {0.86f, 0.70f, 0.18f, 1.0f},
          {0.58f, 0.45f, 0.08f, 1.0f}}};
 
-   return DrawVectorControl(
-      label, components.data(), static_cast<int>(components.size()), columnWidth, speed, minValue, maxValue, format);
+   return DrawVectorControl(label, components.data(), static_cast<std::int32_t>(components.size()), columnWidth, speed,
+      minValue, maxValue, format);
 }
 
 bool DrawQuaternionControl(
@@ -422,8 +423,8 @@ bool DrawQuaternionControl(
       VectorComponent{"W", &components.w, 1.0f, {0.72f, 0.58f, 0.12f, 1.0f}, {0.86f, 0.70f, 0.18f, 1.0f},
          {0.58f, 0.45f, 0.08f, 1.0f}}};
 
-   if (!DrawVectorControl(label, vectorComponents.data(), static_cast<int>(vectorComponents.size()), columnWidth, speed,
-          0.0f, 0.0f, "%.3f")) {
+   if (!DrawVectorControl(label, vectorComponents.data(), static_cast<std::int32_t>(vectorComponents.size()),
+          columnWidth, speed, 0.0f, 0.0f, "%.3f")) {
       return false;
    }
 
@@ -529,7 +530,8 @@ bool DrawMultilineText(
    return changed;
 }
 
-bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<std::string>& items, float columnWidth) {
+bool DrawCombo(
+   const std::string& label, std::int32_t& currentIndex, const std::vector<std::string>& items, float columnWidth) {
    std::vector<const char*> itemPointers;
    itemPointers.reserve(items.size());
 
@@ -541,7 +543,8 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<st
    return DrawCombo(label, currentIndex, itemPointers, columnWidth);
 }
 
-bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<const char*>& items, float columnWidth) {
+bool DrawCombo(
+   const std::string& label, std::int32_t& currentIndex, const std::vector<const char*>& items, float columnWidth) {
    BeginPropertyRow(label, columnWidth);
    bool changed = false;
 
@@ -553,7 +556,7 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<co
       return false;
    }
 
-   if (currentIndex < 0 || currentIndex >= static_cast<int>(items.size())) {
+   if (currentIndex < 0 || currentIndex >= static_cast<std::int32_t>(items.size())) {
       // 外部データ由来の不正インデックスは、プレビューへ使う前に先頭へ正規化する。
       currentIndex = 0;
    }
@@ -561,7 +564,7 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<co
    const char* preview = items[currentIndex] != nullptr ? items[currentIndex] : "";
 
    if (ImGui::BeginCombo("##Combo", preview)) {
-      for (int i = 0; i < static_cast<int>(items.size()); ++i) {
+      for (std::int32_t i = 0; i < static_cast<std::int32_t>(items.size()); ++i) {
          const bool isSelected = currentIndex == i;
          const char* itemLabel = items[i] != nullptr ? items[i] : "";
 
@@ -583,7 +586,7 @@ bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<co
 }
 
 bool DrawLanguageCombo(const std::string& label, EditorLanguage& language, float columnWidth) {
-   int currentIndex = language == EditorLanguage::Japanese ? 0 : 1;
+   std::int32_t currentIndex = language == EditorLanguage::Japanese ? 0 : 1;
    const std::vector<const char*> items = {
       LanguageDisplayName(EditorLanguage::Japanese), LanguageDisplayName(EditorLanguage::English)};
 

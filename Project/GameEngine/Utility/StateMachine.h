@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -34,7 +35,7 @@ public:
    /// @brief 状態リクエストを追加
    /// @param stateName 状態名
    /// @param priority 優先度（大きいほど優先される）
-   void RequestState(const std::string& stateName, int priority);
+   void RequestState(const std::string& stateName, std::int32_t priority);
 
    /// @brief 現在の状態名を取得
    const std::string& GetCurrentState() const { return currentState_; }
@@ -55,7 +56,7 @@ private:
    bool CanTransition(const std::string& newState) const;
 
 private:
-   std::unordered_map<std::string, int> requests_;
+   std::unordered_map<std::string, std::int32_t> requests_;
    std::unordered_map<std::string, State> states_;
    std::string currentState_ = "Idle";
    std::unordered_map<std::string, std::vector<std::string>> transitionRules_;

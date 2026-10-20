@@ -1,4 +1,5 @@
 #include "GameEngine/Graphics/Pipeline/PipelineDefinitionLoader.h"
+#include <cstdint>
 #include "GameEngine/Utility/Logger.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -15,10 +16,11 @@ std::string WStringToString(const std::wstring& wstr) {
 
    // Windows の UTF-16 パスを JSON／ログで共通利用する UTF-8 へ変換する。
    // 先に必要バイト数を問い合わせ、マルチバイト文字を途中で切らない正確な領域を確保する。
-   int sizeNeeded =
-      WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+   std::int32_t sizeNeeded =
+      WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<std::int32_t>(wstr.size()), nullptr, 0, nullptr, nullptr);
    std::string value(static_cast<size_t>(sizeNeeded), 0);
-   WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), &value[0], sizeNeeded, nullptr, nullptr);
+   WideCharToMultiByte(
+      CP_UTF8, 0, &wstr[0], static_cast<std::int32_t>(wstr.size()), &value[0], sizeNeeded, nullptr, nullptr);
    return value;
 }
 }

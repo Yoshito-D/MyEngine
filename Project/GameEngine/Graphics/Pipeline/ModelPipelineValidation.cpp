@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Pipeline/PSOManager.h"
 #include "GameEngine/Graphics/Pipeline/ShaderManager.h"
 #include "GameEngine/Graphics/Resources/Material.h"
@@ -103,8 +104,8 @@ BlendMode PSOManager::ResolveModelBlendMode(const std::string& name, BlendMode r
       return it->second;
    }
 
-   const int value = static_cast<int>(requested);
-   return value >= 0 && value < static_cast<int>(BlendMode::kCount) ? requested : BlendMode::kBlendModeNone;
+   const std::int32_t value = static_cast<std::int32_t>(requested);
+   return value >= 0 && value < static_cast<std::int32_t>(BlendMode::kCount) ? requested : BlendMode::kBlendModeNone;
 }
 
 bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, ModelPipelineDefinition& model) const {

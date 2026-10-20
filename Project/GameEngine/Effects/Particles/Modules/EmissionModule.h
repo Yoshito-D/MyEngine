@@ -43,10 +43,7 @@ public:
    void AddBurst(const Burst& burst);
 
    /// @brief 設定と再生カーソルをまとめて破棄する。
-   void ClearBursts() {
-      bursts_.clear();
-      burstStates_.clear();
-   }
+   void ClearBursts();
 
    /// @brief 保存用の放出設定だけを読み取る。
    const std::vector<Burst>& GetBursts() const { return bursts_; }

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Scene/SceneObjectStore.h"
 
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
@@ -262,7 +263,7 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
       return nullptr;
    }
 
-   const std::string objectType = objectData.value("objectType", "Model");
+   const std::string objectType = objectData.value("objectType", "");
 
    // 派生型ごとの必須リソースを先に生成してから、共通コンポーネント状態を上書きする。
    if (objectType == "ParticleSystem") {
@@ -270,7 +271,7 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
       return nullptr;
    }
 
-   if (objectType == "Generic" || objectType == "Object") {
+   if (objectType == "Generic") {
       const std::string id = objectData.value("id", "");
       Object* object = CreateGenericObject(nullptr, id);
 
@@ -855,6 +856,28 @@ nlohmann::json SceneObjectStore::SerializeAll() const {
    return objects;
 }
 
+std::vector<Object*> SceneObjectStore::GetObjects() {
+   std::vector<Object*> objects;
+   objects.reserve(idToObject_.size());
+
+   for (const auto& [id, object] : idToObject_) {
+      objects.push_back(object);
+   }
+
+   return objects;
+}
+
+std::vector<const Object*> SceneObjectStore::GetObjects() const {
+   std::vector<const Object*> objects;
+   objects.reserve(idToObject_.size());
+
+   for (const auto& [id, object] : idToObject_) {
+      objects.push_back(object);
+   }
+
+   return objects;
+}
+
 std::string SceneObjectStore::AllocateId(const std::string& requestedId) {
    if (!requestedId.empty() && !ContainsId(requestedId) && !Object::FindByEntityId(requestedId)) {
       // 復元IDの番号を採用した後に自動採番が衝突しないようカウンターも追従させる。
@@ -895,7 +918,7 @@ std::string SceneObjectStore::BuildUniqueObjectName(const std::string& baseName)
       return base;
    }
 
-   int suffix = 1;
+   std::int32_t suffix = 1;
 
    while (true) {
       const std::string candidate = base + "_" + std::to_string(suffix++);
@@ -1011,6 +1034,130 @@ void SceneObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::jso
       sprite->SetScreenAnchorPoint(
          ParseSpriteAnchorPoint(data.at("screenAnchorPoint"), sprite->GetScreenAnchorPoint()));
    }
+}
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+std::vector<Object*> SceneObjectStore::GetGenericObjects() {
+   std::vector<Object*> view;
+
+   for (auto& entry : genericObjects_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<const Object*> SceneObjectStore::GetGenericObjects() const {
+   std::vector<const Object*> view;
+
+   for (const auto& entry : genericObjects_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<Model*> SceneObjectStore::GetModels() {
+   std::vector<Model*> view;
+
+   for (auto& entry : models_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<const Model*> SceneObjectStore::GetModels() const {
+   std::vector<const Model*> view;
+
+   for (const auto& entry : models_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<Sprite*> SceneObjectStore::GetSprites() {
+   std::vector<Sprite*> view;
+
+   for (auto& entry : sprites_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<const Sprite*> SceneObjectStore::GetSprites() const {
+   std::vector<const Sprite*> view;
+
+   for (const auto& entry : sprites_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<UIText*> SceneObjectStore::GetUITexts() {
+   std::vector<UIText*> view;
+
+   for (auto& entry : uiTexts_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<const UIText*> SceneObjectStore::GetUITexts() const {
+   std::vector<const UIText*> view;
+
+   for (const auto& entry : uiTexts_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<Skybox*> SceneObjectStore::GetSkyboxes() {
+   std::vector<Skybox*> view;
+
+   for (auto& entry : skyboxes_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<const Skybox*> SceneObjectStore::GetSkyboxes() const {
+   std::vector<const Skybox*> view;
+
+   for (const auto& entry : skyboxes_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<ParticleSystem*> SceneObjectStore::GetParticleSystems() {
+   std::vector<ParticleSystem*> view;
+
+   for (auto& entry : particleSystems_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
+}
+
+std::vector<const ParticleSystem*> SceneObjectStore::GetParticleSystems() const {
+   std::vector<const ParticleSystem*> view;
+
+   for (const auto& entry : particleSystems_) {
+      view.push_back(entry.get());
+   }
+
+   return view;
 }
 
 } // namespace GameEngine

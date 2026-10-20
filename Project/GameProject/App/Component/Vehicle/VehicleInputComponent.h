@@ -76,19 +76,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.playerSlot = playerSlot;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-      settings.playerSlot = std::min(settings.playerSlot, 3u);
-      playerSlot = settings.playerSlot;
-   }
+   void Configure(const Settings& requested);
 
 private:
    uint32_t playerSlot = 0;

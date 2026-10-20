@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Tutorial/TutorialProgressComponent.h"
+#include <cstdint>
 
 #include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Character/CharacterLanding.h"
@@ -152,7 +153,7 @@ void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
    }
 
    if (data.contains("targetPlanetIndex") && data.at("targetPlanetIndex").is_number_integer()) {
-      targetPlanetIndex_ = std::max(data.at("targetPlanetIndex").get<int>(), 0);
+      targetPlanetIndex_ = std::max(data.at("targetPlanetIndex").get<std::int32_t>(), 0);
    }
 
    if (data.contains("nextScene") && data.at("nextScene").is_string()) {
@@ -180,13 +181,13 @@ void TutorialProgressComponent::SetPhase(Phase phase) {
    }
 }
 
-int TutorialProgressComponent::GetNormalizedTargetPlanetIndex() const {
+std::int32_t TutorialProgressComponent::GetNormalizedTargetPlanetIndex() const {
    if (!planetSwitcher_) {
       // 参照解決前でも負値だけは除外し、シリアライズやインスペクターから安全に利用できるようにする。
       return std::max(targetPlanetIndex_, 0);
    }
 
-   const int planetCount = planetSwitcher_->GetPlanetCount();
+   const std::int32_t planetCount = planetSwitcher_->GetPlanetCount();
    return planetCount > 0 ? std::clamp(targetPlanetIndex_, 0, planetCount - 1) : 0;
 }
 
@@ -257,7 +258,7 @@ void TutorialProgressComponent::ApplyGuideOpacity() {
 }
 
 void TutorialProgressComponent::HandleLandingResult() {
-   const int landedPlanetIndex = planetSwitcher_->GetCurrentPlanetIndex();
+   const std::int32_t landedPlanetIndex = planetSwitcher_->GetCurrentPlanetIndex();
 
    // 惑星間移動の課題では着地品質より先に着地先を検証する。
    // 元の惑星へ戻った場合は最終課題のまま再挑戦させ、成功着地でも完了扱いにしない。
@@ -346,7 +347,7 @@ void TutorialProgressComponent::DrawInspector() {
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    GameEngine::EditorUI::SceneReference("Next Scene", nextScene_);
    ImGui::Text("Phase: %s", GetPhaseName());
-   const int maxPlanetIndex = planetSwitcher_ ? std::max(planetSwitcher_->GetPlanetCount() - 1, 0) : 0;
+   const std::int32_t maxPlanetIndex = planetSwitcher_ ? std::max(planetSwitcher_->GetPlanetCount() - 1, 0) : 0;
 
    if (ImGui::DragInt("Target Planet Index", &targetPlanetIndex_, 1.0f, 0, maxPlanetIndex)) {
       NormalizeTargetPlanetIndex();

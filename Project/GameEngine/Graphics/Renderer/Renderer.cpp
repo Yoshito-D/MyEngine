@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Renderer/Renderer.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Object/Model/Model.h"
@@ -62,15 +63,6 @@ GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
    return GameEngine::Vector3(matrix.m[3][0], matrix.m[3][1], matrix.m[3][2]);
 }
 
-void ResolveParentRelationForRender(GameEngine::Object* object) {
-   if (!object) return;
-
-   auto* transformComponent = object->GetComponent<GameEngine::TransformComponent>();
-
-   if (!transformComponent) return;
-
-   transformComponent->ResolveParentRelation();
-}
 }
 
 namespace GameEngine {
@@ -607,8 +599,8 @@ void Renderer::DrawSpline(
    }
 }
 
-void Renderer::DrawGrid(GridPlane plane, float gridSize, int thickLineInterval, int range, bool enableFade,
-   float fadeDistance, bool applyPostProcess) {
+void Renderer::DrawGrid(GridPlane plane, float gridSize, std::int32_t thickLineInterval, std::int32_t range,
+   bool enableFade, float fadeDistance, bool applyPostProcess) {
    Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
    assert(activeCamera != nullptr);
 
@@ -840,8 +832,6 @@ void Renderer::DrawAutoRegisteredModels() {
          continue;
       }
 
-      ResolveParentRelationForRender(model);
-
       if (!renderComponent->IsEnabled() || !renderComponent->DescribeSettings().autoRender ||
           !renderComponent->DescribeSettings().visible) {
          continue;
@@ -911,8 +901,6 @@ void Renderer::DrawAutoRegisteredSprites() {
       if (!renderComponent) {
          continue;
       }
-
-      ResolveParentRelationForRender(sprite);
 
       if (!renderComponent->IsEnabled() || !renderComponent->DescribeSettings().autoRender ||
           !renderComponent->DescribeSettings().visible) {
@@ -1219,7 +1207,7 @@ void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode)
 
       if (!pipelineState) {
          Logger::Error("Failed to get pipeline: " + pipelineName +
-                       " with blend mode: " + std::to_string(static_cast<int>(blendMode)));
+                       " with blend mode: " + std::to_string(static_cast<std::int32_t>(blendMode)));
 
          // フォールバック: ブレンドモードなしで再試行
          pipelineState = psoManager_->GetPipeline(pipelineName, BlendMode::kBlendModeNone);
@@ -1320,38 +1308,26 @@ RenderPass Renderer::DetermineRenderPass(BlendMode blendMode, bool applyPostProc
    return (blendMode == BlendMode::kBlendModeNone) ? RenderPass::Opaque : RenderPass::Transparent;
 }
 
-void Renderer::SortTransparentCommands() {
-   if (transparentCommands_.size() < 2) return;
+} // namespace GameEngine
 
-   // 同距離の登録順を維持しつつ、位置を持つ要素は奥から手前へ描いてアルファ合成を成立させる。
-   std::stable_sort(transparentCommands_.begin(), transparentCommands_.end(),
-      [](const std::unique_ptr<IDrawCommand>& lhs, const std::unique_ptr<IDrawCommand>& rhs) {
-         const auto lPos = lhs->GetSortPosition();
-         const auto rPos = rhs->GetSortPosition();
-         Camera* lCam = lhs->GetCamera();
-         Camera* rCam = rhs->GetCamera();
+#ifdef USE_IMGUI
+namespace GameEngine {
 
-         const bool lHasPos = lPos.has_value() && lCam;
-         const bool rHasPos = rPos.has_value() && rCam;
+bool Renderer::GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible) {
+   return imGuiManager_ && imGuiManager_->GetEditorWindowVisibility(stableId, label, defaultVisible);
+}
 
-         // 位置情報なし → 位置情報ありより手前（先に描画）
-         if (lHasPos != rHasPos) {
-            return lHasPos > rHasPos;
-         }
+bool Renderer::SetEditorWindowVisibility(const char* stableId, bool visible) {
+   return imGuiManager_ && imGuiManager_->SetEditorWindowVisibility(stableId, visible);
+}
 
-         // 両方位置情報あり → カメラ距離の遠い順
-         if (lHasPos && rHasPos) {
-            const float lDist = (*lPos - lCam->GetPosition()).LengthSquared();
-            const float rDist = (*rPos - rCam->GetPosition()).LengthSquared();
+} // namespace GameEngine
+#endif
 
-            if (lDist != rDist) {
-               return lDist > rDist;
-            }
-         }
+namespace GameEngine {
 
-         // 距離が同じまたは位置情報なし → 種別優先度順
-         return lhs->GetTypePriority() > rhs->GetTypePriority();
-      });
+std::string Renderer::MakePipelineCacheKey(const std::string& name, BlendMode mode) const {
+   return name + "_" + std::to_string(static_cast<std::int32_t>(mode));
 }
 
 } // namespace GameEngine

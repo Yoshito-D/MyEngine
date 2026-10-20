@@ -28,10 +28,7 @@ public:
    void Apply(float rollInput, float pitchInput, float deltaTime);
 
    /// @brief 着地時に角速度をリセットする
-   void ResetAngularVelocity() {
-      angularVelRoll_ = 0.0f;
-      angularVelPitch_ = 0.0f;
-   }
+   void ResetAngularVelocity();
 
 #ifdef USE_IMGUI
 

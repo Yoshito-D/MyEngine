@@ -1,4 +1,6 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Object/Component/Rendering/LightComponent.h"
 
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -32,34 +34,6 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    },
    GameEngine::LightComponent::kDisplayName, GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model);
 
-GameEngine::Vector3 ReadVector3(const nlohmann::json& data, const char* key, const GameEngine::Vector3& fallback) {
-   if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 3) {
-      return fallback;
-   }
-
-   return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>(), data.at(key)[2].get<float>()};
-}
-
-GameEngine::Vector4 ReadVector4(const nlohmann::json& data, const char* key, const GameEngine::Vector4& fallback) {
-   if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 4) {
-      return fallback;
-   }
-
-   return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>(), data.at(key)[2].get<float>(),
-      data.at(key)[3].get<float>()};
-}
-
-GameEngine::Vector2 ReadVector2(const nlohmann::json& data, const char* key, const GameEngine::Vector2& fallback) {
-   if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 2) {
-      return fallback;
-   }
-
-   return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>()};
-}
-
-float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
-   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
-}
 }
 
 namespace GameEngine {
@@ -71,53 +45,6 @@ void LightComponent::SetLightType(Type type) {
    // 登録が残るため、型を書き換える前に現在のRuntimeライトを解除する。
    ReleaseRuntimeLight();
    type_ = type;
-}
-
-bool LightComponent::DeserializeLegacy(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return false;
-   }
-
-   Type parsedType;
-
-   if (!TryParseType(data.value("type", ""), parsedType)) {
-      return false;
-   }
-
-   // 旧形式はTransformをライトデータ内に保持していたため、Component固有値と
-   // OwnerのTransformへ分けて移行する。
-   SetLightType(parsedType);
-   color = ReadVector4(data, "color", color);
-   intensity = ReadFloat(data, "intensity", intensity);
-   radius = ReadFloat(data, "radius", radius);
-   decay = ReadFloat(data, "decay", decay);
-   distance = ReadFloat(data, "distance", distance);
-   cosAngle = ReadFloat(data, "cosAngle", cosAngle);
-   cosFalloffStart = ReadFloat(data, "cosFalloffStart", cosFalloffStart);
-   areaSize = ReadVector2(data, "size", areaSize);
-
-   if (auto* transform = GetOwner().GetComponent<TransformComponent>()) {
-      {
-         auto pose = transform->GetLocalPose();
-         pose.translation = ReadVector3(data, "position", transform->GetLocalPose().translation);
-         transform->ApplyLocalPose(pose);
-      }
-
-      // Area Lightだけ旧フィールド名がnormalで、それ以外はdirectionを使用していた。
-      const Vector3 direction = type_ == Type::Area ? ReadVector3(data, "normal", Vector3(0.0f, -1.0f, 0.0f))
-                                                    : ReadVector3(data, "direction", Vector3(0.0f, -1.0f, 0.0f));
-
-      // Point Lightには方向がないため回転を変更せず、既存Entityの姿勢を保つ。
-      if (type_ == Type::Directional || type_ == Type::Spot || type_ == Type::Area) {
-         {
-            auto pose = transform->GetLocalPose();
-            pose.SetRotationQuaternion(LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
-            transform->ApplyLocalPose(pose);
-         }
-      }
-   }
-
-   return true;
 }
 
 void LightComponent::Update(float deltaTime) {
@@ -153,16 +80,15 @@ void LightComponent::Deserialize(const nlohmann::json& data) {
       SetLightType(parsedType);
    }
 
-   color = ReadVector4(data, "color", color);
-   intensity = ReadFloat(data, "intensity", intensity);
-   radius = ReadFloat(data, "radius", radius);
-   decay = ReadFloat(data, "decay", decay);
-   distance = ReadFloat(data, "distance", distance);
-   cosAngle = ReadFloat(data, "cosAngle", cosAngle);
-   cosFalloffStart = ReadFloat(data, "cosFalloffStart", cosFalloffStart);
+   color = data.contains("color") ? JsonValue::ReadVector4(data.at("color"), color) : color;
+   intensity = JsonValue::ReadFloat(data, "intensity", intensity);
+   radius = JsonValue::ReadFloat(data, "radius", radius);
+   decay = JsonValue::ReadFloat(data, "decay", decay);
+   distance = JsonValue::ReadFloat(data, "distance", distance);
+   cosAngle = JsonValue::ReadFloat(data, "cosAngle", cosAngle);
+   cosFalloffStart = JsonValue::ReadFloat(data, "cosFalloffStart", cosFalloffStart);
 
-   // sizeは旧形式との互換名。現行areaSizeがあれば必ずそちらを優先する。
-   areaSize = ReadVector2(data, "areaSize", ReadVector2(data, "size", areaSize));
+   areaSize = data.contains("areaSize") ? JsonValue::ReadVector2(data.at("areaSize"), areaSize) : areaSize;
    Configure(DescribeSettings());
 }
 
@@ -351,7 +277,7 @@ void LightComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    const char* types[] = {"Directional", "Point", "Spot", "Area"};
-   int selectedType = static_cast<int>(type_);
+   std::int32_t selectedType = static_cast<std::int32_t>(type_);
 
    if (ImGui::Combo("Type", &selectedType, types, IM_ARRAYSIZE(types))) {
       SetLightType(static_cast<Type>(selectedType));
@@ -377,5 +303,84 @@ void LightComponent::DrawInspector() {
    Configure(DescribeSettings());
 }
 #endif
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+LightComponent::Settings LightComponent::DescribeSettings() const {
+   Settings settings;
+   settings.color = color;
+   settings.intensity = intensity;
+   settings.radius = radius;
+   settings.decay = decay;
+   settings.distance = distance;
+   settings.cosAngle = cosAngle;
+   settings.cosFalloffStart = cosFalloffStart;
+   settings.areaSize = areaSize;
+   return settings;
+}
+
+void LightComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.color.x)) {
+      settings.color.x = defaults.color.x;
+   }
+
+   if (!std::isfinite(settings.color.y)) {
+      settings.color.y = defaults.color.y;
+   }
+
+   if (!std::isfinite(settings.color.z)) {
+      settings.color.z = defaults.color.z;
+   }
+
+   if (!std::isfinite(settings.color.w)) {
+      settings.color.w = defaults.color.w;
+   }
+
+   if (!std::isfinite(settings.intensity)) {
+      settings.intensity = defaults.intensity;
+   }
+
+   if (!std::isfinite(settings.radius)) {
+      settings.radius = defaults.radius;
+   }
+
+   if (!std::isfinite(settings.decay)) {
+      settings.decay = defaults.decay;
+   }
+
+   if (!std::isfinite(settings.distance)) {
+      settings.distance = defaults.distance;
+   }
+
+   if (!std::isfinite(settings.cosAngle)) {
+      settings.cosAngle = defaults.cosAngle;
+   }
+
+   if (!std::isfinite(settings.cosFalloffStart)) {
+      settings.cosFalloffStart = defaults.cosFalloffStart;
+   }
+
+   if (!std::isfinite(settings.areaSize.x)) {
+      settings.areaSize.x = defaults.areaSize.x;
+   }
+
+   if (!std::isfinite(settings.areaSize.y)) {
+      settings.areaSize.y = defaults.areaSize.y;
+   }
+
+   color = settings.color;
+   intensity = settings.intensity;
+   radius = settings.radius;
+   decay = settings.decay;
+   distance = settings.distance;
+   cosAngle = settings.cosAngle;
+   cosFalloffStart = settings.cosFalloffStart;
+   areaSize = settings.areaSize;
+}
 
 } // namespace GameEngine

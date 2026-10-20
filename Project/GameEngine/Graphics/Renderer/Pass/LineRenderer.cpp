@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Renderer/Pass/LineRenderer.h"
 #include "GameEngine/Scene/Camera/Camera.h"
 #include "GameEngine/Math/MathUtils.h"
@@ -126,8 +127,8 @@ void LineRenderer::DrawSpline(
    }
 }
 
-void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int thickLineInterval, int range,
-   bool enableFade, float fadeDistance) {
+void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, std::int32_t thickLineInterval,
+   std::int32_t range, bool enableFade, float fadeDistance) {
    if (!camera) return;
 
    Vector3 cameraPos = camera->GetTransform().translation;
@@ -307,17 +308,17 @@ void LineRenderer::DrawGrid(Camera* camera, GridPlane plane, float gridSize, int
 void LineRenderer::DrawSphere(const Vector3& center, float radius, const Vector4& color, Camera* camera) {
    if (!camera) return;
 
-   const int segments = 16;
-   const int rings = 8;
+   const std::int32_t segments = 16;
+   const std::int32_t rings = 8;
 
    // 緯度リングと経度アークの両方を線分化し、どの視点からも球の輪郭を読めるようにする。
    // 経度方向のライン
-   for (int i = 0; i <= rings; ++i) {
+   for (std::int32_t i = 0; i <= rings; ++i) {
       float theta = MathConstants::kPi * static_cast<float>(i) / static_cast<float>(rings);
       float sinTheta = std::sin(theta);
       float cosTheta = std::cos(theta);
 
-      for (int j = 0; j < segments; ++j) {
+      for (std::int32_t j = 0; j < segments; ++j) {
          float phi1 = MathConstants::kTwoPi * static_cast<float>(j) / static_cast<float>(segments);
          float phi2 = MathConstants::kTwoPi * static_cast<float>(j + 1) / static_cast<float>(segments);
 
@@ -332,10 +333,10 @@ void LineRenderer::DrawSphere(const Vector3& center, float radius, const Vector4
    }
 
    // 緯度方向のライン
-   for (int j = 0; j < segments; ++j) {
+   for (std::int32_t j = 0; j < segments; ++j) {
       float phi = MathConstants::kTwoPi * static_cast<float>(j) / static_cast<float>(segments);
 
-      for (int i = 0; i < rings; ++i) {
+      for (std::int32_t i = 0; i < rings; ++i) {
          float theta1 = MathConstants::kPi * static_cast<float>(i) / static_cast<float>(rings);
          float theta2 = MathConstants::kPi * static_cast<float>(i + 1) / static_cast<float>(rings);
 
@@ -354,16 +355,16 @@ void LineRenderer::DrawHemisphere(
    const Vector3& center, float radius, const Vector3& up, const Vector4& color, Camera* camera) {
    if (!camera) return;
 
-   const int segments = 16;
-   const int rings = 8;
+   const std::int32_t segments = 16;
+   const std::int32_t rings = 8;
 
    // 半球のみ描画（theta: 0 to π/2）
-   for (int i = 0; i <= rings; ++i) {
+   for (std::int32_t i = 0; i <= rings; ++i) {
       float theta = MathConstants::kHalfPi * static_cast<float>(i) / static_cast<float>(rings);
       float sinTheta = std::sin(theta);
       float cosTheta = std::cos(theta);
 
-      for (int j = 0; j < segments; ++j) {
+      for (std::int32_t j = 0; j < segments; ++j) {
          float phi1 = MathConstants::kTwoPi * static_cast<float>(j) / static_cast<float>(segments);
          float phi2 = MathConstants::kTwoPi * static_cast<float>(j + 1) / static_cast<float>(segments);
 
@@ -385,7 +386,7 @@ void LineRenderer::DrawCone(
    const Vector3& apex, float radius, float height, const Vector3& direction, const Vector4& color, Camera* camera) {
    if (!camera) return;
 
-   const int segments = 16;
+   const std::int32_t segments = 16;
    Vector3 dir = direction.Normalize();
    Vector3 base = apex + dir * height;
 
@@ -395,7 +396,7 @@ void LineRenderer::DrawCone(
    Vector3 upVec = right.Cross(dir).Normalize();
 
    // 円周上の点を計算して頂点から線を引く
-   for (int i = 0; i < segments; ++i) {
+   for (std::int32_t i = 0; i < segments; ++i) {
       float angle1 = MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(segments);
       float angle2 = MathConstants::kTwoPi * static_cast<float>(i + 1) / static_cast<float>(segments);
 
@@ -446,7 +447,7 @@ void LineRenderer::DrawCircle(
    const Vector3& center, float radius, const Vector3& normal, const Vector4& color, Camera* camera) {
    if (!camera) return;
 
-   const int segments = 32;
+   const std::int32_t segments = 32;
    Vector3 n = normal.Normalize();
 
    // 法線とほぼ平行な補助軸を避け、円平面を張る直交基底を外積から構成する。
@@ -455,7 +456,7 @@ void LineRenderer::DrawCircle(
    Vector3 upVec = right.Cross(n).Normalize();
 
    // 円を描画
-   for (int i = 0; i < segments; ++i) {
+   for (std::int32_t i = 0; i < segments; ++i) {
       float angle1 = MathConstants::kTwoPi * static_cast<float>(i) / static_cast<float>(segments);
       float angle2 = MathConstants::kTwoPi * static_cast<float>(i + 1) / static_cast<float>(segments);
 
@@ -470,3 +471,11 @@ void LineRenderer::Clear() {
    cameraLineGroups_.clear();
 }
 }
+
+namespace GameEngine {
+
+const std::unordered_map<Camera*, std::vector<LineRenderer::LineInstance>>& LineRenderer::GetCameraLineGroups() const {
+   return cameraLineGroups_;
+}
+
+} // namespace GameEngine

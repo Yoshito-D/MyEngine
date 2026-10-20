@@ -28,27 +28,7 @@ void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    UpdateConstantBuffer();
 
-   // 深度を使わない色フィルターなのでDSVを束縛せず、スタックのping-pong出力面だけを更新する。
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // ルートパラメータの物理番号はPSO定義から解決されるため、b0/t0の並びをC++側で固定しない。
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // 頂点バッファを持たないフルスクリーントライアングルで画面端の継ぎ目を避ける。
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   // 次のポストプロセスが今回の出力を入力SRVとして使用できる状態へ戻す。
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 /// @brief CPUから直接更新するアンチエイリアシング定数バッファを作成し、永続Mapする。
@@ -99,3 +79,27 @@ void AntiAliasing::ImGuiEdit() {
 #endif
 
 }
+
+namespace GameEngine {
+
+void AntiAliasing::SetContrastThreshold(float threshold) {
+   contrastThreshold_ = threshold;
+   UpdateConstantBuffer();
+}
+
+void AntiAliasing::SetRelativeThreshold(float threshold) {
+   relativeThreshold_ = threshold;
+   UpdateConstantBuffer();
+}
+
+void AntiAliasing::SetSubpixelBlending(float blending) {
+   subpixelBlending_ = blending;
+   UpdateConstantBuffer();
+}
+
+void AntiAliasing::SetEdgeSearchSteps(float steps) {
+   edgeSearchSteps_ = steps;
+   UpdateConstantBuffer();
+}
+
+} // namespace GameEngine

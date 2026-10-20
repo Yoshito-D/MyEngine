@@ -5,7 +5,7 @@
 #include "GameEngine/Scene/Camera/DebugCamera.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Editor/Camera/CameraEditor.h"
-#include "GameEngine/Scene/SceneObjectStore.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include <filesystem>
 #include <memory>
 #include <vector>
@@ -61,7 +61,13 @@ public:
    const std::string& GetEditorSceneName() const { return editorSceneName_; }
 
    /// @brief 保存済みシーンデータを現在のシーンへ必要に応じて適用する
-   virtual void LoadSceneDataIfNeeded();
+   virtual void LoadSceneDataIfNeeded() = 0;
+
+   /// @brief このシーンの全Entityを所有するWorldを取得する。
+   SceneWorld& GetSceneWorld() { return sceneWorld_; }
+
+   /// @brief Worldを読み取り専用で取得する。
+   const SceneWorld& GetSceneWorld() const { return sceneWorld_; }
 
 #ifdef USE_IMGUI
 
@@ -81,8 +87,6 @@ public:
    /// @return カメラエディタ。未初期化の場合は nullptr
    const CameraEditor* GetCameraEditor() const { return cameraEditor_.get(); }
 
-   /// @brief 必要に応じてエディタ用シーンデータを自動読み込みする
-   void LoadEditorSceneIfNeeded();
 #endif
 
 protected:
@@ -103,11 +107,7 @@ protected:
    virtual void OnFinalize() {}
 
 private:
-   /// @brief デバッグカメラの更新
-   void UpdateDebugCamera();
-
-   /// @brief エディタなしビルドで保存済みシーンデータをランタイム用に適用する
-   void LoadRuntimeSceneIfNeeded();
+   SceneWorld sceneWorld_;
 
 #ifdef USE_IMGUI
    void LoadDebugCameraState();
@@ -121,14 +121,12 @@ private:
 #endif
 
    // 静的メンバー
-   static inline std::string sNextSceneName_ = "";
-   static inline std::string sPendingSceneName_ = "";
-   static inline bool sIsWaitingForFadeOut_ = false;
-   static inline BaseScene* sCurrentScene_ = nullptr; // 現在のシーンインスタンス
+   static std::string sNextSceneName_;
+   static std::string sPendingSceneName_;
+   static bool sIsWaitingForFadeOut_;
+   static BaseScene* sCurrentScene_; // 現在のシーンインスタンス
 
    bool isFinished_ = false;
    std::string editorSceneName_ = "Scene";
-   std::unique_ptr<SceneObjectStore> runtimeSceneObjectStore_ = nullptr;
-   std::vector<std::unique_ptr<Object>> sceneEntities_;
 };
 }

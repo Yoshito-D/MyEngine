@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Editor/EditorSceneContext.h"
 
 #ifdef USE_IMGUI
@@ -33,148 +34,13 @@
 namespace GameEngine {
 
 namespace {
-constexpr int kJsonIndentSize = 3;
+constexpr std::int32_t kJsonIndentSize = 3;
 constexpr float kVectorLengthEpsilonSquared = 1.0e-8f;
 constexpr float kHomogeneousCoordinateEpsilon = 1.0e-6f;
 constexpr float kSafeNormalizedDeviceCoordinateLimit = 0.95f;
 constexpr float kScreenSpaceFarClip = 100.0f;
 constexpr float kDefaultScreenSpaceDepth = 1.0f;
 constexpr float kDuplicatePositionOffset = 1.0f;
-
-bool HasOptionalJsonType(const nlohmann::json& data, const char* key, nlohmann::json::value_t type) {
-   const auto it = data.find(key);
-   return it == data.end() || it->type() == type;
-}
-
-bool IsValidComponentState(const nlohmann::json& data, const char* typeKey) {
-   return data.is_object() && HasOptionalJsonType(data, typeKey, nlohmann::json::value_t::string) &&
-          HasOptionalJsonType(data, "enabled", nlohmann::json::value_t::boolean) &&
-          HasOptionalJsonType(data, "data", nlohmann::json::value_t::object);
-}
-
-bool IsValidObjectState(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return false;
-   }
-
-   for (const auto* key : {"id", "parentId", "objectType", "assetId", "name"}) {
-      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::string)) {
-         return false;
-      }
-   }
-
-   for (const auto* key : {"data", "sprite"}) {
-      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::object)) {
-         return false;
-      }
-   }
-
-   if (!HasOptionalJsonType(data, "components", nlohmann::json::value_t::array)) {
-      return false;
-   }
-
-   if (data.contains("components")) {
-      for (const auto& component : data.at("components")) {
-         if (!IsValidComponentState(component, "typeName")) {
-            return false;
-         }
-      }
-   }
-
-   return true;
-}
-
-bool IsValidSceneSnapshot(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return false;
-   }
-
-   // 復元前にコンテナと参照キーを検証し、型違反で既存の選択・履歴・所有物を失わないようにする。
-   for (const auto* key : {"objects", "sceneObjects", "sceneParticleSystems", "hierarchyOrder"}) {
-      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::array)) {
-         return false;
-      }
-   }
-
-   for (const auto* key : {"cameras", "environment", "renderSettings"}) {
-      if (!HasOptionalJsonType(data, key, nlohmann::json::value_t::object)) {
-         return false;
-      }
-   }
-
-   if (data.contains("objects")) {
-      for (const auto& object : data.at("objects")) {
-         if (!IsValidObjectState(object)) {
-            return false;
-         }
-      }
-   }
-
-   for (const auto* key : {"sceneObjects", "sceneParticleSystems"}) {
-      if (!data.contains(key)) {
-         continue;
-      }
-
-      const char* payloadKey = std::string_view(key) == "sceneObjects" ? "object" : "particleSystem";
-
-      for (const auto& entry : data.at(key)) {
-         if (!entry.is_object() || !HasOptionalJsonType(entry, "sceneKey", nlohmann::json::value_t::string) ||
-             !HasOptionalJsonType(entry, "deleted", nlohmann::json::value_t::boolean) ||
-             (entry.contains(payloadKey) && !IsValidObjectState(entry.at(payloadKey)))) {
-            return false;
-         }
-      }
-   }
-
-   if (data.contains("cameras")) {
-      const auto& cameras = data.at("cameras");
-
-      if (!HasOptionalJsonType(cameras, "virtualCameras", nlohmann::json::value_t::array) ||
-          !HasOptionalJsonType(cameras, "brain", nlohmann::json::value_t::object)) {
-         return false;
-      }
-
-      if (cameras.contains("virtualCameras")) {
-         for (const auto& camera : cameras.at("virtualCameras")) {
-            if (!camera.is_object()) {
-               return false;
-            }
-
-            for (const auto* key : {"name", "id", "followTargetId", "lookAtTargetId"}) {
-               if (!HasOptionalJsonType(camera, key, nlohmann::json::value_t::string)) {
-                  return false;
-               }
-            }
-
-            if (!HasOptionalJsonType(camera, "components", nlohmann::json::value_t::array) ||
-                !HasOptionalJsonType(camera, "state", nlohmann::json::value_t::object) ||
-                !HasOptionalJsonType(camera, "active", nlohmann::json::value_t::boolean) ||
-                !HasOptionalJsonType(camera, "componentsAreComplete", nlohmann::json::value_t::boolean) ||
-                (camera.contains("priority") && !camera.at("priority").is_number_integer())) {
-               return false;
-            }
-
-            if (camera.contains("components")) {
-               for (const auto& component : camera.at("components")) {
-                  if (!IsValidComponentState(component, "componentName")) {
-                     return false;
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   if (data.contains("hierarchyOrder")) {
-      for (const auto& id : data.at("hierarchyOrder")) {
-         if (!id.is_string()) {
-            return false;
-         }
-      }
-   }
-
-   return true;
-}
 
 ImGuizmo::OPERATION ToImGuizmoOperation(EditorSceneContext::GizmoOperation operation, bool restrictTo2D = false) {
    if (restrictTo2D) {
@@ -226,60 +92,9 @@ float AbsDiff(float lhs, float rhs) {
    return std::abs(lhs - rhs);
 }
 
-std::string GetSceneObjectTypeName(const Object* object) {
-   if (dynamic_cast<const UIText*>(object)) {
-      return "UIText";
-   }
-
-   if (dynamic_cast<const Model*>(object)) {
-      return "Model";
-   }
-
-   if (dynamic_cast<const Sprite*>(object)) {
-      return "Sprite";
-   }
-
-   if (dynamic_cast<const Skybox*>(object)) {
-      return "Skybox";
-   }
-
-   return "Object";
-}
-
-bool DoesSceneObjectTypeMatch(const Object* object, const std::string& objectType) {
-   if (!object) {
-      return false;
-   }
-
-   const std::string existingObjectType = GetSceneObjectTypeName(object);
-   return existingObjectType == objectType || (existingObjectType == "Object" && objectType == "Generic");
-}
-
-std::string BuildSceneKey(const std::string& typeName, const std::string& objectName) {
-   return typeName + ":" + (objectName.empty() ? "Object" : objectName);
-}
-
 std::string BuildDuplicateName(const std::string& name) {
    const std::string base = name.empty() ? "Object" : name;
    return base + "_Copy";
-}
-
-bool IsRegisteredParticleSystem(const ParticleSystem* particleSystem) {
-   if (!particleSystem) {
-      return false;
-   }
-
-   for (auto* registered : ParticleSystem::GetRegisteredParticleSystems()) {
-      if (registered == particleSystem) {
-         return true;
-      }
-   }
-
-   return false;
-}
-
-bool IsEditableSceneParticleSystem(const ParticleSystem* particleSystem) {
-   return particleSystem && particleSystem->IsEditorInspectable() && IsRegisteredParticleSystem(particleSystem);
 }
 
 bool IsFiniteVector(const Vector3& value) {
@@ -340,7 +155,7 @@ bool IsProjectedInsideCamera(const Camera* camera, const Vector3& worldPosition)
 }
 
 bool UsesScreenRenderSpace(const Object* object) {
-   // UITextはRenderComponentを持たない旧シーンでもTextRendererが常にスクリーン空間で描画する。
+   // UITextはTextRendererがスクリーン空間で描画する。
    if (dynamic_cast<const UIText*>(object)) {
       return true;
    }
@@ -471,7 +286,6 @@ Transform BuildScreenSpacePlacementTransform() {
 
 void EditorSceneContext::Initialize(std::string sceneName) {
    sceneName_ = sceneName.empty() ? "Scene" : std::move(sceneName);
-   hasAutoLoaded_ = false;
    isDirty_ = false;
    SetStatus("Editor scene initialized");
    selectedObject_ = nullptr;
@@ -479,24 +293,8 @@ void EditorSceneContext::Initialize(std::string sceneName) {
    commandStack_.Clear();
 
    // 前シーンの非所有ポインターや安定キーを持ち越すと別シーンのEntityへ誤適用されるため一括で破棄する。
-   hiddenSceneObjects_.clear();
-   hiddenParticleSystems_.clear();
-   hiddenSceneObjectKeys_.clear();
-   hiddenParticleSystemKeys_.clear();
-   sceneObjectKeys_.clear();
-   sceneParticleSystemKeys_.clear();
    hierarchyOrder_.clear();
    assetRegistry_.Scan();
-}
-
-void EditorSceneContext::AutoLoad() {
-   if (hasAutoLoaded_) return;
-
-   hasAutoLoaded_ = true;
-
-   // JSONを適用する前にBaseSceneが生成した実体へキーを割り当て、保存済み状態との対応を固定する。
-   RegisterSceneOwnedKeys();
-   Load();
 }
 
 void EditorSceneContext::Clear() {
@@ -511,28 +309,8 @@ void EditorSceneContext::Clear() {
    isManipulating_ = false;
    isManipulatingParticleSystem_ = false;
    commandStack_.Clear();
-   objectStore_.Clear();
-
-   // シーン所有EntityはStoreから破棄できないため、コンテキスト終了時に一時的な非表示状態だけを元へ戻す。
-   for (const Object* hiddenObject : hiddenSceneObjects_) {
-      Object* object = const_cast<Object*>(hiddenObject);
-
-      if (!object) {
-         continue;
-      }
-
-      object->Activate();
-   }
-
-   hiddenSceneObjects_.clear();
-   hiddenParticleSystems_.clear();
-   hiddenSceneObjectKeys_.clear();
-   hiddenParticleSystemKeys_.clear();
-   sceneObjectKeys_.clear();
-   sceneParticleSystemKeys_.clear();
    hierarchyOrder_.clear();
    ClearDirty();
-   SetStatus("Editor scene cleared");
 }
 
 bool EditorSceneContext::Save() {
@@ -585,196 +363,46 @@ bool EditorSceneContext::Load() {
 }
 
 nlohmann::json EditorSceneContext::SerializeToJson() {
-   nlohmann::json sceneData = nlohmann::json::object();
-   sceneData["version"] = kCurrentSceneFormatVersion;
+   auto sceneData = world_.SerializeToJson();
    sceneData["sceneName"] = sceneName_;
-
-   // Editor生成物とBaseScene所有物は寿命が異なるため、復元可能な所有物と差分適用対象を別配列へ保存する。
-   sceneData["objects"] = objectStore_.SerializeAll();
-   sceneData["sceneObjects"] = SerializeSceneObjects();
-   sceneData["sceneParticleSystems"] = SerializeSceneParticleSystems();
    sceneData["hierarchyOrder"] = nlohmann::json::array();
 
    for (const Object* object : CollectEditableObjects()) {
-      if (object && !object->GetEntityId().empty()) {
-         sceneData["hierarchyOrder"].push_back(object->GetEntityId());
-      }
+      sceneData["hierarchyOrder"].push_back(object->GetEntityId());
    }
 
-   sceneData["cameras"] = SerializeCameras();
-
-   // シーンライトはLightComponentとしてobjects/sceneObjectsへ保存し、環境設定との二重所有を避ける。
-   sceneData["environment"] = nlohmann::json::object();
-   sceneData["renderSettings"] = EngineContext::SerializePostProcessSceneState();
    return sceneData;
 }
 
 bool EditorSceneContext::LoadFromJson(const nlohmann::json& sceneData) {
-   if (!IsValidSceneSnapshot(sceneData)) {
+   if (!SceneWorld::IsValidSnapshot(sceneData)) {
       SetStatus("Load failed: invalid scene structure or reference type", Logger::LogLevel::Error);
       return false;
    }
 
-   const auto backup = SerializeToJson();
-   const std::string selectedObjectId = GetObjectIdForCommand(GetSelectedObject());
-   const std::string selectedParticleId = GetParticleSystemIdForCommand(GetSelectedParticleSystem());
-   const bool wasDirty = isDirty_;
-   const bool wereReferencesDirty = referencesDirty_;
-   auto history = std::move(commandStack_);
-   commandStack_.Clear();
-   bool entitiesChanged = false;
-   std::string failure;
-   try {
-      if (ApplySceneSnapshot(sceneData, entitiesChanged)) {
-         ClearDirty();
-         SetStatus("Loaded scene snapshot");
-         return true;
-      }
-
-      failure = lastStatusMessage_;
-   } catch (const std::exception& error) {
-      failure = "Load failed while restoring scene data: " + std::string(error.what());
-   }
-
-   bool restored = !entitiesChanged;
-
-   if (entitiesChanged) {
-      // Component固有の復元失敗も一度だけ元の完全状態へ戻す。再帰Loadと履歴の再実行は行わない。
-      try {
-         bool rollbackChanged = false;
-         restored = ApplySceneSnapshot(backup, rollbackChanged);
-      } catch (const std::exception&) {
-         restored = false;
-      }
-   }
-
-   if (restored) {
-      commandStack_ = std::move(history);
-      isDirty_ = wasDirty;
-      referencesDirty_ = wereReferencesDirty;
-      selectedObject_ = nullptr;
-
-      for (auto* object : CollectEditableObjects()) {
-         if (object && object->GetEntityId() == selectedObjectId) {
-            selectedObject_ = object;
-            break;
-         }
-      }
-
-      selectedParticleSystem_ = FindParticleForCommand(selectedParticleId);
-      SetStatus(
-         failure.empty() ? "Load failed: scene could not be restored" : std::move(failure), Logger::LogLevel::Error);
-   } else {
-      MarkDirty();
-      SetStatus(
-         failure + "; recovery failed because previous resources could not be restored", Logger::LogLevel::Error);
-   }
-
-   return false;
-}
-
-bool EditorSceneContext::ApplySceneSnapshot(const nlohmann::json& sceneData, bool& entitiesChanged) {
-   // Rendererは自身の設定を検証する。Entityを破棄する前に適用可否を確定させる。
-   if (sceneData.contains("renderSettings") && !sceneData.at("renderSettings").empty() &&
-       !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
-      SetStatus("Load failed: invalid render settings", Logger::LogLevel::Error);
-      return false;
-   }
-
-   entitiesChanged = true;
-
-   // Storeの再構築でポインターが無効になり得るため、選択と履歴を先に切り離してから状態を入れ替える。
+   const std::string objectId = GetObjectIdForCommand(GetSelectedObject());
+   const std::string particleId = GetParticleSystemIdForCommand(GetSelectedParticleSystem());
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
    manipulatingObject_ = nullptr;
    manipulatingParticleSystem_ = nullptr;
    isManipulating_ = false;
    isManipulatingParticleSystem_ = false;
-   RegisterSceneOwnedKeys();
-   objectStore_.Clear();
+   ++editRevision_;
 
-   // 同じスナップショット内の安定IDを再利用するため、旧Store所有物をグローバルEntity索引からも先に解放する。
-   objectStore_.FlushDeferredDeletes();
-   hiddenSceneObjects_.clear();
-   hiddenParticleSystems_.clear();
-   hiddenSceneObjectKeys_.clear();
-   hiddenParticleSystemKeys_.clear();
-   hierarchyOrder_.clear();
-
-   if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
-      for (const auto& objectData : sceneData.at("objects")) {
-         // DataDrivenSceneではobjectsもSceneWorldが既に所有するため、Reload時は同じ実体を更新して二重所有を避ける。
-         if (objectData.is_object()) {
-            const std::string objectId = objectData.value("id", "");
-            const std::string objectType = objectData.value("objectType", "Model");
-
-            if (auto* sceneWorld = SceneWorld::GetCurrent()) {
-               Object* existingObject = sceneWorld->FindObjectById(objectId);
-               ParticleSystem* existingParticleSystem = sceneWorld->FindParticleSystemById(objectId);
-
-               if (existingObject || existingParticleSystem) {
-                  const bool isParticleSystemData = objectType == "ParticleSystem";
-
-                  if (isParticleSystemData && existingParticleSystem && !existingObject) {
-                     // 新規復元と同じ初期状態に揃え、旧設定で生成済みの粒子を残さない。
-                     existingParticleSystem->Stop();
-
-                     if (!objectStore_.ApplyParticleSystemState(existingParticleSystem, objectData)) {
-                        return false;
-                     }
-
-                     existingParticleSystem->Play();
-                  } else if (!isParticleSystemData && existingObject && !existingParticleSystem &&
-                             DoesSceneObjectTypeMatch(existingObject, objectType)) {
-                     if (!objectStore_.ApplyObjectState(existingObject, objectData)) {
-                        return false;
-                     }
-                  } else {
-                     SetStatus("Load failed: conflicting object type or id " + objectId, Logger::LogLevel::Error);
-                     return false;
-                  }
-
-                  continue;
-               }
-            }
-         }
-
-         const bool isParticle = objectData.value("objectType", "Model") == "ParticleSystem";
-
-         if (isParticle ? objectStore_.RestoreParticleSystem(objectData) == nullptr
-                        : objectStore_.RestoreObject(objectData) == nullptr) {
-            SetStatus("Load failed: could not restore asset for object " + objectData.value("id", ""),
-               Logger::LogLevel::Error);
-            return false;
-         }
-      }
+   // 初回ロードと同じ復元経路を使い、失敗時の復旧もWorldへ任せる。
+   if (!world_.LoadFromJson(sceneData)) {
+      selectedObject_ = world_.FindObjectById(objectId);
+      selectedParticleSystem_ = world_.FindParticleSystemById(particleId);
+      SetStatus("Load failed: could not restore scene snapshot", Logger::LogLevel::Error);
+      return false;
    }
 
-   if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
-      if (!ApplySceneObjects(sceneData.at("sceneObjects"))) {
-         SetStatus("Load failed: scene-owned object state has conflicting type", Logger::LogLevel::Error);
-         return false;
-      }
-   }
-
-   if (sceneData.contains("sceneParticleSystems") && sceneData.at("sceneParticleSystems").is_array()) {
-      if (!ApplySceneParticleSystems(sceneData.at("sceneParticleSystems"))) {
-         SetStatus("Load failed: scene-owned particle state could not be applied", Logger::LogLevel::Error);
-         return false;
-      }
-   }
-
-   if (sceneData.contains("cameras") && sceneData.at("cameras").is_object()) {
-      ApplyCameras(sceneData.at("cameras"));
-   }
-
+   commandStack_.Clear();
    ApplyHierarchyOrder(sceneData.value("hierarchyOrder", nlohmann::json::array()));
-
-   // 全Entityとカメラの復元後に通知し、旧実体へのキャッシュやID参照を再構築する。
-   if (auto* sceneWorld = SceneWorld::GetCurrent()) {
-      sceneWorld->ResolveReferences(CollectEditableObjects());
-   }
-
+   referencesDirty_ = false;
+   ClearDirty();
+   SetStatus("Loaded scene snapshot");
    return true;
 }
 
@@ -820,10 +448,8 @@ void EditorSceneContext::MarkDirty() {
 void EditorSceneContext::RefreshReferences(bool initializeRuntime) {
    if (!referencesDirty_ && !initializeRuntime) return;
 
-   if (auto* world = SceneWorld::GetCurrent()) {
-      world->ResolveReferences(CollectEditableObjects(), initializeRuntime);
-      referencesDirty_ = false;
-   }
+   world_.ResolveReferences(CollectEditableObjects(), initializeRuntime);
+   referencesDirty_ = false;
 }
 
 void EditorSceneContext::ClearDirty() {
@@ -844,11 +470,11 @@ std::vector<Object*> EditorSceneContext::CollectEditableObjects() {
 
 std::vector<const Object*> EditorSceneContext::CollectEditableObjects() const {
    std::vector<const Object*> objects;
-   const auto& registeredObjects = Object::GetRegisteredObjects();
+   const auto registeredObjects = Store().GetObjects();
    objects.reserve(registeredObjects.size());
 
-   for (Object* object : registeredObjects) {
-      if (object && !hiddenSceneObjects_.contains(object) && !objectStore_.IsPendingDeletion(object)) {
+   for (const Object* object : registeredObjects) {
+      if (object != nullptr) {
          objects.push_back(object);
       }
    }
@@ -892,17 +518,7 @@ std::vector<ParticleSystem*> EditorSceneContext::CollectEditableParticleSystems(
 }
 
 std::vector<const ParticleSystem*> EditorSceneContext::CollectEditableParticleSystems() const {
-   std::vector<const ParticleSystem*> particleSystems;
-   const auto& registered = ParticleSystem::GetRegisteredParticleSystems();
-   particleSystems.reserve(registered.size());
-
-   for (auto* particleSystem : registered) {
-      if (IsEditableSceneParticleSystem(particleSystem) && !hiddenParticleSystems_.contains(particleSystem)) {
-         particleSystems.push_back(particleSystem);
-      }
-   }
-
-   return particleSystems;
+   return Store().GetParticleSystems();
 }
 
 void EditorSceneContext::SelectObject(Object* object) {
@@ -1013,8 +629,7 @@ bool EditorSceneContext::CanDeleteObject(const Object* object) const {
 }
 
 bool EditorSceneContext::CanDeleteParticleSystem(const ParticleSystem* particleSystem) const {
-   return particleSystem && IsParticleSystemAlive(particleSystem) &&
-          (objectStore_.Contains(particleSystem) || IsEditableSceneParticleSystem(particleSystem));
+   return particleSystem && IsParticleSystemAlive(particleSystem) && Store().Contains(particleSystem);
 }
 
 void EditorSceneContext::CreateEmptyObject() {
@@ -1106,13 +721,7 @@ bool EditorSceneContext::PlaceAsset(const std::string& assetId, Object* parent) 
 void EditorSceneContext::DuplicateSelectedObject() {
    if (IsParticleSystemAlive(selectedParticleSystem_)) {
       // 複製もUndo可能にするため、具象型を直接コピーせず復元可能なスナップショットへ統一する。
-      nlohmann::json snapshot;
-
-      if (const std::string particleId = objectStore_.GetId(selectedParticleSystem_); !particleId.empty()) {
-         snapshot = objectStore_.SerializeObject(particleId);
-      } else if (IsEditableSceneParticleSystem(selectedParticleSystem_)) {
-         snapshot = objectStore_.SerializeParticleSystemState(selectedParticleSystem_);
-      }
+      auto snapshot = GetParticleSnapshot(selectedParticleSystem_);
 
       if (!snapshot.is_object() || snapshot.empty()) {
          SetStatus("Duplicate failed: selected particle cannot be duplicated", Logger::LogLevel::Warning);
@@ -1137,13 +746,7 @@ void EditorSceneContext::DuplicateSelectedObject() {
       return;
    }
 
-   nlohmann::json snapshot;
-
-   if (const std::string objectId = objectStore_.GetId(selectedObject_); !objectId.empty()) {
-      snapshot = objectStore_.SerializeObject(objectId);
-   } else {
-      snapshot = objectStore_.SerializeObjectState(selectedObject_);
-   }
+   auto snapshot = GetObjectSnapshot(selectedObject_);
 
    if (!snapshot.is_object() || snapshot.empty()) {
       SetStatus("Duplicate failed: selected object cannot be duplicated", Logger::LogLevel::Warning);
@@ -1158,7 +761,6 @@ void EditorSceneContext::DuplicateSelectedObject() {
 void EditorSceneContext::DeleteObject(Object* object) {
    if (!CanDeleteObject(object)) return;
 
-   RegisterSceneOwnedKeys();
    CommitEdit(std::make_unique<DeleteObjectCommand>(object->GetEntityId()));
 }
 
@@ -1210,19 +812,19 @@ void EditorSceneContext::DrawGizmoInspectorControls() {
 
    const char* operationLabels[] = {ImGuiHelper::Localize({"移動", "Move"}), ImGuiHelper::Localize({"回転", "Rotate"}),
       ImGuiHelper::Localize({"拡縮", "Scale"})};
-   int operation = static_cast<int>(gizmoOperation_);
+   std::int32_t operation = static_cast<std::int32_t>(gizmoOperation_);
 
    if (ImGui::Combo(ImGuiHelper::Localize({"操作", "Operation"}), &operation, operationLabels,
-          static_cast<int>(std::size(operationLabels)))) {
+          static_cast<std::int32_t>(std::size(operationLabels)))) {
       gizmoOperation_ = static_cast<GizmoOperation>(operation);
    }
 
    const char* modeLabels[] = {
       ImGuiHelper::Localize({"ローカル", "Local"}), ImGuiHelper::Localize({"ワールド", "World"})};
-   int mode = static_cast<int>(gizmoMode_);
+   std::int32_t mode = static_cast<std::int32_t>(gizmoMode_);
 
-   if (ImGui::Combo(
-          ImGuiHelper::Localize({"空間", "Mode"}), &mode, modeLabels, static_cast<int>(std::size(modeLabels)))) {
+   if (ImGui::Combo(ImGuiHelper::Localize({"空間", "Mode"}), &mode, modeLabels,
+          static_cast<std::int32_t>(std::size(modeLabels)))) {
       gizmoMode_ = static_cast<GizmoMode>(mode);
    }
 }
@@ -1495,378 +1097,6 @@ bool EditorSceneContext::IsParticleSystemAlive(const ParticleSystem* particleSys
    return std::find(particleSystems.begin(), particleSystems.end(), particleSystem) != particleSystems.end();
 }
 
-void EditorSceneContext::RegisterSceneOwnedKeys() {
-   // ポインターや表示名だけでは再起動後に対応できないため、シーン所有物へ保存用の安定キーを割り当てる。
-   std::unordered_set<std::string> usedObjectKeys;
-
-   for (const auto& [object, key] : sceneObjectKeys_) {
-      if (object && !key.empty()) {
-         usedObjectKeys.insert(key);
-      }
-   }
-
-   auto registerObject = [&](Object* object) {
-      if (!object || objectStore_.Contains(object) || objectStore_.IsPendingDeletion(object) ||
-          sceneObjectKeys_.contains(object))
-         return;
-
-      const std::string& entityId = object->GetEntityId();
-      const std::string baseKey = entityId.rfind("runtime_entity_", 0) == 0
-                                     ? BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName())
-                                     : entityId;
-      std::string key = baseKey;
-      int suffix = 2;
-
-      while (usedObjectKeys.contains(key)) {
-         key = baseKey + "#" + std::to_string(suffix++);
-      }
-
-      usedObjectKeys.insert(key);
-
-      if (object->GetEntityId().rfind("runtime_entity_", 0) == 0) {
-         // 一時IDは起動ごとに変わるので、初回登録時にシーン内で再現可能なキーへ置換する。
-         object->SetEntityId(key);
-      }
-
-      sceneObjectKeys_[object] = key;
-   };
-
-   for (Object* object : Object::GetRegisteredObjects()) {
-      registerObject(object);
-   }
-
-   for (auto it = sceneParticleSystemKeys_.begin(); it != sceneParticleSystemKeys_.end();) {
-      if (!IsEditableSceneParticleSystem(it->first) || objectStore_.Contains(it->first)) {
-         it = sceneParticleSystemKeys_.erase(it);
-      } else {
-         ++it;
-      }
-   }
-
-   for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
-      if (!IsEditableSceneParticleSystem(particleSystem) || objectStore_.Contains(particleSystem) ||
-          sceneParticleSystemKeys_.contains(particleSystem)) {
-         continue;
-      }
-
-      std::unordered_set<std::string> usedParticleKeys;
-
-      for (const auto& [registeredParticleSystem, key] : sceneParticleSystemKeys_) {
-         if (registeredParticleSystem && !key.empty()) {
-            usedParticleKeys.insert(key);
-         }
-      }
-
-      const std::string baseKey = BuildSceneKey("ParticleSystem", particleSystem->GetName());
-      std::string key = baseKey;
-      int suffix = 2;
-
-      while (usedParticleKeys.contains(key)) {
-         key = baseKey + "#" + std::to_string(suffix++);
-      }
-
-      usedParticleKeys.insert(key);
-      sceneParticleSystemKeys_[particleSystem] = key;
-   }
-}
-
-std::string EditorSceneContext::EnsureSceneObjectKey(const Object* object) {
-   if (!object) {
-      return {};
-   }
-
-   RegisterSceneOwnedKeys();
-   auto it = sceneObjectKeys_.find(object);
-   return it == sceneObjectKeys_.end() ? std::string{} : it->second;
-}
-
-std::string EditorSceneContext::EnsureSceneParticleSystemKey(const ParticleSystem* particleSystem) {
-   if (!particleSystem) {
-      return {};
-   }
-
-   RegisterSceneOwnedKeys();
-   auto it = sceneParticleSystemKeys_.find(particleSystem);
-   return it == sceneParticleSystemKeys_.end() ? std::string{} : it->second;
-}
-
-Object* EditorSceneContext::FindSceneObjectByKey(const std::string& key) const {
-   if (key.empty()) {
-      return nullptr;
-   }
-
-   auto isRegistered = [](const Object* object) {
-      const auto& registeredObjects = Object::GetRegisteredObjects();
-      return std::find(registeredObjects.begin(), registeredObjects.end(), object) != registeredObjects.end();
-   };
-
-   for (const auto& [object, objectKey] : sceneObjectKeys_) {
-      if (objectKey == key && object && !objectStore_.Contains(object) && isRegistered(object)) {
-         return const_cast<Object*>(object);
-      }
-   }
-
-   return nullptr;
-}
-
-ParticleSystem* EditorSceneContext::FindSceneParticleSystemByKey(const std::string& key) const {
-   if (key.empty()) {
-      return nullptr;
-   }
-
-   for (const auto& [particleSystem, particleKey] : sceneParticleSystemKeys_) {
-      if (particleKey == key && IsEditableSceneParticleSystem(particleSystem) &&
-          !objectStore_.Contains(particleSystem)) {
-         return const_cast<ParticleSystem*>(particleSystem);
-      }
-   }
-
-   return nullptr;
-}
-
-nlohmann::json EditorSceneContext::SerializeSceneObjects() {
-   RegisterSceneOwnedKeys();
-
-   nlohmann::json sceneObjects = nlohmann::json::array();
-   std::unordered_set<std::string> emittedKeys;
-
-   for (Object* object : CollectEditableObjects()) {
-      if (!object || objectStore_.Contains(object)) {
-         continue;
-      }
-
-      const std::string key = EnsureSceneObjectKey(object);
-
-      if (key.empty()) {
-         continue;
-      }
-
-      nlohmann::json entry = nlohmann::json::object();
-      entry["sceneKey"] = key;
-      entry["deleted"] = false;
-      entry["object"] = objectStore_.SerializeObjectState(object, key);
-      sceneObjects.push_back(std::move(entry));
-      emittedKeys.insert(key);
-   }
-
-   // 実体が列挙から消えても削除意図を次回ロードへ伝えるため、キーだけの墓標を出力する。
-   for (const auto& key : hiddenSceneObjectKeys_) {
-      if (key.empty() || emittedKeys.contains(key)) {
-         continue;
-      }
-
-      sceneObjects.push_back(nlohmann::json{{"sceneKey", key}, {"deleted", true}});
-   }
-
-   return sceneObjects;
-}
-
-nlohmann::json EditorSceneContext::SerializeSceneParticleSystems() {
-   RegisterSceneOwnedKeys();
-
-   nlohmann::json sceneParticleSystems = nlohmann::json::array();
-   std::unordered_set<std::string> emittedKeys;
-
-   for (ParticleSystem* particleSystem : CollectEditableParticleSystems()) {
-      if (!IsEditableSceneParticleSystem(particleSystem) || objectStore_.Contains(particleSystem)) {
-         continue;
-      }
-
-      const std::string key = EnsureSceneParticleSystemKey(particleSystem);
-
-      if (key.empty()) {
-         continue;
-      }
-
-      nlohmann::json entry = nlohmann::json::object();
-      entry["sceneKey"] = key;
-      entry["deleted"] = false;
-      entry["particleSystem"] = objectStore_.SerializeParticleSystemState(particleSystem, key);
-      sceneParticleSystems.push_back(std::move(entry));
-      emittedKeys.insert(key);
-   }
-
-   for (const auto& key : hiddenParticleSystemKeys_) {
-      if (key.empty() || emittedKeys.contains(key)) {
-         continue;
-      }
-
-      sceneParticleSystems.push_back(nlohmann::json{{"sceneKey", key}, {"deleted", true}});
-   }
-
-   return sceneParticleSystems;
-}
-
-nlohmann::json EditorSceneContext::SerializeCameras() const {
-   nlohmann::json camerasData = nlohmann::json::object();
-
-   CinemachineBrain* brain = EngineContext::GetActiveBrain();
-
-   if (!brain) {
-      return camerasData;
-   }
-
-   camerasData["brain"] = nlohmann::json{{"defaultBlendTime", brain->GetDefaultBlendTime()}};
-
-   nlohmann::json virtualCameras = nlohmann::json::array();
-   const auto& registeredCameras = brain->GetVirtualCameras();
-
-   for (size_t index = 0; index < registeredCameras.size(); ++index) {
-      VirtualCamera* camera = registeredCameras[index];
-
-      if (!camera || camera->GetName() == "DebugCamera") {
-         continue;
-      }
-
-      nlohmann::json cameraData = camera->Serialize();
-      cameraData["index"] = index;
-      virtualCameras.push_back(std::move(cameraData));
-   }
-
-   camerasData["virtualCameras"] = std::move(virtualCameras);
-   return camerasData;
-}
-
-bool EditorSceneContext::ApplySceneObjects(const nlohmann::json& sceneObjectsData) {
-   if (!sceneObjectsData.is_array()) {
-      return false;
-   }
-
-   RegisterSceneOwnedKeys();
-
-   for (const auto& entry : sceneObjectsData) {
-      if (!entry.is_object()) {
-         continue;
-      }
-
-      const std::string key = entry.value("sceneKey", "");
-
-      if (key.empty()) {
-         continue;
-      }
-
-      // BaseSceneが生成した実体へ差分を適用し、ここでは所有権を持つ新規Entityを作らない。
-      Object* object = FindSceneObjectByKey(key);
-
-      if (entry.value("deleted", false)) {
-         hiddenSceneObjectKeys_.insert(key);
-
-         if (object) {
-            hiddenSceneObjects_.insert(object);
-
-            // 保存済みの削除もUI削除と同じく全Componentを停止する。ライトや音声の副作用も解除する。
-            object->Deactivate();
-         }
-
-         continue;
-      }
-
-      if (!object) {
-         SetStatus("Load warning: scene object not found for key " + key, Logger::LogLevel::Warning);
-         continue;
-      }
-
-      hiddenSceneObjects_.erase(object);
-      hiddenSceneObjectKeys_.erase(key);
-
-      if (entry.contains("object") && entry.at("object").is_object()) {
-         if (!objectStore_.ApplyObjectState(object, entry.at("object"))) {
-            return false;
-         }
-      }
-   }
-
-   return true;
-}
-
-bool EditorSceneContext::ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData) {
-   if (!sceneParticlesData.is_array()) {
-      return false;
-   }
-
-   RegisterSceneOwnedKeys();
-
-   for (const auto& entry : sceneParticlesData) {
-      if (!entry.is_object()) {
-         continue;
-      }
-
-      const std::string key = entry.value("sceneKey", "");
-
-      if (key.empty()) {
-         continue;
-      }
-
-      ParticleSystem* particleSystem = FindSceneParticleSystemByKey(key);
-
-      if (entry.value("deleted", false)) {
-         hiddenParticleSystemKeys_.insert(key);
-
-         if (particleSystem) {
-            hiddenParticleSystems_.insert(particleSystem);
-            particleSystem->Stop();
-         }
-
-         continue;
-      }
-
-      if (!particleSystem) {
-         SetStatus("Load warning: scene particle system not found for key " + key, Logger::LogLevel::Warning);
-         continue;
-      }
-
-      hiddenParticleSystems_.erase(particleSystem);
-      hiddenParticleSystemKeys_.erase(key);
-
-      if (entry.contains("particleSystem") && entry.at("particleSystem").is_object()) {
-         // 削除差分で停止していた場合も、保存済みの生存状態へ戻して旧粒子を残さず再開する。
-         particleSystem->Stop();
-
-         if (!objectStore_.ApplyParticleSystemState(particleSystem, entry.at("particleSystem"))) {
-            return false;
-         }
-
-         particleSystem->Play();
-      }
-   }
-
-   return true;
-}
-
-void EditorSceneContext::ApplyCameras(const nlohmann::json& camerasData) {
-   if (auto* world = SceneWorld::GetCurrent()) {
-      world->ApplyCameraConfiguration(camerasData);
-   }
-}
-
-void EditorSceneContext::HideSceneOwnedObject(Object* object) {
-   if (!object) return;
-
-   const std::string key = EnsureSceneObjectKey(object);
-
-   if (!key.empty()) {
-      hiddenSceneObjectKeys_.insert(key);
-   }
-
-   hiddenSceneObjects_.insert(object);
-
-   // RenderComponentだけでなく更新系Componentも止め、削除済みEntityが副作用を発生させないようにする。
-   object->Deactivate();
-}
-
-void EditorSceneContext::HideSceneOwnedParticleSystem(ParticleSystem* particleSystem) {
-   if (!particleSystem) return;
-
-   const std::string key = EnsureSceneParticleSystemKey(particleSystem);
-
-   if (!key.empty()) {
-      hiddenParticleSystemKeys_.insert(key);
-   }
-
-   hiddenParticleSystems_.insert(particleSystem);
-   particleSystem->Stop();
-}
-
 bool EditorSceneContext::HasTransformChanged(const Transform& lhs, const Transform& rhs) const {
    // 行列の分解誤差で空のギズモ操作が履歴化されないよう、編集精度より小さい差を無視する。
    constexpr float kEpsilon = 0.0001f;
@@ -1934,16 +1164,11 @@ std::string EditorSceneContext::GetObjectIdForCommand(const Object* object) cons
 }
 
 std::string EditorSceneContext::GetParticleSystemIdForCommand(const ParticleSystem* particleSystem) {
-   const auto id = objectStore_.GetId(particleSystem);
-   return id.empty() ? EnsureSceneParticleSystemKey(particleSystem) : id;
+   return Store().GetId(particleSystem);
 }
 
 ParticleSystem* EditorSceneContext::FindParticleForCommand(const std::string& id) const {
-   if (auto* particle = const_cast<ParticleSystem*>(objectStore_.FindParticleById(id))) {
-      return particle;
-   }
-
-   return FindSceneParticleSystemByKey(id);
+   return const_cast<ParticleSystem*>(Store().FindParticleById(id));
 }
 
 void EditorSceneContext::SetStatus(std::string message, Logger::LogLevel level) {
@@ -1998,22 +1223,12 @@ void EditorSceneContext::ApplyDuplicateOffset(nlohmann::json& snapshot) const {
 }
 
 nlohmann::json EditorSceneContext::GetObjectSnapshot(const Object* object) {
-   RegisterSceneOwnedKeys();
-   return IsObjectAlive(object) ? objectStore_.SerializeObjectState(object) : nlohmann::json::object();
+   return IsObjectAlive(object) ? Store().SerializeObjectState(object) : nlohmann::json::object();
 }
 
 nlohmann::json EditorSceneContext::GetParticleSnapshot(const ParticleSystem* particleSystem) {
-   if (!IsParticleSystemAlive(particleSystem)) {
-      return nlohmann::json::object();
-   }
-
-   const auto id = GetParticleSystemIdForCommand(particleSystem);
-
-   if (objectStore_.Contains(particleSystem)) {
-      return objectStore_.SerializeObject(id);
-   }
-
-   return objectStore_.SerializeParticleSystemState(particleSystem, id);
+   return IsParticleSystemAlive(particleSystem) ? Store().SerializeObject(Store().GetId(particleSystem))
+                                                : nlohmann::json::object();
 }
 
 bool EditorSceneContext::CommitObjectEdit(
@@ -2094,7 +1309,7 @@ nlohmann::json EditorSceneContext::CommandOperations::Create(CreateObjectCommand
    }
 
    using Kind = CreateObjectCommand::Kind;
-   auto& store = owner_.objectStore_;
+   auto& store = owner_.Store();
 
    if (kind == Kind::Particle) {
       auto* particle =
@@ -2178,49 +1393,19 @@ bool EditorSceneContext::CommandOperations::Remove(const std::string& id, bool p
 
    if (particle) {
       auto* found = owner_.FindParticleForCommand(id);
-      removed.sceneOwned = !owner_.objectStore_.Contains(found);
       removed.wasPlaying = found->IsPlaying();
-
-      if (owner_.GetSelectedParticleSystem() == found) {
-         owner_.SelectParticleSystem(nullptr);
-      }
-
-      if (!removed.sceneOwned) {
-         return owner_.objectStore_.DeleteParticleSystem(id);
-      }
-
-      removed.sceneKey = owner_.EnsureSceneParticleSystemKey(found);
-      owner_.HideSceneOwnedParticleSystem(found);
-      return true;
+      owner_.SelectParticleSystem(nullptr);
+      return owner_.Store().DeleteParticleSystem(id);
    }
 
-   auto* object = ResolveObject(id);
-   removed.sceneOwned = !owner_.objectStore_.Contains(object);
-
    for (auto* child : owner_.CollectEditableObjects()) {
-      if (child && child->GetParentEntityId() == id) {
+      if (child->GetParentEntityId() == id) {
          removed.childIds.push_back(child->GetEntityId());
       }
    }
 
-   if (owner_.GetSelectedObject() == object) {
-      owner_.SelectObject(nullptr);
-   }
-
-   if (!removed.sceneOwned) {
-      return owner_.objectStore_.DeleteObject(id);
-   }
-
-   removed.sceneKey = owner_.EnsureSceneObjectKey(object);
-   owner_.HideSceneOwnedObject(object);
-
-   for (const auto& childId : removed.childIds) {
-      if (auto* child = ResolveObject(childId)) {
-         child->SetParentEntityId({});
-      }
-   }
-
-   return true;
+   owner_.SelectObject(nullptr);
+   return owner_.Store().DeleteObject(id);
 }
 
 bool EditorSceneContext::CommandOperations::Restore(const RemovedEditorEntity& removed, bool particle) {
@@ -2229,20 +1414,7 @@ bool EditorSceneContext::CommandOperations::Restore(const RemovedEditorEntity& r
    }
 
    if (particle) {
-      ParticleSystem* found = nullptr;
-
-      if (removed.sceneOwned) {
-         found = owner_.FindSceneParticleSystemByKey(removed.sceneKey);
-
-         if (!found || !owner_.objectStore_.ApplyParticleSystemState(found, removed.snapshot)) {
-            return false;
-         }
-
-         owner_.hiddenParticleSystems_.erase(found);
-         owner_.hiddenParticleSystemKeys_.erase(removed.sceneKey);
-      } else {
-         found = owner_.objectStore_.RestoreParticleSystem(removed.snapshot);
-      }
+      auto* found = owner_.Store().RestoreParticleSystem(removed.snapshot);
 
       if (!found) {
          return false;
@@ -2258,26 +1430,12 @@ bool EditorSceneContext::CommandOperations::Restore(const RemovedEditorEntity& r
       return true;
    }
 
-   Object* object = nullptr;
-
-   if (removed.sceneOwned) {
-      object = owner_.FindSceneObjectByKey(removed.sceneKey);
-
-      if (!object || !owner_.objectStore_.ApplyObjectState(object, removed.snapshot)) {
-         return false;
-      }
-
-      owner_.hiddenSceneObjects_.erase(object);
-      owner_.hiddenSceneObjectKeys_.erase(removed.sceneKey);
-   } else {
-      object = owner_.objectStore_.RestoreObject(removed.snapshot);
-   }
+   auto* object = owner_.Store().RestoreObject(removed.snapshot);
 
    if (!object) {
       return false;
    }
 
-   // 遅延破棄が解除した子の親IDも戻し、削除前と同じ階層を一回のUndoで復元する。
    for (const auto& childId : removed.childIds) {
       if (auto* child = ResolveObject(childId)) {
          child->SetParentEntityId(object->GetEntityId());
@@ -2292,11 +1450,11 @@ bool EditorSceneContext::CommandOperations::ApplySnapshot(
    const std::string& id, const nlohmann::json& snapshot, bool particle) {
    if (particle) {
       auto* found = owner_.FindParticleForCommand(id);
-      return found && owner_.objectStore_.ApplyParticleSystemState(found, snapshot);
+      return found && owner_.Store().ApplyParticleSystemState(found, snapshot);
    }
 
    auto* found = ResolveObject(id);
-   return found && owner_.objectStore_.ApplyObjectState(found, snapshot);
+   return found && owner_.Store().ApplyObjectState(found, snapshot);
 }
 
 bool EditorSceneContext::CommandOperations::ApplyPose(const std::string& id, const Transform& pose, bool particle) {
@@ -2331,7 +1489,7 @@ bool EditorSceneContext::CommandOperations::Reorder(
 nlohmann::json EditorSceneContext::CommandOperations::RestoreSnapshot(const nlohmann::json& snapshot) {
    // ParticleSystemはObject階層外で別ストアに登録されるため、種別を見て復元経路を分ける。
    if (snapshot.value("objectType", "Model") == "ParticleSystem") {
-      auto* found = owner_.objectStore_.RestoreParticleSystem(snapshot);
+      auto* found = owner_.Store().RestoreParticleSystem(snapshot);
 
       if (!found) {
          return {};
@@ -2342,7 +1500,7 @@ nlohmann::json EditorSceneContext::CommandOperations::RestoreSnapshot(const nloh
       return owner_.GetParticleSnapshot(found);
    }
 
-   auto* found = owner_.objectStore_.RestoreObject(snapshot);
+   auto* found = owner_.Store().RestoreObject(snapshot);
 
    if (!found) {
       return {};
@@ -2398,7 +1556,7 @@ void EditorSceneContext::FinishEditingFrame() {
       isManipulatingParticleSystem_ = false;
    }
 
-   objectStore_.FlushDeferredDeletes();
+   Store().FlushDeferredDeletes();
 }
 
 void EditorSceneContext::RefreshAssets() {
@@ -2407,4 +1565,18 @@ void EditorSceneContext::RefreshAssets() {
 
 } // namespace GameEngine
 
+#endif
+
+#ifdef USE_IMGUI
+namespace GameEngine {
+
+ParticleSystem* EditorSceneContext::GetSelectedParticleSystem() {
+   return IsParticleSystemAlive(selectedParticleSystem_) ? selectedParticleSystem_ : nullptr;
+}
+
+const ParticleSystem* EditorSceneContext::GetSelectedParticleSystem() const {
+   return IsParticleSystemAlive(selectedParticleSystem_) ? selectedParticleSystem_ : nullptr;
+}
+
+} // namespace GameEngine
 #endif

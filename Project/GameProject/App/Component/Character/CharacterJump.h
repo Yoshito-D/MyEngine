@@ -48,23 +48,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.jumpStrength = jumpStrength;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.jumpStrength)) {
-         settings.jumpStrength = defaults.jumpStrength;
-      }
-
-      jumpStrength = settings.jumpStrength;
-   }
+   void Configure(const Settings& requested);
 
 private:
    float jumpStrength = 5.0f;

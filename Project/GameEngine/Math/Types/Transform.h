@@ -24,29 +24,13 @@ struct Transform {
    Transform() = default;
 
    /// @brief 姿勢を採用する境界で、位置と拡縮が有限値か一括検証する。ゼロ・負の拡縮も許可する。
-   bool IsFinite() const {
-      return std::isfinite(translation.x) && std::isfinite(translation.y) && std::isfinite(translation.z) &&
-             std::isfinite(scale.x) && std::isfinite(scale.y) && std::isfinite(scale.z);
-   }
+   bool IsFinite() const;
 
    /// @brief 有限なEuler角を姿勢へ変換して適用する。
-   void SetRotationEuler(const Vector3& euler) {
-      if (!std::isfinite(euler.x) || !std::isfinite(euler.y) || !std::isfinite(euler.z)) return;
-
-      orientation_ = EulerToQuaternion(euler);
-      serializeAsQuaternion_ = false;
-   }
+   void SetRotationEuler(const Vector3& euler);
 
    /// @brief 有限かつ非零のQuaternionを正規化して姿勢へ適用する。
-   void SetRotationQuaternion(const Quaternion& quaternion) {
-      const float squared = quaternion.x * quaternion.x + quaternion.y * quaternion.y + quaternion.z * quaternion.z +
-                            quaternion.w * quaternion.w;
-
-      if (!std::isfinite(squared) || squared < 1.0e-12f) return;
-
-      orientation_ = quaternion.Normalize();
-      serializeAsQuaternion_ = true;
-   }
+   void SetRotationQuaternion(const Quaternion& quaternion);
 
    /// @brief 保存時にQuaternion表現を優先するか調べる。計算の正本は常にQuaternion。
    bool IsUsingQuaternion() const { return serializeAsQuaternion_; }

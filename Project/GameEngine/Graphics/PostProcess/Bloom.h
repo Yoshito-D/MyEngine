@@ -38,25 +38,13 @@ public:
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetThreshold(float threshold) {
-      threshold_ = threshold;
-      UpdateConstantBuffer();
-   }
+   void SetThreshold(float threshold);
 
-   void SetIntensity(float intensity) {
-      intensity_ = intensity;
-      UpdateConstantBuffer();
-   }
+   void SetIntensity(float intensity);
 
-   void SetBlurRadius(float radius) {
-      blurRadius_ = radius;
-      UpdateConstantBuffer();
-   }
+   void SetBlurRadius(float radius);
 
-   void SetSoftThreshold(float softThreshold) {
-      softThreshold_ = softThreshold;
-      UpdateConstantBuffer();
-   }
+   void SetSoftThreshold(float softThreshold);
 
 private:
    float threshold_ = 1.0f;     // 通常の白を超えるHDR発光を中心に抽出する

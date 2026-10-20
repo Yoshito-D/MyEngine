@@ -38,20 +38,11 @@ public:
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetBlurStrength(float strength) {
-      intensity_ = strength;
-      UpdateConstantBuffer();
-   }
+   void SetBlurStrength(float strength);
 
-   void SetKernelSize(int32_t size) {
-      kernelSize_ = size;
-      UpdateConstantBuffer();
-   }
+   void SetKernelSize(int32_t size);
 
-   void SetSigma(float sigma) {
-      sigma_ = sigma;
-      UpdateConstantBuffer();
-   }
+   void SetSigma(float sigma);
 
 private:
    float intensity_ = 0.8f;

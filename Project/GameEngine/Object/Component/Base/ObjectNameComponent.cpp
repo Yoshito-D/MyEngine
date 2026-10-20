@@ -59,3 +59,19 @@ void ObjectNameComponent::DrawInspector() {
 #endif
 
 }
+
+namespace GameEngine {
+
+ObjectNameComponent::Settings ObjectNameComponent::DescribeSettings() const {
+   Settings settings;
+   settings.name = name;
+   return settings;
+}
+
+void ObjectNameComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+   name = settings.name;
+}
+
+} // namespace GameEngine

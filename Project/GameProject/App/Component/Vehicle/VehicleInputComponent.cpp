@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
+#include <cstdint>
 
 #include "GameEngine/Input/InputActionService.h"
 #include "GameEngine/Framework/EngineContext.h"
@@ -86,15 +87,32 @@ void VehicleInputComponent::DrawInspector() {
 
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
-   int slot = static_cast<int>(playerSlot);
+   std::int32_t slot = static_cast<std::int32_t>(playerSlot);
 
    if (ImGui::SliderInt(GameEngine::LocalizeEditorText("プレイヤースロット", "Player Slot"), &slot, 0,
-          static_cast<int>(GameEngine::InputActionService::kMaxPlayers - 1))) {
+          static_cast<std::int32_t>(GameEngine::InputActionService::kMaxPlayers - 1))) {
       playerSlot = static_cast<uint32_t>(slot);
    }
 
    Configure(DescribeSettings());
 }
 #endif
+
+} // namespace App
+
+namespace App {
+
+VehicleInputComponent::Settings VehicleInputComponent::DescribeSettings() const {
+   Settings settings;
+   settings.playerSlot = playerSlot;
+   return settings;
+}
+
+void VehicleInputComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+   settings.playerSlot = std::min(settings.playerSlot, 3u);
+   playerSlot = settings.playerSlot;
+}
 
 } // namespace App

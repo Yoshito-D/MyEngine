@@ -31,7 +31,7 @@ void DataDrivenScene::LoadSceneDataIfNeeded() {
    }
 
    // 構築に失敗した場合は未ロードのままにし、呼び出し側が再試行できる状態を残す。
-   isLoaded_ = sceneWorld_.LoadFromJson(sceneData);
+   isLoaded_ = GetSceneWorld().LoadFromJson(sceneData);
 
    if (!isLoaded_) {
       Logger::Error("DataDrivenScene failed to build: " + sceneFilePath_.generic_string());
@@ -40,21 +40,10 @@ void DataDrivenScene::LoadSceneDataIfNeeded() {
 
 #ifdef USE_IMGUI
    if (auto* editorContext = GetEditorSceneContext()) {
-      // データ駆動シーンはBaseSceneの自動読込を通らないため、表示順だけを重複生成なしで渡す。
+      // Worldの読込後、エディタには所有物を作り直さず表示順だけを反映する。
       editorContext->ApplyHierarchyOrder(sceneData.value("hierarchyOrder", nlohmann::json::array()));
    }
 #endif
-}
-
-void DataDrivenScene::OnUpdate(float deltaTime) {
-   if (isLoaded_) {
-      sceneWorld_.Update(deltaTime);
-   }
-}
-
-void DataDrivenScene::OnFinalize() {
-   sceneWorld_.Clear();
-   isLoaded_ = false;
 }
 
 } // namespace GameEngine

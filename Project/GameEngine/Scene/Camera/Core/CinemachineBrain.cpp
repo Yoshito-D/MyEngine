@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Scene/Camera/Camera.h"
 #include <algorithm>
@@ -77,7 +78,7 @@ void CinemachineBrain::UpdateEditorPreview(float deltaTime, VirtualCamera* edito
 
 VirtualCamera* CinemachineBrain::FindHighestPriorityCamera() const {
    VirtualCamera* highest = nullptr;
-   int highestPriority = INT_MIN;
+   std::int32_t highestPriority = INT_MIN;
 
    // 同一優先度では先に登録されたカメラを維持し、毎フレーム選択が揺れないよう厳密な > で比較する。
    for (VirtualCamera* vcam : virtualCameras_) {
@@ -164,6 +165,14 @@ void CinemachineBrain::Cut(VirtualCamera* vcam) {
    activeCamera_ = vcam;
    currentState_ = vcam->GetState();
    activeBlend_.reset();
+}
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+std::vector<const VirtualCamera*> CinemachineBrain::GetVirtualCameras() const {
+   return {virtualCameras_.begin(), virtualCameras_.end()};
 }
 
 } // namespace GameEngine

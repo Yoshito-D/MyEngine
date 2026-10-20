@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include <cmath>
 #include <algorithm>
 #include "GameEngine/Scene/Light/SpotLight.h"
@@ -19,7 +20,7 @@ void SpotLight::Initialize(GraphicsDevice* device) {
    sIsInitialized_ = true;
 }
 
-void SpotLight::Create(unsigned int color, const Vector3& position, float intensity, const Vector3& direction,
+void SpotLight::Create(std::uint32_t color, const Vector3& position, float intensity, const Vector3& direction,
    float distance, float decay, float cosAngle, float cosFalloffStart) {
    if (!sIsInitialized_) return;
 

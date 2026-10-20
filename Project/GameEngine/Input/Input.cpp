@@ -5,6 +5,33 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "xinput.lib")
 
+namespace {
+GameEngine::Vector2 NormalizeStick(SHORT x, SHORT y, float deadZone) {
+   using GameEngine::Vector2;
+   // 軸ごとのデッドゾーンでは斜め入力の角度が歪むため、スティック全体を円形領域として評価する。
+   float normX = static_cast<float>(x) / 32767.0f;
+   float normY = static_cast<float>(y) / 32767.0f;
+   float length = std::sqrt(normX * normX + normY * normY);
+
+   // ゼロ長とデッドゾーン上限では除算できないため、先に中立値を返す。
+   if (!std::isfinite(deadZone) || deadZone >= 1.0f) {
+      return Vector2(0.0f, 0.0f);
+   }
+
+   deadZone = std::max(0.0f, deadZone);
+
+   if (length <= deadZone) {
+      return Vector2(0.0f, 0.0f);
+   }
+
+   // デッドゾーン外の残り区間を0～1へ再マップし、境界で値が急にdeadZone分跳ねないようにする。
+   float scale = (length - deadZone) / (1.0f - deadZone);
+   scale = std::clamp(scale, 0.0f, 1.0f);
+
+   return Vector2((normX / length) * scale, (normY / length) * scale);
+}
+}
+
 namespace GameEngine {
 Input::~Input() {
    // アプリ終了後にコントローラーが振動し続けないよう、保持している出力を明示的に停止する。
@@ -214,66 +241,21 @@ bool Input::IsGamePadButtonReleased(GamePadButton button, uint32_t index) const 
 }
 
 Vector2 Input::GetLeftStick(uint32_t index, float deadZone) const {
-   if (index >= 4) {
-      return Vector2(0.0f, 0.0f);
+   if (index >= XUSER_MAX_COUNT) {
+      return {};
    }
 
-   const auto& state = gamePadState_[index];
-   float x = static_cast<float>(state.Gamepad.sThumbLX);
-   float y = static_cast<float>(state.Gamepad.sThumbLY);
-
-   // 軸ごとのデッドゾーンでは斜め入力の角度が歪むため、スティック全体を円形領域として評価する。
-   float normX = x / 32767.0f;
-   float normY = y / 32767.0f;
-   float length = std::sqrt(normX * normX + normY * normY);
-
-   // ゼロ長とデッドゾーン上限では除算できないため、先に中立値を返す。
-   if (!std::isfinite(deadZone) || deadZone >= 1.0f) {
-      return Vector2(0.0f, 0.0f);
-   }
-
-   deadZone = std::max(0.0f, deadZone);
-
-   if (length <= deadZone) {
-      return Vector2(0.0f, 0.0f);
-   }
-
-   // デッドゾーン外の残り区間を0～1へ再マップし、境界で値が急にdeadZone分跳ねないようにする。
-   float scale = (length - deadZone) / (1.0f - deadZone);
-   scale = std::clamp(scale, 0.0f, 1.0f);
-
-   return Vector2((normX / length) * scale, (normY / length) * scale);
+   const auto& pad = gamePadState_[index].Gamepad;
+   return NormalizeStick(pad.sThumbLX, pad.sThumbLY, deadZone);
 }
 
 Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
-   if (index >= 4) {
-      return Vector2(0.0f, 0.0f);
+   if (index >= XUSER_MAX_COUNT) {
+      return {};
    }
 
-   const auto& state = gamePadState_[index];
-   float x = static_cast<float>(state.Gamepad.sThumbRX);
-   float y = static_cast<float>(state.Gamepad.sThumbRY);
-
-   // 左スティックと同じ円形デッドゾーンを適用し、カメラ操作時の方向を保つ。
-   float normX = x / 32767.0f;
-   float normY = y / 32767.0f;
-   float length = std::sqrt(normX * normX + normY * normY);
-
-   // ゼロ長とデッドゾーン上限では除算できないため、先に中立値を返す。
-   if (!std::isfinite(deadZone) || deadZone >= 1.0f) {
-      return Vector2(0.0f, 0.0f);
-   }
-
-   deadZone = std::max(0.0f, deadZone);
-
-   if (length <= deadZone) {
-      return Vector2(0.0f, 0.0f);
-   }
-
-   float scale = (length - deadZone) / (1.0f - deadZone);
-   scale = std::clamp(scale, 0.0f, 1.0f);
-
-   return Vector2((normX / length) * scale, (normY / length) * scale);
+   const auto& pad = gamePadState_[index].Gamepad;
+   return NormalizeStick(pad.sThumbRX, pad.sThumbRY, deadZone);
 }
 
 float Input::GetLeftTrigger(uint32_t index, float deadZone) const {

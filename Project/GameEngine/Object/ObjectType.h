@@ -34,7 +34,7 @@ constexpr ObjectTypeMask operator|(ObjectTypeMask lhs, ObjectType rhs) {
 }
 
 /// @brief すべてのオブジェクト種別を含むビットマスク
-inline constexpr ObjectTypeMask kAllObjectTypes =
+constexpr ObjectTypeMask kAllObjectTypes =
    ObjectType::Generic | ObjectType::Model | ObjectType::Sprite | ObjectType::UIText | ObjectType::Skybox;
 
 } // namespace GameEngine

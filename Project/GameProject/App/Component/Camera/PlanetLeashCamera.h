@@ -32,26 +32,18 @@ public:
    void SetSphereCenter(const GameEngine::Vector3& center) { sphereCenter_ = center; }
 
    /// @brief 初期カメラ位置を設定し、初期化済みにする
-   void SetInitialEyePosition(const GameEngine::Vector3& eye) {
-      eyePos_ = eye;
-      isInitialized_ = true;
-   }
+   void SetInitialEyePosition(const GameEngine::Vector3& eye);
 
    /// @brief 重力Upを設定する
    void SetGravityUp(const GameEngine::Vector3& up) { gravityUp_ = up; }
 
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
-   void SetDriftDistanceScale(float scale) {
-      driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
-   }
+   void SetDriftDistanceScale(float scale);
 
    /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
    /// @param cameraHeightOffset カメラ高さへ加える量。正の値は重力Up方向、負の値は下方向。
    /// @param lookTargetHeightOffset 注視点高さへ加える量。正の値は重力Up方向、負の値は下方向。
-   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
-      driftCameraHeightOffset_ = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
-      driftLookTargetHeightOffset_ = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
-   }
+   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset);
 
    /// @brief 直近計算のカメラUpを取得する
    GameEngine::Vector3 GetCameraUp() const { return cachedUp_; }
@@ -88,37 +80,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.maxFollowDistance = maxFollowDistance;
-      settings.followSpeed = followSpeed;
-      settings.minPlanetDistance = minPlanetDistance;
-      settings.useGravityUp = useGravityUp;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.maxFollowDistance)) {
-         settings.maxFollowDistance = defaults.maxFollowDistance;
-      }
-
-      if (!std::isfinite(settings.followSpeed)) {
-         settings.followSpeed = defaults.followSpeed;
-      }
-
-      if (!std::isfinite(settings.minPlanetDistance)) {
-         settings.minPlanetDistance = defaults.minPlanetDistance;
-      }
-
-      maxFollowDistance = settings.maxFollowDistance;
-      followSpeed = settings.followSpeed;
-      minPlanetDistance = settings.minPlanetDistance;
-      useGravityUp = settings.useGravityUp;
-   }
+   void Configure(const Settings& requested);
 
 private:
    float maxFollowDistance = 8.0f;

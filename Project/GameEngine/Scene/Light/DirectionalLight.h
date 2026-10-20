@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -39,7 +40,8 @@ public:
    /// @param direction ライトの向き。デフォルトは下方向（0.0f, -1.0f, 0.0f）
    /// @param intensity 輝度。デフォルトは1.0f
    /// @details ディレクショナルライトは、無限遠からの平行光源を表現する。
-   void Create(unsigned int color = 0xffffffff, const Vector3& direction = {0.0f, -1.0f, 0.0f}, float intensity = 1.0f);
+   void Create(
+      std::uint32_t color = 0xffffffff, const Vector3& direction = {0.0f, -1.0f, 0.0f}, float intensity = 1.0f);
 
    /// @brief ディレクショナルライトデータへのポインタを取得
    /// @return directionalLightData_ メンバーへのポインタ

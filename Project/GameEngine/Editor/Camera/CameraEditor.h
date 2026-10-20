@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #ifdef USE_IMGUI
 
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
@@ -126,7 +127,7 @@ private:
    bool showGizmoSettings_ = false;
    GizmoOperation gizmoOperation_ = GizmoOperation::Translate;
    GizmoMode gizmoMode_ = GizmoMode::Local;
-   int selectedVirtualCameraIndex_ = -1;
+   std::int32_t selectedVirtualCameraIndex_ = -1;
 
    struct ComponentFactoryEntry {
       std::string displayName;

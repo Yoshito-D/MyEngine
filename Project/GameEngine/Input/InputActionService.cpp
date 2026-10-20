@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Input/InputActionService.h"
 #include "GameEngine/Utility/Logger.h"
 #include <fstream>
@@ -13,8 +14,8 @@ namespace {
 
 using json = nlohmann::json;
 
-constexpr int kInputActionFormatVersion = 1;
-constexpr int kJsonIndentSize = 2;
+constexpr std::int32_t kInputActionFormatVersion = 1;
+constexpr std::int32_t kJsonIndentSize = 2;
 
 const InputActionState kEmptyActionState{};
 
@@ -285,13 +286,7 @@ bool DeserializeBinding(const json& source, InputBinding& binding) {
                 TryParseKey(source["down"].get<std::string>(), binding.downKey);
       case InputBindingType::LeftStick:
       case InputBindingType::RightStick:
-         if (!source.contains("axis")) {
-            // axis が存在しない旧形式も読み込めるよう、従来どおりスティック全体を割り当てる。
-            binding.axis = InputBindingAxis::Both;
-            return true;
-         }
-
-         return source.at("axis").is_string() &&
+         return source.contains("axis") && source.at("axis").is_string() &&
                 TryParseBindingAxis(source.at("axis").get<std::string>(), binding.axis);
    }
 
@@ -1050,7 +1045,7 @@ void InputActionService::DrawImGui() {
       ImGui::Text("%s / %s (%s)", action->map.c_str(), action->id.c_str(), ToString(action->type));
 
       for (size_t index = 0; index < action->bindings.size(); ++index) {
-         ImGui::PushID(static_cast<int>(index));
+         ImGui::PushID(static_cast<std::int32_t>(index));
          const InputBinding& binding = action->bindings[index];
          ImGui::BulletText("%s", DescribeBinding(binding).c_str());
 

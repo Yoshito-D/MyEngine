@@ -17,26 +17,7 @@ void ShockWave::Initialize(GraphicsDevice* device, OffscreenRenderTarget* render
 void ShockWave::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!GetPipeline() || !GetRootSignature()) return;
 
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // 定数バッファをルートパラメータ0にセット
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // フルスクリーントライアングル描画
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 void ShockWave::CreateConstantBuffer() {
@@ -91,3 +72,28 @@ void ShockWave::ImGuiEdit() {
 #endif
 
 }
+
+namespace GameEngine {
+
+void ShockWave::SetCenter(float x, float y) {
+   centerX_ = x;
+   centerY_ = y;
+   UpdateConstantBuffer();
+}
+
+void ShockWave::SetStrength(float strength) {
+   distortionStrength_ = strength;
+   UpdateConstantBuffer();
+}
+
+void ShockWave::SetWaveRadius(float radius) {
+   waveRadius_ = radius;
+   UpdateConstantBuffer();
+}
+
+void ShockWave::SetWaveThickness(float thickness) {
+   waveThickness_ = thickness;
+   UpdateConstantBuffer();
+}
+
+} // namespace GameEngine

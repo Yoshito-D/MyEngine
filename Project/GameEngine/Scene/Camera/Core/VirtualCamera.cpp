@@ -1,4 +1,6 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/SceneWorld.h"
@@ -11,18 +13,6 @@ std::unordered_map<std::string, VirtualCamera::ComponentFactory>& ComponentFacto
    // 静的初期化順序の影響を避けるため、Registryは初回利用時に関数ローカルで構築する。
    static std::unordered_map<std::string, VirtualCamera::ComponentFactory> factories;
    return factories;
-}
-
-nlohmann::json SerializeVector3(const Vector3& value) {
-   return nlohmann::json::array({value.x, value.y, value.z});
-}
-
-Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
-   if (!data.is_array() || data.size() != 3) {
-      return fallback;
-   }
-
-   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
 }
 
 nlohmann::json SerializeQuaternion(const Quaternion& value) {
@@ -40,10 +30,10 @@ Quaternion DeserializeQuaternion(const nlohmann::json& data, const Quaternion& f
 nlohmann::json SerializeMatrix4x4(const Matrix4x4& matrix) {
    nlohmann::json rows = nlohmann::json::array();
 
-   for (int row = 0; row < 4; ++row) {
+   for (std::int32_t row = 0; row < 4; ++row) {
       nlohmann::json columns = nlohmann::json::array();
 
-      for (int column = 0; column < 4; ++column) {
+      for (std::int32_t column = 0; column < 4; ++column) {
          columns.push_back(matrix.m[row][column]);
       }
 
@@ -62,12 +52,12 @@ Matrix4x4 DeserializeMatrix4x4(const nlohmann::json& data, const Matrix4x4& fall
    // 逆行列計算やカメラ姿勢を壊すため、要素単位の復元は行わない。
    Matrix4x4 matrix = fallback;
 
-   for (int row = 0; row < 4; ++row) {
+   for (std::int32_t row = 0; row < 4; ++row) {
       if (!data[row].is_array() || data[row].size() != 4) {
          return fallback;
       }
 
-      for (int column = 0; column < 4; ++column) {
+      for (std::int32_t column = 0; column < 4; ++column) {
          matrix.m[row][column] = data[row][column].get<float>();
       }
    }
@@ -80,10 +70,11 @@ nlohmann::json SerializeTransform(const Transform& transform) {
    // Editor表示用Eulerと補間用Quaternionを相互変換した際の丸め誤差を避けるためである。
    const Quaternion activeQuaternion = transform.GetActiveQuaternion();
    const Vector3 activeEuler = transform.GetActiveEuler();
-   return nlohmann::json{{"translation", SerializeVector3(transform.translation)},
-      {"rotation", SerializeVector3(activeEuler)}, {"rotationQuaternion", SerializeQuaternion(activeQuaternion)},
+   return nlohmann::json{{"translation", GameEngine::JsonValue::WriteVector3(transform.translation)},
+      {"rotation", GameEngine::JsonValue::WriteVector3(activeEuler)},
+      {"rotationQuaternion", SerializeQuaternion(activeQuaternion)},
       {"rotationSource", transform.IsUsingQuaternion() ? "quaternion" : "euler"},
-      {"scale", SerializeVector3(transform.scale)}};
+      {"scale", GameEngine::JsonValue::WriteVector3(transform.scale)}};
 }
 
 Transform DeserializeTransform(const nlohmann::json& data, const Transform& fallback) {
@@ -93,18 +84,19 @@ Transform DeserializeTransform(const nlohmann::json& data, const Transform& fall
 
    Transform transform = fallback;
    transform.translation = data.contains("translation")
-                              ? DeserializeVector3(data.at("translation"), transform.translation)
+                              ? GameEngine::JsonValue::ReadVector3(data.at("translation"), transform.translation)
                               : transform.translation;
-   transform.scale = data.contains("scale") ? DeserializeVector3(data.at("scale"), transform.scale) : transform.scale;
+   transform.scale =
+      data.contains("scale") ? GameEngine::JsonValue::ReadVector3(data.at("scale"), transform.scale) : transform.scale;
 
-   // rotationSourceのない旧データはEuler形式として読み、互換性を保つ。
-   const std::string rotationSource = data.value("rotationSource", "euler");
+   const std::string rotationSource =
+      data.value("rotationSource", transform.IsUsingQuaternion() ? "quaternion" : "euler");
 
    if (rotationSource == "quaternion" && data.contains("rotationQuaternion")) {
       transform.SetRotationQuaternion(
          DeserializeQuaternion(data.at("rotationQuaternion"), transform.GetActiveQuaternion()));
-   } else if (data.contains("rotation")) {
-      transform.SetRotationEuler(DeserializeVector3(data.at("rotation"), transform.GetActiveEuler()));
+   } else if (rotationSource == "euler" && data.contains("rotation")) {
+      transform.SetRotationEuler(GameEngine::JsonValue::ReadVector3(data.at("rotation"), transform.GetActiveEuler()));
    }
 
    return transform;
@@ -340,7 +332,7 @@ void VirtualCamera::SortComponents() {
    std::stable_sort(components_.begin(), components_.end(),
       [](const std::unique_ptr<ICinemachineComponent>& a, const std::unique_ptr<ICinemachineComponent>& b) {
          if (a->GetStage() != b->GetStage()) {
-            return static_cast<int>(a->GetStage()) < static_cast<int>(b->GetStage());
+            return static_cast<std::int32_t>(a->GetStage()) < static_cast<std::int32_t>(b->GetStage());
          }
 
          return a->GetExecutionOrder() < b->GetExecutionOrder();
@@ -363,7 +355,7 @@ nlohmann::json VirtualCamera::Serialize() const {
 
    return nlohmann::json{{"id", id_}, {"name", name_}, {"priority", priority_}, {"active", isActive_},
       {"followTargetId", followTargetEntityId_}, {"lookAtTargetId", lookAtTargetEntityId_},
-      {"state", SerializeCameraState(state_)}, {"components", componentsData}, {"componentsAreComplete", true}};
+      {"state", SerializeCameraState(state_)}, {"components", componentsData}};
 }
 
 void VirtualCamera::Deserialize(const nlohmann::json& data) {
@@ -373,17 +365,10 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
       name_ = data.at("name").get<std::string>();
    }
 
-   // 旧シーンでは表示名が参照キーだったため、最初の読み込みで安定IDへ移す。
-   if (id_.empty() && name_ != "DebugCamera") {
-      id_ = data.value("id", name_);
-
-      if (id_.empty()) {
-         id_ = name_;
-      }
-   }
+   id_ = data.value("id", std::string{});
 
    if (data.contains("priority") && data.at("priority").is_number_integer()) {
-      priority_ = data.at("priority").get<int>();
+      priority_ = data.at("priority").get<std::int32_t>();
    }
 
    if (data.contains("active") && data.at("active").is_boolean()) {
@@ -405,7 +390,7 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
    if (!data.contains("components") || !data.at("components").is_array()) return;
 
    // 既存Componentには状態を重ね、不足しているComponentだけFactoryで追加する。
-   // 旧形式はJSONにない依存部品を残し、完全スナップショットは最後に余剰分を削除する。
+   // 完全スナップショットの一覧にない部品は最後に削除する。
    for (const auto& componentData : data.at("components")) {
       if (!componentData.is_object()) {
          continue;
@@ -436,8 +421,7 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
       }
    }
 
-   if (data.value("componentsAreComplete", false)) {
-      // 旧形式だけはFactoryの依存部品補完を許可し、現行スナップショットは削除も復元する。
+   {
       std::erase_if(components_, [&data](const auto& component) {
          return std::none_of(
             data.at("components").begin(), data.at("components").end(), [&component](const auto& entry) {
@@ -445,6 +429,20 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
             });
       });
    }
+}
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+std::vector<const ICinemachineComponent*> VirtualCamera::GetComponents() const {
+   std::vector<const ICinemachineComponent*> result;
+
+   for (const auto& component : components_) {
+      result.push_back(component.get());
+   }
+
+   return result;
 }
 
 } // namespace GameEngine

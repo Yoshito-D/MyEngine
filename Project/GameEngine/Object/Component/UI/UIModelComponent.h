@@ -69,51 +69,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.projectionType = projectionType;
-      settings.anchorPoint = anchorPoint;
-      settings.screenOffset = screenOffset;
-      settings.localPivot = localPivot;
-      settings.depth = depth;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.screenOffset.x)) {
-         settings.screenOffset.x = defaults.screenOffset.x;
-      }
-
-      if (!std::isfinite(settings.screenOffset.y)) {
-         settings.screenOffset.y = defaults.screenOffset.y;
-      }
-
-      if (!std::isfinite(settings.localPivot.x)) {
-         settings.localPivot.x = defaults.localPivot.x;
-      }
-
-      if (!std::isfinite(settings.localPivot.y)) {
-         settings.localPivot.y = defaults.localPivot.y;
-      }
-
-      if (!std::isfinite(settings.localPivot.z)) {
-         settings.localPivot.z = defaults.localPivot.z;
-      }
-
-      if (!std::isfinite(settings.depth)) {
-         settings.depth = defaults.depth;
-      }
-
-      projectionType = settings.projectionType;
-      anchorPoint = settings.anchorPoint;
-      screenOffset = settings.screenOffset;
-      localPivot = settings.localPivot;
-      depth = settings.depth;
-   }
+   void Configure(const Settings& requested);
 
 private:
    ProjectionType projectionType = ProjectionType::Orthographic; ///< UIカメラの投影方式

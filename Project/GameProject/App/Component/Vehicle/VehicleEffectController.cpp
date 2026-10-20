@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleEffectController.h"
+#include <cstdint>
 
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
@@ -74,7 +75,7 @@ void VehicleEffectController::Update(float deltaTime) {
    }
 
    // 共通エミッタ内のスロットをJSONパスで役割分けし、各ゲーム状態へ結び付ける。
-   for (int slotIndex = 0; slotIndex < emitter->GetSlotCount(); ++slotIndex) {
+   for (std::int32_t slotIndex = 0; slotIndex < emitter->GetSlotCount(); ++slotIndex) {
       auto* slot = emitter->DescribeSlot(slotIndex);
 
       if (!slot) {

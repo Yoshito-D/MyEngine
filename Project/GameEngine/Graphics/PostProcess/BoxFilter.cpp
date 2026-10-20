@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/PostProcess/BoxFilter.h"
 #include "GameEngine/Graphics/Device/ResourceHelper.h"
 
@@ -17,26 +18,7 @@ void BoxFilter::Initialize(GraphicsDevice* device, OffscreenRenderTarget* render
 void BoxFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!GetPipeline() || !GetRootSignature()) return;
 
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // 定数バッファをルートパラメータ0にセット
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // フルスクリーントライアングル描画
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 void BoxFilter::CreateConstantBuffer() {
@@ -79,3 +61,12 @@ void BoxFilter::ImGuiEdit() {
 #endif
 
 }
+
+namespace GameEngine {
+
+void BoxFilter::SetKernelRadius(std::int32_t radius) {
+   kernelRadius_ = radius;
+   UpdateConstantBuffer();
+}
+
+} // namespace GameEngine

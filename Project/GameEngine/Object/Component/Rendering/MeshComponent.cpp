@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Graphics/Resources/Mesh.h"
@@ -314,16 +315,15 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
       planeOrientation_ = ParsePlaneOrientation(data.at("planeOrientation"), planeOrientation_);
    }
 
-   // size/anchorはQuad専用名導入前の互換キー。現行キーを先に試し、なければ旧キーを読む。
    Vector2 value = quadSize_;
 
-   if (ReadVector2(data, "quadSize", value) || ReadVector2(data, "size", value)) {
+   if (ReadVector2(data, "quadSize", value)) {
       quadSize_ = value;
    }
 
    value = quadAnchorPoint_;
 
-   if (ReadVector2(data, "quadAnchorPoint", value) || ReadVector2(data, "anchor", value)) {
+   if (ReadVector2(data, "quadAnchorPoint", value)) {
       quadAnchorPoint_ = value;
    }
 
@@ -403,7 +403,7 @@ void MeshComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    const char* sourceTypeItems[] = {Tr("モデルファイル", "Model File"), Tr("プリミティブ", "Primitive")};
-   int sourceTypeIndex = static_cast<int>(sourceType_);
+   std::int32_t sourceTypeIndex = static_cast<std::int32_t>(sourceType_);
 
    if (ImGui::Combo(Tr("メッシュ種別", "Mesh Source"), &sourceTypeIndex, sourceTypeItems, 2)) {
       SetSourceType(static_cast<SourceType>(sourceTypeIndex));
@@ -438,7 +438,7 @@ void MeshComponent::DrawInspector() {
    bool meshChanged = false;
    const char* primitiveTypeItems[] = {
       "Quad", "Ring", "Sphere", "Box", "Cylinder", "Cone", "Circle", "Plane", "Torus", "Triangle"};
-   int primitiveTypeIndex = static_cast<int>(primitiveType_);
+   std::int32_t primitiveTypeIndex = static_cast<std::int32_t>(primitiveType_);
 
    if (ImGui::Combo(Tr("プリミティブ", "Primitive"), &primitiveTypeIndex, primitiveTypeItems, 10)) {
       primitiveType_ = static_cast<PrimitiveType>(primitiveTypeIndex);
@@ -452,7 +452,7 @@ void MeshComponent::DrawInspector() {
 
    if (supportsPlaneOrientation) {
       const char* orientationItems[] = {"XY", "XZ", "YZ"};
-      int orientationIndex = static_cast<int>(planeOrientation_);
+      std::int32_t orientationIndex = static_cast<std::int32_t>(planeOrientation_);
 
       if (ImGui::Combo(Tr("生成平面", "Plane Orientation"), &orientationIndex, orientationItems, 3)) {
          planeOrientation_ = static_cast<PlaneOrientation>(orientationIndex);
@@ -479,7 +479,7 @@ void MeshComponent::DrawInspector() {
       case PrimitiveType::Ring: {
          meshChanged |= ImGui::DragFloat(Tr("内半径", "Inner Radius"), &ringInnerRadius_, 0.01f, 0.0f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("外半径", "Outer Radius"), &ringOuterRadius_, 0.01f, 0.001f, 1000.0f);
-         int segments = static_cast<int>(ringSegments_);
+         std::int32_t segments = static_cast<std::int32_t>(ringSegments_);
 
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
             ringSegments_ = static_cast<uint32_t>(std::max(segments, 3));
@@ -490,8 +490,8 @@ void MeshComponent::DrawInspector() {
       }
       case PrimitiveType::Sphere: {
          meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &sphereRadius_, 0.01f, 0.001f, 1000.0f);
-         int stacks = static_cast<int>(sphereStacks_);
-         int slices = static_cast<int>(sphereSlices_);
+         std::int32_t stacks = static_cast<std::int32_t>(sphereStacks_);
+         std::int32_t slices = static_cast<std::int32_t>(sphereSlices_);
 
          if (ImGui::DragInt(Tr("スタック", "Stacks"), &stacks, 1.0f, 2, 256)) {
             sphereStacks_ = static_cast<uint32_t>(std::max(stacks, 2));
@@ -512,7 +512,7 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("上半径", "Top Radius"), &cylinderTopRadius_, 0.01f, 0.0f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("下半径", "Bottom Radius"), &cylinderBottomRadius_, 0.01f, 0.0f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("高さ", "Height"), &cylinderHeight_, 0.01f, 0.001f, 1000.0f);
-         int segments = static_cast<int>(cylinderSegments_);
+         std::int32_t segments = static_cast<std::int32_t>(cylinderSegments_);
 
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
             cylinderSegments_ = static_cast<uint32_t>(std::max(segments, 3));
@@ -524,7 +524,7 @@ void MeshComponent::DrawInspector() {
       case PrimitiveType::Cone: {
          meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &coneRadius_, 0.01f, 0.001f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("高さ", "Height"), &coneHeight_, 0.01f, 0.001f, 1000.0f);
-         int segments = static_cast<int>(coneSegments_);
+         std::int32_t segments = static_cast<std::int32_t>(coneSegments_);
 
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
             coneSegments_ = static_cast<uint32_t>(std::max(segments, 3));
@@ -535,7 +535,7 @@ void MeshComponent::DrawInspector() {
       }
       case PrimitiveType::Circle: {
          meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &circleRadius_, 0.01f, 0.001f, 1000.0f);
-         int segments = static_cast<int>(circleSegments_);
+         std::int32_t segments = static_cast<std::int32_t>(circleSegments_);
 
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
             circleSegments_ = static_cast<uint32_t>(std::max(segments, 3));
@@ -547,8 +547,8 @@ void MeshComponent::DrawInspector() {
       case PrimitiveType::Plane: {
          meshChanged |= ImGui::DragFloat(Tr("幅", "Width"), &planeWidth_, 0.01f, 0.001f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("奥行き", "Depth"), &planeDepth_, 0.01f, 0.001f, 1000.0f);
-         int widthSegments = static_cast<int>(planeWidthSegments_);
-         int depthSegments = static_cast<int>(planeDepthSegments_);
+         std::int32_t widthSegments = static_cast<std::int32_t>(planeWidthSegments_);
+         std::int32_t depthSegments = static_cast<std::int32_t>(planeDepthSegments_);
 
          if (ImGui::DragInt(Tr("幅の分割数", "Width Segments"), &widthSegments, 1.0f, 1, 512)) {
             planeWidthSegments_ = static_cast<uint32_t>(std::max(widthSegments, 1));
@@ -565,8 +565,8 @@ void MeshComponent::DrawInspector() {
       case PrimitiveType::Torus: {
          meshChanged |= ImGui::DragFloat(Tr("主半径", "Major Radius"), &torusMajorRadius_, 0.01f, 0.001f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("副半径", "Minor Radius"), &torusMinorRadius_, 0.01f, 0.001f, 1000.0f);
-         int majorSegments = static_cast<int>(torusMajorSegments_);
-         int minorSegments = static_cast<int>(torusMinorSegments_);
+         std::int32_t majorSegments = static_cast<std::int32_t>(torusMajorSegments_);
+         std::int32_t minorSegments = static_cast<std::int32_t>(torusMinorSegments_);
 
          if (ImGui::DragInt(Tr("主分割数", "Major Segments"), &majorSegments, 1.0f, 3, 512)) {
             torusMajorSegments_ = static_cast<uint32_t>(std::max(majorSegments, 3));
@@ -728,3 +728,12 @@ void MeshComponent::ApplyTextureCoordinates(Texture* texture, const Vector2& lef
 }
 
 }
+
+namespace GameEngine {
+
+void MeshComponent::SetPrimitiveType(PrimitiveType primitiveType) {
+   sourceType_ = SourceType::Primitive;
+   primitiveType_ = primitiveType;
+}
+
+} // namespace GameEngine

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include "GameProject/App/UI/MenuAnimation.h"
+
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/VectorMath.h"
 #include <array>
@@ -53,7 +56,7 @@ private:
    bool CaptureBaseVisualStates();
    bool IsOptionAvailable(std::size_t optionIndex) const;
    bool SelectInitialOption();
-   bool MoveSelection(int direction);
+   bool MoveSelection(std::int32_t direction);
    void RefreshSelectionText();
    void UpdateSelectionAnimation(float deltaTime);
    const std::string& GetSelectedSceneName() const;
@@ -71,19 +74,16 @@ private:
    float selectionPulseScale_ = 1.1f;
    float selectionSwitchDuration_ = 0.16f;
    float selectionSwitchScale_ = 0.82f;
-   float selectionAnimationElapsed_ = 0.0f;
-   float selectionSwitchElapsed_ = 0.0f;
    std::array<GameEngine::UITextComponent*, 2> optionTexts_ = {};
    std::array<GameEngine::TransformComponent*, 2> optionTransforms_ = {};
    std::array<GameEngine::Vector3, 2> baseScales_ = {
       GameEngine::Vector3{1.0f, 1.0f, 1.0f}, GameEngine::Vector3{1.0f, 1.0f, 1.0f}};
    std::array<float, 2> baseOpacities_ = {1.0f, 1.0f};
-   int selectedOption_ = 0;
+   std::int32_t selectedOption_ = 0;
    bool startRequested_ = false;
    bool navigationLatched_ = false;
    bool hasBaseVisualStates_ = false;
-   bool legacySingleOption_ = false;
-   bool selectionSwitchActive_ = false;
+   MenuSelectionAnimation selectionAnimation_;
 };
 
 } // namespace App

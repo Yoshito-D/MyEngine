@@ -29,7 +29,7 @@ public:
    /// @param callback コールバック
    /// @param repeat 繰り返し回数。-1 は無限
    /// @return タイマーID
-   static TimerId SetInterval(float intervalSec, std::function<void()> callback, int repeat = -1);
+   static TimerId SetInterval(float intervalSec, std::function<void()> callback, std::int32_t repeat = -1);
 
    /// @brief タイマーを解除
    static void Clear(TimerId id);
@@ -56,9 +56,9 @@ public:
 private:
    struct Timer {
       TimerId id{};
-      float remaining{}; // 次発火までの残り時間
-      float interval{};  // 間隔（0 の場合は一度きり）
-      int repeat{-1};    // 残り回数（-1 は無限）
+      float remaining{};       // 次発火までの残り時間
+      float interval{};        // 間隔（0 の場合は一度きり）
+      std::int32_t repeat{-1}; // 残り回数（-1 は無限）
       bool paused{false};
       std::shared_ptr<std::function<void()>> callback;
    };

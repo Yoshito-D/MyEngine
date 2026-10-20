@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameEngine/Scene/SceneObjectStore.h"
 #include <memory>
 #include <nlohmann/json.hpp>
@@ -11,7 +12,6 @@ namespace GameEngine {
 
 class Object;
 class ParticleSystem;
-class Skybox;
 class VirtualCamera;
 class CinemachineBrain;
 
@@ -25,6 +25,21 @@ public:
    /// @brief デストラクタ
    ~SceneWorld();
 
+   /// @brief 保存シーンの形式バージョン。
+   static constexpr std::int32_t kFormatVersion = 7;
+
+   /// @brief 所有物の変更前に保存形式・型・IDを検証する。
+   static bool IsValidSnapshot(const nlohmann::json& sceneData);
+
+   /// @brief 全所有物とカメラ・描画設定を完全スナップショットとして保存する。
+   nlohmann::json SerializeToJson() const;
+
+   /// @brief 共通の生成・削除・復元ストアを取得する。
+   SceneObjectStore& GetObjectStore() { return objectStore_; }
+
+   /// @brief 共通ストアを読み取り専用で取得する。
+   const SceneObjectStore& GetObjectStore() const { return objectStore_; }
+
    /// @brief JSONからシーン全体を生成する
    /// @param sceneData シーン定義JSON
    /// @return 必須データを生成できた場合はtrue
@@ -32,9 +47,6 @@ public:
 
    /// @brief 所有するシーン要素をすべて破棄する
    void Clear();
-
-   /// @brief Model等とは別に管理される汎用オブジェクトを更新する
-   void Update(float);
 
    /// @brief 安定IDからオブジェクトを検索する
    /// @param objectId JSONに保存されたオブジェクトID
@@ -52,21 +64,13 @@ public:
    /// @brief 読み取り専用の対象を検索する。
    const ParticleSystem* FindParticleSystemById(const std::string& objectId) const;
 
-   /// @brief 表示名からオブジェクトを検索する
-   /// @param objectName ObjectNameComponentの名前
-   /// @return 最初に一致したオブジェクト。存在しない場合はnullptr
-   Object* FindObjectByName(const std::string& objectName);
-
-   /// @brief 読み取り専用の対象を検索する。
-   const Object* FindObjectByName(const std::string& objectName) const;
-
-   /// @brief IDまたは名前から仮想カメラを検索する
-   /// @param cameraIdOrName カメラIDまたは表示名
+   /// @brief 安定IDから仮想カメラを検索する
+   /// @param cameraId カメラの安定ID
    /// @return 対応する仮想カメラ。存在しない場合はnullptr
-   VirtualCamera* FindVirtualCamera(const std::string& cameraIdOrName);
+   VirtualCamera* FindVirtualCamera(const std::string& cameraId);
 
    /// @brief 読み取り専用の対象を検索する。
-   const VirtualCamera* FindVirtualCamera(const std::string& cameraIdOrName) const;
+   const VirtualCamera* FindVirtualCamera(const std::string& cameraId) const;
 
    /// @brief 一意な安定IDを持つ仮想カメラを作成しBrainへ登録する
    /// @param name 表示名。空ならVirtual Cameraを使用する
@@ -77,10 +81,6 @@ public:
    /// @return 管理対象のカメラを削除した場合はtrue
    bool RemoveVirtualCamera(VirtualCamera* camera);
 
-   /// @brief 保存されたカメラ一覧へ構成を置き換える（DebugCameraは維持する）
-   /// @param camerasData シーンJSONのcamerasオブジェクト
-   void ApplyCameraConfiguration(const nlohmann::json& camerasData);
-
    /// @brief オブジェクトに割り当てられた安定IDを取得する
    /// @param object 対象オブジェクト
    /// @return 安定ID。管理対象外の場合は空文字列
@@ -90,57 +90,21 @@ public:
    /// @return 現在のシーンワールド。未ロードの場合はnullptr
    static SceneWorld* GetCurrent() { return sCurrent_; }
 
-   /// @brief Model等の描画オブジェクトとは別に所有するGenericオブジェクト一覧を取得する
-   /// @return Genericオブジェクト一覧
-   std::vector<Object*> GetGenericObjects() {
-      std::vector<Object*> view;
-
-      for (auto& entry : genericObjects_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
-
-   /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
-   std::vector<const Object*> GetGenericObjects() const {
-      std::vector<const Object*> view;
-
-      for (const auto& entry : genericObjects_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
-
    /// @brief 全要素を復元した後、指定Entity群の親子関係とComponent参照を再解決する
-   /// @param objects シーン所有分とエディター所有分を含む復元済みEntity
+   /// @param objects 共通Storeに復元されたEntity
    /// @param initializeRuntime falseなら参照だけを更新する
    void ResolveReferences(const std::vector<Object*>& objects, bool initializeRuntime = true);
 
 private:
    CinemachineBrain* GetCameraBrain() const;
-   CinemachineBrain* cameraBrain_ = nullptr;
-   bool RestoreObjectEntry(const nlohmann::json& objectData, const std::string& legacySceneKey = {});
-   void RestoreLegacyEntries(const nlohmann::json& sceneData);
-   void RestoreLegacyLights(const nlohmann::json& sceneData);
+   bool ApplySnapshot(const nlohmann::json& sceneData);
    void RestoreCameras(const nlohmann::json& sceneData);
-   void ResolveReferences();
-   std::vector<Object*> CollectObjects();
 
-   /// @brief シーン所有オブジェクトの読み取り用統合ビューを作る。
-   std::vector<const Object*> CollectObjects() const;
-   void RegisterLooseObject(const std::string& id, Object* object);
-
+   CinemachineBrain* cameraBrain_ = nullptr;
    SceneObjectStore objectStore_;
-   std::vector<std::unique_ptr<Object>> genericObjects_;
-   std::vector<std::unique_ptr<Skybox>> skyboxes_;
    std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_;
-   std::unordered_map<std::string, Object*> looseObjectsById_;
-   std::unordered_map<const Object*, std::string> looseObjectIds_;
    std::unordered_map<std::string, VirtualCamera*> virtualCamerasById_;
-
-   static inline SceneWorld* sCurrent_ = nullptr;
+   static SceneWorld* sCurrent_;
 };
 
 } // namespace GameEngine

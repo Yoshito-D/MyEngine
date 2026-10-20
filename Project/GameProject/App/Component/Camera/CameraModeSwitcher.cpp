@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
+#include <cstdint>
 
 #include "GameProject/App/Component/Camera/GravityFollowCamera.h"
 #include "GameEngine/Object/Object.h"
@@ -117,7 +118,7 @@ void CameraModeSwitcher::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    for (size_t index = 0; index < cameraIds_.size(); ++index) {
-      ImGui::PushID(static_cast<int>(index));
+      ImGui::PushID(static_cast<std::int32_t>(index));
       GameEngine::EditorUI::CameraReference("Camera", cameraIds_[index]);
 
       if (ImGui::RadioButton("Initial Camera", initialIndex_ == index)) {
@@ -170,5 +171,17 @@ void CameraModeSwitcher::DrawInspector() {
    ImGui::Text("Camera: %zu / %zu", cameras_.empty() ? 0 : currentIndex_ + 1, cameras_.size());
 }
 #endif
+
+} // namespace App
+
+namespace App {
+
+GameEngine::VirtualCamera* CameraModeSwitcher::GetSelectedCamera() {
+   return currentIndex_ < cameras_.size() ? cameras_[currentIndex_] : nullptr;
+}
+
+const GameEngine::VirtualCamera* CameraModeSwitcher::GetSelectedCamera() const {
+   return currentIndex_ < cameras_.size() ? cameras_[currentIndex_] : nullptr;
+}
 
 } // namespace App

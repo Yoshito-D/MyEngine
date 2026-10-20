@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <d3d12.h>
 #include <vector>
 #include <memory>
@@ -21,17 +22,16 @@ private:
    struct EffectInfo {
       std::unique_ptr<PostProcess> effect;
       bool enabled = true;
-      int priority = 0; // 数値が小さいほど先に実行される
+      std::int32_t priority = 0; // 数値が小さいほど先に実行される
       std::string id;
       std::string name;
       std::string pipelineName; // パイプライン名を追加
       bool defaultEnabled = true;
-      int defaultPriority = 0;
+      std::int32_t defaultPriority = 0;
       nlohmann::json defaultSettings = nlohmann::json::object();
 
       EffectInfo(std::unique_ptr<PostProcess> eff, const std::string& effectId, const std::string& effectName,
-         int prio = 0, const std::string& pipeline = "")
-         : effect(std::move(eff)), id(effectId), name(effectName), priority(prio), pipelineName(pipeline) {}
+         std::int32_t prio = 0, const std::string& pipeline = "");
    };
 
 public:
@@ -40,7 +40,7 @@ public:
       std::string id;
       std::string name;
       std::string className;
-      int priority = 0;
+      std::int32_t priority = 0;
       bool enabled = true;
       std::string pipelineName; // パイプライン名を追加
       std::string rootSignatureName;
@@ -64,7 +64,7 @@ public:
    /// @param enabled 初期有効状態
    /// @param pipelineName パイプライン名
    /// @param id シーン保存に使用する不変ID
-   void RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority = 0,
+   void RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, std::int32_t priority = 0,
       bool enabled = true, const std::string& pipelineName = "", const std::string& id = "");
 
    /// @brief 全てのエフェクトを適用
@@ -84,12 +84,12 @@ public:
    /// @brief エフェクトの優先度を設定
    /// @param name エフェクト名
    /// @param priority 優先度
-   void SetEffectPriority(const std::string& name, int priority);
+   void SetEffectPriority(const std::string& name, std::int32_t priority);
 
    /// @brief エフェクトの優先度を取得
    /// @param name エフェクト名
    /// @return 優先度
-   int GetEffectPriority(const std::string& name) const;
+   std::int32_t GetEffectPriority(const std::string& name) const;
 
    /// @brief エフェクトを取得
    /// @param name エフェクト名

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/Effects/ParticleEmitterComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Object/Object.h"
@@ -90,9 +91,9 @@ void ParticleEmitterComponent::Update(float) {
    bool anyFinished = false;
 
    // 削除予定インデックスを収集して後でまとめて削除
-   std::vector<int> slotsToRemove;
+   std::vector<std::int32_t> slotsToRemove;
 
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(slots_.size()); ++i) {
       EmitterSlot& slot = slots_[i];
 
       if (!slot.particleSystem) {
@@ -132,7 +133,7 @@ void ParticleEmitterComponent::Update(float) {
    }
 
    // 後ろから削除する（インデックスずれを防ぐ）
-   for (int i = static_cast<int>(slotsToRemove.size()) - 1; i >= 0; --i) {
+   for (std::int32_t i = static_cast<std::int32_t>(slotsToRemove.size()) - 1; i >= 0; --i) {
       RemoveSlot(slotsToRemove[i]);
    }
 
@@ -199,11 +200,11 @@ void ParticleEmitterComponent::ApplyEmitterToShapeModule(ParticleSystem* ps, con
 // スロット管理
 // ============================================================
 
-int ParticleEmitterComponent::AddSlot(const std::string& jsonPath, const AttachmentConfig& config) {
+std::int32_t ParticleEmitterComponent::AddSlot(const std::string& jsonPath, const AttachmentConfig& config) {
    EmitterSlot slot;
    slot.jsonPath = jsonPath;
    slot.attachConfig = ValidateConfiguration(SlotConfiguration{jsonPath, config}).attachConfig;
-   const int idx = static_cast<int>(slots_.size());
+   const std::int32_t idx = static_cast<std::int32_t>(slots_.size());
    slots_.push_back(std::move(slot));
 
    // アタッチ済みなら即 ParticleSystem を生成する
@@ -214,8 +215,8 @@ int ParticleEmitterComponent::AddSlot(const std::string& jsonPath, const Attachm
    return idx;
 }
 
-void ParticleEmitterComponent::RemoveSlot(int slotIndex) {
-   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size())) return;
+void ParticleEmitterComponent::RemoveSlot(std::int32_t slotIndex) {
+   if (slotIndex < 0 || slotIndex >= static_cast<std::int32_t>(slots_.size())) return;
 
    if (slots_[slotIndex].particleSystem) {
       slots_[slotIndex].particleSystem->Stop();
@@ -250,11 +251,11 @@ ParticleEmitterComponent::~ParticleEmitterComponent() {
    ClearSlots();
 }
 
-const ParticleEmitterComponent::SlotConfiguration* ParticleEmitterComponent::DescribeSlot(int index) const {
+const ParticleEmitterComponent::SlotConfiguration* ParticleEmitterComponent::DescribeSlot(std::int32_t index) const {
    return GetSlot(index);
 }
 
-bool ParticleEmitterComponent::ConfigureSlot(int index, const SlotConfiguration& configuration) {
+bool ParticleEmitterComponent::ConfigureSlot(std::int32_t index, const SlotConfiguration& configuration) {
    auto* slot = GetSlot(index);
 
    if (!slot) {
@@ -265,7 +266,7 @@ bool ParticleEmitterComponent::ConfigureSlot(int index, const SlotConfiguration&
    return !HasOwner() || LoadSlot(*slot);
 }
 
-void ParticleEmitterComponent::EnableEmission(int index, bool enabled) {
+void ParticleEmitterComponent::EnableEmission(std::int32_t index, bool enabled) {
    auto* slot = GetSlot(index);
 
    if (slot && slot->particleSystem) {
@@ -275,40 +276,25 @@ void ParticleEmitterComponent::EnableEmission(int index, bool enabled) {
    }
 }
 
-bool ParticleEmitterComponent::HasLivingParticles(int index) const {
+bool ParticleEmitterComponent::HasLivingParticles(std::int32_t index) const {
    const auto* slot = GetSlot(index);
    return slot && slot->particleSystem && slot->particleSystem->GetActiveParticleCount() > 0;
 }
 
-ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(int slotIndex) {
-   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size())) {
+ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(std::int32_t slotIndex) {
+   if (slotIndex < 0 || slotIndex >= static_cast<std::int32_t>(slots_.size())) {
       return nullptr;
    }
 
    return &slots_[slotIndex];
 }
 
-const ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(int slotIndex) const {
-   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size())) {
+const ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(std::int32_t slotIndex) const {
+   if (slotIndex < 0 || slotIndex >= static_cast<std::int32_t>(slots_.size())) {
       return nullptr;
    }
 
    return &slots_[slotIndex];
-}
-
-// ── 後方互換ヘルパー ──────────────────────────────────────
-
-bool ParticleEmitterComponent::LoadEffect(const std::string& jsonPath) {
-   legacyJsonPath_ = jsonPath;
-
-   if (slots_.empty()) {
-      AddSlot(jsonPath);
-      return slots_[0].particleSystem != nullptr;
-   }
-
-   // スロット 0 を上書き
-   slots_[0].jsonPath = jsonPath;
-   return LoadSlot(slots_[0]);
 }
 
 // ============================================================
@@ -316,31 +302,31 @@ bool ParticleEmitterComponent::LoadEffect(const std::string& jsonPath) {
 // ============================================================
 
 void ParticleEmitterComponent::Play() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(slots_.size()); ++i) {
       Play(i);
    }
 }
 
 void ParticleEmitterComponent::Stop() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(slots_.size()); ++i) {
       Stop(i);
    }
 }
 
 void ParticleEmitterComponent::Pause() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(slots_.size()); ++i) {
       Pause(i);
    }
 }
 
 void ParticleEmitterComponent::Resume() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(slots_.size()); ++i) {
       Resume(i);
    }
 }
 
 void ParticleEmitterComponent::Restart() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(slots_.size()); ++i) {
       Restart(i);
    }
 }
@@ -375,7 +361,7 @@ bool ParticleEmitterComponent::IsFinished() const {
 
 // ── 個別スロット再生制御 ──────────────────────────────────
 
-void ParticleEmitterComponent::Play(int idx) {
+void ParticleEmitterComponent::Play(std::int32_t idx) {
    auto* slot = GetSlot(idx);
 
    if (!slot || !slot->particleSystem) return;
@@ -389,7 +375,7 @@ void ParticleEmitterComponent::Play(int idx) {
    slot->particleSystem->Play();
 }
 
-void ParticleEmitterComponent::Stop(int idx) {
+void ParticleEmitterComponent::Stop(std::int32_t idx) {
    auto* slot = GetSlot(idx);
 
    if (slot && slot->particleSystem) {
@@ -397,7 +383,7 @@ void ParticleEmitterComponent::Stop(int idx) {
    }
 }
 
-void ParticleEmitterComponent::Pause(int idx) {
+void ParticleEmitterComponent::Pause(std::int32_t idx) {
    auto* slot = GetSlot(idx);
 
    if (slot && slot->particleSystem) {
@@ -405,7 +391,7 @@ void ParticleEmitterComponent::Pause(int idx) {
    }
 }
 
-void ParticleEmitterComponent::Resume(int idx) {
+void ParticleEmitterComponent::Resume(std::int32_t idx) {
    auto* slot = GetSlot(idx);
 
    if (slot && slot->particleSystem) {
@@ -413,23 +399,23 @@ void ParticleEmitterComponent::Resume(int idx) {
    }
 }
 
-void ParticleEmitterComponent::Restart(int idx) {
+void ParticleEmitterComponent::Restart(std::int32_t idx) {
    Stop(idx);
    Play(idx);
 }
 
-bool ParticleEmitterComponent::IsPlaying(int idx) const {
+bool ParticleEmitterComponent::IsPlaying(std::int32_t idx) const {
    const auto* slot = GetSlot(idx);
    return slot && slot->particleSystem && slot->particleSystem->IsPlaying();
 }
 
-bool ParticleEmitterComponent::IsFinished(int idx) const {
+bool ParticleEmitterComponent::IsFinished(std::int32_t idx) const {
    const auto* slot = GetSlot(idx);
    return slot && slot->particleSystem && slot->particleSystem->IsFinished();
 }
 
 void ParticleEmitterComponent::SetSlotWorldTransform(
-   int idx, const Vector3& position, const Quaternion& rotation, const Vector3& scale) {
+   std::int32_t idx, const Vector3& position, const Quaternion& rotation, const Vector3& scale) {
    auto* slot = GetSlot(idx);
 
    if (!slot) return;
@@ -788,31 +774,6 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
 
    ClearSlots();
 
-   // 旧フォーマット互換（jsonPath がトップレベルにある場合）
-   if (data.contains("jsonPath") && data.at("jsonPath").is_string()) {
-      EmitterSlot slot;
-      slot.jsonPath = data.at("jsonPath").get<std::string>();
-
-      if (data.contains("autoPlay") && data.at("autoPlay").is_boolean()) {
-         slot.autoPlay = data.at("autoPlay").get<bool>();
-      }
-
-      if (data.contains("loop") && data.at("loop").is_boolean()) {
-         slot.loop = data.at("loop").get<bool>();
-      }
-
-      if (data.contains("playOnceAndDestroy") && data.at("playOnceAndDestroy").is_boolean()) {
-         slot.playOnceAndDestroy = data.at("playOnceAndDestroy").get<bool>();
-      }
-
-      if (data.contains("attachConfig") && data.at("attachConfig").is_object()) {
-         DeserializeAttachmentConfig(data.at("attachConfig"), slot.attachConfig);
-      }
-
-      slots_.push_back(std::move(slot));
-   }
-
-   // 新フォーマット
    if (data.contains("slots") && data.at("slots").is_array()) {
       for (const auto& s : data.at("slots")) {
          EmitterSlot slot;
@@ -912,9 +873,9 @@ void ParticleEmitterComponent::DrawInspector() {
    }
 
    // ── 各スロット ────────────────────────────────
-   int removeIdx = -1;
+   std::int32_t removeIdx = -1;
 
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(slots_.size()); ++i) {
       EmitterSlot& slot = slots_[i];
 
       ImGui::PushID(i);
@@ -1033,7 +994,7 @@ void ParticleEmitterComponent::DrawInspector() {
             Tr("スケールオフセット", "Scale Offset"), &slot.attachConfig.scaleOffset.x, 0.01f, 0.001f, 100.0f);
 
          const char* spaceItems[] = {Tr("ワールド", "World"), Tr("ローカル", "Local")};
-         int spaceIdx = (slot.attachConfig.simulationSpace == AttachmentConfig::Space::Local) ? 1 : 0;
+         std::int32_t spaceIdx = (slot.attachConfig.simulationSpace == AttachmentConfig::Space::Local) ? 1 : 0;
 
          if (ImGui::Combo(Tr("シミュレーション空間", "Sim Space"), &spaceIdx, spaceItems, 2)) {
             slot.attachConfig.simulationSpace =

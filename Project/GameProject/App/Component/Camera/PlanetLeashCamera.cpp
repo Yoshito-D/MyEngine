@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameProject/App/Component/Camera/PlanetLeashCamera.h"
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
@@ -16,25 +17,6 @@ using namespace GameEngine;
 namespace App {
 
 namespace {
-nlohmann::json SerializeVector3(const Vector3& value) {
-   return nlohmann::json::array({value.x, value.y, value.z});
-}
-
-Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
-   if (!data.is_array() || data.size() != 3) {
-      return fallback;
-   }
-
-   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
-}
-
-float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
-   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
-}
-
-bool ReadBool(const nlohmann::json& data, const char* key, bool fallback) {
-   return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
-}
 
 const bool kRegistered =
    VirtualCamera::RegisterComponentFactory("PlanetLeashCamera", [](VirtualCamera& camera) -> ICinemachineComponent* {
@@ -193,10 +175,10 @@ nlohmann::json PlanetLeashCamera::Serialize() const {
 void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   maxFollowDistance = ReadFloat(data, "maxFollowDistance", maxFollowDistance);
-   followSpeed = ReadFloat(data, "followSpeed", followSpeed);
-   minPlanetDistance = ReadFloat(data, "minPlanetDistance", minPlanetDistance);
-   useGravityUp = ReadBool(data, "useGravityUp", useGravityUp);
+   maxFollowDistance = GameEngine::JsonValue::ReadFloat(data, "maxFollowDistance", maxFollowDistance);
+   followSpeed = GameEngine::JsonValue::ReadFloat(data, "followSpeed", followSpeed);
+   minPlanetDistance = GameEngine::JsonValue::ReadFloat(data, "minPlanetDistance", minPlanetDistance);
+   useGravityUp = GameEngine::JsonValue::ReadBool(data, "useGravityUp", useGravityUp);
    driftDistanceScale_ = 1.0f;
    driftCameraHeightOffset_ = 0.0f;
    driftLookTargetHeightOffset_ = 0.0f;
@@ -231,5 +213,54 @@ void PlanetLeashCamera::DrawInspector() {
    Configure(DescribeSettings());
 }
 #endif
+
+} // namespace App
+
+namespace App {
+
+void PlanetLeashCamera::SetInitialEyePosition(const GameEngine::Vector3& eye) {
+   eyePos_ = eye;
+   isInitialized_ = true;
+}
+
+void PlanetLeashCamera::SetDriftDistanceScale(float scale) {
+   driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
+}
+
+void PlanetLeashCamera::SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
+   driftCameraHeightOffset_ = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
+   driftLookTargetHeightOffset_ = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
+}
+
+PlanetLeashCamera::Settings PlanetLeashCamera::DescribeSettings() const {
+   Settings settings;
+   settings.maxFollowDistance = maxFollowDistance;
+   settings.followSpeed = followSpeed;
+   settings.minPlanetDistance = minPlanetDistance;
+   settings.useGravityUp = useGravityUp;
+   return settings;
+}
+
+void PlanetLeashCamera::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.maxFollowDistance)) {
+      settings.maxFollowDistance = defaults.maxFollowDistance;
+   }
+
+   if (!std::isfinite(settings.followSpeed)) {
+      settings.followSpeed = defaults.followSpeed;
+   }
+
+   if (!std::isfinite(settings.minPlanetDistance)) {
+      settings.minPlanetDistance = defaults.minPlanetDistance;
+   }
+
+   maxFollowDistance = settings.maxFollowDistance;
+   followSpeed = settings.followSpeed;
+   minPlanetDistance = settings.minPlanetDistance;
+   useGravityUp = settings.useGravityUp;
+}
 
 } // namespace App

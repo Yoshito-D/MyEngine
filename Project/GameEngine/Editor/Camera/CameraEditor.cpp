@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 
 #ifdef USE_IMGUI
 
@@ -184,11 +185,11 @@ void CameraEditor::ShowVirtualCameraTab() {
       // 選択状態を毎フレーム検証
       // Scene切替などでBrain側から削除されたCameraをInspectorが参照し続けないようにする。
       if (targetVirtualCamera_) {
-         int foundIndex = -1;
+         std::int32_t foundIndex = -1;
 
          for (size_t i = 0; i < vcams.size(); ++i) {
             if (vcams[i] == targetVirtualCamera_) {
-               foundIndex = static_cast<int>(i);
+               foundIndex = static_cast<std::int32_t>(i);
                break;
             }
          }
@@ -218,7 +219,7 @@ void CameraEditor::ShowVirtualCameraTab() {
 
                camera->SetState(state);
                targetVirtualCamera_ = camera;
-               selectedVirtualCameraIndex_ = static_cast<int>(vcams.size()) - 1;
+               selectedVirtualCameraIndex_ = static_cast<std::int32_t>(vcams.size()) - 1;
                EditorUI::MarkChanged();
             }
          }
@@ -253,7 +254,7 @@ void CameraEditor::ShowVirtualCameraTab() {
          }
 
          bool isActive = (vcam == targetBrain_->GetActiveCamera());
-         ImGui::PushID(static_cast<int>(i));
+         ImGui::PushID(static_cast<std::int32_t>(i));
 
          char label[128];
          const std::string& vcamName = vcam->GetName();
@@ -264,8 +265,8 @@ void CameraEditor::ShowVirtualCameraTab() {
             snprintf(label, sizeof(label), "%s%s", vcamName.c_str(), isActive ? " *" : "");
          }
 
-         if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<int>(i))) {
-            selectedVirtualCameraIndex_ = static_cast<int>(i);
+         if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<std::int32_t>(i))) {
+            selectedVirtualCameraIndex_ = static_cast<std::int32_t>(i);
             targetVirtualCamera_ = vcam;
          }
 
@@ -361,7 +362,7 @@ void CameraEditor::ShowVirtualCameraInspector(VirtualCamera* vcam) {
 
       ImGui::EndDisabled();
 
-      int priority = vcam->GetPriority();
+      std::int32_t priority = vcam->GetPriority();
 
       if (ImGui::DragInt(Tr("優先度", "Priority"), &priority)) {
          vcam->SetPriority(priority);
@@ -544,11 +545,11 @@ void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
 
       // 選択状態の検証・同期
       if (targetVirtualCamera_) {
-         int foundIndex = -1;
+         std::int32_t foundIndex = -1;
 
          for (size_t i = 0; i < vcams.size(); ++i) {
             if (vcams[i] == targetVirtualCamera_) {
-               foundIndex = static_cast<int>(i);
+               foundIndex = static_cast<std::int32_t>(i);
                break;
             }
          }
@@ -572,14 +573,14 @@ void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
          }
 
          bool isActive = (vcam == brain->GetActiveCamera());
-         ImGui::PushID(static_cast<int>(i));
+         ImGui::PushID(static_cast<std::int32_t>(i));
 
          char label[64];
          snprintf(label, sizeof(label), "[%zu] %s:%d%s", i, Tr("優先度", "Priority"), vcam->GetPriority(),
             isActive ? Tr(" [有効]", " [ACTIVE]") : "");
 
-         if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<int>(i))) {
-            selectedVirtualCameraIndex_ = static_cast<int>(i);
+         if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<std::int32_t>(i))) {
+            selectedVirtualCameraIndex_ = static_cast<std::int32_t>(i);
             targetVirtualCamera_ = vcam;
          }
 
@@ -672,7 +673,7 @@ bool CameraEditor::EditProjectionSettings(Camera* camera) {
    bool changed = false;
 
    // 投影方式
-   int projType = static_cast<int>(camera->GetProjectionType());
+   std::int32_t projType = static_cast<std::int32_t>(camera->GetProjectionType());
    const char* projTypes[] = {Tr("透視投影", "Perspective"), Tr("平行投影", "Orthographic")};
    const std::string projectionTypeLabel = std::string(Tr("投影タイプ", "Type")) + "##Projection";
 
@@ -799,7 +800,7 @@ void CameraEditor::ShowImGuizmoControls() {
    ImGui::BeginChild("CameraImGuizmoControls", ImVec2(0, 74), true);
    ImGui::Text("ImGuizmo");
 
-   int operation = static_cast<int>(gizmoOperation_);
+   std::int32_t operation = static_cast<std::int32_t>(gizmoOperation_);
    const char* operations[] = {Tr("移動", "Translate"), Tr("回転", "Rotate"), Tr("スケール", "Scale")};
    const std::string operationLabel = std::string(Tr("操作", "Operation")) + "##CameraImGuizmo";
 
@@ -807,7 +808,7 @@ void CameraEditor::ShowImGuizmoControls() {
       gizmoOperation_ = static_cast<GizmoOperation>(operation);
    }
 
-   int mode = static_cast<int>(gizmoMode_);
+   std::int32_t mode = static_cast<std::int32_t>(gizmoMode_);
    const char* modes[] = {Tr("ローカル", "Local"), Tr("ワールド", "World")};
    const std::string modeLabel = std::string(Tr("空間", "Mode")) + "##CameraImGuizmo";
 

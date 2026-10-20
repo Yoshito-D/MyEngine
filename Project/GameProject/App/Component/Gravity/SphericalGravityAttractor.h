@@ -25,18 +25,10 @@ public:
    GameEngine::Vector3 GetUpVectorFor(const GameEngine::Vector3& objectPosition) const override;
 
    /// @brief influenceRadius をシリアライズする
-   nlohmann::json Serialize() const override {
-      nlohmann::json json;
-      json["influenceRadius"] = influenceRadius;
-      return json;
-   }
+   nlohmann::json Serialize() const override;
 
    /// @brief influenceRadius をデシリアライズする
-   void Deserialize(const nlohmann::json& data) override {
-      if (data.contains("influenceRadius")) {
-         influenceRadius = data["influenceRadius"];
-      }
-   }
+   void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
@@ -52,38 +44,17 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.influenceRadius = influenceRadius;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.influenceRadius)) {
-         settings.influenceRadius = defaults.influenceRadius;
-      }
-
-      settings.influenceRadius = std::max(0.0f, settings.influenceRadius);
-      influenceRadius = settings.influenceRadius;
-   }
+   void Configure(const Settings& requested);
 
 private:
    float influenceRadius = 0.0f;
 
 private:
    /// @brief 発生源中心座標（オーナーTransform）
-   GameEngine::Vector3 GetCenter() const {
-      if (!HasOwner()) {
-         return {0.0f, 0.0f, 0.0f};
-      }
-
-      auto* t = GetOwner().GetComponent<GameEngine::TransformComponent>();
-      return t ? t->GetLocalPose().translation : GameEngine::Vector3{0.0f, 0.0f, 0.0f};
-   }
+   GameEngine::Vector3 GetCenter() const;
 };
 
 } // namespace App

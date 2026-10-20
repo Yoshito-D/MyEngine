@@ -755,3 +755,64 @@ bool SkinCluster::TryResolveJointMatrix(size_t index, Matrix4x4& matrix) const {
 }
 
 }
+
+namespace GameEngine {
+
+bool SkinCluster::HasComputeSkinningResources(size_t meshIndex) const {
+   return HasPalette() && meshIndex < skinnedVertexResourceStates.size() &&
+          meshIndex < mappedSkinningInformationData.size() && mappedSkinningInformationData[meshIndex] &&
+          meshIndex < inputVertexSrvHandles.size() && meshIndex < influenceSrvHandles.size() &&
+          meshIndex < skinnedVertexResources.size() && meshIndex < skinnedVertexBufferViews.size() &&
+          meshIndex < skinnedVertexUavHandles.size() && meshIndex < skinningInformationResources.size() &&
+          inputVertexSrvHandles[meshIndex].second.ptr != 0 && influenceSrvHandles[meshIndex].second.ptr != 0 &&
+          skinnedVertexResources[meshIndex] && skinnedVertexUavHandles[meshIndex].second.ptr != 0 &&
+          skinningInformationResources[meshIndex];
+}
+
+const D3D12_VERTEX_BUFFER_VIEW* SkinCluster::GetSkinnedVertexBufferView(size_t meshIndex) const {
+   if (meshIndex >= skinnedVertexBufferViews.size()) {
+      return nullptr;
+   }
+
+   return &skinnedVertexBufferViews[meshIndex];
+}
+
+const D3D12_VERTEX_BUFFER_VIEW* SkinCluster::GetInfluenceBufferView(size_t meshIndex) const {
+   if (meshIndex >= influenceBufferViews.size()) {
+      return nullptr;
+   }
+
+   return &influenceBufferViews[meshIndex];
+}
+
+const D3D12_VERTEX_BUFFER_VIEW& ModelAsset::GetVertexBufferView(size_t index) const {
+   assert(index < vertexBufferViews_.size());
+   return vertexBufferViews_[index];
+}
+
+ID3D12Resource* ModelAsset::GetVertexBuffer(size_t index) const {
+   assert(index < vertexResources_.size());
+   return vertexResources_[index].Get();
+}
+
+const D3D12_INDEX_BUFFER_VIEW& ModelAsset::GetIndexBufferView(size_t index) const {
+   assert(index < indexBufferViews_.size());
+   return indexBufferViews_[index];
+}
+
+const std::vector<uint32_t>& ModelAsset::GetIndices(size_t index) const {
+   assert(index < modelData_.meshes.size());
+   return modelData_.meshes[index].indices;
+}
+
+const std::vector<Mesh::VertexData>& ModelAsset::GetVertices(size_t index) const {
+   assert(index < modelData_.meshes.size());
+   return modelData_.meshes[index].vertices;
+}
+
+const MaterialAsset& ModelAsset::GetMaterialAsset(size_t index) const {
+   assert(index < modelData_.materials.size());
+   return modelData_.materials[index];
+}
+
+} // namespace GameEngine

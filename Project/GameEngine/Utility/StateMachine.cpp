@@ -1,4 +1,5 @@
 #include "GameEngine/Utility/StateMachine.h"
+#include <cstdint>
 
 #include <limits>
 
@@ -29,7 +30,7 @@ void StateMachine::SetTransitionCallback(std::function<void(const std::string&, 
 // --------------------------------------------------------
 // 状態リクエスト追加
 // --------------------------------------------------------
-void StateMachine::RequestState(const std::string& stateName, int priority) {
+void StateMachine::RequestState(const std::string& stateName, std::int32_t priority) {
    if (states_.find(stateName) == states_.end()) return;
 
    if (!CanTransition(stateName)) return;
@@ -54,7 +55,7 @@ const std::string& StateMachine::Resolve() {
       return currentState_;
    }
 
-   int bestPriority = std::numeric_limits<int>::lowest();
+   std::int32_t bestPriority = std::numeric_limits<std::int32_t>::lowest();
    std::string bestState = currentState_;
    bool hasBestState = false;
 

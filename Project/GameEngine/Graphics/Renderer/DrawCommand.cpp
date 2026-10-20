@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Renderer/DrawCommand.h"
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
@@ -138,6 +139,27 @@ Camera* DrawCommandWrapper::GetCamera() const {
          return cmd_.lineData.camera;
       default:
          return nullptr;
+   }
+}
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+std::int32_t DrawCommandWrapper::GetTypePriority() const {
+   switch (cmd_.type) {
+      case DrawCommandType::Model:
+         return 4;
+      case DrawCommandType::Sprite:
+         return 3;
+      case DrawCommandType::Text:
+         return 3;
+      case DrawCommandType::Particle:
+         return 2;
+      case DrawCommandType::Line:
+         return 1;
+      default:
+         return 0;
    }
 }
 

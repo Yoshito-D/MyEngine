@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Editor/Renderer/RendererEditorController.h"
 
 #ifdef USE_IMGUI
@@ -40,11 +41,11 @@
 namespace GameEngine {
 
 namespace {
-constexpr int kJsonIndentSize = 3;
+constexpr std::int32_t kJsonIndentSize = 3;
 constexpr unsigned char kUtf8ContinuationByteMask = 0xC0;
 constexpr unsigned char kUtf8ContinuationByteTag = 0x80;
 constexpr float kHierarchyDropGuideThickness = 2.0f;
-constexpr int kEmptyCStringPayloadSize = 1;
+constexpr std::int32_t kEmptyCStringPayloadSize = 1;
 constexpr size_t kInspectorNameBufferSize = 256;
 constexpr const char* kFolderIconAssetId = "engine/textures/editor/ic_system_folder_01_128.png";
 
@@ -178,7 +179,7 @@ void DrawHierarchyInsertionDropTarget(
    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - style.ItemSpacing.y);
    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, 0.0f));
    ImGui::PushID(targetObject);
-   ImGui::PushID(static_cast<int>(dropPosition));
+   ImGui::PushID(static_cast<std::int32_t>(dropPosition));
    ImGui::InvisibleButton(
       "##HierarchyInsertionDropTarget", ImVec2(std::max(ImGui::GetContentRegionAvail().x, 1.0f), dropTargetHeight));
 
@@ -609,7 +610,7 @@ void RendererEditorController::ShowAssetWindow() {
    ImGui::SetNextItemWidth(std::max(1.0f, std::min(125.0f * scale, ImGui::GetContentRegionAvail().x)));
    ImGui::Combo("##Type", &editorAssetTypeFilter_, filters, IM_ARRAYSIZE(filters));
    const char* scopes[] = {"This folder", "All Resources"};
-   int scope = editorSearchAllFolders_ ? 1 : 0;
+   std::int32_t scope = editorSearchAllFolders_ ? 1 : 0;
    ContinueRowIfFits(125.0f * scale);
    ImGui::SetNextItemWidth(std::max(1.0f, std::min(125.0f * scale, ImGui::GetContentRegionAvail().x)));
 
@@ -691,7 +692,7 @@ void RendererEditorController::ShowAssetWindow() {
             continue;
          }
 
-         if (editorAssetTypeFilter_ && static_cast<int>(entry.type) != editorAssetTypeFilter_ - 1) {
+         if (editorAssetTypeFilter_ && static_cast<std::int32_t>(entry.type) != editorAssetTypeFilter_ - 1) {
             continue;
          }
 
@@ -720,8 +721,8 @@ void RendererEditorController::ShowAssetWindow() {
    }
 
    const float cellWidth = editorThumbnailSize_ + ImGui::GetStyle().FramePadding.x * 2.0f + 12.0f;
-   const int columns =
-      editorAssetIconView_ ? std::max(1, static_cast<int>(ImGui::GetContentRegionAvail().x / cellWidth)) : 1;
+   const std::int32_t columns =
+      editorAssetIconView_ ? std::max(1, static_cast<std::int32_t>(ImGui::GetContentRegionAvail().x / cellWidth)) : 1;
 
    if (ImGui::BeginTable("AssetContents", columns)) {
       for (const auto& id : editorVisibleAssets_) {
@@ -1090,7 +1091,7 @@ void RendererEditorController::ShowHierarchyWindow() {
             continue;
          }
 
-         ImGui::PushID(static_cast<int>(sceneObjects.size() + i));
+         ImGui::PushID(static_cast<std::int32_t>(sceneObjects.size() + i));
 
          std::string label = particleSystem->GetName();
          label += "##ParticleSystem_" + std::to_string(i);
@@ -1202,10 +1203,8 @@ bool RendererEditorController::CreateEditorScene(const std::string& sceneName) {
    }
 
    nlohmann::json sceneData = {{"version", EditorSceneContext::kCurrentSceneFormatVersion}, {"sceneName", sceneName},
-      {"objects", nlohmann::json::array()}, {"sceneObjects", nlohmann::json::array()},
-      {"sceneParticleSystems", nlohmann::json::array()}, {"hierarchyOrder", nlohmann::json::array()},
-      {"cameras", {{"brain", {{"defaultBlendTime", 0.0f}}}, {"virtualCameras", nlohmann::json::array()}}},
-      {"environment", nlohmann::json::object()}};
+      {"objects", nlohmann::json::array()}, {"hierarchyOrder", nlohmann::json::array()},
+      {"cameras", {{"brain", {{"defaultBlendTime", 0.0f}}}, {"virtualCameras", nlohmann::json::array()}}}};
 
    if (!SaveJsonFile(sceneFilePath, sceneData, errorMessage)) {
       editorSceneCatalogStatus_ = std::move(errorMessage);
@@ -1414,8 +1413,6 @@ void RendererEditorController::ShowInspectorWindow() {
    ImGui::Spacing();
 
    if (editorContext) {
-      const bool editorOwned = editorContext->IsEditorOwned(selectedObject);
-      ImGui::Text("%s: %s", Tr("所有者", "Owner"), editorOwned ? Tr("エディタ", "Editor") : Tr("シーン", "Scene"));
       ImGui::Text("%s: %s", Tr("Entity ID", "Entity ID"), selectedObject->GetEntityId().c_str());
 
       if (!selectedObject->GetParentEntityId().empty()) {
@@ -1491,8 +1488,8 @@ void RendererEditorController::ShowInspectorWindow() {
       if (addableComponentTypeNames.empty()) {
          ImGui::Text("%s", Tr("追加できるコンポーネントがありません", "No addable components"));
       } else {
-         editorSelectedAddComponentIndex_ =
-            std::clamp(editorSelectedAddComponentIndex_, 0, static_cast<int>(addableComponentTypeNames.size() - 1));
+         editorSelectedAddComponentIndex_ = std::clamp(
+            editorSelectedAddComponentIndex_, 0, static_cast<std::int32_t>(addableComponentTypeNames.size() - 1));
          const char* selectedTypeName = addableComponentTypeNames[editorSelectedAddComponentIndex_].c_str();
          const std::string selectedDisplayName = LocalizeObjectComponentTypeName(selectedTypeName);
 
@@ -1500,12 +1497,12 @@ void RendererEditorController::ShowInspectorWindow() {
 
          if (ImGui::BeginCombo(typeLabel.c_str(), selectedDisplayName.c_str())) {
             for (size_t i = 0; i < addableComponentTypeNames.size(); ++i) {
-               const bool selected = (static_cast<int>(i) == editorSelectedAddComponentIndex_);
+               const bool selected = (static_cast<std::int32_t>(i) == editorSelectedAddComponentIndex_);
                const std::string displayLabel = LocalizeObjectComponentTypeName(addableComponentTypeNames[i].c_str()) +
                                                 "##" + addableComponentTypeNames[i];
 
                if (ImGui::Selectable(displayLabel.c_str(), selected)) {
-                  editorSelectedAddComponentIndex_ = static_cast<int>(i);
+                  editorSelectedAddComponentIndex_ = static_cast<std::int32_t>(i);
                }
 
                if (selected) {

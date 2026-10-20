@@ -82,3 +82,12 @@ std::string ComponentRegistry::GetDisplayName(const std::string& typeName) const
 }
 #endif
 }
+
+namespace GameEngine {
+
+ComponentRegistry& ComponentRegistry::GetInstance() {
+   static ComponentRegistry instance;
+   return instance;
+}
+
+} // namespace GameEngine

@@ -53,16 +53,10 @@ public:
    Model& SetMaterial(Material* material);
 
    /// @brief スキンクラスタを取得する（MeshComponent への便利アクセス）
-   SkinCluster* GetSkinCluster() {
-      auto* c = GetComponent<MeshComponent>();
-      return c ? c->GetSkinCluster() : nullptr;
-   }
+   SkinCluster* GetSkinCluster();
 
    /// @brief スキンクラスタを読み取り専用で取得する
-   const SkinCluster* GetSkinCluster() const {
-      const auto* c = GetComponent<MeshComponent>();
-      return c ? c->GetSkinCluster() : nullptr;
-   }
+   const SkinCluster* GetSkinCluster() const;
 
    /// @brief モデルの位置を取得する
    /// @return 位置

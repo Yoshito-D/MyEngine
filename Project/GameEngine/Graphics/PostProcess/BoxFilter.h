@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include <wrl.h>
 #include <d3d12.h>
@@ -36,10 +37,7 @@ public:
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    /// @brief カーネル半径を設定（1=3x3, 2=5x5, 3=7x7）
-   void SetKernelRadius(int radius) {
-      kernelRadius_ = radius;
-      UpdateConstantBuffer();
-   }
+   void SetKernelRadius(std::int32_t radius);
 
 private:
    int32_t kernelRadius_ = 1; // デフォルト3x3

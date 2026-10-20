@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Framework/PlayModeController.h"
 #include "GameEngine/Object/Component/Audio/AudioSceneLifecycle.h"
 #include "GameEngine/Audio/Audio.h"
@@ -21,22 +22,15 @@ namespace GameEngine {
 
 #ifdef USE_IMGUI
 namespace {
-constexpr int kSceneJsonIndentSize = 3;
+constexpr std::int32_t kSceneJsonIndentSize = 3;
 
-bool PatchObjectComponentData(nlohmann::json& objectData, const std::string& fallbackObjectId,
-   const std::string& objectId, const std::string& componentTypeName, const nlohmann::json& componentData,
-   const std::string& parentEntityId) {
+bool PatchObjectComponentData(nlohmann::json& objectData, const std::string& objectId,
+   const std::string& componentTypeName, const nlohmann::json& componentData, const std::string& parentEntityId) {
    if (!objectData.is_object()) {
       return false;
    }
 
-   // 旧sceneObjectsではIDが埋め込みObjectではなくsceneKeyにしかないため、
-   // 明示IDがない場合だけ呼び出し元のfallbackを使って照合する。
-   std::string serializedObjectId = objectData.value("id", "");
-
-   if (serializedObjectId.empty()) {
-      serializedObjectId = fallbackObjectId;
-   }
+   const std::string serializedObjectId = objectData.value("id", "");
 
    if (serializedObjectId != objectId || !objectData.contains("components") ||
        !objectData.at("components").is_array()) {
@@ -65,44 +59,17 @@ bool PatchObjectComponentData(nlohmann::json& objectData, const std::string& fal
 
 bool PatchSceneComponentData(nlohmann::json& sceneData, const std::string& objectId,
    const std::string& componentTypeName, const nlohmann::json& componentData, const std::string& parentEntityId) {
-   if (!sceneData.is_object()) {
+   if (!sceneData.is_object() || !sceneData.contains("objects") || !sceneData.at("objects").is_array()) {
       return false;
    }
 
-   // 現行objectsと旧sceneObjectsの両方を走査する。移行途中のファイルに同じEntityが
-   // 両形式で存在しても、同じComponent値へ揃えることで保存結果を一貫させる。
-   bool patched = false;
-
-   if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
-      for (auto& objectData : sceneData["objects"]) {
-         patched =
-            PatchObjectComponentData(objectData, {}, objectId, componentTypeName, componentData, parentEntityId) ||
-            patched;
+   for (auto& object : sceneData["objects"]) {
+      if (PatchObjectComponentData(object, objectId, componentTypeName, componentData, parentEntityId)) {
+         return true;
       }
    }
 
-   if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
-      for (auto& sceneObjectEntry : sceneData["sceneObjects"]) {
-         if (!sceneObjectEntry.is_object() || sceneObjectEntry.value("deleted", false)) {
-            continue;
-         }
-
-         const std::string sceneKey = sceneObjectEntry.value("sceneKey", "");
-
-         // 旧版はobjectラッパー内、移行後はentry直下に本体があるため形を吸収する。
-         nlohmann::json* objectData = &sceneObjectEntry;
-
-         if (sceneObjectEntry.contains("object") && sceneObjectEntry.at("object").is_object()) {
-            objectData = &sceneObjectEntry["object"];
-         }
-
-         patched = PatchObjectComponentData(
-                      *objectData, sceneKey, objectId, componentTypeName, componentData, parentEntityId) ||
-                   patched;
-      }
-   }
-
-   return patched;
+   return false;
 }
 
 bool LoadSceneJsonFile(const std::filesystem::path& filePath, nlohmann::json& sceneData) {

@@ -1,4 +1,5 @@
 #include "GameEngine/Utility/Logger.h"
+#include <cstdint>
 #include <algorithm>
 #include <format>
 #include <iostream>
@@ -121,16 +122,16 @@ std::wstring Logger::ConvertString(const std::string& str) {
    }
 
    // Win32変換をサイズ照会と実変換の2段階で行い、可変長UTF-8でも切り捨てない。
-   auto sizeNeeded =
-      MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), NULL, 0);
+   auto sizeNeeded = MultiByteToWideChar(
+      CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<std::int32_t>(str.size()), NULL, 0);
 
    if (sizeNeeded == 0) {
       return std::wstring();
    }
 
    std::wstring result(sizeNeeded, 0);
-   MultiByteToWideChar(
-      CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), &result[0], sizeNeeded);
+   MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<std::int32_t>(str.size()),
+      &result[0], sizeNeeded);
    return result;
 }
 
@@ -140,14 +141,16 @@ std::string Logger::ConvertString(const std::wstring& str) {
    }
 
    // デバッグ出力用UTF-16から、ログファイル共通のUTF-8バイト列へ必要量だけ確保して変換する。
-   auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0, NULL, NULL);
+   auto sizeNeeded =
+      WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<std::int32_t>(str.size()), NULL, 0, NULL, NULL);
 
    if (sizeNeeded == 0) {
       return std::string();
    }
 
    std::string result(sizeNeeded, 0);
-   WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), sizeNeeded, NULL, NULL);
+   WideCharToMultiByte(
+      CP_UTF8, 0, str.data(), static_cast<std::int32_t>(str.size()), result.data(), sizeNeeded, NULL, NULL);
    return result;
 }
 

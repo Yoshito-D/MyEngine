@@ -331,7 +331,7 @@ void MainModule::DrawInspector() {
 
    ImGui::Separator();
 
-   int maxParticles = static_cast<int>(GetMaxParticles());
+   std::int32_t maxParticles = static_cast<std::int32_t>(GetMaxParticles());
 
    if (ImGuiHelper::DrawIntControl(
           L({"最大粒子数", "Max Particles"}), maxParticles, 1000, kInspectorColumnWidth, 1.0f, 1, 10000)) {
@@ -363,9 +363,9 @@ void EmissionModule::DrawInspector() {
    bool scheduleChanged = false;
 
    // 走査中のeraseで参照を無効化しないよう、削除対象だけ記録してループ後に反映する。
-   int removeIndex = -1;
+   std::int32_t removeIndex = -1;
 
-   for (int i = 0; i < static_cast<int>(bursts.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(bursts.size()); ++i) {
       auto& burst = bursts[i];
       ImGui::PushID(i);
 
@@ -390,14 +390,14 @@ void EmissionModule::DrawInspector() {
             scheduleChanged = true;
          }
 
-         int count = static_cast<int>(burst.count);
+         std::int32_t count = static_cast<std::int32_t>(burst.count);
 
          if (ImGuiHelper::DrawIntControl(L({"数", "Count"}), count, 10, kInspectorColumnWidth, 1.0f, 1, 10000)) {
             burst.count = static_cast<uint32_t>(std::max(count, 1));
             scheduleChanged = true;
          }
 
-         int cycles = static_cast<int>(burst.cycles);
+         std::int32_t cycles = static_cast<std::int32_t>(burst.cycles);
 
          if (ImGuiHelper::DrawIntControl(L({"回数", "Cycles"}), cycles, 1, kInspectorColumnWidth, 1.0f, 0, 1000)) {
             burst.cycles = static_cast<uint32_t>(std::max(cycles, 0));
@@ -894,13 +894,13 @@ void UVTransformModule::DrawInspector() {
 void TextureSheetAnimationModule::DrawInspector() {
    if (!DrawModuleEnabled(*this, "TextureSheetAnimation")) return;
 
-   int tilesX = static_cast<int>(GetTilesX());
+   std::int32_t tilesX = static_cast<std::int32_t>(GetTilesX());
 
    if (ImGuiHelper::DrawIntControl(L({"横分割数", "Tiles X"}), tilesX, 1, kInspectorColumnWidth, 1.0f, 1, 64)) {
       SetTilesX(static_cast<uint32_t>(std::max(tilesX, 1)));
    }
 
-   int tilesY = static_cast<int>(GetTilesY());
+   std::int32_t tilesY = static_cast<std::int32_t>(GetTilesY());
 
    if (ImGuiHelper::DrawIntControl(L({"縦分割数", "Tiles Y"}), tilesY, 1, kInspectorColumnWidth, 1.0f, 1, 64)) {
       SetTilesY(static_cast<uint32_t>(std::max(tilesY, 1)));
@@ -913,18 +913,18 @@ void TextureSheetAnimationModule::DrawInspector() {
       SetFrameOverTime(frameOverTime);
    }
 
-   int cycles = static_cast<int>(GetCycles());
+   std::int32_t cycles = static_cast<std::int32_t>(GetCycles());
 
    if (ImGuiHelper::DrawIntControl(L({"サイクル", "Cycles"}), cycles, 1, kInspectorColumnWidth, 1.0f, 1, 100)) {
       SetCycles(static_cast<uint32_t>(std::max(cycles, 1)));
    }
 
    // 単一行ではX方向だけが再生対象なので、選択モードに合わせて入力上限を変える。
-   int frameCount = static_cast<int>(GetFrameCount());
-   int maxFrameCount = static_cast<int>(GetTilesX() * GetTilesY());
+   std::int32_t frameCount = static_cast<std::int32_t>(GetFrameCount());
+   std::int32_t maxFrameCount = static_cast<std::int32_t>(GetTilesX() * GetTilesY());
 
    if (GetAnimationMode() == AnimationMode::SingleRow) {
-      maxFrameCount = static_cast<int>(GetTilesX());
+      maxFrameCount = static_cast<std::int32_t>(GetTilesX());
    }
 
    if (ImGuiHelper::DrawIntControl(L({"フレーム数 (0=全て)", "Frame Count (0=All)"}), frameCount, 0,
@@ -948,7 +948,7 @@ void TextureSheetAnimationModule::DrawInspector() {
       }
    }
 
-   int startFrame = static_cast<int>(GetStartFrame());
+   std::int32_t startFrame = static_cast<std::int32_t>(GetStartFrame());
 
    if (ImGuiHelper::DrawIntControl(
           L({"開始フレーム", "Start Frame"}), startFrame, 0, kInspectorColumnWidth, 1.0f, 0, 1024)) {
@@ -963,7 +963,7 @@ void TextureSheetAnimationModule::DrawInspector() {
       }
 
       if (!randomRow) {
-         int rowIndex = static_cast<int>(GetRowIndex());
+         std::int32_t rowIndex = static_cast<std::int32_t>(GetRowIndex());
 
          if (ImGuiHelper::DrawIntControl(
                 L({"行インデックス", "Row Index"}), rowIndex, 0, kInspectorColumnWidth, 1.0f, 0, 1024)) {
@@ -1104,7 +1104,7 @@ void TrailModule::DrawInspector() {
 
    // Emitter接続モードは常に二点だけを使うため、履歴点数と点間距離の設定はPath時だけ意味を持つ。
    if (GetMode() == TrailMode::ParticlePath) {
-      int maxPoints = static_cast<int>(GetMaxPoints());
+      std::int32_t maxPoints = static_cast<std::int32_t>(GetMaxPoints());
 
       if (ImGuiHelper::DrawIntControl(
              L({"履歴点数", "History Points"}), maxPoints, 16, kInspectorColumnWidth, 1.0f, 2, 128)) {
@@ -1204,7 +1204,7 @@ void ParticleMeshModule::DrawInspector() {
             SetRingOuterRadius(outer);
          }
 
-         int segments = static_cast<int>(GetRingSegments());
+         std::int32_t segments = static_cast<std::int32_t>(GetRingSegments());
 
          if (ImGuiHelper::DrawIntControl(
                 L({"分割数", "Segments"}), segments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
@@ -1221,13 +1221,13 @@ void ParticleMeshModule::DrawInspector() {
             SetSphereRadius(radius);
          }
 
-         int stacks = static_cast<int>(GetSphereStacks());
+         std::int32_t stacks = static_cast<std::int32_t>(GetSphereStacks());
 
          if (ImGuiHelper::DrawIntControl(L({"スタック", "Stacks"}), stacks, 16, kInspectorColumnWidth, 1.0f, 2, 64)) {
             SetSphereStacks(static_cast<uint32_t>(std::max(stacks, 2)));
          }
 
-         int slices = static_cast<int>(GetSphereSlices());
+         std::int32_t slices = static_cast<std::int32_t>(GetSphereSlices());
 
          if (ImGuiHelper::DrawIntControl(L({"スライス", "Slices"}), slices, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
             SetSphereSlices(static_cast<uint32_t>(std::max(slices, 3)));
@@ -1267,7 +1267,7 @@ void ParticleMeshModule::DrawInspector() {
             SetCylinderHeight(height);
          }
 
-         int segments = static_cast<int>(GetCylinderSegments());
+         std::int32_t segments = static_cast<std::int32_t>(GetCylinderSegments());
 
          if (ImGuiHelper::DrawIntControl(
                 L({"分割数", "Segments"}), segments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
@@ -1291,7 +1291,7 @@ void ParticleMeshModule::DrawInspector() {
             SetConeHeight(height);
          }
 
-         int segments = static_cast<int>(GetConeSegments());
+         std::int32_t segments = static_cast<std::int32_t>(GetConeSegments());
 
          if (ImGuiHelper::DrawIntControl(
                 L({"分割数", "Segments"}), segments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
@@ -1308,7 +1308,7 @@ void ParticleMeshModule::DrawInspector() {
             SetCircleRadius(radius);
          }
 
-         int segments = static_cast<int>(GetCircleSegments());
+         std::int32_t segments = static_cast<std::int32_t>(GetCircleSegments());
 
          if (ImGuiHelper::DrawIntControl(
                 L({"分割数", "Segments"}), segments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
@@ -1349,14 +1349,14 @@ void ParticleMeshModule::DrawInspector() {
             SetTorusMinorRadius(minorRadius);
          }
 
-         int majorSegments = static_cast<int>(GetTorusMajorSegments());
+         std::int32_t majorSegments = static_cast<std::int32_t>(GetTorusMajorSegments());
 
          if (ImGuiHelper::DrawIntControl(
                 L({"主分割数", "Major Segments"}), majorSegments, 32, kInspectorColumnWidth, 1.0f, 3, 128)) {
             SetTorusMajorSegments(static_cast<uint32_t>(std::max(majorSegments, 3)));
          }
 
-         int minorSegments = static_cast<int>(GetTorusMinorSegments());
+         std::int32_t minorSegments = static_cast<std::int32_t>(GetTorusMinorSegments());
 
          if (ImGuiHelper::DrawIntControl(
                 L({"副分割数", "Minor Segments"}), minorSegments, 16, kInspectorColumnWidth, 1.0f, 3, 128)) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <chrono>
 
 namespace GameEngine {
@@ -32,7 +33,7 @@ private:
    TimePoint prevTime_;
    float deltaTime_ = 0.0f;
    float elapsedTime_ = 0.0f;
-   int frameCount_ = 0;
+   std::int32_t frameCount_ = 0;
    float fps_ = 0.0f;
 };
 }

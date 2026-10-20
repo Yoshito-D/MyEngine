@@ -22,7 +22,7 @@ public:
       Circle,     ///< 円
       Edge,       ///< 線分
       Point,      ///< 原点
-      Cylinder,   ///< 円柱。既存JSONとの互換性維持のため列挙末尾側に配置
+      Cylinder,   ///< 円柱。保存値が他の形状と重複しない列挙値
       Torus,      ///< トーラス
       SkinnedMesh ///< 現在姿勢のスキニング済みメッシュ表面
    };
@@ -119,11 +119,7 @@ public:
 
    /// @brief 形状のローカル位置を設定する
    /// @param position エミッター基準の位置
-   void SetPosition(const Vector3& position) {
-      auto pose = transform_;
-      pose.translation = position;
-      SetTransform(pose);
-   }
+   void SetPosition(const Vector3& position);
 
    /// @brief 形状のローカル位置を取得する
    /// @return エミッター基準の位置
@@ -139,11 +135,7 @@ public:
 
    /// @brief 形状のローカルスケールを設定する
    /// @param scale 各軸の拡縮率
-   void SetScale(const Vector3& scale) {
-      auto pose = transform_;
-      pose.scale = scale;
-      SetTransform(pose);
-   }
+   void SetScale(const Vector3& scale);
 
    /// @brief 形状のローカルスケールを取得する
    /// @return 各軸の拡縮率
@@ -151,11 +143,7 @@ public:
 
    /// @brief 形状の位置・回転・スケールをまとめて設定する
    /// @param transform エミッター基準のローカルトランスフォーム
-   void SetTransform(const Transform& transform) {
-      if (transform.IsFinite()) {
-         transform_ = transform;
-      }
-   }
+   void SetTransform(const Transform& transform);
 
    /// @brief 形状のローカルトランスフォームを取得する
    /// @return エミッター基準のトランスフォーム
@@ -164,10 +152,7 @@ public:
    /// @brief スキンメッシュ発生に使用するモデルと現在姿勢を設定する
    /// @param modelAsset 頂点・インデックスを持つモデル
    /// @param skinCluster 現在のスキニング行列。nullptrなら静的頂点を使用
-   void SetSkinnedMeshSource(const ModelAsset* modelAsset, const SkinCluster* skinCluster) {
-      skinnedMeshModel_ = modelAsset;
-      skinnedMeshSkinCluster_ = skinCluster;
-   }
+   void SetSkinnedMeshSource(const ModelAsset* modelAsset, const SkinCluster* skinCluster);
 
    /// @brief 形状に基づいてランダムな放出位置を取得
    /// @return 形状のローカル変換を反映した放出位置

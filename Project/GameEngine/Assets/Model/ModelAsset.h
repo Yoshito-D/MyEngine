@@ -128,35 +128,14 @@ public:
    /// @brief 指定メッシュのCompute Skinning用リソースがそろっているか
    /// @param meshIndex メッシュ番号
    /// @return 必要なSRV/UAV/CBV/VBVが利用可能ならtrue
-   bool HasComputeSkinningResources(size_t meshIndex) const {
-      return HasPalette() && meshIndex < skinnedVertexResourceStates.size() &&
-             meshIndex < mappedSkinningInformationData.size() && mappedSkinningInformationData[meshIndex] &&
-             meshIndex < inputVertexSrvHandles.size() && meshIndex < influenceSrvHandles.size() &&
-             meshIndex < skinnedVertexResources.size() && meshIndex < skinnedVertexBufferViews.size() &&
-             meshIndex < skinnedVertexUavHandles.size() && meshIndex < skinningInformationResources.size() &&
-             inputVertexSrvHandles[meshIndex].second.ptr != 0 && influenceSrvHandles[meshIndex].second.ptr != 0 &&
-             skinnedVertexResources[meshIndex] && skinnedVertexUavHandles[meshIndex].second.ptr != 0 &&
-             skinningInformationResources[meshIndex];
-   }
+   bool HasComputeSkinningResources(size_t meshIndex) const;
 
    /// @brief 指定メッシュのCompute Skinning済み頂点バッファビューを取得する
    /// @param meshIndex メッシュ番号
    /// @return 利用可能な場合は頂点バッファビュー、範囲外ならnullptr
-   const D3D12_VERTEX_BUFFER_VIEW* GetSkinnedVertexBufferView(size_t meshIndex) const {
-      if (meshIndex >= skinnedVertexBufferViews.size()) {
-         return nullptr;
-      }
+   const D3D12_VERTEX_BUFFER_VIEW* GetSkinnedVertexBufferView(size_t meshIndex) const;
 
-      return &skinnedVertexBufferViews[meshIndex];
-   }
-
-   const D3D12_VERTEX_BUFFER_VIEW* GetInfluenceBufferView(size_t meshIndex) const {
-      if (meshIndex >= influenceBufferViews.size()) {
-         return nullptr;
-      }
-
-      return &influenceBufferViews[meshIndex];
-   }
+   const D3D12_VERTEX_BUFFER_VIEW* GetInfluenceBufferView(size_t meshIndex) const;
 };
 
 /// @brief モデルデータを表す構造体
@@ -189,50 +168,32 @@ public:
    /// @brief 指定インデックスの頂点バッファビューを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return 頂点バッファビュー
-   const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView(size_t index = 0) const {
-      assert(index < vertexBufferViews_.size());
-      return vertexBufferViews_[index];
-   }
+   const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView(size_t index = 0) const;
 
    /// @brief 指定インデックスの頂点バッファを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return 頂点バッファリソース
-   ID3D12Resource* GetVertexBuffer(size_t index = 0) const {
-      assert(index < vertexResources_.size());
-      return vertexResources_[index].Get();
-   }
+   ID3D12Resource* GetVertexBuffer(size_t index = 0) const;
 
    /// @brief 指定インデックスのインデックスバッファビューを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return インデックスバッファビュー
-   const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView(size_t index = 0) const {
-      assert(index < indexBufferViews_.size());
-      return indexBufferViews_[index];
-   }
+   const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView(size_t index = 0) const;
 
    /// @brief 指定インデックスのインデックスデータを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return インデックスデータの参照
-   const std::vector<uint32_t>& GetIndices(size_t index = 0) const {
-      assert(index < modelData_.meshes.size());
-      return modelData_.meshes[index].indices;
-   }
+   const std::vector<uint32_t>& GetIndices(size_t index = 0) const;
 
    /// @brief 指定インデックスの頂点データを取得する
    /// @param index メッシュ番号（省略時は0）
    /// @return 頂点データの参照
-   const std::vector<Mesh::VertexData>& GetVertices(size_t index = 0) const {
-      assert(index < modelData_.meshes.size());
-      return modelData_.meshes[index].vertices;
-   }
+   const std::vector<Mesh::VertexData>& GetVertices(size_t index = 0) const;
 
    /// @brief 指定インデックスのマテリアルを取得する
    /// @param index マテリアル番号（省略時は0）
    /// @return マテリアルアセット
-   const MaterialAsset& GetMaterialAsset(size_t index = 0) const {
-      assert(index < modelData_.materials.size());
-      return modelData_.materials[index];
-   }
+   const MaterialAsset& GetMaterialAsset(size_t index = 0) const;
 
    /// @brief メッシュデータ一覧を取得する
    const std::vector<MeshData>& GetMeshData() const { return modelData_.meshes; }

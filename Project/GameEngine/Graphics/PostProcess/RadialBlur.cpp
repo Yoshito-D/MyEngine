@@ -35,26 +35,7 @@ void RadialBlur::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rende
 void RadialBlur::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!GetPipeline() || !GetRootSignature()) return;
 
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // 定数バッファをルートパラメータ0にセット
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // フルスクリーントライアングル描画
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 void RadialBlur::CreateConstantBuffer() {
@@ -106,3 +87,25 @@ void RadialBlur::SetParams(const RadialBlurParams& params) {
 }
 
 }
+
+namespace GameEngine {
+
+void RadialBlur::SetBlurStrength(float strength) {
+   auto params = params_;
+   params.strength = strength;
+   SetParams(params);
+}
+
+void RadialBlur::SetCenter(float x, float y) {
+   auto params = params_;
+   params.center = {x, y};
+   SetParams(params);
+}
+
+void RadialBlur::SetSampleCount(int32_t count) {
+   auto params = params_;
+   params.sampleCount = count;
+   SetParams(params);
+}
+
+} // namespace GameEngine

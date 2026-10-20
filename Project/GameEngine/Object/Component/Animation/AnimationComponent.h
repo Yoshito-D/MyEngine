@@ -71,47 +71,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.animationName = animationName;
-      settings.clipName = clipName;
-      settings.targetNodeName = targetNodeName;
-      settings.playbackSpeed = playbackSpeed;
-      settings.loop = loop;
-      settings.applyTranslation = applyTranslation;
-      settings.applyRotation = applyRotation;
-      settings.applyScale = applyScale;
-      settings.useSkinning = useSkinning;
-      settings.debugDrawBones = debugDrawBones;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.playbackSpeed)) {
-         settings.playbackSpeed = defaults.playbackSpeed;
-      }
-
-      animationName = settings.animationName;
-      clipName = settings.clipName;
-      targetNodeName = settings.targetNodeName;
-      playbackSpeed = settings.playbackSpeed;
-      loop = settings.loop;
-      applyTranslation = settings.applyTranslation;
-      applyRotation = settings.applyRotation;
-      applyScale = settings.applyScale;
-      useSkinning = settings.useSkinning;
-      debugDrawBones = settings.debugDrawBones;
-
-      if (!std::isfinite(currentTime)) {
-         currentTime = 0.0f;
-      }
-
-      Seek(currentTime);
-   }
+   void Configure(const Settings& requested);
 
 private:
    std::string animationName;     ///< 再生するアニメーションアセットID

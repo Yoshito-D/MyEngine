@@ -79,47 +79,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.clipAssetId = clipAssetId;
-      settings.volume = volume;
-      settings.loop = loop;
-      settings.playOnStart = playOnStart;
-      settings.fadeInSeconds = fadeInSeconds;
-      settings.fadeOutSeconds = fadeOutSeconds;
-      settings.continueAcrossScenes = continueAcrossScenes;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.volume)) {
-         settings.volume = defaults.volume;
-      }
-
-      if (!std::isfinite(settings.fadeInSeconds)) {
-         settings.fadeInSeconds = defaults.fadeInSeconds;
-      }
-
-      if (!std::isfinite(settings.fadeOutSeconds)) {
-         settings.fadeOutSeconds = defaults.fadeOutSeconds;
-      }
-
-      settings.volume = std::clamp(settings.volume, 0.0f, 1.0f);
-      settings.fadeInSeconds = std::max(settings.fadeInSeconds, 0.0f);
-      settings.fadeOutSeconds = std::max(settings.fadeOutSeconds, 0.0f);
-      clipAssetId = settings.clipAssetId;
-      volume = settings.volume;
-      loop = settings.loop;
-      playOnStart = settings.playOnStart;
-      fadeInSeconds = settings.fadeInSeconds;
-      fadeOutSeconds = settings.fadeOutSeconds;
-      continueAcrossScenes = settings.continueAcrossScenes;
-      Prepare();
-   }
+   void Configure(const Settings& requested);
 
 private:
    std::string clipAssetId;

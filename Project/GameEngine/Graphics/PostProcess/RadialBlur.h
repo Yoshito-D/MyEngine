@@ -49,23 +49,11 @@ public:
    const RadialBlurParams& GetParams() const { return params_; }
 
    // パラメータ設定
-   void SetBlurStrength(float strength) {
-      auto params = params_;
-      params.strength = strength;
-      SetParams(params);
-   }
+   void SetBlurStrength(float strength);
 
-   void SetCenter(float x, float y) {
-      auto params = params_;
-      params.center = {x, y};
-      SetParams(params);
-   }
+   void SetCenter(float x, float y);
 
-   void SetSampleCount(int32_t count) {
-      auto params = params_;
-      params.sampleCount = count;
-      SetParams(params);
-   }
+   void SetSampleCount(int32_t count);
 
 private:
    RadialBlurParams params_;

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Effects/Particles/Modules/TextureSheetAnimationModule.h"
 
 namespace GameEngine {
@@ -56,9 +57,9 @@ void TextureSheetAnimationModule::InitializeParticle(Particle& particle) const {
    if (!IsEnabled()) return;
 
    const uint32_t safeTilesY = std::max(tilesY_, 1u);
-   particle.sheetFrame = static_cast<int>(startFrame_);
-   particle.sheetRow = randomRow_ ? RandomUtils::Random<int>(0, static_cast<int>(safeTilesY - 1u))
-                                  : static_cast<int>(std::min(rowIndex_, safeTilesY - 1u));
+   particle.sheetFrame = static_cast<std::int32_t>(startFrame_);
+   particle.sheetRow = randomRow_ ? RandomUtils::Random<std::int32_t>(0, static_cast<std::int32_t>(safeTilesY - 1u))
+                                  : static_cast<std::int32_t>(std::min(rowIndex_, safeTilesY - 1u));
 }
 
 uint32_t TextureSheetAnimationModule::ResolveFrame(const Particle& particle) const {
@@ -87,7 +88,7 @@ uint32_t TextureSheetAnimationModule::ResolveFrame(const Particle& particle) con
 void TextureSheetAnimationModule::UpdateAnimation(Particle& particle, float) const {
    if (!IsEnabled()) return;
 
-   particle.sheetFrame = static_cast<int>(ResolveFrame(particle));
+   particle.sheetFrame = static_cast<std::int32_t>(ResolveFrame(particle));
 }
 
 nlohmann::json TextureSheetAnimationModule::ToJson() const {
@@ -101,7 +102,7 @@ nlohmann::json TextureSheetAnimationModule::ToJson() const {
    j["randomRow"] = randomRow_;
    j["rowIndex"] = rowIndex_;
    j["startFrame"] = startFrame_;
-   j["animationMode"] = static_cast<int>(animationMode_);
+   j["animationMode"] = static_cast<std::int32_t>(animationMode_);
    return j;
 }
 
@@ -143,11 +144,45 @@ void TextureSheetAnimationModule::FromJson(const nlohmann::json& j) {
    }
 
    if (j.contains("animationMode")) {
-      const int mode = j["animationMode"].get<int>();
-      animationMode_ =
-         mode == static_cast<int>(AnimationMode::SingleRow) ? AnimationMode::SingleRow : AnimationMode::WholeSheet;
+      const std::int32_t mode = j["animationMode"].get<std::int32_t>();
+      animationMode_ = mode == static_cast<std::int32_t>(AnimationMode::SingleRow) ? AnimationMode::SingleRow
+                                                                                   : AnimationMode::WholeSheet;
    }
 
    ClampSettings();
 }
 }
+
+namespace GameEngine {
+
+void TextureSheetAnimationModule::SetTilesX(uint32_t value) {
+   tilesX_ = std::max(value, 1u);
+   ClampSettings();
+}
+
+void TextureSheetAnimationModule::SetTilesY(uint32_t value) {
+   tilesY_ = std::max(value, 1u);
+   ClampSettings();
+}
+
+void TextureSheetAnimationModule::SetFrameCount(uint32_t value) {
+   frameCount_ = value;
+   ClampSettings();
+}
+
+void TextureSheetAnimationModule::SetRowIndex(uint32_t value) {
+   rowIndex_ = value;
+   ClampSettings();
+}
+
+void TextureSheetAnimationModule::SetStartFrame(uint32_t value) {
+   startFrame_ = value;
+   ClampSettings();
+}
+
+void TextureSheetAnimationModule::SetAnimationMode(AnimationMode value) {
+   animationMode_ = value == AnimationMode::SingleRow ? AnimationMode::SingleRow : AnimationMode::WholeSheet;
+   ClampSettings();
+}
+
+} // namespace GameEngine

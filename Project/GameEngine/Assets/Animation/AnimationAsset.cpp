@@ -36,7 +36,7 @@ void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const s
       }
 
       const float ticksPerSecond =
-         animationAssimp->mTicksPerSecond == 0.0 ? 1.0f : static_cast<float>(animationAssimp->mTicksPerSecond);
+         animationAssimp->mTicksPerSecond == 0.0f ? 1.0f : static_cast<float>(animationAssimp->mTicksPerSecond);
 
       // Assimpのtick時刻をここで秒へ統一し、以降の再生処理をエンジン時間だけで扱えるようにする。
       AnimationClip clip;

@@ -55,27 +55,7 @@ void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    AdvanceTime();
    UpdateConstantBuffer();
 
-   // 色だけを扱う後処理なのでDSVを束縛せず、深度リソースとの不要な競合を避ける。
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // 物理スロット番号はルートシグネチャ定義の意味名から解決済みであり、並び順を固定値で仮定しない。
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // 頂点バッファ不要のフルスクリーントライアングルで、入力画像全体を一度だけ評価する。
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   // 後続エフェクトが今回の出力をSRVとして読める状態へ遷移する。
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 #ifdef USE_IMGUI
@@ -172,3 +152,31 @@ void WhiteNoise::AdvanceTime() {
 }
 
 }
+
+namespace GameEngine {
+
+void WhiteNoise::SetNoiseDensity(float value) {
+   auto params = params_;
+   params.noiseDensity = value;
+   SetParams(params);
+}
+
+void WhiteNoise::SetSeedChangeRate(float value) {
+   auto params = params_;
+   params.seedChangeRate = value;
+   SetParams(params);
+}
+
+void WhiteNoise::SetNoiseThreshold(float value) {
+   auto params = params_;
+   params.noiseThreshold = value;
+   SetParams(params);
+}
+
+void WhiteNoise::SetNoiseIntensity(float value) {
+   auto params = params_;
+   params.noiseIntensity = value;
+   SetParams(params);
+}
+
+} // namespace GameEngine

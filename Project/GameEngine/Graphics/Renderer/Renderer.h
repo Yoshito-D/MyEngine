@@ -156,17 +156,13 @@ public:
    /// @param label メニューの日本語・英語ラベル（文字列リテラル）。
    /// @param defaultVisible 初回登録時の表示状態。
    /// @return 現在の表示状態。マネージャーがない場合はfalse。
-   bool GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true) {
-      return imGuiManager_ && imGuiManager_->GetEditorWindowVisibility(stableId, label, defaultVisible);
-   }
+   bool GetEditorWindowVisibility(const char* stableId, ImGuiHelper::LocalizedText label, bool defaultVisible = true);
 
    /// @brief 登録済みエディターウィンドウの表示状態を設定する。
    /// @param stableId 登録済みウィンドウの固定ID。
    /// @param visible 表示する場合はtrue。
    /// @return マネージャーがない、またはIDが未登録の場合はfalse。
-   bool SetEditorWindowVisibility(const char* stableId, bool visible) {
-      return imGuiManager_ && imGuiManager_->SetEditorWindowVisibility(stableId, visible);
-   }
+   bool SetEditorWindowVisibility(const char* stableId, bool visible);
 #endif
 
    /// @brief 線を描画する（LineRendererに委任）
@@ -192,8 +188,8 @@ public:
    /// @param enableFade カメラからの距離に応じてフェードアウトするか（デフォルト：true）
    /// @param fadeDistance フェードアウトを開始する距離（デフォルト：50.0f、enableFadeがtrueの場合のみ有効）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10, int range = 100,
-      bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
+   void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, std::int32_t thickLineInterval = 10,
+      std::int32_t range = 100, bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
 
    /// @brief 球を描画する
    /// @param center 中心
@@ -377,9 +373,7 @@ private:
    std::unordered_map<std::string, PipelineHandle> pipelineCache_;
 
    /// @brief pipelineCache_ のキーを生成
-   std::string MakePipelineCacheKey(const std::string& name, BlendMode mode) const {
-      return name + "_" + std::to_string(static_cast<int>(mode));
-   }
+   std::string MakePipelineCacheKey(const std::string& name, BlendMode mode) const;
 
    std::unique_ptr<Material> defaultMaterial_ = nullptr;
    std::unique_ptr<RenderBootstrapper> renderBootstrapper_;
@@ -451,8 +445,5 @@ private:
 
    /// @brief ブレンドモードとポストプロセス指定から描画パスを決定
    RenderPass DetermineRenderPass(BlendMode blendMode, bool applyPostProcess) const;
-
-   /// @brief 半透明コマンドをカメラ距離でソート
-   void SortTransparentCommands();
 };
 }

@@ -104,3 +104,12 @@ void EmissionModule::FromJson(const nlohmann::json& j) {
    }
 }
 }
+
+namespace GameEngine {
+
+void EmissionModule::ClearBursts() {
+   bursts_.clear();
+   burstStates_.clear();
+}
+
+} // namespace GameEngine

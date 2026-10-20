@@ -35,7 +35,7 @@ public:
    void SetForce(const Vector3& force) { force_ = RandomVector3(force, force, false); }
 
    /// @brief 加える力の代表値を取得する
-   const Vector3& GetForce() const { return force_.Minimum(); }
+   Vector3 GetForce() const { return force_.Minimum(); }
 
    /// @brief 加える力を乱数範囲で設定する
    void SetForceRange(const RandomVector3& force) { force_ = force; }
