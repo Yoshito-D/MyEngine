@@ -9,6 +9,7 @@ bool ParticleMeshModule::RebuildMesh(Mesh& mesh) {
    // Mesh Moduleを無効化した場合も描画経路を変えず、既定Quadへ戻して既存エフェクトの見た目を維持する。
    const float meshOriginY = IsEnabled() ? GetOriginY() : 0.5f;
    const MeshType meshType = IsEnabled() ? GetMeshType() : MeshType::Quad;
+
    switch (meshType) {
       case MeshType::Quad:
          mesh.CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
@@ -48,8 +49,11 @@ bool ParticleMeshModule::RebuildMesh(Mesh& mesh) {
          mesh.CreateParticleQuad(1.0f, 1.0f, Mesh::PlaneOrientation::XY, meshOriginY);
          break;
    }
-   if (!mesh.GetVertexBufferView().BufferLocation || !mesh.GetIndexCount())
+
+   if (!mesh.GetVertexBufferView().BufferLocation || !mesh.GetIndexCount()) {
       return false;
+   }
+
    meshDirty_ = false;
    return true;
 }
@@ -68,60 +72,109 @@ nlohmann::json ParticleMeshModule::ToJson() const {
 }
 
 void ParticleMeshModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
-   if (j.contains("particleMeshType"))
+   }
+
+   if (j.contains("particleMeshType")) {
       SetMeshType(static_cast<MeshType>(j["particleMeshType"].get<int>()));
-   if (j.contains("meshOriginY"))
+   }
+
+   if (j.contains("meshOriginY")) {
       SetOriginY(j["meshOriginY"].get<float>());
-   if (j.contains("ringInnerRadius"))
+   }
+
+   if (j.contains("ringInnerRadius")) {
       SetRingInnerRadius(j["ringInnerRadius"]);
-   if (j.contains("ringOuterRadius"))
+   }
+
+   if (j.contains("ringOuterRadius")) {
       SetRingOuterRadius(j["ringOuterRadius"]);
-   if (j.contains("ringSegments"))
+   }
+
+   if (j.contains("ringSegments")) {
       SetRingSegments(j["ringSegments"].get<uint32_t>());
-   if (j.contains("sphereRadius"))
+   }
+
+   if (j.contains("sphereRadius")) {
       SetSphereRadius(j["sphereRadius"]);
-   if (j.contains("sphereStacks"))
+   }
+
+   if (j.contains("sphereStacks")) {
       SetSphereStacks(j["sphereStacks"].get<uint32_t>());
-   if (j.contains("sphereSlices"))
+   }
+
+   if (j.contains("sphereSlices")) {
       SetSphereSlices(j["sphereSlices"].get<uint32_t>());
+   }
+
    if (j.contains("boxSize") && j["boxSize"].is_array() && j["boxSize"].size() >= 3) {
       SetBoxSize(Vector3(j["boxSize"][0], j["boxSize"][1], j["boxSize"][2]));
    }
 
    // 旧データの単一半径を先に適用し、新しい上下半径があれば個別値で上書きする。
-   if (j.contains("cylinderRadius"))
+   if (j.contains("cylinderRadius")) {
       SetCylinderRadius(j["cylinderRadius"]);
-   if (j.contains("cylinderTopRadius"))
+   }
+
+   if (j.contains("cylinderTopRadius")) {
       SetCylinderTopRadius(j["cylinderTopRadius"]);
-   if (j.contains("cylinderBottomRadius"))
+   }
+
+   if (j.contains("cylinderBottomRadius")) {
       SetCylinderBottomRadius(j["cylinderBottomRadius"]);
-   if (j.contains("cylinderHeight"))
+   }
+
+   if (j.contains("cylinderHeight")) {
       SetCylinderHeight(j["cylinderHeight"]);
-   if (j.contains("cylinderSegments"))
+   }
+
+   if (j.contains("cylinderSegments")) {
       SetCylinderSegments(j["cylinderSegments"].get<uint32_t>());
-   if (j.contains("coneRadius"))
+   }
+
+   if (j.contains("coneRadius")) {
       SetConeRadius(j["coneRadius"]);
-   if (j.contains("coneHeight"))
+   }
+
+   if (j.contains("coneHeight")) {
       SetConeHeight(j["coneHeight"]);
-   if (j.contains("coneSegments"))
+   }
+
+   if (j.contains("coneSegments")) {
       SetConeSegments(j["coneSegments"].get<uint32_t>());
-   if (j.contains("circleRadius"))
+   }
+
+   if (j.contains("circleRadius")) {
       SetCircleRadius(j["circleRadius"]);
-   if (j.contains("circleSegments"))
+   }
+
+   if (j.contains("circleSegments")) {
       SetCircleSegments(j["circleSegments"].get<uint32_t>());
-   if (j.contains("planeWidth"))
+   }
+
+   if (j.contains("planeWidth")) {
       SetPlaneWidth(j["planeWidth"]);
-   if (j.contains("planeDepth"))
+   }
+
+   if (j.contains("planeDepth")) {
       SetPlaneDepth(j["planeDepth"]);
-   if (j.contains("torusMajorRadius"))
+   }
+
+   if (j.contains("torusMajorRadius")) {
       SetTorusMajorRadius(j["torusMajorRadius"]);
-   if (j.contains("torusMinorRadius"))
+   }
+
+   if (j.contains("torusMinorRadius")) {
       SetTorusMinorRadius(j["torusMinorRadius"]);
-   if (j.contains("torusMajorSegments"))
+   }
+
+   if (j.contains("torusMajorSegments")) {
       SetTorusMajorSegments(j["torusMajorSegments"].get<uint32_t>());
-   if (j.contains("torusMinorSegments"))
+   }
+
+   if (j.contains("torusMinorSegments")) {
       SetTorusMinorSegments(j["torusMinorSegments"].get<uint32_t>());
+   }
 }
 }

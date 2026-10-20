@@ -15,8 +15,7 @@ void Bloom::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarg
 }
 
 void Bloom::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature())
-      return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    GetRenderTarget()->PreDraw(false);
 

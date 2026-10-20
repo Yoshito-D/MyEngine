@@ -19,6 +19,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
    std::function<void()> invalidatePipelineBindingFunc, D3D12_GPU_DESCRIPTOR_HANDLE sceneColorHandle,
    D3D12_GPU_DESCRIPTOR_HANDLE sceneDepthHandle) {
    ParticleSystem* particleSystem = particleData.particleSystem;
+
    if (!particleSystem) {
       Logger::Warning("[ParticleRenderer] ParticleSystem is null, skip draw");
       return;
@@ -37,8 +38,8 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
    const uint32_t activeCount = particleSystem->GetDrawParticleCount();
    const bool hasRibbon =
       particleSystem->DescribeTrailModule().IsEnabled() && particleSystem->GetRibbonIndexCount() > 0;
-   if (activeCount == 0 && !hasRibbon)
-      return;
+
+   if (activeCount == 0 && !hasRibbon) return;
 
    // Particleパイプラインを設定
    // マテリアルに blendMode が設定されていればそれを優先、なければ加算ブレンド
@@ -59,10 +60,12 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
       }
 
       auto resolved = psoManager_->ResolvePipelineRootParameter("Particle", semantic);
+
       if (!resolved.has_value()) {
          Logger::Error(
             "[ParticleRenderer] Failed to resolve root slot: pipeline=Particle, semantic=" + std::string(semantic));
       }
+
       return resolved;
    };
 
@@ -72,6 +75,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
    const auto sceneColorSlot = resolveSlot("scenecolor");
    const auto sceneDepthSlot = resolveSlot("scenedepth");
    const auto particleDrawSlot = resolveSlot("particledraw");
+
    if (!materialSlot || !instancingSlot || !textureSlot || !sceneColorSlot || !sceneDepthSlot || !particleDrawSlot) {
       return;
    }
@@ -84,6 +88,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
 
       // マテリアル設定（ParticleMaterial）
       auto* material = particleSystem->GetMaterial();
+
       if (material && material->GetMaterialResource()) {
          cmdList->SetGraphicsRootConstantBufferView(
             materialSlot.value(), material->GetMaterialResource()->GetGPUVirtualAddress());
@@ -93,6 +98,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
          // 描画前にコピーした色を参照し、現在書き込み中のRTVとの自己依存を避ける。
          cmdList->SetGraphicsRootDescriptorTable(sceneColorSlot.value(), sceneColorHandle);
       }
+
       if (sceneDepthHandle.ptr != 0) {
          cmdList->SetGraphicsRootDescriptorTable(sceneDepthSlot.value(), sceneDepthHandle);
       }
@@ -102,6 +108,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
          if (Texture* ribbonTexture = particleSystem->GetRibbonTexture()) {
             cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), ribbonTexture->GetTextureSrvHandleGPU());
          }
+
          cmdList->SetGraphicsRootDescriptorTable(
             instancingSlot.value(), particleSystem->GetRibbonInstancingSrvHandleGPU());
          const auto& vertexBufferView = particleSystem->GetRibbonVertexBufferView();
@@ -112,20 +119,22 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
          cmdList->DrawIndexedInstanced(particleSystem->GetRibbonIndexCount(), 1, 0, 0, 0);
       }
 
-      if (activeCount == 0)
-         return;
+      if (activeCount == 0) return;
 
       // 本体は常にGPUシミュレーション出力を使い、トレイルの有無とは独立して描画する。
       if (Texture* texture = particleSystem->GetTexture()) {
          cmdList->SetGraphicsRootDescriptorTable(textureSlot.value(), texture->GetTextureSrvHandleGPU());
       }
+
       cmdList->SetGraphicsRootDescriptorTable(instancingSlot.value(), particleSystem->GetInstancingSrvHandleGPU());
 
       // メッシュ設定（Billboard用Quad または Model）
       const ModelAsset* modelAsset = particleSystem->GetModelAsset();
+
       if (modelAsset) {
          // Modelモードは各頂点をactiveCount回インスタンス化し、粒子データはSRVから引く。
          const auto& meshes = modelAsset->GetMeshData();
+
          for (size_t i = 0; i < meshes.size(); ++i) {
             cmdList->IASetVertexBuffers(0, 1, &modelAsset->GetVertexBufferView(i));
             cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -134,6 +143,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
       } else {
          // Billboardモードは共有Quadのインデックスを使い、頂点数を抑える。
          const Mesh* mesh = particleSystem->GetMesh();
+
          if (mesh) {
             cmdList->IASetVertexBuffers(0, 1, &mesh->GetVertexBufferView());
             cmdList->IASetIndexBuffer(&mesh->GetIndexBufferView());
@@ -147,6 +157,7 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
    if (usesSceneRefraction) {
       drawPass(BlendMode::kBlendModeNormal, 1);
    }
+
    drawPass(resolvedBlendMode, 0);
 }
 

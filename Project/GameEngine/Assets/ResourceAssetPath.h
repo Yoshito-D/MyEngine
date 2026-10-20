@@ -14,18 +14,29 @@ inline std::string ResourcePathToUtf8(const std::filesystem::path& path) {
 /// @brief 正規のresources相対IDをUTF-8パスへ変換し、無効なIDでは空パスを返す。
 /// @param assetId 正規化済みのスラッシュ区切りID。絶対パスや短縮名への推測は行わない。
 inline std::filesystem::path ResourceAssetIdPath(const std::string& assetId) {
-   if (assetId.empty() || assetId.size() > 4096 || assetId.find_first_of("<>:\"|?*") != std::string::npos)
+   if (assetId.empty() || assetId.size() > 4096 || assetId.find_first_of("<>:\"|?*") != std::string::npos) {
       return {};
-   for (unsigned char character : assetId)
-      if (character < 32)
+   }
+
+   for (unsigned char character : assetId) {
+      if (character < 32) {
          return {};
+      }
+   }
+
    try {
       const std::filesystem::path relative(std::u8string(assetId.begin(), assetId.end()));
-      if (relative.has_root_path() || ResourcePathToUtf8(relative.lexically_normal()) != assetId)
+
+      if (relative.has_root_path() || ResourcePathToUtf8(relative.lexically_normal()) != assetId) {
          return {};
-      for (const auto& part : relative)
-         if (part == ".." || part == ".")
+      }
+
+      for (const auto& part : relative) {
+         if (part == ".." || part == ".") {
             return {};
+         }
+      }
+
       return relative;
    } catch (const std::system_error&) {
       return {};
@@ -39,25 +50,39 @@ inline std::filesystem::path ResourceAssetIdPath(const std::string& assetId) {
 inline std::filesystem::path ResolveResourceAssetPath(
    const std::string& assetId, const std::filesystem::path& resourcesRoot = "resources") {
    const auto relative = ResourceAssetIdPath(assetId);
-   if (relative.empty())
+
+   if (relative.empty()) {
       return {};
+   }
+
    std::error_code error;
    const auto root = std::filesystem::weakly_canonical(resourcesRoot, error);
-   if (error)
+
+   if (error) {
       return {};
+   }
+
    const auto candidate = std::filesystem::weakly_canonical(root / relative, error);
-   if (error)
+
+   if (error) {
       return {};
+   }
 
    // Junctionやシンボリックリンクでも、実際の読込先がルートを逸脱しないことを確認する。
    auto candidatePart = candidate.begin();
+
    for (const auto& rootPart : root) {
-      if (candidatePart == candidate.end() || *candidatePart != rootPart)
+      if (candidatePart == candidate.end() || *candidatePart != rootPart) {
          return {};
+      }
+
       ++candidatePart;
    }
-   if (candidatePart == candidate.end() || !std::filesystem::is_regular_file(candidate, error) || error)
+
+   if (candidatePart == candidate.end() || !std::filesystem::is_regular_file(candidate, error) || error) {
       return {};
+   }
+
    return candidate;
 }
 }

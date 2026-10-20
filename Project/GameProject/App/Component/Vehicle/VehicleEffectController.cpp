@@ -36,17 +36,16 @@ GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
 
 void VehicleEffectController::Update(float deltaTime) {
    (void)deltaTime;
-   if (!HasOwner()) {
-      return;
-   }
+
+   if (!HasOwner()) return;
+
    auto* emitter = GetOwner().GetComponent<GameEngine::ParticleEmitterComponent>();
    auto* drift = GetOwner().GetComponent<VehicleDrift>();
    auto* landingBoost = GetOwner().GetComponent<VehicleLandingBoost>();
    auto* jump = GetOwner().GetComponent<CharacterJump>();
    auto* landing = GetOwner().GetComponent<CharacterLanding>();
-   if (!emitter) {
-      return;
-   }
+
+   if (!emitter) return;
 
    const bool isJumping = jump && jump->IsJumping();
    const bool isGrounded = landing && landing->IsGrounded();
@@ -67,6 +66,7 @@ void VehicleEffectController::Update(float deltaTime) {
    GameEngine::Vector3 landingContactPoint{};
    GameEngine::Quaternion landingRotation = GameEngine::Quaternion::Identity();
    const bool hasLandingTransform = landedThisFrame && landing && landing->HasLandingContact();
+
    if (hasLandingTransform) {
       // 車体中心ではなく実際の接触点・法線へ配置し、球面上でも地表に沿わせる。
       landingContactPoint = landing->GetLastLandingContactPoint();
@@ -76,9 +76,11 @@ void VehicleEffectController::Update(float deltaTime) {
    // 共通エミッタ内のスロットをJSONパスで役割分けし、各ゲーム状態へ結び付ける。
    for (int slotIndex = 0; slotIndex < emitter->GetSlotCount(); ++slotIndex) {
       auto* slot = emitter->DescribeSlot(slotIndex);
+
       if (!slot) {
          continue;
       }
+
       if (ContainsEffectName(slot->jsonPath, "tire_dust")) {
          emitter->EnableEmission(slotIndex, isDrifting && !isJumping);
       } else if (ContainsEffectName(slot->jsonPath, "miniturbo")) {
@@ -89,6 +91,7 @@ void VehicleEffectController::Update(float deltaTime) {
          if (!isGrounded) {
             // 空中へ移った時点で既存粒子も消し、車体に追従して見え続けるのを防ぐ。
             emitter->EnableEmission(slotIndex, false);
+
             if (emitter->IsPlaying(slotIndex) || emitter->HasLivingParticles(slotIndex)) {
                emitter->Stop(slotIndex);
             }
@@ -101,12 +104,14 @@ void VehicleEffectController::Update(float deltaTime) {
             emitter->SetSlotWorldTransform(
                slotIndex, landingContactPoint, landingRotation, slot->attachConfig.scaleOffset);
          }
+
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "landingDust") && landedThisFrame) {
          if (hasLandingTransform) {
             emitter->SetSlotWorldTransform(
                slotIndex, landingContactPoint, landingRotation, slot->attachConfig.scaleOffset);
          }
+
          emitter->Play(slotIndex);
       } else if (ContainsEffectName(slot->jsonPath, "landing_failure") && failedLandingThisFrame) {
          emitter->Play(slotIndex);
@@ -124,9 +129,9 @@ void VehicleEffectController::Update(float deltaTime) {
 #ifdef USE_IMGUI
 void VehicleEffectController::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Text("Was Jumping: %s", wasJumping_ ? "true" : "false");
    ImGui::Text("Was Grounded: %s", wasGrounded_ ? "true" : "false");
 }

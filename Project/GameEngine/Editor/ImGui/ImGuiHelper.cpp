@@ -12,12 +12,17 @@
 namespace GameEngine {
 namespace ImGuiHelper {
 bool DrawFolderTreeNode(const char* label, bool selected, bool revealAncestor, ImTextureRef icon) {
-   if (revealAncestor)
+   if (revealAncestor) {
       ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+   }
+
    ImGuiTreeNodeFlags flags =
       ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
-   if (selected)
+
+   if (selected) {
       flags |= ImGuiTreeNodeFlags_Selected;
+   }
+
    const ImVec2 position = ImGui::GetCursorScreenPos();
    const bool open = ImGui::TreeNodeEx("##Folder", flags);
    const ImVec2 rowMin = ImGui::GetItemRectMin();
@@ -26,11 +31,13 @@ bool DrawFolderTreeNode(const char* label, bool selected, bool revealAncestor, I
    draw->PushClipRect(rowMin, rowMax, true);
    float textX = position.x + ImGui::GetTreeNodeToLabelSpacing();
    const float iconSize = ImGui::GetFontSize();
+
    if (icon.GetTexID()) {
       const float iconY = rowMin.y + (rowMax.y - rowMin.y - iconSize) * 0.5f;
       draw->AddImage(icon, ImVec2(textX, iconY), ImVec2(textX + iconSize, iconY + iconSize));
       textX += iconSize + ImGui::GetStyle().ItemInnerSpacing.x;
    }
+
    draw->AddText(ImVec2(textX, rowMin.y + (rowMax.y - rowMin.y - ImGui::GetFontSize()) * 0.5f),
       ImGui::GetColorU32(ImGuiCol_Text), label);
    draw->PopClipRect();
@@ -72,11 +79,16 @@ void BeginPropertyRow(const std::string& label, float columnWidth, bool pushItem
 
    // 小幅のInspectorではラベルを上へ移し、固定ラベル幅が入力欄を押し出すことを防ぐ。
    ImGui::Columns(columns ? 2 : 1, nullptr, false);
-   if (columns)
+
+   if (columns) {
       ImGui::SetColumnWidth(0, std::min(columnWidth * fontScale, availableWidth * 0.45f));
+   }
+
    DrawVisibleLabel(label);
-   if (columns)
+
+   if (columns) {
       ImGui::NextColumn();
+   }
 
    if (pushItemWidth) {
       // 負の幅で第2列の残り領域を使い切り、呼び出し側ごとの幅計算を不要にする。
@@ -227,9 +239,7 @@ void HelpMarker(const char* desc) {
 }
 
 void Tooltip(const char* desc) {
-   if (desc == nullptr || desc[0] == '\0' || !ImGui::IsItemHovered()) {
-      return;
-   }
+   if (desc == nullptr || desc[0] == '\0' || !ImGui::IsItemHovered()) return;
 
    ImGui::BeginTooltip();
    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
@@ -246,11 +256,13 @@ void TextWithHelp(const std::string& text, const char* helpText) {
 
 bool BeginSection(const std::string& label, bool defaultOpen) {
    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
+
    if (defaultOpen) {
       flags |= ImGuiTreeNodeFlags_DefaultOpen;
    }
 
    const bool open = ImGui::CollapsingHeader(label.c_str(), flags);
+
    if (open) {
       // 開いている場合だけ字下げし、呼び出し側のEndSectionとのスタックを対応させる。
       ImGui::Indent();
@@ -294,6 +306,7 @@ bool DrawIntControl(
    }
 
    ImGui::SameLine();
+
    if (ImGui::DragInt("##Value", &value, speed, minValue, maxValue)) {
       valueChanged = true;
    }
@@ -319,6 +332,7 @@ bool DrawFloatControl(const std::string& label, float& value, float resetValue, 
    }
 
    ImGui::SameLine();
+
    if (ImGui::DragFloat("##Value", &value, speed, minValue, maxValue, format)) {
       valueChanged = true;
    }
@@ -414,6 +428,7 @@ bool DrawQuaternionControl(
    }
 
    value = Quaternion{components.x, components.y, components.z, components.w};
+
    if (normalizeOnEdit) {
       // 回転用途では単位長を維持し、編集値による拡縮成分の混入を防ぐ。
       value = value.Normalize();
@@ -644,23 +659,28 @@ bool DrawPathControl(
          std::max(48.0f, ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
 
       ImGui::PushItemWidth(inputWidth);
+
       if (ImGui::InputText("##Path", buffer.data(), buffer.size())) {
          path = buffer.data();
          changed = true;
       }
+
       ImGui::PopItemWidth();
 
       ImGui::SameLine();
+
       if (ImGui::Button(clearLabel) && !path.empty()) {
          path.clear();
          changed = true;
       }
    } else {
       ImGui::PushItemWidth(-FLT_MIN);
+
       if (ImGui::InputText("##Path", buffer.data(), buffer.size())) {
          path = buffer.data();
          changed = true;
       }
+
       ImGui::PopItemWidth();
    }
 
@@ -674,6 +694,7 @@ bool AcceptStringDragDrop(const char* payloadType, std::string& value) {
    }
 
    bool accepted = false;
+
    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payloadType)) {
       // ペイロードは終端保証がないためDataSizeを上限にし、末尾のNULだけを除いてコピーする。
       const char* data = static_cast<const char*>(payload->Data);

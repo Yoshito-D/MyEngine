@@ -19,6 +19,7 @@ std::filesystem::path GetEditorSessionStateFilePath() {
 std::string LoadLastEditorSceneName(const SceneCatalog& sceneCatalog) {
    const std::filesystem::path filePath = GetEditorSessionStateFilePath();
    std::ifstream file(filePath);
+
    if (!file.is_open()) {
       return {};
    }
@@ -44,20 +45,20 @@ std::string LoadLastEditorSceneName(const SceneCatalog& sceneCatalog) {
 }
 
 void SaveLastEditorSceneName(const std::string& sceneName) {
-   if (sceneName.empty()) {
-      return;
-   }
+   if (sceneName.empty()) return;
 
    // 初回起動でも保存できるよう、状態ファイルより先に親ディレクトリを用意する。
    const std::filesystem::path filePath = GetEditorSessionStateFilePath();
    std::error_code error;
    std::filesystem::create_directories(filePath.parent_path(), error);
+
    if (error) {
       Logger::Warning("Editor session directory could not be created: " + error.message(), Logger::LogChannel::Editor);
       return;
    }
 
    std::ofstream file(filePath);
+
    if (!file.is_open()) {
       Logger::Warning(
          "Editor session state could not be saved: " + filePath.generic_string(), Logger::LogChannel::Editor);
@@ -82,6 +83,7 @@ void Game::Initialize() {
       Logger::Critical("Scene catalog initialization failed.");
       return;
    }
+
    factory_ = std::make_unique<MySceneFactory>(sceneCatalog_);
    sceneManager_ = std::make_unique<GameEngine::SceneManager>(factory_.get());
 
@@ -101,16 +103,17 @@ void Game::Initialize() {
 }
 
 void Game::Update() {
-   if (!sceneManager_) {
-      return;
-   }
+   if (!sceneManager_) return;
 #ifdef USE_IMGUI
    // エディタでは入力・時間を進めるランタイム更新と、選択表示などの編集更新を分離する。
    playModeController_->ProcessRequests(*sceneManager_);
+
    if (playModeController_->ShouldRunRuntimeUpdate()) {
       Framework::Update();
    }
+
    sceneManager_->EditorUpdate();
+
    if (playModeController_->ShouldRunRuntimeUpdate()) {
       GameEngine::EngineContext::AdvanceGameFrameNumber();
       sceneManager_->RuntimeUpdate();
@@ -120,25 +123,22 @@ void Game::Update() {
    GameEngine::EngineContext::AdvanceGameFrameNumber();
    sceneManager_->Update();
 #endif
-   if (auto* audio = GameEngine::EngineContext::GetAudio())
+   if (auto* audio = GameEngine::EngineContext::GetAudio()) {
       audio->Update(GameEngine::EngineContext::GetUnscaledDeltaTime());
+   }
 }
 
 void Game::Draw() {
    // このフレームに対象が見つからなければ、影を描かない。
    GameEngine::EngineContext::ClearPlayerShadowFrameData();
 
-   if (!sceneManager_) {
-      return;
-   }
+   if (!sceneManager_) return;
 
    sceneManager_->Draw();
 
    auto* camera = GameEngine::EngineContext::GetActiveCamera();
 
-   if (!camera) {
-      return;
-   }
+   if (!camera) return;
 
    // VehicleControllerを持つプレイヤーが1体の構成。
    for (auto* model : GameEngine::Model::GetRegisteredModels()) {
@@ -175,6 +175,7 @@ void Game::Finalize() {
 
 void Game::EndFrame() {
    Framework::EndFrame();
+
    if (sceneManager_) {
       // 描画中の参照を無効化しないよう、予約されたシーン遷移はフレーム末尾で確定する。
       sceneManager_->CheckSceneChange();

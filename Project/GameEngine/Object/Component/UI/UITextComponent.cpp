@@ -33,13 +33,17 @@ GameEngine::UIAnchor ParseAnchor(const nlohmann::json& value, GameEngine::UIAnch
    if (!value.is_string()) {
       return fallback;
    }
+
    const std::string name = value.get<std::string>();
+
    for (int index = 0; index <= static_cast<int>(GameEngine::UIAnchor::BottomRight); ++index) {
       const auto anchor = static_cast<GameEngine::UIAnchor>(index);
+
       if (name == ToAnchorName(anchor)) {
          return anchor;
       }
    }
+
    return fallback;
 }
 
@@ -60,13 +64,21 @@ GameEngine::TextHorizontalAlignment ParseAlignment(
    if (!value.is_string()) {
       return fallback;
    }
+
    const std::string name = value.get<std::string>();
-   if (name == "Center")
+
+   if (name == "Center") {
       return GameEngine::TextHorizontalAlignment::Center;
-   if (name == "Right")
+   }
+
+   if (name == "Right") {
       return GameEngine::TextHorizontalAlignment::Right;
-   if (name == "Left")
+   }
+
+   if (name == "Left") {
       return GameEngine::TextHorizontalAlignment::Left;
+   }
+
    return fallback;
 }
 }
@@ -78,9 +90,8 @@ const char* UITextComponent::GetTypeName() const {
 }
 
 void UITextComponent::SetText(std::string text) {
-   if (text_ == text) {
-      return;
-   }
+   if (text_ == text) return;
+
    text_ = std::move(text);
 
    // レイアウトの作り直しとは別に版数も進め、タイプライター等が本文変更だけを検出できるようにする。
@@ -109,24 +120,24 @@ void UITextComponent::SetStyle(const TextStyle& style) {
                               style_.maxWidth != sanitizedStyle.maxWidth ||
                               style_.lineSpacing != sanitizedStyle.lineSpacing;
    style_ = std::move(sanitizedStyle);
+
    if (layoutChanged) {
       InvalidateLayout();
    }
 }
 
 void UITextComponent::SetFontId(std::string fontId) {
-   if (style_.fontId == fontId) {
-      return;
-   }
+   if (style_.fontId == fontId) return;
+
    style_.fontId = std::move(fontId);
    InvalidateLayout();
 }
 
 void UITextComponent::SetFontSize(uint32_t fontSize) {
    fontSize = (std::max)(fontSize, 1u);
-   if (style_.fontSize == fontSize) {
-      return;
-   }
+
+   if (style_.fontSize == fontSize) return;
+
    style_.fontSize = fontSize;
    InvalidateLayout();
 }
@@ -148,6 +159,7 @@ const TextLayoutResult& UITextComponent::GetLayout(FontManager& fontManager) con
       layoutFontRevision_ = fontManager.GetRevision();
       layoutDirty_ = false;
    }
+
    return cachedLayout_;
 }
 
@@ -163,38 +175,49 @@ void UITextComponent::Deserialize(const nlohmann::json& data) {
    // 欠落キーは現在値を残す部分更新として扱い、古いシーンや最小設定の JSON も読み込めるようにする。
    // 最後に SetStyle を一度だけ通すことで、値の補正とレイアウト無効化判定を通常更新と共通化する。
    TextStyle style = style_;
+
    if (data.contains("text") && data.at("text").is_string()) {
       SetText(data.at("text").get<std::string>());
    }
+
    if (data.contains("fontId") && data.at("fontId").is_string()) {
       style.fontId = data.at("fontId").get<std::string>();
    }
+
    if (data.contains("fontSize") && data.at("fontSize").is_number_unsigned()) {
       style.fontSize = data.at("fontSize").get<uint32_t>();
    }
+
    if (data.contains("color") && data.at("color").is_array() && data.at("color").size() >= 4) {
       const auto& color = data.at("color");
       style.color = {color[0].get<float>(), color[1].get<float>(), color[2].get<float>(), color[3].get<float>()};
    }
+
    if (data.contains("screenAnchor")) {
       style.screenAnchor = ParseAnchor(data.at("screenAnchor"), style.screenAnchor);
    }
+
    if (data.contains("pivot") && data.at("pivot").is_array() && data.at("pivot").size() >= 2) {
       const auto& pivot = data.at("pivot");
       style.pivot = {pivot[0].get<float>(), pivot[1].get<float>()};
    }
+
    if (data.contains("horizontalAlignment")) {
       style.horizontalAlignment = ParseAlignment(data.at("horizontalAlignment"), style.horizontalAlignment);
    }
+
    if (data.contains("maxWidth") && data.at("maxWidth").is_number()) {
       style.maxWidth = data.at("maxWidth").get<float>();
    }
+
    if (data.contains("lineSpacing") && data.at("lineSpacing").is_number()) {
       style.lineSpacing = data.at("lineSpacing").get<float>();
    }
+
    if (data.contains("sortingOrder") && data.at("sortingOrder").is_number_integer()) {
       style.sortingOrder = data.at("sortingOrder").get<int32_t>();
    }
+
    SetStyle(style);
 }
 
@@ -205,29 +228,34 @@ void UITextComponent::InvalidateLayout() {
 #ifdef USE_IMGUI
 void UITextComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
 
    // 複数ウィジェットの編集結果を一時値へ集約し、フレーム末尾に一括適用する。
    // これにより、途中状態ごとにレイアウトキャッシュを何度も破棄せずに済む。
    TextStyle editedStyle = style_;
    std::string editedText = text_;
+
    if (ImGuiHelper::DrawMultilineText(ImGuiHelper::Localize({"テキスト", "Text"}), editedText, 4096)) {
       SetText(std::move(editedText));
    }
 
    const auto fontIds = EngineContext::GetFontIds();
    const char* preview = editedStyle.fontId.empty() ? "<none>" : editedStyle.fontId.c_str();
+
    if (ImGui::BeginCombo(ImGuiHelper::Localize({"フォント", "Font"}), preview)) {
       for (const std::string& fontId : fontIds) {
          const bool selected = fontId == editedStyle.fontId;
+
          if (ImGui::Selectable(fontId.c_str(), selected)) {
             editedStyle.fontId = fontId;
          }
-         if (selected)
+
+         if (selected) {
             ImGui::SetItemDefaultFocus();
+         }
       }
+
       ImGui::EndCombo();
    }
 
@@ -243,6 +271,7 @@ void UITextComponent::DrawInspector() {
    const char* anchorNames[] = {"Top Left", "Top Center", "Top Right", "Middle Left", "Middle Center", "Middle Right",
       "Bottom Left", "Bottom Center", "Bottom Right"};
    int anchorIndex = static_cast<int>(editedStyle.screenAnchor);
+
    if (ImGui::Combo(ImGuiHelper::Localize({"画面アンカー", "Screen Anchor"}), &anchorIndex, anchorNames,
           static_cast<int>(std::size(anchorNames)))) {
       editedStyle.screenAnchor = static_cast<UIAnchor>(anchorIndex);
@@ -250,6 +279,7 @@ void UITextComponent::DrawInspector() {
 
    const char* alignmentNames[] = {"Left", "Center", "Right"};
    int alignmentIndex = static_cast<int>(editedStyle.horizontalAlignment);
+
    if (ImGui::Combo(ImGuiHelper::Localize({"水平揃え", "Horizontal Alignment"}), &alignmentIndex, alignmentNames, 3)) {
       editedStyle.horizontalAlignment = static_cast<TextHorizontalAlignment>(alignmentIndex);
    }

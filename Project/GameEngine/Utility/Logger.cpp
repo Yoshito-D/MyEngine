@@ -35,6 +35,7 @@ std::string ExtractSourceFileName(const char* sourceFilePath) {
 
    std::string_view path(sourceFilePath);
    const size_t separatorPosition = path.find_last_of("/\\");
+
    if (separatorPosition == std::string_view::npos) {
       return std::string(path);
    }
@@ -85,6 +86,7 @@ void Logger::InitializeInternal() {
    // チャンネル別ログに加えて時系列を横断できる集約ログへも同じ行を出力する。
    const std::filesystem::path allLogFilePath = currentLogDirectory_ / kAllLogFileName;
    allLogStream_.open(allLogFilePath, std::ios::out | std::ios::app);
+
    if (!allLogStream_.is_open()) {
       throw std::runtime_error("ログファイルを開けません: " + allLogFilePath.generic_string());
    }
@@ -121,9 +123,11 @@ std::wstring Logger::ConvertString(const std::string& str) {
    // Win32変換をサイズ照会と実変換の2段階で行い、可変長UTF-8でも切り捨てない。
    auto sizeNeeded =
       MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), NULL, 0);
+
    if (sizeNeeded == 0) {
       return std::wstring();
    }
+
    std::wstring result(sizeNeeded, 0);
    MultiByteToWideChar(
       CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), &result[0], sizeNeeded);
@@ -137,9 +141,11 @@ std::string Logger::ConvertString(const std::wstring& str) {
 
    // デバッグ出力用UTF-16から、ログファイル共通のUTF-8バイト列へ必要量だけ確保して変換する。
    auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0, NULL, NULL);
+
    if (sizeNeeded == 0) {
       return std::string();
    }
+
    std::string result(sizeNeeded, 0);
    WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), sizeNeeded, NULL, NULL);
    return result;
@@ -171,6 +177,7 @@ void Logger::CloseStreams() {
 void Logger::OpenChannelLogFile(LogChannel channel, const std::filesystem::path& filePath) {
    std::ofstream& stream = GetLogChannelStream(channel);
    stream.open(filePath, std::ios::out | std::ios::app);
+
    if (!stream.is_open()) {
       throw std::runtime_error("ログファイルを開けません: " + filePath.generic_string());
    }
@@ -221,6 +228,7 @@ std::wstring Logger::FormatLogMessage(
 std::string Logger::GetSourceLocationString(std::source_location location) const {
    // ビルド環境固有の絶対パスを落とし、ログを短く保ちながらファイル・行・関数は残す。
    std::string fileName = ExtractSourceFileName(location.file_name());
+
    if (fileName.empty()) {
       fileName = "unknown";
    }
@@ -285,13 +293,16 @@ void Logger::CleanOldLogFiles(const std::string& logDir) {
    // ログファイルが指定数を超えている場合、古いファイルを削除
    // 現在のディレクトリ1件を上限へ含めるため、古い世代へ割り当てる枠を1つ減らす。
    const size_t maxOldLogFiles = currentLogDirectory_.empty() ? kMaxLogFiles : kMaxLogFiles - 1;
+
    while (logFiles.size() > maxOldLogFiles) {
       std::wcout << L"Deleting old log file: " << logFiles.front() << std::endl;
+
       if (std::filesystem::is_directory(logFiles.front())) {
          std::filesystem::remove_all(logFiles.front()); // 古いログフォルダ削除
       } else {
          std::filesystem::remove(logFiles.front()); // 古いファイル削除
       }
+
       logFiles.erase(logFiles.begin()); // 削除したファイルをリストから削除
    }
 }

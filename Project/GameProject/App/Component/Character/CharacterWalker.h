@@ -90,18 +90,31 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.moveSpeed))
+
+      if (!std::isfinite(settings.moveSpeed)) {
          settings.moveSpeed = defaults.moveSpeed;
-      if (!std::isfinite(settings.acceleration))
+      }
+
+      if (!std::isfinite(settings.acceleration)) {
          settings.acceleration = defaults.acceleration;
-      if (!std::isfinite(settings.friction))
+      }
+
+      if (!std::isfinite(settings.friction)) {
          settings.friction = defaults.friction;
-      if (!std::isfinite(settings.airAcceleration))
+      }
+
+      if (!std::isfinite(settings.airAcceleration)) {
          settings.airAcceleration = defaults.airAcceleration;
-      if (!std::isfinite(settings.airFriction))
+      }
+
+      if (!std::isfinite(settings.airFriction)) {
          settings.airFriction = defaults.airFriction;
-      if (!std::isfinite(settings.turnSpeed))
+      }
+
+      if (!std::isfinite(settings.turnSpeed)) {
          settings.turnSpeed = defaults.turnSpeed;
+      }
+
       moveSpeed = settings.moveSpeed;
       acceleration = settings.acceleration;
       friction = settings.friction;

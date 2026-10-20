@@ -23,6 +23,7 @@ using json = nlohmann::json;
 // 例外をこの境界で吸収しておくことで、1 項目の不正値がエフェクトスタック全体の復元を妨げない。
 float ReadFloat(const json& settings, const char* key, float fallback) {
    const auto it = settings.find(key);
+
    if (it == settings.end() || !it->is_number()) {
       return fallback;
    }
@@ -38,6 +39,7 @@ float ReadFloat(const json& settings, const char* key, float fallback) {
 
 int32_t ReadInt32(const json& settings, const char* key, int32_t fallback) {
    const auto it = settings.find(key);
+
    if (it == settings.end() || !it->is_number_integer()) {
       return fallback;
    }
@@ -62,6 +64,7 @@ std::string ReadString(const json& settings, const char* key, const std::string&
 
 GameEngine::Vector2 ReadVector2(const json& settings, const char* key, const GameEngine::Vector2& fallback) {
    const auto it = settings.find(key);
+
    if (it == settings.end() || !it->is_array() || it->size() != 2 || !(*it)[0].is_number() || !(*it)[1].is_number()) {
       return fallback;
    }
@@ -76,24 +79,23 @@ GameEngine::Vector2 ReadVector2(const json& settings, const char* key, const Gam
 
 void ReadFloat4(const json& settings, const char* key, float (&values)[4]) {
    const auto it = settings.find(key);
-   if (it == settings.end() || !it->is_array() || it->size() != 4) {
-      return;
-   }
+
+   if (it == settings.end() || !it->is_array() || it->size() != 4) return;
+
    for (size_t index = 0; index < 4; ++index) {
-      if (!(*it)[index].is_number()) {
-         return;
-      }
+      if (!(*it)[index].is_number()) return;
    }
 
    // 4要素を一時配列へすべて検証してから反映し、途中要素だけ更新された色を作らない。
    try {
       float parsedValues[4]{};
+
       for (size_t index = 0; index < 4; ++index) {
          parsedValues[index] = (*it)[index].get<float>();
-         if (!std::isfinite(parsedValues[index])) {
-            return;
-         }
+
+         if (!std::isfinite(parsedValues[index])) return;
       }
+
       for (size_t index = 0; index < 4; ++index) {
          values[index] = parsedValues[index];
       }
@@ -117,6 +119,7 @@ bool AntiAliasing::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    contrastThreshold_ = ReadFloat(settings, "contrastThreshold", contrastThreshold_);
    relativeThreshold_ = ReadFloat(settings, "relativeThreshold", relativeThreshold_);
    subpixelBlending_ = ReadFloat(settings, "subpixelBlending", subpixelBlending_);
@@ -134,6 +137,7 @@ bool Bloom::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    threshold_ = ReadFloat(settings, "threshold", threshold_);
    softThreshold_ = ReadFloat(settings, "softThreshold", softThreshold_);
    intensity_ = ReadFloat(settings, "intensity", intensity_);
@@ -150,6 +154,7 @@ bool BoxFilter::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    kernelRadius_ = ReadInt32(settings, "kernelRadius", kernelRadius_);
    UpdateConstantBuffer();
    return true;
@@ -164,6 +169,7 @@ bool ChromaticAberration::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    const Vector2 center = ReadVector2(settings, "center", Vector2(centerX_, centerY_));
    const Vector2 fixedDirection = ReadVector2(settings, "fixedDirection", Vector2(fixedDirectionX_, fixedDirectionY_));
    centerX_ = center.x;
@@ -215,6 +221,7 @@ bool GaussFilter::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    intensity_ = ReadFloat(settings, "intensity", intensity_);
    kernelSize_ = ReadInt32(settings, "kernelSize", kernelSize_);
    sigma_ = ReadFloat(settings, "sigma", sigma_);
@@ -231,6 +238,7 @@ bool Outline::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    ReadFloat4(settings, "outlineColor", outlineColor_);
    thickness_ = ReadFloat(settings, "thickness", thickness_);
    depthThreshold_ = ReadFloat(settings, "depthThreshold", depthThreshold_);
@@ -247,6 +255,7 @@ bool Pixelation::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    pixelSize_ = ReadFloat(settings, "pixelSize", pixelSize_);
    UpdateConstantBuffer();
    return true;
@@ -281,6 +290,7 @@ bool ShockWave::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    const Vector2 center = ReadVector2(settings, "center", Vector2(centerX_, centerY_));
    const Vector2 aspectRatio = ReadVector2(settings, "aspectRatio", Vector2(aspectRatioX_, aspectRatioY_));
    centerX_ = center.x;
@@ -307,6 +317,7 @@ bool SpeedLine::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    SpeedLineParams params = params_;
    params.center = ReadVector2(settings, "center", params.center);
    params.intensity = ReadFloat(settings, "intensity", params.intensity);
@@ -330,18 +341,21 @@ bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
    if (!settings.is_object()) {
       return false;
    }
+
    const Vector2 center = ReadVector2(settings, "center", Vector2(centerX_, centerY_));
    centerX_ = center.x;
    centerY_ = center.y;
    radius_ = ReadFloat(settings, "radius", radius_);
    softness_ = ReadFloat(settings, "softness", softness_);
    const auto color = settings.find("color");
+
    if (color != settings.end() && color->is_array() && color->size() == 3 && (*color)[0].is_number() &&
        (*color)[1].is_number() && (*color)[2].is_number()) {
       try {
          const float red = (*color)[0].get<float>();
          const float green = (*color)[1].get<float>();
          const float blue = (*color)[2].get<float>();
+
          if (std::isfinite(red) && std::isfinite(green) && std::isfinite(blue)) {
             vignetteColorR_ = red;
             vignetteColorG_ = green;
@@ -351,6 +365,7 @@ bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
          // 数値変換が範囲外の場合は、以前の色を維持する。
       }
    }
+
    intensity_ = ReadFloat(settings, "intensity", intensity_);
    UpdateConstantBuffer();
    return true;

@@ -15,8 +15,7 @@ void Vignette::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderT
 }
 
 void Vignette::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature())
-      return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    GetRenderTarget()->PreDraw(false);
 

@@ -27,8 +27,10 @@ struct RandomFloat {
 
       // 固定値では未使用の上限を破棄し、範囲の並べ替えによる指定値の変化を防ぐ。
       maximum_ = randomized_ && std::isfinite(high) ? high : minimum_;
-      if (maximum_ < minimum_)
+
+      if (maximum_ < minimum_) {
          std::swap(minimum_, maximum_);
+      }
    }
 
    /// @brief 検証済みの下限を値として観測する
@@ -68,12 +70,17 @@ struct RandomVector2 {
    RandomVector2(const Vector2& low, const Vector2& high, bool randomize = true) : randomized_(randomize) {
       minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
       maximum_.x = randomized_ && std::isfinite(high.x) ? high.x : minimum_.x;
-      if (maximum_.x < minimum_.x)
+
+      if (maximum_.x < minimum_.x) {
          std::swap(minimum_.x, maximum_.x);
+      }
+
       minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
       maximum_.y = randomized_ && std::isfinite(high.y) ? high.y : minimum_.y;
-      if (maximum_.y < minimum_.y)
+
+      if (maximum_.y < minimum_.y) {
          std::swap(minimum_.y, maximum_.y);
+      }
    }
 
    /// @brief 検証済みの下限を値として観測する
@@ -113,16 +120,24 @@ struct RandomVector3 {
    RandomVector3(const Vector3& low, const Vector3& high, bool randomize = true) : randomized_(randomize) {
       minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
       maximum_.x = randomized_ && std::isfinite(high.x) ? high.x : minimum_.x;
-      if (maximum_.x < minimum_.x)
+
+      if (maximum_.x < minimum_.x) {
          std::swap(minimum_.x, maximum_.x);
+      }
+
       minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
       maximum_.y = randomized_ && std::isfinite(high.y) ? high.y : minimum_.y;
-      if (maximum_.y < minimum_.y)
+
+      if (maximum_.y < minimum_.y) {
          std::swap(minimum_.y, maximum_.y);
+      }
+
       minimum_.z = std::isfinite(low.z) ? low.z : 0.0f;
       maximum_.z = randomized_ && std::isfinite(high.z) ? high.z : minimum_.z;
-      if (maximum_.z < minimum_.z)
+
+      if (maximum_.z < minimum_.z) {
          std::swap(minimum_.z, maximum_.z);
+      }
    }
 
    /// @brief 検証済みの下限を値として観測する

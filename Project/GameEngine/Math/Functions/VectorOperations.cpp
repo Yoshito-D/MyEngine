@@ -49,9 +49,11 @@ Vector3 ComputeNormal(const Vector3& a, const Vector3& b, const Vector3& c) {
 
 Vector3 Normalize(const Vector3& vec) {
    float length = std::sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+
    if (length == 0.0f) {
       return Vector3(0.0f, 0.0f, 0.0f);
    }
+
    return Vector3(vec.x / length, vec.y / length, vec.z / length);
 }
 

@@ -113,36 +113,67 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.minimumEffectSpeed))
+
+      if (!std::isfinite(settings.minimumEffectSpeed)) {
          settings.minimumEffectSpeed = defaults.minimumEffectSpeed;
-      if (!std::isfinite(settings.maximumEffectSpeed))
+      }
+
+      if (!std::isfinite(settings.maximumEffectSpeed)) {
          settings.maximumEffectSpeed = defaults.maximumEffectSpeed;
-      if (!std::isfinite(settings.responseSpeed))
+      }
+
+      if (!std::isfinite(settings.responseSpeed)) {
          settings.responseSpeed = defaults.responseSpeed;
-      if (!std::isfinite(settings.visibleThreshold))
+      }
+
+      if (!std::isfinite(settings.visibleThreshold)) {
          settings.visibleThreshold = defaults.visibleThreshold;
-      if (!std::isfinite(settings.idleInnerRadius))
+      }
+
+      if (!std::isfinite(settings.idleInnerRadius)) {
          settings.idleInnerRadius = defaults.idleInnerRadius;
-      if (!std::isfinite(settings.activeInnerRadius))
+      }
+
+      if (!std::isfinite(settings.activeInnerRadius)) {
          settings.activeInnerRadius = defaults.activeInnerRadius;
-      if (!std::isfinite(settings.outerRadius))
+      }
+
+      if (!std::isfinite(settings.outerRadius)) {
          settings.outerRadius = defaults.outerRadius;
-      if (!std::isfinite(settings.maxIntensity))
+      }
+
+      if (!std::isfinite(settings.maxIntensity)) {
          settings.maxIntensity = defaults.maxIntensity;
-      if (!std::isfinite(settings.idleFlowSpeed))
+      }
+
+      if (!std::isfinite(settings.idleFlowSpeed)) {
          settings.idleFlowSpeed = defaults.idleFlowSpeed;
-      if (!std::isfinite(settings.activeFlowSpeed))
+      }
+
+      if (!std::isfinite(settings.activeFlowSpeed)) {
          settings.activeFlowSpeed = defaults.activeFlowSpeed;
-      if (!std::isfinite(settings.lineDensity))
+      }
+
+      if (!std::isfinite(settings.lineDensity)) {
          settings.lineDensity = defaults.lineDensity;
-      if (!std::isfinite(settings.thickness))
+      }
+
+      if (!std::isfinite(settings.thickness)) {
          settings.thickness = defaults.thickness;
-      if (!std::isfinite(settings.randomSeed))
+      }
+
+      if (!std::isfinite(settings.randomSeed)) {
          settings.randomSeed = defaults.randomSeed;
-      if (!std::isfinite(settings.radialBlurMaxStrength))
+      }
+
+      if (!std::isfinite(settings.radialBlurMaxStrength)) {
          settings.radialBlurMaxStrength = defaults.radialBlurMaxStrength;
-      if (!std::isfinite(settings.radialBlurVisibleThreshold))
+      }
+
+      if (!std::isfinite(settings.radialBlurVisibleThreshold)) {
          settings.radialBlurVisibleThreshold = defaults.radialBlurVisibleThreshold;
+      }
+
       settings.maximumEffectSpeed = std::max(settings.minimumEffectSpeed + 0.001f, settings.maximumEffectSpeed);
       settings.responseSpeed = std::max(0.0f, settings.responseSpeed);
       settings.radialBlurSampleCount = std::clamp(settings.radialBlurSampleCount, 1, 64);

@@ -95,14 +95,23 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.autoSpeed))
+
+      if (!std::isfinite(settings.autoSpeed)) {
          settings.autoSpeed = defaults.autoSpeed;
-      if (!std::isfinite(settings.steerSpeed))
+      }
+
+      if (!std::isfinite(settings.steerSpeed)) {
          settings.steerSpeed = defaults.steerSpeed;
-      if (!std::isfinite(settings.speedRecovery))
+      }
+
+      if (!std::isfinite(settings.speedRecovery)) {
          settings.speedRecovery = defaults.speedRecovery;
-      if (!std::isfinite(settings.maxSpeed))
+      }
+
+      if (!std::isfinite(settings.maxSpeed)) {
          settings.maxSpeed = defaults.maxSpeed;
+      }
+
       settings.maxSpeed = std::max(0.0f, settings.maxSpeed);
       settings.autoSpeed = std::clamp(settings.autoSpeed, 0.0f, settings.maxSpeed);
       settings.speedRecovery = std::max(0.0f, settings.speedRecovery);
@@ -110,8 +119,10 @@ public:
       steerSpeed = settings.steerSpeed;
       speedRecovery = settings.speedRecovery;
       maxSpeed = settings.maxSpeed;
-      if (currentSpeed_ >= 0.0f)
+
+      if (currentSpeed_ >= 0.0f) {
          currentSpeed_ = std::min(currentSpeed_, maxSpeed);
+      }
    }
 
 private:

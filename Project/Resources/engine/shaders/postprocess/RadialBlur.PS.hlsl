@@ -17,6 +17,7 @@ float4 main(VSOutput input) : SV_TARGET {
 
    // 放射状にサンプル
    float32_t4 color = float32_t4(0, 0, 0, 0);
+
    for (int32_t i = 0; i < gSampleCount; ++i) {
       float t = (float)i / (float)(gSampleCount - 1);
       float32_t2 sampleUV = uv + dir * gStrength * t;

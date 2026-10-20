@@ -95,12 +95,19 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.volume))
+
+      if (!std::isfinite(settings.volume)) {
          settings.volume = defaults.volume;
-      if (!std::isfinite(settings.fadeInSeconds))
+      }
+
+      if (!std::isfinite(settings.fadeInSeconds)) {
          settings.fadeInSeconds = defaults.fadeInSeconds;
-      if (!std::isfinite(settings.fadeOutSeconds))
+      }
+
+      if (!std::isfinite(settings.fadeOutSeconds)) {
          settings.fadeOutSeconds = defaults.fadeOutSeconds;
+      }
+
       settings.volume = std::clamp(settings.volume, 0.0f, 1.0f);
       settings.fadeInSeconds = std::max(settings.fadeInSeconds, 0.0f);
       settings.fadeOutSeconds = std::max(settings.fadeOutSeconds, 0.0f);

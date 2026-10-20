@@ -24,8 +24,10 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
       GameEngine::ObjectType::UIText);
 
 template <typename T> T Read(const nlohmann::json& data, const char* key, T fallback) {
-   if (!data.contains(key))
+   if (!data.contains(key)) {
       return fallback;
+   }
+
    try {
       return data.at(key).get<T>();
    } catch (...) {
@@ -44,13 +46,17 @@ void BgmComponent::Prepare() {
       clip_.reset();
       preparedAssetId_ = clipAssetId;
    }
-   if (!clip_ && !clipAssetId.empty())
+
+   if (!clip_ && !clipAssetId.empty()) {
       clip_ = EngineContext::GetSoundClip(clipAssetId);
+   }
 }
 
 bool BgmComponent::BeginRuntime() {
-   if (runtimeStarted_ || !IsEnabled())
+   if (runtimeStarted_ || !IsEnabled()) {
       return false;
+   }
+
    runtimeStarted_ = true;
    Prepare();
    return playOnStart && Play();
@@ -58,13 +64,21 @@ bool BgmComponent::BeginRuntime() {
 
 bool BgmComponent::Submit(bool restart) {
    auto* audio = EngineContext::GetAudio();
-   if (!IsEnabled() || !audio || !audio->IsAvailable())
+
+   if (!IsEnabled() || !audio || !audio->IsAvailable()) {
       return false;
+   }
+
    Prepare();
-   if (!clip_)
+
+   if (!clip_) {
       return false;
-   if (!ownerToken_)
+   }
+
+   if (!ownerToken_) {
       ownerToken_ = audio->CreateBgmOwner();
+   }
+
    audio->RequestBgm(ownerToken_,
       BgmRequest{clipAssetId, clip_, volume, loop, fadeInSeconds, fadeOutSeconds, continueAcrossScenes}, restart);
    return true;
@@ -80,9 +94,11 @@ bool BgmComponent::Restart() {
 
 void BgmComponent::Stop() {
    if (ownerToken_) {
-      if (auto* audio = EngineContext::GetAudio(); audio && audio->IsAvailable())
+      if (auto* audio = EngineContext::GetAudio(); audio && audio->IsAvailable()) {
          audio->ReleaseBgmOwner(ownerToken_);
+      }
    }
+
    ownerToken_ = 0;
    runtimeStarted_ = false;
 }
@@ -94,8 +110,8 @@ nlohmann::json BgmComponent::Serialize() const {
 }
 
 void BgmComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object())
-      return;
+   if (!data.is_object()) return;
+
    Stop();
    clipAssetId = Read<std::string>(data, "clipAssetId", "");
    volume = Read<float>(data, "volume", 1.0f);
@@ -104,13 +120,21 @@ void BgmComponent::Deserialize(const nlohmann::json& data) {
    fadeInSeconds = Read<float>(data, "fadeInSeconds", 0.0f);
    fadeOutSeconds = Read<float>(data, "fadeOutSeconds", 0.0f);
    continueAcrossScenes = Read<bool>(data, "continueAcrossScenes", false);
-   if (!std::isfinite(volume))
+
+   if (!std::isfinite(volume)) {
       volume = 1.0f;
+   }
+
    volume = std::clamp(volume, 0.0f, 1.0f);
-   if (!std::isfinite(fadeInSeconds) || fadeInSeconds < 0.0f)
+
+   if (!std::isfinite(fadeInSeconds) || fadeInSeconds < 0.0f) {
       fadeInSeconds = 0.0f;
-   if (!std::isfinite(fadeOutSeconds) || fadeOutSeconds < 0.0f)
+   }
+
+   if (!std::isfinite(fadeOutSeconds) || fadeOutSeconds < 0.0f) {
       fadeOutSeconds = 0.0f;
+   }
+
    clip_.reset();
    Prepare();
    Configure(DescribeSettings());
@@ -125,11 +149,14 @@ void BgmComponent::SetClipForTesting(const std::string& assetId, std::shared_ptr
 #ifdef USE_IMGUI
 void BgmComponent::DrawInspector() {
    auto Tr = [](const char* ja, const char* en) { return ImGuiHelper::Localize({ja, en}); };
-   if (!ImGui::CollapsingHeader(MakeObjectComponentHeaderLabel(GetTypeName()).c_str()))
-      return;
+
+   if (!ImGui::CollapsingHeader(MakeObjectComponentHeaderLabel(GetTypeName()).c_str())) return;
+
    std::string nextId = clipAssetId;
+
    if (EditorUI::AssetReference(Tr("音声", "Clip"), nextId, EditorAssetType::Audio)) {
       auto nextClip = nextId.empty() ? std::shared_ptr<const SoundClip>() : EngineContext::GetSoundClip(nextId);
+
       if (nextId.empty() || nextClip) {
          clipAssetId = nextId;
          preparedAssetId_ = nextId;
@@ -138,22 +165,35 @@ void BgmComponent::DrawInspector() {
          Logger::Warning("[BgmComponent] Audio asset could not be loaded: " + nextId);
       }
    }
-   if (!clipAssetId.empty() && !clip_)
+
+   if (!clipAssetId.empty() && !clip_) {
       ImGui::TextUnformatted(Tr("音声が見つかりません", "Unresolved audio asset"));
-   if (ImGui::SliderFloat(Tr("音量", "Volume"), &volume, 0.0f, 1.0f) && ownerToken_)
+   }
+
+   if (ImGui::SliderFloat(Tr("音量", "Volume"), &volume, 0.0f, 1.0f) && ownerToken_) {
       Play();
+   }
+
    ImGui::Checkbox(Tr("ループ", "Loop"), &loop);
    ImGui::Checkbox(Tr("開始時に再生", "Play On Start"), &playOnStart);
    ImGui::DragFloat(Tr("フェードイン秒", "Fade In Seconds"), &fadeInSeconds, 0.05f, 0.0f, 60.0f);
    ImGui::DragFloat(Tr("フェードアウト秒", "Fade Out Seconds"), &fadeOutSeconds, 0.05f, 0.0f, 60.0f);
    ImGui::Checkbox(Tr("シーン間で継続", "Continue Across Scenes"), &continueAcrossScenes);
-   if (ImGui::Button(Tr("試聴", "Preview")) && clip_)
-      if (auto* audio = EngineContext::GetAudio())
+
+   if (ImGui::Button(Tr("試聴", "Preview")) && clip_) {
+      if (auto* audio = EngineContext::GetAudio()) {
          audio->PlayOneShot(clip_, AudioBus::Bgm, volume, 1.0f, true);
+      }
+   }
+
    ImGui::SameLine();
-   if (ImGui::Button(Tr("試聴停止", "Stop Preview")))
-      if (auto* audio = EngineContext::GetAudio())
+
+   if (ImGui::Button(Tr("試聴停止", "Stop Preview"))) {
+      if (auto* audio = EngineContext::GetAudio()) {
          audio->StopPreviews();
+      }
+   }
+
    Configure(DescribeSettings());
 }
 #endif

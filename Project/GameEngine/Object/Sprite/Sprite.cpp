@@ -27,12 +27,15 @@ std::string BuildDefaultSpriteName(const std::vector<Sprite*>& registeredSprites
             return true;
          }
       }
+
       return false;
    };
 
    uint32_t index = 1;
+
    while (true) {
       const std::string candidate = "Sprite_" + std::to_string(index++);
+
       if (!exists(candidate)) {
          return candidate;
       }
@@ -49,10 +52,13 @@ Sprite::Sprite() {
       pose.scale = Vector3(1.0f, 1.0f, 1.0f);
       transformComponent->ApplyLocalPose(pose);
    }
+
    if (auto* materialComponent = AddComponent<MaterialComponent>()) {
       materialComponent->EnsureMaterial(BuildAutoSpriteMaterialName(), 0xffffffff, Material::LightingMode::NONE);
    }
+
    AddComponent<MeshComponent>();
+
    if (auto* renderComponent = AddComponent<RenderComponent>()) {
       {
          auto settings = renderComponent->DescribeSettings();
@@ -60,6 +66,7 @@ Sprite::Sprite() {
          renderComponent->Configure(settings);
       }
    }
+
    SetObjectName(BuildDefaultSpriteName(sRegisteredSprites_));
 
    // Rendererが所有権を持たずに自動描画対象を列挙するため、構築完了後のthisを静的一覧へ登録する。
@@ -72,12 +79,11 @@ Sprite::~Sprite() {
 }
 
 void Sprite::UnregisterSprite(Sprite* sprite) {
-   if (!sprite) {
-      return;
-   }
+   if (!sprite) return;
 
    // Editorは描画一覧から先に外して実体を遅延破棄するため、デストラクターから再度呼ばれても何もしない冪等操作とする。
    auto it = std::find(sRegisteredSprites_.begin(), sRegisteredSprites_.end(), sprite);
+
    if (it != sRegisteredSprites_.end()) {
       sRegisteredSprites_.erase(it);
    }
@@ -113,6 +119,7 @@ void Sprite::Create(const Vector2& size, Material* material, const Vector2& anch
    }
 
    auto* transformComponent = GetComponent<TransformComponent>();
+
    if (transformComponent) {
       {
          auto pose = transformComponent->GetLocalPose();
@@ -152,9 +159,9 @@ void Sprite::SetSize(const Vector2& size) {
 
 void Sprite::SetScale(const Vector2& scale) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
+
    auto pose = transformComponent->GetLocalPose();
    pose.scale.x = scale.x;
    pose.scale.y = scale.y;
@@ -166,9 +173,9 @@ void Sprite::SetScale(const Vector2& scale) {
 
 void Sprite::SetPosition(const Vector2& position) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
+
    auto pose = transformComponent->GetLocalPose();
    pose.translation.x = position.x;
    pose.translation.y = position.y;
@@ -180,9 +187,8 @@ void Sprite::SetPosition(const Vector2& position) {
 
 void Sprite::SetRotation(float rotation) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
 
    // Quaternion setter経由でEuler側も同期し、描画・Inspector・シリアライズが同じZ回転を参照するようにする。
    {
@@ -194,25 +200,31 @@ void Sprite::SetRotation(float rotation) {
 
 Vector2 Sprite::GetScale() const {
    const auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
       return Vector2(1.0f, 1.0f);
    }
+
    return Vector2{transformComponent->GetLocalPose().scale.x, transformComponent->GetLocalPose().scale.y};
 }
 
 Vector2 Sprite::GetPosition() const {
    const auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
       return Vector2(0.0f, 0.0f);
    }
+
    return Vector2{transformComponent->GetLocalPose().translation.x, transformComponent->GetLocalPose().translation.y};
 }
 
 float Sprite::GetRotation() const {
    const auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
       return 0.0f;
    }
+
    return transformComponent->GetLocalPose().GetActiveEuler().z;
 }
 
@@ -220,6 +232,7 @@ Vector2 Sprite::GetSize() const {
    if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->GetQuadSize();
    }
+
    return Vector2(1.0f, 1.0f);
 }
 
@@ -227,6 +240,7 @@ Vector2 Sprite::GetAnchorPoint() const {
    if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->GetQuadAnchorPoint();
    }
+
    return Vector2(0.0f, 0.0f);
 }
 
@@ -234,6 +248,7 @@ bool Sprite::IsFlipX() const {
    if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->IsFlipX();
    }
+
    return false;
 }
 
@@ -241,6 +256,7 @@ bool Sprite::IsFlipY() const {
    if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->IsFlipY();
    }
+
    return false;
 }
 
@@ -281,6 +297,7 @@ Vector2 Sprite::GetTextureLeftTop() const {
    if (const auto* materialComponent = GetMaterialComponent()) {
       return materialComponent->GetTextureLeftTop();
    }
+
    return Vector2(0.0f, 0.0f);
 }
 
@@ -288,6 +305,7 @@ Vector2 Sprite::GetTextureSize() const {
    if (const auto* materialComponent = GetMaterialComponent()) {
       return materialComponent->GetTextureSize();
    }
+
    return Vector2(0.0f, 0.0f);
 }
 
@@ -295,11 +313,13 @@ const Mesh* Sprite::GetMesh() const {
    if (const auto* primitiveMeshComponent = GetMeshComponent()) {
       return primitiveMeshComponent->GetMesh();
    }
+
    return nullptr;
 }
 
 TransformationMatrix* Sprite::GetTransformationMatrix() {
    auto* transformComponent = GetTransformComponent();
+
    if (!transformComponent) {
       return nullptr;
    }
@@ -310,14 +330,12 @@ TransformationMatrix* Sprite::GetTransformationMatrix() {
 
 void Sprite::Update(Camera* camera, Texture* texture) {
    auto* transformComponent = GetTransformComponent();
-   if (!transformComponent || !camera) {
-      return;
-   }
+
+   if (!transformComponent || !camera) return;
 
    auto* transformationMatrix = transformComponent->EnsureTransformationMatrix();
-   if (!transformationMatrix) {
-      return;
-   }
+
+   if (!transformationMatrix) return;
 
    // Quadの設定や描画Textureはフレーム間で変わり得るため、DrawCommand作成前にMap済み頂点を同期する。
    UpdateVertexPositions();
@@ -335,14 +353,12 @@ void Sprite::Update(Camera* camera, Texture* texture) {
 void Sprite::UpdateMatrixForUI(
    Camera* camera, Texture* texture, AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight) {
    auto* transformComponent = GetTransformComponent();
-   if (!transformComponent || !camera) {
-      return;
-   }
+
+   if (!transformComponent || !camera) return;
 
    auto* transformationMatrix = transformComponent->EnsureTransformationMatrix();
-   if (!transformationMatrix) {
-      return;
-   }
+
+   if (!transformationMatrix) return;
 
    // 保存されたQuad設定と現在のTexture寸法を使い、アンカー計算より先に頂点位置とUVを同期する。
    UpdateVertexPositions();
@@ -423,9 +439,8 @@ void Sprite::UpdateVertexPositions() {
 
 void Sprite::UpdateTextureCoordinates(Texture* texture) {
    auto* primitiveMeshComponent = GetMeshComponent();
-   if (!primitiveMeshComponent) {
-      return;
-   }
+
+   if (!primitiveMeshComponent) return;
 
    // Material側のピクセル矩形をTextureの実寸で正規化する。Texture未解決時は既存UVを壊さず更新を見送る。
    primitiveMeshComponent->ApplyTextureCoordinates(texture, GetTextureLeftTop(), GetTextureSize());

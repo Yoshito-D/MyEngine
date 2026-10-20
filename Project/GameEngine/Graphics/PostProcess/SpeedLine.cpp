@@ -30,8 +30,7 @@ void GameEngine::SpeedLine::Initialize(GraphicsDevice* device, OffscreenRenderTa
 /// @brief エフェクトを適用
 /// @param inputSRV 入力SRV
 void GameEngine::SpeedLine::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature())
-      return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    GetRenderTarget()->PreDraw(false);
 
@@ -93,9 +92,7 @@ void GameEngine::SpeedLine::CreateConstantBuffer() {
 }
 
 void GameEngine::SpeedLine::UpdateConstantBuffer() {
-   if (!constantBufferData_) {
-      return;
-   }
+   if (!constantBufferData_) return;
 
    constantBufferData_->center = params_.center;
 

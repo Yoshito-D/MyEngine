@@ -264,8 +264,10 @@ public:
 
    /// @brief 有効状態が変わった場合も描画形状を再構築する
    void SetEnabled(bool enabled) override {
-      if (IsEnabled() != enabled)
+      if (IsEnabled() != enabled) {
          meshDirty_ = true;
+      }
+
       ParticleModule::SetEnabled(enabled);
    }
 

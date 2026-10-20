@@ -8,10 +8,14 @@ template <class T> bool RegisterRearComponent(const char* name) {
    return GameEngine::VirtualCamera::RegisterComponentFactory(
       name, [](GameEngine::VirtualCamera& owner) -> GameEngine::ICinemachineComponent* {
          // 新しい部品名だけを読み込んだ場合も、入力と依存部品を一度だけ補う。
-         if (!owner.GetComponent<PlayerRearFollowCamera>())
+         if (!owner.GetComponent<PlayerRearFollowCamera>()) {
             owner.AddComponent<PlayerRearFollowCamera>();
-         if (auto* existing = owner.GetComponent<T>())
+         }
+
+         if (auto* existing = owner.GetComponent<T>()) {
             return existing;
+         }
+
          return owner.AddComponent<T>();
       });
 }

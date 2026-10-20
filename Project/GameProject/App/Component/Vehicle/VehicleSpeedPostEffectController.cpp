@@ -30,6 +30,7 @@ float SmoothTowards(float current, float target, float responseSpeed, float delt
 
 float CalculateEffectAmount(float currentSpeed, float minimumEffectSpeed, float maximumEffectSpeed) {
    const float speedRange = maximumEffectSpeed - minimumEffectSpeed;
+
    if (speedRange <= 1e-4f) {
       return currentSpeed >= minimumEffectSpeed ? 1.0f : 0.0f;
    }
@@ -52,6 +53,7 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
    }
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
+
    if (!groundMover) {
       ApplyNeutralEffect();
       return;
@@ -106,9 +108,8 @@ void VehicleSpeedPostEffectController::OnDisable() {
 void VehicleSpeedPostEffectController::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("演出最低速度", "Minimum Effect Speed"), &minimumEffectSpeed, 0.1f, 0.0f, 200.0f);
@@ -158,6 +159,7 @@ void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
    if (data.contains("minimumEffectSpeed")) {
       minimumEffectSpeed = data["minimumEffectSpeed"];
    }
+
    if (data.contains("maximumEffectSpeed")) {
       maximumEffectSpeed = data["maximumEffectSpeed"];
    }
@@ -165,58 +167,76 @@ void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
    // 旧シーンの相対指定を絶対速度へ移行し、保存済みデータとの互換性を維持する。
    if (!data.contains("minimumEffectSpeed") && data.contains("activationMargin")) {
       float baseSpeed = minimumEffectSpeed;
+
       if (HasOwner()) {
          if (auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>()) {
             baseSpeed = groundMover->DescribeSettings().autoSpeed;
          }
       }
+
       minimumEffectSpeed = baseSpeed + std::max(data["activationMargin"].get<float>(), 0.0f);
    }
+
    if (!data.contains("maximumEffectSpeed") && data.contains("effectSpeedRange")) {
       maximumEffectSpeed = minimumEffectSpeed + std::max(data["effectSpeedRange"].get<float>(), 0.01f);
    }
+
    if (data.contains("responseSpeed")) {
       responseSpeed = data["responseSpeed"];
    }
+
    if (data.contains("visibleThreshold")) {
       visibleThreshold = data["visibleThreshold"];
    }
+
    if (data.contains("idleInnerRadius")) {
       idleInnerRadius = data["idleInnerRadius"];
    }
+
    if (data.contains("activeInnerRadius")) {
       activeInnerRadius = data["activeInnerRadius"];
    }
+
    if (data.contains("outerRadius")) {
       outerRadius = data["outerRadius"];
    }
+
    if (data.contains("maxIntensity")) {
       maxIntensity = data["maxIntensity"];
    }
+
    if (data.contains("idleFlowSpeed")) {
       idleFlowSpeed = data["idleFlowSpeed"];
    }
+
    if (data.contains("activeFlowSpeed")) {
       activeFlowSpeed = data["activeFlowSpeed"];
    }
+
    if (data.contains("lineDensity")) {
       lineDensity = data["lineDensity"];
    }
+
    if (data.contains("thickness")) {
       thickness = data["thickness"];
    }
+
    if (data.contains("randomSeed")) {
       randomSeed = data["randomSeed"];
    }
+
    if (data.contains("radialBlurMaxStrength")) {
       radialBlurMaxStrength = data["radialBlurMaxStrength"];
    }
+
    if (data.contains("radialBlurSampleCount")) {
       radialBlurSampleCount = data["radialBlurSampleCount"];
    }
+
    if (data.contains("radialBlurVisibleThreshold")) {
       radialBlurVisibleThreshold = data["radialBlurVisibleThreshold"];
    }
+
    Configure(DescribeSettings());
 }
 

@@ -27,9 +27,11 @@ SamplerState gSampler : register(s0);
 float LinearizeDepth(float depth) {
    float nearClip = gMaterial.sceneParams.z;
    float farClip = gMaterial.sceneParams.w;
+
    if (gMaterial.projectionParams.x > 0.5f) {
       return lerp(nearClip, farClip, depth);
    }
+
    return nearClip * farClip / max(farClip - depth * (farClip - nearClip), 0.0001f);
 }
 
@@ -41,6 +43,7 @@ PixelShaderOutput main(VertexShaderOutput input) {
    // UV変換 & テクスチャサンプリング
    float4 transformedUV = mul(float4(input.texCoord, 0.0f, 1.0f), particleUvTransform);
    transformedUV = mul(transformedUV, gMaterial.uvTransform);
+
    if (input.customData.x < 0.0f) {
       // 通常パーティクルのClampサンプラーを維持したまま、トレイルの長手方向だけを繰り返す。
       transformedUV.y = frac(transformedUV.y);
@@ -57,6 +60,7 @@ PixelShaderOutput main(VertexShaderOutput input) {
    output.color = textureColor * input.color * gMaterial.color;
 
    float2 screenUV = input.position.xy / gMaterial.sceneParams.xy;
+
    if (gMaterial.effectParams.x > 0.5f) {
       float sceneDepth = gSceneDepth.SampleLevel(gSampler, screenUV, 0.0f);
       float depthSeparation = LinearizeDepth(sceneDepth) - LinearizeDepth(input.position.z);
@@ -92,9 +96,11 @@ PixelShaderOutput main(VertexShaderOutput input) {
       output.color = float4(distortedScene.rgb, distortionWeight);
    } else {
       float toonSteps = gMaterial.renderingParams.z;
+
       if (toonSteps >= 2.0f) {
          output.color.rgb = floor(saturate(output.color.rgb) * (toonSteps - 1.0f) + 0.5f) / (toonSteps - 1.0f);
       }
+
       output.color.rgb *= gMaterial.renderingParams.x;
    }
 

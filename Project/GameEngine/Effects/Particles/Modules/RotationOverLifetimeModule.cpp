@@ -27,20 +27,25 @@ nlohmann::json RotationOverLifetimeModule::ToJson() const {
 }
 
 void RotationOverLifetimeModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
+   }
+
    auto low = angularVelocity_.Minimum();
    auto high = angularVelocity_.Maximum();
    bool randomized = angularVelocity_.IsRandomized();
    auto readVector = [&](const char* name, Vector3& value) {
-      if (j.contains(name) && j[name].is_array() && j[name].size() >= 3)
+      if (j.contains(name) && j[name].is_array() && j[name].size() >= 3) {
          value = Vector3{j[name][0], j[name][1], j[name][2]};
+      }
    };
+
    if (j.contains("angularVelocity")) {
       readVector("angularVelocity", low);
       high = low;
       randomized = false;
    }
+
    readVector("angularVelocityMin", low);
    readVector("angularVelocityMax", high);
    randomized = j.value("angularVelocityRandomize", randomized);

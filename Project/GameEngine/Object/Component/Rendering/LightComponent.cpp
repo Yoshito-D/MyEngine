@@ -27,6 +27,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
       if (!object.HasComponent<GameEngine::TransformComponent>()) {
          object.AddComponent<GameEngine::TransformComponent>();
       }
+
       return object.AddComponent<GameEngine::LightComponent>();
    },
    GameEngine::LightComponent::kDisplayName, GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model);
@@ -35,6 +36,7 @@ GameEngine::Vector3 ReadVector3(const nlohmann::json& data, const char* key, con
    if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 3) {
       return fallback;
    }
+
    return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>(), data.at(key)[2].get<float>()};
 }
 
@@ -42,6 +44,7 @@ GameEngine::Vector4 ReadVector4(const nlohmann::json& data, const char* key, con
    if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 4) {
       return fallback;
    }
+
    return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>(), data.at(key)[2].get<float>(),
       data.at(key)[3].get<float>()};
 }
@@ -50,6 +53,7 @@ GameEngine::Vector2 ReadVector2(const nlohmann::json& data, const char* key, con
    if (!data.contains(key) || !data.at(key).is_array() || data.at(key).size() != 2) {
       return fallback;
    }
+
    return {data.at(key)[0].get<float>(), data.at(key)[1].get<float>()};
 }
 
@@ -61,9 +65,7 @@ float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
 namespace GameEngine {
 
 void LightComponent::SetLightType(Type type) {
-   if (type_ == type) {
-      return;
-   }
+   if (type_ == type) return;
 
    // LightManagerは種類別コンテナを持つ。同じキーのまま型だけ変えると旧コンテナにも
    // 登録が残るため、型を書き換える前に現在のRuntimeライトを解除する。
@@ -77,6 +79,7 @@ bool LightComponent::DeserializeLegacy(const nlohmann::json& data) {
    }
 
    Type parsedType;
+
    if (!TryParseType(data.value("type", ""), parsedType)) {
       return false;
    }
@@ -113,6 +116,7 @@ bool LightComponent::DeserializeLegacy(const nlohmann::json& data) {
          }
       }
    }
+
    return true;
 }
 
@@ -141,14 +145,14 @@ nlohmann::json LightComponent::Serialize() const {
 }
 
 void LightComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    Type parsedType = type_;
+
    if (TryParseType(data.value("lightType", data.value("type", "")), parsedType)) {
       SetLightType(parsedType);
    }
+
    color = ReadVector4(data, "color", color);
    intensity = ReadFloat(data, "intensity", intensity);
    radius = ReadFloat(data, "radius", radius);
@@ -163,15 +167,12 @@ void LightComponent::Deserialize(const nlohmann::json& data) {
 }
 
 void LightComponent::SynchronizeRuntimeLight() {
-   if (!HasOwner() || !IsEnabled()) {
-      return;
-   }
+   if (!HasOwner() || !IsEnabled()) return;
 
    // Entity IDをManager上の一意キーとして使い、Componentと描画用ライトを一対一に対応させる。
    const std::string runtimeKey = ResolveRuntimeKey();
-   if (runtimeKey.empty()) {
-      return;
-   }
+
+   if (runtimeKey.empty()) return;
 
    // Entity IDの変更またはライト型変更があれば、旧キー/旧型の登録を先に削除する。
    if (!runtimeLightKey_.empty() && (runtimeLightKey_ != runtimeKey || registeredType_ != type_)) {
@@ -189,12 +190,15 @@ void LightComponent::SynchronizeRuntimeLight() {
    // キーと登録型を先に記録し、Disable/Detach時に正しいコンテナから削除できるようにする。
    runtimeLightKey_ = runtimeKey;
    registeredType_ = type_;
+
    switch (type_) {
       case Type::Directional: {
          auto* light = EngineContext::GetDirectionalLight(runtimeKey);
+
          if (!light) {
             light = EngineContext::CreateDirectionalLight(runtimeKey);
          }
+
          if (light && light->GetDirectionalLightData()) {
             auto data = *light->GetDirectionalLightData();
             data.color = color;
@@ -202,13 +206,16 @@ void LightComponent::SynchronizeRuntimeLight() {
             data.intensity = intensity;
             light->ApplyIllumination(data);
          }
+
          break;
       }
       case Type::Point: {
          auto* light = EngineContext::GetPointLight(runtimeKey);
+
          if (!light) {
             light = EngineContext::CreatePointLight(runtimeKey);
          }
+
          if (light && light->GetPointLightData()) {
             auto data = *light->GetPointLightData();
             data.color = color;
@@ -220,13 +227,16 @@ void LightComponent::SynchronizeRuntimeLight() {
             data.decay = std::max(decay, 0.0f);
             light->ApplyIllumination(data);
          }
+
          break;
       }
       case Type::Spot: {
          auto* light = EngineContext::GetSpotLight(runtimeKey);
+
          if (!light) {
             light = EngineContext::CreateSpotLight(runtimeKey);
          }
+
          if (light && light->GetSpotLightData()) {
             auto data = *light->GetSpotLightData();
             data.color = color;
@@ -239,13 +249,16 @@ void LightComponent::SynchronizeRuntimeLight() {
             data.cosFalloffStart = cosFalloffStart;
             light->ApplyIllumination(data);
          }
+
          break;
       }
       case Type::Area: {
          auto* light = EngineContext::GetAreaLight(runtimeKey);
+
          if (!light) {
             light = EngineContext::CreateAreaLight(runtimeKey);
          }
+
          if (light && light->GetAreaLightData()) {
             auto data = *light->GetAreaLightData();
             data.color = color;
@@ -259,15 +272,14 @@ void LightComponent::SynchronizeRuntimeLight() {
             data.height = std::max(areaSize.y, 0.0f);
             light->ApplyIllumination(data);
          }
+
          break;
       }
    }
 }
 
 void LightComponent::ReleaseRuntimeLight() {
-   if (runtimeLightKey_.empty()) {
-      return;
-   }
+   if (runtimeLightKey_.empty()) return;
 
    // type_ではなく実際に登録した型を使う。SetLightTypeは解除後にtype_を更新するため、
    // ここで現在値を見ると別のManagerへ削除要求を送る可能性がある。
@@ -285,6 +297,7 @@ void LightComponent::ReleaseRuntimeLight() {
          EngineContext::RemoveAreaLight(runtimeLightKey_);
          break;
    }
+
    runtimeLightKey_.clear();
 }
 
@@ -303,6 +316,7 @@ const char* LightComponent::TypeToString(Type type) {
       case Type::Area:
          return "area";
    }
+
    return "directional";
 }
 
@@ -311,33 +325,38 @@ bool LightComponent::TryParseType(const std::string& value, Type& type) {
       type = Type::Directional;
       return true;
    }
+
    if (value == "point") {
       type = Type::Point;
       return true;
    }
+
    if (value == "spot") {
       type = Type::Spot;
       return true;
    }
+
    if (value == "area") {
       type = Type::Area;
       return true;
    }
+
    return false;
 }
 
 #ifdef USE_IMGUI
 void LightComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    const char* types[] = {"Directional", "Point", "Spot", "Area"};
    int selectedType = static_cast<int>(type_);
+
    if (ImGui::Combo("Type", &selectedType, types, IM_ARRAYSIZE(types))) {
       SetLightType(static_cast<Type>(selectedType));
    }
+
    ImGui::ColorEdit4("Color", &color.x);
    ImGui::DragFloat("Intensity", &intensity, 0.05f, 0.0f, 1000.0f);
 

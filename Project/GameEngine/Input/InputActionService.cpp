@@ -63,6 +63,7 @@ const char* ToString(InputActionType type) {
       case InputActionType::Axis2D:
          return "Axis2D";
    }
+
    return "Button";
 }
 
@@ -71,14 +72,17 @@ bool TryParseActionType(const std::string& text, InputActionType& type) {
       type = InputActionType::Button;
       return true;
    }
+
    if (text == "Axis1D") {
       type = InputActionType::Axis1D;
       return true;
    }
+
    if (text == "Axis2D") {
       type = InputActionType::Axis2D;
       return true;
    }
+
    return false;
 }
 
@@ -97,6 +101,7 @@ const char* ToString(InputBindingType type) {
       case InputBindingType::RightStick:
          return "RightStick";
    }
+
    return "Key";
 }
 
@@ -105,26 +110,32 @@ bool TryParseBindingType(const std::string& text, InputBindingType& type) {
       type = InputBindingType::Key;
       return true;
    }
+
    if (text == "GamePadButton") {
       type = InputBindingType::GamePadButton;
       return true;
    }
+
    if (text == "KeyAxis1D") {
       type = InputBindingType::KeyAxis1D;
       return true;
    }
+
    if (text == "KeyAxis2D") {
       type = InputBindingType::KeyAxis2D;
       return true;
    }
+
    if (text == "LeftStick") {
       type = InputBindingType::LeftStick;
       return true;
    }
+
    if (text == "RightStick") {
       type = InputBindingType::RightStick;
       return true;
    }
+
    return false;
 }
 
@@ -137,6 +148,7 @@ const char* ToString(InputBindingAxis axis) {
       case InputBindingAxis::Y:
          return "Y";
    }
+
    return "Both";
 }
 
@@ -145,14 +157,17 @@ bool TryParseBindingAxis(const std::string& text, InputBindingAxis& axis) {
       axis = InputBindingAxis::Both;
       return true;
    }
+
    if (text == "X") {
       axis = InputBindingAxis::X;
       return true;
    }
+
    if (text == "Y") {
       axis = InputBindingAxis::Y;
       return true;
    }
+
    return false;
 }
 
@@ -162,6 +177,7 @@ const char* ToString(KeyCode key) {
          return name;
       }
    }
+
    return "Space";
 }
 
@@ -172,6 +188,7 @@ bool TryParseKey(const std::string& text, KeyCode& key) {
          return true;
       }
    }
+
    return false;
 }
 
@@ -181,6 +198,7 @@ const char* ToString(GamePadButton button) {
          return name;
       }
    }
+
    return "A";
 }
 
@@ -191,6 +209,7 @@ bool TryParseGamePadButton(const std::string& text, GamePadButton& button) {
          return true;
       }
    }
+
    return false;
 }
 
@@ -200,6 +219,7 @@ json SerializeBinding(const InputBinding& binding) {
    json result;
    result["type"] = ToString(binding.type);
    result["scale"] = binding.scale;
+
    switch (binding.type) {
       case InputBindingType::Key:
          result["key"] = ToString(binding.key);
@@ -222,6 +242,7 @@ json SerializeBinding(const InputBinding& binding) {
          result["axis"] = ToString(binding.axis);
          break;
    }
+
    return result;
 }
 
@@ -231,12 +252,15 @@ bool DeserializeBinding(const json& source, InputBinding& binding) {
    if (!source.is_object() || !source.contains("type") || !source["type"].is_string()) {
       return false;
    }
+
    if (!TryParseBindingType(source["type"].get<std::string>(), binding.type)) {
       return false;
    }
+
    if (source.contains("scale") && !source.at("scale").is_number()) {
       return false;
    }
+
    binding.scale = source.contains("scale") ? source.at("scale").get<float>() : 1.0f;
 
    switch (binding.type) {
@@ -266,9 +290,11 @@ bool DeserializeBinding(const json& source, InputBinding& binding) {
             binding.axis = InputBindingAxis::Both;
             return true;
          }
+
          return source.at("axis").is_string() &&
                 TryParseBindingAxis(source.at("axis").get<std::string>(), binding.axis);
    }
+
    return false;
 }
 
@@ -288,6 +314,7 @@ std::string DescribeBinding(const InputBinding& binding) {
       case InputBindingType::RightStick:
          return std::string("Right Stick ") + ToString(binding.axis);
    }
+
    return {};
 }
 
@@ -309,6 +336,7 @@ std::vector<PhysicalControl> GetPhysicalControls(const InputBinding& binding) {
    // 複合バインドを「物理デバイス上の入力」の列へ正規化することで、
    // KeyAxis1D/2D を含む異種バインド同士でも同じ手順で競合を検出できる。
    auto key = [](KeyCode value) { return PhysicalControl{PhysicalControlType::Key, static_cast<uint32_t>(value)}; };
+
    switch (binding.type) {
       case InputBindingType::Key:
          return {key(binding.key)};
@@ -323,6 +351,7 @@ std::vector<PhysicalControl> GetPhysicalControls(const InputBinding& binding) {
       case InputBindingType::RightStick:
          return {{PhysicalControlType::RightStick, 0}};
    }
+
    return {};
 }
 
@@ -345,52 +374,63 @@ bool SetPhysicalControlAtIndex(InputBinding& binding, size_t controlIndex, const
          if (controlIndex != 0 || control.type != PhysicalControlType::Key) {
             return false;
          }
+
          binding.key = static_cast<KeyCode>(control.value);
          return true;
       case InputBindingType::GamePadButton:
          if (controlIndex != 0 || control.type != PhysicalControlType::GamePadButton) {
             return false;
          }
+
          binding.gamePadButton = static_cast<GamePadButton>(control.value);
          return true;
       case InputBindingType::KeyAxis1D:
          if (control.type != PhysicalControlType::Key) {
             return false;
          }
+
          if (controlIndex == 0) {
             binding.negativeKey = static_cast<KeyCode>(control.value);
             return true;
          }
+
          if (controlIndex == 1) {
             binding.positiveKey = static_cast<KeyCode>(control.value);
             return true;
          }
+
          return false;
       case InputBindingType::KeyAxis2D:
          if (control.type != PhysicalControlType::Key) {
             return false;
          }
+
          if (controlIndex == 0) {
             binding.leftKey = static_cast<KeyCode>(control.value);
             return true;
          }
+
          if (controlIndex == 1) {
             binding.rightKey = static_cast<KeyCode>(control.value);
             return true;
          }
+
          if (controlIndex == 2) {
             binding.upKey = static_cast<KeyCode>(control.value);
             return true;
          }
+
          if (controlIndex == 3) {
             binding.downKey = static_cast<KeyCode>(control.value);
             return true;
          }
+
          return false;
       case InputBindingType::LeftStick:
       case InputBindingType::RightStick:
          return false;
    }
+
    return false;
 }
 
@@ -401,24 +441,30 @@ bool FindSingleChangedControl(const InputBinding& previous, const InputBinding& 
    if (previous.type != replacement.type) {
       return false;
    }
+
    const auto previousControls = GetPhysicalControls(previous);
    const auto replacementControls = GetPhysicalControls(replacement);
+
    if (previousControls.size() != replacementControls.size()) {
       return false;
    }
 
    size_t changedIndex = previousControls.size();
+
    for (size_t index = 0; index < previousControls.size(); ++index) {
       if (previousControls[index] != replacementControls[index]) {
          if (changedIndex != previousControls.size()) {
             return false;
          }
+
          changedIndex = index;
       }
    }
+
    if (changedIndex == previousControls.size()) {
       return false;
    }
+
    previousControl = previousControls[changedIndex];
    replacementControl = replacementControls[changedIndex];
    return true;
@@ -430,6 +476,7 @@ bool ReplacePhysicalControl(InputBinding& binding, const PhysicalControl& target
    if (target.type != replacement.type) {
       return false;
    }
+
    bool replaced = false;
    auto replaceKey = [&](KeyCode& key) {
       if (target.type == PhysicalControlType::Key && static_cast<uint32_t>(key) == target.value) {
@@ -437,6 +484,7 @@ bool ReplacePhysicalControl(InputBinding& binding, const PhysicalControl& target
          replaced = true;
       }
    };
+
    switch (binding.type) {
       case InputBindingType::Key:
          replaceKey(binding.key);
@@ -447,6 +495,7 @@ bool ReplacePhysicalControl(InputBinding& binding, const PhysicalControl& target
             binding.gamePadButton = static_cast<GamePadButton>(replacement.value);
             replaced = true;
          }
+
          break;
       case InputBindingType::KeyAxis1D:
          replaceKey(binding.negativeKey);
@@ -462,6 +511,7 @@ bool ReplacePhysicalControl(InputBinding& binding, const PhysicalControl& target
       case InputBindingType::RightStick:
          break;
    }
+
    return replaced;
 }
 
@@ -481,6 +531,7 @@ void InputActionService::Initialize(
       Logger::Warning("Input actions default file is missing or invalid; built-in defaults are active: " +
                       defaultPath_.generic_string());
    }
+
    defaults_ = actions_;
    LoadOverrides();
 }
@@ -573,6 +624,7 @@ void InputActionService::BuildFallbackDefaults() {
 
 bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool replaceAll) {
    std::ifstream stream(path);
+
    if (!stream) {
       return false;
    }
@@ -583,6 +635,7 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
    } catch (const json::exception&) {
       return false;
    }
+
    if (!root.contains("maps") || !root["maps"].is_object()) {
       return false;
    }
@@ -591,16 +644,20 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
    // replaceAll は未知アクションの追加可否を表し、override 読み込み時は既知項目だけを許可する。
    auto loadedActions = replaceAll ? actions_ : actions_;
    size_t appliedCount = 0;
+
    for (const auto& [mapName, mapData] : root["maps"].items()) {
       if (!mapData.is_object()) {
          continue;
       }
+
       for (const auto& [actionId, actionData] : mapData.items()) {
          if (!actionData.is_object()) {
             continue;
          }
+
          const std::string key = MakeKey(mapName, actionId);
          auto existing = actions_.find(key);
+
          if (!replaceAll && existing == actions_.end()) {
             Logger::Warning("Ignoring unknown input action override: " + mapName + "/" + actionId);
             continue;
@@ -611,6 +668,7 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
          action.map = mapName;
          action.id = actionId;
          InputActionType type = action.type;
+
          if (!actionData.contains("type") || !actionData["type"].is_string() ||
              !TryParseActionType(actionData["type"].get<std::string>(), type) || !actionData.contains("bindings") ||
              !actionData["bindings"].is_array()) {
@@ -621,14 +679,18 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
          // 配列全体を検証してから置換する。途中まで有効な配列は操作体系を予測不能にするため採用しない。
          std::vector<InputBinding> bindings;
          bool valid = true;
+
          for (const json& bindingData : actionData["bindings"]) {
             InputBinding binding;
+
             if (!DeserializeBinding(bindingData, binding)) {
                valid = false;
                break;
             }
+
             bindings.push_back(binding);
          }
+
          if (!valid || bindings.empty()) {
             Logger::Warning("Invalid bindings; retaining fallback: " + mapName + "/" + actionId);
             continue;
@@ -654,24 +716,27 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
    if (replaceAll && appliedCount == 0) {
       return false;
    }
+
    actions_ = std::move(loadedActions);
    return true;
 }
 
 void InputActionService::Update() {
-   if (!backend_) {
-      return;
-   }
+   if (!backend_) return;
+
    ++frameNumber_;
 
    // 全アクションをプレイヤー単位で評価し、このフレームのスナップショットを完成させる。
    // 利用側が同じフレームに何度問い合わせても triggered/released が変化しない設計である。
    for (auto& [key, action] : actions_) {
       (void)key;
+
       for (uint32_t playerSlot = 0; playerSlot < kMaxPlayers; ++playerSlot) {
          Vector2 value{};
+
          for (const InputBinding& binding : action.bindings) {
             const Vector2 bindingValue = EvaluateBinding(binding, playerSlot, action.deadZone);
+
             if (action.type == InputActionType::Button) {
                // ボタンは複数デバイスの論理OR。加算すると二重入力時だけ値が変わるため最大値を使う。
                value.x = std::max(value.x, bindingValue.x);
@@ -705,42 +770,51 @@ Vector2 InputActionService::EvaluateBinding(const InputBinding& binding, uint32_
    // キーボードは共有デバイスなのでプレイヤー0だけへ割り当てる。
    // ゲームパッドは playerSlot と物理ポートを一対一で対応させる。
    const bool allowKeyboard = playerSlot == 0;
+
    switch (binding.type) {
       case InputBindingType::Key:
          if (allowKeyboard && backend_->IsKeyPressed(binding.key)) {
             value.x = 1.0f;
          }
+
          break;
       case InputBindingType::GamePadButton:
          if (backend_->IsGamePadButtonPressed(binding.gamePadButton, playerSlot)) {
             value.x = 1.0f;
          }
+
          break;
       case InputBindingType::KeyAxis1D:
          if (allowKeyboard) {
             if (backend_->IsKeyPressed(binding.negativeKey)) {
                value.x -= 1.0f;
             }
+
             if (backend_->IsKeyPressed(binding.positiveKey)) {
                value.x += 1.0f;
             }
          }
+
          break;
       case InputBindingType::KeyAxis2D:
          if (allowKeyboard) {
             if (backend_->IsKeyPressed(binding.leftKey)) {
                value.x -= 1.0f;
             }
+
             if (backend_->IsKeyPressed(binding.rightKey)) {
                value.x += 1.0f;
             }
+
             if (backend_->IsKeyPressed(binding.upKey)) {
                value.y -= 1.0f;
             }
+
             if (backend_->IsKeyPressed(binding.downKey)) {
                value.y += 1.0f;
             }
          }
+
          break;
       case InputBindingType::LeftStick:
          value = backend_->GetLeftStick(playerSlot, deadZone);
@@ -758,6 +832,7 @@ Vector2 InputActionService::EvaluateBinding(const InputBinding& binding, uint32_
       value.x = value.y;
       value.y = 0.0f;
    }
+
    value.x *= binding.scale;
    value.y *= binding.scale;
    return value;
@@ -766,9 +841,11 @@ Vector2 InputActionService::EvaluateBinding(const InputBinding& binding, uint32_
 const InputActionState& InputActionService::GetActionState(
    const std::string& actionMap, const std::string& actionId, uint32_t playerSlot) const {
    const ActionDefinition* action = FindAction(actionMap, actionId);
+
    if (!action || playerSlot >= kMaxPlayers) {
       return kEmptyActionState;
    }
+
    return action->states[playerSlot];
 }
 
@@ -779,9 +856,11 @@ bool InputActionService::BeginRebind(const std::string& actionMap, const std::st
 bool InputActionService::BeginRebindPart(
    const std::string& actionMap, const std::string& actionId, size_t bindingIndex, RebindPart part) {
    const ActionDefinition* action = FindAction(actionMap, actionId);
+
    if (!action || bindingIndex >= action->bindings.size()) {
       return false;
    }
+
    pendingRebind_ = {actionMap, actionId, bindingIndex, part, true};
    hasPendingConflict_ = false;
    return true;
@@ -790,9 +869,11 @@ bool InputActionService::BeginRebindPart(
 bool InputActionService::ApplyBinding(const std::string& actionMap, const std::string& actionId, size_t bindingIndex,
    const InputBinding& binding, bool replaceConflict) {
    ActionDefinition* target = FindAction(actionMap, actionId);
+
    if (!target || bindingIndex >= target->bindings.size()) {
       return false;
    }
+
    const InputBinding previousTargetBinding = target->bindings[bindingIndex];
 
    // 一方向だけを再割り当てた複合軸では、競合先の同じ物理入力と旧入力を交換する。
@@ -809,12 +890,15 @@ bool InputActionService::ApplyBinding(const std::string& actionMap, const std::s
       const auto previousTargetControls = GetPhysicalControls(previousTargetBinding);
       const auto selfConflict =
          std::find(previousTargetControls.begin(), previousTargetControls.end(), replacementControl);
+
       if (selfConflict != previousTargetControls.end()) {
          if (!replaceConflict) {
             return false;
          }
+
          const size_t selfConflictIndex =
             static_cast<size_t>(std::distance(previousTargetControls.begin(), selfConflict));
+
          if (!SetPhysicalControlAtIndex(resolvedTargetBinding, selfConflictIndex, previousControl)) {
             return false;
          }
@@ -825,9 +909,11 @@ bool InputActionService::ApplyBinding(const std::string& actionMap, const std::s
    // 同じ物理入力を共有できるため、競合解決は同一マップ内だけに限定する。
    for (auto& [key, action] : actions_) {
       (void)key;
+
       if (action.map != target->map) {
          continue;
       }
+
       for (InputBinding& existing : action.bindings) {
          const bool isTarget = &action == target && &existing == &target->bindings[bindingIndex];
 
@@ -835,10 +921,12 @@ bool InputActionService::ApplyBinding(const std::string& actionMap, const std::s
          const bool conflictsWithReplacement = changesSingleControl
                                                   ? ContainsPhysicalControl(existing, replacementControl)
                                                   : SharesPhysicalControl(existing, binding);
+
          if (!isTarget && conflictsWithReplacement) {
             if (!replaceConflict) {
                return false;
             }
+
             if (!changesSingleControl || !ReplacePhysicalControl(existing, replacementControl, previousControl)) {
                // 安全な局所交換ができない場合は、競合側へ対象の旧バインド全体を移す。
                existing = previousTargetBinding;
@@ -846,6 +934,7 @@ bool InputActionService::ApplyBinding(const std::string& actionMap, const std::s
          }
       }
    }
+
    target->bindings[bindingIndex] = resolvedTargetBinding;
    return true;
 }
@@ -855,11 +944,13 @@ bool InputActionService::LoadOverrides() {
       Logger::Info("Input override file is missing; defaults are active: " + overridePath_.generic_string());
       return false;
    }
+
    if (!LoadDefinitions(overridePath_, false)) {
       Logger::Warning(
          "Input override file is invalid; defaults are active per action: " + overridePath_.generic_string());
       return false;
    }
+
    return true;
 }
 
@@ -868,15 +959,18 @@ bool InputActionService::SaveOverrides() const {
    // ユーザーが確認した割り当てが不用意に変わらないようにする。
    json root;
    root["version"] = kInputActionFormatVersion;
+
    for (const auto& [key, action] : actions_) {
       (void)key;
       json actionData;
       actionData["type"] = ToString(action.type);
       actionData["deadZone"] = action.deadZone;
       actionData["bindings"] = json::array();
+
       for (const InputBinding& binding : action.bindings) {
          actionData["bindings"].push_back(SerializeBinding(binding));
       }
+
       root["maps"][action.map][action.id] = std::move(actionData);
    }
 
@@ -887,11 +981,14 @@ bool InputActionService::SaveOverrides() const {
    // WRITE_THROUGH付きの置換で切り替える。
    const std::filesystem::path temporaryPath = overridePath_.wstring() + L".tmp";
    std::ofstream stream(temporaryPath, std::ios::trunc);
+
    if (!stream) {
       return false;
    }
+
    stream << root.dump(kJsonIndentSize);
    stream.close();
+
    if (!stream) {
       return false;
    }
@@ -900,6 +997,7 @@ bool InputActionService::SaveOverrides() const {
       std::filesystem::remove(temporaryPath, error);
       return false;
    }
+
    return true;
 }
 
@@ -928,19 +1026,20 @@ std::string InputActionService::MakeKey(const std::string& actionMap, const std:
 
 #ifdef USE_IMGUI
 void InputActionService::DrawImGui() {
-   if (!ImGui::CollapsingHeader("Input Actions")) {
-      return;
-   }
+   if (!ImGui::CollapsingHeader("Input Actions")) return;
+
    ImGui::TextUnformatted("Keyboard/Mouse: Player 0, XInput: matching player slot");
 
    // actions_ はunordered_mapのため、そのまま描画すると毎回並びが揺れる。
    // ポインターだけを並べ替え、実体と再バインド状態のアドレスは維持する。
    std::vector<ActionDefinition*> sortedActions;
    sortedActions.reserve(actions_.size());
+
    for (auto& [key, action] : actions_) {
       (void)key;
       sortedActions.push_back(&action);
    }
+
    std::sort(
       sortedActions.begin(), sortedActions.end(), [](const ActionDefinition* left, const ActionDefinition* right) {
          return MakeKey(left->map, left->id) < MakeKey(right->map, right->id);
@@ -949,44 +1048,59 @@ void InputActionService::DrawImGui() {
    for (ActionDefinition* action : sortedActions) {
       ImGui::PushID(action->id.c_str());
       ImGui::Text("%s / %s (%s)", action->map.c_str(), action->id.c_str(), ToString(action->type));
+
       for (size_t index = 0; index < action->bindings.size(); ++index) {
          ImGui::PushID(static_cast<int>(index));
          const InputBinding& binding = action->bindings[index];
          ImGui::BulletText("%s", DescribeBinding(binding).c_str());
+
          if (binding.type == InputBindingType::KeyAxis1D) {
             ImGui::SameLine();
+
             if (ImGui::SmallButton("Negative")) {
                BeginRebindPart(action->map, action->id, index, RebindPart::Negative);
             }
+
             ImGui::SameLine();
+
             if (ImGui::SmallButton("Positive")) {
                BeginRebindPart(action->map, action->id, index, RebindPart::Positive);
             }
          } else if (binding.type == InputBindingType::KeyAxis2D) {
             ImGui::SameLine();
+
             if (ImGui::SmallButton("Left")) {
                BeginRebindPart(action->map, action->id, index, RebindPart::Left);
             }
+
             ImGui::SameLine();
+
             if (ImGui::SmallButton("Right")) {
                BeginRebindPart(action->map, action->id, index, RebindPart::Right);
             }
+
             ImGui::SameLine();
+
             if (ImGui::SmallButton("Up")) {
                BeginRebindPart(action->map, action->id, index, RebindPart::Up);
             }
+
             ImGui::SameLine();
+
             if (ImGui::SmallButton("Down")) {
                BeginRebindPart(action->map, action->id, index, RebindPart::Down);
             }
          } else if (binding.type == InputBindingType::Key || binding.type == InputBindingType::GamePadButton) {
             ImGui::SameLine();
+
             if (ImGui::SmallButton("Rebind")) {
                BeginRebind(action->map, action->id, index);
             }
          }
+
          ImGui::PopID();
       }
+
       ImGui::PopID();
    }
 
@@ -1002,6 +1116,7 @@ void InputActionService::DrawImGui() {
       // 押下中ではなくトリガーだけを拾い、再バインド開始に使った入力を誤採用しない。
       for (const auto& [name, key] : kKnownKeys) {
          (void)name;
+
          if (backend_->IsKeyTriggered(key)) {
             switch (pendingRebind_.part) {
                case RebindPart::Negative:
@@ -1029,6 +1144,7 @@ void InputActionService::DrawImGui() {
                   captured.key = key;
                   break;
             }
+
             hasCapture = true;
             break;
          }
@@ -1039,6 +1155,7 @@ void InputActionService::DrawImGui() {
       if (!hasCapture && pendingRebind_.part == RebindPart::Whole) {
          for (const auto& [name, button] : kKnownGamePadButtons) {
             (void)name;
+
             if (backend_->IsGamePadButtonTriggered(button, 0)) {
                captured.type = InputBindingType::GamePadButton;
                captured.gamePadButton = button;
@@ -1047,6 +1164,7 @@ void InputActionService::DrawImGui() {
             }
          }
       }
+
       if (hasCapture) {
          // まず非破壊モードで適用し、競合があった場合だけユーザー確認へ進む。
          if (ApplyBinding(pendingRebind_.map, pendingRebind_.actionId, pendingRebind_.bindingIndex, captured, false)) {
@@ -1057,7 +1175,9 @@ void InputActionService::DrawImGui() {
             ImGui::OpenPopup("Input binding conflict");
          }
       }
+
       ImGui::SameLine();
+
       if (ImGui::SmallButton("Cancel")) {
          pendingRebind_.active = false;
       }
@@ -1065,6 +1185,7 @@ void InputActionService::DrawImGui() {
 
    if (ImGui::BeginPopupModal("Input binding conflict", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
       ImGui::TextUnformatted("This physical input is already assigned.");
+
       if (ImGui::Button("Replace") && hasPendingConflict_) {
          ApplyBinding(
             pendingRebind_.map, pendingRebind_.actionId, pendingRebind_.bindingIndex, pendingConflictBinding_, true);
@@ -1072,11 +1193,14 @@ void InputActionService::DrawImGui() {
          hasPendingConflict_ = false;
          ImGui::CloseCurrentPopup();
       }
+
       ImGui::SameLine();
+
       if (ImGui::Button("Cancel")) {
          hasPendingConflict_ = false;
          ImGui::CloseCurrentPopup();
       }
+
       ImGui::EndPopup();
    }
 
@@ -1085,7 +1209,9 @@ void InputActionService::DrawImGui() {
          Logger::Warning("Failed to save input bindings");
       }
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button("Reset To Defaults")) {
       ResetToDefaults();
    }

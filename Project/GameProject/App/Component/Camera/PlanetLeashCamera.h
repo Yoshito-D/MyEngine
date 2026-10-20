@@ -101,12 +101,19 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.maxFollowDistance))
+
+      if (!std::isfinite(settings.maxFollowDistance)) {
          settings.maxFollowDistance = defaults.maxFollowDistance;
-      if (!std::isfinite(settings.followSpeed))
+      }
+
+      if (!std::isfinite(settings.followSpeed)) {
          settings.followSpeed = defaults.followSpeed;
-      if (!std::isfinite(settings.minPlanetDistance))
+      }
+
+      if (!std::isfinite(settings.minPlanetDistance)) {
          settings.minPlanetDistance = defaults.minPlanetDistance;
+      }
+
       maxFollowDistance = settings.maxFollowDistance;
       followSpeed = settings.followSpeed;
       minPlanetDistance = settings.minPlanetDistance;

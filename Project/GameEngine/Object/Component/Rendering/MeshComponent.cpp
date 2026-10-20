@@ -23,13 +23,16 @@ GameEngine::MeshComponent::SourceType ParseSourceType(
    const nlohmann::json& value, GameEngine::MeshComponent::SourceType fallback) {
    if (value.is_string()) {
       const std::string name = value.get<std::string>();
+
       if (name == "ModelFile") {
          return GameEngine::MeshComponent::SourceType::ModelFile;
       }
+
       if (name == "Primitive") {
          return GameEngine::MeshComponent::SourceType::Primitive;
       }
    }
+
    return fallback;
 }
 
@@ -63,26 +66,46 @@ GameEngine::MeshComponent::PrimitiveType ParsePrimitiveType(
    const nlohmann::json& value, GameEngine::MeshComponent::PrimitiveType fallback) {
    if (value.is_string()) {
       const std::string name = value.get<std::string>();
-      if (name == "Quad")
+
+      if (name == "Quad") {
          return GameEngine::MeshComponent::PrimitiveType::Quad;
-      if (name == "Ring")
+      }
+
+      if (name == "Ring") {
          return GameEngine::MeshComponent::PrimitiveType::Ring;
-      if (name == "Sphere")
+      }
+
+      if (name == "Sphere") {
          return GameEngine::MeshComponent::PrimitiveType::Sphere;
-      if (name == "Box")
+      }
+
+      if (name == "Box") {
          return GameEngine::MeshComponent::PrimitiveType::Box;
-      if (name == "Cylinder")
+      }
+
+      if (name == "Cylinder") {
          return GameEngine::MeshComponent::PrimitiveType::Cylinder;
-      if (name == "Cone")
+      }
+
+      if (name == "Cone") {
          return GameEngine::MeshComponent::PrimitiveType::Cone;
-      if (name == "Circle")
+      }
+
+      if (name == "Circle") {
          return GameEngine::MeshComponent::PrimitiveType::Circle;
-      if (name == "Plane")
+      }
+
+      if (name == "Plane") {
          return GameEngine::MeshComponent::PrimitiveType::Plane;
-      if (name == "Torus")
+      }
+
+      if (name == "Torus") {
          return GameEngine::MeshComponent::PrimitiveType::Torus;
-      if (name == "Triangle")
+      }
+
+      if (name == "Triangle") {
          return GameEngine::MeshComponent::PrimitiveType::Triangle;
+      }
    }
 
    return fallback;
@@ -125,13 +148,20 @@ GameEngine::MeshComponent::PlaneOrientation ParsePlaneOrientation(
    const nlohmann::json& value, GameEngine::MeshComponent::PlaneOrientation fallback) {
    if (value.is_string()) {
       const std::string name = value.get<std::string>();
-      if (name == "XY")
+
+      if (name == "XY") {
          return GameEngine::MeshComponent::PlaneOrientation::XY;
-      if (name == "XZ")
+      }
+
+      if (name == "XZ") {
          return GameEngine::MeshComponent::PlaneOrientation::XZ;
-      if (name == "YZ")
+      }
+
+      if (name == "YZ") {
          return GameEngine::MeshComponent::PlaneOrientation::YZ;
+      }
    }
+
    return fallback;
 }
 
@@ -161,13 +191,12 @@ const char* MeshComponent::GetTypeName() const {
 }
 
 void MeshComponent::SetSourceType(SourceType sourceType) {
-   if (sourceType_ == sourceType) {
-      return;
-   }
+   if (sourceType_ == sourceType) return;
 
    // ModelFileとPrimitiveは所有リソースの経路が排他的。Modelへ切り替える時は
    // 以前生成した編集可能Meshを破棄し、誤ってそちらを描画しないようにする。
    sourceType_ = sourceType;
+
    if (sourceType_ == SourceType::ModelFile) {
       mesh_.reset();
    }
@@ -181,6 +210,7 @@ void MeshComponent::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset)
    mesh_.reset();
 
    skinCluster_.reset();
+
    if (modelAsset_ && modelAsset_->HasSkinningData()) {
       // PaletteとCompute出力を共有すると複数Entityの姿勢が上書きし合うため、専用Instanceを作る。
       skinCluster_ = modelAsset_->CreateSkinClusterInstance();
@@ -195,6 +225,7 @@ bool MeshComponent::SetModelAssetByAssetId(const std::string& assetId) {
 
    // ID解決と必要ならロードする責務をAssetManagerへ集約し、このComponentはパス形式を知らない。
    auto modelAsset = EngineContext::LoadModelByAssetId(assetId);
+
    if (!modelAsset) {
       return false;
    }
@@ -217,6 +248,7 @@ SkinCluster* MeshComponent::GetSkinCluster() {
    if (skinCluster_) {
       return &(*skinCluster_);
    }
+
    return nullptr;
 }
 
@@ -224,9 +256,11 @@ const SkinCluster* MeshComponent::GetSkinCluster() const {
    if (sourceType_ != SourceType::ModelFile) {
       return nullptr;
    }
+
    if (skinCluster_) {
       return &(*skinCluster_);
    }
+
    return modelAsset_ ? modelAsset_->GetSkinCluster() : nullptr;
 }
 
@@ -253,13 +287,12 @@ nlohmann::json MeshComponent::Serialize() const {
 }
 
 void MeshComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    if (data.contains("sourceType")) {
       sourceType_ = ParseSourceType(data.at("sourceType"), sourceType_);
    }
+
    if (data.contains("reverseFaces") && data.at("reverseFaces").is_boolean()) {
       reverseFaces_ = data.at("reverseFaces").get<bool>();
    }
@@ -267,6 +300,7 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
    // Sourceを先に確定し、ModelFile時だけAssetを解決する。Primitiveの古いassetIdを誤ロードしない。
    if (sourceType_ == SourceType::ModelFile && data.contains("assetId") && data.at("assetId").is_string()) {
       const std::string assetId = data.at("assetId").get<std::string>();
+
       if (!assetId.empty()) {
          SetModelAssetByAssetId(assetId);
       }
@@ -275,17 +309,20 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("primitiveType")) {
       primitiveType_ = ParsePrimitiveType(data.at("primitiveType"), primitiveType_);
    }
+
    if (data.contains("planeOrientation")) {
       planeOrientation_ = ParsePlaneOrientation(data.at("planeOrientation"), planeOrientation_);
    }
 
    // size/anchorはQuad専用名導入前の互換キー。現行キーを先に試し、なければ旧キーを読む。
    Vector2 value = quadSize_;
+
    if (ReadVector2(data, "quadSize", value) || ReadVector2(data, "size", value)) {
       quadSize_ = value;
    }
 
    value = quadAnchorPoint_;
+
    if (ReadVector2(data, "quadAnchorPoint", value) || ReadVector2(data, "anchor", value)) {
       quadAnchorPoint_ = value;
    }
@@ -293,6 +330,7 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("flipX") && data.at("flipX").is_boolean()) {
       flipX_ = data.at("flipX").get<bool>();
    }
+
    if (data.contains("flipY") && data.at("flipY").is_boolean()) {
       flipY_ = data.at("flipY").get<bool>();
    }
@@ -320,11 +358,13 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
    readFloat("sphereRadius", sphereRadius_, 0.001f);
    readSegments("sphereStacks", sphereStacks_, 2);
    readSegments("sphereSlices", sphereSlices_, 3);
+
    if (ReadVector3(data, "boxSize", boxSize_)) {
       boxSize_.x = std::max(boxSize_.x, 0.001f);
       boxSize_.y = std::max(boxSize_.y, 0.001f);
       boxSize_.z = std::max(boxSize_.z, 0.001f);
    }
+
    readFloat("cylinderTopRadius", cylinderTopRadius_, 0.0f);
    readFloat("cylinderBottomRadius", cylinderBottomRadius_, 0.0f);
    readFloat("cylinderHeight", cylinderHeight_, 0.001f);
@@ -359,32 +399,37 @@ void MeshComponent::DrawInspector() {
    auto Tr = [](const char* japanese, const char* english) { return ImGuiHelper::Localize({japanese, english}); };
 
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    const char* sourceTypeItems[] = {Tr("モデルファイル", "Model File"), Tr("プリミティブ", "Primitive")};
    int sourceTypeIndex = static_cast<int>(sourceType_);
+
    if (ImGui::Combo(Tr("メッシュ種別", "Mesh Source"), &sourceTypeIndex, sourceTypeItems, 2)) {
       SetSourceType(static_cast<SourceType>(sourceTypeIndex));
    }
+
    ImGui::Checkbox(Tr("表裏を反転", "Reverse Faces"), &reverseFaces_);
 
    if (sourceType_ == SourceType::ModelFile) {
       ImGui::Text("%s: %s", Tr("アセットID", "Asset ID"), assetId_.empty() ? Tr("なし", "None") : assetId_.c_str());
       ImGui::Text(
          "%s: %s", Tr("状態", "Status"), modelAsset_ ? Tr("読み込み済み", "Loaded") : Tr("未読み込み", "Not loaded"));
+
       if (modelAsset_) {
          ImGui::Text("%s: %s", Tr("スキニング", "Skinning"),
             modelAsset_->HasSkinningData() ? Tr("あり", "Available") : Tr("なし", "None"));
       }
 
       std::string nextAssetId = assetId_;
+
       if (EditorUI::AssetReference(Tr("モデル", "Model"), nextAssetId, EditorAssetType::Model)) {
          // 編集全体のUndoはInspectorのスナップショット経路へ集約する。
-         if (!SetModelAssetByAssetId(nextAssetId))
+         if (!SetModelAssetByAssetId(nextAssetId)) {
             Logger::Warning("[MeshComponent] Model asset could not be loaded: " + nextAssetId);
+         }
       }
+
       ImGui::Spacing();
       return;
    }
@@ -394,6 +439,7 @@ void MeshComponent::DrawInspector() {
    const char* primitiveTypeItems[] = {
       "Quad", "Ring", "Sphere", "Box", "Cylinder", "Cone", "Circle", "Plane", "Torus", "Triangle"};
    int primitiveTypeIndex = static_cast<int>(primitiveType_);
+
    if (ImGui::Combo(Tr("プリミティブ", "Primitive"), &primitiveTypeIndex, primitiveTypeItems, 10)) {
       primitiveType_ = static_cast<PrimitiveType>(primitiveTypeIndex);
       meshChanged = true;
@@ -403,9 +449,11 @@ void MeshComponent::DrawInspector() {
    const bool supportsPlaneOrientation =
       primitiveType_ == PrimitiveType::Ring || primitiveType_ == PrimitiveType::Circle ||
       primitiveType_ == PrimitiveType::Plane || primitiveType_ == PrimitiveType::Triangle;
+
    if (supportsPlaneOrientation) {
       const char* orientationItems[] = {"XY", "XZ", "YZ"};
       int orientationIndex = static_cast<int>(planeOrientation_);
+
       if (ImGui::Combo(Tr("生成平面", "Plane Orientation"), &orientationIndex, orientationItems, 3)) {
          planeOrientation_ = static_cast<PlaneOrientation>(orientationIndex);
          meshChanged = true;
@@ -416,6 +464,7 @@ void MeshComponent::DrawInspector() {
    const bool supportsOriginY = primitiveType_ == PrimitiveType::Sphere || primitiveType_ == PrimitiveType::Box ||
                                 primitiveType_ == PrimitiveType::Cylinder || primitiveType_ == PrimitiveType::Cone ||
                                 primitiveType_ == PrimitiveType::Torus;
+
    if (supportsOriginY) {
       meshChanged |= ImGui::SliderFloat(Tr("原点Y", "Origin Y"), &originY_, 0.0f, 1.0f, "%.2f");
    }
@@ -431,24 +480,29 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("内半径", "Inner Radius"), &ringInnerRadius_, 0.01f, 0.0f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("外半径", "Outer Radius"), &ringOuterRadius_, 0.01f, 0.001f, 1000.0f);
          int segments = static_cast<int>(ringSegments_);
+
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
             ringSegments_ = static_cast<uint32_t>(std::max(segments, 3));
             meshChanged = true;
          }
+
          break;
       }
       case PrimitiveType::Sphere: {
          meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &sphereRadius_, 0.01f, 0.001f, 1000.0f);
          int stacks = static_cast<int>(sphereStacks_);
          int slices = static_cast<int>(sphereSlices_);
+
          if (ImGui::DragInt(Tr("スタック", "Stacks"), &stacks, 1.0f, 2, 256)) {
             sphereStacks_ = static_cast<uint32_t>(std::max(stacks, 2));
             meshChanged = true;
          }
+
          if (ImGui::DragInt(Tr("スライス", "Slices"), &slices, 1.0f, 3, 512)) {
             sphereSlices_ = static_cast<uint32_t>(std::max(slices, 3));
             meshChanged = true;
          }
+
          break;
       }
       case PrimitiveType::Box:
@@ -459,29 +513,35 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("下半径", "Bottom Radius"), &cylinderBottomRadius_, 0.01f, 0.0f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("高さ", "Height"), &cylinderHeight_, 0.01f, 0.001f, 1000.0f);
          int segments = static_cast<int>(cylinderSegments_);
+
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
             cylinderSegments_ = static_cast<uint32_t>(std::max(segments, 3));
             meshChanged = true;
          }
+
          break;
       }
       case PrimitiveType::Cone: {
          meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &coneRadius_, 0.01f, 0.001f, 1000.0f);
          meshChanged |= ImGui::DragFloat(Tr("高さ", "Height"), &coneHeight_, 0.01f, 0.001f, 1000.0f);
          int segments = static_cast<int>(coneSegments_);
+
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
             coneSegments_ = static_cast<uint32_t>(std::max(segments, 3));
             meshChanged = true;
          }
+
          break;
       }
       case PrimitiveType::Circle: {
          meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &circleRadius_, 0.01f, 0.001f, 1000.0f);
          int segments = static_cast<int>(circleSegments_);
+
          if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
             circleSegments_ = static_cast<uint32_t>(std::max(segments, 3));
             meshChanged = true;
          }
+
          break;
       }
       case PrimitiveType::Plane: {
@@ -489,14 +549,17 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("奥行き", "Depth"), &planeDepth_, 0.01f, 0.001f, 1000.0f);
          int widthSegments = static_cast<int>(planeWidthSegments_);
          int depthSegments = static_cast<int>(planeDepthSegments_);
+
          if (ImGui::DragInt(Tr("幅の分割数", "Width Segments"), &widthSegments, 1.0f, 1, 512)) {
             planeWidthSegments_ = static_cast<uint32_t>(std::max(widthSegments, 1));
             meshChanged = true;
          }
+
          if (ImGui::DragInt(Tr("奥行きの分割数", "Depth Segments"), &depthSegments, 1.0f, 1, 512)) {
             planeDepthSegments_ = static_cast<uint32_t>(std::max(depthSegments, 1));
             meshChanged = true;
          }
+
          break;
       }
       case PrimitiveType::Torus: {
@@ -504,14 +567,17 @@ void MeshComponent::DrawInspector() {
          meshChanged |= ImGui::DragFloat(Tr("副半径", "Minor Radius"), &torusMinorRadius_, 0.01f, 0.001f, 1000.0f);
          int majorSegments = static_cast<int>(torusMajorSegments_);
          int minorSegments = static_cast<int>(torusMinorSegments_);
+
          if (ImGui::DragInt(Tr("主分割数", "Major Segments"), &majorSegments, 1.0f, 3, 512)) {
             torusMajorSegments_ = static_cast<uint32_t>(std::max(majorSegments, 3));
             meshChanged = true;
          }
+
          if (ImGui::DragInt(Tr("副分割数", "Minor Segments"), &minorSegments, 1.0f, 3, 512)) {
             torusMinorSegments_ = static_cast<uint32_t>(std::max(minorSegments, 3));
             meshChanged = true;
          }
+
          break;
       }
       case PrimitiveType::Triangle:
@@ -544,6 +610,7 @@ void MeshComponent::CreateMesh() {
    // 編集済み頂点を残さず、選択中パラメーターからGPUバッファまで一括で再構築する。
    mesh_ = std::make_unique<Mesh>();
    const Mesh::PlaneOrientation meshOrientation = ToMeshPlaneOrientation(planeOrientation_);
+
    switch (primitiveType_) {
       case PrimitiveType::Quad:
          mesh_->CreateSprite(quadSize_.x, quadSize_.y);
@@ -590,6 +657,7 @@ Mesh* MeshComponent::EnsureMesh() {
    if (!mesh_) {
       CreateMesh();
    }
+
    return mesh_.get();
 }
 
@@ -598,14 +666,11 @@ void MeshComponent::ApplyToMesh() {
 }
 
 void MeshComponent::ApplyToMesh(Mesh* mesh) const {
-   if (!mesh || primitiveType_ != PrimitiveType::Quad) {
-      return;
-   }
+   if (!mesh || primitiveType_ != PrimitiveType::Quad) return;
 
    auto* vertexData = mesh->GetVertexData();
-   if (!vertexData) {
-      return;
-   }
+
+   if (!vertexData) return;
 
    // Anchorをサイズ比として各辺から引き、(0,0)=左下、(0.5,0.5)=中心のローカル座標を作る。
    float left = 0.0f - quadAnchorPoint_.x * quadSize_.x;
@@ -630,19 +695,15 @@ void MeshComponent::ApplyToMesh(Mesh* mesh) const {
 
 void MeshComponent::ApplyTextureCoordinates(Texture* texture, const Vector2& leftTop, const Vector2& size) {
    // 非Quad形状はMesh生成時のUVを使う。Quad専用の4頂点更新を適用すると三角形などで範囲外になる。
-   if (sourceType_ != SourceType::Primitive || primitiveType_ != PrimitiveType::Quad) {
-      return;
-   }
+   if (sourceType_ != SourceType::Primitive || primitiveType_ != PrimitiveType::Quad) return;
 
    Mesh* mesh = EnsureMesh();
-   if (!texture || !mesh || !mesh->GetVertexData()) {
-      return;
-   }
+
+   if (!texture || !mesh || !mesh->GetVertexData()) return;
 
    const DirectX::TexMetadata& metadata = texture->GetMetadata();
-   if (metadata.width == 0 || metadata.height == 0) {
-      return;
-   }
+
+   if (metadata.width == 0 || metadata.height == 0) return;
 
    Vector2 actualTextureLeftTop = leftTop;
    Vector2 actualTextureSize = size;

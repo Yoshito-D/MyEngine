@@ -152,8 +152,9 @@ public:
    /// @brief 形状の位置・回転・スケールをまとめて設定する
    /// @param transform エミッター基準のローカルトランスフォーム
    void SetTransform(const Transform& transform) {
-      if (transform.IsFinite())
+      if (transform.IsFinite()) {
          transform_ = transform;
+      }
    }
 
    /// @brief 形状のローカルトランスフォームを取得する

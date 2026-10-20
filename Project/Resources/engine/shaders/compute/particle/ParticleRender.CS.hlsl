@@ -81,19 +81,20 @@ ParticleForGPU MakeInactiveParticle() {
 
 [numthreads(64, 1, 1)] void main(uint3 dispatchThreadId : SV_DispatchThreadID) {
    uint outputIndex = dispatchThreadId.x;
-   if (outputIndex >= gParticleCount) {
-      return;
-   }
+
+   if (outputIndex >= gParticleCount) return;
 
    GpuParticleAttributes attributes = gAttributes[outputIndex];
    uint ownerIndex = attributes.stateIndex;
    uint stateIndex = ownerIndex < gParticleCapacity ? gOwnerMappings[ownerIndex] : INVALID_PARTICLE_INDEX;
+
    if (stateIndex >= gParticleCapacity) {
       gOutputParticles[outputIndex] = MakeInactiveParticle();
       return;
    }
 
    GpuParticleState state = gStates[stateIndex];
+
    if (state.ownerParticleIndex != ownerIndex || state.positionAndActive.w <= 0.5f) {
       gOutputParticles[outputIndex] = MakeInactiveParticle();
       return;
@@ -148,6 +149,7 @@ ParticleForGPU MakeInactiveParticle() {
    outputParticle.color.a *= state.positionAndActive.w;
    outputParticle.customData = attributes.customData;
    outputParticle.customData.w = length(state.velocityAndLifetime.xyz);
+
    if (gCameraFadeParams.x > 0.5f) {
       float fadeNear = gCameraFadeParams.y;
       float fadeFar = max(gCameraFadeParams.z, fadeNear + 0.0001f);
@@ -156,5 +158,6 @@ ParticleForGPU MakeInactiveParticle() {
    } else {
       outputParticle.customData.z = 1.0f;
    }
+
    gOutputParticles[outputIndex] = outputParticle;
 }

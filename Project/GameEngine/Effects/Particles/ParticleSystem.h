@@ -321,8 +321,9 @@ public:
 
    /// @brief ブレンドモードを設定（マテリアルに委譲）
    void SetBlendMode(std::optional<BlendMode> mode) {
-      if (material_)
+      if (material_) {
          material_->SetBlendMode(mode);
+      }
    }
 
    /// @brief ブレンドモードを取得（マテリアルに委譲）
@@ -440,20 +441,30 @@ private:
 
    template <class Module> bool ApplyModuleConfiguration(Module& target, const Module& configuration) {
       const auto settings = configuration.ToJson();
-      if (!HasFiniteSettings(settings))
+
+      if (!HasFiniteSettings(settings)) {
          return false;
+      }
+
       if constexpr (std::is_same_v<Module, MainModule>) {
          if (configuration.GetMaxParticles() == 0 || configuration.GetMaxParticles() > kMaxParticles ||
-             configuration.GetDuration() < 0.0f)
+             configuration.GetDuration() < 0.0f) {
             return false;
+         }
       }
+
       const auto before = target.ToJson();
-      if (before == settings)
+
+      if (before == settings) {
          return true;
+      }
+
       if constexpr (std::is_same_v<Module, EmissionModule>) {
          // 放出率・有効状態の編集では進行済みカーソルを保持し、スケジュール変更時だけ再構築する。
-         if (before.at("bursts") != settings.at("bursts"))
+         if (before.at("bursts") != settings.at("bursts")) {
             target.ReplaceBurstSchedule(configuration.GetBursts());
+         }
+
          target.SetEnabled(configuration.IsEnabled());
          target.SetRateOverTime(configuration.GetRateOverTime());
          target.SetRateOverDistance(configuration.GetRateOverDistance());
@@ -466,6 +477,7 @@ private:
          // その他のモジュールは設定値だけを持つため、保存形式へ往復させずに適用する。
          target = configuration;
       }
+
       return true;
    }
 

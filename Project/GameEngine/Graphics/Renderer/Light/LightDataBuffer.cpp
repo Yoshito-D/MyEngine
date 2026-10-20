@@ -10,16 +10,15 @@ bool sIsInitialized_ = false;
 }
 
 void LightDataBuffer::Initialize(GraphicsDevice* device) {
-   if (sIsInitialized_)
-      return;
+   if (sIsInitialized_) return;
+
    sDevice_ = device;
    sIsInitialized_ = true;
 }
 
 void LightDataBuffer::Create(
    uint32_t maxDirectionalLights, uint32_t maxPointLights, uint32_t maxSpotLights, uint32_t maxAreaLights) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    maxDirectionalLights_ = maxDirectionalLights;
    maxPointLights_ = maxPointLights;
@@ -48,12 +47,12 @@ void LightDataBuffer::Create(
 }
 
 void LightDataBuffer::UpdateDirectionalLights(const std::vector<DirectionalLightData>& lights) {
-   if (!directionalLightData_)
-      return;
+   if (!directionalLightData_) return;
 
    // GPU確保容量を上限にし、シェーダーが参照する件数も実際に転送した要素数へ合わせる。
    currentDirectionalLightCount_ =
       static_cast<uint32_t>(std::min(lights.size(), static_cast<size_t>(maxDirectionalLights_)));
+
    for (uint32_t i = 0; i < currentDirectionalLightCount_; ++i) {
       directionalLightData_[i] = lights[i];
    }
@@ -62,10 +61,10 @@ void LightDataBuffer::UpdateDirectionalLights(const std::vector<DirectionalLight
 }
 
 void LightDataBuffer::UpdatePointLights(const std::vector<PointLightData>& lights) {
-   if (!pointLightData_)
-      return;
+   if (!pointLightData_) return;
 
    currentPointLightCount_ = static_cast<uint32_t>(std::min(lights.size(), static_cast<size_t>(maxPointLights_)));
+
    for (uint32_t i = 0; i < currentPointLightCount_; ++i) {
       pointLightData_[i] = lights[i];
    }
@@ -74,10 +73,10 @@ void LightDataBuffer::UpdatePointLights(const std::vector<PointLightData>& light
 }
 
 void LightDataBuffer::UpdateSpotLights(const std::vector<SpotLightData>& lights) {
-   if (!spotLightData_)
-      return;
+   if (!spotLightData_) return;
 
    currentSpotLightCount_ = static_cast<uint32_t>(std::min(lights.size(), static_cast<size_t>(maxSpotLights_)));
+
    for (uint32_t i = 0; i < currentSpotLightCount_; ++i) {
       spotLightData_[i] = lights[i];
    }
@@ -86,10 +85,10 @@ void LightDataBuffer::UpdateSpotLights(const std::vector<SpotLightData>& lights)
 }
 
 void LightDataBuffer::UpdateAreaLights(const std::vector<AreaLightData>& lights) {
-   if (!areaLightData_)
-      return;
+   if (!areaLightData_) return;
 
    currentAreaLightCount_ = static_cast<uint32_t>(std::min(lights.size(), static_cast<size_t>(maxAreaLights_)));
+
    for (uint32_t i = 0; i < currentAreaLightCount_; ++i) {
       areaLightData_[i] = lights[i];
    }
@@ -98,8 +97,7 @@ void LightDataBuffer::UpdateAreaLights(const std::vector<AreaLightData>& lights)
 }
 
 void LightDataBuffer::UpdateLightCount() {
-   if (!lightCountData_)
-      return;
+   if (!lightCountData_) return;
 
    // 各StructuredBufferの有効範囲を一つのCBVへ集約し、シェーダー側ループの上限として渡す。
    lightCountData_->directionalLightCount = currentDirectionalLightCount_;

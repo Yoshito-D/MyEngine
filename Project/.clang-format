@@ -14,7 +14,10 @@ ReferenceAlignment: Left
 AlignAfterOpenBracket: DontAlign
 AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortBlocksOnASingleLine: Never
-AllowShortIfStatementsOnASingleLine: Never
+# Only bare-return guards omit braces; other control statements use braces.
+AllowShortIfStatementsOnASingleLine: WithoutElse
+# Inserting braces automatically would also wrap the bare-return guards.
+InsertBraces: false
 AllowShortLoopsOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false

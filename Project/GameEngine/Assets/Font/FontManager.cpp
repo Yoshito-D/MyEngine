@@ -45,6 +45,7 @@ bool FontManager::LoadMsdfFont(const std::string& fontId, const std::filesystem:
 
 size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& directory) {
    std::error_code error;
+
    if (!std::filesystem::is_directory(directory, error)) {
       return 0;
    }
@@ -64,16 +65,20 @@ size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& dire
       }
 
       const std::filesystem::directory_entry& entry = *iterator;
+
       if (entry.is_regular_file(error)) {
          std::string extension = entry.path().extension().string();
          std::transform(extension.begin(), extension.end(), extension.begin(),
             [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
+
          if (extension == ".json") {
             std::filesystem::path relativePath = std::filesystem::relative(entry.path(), directory, error);
+
             if (error) {
                error.clear();
                relativePath = entry.path().filename();
             }
+
             relativePath.replace_extension();
 
             // ディレクトリ相対パスをIDにして、同名フォントをサブフォルダーで共存させる。
@@ -82,9 +87,11 @@ size_t FontManager::LoadMsdfFontsFromDirectory(const std::filesystem::path& dire
             }
          }
       }
+
       error.clear();
       iterator.increment(error);
    }
+
    return loadedCount;
 }
 
@@ -95,10 +102,12 @@ bool FontManager::HasFont(const std::string& fontId) const {
 std::vector<std::string> FontManager::GetFontIds() const {
    std::vector<std::string> ids;
    ids.reserve(msdfFonts_.size());
+
    for (const auto& [fontId, font] : msdfFonts_) {
       (void)font;
       ids.push_back(fontId);
    }
+
    std::sort(ids.begin(), ids.end());
    return ids;
 }

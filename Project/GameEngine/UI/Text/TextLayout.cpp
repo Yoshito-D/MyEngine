@@ -14,11 +14,13 @@ struct LineRange {
 
 TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view text, const TextStyle& style) {
    TextLayoutResult result{};
+
    if (text.empty() || style.fontId.empty() || style.fontSize == 0 || !fontManager.HasFont(style.fontId)) {
       return result;
    }
 
    const auto codePoints = DecodeUtf8(text);
+
    if (codePoints.empty()) {
       return result;
    }
@@ -52,6 +54,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
       if (codePoint == U'\r') {
          continue;
       }
+
       if (codePoint == U'\n') {
          finishLine();
          baseline += lineAdvance;
@@ -59,12 +62,14 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
       }
 
       const GlyphInfo* glyph = fontManager.GetOrCreateGlyph(style.fontId, style.fontSize, codePoint);
+
       if (!glyph) {
          // フォールバック文字も得られないコードポイントだけを飛ばし、残りの文章は配置する。
          continue;
       }
 
       float kerning = fontManager.GetKerning(style.fontId, previousGlyphIndex, glyph->glyphIndex, style.fontSize);
+
       if (style.maxWidth > 0.0f && penX > 0.0f && penX + kerning + glyph->advance > style.maxWidth) {
          // 単語情報を持たない単純レイアウトなので、幅を超える直前のグリフ境界で折り返す。
          // グリフを追加する前に折り返し、次行先頭ではカーニングを適用しない。
@@ -81,6 +86,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
       penX += glyph->advance;
       previousGlyphIndex = glyph->glyphIndex;
    }
+
    finishLine();
 
    const float layoutWidth = style.maxWidth > 0.0f ? style.maxWidth : maximumLineWidth;
@@ -88,6 +94,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
    // 行が確定して幅が分かった後に、各行だけを横方向へ移動して整列する。
    for (const LineRange& line : lines) {
       float offsetX = 0.0f;
+
       if (style.horizontalAlignment == TextHorizontalAlignment::Center) {
          offsetX = (layoutWidth - line.width) * 0.5f;
       } else if (style.horizontalAlignment == TextHorizontalAlignment::Right) {

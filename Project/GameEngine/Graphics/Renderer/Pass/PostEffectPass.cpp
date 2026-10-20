@@ -9,9 +9,7 @@
 namespace GameEngine {
 
 void PostEffectPass::Execute(FrameContext& ctx) {
-   if (!offscreenRT_) {
-      return;
-   }
+   if (!offscreenRT_) return;
 
    // メイン描画パスの終了：current を RTV→SRV に遷移させてエフェクトの入力として使えるようにする
    offscreenRT_->PostDraw();
@@ -23,12 +21,14 @@ void PostEffectPass::Execute(FrameContext& ctx) {
       if (ctx.device) {
          ctx.device->TransitionDepthStencilToShaderResource();
       }
+
       ctx.postProcessMgr->ApplyEffects(offscreenRT_->GetSRVHandleGPU());
 
       // エフェクトがRootSignature/PSOを直接変更するため、後続UIモデルで必ず再バインドさせる。
       if (ctx.invalidatePipelineBindingFunc) {
          ctx.invalidatePipelineBindingFunc();
       }
+
       if (ctx.device) {
          ctx.device->TransitionDepthStencilToWrite();
       }

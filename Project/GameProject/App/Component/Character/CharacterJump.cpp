@@ -10,15 +10,13 @@ namespace App {
 
 void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
    // 空中での多重ジャンプを防止
-   if (isJumping_) {
-      return;
-   }
+   if (isJumping_) return;
 
    // 重力ボディへ上向き速度を加算
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   if (!gravityBody) {
-      return;
-   }
+
+   if (!gravityBody) return;
+
    gravityBody->AddVelocityImpulse(gravityUp * jumpStrength);
 
    // ジャンプ状態を記録
@@ -29,9 +27,9 @@ void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
 void CharacterJump::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::DragFloat(Tr("ジャンプ力", "Jump Strength"), &jumpStrength, 0.1f, 0.0f, 30.0f);
    ImGui::Text("%s: %s", Tr("ジャンプ中", "Is Jumping"), isJumping_ ? Tr("はい", "true") : Tr("いいえ", "false"));
@@ -49,6 +47,7 @@ void CharacterJump::Deserialize(const nlohmann::json& data) {
    if (data.contains("jumpStrength")) {
       jumpStrength = data["jumpStrength"];
    }
+
    Configure(DescribeSettings());
 }
 

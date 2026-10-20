@@ -94,16 +94,22 @@ public:
    /// @return Genericオブジェクト一覧
    std::vector<Object*> GetGenericObjects() {
       std::vector<Object*> view;
-      for (auto& entry : genericObjects_)
+
+      for (auto& entry : genericObjects_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
    std::vector<const Object*> GetGenericObjects() const {
       std::vector<const Object*> view;
-      for (const auto& entry : genericObjects_)
+
+      for (const auto& entry : genericObjects_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 

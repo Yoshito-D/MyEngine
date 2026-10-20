@@ -58,6 +58,7 @@ template <typename T> T GetRandomElement(const std::vector<T>& vec) {
    if (vec.empty()) {
       throw std::runtime_error("Vector is empty");
    }
+
    return vec[RandomManager::Uniform<size_t>(0, vec.size() - 1)];
 }
 

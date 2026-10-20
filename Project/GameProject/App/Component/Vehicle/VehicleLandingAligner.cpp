@@ -28,11 +28,10 @@ void VehicleLandingAligner::BeginAlign(const Quaternion& startRot, const Quatern
 
 void VehicleLandingAligner::Update(float deltaTime) {
    // タイマーがゼロ以下なら補正は終了しているので何もしない。
-   if (alignTimer_ <= 0.0f) {
-      return;
-   }
+   if (alignTimer_ <= 0.0f) return;
 
    auto* transform = GetOwner().GetComponent<TransformComponent>();
+
    if (!transform) {
       alignTimer_ = 0.0f;
       return;
@@ -40,6 +39,7 @@ void VehicleLandingAligner::Update(float deltaTime) {
 
    // タイマーを減算する。負にならないようクランプしてから使う。
    alignTimer_ -= deltaTime;
+
    if (alignTimer_ <= 0.0f) {
       alignTimer_ = 0.0f;
    }
@@ -68,9 +68,8 @@ Quaternion VehicleLandingAligner::CalcBlendedRotation() const {
 
 void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    // Transform に補間済み回転を書き込む。
    {
@@ -84,6 +83,7 @@ void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
    // これを更新しないと重力補正が古い Up に向かって動き続けて
    // ランディングアライナーの補正と干渉してしまう。
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
+
    if (gravityBody) {
       Vector3 blendedUp = RotateVector({0.0f, 1.0f, 0.0f}, blended);
       gravityBody->SetCurrentUpVector(blendedUp);
@@ -99,9 +99,9 @@ void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
 void VehicleLandingAligner::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::DragFloat(Tr("姿勢合わせ時間", "Align Time"), &alignTime, 0.01f, 0.05f, 2.0f);
    ImGui::Spacing();

@@ -31,6 +31,7 @@ float4 main(VSOutput input) : SV_TARGET {
 
    // 歪みベクトルを計算（元のUV座標に対して適用）
    float32_t2 distortionVector = float32_t2(0, 0);
+
    if (distance > 0.001) {
       // 中心から外向きの歪み（アスペクト比補正を元に戻す）
       float32_t2 normalizedOffset = normalize(centerOffset);

@@ -14,9 +14,11 @@ bool App::GravityAttractor::ApplyTo(GravityBody& gravityBody, const GameEngine::
 
    // Up方向を基準に姿勢目標と重力加速度を設定
    GameEngine::Vector3 upVector = GetUpVectorFor(objectPosition);
+
    if (upVector.LengthSquared() < 1e-8f) {
       return false;
    }
+
    upVector = upVector.Normalize();
    gravityBody.ApplyGravityFromSurface(upVector);
    return true;

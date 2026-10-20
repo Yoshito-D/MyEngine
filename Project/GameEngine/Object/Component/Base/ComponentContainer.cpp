@@ -36,6 +36,7 @@ const IObjectComponent* ComponentContainer::GetByTypeName(const std::string& typ
       if (!component) {
          continue;
       }
+
       if (typeName == component->GetTypeName()) {
          return component.get();
       }
@@ -46,9 +47,11 @@ const IObjectComponent* ComponentContainer::GetByTypeName(const std::string& typ
 
 bool ComponentContainer::RemoveByTypeName(const std::string& typeName) {
    IObjectComponent* component = GetByTypeName(typeName);
+
    if (!component) {
       return false;
    }
+
    return RemoveByTypeIndex(std::type_index(typeid(*component)));
 }
 
@@ -58,6 +61,7 @@ void ComponentContainer::Update(float deltaTime) {
       if (!component || !component->IsEnabled()) {
          continue;
       }
+
       component->Update(deltaTime);
    }
 }
@@ -69,6 +73,7 @@ void ComponentContainer::Clear() {
          component->Detach();
       }
    }
+
    components_.clear();
    typeIndex_.clear();
 }
@@ -96,10 +101,11 @@ void ComponentContainer::ResolveReferences(SceneWorld& sceneWorld, bool initiali
       }
 
       // 無効なComponentの参照は保持するが、レース停止やUI演出などの初期化は実行しない。
-      if (initializeRuntime && component->IsEnabled())
+      if (initializeRuntime && component->IsEnabled()) {
          component->OnSceneLoaded(sceneWorld);
-      else
+      } else {
          component->OnReferencesChanged(sceneWorld);
+      }
    }
 }
 
@@ -131,9 +137,11 @@ bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
    // JSONを完全スナップショットとして扱うため、まず存在する型名を収集する。
    // 先に追加・更新を始めると、削除対象判定が途中状態へ依存してしまう。
    std::unordered_set<std::string> serializedTypeNames;
+
    for (const auto& componentData : componentsData) {
       if (componentData.is_object()) {
          const std::string typeName = componentData.value("typeName", "");
+
          if (!typeName.empty()) {
             serializedTypeNames.insert(typeName);
          }
@@ -142,11 +150,13 @@ bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
 
    // components_を走査中に直接eraseせず、型名を退避してから削除してIterator無効化を避ける。
    std::vector<std::string> removedTypeNames;
+
    for (const auto& component : components_) {
       if (component && !serializedTypeNames.contains(component->GetTypeName())) {
          removedTypeNames.emplace_back(component->GetTypeName());
       }
    }
+
    for (const auto& typeName : removedTypeNames) {
       RemoveByTypeName(typeName);
    }
@@ -157,12 +167,14 @@ bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
       }
 
       const std::string typeName = componentData.value("typeName", "");
+
       if (typeName.empty()) {
          continue;
       }
 
       // AddByTypeNameは同型が既にあれば既存実体を返すため、新規作成と状態上書きを同じ経路で処理できる。
       auto* component = AddByTypeName(typeName);
+
       if (!component) {
          continue;
       }
@@ -187,10 +199,13 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
    // チェックボックスの幅だけを固定し、見出しと内容には残りの幅を渡す。
    // SameLineの折返しや表示言語のラベル幅に、Component行の配置を依存させない。
    if (!ImGui::BeginTable("##ComponentInspector", 2,
-          ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoPadOuterX))
+          ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoPadOuterX)) {
       return action;
+   }
+
    ImGui::TableSetupColumn("##Enabled", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight());
    ImGui::TableSetupColumn("##Content", ImGuiTableColumnFlags_WidthStretch);
+
    for (auto& component : components_) {
       if (!component) {
          continue;
@@ -201,10 +216,14 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
       bool enabled = component->IsEnabled();
-      if (ImGui::Checkbox("##Enabled", &enabled))
+
+      if (ImGui::Checkbox("##Enabled", &enabled)) {
          component->SetEnabled(enabled);
-      if (ImGui::IsItemHovered())
+      }
+
+      if (ImGui::IsItemHovered()) {
          ImGui::SetTooltip("%s", LocalizeEditorText("有効", "Enabled"));
+      }
 
       ImGui::TableSetColumnIndex(1);
       const ImVec2 headerPosition = ImGui::GetCursorScreenPos();
@@ -223,6 +242,7 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
          std::string saveButtonText = LocalizeEditorText("保存", "Save");
          float saveButtonWidth = ImGui::CalcTextSize(saveButtonText.c_str()).x + style.FramePadding.x * 2.0f;
          float saveButtonX = removeButtonX - saveButtonWidth - style.ItemSpacing.x;
+
          if (saveButtonX < headerPosition.x) {
             saveButtonText = "S";
             saveButtonWidth = ImGui::CalcTextSize(saveButtonText.c_str()).x + style.FramePadding.x * 2.0f;
@@ -233,9 +253,11 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
          if (saveButtonX >= headerPosition.x) {
             const std::string saveButtonLabel = saveButtonText + "##SaveComponent";
             ImGui::SetCursorScreenPos(ImVec2(saveButtonX, headerPosition.y + 1.0f));
+
             if (ImGui::SmallButton(saveButtonLabel.c_str())) {
                action.savedTypeName = component->GetTypeName();
             }
+
             if (ImGui::IsItemHovered()) {
                ImGui::SetTooltip("%s", LocalizeEditorText("プレイ中の値でこのコンポーネントだけを上書き保存",
                                           "Overwrite only this component with its play mode values"));
@@ -244,9 +266,11 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
       }
 
       ImGui::SetCursorScreenPos(ImVec2(removeButtonX, headerPosition.y + 1.0f));
+
       if (ImGui::SmallButton("X##RemoveComponent")) {
          action.removedTypeName = component->GetTypeName();
       }
+
       if (ImGui::IsItemHovered()) {
          ImGui::SetTooltip("%s", LocalizeEditorText("コンポーネントを外す", "Remove Component"));
       }
@@ -258,6 +282,7 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
       ImGui::Dummy(ImVec2(0.0f, 0.0f));
       ImGui::PopID();
    }
+
    ImGui::EndTable();
    return action;
 }
@@ -265,6 +290,7 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
 
 bool ComponentContainer::RemoveByTypeIndex(const std::type_index& type) {
    auto mapIt = typeIndex_.find(type);
+
    if (mapIt == typeIndex_.end()) {
       return false;
    }

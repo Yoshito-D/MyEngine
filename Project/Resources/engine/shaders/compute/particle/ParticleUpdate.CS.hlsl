@@ -49,12 +49,12 @@ float3 RotateByQuaternion(float3 value, float4 quaternion) {
 void RecycleParticle(uint particleIndex, inout GpuParticleState state) {
    uint previousAlive;
    InterlockedCompareExchange(gAliveFlags[particleIndex], 1u, 0u, previousAlive);
-   if (previousAlive != 1u) {
-      return;
-   }
+
+   if (previousAlive != 1u) return;
 
    state.positionAndActive.w = 0.0f;
    uint ignored;
+
    if (state.ownerParticleIndex < gParticleCapacity) {
       InterlockedCompareExchange(
          gOwnerMappings[state.ownerParticleIndex], particleIndex, INVALID_PARTICLE_INDEX, ignored);
@@ -62,6 +62,7 @@ void RecycleParticle(uint particleIndex, inout GpuParticleState state) {
 
    uint freeSlot;
    gFreeCount.InterlockedAdd(0u, 1u, freeSlot);
+
    if (freeSlot < gParticleCapacity) {
       // 次のEmitter CSはdispatch後のUAV barrierを待つため、counterとslotを一体として観測する。
       gFreeList[freeSlot] = particleIndex;
@@ -73,13 +74,13 @@ void RecycleParticle(uint particleIndex, inout GpuParticleState state) {
 
 [numthreads(64, 1, 1)] void main(uint3 dispatchThreadId : SV_DispatchThreadID) {
    uint particleIndex = dispatchThreadId.x;
-   if (particleIndex >= gParticleCapacity || gAliveFlags[particleIndex] == 0u) {
-      return;
-   }
+
+   if (particleIndex >= gParticleCapacity || gAliveFlags[particleIndex] == 0u) return;
 
    GpuParticleState state = gStates[particleIndex];
    GpuParticleMotion motion = gMotions[particleIndex];
    float deltaTime = gCameraForward.w;
+
    if (state.velocityAndLifetime.w <= deltaTime) {
       state.velocityAndLifetime.w = 0.0f;
       RecycleParticle(particleIndex, state);
@@ -93,6 +94,7 @@ void RecycleParticle(uint particleIndex, inout GpuParticleState state) {
 
    float speed = length(state.velocityAndLifetime.xyz);
    float speedLimit = motion.limitAndGravity.x;
+
    if (speedLimit >= 0.0f && speed > speedLimit && speed > 0.000001f) {
       float excess = speed - speedLimit;
       state.velocityAndLifetime.xyz *= 1.0f - motion.limitAndGravity.y * excess / speed;
@@ -101,32 +103,40 @@ void RecycleParticle(uint particleIndex, inout GpuParticleState state) {
    if (motion.noiseParams.x != 0.0f) {
       float3 samplePosition = state.positionAndActive.xyz;
       bool useLocalSimulation = gSimulationOriginAndLocal.w > 0.5f;
+
       if (useLocalSimulation) {
          float4 inverseRotation = float4(-gSimulationRotation.xyz, gSimulationRotation.w);
          samplePosition = RotateByQuaternion(samplePosition - gSimulationOriginAndLocal.xyz, inverseRotation);
       }
+
       float phase = state.age * motion.noiseParams.z;
       float3 noiseVelocity = float3(sin(samplePosition.x * motion.noiseParams.y + phase),
                                 sin(samplePosition.y * motion.noiseParams.y + phase * 1.3f),
                                 sin(samplePosition.z * motion.noiseParams.y + phase * 0.7f)) *
                              motion.noiseParams.x;
+
       if (useLocalSimulation) {
          noiseVelocity = RotateByQuaternion(noiseVelocity, gSimulationRotation);
       }
+
       state.velocityAndLifetime.xyz += noiseVelocity * deltaTime;
    }
 
    float3 acceleration = motion.forceAndDrag.xyz + float3(0.0f, -9.8f * motion.limitAndGravity.z, 0.0f);
+
    if (gAttractorParams.w > 0.5f) {
       float3 toTarget = gAttractorPosition.xyz - state.positionAndActive.xyz;
       float distanceToTarget = length(toTarget);
+
       if (distanceToTarget > 0.0001f && (gAttractorParams.y <= 0.0f || distanceToTarget <= gAttractorParams.y)) {
          float attenuation = 1.0f;
+
          if (gAttractorParams.z > 0.0f) {
             attenuation = gAttractorParams.y > 0.0f
                              ? pow(max(1.0f - distanceToTarget / gAttractorParams.y, 0.0f), gAttractorParams.z)
                              : 1.0f / pow(max(distanceToTarget, 1.0f), gAttractorParams.z);
          }
+
          acceleration += toTarget / distanceToTarget * (gAttractorParams.x * attenuation);
       }
    }

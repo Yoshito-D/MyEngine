@@ -49,8 +49,7 @@ void WhiteNoise::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rende
 ///          ポストプロセススタックが選択した反対側のターゲットへフルスクリーン描画する。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void WhiteNoise::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature())
-      return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    // シェーダーはfloor(time * seedChangeRate)を乱数シードに使うため、定数転送前に時刻を更新する。
    AdvanceTime();
@@ -141,9 +140,7 @@ void WhiteNoise::CreateConstantBuffer() {
 /// @brief 現在のCPUパラメーターをHLSLのWhiteNoiseCBレイアウトへ転送する。
 /// @details 末尾パディングも明示的に初期化し、定数バッファレジスター境界の未定義値を残さない。
 void WhiteNoise::UpdateConstantBuffer() {
-   if (!constantBufferData_) {
-      return;
-   }
+   if (!constantBufferData_) return;
 
    constantBufferData_->time = params_.time;
    constantBufferData_->noiseDensity = params_.noiseDensity;
@@ -160,6 +157,7 @@ void WhiteNoise::UpdateConstantBuffer() {
 ///          休止や処理落ち後の大きな差分は0.1秒へ制限してノイズパターンの急変を抑える。
 void WhiteNoise::AdvanceTime() {
    const auto now = std::chrono::steady_clock::now();
+
    if (!hasPreviousTime_) {
       previousTime_ = now;
       hasPreviousTime_ = true;

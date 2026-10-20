@@ -26,8 +26,8 @@ float ClampFovY(float fovY) {
 }
 
 void Camera::InitializeGraphicsDevice(GraphicsDevice* device) {
-   if (sIsInitialized_)
-      return;
+   if (sIsInitialized_) return;
+
    sDevice_ = device;
    sIsInitialized_ = true;
 }
@@ -58,16 +58,24 @@ void Camera::SetFovY(float fovY) {
 void Camera::Update() {
    // 投影の関連値を同じ境界で検証し、変更操作の終了時にキャッシュを一致させる。
    fovY_ = ClampFovY(fovY_);
-   if (!std::isfinite(aspectRatio_) || aspectRatio_ <= 0.0f)
+
+   if (!std::isfinite(aspectRatio_) || aspectRatio_ <= 0.0f) {
       aspectRatio_ = 1.0f;
-   if (!std::isfinite(nearClip_) || nearClip_ <= 0.0f)
+   }
+
+   if (!std::isfinite(nearClip_) || nearClip_ <= 0.0f) {
       nearClip_ = kDefaultNearClip;
-   if (!std::isfinite(farClip_) || farClip_ <= nearClip_)
+   }
+
+   if (!std::isfinite(farClip_) || farClip_ <= nearClip_) {
       farClip_ = nearClip_ + kDefaultFarClip;
+   }
+
    if (!std::isfinite(farClip_) || farClip_ <= nearClip_ || !std::isfinite(nearClip_ * farClip_)) {
       nearClip_ = kDefaultNearClip;
       farClip_ = kDefaultFarClip;
    }
+
    auto finiteOr = [](float value, float fallback) { return std::isfinite(value) ? value : fallback; };
    transform_.translation = {finiteOr(transform_.translation.x, 0.0f), finiteOr(transform_.translation.y, 0.0f),
       finiteOr(transform_.translation.z, 0.0f)};
@@ -105,22 +113,28 @@ void Camera::Update() {
 }
 
 void Camera::ApplyState(const CameraState& state) {
-   if (!state.transform.IsFinite())
-      return;
+   if (!state.transform.IsFinite()) return;
+
    fovY_ = state.fov;
    nearClip_ = state.nearClip;
    farClip_ = state.farClip;
+
    if (state.hasViewMatrixOverride) {
       // 明示ビューでは従来どおり状態の位置をGPUへ渡し、回転・拡縮の解釈は変更しない。
       transform_.translation = state.transform.translation;
    } else {
       transform_ = state.transform;
    }
+
    Update();
    bool validOverride = state.hasViewMatrixOverride;
-   for (const auto& row : state.viewMatrixOverride.m)
-      for (float element : row)
+
+   for (const auto& row : state.viewMatrixOverride.m) {
+      for (float element : row) {
          validOverride &= std::isfinite(element);
+      }
+   }
+
    if (validOverride) {
       viewMatrix_ = state.viewMatrixOverride;
       viewProjectionMatrix_ = viewMatrix_ * GetProjectionMatrix();
@@ -130,9 +144,7 @@ void Camera::ApplyState(const CameraState& state) {
 
 void Camera::SetOrthographicSize(float width, float height) {
    // 0 以下の寸法は射影行列の除算を成立させないため、現在の有効設定を維持する。
-   if (!std::isfinite(width) || !std::isfinite(height) || width <= 0.0f || height <= 0.0f) {
-      return;
-   }
+   if (!std::isfinite(width) || !std::isfinite(height) || width <= 0.0f || height <= 0.0f) return;
 
    orthographicWidth_ = width;
    orthographicHeight_ = height;
@@ -154,8 +166,7 @@ Matrix4x4 Camera::GetProjectionMatrix() const {
 }
 
 void Camera::SetCameraForGpuData() {
-   if (cameraForGpuData_ == nullptr)
-      return;
+   if (cameraForGpuData_ == nullptr) return;
 
    // 行列は描画コマンド側で別途バインドし、この定数バッファにはライティング等が使う視点位置だけを置く。
    cameraForGpuData_->worldPosition = transform_.translation;

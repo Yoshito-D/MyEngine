@@ -31,8 +31,8 @@ struct Transform {
 
    /// @brief 有限なEuler角を姿勢へ変換して適用する。
    void SetRotationEuler(const Vector3& euler) {
-      if (!std::isfinite(euler.x) || !std::isfinite(euler.y) || !std::isfinite(euler.z))
-         return;
+      if (!std::isfinite(euler.x) || !std::isfinite(euler.y) || !std::isfinite(euler.z)) return;
+
       orientation_ = EulerToQuaternion(euler);
       serializeAsQuaternion_ = false;
    }
@@ -41,8 +41,9 @@ struct Transform {
    void SetRotationQuaternion(const Quaternion& quaternion) {
       const float squared = quaternion.x * quaternion.x + quaternion.y * quaternion.y + quaternion.z * quaternion.z +
                             quaternion.w * quaternion.w;
-      if (!std::isfinite(squared) || squared < 1.0e-12f)
-         return;
+
+      if (!std::isfinite(squared) || squared < 1.0e-12f) return;
+
       orientation_ = quaternion.Normalize();
       serializeAsQuaternion_ = true;
    }

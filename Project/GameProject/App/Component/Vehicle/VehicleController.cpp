@@ -33,9 +33,7 @@ Vector3 VehicleController::GetLastMoveDirection() const {
 }
 
 void VehicleController::Update(float deltaTime) {
-   if (!HasOwner()) {
-      return;
-   }
+   if (!HasOwner()) return;
 
    // Inspectorで依存Componentが削除・再追加されるため、利用する更新ごとに解決する。
    auto* input = GetOwner().GetComponent<VehicleInputComponent>();
@@ -45,6 +43,7 @@ void VehicleController::Update(float deltaTime) {
    // 現在の重力Upを取得（無ければワールドUp）
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    Vector3 gravityUp = {0.0f, 1.0f, 0.0f};
+
    if (gravityBody) {
       gravityUp = gravityBody->GetTargetUpVector();
    }
@@ -54,8 +53,10 @@ void VehicleController::Update(float deltaTime) {
    auto* world = SceneWorld::GetCurrent();
    auto* camera = world ? world->FindVirtualCamera(gravityFollowCameraId_) : nullptr;
    auto* gravityFollowCamera = camera ? camera->GetComponent<GravityFollowCamera>() : nullptr;
+
    if (gravityFollowCamera && input) {
       const Vector2 camInput = input->GetCameraLookInput();
+
       if (camInput.x != 0.0f || camInput.y != 0.0f) {
          constexpr float kCamRotateScale = 150.0f;
          Vector2 delta = {camInput.x * kCamRotateScale * deltaTime, camInput.y * kCamRotateScale * deltaTime};
@@ -175,9 +176,9 @@ void VehicleController::SubmitPlayerShadow(GameEngine::Camera* camera) {
 void VehicleController::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::TextUnformatted(
       Tr("入力は VehicleInputComponent から取得します", "Input is provided by VehicleInputComponent"));

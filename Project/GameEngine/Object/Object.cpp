@@ -36,17 +36,20 @@ GameEngine::Matrix4x4 CalculateWorldMatrix(
    }
 
    GameEngine::Matrix4x4 localMatrix = GameEngine::MakeIdentity4x4();
+
    if (const auto* transform = object->GetComponent<GameEngine::TransformComponent>()) {
       localMatrix = GameEngine::MakeAffineMatrix(transform->GetLocalPose());
    }
 
    const std::string& parentId = object->GetParentEntityId();
+
    if (parentId.empty()) {
       visiting.erase(object);
       return localMatrix;
    }
 
    const auto* parent = GameEngine::Object::FindByEntityId(parentId);
+
    if (!parent || parent == object) {
       visiting.erase(object);
       return localMatrix;
@@ -80,9 +83,11 @@ Object::~Object() {
    // RegistryからOwnerを外す前にComponentへDetachを通知し、外部Manager登録を解除させる。
    components_.Clear();
    auto& objectsById = RegisteredObjectIds();
+
    if (const auto idIt = objectsById.find(entityId_); idIt != objectsById.end() && idIt->second == this) {
       objectsById.erase(idIt);
    }
+
    auto& objects = RegisteredObjects();
    objects.erase(std::remove(objects.begin(), objects.end(), this), objects.end());
 }
@@ -91,12 +96,14 @@ bool Object::SetEntityId(const std::string& entityId) {
    if (entityId.empty()) {
       return false;
    }
+
    if (entityId_ == entityId) {
       return true;
    }
 
    // ID索引の一意性を先に確認し、失敗時は現在のIDと親子関係を一切変更しない。
    auto& objectsById = RegisteredObjectIds();
+
    if (const auto duplicateIt = objectsById.find(entityId);
       duplicateIt != objectsById.end() && duplicateIt->second != this) {
       return false;
@@ -104,17 +111,21 @@ bool Object::SetEntityId(const std::string& entityId) {
 
    // 索引を旧→新へ付け替えた後、子が保持する参照もまとめて移行する。
    const std::string previousId = entityId_;
+
    if (const auto previousIt = objectsById.find(previousId);
       previousIt != objectsById.end() && previousIt->second == this) {
       objectsById.erase(previousIt);
    }
+
    entityId_ = entityId;
    objectsById[entityId_] = this;
+
    for (Object* object : RegisteredObjects()) {
       if (object && object != this && object->GetParentEntityId() == previousId) {
          object->SetParentEntityId(entityId_);
       }
    }
+
    return true;
 }
 
@@ -123,6 +134,7 @@ bool Object::SetParentEntityId(const std::string& parentEntityId) {
    if (parentEntityId == entityId_ || WouldCreateParentCycle(parentEntityId)) {
       return false;
    }
+
    parentEntityId_ = parentEntityId;
    return true;
 }
@@ -138,6 +150,7 @@ Matrix4x4 Object::GetParentWorldMatrix() const {
    }
 
    const Object* parent = FindByEntityId(parentEntityId_);
+
    if (!parent || parent == this) {
       return MakeIdentity4x4();
    }
@@ -156,6 +169,7 @@ Object* Object::FindByEntityId(const std::string& entityId) {
    if (entityId.empty()) {
       return nullptr;
    }
+
    const auto& objectsById = RegisteredObjectIds();
    const auto it = objectsById.find(entityId);
    return it != objectsById.end() ? it->second : nullptr;
@@ -165,6 +179,7 @@ Object* Object::FindByObjectName(const std::string& objectName) {
    if (objectName.empty()) {
       return nullptr;
    }
+
    const auto& objects = RegisteredObjects();
    const auto it = std::find_if(objects.begin(), objects.end(),
       [&objectName](const Object* object) { return object && object->GetObjectName() == objectName; });
@@ -180,20 +195,23 @@ bool Object::WouldCreateParentCycle(const std::string& parentEntityId) const {
    // 既に壊れている別系統の循環もvisitedで安全に打ち切る。
    std::unordered_set<const Object*> visited;
    const Object* current = FindByEntityId(parentEntityId);
+
    while (current && visited.insert(current).second) {
       if (current == this) {
          return true;
       }
+
       current = FindByEntityId(current->GetParentEntityId());
    }
+
    return false;
 }
 
 void Object::SetObjectName(const std::string& name) {
    auto* objectNameComponent = AddComponent<ObjectNameComponent>();
-   if (!objectNameComponent) {
-      return;
-   }
+
+   if (!objectNameComponent) return;
+
    {
       auto settings = objectNameComponent->DescribeSettings();
       settings.name = name;
@@ -203,10 +221,12 @@ void Object::SetObjectName(const std::string& name) {
 
 std::string Object::GetObjectName() const {
    const auto* objectNameComponent = GetComponent<ObjectNameComponent>();
+
    if (!objectNameComponent || objectNameComponent->DescribeSettings().name.empty()) {
       // 旧データや削除済みコンポーネントでも、ヒエラルキーへ安定した表示名を返す。
       return "Object";
    }
+
    return objectNameComponent->DescribeSettings().name;
 }
 
@@ -244,6 +264,7 @@ void Object::UpdateComponents(float deltaTime) {
 
 void Object::Activate() {
    components_.Activate();
+
    if (auto* renderComponent = GetComponent<RenderComponent>()) {
       {
          auto settings = renderComponent->DescribeSettings();
@@ -255,6 +276,7 @@ void Object::Activate() {
 
 void Object::Deactivate() {
    components_.Deactivate();
+
    if (auto* renderComponent = GetComponent<RenderComponent>()) {
       {
          auto settings = renderComponent->DescribeSettings();

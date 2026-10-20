@@ -68,13 +68,14 @@ void ParticleEmitterComponent::OnDisable() {
 }
 
 void ParticleEmitterComponent::Update(float) {
-   if (slots_.empty())
-      return;
+   if (slots_.empty()) return;
 
    // Distance Culling 判定（共通）
    bool culled = false;
+
    if (maxCullDistance > 0.0f) {
       auto* camera = EngineContext::GetActiveCamera();
+
       if (camera) {
          // スロット 0 の行列でカリング判定
          const Matrix4x4 emitterMat = ComputeEmitterMatrix(slots_[0].attachConfig);
@@ -93,10 +94,14 @@ void ParticleEmitterComponent::Update(float) {
 
    for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
       EmitterSlot& slot = slots_[i];
-      if (!slot.particleSystem)
+
+      if (!slot.particleSystem) {
          continue;
-      if (culled)
+      }
+
+      if (culled) {
          continue;
+      }
 
       {
          if (auto* modelComponent = GetOwner().GetComponent<MeshComponent>()) {
@@ -116,10 +121,12 @@ void ParticleEmitterComponent::Update(float) {
          if (slot.onFinished) {
             slot.onFinished(i);
          }
+
          if (slot.playOnceAndDestroy) {
             slotsToRemove.push_back(i);
             continue;
          }
+
          anyFinished = true;
       }
    }
@@ -140,8 +147,7 @@ void ParticleEmitterComponent::Update(float) {
 }
 
 void ParticleEmitterComponent::ApplyEmitterToShapeModule(ParticleSystem* ps, const Matrix4x4& emitterMatrix) {
-   if (!ps)
-      return;
+   if (!ps) return;
 
    Transform shapeTransform;
 
@@ -155,21 +161,25 @@ void ParticleEmitterComponent::ApplyEmitterToShapeModule(ParticleSystem* ps, con
    const float sx = shapeTransform.scale.x;
    const float sy = shapeTransform.scale.y;
    const float sz = shapeTransform.scale.z;
+
    if (sx > 0.000001f) {
       rotationMatrix.m[0][0] /= sx;
       rotationMatrix.m[0][1] /= sx;
       rotationMatrix.m[0][2] /= sx;
    }
+
    if (sy > 0.000001f) {
       rotationMatrix.m[1][0] /= sy;
       rotationMatrix.m[1][1] /= sy;
       rotationMatrix.m[1][2] /= sy;
    }
+
    if (sz > 0.000001f) {
       rotationMatrix.m[2][0] /= sz;
       rotationMatrix.m[2][1] /= sz;
       rotationMatrix.m[2][2] /= sz;
    }
+
    rotationMatrix.m[3][0] = 0.0f;
    rotationMatrix.m[3][1] = 0.0f;
    rotationMatrix.m[3][2] = 0.0f;
@@ -200,16 +210,18 @@ int ParticleEmitterComponent::AddSlot(const std::string& jsonPath, const Attachm
    if (HasOwner()) {
       LoadSlot(slots_.back());
    }
+
    return idx;
 }
 
 void ParticleEmitterComponent::RemoveSlot(int slotIndex) {
-   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size()))
-      return;
+   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size())) return;
+
    if (slots_[slotIndex].particleSystem) {
       slots_[slotIndex].particleSystem->Stop();
       slots_[slotIndex].particleSystem.reset();
    }
+
    slots_.erase(slots_.begin() + slotIndex);
 }
 
@@ -220,6 +232,7 @@ void ParticleEmitterComponent::ClearSlots() {
          slot.particleSystem.reset();
       }
    }
+
    slots_.clear();
 }
 
@@ -243,14 +256,18 @@ const ParticleEmitterComponent::SlotConfiguration* ParticleEmitterComponent::Des
 
 bool ParticleEmitterComponent::ConfigureSlot(int index, const SlotConfiguration& configuration) {
    auto* slot = GetSlot(index);
-   if (!slot)
+
+   if (!slot) {
       return false;
+   }
+
    static_cast<SlotConfiguration&>(*slot) = ValidateConfiguration(configuration);
    return !HasOwner() || LoadSlot(*slot);
 }
 
 void ParticleEmitterComponent::EnableEmission(int index, bool enabled) {
    auto* slot = GetSlot(index);
+
    if (slot && slot->particleSystem) {
       auto emission = slot->particleSystem->DescribeEmissionModule();
       emission.SetEnabled(enabled);
@@ -264,14 +281,18 @@ bool ParticleEmitterComponent::HasLivingParticles(int index) const {
 }
 
 ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(int slotIndex) {
-   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size()))
+   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size())) {
       return nullptr;
+   }
+
    return &slots_[slotIndex];
 }
 
 const ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(int slotIndex) const {
-   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size()))
+   if (slotIndex < 0 || slotIndex >= static_cast<int>(slots_.size())) {
       return nullptr;
+   }
+
    return &slots_[slotIndex];
 }
 
@@ -279,6 +300,7 @@ const ParticleEmitterComponent::EmitterSlot* ParticleEmitterComponent::GetSlot(i
 
 bool ParticleEmitterComponent::LoadEffect(const std::string& jsonPath) {
    legacyJsonPath_ = jsonPath;
+
    if (slots_.empty()) {
       AddSlot(jsonPath);
       return slots_[0].particleSystem != nullptr;
@@ -294,47 +316,60 @@ bool ParticleEmitterComponent::LoadEffect(const std::string& jsonPath) {
 // ============================================================
 
 void ParticleEmitterComponent::Play() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i)
+   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
       Play(i);
+   }
 }
 
 void ParticleEmitterComponent::Stop() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i)
+   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
       Stop(i);
+   }
 }
 
 void ParticleEmitterComponent::Pause() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i)
+   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
       Pause(i);
+   }
 }
 
 void ParticleEmitterComponent::Resume() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i)
+   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
       Resume(i);
+   }
 }
 
 void ParticleEmitterComponent::Restart() {
-   for (int i = 0; i < static_cast<int>(slots_.size()); ++i)
+   for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
       Restart(i);
+   }
 }
 
 bool ParticleEmitterComponent::IsPlaying() const {
    for (const auto& slot : slots_) {
-      if (slot.particleSystem && slot.particleSystem->IsPlaying())
+      if (slot.particleSystem && slot.particleSystem->IsPlaying()) {
          return true;
+      }
    }
+
    return false;
 }
 
 bool ParticleEmitterComponent::IsFinished() const {
-   if (slots_.empty())
+   if (slots_.empty()) {
       return false;
-   for (const auto& slot : slots_) {
-      if (!slot.particleSystem)
-         continue;
-      if (!slot.particleSystem->IsFinished())
-         return false;
    }
+
+   for (const auto& slot : slots_) {
+      if (!slot.particleSystem) {
+         continue;
+      }
+
+      if (!slot.particleSystem->IsFinished()) {
+         return false;
+      }
+   }
+
    return true;
 }
 
@@ -342,8 +377,9 @@ bool ParticleEmitterComponent::IsFinished() const {
 
 void ParticleEmitterComponent::Play(int idx) {
    auto* slot = GetSlot(idx);
-   if (!slot || !slot->particleSystem)
-      return;
+
+   if (!slot || !slot->particleSystem) return;
+
    {
       auto configuration = slot->particleSystem->DescribeMainModule();
       configuration.SetLooping(slot->loop);
@@ -355,20 +391,26 @@ void ParticleEmitterComponent::Play(int idx) {
 
 void ParticleEmitterComponent::Stop(int idx) {
    auto* slot = GetSlot(idx);
-   if (slot && slot->particleSystem)
+
+   if (slot && slot->particleSystem) {
       slot->particleSystem->Stop();
+   }
 }
 
 void ParticleEmitterComponent::Pause(int idx) {
    auto* slot = GetSlot(idx);
-   if (slot && slot->particleSystem)
+
+   if (slot && slot->particleSystem) {
       slot->particleSystem->Pause();
+   }
 }
 
 void ParticleEmitterComponent::Resume(int idx) {
    auto* slot = GetSlot(idx);
-   if (slot && slot->particleSystem)
+
+   if (slot && slot->particleSystem) {
       slot->particleSystem->Resume();
+   }
 }
 
 void ParticleEmitterComponent::Restart(int idx) {
@@ -389,8 +431,8 @@ bool ParticleEmitterComponent::IsFinished(int idx) const {
 void ParticleEmitterComponent::SetSlotWorldTransform(
    int idx, const Vector3& position, const Quaternion& rotation, const Vector3& scale) {
    auto* slot = GetSlot(idx);
-   if (!slot)
-      return;
+
+   if (!slot) return;
 
    // オーナーやボーンから切り離し、指定されたワールド変換をそのまま使う。
    auto& config = slot->attachConfig;
@@ -423,21 +465,25 @@ bool ParticleEmitterComponent::TryComputeJointWorldMatrix(
    const auto* meshComponent = GetOwner().GetComponent<MeshComponent>();
    const ModelAsset* modelAsset = meshComponent ? meshComponent->GetModelAsset() : nullptr;
    const Skeleton* skeleton = modelAsset ? modelAsset->GetBindSkeleton() : nullptr;
+
    if (!skeleton) {
       return false;
    }
 
    const auto jointIt = skeleton->GetJointMap().find(jointName);
+
    if (jointIt == skeleton->GetJointMap().end()) {
       return false;
    }
 
    const int32_t jointIndex = jointIt->second;
+
    if (jointIndex < 0 || static_cast<size_t>(jointIndex) >= skeleton->GetJoints().size()) {
       return false;
    }
 
    Matrix4x4 jointSkeletonMatrix = skeleton->GetJoints()[static_cast<size_t>(jointIndex)].skeletonSpaceMatrix;
+
    if (const SkinCluster* skinCluster = meshComponent->GetSkinCluster()) {
       skinCluster->TryResolveJointMatrix(jointIndex, jointSkeletonMatrix);
    }
@@ -461,6 +507,7 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
       TryComputeJointWorldMatrix(cfg.boneName, base);
    } else {
       auto* tc = GetOwner().GetComponent<TransformComponent>();
+
       if (tc) {
          base = MakeAffineMatrix(tc->GetLocalPose());
          base = tc->ComposeWorldMatrix(base);
@@ -472,22 +519,26 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
       const float sx = Vector3(base.m[0][0], base.m[0][1], base.m[0][2]).Length();
       const float sy = Vector3(base.m[1][0], base.m[1][1], base.m[1][2]).Length();
       const float sz = Vector3(base.m[2][0], base.m[2][1], base.m[2][2]).Length();
+
       if (sx > 0.0001f) {
          base.m[0][0] /= sx;
          base.m[0][1] /= sx;
          base.m[0][2] /= sx;
       }
+
       if (sy > 0.0001f) {
          base.m[1][0] /= sy;
          base.m[1][1] /= sy;
          base.m[1][2] /= sy;
       }
+
       if (sz > 0.0001f) {
          base.m[2][0] /= sz;
          base.m[2][1] /= sz;
          base.m[2][2] /= sz;
       }
    }
+
    if (!cfg.followRotation) {
       const float sx = Vector3(base.m[0][0], base.m[0][1], base.m[0][2]).Length();
       const float sy = Vector3(base.m[1][0], base.m[1][1], base.m[1][2]).Length();
@@ -504,6 +555,7 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
       base.m[2][1] = 0.0f;
       base.m[2][2] = sz;
    }
+
    if (!cfg.followPosition) {
       base.m[3][0] = 0.0f;
       base.m[3][1] = 0.0f;
@@ -528,9 +580,7 @@ Matrix4x4 ParticleEmitterComponent::ComputeEmitterMatrix(const AttachmentConfig&
 }
 
 void ParticleEmitterComponent::DrawDebugAttachments() const {
-   if (!debugDrawAttachments) {
-      return;
-   }
+   if (!debugDrawAttachments) return;
 
    constexpr float kJointRadius = 0.06f;
    constexpr float kEmitterRadius = 0.035f;
@@ -544,11 +594,13 @@ void ParticleEmitterComponent::DrawDebugAttachments() const {
 
    for (size_t slotIndex = 0; slotIndex < slots_.size(); ++slotIndex) {
       const AttachmentConfig& config = slots_[slotIndex].attachConfig;
+
       if (config.boneName.empty()) {
          continue;
       }
 
       Matrix4x4 jointWorldMatrix;
+
       if (!TryComputeJointWorldMatrix(config.boneName, jointWorldMatrix)) {
          continue;
       }
@@ -598,6 +650,7 @@ ParticleEmitterComponent::SlotConfiguration ParticleEmitterComponent::ValidateCo
 bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
    static_cast<SlotConfiguration&>(slot) = ValidateConfiguration(slot);
    std::unique_ptr<ParticleSystem> ps = std::move(slot.particleSystem);
+
    if (!ps) {
       ps = std::make_unique<ParticleSystem>();
    } else {
@@ -636,13 +689,14 @@ bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
 }
 
 void ParticleEmitterComponent::SyncSimulationSpace(ParticleSystem* ps, AttachmentConfig::Space space) {
-   if (!ps)
-      return;
+   if (!ps) return;
+
    auto configuration = ps->DescribeMainModule();
    const auto simulationSpace =
       space == AttachmentConfig::Space::Local ? MainModule::SimulationSpace::Local : MainModule::SimulationSpace::World;
-   if (configuration.GetSimulationSpace() == simulationSpace)
-      return;
+
+   if (configuration.GetSimulationSpace() == simulationSpace) return;
+
    configuration.SetSimulationSpace(simulationSpace);
    ps->ConfigureModule(configuration);
 }
@@ -676,20 +730,29 @@ static void DeserializeAttachmentConfig(const nlohmann::json& j, ParticleEmitter
       }
    };
 
-   if (j.contains("followPosition") && j.at("followPosition").is_boolean())
+   if (j.contains("followPosition") && j.at("followPosition").is_boolean()) {
       cfg.followPosition = j.at("followPosition").get<bool>();
-   if (j.contains("followRotation") && j.at("followRotation").is_boolean())
+   }
+
+   if (j.contains("followRotation") && j.at("followRotation").is_boolean()) {
       cfg.followRotation = j.at("followRotation").get<bool>();
-   if (j.contains("followScale") && j.at("followScale").is_boolean())
+   }
+
+   if (j.contains("followScale") && j.at("followScale").is_boolean()) {
       cfg.followScale = j.at("followScale").get<bool>();
+   }
+
    readVec3("positionOffset", cfg.positionOffset);
    readVec3("rotationOffset", cfg.rotationOffset);
    readVec3("scaleOffset", cfg.scaleOffset);
+
    if (j.contains("simulationSpace") && j.at("simulationSpace").is_string()) {
       cfg.simulationSpace = (j.at("simulationSpace").get<std::string>() == "Local") ? Space::Local : Space::World;
    }
-   if (j.contains("boneName") && j.at("boneName").is_string())
+
+   if (j.contains("boneName") && j.at("boneName").is_string()) {
       cfg.boneName = j.at("boneName").get<std::string>();
+   }
 }
 
 nlohmann::json ParticleEmitterComponent::Serialize() const {
@@ -698,6 +761,7 @@ nlohmann::json ParticleEmitterComponent::Serialize() const {
    j["debugDrawAttachments"] = debugDrawAttachments;
 
    nlohmann::json slotsJson = nlohmann::json::array();
+
    for (const auto& slot : slots_) {
       nlohmann::json s;
       s["jsonPath"] = slot.jsonPath;
@@ -707,6 +771,7 @@ nlohmann::json ParticleEmitterComponent::Serialize() const {
       s["attachConfig"] = SerializeAttachmentConfig(slot.attachConfig);
       slotsJson.push_back(std::move(s));
    }
+
    j["slots"] = std::move(slotsJson);
 
    return j;
@@ -716,6 +781,7 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("maxCullDistance") && data.at("maxCullDistance").is_number()) {
       maxCullDistance = data.at("maxCullDistance").get<float>();
    }
+
    if (data.contains("debugDrawAttachments") && data.at("debugDrawAttachments").is_boolean()) {
       debugDrawAttachments = data.at("debugDrawAttachments").get<bool>();
    }
@@ -726,15 +792,23 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("jsonPath") && data.at("jsonPath").is_string()) {
       EmitterSlot slot;
       slot.jsonPath = data.at("jsonPath").get<std::string>();
-      if (data.contains("autoPlay") && data.at("autoPlay").is_boolean())
+
+      if (data.contains("autoPlay") && data.at("autoPlay").is_boolean()) {
          slot.autoPlay = data.at("autoPlay").get<bool>();
-      if (data.contains("loop") && data.at("loop").is_boolean())
+      }
+
+      if (data.contains("loop") && data.at("loop").is_boolean()) {
          slot.loop = data.at("loop").get<bool>();
-      if (data.contains("playOnceAndDestroy") && data.at("playOnceAndDestroy").is_boolean())
+      }
+
+      if (data.contains("playOnceAndDestroy") && data.at("playOnceAndDestroy").is_boolean()) {
          slot.playOnceAndDestroy = data.at("playOnceAndDestroy").get<bool>();
+      }
+
       if (data.contains("attachConfig") && data.at("attachConfig").is_object()) {
          DeserializeAttachmentConfig(data.at("attachConfig"), slot.attachConfig);
       }
+
       slots_.push_back(std::move(slot));
    }
 
@@ -742,17 +816,27 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("slots") && data.at("slots").is_array()) {
       for (const auto& s : data.at("slots")) {
          EmitterSlot slot;
-         if (s.contains("jsonPath") && s.at("jsonPath").is_string())
+
+         if (s.contains("jsonPath") && s.at("jsonPath").is_string()) {
             slot.jsonPath = s.at("jsonPath").get<std::string>();
-         if (s.contains("autoPlay") && s.at("autoPlay").is_boolean())
+         }
+
+         if (s.contains("autoPlay") && s.at("autoPlay").is_boolean()) {
             slot.autoPlay = s.at("autoPlay").get<bool>();
-         if (s.contains("loop") && s.at("loop").is_boolean())
+         }
+
+         if (s.contains("loop") && s.at("loop").is_boolean()) {
             slot.loop = s.at("loop").get<bool>();
-         if (s.contains("playOnceAndDestroy") && s.at("playOnceAndDestroy").is_boolean())
+         }
+
+         if (s.contains("playOnceAndDestroy") && s.at("playOnceAndDestroy").is_boolean()) {
             slot.playOnceAndDestroy = s.at("playOnceAndDestroy").get<bool>();
+         }
+
          if (s.contains("attachConfig") && s.at("attachConfig").is_object()) {
             DeserializeAttachmentConfig(s.at("attachConfig"), slot.attachConfig);
          }
+
          slots_.push_back(std::move(slot));
       }
    }
@@ -774,15 +858,15 @@ void ParticleEmitterComponent::DrawInspector() {
    auto Tr = [](const char* japanese, const char* english) { return ImGuiHelper::Localize({japanese, english}); };
 
    const std::string componentHeader = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(componentHeader.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(componentHeader.c_str())) return;
 
    // ── コンポーネント共通設定 ─────────────────────
    ImGui::DragFloat(Tr("カリング距離", "Cull Distance"), &maxCullDistance, 1.0f, 0.0f, 10000.0f);
    ImGui::Checkbox(Tr("アタッチ先をデバッグ描画", "Debug Draw Attachments"), &debugDrawAttachments);
 
    const Skeleton* ownerSkeleton = nullptr;
+
    if (const auto* meshComponent = GetOwner().GetComponent<MeshComponent>()) {
       if (const ModelAsset* modelAsset = meshComponent->GetModelAsset()) {
          ownerSkeleton = modelAsset->GetBindSkeleton();
@@ -791,34 +875,45 @@ void ParticleEmitterComponent::DrawInspector() {
 
    // ── 全スロット一括制御 ────────────────────────
    ImGui::SeparatorText(Tr("全体制御", "Global Control"));
+
    if (ImGui::Button(Tr("全て再生", "Play All"))) {
       Play();
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button(Tr("全て停止", "Stop All"))) {
       Stop();
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button(Tr("全て一時停止", "Pause All"))) {
       Pause();
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button(Tr("全て再開", "Resume All"))) {
       Resume();
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button(Tr("全て再スタート", "Restart All"))) {
       Restart();
    }
 
    // ── スロット追加 ──────────────────────────────
    ImGui::SeparatorText(Tr("スロット", "Slots"));
+
    if (ImGui::Button(Tr("+ スロット追加", "+ Add Slot"))) {
       AddSlot("");
    }
 
    // ── 各スロット ────────────────────────────────
    int removeIdx = -1;
+
    for (int i = 0; i < static_cast<int>(slots_.size()); ++i) {
       EmitterSlot& slot = slots_[i];
 
@@ -831,11 +926,13 @@ void ParticleEmitterComponent::DrawInspector() {
          if (ImGui::MenuItem(Tr("スロットを削除", "Remove Slot"))) {
             removeIdx = i;
          }
+
          ImGui::EndPopup();
       }
 
       if (open) {
          std::string nextPath = slot.jsonPath;
+
          if (EditorUI::AssetFileReference(Tr("パーティクル", "Particle"), nextPath, EditorAssetType::Particle)) {
             const std::string previousPath = slot.jsonPath;
             auto previousSystem = std::move(slot.particleSystem);
@@ -843,13 +940,15 @@ void ParticleEmitterComponent::DrawInspector() {
 
             // 読込失敗時は旧参照と実体を両方維持し、見た目だけ変更済みの状態を残さない。
             if (nextPath.empty()) {
-               if (previousSystem)
+               if (previousSystem) {
                   previousSystem->Stop();
+               }
             } else if (!LoadSlot(slot)) {
                slot.jsonPath = previousPath;
                slot.particleSystem = std::move(previousSystem);
             }
          }
+
          if (ImGui::Button(Tr("再読み込み", "Reload"))) {
             if (slot.particleSystem && !slot.jsonPath.empty()) {
                slot.particleSystem->LoadFromJson(slot.jsonPath);
@@ -866,36 +965,48 @@ void ParticleEmitterComponent::DrawInspector() {
          ImGui::SeparatorText(Tr("再生制御", "Playback"));
          const bool playing = IsPlaying(i);
          ImGui::BeginDisabled(playing);
+
          if (ImGui::Button(Tr("再生", "Play"))) {
             Play(i);
          }
+
          ImGui::EndDisabled();
          ImGui::SameLine();
          ImGui::BeginDisabled(!playing);
+
          if (ImGui::Button(Tr("停止", "Stop"))) {
             Stop(i);
          }
+
          ImGui::SameLine();
+
          if (ImGui::Button(Tr("一時停止", "Pause"))) {
             Pause(i);
          }
+
          ImGui::SameLine();
+
          if (ImGui::Button(Tr("再開", "Resume"))) {
             Resume(i);
          }
+
          ImGui::EndDisabled();
          ImGui::SameLine();
+
          if (ImGui::Button(Tr("再スタート", "Restart"))) {
             Restart(i);
          }
 
          const char* statusStr = Tr("停止中", "Stopped");
+
          if (slot.particleSystem) {
-            if (slot.particleSystem->IsPlaying())
+            if (slot.particleSystem->IsPlaying()) {
                statusStr = Tr("再生中", "Playing");
-            else if (IsFinished(i))
+            } else if (IsFinished(i)) {
                statusStr = Tr("完了", "Finished");
+            }
          }
+
          ImGui::Text("%s: %s", Tr("状態", "Status"), statusStr);
 
          ImGui::Checkbox(Tr("自動再生", "Auto Play"), &slot.autoPlay);
@@ -913,14 +1024,17 @@ void ParticleEmitterComponent::DrawInspector() {
          ImGui::Checkbox(Tr("スケール", "Scale"), &slot.attachConfig.followScale);
          ImGui::DragFloat3(Tr("位置オフセット", "Pos Offset"), &slot.attachConfig.positionOffset.x, 0.05f);
          Vector3 rotationOffsetDegrees = ImGuiHelper::RadiansToDegrees(slot.attachConfig.rotationOffset);
+
          if (ImGui::DragFloat3(Tr("回転オフセット (deg)", "Rot Offset (deg)"), &rotationOffsetDegrees.x, 0.1f)) {
             slot.attachConfig.rotationOffset = ImGuiHelper::DegreesToRadians(rotationOffsetDegrees);
          }
+
          ImGui::DragFloat3(
             Tr("スケールオフセット", "Scale Offset"), &slot.attachConfig.scaleOffset.x, 0.01f, 0.001f, 100.0f);
 
          const char* spaceItems[] = {Tr("ワールド", "World"), Tr("ローカル", "Local")};
          int spaceIdx = (slot.attachConfig.simulationSpace == AttachmentConfig::Space::Local) ? 1 : 0;
+
          if (ImGui::Combo(Tr("シミュレーション空間", "Sim Space"), &spaceIdx, spaceItems, 2)) {
             slot.attachConfig.simulationSpace =
                (spaceIdx == 1) ? AttachmentConfig::Space::Local : AttachmentConfig::Space::World;
@@ -931,16 +1045,19 @@ void ParticleEmitterComponent::DrawInspector() {
                                  (ownerSkeleton && ownerSkeleton->GetJointMap().contains(slot.attachConfig.boneName));
          std::string jointPreview = slot.attachConfig.boneName.empty() ? Tr("<ルートTransform>", "<Root Transform>")
                                                                        : slot.attachConfig.boneName;
+
          if (!hasSelectedJoint) {
             jointPreview += Tr(" (見つかりません)", " (Not Found)");
          }
 
          if (ImGui::BeginCombo(Tr("アタッチ先ジョイント", "Attachment Joint"), jointPreview.c_str())) {
             const bool usesRootTransform = slot.attachConfig.boneName.empty();
+
             if (ImGui::Selectable(Tr("<ルートTransform>", "<Root Transform>"), usesRootTransform)) {
                slot.attachConfig.boneName.clear();
                hasSelectedJoint = true;
             }
+
             if (usesRootTransform) {
                ImGui::SetItemDefaultFocus();
             }
@@ -949,36 +1066,44 @@ void ParticleEmitterComponent::DrawInspector() {
                for (const Joint& joint : ownerSkeleton->GetJoints()) {
                   size_t hierarchyDepth = 0;
                   std::optional<int32_t> parentIndex = joint.parent;
+
                   while (parentIndex && hierarchyDepth < ownerSkeleton->GetJoints().size()) {
                      ++hierarchyDepth;
                      const int32_t index = *parentIndex;
+
                      if (index < 0 || static_cast<size_t>(index) >= ownerSkeleton->GetJoints().size()) {
                         break;
                      }
+
                      parentIndex = ownerSkeleton->GetJoints()[static_cast<size_t>(index)].parent;
                   }
 
                   const std::string jointLabel = std::string(hierarchyDepth * 2, ' ') + joint.name;
                   ImGui::PushID(joint.index);
                   const bool isSelected = slot.attachConfig.boneName == joint.name;
+
                   if (ImGui::Selectable(jointLabel.c_str(), isSelected)) {
                      slot.attachConfig.boneName = joint.name;
                      hasSelectedJoint = true;
                   }
+
                   if (isSelected) {
                      ImGui::SetItemDefaultFocus();
                   }
+
                   ImGui::PopID();
                }
             } else {
                ImGui::TextDisabled("%s", Tr("スケルトンを持つモデルが必要です", "A model with a skeleton is required"));
             }
+
             ImGui::EndCombo();
          }
 
          if (ownerSkeleton) {
             ImGui::TextDisabled("%s: %zu", Tr("ジョイント数", "Joint Count"), ownerSkeleton->GetJoints().size());
          }
+
          if (!hasSelectedJoint) {
             ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.25f, 1.0f), "%s",
                Tr("選択中のジョイントは現在のモデルに存在しません",

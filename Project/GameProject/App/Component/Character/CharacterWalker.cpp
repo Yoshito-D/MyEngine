@@ -17,15 +17,14 @@ namespace App {
 void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravityUp, float deltaTime, bool isGrounded) {
    // Transform が無い場合は移動不可
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    // ScreenSpaceBasis から重力平面上の移動基底を取得
    auto* basis = GetOwner().GetComponent<ScreenSpaceBasis>();
-   if (!basis) {
-      return;
-   }
+
+   if (!basis) return;
+
    basis->UpdateBasis(gravityUp);
    Vector3 fProj = basis->GetForwardBasis(gravityUp);
    Vector3 rProj = basis->GetRightBasis(gravityUp);
@@ -44,15 +43,18 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
       Vector3 diff = targetVelocity - horizontalVelocity_;
       float diffLen = diff.Length();
       float accelStep = accel * deltaTime;
+
       if (accelStep >= diffLen) {
          horizontalVelocity_ = targetVelocity;
       } else {
          horizontalVelocity_ = horizontalVelocity_ + diff.Normalize() * accelStep;
       }
+
       lastMoveDirection_ = inputDir.Normalize();
    } else {
       // 無入力時: 減速して慣性を収束
       float speed = horizontalVelocity_.Length();
+
       if (speed > 1e-4f) {
          float decelStep = decel * deltaTime;
          float newSpeed = std::max(0.0f, speed - decelStep);
@@ -60,6 +62,7 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
       } else {
          horizontalVelocity_ = {0.0f, 0.0f, 0.0f};
       }
+
       if (horizontalVelocity_.LengthSquared() < 1e-8f) {
          lastMoveDirection_ = {0.0f, 0.0f, 0.0f};
       }
@@ -73,9 +76,7 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
    }
 
    // 移動方向が無ければ向き補間は不要
-   if (lastMoveDirection_.LengthSquared() < 1e-6f) {
-      return;
-   }
+   if (lastMoveDirection_.LengthSquared() < 1e-6f) return;
 
    // 重力平面投影ヘルパー
    auto projectOnPlane = [&](const Vector3& v) -> Vector3 {
@@ -94,6 +95,7 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
    if (curFlat.LengthSquared() > 1e-6f && tgtFlat.LengthSquared() > 1e-6f) {
       float cosA = std::clamp(curFlat.Dot(tgtFlat), -1.0f, 1.0f);
       float angle = std::acos(cosA);
+
       if (angle > 1e-4f) {
          float sign = gravityUp.Dot(curFlat.Cross(tgtFlat)) >= 0.0f ? 1.0f : -1.0f;
          float step = std::clamp(turnSpeed * deltaTime, 0.0f, angle);
@@ -111,9 +113,9 @@ void CharacterWalker::ApplyMovement(const Vector2& input, const Vector3& gravity
 void CharacterWalker::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::DragFloat(Tr("移動速度", "Move Speed"), &moveSpeed, 0.1f, 0.0f, 50.0f);
    ImGui::DragFloat(Tr("加速度", "Acceleration"), &acceleration, 0.5f, 0.0f, 100.0f);
@@ -143,21 +145,27 @@ void CharacterWalker::Deserialize(const nlohmann::json& data) {
    if (data.contains("moveSpeed")) {
       moveSpeed = data["moveSpeed"];
    }
+
    if (data.contains("acceleration")) {
       acceleration = data["acceleration"];
    }
+
    if (data.contains("friction")) {
       friction = data["friction"];
    }
+
    if (data.contains("airAcceleration")) {
       airAcceleration = data["airAcceleration"];
    }
+
    if (data.contains("airFriction")) {
       airFriction = data["airFriction"];
    }
+
    if (data.contains("turnSpeed")) {
       turnSpeed = data["turnSpeed"];
    }
+
    Configure(DescribeSettings());
 }
 

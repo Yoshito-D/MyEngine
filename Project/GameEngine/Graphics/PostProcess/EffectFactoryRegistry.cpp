@@ -19,6 +19,7 @@ void EffectFactoryRegistry::RegisterFactory(const std::string& className, Factor
 /// @return 生成したポストプロセス。未登録の場合はnullptr
 std::unique_ptr<PostProcess> EffectFactoryRegistry::Create(const std::string& className) const {
    auto it = factories_.find(className);
+
    if (it == factories_.end()) {
       return nullptr;
    }

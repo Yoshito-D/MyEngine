@@ -15,6 +15,7 @@ namespace App {
 
 void RaceTimeTextComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    raceManager_ = nullptr;
+
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
@@ -22,13 +23,12 @@ void RaceTimeTextComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWor
 
 void RaceTimeTextComponent::Update(float deltaTime) {
    (void)deltaTime;
-   if (!raceManager_ || !HasOwner()) {
-      return;
-   }
+
+   if (!raceManager_ || !HasOwner()) return;
+
    auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
-   if (!text) {
-      return;
-   }
+
+   if (!text) return;
 
    const RaceManagerComponent::State raceState = raceManager_->GetState();
 
@@ -59,9 +59,9 @@ void RaceTimeTextComponent::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void RaceTimeTextComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    ImGui::Text("Resolved: %s", raceManager_ ? "true" : "false");
 }

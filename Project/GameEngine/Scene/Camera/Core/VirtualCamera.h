@@ -82,15 +82,18 @@ public:
             return casted;
          }
       }
+
       return nullptr;
    }
 
    /// @brief 型から読み取り専用のコンポーネントを探す。
    template <typename T> const T* GetComponent() const {
       for (const auto& component : components_) {
-         if (const auto* typed = dynamic_cast<const T*>(component.get()))
+         if (const auto* typed = dynamic_cast<const T*>(component.get())) {
             return typed;
+         }
       }
+
       return nullptr;
    }
 
@@ -155,8 +158,11 @@ public:
    /// @brief 所有ポインターを公開せず読み取り用の部品一覧を作る。
    std::vector<const ICinemachineComponent*> GetComponents() const {
       std::vector<const ICinemachineComponent*> result;
-      for (const auto& component : components_)
+
+      for (const auto& component : components_) {
          result.push_back(component.get());
+      }
+
       return result;
    }
 

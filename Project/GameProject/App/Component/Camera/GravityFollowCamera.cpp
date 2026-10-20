@@ -31,6 +31,7 @@ static float ClampCameraFov(float fov) {
    if (!std::isfinite(fov)) {
       return kDefaultSafeFov;
    }
+
    return std::clamp(fov, kMinSafeFov, kMaxSafeFov);
 }
 
@@ -53,6 +54,7 @@ static Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fal
    if (!data.is_array() || data.size() != 3) {
       return fallback;
    }
+
    return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
 }
 
@@ -69,6 +71,7 @@ const bool kRegistered =
       if (auto* existing = camera.GetComponent<GravityFollowCamera>()) {
          return existing;
       }
+
       return camera.AddComponent<GravityFollowCamera>();
    });
 
@@ -92,8 +95,8 @@ static float ExpSmoothingFactor(float speed, float deltaTime) {
 static void StepSpring1D(
    float target, float stiffness, float damping, float deltaTime, float& inOutValue, float& inOutVelocity) {
    float dt = std::clamp(deltaTime, 0.0f, kMaxSpringDeltaTime);
-   if (dt <= 0.0f)
-      return;
+
+   if (dt <= 0.0f) return;
 
    float k = std::max(0.0f, stiffness);
    float c = std::max(0.0f, damping);
@@ -101,6 +104,7 @@ static void StepSpring1D(
    if (!std::isfinite(inOutValue)) {
       inOutValue = target;
    }
+
    if (!std::isfinite(inOutVelocity)) {
       inOutVelocity = 0.0f;
    }
@@ -127,25 +131,31 @@ static void StepSpring1D(
 static Vector3 RotateTowardsUnit(const Vector3& current, const Vector3& target, float maxRadiansDelta) {
    Vector3 c = current;
    float cLen = c.Length();
-   if (cLen < 1e-6f)
+
+   if (cLen < 1e-6f) {
       c = {0.0f, 1.0f, 0.0f};
-   else
+   } else {
       c = c * (1.0f / cLen);
+   }
 
    Vector3 t = target;
    float tLen = t.Length();
-   if (tLen < 1e-6f)
+
+   if (tLen < 1e-6f) {
       t = {0.0f, 1.0f, 0.0f};
-   else
+   } else {
       t = t * (1.0f / tLen);
+   }
 
    float dot = std::clamp(c.Dot(t), -1.0f, 1.0f);
    float angle = std::acos(dot);
+
    if (angle < 1e-6f) {
       return t;
    }
 
    float step = std::max(0.0f, maxRadiansDelta);
+
    if (step >= angle) {
       return t;
    }
@@ -155,11 +165,13 @@ static Vector3 RotateTowardsUnit(const Vector3& current, const Vector3& target, 
       Vector3 axis = (std::abs(c.x) < 0.9f) ? Vector3{1.0f, 0.0f, 0.0f} : Vector3{0.0f, 1.0f, 0.0f};
       axis = c.Cross(axis);
       float axisLen = axis.Length();
+
       if (axisLen < 1e-6f) {
          axis = Vector3{0.0f, 0.0f, 1.0f};
       } else {
          axis = axis * (1.0f / axisLen);
       }
+
       return RotateAroundAxis(c, axis, step);
    }
 
@@ -185,17 +197,21 @@ Vector3 GravityFollowCamera::SmoothGravityUp(float deltaTime) {
    // 目標 up を正規化
    Vector3 targetUp = gravityUp_;
    float targetLen = targetUp.Length();
-   if (targetLen < 1e-6f)
+
+   if (targetLen < 1e-6f) {
       targetUp = {0.0f, 1.0f, 0.0f};
-   else
+   } else {
       targetUp = targetUp * (1.0f / targetLen);
+   }
 
    // 現在 up も念のため正規化（数値誤差の蓄積を防ぐ）
    float curLen = currentGravityUp_.Length();
-   if (curLen < 1e-6f)
+
+   if (curLen < 1e-6f) {
       currentGravityUp_ = targetUp;
-   else
+   } else {
       currentGravityUp_ = currentGravityUp_ * (1.0f / curLen);
+   }
 
    // 回転前の Up を保存しておく（後でデルタ回転を算出するため）
    Vector3 oldUp = currentGravityUp_;
@@ -217,16 +233,20 @@ Vector3 GravityFollowCamera::SmoothGravityUp(float deltaTime) {
    //   回転し、right の符号が反転しない。
    // ─────────────────────────────────────────────────────────────
    float cosAngle = std::clamp(oldUp.Dot(currentGravityUp_), -1.0f, 1.0f);
+
    if (cosAngle < 0.9999f) {
       Vector3 rotAxis = oldUp.Cross(currentGravityUp_);
       float axisLen = rotAxis.Length();
+
       if (axisLen > 1e-6f) {
          rotAxis = rotAxis * (1.0f / axisLen);
          float deltaAngle = std::acos(cosAngle);
          flatForward_ = RotateAroundAxis(flatForward_, rotAxis, deltaAngle);
          float fLen = flatForward_.Length();
-         if (fLen > 1e-6f)
+
+         if (fLen > 1e-6f) {
             flatForward_ = flatForward_ * (1.0f / fLen);
+         }
       }
    }
 
@@ -245,6 +265,7 @@ Vector3 GravityFollowCamera::RebuildBasis(const Vector3& up) {
    // right = up × forward。退化判定を行い、退化時は代替軸から両軸を復元する
    Vector3 right = up.Cross(flatForward_);
    float rLen = right.Length();
+
    if (rLen > 1e-6f) {
       right = right * (1.0f / rLen);
    } else {
@@ -255,6 +276,7 @@ Vector3 GravityFollowCamera::RebuildBasis(const Vector3& up) {
       flatForward_ = right.Cross(up);
       flatForward_ = flatForward_ * (1.0f / flatForward_.Length());
    }
+
    return right;
 }
 
@@ -267,8 +289,10 @@ void GravityFollowCamera::ComputeEyeAndUp(
    // ピッチ後の前方方向（pivot から eye への逆方向）
    Vector3 pitchedForward = RotateAroundAxis(flatForward_, right, pitch_);
    float pfLen = pitchedForward.Length();
-   if (pfLen > 1e-6f)
+
+   if (pfLen > 1e-6f) {
       pitchedForward = pitchedForward * (1.0f / pfLen);
+   }
 
    // eye = pivot の後方（−前方）に distance 分離れた位置
    outEye = pivotTarget_ + pitchedForward * (-std::max(0.5f, distance_ * driftDistanceScale_)) +
@@ -278,8 +302,10 @@ void GravityFollowCamera::ComputeEyeAndUp(
    // ピッチに合わせて Up もチルトさせることで、カメラが自然な傾きを保つ
    outCameraUp = RotateAroundAxis(up, right, pitch_);
    float cuLen = outCameraUp.Length();
-   if (cuLen > 1e-6f)
+
+   if (cuLen > 1e-6f) {
       outCameraUp = outCameraUp * (1.0f / cuLen);
+   }
 }
 
 /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
@@ -291,16 +317,20 @@ void GravityFollowCamera::ApplyLookAt(CameraState& state, const Vector3& eye, co
    const Vector3 lookTarget = pivotTarget_ + currentGravityUp_ * driftLookTargetHeightOffset_;
    Vector3 zaxis = lookTarget - eye;
    float zLen = zaxis.Length();
-   if (zLen > 1e-6f)
+
+   if (zLen > 1e-6f) {
       zaxis = zaxis * (1.0f / zLen);
+   }
 
    // x 軸 = cameraUp × zaxis（right 方向）
    Vector3 xaxis = cameraUp.Cross(zaxis);
    float xLen = xaxis.Length();
-   if (xLen > 1e-6f)
+
+   if (xLen > 1e-6f) {
       xaxis = xaxis * (1.0f / xLen);
-   else
+   } else {
       xaxis = cachedRight_; // 極端な退化時は前フレームの値を保持
+   }
 
    // キャッシュ更新（外部から参照される Right / Up を確定）
    cachedRight_ = xaxis;
@@ -319,6 +349,7 @@ void GravityFollowCamera::UpdateAccelerationEffect(CameraState& state, float del
    // 速度がどれだけ「加速帯域」に入っているかを [0,1] で算出
    float speedRange = speedBoostMax - speedBoostThreshold;
    float boostAlpha = 0.0f;
+
    if (speedRange > 1e-4f) {
       boostAlpha = std::clamp((playerSpeed_ - speedBoostThreshold) / speedRange, 0.0f, 1.0f);
    }
@@ -339,6 +370,7 @@ void GravityFollowCamera::UpdateAccelerationEffect(CameraState& state, float del
    //   ミニターボ特有の「瞬間的に広がって徐々に戻る」演出が得られる。
    // ─────────────────────────────────────────────────────────────
    float speedDelta = 0.0f;
+
    if (!isSpeedInitialized_) {
       previousPlayerSpeed_ = playerSpeed_;
       isSpeedInitialized_ = true;
@@ -385,6 +417,7 @@ void GravityFollowCamera::UpdateAccelerationEffect(CameraState& state, float del
    if (!std::isfinite(currentFov_)) {
       currentFov_ = baseFov;
    }
+
    float t = ExpSmoothingFactor(fovLerpSpeed, deltaTime);
    currentFov_ = currentFov_ + (targetFov - currentFov_) * t;
    currentFov_ = ClampCameraFov(currentFov_);
@@ -408,6 +441,7 @@ Vector3 GravityFollowCamera::SmoothEye(const Vector3& targetEye, float deltaTime
 
    // Springによる距離キックを後方方向へ加算
    float baseLen = targetOffset.Length();
+
    if (baseLen > 1e-6f) {
       Vector3 backDir = targetOffset * (1.0f / baseLen);
       targetOffset = targetOffset + backDir * springDistanceOffset_;
@@ -467,12 +501,15 @@ void GravityFollowCamera::ProcessInput(const Vector2& mouseDelta, int32_t wheelD
          // currentGravityUp_ を使うことで補間中も自然な旋回になる
          Vector3 up = currentGravityUp_;
          float upLen = up.Length();
+
          if (upLen > 1e-6f) {
             up = up * (1.0f / upLen);
             flatForward_ = RotateAroundAxis(flatForward_, up, mouseDelta.x * rotateSpeed);
             float len = flatForward_.Length();
-            if (len > 1e-6f)
+
+            if (len > 1e-6f) {
                flatForward_ = flatForward_ * (1.0f / len);
+            }
          }
       }
 
@@ -515,9 +552,7 @@ nlohmann::json GravityFollowCamera::Serialize() const {
 }
 
 void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    rotateSpeed = ReadFloat(data, "rotateSpeed", rotateSpeed);
    scrollSpeed = ReadFloat(data, "scrollSpeed", scrollSpeed);
@@ -541,15 +576,19 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
    if (data.contains("flatForward")) {
       flatForward_ = DeserializeVector3(data.at("flatForward"), flatForward_);
    }
+
    if (data.contains("gravityUp")) {
       gravityUp_ = DeserializeVector3(data.at("gravityUp"), gravityUp_);
    }
+
    if (data.contains("currentGravityUp")) {
       currentGravityUp_ = DeserializeVector3(data.at("currentGravityUp"), currentGravityUp_);
    }
+
    if (data.contains("pivotTarget")) {
       pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
    }
+
    playerSpeed_ = ReadFloat(data, "playerSpeed", playerSpeed_);
    autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
    currentFov_ = ReadFloat(data, "currentFov", currentFov_);
@@ -559,13 +598,17 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
    springDistanceVelocity_ = ReadFloat(data, "springDistanceVelocity", springDistanceVelocity_);
    previousPlayerSpeed_ = ReadFloat(data, "previousPlayerSpeed", previousPlayerSpeed_);
    isSpeedInitialized_ = ReadBool(data, "isSpeedInitialized", isSpeedInitialized_);
+
    if (data.contains("currentEyeOffset")) {
       currentEyeOffset_ = DeserializeVector3(data.at("currentEyeOffset"), currentEyeOffset_);
    }
+
    isEyeInitialized_ = ReadBool(data, "isEyeInitialized", isEyeInitialized_);
+
    if (data.contains("cachedRight")) {
       cachedRight_ = DeserializeVector3(data.at("cachedRight"), cachedRight_);
    }
+
    if (data.contains("cachedUp")) {
       cachedUp_ = DeserializeVector3(data.at("cachedUp"), cachedUp_);
    }
@@ -588,6 +631,7 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
       state.fov = currentFov_;
       owner->SetState(state);
    }
+
    Configure(DescribeSettings());
 }
 
@@ -595,15 +639,19 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
 void GravityFollowCamera::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    bool enabled = IsEnabled();
-   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled))
+
+   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled)) {
       SetEnabled(enabled);
+   }
 
    ImGui::DragFloat(Tr("距離", "Distance"), &distance_, 0.1f, 0.5f, 200.0f);
    float rotateSpeedDeg = rotateSpeed * MathConstants::kRadiansToDegrees;
+
    if (ImGui::DragFloat(
           Tr("回転速度 (deg/pixel)", "Rotate Speed (deg/pixel)"), &rotateSpeedDeg, 0.01f, 0.0f, 6.0f, "%.2f")) {
       rotateSpeed = rotateSpeedDeg * MathConstants::kDegreesToRadians;
    }
+
    ImGui::DragFloat(Tr("スクロール速度", "Scroll Speed"), &scrollSpeed, 0.0001f, 0.0f, 0.1f, "%.4f");
    ImGui::DragFloat(Tr("GravityUp補間", "GravityUp Lerp"), &gravityUpLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::DragFloat(Tr("FOV デフォルト", "FOV Default"), &fovDefault, 0.001f, 0.1f, 1.5f, "%.3f");
@@ -621,6 +669,7 @@ void GravityFollowCamera::DrawInspector() {
    ImGui::DragFloat(Tr("位置補間", "Position Lerp"), &positionLerpSpeed, 0.5f, 1.0f, 100.0f);
 
    float pitchDeg = pitch_ * MathConstants::kRadiansToDegrees;
+
    if (ImGui::SliderFloat(Tr("ピッチ (deg)", "Pitch (deg)"), &pitchDeg, 5.0f, 80.0f)) {
       pitch_ = pitchDeg * MathConstants::kDegreesToRadians;
    }

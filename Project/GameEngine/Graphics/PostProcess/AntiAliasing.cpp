@@ -24,8 +24,7 @@ void AntiAliasing::Initialize(GraphicsDevice* device, OffscreenRenderTarget* ren
 ///          頂点入力を持たない1回のフルスクリーンパスでFXAA系の平滑化を行う。
 /// @param inputSRV 直前のポストプロセス結果、またはシーンカラーのSRV
 void AntiAliasing::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature())
-      return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    UpdateConstantBuffer();
 
@@ -61,9 +60,7 @@ void AntiAliasing::CreateConstantBuffer() {
 /// @brief 現在のエッジ判定・平滑化パラメーターをHLSLのAntiAliasingParamsへ転送する。
 /// @details メンバーの並びをシェーダー側の4つのfloatと一致させ、1レジスター分を一括して更新する。
 void AntiAliasing::UpdateConstantBuffer() {
-   if (!constantBufferData_) {
-      return;
-   }
+   if (!constantBufferData_) return;
 
    constantBufferData_->contrastThreshold = contrastThreshold_;
    constantBufferData_->relativeThreshold = relativeThreshold_;

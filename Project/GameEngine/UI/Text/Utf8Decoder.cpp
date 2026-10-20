@@ -17,6 +17,7 @@ std::vector<char32_t> DecodeUtf8(std::string_view text) {
    result.reserve(text.size());
 
    size_t offset = 0;
+
    while (offset < text.size()) {
       const uint8_t first = static_cast<uint8_t>(text[offset]);
       char32_t codePoint = 0;
@@ -52,10 +53,12 @@ std::vector<char32_t> DecodeUtf8(std::string_view text) {
       // 継続バイトを6ビットずつ連結してUnicodeコードポイントを復元する。
       for (size_t index = 1; index < sequenceLength; ++index) {
          const uint8_t continuation = static_cast<uint8_t>(text[offset + index]);
+
          if (!IsContinuationByte(continuation)) {
             valid = false;
             break;
          }
+
          codePoint = (codePoint << 6u) | (continuation & 0x3Fu);
       }
 

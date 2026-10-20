@@ -20,6 +20,7 @@ size_t GrowCapacity(size_t required, size_t minimum) {
    while (capacity < required) {
       capacity *= 2u;
    }
+
    return capacity;
 }
 }
@@ -47,6 +48,7 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
    const Transform& transform, size_t visibleGlyphCount, uint32_t layoutWidth, uint32_t layoutHeight,
    float viewportWidth, float viewportHeight) {
    std::vector<TextDrawData> drawDataList;
+
    if (layout.glyphs.empty() || layoutWidth == 0 || layoutHeight == 0 || viewportWidth <= 0.0f ||
        viewportHeight <= 0.0f) {
       return drawDataList;
@@ -81,12 +83,14 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
    for (size_t placementIndex = 0; placementIndex < glyphLimit; ++placementIndex) {
       const GlyphPlacement& placement = layout.glyphs[placementIndex];
       const GlyphInfo& glyph = placement.glyph;
+
       if (glyph.bitmapSize.x <= 0.0f || glyph.bitmapSize.y <= 0.0f || glyph.atlasSrv.ptr == 0) {
          continue;
       }
 
       size_t geometryIndex = 0;
       const auto lookup = pageLookup.find(glyph.atlasSrv.ptr);
+
       if (lookup == pageLookup.end()) {
          geometryIndex = pageGeometry.size();
          pageLookup[glyph.atlasSrv.ptr] = geometryIndex;
@@ -130,6 +134,7 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
 
       // ページ別のローカルインデックスをフレーム共通バッファの頂点位置へ付け替える。
       vertices_.insert(vertices_.end(), geometry.vertices.begin(), geometry.vertices.end());
+
       for (uint32_t localIndex : geometry.indices) {
          indices_.push_back(globalBaseVertex + localIndex);
       }
@@ -150,6 +155,7 @@ bool TextRenderer::UploadBuffers() {
    if (vertices_.empty() || indices_.empty()) {
       return true;
    }
+
    if (!EnsureBufferCapacity(vertices_.size(), indices_.size())) {
       return false;
    }
@@ -157,18 +163,22 @@ bool TextRenderer::UploadBuffers() {
    // 全テキストを一つの頂点・インデックスバッファへ連続配置し、描画ごとは
    // startIndexとatlas SRVの変更だけで済ませる。
    void* mappedVertices = nullptr;
+
    if (FAILED(vertexBuffer_->Map(0, nullptr, &mappedVertices)) || !mappedVertices) {
       Logger::Error("[TextRenderer] Failed to map the vertex buffer.");
       return false;
    }
+
    std::memcpy(mappedVertices, vertices_.data(), vertices_.size() * sizeof(TextVertex));
    vertexBuffer_->Unmap(0, nullptr);
 
    void* mappedIndices = nullptr;
+
    if (FAILED(indexBuffer_->Map(0, nullptr, &mappedIndices)) || !mappedIndices) {
       Logger::Error("[TextRenderer] Failed to map the index buffer.");
       return false;
    }
+
    std::memcpy(mappedIndices, indices_.data(), indices_.size() * sizeof(uint32_t));
    indexBuffer_->Unmap(0, nullptr);
 
@@ -178,10 +188,12 @@ bool TextRenderer::UploadBuffers() {
    };
 
    ViewportData* viewportData = nullptr;
+
    if (FAILED(viewportBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&viewportData))) || !viewportData) {
       Logger::Error("[TextRenderer] Failed to map the viewport buffer.");
       return false;
    }
+
    viewportData->size = {viewportWidth_, viewportHeight_};
 
    // シェーダー側でピクセル座標をクリップ空間へ変換するため両方を渡す。
@@ -192,13 +204,12 @@ bool TextRenderer::UploadBuffers() {
 
 void TextRenderer::DrawUIText(
    const TextDrawData& textData, const std::function<void(const std::string&, BlendMode)>& setPipelineFunc) {
-   if (!device_ || !psoManager_ || !setPipelineFunc || textData.indexCount == 0 || textData.atlasSrv.ptr == 0) {
-      return;
-   }
+   if (!device_ || !psoManager_ || !setPipelineFunc || textData.indexCount == 0 || textData.atlasSrv.ptr == 0) return;
 
    setPipelineFunc("Text", BlendMode::kBlendModeNormal);
    const auto viewportSlot = psoManager_->ResolvePipelineRootParameter("Text", "viewport");
    const auto atlasSlot = psoManager_->ResolvePipelineRootParameter("Text", "fontatlas");
+
    if (!viewportSlot || !atlasSlot) {
       Logger::Error("[TextRenderer] Failed to resolve Text root slots.");
       return;
@@ -235,9 +246,11 @@ bool TextRenderer::EnsureBufferCapacity(size_t vertexCount, size_t indexCount) {
       // 容量超過時だけバッファを作り直し、通常フレームでは既存UPLOAD領域を再利用する。
       vertexCapacity_ = GrowCapacity(vertexCount, kInitialVertexCapacity);
       vertexBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), vertexCapacity_ * sizeof(TextVertex));
+
       if (!vertexBuffer_) {
          return false;
       }
+
       vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
       vertexBufferView_.SizeInBytes = static_cast<UINT>(vertexCapacity_ * sizeof(TextVertex));
       vertexBufferView_.StrideInBytes = sizeof(TextVertex);
@@ -246,19 +259,23 @@ bool TextRenderer::EnsureBufferCapacity(size_t vertexCount, size_t indexCount) {
    if (indexCount > indexCapacity_) {
       indexCapacity_ = GrowCapacity(indexCount, kInitialIndexCapacity);
       indexBuffer_ = ResourceHelper::CreateBufferResource(device_->GetDevice(), indexCapacity_ * sizeof(uint32_t));
+
       if (!indexBuffer_) {
          return false;
       }
+
       indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
       indexBufferView_.SizeInBytes = static_cast<UINT>(indexCapacity_ * sizeof(uint32_t));
       indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
    }
+
    return true;
 }
 
 Vector2 TextRenderer::CalculateAnchorPosition(UIAnchor anchor, uint32_t screenWidth, uint32_t screenHeight) {
    const float width = static_cast<float>(screenWidth);
    const float height = static_cast<float>(screenHeight);
+
    switch (anchor) {
       case UIAnchor::TopCenter:
          return {width * 0.5f, 0.0f};

@@ -13,6 +13,7 @@ bool SphericalGravityAttractor::IsInRange(const GameEngine::Vector3& objectPosit
    if (influenceRadius <= 0.0f) {
       return true;
    }
+
    GameEngine::Vector3 diff = objectPosition - GetCenter();
    return diff.LengthSquared() <= influenceRadius * influenceRadius;
 }
@@ -20,9 +21,11 @@ bool SphericalGravityAttractor::IsInRange(const GameEngine::Vector3& objectPosit
 /// @brief 中心から対象への方向を重力Upとして返す
 GameEngine::Vector3 SphericalGravityAttractor::GetUpVectorFor(const GameEngine::Vector3& objectPosition) const {
    GameEngine::Vector3 dir = objectPosition - GetCenter();
+
    if (dir.LengthSquared() < 1e-8f) {
       return GameEngine::Vector3{0.0f, 1.0f, 0.0f};
    }
+
    return dir.Normalize();
 }
 
@@ -31,9 +34,8 @@ void SphericalGravityAttractor::DrawInspector() {
 
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
 
    ImGui::Separator();
 
@@ -43,6 +45,7 @@ void SphericalGravityAttractor::DrawInspector() {
 
    // 影響半径を調整（0以下は無限範囲）
    ImGui::DragFloat(Tr("影響半径", "Influence Radius"), &influenceRadius, 0.5f, 0.0f, 500.0f);
+
    if (influenceRadius <= 0.0f) {
       ImGui::SameLine();
       ImGui::TextDisabled("%s", Tr("(無限)", "(Infinite)"));

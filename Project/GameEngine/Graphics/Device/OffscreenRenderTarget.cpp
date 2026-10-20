@@ -17,13 +17,9 @@ void OffscreenRenderTarget::Initialize(GraphicsDevice* device, uint32_t width, u
 }
 
 void OffscreenRenderTarget::Resize(uint32_t width, uint32_t height) {
-   if (!device_ || width == 0 || height == 0) {
-      return;
-   }
+   if (!device_ || width == 0 || height == 0) return;
 
-   if (width_ == width && height_ == height) {
-      return;
-   }
+   if (width_ == width && height_ == height) return;
 
    const UINT currentSrvIndex = currentRenderTarget_.srvIndex;
    const UINT previousSrvIndex = previousRenderTarget_.srvIndex;
@@ -87,9 +83,11 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
 
    // SRV作成
    const bool allocateSrvIndex = srvIndex == static_cast<UINT>(-1);
+
    if (allocateSrvIndex) {
       srvIndex = device_->GetNextSrvIndex();
    }
+
    info.srvIndex = srvIndex;
    info.srvHandleCPU = CD3DX12_CPU_DESCRIPTOR_HANDLE(
       device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), srvIndex, device_->GetDescriptorSizeCBVSRVUAV());
@@ -103,6 +101,7 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTarge
    srvDesc.Texture2D.MipLevels = 1;
 
    device_->GetDevice()->CreateShaderResourceView(info.renderTarget.Get(), &srvDesc, info.srvHandleCPU);
+
    if (allocateSrvIndex) {
       device_->IncrementSrvIndex();
    }
@@ -134,9 +133,11 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateSnapshotInf
    assert(SUCCEEDED(result));
 
    const bool allocateSrvIndex = srvIndex == static_cast<UINT>(-1);
+
    if (allocateSrvIndex) {
       srvIndex = device_->GetNextSrvIndex();
    }
+
    info.srvIndex = srvIndex;
    info.srvHandleCPU = CD3DX12_CPU_DESCRIPTOR_HANDLE(
       device_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), srvIndex, device_->GetDescriptorSizeCBVSRVUAV());
@@ -149,9 +150,11 @@ OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateSnapshotInf
    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
    srvDesc.Texture2D.MipLevels = 1;
    device_->GetDevice()->CreateShaderResourceView(info.renderTarget.Get(), &srvDesc, info.srvHandleCPU);
+
    if (allocateSrvIndex) {
       device_->IncrementSrvIndex();
    }
+
    info.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    return info;
 }
@@ -162,20 +165,20 @@ void OffscreenRenderTarget::CaptureSceneTextures() {
 }
 
 void OffscreenRenderTarget::CaptureSceneColor() {
-   if (!device_ || !currentRenderTarget_.renderTarget || !sceneColorSnapshot_.renderTarget) {
-      return;
-   }
+   if (!device_ || !currentRenderTarget_.renderTarget || !sceneColorSnapshot_.renderTarget) return;
 
    auto* commandList = device_->GetCommandList();
 
    // 呼び出し時点の描画状態を保存し、コピー後に同じ用途へ戻す。
    // 透明パス途中でも後続描画を継続できることが重要になる。
    const D3D12_RESOURCE_STATES previousColorState = currentRenderTarget_.state;
+
    if (previousColorState != D3D12_RESOURCE_STATE_COPY_SOURCE) {
       const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
          currentRenderTarget_.renderTarget.Get(), previousColorState, D3D12_RESOURCE_STATE_COPY_SOURCE);
       commandList->ResourceBarrier(1, &barrier);
    }
+
    {
       const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
          sceneColorSnapshot_.renderTarget.Get(), sceneColorSnapshot_.state, D3D12_RESOURCE_STATE_COPY_DEST);
@@ -191,6 +194,7 @@ void OffscreenRenderTarget::CaptureSceneColor() {
       commandList->ResourceBarrier(1, &barrier);
       sceneColorSnapshot_.state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    }
+
    if (previousColorState != D3D12_RESOURCE_STATE_COPY_SOURCE) {
       const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
          currentRenderTarget_.renderTarget.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, previousColorState);
@@ -199,9 +203,7 @@ void OffscreenRenderTarget::CaptureSceneColor() {
 }
 
 void OffscreenRenderTarget::CaptureSceneDepth() {
-   if (!device_ || !sceneDepthSnapshot_.renderTarget || !device_->GetDepthBufferResource()) {
-      return;
-   }
+   if (!device_ || !sceneDepthSnapshot_.renderTarget || !device_->GetDepthBufferResource()) return;
 
    auto* commandList = device_->GetCommandList();
 
@@ -303,6 +305,7 @@ void OffscreenRenderTarget::BindPreservingContents(bool useDSV) {
       Logger::Warning("[OffscreenRenderTarget] Cannot restore an uninitialized render target or depth buffer.");
       return;
    }
+
    auto commandList = device_->GetCommandList();
 
    // マスク用RTVなどへの一時切替から戻り、既存のシーン色へ追加描画する。

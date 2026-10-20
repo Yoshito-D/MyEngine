@@ -90,8 +90,11 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.playbackSpeed))
+
+      if (!std::isfinite(settings.playbackSpeed)) {
          settings.playbackSpeed = defaults.playbackSpeed;
+      }
+
       animationName = settings.animationName;
       clipName = settings.clipName;
       targetNodeName = settings.targetNodeName;
@@ -102,8 +105,11 @@ public:
       applyScale = settings.applyScale;
       useSkinning = settings.useSkinning;
       debugDrawBones = settings.debugDrawBones;
-      if (!std::isfinite(currentTime))
+
+      if (!std::isfinite(currentTime)) {
          currentTime = 0.0f;
+      }
+
       Seek(currentTime);
    }
 

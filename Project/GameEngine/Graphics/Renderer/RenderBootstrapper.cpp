@@ -26,9 +26,11 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
 
    if (!context.shaderManager->Initialize(context.device)) {
       Logger::Error("[RenderBootstrapper] Failed to initialize shaders from JSON registry.");
+
       if (!context.shaderManager->HasShader("Object3D", ShaderType::Vertex) ||
-          !context.shaderManager->HasShader("Object3D", ShaderType::Pixel))
+          !context.shaderManager->HasShader("Object3D", ShaderType::Pixel)) {
          return false;
+      }
    }
 
    context.psoManager->Initialize(context.device, context.shaderManager);
@@ -41,8 +43,11 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    if (!context.psoManager->LoadPipelineDefinitions(
           L"resources/engine/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
       Logger::Error("[RenderBootstrapper] Failed to load pipeline definitions from JSON registry.");
-      if (!context.psoManager->GetModelPipeline("Object3D"))
+
+      if (!context.psoManager->GetModelPipeline("Object3D")) {
          return false;
+      }
+
       Logger::Warning("[RenderBootstrapper] Continuing with available pipelines; some definitions failed.");
    } else {
       Logger::Info("Pipeline definitions loaded.");
@@ -66,6 +71,7 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
       Logger::Error("[RenderBootstrapper] Failed to load post-process effects from JSON registry.");
       return false;
    }
+
    Logger::Info("Successfully loaded post-process effects from JSON");
 
    context.shaderManager->LogRootParameterTablesDebug();

@@ -178,16 +178,22 @@ public:
    /// @return Genericオブジェクト一覧
    std::vector<Object*> GetGenericObjects() {
       std::vector<Object*> view;
-      for (auto& entry : genericObjects_)
+
+      for (auto& entry : genericObjects_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
    std::vector<const Object*> GetGenericObjects() const {
       std::vector<const Object*> view;
-      for (const auto& entry : genericObjects_)
+
+      for (const auto& entry : genericObjects_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
@@ -195,16 +201,22 @@ public:
    /// @return Model一覧
    std::vector<Model*> GetModels() {
       std::vector<Model*> view;
-      for (auto& entry : models_)
+
+      for (auto& entry : models_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
    std::vector<const Model*> GetModels() const {
       std::vector<const Model*> view;
-      for (const auto& entry : models_)
+
+      for (const auto& entry : models_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
@@ -212,16 +224,22 @@ public:
    /// @return Sprite一覧
    std::vector<Sprite*> GetSprites() {
       std::vector<Sprite*> view;
-      for (auto& entry : sprites_)
+
+      for (auto& entry : sprites_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
    std::vector<const Sprite*> GetSprites() const {
       std::vector<const Sprite*> view;
-      for (const auto& entry : sprites_)
+
+      for (const auto& entry : sprites_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
@@ -229,16 +247,22 @@ public:
    /// @return UIテキスト一覧
    std::vector<UIText*> GetUITexts() {
       std::vector<UIText*> view;
-      for (auto& entry : uiTexts_)
+
+      for (auto& entry : uiTexts_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
    std::vector<const UIText*> GetUITexts() const {
       std::vector<const UIText*> view;
-      for (const auto& entry : uiTexts_)
+
+      for (const auto& entry : uiTexts_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
@@ -246,16 +270,22 @@ public:
    /// @return スカイボックス一覧
    std::vector<Skybox*> GetSkyboxes() {
       std::vector<Skybox*> view;
-      for (auto& entry : skyboxes_)
+
+      for (auto& entry : skyboxes_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
    std::vector<const Skybox*> GetSkyboxes() const {
       std::vector<const Skybox*> view;
-      for (const auto& entry : skyboxes_)
+
+      for (const auto& entry : skyboxes_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
@@ -263,16 +293,22 @@ public:
    /// @return ParticleSystem一覧
    std::vector<ParticleSystem*> GetParticleSystems() {
       std::vector<ParticleSystem*> view;
-      for (auto& entry : particleSystems_)
+
+      for (auto& entry : particleSystems_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
    std::vector<const ParticleSystem*> GetParticleSystems() const {
       std::vector<const ParticleSystem*> view;
-      for (const auto& entry : particleSystems_)
+
+      for (const auto& entry : particleSystems_) {
          view.push_back(entry.get());
+      }
+
       return view;
    }
 

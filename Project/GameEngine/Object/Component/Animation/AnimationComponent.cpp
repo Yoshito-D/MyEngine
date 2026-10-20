@@ -47,50 +47,65 @@ void AnimationComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("animationName") && data.at("animationName").is_string()) {
       animationName = data.at("animationName").get<std::string>();
    }
+
    if (data.contains("clipName") && data.at("clipName").is_string()) {
       clipName = data.at("clipName").get<std::string>();
    }
+
    if (data.contains("targetNodeName") && data.at("targetNodeName").is_string()) {
       targetNodeName = data.at("targetNodeName").get<std::string>();
    }
+
    if (data.contains("currentTime") && data.at("currentTime").is_number()) {
       currentTime = data.at("currentTime").get<float>();
    }
+
    if (data.contains("playbackSpeed") && data.at("playbackSpeed").is_number()) {
       playbackSpeed = data.at("playbackSpeed").get<float>();
    }
+
    if (data.contains("loop") && data.at("loop").is_boolean()) {
       loop = data.at("loop").get<bool>();
    }
+
    if (data.contains("playing") && data.at("playing").is_boolean()) {
       playing = data.at("playing").get<bool>();
    }
+
    if (data.contains("applyTranslation") && data.at("applyTranslation").is_boolean()) {
       applyTranslation = data.at("applyTranslation").get<bool>();
    }
+
    if (data.contains("applyRotation") && data.at("applyRotation").is_boolean()) {
       applyRotation = data.at("applyRotation").get<bool>();
    }
+
    if (data.contains("applyScale") && data.at("applyScale").is_boolean()) {
       applyScale = data.at("applyScale").get<bool>();
    }
+
    if (data.contains("useSkinning") && data.at("useSkinning").is_boolean()) {
       useSkinning = data.at("useSkinning").get<bool>();
    }
+
    if (data.contains("debugDrawBones") && data.at("debugDrawBones").is_boolean()) {
       debugDrawBones = data.at("debugDrawBones").get<bool>();
    }
+
    Configure(DescribeSettings());
 }
 
 void AnimationComponent::Seek(float seconds) {
-   if (!std::isfinite(seconds))
-      return;
+   if (!std::isfinite(seconds)) return;
+
    currentTime = std::max(seconds, 0.0f);
+
    if (const auto* clip = PrepareSelectedClip()) {
       currentTime = std::min(currentTime, std::max(clip->duration, 0.0f));
-      if (HasOwner())
+
+      if (HasOwner()) {
          ApplyCurrentPose(*clip);
+      }
    }
 }
 
@@ -140,6 +155,7 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
    }
 
    const AnimationClip* selectedClip = nullptr;
+
    if (!clipName.empty()) {
       selectedClip = cachedAnimationAsset_->GetClip(clipName);
    }
@@ -148,6 +164,7 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
    if (!selectedClip) {
       selectedClip = cachedAnimationAsset_->GetDefaultClip();
    }
+
    if (!selectedClip) {
       return nullptr;
    }
@@ -169,6 +186,7 @@ const AnimationClip* AnimationComponent::PrepareSelectedClip() {
 
 void AnimationComponent::Update(float deltaTime) {
    const AnimationClip* selectedClip = PrepareSelectedClip();
+
    if (selectedClip) {
       if (playing && deltaTime > 0.0f) {
          animator_.Update(deltaTime);
@@ -183,9 +201,7 @@ void AnimationComponent::Update(float deltaTime) {
 }
 
 void AnimationComponent::DrawDebugBones() {
-   if (!debugDrawBones) {
-      return;
-   }
+   if (!debugDrawBones) return;
 
    if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
       EngineContext::DrawSkeleton(model);
@@ -199,9 +215,11 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
    if (auto* model = dynamic_cast<Model*>(&GetOwner())) {
       auto* modelAssetComp = model->GetComponent<MeshComponent>();
       const ModelAsset* modelAsset = modelAssetComp ? modelAssetComp->GetModelAsset() : nullptr;
+
       if (useSkinning && modelAsset && modelAsset->HasSkinningData()) {
          const Skeleton* bindSkeleton = modelAsset->GetBindSkeleton();
          SkinCluster* skinCluster = modelAssetComp->GetSkinCluster();
+
          if (bindSkeleton && skinCluster && !bindSkeleton->GetJoints().empty() && skinCluster->HasPalette()) {
             // 毎フレームBind Poseから評価し直し、前フレームの姿勢へ差分を重ねてドリフトさせない。
             Skeleton skeletonPose = *bindSkeleton;
@@ -216,46 +234,50 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
    // targetNodeNameが空の場合の既定Node選択もAnimatorへ委ね、Assetごとの命名差を吸収する。
    const NodeAnimation* nodeAnimation = animator_.ResolveNodeAnimation(targetNodeName);
 
-   if (!nodeAnimation) {
-      return;
-   }
+   if (!nodeAnimation) return;
 
    auto* transformComponent = GetOwner().GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
 
    // 許可したチャンネルを同じ作業姿勢へ評価し、全TRSを同時に反映する。
    auto pose = transformComponent->GetLocalPose();
+
    if (applyTranslation && !nodeAnimation->translation.keyframes.empty()) {
       pose.translation = CalculateValue(nodeAnimation->translation.keyframes, currentTime);
    }
+
    if (applyRotation && !nodeAnimation->rotation.keyframes.empty()) {
       pose.SetRotationQuaternion(CalculateValue(nodeAnimation->rotation.keyframes, currentTime));
    }
+
    if (applyScale && !nodeAnimation->scale.keyframes.empty()) {
       pose.scale = CalculateValue(nodeAnimation->scale.keyframes, currentTime);
    }
+
    transformComponent->ApplyLocalPose(pose);
 }
 
 #ifdef USE_IMGUI
 void AnimationComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
 
    auto Tr = [](const char* ja, const char* en) { return ImGuiHelper::Localize({ja, en}); };
 
    if (ImGui::Button(Tr("再生", "Play"))) {
       Play();
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button(Tr("停止", "Stop"))) {
       Stop();
    }
+
    ImGui::SameLine();
+
    if (ImGui::Button(Tr("ポーズ", "Pause"))) {
       Pause();
    }
@@ -270,6 +292,7 @@ void AnimationComponent::DrawInspector() {
 
    const auto animationNames = EngineContext::GetAnimationNames();
    const char* animationPreview = animationName.empty() ? Tr("<なし>", "<none>") : animationName.c_str();
+
    if (ImGui::BeginCombo(Tr("アニメーションアセット", "Animation Asset"), animationPreview)) {
       if (ImGui::Selectable(Tr("<なし>", "<none>"), animationName.empty())) {
          // Asset参照・Clip参照・再生時刻を一組で破棄し、旧Assetの生ポインターを残さない。
@@ -285,6 +308,7 @@ void AnimationComponent::DrawInspector() {
          const auto& name = animationNames[i];
          ImGui::PushID(5300 + static_cast<int>(i));
          const bool isSelected = animationName == name;
+
          if (ImGui::Selectable(name.c_str(), isSelected)) {
             // Asset変更時は同名Clipでも別実体なので、選択とAnimatorキャッシュを初期化する。
             animationName = name;
@@ -294,11 +318,14 @@ void AnimationComponent::DrawInspector() {
             cachedAnimationAsset_.reset();
             animator_.SetClip(nullptr);
          }
+
          if (isSelected) {
             ImGui::SetItemDefaultFocus();
          }
+
          ImGui::PopID();
       }
+
       ImGui::EndCombo();
    }
 
@@ -307,9 +334,11 @@ void AnimationComponent::DrawInspector() {
    }
 
    auto animationAsset = animationName.empty() ? nullptr : EngineContext::GetAnimation(animationName);
+
    if (animationAsset && animationAsset->HasAnyClip()) {
       const auto clipNames = animationAsset->GetClipNames();
       std::string previewClip = clipName.empty() ? animationAsset->GetDefaultClipName() : clipName;
+
       if (previewClip.empty() && !clipNames.empty()) {
          previewClip = clipNames.front();
       }
@@ -320,16 +349,20 @@ void AnimationComponent::DrawInspector() {
             const auto& name = clipNames[i];
             ImGui::PushID(5400 + static_cast<int>(i));
             const bool isSelected = (clipName == name);
+
             if (ImGui::Selectable(name.c_str(), isSelected)) {
                clipName = name;
                currentTime = 0.0f;
                animator_.SetClip(nullptr);
             }
+
             if (isSelected) {
                ImGui::SetItemDefaultFocus();
             }
+
             ImGui::PopID();
          }
+
          ImGui::EndCombo();
       }
    }
@@ -337,6 +370,7 @@ void AnimationComponent::DrawInspector() {
    char targetNodeBuffer[ImGuiHelper::kDefaultTextBufferSize]{};
    const size_t targetNameSize = std::min(targetNodeName.size(), sizeof(targetNodeBuffer) - 1);
    std::memcpy(targetNodeBuffer, targetNodeName.c_str(), targetNameSize);
+
    if (ImGui::InputText(
           ImGuiHelper::Localize({"対象ノード", "Target Node"}), targetNodeBuffer, sizeof(targetNodeBuffer))) {
       targetNodeName = targetNodeBuffer;
@@ -348,6 +382,7 @@ void AnimationComponent::DrawInspector() {
          ApplyCurrentPose(*selectedClip);
       }
    }
+
    ImGui::Spacing();
    Configure(DescribeSettings());
 }

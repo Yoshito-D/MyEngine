@@ -20,6 +20,7 @@ namespace App {
 void RaceCountdownTextComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // シーン再読み込み後に以前のRaceManagerを参照しないよう、保存済みIDから解決し直す。
    raceManager_ = nullptr;
+
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
@@ -35,18 +36,17 @@ void RaceCountdownTextComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorl
 }
 
 void RaceCountdownTextComponent::Update(float deltaTime) {
-   if (!raceManager_ || !HasOwner()) {
-      return;
-   }
+   if (!raceManager_ || !HasOwner()) return;
+
    auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
-   if (!text || !transform) {
-      return;
-   }
+
+   if (!text || !transform) return;
 
    // Countdown中は残り秒数、Running直後の表示期間はSTART、それ以外は空文字とし、
    // 一つのUITextをレース状態に応じて排他的に使う。
    std::string nextText;
+
    if (raceManager_->GetState() == RaceManagerComponent::State::Countdown) {
       // 切り上げにより残り時間が正の間は0を表示せず、GO表示との境界を明確にする。
       const int count = std::max(1, static_cast<int>(std::ceil(raceManager_->GetCountdownRemaining())));
@@ -56,6 +56,7 @@ void RaceCountdownTextComponent::Update(float deltaTime) {
    }
 
    text->SetText(nextText);
+
    if (nextText.empty()) {
       // 非表示期間にもシーンで設定された姿勢と透明度へ戻し、次回表示の開始状態を保証する。
       RestoreBaseVisualState(*text, *transform);
@@ -72,6 +73,7 @@ void RaceCountdownTextComponent::Update(float deltaTime) {
    } else {
       animationElapsed_ += std::max(deltaTime, 0.0f);
    }
+
    ApplyAnimation(*text, *transform);
 }
 
@@ -82,14 +84,13 @@ nlohmann::json RaceCountdownTextComponent::Serialize() const {
 }
 
 void RaceCountdownTextComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // 各項目を独立して検証し、欠落・型不一致の項目は既定値または現在値を維持する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }
+
    if (data.contains("startText") && data.at("startText").is_string()) {
       startText_ = data.at("startText").get<std::string>();
    }
@@ -98,9 +99,11 @@ void RaceCountdownTextComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("rotationDuration") && data.at("rotationDuration").is_number()) {
       rotationDuration_ = std::max(data.at("rotationDuration").get<float>(), 0.0001f);
    }
+
    if (data.contains("fadeDuration") && data.at("fadeDuration").is_number()) {
       fadeDuration_ = std::max(data.at("fadeDuration").get<float>(), 0.0001f);
    }
+
    if (data.contains("fadeEndScale") && data.at("fadeEndScale").is_number()) {
       // 終端倍率を1以上に制限し、カウントダウン演出が意図せず縮小へ反転するのを防ぐ。
       fadeEndScale_ = std::max(data.at("fadeEndScale").get<float>(), 1.0f);
@@ -110,14 +113,13 @@ void RaceCountdownTextComponent::Deserialize(const nlohmann::json& data) {
 void RaceCountdownTextComponent::CaptureBaseVisualState() {
    // 再取得に失敗した場合に以前のシーンの退避値を使わないよう、有効フラグを先に落とす。
    hasBaseVisualState_ = false;
-   if (!HasOwner()) {
-      return;
-   }
+
+   if (!HasOwner()) return;
+
    const auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
    const auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
-   if (!text || !transform) {
-      return;
-   }
+
+   if (!text || !transform) return;
 
    baseOpacity_ = text->GetStyle().color.w;
    baseScale_ = transform->GetLocalPose().scale;
@@ -135,26 +137,25 @@ void RaceCountdownTextComponent::RestoreBaseVisualState(
       // シーンロード順などで未取得なら、利用時点で一度だけ現在の見た目を退避する。
       CaptureBaseVisualState();
    }
-   if (!hasBaseVisualState_) {
-      return;
-   }
+
+   if (!hasBaseVisualState_) return;
 
    text.SetOpacity(baseOpacity_);
    auto pose = transform.GetLocalPose();
    pose.scale = baseScale_;
+
    if (baseUsesQuaternion_) {
       pose.SetRotationQuaternion(baseRotationQuaternion_);
    } else {
       pose.SetRotationEuler(baseEuler_);
    }
+
    transform.ApplyLocalPose(pose);
 }
 
 void RaceCountdownTextComponent::ApplyAnimation(
    GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform) {
-   if (!hasBaseVisualState_) {
-      return;
-   }
+   if (!hasBaseVisualState_) return;
 
    const float rotationProgress = std::clamp(animationElapsed_ / rotationDuration_, 0.0f, 1.0f);
 
@@ -176,9 +177,9 @@ void RaceCountdownTextComponent::ApplyAnimation(
 #ifdef USE_IMGUI
 void RaceCountdownTextComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::ImGuiHelper::DrawInputString("Start Text", startText_);
    ImGui::Text("Resolved: %s", raceManager_ ? "true" : "false");

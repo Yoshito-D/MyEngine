@@ -36,9 +36,8 @@ RWStructuredBuffer<uint> gOwnerMappings : register(u4);
 [numthreads(64, 1, 1)] void main(uint3 dispatchThreadId : SV_DispatchThreadID) {
    uint localIndex = dispatchThreadId.x;
    uint index = gInitializationStartIndex + localIndex;
-   if (index >= gParticleCapacity) {
-      return;
-   }
+
+   if (index >= gParticleCapacity) return;
 
    GpuParticleState state = (GpuParticleState)0;
    state.ownerParticleIndex = INVALID_PARTICLE_INDEX;
@@ -51,6 +50,7 @@ RWStructuredBuffer<uint> gOwnerMappings : register(u4);
    if (gInitializationStartIndex == 0u) {
       // stackの末尾から0,1,2...の順にpopでき、再現性のある初回割り当てになる。
       gFreeList[index] = gParticleCapacity - 1u - index;
+
       if (index == 0u) {
          gFreeCount.InterlockedExchange(0u, gParticleCapacity, previousValue);
       }
@@ -58,6 +58,7 @@ RWStructuredBuffer<uint> gOwnerMappings : register(u4);
       // 実行中の容量拡張では既存状態を保持し、新規slotだけをatomicに公開する。
       uint freeSlot;
       gFreeCount.InterlockedAdd(0u, 1u, freeSlot);
+
       if (freeSlot < gParticleCapacity) {
          gFreeList[freeSlot] = index;
       } else {

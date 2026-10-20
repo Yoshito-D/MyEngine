@@ -46,12 +46,14 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
    // D3D12バッファの生成時状態は実質COMMONとして扱われるため、実際の初期状態と追跡値を一致させる。
    const HRESULT result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
       D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource));
+
    if (FAILED(result)) {
       Logger::Error(
          std::format("[ParticleSystem] Failed to create default GPU buffer: size={}, flags={}, HRESULT=0x{:08X}", size,
             static_cast<uint32_t>(flags), static_cast<uint32_t>(result)));
       return nullptr;
    }
+
    return resource;
 }
 
@@ -61,12 +63,14 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateReadbackBuffer(ID3D12Device* device
    const CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(size);
    const HRESULT result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
       D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource));
+
    if (FAILED(result)) {
       Logger::Error(
          std::format("[ParticleSystem] Failed to create GPU state readback buffer: size={}, HRESULT=0x{:08X}", size,
             static_cast<uint32_t>(result)));
       return nullptr;
    }
+
    return resource;
 }
 
@@ -77,12 +81,15 @@ std::string BuildDefaultParticleSystemName(const std::vector<ParticleSystem*>& r
             return true;
          }
       }
+
       return false;
    };
 
    uint32_t index = 1;
+
    while (true) {
       const std::string candidate = "ParticleSystem_" + std::to_string(index++);
+
       if (!exists(candidate)) {
          return candidate;
       }
@@ -91,8 +98,8 @@ std::string BuildDefaultParticleSystemName(const std::vector<ParticleSystem*>& r
 }
 
 void ParticleSystem::Initialize(GraphicsDevice* device) {
-   if (sIsInitialized_)
-      return;
+   if (sIsInitialized_) return;
+
    sDevice_ = device;
    sIsInitialized_ = true;
 }
@@ -102,8 +109,8 @@ const std::vector<ParticleSystem*>& ParticleSystem::GetRegisteredParticleSystems
 }
 
 void ParticleSystem::CreateQuadMesh() {
-   if (isCreated_)
-      return;
+   if (isCreated_) return;
+
    if (quadMesh_ && sDevice_) {
       const float meshOriginY =
          particleMeshModule_ && particleMeshModule_->IsEnabled() ? particleMeshModule_->GetOriginY() : 0.5f;
@@ -113,11 +120,11 @@ void ParticleSystem::CreateQuadMesh() {
 }
 
 void ParticleSystem::RebuildParticleMesh() {
-   if (!quadMesh_ || !sDevice_)
-      return;
+   if (!quadMesh_ || !sDevice_) return;
+
    auto* meshModule = particleMeshModule_.get();
-   if (!meshModule)
-      return;
+
+   if (!meshModule) return;
 
    meshModule->RebuildMesh(*quadMesh_);
 }
@@ -170,33 +177,41 @@ ParticleSystem::~ParticleSystem() {
       instancingResource_->Unmap(0, nullptr);
       instancingData_ = nullptr;
    }
+
    if (sDevice_ && instancingSrvIndex_ != UINT_MAX) {
       sDevice_->ReleaseSrvIndex(instancingSrvIndex_);
    }
+
    if (gpuSpawnRequestResource_ && gpuSpawnRequestData_) {
       gpuSpawnRequestResource_->Unmap(0, nullptr);
       gpuSpawnRequestData_ = nullptr;
    }
+
    if (gpuAttributesResource_ && gpuAttributesData_) {
       gpuAttributesResource_->Unmap(0, nullptr);
       gpuAttributesData_ = nullptr;
    }
+
    if (gpuSettingsResource_ && gpuSettingsData_) {
       gpuSettingsResource_->Unmap(0, nullptr);
       gpuSettingsData_ = nullptr;
    }
+
    if (gpuRibbonSettingsResource_ && gpuRibbonSettingsData_) {
       gpuRibbonSettingsResource_->Unmap(0, nullptr);
       gpuRibbonSettingsData_ = nullptr;
    }
+
    if (gpuStateReadbackResource_ && gpuStateReadbackData_) {
       gpuStateReadbackResource_->Unmap(0, nullptr);
       gpuStateReadbackData_ = nullptr;
    }
+
    if (gpuRibbonInputResource_ && gpuRibbonInputData_) {
       gpuRibbonInputResource_->Unmap(0, nullptr);
       gpuRibbonInputData_ = nullptr;
    }
+
    if (sDevice_) {
       // Descriptor indexは共有Heapから借りているため、Resourceとは別に全て返却する。
       for (const UINT descriptorIndex : gpuDescriptorIndices_) {
@@ -204,6 +219,7 @@ ParticleSystem::~ParticleSystem() {
             sDevice_->ReleaseSrvIndex(descriptorIndex);
          }
       }
+
       for (const UINT descriptorIndex : gpuRibbonDescriptorIndices_) {
          if (descriptorIndex != UINT_MAX) {
             sDevice_->ReleaseSrvIndex(descriptorIndex);
@@ -213,11 +229,10 @@ ParticleSystem::~ParticleSystem() {
 }
 
 void ParticleSystem::UnregisterParticleSystem(ParticleSystem* particleSystem) {
-   if (!particleSystem) {
-      return;
-   }
+   if (!particleSystem) return;
 
    auto it = std::find(sRegisteredParticleSystems_.begin(), sRegisteredParticleSystems_.end(), particleSystem);
+
    if (it != sRegisteredParticleSystems_.end()) {
       sRegisteredParticleSystems_.erase(it);
    }
@@ -225,6 +240,7 @@ void ParticleSystem::UnregisterParticleSystem(ParticleSystem* particleSystem) {
 
 void ParticleSystem::Create() {
    CreateQuadMesh();
+
    if (particleMeshModule_ && particleMeshModule_->IsDirty()) {
       RebuildParticleMesh();
    }
@@ -235,22 +251,26 @@ void ParticleSystem::Create() {
    // パーティクル配列を確保
    // CPU側は設定上限だけ確保し、GPU Bufferは実行中の上限変更に備えてkMaxParticles固定で確保する。
    uint32_t maxParticles = mainModule_->GetMaxParticles();
+
    if (maxParticles > kMaxParticles) {
       maxParticles = kMaxParticles;
    }
+
    particles_.resize(maxParticles);
    renderParticleIndices_.clear();
    renderParticleIndices_.reserve(maxParticles);
    gpuStateIndexByCpuParticle_.assign(maxParticles, kInvalidGpuParticleIndex);
    gpuRenderParticleCount_ = 0;
    gpuPendingSpawnRequestCount_ = 0;
+
    for (auto& particle : particles_) {
       particle.isActive = false;
    }
 
    // フリーリスト初期化（全インデックスを積む）
-   while (!freeParticleIndices_.empty())
+   while (!freeParticleIndices_.empty()) {
       freeParticleIndices_.pop();
+   }
 
    // stackから小さいindex順に払い出されるよう逆順で積み、初期状態の対応を追いやすくする。
    for (int32_t i = static_cast<int32_t>(maxParticles) - 1; i >= 0; --i) {
@@ -321,41 +341,48 @@ void ParticleSystem::ProcessPendingSubEmitters() {
 
    // 死亡エフェクトが相互参照しても、再帰的な生成でメモリが無制限に増えないよう全体数を制限する。
    constexpr size_t kMaxRuntimeSubEmitters = 256;
+
    for (const PendingSubEmitterEvent& event : sPendingSubEmitterEvents_) {
       if (event.effectPath.empty() || sRuntimeSubEmitters_.size() >= kMaxRuntimeSubEmitters) {
          continue;
       }
+
       auto child = std::make_shared<ParticleSystem>();
       child->SetEditorInspectable(false);
+
       if (!child->LoadFromJson(event.effectPath)) {
          continue;
       }
+
       if (ShapeModule* shape = child->shapeModule_.get()) {
          Transform transform = shape->GetTransform();
          transform.translation += event.position;
          shape->SetTransform(transform);
       }
+
       child->Create();
-      if (!child->IsPlaying())
+
+      if (!child->IsPlaying()) {
          child->Play();
+      }
+
       sRuntimeSubEmitters_.push_back(std::move(child));
    }
+
    sPendingSubEmitterEvents_.clear();
 }
 
 void ParticleSystem::QueueSubEmitter(const std::string& effectPath, const Vector3& position) {
    if (!subEmitterSettings_.enabled || effectPath.empty() ||
-       subEmitterEventsThisFrame_ >= subEmitterSettings_.maxEventsPerFrame) {
+       subEmitterEventsThisFrame_ >= subEmitterSettings_.maxEventsPerFrame)
       return;
-   }
+
    sPendingSubEmitterEvents_.push_back({effectPath, position});
    ++subEmitterEventsThisFrame_;
 }
 
 void ParticleSystem::CreateGpuSimulationResources() {
-   if (!sDevice_) {
-      return;
-   }
+   if (!sDevice_) return;
 
    ID3D12Device* device = sDevice_->GetDevice();
 
@@ -373,6 +400,7 @@ void ParticleSystem::CreateGpuSimulationResources() {
       CreateDefaultBuffer(device, sizeof(uint32_t) * kMaxParticles, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuOutputResource_ =
       CreateDefaultBuffer(device, sizeof(ParticleForGPU) * kMaxParticles, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
    if (!gpuStateResource_ || !gpuMotionResource_ || !gpuAliveResource_ || !gpuFreeListResource_ ||
        !gpuFreeCountResource_ || !gpuOwnerMappingResource_ || !gpuOutputResource_) {
       Logger::Error("[ParticleSystem] GPU particle resources are unavailable; this particle system cannot run.");
@@ -380,6 +408,7 @@ void ParticleSystem::CreateGpuSimulationResources() {
       gpuOutputResource_.Reset();
       return;
    }
+
    if (gpuStateReadbackResource_ && gpuStateReadbackData_) {
       gpuStateReadbackResource_->Unmap(0, nullptr);
       gpuStateReadbackData_ = nullptr;
@@ -391,6 +420,7 @@ void ParticleSystem::CreateGpuSimulationResources() {
    gpuSettingsResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuSimulationSettings));
    gpuRibbonSettingsResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuSimulationSettings));
    gpuStateReadbackResource_ = CreateReadbackBuffer(device, sizeof(GpuParticleState) * kMaxParticles);
+
    if (!gpuSpawnRequestResource_ || !gpuAttributesResource_ || !gpuSettingsResource_ || !gpuRibbonSettingsResource_ ||
        !gpuStateReadbackResource_) {
       Logger::Error("[ParticleSystem] Failed to create required GPU simulation upload/readback resources.");
@@ -398,14 +428,17 @@ void ParticleSystem::CreateGpuSimulationResources() {
       gpuOutputResource_.Reset();
       return;
    }
+
    gpuSpawnRequestResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuSpawnRequestData_));
    gpuAttributesResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuAttributesData_));
    gpuSettingsResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuSettingsData_));
    gpuRibbonSettingsResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuRibbonSettingsData_));
+
    if (gpuStateReadbackResource_) {
       const D3D12_RANGE readRange{0, sizeof(GpuParticleState) * kMaxParticles};
       gpuStateReadbackResource_->Map(0, &readRange, reinterpret_cast<void**>(&gpuStateReadbackData_));
    }
+
    gpuStateReadbackAvailable_ = false;
 
    for (uint32_t i = 0; i < kMaxParticles; ++i) {
@@ -423,6 +456,7 @@ void ParticleSystem::CreateGpuSimulationResources() {
       sDevice_->IncrementSrvIndex();
       return index;
    };
+
    for (UINT& descriptorIndex : gpuDescriptorIndices_) {
       descriptorIndex = allocateDescriptor();
    }
@@ -507,19 +541,17 @@ void ParticleSystem::CreateGpuSimulationResources() {
 }
 
 void ParticleSystem::EnsureParticlePoolCapacity() {
-   if (!mainModule_) {
-      return;
-   }
+   if (!mainModule_) return;
 
    const uint32_t requestedCapacity = std::clamp(mainModule_->GetMaxParticles(), 1u, kMaxParticles);
    const uint32_t previousCapacity = static_cast<uint32_t>(particles_.size());
-   if (requestedCapacity <= previousCapacity) {
-      return;
-   }
+
+   if (requestedCapacity <= previousCapacity) return;
 
    particles_.resize(requestedCapacity);
    gpuStateIndexByCpuParticle_.resize(requestedCapacity, kInvalidGpuParticleIndex);
    renderParticleIndices_.reserve(requestedCapacity);
+
    for (uint32_t index = requestedCapacity; index-- > previousCapacity;) {
       particles_[index].isActive = false;
       freeParticleIndices_.push(index);
@@ -529,16 +561,16 @@ void ParticleSystem::EnsureParticlePoolCapacity() {
    if (!gpuNeedsInitialize_) {
       gpuInitializationStartIndex_ = previousCapacity;
    }
+
    gpuNeedsInitialize_ = true;
 }
 
 void ParticleSystem::EnsureGpuRibbonResources(uint32_t requiredSegmentCount) {
-   if (!sDevice_ || requiredSegmentCount == 0 || requiredSegmentCount <= gpuRibbonSegmentCapacity_) {
-      return;
-   }
+   if (!sDevice_ || requiredSegmentCount == 0 || requiredSegmentCount <= gpuRibbonSegmentCapacity_) return;
 
    // 履歴点が少し増えるたびにGPU Resourceを作り直さないよう、倍増方式か最小64区間で拡張する。
    const uint32_t newCapacity = std::max(requiredSegmentCount, std::max(gpuRibbonSegmentCapacity_ * 2u, 64u));
+
    if (gpuRibbonInputResource_ && gpuRibbonInputData_) {
       gpuRibbonInputResource_->Unmap(0, nullptr);
       gpuRibbonInputData_ = nullptr;
@@ -551,6 +583,7 @@ void ParticleSystem::EnsureGpuRibbonResources(uint32_t requiredSegmentCount) {
       device, sizeof(Mesh::VertexData) * newCapacity * 4u, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
    gpuRibbonIndexResource_ =
       CreateDefaultBuffer(device, sizeof(uint32_t) * newCapacity * 6u, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
    if (!gpuRibbonVertexResource_ || !gpuRibbonIndexResource_) {
       Logger::Error("[ParticleSystem] GPU ribbon resources are unavailable.");
       gpuRibbonSegmentCount_ = 0;
@@ -619,15 +652,16 @@ void ParticleSystem::DispatchGpuRibbon(const PSOManager* psoManager) {
 
    constexpr const char* kPipelineName = "ParticleRibbonCompute";
    const auto* pipeline = psoManager->GetComputePipeline(kPipelineName);
-   if (!pipeline || !pipeline->pipelineState)
-      return;
+
+   if (!pipeline || !pipeline->pipelineState) return;
+
    auto* rootSignature = psoManager->GetRootSignature(pipeline->rootSignatureName);
    const auto settingsSlot = psoManager->ResolvePipelineRootParameter(kPipelineName, "settings");
    const auto segmentsSlot = psoManager->ResolvePipelineRootParameter(kPipelineName, "segments");
    const auto verticesSlot = psoManager->ResolvePipelineRootParameter(kPipelineName, "vertices");
    const auto indicesSlot = psoManager->ResolvePipelineRootParameter(kPipelineName, "indices");
-   if (!rootSignature || !settingsSlot || !segmentsSlot || !verticesSlot || !indicesSlot)
-      return;
+
+   if (!rootSignature || !settingsSlot || !segmentsSlot || !verticesSlot || !indicesSlot) return;
 
    ID3D12GraphicsCommandList* commandList = sDevice_->GetCommandList();
 
@@ -638,6 +672,7 @@ void ParticleSystem::DispatchGpuRibbon(const PSOManager* psoManager) {
       commandList->ResourceBarrier(1, &barrier);
       gpuRibbonVertexState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
    }
+
    if (gpuRibbonIndexState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
       const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
          gpuRibbonIndexResource_.Get(), gpuRibbonIndexState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -673,13 +708,14 @@ void ParticleSystem::Update(float deltaTime) {
    // 早期returnするフレームで前回値を再Dispatchしないよう、GPU用時間を最初に無効化する。
    gpuDeltaTime_ = 0.0f;
    EnsureParticlePoolCapacity();
-   if (!isPlaying_ || isPaused_)
-      return;
+
+   if (!isPlaying_ || isPaused_) return;
 
    // システム単位の時間倍率を全ての寿命・放出・物理へ一貫して適用する。
    deltaTime *= mainModule_->GetTimeScale();
-   if (deltaTime <= 0.0f)
-      return;
+
+   if (deltaTime <= 0.0f) return;
+
    gpuDeltaTime_ = deltaTime;
    subEmitterEventsThisFrame_ = 0;
    SynchronizeTrailMode();
@@ -699,6 +735,7 @@ void ParticleSystem::Update(float deltaTime) {
    if (shouldEmit && emissionModule_->IsEnabled()) {
       // EmissionModule の rateOverTime を使用（1秒間に放出するパーティクル数）
       float emissionRate = emissionModule_->GetRateOverTime();
+
       if (emissionRate > 0.0f) {
          emissionAccumulator_ += emissionRate * deltaTime;
 
@@ -711,23 +748,29 @@ void ParticleSystem::Update(float deltaTime) {
 
       // 描画経路に依存せず、エミッターの移動距離に対して一定密度で放出する。
       const Vector3 emitterPosition = shapeModule_->GetTransform().translation;
+
       if (hasPreviousEmitterPosition_) {
          const float rateOverDistance = emissionModule_->GetRateOverDistance();
+
          if (rateOverDistance > 0.0f) {
             emissionDistanceAccumulator_ += (emitterPosition - previousEmitterPosition_).Length() * rateOverDistance;
+
             while (emissionDistanceAccumulator_ >= 1.0f) {
                EmitParticle();
                emissionDistanceAccumulator_ -= 1.0f;
             }
          }
       }
+
       previousEmitterPosition_ = emitterPosition;
       hasPreviousEmitterPosition_ = true;
 
       // 放出スケジュールの実行状態はEmissionModuleが進める。生成はプール容量内に制限する。
       const uint32_t burstCount = std::min(emissionModule_->AdvanceBursts(systemTime_), kMaxParticles);
-      for (uint32_t i = 0; i < burstCount; ++i)
+
+      for (uint32_t i = 0; i < burstCount; ++i) {
          EmitParticle();
+      }
    }
 
    // パーティクル更新
@@ -735,25 +778,33 @@ void ParticleSystem::Update(float deltaTime) {
    const bool needsCpuState = gpuStateReadbackAvailable_ && gpuStateReadbackData_ &&
                               (ResolveSortMode() != RendererModule::SortMode::None ||
                                  (trailModule_ && trailModule_->IsEnabled()) || subEmitterSettings_.enabled);
+
    if (needsCpuState) {
       // GPU slotはatomic FreeListで決まるため、owner indexから現在のslotを逆引きできる表を毎回組み直す。
       std::fill(gpuStateIndexByCpuParticle_.begin(), gpuStateIndexByCpuParticle_.end(), kInvalidGpuParticleIndex);
+
       for (uint32_t stateIndex = 0; stateIndex < static_cast<uint32_t>(particles_.size()); ++stateIndex) {
          const GpuParticleState& state = gpuStateReadbackData_[stateIndex];
+
          if (state.positionAndActive.w > 0.5f && state.ownerParticleIndex < gpuStateIndexByCpuParticle_.size()) {
             gpuStateIndexByCpuParticle_[state.ownerParticleIndex] = stateIndex;
          }
       }
    }
+
    for (uint32_t i = 0; i < static_cast<uint32_t>(particles_.size()); ++i) {
       Particle& particle = particles_[i];
-      if (!particle.isActive)
+
+      if (!particle.isActive) {
          continue;
+      }
 
       const Vector3 previousPosition = particle.transform.translation;
+
       if (needsCpuState) {
          // ソート・イベント・リボンだけが前フレームのGPU結果を参照し、運動の積分はGPUに限定する。
          const uint32_t stateIndex = gpuStateIndexByCpuParticle_[i];
+
          if (stateIndex != kInvalidGpuParticleIndex) {
             const GpuParticleState& state = gpuStateReadbackData_[stateIndex];
             particle.transform.translation =
@@ -780,22 +831,33 @@ void ParticleSystem::Update(float deltaTime) {
 
       // 視覚属性はGPUへ渡す初期値を更新する。位置・速度・重力・フォース等の積分はCSだけが行う。
       // 寿命進行度に依存する視覚値を先に確定し、後段のAttributes作成では完成値だけをGPUへ渡す。
-      if (colorOverLifetimeModule_->IsEnabled())
+      if (colorOverLifetimeModule_->IsEnabled()) {
          colorOverLifetimeModule_->UpdateColor(particle);
-      if (sizeOverLifetimeModule_->IsEnabled())
+      }
+
+      if (sizeOverLifetimeModule_->IsEnabled()) {
          sizeOverLifetimeModule_->UpdateSize(particle);
-      if (rotationOverLifetimeModule_->IsEnabled())
+      }
+
+      if (rotationOverLifetimeModule_->IsEnabled()) {
          rotationOverLifetimeModule_->UpdateRotation(particle, deltaTime);
-      if (uvTransformModule_ && uvTransformModule_->IsEnabled())
+      }
+
+      if (uvTransformModule_ && uvTransformModule_->IsEnabled()) {
          uvTransformModule_->UpdateUV(particle, deltaTime);
+      }
+
       if (textureSheetAnimationModule_ && textureSheetAnimationModule_->IsEnabled()) {
          textureSheetAnimationModule_->UpdateAnimation(particle, deltaTime);
       }
 
       if (needsCpuState && subEmitterSettings_.enabled && !subEmitterSettings_.spawnOnCollisionPath.empty()) {
          Vector3 planeNormal = subEmitterSettings_.collisionPlaneNormal;
-         if (planeNormal.LengthSquared() < 0.000001f)
+
+         if (planeNormal.LengthSquared() < 0.000001f) {
             planeNormal = Vector3(0.0f, 1.0f, 0.0f);
+         }
+
          planeNormal = planeNormal.Normalize();
          const float previousDistance = previousPosition.Dot(planeNormal) - subEmitterSettings_.collisionPlaneDistance;
          const float currentDistance =
@@ -805,6 +867,7 @@ void ParticleSystem::Update(float deltaTime) {
          if (previousDistance >= 0.0f && currentDistance < 0.0f) {
             particle.transform.translation -= planeNormal * currentDistance;
             const float normalVelocity = particle.velocity.Dot(planeNormal);
+
             if (normalVelocity < 0.0f) {
                particle.velocity -=
                   planeNormal *
@@ -849,6 +912,7 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
    Matrix4x4 result = MakeScaleMatrix(Vector3(particle.uvScale.x, particle.uvScale.y, 1.0f)) *
                       MakeRotateZMatrix(particle.uvRotation) *
                       MakeTranslateMatrix(Vector3(particle.uvOffset.x, particle.uvOffset.y, 0.0f));
+
    if (!textureSheetAnimationModule_ || !textureSheetAnimationModule_->IsEnabled()) {
       return result;
    }
@@ -857,6 +921,7 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
    const uint32_t tilesY = std::max(textureSheetAnimationModule_->GetTilesY(), 1u);
    uint32_t column = 0;
    uint32_t row = 0;
+
    if (textureSheetAnimationModule_->GetAnimationMode() == TextureSheetAnimationModule::AnimationMode::WholeSheet) {
       const uint32_t totalFrames = tilesX * tilesY;
       const uint32_t frame = totalFrames > 0 ? static_cast<uint32_t>(particle.sheetFrame) % totalFrames : 0;
@@ -871,10 +936,12 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
    float vSize = 1.0f / static_cast<float>(tilesY);
    float uOffset = static_cast<float>(column) * uSize;
    float vOffset = static_cast<float>(row) * vSize;
+
    if (texture_ && texture_->GetWidth() > 0 && texture_->GetHeight() > 0) {
       // セル境界の線形補間が隣フレームを拾わないよう、UV矩形を半Texelずつ内側へ縮める。
       const float halfTexelU = 0.5f / static_cast<float>(texture_->GetWidth());
       const float halfTexelV = 0.5f / static_cast<float>(texture_->GetHeight());
+
       if (uSize > halfTexelU * 2.0f && vSize > halfTexelV * 2.0f) {
          uOffset += halfTexelU;
          vOffset += halfTexelV;
@@ -882,6 +949,7 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
          vSize -= halfTexelV * 2.0f;
       }
    }
+
    return result *
           (MakeScaleMatrix(Vector3(uSize, vSize, 1.0f)) * MakeTranslateMatrix(Vector3(uOffset, vOffset, 0.0f)));
 }
@@ -894,6 +962,7 @@ void ParticleSystem::UpdateTrailPoints(Particle& particle) {
    }
 
    auto& points = particle.ribbonPoints;
+
    if (trailModule_->GetMode() == TrailModule::TrailMode::EmitterToParticle) {
       const Vector3 emitterPosition =
          shapeModule_ ? shapeModule_->GetTransform().translation : Vector3(0.0f, 0.0f, 0.0f);
@@ -913,6 +982,7 @@ void ParticleSystem::UpdateTrailPoints(Particle& particle) {
    if (points.empty() || distanceSquared >= minDistanceSquared) {
       points.push_back(particle.transform.translation);
       const size_t maxPoints = trailModule_->GetMaxPoints();
+
       if (points.size() > maxPoints) {
          points.erase(points.begin(), points.begin() + (points.size() - maxPoints));
       }
@@ -920,15 +990,15 @@ void ParticleSystem::UpdateTrailPoints(Particle& particle) {
 }
 
 void ParticleSystem::SynchronizeTrailMode() {
-   if (!trailModule_ || trailModule_->GetMode() == lastTrailMode_) {
-      return;
-   }
+   if (!trailModule_ || trailModule_->GetMode() == lastTrailMode_) return;
 
    // 異なる意味の点列を混在させず、停止中のプレビューでも新しい方式を即座に反映する。
    detachedRibbons_.clear();
    lastTrailMode_ = trailModule_->GetMode();
+
    for (Particle& particle : particles_) {
       particle.ribbonPoints.clear();
+
       if (particle.isActive) {
          UpdateTrailPoints(particle);
       }
@@ -942,6 +1012,7 @@ void ParticleSystem::DetachRibbon(Particle& particle) {
    }
 
    const float retractionDuration = trailModule_->GetRetractionDuration();
+
    if (retractionDuration <= 0.0f || particle.ribbonPoints.empty()) {
       particle.ribbonPoints.clear();
       return;
@@ -949,17 +1020,18 @@ void ParticleSystem::DetachRibbon(Particle& particle) {
 
    std::vector<Vector3> points = std::move(particle.ribbonPoints);
    particle.ribbonPoints.clear();
+
    if ((particle.transform.translation - points.back()).LengthSquared() > 0.00000001f) {
       points.push_back(particle.transform.translation);
    }
-   if (points.size() < 2) {
-      return;
-   }
+
+   if (points.size() < 2) return;
 
    // 長寿命・高レート設定でも死亡済み履歴が無制限に増えないよう、粒子上限と同数に抑える。
    if (detachedRibbons_.size() >= kMaxParticles) {
       detachedRibbons_.pop_front();
    }
+
    DetachedRibbon detachedRibbon;
    detachedRibbon.points = std::move(points);
    detachedRibbon.width = particle.ribbonWidth;
@@ -976,6 +1048,7 @@ void ParticleSystem::UpdateDetachedRibbons(float deltaTime) {
    for (DetachedRibbon& ribbon : detachedRibbons_) {
       ribbon.age += deltaTime;
    }
+
    detachedRibbons_.erase(std::remove_if(detachedRibbons_.begin(), detachedRibbons_.end(),
                              [](const DetachedRibbon& ribbon) {
                                 return ribbon.points.size() < 2 || ribbon.age >= ribbon.retractionDuration;
@@ -984,9 +1057,8 @@ void ParticleSystem::UpdateDetachedRibbons(float deltaTime) {
 }
 
 void ParticleSystem::BuildRibbonMesh(Camera* camera) {
-   if (!camera || !quadMesh_ || !gpuRibbonSettingsData_) {
-      return;
-   }
+   if (!camera || !quadMesh_ || !gpuRibbonSettingsData_) return;
+
    SynchronizeTrailMode();
 
    constexpr float kPointEpsilonSquared = 0.00000001f;
@@ -997,25 +1069,32 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
 
    // 必要区間数を先に集計し、Upload先を確保してから一度の走査で連続データを書き込む。
    uint32_t segmentCount = 0;
+
    for (const Particle& particle : particles_) {
-      if (!particle.isActive || particle.ribbonPoints.empty())
+      if (!particle.isActive || particle.ribbonPoints.empty()) {
          continue;
+      }
+
       const size_t pointCount = particle.ribbonPoints.size() + (hasVirtualHead(particle) ? 1u : 0u);
-      if (pointCount >= 2)
+
+      if (pointCount >= 2) {
          segmentCount += static_cast<uint32_t>(pointCount - 1);
+      }
    }
+
    for (const DetachedRibbon& ribbon : detachedRibbons_) {
-      if (ribbon.points.size() >= 2)
+      if (ribbon.points.size() >= 2) {
          segmentCount += static_cast<uint32_t>(ribbon.points.size() - 1);
+      }
    }
 
    gpuRibbonSegmentCount_ = segmentCount;
    gpuRibbonIndexCount_ = segmentCount * 6u;
-   if (segmentCount == 0) {
-      return;
-   }
+
+   if (segmentCount == 0) return;
 
    EnsureGpuRibbonResources(segmentCount);
+
    if (!gpuRibbonInputData_ || !gpuRibbonVertexResource_ || !gpuRibbonIndexResource_) {
       gpuRibbonSegmentCount_ = 0;
       gpuRibbonIndexCount_ = 0;
@@ -1028,13 +1107,14 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
 
    // 生存粒子と切り離し済みRibbonで頂点化規則を共有し、継ぎ目・UVの計算差をなくす。
    auto writeTrail = [&](size_t pointCount, auto&& getPoint, float width, float alpha) {
-      if (pointCount < 2)
-         return;
+      if (pointCount < 2) return;
 
       float totalDistance = 0.0f;
+
       for (size_t pointIndex = 0; pointIndex + 1 < pointCount; ++pointIndex) {
          totalDistance += (getPoint(pointIndex + 1) - getPoint(pointIndex)).Length();
       }
+
       const float safeTotalDistance = std::max(totalDistance, 0.0001f);
 
       auto normalizeDirection = [](const Vector3& direction, const Vector3& fallback) {
@@ -1045,9 +1125,11 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
          if (pointIndex == 0) {
             return normalizeDirection(getPoint(1) - getPoint(0), Vector3(0.0f, 1.0f, 0.0f));
          }
+
          if (pointIndex + 1 == pointCount) {
             return normalizeDirection(getPoint(pointIndex) - getPoint(pointIndex - 1), Vector3(0.0f, 1.0f, 0.0f));
          }
+
          const Vector3 previousDirection =
             normalizeDirection(getPoint(pointIndex) - getPoint(pointIndex - 1), Vector3(0.0f, 1.0f, 0.0f));
          const Vector3 nextDirection =
@@ -1058,6 +1140,7 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
       };
 
       float traveledDistance = 0.0f;
+
       for (size_t pointIndex = 0; pointIndex + 1 < pointCount; ++pointIndex) {
          const Vector3 start = getPoint(pointIndex);
          const Vector3 end = getPoint(pointIndex + 1);
@@ -1081,8 +1164,10 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
    };
 
    for (const Particle& particle : particles_) {
-      if (!particle.isActive || particle.ribbonPoints.empty())
+      if (!particle.isActive || particle.ribbonPoints.empty()) {
          continue;
+      }
+
       const bool includesVirtualHead = hasVirtualHead(particle);
       const size_t pointCount = particle.ribbonPoints.size() + (includesVirtualHead ? 1u : 0u);
       writeTrail(
@@ -1094,8 +1179,10 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
          },
          particle.ribbonWidth, 1.0f);
    }
+
    for (const DetachedRibbon& ribbon : detachedRibbons_) {
       float totalDistance = 0.0f;
+
       for (size_t pointIndex = 0; pointIndex + 1 < ribbon.points.size(); ++pointIndex) {
          totalDistance += (ribbon.points[pointIndex + 1] - ribbon.points[pointIndex]).Length();
       }
@@ -1105,13 +1192,18 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
       const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
       float distanceToRetract = totalDistance * easedProgress;
       size_t tailSegmentIndex = 0;
+
       while (tailSegmentIndex + 2 < ribbon.points.size()) {
          const float segmentLength = (ribbon.points[tailSegmentIndex + 1] - ribbon.points[tailSegmentIndex]).Length();
-         if (distanceToRetract <= segmentLength)
+
+         if (distanceToRetract <= segmentLength) {
             break;
+         }
+
          distanceToRetract -= segmentLength;
          ++tailSegmentIndex;
       }
+
       const Vector3& segmentStart = ribbon.points[tailSegmentIndex];
       const Vector3& segmentEnd = ribbon.points[tailSegmentIndex + 1];
       const float segmentLength = (segmentEnd - segmentStart).Length();
@@ -1153,8 +1245,7 @@ void ParticleSystem::BuildRibbonMesh(Camera* camera) {
 }
 
 void ParticleSystem::UpdateMatrix(Camera* camera) {
-   if (!camera || !rendererModule_)
-      return;
+   if (!camera || !rendererModule_) return;
 
    const Matrix4x4 viewProjectionMatrix = camera->GetViewProjectionMatrix();
    const Transform cameraTransform = camera->GetTransform();
@@ -1206,10 +1297,12 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    const bool attractorEnabled = forceOverLifetimeModule_->IsEnabled() &&
                                  forceOverLifetimeModule_->IsAttractorEnabled() &&
                                  forceOverLifetimeModule_->GetAttractorStrength() != 0.0f;
+
    if (attractorEnabled && useLocalSimulation) {
       // Attractor中心はCPUで一度Worldへ変換し、全粒子Threadで同じ変換を繰り返さない。
       attractorPosition = simulationTransform.translation + RotateVector(attractorPosition, simulationRotation);
    }
+
    gpuSettingsData_->attractorPosition = Vector4(attractorPosition.x, attractorPosition.y, attractorPosition.z, 0.0f);
    gpuSettingsData_->attractorParams =
       Vector4(forceOverLifetimeModule_->GetAttractorStrength(), forceOverLifetimeModule_->GetAttractorRadius(),
@@ -1221,22 +1314,28 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
 
    // ソート対象はアクティブ粒子のインデックスだけに絞り、行列生成と運動計算はCSに限定する。
    renderParticleIndices_.clear();
+
    for (uint32_t particleIndex = 0; particleIndex < static_cast<uint32_t>(particles_.size()); ++particleIndex) {
-      if (particles_[particleIndex].isActive)
+      if (particles_[particleIndex].isActive) {
          renderParticleIndices_.push_back(particleIndex);
+      }
    }
+
    const RendererModule::SortMode sortMode = ResolveSortMode();
+
    if (sortMode != RendererModule::SortMode::None) {
       const Vector3 cameraPosition = cameraTransform.translation;
       const bool backToFront = sortMode == RendererModule::SortMode::BackToFront;
       auto getSortPosition = [this](uint32_t particleIndex) {
          if (gpuStateReadbackAvailable_ && gpuStateReadbackData_) {
             const uint32_t stateIndex = gpuStateIndexByCpuParticle_[particleIndex];
+
             if (stateIndex != kInvalidGpuParticleIndex) {
                const Vector4& position = gpuStateReadbackData_[stateIndex].positionAndActive;
                return Vector3(position.x, position.y, position.z);
             }
          }
+
          return particles_[particleIndex].transform.translation;
       };
       std::sort(renderParticleIndices_.begin(), renderParticleIndices_.end(),
@@ -1245,8 +1344,10 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
             const float rhsDistance = (getSortPosition(rhsIndex) - cameraPosition).LengthSquared();
 
             // 等距離時はowner indexをTie-breakerにして、フレーム間の描画順ちらつきを防ぐ。
-            if (lhsDistance == rhsDistance)
+            if (lhsDistance == rhsDistance) {
                return lhsIndex < rhsIndex;
+            }
+
             return backToFront ? lhsDistance > rhsDistance : lhsDistance < rhsDistance;
          });
    }
@@ -1305,13 +1406,16 @@ void ParticleSystem::Stop() {
    emissionModule_->ResetBurstStates();
 
    // 全パーティクルを非アクティブ化し、フリーリストを再構築
-   while (!freeParticleIndices_.empty())
+   while (!freeParticleIndices_.empty()) {
       freeParticleIndices_.pop();
+   }
+
    for (uint32_t i = 0; i < static_cast<uint32_t>(particles_.size()); ++i) {
       particles_[i].isActive = false;
       particles_[i].ribbonPoints.clear();
       freeParticleIndices_.push(i);
    }
+
    detachedRibbons_.clear();
    activeParticleCount_ = 0;
    gpuRenderParticleCount_ = 0;
@@ -1332,17 +1436,20 @@ void ParticleSystem::Pause() {
 }
 
 void ParticleSystem::Resume() {
-   if (!isPlaying_)
-      return;
+   if (!isPlaying_) return;
+
    isPaused_ = false;
 }
 
 bool ParticleSystem::IsFinished() const {
-   if (!isCreated_)
+   if (!isCreated_) {
       return false;
+   }
+
    if (isPlaying_ && !isPaused_ && !mainModule_->IsLooping() && systemTime_ >= mainModule_->GetDuration()) {
       return activeParticleCount_ == 0 && detachedRibbons_.empty();
    }
+
    return false;
 }
 
@@ -1353,6 +1460,7 @@ void ParticleSystem::SetTexture(Texture* texture) {
 
    texture_ = texture;
    textureName_ = texture ? texture->GetName() : std::string();
+
    if (material_) {
       material_->SetTexture(texture);
    }
@@ -1360,18 +1468,22 @@ void ParticleSystem::SetTexture(Texture* texture) {
 
 void ParticleSystem::SetTextureName(const std::string& textureName) {
    textureName_ = textureName;
+
    if (textureName_.empty()) {
       SetTexture(nullptr);
       return;
    }
 
    Texture* texture = EngineContext::GetTexture(textureName_);
+
    if (texture) {
       if (texture->GetMetadata().IsCubemap()) {
          SetTexture(nullptr);
          return;
       }
+
       texture_ = texture;
+
       if (material_) {
          material_->SetTexture(texture);
       }
@@ -1386,10 +1498,13 @@ Texture* ParticleSystem::GetRibbonTexture() const {
    if (!trailModule_ || trailModule_->GetTextureName().empty()) {
       return texture_;
    }
+
    Texture* ribbonTexture = EngineContext::GetTexture(trailModule_->GetTextureName());
+
    if (!ribbonTexture || ribbonTexture->GetMetadata().IsCubemap()) {
       return texture_;
    }
+
    return ribbonTexture;
 }
 
@@ -1404,6 +1519,7 @@ uint32_t ParticleSystem::GetDrawParticleCount() const {
 RendererModule::SortMode ParticleSystem::ResolveSortMode() const {
    RendererModule::SortMode sortMode =
       rendererModule_ ? rendererModule_->GetSortMode() : RendererModule::SortMode::None;
+
    if (sortMode != RendererModule::SortMode::Auto) {
       return sortMode;
    }
@@ -1448,10 +1564,14 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
    const Quaternion simulationRotation = particle.simulationSpaceTransform.GetActiveQuaternion();
    Vector3 force(0.0f, 0.0f, 0.0f);
    float drag = 0.0f;
+
    if (forceOverLifetimeModule_->IsEnabled()) {
       force = particle.forceOverLifetimeForce;
-      if (useLocalSimulation)
+
+      if (useLocalSimulation) {
          force = RotateVector(force, simulationRotation);
+      }
+
       drag = particle.drag;
    }
 
@@ -1460,12 +1580,17 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
 
    Vector3 linearVelocity(0.0f, 0.0f, 0.0f);
    float speedModifier = 1.0f;
+
    if (velocityOverLifetimeModule_->IsEnabled()) {
       linearVelocity = particle.velocityOverLifetimeLinearVelocity;
-      if (useLocalSimulation)
+
+      if (useLocalSimulation) {
          linearVelocity = RotateVector(linearVelocity, simulationRotation);
+      }
+
       speedModifier = particle.velocityOverLifetimeSpeedModifier;
    }
+
    request.motion.velocityAndSpeedModifier =
       Vector4(linearVelocity.x, linearVelocity.y, linearVelocity.z, speedModifier);
    request.motion.limitAndGravity =
@@ -1476,16 +1601,17 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
 }
 
 void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
-   if (!psoManager || !sDevice_ || !CanUseGpuSimulation())
-      return;
+   if (!psoManager || !sDevice_ || !CanUseGpuSimulation()) return;
 
    ID3D12GraphicsCommandList* commandList = sDevice_->GetCommandList();
+
    if (gpuStateResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
       const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
          gpuStateResource_.Get(), gpuStateResourceState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
       commandList->ResourceBarrier(1, &barrier);
       gpuStateResourceState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
    }
+
    if (gpuOwnerMappingResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
       const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
          gpuOwnerMappingResource_.Get(), gpuOwnerMappingResourceState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -1496,11 +1622,17 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
    auto getPipeline = [psoManager](const char* pipelineName) { return psoManager->GetComputePipeline(pipelineName); };
    auto setPipeline = [&](const char* pipelineName) -> bool {
       const auto* pipeline = getPipeline(pipelineName);
-      if (!pipeline || !pipeline->pipelineState)
+
+      if (!pipeline || !pipeline->pipelineState) {
          return false;
+      }
+
       auto* rootSignature = psoManager->GetRootSignature(pipeline->rootSignatureName);
-      if (!rootSignature)
+
+      if (!rootSignature) {
          return false;
+      }
+
       commandList->SetComputeRootSignature(rootSignature->GetRootSignature());
       commandList->SetPipelineState(pipeline->pipelineState.Get());
       return true;
@@ -1518,8 +1650,9 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
       const auto freeList = resolve(kInitPipeline, "freelist");
       const auto freeCount = resolve(kInitPipeline, "freecount");
       const auto mappings = resolve(kInitPipeline, "ownermappings");
-      if (!settings || !states || !alive || !freeList || !freeCount || !mappings || !setPipeline(kInitPipeline))
-         return;
+
+      if (!settings || !states || !alive || !freeList || !freeCount || !mappings || !setPipeline(kInitPipeline)) return;
+
       commandList->SetComputeRootConstantBufferView(settings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
       commandList->SetComputeRootDescriptorTable(states.value(), gpuStateUavHandleGPU_);
       commandList->SetComputeRootDescriptorTable(alive.value(), gpuAliveUavHandleGPU_);
@@ -1550,9 +1683,11 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
       const auto freeList = resolve(kEmitterPipeline, "freelist");
       const auto freeCount = resolve(kEmitterPipeline, "freecount");
       const auto mappings = resolve(kEmitterPipeline, "ownermappings");
+
       if (!settings || !requests || !states || !motions || !alive || !freeList || !freeCount || !mappings ||
           !setPipeline(kEmitterPipeline))
          return;
+
       commandList->SetComputeRootConstantBufferView(settings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
       commandList->SetComputeRootDescriptorTable(requests.value(), gpuSpawnRequestSrvHandleGPU_);
       commandList->SetComputeRootDescriptorTable(states.value(), gpuStateUavHandleGPU_);
@@ -1584,9 +1719,11 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
    const auto updateFreeList = resolve(kUpdatePipeline, "freelist");
    const auto updateFreeCount = resolve(kUpdatePipeline, "freecount");
    const auto updateMappings = resolve(kUpdatePipeline, "ownermappings");
+
    if (!updateSettings || !updateStates || !updateMotions || !updateAlive || !updateFreeList || !updateFreeCount ||
        !updateMappings || !setPipeline(kUpdatePipeline))
       return;
+
    commandList->SetComputeRootConstantBufferView(updateSettings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
    commandList->SetComputeRootDescriptorTable(updateStates.value(), gpuStateUavHandleGPU_);
    commandList->SetComputeRootDescriptorTable(updateMotions.value(), gpuMotionUavHandleGPU_);
@@ -1615,6 +1752,7 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
       CD3DX12_RESOURCE_BARRIER::Transition(gpuStateResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, stateTarget);
    commandList->ResourceBarrier(1, &stateTransition);
    gpuStateResourceState_ = stateTarget;
+
    if (needsCpuState && gpuStateReadbackResource_ && gpuStateReadbackData_) {
       // ownerParticleIndexも同時にReadbackし、atomic FreeListで割り当てられた実番号をCPUソートへ対応付ける。
       commandList->CopyBufferRegion(
@@ -1625,18 +1763,19 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
       commandList->ResourceBarrier(1, &stateToSrv);
       gpuStateResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
    }
+
    const auto mappingToSrv = CD3DX12_RESOURCE_BARRIER::Transition(gpuOwnerMappingResource_.Get(),
       D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
    commandList->ResourceBarrier(1, &mappingToSrv);
    gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
    // Ribbonは更新後の位置履歴を使う一方、粒子本体が0でも残存できるためRender CSより先に独立実行する。
-   if (trailModule_ && trailModule_->IsEnabled())
+   if (trailModule_ && trailModule_->IsEnabled()) {
       DispatchGpuRibbon(psoManager);
+   }
 
    // 本体が0でも上のUpdate CSとリボン生成までは実行し、死亡後のトレイルだけを描画できるようにする。
-   if (gpuRenderParticleCount_ == 0)
-      return;
+   if (gpuRenderParticleCount_ == 0) return;
 
    if (gpuOutputResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
       const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -1652,9 +1791,11 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
    const auto renderStates = resolve(kRenderPipeline, "states");
    const auto renderMappings = resolve(kRenderPipeline, "ownermappings");
    const auto renderOutput = resolve(kRenderPipeline, "outputparticles");
+
    if (!renderSettings || !renderAttributes || !renderStates || !renderMappings || !renderOutput ||
        !setPipeline(kRenderPipeline))
       return;
+
    commandList->SetComputeRootConstantBufferView(renderSettings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
    commandList->SetComputeRootDescriptorTable(renderAttributes.value(), gpuAttributesSrvHandleGPU_);
    commandList->SetComputeRootDescriptorTable(renderStates.value(), gpuStateSrvHandleGPU_);
@@ -1676,17 +1817,23 @@ bool ParticleSystem::HasFiniteSettings(const nlohmann::json& settings) {
       const double value = settings.get<double>();
       return std::isfinite(value) && std::abs(value) <= std::numeric_limits<float>::max();
    }
+
    if (settings.is_structured()) {
-      for (const auto& value : settings)
-         if (!HasFiniteSettings(value))
+      for (const auto& value : settings) {
+         if (!HasFiniteSettings(value)) {
             return false;
+         }
+      }
    }
+
    return true;
 }
 
 bool ParticleSystem::ApplyEmitterPose(const Transform& pose) {
-   if (!pose.IsFinite())
+   if (!pose.IsFinite()) {
       return false;
+   }
+
    shapeModule_->SetTransform(pose);
    return true;
 }
@@ -1758,8 +1905,8 @@ bool ParticleSystem::ConfigureModule(const ParticleMeshModule& configuration) {
 void ParticleSystem::EmitParticle() {
    const uint32_t activeParticleLimit =
       std::min(std::clamp(mainModule_->GetMaxParticles(), 1u, kMaxParticles), static_cast<uint32_t>(particles_.size()));
-   if (activeParticleCount_ >= activeParticleLimit || freeParticleIndices_.empty())
-      return;
+
+   if (activeParticleCount_ >= activeParticleLimit || freeParticleIndices_.empty()) return;
 
    uint32_t index = freeParticleIndices_.top();
    freeParticleIndices_.pop();
@@ -1784,6 +1931,7 @@ void ParticleSystem::EmitParticle() {
        rendererModule_->GetBillboardType() == RendererModule::BillboardType::None) {
       initialRotation = (emitterTransform.GetActiveQuaternion() * initialRotation).Normalize();
    }
+
    particle.transform.SetRotationQuaternion(initialRotation);
 
    // Color - RandomColorから取得してVector4に変換
@@ -1802,28 +1950,35 @@ void ParticleSystem::EmitParticle() {
    if (velocityOverLifetimeModule_) {
       velocityOverLifetimeModule_->InitializeParticle(particle);
    }
+
    if (forceOverLifetimeModule_) {
       forceOverLifetimeModule_->InitializeParticle(particle);
    }
+
    if (limitVelocityModule_) {
       limitVelocityModule_->InitializeParticle(particle);
    }
+
    if (noiseModule_) {
       noiseModule_->InitializeParticle(particle);
    }
+
    if (sizeOverLifetimeModule_) {
       sizeOverLifetimeModule_->InitializeParticle(particle);
    }
+
    particle.gravityModifier = mainModule_->GetGravityModifierRange().GetValue();
 
    const bool useVectorStartVelocity = mainModule_->GetStartSpeedMode() == MainModule::StartSpeedMode::Vector3;
    const bool useLocalSimulation = mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local;
    auto resolveStartVelocity = [&]() {
       Vector3 velocity = mainModule_->GetStartVelocity().GetValue();
+
       if (useLocalSimulation) {
          // Vector3モードの設定値はShapeローカル軸として扱い、GPUへ渡す前にWorld方向へ回転する。
          velocity = RotateVector(velocity, emitterTransform.GetActiveQuaternion());
       }
+
       return velocity;
    };
 
@@ -1834,6 +1989,7 @@ void ParticleSystem::EmitParticle() {
       particle.transform.translation = emissionPos;
 
       const float dirLen = direction.Length();
+
       if (dirLen > 0.0001f) {
          direction = direction / dirLen;
       }
@@ -1847,6 +2003,7 @@ void ParticleSystem::EmitParticle() {
 
       if (shapeModule_->GetShapeType() == ShapeModule::ShapeType::Circle) {
          float outwardVelocity = shapeModule_->GetCircleOutwardVelocity();
+
          if (outwardVelocity != 0.0f) {
             particle.velocity += shapeModule_->GetCircleOutwardDirection(emissionPos) * outwardVelocity;
          }
@@ -1887,8 +2044,11 @@ bool ParticleSystem::SaveToJson(const std::string& filePath) const {
    try {
       nlohmann::json j = ToJson();
       std::ofstream ofs(std::filesystem::path(std::u8string(filePath.begin(), filePath.end())));
-      if (!ofs.is_open())
+
+      if (!ofs.is_open()) {
          return false;
+      }
+
       ofs << j.dump(kJsonIndentSize);
       return static_cast<bool>(ofs);
    } catch (...) {
@@ -1899,8 +2059,11 @@ bool ParticleSystem::SaveToJson(const std::string& filePath) const {
 bool ParticleSystem::LoadFromJson(const std::string& filePath) {
    try {
       std::ifstream ifs(std::filesystem::path(std::u8string(filePath.begin(), filePath.end())));
-      if (!ifs.is_open())
+
+      if (!ifs.is_open()) {
          return false;
+      }
+
       nlohmann::json j;
       ifs >> j;
       FromJson(j);
@@ -2010,6 +2173,7 @@ nlohmann::json ParticleSystem::ToJson() const {
 bool ParticleSystem::ConfigureSubEmitters(const SubEmitterSettings& settings) {
    const float normalLength =
       std::hypot(settings.collisionPlaneNormal.x, settings.collisionPlaneNormal.y, settings.collisionPlaneNormal.z);
+
    if (!std::isfinite(settings.updateInterval) || settings.updateInterval < 0.001f || settings.maxEventsPerFrame < 1 ||
        settings.maxEventsPerFrame > 1024 || !std::isfinite(normalLength) || normalLength <= 1.0e-4f ||
        !std::isfinite(settings.collisionPlaneDistance) || !std::isfinite(settings.collisionRestitution) ||
@@ -2029,6 +2193,7 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
       Logger::Warning("[ParticleSystem] Invalid numeric settings; keeping the current configuration.");
       return;
    }
+
    if (j.contains("textureName")) {
       SetTextureName(j["textureName"].get<std::string>());
    }
@@ -2056,26 +2221,44 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
             !data.contains("maxEventsPerFrame") ||
             (data.at("maxEventsPerFrame").is_number_integer() && data.at("maxEventsPerFrame").get<double>() >= 1.0 &&
                data.at("maxEventsPerFrame").get<double>() <= 1024.0);
-         if (data.contains("enabled"))
+
+         if (data.contains("enabled")) {
             settings.enabled = data.at("enabled").get<bool>();
-         if (data.contains("spawnOnDeathPath"))
+         }
+
+         if (data.contains("spawnOnDeathPath")) {
             settings.spawnOnDeathPath = data.at("spawnOnDeathPath").get<std::string>();
-         if (data.contains("spawnOnUpdatePath"))
+         }
+
+         if (data.contains("spawnOnUpdatePath")) {
             settings.spawnOnUpdatePath = data.at("spawnOnUpdatePath").get<std::string>();
-         if (data.contains("spawnOnCollisionPath"))
+         }
+
+         if (data.contains("spawnOnCollisionPath")) {
             settings.spawnOnCollisionPath = data.at("spawnOnCollisionPath").get<std::string>();
-         if (data.contains("updateInterval"))
+         }
+
+         if (data.contains("updateInterval")) {
             settings.updateInterval = data.at("updateInterval").get<float>();
-         if (validEventLimit && data.contains("maxEventsPerFrame"))
+         }
+
+         if (validEventLimit && data.contains("maxEventsPerFrame")) {
             settings.maxEventsPerFrame = data.at("maxEventsPerFrame").get<uint32_t>();
+         }
+
          if (data.contains("collisionPlaneNormal")) {
             const auto normal = data.at("collisionPlaneNormal").get<std::array<float, 3>>();
             settings.collisionPlaneNormal = {normal[0], normal[1], normal[2]};
          }
-         if (data.contains("collisionPlaneDistance"))
+
+         if (data.contains("collisionPlaneDistance")) {
             settings.collisionPlaneDistance = data.at("collisionPlaneDistance").get<float>();
-         if (data.contains("collisionRestitution"))
+         }
+
+         if (data.contains("collisionRestitution")) {
             settings.collisionRestitution = data.at("collisionRestitution").get<float>();
+         }
+
          if (!data.is_object() || !validEventLimit || !ConfigureSubEmitters(settings)) {
             Logger::Warning("[ParticleSystem] Invalid sub-emitter settings; keeping the current settings.");
          }
@@ -2086,134 +2269,182 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
 
    if (j.contains("materialSettings") && j["materialSettings"].is_object() && material_) {
       const auto& settings = j["materialSettings"];
-      if (settings.contains("brightness"))
+
+      if (settings.contains("brightness")) {
          material_->SetBrightness(settings["brightness"]);
-      if (settings.contains("alphaCutoff"))
+      }
+
+      if (settings.contains("alphaCutoff")) {
          material_->SetAlphaCutoff(settings["alphaCutoff"]);
-      if (settings.contains("toonSteps"))
+      }
+
+      if (settings.contains("toonSteps")) {
          material_->SetToonSteps(settings["toonSteps"].get<uint32_t>());
-      if (settings.contains("softParticles"))
+      }
+
+      if (settings.contains("softParticles")) {
          material_->SetSoftParticlesEnabled(settings["softParticles"]);
-      if (settings.contains("softParticleDistance"))
+      }
+
+      if (settings.contains("softParticleDistance")) {
          material_->SetSoftParticleDistance(settings["softParticleDistance"]);
-      if (settings.contains("distortionStrength"))
+      }
+
+      if (settings.contains("distortionStrength")) {
          material_->SetDistortionStrength(settings["distortionStrength"]);
-      if (settings.contains("distortionBlend"))
+      }
+
+      if (settings.contains("distortionBlend")) {
          material_->SetDistortionBlend(settings["distortionBlend"]);
-      if (settings.contains("distortionUseTextureFlow"))
+      }
+
+      if (settings.contains("distortionUseTextureFlow")) {
          material_->SetDistortionUseTextureFlow(settings["distortionUseTextureFlow"]);
+      }
    }
 
    // 各モジュールのFromJson()を呼び出し
    if (j.contains("mainModule") && mainModule_) {
       auto configuration = *mainModule_;
       configuration.FromJson(j["mainModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("emissionModule") && emissionModule_) {
       auto configuration = *emissionModule_;
       configuration.FromJson(j["emissionModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("shapeModule") && shapeModule_) {
       auto configuration = *shapeModule_;
       configuration.FromJson(j["shapeModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("velocityOverLifetimeModule") && velocityOverLifetimeModule_) {
       auto configuration = *velocityOverLifetimeModule_;
       configuration.FromJson(j["velocityOverLifetimeModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("limitVelocityModule") && limitVelocityModule_) {
       auto configuration = *limitVelocityModule_;
       configuration.FromJson(j["limitVelocityModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("forceOverLifetimeModule") && forceOverLifetimeModule_) {
       auto configuration = *forceOverLifetimeModule_;
       configuration.FromJson(j["forceOverLifetimeModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("colorOverLifetimeModule") && colorOverLifetimeModule_) {
       auto configuration = *colorOverLifetimeModule_;
       configuration.FromJson(j["colorOverLifetimeModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("sizeOverLifetimeModule") && sizeOverLifetimeModule_) {
       auto configuration = *sizeOverLifetimeModule_;
       configuration.FromJson(j["sizeOverLifetimeModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("rotationOverLifetimeModule") && rotationOverLifetimeModule_) {
       auto configuration = *rotationOverLifetimeModule_;
       configuration.FromJson(j["rotationOverLifetimeModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("noiseModule") && noiseModule_) {
       auto configuration = *noiseModule_;
       configuration.FromJson(j["noiseModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("uvTransformModule") && uvTransformModule_) {
       auto configuration = *uvTransformModule_;
       configuration.FromJson(j["uvTransformModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("textureSheetAnimationModule") && textureSheetAnimationModule_) {
       auto configuration = *textureSheetAnimationModule_;
       configuration.FromJson(j["textureSheetAnimationModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("rendererModule") && rendererModule_) {
       auto configuration = *rendererModule_;
       configuration.FromJson(j["rendererModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("trailModule") && trailModule_) {
       auto configuration = *trailModule_;
       configuration.FromJson(j["trailModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    } else if (j.contains("rendererModule") && j["rendererModule"].contains("ribbonEnabled") && trailModule_) {
       // 旧設定ではトレイル項目がRendererModule内に保存されていた。
       auto configuration = *trailModule_;
       configuration.FromJson(j["rendererModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 
    if (j.contains("particleMeshModule") && particleMeshModule_) {
       auto configuration = *particleMeshModule_;
       configuration.FromJson(j["particleMeshModule"]);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    } else if (j.contains("rendererModule") && particleMeshModule_) {
       // 旧RendererModuleのenabledはメッシュ有効状態ではないため引き継がない。
       nlohmann::json legacyMeshSettings = j["rendererModule"];
@@ -2221,8 +2452,10 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
       particleMeshModule_->SetEnabled(true);
       auto configuration = *particleMeshModule_;
       configuration.FromJson(legacyMeshSettings);
-      if (!ConfigureModule(configuration))
+
+      if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
+      }
    }
 }
 }

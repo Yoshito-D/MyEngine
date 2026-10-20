@@ -41,19 +41,18 @@ void TypewriterComponent::OnEnable() {
 
 void TypewriterComponent::Update(float deltaTime) {
    auto* textComponent = GetOwner().GetComponent<UITextComponent>();
-   if (!textComponent) {
-      return;
-   }
+
+   if (!textComponent) return;
 
    if (restartOnTextChange && observedTextRevision_ != textComponent->GetTextRevision()) {
       // 同じUITextを会話更新などで再利用した場合、新しい文章を先頭から表示し直す。
       Restart();
    }
-   if (!playing_) {
-      return;
-   }
+
+   if (!playing_) return;
 
    const size_t glyphCount = CountGlyphs();
+
    if (glyphCount == 0) {
       textComponent->SetVisibleGlyphCount(0);
       playing_ = false;
@@ -61,6 +60,7 @@ void TypewriterComponent::Update(float deltaTime) {
    }
 
    elapsed_ += std::max(deltaTime, 0.0f);
+
    if (elapsed_ <= delay) {
       textComponent->SetVisibleGlyphCount(0);
       return;
@@ -69,6 +69,7 @@ void TypewriterComponent::Update(float deltaTime) {
    const float safeRate = std::max(glyphsPerSecond, 0.001f);
    const float revealTime = static_cast<float>(glyphCount) / safeRate;
    float animationTime = elapsed_ - std::max(delay, 0.0f);
+
    if (loop && animationTime >= revealTime) {
       // 経過時間そのものを巻き戻さず表示位相だけを循環し、長時間実行時の更新を単純に保つ。
       animationTime = std::fmod(animationTime, revealTime);
@@ -76,6 +77,7 @@ void TypewriterComponent::Update(float deltaTime) {
 
    const size_t visibleCount = std::min(static_cast<size_t>(std::floor(animationTime * safeRate)), glyphCount);
    textComponent->SetVisibleGlyphCount(visibleCount);
+
    if (!loop && visibleCount >= glyphCount) {
       playing_ = false;
    }
@@ -92,6 +94,7 @@ void TypewriterComponent::Pause() {
 void TypewriterComponent::Restart() {
    elapsed_ = 0.0f;
    playing_ = true;
+
    if (auto* textComponent = GetOwner().GetComponent<UITextComponent>()) {
       observedTextRevision_ = textComponent->GetTextRevision();
       textComponent->SetVisibleGlyphCount(0);
@@ -100,6 +103,7 @@ void TypewriterComponent::Restart() {
 
 void TypewriterComponent::Complete() {
    playing_ = false;
+
    if (auto* textComponent = GetOwner().GetComponent<UITextComponent>()) {
       observedTextRevision_ = textComponent->GetTextRevision();
       textComponent->SetVisibleGlyphCount(UITextComponent::kShowAllGlyphs);
@@ -124,28 +128,42 @@ void TypewriterComponent::Deserialize(const nlohmann::json& data) {
    playOnEnable = data.value("playOnEnable", playOnEnable);
    loop = data.value("loop", loop);
    restartOnTextChange = data.value("restartOnTextChange", restartOnTextChange);
+
    if (playOnEnable) {
       Restart();
    }
+
    Configure(DescribeSettings());
 }
 
 #ifdef USE_IMGUI
 void TypewriterComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str()))
-      return;
-   if (ImGui::Button(ImGuiHelper::Localize({"再生", "Play"})))
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
+   if (ImGui::Button(ImGuiHelper::Localize({"再生", "Play"}))) {
       Play();
+   }
+
    ImGui::SameLine();
-   if (ImGui::Button(ImGuiHelper::Localize({"一時停止", "Pause"})))
+
+   if (ImGui::Button(ImGuiHelper::Localize({"一時停止", "Pause"}))) {
       Pause();
+   }
+
    ImGui::SameLine();
-   if (ImGui::Button(ImGuiHelper::Localize({"リスタート", "Restart"})))
+
+   if (ImGui::Button(ImGuiHelper::Localize({"リスタート", "Restart"}))) {
       Restart();
+   }
+
    ImGui::SameLine();
-   if (ImGui::Button(ImGuiHelper::Localize({"即時表示", "Complete"})))
+
+   if (ImGui::Button(ImGuiHelper::Localize({"即時表示", "Complete"}))) {
       Complete();
+   }
+
    ImGui::DragFloat(ImGuiHelper::Localize({"1秒あたりの文字数", "Glyphs Per Second"}), &glyphsPerSecond, 0.1f, 0.001f);
    ImGui::DragFloat(ImGuiHelper::Localize({"遅延", "Delay"}), &delay, 0.01f, 0.0f);
    ImGui::Checkbox(ImGuiHelper::Localize({"有効化時に再生", "Play On Enable"}), &playOnEnable);

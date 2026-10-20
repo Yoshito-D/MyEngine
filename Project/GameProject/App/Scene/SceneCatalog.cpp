@@ -9,6 +9,7 @@ bool SceneCatalog::Load(const std::filesystem::path& catalogPath) {
    initialSceneName_.clear();
 
    std::ifstream file(catalogPath);
+
    if (!file.is_open()) {
       Logger::Error("Scene catalog could not be opened: " + catalogPath.generic_string());
       return false;
@@ -28,6 +29,7 @@ bool SceneCatalog::Load(const std::filesystem::path& catalogPath) {
    }
 
    initialSceneName_ = catalogData.value("initialScene", "");
+
    for (const auto& [sceneName, scenePath] : catalogData.at("scenes").items()) {
       if (!sceneName.empty() && scenePath.is_string()) {
          // カタログのパスをresources相対に限定し、実行ディレクトリからの解決規則を統一する。
@@ -42,6 +44,7 @@ bool SceneCatalog::Load(const std::filesystem::path& catalogPath) {
       Logger::Error("Scene catalog initialScene is missing or not registered");
       return false;
    }
+
    return true;
 }
 

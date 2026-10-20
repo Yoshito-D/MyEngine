@@ -19,6 +19,7 @@ void CinemachineBrain::Update(float deltaTime) {
       if (VirtualCamera* selectedCamera = FindHighestPriorityCamera()) {
          Cut(selectedCamera);
       }
+
       ApplyStateToOutputCamera();
       return;
    }
@@ -90,8 +91,7 @@ VirtualCamera* CinemachineBrain::FindHighestPriorityCamera() const {
 }
 
 void CinemachineBrain::BlendToCamera(VirtualCamera* newCamera) {
-   if (newCamera == nullptr)
-      return;
+   if (newCamera == nullptr) return;
 
    if (activeCamera_ != nullptr && defaultBlendTime_ > 0.0f) {
       // 最新要求で置き換える。完了後に古い切り替えが再開しないよう、
@@ -107,8 +107,7 @@ void CinemachineBrain::BlendToCamera(VirtualCamera* newCamera) {
 }
 
 void CinemachineBrain::UpdateBlend(float deltaTime) {
-   if (!activeBlend_ || !activeCamera_)
-      return;
+   if (!activeBlend_ || !activeCamera_) return;
 
    // 最後に要求された切り替えだけを、要求時に表示していたstateから進める。
    BlendLayer& layer = *activeBlend_;
@@ -128,17 +127,16 @@ void CinemachineBrain::UpdateBlend(float deltaTime) {
 }
 
 void CinemachineBrain::ApplyStateToOutputCamera() {
-   if (outputCamera_ == nullptr)
-      return;
+   if (outputCamera_ == nullptr) return;
 
    outputCamera_->ApplyState(currentState_);
 }
 
 void CinemachineBrain::RegisterVirtualCamera(VirtualCamera* vcam) {
-   if (vcam == nullptr)
-      return;
+   if (vcam == nullptr) return;
 
    auto it = std::find(virtualCameras_.begin(), virtualCameras_.end(), vcam);
+
    if (it == virtualCameras_.end()) {
       virtualCameras_.push_back(vcam);
    }
@@ -160,8 +158,7 @@ void CinemachineBrain::UnregisterVirtualCamera(VirtualCamera* vcam) {
 }
 
 void CinemachineBrain::Cut(VirtualCamera* vcam) {
-   if (vcam == nullptr)
-      return;
+   if (vcam == nullptr) return;
 
    // Cut後に古いBlendが再適用されないよう、出力状態と選択先を更新して補間も解除する。
    activeCamera_ = vcam;

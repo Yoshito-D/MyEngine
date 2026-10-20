@@ -42,6 +42,7 @@ void ParticleMaterial::SetUVTransform(const Matrix4x4& transform) {
 void ParticleMaterial::SetBrightness(float brightness) {
    // Resource生成前の設定も保持し、Create後は永続Mapされた定数Bufferへ同じ値を即時同期する。
    brightness_ = std::max(brightness, 0.0f);
+
    if (materialData_) {
       materialData_->renderingParams.x = brightness_;
    }
@@ -49,6 +50,7 @@ void ParticleMaterial::SetBrightness(float brightness) {
 
 void ParticleMaterial::SetAlphaCutoff(float cutoff) {
    alphaCutoff_ = std::clamp(cutoff, 0.0f, 1.0f);
+
    if (materialData_) {
       materialData_->renderingParams.y = alphaCutoff_;
    }
@@ -56,6 +58,7 @@ void ParticleMaterial::SetAlphaCutoff(float cutoff) {
 
 void ParticleMaterial::SetToonSteps(uint32_t steps) {
    toonSteps_ = steps;
+
    if (materialData_) {
       materialData_->renderingParams.z = static_cast<float>(toonSteps_);
    }
@@ -75,6 +78,7 @@ uint32_t ParticleMaterial::GetToonSteps() const {
 
 void ParticleMaterial::SetSoftParticlesEnabled(bool enabled) {
    softParticlesEnabled_ = enabled;
+
    if (materialData_) {
       materialData_->effectParams.x = enabled ? 1.0f : 0.0f;
    }
@@ -82,6 +86,7 @@ void ParticleMaterial::SetSoftParticlesEnabled(bool enabled) {
 
 void ParticleMaterial::SetSoftParticleDistance(float distance) {
    softParticleDistance_ = std::max(distance, 0.0001f);
+
    if (materialData_) {
       materialData_->effectParams.y = softParticleDistance_;
    }
@@ -89,6 +94,7 @@ void ParticleMaterial::SetSoftParticleDistance(float distance) {
 
 void ParticleMaterial::SetDistortionStrength(float strength) {
    distortionStrength_ = strength;
+
    if (materialData_) {
       materialData_->effectParams.z = distortionStrength_;
    }
@@ -96,6 +102,7 @@ void ParticleMaterial::SetDistortionStrength(float strength) {
 
 void ParticleMaterial::SetDistortionBlend(float blend) {
    distortionBlend_ = std::clamp(blend, 0.0f, 1.0f);
+
    if (materialData_) {
       materialData_->effectParams.w = distortionBlend_;
    }
@@ -103,15 +110,14 @@ void ParticleMaterial::SetDistortionBlend(float blend) {
 
 void ParticleMaterial::SetDistortionUseTextureFlow(bool enabled) {
    distortionUseTextureFlow_ = enabled;
+
    if (materialData_) {
       materialData_->projectionParams.y = enabled ? 1.0f : 0.0f;
    }
 }
 
 void ParticleMaterial::SetSceneParameters(float width, float height, float nearClip, float farClip, bool orthographic) {
-   if (!materialData_) {
-      return;
-   }
+   if (!materialData_) return;
 
    // Soft Particleの深度復元で除算が破綻しないよう、解像度とNear/Farの順序を安全範囲へ正規化する。
    materialData_->sceneParams = Vector4(std::max(width, 1.0f), std::max(height, 1.0f), std::max(nearClip, 0.0001f),

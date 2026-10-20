@@ -63,6 +63,7 @@ Texture* SkyboxComponent::GetTexture() const {
          texture_ = resolvedTexture;
       }
    }
+
    return texture_;
 }
 
@@ -76,8 +77,10 @@ void SkyboxComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("textureName") && data.at("textureName").is_string()) {
       SetTextureName(data.at("textureName").get<std::string>());
    }
+
    if (data.contains("color") && data.at("color").is_array() && data.at("color").size() >= 4) {
       const auto& color = data.at("color");
+
       if (color[0].is_number() && color[1].is_number() && color[2].is_number() && color[3].is_number()) {
          color_ = Vector4(color[0].get<float>(), color[1].get<float>(), color[2].get<float>(), color[3].get<float>());
       }
@@ -89,11 +92,11 @@ void SkyboxComponent::DrawInspector() {
    auto Tr = [](const char* japanese, const char* english) { return ImGuiHelper::Localize({japanese, english}); };
 
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    float color[4] = {color_.x, color_.y, color_.z, color_.w};
+
    if (ImGui::ColorEdit4(Tr("カラー", "Color"), color)) {
       color_ = Vector4(color[0], color[1], color[2], color[3]);
    }
@@ -103,9 +106,11 @@ void SkyboxComponent::DrawInspector() {
       Texture* texture = textureResolver_ ? textureResolver_(entry.assetId) : nullptr;
       return texture && texture->GetMetadata().IsCubemap();
    };
+
    if (EditorUI::AssetReference(
-          Tr("キューブマップ", "Cubemap"), nextTextureId, EditorAssetType::Texture, acceptsCubemap))
+          Tr("キューブマップ", "Cubemap"), nextTextureId, EditorAssetType::Texture, acceptsCubemap)) {
       SetTextureName(nextTextureId);
+   }
 }
 #endif
 

@@ -87,6 +87,7 @@ Quaternion Slerp(const Quaternion& q0, const Quaternion& q1, float t) {
 
    // --- 3. 非常に近い場合は線形補間へフォールバック ---
    const float epsilon = 1e-6f;
+
    if (1.0f - dot < epsilon) {
       // 線形補間
       Quaternion result = Q0 * (1.0f - t) + Q1 * t;
@@ -112,31 +113,37 @@ Quaternion LookRotation(const Vector3& forward, const Vector3& up) {
    Vector3 f = forward;
 
    // 退化した入力でも回転行列を構築できるよう、前方とUpを既定軸へ段階的に退避する。
-   if (f.LengthSquared() < 1e-6f)
+   if (f.LengthSquared() < 1e-6f) {
       f = Vector3(0, 0, 1);
-   else
+   } else {
       f.Normalize();
+   }
 
    Vector3 u = up;
-   if (u.LengthSquared() < 1e-6f)
+
+   if (u.LengthSquared() < 1e-6f) {
       u = Vector3(0, 1, 0);
-   else
+   } else {
       u.Normalize();
+   }
 
    // forward と up が平行なら別の up ベクトルに差し替え
    if (fabs(f.Dot(u)) > 0.999f) {
-      if (fabs(f.y) < 0.99f)
+      if (fabs(f.y) < 0.99f) {
          u = Vector3(0, 1, 0);
-      else
+      } else {
          u = Vector3(1, 0, 0);
+      }
    }
 
    // 左手系: right = up × forward
    Vector3 r = u.Cross(f);
-   if (r.LengthSquared() < 1e-6f)
+
+   if (r.LengthSquared() < 1e-6f) {
       r = Vector3(1, 0, 0);
-   else
+   } else {
       r.Normalize();
+   }
 
    // 直交 up 再計算（左手系） up = forward × right
    u = f.Cross(r);

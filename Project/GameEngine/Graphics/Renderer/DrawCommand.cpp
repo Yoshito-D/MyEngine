@@ -79,10 +79,12 @@ DrawCommand DrawCommand::CreateLine(std::function<void(ID3D12GraphicsCommandList
    cmd.lineData.drawFunc = drawFunc;
    cmd.lineData.camera = camera;
    cmd.lineData.sortPosition = sortPosition;
+
    if (camera) {
       // 実行時までCameraの行列が変化しても、登録時に意図した視点で線を描けるよう値をスナップショットする。
       cmd.lineData.viewProjectionMatrix = camera->GetViewProjectionMatrix();
    }
+
    return cmd;
 }
 
@@ -97,6 +99,7 @@ std::optional<Vector3> DrawCommandWrapper::GetSortPosition() const {
          if (cmd_.modelData.model) {
             return cmd_.modelData.model->GetPosition();
          }
+
          break;
       case DrawCommandType::Sprite:
          if (!cmd_.isUISprite && cmd_.spriteData.sprite) {
@@ -104,6 +107,7 @@ std::optional<Vector3> DrawCommandWrapper::GetSortPosition() const {
                return tc->GetLocalPose().translation;
             }
          }
+
          break;
       case DrawCommandType::Text:
          break;
@@ -111,10 +115,12 @@ std::optional<Vector3> DrawCommandWrapper::GetSortPosition() const {
          if (cmd_.lineData.sortPosition) {
             return cmd_.lineData.sortPosition;
          }
+
          break;
       default:
          break;
    }
+
    return std::nullopt;
 }
 

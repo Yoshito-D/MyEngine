@@ -12,15 +12,19 @@ void TextureSheetAnimationModule::ClampSettings() {
    frameOverTime_ = std::max(frameOverTime_, 0.0f);
 
    const uint32_t totalFrameCount = GetTotalFrameCount();
+
    if (totalFrameCount > 0) {
       startFrame_ %= totalFrameCount;
    }
+
    if (frameCount_ > totalFrameCount) {
       frameCount_ = totalFrameCount;
    }
+
    if (animationMode_ == AnimationMode::WholeSheet) {
       randomRow_ = false;
    }
+
    rowIndex_ = std::min(rowIndex_, tilesY_ - 1u);
 }
 
@@ -32,6 +36,7 @@ uint32_t TextureSheetAnimationModule::GetTotalFrameCount() const {
 
 uint32_t TextureSheetAnimationModule::GetPlayableFrameCount() const {
    const uint32_t totalFrameCount = GetTotalFrameCount();
+
    if (totalFrameCount == 0) {
       return 1;
    }
@@ -43,12 +48,13 @@ uint32_t TextureSheetAnimationModule::GetPlayableFrameCount() const {
    if (frameCount_ == 0) {
       return availableFrames;
    }
+
    return std::clamp(frameCount_, 1u, availableFrames);
 }
 
 void TextureSheetAnimationModule::InitializeParticle(Particle& particle) const {
-   if (!IsEnabled())
-      return;
+   if (!IsEnabled()) return;
+
    const uint32_t safeTilesY = std::max(tilesY_, 1u);
    particle.sheetFrame = static_cast<int>(startFrame_);
    particle.sheetRow = randomRow_ ? RandomUtils::Random<int>(0, static_cast<int>(safeTilesY - 1u))
@@ -79,8 +85,8 @@ uint32_t TextureSheetAnimationModule::ResolveFrame(const Particle& particle) con
 }
 
 void TextureSheetAnimationModule::UpdateAnimation(Particle& particle, float) const {
-   if (!IsEnabled())
-      return;
+   if (!IsEnabled()) return;
+
    particle.sheetFrame = static_cast<int>(ResolveFrame(particle));
 }
 
@@ -100,29 +106,48 @@ nlohmann::json TextureSheetAnimationModule::ToJson() const {
 }
 
 void TextureSheetAnimationModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
-   if (j.contains("tilesX"))
+   }
+
+   if (j.contains("tilesX")) {
       tilesX_ = j["tilesX"].get<uint32_t>();
-   if (j.contains("tilesY"))
+   }
+
+   if (j.contains("tilesY")) {
       tilesY_ = j["tilesY"].get<uint32_t>();
-   if (j.contains("frameOverTime"))
+   }
+
+   if (j.contains("frameOverTime")) {
       frameOverTime_ = j["frameOverTime"];
-   if (j.contains("cycles"))
+   }
+
+   if (j.contains("cycles")) {
       cycles_ = j["cycles"].get<uint32_t>();
-   if (j.contains("frameCount"))
+   }
+
+   if (j.contains("frameCount")) {
       frameCount_ = j["frameCount"].get<uint32_t>();
-   if (j.contains("randomRow"))
+   }
+
+   if (j.contains("randomRow")) {
       randomRow_ = j["randomRow"];
-   if (j.contains("rowIndex"))
+   }
+
+   if (j.contains("rowIndex")) {
       rowIndex_ = j["rowIndex"].get<uint32_t>();
-   if (j.contains("startFrame"))
+   }
+
+   if (j.contains("startFrame")) {
       startFrame_ = j["startFrame"].get<uint32_t>();
+   }
+
    if (j.contains("animationMode")) {
       const int mode = j["animationMode"].get<int>();
       animationMode_ =
          mode == static_cast<int>(AnimationMode::SingleRow) ? AnimationMode::SingleRow : AnimationMode::WholeSheet;
    }
+
    ClampSettings();
 }
 }

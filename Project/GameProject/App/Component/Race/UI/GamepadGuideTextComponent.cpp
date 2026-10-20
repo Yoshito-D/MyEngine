@@ -31,9 +31,11 @@ void GamepadGuideTextComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
    // 新しい参照を検索する前に必ず解決状態を初期化する。
    raceManager_ = nullptr;
    characterJump_ = nullptr;
+
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
+
    if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
       characterJump_ = playerObject->GetComponent<CharacterJump>();
    }
@@ -43,13 +45,12 @@ void GamepadGuideTextComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
 /// @param deltaTime 前フレームからの経過時間。本コンポーネントでは状態参照のみのため使用しない
 void GamepadGuideTextComponent::Update(float deltaTime) {
    (void)deltaTime;
-   if (!HasOwner()) {
-      return;
-   }
+
+   if (!HasOwner()) return;
+
    auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
-   if (!text) {
-      return;
-   }
+
+   if (!text) return;
 
    const bool isShowingResult = raceManager_ && raceManager_->GetState() == RaceManagerComponent::State::Finished;
 
@@ -74,15 +75,14 @@ nlohmann::json GamepadGuideTextComponent::Serialize() const {
 /// @brief JSONに含まれる有効なオブジェクトID設定を読み込む
 /// @param data コンポーネント設定を格納したJSON
 void GamepadGuideTextComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
 
    // 欠落または型不一致の項目では現在値を維持し、
    // 古いシーンデータや部分的な設定データも読み込めるようにする。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }
+
    if (data.contains("playerObjectId") && data.at("playerObjectId").is_string()) {
       playerObjectId_ = data.at("playerObjectId").get<std::string>();
    }
@@ -93,9 +93,9 @@ void GamepadGuideTextComponent::Deserialize(const nlohmann::json& data) {
 /// @brief 設定IDと実行時の参照解決状況をインスペクターへ表示する
 void GamepadGuideTextComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    ImGui::Text("Resolved: Race=%s Player Jump=%s", raceManager_ ? "true" : "false", characterJump_ ? "true" : "false");

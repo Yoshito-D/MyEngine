@@ -1745,12 +1745,6 @@
       <Filter>Tools</Filter>
     </None>
     <None Include="AGENTS.md" />
-    <None Include="Docs\Camera\PlayerRearFollowCamera_FixFlow.md">
-      <Filter>Docs\Camera</Filter>
-    </None>
-    <None Include="Docs\Rendering\PlayerShadowPass_Implementation.md">
-      <Filter>Docs\Rendering</Filter>
-    </None>
     <None Include="Resources\engine\pipelines\pipeline_registry.json">
       <Filter>Resources\engine\pipelines</Filter>
     </None>

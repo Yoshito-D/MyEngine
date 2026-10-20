@@ -8,8 +8,9 @@ using namespace RearCameraMath;
 
 void RearCameraPositionSolver::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    auto* camera = GetRearCamera();
-   if (!camera)
-      return;
+
+   if (!camera) return;
+
    const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
    const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
    const auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
@@ -48,16 +49,19 @@ GameEngine::Vector3 RearCameraPositionSolver::ComputeEye(const RearCameraInput& 
    // ドリフト中は縮めた基準距離を下限にし、接近演出を通常距離のクランプで打ち消さない。
    float minimumEyeDistance = std::max(1.0f, settings.distance * input.driftDistanceScale);
    float eyeOffsetLength = eyeOffset.Length();
+
    if (eyeOffsetLength < minimumEyeDistance) {
       GameEngine::Vector3 fallbackDirection =
          eyeOffsetLength > 1e-4f ? eyeOffset * (1.0f / eyeOffsetLength) : safeBackward;
       eyeOffset = fallbackDirection * minimumEyeDistance;
    }
+
    GameEngine::Vector3 eye = input.pivotTarget + eyeOffset;
 
    // 着地前は速度後方から着地接線後方へ移る間に、予測地表の外側へ徐々に寄せる。
    // 最低高さだけをブレンドすると負の外向き高さを一度に打ち消すため、補正量全体をブレンドする。
    const float landingBlend = std::clamp(transition.currentPreLandingBlend, 0.0f, 1.0f);
+
    if (input.isAirborne && landingBlend > 0.0f) {
       const GameEngine::Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, up);
       const float minimumOutwardHeight = std::max(0.0f, settings.preLandingMinOutwardHeight);
@@ -132,11 +136,13 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(const RearCameraInput& i
 
    // 補間後の高さ補正も補正量全体をブレンドし、予測開始時の急な押し出しを避ける。
    const float landingBlend = std::clamp(transition.currentPreLandingBlend, 0.0f, 1.0f);
+
    if (input.isAirborne && landingBlend > 0.0f) {
       const Vector3 landingUp = NormalizeOrFallback(input.predictedLandingUp, safeUp);
       const float minimumOutwardHeight = std::max(0.0f, settings.preLandingMinOutwardHeight);
       const float outwardHeight = state_.currentEyeOffset.Dot(landingUp);
       const float correction = std::max(0.0f, minimumOutwardHeight - outwardHeight) * landingBlend;
+
       if (correction > 0.0f) {
          state_.currentEyeOffset += landingUp * correction;
          heightCorrected = true;
@@ -149,6 +155,7 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(const RearCameraInput& i
       float correctedLength = state_.currentEyeOffset.Length();
       const float minimumDistance = std::max(1.0f, settings.distance * input.driftDistanceScale);
       const Vector3 correctedDirection = NormalizeOrFallback(state_.currentEyeOffset, safeUp);
+
       if (correctedLength < minimumDistance) {
          correctedLength = minimumDistance;
          state_.currentEyeOffset = correctedDirection * correctedLength;
@@ -157,6 +164,7 @@ GameEngine::Vector3 RearCameraPositionSolver::SmoothEye(const RearCameraInput& i
       // 高さの押し上げで角速度上限を迂回しない。制約外の保存位置や急変したUpからは、
       // 距離と連続回転を優先して安全側の候補へ戻す（途中の高さは即時に強制しない）。
       const float correctedAngle = std::acos(std::clamp(currentDir.Dot(correctedDirection), -1.0f, 1.0f));
+
       if (correctedAngle > maxAngularDelta + 1e-5f) {
          state_.currentEyeOffset = RotateTowardsUnit(currentDir, correctedDirection, maxAngularDelta, aim.cachedRight) *
                                    std::max(smoothedLength, correctedLength);

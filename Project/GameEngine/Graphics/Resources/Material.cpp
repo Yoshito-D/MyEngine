@@ -12,15 +12,14 @@ bool sIsInitialized_ = false;
 }
 
 void Material::Initialize(GraphicsDevice* device) {
-   if (sIsInitialized_)
-      return;
+   if (sIsInitialized_) return;
+
    sDevice_ = device;
    sIsInitialized_ = true;
 }
 
 void Material::Create(unsigned int color, int32_t lightingMode, const Matrix4x4& uvTransform, float shininess) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
 
    // シェーダーからCBVとして直接読むUPLOADバッファを永続Mapし、
    // セッターの変更を次回描画へ即時反映できるようにする。
@@ -54,36 +53,49 @@ void Material::Create(unsigned int color, int32_t lightingMode, const Matrix4x4&
 }
 
 void Material::SetPipelineName(const std::string& name) {
-   if (pipelineName_ != name)
+   if (pipelineName_ != name) {
       parameters_.clear();
+   }
+
    pipelineName_ = name;
 }
 
 bool Material::HasValidData() const {
-   if (!materialData_)
+   if (!materialData_) {
       return false;
+   }
+
    const auto& data = *materialData_;
    const auto finiteColor = [](const Vector4& color) {
       return std::isfinite(color.x) && std::isfinite(color.y) && std::isfinite(color.z) && std::isfinite(color.w);
    };
+
    if (!finiteColor(data.color) || !finiteColor(data.rimLightColor) || !finiteColor(data.fillLightColor) ||
        data.lightingMode < NONE || data.lightingMode > BLINNPHONG || !std::isfinite(data.environmentCoefficient) ||
        !std::isfinite(data.shininess) || !std::isfinite(data.rimLightIntensity) || !std::isfinite(data.rimLightPower) ||
-       !std::isfinite(data.fillLightIntensity))
+       !std::isfinite(data.fillLightIntensity)) {
       return false;
-   for (const auto& row : data.uvTransform.m) {
-      for (float value : row)
-         if (!std::isfinite(value))
-            return false;
    }
+
+   for (const auto& row : data.uvTransform.m) {
+      for (float value : row) {
+         if (!std::isfinite(value)) {
+            return false;
+         }
+      }
+   }
+
    return true;
 }
 
 std::unique_ptr<Material> Material::Clone() const {
    auto copy = std::make_unique<Material>();
    copy->Create();
-   if (materialData_ && copy->materialData_)
+
+   if (materialData_ && copy->materialData_) {
       *copy->materialData_ = *materialData_;
+   }
+
    copy->pipelineName_ = pipelineName_;
    copy->blendMode_ = blendMode_;
    copy->parameters_ = parameters_;
@@ -96,35 +108,51 @@ bool Material::SetParameter(const std::string& name, const std::vector<float>& v
       Logger::Warning("[Material] Invalid parameter: pipeline=" + pipelineName_ + ", name=" + name);
       return false;
    }
+
    parameters_[name] = value;
    return true;
 }
 
 ID3D12Resource* Material::PrepareParameters(const ModelPipelineDefinition& definition) const {
-   if (definition.parameterBufferSize == 0 || definition.parameterBufferSize > 4096 || !sDevice_)
+   if (definition.parameterBufferSize == 0 || definition.parameterBufferSize > 4096 || !sDevice_) {
       return nullptr;
+   }
+
    for (const auto& [name, value] : parameters_) {
       auto field = std::find_if(definition.parameters.begin(), definition.parameters.end(),
          [&](const auto& entry) { return entry.name == name; });
-      if (field == definition.parameters.end() || field->defaultValue.size() != value.size())
+
+      if (field == definition.parameters.end() || field->defaultValue.size() != value.size()) {
          return nullptr;
+      }
    }
+
    if (!parameterResource_) {
       // マテリアルごとに一度だけ確保し、ここではシェーダーやPSOを作成しない。
       parameterResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), 4096);
-      if (!parameterResource_ || FAILED(parameterResource_->Map(0, nullptr, &parameterData_)))
+
+      if (!parameterResource_ || FAILED(parameterResource_->Map(0, nullptr, &parameterData_))) {
          return nullptr;
+      }
    }
-   if (!parameterData_)
+
+   if (!parameterData_) {
       return nullptr;
+   }
+
    std::memset(parameterData_, 0, definition.parameterBufferSize);
+
    for (const auto& field : definition.parameters) {
       const auto it = parameters_.find(field.name);
       const auto& value = it == parameters_.end() ? field.defaultValue : it->second;
-      if (field.offset + value.size() * sizeof(float) > definition.parameterBufferSize)
+
+      if (field.offset + value.size() * sizeof(float) > definition.parameterBufferSize) {
          return nullptr;
+      }
+
       std::memcpy(static_cast<char*>(parameterData_) + field.offset, value.data(), value.size() * sizeof(float));
    }
+
    return parameterResource_.Get();
 }
 
@@ -146,6 +174,7 @@ Vector4 Material::GetColor() const {
    if (materialData_) {
       return materialData_->color;
    }
+
    return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
@@ -159,6 +188,7 @@ Material::LightingMode Material::GetLightingMode() const {
    if (materialData_) {
       return static_cast<LightingMode>(materialData_->lightingMode);
    }
+
    return LightingMode::HALFLAMBERT;
 }
 
@@ -172,6 +202,7 @@ float Material::GetShininess() const {
    if (materialData_) {
       return materialData_->shininess;
    }
+
    return 40.0f;
 }
 
@@ -185,6 +216,7 @@ float Material::GetEnvironmentTextureStrength() const {
    if (materialData_) {
       return materialData_->environmentCoefficient;
    }
+
    return 0.0f;
 }
 
@@ -198,6 +230,7 @@ Vector4 Material::GetRimLightColor() const {
    if (materialData_) {
       return materialData_->rimLightColor;
    }
+
    return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
@@ -211,6 +244,7 @@ float Material::GetRimLightIntensity() const {
    if (materialData_) {
       return materialData_->rimLightIntensity;
    }
+
    return 0.0f;
 }
 
@@ -224,6 +258,7 @@ float Material::GetRimLightPower() const {
    if (materialData_) {
       return materialData_->rimLightPower;
    }
+
    return 4.0f;
 }
 
@@ -237,6 +272,7 @@ Vector4 Material::GetFillLightColor() const {
    if (materialData_) {
       return materialData_->fillLightColor;
    }
+
    return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
@@ -250,6 +286,7 @@ float Material::GetFillLightIntensity() const {
    if (materialData_) {
       return materialData_->fillLightIntensity;
    }
+
    return 0.0f;
 }
 
@@ -265,6 +302,7 @@ Matrix4x4 Material::GetUVTransform() const {
    if (materialData_) {
       return materialData_->uvTransform;
    }
+
    return MakeIdentity4x4();
 }
 
@@ -351,8 +389,7 @@ void Material::DecomposeUVTransform(Vector2& outScale, float& outRotation, Vecto
 }
 
 void Material::ComposeUVTransform(const Vector2& scale, float rotation, const Vector2& translation) {
-   if (!materialData_)
-      return;
+   if (!materialData_) return;
 
    Matrix4x4 scaleMat = MakeScaleMatrix(Vector3(scale.x, scale.y, 1.0f));
    Matrix4x4 rotMat = MakeRotateZMatrix(rotation);

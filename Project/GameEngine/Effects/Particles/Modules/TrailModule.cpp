@@ -11,12 +11,15 @@ nlohmann::json TrailModule::ToJson() const {
 
 void TrailModule::FromJson(const nlohmann::json& j) {
    // 旧RendererModuleでは有効フラグだけがribbonEnabledだったため、こちらを優先する。
-   if (j.contains("ribbonEnabled"))
+   if (j.contains("ribbonEnabled")) {
       SetEnabled(j["ribbonEnabled"].get<bool>());
-   else if (j.contains("enabled"))
+   } else if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
+   }
+
    if (j.contains("mode")) {
       const int mode = j["mode"].get<int>();
+
       if (mode >= static_cast<int>(TrailMode::ParticlePath) && mode <= static_cast<int>(TrailMode::EmitterToParticle)) {
          SetMode(static_cast<TrailMode>(mode));
       }
@@ -26,41 +29,56 @@ void TrailModule::FromJson(const nlohmann::json& j) {
    }
 
    const char* widthKey = j.contains("width") ? "width" : "ribbonWidth";
+
    if (j.contains(widthKey)) {
-      if (j[widthKey].is_object())
+      if (j[widthKey].is_object()) {
          width_.FromJson(j[widthKey]);
-      else
+      } else {
          width_ = RandomFloat(j[widthKey].get<float>());
+      }
    }
-   if (j.contains("maxPoints"))
+
+   if (j.contains("maxPoints")) {
       SetMaxPoints(j["maxPoints"]);
-   else if (j.contains("ribbonMaxPoints"))
+   } else if (j.contains("ribbonMaxPoints")) {
       SetMaxPoints(j["ribbonMaxPoints"]);
-   if (j.contains("minDistance"))
+   }
+
+   if (j.contains("minDistance")) {
       SetMinDistance(j["minDistance"]);
-   else if (j.contains("ribbonMinDistance"))
+   } else if (j.contains("ribbonMinDistance")) {
       SetMinDistance(j["ribbonMinDistance"]);
-   if (j.contains("textureName"))
+   }
+
+   if (j.contains("textureName")) {
       SetTextureName(j["textureName"].get<std::string>());
-   else if (j.contains("ribbonTextureName"))
+   } else if (j.contains("ribbonTextureName")) {
       SetTextureName(j["ribbonTextureName"].get<std::string>());
+   }
 
    const char* colorKey = j.contains("color") ? "color" : "ribbonColor";
+
    if (j.contains(colorKey) && j[colorKey].is_array() && j[colorKey].size() >= 4) {
       const auto& color = j[colorKey];
       SetColor(Vector4(color[0], color[1], color[2], color[3]));
    }
-   if (j.contains("retractionDuration"))
+
+   if (j.contains("retractionDuration")) {
       SetRetractionDuration(j["retractionDuration"]);
-   else if (j.contains("ribbonFadeDuration"))
+   } else if (j.contains("ribbonFadeDuration")) {
       SetRetractionDuration(j["ribbonFadeDuration"]);
-   if (j.contains("tailWidthScale"))
+   }
+
+   if (j.contains("tailWidthScale")) {
       SetTailWidthScale(j["tailWidthScale"]);
-   else if (j.contains("ribbonTailWidthScale"))
+   } else if (j.contains("ribbonTailWidthScale")) {
       SetTailWidthScale(j["ribbonTailWidthScale"]);
-   if (j.contains("textureTiling"))
+   }
+
+   if (j.contains("textureTiling")) {
       SetTextureTiling(j["textureTiling"]);
-   else if (j.contains("ribbonTextureTiling"))
+   } else if (j.contains("ribbonTextureTiling")) {
       SetTextureTiling(j["ribbonTextureTiling"]);
+   }
 }
 }

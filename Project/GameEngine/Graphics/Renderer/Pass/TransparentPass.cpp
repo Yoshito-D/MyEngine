@@ -8,9 +8,7 @@
 namespace GameEngine {
 
 void TransparentPass::Sort(std::vector<std::unique_ptr<IDrawCommand>>& commands) const {
-   if (commands.size() < 2) {
-      return;
-   }
+   if (commands.size() < 2) return;
 
    // 通常のアルファ合成を成立させるため奥から手前へ並べる。
    // 距離が同じ要素はstable_sortで登録順を保持し、描画のちらつきを防ぐ。
@@ -32,6 +30,7 @@ void TransparentPass::Sort(std::vector<std::unique_ptr<IDrawCommand>>& commands)
          if (lHasPos && rHasPos) {
             const float lDist = (*lPos - lCam->GetPosition()).LengthSquared();
             const float rDist = (*rPos - rCam->GetPosition()).LengthSquared();
+
             if (lDist != rDist) {
                return lDist > rDist;
             }
@@ -42,9 +41,7 @@ void TransparentPass::Sort(std::vector<std::unique_ptr<IDrawCommand>>& commands)
 }
 
 void TransparentPass::Execute(FrameContext& ctx) {
-   if (!ctx.transparentCommands) {
-      return;
-   }
+   if (!ctx.transparentCommands) return;
 
    Sort(*ctx.transparentCommands);
 

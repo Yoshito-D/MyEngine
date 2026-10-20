@@ -12,10 +12,12 @@ std::vector<UIText*> UIText::sRegisteredTexts_;
 namespace {
 std::string BuildDefaultTextName(const std::vector<UIText*>& registeredTexts) {
    uint32_t index = 1;
+
    while (true) {
       const std::string candidate = "UIText_" + std::to_string(index++);
       const bool exists = std::any_of(registeredTexts.begin(), registeredTexts.end(),
          [&candidate](const UIText* text) { return text && text->GetObjectName() == candidate; });
+
       if (!exists) {
          return candidate;
       }
@@ -33,6 +35,7 @@ UIText::UIText() {
    }
    SetObjectName(BuildDefaultTextName(sRegisteredTexts_));
    AddComponent<UITextComponent>();
+
    if (auto* renderComponent = AddComponent<RenderComponent>()) {
       {
          auto settings = renderComponent->DescribeSettings();
@@ -47,6 +50,7 @@ UIText::UIText() {
          renderComponent->Configure(settings);
       }
    }
+
    sRegisteredTexts_.push_back(this);
 }
 
@@ -84,6 +88,7 @@ const std::vector<UIText*>& UIText::GetRegisteredTexts() {
 void UIText::UnregisterText(UIText* text) {
    // 明示削除とデストラクターの両方から呼ばれても安全な一回削除にする。
    const auto iterator = std::find(sRegisteredTexts_.begin(), sRegisteredTexts_.end(), text);
+
    if (iterator != sRegisteredTexts_.end()) {
       sRegisteredTexts_.erase(iterator);
    }

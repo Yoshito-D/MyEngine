@@ -864,8 +864,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Docs\FolderStructure.md" />
-    <None Include="Docs\Rendering\PlayerShadowPass_Implementation.md" />
-    <None Include="Docs\Camera\PlayerRearFollowCamera_FixFlow.md" />
     <None Include="..\Tools\FilterAdjust.ps1" />
     <None Include="..\Tools\RunFilterAdjust.bat" />
   </ItemGroup>

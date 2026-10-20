@@ -8,8 +8,9 @@ using namespace RearCameraMath;
 
 void RearCameraDirectionTracker::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
    auto* camera = GetRearCamera();
-   if (!camera)
-      return;
+
+   if (!camera) return;
+
    const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
    const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
    const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
@@ -36,9 +37,11 @@ void RearCameraDirectionTracker::TransportWithGravity(
    //   回転し、right の符号が反転しない。
    // ─────────────────────────────────────────────────────────────
    float cosAngle = std::clamp(oldUp.Dot(newUp), -1.0f, 1.0f);
+
    if (cosAngle < 0.9999f) {
       Vector3 rotAxis = oldUp.Cross(newUp);
       float axisLen = rotAxis.Length();
+
       if (axisLen > 1e-6f) {
          rotAxis = rotAxis * (1.0f / axisLen);
          float deltaAngle = std::acos(cosAngle);
@@ -49,8 +52,10 @@ void RearCameraDirectionTracker::TransportWithGravity(
          state_.currentBackward = state_.currentBackward * cs + rotAxis.Cross(state_.currentBackward) * sn +
                                   rotAxis * (rotAxis.Dot(state_.currentBackward) * (1.0f - cs));
          float bLen = state_.currentBackward.Length();
-         if (bLen > 1e-6f)
+
+         if (bLen > 1e-6f) {
             state_.currentBackward = state_.currentBackward * (1.0f / bLen);
+         }
       }
    }
 }
@@ -94,6 +99,7 @@ void RearCameraDirectionTracker::UpdateBackwardVector(const RearCameraInput& inp
       float planetDirectionBlend =
          planet.ComputePlanetDirectionBlend(input, settings, transition, state_.currentBackward) *
          (1.0f - transition.currentPreLandingBlend);
+
       if (planetDirectionBlend > 1e-4f) {
          desiredBackward = BlendUnitDirectionSafely(
             desiredBackward, planet.GetState().currentPlanetBackward, planetDirectionBlend, desiredBackward, up);
@@ -124,6 +130,7 @@ void RearCameraDirectionTracker::UpdateBackwardVector(const RearCameraInput& inp
    }
 
    float followSpeed = settings.rearLerpSpeed;
+
    if (input.isAirborne) {
       followSpeed = settings.airborneForwardLerpSpeed;
       state_.lastAirborneRearFollowSpeed = followSpeed;
@@ -131,6 +138,7 @@ void RearCameraDirectionTracker::UpdateBackwardVector(const RearCameraInput& inp
       state_.landingRearLerpElapsed = std::max(0.0f, settings.landingRearLerpRampSeconds);
    } else {
       float rampSeconds = std::max(0.0f, settings.landingRearLerpRampSeconds);
+
       if (rampSeconds > 1e-4f && state_.landingRearLerpElapsed < rampSeconds) {
          // 着地した瞬間に settings.rearLerpSpeed をそのまま使うと、地上後方へ戻る力が急に強くなり画が跳ねる。
          // 着地直前の空中追従速度から設定値へ指定秒数で近づけ、接地直後の戻り方をなめらかにする。
@@ -141,6 +149,7 @@ void RearCameraDirectionTracker::UpdateBackwardVector(const RearCameraInput& inp
             state_.landingRearLerpStartSpeed + (settings.rearLerpSpeed - state_.landingRearLerpStartSpeed) * rampAlpha;
       }
    }
+
    float t = ExpSmoothingFactor(followSpeed, deltaTime);
 
    // 原因: 空中で速度方向が急に反対側へ変わると、state_.currentBackward と desiredBackward が
@@ -148,6 +157,7 @@ void RearCameraDirectionTracker::UpdateBackwardVector(const RearCameraInput& inp
    // 修正: 補間率 t を角度量へ変換し、RotateTowardsUnit で一方向に回すことで反転を防ぐ。
    Vector3 trackedBackward = BlendUnitDirectionSafely(state_.currentBackward, desiredBackward, t, desiredBackward, up);
    state_.currentBackward = trackedBackward;
+
    if (!input.isAirborne && state_.currentBackward.Dot(desiredBackward) > 0.9999f) {
       // 収束後だけ厳密な地上後方へ確定し、長時間の数値誤差を残さない。
       state_.currentBackward = desiredBackward;

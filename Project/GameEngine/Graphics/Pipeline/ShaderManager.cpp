@@ -22,15 +22,18 @@ std::wstring Utf8ToWString(const std::string& str) {
    // JSONはUTF-8、DXCとWindowsファイルAPIはUTF-16を受け取るため、終端を含む必要長を
    // 先に取得してから変換する。戻り値からはstd::wstring自身の終端要素を除く。
    const int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+
    if (size <= 0) {
       return {};
    }
 
    std::wstring result(static_cast<size_t>(size), L'\0');
    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, result.data(), size);
+
    if (!result.empty() && result.back() == L'\0') {
       result.pop_back();
    }
+
    return result;
 }
 
@@ -42,26 +45,32 @@ std::string ToLowerString(std::string value) {
 
 bool TryParseShaderType(const std::string& text, GameEngine::ShaderType& outType) {
    const std::string lower = ToLowerString(text);
+
    if (lower == "vertex" || lower == "vs") {
       outType = GameEngine::ShaderType::Vertex;
       return true;
    }
+
    if (lower == "pixel" || lower == "ps") {
       outType = GameEngine::ShaderType::Pixel;
       return true;
    }
+
    if (lower == "compute" || lower == "cs") {
       outType = GameEngine::ShaderType::Compute;
       return true;
    }
+
    if (lower == "geometry" || lower == "gs") {
       outType = GameEngine::ShaderType::Geometry;
       return true;
    }
+
    if (lower == "hull" || lower == "hs") {
       outType = GameEngine::ShaderType::Hull;
       return true;
    }
+
    if (lower == "domain" || lower == "ds") {
       outType = GameEngine::ShaderType::Domain;
       return true;
@@ -74,6 +83,7 @@ std::string NormalizePipelineName(std::string pipelineName) {
    if (pipelineName.rfind("PostProcess_", 0) == 0) {
       pipelineName = pipelineName.substr(std::string("PostProcess_").size());
    }
+
    return pipelineName;
 }
 }
@@ -82,10 +92,12 @@ namespace GameEngine {
 bool ShaderManager::Initialize(GraphicsDevice* device) {
    device_ = device;
    InitializeDXC();
+
    if (!LoadShaderRegistry()) {
       Logger::Error("[ShaderManager] Shader registry load failed. Hardcoded shader fallback is disabled.");
       return false;
    }
+
    BuildPipelineRootParameterTables();
    return true;
 }
@@ -94,6 +106,7 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
    const std::string registryPath = std::filesystem::path(registryFilePath).string();
    std::ifstream inputStream;
    inputStream.open(registryPath);
+
    if (!inputStream.is_open()) {
       Logger::Error("[ShaderManager] Failed to open shader registry: " + registryPath);
       return false;
@@ -114,6 +127,7 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
       bool allSucceeded = true;
 
       size_t shaderIndex = 0;
+
       for (const auto& shaderJson : root["shaders"]) {
          const std::string entryLabel = registryPath + "#shaders[" + std::to_string(shaderIndex) + "]";
          ++shaderIndex;
@@ -126,6 +140,7 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
 
          ShaderInfo info;
          info.name = shaderJson.value("name", "");
+
          if (info.name.empty()) {
             Logger::Error("[ShaderManager] Shader registry entry is missing name: " + entryLabel);
             allSucceeded = false;
@@ -133,6 +148,7 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
          }
 
          std::string typeString = shaderJson.value("type", "");
+
          if (!TryParseShaderType(typeString, info.type)) {
             Logger::Error(
                "[ShaderManager] Shader registry entry has invalid type: " + entryLabel + " name=" + info.name);
@@ -142,13 +158,16 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
 
          std::string filePathString =
             shaderJson.value("filePath", shaderJson.value("file", shaderJson.value("path", "")));
+
          if (filePathString.empty()) {
             Logger::Error(
                "[ShaderManager] Shader registry entry is missing filePath: " + entryLabel + " name=" + info.name);
             allSucceeded = false;
             continue;
          }
+
          info.filePath = Utf8ToWString(filePathString);
+
          if (!std::filesystem::exists(std::filesystem::path(info.filePath))) {
             Logger::Error(
                "[ShaderManager] Shader file does not exist: " + filePathString + " (name=" + info.name + ")");
@@ -158,6 +177,7 @@ bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
 
          const std::string entryPointString = shaderJson.value("entryPoint", "main");
          info.entryPoint = Utf8ToWString(entryPointString);
+
          if (info.entryPoint.empty()) {
             info.entryPoint = L"main";
          }
@@ -228,6 +248,7 @@ bool ShaderManager::LoadComputeShader(
 
 bool ShaderManager::LoadShader(const ShaderInfo& info) {
    auto shader = CompileShader(info.filePath, GetShaderProfile(info.type), info.entryPoint, info.defines);
+
    if (!shader) {
       Logger::Error("[ShaderManager] Shader compilation failed: " + info.name + " (" +
                     std::filesystem::path(info.filePath).string() + ")");
@@ -272,6 +293,7 @@ IDxcBlob* ShaderManager::GetShader(const std::string& name, ShaderType type) con
 const ShaderReflectionInfo* ShaderManager::GetShaderReflection(const std::string& name, ShaderType type) const {
    std::string key = CreateShaderKey(name, type);
    auto it = shaders_.find(key);
+
    if (it == shaders_.end()) {
       return nullptr;
    }
@@ -298,6 +320,7 @@ std::optional<UINT> ShaderManager::ResolvePipelineRootParameter(
    ++pipelineStats.requests;
 
    const auto* table = GetPipelineRootParameterTable(pipelineName);
+
    if (!table) {
       ++resolveStats_.misses;
       ++pipelineStats.misses;
@@ -306,6 +329,7 @@ std::optional<UINT> ShaderManager::ResolvePipelineRootParameter(
 
    const std::string key = ToLowerString(semanticName);
    auto it = table->slotBySemanticName.find(key);
+
    if (it == table->slotBySemanticName.end()) {
       ++resolveStats_.misses;
       ++pipelineStats.misses;
@@ -322,6 +346,7 @@ const PipelineRootParameterTable* ShaderManager::GetPipelineRootParameterTable(c
    const std::string normalized = NormalizePipelineName(pipelineName);
 
    auto it = pipelineRootTables_.find(normalized);
+
    if (it != pipelineRootTables_.end()) {
       return &it->second;
    }
@@ -333,9 +358,11 @@ void ShaderManager::LogRootParameterTablesDebug() const {
    const auto stageInfos = GetPipelineStageMatchInfos();
 
    Logger::Info("[ShaderManager] Root parameter table debug dump begin");
+
    if (pipelineRootTables_.empty()) {
       Logger::Info("[ShaderManager] Root parameter tables are supplied by PSO JSON definitions.");
    }
+
    for (const auto& [pipelineName, table] : pipelineRootTables_) {
 
       Logger::Info("[ShaderManager] " + pipelineName +
@@ -343,6 +370,7 @@ void ShaderManager::LogRootParameterTablesDebug() const {
                    ", entries=" + std::to_string(table.slotBySemanticName.size()));
 
       auto stageIt = stageInfos.find(pipelineName);
+
       if (stageIt != stageInfos.end()) {
          const auto& info = stageIt->second;
          Logger::Info("  [VS] reflection=" + std::string(info.vertex.hasReflection ? "present" : "missing") +
@@ -357,22 +385,24 @@ void ShaderManager::LogRootParameterTablesDebug() const {
          Logger::Info("  - " + semantic + " -> " + std::to_string(slot));
       }
    }
+
    Logger::Info("[ShaderManager] Root parameter table debug dump end");
 }
 
 std::unordered_map<std::string, PipelineStageMatchInfo> ShaderManager::GetPipelineStageMatchInfos() const {
    std::unordered_map<std::string, PipelineStageMatchInfo> results;
+
    for (const auto& [pipelineName, table] : pipelineRootTables_) {
       PipelineStageMatchInfo info{};
 
       const auto fillStage = [&](ShaderType stage, ShaderStageMatchInfo& out) {
          const auto* reflection = GetShaderReflection(pipelineName, stage);
-         if (!reflection || !reflection->isValid) {
-            return;
-         }
+
+         if (!reflection || !reflection->isValid) return;
 
          out.hasReflection = true;
          out.resourceCount = static_cast<uint32_t>(reflection->boundResources.size());
+
          for (const auto& resource : reflection->boundResources) {
             if (!resource.name.empty() && table.slotBySemanticName.contains(ToLowerString(resource.name))) {
                ++out.matchedByName;
@@ -408,6 +438,7 @@ void ShaderManager::UnloadShader(const std::string& name, ShaderType type) {
 bool ShaderManager::ReloadShader(const std::string& name, ShaderType type) {
    std::string key = CreateShaderKey(name, type);
    auto it = shaders_.find(key);
+
    if (it == shaders_.end()) {
       return false;
    }
@@ -417,6 +448,7 @@ bool ShaderManager::ReloadShader(const std::string& name, ShaderType type) {
 
    // 再コンパイル
    auto newBlob = CompileShader(oldShader.filePath, GetShaderProfile(type), oldShader.entryPoint, oldShader.defines);
+
    if (!newBlob) {
       return false;
    }
@@ -434,12 +466,14 @@ void ShaderManager::ReloadAllShaders() {
    // 各シェーダーを独立して差し替え、失敗したものだけ旧Blobを継続使用する。
    for (auto& [key, shader] : shaders_) {
       auto newBlob = CompileShader(shader.filePath, GetShaderProfile(shader.type), shader.entryPoint, shader.defines);
+
       if (newBlob) {
          shader.blob = newBlob;
          shader.reflection = ExtractReflectionInfo(newBlob.Get(), shader.type);
          shader.fileTimestamp = GetFileTimestamp(shader.filePath);
       }
    }
+
    BuildPipelineRootParameterTables();
 }
 
@@ -464,6 +498,7 @@ ComPtr<IDxcBlob> ShaderManager::CompileShader(const std::wstring& filePath, cons
 
 ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, ShaderType type) const {
    ShaderReflectionInfo info;
+
    if (!shaderBlob || !dxcUtils_) {
       return info;
    }
@@ -480,11 +515,13 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
 
    ComPtr<ID3D12ShaderReflection> reflection;
    HRESULT hr = dxcUtils_->CreateReflection(&reflectionArg, IID_PPV_ARGS(&reflection));
+
    if (FAILED(hr) || !reflection) {
       return info;
    }
 
    D3D12_SHADER_DESC shaderDesc{};
+
    if (FAILED(reflection->GetDesc(&shaderDesc))) {
       return info;
    }
@@ -492,11 +529,14 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
    // CBV/SRV/UAV/Samplerを含むバインド資源は、semanticからレジスタを推定する際に使う。
    for (UINT i = 0; i < shaderDesc.BoundResources; ++i) {
       D3D12_SHADER_INPUT_BIND_DESC bindDesc{};
+
       if (SUCCEEDED(reflection->GetResourceBindingDesc(i, &bindDesc))) {
          ShaderResourceBindingInfo binding{};
+
          if (bindDesc.Name) {
             binding.name = bindDesc.Name;
          }
+
          binding.type = bindDesc.Type;
          binding.bindPoint = bindDesc.BindPoint;
          binding.bindCount = bindDesc.BindCount;
@@ -509,16 +549,20 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
    // 定数バッファはサイズと変数数も保存し、将来のレイアウト診断で利用できるようにする。
    for (UINT i = 0; i < shaderDesc.ConstantBuffers; ++i) {
       ID3D12ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByIndex(i);
+
       if (!cb) {
          continue;
       }
 
       D3D12_SHADER_BUFFER_DESC cbDesc{};
+
       if (SUCCEEDED(cb->GetDesc(&cbDesc))) {
          ShaderConstantBufferInfo cbInfo{};
+
          if (cbDesc.Name) {
             cbInfo.name = cbDesc.Name;
          }
+
          cbInfo.size = cbDesc.Size;
          cbInfo.variableCount = cbDesc.Variables;
 
@@ -526,12 +570,14 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
          std::function<void(ID3D12ShaderReflectionType*, const std::string&, UINT)> visit;
          visit = [&](ID3D12ShaderReflectionType* field, const std::string& name, UINT offset) {
             D3D12_SHADER_TYPE_DESC desc{};
-            if (!field || FAILED(field->GetDesc(&desc)))
-               return;
+
+            if (!field || FAILED(field->GetDesc(&desc))) return;
+
             if (desc.Class == D3D_SVC_STRUCT && desc.Elements == 0) {
                for (UINT member = 0; member < desc.Members; ++member) {
                   auto* child = field->GetMemberTypeByIndex(member);
                   D3D12_SHADER_TYPE_DESC childDesc{};
+
                   if (child && SUCCEEDED(child->GetDesc(&childDesc))) {
                      visit(child, field->GetMemberTypeName(member), offset + childDesc.Offset);
                   }
@@ -541,12 +587,16 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
                   {name, offset, desc.Type, desc.Class, desc.Rows, desc.Columns, desc.Elements});
             }
          };
+
          for (UINT variable = 0; variable < cbDesc.Variables; ++variable) {
             auto* field = cb->GetVariableByIndex(variable);
             D3D12_SHADER_VARIABLE_DESC desc{};
-            if (field && SUCCEEDED(field->GetDesc(&desc)))
+
+            if (field && SUCCEEDED(field->GetDesc(&desc))) {
                visit(field->GetType(), desc.Name, desc.StartOffset);
+            }
          }
+
          info.constantBuffers.push_back(std::move(cbInfo));
       }
    }
@@ -556,11 +606,14 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
       // 他ステージではシグネチャ走査を省く。
       for (UINT i = 0; i < shaderDesc.InputParameters; ++i) {
          D3D12_SIGNATURE_PARAMETER_DESC inputDesc{};
+
          if (SUCCEEDED(reflection->GetInputParameterDesc(i, &inputDesc))) {
             ShaderInputParameterInfo input{};
+
             if (inputDesc.SemanticName) {
                input.semanticName = inputDesc.SemanticName;
             }
+
             input.semanticIndex = inputDesc.SemanticIndex;
             input.mask = inputDesc.Mask;
             input.componentType = inputDesc.ComponentType;

@@ -41,9 +41,11 @@ void RaceManagerComponent::Update(float deltaTime) {
    switch (state_) {
       case State::Countdown:
          countdownRemaining_ -= safeDeltaTime;
+
          if (countdownRemaining_ <= 0.0f) {
             BeginRace();
          }
+
          break;
       case State::Running:
          elapsedTime_ += safeDeltaTime;
@@ -53,11 +55,13 @@ void RaceManagerComponent::Update(float deltaTime) {
          // リスタートを選んだ場合は自動遷移より優先し、二重のシーン要求を防ぐ。
          if (!restartRequested_ && !nextScene_.empty() && !sceneChangeRequested_) {
             finishElapsed_ += safeDeltaTime;
+
             if (finishElapsed_ >= finishDelay_) {
                GameEngine::BaseScene::SetNextSceneName(nextScene_);
                sceneChangeRequested_ = true;
             }
          }
+
          break;
       default:
          break;
@@ -97,9 +101,8 @@ void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
 }
 
 void RaceManagerComponent::NotifyStart() {
-   if (state_ != State::Waiting) {
-      return;
-   }
+   if (state_ != State::Waiting) return;
+
    BeginRace();
 }
 
@@ -111,9 +114,7 @@ void RaceManagerComponent::NotifyCheckpoint(size_t checkpointIndex) {
 }
 
 void RaceManagerComponent::NotifyFinish() {
-   if (state_ != State::Running || !CanFinish()) {
-      return;
-   }
+   if (state_ != State::Running || !CanFinish()) return;
 
    state_ = State::Finished;
    startBannerRemaining_ = 0.0f;
@@ -146,6 +147,7 @@ void RaceManagerComponent::NotifyStartFinish() {
       NotifyStart();
       return;
    }
+
    if (state_ == State::Running && startGateExited_) {
       // スタート後に一度ゲート外へ出るまで、同じ重なりをゴールとして受理しない。
       NotifyFinish();
@@ -173,6 +175,7 @@ void RaceManagerComponent::Restart() {
       // 結果画面で停止した入力・演出制御を、シーン解決時に記録した有効状態へ戻す。
       cameraSwitcher_->SetEnabled(cameraSwitcherEnabledWhenUnlocked_);
    }
+
    if (speedPostEffectController_) {
       speedPostEffectController_->SetEnabled(speedPostEffectEnabledWhenRacing_);
    }
@@ -201,6 +204,7 @@ bool RaceManagerComponent::RequestRestart() {
    if (state_ != State::Finished || restartRequested_ || restartScene_.empty()) {
       return false;
    }
+
    restartRequested_ = true;
    GameEngine::BaseScene::SetNextSceneName(restartScene_);
    return true;
@@ -208,11 +212,13 @@ bool RaceManagerComponent::RequestRestart() {
 
 nlohmann::json RaceManagerComponent::Serialize() const {
    const char* startModeName = "Countdown";
+
    if (startMode_ == StartMode::Immediate) {
       startModeName = "Immediate";
    } else if (startMode_ == StartMode::Gate) {
       startModeName = "Gate";
    }
+
    return nlohmann::json{{"startMode", startModeName}, {"countdownSeconds", countdownSeconds_},
       {"startTextDuration", startTextDuration_}, {"checkpointCount", checkpointCount_},
       {"playerObjectId", playerObjectId_}, {"finishCameraId", finishCameraId_}, {"restartScene", restartScene_},
@@ -221,11 +227,11 @@ nlohmann::json RaceManagerComponent::Serialize() const {
 }
 
 void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) {
-      return;
-   }
+   if (!data.is_object()) return;
+
    if (data.contains("startMode") && data.at("startMode").is_string()) {
       const std::string startMode = data.at("startMode").get<std::string>();
+
       if (startMode == "Immediate") {
          startMode_ = StartMode::Immediate;
       } else if (startMode == "Gate") {
@@ -234,39 +240,51 @@ void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
          startMode_ = StartMode::Countdown;
       }
    }
+
    if (data.contains("countdownSeconds") && data.at("countdownSeconds").is_number()) {
       countdownSeconds_ = std::max(data.at("countdownSeconds").get<float>(), 0.0f);
    }
+
    if (data.contains("startTextDuration") && data.at("startTextDuration").is_number()) {
       startTextDuration_ = std::max(data.at("startTextDuration").get<float>(), 0.0f);
    }
+
    if (data.contains("checkpointCount") && data.at("checkpointCount").is_number_unsigned()) {
       checkpointCount_ = data.at("checkpointCount").get<size_t>();
    }
+
    if (data.contains("playerObjectId") && data.at("playerObjectId").is_string()) {
       playerObjectId_ = data.at("playerObjectId").get<std::string>();
    }
+
    if (data.contains("finishCameraId") && data.at("finishCameraId").is_string()) {
       finishCameraId_ = data.at("finishCameraId").get<std::string>();
    }
+
    if (data.contains("restartScene") && data.at("restartScene").is_string()) {
       restartScene_ = data.at("restartScene").get<std::string>();
    }
+
    if (data.contains("recordKey") && data.at("recordKey").is_string()) {
       recordKey_ = data.at("recordKey").get<std::string>();
    }
+
    if (data.contains("recordFile") && data.at("recordFile").is_string()) {
       recordFile_ = data.at("recordFile").get<std::string>();
    }
+
    if (data.contains("lockPlayerDuringCountdown") && data.at("lockPlayerDuringCountdown").is_boolean()) {
       lockPlayerDuringCountdown_ = data.at("lockPlayerDuringCountdown").get<bool>();
    }
+
    if (data.contains("lockPlayerOnFinish") && data.at("lockPlayerOnFinish").is_boolean()) {
       lockPlayerOnFinish_ = data.at("lockPlayerOnFinish").get<bool>();
    }
+
    if (data.contains("nextScene") && data.at("nextScene").is_string()) {
       nextScene_ = data.at("nextScene").get<std::string>();
    }
+
    if (data.contains("finishDelay") && data.at("finishDelay").is_number()) {
       finishDelay_ = std::max(data.at("finishDelay").get<float>(), 0.0f);
    }
@@ -295,15 +313,18 @@ bool RaceManagerComponent::CanFinish() const {
 
 void RaceManagerComponent::SetPlayerLocked(bool locked) {
    playerLocked_ = locked;
+
    if (locked) {
       // 物理を止める前に残速度を消し、解除直後にロック前の慣性が再開しないようにする。
       if (gravityBody_) {
          gravityBody_->StopMotion();
          gravityBody_->SetEnabled(false);
       }
+
       if (vehicleController_) {
          vehicleController_->SetEnabled(false);
       }
+
       return;
    }
 
@@ -312,19 +333,20 @@ void RaceManagerComponent::SetPlayerLocked(bool locked) {
       gravityBody_->StopMotion();
       gravityBody_->SetEnabled(gravityBodyEnabledWhenUnlocked_);
    }
+
    if (vehicleController_) {
       vehicleController_->SetEnabled(vehicleControllerEnabledWhenUnlocked_);
    }
 }
 
 void RaceManagerComponent::AddBestTime(float timeSeconds) {
-   if (!std::isfinite(timeSeconds) || timeSeconds <= 0.0f) {
-      return;
-   }
+   if (!std::isfinite(timeSeconds) || timeSeconds <= 0.0f) return;
+
    bestTimes_.push_back(timeSeconds);
 
    // 保存・表示の双方が先頭から最速順を仮定するため、追加時点で固定件数へ正規化する。
    std::sort(bestTimes_.begin(), bestTimes_.end());
+
    if (bestTimes_.size() > kBestTimeCount) {
       bestTimes_.resize(kBestTimeCount);
    }
@@ -332,11 +354,13 @@ void RaceManagerComponent::AddBestTime(float timeSeconds) {
 
 bool RaceManagerComponent::LoadBestTimes() {
    bestTimes_.clear();
+
    if (recordFile_.empty() || recordKey_.empty()) {
       return true;
    }
 
    const std::filesystem::path recordPath(recordFile_);
+
    if (!std::filesystem::exists(recordPath)) {
       // 初回起動は記録なしが正常なので、空ランキングのまま成功として扱う。
       return true;
@@ -344,6 +368,7 @@ bool RaceManagerComponent::LoadBestTimes() {
 
    try {
       std::ifstream input(recordPath);
+
       if (!input.is_open()) {
          LogRecordWarning("could not open record file");
          return false;
@@ -351,6 +376,7 @@ bool RaceManagerComponent::LoadBestTimes() {
 
       nlohmann::json root;
       input >> root;
+
       if (!root.is_object() || !root.contains("races") || !root.at("races").is_object()) {
          LogRecordWarning("record file schema is invalid");
          return false;
@@ -362,7 +388,9 @@ bool RaceManagerComponent::LoadBestTimes() {
       if (!races.contains(recordKey_) || !races.at(recordKey_).is_object()) {
          return true;
       }
+
       const auto& raceData = races.at(recordKey_);
+
       if (!raceData.contains("bestTimes") || !raceData.at("bestTimes").is_array()) {
          return true;
       }
@@ -372,6 +400,7 @@ bool RaceManagerComponent::LoadBestTimes() {
             AddBestTime(value.get<float>());
          }
       }
+
       return true;
    } catch (const std::exception& exception) {
       LogRecordWarning(std::string("failed to load records: ") + exception.what());
@@ -388,10 +417,12 @@ bool RaceManagerComponent::SaveBestTimes() const {
 
    const std::filesystem::path recordPath(recordFile_);
    nlohmann::json root = nlohmann::json::object();
+
    if (std::filesystem::exists(recordPath)) {
       // 他コースの記録を保持するため、既存JSONを土台に現在キーだけを更新する。
       try {
          std::ifstream input(recordPath);
+
          if (input.is_open()) {
             input >> root;
          }
@@ -400,18 +431,24 @@ bool RaceManagerComponent::SaveBestTimes() const {
          root = nlohmann::json::object();
       }
    }
+
    if (!root.is_object()) {
       root = nlohmann::json::object();
    }
+
    root["version"] = kRecordFormatVersion;
+
    if (!root.contains("races") || !root.at("races").is_object()) {
       root["races"] = nlohmann::json::object();
    }
+
    root["races"][recordKey_]["bestTimes"] = bestTimes_;
 
    std::error_code error;
+
    if (!recordPath.parent_path().empty()) {
       std::filesystem::create_directories(recordPath.parent_path(), error);
+
       if (error) {
          LogRecordWarning("could not create record directory: " + error.message());
          return false;
@@ -424,12 +461,15 @@ bool RaceManagerComponent::SaveBestTimes() const {
    // 書き込み途中の本番ファイルを残さないよう、一時ファイルを完成させてから置換する。
    try {
       std::ofstream output(temporaryPath, std::ios::out | std::ios::trunc);
+
       if (!output.is_open()) {
          LogRecordWarning("could not open temporary record file");
          return false;
       }
+
       output << root.dump(kJsonIndentSize) << '\n';
       output.close();
+
       if (!output) {
          LogRecordWarning("could not finish writing temporary record file");
          return false;
@@ -448,6 +488,7 @@ bool RaceManagerComponent::SaveBestTimes() const {
    }
 #else
    std::filesystem::rename(temporaryPath, recordPath, error);
+
    if (error) {
       LogRecordWarning("could not replace record file: " + error.message());
       std::filesystem::remove(temporaryPath, error);
@@ -464,18 +505,24 @@ void RaceManagerComponent::LogRecordWarning(const std::string& message) const {
 #ifdef USE_IMGUI
 void RaceManagerComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    const char* startModes[] = {"Immediate", "Countdown", "Gate"};
    int mode = static_cast<int>(startMode_);
-   if (ImGui::Combo("Start Mode", &mode, startModes, 3))
+
+   if (ImGui::Combo("Start Mode", &mode, startModes, 3)) {
       startMode_ = static_cast<StartMode>(mode);
+   }
+
    ImGui::DragFloat("Countdown Seconds", &countdownSeconds_, 0.1f, 0.0f, 60.0f);
    ImGui::DragFloat("Start Text Duration", &startTextDuration_, 0.05f, 0.0f, 60.0f);
    int count = static_cast<int>(std::min(checkpointCount_, size_t{100000}));
-   if (ImGui::InputInt("Checkpoint Count", &count))
+
+   if (ImGui::InputInt("Checkpoint Count", &count)) {
       checkpointCount_ = static_cast<size_t>(std::max(count, 0));
+   }
+
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    GameEngine::EditorUI::CameraReference("Finish Camera", finishCameraId_);
    GameEngine::EditorUI::SceneReference("Restart Scene", restartScene_);
@@ -489,9 +536,11 @@ void RaceManagerComponent::DrawInspector() {
    ImGui::Text("State: %s", stateNames[static_cast<int>(state_)]);
    ImGui::Text("Time: %.3f", elapsedTime_);
    ImGui::Text("Checkpoint: %zu / %zu", nextCheckpointIndex_, checkpointCount_);
+
    for (size_t index = 0; index < bestTimes_.size(); ++index) {
       ImGui::Text("Best %zu: %.3f", index + 1, bestTimes_[index]);
    }
+
    if (ImGui::Button("Restart State")) {
       Restart();
    }

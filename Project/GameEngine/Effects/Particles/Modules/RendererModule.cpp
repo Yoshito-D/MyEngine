@@ -20,29 +20,47 @@ nlohmann::json RendererModule::ToJson() const {
 }
 
 void RendererModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
-   if (j.contains("rotationSpace"))
+   }
+
+   if (j.contains("rotationSpace")) {
       rotationSpace_ = static_cast<RotationSpace>(j["rotationSpace"].get<int>());
-   if (j.contains("billboardType"))
+   }
+
+   if (j.contains("billboardType")) {
       billboardType_ = static_cast<BillboardType>(j["billboardType"].get<int>());
-   if (j.contains("speedScale"))
+   }
+
+   if (j.contains("speedScale")) {
       speedScale_ = j["speedScale"];
-   if (j.contains("lengthScale"))
+   }
+
+   if (j.contains("lengthScale")) {
       lengthScale_ = j["lengthScale"];
+   }
+
    if (j.contains("velocityStretchEnabled")) {
       velocityStretchEnabled_ = j["velocityStretchEnabled"];
    } else {
       // 旧データのVelocityは方向合わせとストレッチが一体だったため、見た目を維持する。
       velocityStretchEnabled_ = billboardType_ == BillboardType::Velocity;
    }
-   if (j.contains("sortMode"))
+
+   if (j.contains("sortMode")) {
       sortMode_ = static_cast<SortMode>(j["sortMode"].get<int>());
-   if (j.contains("cameraFadeEnabled"))
+   }
+
+   if (j.contains("cameraFadeEnabled")) {
       cameraFadeEnabled_ = j["cameraFadeEnabled"];
-   if (j.contains("cameraFadeNear"))
+   }
+
+   if (j.contains("cameraFadeNear")) {
       SetCameraFadeNear(j["cameraFadeNear"]);
-   if (j.contains("cameraFadeFar"))
+   }
+
+   if (j.contains("cameraFadeFar")) {
       SetCameraFadeFar(j["cameraFadeFar"]);
+   }
 }
 }

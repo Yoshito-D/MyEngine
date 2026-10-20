@@ -21,9 +21,8 @@ namespace App {
 
 void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float deltaTime) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    // ---- 速度更新 ----
    // autoSpeed へ向けて currentSpeed_ を毎フレーム近づける。
@@ -51,9 +50,8 @@ void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float
    // VehicleLandingAligner が Slerp 補正中の場合は姿勢を書き換えない。
    // 両方が同フレームに transform を書き換えると補正がキャンセルされるため。
    auto* aligner = GetOwner().GetComponent<VehicleLandingAligner>();
-   if (aligner && aligner->IsAligning()) {
-      return;
-   }
+
+   if (aligner && aligner->IsAligning()) return;
 
    RebuildPosture(flatForward_, gravityUp);
 }
@@ -100,9 +98,8 @@ void VehicleGroundMover::ApplyLandingPenalty(float speed, float duration) {
 
 void VehicleGroundMover::BlockAcceleration(float seconds) {
    accelerationBlockRemaining_ = std::max(accelerationBlockRemaining_, std::max(0.0f, seconds));
-   if (!IsAccelerationBlocked()) {
-      return;
-   }
+
+   if (!IsAccelerationBlocked()) return;
 
    // 着地直前のミニターボなどが次フレームに持ち越されないようにする。
    velocityImpulse_ = std::min(0.0f, velocityImpulse_);
@@ -114,9 +111,7 @@ void VehicleGroundMover::AdvanceAccelerationBlock(float deltaTime) {
 }
 
 void VehicleGroundMover::AddAcceleration(float accel) {
-   if (IsAccelerationBlocked() && accel > 0.0f) {
-      return;
-   }
+   if (IsAccelerationBlocked() && accel > 0.0f) return;
 
    // currentSpeed_ が未初期化（負値）のときは autoSpeed を初期値として使う。
    if (currentSpeed_ < 0.0f) {
@@ -128,9 +123,8 @@ void VehicleGroundMover::AddAcceleration(float accel) {
 }
 
 void VehicleGroundMover::AddVelocityImpulse(float impulse) {
-   if (IsAccelerationBlocked() && impulse > 0.0f) {
-      return;
-   }
+   if (IsAccelerationBlocked() && impulse > 0.0f) return;
+
    if (currentSpeed_ < 0.0f) {
       currentSpeed_ = autoSpeed;
    }
@@ -170,14 +164,14 @@ Vector3 VehicleGroundMover::ProjectToHorizontalPlane(const Vector3& dir, const V
       flat = tmp - gravityUp * gravityUp.Dot(tmp);
       flatLen = flat.Length();
    }
+
    return flat * (1.0f / flatLen);
 }
 
 void VehicleGroundMover::ApplyVelocityToGravityBody(const Vector3& flatForward, const Vector3& gravityUp) {
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-   if (!gravityBody) {
-      return;
-   }
+
+   if (!gravityBody) return;
 
    // 既存の速度から重力方向成分（垂直速度）だけを取り出す。
    // Dot(gravityUp) で垂直方向の大きさを得て、gravityUp を掛けて垂直ベクトルを復元する。
@@ -187,9 +181,8 @@ void VehicleGroundMover::ApplyVelocityToGravityBody(const Vector3& flatForward, 
 
 void VehicleGroundMover::RebuildPosture(const Vector3& flatForward, const Vector3& gravityUp) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    // 正規直交基底を構築する。
    // right  = gravityUp × flatForward（右方向）
@@ -209,6 +202,7 @@ void VehicleGroundMover::RebuildPosture(const Vector3& flatForward, const Vector
    // GravityBody は「重力から見た現在の上向き」を内部で持っており、
    // これを更新しないと回転補正が古い Up に向かって動き続ける。
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
+
    if (gravityBody) {
       gravityBody->SetCurrentUpVector(gravityUp);
       gravityBody->SetTargetUpVector(gravityUp);
@@ -230,6 +224,7 @@ Quaternion VehicleGroundMover::BasisToQuaternion(const Vector3& right, const Vec
    // trace が負のときは w が小さく精度が落ちるため、最大の対角成分を基準に分岐する。
    float trace = m00 + m11 + m22;
    Quaternion q;
+
    if (trace > 0.0f) {
       float s = 0.5f / std::sqrt(trace + 1.0f);
       q.w = (0.25f / s);
@@ -255,6 +250,7 @@ Quaternion VehicleGroundMover::BasisToQuaternion(const Vector3& right, const Vec
       q.y = (m12 + m21) / s;
       q.z = 0.25f * s;
    }
+
    return q.Normalize();
 }
 
@@ -266,18 +262,20 @@ Quaternion VehicleGroundMover::BasisToQuaternion(const Vector3& right, const Vec
 void VehicleGroundMover::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::DragFloat(Tr("自動速度", "Auto Speed"), &autoSpeed, 0.1f, 0.0f, 100.0f);
    ImGui::DragFloat((std::string(Tr("操舵速度", "Steer Speed")) + "##2").c_str(), &steerSpeed, 1.0f, 0.0f, 360.0f);
    ImGui::DragFloat(Tr("速度回復", "Speed Recovery"), &speedRecovery, 0.1f, 0.1f, 20.0f);
    ImGui::DragFloat(Tr("最大速度", "Max Speed"), &maxSpeed, 0.1f, 0.0f, 200.0f);
    ImGui::Spacing();
+
    if (ImGui::Button(Tr("速度リセット", "Reset Speed"))) {
       currentSpeed_ = 0.0f;
    }
+
    ImGui::Spacing();
    ImGui::Text("%s: %.2f", Tr("現在速度", "Current Speed"), currentSpeed_);
    ImGui::Text(
@@ -299,15 +297,19 @@ void VehicleGroundMover::Deserialize(const nlohmann::json& data) {
    if (data.contains("autoSpeed")) {
       autoSpeed = data["autoSpeed"];
    }
+
    if (data.contains("steerSpeed")) {
       steerSpeed = data["steerSpeed"];
    }
+
    if (data.contains("speedRecovery")) {
       speedRecovery = data["speedRecovery"];
    }
+
    if (data.contains("maxSpeed")) {
       maxSpeed = data["maxSpeed"];
    }
+
    Configure(DescribeSettings());
 }
 

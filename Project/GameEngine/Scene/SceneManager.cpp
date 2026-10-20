@@ -15,12 +15,14 @@ bool SceneManager::ChangeScene(const std::string& name) {
    }
 
    auto newScene = factory_->CreateScene(name);
+
    if (!newScene) {
       return false;
    }
 
    // Initializeより先にデータ名を渡し、EditorContextやDebugCamera状態が正しいファイルを参照できるようにする。
    newScene->SetEditorSceneName(name);
+
    if (!ChangeScene(std::move(newScene))) {
       return false;
    }
@@ -36,10 +38,14 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
 
    isChangingScene_ = true;
    auto* audio = EngineContext::GetAudio();
-   if (audio)
+
+   if (audio) {
       audio->StopPreviews();
-   if (audio && audio->IsAvailable())
+   }
+
+   if (audio && audio->IsAvailable()) {
       audio->BeginBgmSceneChange();
+   }
 
    // 新シーン生成にはCamera/Light等のグローバルManagerを再利用するため、旧シーンを完全に終了してから初期化する。
    if (currentScene_) {
@@ -58,8 +64,9 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
    currentScene_->Initialize();
    currentScene_->LoadSceneDataIfNeeded();
 
-   if (audio && audio->IsAvailable())
+   if (audio && audio->IsAvailable()) {
       audio->EndBgmSceneChange(HasSceneBgmRequest());
+   }
 #ifndef USE_IMGUI
    BeginSceneAudio();
 #endif
@@ -72,6 +79,7 @@ bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
 void SceneManager::Update() {
    // フェードはPauseやtimeScaleの影響を受けないUI時間で進める。
    UpdateTransition(EngineContext::GetUnscaledDeltaTime());
+
    if (currentScene_) {
       currentScene_->Update();
    }
@@ -79,6 +87,7 @@ void SceneManager::Update() {
 
 void SceneManager::EditorUpdate() {
    UpdateTransition(EngineContext::GetUnscaledDeltaTime());
+
    if (currentScene_) {
       currentScene_->EditorUpdate();
    }
@@ -91,17 +100,21 @@ void SceneManager::RuntimeUpdate() {
 }
 
 void SceneManager::Draw() {
-   if (currentScene_)
+   if (currentScene_) {
       currentScene_->Draw();
+   }
 }
 
 void SceneManager::Finalize() {
-   if (auto* audio = EngineContext::GetAudio())
+   if (auto* audio = EngineContext::GetAudio()) {
       audio->StopPreviews();
+   }
+
    if (currentScene_) {
       currentScene_->Finalize();
       currentScene_.reset();
    }
+
    pendingSceneName_.clear();
    transitionState_ = TransitionState::Idle;
    transitionElapsed_ = 0.0f;
@@ -110,13 +123,11 @@ void SceneManager::Finalize() {
 }
 
 void SceneManager::CheckSceneChange() {
-   if (!currentScene_ || isChangingScene_)
-      return;
+   if (!currentScene_ || isChangingScene_) return;
 
    std::string nextSceneName = currentScene_->GetNextSceneName();
-   if (nextSceneName.empty()) {
-      return;
-   }
+
+   if (nextSceneName.empty()) return;
 
    // 既にフェード中なら最初の要求を維持し、毎フレーム遷移先が書き換わるのを防ぐ。
    if (pendingSceneName_.empty()) {
@@ -125,27 +136,27 @@ void SceneManager::CheckSceneChange() {
 }
 
 void SceneManager::UpdateTransition(float deltaTime) {
-   if (transitionState_ == TransitionState::Idle) {
-      return;
-   }
+   if (transitionState_ == TransitionState::Idle) return;
 
    // 負の時間を拒否し、0除算のない固定Durationに対して進捗を正規化する。
    transitionElapsed_ += std::max(deltaTime, 0.0f);
    const float progress = std::clamp(transitionElapsed_ / kTransitionDuration, 0.0f, 1.0f);
+
    if (transitionState_ == TransitionState::FadingIn) {
       transitionOpacity_ = 1.0f - progress;
       EngineContext::SetSceneTransitionOpacity(transitionOpacity_);
+
       if (progress >= 1.0f) {
          transitionState_ = TransitionState::Idle;
       }
+
       return;
    }
 
    transitionOpacity_ = progress;
    EngineContext::SetSceneTransitionOpacity(transitionOpacity_);
-   if (progress < 1.0f || pendingSceneName_.empty()) {
-      return;
-   }
+
+   if (progress < 1.0f || pendingSceneName_.empty()) return;
 
    // ChangeScene中の再参照に備えてpendingを先に空にし、遷移先名はローカルへ確保する。
    const std::string nextSceneName = std::move(pendingSceneName_);
@@ -171,9 +182,8 @@ void SceneManager::UpdateTransition(float deltaTime) {
 }
 
 void SceneManager::StartFadeOut(const std::string& nextSceneName) {
-   if (nextSceneName.empty()) {
-      return;
-   }
+   if (nextSceneName.empty()) return;
+
    pendingSceneName_ = nextSceneName;
    BaseScene::SetNextSceneName("");
    transitionState_ = TransitionState::FadingOut;

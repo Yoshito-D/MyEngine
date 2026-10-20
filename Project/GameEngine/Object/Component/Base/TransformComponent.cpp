@@ -38,10 +38,12 @@ TransformationMatrix* TransformComponent::EnsureTransformationMatrix() {
 
 void TransformComponent::SetWorldMatrixOverride(const Matrix4x4& worldMatrix) {
    // Animation等が計算済みWorld行列を供給する場合に、通常のTRS/親子合成を一時的に迂回する。
-   for (const auto& row : worldMatrix.m)
-      for (float element : row)
-         if (!std::isfinite(element))
-            return;
+   for (const auto& row : worldMatrix.m) {
+      for (float element : row) {
+         if (!std::isfinite(element)) return;
+      }
+   }
+
    worldMatrixOverride_ = worldMatrix;
    hasWorldMatrixOverride_ = true;
 }
@@ -52,31 +54,35 @@ void TransformComponent::ClearWorldMatrixOverride() {
 }
 
 bool TransformComponent::ApplyLocalPose(const Transform& pose) {
-   if (!pose.IsFinite())
+   if (!pose.IsFinite()) {
       return false;
+   }
+
    transform = pose;
    ClearWorldMatrixOverride();
    return true;
 }
 
 void TransformComponent::ResolveParentRelation() {
-   if (!HasOwner() || !GetOwner().GetParentEntityId().empty() || parentObjectName.empty())
-      return;
+   if (!HasOwner() || !GetOwner().GetParentEntityId().empty() || parentObjectName.empty()) return;
+
    if (const auto* parent = Object::FindByObjectName(parentObjectName)) {
-      if (GetOwner().SetParentEntityId(parent->GetEntityId()))
+      if (GetOwner().SetParentEntityId(parent->GetEntityId())) {
          parentObjectName.clear();
+      }
    }
 }
 
 void TransformComponent::ResolveParentRelation(std::span<Object* const> sceneObjects) {
-   if (!HasOwner() || !GetOwner().GetParentEntityId().empty() || parentObjectName.empty())
-      return;
+   if (!HasOwner() || !GetOwner().GetParentEntityId().empty() || parentObjectName.empty()) return;
 
    // エディタの旧データ移行では別シーンの同名オブジェクトを検索対象へ広げない。
    for (const auto* candidate : sceneObjects) {
       if (candidate && candidate != &GetOwner() && candidate->GetObjectName() == parentObjectName) {
-         if (GetOwner().SetParentEntityId(candidate->GetEntityId()))
+         if (GetOwner().SetParentEntityId(candidate->GetEntityId())) {
             parentObjectName.clear();
+         }
+
          return;
       }
    }
@@ -103,14 +109,11 @@ nlohmann::json TransformComponent::Serialize() const {
 void TransformComponent::Deserialize(const nlohmann::json& data) {
    // 不足フィールドは現在値を保つ部分更新方式にし、旧シーン形式やComponent単体保存を受け入れる。
    auto readVec3 = [](const nlohmann::json& source, const char* key, Vector3& out) {
-      if (!source.contains(key) || !source.at(key).is_array()) {
-         return;
-      }
+      if (!source.contains(key) || !source.at(key).is_array()) return;
 
       const auto& array = source.at(key);
-      if (array.size() != 3) {
-         return;
-      }
+
+      if (array.size() != 3) return;
 
       out.x = array[0].get<float>();
       out.y = array[1].get<float>();
@@ -142,6 +145,7 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 
    if (data.contains("rotationQuaternion") && data.at("rotationQuaternion").is_array()) {
       const auto& quaternionArray = data.at("rotationQuaternion");
+
       if (quaternionArray.size() == 4) {
          rotationQuaternion.x = quaternionArray[0].get<float>();
          rotationQuaternion.y = quaternionArray[1].get<float>();
@@ -153,6 +157,7 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 
    if (data.contains("rotationSource") && data.at("rotationSource").is_string()) {
       const auto source = data.at("rotationSource").get<std::string>();
+
       if (source == "quaternion") {
          rotationSource = Transform::RotationSource::Quaternion;
       }
@@ -192,15 +197,16 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 #ifdef USE_IMGUI
 void TransformComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    Transform pose = transform;
    Vector3& scale = pose.scale;
    bool changed = ImGuiHelper::DrawVec3Control(
       ImGuiHelper::Localize({"スケール", "Scale"}), scale, 1.0f, ImGuiHelper::kDefaultColumnWidth, 0.1f, 0.1f, 10.0f);
 
    Vector3 rotationEuler = pose.GetActiveEuler();
+
    if (ImGuiHelper::DrawEulerDegreesControl(ImGuiHelper::Localize({"回転 (deg)", "Rotation (deg)"}), rotationEuler,
           0.0f, ImGuiHelper::kDefaultColumnWidth, 0.1f)) {
       // 表示用Euler角を正規化されたQuaternionへ変換する。
@@ -212,8 +218,9 @@ void TransformComponent::DrawInspector() {
    changed |= ImGuiHelper::DrawVec3Control(
       ImGuiHelper::Localize({"位置", "Position"}), position, 0.0f, ImGuiHelper::kDefaultColumnWidth, 0.1f);
 
-   if (changed)
+   if (changed) {
       ApplyLocalPose(pose);
+   }
 
    // Transform InspectorとGizmoの座標系/スナップ設定を同じ欄へまとめる。
    if (auto* currentScene = BaseScene::GetCurrentScene()) {
@@ -228,12 +235,14 @@ void TransformComponent::DrawInspector() {
 
    std::string parentEntityId = HasOwner() ? GetOwner().GetParentEntityId() : std::string();
    bool parentEnabled = !parentEntityId.empty();
+
    if (ImGuiHelper::DrawCheckbox(ImGuiHelper::Localize({"親を使用", "Use Parent"}), parentEnabled)) {
       if (!parentEnabled) {
          // 親を無効化した時点で新旧両方の参照を消し、後のScene解決で再接続されないようにする。
          if (HasOwner()) {
             GetOwner().SetParentEntityId({});
          }
+
          parentObjectName.clear();
       }
    }

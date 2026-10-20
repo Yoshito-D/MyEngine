@@ -9,10 +9,14 @@ GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
 
 bool IsFiniteMatrix(const Matrix4x4& matrix) {
-   for (const auto& row : matrix.m)
-      for (float element : row)
-         if (!std::isfinite(element))
+   for (const auto& row : matrix.m) {
+      for (float element : row) {
+         if (!std::isfinite(element)) {
             return false;
+         }
+      }
+   }
+
    return true;
 }
 
@@ -25,31 +29,34 @@ Matrix4x4 NormalMatrix(const Matrix4x4& world) {
 }
 
 void TransformationMatrix::Initialize(GraphicsDevice* device) {
-   if (sIsInitialized_)
-      return;
+   if (sIsInitialized_) return;
+
    sDevice_ = device;
    sIsInitialized_ = true;
 }
 
 void TransformationMatrix::Create(const Matrix4x4& wvp, const Matrix4x4& world) {
-   if (!sIsInitialized_)
-      return;
+   if (!sIsInitialized_) return;
+
    transformationMatrixResource_ =
       ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(TransformationMatrixData));
 
    // 書き込むためのアドレスを取得
    transformationMatrixResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
    *transformationMatrixData_ = {MakeIdentity4x4(), MakeIdentity4x4(), MakeIdentity4x4()};
-   if (IsFiniteMatrix(wvp) && IsFiniteMatrix(world))
+
+   if (IsFiniteMatrix(wvp) && IsFiniteMatrix(world)) {
       *transformationMatrixData_ = {wvp, world, NormalMatrix(world)};
+   }
 }
 
 void TransformationMatrix::ApplyWorldTransform(const Matrix4x4& world, const Matrix4x4& viewProjection) {
-   if (!transformationMatrixData_)
-      return;
+   if (!transformationMatrixData_) return;
+
    const auto wvp = world * viewProjection;
-   if (!IsFiniteMatrix(world) || !IsFiniteMatrix(wvp))
-      return;
+
+   if (!IsFiniteMatrix(world) || !IsFiniteMatrix(wvp)) return;
+
    *transformationMatrixData_ = {wvp, world, NormalMatrix(world)};
 }
 

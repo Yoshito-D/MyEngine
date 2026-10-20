@@ -28,12 +28,15 @@ std::string BuildDefaultModelName(const std::vector<GameEngine::Model*>& registe
             return true;
          }
       }
+
       return false;
    };
 
    uint32_t index = 1;
+
    while (true) {
       const std::string candidate = "Model_" + std::to_string(index++);
+
       if (!exists(candidate)) {
          return candidate;
       }
@@ -54,9 +57,11 @@ Model::Model() {
       pose.scale = Vector3(1.0f, 1.0f, 1.0f);
       transformComponent->ApplyLocalPose(pose);
    }
+
    if (auto* materialComponent = AddComponent<MaterialComponent>()) {
       materialComponent->EnsureMaterial(BuildAutoModelMaterialName());
    }
+
    AddComponent<MeshComponent>();
    AddComponent<RenderComponent>();
    SetObjectName(BuildDefaultModelName(sRegisteredModels_));
@@ -68,12 +73,11 @@ Model::~Model() {
 }
 
 void Model::UnregisterModel(Model* model) {
-   if (!model) {
-      return;
-   }
+   if (!model) return;
 
    // 登録はコンストラクタで一度だけ行うため、最初の一致を消せば一覧の整合性を回復できる。
    auto it = std::find(sRegisteredModels_.begin(), sRegisteredModels_.end(), model);
+
    if (it != sRegisteredModels_.end()) {
       sRegisteredModels_.erase(it);
    }
@@ -87,6 +91,7 @@ Model& Model::SetModelAsset(const std::shared_ptr<ModelAsset>& modelAsset) {
    if (auto* c = GetComponent<MeshComponent>()) {
       c->SetModelAsset(modelAsset);
    }
+
    return *this;
 }
 
@@ -96,6 +101,7 @@ Model& Model::SetMaterial(Material* material) {
          materialComponent->AssignMaterial(material);
       }
    }
+
    return *this;
 }
 
@@ -104,6 +110,7 @@ Model& Model::Create() {
    AddComponent<RenderComponent>();
 
    auto* transformComponent = GetComponent<TransformComponent>();
+
    if (transformComponent) {
       {
          auto pose = transformComponent->GetLocalPose();
@@ -112,6 +119,7 @@ Model& Model::Create() {
       }
       transformComponent->EnsureTransformationMatrix();
    }
+
    return *this;
 }
 
@@ -123,40 +131,45 @@ const Vector3& Model::GetPosition() const {
    if (!transformComponent) {
       return zero;
    }
+
    return transformComponent->GetLocalPose().translation;
 }
 
 Vector3 Model::GetRotation() const {
    static const Vector3 zero = Vector3(0.0f, 0.0f, 0.0f);
    const auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
       return zero;
    }
+
    return transformComponent->GetLocalPose().GetActiveEuler();
 }
 
 const Vector3& Model::GetScale() const {
    static const Vector3 one(1.0f, 1.0f, 1.0f);
    const auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
       return one;
    }
+
    return transformComponent->GetLocalPose().scale;
 }
 
 void Model::SetTransform(const Transform& transform) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
+
    transformComponent->ApplyLocalPose(transform);
 }
 
 void Model::SetPosition(const Vector3& translation) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
+
    {
       auto pose = transformComponent->GetLocalPose();
       pose.translation = translation;
@@ -166,9 +179,9 @@ void Model::SetPosition(const Vector3& translation) {
 
 void Model::SetRotation(const Vector3& rotation) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
+
    {
       auto pose = transformComponent->GetLocalPose();
       pose.SetRotationEuler(rotation);
@@ -178,9 +191,9 @@ void Model::SetRotation(const Vector3& rotation) {
 
 void Model::SetRotationQuaternion(const Quaternion& quaternion) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
+
    {
       auto pose = transformComponent->GetLocalPose();
       pose.SetRotationQuaternion(quaternion);
@@ -191,6 +204,7 @@ void Model::SetRotationQuaternion(const Quaternion& quaternion) {
 Quaternion Model::GetRotationQuaternion() const {
    static const Quaternion identity = Quaternion::Identity();
    const auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
       return identity;
    }
@@ -200,20 +214,23 @@ Quaternion Model::GetRotationQuaternion() const {
 
 void Model::SetUseQuaternion(bool use) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
 
    auto transform = transformComponent->GetLocalPose();
-   if (use)
+
+   if (use) {
       transform.SetRotationQuaternion(transform.GetActiveQuaternion());
-   else
+   } else {
       transform.SetRotationEuler(transform.GetActiveEuler());
+   }
+
    transformComponent->ApplyLocalPose(transform);
 }
 
 bool Model::IsUsingQuaternion() const {
    const auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
       return false;
    }
@@ -223,17 +240,17 @@ bool Model::IsUsingQuaternion() const {
 
 void Model::SetWorldMatrix(const Matrix4x4& worldMatrix) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
+
    transformComponent->SetWorldMatrixOverride(worldMatrix);
 }
 
 void Model::SetScale(const Vector3& scale) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent) {
-      return;
-   }
+
+   if (!transformComponent) return;
+
    {
       auto pose = transformComponent->GetLocalPose();
       pose.scale = scale;
@@ -243,14 +260,12 @@ void Model::SetScale(const Vector3& scale) {
 
 void Model::UpdateMatrix(Camera* camera) {
    auto* transformComponent = GetComponent<TransformComponent>();
-   if (!transformComponent || !camera) {
-      return;
-   }
+
+   if (!transformComponent || !camera) return;
 
    auto* transformationMatrix = transformComponent->EnsureTransformationMatrix();
-   if (!transformationMatrix) {
-      return;
-   }
+
+   if (!transformationMatrix) return;
 
    // 通常はローカル Transform から組み立てるが、物理演算などが最終行列を供給した場合は
    // その結果を優先し、二重にスケール・回転・平行移動を適用しない。
@@ -262,6 +277,7 @@ void Model::UpdateMatrix(Camera* camera) {
 
    // modelAssetのrootNode.localMatrixを掛ける
    const ModelAsset* modelAsset = GetComponent<MeshComponent>()->GetModelAsset();
+
    if (modelAsset) {
       // スキニングモデルではボーン階層がルート変換を担うため、ここで再適用すると二重変換になる。
       if (!modelAsset->HasSkinningData()) {
@@ -275,9 +291,11 @@ void Model::UpdateMatrix(Camera* camera) {
 
 TransformationMatrix* Model::GetTransformationMatrix() {
    auto* transformComponent = GetComponent<TransformComponent>();
+
    if (!transformComponent) {
       return nullptr;
    }
+
    return transformComponent->EnsureTransformationMatrix();
 }
 }

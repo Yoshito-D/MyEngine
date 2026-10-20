@@ -67,18 +67,21 @@ float3 CalculateAreaLightContribution(float3 surfacePos, float3 surfaceNormal, f
    float3 lightDirFromClosest = normalize(toClosestPoint);
 
    float cosTheta = dot(surfaceNormal, lightDirFromClosest);
+
    if (cosTheta <= 0.0f) {
       specular = float3(0.0f, 0.0f, 0.0f);
       return float3(0.0f, 0.0f, 0.0f);
    }
 
    float lightCosTheta = dot(-lightDirFromClosest, lightNormal);
+
    if (lightCosTheta <= 0.0f) {
       specular = float3(0.0f, 0.0f, 0.0f);
       return float3(0.0f, 0.0f, 0.0f);
    }
 
    float3 diffuse;
+
    if (lightingMode == 1) {
       diffuse = CalculateLambert(surfaceNormal, -lightDirFromClosest);
    } else {
@@ -86,6 +89,7 @@ float3 CalculateAreaLightContribution(float3 surfacePos, float3 surfaceNormal, f
    }
 
    specular = float3(0.0f, 0.0f, 0.0f);
+
    if (lightingMode == 3) {
       specular = CalculatePhongSpecular(surfaceNormal, lightDirFromClosest, toEye, shininess);
    } else if (lightingMode == 4) {

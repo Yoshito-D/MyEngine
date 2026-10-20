@@ -54,31 +54,34 @@ uint PopFreeParticle() {
    // Update CSとの間のUAV barrierにより、counterが示すslotは必ず公開済みである。
    // 同一Emitter dispatch内ではpushしないため、CASによるcounter予約だけで競合を解決できる。
    uint availableCount = gFreeCount.Load(0u);
+
    while (availableCount > 0u) {
       uint observedCount;
       gFreeCount.InterlockedCompareExchange(0u, availableCount, availableCount - 1u, observedCount);
+
       if (observedCount == availableCount) {
          return gFreeList[availableCount - 1u];
       }
+
       availableCount = observedCount;
    }
+
    return INVALID_PARTICLE_INDEX;
 }
 
 [numthreads(64, 1, 1)] void main(uint3 dispatchThreadId : SV_DispatchThreadID) {
    uint requestIndex = dispatchThreadId.x;
-   if (requestIndex >= gSpawnRequestCount) {
-      return;
-   }
+
+   if (requestIndex >= gSpawnRequestCount) return;
 
    GpuSpawnRequest request = gSpawnRequests[requestIndex];
    uint ownerIndex = request.state.ownerParticleIndex;
-   if (ownerIndex >= gParticleCapacity) {
-      return;
-   }
+
+   if (ownerIndex >= gParticleCapacity) return;
 
    if (request.operation == 1u) {
       uint existingIndex = gOwnerMappings[ownerIndex];
+
       if (existingIndex < gParticleCapacity && gAliveFlags[existingIndex] != 0u) {
          GpuParticleState state = gStates[existingIndex];
          state.positionAndActive.xyz = request.state.positionAndActive.xyz;
@@ -86,6 +89,7 @@ uint PopFreeParticle() {
          gStates[existingIndex] = state;
          gMotions[existingIndex] = request.motion;
       }
+
       return;
    }
 
@@ -93,11 +97,11 @@ uint PopFreeParticle() {
    uint previousMapping;
    InterlockedCompareExchange(
       gOwnerMappings[ownerIndex], INVALID_PARTICLE_INDEX, RESERVED_PARTICLE_INDEX, previousMapping);
-   if (previousMapping != INVALID_PARTICLE_INDEX) {
-      return;
-   }
+
+   if (previousMapping != INVALID_PARTICLE_INDEX) return;
 
    uint particleIndex = PopFreeParticle();
+
    if (particleIndex == INVALID_PARTICLE_INDEX) {
       uint ignored;
       InterlockedCompareExchange(gOwnerMappings[ownerIndex], RESERVED_PARTICLE_INDEX, INVALID_PARTICLE_INDEX, ignored);
@@ -106,6 +110,7 @@ uint PopFreeParticle() {
 
    uint previousAlive;
    InterlockedCompareExchange(gAliveFlags[particleIndex], 0u, 1u, previousAlive);
+
    if (previousAlive != 0u) {
       uint ignored;
       InterlockedCompareExchange(gOwnerMappings[ownerIndex], RESERVED_PARTICLE_INDEX, INVALID_PARTICLE_INDEX, ignored);

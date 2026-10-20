@@ -56,8 +56,10 @@ struct Particle {
    /// @brief 粒子の寿命進行度を取得（0.0 ～ 1.0）
    /// @return 寿命進行度
    float GetLifeProgress() const {
-      if (lifeTime <= 0.0f)
+      if (lifeTime <= 0.0f) {
          return 1.0f;
+      }
+
       return currentTime / lifeTime;
    }
 

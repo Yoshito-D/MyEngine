@@ -78,14 +78,23 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.landingOffset))
+
+      if (!std::isfinite(settings.landingOffset)) {
          settings.landingOffset = defaults.landingOffset;
-      if (!std::isfinite(settings.obbHalfExtents.x))
+      }
+
+      if (!std::isfinite(settings.obbHalfExtents.x)) {
          settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
-      if (!std::isfinite(settings.obbHalfExtents.y))
+      }
+
+      if (!std::isfinite(settings.obbHalfExtents.y)) {
          settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
-      if (!std::isfinite(settings.obbHalfExtents.z))
+      }
+
+      if (!std::isfinite(settings.obbHalfExtents.z)) {
          settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
+      }
+
       settings.obbHalfExtents.x = std::max(0.0f, settings.obbHalfExtents.x);
       settings.obbHalfExtents.y = std::max(0.0f, settings.obbHalfExtents.y);
       settings.obbHalfExtents.z = std::max(0.0f, settings.obbHalfExtents.z);

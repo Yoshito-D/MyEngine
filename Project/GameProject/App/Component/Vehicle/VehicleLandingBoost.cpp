@@ -20,6 +20,7 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
    float alignment = std::clamp(localUp.Dot(gravityUp), 0.0f, 1.0f);
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
+
    if (!groundMover) {
       lastLandingResult_ = LandingResult::Normal;
       return lastLandingResult_;
@@ -31,6 +32,7 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
       lastLandingResult_ = LandingResult::Success;
       return lastLandingResult_;
    }
+
    if (alignment >= normalThreshold) {
       // 普通: 多少傾いた着地なので速度は変化させない。
       lastLandingResult_ = LandingResult::Normal;
@@ -47,9 +49,9 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
 void VehicleLandingBoost::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::DragFloat(Tr("ブースト量", "Boost Amount"), &boostAmount, 0.1f, 0.0f, 200.0f);
    ImGui::DragFloat(Tr("ブーストしきい値", "Boost Threshold"), &boostThreshold, 0.01f, 0.0f, 1.0f);
@@ -74,15 +76,19 @@ void VehicleLandingBoost::Deserialize(const nlohmann::json& data) {
    if (data.contains("boostAmount")) {
       boostAmount = data["boostAmount"];
    }
+
    if (data.contains("boostThreshold")) {
       boostThreshold = data["boostThreshold"];
    }
+
    if (data.contains("normalThreshold")) {
       normalThreshold = data["normalThreshold"];
    }
+
    if (data.contains("penaltySpeed")) {
       penaltySpeed = data["penaltySpeed"];
    }
+
    if (data.contains("penaltyDuration")) {
       penaltyDuration = std::max(0.0f, data["penaltyDuration"].get<float>());
    }

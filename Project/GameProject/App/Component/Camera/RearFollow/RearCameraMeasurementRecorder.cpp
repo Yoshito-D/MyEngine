@@ -17,8 +17,9 @@ using namespace RearCameraMath;
 
 void RearCameraMeasurementRecorder::MutateCameraState(GameEngine::CameraState&, float) {
    auto* camera = GetRearCamera();
-   if (!camera)
-      return;
+
+   if (!camera) return;
+
    if (const auto frame = camera->GetFrameView()) {
       // 旧実装と同様、カメラ補間用dtではなくゲーム更新時刻で計測する。
       RecordCameraMeasurementSample(GameEngine::EngineContext::GetDeltaTime(),
@@ -30,6 +31,7 @@ void RearCameraMeasurementRecorder::MutateCameraState(GameEngine::CameraState&, 
 inline std::string SanitizeMeasurementName(const std::string& name) {
    std::string sanitized;
    sanitized.reserve(name.size());
+
    for (unsigned char character : name) {
       if (std::isalnum(character) || character == '-' || character == '_') {
          sanitized.push_back(static_cast<char>(character));
@@ -37,6 +39,7 @@ inline std::string SanitizeMeasurementName(const std::string& name) {
          sanitized.push_back('_');
       }
    }
+
    return sanitized.empty() ? "camera_measurement" : sanitized;
 }
 
@@ -67,9 +70,11 @@ void RearCameraMeasurementRecorder::StartCameraMeasurement(
 
 bool RearCameraMeasurementRecorder::StopCameraMeasurement(bool saveToFile, const RearCameraSettings& settings) {
    state_.cameraMeasurementActive = false;
+
    if (!saveToFile) {
       return true;
    }
+
    return SaveCameraMeasurementFiles(settings);
 }
 
@@ -92,13 +97,10 @@ void RearCameraMeasurementRecorder::ClearCameraMeasurement() {
 
 void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
    float deltaTime, uint64_t gameFrame, const RearCameraSettings& settings, const RearCameraFrameView& frame) {
-   if (!state_.cameraMeasurementActive) {
-      return;
-   }
+   if (!state_.cameraMeasurementActive) return;
 
-   if (state_.cameraMeasurementLastGameFrame == gameFrame) {
-      return;
-   }
+   if (state_.cameraMeasurementLastGameFrame == gameFrame) return;
+
    state_.cameraMeasurementLastGameFrame = gameFrame;
 
    CameraMeasurementSample sample{};
@@ -158,6 +160,7 @@ void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
       sample.rightUpAbsDot, sample.upForwardAbsDot, sample.forwardRightAbsDot});
    state_.cameraMeasurementMaxLengthError = std::max({state_.cameraMeasurementMaxLengthError,
       std::abs(sample.rightLength - 1.0f), std::abs(sample.upLength - 1.0f), std::abs(sample.forwardLength - 1.0f)});
+
    if (sample.invalid) {
       ++state_.cameraMeasurementInvalidCount;
    }
@@ -184,6 +187,7 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
    const std::filesystem::path directory(kCameraMeasurementDirectory);
    std::error_code error;
    std::filesystem::create_directories(directory, error);
+
    if (error) {
       Logger::Warning(
          "Camera measurement directory could not be created: " + error.message(), Logger::LogChannel::Game);
@@ -195,6 +199,7 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
    const std::filesystem::path csvPath = directory / (fileStem + ".csv");
    const std::filesystem::path summaryPath = directory / (fileStem + ".summary.json");
    std::ofstream csv(csvPath, std::ios::out | std::ios::trunc);
+
    if (!csv.is_open()) {
       Logger::Warning(
          "Camera measurement CSV could not be opened: " + csvPath.generic_string(), Logger::LogChannel::Game);
@@ -211,6 +216,7 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
           "camera_right_x,camera_right_y,camera_right_z,camera_up_x,camera_up_y,camera_up_z,"
           "camera_forward_x,camera_forward_y,camera_forward_z\n";
    csv << std::fixed << std::setprecision(7);
+
    for (const CameraMeasurementSample& sample : state_.cameraMeasurementSamples) {
       csv << sample.frame << ',' << sample.timeSeconds << ',' << sample.deltaTimeSeconds << ','
           << sample.gravityUpStepDegrees << ',' << sample.cameraRightStepDegrees << ',' << sample.cameraUpStepDegrees
@@ -226,7 +232,9 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
           << sample.cameraRight.z << ',' << sample.cameraUp.x << ',' << sample.cameraUp.y << ',' << sample.cameraUp.z
           << ',' << sample.cameraForward.x << ',' << sample.cameraForward.y << ',' << sample.cameraForward.z << '\n';
    }
+
    csv.close();
+
    if (!csv) {
       Logger::Warning("Camera measurement CSV write failed: " + csvPath.generic_string(), Logger::LogChannel::Game);
       return false;
@@ -279,13 +287,16 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
    };
 
    std::ofstream summaryFile(summaryPath, std::ios::out | std::ios::trunc);
+
    if (!summaryFile.is_open()) {
       Logger::Warning(
          "Camera measurement summary could not be opened: " + summaryPath.generic_string(), Logger::LogChannel::Game);
       return false;
    }
+
    summaryFile << summary.dump(3);
    summaryFile.close();
+
    if (!summaryFile) {
       Logger::Warning(
          "Camera measurement summary write failed: " + summaryPath.generic_string(), Logger::LogChannel::Game);
@@ -353,12 +364,14 @@ void RearCameraMeasurementRecorder::RunFixedGravityUpVerification(const RearCame
          sample.rightUpAbsDot, sample.upForwardAbsDot, sample.forwardRightAbsDot});
       state_.cameraMeasurementMaxLengthError = std::max({state_.cameraMeasurementMaxLengthError,
          std::abs(sample.rightLength - 1.0f), std::abs(sample.upLength - 1.0f), std::abs(sample.forwardLength - 1.0f)});
+
       if (sample.invalid) {
          ++state_.cameraMeasurementInvalidCount;
       }
 
       previousCameraUp = currentUp;
       previousCameraForward = cameraForward;
+
       if (sample.targetGravityUpErrorDegrees <= 1e-4f) {
          break;
       }

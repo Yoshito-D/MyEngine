@@ -19,12 +19,15 @@ std::string BuildDefaultSkyboxName(const std::vector<Skybox*>& registeredSkyboxe
             return true;
          }
       }
+
       return false;
    };
 
    uint32_t index = 1;
+
    while (true) {
       const std::string candidate = "Skybox_" + std::to_string(index++);
+
       if (!exists(candidate)) {
          return candidate;
       }
@@ -46,6 +49,7 @@ Skybox::~Skybox() {
 void Skybox::UnregisterSkybox(Skybox* skybox) {
    // 破棄済みポインターを静的一覧へ残さず、名前生成やエディター列挙から参照されないようにする。
    auto it = std::find(sRegisteredSkyboxes_.begin(), sRegisteredSkyboxes_.end(), skybox);
+
    if (it != sRegisteredSkyboxes_.end()) {
       sRegisteredSkyboxes_.erase(it);
    }
@@ -91,6 +95,7 @@ void Skybox::SetColor(const Vector4& color) {
    if (auto* skyboxComponent = GetComponent<SkyboxComponent>()) {
       skyboxComponent->SetColor(color);
    }
+
    if (materialData_) {
       materialData_->color = color;
    }
@@ -111,6 +116,7 @@ void Skybox::UpdateTransform(const Matrix4x4& viewProjectionMatrix) {
          materialData_->color = skyboxComponent->GetColor();
       }
    }
+
    if (transformData_) {
       // VSシェーダーは wVP のみ使用する
       // Skybox 固有のローカル変換は持たず、呼び出し側で平行移動を除いたビュー射影行列を供給する。

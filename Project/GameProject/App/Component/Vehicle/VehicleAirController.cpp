@@ -28,9 +28,8 @@ constexpr float kAngularVelocityEpsilon = 0.001f;
 
 void VehicleAirController::Apply(float rollInput, float pitchInput, float deltaTime) {
    auto* transform = GetOwner().GetComponent<TransformComponent>();
-   if (!transform) {
-      return;
-   }
+
+   if (!transform) return;
 
    // 処理落ちやブレーク復帰時の大きなdtで、慣性が1フレームで消えることを防ぐ。
    const float controlDeltaTime = std::clamp(deltaTime, 0.0f, kMaxControlDeltaTime);
@@ -65,6 +64,7 @@ void VehicleAirController::Apply(float rollInput, float pitchInput, float deltaT
    // GravityBody の速度から垂直成分（重力方向）を分離し、水平成分だけに
    // exp(-airDrag * dt) の減衰を掛けて戻す。垂直成分は重力計算に任せる。
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
+
    if (gravityBody) {
       gravityBody->ApplySurfaceDrag(airDrag, controlDeltaTime);
    }
@@ -97,9 +97,7 @@ void VehicleAirController::UpdateAngularVelocity(float input, float& angVel, flo
 }
 
 void VehicleAirController::ApplyPitchRotation(Quaternion& rot, const Vector3& localRight, float deltaTime) const {
-   if (std::abs(angularVelPitch_) <= 1e-6f) {
-      return;
-   }
+   if (std::abs(angularVelPitch_) <= 1e-6f) return;
 
    // localRight 軸まわりの pitch 回転（前後傾き）を合成する。
    // roll と同じく左掛けでワールド空間基準の軸を維持する。
@@ -109,9 +107,7 @@ void VehicleAirController::ApplyPitchRotation(Quaternion& rot, const Vector3& lo
 
 void VehicleAirController::ApplyRollRotation(
    GameEngine::Quaternion& rot, const Vector3& localForward, float deltaTime) const {
-   if (std::abs(angularVelRoll_) <= 1e-6f) {
-      return;
-   }
+   if (std::abs(angularVelRoll_) <= 1e-6f) return;
 
    // localForward 軸まわりの roll 回転（左右傾き）を合成する。
    Quaternion delta = MakeRotateAxisAngleQuaternion(localForward, angularVelRoll_ * deltaTime);
@@ -126,9 +122,9 @@ void VehicleAirController::ApplyRollRotation(
 void VehicleAirController::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-   if (!ImGui::CollapsingHeader(header.c_str())) {
-      return;
-   }
+
+   if (!ImGui::CollapsingHeader(header.c_str())) return;
+
    ImGui::Separator();
    ImGui::DragFloat(
       (std::string(Tr("ロール速度 (deg/s)", "Roll Speed (deg/s)")) + "##1").c_str(), &rollSpeed, 1.0f, 0.0f, 360.0f);
@@ -154,12 +150,15 @@ void VehicleAirController::Deserialize(const nlohmann::json& data) {
    if (data.contains("steerSpeed")) {
       rollSpeed = data["steerSpeed"];
    }
+
    if (data.contains("pitchSpeed")) {
       pitchSpeed = data["pitchSpeed"];
    }
+
    if (data.contains("angularDamping")) {
       angularDamping = data["angularDamping"];
    }
+
    if (data.contains("airDrag")) {
       airDrag = data["airDrag"];
    }

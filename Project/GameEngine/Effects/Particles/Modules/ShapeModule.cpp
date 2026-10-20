@@ -18,9 +18,11 @@ float RandomRange(float min, float max) {
 Vector3 ResolveSkinnedVertexPosition(
    const ModelAsset& modelAsset, const SkinCluster* skinCluster, size_t meshIndex, uint32_t vertexIndex) {
    const auto& vertices = modelAsset.GetVertices(meshIndex);
+
    if (vertexIndex >= vertices.size()) {
       return Vector3(0.0f, 0.0f, 0.0f);
    }
+
    const Vector3 basePosition(
       vertices[vertexIndex].position.x, vertices[vertexIndex].position.y, vertices[vertexIndex].position.z);
    return skinCluster ? skinCluster->EvaluateSkinnedPosition(meshIndex, vertexIndex, basePosition) : basePosition;
@@ -68,6 +70,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
             localOffset.z += RandomRange(-boxSize_.z * 0.5f, boxSize_.z * 0.5f) * scale.z;
          } else {
             int face = static_cast<int>(RandomRange(0.0f, 6.0f));
+
             switch (face) {
                case 0:
                   localOffset.x += boxSize_.x * 0.5f * scale.x;
@@ -89,6 +92,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
                   break;
             }
          }
+
          break;
       }
       case ShapeType::Circle: {
@@ -129,27 +133,39 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
          if (!skinnedMeshModel_) {
             break;
          }
+
          const auto& meshes = skinnedMeshModel_->GetMeshData();
 
          // 頂点数ではなくindex三個を一面として数え、複数Meshを一続きの抽選範囲として扱う。
          size_t totalTriangleCount = 0;
-         for (const auto& mesh : meshes)
+
+         for (const auto& mesh : meshes) {
             totalTriangleCount += mesh.indices.size() / 3;
+         }
+
          if (totalTriangleCount == 0) {
             break;
          }
+
          size_t selectedTriangle = std::min(
             static_cast<size_t>(RandomRange(0.0f, static_cast<float>(totalTriangleCount))), totalTriangleCount - 1);
          size_t meshIndex = 0;
+
          while (meshIndex < meshes.size()) {
             const size_t meshTriangleCount = meshes[meshIndex].indices.size() / 3;
-            if (selectedTriangle < meshTriangleCount)
+
+            if (selectedTriangle < meshTriangleCount) {
                break;
+            }
+
             selectedTriangle -= meshTriangleCount;
             ++meshIndex;
          }
-         if (meshIndex >= meshes.size())
+
+         if (meshIndex >= meshes.size()) {
             break;
+         }
+
          const auto& indices = meshes[meshIndex].indices;
          const size_t indexOffset = selectedTriangle * 3;
          const Vector3 p0 =
@@ -263,8 +279,10 @@ nlohmann::json ShapeModule::ToJson() const {
 }
 
 bool ShapeModule::ApplyConfiguration(const ShapeModule& configuration) {
-   if (!configuration.transform_.IsFinite())
+   if (!configuration.transform_.IsFinite()) {
       return false;
+   }
+
    enabled_ = configuration.enabled_;
    shapeType_ = configuration.shapeType_;
    emitFrom_ = configuration.emitFrom_;
@@ -282,41 +300,59 @@ bool ShapeModule::ApplyConfiguration(const ShapeModule& configuration) {
 }
 
 void ShapeModule::FromJson(const nlohmann::json& j) {
-   if (j.contains("enabled"))
+   if (j.contains("enabled")) {
       enabled_ = j["enabled"];
-   if (j.contains("shapeType"))
+   }
+
+   if (j.contains("shapeType")) {
       shapeType_ = static_cast<ShapeType>(j["shapeType"].get<int>());
-   if (j.contains("emitFrom"))
+   }
+
+   if (j.contains("emitFrom")) {
       emitFrom_ = static_cast<EmitFrom>(j["emitFrom"].get<int>());
-   if (j.contains("radius"))
+   }
+
+   if (j.contains("radius")) {
       radius_ = j["radius"];
-   if (j.contains("angle"))
+   }
+
+   if (j.contains("angle")) {
       angle_ = j["angle"];
-   if (j.contains("length"))
+   }
+
+   if (j.contains("length")) {
       length_ = j["length"];
+   }
 
    if (j.contains("boxSize")) {
       auto arr = j["boxSize"];
       boxSize_ = Vector3{arr[0], arr[1], arr[2]};
    }
 
-   if (j.contains("arc"))
+   if (j.contains("arc")) {
       arc_ = j["arc"];
-   if (j.contains("circleOutwardVelocity"))
+   }
+
+   if (j.contains("circleOutwardVelocity")) {
       circleOutwardVelocity_ = j["circleOutwardVelocity"];
-   if (j.contains("torusMajorRadius"))
+   }
+
+   if (j.contains("torusMajorRadius")) {
       SetTorusMajorRadius(j["torusMajorRadius"]);
+   }
 
    if (j.contains("position")) {
       auto arr = j["position"];
       transform_.translation = Vector3{arr[0], arr[1], arr[2]};
    }
+
    if (j.contains("rotation")) {
       auto arr = j["rotation"];
 
       // JSONのEuler値は入力互換用に読み、内部の正本はQuaternionへ統一する。
       transform_.SetRotationQuaternion(Vector3ToQuaternion(Vector3(arr[0], arr[1], arr[2])));
    }
+
    if (j.contains("scale")) {
       auto arr = j["scale"];
       transform_.scale = Vector3{arr[0], arr[1], arr[2]};

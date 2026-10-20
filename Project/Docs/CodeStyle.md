@@ -7,11 +7,31 @@
 
 - インデントはスペース3文字とし、タブを混在させない。
 - 開き波括弧は宣言や条件と同じ行に置く。
-- `if`・`for`・`while`の処理は次の行へ書く。実装ファイルの関数も複数行に展開する。
+- `else`のない`if`で処理が`return;`だけの場合は、120文字以内なら`if (!camera) return;`のように1行で書く。
+- それ以外の`if`・`else`・`for`・`while`・`do`の処理は必ず`{}`で囲み、次の行へ書く。
+  `return false;`など値を返す処理も`{}`で囲む。`else if`は通常の連結した形で書く。
+- 処理に説明コメントがある場合は、`return;`だけでも`{}`を残してコメントを保持する。
+- 実装ファイルの関数は複数行に展開する。
 - クラス内の単純なアクセサーは、120文字以内なら1行にまとめてよい。
 - 行の長さは120文字を目安とし、長い引数・条件・式は意味のまとまりで改行する。
   文字列と既存コメントの内容は自動整形で書き換えない。
 - 改行コードはCRLF、文字コードはUTF-8とし、末尾に改行を1つ置く。行末の空白は残さない。
+
+```cpp
+if (!camera) return;
+
+if (!resource) {
+   return false;
+}
+
+if (camera) {
+   camera->Update();
+}
+
+for (auto& item : items) {
+   item.Update();
+}
+```
 
 ## 空行
 
@@ -19,7 +39,31 @@
 - 公開API同士の間には空行を1行置き、説明コメントと宣言は離さない。
 - 関数内では、入力確認、準備、計算、結果の反映など、処理の目的が変わる位置に空行を置く。
   同じ目的の連続した代入や計算はまとめる。
+- `if`・`for`・`while`・`do`・`switch`の前後は、前後の処理と空行1行で区切る。
+  1行の早期リターンも同じ扱いとし、連続する制御文の間にも空行を置く。
+- ブロックの先頭・末尾には制御文のための空行を追加しない。
+  `if`・`else if`・`else`の連結部分や、`do`の末尾の`while`は分けない。
+- 制御文の直前に説明コメントがある場合は、コメントと制御文を離さず、コメントの前に空行を置く。
 - `#pragma once`の後と、インクルード群の後には空行を1行置く。
+
+```cpp
+auto* camera = GetCamera();
+
+if (!camera) return;
+
+const auto deltaTime = GetDeltaTime();
+
+// 有効な項目だけを更新する。
+for (auto& item : items) {
+   if (!item.IsActive()) {
+      continue;
+   }
+
+   item.Update(deltaTime);
+}
+
+camera->Update();
+```
 
 ## コメント
 
@@ -41,6 +85,9 @@ const Settings& GetSettings() const { return settings_; }
 ## 整形
 
 Visual Studioでは`.clang-format`による書式設定を有効にする。
+短い`if`の1行化は`AllowShortIfStatementsOnASingleLine: WithoutElse`で指定する。
+`clang-format`には`return;`だけを例外にして波括弧を挿入する設定がないため、
+`InsertBraces`は無効にし、それ以外の処理の`{}`はコード側で必ず付ける。
 コマンドラインでは対象ファイルを指定して実行する。
 
 ```powershell

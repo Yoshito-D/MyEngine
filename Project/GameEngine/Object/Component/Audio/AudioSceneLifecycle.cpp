@@ -17,26 +17,34 @@ std::vector<Object*> SortedObjects() {
 
 bool HasSceneBgmRequest() {
    for (Object* object : SortedObjects()) {
-      if (auto* bgm = object->GetComponent<BgmComponent>(); bgm && bgm->HasStartupTrack())
+      if (auto* bgm = object->GetComponent<BgmComponent>(); bgm && bgm->HasStartupTrack()) {
          return true;
+      }
    }
+
    return false;
 }
 
 void BeginSceneAudio() {
    auto objects = SortedObjects();
    BgmComponent* selectedBgm = nullptr;
+
    for (Object* object : objects) {
-      if (auto* source = object->GetComponent<AudioSourceComponent>())
+      if (auto* source = object->GetComponent<AudioSourceComponent>()) {
          source->BeginRuntime();
+      }
+
       if (auto* bgm = object->GetComponent<BgmComponent>(); bgm && bgm->HasStartupTrack()) {
-         if (!selectedBgm)
+         if (!selectedBgm) {
             selectedBgm = bgm;
-         else
+         } else {
             Logger::Warning("Multiple active BGM components; lowest entity ID wins");
+         }
       }
    }
-   if (selectedBgm)
+
+   if (selectedBgm) {
       selectedBgm->BeginRuntime();
+   }
 }
 }

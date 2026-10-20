@@ -15,8 +15,7 @@ void GaussFilter::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rend
 }
 
 void GaussFilter::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
-   if (!GetPipeline() || !GetRootSignature())
-      return;
+   if (!GetPipeline() || !GetRootSignature()) return;
 
    GetRenderTarget()->PreDraw(false);
 

@@ -170,6 +170,7 @@ uint32_t Input::GetConnectedGamePadCount() const {
    for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i) {
       XINPUT_STATE state = {};
       DWORD result = XInputGetState(i, &state);
+
       if (result == ERROR_SUCCESS) {
          ++count;
       }
@@ -213,8 +214,9 @@ bool Input::IsGamePadButtonReleased(GamePadButton button, uint32_t index) const 
 }
 
 Vector2 Input::GetLeftStick(uint32_t index, float deadZone) const {
-   if (index >= 4)
+   if (index >= 4) {
       return Vector2(0.0f, 0.0f);
+   }
 
    const auto& state = gamePadState_[index];
    float x = static_cast<float>(state.Gamepad.sThumbLX);
@@ -226,11 +228,15 @@ Vector2 Input::GetLeftStick(uint32_t index, float deadZone) const {
    float length = std::sqrt(normX * normX + normY * normY);
 
    // ゼロ長とデッドゾーン上限では除算できないため、先に中立値を返す。
-   if (!std::isfinite(deadZone) || deadZone >= 1.0f)
+   if (!std::isfinite(deadZone) || deadZone >= 1.0f) {
       return Vector2(0.0f, 0.0f);
+   }
+
    deadZone = std::max(0.0f, deadZone);
-   if (length <= deadZone)
+
+   if (length <= deadZone) {
       return Vector2(0.0f, 0.0f);
+   }
 
    // デッドゾーン外の残り区間を0～1へ再マップし、境界で値が急にdeadZone分跳ねないようにする。
    float scale = (length - deadZone) / (1.0f - deadZone);
@@ -240,8 +246,9 @@ Vector2 Input::GetLeftStick(uint32_t index, float deadZone) const {
 }
 
 Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
-   if (index >= 4)
+   if (index >= 4) {
       return Vector2(0.0f, 0.0f);
+   }
 
    const auto& state = gamePadState_[index];
    float x = static_cast<float>(state.Gamepad.sThumbRX);
@@ -253,11 +260,15 @@ Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
    float length = std::sqrt(normX * normX + normY * normY);
 
    // ゼロ長とデッドゾーン上限では除算できないため、先に中立値を返す。
-   if (!std::isfinite(deadZone) || deadZone >= 1.0f)
+   if (!std::isfinite(deadZone) || deadZone >= 1.0f) {
       return Vector2(0.0f, 0.0f);
+   }
+
    deadZone = std::max(0.0f, deadZone);
-   if (length <= deadZone)
+
+   if (length <= deadZone) {
       return Vector2(0.0f, 0.0f);
+   }
 
    float scale = (length - deadZone) / (1.0f - deadZone);
    scale = std::clamp(scale, 0.0f, 1.0f);
@@ -266,8 +277,10 @@ Vector2 Input::GetRightStick(uint32_t index, float deadZone) const {
 }
 
 float Input::GetLeftTrigger(uint32_t index, float deadZone) const {
-   if (index >= 4 || !std::isfinite(deadZone) || deadZone >= 1.0f)
+   if (index >= 4 || !std::isfinite(deadZone) || deadZone >= 1.0f) {
       return 0.0f;
+   }
+
    deadZone = std::max(0.0f, deadZone);
 
    // 8bit入力を正規化し、デッドゾーンより上の範囲を再び0～1へ広げる。
@@ -276,16 +289,17 @@ float Input::GetLeftTrigger(uint32_t index, float deadZone) const {
 }
 
 float Input::GetRightTrigger(uint32_t index, float deadZone) const {
-   if (index >= 4 || !std::isfinite(deadZone) || deadZone >= 1.0f)
+   if (index >= 4 || !std::isfinite(deadZone) || deadZone >= 1.0f) {
       return 0.0f;
+   }
+
    deadZone = std::max(0.0f, deadZone);
    float value = gamePadState_[index].Gamepad.bRightTrigger / 255.0f;
    return (value < deadZone) ? 0.0f : (value - deadZone) / (1.0f - deadZone);
 }
 
 void Input::SetVibration(uint32_t index, float leftMotor, float rightMotor) {
-   if (index >= 4)
-      return;
+   if (index >= 4) return;
 
    // 範囲外のゲーム側パラメーターを先にClampし、WORDへの変換時の折り返しを防ぐ。
    // 0.0f～1.0f → 0～65535 に変換

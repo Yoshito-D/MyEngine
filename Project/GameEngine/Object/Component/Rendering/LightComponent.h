@@ -97,30 +97,55 @@ public:
    void Configure(const Settings& requested) {
       auto settings = requested;
       [[maybe_unused]] const Settings defaults;
-      if (!std::isfinite(settings.color.x))
+
+      if (!std::isfinite(settings.color.x)) {
          settings.color.x = defaults.color.x;
-      if (!std::isfinite(settings.color.y))
+      }
+
+      if (!std::isfinite(settings.color.y)) {
          settings.color.y = defaults.color.y;
-      if (!std::isfinite(settings.color.z))
+      }
+
+      if (!std::isfinite(settings.color.z)) {
          settings.color.z = defaults.color.z;
-      if (!std::isfinite(settings.color.w))
+      }
+
+      if (!std::isfinite(settings.color.w)) {
          settings.color.w = defaults.color.w;
-      if (!std::isfinite(settings.intensity))
+      }
+
+      if (!std::isfinite(settings.intensity)) {
          settings.intensity = defaults.intensity;
-      if (!std::isfinite(settings.radius))
+      }
+
+      if (!std::isfinite(settings.radius)) {
          settings.radius = defaults.radius;
-      if (!std::isfinite(settings.decay))
+      }
+
+      if (!std::isfinite(settings.decay)) {
          settings.decay = defaults.decay;
-      if (!std::isfinite(settings.distance))
+      }
+
+      if (!std::isfinite(settings.distance)) {
          settings.distance = defaults.distance;
-      if (!std::isfinite(settings.cosAngle))
+      }
+
+      if (!std::isfinite(settings.cosAngle)) {
          settings.cosAngle = defaults.cosAngle;
-      if (!std::isfinite(settings.cosFalloffStart))
+      }
+
+      if (!std::isfinite(settings.cosFalloffStart)) {
          settings.cosFalloffStart = defaults.cosFalloffStart;
-      if (!std::isfinite(settings.areaSize.x))
+      }
+
+      if (!std::isfinite(settings.areaSize.x)) {
          settings.areaSize.x = defaults.areaSize.x;
-      if (!std::isfinite(settings.areaSize.y))
+      }
+
+      if (!std::isfinite(settings.areaSize.y)) {
          settings.areaSize.y = defaults.areaSize.y;
+      }
+
       color = settings.color;
       intensity = settings.intensity;
       radius = settings.radius;
