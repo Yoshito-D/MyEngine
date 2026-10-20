@@ -17,26 +17,7 @@ void Vignette::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderT
 void Vignette::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!GetPipeline() || !GetRootSignature()) return;
 
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // 定数バッファをルートパラメータ0にセット
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // フルスクリーントライアングル描画
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 void Vignette::CreateConstantBuffer() {
@@ -85,3 +66,22 @@ void Vignette::ImGuiEdit() {
 #endif
 
 }
+
+namespace GameEngine {
+
+void Vignette::SetIntensity(float intensity) {
+   intensity_ = intensity;
+   UpdateConstantBuffer();
+}
+
+void Vignette::SetSoftness(float softness) {
+   softness_ = softness;
+   UpdateConstantBuffer();
+}
+
+void Vignette::SetRadius(float radius) {
+   radius_ = radius;
+   UpdateConstantBuffer();
+}
+
+} // namespace GameEngine

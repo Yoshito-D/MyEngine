@@ -175,3 +175,38 @@ void TypewriterComponent::DrawInspector() {
 #endif
 
 } // namespace GameEngine
+
+namespace GameEngine {
+
+TypewriterComponent::Settings TypewriterComponent::DescribeSettings() const {
+   Settings settings;
+   settings.glyphsPerSecond = glyphsPerSecond;
+   settings.delay = delay;
+   settings.playOnEnable = playOnEnable;
+   settings.loop = loop;
+   settings.restartOnTextChange = restartOnTextChange;
+   return settings;
+}
+
+void TypewriterComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.glyphsPerSecond)) {
+      settings.glyphsPerSecond = defaults.glyphsPerSecond;
+   }
+
+   if (!std::isfinite(settings.delay)) {
+      settings.delay = defaults.delay;
+   }
+
+   settings.glyphsPerSecond = std::max(0.0f, settings.glyphsPerSecond);
+   settings.delay = std::max(settings.delay, 0.0f);
+   glyphsPerSecond = settings.glyphsPerSecond;
+   delay = settings.delay;
+   playOnEnable = settings.playOnEnable;
+   loop = settings.loop;
+   restartOnTextChange = settings.restartOnTextChange;
+}
+
+} // namespace GameEngine

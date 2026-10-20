@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraDebugView.h"
+#include <cstdint>
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
@@ -97,7 +98,7 @@ void RearCameraDebugView::DrawCameraEvidenceWindow(
 
    float recoveryCurvePreview[65]{};
 
-   for (int index = 0; index < 65; ++index) {
+   for (std::int32_t index = 0; index < 65; ++index) {
       recoveryCurvePreview[index] = frame.aim.EvaluateLookAtRecoveryCurve(settings, static_cast<float>(index) / 64.0f);
    }
 
@@ -145,11 +146,11 @@ void RearCameraDebugView::DrawCameraEvidenceWindow(
       std::snprintf(horizontalOverlay, sizeof(horizontalOverlay), "横向きの変化　最大 %.3f度/フレーム",
          recorder.GetState().cameraMeasurementMaxRightStepDegrees);
 
-      ImGui::PlotLines("##PresentationUpwardHistory", upwardHistory.data(), static_cast<int>(upwardHistory.size()), 0,
-         upwardOverlay, 0.0f, std::max(1.0f, recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees * 1.1f),
-         ImVec2(-1.0f, 95.0f));
+      ImGui::PlotLines("##PresentationUpwardHistory", upwardHistory.data(),
+         static_cast<std::int32_t>(upwardHistory.size()), 0, upwardOverlay, 0.0f,
+         std::max(1.0f, recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees * 1.1f), ImVec2(-1.0f, 95.0f));
       ImGui::PlotLines("##PresentationHorizontalHistory", horizontalHistory.data(),
-         static_cast<int>(horizontalHistory.size()), 0, horizontalOverlay, 0.0f,
+         static_cast<std::int32_t>(horizontalHistory.size()), 0, horizontalOverlay, 0.0f,
          std::max(1.0f, recorder.GetState().cameraMeasurementMaxRightStepDegrees * 1.1f), ImVec2(-1.0f, 95.0f));
    }
 
@@ -391,7 +392,7 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
       ImGui::SliderFloat(Tr("戻り終わり", "Recovery End"), &settings.lookAtRecoveryCurveControl2, 0.0f, 1.0f, "%.2f");
       float recoveryCurvePreview[65]{};
 
-      for (int index = 0; index < 65; ++index) {
+      for (std::int32_t index = 0; index < 65; ++index) {
          recoveryCurvePreview[index] =
             frame.aim.EvaluateLookAtRecoveryCurve(settings, static_cast<float>(index) / 64.0f);
       }
@@ -470,14 +471,14 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
             recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees);
          std::snprintf(rightOverlay, sizeof(rightOverlay), "横向きの変化　最大 %.3f度/フレーム",
             recorder.GetState().cameraMeasurementMaxRightStepDegrees);
-         ImGui::PlotLines("##GravityUpStepHistory", gravityUpHistory.data(), static_cast<int>(gravityUpHistory.size()),
-            0, gravityOverlay, 0.0f,
+         ImGui::PlotLines("##GravityUpStepHistory", gravityUpHistory.data(),
+            static_cast<std::int32_t>(gravityUpHistory.size()), 0, gravityOverlay, 0.0f,
             std::max(1.0f, recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees * 1.1f), ImVec2(-1.0f, 90.0f));
-         ImGui::PlotLines("##RightStepHistory", rightHistory.data(), static_cast<int>(rightHistory.size()), 0,
+         ImGui::PlotLines("##RightStepHistory", rightHistory.data(), static_cast<std::int32_t>(rightHistory.size()), 0,
             rightOverlay, 0.0f, std::max(1.0f, recorder.GetState().cameraMeasurementMaxRightStepDegrees * 1.1f),
             ImVec2(-1.0f, 90.0f));
          ImGui::PlotLines("##GravityUpTargetErrorHistory", targetErrorHistory.data(),
-            static_cast<int>(targetErrorHistory.size()), 0,
+            static_cast<std::int32_t>(targetErrorHistory.size()), 0,
             Tr("目標の上方向まで残っている角度", "Angle Remaining to the Target Up Direction"), 0.0f, 180.0f,
             ImVec2(-1.0f, 90.0f));
       }

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Framework/EngineContext.h"
 #include <nlohmann/json.hpp>
 #include "GameEngine/Object/Model/Model.h"
@@ -764,7 +765,7 @@ void EngineContext::ClearCameraUnits() {
 
 // ディレクショナルライト
 DirectionalLight* EngineContext::CreateDirectionalLight(
-   const std::string& name, unsigned int color, const Vector3& direction, float intensity) {
+   const std::string& name, std::uint32_t color, const Vector3& direction, float intensity) {
    if (!sLightManager_) {
       return nullptr;
    }
@@ -804,7 +805,7 @@ std::vector<std::string> EngineContext::GetDirectionalLightNames() {
 
 // ポイントライト
 PointLight* EngineContext::CreatePointLight(
-   const std::string& name, unsigned int color, const Vector3& position, float intensity, float radius, float decay) {
+   const std::string& name, std::uint32_t color, const Vector3& position, float intensity, float radius, float decay) {
    if (!sLightManager_) {
       return nullptr;
    }
@@ -828,24 +829,6 @@ bool EngineContext::RemovePointLight(const std::string& name) {
    return sLightManager_->RemovePointLight(name);
 }
 
-const std::vector<PointLight*>& EngineContext::GetPointLights() {
-   static std::vector<PointLight*> emptyPointLights;
-
-   if (!sLightManager_) {
-      return emptyPointLights;
-   }
-
-   // 互換性のためだけに残した非推奨メソッド。現在はライトをmapで保持するため空配列を返す。
-   emptyPointLights.clear();
-   auto names = sLightManager_->GetPointLightNames();
-
-   for (const auto& name : names) {
-      emptyPointLights.push_back(sLightManager_->GetPointLight(name));
-   }
-
-   return emptyPointLights;
-}
-
 void EngineContext::ClearPointLights() {
    if (!sLightManager_) return;
 
@@ -861,7 +844,7 @@ std::vector<std::string> EngineContext::GetPointLightNames() {
 }
 
 // スポットライト
-SpotLight* EngineContext::CreateSpotLight(const std::string& name, unsigned int color, const Vector3& position,
+SpotLight* EngineContext::CreateSpotLight(const std::string& name, std::uint32_t color, const Vector3& position,
    float intensity, const Vector3& direction, float distance, float decay, float cosAngle, float cosFalloffStart) {
    if (!sLightManager_) {
       return nullptr;
@@ -1095,8 +1078,8 @@ void EngineContext::DrawSpline(
    sRenderer_->DrawSpline(controlPoints, color, segmentCount, applyPostProcess);
 }
 
-void EngineContext::DrawGrid(GridPlane plane, float gridSize, int thickLineInterval, int range, bool enableFade,
-   float fadeDistance, bool applyPostProcess) {
+void EngineContext::DrawGrid(GridPlane plane, float gridSize, std::int32_t thickLineInterval, std::int32_t range,
+   bool enableFade, float fadeDistance, bool applyPostProcess) {
    if (!sRenderer_) return;
 
    sRenderer_->DrawGrid(plane, gridSize, thickLineInterval, range, enableFade, fadeDistance, applyPostProcess);

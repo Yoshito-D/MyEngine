@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Scene/BaseScene.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/SceneObjectStore.h"
@@ -22,56 +23,11 @@
 namespace {
 constexpr float kMainCameraFarClip = 10000.0f;
 #ifdef USE_IMGUI
-constexpr int kInactiveDebugCameraPriority = -1;
-constexpr int kActiveDebugCameraPriority = 100;
-constexpr int kDebugCameraStateFormatVersion = 1;
-constexpr int kDebugCameraJsonIndentSize = 3;
+constexpr std::int32_t kInactiveDebugCameraPriority = -1;
+constexpr std::int32_t kActiveDebugCameraPriority = 100;
+constexpr std::int32_t kDebugCameraStateFormatVersion = 1;
+constexpr std::int32_t kDebugCameraJsonIndentSize = 3;
 #endif
-
-std::string GetSceneObjectTypeName(const GameEngine::Object* object) {
-   // 保存キーは基底Objectの名前だけでは型違いを区別できないため、
-   // 派生型を具体的なものから順に判定して安定した型名を付ける。
-   if (dynamic_cast<const GameEngine::UIText*>(object)) {
-      return "UIText";
-   }
-
-   if (dynamic_cast<const GameEngine::Model*>(object)) {
-      return "Model";
-   }
-
-   if (dynamic_cast<const GameEngine::Sprite*>(object)) {
-      return "Sprite";
-   }
-
-   if (dynamic_cast<const GameEngine::Skybox*>(object)) {
-      return "Skybox";
-   }
-
-   return "Object";
-}
-
-std::string BuildSceneKey(const std::string& typeName, const std::string& objectName) {
-   // 名前未設定でもキーを空にせず、後段の重複サフィックス処理へ渡せる基底キーを作る。
-   return typeName + ":" + (objectName.empty() ? "Object" : objectName);
-}
-
-bool IsRegisteredParticleSystem(const GameEngine::ParticleSystem* particleSystem) {
-   if (!particleSystem) {
-      return false;
-   }
-
-   for (auto* registered : GameEngine::ParticleSystem::GetRegisteredParticleSystems()) {
-      if (registered == particleSystem) {
-         return true;
-      }
-   }
-
-   return false;
-}
-
-bool IsEditableSceneParticleSystem(const GameEngine::ParticleSystem* particleSystem) {
-   return particleSystem && particleSystem->IsEditorInspectable() && IsRegisteredParticleSystem(particleSystem);
-}
 
 void UpdateEditorLightProxies(float deltaTime) {
    // Edit停止中は通常のComponent更新が走らないが、ライトのGPUプロキシだけは
@@ -109,409 +65,22 @@ void DrawEditorComponentDebug() {
    }
 }
 
-class RuntimeSceneApplier {
-public:
-   explicit RuntimeSceneApplier(GameEngine::SceneObjectStore& objectStore) : objectStore_(objectStore) {}
-
-   bool Apply(const nlohmann::json& sceneData) {
-      if (!sceneData.is_object()) {
-         return false;
-      }
-
-      // シーン固有コードで生成されたオブジェクトは、エディタ生成物を復元する前に
-      // 固定キーへ結び付ける。これで Release でも editor_scene の上書き対象がずれない。
-      RegisterSceneOwnedKeys();
-
-      // Storeが所有する前回ロード分だけを破棄し、シーン固有コードが所有するEntityは残す。
-      // 以降、objectsは新規生成、sceneObjectsは既存Entityへの差分として適用される。
-      objectStore_.Clear();
-
-      if (sceneData.contains("objects") && sceneData.at("objects").is_array()) {
-         for (const auto& objectData : sceneData.at("objects")) {
-            objectStore_.RestoreObject(objectData);
-         }
-      }
-
-      if (sceneData.contains("sceneObjects") && sceneData.at("sceneObjects").is_array()) {
-         ApplySceneObjects(sceneData.at("sceneObjects"));
-      }
-
-      if (sceneData.contains("sceneParticleSystems") && sceneData.at("sceneParticleSystems").is_array()) {
-         ApplySceneParticleSystems(sceneData.at("sceneParticleSystems"));
-      }
-
-      if (sceneData.contains("cameras") && sceneData.at("cameras").is_object()) {
-         ApplyCameras(sceneData.at("cameras"));
-      }
-
-      if (sceneData.contains("environment") && sceneData.at("environment").is_object()) {
-         ApplyLegacyLights(sceneData.at("environment"));
-      }
-
-      if (sceneData.contains("renderSettings") &&
-          !GameEngine::EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
-         return false;
-      }
-
-      return true;
-   }
-
-private:
-   void RegisterSceneOwnedKeys() {
-      // C++側で生成されたEntityをJSON差分と対応付ける。ポインター自体は実行ごとに変わるため、
-      // 明示Entity IDを優先し、旧runtime_entity_*だけ型名+表示名から安定キーへ移行する。
-      std::unordered_set<std::string> usedObjectKeys;
-
-      for (const auto& [object, key] : sceneObjectKeys_) {
-         if (object && !key.empty()) {
-            usedObjectKeys.insert(key);
-         }
-      }
-
-      auto registerObject = [&](GameEngine::Object* object) {
-         if (!object || objectStore_.Contains(object) || sceneObjectKeys_.contains(object)) return;
-
-         const std::string& entityId = object->GetEntityId();
-         const std::string baseKey = entityId.rfind("runtime_entity_", 0) == 0
-                                        ? BuildSceneKey(GetSceneObjectTypeName(object), object->GetObjectName())
-                                        : entityId;
-         std::string key = baseKey;
-         int suffix = 2;
-
-         // 同名Entityも個別に保存できるよう、登録順に決定的なサフィックスを付ける。
-         while (usedObjectKeys.contains(key)) {
-            key = baseKey + "#" + std::to_string(suffix++);
-         }
-
-         usedObjectKeys.insert(key);
-
-         if (object->GetEntityId().rfind("runtime_entity_", 0) == 0) {
-            object->SetEntityId(key);
-         }
-
-         sceneObjectKeys_[object] = key;
-      };
-
-      for (auto* object : GameEngine::Object::GetRegisteredObjects()) {
-         registerObject(object);
-      }
-
-      // Registryから外れたParticleSystemの生ポインターを次回ロードへ持ち越さない。
-      for (auto it = sceneParticleSystemKeys_.begin(); it != sceneParticleSystemKeys_.end();) {
-         if (!IsEditableSceneParticleSystem(it->first) || objectStore_.Contains(it->first)) {
-            it = sceneParticleSystemKeys_.erase(it);
-         } else {
-            ++it;
-         }
-      }
-
-      std::unordered_set<std::string> usedParticleKeys;
-
-      for (const auto& [particleSystem, key] : sceneParticleSystemKeys_) {
-         if (particleSystem && !key.empty()) {
-            usedParticleKeys.insert(key);
-         }
-      }
-
-      for (auto* particleSystem : GameEngine::ParticleSystem::GetRegisteredParticleSystems()) {
-         if (!IsEditableSceneParticleSystem(particleSystem) || objectStore_.Contains(particleSystem) ||
-             sceneParticleSystemKeys_.contains(particleSystem)) {
-            continue;
-         }
-
-         const std::string baseKey = BuildSceneKey("ParticleSystem", particleSystem->GetName());
-         std::string key = baseKey;
-         int suffix = 2;
-
-         while (usedParticleKeys.contains(key)) {
-            key = baseKey + "#" + std::to_string(suffix++);
-         }
-
-         usedParticleKeys.insert(key);
-         sceneParticleSystemKeys_[particleSystem] = key;
-      }
-   }
-
-   GameEngine::Object* FindSceneObjectByKey(const std::string& key) const {
-      if (key.empty()) {
-         return nullptr;
-      }
-
-      // sceneObjectKeys_は非所有ポインターを保持するため、利用直前に現行Registry所属も確認する。
-      auto isRegistered = [](const GameEngine::Object* object) {
-         const auto& registeredObjects = GameEngine::Object::GetRegisteredObjects();
-         return std::find(registeredObjects.begin(), registeredObjects.end(), object) != registeredObjects.end();
-      };
-
-      for (const auto& [object, objectKey] : sceneObjectKeys_) {
-         if (objectKey == key && object && !objectStore_.Contains(object) && isRegistered(object)) {
-            return const_cast<GameEngine::Object*>(object);
-         }
-      }
-
-      return nullptr;
-   }
-
-   GameEngine::ParticleSystem* FindSceneParticleSystemByKey(const std::string& key) const {
-      if (key.empty()) {
-         return nullptr;
-      }
-
-      for (const auto& [particleSystem, particleKey] : sceneParticleSystemKeys_) {
-         if (particleKey == key && IsEditableSceneParticleSystem(particleSystem) &&
-             !objectStore_.Contains(particleSystem)) {
-            return const_cast<GameEngine::ParticleSystem*>(particleSystem);
-         }
-      }
-
-      return nullptr;
-   }
-
-   void ApplySceneObjects(const nlohmann::json& sceneObjectsData) {
-      for (const auto& entry : sceneObjectsData) {
-         if (!entry.is_object()) {
-            continue;
-         }
-
-         const std::string key = entry.value("sceneKey", "");
-
-         if (key.empty()) {
-            continue;
-         }
-
-         GameEngine::Object* object = FindSceneObjectByKey(key);
-
-         if (entry.value("deleted", false)) {
-            // C++側所有物はここでdeleteできないため、全Componentを停止し描画も明示的に隠す。
-            // 所有者はそのまま保ちつつ、保存上の「削除」と同じ実行結果にする。
-            if (object) {
-               object->Deactivate();
-            }
-
-            continue;
-         }
-
-         if (!object) {
-            continue;
-         }
-
-         if (auto* renderComponent = object->GetComponent<GameEngine::RenderComponent>()) {
-            {
-               auto settings = renderComponent->DescribeSettings();
-               settings.visible = true;
-               renderComponent->Configure(settings);
-            }
-         }
-
-         // 旧形式は差分本体がobject内、現行形式はentry直下にあるため両方を受け付ける。
-         const nlohmann::json* objectData = &entry;
-
-         if (entry.contains("object") && entry.at("object").is_object()) {
-            objectData = &entry.at("object");
-         }
-
-         objectStore_.ApplyObjectState(object, *objectData);
-      }
-   }
-
-   void ApplySceneParticleSystems(const nlohmann::json& sceneParticlesData) {
-      for (const auto& entry : sceneParticlesData) {
-         if (!entry.is_object()) {
-            continue;
-         }
-
-         const std::string key = entry.value("sceneKey", "");
-
-         if (key.empty()) {
-            continue;
-         }
-
-         GameEngine::ParticleSystem* particleSystem = FindSceneParticleSystemByKey(key);
-
-         if (entry.value("deleted", false)) {
-            // シーン固有コードが所有するため破棄せず、Emissionを停止して削除状態を再現する。
-            if (particleSystem) {
-               particleSystem->Stop();
-            }
-
-            continue;
-         }
-
-         if (!particleSystem) {
-            continue;
-         }
-
-         const nlohmann::json* particleData = &entry;
-
-         if (entry.contains("particleSystem") && entry.at("particleSystem").is_object()) {
-            particleData = &entry.at("particleSystem");
-         }
-
-         objectStore_.ApplyParticleSystemState(particleSystem, *particleData);
-      }
-   }
-
-   void ApplyCameras(const nlohmann::json& camerasData) {
-      if (!camerasData.is_object()) return;
-
-      GameEngine::CinemachineBrain* brain = GameEngine::EngineContext::GetActiveBrain();
-
-      if (!brain) return;
-
-      if (camerasData.contains("brain") && camerasData.at("brain").is_object()) {
-         const auto& brainData = camerasData.at("brain");
-
-         if (brainData.contains("defaultBlendTime") && brainData.at("defaultBlendTime").is_number()) {
-            brain->SetDefaultBlendTime(brainData.at("defaultBlendTime").get<float>());
-         }
-      }
-
-      if (!camerasData.contains("virtualCameras") || !camerasData.at("virtualCameras").is_array()) return;
-
-      // RuntimeではC++が生成・登録済みのカメラへ状態だけを重ねる。
-      // JSONから新しいVirtualCameraを所有すると、シーン終了時の寿命管理が分岐してしまう。
-      const auto& registeredCameras = brain->GetVirtualCameras();
-      std::unordered_set<GameEngine::VirtualCamera*> appliedCameras;
-
-      for (const auto& cameraData : camerasData.at("virtualCameras")) {
-         if (!cameraData.is_object()) {
-            continue;
-         }
-
-         const std::string cameraName = cameraData.value("name", "");
-
-         if (cameraName == "DebugCamera") {
-            continue;
-         }
-
-         // 名前は並び替えに強いため優先し、名前が一致しない旧データだけindexへフォールバックする。
-         GameEngine::VirtualCamera* targetCamera = nullptr;
-
-         if (!cameraName.empty()) {
-            for (GameEngine::VirtualCamera* camera : registeredCameras) {
-               if (camera && camera->GetName() == cameraName && camera->GetName() != "DebugCamera") {
-                  targetCamera = camera;
-                  break;
-               }
-            }
-         }
-
-         if (!targetCamera && cameraData.contains("index") && cameraData.at("index").is_number_unsigned()) {
-            const size_t index = cameraData.at("index").get<size_t>();
-
-            if (index < registeredCameras.size()) {
-               GameEngine::VirtualCamera* candidate = registeredCameras[index];
-
-               if (candidate && candidate->GetName() != "DebugCamera") {
-                  targetCamera = candidate;
-               }
-            }
-         }
-
-         // 壊れたJSONで同じカメラを複数回上書きし、結果が配列順依存になることを防ぐ。
-         if (!targetCamera || appliedCameras.contains(targetCamera)) {
-            continue;
-         }
-
-         targetCamera->Deserialize(cameraData);
-         appliedCameras.insert(targetCamera);
-      }
-   }
-
-   void ApplyLegacyLights(const nlohmann::json& environment) {
-      if (!environment.contains("lights") || !environment.at("lights").is_array()) return;
-
-      // 旧環境ライトを現行Entity+LightComponentへ変換する。同IDの既定ライトがあれば再利用し、
-      // なければStore所有の汎用Entityを受け皿として作る。
-      for (const auto& lightData : environment.at("lights")) {
-         if (!lightData.is_object()) {
-            continue;
-         }
-
-         const std::string id = lightData.value("id", "");
-
-         if (id.empty()) {
-            continue;
-         }
-
-         GameEngine::Object* entity = GameEngine::Object::FindByEntityId(id);
-
-         if (!entity) {
-            entity = objectStore_.CreateGenericObject(nullptr, id);
-
-            if (entity) {
-               entity->SetObjectName(id);
-            }
-         }
-
-         if (!entity) {
-            continue;
-         }
-
-         auto* light = entity->GetComponent<GameEngine::LightComponent>();
-
-         if (!light) {
-            light = entity->AddComponent<GameEngine::LightComponent>();
-         }
-
-         if (light) {
-            light->DeserializeLegacy(lightData);
-         }
-      }
-   }
-
-   GameEngine::SceneObjectStore& objectStore_;
-   std::unordered_map<const GameEngine::Object*, std::string> sceneObjectKeys_;
-   std::unordered_map<const GameEngine::ParticleSystem*, std::string> sceneParticleSystemKeys_;
-};
 } // namespace
 
 namespace GameEngine {
+
+BaseScene* BaseScene::sCurrentScene_ = nullptr;
+
+bool BaseScene::sIsWaitingForFadeOut_ = false;
+
+std::string BaseScene::sPendingSceneName_;
+
+std::string BaseScene::sNextSceneName_;
 BaseScene::~BaseScene() = default;
 
 void BaseScene::Initialize() {
    // 現在のシーンインスタンスを登録
    sCurrentScene_ = this;
-
-   // 各種ライトを必ず同じEntity構造で用意し、Editor保存・親子Transform・Runtime復元の
-   // すべてが特殊ケースなしでLightComponentを扱えるようにする。
-   auto createDefaultLight = [this](const char* entityId, LightComponent::Type type, const Vector3& position,
-                                const Vector3& direction, float intensity) {
-      auto entity = std::make_unique<Object>();
-      entity->SetEntityId(entityId);
-      entity->SetObjectName(entityId);
-      auto* transform = entity->AddComponent<TransformComponent>();
-      {
-         auto pose = transform->GetLocalPose();
-         pose.translation = position;
-         transform->ApplyLocalPose(pose);
-      }
-
-      if (type != LightComponent::Type::Point) {
-         {
-            auto pose = transform->GetLocalPose();
-            pose.SetRotationQuaternion(LookRotation(direction, Vector3(0.0f, 1.0f, 0.0f)));
-            transform->ApplyLocalPose(pose);
-         }
-      }
-
-      auto* light = entity->AddComponent<LightComponent>();
-      light->SetLightType(type);
-      {
-         auto settings = light->DescribeSettings();
-         settings.intensity = intensity;
-         light->Configure(settings);
-      }
-      sceneEntities_.push_back(std::move(entity));
-   };
-
-   // デフォルトライトも通常Entityとして所有し、ヒエラルキー・保存・親子Transformを共通化する。
-   createDefaultLight(
-      "MainDirectionalLight", LightComponent::Type::Directional, Vector3(), Vector3(0.0f, -1.0f, 0.0f), 1.0f);
-   createDefaultLight("MainPointLight", LightComponent::Type::Point, Vector3(), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
-   createDefaultLight("MainSpotLight", LightComponent::Type::Spot, Vector3(), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
-   createDefaultLight(
-      "MainAreaLight", LightComponent::Type::Area, Vector3(0.0f, 10.0f, 0.0f), Vector3(0.0f, -1.0f, 0.0f), 0.0f);
 
    // CameraUnitを生成（Brain+Cameraのペア）
    // CameraUnitが出力CameraとVirtualCamera選択用Brainの寿命を一括管理する。
@@ -535,7 +104,7 @@ void BaseScene::Initialize() {
    cameraEditor_->Initialize(EngineContext::GetLineRenderer());
    cameraEditor_->SetTargetBrain(brain);
 
-   editorSceneContext_ = std::make_unique<EditorSceneContext>();
+   editorSceneContext_ = std::make_unique<EditorSceneContext>(sceneWorld_);
    editorSceneContext_->Initialize(editorSceneName_);
 #endif
 
@@ -611,6 +180,7 @@ void BaseScene::Draw() {
 void BaseScene::Finalize() {
    // 派生クラスが自分の登録物を参照できるうちに先に終了処理を通知する。
    OnFinalize();
+   sceneWorld_.Clear();
 
    // 現在のシーンインスタンスをクリア
    if (sCurrentScene_ == this) {
@@ -637,14 +207,6 @@ void BaseScene::Finalize() {
    cameraEditor_.reset();
 #endif
 
-   // Runtime JSONから生成したObjectはStoreが所有するため、Registryの一括クリアより先に破棄する。
-   if (runtimeSceneObjectStore_) {
-      runtimeSceneObjectStore_->Clear();
-      runtimeSceneObjectStore_.reset();
-   }
-
-   // 既定ライトEntityを破棄してから各Manager/Registryを空にし、生ポインターを残さない。
-   sceneEntities_.clear();
    EngineContext::ClearCameraUnits();
    EngineContext::ClearDirectionalLights();
    EngineContext::ClearPointLights();
@@ -665,50 +227,7 @@ void BaseScene::SetNextSceneName(const std::string& sceneName) {
    sNextSceneName_ = sceneName;
 }
 
-void BaseScene::LoadSceneDataIfNeeded() {
-   // Editorビルドは編集コンテキストが差分や履歴を管理し、Releaseビルドは
-   // 同じJSONを軽量なRuntimeSceneApplierで直接適用する。
 #ifdef USE_IMGUI
-   LoadEditorSceneIfNeeded();
-#else
-   LoadRuntimeSceneIfNeeded();
-#endif
-}
-
-void BaseScene::LoadRuntimeSceneIfNeeded() {
-   const std::string filename = editorSceneName_ + ".json";
-   const std::filesystem::path filePath = std::filesystem::path("resources") / "game" / "scenes" /
-                                          std::filesystem::path(std::u8string(filename.begin(), filename.end()));
-
-   if (!std::filesystem::exists(filePath)) return;
-
-   std::ifstream file(filePath);
-
-   if (!file.is_open()) return;
-
-   nlohmann::json sceneData;
-   try {
-      file >> sceneData;
-   } catch (...) {
-      return;
-   }
-
-   // Runtimeでも既存の復元ロジックを再利用するためStoreを所有コンテナとして使う。
-   // 適用失敗時は部分生成されたObjectごと破棄し、C++生成シーンだけで継続する。
-   runtimeSceneObjectStore_ = std::make_unique<SceneObjectStore>();
-   RuntimeSceneApplier applier(*runtimeSceneObjectStore_);
-
-   if (!applier.Apply(sceneData)) {
-      runtimeSceneObjectStore_.reset();
-   }
-}
-
-#ifdef USE_IMGUI
-void BaseScene::LoadEditorSceneIfNeeded() {
-   if (editorSceneContext_) {
-      editorSceneContext_->AutoLoad();
-   }
-}
 
 std::filesystem::path BaseScene::GetDebugCameraStateFilePath() const {
    const std::string filename = editorSceneName_ + ".json";
@@ -734,22 +253,15 @@ void BaseScene::LoadDebugCameraState() {
       return;
    }
 
-   // version導入前はCamera本体がルートだったため、ラップ済み形式と旧形式を両方読む。
-   const nlohmann::json* cameraData = nullptr;
-
-   if (root.is_object() && root.contains("debugCamera") && root.at("debugCamera").is_object()) {
-      cameraData = &root.at("debugCamera");
-   } else if (root.is_object()) {
-      cameraData = &root;
-   }
-
-   if (!cameraData) return;
+   if (!root.is_object() || root.value("version", 0) != kDebugCameraStateFormatVersion ||
+       !root.contains("debugCamera") || !root.at("debugCamera").is_object())
+      return;
 
    // 保存されたpriority/activeを復元するとF1の選択状態まで前回値に引きずられる。
    // Transform等だけを読み、選択制御用の実行時プロパティは初期化時の値を保つ。
-   const int priority = debugCamera_->GetPriority();
+   const std::int32_t priority = debugCamera_->GetPriority();
    const bool active = debugCamera_->IsActive();
-   debugCamera_->Deserialize(*cameraData);
+   debugCamera_->Deserialize(root.at("debugCamera"));
    debugCamera_->SetName("DebugCamera");
    debugCamera_->SetPriority(priority);
    debugCamera_->SetActive(active);
@@ -777,23 +289,4 @@ void BaseScene::SaveDebugCameraState() const {
 }
 #endif
 
-void BaseScene::UpdateDebugCamera() {
-#ifdef USE_IMGUI
-   if (EngineContext::IsKeyTriggered(KeyCode::F1)) {
-      isDebugCameraActive_ = !isDebugCameraActive_;
-
-      if (isDebugCameraActive_) {
-         debugCamera_->SetPriority(kActiveDebugCameraPriority);
-      } else {
-         debugCamera_->SetPriority(kInactiveDebugCameraPriority);
-      }
-   }
-
-   {
-      if (CinemachineBrain* brain = EngineContext::GetActiveBrain()) {
-         brain->UpdateEditorPreview(EngineContext::GetUnscaledDeltaTime(), debugCamera_.get());
-      }
-   }
-#endif // USE_IMGUI
-}
 }

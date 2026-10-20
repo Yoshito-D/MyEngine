@@ -108,3 +108,25 @@ void GameEngine::SpeedLine::UpdateConstantBuffer() {
    constantBufferData_->randomSeed = params_.randomSeed;
    constantBufferData_->flowSpeed = params_.flowSpeed;
 }
+
+namespace GameEngine {
+
+void SpeedLine::SetCenter(Vector2 center) {
+   auto params = params_;
+   params.center = center;
+   SetParams(params);
+}
+
+void SpeedLine::SetIntensity(float value) {
+   auto params = params_;
+   params.intensity = value;
+   SetParams(params);
+}
+
+void SpeedLine::SetLineDensity(float value) {
+   auto params = params_;
+   params.lineDensity = value;
+   SetParams(params);
+}
+
+} // namespace GameEngine

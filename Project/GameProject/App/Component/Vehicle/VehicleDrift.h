@@ -33,7 +33,7 @@ namespace App {
 class VehicleDrift final : public GameEngine::IObjectComponent {
 public:
    /// @brief ドリフト移行方式
-   enum class DriftMode : int {
+   enum class DriftMode : std::int32_t {
       ButtonMode = 0,     ///< 専用ボタンを押し続けることでドリフト開始
       SustainedSteer = 1, ///< 同方向ステアを一定時間継続することでドリフト開始
    };

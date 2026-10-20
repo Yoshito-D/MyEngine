@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
 #include <functional>
@@ -138,10 +139,10 @@ public:
    const Transform* GetLookAtTarget() const;
 
    /// @brief ブレンド選択に使用する優先度を取得する
-   int GetPriority() const { return priority_; }
+   std::int32_t GetPriority() const { return priority_; }
 
    /// @brief ブレンド選択に使用する優先度を設定する
-   void SetPriority(int priority) { priority_ = priority; }
+   void SetPriority(std::int32_t priority) { priority_ = priority; }
 
    /// @brief カメラがブレンド候補として有効かを取得する
    bool IsActive() const { return isActive_; }
@@ -156,15 +157,7 @@ public:
    void SetState(const CameraState& state) { state_ = state; }
 
    /// @brief 所有ポインターを公開せず読み取り用の部品一覧を作る。
-   std::vector<const ICinemachineComponent*> GetComponents() const {
-      std::vector<const ICinemachineComponent*> result;
-
-      for (const auto& component : components_) {
-         result.push_back(component.get());
-      }
-
-      return result;
-   }
+   std::vector<const ICinemachineComponent*> GetComponents() const;
 
    /// @brief 仮想カメラ設定を保存する
    nlohmann::json Serialize() const;
@@ -186,7 +179,7 @@ private:
    CameraState state_;
    std::string name_;
    std::string id_;
-   int priority_ = 0;
+   std::int32_t priority_ = 0;
    bool isActive_ = true;
 };
 

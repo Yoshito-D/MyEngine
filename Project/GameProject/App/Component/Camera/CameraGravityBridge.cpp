@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Camera/CameraGravityBridge.h"
+#include <cstdint>
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
 #include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
@@ -214,7 +215,7 @@ void DrawPresentationLegendEntry(const char* text, float y, const GameEngine::Ve
 void DrawPresentationGuides(const GameEngine::Vector3& playerPosition, const GameEngine::Vector3& motionBackward,
    const GameEngine::Vector3& planetGuideBackward, const GameEngine::Vector3& targetGravityUp,
    const GameEngine::Vector3& cameraForward, const GameEngine::Vector3& cameraRight,
-   const LandingPrediction* prediction, float guideLength, int conditionPreviewMode) {
+   const LandingPrediction* prediction, float guideLength, std::int32_t conditionPreviewMode) {
    const GameEngine::Vector4 trajectoryColor = {1.0f, 0.35f, 0.05f, 1.0f};
    const GameEngine::Vector4 contactColor = {0.1f, 0.95f, 1.0f, 1.0f};
    const GameEngine::Vector4 landingUpColor = {0.15f, 1.0f, 0.25f, 1.0f};
@@ -490,7 +491,7 @@ void CameraGravityBridge::Update(float deltaTime) {
 
       if (rearCameraSelected && debugDrawPresentationGuides) {
          // 反転条件を先に選び、同時成立時も発表用ガイドの意味を一意に保つ。
-         int conditionPreviewMode = 0;
+         std::int32_t conditionPreviewMode = 0;
          const GameEngine::Vector3 actualCameraForward =
             NormalizeOrFallback(playerRearFollowCamera_->GetCameraForward(), forward);
          const float cameraForwardGravityAxisDot = std::abs(actualCameraForward.Dot(gravityUp));
@@ -889,6 +890,137 @@ void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
    }
 
    Configure(DescribeSettings());
+}
+
+} // namespace App
+
+namespace App {
+
+CameraGravityBridge::Settings CameraGravityBridge::DescribeSettings() const {
+   Settings settings;
+   settings.enableLandingShake = enableLandingShake;
+   settings.landingShakeAmplitude = landingShakeAmplitude;
+   settings.landingShakeFrequency = landingShakeFrequency;
+   settings.landingShakeDuration = landingShakeDuration;
+   settings.enableMiniTurboShake = enableMiniTurboShake;
+   settings.miniTurboShakeHorizontalAmplitude = miniTurboShakeHorizontalAmplitude;
+   settings.miniTurboShakeVerticalAmplitude = miniTurboShakeVerticalAmplitude;
+   settings.miniTurboShakeFrequency = miniTurboShakeFrequency;
+   settings.miniTurboShakeDuration = miniTurboShakeDuration;
+   settings.enableDriftCameraApproach = enableDriftCameraApproach;
+   settings.driftCameraDistanceReduction = driftCameraDistanceReduction;
+   settings.driftCameraHeightOffset = driftCameraHeightOffset;
+   settings.driftLookTargetHeightOffset = driftLookTargetHeightOffset;
+   settings.driftCameraLerpSpeed = driftCameraLerpSpeed;
+   settings.debugDrawPresentationGuides = debugDrawPresentationGuides;
+   settings.presentationGuideLength = presentationGuideLength;
+   settings.autoCapturePresentationSequence = autoCapturePresentationSequence;
+   settings.presentationCaptureJumpDelay = presentationCaptureJumpDelay;
+   settings.autoCapturePresentationVideoFrames = autoCapturePresentationVideoFrames;
+   settings.presentationVideoFrameRate = presentationVideoFrameRate;
+   settings.presentationVideoCaptureStartDelay = presentationVideoCaptureStartDelay;
+   settings.presentationVideoCaptureDuration = presentationVideoCaptureDuration;
+   return settings;
+}
+
+void CameraGravityBridge::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.landingShakeAmplitude)) {
+      settings.landingShakeAmplitude = defaults.landingShakeAmplitude;
+   }
+
+   if (!std::isfinite(settings.landingShakeFrequency)) {
+      settings.landingShakeFrequency = defaults.landingShakeFrequency;
+   }
+
+   if (!std::isfinite(settings.landingShakeDuration)) {
+      settings.landingShakeDuration = defaults.landingShakeDuration;
+   }
+
+   if (!std::isfinite(settings.miniTurboShakeHorizontalAmplitude)) {
+      settings.miniTurboShakeHorizontalAmplitude = defaults.miniTurboShakeHorizontalAmplitude;
+   }
+
+   if (!std::isfinite(settings.miniTurboShakeVerticalAmplitude)) {
+      settings.miniTurboShakeVerticalAmplitude = defaults.miniTurboShakeVerticalAmplitude;
+   }
+
+   if (!std::isfinite(settings.miniTurboShakeFrequency)) {
+      settings.miniTurboShakeFrequency = defaults.miniTurboShakeFrequency;
+   }
+
+   if (!std::isfinite(settings.miniTurboShakeDuration)) {
+      settings.miniTurboShakeDuration = defaults.miniTurboShakeDuration;
+   }
+
+   settings.miniTurboShakeHorizontalAmplitude = std::max(0.0f, settings.miniTurboShakeHorizontalAmplitude);
+   settings.miniTurboShakeVerticalAmplitude = std::max(0.0f, settings.miniTurboShakeVerticalAmplitude);
+   settings.miniTurboShakeFrequency = std::max(0.1f, settings.miniTurboShakeFrequency);
+   settings.miniTurboShakeDuration = std::max(0.0f, settings.miniTurboShakeDuration);
+
+   if (!std::isfinite(settings.driftCameraDistanceReduction)) {
+      settings.driftCameraDistanceReduction = defaults.driftCameraDistanceReduction;
+   }
+
+   if (!std::isfinite(settings.driftCameraHeightOffset)) {
+      settings.driftCameraHeightOffset = defaults.driftCameraHeightOffset;
+   }
+
+   if (!std::isfinite(settings.driftLookTargetHeightOffset)) {
+      settings.driftLookTargetHeightOffset = defaults.driftLookTargetHeightOffset;
+   }
+
+   if (!std::isfinite(settings.driftCameraLerpSpeed)) {
+      settings.driftCameraLerpSpeed = defaults.driftCameraLerpSpeed;
+   }
+
+   settings.driftCameraDistanceReduction = std::clamp(settings.driftCameraDistanceReduction, 0.0f, 0.5f);
+   settings.driftCameraLerpSpeed = std::max(0.1f, settings.driftCameraLerpSpeed);
+
+   if (!std::isfinite(settings.presentationGuideLength)) {
+      settings.presentationGuideLength = defaults.presentationGuideLength;
+   }
+
+   if (!std::isfinite(settings.presentationCaptureJumpDelay)) {
+      settings.presentationCaptureJumpDelay = defaults.presentationCaptureJumpDelay;
+   }
+
+   if (!std::isfinite(settings.presentationVideoFrameRate)) {
+      settings.presentationVideoFrameRate = defaults.presentationVideoFrameRate;
+   }
+
+   if (!std::isfinite(settings.presentationVideoCaptureStartDelay)) {
+      settings.presentationVideoCaptureStartDelay = defaults.presentationVideoCaptureStartDelay;
+   }
+
+   if (!std::isfinite(settings.presentationVideoCaptureDuration)) {
+      settings.presentationVideoCaptureDuration = defaults.presentationVideoCaptureDuration;
+   }
+
+   enableLandingShake = settings.enableLandingShake;
+   landingShakeAmplitude = settings.landingShakeAmplitude;
+   landingShakeFrequency = settings.landingShakeFrequency;
+   landingShakeDuration = settings.landingShakeDuration;
+   enableMiniTurboShake = settings.enableMiniTurboShake;
+   miniTurboShakeHorizontalAmplitude = settings.miniTurboShakeHorizontalAmplitude;
+   miniTurboShakeVerticalAmplitude = settings.miniTurboShakeVerticalAmplitude;
+   miniTurboShakeFrequency = settings.miniTurboShakeFrequency;
+   miniTurboShakeDuration = settings.miniTurboShakeDuration;
+   enableDriftCameraApproach = settings.enableDriftCameraApproach;
+   driftCameraDistanceReduction = settings.driftCameraDistanceReduction;
+   driftCameraHeightOffset = settings.driftCameraHeightOffset;
+   driftLookTargetHeightOffset = settings.driftLookTargetHeightOffset;
+   driftCameraLerpSpeed = settings.driftCameraLerpSpeed;
+   debugDrawPresentationGuides = settings.debugDrawPresentationGuides;
+   presentationGuideLength = settings.presentationGuideLength;
+   autoCapturePresentationSequence = settings.autoCapturePresentationSequence;
+   presentationCaptureJumpDelay = settings.presentationCaptureJumpDelay;
+   autoCapturePresentationVideoFrames = settings.autoCapturePresentationVideoFrames;
+   presentationVideoFrameRate = settings.presentationVideoFrameRate;
+   presentationVideoCaptureStartDelay = settings.presentationVideoCaptureStartDelay;
+   presentationVideoCaptureDuration = settings.presentationVideoCaptureDuration;
 }
 
 } // namespace App

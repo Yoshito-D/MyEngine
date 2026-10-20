@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include <nlohmann/json.hpp>
 
@@ -44,7 +45,7 @@ public:
    virtual CinemachineStage GetStage() const = 0;
 
    /// @brief 同一ステージ内の更新順を返す。小さい値を先に実行し、同値は追加順を保つ。
-   virtual int GetExecutionOrder() const { return 0; }
+   virtual std::int32_t GetExecutionOrder() const { return 0; }
 
    /// @brief コンポーネントが有効かどうか
    bool IsEnabled() const { return isEnabled_; }
@@ -77,10 +78,7 @@ protected:
 private:
    friend class VirtualCamera;
 
-   void Attach(VirtualCamera& owner) {
-      owner_ = &owner;
-      OnAttach();
-   }
+   void Attach(VirtualCamera& owner);
 
    VirtualCamera* owner_ = nullptr;
    bool isEnabled_ = true;

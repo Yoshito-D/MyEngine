@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Effects/Particles/Modules/MainModule.h"
 
 namespace GameEngine {
@@ -125,7 +126,7 @@ nlohmann::json MainModule::ToJson() const {
    j["looping"] = looping_;
    j["startLifetime"] = startLifetime_.ToJson();
    j["startSpeed"] = startSpeed_.ToJson();
-   j["startSpeedMode"] = static_cast<int>(startSpeedMode_);
+   j["startSpeedMode"] = static_cast<std::int32_t>(startSpeedMode_);
    j["startVelocity"] = startVelocity_.ToJson();
    j["startSize"] = startSize_.ToJson();
    j["startRotation"] = startRotation_.ToJson();
@@ -133,7 +134,7 @@ nlohmann::json MainModule::ToJson() const {
 
    j["gravityModifier"] = gravityModifier_.ToJson();
    j["timeScale"] = timeScale_;
-   j["simulationSpace"] = static_cast<int>(simulationSpace_);
+   j["simulationSpace"] = static_cast<std::int32_t>(simulationSpace_);
    j["playOnAwake"] = playOnAwake_;
    j["maxParticles"] = maxParticles_;
 
@@ -141,124 +142,109 @@ nlohmann::json MainModule::ToJson() const {
 }
 
 void MainModule::FromJson(const nlohmann::json& j) {
+   auto readRange = [&j](const char* key, auto& value) {
+      if (j.contains(key)) {
+         value.FromJson(j.at(key));
+      }
+   };
+
+   readRange("startLifetime", startLifetime_);
+   readRange("startSpeed", startSpeed_);
+   readRange("startVelocity", startVelocity_);
+   readRange("startSize", startSize_);
+   readRange("startRotation", startRotation_);
+   readRange("startColor", startColor_);
+   readRange("gravityModifier", gravityModifier_);
+
    if (j.contains("duration")) {
-      duration_ = j["duration"];
+      duration_ = j.at("duration");
    }
 
    if (j.contains("looping")) {
-      looping_ = j["looping"];
+      looping_ = j.at("looping");
    }
 
-   if (j.contains("startLifetime")) {
-      if (j["startLifetime"].is_object()) {
-         startLifetime_.FromJson(j["startLifetime"]);
-      } else {
-         float value = j["startLifetime"];
-         startLifetime_ = RandomFloat(value, value, false);
-      }
-   }
-
-   const bool hasStartSpeedMode = j.contains("startSpeedMode");
-
-   if (hasStartSpeedMode) {
-      startSpeedMode_ = static_cast<StartSpeedMode>(j["startSpeedMode"].get<int>());
-   }
-
-   if (j.contains("startSpeed")) {
-      const auto& startSpeedJson = j["startSpeed"];
-
-      if (startSpeedJson.is_object()) {
-         // 旧形式ではstartSpeedキーにVector範囲も格納されたため、minの型から移行先を判定する。
-         const bool isVectorRange = startSpeedJson.contains("min") && startSpeedJson["min"].is_array();
-
-         if (isVectorRange) {
-            startVelocity_.FromJson(startSpeedJson);
-
-            if (!hasStartSpeedMode) {
-               startSpeedMode_ = StartSpeedMode::Vector3;
-            }
-         } else {
-            startSpeed_.FromJson(startSpeedJson);
-         }
-      } else if (startSpeedJson.is_array() && startSpeedJson.size() >= 3) {
-         Vector3 value{startSpeedJson[0], startSpeedJson[1], startSpeedJson[2]};
-         startVelocity_ = RandomVector3(value, value, false);
-
-         if (!hasStartSpeedMode) {
-            startSpeedMode_ = StartSpeedMode::Vector3;
-         }
-      } else {
-         float value = startSpeedJson;
-         startSpeed_ = RandomFloat(value, value, false);
-      }
-   }
-
-   if (j.contains("startVelocity")) {
-      if (j["startVelocity"].is_object()) {
-         startVelocity_.FromJson(j["startVelocity"]);
-      } else if (j["startVelocity"].is_array() && j["startVelocity"].size() >= 3) {
-         auto arr = j["startVelocity"];
-         Vector3 value{arr[0], arr[1], arr[2]};
-         startVelocity_ = RandomVector3(value, value, false);
-      }
-
-      if (!hasStartSpeedMode) {
-         startSpeedMode_ = StartSpeedMode::Vector3;
-      }
-   }
-
-   if (j.contains("startSize")) {
-      if (j["startSize"].is_object()) {
-         startSize_.FromJson(j["startSize"]);
-      } else {
-         // 旧スカラーサイズは三軸へ同値展開し、一様スケールとして見た目を維持する。
-         float value = j["startSize"];
-         Vector3 v(value, value, value);
-         startSize_ = RandomVector3(v, v, false);
-      }
-   }
-
-   if (j.contains("startRotation")) {
-      if (j["startRotation"].is_object()) {
-         startRotation_.FromJson(j["startRotation"]);
-      } else if (j["startRotation"].is_array()) {
-         auto arr = j["startRotation"];
-         Vector3 value{arr[0], arr[1], arr[2]};
-         startRotation_ = RandomVector3(value, value, false);
-      }
-   }
-
-   if (j.contains("startColor")) {
-      if (j["startColor"].is_object()) {
-         startColor_.FromJson(j["startColor"]);
-      } else if (j["startColor"].is_number()) {
-         uint32_t value = j["startColor"];
-         startColor_ = RandomColor(value, value, false);
-      }
-   }
-
-   if (j.contains("gravityModifier")) {
-      if (j["gravityModifier"].is_object()) {
-         gravityModifier_.FromJson(j["gravityModifier"]);
-      } else {
-         SetGravityModifier(j["gravityModifier"]);
-      }
+   if (j.contains("startSpeedMode")) {
+      startSpeedMode_ = static_cast<StartSpeedMode>(j.at("startSpeedMode").get<std::int32_t>());
    }
 
    if (j.contains("timeScale")) {
-      SetTimeScale(j["timeScale"]);
+      SetTimeScale(j.at("timeScale"));
    }
 
    if (j.contains("simulationSpace")) {
-      simulationSpace_ = static_cast<SimulationSpace>(j["simulationSpace"].get<int>());
+      simulationSpace_ = static_cast<SimulationSpace>(j.at("simulationSpace").get<std::int32_t>());
    }
 
    if (j.contains("playOnAwake")) {
-      playOnAwake_ = j["playOnAwake"];
+      playOnAwake_ = j.at("playOnAwake");
    }
 
    if (j.contains("maxParticles")) {
-      maxParticles_ = j["maxParticles"];
+      maxParticles_ = j.at("maxParticles");
    }
 }
 }
+
+namespace GameEngine {
+
+RandomFloat::RandomFloat(float low, float high, bool randomize) : randomized_(randomize) {
+   minimum_ = std::isfinite(low) ? low : 0.0f;
+
+   // 固定値では未使用の上限を破棄し、範囲の並べ替えによる指定値の変化を防ぐ。
+   maximum_ = randomized_ && std::isfinite(high) ? high : minimum_;
+
+   if (maximum_ < minimum_) {
+      std::swap(minimum_, maximum_);
+   }
+}
+
+RandomVector2::RandomVector2(const Vector2& low, const Vector2& high, bool randomize) : randomized_(randomize) {
+   minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
+   maximum_.x = randomized_ && std::isfinite(high.x) ? high.x : minimum_.x;
+
+   if (maximum_.x < minimum_.x) {
+      std::swap(minimum_.x, maximum_.x);
+   }
+
+   minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
+   maximum_.y = randomized_ && std::isfinite(high.y) ? high.y : minimum_.y;
+
+   if (maximum_.y < minimum_.y) {
+      std::swap(minimum_.y, maximum_.y);
+   }
+}
+
+RandomVector3::RandomVector3(const Vector3& low, const Vector3& high, bool randomize) : randomized_(randomize) {
+   minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
+   maximum_.x = randomized_ && std::isfinite(high.x) ? high.x : minimum_.x;
+
+   if (maximum_.x < minimum_.x) {
+      std::swap(minimum_.x, maximum_.x);
+   }
+
+   minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
+   maximum_.y = randomized_ && std::isfinite(high.y) ? high.y : minimum_.y;
+
+   if (maximum_.y < minimum_.y) {
+      std::swap(minimum_.y, maximum_.y);
+   }
+
+   minimum_.z = std::isfinite(low.z) ? low.z : 0.0f;
+   maximum_.z = randomized_ && std::isfinite(high.z) ? high.z : minimum_.z;
+
+   if (maximum_.z < minimum_.z) {
+      std::swap(minimum_.z, maximum_.z);
+   }
+}
+
+RandomColor::RandomColor(uint32_t minVal, uint32_t maxVal, bool enableRandom)
+   : minValue(minVal), maxValue(maxVal), randomize(enableRandom) {
+}
+
+void MainModule::SetStartVelocity(const RandomVector3& velocity) {
+   startVelocity_ = velocity;
+   startSpeedMode_ = StartSpeedMode::Vector3;
+}
+
+} // namespace GameEngine

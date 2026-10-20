@@ -117,7 +117,7 @@ private:
    /// @param index 作成するレンダーターゲットのインデックス（0または1）
    /// @param srvIndex 再利用するSRVインデックス。未指定の場合は新規確保
    /// @return 作成されたレンダーターゲット情報
-   RenderTargetInfo CreateRenderTargetInfo(int index, UINT srvIndex = static_cast<UINT>(-1));
+   RenderTargetInfo CreateRenderTargetInfo(std::int32_t index, UINT srvIndex = static_cast<UINT>(-1));
 
    /// @brief 描画先を持たないシーン参照用テクスチャを作成する
    RenderTargetInfo CreateSnapshotInfo(

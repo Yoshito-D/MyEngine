@@ -164,23 +164,6 @@ void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
       maximumEffectSpeed = data["maximumEffectSpeed"];
    }
 
-   // 旧シーンの相対指定を絶対速度へ移行し、保存済みデータとの互換性を維持する。
-   if (!data.contains("minimumEffectSpeed") && data.contains("activationMargin")) {
-      float baseSpeed = minimumEffectSpeed;
-
-      if (HasOwner()) {
-         if (auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>()) {
-            baseSpeed = groundMover->DescribeSettings().autoSpeed;
-         }
-      }
-
-      minimumEffectSpeed = baseSpeed + std::max(data["activationMargin"].get<float>(), 0.0f);
-   }
-
-   if (!data.contains("maximumEffectSpeed") && data.contains("effectSpeedRange")) {
-      maximumEffectSpeed = minimumEffectSpeed + std::max(data["effectSpeedRange"].get<float>(), 0.01f);
-   }
-
    if (data.contains("responseSpeed")) {
       responseSpeed = data["responseSpeed"];
    }
@@ -265,6 +248,116 @@ void VehicleSpeedPostEffectController::ApplyNeutralEffect() {
 
    GameEngine::EngineContext::SetRadialBlurParams(radialParams);
    GameEngine::EngineContext::SetPostProcessEffectEnabled("Radial Blur", false);
+}
+
+} // namespace App
+
+namespace App {
+
+VehicleSpeedPostEffectController::Settings VehicleSpeedPostEffectController::DescribeSettings() const {
+   Settings settings;
+   settings.minimumEffectSpeed = minimumEffectSpeed;
+   settings.maximumEffectSpeed = maximumEffectSpeed;
+   settings.responseSpeed = responseSpeed;
+   settings.visibleThreshold = visibleThreshold;
+   settings.idleInnerRadius = idleInnerRadius;
+   settings.activeInnerRadius = activeInnerRadius;
+   settings.outerRadius = outerRadius;
+   settings.maxIntensity = maxIntensity;
+   settings.idleFlowSpeed = idleFlowSpeed;
+   settings.activeFlowSpeed = activeFlowSpeed;
+   settings.lineDensity = lineDensity;
+   settings.thickness = thickness;
+   settings.randomSeed = randomSeed;
+   settings.radialBlurMaxStrength = radialBlurMaxStrength;
+   settings.radialBlurSampleCount = radialBlurSampleCount;
+   settings.radialBlurVisibleThreshold = radialBlurVisibleThreshold;
+   return settings;
+}
+
+void VehicleSpeedPostEffectController::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.minimumEffectSpeed)) {
+      settings.minimumEffectSpeed = defaults.minimumEffectSpeed;
+   }
+
+   if (!std::isfinite(settings.maximumEffectSpeed)) {
+      settings.maximumEffectSpeed = defaults.maximumEffectSpeed;
+   }
+
+   if (!std::isfinite(settings.responseSpeed)) {
+      settings.responseSpeed = defaults.responseSpeed;
+   }
+
+   if (!std::isfinite(settings.visibleThreshold)) {
+      settings.visibleThreshold = defaults.visibleThreshold;
+   }
+
+   if (!std::isfinite(settings.idleInnerRadius)) {
+      settings.idleInnerRadius = defaults.idleInnerRadius;
+   }
+
+   if (!std::isfinite(settings.activeInnerRadius)) {
+      settings.activeInnerRadius = defaults.activeInnerRadius;
+   }
+
+   if (!std::isfinite(settings.outerRadius)) {
+      settings.outerRadius = defaults.outerRadius;
+   }
+
+   if (!std::isfinite(settings.maxIntensity)) {
+      settings.maxIntensity = defaults.maxIntensity;
+   }
+
+   if (!std::isfinite(settings.idleFlowSpeed)) {
+      settings.idleFlowSpeed = defaults.idleFlowSpeed;
+   }
+
+   if (!std::isfinite(settings.activeFlowSpeed)) {
+      settings.activeFlowSpeed = defaults.activeFlowSpeed;
+   }
+
+   if (!std::isfinite(settings.lineDensity)) {
+      settings.lineDensity = defaults.lineDensity;
+   }
+
+   if (!std::isfinite(settings.thickness)) {
+      settings.thickness = defaults.thickness;
+   }
+
+   if (!std::isfinite(settings.randomSeed)) {
+      settings.randomSeed = defaults.randomSeed;
+   }
+
+   if (!std::isfinite(settings.radialBlurMaxStrength)) {
+      settings.radialBlurMaxStrength = defaults.radialBlurMaxStrength;
+   }
+
+   if (!std::isfinite(settings.radialBlurVisibleThreshold)) {
+      settings.radialBlurVisibleThreshold = defaults.radialBlurVisibleThreshold;
+   }
+
+   settings.maximumEffectSpeed = std::max(settings.minimumEffectSpeed + 0.001f, settings.maximumEffectSpeed);
+   settings.responseSpeed = std::max(0.0f, settings.responseSpeed);
+   settings.radialBlurSampleCount = std::clamp(settings.radialBlurSampleCount, 1, 64);
+   minimumEffectSpeed = settings.minimumEffectSpeed;
+   maximumEffectSpeed = settings.maximumEffectSpeed;
+   responseSpeed = settings.responseSpeed;
+   visibleThreshold = settings.visibleThreshold;
+   idleInnerRadius = settings.idleInnerRadius;
+   activeInnerRadius = settings.activeInnerRadius;
+   outerRadius = settings.outerRadius;
+   maxIntensity = settings.maxIntensity;
+   idleFlowSpeed = settings.idleFlowSpeed;
+   activeFlowSpeed = settings.activeFlowSpeed;
+   lineDensity = settings.lineDensity;
+   thickness = settings.thickness;
+   randomSeed = settings.randomSeed;
+   radialBlurMaxStrength = settings.radialBlurMaxStrength;
+   radialBlurSampleCount = settings.radialBlurSampleCount;
+   radialBlurVisibleThreshold = settings.radialBlurVisibleThreshold;
 }
 
 } // namespace App

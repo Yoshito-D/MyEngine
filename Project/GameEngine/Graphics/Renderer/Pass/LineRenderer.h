@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <wrl.h>
 #include <d3d12.h>
@@ -66,8 +67,9 @@ public:
    /// @param range カメラからの範囲（グリッド数、デフォルト：100）
    /// @param enableFade カメラからの距離に応じてフェードアウトするか（デフォルト：true）
    /// @param fadeDistance フェードアウトを開始する距離（デフォルト：50.0f、enableFadeがtrueの場合のみ有効）
-   void DrawGrid(Camera* camera, GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10,
-      int range = 100, bool enableFade = true, float fadeDistance = 50.0f);
+   void DrawGrid(Camera* camera, GridPlane plane = GridPlane::XZ, float gridSize = 1.0f,
+      std::int32_t thickLineInterval = 10, std::int32_t range = 100, bool enableFade = true,
+      float fadeDistance = 50.0f);
 
    /// @brief 球を描画する
    /// @param center 中心
@@ -115,9 +117,7 @@ public:
 
    /// @brief カメラごとのライン描画情報を取得
    /// @return カメラとラインデータのマップ
-   const std::unordered_map<Camera*, std::vector<LineInstance>>& GetCameraLineGroups() const {
-      return cameraLineGroups_;
-   }
+   const std::unordered_map<Camera*, std::vector<LineInstance>>& GetCameraLineGroups() const;
 
    /// @brief 容量を検証し、描画するライン列をGPUバッファへ転送する。
    bool UploadLines(const std::vector<LineInstance>& lines);

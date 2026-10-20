@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/VectorMath.h"
 #include <functional>
@@ -83,11 +84,11 @@ public:
    /// @param jsonPath エフェクト JSON ファイルパス
    /// @param config   追従設定（省略時はデフォルト）
    /// @return 追加したスロットのインデックス
-   int AddSlot(const std::string& jsonPath, const AttachmentConfig& config = {});
+   std::int32_t AddSlot(const std::string& jsonPath, const AttachmentConfig& config = {});
 
    /// @brief スロットを削除する
    /// @param slotIndex 削除するスロットのインデックス
-   void RemoveSlot(int slotIndex);
+   void RemoveSlot(std::int32_t slotIndex);
 
    /// @brief 全スロットを削除する
    void ClearSlots();
@@ -96,24 +97,19 @@ public:
    void UnregisterParticleSystemsForRender();
 
    /// @brief スロット数を取得する
-   int GetSlotCount() const { return static_cast<int>(slots_.size()); }
+   std::int32_t GetSlotCount() const { return static_cast<std::int32_t>(slots_.size()); }
 
    /// @brief 実体を公開せず、指定スロットの設定を参照する。
-   const SlotConfiguration* DescribeSlot(int slotIndex) const;
+   const SlotConfiguration* DescribeSlot(std::int32_t slotIndex) const;
 
    /// @brief 設定の置換とSystemの読み込み・追従・再生の同期を完了する。
-   bool ConfigureSlot(int slotIndex, const SlotConfiguration& configuration);
+   bool ConfigureSlot(std::int32_t slotIndex, const SlotConfiguration& configuration);
 
    /// @brief 生存粒子を維持したまま、指定スロットの新規放出を切り替える。
-   void EnableEmission(int slotIndex, bool enabled);
+   void EnableEmission(std::int32_t slotIndex, bool enabled);
 
    /// @brief 指定スロットが表示中の粒子を持つか調べる。
-   bool HasLivingParticles(int slotIndex) const;
-
-   // ── 後方互換ヘルパー（スロット 0 を操作） ────────
-
-   /// @brief JSON ファイルからエフェクトを読み込み、スロット 0 に設定する
-   bool LoadEffect(const std::string& jsonPath);
+   bool HasLivingParticles(std::int32_t slotIndex) const;
 
    // ── 一括再生制御（全スロット） ────────────────────
 
@@ -143,35 +139,35 @@ public:
    // ── 個別スロット再生制御 ──────────────────────────
 
    /// @brief 指定スロットの再生を開始する
-   void Play(int slotIndex);
+   void Play(std::int32_t slotIndex);
 
    /// @brief 指定スロットを停止し、再生位置を先頭へ戻す
-   void Stop(int slotIndex);
+   void Stop(std::int32_t slotIndex);
 
    /// @brief 指定スロットを一時停止する
-   void Pause(int slotIndex);
+   void Pause(std::int32_t slotIndex);
 
    /// @brief 指定スロットの一時停止を解除する
-   void Resume(int slotIndex);
+   void Resume(std::int32_t slotIndex);
 
    /// @brief 指定スロットを先頭から再生し直す
-   void Restart(int slotIndex);
+   void Restart(std::int32_t slotIndex);
 
    /// @brief 指定スロットが再生中かを判定する
    /// @return スロットが存在し再生中の場合はtrue
-   bool IsPlaying(int slotIndex) const;
+   bool IsPlaying(std::int32_t slotIndex) const;
 
    /// @brief 指定スロットが再生を完了したかを判定する
    /// @return スロットが存在し完了している場合はtrue
-   bool IsFinished(int slotIndex) const;
+   bool IsFinished(std::int32_t slotIndex) const;
 
    /// @brief スロットのエミッターを指定ワールド座標に固定する
    /// @param slotIndex 対象スロット
    /// @param position ワールド位置
    /// @param rotation ワールド回転
    /// @param scale ワールドスケール
-   void SetSlotWorldTransform(
-      int slotIndex, const Vector3& position, const Quaternion& rotation, const Vector3& scale = {1.0f, 1.0f, 1.0f});
+   void SetSlotWorldTransform(std::int32_t slotIndex, const Vector3& position, const Quaternion& rotation,
+      const Vector3& scale = {1.0f, 1.0f, 1.0f});
 
    // ── シリアライズ ──────────────────────────────────
 
@@ -189,12 +185,12 @@ public:
 
 private:
    struct EmitterSlot : SlotConfiguration {
-      std::function<void(int)> onFinished;
+      std::function<void(std::int32_t)> onFinished;
       std::unique_ptr<ParticleSystem> particleSystem;
    };
 
-   EmitterSlot* GetSlot(int slotIndex);
-   const EmitterSlot* GetSlot(int slotIndex) const;
+   EmitterSlot* GetSlot(std::int32_t slotIndex);
+   const EmitterSlot* GetSlot(std::int32_t slotIndex) const;
    bool LoadSlot(EmitterSlot& slot);
    static SlotConfiguration ValidateConfiguration(SlotConfiguration configuration);
 
@@ -220,9 +216,6 @@ private:
    static void SyncSimulationSpace(ParticleSystem* ps, AttachmentConfig::Space space);
 
    std::vector<EmitterSlot> slots_;
-
-   // 後方互換のために保持するデフォルト AttachmentConfig（スロット 0 用）
-   std::string legacyJsonPath_;
 };
 
 } // namespace GameEngine

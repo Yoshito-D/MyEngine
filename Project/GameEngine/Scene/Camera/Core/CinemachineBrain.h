@@ -81,9 +81,7 @@ public:
    std::vector<VirtualCamera*> GetVirtualCameras() { return virtualCameras_; }
 
    /// @brief 登録配列を公開せず、constカメラの一覧を作る。
-   std::vector<const VirtualCamera*> GetVirtualCameras() const {
-      return {virtualCameras_.begin(), virtualCameras_.end()};
-   }
+   std::vector<const VirtualCamera*> GetVirtualCameras() const;
 
 private:
    /// @brief ブレンド中の1層を表す構造体

@@ -37,14 +37,10 @@ public:
    bool SwitchToCamera(const std::string& cameraId);
 
    /// @brief 選択中の仮想カメラを返す。未解決の場合はnullptr。
-   GameEngine::VirtualCamera* GetSelectedCamera() {
-      return currentIndex_ < cameras_.size() ? cameras_[currentIndex_] : nullptr;
-   }
+   GameEngine::VirtualCamera* GetSelectedCamera();
 
    /// @brief constコンポーネントの選択結果を読み取り専用で参照する。
-   const GameEngine::VirtualCamera* GetSelectedCamera() const {
-      return currentIndex_ < cameras_.size() ? cameras_[currentIndex_] : nullptr;
-   }
+   const GameEngine::VirtualCamera* GetSelectedCamera() const;
 
    /// @brief カメラ順序と初期モードをJSONへ保存する
    /// @return 保存用JSON

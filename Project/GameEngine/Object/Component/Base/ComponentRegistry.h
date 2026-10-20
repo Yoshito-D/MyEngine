@@ -15,10 +15,7 @@ class ComponentRegistry {
 public:
    using Factory = std::function<IObjectComponent*(Object&)>;
 
-   static ComponentRegistry& GetInstance() {
-      static ComponentRegistry instance;
-      return instance;
-   }
+   static ComponentRegistry& GetInstance();
 
    bool RegisterFactory(const std::string& typeName, Factory factory, ComponentDisplayName displayName = {},
       ObjectTypeMask supportedObjectTypes = kAllObjectTypes);

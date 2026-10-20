@@ -305,23 +305,7 @@ template <Interpolatable T> constexpr T EaseInOutElastic(const T& start, const T
 // ===== Bounce系イージング（バウンス） =====
 
 /// @brief バウンスイーズアウト（ヘルパー関数）
-inline float BounceOut(float t) {
-   const float n1 = 7.5625f;
-   const float d1 = 2.75f;
-
-   if (t < 1.0f / d1) {
-      return n1 * t * t;
-   } else if (t < 2.0f / d1) {
-      t -= 1.5f / d1;
-      return n1 * t * t + 0.75f;
-   } else if (t < 2.5f / d1) {
-      t -= 2.25f / d1;
-      return n1 * t * t + 0.9375f;
-   } else {
-      t -= 2.625f / d1;
-      return n1 * t * t + 0.984375f;
-   }
-}
+float BounceOut(float t);
 
 /// @brief バウンスイーズイン
 template <Interpolatable T> constexpr T EaseInBounce(const T& start, const T& end, float t) {
@@ -342,38 +326,6 @@ template <Interpolatable T> constexpr T EaseInOutBounce(const T& start, const T&
    t = std::clamp(t, 0.0f, 1.0f);
    float easedT = t < 0.5f ? (1.0f - BounceOut(1.0f - 2.0f * t)) / 2.0f : (1.0f + BounceOut(2.0f * t - 1.0f)) / 2.0f;
    return static_cast<T>(start + (end - start) * easedT);
-}
-
-// ===== レガシー関数（後方互換性） =====
-
-/// @brief 開始値から終了値まで、指定したべき乗（power）でイーズイン・イーズアウト補間を行います
-/// @deprecated EaseInOutQuad, EaseInOutCubic などを使用してください
-template <Interpolatable T> constexpr T EaseInOut(T start, T end, float t, float power) {
-   t = std::clamp(t, 0.0f, 1.0f);
-
-   if (t < 0.5f) {
-      float scaledT = std::pow(t * 2.0f, power) * 0.5f;
-      return static_cast<T>(start + (end - start) * scaledT);
-   } else {
-      float scaledT = 1.0f - std::pow((1.0f - t) * 2.0f, power) * 0.5f;
-      return static_cast<T>(start + (end - start) * scaledT);
-   }
-}
-
-/// @brief 開始値から終了値まで、指定したべき乗（power）でイーズアウト補間する
-/// @deprecated EaseOutQuad, EaseOutCubic などを使用してください
-template <Interpolatable T> constexpr T EaseOut(T start, T end, float t, float power) {
-   t = std::clamp(t, 0.0f, 1.0f);
-   float scaledT = 1.0f - std::pow(1.0f - t, power);
-   return static_cast<T>(start + (end - start) * scaledT);
-}
-
-/// @brief 開始値から終了値まで、指定したべき乗（power）でイーズイン補間する
-/// @deprecated EaseInQuad, EaseInCubic などを使用してください
-template <Interpolatable T> constexpr T EaseIn(T start, T end, float t, float power) {
-   t = std::clamp(t, 0.0f, 1.0f);
-   float scaledT = std::pow(t, power);
-   return static_cast<T>(start + (end - start) * scaledT);
 }
 
 // ===== 複合イージング機能 =====
@@ -405,13 +357,6 @@ constexpr T CompoundEasing(const T& start, const T& end, float t, EasingFunc<T> 
       return secondEasing(midPoint, end, normalizedT);
    }
 }
-
-/// @brief 2つのRGBAカラーを線形補間する
-/// @param colorA 最初のRGBAカラー
-/// @param colorB 2番目のRGBAカラー
-/// @param t 補間係数（0.0〜1.0の範囲）
-/// @return 線形補間されたRGBAカラー（ARGB形式の32ビット整数）
-uint32_t LerpRGBAColor(uint32_t colorA, uint32_t colorB, float t);
 
 } // namespace Easing
 } // namespace GameEngine

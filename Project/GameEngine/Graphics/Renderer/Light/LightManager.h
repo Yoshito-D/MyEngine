@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <memory>
 #include <map>
@@ -29,7 +30,7 @@ public:
    /// @param direction ライトの向き（デフォルト：下向き）
    /// @param intensity 輝度（デフォルト：2.0f）
    /// @return 作成されたライトへのポインタ
-   DirectionalLight* CreateDirectionalLight(const std::string& name, unsigned int color = 0xffffffff,
+   DirectionalLight* CreateDirectionalLight(const std::string& name, std::uint32_t color = 0xffffffff,
       const Vector3& direction = {0.0f, -1.0f, 0.0f}, float intensity = 2.0f);
 
    /// @brief ディレクショナルライトを取得
@@ -61,7 +62,7 @@ public:
    /// @param radius 半径（デフォルト：2.0f）
    /// @param decay 減衰（デフォルト：0.1f）
    /// @return 作成されたライトへのポインタ
-   PointLight* CreatePointLight(const std::string& name, unsigned int color = 0xffffffff,
+   PointLight* CreatePointLight(const std::string& name, std::uint32_t color = 0xffffffff,
       const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f, float radius = 2.0f, float decay = 0.1f);
 
    /// @brief ポイントライトを取得
@@ -96,7 +97,7 @@ public:
    /// @param cosAngle スポットライトの角度の余弦（デフォルト：0.7f）
    /// @param cosFalloffStart スポットライトの減衰開始角度の余弦（デフォルト：0.9f）
    /// @return 作成されたライトへのポインタ
-   SpotLight* CreateSpotLight(const std::string& name, unsigned int color = 0xffffffff,
+   SpotLight* CreateSpotLight(const std::string& name, std::uint32_t color = 0xffffffff,
       const Vector3& position = Vector3(), float intensity = 1.0f,
       const Vector3& direction = Vector3(0.0f, -1.0f, 0.0f), float distance = 5.0f, float decay = 0.1f,
       float cosAngle = 0.7f, float cosFalloffStart = 0.9f);

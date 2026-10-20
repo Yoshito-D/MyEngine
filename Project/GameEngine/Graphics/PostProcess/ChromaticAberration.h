@@ -42,16 +42,9 @@ public:
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetStrength(float strength) {
-      pixelShift_ = strength;
-      UpdateConstantBuffer();
-   }
+   void SetStrength(float strength);
 
-   void SetCenter(float x, float y) {
-      centerX_ = x;
-      centerY_ = y;
-      UpdateConstantBuffer();
-   }
+   void SetCenter(float x, float y);
 
 private:
    float centerX_ = 0.5f;

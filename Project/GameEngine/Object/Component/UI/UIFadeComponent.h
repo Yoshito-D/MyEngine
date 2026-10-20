@@ -71,51 +71,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.startOpacity = startOpacity;
-      settings.endOpacity = endOpacity;
-      settings.delay = delay;
-      settings.duration = duration;
-      settings.playOnEnable = playOnEnable;
-      settings.playbackMode = playbackMode;
-      settings.easing = easing;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.startOpacity)) {
-         settings.startOpacity = defaults.startOpacity;
-      }
-
-      if (!std::isfinite(settings.endOpacity)) {
-         settings.endOpacity = defaults.endOpacity;
-      }
-
-      if (!std::isfinite(settings.delay)) {
-         settings.delay = defaults.delay;
-      }
-
-      if (!std::isfinite(settings.duration)) {
-         settings.duration = defaults.duration;
-      }
-
-      settings.startOpacity = std::clamp(settings.startOpacity, 0.0f, 1.0f);
-      settings.endOpacity = std::clamp(settings.endOpacity, 0.0f, 1.0f);
-      settings.duration = std::max(settings.duration, 0.001f);
-      settings.delay = std::max(settings.delay, 0.0f);
-      startOpacity = settings.startOpacity;
-      endOpacity = settings.endOpacity;
-      delay = settings.delay;
-      duration = settings.duration;
-      playOnEnable = settings.playOnEnable;
-      playbackMode = settings.playbackMode;
-      easing = settings.easing;
-   }
+   void Configure(const Settings& requested);
 
 private:
    float startOpacity = 0.0f;

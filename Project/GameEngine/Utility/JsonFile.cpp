@@ -1,4 +1,5 @@
 #include "GameEngine/Utility/JsonFile.h"
+#include <cstdint>
 
 #include <Windows.h>
 #include <algorithm>
@@ -9,7 +10,7 @@
 
 namespace GameEngine {
 
-bool SaveJsonFileAtomically(const std::filesystem::path& filePath, const nlohmann::json& data, int indent) {
+bool SaveJsonFileAtomically(const std::filesystem::path& filePath, const nlohmann::json& data, std::int32_t indent) {
    // シリアライズの例外で既存の保存データが切り詰められないよう、I/Oより先に完了させる。
    std::string serialized;
    try {
@@ -43,7 +44,7 @@ bool SaveJsonFileAtomically(const std::filesystem::path& filePath, const nlohman
    std::filesystem::path temporaryPath;
    HANDLE file = INVALID_HANDLE_VALUE;
 
-   for (int attempt = 0; attempt < 32; ++attempt) {
+   for (std::int32_t attempt = 0; attempt < 32; ++attempt) {
       temporaryPath = filePath;
       temporaryPath +=
          L".save." + std::to_wstring(GetCurrentProcessId()) + L"." + std::to_wstring(sequence.fetch_add(1)) + L".tmp";

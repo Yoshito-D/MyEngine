@@ -26,3 +26,45 @@ void MeshNormalGravityAttractor::DrawInspector() {
 } // namespace App
 
 #endif
+
+namespace App {
+
+GameEngine::Vector3 MeshNormalGravityAttractor::GetUpVectorFor(const GameEngine::Vector3& objectPosition) const {
+   GameEngine::Vector3 normal = FindSurfaceNormal(objectPosition);
+
+   if (normal.LengthSquared() > 1e-8f) {
+      return normal.Normalize();
+   }
+
+   return fallbackUpVector_;
+}
+
+void MeshNormalGravityAttractor::SetFallbackUpVector(const GameEngine::Vector3& up) {
+   const float length = std::hypot(up.x, up.y, up.z);
+
+   if (!std::isfinite(length) || length <= 1.0e-4f) return;
+
+   fallbackUpVector_ = up / length;
+}
+
+nlohmann::json MeshNormalGravityAttractor::Serialize() const {
+   nlohmann::json json;
+   json["fallbackUp"] = {fallbackUpVector_.x, fallbackUpVector_.y, fallbackUpVector_.z};
+   return json;
+}
+
+void MeshNormalGravityAttractor::Deserialize(const nlohmann::json& data) {
+   if (data.contains("fallbackUp")) {
+      const auto& up = data.at("fallbackUp");
+
+      if (up.is_array() && up.size() == 3 && up[0].is_number() && up[1].is_number() && up[2].is_number()) {
+         SetFallbackUpVector({up[0].get<float>(), up[1].get<float>(), up[2].get<float>()});
+      }
+   }
+}
+
+GameEngine::Vector3 MeshNormalGravityAttractor::FindSurfaceNormal(const GameEngine::Vector3& /*objectPosition*/) const {
+   return {0.0f, 0.0f, 0.0f};
+}
+
+} // namespace App

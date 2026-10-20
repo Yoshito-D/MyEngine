@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <cmath>
 #include <algorithm>
 
@@ -31,14 +32,14 @@ public:
 
    /// @brief 惑星1件分の切替情報
    struct PlanetEntry {
-      std::string objectName;          ///< 安定Entity ID（旧データの名前は参照解決時に移行）
+      std::string objectId;            ///< 安定Entity ID（旧データの名前は参照解決時に移行）
       GameEngine::Vector3 center = {}; ///< 惑星中心座標
       float surfaceRadius = 15.0f;     ///< 地表半径
    };
 
    /// @brief 切り替え候補の惑星を安定IDまたは旧オブジェクト名で追加する
-   /// @param objectName 追加する惑星のEntity IDまたは表示名
-   void AddPlanet(std::string objectName);
+   /// @param objectId 追加する惑星のEntity IDまたは表示名
+   void AddPlanet(std::string objectId);
 
    /// @brief 候補を削除し、削除対象を指す選択・保留状態を解除する
    bool RemovePlanet(size_t index);
@@ -50,11 +51,11 @@ public:
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 現在選択中の惑星インデックスを返す
-   int GetCurrentPlanetIndex() const { return currentIndex_; }
+   std::int32_t GetCurrentPlanetIndex() const { return currentIndex_; }
 
    /// @brief 切り替え候補として登録された惑星数を返す
    /// @return 登録済みの惑星候補数
-   int GetPlanetCount() const { return static_cast<int>(entries_.size()); }
+   std::int32_t GetPlanetCount() const { return static_cast<std::int32_t>(entries_.size()); }
 
    /// @brief 直近フレームで惑星が切り替わったかどうかを返す
    bool HasSwitched() const { return switched_; }
@@ -111,37 +112,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.switchHysteresis = switchHysteresis;
-      settings.obbHalfExtents = obbHalfExtents;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.switchHysteresis)) {
-         settings.switchHysteresis = defaults.switchHysteresis;
-      }
-
-      if (!std::isfinite(settings.obbHalfExtents.x)) {
-         settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
-      }
-
-      if (!std::isfinite(settings.obbHalfExtents.y)) {
-         settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
-      }
-
-      if (!std::isfinite(settings.obbHalfExtents.z)) {
-         settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
-      }
-
-      switchHysteresis = settings.switchHysteresis;
-      obbHalfExtents = settings.obbHalfExtents;
-   }
+   void Configure(const Settings& requested);
 
 private:
    float switchHysteresis = 1.0f;
@@ -155,35 +129,35 @@ private:
 #endif
 
    /// @brief 現在選択中インデックス
-   int currentIndex_ = -1;
+   std::int32_t currentIndex_ = -1;
 
    /// @brief 空中で見つけた着地候補。カメラなどの基準確定は着地まで保留する
-   int pendingIndex_ = -1;
+   std::int32_t pendingIndex_ = -1;
 
    /// @brief 現在 GravityAttractorLink に接続している惑星インデックス
-   int activeGravityIndex_ = -1;
+   std::int32_t activeGravityIndex_ = -1;
 
    // 惑星を切り換えたか
    bool switched_ = false;
 
 private:
-   int SelectBestPlanetIndex(const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot);
+   std::int32_t SelectBestPlanetIndex(const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot);
 
-   void ApplyPlanetIndex(int newIndex);
+   void ApplyPlanetIndex(std::int32_t newIndex);
 
-   void ApplyAirborneAttractorIndex(int newIndex, const GameEngine::Vector3& pos);
+   void ApplyAirborneAttractorIndex(std::int32_t newIndex, const GameEngine::Vector3& pos);
 
    bool IsOwnerAirborne() const;
 
    void ApplyCurrentPlanetParameters();
 
-   bool HasPlanet(const std::string& objectName) const;
+   bool HasPlanet(const std::string& objectId) const;
 
-   GravityAttractor* GetAttractorByObjectName(const std::string& objectName) const;
+   GravityAttractor* GetAttractorByObjectId(const std::string& objectId) const;
 
-   GameEngine::Vector3 GetPlanetCenter(const std::string& objectName) const;
+   GameEngine::Vector3 GetPlanetCenter(const std::string& objectId) const;
 
-   float GetPlanetSurfaceRadius(const std::string& objectName) const;
+   float GetPlanetSurfaceRadius(const std::string& objectId) const;
 };
 
 } // namespace App

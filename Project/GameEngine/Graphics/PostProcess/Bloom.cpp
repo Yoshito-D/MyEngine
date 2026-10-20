@@ -17,26 +17,7 @@ void Bloom::Initialize(GraphicsDevice* device, OffscreenRenderTarget* renderTarg
 void Bloom::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!GetPipeline() || !GetRootSignature()) return;
 
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // 定数バッファをルートパラメータ0にセット
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // フルスクリーントライアングル描画
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get());
 }
 
 void Bloom::CreateConstantBuffer() {
@@ -84,3 +65,27 @@ void Bloom::ImGuiEdit() {
 #endif
 
 }
+
+namespace GameEngine {
+
+void Bloom::SetThreshold(float threshold) {
+   threshold_ = threshold;
+   UpdateConstantBuffer();
+}
+
+void Bloom::SetIntensity(float intensity) {
+   intensity_ = intensity;
+   UpdateConstantBuffer();
+}
+
+void Bloom::SetBlurRadius(float radius) {
+   blurRadius_ = radius;
+   UpdateConstantBuffer();
+}
+
+void Bloom::SetSoftThreshold(float softThreshold) {
+   softThreshold_ = softThreshold;
+   UpdateConstantBuffer();
+}
+
+} // namespace GameEngine

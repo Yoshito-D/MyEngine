@@ -38,16 +38,9 @@ public:
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetPixelSize(float size) {
-      pixelSize_ = size;
-      UpdateConstantBuffer();
-   }
+   void SetPixelSize(float size);
 
-   void SetScreenSize(float width, float height) {
-      screenSizeX_ = width;
-      screenSizeY_ = height;
-      UpdateConstantBuffer();
-   }
+   void SetScreenSize(float width, float height);
 
 private:
    float pixelSize_ = 4.0f;

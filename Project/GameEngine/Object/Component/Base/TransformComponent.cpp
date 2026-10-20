@@ -63,31 +63,6 @@ bool TransformComponent::ApplyLocalPose(const Transform& pose) {
    return true;
 }
 
-void TransformComponent::ResolveParentRelation() {
-   if (!HasOwner() || !GetOwner().GetParentEntityId().empty() || parentObjectName.empty()) return;
-
-   if (const auto* parent = Object::FindByObjectName(parentObjectName)) {
-      if (GetOwner().SetParentEntityId(parent->GetEntityId())) {
-         parentObjectName.clear();
-      }
-   }
-}
-
-void TransformComponent::ResolveParentRelation(std::span<Object* const> sceneObjects) {
-   if (!HasOwner() || !GetOwner().GetParentEntityId().empty() || parentObjectName.empty()) return;
-
-   // エディタの旧データ移行では別シーンの同名オブジェクトを検索対象へ広げない。
-   for (const auto* candidate : sceneObjects) {
-      if (candidate && candidate != &GetOwner() && candidate->GetObjectName() == parentObjectName) {
-         if (GetOwner().SetParentEntityId(candidate->GetEntityId())) {
-            parentObjectName.clear();
-         }
-
-         return;
-      }
-   }
-}
-
 Matrix4x4 TransformComponent::ComposeWorldMatrix(const Matrix4x4& local) const {
    return HasOwner() ? local * GetOwner().GetParentWorldMatrix() : local;
 }
@@ -107,7 +82,7 @@ nlohmann::json TransformComponent::Serialize() const {
 }
 
 void TransformComponent::Deserialize(const nlohmann::json& data) {
-   // 不足フィールドは現在値を保つ部分更新方式にし、旧シーン形式やComponent単体保存を受け入れる。
+   // Component単体設定の適用では、指定されていない値を維持する。
    auto readVec3 = [](const nlohmann::json& source, const char* key, Vector3& out) {
       if (!source.contains(key) || !source.at(key).is_array()) return;
 
@@ -171,11 +146,6 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
    if (rotationSource == Transform::RotationSource::Quaternion) {
       if (hasRotationQuaternion) {
          pose.SetRotationQuaternion(rotationQuaternion);
-      } else if (hasRotationEuler) {
-         // 移行途中のデータでQuaternion本体が欠けていても、Eulerから姿勢を復元して
-         // 以後はQuaternion正本として扱える状態へ整える。
-         pose.SetRotationEuler(rotationEuler);
-         pose.SetRotationQuaternion(pose.GetActiveQuaternion());
       }
    } else if (hasRotationEuler) {
       pose.SetRotationEuler(rotationEuler);
@@ -183,12 +153,7 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
 
    ApplyLocalPose(pose);
 
-   // parentObjectNameは安定Entity ID導入前の互換フィールド。Sceneロード後の参照解決でIDへ移行する。
-   if (data.contains("parentObjectName") && data.at("parentObjectName").is_string()) {
-      parentObjectName = data.at("parentObjectName").get<std::string>();
-   }
-
-   // 現行IDが存在する場合は旧名前参照より優先し、Owner側の循環検査を通して設定する。
+   // Entity IDの設定はOwner側の循環検査を通す。
    if (data.contains("parentEntityId") && data.at("parentEntityId").is_string() && HasOwner()) {
       GetOwner().SetParentEntityId(data.at("parentEntityId").get<std::string>());
    }
@@ -238,20 +203,16 @@ void TransformComponent::DrawInspector() {
 
    if (ImGuiHelper::DrawCheckbox(ImGuiHelper::Localize({"親を使用", "Use Parent"}), parentEnabled)) {
       if (!parentEnabled) {
-         // 親を無効化した時点で新旧両方の参照を消し、後のScene解決で再接続されないようにする。
+         // 親を無効化した時点でEntity参照を解除する。
          if (HasOwner()) {
             GetOwner().SetParentEntityId({});
          }
-
-         parentObjectName.clear();
       }
    }
 
    if (ImGuiHelper::DrawInputString(ImGuiHelper::Localize({"親Entity ID", "Parent Entity ID"}), parentEntityId) &&
        HasOwner()) {
-      if (GetOwner().SetParentEntityId(parentEntityId)) {
-         parentObjectName.clear();
-      }
+      GetOwner().SetParentEntityId(parentEntityId);
    }
 }
 #endif

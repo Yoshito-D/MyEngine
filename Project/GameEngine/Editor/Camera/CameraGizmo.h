@@ -27,8 +27,6 @@ public:
       Vector4 farPlaneColor = {1.0f, 0.0f, 0.0f, 1.0f};  // 赤
       Vector4 directionColor = {0.0f, 0.5f, 1.0f, 1.0f}; // 青
       Vector4 upVectorColor = {0.0f, 1.0f, 0.0f, 1.0f};  // 緑
-
-      float frustumScale = 1.0f; // 互換用。視錐台は実際のnear/farで描画する
    };
 
    CameraGizmo() = default;

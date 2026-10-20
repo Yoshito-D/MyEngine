@@ -7,7 +7,15 @@
 #include "GameEngine/Effects/Particles/Modules/MainModule.h"
 #include "GameEngine/Effects/Particles/Modules/EmissionModule.h"
 #include "GameEngine/Effects/Particles/Modules/ShapeModule.h"
-#include "GameEngine/Effects/Particles/Modules/LifetimeModules.h"
+#include "GameEngine/Effects/Particles/Modules/VelocityOverLifetimeModule.h"
+#include "GameEngine/Effects/Particles/Modules/LimitVelocityOverLifetimeModule.h"
+#include "GameEngine/Effects/Particles/Modules/ForceOverLifetimeModule.h"
+#include "GameEngine/Effects/Particles/Modules/ColorOverLifetimeModule.h"
+#include "GameEngine/Effects/Particles/Modules/SizeOverLifetimeModule.h"
+#include "GameEngine/Effects/Particles/Modules/RotationOverLifetimeModule.h"
+#include "GameEngine/Effects/Particles/Modules/UVTransformModule.h"
+#include "GameEngine/Effects/Particles/Modules/TextureSheetAnimationModule.h"
+#include "GameEngine/Effects/Particles/Modules/NoiseModule.h"
 #include "GameEngine/Effects/Particles/Modules/RendererModule.h"
 #include "GameEngine/Effects/Particles/Modules/TrailModule.h"
 #include "GameEngine/Effects/Particles/Modules/ParticleMeshModule.h"
@@ -320,11 +328,7 @@ public:
    void SetEditorInspectable(bool inspectable) { isEditorInspectable_ = inspectable; }
 
    /// @brief ブレンドモードを設定（マテリアルに委譲）
-   void SetBlendMode(std::optional<BlendMode> mode) {
-      if (material_) {
-         material_->SetBlendMode(mode);
-      }
-   }
+   void SetBlendMode(std::optional<BlendMode> mode);
 
    /// @brief ブレンドモードを取得（マテリアルに委譲）
    std::optional<BlendMode> GetBlendMode() const { return material_ ? material_->GetBlendMode() : std::nullopt; }
@@ -439,47 +443,7 @@ private:
    // ============ Unity-like Modules ============
    static bool HasFiniteSettings(const nlohmann::json& settings);
 
-   template <class Module> bool ApplyModuleConfiguration(Module& target, const Module& configuration) {
-      const auto settings = configuration.ToJson();
-
-      if (!HasFiniteSettings(settings)) {
-         return false;
-      }
-
-      if constexpr (std::is_same_v<Module, MainModule>) {
-         if (configuration.GetMaxParticles() == 0 || configuration.GetMaxParticles() > kMaxParticles ||
-             configuration.GetDuration() < 0.0f) {
-            return false;
-         }
-      }
-
-      const auto before = target.ToJson();
-
-      if (before == settings) {
-         return true;
-      }
-
-      if constexpr (std::is_same_v<Module, EmissionModule>) {
-         // 放出率・有効状態の編集では進行済みカーソルを保持し、スケジュール変更時だけ再構築する。
-         if (before.at("bursts") != settings.at("bursts")) {
-            target.ReplaceBurstSchedule(configuration.GetBursts());
-         }
-
-         target.SetEnabled(configuration.IsEnabled());
-         target.SetRateOverTime(configuration.GetRateOverTime());
-         target.SetRateOverDistance(configuration.GetRateOverDistance());
-      } else if constexpr (std::is_same_v<Module, ShapeModule>) {
-         return target.ApplyConfiguration(configuration);
-      } else if constexpr (std::is_same_v<Module, ParticleMeshModule>) {
-         // 編集コピーのdirty状態は信用せず、所有するメッシュの再構築を要求する。
-         target.FromJson(settings);
-      } else {
-         // その他のモジュールは設定値だけを持つため、保存形式へ往復させずに適用する。
-         target = configuration;
-      }
-
-      return true;
-   }
+   template <class Module> bool ApplyModuleConfiguration(Module& target, const Module& configuration);
 
    std::unique_ptr<MainModule> mainModule_ = nullptr;
    std::unique_ptr<EmissionModule> emissionModule_ = nullptr;
@@ -556,11 +520,7 @@ private:
    D3D12_GPU_DESCRIPTOR_HANDLE gpuAttributesSrvHandleGPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE gpuOutputUavHandleGPU_{};
    D3D12_GPU_DESCRIPTOR_HANDLE gpuOutputSrvHandleGPU_{};
-   std::array<UINT, kGpuDescriptorCount> gpuDescriptorIndices_ = [] {
-      std::array<UINT, kGpuDescriptorCount> indices{};
-      indices.fill(UINT_MAX);
-      return indices;
-   }();
+   std::array<UINT, kGpuDescriptorCount> gpuDescriptorIndices_{};
    D3D12_RESOURCE_STATES gpuStateResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    D3D12_RESOURCE_STATES gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_COMMON;
    D3D12_RESOURCE_STATES gpuOutputResourceState_ = D3D12_RESOURCE_STATE_COMMON;

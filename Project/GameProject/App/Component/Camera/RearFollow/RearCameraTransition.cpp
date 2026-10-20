@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraTransition.h"
+#include <cstdint>
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"

@@ -1,11 +1,10 @@
 {
    "cameras": {
       "brain": {
-         "defaultBlendTime": 0.0
+         "defaultBlendTime": 0
       },
       "virtualCameras": []
    },
-   "environment": {},
    "hierarchyOrder": [
       "MainDirectionalLight",
       "MainPointLight",
@@ -16,7 +15,516 @@
       "UIText:StartPrompt",
       "UIText:StageStartPrompt"
    ],
-   "objects": [],
+   "objects": [
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "MainDirectionalLight"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     -1.5707963705062866,
+                     0,
+                     1.5707963705062866
+                  ],
+                  "rotationQuaternion": [
+                     -0.5,
+                     -0.5,
+                     0.5,
+                     0.5
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "areaSize": [
+                     5,
+                     5
+                  ],
+                  "color": [
+                     1,
+                     1,
+                     1,
+                     1
+                  ],
+                  "cosAngle": 0.699999988079071,
+                  "cosFalloffStart": 0.8999999761581421,
+                  "decay": 0.10000000149011612,
+                  "distance": 5,
+                  "intensity": 1,
+                  "lightType": "directional",
+                  "radius": 2
+               },
+               "enabled": true,
+               "typeName": "LightComponent"
+            }
+         ],
+         "id": "MainDirectionalLight",
+         "objectType": "Generic",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "MainPointLight"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotationQuaternion": [
+                     0,
+                     0,
+                     0,
+                     1
+                  ],
+                  "rotationSource": "euler",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "areaSize": [
+                     5,
+                     5
+                  ],
+                  "color": [
+                     1,
+                     1,
+                     1,
+                     1
+                  ],
+                  "cosAngle": 0.699999988079071,
+                  "cosFalloffStart": 0.8999999761581421,
+                  "decay": 0.10000000149011612,
+                  "distance": 5,
+                  "intensity": 0,
+                  "lightType": "point",
+                  "radius": 2
+               },
+               "enabled": true,
+               "typeName": "LightComponent"
+            }
+         ],
+         "id": "MainPointLight",
+         "objectType": "Generic",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "MainSpotLight"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     -1.5707963705062866,
+                     0,
+                     1.5707963705062866
+                  ],
+                  "rotationQuaternion": [
+                     -0.5,
+                     -0.5,
+                     0.5,
+                     0.5
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "areaSize": [
+                     5,
+                     5
+                  ],
+                  "color": [
+                     1,
+                     1,
+                     1,
+                     1
+                  ],
+                  "cosAngle": 0.699999988079071,
+                  "cosFalloffStart": 0.8999999761581421,
+                  "decay": 0.10000000149011612,
+                  "distance": 5,
+                  "intensity": 0,
+                  "lightType": "spot",
+                  "radius": 2
+               },
+               "enabled": true,
+               "typeName": "LightComponent"
+            }
+         ],
+         "id": "MainSpotLight",
+         "objectType": "Generic",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "MainAreaLight"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     -1.5707963705062866,
+                     0,
+                     1.5707963705062866
+                  ],
+                  "rotationQuaternion": [
+                     -0.5,
+                     -0.5,
+                     0.5,
+                     0.5
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     0,
+                     10,
+                     0
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "areaSize": [
+                     5,
+                     5
+                  ],
+                  "color": [
+                     1,
+                     1,
+                     1,
+                     1
+                  ],
+                  "cosAngle": 0.699999988079071,
+                  "cosFalloffStart": 0.8999999761581421,
+                  "decay": 0.10000000149011612,
+                  "distance": 5,
+                  "intensity": 0,
+                  "lightType": "area",
+                  "radius": 2
+               },
+               "enabled": true,
+               "typeName": "LightComponent"
+            }
+         ],
+         "id": "MainAreaLight",
+         "objectType": "Generic",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "Skybox"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "color": [
+                     1,
+                     1,
+                     1,
+                     1
+                  ],
+                  "textureName": "game/textures/space_2048px.dds"
+               },
+               "enabled": true,
+               "typeName": "SkyboxComponent"
+            }
+         ],
+         "id": "Skybox:Skybox",
+         "objectType": "Skybox",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "TitleText"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotationQuaternion": [
+                     0,
+                     0,
+                     0,
+                     1
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     -153.80780029296875,
+                     -111.69532012939453,
+                     1
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "color": [
+                     1,
+                     1,
+                     1,
+                     1
+                  ],
+                  "fontId": "851Gkktt",
+                  "fontSize": 91,
+                  "horizontalAlignment": "Center",
+                  "lineSpacing": 0.9300000071525574,
+                  "maxWidth": 1795,
+                  "pivot": [
+                     0.5,
+                     0.5
+                  ],
+                  "screenAnchor": "MiddleCenter",
+                  "sortingOrder": 100,
+                  "text": "GALAXY RACING"
+               },
+               "enabled": true,
+               "typeName": "UITextComponent"
+            }
+         ],
+         "id": "UIText:TitleText",
+         "objectType": "UIText",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "StartPrompt"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotationQuaternion": [
+                     0,
+                     0,
+                     0,
+                     1
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     292.52685546875,
+                     128.30462646484375,
+                     1
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "color": [
+                     1,
+                     1,
+                     1,
+                     1
+                  ],
+                  "fontId": "851Gkktt",
+                  "fontSize": 34,
+                  "horizontalAlignment": "Center",
+                  "lineSpacing": 1.2000000476837158,
+                  "maxWidth": 1100,
+                  "pivot": [
+                     0.5,
+                     0.5
+                  ],
+                  "screenAnchor": "MiddleCenter",
+                  "sortingOrder": 110,
+                  "text": "> チュートリアルから あそぶ"
+               },
+               "enabled": true,
+               "typeName": "UITextComponent"
+            },
+            {
+               "data": {
+                  "reactionDuration": 0.4000000059604645,
+                  "reactionEndScale": 1.2000000476837158,
+                  "selectionPulseDuration": 1.7999999523162842,
+                  "selectionPulseScale": 1.100000023841858,
+                  "selectionSwitchDuration": 0.1599999964237213,
+                  "selectionSwitchScale": 0.8199999928474426,
+                  "stageOptionObjectId": "UIText:StageStartPrompt",
+                  "stageScene": "GameTest",
+                  "tutorialOptionObjectId": "UIText:StartPrompt",
+                  "tutorialScene": "Tutorial"
+               },
+               "enabled": true,
+               "typeName": "TitleStartComponent"
+            }
+         ],
+         "id": "UIText:StartPrompt",
+         "objectType": "UIText",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "StageStartPrompt"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotationQuaternion": [
+                     0,
+                     0,
+                     0,
+                     1
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     242.2744598388672,
+                     219.16546630859375,
+                     1
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "color": [
+                     1,
+                     1,
+                     1,
+                     1
+                  ],
+                  "fontId": "851Gkktt",
+                  "fontSize": 34,
+                  "horizontalAlignment": "Center",
+                  "lineSpacing": 1.2000000476837158,
+                  "maxWidth": 1100,
+                  "pivot": [
+                     0.5,
+                     0.5
+                  ],
+                  "screenAnchor": "MiddleCenter",
+                  "sortingOrder": 110,
+                  "text": "  ステージから あそぶ"
+               },
+               "enabled": true,
+               "typeName": "UITextComponent"
+            }
+         ],
+         "id": "UIText:StageStartPrompt",
+         "objectType": "UIText",
+         "parentId": ""
+      }
+   ],
    "renderSettings": {
       "postProcessStack": [
          {
@@ -30,7 +538,7 @@
                   0.10000000149011612,
                   0.10000000149011612,
                   0.10000000149011612,
-                  1.0
+                  1
                ],
                "thickness": 1.399999976158142
             }
@@ -45,7 +553,7 @@
                   0.5
                ],
                "sampleCount": 16,
-               "strength": 0.0
+               "strength": 0
             }
          },
          {
@@ -53,10 +561,10 @@
             "id": "bloom",
             "order": 20,
             "settings": {
-               "blurRadius": 4.0,
-               "intensity": 1.0,
+               "blurRadius": 4,
+               "intensity": 1,
                "softThreshold": 0.5,
-               "threshold": 1.0
+               "threshold": 1
             }
          },
          {
@@ -74,7 +582,7 @@
             "settings": {
                "intensity": 0.800000011920929,
                "kernelSize": 1,
-               "sigma": 1.0
+               "sigma": 1
             }
          },
          {
@@ -87,10 +595,10 @@
                   0.5
                ],
                "fixedDirection": [
-                  1.0,
-                  0.0
+                  1,
+                  0
                ],
-               "pixelShift": 5.0,
+               "pixelShift": 5,
                "useFixedDirection": false
             }
          },
@@ -104,9 +612,9 @@
                   0.5
                ],
                "color": [
-                  0.0,
-                  0.0,
-                  0.0
+                  0,
+                  0,
+                  0
                ],
                "intensity": 0.5,
                "radius": 0.7490000128746033,
@@ -127,7 +635,7 @@
                   0.5
                ],
                "distortionStrength": 0.10000000149011612,
-               "fadeOutRadius": 1.0,
+               "fadeOutRadius": 1,
                "highlightIntensity": 0.5,
                "waveRadius": 0.30000001192092896,
                "waveThickness": 0.10000000149011612
@@ -138,7 +646,7 @@
             "id": "pixelation",
             "order": 65,
             "settings": {
-               "pixelSize": 4.0
+               "pixelSize": 4
             }
          },
          {
@@ -156,14 +664,14 @@
                   0.5,
                   0.5
                ],
-               "flowSpeed": 5.0,
+               "flowSpeed": 5,
                "innerRadius": 0.9800000190734863,
-               "intensity": 0.0,
-               "lineDensity": 140.0,
-               "outerRadius": 2.0,
-               "randomSeed": 1.0,
+               "intensity": 0,
+               "lineDensity": 140,
+               "outerRadius": 2,
+               "randomSeed": 1,
                "thickness": 0.800000011920929,
-               "time": 0.0
+               "time": 0
             }
          },
          {
@@ -171,10 +679,10 @@
             "id": "whiteNoise",
             "order": 85,
             "settings": {
-               "noiseDensity": 320.0,
+               "noiseDensity": 320,
                "noiseIntensity": 0.8500000238418579,
                "noiseThreshold": 0.9399999976158142,
-               "seedChangeRate": 24.0
+               "seedChangeRate": 24
             }
          },
          {
@@ -183,30 +691,30 @@
             "order": 90,
             "settings": {
                "dissolveColor": [
-                  0.0,
-                  0.0,
-                  0.0,
-                  1.0
+                  0,
+                  0,
+                  0,
+                  1
                ],
                "edgeColor": [
-                  1.0,
+                  1,
                   0.550000011920929,
                   0.07999999821186066,
-                  1.0
+                  1
                ],
-               "edgeIntensity": 1.0,
+               "edgeIntensity": 1,
                "edgeWidth": 0.07999999821186066,
-               "maskContrast": 1.0,
+               "maskContrast": 1,
                "maskOffset": [
-                  0.0,
-                  0.0
+                  0,
+                  0
                ],
                "maskTexture": "engine/textures/postprocess/noise0.png",
                "maskTiling": [
-                  1.0,
-                  1.0
+                  1,
+                  1
                ],
-               "threshold": 0.0
+               "threshold": 0
             }
          },
          {
@@ -215,7 +723,7 @@
             "order": 95,
             "settings": {
                "contrastThreshold": 0.031199999153614044,
-               "edgeSearchSteps": 8.0,
+               "edgeSearchSteps": 8,
                "relativeThreshold": 0.125,
                "subpixelBlending": 0.75
             }
@@ -229,548 +737,5 @@
       ]
    },
    "sceneName": "Title",
-   "sceneObjects": [
-      {
-         "deleted": false,
-         "object": {
-            "components": [
-               {
-                  "data": {
-                     "name": "MainDirectionalLight"
-                  },
-                  "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "parentEntityId": "",
-                     "rotation": [
-                        -1.5707963705062866,
-                        0.0,
-                        1.5707963705062866
-                     ],
-                     "rotationQuaternion": [
-                        -0.5,
-                        -0.5,
-                        0.5,
-                        0.5
-                     ],
-                     "rotationSource": "quaternion",
-                     "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "translation": [
-                        0.0,
-                        0.0,
-                        0.0
-                     ]
-                  },
-                  "enabled": true,
-                  "typeName": "TransformComponent"
-               },
-               {
-                  "data": {
-                     "areaSize": [
-                        5.0,
-                        5.0
-                     ],
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "cosAngle": 0.699999988079071,
-                     "cosFalloffStart": 0.8999999761581421,
-                     "decay": 0.10000000149011612,
-                     "distance": 5.0,
-                     "intensity": 1.0,
-                     "lightType": "directional",
-                     "radius": 2.0
-                  },
-                  "enabled": true,
-                  "typeName": "LightComponent"
-               }
-            ],
-            "id": "MainDirectionalLight",
-            "objectType": "Generic",
-            "parentId": ""
-         },
-         "sceneKey": "MainDirectionalLight"
-      },
-      {
-         "deleted": false,
-         "object": {
-            "components": [
-               {
-                  "data": {
-                     "name": "MainPointLight"
-                  },
-                  "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "parentEntityId": "",
-                     "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
-                     "rotationQuaternion": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                     ],
-                     "rotationSource": "euler",
-                     "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "translation": [
-                        0.0,
-                        0.0,
-                        0.0
-                     ]
-                  },
-                  "enabled": true,
-                  "typeName": "TransformComponent"
-               },
-               {
-                  "data": {
-                     "areaSize": [
-                        5.0,
-                        5.0
-                     ],
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "cosAngle": 0.699999988079071,
-                     "cosFalloffStart": 0.8999999761581421,
-                     "decay": 0.10000000149011612,
-                     "distance": 5.0,
-                     "intensity": 0.0,
-                     "lightType": "point",
-                     "radius": 2.0
-                  },
-                  "enabled": true,
-                  "typeName": "LightComponent"
-               }
-            ],
-            "id": "MainPointLight",
-            "objectType": "Generic",
-            "parentId": ""
-         },
-         "sceneKey": "MainPointLight"
-      },
-      {
-         "deleted": false,
-         "object": {
-            "components": [
-               {
-                  "data": {
-                     "name": "MainSpotLight"
-                  },
-                  "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "parentEntityId": "",
-                     "rotation": [
-                        -1.5707963705062866,
-                        0.0,
-                        1.5707963705062866
-                     ],
-                     "rotationQuaternion": [
-                        -0.5,
-                        -0.5,
-                        0.5,
-                        0.5
-                     ],
-                     "rotationSource": "quaternion",
-                     "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "translation": [
-                        0.0,
-                        0.0,
-                        0.0
-                     ]
-                  },
-                  "enabled": true,
-                  "typeName": "TransformComponent"
-               },
-               {
-                  "data": {
-                     "areaSize": [
-                        5.0,
-                        5.0
-                     ],
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "cosAngle": 0.699999988079071,
-                     "cosFalloffStart": 0.8999999761581421,
-                     "decay": 0.10000000149011612,
-                     "distance": 5.0,
-                     "intensity": 0.0,
-                     "lightType": "spot",
-                     "radius": 2.0
-                  },
-                  "enabled": true,
-                  "typeName": "LightComponent"
-               }
-            ],
-            "id": "MainSpotLight",
-            "objectType": "Generic",
-            "parentId": ""
-         },
-         "sceneKey": "MainSpotLight"
-      },
-      {
-         "deleted": false,
-         "object": {
-            "components": [
-               {
-                  "data": {
-                     "name": "MainAreaLight"
-                  },
-                  "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "parentEntityId": "",
-                     "rotation": [
-                        -1.5707963705062866,
-                        0.0,
-                        1.5707963705062866
-                     ],
-                     "rotationQuaternion": [
-                        -0.5,
-                        -0.5,
-                        0.5,
-                        0.5
-                     ],
-                     "rotationSource": "quaternion",
-                     "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "translation": [
-                        0.0,
-                        10.0,
-                        0.0
-                     ]
-                  },
-                  "enabled": true,
-                  "typeName": "TransformComponent"
-               },
-               {
-                  "data": {
-                     "areaSize": [
-                        5.0,
-                        5.0
-                     ],
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "cosAngle": 0.699999988079071,
-                     "cosFalloffStart": 0.8999999761581421,
-                     "decay": 0.10000000149011612,
-                     "distance": 5.0,
-                     "intensity": 0.0,
-                     "lightType": "area",
-                     "radius": 2.0
-                  },
-                  "enabled": true,
-                  "typeName": "LightComponent"
-               }
-            ],
-            "id": "MainAreaLight",
-            "objectType": "Generic",
-            "parentId": ""
-         },
-         "sceneKey": "MainAreaLight"
-      },
-      {
-         "deleted": false,
-         "object": {
-            "components": [
-               {
-                  "data": {
-                     "name": "Skybox"
-                  },
-                  "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "textureName": "game/textures/space_2048px.dds"
-                  },
-                  "enabled": true,
-                  "typeName": "SkyboxComponent"
-               }
-            ],
-            "id": "Skybox:Skybox",
-            "objectType": "Skybox",
-            "parentId": ""
-         },
-         "sceneKey": "Skybox:Skybox"
-      },
-      {
-         "deleted": false,
-         "object": {
-            "components": [
-               {
-                  "data": {
-                     "name": "TitleText"
-                  },
-                  "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "parentEntityId": "",
-                     "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
-                     "rotationQuaternion": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                     ],
-                     "rotationSource": "quaternion",
-                     "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "translation": [
-                        -153.80780029296875,
-                        -111.69532012939453,
-                        1.0
-                     ]
-                  },
-                  "enabled": true,
-                  "typeName": "TransformComponent"
-               },
-               {
-                  "data": {
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fontId": "851Gkktt",
-                     "fontSize": 91,
-                     "horizontalAlignment": "Center",
-                     "lineSpacing": 0.9300000071525574,
-                     "maxWidth": 1795.0,
-                     "pivot": [
-                        0.5,
-                        0.5
-                     ],
-                     "screenAnchor": "MiddleCenter",
-                     "sortingOrder": 100,
-                     "text": "GALAXY RACING"
-                  },
-                  "enabled": true,
-                  "typeName": "UITextComponent"
-               }
-            ],
-            "id": "UIText:TitleText",
-            "objectType": "UIText",
-            "parentId": ""
-         },
-         "sceneKey": "UIText:TitleText"
-      },
-      {
-         "deleted": false,
-         "object": {
-            "components": [
-               {
-                  "data": {
-                     "name": "StartPrompt"
-                  },
-                  "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "parentEntityId": "",
-                     "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
-                     "rotationQuaternion": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                     ],
-                     "rotationSource": "quaternion",
-                     "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "translation": [
-                        292.52685546875,
-                        128.30462646484375,
-                        1.0
-                     ]
-                  },
-                  "enabled": true,
-                  "typeName": "TransformComponent"
-               },
-               {
-                  "data": {
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fontId": "851Gkktt",
-                     "fontSize": 34,
-                     "horizontalAlignment": "Center",
-                     "lineSpacing": 1.2000000476837158,
-                     "maxWidth": 1100.0,
-                     "pivot": [
-                        0.5,
-                        0.5
-                     ],
-                     "screenAnchor": "MiddleCenter",
-                     "sortingOrder": 110,
-                     "text": "> チュートリアルから あそぶ"
-                  },
-                  "enabled": true,
-                  "typeName": "UITextComponent"
-               },
-               {
-                  "data": {
-                     "reactionDuration": 0.4000000059604645,
-                     "reactionEndScale": 1.2000000476837158,
-                     "selectionPulseDuration": 1.7999999523162842,
-                     "selectionPulseScale": 1.100000023841858,
-                     "selectionSwitchDuration": 0.1599999964237213,
-                     "selectionSwitchScale": 0.8199999928474426,
-                     "stageOptionObjectId": "UIText:StageStartPrompt",
-                     "stageScene": "GameTest",
-                     "tutorialOptionObjectId": "UIText:StartPrompt",
-                     "tutorialScene": "Tutorial"
-                  },
-                  "enabled": true,
-                  "typeName": "TitleStartComponent"
-               }
-            ],
-            "id": "UIText:StartPrompt",
-            "objectType": "UIText",
-            "parentId": ""
-         },
-         "sceneKey": "UIText:StartPrompt"
-      },
-      {
-         "deleted": false,
-         "object": {
-            "components": [
-               {
-                  "data": {
-                     "name": "StageStartPrompt"
-                  },
-                  "enabled": true,
-                  "typeName": "ObjectNameComponent"
-               },
-               {
-                  "data": {
-                     "parentEntityId": "",
-                     "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                     ],
-                     "rotationQuaternion": [
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0
-                     ],
-                     "rotationSource": "quaternion",
-                     "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "translation": [
-                        242.2744598388672,
-                        219.16546630859375,
-                        1.0
-                     ]
-                  },
-                  "enabled": true,
-                  "typeName": "TransformComponent"
-               },
-               {
-                  "data": {
-                     "color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                     ],
-                     "fontId": "851Gkktt",
-                     "fontSize": 34,
-                     "horizontalAlignment": "Center",
-                     "lineSpacing": 1.2000000476837158,
-                     "maxWidth": 1100.0,
-                     "pivot": [
-                        0.5,
-                        0.5
-                     ],
-                     "screenAnchor": "MiddleCenter",
-                     "sortingOrder": 110,
-                     "text": "  ステージから あそぶ"
-                  },
-                  "enabled": true,
-                  "typeName": "UITextComponent"
-               }
-            ],
-            "id": "UIText:StageStartPrompt",
-            "objectType": "UIText",
-            "parentId": ""
-         },
-         "sceneKey": "UIText:StageStartPrompt"
-      }
-   ],
-   "sceneParticleSystems": [],
-   "version": 6
+   "version": 7
 }

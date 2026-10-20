@@ -15,12 +15,10 @@ class EditorCommandTarget;
 class Object;
 class ParticleSystem;
 
-/// @brief 削除の取り消しに必要な値だけを保持し、シーン所有とエディタ所有の違いを記録する。
+/// @brief 削除の取り消しに必要な保存状態と子IDを保持する。
 struct RemovedEditorEntity {
    nlohmann::json snapshot;
-   std::string sceneKey;
    std::vector<std::string> childIds;
-   bool sceneOwned = false;
    bool wasPlaying = false;
 };
 

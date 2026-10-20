@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include <cmath>
 #include <algorithm>
 #include "GameEngine/Scene/Light/PointLight.h"
@@ -19,7 +20,7 @@ void PointLight::Initialize(GraphicsDevice* device) {
    sIsInitialized_ = true;
 }
 
-void PointLight::Create(unsigned int color, const Vector3& position, float intensity, float radius, float decay) {
+void PointLight::Create(std::uint32_t color, const Vector3& position, float intensity, float radius, float decay) {
    if (!sIsInitialized_) return;
 
    pointLightResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(PointLightData));

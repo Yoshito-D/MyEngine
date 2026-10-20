@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/Rendering/RenderComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Object/Object.h"
@@ -29,7 +30,7 @@ const char* ToRenderSpaceName(GameEngine::RenderComponent::RenderSpace renderSpa
 
 GameEngine::RenderComponent::RenderSpace ParseRenderSpace(
    const nlohmann::json& value, GameEngine::RenderComponent::RenderSpace fallback) {
-   // 現行の可読な文字列と旧シーンの整数列挙値の両方を受け付ける。
+   // 描画空間は正規の保存名から解決する。
    if (value.is_string()) {
       const std::string name = value.get<std::string>();
 
@@ -38,16 +39,6 @@ GameEngine::RenderComponent::RenderSpace ParseRenderSpace(
       }
 
       if (name == "World") {
-         return GameEngine::RenderComponent::RenderSpace::World;
-      }
-   } else if (value.is_number_integer()) {
-      const int index = value.get<int>();
-
-      if (index == static_cast<int>(GameEngine::RenderComponent::RenderSpace::Screen)) {
-         return GameEngine::RenderComponent::RenderSpace::Screen;
-      }
-
-      if (index == static_cast<int>(GameEngine::RenderComponent::RenderSpace::World)) {
          return GameEngine::RenderComponent::RenderSpace::World;
       }
    }
@@ -69,7 +60,7 @@ nlohmann::json RenderComponent::Serialize() const {
 }
 
 void RenderComponent::Deserialize(const nlohmann::json& data) {
-   // キーごとの部分更新として扱い、旧シーンに存在しない項目は現在の既定値を維持する。
+   // キーごとの部分更新として扱い、指定されていない項目は現在値を維持する。
    if (data.contains("visible") && data.at("visible").is_boolean()) {
       visible = data.at("visible").get<bool>();
    }
@@ -103,7 +94,7 @@ void RenderComponent::DrawInspector() {
       ImGuiHelper::Localize({"ワールド", "World"}), ImGuiHelper::Localize({"スクリーン", "Screen"})};
 
    // UI 上の並びを列挙値へ暗黙依存させず、表示項目との対応をここで明示する。
-   int renderSpaceIndex = (renderSpace == RenderSpace::Screen) ? 1 : 0;
+   std::int32_t renderSpaceIndex = (renderSpace == RenderSpace::Screen) ? 1 : 0;
 
    if (ImGui::Combo(ImGuiHelper::Localize({"描画空間", "Render Space"}), &renderSpaceIndex, renderSpaceItems, 2)) {
       renderSpace = (renderSpaceIndex == 1) ? RenderSpace::Screen : RenderSpace::World;
@@ -115,3 +106,25 @@ void RenderComponent::DrawInspector() {
 #endif
 
 }
+
+namespace GameEngine {
+
+RenderComponent::Settings RenderComponent::DescribeSettings() const {
+   Settings settings;
+   settings.visible = visible;
+   settings.autoRender = autoRender;
+   settings.applyPostProcess = applyPostProcess;
+   settings.renderSpace = renderSpace;
+   return settings;
+}
+
+void RenderComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+   visible = settings.visible;
+   autoRender = settings.autoRender;
+   applyPostProcess = settings.applyPostProcess;
+   renderSpace = settings.renderSpace;
+}
+
+} // namespace GameEngine

@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Race/UI/RaceResultUIComponent.h"
+#include <cstdint>
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameProject/App/Component/Race/UI/RaceTimeFormatting.h"
@@ -26,10 +27,8 @@ void RaceResultUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    showingResult_ = false;
    selectedOption_ = 1;
    reactionElapsed_ = 0.0f;
-   selectionAnimationElapsed_ = 0.0f;
-   selectionSwitchElapsed_ = 0.0f;
    reactionStartScale_ = {1.0f, 1.0f, 1.0f};
-   selectionSwitchActive_ = false;
+   selectionAnimation_.Reset();
    hasBaseVisualStates_ = false;
    optionTexts_.fill(nullptr);
    optionTransforms_.fill(nullptr);
@@ -72,9 +71,7 @@ void RaceResultUIComponent::Update(float deltaTime) {
          resultRequested_ = false;
          selectedOption_ = 1;
          navigationLatched_ = false;
-         selectionAnimationElapsed_ = 0.0f;
-         selectionSwitchElapsed_ = 0.0f;
-         selectionSwitchActive_ = false;
+         selectionAnimation_.Reset();
       }
 
       HideOptionVisuals();
@@ -86,9 +83,7 @@ void RaceResultUIComponent::Update(float deltaTime) {
       resultRequested_ = false;
       selectedOption_ = IsOptionAvailable(1) ? 1 : 0;
       navigationLatched_ = false;
-      selectionAnimationElapsed_ = 0.0f;
-      selectionSwitchElapsed_ = 0.0f;
-      selectionSwitchActive_ = false;
+      selectionAnimation_.Reset();
       RefreshSelectionText();
    }
 
@@ -102,7 +97,8 @@ void RaceResultUIComponent::Update(float deltaTime) {
 
    bool selectionChanged = false;
    const auto& navigationAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.NavigateHorizontal", 0);
-   const int navigationDirection = navigationAction.value.x > 0.5f ? 1 : (navigationAction.value.x < -0.5f ? -1 : 0);
+   const std::int32_t navigationDirection =
+      navigationAction.value.x > 0.5f ? 1 : (navigationAction.value.x < -0.5f ? -1 : 0);
 
    // 閾値未満を中立として扱い、スティックの微小な揺れで選択が変わらないようにする。
    if (navigationDirection == 0) {
@@ -112,9 +108,7 @@ void RaceResultUIComponent::Update(float deltaTime) {
       navigationLatched_ = true;
 
       if (selectionChanged) {
-         selectionAnimationElapsed_ = 0.0f;
-         selectionSwitchElapsed_ = 0.0f;
-         selectionSwitchActive_ = true;
+         selectionAnimation_.Reset(true);
          RefreshSelectionText();
       }
    }
@@ -141,7 +135,7 @@ nlohmann::json RaceResultUIComponent::Serialize() const {
 void RaceResultUIComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   // 欠落または型不一致の値では現在の設定を維持し、旧形式や部分設定も受け入れる。
+   // 欠落または型不一致の値では現在の設定を維持し、部分設定も受け入れる。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }
@@ -219,13 +213,14 @@ bool RaceResultUIComponent::IsOptionAvailable(std::size_t optionIndex) const {
           optionTransforms_[optionIndex] != nullptr;
 }
 
-bool RaceResultUIComponent::MoveSelection(int direction) {
-   const int previousSelection = selectedOption_;
-   int candidate = selectedOption_;
+bool RaceResultUIComponent::MoveSelection(std::int32_t direction) {
+   const std::int32_t previousSelection = selectedOption_;
+   std::int32_t candidate = selectedOption_;
 
    // 端では巡回し、未解決の項目を飛ばす。候補数までの試行に制限して全欠落時も終了させる。
    for (std::size_t attempt = 0; attempt < kOptionCount; ++attempt) {
-      candidate = (candidate + direction + static_cast<int>(kOptionCount)) % static_cast<int>(kOptionCount);
+      candidate =
+         (candidate + direction + static_cast<std::int32_t>(kOptionCount)) % static_cast<std::int32_t>(kOptionCount);
 
       if (IsOptionAvailable(static_cast<std::size_t>(candidate))) {
          selectedOption_ = candidate;
@@ -247,43 +242,8 @@ void RaceResultUIComponent::RefreshSelectionText() {
 }
 
 void RaceResultUIComponent::UpdateSelectionAnimation(float deltaTime) {
-   const std::size_t selectedIndex = static_cast<std::size_t>(selectedOption_);
-
-   for (std::size_t optionIndex = 0; optionIndex < kOptionCount; ++optionIndex) {
-      if (!IsOptionAvailable(optionIndex)) {
-         continue;
-      }
-
-      const auto& baseScale = baseScales_[optionIndex];
-      float scaleMultiplier = 1.0f;
-
-      if (optionIndex == selectedIndex) {
-         if (selectionSwitchActive_) {
-            selectionSwitchElapsed_ += std::max(deltaTime, 0.0f);
-            const float switchProgress = std::clamp(selectionSwitchElapsed_ / selectionSwitchDuration_, 0.0f, 1.0f);
-            scaleMultiplier = GameEngine::Easing::EaseOutCubic(selectionSwitchScale_, 1.0f, switchProgress);
-
-            if (switchProgress >= 1.0f) {
-               selectionSwitchActive_ = false;
-               selectionAnimationElapsed_ = 0.0f;
-            }
-         } else {
-            selectionAnimationElapsed_ += std::max(deltaTime, 0.0f);
-            constexpr float kTwoPi = 6.28318530717958647692f;
-            const float pulsePhase =
-               std::fmod(selectionAnimationElapsed_, selectionPulseDuration_) / selectionPulseDuration_;
-            const float pulseProgress = 0.5f - 0.5f * std::cos(kTwoPi * pulsePhase);
-            scaleMultiplier = GameEngine::Easing::EaseInOutSine(1.0f, selectionPulseScale_, pulseProgress);
-         }
-      }
-
-      // 未選択側も基準値から毎フレーム設定し、直前までの選択アニメーションを残さない。
-      {
-         auto pose = optionTransforms_[optionIndex]->GetLocalPose();
-         pose.scale = {baseScale.x * scaleMultiplier, baseScale.y * scaleMultiplier, baseScale.z};
-         optionTransforms_[optionIndex]->ApplyLocalPose(pose);
-      }
-   }
+   UpdateMenuSelection(optionTexts_, optionTransforms_, baseScales_, selectedOption_, selectionAnimation_, deltaTime,
+      selectionPulseDuration_, selectionPulseScale_, selectionSwitchDuration_, selectionSwitchScale_);
 }
 
 void RaceResultUIComponent::HideOptionVisuals() {
@@ -305,23 +265,11 @@ void RaceResultUIComponent::HideOptionVisuals() {
 void RaceResultUIComponent::ApplyResultReaction(std::size_t optionIndex) {
    if (!IsOptionAvailable(optionIndex)) return;
 
-   auto& text = *optionTexts_[optionIndex];
-   auto& transform = *optionTransforms_[optionIndex];
-   const auto& baseScale = baseScales_[optionIndex];
-   const float progress = std::clamp(reactionElapsed_ / reactionDuration_, 0.0f, 1.0f);
-   const float scaleProgress = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, progress);
-   auto pose = transform.GetLocalPose();
-   pose.scale = {reactionStartScale_.x + (baseScale.x * reactionEndScale_ - reactionStartScale_.x) * scaleProgress,
-      reactionStartScale_.y + (baseScale.y * reactionEndScale_ - reactionStartScale_.y) * scaleProgress, baseScale.z};
-   text.SetOpacity(GameEngine::Easing::EaseInQuad(baseOpacities_[optionIndex], 0.0f, progress));
-   transform.ApplyLocalPose(pose);
+   ApplyMenuReaction(*optionTexts_[optionIndex], *optionTransforms_[optionIndex], baseScales_[optionIndex],
+      reactionStartScale_, baseOpacities_[optionIndex], reactionElapsed_, reactionDuration_, reactionEndScale_);
 }
 
 bool RaceResultUIComponent::ConfirmSelection() {
-   // オプションUIが存在しない旧シーンでは、従来どおり決定をリスタートへ戻す。
-   if (!IsOptionAvailable(0) && !IsOptionAvailable(1)) {
-      return raceManager_->RequestRestart();
-   }
 
    if (!IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
       return false;
@@ -361,10 +309,6 @@ std::string RaceResultUIComponent::BuildResultText() const {
       }
 
       stream << '\n';
-   }
-
-   if (!IsOptionAvailable(0) && !IsOptionAvailable(1)) {
-      stream << "\n> RESTART\nA / SPACE";
    }
 
    return stream.str();

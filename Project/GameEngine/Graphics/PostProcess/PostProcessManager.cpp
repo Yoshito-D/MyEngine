@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/PostProcess/PostProcessManager.h"
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include "GameEngine/Graphics/PostProcess/Grayscale.h"
@@ -39,9 +40,9 @@ std::string WStringToString(const std::wstring& wstr) {
       return std::string();
    }
 
-   int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+   std::int32_t size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (std::int32_t)wstr.size(), NULL, 0, NULL, NULL);
    std::string strTo(size_needed, 0);
-   WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+   WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (std::int32_t)wstr.size(), &strTo[0], size_needed, NULL, NULL);
    return strTo;
 }
 
@@ -259,8 +260,8 @@ std::unique_ptr<PostProcess> PostProcessManager::CreateEffectByClassName(const s
    return effectFactoryRegistry_.Create(className);
 }
 
-void PostProcessManager::RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name, int priority,
-   bool enabled, const std::string& pipelineName, const std::string& id) {
+void PostProcessManager::RegisterEffect(std::unique_ptr<PostProcess> effect, const std::string& name,
+   std::int32_t priority, bool enabled, const std::string& pipelineName, const std::string& id) {
    effects_.emplace_back(std::move(effect), id.empty() ? name : id, name, priority, pipelineName);
    EffectInfo& effectInfo = effects_.back();
    effectInfo.enabled = enabled;
@@ -320,7 +321,7 @@ bool PostProcessManager::IsEffectEnabled(const std::string& name) const {
    return (it != effects_.end()) ? it->enabled : false;
 }
 
-void PostProcessManager::SetEffectPriority(const std::string& name, int priority) {
+void PostProcessManager::SetEffectPriority(const std::string& name, std::int32_t priority) {
    auto it = FindEffect(name);
 
    if (it != effects_.end()) {
@@ -329,7 +330,7 @@ void PostProcessManager::SetEffectPriority(const std::string& name, int priority
    }
 }
 
-int PostProcessManager::GetEffectPriority(const std::string& name) const {
+std::int32_t PostProcessManager::GetEffectPriority(const std::string& name) const {
    auto it = FindEffect(name);
    return (it != effects_.end()) ? it->priority : -1;
 }
@@ -416,7 +417,7 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
 
       if (const auto orderIt = entry.find("order"); orderIt != entry.end()) {
          try {
-            (void)orderIt->get<int>();
+            (void)orderIt->get<std::int32_t>();
          } catch (const nlohmann::json::exception&) {
             return false;
          }
@@ -542,7 +543,7 @@ bool PostProcessManager::ShowImGuiControls() {
          ImGui::Checkbox(LocalizeEditorText("有効", "Enabled"), &effectInfo.enabled);
 
          // 優先度設定
-         int priority = effectInfo.priority;
+         std::int32_t priority = effectInfo.priority;
 
          if (ImGui::SliderInt(LocalizeEditorText("実行順", "Priority"), &priority, 0, 100)) {
             effectInfo.priority = priority;
@@ -584,3 +585,12 @@ void PostProcessManager::SortEffectsByPriority() {
       [](const EffectInfo& a, const EffectInfo& b) { return a.priority < b.priority; });
 }
 }
+
+namespace GameEngine {
+
+PostProcessManager::EffectInfo::EffectInfo(std::unique_ptr<PostProcess> eff, const std::string& effectId,
+   const std::string& effectName, std::int32_t prio, const std::string& pipeline)
+   : effect(std::move(eff)), id(effectId), name(effectName), priority(prio), pipelineName(pipeline) {
+}
+
+} // namespace GameEngine

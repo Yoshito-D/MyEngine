@@ -79,25 +79,13 @@ public:
    const SpeedLineParams& GetParams() const { return params_; }
 
    /// @brief 集中線の中心を設定する
-   void SetCenter(Vector2 center) {
-      auto params = params_;
-      params.center = center;
-      SetParams(params);
-   }
+   void SetCenter(Vector2 center);
 
    /// @brief 集中線の明るさを設定する
-   void SetIntensity(float value) {
-      auto params = params_;
-      params.intensity = value;
-      SetParams(params);
-   }
+   void SetIntensity(float value);
 
    /// @brief 集中線の密度を設定する
-   void SetLineDensity(float value) {
-      auto params = params_;
-      params.lineDensity = value;
-      SetParams(params);
-   }
+   void SetLineDensity(float value);
 
 private:
    SpeedLineParams params_;

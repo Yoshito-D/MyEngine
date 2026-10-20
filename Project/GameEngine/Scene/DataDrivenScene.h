@@ -16,21 +16,8 @@ public:
    /// @brief JSONからSceneWorldを生成する
    void LoadSceneDataIfNeeded() override;
 
-   /// @brief このシーンが所有するSceneWorldを取得する
-   /// @return SceneWorldへの読み取り専用参照
-   const SceneWorld& GetSceneWorld() const { return sceneWorld_; }
-
-protected:
-   /// @brief 汎用オブジェクトのコンポーネントを更新する
-   /// @param deltaTime ゲーム用デルタタイム（秒）
-   void OnUpdate(float deltaTime) override;
-
-   /// @brief JSONから生成したシーン要素を破棄する
-   void OnFinalize() override;
-
 private:
    std::filesystem::path sceneFilePath_;
-   SceneWorld sceneWorld_;
    bool isLoaded_ = false;
 };
 

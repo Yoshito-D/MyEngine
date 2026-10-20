@@ -22,16 +22,7 @@ struct RandomFloat {
    RandomFloat(float value) : RandomFloat(value, value, false) {}
 
    /// @brief 固定値ではlowだけを保持し、抽選時だけ範囲の両端を検証する
-   RandomFloat(float low, float high, bool randomize = true) : randomized_(randomize) {
-      minimum_ = std::isfinite(low) ? low : 0.0f;
-
-      // 固定値では未使用の上限を破棄し、範囲の並べ替えによる指定値の変化を防ぐ。
-      maximum_ = randomized_ && std::isfinite(high) ? high : minimum_;
-
-      if (maximum_ < minimum_) {
-         std::swap(minimum_, maximum_);
-      }
-   }
+   RandomFloat(float low, float high, bool randomize = true);
 
    /// @brief 検証済みの下限を値として観測する
    float Minimum() const { return minimum_; }
@@ -67,21 +58,7 @@ struct RandomVector2 {
    RandomVector2(const Vector2& value) : RandomVector2(value, value, false) {}
 
    /// @brief 固定値ではlowだけを保持し、抽選時だけ範囲の両端を検証する
-   RandomVector2(const Vector2& low, const Vector2& high, bool randomize = true) : randomized_(randomize) {
-      minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
-      maximum_.x = randomized_ && std::isfinite(high.x) ? high.x : minimum_.x;
-
-      if (maximum_.x < minimum_.x) {
-         std::swap(minimum_.x, maximum_.x);
-      }
-
-      minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
-      maximum_.y = randomized_ && std::isfinite(high.y) ? high.y : minimum_.y;
-
-      if (maximum_.y < minimum_.y) {
-         std::swap(minimum_.y, maximum_.y);
-      }
-   }
+   RandomVector2(const Vector2& low, const Vector2& high, bool randomize = true);
 
    /// @brief 検証済みの下限を値として観測する
    Vector2 Minimum() const { return minimum_; }
@@ -117,28 +94,7 @@ struct RandomVector3 {
    RandomVector3(const Vector3& value) : RandomVector3(value, value, false) {}
 
    /// @brief 固定値ではlowだけを保持し、抽選時だけ範囲の両端を検証する
-   RandomVector3(const Vector3& low, const Vector3& high, bool randomize = true) : randomized_(randomize) {
-      minimum_.x = std::isfinite(low.x) ? low.x : 0.0f;
-      maximum_.x = randomized_ && std::isfinite(high.x) ? high.x : minimum_.x;
-
-      if (maximum_.x < minimum_.x) {
-         std::swap(minimum_.x, maximum_.x);
-      }
-
-      minimum_.y = std::isfinite(low.y) ? low.y : 0.0f;
-      maximum_.y = randomized_ && std::isfinite(high.y) ? high.y : minimum_.y;
-
-      if (maximum_.y < minimum_.y) {
-         std::swap(minimum_.y, maximum_.y);
-      }
-
-      minimum_.z = std::isfinite(low.z) ? low.z : 0.0f;
-      maximum_.z = randomized_ && std::isfinite(high.z) ? high.z : minimum_.z;
-
-      if (maximum_.z < minimum_.z) {
-         std::swap(minimum_.z, maximum_.z);
-      }
-   }
+   RandomVector3(const Vector3& low, const Vector3& high, bool randomize = true);
 
    /// @brief 検証済みの下限を値として観測する
    Vector3 Minimum() const { return minimum_; }
@@ -181,8 +137,7 @@ struct RandomColor {
    /// @param minVal 各成分の下限を持つRGBA8色
    /// @param maxVal 各成分の上限を持つRGBA8色
    /// @param enableRandom 各成分を範囲から抽選する場合はtrue
-   RandomColor(uint32_t minVal, uint32_t maxVal, bool enableRandom = true)
-      : minValue(minVal), maxValue(maxVal), randomize(enableRandom) {}
+   RandomColor(uint32_t minVal, uint32_t maxVal, bool enableRandom = true);
 
    /// @brief 固定色または成分別の乱数色を取得する
    /// @return RGBA8形式の色
@@ -243,14 +198,6 @@ public:
    /// @param speed スカラー速度範囲
    void SetStartSpeed(const RandomFloat& speed) { startSpeed_ = speed; }
 
-   /// @brief XYZ初速範囲を設定してVector3モードへ切り替える
-   /// @param velocity 成分別の速度範囲
-   void SetStartSpeed(const RandomVector3& velocity) { SetStartVelocity(velocity); }
-
-   /// @brief 固定XYZ初速を設定してVector3モードへ切り替える
-   /// @param velocity 固定速度
-   void SetStartSpeed(const Vector3& velocity) { SetStartVelocity(velocity); }
-
    /// @brief 放出方向へ掛ける初速範囲を取得する
    /// @return スカラー速度範囲
    const RandomFloat& GetStartSpeed() const { return startSpeed_; }
@@ -265,10 +212,7 @@ public:
 
    /// @brief XYZ初速範囲を設定してVector3モードへ切り替える
    /// @param velocity 成分別の速度範囲
-   void SetStartVelocity(const RandomVector3& velocity) {
-      startVelocity_ = velocity;
-      startSpeedMode_ = StartSpeedMode::Vector3;
-   }
+   void SetStartVelocity(const RandomVector3& velocity);
 
    /// @brief 固定XYZ初速を設定してVector3モードへ切り替える
    /// @param velocity 固定速度
@@ -277,10 +221,6 @@ public:
    /// @brief XYZ初速範囲を取得する
    /// @return 成分別の速度範囲
    const RandomVector3& GetStartVelocity() const { return startVelocity_; }
-
-   /// @brief 互換名でXYZ初速範囲を取得する
-   /// @return 成分別の速度範囲
-   const RandomVector3& GetStartSpeedVector() const { return startVelocity_; }
 
    /// @brief 生成時のXYZスケール範囲を設定する
    /// @param size 成分別のスケール範囲

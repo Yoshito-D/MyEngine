@@ -82,6 +82,10 @@ private:
    UINT maskTextureRootSlot_ = 2;
 
 protected:
+   /// @brief 共通のフルスクリーン描画を実行する。追加SRVは深度またはマスクに使用する。
+   void DrawFullscreen(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV, ID3D12Resource* constants = nullptr, UINT extraSlot = 0,
+      D3D12_GPU_DESCRIPTOR_HANDLE extraSRV = {});
+
    /// @brief 初期化時に関連付けた非所有デバイスを取得する。
    GraphicsDevice* GetDevice() const { return device_; }
 

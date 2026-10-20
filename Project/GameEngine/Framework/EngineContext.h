@@ -35,7 +35,7 @@ class EngineContextInitializer {
 private:
    friend class Framework;
 #ifdef MYPROJECT_NON_RELEASE
-   friend int RunAudioSelfTests();
+   friend std::int32_t RunAudioSelfTests();
 #endif
 
    //================================================================
@@ -218,7 +218,7 @@ public:
    /// @param index ゲームパッド番号（通常0）
    /// @param deadZone デッドゾーンの値（0.0～1.0）
    /// @return 左スティックのベクトル
-   static Vector2 GetLeftStick(uint32_t index, float deadZone = 0.24);
+   static Vector2 GetLeftStick(uint32_t index, float deadZone = 0.24f);
 
    /// @brief ゲームパッドの右スティックの状態を取得
    /// @param index ゲームパッド番号（通常0)
@@ -481,7 +481,7 @@ public:
    /// @param direction ライトの向き（デフォルト：下向き）
    /// @param intensity 輝度（デフォルト：1.0f）
    /// @return 作成されたライトへのポインタ
-   static DirectionalLight* CreateDirectionalLight(const std::string& name, unsigned int color = 0xffffffff,
+   static DirectionalLight* CreateDirectionalLight(const std::string& name, std::uint32_t color = 0xffffffff,
       const Vector3& direction = {0.0f, -1.0f, 0.0f}, float intensity = 1.0f);
 
    /// @brief ディレクショナルライトを取得する
@@ -513,7 +513,7 @@ public:
    /// @param radius 半径（デフォルト：2.0f）
    /// @param decay 減衰（デフォルト：0.1f）
    /// @return 作成されたライトへのポインタ
-   static PointLight* CreatePointLight(const std::string& name, unsigned int color = 0xffffffff,
+   static PointLight* CreatePointLight(const std::string& name, std::uint32_t color = 0xffffffff,
       const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f, float radius = 2.0f, float decay = 0.1f);
 
    /// @brief ポイントライトを取得する
@@ -525,9 +525,6 @@ public:
    /// @param name ライト名
    /// @return 削除に成功した場合はtrue
    static bool RemovePointLight(const std::string& name);
-
-   /// @brief ポイントライトの配列を取得する
-   static const std::vector<PointLight*>& GetPointLights();
 
    /// @brief ポイントライトを全削除する
    static void ClearPointLights();
@@ -551,7 +548,7 @@ public:
    /// @param cosAngle スポットライトの角度の余弦（デフォルト：0.7f）
    /// @param cosFalloffStart スポットライトの減衰開始角度の余弦（デフォルト：0.9f）
    /// @return 作成されたライトへのポインタ
-   static SpotLight* CreateSpotLight(const std::string& name, unsigned int color = 0xffffffff,
+   static SpotLight* CreateSpotLight(const std::string& name, std::uint32_t color = 0xffffffff,
       const Vector3& position = Vector3(), float intensity = 1.0f,
       const Vector3& direction = Vector3(0.0f, -1.0f, 0.0f), float distance = 5.0f, float decay = 0.1f,
       float cosAngle = 0.7f, float cosFalloffStart = 0.9f);
@@ -751,8 +748,8 @@ public:
    /// @param enableFade カメラからの距離に応じてフェードアウトするか（デフォルト：true）
    /// @param fadeDistance フェードアウトを開始する距離（デフォルト：50.0f、enableFadeがtrueの場合のみ有効）
    /// @param applyPostProcess ポストプロセスを適用するかどうか（デフォルト：true）
-   static void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, int thickLineInterval = 10,
-      int range = 100, bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
+   static void DrawGrid(GridPlane plane = GridPlane::XZ, float gridSize = 1.0f, std::int32_t thickLineInterval = 10,
+      std::int32_t range = 100, bool enableFade = true, float fadeDistance = 50.0f, bool applyPostProcess = true);
 
    // パーティクルシステムのデバッグ用シェイプ描画
 

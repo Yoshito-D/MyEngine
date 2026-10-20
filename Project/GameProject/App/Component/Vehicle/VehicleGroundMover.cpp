@@ -314,3 +314,49 @@ void VehicleGroundMover::Deserialize(const nlohmann::json& data) {
 }
 
 } // namespace App
+
+namespace App {
+
+VehicleGroundMover::Settings VehicleGroundMover::DescribeSettings() const {
+   Settings settings;
+   settings.autoSpeed = autoSpeed;
+   settings.steerSpeed = steerSpeed;
+   settings.speedRecovery = speedRecovery;
+   settings.maxSpeed = maxSpeed;
+   return settings;
+}
+
+void VehicleGroundMover::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.autoSpeed)) {
+      settings.autoSpeed = defaults.autoSpeed;
+   }
+
+   if (!std::isfinite(settings.steerSpeed)) {
+      settings.steerSpeed = defaults.steerSpeed;
+   }
+
+   if (!std::isfinite(settings.speedRecovery)) {
+      settings.speedRecovery = defaults.speedRecovery;
+   }
+
+   if (!std::isfinite(settings.maxSpeed)) {
+      settings.maxSpeed = defaults.maxSpeed;
+   }
+
+   settings.maxSpeed = std::max(0.0f, settings.maxSpeed);
+   settings.autoSpeed = std::clamp(settings.autoSpeed, 0.0f, settings.maxSpeed);
+   settings.speedRecovery = std::max(0.0f, settings.speedRecovery);
+   autoSpeed = settings.autoSpeed;
+   steerSpeed = settings.steerSpeed;
+   speedRecovery = settings.speedRecovery;
+   maxSpeed = settings.maxSpeed;
+
+   if (currentSpeed_ >= 0.0f) {
+      currentSpeed_ = std::min(currentSpeed_, maxSpeed);
+   }
+}
+
+} // namespace App

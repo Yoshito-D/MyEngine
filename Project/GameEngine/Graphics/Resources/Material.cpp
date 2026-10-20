@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Resources/Material.h"
 #include "GameEngine/Graphics/Device/ResourceHelper.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
@@ -18,7 +19,7 @@ void Material::Initialize(GraphicsDevice* device) {
    sIsInitialized_ = true;
 }
 
-void Material::Create(unsigned int color, int32_t lightingMode, const Matrix4x4& uvTransform, float shininess) {
+void Material::Create(std::uint32_t color, int32_t lightingMode, const Matrix4x4& uvTransform, float shininess) {
    if (!sIsInitialized_) return;
 
    // シェーダーからCBVとして直接読むUPLOADバッファを永続Mapし、
@@ -164,7 +165,7 @@ void Material::SetColor(const Vector4& color) {
    }
 }
 
-void Material::SetColor(unsigned int color) {
+void Material::SetColor(std::uint32_t color) {
    if (materialData_) {
       materialData_->color = ConvertUIntToColor(color);
    }

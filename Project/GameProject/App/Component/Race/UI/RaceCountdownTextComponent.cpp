@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Race/UI/RaceCountdownTextComponent.h"
+#include <cstdint>
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
@@ -49,7 +50,8 @@ void RaceCountdownTextComponent::Update(float deltaTime) {
 
    if (raceManager_->GetState() == RaceManagerComponent::State::Countdown) {
       // 切り上げにより残り時間が正の間は0を表示せず、GO表示との境界を明確にする。
-      const int count = std::max(1, static_cast<int>(std::ceil(raceManager_->GetCountdownRemaining())));
+      const std::int32_t count =
+         std::max(1, static_cast<std::int32_t>(std::ceil(raceManager_->GetCountdownRemaining())));
       nextText = std::to_string(count);
    } else if (raceManager_->IsStartBannerVisible()) {
       nextText = startText_;

@@ -11,6 +11,8 @@
 
 namespace GameEngine {
 
+std::vector<Sprite*> Sprite::sRegisteredSprites_;
+
 namespace {
 // MaterialManagerの名前検索で別Spriteの既定Materialを共有しないよう、プロセス中に重複しない自動名を割り当てる。
 uint64_t sAutoSpriteMaterialCounter = 0;

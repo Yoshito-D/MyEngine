@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Graphics/PostProcess/AntiAliasing.h"
 #include "GameEngine/Graphics/PostProcess/Bloom.h"
 #include "GameEngine/Graphics/PostProcess/BoxFilter.h"
@@ -18,24 +19,9 @@
 namespace {
 using json = nlohmann::json;
 
-// シーンファイルは過去バージョンや手編集された部分設定も読み込むため、
+// Component設定は手編集された部分設定も読み込むため、
 // 各値は「キーが有効なら採用し、それ以外は現在値を維持する」という規則で統一する。
 // 例外をこの境界で吸収しておくことで、1 項目の不正値がエフェクトスタック全体の復元を妨げない。
-float ReadFloat(const json& settings, const char* key, float fallback) {
-   const auto it = settings.find(key);
-
-   if (it == settings.end() || !it->is_number()) {
-      return fallback;
-   }
-
-   try {
-      // 欠落・型不一致・範囲外表現は現在値へフォールバックし、旧シーンの部分設定を受け入れる。
-      const float value = it->get<float>();
-      return std::isfinite(value) ? value : fallback;
-   } catch (const json::exception&) {
-      return fallback;
-   }
-}
 
 int32_t ReadInt32(const json& settings, const char* key, int32_t fallback) {
    const auto it = settings.find(key);
@@ -50,11 +36,6 @@ int32_t ReadInt32(const json& settings, const char* key, int32_t fallback) {
    } catch (const json::exception&) {
       return fallback;
    }
-}
-
-bool ReadBool(const json& settings, const char* key, bool fallback) {
-   const auto it = settings.find(key);
-   return (it != settings.end() && it->is_boolean()) ? it->get<bool>() : fallback;
 }
 
 std::string ReadString(const json& settings, const char* key, const std::string& fallback) {
@@ -108,7 +89,7 @@ void ReadFloat4(const json& settings, const char* key, float (&values)[4]) {
 namespace GameEngine {
 
 // 各エフェクトの Serialize／Deserialize は同じキー名を対にして管理する。
-// Deserialize は全フィールドを必須にせず、欠落した項目を現在値で補うことで旧シーンとの互換性を保つ。
+// Deserialize は全フィールドを必須にせず、未指定の項目は現在値を維持して部分設定を適用する。
 // 値の反映後は GPU 定数バッファも同期し、ロード直後の描画から復元結果が見える状態にする。
 nlohmann::json AntiAliasing::SerializeSettings() const {
    return {{"contrastThreshold", contrastThreshold_}, {"relativeThreshold", relativeThreshold_},
@@ -120,10 +101,10 @@ bool AntiAliasing::DeserializeSettings(const nlohmann::json& settings) {
       return false;
    }
 
-   contrastThreshold_ = ReadFloat(settings, "contrastThreshold", contrastThreshold_);
-   relativeThreshold_ = ReadFloat(settings, "relativeThreshold", relativeThreshold_);
-   subpixelBlending_ = ReadFloat(settings, "subpixelBlending", subpixelBlending_);
-   edgeSearchSteps_ = ReadFloat(settings, "edgeSearchSteps", edgeSearchSteps_);
+   contrastThreshold_ = GameEngine::JsonValue::ReadFloat(settings, "contrastThreshold", contrastThreshold_);
+   relativeThreshold_ = GameEngine::JsonValue::ReadFloat(settings, "relativeThreshold", relativeThreshold_);
+   subpixelBlending_ = GameEngine::JsonValue::ReadFloat(settings, "subpixelBlending", subpixelBlending_);
+   edgeSearchSteps_ = GameEngine::JsonValue::ReadFloat(settings, "edgeSearchSteps", edgeSearchSteps_);
    UpdateConstantBuffer();
    return true;
 }
@@ -138,10 +119,10 @@ bool Bloom::DeserializeSettings(const nlohmann::json& settings) {
       return false;
    }
 
-   threshold_ = ReadFloat(settings, "threshold", threshold_);
-   softThreshold_ = ReadFloat(settings, "softThreshold", softThreshold_);
-   intensity_ = ReadFloat(settings, "intensity", intensity_);
-   blurRadius_ = ReadFloat(settings, "blurRadius", blurRadius_);
+   threshold_ = GameEngine::JsonValue::ReadFloat(settings, "threshold", threshold_);
+   softThreshold_ = GameEngine::JsonValue::ReadFloat(settings, "softThreshold", softThreshold_);
+   intensity_ = GameEngine::JsonValue::ReadFloat(settings, "intensity", intensity_);
+   blurRadius_ = GameEngine::JsonValue::ReadFloat(settings, "blurRadius", blurRadius_);
    UpdateConstantBuffer();
    return true;
 }
@@ -174,8 +155,8 @@ bool ChromaticAberration::DeserializeSettings(const nlohmann::json& settings) {
    const Vector2 fixedDirection = ReadVector2(settings, "fixedDirection", Vector2(fixedDirectionX_, fixedDirectionY_));
    centerX_ = center.x;
    centerY_ = center.y;
-   pixelShift_ = ReadFloat(settings, "pixelShift", pixelShift_);
-   useFixedDirection_ = ReadBool(settings, "useFixedDirection", useFixedDirection_ != 0) ? 1 : 0;
+   pixelShift_ = GameEngine::JsonValue::ReadFloat(settings, "pixelShift", pixelShift_);
+   useFixedDirection_ = GameEngine::JsonValue::ReadBool(settings, "useFixedDirection", useFixedDirection_ != 0) ? 1 : 0;
    fixedDirectionX_ = fixedDirection.x;
    fixedDirectionY_ = fixedDirection.y;
    UpdateConstantBuffer();
@@ -200,10 +181,10 @@ bool Dissolve::DeserializeSettings(const nlohmann::json& settings) {
    // 複数の関連パラメーターは一時コピーへ復元してから一括適用し、
    // セッター側の検証と GPU 更新を一度だけ通す。
    DissolveParams params = params_;
-   params.threshold = ReadFloat(settings, "threshold", params.threshold);
-   params.edgeWidth = ReadFloat(settings, "edgeWidth", params.edgeWidth);
-   params.edgeIntensity = ReadFloat(settings, "edgeIntensity", params.edgeIntensity);
-   params.maskContrast = ReadFloat(settings, "maskContrast", params.maskContrast);
+   params.threshold = GameEngine::JsonValue::ReadFloat(settings, "threshold", params.threshold);
+   params.edgeWidth = GameEngine::JsonValue::ReadFloat(settings, "edgeWidth", params.edgeWidth);
+   params.edgeIntensity = GameEngine::JsonValue::ReadFloat(settings, "edgeIntensity", params.edgeIntensity);
+   params.maskContrast = GameEngine::JsonValue::ReadFloat(settings, "maskContrast", params.maskContrast);
    params.maskTiling = ReadVector2(settings, "maskTiling", params.maskTiling);
    params.maskOffset = ReadVector2(settings, "maskOffset", params.maskOffset);
    ReadFloat4(settings, "edgeColor", params.edgeColor);
@@ -222,9 +203,9 @@ bool GaussFilter::DeserializeSettings(const nlohmann::json& settings) {
       return false;
    }
 
-   intensity_ = ReadFloat(settings, "intensity", intensity_);
+   intensity_ = GameEngine::JsonValue::ReadFloat(settings, "intensity", intensity_);
    kernelSize_ = ReadInt32(settings, "kernelSize", kernelSize_);
-   sigma_ = ReadFloat(settings, "sigma", sigma_);
+   sigma_ = GameEngine::JsonValue::ReadFloat(settings, "sigma", sigma_);
    UpdateConstantBuffer();
    return true;
 }
@@ -240,9 +221,9 @@ bool Outline::DeserializeSettings(const nlohmann::json& settings) {
    }
 
    ReadFloat4(settings, "outlineColor", outlineColor_);
-   thickness_ = ReadFloat(settings, "thickness", thickness_);
-   depthThreshold_ = ReadFloat(settings, "depthThreshold", depthThreshold_);
-   intensity_ = ReadFloat(settings, "intensity", intensity_);
+   thickness_ = GameEngine::JsonValue::ReadFloat(settings, "thickness", thickness_);
+   depthThreshold_ = GameEngine::JsonValue::ReadFloat(settings, "depthThreshold", depthThreshold_);
+   intensity_ = GameEngine::JsonValue::ReadFloat(settings, "intensity", intensity_);
    UpdateConstantBuffer();
    return true;
 }
@@ -256,7 +237,7 @@ bool Pixelation::DeserializeSettings(const nlohmann::json& settings) {
       return false;
    }
 
-   pixelSize_ = ReadFloat(settings, "pixelSize", pixelSize_);
+   pixelSize_ = GameEngine::JsonValue::ReadFloat(settings, "pixelSize", pixelSize_);
    UpdateConstantBuffer();
    return true;
 }
@@ -274,7 +255,7 @@ bool RadialBlur::DeserializeSettings(const nlohmann::json& settings) {
    // SetParams を経由するため、CPU 側の保持値と定数バッファが同じタイミングで切り替わる。
    RadialBlurParams params = params_;
    params.center = ReadVector2(settings, "center", params.center);
-   params.strength = ReadFloat(settings, "strength", params.strength);
+   params.strength = GameEngine::JsonValue::ReadFloat(settings, "strength", params.strength);
    params.sampleCount = ReadInt32(settings, "sampleCount", params.sampleCount);
    SetParams(params);
    return true;
@@ -297,11 +278,11 @@ bool ShockWave::DeserializeSettings(const nlohmann::json& settings) {
    centerY_ = center.y;
    aspectRatioX_ = aspectRatio.x;
    aspectRatioY_ = aspectRatio.y;
-   waveRadius_ = ReadFloat(settings, "waveRadius", waveRadius_);
-   waveThickness_ = ReadFloat(settings, "waveThickness", waveThickness_);
-   distortionStrength_ = ReadFloat(settings, "distortionStrength", distortionStrength_);
-   fadeOutRadius_ = ReadFloat(settings, "fadeOutRadius", fadeOutRadius_);
-   highlightIntensity_ = ReadFloat(settings, "highlightIntensity", highlightIntensity_);
+   waveRadius_ = GameEngine::JsonValue::ReadFloat(settings, "waveRadius", waveRadius_);
+   waveThickness_ = GameEngine::JsonValue::ReadFloat(settings, "waveThickness", waveThickness_);
+   distortionStrength_ = GameEngine::JsonValue::ReadFloat(settings, "distortionStrength", distortionStrength_);
+   fadeOutRadius_ = GameEngine::JsonValue::ReadFloat(settings, "fadeOutRadius", fadeOutRadius_);
+   highlightIntensity_ = GameEngine::JsonValue::ReadFloat(settings, "highlightIntensity", highlightIntensity_);
    UpdateConstantBuffer();
    return true;
 }
@@ -320,14 +301,14 @@ bool SpeedLine::DeserializeSettings(const nlohmann::json& settings) {
 
    SpeedLineParams params = params_;
    params.center = ReadVector2(settings, "center", params.center);
-   params.intensity = ReadFloat(settings, "intensity", params.intensity);
-   params.lineDensity = ReadFloat(settings, "lineDensity", params.lineDensity);
-   params.thickness = ReadFloat(settings, "thickness", params.thickness);
-   params.innerRadius = ReadFloat(settings, "innerRadius", params.innerRadius);
-   params.outerRadius = ReadFloat(settings, "outerRadius", params.outerRadius);
-   params.time = ReadFloat(settings, "time", params.time);
-   params.randomSeed = ReadFloat(settings, "randomSeed", params.randomSeed);
-   params.flowSpeed = ReadFloat(settings, "flowSpeed", params.flowSpeed);
+   params.intensity = GameEngine::JsonValue::ReadFloat(settings, "intensity", params.intensity);
+   params.lineDensity = GameEngine::JsonValue::ReadFloat(settings, "lineDensity", params.lineDensity);
+   params.thickness = GameEngine::JsonValue::ReadFloat(settings, "thickness", params.thickness);
+   params.innerRadius = GameEngine::JsonValue::ReadFloat(settings, "innerRadius", params.innerRadius);
+   params.outerRadius = GameEngine::JsonValue::ReadFloat(settings, "outerRadius", params.outerRadius);
+   params.time = GameEngine::JsonValue::ReadFloat(settings, "time", params.time);
+   params.randomSeed = GameEngine::JsonValue::ReadFloat(settings, "randomSeed", params.randomSeed);
+   params.flowSpeed = GameEngine::JsonValue::ReadFloat(settings, "flowSpeed", params.flowSpeed);
    SetParams(params);
    return true;
 }
@@ -345,8 +326,8 @@ bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
    const Vector2 center = ReadVector2(settings, "center", Vector2(centerX_, centerY_));
    centerX_ = center.x;
    centerY_ = center.y;
-   radius_ = ReadFloat(settings, "radius", radius_);
-   softness_ = ReadFloat(settings, "softness", softness_);
+   radius_ = GameEngine::JsonValue::ReadFloat(settings, "radius", radius_);
+   softness_ = GameEngine::JsonValue::ReadFloat(settings, "softness", softness_);
    const auto color = settings.find("color");
 
    if (color != settings.end() && color->is_array() && color->size() == 3 && (*color)[0].is_number() &&
@@ -366,7 +347,7 @@ bool Vignette::DeserializeSettings(const nlohmann::json& settings) {
       }
    }
 
-   intensity_ = ReadFloat(settings, "intensity", intensity_);
+   intensity_ = GameEngine::JsonValue::ReadFloat(settings, "intensity", intensity_);
    UpdateConstantBuffer();
    return true;
 }
@@ -385,10 +366,10 @@ bool WhiteNoise::DeserializeSettings(const nlohmann::json& settings) {
    // 経過時間は保存データではなく実行時状態なので、ロード時に時計とともに再始動する。
    WhiteNoiseParams params = params_;
    params.time = 0.0f;
-   params.noiseDensity = ReadFloat(settings, "noiseDensity", params.noiseDensity);
-   params.seedChangeRate = ReadFloat(settings, "seedChangeRate", params.seedChangeRate);
-   params.noiseThreshold = ReadFloat(settings, "noiseThreshold", params.noiseThreshold);
-   params.noiseIntensity = ReadFloat(settings, "noiseIntensity", params.noiseIntensity);
+   params.noiseDensity = GameEngine::JsonValue::ReadFloat(settings, "noiseDensity", params.noiseDensity);
+   params.seedChangeRate = GameEngine::JsonValue::ReadFloat(settings, "seedChangeRate", params.seedChangeRate);
+   params.noiseThreshold = GameEngine::JsonValue::ReadFloat(settings, "noiseThreshold", params.noiseThreshold);
+   params.noiseIntensity = GameEngine::JsonValue::ReadFloat(settings, "noiseIntensity", params.noiseIntensity);
    SetParams(params);
    previousTime_ = std::chrono::steady_clock::now();
    hasPreviousTime_ = true;

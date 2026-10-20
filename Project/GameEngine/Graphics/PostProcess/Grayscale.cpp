@@ -10,22 +10,7 @@ namespace GameEngine {
 void Grayscale::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    if (!GetPipeline() || !GetRootSignature()) return;
 
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // このエフェクトは定数バッファを使用しないので、ルートパラメータ0はスキップ
-   // SRVをルートパラメータ1にセット
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-
-   // フルスクリーントライアングル描画
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, nullptr);
 }
 
 #ifdef USE_IMGUI

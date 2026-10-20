@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/UI/UIModelComponent.h"
 
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -206,7 +207,7 @@ void UIModelComponent::DrawInspector() {
 
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
-   int projectionIndex = static_cast<int>(projectionType);
+   std::int32_t projectionIndex = static_cast<std::int32_t>(projectionType);
    const char* projectionItems[] = {
       ImGuiHelper::Localize({"平行投影", "Orthographic"}), ImGuiHelper::Localize({"透視投影", "Perspective"})};
 
@@ -214,7 +215,7 @@ void UIModelComponent::DrawInspector() {
       projectionType = static_cast<ProjectionType>(projectionIndex);
    }
 
-   int anchorIndex = static_cast<int>(anchorPoint);
+   std::int32_t anchorIndex = static_cast<std::int32_t>(anchorPoint);
    const char* anchorItems[] = {"Top Left", "Top Center", "Top Right", "Middle Left", "Middle Center", "Middle Right",
       "Bottom Left", "Bottom Center", "Bottom Right"};
 
@@ -228,5 +229,54 @@ void UIModelComponent::DrawInspector() {
    Configure(DescribeSettings());
 }
 #endif
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+UIModelComponent::Settings UIModelComponent::DescribeSettings() const {
+   Settings settings;
+   settings.projectionType = projectionType;
+   settings.anchorPoint = anchorPoint;
+   settings.screenOffset = screenOffset;
+   settings.localPivot = localPivot;
+   settings.depth = depth;
+   return settings;
+}
+
+void UIModelComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.screenOffset.x)) {
+      settings.screenOffset.x = defaults.screenOffset.x;
+   }
+
+   if (!std::isfinite(settings.screenOffset.y)) {
+      settings.screenOffset.y = defaults.screenOffset.y;
+   }
+
+   if (!std::isfinite(settings.localPivot.x)) {
+      settings.localPivot.x = defaults.localPivot.x;
+   }
+
+   if (!std::isfinite(settings.localPivot.y)) {
+      settings.localPivot.y = defaults.localPivot.y;
+   }
+
+   if (!std::isfinite(settings.localPivot.z)) {
+      settings.localPivot.z = defaults.localPivot.z;
+   }
+
+   if (!std::isfinite(settings.depth)) {
+      settings.depth = defaults.depth;
+   }
+
+   projectionType = settings.projectionType;
+   anchorPoint = settings.anchorPoint;
+   screenOffset = settings.screenOffset;
+   localPivot = settings.localPivot;
+   depth = settings.depth;
+}
 
 } // namespace GameEngine

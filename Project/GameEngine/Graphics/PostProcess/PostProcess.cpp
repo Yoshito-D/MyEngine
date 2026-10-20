@@ -7,6 +7,32 @@
 
 namespace GameEngine {
 
+/// @brief 解決済みスロットと共通の出力遷移でフルスクリーン描画する。
+void PostProcess::DrawFullscreen(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV, ID3D12Resource* constants, UINT extraSlot,
+   D3D12_GPU_DESCRIPTOR_HANDLE extraSRV) {
+   if (!pipeline_ || !rootSignature_ || !device_ || !renderTarget_) return;
+
+   // 全エフェクトで同じ出力遷移と解決済みスロットを使用する。
+   renderTarget_->PreDraw(false);
+   auto* commands = device_->GetCommandList();
+   commands->SetPipelineState(pipeline_->GetPipelineState());
+   commands->SetGraphicsRootSignature(rootSignature_->GetRootSignature());
+
+   if (constants) {
+      commands->SetGraphicsRootConstantBufferView(constantBufferRootSlot_, constants->GetGPUVirtualAddress());
+   }
+
+   commands->SetGraphicsRootDescriptorTable(inputTextureRootSlot_, inputSRV);
+
+   if (extraSRV.ptr != 0) {
+      commands->SetGraphicsRootDescriptorTable(extraSlot, extraSRV);
+   }
+
+   commands->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+   commands->DrawInstanced(3, 1, 0, 0);
+   renderTarget_->PostDraw();
+}
+
 /// @brief 派生エフェクトが共通利用する描画環境を関連付ける。
 /// @details 引数の所有権は移動せず、ポストプロセスの生存中は呼び出し元が両オブジェクトを
 ///          有効に保つ必要がある。派生クラスは追加リソースを作成する前に本実装を呼び出す。

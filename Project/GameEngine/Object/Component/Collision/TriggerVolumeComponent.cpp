@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/Collision/TriggerVolumeComponent.h"
 
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -151,7 +152,7 @@ void TriggerVolumeComponent::DrawInspector() {
 
    GameEngine::EditorUI::ObjectReference("Target", targetObjectId_, "TransformComponent");
    const char* shapes[] = {"Sphere", "AABB"};
-   int shapeIndex = shape_ == Shape::Sphere ? 0 : 1;
+   std::int32_t shapeIndex = shape_ == Shape::Sphere ? 0 : 1;
 
    if (ImGui::Combo("Shape", &shapeIndex, shapes, 2)) {
       shape_ = shapeIndex == 0 ? Shape::Sphere : Shape::Aabb;

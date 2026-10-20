@@ -61,12 +61,7 @@ public:
 
    /// @brief カメラの位置・回転・拡縮をまとめて設定する
    /// @param transform 新しいトランスフォーム
-   void SetTransform(const Transform& transform) {
-      if (transform.IsFinite()) {
-         transform_ = transform;
-         Update();
-      }
-   }
+   void SetTransform(const Transform& transform);
 
    /// @brief カメラのトランスフォームを取得する
    /// @return 現在のトランスフォーム
@@ -74,10 +69,7 @@ public:
 
    /// @brief カメラのワールド位置を設定する
    /// @param position ワールド位置
-   void SetPosition(const Vector3& position) {
-      transform_.translation = position;
-      Update();
-   }
+   void SetPosition(const Vector3& position);
 
    /// @brief カメラのワールド位置を取得する
    /// @return ワールド位置
@@ -85,10 +77,7 @@ public:
 
    /// @brief カメラ回転をEuler角で設定する
    /// @param rotation XYZ回転（ラジアン）
-   void SetRotation(const Vector3& rotation) {
-      transform_.SetRotationEuler(rotation);
-      Update();
-   }
+   void SetRotation(const Vector3& rotation);
 
    /// @brief カメラ回転をEuler角で取得する
    /// @return XYZ回転（ラジアン）
@@ -96,10 +85,7 @@ public:
 
    /// @brief カメラ回転をQuaternionで設定する
    /// @param quaternion ワールド回転
-   void SetQuaternion(const Quaternion& quaternion) {
-      transform_.SetRotationQuaternion(quaternion);
-      Update();
-   }
+   void SetQuaternion(const Quaternion& quaternion);
 
    /// @brief カメラ回転をQuaternionで取得する
    /// @return ワールド回転
@@ -107,10 +93,7 @@ public:
 
    /// @brief カメラのスケールを設定する
    /// @param scale 各軸のスケール
-   void SetScale(const Vector3& scale) {
-      transform_.scale = scale;
-      Update();
-   }
+   void SetScale(const Vector3& scale);
 
    /// @brief カメラのスケールを取得する
    /// @return 各軸のスケール
@@ -129,10 +112,7 @@ public:
 
    /// @brief 投影面のアスペクト比を設定する
    /// @param aspectRatio 幅を高さで割った比率
-   void SetAspectRatio(float aspectRatio) {
-      aspectRatio_ = aspectRatio;
-      Update();
-   }
+   void SetAspectRatio(float aspectRatio);
 
    /// @brief 投影面のアスペクト比を取得する
    /// @return 幅を高さで割った比率
@@ -140,10 +120,7 @@ public:
 
    /// @brief ニアクリップ距離を設定する
    /// @param nearClip カメラから近平面までの距離
-   void SetNearClip(float nearClip) {
-      nearClip_ = nearClip;
-      Update();
-   }
+   void SetNearClip(float nearClip);
 
    /// @brief ニアクリップ距離を取得する
    /// @return カメラから近平面までの距離
@@ -151,10 +128,7 @@ public:
 
    /// @brief ファークリップ距離を設定する
    /// @param farClip カメラから遠平面までの距離
-   void SetFarClip(float farClip) {
-      farClip_ = farClip;
-      Update();
-   }
+   void SetFarClip(float farClip);
 
    /// @brief ファークリップ距離を取得する
    /// @return カメラから遠平面までの距離
@@ -162,10 +136,7 @@ public:
 
    /// @brief 透視投影または平行投影へ切り替える
    /// @param type 使用する投影方式
-   void SetProjectionType(ProjectionType type) {
-      projectionType_ = type;
-      Update();
-   }
+   void SetProjectionType(ProjectionType type);
 
    /// @brief 現在の投影方式を取得する
    /// @return 透視投影または平行投影

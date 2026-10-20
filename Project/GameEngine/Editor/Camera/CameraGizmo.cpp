@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 
 #ifdef USE_IMGUI
 
@@ -41,12 +42,10 @@ void CameraGizmo::Configure(const Settings& settings) {
        !std::isfinite(settings.directionColor.x) || !std::isfinite(settings.directionColor.y) ||
        !std::isfinite(settings.directionColor.z) || !std::isfinite(settings.directionColor.w) ||
        !std::isfinite(settings.upVectorColor.x) || !std::isfinite(settings.upVectorColor.y) ||
-       !std::isfinite(settings.upVectorColor.z) || !std::isfinite(settings.upVectorColor.w) ||
-       !std::isfinite(settings.frustumScale))
+       !std::isfinite(settings.upVectorColor.z) || !std::isfinite(settings.upVectorColor.w))
       return;
 
    settings_ = settings;
-   settings_.frustumScale = std::max(0.0f, settings_.frustumScale);
 }
 
 void CameraGizmo::Initialize(LineRenderer* lineRenderer) {
@@ -173,9 +172,9 @@ void CameraGizmo::DrawCameraIcon(const Vector3& position, const Quaternion& rota
    float lensRadius = bodySize * 0.6f;
 
    // レンズの円周を描画
-   constexpr int segments = 8;
+   constexpr std::int32_t segments = 8;
 
-   for (int i = 0; i < segments; ++i) {
+   for (std::int32_t i = 0; i < segments; ++i) {
       float angle1 = (float)i / segments * MathConstants::kTwoPi;
       float angle2 = (float)(i + 1) / segments * MathConstants::kTwoPi;
 

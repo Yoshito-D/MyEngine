@@ -299,3 +299,17 @@ TransformationMatrix* Model::GetTransformationMatrix() {
    return transformComponent->EnsureTransformationMatrix();
 }
 }
+
+namespace GameEngine {
+
+SkinCluster* Model::GetSkinCluster() {
+   auto* c = GetComponent<MeshComponent>();
+   return c ? c->GetSkinCluster() : nullptr;
+}
+
+const SkinCluster* Model::GetSkinCluster() const {
+   const auto* c = GetComponent<MeshComponent>();
+   return c ? c->GetSkinCluster() : nullptr;
+}
+
+} // namespace GameEngine

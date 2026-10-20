@@ -176,141 +176,51 @@ public:
 
    /// @brief エディターが所有するGenericオブジェクト一覧を取得する
    /// @return Genericオブジェクト一覧
-   std::vector<Object*> GetGenericObjects() {
-      std::vector<Object*> view;
-
-      for (auto& entry : genericObjects_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<Object*> GetGenericObjects();
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
-   std::vector<const Object*> GetGenericObjects() const {
-      std::vector<const Object*> view;
-
-      for (const auto& entry : genericObjects_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<const Object*> GetGenericObjects() const;
 
    /// @brief エディタが所有するModel一覧を取得する
    /// @return Model一覧
-   std::vector<Model*> GetModels() {
-      std::vector<Model*> view;
-
-      for (auto& entry : models_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<Model*> GetModels();
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
-   std::vector<const Model*> GetModels() const {
-      std::vector<const Model*> view;
-
-      for (const auto& entry : models_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<const Model*> GetModels() const;
 
    /// @brief エディタが所有するSprite一覧を取得する
    /// @return Sprite一覧
-   std::vector<Sprite*> GetSprites() {
-      std::vector<Sprite*> view;
-
-      for (auto& entry : sprites_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<Sprite*> GetSprites();
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
-   std::vector<const Sprite*> GetSprites() const {
-      std::vector<const Sprite*> view;
-
-      for (const auto& entry : sprites_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<const Sprite*> GetSprites() const;
 
    /// @brief エディターが所有するUIテキスト一覧を取得する
    /// @return UIテキスト一覧
-   std::vector<UIText*> GetUITexts() {
-      std::vector<UIText*> view;
-
-      for (auto& entry : uiTexts_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<UIText*> GetUITexts();
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
-   std::vector<const UIText*> GetUITexts() const {
-      std::vector<const UIText*> view;
-
-      for (const auto& entry : uiTexts_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<const UIText*> GetUITexts() const;
 
    /// @brief エディタが所有するスカイボックス一覧を取得する
    /// @return スカイボックス一覧
-   std::vector<Skybox*> GetSkyboxes() {
-      std::vector<Skybox*> view;
-
-      for (auto& entry : skyboxes_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<Skybox*> GetSkyboxes();
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
-   std::vector<const Skybox*> GetSkyboxes() const {
-      std::vector<const Skybox*> view;
-
-      for (const auto& entry : skyboxes_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<const Skybox*> GetSkyboxes() const;
 
    /// @brief エディタが所有するParticleSystem一覧を取得する
    /// @return ParticleSystem一覧
-   std::vector<ParticleSystem*> GetParticleSystems() {
-      std::vector<ParticleSystem*> view;
-
-      for (auto& entry : particleSystems_) {
-         view.push_back(entry.get());
-      }
-
-      return view;
-   }
+   std::vector<ParticleSystem*> GetParticleSystems();
 
    /// @brief 所有権を公開せず、読み取り用の要素一覧を作る。
-   std::vector<const ParticleSystem*> GetParticleSystems() const {
-      std::vector<const ParticleSystem*> view;
+   std::vector<const ParticleSystem*> GetParticleSystems() const;
 
-      for (const auto& entry : particleSystems_) {
-         view.push_back(entry.get());
-      }
+   /// @brief 所有する全Objectを列挙する。
+   std::vector<Object*> GetObjects();
 
-      return view;
-   }
+   /// @brief 所有する全Objectを読み取り専用で列挙する。
+   std::vector<const Object*> GetObjects() const;
 
 private:
    std::string AllocateId(const std::string& requestedId);

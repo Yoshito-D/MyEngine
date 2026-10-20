@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Effects/Particles/Modules/UVTransformModule.h"
 
 namespace GameEngine {
@@ -97,17 +98,17 @@ void UVTransformModule::UpdateUV(Particle& particle, float deltaTime) const {
 nlohmann::json UVTransformModule::ToJson() const {
    nlohmann::json j;
    j["enabled"] = IsEnabled();
-   j["scrollMode"] = static_cast<int>(scrollMode_);
+   j["scrollMode"] = static_cast<std::int32_t>(scrollMode_);
    j["scrollConstant"] = {scrollConstant_.x, scrollConstant_.y};
    j["scrollRandom"] = scrollRandom_.ToJson();
    j["scrollCurveStart"] = {scrollCurveStart_.x, scrollCurveStart_.y};
    j["scrollCurveEnd"] = {scrollCurveEnd_.x, scrollCurveEnd_.y};
-   j["rotationMode"] = static_cast<int>(rotationMode_);
+   j["rotationMode"] = static_cast<std::int32_t>(rotationMode_);
    j["rotationConstant"] = rotationConstant_;
    j["rotationRandom"] = rotationRandom_.ToJson();
    j["rotationCurveStart"] = rotationCurveStart_;
    j["rotationCurveEnd"] = rotationCurveEnd_;
-   j["scaleMode"] = static_cast<int>(scaleMode_);
+   j["scaleMode"] = static_cast<std::int32_t>(scaleMode_);
    j["scaleConstant"] = {scaleConstant_.x, scaleConstant_.y};
    j["scaleRandom"] = scaleRandom_.ToJson();
    j["scaleCurveStart"] = {scaleCurveStart_.x, scaleCurveStart_.y};
@@ -121,7 +122,7 @@ void UVTransformModule::FromJson(const nlohmann::json& j) {
    }
 
    if (j.contains("scrollMode")) {
-      scrollMode_ = static_cast<ValueMode>(j["scrollMode"].get<int>());
+      scrollMode_ = static_cast<ValueMode>(j["scrollMode"].get<std::int32_t>());
    }
 
    if (j.contains("scrollConstant") && j["scrollConstant"].is_array() && j["scrollConstant"].size() >= 2) {
@@ -144,7 +145,7 @@ void UVTransformModule::FromJson(const nlohmann::json& j) {
    }
 
    if (j.contains("rotationMode")) {
-      rotationMode_ = static_cast<ValueMode>(j["rotationMode"].get<int>());
+      rotationMode_ = static_cast<ValueMode>(j["rotationMode"].get<std::int32_t>());
    }
 
    if (j.contains("rotationConstant")) {
@@ -164,7 +165,7 @@ void UVTransformModule::FromJson(const nlohmann::json& j) {
    }
 
    if (j.contains("scaleMode")) {
-      scaleMode_ = static_cast<ValueMode>(j["scaleMode"].get<int>());
+      scaleMode_ = static_cast<ValueMode>(j["scaleMode"].get<std::int32_t>());
    }
 
    if (j.contains("scaleConstant") && j["scaleConstant"].is_array() && j["scaleConstant"].size() >= 2) {

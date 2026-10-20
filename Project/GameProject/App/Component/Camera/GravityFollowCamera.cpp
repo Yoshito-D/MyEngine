@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameProject/App/Component/Camera/GravityFollowCamera.h"
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
@@ -44,26 +45,6 @@ static Vector3 RotateAroundAxis(const Vector3& v, const Vector3& axis, float ang
 
    // ロドリゲス公式: v*cos + (axis×v)*sin + axis*(axis・v)*(1-cos)
    return v * c + axis.Cross(v) * s + axis * (axis.Dot(v) * (1.0f - c));
-}
-
-static nlohmann::json SerializeVector3(const Vector3& value) {
-   return nlohmann::json::array({value.x, value.y, value.z});
-}
-
-static Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
-   if (!data.is_array() || data.size() != 3) {
-      return fallback;
-   }
-
-   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
-}
-
-static float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
-   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
-}
-
-static bool ReadBool(const nlohmann::json& data, const char* key, bool fallback) {
-   return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
 }
 
 const bool kRegistered =
@@ -541,76 +522,79 @@ nlohmann::json GravityFollowCamera::Serialize() const {
       {"accelToFovKick", accelToFovKick}, {"accelToDistanceKick", accelToDistanceKick},
       {"turboFovKickMax", turboFovKickMax}, {"turboDistanceKickMax", turboDistanceKickMax},
       {"positionLerpSpeed", positionLerpSpeed}, {"pitch", pitch_}, {"distance", distance_},
-      {"flatForward", SerializeVector3(flatForward_)}, {"gravityUp", SerializeVector3(gravityUp_)},
-      {"currentGravityUp", SerializeVector3(currentGravityUp_)}, {"pivotTarget", SerializeVector3(pivotTarget_)},
-      {"playerSpeed", playerSpeed_}, {"autoSpeed", autoSpeed_}, {"currentFov", currentFov_},
-      {"springFovOffset", springFovOffset_}, {"springFovVelocity", springFovVelocity_},
-      {"springDistanceOffset", springDistanceOffset_}, {"springDistanceVelocity", springDistanceVelocity_},
-      {"previousPlayerSpeed", previousPlayerSpeed_}, {"isSpeedInitialized", isSpeedInitialized_},
-      {"currentEyeOffset", SerializeVector3(currentEyeOffset_)}, {"isEyeInitialized", isEyeInitialized_},
-      {"cachedRight", SerializeVector3(cachedRight_)}, {"cachedUp", SerializeVector3(cachedUp_)}};
+      {"flatForward", GameEngine::JsonValue::WriteVector3(flatForward_)},
+      {"gravityUp", GameEngine::JsonValue::WriteVector3(gravityUp_)},
+      {"currentGravityUp", GameEngine::JsonValue::WriteVector3(currentGravityUp_)},
+      {"pivotTarget", GameEngine::JsonValue::WriteVector3(pivotTarget_)}, {"playerSpeed", playerSpeed_},
+      {"autoSpeed", autoSpeed_}, {"currentFov", currentFov_}, {"springFovOffset", springFovOffset_},
+      {"springFovVelocity", springFovVelocity_}, {"springDistanceOffset", springDistanceOffset_},
+      {"springDistanceVelocity", springDistanceVelocity_}, {"previousPlayerSpeed", previousPlayerSpeed_},
+      {"isSpeedInitialized", isSpeedInitialized_},
+      {"currentEyeOffset", GameEngine::JsonValue::WriteVector3(currentEyeOffset_)},
+      {"isEyeInitialized", isEyeInitialized_}, {"cachedRight", GameEngine::JsonValue::WriteVector3(cachedRight_)},
+      {"cachedUp", GameEngine::JsonValue::WriteVector3(cachedUp_)}};
 }
 
 void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   rotateSpeed = ReadFloat(data, "rotateSpeed", rotateSpeed);
-   scrollSpeed = ReadFloat(data, "scrollSpeed", scrollSpeed);
-   gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
-   fovDefault = ClampCameraFov(ReadFloat(data, "fovDefault", fovDefault));
-   fovBoostMax = std::max(0.0f, ReadFloat(data, "fovBoostMax", fovBoostMax));
-   fovLerpSpeed = ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
-   speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
-   speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
-   distanceBoostMax = ReadFloat(data, "distanceBoostMax", distanceBoostMax);
-   springStiffness = ReadFloat(data, "springStiffness", springStiffness);
-   springDamping = ReadFloat(data, "springDamping", springDamping);
-   accelToFovKick = ReadFloat(data, "accelToFovKick", accelToFovKick);
-   accelToDistanceKick = ReadFloat(data, "accelToDistanceKick", accelToDistanceKick);
-   turboFovKickMax = ReadFloat(data, "turboFovKickMax", turboFovKickMax);
-   turboDistanceKickMax = ReadFloat(data, "turboDistanceKickMax", turboDistanceKickMax);
-   positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
-   pitch_ = std::clamp(ReadFloat(data, "pitch", pitch_), 0.1f, 1.4f);
-   SetDistance(ReadFloat(data, "distance", distance_));
+   rotateSpeed = GameEngine::JsonValue::ReadFloat(data, "rotateSpeed", rotateSpeed);
+   scrollSpeed = GameEngine::JsonValue::ReadFloat(data, "scrollSpeed", scrollSpeed);
+   gravityUpLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
+   fovDefault = ClampCameraFov(GameEngine::JsonValue::ReadFloat(data, "fovDefault", fovDefault));
+   fovBoostMax = std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "fovBoostMax", fovBoostMax));
+   fovLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
+   speedBoostThreshold = GameEngine::JsonValue::ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
+   speedBoostMax = GameEngine::JsonValue::ReadFloat(data, "speedBoostMax", speedBoostMax);
+   distanceBoostMax = GameEngine::JsonValue::ReadFloat(data, "distanceBoostMax", distanceBoostMax);
+   springStiffness = GameEngine::JsonValue::ReadFloat(data, "springStiffness", springStiffness);
+   springDamping = GameEngine::JsonValue::ReadFloat(data, "springDamping", springDamping);
+   accelToFovKick = GameEngine::JsonValue::ReadFloat(data, "accelToFovKick", accelToFovKick);
+   accelToDistanceKick = GameEngine::JsonValue::ReadFloat(data, "accelToDistanceKick", accelToDistanceKick);
+   turboFovKickMax = GameEngine::JsonValue::ReadFloat(data, "turboFovKickMax", turboFovKickMax);
+   turboDistanceKickMax = GameEngine::JsonValue::ReadFloat(data, "turboDistanceKickMax", turboDistanceKickMax);
+   positionLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
+   pitch_ = std::clamp(GameEngine::JsonValue::ReadFloat(data, "pitch", pitch_), 0.1f, 1.4f);
+   SetDistance(GameEngine::JsonValue::ReadFloat(data, "distance", distance_));
 
    if (data.contains("flatForward")) {
-      flatForward_ = DeserializeVector3(data.at("flatForward"), flatForward_);
+      flatForward_ = GameEngine::JsonValue::ReadVector3(data.at("flatForward"), flatForward_);
    }
 
    if (data.contains("gravityUp")) {
-      gravityUp_ = DeserializeVector3(data.at("gravityUp"), gravityUp_);
+      gravityUp_ = GameEngine::JsonValue::ReadVector3(data.at("gravityUp"), gravityUp_);
    }
 
    if (data.contains("currentGravityUp")) {
-      currentGravityUp_ = DeserializeVector3(data.at("currentGravityUp"), currentGravityUp_);
+      currentGravityUp_ = GameEngine::JsonValue::ReadVector3(data.at("currentGravityUp"), currentGravityUp_);
    }
 
    if (data.contains("pivotTarget")) {
-      pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
+      pivotTarget_ = GameEngine::JsonValue::ReadVector3(data.at("pivotTarget"), pivotTarget_);
    }
 
-   playerSpeed_ = ReadFloat(data, "playerSpeed", playerSpeed_);
-   autoSpeed_ = ReadFloat(data, "autoSpeed", autoSpeed_);
-   currentFov_ = ReadFloat(data, "currentFov", currentFov_);
-   springFovOffset_ = ReadFloat(data, "springFovOffset", springFovOffset_);
-   springFovVelocity_ = ReadFloat(data, "springFovVelocity", springFovVelocity_);
-   springDistanceOffset_ = ReadFloat(data, "springDistanceOffset", springDistanceOffset_);
-   springDistanceVelocity_ = ReadFloat(data, "springDistanceVelocity", springDistanceVelocity_);
-   previousPlayerSpeed_ = ReadFloat(data, "previousPlayerSpeed", previousPlayerSpeed_);
-   isSpeedInitialized_ = ReadBool(data, "isSpeedInitialized", isSpeedInitialized_);
+   playerSpeed_ = GameEngine::JsonValue::ReadFloat(data, "playerSpeed", playerSpeed_);
+   autoSpeed_ = GameEngine::JsonValue::ReadFloat(data, "autoSpeed", autoSpeed_);
+   currentFov_ = GameEngine::JsonValue::ReadFloat(data, "currentFov", currentFov_);
+   springFovOffset_ = GameEngine::JsonValue::ReadFloat(data, "springFovOffset", springFovOffset_);
+   springFovVelocity_ = GameEngine::JsonValue::ReadFloat(data, "springFovVelocity", springFovVelocity_);
+   springDistanceOffset_ = GameEngine::JsonValue::ReadFloat(data, "springDistanceOffset", springDistanceOffset_);
+   springDistanceVelocity_ = GameEngine::JsonValue::ReadFloat(data, "springDistanceVelocity", springDistanceVelocity_);
+   previousPlayerSpeed_ = GameEngine::JsonValue::ReadFloat(data, "previousPlayerSpeed", previousPlayerSpeed_);
+   isSpeedInitialized_ = GameEngine::JsonValue::ReadBool(data, "isSpeedInitialized", isSpeedInitialized_);
 
    if (data.contains("currentEyeOffset")) {
-      currentEyeOffset_ = DeserializeVector3(data.at("currentEyeOffset"), currentEyeOffset_);
+      currentEyeOffset_ = GameEngine::JsonValue::ReadVector3(data.at("currentEyeOffset"), currentEyeOffset_);
    }
 
-   isEyeInitialized_ = ReadBool(data, "isEyeInitialized", isEyeInitialized_);
+   isEyeInitialized_ = GameEngine::JsonValue::ReadBool(data, "isEyeInitialized", isEyeInitialized_);
 
    if (data.contains("cachedRight")) {
-      cachedRight_ = DeserializeVector3(data.at("cachedRight"), cachedRight_);
+      cachedRight_ = GameEngine::JsonValue::ReadVector3(data.at("cachedRight"), cachedRight_);
    }
 
    if (data.contains("cachedUp")) {
-      cachedUp_ = DeserializeVector3(data.at("cachedUp"), cachedUp_);
+      cachedUp_ = GameEngine::JsonValue::ReadVector3(data.at("cachedUp"), cachedUp_);
    }
 
    // 保存時の一時的な FOV/spring 状態をゲーム開始時へ持ち越すと、
@@ -688,5 +672,125 @@ void GravityFollowCamera::DrawInspector() {
    Configure(DescribeSettings());
 }
 #endif
+
+} // namespace App
+
+namespace App {
+
+void GravityFollowCamera::SetDriftDistanceScale(float scale) {
+   driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
+}
+
+void GravityFollowCamera::SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
+   driftCameraHeightOffset_ = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
+   driftLookTargetHeightOffset_ = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
+}
+
+GravityFollowCamera::Settings GravityFollowCamera::DescribeSettings() const {
+   Settings settings;
+   settings.rotateSpeed = rotateSpeed;
+   settings.scrollSpeed = scrollSpeed;
+   settings.gravityUpLerpSpeed = gravityUpLerpSpeed;
+   settings.fovDefault = fovDefault;
+   settings.fovBoostMax = fovBoostMax;
+   settings.fovLerpSpeed = fovLerpSpeed;
+   settings.speedBoostThreshold = speedBoostThreshold;
+   settings.speedBoostMax = speedBoostMax;
+   settings.distanceBoostMax = distanceBoostMax;
+   settings.springStiffness = springStiffness;
+   settings.springDamping = springDamping;
+   settings.accelToFovKick = accelToFovKick;
+   settings.accelToDistanceKick = accelToDistanceKick;
+   settings.turboFovKickMax = turboFovKickMax;
+   settings.turboDistanceKickMax = turboDistanceKickMax;
+   settings.positionLerpSpeed = positionLerpSpeed;
+   return settings;
+}
+
+void GravityFollowCamera::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.rotateSpeed)) {
+      settings.rotateSpeed = defaults.rotateSpeed;
+   }
+
+   if (!std::isfinite(settings.scrollSpeed)) {
+      settings.scrollSpeed = defaults.scrollSpeed;
+   }
+
+   if (!std::isfinite(settings.gravityUpLerpSpeed)) {
+      settings.gravityUpLerpSpeed = defaults.gravityUpLerpSpeed;
+   }
+
+   if (!std::isfinite(settings.fovDefault)) {
+      settings.fovDefault = defaults.fovDefault;
+   }
+
+   if (!std::isfinite(settings.fovBoostMax)) {
+      settings.fovBoostMax = defaults.fovBoostMax;
+   }
+
+   if (!std::isfinite(settings.fovLerpSpeed)) {
+      settings.fovLerpSpeed = defaults.fovLerpSpeed;
+   }
+
+   if (!std::isfinite(settings.speedBoostThreshold)) {
+      settings.speedBoostThreshold = defaults.speedBoostThreshold;
+   }
+
+   if (!std::isfinite(settings.speedBoostMax)) {
+      settings.speedBoostMax = defaults.speedBoostMax;
+   }
+
+   if (!std::isfinite(settings.distanceBoostMax)) {
+      settings.distanceBoostMax = defaults.distanceBoostMax;
+   }
+
+   if (!std::isfinite(settings.springStiffness)) {
+      settings.springStiffness = defaults.springStiffness;
+   }
+
+   if (!std::isfinite(settings.springDamping)) {
+      settings.springDamping = defaults.springDamping;
+   }
+
+   if (!std::isfinite(settings.accelToFovKick)) {
+      settings.accelToFovKick = defaults.accelToFovKick;
+   }
+
+   if (!std::isfinite(settings.accelToDistanceKick)) {
+      settings.accelToDistanceKick = defaults.accelToDistanceKick;
+   }
+
+   if (!std::isfinite(settings.turboFovKickMax)) {
+      settings.turboFovKickMax = defaults.turboFovKickMax;
+   }
+
+   if (!std::isfinite(settings.turboDistanceKickMax)) {
+      settings.turboDistanceKickMax = defaults.turboDistanceKickMax;
+   }
+
+   if (!std::isfinite(settings.positionLerpSpeed)) {
+      settings.positionLerpSpeed = defaults.positionLerpSpeed;
+   }
+
+   rotateSpeed = settings.rotateSpeed;
+   scrollSpeed = settings.scrollSpeed;
+   gravityUpLerpSpeed = settings.gravityUpLerpSpeed;
+   fovDefault = settings.fovDefault;
+   fovBoostMax = settings.fovBoostMax;
+   fovLerpSpeed = settings.fovLerpSpeed;
+   speedBoostThreshold = settings.speedBoostThreshold;
+   speedBoostMax = settings.speedBoostMax;
+   distanceBoostMax = settings.distanceBoostMax;
+   springStiffness = settings.springStiffness;
+   springDamping = settings.springDamping;
+   accelToFovKick = settings.accelToFovKick;
+   accelToDistanceKick = settings.accelToDistanceKick;
+   turboFovKickMax = settings.turboFovKickMax;
+   turboDistanceKickMax = settings.turboDistanceKickMax;
+   positionLerpSpeed = settings.positionLerpSpeed;
+}
 
 } // namespace App

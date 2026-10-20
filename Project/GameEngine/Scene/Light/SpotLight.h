@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -46,7 +47,7 @@ public:
    /// @param decay 減衰
    /// @param cosAngle スポットライトの角度の余弦
    /// @param cosFalloffStart スポットライトの減衰開始角度の余弦
-   void Create(unsigned int color = 0xffffffff, const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f,
+   void Create(std::uint32_t color = 0xffffffff, const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f,
       const Vector3& direction = Vector3(0.0f, -1.0f, 0.0f), float distance = 5.0f, float decay = 0.2f,
       float cosAngle = 0.0f, float cosFalloffStart = 0.0f);
 

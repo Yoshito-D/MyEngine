@@ -1,3 +1,5 @@
+#include "GameEngine/Utility/JsonValue.h"
+#include <cstdint>
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraDebugView.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
@@ -432,89 +434,99 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
 void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   distance = ReadFloat(data, "distance", distance);
-   height = ReadFloat(data, "height", height);
-   groundedTargetHeight = ReadFloat(data, "groundedTargetHeight", groundedTargetHeight);
+   distance = GameEngine::JsonValue::ReadFloat(data, "distance", distance);
+   height = GameEngine::JsonValue::ReadFloat(data, "height", height);
+   groundedTargetHeight = GameEngine::JsonValue::ReadFloat(data, "groundedTargetHeight", groundedTargetHeight);
    takeoffFramingBlendSeconds =
-      std::max(0.0f, ReadFloat(data, "takeoffFramingBlendSeconds", takeoffFramingBlendSeconds));
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "takeoffFramingBlendSeconds", takeoffFramingBlendSeconds));
    landingFramingBlendSeconds =
-      std::max(0.0f, ReadFloat(data, "landingFramingBlendSeconds", landingFramingBlendSeconds));
-   airborneDistanceOffset = ReadFloat(data, "airborneDistanceOffset", airborneDistanceOffset);
-   airborneFovOffset = ReadFloat(data, "airborneFovOffset", airborneFovOffset);
-   airbornePlanetDirectionBlend = ReadFloat(data, "airbornePlanetDirectionBlend", airbornePlanetDirectionBlend);
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "landingFramingBlendSeconds", landingFramingBlendSeconds));
+   airborneDistanceOffset = GameEngine::JsonValue::ReadFloat(data, "airborneDistanceOffset", airborneDistanceOffset);
+   airborneFovOffset = GameEngine::JsonValue::ReadFloat(data, "airborneFovOffset", airborneFovOffset);
+   airbornePlanetDirectionBlend =
+      GameEngine::JsonValue::ReadFloat(data, "airbornePlanetDirectionBlend", airbornePlanetDirectionBlend);
    airbornePlanetDirectionLerpSpeed =
-      ReadFloat(data, "airbornePlanetDirectionLerpSpeed", airbornePlanetDirectionLerpSpeed);
-   jumpPlanetDirectionDelaySeconds =
-      std::max(0.0f, ReadFloat(data, "jumpPlanetDirectionDelaySeconds",
-                        ReadFloat(data, "jumpPlanetDirectionRampSeconds", jumpPlanetDirectionDelaySeconds)));
-   jumpPlanetDirectionRestoreSeconds =
-      std::max(0.0f, ReadFloat(data, "jumpPlanetDirectionRestoreSeconds", jumpPlanetDirectionRestoreSeconds));
+      GameEngine::JsonValue::ReadFloat(data, "airbornePlanetDirectionLerpSpeed", airbornePlanetDirectionLerpSpeed);
+   jumpPlanetDirectionDelaySeconds = std::max(
+      0.0f, GameEngine::JsonValue::ReadFloat(data, "jumpPlanetDirectionDelaySeconds", jumpPlanetDirectionDelaySeconds));
+   jumpPlanetDirectionRestoreSeconds = std::max(0.0f,
+      GameEngine::JsonValue::ReadFloat(data, "jumpPlanetDirectionRestoreSeconds", jumpPlanetDirectionRestoreSeconds));
    enableAirbornePlanetDirectionGuide =
-      ReadBool(data, "enableAirbornePlanetDirectionGuide", enableAirbornePlanetDirectionGuide);
+      GameEngine::JsonValue::ReadBool(data, "enableAirbornePlanetDirectionGuide", enableAirbornePlanetDirectionGuide);
    enableAirborneGravityDirectionBoost =
-      ReadBool(data, "enableAirborneGravityDirectionBoost", enableAirborneGravityDirectionBoost);
-   airborneGravityDirectionBoostThreshold =
-      ReadFloat(data, "airborneGravityDirectionBoostThreshold", airborneGravityDirectionBoostThreshold);
-   airborneGravityDirectionBoostFullThreshold =
-      ReadFloat(data, "airborneGravityDirectionBoostFullThreshold", airborneGravityDirectionBoostFullThreshold);
+      GameEngine::JsonValue::ReadBool(data, "enableAirborneGravityDirectionBoost", enableAirborneGravityDirectionBoost);
+   airborneGravityDirectionBoostThreshold = GameEngine::JsonValue::ReadFloat(
+      data, "airborneGravityDirectionBoostThreshold", airborneGravityDirectionBoostThreshold);
+   airborneGravityDirectionBoostFullThreshold = GameEngine::JsonValue::ReadFloat(
+      data, "airborneGravityDirectionBoostFullThreshold", airborneGravityDirectionBoostFullThreshold);
    airborneGravityDirectionBoostBias =
-      ReadFloat(data, "airborneGravityDirectionBoostBias", airborneGravityDirectionBoostBias);
-   airborneBlendLerpSpeed = ReadFloat(data, "airborneBlendLerpSpeed", airborneBlendLerpSpeed);
-   enablePreLandingCamera = ReadBool(data, "enablePreLandingCamera", enablePreLandingCamera);
-   preLandingPredictionSeconds =
-      std::max(0.0f, ReadFloat(data, "preLandingPredictionSeconds", preLandingPredictionSeconds));
+      GameEngine::JsonValue::ReadFloat(data, "airborneGravityDirectionBoostBias", airborneGravityDirectionBoostBias);
+   airborneBlendLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "airborneBlendLerpSpeed", airborneBlendLerpSpeed);
+   enablePreLandingCamera = GameEngine::JsonValue::ReadBool(data, "enablePreLandingCamera", enablePreLandingCamera);
+   preLandingPredictionSeconds = std::max(
+      0.0f, GameEngine::JsonValue::ReadFloat(data, "preLandingPredictionSeconds", preLandingPredictionSeconds));
    preLandingFullBlendSeconds =
-      std::max(0.0f, ReadFloat(data, "preLandingFullBlendSeconds", preLandingFullBlendSeconds));
-   preLandingBlendLerpSpeed = std::max(0.0f, ReadFloat(data, "preLandingBlendLerpSpeed", preLandingBlendLerpSpeed));
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "preLandingFullBlendSeconds", preLandingFullBlendSeconds));
+   preLandingBlendLerpSpeed =
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "preLandingBlendLerpSpeed", preLandingBlendLerpSpeed));
    preLandingReleaseLerpSpeed =
-      std::max(0.0f, ReadFloat(data, "preLandingReleaseLerpSpeed", preLandingReleaseLerpSpeed));
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "preLandingReleaseLerpSpeed", preLandingReleaseLerpSpeed));
    preLandingTerrainLookAhead =
-      std::max(0.0f, ReadFloat(data, "preLandingTerrainLookAhead", preLandingTerrainLookAhead));
-   preLandingTerrainLookBlend =
-      std::clamp(ReadFloat(data, "preLandingTerrainLookBlend", preLandingTerrainLookBlend), 0.0f, 1.0f);
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "preLandingTerrainLookAhead", preLandingTerrainLookAhead));
+   preLandingTerrainLookBlend = std::clamp(
+      GameEngine::JsonValue::ReadFloat(data, "preLandingTerrainLookBlend", preLandingTerrainLookBlend), 0.0f, 1.0f);
    preLandingMinOutwardHeight =
-      std::max(0.0f, ReadFloat(data, "preLandingMinOutwardHeight", preLandingMinOutwardHeight));
-   airborneForwardLerpSpeed = ReadFloat(data, "airborneForwardLerpSpeed", airborneForwardLerpSpeed);
-   rearLerpSpeed = ReadFloat(data, "rearLerpSpeed", rearLerpSpeed);
-   landingRearLerpRampSeconds = ReadFloat(data, "landingRearLerpRampSeconds", landingRearLerpRampSeconds);
-   gravityUpLerpSpeed = ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
-   fovDefault = ClampCameraFov(ReadFloat(data, "fovDefault", fovDefault));
-   fovBoostMax = std::max(0.0f, ReadFloat(data, "fovBoostMax", fovBoostMax));
-   fovLerpSpeed = ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
-   distanceBoostMax = ReadFloat(data, "distanceBoostMax", distanceBoostMax);
-   springStiffness = ReadFloat(data, "springStiffness", springStiffness);
-   springDamping = ReadFloat(data, "springDamping", springDamping);
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "preLandingMinOutwardHeight", preLandingMinOutwardHeight));
+   airborneForwardLerpSpeed =
+      GameEngine::JsonValue::ReadFloat(data, "airborneForwardLerpSpeed", airborneForwardLerpSpeed);
+   rearLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "rearLerpSpeed", rearLerpSpeed);
+   landingRearLerpRampSeconds =
+      GameEngine::JsonValue::ReadFloat(data, "landingRearLerpRampSeconds", landingRearLerpRampSeconds);
+   gravityUpLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "gravityUpLerpSpeed", gravityUpLerpSpeed);
+   fovDefault = ClampCameraFov(GameEngine::JsonValue::ReadFloat(data, "fovDefault", fovDefault));
+   fovBoostMax = std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "fovBoostMax", fovBoostMax));
+   fovLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "fovLerpSpeed", fovLerpSpeed);
+   distanceBoostMax = GameEngine::JsonValue::ReadFloat(data, "distanceBoostMax", distanceBoostMax);
+   springStiffness = GameEngine::JsonValue::ReadFloat(data, "springStiffness", springStiffness);
+   springDamping = GameEngine::JsonValue::ReadFloat(data, "springDamping", springDamping);
 
-   // 旧データでは同じ速度差に「加速度係数」と「ターボ最大量」を重ねていた。
-   // 最大キックに到達する速度差で両者が作る量を合算し、新しい1項目へ移行する。
-   float legacyTurboFovKickMax = std::max(0.0f, ReadFloat(data, "turboFovKickMax", speedChangeFovKickMax));
-   float legacyTurboDistanceKickMax =
-      std::max(0.0f, ReadFloat(data, "turboDistanceKickMax", speedChangeDistanceKickMax));
-   float legacyFovKickMax =
-      std::min(legacyTurboFovKickMax + std::max(0.0f, ReadFloat(data, "accelToFovKick", 0.0f)) * kSpeedDeltaForMaxKick,
-         std::max(0.0f, fovBoostMax) + legacyTurboFovKickMax);
-   float legacyDistanceKickMax = std::min(
-      legacyTurboDistanceKickMax + std::max(0.0f, ReadFloat(data, "accelToDistanceKick", 0.0f)) * kSpeedDeltaForMaxKick,
-      std::max(0.0f, distanceBoostMax) + legacyTurboDistanceKickMax);
-   speedChangeFovKickMax = std::max(0.0f, ReadFloat(data, "speedChangeFovKickMax", legacyFovKickMax));
-   speedChangeDistanceKickMax = std::max(0.0f, ReadFloat(data, "speedChangeDistanceKickMax", legacyDistanceKickMax));
-   speedBoostThreshold = ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
-   speedBoostMax = ReadFloat(data, "speedBoostMax", speedBoostMax);
-   positionLerpSpeed = ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
-   eyeDirectionMaxAngularSpeed =
-      std::max(0.0f, ReadFloat(data, "eyeDirectionMaxAngularSpeed", eyeDirectionMaxAngularSpeed));
-   rotationLerpSpeed = ReadFloat(data, "rotationLerpSpeed", rotationLerpSpeed);
-   lookAtRecoveryRange = std::max(1e-4f, ReadFloat(data, "lookAtRecoveryRange", lookAtRecoveryRange));
-   lookAtRecoveryCurveControl1 =
-      std::clamp(ReadFloat(data, "lookAtRecoveryCurveControl1", lookAtRecoveryCurveControl1), 0.0f, 1.0f);
-   lookAtRecoveryCurveControl2 =
-      std::clamp(ReadFloat(data, "lookAtRecoveryCurveControl2", lookAtRecoveryCurveControl2), 0.0f, 1.0f);
-   showCameraMeasurementOverlay = ReadBool(data, "showCameraMeasurementOverlay", showCameraMeasurementOverlay);
-   showCameraEvidenceWindow = ReadBool(data, "showCameraEvidenceWindow", showCameraEvidenceWindow);
-   input_.autoSpeed = ReadFloat(data, "autoSpeed", input_.autoSpeed);
+   speedChangeFovKickMax =
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "speedChangeFovKickMax", speedChangeFovKickMax));
+   speedChangeDistanceKickMax =
+      std::max(0.0f, GameEngine::JsonValue::ReadFloat(data, "speedChangeDistanceKickMax", speedChangeDistanceKickMax));
+   speedBoostThreshold = GameEngine::JsonValue::ReadFloat(data, "speedBoostThreshold", speedBoostThreshold);
+   speedBoostMax = GameEngine::JsonValue::ReadFloat(data, "speedBoostMax", speedBoostMax);
+   positionLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "positionLerpSpeed", positionLerpSpeed);
+   eyeDirectionMaxAngularSpeed = std::max(
+      0.0f, GameEngine::JsonValue::ReadFloat(data, "eyeDirectionMaxAngularSpeed", eyeDirectionMaxAngularSpeed));
+   rotationLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "rotationLerpSpeed", rotationLerpSpeed);
+   lookAtRecoveryRange =
+      std::max(1e-4f, GameEngine::JsonValue::ReadFloat(data, "lookAtRecoveryRange", lookAtRecoveryRange));
+   lookAtRecoveryCurveControl1 = std::clamp(
+      GameEngine::JsonValue::ReadFloat(data, "lookAtRecoveryCurveControl1", lookAtRecoveryCurveControl1), 0.0f, 1.0f);
+   lookAtRecoveryCurveControl2 = std::clamp(
+      GameEngine::JsonValue::ReadFloat(data, "lookAtRecoveryCurveControl2", lookAtRecoveryCurveControl2), 0.0f, 1.0f);
+   showCameraMeasurementOverlay =
+      GameEngine::JsonValue::ReadBool(data, "showCameraMeasurementOverlay", showCameraMeasurementOverlay);
+   showCameraEvidenceWindow =
+      GameEngine::JsonValue::ReadBool(data, "showCameraEvidenceWindow", showCameraEvidenceWindow);
+   input_.autoSpeed = GameEngine::JsonValue::ReadFloat(data, "autoSpeed", input_.autoSpeed);
 
    ResetRuntimeState();
    Configure(DescribeSettings());
+}
+
+} // namespace App
+
+namespace App {
+
+void PlayerRearFollowCamera::SetDriftDistanceScale(float scale) {
+   input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
+}
+
+void PlayerRearFollowCamera::SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
+   input_.driftCameraHeightOffset = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
+   input_.driftLookTargetHeightOffset = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
 }
 
 } // namespace App

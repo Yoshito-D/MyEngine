@@ -44,17 +44,12 @@ public:
    void SetPlayerSpeed(float speed) { playerSpeed_ = speed; }
 
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
-   void SetDriftDistanceScale(float scale) {
-      driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
-   }
+   void SetDriftDistanceScale(float scale);
 
    /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
    /// @param cameraHeightOffset カメラ高さへ加える量。正の値は重力Up方向、負の値は下方向。
    /// @param lookTargetHeightOffset 注視点高さへ加える量。正の値は重力Up方向、負の値は下方向。
-   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
-      driftCameraHeightOffset_ = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
-      driftLookTargetHeightOffset_ = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
-   }
+   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset);
 
    /// @brief 通常走行速度（autoSpeed）を設定する
    /// @details これを下回った場合のみ減速演出を発火させる
@@ -147,113 +142,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.rotateSpeed = rotateSpeed;
-      settings.scrollSpeed = scrollSpeed;
-      settings.gravityUpLerpSpeed = gravityUpLerpSpeed;
-      settings.fovDefault = fovDefault;
-      settings.fovBoostMax = fovBoostMax;
-      settings.fovLerpSpeed = fovLerpSpeed;
-      settings.speedBoostThreshold = speedBoostThreshold;
-      settings.speedBoostMax = speedBoostMax;
-      settings.distanceBoostMax = distanceBoostMax;
-      settings.springStiffness = springStiffness;
-      settings.springDamping = springDamping;
-      settings.accelToFovKick = accelToFovKick;
-      settings.accelToDistanceKick = accelToDistanceKick;
-      settings.turboFovKickMax = turboFovKickMax;
-      settings.turboDistanceKickMax = turboDistanceKickMax;
-      settings.positionLerpSpeed = positionLerpSpeed;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.rotateSpeed)) {
-         settings.rotateSpeed = defaults.rotateSpeed;
-      }
-
-      if (!std::isfinite(settings.scrollSpeed)) {
-         settings.scrollSpeed = defaults.scrollSpeed;
-      }
-
-      if (!std::isfinite(settings.gravityUpLerpSpeed)) {
-         settings.gravityUpLerpSpeed = defaults.gravityUpLerpSpeed;
-      }
-
-      if (!std::isfinite(settings.fovDefault)) {
-         settings.fovDefault = defaults.fovDefault;
-      }
-
-      if (!std::isfinite(settings.fovBoostMax)) {
-         settings.fovBoostMax = defaults.fovBoostMax;
-      }
-
-      if (!std::isfinite(settings.fovLerpSpeed)) {
-         settings.fovLerpSpeed = defaults.fovLerpSpeed;
-      }
-
-      if (!std::isfinite(settings.speedBoostThreshold)) {
-         settings.speedBoostThreshold = defaults.speedBoostThreshold;
-      }
-
-      if (!std::isfinite(settings.speedBoostMax)) {
-         settings.speedBoostMax = defaults.speedBoostMax;
-      }
-
-      if (!std::isfinite(settings.distanceBoostMax)) {
-         settings.distanceBoostMax = defaults.distanceBoostMax;
-      }
-
-      if (!std::isfinite(settings.springStiffness)) {
-         settings.springStiffness = defaults.springStiffness;
-      }
-
-      if (!std::isfinite(settings.springDamping)) {
-         settings.springDamping = defaults.springDamping;
-      }
-
-      if (!std::isfinite(settings.accelToFovKick)) {
-         settings.accelToFovKick = defaults.accelToFovKick;
-      }
-
-      if (!std::isfinite(settings.accelToDistanceKick)) {
-         settings.accelToDistanceKick = defaults.accelToDistanceKick;
-      }
-
-      if (!std::isfinite(settings.turboFovKickMax)) {
-         settings.turboFovKickMax = defaults.turboFovKickMax;
-      }
-
-      if (!std::isfinite(settings.turboDistanceKickMax)) {
-         settings.turboDistanceKickMax = defaults.turboDistanceKickMax;
-      }
-
-      if (!std::isfinite(settings.positionLerpSpeed)) {
-         settings.positionLerpSpeed = defaults.positionLerpSpeed;
-      }
-
-      rotateSpeed = settings.rotateSpeed;
-      scrollSpeed = settings.scrollSpeed;
-      gravityUpLerpSpeed = settings.gravityUpLerpSpeed;
-      fovDefault = settings.fovDefault;
-      fovBoostMax = settings.fovBoostMax;
-      fovLerpSpeed = settings.fovLerpSpeed;
-      speedBoostThreshold = settings.speedBoostThreshold;
-      speedBoostMax = settings.speedBoostMax;
-      distanceBoostMax = settings.distanceBoostMax;
-      springStiffness = settings.springStiffness;
-      springDamping = settings.springDamping;
-      accelToFovKick = settings.accelToFovKick;
-      accelToDistanceKick = settings.accelToDistanceKick;
-      turboFovKickMax = settings.turboFovKickMax;
-      turboDistanceKickMax = settings.turboDistanceKickMax;
-      positionLerpSpeed = settings.positionLerpSpeed;
-   }
+   void Configure(const Settings& requested);
 
 private:
    float rotateSpeed = 0.005f;

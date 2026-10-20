@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameEngine/Math/VectorMath.h"
 
 namespace GameEngine {
@@ -80,7 +81,7 @@ struct Ball {
    Vector3 acceleration; //!< 加速度
    float mass;           //!< 質量
    float radius;         //!< 半径
-   unsigned int color;   //!< 描画時に解釈するパック済みの色
+   std::uint32_t color;  //!< 描画時に解釈するパック済みの色
 };
 
 /// @brief 固定点を支点として平面内を運動する単振り子の状態。

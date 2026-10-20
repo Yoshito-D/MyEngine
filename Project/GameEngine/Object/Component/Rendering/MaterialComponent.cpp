@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
@@ -102,7 +103,7 @@ nlohmann::json SerializeMaterialProperties(const GameEngine::Material* material)
 
    // -1はパイプライン既定のBlendModeを使うという意味で、明示的なモードと区別する。
    const auto blendMode = material->GetBlendMode();
-   json["blendMode"] = blendMode.has_value() ? static_cast<int>(blendMode.value()) : -1;
+   json["blendMode"] = blendMode.has_value() ? static_cast<std::int32_t>(blendMode.value()) : -1;
    json["pipelineName"] = material->GetPipelineName();
    json["parameters"] = material->GetParameters();
    return json;
@@ -162,9 +163,9 @@ void DeserializeMaterialProperties(GameEngine::Material* material, const nlohman
    }
 
    if (data.contains("blendMode") && data.at("blendMode").is_number_integer()) {
-      const int blendMode = data.at("blendMode").get<int>();
+      const std::int32_t blendMode = data.at("blendMode").get<std::int32_t>();
 
-      if (blendMode >= 0 && blendMode < static_cast<int>(BlendMode::kCount)) {
+      if (blendMode >= 0 && blendMode < static_cast<std::int32_t>(BlendMode::kCount)) {
          material->SetBlendMode(static_cast<BlendMode>(blendMode));
       } else {
          material->SetBlendMode(std::nullopt);
@@ -658,15 +659,15 @@ void MaterialComponent::DrawInspector() {
          const auto names = namesProvider_();
 
          if (!names.empty()) {
-            static int selectedIndex = 0;
-            selectedIndex = std::clamp(selectedIndex, 0, static_cast<int>(names.size() - 1));
+            static std::int32_t selectedIndex = 0;
+            selectedIndex = std::clamp(selectedIndex, 0, static_cast<std::int32_t>(names.size() - 1));
 
             if (ImGui::BeginCombo(Tr("マテリアルアセット", "Material Asset"), names[selectedIndex].c_str())) {
                for (size_t i = 0; i < names.size(); ++i) {
-                  const bool selected = static_cast<int>(i) == selectedIndex;
+                  const bool selected = static_cast<std::int32_t>(i) == selectedIndex;
 
                   if (ImGui::Selectable(names[i].c_str(), selected)) {
-                     selectedIndex = static_cast<int>(i);
+                     selectedIndex = static_cast<std::int32_t>(i);
                   }
 
                   if (selected) {
@@ -692,14 +693,14 @@ void MaterialComponent::DrawInspector() {
       const auto names = namesProvider_();
 
       if (!names.empty()) {
-         int selectedIndex = 0;
+         std::int32_t selectedIndex = 0;
          const std::string currentName =
             materialNames_.empty() ? std::string()
                                    : materialNames_[inspectorSlot_ < materialNames_.size() ? inspectorSlot_ : 0];
 
          for (size_t i = 0; i < names.size(); ++i) {
             if (names[i] == currentName) {
-               selectedIndex = static_cast<int>(i);
+               selectedIndex = static_cast<std::int32_t>(i);
                break;
             }
          }
@@ -708,7 +709,7 @@ void MaterialComponent::DrawInspector() {
 
          if (ImGui::BeginCombo(Tr("マテリアルアセット", "Material Asset"), preview)) {
             for (size_t i = 0; i < names.size(); ++i) {
-               const bool selected = static_cast<int>(i) == selectedIndex;
+               const bool selected = static_cast<std::int32_t>(i) == selectedIndex;
 
                if (ImGui::Selectable(names[i].c_str(), selected)) {
                   if (auto* selectedMaterial = resolver_(names[i])) {
@@ -759,7 +760,7 @@ void MaterialComponent::DrawInspector() {
    };
 
    for (size_t slot = 0; slot < slotCount; ++slot) {
-      ImGui::PushID(static_cast<int>(slot));
+      ImGui::PushID(static_cast<std::int32_t>(slot));
       std::string nextTextureId = GetTextureName(slot);
       const std::string label = std::string(Tr("スロット", "Slot")) + " " + std::to_string(slot);
 
@@ -794,12 +795,12 @@ void MaterialComponent::DrawInspector() {
    }
 
    const char* lightingModeLabels[] = {Tr("なし", "None"), "Lambert", "HalfLambert", "Phong", "BlinnPhong"};
-   int lightingMode = std::clamp(data->lightingMode, static_cast<int>(Material::LightingMode::NONE),
-      static_cast<int>(Material::LightingMode::BLINNPHONG));
+   std::int32_t lightingMode = std::clamp(data->lightingMode, static_cast<std::int32_t>(Material::LightingMode::NONE),
+      static_cast<std::int32_t>(Material::LightingMode::BLINNPHONG));
 
    if (ImGui::BeginCombo(Tr("ライティングモード", "Lighting Mode"), lightingModeLabels[lightingMode])) {
-      for (int i = static_cast<int>(Material::LightingMode::NONE);
-         i <= static_cast<int>(Material::LightingMode::BLINNPHONG); ++i) {
+      for (std::int32_t i = static_cast<std::int32_t>(Material::LightingMode::NONE);
+         i <= static_cast<std::int32_t>(Material::LightingMode::BLINNPHONG); ++i) {
          const bool selected = (i == lightingMode);
 
          if (ImGui::Selectable(lightingModeLabels[i], selected)) {
@@ -857,8 +858,8 @@ void MaterialComponent::DrawInspector() {
       const char* blendModeLabels[] = {Tr("なし", "None"), Tr("通常", "Normal"), Tr("加算", "Add"),
          Tr("減算", "Subtract"), Tr("乗算", "Multiply"), Tr("スクリーン", "Screen")};
       const auto currentBlend = material->GetBlendMode();
-      int blendIndex = currentBlend.has_value() ? static_cast<int>(currentBlend.value()) : -1;
-      const char* blendPreview = (blendIndex >= 0 && blendIndex < static_cast<int>(BlendMode::kCount))
+      std::int32_t blendIndex = currentBlend.has_value() ? static_cast<std::int32_t>(currentBlend.value()) : -1;
+      const char* blendPreview = (blendIndex >= 0 && blendIndex < static_cast<std::int32_t>(BlendMode::kCount))
                                     ? blendModeLabels[blendIndex]
                                     : Tr("<デフォルト>", "<default>");
 
@@ -867,7 +868,7 @@ void MaterialComponent::DrawInspector() {
             material->SetBlendMode(std::nullopt);
          }
 
-         for (int i = 0; i < static_cast<int>(BlendMode::kCount); ++i) {
+         for (std::int32_t i = 0; i < static_cast<std::int32_t>(BlendMode::kCount); ++i) {
             const bool sel = (i == blendIndex);
 
             if (ImGui::Selectable(blendModeLabels[i], sel)) {
@@ -923,7 +924,7 @@ void MaterialComponent::DrawInspector() {
                   material->SetParameter(field.name, {checked ? 1.0f : 0.0f});
                }
             } else if (ImGui::DragScalarN(field.name.c_str(), ImGuiDataType_Float, value.data(),
-                          static_cast<int>(value.size()), 0.01f)) {
+                          static_cast<std::int32_t>(value.size()), 0.01f)) {
                material->SetParameter(field.name, value);
             }
          }

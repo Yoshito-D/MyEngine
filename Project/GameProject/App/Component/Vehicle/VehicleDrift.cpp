@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
+#include <cstdint>
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Object.h"
@@ -274,7 +275,7 @@ void VehicleDrift::DrawInspector() {
    ImGui::Separator();
 
    const char* modeNames[] = {Tr("ボタン入力", "ButtonMode"), Tr("継続ステア", "SustainedSteer")};
-   int modeIdx = static_cast<int>(driftMode);
+   std::int32_t modeIdx = static_cast<std::int32_t>(driftMode);
 
    if (ImGui::Combo(Tr("ドリフトモード", "Drift Mode"), &modeIdx, modeNames, 2)) {
       driftMode = static_cast<DriftMode>(modeIdx);
@@ -303,7 +304,7 @@ void VehicleDrift::DrawInspector() {
 
 nlohmann::json VehicleDrift::Serialize() const {
    nlohmann::json json;
-   json["driftMode"] = static_cast<int>(driftMode);
+   json["driftMode"] = static_cast<std::int32_t>(driftMode);
    json["slideRatio"] = slideRatio;
    json["lateralBuildupRate"] = lateralBuildupRate;
    json["postDriftBleedRate"] = postDriftBleedRate;
@@ -318,7 +319,7 @@ nlohmann::json VehicleDrift::Serialize() const {
 
 void VehicleDrift::Deserialize(const nlohmann::json& data) {
    if (data.contains("driftMode")) {
-      driftMode = static_cast<DriftMode>(data["driftMode"].get<int>());
+      driftMode = static_cast<DriftMode>(data["driftMode"].get<std::int32_t>());
    }
 
    if (data.contains("slideRatio")) {

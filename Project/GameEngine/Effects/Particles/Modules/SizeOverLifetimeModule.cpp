@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Effects/Particles/Modules/SizeOverLifetimeModule.h"
 
 namespace GameEngine {
@@ -32,36 +33,19 @@ nlohmann::json SizeOverLifetimeModule::ToJson() const {
 
 void SizeOverLifetimeModule::FromJson(const nlohmann::json& j) {
    if (j.contains("enabled")) {
-      SetEnabled(j["enabled"].get<bool>());
+      SetEnabled(j.at("enabled").get<bool>());
    }
 
    if (j.contains("sizeMultiplier")) {
-      if (j["sizeMultiplier"].is_object()) {
-         sizeMultiplier_.FromJson(j["sizeMultiplier"]);
-      } else {
-         SetSizeMultiplier(j["sizeMultiplier"]);
-      }
+      sizeMultiplier_.FromJson(j.at("sizeMultiplier"));
    }
 
    if (j.contains("startSize")) {
-      if (j["startSize"].is_array()) {
-         auto arr = j["startSize"];
-         startSize_ = Vector3{arr[0], arr[1], arr[2]};
-      } else {
-         // 旧形式の一様スカラーを三軸へ展開して互換性を維持する。
-         float value = j["startSize"];
-         startSize_ = Vector3(value, value, value);
-      }
+      startSize_ = JsonValue::ReadVector3(j.at("startSize"), startSize_);
    }
 
    if (j.contains("endSize")) {
-      if (j["endSize"].is_array()) {
-         auto arr = j["endSize"];
-         endSize_ = Vector3{arr[0], arr[1], arr[2]};
-      } else {
-         float value = j["endSize"];
-         endSize_ = Vector3(value, value, value);
-      }
+      endSize_ = JsonValue::ReadVector3(j.at("endSize"), endSize_);
    }
 }
 }

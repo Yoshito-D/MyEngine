@@ -1,4 +1,5 @@
 #include "GameEngine/Graphics/Renderer/Light/LightManager.h"
+#include <cstdint>
 #ifdef USE_IMGUI
 #include "imgui.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
@@ -142,7 +143,7 @@ void LightManager::Initialize() {
 //================================================================
 
 DirectionalLight* LightManager::CreateDirectionalLight(
-   const std::string& name, unsigned int color, const Vector3& direction, float intensity) {
+   const std::string& name, std::uint32_t color, const Vector3& direction, float intensity) {
    auto light = std::make_unique<DirectionalLight>();
    light->Create(color, direction, intensity);
    auto* ptr = light.get();
@@ -184,7 +185,7 @@ std::vector<std::string> LightManager::GetDirectionalLightNames() const {
 //================================================================
 
 PointLight* LightManager::CreatePointLight(
-   const std::string& name, unsigned int color, const Vector3& position, float intensity, float radius, float decay) {
+   const std::string& name, std::uint32_t color, const Vector3& position, float intensity, float radius, float decay) {
    auto light = std::make_unique<PointLight>();
    light->Create(color, position, intensity, radius, decay);
    auto* ptr = light.get();
@@ -225,7 +226,7 @@ std::vector<std::string> LightManager::GetPointLightNames() const {
 // スポットライト
 //================================================================
 
-SpotLight* LightManager::CreateSpotLight(const std::string& name, unsigned int color, const Vector3& position,
+SpotLight* LightManager::CreateSpotLight(const std::string& name, std::uint32_t color, const Vector3& position,
    float intensity, const Vector3& direction, float distance, float decay, float cosAngle, float cosFalloffStart) {
    auto light = std::make_unique<SpotLight>();
    light->Create(color, position, intensity, direction, distance, decay, cosAngle, cosFalloffStart);

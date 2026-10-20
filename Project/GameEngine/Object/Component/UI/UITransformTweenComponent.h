@@ -79,95 +79,10 @@ public:
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
-   Settings DescribeSettings() const {
-      Settings settings;
-      settings.animatePosition = animatePosition;
-      settings.animateScale = animateScale;
-      settings.animateRotation = animateRotation;
-      settings.startPosition = startPosition;
-      settings.endPosition = endPosition;
-      settings.startScale = startScale;
-      settings.endScale = endScale;
-      settings.startRotation = startRotation;
-      settings.endRotation = endRotation;
-      settings.delay = delay;
-      settings.duration = duration;
-      settings.playOnEnable = playOnEnable;
-      settings.playbackMode = playbackMode;
-      settings.easing = easing;
-      return settings;
-   }
+   Settings DescribeSettings() const;
 
    /// @brief 関連する設定を検証して一括適用する。保存値とInspectorもこの境界を通す。
-   void Configure(const Settings& requested) {
-      auto settings = requested;
-      [[maybe_unused]] const Settings defaults;
-
-      if (!std::isfinite(settings.startPosition.x)) {
-         settings.startPosition.x = defaults.startPosition.x;
-      }
-
-      if (!std::isfinite(settings.startPosition.y)) {
-         settings.startPosition.y = defaults.startPosition.y;
-      }
-
-      if (!std::isfinite(settings.endPosition.x)) {
-         settings.endPosition.x = defaults.endPosition.x;
-      }
-
-      if (!std::isfinite(settings.endPosition.y)) {
-         settings.endPosition.y = defaults.endPosition.y;
-      }
-
-      if (!std::isfinite(settings.startScale.x)) {
-         settings.startScale.x = defaults.startScale.x;
-      }
-
-      if (!std::isfinite(settings.startScale.y)) {
-         settings.startScale.y = defaults.startScale.y;
-      }
-
-      if (!std::isfinite(settings.endScale.x)) {
-         settings.endScale.x = defaults.endScale.x;
-      }
-
-      if (!std::isfinite(settings.endScale.y)) {
-         settings.endScale.y = defaults.endScale.y;
-      }
-
-      if (!std::isfinite(settings.startRotation)) {
-         settings.startRotation = defaults.startRotation;
-      }
-
-      if (!std::isfinite(settings.endRotation)) {
-         settings.endRotation = defaults.endRotation;
-      }
-
-      if (!std::isfinite(settings.delay)) {
-         settings.delay = defaults.delay;
-      }
-
-      if (!std::isfinite(settings.duration)) {
-         settings.duration = defaults.duration;
-      }
-
-      settings.duration = std::max(settings.duration, 0.001f);
-      settings.delay = std::max(settings.delay, 0.0f);
-      animatePosition = settings.animatePosition;
-      animateScale = settings.animateScale;
-      animateRotation = settings.animateRotation;
-      startPosition = settings.startPosition;
-      endPosition = settings.endPosition;
-      startScale = settings.startScale;
-      endScale = settings.endScale;
-      startRotation = settings.startRotation;
-      endRotation = settings.endRotation;
-      delay = settings.delay;
-      duration = settings.duration;
-      playOnEnable = settings.playOnEnable;
-      playbackMode = settings.playbackMode;
-      easing = settings.easing;
-   }
+   void Configure(const Settings& requested);
 
 private:
    bool animatePosition = true;

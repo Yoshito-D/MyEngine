@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Assets/Font/FontManager.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -36,7 +37,7 @@ GameEngine::UIAnchor ParseAnchor(const nlohmann::json& value, GameEngine::UIAnch
 
    const std::string name = value.get<std::string>();
 
-   for (int index = 0; index <= static_cast<int>(GameEngine::UIAnchor::BottomRight); ++index) {
+   for (std::int32_t index = 0; index <= static_cast<std::int32_t>(GameEngine::UIAnchor::BottomRight); ++index) {
       const auto anchor = static_cast<GameEngine::UIAnchor>(index);
 
       if (name == ToAnchorName(anchor)) {
@@ -259,7 +260,7 @@ void UITextComponent::DrawInspector() {
       ImGui::EndCombo();
    }
 
-   int fontSize = static_cast<int>(editedStyle.fontSize);
+   std::int32_t fontSize = static_cast<std::int32_t>(editedStyle.fontSize);
    ImGui::DragInt(ImGuiHelper::Localize({"文字サイズ", "Font Size"}), &fontSize, 1.0f, 1, 512);
    editedStyle.fontSize = static_cast<uint32_t>(std::max(fontSize, 1));
    ImGui::ColorEdit4(ImGuiHelper::Localize({"文字色", "Color"}), &editedStyle.color.x);
@@ -270,15 +271,15 @@ void UITextComponent::DrawInspector() {
 
    const char* anchorNames[] = {"Top Left", "Top Center", "Top Right", "Middle Left", "Middle Center", "Middle Right",
       "Bottom Left", "Bottom Center", "Bottom Right"};
-   int anchorIndex = static_cast<int>(editedStyle.screenAnchor);
+   std::int32_t anchorIndex = static_cast<std::int32_t>(editedStyle.screenAnchor);
 
    if (ImGui::Combo(ImGuiHelper::Localize({"画面アンカー", "Screen Anchor"}), &anchorIndex, anchorNames,
-          static_cast<int>(std::size(anchorNames)))) {
+          static_cast<std::int32_t>(std::size(anchorNames)))) {
       editedStyle.screenAnchor = static_cast<UIAnchor>(anchorIndex);
    }
 
    const char* alignmentNames[] = {"Left", "Center", "Right"};
-   int alignmentIndex = static_cast<int>(editedStyle.horizontalAlignment);
+   std::int32_t alignmentIndex = static_cast<std::int32_t>(editedStyle.horizontalAlignment);
 
    if (ImGui::Combo(ImGuiHelper::Localize({"水平揃え", "Horizontal Alignment"}), &alignmentIndex, alignmentNames, 3)) {
       editedStyle.horizontalAlignment = static_cast<TextHorizontalAlignment>(alignmentIndex);

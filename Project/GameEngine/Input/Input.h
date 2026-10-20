@@ -342,7 +342,7 @@ public:
    /// @param index ゲームパッド番号（通常0）
    /// @param deadZone デッドゾーンの値（0.0～1.0）
    /// @return 左スティックのベクトル
-   Vector2 GetLeftStick(uint32_t index, float deadZone = 0.24) const override;
+   Vector2 GetLeftStick(uint32_t index, float deadZone = 0.24f) const override;
 
    /// @brief ゲームパッドの右スティックの状態を取得
    /// @param index ゲームパッド番号（通常0)

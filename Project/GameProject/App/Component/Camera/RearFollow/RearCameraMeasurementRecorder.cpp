@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMeasurementRecorder.h"
+#include <cstdint>
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Framework/EngineContext.h"
@@ -28,7 +29,7 @@ void RearCameraMeasurementRecorder::MutateCameraState(GameEngine::CameraState&, 
 }
 
 /// @brief 検証条件名をファイル名として安全なASCIIへ変換する
-inline std::string SanitizeMeasurementName(const std::string& name) {
+std::string SanitizeMeasurementName(const std::string& name) {
    std::string sanitized;
    sanitized.reserve(name.size());
 
@@ -44,7 +45,7 @@ inline std::string SanitizeMeasurementName(const std::string& name) {
 }
 
 /// @brief 計測ファイル名へ付けるローカル時刻を返す
-inline std::string BuildMeasurementTimestamp() {
+std::string BuildMeasurementTimestamp() {
    const auto now = std::chrono::system_clock::now();
    const std::time_t time = std::chrono::system_clock::to_time_t(now);
    std::tm localTime{};

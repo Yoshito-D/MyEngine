@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/UI/UITransformTweenComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
@@ -78,7 +79,7 @@ nlohmann::json UITransformTweenComponent::Serialize() const {
       {"endPosition", {endPosition.x, endPosition.y}}, {"startScale", {startScale.x, startScale.y}},
       {"endScale", {endScale.x, endScale.y}}, {"startRotation", startRotation}, {"endRotation", endRotation},
       {"delay", delay}, {"duration", duration}, {"playOnEnable", playOnEnable},
-      {"playbackMode", static_cast<int>(playbackMode)}, {"easing", static_cast<int>(easing)}};
+      {"playbackMode", static_cast<std::int32_t>(playbackMode)}, {"easing", static_cast<std::int32_t>(easing)}};
 }
 
 void UITransformTweenComponent::Deserialize(const nlohmann::json& data) {
@@ -109,10 +110,11 @@ void UITransformTweenComponent::Deserialize(const nlohmann::json& data) {
    delay = std::max(data.value("delay", delay), 0.0f);
    duration = std::max(data.value("duration", duration), 0.0001f);
    playOnEnable = data.value("playOnEnable", playOnEnable);
-   playbackMode = static_cast<UIPlaybackMode>(std::clamp(data.value("playbackMode", static_cast<int>(playbackMode)),
-      static_cast<int>(UIPlaybackMode::Once), static_cast<int>(UIPlaybackMode::PingPong)));
-   easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<int>(easing)),
-      static_cast<int>(UIEasingType::Linear), static_cast<int>(UIEasingType::EaseOutBack)));
+   playbackMode =
+      static_cast<UIPlaybackMode>(std::clamp(data.value("playbackMode", static_cast<std::int32_t>(playbackMode)),
+         static_cast<std::int32_t>(UIPlaybackMode::Once), static_cast<std::int32_t>(UIPlaybackMode::PingPong)));
+   easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<std::int32_t>(easing)),
+      static_cast<std::int32_t>(UIEasingType::Linear), static_cast<std::int32_t>(UIEasingType::EaseOutBack)));
 
    if (playOnEnable) {
       Restart();
@@ -197,14 +199,14 @@ void UITransformTweenComponent::DrawInspector() {
    ImGui::DragFloat(ImGuiHelper::Localize({"遅延", "Delay"}), &delay, 0.01f, 0.0f);
    ImGui::DragFloat(ImGuiHelper::Localize({"時間", "Duration"}), &duration, 0.01f, 0.0001f);
    ImGui::Checkbox(ImGuiHelper::Localize({"有効化時に再生", "Play On Enable"}), &playOnEnable);
-   int mode = static_cast<int>(playbackMode);
+   std::int32_t mode = static_cast<std::int32_t>(playbackMode);
    const char* modes[] = {"Once", "Loop", "Ping Pong"};
 
    if (ImGui::Combo("Playback", &mode, modes, 3)) {
       playbackMode = static_cast<UIPlaybackMode>(mode);
    }
 
-   int easingIndex = static_cast<int>(easing);
+   std::int32_t easingIndex = static_cast<std::int32_t>(easing);
    const char* easings[] = {"Linear", "Ease In Out Sine", "Ease Out Cubic", "Ease Out Back"};
 
    if (ImGui::Combo("Easing", &easingIndex, easings, 4)) {
@@ -215,5 +217,98 @@ void UITransformTweenComponent::DrawInspector() {
    Configure(DescribeSettings());
 }
 #endif
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+UITransformTweenComponent::Settings UITransformTweenComponent::DescribeSettings() const {
+   Settings settings;
+   settings.animatePosition = animatePosition;
+   settings.animateScale = animateScale;
+   settings.animateRotation = animateRotation;
+   settings.startPosition = startPosition;
+   settings.endPosition = endPosition;
+   settings.startScale = startScale;
+   settings.endScale = endScale;
+   settings.startRotation = startRotation;
+   settings.endRotation = endRotation;
+   settings.delay = delay;
+   settings.duration = duration;
+   settings.playOnEnable = playOnEnable;
+   settings.playbackMode = playbackMode;
+   settings.easing = easing;
+   return settings;
+}
+
+void UITransformTweenComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.startPosition.x)) {
+      settings.startPosition.x = defaults.startPosition.x;
+   }
+
+   if (!std::isfinite(settings.startPosition.y)) {
+      settings.startPosition.y = defaults.startPosition.y;
+   }
+
+   if (!std::isfinite(settings.endPosition.x)) {
+      settings.endPosition.x = defaults.endPosition.x;
+   }
+
+   if (!std::isfinite(settings.endPosition.y)) {
+      settings.endPosition.y = defaults.endPosition.y;
+   }
+
+   if (!std::isfinite(settings.startScale.x)) {
+      settings.startScale.x = defaults.startScale.x;
+   }
+
+   if (!std::isfinite(settings.startScale.y)) {
+      settings.startScale.y = defaults.startScale.y;
+   }
+
+   if (!std::isfinite(settings.endScale.x)) {
+      settings.endScale.x = defaults.endScale.x;
+   }
+
+   if (!std::isfinite(settings.endScale.y)) {
+      settings.endScale.y = defaults.endScale.y;
+   }
+
+   if (!std::isfinite(settings.startRotation)) {
+      settings.startRotation = defaults.startRotation;
+   }
+
+   if (!std::isfinite(settings.endRotation)) {
+      settings.endRotation = defaults.endRotation;
+   }
+
+   if (!std::isfinite(settings.delay)) {
+      settings.delay = defaults.delay;
+   }
+
+   if (!std::isfinite(settings.duration)) {
+      settings.duration = defaults.duration;
+   }
+
+   settings.duration = std::max(settings.duration, 0.001f);
+   settings.delay = std::max(settings.delay, 0.0f);
+   animatePosition = settings.animatePosition;
+   animateScale = settings.animateScale;
+   animateRotation = settings.animateRotation;
+   startPosition = settings.startPosition;
+   endPosition = settings.endPosition;
+   startScale = settings.startScale;
+   endScale = settings.endScale;
+   startRotation = settings.startRotation;
+   endRotation = settings.endRotation;
+   delay = settings.delay;
+   duration = settings.duration;
+   playOnEnable = settings.playOnEnable;
+   playbackMode = settings.playbackMode;
+   easing = settings.easing;
+}
 
 } // namespace GameEngine

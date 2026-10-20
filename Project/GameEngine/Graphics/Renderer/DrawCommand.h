@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <d3d12.h>
 #include <vector>
 #include <functional>
@@ -180,7 +181,7 @@ public:
    virtual BlendMode GetBlendMode() const = 0;
 
    /// @brief 描画種別のソート優先度を取得（大きいほど先に描画）
-   virtual int GetTypePriority() const = 0;
+   virtual std::int32_t GetTypePriority() const = 0;
 
    /// @brief 透過ソート用のワールド座標を取得（取得不可の場合 nullopt）
    virtual std::optional<Vector3> GetSortPosition() const = 0;
@@ -205,22 +206,7 @@ public:
    BlendMode GetBlendMode() const override { return cmd_.blendMode; }
 
    /// @copydoc IDrawCommand::GetTypePriority
-   int GetTypePriority() const override {
-      switch (cmd_.type) {
-         case DrawCommandType::Model:
-            return 4;
-         case DrawCommandType::Sprite:
-            return 3;
-         case DrawCommandType::Text:
-            return 3;
-         case DrawCommandType::Particle:
-            return 2;
-         case DrawCommandType::Line:
-            return 1;
-         default:
-            return 0;
-      }
-   }
+   std::int32_t GetTypePriority() const override;
 
    /// @copydoc IDrawCommand::GetSortPosition
    std::optional<Vector3> GetSortPosition() const override;

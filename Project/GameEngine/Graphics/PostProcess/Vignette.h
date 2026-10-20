@@ -42,20 +42,11 @@ public:
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetIntensity(float intensity) {
-      intensity_ = intensity;
-      UpdateConstantBuffer();
-   }
+   void SetIntensity(float intensity);
 
-   void SetSoftness(float softness) {
-      softness_ = softness;
-      UpdateConstantBuffer();
-   }
+   void SetSoftness(float softness);
 
-   void SetRadius(float radius) {
-      radius_ = radius;
-      UpdateConstantBuffer();
-   }
+   void SetRadius(float radius);
 
 private:
    float intensity_ = 0.5f;

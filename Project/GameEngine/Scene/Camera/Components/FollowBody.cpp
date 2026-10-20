@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Scene/Camera/Components/FollowBody.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include <cmath>
@@ -19,17 +20,6 @@ const bool kRegistered =
       return camera.AddComponent<FollowBody>();
    });
 
-nlohmann::json SerializeVector3(const Vector3& value) {
-   return nlohmann::json::array({value.x, value.y, value.z});
-}
-
-Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
-   if (!data.is_array() || data.size() != 3) {
-      return fallback;
-   }
-
-   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
-}
 } // namespace
 
 void FollowBody::MutateCameraState(CameraState& state, float deltaTime) {
@@ -53,18 +43,19 @@ void FollowBody::MutateCameraState(CameraState& state, float deltaTime) {
 }
 
 nlohmann::json FollowBody::Serialize() const {
-   return nlohmann::json{{"offset", SerializeVector3(offset_)}, {"damping", SerializeVector3(damping_)}};
+   return nlohmann::json{{"offset", GameEngine::JsonValue::WriteVector3(offset_)},
+      {"damping", GameEngine::JsonValue::WriteVector3(damping_)}};
 }
 
 void FollowBody::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
    if (data.contains("offset")) {
-      offset_ = DeserializeVector3(data.at("offset"), offset_);
+      offset_ = GameEngine::JsonValue::ReadVector3(data.at("offset"), offset_);
    }
 
    if (data.contains("damping")) {
-      damping_ = DeserializeVector3(data.at("damping"), damping_);
+      damping_ = GameEngine::JsonValue::ReadVector3(data.at("damping"), damping_);
    }
 }
 

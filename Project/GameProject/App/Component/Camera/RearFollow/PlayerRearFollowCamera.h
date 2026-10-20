@@ -19,7 +19,7 @@ namespace App {
 ///       input_.gravityUp を角速度制限付きで補間する。
 ///       空中時は速度の反対方向へ徐々に補間する。
 ///       プレイヤーが加速すると FOV 拡大・カメラ後退距離増加で加速感を演出する。
-/// @details 外部入力と旧設定の互換性を管理し、各計算部品はVirtualCameraが所有・更新する。
+/// @details 外部入力と追従設定を管理し、各計算部品はVirtualCameraが所有・更新する。
 ///          設定値は一括検証して適用し、実行中の設定への直接アクセスを許可しない。
 class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent, private RearCameraSettings {
 public:
@@ -30,7 +30,7 @@ public:
    ~PlayerRearFollowCamera() override = default;
 
    /// @brief 設定・入力部品を同じBodyステージの計算部品より先に配置する。
-   int GetExecutionOrder() const override { return -1000; }
+   std::int32_t GetExecutionOrder() const override { return -1000; }
 
    /// @brief 計算に必要な全コンポーネントが所有カメラ上に揃っているかを返す。
    bool HasRequiredComponents() const;
@@ -80,17 +80,12 @@ public:
    void SetPlayerSpeed(float speed) { input_.playerSpeed = speed; }
 
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
-   void SetDriftDistanceScale(float scale) {
-      input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
-   }
+   void SetDriftDistanceScale(float scale);
 
    /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
    /// @param cameraHeightOffset カメラ高さへ加える量。正の値はUp方向、負の値は下方向。
    /// @param lookTargetHeightOffset 注視点高さへ加える量。正の値はUp方向、負の値は下方向。
-   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
-      input_.driftCameraHeightOffset = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
-      input_.driftLookTargetHeightOffset = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
-   }
+   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset);
 
    /// @brief プレイヤーの現在速度ベクトルを設定する（空中カメラ方向補間に使用）
    /// @param velocity ワールド空間の速度
@@ -158,7 +153,7 @@ public:
 #endif
 
 protected:
-   /// @brief 旧シーンでも必要な計算・表示コンポーネントを所有カメラへ追加する。
+   /// @brief 必要な計算・表示コンポーネントを所有カメラへ追加する。
    void OnAttach() override;
 
 private:

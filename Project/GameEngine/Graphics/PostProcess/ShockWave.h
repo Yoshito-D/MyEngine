@@ -44,26 +44,13 @@ public:
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定
-   void SetCenter(float x, float y) {
-      centerX_ = x;
-      centerY_ = y;
-      UpdateConstantBuffer();
-   }
+   void SetCenter(float x, float y);
 
-   void SetStrength(float strength) {
-      distortionStrength_ = strength;
-      UpdateConstantBuffer();
-   }
+   void SetStrength(float strength);
 
-   void SetWaveRadius(float radius) {
-      waveRadius_ = radius;
-      UpdateConstantBuffer();
-   }
+   void SetWaveRadius(float radius);
 
-   void SetWaveThickness(float thickness) {
-      waveThickness_ = thickness;
-      UpdateConstantBuffer();
-   }
+   void SetWaveThickness(float thickness);
 
 private:
    float centerX_ = 0.5f;

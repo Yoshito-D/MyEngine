@@ -34,27 +34,7 @@ void Outline::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    // リサイズで1テクセル幅が変化し得るため、描画直前にrenderTarget_の現在サイズから定数を再計算する。
    UpdateConstantBuffer();
 
-   // 深度はSRVとして読むためDSVを同時束縛せず、色出力だけをping-pong先へ書き込む。
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // Outline専用ルートシグネチャのCBV・カラーSRV・深度SRVは、物理番号ではなく解決済みスロットを使う。
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-   cmdList->SetGraphicsRootDescriptorTable(GetDepthTextureRootSlot(), depthSRV);
-
-   // 頂点入力のないフルスクリーントライアングルで全ピクセルの3x3深度近傍を評価する。
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get(), GetDepthTextureRootSlot(), depthSRV);
 }
 
 /// @brief 輪郭の合成色を設定してGPU定数へ即時反映する。

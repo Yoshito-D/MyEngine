@@ -45,32 +45,20 @@ public:
    /// @brief エッジ検出に必要な最小絶対輝度差を設定する。
    /// @note 値はCPU側でクランプされない。
    /// @param threshold 絶対コントラストしきい値
-   void SetContrastThreshold(float threshold) {
-      contrastThreshold_ = threshold;
-      UpdateConstantBuffer();
-   }
+   void SetContrastThreshold(float threshold);
 
    /// @brief 周辺最大輝度に対する相対コントラストしきい値を設定する。
    /// @note 値はCPU側でクランプされない。
    /// @param threshold 相対コントラストしきい値
-   void SetRelativeThreshold(float threshold) {
-      relativeThreshold_ = threshold;
-      UpdateConstantBuffer();
-   }
+   void SetRelativeThreshold(float threshold);
 
    /// @brief 元色と平滑化色の補間率を設定する。
    /// @param blending 補間率。シェーダー側で0～1へ飽和される
-   void SetSubpixelBlending(float blending) {
-      subpixelBlending_ = blending;
-      UpdateConstantBuffer();
-   }
+   void SetSubpixelBlending(float blending);
 
    /// @brief 推定したエッジ方向へ許可する最大探索距離を設定する。
    /// @param steps 最大距離。シェーダー側で1以上として扱われる
-   void SetEdgeSearchSteps(float steps) {
-      edgeSearchSteps_ = steps;
-      UpdateConstantBuffer();
-   }
+   void SetEdgeSearchSteps(float steps);
 
 private:
    float contrastThreshold_ = 0.0312f;

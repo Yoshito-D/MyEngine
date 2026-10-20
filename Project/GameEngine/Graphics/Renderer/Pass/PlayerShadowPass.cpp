@@ -625,3 +625,11 @@ void PlayerShadowPass::Execute(FrameContext& ctx) {
 }
 
 } // namespace GameEngine
+
+namespace GameEngine {
+
+D3D12_GPU_DESCRIPTOR_HANDLE PlayerShadowPass::GetMaskSRVHandleGPU() const {
+   return maskReady_ ? maskSrvHandle_ : D3D12_GPU_DESCRIPTOR_HANDLE{};
+}
+
+} // namespace GameEngine

@@ -166,7 +166,7 @@ nlohmann::json RaceGoalDirectionHUDComponent::Serialize() const {
 void RaceGoalDirectionHUDComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   // キーごとの部分更新にして、旧シーンで未保存の参照 ID はクラス既定値のまま利用する。
+   // キーごとの部分更新にして、未指定の参照IDは現在値を維持する。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
    }

@@ -119,3 +119,7 @@ void BgmPlayer::StopImmediate() {
    sceneChanging_ = false;
 }
 }
+
+#ifdef MYPROJECT_NON_RELEASE
+
+#endif

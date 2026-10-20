@@ -131,9 +131,7 @@ public:
    const PipelineReflectionMetadata* GetPipelineReflectionMetadata(const std::string& name) const;
 
    /// @brief すべてのパイプライン反射メタデータを取得
-   std::unordered_map<std::string, PipelineReflectionMetadata> GetAllPipelineReflectionMetadata() const {
-      return pipelineReflectionMetadata_;
-   }
+   std::unordered_map<std::string, PipelineReflectionMetadata> GetAllPipelineReflectionMetadata() const;
 
    /// @brief 全パイプラインの検証結果サマリーを取得（テスト足場）
    ValidationSummary GetValidationSummary() const;

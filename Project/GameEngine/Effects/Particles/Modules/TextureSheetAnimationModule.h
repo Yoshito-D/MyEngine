@@ -28,10 +28,7 @@ public:
 
    /// @brief シートの横分割数を1以上に補正して設定する
    /// @param value 横方向のタイル数
-   void SetTilesX(uint32_t value) {
-      tilesX_ = std::max(value, 1u);
-      ClampSettings();
-   }
+   void SetTilesX(uint32_t value);
 
    /// @brief シートの横分割数を取得する
    /// @return 横方向のタイル数
@@ -39,10 +36,7 @@ public:
 
    /// @brief シートの縦分割数を1以上に補正して設定する
    /// @param value 縦方向のタイル数
-   void SetTilesY(uint32_t value) {
-      tilesY_ = std::max(value, 1u);
-      ClampSettings();
-   }
+   void SetTilesY(uint32_t value);
 
    /// @brief シートの縦分割数を取得する
    /// @return 縦方向のタイル数
@@ -66,10 +60,7 @@ public:
 
    /// @brief 開始位置から再生するフレーム数を設定する
    /// @param value フレーム数。0なら開始位置以降の全フレーム
-   void SetFrameCount(uint32_t value) {
-      frameCount_ = value;
-      ClampSettings();
-   }
+   void SetFrameCount(uint32_t value);
 
    /// @brief 明示された再生フレーム数を取得する
    /// @return フレーム数。0なら残り全フレーム
@@ -85,10 +76,7 @@ public:
 
    /// @brief 単一行モードで使用する固定行を設定する
    /// @param value 0始まりの行番号。シート範囲内へ補正される
-   void SetRowIndex(uint32_t value) {
-      rowIndex_ = value;
-      ClampSettings();
-   }
+   void SetRowIndex(uint32_t value);
 
    /// @brief 単一行モードの固定行を取得する
    /// @return 0始まりの行番号
@@ -96,10 +84,7 @@ public:
 
    /// @brief 再生を始めるフレームを設定する
    /// @param value 0始まりのフレーム番号。再生範囲内へ循環される
-   void SetStartFrame(uint32_t value) {
-      startFrame_ = value;
-      ClampSettings();
-   }
+   void SetStartFrame(uint32_t value);
 
    /// @brief 再生開始フレームを取得する
    /// @return 0始まりのフレーム番号
@@ -107,10 +92,7 @@ public:
 
    /// @brief シート全体または単一行の再生モードを設定する
    /// @param value 使用する再生モード。不明値はシート全体へ補正される
-   void SetAnimationMode(AnimationMode value) {
-      animationMode_ = value == AnimationMode::SingleRow ? AnimationMode::SingleRow : AnimationMode::WholeSheet;
-      ClampSettings();
-   }
+   void SetAnimationMode(AnimationMode value);
 
    /// @brief 現在の再生モードを取得する
    /// @return シート全体または単一行モード

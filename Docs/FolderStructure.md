@@ -123,5 +123,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Tools\FilterAdjust.ps1
 ## エディタの所有と編集経路
 
 `GameEngine/Scene/SceneObjectStore`はランタイムとエディタ共通の生成・所有・復元を担当する。
+所有関係とversion 7の保存形式は[SceneSnapshots](SceneSnapshots.md)を参照。
 `GameEngine/Editor`はアセット一覧、パネル、参照欄、編集履歴を担当する。
 詳細と操作・制約は[EditorWorkflow](../Project/Docs/Editor/EditorWorkflow.md)を参照。

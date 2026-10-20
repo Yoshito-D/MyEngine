@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Effects/Particles/Modules/ShapeModule.h"
 #include "GameEngine/Assets/Model/ModelAsset.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
@@ -69,7 +70,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
             localOffset.y += RandomRange(-boxSize_.y * 0.5f, boxSize_.y * 0.5f) * scale.y;
             localOffset.z += RandomRange(-boxSize_.z * 0.5f, boxSize_.z * 0.5f) * scale.z;
          } else {
-            int face = static_cast<int>(RandomRange(0.0f, 6.0f));
+            std::int32_t face = static_cast<std::int32_t>(RandomRange(0.0f, 6.0f));
 
             switch (face) {
                case 0:
@@ -261,8 +262,8 @@ nlohmann::json ShapeModule::ToJson() const {
    nlohmann::json j;
 
    j["enabled"] = enabled_;
-   j["shapeType"] = static_cast<int>(shapeType_);
-   j["emitFrom"] = static_cast<int>(emitFrom_);
+   j["shapeType"] = static_cast<std::int32_t>(shapeType_);
+   j["emitFrom"] = static_cast<std::int32_t>(emitFrom_);
    j["radius"] = radius_;
    j["angle"] = angle_;
    j["length"] = length_;
@@ -305,11 +306,11 @@ void ShapeModule::FromJson(const nlohmann::json& j) {
    }
 
    if (j.contains("shapeType")) {
-      shapeType_ = static_cast<ShapeType>(j["shapeType"].get<int>());
+      shapeType_ = static_cast<ShapeType>(j["shapeType"].get<std::int32_t>());
    }
 
    if (j.contains("emitFrom")) {
-      emitFrom_ = static_cast<EmitFrom>(j["emitFrom"].get<int>());
+      emitFrom_ = static_cast<EmitFrom>(j["emitFrom"].get<std::int32_t>());
    }
 
    if (j.contains("radius")) {
@@ -349,7 +350,7 @@ void ShapeModule::FromJson(const nlohmann::json& j) {
    if (j.contains("rotation")) {
       auto arr = j["rotation"];
 
-      // JSONのEuler値は入力互換用に読み、内部の正本はQuaternionへ統一する。
+      // 保存用Euler角から計算用のQuaternionへ変換する。
       transform_.SetRotationQuaternion(Vector3ToQuaternion(Vector3(arr[0], arr[1], arr[2])));
    }
 
@@ -359,3 +360,30 @@ void ShapeModule::FromJson(const nlohmann::json& j) {
    }
 }
 }
+
+namespace GameEngine {
+
+void ShapeModule::SetPosition(const Vector3& position) {
+   auto pose = transform_;
+   pose.translation = position;
+   SetTransform(pose);
+}
+
+void ShapeModule::SetScale(const Vector3& scale) {
+   auto pose = transform_;
+   pose.scale = scale;
+   SetTransform(pose);
+}
+
+void ShapeModule::SetTransform(const Transform& transform) {
+   if (transform.IsFinite()) {
+      transform_ = transform;
+   }
+}
+
+void ShapeModule::SetSkinnedMeshSource(const ModelAsset* modelAsset, const SkinCluster* skinCluster) {
+   skinnedMeshModel_ = modelAsset;
+   skinnedMeshSkinCluster_ = skinCluster;
+}
+
+} // namespace GameEngine

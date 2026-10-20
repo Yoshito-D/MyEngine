@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameEngine/Math/VectorMath.h"
 
 #ifdef USE_IMGUI
@@ -16,22 +17,22 @@ namespace GameEngine {
 namespace ImGuiHelper {
 
 /// @brief プロパティUIで使用する既定のラベル列幅
-inline constexpr float kDefaultColumnWidth = 120.0f;
+constexpr float kDefaultColumnWidth = 120.0f;
 
 /// @brief 1行テキスト入力で確保する既定のバイト数
-inline constexpr size_t kDefaultTextBufferSize = 256;
+constexpr size_t kDefaultTextBufferSize = 256;
 
 /// @brief 複数行テキスト入力で確保する既定のバイト数
-inline constexpr size_t kDefaultMultilineTextBufferSize = 1024;
+constexpr size_t kDefaultMultilineTextBufferSize = 1024;
 
 /// @brief パス入力で確保する既定のバイト数
-inline constexpr size_t kDefaultPathBufferSize = 512;
+constexpr size_t kDefaultPathBufferSize = 512;
 
 /// @brief 複数行テキスト入力欄の既定高さ
-inline constexpr float kDefaultMultilineTextHeight = 80.0f;
+constexpr float kDefaultMultilineTextHeight = 80.0f;
 
 /// @brief 利用可能な横幅全体を使うことを表すImGui幅指定
-inline constexpr float kFillAvailableWidth = -1.0f;
+constexpr float kFillAvailableWidth = -1.0f;
 
 // 言語・ローカライズ --------------------------------------------------------
 enum class EditorLanguage {
@@ -75,8 +76,8 @@ void EndSection();
 // 基本プロパティ操作 ----------------------------------------------------------
 bool DrawButton(const std::string& label, const std::string& buttonLabel, float columnWidth = kDefaultColumnWidth);
 bool DrawCheckbox(const std::string& label, bool& value, float columnWidth = kDefaultColumnWidth);
-bool DrawIntControl(const std::string& label, int& value, int resetValue = 0, float columnWidth = kDefaultColumnWidth,
-   float speed = 1.0f, int minValue = 0, int maxValue = 0);
+bool DrawIntControl(const std::string& label, std::int32_t& value, std::int32_t resetValue = 0,
+   float columnWidth = kDefaultColumnWidth, float speed = 1.0f, std::int32_t minValue = 0, std::int32_t maxValue = 0);
 
 // 数値・ベクトル操作 ----------------------------------------------------------
 // Unity風に、ラベル列と入力列を分けて、小さなリセットボタンを入力の横に置きます。
@@ -123,9 +124,9 @@ bool DrawMultilineText(const std::string& label, std::string& text, size_t buffe
    float columnWidth = kDefaultColumnWidth, float height = kDefaultMultilineTextHeight);
 
 // ドロップダウン・列挙値操作 --------------------------------------------------
-bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<std::string>& items,
+bool DrawCombo(const std::string& label, std::int32_t& currentIndex, const std::vector<std::string>& items,
    float columnWidth = kDefaultColumnWidth);
-bool DrawCombo(const std::string& label, int& currentIndex, const std::vector<const char*>& items,
+bool DrawCombo(const std::string& label, std::int32_t& currentIndex, const std::vector<const char*>& items,
    float columnWidth = kDefaultColumnWidth);
 bool DrawLanguageCombo(const std::string& label, EditorLanguage& language, float columnWidth = kDefaultColumnWidth);
 
@@ -154,9 +155,9 @@ bool DrawEnumCombo(const std::string& label, Enum& value, const std::vector<std:
    std::vector<std::string> labels;
    labels.reserve(items.size());
 
-   int currentIndex = 0;
+   std::int32_t currentIndex = 0;
 
-   for (int i = 0; i < static_cast<int>(items.size()); ++i) {
+   for (std::int32_t i = 0; i < static_cast<std::int32_t>(items.size()); ++i) {
       labels.emplace_back(items[i].second);
 
       if (items[i].first == value) {

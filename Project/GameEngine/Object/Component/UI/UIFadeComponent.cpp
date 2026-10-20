@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/UI/UIFadeComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
@@ -74,8 +75,8 @@ void UIFadeComponent::Restart() {
 
 nlohmann::json UIFadeComponent::Serialize() const {
    return nlohmann::json{{"startOpacity", startOpacity}, {"endOpacity", endOpacity}, {"delay", delay},
-      {"duration", duration}, {"playOnEnable", playOnEnable}, {"playbackMode", static_cast<int>(playbackMode)},
-      {"easing", static_cast<int>(easing)}};
+      {"duration", duration}, {"playOnEnable", playOnEnable}, {"playbackMode", static_cast<std::int32_t>(playbackMode)},
+      {"easing", static_cast<std::int32_t>(easing)}};
 }
 
 void UIFadeComponent::Deserialize(const nlohmann::json& data) {
@@ -86,10 +87,11 @@ void UIFadeComponent::Deserialize(const nlohmann::json& data) {
    delay = std::max(data.value("delay", delay), 0.0f);
    duration = std::max(data.value("duration", duration), 0.0001f);
    playOnEnable = data.value("playOnEnable", playOnEnable);
-   playbackMode = static_cast<UIPlaybackMode>(std::clamp(data.value("playbackMode", static_cast<int>(playbackMode)),
-      static_cast<int>(UIPlaybackMode::Once), static_cast<int>(UIPlaybackMode::PingPong)));
-   easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<int>(easing)),
-      static_cast<int>(UIEasingType::Linear), static_cast<int>(UIEasingType::EaseOutBack)));
+   playbackMode =
+      static_cast<UIPlaybackMode>(std::clamp(data.value("playbackMode", static_cast<std::int32_t>(playbackMode)),
+         static_cast<std::int32_t>(UIPlaybackMode::Once), static_cast<std::int32_t>(UIPlaybackMode::PingPong)));
+   easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<std::int32_t>(easing)),
+      static_cast<std::int32_t>(UIEasingType::Linear), static_cast<std::int32_t>(UIEasingType::EaseOutBack)));
 
    if (playOnEnable) {
       Restart();
@@ -133,14 +135,14 @@ void UIFadeComponent::DrawInspector() {
    ImGui::DragFloat(ImGuiHelper::Localize({"遅延", "Delay"}), &delay, 0.01f, 0.0f);
    ImGui::DragFloat(ImGuiHelper::Localize({"時間", "Duration"}), &duration, 0.01f, 0.0001f);
    ImGui::Checkbox(ImGuiHelper::Localize({"有効化時に再生", "Play On Enable"}), &playOnEnable);
-   int mode = static_cast<int>(playbackMode);
+   std::int32_t mode = static_cast<std::int32_t>(playbackMode);
    const char* modes[] = {"Once", "Loop", "Ping Pong"};
 
    if (ImGui::Combo("Playback", &mode, modes, 3)) {
       playbackMode = static_cast<UIPlaybackMode>(mode);
    }
 
-   int easingIndex = static_cast<int>(easing);
+   std::int32_t easingIndex = static_cast<std::int32_t>(easing);
    const char* easings[] = {"Linear", "Ease In Out Sine", "Ease Out Cubic", "Ease Out Back"};
 
    if (ImGui::Combo("Easing", &easingIndex, easings, 4)) {
@@ -151,5 +153,54 @@ void UIFadeComponent::DrawInspector() {
    Configure(DescribeSettings());
 }
 #endif
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+UIFadeComponent::Settings UIFadeComponent::DescribeSettings() const {
+   Settings settings;
+   settings.startOpacity = startOpacity;
+   settings.endOpacity = endOpacity;
+   settings.delay = delay;
+   settings.duration = duration;
+   settings.playOnEnable = playOnEnable;
+   settings.playbackMode = playbackMode;
+   settings.easing = easing;
+   return settings;
+}
+
+void UIFadeComponent::Configure(const Settings& requested) {
+   auto settings = requested;
+   [[maybe_unused]] const Settings defaults;
+
+   if (!std::isfinite(settings.startOpacity)) {
+      settings.startOpacity = defaults.startOpacity;
+   }
+
+   if (!std::isfinite(settings.endOpacity)) {
+      settings.endOpacity = defaults.endOpacity;
+   }
+
+   if (!std::isfinite(settings.delay)) {
+      settings.delay = defaults.delay;
+   }
+
+   if (!std::isfinite(settings.duration)) {
+      settings.duration = defaults.duration;
+   }
+
+   settings.startOpacity = std::clamp(settings.startOpacity, 0.0f, 1.0f);
+   settings.endOpacity = std::clamp(settings.endOpacity, 0.0f, 1.0f);
+   settings.duration = std::max(settings.duration, 0.001f);
+   settings.delay = std::max(settings.delay, 0.0f);
+   startOpacity = settings.startOpacity;
+   endOpacity = settings.endOpacity;
+   delay = settings.delay;
+   duration = settings.duration;
+   playOnEnable = settings.playOnEnable;
+   playbackMode = settings.playbackMode;
+   easing = settings.easing;
+}
 
 } // namespace GameEngine

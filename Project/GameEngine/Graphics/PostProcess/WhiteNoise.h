@@ -94,35 +94,19 @@ public:
 
    /// @brief 手続き的ノイズの密度を設定する。
    /// @param value UV空間に配置するノイズセル数。
-   void SetNoiseDensity(float value) {
-      auto params = params_;
-      params.noiseDensity = value;
-      SetParams(params);
-   }
+   void SetNoiseDensity(float value);
 
    /// @brief シードの変更頻度を設定する。
    /// @param value 1秒あたりのランダムパターン変更回数。
-   void SetSeedChangeRate(float value) {
-      auto params = params_;
-      params.seedChangeRate = value;
-      SetParams(params);
-   }
+   void SetSeedChangeRate(float value);
 
    /// @brief ノイズセルの選択に使用するしきい値を設定する。
    /// @param value 0.0～1.0のしきい値。
-   void SetNoiseThreshold(float value) {
-      auto params = params_;
-      params.noiseThreshold = value;
-      SetParams(params);
-   }
+   void SetNoiseThreshold(float value);
 
    /// @brief ノイズ強度を設定する。
    /// @param value 0.0～1.0の強度倍率。
-   void SetNoiseIntensity(float value) {
-      auto params = params_;
-      params.noiseIntensity = value;
-      SetParams(params);
-   }
+   void SetNoiseIntensity(float value);
 
 private:
    WhiteNoiseParams params_;

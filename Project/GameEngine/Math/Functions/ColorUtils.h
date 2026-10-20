@@ -10,6 +10,9 @@ namespace GameEngine {
 /// @return 変換後のRGBAカラー
 Vector4 ConvertUIntToColor(uint32_t color);
 
+/// @brief パックされたRGBA色を0から1の係数で線形補間する。
+uint32_t LerpRGBAColor(uint32_t colorA, uint32_t colorB, float t);
+
 /// @brief 2つのRGBAカラーをランダムに線形補間
 /// @param colorA 最初のRGBAカラー
 /// @param colorB 2番目のRGBAカラー

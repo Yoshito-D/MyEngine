@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Graphics/Device/ResourceHelper.h"
@@ -15,6 +16,48 @@
 #include <cmath>
 
 namespace GameEngine {
+
+template <class Module> bool ParticleSystem::ApplyModuleConfiguration(Module& target, const Module& configuration) {
+   const auto settings = configuration.ToJson();
+
+   if (!HasFiniteSettings(settings)) {
+      return false;
+   }
+
+   if constexpr (std::is_same_v<Module, MainModule>) {
+      if (configuration.GetMaxParticles() == 0 || configuration.GetMaxParticles() > kMaxParticles ||
+          configuration.GetDuration() < 0.0f) {
+         return false;
+      }
+   }
+
+   const auto before = target.ToJson();
+
+   if (before == settings) {
+      return true;
+   }
+
+   if constexpr (std::is_same_v<Module, EmissionModule>) {
+      // 放出率・有効状態の編集では進行済みカーソルを保持し、スケジュール変更時だけ再構築する。
+      if (before.at("bursts") != settings.at("bursts")) {
+         target.ReplaceBurstSchedule(configuration.GetBursts());
+      }
+
+      target.SetEnabled(configuration.IsEnabled());
+      target.SetRateOverTime(configuration.GetRateOverTime());
+      target.SetRateOverDistance(configuration.GetRateOverDistance());
+   } else if constexpr (std::is_same_v<Module, ShapeModule>) {
+      return target.ApplyConfiguration(configuration);
+   } else if constexpr (std::is_same_v<Module, ParticleMeshModule>) {
+      // 編集コピーのdirty状態は信用せず、所有するメッシュの再構築を要求する。
+      target.FromJson(settings);
+   } else {
+      // その他のモジュールは設定値だけを持つため、保存形式へ往復させずに適用する。
+      target = configuration;
+   }
+
+   return true;
+}
 
 std::vector<ParticleSystem*> ParticleSystem::sRegisteredParticleSystems_{};
 std::vector<ParticleSystem::PendingSubEmitterEvent> ParticleSystem::sPendingSubEmitterEvents_{};
@@ -35,7 +78,7 @@ bool sIsInitialized_ = false;
 // 全Particle Compute Shaderのnumthreadsと一致させ、Dispatch過不足を防ぐ。
 constexpr uint32_t kParticleComputeThreadGroupSize = 64;
 constexpr uint32_t kInvalidGpuParticleIndex = UINT_MAX;
-constexpr int kJsonIndentSize = 4;
+constexpr std::int32_t kJsonIndentSize = 4;
 
 Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
    ID3D12Device* device, size_t size, D3D12_RESOURCE_FLAGS flags) {
@@ -130,6 +173,9 @@ void ParticleSystem::RebuildParticleMesh() {
 }
 
 ParticleSystem::ParticleSystem() {
+   // リソース生成より先に未割当値を設定し、失敗時の解放でも有効なインデックスと区別する。
+   gpuDescriptorIndices_.fill(UINT_MAX);
+
    quadMesh_ = std::make_unique<Mesh>();
    material_ = std::make_unique<ParticleMaterial>();
 
@@ -1286,8 +1332,8 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    }
 #endif
    gpuSettingsData_->cameraForward = Vector4(cameraForward.x, cameraForward.y, cameraForward.z, simulationDeltaTime);
-   const int billboardType = modelAsset_ ? static_cast<int>(RendererModule::BillboardType::None)
-                                         : static_cast<int>(rendererModule_->GetBillboardType());
+   const std::int32_t billboardType = modelAsset_ ? static_cast<std::int32_t>(RendererModule::BillboardType::None)
+                                                  : static_cast<std::int32_t>(rendererModule_->GetBillboardType());
    gpuSettingsData_->renderParams = Vector4(static_cast<float>(billboardType), rendererModule_->GetSpeedScale(),
       rendererModule_->GetLengthScale(), rendererModule_->IsVelocityStretchEnabled() ? 1.0f : 0.0f);
    gpuSettingsData_->cameraFadeParams = Vector4(rendererModule_->IsCameraFadeEnabled() ? 1.0f : 0.0f,
@@ -2079,7 +2125,7 @@ nlohmann::json ParticleSystem::ToJson() const {
 
    // ブレンドモード
    if (material_ && material_->GetBlendMode().has_value()) {
-      j["blendMode"] = static_cast<int>(material_->GetBlendMode().value());
+      j["blendMode"] = static_cast<std::int32_t>(material_->GetBlendMode().value());
    } else {
       j["blendMode"] = nullptr;
    }
@@ -2200,7 +2246,7 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
 
    // ブレンドモード
    if (j.contains("blendMode") && !j["blendMode"].is_null() && material_) {
-      material_->SetBlendMode(static_cast<BlendMode>(j["blendMode"].get<int>()));
+      material_->SetBlendMode(static_cast<BlendMode>(j["blendMode"].get<std::int32_t>()));
    } else if (material_) {
       material_->SetBlendMode(std::nullopt);
    }
@@ -2210,17 +2256,15 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
       usePostProcess_ = j["usePostProcess"].get<bool>();
    }
 
-   // 旧gpuSimulation値は互換性のため読み飛ばす。シミュレーション経路は常にGPUで固定する。
    if (j.contains("subEmitters")) {
       try {
          const auto& data = j.at("subEmitters");
          auto settings = GetSubEmitterSettings();
 
          // 負値や巨大なJSON整数をuint32_tへ変換する前に範囲を確認する。
-         const bool validEventLimit =
-            !data.contains("maxEventsPerFrame") ||
-            (data.at("maxEventsPerFrame").is_number_integer() && data.at("maxEventsPerFrame").get<double>() >= 1.0 &&
-               data.at("maxEventsPerFrame").get<double>() <= 1024.0);
+         const bool validEventLimit = !data.contains("maxEventsPerFrame") ||
+                                      (data.at("maxEventsPerFrame").is_number_integer() &&
+                                         data.at("maxEventsPerFrame") >= 1 && data.at("maxEventsPerFrame") <= 1024);
 
          if (data.contains("enabled")) {
             settings.enabled = data.at("enabled").get<bool>();
@@ -2304,158 +2348,41 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
    }
 
    // 各モジュールのFromJson()を呼び出し
-   if (j.contains("mainModule") && mainModule_) {
-      auto configuration = *mainModule_;
-      configuration.FromJson(j["mainModule"]);
+   auto readModule = [this, &j](const char* key, auto* module) {
+      if (!module || !j.contains(key)) return;
+
+      auto configuration = *module;
+      configuration.FromJson(j.at(key));
 
       if (!ConfigureModule(configuration)) {
          Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
       }
-   }
+   };
 
-   if (j.contains("emissionModule") && emissionModule_) {
-      auto configuration = *emissionModule_;
-      configuration.FromJson(j["emissionModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("shapeModule") && shapeModule_) {
-      auto configuration = *shapeModule_;
-      configuration.FromJson(j["shapeModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("velocityOverLifetimeModule") && velocityOverLifetimeModule_) {
-      auto configuration = *velocityOverLifetimeModule_;
-      configuration.FromJson(j["velocityOverLifetimeModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("limitVelocityModule") && limitVelocityModule_) {
-      auto configuration = *limitVelocityModule_;
-      configuration.FromJson(j["limitVelocityModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("forceOverLifetimeModule") && forceOverLifetimeModule_) {
-      auto configuration = *forceOverLifetimeModule_;
-      configuration.FromJson(j["forceOverLifetimeModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("colorOverLifetimeModule") && colorOverLifetimeModule_) {
-      auto configuration = *colorOverLifetimeModule_;
-      configuration.FromJson(j["colorOverLifetimeModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("sizeOverLifetimeModule") && sizeOverLifetimeModule_) {
-      auto configuration = *sizeOverLifetimeModule_;
-      configuration.FromJson(j["sizeOverLifetimeModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("rotationOverLifetimeModule") && rotationOverLifetimeModule_) {
-      auto configuration = *rotationOverLifetimeModule_;
-      configuration.FromJson(j["rotationOverLifetimeModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("noiseModule") && noiseModule_) {
-      auto configuration = *noiseModule_;
-      configuration.FromJson(j["noiseModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("uvTransformModule") && uvTransformModule_) {
-      auto configuration = *uvTransformModule_;
-      configuration.FromJson(j["uvTransformModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("textureSheetAnimationModule") && textureSheetAnimationModule_) {
-      auto configuration = *textureSheetAnimationModule_;
-      configuration.FromJson(j["textureSheetAnimationModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("rendererModule") && rendererModule_) {
-      auto configuration = *rendererModule_;
-      configuration.FromJson(j["rendererModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("trailModule") && trailModule_) {
-      auto configuration = *trailModule_;
-      configuration.FromJson(j["trailModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   } else if (j.contains("rendererModule") && j["rendererModule"].contains("ribbonEnabled") && trailModule_) {
-      // 旧設定ではトレイル項目がRendererModule内に保存されていた。
-      auto configuration = *trailModule_;
-      configuration.FromJson(j["rendererModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
-
-   if (j.contains("particleMeshModule") && particleMeshModule_) {
-      auto configuration = *particleMeshModule_;
-      configuration.FromJson(j["particleMeshModule"]);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   } else if (j.contains("rendererModule") && particleMeshModule_) {
-      // 旧RendererModuleのenabledはメッシュ有効状態ではないため引き継がない。
-      nlohmann::json legacyMeshSettings = j["rendererModule"];
-      legacyMeshSettings.erase("enabled");
-      particleMeshModule_->SetEnabled(true);
-      auto configuration = *particleMeshModule_;
-      configuration.FromJson(legacyMeshSettings);
-
-      if (!ConfigureModule(configuration)) {
-         Logger::Warning("[ParticleSystem] Invalid module settings; keeping the current configuration.");
-      }
-   }
+   readModule("mainModule", mainModule_.get());
+   readModule("emissionModule", emissionModule_.get());
+   readModule("shapeModule", shapeModule_.get());
+   readModule("velocityOverLifetimeModule", velocityOverLifetimeModule_.get());
+   readModule("limitVelocityModule", limitVelocityModule_.get());
+   readModule("forceOverLifetimeModule", forceOverLifetimeModule_.get());
+   readModule("colorOverLifetimeModule", colorOverLifetimeModule_.get());
+   readModule("sizeOverLifetimeModule", sizeOverLifetimeModule_.get());
+   readModule("rotationOverLifetimeModule", rotationOverLifetimeModule_.get());
+   readModule("noiseModule", noiseModule_.get());
+   readModule("uvTransformModule", uvTransformModule_.get());
+   readModule("textureSheetAnimationModule", textureSheetAnimationModule_.get());
+   readModule("rendererModule", rendererModule_.get());
+   readModule("trailModule", trailModule_.get());
+   readModule("particleMeshModule", particleMeshModule_.get());
 }
 }
+
+namespace GameEngine {
+
+void ParticleSystem::SetBlendMode(std::optional<BlendMode> mode) {
+   if (material_) {
+      material_->SetBlendMode(mode);
+   }
+}
+
+} // namespace GameEngine

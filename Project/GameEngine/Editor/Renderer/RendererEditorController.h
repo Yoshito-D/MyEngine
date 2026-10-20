@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #ifdef USE_IMGUI
 
 #include <cstddef>
@@ -83,7 +84,7 @@ private:
    std::string editorTreeRevealFolder_;
    std::string editorSelectedAssetId_;
    char editorAssetSearch_[256]{};
-   int editorAssetTypeFilter_ = 0;
+   std::int32_t editorAssetTypeFilter_ = 0;
    bool editorSearchAllFolders_ = false;
    bool editorRevealAsset_ = false;
    std::string editorAssetQueryKey_;
@@ -99,7 +100,7 @@ private:
    std::string editorAssetDeleteReason_;
    std::vector<std::string> editorAssetDeleteReferences_;
    bool editorAssetDeleteReferencesLoaded_ = false;
-   int editorSelectedAddComponentIndex_ = 0;
+   std::int32_t editorSelectedAddComponentIndex_ = 0;
    char editorNewSceneName_[kSceneNameBufferSize] = "NewScene";
    std::vector<std::string> editorSceneNames_;
    std::string editorSelectedSceneName_;

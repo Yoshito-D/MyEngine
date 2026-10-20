@@ -157,7 +157,6 @@ void VehicleController::SubmitPlayerShadow(GameEngine::Camera* camera) {
 
       // 通常描画されないモデルにも、
       // 現在の親行列と描画カメラを反映する。
-      transform->ResolveParentRelation();
 
       model->UpdateMatrix(camera);
 

@@ -83,9 +83,7 @@ public:
    RenderPassType GetPassType() const override { return RenderPassType::Opaque; }
 
    /// @brief デバッグ表示用のマスクSRVを返す。初回のマスク描画前は未定義画像を読ませないためptrが0。
-   D3D12_GPU_DESCRIPTOR_HANDLE GetMaskSRVHandleGPU() const {
-      return maskReady_ ? maskSrvHandle_ : D3D12_GPU_DESCRIPTOR_HANDLE{};
-   }
+   D3D12_GPU_DESCRIPTOR_HANDLE GetMaskSRVHandleGPU() const;
 
 private:
    // PlayerShadow.hlsliと同じ配列順・サイズ。CBVの確保サイズは別途256バイトへ切り上げる。

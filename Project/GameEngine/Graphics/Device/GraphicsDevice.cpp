@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include <stdexcept>
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
@@ -449,7 +450,7 @@ void GraphicsDevice::CreateRenderTargetViews() {
 
    backBuffers_.resize(swcDesc.BufferCount);
 
-   for (int i = 0; i < backBuffers_.size(); i++) {
+   for (std::int32_t i = 0; i < backBuffers_.size(); i++) {
       // スワップチェーンからバッファを取得
       result = swapChain_->GetBuffer(i, IID_PPV_ARGS(backBuffers_[i].ReleaseAndGetAddressOf()));
       assert(SUCCEEDED(result));

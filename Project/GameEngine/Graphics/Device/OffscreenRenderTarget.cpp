@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Device/OffscreenRenderTarget.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 
@@ -43,7 +44,8 @@ void OffscreenRenderTarget::Resize(uint32_t width, uint32_t height) {
       CreateSnapshotInfo(DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, sceneDepthSrvIndex);
 }
 
-OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTargetInfo(int index, UINT srvIndex) {
+OffscreenRenderTarget::RenderTargetInfo OffscreenRenderTarget::CreateRenderTargetInfo(
+   std::int32_t index, UINT srvIndex) {
    RenderTargetInfo info;
 
    D3D12_RESOURCE_DESC texDesc = {};

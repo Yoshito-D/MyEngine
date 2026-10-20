@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Scene/Camera/Components/PerlinNoise.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
@@ -31,21 +32,6 @@ Vector3 NormalizeOrDefault(const Vector3& value, const Vector3& fallback) {
    return fallback;
 }
 
-nlohmann::json SerializeVector3(const Vector3& value) {
-   return nlohmann::json::array({value.x, value.y, value.z});
-}
-
-Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
-   if (!data.is_array() || data.size() != 3) {
-      return fallback;
-   }
-
-   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
-}
-
-float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
-   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
-}
 }
 
 void PerlinNoise::MutateCameraState(CameraState& state, float deltaTime) {
@@ -138,7 +124,8 @@ float PerlinNoise::Noise(float t) const {
 nlohmann::json PerlinNoise::Serialize() const {
    return nlohmann::json{{"amplitudeGain", amplitudeGain_}, {"frequencyGain", frequencyGain_}, {"time", time_},
       {"remainingTime", remainingTime_}, {"initialAmplitude", initialAmplitude_},
-      {"shakeDirection", SerializeVector3(shakeDirection_)}, {"useDirectionalShake", useDirectionalShake_},
+      {"shakeDirection", GameEngine::JsonValue::WriteVector3(shakeDirection_)},
+      {"useDirectionalShake", useDirectionalShake_},
       {"screenSpaceWeights", nlohmann::json::array({screenSpaceWeights_.x, screenSpaceWeights_.y})},
       {"useScreenSpaceShake", useScreenSpaceShake_}};
 }
@@ -146,15 +133,15 @@ nlohmann::json PerlinNoise::Serialize() const {
 void PerlinNoise::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   amplitudeGain_ = ReadFloat(data, "amplitudeGain", amplitudeGain_);
-   frequencyGain_ = ReadFloat(data, "frequencyGain", frequencyGain_);
-   time_ = ReadFloat(data, "time", time_);
-   remainingTime_ = ReadFloat(data, "remainingTime", remainingTime_);
-   initialAmplitude_ = ReadFloat(data, "initialAmplitude", initialAmplitude_);
+   amplitudeGain_ = GameEngine::JsonValue::ReadFloat(data, "amplitudeGain", amplitudeGain_);
+   frequencyGain_ = GameEngine::JsonValue::ReadFloat(data, "frequencyGain", frequencyGain_);
+   time_ = GameEngine::JsonValue::ReadFloat(data, "time", time_);
+   remainingTime_ = GameEngine::JsonValue::ReadFloat(data, "remainingTime", remainingTime_);
+   initialAmplitude_ = GameEngine::JsonValue::ReadFloat(data, "initialAmplitude", initialAmplitude_);
 
    if (data.contains("shakeDirection")) {
-      shakeDirection_ =
-         NormalizeOrDefault(DeserializeVector3(data.at("shakeDirection"), shakeDirection_), {0.0f, 1.0f, 0.0f});
+      shakeDirection_ = NormalizeOrDefault(
+         GameEngine::JsonValue::ReadVector3(data.at("shakeDirection"), shakeDirection_), {0.0f, 1.0f, 0.0f});
    }
 
    if (data.contains("useDirectionalShake") && data.at("useDirectionalShake").is_boolean()) {

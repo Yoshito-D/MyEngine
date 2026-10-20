@@ -64,27 +64,7 @@ void Dissolve::Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
 
    UpdateConstantBuffer();
 
-   // 深度を使わない色フィルターなのでDSVを束縛せず、スタックのping-pong出力面だけを更新する。
-   GetRenderTarget()->PreDraw(false);
-
-   auto cmdList = GetDevice()->GetCommandList();
-
-   cmdList->SetPipelineState(GetPipeline()->GetPipelineState());
-   cmdList->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
-
-   // constantbuffer・inputtexture・masktextureの意味名から解決済みの物理スロットへ各リソースを設定する。
-   if (constantBuffer_) {
-      cmdList->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(), constantBuffer_->GetGPUVirtualAddress());
-   }
-
-   cmdList->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
-   cmdList->SetGraphicsRootDescriptorTable(GetMaskTextureRootSlot(), maskSRV);
-
-   // 頂点入力不要のフルスクリーントライアングルで、各ピクセルのマスク判定と色補間を一度だけ行う。
-   cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-   cmdList->DrawInstanced(3, 1, 0, 0);
-
-   GetRenderTarget()->PostDraw();
+   DrawFullscreen(inputSRV, constantBuffer_.Get(), GetMaskTextureRootSlot(), maskSRV);
 }
 
 /// @brief ディゾルブの全数値パラメーターを正規化して反映する。
@@ -152,35 +132,15 @@ void Dissolve::UpdateConstantBuffer() {
 }
 
 /// @brief マスク名に対応する2Dテクスチャを必要時だけ検索する。
-/// @details 名前変更までは検索結果を再利用する。指定名が見つからない場合は旧データとの互換性を保つため、
-///          短縮名、ファイル名、正規リソースIDの順で既定ノイズを探索する。
+/// @details 正規のリソースIDを名前変更時だけ解決し、次の変更まで結果を再利用する。
 /// @return 解決したテクスチャへの非所有ポインタ。候補がすべて未登録ならnullptr
 Texture* Dissolve::ResolveMaskTexture() {
-   if (!maskTextureLookupDirty_) {
-      // 毎フレームの名前検索を避け、名前変更時だけ再解決する。
-      return maskTexture_;
+   if (maskTextureLookupDirty_) {
+      maskTexture_ = EngineContext::GetTexture(maskTextureName_);
+      maskTextureLookupDirty_ = false;
    }
 
-   maskTextureLookupDirty_ = false;
-   maskTexture_ = EngineContext::GetTexture(maskTextureName_);
-
-   if (maskTexture_) {
-      return maskTexture_;
-   }
-
-   static constexpr std::array<const char*, 3> kDefaultMaskNames = {
-      "noise0", "noise0.png", "engine/textures/postprocess/noise0.png"};
-
-   // 旧プロジェクトで使われた短縮名・ファイル名・正規IDの順に既定ノイズを探す。
-   for (const char* textureName : kDefaultMaskNames) {
-      maskTexture_ = EngineContext::GetTexture(textureName);
-
-      if (maskTexture_) {
-         return maskTexture_;
-      }
-   }
-
-   return nullptr;
+   return maskTexture_;
 }
 
 #ifdef USE_IMGUI

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include "GameProject/App/UI/MenuAnimation.h"
+
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/VectorMath.h"
 #include <array>
@@ -57,7 +60,7 @@ private:
    void ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld);
    bool CaptureBaseVisualStates();
    bool IsOptionAvailable(std::size_t optionIndex) const;
-   bool MoveSelection(int direction);
+   bool MoveSelection(std::int32_t direction);
    void RefreshSelectionText();
    void UpdateSelectionAnimation(float deltaTime);
    void HideOptionVisuals();
@@ -76,8 +79,6 @@ private:
    float selectionSwitchDuration_ = 0.16f;
    float selectionSwitchScale_ = 0.82f;
    float reactionElapsed_ = 0.0f;
-   float selectionAnimationElapsed_ = 0.0f;
-   float selectionSwitchElapsed_ = 0.0f;
    GameEngine::Vector3 reactionStartScale_ = {1.0f, 1.0f, 1.0f};
    std::array<GameEngine::UITextComponent*, kOptionCount> optionTexts_ = {};
    std::array<GameEngine::TransformComponent*, kOptionCount> optionTransforms_ = {};
@@ -85,12 +86,12 @@ private:
       GameEngine::Vector3{1.0f, 1.0f, 1.0f}, GameEngine::Vector3{1.0f, 1.0f, 1.0f}};
    std::array<float, kOptionCount> baseOpacities_ = {1.0f, 1.0f};
    RaceManagerComponent* raceManager_ = nullptr;
-   int selectedOption_ = 1;
+   std::int32_t selectedOption_ = 1;
    bool resultRequested_ = false;
    bool navigationLatched_ = false;
    bool showingResult_ = false;
    bool hasBaseVisualStates_ = false;
-   bool selectionSwitchActive_ = false;
+   MenuSelectionAnimation selectionAnimation_;
 };
 
 } // namespace App

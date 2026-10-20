@@ -165,3 +165,12 @@ void VehicleAirController::Deserialize(const nlohmann::json& data) {
 }
 
 } // namespace App
+
+namespace App {
+
+void VehicleAirController::ResetAngularVelocity() {
+   angularVelRoll_ = 0.0f;
+   angularVelPitch_ = 0.0f;
+}
+
+} // namespace App

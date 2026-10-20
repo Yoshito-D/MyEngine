@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
@@ -40,7 +41,7 @@ public:
    /// @param intensity 強度
    /// @param radius 半径
    /// @param decay 減衰
-   void Create(unsigned int color = 0xffffffff, const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f,
+   void Create(std::uint32_t color = 0xffffffff, const Vector3& position = {0.0f, 0.0f, 0.0f}, float intensity = 1.0f,
       float radius = 2.0f, float decay = 0.2f);
 
    /// @brief ポイントライトデータを取得

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Scene/Camera/Components/OrbitalBody.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Math/VectorMath.h"
@@ -21,21 +22,6 @@ const bool kRegistered =
       return camera.AddComponent<OrbitalBody>();
    });
 
-nlohmann::json SerializeVector3(const Vector3& value) {
-   return nlohmann::json::array({value.x, value.y, value.z});
-}
-
-Vector3 DeserializeVector3(const nlohmann::json& data, const Vector3& fallback) {
-   if (!data.is_array() || data.size() != 3) {
-      return fallback;
-   }
-
-   return Vector3(data[0].get<float>(), data[1].get<float>(), data[2].get<float>());
-}
-
-float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
-   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
-}
 } // namespace
 
 void OrbitalBody::MutateCameraState(CameraState& state, float) {
@@ -99,24 +85,24 @@ void OrbitalBody::ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta, bo
 
 nlohmann::json OrbitalBody::Serialize() const {
    return nlohmann::json{{"yaw", yaw_}, {"pitch", pitch_}, {"distance", distance_},
-      {"pivotTarget", SerializeVector3(pivotTarget_)}, {"rotateSpeed", rotateSpeed_}, {"scrollSpeed", scrollSpeed_},
-      {"moveSpeed", moveSpeed_}};
+      {"pivotTarget", GameEngine::JsonValue::WriteVector3(pivotTarget_)}, {"rotateSpeed", rotateSpeed_},
+      {"scrollSpeed", scrollSpeed_}, {"moveSpeed", moveSpeed_}};
 }
 
 void OrbitalBody::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   yaw_ = ReadFloat(data, "yaw", yaw_);
-   pitch_ = ReadFloat(data, "pitch", pitch_);
-   SetDistance(ReadFloat(data, "distance", distance_));
+   yaw_ = GameEngine::JsonValue::ReadFloat(data, "yaw", yaw_);
+   pitch_ = GameEngine::JsonValue::ReadFloat(data, "pitch", pitch_);
+   SetDistance(GameEngine::JsonValue::ReadFloat(data, "distance", distance_));
 
    if (data.contains("pivotTarget")) {
-      pivotTarget_ = DeserializeVector3(data.at("pivotTarget"), pivotTarget_);
+      pivotTarget_ = GameEngine::JsonValue::ReadVector3(data.at("pivotTarget"), pivotTarget_);
    }
 
-   rotateSpeed_ = ReadFloat(data, "rotateSpeed", rotateSpeed_);
-   scrollSpeed_ = ReadFloat(data, "scrollSpeed", scrollSpeed_);
-   moveSpeed_ = ReadFloat(data, "moveSpeed", moveSpeed_);
+   rotateSpeed_ = GameEngine::JsonValue::ReadFloat(data, "rotateSpeed", rotateSpeed_);
+   scrollSpeed_ = GameEngine::JsonValue::ReadFloat(data, "scrollSpeed", scrollSpeed_);
+   moveSpeed_ = GameEngine::JsonValue::ReadFloat(data, "moveSpeed", moveSpeed_);
 }
 
 #pragma endregion
@@ -152,5 +138,36 @@ void OrbitalBody::DrawInspector() {
    }
 }
 #endif
+
+} // namespace GameEngine
+
+namespace GameEngine {
+
+Vector3 OrbitalBody::GetCameraForward() const {
+   float cosP = std::cos(pitch_);
+   float sinP = std::sin(pitch_);
+   float cosY = std::cos(yaw_);
+   float sinY = std::sin(yaw_);
+   Vector3 offset = {cosP * sinY, -sinP, cosP * cosY};
+   return (-offset).Normalize();
+}
+
+Vector3 OrbitalBody::GetCameraUp() const {
+   float cosP = std::cos(pitch_);
+   float sinP = std::sin(pitch_);
+   float cosY = std::cos(yaw_);
+   float sinY = std::sin(yaw_);
+
+   // rotationMatrix_ = Rx(pitch)*Ry(yaw) の行1 = TransformNormal({0,1,0}, matrix)
+   return {sinP * sinY, cosP, sinP * cosY};
+}
+
+Vector3 OrbitalBody::GetCameraRight() const {
+   float cosY = std::cos(yaw_);
+   float sinY = std::sin(yaw_);
+
+   // LookAtMatrix の xaxis = up.Cross(zaxis) の解析解
+   return {-cosY, 0.0f, sinY};
+}
 
 } // namespace GameEngine

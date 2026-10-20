@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Object/Component/Audio/AudioSourceComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Framework/EngineContext.h"
@@ -279,7 +280,7 @@ void AudioSourceComponent::DrawInspector() {
 
    for (size_t i = 0; i < slots_.size(); ++i) {
       Slot& slot = slots_[i];
-      ImGui::PushID(static_cast<int>(i));
+      ImGui::PushID(static_cast<std::int32_t>(i));
 
       if (ImGui::TreeNode(slot.name.c_str())) {
          char name[128]{};
@@ -304,7 +305,7 @@ void AudioSourceComponent::DrawInspector() {
             ImGui::TextUnformatted(Tr("音声が見つかりません", "Unresolved audio asset"));
          }
 
-         int bus = slot.bus == AudioBus::Ui ? 1 : 0;
+         std::int32_t bus = slot.bus == AudioBus::Ui ? 1 : 0;
 
          if (ImGui::Combo(Tr("区分", "Bus"), &bus, "SE\0UI\0")) {
             slot.bus = bus ? AudioBus::Ui : AudioBus::Se;

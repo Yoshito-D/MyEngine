@@ -124,10 +124,7 @@ public:
 
    /// @brief 生成するプリミティブ形状を設定する
    /// @param primitiveType プリミティブ形状
-   void SetPrimitiveType(PrimitiveType primitiveType) {
-      sourceType_ = SourceType::Primitive;
-      primitiveType_ = primitiveType;
-   }
+   void SetPrimitiveType(PrimitiveType primitiveType);
 
    /// @brief 生成するプリミティブ形状を取得する
    /// @return プリミティブ形状

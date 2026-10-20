@@ -74,7 +74,6 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
 
    Logger::Info("Successfully loaded post-process effects from JSON");
 
-   context.shaderManager->LogRootParameterTablesDebug();
    return true;
 }
 

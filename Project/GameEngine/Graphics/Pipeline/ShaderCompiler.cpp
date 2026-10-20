@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include <cstdint>
 #include "GameEngine/Graphics/Pipeline/ShaderCompiler.h"
 #include "GameEngine/Utility/Logger.h"
 
@@ -9,7 +10,7 @@ std::wstring Utf8ToWString(const std::string& str) {
       return {};
    }
 
-   const int size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+   const std::int32_t size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
 
    if (size <= 0) {
       return {};

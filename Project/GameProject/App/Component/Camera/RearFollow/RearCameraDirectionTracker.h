@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraComponent.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraTypes.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraPlanetGuide.h"
@@ -16,7 +17,7 @@ public:
    GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Body; }
 
    /// @brief 同一ステージの依存関係に従う更新順を返す。
-   int GetExecutionOrder() const override { return -600; }
+   std::int32_t GetExecutionOrder() const override { return -600; }
 
    /// @brief シーン保存とFactory登録に使う名前を返す。
    const char* GetComponentName() const override { return "RearCameraDirectionTracker"; }
