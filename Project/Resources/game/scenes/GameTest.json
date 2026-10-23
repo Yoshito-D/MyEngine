@@ -4849,15 +4849,23 @@
             },
             {
                "data": {
-                  "raceManagerId": "Object:RaceManager",
+                  "optionObjectIds": [
+                     "UIText:ResultTitlePrompt",
+                     "UIText:ResultRestartPrompt"
+                  ],
+                  "pulseDuration": 1.7999999523162842,
+                  "pulseScale": 1.100000023841858,
+                  "switchDuration": 0.1599999964237213,
+                  "switchScale": 0.8199999928474426,
                   "reactionDuration": 0.4000000059604645,
-                  "reactionEndScale": 1.2000000476837158,
-                  "restartOptionObjectId": "UIText:ResultRestartPrompt",
-                  "selectionPulseDuration": 1.7999999523162842,
-                  "selectionPulseScale": 1.100000023841858,
-                  "selectionSwitchDuration": 0.1599999964237213,
-                  "selectionSwitchScale": 0.8199999928474426,
-                  "titleOptionObjectId": "UIText:ResultTitlePrompt",
+                  "reactionEndScale": 1.2000000476837158
+               },
+               "enabled": true,
+               "typeName": "MenuSelectionAnimationComponent"
+            },
+            {
+               "data": {
+                  "raceManagerId": "Object:RaceManager",
                   "titleScene": "Title"
                },
                "enabled": true,

@@ -438,15 +438,23 @@
             },
             {
                "data": {
+                  "optionObjectIds": [
+                     "UIText:StartPrompt",
+                     "UIText:StageStartPrompt"
+                  ],
+                  "pulseDuration": 1.7999999523162842,
+                  "pulseScale": 1.100000023841858,
+                  "switchDuration": 0.1599999964237213,
+                  "switchScale": 0.8199999928474426,
                   "reactionDuration": 0.4000000059604645,
-                  "reactionEndScale": 1.2000000476837158,
-                  "selectionPulseDuration": 1.7999999523162842,
-                  "selectionPulseScale": 1.100000023841858,
-                  "selectionSwitchDuration": 0.1599999964237213,
-                  "selectionSwitchScale": 0.8199999928474426,
-                  "stageOptionObjectId": "UIText:StageStartPrompt",
+                  "reactionEndScale": 1.2000000476837158
+               },
+               "enabled": true,
+               "typeName": "MenuSelectionAnimationComponent"
+            },
+            {
+               "data": {
                   "stageScene": "GameTest",
-                  "tutorialOptionObjectId": "UIText:StartPrompt",
                   "tutorialScene": "Tutorial"
                },
                "enabled": true,

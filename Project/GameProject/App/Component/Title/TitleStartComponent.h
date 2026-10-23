@@ -1,89 +1,48 @@
 #pragma once
 
-#include <cstdint>
-#include "GameProject/App/UI/MenuAnimation.h"
-
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
-#include "GameEngine/Math/VectorMath.h"
-#include <array>
-#include <cstddef>
+#include <cstdint>
 #include <string>
 
-namespace GameEngine {
-class TransformComponent;
-class UITextComponent;
-}
-
 namespace App {
+class MenuSelectionAnimationComponent;
 
-/// @brief タイトル画面の開始経路選択と決定リアクションを制御する
+/// @brief タイトル画面の開始経路選択と画面遷移を制御する。
+/// @details 同じObjectのMenuSelectionAnimationComponentで、項目0をチュートリアル、項目1をステージに対応させる。
 class TitleStartComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "TitleStartComponent";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"タイトル開始UI", "Title Start UI"};
 
-   /// @brief コンポーネント型名を取得する
-   /// @return TitleStartComponent
+   /// @brief コンポーネント型名を取得する。
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief UIの初期表示状態を保存して入力待ちへ戻す
-   /// @param sceneWorld 所属するシーンワールド
+   /// @brief 選択と入力ラッチを初期化する。UI参照と演出は専用コンポーネントが管理する。
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
-   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
-
-   /// @brief 選択表示アニメーションと決定入力後の拡大フェードを更新する
-   /// @param deltaTime ゲーム用デルタタイム（秒）
+   /// @brief 選択・決定入力を処理し、演出を通知してシーン遷移を要求する。
    void Update(float deltaTime) override;
 
-   /// @brief 選択肢の遷移先とリアクション設定をJSONへ保存する
-   /// @return 保存用JSON
+   /// @brief 選択肢の遷移先をJSONへ保存する。
    nlohmann::json Serialize() const override;
 
-   /// @brief JSONから選択肢の遷移先とリアクション設定を読み込む
-   /// @param data 設定JSON
+   /// @brief JSONから選択肢の遷移先を読み込む。
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-
-   /// @brief タイトル開始設定をインスペクターへ表示する
+   /// @brief タイトル開始設定をインスペクターへ表示する。
    void DrawInspector() override;
 #endif
 
 private:
-   void ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld);
-   bool CaptureBaseVisualStates();
-   bool IsOptionAvailable(std::size_t optionIndex) const;
-   bool SelectInitialOption();
-   bool MoveSelection(std::int32_t direction);
-   void RefreshSelectionText();
-   void UpdateSelectionAnimation(float deltaTime);
-   const std::string& GetSelectedSceneName() const;
-   void ApplyStartReaction(std::size_t optionIndex);
+   bool MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction);
+   void RefreshSelectionText(MenuSelectionAnimationComponent& animation);
 
-   std::string tutorialOptionObjectId_ = "UIText:StartPrompt";
-   std::string stageOptionObjectId_ = "UIText:StageStartPrompt";
    std::string tutorialScene_ = "Tutorial";
    std::string stageScene_ = "GameTest";
-   float reactionDuration_ = 0.4f;
-   float reactionEndScale_ = 1.4f;
-   float reactionElapsed_ = 0.0f;
-   GameEngine::Vector3 reactionStartScale_ = {1.0f, 1.0f, 1.0f};
-   float selectionPulseDuration_ = 0.9f;
-   float selectionPulseScale_ = 1.1f;
-   float selectionSwitchDuration_ = 0.16f;
-   float selectionSwitchScale_ = 0.82f;
-   std::array<GameEngine::UITextComponent*, 2> optionTexts_ = {};
-   std::array<GameEngine::TransformComponent*, 2> optionTransforms_ = {};
-   std::array<GameEngine::Vector3, 2> baseScales_ = {
-      GameEngine::Vector3{1.0f, 1.0f, 1.0f}, GameEngine::Vector3{1.0f, 1.0f, 1.0f}};
-   std::array<float, 2> baseOpacities_ = {1.0f, 1.0f};
-   std::int32_t selectedOption_ = 0;
+   std::int32_t selectedOption_ = -1;
    bool startRequested_ = false;
    bool navigationLatched_ = false;
-   bool hasBaseVisualStates_ = false;
-   MenuSelectionAnimation selectionAnimation_;
 };
 
 } // namespace App

@@ -216,7 +216,7 @@
     <Filter Include="GameProject\App\Component\Vehicle">
       <UniqueIdentifier>{f17c3399-b825-4f25-b333-feb1a674411b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameProject\App\UI">
+    <Filter Include="GameProject\App\Component\UI">
       <UniqueIdentifier>{90de3755-1cfc-4a97-b447-bd4cffa4abc2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Resources">
@@ -983,8 +983,8 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\UI\MenuAnimation.cpp">
-      <Filter>GameProject\App\UI</Filter>
+    <ClCompile Include="GameProject\App\Component\UI\MenuSelectionAnimationComponent.cpp">
+      <Filter>GameProject\App\Component\UI</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\Game.cpp">
       <Filter>GameProject</Filter>
@@ -1754,8 +1754,8 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\UI\MenuAnimation.h">
-      <Filter>GameProject\App\UI</Filter>
+    <ClInclude Include="GameProject\App\Component\UI\MenuSelectionAnimationComponent.h">
+      <Filter>GameProject\App\Component\UI</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\Game.h">
       <Filter>GameProject</Filter>
