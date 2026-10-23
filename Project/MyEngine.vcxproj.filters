@@ -320,7 +320,7 @@
     <ClCompile Include="GameEngine\Assets\AssetManager.cpp">
       <Filter>GameEngine\Assets</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Assets\Audio\SoundManager.cpp">
+    <ClCompile Include="GameEngine\Assets\Audio\SoundClipCache.cpp">
       <Filter>GameEngine\Assets\Audio</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Assets\Font\FontManager.cpp">
@@ -348,9 +348,6 @@
       <Filter>GameEngine\Audio</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Audio\BgmPlayer.cpp">
-      <Filter>GameEngine\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="GameEngine\Audio\Sound.cpp">
       <Filter>GameEngine\Audio</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Audio\SoundClip.cpp">
@@ -1061,7 +1058,7 @@
     <ClInclude Include="GameEngine\Assets\AssetManager.h">
       <Filter>GameEngine\Assets</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Assets\Audio\SoundManager.h">
+    <ClInclude Include="GameEngine\Assets\Audio\SoundClipCache.h">
       <Filter>GameEngine\Assets\Audio</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Assets\Font\FontManager.h">
@@ -1089,9 +1086,6 @@
       <Filter>GameEngine\Audio</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Audio\BgmPlayer.h">
-      <Filter>GameEngine\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Audio\Sound.h">
       <Filter>GameEngine\Audio</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Audio\SoundClip.h">

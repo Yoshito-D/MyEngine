@@ -50,9 +50,6 @@ public:
    /// @brief デバイスとMedia Foundationの終了前に全ボイスを解放する。複数回呼び出しても安全。
    void Finalize();
 
-   /// @brief 旧Soundラッパー専用にデバイスを返す。
-   IXAudio2* GetXAudio2() const { return xAudio2_.Get(); }
-
    /// @brief 再生デバイスが作成済みかどうか。
    bool IsAvailable() const { return masteringVoice_ != nullptr || testMode_; }
 
