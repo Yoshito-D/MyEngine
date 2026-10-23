@@ -1,17 +1,13 @@
 #include "GameProject/App/Component/Race/UI/RaceResultUIComponent.h"
-#include <cstdint>
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameProject/App/Component/Race/UI/RaceTimeFormatting.h"
+#include "GameProject/App/Component/UI/MenuSelectionAnimationComponent.h"
 #include "GameEngine/Framework/EngineContext.h"
-#include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
-#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/SceneWorld.h"
-#include "GameEngine/Math/MathUtils.h"
-#include <algorithm>
-#include <cmath>
+#include <cstddef>
 #include <sstream>
 
 #ifdef USE_IMGUI
@@ -26,76 +22,56 @@ void RaceResultUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    navigationLatched_ = false;
    showingResult_ = false;
    selectedOption_ = 1;
-   reactionElapsed_ = 0.0f;
-   reactionStartScale_ = {1.0f, 1.0f, 1.0f};
-   selectionAnimation_.Reset();
-   hasBaseVisualStates_ = false;
-   optionTexts_.fill(nullptr);
-   optionTransforms_.fill(nullptr);
 
-   // 実行時ロードではOnReferencesChangedが自動では呼ばれないため、
-   // RaceManagerと選択肢の参照を同じ経路で解決する。
+   // 実行時ロードではOnReferencesChangedが自動では呼ばれないため、ここからも参照を解決する。
    OnReferencesChanged(sceneWorld);
-   hasBaseVisualStates_ = CaptureBaseVisualStates();
-   HideOptionVisuals();
 }
 
 void RaceResultUIComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
-   // シーン再読み込み後に破棄済みオブジェクトを参照しないよう、
-   // 前回解決したポインターを捨てて保存済みIDから解決し直す。
+   // シーン再読み込み後に破棄済みオブジェクトを参照しないよう、保存済みIDから解決し直す。
    raceManager_ = nullptr;
-   optionTexts_.fill(nullptr);
-   optionTransforms_.fill(nullptr);
 
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
    }
-
-   ResolveOptionVisuals(sceneWorld);
 }
 
-void RaceResultUIComponent::Update(float deltaTime) {
+void RaceResultUIComponent::Update(float) {
    if (!raceManager_ || !HasOwner()) return;
 
    auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
+   auto* animation = GetOwner().GetComponent<MenuSelectionAnimationComponent>();
 
-   if (!text) return;
+   if (!text || !animation || !animation->IsEnabled()) return;
 
    // このUITextはレース中もシーンに残るため、終了状態以外では内容を消しておく。
    // これによりリスタート後に前回のリザルトが一瞬残ることも防ぐ。
    if (raceManager_->GetState() != RaceManagerComponent::State::Finished) {
       text->SetText("");
-
-      if (showingResult_ || resultRequested_) {
-         showingResult_ = false;
-         resultRequested_ = false;
-         selectedOption_ = 1;
-         navigationLatched_ = false;
-         selectionAnimation_.Reset();
-      }
-
-      HideOptionVisuals();
+      showingResult_ = false;
+      resultRequested_ = false;
+      selectedOption_ = 1;
+      navigationLatched_ = false;
+      animation->Hide();
       return;
    }
 
    if (!showingResult_) {
       showingResult_ = true;
       resultRequested_ = false;
-      selectedOption_ = IsOptionAvailable(1) ? 1 : 0;
+      selectedOption_ = animation->IsOptionAvailable(1) ? 1 : 0;
       navigationLatched_ = false;
-      selectionAnimation_.Reset();
-      RefreshSelectionText();
+      animation->Select(selectedOption_, false);
+      RefreshSelectionText(*animation);
    }
 
    text->SetText(BuildResultText());
 
-   if (resultRequested_) {
-      reactionElapsed_ += std::max(deltaTime, 0.0f);
-      ApplyResultReaction(static_cast<std::size_t>(selectedOption_));
-      return;
-   }
+   // 決定後の拡大・フェードは演出コンポーネントだけが更新する。
+   if (resultRequested_) return;
 
-   bool selectionChanged = false;
+   animation->Select(selectedOption_, false);
+   RefreshSelectionText(*animation);
    const auto& navigationAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.NavigateHorizontal", 0);
    const std::int32_t navigationDirection =
       navigationAction.value.x > 0.5f ? 1 : (navigationAction.value.x < -0.5f ? -1 : 0);
@@ -104,125 +80,47 @@ void RaceResultUIComponent::Update(float deltaTime) {
    if (navigationDirection == 0) {
       navigationLatched_ = false;
    } else if (!navigationLatched_) {
-      selectionChanged = MoveSelection(navigationDirection);
-      navigationLatched_ = true;
-
-      if (selectionChanged) {
-         selectionAnimation_.Reset(true);
-         RefreshSelectionText();
+      if (MoveSelection(*animation, navigationDirection)) {
+         animation->Select(selectedOption_);
+         RefreshSelectionText(*animation);
       }
-   }
 
-   // 切り替えたフレームは縮小の開始値を必ず一度表示する。
-   UpdateSelectionAnimation(selectionChanged ? 0.0f : deltaTime);
+      navigationLatched_ = true;
+   }
 
    const auto& confirmAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
 
    if (confirmAction.triggered) {
-      ConfirmSelection();
+      ConfirmSelection(*animation);
    }
 }
 
 nlohmann::json RaceResultUIComponent::Serialize() const {
-   // 実行時ポインターはシーンをまたいで有効ではないため、再解決用IDだけを永続化する。
-   return nlohmann::json{{"raceManagerId", raceManagerId_}, {"titleOptionObjectId", titleOptionObjectId_},
-      {"restartOptionObjectId", restartOptionObjectId_}, {"titleScene", titleScene_},
-      {"reactionDuration", reactionDuration_}, {"reactionEndScale", reactionEndScale_},
-      {"selectionPulseDuration", selectionPulseDuration_}, {"selectionPulseScale", selectionPulseScale_},
-      {"selectionSwitchDuration", selectionSwitchDuration_}, {"selectionSwitchScale", selectionSwitchScale_}};
+   return nlohmann::json{{"raceManagerId", raceManagerId_}, {"titleScene", titleScene_}};
 }
 
 void RaceResultUIComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
-   // 欠落または型不一致の値では現在の設定を維持し、部分設定も受け入れる。
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
       raceManagerId_ = data.at("raceManagerId").get<std::string>();
-   }
-
-   if (data.contains("titleOptionObjectId") && data.at("titleOptionObjectId").is_string()) {
-      titleOptionObjectId_ = data.at("titleOptionObjectId").get<std::string>();
-   }
-
-   if (data.contains("restartOptionObjectId") && data.at("restartOptionObjectId").is_string()) {
-      restartOptionObjectId_ = data.at("restartOptionObjectId").get<std::string>();
    }
 
    if (data.contains("titleScene") && data.at("titleScene").is_string()) {
       titleScene_ = data.at("titleScene").get<std::string>();
    }
-
-   if (data.contains("reactionDuration") && data.at("reactionDuration").is_number()) {
-      reactionDuration_ = std::max(data.at("reactionDuration").get<float>(), 0.0001f);
-   }
-
-   if (data.contains("reactionEndScale") && data.at("reactionEndScale").is_number()) {
-      reactionEndScale_ = std::max(data.at("reactionEndScale").get<float>(), 1.0f);
-   }
-
-   if (data.contains("selectionPulseDuration") && data.at("selectionPulseDuration").is_number()) {
-      selectionPulseDuration_ = std::max(data.at("selectionPulseDuration").get<float>(), 0.0001f);
-   }
-
-   if (data.contains("selectionPulseScale") && data.at("selectionPulseScale").is_number()) {
-      selectionPulseScale_ = std::max(data.at("selectionPulseScale").get<float>(), 1.0f);
-   }
-
-   if (data.contains("selectionSwitchDuration") && data.at("selectionSwitchDuration").is_number()) {
-      selectionSwitchDuration_ = std::max(data.at("selectionSwitchDuration").get<float>(), 0.0001f);
-   }
-
-   if (data.contains("selectionSwitchScale") && data.at("selectionSwitchScale").is_number()) {
-      selectionSwitchScale_ = std::clamp(data.at("selectionSwitchScale").get<float>(), 0.0f, 1.0f);
-   }
 }
 
-void RaceResultUIComponent::ResolveOptionVisuals(GameEngine::SceneWorld& sceneWorld) {
-   // 選択肢ごとの設定IDを同じ添字のText・Transform配列へ対応付ける。
-   const std::array<std::string, kOptionCount> objectIds = {titleOptionObjectId_, restartOptionObjectId_};
-
-   for (std::size_t optionIndex = 0; optionIndex < objectIds.size(); ++optionIndex) {
-      if (auto* optionObject = sceneWorld.FindObjectById(objectIds[optionIndex])) {
-         optionTexts_[optionIndex] = optionObject->GetComponent<GameEngine::UITextComponent>();
-         optionTransforms_[optionIndex] = optionObject->GetComponent<GameEngine::TransformComponent>();
-      }
-   }
-}
-
-bool RaceResultUIComponent::CaptureBaseVisualStates() {
-   bool capturedAny = false;
-
-   for (std::size_t optionIndex = 0; optionIndex < kOptionCount; ++optionIndex) {
-      const auto* text = optionTexts_[optionIndex];
-      const auto* transform = optionTransforms_[optionIndex];
-
-      if (!text || !transform) {
-         continue;
-      }
-
-      baseOpacities_[optionIndex] = text->GetStyle().color.w;
-      baseScales_[optionIndex] = transform->GetLocalPose().scale;
-      capturedAny = true;
-   }
-
-   return capturedAny;
-}
-
-bool RaceResultUIComponent::IsOptionAvailable(std::size_t optionIndex) const {
-   return optionIndex < kOptionCount && optionTexts_[optionIndex] != nullptr &&
-          optionTransforms_[optionIndex] != nullptr;
-}
-
-bool RaceResultUIComponent::MoveSelection(std::int32_t direction) {
+bool RaceResultUIComponent::MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction) {
+   constexpr std::int32_t kOptionCount = 2;
    const std::int32_t previousSelection = selectedOption_;
    std::int32_t candidate = selectedOption_;
 
    // 端では巡回し、未解決の項目を飛ばす。候補数までの試行に制限して全欠落時も終了させる。
-   for (std::size_t attempt = 0; attempt < kOptionCount; ++attempt) {
-      candidate =
-         (candidate + direction + static_cast<std::int32_t>(kOptionCount)) % static_cast<std::int32_t>(kOptionCount);
+   for (std::int32_t attempt = 0; attempt < kOptionCount; ++attempt) {
+      candidate = (candidate + direction + kOptionCount) % kOptionCount;
 
-      if (IsOptionAvailable(static_cast<std::size_t>(candidate))) {
+      if (animation.IsOptionAvailable(static_cast<std::size_t>(candidate))) {
          selectedOption_ = candidate;
          return selectedOption_ != previousSelection;
       }
@@ -231,47 +129,18 @@ bool RaceResultUIComponent::MoveSelection(std::int32_t direction) {
    return false;
 }
 
-void RaceResultUIComponent::RefreshSelectionText() {
-   if (IsOptionAvailable(0)) {
-      optionTexts_[0]->SetText(std::string(selectedOption_ == 0 ? "> " : "  ") + "TITLE");
+void RaceResultUIComponent::RefreshSelectionText(MenuSelectionAnimationComponent& animation) {
+   if (auto* text = animation.GetOptionText(0)) {
+      text->SetText(std::string(selectedOption_ == 0 ? "> " : "  ") + "TITLE");
    }
 
-   if (IsOptionAvailable(1)) {
-      optionTexts_[1]->SetText(std::string(selectedOption_ == 1 ? "> " : "  ") + "RESTART");
-   }
-}
-
-void RaceResultUIComponent::UpdateSelectionAnimation(float deltaTime) {
-   UpdateMenuSelection(optionTexts_, optionTransforms_, baseScales_, selectedOption_, selectionAnimation_, deltaTime,
-      selectionPulseDuration_, selectionPulseScale_, selectionSwitchDuration_, selectionSwitchScale_);
-}
-
-void RaceResultUIComponent::HideOptionVisuals() {
-   for (std::size_t optionIndex = 0; optionIndex < kOptionCount; ++optionIndex) {
-      if (!IsOptionAvailable(optionIndex)) {
-         continue;
-      }
-
-      optionTexts_[optionIndex]->SetText("");
-      optionTexts_[optionIndex]->SetOpacity(baseOpacities_[optionIndex]);
-      {
-         auto pose = optionTransforms_[optionIndex]->GetLocalPose();
-         pose.scale = baseScales_[optionIndex];
-         optionTransforms_[optionIndex]->ApplyLocalPose(pose);
-      }
+   if (auto* text = animation.GetOptionText(1)) {
+      text->SetText(std::string(selectedOption_ == 1 ? "> " : "  ") + "RESTART");
    }
 }
 
-void RaceResultUIComponent::ApplyResultReaction(std::size_t optionIndex) {
-   if (!IsOptionAvailable(optionIndex)) return;
-
-   ApplyMenuReaction(*optionTexts_[optionIndex], *optionTransforms_[optionIndex], baseScales_[optionIndex],
-      reactionStartScale_, baseOpacities_[optionIndex], reactionElapsed_, reactionDuration_, reactionEndScale_);
-}
-
-bool RaceResultUIComponent::ConfirmSelection() {
-
-   if (!IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
+bool RaceResultUIComponent::ConfirmSelection(MenuSelectionAnimationComponent& animation) {
+   if (!animation.IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
       return false;
    }
 
@@ -285,10 +154,8 @@ bool RaceResultUIComponent::ConfirmSelection() {
       return false;
    }
 
-   resultRequested_ = true;
-   reactionElapsed_ = 0.0f;
-   reactionStartScale_ = optionTransforms_[static_cast<std::size_t>(selectedOption_)]->GetLocalPose().scale;
-   return true;
+   resultRequested_ = animation.ConfirmSelection();
+   return resultRequested_;
 }
 
 std::string RaceResultUIComponent::BuildResultText() const {
@@ -321,15 +188,7 @@ void RaceResultUIComponent::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
-   GameEngine::EditorUI::ObjectReference("Title Option", titleOptionObjectId_, "UITextComponent");
-   GameEngine::EditorUI::ObjectReference("Restart Option", restartOptionObjectId_, "UITextComponent");
    GameEngine::EditorUI::SceneReference("Title Scene", titleScene_);
-   ImGui::DragFloat("Reaction Duration", &reactionDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
-   ImGui::DragFloat("Reaction End Scale", &reactionEndScale_, 0.01f, 1.0f, 3.0f, "%.2f");
-   ImGui::DragFloat("Selection Pulse Duration", &selectionPulseDuration_, 0.01f, 0.01f, 3.0f, "%.2f s");
-   ImGui::DragFloat("Selection Pulse Scale", &selectionPulseScale_, 0.01f, 1.0f, 2.0f, "%.2f");
-   ImGui::DragFloat("Selection Switch Duration", &selectionSwitchDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
-   ImGui::DragFloat("Selection Switch Scale", &selectionSwitchScale_, 0.01f, 0.0f, 1.0f, "%.2f");
    ImGui::Text("Resolved: %s", raceManager_ ? "true" : "false");
 }
 #endif

@@ -705,7 +705,7 @@
     <ClInclude Include="GameEngine\Graphics\Resources\TransformationMatrix.h" />
     <ClInclude Include="GameEngine\Window\Window.h" />
     <ClInclude Include="GameEngine\Utility\JsonValue.h" />
-    <ClInclude Include="GameProject\App\UI\MenuAnimation.h" />
+    <ClInclude Include="GameProject\App\Component\UI\MenuSelectionAnimationComponent.h" />
     <ClInclude Include="GameEngine\Utility\JsonFile.h" />
     <ClInclude Include="GameEngine\Math\MathUtils.h" />
     <ClInclude Include="GameEngine\Math\Functions\ColorUtils.h" />
@@ -864,7 +864,7 @@
     <ClCompile Include="GameEngine\Utility\ExportDump.cpp" />
     <ClCompile Include="GameEngine\Utility\JsonValue.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraMath.cpp" />
-    <ClCompile Include="GameProject\App\UI\MenuAnimation.cpp" />
+    <ClCompile Include="GameProject\App\Component\UI\MenuSelectionAnimationComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameEngine\Scene\Scene.cpp" />

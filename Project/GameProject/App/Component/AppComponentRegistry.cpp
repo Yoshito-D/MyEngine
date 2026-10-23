@@ -23,6 +23,7 @@
 #include "GameProject/App/Component/Race/UI/VehicleSpeedGaugeUIComponent.h"
 #include "GameProject/App/Component/Title/TitleStartComponent.h"
 #include "GameProject/App/Component/Tutorial/TutorialProgressComponent.h"
+#include "GameProject/App/Component/UI/MenuSelectionAnimationComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleAirController.h"
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
@@ -75,6 +76,8 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::VehicleSpeedGaugeUIComponent>(
       GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Sprite)),
    RegisterAppComponent<App::TitleStartComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
+   RegisterAppComponent<App::MenuSelectionAnimationComponent>(
+      GameEngine::ObjectType::Generic | GameEngine::ObjectType::UIText),
    RegisterAppComponent<App::TutorialProgressComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleAirController>(),
    RegisterAppComponent<App::VehicleController>(),
