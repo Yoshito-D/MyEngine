@@ -11,6 +11,7 @@
 #include <algorithm>
 
 namespace GameEngine {
+class SceneWorld;
 
 /// @brief 仮想カメラの基底クラス
 class VirtualCamera {
@@ -20,6 +21,9 @@ public:
 
    /// @brief 空の仮想カメラを生成する
    VirtualCamera() = default;
+
+   /// @brief 追従先の安定IDを解決するWorldを関連付ける。
+   void SetWorld(SceneWorld* world) { world_ = world; }
 
    /// @brief 所有するカメラコンポーネントとともに破棄する
    virtual ~VirtualCamera() = default;
@@ -163,12 +167,13 @@ public:
    nlohmann::json Serialize() const;
 
    /// @brief 仮想カメラ設定を読み込む
-   void Deserialize(const nlohmann::json& data);
+   bool Deserialize(const nlohmann::json& data);
 
 protected:
    void SortComponents();
 
 private:
+   SceneWorld* world_ = nullptr;
    std::vector<std::unique_ptr<ICinemachineComponent>> components_;
    const Transform* followTarget_ = nullptr;
    const Transform* lookAtTarget_ = nullptr;

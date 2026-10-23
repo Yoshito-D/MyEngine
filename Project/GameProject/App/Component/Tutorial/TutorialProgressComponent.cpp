@@ -9,7 +9,7 @@
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Component/UI/UIAnimationTypes.h"
 #include "GameEngine/Object/Object.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include <algorithm>
 #include <cmath>
@@ -125,7 +125,7 @@ void TutorialProgressComponent::Update(float deltaTime) {
          // 遷移要求は一度だけ発行し、遅延中は完了メッセージを読める時間を確保する。
          if (!sceneChangeRequested_ && !nextScene_.empty() && completionElapsed_ >= completionDelay_) {
             sceneChangeRequested_ = true;
-            GameEngine::BaseScene::SetNextSceneName(nextScene_);
+            GameEngine::EngineContext::ChangeScene(nextScene_);
          }
 
          break;

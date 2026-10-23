@@ -34,6 +34,7 @@
 #include <wrl.h>
 
 namespace GameEngine {
+class SceneWorld;
 class GraphicsDevice;
 class Camera;
 class PSOManager;
@@ -68,7 +69,16 @@ public:
    static void ClearRegisteredParticleSystems();
 
    /// @brief 更新中に蓄積したサブエミッターイベントを安全なタイミングで生成する
-   static void ProcessPendingSubEmitters();
+   static void ProcessPendingSubEmitters(SceneWorld* world);
+
+   /// @brief 指定Worldで生成した子エフェクトと未処理イベントを破棄する。
+   static void ClearWorldRuntime(SceneWorld* world);
+
+   /// @brief パーティクルを更新元のWorldへ関連付ける。
+   void SetWorld(SceneWorld* world) { world_ = world; }
+
+   /// @brief 更新元のWorldを取得する。描画レジストリは所有権を持たない。
+   SceneWorld* GetWorld() const { return world_; }
 
    /// @brief GPU送信用パーティクルデータ
    struct ParticleForGPU {
@@ -355,7 +365,7 @@ public:
    /// @param psoManager Computeパイプラインの取得元
    void DispatchGpuSimulation(const PSOManager* psoManager);
 
-   // ============ JSON Serialization ============
+   // ============ JSONの保存・復元 ============
 
    /// @brief パラメータをJSONファイルに保存
    /// @param filePath 保存先のファイルパス
@@ -440,7 +450,7 @@ private:
    // O(1) フリーリスト（非アクティブパーティクルのインデックスを管理）
    std::stack<uint32_t> freeParticleIndices_;
 
-   // ============ Unity-like Modules ============
+   // ============ パーティクルの各種モジュール ============
    static bool HasFiniteSettings(const nlohmann::json& settings);
 
    template <class Module> bool ApplyModuleConfiguration(Module& target, const Module& configuration);
@@ -529,6 +539,7 @@ private:
    uint32_t gpuRenderParticleCount_ = 0;
    uint32_t gpuPendingSpawnRequestCount_ = 0;
    bool gpuStateReadbackAvailable_ = false;
+   SceneWorld* world_ = nullptr;
    bool gpuNeedsInitialize_ = true;
    uint32_t gpuInitializationStartIndex_ = 0;
    float gpuDeltaTime_ = 0.0f;
@@ -577,6 +588,7 @@ private:
 
    struct PendingSubEmitterEvent {
       std::string effectPath;
+      SceneWorld* world = nullptr;
       Vector3 position;
    };
 

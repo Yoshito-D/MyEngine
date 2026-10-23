@@ -134,6 +134,18 @@ bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
       return false;
    }
 
+   std::unordered_set<std::string> validatedTypes;
+   for (const auto& entry : componentsData) {
+      if (!entry.is_object() || !entry.contains("typeName") || !entry.at("typeName").is_string()) {
+         return false;
+      }
+      const auto type = entry.at("typeName").get<std::string>();
+      if (!validatedTypes.insert(type).second ||
+          !ComponentRegistry::GetInstance().Supports(type, owner_.GetObjectType())) {
+         return false;
+      }
+   }
+
    // JSONを完全スナップショットとして扱うため、まず存在する型名を収集する。
    // 先に追加・更新を始めると、削除対象判定が途中状態へ依存してしまう。
    std::unordered_set<std::string> serializedTypeNames;
@@ -176,7 +188,7 @@ bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
       auto* component = AddByTypeName(typeName);
 
       if (!component) {
-         continue;
+         return false;
       }
 
       if (componentData.contains("enabled") && componentData.at("enabled").is_boolean()) {

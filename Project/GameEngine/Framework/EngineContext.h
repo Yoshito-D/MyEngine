@@ -28,6 +28,13 @@
 
 namespace GameEngine {
 class Framework;
+class Scene;
+class SceneCatalog;
+class SceneManager;
+#ifdef USE_IMGUI
+class EditorSceneSession;
+class EditorSceneContext;
+#endif
 class Skybox;
 class Object;
 
@@ -61,6 +68,28 @@ class CinemachineBrain;
 
 class EngineContext {
 public:
+   /// @brief アプリケーション所有のシーン管理を接続する。破棄前に接続を解除する。
+   static void SetSceneManager(SceneManager* manager);
+
+   /// @brief アプリケーションが所有するシーン管理を取得する。
+   static SceneManager* GetSceneManager();
+
+   /// @brief シーンの所有者を経由して現在のシーンを取得する。
+   static Scene* GetCurrentScene();
+
+   /// @brief ランタイムとエディタで共有するカタログを取得する。
+   static SceneCatalog* GetSceneCatalog();
+#ifdef USE_IMGUI
+
+   /// @brief 編集セッションを接続し、描画側のUIにも同じセッションを渡す。
+   static void SetEditorSceneSession(EditorSceneSession* session);
+
+   /// @brief エディタ専用のカメラとビューポート操作を取得する。
+   static EditorSceneSession* GetEditorSceneSession();
+
+   /// @brief 現在のシーンの編集コンテキストを取得する。
+   static EditorSceneContext* GetEditorSceneContext();
+#endif
    //================================================================
    // 入力
    //================================================================

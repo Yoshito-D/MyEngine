@@ -27,7 +27,9 @@
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/Scene.h"
+#include "GameEngine/Editor/EditorSceneSession.h"
+#include "GameEngine/Scene/SceneCatalog.h"
 #include "imgui.h"
 #include <algorithm>
 #include <cctype>
@@ -120,53 +122,6 @@ std::string TruncateTextWithEllipsis(const std::string& text, float maxWidth) {
    return kEllipsis;
 }
 
-constexpr const char* kSceneCatalogPath = "resources/game/scene_catalog.json";
-
-bool LoadSceneCatalogData(nlohmann::json& catalogData, std::string& errorMessage) {
-   std::ifstream file(kSceneCatalogPath);
-
-   if (!file.is_open()) {
-      errorMessage = "Scene catalog could not be opened";
-      return false;
-   }
-
-   try {
-      file >> catalogData;
-   } catch (const nlohmann::json::exception& exception) {
-      errorMessage = "Scene catalog contains invalid JSON: " + std::string(exception.what());
-      return false;
-   }
-
-   if (!catalogData.is_object() || !catalogData.contains("scenes") || !catalogData.at("scenes").is_object()) {
-      errorMessage = "Scene catalog must contain a scenes object";
-      return false;
-   }
-
-   if (catalogData.contains("initialScene") && !catalogData.at("initialScene").is_string()) {
-      errorMessage = "Scene catalog initialScene must be a string";
-      return false;
-   }
-
-   return true;
-}
-
-bool SaveJsonFile(const std::filesystem::path& filePath, const nlohmann::json& jsonData, std::string& errorMessage) {
-   try {
-      if (SaveJsonFileAtomically(filePath, jsonData, kJsonIndentSize)) {
-         return true;
-      }
-
-      errorMessage = "Write failed: " + filePath.generic_string();
-   } catch (const std::exception& error) {
-      errorMessage = "Write failed: " + std::string(error.what());
-   }
-   return false;
-}
-
-bool IsValidSceneName(const std::string& sceneName) {
-   return EditorAssetRegistry::IsValidName(sceneName);
-}
-
 void DrawHierarchyInsertionDropTarget(
    EditorSceneContext& editorContext, Object* targetObject, EditorSceneContext::HierarchyDropPosition dropPosition) {
    if (!targetObject) return;
@@ -219,6 +174,11 @@ void RendererEditorController::Initialize(AssetManager* assetManager) {
    RefreshSceneCatalog();
 }
 
+void RendererEditorController::SetSession(EditorSceneSession* session) {
+   session_ = session;
+   RefreshSceneCatalog();
+}
+
 void RendererEditorController::BeginEditorFrame() {
    auto* context = GetActiveEditorContext();
 
@@ -248,7 +208,9 @@ void RendererEditorController::BeginEditorFrame() {
          editorInspectorEntityId_.clear();
          editorAssetQueryKey_.clear();
          editorAssetCheckKey_.clear();
-         context->Load();
+         if (auto* manager = EngineContext::GetSceneManager()) {
+            manager->RequestReload();
+         }
       }
 
       editorSceneReloadFilePath_.clear();
@@ -441,10 +403,10 @@ void RendererEditorController::ShowSceneManagementWindow() {
    }
 
    auto* context = GetActiveEditorContext();
-   const auto* scene = BaseScene::GetCurrentScene();
+   const auto* scene = EngineContext::GetCurrentScene();
    const bool editable = context && EngineContext::IsPlayModeEdit();
    ImGui::TextWrapped("%s: %s%s", Tr("現在のシーン", "Current scene"),
-      scene ? scene->GetEditorSceneName().c_str() : "<none>", context && context->IsDirty() ? " *" : "");
+      scene ? scene->GetDefinition().name.c_str() : "<none>", context && context->IsDirty() ? " *" : "");
 
    if (context) {
       const auto pathUtf8 = context->GetSceneFilePath().generic_u8string();
@@ -543,6 +505,11 @@ void RendererEditorController::ShowSceneManagementWindow() {
 
    if (context && !context->GetLastStatusMessage().empty()) {
       ImGui::TextWrapped("%s", context->GetLastStatusMessage().c_str());
+   }
+
+   if (auto* manager = EngineContext::GetSceneManager();
+      manager && manager->GetLastResult().status != SceneLoadStatus::Succeeded) {
+      ImGui::TextWrapped("%s", manager->GetLastResult().message.c_str());
    }
 
    if (!editorSceneCatalogStatus_.empty()) {
@@ -1123,135 +1090,41 @@ void RendererEditorController::ShowHierarchyWindow() {
 }
 
 void RendererEditorController::RefreshSceneCatalog() {
-   nlohmann::json catalogData;
-   std::string errorMessage;
-
-   if (!LoadSceneCatalogData(catalogData, errorMessage)) {
-      editorSceneNames_.clear();
-      editorSelectedSceneName_.clear();
-      editorReleaseStartSceneName_.clear();
-      editorSceneCatalogStatus_ = std::move(errorMessage);
+   auto* catalog = EngineContext::GetSceneCatalog();
+   if (!catalog) return;
+   if (!catalog->Reload()) {
+      editorSceneCatalogStatus_ = catalog->GetLastError();
       return;
    }
-
-   editorSceneNames_.clear();
-
-   for (const auto& [sceneName, scenePath] : catalogData.at("scenes").items()) {
-      if (!sceneName.empty() && scenePath.is_string()) {
-         editorSceneNames_.push_back(sceneName);
-      }
+   editorSceneNames_ = catalog->GetNames();
+   editorReleaseStartSceneName_ = catalog->GetInitialSceneName();
+   if (!catalog->Contains(editorSelectedSceneName_)) {
+      const auto* scene = EngineContext::GetCurrentScene();
+      editorSelectedSceneName_ = scene ? scene->GetDefinition().name : editorReleaseStartSceneName_;
    }
-
-   std::sort(editorSceneNames_.begin(), editorSceneNames_.end());
-   editorReleaseStartSceneName_ = catalogData.value("initialScene", "");
-
-   // 選択中の項目が外部編集で消えた場合は、起動シーンへ戻して不正な切替要求を防ぐ。
-   if (std::find(editorSceneNames_.begin(), editorSceneNames_.end(), editorSelectedSceneName_) ==
-       editorSceneNames_.end()) {
-      const auto* currentScene = BaseScene::GetCurrentScene();
-      const std::string preferred = currentScene ? currentScene->GetEditorSceneName() : editorReleaseStartSceneName_;
-      editorSelectedSceneName_ =
-         std::find(editorSceneNames_.begin(), editorSceneNames_.end(), preferred) != editorSceneNames_.end()
-            ? preferred
-            : (editorSceneNames_.empty() ? std::string{} : editorSceneNames_.front());
-   }
-
    editorSceneCatalogStatus_.clear();
 }
 
-bool RendererEditorController::CreateEditorScene(const std::string& sceneName) {
-   if (!IsValidSceneName(sceneName)) {
-      editorSceneCatalogStatus_ = "Create failed: invalid scene name";
+bool RendererEditorController::CreateEditorScene(const std::string& name) {
+   auto* catalog = EngineContext::GetSceneCatalog();
+   if (!catalog || !catalog->CreateScene(name)) {
+      editorSceneCatalogStatus_ = catalog ? catalog->GetLastError() : "Scene service is unavailable";
       return false;
    }
-
-   nlohmann::json catalogData;
-   std::string errorMessage;
-
-   if (!LoadSceneCatalogData(catalogData, errorMessage)) {
-      editorSceneCatalogStatus_ = std::move(errorMessage);
-      return false;
-   }
-
-   // Windowsの大文字小文字非区別環境で同一ファイルへ衝突しないよう、表示名もcase-insensitiveで検査する。
-   const std::string foldedSceneName = [&sceneName]() {
-      std::string folded = sceneName;
-      std::transform(folded.begin(), folded.end(), folded.begin(),
-         [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-      return folded;
-   }();
-
-   for (const auto& registeredScene : catalogData.at("scenes").items()) {
-      const std::string& registeredName = registeredScene.key();
-      std::string foldedRegisteredName = registeredName;
-      std::transform(foldedRegisteredName.begin(), foldedRegisteredName.end(), foldedRegisteredName.begin(),
-         [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-
-      if (foldedRegisteredName == foldedSceneName) {
-         editorSceneCatalogStatus_ = "Create failed: scene already exists";
-         return false;
-      }
-   }
-
-   const std::filesystem::path sceneFilePath =
-      std::filesystem::path("resources") / "game" / "scenes" /
-      std::filesystem::path(std::u8string(sceneName.begin(), sceneName.end()) + u8".json");
-
-   if (std::filesystem::exists(sceneFilePath)) {
-      editorSceneCatalogStatus_ = "Create failed: scene file already exists";
-      return false;
-   }
-
-   nlohmann::json sceneData = {{"version", EditorSceneContext::kCurrentSceneFormatVersion}, {"sceneName", sceneName},
-      {"objects", nlohmann::json::array()}, {"hierarchyOrder", nlohmann::json::array()},
-      {"cameras", {{"brain", {{"defaultBlendTime", 0.0f}}}, {"virtualCameras", nlohmann::json::array()}}}};
-
-   if (!SaveJsonFile(sceneFilePath, sceneData, errorMessage)) {
-      editorSceneCatalogStatus_ = std::move(errorMessage);
-      return false;
-   }
-
-   catalogData["scenes"][sceneName] = "game/scenes/" + sceneName + ".json";
-
-   if (!SaveJsonFile(kSceneCatalogPath, catalogData, errorMessage)) {
-      // カタログへ登録できなければ到達不能なシーンファイルになるため、直前の生成だけをロールバックする。
-      std::error_code rollbackError;
-      std::filesystem::remove(sceneFilePath, rollbackError);
-      editorSceneCatalogStatus_ = rollbackError
-                                     ? "Scene file was created, but catalog update failed: " + errorMessage
-                                     : "Catalog update failed; the new scene file was rolled back: " + errorMessage;
-      return false;
-   }
-
    RefreshSceneCatalog();
-   editorSelectedSceneName_ = sceneName;
-   editorSceneCatalogStatus_ = "Created scene: " + sceneName;
+   editorSelectedSceneName_ = name;
+   editorSceneCatalogStatus_ = "Created scene: " + name;
    return true;
 }
 
-bool RendererEditorController::SetReleaseStartScene(const std::string& sceneName) {
-   nlohmann::json catalogData;
-   std::string errorMessage;
-
-   if (!LoadSceneCatalogData(catalogData, errorMessage)) {
-      editorSceneCatalogStatus_ = std::move(errorMessage);
+bool RendererEditorController::SetReleaseStartScene(const std::string& name) {
+   auto* catalog = EngineContext::GetSceneCatalog();
+   if (!catalog || !catalog->SetInitialScene(name)) {
+      editorSceneCatalogStatus_ = catalog ? catalog->GetLastError() : "Scene service is unavailable";
       return false;
    }
-
-   if (sceneName.empty() || !catalogData.at("scenes").contains(sceneName)) {
-      editorSceneCatalogStatus_ = "Release start scene is not registered";
-      return false;
-   }
-
-   catalogData["initialScene"] = sceneName;
-
-   if (!SaveJsonFile(kSceneCatalogPath, catalogData, errorMessage)) {
-      editorSceneCatalogStatus_ = std::move(errorMessage);
-      return false;
-   }
-
-   editorReleaseStartSceneName_ = sceneName;
-   editorSceneCatalogStatus_ = "Release start scene: " + sceneName;
+   editorReleaseStartSceneName_ = name;
+   editorSceneCatalogStatus_ = "Release start scene: " + name;
    return true;
 }
 
@@ -1377,7 +1250,7 @@ void RendererEditorController::ShowInspectorWindow() {
       }
 
       if (editorContext) {
-         editorContext->DrawGizmoInspectorControls();
+         session_->DrawGizmoInspectorControls();
       }
 
       ImGui::Spacing();
@@ -1554,22 +1427,22 @@ void RendererEditorController::ShowSceneOverlay(
       }
    }
 
-   editorContext->AcceptViewportAssetDrop();
+   session_->AcceptViewportAssetDrop();
 
    if (editorContext->GetSelectedObject() || editorContext->GetSelectedParticleSystem()) {
       editorSelectedAssetId_.clear();
    }
 
-   editorContext->DrawTransformGizmo(viewportX, viewportY, viewportWidth, viewportHeight);
+   session_->DrawTransformGizmo(viewportX, viewportY, viewportWidth, viewportHeight);
 
-   if (auto* currentScene = BaseScene::GetCurrentScene()) {
-      if (auto* cameraEditor = currentScene->GetCameraEditor()) {
+   if (auto* currentScene = EngineContext::GetCurrentScene()) {
+      if (auto* cameraEditor = session_->GetCameraEditor()) {
          cameraEditor->DrawSceneGizmos(
             EngineContext::GetActiveCamera(), viewportX, viewportY, viewportWidth, viewportHeight);
       }
    }
 
-   editorContext->HandleViewportClickSelection(viewportX, viewportY, viewportWidth, viewportHeight);
+   session_->HandleViewportClickSelection(viewportX, viewportY, viewportWidth, viewportHeight);
 }
 
 void RendererEditorController::MarkActiveSceneDirty() {
@@ -1579,13 +1452,7 @@ void RendererEditorController::MarkActiveSceneDirty() {
 }
 
 EditorSceneContext* RendererEditorController::GetActiveEditorContext() const {
-   auto* currentScene = BaseScene::GetCurrentScene();
-
-   if (!currentScene) {
-      return nullptr;
-   }
-
-   return currentScene->GetEditorSceneContext();
+   return session_ ? session_->GetContext() : nullptr;
 }
 
 void RendererEditorController::DrawAssetEntry(EditorSceneContext& context, const EditorAssetEntry& entry) {
@@ -1663,25 +1530,23 @@ void RendererEditorController::DrawAssetEntry(EditorSceneContext& context, const
       if (entry.type == EditorAssetType::Folder) {
          NavigateToFolder(entry.assetId);
       } else if (entry.type == EditorAssetType::Scene) {
-         nlohmann::json catalog;
-         std::string error;
-
-         if (LoadSceneCatalogData(catalog, error)) {
-            bool found = false;
-
-            for (const auto& scene : catalog["scenes"].items()) {
-               if (scene.value().is_string() && scene.value().get<std::string>() == entry.assetId) {
-                  RequestSceneOpen(scene.key());
+         auto* catalog = EngineContext::GetSceneCatalog();
+         bool found = false;
+         if (catalog && catalog->Reload()) {
+            for (const auto& name : catalog->GetNames()) {
+               const auto expected = std::filesystem::path("resources") /
+                                     std::filesystem::path(std::u8string(entry.assetId.begin(), entry.assetId.end()));
+               if (catalog->Find(name)->filePath.lexically_normal() == expected.lexically_normal()) {
+                  RequestSceneOpen(name);
                   found = true;
                   break;
                }
             }
-
-            if (!found) {
-               editorAssetStatus_ = "This scene is not registered in scene_catalog.json";
-            }
-         } else {
-            editorAssetStatus_ = error;
+         }
+         if (!found) {
+            editorAssetStatus_ = catalog && !catalog->GetLastError().empty()
+                                    ? catalog->GetLastError()
+                                    : "This scene is not registered in the catalog";
          }
       }
    }
@@ -1787,8 +1652,9 @@ void RendererEditorController::HandlePanelShortcuts(EditorSceneContext& context,
    const auto& io = ImGui::GetIO();
 
    if (!EngineContext::IsPlayModeEdit() || io.WantTextInput || ImGui::IsAnyItemActive() ||
-       !ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+       !ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
       return;
+   }
 
    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
       FinishInspectorEdit(context);
@@ -2171,9 +2037,9 @@ void RendererEditorController::RequestSceneOpen(const std::string& name, bool re
    if (!context || !EngineContext::IsPlayModeEdit()) return;
 
    FinishInspectorEdit(*context);
-   const auto* scene = BaseScene::GetCurrentScene();
+   const auto* scene = EngineContext::GetCurrentScene();
    editorPendingSceneName_ = name;
-   editorPendingSceneReload_ = reload || (scene && name == scene->GetEditorSceneName());
+   editorPendingSceneReload_ = reload || (scene && name == scene->GetDefinition().name);
 
    if (context->IsDirty()) {
       editorUnsavedDialogRequested_ = true;

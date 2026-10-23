@@ -4,6 +4,7 @@
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Object.h"
+#include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
@@ -12,8 +13,6 @@
 #include <unordered_set>
 
 namespace GameEngine {
-
-SceneWorld* SceneWorld::sCurrent_ = nullptr;
 
 namespace {
 bool HasOptionalJsonType(const nlohmann::json& data, const char* key, nlohmann::json::value_t type) {
@@ -60,7 +59,7 @@ bool IsValidObjectState(const nlohmann::json& data) {
 }
 } // namespace
 
-SceneWorld::SceneWorld(CinemachineBrain* cameraBrain) : cameraBrain_(cameraBrain) {
+SceneWorld::SceneWorld(CinemachineBrain* cameraBrain) : cameraBrain_(cameraBrain), objectStore_(*this) {
 }
 
 SceneWorld::~SceneWorld() {
@@ -68,7 +67,7 @@ SceneWorld::~SceneWorld() {
 }
 
 CinemachineBrain* SceneWorld::GetCameraBrain() const {
-   return cameraBrain_ ? cameraBrain_ : EngineContext::GetActiveBrain();
+   return cameraBrain_;
 }
 
 bool SceneWorld::IsValidSnapshot(const nlohmann::json& data) {
@@ -86,6 +85,40 @@ bool SceneWorld::IsValidSnapshot(const nlohmann::json& data) {
       if (!IsValidObjectState(object) || !object.contains("id") || !object.contains("objectType") ||
           object.at("id").get<std::string>().empty() || !ids.insert(object.at("id").get<std::string>()).second) {
          return false;
+      }
+   }
+
+   for (const auto& object : data.at("objects")) {
+      const auto kind = object.at("objectType").get<std::string>();
+      if (kind == "ParticleSystem") {
+         if (object.contains("components") && !object.at("components").empty()) {
+            return false;
+         }
+         continue;
+      }
+      ObjectType type;
+      if (kind == "Generic") {
+         type = ObjectType::Generic;
+      } else if (kind == "Model") {
+         type = ObjectType::Model;
+      } else if (kind == "Sprite") {
+         type = ObjectType::Sprite;
+      } else if (kind == "UIText") {
+         type = ObjectType::UIText;
+      } else if (kind == "Skybox") {
+         type = ObjectType::Skybox;
+      } else {
+         return false;
+      }
+      if (!object.contains("components")) {
+         return false;
+      }
+      std::unordered_set<std::string> componentTypes;
+      for (const auto& component : object.at("components")) {
+         const auto name = component.value("typeName", std::string{});
+         if (!componentTypes.insert(name).second || !ComponentRegistry::GetInstance().Supports(name, type)) {
+            return false;
+         }
       }
    }
 
@@ -111,8 +144,15 @@ bool SceneWorld::IsValidSnapshot(const nlohmann::json& data) {
          return false;
       }
 
+      std::unordered_set<std::string> componentTypes;
+      const auto registered = VirtualCamera::GetRegisteredComponentNames();
       for (const auto& component : camera.at("components")) {
          if (!IsValidComponentState(component, "componentName")) {
+            return false;
+         }
+         const auto name = component.value("componentName", std::string{});
+         if (!componentTypes.insert(name).second ||
+             std::find(registered.begin(), registered.end(), name) == registered.end()) {
             return false;
          }
       }
@@ -148,8 +188,6 @@ bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
       Logger::Error("SceneWorld load failed: invalid snapshot format or duplicate id");
       return false;
    }
-
-   const auto backup = SerializeToJson();
    try {
       if (ApplySnapshot(sceneData)) {
          return true;
@@ -157,29 +195,18 @@ bool SceneWorld::LoadFromJson(const nlohmann::json& sceneData) {
    } catch (const std::exception& error) {
       Logger::Error("SceneWorld load failed: " + std::string(error.what()));
    }
-
-   // 初回・Reload・Play停止のどの経路でも、失敗時は同じ完全状態へ戻す。
-   try {
-      if (!ApplySnapshot(backup)) {
-         Logger::Error("SceneWorld could not restore the previous snapshot");
-      }
-   } catch (const std::exception& error) {
-      Clear();
-      Logger::Error("SceneWorld recovery failed: " + std::string(error.what()));
-   }
-
+   // 復旧元はManagerが所有する。ここでは失敗した構築物だけを解除する。
+   Clear();
    return false;
 }
 
 bool SceneWorld::ApplySnapshot(const nlohmann::json& sceneData) {
-   if (sceneData.contains("renderSettings") && !sceneData.at("renderSettings").empty() &&
-       !EngineContext::ApplyPostProcessSceneState(sceneData.at("renderSettings"))) {
+   if (!EngineContext::ApplyPostProcessSceneState(sceneData.value("renderSettings", nlohmann::json::object()))) {
       return false;
    }
 
    // JSONから除かれたIDも含め、全Entityを同じStoreから置き換える。
    Clear();
-   sCurrent_ = this;
 
    for (const auto& data : sceneData.at("objects")) {
       const bool particle = data.at("objectType") == "ParticleSystem";
@@ -197,6 +224,7 @@ bool SceneWorld::ApplySnapshot(const nlohmann::json& sceneData) {
 }
 
 void SceneWorld::Clear() {
+   ParticleSystem::ClearWorldRuntime(this);
    if (auto* brain = GetCameraBrain()) {
       for (const auto& camera : virtualCameras_) {
          brain->UnregisterVirtualCamera(camera.get());
@@ -209,10 +237,29 @@ void SceneWorld::Clear() {
    virtualCameras_.clear();
    objectStore_.Clear();
    objectStore_.FlushDeferredDeletes();
+}
 
-   if (sCurrent_ == this) {
-      sCurrent_ = nullptr;
+void SceneWorld::Update(float deltaTime) {
+   const auto objects = objectStore_.GetObjects();
+   for (auto* object : objects) {
+      if (objectStore_.Contains(object) && !objectStore_.IsPendingDeletion(object)) {
+         object->UpdateComponents(deltaTime);
+      }
    }
+   const auto particles = ParticleSystem::GetRegisteredParticleSystems();
+   for (auto* particle : particles) {
+      if (particle && particle->GetWorld() == this) {
+         particle->Update(deltaTime);
+      }
+   }
+   ParticleSystem::ProcessPendingSubEmitters(this);
+   if (cameraBrain_) {
+      cameraBrain_->Update(deltaTime);
+   }
+}
+
+void SceneWorld::FinishFrame() {
+   objectStore_.FlushDeferredDeletes();
 }
 
 Object* SceneWorld::FindObjectById(const std::string& objectId) {
@@ -260,6 +307,7 @@ VirtualCamera* SceneWorld::CreateVirtualCamera(const std::string& name) {
    }
 
    camera->SetId(id);
+   camera->SetWorld(this);
    auto* result = camera.get();
    virtualCameras_.push_back(std::move(camera));
    virtualCamerasById_[id] = result;
@@ -287,13 +335,11 @@ bool SceneWorld::RemoveVirtualCamera(VirtualCamera* camera) {
 void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
    if (!sceneData.contains("cameras") || !sceneData.at("cameras").is_object()) return;
 
-   // VirtualCameraはBrainへ登録されて初めて評価対象になる。Brain不在時に
-   // 半端なカメラだけ所有しても機能しないため、まとめて読み飛ばす。
+   // カメラの登録先がない場合も失敗として通知し、不完全なシーンを成功扱いにしない。
    auto* brain = GetCameraBrain();
 
    if (!brain) {
-      Logger::EngineWarning("Virtual cameras skipped because no active camera brain exists");
-      return;
+      throw std::runtime_error("Scene requires an output camera brain");
    }
 
    const auto& camerasData = sceneData.at("cameras");
@@ -309,20 +355,21 @@ void SceneWorld::RestoreCameras(const nlohmann::json& sceneData) {
    if (!camerasData.contains("virtualCameras") || !camerasData.at("virtualCameras").is_array()) return;
 
    for (const auto& cameraData : camerasData.at("virtualCameras")) {
-      // DebugCameraはエディター側が別途所有・復元するため、シーンデータから二重生成しない。
-      if (!cameraData.is_object() || cameraData.value("name", "") == "DebugCamera") {
+      if (!cameraData.is_object()) {
          continue;
       }
 
       auto camera = std::make_unique<VirtualCamera>();
       VirtualCamera* rawCamera = camera.get();
+      rawCamera->SetWorld(this);
       rawCamera->Initialize();
-      rawCamera->Deserialize(cameraData);
+      if (!rawCamera->Deserialize(cameraData)) {
+         throw std::runtime_error("Camera component restoration failed");
+      }
       const std::string id = rawCamera->GetId();
 
       if (id.empty() || virtualCamerasById_.contains(id)) {
-         Logger::EngineWarning("Virtual camera skipped because its id is empty or duplicated");
-         continue;
+         throw std::runtime_error("Camera id is empty or duplicated");
       }
 
       // BrainとID索引は非所有ポインターを保持する。最後にunique_ptrをコンテナへ移し、

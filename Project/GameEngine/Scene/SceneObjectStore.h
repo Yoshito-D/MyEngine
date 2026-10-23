@@ -10,6 +10,7 @@
 
 namespace GameEngine {
 
+class SceneWorld;
 class Model;
 class Object;
 class ParticleSystem;
@@ -20,8 +21,8 @@ class UIText;
 /// @brief 保存シーンから生成する各Object型を所有し、安定IDと遅延削除を管理する。
 class SceneObjectStore {
 public:
-   /// @brief 空の所有ストアを作成する。具象型の寿命は実装側で管理する。
-   SceneObjectStore();
+   /// @brief 指定Worldに所属するObjectとパーティクルの所有ストアを作成する。
+   explicit SceneObjectStore(SceneWorld& world);
 
    /// @brief 所有するシーンオブジェクトを破棄する。
    ~SceneObjectStore();
@@ -48,13 +49,13 @@ public:
    Object* CreateSprite(const std::string& textureAssetId, const Transform* initialTransform = nullptr,
       const std::string& requestedId = {});
 
-   /// @brief エディター管理のUIテキストを作成する
+   /// @brief UIテキストを作成する
    /// @param initialTransform 初期スクリーン座標。省略時は既定値を使用する
    /// @param requestedId 復元時に使用するオブジェクトID
    /// @return 作成したUIテキスト。作成できなかった場合はnullptr
    Object* CreateUIText(const Transform* initialTransform = nullptr, const std::string& requestedId = {});
 
-   /// @brief エディター管理のスカイボックスを作成する
+   /// @brief スカイボックスを作成する
    /// @param requestedId 復元時に使用するオブジェクトID
    /// @return 作成したスカイボックス。作成できなかった場合はnullptr
    Object* CreateSkybox(const std::string& requestedId = {});
@@ -113,7 +114,7 @@ public:
    /// @return 対象が存在して削除予約できた場合はtrue
    bool DeleteParticleSystem(const std::string& objectId);
 
-   /// @brief 前フレームに遅延削除した実体を破棄する
+   /// @brief 描画が完了した削除待ちの実体を破棄する
    void FlushDeferredDeletes();
 
    /// @brief Objectが削除待ちで編集対象から外れているかを調べる
@@ -235,17 +236,10 @@ private:
 
    static nlohmann::json SerializeSpriteData(const Sprite* sprite);
 
-   std::vector<std::unique_ptr<Object>> genericObjects_;
-   std::vector<std::unique_ptr<Model>> models_;
-   std::vector<std::unique_ptr<Sprite>> sprites_;
-   std::vector<std::unique_ptr<UIText>> uiTexts_;
-   std::vector<std::unique_ptr<Skybox>> skyboxes_;
+   SceneWorld& world_;
+   std::vector<std::unique_ptr<Object>> objects_;
    std::vector<std::unique_ptr<ParticleSystem>> particleSystems_;
-   std::vector<std::unique_ptr<Object>> deferredDeleteGenericObjects_;
-   std::vector<std::unique_ptr<Model>> deferredDeleteModels_;
-   std::vector<std::unique_ptr<Sprite>> deferredDeleteSprites_;
-   std::vector<std::unique_ptr<UIText>> deferredDeleteUITexts_;
-   std::vector<std::unique_ptr<Skybox>> deferredDeleteSkyboxes_;
+   std::vector<std::unique_ptr<Object>> deferredDeleteObjects_;
    std::vector<std::unique_ptr<ParticleSystem>> deferredDeleteParticleSystems_;
    std::unordered_set<const Object*> pendingDeletionObjects_;
    std::unordered_map<std::string, Object*> idToObject_;

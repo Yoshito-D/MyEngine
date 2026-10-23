@@ -6,6 +6,7 @@
 #include "GameEngine/Editor/EditorAssetRegistry.h"
 #include "GameEngine/Editor/EditorCommand.h"
 #include "GameEngine/Scene/SceneWorld.h"
+#include "GameEngine/Scene/SceneDefinition.h"
 #include "GameEngine/Math/MathUtils.h"
 #include "GameEngine/Utility/Logger.h"
 #include <cstddef>
@@ -27,7 +28,7 @@ public:
    static constexpr std::int32_t kCurrentSceneFormatVersion = SceneWorld::kFormatVersion;
 
    /// @brief 編集するWorldを関連付け、所有権はシーンに残す。
-   explicit EditorSceneContext(SceneWorld& world) : world_(world) {}
+   explicit EditorSceneContext(SceneWorld& world) : world_(&world) {}
 
    /// @brief ギズモで編集するトランスフォーム要素
    enum class GizmoOperation {
@@ -49,9 +50,15 @@ public:
       After,  ///< 対象と同じ親の直後
    };
 
-   /// @brief シーン名とアセット一覧を初期化する
-   /// @param sceneName 保存ファイル名の基準となるシーン名
-   void Initialize(std::string sceneName);
+   /// @brief シーン情報とアセット一覧を初期化する
+   /// @param definition ロード・保存で共有するシーン名と実ファイルパス
+   void Initialize(const SceneDefinition& definition);
+
+   /// @brief シーンの実体を破棄する前に、選択中のポインターを切り離す。
+   void Suspend();
+
+   /// @brief 復元したWorldへ再接続し、必要に応じて編集履歴と未保存状態を引き継ぐ。
+   void Rebind(SceneWorld& world, const SceneDefinition& definition, const nlohmann::json& data, bool preserve);
 
    /// @brief 選択と編集履歴を破棄して初期状態へ戻す
    void Clear();
@@ -60,27 +67,16 @@ public:
    /// @return 保存に成功した場合はtrue
    bool Save();
 
-   /// @brief シーンJSONを読み込み、現在の編集状態を置き換える
-   /// @return 読み込みと復元に成功した場合はtrue
-   bool Load();
-
    /// @brief World全体の完全スナップショットを構築する
    /// @return 保存可能なシーンJSON
    nlohmann::json SerializeToJson();
-
-   /// @brief JSONからオブジェクト・パーティクル・カメラを復元する
-   /// @param sceneData 読み込むシーンJSON
-   /// @return 必要なシーン構造を適用できた場合はtrue
-   /// @note 失敗時は保存前の状態と安定IDによる選択・履歴を復元する。旧リソースの復元失敗は状態メッセージで通知する。
-   /// @note 描画コマンドが旧オブジェクトを参照していないフレーム境界で呼び出す
-   bool LoadFromJson(const nlohmann::json& sceneData);
 
    /// @brief シーンJSONのヒエラルキー順を現在のオブジェクトへ適用する
    /// @param hierarchyOrderData オブジェクトIDの配列
    void ApplyHierarchyOrder(const nlohmann::json& hierarchyOrderData);
 
-   /// @brief 現在のシーン名に対応する保存先を取得する
-   /// @return resources配下のシーンJSONパス
+   /// @brief 現在のシーン情報に登録された保存先を取得する
+   /// @return ロード時に解決したシーンJSONの実ファイルパス
    std::filesystem::path GetSceneFilePath() const;
 
    /// @brief 未保存の編集があるか調べる
@@ -267,43 +263,9 @@ public:
    /// @brief アセット候補を再走査する。
    void RefreshAssets();
 
-   /// @brief 現在のギズモ操作種別を取得する
-   /// @return 平行移動・回転・拡縮のいずれか
-   GizmoOperation GetGizmoOperation() const { return gizmoOperation_; }
-
-   /// @brief ギズモ操作種別を設定する
-   /// @param operation 平行移動・回転・拡縮のいずれか
-   void SetGizmoOperation(GizmoOperation operation) { gizmoOperation_ = operation; }
-
-   /// @brief 現在のギズモ座標空間を取得する
-   /// @return ローカルまたはワールド
-   GizmoMode GetGizmoMode() const { return gizmoMode_; }
-
-   /// @brief ギズモ座標空間を設定する
-   /// @param mode ローカルまたはワールド
-   void SetGizmoMode(GizmoMode mode) { gizmoMode_ = mode; }
-
-   /// @brief Transformインスペクター内へGuizmoの操作種別と座標空間を描画する
-   void DrawGizmoInspectorControls();
-
-   /// @brief 選択対象のトランスフォームギズモをビューポート上へ描画する
-   /// @param viewportX ビューポート左上のX座標
-   /// @param viewportY ビューポート左上のY座標
-   /// @param viewportWidth ビューポート幅
-   /// @param viewportHeight ビューポート高さ
-   void DrawTransformGizmo(float viewportX, float viewportY, float viewportWidth, float viewportHeight);
-
-   /// @brief ビューポートへの型検証済みモデル・パーティクルアセットドロップを受け付ける
-   void AcceptViewportAssetDrop();
-
-   /// @brief ビューポートクリック位置から描画IDを読み、対象を選択する
-   /// @param viewportX ビューポート左上のX座標
-   /// @param viewportY ビューポート左上のY座標
-   /// @param viewportWidth ビューポート幅
-   /// @param viewportHeight ビューポート高さ
-   void HandleViewportClickSelection(float viewportX, float viewportY, float viewportWidth, float viewportHeight);
-
 private:
+   friend class EditorSceneSession;
+
    class CommandOperations final : public EditorCommandTarget {
    public:
       /// @brief 実行中のコマンドにだけ所有者の編集操作を提供する。
@@ -348,10 +310,6 @@ private:
    void FinishCommand(bool changed);
    bool IsObjectAlive(const Object* object) const;
    bool IsParticleSystemAlive(const ParticleSystem* particleSystem) const;
-   bool HasTransformChanged(const Transform& lhs, const Transform& rhs) const;
-   void SubmitTransformIfNeeded(const Transform& before, const Transform& after, Object* object);
-   void SubmitParticleTransformIfNeeded(
-      const Transform& before, const Transform& after, ParticleSystem* particleSystem);
    Transform BuildPlacementTransformInFrontOfCamera() const;
    std::string GetObjectIdForCommand(const Object* object) const;
    std::string GetParticleSystemIdForCommand(const ParticleSystem* particleSystem);
@@ -359,31 +317,23 @@ private:
    void SetStatus(std::string message, Logger::LogLevel level = Logger::LogLevel::Info);
    void ApplyDuplicateOffset(nlohmann::json& snapshot) const;
 
-   std::string sceneName_ = "Scene";
+   SceneDefinition definition_;
+   std::string suspendedObjectId_, suspendedParticleId_;
    bool isDirty_ = false;
    bool referencesDirty_ = true;
    std::string lastStatusMessage_;
    Object* selectedObject_ = nullptr;
    ParticleSystem* selectedParticleSystem_ = nullptr;
    EditorAssetRegistry assetRegistry_;
-   SceneWorld& world_;
+   SceneWorld* world_;
 
-   SceneObjectStore& Store() { return world_.GetObjectStore(); }
+   SceneObjectStore& Store() { return world_->GetObjectStore(); }
 
-   const SceneObjectStore& Store() const { return world_.GetObjectStore(); }
+   const SceneObjectStore& Store() const { return world_->GetObjectStore(); }
 
    EditorCommandStack commandStack_;
    size_t editRevision_ = 0;
    std::vector<std::string> hierarchyOrder_;
-
-   GizmoOperation gizmoOperation_ = GizmoOperation::Translate;
-   GizmoMode gizmoMode_ = GizmoMode::Local;
-   bool isManipulating_ = false;
-   Object* manipulatingObject_ = nullptr;
-   Transform transformBeforeManipulation_{};
-   bool isManipulatingParticleSystem_ = false;
-   ParticleSystem* manipulatingParticleSystem_ = nullptr;
-   Transform particleTransformBeforeManipulation_{};
 };
 
 } // namespace GameEngine

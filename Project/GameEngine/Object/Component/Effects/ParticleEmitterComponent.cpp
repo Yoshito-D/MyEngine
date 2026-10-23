@@ -643,6 +643,7 @@ bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
       ps->Stop();
    }
 
+   ps->SetWorld(HasOwner() ? GetOwner().GetWorld() : nullptr);
    ps->SetEditorInspectable(false);
    ps->Create();
 
@@ -805,7 +806,9 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
    // アタッチ済みなら PS を生成する
    if (HasOwner()) {
       for (auto& slot : slots_) {
-         LoadSlot(slot);
+         if (!LoadSlot(slot)) {
+            throw std::runtime_error("Could not restore emitter asset: " + slot.jsonPath);
+         }
       }
    }
 }

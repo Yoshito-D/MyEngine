@@ -67,6 +67,13 @@ GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
 
 namespace GameEngine {
 Renderer::~Renderer() = default;
+#ifdef USE_IMGUI
+void Renderer::SetEditorSceneSession(EditorSceneSession* session) {
+   if (editorController_) {
+      editorController_->SetSession(session);
+   }
+}
+#endif
 
 void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager* cameraManager,
    LightManager* lightManager, AssetManager* assetManager) {
@@ -292,8 +299,9 @@ void Renderer::DrawModelWithCamera(
 
    if (!meshComponent ||
        (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile && !meshComponent->GetModelAsset()) ||
-       (meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive && !meshComponent->EnsureMesh()))
+       (meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive && !meshComponent->EnsureMesh())) {
       return;
+   }
 
    std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> handles = {texture->GetTextureSrvHandleGPU()};
 
@@ -322,8 +330,9 @@ void Renderer::Draw(
 
    if (!meshComponent ||
        (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile && !meshComponent->GetModelAsset()) ||
-       (meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive && !meshComponent->EnsureMesh()))
+       (meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive && !meshComponent->EnsureMesh())) {
       return;
+   }
 
    // DrawCommandが実行時にTextureオブジェクトへ再アクセスしないよう、登録時点で
    // メッシュ順にGPU SRVハンドルへ変換して値として保持する。
@@ -1150,8 +1159,9 @@ void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHand
 
 void Renderer::ApplySceneTransitionOverlay() {
    if (sceneTransitionOpacity_ <= 0.0f || !sceneTransitionHorizontalConstantBuffer_ ||
-       !sceneTransitionConstantBuffer_ || !offscreenRenderTarget_)
+       !sceneTransitionConstantBuffer_ || !offscreenRenderTarget_) {
       return;
+   }
 
    auto* transitionPipeline = psoManager_->GetPipeline("SceneTransition");
    const auto constantBufferSlot = psoManager_->ResolvePipelineRootParameter("SceneTransition", "constantbuffer");

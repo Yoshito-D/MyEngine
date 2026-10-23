@@ -3,6 +3,13 @@
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Object/Object.h"
 
+#ifdef USE_IMGUI
+#include "GameEngine/Editor/EditorSceneSession.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#include <imgui.h>
+#endif
+
 namespace {
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::TransformComponent::kTypeName,
@@ -14,11 +21,7 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
       GameEngine::ObjectType::UIText);
 }
 
-#ifdef USE_IMGUI
-#include "GameEngine/Scene/BaseScene.h"
-#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
-#include <imgui.h>
-#endif
+
 
 namespace GameEngine {
 
@@ -188,10 +191,8 @@ void TransformComponent::DrawInspector() {
    }
 
    // Transform InspectorとGizmoの座標系/スナップ設定を同じ欄へまとめる。
-   if (auto* currentScene = BaseScene::GetCurrentScene()) {
-      if (auto* editorContext = currentScene->GetEditorSceneContext()) {
-         editorContext->DrawGizmoInspectorControls();
-      }
+   if (auto* session = EngineContext::GetEditorSceneSession()) {
+      session->DrawGizmoInspectorControls();
    }
 
    ImGui::Spacing();

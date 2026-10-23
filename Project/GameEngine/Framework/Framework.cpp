@@ -133,30 +133,6 @@ void Framework::EndFrame() {
 }
 
 void Framework::Update() {
-   // デルタタイムを取得
-   const float deltaTime = EngineContext::GetDeltaTime();
-
-   // 機能種別ごとの静的レジストリではなく、全Entityに共通する経路でComponentを一度だけ更新する。
-   const auto registeredObjects = Object::GetRegisteredObjects();
-
-   for (auto* object : registeredObjects) {
-      if (!object) {
-         continue;
-      }
-
-      object->UpdateComponents(deltaTime);
-   }
-
-   // 登録されている全てのパーティクルシステムを更新
-   for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
-      if (!particleSystem) {
-         continue;
-      }
-
-      particleSystem->Update(deltaTime);
-   }
-
-   ParticleSystem::ProcessPendingSubEmitters();
 }
 
 void Framework::Draw() {

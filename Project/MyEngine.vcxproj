@@ -367,8 +367,6 @@
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="GameEngine\Object\Skybox\Skybox.cpp" />
-    <ClCompile Include="GameEngine\Scene\BaseScene.cpp" />
-    <ClCompile Include="GameEngine\Scene\DataDrivenScene.cpp" />
     <ClCompile Include="GameEngine\Scene\SceneWorld.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Camera.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
@@ -514,8 +512,6 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleMover.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.cpp" />
     <ClCompile Include="GameProject\Game.cpp" />
-    <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp" />
-    <ClCompile Include="GameProject\App\Scene\SceneCatalog.cpp" />
     <ClCompile Include="GameEngine\Editor\ImGui\ImGuiHelper.cpp" />
     <ClCompile Include="main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -682,8 +678,6 @@
     <ClInclude Include="GameEngine\Collision\Collider.h" />
     <ClInclude Include="GameEngine\Collision\Collision.h" />
     <ClInclude Include="GameEngine\Object\Skybox\Skybox.h" />
-    <ClInclude Include="GameEngine\Scene\BaseScene.h" />
-    <ClInclude Include="GameEngine\Scene\DataDrivenScene.h" />
     <ClInclude Include="GameEngine\Scene\SceneWorld.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Camera.h" />
     <ClInclude Include="GameEngine\Scene\Light\DirectionalLight.h" />
@@ -705,8 +699,6 @@
     <ClInclude Include="GameEngine\Scene\Camera\DebugCamera.h" />
     <ClInclude Include="GameEngine\Editor\Camera\CameraEditor.h" />
     <ClInclude Include="GameEngine\Editor\Camera\CameraGizmo.h" />
-    <ClInclude Include="GameEngine\Scene\IScene.h" />
-    <ClInclude Include="GameEngine\Scene\ISceneFactory.h" />
     <ClInclude Include="GameEngine\Scene\SceneManager.h" />
     <ClInclude Include="GameEngine\Object\Sprite\Sprite.h" />
     <ClInclude Include="GameEngine\Object\Text\UIText.h" />
@@ -795,8 +787,6 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleMover.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.h" />
     <ClInclude Include="GameProject\Game.h" />
-    <ClInclude Include="GameProject\App\Scene\MySceneFactory.h" />
-    <ClInclude Include="GameProject\App\Scene\SceneCatalog.h" />
     <ClInclude Include="GameEngine\Editor\ImGui\ImGuiHelper.h" />
   </ItemGroup>
   <ItemGroup>
@@ -880,6 +870,17 @@
     <ClCompile Include="GameEngine\Utility\JsonValue.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraMath.cpp" />
     <ClCompile Include="GameProject\App\UI\MenuAnimation.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GameEngine\Scene\Scene.cpp" />
+    <ClCompile Include="GameEngine\Scene\SceneCatalog.cpp" />
+    <ClCompile Include="GameEngine\Editor\EditorSceneSession.cpp" />
+    <ClCompile Include="GameEngine\Editor\EditorSceneGeometry.cpp" />
+    <ClInclude Include="GameEngine\Scene\Scene.h" />
+    <ClInclude Include="GameEngine\Scene\SceneDefinition.h" />
+    <ClInclude Include="GameEngine\Scene\SceneCatalog.h" />
+    <ClInclude Include="GameEngine\Editor\EditorSceneSession.h" />
+    <ClInclude Include="GameEngine\Editor\EditorSceneGeometry.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

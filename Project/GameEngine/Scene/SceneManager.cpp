@@ -1,203 +1,272 @@
 #include "GameEngine/pch.h"
-#include "GameEngine/Scene/BaseScene.h"
-#include "GameEngine/Scene/ISceneFactory.h"
 #include "GameEngine/Scene/SceneManager.h"
 #include "GameEngine/Framework/EngineContext.h"
-#include <algorithm>
-#include "GameEngine/Audio/BgmPlayer.h"
 #include "GameEngine/Object/Component/Audio/AudioSceneLifecycle.h"
+#include <fstream>
 
 namespace GameEngine {
-bool SceneManager::ChangeScene(const std::string& name) {
-   // 切り替え処理中の再入を拒否し、Finalize/InitializeからのChangeSceneで所有権が二重に動くのを防ぐ。
-   if (!factory_ || name.empty() || isChangingScene_) {
+SceneManager::SceneManager(SceneCatalog& catalog) : catalog_(catalog) {
+}
+
+SceneManager::~SceneManager() {
+   // 例外による終了時は、アプリケーション所有の通知先が先に破棄されている可能性がある。
+   beforeReplace_ = {};
+   Finalize();
+}
+
+void SceneManager::SetLifecycleCallbacks(std::function<void()> before,
+   std::function<void(const SceneSnapshot&, bool)> after, std::function<SceneSnapshot()> recovery) {
+   beforeReplace_ = std::move(before);
+   afterReplace_ = std::move(after);
+   captureRecovery_ = std::move(recovery);
+}
+
+std::string SceneManager::GetCurrentSceneName() const {
+   return currentScene_ ? currentScene_->GetDefinition().name : std::string{};
+}
+
+SceneLoadResult SceneManager::Report(SceneLoadStatus status, std::string message) {
+   lastResult_ = {status, std::move(message)};
+
+   if (status != SceneLoadStatus::Succeeded) {
+      Logger::Error(lastResult_.message);
+   }
+   return lastResult_;
+}
+
+bool SceneManager::ReadScene(const std::string& name, SceneSnapshot& snapshot) {
+   try {
+      if (!catalog_.Reload()) {
+         throw std::runtime_error(catalog_.GetLastError());
+      }
+      const auto* definition = catalog_.Find(name);
+
+      if (!definition) {
+         throw std::runtime_error("Scene is not registered: " + name);
+      }
+      std::ifstream file(definition->filePath);
+
+      if (!file) {
+         throw std::runtime_error("Could not open scene: " + definition->filePath.generic_string());
+      }
+      snapshot.definition = *definition;
+      file >> snapshot.data;
+
+      if (!SceneWorld::IsValidSnapshot(snapshot.data)) {
+         throw std::runtime_error("Invalid scene structure or component registration: " + name);
+      }
+      return true;
+   } catch (const std::exception& error) {
+      Report(SceneLoadStatus::Rejected, error.what());
+      return false;
+   }
+}
+
+SceneLoadResult SceneManager::LoadInitialScene(const std::string& name) {
+   if (currentScene_ || replacing_) {
+      return Report(SceneLoadStatus::Rejected, "Startup scene is already loaded");
+   }
+   SceneSnapshot snapshot;
+
+   if (!ReadScene(name, snapshot)) {
+      return Report(SceneLoadStatus::Fatal, lastResult_.message);
+   }
+   return Replace(snapshot);
+}
+
+bool SceneManager::RequestSceneChange(const std::string& name) {
+   if (lastResult_.status == SceneLoadStatus::Fatal) {
       return false;
    }
 
-   auto newScene = factory_->CreateScene(name);
-
-   if (!newScene) {
+   if (replacing_ || pending_ || transitionState_ != TransitionState::Idle) {
+      Report(SceneLoadStatus::Rejected, "Scene transition is already pending");
       return false;
    }
+   SceneSnapshot snapshot;
 
-   // Initializeより先にデータ名を渡し、EditorContextやDebugCamera状態が正しいファイルを参照できるようにする。
-   newScene->SetEditorSceneName(name);
-
-   if (!ChangeScene(std::move(newScene))) {
+   if (!ReadScene(name, snapshot)) {
       return false;
    }
-
-   currentSceneName_ = name;
+   pending_ = std::move(snapshot);
    return true;
 }
 
-bool SceneManager::ChangeScene(std::unique_ptr<BaseScene> newScene) {
-   if (!newScene || isChangingScene_) {
-      return false;
-   }
+bool SceneManager::RequestReload() {
+   return currentScene_ && RequestSceneChange(currentScene_->GetDefinition().name);
+}
 
-   isChangingScene_ = true;
+SceneLoadResult SceneManager::RestoreSnapshot(const SceneSnapshot& snapshot) {
+   if (replacing_) {
+      return Report(SceneLoadStatus::Rejected, "Scene replacement is already running");
+   }
+   try {
+      if (!SceneWorld::IsValidSnapshot(snapshot.data)) {
+         return Report(SceneLoadStatus::Rejected, "Invalid restoration snapshot");
+      }
+   } catch (const std::exception& error) {
+      return Report(SceneLoadStatus::Rejected, error.what());
+   }
+   return Replace(snapshot);
+}
+
+SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
+   if (replacing_) {
+      return Report(SceneLoadStatus::Rejected, "Reentrant scene replacement");
+   }
+   // モード変更や資源の解放より先に復旧元を確保し、復旧時はシーンファイルを読み直さない。
+   SceneSnapshot recovery;
+   const bool hadScene = currentScene_ != nullptr;
+   try {
+      if (hadScene) {
+         recovery = captureRecovery_ ? captureRecovery_()
+                                     : SceneSnapshot{currentScene_->GetDefinition(),
+                                          currentScene_->GetSceneWorld().SerializeToJson()};
+      }
+   } catch (const std::exception& error) {
+      return Report(SceneLoadStatus::Rejected, error.what());
+   }
+   replacing_ = true;
+   CancelTransition();
    auto* audio = EngineContext::GetAudio();
 
    if (audio) {
       audio->StopPreviews();
-   }
 
-   if (audio && audio->IsAvailable()) {
-      audio->BeginBgmSceneChange();
+      if (audio->IsAvailable()) {
+         audio->BeginBgmSceneChange();
+      }
    }
-
-   // 新シーン生成にはCamera/Light等のグローバルManagerを再利用するため、旧シーンを完全に終了してから初期化する。
-   if (currentScene_) {
-      currentScene_->Finalize();
+   std::string failure;
+   try {
+      if (beforeReplace_) {
+         beforeReplace_();
+      }
       currentScene_.reset();
+      currentScene_ = std::make_unique<Scene>(snapshot.definition);
+
+      if (!currentScene_->Initialize(snapshot.data)) {
+         throw std::runtime_error("Scene construction failed: " + snapshot.definition.name);
+      }
+
+      if (afterReplace_) {
+         afterReplace_(snapshot, false);
+      }
+   } catch (const std::exception& error) {
+      failure = error.what();
    }
 
-#ifdef USE_IMGUI
-   // シーン初期化中はRuntime更新を止める。遷移前のPlay状態の復帰はUpdateTransition側で予約する。
-   EngineContext::StopPlayModeForSceneInitialization();
-#endif
+   if (!failure.empty()) {
+      if (beforeReplace_) {
+         beforeReplace_();
+      }
+      currentScene_.reset();
 
-   currentScene_ = std::move(newScene);
+      if (!hadScene) {
+         if (audio && audio->IsAvailable()) {
+            audio->EndBgmSceneChange(false);
+         }
+         replacing_ = false;
+         return Report(SceneLoadStatus::Fatal, failure);
+      }
+      try {
+         currentScene_ = std::make_unique<Scene>(recovery.definition);
 
-   // C++で基礎Objectを生成した後に保存JSONを重ねることで、Scene固有Entityへの差分を適用できる。
-   currentScene_->Initialize();
-   currentScene_->LoadSceneDataIfNeeded();
+         if (!currentScene_->Initialize(recovery.data)) {
+            throw std::runtime_error("Could not restore the previous snapshot");
+         }
+
+         if (afterReplace_) {
+            afterReplace_(recovery, true);
+         }
+      } catch (const std::exception& error) {
+         if (beforeReplace_) {
+            beforeReplace_();
+         }
+         currentScene_.reset();
+
+         if (audio && audio->IsAvailable()) {
+            audio->EndBgmSceneChange(false);
+         }
+         replacing_ = false;
+         return Report(SceneLoadStatus::Fatal, failure + "; recovery failed: " + error.what());
+      }
+   }
 
    if (audio && audio->IsAvailable()) {
-      audio->EndBgmSceneChange(HasSceneBgmRequest());
+      audio->EndBgmSceneChange(HasSceneBgmRequest(currentScene_->GetSceneWorld()));
    }
 #ifndef USE_IMGUI
-   BeginSceneAudio();
+   BeginSceneAudio(currentScene_->GetSceneWorld());
 #endif
-
-   isChangingScene_ = false;
+   replacing_ = false;
    BeginFadeIn();
-   return true;
-}
-
-void SceneManager::Update() {
-   // フェードはPauseやtimeScaleの影響を受けないUI時間で進める。
-   UpdateTransition(EngineContext::GetUnscaledDeltaTime());
-
-   if (currentScene_) {
-      currentScene_->Update();
-   }
+   return Report(failure.empty() ? SceneLoadStatus::Succeeded : SceneLoadStatus::Recovered,
+      failure.empty() ? "Loaded scene: " + snapshot.definition.name
+                      : failure + "; restored " + recovery.definition.name);
 }
 
 void SceneManager::EditorUpdate() {
-   UpdateTransition(EngineContext::GetUnscaledDeltaTime());
+   if (transitionState_ == TransitionState::Idle) return;
+   elapsed_ += std::max(EngineContext::GetUnscaledDeltaTime(), 0.0f);
+   const float progress = std::clamp(elapsed_ / kTransitionDuration, 0.0f, 1.0f);
+   opacity_ = transitionState_ == TransitionState::FadingOut ? progress : 1.0f - progress;
+   EngineContext::SetSceneTransitionOpacity(opacity_);
 
-   if (currentScene_) {
-      currentScene_->EditorUpdate();
+   if (progress >= 1.0f) {
+      if (transitionState_ == TransitionState::FadingOut) {
+         commitReady_ = true;
+      } else {
+         transitionState_ = TransitionState::Idle;
+      }
    }
 }
 
 void SceneManager::RuntimeUpdate() {
    if (currentScene_) {
-      currentScene_->RuntimeUpdate();
+      currentScene_->RuntimeUpdate(EngineContext::GetDeltaTime());
    }
-}
-
-void SceneManager::Draw() {
-   if (currentScene_) {
-      currentScene_->Draw();
-   }
-}
-
-void SceneManager::Finalize() {
-   if (auto* audio = EngineContext::GetAudio()) {
-      audio->StopPreviews();
-   }
-
-   if (currentScene_) {
-      currentScene_->Finalize();
-      currentScene_.reset();
-   }
-
-   pendingSceneName_.clear();
-   transitionState_ = TransitionState::Idle;
-   transitionElapsed_ = 0.0f;
-   transitionOpacity_ = 0.0f;
-   EngineContext::SetSceneTransitionOpacity(0.0f);
 }
 
 void SceneManager::CheckSceneChange() {
-   if (!currentScene_ || isChangingScene_) return;
+   if (replacing_) return;
 
-   std::string nextSceneName = currentScene_->GetNextSceneName();
+   if (commitReady_ && pending_) {
+      auto snapshot = std::move(*pending_);
+      pending_.reset();
+      const auto result = Replace(snapshot);
 
-   if (nextSceneName.empty()) return;
-
-   // 既にフェード中なら最初の要求を維持し、毎フレーム遷移先が書き換わるのを防ぐ。
-   if (pendingSceneName_.empty()) {
-      StartFadeOut(nextSceneName);
-   }
-}
-
-void SceneManager::UpdateTransition(float deltaTime) {
-   if (transitionState_ == TransitionState::Idle) return;
-
-   // 負の時間を拒否し、0除算のない固定Durationに対して進捗を正規化する。
-   transitionElapsed_ += std::max(deltaTime, 0.0f);
-   const float progress = std::clamp(transitionElapsed_ / kTransitionDuration, 0.0f, 1.0f);
-
-   if (transitionState_ == TransitionState::FadingIn) {
-      transitionOpacity_ = 1.0f - progress;
-      EngineContext::SetSceneTransitionOpacity(transitionOpacity_);
-
-      if (progress >= 1.0f) {
-         transitionState_ = TransitionState::Idle;
+      if (result.status == SceneLoadStatus::Rejected) {
+         CancelTransition();
+         BeginFadeIn();
       }
-
-      return;
+   } else if (pending_ && transitionState_ != TransitionState::FadingOut) {
+      transitionState_ = TransitionState::FadingOut;
+      elapsed_ = opacity_ * kTransitionDuration;
    }
-
-   transitionOpacity_ = progress;
-   EngineContext::SetSceneTransitionOpacity(transitionOpacity_);
-
-   if (progress < 1.0f || pendingSceneName_.empty()) return;
-
-   // ChangeScene中の再参照に備えてpendingを先に空にし、遷移先名はローカルへ確保する。
-   const std::string nextSceneName = std::move(pendingSceneName_);
-   pendingSceneName_.clear();
-
-#ifdef USE_IMGUI
-   const bool resumePlayMode = EngineContext::IsPlaying();
-#endif
-
-   // 完全に暗転してから同名シーンも作り直し、切り替え後は黒からフェードインする。
-   if (!ChangeScene(nextSceneName)) {
-      BeginFadeIn();
-      BaseScene::SetNextSceneName("");
-      return;
-   }
-
-#ifdef USE_IMGUI
-   if (resumePlayMode) {
-      // シーン初期化で一時停止したプレイモードを次フレーム開始時に復帰させる。
-      EngineContext::RequestPlayModeStart();
-   }
-#endif
 }
 
-void SceneManager::StartFadeOut(const std::string& nextSceneName) {
-   if (nextSceneName.empty()) return;
-
-   pendingSceneName_ = nextSceneName;
-   BaseScene::SetNextSceneName("");
-   transitionState_ = TransitionState::FadingOut;
-
-   // フェードイン中の再要求でも現在の明るさから連続して暗転させる。
-   transitionElapsed_ = transitionOpacity_ * kTransitionDuration;
-   EngineContext::SetSceneTransitionOpacity(transitionOpacity_);
+void SceneManager::CancelTransition() {
+   pending_.reset();
+   commitReady_ = false;
+   transitionState_ = TransitionState::Idle;
+   elapsed_ = opacity_ = 0.0f;
+   EngineContext::SetSceneTransitionOpacity(0.0f);
 }
 
 void SceneManager::BeginFadeIn() {
-   // シーン切り替え直後は完全な黒を保証し、新シーンの初期フレームを露出させない。
    transitionState_ = TransitionState::FadingIn;
-   transitionElapsed_ = 0.0f;
-   transitionOpacity_ = 1.0f;
-   EngineContext::SetSceneTransitionOpacity(transitionOpacity_);
+   elapsed_ = 0.0f;
+   opacity_ = 1.0f;
+   EngineContext::SetSceneTransitionOpacity(opacity_);
 }
-} // namespace GameEngine
+
+void SceneManager::Finalize() {
+   CancelTransition();
+
+   if (currentScene_ && beforeReplace_) {
+      beforeReplace_();
+   }
+   currentScene_.reset();
+}
+}

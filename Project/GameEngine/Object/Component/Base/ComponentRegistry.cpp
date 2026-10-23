@@ -38,6 +38,11 @@ IObjectComponent* ComponentRegistry::CreateComponent(Object& owner, const std::s
    return it->second.factory(owner);
 }
 
+bool ComponentRegistry::Supports(const std::string& typeName, ObjectType type) const {
+   const auto it = registrations_.find(typeName);
+   return it != registrations_.end() && (it->second.supportedObjectTypes & ToObjectTypeMask(type)) != 0;
+}
+
 bool ComponentRegistry::HasFactory(const std::string& typeName) const {
    return registrations_.contains(typeName);
 }

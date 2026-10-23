@@ -5,7 +5,7 @@
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Math/MathUtils.h"
 #include <algorithm>
@@ -86,7 +86,7 @@ void TitleStartComponent::Update(float deltaTime) {
 
       // 選択中の拡大・縮小から連続して決定演出へ入り、基準倍率へ跳ね戻らせない。
       reactionStartScale_ = optionTransforms_[static_cast<std::size_t>(selectedOption_)]->GetLocalPose().scale;
-      GameEngine::BaseScene::SetNextSceneName(selectedScene);
+      GameEngine::EngineContext::ChangeScene(selectedScene);
       return;
    }
 

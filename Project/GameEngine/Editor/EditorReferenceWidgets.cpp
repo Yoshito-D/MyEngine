@@ -2,7 +2,7 @@
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Editor/EditorSceneContext.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/Scene.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
@@ -19,8 +19,7 @@ namespace {
 std::string assetRevealRequest;
 
 EditorSceneContext* Context() {
-   auto* scene = BaseScene::GetCurrentScene();
-   return scene ? scene->GetEditorSceneContext() : nullptr;
+   return EngineContext::GetEditorSceneContext();
 }
 
 void Missing(const std::string& id, bool asset = false) {
@@ -34,30 +33,6 @@ void Missing(const std::string& id, bool asset = false) {
    }
 }
 
-const nlohmann::json& SceneCatalog() {
-   static nlohmann::json catalog;
-   static std::filesystem::file_time_type lastWrite{};
-   const std::filesystem::path path = "resources/game/scene_catalog.json";
-   std::error_code error;
-   const auto modified = std::filesystem::last_write_time(path, error);
-
-   if (error) {
-      catalog = {};
-      return catalog;
-   }
-
-   if (catalog.is_null() || modified != lastWrite) {
-      lastWrite = modified;
-      std::ifstream file(path);
-      try {
-         file >> catalog;
-      } catch (...) {
-         catalog = {};
-      }
-   }
-
-   return catalog;
-}
 }
 
 std::string TakeAssetRevealRequest() {
@@ -285,7 +260,8 @@ bool ObjectReference(const char* label, std::string& id, const char* requiredCom
 
 bool CameraReference(const char* label, std::string& id, const char* requiredComponent) {
    auto* brain = EngineContext::GetActiveBrain();
-   auto* world = SceneWorld::GetCurrent();
+   auto* scene = EngineContext::GetCurrentScene();
+   auto* world = scene ? &scene->GetSceneWorld() : nullptr;
    auto* selected = world ? world->FindVirtualCamera(id) : nullptr;
    const auto accepts = [requiredComponent](const VirtualCamera* camera) {
       return camera && !camera->GetId().empty() &&
@@ -331,37 +307,27 @@ bool CameraReference(const char* label, std::string& id, const char* requiredCom
 }
 
 bool SceneReference(const char* label, std::string& name) {
-   const auto& catalog = SceneCatalog();
-   const bool hasScenes = catalog.is_object() && catalog.contains("scenes") && catalog.at("scenes").is_object();
+   auto* catalog = EngineContext::GetSceneCatalog();
    bool changed = false;
    const char* preview = name.empty() ? ImGuiHelper::Localize({"<なし>", "<none>"}) : name.c_str();
-
    if (ImGui::BeginCombo(label, preview)) {
       if (ImGui::Selectable(ImGuiHelper::Localize({"<なし>", "<none>"}), name.empty())) {
          changed = !name.empty();
          name.clear();
       }
-
-      if (hasScenes) {
-         for (const auto& [sceneName, path] : catalog.at("scenes").items()) {
-            if (!path.is_string()) {
-               continue;
-            }
-
+      if (catalog) {
+         for (const auto& sceneName : catalog->GetNames()) {
             if (ImGui::Selectable(sceneName.c_str(), name == sceneName)) {
                changed = name != sceneName;
                name = sceneName;
             }
          }
       }
-
       ImGui::EndCombo();
    }
-
-   if (!name.empty() && (!hasScenes || !catalog.at("scenes").contains(name))) {
+   if (!name.empty() && (!catalog || !catalog->Contains(name))) {
       Missing(name);
    }
-
    return changed;
 }
 }

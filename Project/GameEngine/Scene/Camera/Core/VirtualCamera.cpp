@@ -143,10 +143,9 @@ CameraState DeserializeCameraState(const nlohmann::json& data, const CameraState
    return state;
 }
 
-Transform* ResolveEntityTransform(const std::string& entityId, Transform& resolvedTransform) {
+Transform* ResolveEntityTransform(SceneWorld* world, const std::string& entityId, Transform& resolvedTransform) {
    // Editorで削除待ち、または非表示にしたEntityへ追従し続けない。
-   auto* world = SceneWorld::GetCurrent();
-   Object* entity = world ? world->FindObjectById(entityId) : Object::FindByEntityId(entityId);
+   Object* entity = world ? world->FindObjectById(entityId) : nullptr;
 
    if (!entity) {
       return nullptr;
@@ -193,7 +192,7 @@ void VirtualCamera::SetLookAtTargetEntityId(const std::string& entityId) {
 const Transform* VirtualCamera::GetFollowTarget() const {
    if (!followTargetEntityId_.empty()) {
       // EntityはScene再ロードで置き換わり得るため、永続ID指定はアクセスごとに解決する。
-      return ResolveEntityTransform(followTargetEntityId_, resolvedFollowTarget_);
+      return ResolveEntityTransform(world_, followTargetEntityId_, resolvedFollowTarget_);
    }
 
    return followTarget_;
@@ -201,7 +200,7 @@ const Transform* VirtualCamera::GetFollowTarget() const {
 
 const Transform* VirtualCamera::GetLookAtTarget() const {
    if (!lookAtTargetEntityId_.empty()) {
-      return ResolveEntityTransform(lookAtTargetEntityId_, resolvedLookAtTarget_);
+      return ResolveEntityTransform(world_, lookAtTargetEntityId_, resolvedLookAtTarget_);
    }
 
    return lookAtTarget_;
@@ -358,8 +357,10 @@ nlohmann::json VirtualCamera::Serialize() const {
       {"state", SerializeCameraState(state_)}, {"components", componentsData}};
 }
 
-void VirtualCamera::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) return;
+bool VirtualCamera::Deserialize(const nlohmann::json& data) {
+   if (!data.is_object()) {
+      return false;
+   }
 
    if (data.contains("name") && data.at("name").is_string()) {
       name_ = data.at("name").get<std::string>();
@@ -387,7 +388,12 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
       state_ = DeserializeCameraState(data.at("state"), state_);
    }
 
-   if (!data.contains("components") || !data.at("components").is_array()) return;
+   if (!data.contains("components")) {
+      return true;
+   }
+   if (!data.at("components").is_array()) {
+      return false;
+   }
 
    // 既存Componentには状態を重ね、不足しているComponentだけFactoryで追加する。
    // 完全スナップショットの一覧にない部品は最後に削除する。
@@ -409,7 +415,7 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
       }
 
       if (!component) {
-         continue;
+         return false;
       }
 
       if (componentData.contains("enabled") && componentData.at("enabled").is_boolean()) {
@@ -429,6 +435,7 @@ void VirtualCamera::Deserialize(const nlohmann::json& data) {
             });
       });
    }
+   return true;
 }
 
 } // namespace GameEngine
