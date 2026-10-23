@@ -25,6 +25,7 @@ public:
    RenderPassType GetPassType() const override { return RenderPassType::PostEffect; }
 
 private:
+   /// @brief ポストエフェクトの入出力に使う中間レンダーターゲットへの参照。
    OffscreenRenderTarget* offscreenRT_ = nullptr;
 };
 

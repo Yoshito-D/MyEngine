@@ -8,9 +8,9 @@
 
 namespace GameEngine {
 struct RadialBlurParams {
-   Vector2 center = {0.5f, 0.5f};
-   float strength = 0.0f;
-   int32_t sampleCount = 15;
+   Vector2 center = {0.5f, 0.5f}; ///< 中心点。
+   float strength = 0.0f;         ///< 効果を適用する強さ。
+   int32_t sampleCount = 15;      ///< 効果の評価に使うテクスチャサンプル数。
 };
 
 /// @brief ラジアルブラー効果
@@ -18,10 +18,10 @@ class RadialBlur : public PostProcess {
 public:
    /// @brief ラジアルブラー用定数バッファ構造体
    struct RadialBlurCB {
-      float centerX;
-      float centerY;
-      float strength;
-      int32_t sampleCount;
+      float centerX;       ///< 画面上の効果中心のX座標（正規化UV）。
+      float centerY;       ///< 画面上の効果中心のY座標（正規化UV）。
+      float strength;      ///< 効果を適用する強さ。
+      int32_t sampleCount; ///< 効果の評価に使うテクスチャサンプル数。
    };
 
    /// @brief 初期化（パイプラインは外部から設定される）
@@ -56,10 +56,10 @@ public:
    void SetSampleCount(int32_t count);
 
 private:
-   RadialBlurParams params_;
+   RadialBlurParams params_; ///< CPU側で保持する効果の設定値。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   RadialBlurCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   RadialBlurCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

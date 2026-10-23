@@ -25,8 +25,8 @@ public:
       D3D12_GPU_DESCRIPTOR_HANDLE sceneDepthHandle = {});
 
 private:
-   GraphicsDevice* device_ = nullptr;
-   const PSOManager* psoManager_ = nullptr;
+   GraphicsDevice* device_ = nullptr;       ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   const PSOManager* psoManager_ = nullptr; ///< パイプラインマネージャーを追加。
 };
 
 } // namespace GameEngine

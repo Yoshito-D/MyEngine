@@ -58,13 +58,15 @@ public:
    void SetFlags(D3D12_ROOT_SIGNATURE_FLAGS flags);
 
 private:
-   ComPtr<ID3DBlob> rootSignatureBlob_ = nullptr;
-   ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-   std::vector<D3D12_ROOT_PARAMETER> rootParameters_;
-   std::vector<D3D12_STATIC_SAMPLER_DESC> staticSamplers_;
+   ComPtr<ID3DBlob> rootSignatureBlob_ = nullptr;          ///< シリアライズ済みルートシグネチャのバイト列。
+   ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;   ///< リソースのバインド配置を定めるルートシグネチャ。
+   std::vector<D3D12_ROOT_PARAMETER> rootParameters_;      ///< D3D12へ渡すルートパラメーター配列。
+   std::vector<D3D12_STATIC_SAMPLER_DESC> staticSamplers_; ///< ルートシグネチャ内に固定するサンプラー配列。
+   /// @brief ルートシグネチャ生成時のアクセス許可フラグ。
    D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags_ = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
    // ディスクリプタレンジの動的配列
+   /// @brief ルートパラメーターから参照するディスクリプタ範囲。アドレスが安定するdequeで保持する。
    std::deque<D3D12_DESCRIPTOR_RANGE> descriptorRanges_;
 };
 }

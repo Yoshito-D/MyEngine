@@ -4,8 +4,8 @@
 // 三角形へ分けた際の対角線上の補間継ぎ目をなくし、頂点バッファも不要にする。
 struct VSOutput {
    // VSではクリップ座標、PSへ届く時点ではラスタライザーが生成した画素位置として扱われる。
-   float4 position : SV_POSITION;
+   float4 position : SV_POSITION; ///< ラスタライズに使うクリップ空間の同次位置。
 
    // オーバーサイズ頂点では0～2だが、可視画面内では入力テクスチャ全域の0～1へ線形補間される。
-   float2 texcoord : TEXCOORD0;
+   float2 texcoord : TEXCOORD0; ///< 入力画像を参照する正規化テクスチャ座標。
 };

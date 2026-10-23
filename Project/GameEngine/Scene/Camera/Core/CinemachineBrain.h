@@ -97,18 +97,18 @@ private:
    void UpdateBlend(float deltaTime);
    void ApplyStateToOutputCamera();
 
-   std::vector<VirtualCamera*> virtualCameras_;
-   std::unique_ptr<Camera> outputCamera_ = nullptr;
+   std::vector<VirtualCamera*> virtualCameras_;     ///< 登録されているVirtualCamera一覧。
+   std::unique_ptr<Camera> outputCamera_ = nullptr; ///< 選択・合成した仮想カメラ状態を反映する所有出力カメラ。
 
-   VirtualCamera* activeCamera_ = nullptr;
+   VirtualCamera* activeCamera_ = nullptr; ///< アクティブなVirtualCamera。
 
-   CameraState currentState_;
+   CameraState currentState_; ///< 現在のカメラ状態。
 
    /// @brief 現在の表示状態から最新の切り替え先へ進むブレンド
    std::optional<BlendLayer> activeBlend_;
 
-   float defaultBlendTime_ = 0.5f;
-   bool cameraMotionPaused_ = false;
+   float defaultBlendTime_ = 0.5f;   ///< 仮想カメラの切り替えに使う既定の補間時間（秒）。
+   bool cameraMotionPaused_ = false; ///< ランタイムのカメラ更新が一時停止中かどうかする。
 };
 
 } // namespace GameEngine

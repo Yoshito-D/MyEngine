@@ -2,11 +2,11 @@
 #include "Lighting.hlsli"
 
 struct PixelShaderOutput {
-   float32_t4 color : SV_TARGET0;
+   float32_t4 color : SV_TARGET0; ///< 表示色のRGBA成分。
 };
 
 struct Camera {
-   float32_t3 worldPosition;
+   float32_t3 worldPosition; ///< カメラのワールド位置。
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
@@ -24,11 +24,11 @@ SamplerState gSampler : register(s0);
 #ifdef OBJECT3D_TRIPLANAR
 // 専用パイプラインのmaterialParametersと同じ順序・オフセットの32バイト定数バッファ。
 struct TriplanarParameters {
-   float triplanarScale;
-   float triplanarSharpness;
-   float triplanarSampleX;
-   float triplanarSampleY;
-   float triplanarSampleZ;
+   float triplanarScale;     ///< トライプラナー投影のテクスチャ繰り返し倍率。
+   float triplanarSharpness; ///< 法線方向に応じた三方向の合成重みの鋭さ。
+   float triplanarSampleX;   ///< X方向の投影テクスチャを参照する有効値。
+   float triplanarSampleY;   ///< Y方向の投影テクスチャを参照する有効値。
+   float triplanarSampleZ;   ///< Z方向の投影テクスチャを参照する有効値。
 };
 
 ConstantBuffer<TriplanarParameters> gTriplanar : register(b3);

@@ -86,13 +86,14 @@ public:
    const std::string& GetMaskTextureName() const { return maskTextureName_; }
 
 private:
-   DissolveParams params_;
+   DissolveParams params_; ///< 現在の正規化済みパラメーター。
+   /// @brief 現在指定されているマスクテクスチャ名。
    std::string maskTextureName_ = "engine/textures/postprocess/noise0.png";
-   Texture* maskTexture_ = nullptr;
-   bool maskTextureLookupDirty_ = true;
+   Texture* maskTexture_ = nullptr;     ///< マスクとして参照するテクスチャへの非所有参照。
+   bool maskTextureLookupDirty_ = true; ///< マスクテクスチャ名から実体を再検索する必要があるかどうか。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   DissolveCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   DissolveCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

@@ -69,17 +69,17 @@ private:
    /// @brief マスクSRVのルートパラメータスロットを設定
    void SetMaskTextureRootSlot(UINT maskTextureSlot);
 
-   GraphicsDevice* device_ = nullptr;
-   OffscreenRenderTarget* renderTarget_ = nullptr;
+   GraphicsDevice* device_ = nullptr;              ///< 初期化時に関連付けた非所有デバイス。
+   OffscreenRenderTarget* renderTarget_ = nullptr; ///< 初期化時に関連付けた非所有描画先。
 
    // パイプラインは外部から設定される
-   const PipelineState* pipeline_ = nullptr;
-   const RootSignature* rootSignature_ = nullptr;
+   const PipelineState* pipeline_ = nullptr;      ///< 管理側が設定した読み取り専用パイプライン。
+   const RootSignature* rootSignature_ = nullptr; ///< 管理側が設定した読み取り専用ルートシグネチャ。
 
-   UINT constantBufferRootSlot_ = 0;
-   UINT inputTextureRootSlot_ = 1;
-   UINT depthTextureRootSlot_ = 2;
-   UINT maskTextureRootSlot_ = 2;
+   UINT constantBufferRootSlot_ = 0; ///< 定数バッファの検証済みバインド番号。
+   UINT inputTextureRootSlot_ = 1;   ///< 入力カラーの検証済みバインド番号。
+   UINT depthTextureRootSlot_ = 2;   ///< 深度テクスチャの検証済みバインド番号。
+   UINT maskTextureRootSlot_ = 2;    ///< マスクテクスチャの検証済みバインド番号。
 
 protected:
    /// @brief 共通のフルスクリーン描画を実行する。追加SRVは深度またはマスクに使用する。

@@ -55,14 +55,14 @@ public:
    RearCameraFrameEvents GetEvents() const { return IsEnabled() ? events_ : RearCameraFrameEvents{}; }
 
 private:
-   RearCameraFrameEvents events_;
+   RearCameraFrameEvents events_; ///< このフレームで検出した離陸・着地などの状態変化。
 
    /// @brief 接地時の表示状態を地上復帰用スナップショットへ保存する
    /// @details 予測接触点などのワールド座標を接地後も使うと、移動するプレイヤーから古い地点へ
    ///          カメラが引かれ続ける。ステートレスに再計算される注視点だけを相対オフセットで保存し、
    ///          プレイヤーと一緒に移動する状態として地上カメラへ戻す。
    void BeginLandingRelease(const GameEngine::Vector3& lastLookTargetOffset);
-   RearCameraTransitionState state_;
+   RearCameraTransitionState state_; ///< この段階の確定済み状態。
 };
 
 } // namespace App

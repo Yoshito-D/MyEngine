@@ -46,6 +46,6 @@ public:
    void ConfigureAngularVelocity(const RandomVector3& range) { angularVelocity_ = range; }
 
 private:
-   RandomVector3 angularVelocity_;
+   RandomVector3 angularVelocity_; ///< 回転速度を表す各軸の成分。
 };
 }

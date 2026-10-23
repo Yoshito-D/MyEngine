@@ -33,8 +33,8 @@ public:
    const SceneWorld& GetSceneWorld() const { return world_; }
 
 private:
-   SceneDefinition definition_;
-   SceneWorld world_;
-   bool initialized_ = false;
+   SceneDefinition definition_; ///< シーン名と読み書き先の実ファイル。
+   SceneWorld world_;           ///< シーン内容を管理するWorld。
+   bool initialized_ = false;   ///< 初期化が完了し、対応する終了処理が必要かどうか。
 };
 }

@@ -38,7 +38,9 @@ public:
       SustainedSteer = 1, ///< 同方向ステアを一定時間継続することでドリフト開始
    };
 
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "VehicleDrift";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両ドリフト", "Vehicle Drift"};
 
    /// @copydoc GameEngine::IObjectComponent::GetTypeName

@@ -13,6 +13,7 @@ class CharacterJump final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterJump";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"キャラクタージャンプ", "Character Jump"};
 
    /// @brief 型名を返す
@@ -54,7 +55,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float jumpStrength = 5.0f;
+   float jumpStrength = 5.0f; ///< ジャンプ初速の強さ。
 
 private:
    /// @brief ジャンプ中フラグ

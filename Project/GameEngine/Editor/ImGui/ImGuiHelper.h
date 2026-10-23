@@ -5,13 +5,12 @@
 
 #ifdef USE_IMGUI
 
+#include "imgui.h"
 #include <cstddef>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
-
-struct ImTextureRef;
 
 namespace GameEngine {
 namespace ImGuiHelper {
@@ -34,6 +33,18 @@ constexpr float kDefaultMultilineTextHeight = 80.0f;
 /// @brief 利用可能な横幅全体を使うことを表すImGui幅指定
 constexpr float kFillAvailableWidth = -1.0f;
 
+namespace Detail {
+/// @brief ベクトル入力の1軸分の値とボタン表示設定。
+struct VectorComponent {
+   const char* label;   ///< 編集するベクトル軸を示すボタンラベル。
+   float* value;        ///< 編集対象となるベクトル成分への非所有参照。
+   float resetValue;    ///< 軸ボタンで初期化する値。
+   ImVec4 buttonColor;  ///< 通常状態の軸ボタンの色。
+   ImVec4 hoveredColor; ///< カーソルが重なった軸ボタンの色。
+   ImVec4 activeColor;  ///< 操作中の軸ボタンの色。
+};
+} // namespace Detail
+
 // 言語・ローカライズ --------------------------------------------------------
 enum class EditorLanguage {
    Japanese,
@@ -41,8 +52,8 @@ enum class EditorLanguage {
 };
 
 struct LocalizedText {
-   const char* japanese = "";
-   const char* english = "";
+   const char* japanese = ""; ///< 日本語を選択しているときに表示する文字列。
+   const char* english = "";  ///< 英語を選択しているときに表示する文字列。
 };
 
 void SetLanguage(EditorLanguage language);

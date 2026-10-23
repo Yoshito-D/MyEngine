@@ -317,32 +317,44 @@ public:
    void BuildDefaultPasses();
 
 private:
-   GraphicsDevice* device_ = nullptr;
-   CameraManager* cameraManager_ = nullptr;
-   LightManager* lightManager_ = nullptr;
-   AssetManager* assetManager_ = nullptr;
+   GraphicsDevice* device_ = nullptr;       ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   CameraManager* cameraManager_ = nullptr; ///< 描画に使う出力カメラを取得する管理オブジェクトへの非所有参照。
+   LightManager* lightManager_ = nullptr;   ///< 描画で参照するライトとGPU転送バッファの管理先。
+   AssetManager* assetManager_ = nullptr;   ///< アセットの読み込みと共有を委譲する管理オブジェクトへの参照。
 
    // シェーダーとパイプライン管理
+   /// @brief シェーダーのコンパイルと共有を管理するオブジェクト。
    std::unique_ptr<ShaderManager> shaderManager_ = std::make_unique<ShaderManager>();
-   std::unique_ptr<PSOManager> psoManager_ = std::make_unique<PSOManager>();
+   std::unique_ptr<PSOManager> psoManager_ = std::make_unique<PSOManager>(); ///< パイプラインマネージャーを追加。
 
    // 専門レンダラー
+   /// @brief モデル描画コマンドを実行するレンダラー。
    std::unique_ptr<ModelRenderer> modelRenderer_ = std::make_unique<ModelRenderer>();
+   /// @brief スプライト描画コマンドを実行するレンダラー。
    std::unique_ptr<SpriteRenderer> spriteRenderer_ = std::make_unique<SpriteRenderer>();
+   /// @brief 粒子のGPU更新と描画を実行するレンダラー。
    std::unique_ptr<ParticleRenderer> particleRenderer_ = std::make_unique<ParticleRenderer>();
+   /// @brief 画面上のUIスプライトを描画するレンダラー。
    std::unique_ptr<UIRenderer> uiRenderer_ = std::make_unique<UIRenderer>();
+   /// @brief 文字のジオメトリ生成と描画を行うレンダラー。
    std::unique_ptr<TextRenderer> textRenderer_ = std::make_unique<TextRenderer>();
 
+   /// @brief 各パスの中間画像と入力スナップショットを管理する描画先。
    std::unique_ptr<OffscreenRenderTarget> offscreenRenderTarget_ = std::make_unique<OffscreenRenderTarget>();
+   /// @brief ギズモや補助線の描画に使うラインレンダラーへの参照。
    std::unique_ptr<LineRenderer> lineRenderer_ = std::make_unique<LineRenderer>();
+   /// @brief ポストエフェクト適用後の補助線を描くレンダラー。
    std::unique_ptr<LineRenderer> postProcessLineRenderer_ = std::make_unique<LineRenderer>();
 
    // PostProcessManagerで置き換え
+   /// @brief ポストエフェクトの設定と適用順を管理するオブジェクト。
    std::unique_ptr<PostProcessManager> postProcessManager_ = std::make_unique<PostProcessManager>();
 
    // UI描画専用カメラ
-   std::unique_ptr<Camera> uiCamera_ = std::make_unique<Camera>();
+   std::unique_ptr<Camera> uiCamera_ = std::make_unique<Camera>(); ///< UI描画の基準とする平行投影カメラ。
+   /// @brief 奥行きを持つUIモデルを描く透視投影カメラ。
    std::unique_ptr<Camera> perspectiveUiCamera_ = std::make_unique<Camera>();
+   /// @brief UIのレイアウト基準となるビューポート寸法。
    Vector2 uiViewportSize_ = {
       static_cast<float>(Window::kUiReferenceWidth), static_cast<float>(Window::kUiReferenceHeight)};
 
@@ -351,22 +363,27 @@ private:
    std::vector<std::unique_ptr<IDrawCommand>> transparentCommands_; // 半透明オブジェクト
    std::vector<std::unique_ptr<IDrawCommand>> postProcessCommands_; // ポストプロセス後の描画
 
-   BlendMode currentBlendMode_ = BlendMode::kBlendModeNormal;
-   std::string currentPipelineName_;
+   BlendMode currentBlendMode_ = BlendMode::kBlendModeNormal; ///< 現在のブレンドモード。
+   std::string currentPipelineName_; ///< 現在のコマンドリストへ設定済みと記録したパイプライン名。
+   /// @brief 現在設定済みと記録したパイプラインのブレンド方式。
    BlendMode currentPipelineBlendMode_ = BlendMode::kBlendModeNormal;
+   /// @brief 現在の環境マッピング用キューブマップSRV。
    D3D12_GPU_DESCRIPTOR_HANDLE activeEnvironmentTextureSrvHandle_ = {};
 
    struct SceneTransitionConstants {
-      float opacity = 0.0f;
-      float blurDirection[2] = {};
-      uint32_t applyComposite = 0;
+      float opacity = 0.0f;        ///< 影の濃さ（0～1）。
+      float blurDirection[2] = {}; ///< シーン遷移でぼかしを適用する画面上の方向。
+      uint32_t applyComposite = 0; ///< ぼかし結果へ暗転合成も適用するかどうか。
    };
 
+   /// @brief シーン遷移の横方向ぼかし設定を保持するバッファ。
    Microsoft::WRL::ComPtr<ID3D12Resource> sceneTransitionHorizontalConstantBuffer_;
+   /// @brief 横方向ぼかし用定数バッファの永続Map先。
    SceneTransitionConstants* sceneTransitionHorizontalConstants_ = nullptr;
+   /// @brief 縦方向ぼかしと暗転合成に使う所有定数バッファ。
    Microsoft::WRL::ComPtr<ID3D12Resource> sceneTransitionConstantBuffer_;
-   SceneTransitionConstants* sceneTransitionConstants_ = nullptr;
-   float sceneTransitionOpacity_ = 0.0f;
+   SceneTransitionConstants* sceneTransitionConstants_ = nullptr; ///< 縦方向ぼかし・暗転用定数バッファの永続Map先。
+   float sceneTransitionOpacity_ = 0.0f;                          ///< シーン遷移の暗転量。0で通常表示、1で完全な暗転。
 
    /// @brief パイプライン名+ブレンドモードをキーにした解決済みキャッシュ
    struct PipelineHandle {
@@ -374,27 +391,31 @@ private:
       bool resolved = false;              ///< 一度でも解決を試みたか
    };
 
+   /// @brief 名前から解決した描画パイプラインハンドルのキャッシュ。
    std::unordered_map<std::string, PipelineHandle> pipelineCache_;
 
    /// @brief pipelineCache_ のキーを生成
    std::string MakePipelineCacheKey(const std::string& name, BlendMode mode) const;
 
-   std::unique_ptr<Material> defaultMaterial_ = nullptr;
+   std::unique_ptr<Material> defaultMaterial_ = nullptr; ///< 専用指定のない描画へ適用する既定マテリアル。
+   /// @brief 描画サブシステムの初期化と接続を行う所有オブジェクト。
    std::unique_ptr<RenderBootstrapper> renderBootstrapper_;
 
    // レンダーパスリスト（Opaque -> PlayerShadow -> Transparent -> PostEffect の順で実行）
-   std::vector<std::unique_ptr<IRenderPass>> renderPasses_;
+   std::vector<std::unique_ptr<IRenderPass>> renderPasses_; ///< 実行順に並べて所有する描画パス。
 
    // 所有権はrenderPasses_。対象データの受け渡しにだけ使い、ClearPassesで必ず解除する。
-   PlayerShadowPass* playerShadowPass_ = nullptr;
+   PlayerShadowPass* playerShadowPass_ = nullptr; ///< renderPassesが所有するプレイヤー影パスへの非所有参照。
 
    // 毎フレーム構築するフレームコンテキスト
-   FrameContext frameCtx_;
+   FrameContext frameCtx_; ///< 各描画パスへ渡す現在フレームの共有コンテキスト。
 
 #ifdef USE_IMGUI
+   /// @brief ImGuiのフレームとエディターウィンドウを管理する所有オブジェクト。
    std::unique_ptr<ImGuiManager> imGuiManager_ = std::make_unique<ImGuiManager>();
+   /// @brief 描画設定やシーン編集UIを制御する所有オブジェクト。
    std::unique_ptr<RendererEditorController> editorController_;
-   bool isSceneHovered_ = false;
+   bool isSceneHovered_ = false; ///< シーンビューポート上にカーソルがあるかどうか。
 #endif
 
 private:

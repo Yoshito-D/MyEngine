@@ -1,21 +1,21 @@
 struct Well {
-   float4x4 skeletonSpaceMatrix;
-   float4x4 skeletonSpaceInverseTransposeMatrix;
+   float4x4 skeletonSpaceMatrix;                 ///< ジョイント座標をスケルトン基準へ変換する行列。
+   float4x4 skeletonSpaceInverseTransposeMatrix; ///< スキニング後の法線変換に使う逆転置行列。
 };
 
 struct Vertex {
-   float32_t4 position;
-   float32_t2 texCoord;
-   float32_t3 normal;
+   float32_t4 position; ///< 描画形状を構成する基準頂点の位置。
+   float32_t2 texCoord; ///< テクスチャ座標。
+   float32_t3 normal;   ///< 面の向きを表す法線ベクトル。
 };
 
 struct VertexInfluence {
-   float32_t4 weight;
-   int32_t4 index;
+   float32_t4 weight; ///< ウェイト値。
+   int32_t4 index;    ///< 対応する配列またはリソース内の要素番号。
 };
 
 struct SkinningInformation {
-   uint32_t numVertices;
+   uint32_t numVertices; ///< 処理対象の頂点数。Computeの範囲外アクセスを防ぐ上限。
 };
 
 // SkinningObject3d.VS.hlslでつくったものと同じPalette

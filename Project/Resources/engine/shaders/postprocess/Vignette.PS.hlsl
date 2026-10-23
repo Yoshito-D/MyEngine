@@ -4,7 +4,7 @@ cbuffer VignetteParams : register(b0) {
    float2 center;  // UV空間での中心（通常は0.5,0.5）
    float radius;   // ビネットの半径（0〜1）
    float softness; // ぼかしの強さ（0〜1）
-   float3 vignetteColor;
+   float3 vignetteColor; ///< 画面周辺へ重ねるビネット色のRGB成分。
    float intensity; // ビネットの強度（暗さの最大値）
 };
 

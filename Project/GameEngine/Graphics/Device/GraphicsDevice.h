@@ -35,8 +35,8 @@ private:
 
    explicit SrvDescriptorAllocation(UINT index) : index_(index) {}
 
-   GraphicsDevice* device_ = nullptr;
-   UINT index_;
+   GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   UINT index_;                       ///< ヒープ内のインデックス。
 };
 
 /// @brief グラフィックスデバイスクラス
@@ -169,38 +169,42 @@ public:
    uint32_t GetBackBufferHeight() const { return static_cast<uint32_t>(backBufferHeight_); }
 
 private:
-   Window* window_ = nullptr;
+   Window* window_ = nullptr; ///< 描画と入力の対象となるウィンドウ。
 
-   ComPtr<IDXGIFactory7> dxgiFactory_ = nullptr;
-   ComPtr<ID3D12Device> device_ = nullptr;
+   ComPtr<IDXGIFactory7> dxgiFactory_ = nullptr; ///< アダプター列挙とスワップチェーン生成に使う所有DXGIファクトリ。
+   ComPtr<ID3D12Device> device_ = nullptr;       ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   /// @brief 現在フレームのGPU処理を記録する所有コマンドリスト。
    ComPtr<ID3D12GraphicsCommandList> commandList_ = nullptr;
+   /// @brief GPUコマンド記録用メモリを保持する所有アロケーター。
    ComPtr<ID3D12CommandAllocator> commandAllocator_ = nullptr;
-   ComPtr<ID3D12CommandQueue> commandQueue_ = nullptr;
-   ComPtr<IDXGISwapChain4> swapChain_ = nullptr;
-   std::vector<ComPtr<ID3D12Resource>> backBuffers_;
-   ComPtr<ID3D12Resource> depthBuffer_ = nullptr;
-   ComPtr<ID3D12DescriptorHeap> rtvHeap_ = nullptr;
-   ComPtr<ID3D12DescriptorHeap> dsvHeap_ = nullptr;
-   ComPtr<ID3D12DescriptorHeap> srvHeap_ = nullptr;
-   D3D12_CPU_DESCRIPTOR_HANDLE depthSrvHandleCPU_ = {};
-   D3D12_GPU_DESCRIPTOR_HANDLE depthSrvHandleGPU_ = {};
-   ComPtr<ID3D12Fence> fence_ = nullptr;
-   UINT64 fenceValue_ = 0;
-   int32_t backBufferWidth_ = 0;
-   int32_t backBufferHeight_ = 0;
-   uint32_t descriptorSizeCBVSRVUAV = 0;
-   uint32_t descriptorSizeRTV = 0;
-   uint32_t descriptorSizeDSV = 0;
-   UINT nextSrvIndex_ = 0;
-   UINT depthSrvIndex_ = static_cast<UINT>(-1);
+   ComPtr<ID3D12CommandQueue> commandQueue_ = nullptr;  ///< 記録済みコマンドをGPUへ投入する所有キュー。
+   ComPtr<IDXGISwapChain4> swapChain_ = nullptr;        ///< 表示用バックバッファを切り替える所有スワップチェーン。
+   std::vector<ComPtr<ID3D12Resource>> backBuffers_;    ///< スワップチェーンから取得した表示用バックバッファ。
+   ComPtr<ID3D12Resource> depthBuffer_ = nullptr;       ///< 描画先の深度を保持するバッファ。
+   ComPtr<ID3D12DescriptorHeap> rtvHeap_ = nullptr;     ///< 描画先ビューを格納する所有ディスクリプタヒープ。
+   ComPtr<ID3D12DescriptorHeap> dsvHeap_ = nullptr;     ///< 深度ステンシルビューを格納する所有ディスクリプタヒープ。
+   ComPtr<ID3D12DescriptorHeap> srvHeap_ = nullptr;     ///< シェーダー可視のCBV・SRV・UAVを格納する所有ヒープ。
+   D3D12_CPU_DESCRIPTOR_HANDLE depthSrvHandleCPU_ = {}; ///< 描画先の深度を登録するSRVのCPU側ハンドル。
+   D3D12_GPU_DESCRIPTOR_HANDLE depthSrvHandleGPU_ = {}; ///< 深度バッファのSRVハンドル（GPU）。
+   ComPtr<ID3D12Fence> fence_ = nullptr;                ///< GPU処理の完了をCPU側から確認する所有同期オブジェクト。
+   UINT64 fenceValue_ = 0;                              ///< 最後にGPUへ完了通知を要求したフェンス値。
+   int32_t backBufferWidth_ = 0;                        ///< 表示用バックバッファの横幅（ピクセル）。
+   int32_t backBufferHeight_ = 0;                       ///< 表示用バックバッファの高さ（ピクセル）。
+   uint32_t descriptorSizeCBVSRVUAV = 0;                ///< CBV/SRV/UAVのデスクリプタサイズ。
+   uint32_t descriptorSizeRTV = 0;                      ///< RTVのデスクリプタサイズ。
+   uint32_t descriptorSizeDSV = 0;                      ///< DSVのデスクリプタサイズ。
+   UINT nextSrvIndex_ = 0;                              ///< 共有ヒープの未使用領域から次に割り当てる番号。
+   UINT depthSrvIndex_ = static_cast<UINT>(-1);         ///< 深度テクスチャの読み出し用に確保したSRV番号。
+   /// @brief 深度バッファの現在のリソース遷移状態。
    D3D12_RESOURCE_STATES depthBufferState_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-   std::queue<UINT> freeSrvIndices_;
+   std::queue<UINT> freeSrvIndices_; ///< 解放済みで再利用できるディスクリプタ番号のキュー。
+   /// @brief フレーム描画後に保存するスクリーンショットの出力先キュー。
    std::queue<std::filesystem::path> screenshotRequests_;
 
-   UINT rtvCount_ = 4;
-   DXGI_FORMAT rtvFormat_ = DXGI_FORMAT_R8G8B8A8_UNORM;
+   UINT rtvCount_ = 4;                                  ///< RTVヒープに確保するビュー数。
+   DXGI_FORMAT rtvFormat_ = DXGI_FORMAT_R8G8B8A8_UNORM; ///< RTVフォーマット。
 
-   std::chrono::steady_clock::time_point reference_;
+   std::chrono::steady_clock::time_point reference_; ///< フレームレート制御で前回のフレーム完了を記録した基準時刻。
 
 private:
    /// @brief デバッグレイヤーを有効

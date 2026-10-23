@@ -53,7 +53,9 @@ public:
    void ApplyWorldTransform(const Matrix4x4& world, const Matrix4x4& viewProjection);
 
 private:
+   /// @brief ワールド・WVP・法線変換行列を保持する所有定数バッファ。
    ComPtr<ID3D12Resource> transformationMatrixResource_ = nullptr;
+   /// @brief トランスフォーメーションマトリックスのデータ。
    TransformationMatrixData* transformationMatrixData_ = nullptr;
 };
 }

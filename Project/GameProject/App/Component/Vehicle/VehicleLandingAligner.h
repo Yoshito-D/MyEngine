@@ -13,7 +13,9 @@ namespace App {
 /// - Update() を毎フレーム呼ぶことで補正を進行させる
 class VehicleLandingAligner final : public GameEngine::IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "VehicleLandingAligner";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両着地姿勢合わせ", "Vehicle Landing Aligner"};
 
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
@@ -53,9 +55,9 @@ private:
    /// @brief blended を Transform と GravityBody に適用する
    void ApplyBlendedRotation(const GameEngine::Quaternion& blended);
 
-   float alignTimer_ = 0.0f;
-   GameEngine::Quaternion alignStart_ = {0.0f, 0.0f, 0.0f, 1.0f};
-   GameEngine::Quaternion alignTarget_ = {0.0f, 0.0f, 0.0f, 1.0f};
+   float alignTimer_ = 0.0f;                                       ///< 着地姿勢補正を開始してからの経過時間（秒）。
+   GameEngine::Quaternion alignStart_ = {0.0f, 0.0f, 0.0f, 1.0f};  ///< 着地姿勢補正を開始した時点の回転。
+   GameEngine::Quaternion alignTarget_ = {0.0f, 0.0f, 0.0f, 1.0f}; ///< 着地姿勢補正で到達する目標回転。
 };
 
 } // namespace App

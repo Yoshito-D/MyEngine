@@ -55,12 +55,12 @@ public:
 
 private:
    struct Timer {
-      TimerId id{};
+      TimerId id{};            ///< 同じ種類の要素を一意に識別するID。
       float remaining{};       // 次発火までの残り時間
       float interval{};        // 間隔（0 の場合は一度きり）
       std::int32_t repeat{-1}; // 残り回数（-1 は無限）
-      bool paused{false};
-      std::shared_ptr<std::function<void()>> callback;
+      bool paused{false};      ///< 時間経過による更新を一時停止しているかどうか。
+      std::shared_ptr<std::function<void()>> callback; ///< 条件成立時に呼び出す処理。
    };
 
    static TimerId NextId();

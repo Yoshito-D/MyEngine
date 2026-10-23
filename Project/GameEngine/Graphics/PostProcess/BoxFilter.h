@@ -13,7 +13,7 @@ public:
    /// @brief ボックスフィルター用パラメータ構造体
    struct BoxFilterCB {
       int32_t kernelRadius; // 1=3x3, 2=5x5, 3=7x7
-      float padding[3];
+      float padding[3];     ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief 初期化
@@ -42,8 +42,8 @@ public:
 private:
    int32_t kernelRadius_ = 1; // デフォルト3x3
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   BoxFilterCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   BoxFilterCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

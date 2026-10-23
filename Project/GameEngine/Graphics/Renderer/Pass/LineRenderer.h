@@ -33,9 +33,9 @@ public:
    LineRenderer& operator=(const LineRenderer&) = delete;
 
    struct LineInstance {
-      Vector3 start;
-      Vector3 end;
-      Vector4 color;
+      Vector3 start; ///< ワールド座標系で表した線分の始点。
+      Vector3 end;   ///< ワールド座標系で表した線分の終点。
+      Vector4 color; ///< 表示色のRGBA成分。
    };
 
    void Initialize(ID3D12Device* device, size_t maxLines);
@@ -126,19 +126,25 @@ public:
    void Clear();
 
 private:
-   // カメラごとにラインをグループ化
-   std::unordered_map<Camera*, std::vector<LineInstance>> cameraLineGroups_;
-   size_t maxLines_ = 0;
+   /// @brief インスタンスの始点と終点を選択する基準頂点。
+   struct BaseVertex {
+      float index; ///< 始点は0、終点は1。
+   };
 
-   ComPtr<ID3D12Resource> instanceBuffer_;
-   D3D12_VERTEX_BUFFER_VIEW instanceVBView_{};
-   UINT8* mappedInstanceBuffer_ = nullptr;
+   // カメラごとにラインをグループ化
+   /// @brief カメラ別にまとめたラインの描画待ちインスタンス。
+   std::unordered_map<Camera*, std::vector<LineInstance>> cameraLineGroups_;
+   size_t maxLines_ = 0; ///< 1回のアップロードで扱えるライン数の上限。
+
+   ComPtr<ID3D12Resource> instanceBuffer_;     ///< ラインごとの始点・終点・色を保持する所有GPUバッファ。
+   D3D12_VERTEX_BUFFER_VIEW instanceVBView_{}; ///< ラインのインスタンス情報を頂点入力へ渡すビュー。
+   UINT8* mappedInstanceBuffer_ = nullptr;     ///< ラインインスタンスバッファの永続Map先。
 
    // 基本線分の頂点（インデックス0と1の2点）
-   ComPtr<ID3D12Resource> baseVertexBuffer_;
-   D3D12_VERTEX_BUFFER_VIEW baseVBView_{};
+   ComPtr<ID3D12Resource> baseVertexBuffer_; ///< ラインの基準形状を格納する所有頂点バッファ。
+   D3D12_VERTEX_BUFFER_VIEW baseVBView_{};   ///< ラインの基準頂点を頂点入力へ渡すビュー。
 
-   TransformationMatrix transformationMatrix_{};
+   TransformationMatrix transformationMatrix_{}; ///< 描画に使う変換行列とGPU定数バッファ。
 
    /// @brief 指定カメラのラインを追加
    void AddLine(Camera* camera, const Line& line);

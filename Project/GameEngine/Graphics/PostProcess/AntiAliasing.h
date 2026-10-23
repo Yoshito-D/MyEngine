@@ -61,13 +61,13 @@ public:
    void SetEdgeSearchSteps(float steps);
 
 private:
-   float contrastThreshold_ = 0.0312f;
-   float relativeThreshold_ = 0.125f;
-   float subpixelBlending_ = 0.75f;
-   float edgeSearchSteps_ = 8.0f;
+   float contrastThreshold_ = 0.0312f; ///< エッジと判定する最小絶対輝度差。
+   float relativeThreshold_ = 0.125f;  ///< 周辺最大輝度に対する相対しきい値。
+   float subpixelBlending_ = 0.75f;    ///< 元色と平滑化色の補間率。
+   float edgeSearchSteps_ = 8.0f;      ///< エッジ方向へ許可する最大探索距離。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   AntiAliasingCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   AntiAliasingCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

@@ -80,8 +80,8 @@ private:
 
    void Attach(VirtualCamera& owner);
 
-   VirtualCamera* owner_ = nullptr;
-   bool isEnabled_ = true;
+   VirtualCamera* owner_ = nullptr; ///< このカメラ部品を所有するVirtualCameraへの非所有参照。
+   bool isEnabled_ = true;          ///< コンポーネントが有効かどうか。
 };
 
 } // namespace GameEngine

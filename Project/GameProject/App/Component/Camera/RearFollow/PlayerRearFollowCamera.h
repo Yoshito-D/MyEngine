@@ -159,7 +159,7 @@ protected:
 private:
    /// @brief 外部公開形式と補間履歴の初期化を橋渡しする。
    void ResetRuntimeState();
-   RearCameraInput input_;
+   RearCameraInput input_; ///< 外部から渡された追従入力。
 };
 
 } // namespace App

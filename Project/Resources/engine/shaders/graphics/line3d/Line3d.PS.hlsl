@@ -1,7 +1,7 @@
 #include "Line3d.hlsli"
 
 struct PixelShaderOutput {
-   float4 color : SV_TARGET0;
+   float4 color : SV_TARGET0; ///< 表示色のRGBA成分。
 };
 
 PixelShaderOutput main(VertexShaderOutput input) {

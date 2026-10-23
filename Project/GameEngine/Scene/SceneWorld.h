@@ -105,9 +105,10 @@ private:
    bool ApplySnapshot(const nlohmann::json& sceneData);
    void RestoreCameras(const nlohmann::json& sceneData);
 
-   CinemachineBrain* cameraBrain_ = nullptr;
-   SceneObjectStore objectStore_;
-   std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_;
+   CinemachineBrain* cameraBrain_ = nullptr; ///< このワールドの仮想カメラを接続するBrainへの非所有参照。
+   SceneObjectStore objectStore_;            ///< 共通の生成・削除・復元ストア。
+   std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_; ///< このワールドが所有する仮想カメラ一覧。
+   /// @brief 安定カメラIDから仮想カメラを引く非所有索引。
    std::unordered_map<std::string, VirtualCamera*> virtualCamerasById_;
 };
 

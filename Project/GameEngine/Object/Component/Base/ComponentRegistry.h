@@ -40,13 +40,15 @@ public:
 
 private:
    struct Registration {
-      Factory factory;
+      Factory factory; ///< 所有オブジェクトに具象コンポーネントを追加する生成処理。
+      /// @brief このコンポーネントを接続できるObject種別のビット集合。
       ObjectTypeMask supportedObjectTypes = kAllObjectTypes;
    };
 
+   /// @brief コンポーネント型名ごとの生成処理と接続可能種別。
    std::unordered_map<std::string, Registration> registrations_;
 #ifdef USE_IMGUI
-   std::unordered_map<std::string, ComponentDisplayName> displayNames_;
+   std::unordered_map<std::string, ComponentDisplayName> displayNames_; ///< 登録型名ごとの日本語・英語の表示名。
 #endif
 };
 }

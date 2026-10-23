@@ -20,7 +20,8 @@ class VehicleLandingBoost;
 /// @brief 基本操作から惑星間ジャンプと成功着地までを段階的に案内する
 class TutorialProgressComponent final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "TutorialProgressComponent";
+   static constexpr const char* kTypeName = "TutorialProgressComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"チュートリアル進行", "Tutorial Progress"};
 
    /// @brief コンポーネント型名を取得する
@@ -77,29 +78,29 @@ private:
    std::string BuildGuideText() const;
    const char* GetPhaseName() const;
 
-   std::string playerObjectId_ = "Model:Player";
-   std::string nextScene_ = "GameTest";
-   std::int32_t targetPlanetIndex_ = 1;
-   float completionDelay_ = 2.5f;
-   float guideFadeDuration_ = 0.2f;
-   float completionElapsed_ = 0.0f;
-   Phase phase_ = Phase::Steering;
-   GuideFadeState guideFadeState_ = GuideFadeState::Visible;
-   CharacterJump* characterJump_ = nullptr;
-   CharacterLanding* characterLanding_ = nullptr;
-   PlanetSwitcher* planetSwitcher_ = nullptr;
-   VehicleInputComponent* vehicleInput_ = nullptr;
-   VehicleLandingBoost* landingBoost_ = nullptr;
-   GameEngine::UITextComponent* guideText_ = nullptr;
-   std::string displayedText_;
-   std::string pendingText_;
-   std::string landingFeedback_;
-   float guideBaseOpacity_ = 1.0f;
-   float guideVisibility_ = 1.0f;
-   bool usedPitch_ = false;
-   bool usedRoll_ = false;
-   bool wasGrounded_ = true;
-   bool sceneChangeRequested_ = false;
+   std::string playerObjectId_ = "Model:Player";             ///< 操作対象プレイヤーの安定Entity ID。
+   std::string nextScene_ = "GameTest";                      ///< 進行完了後に読み込む登録シーン名。
+   std::int32_t targetPlanetIndex_ = 1;                      ///< チュートリアルで到達すべき惑星リンクの番号。
+   float completionDelay_ = 2.5f;                            ///< 完了条件成立から次シーンへ進むまでの待機時間（秒）。
+   float guideFadeDuration_ = 0.2f;                          ///< 案内文章の切り替え時にフェードする時間（秒）。
+   float completionElapsed_ = 0.0f;                          ///< チュートリアル完了後に経過した時間（秒）。
+   Phase phase_ = Phase::Steering;                           ///< チュートリアルの現在の進行段階。
+   GuideFadeState guideFadeState_ = GuideFadeState::Visible; ///< 案内文章の表示・消去・切り替えの進行状態。
+   CharacterJump* characterJump_ = nullptr;        ///< プレイヤーのジャンプ入力と空中状態を扱うコンポーネントへの参照。
+   CharacterLanding* characterLanding_ = nullptr;  ///< 着地状態を参照するコンポーネントへの非所有参照。
+   PlanetSwitcher* planetSwitcher_ = nullptr;      ///< 現在の惑星と切り替え状況を参照するコンポーネント。
+   VehicleInputComponent* vehicleInput_ = nullptr; ///< プレイヤーのアクション入力を参照するコンポーネント。
+   VehicleLandingBoost* landingBoost_ = nullptr;   ///< 着地ブーストの成功状態を参照するコンポーネント。
+   GameEngine::UITextComponent* guideText_ = nullptr; ///< 案内文章の表示内容と透明度を変更するUIText部品への参照。
+   std::string displayedText_;                        ///< 最後にUIへ反映した文字列。重複更新を避けるために保持する。
+   std::string pendingText_;                          ///< フェードアウト完了後に表示する次の案内文章。
+   std::string landingFeedback_;                      ///< 着地結果に応じて表示する案内文字列。
+   float guideBaseOpacity_ = 1.0f;                    ///< 案内UIが保存時に持っていた基準不透明度。
+   float guideVisibility_ = 1.0f;                     ///< フェード演出で案内の基準不透明度へ掛ける表示割合。
+   bool usedPitch_ = false;                           ///< チュートリアル中にピッチ操作を行ったかどうか。
+   bool usedRoll_ = false;                            ///< チュートリアル中にロール操作を行ったかどうか。
+   bool wasGrounded_ = true;                          ///< 着地遷移検出用の前フレーム接地状態。
+   bool sceneChangeRequested_ = false;                ///< この進行状態からシーン切り替えを要求済みかどうか。
 };
 
 } // namespace App

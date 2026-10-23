@@ -45,7 +45,7 @@ private:
    GameEngine::Vector3 ComputeLookTarget(const RearCameraInput& input, const RearCameraSettings& settings,
       const RearCameraTransition& transition, const RearCameraDirectionState& direction,
       const GameEngine::Vector3& up) const;
-   RearCameraAimState state_;
+   RearCameraAimState state_; ///< この段階の確定済み状態。
 };
 
 } // namespace App

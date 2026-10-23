@@ -22,6 +22,7 @@ class PlanetSwitcher final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "PlanetSwitcher";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"惑星切り替え", "Planet Switcher"};
 
    /// @brief 型名を返す
@@ -118,14 +119,14 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float switchHysteresis = 1.0f;
-   GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f};
+   float switchHysteresis = 1.0f; ///< 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）。
+   GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f}; ///< OBBの半サイズ（各軸を個別指定）。
 
 private:
    /// @brief 登録済み惑星候補
    std::vector<PlanetEntry> entries_;
 #ifdef USE_IMGUI
-   std::string newPlanetId_;
+   std::string newPlanetId_; ///< 惑星リンクへ追加する候補の安定Entity ID。
 #endif
 
    /// @brief 現在選択中インデックス
@@ -138,7 +139,7 @@ private:
    std::int32_t activeGravityIndex_ = -1;
 
    // 惑星を切り換えたか
-   bool switched_ = false;
+   bool switched_ = false; ///< 直近フレームで惑星が切り替わったかどうか。
 
 private:
    std::int32_t SelectBestPlanetIndex(const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot);

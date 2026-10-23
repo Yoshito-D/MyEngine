@@ -11,7 +11,9 @@ class Texture;
 /// @brief Skybox固有のキューブマップと色を保持するコンポーネント
 class SkyboxComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "SkyboxComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"スカイボックス", "Skybox"};
 
    /// @brief Asset名から非所有のTexture参照を取得するコールバック
@@ -68,11 +70,11 @@ public:
 #endif
 
 private:
-   static TextureResolver textureResolver_;
+   static TextureResolver textureResolver_; ///< テクスチャ名から読み込み済み実体を解決する外部提供の処理。
 
-   mutable Texture* texture_ = nullptr;
-   std::string textureName_;
-   Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
+   mutable Texture* texture_ = nullptr;       ///< 描画に使用するテクスチャへの非所有参照。
+   std::string textureName_;                  ///< 使用中のキューブマップ名。
+   Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f}; ///< スカイボックスの乗算色。
 };
 
 } // namespace GameEngine

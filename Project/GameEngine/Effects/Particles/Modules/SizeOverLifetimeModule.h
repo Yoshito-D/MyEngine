@@ -57,8 +57,8 @@ public:
 #endif
 
 private:
-   RandomFloat sizeMultiplier_{1.0f, 1.0f, false};
-   Vector3 startSize_{1.0f, 1.0f, 1.0f};
-   Vector3 endSize_{0.0f, 0.0f, 0.0f};
+   RandomFloat sizeMultiplier_{1.0f, 1.0f, false}; ///< サイズ倍率の乱数範囲。
+   Vector3 startSize_{1.0f, 1.0f, 1.0f};           ///< 生存期間の開始時サイズ。
+   Vector3 endSize_{0.0f, 0.0f, 0.0f};             ///< 生存期間の終了時サイズ。
 };
 }

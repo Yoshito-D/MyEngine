@@ -59,7 +59,7 @@ public:
 #endif
 
 private:
-   RandomFloat speedLimit_{10.0f, 10.0f, false};
-   RandomFloat dampen_{0.5f, 0.5f, false};
+   RandomFloat speedLimit_{10.0f, 10.0f, false}; ///< 制限速度の乱数範囲。
+   RandomFloat dampen_{0.5f, 0.5f, false};       ///< 減衰率の乱数範囲。
 };
 }

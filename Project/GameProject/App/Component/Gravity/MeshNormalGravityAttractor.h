@@ -12,6 +12,7 @@ class MeshNormalGravityAttractor : public GravityAttractor {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "MeshNormalGravityAttractor";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{
       "メッシュ法線重力アトラクター", "Mesh Normal Gravity Attractor"};
 

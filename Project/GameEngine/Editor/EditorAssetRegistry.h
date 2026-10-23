@@ -107,13 +107,13 @@ private:
    static EditorAssetType ClassifyAsset(const std::filesystem::path& path, const std::filesystem::path& resourcesRoot);
    bool ResolveDestination(const std::string& assetId, std::filesystem::path& path, std::string& error) const;
 
-   std::vector<EditorAssetEntry> allAssets_;
+   std::vector<EditorAssetEntry> allAssets_; ///< アセットID順に保持する唯一のアセット一覧。
 
    // 情報を複製せず、走査時に作った直下索引だけを描画で再利用する。
-   std::unordered_map<std::string, std::vector<size_t>> children_;
-   std::filesystem::path resourcesRoot_ = "resources";
-   std::string scanError_;
-   uint64_t revision_ = 0;
+   std::unordered_map<std::string, std::vector<size_t>> children_; ///< この要素に属する子ノード。
+   std::filesystem::path resourcesRoot_ = "resources";             ///< 最後に走査したresourcesルート。
+   std::string scanError_;                                         ///< 最後の走査で発生したエラー。空文字列なら成功。
+   uint64_t revision_ = 0; ///< 全Registryの走査で共有する一意の世代番号。UIはIDを保持し、世代変更時に再検索する。
 };
 
 } // namespace GameEngine

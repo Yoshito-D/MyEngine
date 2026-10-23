@@ -20,7 +20,8 @@ public:
       Area
    };
 
-   static constexpr const char* kTypeName = "LightComponent";
+   static constexpr const char* kTypeName = "LightComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"ライト", "Light"};
 
    /// @brief コンポーネント型名を取得する
@@ -97,9 +98,9 @@ private:
    static const char* TypeToString(Type type);
    static bool TryParseType(const std::string& value, Type& type);
 
-   Type type_ = Type::Directional;
-   Type registeredType_ = Type::Directional;
-   std::string runtimeLightKey_;
+   Type type_ = Type::Directional;           ///< 現在のライト形状。
+   Type registeredType_ = Type::Directional; ///< LightManagerへ現在登録しているライト種別。
+   std::string runtimeLightKey_;             ///< LightManagerに登録した実行時ライトの識別キー。
 };
 
 } // namespace GameEngine

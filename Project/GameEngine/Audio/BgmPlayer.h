@@ -7,13 +7,13 @@ namespace GameEngine {
 
 /// @brief シーンが所有し、実行時だけ使用するBGM設定。
 struct BgmRequest {
-   std::string clipAssetId;
-   std::shared_ptr<const SoundClip> clip;
-   float volume = 1.0f;
-   bool loop = true;
-   float fadeInSeconds = 0.0f;
-   float fadeOutSeconds = 0.0f;
-   bool continueAcrossScenes = false;
+   std::string clipAssetId;               ///< 再生する音声クリップの永続アセットID。
+   std::shared_ptr<const SoundClip> clip; ///< 再生対象の音声またはアニメーションクリップへの参照。
+   float volume = 1.0f;                   ///< 個別の音量倍率。
+   bool loop = true;                      ///< 終端到達後に再生を繰り返すかどうか。
+   float fadeInSeconds = 0.0f;            ///< 音量を立ち上げる時間（秒）。
+   float fadeOutSeconds = 0.0f;           ///< 音量を下げて停止する時間（秒）。
+   bool continueAcrossScenes = false;     ///< シーン切り替え後も再生を継続するかどうか。
 };
 
 /// @brief シーンのアドレスに依存しない所有者トークンで、最大2つのBGMボイスを管理する。
@@ -53,20 +53,24 @@ public:
 
 private:
    struct Track {
-      AudioHandle handle;
-      std::string assetId;
-      uint64_t owner = 0;
-      float gain = 1.0f;
+      AudioHandle handle;  ///< 世代番号を含めて対象を特定する操作ハンドル。
+      std::string assetId; ///< Resources配下のファイルを参照する永続アセットID。
+      uint64_t owner = 0;  ///< BGM要求元を識別するトークン。0は所有者なし。
+      float gain = 1.0f;   ///< 現在適用している音量倍率。
+      /// @brief start: 補間や処理の開始値。target: 補間または参照の対象。duration:
+      /// 処理または再生が継続する時間（秒）。elapsed: 処理を開始してからの経過時間（秒）。
       float start = 1.0f, target = 1.0f, duration = 0.0f, elapsed = 0.0f;
-      float fadeOutSeconds = 0.0f;
-      bool continueAcrossScenes = false;
+      float fadeOutSeconds = 0.0f;       ///< 音量を下げて停止する時間（秒）。
+      bool continueAcrossScenes = false; ///< シーン切り替え後も再生を継続するかどうか。
    };
 
    void Fade(Track& track, float target, float seconds);
    void Release(Track& track);
-   Audio& audio_;
+   Audio& audio_; ///< 再生ハンドルと音量操作を委譲するAudioへの非所有参照。
+   /// @brief current_: 現在選択または再生している対象の状態。outgoing_:
+   /// 切り替え前のBGMとフェードアウトの進行状態。
    Track current_, outgoing_;
-   uint64_t nextOwner_ = 0;
-   bool sceneChanging_ = false;
+   uint64_t nextOwner_ = 0;     ///< BGM要求元へ次に発行する一意トークン。
+   bool sceneChanging_ = false; ///< 旧シーンの解放から新シーンの要求確定までの切り替え中かどうか。
 };
 }

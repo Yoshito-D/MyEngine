@@ -26,7 +26,7 @@ public:
    std::unique_ptr<PostProcess> Create(const std::string& className) const;
 
 private:
-   std::unordered_map<std::string, Factory> factories_;
+   std::unordered_map<std::string, Factory> factories_; ///< 登録名から具象型を生成するファクトリの対応表。
 };
 
 }

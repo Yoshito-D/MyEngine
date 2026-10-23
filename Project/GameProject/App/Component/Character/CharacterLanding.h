@@ -16,6 +16,7 @@ class CharacterLanding final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterLanding";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"キャラクター着地", "Character Landing"};
 
    /// @brief 型名を返す
@@ -73,8 +74,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float landingOffset = 0.0f;
-   GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f};
+   float landingOffset = 0.0f;                                  ///< 原点（inertia中心）から着地点までの追加オフセット。
+   GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f}; ///< OBBの半サイズ（各軸を個別指定）。
 
 private:
    /// @brief 惑星地表の半径

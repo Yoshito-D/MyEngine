@@ -163,23 +163,23 @@ private:
    static Vector2 LerpVector2(const Vector2& a, const Vector2& b, float t);
    static float LerpFloat(float a, float b, float t);
 
-   ValueMode scrollMode_ = ValueMode::Constant;
-   ValueMode rotationMode_ = ValueMode::Constant;
-   ValueMode scaleMode_ = ValueMode::Constant;
+   ValueMode scrollMode_ = ValueMode::Constant;   ///< UVスクロール値の決定方法。
+   ValueMode rotationMode_ = ValueMode::Constant; ///< UV回転値の決定方法。
+   ValueMode scaleMode_ = ValueMode::Constant;    ///< UVスケール値の決定方法。
 
-   Vector2 scrollConstant_{0.0f, 0.0f};
-   RandomVector2 scrollRandom_{Vector2{0.0f, 0.0f}, Vector2{0.0f, 0.0f}, false};
-   Vector2 scrollCurveStart_{0.0f, 0.0f};
-   Vector2 scrollCurveEnd_{0.0f, 0.0f};
+   Vector2 scrollConstant_{0.0f, 0.0f};                                          ///< 固定スクロール速度。
+   RandomVector2 scrollRandom_{Vector2{0.0f, 0.0f}, Vector2{0.0f, 0.0f}, false}; ///< スクロール速度の乱数範囲。
+   Vector2 scrollCurveStart_{0.0f, 0.0f};                                        ///< カーブモードの開始スクロール速度。
+   Vector2 scrollCurveEnd_{0.0f, 0.0f};                                          ///< カーブモードの終了スクロール速度。
 
-   float rotationConstant_ = 0.0f;
-   RandomFloat rotationRandom_{0.0f, 0.0f, false};
-   float rotationCurveStart_ = 0.0f;
-   float rotationCurveEnd_ = 0.0f;
+   float rotationConstant_ = 0.0f;                 ///< 固定UV回転量。
+   RandomFloat rotationRandom_{0.0f, 0.0f, false}; ///< UV回転量の乱数範囲。
+   float rotationCurveStart_ = 0.0f;               ///< カーブモードの開始UV回転量。
+   float rotationCurveEnd_ = 0.0f;                 ///< カーブモードの終了UV回転量。
 
-   Vector2 scaleConstant_{1.0f, 1.0f};
-   RandomVector2 scaleRandom_{Vector2{1.0f, 1.0f}, Vector2{1.0f, 1.0f}, false};
-   Vector2 scaleCurveStart_{1.0f, 1.0f};
-   Vector2 scaleCurveEnd_{1.0f, 1.0f};
+   Vector2 scaleConstant_{1.0f, 1.0f};                                          ///< 固定UVスケール。
+   RandomVector2 scaleRandom_{Vector2{1.0f, 1.0f}, Vector2{1.0f, 1.0f}, false}; ///< UVスケールの乱数範囲。
+   Vector2 scaleCurveStart_{1.0f, 1.0f};                                        ///< カーブモードの開始UVスケール。
+   Vector2 scaleCurveEnd_{1.0f, 1.0f};                                          ///< カーブモードの終了UVスケール。
 };
 }

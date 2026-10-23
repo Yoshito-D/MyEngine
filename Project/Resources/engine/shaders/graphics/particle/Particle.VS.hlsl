@@ -3,11 +3,11 @@
 // CPU側ParticleSystem::ParticleForGPUおよびParticleRender CSの出力と共有する224バイト構造。
 // StructuredBufferのstrideはsizeof(ParticleForGPU)で作られるため、順序や型を独立に変更してはならない。
 struct ParticleForGPU {
-   float4x4 wVP;
-   float4x4 world;
-   float4x4 uvTransform;
-   float4 color;
-   float4 customData;
+   float4x4 wVP;         ///< ワールド・ビュー・プロジェクション行列。
+   float4x4 world;       ///< ローカル頂点をワールド座標系へ移す変換行列。
+   float4x4 uvTransform; ///< UV変換行列。
+   float4 color;         ///< 表示色のRGBA成分。
+   float4 customData;    ///< シェーダー連携用（年齢、乱数、カメラフェード、速度）。
 };
 
 // t0は粒子インスタンス配列で、SV_InstanceIDが描画対象要素を直接選択する。
@@ -16,9 +16,9 @@ StructuredBuffer<ParticleForGPU> gParticle : register(t0);
 // 通常粒子はMesh::VertexData、リボンはParticleRibbon CSが生成する同一36バイト形式を入力する。
 // normalは通常メッシュでは法線だが、リボン頂点に限りx成分を頂点アルファとして再利用する。
 struct VertexShaderInput {
-   float4 position : POSITION0;
-   float2 texCoord : TEXCOORD0;
-   float3 normal : NORMAL0;
+   float4 position : POSITION0; ///< 描画する頂点のローカル位置と同次座標成分。
+   float2 texCoord : TEXCOORD0; ///< テクスチャ座標。
+   float3 normal : NORMAL0;     ///< 面の向きを表す法線ベクトル。
 };
 
 VertexShaderOutput main(VertexShaderInput input, uint instanceId : SV_InstanceID) {

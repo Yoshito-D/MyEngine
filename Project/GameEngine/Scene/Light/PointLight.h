@@ -23,12 +23,12 @@ public:
 
    /// @brief ポイントライトデータ構造体
    struct PointLightData {
-      Vector4 color;
-      Vector3 position;
-      float intensity;
-      float radius;
-      float decay;
-      float padding[2];
+      Vector4 color;    ///< 表示色のRGBA成分。
+      Vector3 position; ///< 光源中心のワールド位置。
+      float intensity;  ///< 効果または光の強さ。
+      float radius;     ///< 形状または効果範囲の半径。
+      float decay;      ///< 距離減衰。
+      float padding[2]; ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief デバイスを取得して初期化
@@ -56,7 +56,8 @@ public:
    bool ApplyIllumination(const PointLightData& illumination);
 
 private:
+   /// @brief 点光源のパラメーターを保持する所有GPUリソース。
    Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_ = nullptr;
-   PointLightData* pointLightData_ = nullptr;
+   PointLightData* pointLightData_ = nullptr; ///< ポイントライトデータ。
 };
 }

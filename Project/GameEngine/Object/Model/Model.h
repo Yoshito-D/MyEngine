@@ -117,6 +117,6 @@ public:
    TransformationMatrix* GetTransformationMatrix();
 
 private:
-   static std::vector<Model*> sRegisteredModels_;
+   static std::vector<Model*> sRegisteredModels_; ///< 自動描画の候補として登録されたModelの非所有一覧。
 };
 }

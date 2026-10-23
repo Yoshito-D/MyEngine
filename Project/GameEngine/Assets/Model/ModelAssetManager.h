@@ -50,9 +50,10 @@ private:
    ModelHandle LoadModelInternal(
       const std::string& modelPath, const std::string& modelName, const std::string& assetId);
 
-   GraphicsDevice* device_ = nullptr;
+   GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   /// @brief アニメーションアセットの共有を管理する所有オブジェクト。
    AnimationAssetManager* animationAssetManager_ = nullptr;
-   std::unordered_map<std::string, ModelHandle> modelAssets_;
-   std::unordered_map<std::string, ModelHandle> modelAssetsById_;
+   std::unordered_map<std::string, ModelHandle> modelAssets_;     ///< 論理名から引く共有モデルアセット。
+   std::unordered_map<std::string, ModelHandle> modelAssetsById_; ///< 永続アセットIDから引く共有モデルアセット。
 };
 }

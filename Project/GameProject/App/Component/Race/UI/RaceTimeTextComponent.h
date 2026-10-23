@@ -10,7 +10,8 @@ class RaceManagerComponent;
 /// @brief RaceManagerの状態と時間をUITextへ表示する
 class RaceTimeTextComponent final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "RaceTimeTextComponent";
+   static constexpr const char* kTypeName = "RaceTimeTextComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"レースタイム表示", "Race Time Text"};
 
    /// @brief コンポーネント型名を取得する
@@ -40,8 +41,8 @@ public:
 #endif
 
 private:
-   std::string raceManagerId_;
-   RaceManagerComponent* raceManager_ = nullptr;
+   std::string raceManagerId_;                   ///< レース進行を参照する管理Objectの安定Entity ID。
+   RaceManagerComponent* raceManager_ = nullptr; ///< 参照解決済みレース管理コンポーネントへの非所有参照。
 };
 
 } // namespace App

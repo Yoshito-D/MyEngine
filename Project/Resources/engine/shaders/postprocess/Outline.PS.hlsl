@@ -3,11 +3,11 @@
 // C++側のOutlineCBと同じ並びを保つ。texelSizeは現在の出力解像度から毎描画更新されるため、
 // thicknessを解像度に依存しない画素間隔として扱える。
 struct OutlineParams {
-   float4 outlineColor;
-   float2 texelSize;
-   float thickness;
-   float depthThreshold;
-   float intensity;
+   float4 outlineColor;  ///< 輪郭のRGB色と寄与率として使うアルファ。
+   float2 texelSize;     ///< 出力解像度における1テクセルのUV幅。
+   float thickness;      ///< 深度近傍のサンプリング間隔倍率。
+   float depthThreshold; ///< 深度勾配を輪郭強度へ正規化するしきい値。
+   float intensity;      ///< 効果または光の強さ。
 };
 
 ConstantBuffer<OutlineParams> gParams : register(b0);

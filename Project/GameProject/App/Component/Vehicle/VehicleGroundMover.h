@@ -17,7 +17,9 @@ namespace App {
 /// - VehicleLandingAligner が同 Object にあれば補正中は姿勢再構築をスキップする
 class VehicleGroundMover final : public GameEngine::IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "VehicleGroundMover";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両地上移動", "Vehicle Ground Mover"};
 
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
@@ -88,9 +90,9 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float autoSpeed = 16.0f;
-   float steerSpeed = 120.0f;
-   float speedRecovery = 1.0f;
+   float autoSpeed = 16.0f;    ///< 通常走行速度。これを下回ったときのみ減速演出を発火する。
+   float steerSpeed = 120.0f;  ///< ステアリング角速度（deg/sec）。
+   float speedRecovery = 1.0f; ///< スピード回復速度（per sec）。
    float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限
 
 private:
@@ -133,7 +135,7 @@ private:
    /// @brief 直近の水平前方ベクトル
    GameEngine::Vector3 flatForward_ = {0.0f, 0.0f, 1.0f};
 
-   const float kInitialSpeed = 15.0f;
+   const float kInitialSpeed = 15.0f; ///< 初期化時に適用する地上走行速度。
 };
 
 } // namespace App

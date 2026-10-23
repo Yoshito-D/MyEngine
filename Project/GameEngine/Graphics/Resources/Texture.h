@@ -50,14 +50,16 @@ public:
    const DirectX::TexMetadata& GetMetadata() const { return metadata_; }
 
 private:
-   ComPtr<ID3D12Resource> textureResource_ = nullptr;
+   ComPtr<ID3D12Resource> textureResource_ = nullptr; ///< 画像テクスチャを保持する所有GPUリソース。
+   /// @brief テクスチャSRVの作成・登録に使うCPU側ディスクリプタハンドル。
    CD3DX12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU_;
+   /// @brief 描画時にテクスチャSRVを指定するGPU側ディスクリプタハンドル。
    CD3DX12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU_;
-   std::string name_;
+   std::string name_;    ///< 読み込んだ画像ファイルの名前。
    uint32_t width_ = 0;  // テクスチャの幅
    uint32_t height_ = 0; // テクスチャの高さ
 
-   DirectX::TexMetadata metadata_{};
+   DirectX::TexMetadata metadata_{}; ///< テクスチャのメタデータ。
 
 private:
    /// @brief ミップマップを含むテクスチャをロードする

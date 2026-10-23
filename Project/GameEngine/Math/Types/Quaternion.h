@@ -9,10 +9,10 @@ struct Vector3;
 /// @brief 3次元回転を表すQuaternion。
 /// @details x、y、zをベクトル部、wをスカラー部として保持する。回転として使用するAPIは原則として単位Quaternionを前提とする。
 struct Quaternion {
-   float x;
-   float y;
-   float z;
-   float w;
+   float x; ///< 回転クォータニオンの虚部X成分。
+   float y; ///< 回転クォータニオンの虚部Y成分。
+   float z; ///< 回転クォータニオンの虚部Z成分。
+   float w; ///< 回転クォータニオンの実部。
 
    /// @brief 2つの回転を正規化線形補間する。
    /// @param start 補間開始のQuaternion。

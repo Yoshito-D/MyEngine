@@ -90,28 +90,29 @@ public:
 private:
    /// @brief レンダーターゲットの情報をまとめた構造体
    struct RenderTargetInfo {
-      Microsoft::WRL::ComPtr<ID3D12Resource> renderTarget;
-      D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-      D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
-      D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
-      UINT srvIndex = static_cast<UINT>(-1);
+      Microsoft::WRL::ComPtr<ID3D12Resource> renderTarget; ///< 色または深度の中間画像を保持する所有GPUテクスチャ。
+      D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;               ///< 描画先を指定するRTVのCPU側ハンドル。
+      D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;            ///< シェーダー参照用ビューを書き込むCPU側ハンドル。
+      D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;            ///< シェーダー参照用ビューを指定するGPU側ハンドル。
+      UINT srvIndex = static_cast<UINT>(-1);               ///< 共有ヒープに確保したSRV番号。最大値は未割り当て。
+      /// @brief 中間テクスチャの現在のリソース遷移状態。
       D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    };
 
-   GraphicsDevice* device_ = nullptr;
+   GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
 
-   uint32_t width_ = 0;
-   uint32_t height_ = 0;
-   float clearColor_[4] = {0.1f, 0.25f, 0.5f, 1.0f};
+   uint32_t width_ = 0;                              ///< オフスクリーンレンダリングターゲットの幅。
+   uint32_t height_ = 0;                             ///< オフスクリーンレンダリングターゲットの高さ。
+   float clearColor_[4] = {0.1f, 0.25f, 0.5f, 1.0f}; ///< 描画開始時に塗りつぶすRGBA色。
 
    // レンダーターゲット情報
-   RenderTargetInfo currentRenderTarget_;
-   RenderTargetInfo previousRenderTarget_;
-   RenderTargetInfo sceneColorSnapshot_;
-   RenderTargetInfo sceneDepthSnapshot_;
+   RenderTargetInfo currentRenderTarget_;  ///< 現在の描画先となる中間レンダーターゲット。
+   RenderTargetInfo previousRenderTarget_; ///< ポストエフェクトの入力となる前段の中間レンダーターゲット。
+   RenderTargetInfo sceneColorSnapshot_;   ///< 透明描画前のシーン色を固定して参照するコピー画像。
+   RenderTargetInfo sceneDepthSnapshot_;   ///< 透明描画前のシーン深度を固定して参照するコピー画像。
 
    // 発光強度を1.0で飽和させずBloomへ渡すため、シーン中間色はHDRで保持する。
-   DXGI_FORMAT format_ = DXGI_FORMAT_R16G16B16A16_FLOAT;
+   DXGI_FORMAT format_ = DXGI_FORMAT_R16G16B16A16_FLOAT; ///< レンダーターゲットのフォーマット。
 
    /// @brief レンダーターゲット情報を作成
    /// @param index 作成するレンダーターゲットのインデックス（0または1）

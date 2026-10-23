@@ -27,68 +27,69 @@ enum class ShaderType {
 
 /// @brief シェーダー情報
 struct ShaderInfo {
-   std::string name;
-   std::wstring filePath;
-   ShaderType type;
-   std::wstring entryPoint = L"main";
-   std::vector<std::string> defines;
-   std::vector<std::string> includes;
+   std::string name;                  ///< 識別とエディター表示に使う名前。
+   std::wstring filePath;             ///< コンパイル対象となるHLSLソースファイルのパス。
+   ShaderType type;                   ///< コンパイルする頂点・ピクセル・Computeなどのシェーダーステージ。
+   std::wstring entryPoint = L"main"; ///< シェーダーのコンパイル開始関数名。
+   std::vector<std::string> defines;  ///< シェーダーのコンパイル時に適用するプリプロセッサ定義。
+   std::vector<std::string> includes; ///< シェーダーが参照するインクルードファイル。
 };
 
 /// @brief シェーダー入力パラメータ情報
 struct ShaderInputParameterInfo {
-   std::string semanticName;
-   UINT semanticIndex = 0;
-   BYTE mask = 0;
+   std::string semanticName; ///< 頂点入力要素をシェーダーへ対応付けるセマンティクス名。
+   UINT semanticIndex = 0;   ///< 同名セマンティクス内の要素番号。
+   BYTE mask = 0;            ///< 入力で使用するxyzw成分を示すビット集合。
+   /// @brief シェーダーレジスタ成分の整数・浮動小数点などの型。
    D3D_REGISTER_COMPONENT_TYPE componentType = D3D_REGISTER_COMPONENT_FLOAT32;
 };
 
 /// @brief シェーダーリソースバインド情報
 struct ShaderResourceBindingInfo {
-   std::string name;
-   D3D_SHADER_INPUT_TYPE type = D3D_SIT_CBUFFER;
-   UINT bindPoint = 0;
-   UINT bindCount = 0;
-   UINT space = 0;
-   D3D_SRV_DIMENSION dimension = D3D_SRV_DIMENSION_UNKNOWN;
+   std::string name;                                        ///< 識別とエディター表示に使う名前。
+   D3D_SHADER_INPUT_TYPE type = D3D_SIT_CBUFFER;            ///< 定数バッファ・テクスチャ・UAVなどのリソース種別。
+   UINT bindPoint = 0;                                      ///< シェーダーリソースの先頭レジスタ番号。
+   UINT bindCount = 0;                                      ///< 連続してバインドするリソースの数。
+   UINT space = 0;                                          ///< シェーダーレジスタの名前空間番号。
+   D3D_SRV_DIMENSION dimension = D3D_SRV_DIMENSION_UNKNOWN; ///< シェーダーリソースの次元と参照方式。
 };
 
 /// @brief 定数バッファー内の相対オフセットを持つ、リフレクション結果の末端フィールド。
 struct ShaderVariableInfo {
-   std::string name;
-   UINT offset = 0;
-   D3D_SHADER_VARIABLE_TYPE type = D3D_SVT_VOID;
-   D3D_SHADER_VARIABLE_CLASS variableClass = D3D_SVC_SCALAR;
-   UINT rows = 0;
-   UINT columns = 0;
-   UINT elements = 0;
+   std::string name;                                         ///< 識別とエディター表示に使う名前。
+   UINT offset = 0;                                          ///< 定数バッファ先頭からこのパラメーターまでのバイト数。
+   D3D_SHADER_VARIABLE_TYPE type = D3D_SVT_VOID;             ///< 定数の浮動小数点・整数などの要素型。
+   D3D_SHADER_VARIABLE_CLASS variableClass = D3D_SVC_SCALAR; ///< 定数のスカラー・ベクトル・行列などの分類。
+   UINT rows = 0;                                            ///< 行列または定数要素の行数。
+   UINT columns = 0;                                         ///< 行列または定数要素の列数。
+   UINT elements = 0;                                        ///< 配列として宣言された定数の要素数。
 };
 
 /// @brief 定数バッファ情報
 struct ShaderConstantBufferInfo {
-   std::string name;
-   UINT size = 0;
-   UINT variableCount = 0;
-   std::vector<ShaderVariableInfo> variables;
+   std::string name;                          ///< 識別とエディター表示に使う名前。
+   UINT size = 0;                             ///< 定数バッファ全体のサイズ（バイト）。
+   UINT variableCount = 0;                    ///< 定数バッファ内の変数の数。
+   std::vector<ShaderVariableInfo> variables; ///< 定数バッファ内の変数名・型・配置情報。
 };
 
 /// @brief シェーダーリフレクション情報
 struct ShaderReflectionInfo {
-   bool isValid = false;
-   std::vector<ShaderInputParameterInfo> inputParameters;
-   std::vector<ShaderResourceBindingInfo> boundResources;
-   std::vector<ShaderConstantBufferInfo> constantBuffers;
+   bool isValid = false;                                  ///< 解析または検証に成功し、結果を利用できるかどうか。
+   std::vector<ShaderInputParameterInfo> inputParameters; ///< シェーダーの入力セマンティクスと成分情報。
+   std::vector<ShaderResourceBindingInfo> boundResources; ///< シェーダーが参照するリソースとレジスタ配置。
+   std::vector<ShaderConstantBufferInfo> constantBuffers; ///< シェーダー内の定数バッファと変数配置。
 };
 
 /// @brief コンパイル済みシェーダー
 struct CompiledShader {
-   ComPtr<IDxcBlob> blob;
-   ShaderType type;
-   std::string name;
-   std::wstring filePath;
-   std::wstring entryPoint = L"main";
-   std::vector<std::string> defines;
-   ShaderReflectionInfo reflection;
+   ComPtr<IDxcBlob> blob;             ///< コンパイル済みシェーダーの所有バイトコード。
+   ShaderType type;                   ///< コンパイル済みバイトコードのシェーダーステージ。
+   std::string name;                  ///< 識別とエディター表示に使う名前。
+   std::wstring filePath;             ///< ホットリロードの更新確認に使うHLSLソースファイルのパス。
+   std::wstring entryPoint = L"main"; ///< シェーダーのコンパイル開始関数名。
+   std::vector<std::string> defines;  ///< シェーダーのコンパイル時に適用するプリプロセッサ定義。
+   ShaderReflectionInfo reflection;   ///< コンパイル済みシェーダーから取得した入力・リソース情報。
    uint64_t fileTimestamp = 0; // ホットリロード用
 };
 
@@ -224,14 +225,15 @@ public:
    void ReloadAllShaders();
 
 private:
-   GraphicsDevice* device_ = nullptr;
+   GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
 
    // DXCインターフェース
-   ComPtr<IDxcUtils> dxcUtils_;
-   ComPtr<IDxcCompiler3> dxcCompiler_;
-   ComPtr<IDxcIncludeHandler> includeHandler_;
+   ComPtr<IDxcUtils> dxcUtils_;                ///< DXCのバイト列作成とリフレクションを行う所有ユーティリティ。
+   ComPtr<IDxcCompiler3> dxcCompiler_;         ///< HLSLをコンパイルする所有DXCコンパイラー。
+   ComPtr<IDxcIncludeHandler> includeHandler_; ///< シェーダーのインクルードファイルを解決する所有ハンドラー。
 
    // シェーダー格納用コンテナ（統一管理）
+   /// @brief 登録名から引くコンパイル済みシェーダーのキャッシュ。
    std::unordered_map<std::string, CompiledShader> shaders_;
 
    /// @brief DXCコンポーネントの初期化

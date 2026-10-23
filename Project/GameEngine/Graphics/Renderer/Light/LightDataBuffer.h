@@ -15,53 +15,53 @@ class LightDataBuffer {
 public:
    /// @brief ディレクショナルライトデータ構造体
    struct DirectionalLightData {
-      Vector4 color;
-      Vector3 direction;
-      float intensity;
+      Vector4 color;     ///< 表示色のRGBA成分。
+      Vector3 direction; ///< 光が進むワールド方向。
+      float intensity;   ///< 効果または光の強さ。
    };
 
    /// @brief ポイントライトデータ構造体
    struct PointLightData {
-      Vector4 color;
-      Vector3 position;
-      float intensity;
-      float radius;
-      float decay;
-      float padding[2];
+      Vector4 color;    ///< 表示色のRGBA成分。
+      Vector3 position; ///< 光源中心のワールド位置。
+      float intensity;  ///< 効果または光の強さ。
+      float radius;     ///< 形状または効果範囲の半径。
+      float decay;      ///< 距離減衰。
+      float padding[2]; ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief スポットライトデータ構造体
    struct SpotLightData {
-      Vector4 color;
-      Vector3 position;
-      float intensity;
-      Vector3 direction;
-      float distance;
-      float decay;
-      float cosAngle;
-      float cosFalloffStart;
-      float padding;
+      Vector4 color;         ///< 表示色のRGBA成分。
+      Vector3 position;      ///< 光源中心のワールド位置。
+      float intensity;       ///< 効果または光の強さ。
+      Vector3 direction;     ///< 光が進むワールド方向。
+      float distance;        ///< 基準位置からの距離。
+      float decay;           ///< 距離減衰。
+      float cosAngle;        ///< スポット光の外側コーン角の余弦。
+      float cosFalloffStart; ///< スポット光の減衰開始コーン角の余弦。
+      float padding;         ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief エリアライトデータ構造体
    struct AreaLightData {
-      Vector4 color;
-      Vector3 position;
-      float intensity;
-      Vector3 normal;
-      float width;
-      Vector3 tangent;
-      float height;
-      Vector3 padding;
-      float padding2;
+      Vector4 color;    ///< 表示色のRGBA成分。
+      Vector3 position; ///< 光源中心のワールド位置。
+      float intensity;  ///< 効果または光の強さ。
+      Vector3 normal;   ///< 面の向きを表す法線ベクトル。
+      float width;      ///< 対象領域の横幅。
+      Vector3 tangent;  ///< ライトの右方向ベクトル。
+      float height;     ///< 対象領域の高さ。
+      Vector3 padding;  ///< GPU転送データの配置境界を揃える未使用領域。
+      float padding2;   ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief ライトカウント構造体
    struct LightCountData {
-      uint32_t directionalLightCount;
-      uint32_t pointLightCount;
-      uint32_t spotLightCount;
-      uint32_t areaLightCount;
+      uint32_t directionalLightCount; ///< GPUへ渡す有効な平行光源の数。
+      uint32_t pointLightCount;       ///< GPUへ渡す有効な点光源の数。
+      uint32_t spotLightCount;        ///< GPUへ渡す有効なスポット光源の数。
+      uint32_t areaLightCount;        ///< GPUへ渡す有効な矩形光源の数。
    };
 
    /// @brief デバイスを取得して初期化
@@ -117,36 +117,41 @@ public:
 
 private:
    // 構造化バッファリソース
-   ComPtr<ID3D12Resource> directionalLightBuffer_ = nullptr;
-   ComPtr<ID3D12Resource> pointLightBuffer_ = nullptr;
-   ComPtr<ID3D12Resource> spotLightBuffer_ = nullptr;
-   ComPtr<ID3D12Resource> areaLightBuffer_ = nullptr;
-   ComPtr<ID3D12Resource> lightCountResource_ = nullptr;
+   ComPtr<ID3D12Resource> directionalLightBuffer_ = nullptr; ///< 平行光源のパラメーターを保持するバッファ。
+   ComPtr<ID3D12Resource> pointLightBuffer_ = nullptr;       ///< 点光源のパラメーターを保持するバッファ。
+   ComPtr<ID3D12Resource> spotLightBuffer_ = nullptr;        ///< スポット光源のパラメーターを保持するバッファ。
+   ComPtr<ID3D12Resource> areaLightBuffer_ = nullptr;        ///< 矩形光源のパラメーターを保持するバッファ。
+   ComPtr<ID3D12Resource> lightCountResource_ = nullptr;     ///< 種類別の有効ライト数を保持する所有GPUリソース。
 
    // マップ済みポインタ
+   /// @brief 平行光源のパラメーターを参照するCPU側の永続Map先。対応リソースがメモリを所有する。
    DirectionalLightData* directionalLightData_ = nullptr;
+   /// @brief 点光源のパラメーターを参照するCPU側の永続Map先。対応リソースがメモリを所有する。
    PointLightData* pointLightData_ = nullptr;
+   /// @brief スポット光源のパラメーターを参照するCPU側の永続Map先。対応リソースがメモリを所有する。
    SpotLightData* spotLightData_ = nullptr;
+   /// @brief 矩形光源のパラメーターを参照するCPU側の永続Map先。対応リソースがメモリを所有する。
    AreaLightData* areaLightData_ = nullptr;
+   /// @brief 種類別の有効ライト数を参照するCPU側の永続Map先。対応リソースがメモリを所有する。
    LightCountData* lightCountData_ = nullptr;
 
    // SRVハンドル
-   D3D12_GPU_DESCRIPTOR_HANDLE directionalLightSRVHandle_{};
-   D3D12_GPU_DESCRIPTOR_HANDLE pointLightSRVHandle_{};
-   D3D12_GPU_DESCRIPTOR_HANDLE spotLightSRVHandle_{};
-   D3D12_GPU_DESCRIPTOR_HANDLE areaLightSRVHandle_{};
+   D3D12_GPU_DESCRIPTOR_HANDLE directionalLightSRVHandle_{}; ///< ディレクショナルライトSRVハンドル。
+   D3D12_GPU_DESCRIPTOR_HANDLE pointLightSRVHandle_{};       ///< ポイントライトSRVハンドル。
+   D3D12_GPU_DESCRIPTOR_HANDLE spotLightSRVHandle_{};        ///< スポットライトSRVハンドル。
+   D3D12_GPU_DESCRIPTOR_HANDLE areaLightSRVHandle_{};        ///< エリアライトSRVハンドル。
 
    // 最大ライト数
-   uint32_t maxDirectionalLights_ = 0;
-   uint32_t maxPointLights_ = 0;
-   uint32_t maxSpotLights_ = 0;
-   uint32_t maxAreaLights_ = 0;
+   uint32_t maxDirectionalLights_ = 0; ///< 確保した平行光源バッファの要素数上限。
+   uint32_t maxPointLights_ = 0;       ///< 確保した点光源バッファの要素数上限。
+   uint32_t maxSpotLights_ = 0;        ///< 確保したスポット光源バッファの要素数上限。
+   uint32_t maxAreaLights_ = 0;        ///< 確保した矩形光源バッファの要素数上限。
 
    // 現在のライト数
-   uint32_t currentDirectionalLightCount_ = 0;
-   uint32_t currentPointLightCount_ = 0;
-   uint32_t currentSpotLightCount_ = 0;
-   uint32_t currentAreaLightCount_ = 0;
+   uint32_t currentDirectionalLightCount_ = 0; ///< 現在GPUバッファへ転送している平行光源の数。
+   uint32_t currentPointLightCount_ = 0;       ///< 現在GPUバッファへ転送している点光源の数。
+   uint32_t currentSpotLightCount_ = 0;        ///< 現在GPUバッファへ転送しているスポット光源の数。
+   uint32_t currentAreaLightCount_ = 0;        ///< 現在GPUバッファへ転送している矩形光源の数。
 
    /// @brief 構造化バッファとSRVを作成
    /// @param buffer バッファのポインタ

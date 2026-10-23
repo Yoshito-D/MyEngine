@@ -1,7 +1,7 @@
 cbuffer SceneTransitionConstants : register(b0) {
-   float gOpacity;
-   float2 gBlurDirection;
-   uint gApplyComposite;
+   float gOpacity;        ///< 影の濃さ（0～1）。
+   float2 gBlurDirection; ///< シーン遷移でぼかしを適用する画面上の方向。
+   uint gApplyComposite;  ///< ぼかし結果へ暗転合成も適用するかどうか。
 };
 
 Texture2D gInputTexture : register(t0);

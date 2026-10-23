@@ -58,14 +58,6 @@ void RequestPresentationScreenshot(const char* filename, bool includeDebugGuides
    GameEngine::EngineContext::RequestScreenshot(std::filesystem::path(captureDirectory) / filename);
 }
 
-struct LandingPrediction {
-   GameEngine::Vector3 up = {0.0f, 1.0f, 0.0f};
-   GameEngine::Vector3 backward = {0.0f, 0.0f, -1.0f};
-   GameEngine::Vector3 contactPoint = {0.0f, 0.0f, 0.0f};
-   float secondsToImpact = 0.0f;
-   std::vector<GameEngine::Vector3> trajectoryPoints;
-};
-
 float ComputeObbSupportRadius(const GameEngine::Quaternion& rotation, const GameEngine::Vector3& halfExtents,
    const GameEngine::Vector3& surfaceUp) {
    // OBBの各ローカル軸を法線へ射影し、法線方向に張り出す半径へ合成する。
@@ -77,7 +69,59 @@ float ComputeObbSupportRadius(const GameEngine::Quaternion& rotation, const Game
           std::abs(axisZ.Dot(surfaceUp)) * std::abs(halfExtents.z);
 }
 
-bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vector3& velocity,
+void DrawDebugArrow(const GameEngine::Vector3& origin, const GameEngine::Vector3& direction, float length,
+   const GameEngine::Vector4& color) {
+   const float safeLength = std::max(0.25f, length);
+   const GameEngine::Vector3 normalizedDirection = NormalizeOrFallback(direction, {0.0f, 1.0f, 0.0f});
+   const GameEngine::Vector3 tip = origin + normalizedDirection * safeLength;
+   GameEngine::EngineContext::DrawLine(origin, tip, color, false);
+   GameEngine::EngineContext::DrawCone(tip, safeLength * 0.08f, safeLength * 0.22f, -normalizedDirection, color, false);
+}
+
+void DrawPresentationLegendEntry(const char* text, float y, const GameEngine::Vector4& color) {
+   GameEngine::TextStyle shadowStyle{};
+   shadowStyle.fontId = "arial";
+   shadowStyle.fontSize = 28;
+   shadowStyle.color = {0.0f, 0.0f, 0.0f, 0.9f};
+   shadowStyle.sortingOrder = 899;
+   GameEngine::EngineContext::DrawUIText(text, {26.0f, y + 2.0f}, shadowStyle);
+
+   GameEngine::TextStyle style = shadowStyle;
+   style.color = color;
+   style.sortingOrder = 900;
+   GameEngine::EngineContext::DrawUIText(text, {24.0f, y}, style);
+}
+
+GameEngine::PerlinNoise* GetOrAddShakeNoise(GameEngine::ICinemachineComponent* cameraComponent) {
+   if (!cameraComponent) {
+      return nullptr;
+   }
+
+   auto* virtualCamera = cameraComponent->GetOwnerCamera();
+
+   if (!virtualCamera) {
+      return nullptr;
+   }
+
+   auto* noise = virtualCamera->GetComponent<GameEngine::PerlinNoise>();
+
+   if (!noise) {
+      // シェイク未設定のカメラでも演出を受けられるよう、必要時だけ追加する。
+      noise = virtualCamera->AddComponent<GameEngine::PerlinNoise>();
+   }
+
+   return noise;
+}
+
+void TriggerDirectionalShake(GameEngine::ICinemachineComponent* cameraComponent, const GameEngine::Vector3& direction,
+   float amplitude, float frequency, float duration) {
+   if (auto* noise = GetOrAddShakeNoise(cameraComponent)) {
+      noise->ShakeDirectional(direction, amplitude, frequency, duration);
+   }
+}
+}
+
+bool CameraGravityBridge::PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vector3& velocity,
    const GameEngine::Vector3& planetCenter, float surfaceRadius, float landingOffset,
    const GameEngine::Vector3& obbHalfExtents, const GameEngine::Quaternion& playerRotation,
    const GravityBody& gravityBody, float predictionHorizon, const GameEngine::Vector3& fallbackForward,
@@ -189,33 +233,11 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
    return false;
 }
 
-void DrawDebugArrow(const GameEngine::Vector3& origin, const GameEngine::Vector3& direction, float length,
-   const GameEngine::Vector4& color) {
-   const float safeLength = std::max(0.25f, length);
-   const GameEngine::Vector3 normalizedDirection = NormalizeOrFallback(direction, {0.0f, 1.0f, 0.0f});
-   const GameEngine::Vector3 tip = origin + normalizedDirection * safeLength;
-   GameEngine::EngineContext::DrawLine(origin, tip, color, false);
-   GameEngine::EngineContext::DrawCone(tip, safeLength * 0.08f, safeLength * 0.22f, -normalizedDirection, color, false);
-}
-
-void DrawPresentationLegendEntry(const char* text, float y, const GameEngine::Vector4& color) {
-   GameEngine::TextStyle shadowStyle{};
-   shadowStyle.fontId = "arial";
-   shadowStyle.fontSize = 28;
-   shadowStyle.color = {0.0f, 0.0f, 0.0f, 0.9f};
-   shadowStyle.sortingOrder = 899;
-   GameEngine::EngineContext::DrawUIText(text, {26.0f, y + 2.0f}, shadowStyle);
-
-   GameEngine::TextStyle style = shadowStyle;
-   style.color = color;
-   style.sortingOrder = 900;
-   GameEngine::EngineContext::DrawUIText(text, {24.0f, y}, style);
-}
-
-void DrawPresentationGuides(const GameEngine::Vector3& playerPosition, const GameEngine::Vector3& motionBackward,
-   const GameEngine::Vector3& planetGuideBackward, const GameEngine::Vector3& targetGravityUp,
-   const GameEngine::Vector3& cameraForward, const GameEngine::Vector3& cameraRight,
-   const LandingPrediction* prediction, float guideLength, std::int32_t conditionPreviewMode) {
+void CameraGravityBridge::DrawPresentationGuides(const GameEngine::Vector3& playerPosition,
+   const GameEngine::Vector3& motionBackward, const GameEngine::Vector3& planetGuideBackward,
+   const GameEngine::Vector3& targetGravityUp, const GameEngine::Vector3& cameraForward,
+   const GameEngine::Vector3& cameraRight, const LandingPrediction* prediction, float guideLength,
+   std::int32_t conditionPreviewMode) {
    const GameEngine::Vector4 trajectoryColor = {1.0f, 0.35f, 0.05f, 1.0f};
    const GameEngine::Vector4 contactColor = {0.1f, 0.95f, 1.0f, 1.0f};
    const GameEngine::Vector4 landingUpColor = {0.15f, 1.0f, 0.25f, 1.0f};
@@ -285,35 +307,6 @@ void DrawPresentationGuides(const GameEngine::Vector3& playerPosition, const Gam
    DrawPresentationLegendEntry("ORANGE: predicted trajectory", 24.0f, trajectoryColor);
    DrawPresentationLegendEntry("CYAN: predicted contact", 60.0f, contactColor);
    DrawPresentationLegendEntry("GREEN: landing Up", 96.0f, landingUpColor);
-}
-
-GameEngine::PerlinNoise* GetOrAddShakeNoise(GameEngine::ICinemachineComponent* cameraComponent) {
-   if (!cameraComponent) {
-      return nullptr;
-   }
-
-   auto* virtualCamera = cameraComponent->GetOwnerCamera();
-
-   if (!virtualCamera) {
-      return nullptr;
-   }
-
-   auto* noise = virtualCamera->GetComponent<GameEngine::PerlinNoise>();
-
-   if (!noise) {
-      // シェイク未設定のカメラでも演出を受けられるよう、必要時だけ追加する。
-      noise = virtualCamera->AddComponent<GameEngine::PerlinNoise>();
-   }
-
-   return noise;
-}
-
-void TriggerDirectionalShake(GameEngine::ICinemachineComponent* cameraComponent, const GameEngine::Vector3& direction,
-   float amplitude, float frequency, float duration) {
-   if (auto* noise = GetOrAddShakeNoise(cameraComponent)) {
-      noise->ShakeDirectional(direction, amplitude, frequency, duration);
-   }
-}
 }
 
 void CameraGravityBridge::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {

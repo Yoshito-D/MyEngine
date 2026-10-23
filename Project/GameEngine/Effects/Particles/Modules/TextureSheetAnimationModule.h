@@ -116,14 +116,14 @@ private:
    uint32_t GetPlayableFrameCount() const;
    uint32_t ResolveFrame(const Particle& particle) const;
 
-   uint32_t tilesX_ = 1;
-   uint32_t tilesY_ = 1;
-   float frameOverTime_ = 1.0f;
-   uint32_t cycles_ = 1;
-   uint32_t frameCount_ = 0;
-   bool randomRow_ = false;
-   uint32_t rowIndex_ = 0;
-   uint32_t startFrame_ = 0;
-   AnimationMode animationMode_ = AnimationMode::WholeSheet;
+   uint32_t tilesX_ = 1;                                     ///< シートの横分割数。
+   uint32_t tilesY_ = 1;                                     ///< シートの縦分割数。
+   float frameOverTime_ = 1.0f;                              ///< 寿命に対するフレーム進行倍率。
+   uint32_t cycles_ = 1;                                     ///< 寿命中の再生周期数。
+   uint32_t frameCount_ = 0;                                 ///< 明示された再生フレーム数。
+   bool randomRow_ = false;                                  ///< ランダム行選択が有効かどうかする。
+   uint32_t rowIndex_ = 0;                                   ///< 単一行モードの固定行。
+   uint32_t startFrame_ = 0;                                 ///< 再生開始フレーム。
+   AnimationMode animationMode_ = AnimationMode::WholeSheet; ///< 現在の再生モード。
 };
 }

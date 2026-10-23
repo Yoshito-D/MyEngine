@@ -13,7 +13,9 @@ namespace GameEngine {
 /// @brief Objectのローカル変換・親行列・GPU変換バッファを管理する
 class TransformComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "TransformComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"トランスフォーム", "Transform"};
 
    /// @copydoc IObjectComponent::GetTypeName
@@ -68,9 +70,9 @@ public:
    Matrix4x4 ComposeWorldMatrix(const Matrix4x4& local) const;
 
 private:
-   Transform transform;
-   std::unique_ptr<TransformationMatrix> transformationMatrix_;
-   Matrix4x4 worldMatrixOverride_ = MakeIdentity4x4();
-   bool hasWorldMatrixOverride_ = false;
+   Transform transform;                                         ///< 親の座標系に対する位置・回転・拡縮の正本。
+   std::unique_ptr<TransformationMatrix> transformationMatrix_; ///< 描画に使う変換行列とGPU定数バッファ。
+   Matrix4x4 worldMatrixOverride_ = MakeIdentity4x4();          ///< 上書き用ワールド行列。
+   bool hasWorldMatrixOverride_ = false;                        ///< ワールド行列の上書きが設定されているかどうかする。
 };
 }

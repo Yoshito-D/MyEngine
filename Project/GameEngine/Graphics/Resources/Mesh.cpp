@@ -239,12 +239,6 @@ void Mesh::CreateSkybox() {
 
    // カメラが立方体内部から見るため、巻き順と法線を通常のBoxとは逆向きにする。
    // 角を共有すると面ごとのUVと法線を保持できないため、各面4頂点に分離する。
-   struct FaceVertex {
-      Vector4 pos;
-      Vector2 uv;
-      Vector3 norm;
-   };
-
    static constexpr FaceVertex kFaces[6][4] = {
       // +X (右)
       {{{1.0f, -1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}},
@@ -452,12 +446,6 @@ void Mesh::CreateBox(float width, float height, float depth, float originY) {
 
    // 面間で頂点を共有せず、各面に一定法線を持たせて角をハードエッジとして描画する。
    // 同じ分離により、各面へ独立した0..1 UVも割り当てられる。
-   struct FaceVertex {
-      Vector4 pos;
-      Vector2 uv;
-      Vector3 norm;
-   };
-
    const float hw = width * 0.5f;
    const float hh = height * 0.5f;
    const float hd = depth * 0.5f;

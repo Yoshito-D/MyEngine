@@ -165,13 +165,14 @@ public:
    static std::wstring ConvertStringToWString(const std::string& str);
 
 private:
-   static constexpr size_t kLogChannelCount = 3;
+   static constexpr size_t kLogChannelCount = 3; ///< 個別ファイルへ出力するログチャンネル数。
 
+   /// @brief エンジン・ゲーム・エディター別のログ出力ストリーム。
    std::array<std::ofstream, kLogChannelCount> channelStreams_;
-   std::ofstream allLogStream_;
-   std::filesystem::path currentLogDirectory_;
-   std::mutex logMutex_;
-   bool isInitialized_ = false;
+   std::ofstream allLogStream_;                ///< 全チャンネルをまとめて出力するログストリーム。
+   std::filesystem::path currentLogDirectory_; ///< 現在の実行に対応するログ保存ディレクトリ。
+   std::mutex logMutex_;                       ///< 複数スレッドからのログ出力を直列化する排他ロック。
+   bool isInitialized_ = false;                ///< 共有リソースの初期化が完了したかどうか。
 
 private:
    Logger() = default;

@@ -23,10 +23,6 @@ void LineRenderer::Initialize(ID3D12Device* device, size_t maxLines) {
    instanceVBView_.SizeInBytes = static_cast<UINT>(instanceBufferSize);
 
    // 基本頂点バッファの作成（2点のみ: インデックス0と1）
-   struct BaseVertex {
-      float index; // 0 or 1
-   };
-
    BaseVertex baseVertices[2] = {{0.0f}, {1.0f}};
 
    size_t baseVBSize = sizeof(BaseVertex) * 2;

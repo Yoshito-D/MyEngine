@@ -105,22 +105,22 @@ private:
    /// @brief 再生開始時に保存したシーン情報を破棄する
    void ClearPlaySessionState();
 
-   PlayMode mode_ = PlayMode::Edit;
-   bool playRequested_ = false;
-   bool stopRequested_ = false;
-   bool pauseRequested_ = false;
-   bool resumeRequested_ = false;
-   bool stepRequested_ = false;
-   bool shouldRunRuntimeUpdate_ = false;
-   float gameDeltaTime_ = 0.0f;
-   float timeScale_ = 1.0f;
-   float stepDeltaTime_ = 1.0f / 60.0f;
+   PlayMode mode_ = PlayMode::Edit;      ///< 現在のプレイモード。
+   bool playRequested_ = false;          ///< 次のフレーム境界でプレイを開始する要求。
+   bool stopRequested_ = false;          ///< 次のフレーム境界でプレイを停止する要求。
+   bool pauseRequested_ = false;         ///< 次のフレーム境界で一時停止する要求。
+   bool resumeRequested_ = false;        ///< 次のフレーム境界で再生を再開する要求。
+   bool stepRequested_ = false;          ///< 次のフレーム境界で1フレームだけ進める要求。
+   bool shouldRunRuntimeUpdate_ = false; ///< 現在のフレームでゲーム更新を実行するかどうか。
+   float gameDeltaTime_ = 0.0f;          ///< タイムスケールとプレイ状態を反映したデルタタイム（秒）。
+   float timeScale_ = 1.0f;              ///< ゲーム時間へ適用する倍率。
+   float stepDeltaTime_ = 1.0f / 60.0f;  ///< 1フレーム送りで進める時間（秒）。
 
-   bool hasPlaySession_ = false;
-   SceneDefinition playStartDefinition_;
-   nlohmann::json editorSceneSnapshot_;
-   bool hasEditorSceneSnapshot_ = false;
-   bool playStartSceneWasDirty_ = false;
+   bool hasPlaySession_ = false;         ///< プレイ開始時の復元情報を持つセッションがあるかどうか。
+   SceneDefinition playStartDefinition_; ///< プレイ開始時に編集中だったシーンの定義。
+   nlohmann::json editorSceneSnapshot_;  ///< プレイ停止時に復元する編集シーンの保存状態。
+   bool hasEditorSceneSnapshot_ = false; ///< プレイ開始時の編集シーンを退避済みかどうか。
+   bool playStartSceneWasDirty_ = false; ///< 再生中のシーン切替失敗に備えて、開始時の未保存状態。
 };
 
 } // namespace GameEngine

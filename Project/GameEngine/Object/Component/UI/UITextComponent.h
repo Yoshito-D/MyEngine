@@ -13,8 +13,11 @@ class FontManager;
 /// @brief UTF-8文字列とUI表示設定を保持するコンポーネント
 class UITextComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "UITextComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"UIテキスト", "UI Text"};
+   /// @brief 全文字の表示を指定する可視グリフ数の特別値。
    static constexpr size_t kShowAllGlyphs = (std::numeric_limits<size_t>::max)();
 
    /// @brief コンポーネントの型名を取得する
@@ -91,13 +94,13 @@ public:
 private:
    void InvalidateLayout();
 
-   std::string text_;
-   TextStyle style_{};
-   size_t visibleGlyphCount_ = kShowAllGlyphs;
-   uint64_t textRevision_ = 0;
-   mutable bool layoutDirty_ = true;
-   mutable uint64_t layoutFontRevision_ = 0;
-   mutable TextLayoutResult cachedLayout_{};
+   std::string text_;                          ///< 表示文字列。
+   TextStyle style_{};                         ///< 現在の表示設定。
+   size_t visibleGlyphCount_ = kShowAllGlyphs; ///< 先頭から描画する文字数。
+   uint64_t textRevision_ = 0;                 ///< 文字列更新を検知するためのリビジョン。
+   mutable bool layoutDirty_ = true;           ///< 文章またはスタイル変更によりレイアウトの再計算が必要かどうか。
+   mutable uint64_t layoutFontRevision_ = 0;   ///< キャッシュ生成時のフォント改訂番号。
+   mutable TextLayoutResult cachedLayout_{};   ///< 文章・スタイル・フォント状態に対応する計算済み配置。
 };
 
 } // namespace GameEngine

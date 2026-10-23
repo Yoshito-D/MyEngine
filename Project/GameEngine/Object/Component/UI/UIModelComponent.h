@@ -13,7 +13,9 @@ class Camera;
 /// @brief 3Dモデルを画面アンカー基準のUIとして描画するコンポーネント
 class UIModelComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "UIModelComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"UIモデル", "UI Model"};
 
    /// @brief UIモデルに使用する投影方式

@@ -185,21 +185,22 @@ public:
 #endif
 
 private:
-   bool enabled_ = true;
-   ShapeType shapeType_ = ShapeType::Cone;
-   EmitFrom emitFrom_ = EmitFrom::Volume;
+   bool enabled_ = true;                   ///< 形状による生成が有効かどうかする。
+   ShapeType shapeType_ = ShapeType::Cone; ///< 放出元の幾何形状。
+   EmitFrom emitFrom_ = EmitFrom::Volume;  ///< 形状内の放出領域。
 
-   float radius_ = 1.0f;
-   float angle_ = 25.0f;
-   float length_ = 5.0f;
-   Vector3 boxSize_{1.0f, 1.0f, 1.0f};
-   float arc_ = 360.0f;
-   float circleOutwardVelocity_ = 0.0f;
-   float torusMajorRadius_ = 1.0f;
+   float radius_ = 1.0f;                ///< 球系形状の半径。
+   float angle_ = 25.0f;                ///< 円錐の放出方向に使う開き角（度）。
+   float length_ = 5.0f;                ///< 軸方向の長さ。
+   Vector3 boxSize_{1.0f, 1.0f, 1.0f};  ///< 箱形状の各軸サイズ。
+   float arc_ = 360.0f;                 ///< 円形の放出範囲として使う円弧角（度）。
+   float circleOutwardVelocity_ = 0.0f; ///< 円形状の外向き速度。
+   float torusMajorRadius_ = 1.0f;      ///< トーラスの主半径。
 
-   Transform transform_{};
-   const ModelAsset* skinnedMeshModel_ = nullptr;
+   Transform transform_{};                        ///< 形状のローカルトランスフォーム。
+   const ModelAsset* skinnedMeshModel_ = nullptr; ///< 放出位置をサンプリングするモデルアセットへの非所有参照。
+   /// @brief 現在の変形済み頂点位置を評価するスキニング状態への参照。
    const SkinCluster* skinnedMeshSkinCluster_ = nullptr;
-   mutable Vector3 lastEmissionDirection_{0.0f, 1.0f, 0.0f};
+   mutable Vector3 lastEmissionDirection_{0.0f, 1.0f, 0.0f}; ///< 直近の放出位置のサンプリングで決まった初速方向。
 };
 }

@@ -12,7 +12,8 @@ class RaceManagerComponent;
 /// @details 同じObjectのMenuSelectionAnimationComponentで、項目0をタイトル、項目1をリスタートに対応させる。
 class RaceResultUIComponent final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "RaceResultUIComponent";
+   static constexpr const char* kTypeName = "RaceResultUIComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"レース結果UI", "Race Result UI"};
 
    /// @brief コンポーネント型名を取得する。
@@ -44,13 +45,13 @@ private:
    bool ConfirmSelection(MenuSelectionAnimationComponent& animation);
    std::string BuildResultText() const;
 
-   std::string raceManagerId_;
-   std::string titleScene_ = "Title";
-   RaceManagerComponent* raceManager_ = nullptr;
-   std::int32_t selectedOption_ = 1;
-   bool resultRequested_ = false;
-   bool navigationLatched_ = false;
-   bool showingResult_ = false;
+   std::string raceManagerId_;                   ///< レース進行を参照する管理Objectの安定Entity ID。
+   std::string titleScene_ = "Title";            ///< タイトルへ戻るときに読み込む登録シーン名。
+   RaceManagerComponent* raceManager_ = nullptr; ///< 参照解決済みレース管理コンポーネントへの非所有参照。
+   std::int32_t selectedOption_ = 1;             ///< 現在選択中のメニュー項目番号。負値は未選択。
+   bool resultRequested_ = false;                ///< 結果表示への切り替えを要求済みかどうか。
+   bool navigationLatched_ = false;              ///< 方向入力が中立に戻るまで次のメニュー移動を抑止する状態。
+   bool showingResult_ = false;                  ///< 現在レース結果のメニューを表示しているかどうか。
 };
 
 } // namespace App

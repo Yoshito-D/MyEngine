@@ -233,11 +233,11 @@ public:
    void ResetUVTransform();
 
 private:
-   std::map<std::string, std::vector<float>> parameters_;
-   mutable ComPtr<ID3D12Resource> parameterResource_;
-   mutable void* parameterData_ = nullptr;
-   ComPtr<ID3D12Resource> materialResource_ = nullptr;
-   MaterialData* materialData_ = nullptr;
+   std::map<std::string, std::vector<float>> parameters_; ///< 明示的に上書きされたシェーダーパラメーター。
+   mutable ComPtr<ID3D12Resource> parameterResource_;     ///< 独自マテリアルのパラメーターを格納する所有GPUバッファ。
+   mutable void* parameterData_ = nullptr;                ///< 独自マテリアルのパラメーターバッファの永続Map先。
+   ComPtr<ID3D12Resource> materialResource_ = nullptr;    ///< 描画用のマテリアル設定を保持する所有GPUリソース。
+   MaterialData* materialData_ = nullptr;                 ///< マテリアルデータへのポインタ。
    std::string pipelineName_;           ///< 使用するパイプライン名（空文字列 = デフォルト）
    std::optional<BlendMode> blendMode_; ///< 優先ブレンドモード（nullopt = DrawCommand 依存）
 

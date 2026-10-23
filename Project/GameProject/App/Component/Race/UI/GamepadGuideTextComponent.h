@@ -11,7 +11,9 @@ class RaceManagerComponent;
 /// @brief ゲームパッドの操作ガイドをリザルト以外でUITextへ表示する
 class GamepadGuideTextComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "GamepadGuideTextComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"ゲームパッド操作ガイド", "Gamepad Guide Text"};
 
    const char* GetTypeName() const override { return kTypeName; }
@@ -30,10 +32,10 @@ public:
 #endif
 
 private:
-   std::string raceManagerId_;
-   std::string playerObjectId_;
-   RaceManagerComponent* raceManager_ = nullptr;
-   CharacterJump* characterJump_ = nullptr;
+   std::string raceManagerId_;                   ///< レース進行を参照する管理Objectの安定Entity ID。
+   std::string playerObjectId_;                  ///< 操作対象プレイヤーの安定Entity ID。
+   RaceManagerComponent* raceManager_ = nullptr; ///< 参照解決済みレース管理コンポーネントへの非所有参照。
+   CharacterJump* characterJump_ = nullptr;      ///< プレイヤーのジャンプ入力と空中状態を扱うコンポーネントへの参照。
 };
 
 } // namespace App

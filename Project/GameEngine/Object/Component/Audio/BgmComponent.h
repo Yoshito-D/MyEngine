@@ -12,8 +12,8 @@ namespace GameEngine {
 /// @brief 1シーン分のBGM要求。再生はAudioのBgmPlayerが所有する。
 class BgmComponent final : public IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "BgmComponent";
-   static constexpr ComponentDisplayName kDisplayName{"BGM", "BGM"};
+   static constexpr const char* kTypeName = "BgmComponent";          ///< シリアライズで使用する安定した型名。
+   static constexpr ComponentDisplayName kDisplayName{"BGM", "BGM"}; ///< エディターに表示する日本語名と英語名。
 
    /// @brief このコンポーネントのBGM要求を解放する。
    ~BgmComponent() override;
@@ -69,13 +69,13 @@ public:
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
-      std::string clipAssetId;
-      float volume = 1.0f;
-      bool loop = true;
-      bool playOnStart = true;
-      float fadeInSeconds = 0.0f;
-      float fadeOutSeconds = 0.0f;
-      bool continueAcrossScenes = false;
+      std::string clipAssetId;           ///< 再生する音声クリップの永続アセットID。
+      float volume = 1.0f;               ///< 個別の音量倍率。
+      bool loop = true;                  ///< 終端到達後に再生を繰り返すかどうか。
+      bool playOnStart = true;           ///< シーンの実行開始時に自動再生するかどうか。
+      float fadeInSeconds = 0.0f;        ///< 音量を立ち上げる時間（秒）。
+      float fadeOutSeconds = 0.0f;       ///< 音量を下げて停止する時間（秒）。
+      bool continueAcrossScenes = false; ///< シーン切り替え後も再生を継続するかどうか。
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
@@ -85,19 +85,19 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   std::string clipAssetId;
-   float volume = 1.0f;
-   bool loop = true;
-   bool playOnStart = true;
-   float fadeInSeconds = 0.0f;
-   float fadeOutSeconds = 0.0f;
-   bool continueAcrossScenes = false;
+   std::string clipAssetId;           ///< 再生する音声クリップの永続アセットID。
+   float volume = 1.0f;               ///< 個別の音量倍率。
+   bool loop = true;                  ///< 終端到達後に再生を繰り返すかどうか。
+   bool playOnStart = true;           ///< シーンの実行開始時に自動再生するかどうか。
+   float fadeInSeconds = 0.0f;        ///< 音量を立ち上げる時間（秒）。
+   float fadeOutSeconds = 0.0f;       ///< 音量を下げて停止する時間（秒）。
+   bool continueAcrossScenes = false; ///< シーン切り替え後も再生を継続するかどうか。
 
 private:
    bool Submit(bool restart);
-   std::shared_ptr<const SoundClip> clip_;
-   std::string preparedAssetId_;
-   uint64_t ownerToken_ = 0;
-   bool runtimeStarted_ = false;
+   std::shared_ptr<const SoundClip> clip_; ///< 再生対象の音声またはアニメーションクリップへの参照。
+   std::string preparedAssetId_;           ///< 再生開始に備えて読み込んだ音声アセットID。
+   uint64_t ownerToken_ = 0;               ///< 再生要求元を識別する所有者トークン。
+   bool runtimeStarted_ = false;           ///< 現在の実行セッションで自動再生処理を開始済みかどうか。
 };
 }

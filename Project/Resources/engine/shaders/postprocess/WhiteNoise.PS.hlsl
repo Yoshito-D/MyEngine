@@ -3,11 +3,11 @@
 // C++側のWhiteNoiseCBと同じ順序。timeは描画時に進み、density／rate／threshold／intensityは
 // CPU側でも有効範囲へ正規化されるが、シェーダー側にも安全な下限・飽和を残す。
 cbuffer WhiteNoiseCB : register(b0) {
-   float gTime;
-   float gNoiseDensity;
-   float gSeedChangeRate;
-   float gNoiseThreshold;
-   float gNoiseIntensity;
+   float gTime;           ///< クリップ先頭からの時刻（秒）。
+   float gNoiseDensity;   ///< UV空間に配置する手続き的ノイズセルの数。
+   float gSeedChangeRate; ///< 1秒あたりのランダムパターン変更回数。
+   float gNoiseThreshold; ///< セルをノイズ化するか決める乱数のしきい値。
+   float gNoiseIntensity; ///< 選択されたノイズセルの強度倍率。
 };
 
 Texture2D gInputTexture : register(t0);

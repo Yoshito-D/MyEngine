@@ -30,7 +30,8 @@ public:
       Gate,
    };
 
-   static constexpr const char* kTypeName = "RaceManagerComponent";
+   static constexpr const char* kTypeName = "RaceManagerComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"レース管理", "Race Manager"};
 
    /// @brief 保存・表示するベストタイムの最大件数
@@ -122,38 +123,40 @@ private:
    bool SaveBestTimes() const;
    void LogRecordWarning(const std::string& message) const;
 
-   State state_ = State::Waiting;
-   StartMode startMode_ = StartMode::Countdown;
-   float elapsedTime_ = 0.0f;
-   std::vector<float> bestTimes_;
-   float countdownSeconds_ = 3.0f;
-   float countdownRemaining_ = 3.0f;
-   float startTextDuration_ = 0.8f;
-   float startBannerRemaining_ = 0.0f;
-   size_t checkpointCount_ = 0;
-   size_t nextCheckpointIndex_ = 0;
-   bool startGateExited_ = false;
-   std::string playerObjectId_;
-   std::string finishCameraId_;
-   std::string restartScene_;
-   std::string recordKey_;
-   std::string recordFile_ = "Saved/race_records.json";
-   bool lockPlayerDuringCountdown_ = true;
-   bool lockPlayerOnFinish_ = true;
-   std::string nextScene_;
-   float finishDelay_ = 0.0f;
-   float finishElapsed_ = 0.0f;
-   bool sceneChangeRequested_ = false;
-   bool restartRequested_ = false;
-   bool runtimeInitialized_ = false;
-   bool playerLocked_ = false;
-   bool vehicleControllerEnabledWhenUnlocked_ = false;
-   bool gravityBodyEnabledWhenUnlocked_ = false;
-   bool cameraSwitcherEnabledWhenUnlocked_ = false;
-   bool speedPostEffectEnabledWhenRacing_ = false;
+   State state_ = State::Waiting;                       ///< 現在のレース状態。
+   StartMode startMode_ = StartMode::Countdown;         ///< 即時・カウントダウン・ゲート通過の開始方式。
+   float elapsedTime_ = 0.0f;                           ///< 現在の計測時間（秒）。
+   std::vector<float> bestTimes_;                       ///< 保存済みベストタイム（秒）を速い順で保持する一覧。
+   float countdownSeconds_ = 3.0f;                      ///< 開始前カウントダウンの時間（秒）。
+   float countdownRemaining_ = 3.0f;                    ///< カウントダウン残り時間（秒）。
+   float startTextDuration_ = 0.8f;                     ///< スタート表示を維持する時間（秒）。
+   float startBannerRemaining_ = 0.0f;                  ///< スタート表示の残り時間（秒）。
+   size_t checkpointCount_ = 0;                         ///< ゴール成立に必要なチェックポイントの総数。
+   size_t nextCheckpointIndex_ = 0;                     ///< 次に通過する必要があるチェックポイント番号。
+   bool startGateExited_ = false;                       ///< スタート後に共用ゲートの外へ一度出たかどうか。
+   std::string playerObjectId_;                         ///< 操作対象プレイヤーの安定Entity ID。
+   std::string finishCameraId_;                         ///< ゴール後の表示に使う仮想カメラの安定ID。
+   std::string restartScene_;                           ///< リトライ時に読み込む登録シーン名。
+   std::string recordKey_;                              ///< 保存記録をコースやルールごとに区別するキー。
+   std::string recordFile_ = "Saved/race_records.json"; ///< ベストタイム一覧を保存するJSONファイル。
+   bool lockPlayerDuringCountdown_ = true;              ///< カウントダウン中にプレイヤー操作を停止するかどうか。
+   bool lockPlayerOnFinish_ = true;                     ///< ゴール後にプレイヤー操作を停止するかどうか。
+   std::string nextScene_;                              ///< 進行完了後に読み込む登録シーン名。
+   float finishDelay_ = 0.0f;                           ///< ゴールから次シーンへ遷移するまでの待機時間（秒）。
+   float finishElapsed_ = 0.0f;                         ///< ゴール後の遷移待機で経過した時間（秒）。
+   bool sceneChangeRequested_ = false;                  ///< この進行状態からシーン切り替えを要求済みかどうか。
+   bool restartRequested_ = false;                      ///< リトライのシーン切り替えを要求済みかどうか。
+   bool runtimeInitialized_ = false;                    ///< 最初の実行時更新に必要な初期化が完了したかどうか。
+   bool playerLocked_ = false;                          ///< レース進行によるプレイヤーの一時停止が適用中かどうか。
+   bool vehicleControllerEnabledWhenUnlocked_ = false;  ///< 操作ロック解除時に戻す車両制御の元の有効状態。
+   bool gravityBodyEnabledWhenUnlocked_ = false;        ///< 操作ロック解除時に戻す重力処理の元の有効状態。
+   bool cameraSwitcherEnabledWhenUnlocked_ = false;     ///< 操作ロック解除時に戻すカメラ切り替えの元の有効状態。
+   bool speedPostEffectEnabledWhenRacing_ = false;      ///< レース再開時に戻す速度演出制御の元の有効状態。
+   /// @brief プレイヤーの車両操作を制御するコンポーネントへの非所有参照。
    VehicleController* vehicleController_ = nullptr;
-   GravityBody* gravityBody_ = nullptr;
-   CameraModeSwitcher* cameraSwitcher_ = nullptr;
+   GravityBody* gravityBody_ = nullptr;           ///< プレイヤーの速度・重力・姿勢を参照するコンポーネント。
+   CameraModeSwitcher* cameraSwitcher_ = nullptr; ///< プレイヤーの仮想カメラ切り替えを行うコンポーネントへの参照。
+   /// @brief プレイヤー速度に応じた画面演出を制御するコンポーネントへの参照。
    VehicleSpeedPostEffectController* speedPostEffectController_ = nullptr;
 };
 

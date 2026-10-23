@@ -3,10 +3,10 @@
 // C++側のAntiAliasingCBと同じ順序で4つのfloatを並べる。
 // b0とt0はPostProcessルートシグネチャのconstantbuffer／inputtextureへ対応する。
 struct AntiAliasingParams {
-   float contrastThreshold;
-   float relativeThreshold;
-   float subpixelBlending;
-   float edgeSearchSteps;
+   float contrastThreshold; ///< エッジと判定する最小絶対輝度差。
+   float relativeThreshold; ///< 周辺最大輝度に対する相対しきい値。
+   float subpixelBlending;  ///< 元色と平滑化色の補間率。
+   float edgeSearchSteps;   ///< エッジ方向へ許可する最大探索距離。
 };
 
 ConstantBuffer<AntiAliasingParams> gParams : register(b0);

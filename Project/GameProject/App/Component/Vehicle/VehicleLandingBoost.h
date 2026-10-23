@@ -22,7 +22,9 @@ enum class LandingResult {
 /// - このコンポーネントを Object から外すだけでブーストを無効化できる
 class VehicleLandingBoost final : public GameEngine::IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "VehicleLandingBoost";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両着地ブースト", "Vehicle Landing Boost"};
 
    /// @copydoc GameEngine::IObjectComponent::GetTypeName

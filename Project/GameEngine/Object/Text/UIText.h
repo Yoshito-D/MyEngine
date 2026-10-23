@@ -51,7 +51,7 @@ public:
    static void ClearRegisteredTexts() { sRegisteredTexts_.clear(); }
 
 private:
-   static std::vector<UIText*> sRegisteredTexts_;
+   static std::vector<UIText*> sRegisteredTexts_; ///< 自動描画の候補として登録されたUITextの非所有一覧。
 };
 
 } // namespace GameEngine

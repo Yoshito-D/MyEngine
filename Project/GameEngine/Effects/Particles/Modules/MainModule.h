@@ -43,9 +43,9 @@ struct RandomFloat {
    void FromJson(const nlohmann::json& json);
 
 private:
-   float minimum_ = 0.0f;
-   float maximum_ = 0.0f;
-   bool randomized_ = false;
+   float minimum_ = 0.0f;    ///< 固定値として、または乱数範囲の下限として使う値。
+   float maximum_ = 0.0f;    ///< 乱数範囲の上限として使う値。
+   bool randomized_ = false; ///< 固定値ではなく下限・上限の範囲から乱数を生成するかどうか。
 };
 
 /// @brief ランダム範囲を表す構造体（Vector2）
@@ -79,9 +79,9 @@ struct RandomVector2 {
    void FromJson(const nlohmann::json& json);
 
 private:
-   Vector2 minimum_ = Vector2{0.0f, 0.0f};
-   Vector2 maximum_ = Vector2{0.0f, 0.0f};
-   bool randomized_ = false;
+   Vector2 minimum_ = Vector2{0.0f, 0.0f}; ///< 固定値として、または乱数範囲の下限として使う値。
+   Vector2 maximum_ = Vector2{0.0f, 0.0f}; ///< 乱数範囲の上限として使う値。
+   bool randomized_ = false;               ///< 固定値ではなく下限・上限の範囲から乱数を生成するかどうか。
 };
 
 /// @brief ランダム範囲を表す構造体（Vector3）
@@ -115,9 +115,9 @@ struct RandomVector3 {
    void FromJson(const nlohmann::json& json);
 
 private:
-   Vector3 minimum_ = Vector3{0.0f, 0.0f, 0.0f};
-   Vector3 maximum_ = Vector3{0.0f, 0.0f, 0.0f};
-   bool randomized_ = false;
+   Vector3 minimum_ = Vector3{0.0f, 0.0f, 0.0f}; ///< 固定値として、または乱数範囲の下限として使う値。
+   Vector3 maximum_ = Vector3{0.0f, 0.0f, 0.0f}; ///< 乱数範囲の上限として使う値。
+   bool randomized_ = false;                     ///< 固定値ではなく下限・上限の範囲から乱数を生成するかどうか。
 };
 
 /// @brief ランダム範囲を表す構造体（色）
@@ -307,21 +307,23 @@ public:
 #endif
 
 private:
-   float duration_ = 5.0f;
-   bool looping_ = true;
+   float duration_ = 5.0f; ///< 1回の放出サイクル時間（秒）。
+   bool looping_ = true;   ///< 放出サイクルがループするかどうかする。
 
-   RandomFloat startLifetime_{2.0f, 2.5f, false};
-   RandomFloat startSpeed_{5.0f, 6.0f, false};
-   StartSpeedMode startSpeedMode_ = StartSpeedMode::Directional;
-   RandomVector3 startVelocity_{Vector3(0.0f, 5.0f, 0.0f), Vector3(0.0f, 6.0f, 0.0f), false};
+   RandomFloat startLifetime_{2.0f, 2.5f, false};                ///< 生成時の寿命範囲（秒）。
+   RandomFloat startSpeed_{5.0f, 6.0f, false};                   ///< 放出方向へ掛ける初速範囲。
+   StartSpeedMode startSpeedMode_ = StartSpeedMode::Directional; ///< 初速の算出方法。
+   RandomVector3 startVelocity_{Vector3(0.0f, 5.0f, 0.0f), Vector3(0.0f, 6.0f, 0.0f), false}; ///< XYZ初速範囲。
+   /// @brief 生成時のXYZスケール範囲。
    RandomVector3 startSize_{Vector3(1.0f, 1.0f, 1.0f), Vector3(1.0f, 1.0f, 1.0f), false};
+   /// @brief 生成時のXYZ回転範囲。
    RandomVector3 startRotation_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false};
-   RandomColor startColor_{0xFFFFFFFF, 0xFFFFFFFF, false};
+   RandomColor startColor_{0xFFFFFFFF, 0xFFFFFFFF, false}; ///< 生成時のRGBA8色範囲。
 
-   RandomFloat gravityModifier_{0.0f, 0.0f, false};
-   float timeScale_ = 1.0f;
-   SimulationSpace simulationSpace_ = SimulationSpace::World;
-   bool playOnAwake_ = true;
-   uint32_t maxParticles_ = 1000;
+   RandomFloat gravityModifier_{0.0f, 0.0f, false};           ///< 粒子ごとの重力倍率範囲。
+   float timeScale_ = 1.0f;                                   ///< このシステム固有の時間倍率。
+   SimulationSpace simulationSpace_ = SimulationSpace::World; ///< パーティクルのシミュレーション座標空間。
+   bool playOnAwake_ = true;                                  ///< システム初期化時に自動再生するかどうかする。
+   uint32_t maxParticles_ = 1000;                             ///< 同時に生存できるパーティクル数の上限。
 };
 }

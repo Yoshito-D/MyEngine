@@ -10,6 +10,12 @@
 
 #include <algorithm>
 
+#ifdef USE_IMGUI
+#include "imgui.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#endif
+
 namespace {
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::MaterialComponent::kTypeName,
@@ -192,14 +198,6 @@ void DeserializeMaterialProperties(GameEngine::Material* material, const nlohman
 }
 
 }
-
-#ifdef USE_IMGUI
-#include "GameEngine/Object/Object.h"
-#include "imgui.h"
-#include "GameEngine/Editor/EditorReferenceWidgets.h"
-#include "GameEngine/Graphics/Resources/Texture.h"
-#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
-#endif
 
 namespace GameEngine {
 

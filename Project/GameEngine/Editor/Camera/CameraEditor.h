@@ -115,18 +115,18 @@ private:
       float viewportWidth, float viewportHeight, const char* id);
    void ShowImGuizmoControls();
 
-   SceneWorld* world_ = nullptr;
-   CameraGizmo gizmo_;
-   Camera* targetCamera_ = nullptr;
-   VirtualCamera* targetVirtualCamera_ = nullptr;
-   CinemachineBrain* targetBrain_ = nullptr;
+   SceneWorld* world_ = nullptr;                  ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
+   CameraGizmo gizmo_;                            ///< カメラの位置・向き・視錐台を表示するギズモ。
+   Camera* targetCamera_ = nullptr;               ///< 直接編集する出力カメラへの参照。
+   VirtualCamera* targetVirtualCamera_ = nullptr; ///< 編集対象の仮想カメラへの参照。
+   CinemachineBrain* targetBrain_ = nullptr;      ///< 仮想カメラの選択と合成を管理するBrainへの参照。
 
-   bool showGizmo_ = true;
-   bool useImGuizmo_ = true;
-   bool showGizmoSettings_ = false;
-   GizmoOperation gizmoOperation_ = GizmoOperation::Translate;
-   GizmoMode gizmoMode_ = GizmoMode::Local;
-   std::int32_t selectedVirtualCameraIndex_ = -1;
+   bool showGizmo_ = true;                                     ///< カメラのギズモを表示するかどうか。
+   bool useImGuizmo_ = true;                                   ///< ImGuizmoによる移動・回転・拡縮操作を使うかどうか。
+   bool showGizmoSettings_ = false;                            ///< ギズモの表示設定を開いているかどうか。
+   GizmoOperation gizmoOperation_ = GizmoOperation::Translate; ///< 移動・回転・拡縮のうち現在選択している操作。
+   GizmoMode gizmoMode_ = GizmoMode::Local;                    ///< ギズモ操作の基準とするローカルまたはワールド座標系。
+   std::int32_t selectedVirtualCameraIndex_ = -1;              ///< 一覧で選択中の仮想カメラ番号。-1は未選択。
 };
 
 } // namespace GameEngine

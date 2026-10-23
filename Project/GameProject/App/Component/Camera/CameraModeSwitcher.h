@@ -14,7 +14,8 @@ namespace App {
 /// @brief 入力に応じてJSON定義された仮想カメラの優先度を切り替える
 class CameraModeSwitcher final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "CameraModeSwitcher";
+   static constexpr const char* kTypeName = "CameraModeSwitcher"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"カメラモード切替", "Camera Mode Switcher"};
 
    /// @brief コンポーネント型名を取得する
@@ -59,10 +60,10 @@ public:
 private:
    void ApplyMode();
 
-   std::vector<std::string> cameraIds_;
-   std::vector<GameEngine::VirtualCamera*> cameras_;
-   size_t initialIndex_ = 0;
-   size_t currentIndex_ = 0;
+   std::vector<std::string> cameraIds_;              ///< 切り替え候補の仮想カメラIDを順番に保持する一覧。
+   std::vector<GameEngine::VirtualCamera*> cameras_; ///< 安定IDから解決した切り替え候補の非所有カメラ参照。
+   size_t initialIndex_ = 0;                         ///< 開始時に選択するカメラの候補番号。
+   size_t currentIndex_ = 0;                         ///< 現在選択中インデックス。
 };
 
 } // namespace App

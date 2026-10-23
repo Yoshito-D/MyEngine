@@ -47,7 +47,7 @@ public:
    void Reset(const RearCameraSettings&) override { ClearCameraMeasurement(); }
 
 private:
-   RearCameraMeasurementState state_;
+   RearCameraMeasurementState state_; ///< 計測履歴。
 };
 
 } // namespace App

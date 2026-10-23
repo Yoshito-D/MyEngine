@@ -11,7 +11,8 @@ class MenuSelectionAnimationComponent;
 /// @details 同じObjectのMenuSelectionAnimationComponentで、項目0をチュートリアル、項目1をステージに対応させる。
 class TitleStartComponent final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "TitleStartComponent";
+   static constexpr const char* kTypeName = "TitleStartComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"タイトル開始UI", "Title Start UI"};
 
    /// @brief コンポーネント型名を取得する。
@@ -38,11 +39,11 @@ private:
    bool MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction);
    void RefreshSelectionText(MenuSelectionAnimationComponent& animation);
 
-   std::string tutorialScene_ = "Tutorial";
-   std::string stageScene_ = "GameTest";
-   std::int32_t selectedOption_ = -1;
-   bool startRequested_ = false;
-   bool navigationLatched_ = false;
+   std::string tutorialScene_ = "Tutorial"; ///< チュートリアル開始時に読み込む登録シーン名。
+   std::string stageScene_ = "GameTest";    ///< 通常プレイ開始時に読み込む登録シーン名。
+   std::int32_t selectedOption_ = -1;       ///< 現在選択中のメニュー項目番号。負値は未選択。
+   bool startRequested_ = false;            ///< メニュー選択によるプレイ開始を要求済みかどうか。
+   bool navigationLatched_ = false;         ///< 方向入力が中立に戻るまで次のメニュー移動を抑止する状態。
 };
 
 } // namespace App

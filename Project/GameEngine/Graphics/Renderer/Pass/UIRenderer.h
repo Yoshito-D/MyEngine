@@ -39,11 +39,11 @@ public:
    void SetUICamera(Camera* camera) { uiCamera_ = camera; }
 
 private:
-   GraphicsDevice* device_ = nullptr;
-   const PSOManager* psoManager_ = nullptr;
-   Camera* uiCamera_ = nullptr;
-   SpriteRenderer* spriteRenderer_ = nullptr;
-   LightManager* lightManager_ = nullptr;
+   GraphicsDevice* device_ = nullptr;         ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   const PSOManager* psoManager_ = nullptr;   ///< パイプラインマネージャーを追加。
+   Camera* uiCamera_ = nullptr;               ///< UI描画の基準とする平行投影カメラ。
+   SpriteRenderer* spriteRenderer_ = nullptr; ///< スプライト描画コマンドを実行するレンダラー。
+   LightManager* lightManager_ = nullptr;     ///< シーン内ライトとGPU転送データを管理するオブジェクト。
 };
 
 } // namespace GameEngine

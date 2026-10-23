@@ -1,28 +1,28 @@
 // CPU側TextRenderer::ViewportDataと一致する16バイト定数バッファ。
 // sizeはCPU/GPU契約を明示する値、inverseSizeは除算を頂点ごとに繰り返さないための値である。
 struct TextViewport {
-   float2 size;
-   float2 inverseSize;
+   float2 size;        ///< 文字描画先のビューポート幅・高さ（ピクセル）。
+   float2 inverseSize; ///< ビューポートの幅・高さの逆数。
 };
 
 ConstantBuffer<TextViewport> gTextViewport : register(b0);
 
 // TextRenderer::TextVertexおよびtext_pipeline.jsonのbyte offsetと一致する48バイト頂点形式。
 struct VertexShaderInput {
-   float2 position : POSITION0;
-   float2 texCoord : TEXCOORD0;
-   float4 color : COLOR0;
+   float2 position : POSITION0; ///< 画面に配置した文字頂点の位置（ピクセル）。
+   float2 texCoord : TEXCOORD0; ///< テクスチャ座標。
+   float4 color : COLOR0;       ///< 表示色のRGBA成分。
 
    // xy:アトラス寸法、z:距離場レンジ、w:ビットマップ/MSDF種別。PSでカバレッジ計算に使用する。
-   float4 atlasParameters : TEXCOORD1;
+   float4 atlasParameters : TEXCOORD1; ///< xyはアトラス寸法、zは距離範囲、wはMSDFなどのアトラス形式。
 };
 
 // texCoord・頂点色・アトラス情報はPSへ補間して渡し、VSは座標系変換だけを担当する。
 struct VertexShaderOutput {
-   float4 position : SV_POSITION;
-   float2 texCoord : TEXCOORD0;
-   float4 color : COLOR0;
-   float4 atlasParameters : TEXCOORD1;
+   float4 position : SV_POSITION;      ///< ラスタライズに使うクリップ空間の同次位置。
+   float2 texCoord : TEXCOORD0;        ///< テクスチャ座標。
+   float4 color : COLOR0;              ///< 表示色のRGBA成分。
+   float4 atlasParameters : TEXCOORD1; ///< xyはアトラス寸法、zは距離範囲、wはMSDFなどのアトラス形式。
 };
 
 VertexShaderOutput main(VertexShaderInput input) {

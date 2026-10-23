@@ -60,7 +60,8 @@ public:
    bool ApplyIllumination(const AreaLightData& illumination);
 
 private:
+   /// @brief 矩形光源のパラメーターを保持する所有GPUリソース。
    Microsoft::WRL::ComPtr<ID3D12Resource> areaLightResource_ = nullptr;
-   AreaLightData* areaLightData_ = nullptr;
+   AreaLightData* areaLightData_ = nullptr; ///< エリアライトデータ。
 };
 }

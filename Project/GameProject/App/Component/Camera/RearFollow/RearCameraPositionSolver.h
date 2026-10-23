@@ -59,7 +59,7 @@ private:
    GameEngine::Vector3 SmoothEye(const RearCameraInput& input, const RearCameraSettings& settings,
       const RearCameraTransitionState& transition, const RearCameraAimState& aim, const GameEngine::Vector3& targetEye,
       const GameEngine::Vector3& up, float deltaTime);
-   RearCameraPositionState state_;
+   RearCameraPositionState state_; ///< この段階の確定済み状態。
 };
 
 } // namespace App

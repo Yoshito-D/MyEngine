@@ -31,6 +31,7 @@ public:
    std::vector<std::string> GetAnimationNames() const;
 
 private:
+   /// @brief 論理名から読み込み済みアニメーションを引く共有キャッシュ。
    std::unordered_map<std::string, AnimationHandle> animationAssets_;
 };
 

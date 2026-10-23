@@ -21,38 +21,39 @@ class ShaderManager;
 
 /// @brief パイプライン設定構造体
 struct PipelineConfig {
-   std::string vertexShaderName;
-   std::string pixelShaderName;
-   std::string rootSignatureName;
-   BlendMode blendMode = BlendMode::kBlendModeNone;
-   D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK;
-   D3D12_FILL_MODE fillMode = D3D12_FILL_MODE_SOLID;
+   std::string vertexShaderName;                     ///< 参照する頂点シェーダーの登録名。
+   std::string pixelShaderName;                      ///< 参照するピクセルシェーダーの登録名。
+   std::string rootSignatureName;                    ///< 使用するルートシグネチャ名。
+   BlendMode blendMode = BlendMode::kBlendModeNone;  ///< 優先ブレンドモード（nullopt = 加算）。
+   D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK;  ///< 描画から除外する面の向き。
+   D3D12_FILL_MODE fillMode = D3D12_FILL_MODE_SOLID; ///< ポリゴンを塗りつぶすかワイヤー表示するかの設定。
    BOOL frontCounterClockwise = FALSE; ///< TRUEの場合は反時計回りの面を前面として扱う
-   BOOL depthEnable = TRUE;
-   D3D12_DEPTH_WRITE_MASK depthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-   D3D12_COMPARISON_FUNC depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+   BOOL depthEnable = TRUE;            ///< 深度テストを有効にするかどうか。
+   D3D12_DEPTH_WRITE_MASK depthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL; ///< 深度バッファへ書き込むかどうかの設定。
+   D3D12_COMPARISON_FUNC depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; ///< 深度テストで使う比較方法。
+   /// @brief 頂点を点・線・三角形のどれとして組み立てるかの分類。
    D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-   DXGI_FORMAT rtvFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+   DXGI_FORMAT rtvFormat = DXGI_FORMAT_R8G8B8A8_UNORM; ///< このPSOが出力するレンダーターゲットの形式。
 
-   std::vector<InputElementDefinition> inputElements;
+   std::vector<InputElementDefinition> inputElements; ///< 頂点入力を構成する各要素の定義。
 };
 
 struct PipelineReflectionMetadata {
-   bool hasVertexReflection = false;
-   bool hasPixelReflection = false;
-   uint32_t vertexResourceCount = 0;
-   uint32_t pixelResourceCount = 0;
-   uint32_t estimatedRequiredBindingCount = 0;
-   uint32_t rootParameterCount = 0;
-   bool hasPotentialBindingMismatch = false;
-   uint32_t validationWarningCount = 0;
-   std::vector<std::string> missingSemantics;
+   bool hasVertexReflection = false;           ///< 頂点シェーダーのリフレクション情報を取得できたかどうか。
+   bool hasPixelReflection = false;            ///< ピクセルシェーダーのリフレクション情報を取得できたかどうか。
+   uint32_t vertexResourceCount = 0;           ///< 頂点シェーダーが参照するリソースの数。
+   uint32_t pixelResourceCount = 0;            ///< ピクセルシェーダーが参照するリソースの数。
+   uint32_t estimatedRequiredBindingCount = 0; ///< リフレクションから推定した必要バインド数。
+   uint32_t rootParameterCount = 0;            ///< ルートシグネチャに定義されたパラメーター数。
+   bool hasPotentialBindingMismatch = false;   ///< シェーダーとルート定義に不一致の可能性があるかどうか。
+   uint32_t validationWarningCount = 0;        ///< このパイプラインの検証で検出した警告数。
+   std::vector<std::string> missingSemantics;  ///< ルート定義に対応先がない必須セマンティクス。
 };
 
 struct ValidationSummary {
-   uint32_t pipelineCount = 0;
-   uint32_t warningPipelines = 0;
-   uint32_t totalWarnings = 0;
+   uint32_t pipelineCount = 0;    ///< 検証対象のパイプライン数。
+   uint32_t warningPipelines = 0; ///< 警告が検出されたパイプライン数。
+   uint32_t totalWarnings = 0;    ///< 全パイプラインの警告数の合計。
 };
 
 /// @brief パイプライン管理クラス
@@ -143,30 +144,38 @@ public:
    bool SaveValidationReportJson(const std::string& filePath) const;
 
 private:
-   GraphicsDevice* device_ = nullptr;
-   ShaderManager* shaderManager_ = nullptr;
+   GraphicsDevice* device_ = nullptr;       ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   ShaderManager* shaderManager_ = nullptr; ///< シェーダーマネージャー。
 
-   PipelineLibrary pipelineLibrary_;
+   PipelineLibrary pipelineLibrary_; ///< 生成した描画・Computeパイプラインを所有する保管先。
+   /// @brief ルートシグネチャ名ごとの読み込み済み定義。
    std::unordered_map<std::string, RootSignatureDefinition> rootDefinitions_;
+   /// @brief モデルパイプライン名ごとのバインド・マテリアル契約。
    std::unordered_map<std::string, ModelPipelineDefinition> modelPipelines_;
+   /// @brief ブレンド方式を固定したモデルパイプラインの対応表。
    std::unordered_map<std::string, BlendMode> fixedModelBlendModes_;
    bool ValidateModelPipeline(const PipelineDefinition& definition, ModelPipelineDefinition& model) const;
 
    // ルートシグネチャ格納用コンテナ
+   /// @brief 名前ごとに登録するルートシグネチャの定義または所有実体。
    std::unordered_map<std::string, std::unique_ptr<RootSignature>> rootSignatures_;
 
    // パイプライン反射メタデータ
+   /// @brief パイプライン名ごとのリソース検証結果。
    std::unordered_map<std::string, PipelineReflectionMetadata> pipelineReflectionMetadata_;
 
    // ルートシグネチャ定義のパラメータ数
+   /// @brief ルートシグネチャ名ごとのパラメーター数。
    std::unordered_map<std::string, uint32_t> rootSignatureParameterCounts_;
+   /// @brief ルートシグネチャごとの意味名からスロット番号への索引。
    std::unordered_map<std::string, std::unordered_map<std::string, UINT>> rootSignatureSemanticSlots_;
+   /// @brief パイプラインごとの意味名からルートスロット番号への索引。
    std::unordered_map<std::string, std::unordered_map<std::string, UINT>> pipelineSemanticSlots_;
 
    // 同一警告の重複抑制
-   std::unordered_set<std::string> emittedValidationWarnings_;
+   std::unordered_set<std::string> emittedValidationWarnings_; ///< 同じ検証警告の重複出力を抑える識別キー集合。
 
-   PipelineDefinitionLoader definitionLoader_;
+   PipelineDefinitionLoader definitionLoader_; ///< JSONからパイプライン定義を読み取るローダー。
 
    /// @brief パイプラインキーを生成
    /// @param name パイプライン名

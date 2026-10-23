@@ -170,7 +170,7 @@ public:
       uint32_t screenWidth = Window::kUiReferenceWidth, uint32_t screenHeight = Window::kUiReferenceHeight);
 
 private:
-   AnchorPoint screenAnchorPoint_ = AnchorPoint::MiddleCenter;
+   AnchorPoint screenAnchorPoint_ = AnchorPoint::MiddleCenter; ///< 自動スクリーン描画で使用する画面アンカー。
 
 private:
    /// @brief アンカーポイントに基づいて画面座標を計算
@@ -192,6 +192,6 @@ private:
    const TransformComponent* GetTransformComponent() const;
 
 private:
-   static std::vector<Sprite*> sRegisteredSprites_;
+   static std::vector<Sprite*> sRegisteredSprites_; ///< 自動描画の候補として登録されたSpriteの非所有一覧。
 };
 }

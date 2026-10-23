@@ -86,10 +86,10 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float maxFollowDistance = 8.0f;
-   float followSpeed = 6.0f;
-   float minPlanetDistance = 7.0f;
-   bool useGravityUp = true;
+   float maxFollowDistance = 8.0f; ///< 追従開始距離（この距離を超えた分を追う）。
+   float followSpeed = 6.0f;       ///< 追従速度。
+   float minPlanetDistance = 7.0f; ///< 惑星中心からの最小許容距離。
+   bool useGravityUp = true;       ///< 重力Up使用フラグ（将来拡張向け）。
 
 private:
    /// @brief 注視対象座標

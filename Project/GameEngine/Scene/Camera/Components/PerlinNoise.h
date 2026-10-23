@@ -67,15 +67,15 @@ public:
 private:
    float Noise(float t) const;
 
-   float amplitudeGain_ = 0.0f;
-   float frequencyGain_ = 1.0f;
-   float time_ = 0.0f;
-   float remainingTime_ = 0.0f;
-   float initialAmplitude_ = 0.0f;
-   Vector3 shakeDirection_ = {0.0f, 1.0f, 0.0f};
-   bool useDirectionalShake_ = false;
-   Vector2 screenSpaceWeights_ = {};
-   bool useScreenSpaceShake_ = false;
+   float amplitudeGain_ = 0.0f;                  ///< カメラ揺れに掛ける振幅倍率。
+   float frequencyGain_ = 1.0f;                  ///< カメラ揺れの時間周波数へ掛ける倍率。
+   float time_ = 0.0f;                           ///< クリップ先頭からの時刻（秒）。
+   float remainingTime_ = 0.0f;                  ///< 処理が終了するまでの残り時間（秒）。
+   float initialAmplitude_ = 0.0f;               ///< 減衰開始時のカメラ揺れの振幅。
+   Vector3 shakeDirection_ = {0.0f, 1.0f, 0.0f}; ///< 方向指定のカメラ揺れに使うワールド方向。
+   bool useDirectionalShake_ = false;            ///< 揺れを指定方向に制限するかどうか。
+   Vector2 screenSpaceWeights_ = {};             ///< 画面の横・縦方向それぞれに加える揺れの重み。
+   bool useScreenSpaceShake_ = false;            ///< 画面基準の横・縦方向へ揺れを適用するかどうか。
 };
 
 } // namespace GameEngine

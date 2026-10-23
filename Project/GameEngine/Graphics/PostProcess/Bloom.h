@@ -52,8 +52,8 @@ private:
    float intensity_ = 1.0f;     // HDR輝度差を保ちながら周辺光を加算する
    float blurRadius_ = 4.0f;    // パーティクル輪郭の外側まで発光を広げる
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   BloomCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   BloomCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

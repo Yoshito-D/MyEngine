@@ -61,7 +61,8 @@ public:
 #endif
 
 private:
+   /// @brief 加算速度の乱数範囲。
    RandomVector3 linearVelocity_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false};
-   RandomFloat speedModifier_{1.0f, 1.0f, false};
+   RandomFloat speedModifier_{1.0f, 1.0f, false}; ///< 速度倍率の乱数範囲。
 };
 }

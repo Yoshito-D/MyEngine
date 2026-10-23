@@ -23,8 +23,8 @@ enum class UIEasingType {
 
 /// @brief 再生時間から得られる正規化進捗
 struct UIPlaybackSample {
-   float progress = 0.0f;
-   bool finished = false;
+   float progress = 0.0f; ///< 進行度 [0, 1]。
+   bool finished = false; ///< 再生区間の終端へ到達したかどうか。
 };
 
 /// @brief 再生時間を0から1の進捗に変換する

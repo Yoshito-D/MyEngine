@@ -93,17 +93,17 @@ public:
 
 private:
    struct EditorWindowState {
-      ImGuiHelper::LocalizedText label;
-      bool visible;
+      ImGuiHelper::LocalizedText label; ///< メニューへ表示するウィンドウ名の日本語・英語ラベル。
+      bool visible;                     ///< Objectを描画対象として表示するか。
    };
 
-   std::map<std::string, EditorWindowState> editorWindows_;
+   std::map<std::string, EditorWindowState> editorWindows_; ///< 登録名に対応するエディターウィンドウの表示状態。
    bool isDockSpaceVisible_ = true;   // ドッキングスペース表示フラグ
    bool multiViewportEnabled_ = true; // マルチビューポート有効フラグ
-   bool resetLayoutRequested_ = false;
+   bool resetLayoutRequested_ = false; ///< 次のフレームでドッキング配置を初期化する要求。
    HWND windowHandle_ = nullptr; // Windowが所有する非所有ハンドル
-   float uiScale_ = 1.0f;
-   ImGuiHelper::EditorLanguage language_ = ImGuiHelper::EditorLanguage::Japanese;
+   float uiScale_ = 1.0f;        ///< エディターUIの基準サイズへ掛ける倍率。
+   ImGuiHelper::EditorLanguage language_ = ImGuiHelper::EditorLanguage::Japanese; ///< エディター表示言語。
 };
 }
 #endif

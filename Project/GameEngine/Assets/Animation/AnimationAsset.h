@@ -79,8 +79,8 @@ private:
    void LoadAnimationFile(const std::string& directoryPath, const std::string& filename);
 
 private:
-   std::map<std::string, AnimationClip> clips_;
-   std::string defaultClipName_;
+   std::map<std::string, AnimationClip> clips_; ///< 名前またはアセットIDに対応するクリップの一覧。
+   std::string defaultClipName_;                ///< 既定クリップ名。
 };
 
 /// @brief クリップの再生時刻を進め、ノード別カーブを解決する再生状態
@@ -124,11 +124,11 @@ public:
    const NodeAnimation* ResolveNodeAnimation(const std::string& nodeName) const;
 
 private:
-   const AnimationClip* clip_ = nullptr;
-   float currentTime_ = 0.0f;
-   float playbackSpeed_ = 1.0f;
-   bool loop_ = true;
-   bool playing_ = true;
+   const AnimationClip* clip_ = nullptr; ///< 現在の再生クリップ。
+   float currentTime_ = 0.0f;            ///< 現在の再生位置（秒）。
+   float playbackSpeed_ = 1.0f;          ///< 実時間に対する再生時間の倍率。
+   bool loop_ = true;                    ///< 終端到達後に再生を繰り返すかどうか。
+   bool playing_ = true;                 ///< 現在再生を進めているかどうか。
 };
 
 /// @brief 指定時刻のVector3値を線形補間する

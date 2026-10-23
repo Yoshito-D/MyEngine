@@ -30,10 +30,10 @@ public:
    float GetFrameTimeMs() const;
 
 private:
-   TimePoint prevTime_;
-   float deltaTime_ = 0.0f;
-   float elapsedTime_ = 0.0f;
-   std::int32_t frameCount_ = 0;
-   float fps_ = 0.0f;
+   TimePoint prevTime_;          ///< 前回の実フレーム時間を計測した時刻。
+   float deltaTime_ = 0.0f;      ///< 現在フレームで進める時間（秒）。
+   float elapsedTime_ = 0.0f;    ///< 現在の処理区間で累積した経過時間（秒）。
+   std::int32_t frameCount_ = 0; ///< 現在の計測区間で数えたフレーム数。
+   float fps_ = 0.0f;            ///< 直近の計測区間の平均フレームレート。
 };
 }

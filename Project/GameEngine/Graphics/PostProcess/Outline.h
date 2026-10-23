@@ -64,13 +64,13 @@ public:
    void SetIntensity(float intensity);
 
 private:
-   float outlineColor_[4] = {0.1f, 0.1f, 0.1f, 1.0f};
-   float thickness_ = 1.4f;
-   float depthThreshold_ = 0.6f;
-   float intensity_ = 0.7f;
+   float outlineColor_[4] = {0.1f, 0.1f, 0.1f, 1.0f}; ///< 輪郭のRGB色と寄与率として使うアルファ。
+   float thickness_ = 1.4f;                           ///< 深度近傍のサンプリング間隔倍率。
+   float depthThreshold_ = 0.6f;                      ///< 深度勾配を輪郭強度へ正規化するしきい値。
+   float intensity_ = 0.7f;                           ///< 効果または光の強さ。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   OutlineCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   OutlineCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

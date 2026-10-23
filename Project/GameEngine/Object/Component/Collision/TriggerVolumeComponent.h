@@ -20,7 +20,8 @@ public:
       Aabb,   ///< Transformの各座標軸に平行な半幅で判定する直方体
    };
 
-   static constexpr const char* kTypeName = "TriggerVolumeComponent";
+   static constexpr const char* kTypeName = "TriggerVolumeComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"トリガーボリューム", "Trigger Volume"};
 
    /// @brief コンポーネント型名を取得する
@@ -77,16 +78,16 @@ private:
    Object* ResolveTarget() const;
    bool CalculateOverlap(const Object& target) const;
 
-   SceneWorld* sceneWorld_ = nullptr;
-   std::string targetObjectId_;
-   Shape shape_ = Shape::Aabb;
-   Vector3 centerOffset_{};
-   Vector3 halfExtents_ = {1.0f, 1.0f, 1.0f};
-   float radius_ = 1.0f;
-   bool debugDraw_ = false;
-   bool isInside_ = false;
-   bool enteredThisFrame_ = false;
-   bool exitedThisFrame_ = false;
+   SceneWorld* sceneWorld_ = nullptr;         ///< 参照先オブジェクトを安定IDから解決するシーンワールド。
+   std::string targetObjectId_;               ///< 重なり判定の対象オブジェクトID。
+   Shape shape_ = Shape::Aabb;                ///< 重なり判定に使う球または軸平行ボックスの選択。
+   Vector3 centerOffset_{};                   ///< 所有Objectの位置へ加えるトリガー中心のオフセット。
+   Vector3 halfExtents_ = {1.0f, 1.0f, 1.0f}; ///< 軸平行ボックスの中心から各面までの半幅。
+   float radius_ = 1.0f;                      ///< 形状または効果範囲の半径。
+   bool debugDraw_ = false;                   ///< 判定形状と接触状態を補助描画するかどうか。
+   bool isInside_ = false;                    ///< 現在トリガー内にいるかどうかする。
+   bool enteredThisFrame_ = false;            ///< 直前の外側状態からこのフレームで内側へ変化したかどうか。
+   bool exitedThisFrame_ = false;             ///< 直前の内側状態からこのフレームで外側へ変化したかどうか。
 };
 
 } // namespace GameEngine

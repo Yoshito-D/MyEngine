@@ -11,10 +11,10 @@ class Pixelation : public PostProcess {
 public:
    /// @brief ピクセル化エフェクト用パラメータ構造体
    struct PixelationCB {
-      float pixelSize;
-      float screenSizeX;
-      float screenSizeY;
-      float padding;
+      float pixelSize;   ///< ピクセル化で同じ色にまとめるブロックの辺長。
+      float screenSizeX; ///< 効果を適用する画面の横幅（ピクセル）。
+      float screenSizeY; ///< 効果を適用する画面の高さ（ピクセル）。
+      float padding;     ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief 初期化
@@ -43,12 +43,12 @@ public:
    void SetScreenSize(float width, float height);
 
 private:
-   float pixelSize_ = 4.0f;
-   float screenSizeX_ = 1280.0f;
-   float screenSizeY_ = 720.0f;
+   float pixelSize_ = 4.0f;      ///< ピクセル化で同じ色にまとめるブロックの辺長。
+   float screenSizeX_ = 1280.0f; ///< 効果を適用する画面の横幅（ピクセル）。
+   float screenSizeY_ = 720.0f;  ///< 効果を適用する画面の高さ（ピクセル）。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   PixelationCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   PixelationCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

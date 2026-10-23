@@ -371,22 +371,23 @@ public:
    void SetVibration(uint32_t index, float leftMotor, float rightMotor);
 
 private:
-   static constexpr size_t kKeyboardKeyCount = 256;
-   static constexpr BYTE kPressedStateMask = 0x80;
+   static constexpr size_t kKeyboardKeyCount = 256; ///< DirectInputのキーボード状態配列の要素数。
+   static constexpr BYTE kPressedStateMask = 0x80;  ///< キー・マウスボタンの押下状態を検出するビットマスク。
 
+   /// @brief キーボードとマウスの取得に使う所有DirectInputインターフェース。
    ComPtr<IDirectInput8> directInput_ = nullptr;
-   ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
-   BYTE key_[kKeyboardKeyCount] = {};
-   BYTE prevKey_[kKeyboardKeyCount] = {};
+   ComPtr<IDirectInputDevice8> keyboard_ = nullptr; ///< キーボード状態を取得する所有DirectInputデバイス。
+   BYTE key_[kKeyboardKeyCount] = {};               ///< 現在フレームに取得したキー番号ごとの押下状態。
+   BYTE prevKey_[kKeyboardKeyCount] = {};           ///< 押下・解放エッジの比較元となる前フレームのキー状態。
 
-   ComPtr<IDirectInputDevice8> mouse_ = nullptr;
-   DIMOUSESTATE mouseState_ = {};
-   DIMOUSESTATE prevMouseState_ = {};
+   ComPtr<IDirectInputDevice8> mouse_ = nullptr; ///< マウス状態を取得する所有DirectInputデバイス。
+   DIMOUSESTATE mouseState_ = {};                ///< 現在フレームのマウス移動量とボタン状態。
+   DIMOUSESTATE prevMouseState_ = {};            ///< 前フレームのマウス移動量とボタン状態。
 
-   XINPUT_STATE gamePadState_[XUSER_MAX_COUNT]{};
-   XINPUT_STATE prevGamePadState_[XUSER_MAX_COUNT]{};
+   XINPUT_STATE gamePadState_[XUSER_MAX_COUNT]{};     ///< ポート別の現在フレームのゲームパッド状態。
+   XINPUT_STATE prevGamePadState_[XUSER_MAX_COUNT]{}; ///< ポート別の前フレームのゲームパッド状態。
 
-   HWND hwnd_ = nullptr;
+   HWND hwnd_ = nullptr; ///< ウィンドウハンドル。
 
 private:
    /// @brief キーボードの状態を更新

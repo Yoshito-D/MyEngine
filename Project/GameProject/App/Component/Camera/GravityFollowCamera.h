@@ -148,22 +148,22 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float rotateSpeed = 0.005f;
-   float scrollSpeed = 1.0f / 120.0f;
-   float gravityUpLerpSpeed = 5.0f;
-   float fovDefault = 0.45f;
-   float fovBoostMax = 0.08f;
-   float fovLerpSpeed = 4.0f;
-   float speedBoostThreshold = 5.0f;
-   float speedBoostMax = 25.0f;
-   float distanceBoostMax = 2.5f;
-   float springStiffness = 85.0f;
-   float springDamping = 18.0f;
-   float accelToFovKick = 0.0025f;
-   float accelToDistanceKick = 0.04f;
-   float turboFovKickMax = 0.06f;
-   float turboDistanceKickMax = 2.0f;
-   float positionLerpSpeed = 12.0f;
+   float rotateSpeed = 0.005f;        ///< 入力回転感度。
+   float scrollSpeed = 1.0f / 120.0f; ///< ホイールズーム感度。
+   float gravityUpLerpSpeed = 5.0f;   ///< 惑星切り替え時の重力Up補間速度（大きいほど速く追従）。
+   float fovDefault = 0.45f;          ///< 通常時の FOV（ラジアン相当）。
+   float fovBoostMax = 0.08f;         ///< 加速時に加算される最大 FOV 量（視野を広げて速度感を演出）。
+   float fovLerpSpeed = 4.0f;         ///< FOV が加速ブーストに追従する補間速度。
+   float speedBoostThreshold = 5.0f;  ///< 加速演出を開始するプレイヤー速度の閾値。
+   float speedBoostMax = 25.0f;       ///< 加速演出が最大になるプレイヤー速度。
+   float distanceBoostMax = 2.5f;     ///< 通常加速時にカメラが後退する最大追加距離。
+   float springStiffness = 85.0f;     ///< Spring の剛性（大きいほど目標へ強く引っ張る）。
+   float springDamping = 18.0f;       ///< Spring の減衰（大きいほど揺れが早く収束）。
+   float accelToFovKick = 0.0025f;    ///< 速度変化量（加速度）を FOV キックへ変換する係数。
+   float accelToDistanceKick = 0.04f; ///< 速度変化量（加速度）を距離キックへ変換する係数。
+   float turboFovKickMax = 0.06f;     ///< ミニターボ時に上乗せする FOV キック最大量。
+   float turboDistanceKickMax = 2.0f; ///< ミニターボ時に上乗せする距離キック最大量。
+   float positionLerpSpeed = 12.0f;   ///< カメラ位置（eye）の追従速度。
 
 private:
    /// @brief ピッチ角（ラジアン）
@@ -204,15 +204,15 @@ private:
 
    /// @brief Spring による FOV オフセット状態
    float springFovOffset_ = 0.0f;
-   float springFovVelocity_ = 0.0f;
+   float springFovVelocity_ = 0.0f; ///< springFovVelocityの継続状態。
 
    /// @brief Spring による距離オフセット状態
    float springDistanceOffset_ = 0.0f;
-   float springDistanceVelocity_ = 0.0f;
+   float springDistanceVelocity_ = 0.0f; ///< springDistanceVelocityの継続状態。
 
    /// @brief 速度変化量算出用の前フレーム速度
    float previousPlayerSpeed_ = 0.0f;
-   bool isSpeedInitialized_ = false;
+   bool isSpeedInitialized_ = false; ///< isSpeedInitializedの継続状態。
 
    /// @brief 補間済みの eye オフセット（ピボット相対）
    ///        絶対座標ではなくピボットからのオフセットを保持することで、

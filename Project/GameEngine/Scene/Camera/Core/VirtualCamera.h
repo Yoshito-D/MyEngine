@@ -173,19 +173,20 @@ protected:
    void SortComponents();
 
 private:
-   SceneWorld* world_ = nullptr;
+   SceneWorld* world_ = nullptr; ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
+   /// @brief ステージと実行順に並べて所有するカメラ部品。
    std::vector<std::unique_ptr<ICinemachineComponent>> components_;
-   const Transform* followTarget_ = nullptr;
-   const Transform* lookAtTarget_ = nullptr;
-   std::string followTargetEntityId_;
-   std::string lookAtTargetEntityId_;
-   mutable Transform resolvedFollowTarget_;
-   mutable Transform resolvedLookAtTarget_;
-   CameraState state_;
-   std::string name_;
-   std::string id_;
-   std::int32_t priority_ = 0;
-   bool isActive_ = true;
+   const Transform* followTarget_ = nullptr; ///< 直接指定された位置追従先Transformへの非所有参照。
+   const Transform* lookAtTarget_ = nullptr; ///< 直接指定された注視先Transformへの非所有参照。
+   std::string followTargetEntityId_;        ///< 位置追従対象の安定Entity ID。
+   std::string lookAtTargetEntityId_;        ///< 注視対象の安定Entity ID。
+   mutable Transform resolvedFollowTarget_;  ///< 安定Entity IDから毎回解決する追従先のワールド位置。
+   mutable Transform resolvedLookAtTarget_;  ///< 安定Entity IDから毎回解決する注視先のワールド位置。
+   CameraState state_;                       ///< 最後に計算したカメラ状態。
+   std::string name_;                        ///< 仮想カメラ名。
+   std::string id_;                          ///< 名前変更に影響されないシーン内の安定ID。
+   std::int32_t priority_ = 0;               ///< ブレンド選択に使用する優先度。
+   bool isActive_ = true;                    ///< カメラがブレンド候補として有効か。
 };
 
 } // namespace GameEngine

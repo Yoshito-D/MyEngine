@@ -886,97 +886,97 @@ std::vector<const Object*> SceneObjectStore::GetGenericObjects() const {
 
 std::vector<Model*> SceneObjectStore::GetModels() {
    std::vector<Model*> result;
+
    for (const auto& entry : objects_) {
-      if (true) {
-         if (auto* value = dynamic_cast<Model*>(entry.get())) {
-            result.push_back(value);
-         }
+      if (auto* model = dynamic_cast<Model*>(entry.get())) {
+         result.push_back(model);
       }
    }
+
    return result;
 }
 
 std::vector<const Model*> SceneObjectStore::GetModels() const {
    std::vector<const Model*> result;
+
    for (const auto& entry : objects_) {
-      if (true) {
-         if (auto* value = dynamic_cast<const Model*>(entry.get())) {
-            result.push_back(value);
-         }
+      if (auto* model = dynamic_cast<const Model*>(entry.get())) {
+         result.push_back(model);
       }
    }
+
    return result;
 }
 
 std::vector<Sprite*> SceneObjectStore::GetSprites() {
    std::vector<Sprite*> result;
+
    for (const auto& entry : objects_) {
-      if (true) {
-         if (auto* value = dynamic_cast<Sprite*>(entry.get())) {
-            result.push_back(value);
-         }
+      if (auto* sprite = dynamic_cast<Sprite*>(entry.get())) {
+         result.push_back(sprite);
       }
    }
+
    return result;
 }
 
 std::vector<const Sprite*> SceneObjectStore::GetSprites() const {
    std::vector<const Sprite*> result;
+
    for (const auto& entry : objects_) {
-      if (true) {
-         if (auto* value = dynamic_cast<const Sprite*>(entry.get())) {
-            result.push_back(value);
-         }
+      if (auto* sprite = dynamic_cast<const Sprite*>(entry.get())) {
+         result.push_back(sprite);
       }
    }
+
    return result;
 }
 
 std::vector<UIText*> SceneObjectStore::GetUITexts() {
    std::vector<UIText*> result;
+
    for (const auto& entry : objects_) {
-      if (true) {
-         if (auto* value = dynamic_cast<UIText*>(entry.get())) {
-            result.push_back(value);
-         }
+      if (auto* text = dynamic_cast<UIText*>(entry.get())) {
+         result.push_back(text);
       }
    }
+
    return result;
 }
 
 std::vector<const UIText*> SceneObjectStore::GetUITexts() const {
    std::vector<const UIText*> result;
+
    for (const auto& entry : objects_) {
-      if (true) {
-         if (auto* value = dynamic_cast<const UIText*>(entry.get())) {
-            result.push_back(value);
-         }
+      if (auto* text = dynamic_cast<const UIText*>(entry.get())) {
+         result.push_back(text);
       }
    }
+
    return result;
 }
 
 std::vector<Skybox*> SceneObjectStore::GetSkyboxes() {
    std::vector<Skybox*> result;
+
    for (const auto& entry : objects_) {
-      if (true) {
-         if (auto* value = dynamic_cast<Skybox*>(entry.get())) {
-            result.push_back(value);
-         }
+      if (auto* skybox = dynamic_cast<Skybox*>(entry.get())) {
+         result.push_back(skybox);
       }
    }
+
    return result;
 }
 
 std::vector<const Skybox*> SceneObjectStore::GetSkyboxes() const {
    std::vector<const Skybox*> result;
+
    for (const auto& entry : objects_) {
-      if (true) {
-         if (auto* value = dynamic_cast<const Skybox*>(entry.get())) {
-            result.push_back(value);
-         }
+      if (auto* skybox = dynamic_cast<const Skybox*>(entry.get())) {
+         result.push_back(skybox);
       }
    }
+
    return result;
 }
 

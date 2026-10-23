@@ -19,6 +19,7 @@ class VehicleInputComponent final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "VehicleInputComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両入力", "Vehicle Input"};
 
    /// @brief コンポーネント型名を取得する
@@ -82,7 +83,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   uint32_t playerSlot = 0;
+   uint32_t playerSlot = 0; ///< 入力を読み取るプレイヤースロット。
 
 private:
    const GameEngine::InputActionState& GetActionState(const char* actionId) const;
