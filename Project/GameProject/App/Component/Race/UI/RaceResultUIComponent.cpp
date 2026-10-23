@@ -7,7 +7,7 @@
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Math/MathUtils.h"
 #include <algorithm>
@@ -280,7 +280,7 @@ bool RaceResultUIComponent::ConfirmSelection() {
          return false;
       }
 
-      GameEngine::BaseScene::SetNextSceneName(titleScene_);
+      GameEngine::EngineContext::ChangeScene(titleScene_);
    } else if (!raceManager_->RequestRestart()) {
       return false;
    }

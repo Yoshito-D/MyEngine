@@ -11,6 +11,7 @@
 
 namespace GameEngine {
 
+class SceneWorld;
 class Camera;
 class VirtualCamera;
 class CinemachineBrain;
@@ -38,6 +39,9 @@ public:
    /// @brief 初期化
    /// @param lineRenderer ギズモ描画用のラインレンダラー
    void Initialize(LineRenderer* lineRenderer);
+
+   /// @brief カメラの生成・削除で使用するWorldを関連付ける。
+   void SetWorld(SceneWorld* world) { world_ = world; }
 
    /// @brief メインエディタウィンドウを表示
    void ShowEditorWindow();
@@ -82,12 +86,6 @@ public:
 
    bool GetShowGizmo() const { return showGizmo_; }
 
-   /// @brief 外部コンポーネント（App側など）をエディタのAdd Componentリストに登録
-   /// @param displayName ポップアップに表示される名前
-   /// @param factory VirtualCamera* を受け取り ICinemachineComponent* を返すファクトリ関数
-   void RegisterComponentFactory(
-      const std::string& displayName, std::function<ICinemachineComponent*(VirtualCamera*)> factory);
-
 private:
    /// @brief VirtualCameraタブの表示（Brain登録一覧＋インスペクタ）
    void ShowVirtualCameraTab();
@@ -117,6 +115,7 @@ private:
       float viewportWidth, float viewportHeight, const char* id);
    void ShowImGuizmoControls();
 
+   SceneWorld* world_ = nullptr;
    CameraGizmo gizmo_;
    Camera* targetCamera_ = nullptr;
    VirtualCamera* targetVirtualCamera_ = nullptr;
@@ -128,13 +127,6 @@ private:
    GizmoOperation gizmoOperation_ = GizmoOperation::Translate;
    GizmoMode gizmoMode_ = GizmoMode::Local;
    std::int32_t selectedVirtualCameraIndex_ = -1;
-
-   struct ComponentFactoryEntry {
-      std::string displayName;
-      std::function<ICinemachineComponent*(VirtualCamera*)> factory;
-   };
-
-   std::vector<ComponentFactoryEntry> externalFactories_;
 };
 
 } // namespace GameEngine

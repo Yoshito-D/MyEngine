@@ -8,7 +8,7 @@
 #include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Object.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include <algorithm>
@@ -58,7 +58,7 @@ void RaceManagerComponent::Update(float deltaTime) {
             finishElapsed_ += safeDeltaTime;
 
             if (finishElapsed_ >= finishDelay_) {
-               GameEngine::BaseScene::SetNextSceneName(nextScene_);
+               GameEngine::EngineContext::ChangeScene(nextScene_);
                sceneChangeRequested_ = true;
             }
          }
@@ -207,7 +207,7 @@ bool RaceManagerComponent::RequestRestart() {
    }
 
    restartRequested_ = true;
-   GameEngine::BaseScene::SetNextSceneName(restartScene_);
+   GameEngine::EngineContext::ChangeScene(restartScene_);
    return true;
 }
 

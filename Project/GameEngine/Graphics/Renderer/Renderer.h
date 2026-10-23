@@ -145,6 +145,10 @@ public:
    void SetSceneTransitionOpacity(float opacity);
 
 #ifdef USE_IMGUI
+
+   /// @brief シーン管理の初期化後に、所有権を移さずエディタUIへ依存を接続する。
+   void SetEditorSceneSession(EditorSceneSession* session);
+
    bool GetIsSceneHovered() const { return isSceneHovered_; }
 
    bool GetIsDockSpaceVisible() const { return imGuiManager_->IsDockSpaceVisible(); }
@@ -298,7 +302,7 @@ public:
    /// @brief 編集・更新操作に使用するサービスへのアクセス。
    LineRenderer* GetLineRenderer() { return lineRenderer_.get(); }
 
-   // ========== RenderGraph API ==========
+   // ========== 描画パスの構成API ==========
 
    /// @brief レンダーパスを末尾に追加する
    /// @param pass 追加するパス（所有権を移譲）

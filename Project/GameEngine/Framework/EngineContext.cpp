@@ -4,7 +4,10 @@
 #include <nlohmann/json.hpp>
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Assets/Model/ModelAsset.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/Scene.h"
+#ifdef USE_IMGUI
+#include "GameEngine/Editor/EditorSceneSession.h"
+#endif
 #include "GameEngine/Object/Component/Rendering/RenderComponent.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Object/Skybox/Skybox.h"
@@ -20,6 +23,10 @@ GameEngine::AssetManager* sAssetManager_ = nullptr;
 GameEngine::TimeProfiler* sTimeProfiler_ = nullptr;
 GameEngine::CameraManager* sCameraManager_ = nullptr;
 GameEngine::LightManager* sLightManager_ = nullptr;
+GameEngine::SceneManager* sSceneManager_ = nullptr;
+#ifdef USE_IMGUI
+GameEngine::EditorSceneSession* sEditorSceneSession_ = nullptr;
+#endif
 float sGameDeltaTime_ = 0.0f;
 bool sHasGameDeltaTimeOverride_ = false;
 uint64_t sGameFrameNumber_ = 0;
@@ -29,6 +36,37 @@ GameEngine::PlayModeController* sPlayModeController_ = nullptr;
 }
 
 namespace GameEngine {
+void EngineContext::SetSceneManager(SceneManager* manager) {
+   sSceneManager_ = manager;
+}
+
+SceneManager* EngineContext::GetSceneManager() {
+   return sSceneManager_;
+}
+
+Scene* EngineContext::GetCurrentScene() {
+   return sSceneManager_ ? sSceneManager_->GetCurrentScene() : nullptr;
+}
+
+SceneCatalog* EngineContext::GetSceneCatalog() {
+   return sSceneManager_ ? &sSceneManager_->GetCatalog() : nullptr;
+}
+#ifdef USE_IMGUI
+void EngineContext::SetEditorSceneSession(EditorSceneSession* session) {
+   sEditorSceneSession_ = session;
+   if (sRenderer_) {
+      sRenderer_->SetEditorSceneSession(session);
+   }
+}
+
+EditorSceneSession* EngineContext::GetEditorSceneSession() {
+   return sEditorSceneSession_;
+}
+
+EditorSceneContext* EngineContext::GetEditorSceneContext() {
+   return sEditorSceneSession_ ? sEditorSceneSession_->GetContext() : nullptr;
+}
+#endif
 
 void EngineContextInitializer::Initialize(GraphicsDevice* graphicsDevice, Input* input,
    InputActionService* inputActionService, Audio* audio, Renderer* renderer, AssetManager* assetManager,
@@ -366,7 +404,9 @@ const InputActionState& EngineContext::GetInputActionState(
 }
 
 void EngineContext::ChangeScene(const std::string& name) {
-   BaseScene::SetNextSceneName(name);
+   if (sSceneManager_) {
+      sSceneManager_->RequestSceneChange(name);
+   }
 }
 
 void EngineContext::SetSceneTransitionOpacity(float opacity) {

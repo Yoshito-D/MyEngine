@@ -22,6 +22,9 @@ public:
 
    IObjectComponent* CreateComponent(Object& owner, const std::string& typeName) const;
 
+   /// @brief 実体を生成せず、登録型と適用可能なObject種別を検証する。
+   bool Supports(const std::string& typeName, ObjectType type) const;
+
    bool HasFactory(const std::string& typeName) const;
 
    std::vector<std::string> GetRegisteredTypeNames() const;

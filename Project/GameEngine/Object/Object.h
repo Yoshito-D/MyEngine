@@ -9,6 +9,7 @@
 #include <vector>
 
 namespace GameEngine {
+class SceneWorld;
 class Camera;
 class TransformComponent;
 
@@ -16,6 +17,12 @@ class TransformComponent;
 /// コンポーネントの管理はComponentContainerに委譲する
 class Object {
 public:
+   /// @brief コンポーネントの復元前に、所有元のWorldを関連付ける。
+   void SetWorld(SceneWorld* world) { world_ = world; }
+
+   /// @brief 所有元のWorldを取得する。シーン外の補助オブジェクトではnullptrを返す。
+   SceneWorld* GetWorld() const { return world_; }
+
    /// @brief 必須の名前コンポーネントを持つオブジェクトを生成する
    Object();
 
@@ -150,6 +157,7 @@ public:
 #endif
 
 private:
+   SceneWorld* world_ = nullptr;
    bool WouldCreateParentCycle(const std::string& parentEntityId) const;
 
    ComponentContainer components_;

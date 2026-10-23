@@ -76,7 +76,7 @@ void CameraEditor::Initialize(LineRenderer* lineRenderer) {
 void CameraEditor::SetTargetBrain(CinemachineBrain* brain) {
    targetBrain_ = brain;
 
-   // BrainがCameraを所有しているのでtargetCamera_を自動設定
+   // Brain経由で出力カメラの非所有参照を取得する。
    targetCamera_ = brain ? brain->GetOutputCamera() : nullptr;
 
    // brain変更時は選択状態をリセット
@@ -205,7 +205,7 @@ void CameraEditor::ShowVirtualCameraTab() {
       ImGui::BeginDisabled(EngineContext::IsInPlayMode());
 
       if (ImGui::Button(Tr("カメラを作成", "Create Camera"))) {
-         if (auto* world = SceneWorld::GetCurrent()) {
+         if (auto* world = world_) {
             if (auto* camera = world->CreateVirtualCamera("Virtual Camera")) {
                // 現在のビューを初期構図として使い、空シーンでも配置場所が分かるようにする。
                CameraState state;
@@ -229,7 +229,7 @@ void CameraEditor::ShowVirtualCameraTab() {
       ImGui::BeginDisabled(!targetVirtualCamera_ || targetVirtualCamera_->GetId().empty());
 
       if (ImGui::Button(Tr("カメラを削除", "Delete Camera"))) {
-         if (auto* world = SceneWorld::GetCurrent()) {
+         if (auto* world = world_) {
             if (world->RemoveVirtualCamera(targetVirtualCamera_)) {
                targetVirtualCamera_ = nullptr;
                selectedVirtualCameraIndex_ = -1;
@@ -469,32 +469,16 @@ void CameraEditor::ShowAddComponentPopup(VirtualCamera* vcam) {
    if (ImGui::Button(Tr("+ コンポーネント追加", "+ Add Component"))) {
       ImGui::OpenPopup("AddComponentPopup");
    }
-
    if (ImGui::BeginPopup("AddComponentPopup")) {
       for (const auto& name : VirtualCamera::GetRegisteredComponentNames()) {
          if (vcam->FindComponentByName(name)) {
             continue;
          }
-
          if (ImGui::MenuItem(name.c_str())) {
             vcam->AddComponentByName(name);
             ImGui::CloseCurrentPopup();
          }
       }
-
-      if (!externalFactories_.empty()) {
-         ImGui::Separator();
-         ImGui::Text("%s", Tr("アプリコンポーネント", "App Components"));
-         ImGui::Separator();
-
-         for (auto& entry : externalFactories_) {
-            if (ImGui::MenuItem(entry.displayName.c_str())) {
-               entry.factory(vcam);
-               ImGui::CloseCurrentPopup();
-            }
-         }
-      }
-
       ImGui::EndPopup();
    }
 }
@@ -817,11 +801,6 @@ void CameraEditor::ShowImGuizmoControls() {
    }
 
    ImGui::EndChild();
-}
-
-void CameraEditor::RegisterComponentFactory(
-   const std::string& displayName, std::function<ICinemachineComponent*(VirtualCamera*)> factory) {
-   externalFactories_.push_back({displayName, std::move(factory)});
 }
 
 } // namespace GameEngine

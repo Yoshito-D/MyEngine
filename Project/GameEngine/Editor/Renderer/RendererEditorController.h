@@ -12,6 +12,7 @@
 namespace GameEngine {
 class AssetManager;
 class EditorSceneContext;
+class EditorSceneSession;
 class Object;
 enum class EditorAssetType;
 struct EditorAssetEntry;
@@ -21,6 +22,9 @@ class RendererEditorController {
 public:
    /// @brief アセット操作に使用するマネージャーを接続する
    void Initialize(AssetManager* assetManager);
+
+   /// @brief アプリケーションが所有するエディタ資源を関連付ける。
+   void SetSession(EditorSceneSession* session);
 
    /// @brief フレーム開始時に遅延操作と選択状態を同期する
    void BeginEditorFrame();
@@ -75,6 +79,7 @@ private:
 private:
    static constexpr size_t kSceneNameBufferSize = 128;
 
+   EditorSceneSession* session_ = nullptr;
    AssetManager* assetManager_ = nullptr;
 
    bool editorAssetIconView_ = true;

@@ -19,8 +19,17 @@ class CinemachineBrain;
 class SceneWorld final {
 public:
    /// @brief 空のシーンワールドを作成する
-   /// @param cameraBrain カメラ登録先。nullptrならEngineContextの現在のBrainを使用する
+   /// @param cameraBrain カメラの登録先。カメラを読み込む前に明示的に設定する。
    explicit SceneWorld(CinemachineBrain* cameraBrain = nullptr);
+
+   /// @brief シーン初期化時に、カメラの登録先を明示的に関連付ける。
+   void SetCameraBrain(CinemachineBrain* brain) { cameraBrain_ = brain; }
+
+   /// @brief World内のObjectとパーティクルを一度ずつ更新してからカメラを評価する。
+   void Update(float deltaTime);
+
+   /// @brief 描画終了後のフレーム境界で、遅延削除した実体を解放する。
+   void FinishFrame();
 
    /// @brief デストラクタ
    ~SceneWorld();
@@ -42,7 +51,7 @@ public:
 
    /// @brief JSONからシーン全体を生成する
    /// @param sceneData シーン定義JSON
-   /// @return 必須データを生成できた場合はtrue
+   /// @return 必須データを生成できた場合はtrue。構築失敗時は部分生成物を解除する。
    bool LoadFromJson(const nlohmann::json& sceneData);
 
    /// @brief 所有するシーン要素をすべて破棄する
@@ -86,10 +95,6 @@ public:
    /// @return 安定ID。管理対象外の場合は空文字列
    std::string GetObjectId(const Object* object) const;
 
-   /// @brief 現在ロードされているシーンワールドを取得する
-   /// @return 現在のシーンワールド。未ロードの場合はnullptr
-   static SceneWorld* GetCurrent() { return sCurrent_; }
-
    /// @brief 全要素を復元した後、指定Entity群の親子関係とComponent参照を再解決する
    /// @param objects 共通Storeに復元されたEntity
    /// @param initializeRuntime falseなら参照だけを更新する
@@ -104,7 +109,6 @@ private:
    SceneObjectStore objectStore_;
    std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_;
    std::unordered_map<std::string, VirtualCamera*> virtualCamerasById_;
-   static SceneWorld* sCurrent_;
 };
 
 } // namespace GameEngine

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include "GameEngine/Scene/SceneDefinition.h"
 #include <string>
 
 namespace GameEngine {
@@ -77,6 +78,18 @@ public:
    /// @details 開始時のシーン情報を保持し、初期化後の次フレームで元の再生状態へ戻る
    void StopForSceneInitialization();
 
+   /// @brief 復旧に使用できる再生開始時の編集スナップショットがあるか調べる。
+   bool HasRecoverySnapshot() const { return hasPlaySession_ && hasEditorSceneSnapshot_; }
+
+   /// @brief カタログやファイルを読み直さず、再生開始時の編集内容を取得する。
+   SceneSnapshot GetRecoverySnapshot() const { return {playStartDefinition_, editorSceneSnapshot_}; }
+
+   /// @brief 再生中のシーン切替失敗に備えて、開始時の未保存状態を取得する。
+   bool GetPlayStartWasDirty() const { return playStartSceneWasDirty_; }
+
+   /// @brief 読込失敗からの復旧後に再生を停止し、保留中の再開要求を破棄する。
+   void StopAfterLoadFailure();
+
 private:
    /// @brief プレイモードの開始処理
    /// @param sceneManager シーンマネージャー
@@ -104,7 +117,7 @@ private:
    float stepDeltaTime_ = 1.0f / 60.0f;
 
    bool hasPlaySession_ = false;
-   std::string playStartSceneName_;
+   SceneDefinition playStartDefinition_;
    nlohmann::json editorSceneSnapshot_;
    bool hasEditorSceneSnapshot_ = false;
    bool playStartSceneWasDirty_ = false;

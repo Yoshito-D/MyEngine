@@ -1,6 +1,7 @@
 #include "GameEngine/pch.h"
 #include <cstdint>
 #include "GameEngine/Scene/SceneObjectStore.h"
+#include "GameEngine/Scene/SceneWorld.h"
 
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
@@ -98,7 +99,9 @@ Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::
 }
 } // namespace
 
-SceneObjectStore::SceneObjectStore() = default;
+SceneObjectStore::SceneObjectStore(SceneWorld& world) : world_(world) {
+}
+
 SceneObjectStore::~SceneObjectStore() = default;
 
 Object* SceneObjectStore::CreateGenericObject(const Transform* initialTransform, const std::string& requestedId) {
@@ -114,7 +117,7 @@ Object* SceneObjectStore::CreateGenericObject(const Transform* initialTransform,
 
    const std::string id = AllocateId(requestedId);
    RegisterObject(id, rawObject);
-   genericObjects_.push_back(std::move(object));
+   objects_.push_back(std::move(object));
    return rawObject;
 }
 
@@ -147,7 +150,7 @@ Object* SceneObjectStore::CreateModel(
 
    const std::string id = AllocateId(requestedId);
    RegisterObject(id, rawModel);
-   models_.push_back(std::move(model));
+   objects_.push_back(std::move(model));
    return rawModel;
 }
 
@@ -182,7 +185,7 @@ Object* SceneObjectStore::CreateSprite(
 
    const std::string id = AllocateId(requestedId);
    RegisterObject(id, rawSprite);
-   sprites_.push_back(std::move(sprite));
+   objects_.push_back(std::move(sprite));
    return rawSprite;
 }
 
@@ -210,7 +213,7 @@ Object* SceneObjectStore::CreateUIText(const Transform* initialTransform, const 
 
    const std::string id = AllocateId(requestedId);
    RegisterObject(id, rawText);
-   uiTexts_.push_back(std::move(uiText));
+   objects_.push_back(std::move(uiText));
    return rawText;
 }
 
@@ -227,7 +230,7 @@ Object* SceneObjectStore::CreateSkybox(const std::string& requestedId) {
 
    const std::string id = AllocateId(requestedId);
    RegisterObject(id, rawSkybox);
-   skyboxes_.push_back(std::move(skybox));
+   objects_.push_back(std::move(skybox));
    return rawSkybox;
 }
 
@@ -235,6 +238,7 @@ ParticleSystem* SceneObjectStore::CreateParticleSystem(
    const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
    auto particleSystem = std::make_unique<ParticleSystem>();
    ParticleSystem* rawParticleSystem = particleSystem.get();
+   rawParticleSystem->SetWorld(&world_);
    rawParticleSystem->Create();
    rawParticleSystem->SetName(
       BuildUniqueObjectName(assetId.empty() ? "ParticleSystem" : BuildNameFromAssetId(assetId)));
@@ -276,7 +280,9 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
       Object* object = CreateGenericObject(nullptr, id);
 
       if (object) {
-         ApplyObjectState(object, objectData);
+         if (!ApplyObjectState(object, objectData)) {
+            return nullptr;
+         }
       }
 
       return object;
@@ -290,7 +296,9 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
          return nullptr;
       }
 
-      ApplyObjectState(object, objectData);
+      if (!ApplyObjectState(object, objectData)) {
+         return nullptr;
+      }
       return object;
    }
 
@@ -302,7 +310,9 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
          return nullptr;
       }
 
-      ApplyObjectState(object, objectData);
+      if (!ApplyObjectState(object, objectData)) {
+         return nullptr;
+      }
       return object;
    }
 
@@ -316,7 +326,9 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
          return nullptr;
       }
 
-      ApplyObjectState(object, objectData);
+      if (!ApplyObjectState(object, objectData)) {
+         return nullptr;
+      }
 
       return object;
    }
@@ -333,7 +345,9 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
       return nullptr;
    }
 
-   ApplyObjectState(object, objectData);
+   if (!ApplyObjectState(object, objectData)) {
+      return nullptr;
+   }
 
    return object;
 }
@@ -367,91 +381,32 @@ ParticleSystem* SceneObjectStore::RestoreParticleSystem(const nlohmann::json& ob
 }
 
 bool SceneObjectStore::DeleteObject(const std::string& objectId) {
-   auto mapIt = idToObject_.find(objectId);
-
-   if (mapIt == idToObject_.end()) {
+   Object* target = FindById(objectId);
+   if (!target) {
       return false;
    }
-
-   Object* target = mapIt->second;
-
-   // 描画レジストリから先に解除し、フレーム中に残った生ポインターが破棄済みメモリを参照しないようにする。
-   if (auto* textTarget = dynamic_cast<UIText*>(target)) {
-      auto vecIt = std::find_if(uiTexts_.begin(), uiTexts_.end(),
-         [textTarget](const std::unique_ptr<UIText>& text) { return text.get() == textTarget; });
-
-      if (vecIt == uiTexts_.end()) {
-         return false;
-      }
-
-      UnregisterObject(target);
-      UnregisterOwnedRuntimeSystems(target);
-      UIText::UnregisterText(textTarget);
-      deferredDeleteUITexts_.push_back(std::move(*vecIt));
-      uiTexts_.erase(vecIt);
-      return true;
+   const auto it =
+      std::find_if(objects_.begin(), objects_.end(), [target](const auto& p) { return p.get() == target; });
+   if (it == objects_.end()) {
+      return false;
    }
-
-   if (auto* modelTarget = dynamic_cast<Model*>(target)) {
-      auto vecIt = std::find_if(models_.begin(), models_.end(),
-         [modelTarget](const std::unique_ptr<Model>& model) { return model.get() == modelTarget; });
-
-      if (vecIt == models_.end()) {
-         return false;
-      }
-
-      UnregisterObject(target);
-      UnregisterOwnedRuntimeSystems(target);
-      Model::UnregisterModel(modelTarget);
-      deferredDeleteModels_.push_back(std::move(*vecIt));
-      models_.erase(vecIt);
-      return true;
+   UnregisterObject(target);
+   UnregisterOwnedRuntimeSystems(target);
+   if (auto* model = dynamic_cast<Model*>(target)) {
+      Model::UnregisterModel(model);
    }
-
-   if (auto* spriteTarget = dynamic_cast<Sprite*>(target)) {
-      auto vecIt = std::find_if(sprites_.begin(), sprites_.end(),
-         [spriteTarget](const std::unique_ptr<Sprite>& sprite) { return sprite.get() == spriteTarget; });
-
-      if (vecIt == sprites_.end()) {
-         return false;
-      }
-
-      UnregisterObject(target);
-      UnregisterOwnedRuntimeSystems(target);
-      Sprite::UnregisterSprite(spriteTarget);
-      deferredDeleteSprites_.push_back(std::move(*vecIt));
-      sprites_.erase(vecIt);
-      return true;
+   if (auto* sprite = dynamic_cast<Sprite*>(target)) {
+      Sprite::UnregisterSprite(sprite);
    }
-
-   if (auto* skyboxTarget = dynamic_cast<Skybox*>(target)) {
-      auto vecIt = std::find_if(skyboxes_.begin(), skyboxes_.end(),
-         [skyboxTarget](const std::unique_ptr<Skybox>& skybox) { return skybox.get() == skyboxTarget; });
-
-      if (vecIt == skyboxes_.end()) {
-         return false;
-      }
-
-      UnregisterObject(target);
-      UnregisterOwnedRuntimeSystems(target);
-      Skybox::UnregisterSkybox(skyboxTarget);
-      deferredDeleteSkyboxes_.push_back(std::move(*vecIt));
-      skyboxes_.erase(vecIt);
-      return true;
+   if (auto* text = dynamic_cast<UIText*>(target)) {
+      UIText::UnregisterText(text);
    }
-
-   auto genericIt = std::find_if(genericObjects_.begin(), genericObjects_.end(),
-      [target](const std::unique_ptr<Object>& object) { return object.get() == target; });
-
-   if (genericIt != genericObjects_.end()) {
-      UnregisterObject(target);
-      UnregisterOwnedRuntimeSystems(target);
-      deferredDeleteGenericObjects_.push_back(std::move(*genericIt));
-      genericObjects_.erase(genericIt);
-      return true;
+   if (auto* skybox = dynamic_cast<Skybox*>(target)) {
+      Skybox::UnregisterSkybox(skybox);
    }
-
-   return false;
+   deferredDeleteObjects_.push_back(std::move(*it));
+   objects_.erase(it);
+   return true;
 }
 
 bool SceneObjectStore::DeleteParticleSystem(const std::string& objectId) {
@@ -478,75 +433,19 @@ bool SceneObjectStore::DeleteParticleSystem(const std::string& objectId) {
 }
 
 void SceneObjectStore::FlushDeferredDeletes() {
-   // UI・描画側が前フレームの一覧を使い終えたフレーム先頭で実体を破棄する。
-   deferredDeleteGenericObjects_.clear();
+   deferredDeleteObjects_.clear();
    deferredDeleteParticleSystems_.clear();
-   deferredDeleteUITexts_.clear();
-   deferredDeleteSkyboxes_.clear();
-   deferredDeleteSprites_.clear();
-   deferredDeleteModels_.clear();
    pendingDeletionObjects_.clear();
 }
 
 void SceneObjectStore::Clear() {
-   // 各具象型の静的レジストリを解除してからunique_ptrを遅延キューへ移し、列挙中の破棄を避ける。
-   for (auto& object : genericObjects_) {
-      if (object) {
-         UnregisterOwnedRuntimeSystems(object.get());
-         deferredDeleteGenericObjects_.push_back(std::move(object));
-      }
+   // 個別削除とシーン全体の置換で、登録解除と遅延削除の経路を統一する。
+   while (!objects_.empty()) {
+      DeleteObject(GetId(objects_.back().get()));
    }
-
-   for (auto& model : models_) {
-      if (model) {
-         UnregisterOwnedRuntimeSystems(model.get());
-         Model::UnregisterModel(model.get());
-         deferredDeleteModels_.push_back(std::move(model));
-      }
+   while (!particleSystems_.empty()) {
+      DeleteParticleSystem(GetId(particleSystems_.back().get()));
    }
-
-   for (auto& sprite : sprites_) {
-      if (sprite) {
-         UnregisterOwnedRuntimeSystems(sprite.get());
-         Sprite::UnregisterSprite(sprite.get());
-         deferredDeleteSprites_.push_back(std::move(sprite));
-      }
-   }
-
-   for (auto& uiText : uiTexts_) {
-      if (uiText) {
-         UnregisterOwnedRuntimeSystems(uiText.get());
-         UIText::UnregisterText(uiText.get());
-         deferredDeleteUITexts_.push_back(std::move(uiText));
-      }
-   }
-
-   for (auto& skybox : skyboxes_) {
-      if (skybox) {
-         UnregisterOwnedRuntimeSystems(skybox.get());
-         Skybox::UnregisterSkybox(skybox.get());
-         deferredDeleteSkyboxes_.push_back(std::move(skybox));
-      }
-   }
-
-   for (auto& particleSystem : particleSystems_) {
-      if (particleSystem) {
-         ParticleSystem::UnregisterParticleSystem(particleSystem.get());
-         deferredDeleteParticleSystems_.push_back(std::move(particleSystem));
-      }
-   }
-
-   objectToId_.clear();
-   idToObject_.clear();
-   particleSystemToId_.clear();
-   idToParticleSystem_.clear();
-   particleSystemAssetIds_.clear();
-   particleSystems_.clear();
-   skyboxes_.clear();
-   uiTexts_.clear();
-   sprites_.clear();
-   models_.clear();
-   genericObjects_.clear();
 }
 
 bool SceneObjectStore::Contains(const Object* object) const {
@@ -558,7 +457,7 @@ bool SceneObjectStore::Contains(const ParticleSystem* particleSystem) const {
 }
 
 bool SceneObjectStore::ContainsId(const std::string& objectId) const {
-   // BaseScene所有EntityともID空間を共有するため、Store外のグローバルEntity IDまで衝突判定へ含める。
+   // 描画用の補助オブジェクトも同じID索引を使用するため、Store外の実体との衝突も拒否する。
    return idToObject_.contains(objectId) || idToParticleSystem_.contains(objectId) ||
           Object::FindByEntityId(objectId) != nullptr;
 }
@@ -724,7 +623,9 @@ bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& ob
    }
 
    if (objectData.contains("components") && objectData.at("components").is_array()) {
-      object->DeserializeComponents(objectData.at("components"));
+      if (!object->DeserializeComponents(objectData.at("components"))) {
+         return false;
+      }
    }
 
    if (objectData.contains("parentId") && objectData.at("parentId").is_string()) {
@@ -768,114 +669,30 @@ bool SceneObjectStore::ApplyParticleSystemState(
 }
 
 nlohmann::json SceneObjectStore::SerializeAll() const {
-   nlohmann::json objects = nlohmann::json::array();
-
-   // 所有コンテナは具象型ごとに分かれているが、復元側がobjectTypeで振り分けられる単一配列へ正規化する。
-   for (const auto& object : genericObjects_) {
-      if (!object) {
-         continue;
-      }
-
-      const std::string id = GetId(object.get());
-
-      if (!id.empty()) {
-         objects.push_back(SerializeObject(id));
-      }
+   auto result = nlohmann::json::array();
+   for (const auto& object : objects_) {
+      result.push_back(SerializeObject(GetId(object.get())));
    }
-
-   for (const auto& model : models_) {
-      if (!model) {
-         continue;
-      }
-
-      const std::string id = GetId(model.get());
-
-      if (id.empty()) {
-         continue;
-      }
-
-      objects.push_back(SerializeObject(id));
+   for (const auto& particle : particleSystems_) {
+      result.push_back(SerializeObject(GetId(particle.get())));
    }
-
-   for (const auto& sprite : sprites_) {
-      if (!sprite) {
-         continue;
-      }
-
-      const std::string id = GetId(sprite.get());
-
-      if (id.empty()) {
-         continue;
-      }
-
-      objects.push_back(SerializeObject(id));
-   }
-
-   for (const auto& uiText : uiTexts_) {
-      if (!uiText) {
-         continue;
-      }
-
-      const std::string id = GetId(uiText.get());
-
-      if (id.empty()) {
-         continue;
-      }
-
-      objects.push_back(SerializeObject(id));
-   }
-
-   for (const auto& skybox : skyboxes_) {
-      if (!skybox) {
-         continue;
-      }
-
-      const std::string id = GetId(skybox.get());
-
-      if (id.empty()) {
-         continue;
-      }
-
-      objects.push_back(SerializeObject(id));
-   }
-
-   for (const auto& particleSystem : particleSystems_) {
-      if (!particleSystem) {
-         continue;
-      }
-
-      const std::string id = GetId(particleSystem.get());
-
-      if (id.empty()) {
-         continue;
-      }
-
-      objects.push_back(SerializeObject(id));
-   }
-
-   return objects;
+   return result;
 }
 
 std::vector<Object*> SceneObjectStore::GetObjects() {
-   std::vector<Object*> objects;
-   objects.reserve(idToObject_.size());
-
-   for (const auto& [id, object] : idToObject_) {
-      objects.push_back(object);
+   std::vector<Object*> result;
+   for (const auto& entry : objects_) {
+      result.push_back(entry.get());
    }
-
-   return objects;
+   return result;
 }
 
 std::vector<const Object*> SceneObjectStore::GetObjects() const {
-   std::vector<const Object*> objects;
-   objects.reserve(idToObject_.size());
-
-   for (const auto& [id, object] : idToObject_) {
-      objects.push_back(object);
+   std::vector<const Object*> result;
+   for (const auto& entry : objects_) {
+      result.push_back(entry.get());
    }
-
-   return objects;
+   return result;
 }
 
 std::string SceneObjectStore::AllocateId(const std::string& requestedId) {
@@ -933,9 +750,12 @@ void SceneObjectStore::RegisterObject(const std::string& id, Object* object) {
    if (!object || id.empty()) return;
 
    // ID検索とポインター検索の双方向表を同時に更新し、Undoコマンドのどちらの参照経路も一致させる。
+   if (!object->SetEntityId(id)) {
+      throw std::runtime_error("Duplicate entity ID: " + id);
+   }
+   object->SetWorld(&world_);
    idToObject_[id] = object;
    objectToId_[object] = id;
-   object->SetEntityId(id);
 }
 
 void SceneObjectStore::RegisterParticleSystem(
@@ -1041,103 +861,123 @@ void SceneObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::jso
 namespace GameEngine {
 
 std::vector<Object*> SceneObjectStore::GetGenericObjects() {
-   std::vector<Object*> view;
-
-   for (auto& entry : genericObjects_) {
-      view.push_back(entry.get());
+   std::vector<Object*> result;
+   for (const auto& entry : objects_) {
+      if (entry->GetObjectType() == ObjectType::Generic) {
+         if (auto* value = dynamic_cast<Object*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<const Object*> SceneObjectStore::GetGenericObjects() const {
-   std::vector<const Object*> view;
-
-   for (const auto& entry : genericObjects_) {
-      view.push_back(entry.get());
+   std::vector<const Object*> result;
+   for (const auto& entry : objects_) {
+      if (entry->GetObjectType() == ObjectType::Generic) {
+         if (auto* value = dynamic_cast<const Object*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<Model*> SceneObjectStore::GetModels() {
-   std::vector<Model*> view;
-
-   for (auto& entry : models_) {
-      view.push_back(entry.get());
+   std::vector<Model*> result;
+   for (const auto& entry : objects_) {
+      if (true) {
+         if (auto* value = dynamic_cast<Model*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<const Model*> SceneObjectStore::GetModels() const {
-   std::vector<const Model*> view;
-
-   for (const auto& entry : models_) {
-      view.push_back(entry.get());
+   std::vector<const Model*> result;
+   for (const auto& entry : objects_) {
+      if (true) {
+         if (auto* value = dynamic_cast<const Model*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<Sprite*> SceneObjectStore::GetSprites() {
-   std::vector<Sprite*> view;
-
-   for (auto& entry : sprites_) {
-      view.push_back(entry.get());
+   std::vector<Sprite*> result;
+   for (const auto& entry : objects_) {
+      if (true) {
+         if (auto* value = dynamic_cast<Sprite*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<const Sprite*> SceneObjectStore::GetSprites() const {
-   std::vector<const Sprite*> view;
-
-   for (const auto& entry : sprites_) {
-      view.push_back(entry.get());
+   std::vector<const Sprite*> result;
+   for (const auto& entry : objects_) {
+      if (true) {
+         if (auto* value = dynamic_cast<const Sprite*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<UIText*> SceneObjectStore::GetUITexts() {
-   std::vector<UIText*> view;
-
-   for (auto& entry : uiTexts_) {
-      view.push_back(entry.get());
+   std::vector<UIText*> result;
+   for (const auto& entry : objects_) {
+      if (true) {
+         if (auto* value = dynamic_cast<UIText*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<const UIText*> SceneObjectStore::GetUITexts() const {
-   std::vector<const UIText*> view;
-
-   for (const auto& entry : uiTexts_) {
-      view.push_back(entry.get());
+   std::vector<const UIText*> result;
+   for (const auto& entry : objects_) {
+      if (true) {
+         if (auto* value = dynamic_cast<const UIText*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<Skybox*> SceneObjectStore::GetSkyboxes() {
-   std::vector<Skybox*> view;
-
-   for (auto& entry : skyboxes_) {
-      view.push_back(entry.get());
+   std::vector<Skybox*> result;
+   for (const auto& entry : objects_) {
+      if (true) {
+         if (auto* value = dynamic_cast<Skybox*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<const Skybox*> SceneObjectStore::GetSkyboxes() const {
-   std::vector<const Skybox*> view;
-
-   for (const auto& entry : skyboxes_) {
-      view.push_back(entry.get());
+   std::vector<const Skybox*> result;
+   for (const auto& entry : objects_) {
+      if (true) {
+         if (auto* value = dynamic_cast<const Skybox*>(entry.get())) {
+            result.push_back(value);
+         }
+      }
    }
-
-   return view;
+   return result;
 }
 
 std::vector<ParticleSystem*> SceneObjectStore::GetParticleSystems() {

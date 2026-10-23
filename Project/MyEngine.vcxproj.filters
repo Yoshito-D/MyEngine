@@ -216,9 +216,6 @@
     <Filter Include="GameProject\App\Component\Vehicle">
       <UniqueIdentifier>{f17c3399-b825-4f25-b333-feb1a674411b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameProject\App\Scene">
-      <UniqueIdentifier>{43abb63a-2aeb-495b-b749-331ebc7073c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameProject\App\UI">
       <UniqueIdentifier>{90de3755-1cfc-4a97-b447-bd4cffa4abc2}</UniqueIdentifier>
     </Filter>
@@ -378,6 +375,12 @@
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorSceneContext.cpp">
+      <Filter>GameEngine\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Editor\EditorSceneGeometry.cpp">
+      <Filter>GameEngine\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Editor\EditorSceneSession.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Editor\ImGui\ImGuiHelper.cpp">
@@ -740,9 +743,6 @@
     <ClCompile Include="GameEngine\pch.cpp">
       <Filter>GameEngine</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Scene\BaseScene.cpp">
-      <Filter>GameEngine\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Scene\Camera\Camera.cpp">
       <Filter>GameEngine\Scene\Camera</Filter>
     </ClCompile>
@@ -776,9 +776,6 @@
     <ClCompile Include="GameEngine\Scene\Camera\DebugCamera.cpp">
       <Filter>GameEngine\Scene\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Scene\DataDrivenScene.cpp">
-      <Filter>GameEngine\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Scene\Light\AreaLight.cpp">
       <Filter>GameEngine\Scene\Light</Filter>
     </ClCompile>
@@ -790,6 +787,12 @@
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\Light\SpotLight.cpp">
       <Filter>GameEngine\Scene\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Scene\Scene.cpp">
+      <Filter>GameEngine\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Scene\SceneCatalog.cpp">
+      <Filter>GameEngine\Scene</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Scene\SceneManager.cpp">
       <Filter>GameEngine\Scene</Filter>
@@ -983,12 +986,6 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\MySceneFactory.cpp">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Scene\SceneCatalog.cpp">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="GameProject\App\UI\MenuAnimation.cpp">
       <Filter>GameProject\App\UI</Filter>
     </ClCompile>
@@ -1122,6 +1119,12 @@
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorSceneContext.h">
+      <Filter>GameEngine\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Editor\EditorSceneGeometry.h">
+      <Filter>GameEngine\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Editor\EditorSceneSession.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Editor\ImGui\ImGuiHelper.h">
@@ -1508,9 +1511,6 @@
     <ClInclude Include="GameEngine\pch.h">
       <Filter>GameEngine</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Scene\BaseScene.h">
-      <Filter>GameEngine\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="GameEngine\Scene\Camera\Camera.h">
       <Filter>GameEngine\Scene\Camera</Filter>
     </ClInclude>
@@ -1544,15 +1544,6 @@
     <ClInclude Include="GameEngine\Scene\Camera\DebugCamera.h">
       <Filter>GameEngine\Scene\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Scene\DataDrivenScene.h">
-      <Filter>GameEngine\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Scene\IScene.h">
-      <Filter>GameEngine\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameEngine\Scene\ISceneFactory.h">
-      <Filter>GameEngine\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="GameEngine\Scene\Light\AreaLight.h">
       <Filter>GameEngine\Scene\Light</Filter>
     </ClInclude>
@@ -1564,6 +1555,15 @@
     </ClInclude>
     <ClInclude Include="GameEngine\Scene\Light\SpotLight.h">
       <Filter>GameEngine\Scene\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Scene\Scene.h">
+      <Filter>GameEngine\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Scene\SceneCatalog.h">
+      <Filter>GameEngine\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Scene\SceneDefinition.h">
+      <Filter>GameEngine\Scene</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Scene\SceneManager.h">
       <Filter>GameEngine\Scene</Filter>
@@ -1759,12 +1759,6 @@
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleSpeedPostEffectController.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\MySceneFactory.h">
-      <Filter>GameProject\App\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Scene\SceneCatalog.h">
-      <Filter>GameProject\App\Scene</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\UI\MenuAnimation.h">
       <Filter>GameProject\App\UI</Filter>

@@ -380,7 +380,7 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
    const auto stackIt = state.find("postProcessStack");
 
    if (stackIt == state.end()) {
-      return true;
+      return ApplySceneState(nlohmann::json{{"postProcessStack", nlohmann::json::array()}});
    }
 
    if (!stackIt->is_array()) {

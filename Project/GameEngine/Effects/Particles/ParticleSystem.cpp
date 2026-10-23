@@ -376,24 +376,26 @@ void ParticleSystem::ClearRegisteredParticleSystems() {
    sRegisteredParticleSystems_.clear();
 }
 
-void ParticleSystem::ProcessPendingSubEmitters() {
+void ParticleSystem::ProcessPendingSubEmitters(SceneWorld* world) {
    // 更新中のグローバル登録配列を変更しないよう、イベントはフレーム境界でまとめて実体化する。
-   sRuntimeSubEmitters_.erase(
-      std::remove_if(sRuntimeSubEmitters_.begin(), sRuntimeSubEmitters_.end(),
-         [](const auto& particleSystem) {
-            return !particleSystem || (!particleSystem->IsPlaying() && particleSystem->GetActiveParticleCount() == 0);
-         }),
+   sRuntimeSubEmitters_.erase(std::remove_if(sRuntimeSubEmitters_.begin(), sRuntimeSubEmitters_.end(),
+                                 [world](const auto& particleSystem) {
+                                    return !particleSystem ||
+                                           (particleSystem->GetWorld() == world && !particleSystem->IsPlaying() &&
+                                              particleSystem->GetActiveParticleCount() == 0);
+                                 }),
       sRuntimeSubEmitters_.end());
 
    // 死亡エフェクトが相互参照しても、再帰的な生成でメモリが無制限に増えないよう全体数を制限する。
    constexpr size_t kMaxRuntimeSubEmitters = 256;
 
    for (const PendingSubEmitterEvent& event : sPendingSubEmitterEvents_) {
-      if (event.effectPath.empty() || sRuntimeSubEmitters_.size() >= kMaxRuntimeSubEmitters) {
+      if (event.world != world || event.effectPath.empty() || sRuntimeSubEmitters_.size() >= kMaxRuntimeSubEmitters) {
          continue;
       }
 
       auto child = std::make_shared<ParticleSystem>();
+      child->SetWorld(world);
       child->SetEditorInspectable(false);
 
       if (!child->LoadFromJson(event.effectPath)) {
@@ -415,15 +417,21 @@ void ParticleSystem::ProcessPendingSubEmitters() {
       sRuntimeSubEmitters_.push_back(std::move(child));
    }
 
-   sPendingSubEmitterEvents_.clear();
+   std::erase_if(sPendingSubEmitterEvents_, [world](const auto& event) { return event.world == world; });
+}
+
+void ParticleSystem::ClearWorldRuntime(SceneWorld* world) {
+   std::erase_if(sPendingSubEmitterEvents_, [world](const auto& event) { return event.world == world; });
+   std::erase_if(sRuntimeSubEmitters_, [world](const auto& child) { return child && child->GetWorld() == world; });
 }
 
 void ParticleSystem::QueueSubEmitter(const std::string& effectPath, const Vector3& position) {
    if (!subEmitterSettings_.enabled || effectPath.empty() ||
-       subEmitterEventsThisFrame_ >= subEmitterSettings_.maxEventsPerFrame)
+       subEmitterEventsThisFrame_ >= subEmitterSettings_.maxEventsPerFrame) {
       return;
+   }
 
-   sPendingSubEmitterEvents_.push_back({effectPath, position});
+   sPendingSubEmitterEvents_.push_back({effectPath, world_, position});
    ++subEmitterEventsThisFrame_;
 }
 
@@ -1731,8 +1739,9 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
       const auto mappings = resolve(kEmitterPipeline, "ownermappings");
 
       if (!settings || !requests || !states || !motions || !alive || !freeList || !freeCount || !mappings ||
-          !setPipeline(kEmitterPipeline))
+          !setPipeline(kEmitterPipeline)) {
          return;
+      }
 
       commandList->SetComputeRootConstantBufferView(settings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
       commandList->SetComputeRootDescriptorTable(requests.value(), gpuSpawnRequestSrvHandleGPU_);
@@ -1767,8 +1776,9 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
    const auto updateMappings = resolve(kUpdatePipeline, "ownermappings");
 
    if (!updateSettings || !updateStates || !updateMotions || !updateAlive || !updateFreeList || !updateFreeCount ||
-       !updateMappings || !setPipeline(kUpdatePipeline))
+       !updateMappings || !setPipeline(kUpdatePipeline)) {
       return;
+   }
 
    commandList->SetComputeRootConstantBufferView(updateSettings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
    commandList->SetComputeRootDescriptorTable(updateStates.value(), gpuStateUavHandleGPU_);
@@ -1839,8 +1849,9 @@ void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
    const auto renderOutput = resolve(kRenderPipeline, "outputparticles");
 
    if (!renderSettings || !renderAttributes || !renderStates || !renderMappings || !renderOutput ||
-       !setPipeline(kRenderPipeline))
+       !setPipeline(kRenderPipeline)) {
       return;
+   }
 
    commandList->SetComputeRootConstantBufferView(renderSettings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
    commandList->SetComputeRootDescriptorTable(renderAttributes.value(), gpuAttributesSrvHandleGPU_);

@@ -4,19 +4,20 @@
 #include "GameEngine/Object/Component/Audio/BgmComponent.h"
 #include "GameEngine/Object/Object.h"
 #include <algorithm>
+#include "GameEngine/Scene/SceneWorld.h"
 
 namespace GameEngine {
 namespace {
-std::vector<Object*> SortedObjects() {
-   auto objects = Object::GetRegisteredObjects();
+std::vector<Object*> SortedObjects(SceneWorld& world) {
+   auto objects = world.GetObjectStore().GetObjects();
    std::sort(objects.begin(), objects.end(),
       [](const Object* a, const Object* b) { return a->GetEntityId() < b->GetEntityId(); });
    return objects;
 }
 }
 
-bool HasSceneBgmRequest() {
-   for (Object* object : SortedObjects()) {
+bool HasSceneBgmRequest(SceneWorld& world) {
+   for (Object* object : SortedObjects(world)) {
       if (auto* bgm = object->GetComponent<BgmComponent>(); bgm && bgm->HasStartupTrack()) {
          return true;
       }
@@ -25,8 +26,8 @@ bool HasSceneBgmRequest() {
    return false;
 }
 
-void BeginSceneAudio() {
-   auto objects = SortedObjects();
+void BeginSceneAudio(SceneWorld& world) {
+   auto objects = SortedObjects(world);
    BgmComponent* selectedBgm = nullptr;
 
    for (Object* object : objects) {

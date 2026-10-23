@@ -50,7 +50,7 @@ void VehicleController::Update(float deltaTime) {
 
    // 制御側は物理キーを知らず、意味付け済みの入力だけを消費する。
    // カメラやその部品をInspectorで削除しても、次の入力で旧メモリへアクセスしない。
-   auto* world = SceneWorld::GetCurrent();
+   auto* world = GetOwner().GetWorld();
    auto* camera = world ? world->FindVirtualCamera(gravityFollowCameraId_) : nullptr;
    auto* gravityFollowCamera = camera ? camera->GetComponent<GravityFollowCamera>() : nullptr;
 

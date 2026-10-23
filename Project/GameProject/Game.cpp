@@ -17,7 +17,7 @@ std::filesystem::path GetEditorSessionStateFilePath() {
    return std::filesystem::path("resources") / "game" / "editor" / "session_state.json";
 }
 
-std::string LoadLastEditorSceneName(const SceneCatalog& sceneCatalog) {
+std::string LoadLastEditorSceneName(const GameEngine::SceneCatalog& sceneCatalog) {
    const std::filesystem::path filePath = GetEditorSessionStateFilePath();
    std::ifstream file(filePath);
 
@@ -77,30 +77,71 @@ void SaveLastEditorSceneName(const std::string& sceneName) {
 
 void Game::Initialize() {
    Framework::Initialize();
-   Logger::GameInfo("Game initialized.");
-
-   // シーンマネージャーの初期化
    if (!sceneCatalog_.Load()) {
-      Logger::Critical("Scene catalog initialization failed.");
+      Logger::Critical(sceneCatalog_.GetLastError());
+      MessageBoxA(nullptr, sceneCatalog_.GetLastError().c_str(), "Scene catalog failed", MB_OK | MB_ICONERROR);
+      PostQuitMessage(1);
       return;
    }
-
-   factory_ = std::make_unique<MySceneFactory>(sceneCatalog_);
-   sceneManager_ = std::make_unique<GameEngine::SceneManager>(factory_.get());
-
+   sceneManager_ = std::make_unique<GameEngine::SceneManager>(sceneCatalog_);
+   GameEngine::EngineContext::SetSceneManager(sceneManager_.get());
 #ifdef USE_IMGUI
    playModeController_ = std::make_unique<GameEngine::PlayModeController>();
    GameEngine::EngineContext::SetPlayModeController(playModeController_.get());
+   editorSession_ = std::make_unique<GameEngine::EditorSceneSession>();
+   GameEngine::EngineContext::SetEditorSceneSession(editorSession_.get());
+   sceneManager_->SetLifecycleCallbacks(
+      [this]() {
+         editorSession_->Detach();
+         playModeController_->StopForSceneInitialization();
+      },
+      [this](const GameEngine::SceneSnapshot& snapshot, bool recovered) {
+         if (recovered && recoveryFromPlay_) {
+            editorSession_->RestoreEditingStateOnAttach();
+         }
+         editorSession_->Attach(*sceneManager_->GetCurrentScene(), snapshot.data, recovered && !recoveryFromPlay_);
+         if (recovered) {
+            playModeController_->StopAfterLoadFailure();
+            if (auto* context = editorSession_->GetContext()) {
+               if (recoveryWasDirty_) {
+                  context->MarkDirty();
+               } else {
+                  context->ClearDirty();
+               }
+            }
+         }
+      },
+      [this]() {
+         recoveryFromPlay_ = playModeController_->HasRecoverySnapshot();
+         if (recoveryFromPlay_) {
+            recoveryWasDirty_ = playModeController_->GetPlayStartWasDirty();
+            return playModeController_->GetRecoverySnapshot();
+         }
+         auto* context = editorSession_->GetContext();
+         recoveryWasDirty_ = context && context->IsDirty();
+         auto* scene = sceneManager_->GetCurrentScene();
+         return GameEngine::SceneSnapshot{
+            scene->GetDefinition(), context ? context->SerializeToJson() : scene->GetSceneWorld().SerializeToJson()};
+      });
 #endif
-
-   // 最初のシーンを設定
    std::string initialSceneName = sceneCatalog_.GetInitialSceneName();
 #ifdef USE_IMGUI
-   if (const std::string lastSceneName = LoadLastEditorSceneName(sceneCatalog_); !lastSceneName.empty()) {
-      initialSceneName = lastSceneName;
+   if (const auto last = LoadLastEditorSceneName(sceneCatalog_); !last.empty()) {
+      initialSceneName = last;
    }
 #endif
-   sceneManager_->ChangeScene(initialSceneName);
+   sceneManager_->LoadInitialScene(initialSceneName);
+   CheckSceneFailure();
+}
+
+void Game::CheckSceneFailure() {
+   if (fatalSceneFailureReported_ || !sceneManager_ ||
+       sceneManager_->GetLastResult().status != GameEngine::SceneLoadStatus::Fatal) {
+      return;
+   }
+   fatalSceneFailureReported_ = true;
+   MessageBoxA(nullptr, sceneManager_->GetLastResult().message.c_str(), "Scene loading failed", MB_OK | MB_ICONERROR);
+   PostQuitMessage(1);
 }
 
 void Game::Update() {
@@ -114,6 +155,7 @@ void Game::Update() {
    }
 
    sceneManager_->EditorUpdate();
+   editorSession_->Update();
 
    if (playModeController_->ShouldRunRuntimeUpdate()) {
       GameEngine::EngineContext::AdvanceGameFrameNumber();
@@ -122,8 +164,10 @@ void Game::Update() {
 #else
    Framework::Update();
    GameEngine::EngineContext::AdvanceGameFrameNumber();
-   sceneManager_->Update();
+   sceneManager_->EditorUpdate();
+   sceneManager_->RuntimeUpdate();
 #endif
+   CheckSceneFailure();
    if (auto* audio = GameEngine::EngineContext::GetAudio()) {
       audio->Update(GameEngine::EngineContext::GetUnscaledDeltaTime());
    }
@@ -135,14 +179,16 @@ void Game::Draw() {
 
    if (!sceneManager_) return;
 
-   sceneManager_->Draw();
+#ifdef USE_IMGUI
+   editorSession_->Draw();
+#endif
 
    auto* camera = GameEngine::EngineContext::GetActiveCamera();
 
    if (!camera) return;
 
    // VehicleControllerを持つプレイヤーが1体の構成。
-   for (auto* model : GameEngine::Model::GetRegisteredModels()) {
+   for (auto* model : sceneManager_->GetCurrentScene()->GetSceneWorld().GetObjectStore().GetModels()) {
       if (!model) {
          continue;
       }
@@ -168,9 +214,13 @@ void Game::Finalize() {
       sceneManager_->Finalize();
    }
 #ifdef USE_IMGUI
+   GameEngine::EngineContext::SetEditorSceneSession(nullptr);
+   editorSession_.reset();
    GameEngine::EngineContext::SetPlayModeController(nullptr);
    playModeController_.reset();
 #endif
+   GameEngine::EngineContext::SetSceneManager(nullptr);
+   sceneManager_.reset();
    Framework::Finalize();
 }
 
@@ -179,6 +229,10 @@ void Game::EndFrame() {
 
    if (sceneManager_) {
       // 描画中の参照を無効化しないよう、予約されたシーン遷移はフレーム末尾で確定する。
+      if (auto* scene = sceneManager_->GetCurrentScene()) {
+         scene->GetSceneWorld().FinishFrame();
+      }
       sceneManager_->CheckSceneChange();
+      CheckSceneFailure();
    }
 }

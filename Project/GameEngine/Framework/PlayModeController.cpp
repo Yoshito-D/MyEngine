@@ -6,10 +6,11 @@
 
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/SceneManager.h"
-#include "GameEngine/Scene/BaseScene.h"
+#include "GameEngine/Scene/Scene.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/EditorSceneContext.h"
+#include "GameEngine/Editor/EditorSceneSession.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Utility/JsonFile.h"
@@ -163,14 +164,14 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
       return reportFailure("component serialization failed");
    }
 
-   BaseScene* scene = BaseScene::GetCurrentScene();
-   EditorSceneContext* editorContext = scene ? scene->GetEditorSceneContext() : nullptr;
+   Scene* scene = EngineContext::GetCurrentScene();
+   EditorSceneContext* editorContext = EngineContext::GetEditorSceneContext();
 
    if (!editorContext) {
       return reportFailure("editor scene context is not available");
    }
 
-   if (scene->GetEditorSceneName() != playStartSceneName_) {
+   if (scene->GetDefinition().name != playStartDefinition_.name) {
       return reportFailure("current scene differs from the play mode starting scene");
    }
 
@@ -208,7 +209,7 @@ void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
 #ifdef USE_IMGUI
    // ゲーム更新より前に削除・差し替え済みComponentへのキャッシュを切り離す。
    if (auto* scene = sceneManager.GetCurrentScene()) {
-      if (auto* context = scene->GetEditorSceneContext()) {
+      if (auto* context = EngineContext::GetEditorSceneContext()) {
          context->RefreshReferences();
       }
    }
@@ -292,25 +293,32 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
          audio->SetGamePaused(false);
       }
 
-      BeginSceneAudio();
+      if (auto* scene = sceneManager.GetCurrentScene()) {
+         BeginSceneAudio(scene->GetSceneWorld());
+      }
       return;
    }
 
    // 再生中の変更を破棄できるよう、開始シーン名・完全Snapshot・Dirty状態を一組で保存する。
-   playStartSceneName_ = sceneManager.GetCurrentSceneName();
+   if (auto* scene = sceneManager.GetCurrentScene()) {
+      playStartDefinition_ = scene->GetDefinition();
+   }
    editorSceneSnapshot_ = nlohmann::json();
    hasEditorSceneSnapshot_ = false;
    playStartSceneWasDirty_ = false;
 
 #ifdef USE_IMGUI
-   if (BaseScene* scene = sceneManager.GetCurrentScene()) {
-      if (EditorSceneContext* editorContext = scene->GetEditorSceneContext()) {
+   if (Scene* scene = sceneManager.GetCurrentScene()) {
+      if (EditorSceneContext* editorContext = EngineContext::GetEditorSceneContext()) {
          editorSceneSnapshot_ = editorContext->SerializeToJson();
          hasEditorSceneSnapshot_ = editorSceneSnapshot_.is_object();
          playStartSceneWasDirty_ = editorContext->IsDirty();
 
          // UI演出やカメラ切替が変更する前に編集状態を退避しておく。
          editorContext->RefreshReferences(true);
+         if (auto* session = EngineContext::GetEditorSceneSession()) {
+            session->BeginPlay();
+         }
       }
    }
 #endif
@@ -325,10 +333,14 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
       audio->StopPreviews();
    }
 
-   BeginSceneAudio();
+   if (auto* scene = sceneManager.GetCurrentScene()) {
+      BeginSceneAudio(scene->GetSceneWorld());
+   }
 }
 
 void PlayModeController::StopPlaying(SceneManager& sceneManager) {
+   sceneManager.CancelTransition();
+
    if (mode_ == PlayMode::Edit && !hasPlaySession_) return;
 
    // 復元処理がRuntime更新を誘発しないよう、シーンを戻す前にEditへ確定する。
@@ -340,19 +352,17 @@ void PlayModeController::StopPlaying(SceneManager& sceneManager) {
    }
 
 #ifdef USE_IMGUI
-   // 再生中に別シーンへ遷移していても開始シーンを作り直し、その新しいEditorContextへSnapshotを適用する。
-   if (!playStartSceneName_.empty() && hasEditorSceneSnapshot_) {
-      if (sceneManager.ChangeScene(playStartSceneName_)) {
-         if (BaseScene* scene = sceneManager.GetCurrentScene()) {
-            if (EditorSceneContext* editorContext = scene->GetEditorSceneContext()) {
-               if (editorContext->LoadFromJson(editorSceneSnapshot_)) {
-                  // Snapshot内容だけでなく保存済み/未保存の表示状態もPlay開始前へ戻す。
-                  if (playStartSceneWasDirty_) {
-                     editorContext->MarkDirty();
-                  } else {
-                     editorContext->ClearDirty();
-                  }
-               }
+   if (!playStartDefinition_.name.empty() && hasEditorSceneSnapshot_) {
+      if (auto* session = EngineContext::GetEditorSceneSession()) {
+         session->RestoreEditingStateOnAttach();
+      }
+      const auto result = sceneManager.RestoreSnapshot({playStartDefinition_, editorSceneSnapshot_});
+      if (result) {
+         if (auto* context = EngineContext::GetEditorSceneContext()) {
+            if (playStartSceneWasDirty_) {
+               context->MarkDirty();
+            } else {
+               context->ClearDirty();
             }
          }
       }
@@ -360,6 +370,19 @@ void PlayModeController::StopPlaying(SceneManager& sceneManager) {
 #endif
 
    ClearPlaySessionState();
+}
+
+void PlayModeController::StopAfterLoadFailure() {
+   mode_ = PlayMode::Edit;
+   shouldRunRuntimeUpdate_ = false;
+   gameDeltaTime_ = 0.0f;
+   EngineContext::SetGameDeltaTime(0.0f);
+   ClearTransitionRequests();
+   ClearPlaySessionState();
+   if (auto* audio = EngineContext::GetAudio()) {
+      audio->StopGameAudio();
+      audio->SetGamePaused(false);
+   }
 }
 
 void PlayModeController::ClearTransitionRequests() {
@@ -372,7 +395,7 @@ void PlayModeController::ClearTransitionRequests() {
 
 void PlayModeController::ClearPlaySessionState() {
    hasPlaySession_ = false;
-   playStartSceneName_.clear();
+   playStartDefinition_.name.clear();
    editorSceneSnapshot_ = nlohmann::json();
    hasEditorSceneSnapshot_ = false;
    playStartSceneWasDirty_ = false;
