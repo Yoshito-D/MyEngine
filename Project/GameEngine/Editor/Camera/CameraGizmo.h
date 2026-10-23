@@ -84,8 +84,8 @@ private:
    void DrawQuad(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3, const Vector4& color,
       Camera* viewCamera);
 
-   LineRenderer* lineRenderer_ = nullptr;
-   Settings settings_;
+   LineRenderer* lineRenderer_ = nullptr; ///< ギズモや補助線の描画に使うラインレンダラーへの参照。
+   Settings settings_;                    ///< この処理に適用する設定値。
 };
 
 } // namespace GameEngine

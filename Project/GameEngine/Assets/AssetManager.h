@@ -43,11 +43,17 @@ public:
    FontManager* GetFontManager() { return fontManager_.get(); }
 
 private:
+   /// @brief マテリアルアセットの生成と共有を管理する所有オブジェクト。
    std::unique_ptr<MaterialManager> materialManager_ = std::make_unique<MaterialManager>();
+   /// @brief モデルアセットの読み込みと共有を管理する所有オブジェクト。
    std::unique_ptr<ModelAssetManager> modelAssetManager_ = std::make_unique<ModelAssetManager>();
+   /// @brief テクスチャの読み込みと名前解決を管理する所有オブジェクト。
    std::unique_ptr<TextureManager> textureManager_ = std::make_unique<TextureManager>();
+   /// @brief デコード済み音声を共有する所有キャッシュ。
    std::unique_ptr<SoundClipCache> soundClipCache_ = std::make_unique<SoundClipCache>();
+   /// @brief アニメーションアセットの共有を管理する所有オブジェクト。
    std::unique_ptr<AnimationAssetManager> animationAssetManager_ = std::make_unique<AnimationAssetManager>();
+   /// @brief フォントアセットとグリフ情報を管理する所有オブジェクト。
    std::unique_ptr<FontManager> fontManager_ = std::make_unique<FontManager>();
 };
 }

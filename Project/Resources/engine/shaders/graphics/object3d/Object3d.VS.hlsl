@@ -3,18 +3,18 @@
 // CPU側TransformationMatrixDataと同じ3行列・同じ順序の192バイト定数バッファ。
 // シェーダーはrow-majorでコンパイルされ、エンジンの「ベクトル * 行列」規約をそのまま使用する。
 struct TransformationMatrix {
-   float32_t4x4 wVP;
-   float32_t4x4 world;
-   float32_t4x4 worldInverseTranspose;
+   float32_t4x4 wVP;                   ///< ワールド・ビュー・プロジェクション行列。
+   float32_t4x4 world;                 ///< ローカル頂点をワールド座標系へ移す変換行列。
+   float32_t4x4 worldInverseTranspose; ///< ワールド行列の逆行列の転置行列。
 };
 
 ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0);
 
 // Mesh::VertexDataとPSOのリフレクション入力レイアウトに対応する頂点形式。
 struct VertexShaderInput {
-   float32_t4 position : POSITION0;
-   float32_t2 texCoord : TEXCOORD0;
-   float32_t3 normal : NORMAL0;
+   float32_t4 position : POSITION0; ///< 描画する頂点のローカル位置と同次座標成分。
+   float32_t2 texCoord : TEXCOORD0; ///< テクスチャ座標。
+   float32_t3 normal : NORMAL0;     ///< 面の向きを表す法線ベクトル。
 };
 
 VertexShaderOutput main(VertexShaderInput input) {

@@ -8,7 +8,8 @@ namespace App {
 /// @brief 車両状態をJSON定義済みのパーティクルスロットへ反映する
 class VehicleEffectController final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "VehicleEffectController";
+   static constexpr const char* kTypeName = "VehicleEffectController"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両エフェクト制御", "Vehicle Effect Controller"};
 
    /// @brief コンポーネント型名を取得する
@@ -34,9 +35,9 @@ public:
 #endif
 
 private:
-   uint64_t lastMiniTurboFireCount_ = 0;
-   bool wasJumping_ = false;
-   bool wasGrounded_ = true;
+   uint64_t lastMiniTurboFireCount_ = 0; ///< カメラが最後に処理したミニターボ発動の連番。
+   bool wasJumping_ = false;             ///< 離陸・着地の変化を検出する前フレームのジャンプ状態。
+   bool wasGrounded_ = true;             ///< 着地遷移検出用の前フレーム接地状態。
 };
 
 } // namespace App

@@ -14,23 +14,23 @@ struct Particle {
    Vector3 velocity;                   // 速度
    Vector3 acceleration;               // 加速度
    Vector3 angularVelocity;            // 角速度（ランダム対応）
-   Vector3 velocityOverLifetimeLinearVelocity;
-   float velocityOverLifetimeSpeedModifier;
-   Vector3 forceOverLifetimeForce;
-   float limitVelocitySpeedLimit;
-   float limitVelocityDampen;
-   float noiseStrength;
-   float noiseFrequency;
-   float noiseScrollSpeed;
-   float noiseTime;
+   Vector3 velocityOverLifetimeLinearVelocity; ///< 生成時に確定した粒子固有の速度加算値。
+   float velocityOverLifetimeSpeedModifier;    ///< 生成時に確定した粒子固有の速度倍率。
+   Vector3 forceOverLifetimeForce;             ///< 生成時に確定した粒子固有の外力ベクトル。
+   float limitVelocitySpeedLimit;              ///< 粒子速度を制限する上限値。
+   float limitVelocityDampen;                  ///< 上限を超えた速度を抑える減衰割合。
+   float noiseStrength;                        ///< 速度へ加えるノイズの強さ。
+   float noiseFrequency;                       ///< 位置に対するノイズの空間周波数。
+   float noiseScrollSpeed;                     ///< 時間に対するノイズ位相の進行速度。
+   float noiseTime;                            ///< ノイズ位相を評価する経過時間（秒）。
    Vector4 color;                     // 色（RGBA）
    Vector4 customData;                // シェーダー連携用（年齢、乱数、カメラフェード、速度）
    std::vector<Vector3> ribbonPoints; // リボン生成用のワールド位置履歴
-   float ribbonWidth;
-   float subEmitterTimer;
-   float gravityModifier;
-   float drag;
-   float sizeOverLifetimeMultiplier;
+   float ribbonWidth;                 ///< この粒子の履歴から生成するリボンの幅。
+   float subEmitterTimer;             ///< 次の更新時サブエミッター発火まで繰り越す経過秒数。
+   float gravityModifier;             ///< 重力加速度へ掛ける倍率。
+   float drag;                        ///< 速度を時間に応じて減衰させる抵抗係数。
+   float sizeOverLifetimeMultiplier;  ///< 寿命に応じたサイズへ掛ける粒子固有の倍率。
    float lifeTime;          // 寿命
    float currentTime;       // 現在経過時間
    Vector3 initialSize;     // 初期サイズ

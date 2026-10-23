@@ -28,7 +28,7 @@ public:
    const std::vector<BYTE>& GetPcm() const { return pcm_; }
 
 private:
-   std::vector<uint64_t> formatWords_;
-   std::vector<BYTE> pcm_;
+   std::vector<uint64_t> formatWords_; ///< WAVEFORMATEXを十分な配置境界で保持する所有ストレージ。
+   std::vector<BYTE> pcm_;             ///< いずれかのボイスが参照している間保持されるPCMデータ。
 };
 }

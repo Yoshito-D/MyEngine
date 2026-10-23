@@ -4,13 +4,6 @@
 #include "GameEngine/Assets/Font/FontManager.h"
 
 namespace GameEngine {
-namespace {
-struct LineRange {
-   size_t begin = 0;
-   size_t end = 0;
-   float width = 0.0f;
-};
-}
 
 TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view text, const TextStyle& style) {
    TextLayoutResult result{};

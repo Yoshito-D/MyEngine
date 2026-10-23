@@ -43,7 +43,7 @@ public:
    const RearCameraDirectionState& GetState() const { return state_; }
 
 private:
-   RearCameraDirectionState state_;
+   RearCameraDirectionState state_; ///< この段階の確定済み状態。
 };
 
 } // namespace App

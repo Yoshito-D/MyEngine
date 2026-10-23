@@ -9,7 +9,7 @@ namespace GameEngine {
 
 /// @brief 3次元空間の座標、方向、Euler角などを表す浮動小数点ベクトル。
 struct Vector3 {
-   float x, y, z;
+   float x, y, z; ///< 3次元ベクトルのX・Y・Z成分。
 
    /// @brief 2点間を線形補間する。
    /// @param start 補間区間の始点。

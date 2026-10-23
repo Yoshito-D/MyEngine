@@ -21,7 +21,9 @@ namespace App {
 ///     - VehicleDrift          … ドリフト処理（将来実装）
 class VehicleMover final : public GameEngine::IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "VehicleMover";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両移動", "Vehicle Mover"};
 
    /// @copydoc GameEngine::IObjectComponent::GetTypeName

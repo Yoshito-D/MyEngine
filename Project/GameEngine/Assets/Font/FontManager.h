@@ -88,9 +88,10 @@ public:
    void Clear();
 
 private:
-   GraphicsDevice* device_ = nullptr;
+   GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   /// @brief フォントIDごとに所有するMSDFフォント。
    std::unordered_map<std::string, std::unique_ptr<MsdfFont>> msdfFonts_;
-   uint64_t revision_ = 0;
+   uint64_t revision_ = 0; ///< フォントの追加・再読み込みを検知するリビジョン。
 };
 
 } // namespace GameEngine

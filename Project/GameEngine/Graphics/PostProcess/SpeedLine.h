@@ -31,21 +31,21 @@ class SpeedLine : public PostProcess {
 public:
    /// @brief 集中線用定数バッファ構造体
    struct SpeedLineCB {
-      Vector2 center;
+      Vector2 center; ///< 中心点。
 
-      float intensity;
-      float lineDensity;
+      float intensity;   ///< 効果または光の強さ。
+      float lineDensity; ///< 放射方向へ生成する線の密度。
 
-      float thickness;
-      float innerRadius;
+      float thickness;   ///< 深度近傍のサンプリング間隔倍率。
+      float innerRadius; ///< 線を描き始める内側半径。
 
-      float outerRadius;
-      float time;
+      float outerRadius; ///< 線を描き終える外側半径。
+      float time;        ///< クリップ先頭からの時刻（秒）。
 
-      float randomSeed;
-      float flowSpeed;
+      float randomSeed; ///< 線パターンを選ぶ乱数シード。
+      float flowSpeed;  ///< 中心から外側へ流れる速度。
 
-      float padding[2];
+      float padding[2]; ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief 初期化
@@ -88,10 +88,10 @@ public:
    void SetLineDensity(float value);
 
 private:
-   SpeedLineParams params_;
+   SpeedLineParams params_; ///< 現在の集中線パラメーター。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   SpeedLineCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   SpeedLineCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
 

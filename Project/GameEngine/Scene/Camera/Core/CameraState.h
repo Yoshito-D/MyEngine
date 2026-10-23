@@ -8,15 +8,15 @@ namespace GameEngine {
 
 /// @brief カメラの状態を表す値オブジェクト
 struct CameraState {
-   Transform transform;
-   float fov = 0.45f;
-   float nearClip = 0.01f;
-   float farClip = 10000.0f;
+   Transform transform;      ///< 位置・回転・拡縮をまとめた変換情報。
+   float fov = 0.45f;        ///< 透視投影の垂直視野角（ラジアン）。
+   float nearClip = 0.01f;   ///< 影用カメラの近クリップ距離。
+   float farClip = 10000.0f; ///< プレイヤーと地面の両方を含める遠クリップ距離。
 
    // ビュー行列を直接保持するフラグと行列
    // trueの場合、Transform→行列変換を行わずviewMatrixOverrideを使用する
-   bool hasViewMatrixOverride = false;
-   Matrix4x4 viewMatrixOverride = MakeIdentity4x4();
+   bool hasViewMatrixOverride = false;               ///< TRSからの計算に代えて明示ビュー行列を使うかどうか。
+   Matrix4x4 viewMatrixOverride = MakeIdentity4x4(); ///< 外部計算から直接供給されたビュー行列。
 
    CameraState() { transform.SetRotationQuaternion(Quaternion::Identity()); }
 

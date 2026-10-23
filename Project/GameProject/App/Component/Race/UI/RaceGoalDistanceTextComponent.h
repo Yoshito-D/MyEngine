@@ -14,7 +14,8 @@ class RaceManagerComponent;
 /// @brief プレイヤーからゴールまでの直線距離をメートル表記でUITextへ表示する
 class RaceGoalDistanceTextComponent final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "RaceGoalDistanceTextComponent";
+   static constexpr const char* kTypeName = "RaceGoalDistanceTextComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"ゴール距離表示", "Goal Distance Text"};
 
    /// @brief コンポーネント型名を取得する
@@ -47,12 +48,12 @@ public:
 #endif
 
 private:
-   std::string raceManagerId_ = "Object:RaceManager";
-   std::string playerObjectId_ = "Model:Player";
-   std::string goalObjectId_ = "Model:Goal";
-   RaceManagerComponent* raceManager_ = nullptr;
-   GameEngine::Object* playerObject_ = nullptr;
-   GameEngine::Object* goalObject_ = nullptr;
+   std::string raceManagerId_ = "Object:RaceManager"; ///< レース進行を参照する管理Objectの安定Entity ID。
+   std::string playerObjectId_ = "Model:Player";      ///< 操作対象プレイヤーの安定Entity ID。
+   std::string goalObjectId_ = "Model:Goal";          ///< ゴール地点の安定Entity ID。
+   RaceManagerComponent* raceManager_ = nullptr;      ///< 参照解決済みレース管理コンポーネントへの非所有参照。
+   GameEngine::Object* playerObject_ = nullptr;       ///< 参照解決済みプレイヤーObjectへの非所有参照。
+   GameEngine::Object* goalObject_ = nullptr;         ///< 参照解決済みゴールObjectへの非所有参照。
 };
 
 } // namespace App

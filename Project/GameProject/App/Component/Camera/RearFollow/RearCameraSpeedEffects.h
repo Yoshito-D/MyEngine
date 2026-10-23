@@ -39,8 +39,8 @@ public:
    float GetBoostAlpha() const { return boostAlpha_; }
 
 private:
-   float boostAlpha_ = 0.0f;
-   RearCameraSpeedState state_;
+   float boostAlpha_ = 0.0f;    ///< 距離演出へ渡す現在の加速割合。
+   RearCameraSpeedState state_; ///< この段階の確定済み状態。
 };
 
 } // namespace App

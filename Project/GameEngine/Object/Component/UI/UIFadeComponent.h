@@ -11,7 +11,9 @@ namespace GameEngine {
 /// @brief UITextComponentの不透明度を時間補間するコンポーネント
 class UIFadeComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "UIFadeComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"UIフェード", "UI Fade"};
 
    /// @brief コンポーネントの型名を取得する
@@ -62,12 +64,12 @@ public:
 
       /// @brief 不透明度の補間範囲と再生設定
       float startOpacity = 0.0f;
-      float endOpacity = 1.0f;
-      float delay = 0.0f;
-      float duration = 0.5f;
-      bool playOnEnable = true;
-      UIPlaybackMode playbackMode = UIPlaybackMode::Once;
-      UIEasingType easing = UIEasingType::EaseInOutSine;
+      float endOpacity = 1.0f;                            ///< フェード終了時の不透明度。
+      float delay = 0.0f;                                 ///< 再生開始から変化を始めるまでの待機時間（秒）。
+      float duration = 0.5f;                              ///< 処理または再生が継続する時間（秒）。
+      bool playOnEnable = true;                           ///< コンポーネントが有効になるたびに自動再生するかどうか。
+      UIPlaybackMode playbackMode = UIPlaybackMode::Once; ///< 1回・繰り返し・往復などの再生方式。
+      UIEasingType easing = UIEasingType::EaseInOutSine;  ///< 再生進行度を補間量へ変換するイージング方式。
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
@@ -77,19 +79,19 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float startOpacity = 0.0f;
-   float endOpacity = 1.0f;
-   float delay = 0.0f;
-   float duration = 0.5f;
-   bool playOnEnable = true;
-   UIPlaybackMode playbackMode = UIPlaybackMode::Once;
-   UIEasingType easing = UIEasingType::EaseInOutSine;
+   float startOpacity = 0.0f;                          ///< 不透明度の補間範囲と再生設定。
+   float endOpacity = 1.0f;                            ///< フェード終了時の不透明度。
+   float delay = 0.0f;                                 ///< 再生開始から変化を始めるまでの待機時間（秒）。
+   float duration = 0.5f;                              ///< 処理または再生が継続する時間（秒）。
+   bool playOnEnable = true;                           ///< コンポーネントが有効になるたびに自動再生するかどうか。
+   UIPlaybackMode playbackMode = UIPlaybackMode::Once; ///< 1回・繰り返し・往復などの再生方式。
+   UIEasingType easing = UIEasingType::EaseInOutSine;  ///< 再生進行度を補間量へ変換するイージング方式。
 
 private:
    void Apply(float progress);
 
-   float elapsed_ = 0.0f;
-   bool playing_ = true;
+   float elapsed_ = 0.0f; ///< 処理を開始してからの経過時間（秒）。
+   bool playing_ = true;  ///< 再生中か。
 };
 
 } // namespace GameEngine

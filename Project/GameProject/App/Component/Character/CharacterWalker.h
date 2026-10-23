@@ -18,6 +18,7 @@ class CharacterWalker final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterWalker";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"キャラクター歩行", "Character Walker"};
 
    /// @brief 型名を返す
@@ -81,12 +82,12 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float moveSpeed = 5.0f;
-   float acceleration = 20.0f;
-   float friction = 15.0f;
-   float airAcceleration = 5.0f;
-   float airFriction = 0.0f;
-   float turnSpeed = 10.0f;
+   float moveSpeed = 5.0f;       ///< 最大移動速度（units/sec）。
+   float acceleration = 20.0f;   ///< 1秒あたりの速度変化を表す加速度。
+   float friction = 15.0f;       ///< 地上減速度（units/sec²）。
+   float airAcceleration = 5.0f; ///< 空中加速度（units/sec²）。
+   float airFriction = 0.0f;     ///< 空中減速度（units/sec²）。
+   float turnSpeed = 10.0f;      ///< 旋回速度（rad/sec）。
 
 private:
    /// @brief 重力平面上の現在速度

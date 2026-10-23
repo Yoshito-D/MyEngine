@@ -19,7 +19,9 @@ public:
    std::shared_ptr<const SoundClip> GetClip(const std::string& assetId);
 
 private:
+   /// @brief 名前またはアセットIDに対応するクリップの一覧。
    std::unordered_map<std::string, std::shared_ptr<const SoundClip>> clips_;
+   /// @brief 読み込み失敗時のファイル更新時刻。変更されるまで同じ失敗を繰り返さない。
    std::unordered_map<std::string, std::optional<std::filesystem::file_time_type>> failedClips_;
 };
 

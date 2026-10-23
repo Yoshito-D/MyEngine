@@ -35,10 +35,10 @@ public:
 
 private:
    struct CameraUnit {
-      std::unique_ptr<CinemachineBrain> brain;
+      std::unique_ptr<CinemachineBrain> brain; ///< 出力カメラと仮想カメラの選択・合成を管理する所有オブジェクト。
    };
 
-   std::vector<std::unique_ptr<CameraUnit>> units_;
-   CameraUnit* activeUnit_ = nullptr;
+   std::vector<std::unique_ptr<CameraUnit>> units_; ///< 出力カメラとBrainを組にした所有カメラユニット一覧。
+   CameraUnit* activeUnit_ = nullptr;               ///< 現在の描画に使用するカメラユニットへの非所有参照。
 };
 }

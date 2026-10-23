@@ -313,21 +313,9 @@ std::string DescribeBinding(const InputBinding& binding) {
    return {};
 }
 
-enum class PhysicalControlType {
-   Key,
-   GamePadButton,
-   LeftStick,
-   RightStick,
-};
+} // namespace
 
-struct PhysicalControl {
-   PhysicalControlType type;
-   uint32_t value;
-
-   bool operator==(const PhysicalControl&) const = default;
-};
-
-std::vector<PhysicalControl> GetPhysicalControls(const InputBinding& binding) {
+std::vector<InputActionService::PhysicalControl> InputActionService::GetPhysicalControls(const InputBinding& binding) {
    // 複合バインドを「物理デバイス上の入力」の列へ正規化することで、
    // KeyAxis1D/2D を含む異種バインド同士でも同じ手順で競合を検出できる。
    auto key = [](KeyCode value) { return PhysicalControl{PhysicalControlType::Key, static_cast<uint32_t>(value)}; };
@@ -350,7 +338,7 @@ std::vector<PhysicalControl> GetPhysicalControls(const InputBinding& binding) {
    return {};
 }
 
-bool SharesPhysicalControl(const InputBinding& left, const InputBinding& right) {
+bool InputActionService::SharesPhysicalControl(const InputBinding& left, const InputBinding& right) {
    const auto leftControls = GetPhysicalControls(left);
    const auto rightControls = GetPhysicalControls(right);
    return std::any_of(leftControls.begin(), leftControls.end(), [&rightControls](const PhysicalControl& control) {
@@ -358,12 +346,13 @@ bool SharesPhysicalControl(const InputBinding& left, const InputBinding& right) 
    });
 }
 
-bool ContainsPhysicalControl(const InputBinding& binding, const PhysicalControl& target) {
+bool InputActionService::ContainsPhysicalControl(const InputBinding& binding, const PhysicalControl& target) {
    const auto controls = GetPhysicalControls(binding);
    return std::find(controls.begin(), controls.end(), target) != controls.end();
 }
 
-bool SetPhysicalControlAtIndex(InputBinding& binding, size_t controlIndex, const PhysicalControl& control) {
+bool InputActionService::SetPhysicalControlAtIndex(
+   InputBinding& binding, size_t controlIndex, const PhysicalControl& control) {
    switch (binding.type) {
       case InputBindingType::Key:
          if (controlIndex != 0 || control.type != PhysicalControlType::Key) {
@@ -429,7 +418,7 @@ bool SetPhysicalControlAtIndex(InputBinding& binding, size_t controlIndex, const
    return false;
 }
 
-bool FindSingleChangedControl(const InputBinding& previous, const InputBinding& replacement,
+bool InputActionService::FindSingleChangedControl(const InputBinding& previous, const InputBinding& replacement,
    PhysicalControl& previousControl, PhysicalControl& replacementControl) {
    // 競合時に安全に入れ替えられるのは、同じ形のバインドで一つの物理入力だけを
    // 変更した場合に限る。複数変更を推測で交換すると別方向の割り当てまで壊れてしまう。
@@ -465,7 +454,8 @@ bool FindSingleChangedControl(const InputBinding& previous, const InputBinding& 
    return true;
 }
 
-bool ReplacePhysicalControl(InputBinding& binding, const PhysicalControl& target, const PhysicalControl& replacement) {
+bool InputActionService::ReplacePhysicalControl(
+   InputBinding& binding, const PhysicalControl& target, const PhysicalControl& replacement) {
    // キーとゲームパッドボタンのようにデバイス種別をまたぐ置換は行わない。
    // 呼び出し側は false を受け取ると、バインド全体を旧割り当てへ差し替える。
    if (target.type != replacement.type) {
@@ -509,8 +499,6 @@ bool ReplacePhysicalControl(InputBinding& binding, const PhysicalControl& target
 
    return replaced;
 }
-
-} // namespace
 
 void InputActionService::Initialize(
    IInputBackend& backend, const std::filesystem::path& defaultPath, const std::filesystem::path& overridePath) {

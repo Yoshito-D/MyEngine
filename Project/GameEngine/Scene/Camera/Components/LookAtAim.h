@@ -47,8 +47,8 @@ public:
 #endif
 
 private:
-   float damping_ = 10.0f;
-   Vector3 offset_ = {0.0f, 0.0f, 0.0f};
+   float damping_ = 10.0f;               ///< 注視回転のダンピング。
+   Vector3 offset_ = {0.0f, 0.0f, 0.0f}; ///< 注視点のオフセット。
 };
 
 } // namespace GameEngine

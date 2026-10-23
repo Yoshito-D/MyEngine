@@ -26,16 +26,16 @@ struct MaterialAsset {
 
 /// @brief メッシュデータを表す構造体
 struct MeshData {
-   std::vector<Mesh::VertexData> vertices;
-   std::vector<uint32_t> indices;
+   std::vector<Mesh::VertexData> vertices; ///< メッシュを構成する頂点データ。
+   std::vector<uint32_t> indices;          ///< 三角形を構成する頂点配列への参照番号。
    uint32_t materialIndex; // このメッシュが使用するマテリアルのインデックス
 };
 
 struct Node {
-   Transform transform;
-   Matrix4x4 localMatrix;
-   std::string name;
-   std::vector<Node> children;
+   Transform transform;        ///< 位置・回転・拡縮をまとめた変換情報。
+   Matrix4x4 localMatrix;      ///< 親の座標系に対するローカル変換行列。
+   std::string name;           ///< 識別とエディター表示に使う名前。
+   std::vector<Node> children; ///< この要素に属する子ノード。
 };
 
 struct VertexWeightData {
@@ -46,47 +46,57 @@ struct VertexWeightData {
 
 struct JointWeightData {
    Matrix4x4 inverseBindPoseMatrix;             // 逆バインドポーズ行列
-   std::vector<VertexWeightData> vertexWeights; // このジョイントに影響を受
+   std::vector<VertexWeightData> vertexWeights; // このジョイントの影響を受ける頂点とウェイト。
 };
 
 const uint32_t kNumMaxInfluence = 4; // 頂点が影響を受ける最大ジョイント数
 
 struct VertexInfluence {
-   std::array<float, kNumMaxInfluence> weights;
-   std::array<int32_t, kNumMaxInfluence> jointIndices;
+   std::array<float, kNumMaxInfluence> weights;        ///< 各ジョイントが頂点に与える影響の重み。
+   std::array<int32_t, kNumMaxInfluence> jointIndices; ///< 重みに対応するジョイント番号。
 };
 
 struct WellForGPU {
-   Matrix4x4 skeletonSpaceMatrix;
-   Matrix4x4 skeletonSpaceInverseTransposeMatrix;
+   Matrix4x4 skeletonSpaceMatrix;                 ///< ジョイント座標をスケルトン基準へ変換する行列。
+   Matrix4x4 skeletonSpaceInverseTransposeMatrix; ///< スキニング後の法線変換に使う逆転置行列。
 };
 
 struct SkinningInformationForGPU {
-   uint32_t numVertices = 0;
-   uint32_t padding[3] = {};
+   uint32_t numVertices = 0; ///< 処理対象の頂点数。Computeの範囲外アクセスを防ぐ上限。
+   uint32_t padding[3] = {}; ///< GPU転送データの配置境界を揃える未使用領域。
 };
 
 class SkinCluster {
    friend class ModelAsset;
 
    // 不変な入力はコピー間で共有し、Palette/出力を差し替える際には対応する所有権も置換する。
+   /// @brief メッシュごとの入力頂点SRVの共有所有権。
    std::vector<std::shared_ptr<SrvDescriptorAllocation>> inputVertexDescriptors;
+   /// @brief メッシュごとの頂点ウェイトSRVの共有所有権。
    std::vector<std::shared_ptr<SrvDescriptorAllocation>> influenceDescriptors;
+   /// @brief メッシュごとのスキニング出力UAVの共有所有権。
    std::vector<std::shared_ptr<SrvDescriptorAllocation>> skinnedVertexDescriptors;
-   std::shared_ptr<SrvDescriptorAllocation> paletteDescriptor;
+   std::shared_ptr<SrvDescriptorAllocation> paletteDescriptor;             ///< ジョイント行列パレットSRVの共有所有権。
    std::vector<Matrix4x4> inverseBindPoseMatrices;                         // 逆バインドポーズ行列のリスト
    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> influenceResources; // メッシュごとの頂点影響リソース
    std::vector<D3D12_VERTEX_BUFFER_VIEW> influenceBufferViews;             // メッシュごとの頂点バッファ
    std::vector<VertexInfluence*> mappedInfluenceData;                      // メッシュごとのマップ済み頂点影響データ
+   /// @brief メッシュごとの入力頂点SRVのCPU/GPUハンドル。
    std::vector<std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>> inputVertexSrvHandles;
+   /// @brief メッシュごとの頂点ウェイトSRVのCPU/GPUハンドル。
    std::vector<std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>> influenceSrvHandles;
+   /// @brief インスタンス固有のスキニング済み頂点を保持するGPUバッファ。
    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> skinnedVertexResources;
+   /// @brief スキニング済み頂点バッファを描画入力に指定するビュー。
    std::vector<D3D12_VERTEX_BUFFER_VIEW> skinnedVertexBufferViews;
+   /// @brief スキニング出力先UAVのCPU/GPUハンドル。
    std::vector<std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>> skinnedVertexUavHandles;
+   /// @brief メッシュごとの頂点数をComputeへ渡す定数バッファ。
    std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> skinningInformationResources;
+   /// @brief 頂点数定数バッファの永続Map先。対応リソースが寿命を管理する。
    std::vector<SkinningInformationForGPU*> mappedSkinningInformationData;
-   std::vector<D3D12_RESOURCE_STATES> skinnedVertexResourceStates;
-   Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource;
+   std::vector<D3D12_RESOURCE_STATES> skinnedVertexResourceStates; ///< スキニング出力バッファごとの現在の遷移状態。
+   Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource;         ///< ジョイント行列パレットを格納するGPUリソース。
    std::span<WellForGPU> mappedPalette; // マップされたスケルトン行列データへのスパン
    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE>
       paletteSrvHandle; // パレット用のCPU/GPUディスクリプタハンドル
@@ -140,7 +150,7 @@ public:
 
 /// @brief モデルデータを表す構造体
 struct ModelData {
-   std::map<std::string, JointWeightData> skinClusterData;
+   std::map<std::string, JointWeightData> skinClusterData; ///< ジョイント名ごとのバインド行列と頂点ウェイト。
    std::vector<MeshData> meshes;         // 複数メッシュ対応
    std::vector<MaterialAsset> materials; // 複数マテリアル対応
    Node rootNode;                        // ルートノード
@@ -220,8 +230,8 @@ private:
       const std::vector<MeshData>& meshes, const std::vector<ComPtr<ID3D12Resource>>& vertices);
    static void CreateOutputSkinningResources(
       GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes);
-   std::string assetId_;
-   ModelData modelData_;
+   std::string assetId_;                                     ///< このモデルの完全なアセットID。
+   ModelData modelData_;                                     ///< 読み込み済みのメッシュ・マテリアル・スキニング情報。
    std::vector<ComPtr<ID3D12Resource>> vertexResources_;     // 複数リソース
    std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews_; // 複数ビュー
    std::vector<Mesh::VertexData*> mappedVertexData_;         // 複数マップデータ
@@ -229,9 +239,9 @@ private:
    std::vector<D3D12_INDEX_BUFFER_VIEW> indexBufferViews_;   // 複数インデックスビュー
    std::vector<uint32_t*> mappedIndexData_;                  // 複数インデックスマップデータ
    std::optional<Skeleton> skeleton_;                        // スケルトン（オプション）
-   std::optional<SkinCluster> skinCluster_;
-   GraphicsDevice* graphicsDevice_ = nullptr;
-   bool hasSkinningData_ = false;
+   std::optional<SkinCluster> skinCluster_;                  ///< 描画インスタンスが持つスキニング用の状態とリソース。
+   GraphicsDevice* graphicsDevice_ = nullptr; ///< GPUリソースの生成とディスクリプタ割り当てに使うデバイスへの参照。
+   bool hasSkinningData_ = false;             ///< スキニングボーン情報を含むモデルか。
 
 private:
    ModelData LoadModelFile(const std::string& directoryPath, const std::string& filename);

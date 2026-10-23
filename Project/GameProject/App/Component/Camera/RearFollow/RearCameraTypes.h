@@ -157,34 +157,35 @@ struct RearCameraSettings {
 
 /// @brief 1フレーム分のカメラ計測値
 struct CameraMeasurementSample {
-   uint64_t frame = 0;
-   float timeSeconds = 0.0f;
-   float deltaTimeSeconds = 0.0f;
-   float gravityUpStepDegrees = 0.0f;
-   float cameraRightStepDegrees = 0.0f;
-   float cameraUpStepDegrees = 0.0f;
-   float cameraForwardStepDegrees = 0.0f;
-   float targetGravityUpErrorDegrees = 0.0f;
-   float cameraForwardGravityUpAbsDot = 0.0f;
-   float rightLength = 1.0f;
-   float upLength = 1.0f;
-   float forwardLength = 1.0f;
-   float rightUpAbsDot = 0.0f;
-   float upForwardAbsDot = 0.0f;
-   float forwardRightAbsDot = 0.0f;
-   float lookAtCandidateRightLength = 1.0f;
-   float lookAtRecoveryInput = 1.0f;
-   float lookAtRecoveryBlend = 1.0f;
-   float preLandingBlend = 0.0f;
-   float predictedImpactSeconds = 0.0f;
-   bool airborne = false;
-   bool landingPredictionValid = false;
-   bool invalid = false;
-   GameEngine::Vector3 targetGravityUp = {0.0f, 1.0f, 0.0f};
+   uint64_t frame = 0;                        ///< 測定対象のゲームフレーム番号。
+   float timeSeconds = 0.0f;                  ///< 測定開始からの累積時間（秒）。
+   float deltaTimeSeconds = 0.0f;             ///< この測定フレームの時間刻み（秒）。
+   float gravityUpStepDegrees = 0.0f;         ///< 前フレームからの重力Up方向の変化角（度）。
+   float cameraRightStepDegrees = 0.0f;       ///< 前フレームからのカメラ右方向の変化角（度）。
+   float cameraUpStepDegrees = 0.0f;          ///< 前フレームからのカメラ上方向の変化角（度）。
+   float cameraForwardStepDegrees = 0.0f;     ///< 前フレームからのカメラ前方向の変化角（度）。
+   float targetGravityUpErrorDegrees = 0.0f;  ///< カメラ側の重力Upと目標重力Upの誤差角（度）。
+   float cameraForwardGravityUpAbsDot = 0.0f; ///< カメラ前方と重力Upの内積の絶対値。平行に近いほど1。
+   float rightLength = 1.0f;                  ///< カメラ右方向ベクトルの長さ。
+   float upLength = 1.0f;                     ///< カメラ上方向ベクトルの長さ。
+   float forwardLength = 1.0f;                ///< カメラ前方向ベクトルの長さ。
+   float rightUpAbsDot = 0.0f;                ///< カメラ右方向と上方向の内積の絶対値。直交時は0。
+   float upForwardAbsDot = 0.0f;              ///< カメラ上方向と前方向の内積の絶対値。直交時は0。
+   float forwardRightAbsDot = 0.0f;           ///< カメラ前方向と右方向の内積の絶対値。直交時は0。
+   float lookAtCandidateRightLength = 1.0f;   ///< 注視方向から構築した候補右ベクトルの長さ。退化の検出に使う。
+   float lookAtRecoveryInput = 1.0f;          ///< 注視姿勢の退化からの回復量を求める入力値。
+   float lookAtRecoveryBlend = 1.0f;          ///< 注視姿勢の回復処理へ適用した補間割合。
+   float preLandingBlend = 0.0f;              ///< 予測着地方向へカメラを寄せる現在の割合。
+   float predictedImpactSeconds = 0.0f;       ///< 着地予測で得た接触までの残り時間（秒）。
+   bool airborne = false;                     ///< 測定時にプレイヤーが空中状態だったかどうか。
+   bool landingPredictionValid = false;       ///< 今フレームの着地予測が有効か。
+   bool invalid = false;                      ///< 非有限値や不正なカメラ基底を検出した測定かどうか。
+   GameEngine::Vector3 targetGravityUp = {0.0f, 1.0f, 0.0f}; ///< 追従の目標となる重力Up方向。
+   /// @brief 補間中の現在重力Up（惑星切り替え時のロール急変を防ぐ）。
    GameEngine::Vector3 currentGravityUp = {0.0f, 1.0f, 0.0f};
-   GameEngine::Vector3 cameraRight = {1.0f, 0.0f, 0.0f};
-   GameEngine::Vector3 cameraUp = {0.0f, 1.0f, 0.0f};
-   GameEngine::Vector3 cameraForward = {0.0f, 0.0f, 1.0f};
+   GameEngine::Vector3 cameraRight = {1.0f, 0.0f, 0.0f};   ///< カメラのワールド右方向。
+   GameEngine::Vector3 cameraUp = {0.0f, 1.0f, 0.0f};      ///< カメラのワールド上方向。
+   GameEngine::Vector3 cameraForward = {0.0f, 0.0f, 1.0f}; ///< カメラのワールド前方向。
 };
 
 /// @brief 1フレームの追従入力。予測失効時も直前の予測値は解除補間のため保持する。

@@ -15,7 +15,9 @@ class Texture;
 /// @brief モデルファイルまたはエンジン標準プリミティブを選択してメッシュを供給するコンポーネント
 class MeshComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "MeshComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"メッシュ", "Mesh"};
 
    /// @brief メッシュデータの入力元
@@ -176,45 +178,45 @@ public:
    void ApplyTextureCoordinates(Texture* texture, const Vector2& leftTop, const Vector2& size);
 
 private:
-   SourceType sourceType_ = SourceType::ModelFile;
-   bool reverseFaces_ = false;
-   std::shared_ptr<ModelAsset> modelAsset_;
-   std::string assetId_;
-   std::optional<SkinCluster> skinCluster_;
-   PrimitiveType primitiveType_ = PrimitiveType::Quad;
-   PlaneOrientation planeOrientation_ = PlaneOrientation::XY;
-   Vector2 quadSize_ = {128.0f, 128.0f};
-   Vector2 quadAnchorPoint_ = {0.0f, 0.0f};
-   bool flipX_ = false;
-   bool flipY_ = false;
-   float originY_ = 0.5f;
-   float ringInnerRadius_ = 0.4f;
-   float ringOuterRadius_ = 0.5f;
-   uint32_t ringSegments_ = 32;
-   float sphereRadius_ = 0.5f;
-   uint32_t sphereStacks_ = 16;
-   uint32_t sphereSlices_ = 32;
-   Vector3 boxSize_ = {1.0f, 1.0f, 1.0f};
-   float cylinderTopRadius_ = 0.5f;
-   float cylinderBottomRadius_ = 0.5f;
-   float cylinderHeight_ = 1.0f;
-   uint32_t cylinderSegments_ = 32;
-   float coneRadius_ = 0.5f;
-   float coneHeight_ = 1.0f;
-   uint32_t coneSegments_ = 32;
-   float circleRadius_ = 0.5f;
-   uint32_t circleSegments_ = 32;
-   float planeWidth_ = 1.0f;
-   float planeDepth_ = 1.0f;
-   uint32_t planeWidthSegments_ = 1;
-   uint32_t planeDepthSegments_ = 1;
-   float torusMajorRadius_ = 0.5f;
-   float torusMinorRadius_ = 0.2f;
-   uint32_t torusMajorSegments_ = 32;
-   uint32_t torusMinorSegments_ = 16;
-   Vector3 triangleV0_ = {-0.5f, 0.0f, 0.0f};
-   Vector3 triangleV1_ = {0.0f, 1.0f, 0.0f};
-   Vector3 triangleV2_ = {0.5f, 0.0f, 0.0f};
-   std::unique_ptr<Mesh> mesh_;
+   SourceType sourceType_ = SourceType::ModelFile;            ///< メッシュデータの入力元。
+   bool reverseFaces_ = false;                                ///< 描画時にメッシュの表裏を反転するか。
+   std::shared_ptr<ModelAsset> modelAsset_;                   ///< モデルアセットハンドル。
+   std::string assetId_;                                      ///< 設定されているモデルアセットID。
+   std::optional<SkinCluster> skinCluster_;                   ///< 描画インスタンスが持つスキニング用の状態とリソース。
+   PrimitiveType primitiveType_ = PrimitiveType::Quad;        ///< 生成するプリミティブ形状。
+   PlaneOrientation planeOrientation_ = PlaneOrientation::XY; ///< 平面プリミティブを置くXY・XZ・YZの選択。
+   Vector2 quadSize_ = {128.0f, 128.0f};                      ///< Quadの幅と高さ。
+   Vector2 quadAnchorPoint_ = {0.0f, 0.0f};                   ///< Quadの頂点配置用アンカーポイント。
+   bool flipX_ = false;                                       ///< Quadが左右反転されているか。
+   bool flipY_ = false;                                       ///< Quadが上下反転されているか。
+   float originY_ = 0.5f;                                     ///< メッシュ高さに対する原点の相対位置。
+   float ringInnerRadius_ = 0.4f;                             ///< リング形状の内側の半径。
+   float ringOuterRadius_ = 0.5f;                             ///< リング形状の外側の半径。
+   uint32_t ringSegments_ = 32;                               ///< リング円周方向の分割数。
+   float sphereRadius_ = 0.5f;                                ///< 球プリミティブの半径。
+   uint32_t sphereStacks_ = 16;                               ///< 球の緯度方向の分割数。
+   uint32_t sphereSlices_ = 32;                               ///< 球の経度方向の分割数。
+   Vector3 boxSize_ = {1.0f, 1.0f, 1.0f};                     ///< ボックス形状の各軸方向の全幅。
+   float cylinderTopRadius_ = 0.5f;                           ///< 円柱または円錐台の上面半径。
+   float cylinderBottomRadius_ = 0.5f;                        ///< 円柱または円錐台の底面半径。
+   float cylinderHeight_ = 1.0f;                              ///< 円柱または円錐台の高さ。
+   uint32_t cylinderSegments_ = 32;                           ///< 円柱の円周方向の分割数。
+   float coneRadius_ = 0.5f;                                  ///< 円錐底面の半径。
+   float coneHeight_ = 1.0f;                                  ///< 円錐の高さ。
+   uint32_t coneSegments_ = 32;                               ///< 円錐の円周方向の分割数。
+   float circleRadius_ = 0.5f;                                ///< 円形プリミティブの半径。
+   uint32_t circleSegments_ = 32;                             ///< 円形プリミティブの円周分割数。
+   float planeWidth_ = 1.0f;                                  ///< 平面プリミティブの横幅。
+   float planeDepth_ = 1.0f;                                  ///< 平面プリミティブの奥行き。
+   uint32_t planeWidthSegments_ = 1;                          ///< 平面プリミティブの横方向の分割数。
+   uint32_t planeDepthSegments_ = 1;                          ///< 平面プリミティブの奥行き方向の分割数。
+   float torusMajorRadius_ = 0.5f;                            ///< トーラス中心から断面中心までの主半径。
+   float torusMinorRadius_ = 0.2f;                            ///< トーラスの管断面の半径。
+   uint32_t torusMajorSegments_ = 32;                         ///< トーラスの主円周方向の分割数。
+   uint32_t torusMinorSegments_ = 16;                         ///< トーラスの管断面方向の分割数。
+   Vector3 triangleV0_ = {-0.5f, 0.0f, 0.0f};                 ///< 三角形プリミティブの第1頂点。
+   Vector3 triangleV1_ = {0.0f, 1.0f, 0.0f};                  ///< 三角形プリミティブの第2頂点。
+   Vector3 triangleV2_ = {0.5f, 0.0f, 0.0f};                  ///< 三角形プリミティブの第3頂点。
+   std::unique_ptr<Mesh> mesh_;                               ///< 生成した描画用メッシュの所有オブジェクト。
 };
 } // namespace GameEngine

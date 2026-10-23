@@ -178,22 +178,23 @@ private:
 
 private:
    void SyncMaterialNamesSize();
-   static const PSOManager* pipelineManager_;
-   std::vector<std::unique_ptr<Material>> overrides_;
-   std::vector<Material*> sharedMaterials_;
+   static const PSOManager* pipelineManager_; ///< 独自マテリアルの描画契約を解決するPSO管理オブジェクトへの参照。
+   std::vector<std::unique_ptr<Material>> overrides_; ///< スロットごとのインスタンス専用マテリアルの所有一覧。
+   std::vector<Material*> sharedMaterials_;           ///< スロットごとに割り当てられた共有マテリアルへの非所有参照。
 #ifdef USE_IMGUI
-   size_t inspectorSlot_ = 0;
-   bool editShared_ = false;
+   size_t inspectorSlot_ = 0; ///< インスペクターで編集中のマテリアルスロット番号。
+   bool editShared_ = false;  ///< インスタンス専用値ではなく共有マテリアル自体を編集するかどうか。
 #endif
 
-   static MaterialResolver resolver_;
-   static MaterialCreator creator_;
-   static MaterialNamesProvider namesProvider_;
-   static TextureResolver textureResolver_;
+   static MaterialResolver resolver_;           ///< 論理名から共有マテリアルを解決する外部提供の処理。
+   static MaterialCreator creator_;             ///< 共有マテリアルの生成を委譲する外部提供の処理。
+   static MaterialNamesProvider namesProvider_; ///< 選択可能な共有マテリアル名の一覧を取得する処理。
+   static TextureResolver textureResolver_;     ///< テクスチャ名から読み込み済み実体を解決する外部提供の処理。
+   /// @brief 環境マッピング用のキューブマップ名を解決する処理。
    static EnvironmentTextureResolver environmentTextureResolver_;
-   std::vector<std::string> materialNames_;
-   std::vector<std::string> textureNames_;
-   Vector2 textureLeftTop_ = {0.0f, 0.0f};
-   Vector2 textureSize_ = {0.0f, 0.0f};
+   std::vector<std::string> materialNames_; ///< 各マテリアルスロットの保存名。
+   std::vector<std::string> textureNames_;  ///< 各マテリアルスロットのテクスチャ名。
+   Vector2 textureLeftTop_ = {0.0f, 0.0f};  ///< Spriteなどの矩形描画で使用するテクスチャ左上座標。
+   Vector2 textureSize_ = {0.0f, 0.0f};     ///< Spriteなどの矩形描画で使用するテクスチャ矩形サイズ。
 };
 }

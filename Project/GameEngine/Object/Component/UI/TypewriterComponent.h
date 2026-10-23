@@ -12,7 +12,9 @@ namespace GameEngine {
 /// @brief UITextComponentを先頭から1文字ずつ表示するコンポーネント
 class TypewriterComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "TypewriterComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"タイプライター", "Typewriter"};
 
    /// @brief コンポーネントの型名を取得する
@@ -66,10 +68,10 @@ public:
 
       /// @brief 文字送り速度と再生設定
       float glyphsPerSecond = 20.0f;
-      float delay = 0.0f;
-      bool playOnEnable = true;
-      bool loop = false;
-      bool restartOnTextChange = true;
+      float delay = 0.0f;              ///< 再生開始から変化を始めるまでの待機時間（秒）。
+      bool playOnEnable = true;        ///< コンポーネントが有効になるたびに自動再生するかどうか。
+      bool loop = false;               ///< 終端到達後に再生を繰り返すかどうか。
+      bool restartOnTextChange = true; ///< 文章が更新されたときに文字送りを先頭から再開するかどうか。
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
@@ -79,18 +81,18 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float glyphsPerSecond = 20.0f;
-   float delay = 0.0f;
-   bool playOnEnable = true;
-   bool loop = false;
-   bool restartOnTextChange = true;
+   float glyphsPerSecond = 20.0f;   ///< 文字送り速度と再生設定。
+   float delay = 0.0f;              ///< 再生開始から変化を始めるまでの待機時間（秒）。
+   bool playOnEnable = true;        ///< コンポーネントが有効になるたびに自動再生するかどうか。
+   bool loop = false;               ///< 終端到達後に再生を繰り返すかどうか。
+   bool restartOnTextChange = true; ///< 文章が更新されたときに文字送りを先頭から再開するかどうか。
 
 private:
    size_t CountGlyphs() const;
 
-   float elapsed_ = 0.0f;
-   bool playing_ = true;
-   uint64_t observedTextRevision_ = 0;
+   float elapsed_ = 0.0f;              ///< 処理を開始してからの経過時間（秒）。
+   bool playing_ = true;               ///< 再生中か。
+   uint64_t observedTextRevision_ = 0; ///< 文字送りが最後に確認した文章の改訂番号。
 };
 
 } // namespace GameEngine

@@ -1,9 +1,9 @@
 #include "FullscreenTriangle.hlsli"
 
 cbuffer RadialBlurCB : register(b0) {
-   float32_t2 gCenter;
-   float gStrength;
-   int32_t gSampleCount;
+   float32_t2 gCenter;   ///< ショックウェーブの中心。
+   float gStrength;      ///< 効果を適用する強さ。
+   int32_t gSampleCount; ///< 効果の評価に使うテクスチャサンプル数。
 };
 
 Texture2D gInputTexture : register(t0);

@@ -5,7 +5,7 @@ SamplerState textureSampler : register(s0);
 
 cbuffer BoxFilterParams : register(b0) {
    // カーネル半径: 1=3x3, 2=5x5, 3=7x7 ...
-   int kernelRadius;
+   int kernelRadius; ///< 1=3x3, 2=5x5, 3=7x7。
 };
 
 float4 main(VSOutput input) : SV_TARGET {

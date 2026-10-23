@@ -56,13 +56,15 @@ public:
 private:
    void RegisterAlias(const std::string& alias, const std::string& ownerName);
 
-   GraphicsDevice* device_ = nullptr;
+   GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   /// @brief 名前やスロットに対応するテクスチャの一覧。
    std::unordered_map<std::string, std::unique_ptr<Texture>> textures_;
-   std::unordered_map<std::string, Texture*> textureAliases_;
+   std::unordered_map<std::string, Texture*> textureAliases_; ///< 短縮名から所有済みテクスチャを引く非所有索引。
 
    // 失敗した参照を描画のたびに再読込しない。明示再走査かClearで再試行する。
-   std::unordered_set<std::string> failedTextureNames_;
+   std::unordered_set<std::string> failedTextureNames_; ///< 再試行を明示するまで読み込み失敗を記憶する名前集合。
+   /// @brief GPUへのコピー完了まで保持するアップロード用リソース。
    std::list<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResource_;
-   std::string lastCubemapName_;
+   std::string lastCubemapName_; ///< 最後に読み込みに成功したキューブマップの名前。
 };
 }

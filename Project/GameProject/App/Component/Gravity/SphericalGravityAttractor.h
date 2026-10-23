@@ -12,6 +12,7 @@ class SphericalGravityAttractor final : public GravityAttractor {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "SphericalGravityAttractor";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{
       "球状重力アトラクター", "Spherical Gravity Attractor"};
 
@@ -50,7 +51,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   float influenceRadius = 0.0f;
+   float influenceRadius = 0.0f; ///< 影響半径（0以下で無限）。
 
 private:
    /// @brief 発生源中心座標（オーナーTransform）

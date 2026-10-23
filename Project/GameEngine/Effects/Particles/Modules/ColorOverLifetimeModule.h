@@ -41,7 +41,7 @@ public:
 #endif
 
 private:
-   Vector4 startColor_{1.0f, 1.0f, 1.0f, 1.0f};
-   Vector4 endColor_{1.0f, 1.0f, 1.0f, 0.0f};
+   Vector4 startColor_{1.0f, 1.0f, 1.0f, 1.0f}; ///< 生存期間の開始色。
+   Vector4 endColor_{1.0f, 1.0f, 1.0f, 0.0f};   ///< 生存期間の終了色。
 };
 }

@@ -100,14 +100,14 @@ public:
 #endif
 
 private:
-   RotationSpace rotationSpace_ = RotationSpace::Local;
-   BillboardType billboardType_ = BillboardType::View;
-   float speedScale_ = 1.0f;
-   float lengthScale_ = 2.0f;
-   bool velocityStretchEnabled_ = false;
-   SortMode sortMode_ = SortMode::Auto;
-   bool cameraFadeEnabled_ = false;
-   float cameraFadeNear_ = 0.25f;
-   float cameraFadeFar_ = 1.0f;
+   RotationSpace rotationSpace_ = RotationSpace::Local; ///< 粒子回転を解釈する座標空間。
+   BillboardType billboardType_ = BillboardType::View;  ///< ビルボードの向き合わせ方式。
+   float speedScale_ = 1.0f;                            ///< 速度ストレッチへ使用する速度倍率。
+   float lengthScale_ = 2.0f;                           ///< 速度ストレッチの長さ倍率。
+   bool velocityStretchEnabled_ = false;                ///< 速度ストレッチが有効かどうかする。
+   SortMode sortMode_ = SortMode::Auto;                 ///< 描画順序。
+   bool cameraFadeEnabled_ = false;                     ///< カメラ近接フェードが有効かどうかする。
+   float cameraFadeNear_ = 0.25f;                       ///< 完全に透明になるカメラ距離。
+   float cameraFadeFar_ = 1.0f;                         ///< 完全に表示されるカメラ距離。
 };
 }

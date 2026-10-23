@@ -57,13 +57,6 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
    viewportWidth_ = viewportWidth;
    viewportHeight_ = viewportHeight;
 
-   struct PageGeometry {
-      D3D12_GPU_DESCRIPTOR_HANDLE atlasSrv = {};
-      Vector4 atlasParameters = {};
-      std::vector<TextVertex> vertices;
-      std::vector<uint32_t> indices;
-   };
-
    Vector2 anchorPosition = CalculateAnchorPosition(style.screenAnchor, layoutWidth, layoutHeight);
 
    // 異なるアスペクト比では基準UI領域を中央に置き、サイズと縦横比を維持する。
@@ -181,11 +174,6 @@ bool TextRenderer::UploadBuffers() {
 
    std::memcpy(mappedIndices, indices_.data(), indices_.size() * sizeof(uint32_t));
    indexBuffer_->Unmap(0, nullptr);
-
-   struct ViewportData {
-      Vector2 size;
-      Vector2 inverseSize;
-   };
 
    ViewportData* viewportData = nullptr;
 

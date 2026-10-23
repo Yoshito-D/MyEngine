@@ -61,22 +61,23 @@ private:
    void LoadDebugCameraState();
    void SaveDebugCameraState() const;
    std::filesystem::path GetDebugCameraStateFilePath() const;
-   Scene* scene_ = nullptr;
-   SceneDefinition definition_;
-   std::unique_ptr<EditorSceneContext> context_;
+   Scene* scene_ = nullptr;                      ///< 現在操作するシーンへの参照。
+   SceneDefinition definition_;                  ///< シーン名と保存先などのシーン定義。
+   std::unique_ptr<EditorSceneContext> context_; ///< 現在の選択・変更状態・編集履歴を管理する所有コンテキスト。
+   /// @brief プレイ開始前の編集状態と履歴を退避する所有コンテキスト。
    std::unique_ptr<EditorSceneContext> editingContext_;
-   bool restoreEditingState_ = false;
-   std::unique_ptr<DebugCamera> debugCamera_;
-   std::unique_ptr<CameraEditor> cameraEditor_;
-   bool isDebugCameraActive_ = false;
-   GizmoOperation gizmoOperation_ = GizmoOperation::Translate;
-   GizmoMode gizmoMode_ = GizmoMode::Local;
-   bool isManipulating_ = false;
-   Object* manipulatingObject_ = nullptr;
-   Transform transformBeforeManipulation_{};
-   bool isManipulatingParticleSystem_ = false;
-   ParticleSystem* manipulatingParticleSystem_ = nullptr;
-   Transform particleTransformBeforeManipulation_{};
+   bool restoreEditingState_ = false;                          ///< 次回のシーン接続で退避済みの編集状態を戻すかどうか。
+   std::unique_ptr<DebugCamera> debugCamera_;                  ///< エディター閲覧に使う所有デバッグカメラ。
+   std::unique_ptr<CameraEditor> cameraEditor_;                ///< カメラ一覧とギズモ編集を管理する所有オブジェクト。
+   bool isDebugCameraActive_ = false;                          ///< 出力先としてデバッグカメラを優先しているかどうか。
+   GizmoOperation gizmoOperation_ = GizmoOperation::Translate; ///< 移動・回転・拡縮のうち現在選択している操作。
+   GizmoMode gizmoMode_ = GizmoMode::Local;                    ///< ギズモ操作の基準とするローカルまたはワールド座標系。
+   bool isManipulating_ = false;                               ///< Objectのギズモ操作が継続中かどうか。
+   Object* manipulatingObject_ = nullptr;                      ///< ギズモで操作中のObjectへの非所有参照。
+   Transform transformBeforeManipulation_{};                   ///< ギズモ操作を取り消すための操作開始時Transform。
+   bool isManipulatingParticleSystem_ = false;                 ///< ParticleSystemのギズモ操作が継続中かどうか。
+   ParticleSystem* manipulatingParticleSystem_ = nullptr;      ///< ギズモで配置を操作中のParticleSystemへの参照。
+   Transform particleTransformBeforeManipulation_{};           ///< 粒子配置のギズモ操作開始時のTransform。
 };
 }
 #endif

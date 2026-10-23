@@ -11,14 +11,14 @@ class ChromaticAberration : public PostProcess {
 public:
    /// @brief 色収差効果のパラメータ構造体
    struct ParamsCB {
-      float centerX;
-      float centerY;
-      float pixelShift;
-      int32_t useFixedDirection;
-      float fixedDirectionX;
-      float fixedDirectionY;
-      float texSizeX;
-      float texSizeY;
+      float centerX;             ///< 画面上の効果中心のX座標（正規化UV）。
+      float centerY;             ///< 画面上の効果中心のY座標（正規化UV）。
+      float pixelShift;          ///< 色収差でRGBの参照位置をずらす量（ピクセル）。
+      int32_t useFixedDirection; ///< 中心からの放射方向ではなく指定方向へ色をずらすかどうか。
+      float fixedDirectionX;     ///< 色収差の固定方向のX成分。
+      float fixedDirectionY;     ///< 色収差の固定方向のY成分。
+      float texSizeX;            ///< 入力テクスチャの横幅（ピクセル）。
+      float texSizeY;            ///< 入力テクスチャの高さ（ピクセル）。
    };
 
    /// @brief 初期化（パイプラインは外部から設定される）
@@ -47,15 +47,15 @@ public:
    void SetCenter(float x, float y);
 
 private:
-   float centerX_ = 0.5f;
-   float centerY_ = 0.5f;
-   float pixelShift_ = 5.0f;
-   int32_t useFixedDirection_ = 0;
-   float fixedDirectionX_ = 1.0f;
-   float fixedDirectionY_ = 0.0f;
+   float centerX_ = 0.5f;          ///< 画面上の効果中心のX座標（正規化UV）。
+   float centerY_ = 0.5f;          ///< 画面上の効果中心のY座標（正規化UV）。
+   float pixelShift_ = 5.0f;       ///< 色収差でRGBの参照位置をずらす量（ピクセル）。
+   int32_t useFixedDirection_ = 0; ///< 中心からの放射方向ではなく指定方向へ色をずらすかどうか。
+   float fixedDirectionX_ = 1.0f;  ///< 色収差の固定方向のX成分。
+   float fixedDirectionY_ = 0.0f;  ///< 色収差の固定方向のY成分。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   ParamsCB* constantBufferData_ = nullptr;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   ParamsCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

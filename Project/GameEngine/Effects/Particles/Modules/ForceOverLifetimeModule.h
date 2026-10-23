@@ -100,12 +100,12 @@ public:
 #endif
 
 private:
-   RandomVector3 force_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false};
-   RandomFloat drag_{0.0f, 0.0f, false};
-   bool attractorEnabled_ = false;
-   Vector3 attractorPosition_{0.0f, 0.0f, 0.0f};
-   float attractorStrength_ = 0.0f;
-   float attractorRadius_ = 0.0f;
-   float attractorFalloff_ = 1.0f;
+   RandomVector3 force_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false}; ///< 加える力の乱数範囲。
+   RandomFloat drag_{0.0f, 0.0f, false};                                              ///< 粒子ごとの空気抵抗範囲。
+   bool attractorEnabled_ = false;               ///< ポイント引力または斥力が有効かどうかする。
+   Vector3 attractorPosition_{0.0f, 0.0f, 0.0f}; ///< 引力中心。
+   float attractorStrength_ = 0.0f;              ///< 引力強度。
+   float attractorRadius_ = 0.0f;                ///< 作用半径。
+   float attractorFalloff_ = 1.0f;               ///< 距離減衰指数。
 };
 }

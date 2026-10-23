@@ -6,11 +6,11 @@ struct VertexShaderOutput {
    float4 color : COLOR0;         // インスタンス色。リボン時は頂点アルファも乗算済み
 
    // 行列を4本の補間レジスターへ展開し、PS側でfloat4x4へ復元する。
-   float4 uvTransform0 : TEXCOORD1;
-   float4 uvTransform1 : TEXCOORD2;
-   float4 uvTransform2 : TEXCOORD3;
-   float4 uvTransform3 : TEXCOORD4;
+   float4 uvTransform0 : TEXCOORD1; ///< 粒子のUV変換行列の第1行。
+   float4 uvTransform1 : TEXCOORD2; ///< 粒子のUV変換行列の第2行。
+   float4 uvTransform2 : TEXCOORD3; ///< 粒子のUV変換行列の第3行。
+   float4 uvTransform3 : TEXCOORD4; ///< 粒子のUV変換行列の第4行。
 
    // x:寿命進行度（負値はリボン識別子）、y:粒子乱数、z:カメラ近接フェード、w:速度。
-   float4 customData : TEXCOORD5;
+   float4 customData : TEXCOORD5; ///< シェーダー連携用（年齢、乱数、カメラフェード、速度）。
 };

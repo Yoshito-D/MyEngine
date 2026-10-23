@@ -157,12 +157,12 @@ public:
 #endif
 
 private:
-   SceneWorld* world_ = nullptr;
+   SceneWorld* world_ = nullptr; ///< このObjectを所有するワールド。シーン外の補助Objectではnullptr。
    bool WouldCreateParentCycle(const std::string& parentEntityId) const;
 
-   ComponentContainer components_;
-   std::string entityId_;
-   std::string parentEntityId_;
+   ComponentContainer components_; ///< このObjectが所有するコンポーネントと型検索のコンテナ。
+   std::string entityId_;          ///< シーン内参照に使用する安定ID。
+   std::string parentEntityId_;    ///< 親Entityの安定ID。
 };
 
 } // namespace GameEngine

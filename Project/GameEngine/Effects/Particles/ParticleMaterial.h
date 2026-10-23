@@ -129,18 +129,19 @@ public:
    std::optional<BlendMode> GetBlendMode() const { return blendMode_; }
 
 private:
+   /// @brief 描画用のマテリアル設定を保持する所有GPUリソース。
    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
-   MaterialData* materialData_ = nullptr;
-   Texture* texture_ = nullptr;
+   MaterialData* materialData_ = nullptr;  ///< マテリアルデータ。
+   Texture* texture_ = nullptr;            ///< テクスチャ。
    std::string pipelineName_ = "Particle"; ///< 使用するパイプライン名
    std::optional<BlendMode> blendMode_;    ///< 優先ブレンドモード（nullopt = 加算）
-   float brightness_ = 1.0f;
-   float alphaCutoff_ = 0.001f;
-   uint32_t toonSteps_ = 0;
-   bool softParticlesEnabled_ = false;
-   float softParticleDistance_ = 0.5f;
-   float distortionStrength_ = 0.0f;
-   float distortionBlend_ = 1.0f;
-   bool distortionUseTextureFlow_ = false;
+   float brightness_ = 1.0f;               ///< 描画色へ掛ける輝度倍率。
+   float alphaCutoff_ = 0.001f;            ///< ピクセルを破棄する透明度の下限。
+   uint32_t toonSteps_ = 0;                ///< トゥーン陰影の階調数。0は段階化を使わない。
+   bool softParticlesEnabled_ = false;     ///< ソフトパーティクルが有効かどうかする。
+   float softParticleDistance_ = 0.5f;     ///< 交差境界をフェードする距離。
+   float distortionStrength_ = 0.0f;       ///< 背景を歪ませる最大ピクセル数。
+   float distortionBlend_ = 1.0f;          ///< 屈折結果と元背景の混合率。
+   bool distortionUseTextureFlow_ = false; ///< 歪み方向にテクスチャのRGフローマップを使用するかどうかする。
 };
 }

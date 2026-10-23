@@ -3,14 +3,14 @@
 // C++側のDissolveCBと同じレジスター順で、進行度、境界形状、UV変換、2種類の色を受け取る。
 // b0／t0／t1は専用ルートシグネチャのconstantbuffer／inputtexture／masktextureへ対応する。
 cbuffer DissolveCB : register(b0) {
-   float gThreshold;
-   float gEdgeWidth;
-   float gEdgeIntensity;
-   float gMaskContrast;
-   float2 gMaskTiling;
-   float2 gMaskOffset;
-   float4 gEdgeColor;
-   float4 gDissolveColor;
+   float gThreshold;      ///< 輝度閾値。
+   float gEdgeWidth;      ///< しきい値周辺の遷移幅。
+   float gEdgeIntensity;  ///< 遷移エッジの発光強度。
+   float gMaskContrast;   ///< マスク値を0.5中心で強調する倍率。
+   float2 gMaskTiling;    ///< マスクUVの繰り返し倍率。
+   float2 gMaskOffset;    ///< マスクUVのスクロール量。
+   float4 gEdgeColor;     ///< 遷移エッジのRGBA色。
+   float4 gDissolveColor; ///< 消失側へ補間するRGBA色。
 };
 
 Texture2D gInputTexture : register(t0);

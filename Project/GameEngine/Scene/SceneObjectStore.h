@@ -236,18 +236,23 @@ private:
 
    static nlohmann::json SerializeSpriteData(const Sprite* sprite);
 
-   SceneWorld& world_;
-   std::vector<std::unique_ptr<Object>> objects_;
-   std::vector<std::unique_ptr<ParticleSystem>> particleSystems_;
+   SceneWorld& world_;                            ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
+   std::vector<std::unique_ptr<Object>> objects_; ///< シーン内で生成したObjectの所有一覧。
+   std::vector<std::unique_ptr<ParticleSystem>> particleSystems_; ///< シーン内で生成したParticleSystemの所有一覧。
+   /// @brief GPU参照が完了するフレーム境界まで寿命を保持する削除待ちObject。
    std::vector<std::unique_ptr<Object>> deferredDeleteObjects_;
+   /// @brief フレーム境界まで寿命を保持する削除待ちParticleSystem。
    std::vector<std::unique_ptr<ParticleSystem>> deferredDeleteParticleSystems_;
-   std::unordered_set<const Object*> pendingDeletionObjects_;
-   std::unordered_map<std::string, Object*> idToObject_;
+   std::unordered_set<const Object*> pendingDeletionObjects_; ///< 更新や検索の対象から外した削除待ちObjectの集合。
+   std::unordered_map<std::string, Object*> idToObject_;      ///< 安定Entity IDからObjectを引く非所有索引。
+   /// @brief 安定IDからParticleSystemを引く非所有索引。
    std::unordered_map<std::string, ParticleSystem*> idToParticleSystem_;
-   std::unordered_map<const Object*, std::string> objectToId_;
+   std::unordered_map<const Object*, std::string> objectToId_; ///< Objectのアドレスから安定Entity IDを引く逆索引。
+   /// @brief ParticleSystemのアドレスから安定IDを引く逆索引。
    std::unordered_map<const ParticleSystem*, std::string> particleSystemToId_;
+   /// @brief 各ParticleSystemの生成元となったアセットID。
    std::unordered_map<const ParticleSystem*, std::string> particleSystemAssetIds_;
-   uint64_t nextObjectIndex_ = 1;
+   uint64_t nextObjectIndex_ = 1; ///< 一時IDや自動生成Entity IDに使う次の通し番号。
 };
 
 } // namespace GameEngine

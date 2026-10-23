@@ -20,14 +20,15 @@ class PostProcessManager {
 private:
    /// @brief ポストプロセス効果の情報
    struct EffectInfo {
-      std::unique_ptr<PostProcess> effect;
-      bool enabled = true;
+      std::unique_ptr<PostProcess> effect; ///< 生成・更新・適用を管理する所有ポストエフェクト。
+      bool enabled = true;                 ///< この機能を実行するかどうか。
       std::int32_t priority = 0; // 数値が小さいほど先に実行される
-      std::string id;
-      std::string name;
+      std::string id;            ///< 同じ種類の要素を一意に識別するID。
+      std::string name;          ///< 識別とエディター表示に使う名前。
       std::string pipelineName; // パイプライン名を追加
-      bool defaultEnabled = true;
-      std::int32_t defaultPriority = 0;
+      bool defaultEnabled = true;       ///< シーン設定を初期化したときに使う有効状態。
+      std::int32_t defaultPriority = 0; ///< シーン設定を初期化したときに使う適用優先度。
+      /// @brief シーン設定を初期化したときに復元するエフェクト設定。
       nlohmann::json defaultSettings = nlohmann::json::object();
 
       EffectInfo(std::unique_ptr<PostProcess> eff, const std::string& effectId, const std::string& effectName,
@@ -37,13 +38,13 @@ private:
 public:
    /// @brief エフェクト定義構造体
    struct EffectDefinition {
-      std::string id;
-      std::string name;
-      std::string className;
-      std::int32_t priority = 0;
-      bool enabled = true;
+      std::string id;            ///< 同じ種類の要素を一意に識別するID。
+      std::string name;          ///< 識別とエディター表示に使う名前。
+      std::string className;     ///< エフェクトを生成するファクトリの登録クラス名。
+      std::int32_t priority = 0; ///< 数値が小さいほど先に実行される。
+      bool enabled = true;       ///< この機能を実行するかどうか。
       std::string pipelineName; // パイプライン名を追加
-      std::string rootSignatureName;
+      std::string rootSignatureName; ///< 使用するルートシグネチャ名。
    };
 
    /// @brief 初期化
@@ -132,10 +133,10 @@ public:
 private:
    friend class EngineContext;
    PostProcess* GetEffect(const std::string& name);
-   GraphicsDevice* device_ = nullptr;
-   OffscreenRenderTarget* renderTarget_ = nullptr;
+   GraphicsDevice* device_ = nullptr;              ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   OffscreenRenderTarget* renderTarget_ = nullptr; ///< 色または深度の中間画像を保持する所有GPUテクスチャ。
    const PSOManager* psoManager_ = nullptr; // パイプラインマネージャーを追加
-   std::vector<EffectInfo> effects_;
+   std::vector<EffectInfo> effects_;        ///< 適用順と有効状態を持つ所有ポストエフェクト一覧。
 
    /// @brief エフェクトを名前で検索
    /// @param name エフェクト名
@@ -156,7 +157,7 @@ private:
    bool ConfigureEffectPipeline(
       PostProcess* effect, const std::string& pipelineName, const std::string& rootSignatureName);
 
-   EffectFactoryRegistry effectFactoryRegistry_;
-   bool effectFactoriesRegistered_ = false;
+   EffectFactoryRegistry effectFactoryRegistry_; ///< エフェクト名と生成ファクトリの対応を保持するレジストリ。
+   bool effectFactoriesRegistered_ = false;      ///< 既定エフェクトのファクトリを登録済みかどうか。
 };
 }

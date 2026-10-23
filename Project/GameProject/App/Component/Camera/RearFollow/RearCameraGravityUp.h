@@ -32,7 +32,7 @@ private:
    GameEngine::Vector3 SmoothGravityUp(const RearCameraInput& input, const RearCameraSettings& settings,
       const RearCameraTransitionState& transition, const RearCameraAimState& aim, RearCameraDirectionTracker& direction,
       float deltaTime);
-   RearCameraGravityState state_;
+   RearCameraGravityState state_; ///< 補間済み重力Up。
 };
 
 } // namespace App

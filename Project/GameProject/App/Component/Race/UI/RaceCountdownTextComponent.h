@@ -16,7 +16,8 @@ class RaceManagerComponent;
 /// @brief レース開始前の3・2・1とSTARTをUITextへ表示する
 class RaceCountdownTextComponent final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "RaceCountdownTextComponent";
+   static constexpr const char* kTypeName = "RaceCountdownTextComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"レースカウントダウン表示", "Race Countdown Text"};
 
    /// @brief コンポーネント型名を取得する
@@ -53,20 +54,21 @@ private:
    void RestoreBaseVisualState(GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform);
    void ApplyAnimation(GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform);
 
-   std::string raceManagerId_;
-   std::string startText_ = "START";
-   RaceManagerComponent* raceManager_ = nullptr;
-   std::string displayedText_;
-   float animationElapsed_ = 0.0f;
-   float rotationDuration_ = 0.45f;
-   float fadeDuration_ = 0.45f;
-   float fadeEndScale_ = 1.6f;
-   GameEngine::Vector3 baseScale_ = {1.0f, 1.0f, 1.0f};
-   GameEngine::Vector3 baseEuler_ = {};
+   std::string raceManagerId_;                          ///< レース進行を参照する管理Objectの安定Entity ID。
+   std::string startText_ = "START";                    ///< カウントダウン終了時に表示する文字列。
+   RaceManagerComponent* raceManager_ = nullptr;        ///< 参照解決済みレース管理コンポーネントへの非所有参照。
+   std::string displayedText_;                          ///< 最後にUIへ反映した文字列。重複更新を避けるために保持する。
+   float animationElapsed_ = 0.0f;                      ///< 現在のUI演出を開始してからの経過時間（秒）。
+   float rotationDuration_ = 0.45f;                     ///< カウント表示の回転演出に使う時間（秒）。
+   float fadeDuration_ = 0.45f;                         ///< UIをフェードさせる時間（秒）。
+   float fadeEndScale_ = 1.6f;                          ///< フェード完了時の基準サイズに対する拡大率。
+   GameEngine::Vector3 baseScale_ = {1.0f, 1.0f, 1.0f}; ///< 演出開始前に記録した基準スケール。
+   GameEngine::Vector3 baseEuler_ = {};                 ///< 演出開始前に記録した基準Euler角（ラジアン）。
+   /// @brief 演出開始前に記録した基準姿勢。
    GameEngine::Quaternion baseRotationQuaternion_ = GameEngine::Quaternion::Identity();
-   float baseOpacity_ = 1.0f;
-   bool baseUsesQuaternion_ = false;
-   bool hasBaseVisualState_ = false;
+   float baseOpacity_ = 1.0f;        ///< 演出で上書きする前の基準不透明度。
+   bool baseUsesQuaternion_ = false; ///< 基準姿勢の保存形式がQuaternionだったかどうか。
+   bool hasBaseVisualState_ = false; ///< 演出前のサイズ・姿勢・透明度を記録済みかどうか。
 };
 
 } // namespace App

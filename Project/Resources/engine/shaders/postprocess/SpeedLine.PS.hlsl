@@ -1,15 +1,15 @@
 #include "FullscreenTriangle.hlsli"
 
 cbuffer SpeedLineCB : register(b0) {
-   float2 gCenter;
-   float gIntensity;
-   float gLineDensity;
-   float gThickness;
-   float gInnerRadius;
-   float gOuterRadius;
-   float gTime;
-   float gRandomSeed;
-   float gFlowSpeed;
+   float2 gCenter;     ///< ショックウェーブの中心。
+   float gIntensity;   ///< 効果または光の強さ。
+   float gLineDensity; ///< 放射方向へ生成する線の密度。
+   float gThickness;   ///< 深度近傍のサンプリング間隔倍率。
+   float gInnerRadius; ///< 線を描き始める内側半径。
+   float gOuterRadius; ///< 線を描き終える外側半径。
+   float gTime;        ///< クリップ先頭からの時刻（秒）。
+   float gRandomSeed;  ///< 線パターンを選ぶ乱数シード。
+   float gFlowSpeed;   ///< 中心から外側へ流れる速度。
 };
 
 Texture2D gInputTexture : register(t0);

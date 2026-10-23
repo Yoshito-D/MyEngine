@@ -11,18 +11,20 @@ namespace GameEngine {
 /// @brief 再生可能なObject上の名前付きサウンドスロット。1コンポーネントで複数の音声を保持する。
 class AudioSourceComponent final : public IObjectComponent {
 public:
+   /// @brief シリアライズで使用する安定したコンポーネント型。
    static constexpr const char* kTypeName = "AudioSourceComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"音声ソース", "Audio Source"};
 
    /// @brief 保存対象のスロット設定。クリップとハンドルは実行時専用。
    struct Slot {
-      std::string name;
-      std::string clipAssetId;
-      AudioBus bus = AudioBus::Se;
-      float volume = 1.0f;
-      float pitch = 1.0f;
-      bool loop = false;
-      bool playOnStart = false;
+      std::string name;            ///< 識別とエディター表示に使う名前。
+      std::string clipAssetId;     ///< 再生する音声クリップの永続アセットID。
+      AudioBus bus = AudioBus::Se; ///< 音量設定を共有するBGM・SEなどの出力バス。
+      float volume = 1.0f;         ///< 個別の音量倍率。
+      float pitch = 1.0f;          ///< 音声の周波数比。1で元の音程。
+      bool loop = false;           ///< 終端到達後に再生を繰り返すかどうか。
+      bool playOnStart = false;    ///< シーンの実行開始時に自動再生するかどうか。
    };
 
    /// @brief コンテナのDetach外で破棄された場合も、所有する再生を停止する。
@@ -102,14 +104,14 @@ public:
 #endif
 private:
    struct RuntimeSlot {
-      std::shared_ptr<const SoundClip> clip;
-      AudioHandle handle;
+      std::shared_ptr<const SoundClip> clip; ///< 再生対象の音声またはアニメーションクリップへの参照。
+      AudioHandle handle;                    ///< 世代番号を含めて対象を特定する操作ハンドル。
    };
 
    size_t FindSlot(const std::string& name) const;
-   std::vector<Slot> slots_;
-   std::vector<RuntimeSlot> runtime_;
-   std::vector<AudioHandle> oneShots_;
-   bool runtimeStarted_ = false;
+   std::vector<Slot> slots_;           ///< 設定済みスロット。
+   std::vector<RuntimeSlot> runtime_;  ///< 保存設定の各スロットに対応する実行時再生状態。
+   std::vector<AudioHandle> oneShots_; ///< 終了または解放を管理する単発音声のハンドル一覧。
+   bool runtimeStarted_ = false;       ///< 現在の実行セッションで自動再生処理を開始済みかどうか。
 };
 }

@@ -107,14 +107,14 @@ public:
 #endif
 
 private:
-   TrailMode mode_ = TrailMode::ParticlePath;
-   RandomFloat width_{0.5f, 0.5f, false};
-   uint32_t maxPoints_ = 16;
-   float minDistance_ = 0.1f;
-   std::string textureName_;
-   Vector4 color_{1.0f, 1.0f, 1.0f, 1.0f};
-   float retractionDuration_ = 0.5f;
-   float tailWidthScale_ = 0.0f;
-   float textureTiling_ = 1.0f;
+   TrailMode mode_ = TrailMode::ParticlePath; ///< トレイルの生成方式。
+   RandomFloat width_{0.5f, 0.5f, false};     ///< 粒子ごとのトレイル幅範囲。
+   uint32_t maxPoints_ = 16;                  ///< 1粒子が保持する履歴点数。
+   float minDistance_ = 0.1f;                 ///< 履歴点を追加する最小移動距離。
+   std::string textureName_;                  ///< トレイル専用テクスチャ名。
+   Vector4 color_{1.0f, 1.0f, 1.0f, 1.0f};    ///< トレイル全体に乗算する色。
+   float retractionDuration_ = 0.5f;          ///< 親粒子の消滅後に末尾が先端へ到達する時間（秒）。
+   float tailWidthScale_ = 0.0f;              ///< トレイル末尾の幅倍率。
+   float textureTiling_ = 1.0f;               ///< トレイル全長に対するテクスチャの繰り返し回数。
 };
 }

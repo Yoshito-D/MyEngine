@@ -5,15 +5,6 @@
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Object.h"
 
-namespace {
-const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
-   GameEngine::AnimationComponent::kTypeName,
-   [](GameEngine::Object& o) -> GameEngine::IObjectComponent* {
-      return o.AddComponent<GameEngine::AnimationComponent>();
-   },
-   GameEngine::AnimationComponent::kDisplayName, GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model));
-}
-
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Assets/Model/ModelAsset.h"
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
@@ -28,6 +19,15 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include <cstring>
 #endif
+
+namespace {
+const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
+   GameEngine::AnimationComponent::kTypeName,
+   [](GameEngine::Object& o) -> GameEngine::IObjectComponent* {
+      return o.AddComponent<GameEngine::AnimationComponent>();
+   },
+   GameEngine::AnimationComponent::kDisplayName, GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model));
+}
 
 namespace GameEngine {
 

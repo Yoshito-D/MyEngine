@@ -105,16 +105,17 @@ public:
    void SetName(const std::wstring& name) { name_ = name; }
 
 private:
-   ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
-   std::wstring name_{};
-   ComPtr<IDxcBlob> vertexShaderBlob_ = nullptr;
-   ComPtr<IDxcBlob> pixelShaderBlob_ = nullptr;
-   const RootSignature* rootSignature_ = nullptr;
-   std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs_{};
-   D3D12_BLEND_DESC blendDesc_{};
-   D3D12_RASTERIZER_DESC rasterizerDesc_{};
-   D3D12_DEPTH_STENCIL_DESC depthStencilDesc_{};
-   DXGI_FORMAT rtvFormat_ = DXGI_FORMAT_R8G8B8A8_UNORM;
+   ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr; ///< 生成済みの所有グラフィックスPSO。
+   std::wstring name_{};                                         ///< 識別とエディター表示に使う名前。
+   ComPtr<IDxcBlob> vertexShaderBlob_ = nullptr;                 ///< コンパイル済み頂点シェーダーのバイトコード。
+   ComPtr<IDxcBlob> pixelShaderBlob_ = nullptr;                  ///< コンパイル済みピクセルシェーダーのバイトコード。
+   const RootSignature* rootSignature_ = nullptr;                ///< リソースのバインド配置を定めるルートシグネチャ。
+   std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs_{};   ///< D3D12へ渡す頂点入力要素の配列。
+   D3D12_BLEND_DESC blendDesc_{};                                ///< 色と透明度の合成方法を指定するD3D12設定。
+   D3D12_RASTERIZER_DESC rasterizerDesc_{};                      ///< カリングと塗りつぶしを指定するD3D12設定。
+   D3D12_DEPTH_STENCIL_DESC depthStencilDesc_{};                 ///< 深度・ステンシル処理を指定するD3D12設定。
+   DXGI_FORMAT rtvFormat_ = DXGI_FORMAT_R8G8B8A8_UNORM;          ///< このPSOが出力するレンダーターゲットの形式。
+   /// @brief PSOで使用する点・線・三角形の分類。
    D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 };
 }

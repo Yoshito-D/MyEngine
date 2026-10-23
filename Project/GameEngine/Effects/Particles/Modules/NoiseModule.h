@@ -71,8 +71,8 @@ public:
 #endif
 
 private:
-   RandomFloat strength_{1.0f, 1.0f, false};
-   RandomFloat frequency_{0.5f, 0.5f, false};
-   RandomFloat scrollSpeed_{1.0f, 1.0f, false};
+   RandomFloat strength_{1.0f, 1.0f, false};    ///< ノイズ強度の乱数範囲。
+   RandomFloat frequency_{0.5f, 0.5f, false};   ///< ノイズ周波数の乱数範囲。
+   RandomFloat scrollSpeed_{1.0f, 1.0f, false}; ///< ノイズ座標のスクロール速度の乱数範囲。
 };
 }

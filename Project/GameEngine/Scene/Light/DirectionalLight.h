@@ -55,7 +55,8 @@ public:
    bool ApplyIllumination(const DirectionalLightData& illumination);
 
 private:
+   /// @brief 平行光源のパラメーターを保持する所有GPUリソース。
    ComPtr<ID3D12Resource> directionalLightResource_ = nullptr;
-   DirectionalLightData* directionalLightData_ = nullptr;
+   DirectionalLightData* directionalLightData_ = nullptr; ///< ディレクショナルライトデータへのポインタ。
 };
 }

@@ -22,15 +22,15 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET {
    float4 color = float4(0, 0, 0, 0);
    float totalWeight = 0.0f;
 
-   // 可変サイズのブラーカーネル（知り合いのコードと同様）
-   int kernelRadius = max(1, kernelSize); // 四捨五入
+   // 最低でも3×3の範囲をサンプリングするため、半径を1以上にする。
+   int kernelRadius = max(1, kernelSize);
 
-   // 2Dガウシアンブラー（知り合いのコードと同じ構造）
+   // 中心からの距離に応じて周辺画素を重み付けし、2次元のぼかし色を求める。
    for (int x = -kernelRadius; x <= kernelRadius; x++) {
       for (int y = -kernelRadius; y <= kernelRadius; y++) {
          float2 offset = float2(x, y) * texelSize;
 
-         // ガウシアン重みの計算（知り合いのコードと同じ方式）
+         // sigmaが大きいほど離れたサンプルにも重みを残し、ぼかしを広げる。
          float distance = length(float2(x, y));
          float weight = exp(-distance * distance / (2.0f * sigma * sigma));
 
@@ -39,10 +39,10 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET {
       }
    }
 
-   // 重みで正規化（知り合いのコードと同様）
+   // サンプル数やsigmaによって画像全体の明るさが変わらないよう、重みの総和で割る。
    color /= totalWeight;
 
-   // 強度を適用（元の色とブラー色をブレンド - 知り合いのコードと同様）
+   // intensityで元画像とぼかし画像の混合比率を指定する。
    float4 originalColor = inputTexture.Sample(samplerLinear, uv);
    return lerp(originalColor, color, intensity);
 }

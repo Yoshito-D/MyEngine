@@ -39,9 +39,9 @@ enum class RenderPass {
 
 /// @brief モデル描画用データ
 struct ModelDrawData {
-   Model* model;
+   Model* model;                    ///< 描画するModelへの非所有参照。
    std::optional<size_t> meshIndex; ///< 選択されたサブメッシュ。未設定のコマンドはキュー投入前に分割する。
-   std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textures;
+   std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textures;            ///< 名前やスロットに対応するテクスチャの一覧。
    D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandle = {}; // 環境テクスチャSRV (ptr==0なら無効)
    Camera* camera;                                               // 描画時のカメラを保存
    BlendMode blendMode;                                          // ブレンドモード
@@ -49,36 +49,36 @@ struct ModelDrawData {
 
 /// @brief スプライト描画用データ
 struct SpriteDrawData {
-   Sprite* sprite;
-   Texture* texture;
-   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle;
+   Sprite* sprite;                               ///< 描画対象スプライトへの非所有参照。
+   Texture* texture;                             ///< 描画に使用するテクスチャへの非所有参照。
+   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle; ///< 描画時に参照するテクスチャSRVのGPUハンドル。
    Camera* camera;      // 描画時のカメラを保存
    BlendMode blendMode; // ブレンドモード
 };
 
 /// @brief UI用スプライト描画用データ
 struct UISpriteDrawData {
-   Sprite* sprite;
-   Texture* texture;
-   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle;
-   Sprite::AnchorPoint anchorPoint;
-   uint32_t screenWidth;
-   uint32_t screenHeight;
+   Sprite* sprite;                               ///< 描画対象スプライトへの非所有参照。
+   Texture* texture;                             ///< 描画に使用するテクスチャへの非所有参照。
+   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle; ///< 描画時に参照するテクスチャSRVのGPUハンドル。
+   Sprite::AnchorPoint anchorPoint;              ///< 画面上のアンカー。
+   uint32_t screenWidth;                         ///< UI配置の基準となる画面幅（ピクセル）。
+   uint32_t screenHeight;                        ///< UI配置の基準となる画面高（ピクセル）。
    BlendMode blendMode; // ブレンドモード
 };
 
 /// @brief UIテキスト描画用データ
 struct TextDrawData {
-   D3D12_GPU_DESCRIPTOR_HANDLE atlasSrv = {};
-   uint32_t indexCount = 0;
-   uint32_t startIndex = 0;
-   int32_t baseVertex = 0;
-   int32_t sortingOrder = 0;
+   D3D12_GPU_DESCRIPTOR_HANDLE atlasSrv = {}; ///< フォントアトラスをシェーダーから読むSRVのGPUハンドル。
+   uint32_t indexCount = 0;                   ///< 描画に使用する頂点参照番号の数。
+   uint32_t startIndex = 0;                   ///< 共有インデックスバッファ内の描画開始位置。
+   int32_t baseVertex = 0;                    ///< インデックス値へ加える頂点の基準オフセット。
+   int32_t sortingOrder = 0;                  ///< UI要素を前後に並べる描画順。
 };
 
 /// @brief パーティクル描画用データ
 struct ParticleDrawData {
-   ParticleSystem* particleSystem;
+   ParticleSystem* particleSystem; ///< 描画・更新するParticleSystemへの参照。
    Camera* camera; // 描画時のカメラを保存
 };
 
@@ -92,18 +92,18 @@ struct LineDrawData {
 
 /// @brief 描画コマンド
 struct DrawCommand {
-   DrawCommandType type;
-   BlendMode blendMode;
-   RenderPass renderPass;
+   DrawCommandType type;    ///< 処理対象の種類を区別する識別値。
+   BlendMode blendMode;     ///< 優先ブレンドモード（nullopt = 加算）。
+   RenderPass renderPass;   ///< このコマンドを実行する描画パス。
    bool isUISprite = false; // UIスプライトかどうかを識別するフラグ
 
    // 各種データ（該当するものだけ使用）
-   ModelDrawData modelData;
-   SpriteDrawData spriteData;
-   UISpriteDrawData uiSpriteData;
-   TextDrawData textData;
-   ParticleDrawData particleData;
-   LineDrawData lineData;
+   ModelDrawData modelData;       ///< 読み込み済みのメッシュ・マテリアル・スキニング情報。
+   SpriteDrawData spriteData;     ///< ワールド空間スプライトの描画情報。
+   UISpriteDrawData uiSpriteData; ///< 画面上のUIスプライトの描画情報。
+   TextDrawData textData;         ///< 共有テキストバッファの描画範囲とアトラス情報。
+   ParticleDrawData particleData; ///< 粒子描画の対象システムとカメラ情報。
+   LineDrawData lineData;         ///< ライン描画処理とソート位置・カメラ情報。
 
    /// @brief 後からファクトリ関数と同じ形式で値を設定できる空コマンドを生成する
    DrawCommand() = default;
@@ -218,7 +218,7 @@ public:
    const DrawCommand& GetDrawCommand() const override { return cmd_; }
 
 private:
-   DrawCommand cmd_;
+   DrawCommand cmd_; ///< 所有する値型の描画コマンド。
 };
 
 } // namespace GameEngine

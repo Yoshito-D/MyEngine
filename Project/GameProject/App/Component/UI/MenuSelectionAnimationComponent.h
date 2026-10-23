@@ -17,7 +17,9 @@ namespace App {
 /// @brief メニュー項目の参照と基準姿勢を保持し、選択・決定・非表示の演出を管理する。
 class MenuSelectionAnimationComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "MenuSelectionAnimationComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"メニュー選択演出", "Menu Selection Animation"};
 
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
@@ -71,10 +73,10 @@ private:
    };
 
    struct OptionVisual {
-      std::string objectId;
-      GameEngine::Vector3 baseScale = {1.0f, 1.0f, 1.0f};
-      float baseOpacity = 1.0f;
-      bool captured = false;
+      std::string objectId;                               ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
+      GameEngine::Vector3 baseScale = {1.0f, 1.0f, 1.0f}; ///< 演出開始前に記録した基準スケール。
+      float baseOpacity = 1.0f;                           ///< 演出で上書きする前の基準不透明度。
+      bool captured = false;                              ///< 演出前の基準サイズと透明度を取得済みかどうか。
    };
 
    GameEngine::Object* FindOptionObject(std::size_t optionIndex) const;
@@ -83,19 +85,19 @@ private:
    void ApplyReaction();
    void ValidateSettings();
 
-   std::vector<OptionVisual> options_;
-   float pulseDuration_ = 0.9f;
-   float pulseScale_ = 1.1f;
-   float switchDuration_ = 0.16f;
-   float switchScale_ = 0.82f;
-   float reactionDuration_ = 0.4f;
-   float reactionEndScale_ = 1.2f;
-   State state_ = State::Hidden;
-   std::int32_t selectedOption_ = -1;
-   float elapsed_ = 0.0f;
-   bool switching_ = false;
-   bool skipAdvance_ = false;
-   GameEngine::Vector3 reactionStartScale_ = {1.0f, 1.0f, 1.0f};
+   std::vector<OptionVisual> options_; ///< 選択演出を適用するメニュー項目と基準表示状態。
+   float pulseDuration_ = 0.9f;        ///< 選択中の拡縮を繰り返す周期（秒）。
+   float pulseScale_ = 1.1f;           ///< 選択中の拡縮演出で使う最大スケール倍率。
+   float switchDuration_ = 0.16f;      ///< 選択項目の変更演出に使う時間（秒）。
+   float switchScale_ = 0.82f;         ///< 選択が切り替わるときに一時適用するスケール倍率。
+   float reactionDuration_ = 0.4f;     ///< 選択確定後の反応演出に使う時間（秒）。
+   float reactionEndScale_ = 1.2f;     ///< 選択確定演出の終了時に使うスケール倍率。
+   State state_ = State::Hidden;       ///< 現在の処理段階または実行状態。
+   std::int32_t selectedOption_ = -1;  ///< 現在選択中のメニュー項目番号。負値は未選択。
+   float elapsed_ = 0.0f;              ///< 処理を開始してからの経過時間（秒）。
+   bool switching_ = false;            ///< 選択項目の切り替え演出が進行中かどうか。
+   bool skipAdvance_ = false;          ///< 演出を開始したフレームの時間加算を一度だけ省略する状態。
+   GameEngine::Vector3 reactionStartScale_ = {1.0f, 1.0f, 1.0f}; ///< 選択確定演出を開始したときのスケール。
 };
 
 } // namespace App

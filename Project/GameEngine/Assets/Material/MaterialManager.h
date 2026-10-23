@@ -34,7 +34,8 @@ public:
    std::vector<std::string> GetMaterialNames() const;
 
 private:
-   ID3D12Device* device_ = nullptr;
+   ID3D12Device* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   /// @brief 名前またはスロットごとのマテリアルデータ。
    std::unordered_map<std::string, std::unique_ptr<Material>> materials_;
 };
 }

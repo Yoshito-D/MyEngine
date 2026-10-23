@@ -10,8 +10,9 @@ namespace GameEngine {
 /// @brief Objectの自動描画可否と描画空間を設定する
 class RenderComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "RenderComponent";
-   static constexpr ComponentDisplayName kDisplayName{"描画", "Render"};
+   static constexpr ComponentDisplayName kDisplayName{"描画", "Render"}; ///< エディターに表示する日本語名と英語名。
 
    /// @brief 自動描画時に使用する座標空間
    enum class RenderSpace {
@@ -55,6 +56,6 @@ private:
    bool visible = true;          ///< Objectを描画対象として表示するか
    bool autoRender = true;       ///< Rendererの自動収集対象に含めるか
    bool applyPostProcess = true; ///< ポストプロセス前の描画キューへ投入するか
-   RenderSpace renderSpace = RenderSpace::World;
+   RenderSpace renderSpace = RenderSpace::World; ///< 自動描画で使用する描画空間。
 };
 }

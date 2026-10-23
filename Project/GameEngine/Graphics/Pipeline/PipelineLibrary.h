@@ -44,7 +44,9 @@ public:
    void Clear();
 
 private:
+   /// @brief 名前ごとに所有する描画用パイプライン。
    std::unordered_map<std::string, std::unique_ptr<PipelineState>> graphicsPipelines_;
+   /// @brief 名前ごとに保持するCompute用パイプライン。
    std::unordered_map<std::string, ComputePipelineDefinition> computePipelines_;
 };
 

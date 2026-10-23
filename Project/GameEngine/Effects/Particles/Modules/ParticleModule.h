@@ -32,6 +32,6 @@ public:
 #endif
 
 private:
-   bool enabled_ = true;
+   bool enabled_ = true; ///< モジュールが有効か。
 };
 }

@@ -1,8 +1,8 @@
 struct PixelShaderInput {
-   float4 position : SV_POSITION;
-   float2 texCoord : TEXCOORD0;
-   float4 color : COLOR0;
-   float4 atlasParameters : TEXCOORD1;
+   float4 position : SV_POSITION;      ///< ラスタライズ後の画面位置と深度。
+   float2 texCoord : TEXCOORD0;        ///< テクスチャ座標。
+   float4 color : COLOR0;              ///< 表示色のRGBA成分。
+   float4 atlasParameters : TEXCOORD1; ///< xyはアトラス寸法、zは距離範囲、wはMSDFなどのアトラス形式。
 };
 
 Texture2D<float4> gFontAtlas : register(t0);

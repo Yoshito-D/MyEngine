@@ -41,10 +41,11 @@ public:
 
 private:
    bool SaveCatalog(const nlohmann::json& data);
+   /// @brief 登録シーンと起動シーンを保存するカタログファイル。
    std::filesystem::path catalogPath_ = "resources/game/scene_catalog.json";
-   std::string initialSceneName_;
-   std::unordered_map<std::string, SceneDefinition> scenes_;
-   nlohmann::json catalogData_;
-   std::string lastError_;
+   std::string initialSceneName_;                            ///< 設定されている起動シーン名。
+   std::unordered_map<std::string, SceneDefinition> scenes_; ///< シーン名から保存先などの定義を引く索引。
+   nlohmann::json catalogData_;                              ///< 編集・保存するシーンカタログのJSON本体。
+   std::string lastError_;                                   ///< 直近のカタログ操作のエラー内容。
 };
 }

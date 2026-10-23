@@ -1,9 +1,9 @@
 #include "FullscreenTriangle.hlsli"
 
 struct PixelationParams {
-   float pixelSize;
-   float2 screenSize;
-   float padding;
+   float pixelSize;   ///< ピクセル化で同じ色にまとめるブロックの辺長。
+   float2 screenSize; ///< 画面の幅と高さ（ピクセル）。
+   float padding;     ///< GPU転送データの配置境界を揃える未使用領域。
 };
 
 Texture2D<float4> sourceTexture : register(t0);
@@ -11,7 +11,7 @@ SamplerState textureSampler : register(s0);
 ConstantBuffer<PixelationParams> params : register(b0);
 
 struct PSOutput {
-   float4 color : SV_TARGET0;
+   float4 color : SV_TARGET0; ///< 表示色のRGBA成分。
 };
 
 PSOutput main(VSOutput input) {

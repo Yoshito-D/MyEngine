@@ -88,14 +88,14 @@ public:
 private:
    // PlayerShadow.hlsliと同じ配列順・サイズ。CBVの確保サイズは別途256バイトへ切り上げる。
    struct MaskConstants {
-      Matrix4x4 playerShadowWVP{};
+      Matrix4x4 playerShadowWVP{}; ///< プレイヤー頂点を影マスクのクリップ空間へ移す行列。
    };
 
    struct ProjectConstants {
-      Matrix4x4 worldViewProjection{};
-      Matrix4x4 world{};
-      Matrix4x4 worldInverseTranspose{};
-      Matrix4x4 shadowViewProjection{};
+      Matrix4x4 worldViewProjection{};   ///< ローカル頂点を画面のクリップ空間へ移す合成行列。
+      Matrix4x4 world{};                 ///< ローカル頂点をワールド座標系へ移す変換行列。
+      Matrix4x4 worldInverseTranspose{}; ///< ワールド行列の逆行列の転置行列。
+      Matrix4x4 shadowViewProjection{};  ///< ワールド位置を影マスクの投影空間へ移す行列。
    };
 
    struct ShadowParameters {
@@ -109,19 +109,19 @@ private:
 
    // 事前に描画可能性を検証し、RTV変更後はGPUへの設定とDrawだけを行う。
    struct DrawGeometry {
-      D3D12_VERTEX_BUFFER_VIEW vertexView{};
-      D3D12_INDEX_BUFFER_VIEW indexView{};
-      UINT indexCount = 0;
-      size_t meshIndex = 0;
+      D3D12_VERTEX_BUFFER_VIEW vertexView{}; ///< 描画対象の頂点バッファビュー。
+      D3D12_INDEX_BUFFER_VIEW indexView{};   ///< 描画対象のインデックスバッファビュー。
+      UINT indexCount = 0;                   ///< 描画に使用する頂点参照番号の数。
+      size_t meshIndex = 0;                  ///< メッシュID。
    };
 
    struct ShadowBindings {
-      const PipelineState* maskPipeline = nullptr;
-      const PipelineState* projectPipeline = nullptr;
-      UINT maskConstants = 0;
-      UINT projectConstants = 0;
-      UINT parameters = 0;
-      UINT maskTexture = 0;
+      const PipelineState* maskPipeline = nullptr;    ///< 影マスクを描くパイプラインへの非所有参照。
+      const PipelineState* projectPipeline = nullptr; ///< 影を地表へ合成するパイプラインへの非所有参照。
+      UINT maskConstants = 0;                         ///< 影マスク用定数バッファのルートスロット番号。
+      UINT projectConstants = 0;                      ///< 影投影用定数バッファのルートスロット番号。
+      UINT parameters = 0;                            ///< 影の共通パラメーターを設定するルートスロット番号。
+      UINT maskTexture = 0;                           ///< 影マスクSRVを設定するルートスロット番号。
    };
 
    /// @brief 初期化失敗時またはGPU完了後に専用資源を破棄する。
@@ -166,35 +166,37 @@ private:
    /// @brief 通常シーンと同じ惑星メッシュに、深度EQUAL・深度書込なしで影を合成する。
    void DrawReceiverShadow(FrameContext& ctx);
 
-   GraphicsDevice* device_ = nullptr;
-   PlayerShadowSettings settings_{};
-   PlayerShadowFrameData frameData_{};
-   bool initialized_ = false;
-   bool hasFrameData_ = false;
-   bool maskReady_ = false;
-   std::string lastFailure_;
-   std::vector<DrawGeometry> playerGeometry_;
-   std::vector<DrawGeometry> receiverGeometry_;
-   ShadowBindings bindings_{};
+   GraphicsDevice* device_ = nullptr;           ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   PlayerShadowSettings settings_{};            ///< この処理に適用する設定値。
+   PlayerShadowFrameData frameData_{};          ///< このフレームに適用する描画対象と投影条件。
+   bool initialized_ = false;                   ///< 初期化が完了し、対応する終了処理が必要かどうか。
+   bool hasFrameData_ = false;                  ///< 現在フレームで有効な影描画要求を受理したかどうか。
+   bool maskReady_ = false;                     ///< 現在フレームで影マスクの描画を完了したかどうか。
+   std::string lastFailure_;                    ///< 同じエラーの再出力を防ぐ直近の失敗理由。
+   std::vector<DrawGeometry> playerGeometry_;   ///< 影マスクへ描くプレイヤーのサブメッシュ情報。
+   std::vector<DrawGeometry> receiverGeometry_; ///< 影を受け取る地表モデルのサブメッシュ情報。
+   ShadowBindings bindings_{};                  ///< モデル描画に必要なリソースのバインド契約。
 
-   Vector3 shadowUp_{};
-   Vector3 groundPosition_{};
-   Vector3 previousTangentUp_{0.0f, 0.0f, 1.0f};
-   Matrix4x4 shadowViewProjection_{};
+   Vector3 shadowUp_{};                          ///< 影カメラの向きを安定させる上方向。
+   Vector3 groundPosition_{};                    ///< プレイヤー直下の地表上にある影の投影中心。
+   Vector3 previousTangentUp_{0.0f, 0.0f, 1.0f}; ///< 影カメラの急反転を防ぐ前フレームの接線方向。
+   Matrix4x4 shadowViewProjection_{};            ///< ワールド位置を影マスクの投影空間へ移す行列。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> maskTexture_;
-   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> maskRtvHeap_;
-   std::shared_ptr<SrvDescriptorAllocation> maskSrvAllocation_;
-   D3D12_CPU_DESCRIPTOR_HANDLE maskRtvHandle_{};
-   D3D12_GPU_DESCRIPTOR_HANDLE maskSrvHandle_{};
+   Microsoft::WRL::ComPtr<ID3D12Resource> maskTexture_;         ///< マスクとして参照するテクスチャへの非所有参照。
+   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> maskRtvHeap_;   ///< 影マスク描画先のRTVを格納する所有ヒープ。
+   std::shared_ptr<SrvDescriptorAllocation> maskSrvAllocation_; ///< 影マスクを読み出すSRVスロットの共有所有権。
+   D3D12_CPU_DESCRIPTOR_HANDLE maskRtvHandle_{};                ///< 影マスクを描画先へ設定するRTVのCPUハンドル。
+   D3D12_GPU_DESCRIPTOR_HANDLE maskSrvHandle_{};                ///< 影マスクをシェーダーから読むSRVのGPUハンドル。
+   /// @brief 影またはマスク画像の現在のリソース遷移状態。
    D3D12_RESOURCE_STATES maskState_ = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> maskConstantBuffer_;
-   Microsoft::WRL::ComPtr<ID3D12Resource> projectConstantBuffer_;
+   Microsoft::WRL::ComPtr<ID3D12Resource> maskConstantBuffer_;    ///< プレイヤー影マスク描画の定数を保持するバッファ。
+   Microsoft::WRL::ComPtr<ID3D12Resource> projectConstantBuffer_; ///< プレイヤー影投影の定数を保持するバッファ。
+   /// @brief 影の不透明度などをGPUへ渡す所有定数バッファ。
    Microsoft::WRL::ComPtr<ID3D12Resource> parameterConstantBuffer_;
-   MaskConstants* mappedMaskConstants_ = nullptr;
-   ProjectConstants* mappedProjectConstants_ = nullptr;
-   ShadowParameters* mappedParameters_ = nullptr;
+   MaskConstants* mappedMaskConstants_ = nullptr;       ///< 影マスク定数バッファの永続Map先。
+   ProjectConstants* mappedProjectConstants_ = nullptr; ///< 影投影定数バッファの永続Map先。
+   ShadowParameters* mappedParameters_ = nullptr;       ///< 影の共通パラメーターバッファの永続Map先。
 };
 
 } // namespace GameEngine

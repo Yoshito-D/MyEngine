@@ -42,8 +42,8 @@ struct Transform {
    Vector3 GetActiveEuler() const { return QuaternionToEuler(orientation_); }
 
 private:
-   Quaternion orientation_ = Quaternion::Identity();
-   bool serializeAsQuaternion_ = false;
+   Quaternion orientation_ = Quaternion::Identity(); ///< 姿勢の正本として保持する正規化済みクォータニオン。
+   bool serializeAsQuaternion_ = false;              ///< 姿勢の保存形式としてQuaternion表現を選択するかどうか。
 
    static Quaternion EulerToQuaternion(const Vector3& eulerAngles) { return eulerAngles.ToQuaternion().Normalize(); }
 

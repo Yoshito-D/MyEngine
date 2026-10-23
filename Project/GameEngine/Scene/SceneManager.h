@@ -16,8 +16,8 @@ enum class SceneLoadStatus {
 
 /// @brief エディタに表示できる処理結果と診断メッセージ。
 struct SceneLoadResult {
-   SceneLoadStatus status = SceneLoadStatus::Succeeded;
-   std::string message;
+   SceneLoadStatus status = SceneLoadStatus::Succeeded; ///< 処理結果の成功・拒否・復旧・失敗などの分類。
+   std::string message;                                 ///< 処理結果や失敗理由を伝える説明文字列。
 
    /// @brief 処理が正常に完了した場合だけtrueへ変換する。
    explicit operator bool() const { return status == SceneLoadStatus::Succeeded; }
@@ -80,23 +80,23 @@ private:
    SceneLoadResult Replace(const SceneSnapshot& snapshot);
    SceneLoadResult Report(SceneLoadStatus status, std::string message);
    void BeginFadeIn();
-   SceneCatalog& catalog_;
-   std::unique_ptr<Scene> currentScene_;
-   std::optional<SceneSnapshot> pending_;
+   SceneCatalog& catalog_;                ///< 共有カタログ。
+   std::unique_ptr<Scene> currentScene_;  ///< 現在実行・編集している所有シーン。
+   std::optional<SceneSnapshot> pending_; ///< フレーム境界で適用する読み込み済みのシーン切り替え要求。
    enum class TransitionState {
       Idle,
       FadingOut,
       FadingIn
    };
-   TransitionState transitionState_ = TransitionState::Idle;
-   float elapsed_ = 0.0f;
-   float opacity_ = 0.0f;
-   bool commitReady_ = false;
-   bool replacing_ = false;
-   SceneLoadResult lastResult_;
-   std::function<void()> beforeReplace_;
-   std::function<void(const SceneSnapshot&, bool)> afterReplace_;
-   std::function<SceneSnapshot()> captureRecovery_;
-   static constexpr float kTransitionDuration = 0.4f;
+   TransitionState transitionState_ = TransitionState::Idle; ///< 暗転・シーン置換・復帰の進行段階。
+   float elapsed_ = 0.0f;                                    ///< 処理を開始してからの経過時間（秒）。
+   float opacity_ = 0.0f;                                    ///< 影の濃さ（0～1）。
+   bool commitReady_ = false;                                ///< 暗転が完了し、シーン実体を置換できるかどうか。
+   bool replacing_ = false;                                  ///< シーンの構築・復旧中で再入を拒否するかどうか。
+   SceneLoadResult lastResult_;                              ///< 即時操作と予約操作を含む、直近の処理結果。
+   std::function<void()> beforeReplace_;                     ///< 旧シーンを破棄する前に編集状態などを切り離す通知。
+   std::function<void(const SceneSnapshot&, bool)> afterReplace_; ///< 新規または復旧シーンを構築した後の接続通知。
+   std::function<SceneSnapshot()> captureRecovery_;               ///< 置換失敗時の復元元となる保存状態を取得する処理。
+   static constexpr float kTransitionDuration = 0.4f;             ///< シーン遷移の暗転・復帰にそれぞれ使う時間（秒）。
 };
 }

@@ -166,14 +166,21 @@ public:
    bool UpdateQuadTextureCoordinates(const std::array<Vector2, 4>& coordinates);
 
 private:
-   ComPtr<ID3D12Resource> vertexResource_ = nullptr;
-   ComPtr<ID3D12Resource> indexResource_ = nullptr;
-   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
-   D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
-   VertexData* vertexData_ = nullptr;
-   uint32_t* dynamicIndexData_ = nullptr;
-   uint32_t dynamicVertexCapacity_ = 0;
-   uint32_t dynamicIndexCapacity_ = 0;
-   UINT indexCount_ = 0;
+   /// @brief 立方体の各面で共有する、位置・UV・法線の頂点情報。
+   struct FaceVertex {
+      Vector4 pos;  ///< 頂点の位置と同次座標成分。
+      Vector2 uv;   ///< 画像を参照する2次元テクスチャ座標。
+      Vector3 norm; ///< 頂点の面方向を表す法線。
+   };
+
+   ComPtr<ID3D12Resource> vertexResource_ = nullptr; ///< 頂点データを保持する所有GPUリソース。
+   ComPtr<ID3D12Resource> indexResource_ = nullptr;  ///< 三角形の頂点参照番号を保持する所有GPUリソース。
+   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};     ///< 頂点バッファを描画入力へ設定するビュー。
+   D3D12_INDEX_BUFFER_VIEW indexBufferView_{};       ///< インデックスバッファを描画入力へ設定するビュー。
+   VertexData* vertexData_ = nullptr;     ///< 頂点データを参照するCPU側の永続Map先。対応リソースがメモリを所有する。
+   uint32_t* dynamicIndexData_ = nullptr; ///< 動的インデックスバッファの永続Map先。
+   uint32_t dynamicVertexCapacity_ = 0;   ///< 動的頂点バッファに確保した頂点数上限。
+   uint32_t dynamicIndexCapacity_ = 0;    ///< 動的インデックスバッファに確保した要素数上限。
+   UINT indexCount_ = 0;                  ///< 描画に使用する頂点参照番号の数。
 };
 }

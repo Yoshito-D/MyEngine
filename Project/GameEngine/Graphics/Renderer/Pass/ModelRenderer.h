@@ -34,12 +34,12 @@ public:
       std::function<void(const std::string&, BlendMode)> setPipelineFunc);
 
 private:
-   std::shared_ptr<SrvDescriptorAllocation> nullCubeAllocation_;
-   D3D12_GPU_DESCRIPTOR_HANDLE nullCubeHandle_{};
-   std::unordered_set<std::string> reportedFailures_;
-   GraphicsDevice* device_ = nullptr;
-   const PSOManager* psoManager_ = nullptr;
-   AssetManager* assetManager_ = nullptr;
+   std::shared_ptr<SrvDescriptorAllocation> nullCubeAllocation_; ///< キューブマップ未指定時のnull SRVの所有権。
+   D3D12_GPU_DESCRIPTOR_HANDLE nullCubeHandle_{};     ///< キューブマップ未指定時に設定するnull SRVのGPUハンドル。
+   std::unordered_set<std::string> reportedFailures_; ///< 同じ描画失敗を繰り返し出力しないための識別キー集合。
+   GraphicsDevice* device_ = nullptr;                 ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   const PSOManager* psoManager_ = nullptr;           ///< パイプラインマネージャーを追加。
+   AssetManager* assetManager_ = nullptr;             ///< アセットの読み込みと共有を委譲する管理オブジェクトへの参照。
 };
 
 } // namespace GameEngine

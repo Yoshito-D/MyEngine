@@ -203,30 +203,30 @@ public:
 #endif
 
 private:
-   MeshType meshType_ = MeshType::Quad;
-   float originY_ = 0.5f;
-   bool meshDirty_ = false;
-   float ringInnerRadius_ = 0.4f;
-   float ringOuterRadius_ = 0.5f;
-   uint32_t ringSegments_ = 32;
-   float sphereRadius_ = 0.5f;
-   uint32_t sphereStacks_ = 16;
-   uint32_t sphereSlices_ = 32;
-   Vector3 boxSize_{1.0f, 1.0f, 1.0f};
-   float cylinderTopRadius_ = 0.5f;
-   float cylinderBottomRadius_ = 0.5f;
-   float cylinderHeight_ = 1.0f;
-   uint32_t cylinderSegments_ = 32;
-   float coneRadius_ = 0.5f;
-   float coneHeight_ = 1.0f;
-   uint32_t coneSegments_ = 32;
-   float circleRadius_ = 0.5f;
-   uint32_t circleSegments_ = 32;
-   float planeWidth_ = 1.0f;
-   float planeDepth_ = 1.0f;
-   float torusMajorRadius_ = 0.5f;
-   float torusMinorRadius_ = 0.2f;
-   uint32_t torusMajorSegments_ = 32;
-   uint32_t torusMinorSegments_ = 16;
+   MeshType meshType_ = MeshType::Quad; ///< メッシュ種別。
+   float originY_ = 0.5f;               ///< メッシュのY原点。
+   bool meshDirty_ = false;             ///< メッシュ再構築が必要かどうかする。
+   float ringInnerRadius_ = 0.4f;       ///< リング内半径。
+   float ringOuterRadius_ = 0.5f;       ///< リング外半径。
+   uint32_t ringSegments_ = 32;         ///< リング分割数。
+   float sphereRadius_ = 0.5f;          ///< 球の半径。
+   uint32_t sphereStacks_ = 16;         ///< 球のスタック数。
+   uint32_t sphereSlices_ = 32;         ///< 球のスライス数。
+   Vector3 boxSize_{1.0f, 1.0f, 1.0f};  ///< 箱の大きさ。
+   float cylinderTopRadius_ = 0.5f;     ///< 円柱の上半径。
+   float cylinderBottomRadius_ = 0.5f;  ///< 円柱の下半径。
+   float cylinderHeight_ = 1.0f;        ///< 円柱の高さ。
+   uint32_t cylinderSegments_ = 32;     ///< 円柱の分割数。
+   float coneRadius_ = 0.5f;            ///< 円錐の半径。
+   float coneHeight_ = 1.0f;            ///< 円錐の高さ。
+   uint32_t coneSegments_ = 32;         ///< 円錐の分割数。
+   float circleRadius_ = 0.5f;          ///< 円の半径。
+   uint32_t circleSegments_ = 32;       ///< 円の分割数。
+   float planeWidth_ = 1.0f;            ///< 平面の幅。
+   float planeDepth_ = 1.0f;            ///< 平面の奥行き。
+   float torusMajorRadius_ = 0.5f;      ///< トーラスの主半径。
+   float torusMinorRadius_ = 0.2f;      ///< トーラスの副半径。
+   uint32_t torusMajorSegments_ = 32;   ///< トーラスの主分割数。
+   uint32_t torusMinorSegments_ = 16;   ///< トーラスの副分割数。
 };
 }

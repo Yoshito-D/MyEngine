@@ -12,7 +12,9 @@ namespace GameEngine {
 /// @brief UIの移動、拡縮、回転を時間補間するコンポーネント
 class UITransformTweenComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "UITransformTweenComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"UIトゥイーン", "UI Transform Tween"};
 
    /// @brief コンポーネントの型名を取得する
@@ -63,19 +65,19 @@ public:
 
       /// @brief 位置、拡縮、回転の補間範囲と再生設定
       bool animatePosition = true;
-      bool animateScale = false;
-      bool animateRotation = false;
-      Vector2 startPosition = {0.0f, 0.0f};
-      Vector2 endPosition = {0.0f, 0.0f};
-      Vector2 startScale = {1.0f, 1.0f};
-      Vector2 endScale = {1.0f, 1.0f};
-      float startRotation = 0.0f;
-      float endRotation = 0.0f;
-      float delay = 0.0f;
-      float duration = 0.5f;
-      bool playOnEnable = true;
-      UIPlaybackMode playbackMode = UIPlaybackMode::Once;
-      UIEasingType easing = UIEasingType::EaseOutCubic;
+      bool animateScale = false;                          ///< 拡縮をアニメーションの対象に含めるかどうか。
+      bool animateRotation = false;                       ///< 回転をアニメーションの対象に含めるかどうか。
+      Vector2 startPosition = {0.0f, 0.0f};               ///< アニメーション開始時のUI位置。
+      Vector2 endPosition = {0.0f, 0.0f};                 ///< アニメーション終了時のUI位置。
+      Vector2 startScale = {1.0f, 1.0f};                  ///< アニメーション開始時または粒子生成時の拡大率。
+      Vector2 endScale = {1.0f, 1.0f};                    ///< アニメーション終了時の拡大率。
+      float startRotation = 0.0f;                         ///< アニメーション開始時または粒子生成時の回転。
+      float endRotation = 0.0f;                           ///< アニメーション終了時の回転角。
+      float delay = 0.0f;                                 ///< 再生開始から変化を始めるまでの待機時間（秒）。
+      float duration = 0.5f;                              ///< 処理または再生が継続する時間（秒）。
+      bool playOnEnable = true;                           ///< コンポーネントが有効になるたびに自動再生するかどうか。
+      UIPlaybackMode playbackMode = UIPlaybackMode::Once; ///< 1回・繰り返し・往復などの再生方式。
+      UIEasingType easing = UIEasingType::EaseOutCubic;   ///< 再生進行度を補間量へ変換するイージング方式。
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
@@ -85,26 +87,26 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   bool animatePosition = true;
-   bool animateScale = false;
-   bool animateRotation = false;
-   Vector2 startPosition = {0.0f, 0.0f};
-   Vector2 endPosition = {0.0f, 0.0f};
-   Vector2 startScale = {1.0f, 1.0f};
-   Vector2 endScale = {1.0f, 1.0f};
-   float startRotation = 0.0f;
-   float endRotation = 0.0f;
-   float delay = 0.0f;
-   float duration = 0.5f;
-   bool playOnEnable = true;
-   UIPlaybackMode playbackMode = UIPlaybackMode::Once;
-   UIEasingType easing = UIEasingType::EaseOutCubic;
+   bool animatePosition = true;                        ///< 位置、拡縮、回転の補間範囲と再生設定。
+   bool animateScale = false;                          ///< 拡縮をアニメーションの対象に含めるかどうか。
+   bool animateRotation = false;                       ///< 回転をアニメーションの対象に含めるかどうか。
+   Vector2 startPosition = {0.0f, 0.0f};               ///< アニメーション開始時のUI位置。
+   Vector2 endPosition = {0.0f, 0.0f};                 ///< アニメーション終了時のUI位置。
+   Vector2 startScale = {1.0f, 1.0f};                  ///< アニメーション開始時または粒子生成時の拡大率。
+   Vector2 endScale = {1.0f, 1.0f};                    ///< アニメーション終了時の拡大率。
+   float startRotation = 0.0f;                         ///< アニメーション開始時または粒子生成時の回転。
+   float endRotation = 0.0f;                           ///< アニメーション終了時の回転角。
+   float delay = 0.0f;                                 ///< 再生開始から変化を始めるまでの待機時間（秒）。
+   float duration = 0.5f;                              ///< 処理または再生が継続する時間（秒）。
+   bool playOnEnable = true;                           ///< コンポーネントが有効になるたびに自動再生するかどうか。
+   UIPlaybackMode playbackMode = UIPlaybackMode::Once; ///< 1回・繰り返し・往復などの再生方式。
+   UIEasingType easing = UIEasingType::EaseOutCubic;   ///< 再生進行度を補間量へ変換するイージング方式。
 
 private:
    void Apply(float progress);
 
-   float elapsed_ = 0.0f;
-   bool playing_ = true;
+   float elapsed_ = 0.0f; ///< 処理を開始してからの経過時間（秒）。
+   bool playing_ = true;  ///< 再生中か。
 };
 
 } // namespace GameEngine

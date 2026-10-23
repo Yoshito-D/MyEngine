@@ -54,7 +54,7 @@ private:
    ///          開始閾値未満では惑星方向補間を始めず、最大閾値で最大係数になる。
    float ComputePlanetDirectionGravityFactorTarget(
       const RearCameraInput& input, const RearCameraSettings& settings) const;
-   RearCameraPlanetState state_;
+   RearCameraPlanetState state_; ///< この段階の確定済み状態。
 };
 
 } // namespace App

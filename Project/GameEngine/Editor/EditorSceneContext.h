@@ -304,7 +304,7 @@ private:
 
    private:
       Object* ResolveObject(const std::string& id) const;
-      EditorSceneContext& owner_;
+      EditorSceneContext& owner_; ///< この部品の接続先となる所有オブジェクトへの参照。
    };
 
    void FinishCommand(bool changed);
@@ -317,23 +317,25 @@ private:
    void SetStatus(std::string message, Logger::LogLevel level = Logger::LogLevel::Info);
    void ApplyDuplicateOffset(nlohmann::json& snapshot) const;
 
-   SceneDefinition definition_;
+   SceneDefinition definition_; ///< シーン名と保存先などのシーン定義。
+   /// @brief suspendedObjectId_: シーン実体の差し替え後に選択を復元するObjectの安定ID。suspendedParticleId_:
+   /// シーン実体の差し替え後に選択を復元するParticleSystemの安定ID。
    std::string suspendedObjectId_, suspendedParticleId_;
-   bool isDirty_ = false;
-   bool referencesDirty_ = true;
-   std::string lastStatusMessage_;
-   Object* selectedObject_ = nullptr;
-   ParticleSystem* selectedParticleSystem_ = nullptr;
-   EditorAssetRegistry assetRegistry_;
-   SceneWorld* world_;
+   bool isDirty_ = false;                             ///< 未保存の編集があるかどうか。
+   bool referencesDirty_ = true;                      ///< 編集によってコンポーネント参照の再解決が必要かどうか。
+   std::string lastStatusMessage_;                    ///< 直近の保存・読込操作の状態メッセージ。
+   Object* selectedObject_ = nullptr;                 ///< 選択中の編集対象Objectへの非所有参照。
+   ParticleSystem* selectedParticleSystem_ = nullptr; ///< 選択中のParticleSystemへの非所有参照。
+   EditorAssetRegistry assetRegistry_;                ///< アセットの一覧・再走査・ファイル操作を管理するレジストリ。
+   SceneWorld* world_;                                ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
 
    SceneObjectStore& Store() { return world_->GetObjectStore(); }
 
    const SceneObjectStore& Store() const { return world_->GetObjectStore(); }
 
-   EditorCommandStack commandStack_;
-   size_t editRevision_ = 0;
-   std::vector<std::string> hierarchyOrder_;
+   EditorCommandStack commandStack_; ///< 編集操作のUndo・Redo履歴。
+   size_t editRevision_ = 0;         ///< 入れ子の編集をInspectorから二重記録しないため、成功した履歴変更の番号。
+   std::vector<std::string> hierarchyOrder_; ///< ヒエラルキー表示順に並べた安定Entity ID。
 };
 
 } // namespace GameEngine

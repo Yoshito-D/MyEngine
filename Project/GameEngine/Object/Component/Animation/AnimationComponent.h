@@ -14,7 +14,9 @@ namespace GameEngine {
 /// @brief モデルのノードまたはスケルトンへアニメーションクリップを適用する
 class AnimationComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "AnimationComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"アニメーション", "Animation"};
 
    /// @copydoc IObjectComponent::GetTypeName
@@ -95,9 +97,9 @@ private:
    void ApplyCurrentPose(const AnimationClip& selectedClip);
    Vector3 QuaternionToEuler_(const Quaternion& q) const;
 
-   std::shared_ptr<AnimationAsset> cachedAnimationAsset_;
-   std::string cachedAnimationName_;
-   Animator animator_;
+   std::shared_ptr<AnimationAsset> cachedAnimationAsset_; ///< 解決済みアニメーションアセットの共有参照。
+   std::string cachedAnimationName_;                      ///< キャッシュ済みアニメーションアセットを識別する名前。
+   Animator animator_;                                    ///< クリップの再生時刻とノード姿勢を管理する状態。
 };
 
 }

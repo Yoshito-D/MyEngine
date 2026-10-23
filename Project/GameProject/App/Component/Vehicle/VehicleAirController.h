@@ -15,7 +15,9 @@ class GravityBody;
 /// - 着地した瞬間に角速度をリセットする（VehicleMover から呼ばれる）
 class VehicleAirController final : public GameEngine::IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "VehicleAirController";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両空中制御", "Vehicle Air Controller"};
 
    /// @copydoc GameEngine::IObjectComponent::GetTypeName
@@ -66,8 +68,8 @@ private:
    /// @brief roll 角速度を回転クォータニオンへ反映する
    void ApplyRollRotation(GameEngine::Quaternion& rot, const GameEngine::Vector3& localForward, float deltaTime) const;
 
-   float angularVelRoll_ = 0.0f;
-   float angularVelPitch_ = 0.0f;
+   float angularVelRoll_ = 0.0f;  ///< 空中ロール操作の現在の角速度。
+   float angularVelPitch_ = 0.0f; ///< 空中ピッチ操作の現在の角速度。
 };
 
 } // namespace App

@@ -9,11 +9,11 @@ namespace GameEngine {
 class Window {
 public:
    // 画面サイズ
-   static const int32_t kWindowWidth = 1280;
-   static const int32_t kWindowHeight = 720;
+   static const int32_t kWindowWidth = 1280; ///< 起動時ウィンドウの基準横幅（ピクセル）。
+   static const int32_t kWindowHeight = 720; ///< 起動時ウィンドウの基準高さ（ピクセル）。
 
-   static const int32_t kResolutionWidth = 1920;
-   static const int32_t kResolutionHeight = 1080;
+   static const int32_t kResolutionWidth = 1920;  ///< 描画解像度の基準横幅（ピクセル）。
+   static const int32_t kResolutionHeight = 1080; ///< 描画解像度の基準高さ（ピクセル）。
 
    /// @brief UI配置の基準とする論理画面幅
    static constexpr int32_t kUiReferenceWidth = kWindowWidth;
@@ -57,12 +57,12 @@ public:
 private:
    HWND hwnd_ = nullptr;   // ウィンドウハンドル
    WNDCLASSEX wndClass_{}; // ウィンドウクラス
-   UINT windowStyle_;
-   float aspectRatio_;
-   bool isFullscreen_ = false;
-   RECT windowedRect_{};
-   LONG windowedStyle_ = 0;
-   LONG windowedExStyle_ = 0;
+   UINT windowStyle_;      ///< ウィンドウ生成・切り替えに使うWin32スタイル。
+   float aspectRatio_;     ///< 横幅を高さで割った投影アスペクト比。
+   bool isFullscreen_ = false; ///< フルスクリーン状態。
+   RECT windowedRect_{};       ///< フルスクリーン解除時に復元するウィンドウ矩形。
+   LONG windowedStyle_ = 0;    ///< フルスクリーン解除時に復元する通常スタイル。
+   LONG windowedExStyle_ = 0;  ///< フルスクリーン解除時に復元する拡張スタイル。
 
 private:
    /// @brief ウィンドウプロシージャ

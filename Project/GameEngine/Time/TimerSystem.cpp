@@ -67,6 +67,7 @@ void TimerSystem::Update(float deltaTime) {
 
    updating = true;
 
+   // この関数の局所staticにだけ作用するガードなので、型も同じスコープに閉じ込める。
    struct UpdateGuard {
       ~UpdateGuard() { updating = false; }
    } guard;

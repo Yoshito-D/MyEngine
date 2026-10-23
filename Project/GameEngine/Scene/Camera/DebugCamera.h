@@ -28,7 +28,7 @@ public:
    const OrbitalBody* GetOrbitalBody() const { return orbitalBody_; }
 
 private:
-   OrbitalBody* orbitalBody_ = nullptr;
+   OrbitalBody* orbitalBody_ = nullptr; ///< OrbitalBodyコンポーネント。
 };
 
 } // namespace GameEngine

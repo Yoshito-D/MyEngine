@@ -1,12 +1,12 @@
 #include "Skybox.hlsli"
 
 struct PixelShaderOutput {
-   float32_t4 color : SV_TARGET0;
+   float32_t4 color : SV_TARGET0; ///< 表示色のRGBA成分。
 };
 
 // CPU側SkyboxMaterialDataと一致する1レジスター（16バイト）の色変調値。
 struct Material {
-   float32_t4 color;
+   float32_t4 color; ///< 表示色のRGBA成分。
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);

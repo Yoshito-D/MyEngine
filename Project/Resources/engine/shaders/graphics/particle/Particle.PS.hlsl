@@ -1,22 +1,22 @@
 #include "Particle.hlsli"
 
 struct Material {
-   float4 color;
-   float4x4 uvTransform;
-   float4 renderingParams;
-   float4 effectParams;
-   float4 sceneParams;
-   float4 projectionParams;
+   float4 color;            ///< 表示色のRGBA成分。
+   float4x4 uvTransform;    ///< UV変換行列。
+   float4 renderingParams;  ///< x: 輝度、y: アルファ閾値、z: トゥーン階調数。
+   float4 effectParams;     ///< x: ソフト有効、y: 距離、z: 歪みピクセル、w: 歪み混合率。
+   float4 sceneParams;      ///< x: 幅、y: 高さ、z: near、w: far。
+   float4 projectionParams; ///< x: 平行投影フラグ、y: 歪みにRGフローマップを使用。
 };
 
 struct PixelShaderOutput {
-   float4 color : SV_TARGET0;
+   float4 color : SV_TARGET0; ///< 表示色のRGBA成分。
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
 
 cbuffer ParticleDrawParameters : register(b1) {
-   uint gRefractionPass;
+   uint gRefractionPass; ///< 背景を歪ませる屈折パスなら1、本体色を描くパスなら0。
 };
 
 Texture2D<float4> gTexture : register(t0);

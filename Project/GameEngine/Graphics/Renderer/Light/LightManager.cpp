@@ -98,26 +98,6 @@ bool ReadVector4(const json& source, const char* key, GameEngine::Vector4& desti
    }
 }
 
-struct DirectionalSceneLight {
-   std::string id;
-   GameEngine::DirectionalLight::DirectionalLightData data{};
-};
-
-struct PointSceneLight {
-   std::string id;
-   GameEngine::PointLight::PointLightData data{};
-};
-
-struct SpotSceneLight {
-   std::string id;
-   GameEngine::SpotLight::SpotLightData data{};
-};
-
-struct AreaSceneLight {
-   std::string id;
-   GameEngine::AreaLight::AreaLightData data{};
-};
-
 #ifdef USE_IMGUI
 const char* LocalizeEditorText(const char* japanese, const char* english) {
    return GameEngine::ImGuiHelper::Localize({japanese, english});

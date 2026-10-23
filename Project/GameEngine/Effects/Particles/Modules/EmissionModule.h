@@ -66,17 +66,17 @@ public:
 #endif
 
 private:
-   bool enabled_ = true;
-   float rateOverTime_ = 10.0f;
-   float rateOverDistance_ = 0.0f;
+   bool enabled_ = true;           ///< この機能を実行するかどうか。
+   float rateOverTime_ = 10.0f;    ///< 1秒あたりに放出する粒子数。
+   float rateOverDistance_ = 0.0f; ///< エミッターの移動距離1単位あたりに放出する粒子数。
 
    struct BurstCursor {
-      uint32_t firedCount = 0;
-      float nextFireTime = -1.0f;
+      uint32_t firedCount = 0;    ///< 現在の再生で発火済みのバースト回数。
+      float nextFireTime = -1.0f; ///< 次のバーストを発火するシステム時刻（秒）。負値は未初期化。
    };
 
    static Burst ValidateBurst(Burst burst);
-   std::vector<Burst> bursts_;
-   std::vector<BurstCursor> burstStates_;
+   std::vector<Burst> bursts_;            ///< 保存対象となるバーストの開始時刻・粒子数・周期設定。
+   std::vector<BurstCursor> burstStates_; ///< バースト設定と同じ順序で保持する再生中の発火カーソル。
 };
 }

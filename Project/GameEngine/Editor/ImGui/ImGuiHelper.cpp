@@ -49,14 +49,7 @@ namespace {
 
 EditorLanguage gLanguage = EditorLanguage::Japanese;
 
-struct VectorComponent {
-   const char* label;
-   float* value;
-   float resetValue;
-   ImVec4 buttonColor;
-   ImVec4 hoveredColor;
-   ImVec4 activeColor;
-};
+using Detail::VectorComponent;
 
 void DrawVisibleLabel(const std::string& label) {
    // ImGuiの##以降はID専用なので、プロパティ名としては利用者に見せない。

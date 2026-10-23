@@ -175,20 +175,21 @@ public:
 
 private:
    void SetCameraForGpuData();
-   Transform transform_;
-   float fovY_ = kDefaultFovY;
-   float aspectRatio_ = 0.0f;
-   float nearClip_ = kDefaultNearClip;
-   float farClip_ = kDefaultFarClip;
-   float orthographicWidth_ = static_cast<float>(Window::kResolutionWidth);
-   float orthographicHeight_ = static_cast<float>(Window::kResolutionHeight);
-   ProjectionType projectionType_ = ProjectionType::Perspective;
+   Transform transform_;                                                      ///< カメラのトランスフォーム。
+   float fovY_ = kDefaultFovY;                                                ///< 透視投影の垂直視野角（ラジアン）。
+   float aspectRatio_ = 0.0f;                                                 ///< 投影面のアスペクト比。
+   float nearClip_ = kDefaultNearClip;                                        ///< ニアクリップ距離。
+   float farClip_ = kDefaultFarClip;                                          ///< ファークリップ距離。
+   float orthographicWidth_ = static_cast<float>(Window::kResolutionWidth);   ///< 平行投影で表示する空間の横幅。
+   float orthographicHeight_ = static_cast<float>(Window::kResolutionHeight); ///< 平行投影で表示する空間の高さ。
+   ProjectionType projectionType_ = ProjectionType::Perspective;              ///< 現在の投影方式。
 
-   Matrix4x4 viewProjectionMatrix_{};
-   Matrix4x4 viewMatrix_{};
+   Matrix4x4 viewProjectionMatrix_{}; ///< 現在のビュー・プロジェクション合成行列。
+   Matrix4x4 viewMatrix_{};           ///< 現在のビュー行列。
 
+   /// @brief カメラの位置・投影設定を保持する所有GPUリソース。
    Microsoft::WRL::ComPtr<ID3D12Resource> cameraResource_ = nullptr;
-   CameraForGPU* cameraForGpuData_ = nullptr;
+   CameraForGPU* cameraForGpuData_ = nullptr; ///< カメラ定数バッファの永続Map先。
 };
 
 } // namespace GameEngine

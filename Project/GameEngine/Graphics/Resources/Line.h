@@ -10,8 +10,8 @@ class Line {
 public:
    /// @brief 頂点構造体
    struct Vertex {
-      Vector3 position;
-      Vector4 color;
+      Vector3 position; ///< 描画形状を構成する基準頂点の位置。
+      Vector4 color;    ///< 色。
    };
 
    /// @brief コンストラクタ
@@ -40,8 +40,8 @@ public:
    std::array<Vertex, 2> GetVertices() const;
 
 private:
-   Vector3 start_;
-   Vector3 end_;
-   Vector4 color_;
+   Vector3 start_; ///< スタート位置。
+   Vector3 end_;   ///< エンド位置。
+   Vector4 color_; ///< 色。
 };
 }

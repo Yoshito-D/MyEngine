@@ -178,11 +178,37 @@ public:
    bool DebugDraw();
 
 private:
-   std::map<std::string, std::unique_ptr<DirectionalLight>> directionalLights_;
-   std::map<std::string, std::unique_ptr<PointLight>> pointLights_;
-   std::map<std::string, std::unique_ptr<SpotLight>> spotLights_;
-   std::map<std::string, std::unique_ptr<AreaLight>> areaLights_;
+   /// @brief 検証完了まで一時保持する、シーンの平行光源設定。
+   struct DirectionalSceneLight {
+      std::string id;                                ///< シーン内の平行光源を識別するID。
+      DirectionalLight::DirectionalLightData data{}; ///< 保存対象となる平行光源のGPUパラメーター。
+   };
 
+   /// @brief 検証完了まで一時保持する、シーンの点光源設定。
+   struct PointSceneLight {
+      std::string id;                    ///< シーン内の点光源を識別するID。
+      PointLight::PointLightData data{}; ///< 保存対象となる点光源のGPUパラメーター。
+   };
+
+   /// @brief 検証完了まで一時保持する、シーンのスポット光源設定。
+   struct SpotSceneLight {
+      std::string id;                  ///< シーン内のスポット光源を識別するID。
+      SpotLight::SpotLightData data{}; ///< 保存対象となるスポット光源のGPUパラメーター。
+   };
+
+   /// @brief 検証完了まで一時保持する、シーンの矩形光源設定。
+   struct AreaSceneLight {
+      std::string id;                  ///< シーン内の矩形光源を識別するID。
+      AreaLight::AreaLightData data{}; ///< 保存対象となる矩形光源のGPUパラメーター。
+   };
+
+   /// @brief 名前ごとに管理する平行光源の一覧。
+   std::map<std::string, std::unique_ptr<DirectionalLight>> directionalLights_;
+   std::map<std::string, std::unique_ptr<PointLight>> pointLights_; ///< 名前ごとに管理する点光源の一覧。
+   std::map<std::string, std::unique_ptr<SpotLight>> spotLights_;   ///< 名前ごとに管理するスポット光源の一覧。
+   std::map<std::string, std::unique_ptr<AreaLight>> areaLights_;   ///< 名前ごとに管理する矩形光源の一覧。
+
+   /// @brief 各種ライトのGPU転送バッファを管理する所有オブジェクト。
    std::unique_ptr<LightDataBuffer> lightDataBuffer_ = nullptr;
 };
 }

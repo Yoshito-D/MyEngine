@@ -1,8 +1,8 @@
 #include "Line3d.hlsli"
 
 struct TransformationMatrix {
-   float4x4 wVP;
-   float4x4 world;
+   float4x4 wVP;   ///< ワールド・ビュー・プロジェクション行列。
+   float4x4 world; ///< ローカル頂点をワールド座標系へ移す変換行列。
 };
 
 ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0);

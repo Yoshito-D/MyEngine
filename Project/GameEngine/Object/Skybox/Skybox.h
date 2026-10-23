@@ -67,23 +67,24 @@ public:
 private:
    /// @brief VS側: TransformationMatrix (wVP / world / worldInverseTranspose)
    struct SkyboxTransformData {
-      Matrix4x4 wVP;
-      Matrix4x4 world;
-      Matrix4x4 worldInverseTranspose;
+      Matrix4x4 wVP;                   ///< ワールド・ビュー・プロジェクション行列。
+      Matrix4x4 world;                 ///< ローカル頂点をワールド座標系へ移す変換行列。
+      Matrix4x4 worldInverseTranspose; ///< ワールド行列の逆行列の転置行列。
    };
 
    /// @brief PS側: Material
    struct SkyboxMaterialData {
-      Vector4 color;
+      Vector4 color; ///< 表示色のRGBA成分。
    };
 
-   static std::vector<Skybox*> sRegisteredSkyboxes_;
+   static std::vector<Skybox*> sRegisteredSkyboxes_; ///< 自動描画の候補として登録されたSkyboxの非所有一覧。
 
-   Mesh mesh_;
-   ComPtr<ID3D12Resource> transformResource_ = nullptr;
-   SkyboxTransformData* transformData_ = nullptr;
+   Mesh mesh_;                                          ///< メッシュ。
+   ComPtr<ID3D12Resource> transformResource_ = nullptr; ///< スカイボックスの変換行列を保持する所有定数バッファ。
+   SkyboxTransformData* transformData_ = nullptr;       ///< スカイボックス変換バッファの永続Map先。
 
-   ComPtr<ID3D12Resource> materialResource_ = nullptr;
+   ComPtr<ID3D12Resource> materialResource_ = nullptr; ///< 描画用のマテリアル設定を保持する所有GPUリソース。
+   /// @brief 描画用のマテリアル設定を参照するCPU側の永続Map先。対応リソースがメモリを所有する。
    SkyboxMaterialData* materialData_ = nullptr;
 };
 

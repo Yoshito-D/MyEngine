@@ -23,15 +23,15 @@ public:
 
    /// @brief スポットライトデータ構造体
    struct SpotLightData {
-      Vector4 color;
-      Vector3 position;
-      float intensity;
-      Vector3 direction;
-      float distance;
-      float decay;
-      float cosAngle;
-      float cosFalloffStart;
-      float padding;
+      Vector4 color;         ///< 表示色のRGBA成分。
+      Vector3 position;      ///< 光源中心のワールド位置。
+      float intensity;       ///< 効果または光の強さ。
+      Vector3 direction;     ///< 光が進むワールド方向。
+      float distance;        ///< 基準位置からの距離。
+      float decay;           ///< 距離減衰。
+      float cosAngle;        ///< スポット光の外側コーン角の余弦。
+      float cosFalloffStart; ///< スポット光の減衰開始コーン角の余弦。
+      float padding;         ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief デバイスを取得して初期化
@@ -63,7 +63,8 @@ public:
    bool ApplyIllumination(const SpotLightData& illumination);
 
 private:
+   /// @brief スポット光源のパラメーターを保持する所有GPUリソース。
    Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_ = nullptr;
-   SpotLightData* spotLightData_ = nullptr;
+   SpotLightData* spotLightData_ = nullptr; ///< スポットライトデータへのポインタ。
 };
 }

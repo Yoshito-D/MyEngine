@@ -21,8 +21,8 @@ enum class AudioBus {
 
 /// @brief 世代番号で検証する再生識別子。完了またはRelease後は無効になる。
 struct AudioHandle {
-   uint32_t index = UINT32_MAX;
-   uint32_t generation = 0;
+   uint32_t index = UINT32_MAX; ///< 対応する配列またはリソース内の要素番号。
+   uint32_t generation = 0;     ///< 再利用されたスロットと古いハンドルを区別する世代番号。
 
    /// @brief 構文上有効なインデックスを持つかどうか。
    explicit operator bool() const { return index != UINT32_MAX; }
@@ -151,20 +151,25 @@ private:
    using State = AudioPlaybackState;
 
    struct Entry {
-      uint32_t generation = 1;
-      std::shared_ptr<const SoundClip> clip;
-      IXAudio2SourceVoice* voice = nullptr;
-      XAUDIO2_BUFFER buffer{};
-      AudioBus bus = AudioBus::Se;
-      State state = State::Stopped;
+      uint32_t generation = 1;               ///< 再利用されたスロットと古いハンドルを区別する世代番号。
+      std::shared_ptr<const SoundClip> clip; ///< 再生対象の音声またはアニメーションクリップへの参照。
+      IXAudio2SourceVoice* voice = nullptr;  ///< この再生エントリーが生成・破棄を管理するXAudio2ソースボイス。
+      XAUDIO2_BUFFER buffer{};               ///< 再生ボイスへ投入するPCMデータとループ設定。
+      AudioBus bus = AudioBus::Se;           ///< 音量設定を共有するBGM・SEなどの出力バス。
+      State state = State::Stopped;          ///< 現在の処理段階または実行状態。
+      /// @brief volume: 個別の音量倍率。pitch: 音声の周波数比。1で元の音程。fade:
+      /// フェード処理で個別音量へ掛ける倍率。
       float volume = 1.0f, pitch = 1.0f, fade = 1.0f;
+      /// @brief loop: 終端到達後に再生を繰り返すかどうか。preview: エディターのプレビューとして再生し、
+      /// ゲーム一時停止の対象から外すかどうか。pausedByGame: ゲーム一時停止によってボイスを停止し、
+      /// 再開待ちになっているかどうか。
       bool loop = false, preview = false, pausedByGame = false;
-      bool testVoice = false;
-      uint32_t startCount = 0;
+      bool testVoice = false;  ///< 実ボイスを作らずテスト用の再生状態を保持しているかどうか。
+      uint32_t startCount = 0; ///< 検証用に記録する再生開始回数。
    };
 
-   static constexpr size_t kMaxVoices = 64;
-   static constexpr size_t kMaxHandles = 256;
+   static constexpr size_t kMaxVoices = 64;   ///< 同時に確保できる再生ボイス数の上限。
+   static constexpr size_t kMaxHandles = 256; ///< 再生エントリーを保持するハンドルスロット数の上限。
    Entry* Find(AudioHandle handle);
    const Entry* Find(AudioHandle handle) const;
    bool Start(Entry& entry);
@@ -172,14 +177,15 @@ private:
    void ApplyVolume(Entry& entry);
    void Retire(Entry& entry);
 
-   Microsoft::WRL::ComPtr<IXAudio2> xAudio2_;
+   Microsoft::WRL::ComPtr<IXAudio2> xAudio2_; ///< 所有するXAudio2エンジン。
+   /// @brief 全音声の最終出力に使い、終了時に破棄するマスタリングボイス。
    IXAudio2MasteringVoice* masteringVoice_ = nullptr;
-   bool mfStarted_ = false;
-   bool gamePaused_ = false;
-   bool testMode_ = false;
-   float masterVolume_ = 1.0f;
-   std::array<float, 3> busVolumes_{1.0f, 1.0f, 1.0f};
-   std::array<Entry, kMaxHandles> entries_{};
-   std::unique_ptr<BgmPlayer> bgmPlayer_;
+   bool mfStarted_ = false;                            ///< Media Foundationの起動に成功し、終了処理が必要かどうか。
+   bool gamePaused_ = false;                           ///< ゲーム音声を一括で一時停止しているかどうか。
+   bool testMode_ = false;                             ///< 実オーディオデバイスを使わず状態遷移だけを検証するかどうか。
+   float masterVolume_ = 1.0f;                         ///< 全出力バスへ共通に掛ける音量倍率。
+   std::array<float, 3> busVolumes_{1.0f, 1.0f, 1.0f}; ///< 出力バス別に掛ける音量倍率。
+   std::array<Entry, kMaxHandles> entries_{};          ///< 登録済み惑星候補。
+   std::unique_ptr<BgmPlayer> bgmPlayer_;              ///< BGMの要求元とクロスフェードを管理する所有オブジェクト。
 };
 }

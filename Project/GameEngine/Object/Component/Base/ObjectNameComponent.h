@@ -46,6 +46,6 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   std::string name = "Object";
+   std::string name = "Object"; ///< 識別とエディター表示に使う名前。
 };
 }

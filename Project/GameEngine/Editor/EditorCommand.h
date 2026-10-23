@@ -17,9 +17,9 @@ class ParticleSystem;
 
 /// @brief 削除の取り消しに必要な保存状態と子IDを保持する。
 struct RemovedEditorEntity {
-   nlohmann::json snapshot;
-   std::vector<std::string> childIds;
-   bool wasPlaying = false;
+   nlohmann::json snapshot;           ///< Undo・再構築に使う対象の完全な保存状態。
+   std::vector<std::string> childIds; ///< 親子関係の復元時に再接続する子の安定ID。
+   bool wasPlaying = false;           ///< 削除または切り替え前に再生中だったかどうか。
 };
 
 /// @brief エディタ操作を実行・取り消し可能な形で表すコマンドインターフェース
@@ -79,7 +79,8 @@ public:
    const char* GetRedoName() const;
 
 private:
-   std::vector<std::unique_ptr<IEditorCommand>> undoStack_;
+   std::vector<std::unique_ptr<IEditorCommand>> undoStack_; ///< 取り消し可能な編集コマンドを所有する履歴。
+   /// @brief 取り消し後に再実行できる編集コマンドを所有する履歴。
    std::vector<std::unique_ptr<IEditorCommand>> redoStack_;
 };
 
@@ -114,10 +115,12 @@ public:
    const char* GetName() const override;
 
 private:
-   Kind kind_;
-   Transform initialTransform_{};
+   Kind kind_;                    ///< 生成または処理する要素の種別。
+   Transform initialTransform_{}; ///< 生成時に適用する位置・回転・拡縮。
+   /// @brief assetId_: Resources配下のファイルを参照する永続アセットID。parentId_: 親オブジェクトの安定Entity ID。
+   /// 空文字列はルート。objectId_: 編集や参照の対象オブジェクトを識別する安定Entity ID。
    std::string assetId_, parentId_, objectId_;
-   nlohmann::json snapshot_;
+   nlohmann::json snapshot_; ///< Undo・再構築に使う対象の完全な保存状態。
 };
 
 /// @brief Inspectorで適用した一操作を安定IDと前後スナップショットで記録する。
@@ -137,10 +140,11 @@ public:
 
 private:
    bool Apply(EditorCommandTarget& context, const nlohmann::json& snapshot);
-   std::string id_, name_;
+   std::string id_, name_; ///< id_: 同じ種類の要素を一意に識別するID。name_: 識別とエディター表示に使う名前。
+   /// @brief before_: 取り消し時に戻す編集前の状態。after_: 再実行時に適用する編集後の状態。
    nlohmann::json before_, after_;
-   bool particle_ = false;
-   bool alreadyApplied_ = true;
+   bool particle_ = false;      ///< 編集対象が通常ObjectではなくParticleSystemかどうか。
+   bool alreadyApplied_ = true; ///< 現在値へ反映済みで、履歴への登録だけが必要かどうか。
 };
 
 /// @brief 親とHierarchy順を同時に変更し、一回のUndoで戻す。
@@ -161,7 +165,11 @@ public:
 
 private:
    bool Apply(EditorCommandTarget& context, const std::string& parent, const std::vector<std::string>& order);
+   /// @brief id_: 同じ種類の要素を一意に識別するID。beforeParent_: 取り消し時に戻す親Entity ID。afterParent_:
+   /// 再実行時に適用する親Entity ID。
    std::string id_, beforeParent_, afterParent_;
+   /// @brief beforeOrder_: 取り消し時に復元するヒエラルキー表示順。afterOrder_:
+   /// 再実行時に適用するヒエラルキー表示順。
    std::vector<std::string> beforeOrder_, afterOrder_;
 };
 
@@ -182,8 +190,8 @@ public:
    const char* GetName() const override { return "Delete Object"; }
 
 private:
-   std::string objectId_;
-   RemovedEditorEntity removed_;
+   std::string objectId_;        ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
+   RemovedEditorEntity removed_; ///< 削除前の状態と子参照・再生状態をまとめた復元情報。
 };
 
 /// @brief エディタ所有パーティクルをスナップショット付きで削除するコマンド
@@ -203,8 +211,8 @@ public:
    const char* GetName() const override { return "Delete Particle System"; }
 
 private:
-   std::string objectId_;
-   RemovedEditorEntity removed_;
+   std::string objectId_;        ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
+   RemovedEditorEntity removed_; ///< 削除前の状態と子参照・再生状態をまとめた復元情報。
 };
 
 /// @brief オブジェクトの変形前後を保持してギズモ操作をUndo可能にするコマンド
@@ -228,9 +236,9 @@ public:
 private:
    void Apply(EditorCommandTarget& context, const Transform& transform) const;
 
-   std::string objectId_;
-   Transform before_{};
-   Transform after_{};
+   std::string objectId_; ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
+   Transform before_{};   ///< 取り消し時に戻す編集前の状態。
+   Transform after_{};    ///< 再実行時に適用する編集後の状態。
 };
 
 /// @brief パーティクルシステムの変形前後を保持してギズモ操作をUndo可能にするコマンド
@@ -254,9 +262,9 @@ public:
 private:
    void Apply(EditorCommandTarget& context, const Transform& transform) const;
 
-   std::string objectId_;
-   Transform before_{};
-   Transform after_{};
+   std::string objectId_; ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
+   Transform before_{};   ///< 取り消し時に戻す編集前の状態。
+   Transform after_{};    ///< 再実行時に適用する編集後の状態。
 };
 
 /// @brief 任意オブジェクトのJSONスナップショットを復元する複製用コマンド
@@ -277,9 +285,9 @@ public:
    const char* GetName() const override { return commandName_.c_str(); }
 
 private:
-   nlohmann::json snapshot_;
-   std::string restoredObjectId_;
-   std::string commandName_;
+   nlohmann::json snapshot_;      ///< Undo・再構築に使う対象の完全な保存状態。
+   std::string restoredObjectId_; ///< 復元によって生成されたオブジェクトの安定ID。
+   std::string commandName_;      ///< 履歴や操作表示に使う編集コマンド名。
 };
 
 /// @brief Component追加・削除と依存設定の復元を一操作として扱う。
@@ -301,9 +309,11 @@ public:
    const char* GetName() const override { return add_ ? "Add Component" : "Remove Component"; }
 
 private:
+   /// @brief objectId_: 編集や参照の対象オブジェクトを識別する安定Entity ID。typeName_:
+   /// 対象コンポーネントをファクトリで識別する型名。
    std::string objectId_, typeName_;
-   bool add_ = true;
-   nlohmann::json beforeSnapshot_;
+   bool add_ = true;               ///< コンポーネントの追加ならtrue、削除ならfalse。
+   nlohmann::json beforeSnapshot_; ///< 取り消しで復元する操作前の完全な保存状態。
 };
 
 /// @brief コマンド実行中だけ渡す編集操作。所有ストアやContextの内部状態を公開しない。

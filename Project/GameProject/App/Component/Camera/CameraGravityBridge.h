@@ -5,18 +5,23 @@
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
+#include "GameEngine/Math/Types/Vector4.h"
+#include "GameEngine/Math/Types/Quaternion.h"
 #include "GameProject/App/Component/Camera/GravityFollowCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
 #include "GameProject/App/Component/Camera/PlanetLeashCamera.h"
 #include <cstdint>
+#include <vector>
 
 namespace App {
+class GravityBody;
 
 /// @brief 自身の位置・重力Up方向をカメラ系コンポーネントへ橋渡しするコンポーネント
 class CameraGravityBridge final : public GameEngine::IObjectComponent {
 public:
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CameraGravityBridge";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"カメラ重力ブリッジ", "Camera Gravity Bridge"};
 
    /// @brief 型名を返す
@@ -158,30 +163,53 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   bool enableLandingShake = true;
-   float landingShakeAmplitude = 0.15f;
-   float landingShakeFrequency = 14.0f;
-   float landingShakeDuration = 0.1f;
-   bool enableMiniTurboShake = true;
-   float miniTurboShakeHorizontalAmplitude = 0.2f;
-   float miniTurboShakeVerticalAmplitude = 0.15f;
-   float miniTurboShakeFrequency = 18.0f;
-   float miniTurboShakeDuration = 0.2f;
-   bool enableDriftCameraApproach = true;
-   float driftCameraDistanceReduction = 0.1f;
-   float driftCameraHeightOffset = 0.0f;
-   float driftLookTargetHeightOffset = 0.0f;
-   float driftCameraLerpSpeed = 6.0f;
-   bool debugDrawPresentationGuides = false;
-   float presentationGuideLength = 8.0f;
-   bool autoCapturePresentationSequence = false;
-   float presentationCaptureJumpDelay = 1.25f;
-   bool autoCapturePresentationVideoFrames = false;
-   float presentationVideoFrameRate = 10.0f;
-   float presentationVideoCaptureStartDelay = 3.25f;
-   float presentationVideoCaptureDuration = 8.0f;
+   bool enableLandingShake = true;                   ///< 着地時の縦シェイクを有効にするか。
+   float landingShakeAmplitude = 0.15f;              ///< 着地シェイクの振幅。
+   float landingShakeFrequency = 14.0f;              ///< 着地シェイクの周波数。
+   float landingShakeDuration = 0.1f;                ///< 着地シェイクの持続時間。
+   bool enableMiniTurboShake = true;                 ///< ミニターボ発動時の縦・横シェイクを有効にするか。
+   float miniTurboShakeHorizontalAmplitude = 0.2f;   ///< ミニターボシェイクの横揺れ振幅。
+   float miniTurboShakeVerticalAmplitude = 0.15f;    ///< ミニターボシェイクの縦揺れ振幅。
+   float miniTurboShakeFrequency = 18.0f;            ///< ミニターボシェイクの周波数。
+   float miniTurboShakeDuration = 0.2f;              ///< ミニターボシェイクの持続時間（秒）。
+   bool enableDriftCameraApproach = true;            ///< 横入力中のカメラ接近演出（距離と高さ）を有効にするか。
+   float driftCameraDistanceReduction = 0.1f;        ///< 横入力中に通常のカメラ距離を短縮する割合（0.1で10%）。
+   float driftCameraHeightOffset = 0.0f;             ///< 横入力中に通常のカメラ高さへ加える量（重力Up方向）。
+   float driftLookTargetHeightOffset = 0.0f;         ///< 横入力中に通常の注視点高さへ加える量（重力Up方向）。
+   float driftCameraLerpSpeed = 6.0f;                ///< 横入力の開始・終了時の距離倍率と高さの補間速度。
+   bool debugDrawPresentationGuides = false;         ///< 発表用スクリーンショットにカメラ軸と着地予測を表示するか。
+   float presentationGuideLength = 8.0f;             ///< 発表用デバッグ矢印の長さ。
+   bool autoCapturePresentationSequence = false;     ///< 発表用のジャンプ・着地スクリーンショットを自動保存するか。
+   float presentationCaptureJumpDelay = 1.25f;       ///< 自動撮影を開始してからジャンプするまでの待ち時間。
+   bool autoCapturePresentationVideoFrames = false;  ///< 発表用動画へ変換する連番PNGを自動保存するか。
+   float presentationVideoFrameRate = 10.0f;         ///< 発表用動画の連番PNGを保存するフレームレート。
+   float presentationVideoCaptureStartDelay = 3.25f; ///< 発表用動画の連番PNGを保存し始めるまでの待ち時間。
+   float presentationVideoCaptureDuration = 8.0f;    ///< 発表用動画として保存する時間。
 
 private:
+   /// @brief 着地予測で得た接触姿勢・時刻と表示用の軌道。
+   struct LandingPrediction {
+      GameEngine::Vector3 up = {0.0f, 1.0f, 0.0f};           ///< 着地面の法線に沿った上方向。
+      GameEngine::Vector3 backward = {0.0f, 0.0f, -1.0f};    ///< 着地後の追従カメラを配置する後方方向。
+      GameEngine::Vector3 contactPoint = {0.0f, 0.0f, 0.0f}; ///< 着地を予測した地表上の接触点。
+      float secondsToImpact = 0.0f;                          ///< 予測した地表接触までの残り時間（秒）。
+      std::vector<GameEngine::Vector3> trajectoryPoints;     ///< 着地予測でサンプリングした移動軌道の位置列。
+   };
+
+   /// @brief 重力と機体の形状から地表への接触姿勢・時刻を予測する。
+   static bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vector3& velocity,
+      const GameEngine::Vector3& planetCenter, float surfaceRadius, float landingOffset,
+      const GameEngine::Vector3& obbHalfExtents, const GameEngine::Quaternion& playerRotation,
+      const GravityBody& gravityBody, float predictionHorizon, const GameEngine::Vector3& fallbackForward,
+      const GameEngine::Vector3& fallbackRight, LandingPrediction& outPrediction);
+
+   /// @brief カメラ基底と着地予測を発表用のガイドとして表示する。
+   static void DrawPresentationGuides(const GameEngine::Vector3& playerPosition,
+      const GameEngine::Vector3& motionBackward, const GameEngine::Vector3& planetGuideBackward,
+      const GameEngine::Vector3& targetGravityUp, const GameEngine::Vector3& cameraForward,
+      const GameEngine::Vector3& cameraRight, const LandingPrediction* prediction, float guideLength,
+      std::int32_t conditionPreviewMode);
+
    /// @brief 重力方向を算出するための惑星中心
    GameEngine::Vector3 planetCenter_ = {0.0f, 0.0f, 0.0f};
 
@@ -254,9 +282,11 @@ private:
    /// @brief カメラ更新のウォームアップ後にジャンプ計測へ履歴を切り替え済みか
    bool presentationMeasurementResetForJump_ = false;
 
+   /// @brief 選択中カメラの安定ID。削除されたComponentの生ポインターを保持しない。
    std::string gravityFollowCameraId_ = "GravityFollowCamera";
+   /// @brief プレイヤー後方追従カメラを参照する安定カメラID。
    std::string playerRearFollowCameraId_ = "PlayerRearFollowCamera";
-   std::string planetLeashCameraId_ = "PlanetLeashCamera";
+   std::string planetLeashCameraId_ = "PlanetLeashCamera"; ///< 惑星を基準に追従するカメラの安定ID。
 };
 
 } // namespace App

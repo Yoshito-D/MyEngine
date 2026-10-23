@@ -19,7 +19,8 @@ public:
       StartFinish,
    };
 
-   static constexpr const char* kTypeName = "RaceGateComponent";
+   static constexpr const char* kTypeName = "RaceGateComponent"; ///< コンポーネント型名。
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"レースゴール／ゲート", "Race Goal / Gate"};
 
    /// @brief コンポーネント型名を取得する
@@ -52,10 +53,10 @@ public:
 #endif
 
 private:
-   std::string raceManagerId_ = "race_manager";
-   GateType gateType_ = GateType::Finish;
-   size_t checkpointIndex_ = 0;
-   RaceManagerComponent* raceManager_ = nullptr;
+   std::string raceManagerId_ = "race_manager";  ///< レース進行を参照する管理Objectの安定Entity ID。
+   GateType gateType_ = GateType::Finish;        ///< スタート・チェックポイント・ゴールなどのゲートの役割。
+   size_t checkpointIndex_ = 0;                  ///< このゲートに割り当てたチェックポイント番号。
+   RaceManagerComponent* raceManager_ = nullptr; ///< 参照解決済みレース管理コンポーネントへの非所有参照。
 };
 
 } // namespace App

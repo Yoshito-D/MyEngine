@@ -153,8 +153,9 @@ private:
    void ChangeEnabledState(bool enabled);
    bool RemoveByTypeIndex(const std::type_index& type);
 
-   Object& owner_;
-   std::vector<std::unique_ptr<IObjectComponent>> components_;
+   Object& owner_;                                             ///< この部品の接続先となる所有オブジェクトへの参照。
+   std::vector<std::unique_ptr<IObjectComponent>> components_; ///< 所有Objectへ接続したコンポーネントの所有一覧。
+   /// @brief 型情報から所有済みコンポーネントをO(1)で引く非所有索引。
    std::unordered_map<std::type_index, IObjectComponent*> typeIndex_;
 };
 

@@ -15,7 +15,9 @@ class ParticleSystem;
 /// ParticleSystem の生成・再生制御と Object トランスフォームへの追従を担う
 class ParticleEmitterComponent final : public IObjectComponent {
 public:
+   /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "ParticleEmitterComponent";
+   /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"パーティクルエミッター", "Particle Emitter"};
    const char* GetTypeName() const override;
 
@@ -51,11 +53,11 @@ public:
 
    /// @brief 保存・編集するスロット設定。実行中のSystemは含まない。
    struct SlotConfiguration {
-      std::string jsonPath;
-      AttachmentConfig attachConfig;
-      bool autoPlay = true;
-      bool loop = true;
-      bool playOnceAndDestroy = false;
+      std::string jsonPath;            ///< 粒子エフェクトの設定を読み込むJSONファイルパス。
+      AttachmentConfig attachConfig;   ///< 追従先のボーン・変換成分・オフセットの設定。
+      bool autoPlay = true;            ///< 接続または有効化したときに自動再生するかどうか。
+      bool loop = true;                ///< 終端到達後に再生を繰り返すかどうか。
+      bool playOnceAndDestroy = false; ///< 1回の再生終了後にスロットを取り除くかどうか。
    };
 
    // ── ライフサイクル ────────────────────────────────
@@ -185,8 +187,9 @@ public:
 
 private:
    struct EmitterSlot : SlotConfiguration {
+      /// @brief 全スロットが終了したとき（IsFinished() が true になったとき）に呼ばれる。
       std::function<void(std::int32_t)> onFinished;
-      std::unique_ptr<ParticleSystem> particleSystem;
+      std::unique_ptr<ParticleSystem> particleSystem; ///< 描画・更新するParticleSystemへの参照。
    };
 
    EmitterSlot* GetSlot(std::int32_t slotIndex);
@@ -215,7 +218,7 @@ private:
    /// @brief simulationSpace を ParticleSystem 側に伝播する
    static void SyncSimulationSpace(ParticleSystem* ps, AttachmentConfig::Space space);
 
-   std::vector<EmitterSlot> slots_;
+   std::vector<EmitterSlot> slots_; ///< 保存設定と実行中の状態を保持する再生スロット一覧。
 };
 
 } // namespace GameEngine

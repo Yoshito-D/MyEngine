@@ -109,12 +109,12 @@ public:
    void SetNoiseIntensity(float value);
 
 private:
-   WhiteNoiseParams params_;
+   WhiteNoiseParams params_; ///< 現在のホワイトノイズパラメーター。
 
-   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;
-   WhiteNoiseCB* constantBufferData_ = nullptr;
-   std::chrono::steady_clock::time_point previousTime_;
-   bool hasPreviousTime_ = false;
+   Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
+   WhiteNoiseCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
+   std::chrono::steady_clock::time_point previousTime_; ///< 前回の時間計測に使った基準時刻。
+   bool hasPreviousTime_ = false;                       ///< 経過時間を求める前回の時刻を取得済みかどうか。
 
    void CreateConstantBuffer();
    void UpdateConstantBuffer();

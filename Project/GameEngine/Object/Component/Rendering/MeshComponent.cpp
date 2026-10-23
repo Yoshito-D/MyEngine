@@ -10,6 +10,12 @@
 #include <algorithm>
 #include <string>
 
+#ifdef USE_IMGUI
+#include "imgui.h"
+#include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#endif
+
 namespace {
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::MeshComponent::kTypeName,
@@ -178,12 +184,6 @@ GameEngine::Mesh::PlaneOrientation ToMeshPlaneOrientation(GameEngine::MeshCompon
    }
 }
 }
-
-#ifdef USE_IMGUI
-#include "imgui.h"
-#include "GameEngine/Editor/EditorReferenceWidgets.h"
-#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
-#endif
 
 namespace GameEngine {
 

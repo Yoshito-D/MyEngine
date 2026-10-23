@@ -8,10 +8,10 @@ SamplerState samLinear : register(s0);
 // texSizeの各成分は除数になるため正値が必須で、現在のC++実装は基準解像度1280x720を渡している。
 cbuffer ParamsCB : register(b0) {
    float2 center; // 中心UV
-   float pixelShift;
+   float pixelShift;          ///< 色収差でRGBの参照位置をずらす量（ピクセル）。
    int32_t useFixedDirection; // 0 or 1
    float2 fixedDirection;     // 固定方向
-   float2 texSize;
+   float2 texSize;            ///< 色収差のピクセル量をUVへ換算する入力テクスチャ寸法。
 };
 
 float4 main(VSOutput input) : SV_TARGET {

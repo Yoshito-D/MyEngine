@@ -10,8 +10,8 @@ class ComponentContainer;
 
 /// @brief コンポーネント型のエディター表示名
 struct ComponentDisplayName {
-   const char* japanese = "";
-   const char* english = "";
+   const char* japanese = ""; ///< 日本語を選択しているときに表示する文字列。
+   const char* english = "";  ///< 英語を選択しているときに表示する文字列。
 };
 
 #ifdef USE_IMGUI
@@ -98,7 +98,7 @@ private:
    /// @brief コンポーネントをオブジェクトからデタッチする
    void Detach();
 
-   Object* owner_ = nullptr;
-   bool isEnabled_ = true;
+   Object* owner_ = nullptr; ///< この部品の接続先となる所有オブジェクトへの参照。
+   bool isEnabled_ = true;   ///< コンポーネントが更新対象として有効かどうかする。
 };
 }

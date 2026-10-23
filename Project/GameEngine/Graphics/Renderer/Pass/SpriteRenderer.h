@@ -30,8 +30,8 @@ public:
       std::function<void(const std::string&, BlendMode)> setPipelineFunc);
 
 private:
-   GraphicsDevice* device_ = nullptr;
-   const PSOManager* psoManager_ = nullptr;
+   GraphicsDevice* device_ = nullptr;       ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   const PSOManager* psoManager_ = nullptr; ///< パイプラインマネージャーを追加。
 };
 
 } // namespace GameEngine

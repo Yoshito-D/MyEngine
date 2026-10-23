@@ -87,16 +87,16 @@ public:
 #endif
 
 private:
-   float yaw_ = MathConstants::kPi;
+   float yaw_ = MathConstants::kPi; ///< Yaw角度。
    float pitch_ = -0.785f; // -45度
-   float distance_ = 75.0f;
-   Vector3 pivotTarget_ = {0.0f, 0.0f, 0.0f};
+   float distance_ = 75.0f;                   ///< ピボットからの距離。
+   Vector3 pivotTarget_ = {0.0f, 0.0f, 0.0f}; ///< ピボットターゲット。
 
-   float rotateSpeed_ = 0.01f;
-   float scrollSpeed_ = 1.0f / 20.0f;
-   float moveSpeed_ = 0.0008f;
+   float rotateSpeed_ = 0.01f;        ///< 入力回転感度。
+   float scrollSpeed_ = 1.0f / 20.0f; ///< ホイールズーム感度。
+   float moveSpeed_ = 0.0008f;        ///< 最大移動速度（units/sec）。
 
-   Matrix4x4 rotationMatrix_ = MakeIdentity4x4();
+   Matrix4x4 rotationMatrix_ = MakeIdentity4x4(); ///< 現在の旋回姿勢を表す回転行列。
 };
 
 } // namespace GameEngine
