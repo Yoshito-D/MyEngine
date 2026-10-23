@@ -725,44 +725,16 @@ void EngineContext::ClearMaterials() {
    sAssetManager_->GetMaterialManager()->Clear();
 }
 
-void EngineContext::LoadSound(const std::string& soundPath, const std::string& name) {
-   if (!sAssetManager_) return;
-
-   if (!sAssetManager_->GetSoundManager()) return;
-
-   sAssetManager_->GetSoundManager()->LoadSound(soundPath, name);
-}
-
-Sound* EngineContext::GetSound(const std::string& name) {
-   if (!sAssetManager_) {
-      return nullptr;
-   }
-
-   if (!sAssetManager_->GetSoundManager()) {
-      return nullptr;
-   }
-
-   return sAssetManager_->GetSoundManager()->GetSound(name);
-}
-
-void EngineContext::ClearSounds() {
-   if (!sAssetManager_) return;
-
-   if (!sAssetManager_->GetSoundManager()) return;
-
-   sAssetManager_->GetSoundManager()->Clear();
-}
-
 Audio* EngineContext::GetAudio() {
    return sAudio_;
 }
 
 std::shared_ptr<const SoundClip> EngineContext::GetSoundClip(const std::string& assetId) {
-   if (!sAssetManager_ || !sAssetManager_->GetSoundManager()) {
+   if (!sAssetManager_ || !sAssetManager_->GetSoundClipCache()) {
       return nullptr;
    }
 
-   return sAssetManager_->GetSoundManager()->GetClip(assetId);
+   return sAssetManager_->GetSoundClipCache()->GetClip(assetId);
 }
 
 Camera* EngineContext::GetActiveCamera() {

@@ -1,15 +1,13 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Assets/AssetManager.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
-#include "GameEngine/Audio/Audio.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include "GameEngine/Object/Component/Rendering/SkyboxComponent.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
 
 namespace GameEngine {
-void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
+void AssetManager::Initialize(GraphicsDevice* device) {
    assert(device != nullptr);
-   assert(audio != nullptr);
 
    // コンポーネントはAssetManagerへ直接依存しないため、名前解決だけをコールバックとして公開する。
    materialManager_->Initialize(device->GetDevice());
@@ -33,7 +31,7 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
       return textureManager_ ? textureManager_->GetTexture(name) : nullptr;
    });
 
-   // 各マネージャーを利用側へ公開する前にGPU/音声デバイスとの接続と既定アセット読込を完了する。
+   // 各マネージャーを利用側へ公開する前にGPUデバイスとの接続と既定アセット読込を完了する。
    modelAssetManager_->Initialize(device, animationAssetManager_.get());
    textureManager_->Initialize(device);
    textureManager_->LoadTexturesFromDirectory("resources/engine/textures", "resources");
@@ -43,6 +41,5 @@ void AssetManager::Initialize(GraphicsDevice* device, Audio* audio) {
    fontManager_->LoadMsdfFontsFromDirectory("resources/engine/fonts");
    fontManager_->LoadMsdfFontsFromDirectory("resources/game/font");
    fontManager_->LoadMsdfFontsFromDirectory("resources/game/fonts");
-   soundManager_->Initialize(audio);
 }
 }

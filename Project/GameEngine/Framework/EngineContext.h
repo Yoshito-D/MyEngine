@@ -458,22 +458,10 @@ public:
    /// @brief マテリアルを全削除
    static void ClearMaterials();
 
-   /// @brief サウンドをロードする
-   /// @param soundPath サウンドのパス
-   /// @param name 名前
-   static void LoadSound(const std::string& soundPath, const std::string& name);
-
-   /// @brief サウンドを取得する
-   /// @param name 名前
-   static Sound* GetSound(const std::string& name);
-
-   /// @brief サウンドを全削除
-   static void ClearSounds();
-
    /// @brief Frameworkが所有するオーディオサービスを返す。終了処理中はnullptr。
    static Audio* GetAudio();
 
-   /// @brief セットアップ中にResources基準の音声クリップを準備してキャッシュする。
+   /// @brief resources相対の正規アセットIDから、再生状態を持たない共有音声クリップを取得する。
    static std::shared_ptr<const SoundClip> GetSoundClip(const std::string& assetId);
 
    //================================================================

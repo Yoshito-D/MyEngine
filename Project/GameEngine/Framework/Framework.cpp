@@ -5,7 +5,6 @@
 #include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Camera.h"
-#include "GameEngine/Audio/Sound.h"
 #include "GameEngine/Scene/Light/DirectionalLight.h"
 #include "GameEngine/Scene/Light/SpotLight.h"
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
@@ -62,12 +61,9 @@ void Framework::Initialize() {
    audio_ = std::make_unique<Audio>();
    audio_->Initialize();
 
-   // SoundクラスにXAudio2インターフェイスを渡す
-   Sound::Initialize(audio_->GetXAudio2());
-
-   // アセットマネージャーの初期化（オーディオシステムを渡す）
+   // アセットマネージャーの初期化
    assetManager_ = std::make_unique<AssetManager>();
-   assetManager_->Initialize(device_.get(), audio_.get());
+   assetManager_->Initialize(device_.get());
 
    // CameraManagerとLightManagerのインスタンスを生成
    cameraManager_ = std::make_unique<CameraManager>();

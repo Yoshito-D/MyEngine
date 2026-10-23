@@ -1,7 +1,6 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Audio/Audio.h"
 #include "GameEngine/Audio/BgmPlayer.h"
-#include "GameEngine/Audio/Sound.h"
 #include <mfapi.h>
 #include <algorithm>
 #include <cmath>
@@ -56,8 +55,6 @@ void Audio::Finalize() {
    for (auto& entry : entries_) {
       Retire(entry);
    }
-
-   Sound::Initialize(nullptr);
 
    if (xAudio2_) {
       xAudio2_->StopEngine();

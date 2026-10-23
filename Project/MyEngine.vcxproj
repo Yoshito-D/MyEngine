@@ -233,7 +233,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Assets\Audio\SoundManager.cpp" />
+    <ClCompile Include="GameEngine\Assets\Audio\SoundClipCache.cpp" />
     <ClCompile Include="GameEngine\Assets\Texture\TextureManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -400,10 +400,6 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Audio\Sound.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
-    </ClCompile>
     <ClCompile Include="GameEngine\Scene\Camera\Components\FollowBody.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Components\LookAtAim.cpp" />
     <ClCompile Include="GameEngine\Scene\Camera\Components\OrbitalBody.cpp" />
@@ -562,7 +558,7 @@
     <ClInclude Include="GameEngine\Assets\ResourceAssetPath.h" />
     <ClInclude Include="GameEngine\Assets\Material\MaterialManager.h" />
     <ClInclude Include="GameEngine\Assets\Model\ModelAssetManager.h" />
-    <ClInclude Include="GameEngine\Assets\Audio\SoundManager.h" />
+    <ClInclude Include="GameEngine\Assets\Audio\SoundClipCache.h" />
     <ClInclude Include="GameEngine\Assets\Texture\TextureManager.h" />
     <ClInclude Include="GameEngine\Audio\Audio.h" />
     <ClInclude Include="GameEngine\Audio\BgmPlayer.h" />
@@ -687,7 +683,6 @@
     <ClInclude Include="GameEngine\Graphics\Resources\Mesh.h" />
     <ClInclude Include="GameEngine\Object\Model\Model.h" />
     <ClInclude Include="GameEngine\Graphics\Pipeline\PipelineState.h" />
-    <ClInclude Include="GameEngine\Audio\Sound.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Components\FollowBody.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Components\LookAtAim.h" />
     <ClInclude Include="GameEngine\Scene\Camera\Components\OrbitalBody.h" />
