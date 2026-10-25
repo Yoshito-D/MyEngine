@@ -66,9 +66,11 @@ void LightComponent::OnDetach() {
 }
 
 nlohmann::json LightComponent::Serialize() const {
-   return nlohmann::json{{"lightType", TypeToString(type_)}, {"color", {color.x, color.y, color.z, color.w}},
-      {"intensity", intensity}, {"radius", radius}, {"decay", decay}, {"distance", distance}, {"cosAngle", cosAngle},
-      {"cosFalloffStart", cosFalloffStart}, {"areaSize", {areaSize.x, areaSize.y}}};
+   return nlohmann::json{{"lightType", TypeToString(type_)},
+      {"color", {settings_.color.x, settings_.color.y, settings_.color.z, settings_.color.w}},
+      {"intensity", settings_.intensity}, {"radius", settings_.radius}, {"decay", settings_.decay},
+      {"distance", settings_.distance}, {"cosAngle", settings_.cosAngle},
+      {"cosFalloffStart", settings_.cosFalloffStart}, {"areaSize", {settings_.areaSize.x, settings_.areaSize.y}}};
 }
 
 void LightComponent::Deserialize(const nlohmann::json& data) {
@@ -80,16 +82,18 @@ void LightComponent::Deserialize(const nlohmann::json& data) {
       SetLightType(parsedType);
    }
 
-   color = data.contains("color") ? JsonValue::ReadVector4(data.at("color"), color) : color;
-   intensity = JsonValue::ReadFloat(data, "intensity", intensity);
-   radius = JsonValue::ReadFloat(data, "radius", radius);
-   decay = JsonValue::ReadFloat(data, "decay", decay);
-   distance = JsonValue::ReadFloat(data, "distance", distance);
-   cosAngle = JsonValue::ReadFloat(data, "cosAngle", cosAngle);
-   cosFalloffStart = JsonValue::ReadFloat(data, "cosFalloffStart", cosFalloffStart);
+   auto settings = DescribeSettings();
+   settings.color = data.contains("color") ? JsonValue::ReadVector4(data.at("color"), settings.color) : settings.color;
+   settings.intensity = JsonValue::ReadFloat(data, "intensity", settings.intensity);
+   settings.radius = JsonValue::ReadFloat(data, "radius", settings.radius);
+   settings.decay = JsonValue::ReadFloat(data, "decay", settings.decay);
+   settings.distance = JsonValue::ReadFloat(data, "distance", settings.distance);
+   settings.cosAngle = JsonValue::ReadFloat(data, "cosAngle", settings.cosAngle);
+   settings.cosFalloffStart = JsonValue::ReadFloat(data, "cosFalloffStart", settings.cosFalloffStart);
 
-   areaSize = data.contains("areaSize") ? JsonValue::ReadVector2(data.at("areaSize"), areaSize) : areaSize;
-   Configure(DescribeSettings());
+   settings.areaSize =
+      data.contains("areaSize") ? JsonValue::ReadVector2(data.at("areaSize"), settings.areaSize) : settings.areaSize;
+   Configure(settings);
 }
 
 void LightComponent::SynchronizeRuntimeLight() {
@@ -127,9 +131,9 @@ void LightComponent::SynchronizeRuntimeLight() {
 
          if (light && light->GetDirectionalLightData()) {
             auto data = *light->GetDirectionalLightData();
-            data.color = color;
+            data.color = settings_.color;
             data.direction = forward;
-            data.intensity = intensity;
+            data.intensity = settings_.intensity;
             light->ApplyIllumination(data);
          }
 
@@ -144,13 +148,13 @@ void LightComponent::SynchronizeRuntimeLight() {
 
          if (light && light->GetPointLightData()) {
             auto data = *light->GetPointLightData();
-            data.color = color;
+            data.color = settings_.color;
             data.position = position;
-            data.intensity = intensity;
+            data.intensity = settings_.intensity;
 
             // 負値は減衰式を不安定にするため、GPUへ渡す境界で物理量を0以上に制限する。
-            data.radius = std::max(radius, 0.0f);
-            data.decay = std::max(decay, 0.0f);
+            data.radius = std::max(settings_.radius, 0.0f);
+            data.decay = std::max(settings_.decay, 0.0f);
             light->ApplyIllumination(data);
          }
 
@@ -165,14 +169,14 @@ void LightComponent::SynchronizeRuntimeLight() {
 
          if (light && light->GetSpotLightData()) {
             auto data = *light->GetSpotLightData();
-            data.color = color;
+            data.color = settings_.color;
             data.position = position;
-            data.intensity = intensity;
+            data.intensity = settings_.intensity;
             data.direction = forward;
-            data.distance = std::max(distance, 0.0f);
-            data.decay = std::max(decay, 0.0f);
-            data.cosAngle = cosAngle;
-            data.cosFalloffStart = cosFalloffStart;
+            data.distance = std::max(settings_.distance, 0.0f);
+            data.decay = std::max(settings_.decay, 0.0f);
+            data.cosAngle = settings_.cosAngle;
+            data.cosFalloffStart = settings_.cosFalloffStart;
             light->ApplyIllumination(data);
          }
 
@@ -187,15 +191,15 @@ void LightComponent::SynchronizeRuntimeLight() {
 
          if (light && light->GetAreaLightData()) {
             auto data = *light->GetAreaLightData();
-            data.color = color;
+            data.color = settings_.color;
             data.position = position;
-            data.intensity = intensity;
+            data.intensity = settings_.intensity;
 
             // Area Lightは面法線にforward、面内方向にrightを用い、Transform回転へ追従させる。
             data.normal = forward;
             data.tangent = right;
-            data.width = std::max(areaSize.x, 0.0f);
-            data.height = std::max(areaSize.y, 0.0f);
+            data.width = std::max(settings_.areaSize.x, 0.0f);
+            data.height = std::max(settings_.areaSize.y, 0.0f);
             light->ApplyIllumination(data);
          }
 
@@ -283,24 +287,26 @@ void LightComponent::DrawInspector() {
       SetLightType(static_cast<Type>(selectedType));
    }
 
-   ImGui::ColorEdit4("Color", &color.x);
-   ImGui::DragFloat("Intensity", &intensity, 0.05f, 0.0f, 1000.0f);
+   auto settings = DescribeSettings();
+   ImGui::ColorEdit4("Color", &settings.color.x);
+   ImGui::DragFloat("Intensity", &settings.intensity, 0.05f, 0.0f, 1000.0f);
 
    if (type_ == Type::Point) {
-      ImGui::DragFloat("Radius", &radius, 0.05f, 0.0f, 10000.0f);
-      ImGui::DragFloat("Decay", &decay, 0.01f, 0.0f, 100.0f);
+      ImGui::DragFloat("Radius", &settings.radius, 0.05f, 0.0f, 10000.0f);
+      ImGui::DragFloat("Decay", &settings.decay, 0.01f, 0.0f, 100.0f);
    } else if (type_ == Type::Spot) {
-      ImGui::DragFloat("Distance", &distance, 0.05f, 0.0f, 10000.0f);
-      ImGui::DragFloat("Decay", &decay, 0.01f, 0.0f, 100.0f);
-      ImGui::SliderFloat("Cos Angle", &cosAngle, -1.0f, 1.0f);
-      ImGui::SliderFloat("Cos Falloff Start", &cosFalloffStart, -1.0f, 1.0f);
+      ImGui::DragFloat("Distance", &settings.distance, 0.05f, 0.0f, 10000.0f);
+      ImGui::DragFloat("Decay", &settings.decay, 0.01f, 0.0f, 100.0f);
+      ImGui::SliderFloat("Cos Angle", &settings.cosAngle, -1.0f, 1.0f);
+      ImGui::SliderFloat("Cos Falloff Start", &settings.cosFalloffStart, -1.0f, 1.0f);
    } else if (type_ == Type::Area) {
-      ImGui::DragFloat2("Size", &areaSize.x, 0.05f, 0.0f, 10000.0f);
+      ImGui::DragFloat2("Size", &settings.areaSize.x, 0.05f, 0.0f, 10000.0f);
    }
+
+   Configure(settings);
 
    // Edit停止中でもInspector操作の結果を同じフレームのViewportへ反映する。
    SynchronizeRuntimeLight();
-   Configure(DescribeSettings());
 }
 #endif
 
@@ -309,16 +315,7 @@ void LightComponent::DrawInspector() {
 namespace GameEngine {
 
 LightComponent::Settings LightComponent::DescribeSettings() const {
-   Settings settings;
-   settings.color = color;
-   settings.intensity = intensity;
-   settings.radius = radius;
-   settings.decay = decay;
-   settings.distance = distance;
-   settings.cosAngle = cosAngle;
-   settings.cosFalloffStart = cosFalloffStart;
-   settings.areaSize = areaSize;
-   return settings;
+   return settings_;
 }
 
 void LightComponent::Configure(const Settings& requested) {
@@ -373,14 +370,7 @@ void LightComponent::Configure(const Settings& requested) {
       settings.areaSize.y = defaults.areaSize.y;
    }
 
-   color = settings.color;
-   intensity = settings.intensity;
-   radius = settings.radius;
-   decay = settings.decay;
-   distance = settings.distance;
-   cosAngle = settings.cosAngle;
-   cosFalloffStart = settings.cosFalloffStart;
-   areaSize = settings.areaSize;
+   settings_ = settings;
 }
 
 } // namespace GameEngine

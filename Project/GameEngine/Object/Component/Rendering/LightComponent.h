@@ -82,16 +82,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   Vector4 color{1.0f, 1.0f, 1.0f, 1.0f}; ///< リニア空間のライト色
-   float intensity = 1.0f;                ///< ライト強度
-   float radius = 2.0f;                   ///< Point Lightの有効半径
-   float decay = 0.1f;                    ///< 距離減衰
-   float distance = 5.0f;                 ///< Spot Lightの到達距離
-   float cosAngle = 0.7f;                 ///< Spot Lightの外側コーン
-   float cosFalloffStart = 0.9f;          ///< Spot Lightの減衰開始コーン
-   Vector2 areaSize{5.0f, 5.0f};          ///< Area Lightの幅と高さ
+   Settings settings_; ///< 検証済みの保存・編集用設定。
 
-private:
    void SynchronizeRuntimeLight();
    void ReleaseRuntimeLight();
    std::string ResolveRuntimeKey() const;

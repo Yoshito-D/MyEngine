@@ -6,7 +6,6 @@
 #include "GameEngine/Math/VectorMath.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
-#include "GameEngine/Math/VectorMath.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
