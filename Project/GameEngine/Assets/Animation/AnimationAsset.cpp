@@ -15,15 +15,11 @@
 namespace GameEngine {
 
 void AnimationAsset::LoadFile(const std::string& directoryPath, const std::string& fileName) {
-   LoadAnimationFile(directoryPath, fileName);
-}
-
-void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const std::string& filename) {
    clips_.clear();
    defaultClipName_.clear();
 
    Assimp::Importer importer;
-   std::string filePath = directoryPath + "/" + filename;
+   std::string filePath = directoryPath + "/" + fileName;
    const aiScene* scene = importer.ReadFile(filePath.c_str(), 0);
 
    if (!scene || scene->mNumAnimations == 0) return;
@@ -44,7 +40,7 @@ void AnimationAsset::LoadAnimationFile(const std::string& directoryPath, const s
       if (animationAssimp->mName.length > 0) {
          clip.name = animationAssimp->mName.C_Str();
       } else {
-         clip.name = filename + "#" + std::to_string(animationIndex);
+         clip.name = fileName + "#" + std::to_string(animationIndex);
       }
 
       clip.duration = static_cast<float>(animationAssimp->mDuration / ticksPerSecond);

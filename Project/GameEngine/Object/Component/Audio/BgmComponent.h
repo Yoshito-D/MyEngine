@@ -28,7 +28,7 @@ public:
    bool BeginRuntime();
 
    /// @brief このコンポーネントに再生可能な起動時トラックが設定されているかどうか。
-   bool HasStartupTrack() const { return IsEnabled() && playOnStart && clip_ != nullptr; }
+   bool HasStartupTrack() const { return IsEnabled() && settings_.playOnStart && clip_ != nullptr; }
 
    /// @brief 設定されたBGMを明示的に要求する。同じトラックは再起動しない。
    bool Play();
@@ -85,15 +85,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   std::string clipAssetId;           ///< 再生する音声クリップの永続アセットID。
-   float volume = 1.0f;               ///< 個別の音量倍率。
-   bool loop = true;                  ///< 終端到達後に再生を繰り返すかどうか。
-   bool playOnStart = true;           ///< シーンの実行開始時に自動再生するかどうか。
-   float fadeInSeconds = 0.0f;        ///< 音量を立ち上げる時間（秒）。
-   float fadeOutSeconds = 0.0f;       ///< 音量を下げて停止する時間（秒）。
-   bool continueAcrossScenes = false; ///< シーン切り替え後も再生を継続するかどうか。
+   Settings settings_; ///< 検証済みの保存・編集用設定。
 
-private:
    bool Submit(bool restart);
    std::shared_ptr<const SoundClip> clip_; ///< 再生対象の音声またはアニメーションクリップへの参照。
    std::string preparedAssetId_;           ///< 再生開始に備えて読み込んだ音声アセットID。

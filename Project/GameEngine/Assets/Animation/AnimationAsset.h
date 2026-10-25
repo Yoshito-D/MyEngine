@@ -1,7 +1,4 @@
 #pragma once
-
-#pragma once
-
 #include <map>
 #include <string>
 #include <vector>
@@ -74,9 +71,6 @@ public:
    /// @brief 読み込まれている全クリップ名を取得する
    /// @return クリップ名の一覧
    std::vector<std::string> GetClipNames() const;
-
-private:
-   void LoadAnimationFile(const std::string& directoryPath, const std::string& filename);
 
 private:
    std::map<std::string, AnimationClip> clips_; ///< 名前またはアセットIDに対応するクリップの一覧。

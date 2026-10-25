@@ -42,13 +42,13 @@ BgmComponent::~BgmComponent() {
 }
 
 void BgmComponent::Prepare() {
-   if (preparedAssetId_ != clipAssetId) {
+   if (preparedAssetId_ != settings_.clipAssetId) {
       clip_.reset();
-      preparedAssetId_ = clipAssetId;
+      preparedAssetId_ = settings_.clipAssetId;
    }
 
-   if (!clip_ && !clipAssetId.empty()) {
-      clip_ = EngineContext::GetSoundClip(clipAssetId);
+   if (!clip_ && !settings_.clipAssetId.empty()) {
+      clip_ = EngineContext::GetSoundClip(settings_.clipAssetId);
    }
 }
 
@@ -59,7 +59,7 @@ bool BgmComponent::BeginRuntime() {
 
    runtimeStarted_ = true;
    Prepare();
-   return playOnStart && Play();
+   return settings_.playOnStart && Play();
 }
 
 bool BgmComponent::Submit(bool restart) {
@@ -80,7 +80,9 @@ bool BgmComponent::Submit(bool restart) {
    }
 
    audio->RequestBgm(ownerToken_,
-      BgmRequest{clipAssetId, clip_, volume, loop, fadeInSeconds, fadeOutSeconds, continueAcrossScenes}, restart);
+      BgmRequest{settings_.clipAssetId, clip_, settings_.volume, settings_.loop, settings_.fadeInSeconds,
+         settings_.fadeOutSeconds, settings_.continueAcrossScenes},
+      restart);
    return true;
 }
 
@@ -104,44 +106,30 @@ void BgmComponent::Stop() {
 }
 
 nlohmann::json BgmComponent::Serialize() const {
-   return {{"clipAssetId", clipAssetId}, {"volume", volume}, {"loop", loop}, {"playOnStart", playOnStart},
-      {"fadeInSeconds", fadeInSeconds}, {"fadeOutSeconds", fadeOutSeconds},
-      {"continueAcrossScenes", continueAcrossScenes}};
+   return {{"clipAssetId", settings_.clipAssetId}, {"volume", settings_.volume}, {"loop", settings_.loop},
+      {"playOnStart", settings_.playOnStart}, {"fadeInSeconds", settings_.fadeInSeconds},
+      {"fadeOutSeconds", settings_.fadeOutSeconds}, {"continueAcrossScenes", settings_.continueAcrossScenes}};
 }
 
 void BgmComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
    Stop();
-   clipAssetId = Read<std::string>(data, "clipAssetId", "");
-   volume = Read<float>(data, "volume", 1.0f);
-   loop = Read<bool>(data, "loop", true);
-   playOnStart = Read<bool>(data, "playOnStart", true);
-   fadeInSeconds = Read<float>(data, "fadeInSeconds", 0.0f);
-   fadeOutSeconds = Read<float>(data, "fadeOutSeconds", 0.0f);
-   continueAcrossScenes = Read<bool>(data, "continueAcrossScenes", false);
-
-   if (!std::isfinite(volume)) {
-      volume = 1.0f;
-   }
-
-   volume = std::clamp(volume, 0.0f, 1.0f);
-
-   if (!std::isfinite(fadeInSeconds) || fadeInSeconds < 0.0f) {
-      fadeInSeconds = 0.0f;
-   }
-
-   if (!std::isfinite(fadeOutSeconds) || fadeOutSeconds < 0.0f) {
-      fadeOutSeconds = 0.0f;
-   }
+   Settings settings;
+   settings.clipAssetId = Read<std::string>(data, "clipAssetId", settings.clipAssetId);
+   settings.volume = Read<float>(data, "volume", settings.volume);
+   settings.loop = Read<bool>(data, "loop", settings.loop);
+   settings.playOnStart = Read<bool>(data, "playOnStart", settings.playOnStart);
+   settings.fadeInSeconds = Read<float>(data, "fadeInSeconds", settings.fadeInSeconds);
+   settings.fadeOutSeconds = Read<float>(data, "fadeOutSeconds", settings.fadeOutSeconds);
+   settings.continueAcrossScenes = Read<bool>(data, "continueAcrossScenes", settings.continueAcrossScenes);
 
    clip_.reset();
-   Prepare();
-   Configure(DescribeSettings());
+   Configure(settings);
 }
 #ifdef MYPROJECT_NON_RELEASE
 void BgmComponent::SetClipForTesting(const std::string& assetId, std::shared_ptr<const SoundClip> clip) {
-   clipAssetId = assetId;
+   settings_.clipAssetId = assetId;
    preparedAssetId_ = assetId;
    clip_ = std::move(clip);
 }
@@ -152,13 +140,14 @@ void BgmComponent::DrawInspector() {
 
    if (!ImGui::CollapsingHeader(MakeObjectComponentHeaderLabel(GetTypeName()).c_str())) return;
 
-   std::string nextId = clipAssetId;
+   auto settings = DescribeSettings();
+   std::string nextId = settings.clipAssetId;
 
    if (EditorUI::AssetReference(Tr("音声", "Clip"), nextId, EditorAssetType::Audio)) {
       auto nextClip = nextId.empty() ? std::shared_ptr<const SoundClip>() : EngineContext::GetSoundClip(nextId);
 
       if (nextId.empty() || nextClip) {
-         clipAssetId = nextId;
+         settings.clipAssetId = nextId;
          preparedAssetId_ = nextId;
          clip_ = std::move(nextClip);
       } else {
@@ -166,23 +155,27 @@ void BgmComponent::DrawInspector() {
       }
    }
 
-   if (!clipAssetId.empty() && !clip_) {
+   if (!settings.clipAssetId.empty() && !clip_) {
       ImGui::TextUnformatted(Tr("音声が見つかりません", "Unresolved audio asset"));
    }
 
-   if (ImGui::SliderFloat(Tr("音量", "Volume"), &volume, 0.0f, 1.0f) && ownerToken_) {
+   const bool volumeChanged = ImGui::SliderFloat(Tr("音量", "Volume"), &settings.volume, 0.0f, 1.0f);
+
+   ImGui::Checkbox(Tr("ループ", "Loop"), &settings.loop);
+   ImGui::Checkbox(Tr("開始時に再生", "Play On Start"), &settings.playOnStart);
+   ImGui::DragFloat(Tr("フェードイン秒", "Fade In Seconds"), &settings.fadeInSeconds, 0.05f, 0.0f, 60.0f);
+   ImGui::DragFloat(Tr("フェードアウト秒", "Fade Out Seconds"), &settings.fadeOutSeconds, 0.05f, 0.0f, 60.0f);
+   ImGui::Checkbox(Tr("シーン間で継続", "Continue Across Scenes"), &settings.continueAcrossScenes);
+
+   Configure(settings);
+
+   if (volumeChanged && ownerToken_) {
       Play();
    }
 
-   ImGui::Checkbox(Tr("ループ", "Loop"), &loop);
-   ImGui::Checkbox(Tr("開始時に再生", "Play On Start"), &playOnStart);
-   ImGui::DragFloat(Tr("フェードイン秒", "Fade In Seconds"), &fadeInSeconds, 0.05f, 0.0f, 60.0f);
-   ImGui::DragFloat(Tr("フェードアウト秒", "Fade Out Seconds"), &fadeOutSeconds, 0.05f, 0.0f, 60.0f);
-   ImGui::Checkbox(Tr("シーン間で継続", "Continue Across Scenes"), &continueAcrossScenes);
-
    if (ImGui::Button(Tr("試聴", "Preview")) && clip_) {
       if (auto* audio = EngineContext::GetAudio()) {
-         audio->PlayOneShot(clip_, AudioBus::Bgm, volume, 1.0f, true);
+         audio->PlayOneShot(clip_, AudioBus::Bgm, settings_.volume, 1.0f, true);
       }
    }
 
@@ -193,8 +186,6 @@ void BgmComponent::DrawInspector() {
          audio->StopPreviews();
       }
    }
-
-   Configure(DescribeSettings());
 }
 #endif
 }
@@ -202,15 +193,7 @@ void BgmComponent::DrawInspector() {
 namespace GameEngine {
 
 BgmComponent::Settings BgmComponent::DescribeSettings() const {
-   Settings settings;
-   settings.clipAssetId = clipAssetId;
-   settings.volume = volume;
-   settings.loop = loop;
-   settings.playOnStart = playOnStart;
-   settings.fadeInSeconds = fadeInSeconds;
-   settings.fadeOutSeconds = fadeOutSeconds;
-   settings.continueAcrossScenes = continueAcrossScenes;
-   return settings;
+   return settings_;
 }
 
 void BgmComponent::Configure(const Settings& requested) {
@@ -232,13 +215,7 @@ void BgmComponent::Configure(const Settings& requested) {
    settings.volume = std::clamp(settings.volume, 0.0f, 1.0f);
    settings.fadeInSeconds = std::max(settings.fadeInSeconds, 0.0f);
    settings.fadeOutSeconds = std::max(settings.fadeOutSeconds, 0.0f);
-   clipAssetId = settings.clipAssetId;
-   volume = settings.volume;
-   loop = settings.loop;
-   playOnStart = settings.playOnStart;
-   fadeInSeconds = settings.fadeInSeconds;
-   fadeOutSeconds = settings.fadeOutSeconds;
-   continueAcrossScenes = settings.continueAcrossScenes;
+   settings_ = std::move(settings);
    Prepare();
 }
 

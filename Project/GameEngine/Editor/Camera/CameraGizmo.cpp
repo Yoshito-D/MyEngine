@@ -58,29 +58,7 @@ void CameraGizmo::DrawFrustum(Camera* camera, Camera* viewCamera) {
    const float farClip = NormalizeFarClip(camera->GetNearClip(), camera->GetFarClip());
    const Matrix4x4 projectionMatrix = MakeCameraProjectionMatrix(*camera, farClip);
 
-   Vector3 corners[8];
-   CalculateFrustumCorners(camera->GetViewMatrix(), projectionMatrix, corners);
-
-   // 視錐台のエッジを描画
-   if (settings_.showFrustum) {
-      // ニアクリップ面の辺
-      if (settings_.showNearPlane) {
-         DrawQuad(corners[0], corners[1], corners[2], corners[3], settings_.nearPlaneColor, viewCamera);
-      }
-
-      // ファークリップ面の辺
-      if (settings_.showFarPlane) {
-         DrawQuad(corners[4], corners[5], corners[6], corners[7], settings_.farPlaneColor, viewCamera);
-      }
-
-      // ニア面とファー面を結ぶ辺
-      lineRenderer_->DrawLine(corners[0], corners[4], settings_.frustumColor, viewCamera);
-      lineRenderer_->DrawLine(corners[1], corners[5], settings_.frustumColor, viewCamera);
-      lineRenderer_->DrawLine(corners[2], corners[6], settings_.frustumColor, viewCamera);
-      lineRenderer_->DrawLine(corners[3], corners[7], settings_.frustumColor, viewCamera);
-   }
-
-   DrawOrientationVectors(camera->GetViewMatrix(), viewCamera);
+   DrawFrustum(camera->GetViewMatrix(), projectionMatrix, viewCamera);
 }
 
 void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera) {
@@ -95,6 +73,10 @@ void CameraGizmo::DrawFrustum(const CameraState& state, Camera* viewCamera, floa
    const Matrix4x4 viewMatrix = state.GetViewMatrix();
    const Matrix4x4 projectionMatrix = MakeCameraStateProjectionMatrix(state, aspectRatio, farClip);
 
+   DrawFrustum(viewMatrix, projectionMatrix, viewCamera);
+}
+
+void CameraGizmo::DrawFrustum(const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix, Camera* viewCamera) {
    // 視錐台の8頂点を計算
    Vector3 corners[8];
    CalculateFrustumCorners(viewMatrix, projectionMatrix, corners);

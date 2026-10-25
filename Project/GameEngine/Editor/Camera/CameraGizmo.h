@@ -71,6 +71,9 @@ public:
    void Configure(const Settings& settings);
 
 private:
+   /// @brief 確定した行列から視錐台と向きを共通描画する。
+   void DrawFrustum(const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix, Camera* viewCamera);
+
    /// @brief ViewProjection行列から視錐台の8頂点を計算
    void CalculateFrustumCorners(
       const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix, Vector3 outCorners[8]) const;
