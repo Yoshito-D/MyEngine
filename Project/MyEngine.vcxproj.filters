@@ -1,11 +1,5 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Docs">
-      <UniqueIdentifier>{80565c4b-5450-48c3-9dc3-bcb9cc77c848}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Docs\Editor">
-      <UniqueIdentifier>{8578880b-4c02-496f-a9e8-475cdae841f8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Externals">
       <UniqueIdentifier>{323e27c5-ff7c-4de8-836c-016534d6c441}</UniqueIdentifier>
     </Filter>
@@ -260,9 +254,6 @@
     </Filter>
     <Filter Include="Resources\game\config">
       <UniqueIdentifier>{afa9114e-d255-47a5-849e-397150accb62}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Tests">
-      <UniqueIdentifier>{33ebd051-4688-46f8-9453-5e858834f383}</UniqueIdentifier>
     </Filter>
     <Filter Include="Tools">
       <UniqueIdentifier>{87fa68d2-337e-4805-9063-f758d5112926}</UniqueIdentifier>
@@ -1756,9 +1747,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Docs\FolderStructure.md">
-      <Filter>Docs</Filter>
-    </None>
     <None Include="..\Tools\FilterAdjust.ps1">
       <Filter>Tools</Filter>
     </None>
@@ -1766,23 +1754,8 @@
       <Filter>Tools</Filter>
     </None>
     <None Include="AGENTS.md" />
-    <None Include="Docs\Editor\EditorWorkflow.md">
-      <Filter>Docs\Editor</Filter>
-    </None>
     <None Include="Resources\game\config\input_actions.json">
       <Filter>Resources\game\config</Filter>
-    </None>
-    <None Include="Tests\EditorAssetRegistryTests.cpp">
-      <Filter>Tests</Filter>
-    </None>
-    <None Include="Tests\EditorImGuiLayoutTests.cpp">
-      <Filter>Tests</Filter>
-    </None>
-    <None Include="Tests\EditorSceneContextTests.cpp">
-      <Filter>Tests</Filter>
-    </None>
-    <None Include="Tests\TexturePathTests.cpp">
-      <Filter>Tests</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -1802,8 +1775,12 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GameEngine\Assets\Texture\TextureCacheBuilder.cpp"><Filter>GameEngine\Assets\Texture</Filter></ClCompile>
-    <ClInclude Include="GameEngine\Assets\Texture\TextureCacheBuilder.h"><Filter>GameEngine\Assets\Texture</Filter></ClInclude>
+    <ClCompile Include="GameEngine\Assets\Texture\TextureCacheBuilder.cpp">
+      <Filter>GameEngine\Assets\Texture</Filter>
+    </ClCompile>
+    <ClInclude Include="GameEngine\Assets\Texture\TextureCacheBuilder.h">
+      <Filter>GameEngine\Assets\Texture</Filter>
+    </ClInclude>
     <ClCompile Include="GameEngine\Assets\Texture\TextureCacheStartup.cpp">
       <Filter>GameEngine\Assets\Texture</Filter>
     </ClCompile>
@@ -1812,22 +1789,295 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Docs\TextureLoading.md"><Filter>Docs</Filter></None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\engine\pipelines\root_signatures\**\*.json">
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_emitter_compute_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures</Filter>
     </None>
-    <None Include="Resources\engine\pipelines\pso\**\*.json">
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_init_compute_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_render_compute_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_ribbon_compute_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_update_compute_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\compute\skinning_compute_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\line3d_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_triplanar_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\skybox_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_dissolve_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_outline_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\compute\particle_emitter_compute_pipeline.json">
       <Filter>Resources\engine\pipelines\pso</Filter>
     </None>
-    <None Include="Docs\ShaderCompilation.md">
-      <Filter>Docs</Filter>
+    <None Include="Resources\engine\pipelines\pso\compute\particle_init_compute_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
     </None>
-    <None Include="Resources\engine\shaders\**\*.hlsl">
+    <None Include="Resources\engine\pipelines\pso\compute\particle_render_compute_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\compute\particle_ribbon_compute_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\compute\particle_update_compute_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\compute\skinning_compute_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\line3d_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\object3d_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\object3d_triplanar_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_mask_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\anti_aliasing_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\bloom_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\boxfilter_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\chromatic_aberration_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\dissolve_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\fullscreen_triangle_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\gaussfilter_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\grayscale_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\linear_to_srgb_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\outline_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\pixelation_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\radialblur_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\scene_transition_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\shockwave_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\speedline_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\vignette_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\pipelines\pso\postprocess\white_noise_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\compute\particle\ParticleEmitter.CS.hlsl">
       <Filter>Resources\engine\shaders</Filter>
     </None>
-    <None Include="Resources\engine\shaders\**\*.hlsli">
+    <None Include="Resources\engine\shaders\compute\particle\ParticleInit.CS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\compute\particle\ParticleRender.CS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\compute\particle\ParticleRibbon.CS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\compute\particle\ParticleUpdate.CS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\compute\skinning\Skinning.CS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\line3d\Line3D.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\line3d\Line3D.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3D.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3D.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3DTriplanar.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\particle\Particle.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\particle\Particle.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadowMask.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadowMask.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadowProject.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadowProject.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\skybox\Skybox.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\skybox\Skybox.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\text\Text.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\text\Text.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\AntiAliasing.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\Bloom.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\BoxFilter.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\ChromaticAberration.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\Dissolve.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\FullscreenTriangle.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\FullscreenTriangle.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\GaussFilter.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\Grayscale.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\LinearToSRGB.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\Outline.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\Pixelation.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\RadialBlur.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\SceneTransition.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\ShockWave.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\SpeedLine.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\Vignette.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\WhiteNoise.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\line3d\Line3d.hlsli">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\object3d\Lighting.hlsli">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3d.hlsli">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3DCommon.hlsli">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\particle\Particle.hlsli">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadow.hlsli">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\skybox\Skybox.hlsli">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\postprocess\FullscreenTriangle.hlsli">
       <Filter>Resources\engine\shaders</Filter>
     </None>
   </ItemGroup>
