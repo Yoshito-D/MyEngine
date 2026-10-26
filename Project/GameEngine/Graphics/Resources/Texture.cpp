@@ -2,31 +2,39 @@
 #include "GameEngine/Graphics/Resources/Texture.h"
 #include "GameEngine/Graphics/Device/ResourceHelper.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
-#include <algorithm>
-#include <cctype>
 #include <filesystem>
 
 namespace GameEngine {
-ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::string& filePath) {
+ComPtr<ID3D12Resource> Texture::LoadTexture(
+   GraphicsDevice* device, const std::filesystem::path& filePath, const TextureInfo& info) {
    if (!device || !device->GetDevice() || !device->GetCommandList()) {
       return nullptr;
    }
 
-   name_ = filePath.substr(filePath.find_last_of("/\\") + 1);
-   DirectX::ScratchImage mipImages = LoadTextureWithMipmaps(filePath);
+   name_ = info.name;
+   DirectX::ScratchImage mipImages;
+   // 実行時にはビルド済みDDSだけを展開し、画像変換とミップ生成は行わない。
+   if (FAILED(DirectX::LoadFromDDSFile(filePath.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, mipImages))) {
+      return nullptr;
+   }
 
    if (!mipImages.GetImageCount()) {
       return nullptr;
    }
 
    metadata_ = mipImages.GetMetadata();
+   // 壊れた生成物や異なる世代のカタログをGPUリソース生成前に拒否する。
+   if (metadata_.width != info.width || metadata_.height != info.height || metadata_.mipLevels != info.mipLevels ||
+       metadata_.format != info.format || metadata_.IsCubemap() != info.isCubemap) {
+      return nullptr;
+   }
 
    if (metadata_.dimension != DirectX::TEX_DIMENSION_TEXTURE2D || !metadata_.width || !metadata_.height ||
        metadata_.width > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION ||
        metadata_.height > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION || !metadata_.mipLevels ||
        metadata_.mipLevels > D3D12_REQ_MIP_LEVELS ||
        (metadata_.IsCubemap() ? metadata_.arraySize != 6 : metadata_.arraySize != 1)) {
-      Logger::Warning("Unsupported texture dimensions: " + filePath);
+      Logger::Warning("Unsupported texture dimensions: " + info.name);
       return nullptr;
    }
 
@@ -36,7 +44,7 @@ ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::s
           D3D12_FEATURE_FORMAT_SUPPORT, &formatSupport, sizeof(formatSupport))) ||
        !(formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_TEXTURE2D) ||
        !(formatSupport.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE)) {
-      Logger::Warning("Unsupported texture format: " + filePath);
+      Logger::Warning("Unsupported texture format: " + info.name);
       return nullptr;
    }
 
@@ -82,53 +90,5 @@ ComPtr<ID3D12Resource> Texture::LoadTexture(GraphicsDevice* device, const std::s
    device->IncrementSrvIndex();
 
    return intermediateResource;
-}
-
-DirectX::ScratchImage Texture::LoadTextureWithMipmaps(const std::string& filePath) {
-   DirectX::ScratchImage image{};
-   std::wstring filePathW = Logger::ConvertString(filePath);
-
-   HRESULT hr = S_OK;
-
-   std::string extension = std::filesystem::path(std::u8string(filePath.begin(), filePath.end())).extension().string();
-   std::transform(extension.begin(), extension.end(), extension.begin(),
-      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-
-   if (extension == ".dds") {
-      // DDSは既存の圧縮形式やキューブ面を保持し、一般画像は色空間をsRGBとして読み込む。
-      hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
-   } else {
-      hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-   }
-
-   if (FAILED(hr)) {
-      Logger::Warning("Texture could not be decoded: " + filePath);
-      return {};
-   }
-
-   const DirectX::TexMetadata& metadata = image.GetMetadata();
-
-   // ミップマップが生成できるサイズかチェック
-   if (metadata.width <= 1 && metadata.height <= 1) {
-      // 1x1など、ミップマップ不要（または生成できない）場合はそのまま返す
-      return image;
-   }
-
-   DirectX::ScratchImage mipImages{};
-
-   if (DirectX::IsCompressed(image.GetMetadata().format)) {
-      // BC圧縮画像をCPUで再生成すると形式と既存mipを失うため、そのままGPUへ送る。
-      mipImages = std::move(image); // 圧縮テクスチャは元画像をそのまま使用
-   } else {
-      hr = DirectX::GenerateMipMaps(
-         image.GetImages(), image.GetImageCount(), metadata, DirectX::TEX_FILTER_SRGB, 4, mipImages);
-   }
-
-   if (FAILED(hr)) {
-      Logger::Error("MipMap generation failed for: " + filePath);
-      return image; // ミップマップ生成に失敗した場合、元画像を返す
-   }
-
-   return mipImages;
 }
 }

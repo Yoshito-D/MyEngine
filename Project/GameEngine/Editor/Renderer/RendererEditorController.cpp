@@ -49,7 +49,7 @@ constexpr unsigned char kUtf8ContinuationByteTag = 0x80;
 constexpr float kHierarchyDropGuideThickness = 2.0f;
 constexpr std::int32_t kEmptyCStringPayloadSize = 1;
 constexpr size_t kInspectorNameBufferSize = 256;
-constexpr const char* kFolderIconAssetId = "engine/textures/editor/ic_system_folder_01_128.png";
+constexpr const char* kFolderIconAssetId = "ic_system_folder_01_128";
 
 void ContinueRowIfFits(float nextWidth) {
    const float right = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
@@ -1145,7 +1145,7 @@ void RendererEditorController::ShowInspectorWindow() {
          ImGui::TextWrapped("%s", entry->assetId.c_str());
 
          if (entry->type == EditorAssetType::Texture) {
-            if (Texture* texture = EngineContext::GetTexture(entry->assetId)) {
+            if (Texture* texture = EngineContext::GetTexture(entry->displayName)) {
                ImGui::Text("%u x %u", texture->GetWidth(), texture->GetHeight());
 
                if (!texture->GetMetadata().IsCubemap()) {
@@ -1157,7 +1157,7 @@ void RendererEditorController::ShowInspectorWindow() {
                }
             } else {
                ImGui::TextWrapped(
-                  "Preview unavailable: texture could not be decoded or is unsupported. Rescan to retry after correcting the file.");
+                  "Preview unavailable. Restart the editor to regenerate CookedTextures from the source image.");
             }
          }
 
@@ -1468,6 +1468,11 @@ void RendererEditorController::DrawAssetEntry(EditorSceneContext& context, const
                                : std::string("[") + type + "] " + entry.displayName;
    const bool clicked =
       ImGui::Selectable(text.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(width, itemHeight));
+   // Selectableは画面外でもレイアウトを進めるが、サムネイルのGPU読込は表示項目だけに限定する。
+   if (!ImGui::IsItemVisible()) {
+      ImGui::PopID();
+      return;
+   }
    const bool hovered = ImGui::IsItemHovered();
    const bool doubleClicked = hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 
@@ -1497,7 +1502,7 @@ void RendererEditorController::DrawAssetEntry(EditorSceneContext& context, const
       Texture* texture =
          entry.type == EditorAssetType::Folder
             ? EngineContext::GetTexture(kFolderIconAssetId)
-            : (entry.type == EditorAssetType::Texture ? EngineContext::GetTexture(entry.assetId) : nullptr);
+            : (entry.type == EditorAssetType::Texture ? EngineContext::GetTexture(entry.displayName) : nullptr);
       const ImVec2 iconMin(start.x + std::max(0.0f, (width - editorThumbnailSize_) * 0.5f), start.y + 2.0f);
       const ImVec2 iconMax(iconMin.x + editorThumbnailSize_, iconMin.y + editorThumbnailSize_);
 

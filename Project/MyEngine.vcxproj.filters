@@ -1925,4 +1925,28 @@
       <Filter>Externals\imgui</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GameEngine\Assets\Texture\SceneTexturePreloader.cpp">
+      <Filter>GameEngine\Assets\Texture</Filter>
+    </ClCompile>
+    <ClInclude Include="GameEngine\Assets\Texture\SceneTexturePreloader.h">
+      <Filter>GameEngine\Assets\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Assets\Texture\TextureCatalog.h">
+      <Filter>GameEngine\Assets\Texture</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GameEngine\Assets\Texture\TextureCacheBuilder.cpp"><Filter>GameEngine\Assets\Texture</Filter></ClCompile>
+    <ClInclude Include="GameEngine\Assets\Texture\TextureCacheBuilder.h"><Filter>GameEngine\Assets\Texture</Filter></ClInclude>
+    <ClCompile Include="GameEngine\Assets\Texture\TextureCacheStartup.cpp">
+      <Filter>GameEngine\Assets\Texture</Filter>
+    </ClCompile>
+    <ClInclude Include="GameEngine\Assets\Texture\TextureCacheStartup.h">
+      <Filter>GameEngine\Assets\Texture</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\TextureLoading.md"><Filter>Docs</Filter></None>
+  </ItemGroup>
 </Project>

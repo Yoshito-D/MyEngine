@@ -204,7 +204,7 @@
          0
       ]
    },
-   "textureName": "game/textures/smoke.png",
+   "textureName": "smoke",
    "textureSheetAnimationModule": {
       "animationMode": 0,
       "cycles": 1,

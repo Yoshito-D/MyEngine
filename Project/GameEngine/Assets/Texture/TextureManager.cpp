@@ -2,146 +2,121 @@
 #include "GameEngine/Assets/Texture/TextureManager.h"
 #include "GameEngine/Assets/ResourceAssetPath.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
-#include <algorithm>
-#include <cctype>
-#include <filesystem>
-
-namespace {
-bool IsSupportedTextureExtension(const std::filesystem::path& path) {
-   std::string ext = GameEngine::ResourcePathToUtf8(path.extension());
-
-   // Windows上でも入力表記に依存しないよう、拡張子だけを小文字へ正規化する。
-   std::transform(
-      ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-   return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".dds";
-}
-
-std::string ToGenericString(std::filesystem::path path) {
-   return GameEngine::ResourcePathToUtf8(path.lexically_normal());
-}
-
-std::string NormalizeAssetId(const std::filesystem::path& path, const std::filesystem::path& resourcesRoot) {
-   std::error_code error;
-
-   // 保存IDはresources相対を優先し、相対化不能な別ボリューム等では元パスを失わない。
-   std::filesystem::path relative = std::filesystem::relative(path, resourcesRoot, error);
-
-   if (error) {
-      relative = path;
-   }
-
-   return ToGenericString(relative);
-}
-
-std::filesystem::path ResolveResourceTexturePath(const std::string& assetId) {
-   const auto path = GameEngine::ResourceAssetIdPath(assetId);
-   return !path.empty() && IsSupportedTextureExtension(path) ? GameEngine::ResolveResourceAssetPath(assetId)
-                                                             : std::filesystem::path{};
-}
-}
+#include <chrono>
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <stdexcept>
 
 namespace GameEngine {
-void TextureManager::Initialize(GraphicsDevice* device) {
-   assert(device != nullptr);
+bool TextureManager::Initialize(GraphicsDevice* device) {
+   Clear();
+   catalog_.clear();
    device_ = device;
-   intermediateResource_.clear();
-   failedTextureNames_.clear();
+   try {
+      if (!device) {
+         throw std::runtime_error("Graphics device is unavailable");
+      }
+      resourcesRoot_ = "Resources";
+
+      for (const auto* rootId : kTextureRoots) {
+         const auto cooked = std::filesystem::path(rootId) / kTextureCookedDirectory;
+         std::ifstream stream(resourcesRoot_ / cooked / "catalog.json");
+         nlohmann::json catalog;
+         stream >> catalog;
+
+         if (catalog.at("version").get<std::int32_t>() != kTextureCookVersion || !catalog.at("textures").is_array()) {
+            throw std::runtime_error("Unsupported texture catalog version or structure");
+         }
+
+         for (const auto& entry : catalog.at("textures")) {
+            TextureInfo info;
+            info.name = entry.at("name").get<std::string>();
+            info.sourcePath = ResourceAssetIdPath(entry.at("sourcePath").get<std::string>());
+            info.ddsPath = ResourceAssetIdPath(entry.at("ddsPath").get<std::string>());
+            const auto namePath = ResourceAssetIdPath(info.name);
+            const auto expected = cooked / std::filesystem::path(namePath.wstring() + L".dds");
+
+            if (namePath.empty() || namePath.has_parent_path() || info.sourcePath.empty() ||
+                ResourcePathToUtf8(info.sourcePath.stem()) != info.name || info.ddsPath != expected) {
+               throw std::runtime_error("Invalid texture catalog path: " + info.name);
+            }
+
+            info.width = entry.at("width").get<std::uint32_t>();
+            info.height = entry.at("height").get<std::uint32_t>();
+            info.mipLevels = entry.at("mipLevels").get<std::uint32_t>();
+            info.format = static_cast<DXGI_FORMAT>(entry.at("format").get<std::uint32_t>());
+            info.isCubemap = entry.at("isCubemap").get<bool>();
+
+            if (!info.width || !info.height || info.width > 16384 || info.height > 16384 || !info.mipLevels ||
+                info.mipLevels > 15 || !catalog_.emplace(info.name, info).second) {
+               throw std::runtime_error("Invalid or duplicate texture catalog entry: " + info.name);
+            }
+         }
+      }
+
+      Logger::Info(std::format("Texture catalog: {} available, 0 loaded", catalog_.size()));
+      return true;
+   } catch (const std::exception& error) {
+      catalog_.clear();
+      Logger::Error("Cooked texture catalog unavailable. Delete the affected cached DDS and restart, or rebuild: " +
+                    std::string(error.what()));
+      return false;
+   }
 }
 
-void TextureManager::LoadTexture(const std::string& filePath, const std::string& name) {
-   if (textures_.find(name) != textures_.end()) return;
+const TextureInfo* TextureManager::FindTextureInfo(const std::string& textureName) const {
+   const auto found = catalog_.find(textureName);
+   return found == catalog_.end() ? nullptr : &found->second;
+}
 
-   if (!device_ || failedTextureNames_.contains(name)) return;
-
+Texture* TextureManager::GetTexture(const std::string& textureName) {
+   if (const auto loaded = textures_.find(textureName); loaded != textures_.end()) {
+      return loaded->second.get();
+   }
+   if (!device_ || textureName.empty() || failedTextureNames_.contains(textureName)) {
+      return nullptr;
+   }
+   const auto* info = FindTextureInfo(textureName);
+   const auto path =
+      info ? ResolveResourceAssetPath(ResourcePathToUtf8(info->ddsPath), resourcesRoot_) : std::filesystem::path{};
+   if (!info || path.empty()) {
+      failedTextureNames_.insert(textureName);
+      Logger::Error(
+         "Cooked texture is missing. Delete the affected cached DDS and restart, or rebuild: " + textureName);
+      return nullptr;
+   }
    auto texture = std::make_unique<Texture>();
-   Microsoft::WRL::ComPtr<ID3D12Resource> intermediate = texture->LoadTexture(device_, filePath);
-
-   if (!intermediate || !texture->GetWidth() || !texture->GetHeight()) {
-      failedTextureNames_.insert(name);
-      return;
-   }
-
-   // GPUコピー完了まではアップロード用リソースが必要なため、明示解放まで所有する。
-   intermediateResource_.push_back(intermediate);
-
-   textures_[name] = std::move(texture);
-
-   if (textures_[name]->GetMetadata().IsCubemap()) {
-      lastCubemapName_ = name;
-   }
-
-   Logger::Info("Texture loaded: " + name);
-}
-
-void TextureManager::LoadTexturesFromDirectory(
-   const std::filesystem::path& directoryPath, const std::filesystem::path& resourcesRoot) {
-   std::error_code error;
-
-   if (!std::filesystem::is_directory(directoryPath, error)) {
-      Logger::Warning("Texture directory not found: " + directoryPath.generic_string());
-      return;
-   }
-
-   // サブフォルダー名を含むアセットIDを作るため、対象ルートを再帰的に走査する。
-   std::filesystem::recursive_directory_iterator iterator(
-      directoryPath, std::filesystem::directory_options::skip_permission_denied, error);
-   const std::filesystem::recursive_directory_iterator end;
-
-   for (; !error && iterator != end; iterator.increment(error)) {
-      const auto& entry = *iterator;
-
-      if (!entry.is_regular_file(error)) {
-         error.clear();
-         continue;
-      }
-
-      const auto& path = entry.path();
-
-      if (!IsSupportedTextureExtension(path)) {
-         continue;
-      }
-
-      const std::string assetId = NormalizeAssetId(path, resourcesRoot);
-      LoadTexture(ToGenericString(path), assetId);
-
-      // ゲームコードが使う論理名も登録する。Projectで保存する参照は完全IDなので衝突しない。
-      RegisterAlias(ToGenericString(path.stem()), assetId);
-      RegisterAlias(ToGenericString(path.filename()), assetId);
-   }
-
-   if (error) {
-      Logger::Warning("Texture directory scan failed: " + directoryPath.generic_string());
-   }
-}
-
-Texture* TextureManager::GetTexture(const std::string& name) {
-   auto it = textures_.find(name);
-
-   if (it != textures_.end()) {
-      return it->second.get();
-   }
-
-   auto aliasIt = textureAliases_.find(name);
-
-   if (aliasIt != textureAliases_.end()) {
-      return aliasIt->second;
-   }
-
-   if (!device_ || failedTextureNames_.contains(name)) {
+   auto intermediate = texture->LoadTexture(device_, path, *info);
+   if (!intermediate) {
+      failedTextureNames_.insert(textureName);
+      Logger::Error(
+         "Cooked texture could not be loaded. Delete the affected cached DDS and restart, or rebuild: " + textureName);
       return nullptr;
    }
-
-   const auto path = ResolveResourceTexturePath(name);
-
-   if (path.empty()) {
-      failedTextureNames_.insert(name);
-      return nullptr;
+   intermediateResource_.push_back(std::move(intermediate));
+   auto* result = texture.get();
+   textures_.emplace(textureName, std::move(texture));
+   if (info->isCubemap) {
+      lastCubemapName_ = textureName;
    }
+   Logger::Info("Texture loaded: " + textureName);
+   return result;
+}
 
-   // 短縮名の推測は行わず、検証済みの完全IDだけで読込と登録を行う。
-   LoadTexture(ToGenericString(path), name);
-   const auto loaded = textures_.find(name);
-   return loaded != textures_.end() ? loaded->second.get() : nullptr;
+bool TextureManager::Preload(std::span<const std::string> textureNames) {
+   const auto start = std::chrono::steady_clock::now();
+   const auto previousCount = textures_.size();
+   bool succeeded = true;
+   for (const auto& id : textureNames) {
+      if (!GetTexture(id)) {
+         succeeded = false;
+      }
+   }
+   const double milliseconds =
+      std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+   Logger::Info(std::format("Scene textures: {} referenced, {} new, {} loaded, {:.3f} ms, success={}",
+      textureNames.size(), textures_.size() - previousCount, textures_.size(), milliseconds, succeeded));
+   return succeeded;
 }
 
 void TextureManager::RefreshFailedLoads() {
@@ -150,74 +125,40 @@ void TextureManager::RefreshFailedLoads() {
 
 std::vector<std::string> TextureManager::GetTextureNames() const {
    std::vector<std::string> names;
-   names.reserve(textures_.size());
-
-   for (const auto& [name, texture] : textures_) {
-      (void)texture;
-      names.push_back(name);
+   for (const auto& [id, info] : catalog_) {
+      (void)info;
+      names.push_back(id);
    }
-
-   // unordered_mapの反復順を外へ出さず、Inspectorの候補順を実行ごとに安定させる。
-   std::sort(names.begin(), names.end());
    return names;
 }
 
 std::vector<std::string> TextureManager::GetCubemapTextureNames() const {
    std::vector<std::string> names;
-
-   for (const auto& [name, texture] : textures_) {
-      if (texture && texture->GetMetadata().IsCubemap()) {
-         names.push_back(name);
+   for (const auto& [id, info] : catalog_) {
+      if (info.isCubemap) {
+         names.push_back(id);
       }
    }
-
-   std::sort(names.begin(), names.end());
    return names;
 }
 
 Texture* TextureManager::GetLastCubemapTexture() const {
-   if (lastCubemapName_.empty()) {
-      return nullptr;
-   }
-
-   auto it = textures_.find(lastCubemapName_);
-   return (it != textures_.end()) ? it->second.get() : nullptr;
+   const auto found = textures_.find(lastCubemapName_);
+   return found == textures_.end() ? nullptr : found->second.get();
 }
 
 void TextureManager::ReleaseIntermediateResources() {
-   if (intermediateResource_.empty()) return;
-
-   for (auto& resource : intermediateResource_) {
-      if (resource) {
-         resource.Reset();
-      }
+   if (intermediateResource_.empty()) {
+      return;
    }
-
    intermediateResource_.clear();
    Logger::Info("Intermediate resources released.");
 }
 
 void TextureManager::Clear() {
-   // AliasはTextureへの非所有ポインタなので、本体破棄と同じ操作で必ず無効化する。
    textures_.clear();
-   textureAliases_.clear();
    failedTextureNames_.clear();
    intermediateResource_.clear();
    lastCubemapName_.clear();
-}
-
-void TextureManager::RegisterAlias(const std::string& alias, const std::string& ownerName) {
-   if (alias.empty() || alias == ownerName) return;
-
-   auto ownerIt = textures_.find(ownerName);
-
-   if (ownerIt == textures_.end()) return;
-
-   if (textures_.contains(alias) || textureAliases_.contains(alias)) {
-      // 同名ファイルが別フォルダーにある場合、曖昧な短縮名を後勝ちで変化させない。
-      return;
-   }
-
-   textureAliases_[alias] = ownerIt->second.get();
 }
 }

@@ -12,6 +12,11 @@ Scene::~Scene() {
 }
 
 bool Scene::Initialize(const nlohmann::json& data) {
+   // 初回描画やイベント発火で読込が発生しないよう、保存状態の参照を先に準備する。
+   if (!SceneWorld::IsValidSnapshot(data) || !EngineContext::PreloadSceneTextures(data)) {
+      return false;
+   }
+
    auto camera = std::make_unique<Camera>();
    camera->Initialize();
    camera->SetFarClip(10000.0f);

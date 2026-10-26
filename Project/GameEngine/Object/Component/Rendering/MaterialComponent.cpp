@@ -11,6 +11,7 @@
 #include <algorithm>
 
 #ifdef USE_IMGUI
+#include "GameEngine/Framework/EngineContext.h"
 #include "imgui.h"
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
@@ -753,8 +754,8 @@ void MaterialComponent::DrawInspector() {
    // 候補情報はProjectと同じレジストリから取得し、選択時だけ用途別のTexture次元を検証する。
    ImGui::SeparatorText(Tr("テクスチャ", "Textures"));
    const auto acceptsTexture2D = [](const EditorAssetEntry& entry) {
-      Texture* texture = textureResolver_ ? textureResolver_(entry.assetId) : nullptr;
-      return texture && !texture->GetMetadata().IsCubemap();
+      const auto* info = EngineContext::FindTextureInfo(entry.displayName);
+      return info && !info->isCubemap;
    };
 
    for (size_t slot = 0; slot < slotCount; ++slot) {
@@ -965,8 +966,8 @@ void MaterialComponent::DrawInspector() {
    ImGui::SeparatorText(Tr("環境テクスチャ", "Environment Texture"));
 
    const auto acceptsCubemap = [](const EditorAssetEntry& entry) {
-      Texture* texture = environmentTextureResolver_ ? environmentTextureResolver_(entry.assetId) : nullptr;
-      return texture && texture->GetMetadata().IsCubemap();
+      const auto* info = EngineContext::FindTextureInfo(entry.displayName);
+      return info && info->isCubemap;
    };
    std::string nextEnvironmentId = environmentTextureName_;
 

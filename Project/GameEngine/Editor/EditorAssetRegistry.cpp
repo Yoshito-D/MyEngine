@@ -2,6 +2,7 @@
 
 #ifdef USE_IMGUI
 
+#include "GameEngine/Assets/Texture/TextureCatalog.h"
 #include <algorithm>
 #include <atomic>
 #include <cctype>
@@ -26,6 +27,14 @@ std::string ToLower(std::string value) {
    std::transform(value.begin(), value.end(), value.begin(),
       [](unsigned char c) { return c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : static_cast<char>(c); });
    return value;
+}
+
+bool IsCookedTextureRoot(const std::filesystem::path& path, const std::filesystem::path& root) {
+   const auto id = ToLower(ToGenericString(path.lexically_relative(root)));
+
+   return std::any_of(kTextureRoots.begin(), kTextureRoots.end(), [&id](const auto* textureRoot) {
+      return id == ToLower(ToGenericString(std::filesystem::path(textureRoot) / kTextureCookedDirectory));
+   });
 }
 
 bool IsValidFileName(const std::string& name) {
@@ -133,7 +142,10 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
          break;
       }
 
-      if (std::filesystem::is_symlink(status)) {
+      if (std::filesystem::is_directory(status) && IsCookedTextureRoot(path, resourcesRoot_)) {
+         // 生成DDSとカタログを編集用アセットとして再登録しない。
+         it.disable_recursion_pending();
+      } else if (std::filesystem::is_symlink(status)) {
          // リンク先がルート外でもブラウザーの操作対象にならないよう除外する。
          it.disable_recursion_pending();
       } else if (std::filesystem::is_directory(status) || std::filesystem::is_regular_file(status)) {
@@ -242,7 +254,8 @@ std::vector<std::string> EditorAssetRegistry::FindReferences(const std::string& 
          break;
       }
 
-      if (std::filesystem::is_symlink(status) || NormalizeAssetId(it->path(), resourcesRoot_).empty()) {
+      if (IsCookedTextureRoot(it->path(), resourcesRoot_) || std::filesystem::is_symlink(status) ||
+          NormalizeAssetId(it->path(), resourcesRoot_).empty()) {
          it.disable_recursion_pending();
       } else if (std::filesystem::is_regular_file(status)) {
          const std::string extension = ToLower(it->path().extension().string());
@@ -388,6 +401,16 @@ bool EditorAssetRegistry::ResolveDestination(
    const std::string& assetId, std::filesystem::path& path, std::string& error) const {
    error.clear();
    const std::string foldedId = ToLower(assetId);
+
+   const bool isCooked = std::any_of(kTextureRoots.begin(), kTextureRoots.end(), [&foldedId](const auto* root) {
+      const auto id = ToLower(ToGenericString(std::filesystem::path(root) / kTextureCookedDirectory));
+      return foldedId == id || foldedId.starts_with(id + "/");
+   });
+
+   if (isCooked) {
+      error = "Generated textures are managed at startup and cannot be edited in Project.";
+      return false;
+   }
 
    if (foldedId == "engine" || foldedId.starts_with("engine/")) {
       error = "Engine resource folders use built-in names and cannot be modified.";

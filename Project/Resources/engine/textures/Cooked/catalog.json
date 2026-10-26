@@ -1,0 +1,41 @@
+{
+  "version": 3,
+  "textures": [
+    {
+      "ddsHash": "aff88453d68b981bc85c55cbb1f23d9d1cd940b22b27c17c994214feb1c1393f",
+      "ddsPath": "engine/textures/Cooked/ic_system_folder_01_128.dds",
+      "format": 87,
+      "height": 128,
+      "isCubemap": false,
+      "mipLevels": 4,
+      "name": "ic_system_folder_01_128",
+      "sourceHash": "d0f9ee936b00d35696de85307a830686d1e1c8970a5246f8b899e33a28045a03",
+      "sourcePath": "engine/textures/editor/ic_system_folder_01_128.png",
+      "width": 128
+    },
+    {
+      "ddsHash": "90cdfab043646e54b996d2ea9119a40a3001bf2b580faf381ad2f56351fa628a",
+      "ddsPath": "engine/textures/Cooked/noise0.dds",
+      "format": 87,
+      "height": 512,
+      "isCubemap": false,
+      "mipLevels": 4,
+      "name": "noise0",
+      "sourceHash": "98379e8f9602a5ae1bcf1cbfc76ce8cb9d62c0945506d313950a8a62af630336",
+      "sourcePath": "engine/textures/postprocess/noise0.png",
+      "width": 512
+    },
+    {
+      "ddsHash": "16acd2e52aa4017575964c422be1c44eedf7a6c90d2c3429ce51b081fcb53664",
+      "ddsPath": "engine/textures/Cooked/white1x1.dds",
+      "format": 91,
+      "height": 1,
+      "isCubemap": false,
+      "mipLevels": 1,
+      "name": "white1x1",
+      "sourceHash": "cfe308c4710322d378b00bd7b0df5277a1d078078fd24c7c84767f0c36003d33",
+      "sourcePath": "engine/textures/white1x1.png",
+      "width": 1
+    }
+  ]
+}

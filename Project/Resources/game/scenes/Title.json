@@ -297,7 +297,7 @@
                      1,
                      1
                   ],
-                  "textureName": "game/textures/space_2048px.dds"
+                  "textureName": "space_2048px"
                },
                "enabled": true,
                "typeName": "SkyboxComponent"
@@ -717,7 +717,7 @@
                   0,
                   0
                ],
-               "maskTexture": "engine/textures/postprocess/noise0.png",
+               "maskTexture": "noise0",
                "maskTiling": [
                   1,
                   1

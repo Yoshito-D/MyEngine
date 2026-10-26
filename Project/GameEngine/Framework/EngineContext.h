@@ -422,10 +422,11 @@ public:
    /// @return アニメーション名のリスト
    static std::vector<std::string> GetAnimationNames();
 
-   /// @brief テクスチャをロードする
-   /// @param texturePath テクスチャのパス
-   /// @param name 名前
-   static void LoadTexture(const std::string& texturePath, const std::string& name);
+   /// @brief GPU読み込みなしでカタログ上のテクスチャ情報を参照する。
+   static const TextureInfo* FindTextureInfo(const std::string& textureName);
+
+   /// @brief シーンとParticle依存のテクスチャを構築前に同期準備する。
+   static bool PreloadSceneTextures(const nlohmann::json& scene);
 
    /// @brief テクスチャを取得する
    /// @param name 名前
@@ -434,7 +435,7 @@ public:
    /// @brief テクスチャを全削除
    static void ClearTextures();
 
-   /// @brief ロード済みテクスチャ名一覧を取得する
+   /// @brief 未読込を含むカタログ上の画像名一覧を取得する
    /// @return テクスチャ名のリスト
    static std::vector<std::string> GetTextureNames();
 

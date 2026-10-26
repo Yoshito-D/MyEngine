@@ -88,7 +88,7 @@ public:
 private:
    DissolveParams params_; ///< 現在の正規化済みパラメーター。
    /// @brief 現在指定されているマスクテクスチャ名。
-   std::string maskTextureName_ = "engine/textures/postprocess/noise0.png";
+   std::string maskTextureName_ = "noise0";
    Texture* maskTexture_ = nullptr;     ///< マスクとして参照するテクスチャへの非所有参照。
    bool maskTextureLookupDirty_ = true; ///< マスクテクスチャ名から実体を再検索する必要があるかどうか。
 

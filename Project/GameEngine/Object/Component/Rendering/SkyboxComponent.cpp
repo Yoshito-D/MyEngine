@@ -8,6 +8,7 @@
 #ifdef USE_IMGUI
 #include "imgui.h"
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
@@ -103,8 +104,8 @@ void SkyboxComponent::DrawInspector() {
 
    std::string nextTextureId = textureName_;
    const auto acceptsCubemap = [](const EditorAssetEntry& entry) {
-      Texture* texture = textureResolver_ ? textureResolver_(entry.assetId) : nullptr;
-      return texture && texture->GetMetadata().IsCubemap();
+      const auto* info = EngineContext::FindTextureInfo(entry.displayName);
+      return info && info->isCubemap;
    };
 
    if (EditorUI::AssetReference(

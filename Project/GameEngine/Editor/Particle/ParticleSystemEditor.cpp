@@ -662,8 +662,8 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
           StableLabel(Tr("テクスチャとモデル", "Texture and Model"), "ParticleTextureAndModel").c_str())) {
       std::string nextTextureId = particleSystem->GetTextureName();
       const auto acceptsTexture2D = [](const EditorAssetEntry& entry) {
-         Texture* texture = EngineContext::GetTexture(entry.assetId);
-         return texture && !texture->GetMetadata().IsCubemap();
+         const auto* info = EngineContext::FindTextureInfo(entry.displayName);
+         return info && !info->isCubemap;
       };
 
       if (EditorUI::AssetReference(

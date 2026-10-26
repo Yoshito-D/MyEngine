@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Assets/Texture/SceneTexturePreloader.h"
 #include <cstdint>
 #include "GameEngine/Framework/EngineContext.h"
 #include <nlohmann/json.hpp>
@@ -648,12 +649,12 @@ std::vector<std::string> EngineContext::GetAnimationNames() {
    return sAssetManager_->GetAnimationAssetManager()->GetAnimationNames();
 }
 
-void EngineContext::LoadTexture(const std::string& texturePath, const std::string& name) {
-   if (!sAssetManager_) return;
+const TextureInfo* EngineContext::FindTextureInfo(const std::string& textureName) {
+   return sAssetManager_ ? sAssetManager_->GetTextureManager()->FindTextureInfo(textureName) : nullptr;
+}
 
-   if (!sAssetManager_->GetTextureManager()) return;
-
-   sAssetManager_->GetTextureManager()->LoadTexture(texturePath, name);
+bool EngineContext::PreloadSceneTextures(const nlohmann::json& scene) {
+   return sAssetManager_ && GameEngine::PreloadSceneTextures(*sAssetManager_->GetTextureManager(), scene);
 }
 
 Texture* EngineContext::GetTexture(const std::string& name) {
