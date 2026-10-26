@@ -207,8 +207,12 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
 }
 
 void SceneManager::EditorUpdate() {
-   if (transitionState_ == TransitionState::Idle) return;
-   elapsed_ += std::max(EngineContext::GetUnscaledDeltaTime(), 0.0f);
+   if (transitionState_ == TransitionState::Idle || transitionState_ == TransitionState::PreparingFadeIn) return;
+
+   // フレームのデルタタイムには開始前のシーン読込も含まれるため、フェード自身の基準時刻から計測する。
+   const auto now = std::chrono::steady_clock::now();
+   elapsed_ += std::chrono::duration<float>(now - transitionUpdateTime_).count();
+   transitionUpdateTime_ = now;
    const float progress = std::clamp(elapsed_ / kTransitionDuration, 0.0f, 1.0f);
    opacity_ = transitionState_ == TransitionState::FadingOut ? progress : 1.0f - progress;
    EngineContext::SetSceneTransitionOpacity(opacity_);
@@ -231,6 +235,12 @@ void SceneManager::RuntimeUpdate() {
 void SceneManager::CheckSceneChange() {
    if (replacing_) return;
 
+   // 最初の描画で発生する資源準備も暗転中に済ませ、表示できる状態になってから復帰時間を計測する。
+   if (transitionState_ == TransitionState::PreparingFadeIn) {
+      transitionState_ = TransitionState::FadingIn;
+      transitionUpdateTime_ = std::chrono::steady_clock::now();
+   }
+
    if (commitReady_ && pending_) {
       auto snapshot = std::move(*pending_);
       pending_.reset();
@@ -243,6 +253,7 @@ void SceneManager::CheckSceneChange() {
    } else if (pending_ && transitionState_ != TransitionState::FadingOut) {
       transitionState_ = TransitionState::FadingOut;
       elapsed_ = opacity_ * kTransitionDuration;
+      transitionUpdateTime_ = std::chrono::steady_clock::now();
    }
 }
 
@@ -255,7 +266,7 @@ void SceneManager::CancelTransition() {
 }
 
 void SceneManager::BeginFadeIn() {
-   transitionState_ = TransitionState::FadingIn;
+   transitionState_ = TransitionState::PreparingFadeIn;
    elapsed_ = 0.0f;
    opacity_ = 1.0f;
    EngineContext::SetSceneTransitionOpacity(opacity_);
