@@ -799,7 +799,6 @@
     <None Include="Resources\game\config\input_actions.json" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Docs\FolderStructure.md" />
     <None Include="..\Tools\FilterAdjust.ps1" />
     <None Include="..\Tools\RunFilterAdjust.bat" />
   </ItemGroup>
@@ -841,13 +840,6 @@
     <ClCompile Include="GameEngine\Editor\EditorReferenceWidgets.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Tests\EditorAssetRegistryTests.cpp" />
-    <None Include="Tests\EditorSceneContextTests.cpp" />
-    <None Include="Tests\EditorImGuiLayoutTests.cpp" />
-    <None Include="Tests\TexturePathTests.cpp" />
-    <None Include="Docs\Editor\EditorWorkflow.md" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="GameEngine\Assets\Texture\SceneTexturePreloader.cpp" />
     <ClInclude Include="GameEngine\Assets\Texture\SceneTexturePreloader.h" />
     <ClInclude Include="GameEngine\Assets\Texture\TextureCatalog.h" />
@@ -855,20 +847,115 @@
     <ClInclude Include="GameEngine\Assets\Texture\TextureCacheBuilder.h" />
     <ClCompile Include="GameEngine\Assets\Texture\TextureCacheStartup.cpp" />
     <ClInclude Include="GameEngine\Assets\Texture\TextureCacheStartup.h" />
-    <None Include="Docs\TextureLoading.md" />
   </ItemGroup>
+  <!-- Shader artifacts and compiler options are shared by all C++ configurations. -->
   <PropertyGroup>
     <ShaderSourceDirectory>$(ProjectDir)Resources\engine\shaders</ShaderSourceDirectory>
-    <ShaderOutputDirectory>$(ProjectDir)..\Generated\Shaders\$(Configuration)</ShaderOutputDirectory>
+    <ShaderOutputDirectory>$(ShaderSourceDirectory)\Compiled</ShaderOutputDirectory>
     <DxcShaderCompilerPath Condition="'$(DxcShaderCompilerPath)' == ''">$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxc.exe</DxcShaderCompilerPath>
     <ShaderCompileOptions Condition="'$(ShaderCompileOptions)' == ''">-E main -Zi -Qembed_debug -Od -Zpr</ShaderCompileOptions>
     <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
+  <!-- IDE-visible C++ project items must list each file explicitly.
+       Build discovery remains dynamic inside the targets below. -->
   <ItemGroup>
-    <None Include="Resources\engine\pipelines\root_signatures\**\*.json" />
-    <None Include="Resources\engine\pipelines\pso\**\*.json" />
-    <None Include="Resources\engine\shaders\**\*.hlsl" />
-    <None Include="Resources\engine\shaders\**\*.hlsli" />
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_emitter_compute_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_init_compute_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_render_compute_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_ribbon_compute_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\compute\particle_update_compute_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\compute\skinning_compute_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\line3d_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_triplanar_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\skybox_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_dissolve_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_outline_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_rootsig.json" />
+    <None Include="Resources\engine\pipelines\pso\compute\particle_emitter_compute_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\compute\particle_init_compute_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\compute\particle_render_compute_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\compute\particle_ribbon_compute_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\compute\particle_update_compute_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\compute\skinning_compute_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\line3d_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\object3d_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\object3d_triplanar_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_mask_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\anti_aliasing_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\bloom_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\boxfilter_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\chromatic_aberration_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\dissolve_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\fullscreen_triangle_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\gaussfilter_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\grayscale_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\linear_to_srgb_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\outline_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\pixelation_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\radialblur_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\scene_transition_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\shockwave_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\speedline_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\vignette_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\postprocess\white_noise_pipeline.json" />
+    <None Include="Resources\engine\shaders\compute\particle\ParticleEmitter.CS.hlsl" />
+    <None Include="Resources\engine\shaders\compute\particle\ParticleInit.CS.hlsl" />
+    <None Include="Resources\engine\shaders\compute\particle\ParticleRender.CS.hlsl" />
+    <None Include="Resources\engine\shaders\compute\particle\ParticleRibbon.CS.hlsl" />
+    <None Include="Resources\engine\shaders\compute\particle\ParticleUpdate.CS.hlsl" />
+    <None Include="Resources\engine\shaders\compute\skinning\Skinning.CS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\line3d\Line3D.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\line3d\Line3D.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3D.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3D.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3DTriplanar.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\particle\Particle.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\particle\Particle.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadowMask.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadowMask.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadowProject.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadowProject.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\skybox\Skybox.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\skybox\Skybox.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\text\Text.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\text\Text.VS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\AntiAliasing.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\Bloom.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\BoxFilter.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\ChromaticAberration.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\Dissolve.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\FullscreenTriangle.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\FullscreenTriangle.VS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\GaussFilter.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\Grayscale.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\LinearToSRGB.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\Outline.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\Pixelation.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\RadialBlur.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\SceneTransition.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\ShockWave.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\SpeedLine.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\Vignette.PS.hlsl" />
+    <None Include="Resources\engine\shaders\postprocess\WhiteNoise.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\line3d\Line3d.hlsli" />
+    <None Include="Resources\engine\shaders\graphics\object3d\Lighting.hlsli" />
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3d.hlsli" />
+    <None Include="Resources\engine\shaders\graphics\object3d\Object3DCommon.hlsli" />
+    <None Include="Resources\engine\shaders\graphics\particle\Particle.hlsli" />
+    <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadow.hlsli" />
+    <None Include="Resources\engine\shaders\graphics\skybox\Skybox.hlsli" />
+    <None Include="Resources\engine\shaders\postprocess\FullscreenTriangle.hlsli" />
   </ItemGroup>
   <!-- Discover and fingerprint inputs on every build, including shader-only edits.
        WriteOnlyWhenDifferent keeps timestamps stable when content is unchanged. -->
@@ -878,14 +965,16 @@
       <_ShaderOutputRoot>$([System.IO.Path]::GetFullPath('$(ShaderOutputDirectory)\'))</_ShaderOutputRoot>
       <_ShaderSourceKey>$(_ShaderSourceRoot.ToUpperInvariant())</_ShaderSourceKey>
       <_ShaderOutputKey>$(_ShaderOutputRoot.ToUpperInvariant())</_ShaderOutputKey>
+      <_ShaderCompiledRoot>$([System.IO.Path]::GetFullPath('$(_ShaderSourceRoot)Compiled\'))</_ShaderCompiledRoot>
+      <_ShaderCompiledKey>$(_ShaderCompiledRoot.ToUpperInvariant())</_ShaderCompiledKey>
       <_ShaderCompilerDirectory>$([System.IO.Path]::GetDirectoryName('$(DxcShaderCompilerPath)'))</_ShaderCompilerDirectory>
       <_ShaderCommonState>$(_ShaderOutputRoot)shader-inputs.cache</_ShaderCommonState>
     </PropertyGroup>
     <Error Condition="!Exists('$(_ShaderSourceRoot)')" Text="Shader source directory does not exist: $(_ShaderSourceRoot)" />
-    <Error Condition="$(_ShaderSourceKey.StartsWith('$(_ShaderOutputKey)')) Or $(_ShaderOutputKey.StartsWith('$(_ShaderSourceKey)'))" Text="Shader source and output directories must be separate." />
+    <Error Condition="$(_ShaderSourceKey.StartsWith('$(_ShaderOutputKey)')) Or ($(_ShaderOutputKey.StartsWith('$(_ShaderSourceKey)')) And !$(_ShaderOutputKey.StartsWith('$(_ShaderCompiledKey)')))" Text="Shader output must not contain sources. Outputs inside the shader source tree must use the Compiled directory." />
     <Error Condition="!Exists('$(DxcShaderCompilerPath)')" Text="DXC was not found: $(DxcShaderCompilerPath)" />
     <ItemGroup>
-      <_ShaderSource Include="$(_ShaderSourceRoot)**\*.hlsl" />
+      <_ShaderSource Include="$(_ShaderSourceRoot)**\*.hlsl" Exclude="$(_ShaderCompiledRoot)**\*" />
     </ItemGroup>
     <Error Condition="'@(_ShaderSource)' == ''" Text="No HLSL entry files found in $(_ShaderSourceRoot)" />
     <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ShaderSource.Filename)%(_ShaderSource.Extension)', '^[A-Za-z_][A-Za-z0-9_]*\.(VS|PS|CS|GS|HS|DS)\.hlsl$'))" Text="Expected &lt;Name&gt;.&lt;VS|PS|CS|GS|HS|DS&gt;.hlsl; use .hlsli for shared code: %(_ShaderSource.FullPath)" />
@@ -901,7 +990,7 @@
       </_ShaderSource>
       <!-- Every shared include is a dependency, including nested includes. The list
            of hashes changes when an include is removed or renamed as well. -->
-      <_ShaderCommonInput Include="$(MSBuildProjectFullPath);$(DxcShaderCompilerPath);$(_ShaderCompilerDirectory)\dxcompiler.dll;$(_ShaderSourceRoot)**\*.hlsli" />
+      <_ShaderCommonInput Include="$(MSBuildProjectFullPath);$(DxcShaderCompilerPath);$(_ShaderCompilerDirectory)\dxcompiler.dll;$(_ShaderSourceRoot)**\*.hlsli" Exclude="$(_ShaderCompiledRoot)**\*" />
       <_ShaderCommonInput Include="$(_ShaderCompilerDirectory)\dxil.dll" Condition="Exists('$(_ShaderCompilerDirectory)\dxil.dll')" />
     </ItemGroup>
     <GetFileHash Files="@(_ShaderSource)" Algorithm="SHA256">
@@ -911,7 +1000,7 @@
       <Output TaskParameter="Items" ItemName="_ShaderCommonHash" />
     </GetFileHash>
     <MakeDir Directories="$(_ShaderOutputRoot)" />
-    <WriteLinesToFile File="$(_ShaderCommonState)" Overwrite="true" WriteOnlyWhenDifferent="true" Lines="$(Configuration);$(Platform);$(ShaderCompileOptions);@(_ShaderCommonHash->'%(FullPath)|%(FileHash)')" />
+    <WriteLinesToFile File="$(_ShaderCommonState)" Overwrite="true" WriteOnlyWhenDifferent="true" Lines="$(ShaderCompileOptions);@(_ShaderCommonHash->'%(FullPath)|%(FileHash)')" />
     <WriteLinesToFile File="%(_Shader.StateFile)" Overwrite="true" WriteOnlyWhenDifferent="true" Lines="%(_Shader.FullPath)|%(_Shader.Profile)|%(_Shader.FileHash)" />
   </Target>
   <!-- Target batching gives each shader its own incremental input/output check. -->
