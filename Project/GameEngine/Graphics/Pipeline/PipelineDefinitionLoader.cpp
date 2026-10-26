@@ -1,111 +1,85 @@
 #include "GameEngine/Graphics/Pipeline/PipelineDefinitionLoader.h"
-#include <cstdint>
 #include "GameEngine/Utility/Logger.h"
 #include <nlohmann/json.hpp>
+#include <algorithm>
 #include <fstream>
-#include <filesystem>
-#include <Windows.h>
-
-using json = nlohmann::json;
-
-namespace {
-std::string WStringToString(const std::wstring& wstr) {
-   if (wstr.empty()) {
-      return std::string();
-   }
-
-   // Windows の UTF-16 パスを JSON／ログで共通利用する UTF-8 へ変換する。
-   // 先に必要バイト数を問い合わせ、マルチバイト文字を途中で切らない正確な領域を確保する。
-   std::int32_t sizeNeeded =
-      WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<std::int32_t>(wstr.size()), nullptr, 0, nullptr, nullptr);
-   std::string value(static_cast<size_t>(sizeNeeded), 0);
-   WideCharToMultiByte(
-      CP_UTF8, 0, &wstr[0], static_cast<std::int32_t>(wstr.size()), &value[0], sizeNeeded, nullptr, nullptr);
-   return value;
-}
-}
+#include <unordered_map>
 
 namespace GameEngine {
 
-bool PipelineDefinitionLoader::LoadRegistryFile(const std::wstring& registryFilePath,
-   std::vector<std::string>& rootSignaturePaths, std::vector<std::string>& pipelinePaths) const {
-   // 呼び出し元の古い結果を混ぜないよう、読み込みの成否にかかわらず今回検証できた項目だけを返す。
+bool PipelineDefinitionLoader::DiscoverDefinitions(const std::filesystem::path& pipelineDirectory,
+   std::vector<std::filesystem::path>& rootSignaturePaths, std::vector<std::filesystem::path>& pipelinePaths) const {
    rootSignaturePaths.clear();
    pipelinePaths.clear();
 
-   std::ifstream file(WStringToString(registryFilePath));
+   const auto discover = [](const std::filesystem::path& directory, std::vector<std::filesystem::path>& paths) {
+      for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
+         if (entry.is_regular_file() && entry.path().extension() == L".json") {
+            paths.push_back(entry.path());
+         }
+      }
 
-   if (!file.is_open()) {
-      Logger::Error(
-         "[PipelineDefinitionLoader] Failed to open pipeline registry: " + WStringToString(registryFilePath));
-      return false;
-   }
+      if (paths.empty()) {
+         Logger::Error(L"[PipelineDefinitionLoader] No JSON definitions found in: " + directory.wstring());
+         return false;
+      }
+
+      // ファイルシステムの列挙順に依存せず、同名定義を後勝ちで上書きしない。
+      // GPUオブジェクトの生成前に全件を検証し、不正な定義集合をまとめて拒否する。
+      std::sort(paths.begin(), paths.end());
+      std::unordered_map<std::string, std::filesystem::path> names;
+
+      for (const auto& path : paths) {
+         try {
+            std::ifstream file(path);
+
+            if (!file.is_open()) {
+               Logger::Error(L"[PipelineDefinitionLoader] Cannot read definition: " + path.wstring());
+               return false;
+            }
+
+            nlohmann::json definition;
+            file >> definition;
+            const std::string name = definition.at("name").get<std::string>();
+
+            if (name.empty()) {
+               Logger::Error(L"[PipelineDefinitionLoader] Definition name is empty: " + path.wstring());
+               return false;
+            }
+
+            const auto [previous, inserted] = names.emplace(name, path);
+
+            if (!inserted) {
+               Logger::Error(L"[PipelineDefinitionLoader] Duplicate definition name: " + path.wstring() +
+                             L" (already defined in " + previous->second.wstring() + L")");
+               return false;
+            }
+         } catch (const std::exception& error) {
+            Logger::Error(L"[PipelineDefinitionLoader] Invalid definition: " + path.wstring());
+            Logger::Error(error.what());
+            return false;
+         }
+      }
+
+      return true;
+   };
 
    try {
-      json registryJson;
-      file >> registryJson;
+      std::vector<std::filesystem::path> roots;
+      std::vector<std::filesystem::path> pipelines;
 
-      if (!registryJson.contains("rootSignatures") || !registryJson["rootSignatures"].is_array()) {
-         Logger::Error("[PipelineDefinitionLoader] Pipeline registry is missing required array: rootSignatures");
+      if (!discover(pipelineDirectory / "root_signatures", roots) || !discover(pipelineDirectory / "pso", pipelines)) {
          return false;
       }
 
-      if (!registryJson.contains("pipelines") || !registryJson["pipelines"].is_array()) {
-         Logger::Error("[PipelineDefinitionLoader] Pipeline registry is missing required array: pipelines");
-         return false;
-      }
-
-      // 配列全体を走査して不備をまとめて報告する。エラー後も有効な項目は output に残し、
-      // 設定修正時に利用可能な定義と壊れている定義をログから一度に判別できるようにする。
-      bool allSucceeded = true;
-      const auto loadPathArray = [&](const json& paths, const char* label, std::vector<std::string>& output) {
-         size_t index = 0;
-
-         for (const auto& pathJson : paths) {
-            const std::string entryLabel = std::string(label) + "[" + std::to_string(index) + "]";
-            ++index;
-
-            if (!pathJson.is_string()) {
-               Logger::Error("[PipelineDefinitionLoader] Registry path entry is not a string: " + entryLabel);
-               allSucceeded = false;
-               continue;
-            }
-
-            const std::string path = pathJson.get<std::string>();
-
-            if (!std::filesystem::exists(path)) {
-               Logger::Error(
-                  "[PipelineDefinitionLoader] Registry path does not exist: " + path + " (" + entryLabel + ")");
-               allSucceeded = false;
-               continue;
-            }
-
-            // 正常な項目は保持しつつ全体は失敗扱いにし、ログで複数の設定不備を一度に確認できるようにする。
-            output.push_back(path);
-         }
-      };
-
-      loadPathArray(registryJson["rootSignatures"], "rootSignatures", rootSignaturePaths);
-      loadPathArray(registryJson["pipelines"], "pipelines", pipelinePaths);
-
-      if (rootSignaturePaths.empty()) {
-         // 配列自体が存在しても有効な定義が 0 件なら描画基盤を構築できないため、全体を失敗扱いにする。
-         Logger::Error("[PipelineDefinitionLoader] Pipeline registry did not provide any valid root signature paths.");
-         allSucceeded = false;
-      }
-
-      if (pipelinePaths.empty()) {
-         Logger::Error("[PipelineDefinitionLoader] Pipeline registry did not provide any valid pipeline paths.");
-         allSucceeded = false;
-      }
-
-      return allSucceeded;
-   } catch (const std::exception& e) {
-      // JSON 構文、型変換、ファイル I/O の例外を API 境界で bool と診断ログへ変換し、起動処理へ伝播させない。
-      Logger::Error("[PipelineDefinitionLoader] Exception loading pipeline registry: " + std::string(e.what()));
-      return false;
-   } catch (...) {
-      Logger::Error("[PipelineDefinitionLoader] Unknown exception loading pipeline registry.");
+      rootSignaturePaths.swap(roots);
+      pipelinePaths.swap(pipelines);
+      Logger::Info("[PipelineDefinitionLoader] Discovered " + std::to_string(rootSignaturePaths.size()) +
+                   " root signatures and " + std::to_string(pipelinePaths.size()) + " pipelines.");
+      return true;
+   } catch (const std::exception& error) {
+      Logger::Error(L"[PipelineDefinitionLoader] Cannot scan pipeline directory: " + pipelineDirectory.wstring());
+      Logger::Error(error.what());
       return false;
    }
 }

@@ -5,16 +5,12 @@
 #include <wrl.h>
 #include <string>
 #include <unordered_map>
-#include <memory>
 #include <vector>
-#include <optional>
 #include <d3d12shader.h>
 
 using namespace Microsoft::WRL;
 
 namespace GameEngine {
-class GraphicsDevice;
-
 /// @brief シェーダータイプ
 enum class ShaderType {
    Vertex,
@@ -23,16 +19,6 @@ enum class ShaderType {
    Geometry,
    Hull,
    Domain
-};
-
-/// @brief シェーダー情報
-struct ShaderInfo {
-   std::string name;                  ///< 識別とエディター表示に使う名前。
-   std::wstring filePath;             ///< コンパイル対象となるHLSLソースファイルのパス。
-   ShaderType type;                   ///< コンパイルする頂点・ピクセル・Computeなどのシェーダーステージ。
-   std::wstring entryPoint = L"main"; ///< シェーダーのコンパイル開始関数名。
-   std::vector<std::string> defines;  ///< シェーダーのコンパイル時に適用するプリプロセッサ定義。
-   std::vector<std::string> includes; ///< シェーダーが参照するインクルードファイル。
 };
 
 /// @brief シェーダー入力パラメータ情報
@@ -83,81 +69,20 @@ struct ShaderReflectionInfo {
 
 /// @brief コンパイル済みシェーダー
 struct CompiledShader {
-   ComPtr<IDxcBlob> blob;             ///< コンパイル済みシェーダーの所有バイトコード。
-   ShaderType type;                   ///< コンパイル済みバイトコードのシェーダーステージ。
-   std::string name;                  ///< 識別とエディター表示に使う名前。
-   std::wstring filePath;             ///< ホットリロードの更新確認に使うHLSLソースファイルのパス。
-   std::wstring entryPoint = L"main"; ///< シェーダーのコンパイル開始関数名。
-   std::vector<std::string> defines;  ///< シェーダーのコンパイル時に適用するプリプロセッサ定義。
-   ShaderReflectionInfo reflection;   ///< コンパイル済みシェーダーから取得した入力・リソース情報。
-   uint64_t fileTimestamp = 0; // ホットリロード用
+   ComPtr<IDxcBlob> blob;           ///< コンパイル済みシェーダーの所有バイトコード。
+   ShaderType type;                 ///< コンパイル済みバイトコードのシェーダーステージ。
+   std::string name;                ///< ファイル名から取得するシェーダーの識別名。
+   std::wstring filePath;           ///< 再読み込みに使う生成済みバイナリのパス。
+   ShaderReflectionInfo reflection; ///< コンパイル済みシェーダーから取得した入力・リソース情報。
 };
 
 /// @brief シェーダー管理クラス
 class ShaderManager {
 public:
-   /// @brief シェーダーマネージャーの初期化
-   /// @param device グラフィックスデバイス
-   /// @return 初期化とシェーダーレジストリ読み込みに成功した場合はtrue
-   bool Initialize(GraphicsDevice* device);
-
-   /// @brief シェーダーレジストリファイルから読み込み
-   /// @param registryFilePath レジストリファイルのパス
-   /// @return 成功時はtrue
-   bool LoadShaderRegistry(const std::wstring& registryFilePath = L"resources/engine/shaders/shader_registry.json");
-
-   /// @brief 頂点シェーダーをコンパイルして登録
-   /// @param name シェーダー名
-   /// @param filePath HLSLファイルパス
-   /// @param defines マクロ定義（オプション）
-   /// @return コンパイル成功時はtrue
-   bool LoadVertexShader(
-      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
-
-   /// @brief ピクセルシェーダーをコンパイルして登録
-   /// @param name シェーダー名
-   /// @param filePath HLSLファイルパス
-   /// @param defines マクロ定義（オプション）
-   /// @return コンパイル成功時はtrue
-   bool LoadPixelShader(
-      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
-
-   /// @brief コンピューティングシェーダーをコンパイルして登録
-   /// @param name シェーダー名
-   /// @param filePath HLSLファイルパス
-   /// @param defines マクロ定義（オプション）
-   /// @return コンパイル成功時はtrue
-   bool LoadComputeShader(
-      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
-
-   /// @brief ジオメトリシェーダーをコンパイルして登録
-   /// @param name シェーダー名
-   /// @param filePath HLSLファイルパス
-   /// @param defines マクロ定義（オプション）
-   /// @return コンパイル成功時はtrue
-   bool LoadGeometryShader(
-      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
-
-   /// @brief ハルシェーダーをコンパイルして登録
-   /// @param name シェーダー名
-   /// @param filePath HLSLファイルパス
-   /// @param defines マクロ定義（オプション）
-   /// @return コンパイル成功時はtrue
-   bool LoadHullShader(
-      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
-
-   /// @brief ドメインシェーダーをコンパイルして登録
-   /// @param name シェーダー名
-   /// @param filePath HLSLファイルパス
-   /// @param defines マクロ定義（オプション）
-   /// @return コンパイル成功時はtrue
-   bool LoadDomainShader(
-      const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines = {});
-
-   /// @brief シェーダーを読み込み（タイプ指定）
-   /// @param info シェーダー情報
-   /// @return コンパイル成功時はtrue
-   bool LoadShader(const ShaderInfo& info);
+   /// @brief 生成済みバイナリを再帰的に検出し、ファイル名からシェーダーを登録する。
+   /// @param shaderDirectory ビルドで配置されたシェーダーバイナリのディレクトリ。
+   /// @return すべてのバイナリの読み込みとリフレクション取得に成功した場合はtrue。
+   bool Initialize(const std::wstring& shaderDirectory = L"Resources/engine/shaders");
 
    /// @brief 頂点シェーダーを取得
    /// @param name シェーダー名
@@ -215,55 +140,31 @@ public:
    /// @param type シェーダータイプ
    void UnloadShader(const std::string& name, ShaderType type);
 
-   /// @brief シェーダーをリロード（開発用）
+   /// @brief 再ビルドされたバイナリを読み直す。失敗時は既存のシェーダーを保持する。
    /// @param name シェーダー名
    /// @param type シェーダータイプ
    /// @return 成功時はtrue
    bool ReloadShader(const std::string& name, ShaderType type);
 
-   /// @brief すべてのシェーダーをリロード（開発用）
-   void ReloadAllShaders();
+   /// @brief ディレクトリを再走査し、追加・削除を含めて生成済みシェーダーを読み直す。
+   /// @return 全件成功時はtrue。失敗時は既存のシェーダーを保持する。
+   bool ReloadAllShaders();
 
 private:
-   GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
+   ComPtr<IDxcUtils> dxcUtils_;   ///< バイナリ読み込みとリフレクションに使うDXCユーティリティ。
+   std::wstring shaderDirectory_; ///< 再走査に使う生成済みバイナリのディレクトリ。
+   std::unordered_map<std::string, CompiledShader> shaders_; ///< 識別名とステージで引くシェーダー。
 
-   // DXCインターフェース
-   ComPtr<IDxcUtils> dxcUtils_;                ///< DXCのバイト列作成とリフレクションを行う所有ユーティリティ。
-   ComPtr<IDxcCompiler3> dxcCompiler_;         ///< HLSLをコンパイルする所有DXCコンパイラー。
-   ComPtr<IDxcIncludeHandler> includeHandler_; ///< シェーダーのインクルードファイルを解決する所有ハンドラー。
+   /// @brief 全バイナリの読み込みに成功した場合だけ登録内容を更新する。
+   bool LoadShaderDirectory(const std::wstring& shaderDirectory);
 
-   // シェーダー格納用コンテナ（統一管理）
-   /// @brief 登録名から引くコンパイル済みシェーダーのキャッシュ。
-   std::unordered_map<std::string, CompiledShader> shaders_;
+   /// @brief ファイル名・バイトコード・リフレクションを検証してバイナリを読み込む。
+   bool ReadShaderBinary(const std::wstring& filePath, CompiledShader& shader) const;
 
-   /// @brief DXCコンポーネントの初期化
-   void InitializeDXC();
-
-   /// @brief シェーダーコンパイル処理
-   /// @param filePath HLSLファイルパス
-   /// @param profile シェーダープロファイル
-   /// @param defines マクロ定義
-   /// @return コンパイル済みシェーダーブロブ
-   ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile,
-      const std::wstring& entryPoint = L"main", const std::vector<std::string>& defines = {});
-
-   /// @brief シェーダーリフレクション情報を抽出
+   /// @brief シェーダーリフレクション情報を抽出する。
    ShaderReflectionInfo ExtractReflectionInfo(IDxcBlob* shaderBlob, ShaderType type) const;
 
-   /// @brief シェーダーキーを生成
-   /// @param name シェーダー名
-   /// @param type シェーダータイプ
-   /// @return キー文字列
+   /// @brief シェーダーの識別名とステージからキャッシュのキーを生成する。
    std::string CreateShaderKey(const std::string& name, ShaderType type) const;
-
-   /// @brief シェーダータイプからプロファイルを取得
-   /// @param type シェーダータイプ
-   /// @return プロファイル文字列
-   const wchar_t* GetShaderProfile(ShaderType type) const;
-
-   /// @brief ファイルのタイムスタンプを取得
-   /// @param filePath ファイルパス
-   /// @return タイムスタンプ
-   uint64_t GetFileTimestamp(const std::wstring& filePath) const;
 };
 }

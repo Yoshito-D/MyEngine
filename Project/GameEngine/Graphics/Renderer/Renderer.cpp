@@ -1,11 +1,11 @@
 #include "GameEngine/pch.h"
 #include <cstdint>
+#include <stdexcept>
 #include "GameEngine/Graphics/Renderer/Renderer.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Scene/Camera/Camera.h"
 #include "GameEngine/Graphics/Pipeline/RootSignature.h"
-#include "GameEngine/Graphics/Pipeline/ShaderCompiler.h"
 #include "GameEngine/Graphics/Resources/Mesh.h"
 #include "GameEngine/Graphics/Device/ResourceHelper.h"
 #include "GameEngine/Graphics/Resources/TransformationMatrix.h"
@@ -123,7 +123,8 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
 
    if (!renderBootstrapper_->Initialize(context)) {
       Logger::Error("[Renderer] Render bootstrap failed. Rendering passes were not created.");
-      return;
+      // Framework::Runの初期化エラー処理へ渡し、未構築の描画パスでゲームループを開始しない。
+      throw std::runtime_error("Render initialization failed. Check the engine log and rebuild the project.");
    }
 
    sceneTransitionHorizontalConstantBuffer_ =
