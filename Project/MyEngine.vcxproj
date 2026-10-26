@@ -420,10 +420,6 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="GameEngine\Graphics\Pipeline\ShaderCompiler.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
-    </ClCompile>
     <ClCompile Include="GameEngine\Object\Sprite\Sprite.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -602,7 +598,6 @@
     <ClInclude Include="GameEngine\Graphics\Renderer\Light\LightDataBuffer.h" />
     <ClInclude Include="GameEngine\Graphics\Device\OffscreenRenderTarget.h" />
     <ClInclude Include="GameEngine\Scene\Light\PointLight.h" />
-    <ClInclude Include="GameEngine\Graphics\Pipeline\ShaderCompiler.h" />
     <ClInclude Include="GameEngine\Scene\Light\SpotLight.h" />
     <ClInclude Include="GameEngine\Scene\Camera\CameraManager.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\DrawCommand.h" />
@@ -802,49 +797,6 @@
       </SubType>
     </None>
     <None Include="Resources\game\config\input_actions.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\fullscreen_triangle_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\scene_transition_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\line3d_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\object3d_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\object3d_triplanar_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pipeline_registry.json" />
-    <None Include="Resources\engine\pipelines\pso\compute\skinning_compute_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\anti_aliasing_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\white_noise_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\bloom_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\boxfilter_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\chromatic_aberration_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\dissolve_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\gaussfilter_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\grayscale_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\linear_to_srgb_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\outline_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\pixelation_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\radialblur_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\shockwave_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\speedline_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\postprocess\vignette_pipeline.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\line3d_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_triplanar_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_dissolve_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_outline_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_radialblur_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\compute\skinning_compute_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\skybox_rootsig.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
-    <None Include="Resources\engine\shaders\shader_registry.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_mask_pipeline.json" />
-    <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json" />
-    <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Docs\FolderStructure.md" />
@@ -905,10 +857,89 @@
     <ClInclude Include="GameEngine\Assets\Texture\TextureCacheStartup.h" />
     <None Include="Docs\TextureLoading.md" />
   </ItemGroup>
+  <PropertyGroup>
+    <ShaderSourceDirectory>$(ProjectDir)Resources\engine\shaders</ShaderSourceDirectory>
+    <ShaderOutputDirectory>$(ProjectDir)..\Generated\Shaders\$(Configuration)</ShaderOutputDirectory>
+    <DxcShaderCompilerPath Condition="'$(DxcShaderCompilerPath)' == ''">$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxc.exe</DxcShaderCompilerPath>
+    <ShaderCompileOptions Condition="'$(ShaderCompileOptions)' == ''">-E main -Zi -Qembed_debug -Od -Zpr</ShaderCompileOptions>
+    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="Resources\engine\pipelines\root_signatures\**\*.json" />
+    <None Include="Resources\engine\pipelines\pso\**\*.json" />
+    <None Include="Resources\engine\shaders\**\*.hlsl" />
+    <None Include="Resources\engine\shaders\**\*.hlsli" />
+  </ItemGroup>
+  <!-- Discover and fingerprint inputs on every build, including shader-only edits.
+       WriteOnlyWhenDifferent keeps timestamps stable when content is unchanged. -->
+  <Target Name="PrepareShaderInputs" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_ShaderSourceRoot>$([System.IO.Path]::GetFullPath('$(ShaderSourceDirectory)\'))</_ShaderSourceRoot>
+      <_ShaderOutputRoot>$([System.IO.Path]::GetFullPath('$(ShaderOutputDirectory)\'))</_ShaderOutputRoot>
+      <_ShaderSourceKey>$(_ShaderSourceRoot.ToUpperInvariant())</_ShaderSourceKey>
+      <_ShaderOutputKey>$(_ShaderOutputRoot.ToUpperInvariant())</_ShaderOutputKey>
+      <_ShaderCompilerDirectory>$([System.IO.Path]::GetDirectoryName('$(DxcShaderCompilerPath)'))</_ShaderCompilerDirectory>
+      <_ShaderCommonState>$(_ShaderOutputRoot)shader-inputs.cache</_ShaderCommonState>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_ShaderSourceRoot)')" Text="Shader source directory does not exist: $(_ShaderSourceRoot)" />
+    <Error Condition="$(_ShaderSourceKey.StartsWith('$(_ShaderOutputKey)')) Or $(_ShaderOutputKey.StartsWith('$(_ShaderSourceKey)'))" Text="Shader source and output directories must be separate." />
+    <Error Condition="!Exists('$(DxcShaderCompilerPath)')" Text="DXC was not found: $(DxcShaderCompilerPath)" />
+    <ItemGroup>
+      <_ShaderSource Include="$(_ShaderSourceRoot)**\*.hlsl" />
+    </ItemGroup>
+    <Error Condition="'@(_ShaderSource)' == ''" Text="No HLSL entry files found in $(_ShaderSourceRoot)" />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ShaderSource.Filename)%(_ShaderSource.Extension)', '^[A-Za-z_][A-Za-z0-9_]*\.(VS|PS|CS|GS|HS|DS)\.hlsl$'))" Text="Expected &lt;Name&gt;.&lt;VS|PS|CS|GS|HS|DS&gt;.hlsl; use .hlsli for shared code: %(_ShaderSource.FullPath)" />
+    <RemoveDuplicates Inputs="@(_ShaderSource->'%(Filename)')">
+      <Output TaskParameter="HadAnyDuplicates" PropertyName="_DuplicateShaderNames" />
+    </RemoveDuplicates>
+    <Error Condition="'$(_DuplicateShaderNames)' == 'true'" Text="Duplicate shader name and stage (case insensitive). File names must be unique across directories: @(_ShaderSource, ', ')" />
+    <ItemGroup>
+      <_ShaderSource>
+        <Profile>$([System.IO.Path]::GetExtension('%(Filename)').Substring(1).ToLowerInvariant())_6_0</Profile>
+        <OutputFile>$(_ShaderOutputRoot)%(Filename).cso</OutputFile>
+        <StateFile>$(_ShaderOutputRoot)%(Filename).cso.sha256</StateFile>
+      </_ShaderSource>
+      <!-- Every shared include is a dependency, including nested includes. The list
+           of hashes changes when an include is removed or renamed as well. -->
+      <_ShaderCommonInput Include="$(MSBuildProjectFullPath);$(DxcShaderCompilerPath);$(_ShaderCompilerDirectory)\dxcompiler.dll;$(_ShaderSourceRoot)**\*.hlsli" />
+      <_ShaderCommonInput Include="$(_ShaderCompilerDirectory)\dxil.dll" Condition="Exists('$(_ShaderCompilerDirectory)\dxil.dll')" />
+    </ItemGroup>
+    <GetFileHash Files="@(_ShaderSource)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_Shader" />
+    </GetFileHash>
+    <GetFileHash Files="@(_ShaderCommonInput)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_ShaderCommonHash" />
+    </GetFileHash>
+    <MakeDir Directories="$(_ShaderOutputRoot)" />
+    <WriteLinesToFile File="$(_ShaderCommonState)" Overwrite="true" WriteOnlyWhenDifferent="true" Lines="$(Configuration);$(Platform);$(ShaderCompileOptions);@(_ShaderCommonHash->'%(FullPath)|%(FileHash)')" />
+    <WriteLinesToFile File="%(_Shader.StateFile)" Overwrite="true" WriteOnlyWhenDifferent="true" Lines="%(_Shader.FullPath)|%(_Shader.Profile)|%(_Shader.FileHash)" />
+  </Target>
+  <!-- Target batching gives each shader its own incremental input/output check. -->
+  <Target Name="CompileShaderObjects" DependsOnTargets="PrepareShaderInputs" Inputs="%(_Shader.StateFile);$(_ShaderCommonState)" Outputs="%(_Shader.OutputFile)" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Message Importance="High" Text="DXC: %(_Shader.Filename)%(_Shader.Extension) -&gt; %(_Shader.OutputFile)" />
+    <Delete Files="%(_Shader.OutputFile).tmp" />
+    <Exec WorkingDirectory="$(ProjectDir)" UseUtf8Encoding="Always" Command="&quot;$(DxcShaderCompilerPath)&quot; &quot;%(_Shader.FullPath)&quot; $(ShaderCompileOptions) -T %(_Shader.Profile) -Fo &quot;%(_Shader.OutputFile).tmp&quot;" />
+    <Error Condition="!Exists('%(_Shader.OutputFile).tmp')" Text="DXC produced no object: %(_Shader.FullPath)" />
+    <!-- Publish only successful objects, retaining the last good binary on errors. -->
+    <Move SourceFiles="%(_Shader.OutputFile).tmp" DestinationFiles="%(_Shader.OutputFile)" />
+    <OnError ExecuteTargets="RemoveIncompleteShaderObjects" />
+  </Target>
+  <Target Name="RemoveIncompleteShaderObjects">
+    <Delete Files="@(_Shader->'%(OutputFile).tmp')" />
+  </Target>
+  <Target Name="CompileShaders" BeforeTargets="PrepareForBuild" DependsOnTargets="CompileShaderObjects" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <_ExpectedShaderArtifact Include="@(_Shader->'%(OutputFile)');@(_Shader->'%(StateFile)')" />
+      <_StaleShaderArtifact Include="$(_ShaderOutputRoot)*.cso;$(_ShaderOutputRoot)*.cso.sha256;$(_ShaderOutputRoot)*.cso.tmp" Exclude="@(_ExpectedShaderArtifact)" />
+      <FileWrites Include="@(_ExpectedShaderArtifact);$(_ShaderCommonState)" />
+    </ItemGroup>
+    <Delete Files="@(_StaleShaderArtifact)" />
+    <Message Importance="High" Text="Shaders: @(_Shader-&gt;Count()) objects available; @(_StaleShaderArtifact-&gt;Count()) stale artifacts removed." />
+  </Target>
   <Target Name="PrepareTextureCache" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
     <Exec WorkingDirectory="$(ProjectDir)" Command="&quot;$(TargetPath)&quot; --prepare-textures &quot;$(ProjectDir)Resources&quot;" />
   </Target>
-  <Target Name="CopyRuntimeResources" AfterTargets="PrepareTextureCache" Condition="'$(DesignTimeBuild)' != 'true'">
+  <Target Name="CopyRuntimeResources" AfterTargets="PrepareTextureCache" DependsOnTargets="CompileShaders" Condition="'$(DesignTimeBuild)' != 'true'">
     <PropertyGroup>
       <_ResourceSourceDirectory Condition="'$(_ResourceSourceDirectory)' == ''">$(ProjectDir)Resources</_ResourceSourceDirectory>
       <_ResourceSourceRoot>$([System.IO.Path]::GetFullPath('$(_ResourceSourceDirectory)\'))</_ResourceSourceRoot>
@@ -917,24 +948,29 @@
       <_ResourceTargetKey>$(_ResourceTargetRoot.ToUpperInvariant())</_ResourceTargetKey>
     </PropertyGroup>
     <Error Condition="!Exists('$(_ResourceSourceRoot)')" Text="Source Resources does not exist: $(_ResourceSourceRoot)" />
-    <Error Condition="$(_ResourceSourceKey.StartsWith('$(_ResourceTargetKey)')) Or $(_ResourceTargetKey.StartsWith('$(_ResourceSourceKey)'))"
-           Text="Runtime Resources must be separate from the source Resources folder." />
+    <Error Condition="$(_ResourceSourceKey.StartsWith('$(_ResourceTargetKey)')) Or $(_ResourceTargetKey.StartsWith('$(_ResourceSourceKey)'))" Text="Runtime Resources must be separate from the source Resources folder." />
     <MakeDir Directories="$(TargetDir)" />
     <ItemGroup>
       <_OutputResourceDirectory Include="$([System.IO.Directory]::GetDirectories('$(TargetDir)'))" />
-      <_WrongCaseResourceRoot Include="@(_OutputResourceDirectory)"
-                              Condition="'%(Filename)' == 'Resources' And $([System.String]::CompareOrdinal('%(Filename)', 'Resources')) != 0" />
+      <_WrongCaseResourceRoot Include="@(_OutputResourceDirectory)" Condition="'%(Filename)' == 'Resources' And $([System.String]::CompareOrdinal('%(Filename)', 'Resources')) != 0" />
     </ItemGroup>
     <!-- 小文字resourcesが残っている場合だけ、管理対象のコピーを作り直して大文字へ揃える。 -->
     <RemoveDir Directories="@(_WrongCaseResourceRoot)" />
     <MakeDir Directories="$(_ResourceTargetRoot)" />
     <ItemGroup>
-      <_RuntimeResourceFile Include="$(_ResourceSourceRoot)**\*"
-                            Exclude="$(_ResourceSourceRoot)engine\textures\**\*;$(_ResourceSourceRoot)game\textures\**\*" />
+      <_RuntimeResourceFile Include="$(_ResourceSourceRoot)**\*" Exclude="$(_ResourceSourceRoot)engine\textures\**\*;$(_ResourceSourceRoot)game\textures\**\*;$(_ResourceSourceRoot)engine\shaders\**\*" />
       <!-- 通常テクスチャはCookedだけを含める。フォントのPNGアトラスは通常のリソースとして保持する。 -->
       <_RuntimeResourceFile Include="$(_ResourceSourceRoot)engine\textures\Cooked\*.dds;$(_ResourceSourceRoot)engine\textures\Cooked\catalog.json;$(_ResourceSourceRoot)game\textures\Cooked\*.dds;$(_ResourceSourceRoot)game\textures\Cooked\catalog.json" />
       <_ResourceToCopy Include="@(_RuntimeResourceFile)">
         <DestinationPath>$(_ResourceTargetRoot)$([MSBuild]::MakeRelative('$(_ResourceSourceRoot)', '%(FullPath)'))</DestinationPath>
+      </_ResourceToCopy>
+    </ItemGroup>
+    <ItemGroup>
+      <!-- Include generated shaders in the expected resource set so stale cleanup
+           removes obsolete binaries without removing current build outputs. -->
+      <_CompiledShaderFile Include="$(ShaderOutputDirectory)\*.cso" />
+      <_ResourceToCopy Include="@(_CompiledShaderFile)">
+        <DestinationPath>$(_ResourceTargetRoot)engine\shaders\%(Filename)%(Extension)</DestinationPath>
       </_ResourceToCopy>
     </ItemGroup>
     <Copy SourceFiles="@(_ResourceToCopy)" DestinationFiles="@(_ResourceToCopy->'%(DestinationPath)')" SkipUnchangedFiles="true" />
@@ -946,10 +982,9 @@
     <Delete Files="@(_StaleRuntimeResource)" />
     <ItemGroup>
       <_RuntimeResourceDirectory Include="$([System.IO.Directory]::GetDirectories('$(_ResourceTargetRoot)', '*', System.IO.SearchOption.AllDirectories))" />
-      <_EmptyRuntimeResourceDirectory Include="@(_RuntimeResourceDirectory)"
-                                      Condition="$([System.IO.Directory]::GetFiles('%(Identity)', '*', System.IO.SearchOption.AllDirectories).Length) == 0" />
+      <_EmptyRuntimeResourceDirectory Include="@(_RuntimeResourceDirectory)" Condition="$([System.IO.Directory]::GetFiles('%(Identity)', '*', System.IO.SearchOption.AllDirectories).Length) == 0" />
     </ItemGroup>
     <RemoveDir Directories="@(_EmptyRuntimeResourceDirectory)" />
-    <Message Importance="High" Text="Resources: @(_ResourceToCopy->Count()) files selected, @(_StaleRuntimeResource->Count()) stale files removed; unchanged files skipped." />
+    <Message Importance="High" Text="Resources: @(_ResourceToCopy-&gt;Count()) files selected, @(_StaleRuntimeResource-&gt;Count()) stale files removed; unchanged files skipped." />
   </Target>
 </Project>

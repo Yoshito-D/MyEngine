@@ -30,7 +30,7 @@ struct RenderBootstrapContext {
    Material* defaultMaterial = nullptr; ///< 専用指定のない描画へ適用する既定マテリアル。
    /// @brief 各パスの中間画像と入力スナップショットを管理する描画先。
    OffscreenRenderTarget* offscreenRenderTarget = nullptr;
-   ShaderManager* shaderManager = nullptr;           ///< シェーダーのコンパイルと共有を管理するオブジェクト。
+   ShaderManager* shaderManager = nullptr;           ///< 生成済みシェーダーの読み込みと共有を管理するオブジェクト。
    PSOManager* psoManager = nullptr;                 ///< パイプラインマネージャーを追加。
    ModelRenderer* modelRenderer = nullptr;           ///< モデル描画コマンドを実行するレンダラー。
    SpriteRenderer* spriteRenderer = nullptr;         ///< スプライト描画コマンドを実行するレンダラー。

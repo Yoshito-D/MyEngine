@@ -24,13 +24,9 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    // 後続パスが参照する描画形式を確定するため、オフスクリーンターゲットを最初に生成する。
    context.offscreenRenderTarget->Initialize(context.device);
 
-   if (!context.shaderManager->Initialize(context.device)) {
-      Logger::Error("[RenderBootstrapper] Failed to initialize shaders from JSON registry.");
-
-      if (!context.shaderManager->HasShader("Object3D", ShaderType::Vertex) ||
-          !context.shaderManager->HasShader("Object3D", ShaderType::Pixel)) {
-         return false;
-      }
+   if (!context.shaderManager->Initialize()) {
+      Logger::Error("[RenderBootstrapper] Failed to load compiled shaders.");
+      return false;
    }
 
    context.psoManager->Initialize(context.device, context.shaderManager);
@@ -40,15 +36,10 @@ bool RenderBootstrapper::Initialize(const RenderBootstrapContext& context) const
    context.spriteRenderer->Initialize(context.device, context.psoManager);
    context.particleRenderer->Initialize(context.device, context.psoManager);
 
-   if (!context.psoManager->LoadPipelineDefinitions(
-          L"resources/engine/pipelines/pipeline_registry.json", context.offscreenRenderTarget->GetFormat())) {
-      Logger::Error("[RenderBootstrapper] Failed to load pipeline definitions from JSON registry.");
+   if (!context.psoManager->LoadPipelineDefinitions(context.offscreenRenderTarget->GetFormat())) {
+      Logger::Error("[RenderBootstrapper] Failed to load pipeline definitions from directories.");
 
-      if (!context.psoManager->GetModelPipeline("Object3D")) {
-         return false;
-      }
-
-      Logger::Warning("[RenderBootstrapper] Continuing with available pipelines; some definitions failed.");
+      return false;
    } else {
       Logger::Info("Pipeline definitions loaded.");
    }

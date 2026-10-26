@@ -1,266 +1,125 @@
 #include "GameEngine/pch.h"
 #include <cstdint>
 #include "GameEngine/Graphics/Pipeline/ShaderManager.h"
-#include "GameEngine/Graphics/Device/GraphicsDevice.h"
-#include "GameEngine/Graphics/Pipeline/ShaderCompiler.h"
 #include "GameEngine/Utility/Logger.h"
-#include <nlohmann/json.hpp>
 #include <filesystem>
-#include <fstream>
 #include <algorithm>
 #include <cctype>
 #include <functional>
-
-using json = nlohmann::json;
-
-namespace {
-
-std::wstring Utf8ToWString(const std::string& str) {
-   if (str.empty()) {
-      return {};
-   }
-
-   // JSONはUTF-8、DXCとWindowsファイルAPIはUTF-16を受け取るため、終端を含む必要長を
-   // 先に取得してから変換する。戻り値からはstd::wstring自身の終端要素を除く。
-   const std::int32_t size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
-
-   if (size <= 0) {
-      return {};
-   }
-
-   std::wstring result(static_cast<size_t>(size), L'\0');
-   MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, result.data(), size);
-
-   if (!result.empty() && result.back() == L'\0') {
-      result.pop_back();
-   }
-
-   return result;
-}
-
-std::string ToLowerString(std::string value) {
-   std::transform(
-      value.begin(), value.end(), value.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-   return value;
-}
-
-bool TryParseShaderType(const std::string& text, GameEngine::ShaderType& outType) {
-   const std::string lower = ToLowerString(text);
-
-   if (lower == "vertex" || lower == "vs") {
-      outType = GameEngine::ShaderType::Vertex;
-      return true;
-   }
-
-   if (lower == "pixel" || lower == "ps") {
-      outType = GameEngine::ShaderType::Pixel;
-      return true;
-   }
-
-   if (lower == "compute" || lower == "cs") {
-      outType = GameEngine::ShaderType::Compute;
-      return true;
-   }
-
-   if (lower == "geometry" || lower == "gs") {
-      outType = GameEngine::ShaderType::Geometry;
-      return true;
-   }
-
-   if (lower == "hull" || lower == "hs") {
-      outType = GameEngine::ShaderType::Hull;
-      return true;
-   }
-
-   if (lower == "domain" || lower == "ds") {
-      outType = GameEngine::ShaderType::Domain;
-      return true;
-   }
-
-   return false;
-}
-
-}
+#include <regex>
+#include <unordered_set>
 
 namespace GameEngine {
-bool ShaderManager::Initialize(GraphicsDevice* device) {
-   device_ = device;
-   InitializeDXC();
-
-   if (!LoadShaderRegistry()) {
-      Logger::Error("[ShaderManager] Shader registry load failed. Hardcoded shader fallback is disabled.");
+bool ShaderManager::Initialize(const std::wstring& shaderDirectory) {
+   if (!dxcUtils_ && FAILED(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils_)))) {
+      Logger::Error("[ShaderManager] Failed to initialize DXC utilities.");
       return false;
    }
 
+   if (!LoadShaderDirectory(shaderDirectory)) {
+      return false;
+   }
+
+   shaderDirectory_ = shaderDirectory;
    return true;
 }
 
-bool ShaderManager::LoadShaderRegistry(const std::wstring& registryFilePath) {
-   const std::string registryPath = std::filesystem::path(registryFilePath).string();
-   std::ifstream inputStream;
-   inputStream.open(registryPath);
-
-   if (!inputStream.is_open()) {
-      Logger::Error("[ShaderManager] Failed to open shader registry: " + registryPath);
-      return false;
-   }
-
+bool ShaderManager::LoadShaderDirectory(const std::wstring& shaderDirectory) {
    try {
-      json root;
-      inputStream >> root;
+      std::vector<std::filesystem::path> paths;
 
-      if (!root.contains("shaders") || !root["shaders"].is_array()) {
-         Logger::Error("[ShaderManager] Shader registry is missing required array: shaders (" + registryPath + ")");
+      for (const auto& entry : std::filesystem::recursive_directory_iterator(shaderDirectory)) {
+         if (entry.is_regular_file() && entry.path().extension() == L".cso") {
+            paths.push_back(entry.path());
+         }
+      }
+
+      if (paths.empty()) {
+         Logger::Error(L"[ShaderManager] No compiled shaders found in: " + shaderDirectory);
          return false;
       }
 
-      // 不正エントリだけを飛ばして残りをロードし、最後に全体成否を返す。
-      // これによりログへ複数の定義エラーを一度の起動で列挙できる。
-      bool loadedAny = false;
-      bool allSucceeded = true;
+      std::sort(paths.begin(), paths.end());
+      std::unordered_map<std::string, CompiledShader> loaded;
+      std::unordered_set<std::string> identifiers;
 
-      size_t shaderIndex = 0;
+      for (const auto& path : paths) {
+         CompiledShader shader;
 
-      for (const auto& shaderJson : root["shaders"]) {
-         const std::string entryLabel = registryPath + "#shaders[" + std::to_string(shaderIndex) + "]";
-         ++shaderIndex;
-
-         if (!shaderJson.is_object()) {
-            Logger::Error("[ShaderManager] Shader registry entry is not an object: " + entryLabel);
-            allSucceeded = false;
-            continue;
+         if (!ReadShaderBinary(path.wstring(), shader)) {
+            return false;
          }
 
-         ShaderInfo info;
-         info.name = shaderJson.value("name", "");
+         const std::string key = CreateShaderKey(shader.name, shader.type);
+         std::string insensitiveKey = key;
+         std::transform(insensitiveKey.begin(), insensitiveKey.end(), insensitiveKey.begin(),
+            [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
 
-         if (info.name.empty()) {
-            Logger::Error("[ShaderManager] Shader registry entry is missing name: " + entryLabel);
-            allSucceeded = false;
-            continue;
+         // Windows上のビルドと同じく、ディレクトリや大文字小文字だけが違う同名を拒否する。
+         if (!identifiers.insert(insensitiveKey).second) {
+            Logger::Error(L"[ShaderManager] Duplicate shader name and stage: " + path.wstring());
+            return false;
          }
 
-         std::string typeString = shaderJson.value("type", "");
-
-         if (!TryParseShaderType(typeString, info.type)) {
-            Logger::Error(
-               "[ShaderManager] Shader registry entry has invalid type: " + entryLabel + " name=" + info.name);
-            allSucceeded = false;
-            continue;
-         }
-
-         std::string filePathString =
-            shaderJson.value("filePath", shaderJson.value("file", shaderJson.value("path", "")));
-
-         if (filePathString.empty()) {
-            Logger::Error(
-               "[ShaderManager] Shader registry entry is missing filePath: " + entryLabel + " name=" + info.name);
-            allSucceeded = false;
-            continue;
-         }
-
-         info.filePath = Utf8ToWString(filePathString);
-
-         if (!std::filesystem::exists(std::filesystem::path(info.filePath))) {
-            Logger::Error(
-               "[ShaderManager] Shader file does not exist: " + filePathString + " (name=" + info.name + ")");
-            allSucceeded = false;
-            continue;
-         }
-
-         const std::string entryPointString = shaderJson.value("entryPoint", "main");
-         info.entryPoint = Utf8ToWString(entryPointString);
-
-         if (info.entryPoint.empty()) {
-            info.entryPoint = L"main";
-         }
-
-         if (shaderJson.contains("defines") && shaderJson["defines"].is_array()) {
-            // defineはコンパイル結果のキャッシュキー情報としても保持し、ホットリロードで同じ条件を再現する。
-            for (const auto& define : shaderJson["defines"]) {
-               if (define.is_string()) {
-                  info.defines.push_back(define.get<std::string>());
-               }
-            }
-         }
-
-         if (!LoadShader(info)) {
-            Logger::Error("[ShaderManager] Failed to load shader: " + info.name + " from " + filePathString);
-            allSucceeded = false;
-            continue;
-         }
-
-         loadedAny = true;
+         loaded.emplace(key, std::move(shader));
       }
 
-      if (!loadedAny) {
-         Logger::Error("[ShaderManager] Shader registry did not load any shaders: " + registryPath);
-         return false;
-      }
-
-      return allSucceeded;
-   } catch (const std::exception& e) {
-      Logger::Error("[ShaderManager] Exception loading shader registry " + registryPath + ": " + std::string(e.what()));
-      return false;
-   } catch (...) {
-      Logger::Error("[ShaderManager] Unknown exception loading shader registry: " + registryPath);
+      // 途中で不正バイナリが見つかっても、稼働中のシェーダーを部分的に置き換えない。
+      shaders_.swap(loaded);
+      Logger::Info("[ShaderManager] Loaded compiled shaders: " + std::to_string(shaders_.size()));
+      return true;
+   } catch (const std::exception& error) {
+      Logger::Error(L"[ShaderManager] Cannot load shader directory: " + shaderDirectory);
+      Logger::Error(error.what());
       return false;
    }
 }
 
-bool ShaderManager::LoadVertexShader(
-   const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines) {
-   ShaderInfo info;
-   info.name = name;
-   info.filePath = filePath;
-   info.type = ShaderType::Vertex;
-   info.defines = defines;
-   return LoadShader(info);
-}
+bool ShaderManager::ReadShaderBinary(const std::wstring& filePath, CompiledShader& shader) const {
+   const std::filesystem::path path(filePath);
+   const std::string fileName = path.filename().string();
+   static const std::regex pattern(R"(^([A-Za-z_][A-Za-z0-9_]*)\.(VS|PS|CS|GS|HS|DS)\.cso$)");
+   std::smatch match;
 
-bool ShaderManager::LoadPixelShader(
-   const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines) {
-   ShaderInfo info;
-   info.name = name;
-   info.filePath = filePath;
-   info.type = ShaderType::Pixel;
-   info.defines = defines;
-   return LoadShader(info);
-}
-
-bool ShaderManager::LoadComputeShader(
-   const std::string& name, const std::wstring& filePath, const std::vector<std::string>& defines) {
-   ShaderInfo info;
-   info.name = name;
-   info.filePath = filePath;
-   info.type = ShaderType::Compute;
-   info.defines = defines;
-   return LoadShader(info);
-}
-
-bool ShaderManager::LoadShader(const ShaderInfo& info) {
-   auto shader = CompileShader(info.filePath, GetShaderProfile(info.type), info.entryPoint, info.defines);
-
-   if (!shader) {
-      Logger::Error("[ShaderManager] Shader compilation failed: " + info.name + " (" +
-                    std::filesystem::path(info.filePath).string() + ")");
+   if (!dxcUtils_ || !std::regex_match(fileName, match, pattern)) {
+      Logger::Error(L"[ShaderManager] Expected <Name>.<VS|PS|CS|GS|HS|DS>.cso: " + filePath);
       return false;
    }
 
-   // Blobだけでなく反射情報・元パス・エントリポイント・define・更新時刻を一体で保存し、
-   // PSO構築とホットリロードの双方が同じコンパイル条件を再利用できるようにする。
-   CompiledShader compiled;
-   compiled.blob = shader;
-   compiled.type = info.type;
-   compiled.name = info.name;
-   compiled.filePath = info.filePath;
-   compiled.entryPoint = info.entryPoint;
-   compiled.defines = info.defines;
-   compiled.reflection = ExtractReflectionInfo(shader.Get(), info.type);
-   compiled.fileTimestamp = GetFileTimestamp(info.filePath);
+   const std::string stage = match[2].str();
+   ShaderType type = ShaderType::Vertex;
 
-   std::string key = CreateShaderKey(info.name, info.type);
-   shaders_[key] = compiled;
+   if (stage == "PS") {
+      type = ShaderType::Pixel;
+   } else if (stage == "CS") {
+      type = ShaderType::Compute;
+   } else if (stage == "GS") {
+      type = ShaderType::Geometry;
+   } else if (stage == "HS") {
+      type = ShaderType::Hull;
+   } else if (stage == "DS") {
+      type = ShaderType::Domain;
+   }
+
+   ComPtr<IDxcBlobEncoding> blob;
+
+   if (FAILED(dxcUtils_->LoadFile(filePath.c_str(), nullptr, &blob)) || !blob || blob->GetBufferSize() == 0) {
+      Logger::Error(L"[ShaderManager] Cannot read compiled shader: " + filePath);
+      return false;
+   }
+
+   auto reflection = ExtractReflectionInfo(blob.Get(), type);
+
+   if (!reflection.isValid) {
+      Logger::Error(L"[ShaderManager] Invalid shader binary, reflection, or stage: " + filePath);
+      return false;
+   }
+
+   shader.blob = blob;
+   shader.type = type;
+   shader.name = match[1].str();
+   shader.filePath = filePath;
+   shader.reflection = std::move(reflection);
    return true;
 }
 
@@ -274,6 +133,18 @@ IDxcBlob* ShaderManager::GetPixelShader(const std::string& name) const {
 
 IDxcBlob* ShaderManager::GetComputeShader(const std::string& name) const {
    return GetShader(name, ShaderType::Compute);
+}
+
+IDxcBlob* ShaderManager::GetGeometryShader(const std::string& name) const {
+   return GetShader(name, ShaderType::Geometry);
+}
+
+IDxcBlob* ShaderManager::GetHullShader(const std::string& name) const {
+   return GetShader(name, ShaderType::Hull);
+}
+
+IDxcBlob* ShaderManager::GetDomainShader(const std::string& name) const {
+   return GetShader(name, ShaderType::Domain);
 }
 
 IDxcBlob* ShaderManager::GetShader(const std::string& name, ShaderType type) const {
@@ -308,61 +179,25 @@ void ShaderManager::UnloadShader(const std::string& name, ShaderType type) {
 }
 
 bool ShaderManager::ReloadShader(const std::string& name, ShaderType type) {
-   std::string key = CreateShaderKey(name, type);
-   auto it = shaders_.find(key);
+   auto it = shaders_.find(CreateShaderKey(name, type));
 
    if (it == shaders_.end()) {
       return false;
    }
 
-   // 新しいコンパイルが成功するまで既存Blobを保持し、編集途中のHLSLで描画を失わない。
-   const auto& oldShader = it->second;
+   CompiledShader shader;
 
-   // 再コンパイル
-   auto newBlob = CompileShader(oldShader.filePath, GetShaderProfile(type), oldShader.entryPoint, oldShader.defines);
-
-   if (!newBlob) {
+   // 読み込みと反射情報の検証が完了するまで既存Blobを保持する。
+   if (!ReadShaderBinary(it->second.filePath, shader)) {
       return false;
    }
 
-   // 更新
-   it->second.blob = newBlob;
-   it->second.reflection = ExtractReflectionInfo(newBlob.Get(), oldShader.type);
-   it->second.fileTimestamp = GetFileTimestamp(oldShader.filePath);
-
+   it->second = std::move(shader);
    return true;
 }
 
-void ShaderManager::ReloadAllShaders() {
-   // 各シェーダーを独立して差し替え、失敗したものだけ旧Blobを継続使用する。
-   for (auto& [key, shader] : shaders_) {
-      auto newBlob = CompileShader(shader.filePath, GetShaderProfile(shader.type), shader.entryPoint, shader.defines);
-
-      if (newBlob) {
-         shader.blob = newBlob;
-         shader.reflection = ExtractReflectionInfo(newBlob.Get(), shader.type);
-         shader.fileTimestamp = GetFileTimestamp(shader.filePath);
-      }
-   }
-}
-
-void ShaderManager::InitializeDXC() {
-   HRESULT result = S_FALSE;
-
-   result = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils_));
-   assert(SUCCEEDED(result));
-
-   result = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler_));
-   assert(SUCCEEDED(result));
-
-   result = dxcUtils_->CreateDefaultIncludeHandler(&includeHandler_);
-   assert(SUCCEEDED(result));
-}
-
-ComPtr<IDxcBlob> ShaderManager::CompileShader(const std::wstring& filePath, const wchar_t* profile,
-   const std::wstring& entryPoint, const std::vector<std::string>& defines) {
-   return ShaderCompiler::CompileShader(
-      filePath, profile, dxcUtils_.Get(), dxcCompiler_.Get(), includeHandler_.Get(), entryPoint, defines);
+bool ShaderManager::ReloadAllShaders() {
+   return LoadShaderDirectory(shaderDirectory_);
 }
 
 ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, ShaderType type) const {
@@ -392,6 +227,14 @@ ShaderReflectionInfo ShaderManager::ExtractReflectionInfo(IDxcBlob* shaderBlob, 
    D3D12_SHADER_DESC shaderDesc{};
 
    if (FAILED(reflection->GetDesc(&shaderDesc))) {
+      return info;
+   }
+
+   // 改名された別ステージのバイナリをPSOへ渡さないよう、ファイル名と実体も照合する。
+   constexpr D3D12_SHADER_VERSION_TYPE stageTypes[] = {D3D12_SHVER_VERTEX_SHADER, D3D12_SHVER_PIXEL_SHADER,
+      D3D12_SHVER_COMPUTE_SHADER, D3D12_SHVER_GEOMETRY_SHADER, D3D12_SHVER_HULL_SHADER, D3D12_SHVER_DOMAIN_SHADER};
+
+   if (D3D12_SHVER_GET_TYPE(shaderDesc.Version) != static_cast<UINT>(stageTypes[static_cast<size_t>(type)])) {
       return info;
    }
 
@@ -499,31 +342,4 @@ std::string ShaderManager::CreateShaderKey(const std::string& name, ShaderType t
    return name + "_" + std::to_string(static_cast<std::int32_t>(type));
 }
 
-const wchar_t* ShaderManager::GetShaderProfile(ShaderType type) const {
-   switch (type) {
-      case ShaderType::Vertex:
-         return L"vs_6_0";
-      case ShaderType::Pixel:
-         return L"ps_6_0";
-      case ShaderType::Compute:
-         return L"cs_6_0";
-      case ShaderType::Geometry:
-         return L"gs_6_0";
-      case ShaderType::Hull:
-         return L"hs_6_0";
-      case ShaderType::Domain:
-         return L"ds_6_0";
-      default:
-         return L"vs_6_0";
-   }
-}
-
-uint64_t ShaderManager::GetFileTimestamp(const std::wstring& filePath) const {
-   try {
-      auto ftime = std::filesystem::last_write_time(filePath);
-      return ftime.time_since_epoch().count();
-   } catch (...) {
-      return 0;
-   }
-}
 }

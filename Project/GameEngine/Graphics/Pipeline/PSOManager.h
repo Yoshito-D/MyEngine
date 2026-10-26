@@ -1,6 +1,7 @@
 #pragma once
 
 #include <d3d12.h>
+#include <filesystem>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -27,8 +28,8 @@ struct PipelineConfig {
    BlendMode blendMode = BlendMode::kBlendModeNone;  ///< 優先ブレンドモード（nullopt = 加算）。
    D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK;  ///< 描画から除外する面の向き。
    D3D12_FILL_MODE fillMode = D3D12_FILL_MODE_SOLID; ///< ポリゴンを塗りつぶすかワイヤー表示するかの設定。
-   BOOL frontCounterClockwise = FALSE; ///< TRUEの場合は反時計回りの面を前面として扱う
-   BOOL depthEnable = TRUE;            ///< 深度テストを有効にするかどうか。
+   BOOL frontCounterClockwise = FALSE;               ///< TRUEの場合は反時計回りの面を前面として扱う
+   BOOL depthEnable = TRUE;                          ///< 深度テストを有効にするかどうか。
    D3D12_DEPTH_WRITE_MASK depthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL; ///< 深度バッファへ書き込むかどうかの設定。
    D3D12_COMPARISON_FUNC depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; ///< 深度テストで使う比較方法。
    /// @brief 頂点を点・線・三角形のどれとして組み立てるかの分類。
@@ -64,11 +65,12 @@ public:
    /// @param shaderManager シェーダーマネージャー
    void Initialize(GraphicsDevice* device, ShaderManager* shaderManager);
 
-   /// @brief パイプライン定義ファイルから読み込み
-   /// @param definitionFilePath 定義ファイルのパス
-   /// @param rtvFormat レンダーターゲットフォーマット
-   /// @return 成功時はtrue
-   bool LoadPipelineDefinitions(const std::wstring& definitionFilePath, DXGI_FORMAT rtvFormat);
+   /// @brief ルートシグネチャとPSOのJSONをディレクトリから自動検出して読み込む。
+   /// @param rtvFormat レンダーターゲットフォーマット。
+   /// @param definitionDirectory root_signaturesとpsoを含むディレクトリ。
+   /// @return すべての定義の検証とGPUオブジェクトの生成に成功した場合はtrue。
+   bool LoadPipelineDefinitions(
+      DXGI_FORMAT rtvFormat, const std::filesystem::path& definitionDirectory = "Resources/engine/pipelines");
 
    /// @brief ルートシグネチャ定義から作成
    /// @param definition ルートシグネチャ定義
@@ -175,7 +177,7 @@ private:
    // 同一警告の重複抑制
    std::unordered_set<std::string> emittedValidationWarnings_; ///< 同じ検証警告の重複出力を抑える識別キー集合。
 
-   PipelineDefinitionLoader definitionLoader_; ///< JSONからパイプライン定義を読み取るローダー。
+   PipelineDefinitionLoader definitionLoader_; ///< 定義JSONを検出し、識別名を検証するローダー。
 
    /// @brief パイプラインキーを生成
    /// @param name パイプライン名
@@ -184,15 +186,15 @@ private:
    std::string CreatePipelineKey(const std::string& name, BlendMode blendMode) const;
 
    /// @brief ルートシグネチャをJSONファイルから読み込み
-   /// @param filePath ファイルパス
+   /// @param definitionPath 定義ファイルのパス
    /// @return 成功時はtrue
-   bool LoadRootSignatureFromFile(const std::string& filePath);
+   bool LoadRootSignatureFromFile(const std::filesystem::path& definitionPath);
 
    /// @brief パイプラインをJSONファイルから読み込み
-   /// @param filePath ファイルパス
+   /// @param definitionPath 定義ファイルのパス
    /// @param rtvFormat レンダーターゲットフォーマット
    /// @return 成功時はtrue
-   bool LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT rtvFormat);
+   bool LoadPipelineFromFile(const std::filesystem::path& definitionPath, DXGI_FORMAT rtvFormat);
 
    /// @brief 重複抑制付きログ出力
    void LogValidationMessage(const std::string& dedupeKey, const std::string& message, Logger::LogLevel level);

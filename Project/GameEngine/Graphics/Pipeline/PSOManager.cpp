@@ -2,6 +2,7 @@
 #include <cstdint>
 #include "GameEngine/Graphics/Pipeline/PSOManager.h"
 #include "GameEngine/Graphics/Pipeline/ShaderManager.h"
+#include "GameEngine/Assets/ResourceAssetPath.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -371,29 +372,29 @@ void PSOManager::Initialize(GraphicsDevice* device, ShaderManager* shaderManager
    emittedValidationWarnings_.clear();
 }
 
-bool PSOManager::LoadPipelineDefinitions(const std::wstring& definitionFilePath, DXGI_FORMAT rtvFormat) {
-   std::vector<std::string> rootSignaturePaths;
-   std::vector<std::string> pipelinePaths;
-   const bool registryValid = definitionLoader_.LoadRegistryFile(definitionFilePath, rootSignaturePaths, pipelinePaths);
+bool PSOManager::LoadPipelineDefinitions(DXGI_FORMAT rtvFormat, const std::filesystem::path& definitionDirectory) {
+   std::vector<std::filesystem::path> rootSignaturePaths;
+   std::vector<std::filesystem::path> pipelinePaths;
 
-   if (!registryValid) {
-      Logger::Error("[PSOManager] Failed to load pipeline registry.");
+   if (!definitionLoader_.DiscoverDefinitions(definitionDirectory, rootSignaturePaths, pipelinePaths)) {
+      Logger::Error("[PSOManager] Failed to discover pipeline definitions.");
+      return false;
    }
 
    // Pipeline生成は参照先RootSignatureが登録済みであることを前提とするため、
-   // レジストリ上の記述順に依存せずルート定義をすべて先に処理する。
-   bool allSucceeded = registryValid;
+   // ファイルの配置や名前の順序に依存せずルート定義をすべて先に処理する。
+   bool allSucceeded = true;
 
    for (const auto& rootSignaturePath : rootSignaturePaths) {
       if (!LoadRootSignatureFromFile(rootSignaturePath)) {
-         Logger::Error("[PSOManager] Failed to load root signature definition: " + rootSignaturePath);
+         Logger::Error(L"[PSOManager] Failed to load root signature definition: " + rootSignaturePath.wstring());
          allSucceeded = false;
       }
    }
 
    for (const auto& pipelinePath : pipelinePaths) {
       if (!LoadPipelineFromFile(pipelinePath, rtvFormat)) {
-         Logger::Error("[PSOManager] Failed to load pipeline definition: " + pipelinePath);
+         Logger::Error(L"[PSOManager] Failed to load pipeline definition: " + pipelinePath.wstring());
          allSucceeded = false;
       }
    }
@@ -432,8 +433,9 @@ void PSOManager::LogValidationMessage(
    }
 }
 
-bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
-   std::ifstream file(filePath);
+bool PSOManager::LoadRootSignatureFromFile(const std::filesystem::path& definitionPath) {
+   const std::string filePath = ResourcePathToUtf8(definitionPath);
+   std::ifstream file(definitionPath);
 
    if (!file.is_open()) {
       Logger::Error("Failed to open root signature file: " + filePath);
@@ -532,8 +534,9 @@ bool PSOManager::LoadRootSignatureFromFile(const std::string& filePath) {
    }
 }
 
-bool PSOManager::LoadPipelineFromFile(const std::string& filePath, DXGI_FORMAT rtvFormat) {
-   std::ifstream file(filePath);
+bool PSOManager::LoadPipelineFromFile(const std::filesystem::path& definitionPath, DXGI_FORMAT rtvFormat) {
+   const std::string filePath = ResourcePathToUtf8(definitionPath);
+   std::ifstream file(definitionPath);
 
    if (!file.is_open()) {
       Logger::Error("Failed to open pipeline file: " + filePath);
