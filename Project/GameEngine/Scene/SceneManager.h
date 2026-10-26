@@ -1,6 +1,7 @@
 #pragma once
 #include "GameEngine/Scene/Scene.h"
 #include "GameEngine/Scene/SceneCatalog.h"
+#include <chrono>
 #include <functional>
 #include <optional>
 
@@ -86,11 +87,13 @@ private:
    enum class TransitionState {
       Idle,
       FadingOut,
+      PreparingFadeIn,
       FadingIn
    };
-   TransitionState transitionState_ = TransitionState::Idle; ///< 暗転・シーン置換・復帰の進行段階。
-   float elapsed_ = 0.0f;                                    ///< 処理を開始してからの経過時間（秒）。
-   float opacity_ = 0.0f;                                    ///< 影の濃さ（0～1）。
+   TransitionState transitionState_ = TransitionState::Idle;    ///< 暗転・シーン置換・復帰の進行段階。
+   std::chrono::steady_clock::time_point transitionUpdateTime_; ///< フェード開始以降の時間だけを計測する基準時刻。
+   float elapsed_ = 0.0f;                                       ///< 処理を開始してからの経過時間（秒）。
+   float opacity_ = 0.0f;                                       ///< 影の濃さ（0～1）。
    bool commitReady_ = false;                                ///< 暗転が完了し、シーン実体を置換できるかどうか。
    bool replacing_ = false;                                  ///< シーンの構築・復旧中で再入を拒否するかどうか。
    SceneLoadResult lastResult_;                              ///< 即時操作と予約操作を含む、直近の処理結果。
