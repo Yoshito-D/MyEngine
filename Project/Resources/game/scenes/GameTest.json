@@ -861,7 +861,7 @@
                         "rimLightIntensity": 0.41999998688697815,
                         "rimLightPower": 12.510000228881836,
                         "shininess": 40,
-                        "textureName": "game/textures/ground/coast_sand_05_diff_2k.jpg",
+                        "textureName": "coast_sand_05_diff_2k",
                         "uvTransform": [
                            [
                               1,
@@ -1696,7 +1696,7 @@
                         "rimLightIntensity": 0.41999998688697815,
                         "rimLightPower": 12.510000228881836,
                         "shininess": 40,
-                        "textureName": "game/textures/ground/plywood_diff_2k.jpg",
+                        "textureName": "plywood_diff_2k",
                         "uvTransform": [
                            [
                               1,
@@ -2317,7 +2317,7 @@
                         "rimLightIntensity": 0.5799999833106995,
                         "rimLightPower": 12.510000228881836,
                         "shininess": 40,
-                        "textureName": "game/textures/ground/rusty_metal_02_diff_2k.jpg",
+                        "textureName": "rusty_metal_02_diff_2k",
                         "uvTransform": [
                            [
                               1,
@@ -5027,7 +5027,7 @@
                      1,
                      1
                   ],
-                  "textureName": "game/textures/space_2048px.dds"
+                  "textureName": "space_2048px"
                },
                "enabled": true,
                "typeName": "SkyboxComponent"
@@ -5772,7 +5772,7 @@
                   0,
                   0
                ],
-               "maskTexture": "engine/textures/postprocess/noise0.png",
+               "maskTexture": "noise0",
                "maskTiling": [
                   1,
                   1

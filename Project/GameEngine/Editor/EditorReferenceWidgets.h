@@ -11,7 +11,7 @@ namespace GameEngine::EditorUI {
 using AssetPredicate = std::function<bool(const EditorAssetEntry&)>;
 
 /// @brief 共通アセット参照欄を描画し、候補選択・解除・検証済みドロップを受け付ける。
-/// @param assetId resources基準の永続ID。選択・参照表示だけでは変更しない。
+/// @param assetId Textureは画像名、それ以外はresources相対ID。選択・参照表示だけでは変更しない。
 /// @param requiredType 許可する種別。Unknownは全登録アセットを許可する。
 /// @param accepts Cubemapなど用途固有の追加検証。未指定なら種別だけを検証する。
 /// @return IDが実際に変更された場合だけtrue。

@@ -1,8 +1,10 @@
 #include "GameEngine/pch.h"
+#include <chrono>
 #include "GameEngine/Framework/Framework.h"
 #include "GameEngine/Utility/ExportDump.h"
 #include "GameEngine/Utility/D3DResourceLeakChecker.h"
 #include "GameEngine/Utility/Logger.h"
+#include "GameEngine/Assets/Texture/TextureCacheStartup.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Camera.h"
 #include "GameEngine/Scene/Light/DirectionalLight.h"
@@ -16,7 +18,6 @@
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 
 namespace GameEngine {
-
 void Framework::Initialize() {
    // 例外発生時にダンプを出力するハンドラを設定
    SetUnhandledExceptionFilter(ExportDump);
@@ -28,6 +29,9 @@ void Framework::Initialize() {
    window_ = std::make_unique<Window>();
    window_->CreateGameWindow(
       L"GALAXY RACING", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+
+   // WICを利用するためWindowでCOMを初期化した後、GPUリソースの準備より先に生成する。
+   PrepareStartupTextureCache();
 
    // デバイスの初期化
    device_ = std::make_unique<GraphicsDevice>();
@@ -168,8 +172,19 @@ void Framework::Finalize() {
 }
 
 void Framework::Run() {
+   RunTextureCacheBuildCommandIfRequested();
+
+   const auto startupStart = std::chrono::steady_clock::now();
+   bool firstPresent = true;
    // 初期化
-   Initialize();
+   try {
+      Initialize();
+   } catch (const std::exception& error) {
+      Logger::Critical(error.what());
+      MessageBoxA(nullptr, error.what(), "Engine initialization failed", MB_OK | MB_ICONERROR);
+      Finalize();
+      return;
+   }
 
    // メインループ
    while (window_->ProcessMessage() == 0) {
@@ -184,6 +199,13 @@ void Framework::Run() {
 
       // フレーム終了処理
       EndFrame();
+      if (firstPresent) {
+         const double milliseconds =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startupStart).count();
+         Logger::Info(std::format("Startup first Present: {:.3f} ms; {} textures loaded", milliseconds,
+            assetManager_->GetTextureManager()->GetLoadedTextureCount()));
+         firstPresent = false;
+      }
    }
 
    // 終了処理

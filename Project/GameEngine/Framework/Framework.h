@@ -38,6 +38,8 @@ public:
 
    /// @brief 終了処理
    virtual void Finalize();
+
+   /// @brief ビルド用DDS生成、または通常の初期化・描画ループを実行する。
    void Run();
 
 private:

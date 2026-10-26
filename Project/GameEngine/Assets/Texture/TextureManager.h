@@ -4,67 +4,64 @@
 #include <wrl.h>
 #include <filesystem>
 #include <list>
+#include <map>
+#include <memory>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "GameEngine/Assets/Texture/TextureCatalog.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
 
 namespace GameEngine {
-
-/// @brief テクスチャマネージャークラス
+/// @brief ビルド済みDDSのカタログと、必要時に生成するGPUテクスチャを所有する。
 class TextureManager {
 public:
-   /// @brief テクスチャマネージャーの初期化
-   /// @param device グラフィックスデバイス
-   void Initialize(GraphicsDevice* device);
+   /// @brief 各textures/Cookedのカタログを合算する。GPUテクスチャはまだ生成しない。
+   /// @return カタログが現在の生成規約に一致する場合true。
+   bool Initialize(GraphicsDevice* device);
 
-   /// @brief テクスチャをロード
-   /// @param filePath テクスチャファイルのパス
-   /// @param name テクスチャの名前 + 拡張子
-   void LoadTexture(const std::string& filePath, const std::string& name);
+   /// @brief 画像名から取得し、未読込ならDDSを同期アップロードする。
+   /// @note コマンドリストが開いている描画スレッド上で呼び出す。
+   /// @return 不正画像名・未変換・読込失敗の場合nullptr。DDS削除後の再起動か再ビルドを案内するログを1度出力する。
+   Texture* GetTexture(const std::string& textureName);
 
-   /// @brief ディレクトリ配下のテクスチャを再帰的にロード
-   void LoadTexturesFromDirectory(
-      const std::filesystem::path& directoryPath, const std::filesystem::path& resourcesRoot = "resources");
+   /// @brief GPU読み込みを発生させずにカタログの画像情報を参照する。
+   const TextureInfo* FindTextureInfo(const std::string& textureName) const;
 
-   /// @brief 登録済み名を解決し、未読込の正規化済みresources相対IDなら必要時にロードする。
-   /// @param name 登録済み名、またはresourcesルート内のスラッシュ区切り相対ID。
-   /// @return 読込済みTexture。無効なID・非対応画像・読込失敗の場合はnullptr。
-   /// @note GPUアップロードを記録できるフレームまたは初期化処理中に呼び出す。
-   Texture* GetTexture(const std::string& name);
+   /// @brief シーンで必要な画像名を同期準備し、時間と新規読み込み件数を記録する。
+   /// @return 全参照の準備に成功した場合true。
+   bool Preload(std::span<const std::string> textureNames);
 
-   /// @brief 再走査後に失敗したIDの再試行を許可する。成功済みTextureは保持する。
+   /// @brief 再走査後に失敗した画像名の再試行を許可する。成功済みTextureは保持する。
    void RefreshFailedLoads();
 
-   /// @brief 読み込み済みテクスチャ名一覧を取得
+   /// @brief 未読込も含むカタログ上の画像名を名前順で取得する。
    std::vector<std::string> GetTextureNames() const;
 
-   /// @brief 読み込み済みキューブマップテクスチャ名一覧を取得
+   /// @brief GPU読み込みを発生させずにキューブマップ画像名一覧を取得する。
    std::vector<std::string> GetCubemapTextureNames() const;
 
-   /// @brief 最後にロードしたキューブマップテクスチャを取得
-   /// @return キューブマップテクスチャへのポインタ（未ロードの場合は nullptr）
+   /// @brief 最後に準備したキューブマップを取得する。未読込ならnullptr。
    Texture* GetLastCubemapTexture() const;
 
-   /// @brief 中間リソースを解放
+   /// @brief 現在GPUへ準備済みのテクスチャ件数を取得する。
+   size_t GetLoadedTextureCount() const { return textures_.size(); }
+
+   /// @brief GPUコピー完了後にアップロード用リソースを解放する。
    void ReleaseIntermediateResources();
 
-   /// @brief テクスチャマネージャーを全削除
+   /// @brief GPUテクスチャを削除する。カタログは次の必要時読み込みにも使用する。
    void Clear();
 
 private:
-   void RegisterAlias(const std::string& alias, const std::string& ownerName);
-
-   GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。
-   /// @brief 名前やスロットに対応するテクスチャの一覧。
-   std::unordered_map<std::string, std::unique_ptr<Texture>> textures_;
-   std::unordered_map<std::string, Texture*> textureAliases_; ///< 短縮名から所有済みテクスチャを引く非所有索引。
-
-   // 失敗した参照を描画のたびに再読込しない。明示再走査かClearで再試行する。
-   std::unordered_set<std::string> failedTextureNames_; ///< 再試行を明示するまで読み込み失敗を記憶する名前集合。
-   /// @brief GPUへのコピー完了まで保持するアップロード用リソース。
-   std::list<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResource_;
-   std::string lastCubemapName_; ///< 最後に読み込みに成功したキューブマップの名前。
+   GraphicsDevice* device_ = nullptr;                                       ///< 描画スレッドで利用する非所有デバイス。
+   std::filesystem::path resourcesRoot_;                                       ///< 元画像と生成DDSの基準となるResourcesルート。
+   std::map<std::string, TextureInfo> catalog_;                             ///< GPU読み込みとは独立した論理画像名索引。
+   std::unordered_map<std::string, std::unique_ptr<Texture>> textures_;     ///< 準備済みGPUテクスチャ。
+   std::unordered_set<std::string> failedTextureNames_;                     ///< 明示再試行まで失敗を記憶する画像名。
+   std::list<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResource_; ///< コピー完了までの所有参照。
+   std::string lastCubemapName_; ///< 最後に読み込んだキューブマップの画像名。
 };
 }

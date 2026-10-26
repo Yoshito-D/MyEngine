@@ -7,6 +7,7 @@
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Assets/ResourceAssetPath.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include "imgui.h"
@@ -65,7 +66,13 @@ bool AssetReference(
    const char* label, std::string& assetId, EditorAssetType requiredType, const AssetPredicate& accepts) {
    auto* context = Context();
    const auto* registry = context ? &context->GetAssetRegistry() : nullptr;
-   const auto* selected = registry ? registry->FindAsset(assetId, requiredType) : nullptr;
+   // 保存する画像名と、Project上で操作するファイルパスは別に管理する。
+   const auto* textureInfo =
+      requiredType == EditorAssetType::Texture ? EngineContext::FindTextureInfo(assetId) : nullptr;
+   const std::string selectedId = requiredType == EditorAssetType::Texture
+                                     ? (textureInfo ? ResourcePathToUtf8(textureInfo->sourcePath) : std::string{})
+                                     : assetId;
+   const auto* selected = registry ? registry->FindAsset(selectedId, requiredType) : nullptr;
    const std::string before = assetId;
    const char* none = ImGuiHelper::Localize({"<なし>", "<none>"});
    ImGui::PushID(label);
@@ -93,8 +100,9 @@ bool AssetReference(
             }
 
             // 完全IDを表示し、同じファイル名でもフォルダーによって候補を区別する。
-            if (ImGui::Selectable(entry.assetId.c_str(), entry.assetId == assetId)) {
-               assetId = entry.assetId;
+            const auto& reference = requiredType == EditorAssetType::Texture ? entry.displayName : entry.assetId;
+            if (ImGui::Selectable(entry.assetId.c_str(), reference == assetId)) {
+               assetId = reference;
             }
          }
       }
@@ -108,7 +116,7 @@ bool AssetReference(
 
    if (ImGui::BeginDragDropTarget()) {
       if (const auto* entry = AcceptAssetDrop(requiredType, accepts)) {
-         assetId = entry->assetId;
+         assetId = requiredType == EditorAssetType::Texture ? entry->displayName : entry->assetId;
       }
 
       ImGui::EndDragDropTarget();

@@ -33,9 +33,9 @@ void AssetManager::Initialize(GraphicsDevice* device) {
 
    // 各マネージャーを利用側へ公開する前にGPUデバイスとの接続と既定アセット読込を完了する。
    modelAssetManager_->Initialize(device, animationAssetManager_.get());
-   textureManager_->Initialize(device);
-   textureManager_->LoadTexturesFromDirectory("resources/engine/textures", "resources");
-   textureManager_->LoadTexturesFromDirectory("resources/game/textures", "resources");
+   if (!textureManager_->Initialize(device) || !textureManager_->GetTexture("white1x1")) {
+      throw std::runtime_error("Texture cache is missing or invalid. Check the engine log and restart after correcting the source image.");
+   }
    fontManager_->Initialize(device);
    fontManager_->LoadMsdfFontsFromDirectory("resources/engine/font");
    fontManager_->LoadMsdfFontsFromDirectory("resources/engine/fonts");

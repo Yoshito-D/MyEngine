@@ -57,19 +57,23 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <!-- 画像だけの変更でも生成処理を実行し、実行ファイルの再リンクはMSBuildへ委ねる。 -->
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)..\Generated\Outputs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
-    <OutDir>$(SolutionDir)..\Generated\Outputs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)..\Generated\Outputs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)..\Generated\Outputs\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\Generated\Obj\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -891,4 +895,61 @@
     <None Include="Tests\TexturePathTests.cpp" />
     <None Include="Docs\Editor\EditorWorkflow.md" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GameEngine\Assets\Texture\SceneTexturePreloader.cpp" />
+    <ClInclude Include="GameEngine\Assets\Texture\SceneTexturePreloader.h" />
+    <ClInclude Include="GameEngine\Assets\Texture\TextureCatalog.h" />
+    <ClCompile Include="GameEngine\Assets\Texture\TextureCacheBuilder.cpp" />
+    <ClInclude Include="GameEngine\Assets\Texture\TextureCacheBuilder.h" />
+    <ClCompile Include="GameEngine\Assets\Texture\TextureCacheStartup.cpp" />
+    <ClInclude Include="GameEngine\Assets\Texture\TextureCacheStartup.h" />
+    <None Include="Docs\TextureLoading.md" />
+  </ItemGroup>
+  <Target Name="PrepareTextureCache" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Exec WorkingDirectory="$(ProjectDir)" Command="&quot;$(TargetPath)&quot; --prepare-textures &quot;$(ProjectDir)Resources&quot;" />
+  </Target>
+  <Target Name="CopyRuntimeResources" AfterTargets="PrepareTextureCache" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_ResourceSourceDirectory Condition="'$(_ResourceSourceDirectory)' == ''">$(ProjectDir)Resources</_ResourceSourceDirectory>
+      <_ResourceSourceRoot>$([System.IO.Path]::GetFullPath('$(_ResourceSourceDirectory)\'))</_ResourceSourceRoot>
+      <_ResourceTargetRoot>$([System.IO.Path]::GetFullPath('$(TargetDir)Resources\'))</_ResourceTargetRoot>
+      <_ResourceSourceKey>$(_ResourceSourceRoot.ToUpperInvariant())</_ResourceSourceKey>
+      <_ResourceTargetKey>$(_ResourceTargetRoot.ToUpperInvariant())</_ResourceTargetKey>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_ResourceSourceRoot)')" Text="Source Resources does not exist: $(_ResourceSourceRoot)" />
+    <Error Condition="$(_ResourceSourceKey.StartsWith('$(_ResourceTargetKey)')) Or $(_ResourceTargetKey.StartsWith('$(_ResourceSourceKey)'))"
+           Text="Runtime Resources must be separate from the source Resources folder." />
+    <MakeDir Directories="$(TargetDir)" />
+    <ItemGroup>
+      <_OutputResourceDirectory Include="$([System.IO.Directory]::GetDirectories('$(TargetDir)'))" />
+      <_WrongCaseResourceRoot Include="@(_OutputResourceDirectory)"
+                              Condition="'%(Filename)' == 'Resources' And $([System.String]::CompareOrdinal('%(Filename)', 'Resources')) != 0" />
+    </ItemGroup>
+    <!-- 小文字resourcesが残っている場合だけ、管理対象のコピーを作り直して大文字へ揃える。 -->
+    <RemoveDir Directories="@(_WrongCaseResourceRoot)" />
+    <MakeDir Directories="$(_ResourceTargetRoot)" />
+    <ItemGroup>
+      <_RuntimeResourceFile Include="$(_ResourceSourceRoot)**\*"
+                            Exclude="$(_ResourceSourceRoot)engine\textures\**\*;$(_ResourceSourceRoot)game\textures\**\*" />
+      <!-- 通常テクスチャはCookedだけを含める。フォントのPNGアトラスは通常のリソースとして保持する。 -->
+      <_RuntimeResourceFile Include="$(_ResourceSourceRoot)engine\textures\Cooked\*.dds;$(_ResourceSourceRoot)engine\textures\Cooked\catalog.json;$(_ResourceSourceRoot)game\textures\Cooked\*.dds;$(_ResourceSourceRoot)game\textures\Cooked\catalog.json" />
+      <_ResourceToCopy Include="@(_RuntimeResourceFile)">
+        <DestinationPath>$(_ResourceTargetRoot)$([MSBuild]::MakeRelative('$(_ResourceSourceRoot)', '%(FullPath)'))</DestinationPath>
+      </_ResourceToCopy>
+    </ItemGroup>
+    <Copy SourceFiles="@(_ResourceToCopy)" DestinationFiles="@(_ResourceToCopy->'%(DestinationPath)')" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <_ExpectedRuntimeResource Include="@(_ResourceToCopy->'%(DestinationPath)')" />
+      <_ExistingRuntimeResource Include="$(_ResourceTargetRoot)**\*" />
+      <_StaleRuntimeResource Include="@(_ExistingRuntimeResource)" Exclude="@(_ExpectedRuntimeResource)" />
+    </ItemGroup>
+    <Delete Files="@(_StaleRuntimeResource)" />
+    <ItemGroup>
+      <_RuntimeResourceDirectory Include="$([System.IO.Directory]::GetDirectories('$(_ResourceTargetRoot)', '*', System.IO.SearchOption.AllDirectories))" />
+      <_EmptyRuntimeResourceDirectory Include="@(_RuntimeResourceDirectory)"
+                                      Condition="$([System.IO.Directory]::GetFiles('%(Identity)', '*', System.IO.SearchOption.AllDirectories).Length) == 0" />
+    </ItemGroup>
+    <RemoveDir Directories="@(_EmptyRuntimeResourceDirectory)" />
+    <Message Importance="High" Text="Resources: @(_ResourceToCopy->Count()) files selected, @(_StaleRuntimeResource->Count()) stale files removed; unchanged files skipped." />
+  </Target>
 </Project>

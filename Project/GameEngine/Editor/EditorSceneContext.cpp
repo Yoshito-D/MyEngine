@@ -346,10 +346,11 @@ void EditorSceneContext::CreateEmptyObject() {
 }
 
 void EditorSceneContext::CreateSpriteFromTexture(const std::string& textureAssetId) {
-   if (!assetRegistry_.FindAsset(textureAssetId, EditorAssetType::Texture)) return;
+   const auto* entry = assetRegistry_.FindAsset(textureAssetId, EditorAssetType::Texture);
+   if (!entry) return;
 
    CommitEdit(std::make_unique<CreateObjectCommand>(
-      CreateObjectCommand::Kind::Sprite, BuildScreenSpacePlacementTransform(), textureAssetId));
+      CreateObjectCommand::Kind::Sprite, BuildScreenSpacePlacementTransform(), entry->displayName));
 }
 
 void EditorSceneContext::CreateUIText() {

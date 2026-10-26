@@ -42,7 +42,7 @@ public:
       const std::string& assetId, const Transform* initialTransform = nullptr, const std::string& requestedId = {});
 
    /// @brief テクスチャを表示するSpriteを作成する
-   /// @param textureAssetId resources相対のテクスチャID
+   /// @param textureAssetId 拡張子なしの画像名
    /// @param initialTransform 初期トランスフォーム
    /// @param requestedId 復元時に再利用するID
    /// @return 作成したSprite。ロードできない場合はnullptr

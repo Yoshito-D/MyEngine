@@ -176,9 +176,9 @@ void Dissolve::ImGuiEdit() {
 
       if (ImGui::BeginCombo(LocalizeEditorText("マスクテクスチャ", "Mask Texture"), texturePreview)) {
          for (const auto& textureName : textureNames) {
-            Texture* candidate = EngineContext::GetTexture(textureName);
+            const auto* candidate = EngineContext::FindTextureInfo(textureName);
 
-            if (candidate && candidate->GetMetadata().IsCubemap()) {
+            if (candidate && candidate->isCubemap) {
                continue;
             }
 

@@ -4,6 +4,8 @@
 #include <dxgi1_6.h>
 #include <wrl.h>
 #include <string>
+#include <filesystem>
+#include "GameEngine/Assets/Texture/TextureCatalog.h"
 #include "Externals/DirectXTex/DirectXTex.h"
 #include "Externals/DirectXTex/d3dx12.h"
 
@@ -17,9 +19,11 @@ class Texture {
 public:
    /// @brief テクスチャをロードする
    /// @param device グラフィックスデバイス
-   /// @param filePath テクスチャファイルのパス
+   /// @param filePath ビルド済みDDSの物理パス
+   /// @param info 画像名と生成時のメタデータ
    /// @return GPUコピー完了まで保持するUPLOADリソース。画像が不正・非対応の場合はnullptr。
-   [[nodiscard]] ComPtr<ID3D12Resource> LoadTexture(GraphicsDevice* device, const std::string& filePath);
+   [[nodiscard]] ComPtr<ID3D12Resource> LoadTexture(
+      GraphicsDevice* device, const std::filesystem::path& filePath, const TextureInfo& info);
 
    /// @brief テクスチャのリソースを取得する
    /// @return テクスチャリソース
@@ -30,7 +34,7 @@ public:
    const CD3DX12_CPU_DESCRIPTOR_HANDLE& GetTextureSrvHandleCPU() const { return textureSrvHandleCPU_; }
 
    /// @brief テクスチャのリソースを取得する
-   /// @return テクスチャの名前
+   /// @return 拡張子なしの画像名
    const std::string& GetName() const { return name_; }
 
    /// @brief テクスチャの幅を取得する
@@ -55,16 +59,10 @@ private:
    CD3DX12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU_;
    /// @brief 描画時にテクスチャSRVを指定するGPU側ディスクリプタハンドル。
    CD3DX12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU_;
-   std::string name_;    ///< 読み込んだ画像ファイルの名前。
+   std::string name_;    ///< 生成DDSのパスから独立した論理アセットID。
    uint32_t width_ = 0;  // テクスチャの幅
    uint32_t height_ = 0; // テクスチャの高さ
 
    DirectX::TexMetadata metadata_{}; ///< テクスチャのメタデータ。
-
-private:
-   /// @brief ミップマップを含むテクスチャをロードする
-   /// @param filePath テクスチャファイルのパス
-   /// @return ロードされたテクスチャのScratchImage
-   DirectX::ScratchImage LoadTextureWithMipmaps(const std::string& filePath);
 };
 }
