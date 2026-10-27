@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -118,17 +119,26 @@ private:
    bool CanFinish() const;
    void SetPlayerLocked(bool locked);
    void SetCameraMotionPaused(bool paused);
+   void ApplyCountdownCameraPose();
    void AddBestTime(float timeSeconds);
    bool LoadBestTimes();
    bool SaveBestTimes() const;
    void LogRecordWarning(const std::string& message) const;
 
-   State state_ = State::Waiting;                       ///< 現在のレース状態。
-   StartMode startMode_ = StartMode::Countdown;         ///< 即時・カウントダウン・ゲート通過の開始方式。
-   float elapsedTime_ = 0.0f;                           ///< 現在の計測時間（秒）。
-   std::vector<float> bestTimes_;                       ///< 保存済みベストタイム（秒）を速い順で保持する一覧。
-   float countdownSeconds_ = 3.0f;                      ///< 開始前カウントダウンの時間（秒）。
-   float countdownRemaining_ = 3.0f;                    ///< カウントダウン残り時間（秒）。
+   State state_ = State::Waiting;                  ///< 現在のレース状態。
+   StartMode startMode_ = StartMode::Countdown;    ///< 即時・カウントダウン・ゲート通過の開始方式。
+   float elapsedTime_ = 0.0f;                      ///< 現在の計測時間（秒）。
+   std::vector<float> bestTimes_;                  ///< 保存済みベストタイム（秒）を速い順で保持する一覧。
+   float countdownSeconds_ = 3.0f;                 ///< 開始前カウントダウンの時間（秒）。
+   float countdownRemaining_ = 3.0f;               ///< カウントダウン残り時間（秒）。
+   bool useCountdownCameraPose_ = false;           ///< カウントダウン専用の保存姿勢を使用するか。
+   GameEngine::Vector3 countdownCameraPosition_{}; ///< カウントダウン中のワールド位置。
+   GameEngine::Vector3 countdownCameraRotation_{}; ///< カウントダウン中のEuler角（ラジアン）。
+   float countdownCameraFov_ = 0.45f;              ///< カウントダウン中の垂直画角（ラジアン）。
+   float startCameraBlendSeconds_ = 1.0f;          ///< 開始時に走行カメラへ移行する時間（秒）。
+   /// @brief 開始時の補間曲線。既定では速く動き始めて徐々に減速する。
+   GameEngine::CinemachineBrain::BlendEasing startCameraBlendEasing_ =
+      GameEngine::CinemachineBrain::BlendEasing::EaseOut;
    float startTextDuration_ = 0.8f;                     ///< スタート表示を維持する時間（秒）。
    float startBannerRemaining_ = 0.0f;                  ///< スタート表示の残り時間（秒）。
    size_t checkpointCount_ = 0;                         ///< ゴール成立に必要なチェックポイントの総数。

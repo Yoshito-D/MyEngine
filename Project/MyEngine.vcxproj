@@ -854,7 +854,9 @@
     <ShaderOutputDirectory>$(ShaderSourceDirectory)\Compiled</ShaderOutputDirectory>
     <DxcShaderCompilerPath Condition="'$(DxcShaderCompilerPath)' == ''">$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxc.exe</DxcShaderCompilerPath>
     <ShaderCompileOptions Condition="'$(ShaderCompileOptions)' == ''">-E main -Zi -Qembed_debug -Od -Zpr</ShaderCompileOptions>
-    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+    <!-- エディタの相対パスはコピー先ではなく編集元へ向け、保存内容が次回ビルドで失われるのを防ぐ。 -->
+    <LocalDebuggerWorkingDirectory Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Development'">$(ProjectDir)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory Condition="'$(Configuration)' == 'Release'">$(OutDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <!-- IDE-visible C++ project items must list each file explicitly.
        Build discovery remains dynamic inside the targets below. -->

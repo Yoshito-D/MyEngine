@@ -6,12 +6,14 @@
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameProject/App/Component/Vehicle/VehicleSpeedPostEffectController.h"
 #include "GameEngine/Utility/Logger.h"
+#include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -25,6 +27,7 @@
 namespace {
 constexpr std::int32_t kRecordFormatVersion = 1;
 constexpr std::int32_t kJsonIndentSize = 3;
+constexpr std::array<const char*, 4> kCameraBlendEasingNames = {"Linear", "EaseIn", "EaseOut", "EaseInOut"};
 }
 
 namespace App {
@@ -189,6 +192,12 @@ void RaceManagerComponent::Restart() {
          break;
       case StartMode::Countdown:
          state_ = State::Countdown;
+
+         // Edit中の読込では追従カメラを書き換えず、実行開始時に保存した姿勢を適用する。
+         if (runtimeInitialized_) {
+            ApplyCountdownCameraPose();
+         }
+
          SetCameraMotionPaused(true);
          SetPlayerLocked(runtimeInitialized_ && lockPlayerDuringCountdown_);
          break;
@@ -221,6 +230,11 @@ nlohmann::json RaceManagerComponent::Serialize() const {
    }
 
    return nlohmann::json{{"startMode", startModeName}, {"countdownSeconds", countdownSeconds_},
+      {"useCountdownCameraPose", useCountdownCameraPose_},
+      {"countdownCameraPosition", GameEngine::JsonValue::WriteVector3(countdownCameraPosition_)},
+      {"countdownCameraRotation", GameEngine::JsonValue::WriteVector3(countdownCameraRotation_)},
+      {"countdownCameraFov", countdownCameraFov_}, {"startCameraBlendSeconds", startCameraBlendSeconds_},
+      {"startCameraBlendEasing", kCameraBlendEasingNames[static_cast<size_t>(startCameraBlendEasing_)]},
       {"startTextDuration", startTextDuration_}, {"checkpointCount", checkpointCount_},
       {"playerObjectId", playerObjectId_}, {"finishCameraId", finishCameraId_}, {"restartScene", restartScene_},
       {"recordKey", recordKey_}, {"recordFile", recordFile_}, {"lockPlayerDuringCountdown", lockPlayerDuringCountdown_},
@@ -229,6 +243,32 @@ nlohmann::json RaceManagerComponent::Serialize() const {
 
 void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
    if (!data.is_object()) return;
+
+   useCountdownCameraPose_ = GameEngine::JsonValue::ReadBool(data, "useCountdownCameraPose", useCountdownCameraPose_);
+
+   if (data.contains("countdownCameraPosition")) {
+      countdownCameraPosition_ =
+         GameEngine::JsonValue::ReadVector3(data.at("countdownCameraPosition"), countdownCameraPosition_);
+   }
+
+   if (data.contains("countdownCameraRotation")) {
+      countdownCameraRotation_ =
+         GameEngine::JsonValue::ReadVector3(data.at("countdownCameraRotation"), countdownCameraRotation_);
+   }
+
+   countdownCameraFov_ = std::clamp(
+      GameEngine::JsonValue::ReadFloat(data, "countdownCameraFov", countdownCameraFov_), 0.017453292f, 3.12413936f);
+   startCameraBlendSeconds_ =
+      std::max(GameEngine::JsonValue::ReadFloat(data, "startCameraBlendSeconds", startCameraBlendSeconds_), 0.0f);
+
+   if (data.contains("startCameraBlendEasing") && data.at("startCameraBlendEasing").is_string()) {
+      for (size_t index = 0; index < kCameraBlendEasingNames.size(); ++index) {
+         if (data.at("startCameraBlendEasing") == kCameraBlendEasingNames[index]) {
+            startCameraBlendEasing_ = static_cast<GameEngine::CinemachineBrain::BlendEasing>(index);
+            break;
+         }
+      }
+   }
 
    if (data.contains("startMode") && data.at("startMode").is_string()) {
       const std::string startMode = data.at("startMode").get<std::string>();
@@ -304,7 +344,27 @@ void RaceManagerComponent::BeginRace() {
 
 void RaceManagerComponent::SetCameraMotionPaused(bool paused) {
    if (auto* brain = GameEngine::EngineContext::GetActiveBrain()) {
-      brain->SetCameraMotionPaused(paused);
+      brain->SetCameraMotionPaused(paused, startCameraBlendSeconds_, startCameraBlendEasing_);
+   }
+}
+
+void RaceManagerComponent::ApplyCountdownCameraPose() {
+   if (!useCountdownCameraPose_) return;
+
+   auto* brain = GameEngine::EngineContext::GetActiveBrain();
+   auto* camera = cameraSwitcher_ ? cameraSwitcher_->GetSelectedCamera() : (brain ? brain->GetActiveCamera() : nullptr);
+
+   if (!camera) return;
+
+   auto state = camera->GetState();
+   state.transform.translation = countdownCameraPosition_;
+   state.transform.SetRotationEuler(countdownCameraRotation_);
+   state.hasViewMatrixOverride = false;
+   state.fov = countdownCameraFov_;
+   camera->SetState(state);
+
+   if (brain) {
+      brain->Cut(camera);
    }
 }
 
@@ -517,6 +577,39 @@ void RaceManagerComponent::DrawInspector() {
    }
 
    ImGui::DragFloat("Countdown Seconds", &countdownSeconds_, 0.1f, 0.0f, 60.0f);
+   ImGui::DragFloat("Start Camera Blend Seconds", &startCameraBlendSeconds_, 0.05f, 0.0f, 10.0f);
+   auto easingIndex = static_cast<std::int32_t>(startCameraBlendEasing_);
+
+   if (ImGui::Combo("Start Camera Blend Easing", &easingIndex, kCameraBlendEasingNames.data(),
+          static_cast<std::int32_t>(kCameraBlendEasingNames.size()))) {
+      startCameraBlendEasing_ = static_cast<GameEngine::CinemachineBrain::BlendEasing>(easingIndex);
+   }
+
+   ImGui::Checkbox("Use Countdown Camera Pose", &useCountdownCameraPose_);
+
+   if (ImGui::Button("Capture Current Camera for Countdown")) {
+      if (const auto* brain = GameEngine::EngineContext::GetActiveBrain()) {
+         // 追従カメラのビュー行列指定もTRSへ正規化し、見えている姿勢を保存する。
+         const auto state = GameEngine::CameraState::Lerp(brain->GetCurrentState(), brain->GetCurrentState(), 0.0f);
+         countdownCameraPosition_ = state.transform.translation;
+         countdownCameraRotation_ = state.transform.GetActiveEuler();
+         countdownCameraFov_ = state.fov;
+         useCountdownCameraPose_ = true;
+      }
+   }
+
+   if (useCountdownCameraPose_) {
+      ImGui::DragFloat3("Countdown Camera Position", &countdownCameraPosition_.x, 0.1f);
+      auto rotationDegrees = countdownCameraRotation_ * GameEngine::MathConstants::kRadiansToDegrees;
+
+      if (ImGui::DragFloat3("Countdown Camera Rotation (deg)", &rotationDegrees.x, 0.1f)) {
+         countdownCameraRotation_ = rotationDegrees * GameEngine::MathConstants::kDegreesToRadians;
+      }
+
+      ImGui::SliderAngle("Countdown Camera FOV (deg)", &countdownCameraFov_, 1.0f, 179.0f);
+      ImGui::TextWrapped("Save the scene to keep the countdown camera pose and start blend time.");
+   }
+
    ImGui::DragFloat("Start Text Duration", &startTextDuration_, 0.05f, 0.0f, 60.0f);
    std::int32_t count = static_cast<std::int32_t>(std::min(checkpointCount_, size_t{100000}));
 

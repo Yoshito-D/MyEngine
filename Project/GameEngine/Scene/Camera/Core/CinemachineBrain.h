@@ -15,6 +15,14 @@ class Camera;
 /// 複数のVirtualCameraを管理し、最終的なカメラ状態を計算
 class CinemachineBrain {
 public:
+   /// @brief カメラ移行の補間曲線。EaseIn/Outは3次曲線、EaseInOutはSmoothstepを使用する。
+   enum class BlendEasing : std::int32_t {
+      Linear,
+      EaseIn,
+      EaseOut,
+      EaseInOut,
+   };
+
    /// @brief 出力カメラを持たないBrainを構築する。
    CinemachineBrain();
 
@@ -65,7 +73,10 @@ public:
 
    /// @brief ランタイムの追従更新とカメラ間ブレンドを一時停止する
    /// @param paused trueの間は選択中カメラの保存状態をそのまま出力する
-   void SetCameraMotionPaused(bool paused) { cameraMotionPaused_ = paused; }
+   /// @param resumeBlendSeconds 停止解除時に表示中の姿勢から追従状態へ移る秒数。0なら即時反映。
+   /// @param resumeBlendEasing 停止解除時の補間曲線。
+   void SetCameraMotionPaused(
+      bool paused, float resumeBlendSeconds = 0.5f, BlendEasing resumeBlendEasing = BlendEasing::EaseInOut);
 
    /// @brief ランタイムのカメラ更新が一時停止中か取得する
    /// @return 追従更新とブレンドを停止している場合はtrue
@@ -86,10 +97,11 @@ public:
 private:
    /// @brief ブレンド中の1層を表す構造体
    struct BlendLayer {
-      CameraState fromState;   // ブレンド開始時の状態
-      VirtualCamera* toCamera; // ブレンド先カメラ
-      float duration;          // ブレンド時間
-      float progress;          // 進行度 [0, 1]
+      CameraState fromState;                       // ブレンド開始時の状態
+      VirtualCamera* toCamera;                     // ブレンド先カメラ
+      float duration;                              // ブレンド時間
+      float progress;                              // 進行度 [0, 1]
+      BlendEasing easing = BlendEasing::EaseInOut; // この移行に使う補間曲線
    };
 
    VirtualCamera* FindHighestPriorityCamera() const;

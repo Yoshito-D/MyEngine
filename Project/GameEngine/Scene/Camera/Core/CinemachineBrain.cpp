@@ -3,6 +3,7 @@
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include "GameEngine/Scene/Camera/Camera.h"
 #include <algorithm>
+#include <cmath>
 
 namespace GameEngine {
 
@@ -11,6 +12,26 @@ CinemachineBrain::~CinemachineBrain() = default;
 
 void CinemachineBrain::Initialize(std::unique_ptr<Camera> outputCamera) {
    outputCamera_ = std::move(outputCamera);
+}
+
+void CinemachineBrain::SetCameraMotionPaused(bool paused, float resumeBlendSeconds, BlendEasing resumeBlendEasing) {
+   if (cameraMotionPaused_ == paused) return;
+
+   cameraMotionPaused_ = paused;
+
+   if (paused) {
+      activeBlend_.reset();
+      return;
+   }
+
+   auto* selectedCamera = FindHighestPriorityCamera();
+
+   // 同じVirtualCameraでも停止解除直後の追従計算で姿勢が変わるため、
+   // 計算前の表示状態を始点に固定し、毎フレーム更新される追従先へ補間する。
+   if (selectedCamera && std::isfinite(resumeBlendSeconds) && resumeBlendSeconds > 0.0f) {
+      activeCamera_ = selectedCamera;
+      activeBlend_ = BlendLayer{currentState_, selectedCamera, resumeBlendSeconds, 0.0f, resumeBlendEasing};
+   }
 }
 
 void CinemachineBrain::Update(float deltaTime) {
@@ -119,10 +140,26 @@ void CinemachineBrain::UpdateBlend(float deltaTime) {
       currentState_ = layer.toCamera->GetState();
       activeBlend_.reset();
    } else {
-      // イーズイン・アウト補間 (Smoothstep)
-      // Smoothstepで始端・終端の速度を0にし、カメラ切り替え時の速度段差を抑える。
-      float t = layer.progress;
-      float easedT = t * t * (3.0f - 2.0f * t);
+      const float t = std::clamp(layer.progress, 0.0f, 1.0f);
+      float easedT = t;
+
+      // 位置・姿勢・画角に同じ曲線を適用し、演出全体の到着タイミングを揃える。
+      switch (layer.easing) {
+         case BlendEasing::EaseIn:
+            easedT = Easing::EaseInCubic(0.0f, 1.0f, t);
+            break;
+         case BlendEasing::EaseOut:
+            easedT = Easing::EaseOutCubic(0.0f, 1.0f, t);
+            break;
+         case BlendEasing::EaseInOut:
+            // Smoothstepで始端・終端の速度を0にし、カメラ切り替え時の速度段差を抑える。
+            easedT = t * t * (3.0f - 2.0f * t);
+            break;
+         case BlendEasing::Linear:
+         default:
+            break;
+      }
+
       currentState_ = CameraState::Lerp(layer.fromState, layer.toCamera->GetState(), easedT);
    }
 }

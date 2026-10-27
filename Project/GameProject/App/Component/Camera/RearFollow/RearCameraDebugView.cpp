@@ -219,7 +219,7 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
 
    if (ImGui::CollapsingHeader(Tr("空中の見え方", "Airborne Presentation"), ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::DragFloat(
-         Tr("空中時の追加距離", "Airborne Extra Distance"), &settings.airborneDistanceOffset, 0.1f, 0.0f, 30.0f);
+         Tr("空中時の追加距離", "Airborne Extra Distance"), &settings.airborneDistanceOffset, 0.1f, -30.0f, 30.0f);
       DrawHelp("空中で基準後方距離へ加える量です。周囲を広く見せます。",
          "Extra rear settings.distance added while airborne to show more surroundings.");
       ImGui::DragFloat(
