@@ -1,5 +1,8 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="GameProject\App\Component\Rendering">
+      <UniqueIdentifier>{f396e044-52ec-4478-a550-34b70ad1a882}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Externals">
       <UniqueIdentifier>{323e27c5-ff7c-4de8-836c-016534d6c441}</UniqueIdentifier>
     </Filter>
@@ -905,6 +908,9 @@
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp">
       <Filter>GameProject\App\Component\Gravity</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Rendering\PlanetDistanceColorComponent.cpp">
+      <Filter>GameProject\App\Component\Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp">
       <Filter>GameProject\App\Component\Race</Filter>
     </ClCompile>
@@ -1672,6 +1678,9 @@
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h">
       <Filter>GameProject\App\Component\Gravity</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Rendering\PlanetDistanceColorComponent.h">
+      <Filter>GameProject\App\Component\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h">
       <Filter>GameProject\App\Component\Race</Filter>
