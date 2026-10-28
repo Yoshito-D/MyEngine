@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Tutorial/TutorialProgressComponent.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 
 #include "GameProject/App/Component/Character/CharacterJump.h"
@@ -144,7 +145,19 @@ nlohmann::json TutorialProgressComponent::Serialize() const {
       {"nextScene", nextScene_}, {"completionDelay", completionDelay_}, {"guideFadeDuration", guideFadeDuration_}};
 }
 
+nlohmann::json TutorialProgressComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"playerObjectId", "nextScene", "targetPlanetIndex"});
+}
+
 void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void TutorialProgressComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void TutorialProgressComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    // 各設定を独立して検証し、欠落または型不一致なら既定値・現在値を維持する。
@@ -342,7 +355,7 @@ const char* TutorialProgressComponent::GetPhaseName() const {
 void TutorialProgressComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
    GameEngine::EditorUI::SceneReference("Next Scene", nextScene_);

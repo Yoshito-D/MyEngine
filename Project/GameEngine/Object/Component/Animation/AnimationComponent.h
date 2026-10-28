@@ -28,6 +28,12 @@ public:
    /// @copydoc IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
    /// @copydoc IObjectComponent::Update
    void Update(float deltaTime) override;
 
@@ -79,6 +85,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    std::string animationName;     ///< 再生するアニメーションアセットID
    std::string clipName;          ///< アセット内で選択するクリップ名
    std::string targetNodeName;    ///< スキニングを使わない場合の適用先ノード名

@@ -1,0 +1,14 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "CharacterLanding",
+   "data": {
+      "landingOffset": 0.07000000029802322,
+      "obbHalfExtents": {
+         "x": 0.3499999940395355,
+         "y": 0.17499999701976776,
+         "z": 0.75
+      },
+      "surfaceRadius": 50.0
+   }
+}

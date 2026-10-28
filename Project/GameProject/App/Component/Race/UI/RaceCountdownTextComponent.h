@@ -43,6 +43,12 @@ public:
    /// @param data 表示設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief 参照状態をインスペクターへ表示する
@@ -50,6 +56,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    void CaptureBaseVisualState();
    void RestoreBaseVisualState(GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform);
    void ApplyAnimation(GameEngine::UITextComponent& text, GameEngine::TransformComponent& transform);

@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Character/CharacterWalker.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Camera/ScreenSpaceBasis.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -114,7 +115,7 @@ void CharacterWalker::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("移動速度", "Move Speed"), &moveSpeed, 0.1f, 0.0f, 50.0f);
@@ -141,7 +142,19 @@ nlohmann::json CharacterWalker::Serialize() const {
    return json;
 }
 
+nlohmann::json CharacterWalker::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void CharacterWalker::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void CharacterWalker::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void CharacterWalker::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("moveSpeed")) {
       moveSpeed = data["moveSpeed"];
    }

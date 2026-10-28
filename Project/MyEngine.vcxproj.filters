@@ -263,6 +263,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GameEngine\Editor\ParameterAssetEditor.cpp">
+      <Filter>GameEngine\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\Base\ParameterComponent.cpp">
+      <Filter>GameEngine\Object\Component\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Assets\ParameterAssetStore.cpp">
+      <Filter>GameEngine\Assets</Filter>
+    </ClCompile>
     <ClCompile Include="Externals\imgui\imgui_demo.cpp">
       <Filter>Externals\imgui</Filter>
     </ClCompile>
@@ -986,6 +995,15 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameEngine\Editor\ParameterAssetEditor.h">
+      <Filter>GameEngine\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\Base\ParameterComponent.h">
+      <Filter>GameEngine\Object\Component\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Assets\ParameterAssetStore.h">
+      <Filter>GameEngine\Assets</Filter>
+    </ClInclude>
     <ClInclude Include="Externals\imgui\imconfig.h">
       <Filter>Externals\imgui</Filter>
     </ClInclude>

@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
@@ -35,7 +36,7 @@ void SphericalGravityAttractor::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
 
    ImGui::Separator();
 
@@ -75,7 +76,19 @@ nlohmann::json SphericalGravityAttractor::Serialize() const {
    return json;
 }
 
+nlohmann::json SphericalGravityAttractor::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void SphericalGravityAttractor::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void SphericalGravityAttractor::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void SphericalGravityAttractor::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("influenceRadius")) {
       influenceRadius = data["influenceRadius"];
    }

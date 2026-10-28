@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Race/UI/RaceCountdownTextComponent.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
@@ -85,7 +86,19 @@ nlohmann::json RaceCountdownTextComponent::Serialize() const {
       {"rotationDuration", rotationDuration_}, {"fadeDuration", fadeDuration_}, {"fadeEndScale", fadeEndScale_}};
 }
 
+nlohmann::json RaceCountdownTextComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"raceManagerId"});
+}
+
 void RaceCountdownTextComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void RaceCountdownTextComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void RaceCountdownTextComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    // 各項目を独立して検証し、欠落・型不一致の項目は既定値または現在値を維持する。
@@ -180,7 +193,7 @@ void RaceCountdownTextComponent::ApplyAnimation(
 void RaceCountdownTextComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::ImGuiHelper::DrawInputString("Start Text", startText_);

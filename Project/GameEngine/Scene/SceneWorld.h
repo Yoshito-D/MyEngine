@@ -57,6 +57,9 @@ public:
    /// @brief 所有するシーン要素をすべて破棄する
    void Clear();
 
+   /// @brief 一時停止中も共通設定の更新を生存インスタンスへ反映する。
+   void SynchronizeParameters();
+
    /// @brief 安定IDからオブジェクトを検索する
    /// @param objectId JSONに保存されたオブジェクトID
    /// @return 対応するオブジェクト。存在しない場合はnullptr

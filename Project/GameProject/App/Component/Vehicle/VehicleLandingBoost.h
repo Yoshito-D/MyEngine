@@ -51,7 +51,15 @@ public:
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    /// @brief 着地ブーストの加算量（units/sec）
    float boostAmount = 0.0f;
 

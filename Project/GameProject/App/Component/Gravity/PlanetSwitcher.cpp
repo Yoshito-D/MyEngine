@@ -1,4 +1,5 @@
 #include "GameEngine/Utility/JsonValue.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Gravity/GravityAttractorLink.h"
@@ -393,7 +394,19 @@ nlohmann::json PlanetSwitcher::Serialize() const {
    return json;
 }
 
+nlohmann::json PlanetSwitcher::GetSharedParameters() const {
+   return ExtractSharedParameters({"planets"});
+}
+
 void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void PlanetSwitcher::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void PlanetSwitcher::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    if (data.contains("switchHysteresis") && data.at("switchHysteresis").is_number()) {
@@ -404,7 +417,8 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
       obbHalfExtents = GameEngine::JsonValue::ReadVector3(data.at("obbHalfExtents"), obbHalfExtents);
    }
 
-   entries_.clear();
+   if (initializeRuntime) {
+      entries_.clear();
 
    // 読み直した配列と旧インデックスの対応は保証できないため、選択状態も同時に破棄する。
    currentIndex_ = -1;
@@ -416,15 +430,16 @@ void PlanetSwitcher::Deserialize(const nlohmann::json& data) {
    for (const auto& planetData : data.at("planets")) {
       std::string objectId;
 
-      if (planetData.is_object() && planetData.contains("objectId") && planetData.at("objectId").is_string()) {
-         objectId = planetData.at("objectId").get<std::string>();
-      }
+         if (planetData.is_object() && planetData.contains("objectId") && planetData.at("objectId").is_string()) {
+            objectId = planetData.at("objectId").get<std::string>();
+         }
 
-      if (objectId.empty() || HasPlanet(objectId)) {
-         continue;
-      }
+         if (objectId.empty() || HasPlanet(objectId)) {
+            continue;
+         }
 
-      entries_.push_back({objectId, GetPlanetCenter(objectId), GetPlanetSurfaceRadius(objectId)});
+         entries_.push_back({objectId, GetPlanetCenter(objectId), GetPlanetSurfaceRadius(objectId)});
+      }
    }
 
    Configure(DescribeSettings());
@@ -435,7 +450,7 @@ void PlanetSwitcher::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::Text("%s: %d", Tr("惑星数", "Planets"), static_cast<std::int32_t>(entries_.size()));

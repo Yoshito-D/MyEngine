@@ -1,0 +1,11 @@
+{
+   "version": 1,
+   "domain": "Camera",
+   "componentType": "PlanetLeashCamera",
+   "data": {
+      "followSpeed": 50.0,
+      "maxFollowDistance": 30.0,
+      "minPlanetDistance": 75.0,
+      "useGravityUp": true
+   }
+}

@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
@@ -241,7 +242,20 @@ nlohmann::json RaceManagerComponent::Serialize() const {
       {"lockPlayerOnFinish", lockPlayerOnFinish_}, {"nextScene", nextScene_}, {"finishDelay", finishDelay_}};
 }
 
+nlohmann::json RaceManagerComponent::GetSharedParameters() const {
+   return ExtractSharedParameters(
+      {"playerObjectId", "finishCameraId", "restartScene", "nextScene", "recordKey", "recordFile"});
+}
+
 void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void RaceManagerComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    useCountdownCameraPose_ = GameEngine::JsonValue::ReadBool(data, "useCountdownCameraPose", useCountdownCameraPose_);
@@ -567,7 +581,7 @@ void RaceManagerComponent::LogRecordWarning(const std::string& message) const {
 void RaceManagerComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    const char* startModes[] = {"Immediate", "Countdown", "Gate"};
    std::int32_t mode = static_cast<std::int32_t>(startMode_);

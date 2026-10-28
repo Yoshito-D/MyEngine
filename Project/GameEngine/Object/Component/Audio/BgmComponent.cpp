@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Component/Audio/BgmComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Audio/Audio.h"
@@ -111,10 +112,24 @@ nlohmann::json BgmComponent::Serialize() const {
       {"fadeOutSeconds", settings_.fadeOutSeconds}, {"continueAcrossScenes", settings_.continueAcrossScenes}};
 }
 
+nlohmann::json BgmComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void BgmComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void BgmComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void BgmComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
-   Stop();
+   if (initializeRuntime) {
+      Stop();
+   }
    Settings settings;
    settings.clipAssetId = Read<std::string>(data, "clipAssetId", settings.clipAssetId);
    settings.volume = Read<float>(data, "volume", settings.volume);
@@ -124,8 +139,13 @@ void BgmComponent::Deserialize(const nlohmann::json& data) {
    settings.fadeOutSeconds = Read<float>(data, "fadeOutSeconds", settings.fadeOutSeconds);
    settings.continueAcrossScenes = Read<bool>(data, "continueAcrossScenes", settings.continueAcrossScenes);
 
-   clip_.reset();
+   if (initializeRuntime) {
+      clip_.reset();
+   }
    Configure(settings);
+   if (!initializeRuntime && ownerToken_) {
+      Submit(false);
+   }
 }
 #ifdef MYPROJECT_NON_RELEASE
 void BgmComponent::SetClipForTesting(const std::string& assetId, std::shared_ptr<const SoundClip> clip) {
@@ -138,7 +158,7 @@ void BgmComponent::SetClipForTesting(const std::string& assetId, std::shared_ptr
 void BgmComponent::DrawInspector() {
    auto Tr = [](const char* ja, const char* en) { return ImGuiHelper::Localize({ja, en}); };
 
-   if (!ImGui::CollapsingHeader(MakeObjectComponentHeaderLabel(GetTypeName()).c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(MakeObjectComponentHeaderLabel(GetTypeName()).c_str())) return;
 
    auto settings = DescribeSettings();
    std::string nextId = settings.clipAssetId;

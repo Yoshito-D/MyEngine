@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Rendering/PlanetDistanceColorComponent.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include "GameEngine/Scene/SceneWorld.h"
@@ -103,7 +104,7 @@ void PlanetDistanceColorComponent::ApplyGrayBlend(float amount) {
       }
 
       // RGBだけをグレーへ近づけ、透明度は元の設定を維持する。
-      constexpr float kGray = 0.3f;
+      constexpr float kGray = 0.05f;
       state.appliedColor = {state.baseColor.x + (kGray - state.baseColor.x) * amount,
          state.baseColor.y + (kGray - state.baseColor.y) * amount,
          state.baseColor.z + (kGray - state.baseColor.z) * amount, state.baseColor.w};
@@ -139,7 +140,19 @@ nlohmann::json PlanetDistanceColorComponent::Serialize() const {
       {"fadeEndDistance", settings_.fadeEndDistance}};
 }
 
+nlohmann::json PlanetDistanceColorComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"playerObjectId"});
+}
+
 void PlanetDistanceColorComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void PlanetDistanceColorComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void PlanetDistanceColorComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    auto settings = settings_;
@@ -175,7 +188,7 @@ void PlanetDistanceColorComponent::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    auto settings = settings_;
    GameEngine::EditorUI::ObjectReference("Player", settings.playerObjectId, "TransformComponent");

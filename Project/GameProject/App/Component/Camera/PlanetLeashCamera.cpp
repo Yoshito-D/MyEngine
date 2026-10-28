@@ -172,16 +172,34 @@ nlohmann::json PlanetLeashCamera::Serialize() const {
    };
 }
 
+nlohmann::json PlanetLeashCamera::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void PlanetLeashCamera::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void PlanetLeashCamera::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void PlanetLeashCamera::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    maxFollowDistance = GameEngine::JsonValue::ReadFloat(data, "maxFollowDistance", maxFollowDistance);
    followSpeed = GameEngine::JsonValue::ReadFloat(data, "followSpeed", followSpeed);
    minPlanetDistance = GameEngine::JsonValue::ReadFloat(data, "minPlanetDistance", minPlanetDistance);
    useGravityUp = GameEngine::JsonValue::ReadBool(data, "useGravityUp", useGravityUp);
-   driftDistanceScale_ = 1.0f;
-   driftCameraHeightOffset_ = 0.0f;
-   driftLookTargetHeightOffset_ = 0.0f;
+   if (initializeRuntime) {
+      driftDistanceScale_ = 1.0f;
+   }
+   if (initializeRuntime) {
+      driftCameraHeightOffset_ = 0.0f;
+   }
+   if (initializeRuntime) {
+      driftLookTargetHeightOffset_ = 0.0f;
+   }
    Configure(DescribeSettings());
 }
 

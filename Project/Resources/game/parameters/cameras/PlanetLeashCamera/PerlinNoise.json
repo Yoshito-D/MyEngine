@@ -1,0 +1,9 @@
+{
+   "version": 1,
+   "domain": "Camera",
+   "componentType": "PerlinNoise",
+   "data": {
+      "amplitudeGain": 0.0,
+      "frequencyGain": 14.0
+   }
+}

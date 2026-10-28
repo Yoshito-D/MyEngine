@@ -51,6 +51,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief エディタのインスペクターを描画する
@@ -79,6 +85,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float startOpacity = 0.0f;                          ///< 不透明度の補間範囲と再生設定。
    float endOpacity = 1.0f;                            ///< フェード終了時の不透明度。
    float delay = 0.0f;                                 ///< 再生開始から変化を始めるまでの待機時間（秒）。

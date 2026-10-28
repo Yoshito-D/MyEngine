@@ -46,6 +46,12 @@ public:
    /// @param data ゲージ設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief ゲージ設定と参照解決状態をインスペクターへ表示する
@@ -53,6 +59,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    void SetHudVisible(bool visible);
 
    std::string raceManagerId_ = "Object:RaceManager";        ///< レース進行を参照する管理Objectの安定Entity ID。

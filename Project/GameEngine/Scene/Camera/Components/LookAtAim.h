@@ -40,6 +40,12 @@ public:
    /// @copydoc ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @copydoc ICinemachineComponent::DrawInspector
@@ -47,6 +53,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float damping_ = 10.0f;               ///< 注視回転のダンピング。
    Vector3 offset_ = {0.0f, 0.0f, 0.0f}; ///< 注視点のオフセット。
 };

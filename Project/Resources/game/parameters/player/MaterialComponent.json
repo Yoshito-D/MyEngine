@@ -1,0 +1,76 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "MaterialComponent",
+   "data": {
+      "environmentTextureName": "space_2048px",
+      "materialSlots": [
+         {
+            "blendMode": 0,
+            "color": [
+               1.0,
+               1.0,
+               1.0,
+               1.0
+            ],
+            "environmentTextureStrength": 0.699999988079071,
+            "fillLightColor": [
+               0.9607843160629272,
+               0.8987267017364502,
+               0.8854286670684814,
+               1.0
+            ],
+            "fillLightIntensity": 0.6499999761581421,
+            "lightingMode": 4,
+            "name": "playerMaterial",
+            "ownership": "local",
+            "parameters": {},
+            "pipelineName": "",
+            "rimLightColor": [
+               0.9656862616539001,
+               0.9136149287223816,
+               0.9136149287223816,
+               1.0
+            ],
+            "rimLightIntensity": 1.9700000286102295,
+            "rimLightPower": 10.300000190734863,
+            "shininess": 42.20000076293945,
+            "textureName": "color_palette",
+            "uvTransform": [
+               [
+                  1.0,
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               [
+                  0.0,
+                  1.0,
+                  0.0,
+                  0.0
+               ],
+               [
+                  0.0,
+                  0.0,
+                  1.0,
+                  0.0
+               ],
+               [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+               ]
+            ]
+         }
+      ],
+      "textureLeftTop": [
+         0.0,
+         0.0
+      ],
+      "textureSize": [
+         0.0,
+         0.0
+      ]
+   }
+}

@@ -51,6 +51,12 @@ public:
    /// @param data カメラ切り替え設定
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief 現在のカメラモードを表示する
@@ -58,6 +64,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    void ApplyMode();
 
    std::vector<std::string> cameraIds_;              ///< 切り替え候補の仮想カメラIDを順番に保持する一覧。

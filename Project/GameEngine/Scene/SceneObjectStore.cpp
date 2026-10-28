@@ -317,7 +317,7 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
    }
 
    if (objectType == "Sprite") {
-      const std::string assetId = objectData.value("assetId", "");
+      const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(objectData);
       const std::string id = objectData.value("id", "");
       Object* object = CreateSprite(assetId, nullptr, id);
       auto* sprite = dynamic_cast<Sprite*>(object);
@@ -337,7 +337,7 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
       return nullptr;
    }
 
-   const std::string assetId = objectData.value("assetId", "");
+   const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(objectData);
    const std::string id = objectData.value("id", "");
    Object* object = CreateModel(assetId, nullptr, id);
 
@@ -566,7 +566,7 @@ nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, cons
       std::string textureAssetId;
 
       if (const auto* materialComponent = sprite->GetComponent<MaterialComponent>()) {
-         textureAssetId = materialComponent->GetTextureName();
+         textureAssetId = materialComponent->GetParameterAssetId().empty() ? materialComponent->GetTextureName() : "";
       }
 
       return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Sprite"},
@@ -589,7 +589,8 @@ nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, cons
    std::string assetId;
 
    if (const auto* meshComponent = model->GetComponent<MeshComponent>()) {
-      if (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile) {
+      if (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile &&
+          meshComponent->GetParameterAssetId().empty()) {
          assetId = meshComponent->GetAssetId();
       }
    }

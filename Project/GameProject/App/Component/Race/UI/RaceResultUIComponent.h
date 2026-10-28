@@ -34,12 +34,20 @@ public:
    /// @brief JSONからRaceManager参照とタイトルへの遷移先を読み込む。
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
    /// @brief 参照状態をインスペクターへ表示する。
    void DrawInspector() override;
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    bool MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction);
    void RefreshSelectionText(MenuSelectionAnimationComponent& animation);
    bool ConfirmSelection(MenuSelectionAnimationComponent& animation);

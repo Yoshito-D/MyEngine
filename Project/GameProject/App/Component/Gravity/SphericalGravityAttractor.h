@@ -31,6 +31,12 @@ public:
    /// @brief influenceRadius をデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief デバッグ表示（Inspector）
@@ -51,6 +57,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float influenceRadius = 0.0f; ///< 影響半径（0以下で無限）。
 
 private:

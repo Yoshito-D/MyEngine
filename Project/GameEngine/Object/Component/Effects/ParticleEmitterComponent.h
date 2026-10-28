@@ -179,6 +179,12 @@ public:
    /// @copydoc IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @copydoc IObjectComponent::DrawInspector
@@ -186,6 +192,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    struct EmitterSlot : SlotConfiguration {
       /// @brief 全スロットが終了したとき（IsFinished() が true になったとき）に呼ばれる。
       std::function<void(std::int32_t)> onFinished;

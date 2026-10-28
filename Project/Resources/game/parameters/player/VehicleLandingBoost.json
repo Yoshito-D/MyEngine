@@ -1,0 +1,12 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "VehicleLandingBoost",
+   "data": {
+      "boostAmount": 0.0,
+      "boostThreshold": 0.949999988079071,
+      "normalThreshold": 0.6499999761581421,
+      "penaltyDuration": 1.0,
+      "penaltySpeed": 20.0
+   }
+}

@@ -89,6 +89,12 @@ public:
 
    /// @brief 有効なスロット設定を復元し、再生せずにクリップを準備する。
    void Deserialize(const nlohmann::json& data) override;
+
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
 #ifdef MYPROJECT_NON_RELEASE
 
    /// @brief デバイス不要のテスト用に、名前付きスロットへデコード済みフィクスチャを注入する。
@@ -103,6 +109,8 @@ public:
    void DrawInspector() override;
 #endif
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    struct RuntimeSlot {
       std::shared_ptr<const SoundClip> clip; ///< 再生対象の音声またはアニメーションクリップへの参照。
       AudioHandle handle;                    ///< 世代番号を含めて対象を特定する操作ハンドル。

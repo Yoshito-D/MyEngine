@@ -1,0 +1,11 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "VehicleAirController",
+   "data": {
+      "airDrag": 0.009999999776482582,
+      "angularDamping": 2.5,
+      "pitchSpeed": 250.0,
+      "steerSpeed": 250.0
+   }
+}

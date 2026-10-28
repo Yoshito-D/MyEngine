@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleSpeedPostEffectController.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Object.h"
@@ -109,7 +110,7 @@ void VehicleSpeedPostEffectController::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("演出最低速度", "Minimum Effect Speed"), &minimumEffectSpeed, 0.1f, 0.0f, 200.0f);
@@ -155,7 +156,20 @@ nlohmann::json VehicleSpeedPostEffectController::Serialize() const {
    return json;
 }
 
+nlohmann::json VehicleSpeedPostEffectController::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void VehicleSpeedPostEffectController::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void VehicleSpeedPostEffectController::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void VehicleSpeedPostEffectController::ReadParameters(
+   const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("minimumEffectSpeed")) {
       minimumEffectSpeed = data["minimumEffectSpeed"];
    }

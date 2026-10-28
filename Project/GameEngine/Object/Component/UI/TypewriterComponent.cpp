@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Component/UI/TypewriterComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
@@ -122,14 +123,26 @@ nlohmann::json TypewriterComponent::Serialize() const {
       {"loop", loop}, {"restartOnTextChange", restartOnTextChange}};
 }
 
+nlohmann::json TypewriterComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void TypewriterComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void TypewriterComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void TypewriterComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    glyphsPerSecond = std::max(data.value("glyphsPerSecond", glyphsPerSecond), 0.001f);
    delay = std::max(data.value("delay", delay), 0.0f);
    playOnEnable = data.value("playOnEnable", playOnEnable);
    loop = data.value("loop", loop);
    restartOnTextChange = data.value("restartOnTextChange", restartOnTextChange);
 
-   if (playOnEnable) {
+   if (initializeRuntime && playOnEnable) {
       Restart();
    }
 
@@ -140,7 +153,7 @@ void TypewriterComponent::Deserialize(const nlohmann::json& data) {
 void TypewriterComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    if (ImGui::Button(ImGuiHelper::Localize({"再生", "Play"}))) {
       Play();

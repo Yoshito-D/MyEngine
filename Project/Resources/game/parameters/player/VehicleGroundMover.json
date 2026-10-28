@@ -1,0 +1,11 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "VehicleGroundMover",
+   "data": {
+      "autoSpeed": 35.0,
+      "maxSpeed": 37.5,
+      "speedRecovery": 0.17499999701976776,
+      "steerSpeed": 120.0
+   }
+}

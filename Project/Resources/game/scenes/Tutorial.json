@@ -10,8 +10,6 @@
                {
                   "componentName": "GravityFollowCamera",
                   "data": {
-                     "accelToDistanceKick": 0.03999999910593033,
-                     "accelToFovKick": 0.0024999999441206455,
                      "autoSpeed": 45,
                      "cachedRight": [
                         0.22014817595481873,
@@ -34,22 +32,16 @@
                         0.02638251520693302,
                         -0.989783525466919
                      ],
-                     "distance": 25,
-                     "distanceBoostMax": 2.5,
                      "flatForward": [
                         -0.9653508067131042,
                         0.22590260207653046,
                         -0.13063600659370422
                      ],
-                     "fovBoostMax": 0.07999999821186066,
-                     "fovDefault": 0.44999998807907104,
-                     "fovLerpSpeed": 4,
                      "gravityUp": [
                         0.14011617004871368,
                         0.02638251520693302,
                         -0.989783525466919
                      ],
-                     "gravityUpLerpSpeed": 5,
                      "isEyeInitialized": true,
                      "isSpeedInitialized": false,
                      "pitch": 1,
@@ -59,28 +51,18 @@
                         -49.679466247558594
                      ],
                      "playerSpeed": 32.53232955932617,
-                     "positionLerpSpeed": 12,
                      "previousPlayerSpeed": 32.53232955932617,
-                     "rotateSpeed": 0.004999999888241291,
-                     "scrollSpeed": 0.008333333767950535,
-                     "speedBoostMax": 25,
-                     "speedBoostThreshold": 5,
-                     "springDamping": 18,
                      "springDistanceOffset": 0,
                      "springDistanceVelocity": 0,
                      "springFovOffset": 0,
-                     "springFovVelocity": 0,
-                     "springStiffness": 85,
-                     "turboDistanceKickMax": 2,
-                     "turboFovKickMax": 0.05999999865889549
+                     "springFovVelocity": 0
                   },
-                  "enabled": true
+                  "enabled": true,
+                  "parameterAssetId": "game/parameters/cameras/GravityFollowCamera/GravityFollowCamera.json"
                },
                {
                   "componentName": "PerlinNoise",
                   "data": {
-                     "amplitudeGain": 0,
-                     "frequencyGain": 14,
                      "initialAmplitude": 0.15000000596046448,
                      "remainingTime": 0,
                      "shakeDirection": [
@@ -91,7 +73,8 @@
                      "time": 34.356101989746094,
                      "useDirectionalShake": true
                   },
-                  "enabled": true
+                  "enabled": true,
+                  "parameterAssetId": "game/parameters/cameras/GravityFollowCamera/PerlinNoise.json"
                }
             ],
             "followTargetId": "",
@@ -149,7 +132,7 @@
                      0
                   ],
                   [
-                     4.76837158203125e-7,
+                     4.76837158203125e-07,
                      -27.118988037109375,
                      57.23532485961914,
                      1
@@ -162,56 +145,9 @@
             "components": [
                {
                   "componentName": "PlayerRearFollowCamera",
-                  "data": {
-                     "airborneBlendLerpSpeed": 4,
-                     "airborneDistanceOffset": 4,
-                     "airborneForwardLerpSpeed": 3,
-                     "airborneFovOffset": 0.10000000149011612,
-                     "airborneGravityDirectionBoostBias": 1,
-                     "airborneGravityDirectionBoostFullThreshold": -0.5,
-                     "airborneGravityDirectionBoostThreshold": -1,
-                     "airbornePlanetDirectionBlend": 0.6000000238418579,
-                     "airbornePlanetDirectionLerpSpeed": 2,
-                     "distance": 14.699999809265137,
-                     "distanceBoostMax": 4,
-                     "enableAirborneGravityDirectionBoost": true,
-                     "enableAirbornePlanetDirectionGuide": true,
-                     "enablePreLandingCamera": true,
-                     "eyeDirectionMaxAngularSpeed": 4,
-                     "fovBoostMax": 0.029999999329447746,
-                     "fovDefault": 0.4699999988079071,
-                     "fovLerpSpeed": 0.009999999776482582,
-                     "gravityUpLerpSpeed": 5,
-                     "groundedTargetHeight": 3,
-                     "height": 7.900000095367432,
-                     "jumpPlanetDirectionDelaySeconds": 0.30000001192092896,
-                     "jumpPlanetDirectionRestoreSeconds": 0.5,
-                     "landingFramingBlendSeconds": 0.8999999761581421,
-                     "landingRearLerpRampSeconds": 5,
-                     "lookAtRecoveryCurveControl1": 0,
-                     "lookAtRecoveryCurveControl2": 1,
-                     "lookAtRecoveryRange": 0.15000000596046448,
-                     "positionLerpSpeed": 7.5,
-                     "preLandingBlendLerpSpeed": 1.5,
-                     "preLandingFullBlendSeconds": 0.10000000149011612,
-                     "preLandingMinOutwardHeight": 1,
-                     "preLandingPredictionSeconds": 1.524999976158142,
-                     "preLandingReleaseLerpSpeed": 2,
-                     "preLandingTerrainLookAhead": 9,
-                     "preLandingTerrainLookBlend": 0.5,
-                     "rearLerpSpeed": 7.5,
-                     "rotationLerpSpeed": 12,
-                     "showCameraEvidenceWindow": false,
-                     "showCameraMeasurementOverlay": true,
-                     "speedBoostMax": 35,
-                     "speedBoostThreshold": 1.5,
-                     "speedChangeDistanceKickMax": 4,
-                     "speedChangeFovKickMax": 0.004999999888241291,
-                     "springDamping": 20,
-                     "springStiffness": 20,
-                     "takeoffFramingBlendSeconds": 0.4000000059604645
-                  },
-                  "enabled": true
+                  "data": {},
+                  "enabled": true,
+                  "parameterAssetId": "game/parameters/cameras/PlayerRearFollowCamera/PlayerRearFollowCamera.json"
                },
                {
                   "componentName": "RearCameraTransition",
@@ -261,8 +197,6 @@
                {
                   "componentName": "PerlinNoise",
                   "data": {
-                     "amplitudeGain": 0,
-                     "frequencyGain": 14,
                      "initialAmplitude": 0.15000000596046448,
                      "remainingTime": 0,
                      "shakeDirection": [
@@ -273,7 +207,8 @@
                      "time": 34.356101989746094,
                      "useDirectionalShake": true
                   },
-                  "enabled": true
+                  "enabled": true,
+                  "parameterAssetId": "game/parameters/cameras/PlayerRearFollowCamera/PerlinNoise.json"
                }
             ],
             "followTargetId": "",
@@ -331,7 +266,7 @@
                      0
                   ],
                   [
-                     -9.5367431640625e-7,
+                     -9.5367431640625e-07,
                      -48.858009338378906,
                      28.960250854492188,
                      1
@@ -344,19 +279,13 @@
             "components": [
                {
                   "componentName": "PlanetLeashCamera",
-                  "data": {
-                     "followSpeed": 50,
-                     "maxFollowDistance": 30,
-                     "minPlanetDistance": 75,
-                     "useGravityUp": true
-                  },
-                  "enabled": true
+                  "data": {},
+                  "enabled": true,
+                  "parameterAssetId": "game/parameters/cameras/PlanetLeashCamera/PlanetLeashCamera.json"
                },
                {
                   "componentName": "PerlinNoise",
                   "data": {
-                     "amplitudeGain": 0,
-                     "frequencyGain": 14,
                      "initialAmplitude": 0.15000000596046448,
                      "remainingTime": 0,
                      "shakeDirection": [
@@ -367,7 +296,8 @@
                      "time": 34.356101989746094,
                      "useDirectionalShake": true
                   },
-                  "enabled": true
+                  "enabled": true,
+                  "parameterAssetId": "game/parameters/cameras/PlanetLeashCamera/PerlinNoise.json"
                }
             ],
             "followTargetId": "",
@@ -969,12 +899,11 @@
             },
             {
                "data": {
-                  "fadeEndDistance": 300.0,
-                  "fadeStartDistance": 10.0,
                   "playerObjectId": "Model:Player"
                },
                "enabled": true,
-               "typeName": "PlanetDistanceColorComponent"
+               "typeName": "PlanetDistanceColorComponent",
+               "parameterAssetId": "game/parameters/environment/PlanetDistanceColorComponent.json"
             }
          ],
          "id": "Model:Planet_1",
@@ -1239,12 +1168,11 @@
             },
             {
                "data": {
-                  "fadeEndDistance": 300.0,
-                  "fadeStartDistance": 10.0,
                   "playerObjectId": "Model:Player"
                },
                "enabled": true,
-               "typeName": "PlanetDistanceColorComponent"
+               "typeName": "PlanetDistanceColorComponent",
+               "parameterAssetId": "game/parameters/environment/PlanetDistanceColorComponent.json"
             }
          ],
          "id": "Model:Planet_2",
@@ -1252,7 +1180,7 @@
          "parentId": ""
       },
       {
-         "assetId": "game/models/car/car.obj",
+         "assetId": "",
          "components": [
             {
                "data": {
@@ -1299,7 +1227,6 @@
                      1,
                      1
                   ],
-                  "environmentTextureName": "space_2048px",
                   "environmentTextureStrength": 0.699999988079071,
                   "fillLightColor": [
                      0.9607843160629272,
@@ -1313,66 +1240,6 @@
                   "materialNames": [
                      "playerMaterial"
                   ],
-                  "materialSlots": [
-                     {
-                        "blendMode": -1,
-                        "color": [
-                           1,
-                           1,
-                           1,
-                           1
-                        ],
-                        "environmentTextureStrength": 0.699999988079071,
-                        "fillLightColor": [
-                           0.9607843160629272,
-                           0.8987267017364502,
-                           0.8854286670684814,
-                           1
-                        ],
-                        "fillLightIntensity": 0.6499999761581421,
-                        "lightingMode": 4,
-                        "name": "playerMaterial",
-                        "ownership": "local",
-                        "parameters": {},
-                        "pipelineName": "",
-                        "rimLightColor": [
-                           0.9656862616539001,
-                           0.9136149287223816,
-                           0.9136149287223816,
-                           1
-                        ],
-                        "rimLightIntensity": 1.9700000286102295,
-                        "rimLightPower": 10.300000190734863,
-                        "shininess": 42.20000076293945,
-                        "textureName": "color_palette",
-                        "uvTransform": [
-                           [
-                              1,
-                              0,
-                              0,
-                              0
-                           ],
-                           [
-                              0,
-                              1,
-                              0,
-                              0
-                           ],
-                           [
-                              0,
-                              0,
-                              1,
-                              0
-                           ],
-                           [
-                              0,
-                              0,
-                              0,
-                              1
-                           ]
-                        ]
-                     }
-                  ],
                   "parameters": {},
                   "pipelineName": "",
                   "rimLightColor": [
@@ -1384,16 +1251,8 @@
                   "rimLightIntensity": 1.9700000286102295,
                   "rimLightPower": 10.300000190734863,
                   "shininess": 42.20000076293945,
-                  "textureLeftTop": [
-                     0,
-                     0
-                  ],
                   "textureNames": [
                      "color_palette"
-                  ],
-                  "textureSize": [
-                     0,
-                     0
                   ],
                   "uvTransform": [
                      [
@@ -1423,82 +1282,20 @@
                   ]
                },
                "enabled": true,
-               "typeName": "MaterialComponent"
+               "typeName": "MaterialComponent",
+               "parameterAssetId": "game/parameters/player/MaterialComponent.json"
             },
             {
-               "data": {
-                  "assetId": "game/models/car/car.obj",
-                  "boxSize": [
-                     1,
-                     1,
-                     1
-                  ],
-                  "circleRadius": 0.5,
-                  "circleSegments": 32,
-                  "coneHeight": 1,
-                  "coneRadius": 0.5,
-                  "coneSegments": 32,
-                  "cylinderBottomRadius": 0.5,
-                  "cylinderHeight": 1,
-                  "cylinderSegments": 32,
-                  "cylinderTopRadius": 0.5,
-                  "flipX": false,
-                  "flipY": false,
-                  "originY": 0.5,
-                  "planeDepth": 1,
-                  "planeDepthSegments": 1,
-                  "planeOrientation": "XY",
-                  "planeWidth": 1,
-                  "planeWidthSegments": 1,
-                  "primitiveType": "Quad",
-                  "quadAnchorPoint": [
-                     0,
-                     0
-                  ],
-                  "quadSize": [
-                     128,
-                     128
-                  ],
-                  "reverseFaces": false,
-                  "ringInnerRadius": 0.4000000059604645,
-                  "ringOuterRadius": 0.5,
-                  "ringSegments": 32,
-                  "sourceType": "ModelFile",
-                  "sphereRadius": 0.5,
-                  "sphereSlices": 32,
-                  "sphereStacks": 16,
-                  "torusMajorRadius": 0.5,
-                  "torusMajorSegments": 32,
-                  "torusMinorRadius": 0.20000000298023224,
-                  "torusMinorSegments": 16,
-                  "triangleV0": [
-                     -0.5,
-                     0,
-                     0
-                  ],
-                  "triangleV1": [
-                     0,
-                     1,
-                     0
-                  ],
-                  "triangleV2": [
-                     0.5,
-                     0,
-                     0
-                  ]
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "MeshComponent"
+               "typeName": "MeshComponent",
+               "parameterAssetId": "game/parameters/player/MeshComponent.json"
             },
             {
-               "data": {
-                  "applyPostProcess": true,
-                  "autoRender": true,
-                  "renderSpace": "World",
-                  "visible": true
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "RenderComponent"
+               "typeName": "RenderComponent",
+               "parameterAssetId": "game/parameters/player/RenderComponent.json"
             },
             {
                "data": {},
@@ -1507,11 +1304,6 @@
             },
             {
                "data": {
-                  "obbHalfExtents": [
-                     0.3499999940395355,
-                     0.17499999701976776,
-                     0.75
-                  ],
                   "planets": [
                      {
                         "objectId": "Model:Planet_1"
@@ -1519,40 +1311,29 @@
                      {
                         "objectId": "Model:Planet_2"
                      }
-                  ],
-                  "switchHysteresis": 0.5
+                  ]
                },
                "enabled": true,
-               "typeName": "PlanetSwitcher"
+               "typeName": "PlanetSwitcher",
+               "parameterAssetId": "game/parameters/player/PlanetSwitcher.json"
             },
             {
-               "data": {
-                  "gravityStrength": 9.699999809265137,
-                  "rotationSpeed": 12.5,
-                  "useGravity": true
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "GravityBody"
+               "typeName": "GravityBody",
+               "parameterAssetId": "game/parameters/player/GravityBody.json"
             },
             {
-               "data": {
-                  "landingOffset": 0.07000000029802322,
-                  "obbHalfExtents": {
-                     "x": 0.3499999940395355,
-                     "y": 0.17499999701976776,
-                     "z": 0.75
-                  },
-                  "surfaceRadius": 50
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "CharacterLanding"
+               "typeName": "CharacterLanding",
+               "parameterAssetId": "game/parameters/player/CharacterLanding.json"
             },
             {
-               "data": {
-                  "jumpStrength": 12
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "CharacterJump"
+               "typeName": "CharacterJump",
+               "parameterAssetId": "game/parameters/player/CharacterJump.json"
             },
             {
                "data": {},
@@ -1560,57 +1341,34 @@
                "typeName": "VehicleMover"
             },
             {
-               "data": {
-                  "autoSpeed": 30,
-                  "maxSpeed": 32,
-                  "speedRecovery": 1.5,
-                  "steerSpeed": 120
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "VehicleGroundMover"
+               "typeName": "VehicleGroundMover",
+               "parameterAssetId": "game/parameters/player/VehicleGroundMover.json"
             },
             {
-               "data": {
-                  "airDrag": 0.009999999776482582,
-                  "angularDamping": 2.5,
-                  "pitchSpeed": 250,
-                  "steerSpeed": 250
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "VehicleAirController"
+               "typeName": "VehicleAirController",
+               "parameterAssetId": "game/parameters/player/VehicleAirController.json"
             },
             {
-               "data": {
-                  "alignTime": 0.10000000149011612
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "VehicleLandingAligner"
+               "typeName": "VehicleLandingAligner",
+               "parameterAssetId": "game/parameters/player/VehicleLandingAligner.json"
             },
             {
-               "data": {
-                  "boostAmount": 8,
-                  "boostThreshold": 0.949999988079071,
-                  "normalThreshold": 0.6499999761581421,
-                  "penaltySpeed": 20
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "VehicleLandingBoost"
+               "typeName": "VehicleLandingBoost",
+               "parameterAssetId": "game/parameters/player/VehicleLandingBoost.json"
             },
             {
-               "data": {
-                  "driftMode": 1,
-                  "driftSteerDeadZone": 0.30000001192092896,
-                  "driftSteerMult": 1.5,
-                  "lateralBuildupRate": 1,
-                  "miniTurboBoost": 5,
-                  "miniTurboEnabled": true,
-                  "miniTurboMinTime": 0.5,
-                  "postDriftBleedRate": 6,
-                  "slideRatio": 0.20000000298023224,
-                  "sustainedSteerTime": 0.20000000298023224
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "VehicleDrift"
+               "typeName": "VehicleDrift",
+               "parameterAssetId": "game/parameters/player/VehicleDrift.json"
             },
             {
                "data": {
@@ -1625,449 +1383,26 @@
                "typeName": "VehicleController"
             },
             {
-               "data": {
-                  "activeFlowSpeed": 20,
-                  "activeInnerRadius": 0.38499999046325684,
-                  "idleFlowSpeed": 10,
-                  "idleInnerRadius": 0.9800000190734863,
-                  "lineDensity": 140,
-                  "maxIntensity": 0.800000011920929,
-                  "maximumEffectSpeed": 35,
-                  "minimumEffectSpeed": 15,
-                  "outerRadius": 2.5,
-                  "radialBlurMaxStrength": 0,
-                  "radialBlurSampleCount": 16,
-                  "radialBlurVisibleThreshold": 0.019999999552965164,
-                  "randomSeed": 1,
-                  "responseSpeed": 100,
-                  "thickness": 0.800000011920929,
-                  "visibleThreshold": 0.014999999664723873
-               },
+               "data": {},
                "enabled": true,
-               "typeName": "VehicleSpeedPostEffectController"
+               "typeName": "VehicleSpeedPostEffectController",
+               "parameterAssetId": "game/parameters/player/VehicleSpeedPostEffectController.json"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "typeName": "ParticleEmitterComponent",
+               "parameterAssetId": "game/parameters/player/ParticleEmitterComponent.json"
             },
             {
                "data": {
-                  "debugDrawAttachments": true,
-                  "maxCullDistance": 0,
-                  "slots": [
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0.30000001192092896,
-                              -0.18000000715255737,
-                              0.41499999165534973
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": true,
-                        "jsonPath": "resources/game/particles/tire_dust.json",
-                        "loop": true,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              -0.30000001192092896,
-                              -0.18000000715255737,
-                              0.41499999165534973
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": true,
-                        "jsonPath": "resources/game/particles/tire_dust.json",
-                        "loop": true,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0.30000001192092896,
-                              -0.18000000715255737,
-                              -0.41499999165534973
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": true,
-                        "jsonPath": "resources/game/particles/tire_dust.json",
-                        "loop": true,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              -0.30000001192092896,
-                              -0.18000000715255737,
-                              -0.41499999165534973
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": true,
-                        "jsonPath": "resources/game/particles/tire_dust.json",
-                        "loop": true,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0.2800000011920929,
-                              -0.15000000596046448,
-                              -0.4000000059604645
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "Local"
-                        },
-                        "autoPlay": true,
-                        "jsonPath": "resources/game/particles/miniturbo.json",
-                        "loop": true,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              -0.2800000011920929,
-                              -0.15000000596046448,
-                              -0.4000000059604645
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "Local"
-                        },
-                        "autoPlay": true,
-                        "jsonPath": "resources/game/particles/miniturbo.json",
-                        "loop": true,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0.25,
-                              -0.18000000715255737,
-                              -0.6000000238418579
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": false,
-                        "jsonPath": "resources/game/particles/bonfire.json",
-                        "loop": false,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              -0.25,
-                              -0.18000000715255737,
-                              -0.6000000238418579
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": false,
-                        "jsonPath": "resources/game/particles/bonfire.json",
-                        "loop": false,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0,
-                              0,
-                              0.30000001192092896
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": false,
-                        "jsonPath": "resources/game/particles/sonicBoom.json",
-                        "loop": false,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0,
-                              -0.30000001192092896,
-                              0.5
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "Local"
-                        },
-                        "autoPlay": false,
-                        "jsonPath": "resources/game/particles/landingRing.json",
-                        "loop": false,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0,
-                              -0.30000001192092896,
-                              0
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": false,
-                        "jsonPath": "resources/game/particles/jump.json",
-                        "loop": false,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "Local"
-                        },
-                        "autoPlay": false,
-                        "jsonPath": "resources/game/particles/wind.json",
-                        "loop": false,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0,
-                              -0.30000001192092896,
-                              0.5
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "Local"
-                        },
-                        "autoPlay": false,
-                        "jsonPath": "resources/game/particles/landingDust.json",
-                        "loop": false,
-                        "playOnceAndDestroy": false
-                     },
-                     {
-                        "attachConfig": {
-                           "boneName": "",
-                           "followPosition": true,
-                           "followRotation": true,
-                           "followScale": true,
-                           "positionOffset": [
-                              0,
-                              0,
-                              -0.699999988079071
-                           ],
-                           "rotationOffset": [
-                              0,
-                              0,
-                              0
-                           ],
-                           "scaleOffset": [
-                              1,
-                              1,
-                              1
-                           ],
-                           "simulationSpace": "World"
-                        },
-                        "autoPlay": false,
-                        "jsonPath": "resources/game/particles/landing_failure.json",
-                        "loop": false,
-                        "playOnceAndDestroy": false
-                     }
-                  ]
-               },
-               "enabled": true,
-               "typeName": "ParticleEmitterComponent"
-            },
-            {
-               "data": {
-                  "autoCapturePresentationSequence": false,
-                  "autoCapturePresentationVideoFrames": false,
-                  "debugDrawPresentationGuides": false,
-                  "enableLandingShake": true,
                   "gravityFollowCameraId": "GravityFollowCamera",
-                  "landingShakeAmplitude": 0.15000000596046448,
-                  "landingShakeDuration": 0.10000000149011612,
-                  "landingShakeFrequency": 14,
                   "planetLeashCameraId": "PlanetLeashCamera",
-                  "playerRearFollowCameraId": "PlayerRearFollowCamera",
-                  "presentationCaptureJumpDelay": 1.25,
-                  "presentationGuideLength": 8,
-                  "presentationVideoCaptureDuration": 8,
-                  "presentationVideoCaptureStartDelay": 3.25,
-                  "presentationVideoFrameRate": 10
+                  "playerRearFollowCameraId": "PlayerRearFollowCamera"
                },
                "enabled": true,
-               "typeName": "CameraGravityBridge"
+               "typeName": "CameraGravityBridge",
+               "parameterAssetId": "game/parameters/player/CameraGravityBridge.json"
             },
             {
                "data": {
@@ -2075,11 +1410,11 @@
                      "PlayerRearFollowCamera",
                      "GravityFollowCamera",
                      "PlanetLeashCamera"
-                  ],
-                  "initialIndex": 0
+                  ]
                },
                "enabled": true,
-               "typeName": "CameraModeSwitcher"
+               "typeName": "CameraModeSwitcher",
+               "parameterAssetId": "game/parameters/player/CameraModeSwitcher.json"
             },
             {
                "data": {},

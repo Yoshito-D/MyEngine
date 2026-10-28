@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameEngine/Object/Object.h"
 #include <algorithm>
@@ -50,7 +51,7 @@ void VehicleLandingBoost::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("ブースト量", "Boost Amount"), &boostAmount, 0.1f, 0.0f, 200.0f);
@@ -72,7 +73,19 @@ nlohmann::json VehicleLandingBoost::Serialize() const {
    return json;
 }
 
+nlohmann::json VehicleLandingBoost::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void VehicleLandingBoost::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void VehicleLandingBoost::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void VehicleLandingBoost::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("boostAmount")) {
       boostAmount = data["boostAmount"];
    }

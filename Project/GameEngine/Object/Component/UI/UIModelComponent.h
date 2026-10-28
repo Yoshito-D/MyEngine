@@ -55,6 +55,12 @@ public:
    /// @copydoc IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @copydoc IObjectComponent::DrawInspector
@@ -77,6 +83,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    ProjectionType projectionType = ProjectionType::Orthographic; ///< UIカメラの投影方式
    AnchorPoint anchorPoint = AnchorPoint::MiddleCenter;          ///< 画面上のアンカー
    Vector2 screenOffset{};                                       ///< アンカーからのピクセル移動量（+Yは上）

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Assets/Font/FontManager.h"
@@ -172,7 +173,19 @@ nlohmann::json UITextComponent::Serialize() const {
       {"lineSpacing", style_.lineSpacing}, {"sortingOrder", style_.sortingOrder}};
 }
 
+nlohmann::json UITextComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"screenAnchor", "pivot", "sortingOrder"});
+}
+
 void UITextComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void UITextComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void UITextComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    // 欠落キーは現在値を残す部分更新として扱い、古いシーンや最小設定の JSON も読み込めるようにする。
    // 最後に SetStyle を一度だけ通すことで、値の補正とレイアウト無効化判定を通常更新と共通化する。
    TextStyle style = style_;
@@ -230,7 +243,7 @@ void UITextComponent::InvalidateLayout() {
 void UITextComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
 
    // 複数ウィジェットの編集結果を一時値へ集約し、フレーム末尾に一括適用する。
    // これにより、途中状態ごとにレイアウトキャッシュを何度も破棄せずに済む。

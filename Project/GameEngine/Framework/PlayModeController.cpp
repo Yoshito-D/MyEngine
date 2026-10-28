@@ -154,7 +154,7 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
    nlohmann::json componentData;
    nlohmann::json patchedSnapshot = editorSceneSnapshot_;
    try {
-      componentData = component->Serialize();
+      componentData = component->GetSceneParameters();
 
       if (!PatchSceneComponentData(
              patchedSnapshot, object.GetEntityId(), componentTypeName, componentData, object.GetParentEntityId())) {

@@ -126,6 +126,9 @@ public:
    /// @brief 全コンポーネントをJSON配列へ変換する
    nlohmann::json SerializeComponents() const;
 
+   /// @brief 所有コンポーネントの共通設定を更新する。
+   void SynchronizeParameters() { components_.SynchronizeParameters(); }
+
    // --- ライフサイクル ---
 
    /// @brief 有効な全コンポーネントを更新する

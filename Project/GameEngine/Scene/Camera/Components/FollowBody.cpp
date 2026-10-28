@@ -47,7 +47,19 @@ nlohmann::json FollowBody::Serialize() const {
       {"damping", GameEngine::JsonValue::WriteVector3(damping_)}};
 }
 
+nlohmann::json FollowBody::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void FollowBody::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void FollowBody::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void FollowBody::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    if (data.contains("offset")) {

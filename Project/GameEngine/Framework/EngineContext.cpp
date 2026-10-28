@@ -37,6 +37,10 @@ GameEngine::PlayModeController* sPlayModeController_ = nullptr;
 }
 
 namespace GameEngine {
+ParameterAssetStore& EngineContext::GetParameterAssetStore() {
+   return sAssetManager_->GetParameterAssetStore();
+}
+
 void EngineContext::SetSceneManager(SceneManager* manager) {
    sSceneManager_ = manager;
 }

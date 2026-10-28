@@ -38,6 +38,12 @@ public:
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
    /// @copydoc GameEngine::IObjectComponent::DrawInspector
    void DrawInspector() override;
@@ -57,6 +63,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    struct MaterialColorState {
       const GameEngine::Material* material = nullptr; ///< 比較だけに使う、スロットの変更検知用参照。
       GameEngine::Vector4 baseColor{};                ///< 距離による補間をかける前の設定色。

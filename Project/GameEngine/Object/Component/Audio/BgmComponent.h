@@ -56,6 +56,12 @@ public:
 
    /// @brief 検証済みの設定を復元し、再生せずにクリップを準備する。
    void Deserialize(const nlohmann::json& data) override;
+
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
 #ifdef MYPROJECT_NON_RELEASE
 
    /// @brief デバイス不要のテスト用に、アセットID付きのデコード済みフィクスチャを注入する。
@@ -85,6 +91,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    Settings settings_; ///< 検証済みの保存・編集用設定。
 
    bool Submit(bool restart);

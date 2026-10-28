@@ -58,6 +58,12 @@ public:
    /// @copydoc ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @copydoc ICinemachineComponent::DrawInspector
@@ -65,10 +71,13 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float Noise(float t) const;
 
    float amplitudeGain_ = 0.0f;                  ///< カメラ揺れに掛ける振幅倍率。
    float frequencyGain_ = 1.0f;                  ///< カメラ揺れの時間周波数へ掛ける倍率。
+   float shakeFrequency_ = 1.0f;                 ///< 一時シェイク専用の周波数。共通設定へ保存しない。
    float time_ = 0.0f;                           ///< クリップ先頭からの時刻（秒）。
    float remainingTime_ = 0.0f;                  ///< 処理が終了するまでの残り時間（秒）。
    float initialAmplitude_ = 0.0f;               ///< 減衰開始時のカメラ揺れの振幅。

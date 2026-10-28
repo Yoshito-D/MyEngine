@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Effects/ParticleEmitterComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -764,7 +765,19 @@ nlohmann::json ParticleEmitterComponent::Serialize() const {
    return j;
 }
 
+nlohmann::json ParticleEmitterComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void ParticleEmitterComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void ParticleEmitterComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("maxCullDistance") && data.at("maxCullDistance").is_number()) {
       maxCullDistance = data.at("maxCullDistance").get<float>();
    }
@@ -773,7 +786,10 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
       debugDrawAttachments = data.at("debugDrawAttachments").get<bool>();
    }
 
-   ClearSlots();
+   if (initializeRuntime) {
+      ClearSlots();
+   }
+   size_t slotIndex = 0;
 
    if (data.contains("slots") && data.at("slots").is_array()) {
       for (const auto& s : data.at("slots")) {
@@ -799,16 +815,32 @@ void ParticleEmitterComponent::Deserialize(const nlohmann::json& data) {
             DeserializeAttachmentConfig(s.at("attachConfig"), slot.attachConfig);
          }
 
-         slots_.push_back(std::move(slot));
-      }
-   }
-
-   // アタッチ済みなら PS を生成する
-   if (HasOwner()) {
-      for (auto& slot : slots_) {
-         if (!LoadSlot(slot)) {
-            throw std::runtime_error("Could not restore emitter asset: " + slot.jsonPath);
+         bool reload = true;
+         if (slotIndex < slots_.size()) {
+            auto& existing = slots_[slotIndex];
+            reload = existing.jsonPath != slot.jsonPath || !existing.particleSystem;
+            static_cast<SlotConfiguration&>(existing) = ValidateConfiguration(slot);
+         } else {
+            slots_.push_back(std::move(slot));
          }
+         auto& destination = slots_[slotIndex++];
+         if (HasOwner()) {
+            if (reload) {
+               if (!LoadSlot(destination)) {
+                  throw std::runtime_error("Could not restore emitter asset: " + destination.jsonPath);
+               }
+            } else {
+               auto main = destination.particleSystem->DescribeMainModule();
+               main.SetLooping(destination.loop);
+               destination.particleSystem->ConfigureModule(main);
+               SyncSimulationSpace(destination.particleSystem.get(), destination.attachConfig.simulationSpace);
+               ApplyEmitterToShapeModule(
+                  destination.particleSystem.get(), ComputeEmitterMatrix(destination.attachConfig));
+            }
+         }
+      }
+      while (slots_.size() > slotIndex) {
+         RemoveSlot(static_cast<std::int32_t>(slots_.size() - 1));
       }
    }
 }
@@ -823,7 +855,7 @@ void ParticleEmitterComponent::DrawInspector() {
 
    const std::string componentHeader = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(componentHeader.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(componentHeader.c_str())) return;
 
    // ── コンポーネント共通設定 ─────────────────────
    ImGui::DragFloat(Tr("カリング距離", "Cull Distance"), &maxCullDistance, 1.0f, 0.0f, 10000.0f);

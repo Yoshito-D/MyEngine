@@ -63,6 +63,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief スカイボックス設定のインスペクターを描画する
@@ -70,6 +76,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    static TextureResolver textureResolver_; ///< テクスチャ名から読み込み済み実体を解決する外部提供の処理。
 
    mutable Texture* texture_ = nullptr;       ///< 描画に使用するテクスチャへの非所有参照。

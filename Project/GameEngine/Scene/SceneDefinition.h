@@ -12,7 +12,7 @@ struct SceneDefinition {
    std::filesystem::path filePath; ///< 読み書きするファイルのパス。
 };
 
-/// @brief ファイルアクセスなしで復元できる、メモリー上の完全なシーン情報。
+/// @brief シーン固有状態と共通設定の参照。共通値はアプリ所有ストアの最新版を使用する。
 struct SceneSnapshot {
    SceneDefinition definition; ///< シーン名と保存先などのシーン定義。
    nlohmann::json data;        ///< オブジェクト・カメラ・描画設定を含むシーンの完全なJSON保存状態。

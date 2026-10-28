@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Rendering/RenderComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -59,7 +60,19 @@ nlohmann::json RenderComponent::Serialize() const {
       {"renderSpace", ToRenderSpaceName(renderSpace)}};
 }
 
+nlohmann::json RenderComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void RenderComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void RenderComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void RenderComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    // キーごとの部分更新として扱い、指定されていない項目は現在値を維持する。
    if (data.contains("visible") && data.at("visible").is_boolean()) {
       visible = data.at("visible").get<bool>();
@@ -84,7 +97,7 @@ void RenderComponent::Deserialize(const nlohmann::json& data) {
 void RenderComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Checkbox(ImGuiHelper::Localize({"表示", "Visible"}), &visible);
    ImGui::Checkbox(ImGuiHelper::Localize({"自動描画", "Auto Render"}), &autoRender);

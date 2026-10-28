@@ -57,6 +57,12 @@ public:
    /// @param data LightComponent設定
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief ライト固有設定をインスペクターへ描画する
@@ -82,6 +88,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    Settings settings_; ///< 検証済みの保存・編集用設定。
 
    void SynchronizeRuntimeLight();

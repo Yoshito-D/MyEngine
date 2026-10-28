@@ -59,6 +59,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief メッシュ設定のインスペクターを描画する
@@ -178,6 +184,8 @@ public:
    void ApplyTextureCoordinates(Texture* texture, const Vector2& leftTop, const Vector2& size);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    SourceType sourceType_ = SourceType::ModelFile;            ///< メッシュデータの入力元。
    bool reverseFaces_ = false;                                ///< 描画時にメッシュの表裏を反転するか。
    std::shared_ptr<ModelAsset> modelAsset_;                   ///< モデルアセットハンドル。

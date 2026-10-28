@@ -37,6 +37,12 @@ public:
    /// @brief fallbackUp をデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief デバッグ表示（Inspector）
@@ -48,6 +54,8 @@ protected:
    virtual GameEngine::Vector3 FindSurfaceNormal(const GameEngine::Vector3& /*objectPosition*/) const;
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    /// @brief 法線取得不能時の代替Up
    GameEngine::Vector3 fallbackUpVector_ = {0.0f, 1.0f, 0.0f};
 };

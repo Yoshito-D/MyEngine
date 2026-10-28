@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/UI/UIModelComponent.h"
 
@@ -151,7 +152,19 @@ nlohmann::json UIModelComponent::Serialize() const {
       {"localPivot", {localPivot.x, localPivot.y, localPivot.z}}, {"depth", depth}};
 }
 
+nlohmann::json UIModelComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"screenOffset", "localPivot", "depth", "anchorPoint"});
+}
+
 void UIModelComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void UIModelComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void UIModelComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    // キー単位の部分復元により、追加前の古いシーンではクラス既定値をそのまま利用する。
@@ -205,7 +218,7 @@ void UIModelComponent::Deserialize(const nlohmann::json& data) {
 void UIModelComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    std::int32_t projectionIndex = static_cast<std::int32_t>(projectionType);
    const char* projectionItems[] = {

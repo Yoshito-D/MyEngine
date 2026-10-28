@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
@@ -265,7 +266,7 @@ void GravityBody::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::Checkbox(Tr("重力を使用", "Use Gravity"), &useGravity);
@@ -286,7 +287,19 @@ nlohmann::json GravityBody::Serialize() const {
    return json;
 }
 
+nlohmann::json GravityBody::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void GravityBody::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void GravityBody::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void GravityBody::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("rotationSpeed")) {
       rotationSpeed = data["rotationSpeed"];
    }

@@ -1,0 +1,11 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "RenderComponent",
+   "data": {
+      "applyPostProcess": true,
+      "autoRender": true,
+      "renderSpace": "World",
+      "visible": true
+   }
+}

@@ -23,7 +23,8 @@ bool HasOptionalJsonType(const nlohmann::json& data, const char* key, nlohmann::
 bool IsValidComponentState(const nlohmann::json& data, const char* typeKey) {
    return data.is_object() && HasOptionalJsonType(data, typeKey, nlohmann::json::value_t::string) &&
           HasOptionalJsonType(data, "enabled", nlohmann::json::value_t::boolean) &&
-          HasOptionalJsonType(data, "data", nlohmann::json::value_t::object);
+          HasOptionalJsonType(data, "data", nlohmann::json::value_t::object) &&
+          HasOptionalJsonType(data, "parameterAssetId", nlohmann::json::value_t::string);
 }
 
 bool IsValidObjectState(const nlohmann::json& data) {
@@ -221,6 +222,17 @@ bool SceneWorld::ApplySnapshot(const nlohmann::json& sceneData) {
    RestoreCameras(sceneData);
    ResolveReferences(objectStore_.GetObjects());
    return true;
+}
+
+void SceneWorld::SynchronizeParameters() {
+   for (auto* object : objectStore_.GetObjects()) {
+      object->SynchronizeParameters();
+   }
+   for (const auto& camera : virtualCameras_) {
+      for (const auto* component : camera->GetComponents()) {
+         const_cast<ICinemachineComponent*>(component)->SynchronizeParameters();
+      }
+   }
 }
 
 void SceneWorld::Clear() {

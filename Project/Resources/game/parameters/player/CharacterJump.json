@@ -1,0 +1,8 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "CharacterJump",
+   "data": {
+      "jumpStrength": 12.0
+   }
+}

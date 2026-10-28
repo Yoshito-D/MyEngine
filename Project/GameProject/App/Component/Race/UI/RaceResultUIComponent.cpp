@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Race/UI/RaceResultUIComponent.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameProject/App/Component/Race/UI/RaceTimeFormatting.h"
@@ -99,7 +100,19 @@ nlohmann::json RaceResultUIComponent::Serialize() const {
    return nlohmann::json{{"raceManagerId", raceManagerId_}, {"titleScene", titleScene_}};
 }
 
+nlohmann::json RaceResultUIComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"raceManagerId", "titleScene"});
+}
+
 void RaceResultUIComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void RaceResultUIComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void RaceResultUIComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
@@ -185,7 +198,7 @@ std::string RaceResultUIComponent::BuildResultText() const {
 void RaceResultUIComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::EditorUI::SceneReference("Title Scene", titleScene_);

@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleAirController.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -123,7 +124,7 @@ void VehicleAirController::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(
@@ -146,7 +147,19 @@ nlohmann::json VehicleAirController::Serialize() const {
    return json;
 }
 
+nlohmann::json VehicleAirController::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void VehicleAirController::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void VehicleAirController::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void VehicleAirController::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("steerSpeed")) {
       rollSpeed = data["steerSpeed"];
    }

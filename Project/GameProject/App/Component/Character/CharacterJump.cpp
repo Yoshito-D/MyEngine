@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Object.h"
 
@@ -28,7 +29,7 @@ void CharacterJump::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("ジャンプ力", "Jump Strength"), &jumpStrength, 0.1f, 0.0f, 30.0f);
@@ -43,7 +44,19 @@ nlohmann::json CharacterJump::Serialize() const {
    return json;
 }
 
+nlohmann::json CharacterJump::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void CharacterJump::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void CharacterJump::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void CharacterJump::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("jumpStrength")) {
       jumpStrength = data["jumpStrength"];
    }
