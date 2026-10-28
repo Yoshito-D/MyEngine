@@ -85,7 +85,15 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    /// @brief Up補間回転速度
    float rotationSpeed = 5.0f;
 

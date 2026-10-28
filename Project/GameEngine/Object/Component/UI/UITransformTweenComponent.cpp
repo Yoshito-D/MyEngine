@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/UI/UITransformTweenComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -82,7 +83,19 @@ nlohmann::json UITransformTweenComponent::Serialize() const {
       {"playbackMode", static_cast<std::int32_t>(playbackMode)}, {"easing", static_cast<std::int32_t>(easing)}};
 }
 
+nlohmann::json UITransformTweenComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void UITransformTweenComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void UITransformTweenComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void UITransformTweenComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    // 保存形式は項目ごとの部分更新として読み、未保存の新規項目には現在値を使う。
    // 時間と列挙値は評価関数の前提範囲へ制限し、不正 JSON による 0 除算や未定義モードを防ぐ。
    animatePosition = data.value("animatePosition", animatePosition);
@@ -116,7 +129,7 @@ void UITransformTweenComponent::Deserialize(const nlohmann::json& data) {
    easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<std::int32_t>(easing)),
       static_cast<std::int32_t>(UIEasingType::Linear), static_cast<std::int32_t>(UIEasingType::EaseOutBack)));
 
-   if (playOnEnable) {
+   if (initializeRuntime && playOnEnable) {
       Restart();
    }
 
@@ -157,7 +170,7 @@ void UITransformTweenComponent::Apply(float progress) {
 void UITransformTweenComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    if (ImGui::Button(ImGuiHelper::Localize({"再生", "Play"}))) {
       Play();

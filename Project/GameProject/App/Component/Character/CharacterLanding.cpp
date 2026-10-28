@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Character/CharacterLanding.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Character/CharacterWalker.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
@@ -134,7 +135,7 @@ void CharacterLanding::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("地表半径", "Surface Radius"), &surfaceRadius_, 0.1f, 0.0f, 1000.0f);
@@ -157,7 +158,19 @@ nlohmann::json CharacterLanding::Serialize() const {
    return json;
 }
 
+nlohmann::json CharacterLanding::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void CharacterLanding::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void CharacterLanding::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void CharacterLanding::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("surfaceRadius")) {
       surfaceRadius_ = data["surfaceRadius"];
    }

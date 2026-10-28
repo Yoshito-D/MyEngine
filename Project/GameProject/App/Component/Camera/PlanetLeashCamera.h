@@ -57,6 +57,12 @@ public:
    /// @copydoc GameEngine::ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief デバッグ表示（Inspector）
@@ -86,6 +92,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float maxFollowDistance = 8.0f; ///< 追従開始距離（この距離を超えた分を追う）。
    float followSpeed = 6.0f;       ///< 追従速度。
    float minPlanetDistance = 7.0f; ///< 惑星中心からの最小許容距離。

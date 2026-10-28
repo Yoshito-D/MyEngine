@@ -356,7 +356,8 @@ bool EditorAssetRegistry::CanRemove(const std::string& assetId, std::string& rea
       return false;
    }
 
-   if (asset->type == EditorAssetType::Scene || asset->type == EditorAssetType::Json) {
+   if (asset->type == EditorAssetType::Scene || asset->type == EditorAssetType::Json ||
+       asset->type == EditorAssetType::Parameter) {
       reason = "Scene catalog and opaque configuration references cannot be updated safely by deleting this file.";
       return false;
    }
@@ -648,6 +649,8 @@ const char* EditorAssetRegistry::GetAssetTypeLabel(EditorAssetType type) {
          return "Scene";
       case EditorAssetType::Material:
          return "Material";
+      case EditorAssetType::Parameter:
+         return "Shared Parameters";
       case EditorAssetType::Prefab:
          return "Prefab";
       case EditorAssetType::Json:
@@ -697,6 +700,10 @@ EditorAssetType EditorAssetRegistry::ClassifyAsset(
 
       if (category == "materials") {
          return EditorAssetType::Material;
+      }
+
+      if (category == "parameters") {
+         return EditorAssetType::Parameter;
       }
 
       if (category == "prefabs") {

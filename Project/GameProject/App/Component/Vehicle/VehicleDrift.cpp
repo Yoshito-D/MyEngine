@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
@@ -270,7 +271,7 @@ void VehicleDrift::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
 
@@ -317,7 +318,19 @@ nlohmann::json VehicleDrift::Serialize() const {
    return json;
 }
 
+nlohmann::json VehicleDrift::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void VehicleDrift::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void VehicleDrift::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void VehicleDrift::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("driftMode")) {
       driftMode = static_cast<DriftMode>(data["driftMode"].get<std::int32_t>());
    }

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/UI/UIFadeComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -79,7 +80,19 @@ nlohmann::json UIFadeComponent::Serialize() const {
       {"easing", static_cast<std::int32_t>(easing)}};
 }
 
+nlohmann::json UIFadeComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void UIFadeComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void UIFadeComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void UIFadeComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    // JSON はエディター外からも編集できるため、補間器が前提とする範囲へ復元時に正規化する。
    // duration は 0 除算を避けられる最小正値を保証し、列挙値は定義済み範囲から出さない。
    startOpacity = std::clamp(data.value("startOpacity", startOpacity), 0.0f, 1.0f);
@@ -93,7 +106,7 @@ void UIFadeComponent::Deserialize(const nlohmann::json& data) {
    easing = static_cast<UIEasingType>(std::clamp(data.value("easing", static_cast<std::int32_t>(easing)),
       static_cast<std::int32_t>(UIEasingType::Linear), static_cast<std::int32_t>(UIEasingType::EaseOutBack)));
 
-   if (playOnEnable) {
+   if (initializeRuntime && playOnEnable) {
       Restart();
    }
 
@@ -112,7 +125,7 @@ void UIFadeComponent::Apply(float progress) {
 void UIFadeComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    if (ImGui::Button(ImGuiHelper::Localize({"再生", "Play"}))) {
       Play();

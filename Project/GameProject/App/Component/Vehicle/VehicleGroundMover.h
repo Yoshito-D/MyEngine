@@ -69,6 +69,12 @@ public:
    /// @copydoc GameEngine::IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
 
@@ -90,6 +96,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float autoSpeed = 16.0f;    ///< 通常走行速度。これを下回ったときのみ減速演出を発火する。
    float steerSpeed = 120.0f;  ///< ステアリング角速度（deg/sec）。
    float speedRecovery = 1.0f; ///< スピード回復速度（per sec）。

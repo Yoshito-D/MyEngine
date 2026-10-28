@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
@@ -263,7 +264,7 @@ void VehicleGroundMover::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("自動速度", "Auto Speed"), &autoSpeed, 0.1f, 0.0f, 100.0f);
@@ -293,7 +294,19 @@ nlohmann::json VehicleGroundMover::Serialize() const {
    return json;
 }
 
+nlohmann::json VehicleGroundMover::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void VehicleGroundMover::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void VehicleGroundMover::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void VehicleGroundMover::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("autoSpeed")) {
       autoSpeed = data["autoSpeed"];
    }

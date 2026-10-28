@@ -3,6 +3,10 @@
 #include "GameEngine/Object/Object.h"
 #include <algorithm>
 #include <unordered_set>
+#include "GameEngine/Framework/EngineContext.h"
+#ifdef USE_IMGUI
+#include "GameEngine/Editor/ParameterAssetEditor.h"
+#endif
 
 #ifdef USE_IMGUI
 #include "imgui.h"
@@ -53,6 +57,12 @@ bool ComponentContainer::RemoveByTypeName(const std::string& typeName) {
    }
 
    return RemoveByTypeIndex(std::type_index(typeid(*component)));
+}
+
+void ComponentContainer::SynchronizeParameters() {
+   for (const auto& component : components_) {
+      component->SynchronizeParameters();
+   }
 }
 
 void ComponentContainer::Update(float deltaTime) {
@@ -121,7 +131,7 @@ nlohmann::json ComponentContainer::Serialize() const {
       nlohmann::json entry = nlohmann::json::object();
       entry["typeName"] = component->GetTypeName();
       entry["enabled"] = component->IsEnabled();
-      entry["data"] = component->Serialize();
+      component->WriteParameters(entry);
 
       componentsData.push_back(std::move(entry));
    }
@@ -196,7 +206,9 @@ bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
       }
 
       if (componentData.contains("data") && componentData.at("data").is_object()) {
-         component->Deserialize(componentData.at("data"));
+         if (!component->RestoreParameters(componentData, EngineContext::GetParameterAssetStore())) {
+            return false;
+         }
       }
    }
 
@@ -243,7 +255,13 @@ ComponentInspectorAction ComponentContainer::DrawInspector(bool canSaveComponent
 
       // 各コンポーネントが最初に描くCollapsingHeaderへ、後描画の削除ボタンを重ねられるようにする。
       ImGui::SetNextItemAllowOverlap();
+      const auto parametersBefore = component->GetSharedParameters();
       component->DrawInspector();
+      component->CommitParameterEdit(parametersBefore, ImGui::IsAnyItemActive());
+      const auto headerLabel = MakeObjectComponentHeaderLabel(component->GetTypeName());
+      if (ImGui::GetStateStorage()->GetInt(ImGui::GetID(headerLabel.c_str()), 0) != 0) {
+         DrawParameterAssetControls(*component);
+      }
 
       const ImVec2 contentEndPosition = ImGui::GetCursorScreenPos();
       const float removeButtonWidth = ImGui::CalcTextSize("X").x + style.FramePadding.x * 2.0f;

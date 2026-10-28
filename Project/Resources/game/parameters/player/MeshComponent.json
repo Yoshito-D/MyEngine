@@ -1,0 +1,66 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "MeshComponent",
+   "data": {
+      "assetId": "game/models/car/car.obj",
+      "boxSize": [
+         1.0,
+         1.0,
+         1.0
+      ],
+      "circleRadius": 0.5,
+      "circleSegments": 32,
+      "coneHeight": 1.0,
+      "coneRadius": 0.5,
+      "coneSegments": 32,
+      "cylinderBottomRadius": 0.5,
+      "cylinderHeight": 1.0,
+      "cylinderSegments": 32,
+      "cylinderTopRadius": 0.5,
+      "flipX": false,
+      "flipY": false,
+      "originY": 0.5,
+      "planeDepth": 1.0,
+      "planeDepthSegments": 1,
+      "planeOrientation": "XY",
+      "planeWidth": 1.0,
+      "planeWidthSegments": 1,
+      "primitiveType": "Quad",
+      "quadAnchorPoint": [
+         0.0,
+         0.0
+      ],
+      "quadSize": [
+         128.0,
+         128.0
+      ],
+      "reverseFaces": false,
+      "ringInnerRadius": 0.4000000059604645,
+      "ringOuterRadius": 0.5,
+      "ringSegments": 32,
+      "sourceType": "ModelFile",
+      "sphereRadius": 0.5,
+      "sphereSlices": 32,
+      "sphereStacks": 16,
+      "torusMajorRadius": 0.5,
+      "torusMajorSegments": 32,
+      "torusMinorRadius": 0.20000000298023224,
+      "torusMinorSegments": 16,
+      "triangleV0": [
+         -0.5,
+         0.0,
+         0.0
+      ],
+      "triangleV1": [
+         0.0,
+         1.0,
+         0.0
+      ],
+      "triangleV2": [
+         0.5,
+         0.0,
+         0.0
+      ]
+   }
+}

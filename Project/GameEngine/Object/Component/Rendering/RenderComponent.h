@@ -29,6 +29,12 @@ public:
    /// @copydoc IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @copydoc IObjectComponent::DrawInspector
@@ -53,9 +59,11 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   bool visible = true;          ///< Objectを描画対象として表示するか
-   bool autoRender = true;       ///< Rendererの自動収集対象に含めるか
-   bool applyPostProcess = true; ///< ポストプロセス前の描画キューへ投入するか
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
+   bool visible = true;                          ///< Objectを描画対象として表示するか
+   bool autoRender = true;                       ///< Rendererの自動収集対象に含めるか
+   bool applyPostProcess = true;                 ///< ポストプロセス前の描画キューへ投入するか
    RenderSpace renderSpace = RenderSpace::World; ///< 自動描画で使用する描画空間。
 };
 }

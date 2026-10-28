@@ -177,6 +177,9 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameEngine\Editor\ParameterAssetEditor.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Base\ParameterComponent.cpp" />
+    <ClCompile Include="GameEngine\Assets\ParameterAssetStore.cpp" />
     <ClCompile Include="Externals\imgui\imgui.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -534,6 +537,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameEngine\Editor\ParameterAssetEditor.h" />
+    <ClInclude Include="GameEngine\Object\Component\Base\ParameterComponent.h" />
+    <ClInclude Include="GameEngine\Assets\ParameterAssetStore.h" />
     <ClInclude Include="Externals\imgui\imconfig.h" />
     <ClInclude Include="Externals\imgui\imgui.h" />
     <ClInclude Include="Externals\imgui\ImGuizmo\GraphEditor.h" />

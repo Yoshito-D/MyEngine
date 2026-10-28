@@ -1,0 +1,23 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "VehicleSpeedPostEffectController",
+   "data": {
+      "activeFlowSpeed": 20.0,
+      "activeInnerRadius": 0.38499999046325684,
+      "idleFlowSpeed": 10.0,
+      "idleInnerRadius": 0.9800000190734863,
+      "lineDensity": 140.0,
+      "maxIntensity": 0.800000011920929,
+      "maximumEffectSpeed": 35.0,
+      "minimumEffectSpeed": 27.5,
+      "outerRadius": 2.5,
+      "radialBlurMaxStrength": 0.0,
+      "radialBlurSampleCount": 16,
+      "radialBlurVisibleThreshold": 0.019999999552965164,
+      "randomSeed": 1.0,
+      "responseSpeed": 100.0,
+      "thickness": 0.800000011920929,
+      "visibleThreshold": 0.014999999664723873
+   }
+}

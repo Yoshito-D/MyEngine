@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Animation/AnimationComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -43,7 +44,19 @@ nlohmann::json AnimationComponent::Serialize() const {
       {"useSkinning", useSkinning}, {"debugDrawBones", debugDrawBones}};
 }
 
+nlohmann::json AnimationComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"currentTime", "playing"});
+}
+
 void AnimationComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void AnimationComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void AnimationComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    // Component単体設定を適用するため、存在して型が正しい項目だけを現在値へ重ねる。
    if (data.contains("animationName") && data.at("animationName").is_string()) {
       animationName = data.at("animationName").get<std::string>();
@@ -263,7 +276,7 @@ void AnimationComponent::ApplyCurrentPose(const AnimationClip& selectedClip) {
 void AnimationComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) return;
 
    auto Tr = [](const char* ja, const char* en) { return ImGuiHelper::Localize({ja, en}); };
 

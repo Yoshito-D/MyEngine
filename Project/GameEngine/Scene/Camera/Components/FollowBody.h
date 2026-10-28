@@ -40,6 +40,12 @@ public:
    /// @copydoc ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @copydoc ICinemachineComponent::DrawInspector
@@ -47,6 +53,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    Vector3 offset_ = {0.0f, 5.0f, -10.0f}; ///< 追従対象からのオフセット。
    Vector3 damping_ = {1.0f, 1.0f, 1.0f};  ///< 軸ごとの追従ダンピング。
 };

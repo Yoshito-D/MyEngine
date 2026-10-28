@@ -1,0 +1,8 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "CameraModeSwitcher",
+   "data": {
+      "initialIndex": 0
+   }
+}

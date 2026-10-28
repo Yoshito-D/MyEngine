@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Camera/CameraGravityBridge.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
 #include "GameProject/App/Component/Character/CharacterLanding.h"
@@ -692,7 +693,7 @@ void CameraGravityBridge::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    GameEngine::EditorUI::CameraReference("Gravity Follow Camera", gravityFollowCameraId_, "GravityFollowCamera");
    GameEngine::EditorUI::CameraReference(
@@ -779,7 +780,19 @@ nlohmann::json CameraGravityBridge::Serialize() const {
    return json;
 }
 
+nlohmann::json CameraGravityBridge::GetSharedParameters() const {
+   return ExtractSharedParameters({"gravityFollowCameraId", "planetLeashCameraId", "playerRearFollowCameraId"});
+}
+
 void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void CameraGravityBridge::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void CameraGravityBridge::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("gravityFollowCameraId") && data.at("gravityFollowCameraId").is_string()) {
       gravityFollowCameraId_ = data.at("gravityFollowCameraId").get<std::string>();
    }

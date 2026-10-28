@@ -13,7 +13,16 @@ Scene::~Scene() {
 
 bool Scene::Initialize(const nlohmann::json& data) {
    // 初回描画やイベント発火で読込が発生しないよう、保存状態の参照を先に準備する。
-   if (!SceneWorld::IsValidSnapshot(data) || !EngineContext::PreloadSceneTextures(data)) {
+   if (!SceneWorld::IsValidSnapshot(data)) {
+      return false;
+   }
+   try {
+      const auto resolved = EngineContext::GetParameterAssetStore().ResolveScene(data);
+      if (!EngineContext::PreloadSceneTextures(resolved)) {
+         return false;
+      }
+   } catch (const std::exception& error) {
+      Logger::Error(std::string("Shared parameter resolution failed: ") + error.what());
       return false;
    }
 

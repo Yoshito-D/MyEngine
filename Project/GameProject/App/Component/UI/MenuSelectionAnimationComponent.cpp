@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/UI/MenuSelectionAnimationComponent.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 
 #include "GameEngine/Math/Functions/EasingFunctions.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
@@ -219,7 +220,20 @@ nlohmann::json MenuSelectionAnimationComponent::Serialize() const {
       {"reactionEndScale", reactionEndScale_}};
 }
 
+nlohmann::json MenuSelectionAnimationComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"optionObjectIds"});
+}
+
 void MenuSelectionAnimationComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void MenuSelectionAnimationComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void MenuSelectionAnimationComponent::ReadParameters(
+   const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    if (const auto it = data.find("optionObjectIds"); it != data.end() && it->is_array()) {
@@ -272,7 +286,7 @@ void MenuSelectionAnimationComponent::ValidateSettings() {
 void MenuSelectionAnimationComponent::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    for (std::size_t index = 0; index < options_.size(); ++index) {
       const std::string label = "Option " + std::to_string(index + 1);

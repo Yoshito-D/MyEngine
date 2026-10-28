@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Component/Rendering/SkyboxComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
@@ -73,7 +74,19 @@ nlohmann::json SkyboxComponent::Serialize() const {
    return nlohmann::json{{"textureName", textureName_}, {"color", {color_.x, color_.y, color_.z, color_.w}}};
 }
 
+nlohmann::json SkyboxComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void SkyboxComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void SkyboxComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void SkyboxComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    // 各設定を独立して復元し、欠落フィールドでは既定値または現在値を維持する。
    if (data.contains("textureName") && data.at("textureName").is_string()) {
       SetTextureName(data.at("textureName").get<std::string>());
@@ -94,7 +107,7 @@ void SkyboxComponent::DrawInspector() {
 
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    float color[4] = {color_.x, color_.y, color_.z, color_.w};
 

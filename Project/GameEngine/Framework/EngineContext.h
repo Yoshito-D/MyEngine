@@ -68,6 +68,9 @@ class CinemachineBrain;
 
 class EngineContext {
 public:
+   /// @brief AssetManagerが所有する共通設定ストアを取得する。
+   static ParameterAssetStore& GetParameterAssetStore();
+
    /// @brief アプリケーション所有のシーン管理を接続する。破棄前に接続を解除する。
    static void SetSceneManager(SceneManager* manager);
 

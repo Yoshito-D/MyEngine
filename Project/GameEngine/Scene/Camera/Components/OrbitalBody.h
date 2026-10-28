@@ -80,6 +80,12 @@ public:
    /// @copydoc ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @copydoc ICinemachineComponent::DrawInspector
@@ -87,8 +93,10 @@ public:
 #endif
 
 private:
-   float yaw_ = MathConstants::kPi; ///< Yaw角度。
-   float pitch_ = -0.785f; // -45度
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
+   float yaw_ = MathConstants::kPi;           ///< Yaw角度。
+   float pitch_ = -0.785f;                    // -45度
    float distance_ = 75.0f;                   ///< ピボットからの距離。
    Vector3 pivotTarget_ = {0.0f, 0.0f, 0.0f}; ///< ピボットターゲット。
 

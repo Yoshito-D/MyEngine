@@ -13,16 +13,17 @@ namespace GameEngine {
 
 /// @brief エディタが識別するリソース種別。
 enum class EditorAssetType {
-   Folder,   ///< フォルダー
-   Model,    ///< モデルファイル
-   Texture,  ///< テクスチャファイル
-   Audio,    ///< WAV/MP3ファイル。デコードは利用時に検証する。
-   Particle, ///< パーティクル設定
-   Scene,    ///< シーン設定
-   Material, ///< マテリアル設定
-   Prefab,   ///< プレハブ設定
-   Json,     ///< 用途を特定しないJSON
-   Unknown,  ///< 非対応または未分類
+   Folder,    ///< フォルダー
+   Model,     ///< モデルファイル
+   Texture,   ///< テクスチャファイル
+   Audio,     ///< WAV/MP3ファイル。デコードは利用時に検証する。
+   Particle,  ///< パーティクル設定
+   Scene,     ///< シーン設定
+   Material,  ///< マテリアル設定
+   Parameter, ///< コンポーネント共通設定
+   Prefab,    ///< プレハブ設定
+   Json,      ///< 用途を特定しないJSON
+   Unknown,   ///< 非対応または未分類
 };
 
 /// @brief アセットブラウザーと参照欄で共有する唯一のアセット情報。

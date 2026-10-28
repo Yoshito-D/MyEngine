@@ -162,6 +162,12 @@ public:
    /// @copydoc IObjectComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @copydoc IObjectComponent::DrawInspector
@@ -169,6 +175,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    /// 割り当て・複製・解除の操作だけが並行するスロット情報を更新する。
    /// 描画側がスロット順で参照するマテリアルポインター
    std::vector<Material*> materials;

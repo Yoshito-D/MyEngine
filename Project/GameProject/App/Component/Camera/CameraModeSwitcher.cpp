@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 
 #include "GameProject/App/Component/Camera/GravityFollowCamera.h"
@@ -74,7 +75,19 @@ nlohmann::json CameraModeSwitcher::Serialize() const {
    return nlohmann::json{{"cameraIds", cameraIds_}, {"initialIndex", initialIndex_}};
 }
 
+nlohmann::json CameraModeSwitcher::GetSharedParameters() const {
+   return ExtractSharedParameters({"cameraIds"});
+}
+
 void CameraModeSwitcher::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void CameraModeSwitcher::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void CameraModeSwitcher::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    if (data.contains("cameraIds") && data.at("cameraIds").is_array()) {
@@ -115,7 +128,7 @@ void CameraModeSwitcher::ApplyMode() {
 void CameraModeSwitcher::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    for (size_t index = 0; index < cameraIds_.size(); ++index) {
       ImGui::PushID(static_cast<std::int32_t>(index));

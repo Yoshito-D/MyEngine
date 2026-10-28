@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Audio/AudioSourceComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -220,13 +221,27 @@ nlohmann::json AudioSourceComponent::Serialize() const {
    return {{"slots", std::move(values)}};
 }
 
+nlohmann::json AudioSourceComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void AudioSourceComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void AudioSourceComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void AudioSourceComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object() || !data.contains("slots") || !data.at("slots").is_array()) return;
 
-   StopAll();
-   slots_.clear();
-   runtime_.clear();
-
+   if (initializeRuntime) {
+      StopAll();
+      slots_.clear();
+      runtime_.clear();
+   }
+   std::vector<std::string> names;
    for (const auto& value : data.at("slots")) {
       if (!value.is_object()) {
          continue;
@@ -241,8 +256,41 @@ void AudioSourceComponent::Deserialize(const nlohmann::json& data) {
       slot.loop = Read<bool>(value, "loop", false);
       slot.playOnStart = Read<bool>(value, "playOnStart", false);
 
-      if (!AddSlot(std::move(slot))) {
-         Logger::Warning("Invalid or duplicate audio slot skipped");
+      if (slot.name.empty() || std::find(names.begin(), names.end(), slot.name) != names.end() ||
+          !std::isfinite(slot.volume) || !std::isfinite(slot.pitch) || slot.pitch <= 0.0f) {
+         throw std::runtime_error("Invalid or duplicate audio slot");
+      }
+      names.push_back(slot.name);
+      const auto index = FindSlot(slot.name);
+      if (index == slots_.size()) {
+         if (!AddSlot(std::move(slot))) {
+            throw std::runtime_error("Could not create audio slot");
+         }
+      } else {
+         const auto previous = slots_[index];
+         if (previous.clipAssetId != slot.clipAssetId && !SetClip(slot.name, slot.clipAssetId)) {
+            throw std::runtime_error("Could not load audio clip: " + slot.clipAssetId);
+         }
+         if (auto* audio = EngineContext::GetAudio()) {
+            audio->SetBus(runtime_[index].handle, slot.bus);
+            audio->SetVolume(runtime_[index].handle, slot.volume);
+            audio->SetPitch(runtime_[index].handle, slot.pitch);
+         }
+         slots_[index] = std::move(slot);
+      }
+   }
+   for (size_t index = slots_.size(); index > 0; --index) {
+      const auto name = slots_[index - 1].name;
+      if (std::find(names.begin(), names.end(), name) == names.end()) {
+         RemoveSlot(name);
+      }
+   }
+   // 名前で再利用したハンドルを対応する設定と一緒に並べ替える。
+   for (size_t desired = 0; desired < names.size(); ++desired) {
+      const auto current = FindSlot(names[desired]);
+      if (current < slots_.size() && current != desired) {
+         std::swap(slots_[current], slots_[desired]);
+         std::swap(runtime_[current], runtime_[desired]);
       }
    }
 }
@@ -264,7 +312,7 @@ AudioHandle AudioSourceComponent::GetHandleForTesting(const std::string& name) c
 void AudioSourceComponent::DrawInspector() {
    auto Tr = [](const char* ja, const char* en) { return ImGuiHelper::Localize({ja, en}); };
 
-   if (!ImGui::CollapsingHeader(MakeObjectComponentHeaderLabel(GetTypeName()).c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(MakeObjectComponentHeaderLabel(GetTypeName()).c_str())) return;
 
    if (ImGui::Button(Tr("スロット追加", "Add Slot"))) {
       unsigned number = 1;

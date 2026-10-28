@@ -53,6 +53,12 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
 
@@ -82,6 +88,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float moveSpeed = 5.0f;       ///< 最大移動速度（units/sec）。
    float acceleration = 20.0f;   ///< 1秒あたりの速度変化を表す加速度。
    float friction = 15.0f;       ///< 地上減速度（units/sec²）。

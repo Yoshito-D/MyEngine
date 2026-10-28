@@ -146,6 +146,12 @@ public:
    /// @param data 読み込むJSONデータ
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief デバッグ表示（Inspector）
@@ -157,6 +163,8 @@ protected:
    void OnAttach() override;
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    /// @brief 外部公開形式と補間履歴の初期化を橋渡しする。
    void ResetRuntimeState();
    RearCameraInput input_; ///< 外部から渡された追従入力。

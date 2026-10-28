@@ -108,6 +108,12 @@ public:
    /// @param data レース設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief レース状態と設定をインスペクターへ表示する
@@ -115,6 +121,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    void BeginRace();
    bool CanFinish() const;
    void SetPlayerLocked(bool locked);

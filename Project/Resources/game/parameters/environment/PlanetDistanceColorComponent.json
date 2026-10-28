@@ -1,0 +1,9 @@
+{
+   "componentType": "PlanetDistanceColorComponent",
+   "data": {
+      "fadeEndDistance": 500.0,
+      "fadeStartDistance": 150.0
+   },
+   "domain": "Object",
+   "version": 1
+}

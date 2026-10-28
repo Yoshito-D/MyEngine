@@ -89,7 +89,19 @@ nlohmann::json OrbitalBody::Serialize() const {
       {"scrollSpeed", scrollSpeed_}, {"moveSpeed", moveSpeed_}};
 }
 
+nlohmann::json OrbitalBody::GetSharedParameters() const {
+   return ExtractSharedParameters({"yaw", "pitch", "pivotTarget"});
+}
+
 void OrbitalBody::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void OrbitalBody::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void OrbitalBody::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    yaw_ = GameEngine::JsonValue::ReadFloat(data, "yaw", yaw_);

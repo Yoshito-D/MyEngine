@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Collision/TriggerVolumeComponent.h"
 
@@ -80,7 +81,19 @@ nlohmann::json TriggerVolumeComponent::Serialize() const {
       {"debugDraw", debugDraw_}};
 }
 
+nlohmann::json TriggerVolumeComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"targetObjectId"});
+}
+
 void TriggerVolumeComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void TriggerVolumeComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void TriggerVolumeComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    // 各項目を独立した部分更新として読み、旧データで欠けている設定は現在値を維持する。
@@ -148,7 +161,7 @@ bool TriggerVolumeComponent::CalculateOverlap(const Object& target) const {
 void TriggerVolumeComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    GameEngine::EditorUI::ObjectReference("Target", targetObjectId_, "TransformComponent");
    const char* shapes[] = {"Sphere", "AABB"};

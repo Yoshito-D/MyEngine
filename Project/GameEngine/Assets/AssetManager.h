@@ -7,6 +7,7 @@
 #include "GameEngine/Assets/Animation/AnimationAssetManager.h"
 #include "GameEngine/Assets/Font/FontManager.h"
 #include <memory>
+#include "GameEngine/Assets/ParameterAssetStore.h"
 
 namespace GameEngine {
 
@@ -42,7 +43,11 @@ public:
    /// @return フォントマネージャー
    FontManager* GetFontManager() { return fontManager_.get(); }
 
+   /// @brief シーンをまたいで共通設定と未保存の編集履歴を保持する。
+   ParameterAssetStore& GetParameterAssetStore() { return parameterAssetStore_; }
+
 private:
+   ParameterAssetStore parameterAssetStore_; ///< アプリケーション所有の共通設定。
    /// @brief マテリアルアセットの生成と共有を管理する所有オブジェクト。
    std::unique_ptr<MaterialManager> materialManager_ = std::make_unique<MaterialManager>();
    /// @brief モデルアセットの読み込みと共有を管理する所有オブジェクト。

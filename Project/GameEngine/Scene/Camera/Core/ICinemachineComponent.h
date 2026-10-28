@@ -1,5 +1,7 @@
 #pragma once
 
+#include "GameEngine/Object/Component/Base/ParameterComponent.h"
+
 #include <cstdint>
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include <nlohmann/json.hpp>
@@ -16,8 +18,14 @@ enum class CinemachineStage {
 };
 
 /// @brief Cinemachineコンポーネントのインターフェース
-class ICinemachineComponent {
+class ICinemachineComponent : public ParameterComponent {
 public:
+   /// @copydoc ParameterComponent::GetParameterDomain
+   const char* GetParameterDomain() const override { return "Camera"; }
+
+   /// @copydoc ParameterComponent::GetParameterType
+   const char* GetParameterType() const override { return GetComponentName(); }
+
    /// @brief 未接続・未確保の状態を構築する。
    ICinemachineComponent() = default;
 

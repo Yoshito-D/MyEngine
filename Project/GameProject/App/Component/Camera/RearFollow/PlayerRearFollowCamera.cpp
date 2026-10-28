@@ -431,7 +431,19 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
    };
 }
 
+nlohmann::json PlayerRearFollowCamera::GetSharedParameters() const {
+   return ExtractSharedParameters({"autoSpeed"});
+}
+
 void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void PlayerRearFollowCamera::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void PlayerRearFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    distance = GameEngine::JsonValue::ReadFloat(data, "distance", distance);
@@ -512,7 +524,9 @@ void PlayerRearFollowCamera::Deserialize(const nlohmann::json& data) {
       GameEngine::JsonValue::ReadBool(data, "showCameraEvidenceWindow", showCameraEvidenceWindow);
    input_.autoSpeed = GameEngine::JsonValue::ReadFloat(data, "autoSpeed", input_.autoSpeed);
 
-   ResetRuntimeState();
+   if (initializeRuntime) {
+      ResetRuntimeState();
+   }
    Configure(DescribeSettings());
 }
 

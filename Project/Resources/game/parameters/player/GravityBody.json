@@ -1,0 +1,10 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "GravityBody",
+   "data": {
+      "gravityStrength": 9.699999809265137,
+      "rotationSpeed": 12.5,
+      "useGravity": true
+   }
+}

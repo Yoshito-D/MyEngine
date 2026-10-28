@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Object/Component/Rendering/LightComponent.h"
@@ -73,7 +74,19 @@ nlohmann::json LightComponent::Serialize() const {
       {"cosFalloffStart", settings_.cosFalloffStart}, {"areaSize", {settings_.areaSize.x, settings_.areaSize.y}}};
 }
 
+nlohmann::json LightComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void LightComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void LightComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void LightComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    Type parsedType = type_;
@@ -278,7 +291,7 @@ bool LightComponent::TryParseType(const std::string& value, Type& type) {
 void LightComponent::DrawInspector() {
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    const char* types[] = {"Directional", "Point", "Spot", "Area"};
    std::int32_t selectedType = static_cast<std::int32_t>(type_);

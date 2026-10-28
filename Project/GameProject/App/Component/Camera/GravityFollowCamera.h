@@ -82,6 +82,12 @@ public:
    /// @copydoc GameEngine::ICinemachineComponent::Deserialize
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief デバッグ表示（Inspector）
@@ -148,6 +154,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float rotateSpeed = 0.005f;        ///< 入力回転感度。
    float scrollSpeed = 1.0f / 120.0f; ///< ホイールズーム感度。
    float gravityUpLerpSpeed = 5.0f;   ///< 惑星切り替え時の重力Up補間速度（大きいほど速く追従）。

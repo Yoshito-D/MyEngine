@@ -51,7 +51,19 @@ nlohmann::json LookAtAim::Serialize() const {
    return nlohmann::json{{"damping", damping_}, {"offset", GameEngine::JsonValue::WriteVector3(offset_)}};
 }
 
+nlohmann::json LookAtAim::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void LookAtAim::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void LookAtAim::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void LookAtAim::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    damping_ = GameEngine::JsonValue::ReadFloat(data, "damping", damping_);

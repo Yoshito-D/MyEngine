@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Gravity/MeshNormalGravityAttractor.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
@@ -10,7 +11,7 @@ void MeshNormalGravityAttractor::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
 
@@ -53,7 +54,19 @@ nlohmann::json MeshNormalGravityAttractor::Serialize() const {
    return json;
 }
 
+nlohmann::json MeshNormalGravityAttractor::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void MeshNormalGravityAttractor::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void MeshNormalGravityAttractor::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void MeshNormalGravityAttractor::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("fallbackUp")) {
       const auto& up = data.at("fallbackUp");
 

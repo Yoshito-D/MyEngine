@@ -535,7 +535,22 @@ nlohmann::json GravityFollowCamera::Serialize() const {
       {"cachedUp", GameEngine::JsonValue::WriteVector3(cachedUp_)}};
 }
 
+nlohmann::json GravityFollowCamera::GetSharedParameters() const {
+   return ExtractSharedParameters({"flatForward", "gravityUp", "currentGravityUp", "pivotTarget", "playerSpeed",
+      "autoSpeed", "currentFov", "springFovOffset", "springFovVelocity", "springDistanceOffset",
+      "springDistanceVelocity", "previousPlayerSpeed", "isSpeedInitialized", "currentEyeOffset", "isEyeInitialized",
+      "cachedRight", "cachedUp", "pitch"});
+}
+
 void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void GravityFollowCamera::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void GravityFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    rotateSpeed = GameEngine::JsonValue::ReadFloat(data, "rotateSpeed", rotateSpeed);
@@ -597,23 +612,25 @@ void GravityFollowCamera::Deserialize(const nlohmann::json& data) {
       cachedUp_ = GameEngine::JsonValue::ReadVector3(data.at("cachedUp"), cachedUp_);
    }
 
-   // 保存時の一時的な FOV/spring 状態をゲーム開始時へ持ち越すと、
-   // 初回の速度差や大きな dt と合わさって画角が負へ飛ぶため設定値から再開する。
-   currentFov_ = ClampCameraFov(fovDefault);
-   springFovOffset_ = 0.0f;
-   springFovVelocity_ = 0.0f;
-   springDistanceOffset_ = 0.0f;
-   springDistanceVelocity_ = 0.0f;
-   previousPlayerSpeed_ = playerSpeed_;
-   isSpeedInitialized_ = false;
-   driftDistanceScale_ = 1.0f;
-   driftCameraHeightOffset_ = 0.0f;
-   driftLookTargetHeightOffset_ = 0.0f;
+   if (initializeRuntime) {
+      // 保存時の一時的な FOV/spring 状態をゲーム開始時へ持ち越すと、
+      // 初回の速度差や大きな dt と合わさって画角が負へ飛ぶため設定値から再開する。
+      currentFov_ = ClampCameraFov(fovDefault);
+      springFovOffset_ = 0.0f;
+      springFovVelocity_ = 0.0f;
+      springDistanceOffset_ = 0.0f;
+      springDistanceVelocity_ = 0.0f;
+      previousPlayerSpeed_ = playerSpeed_;
+      isSpeedInitialized_ = false;
+      driftDistanceScale_ = 1.0f;
+      driftCameraHeightOffset_ = 0.0f;
+      driftLookTargetHeightOffset_ = 0.0f;
 
-   if (auto* owner = GetOwnerCamera()) {
-      CameraState state = owner->GetState();
-      state.fov = currentFov_;
-      owner->SetState(state);
+      if (auto* owner = GetOwnerCamera()) {
+         CameraState state = owner->GetState();
+         state.fov = currentFov_;
+         owner->SetState(state);
+      }
    }
 
    Configure(DescribeSettings());

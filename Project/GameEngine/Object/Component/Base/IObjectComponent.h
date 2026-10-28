@@ -1,5 +1,7 @@
 #pragma once
 
+#include "GameEngine/Object/Component/Base/ParameterComponent.h"
+
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -21,8 +23,14 @@ std::string MakeObjectComponentHeaderLabel(const char* typeName);
 #endif
 
 /// @brief Objectへアタッチできるコンポーネントの共通インターフェース
-class IObjectComponent {
+class IObjectComponent : public ParameterComponent {
 public:
+   /// @copydoc ParameterComponent::GetParameterDomain
+   const char* GetParameterDomain() const override { return "Object"; }
+
+   /// @copydoc ParameterComponent::GetParameterType
+   const char* GetParameterType() const override { return GetTypeName(); }
+
    /// @brief 未接続・未確保の状態を構築する。
    IObjectComponent() = default;
 

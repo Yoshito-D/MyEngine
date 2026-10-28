@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Editor/Renderer/RendererEditorController.h"
 
@@ -542,6 +543,7 @@ void RendererEditorController::ShowAssetWindow() {
    }
 
    HandlePanelShortcuts(*context, true);
+   DrawParameterAssetSummary();
 
    if (ImGui::SmallButton("Rescan")) {
       if (assetManager_ && assetManager_->GetTextureManager()) {

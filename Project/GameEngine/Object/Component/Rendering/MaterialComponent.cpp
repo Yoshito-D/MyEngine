@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -519,7 +520,19 @@ nlohmann::json MaterialComponent::Serialize() const {
    return json;
 }
 
-void MaterialComponent::Deserialize(const nlohmann::json& data) try {
+nlohmann::json MaterialComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
+void MaterialComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void MaterialComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void MaterialComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) try {
    if (!data.is_object()) return;
 
    Vector2 textureValue = textureLeftTop_;
@@ -614,6 +627,7 @@ void MaterialComponent::Deserialize(const nlohmann::json& data) try {
 catch (const std::exception& error) {
 
    Logger::Warning("[MaterialComponent] Invalid scene data: " + std::string(error.what()));
+   throw;
 }
 
 #ifdef USE_IMGUI
@@ -625,7 +639,7 @@ void MaterialComponent::DrawInspector() {
 
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    size_t slotCount = std::max<size_t>(1, materials.size());
 

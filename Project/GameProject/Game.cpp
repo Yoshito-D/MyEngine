@@ -146,6 +146,9 @@ void Game::CheckSceneFailure() {
 
 void Game::Update() {
    if (!sceneManager_) return;
+   if (auto* scene = sceneManager_->GetCurrentScene()) {
+      scene->GetSceneWorld().SynchronizeParameters();
+   }
 #ifdef USE_IMGUI
    // エディタでは入力・時間を進めるランタイム更新と、選択表示などの編集更新を分離する。
    playModeController_->ProcessRequests(*sceneManager_);

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -287,7 +288,19 @@ nlohmann::json MeshComponent::Serialize() const {
       {"triangleV2", {triangleV2_.x, triangleV2_.y, triangleV2_.z}}};
 }
 
+nlohmann::json MeshComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void MeshComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void MeshComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void MeshComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
 
    if (data.contains("sourceType")) {
@@ -302,8 +315,10 @@ void MeshComponent::Deserialize(const nlohmann::json& data) {
    if (sourceType_ == SourceType::ModelFile && data.contains("assetId") && data.at("assetId").is_string()) {
       const std::string assetId = data.at("assetId").get<std::string>();
 
-      if (!assetId.empty()) {
-         SetModelAssetByAssetId(assetId);
+      if (!assetId.empty() && (initializeRuntime || assetId != GetAssetId())) {
+         if (!SetModelAssetByAssetId(assetId)) {
+            throw std::runtime_error("Could not load model parameter asset: " + assetId);
+         }
       }
    }
 
@@ -400,7 +415,7 @@ void MeshComponent::DrawInspector() {
 
    const std::string header = MakeObjectComponentHeaderLabel(GetTypeName());
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    const char* sourceTypeItems[] = {Tr("モデルファイル", "Model File"), Tr("プリミティブ", "Primitive")};
    std::int32_t sourceTypeIndex = static_cast<std::int32_t>(sourceType_);

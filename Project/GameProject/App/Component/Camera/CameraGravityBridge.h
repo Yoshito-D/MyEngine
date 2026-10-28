@@ -86,6 +86,12 @@ public:
    /// @brief デシリアライズ
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
 
@@ -163,6 +169,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    bool enableLandingShake = true;                   ///< 着地時の縦シェイクを有効にするか。
    float landingShakeAmplitude = 0.15f;              ///< 着地シェイクの振幅。
    float landingShakeFrequency = 14.0f;              ///< 着地シェイクの周波数。

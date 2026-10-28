@@ -25,9 +25,11 @@ void RearCameraDebugView::MutateCameraState(GameEngine::CameraState&, float) {
    DrawCameraMeasurementOverlay(camera->DescribeSettings(), *recorder);
 #ifdef USE_IMGUI
    if (const auto frame = camera->GetFrameView()) {
+      const auto sharedBefore = camera->GetSharedParameters();
       auto settings = camera->DescribeSettings();
       DrawCameraEvidenceWindow(settings, *frame, *GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>());
       camera->Configure(settings);
+      camera->CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
    }
 #endif
 }
@@ -170,9 +172,11 @@ void RearCameraDebugView::DrawInspector() {
 
    if (const auto frame = camera->GetFrameView()) {
       bool enabled = camera->IsEnabled();
+      const auto sharedBefore = camera->GetSharedParameters();
       auto settings = camera->DescribeSettings();
       DrawInspector(settings, enabled, *frame, *recorder);
       camera->Configure(settings);
+      camera->CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
       camera->SetEnabled(enabled);
    }
 }

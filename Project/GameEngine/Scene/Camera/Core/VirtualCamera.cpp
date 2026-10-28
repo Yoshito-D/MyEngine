@@ -1,4 +1,8 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Framework/EngineContext.h"
+#ifdef USE_IMGUI
+#include "GameEngine/Editor/ParameterAssetEditor.h"
+#endif
 #include <cstdint>
 #include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
@@ -253,7 +257,10 @@ void VirtualCamera::ResetComponents(const ICinemachineComponent& source) {
 void VirtualCamera::DrawComponentInspector(const ICinemachineComponent* component) {
    for (const auto& owned : components_) {
       if (owned.get() == component) {
+         DrawParameterAssetControls(*owned);
+         const auto parametersBefore = owned->GetSharedParameters();
          owned->DrawInspector();
+         owned->CommitParameterEdit(parametersBefore, ImGui::IsAnyItemActive());
          return;
       }
    }
@@ -348,8 +355,9 @@ nlohmann::json VirtualCamera::Serialize() const {
          continue;
       }
 
-      componentsData.push_back(nlohmann::json{{"componentName", component->GetComponentName()},
-         {"enabled", component->IsEnabled()}, {"data", component->Serialize()}});
+      nlohmann::json entry{{"componentName", component->GetComponentName()}, {"enabled", component->IsEnabled()}};
+      component->WriteParameters(entry);
+      componentsData.push_back(std::move(entry));
    }
 
    return nlohmann::json{{"id", id_}, {"name", name_}, {"priority", priority_}, {"active", isActive_},
@@ -423,7 +431,9 @@ bool VirtualCamera::Deserialize(const nlohmann::json& data) {
       }
 
       if (componentData.contains("data") && componentData.at("data").is_object()) {
-         component->Deserialize(componentData.at("data"));
+         if (!component->RestoreParameters(componentData, EngineContext::GetParameterAssetStore())) {
+            return false;
+         }
       }
    }
 

@@ -46,6 +46,12 @@ public:
    /// @param data ゲート設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief ゲート設定をインスペクターへ表示する
@@ -53,6 +59,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    std::string raceManagerId_ = "race_manager";  ///< レース進行を参照する管理Objectの安定Entity ID。
    GateType gateType_ = GateType::Finish;        ///< スタート・チェックポイント・ゴールなどのゲートの役割。
    size_t checkpointIndex_ = 0;                  ///< このゲートに割り当てたチェックポイント番号。

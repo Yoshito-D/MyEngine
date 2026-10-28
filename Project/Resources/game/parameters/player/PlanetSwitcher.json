@@ -1,0 +1,13 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "PlanetSwitcher",
+   "data": {
+      "obbHalfExtents": [
+         0.3499999940395355,
+         0.17499999701976776,
+         0.75
+      ],
+      "switchHysteresis": 0.75
+   }
+}

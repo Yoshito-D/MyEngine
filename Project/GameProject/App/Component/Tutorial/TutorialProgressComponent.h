@@ -47,6 +47,12 @@ public:
    /// @param data 設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
    /// @brief チュートリアル設定と現在の進行状態をインスペクターへ表示する
@@ -54,6 +60,8 @@ public:
 #endif
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    enum class Phase {
       Steering,
       Jump,

@@ -1,0 +1,17 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "VehicleDrift",
+   "data": {
+      "driftMode": 1,
+      "driftSteerDeadZone": 0.30000001192092896,
+      "driftSteerMult": 1.5,
+      "lateralBuildupRate": 1.0,
+      "miniTurboBoost": 5.0,
+      "miniTurboEnabled": true,
+      "miniTurboMinTime": 0.5,
+      "postDriftBleedRate": 6.0,
+      "slideRatio": 0.20000000298023224,
+      "sustainedSteerTime": 0.20000000298023224
+   }
+}

@@ -119,6 +119,9 @@ public:
    /// @brief 全コンポーネントを更新する
    void Update(float deltaTime);
 
+   /// @brief 無効な部品も含め共通設定の変更を適用する。
+   void SynchronizeParameters();
+
    /// @brief 全コンポーネントを有効化し、ライフサイクルを再開する
    void Activate();
 

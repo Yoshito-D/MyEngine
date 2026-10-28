@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -100,7 +101,7 @@ void VehicleLandingAligner::DrawInspector() {
    auto Tr = GameEngine::LocalizeEditorText;
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("姿勢合わせ時間", "Align Time"), &alignTime, 0.01f, 0.05f, 2.0f);
@@ -116,7 +117,19 @@ nlohmann::json VehicleLandingAligner::Serialize() const {
    return json;
 }
 
+nlohmann::json VehicleLandingAligner::GetSharedParameters() const {
+   return ExtractSharedParameters({});
+}
+
 void VehicleLandingAligner::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data, true);
+}
+
+void VehicleLandingAligner::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data, false);
+}
+
+void VehicleLandingAligner::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (data.contains("alignTime")) {
       alignTime = data["alignTime"];
    }

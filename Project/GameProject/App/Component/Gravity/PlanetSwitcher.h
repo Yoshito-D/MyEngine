@@ -101,6 +101,12 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
+   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
 
@@ -119,6 +125,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+
    float switchHysteresis = 1.0f; ///< 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）。
    GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f}; ///< OBBの半サイズ（各軸を個別指定）。
 
