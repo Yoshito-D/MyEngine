@@ -966,6 +966,15 @@
                },
                "enabled": true,
                "typeName": "SphericalGravityAttractor"
+            },
+            {
+               "data": {
+                  "fadeEndDistance": 300.0,
+                  "fadeStartDistance": 10.0,
+                  "playerObjectId": "Model:Player"
+               },
+               "enabled": true,
+               "typeName": "PlanetDistanceColorComponent"
             }
          ],
          "id": "Model:Planet_1",
@@ -1227,6 +1236,15 @@
                },
                "enabled": true,
                "typeName": "SphericalGravityAttractor"
+            },
+            {
+               "data": {
+                  "fadeEndDistance": 300.0,
+                  "fadeStartDistance": 10.0,
+                  "playerObjectId": "Model:Player"
+               },
+               "enabled": true,
+               "typeName": "PlanetDistanceColorComponent"
             }
          ],
          "id": "Model:Planet_2",

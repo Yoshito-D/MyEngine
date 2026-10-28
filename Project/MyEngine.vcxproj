@@ -485,6 +485,7 @@
     <ClCompile Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\PlanetSwitcher.cpp" />
     <ClCompile Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.cpp" />
+    <ClCompile Include="GameProject\App\Component\Rendering\PlanetDistanceColorComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\UI\GamepadGuideTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\UI\RaceCountdownTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp" />
@@ -758,6 +759,7 @@
     <ClInclude Include="GameProject\App\Component\Gravity\MeshNormalGravityAttractor.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\PlanetSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Gravity\SphericalGravityAttractor.h" />
+    <ClInclude Include="GameProject\App\Component\Rendering\PlanetDistanceColorComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\UI\GamepadGuideTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\UI\RaceCountdownTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h" />

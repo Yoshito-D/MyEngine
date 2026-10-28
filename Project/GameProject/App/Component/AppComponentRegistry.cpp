@@ -12,6 +12,7 @@
 #include "GameProject/App/Component/Gravity/MeshNormalGravityAttractor.h"
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
+#include "GameProject/App/Component/Rendering/PlanetDistanceColorComponent.h"
 #include "GameProject/App/Component/Race/UI/GamepadGuideTextComponent.h"
 #include "GameProject/App/Component/Race/RaceGateComponent.h"
 #include "GameProject/App/Component/Race/UI/RaceCountdownTextComponent.h"
@@ -62,6 +63,7 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::MeshNormalGravityAttractor>(),
    RegisterAppComponent<App::PlanetSwitcher>(),
    RegisterAppComponent<App::SphericalGravityAttractor>(),
+   RegisterAppComponent<App::PlanetDistanceColorComponent>(),
    RegisterAppComponent<App::GamepadGuideTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::RaceManagerComponent>(GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model),
    RegisterAppComponent<App::RaceGateComponent>(
