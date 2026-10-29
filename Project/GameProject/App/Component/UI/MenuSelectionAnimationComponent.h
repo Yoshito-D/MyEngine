@@ -14,7 +14,7 @@ class UITextComponent;
 
 namespace App {
 
-/// @brief メニュー項目の参照と基準姿勢を保持し、選択・決定・非表示の演出を管理する。
+/// @brief メニュー項目の参照と基準姿勢を保持し、表示・選択・決定・非表示の演出を管理する。
 class MenuSelectionAnimationComponent final : public GameEngine::IObjectComponent {
 public:
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
@@ -31,8 +31,19 @@ public:
    /// @brief 未解決または変更された項目の参照と基準姿勢を取得する。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @brief 選択中の脈動、選択切替、決定時の拡大・フェードを更新する。
+   /// @brief 表示時の移動とフェード、選択中の脈動、選択切替、決定演出を更新する。
    void Update(float deltaTime) override;
+
+   /// @brief 全項目を少し下から上げながらフェードインし、指定項目を選択する。
+   /// @param optionIndex 表示後に選択する項目の添字。
+   /// @return 有効な項目の表示演出を開始できた場合はtrue。
+   bool Reveal(std::int32_t optionIndex);
+
+   /// @brief 表示演出が進行中かを取得する。
+   bool IsRevealing() const { return state_ == State::Revealing; }
+
+   /// @brief 決定演出が最後まで再生されたかを取得する。
+   bool IsReactionComplete() const { return state_ == State::Reacting && elapsed_ >= reactionDuration_; }
 
    /// @brief 選択項目を変更する。同じ項目への通知では再生位置を維持する。
    /// @param optionIndex 保存された項目一覧の添字。
@@ -40,11 +51,12 @@ public:
    /// @return TextとTransformを持つ有効な項目を選択できた場合はtrue。
    bool Select(std::int32_t optionIndex, bool animateSwitch = true);
 
-   /// @brief 選択中の実際のスケールから決定演出を開始する。
+   /// @brief 選択中の実際のスケールから横へ伸び、縦が0になる決定演出を開始する。
+   /// @details 未選択項目はスケールを変更せず、透明度だけの短時間のフェードで非表示にする。
    /// @return 有効な選択項目があり、決定演出を開始できた場合はtrue。
    bool ConfirmSelection();
 
-   /// @brief 全項目の文字列を消し、スケールと不透明度を基準値へ戻す。
+   /// @brief 全項目の文字列を消し、位置・スケール・不透明度を基準値へ戻す。
    void Hide();
 
    /// @brief 基準姿勢を取得済みで、現在もTextとTransformを持つ項目か判定する。
@@ -76,19 +88,22 @@ private:
 
    enum class State {
       Hidden,
+      Revealing,
       Selecting,
       Reacting
    };
 
    struct OptionVisual {
-      std::string objectId;                               ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
-      GameEngine::Vector3 baseScale = {1.0f, 1.0f, 1.0f}; ///< 演出開始前に記録した基準スケール。
-      float baseOpacity = 1.0f;                           ///< 演出で上書きする前の基準不透明度。
-      bool captured = false;                              ///< 演出前の基準サイズと透明度を取得済みかどうか。
+      std::string objectId; ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
+      GameEngine::Vector3 baseTranslation = {0.0f, 0.0f, 0.0f}; ///< 表示演出の移動先となる基準位置。
+      GameEngine::Vector3 baseScale = {1.0f, 1.0f, 1.0f};       ///< 演出開始前に記録した基準スケール。
+      float baseOpacity = 1.0f;                                 ///< 演出で上書きする前の基準不透明度。
+      bool captured = false;                                    ///< 演出前の基準サイズと透明度を取得済みかどうか。
    };
 
    GameEngine::Object* FindOptionObject(std::size_t optionIndex) const;
    float EvaluateSelectionScale(float deltaTime);
+   void ApplyReveal();
    void ApplySelection(float scale);
    void ApplyReaction();
    void ValidateSettings();
@@ -98,8 +113,10 @@ private:
    float pulseScale_ = 1.1f;           ///< 選択中の拡縮演出で使う最大スケール倍率。
    float switchDuration_ = 0.16f;      ///< 選択項目の変更演出に使う時間（秒）。
    float switchScale_ = 0.82f;         ///< 選択が切り替わるときに一時適用するスケール倍率。
-   float reactionDuration_ = 0.4f;     ///< 選択確定後の反応演出に使う時間（秒）。
-   float reactionEndScale_ = 1.2f;     ///< 選択確定演出の終了時に使うスケール倍率。
+   float revealDuration_ = 0.25f;      ///< 下から上げながらフェードインする時間（秒）。
+   float revealOffsetY_ = 24.0f;       ///< 表示開始位置を基準位置より下へずらす距離（UIピクセル）。
+   float reactionDuration_ = 0.18f;    ///< 選択確定後の反応演出に使う時間（秒）。
+   float reactionEndScale_ = 2.0f;     ///< 決定時の横スケールに掛ける終了倍率。縦の終了スケールは0。
    State state_ = State::Hidden;       ///< 現在の処理段階または実行状態。
    std::int32_t selectedOption_ = -1;  ///< 現在選択中のメニュー項目番号。負値は未選択。
    float elapsed_ = 0.0f;              ///< 処理を開始してからの経過時間（秒）。

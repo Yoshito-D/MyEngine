@@ -115,6 +115,11 @@
                   "positive": "S"
                },
                {
+                  "type": "KeyAxis1D",
+                  "negative": "Up",
+                  "positive": "Down"
+               },
+               {
                   "type": "GamePadButton",
                   "button": "DPadUp",
                   "scale": -1
@@ -158,6 +163,19 @@
                {
                   "type": "LeftStick",
                   "axis": "X"
+               }
+            ]
+         },
+         "UI.Cancel": {
+            "type": "Button",
+            "bindings": [
+               {
+                  "type": "Key",
+                  "key": "Escape"
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "B"
                }
             ]
          },

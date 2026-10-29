@@ -46,6 +46,7 @@ void MenuSelectionAnimationComponent::OnReferencesChanged(GameEngine::SceneWorld
 
       // 参照の再解決だけで演出中の倍率を基準値に取り込まない。
       if (!option.captured) {
+         option.baseTranslation = transform->GetLocalPose().translation;
          option.baseScale = transform->GetLocalPose().scale;
          option.baseOpacity = text->GetStyle().color.w;
          option.captured = true;
@@ -62,10 +63,32 @@ void MenuSelectionAnimationComponent::Update(float deltaTime) {
 
    if (state_ == State::Selecting) {
       ApplySelection(EvaluateSelectionScale(step));
+   } else if (state_ == State::Revealing) {
+      elapsed_ = std::min(elapsed_ + step, revealDuration_);
+      ApplyReveal();
+
+      if (elapsed_ >= revealDuration_) {
+         state_ = State::Selecting;
+         elapsed_ = 0.0f;
+      }
    } else {
       elapsed_ = std::min(elapsed_ + step, reactionDuration_);
       ApplyReaction();
    }
+}
+
+bool MenuSelectionAnimationComponent::Reveal(std::int32_t optionIndex) {
+   if (optionIndex < 0 || !IsOptionAvailable(static_cast<std::size_t>(optionIndex))) {
+      return false;
+   }
+
+   selectedOption_ = optionIndex;
+   state_ = State::Revealing;
+   elapsed_ = 0.0f;
+   switching_ = false;
+   skipAdvance_ = true;
+   ApplyReveal();
+   return true;
 }
 
 bool MenuSelectionAnimationComponent::Select(std::int32_t optionIndex, bool animateSwitch) {
@@ -119,6 +142,7 @@ void MenuSelectionAnimationComponent::Hide() {
       text->SetOpacity(options_[index].baseOpacity);
       auto* transform = FindOptionObject(index)->GetComponent<GameEngine::TransformComponent>();
       auto pose = transform->GetLocalPose();
+      pose.translation = options_[index].baseTranslation;
       pose.scale = options_[index].baseScale;
       transform->ApplyLocalPose(pose);
    }
@@ -166,6 +190,29 @@ float MenuSelectionAnimationComponent::EvaluateSelectionScale(float deltaTime) {
    return GameEngine::Easing::EaseInOutSine(1.0f, pulseScale_, progress);
 }
 
+void MenuSelectionAnimationComponent::ApplyReveal() {
+   const float progress = std::clamp(elapsed_ / revealDuration_, 0.0f, 1.0f);
+   const float offsetY = GameEngine::Easing::EaseOutCubic(revealOffsetY_, 0.0f, progress);
+
+   for (std::size_t index = 0; index < options_.size(); ++index) {
+      auto* text = GetOptionText(index);
+
+      if (!text) {
+         continue;
+      }
+
+      const auto& option = options_[index];
+      auto* transform = FindOptionObject(index)->GetComponent<GameEngine::TransformComponent>();
+      auto pose = transform->GetLocalPose();
+      // 毎回保存済み位置から計算し、メニューを往復しても上方向の移動を累積させない。
+      pose.translation = option.baseTranslation;
+      pose.translation.y += offsetY;
+      pose.scale = option.baseScale;
+      transform->ApplyLocalPose(pose);
+      text->SetOpacity(GameEngine::Easing::EaseInOutSine(0.0f, option.baseOpacity, progress));
+   }
+}
+
 void MenuSelectionAnimationComponent::ApplySelection(float scale) {
    for (std::size_t index = 0; index < options_.size(); ++index) {
       auto* text = GetOptionText(index);
@@ -189,23 +236,37 @@ void MenuSelectionAnimationComponent::ApplySelection(float scale) {
 void MenuSelectionAnimationComponent::ApplyReaction() {
    if (selectedOption_ < 0) return;
 
-   const auto index = static_cast<std::size_t>(selectedOption_);
-   auto* text = GetOptionText(index);
-
-   if (!text) return;
-
-   auto* transform = FindOptionObject(index)->GetComponent<GameEngine::TransformComponent>();
-   const auto& option = options_[index];
+   const auto selectedIndex = static_cast<std::size_t>(selectedOption_);
+   constexpr float kUnselectedFadeDuration = 0.1f;
+   const float unselectedFadeProgress =
+      std::clamp(elapsed_ / std::min(kUnselectedFadeDuration, reactionDuration_), 0.0f, 1.0f);
    const float progress = std::clamp(elapsed_ / reactionDuration_, 0.0f, 1.0f);
    const float scaleProgress = GameEngine::Easing::EaseOutCubic(0.0f, 1.0f, progress);
-   auto pose = transform->GetLocalPose();
-   // 決定時点の倍率を始点に固定し、反復補間による誤差の蓄積や基準倍率への跳ね戻りを防ぐ。
-   pose.scale = {
-      reactionStartScale_.x + (option.baseScale.x * reactionEndScale_ - reactionStartScale_.x) * scaleProgress,
-      reactionStartScale_.y + (option.baseScale.y * reactionEndScale_ - reactionStartScale_.y) * scaleProgress,
-      option.baseScale.z};
-   text->SetOpacity(GameEngine::Easing::EaseInQuad(option.baseOpacity, 0.0f, progress));
-   transform->ApplyLocalPose(pose);
+
+   for (std::size_t index = 0; index < options_.size(); ++index) {
+      auto* text = GetOptionText(index);
+
+      if (!text) {
+         continue;
+      }
+
+      const auto& option = options_[index];
+
+      // 未選択項目はサイズや位置に触れず、透明度だけを素早く下げて消す。
+      if (index != selectedIndex) {
+         text->SetOpacity(GameEngine::Easing::EaseOutQuad(option.baseOpacity, 0.0f, unselectedFadeProgress));
+         continue;
+      }
+
+      auto* transform = FindOptionObject(index)->GetComponent<GameEngine::TransformComponent>();
+      auto pose = transform->GetLocalPose();
+      // 決定時点の倍率を始点に固定し、反復補間による誤差の蓄積や基準倍率への跳ね戻りを防ぐ。
+      // 横の終了倍率も決定時点を基準にして、脈動の大きさにかかわらず横へ伸ばし、縦は0までつぶす。
+      pose.scale = {reactionStartScale_.x * (1.0f + (reactionEndScale_ - 1.0f) * scaleProgress),
+         reactionStartScale_.y * (1.0f - scaleProgress), option.baseScale.z};
+      text->SetOpacity(GameEngine::Easing::EaseInQuad(option.baseOpacity, 0.0f, progress));
+      transform->ApplyLocalPose(pose);
+   }
 }
 
 nlohmann::json MenuSelectionAnimationComponent::Serialize() const {
@@ -216,7 +277,8 @@ nlohmann::json MenuSelectionAnimationComponent::Serialize() const {
    }
 
    return nlohmann::json{{"optionObjectIds", objectIds}, {"pulseDuration", pulseDuration_}, {"pulseScale", pulseScale_},
-      {"switchDuration", switchDuration_}, {"switchScale", switchScale_}, {"reactionDuration", reactionDuration_},
+      {"switchDuration", switchDuration_}, {"switchScale", switchScale_}, {"revealDuration", revealDuration_},
+      {"revealOffsetY", revealOffsetY_}, {"reactionDuration", reactionDuration_},
       {"reactionEndScale", reactionEndScale_}};
 }
 
@@ -267,6 +329,8 @@ void MenuSelectionAnimationComponent::ReadParameters(
    pulseScale_ = GameEngine::JsonValue::ReadFloat(data, "pulseScale", pulseScale_);
    switchDuration_ = GameEngine::JsonValue::ReadFloat(data, "switchDuration", switchDuration_);
    switchScale_ = GameEngine::JsonValue::ReadFloat(data, "switchScale", switchScale_);
+   revealDuration_ = GameEngine::JsonValue::ReadFloat(data, "revealDuration", revealDuration_);
+   revealOffsetY_ = GameEngine::JsonValue::ReadFloat(data, "revealOffsetY", revealOffsetY_);
    reactionDuration_ = GameEngine::JsonValue::ReadFloat(data, "reactionDuration", reactionDuration_);
    reactionEndScale_ = GameEngine::JsonValue::ReadFloat(data, "reactionEndScale", reactionEndScale_);
    ValidateSettings();
@@ -278,8 +342,10 @@ void MenuSelectionAnimationComponent::ValidateSettings() {
    pulseScale_ = std::isfinite(pulseScale_) ? std::max(pulseScale_, 1.0f) : 1.1f;
    switchDuration_ = std::isfinite(switchDuration_) ? std::max(switchDuration_, 0.0001f) : 0.16f;
    switchScale_ = std::isfinite(switchScale_) ? std::clamp(switchScale_, 0.0f, 1.0f) : 0.82f;
-   reactionDuration_ = std::isfinite(reactionDuration_) ? std::max(reactionDuration_, 0.0001f) : 0.4f;
-   reactionEndScale_ = std::isfinite(reactionEndScale_) ? std::max(reactionEndScale_, 1.0f) : 1.2f;
+   revealDuration_ = std::isfinite(revealDuration_) ? std::max(revealDuration_, 0.0001f) : 0.25f;
+   revealOffsetY_ = std::isfinite(revealOffsetY_) ? std::max(revealOffsetY_, 0.0f) : 24.0f;
+   reactionDuration_ = std::isfinite(reactionDuration_) ? std::max(reactionDuration_, 0.0001f) : 0.18f;
+   reactionEndScale_ = std::isfinite(reactionEndScale_) ? std::max(reactionEndScale_, 1.0f) : 2.0f;
 }
 
 #ifdef USE_IMGUI
@@ -318,8 +384,10 @@ void MenuSelectionAnimationComponent::DrawInspector() {
    ImGui::DragFloat("Pulse Scale", &pulseScale_, 0.01f, 1.0f, 2.0f, "%.2f");
    ImGui::DragFloat("Switch Duration", &switchDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
    ImGui::DragFloat("Switch Scale", &switchScale_, 0.01f, 0.0f, 1.0f, "%.2f");
+   ImGui::DragFloat("Reveal Duration", &revealDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
+   ImGui::DragFloat("Reveal Offset Y", &revealOffsetY_, 1.0f, 0.0f, 100.0f, "%.0f px");
    ImGui::DragFloat("Reaction Duration", &reactionDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
-   ImGui::DragFloat("Reaction End Scale", &reactionEndScale_, 0.01f, 1.0f, 3.0f, "%.2f");
+   ImGui::DragFloat("Reaction Width Multiplier", &reactionEndScale_, 0.01f, 1.0f, 3.0f, "%.2f");
    ValidateSettings();
 }
 #endif

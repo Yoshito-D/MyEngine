@@ -5,6 +5,7 @@
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
+#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleSpeedPostEffectController.h"
 #include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Utility/JsonValue.h"
@@ -76,12 +77,14 @@ void RaceManagerComponent::Update(float deltaTime) {
 void RaceManagerComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    // 前シーンの参照を残さず、設定されたPlayerを起点に関連コンポーネントをまとめて解決する。
    vehicleController_ = nullptr;
+   vehicleInput_ = nullptr;
    gravityBody_ = nullptr;
    cameraSwitcher_ = nullptr;
    speedPostEffectController_ = nullptr;
 
    if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
       vehicleController_ = playerObject->GetComponent<VehicleController>();
+      vehicleInput_ = playerObject->GetComponent<VehicleInputComponent>();
       gravityBody_ = playerObject->GetComponent<GravityBody>();
       cameraSwitcher_ = playerObject->GetComponent<CameraModeSwitcher>();
       speedPostEffectController_ = playerObject->GetComponent<VehicleSpeedPostEffectController>();
@@ -97,6 +100,7 @@ void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
 
    // エディタで指定した有効状態を保存し、レース中の一時ロック解除で上書きしない。
    vehicleControllerEnabledWhenUnlocked_ = vehicleController_ && vehicleController_->IsEnabled();
+   vehicleInputEnabledWhenUnlocked_ = vehicleInput_ && vehicleInput_->IsEnabled();
    gravityBodyEnabledWhenUnlocked_ = gravityBody_ && gravityBody_->IsEnabled();
    cameraSwitcherEnabledWhenUnlocked_ = cameraSwitcher_ && cameraSwitcher_->IsEnabled();
    speedPostEffectEnabledWhenRacing_ = speedPostEffectController_ && speedPostEffectController_->IsEnabled();
@@ -388,6 +392,12 @@ bool RaceManagerComponent::CanFinish() const {
 
 void RaceManagerComponent::SetPlayerLocked(bool locked) {
    playerLocked_ = locked;
+
+   // 走行とカメラ演出の入力を一緒に止め、リザルトの左右操作でドリフト接近を発火させない。
+   // リザルトUIは別のUIアクションを直接読むため、選択と決定はそのまま受け付ける。
+   if (vehicleInput_) {
+      vehicleInput_->SetEnabled(!locked && vehicleInputEnabledWhenUnlocked_);
+   }
 
    if (locked) {
       // 物理を止める前に残速度を消し、解除直後にロック前の慣性が再開しないようにする。

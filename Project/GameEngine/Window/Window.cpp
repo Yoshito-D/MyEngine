@@ -1,5 +1,6 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Window/Window.h"
+#include <UIAutomation.h>
 
 #ifdef USE_IMGUI
 #include "imgui_impl_win32.h"
@@ -7,6 +8,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #endif
 
 #pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "uiautomationcore.lib")
 
 namespace GameEngine {
 namespace {
@@ -49,6 +51,11 @@ void Window::CreateGameWindow(const wchar_t* title, UINT windowStyle, int32_t cl
 }
 
 void Window::DestroyGameWindow() {
+   // HWNDとCOMが有効な間に、UI Automationが保持するプロバイダー参照を解放する。
+   if (FAILED(UiaDisconnectAllProviders())) {
+      Logger::Warning("Failed to disconnect UI Automation providers before window destruction");
+   }
+
    if (hwnd_) {
       DestroyWindow(hwnd_);
       hwnd_ = nullptr;
@@ -139,7 +146,13 @@ LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM l
          }
 
          break;
+      case WM_CLOSE:
+         // HWNDを参照する入力・描画などの終了処理が済むまで、実際の破棄はDestroyGameWindowへ遅延する。
+         PostQuitMessage(0);
+         return 0;
       case WM_DESTROY:
+         // 破棄済みHWNDへの参照をUI Automationのイベントマップに残さない。
+         UiaReturnRawElementProvider(hwnd, 0, 0, nullptr);
          PostQuitMessage(0);
          return 0;
       default:

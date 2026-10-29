@@ -4,6 +4,7 @@
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
+#include <Windows.h>
 #include <cstddef>
 
 #ifdef USE_IMGUI
@@ -14,6 +15,8 @@
 namespace App {
 
 void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld&) {
+   menuPage_ = MenuPage::Main;
+   pendingAction_ = PendingAction::None;
    selectedOption_ = -1;
    startRequested_ = false;
    navigationLatched_ = false;
@@ -26,11 +29,36 @@ void TitleStartComponent::Update(float) {
 
    if (!animation || !animation->IsEnabled()) return;
 
+   // 演出中にSelectで表示状態を戻さず、完了を確認してから次のメニューへ切り替える。
+   if (pendingAction_ != PendingAction::None) {
+      if (!animation->IsReactionComplete()) return;
+
+      const auto action = pendingAction_;
+      pendingAction_ = PendingAction::None;
+
+      if (action == PendingAction::OpenStartMenu) {
+         SwitchMenu(*animation, MenuPage::StartSelection);
+      } else {
+         startRequested_ = true;
+#ifdef USE_IMGUI
+         // エディターではゲームの再生を終了し、編集中のシーンへ戻す。
+         GameEngine::EngineContext::RequestPlayModeStop();
+#else
+         PostQuitMessage(0);
+#endif
+      }
+
+      return;
+   }
+
+   // 表示される前の項目への決定や、押し続けによる次画面への入力持ち越しを防ぐ。
+   if (animation->IsRevealing()) return;
+
    // 初回の選択は全コンポーネントの参照解決後に行い、ロード時の通知順序に依存させない。
    if (selectedOption_ < 0 || !animation->IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
       selectedOption_ = -1;
 
-      // チュートリアルを優先しつつ、欠けている場合は利用可能な項目へフォールバックする。
+      // 上側の項目を優先しつつ、欠けている場合は利用可能な項目へフォールバックする。
       for (std::int32_t index = 0; index < 2; ++index) {
          if (animation->IsOptionAvailable(static_cast<std::size_t>(index))) {
             selectedOption_ = index;
@@ -44,6 +72,13 @@ void TitleStartComponent::Update(float) {
 
    animation->Select(selectedOption_, false);
    RefreshSelectionText(*animation);
+   const auto& cancelAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Cancel", 0);
+
+   if (menuPage_ == MenuPage::StartSelection && cancelAction.triggered) {
+      SwitchMenu(*animation, MenuPage::Main);
+      return;
+   }
+
    const auto& navigationAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Navigate", 0);
    const std::int32_t navigationDirection =
       navigationAction.value.x > 0.5f ? 1 : (navigationAction.value.x < -0.5f ? -1 : 0);
@@ -62,12 +97,23 @@ void TitleStartComponent::Update(float) {
    }
 
    const auto& confirmAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
+
+   if (!confirmAction.triggered) return;
+
+   if (menuPage_ == MenuPage::Main) {
+      if (animation->ConfirmSelection()) {
+         pendingAction_ = selectedOption_ == 0 ? PendingAction::OpenStartMenu : PendingAction::Quit;
+      }
+
+      return;
+   }
+
    const std::string& selectedScene = selectedOption_ == 0 ? tutorialScene_ : stageScene_;
 
    // 空の遷移先や、演出対象を失った項目は決定できない状態として扱う。
-   if (!confirmAction.triggered || selectedScene.empty() || !animation->ConfirmSelection()) return;
+   if (selectedScene.empty() || !animation->ConfirmSelection()) return;
 
-   // 決定後の拡大・フェードは演出コンポーネントが共通暗転中も更新する。
+   // 決定演出は演出コンポーネントが共通暗転中も更新する。
    startRequested_ = true;
    GameEngine::EngineContext::ChangeScene(selectedScene);
 }
@@ -86,6 +132,15 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("stageScene") && data.at("stageScene").is_string()) {
       stageScene_ = data.at("stageScene").get<std::string>();
    }
+}
+
+void TitleStartComponent::SwitchMenu(MenuSelectionAnimationComponent& animation, MenuPage page) {
+   menuPage_ = page;
+   selectedOption_ = -1;
+   animation.Hide();
+   MoveSelection(animation, 1);
+   animation.Reveal(selectedOption_);
+   RefreshSelectionText(animation);
 }
 
 bool TitleStartComponent::MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction) {
@@ -107,12 +162,19 @@ bool TitleStartComponent::MoveSelection(MenuSelectionAnimationComponent& animati
 }
 
 void TitleStartComponent::RefreshSelectionText(MenuSelectionAnimationComponent& animation) {
-   if (auto* text = animation.GetOptionText(0)) {
-      text->SetText(std::string(selectedOption_ == 0 ? "> " : "  ") + "チュートリアルから あそぶ");
-   }
+   const char* labels[] = {menuPage_ == MenuPage::Main ? "はじめる" : "チュートリアルから",
+      menuPage_ == MenuPage::Main ? "やめる" : "ステージから"};
 
-   if (auto* text = animation.GetOptionText(1)) {
-      text->SetText(std::string(selectedOption_ == 1 ? "> " : "  ") + "ステージから あそぶ");
+   for (std::int32_t index = 0; index < 2; ++index) {
+      if (auto* text = animation.GetOptionText(static_cast<std::size_t>(index))) {
+         text->SetText(labels[index]);
+         const float brightness = selectedOption_ == index ? 1.0f : 0.45f;
+         auto color = text->GetStyle().color;
+         color.x = brightness;
+         color.y = brightness;
+         color.z = brightness;
+         text->SetColor(color);
+      }
    }
 }
 
@@ -124,6 +186,7 @@ void TitleStartComponent::DrawInspector() {
 
    GameEngine::EditorUI::SceneReference("Tutorial Scene", tutorialScene_);
    GameEngine::EditorUI::SceneReference("Stage Scene", stageScene_);
+   ImGui::Text("Menu: %s", menuPage_ == MenuPage::Main ? "Main" : "Start Selection");
    ImGui::Text("Selected Option: %d", selectedOption_);
    ImGui::Text("Start Requested: %s", startRequested_ ? "true" : "false");
 }

@@ -51,7 +51,27 @@ GameEngine::Vector2 VehicleInputComponent::GetCameraLookInput() const {
 }
 
 bool VehicleInputComponent::IsJumpTriggered() const {
-   return GetActionState(kJumpAction).triggered;
+   return jumpEnabled_ && !jumpAwaitingRelease_ && GetActionState(kJumpAction).triggered;
+}
+
+bool VehicleInputComponent::IsConfirmTriggered() const {
+   return IsEnabled() && GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", playerSlot).triggered;
+}
+
+void VehicleInputComponent::SetJumpEnabled(bool enabled) {
+   if (jumpEnabled_ == enabled) return;
+
+   jumpEnabled_ = enabled;
+   // 許可したフレームの更新順にかかわらず、説明の決定入力をジャンプへ持ち越さない。
+   jumpAwaitingRelease_ = enabled;
+}
+
+void VehicleInputComponent::Update(float deltaTime) {
+   (void)deltaTime;
+
+   if (!GetActionState(kJumpAction).held) {
+      jumpAwaitingRelease_ = false;
+   }
 }
 
 bool VehicleInputComponent::IsDriftHeld() const {

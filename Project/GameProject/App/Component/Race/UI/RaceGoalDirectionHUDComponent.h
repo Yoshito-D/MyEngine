@@ -35,6 +35,9 @@ public:
    /// @param deltaTime ゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
+   /// @brief 課題の進行に応じて誘導表示を切り替える。空のraceManagerIdではレース状態を参照しない。
+   void SetGuidanceEnabled(bool enabled);
+
    /// @brief 3D矢印の参照設定をJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;
@@ -60,6 +63,7 @@ private:
    GameEngine::Object* goalObject_ = nullptr;                 ///< 参照解決済みゴールObjectへの非所有参照。
    GameEngine::Model* arrowModel_ = nullptr;                  ///< ゴール方向を示す矢印モデルへの非所有参照。
    GameEngine::UIModelComponent* uiModelComponent_ = nullptr; ///< 矢印モデルの画面上配置を制御するUI部品への参照。
+   bool guidanceEnabled_ = true;                              ///< チュートリアルなどから指定する誘導表示の許可状態。
 };
 
 } // namespace App

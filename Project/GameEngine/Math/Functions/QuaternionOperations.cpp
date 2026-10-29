@@ -116,7 +116,7 @@ Quaternion LookRotation(const Vector3& forward, const Vector3& up) {
    if (f.LengthSquared() < 1e-6f) {
       f = Vector3(0, 0, 1);
    } else {
-      f.Normalize();
+      f = f.Normalize();
    }
 
    Vector3 u = up;
@@ -124,7 +124,7 @@ Quaternion LookRotation(const Vector3& forward, const Vector3& up) {
    if (u.LengthSquared() < 1e-6f) {
       u = Vector3(0, 1, 0);
    } else {
-      u.Normalize();
+      u = u.Normalize();
    }
 
    // forward と up が平行なら別の up ベクトルに差し替え
@@ -142,13 +142,14 @@ Quaternion LookRotation(const Vector3& forward, const Vector3& up) {
    if (r.LengthSquared() < 1e-6f) {
       r = Vector3(1, 0, 0);
    } else {
-      r.Normalize();
+      r = r.Normalize();
    }
 
    // 直交 up 再計算（左手系） up = forward × right
    u = f.Cross(r);
 
-   Matrix4x4 m = {r.x, r.y, r.z, 0.0f, u.x, u.y, u.z, 0.0f, f.x, f.y, f.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+   // MatrixToQuaternionは基底を列として読む。行に並べると逆回転になり、指定したforward/upと一致しない。
+   Matrix4x4 m = {r.x, u.x, f.x, 0.0f, r.y, u.y, f.y, 0.0f, r.z, u.z, f.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
    return MatrixToQuaternion(m);
 }
 

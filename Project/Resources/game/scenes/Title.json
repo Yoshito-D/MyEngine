@@ -337,8 +337,8 @@
                      1
                   ],
                   "translation": [
-                     -153.80780029296875,
-                     -111.69532012939453,
+                     0,
+                     -140,
                      1
                   ]
                },
@@ -404,8 +404,8 @@
                      1
                   ],
                   "translation": [
-                     292.52685546875,
-                     128.30462646484375,
+                     0,
+                     100,
                      1
                   ]
                },
@@ -431,7 +431,7 @@
                   ],
                   "screenAnchor": "MiddleCenter",
                   "sortingOrder": 110,
-                  "text": "> チュートリアルから あそぶ"
+                  "text": "はじめる"
                },
                "enabled": true,
                "typeName": "UITextComponent"
@@ -446,8 +446,10 @@
                   "pulseScale": 1.100000023841858,
                   "switchDuration": 0.1599999964237213,
                   "switchScale": 0.8199999928474426,
-                  "reactionDuration": 0.4000000059604645,
-                  "reactionEndScale": 1.2000000476837158
+                  "revealDuration": 0.25,
+                  "revealOffsetY": 24,
+                  "reactionDuration": 0.18,
+                  "reactionEndScale": 2
                },
                "enabled": true,
                "typeName": "MenuSelectionAnimationComponent"
@@ -495,8 +497,8 @@
                      1
                   ],
                   "translation": [
-                     242.2744598388672,
-                     219.16546630859375,
+                     0,
+                     180,
                      1
                   ]
                },
@@ -506,9 +508,9 @@
             {
                "data": {
                   "color": [
-                     1,
-                     1,
-                     1,
+                     0.45,
+                     0.45,
+                     0.45,
                      1
                   ],
                   "fontId": "851Gkktt",
@@ -522,7 +524,7 @@
                   ],
                   "screenAnchor": "MiddleCenter",
                   "sortingOrder": 110,
-                  "text": "  ステージから あそぶ"
+                  "text": "やめる"
                },
                "enabled": true,
                "typeName": "UITextComponent"

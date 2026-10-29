@@ -33,6 +33,9 @@ public:
    /// @param deltaTime 未使用
    void Update(float deltaTime) override;
 
+   /// @brief 課題の進行に応じて誘導表示を切り替える。空のraceManagerIdではレース状態を参照しない。
+   void SetGuidanceEnabled(bool enabled);
+
    /// @brief 参照IDをJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;
@@ -54,6 +57,7 @@ private:
    RaceManagerComponent* raceManager_ = nullptr;      ///< 参照解決済みレース管理コンポーネントへの非所有参照。
    GameEngine::Object* playerObject_ = nullptr;       ///< 参照解決済みプレイヤーObjectへの非所有参照。
    GameEngine::Object* goalObject_ = nullptr;         ///< 参照解決済みゴールObjectへの非所有参照。
+   bool guidanceEnabled_ = true;                      ///< チュートリアルなどから指定する誘導表示の許可状態。
 };
 
 } // namespace App

@@ -7,8 +7,8 @@
 namespace App {
 class MenuSelectionAnimationComponent;
 
-/// @brief タイトル画面の開始経路選択と画面遷移を制御する。
-/// @details 同じObjectのMenuSelectionAnimationComponentで、項目0をチュートリアル、項目1をステージに対応させる。
+/// @brief タイトル画面のメインメニュー、開始経路選択、終了を制御する。
+/// @details 同じObjectのMenuSelectionAnimationComponentの2項目を、メニュー階層ごとに切り替える。
 class TitleStartComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "TitleStartComponent"; ///< コンポーネント型名。
@@ -36,14 +36,28 @@ public:
 #endif
 
 private:
+   enum class MenuPage {
+      Main,
+      StartSelection
+   };
+
+   enum class PendingAction {
+      None,
+      OpenStartMenu,
+      Quit
+   };
+
+   void SwitchMenu(MenuSelectionAnimationComponent& animation, MenuPage page);
    bool MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction);
    void RefreshSelectionText(MenuSelectionAnimationComponent& animation);
 
-   std::string tutorialScene_ = "Tutorial"; ///< チュートリアル開始時に読み込む登録シーン名。
-   std::string stageScene_ = "GameTest";    ///< 通常プレイ開始時に読み込む登録シーン名。
-   std::int32_t selectedOption_ = -1;       ///< 現在選択中のメニュー項目番号。負値は未選択。
-   bool startRequested_ = false;            ///< メニュー選択によるプレイ開始を要求済みかどうか。
-   bool navigationLatched_ = false;         ///< 方向入力が中立に戻るまで次のメニュー移動を抑止する状態。
+   std::string tutorialScene_ = "Tutorial";            ///< チュートリアル開始時に読み込む登録シーン名。
+   std::string stageScene_ = "GameTest";               ///< 通常プレイ開始時に読み込む登録シーン名。
+   MenuPage menuPage_ = MenuPage::Main;                ///< 現在表示しているメニュー階層。
+   PendingAction pendingAction_ = PendingAction::None; ///< 決定演出の完了後に実行する操作。
+   std::int32_t selectedOption_ = -1;                  ///< 現在選択中のメニュー項目番号。負値は未選択。
+   bool startRequested_ = false;                       ///< シーン遷移または終了を要求済みかどうか。
+   bool navigationLatched_ = false;                    ///< 方向入力が中立に戻るまで次のメニュー移動を抑止する状態。
 };
 
 } // namespace App
