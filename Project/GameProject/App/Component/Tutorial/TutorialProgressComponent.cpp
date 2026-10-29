@@ -62,7 +62,6 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
    wasDrifting_ = false;
    wasAirborne_ = characterJump_ && characterJump_->IsJumping();
    jumpStarted_ = false;
-   usedAirControl_ = false;
    sceneChangeRequested_ = false;
    completionElapsed_ = 0.0f;
    runtimeInitialized_ = false;
@@ -98,6 +97,10 @@ bool TutorialProgressComponent::HasRequiredReferences() const {
           targetPlanet_->GetComponent<SphericalGravityAttractor>() &&
           goalObject_->GetComponent<GameEngine::TransformComponent>() &&
           goalObject_->GetComponent<GameEngine::TriggerVolumeComponent>();
+}
+
+bool TutorialProgressComponent::IsGamepadConnected() const {
+   return vehicleInput_ && GameEngine::EngineContext::IsGamePadConnected(vehicleInput_->DescribeSettings().playerSlot);
 }
 
 bool TutorialProgressComponent::IsOnTargetPlanet() const {
@@ -196,11 +199,6 @@ void TutorialProgressComponent::Update(float deltaTime) {
          break;
       case Phase::PlanetTransfer:
       case Phase::Goal:
-         if (isAirborne) {
-            usedAirControl_ = usedAirControl_ || std::abs(vehicleInput_->GetPitchInput()) >= 0.35f ||
-                              std::abs(vehicleInput_->GetRollInput()) >= 0.35f;
-         }
-
          if (landed) {
             HandleLandingResult();
 
@@ -352,7 +350,6 @@ bool TutorialProgressComponent::RevealTargetPlanet() {
    goalPose.SetRotationQuaternion(GameEngine::LookRotation(up * 0.8f + forward * 0.6f, goalNormal));
    goalTransform->ApplyLocalPose(goalPose);
    landingFeedback_.clear();
-   usedAirControl_ = false;
    SetTargetPlanetEnabled(true);
    return true;
 }
@@ -490,17 +487,20 @@ void TutorialProgressComponent::UpdateFeedback(float deltaTime) {
    if (!feedbackText_) return;
 
    driftFeedbackRemaining_ = std::max(0.0f, driftFeedbackRemaining_ - std::max(deltaTime, 0.0f));
+   const bool gamepadConnected = IsGamepadConnected();
    std::string feedback;
 
    if (phase_ == Phase::DriftPractice) {
       if (vehicleDrift_->CanFireMiniTurbo()) {
-         feedback = "ターボ準備OK！　A / D を離す・左スティックを中央に戻すと発動！";
+         feedback = gamepadConnected ? "ターボ準備OK！　左スティックを中央に戻すと発動！"
+                                     : "ターボ準備OK！　A / D を離すと発動！";
       } else if (vehicleDrift_->IsDrifting()) {
          feedback = "ドリフト中…　同じ方向へ曲がり続けてターボをためましょう。";
       } else if (driftFeedbackRemaining_ > 0.0f) {
          feedback = driftFeedback_;
       } else {
-         feedback = "A / D または左スティック左右を入れ続けると、ドリフトが始まります。";
+         feedback = gamepadConnected ? "左スティックを左右どちらかに倒し続けると、ドリフトが始まります。"
+                                     : "A / D を押し続けると、ドリフトが始まります。";
       }
    } else if (phase_ == Phase::JumpPractice) {
       feedback = characterJump_->IsJumping() ? "ジャンプ中！　この惑星に着地してみましょう。" : "ジャンプ 0 / 1";
@@ -512,14 +512,14 @@ void TutorialProgressComponent::UpdateFeedback(float deltaTime) {
          const auto localUp =
             GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, transform->GetLocalPose().GetActiveQuaternion());
          const bool aligned = localUp.Dot(gravityBody_->GetTargetUpVector()) >= 0.95f;
-         feedback = aligned ? "姿勢OK！　車体の底と地表を平行に保ちましょう。"
-                            : "W / S・左スティック上下、Q / E・LB / RB で姿勢を地表に合わせましょう。";
+         if (aligned) {
+            feedback = "姿勢OK！　車体の底と地表を平行に保ちましょう。";
+         } else {
+            feedback = gamepadConnected ? "左スティック上下・LB / RB で姿勢を地表に合わせましょう。"
+                                        : "W / S・Q / E で姿勢を地表に合わせましょう。";
+         }
       } else {
          feedback = landingFeedback_;
-      }
-
-      if (usedAirControl_) {
-         feedback += "\n姿勢操作：体験できました！";
       }
    }
 
@@ -527,7 +527,9 @@ void TutorialProgressComponent::UpdateFeedback(float deltaTime) {
 }
 
 std::string TutorialProgressComponent::BuildGuideText() const {
-   const std::string next = "\nSPACE / A ボタン：次へ";
+   const bool gamepadConnected = IsGamepadConnected();
+   const std::string jumpButton = gamepadConnected ? "A ボタン" : "SPACE キー";
+   const std::string next = "\n" + jumpButton + "：次へ";
 
    switch (phase_) {
       case Phase::DrivingIntro:
@@ -536,10 +538,10 @@ std::string TutorialProgressComponent::BuildGuideText() const {
                 "練習中は、左下の速度メーターを確認しましょう。" +
                 next;
       case Phase::DriftIntro:
-         return "チュートリアル  2 / 8　ドリフトとミニターボ\n"
-                "A / D または左スティック左右を入れ続けると、ドリフトします。\n"
-                "ターボがたまったらハンドルを戻すと発動！　最高速度へ早く到達できます。" +
-                next;
+         return "チュートリアル  2 / 8　ドリフトとミニターボ\n" +
+                std::string(gamepadConnected ? "左スティックを左右どちらかに倒し続けると、ドリフトします。\n"
+                                             : "A / D を押し続けると、ドリフトします。\n") +
+                "ターボがたまったらハンドルを戻すと発動！　最高速度へ早く到達できます。" + next;
       case Phase::DriftPractice:
          return "チュートリアル  3 / 8　ドリフトを体験しよう\n"
                 "ドリフトを続けてからハンドルを戻し、ミニターボを3回発動しましょう。\n"
@@ -547,21 +549,27 @@ std::string TutorialProgressComponent::BuildGuideText() const {
                 std::to_string(miniTurboCount_) + " / 3";
       case Phase::JumpIntro:
          return "チュートリアル  4 / 8　ジャンプ\n"
-                "ミニターボ 3 / 3 達成！　次は SPACE / A ボタンでジャンプします。\n"
+                "ミニターボ 3 / 3 達成！　次は " +
+                jumpButton +
+                "でジャンプします。\n"
                 "速度が速いほど遠くへ飛べます。" +
                 next;
       case Phase::JumpPractice:
          return "チュートリアル  5 / 8　ジャンプを体験しよう\n"
-                "一度ボタンを離してから、SPACE / A ボタンでジャンプしましょう。\n"
+                "一度離してから、" +
+                jumpButton +
+                "でジャンプしましょう。\n"
                 "最初の惑星へ着地すると、次の説明へ進みます。";
       case Phase::AirControlIntro:
-         return "チュートリアル  6 / 8　空中の姿勢と着地\n"
-                "W / S・左スティック上下：前後の傾き　Q / E・LB / RB：左右の傾き\n"
-                "車体の底を地表と平行にして着地すると速度を維持でき、大きく傾くと減速します。" +
-                next;
+         return "チュートリアル  6 / 8　空中の姿勢と着地\n" +
+                std::string(gamepadConnected ? "左スティック上下：前後の傾き　LB / RB：左右の傾き\n"
+                                             : "W / S：前後の傾き　Q / E：左右の傾き\n") +
+                "車体の底を地表と平行にして着地すると速度を維持でき、大きく傾くと減速します。" + next;
       case Phase::PlanetTransfer:
          return "チュートリアル  7 / 8　二つ目の惑星へ！\n"
-                "正面に惑星が出現しました。矢印の方向へ SPACE / A ボタンでジャンプ！\n"
+                "正面に惑星が出現しました。矢印の方向へ " +
+                jumpButton +
+                "でジャンプ！\n"
                 "空中で姿勢を調整し、車体の底を地表に合わせて着地しましょう。";
       case Phase::Goal:
          return "チュートリアル  8 / 8　ゴールへ向かおう\n"

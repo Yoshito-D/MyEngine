@@ -80,6 +80,7 @@ private:
 
    void ReadParameters(const nlohmann::json& data);
    bool HasRequiredReferences() const;
+   bool IsGamepadConnected() const;
    bool IsOnTargetPlanet() const;
    void SetPhase(Phase phase);
    void SetPlayerPaused(bool paused);
@@ -136,7 +137,6 @@ private:
    bool wasDrifting_ = false;                                ///< ドリフト終了の検出用。
    bool wasAirborne_ = false;                                ///< 離陸・着地の検出用。
    bool jumpStarted_ = false;                                ///< ジャンプ課題開始後に離陸したか。
-   bool usedAirControl_ = false;                             ///< 惑星移動中に姿勢操作を体験したか。
    bool controllerEnabledWhenPlaying_ = true;                ///< シーン読込時の走行制御の有効状態。
    bool gravityEnabledWhenPlaying_ = true;                   ///< シーン読込時の物理の有効状態。
    bool sceneChangeRequested_ = false;                       ///< 二重遷移の抑止。

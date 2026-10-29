@@ -915,9 +915,9 @@
                      {
                         "blendMode": 0,
                         "color": [
-                           1.0,
-                           1.0,
-                           1.0,
+                           0.8029739856719971,
+                           0.8029739856719971,
+                           0.8029739856719971,
                            1.0
                         ],
                         "environmentTextureStrength": 0.0,
@@ -949,7 +949,7 @@
                         "rimLightIntensity": 0.41999998688697815,
                         "rimLightPower": 12.510000228881836,
                         "shininess": 40.0,
-                        "textureName": "sandstone_cracks_diff_2k",
+                        "textureName": "painted_concrete_diff_2k",
                         "uvTransform": [
                            [
                               1.0,
@@ -2353,7 +2353,7 @@
                      1.0
                   ],
                   "fontId": "851Gkktt",
-                  "fontSize": 26,
+                  "fontSize": 22,
                   "horizontalAlignment": "Center",
                   "lineSpacing": 1.5,
                   "maxWidth": 1080.0,
@@ -2430,7 +2430,7 @@
                   ],
                   "screenAnchor": "TopCenter",
                   "sortingOrder": 200,
-                  "text": "チュートリアル  1 / 8　自動走行と加速\n地上では自動で前進し、徐々に最高速度へ近づきます。\n練習中は、左下の速度メーターを確認しましょう。\nSPACE / A ボタン：次へ"
+                  "text": "チュートリアル  1 / 8　自動走行と加速\n地上では自動で前進し、徐々に最高速度へ近づきます。\n練習中は、左下の速度メーターを確認しましょう。\nSPACE キー：次へ"
                },
                "enabled": true,
                "typeName": "UITextComponent"
