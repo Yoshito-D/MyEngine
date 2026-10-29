@@ -144,11 +144,11 @@ bool RaceResultUIComponent::MoveSelection(MenuSelectionAnimationComponent& anima
 
 void RaceResultUIComponent::RefreshSelectionText(MenuSelectionAnimationComponent& animation) {
    if (auto* text = animation.GetOptionText(0)) {
-      text->SetText(std::string(selectedOption_ == 0 ? "> " : "  ") + "TITLE");
+      text->SetText("TITLE");
    }
 
    if (auto* text = animation.GetOptionText(1)) {
-      text->SetText(std::string(selectedOption_ == 1 ? "> " : "  ") + "RESTART");
+      text->SetText("RESTART");
    }
 }
 
