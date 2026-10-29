@@ -11,6 +11,7 @@ namespace App {
 class CameraModeSwitcher;
 class GravityBody;
 class VehicleController;
+class VehicleInputComponent;
 class VehicleSpeedPostEffectController;
 
 /// @brief タイムアタックの状態、経過時間、チェックポイント進行を管理する
@@ -167,13 +168,15 @@ private:
    bool runtimeInitialized_ = false;                    ///< 最初の実行時更新に必要な初期化が完了したかどうか。
    bool playerLocked_ = false;                          ///< レース進行によるプレイヤーの一時停止が適用中かどうか。
    bool vehicleControllerEnabledWhenUnlocked_ = false;  ///< 操作ロック解除時に戻す車両制御の元の有効状態。
+   bool vehicleInputEnabledWhenUnlocked_ = false;       ///< 操作ロック解除時に戻す走行入力の元の有効状態。
    bool gravityBodyEnabledWhenUnlocked_ = false;        ///< 操作ロック解除時に戻す重力処理の元の有効状態。
    bool cameraSwitcherEnabledWhenUnlocked_ = false;     ///< 操作ロック解除時に戻すカメラ切り替えの元の有効状態。
    bool speedPostEffectEnabledWhenRacing_ = false;      ///< レース再開時に戻す速度演出制御の元の有効状態。
    /// @brief プレイヤーの車両操作を制御するコンポーネントへの非所有参照。
    VehicleController* vehicleController_ = nullptr;
-   GravityBody* gravityBody_ = nullptr;           ///< プレイヤーの速度・重力・姿勢を参照するコンポーネント。
-   CameraModeSwitcher* cameraSwitcher_ = nullptr; ///< プレイヤーの仮想カメラ切り替えを行うコンポーネントへの参照。
+   VehicleInputComponent* vehicleInput_ = nullptr; ///< カメラ演出にも共有される走行用入力への非所有参照。
+   GravityBody* gravityBody_ = nullptr;            ///< プレイヤーの速度・重力・姿勢を参照するコンポーネント。
+   CameraModeSwitcher* cameraSwitcher_ = nullptr;  ///< プレイヤーの仮想カメラ切り替えを行うコンポーネントへの参照。
    /// @brief プレイヤー速度に応じた画面演出を制御するコンポーネントへの参照。
    VehicleSpeedPostEffectController* speedPostEffectController_ = nullptr;
 };

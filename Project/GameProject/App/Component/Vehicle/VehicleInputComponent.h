@@ -46,6 +46,15 @@ public:
    /// @return 押された瞬間ならtrue
    bool IsJumpTriggered() const;
 
+   /// @brief 決定ボタンがこのフレームに押されたかを同じプレイヤースロットで取得する。
+   bool IsConfirmTriggered() const;
+
+   /// @brief ジャンプ入力を許可し、再許可時はボタンを離すまで入力を保留する。
+   void SetJumpEnabled(bool enabled);
+
+   /// @brief ジャンプ再許可後のボタン解放を監視する。
+   void Update(float deltaTime) override;
+
    /// @brief ドリフト入力が押されているかを取得する
    /// @return 押されている間はtrue
    bool IsDriftHeld() const;
@@ -83,7 +92,9 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   uint32_t playerSlot = 0; ///< 入力を読み取るプレイヤースロット。
+   uint32_t playerSlot = 0;           ///< 入力を読み取るプレイヤースロット。
+   bool jumpEnabled_ = true;          ///< 現在の課題でジャンプ入力を受け付けるか。
+   bool jumpAwaitingRelease_ = false; ///< 決定ボタンと共用するジャンプの押し直し待ち。
 
 private:
    const GameEngine::InputActionState& GetActionState(const char* actionId) const;

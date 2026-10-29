@@ -41,7 +41,7 @@ Quaternion Vector3ToQuaternion(const Vector3& eulerAngles);
 /// @brief 前方ベクトルと上方ベクトルから回転を生成
 /// @param forward 前方ベクトル
 /// @param up 上方ベクトル
-/// @return クォータニオン
+/// @return ローカル+Zがforwardを向き、ローカル+Yがforwardと直交するupを向く単位クォータニオン。
 Quaternion LookRotation(const Vector3& forward, const Vector3& up);
 
 /// @brief 前方ベクトルから回転を生成（上方向はデフォルト）

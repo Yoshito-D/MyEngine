@@ -68,7 +68,7 @@ void RaceResultUIComponent::Update(float) {
 
    text->SetText(BuildResultText());
 
-   // 決定後の拡大・フェードは演出コンポーネントだけが更新する。
+   // 決定演出は演出コンポーネントだけが更新する。
    if (resultRequested_) return;
 
    animation->Select(selectedOption_, false);

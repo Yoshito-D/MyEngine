@@ -70,7 +70,7 @@ void RaceGoalDirectionHUDComponent::OnReferencesChanged(GameEngine::SceneWorld& 
    playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
    goalObject_ = sceneWorld.FindObjectById(goalObjectId_);
 
-   if (!raceManager_) {
+   if (!raceManagerId_.empty() && !raceManager_) {
       Logger::Warning("Goal direction arrow race manager was not found: " + raceManagerId_, Logger::LogChannel::Game);
    }
 
@@ -105,7 +105,8 @@ void RaceGoalDirectionHUDComponent::Update(float deltaTime) {
       raceManager_ ? raceManager_->GetState() : RaceManagerComponent::State::Finished;
    const bool isRaceStarted =
       raceState == RaceManagerComponent::State::Countdown || raceState == RaceManagerComponent::State::Running;
-   const bool shouldShow = isRaceStarted && playerObject_ && goalObject_ && arrowModel_ && uiModelComponent_;
+   const bool shouldShow = guidanceEnabled_ && (raceManagerId_.empty() || isRaceStarted) && playerObject_ &&
+                           goalObject_ && arrowModel_ && uiModelComponent_;
 
    if (!shouldShow) {
       SetVisible(false);
@@ -143,6 +144,14 @@ void RaceGoalDirectionHUDComponent::Update(float deltaTime) {
 
    arrowModel_->SetRotationQuaternion(MakeArrowRotation(uiGoalDirection.Normalize()));
    SetVisible(true);
+}
+
+void RaceGoalDirectionHUDComponent::SetGuidanceEnabled(bool enabled) {
+   guidanceEnabled_ = enabled;
+
+   if (!enabled) {
+      SetVisible(false);
+   }
 }
 
 void RaceGoalDirectionHUDComponent::SetVisible(bool visible) {

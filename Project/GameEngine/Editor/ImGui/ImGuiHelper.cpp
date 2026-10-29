@@ -63,7 +63,7 @@ void DrawVisibleLabel(const std::string& label) {
    ImGui::PopTextWrapPos();
 }
 
-void BeginPropertyRow(const std::string& label, float columnWidth, bool pushItemWidth = true) {
+bool BeginPropertyRow(const std::string& label, float columnWidth, bool pushItemWidth = true) {
    // 同じ表示名を持つ別プロパティが衝突しないよう、行全体をラベルIDのスコープへ入れる。
    ImGui::PushID(label.c_str());
    const float availableWidth = ImGui::GetContentRegionAvail().x;
@@ -71,23 +71,38 @@ void BeginPropertyRow(const std::string& label, float columnWidth, bool pushItem
    const float minimumInputWidth = ImGui::GetFrameHeight() * 3.0f;
    const bool columns = availableWidth >= minimumInputWidth * 2.0f;
 
-   // 小幅のInspectorではラベルを上へ移し、固定ラベル幅が入力欄を押し出すことを防ぐ。
-   ImGui::Columns(columns ? 2 : 1, nullptr, false);
+   // 旧Columnsは親Tableのセル原点とクリップ領域を復元できないため、入れ子に対応したTableを使う。
+   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(ImGui::GetStyle().CellPadding.x, 0.0f));
+   const bool visible = ImGui::BeginTable("##PropertyRow", columns ? 2 : 1,
+      ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoPadOuterX);
+   ImGui::PopStyleVar();
 
-   if (columns) {
-      ImGui::SetColumnWidth(0, std::min(columnWidth * fontScale, availableWidth * 0.45f));
+   if (!visible) {
+      ImGui::PopID();
+      return false;
    }
 
+   // 小幅のInspectorではラベルを上へ移し、固定ラベル幅が入力欄を押し出すことを防ぐ。
+   if (columns) {
+      ImGui::TableSetupColumn(
+         "##Label", ImGuiTableColumnFlags_WidthFixed, std::min(columnWidth * fontScale, availableWidth * 0.45f));
+   }
+
+   ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
+   ImGui::TableNextRow();
+   ImGui::TableSetColumnIndex(0);
    DrawVisibleLabel(label);
 
    if (columns) {
-      ImGui::NextColumn();
+      ImGui::TableSetColumnIndex(1);
    }
 
    if (pushItemWidth) {
       // 負の幅で第2列の残り領域を使い切り、呼び出し側ごとの幅計算を不要にする。
       ImGui::PushItemWidth(-FLT_MIN);
    }
+
+   return true;
 }
 
 void EndPropertyRow(bool popItemWidth = true) {
@@ -96,7 +111,7 @@ void EndPropertyRow(bool popItemWidth = true) {
       ImGui::PopItemWidth();
    }
 
-   ImGui::Columns(1);
+   ImGui::EndTable();
    ImGui::PopID();
 }
 
@@ -125,7 +140,10 @@ bool DrawResetButton(const char* label, const ImVec2& buttonSize) {
 bool DrawVectorControl(const std::string& label, const VectorComponent* components, std::int32_t componentCount,
    float columnWidth, float speed, float minValue, float maxValue, const char* format) {
    bool valueChanged = false;
-   BeginPropertyRow(label, columnWidth);
+
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
 
    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0.0f, 0.0f});
 
@@ -271,14 +289,20 @@ void EndSection() {
 }
 
 bool DrawButton(const std::string& label, const std::string& buttonLabel, float columnWidth) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
+
    const bool clicked = ImGui::Button(buttonLabel.c_str(), ImVec2(-FLT_MIN, 0.0f));
    EndPropertyRow();
    return clicked;
 }
 
 bool DrawCheckbox(const std::string& label, bool& value, float columnWidth) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
+
    const bool changed = ImGui::Checkbox("##Value", &value);
    EndPropertyRow();
    return changed;
@@ -287,7 +311,10 @@ bool DrawCheckbox(const std::string& label, bool& value, float columnWidth) {
 bool DrawIntControl(const std::string& label, std::int32_t& value, std::int32_t resetValue, float columnWidth,
    float speed, std::int32_t minValue, std::int32_t maxValue) {
    bool valueChanged = false;
-   BeginPropertyRow(label, columnWidth);
+
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
 
    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0.0f, 0.0f});
 
@@ -313,7 +340,10 @@ bool DrawIntControl(const std::string& label, std::int32_t& value, std::int32_t 
 bool DrawFloatControl(const std::string& label, float& value, float resetValue, float columnWidth, float speed,
    float minValue, float maxValue, const char* format) {
    bool valueChanged = false;
-   BeginPropertyRow(label, columnWidth);
+
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
 
    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0.0f, 0.0f});
 
@@ -338,7 +368,10 @@ bool DrawFloatControl(const std::string& label, float& value, float resetValue, 
 
 bool DrawSliderFloat(
    const std::string& label, float& value, float minValue, float maxValue, float columnWidth, const char* format) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
+
    const bool changed = ImGui::SliderFloat("##Value", &value, minValue, maxValue, format);
    EndPropertyRow();
    return changed;
@@ -346,7 +379,9 @@ bool DrawSliderFloat(
 
 bool DrawRangeFloat(const std::string& label, float& minValue, float& maxValue, float limitMin, float limitMax,
    float columnWidth, float speed, const char* format) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
 
    const bool changed =
       ImGui::DragFloatRange2("##Range", &minValue, &maxValue, speed, limitMin, limitMax, format, format);
@@ -497,7 +532,10 @@ bool InputString(const std::string& label, std::string& text, size_t bufferSize)
 }
 
 bool DrawInputString(const std::string& label, std::string& text, size_t bufferSize, float columnWidth) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
+
    std::vector<char> buffer = MakeTextBuffer(text, bufferSize);
    const bool changed = ImGui::InputText("##Value", buffer.data(), buffer.size());
 
@@ -511,7 +549,10 @@ bool DrawInputString(const std::string& label, std::string& text, size_t bufferS
 
 bool DrawMultilineText(
    const std::string& label, std::string& text, size_t bufferSize, float columnWidth, float height) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
+
    std::vector<char> buffer = MakeTextBuffer(text, bufferSize);
    const bool changed = ImGui::InputTextMultiline("##Value", buffer.data(), buffer.size(), ImVec2(-FLT_MIN, height));
 
@@ -538,7 +579,10 @@ bool DrawCombo(
 
 bool DrawCombo(
    const std::string& label, std::int32_t& currentIndex, const std::vector<const char*>& items, float columnWidth) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
+
    bool changed = false;
 
    if (items.empty()) {
@@ -593,14 +637,20 @@ bool DrawLanguageCombo(const std::string& label, EditorLanguage& language, float
 }
 
 bool DrawColorEdit3(const std::string& label, Vector3& color, float columnWidth) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
+
    const bool changed = ImGui::ColorEdit3("##Color", &color.x);
    EndPropertyRow();
    return changed;
 }
 
 bool DrawColorEdit4(const std::string& label, Vector4& color, float columnWidth) {
-   BeginPropertyRow(label, columnWidth);
+   if (!BeginPropertyRow(label, columnWidth)) {
+      return false;
+   }
+
    const bool changed = ImGui::ColorEdit4("##Color", &color.x);
    EndPropertyRow();
    return changed;
@@ -627,7 +677,9 @@ bool DrawSearchBox(std::string& filterText, const char* hint, float width, size_
 }
 
 bool DrawReadOnlyText(const std::string& label, const std::string& text, float columnWidth) {
-   BeginPropertyRow(label, columnWidth, false);
+   if (!BeginPropertyRow(label, columnWidth, false)) {
+      return false;
+   }
 
    if (text.empty()) {
       ImGui::TextDisabled("%s", Localize({"なし", "None"}));
@@ -641,7 +693,9 @@ bool DrawReadOnlyText(const std::string& label, const std::string& text, float c
 
 bool DrawPathControl(
    const std::string& label, std::string& path, size_t bufferSize, float columnWidth, bool showClearButton) {
-   BeginPropertyRow(label, columnWidth, false);
+   if (!BeginPropertyRow(label, columnWidth, false)) {
+      return false;
+   }
 
    bool changed = false;
    std::vector<char> buffer = MakeTextBuffer(path, bufferSize);

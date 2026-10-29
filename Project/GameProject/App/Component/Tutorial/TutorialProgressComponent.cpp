@@ -1,17 +1,27 @@
 #include "GameProject/App/Component/Tutorial/TutorialProgressComponent.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
-#include <cstdint>
-
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
+#include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Component/Collision/TriggerVolumeComponent.h"
+#include "GameEngine/Object/Component/Rendering/RenderComponent.h"
+#include "GameEngine/Object/Component/UI/UIAnimationTypes.h"
+#include "GameEngine/Object/Component/UI/UITextComponent.h"
+#include "GameEngine/Object/Model/Model.h"
+#include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/SceneWorld.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Character/CharacterLanding.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
+#include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
+#include "GameProject/App/Component/Race/UI/RaceGoalDirectionHUDComponent.h"
+#include "GameProject/App/Component/Race/UI/RaceGoalDistanceTextComponent.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
+#include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
-#include "GameEngine/Object/Component/UI/UITextComponent.h"
-#include "GameEngine/Object/Component/UI/UIAnimationTypes.h"
-#include "GameEngine/Object/Object.h"
-#include "GameEngine/Framework/EngineContext.h"
-#include "GameEngine/Scene/SceneWorld.h"
 #include <algorithm>
 #include <cmath>
 
@@ -23,189 +33,381 @@
 namespace App {
 
 void TutorialProgressComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
-   // シーン再読み込み前の参照を残さず、同じプレイヤーに属する一連の状態提供元を
-   // 設定IDからまとめて解決する。案内先UITextだけはこのコンポーネントの所有者から取得する。
-   characterJump_ = nullptr;
-   characterLanding_ = nullptr;
-   planetSwitcher_ = nullptr;
-   vehicleInput_ = nullptr;
-   landingBoost_ = nullptr;
+   playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
+   targetPlanet_ = sceneWorld.FindObjectById(targetPlanetObjectId_);
+   goalObject_ = sceneWorld.FindObjectById(goalObjectId_);
+   characterJump_ = playerObject_ ? playerObject_->GetComponent<CharacterJump>() : nullptr;
+   characterLanding_ = playerObject_ ? playerObject_->GetComponent<CharacterLanding>() : nullptr;
+   gravityBody_ = playerObject_ ? playerObject_->GetComponent<GravityBody>() : nullptr;
+   planetSwitcher_ = playerObject_ ? playerObject_->GetComponent<PlanetSwitcher>() : nullptr;
+   vehicleController_ = playerObject_ ? playerObject_->GetComponent<VehicleController>() : nullptr;
+   vehicleInput_ = playerObject_ ? playerObject_->GetComponent<VehicleInputComponent>() : nullptr;
+   vehicleDrift_ = playerObject_ ? playerObject_->GetComponent<VehicleDrift>() : nullptr;
+   landingBoost_ = playerObject_ ? playerObject_->GetComponent<VehicleLandingBoost>() : nullptr;
    guideText_ = HasOwner() ? GetOwner().GetComponent<GameEngine::UITextComponent>() : nullptr;
-
-   if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
-      characterJump_ = playerObject->GetComponent<CharacterJump>();
-      characterLanding_ = playerObject->GetComponent<CharacterLanding>();
-      planetSwitcher_ = playerObject->GetComponent<PlanetSwitcher>();
-      vehicleInput_ = playerObject->GetComponent<VehicleInputComponent>();
-      landingBoost_ = playerObject->GetComponent<VehicleLandingBoost>();
-   }
+   auto* feedback = sceneWorld.FindObjectById(feedbackObjectId_);
+   feedbackText_ = feedback ? feedback->GetComponent<GameEngine::UITextComponent>() : nullptr;
+   auto* distance = sceneWorld.FindObjectById(goalDistanceObjectId_);
+   goalDistance_ = distance ? distance->GetComponent<RaceGoalDistanceTextComponent>() : nullptr;
+   auto* direction = sceneWorld.FindObjectById(goalDirectionObjectId_);
+   goalDirection_ = direction ? direction->GetComponent<RaceGoalDirectionHUDComponent>() : nullptr;
 }
 
 void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
-
-   // 惑星候補はシーン読み込み後に確定するため、この時点で設定値を実在範囲へ補正する。
-   NormalizeTargetPlanetIndex();
-
-   // 進行状況はシーン設定ではなくプレイ中だけの状態として扱い、再読み込み時は最初から開始する。
-   phase_ = Phase::Steering;
-   completionElapsed_ = 0.0f;
-   usedPitch_ = false;
-   usedRoll_ = false;
-
-   // 現在の接地状態を基準にして、読み込み直後の接地を新規着地と誤判定しないようにする。
-   wasGrounded_ = characterLanding_ ? characterLanding_->IsGrounded() : true;
+   controllerEnabledWhenPlaying_ = vehicleController_ && vehicleController_->IsEnabled();
+   gravityEnabledWhenPlaying_ = gravityBody_ && gravityBody_->IsEnabled();
+   miniTurboCount_ = 0;
+   lastMiniTurboFireCount_ = vehicleDrift_ ? vehicleDrift_->GetMiniTurboFireCount() : 0;
+   wasDrifting_ = false;
+   wasAirborne_ = characterJump_ && characterJump_->IsJumping();
+   jumpStarted_ = false;
+   usedAirControl_ = false;
    sceneChangeRequested_ = false;
+   completionElapsed_ = 0.0f;
+   runtimeInitialized_ = false;
    landingFeedback_.clear();
+   driftFeedback_.clear();
+   driftFeedbackRemaining_ = 0.0f;
    displayedText_.clear();
    pendingText_.clear();
-
-   // シーンで設定された元のアルファを最大不透明度として保持し、フェードで上書きしない。
    guideBaseOpacity_ = guideText_ ? guideText_->GetStyle().color.w : 1.0f;
    guideVisibility_ = 1.0f;
    guideFadeState_ = GuideFadeState::Visible;
+   SetTargetPlanetEnabled(false);
+   phase_ = Phase::DrivingIntro;
+   if (vehicleInput_) {
+      vehicleInput_->SetJumpEnabled(false);
+   }
+
+   SetGoalGuidanceEnabled(false);
    UpdateGuideText(0.0f);
+   UpdateFeedback(0.0f);
+
+   if (!HasRequiredReferences()) {
+      Logger::Warning("Tutorial player, planet, goal, or HUD references are missing.", Logger::LogChannel::Game);
+   }
+}
+
+bool TutorialProgressComponent::HasRequiredReferences() const {
+   return guideText_ && feedbackText_ && playerObject_ && targetPlanet_ && goalObject_ && characterJump_ &&
+          characterLanding_ && gravityBody_ && planetSwitcher_ && vehicleController_ && vehicleInput_ &&
+          vehicleDrift_ && landingBoost_ && goalDistance_ && goalDirection_ &&
+          playerObject_->GetComponent<GameEngine::TransformComponent>() &&
+          targetPlanet_->GetComponent<GameEngine::TransformComponent>() &&
+          targetPlanet_->GetComponent<SphericalGravityAttractor>() &&
+          goalObject_->GetComponent<GameEngine::TransformComponent>() &&
+          goalObject_->GetComponent<GameEngine::TriggerVolumeComponent>();
+}
+
+bool TutorialProgressComponent::IsOnTargetPlanet() const {
+   if (!planetSwitcher_ || !characterLanding_ || !characterJump_ || characterJump_->IsJumping() ||
+       !characterLanding_->IsGrounded()) {
+      return false;
+   }
+
+   GameEngine::Model* receiver = nullptr;
+   GameEngine::Vector3 center{};
+   float radius = 0.0f;
+   return planetSwitcher_->TryGetLandingPlanet(receiver, center, radius) && receiver == targetPlanet_;
 }
 
 void TutorialProgressComponent::Update(float deltaTime) {
-   // いずれかの状態提供元が欠けた構成では一部条件だけで進行させず、
-   // 誤った完了やシーン遷移を防ぐためチュートリアル全体を停止する。
-   if (!guideText_ || !characterJump_ || !characterLanding_ || !planetSwitcher_ || !vehicleInput_ || !landingBoost_) {
+   if (!runtimeInitialized_) {
+      // 編集用のシーンに実行時の有効状態の変更を混入させない。
+      runtimeInitialized_ = true;
+      SetPhase(Phase::DrivingIntro);
+   }
+
+   if (!HasRequiredReferences()) {
+      SetPlayerPaused(true);
+      SetGoalGuidanceEnabled(false);
+
+      if (guideText_) {
+         guideText_->SetText(
+            "チュートリアルの参照設定が不足しています。プレイヤー・惑星・ゴール・UIを確認してください。");
+      }
+
       return;
    }
 
-   // 編集中に候補数が変わっても、比較に無効なインデックスを使わない。
-   NormalizeTargetPlanetIndex();
-
-   const bool isGrounded = characterLanding_->IsGrounded();
    const bool isAirborne = characterJump_->IsJumping();
-   const bool landedThisFrame = isGrounded && !wasGrounded_;
-
-   // 車両と同じ入力境界を通し、設定済みプレイヤースロットと無効状態を尊重する。
-   const float steerInput = vehicleInput_->GetSteerInput();
-   const float pitchInput = vehicleInput_->GetPitchInput();
-   const float rollInput = vehicleInput_->GetRollInput();
+   const bool tookOff = isAirborne && !wasAirborne_;
+   const bool landed = !isAirborne && wasAirborne_ && characterLanding_->IsGrounded();
+   const bool confirm =
+      vehicleInput_->IsConfirmTriggered() && guideFadeState_ == GuideFadeState::Visible && pendingText_.empty();
 
    switch (phase_) {
-      case Phase::Steering:
-         // 小さなスティックドリフトを操作達成として扱わないようデッドゾーンを設ける。
-         if (std::abs(steerInput) >= 0.35f) {
-            SetPhase(Phase::Jump);
+      case Phase::DrivingIntro:
+         if (confirm) {
+            SetPhase(Phase::DriftIntro);
          }
 
          break;
-      case Phase::Jump:
-         if (isAirborne) {
-            SetPhase(Phase::AirControl);
+      case Phase::DriftIntro:
+         if (confirm) {
+            lastMiniTurboFireCount_ = vehicleDrift_->GetMiniTurboFireCount();
+            SetPhase(Phase::DriftPractice);
          }
 
          break;
-      case Phase::AirControl:
-         if (isAirborne) {
-            // ピッチとロールは同一フレームで行う必要がないため、空中での達成を個別に保持する。
-            usedPitch_ = usedPitch_ || std::abs(pitchInput) >= 0.35f;
-            usedRoll_ = usedRoll_ || std::abs(rollInput) >= 0.35f;
+      case Phase::DriftPractice: {
+         const auto fireCount = vehicleDrift_->GetMiniTurboFireCount();
 
-            if (usedPitch_ && usedRoll_) {
-               SetPhase(Phase::PlanetTransfer);
-            }
+         if (fireCount > lastMiniTurboFireCount_) {
+            const auto remaining = static_cast<std::uint64_t>(kRequiredMiniTurbos - miniTurboCount_);
+            miniTurboCount_ += static_cast<std::int32_t>(std::min(fireCount - lastMiniTurboFireCount_, remaining));
+            driftFeedback_ = "ミニターボ発動！　速度メーターの上昇を確認しましょう。";
+            driftFeedbackRemaining_ = 1.5f;
+         } else if (wasDrifting_ && !vehicleDrift_->IsDrifting()) {
+            driftFeedback_ = "もう少し長くドリフトしてから、ハンドルを戻しましょう。";
+            driftFeedbackRemaining_ = 1.5f;
+         }
+
+         lastMiniTurboFireCount_ = fireCount;
+
+         if (miniTurboCount_ >= kRequiredMiniTurbos) {
+            SetPhase(Phase::JumpIntro);
+         }
+
+         break;
+      }
+      case Phase::JumpIntro:
+         if (confirm) {
+            jumpStarted_ = false;
+            SetPhase(Phase::JumpPractice);
+         }
+
+         break;
+      case Phase::JumpPractice:
+         jumpStarted_ = jumpStarted_ || tookOff;
+
+         if (jumpStarted_ && landed) {
+            HandleLandingResult();
+            SetPhase(Phase::AirControlIntro);
+         }
+
+         break;
+      case Phase::AirControlIntro:
+         if (confirm && RevealTargetPlanet()) {
+            SetPhase(Phase::PlanetTransfer);
          }
 
          break;
       case Phase::PlanetTransfer:
-      case Phase::LandingPractice:
-         // 接地中の毎フレームではなく空中から接地へ変わった瞬間だけ、直近の着地結果を評価する。
-         if (landedThisFrame) {
+      case Phase::Goal:
+         if (isAirborne) {
+            usedAirControl_ = usedAirControl_ || std::abs(vehicleInput_->GetPitchInput()) >= 0.35f ||
+                              std::abs(vehicleInput_->GetRollInput()) >= 0.35f;
+         }
+
+         if (landed) {
             HandleLandingResult();
+
+            if (!IsOnTargetPlanet()) {
+               landingFeedback_ += "\n元の惑星に戻りました。矢印の方向へ、もう一度ジャンプしましょう。";
+               SetPhase(Phase::PlanetTransfer);
+            }
+         }
+
+         if (IsOnTargetPlanet()) {
+            if (phase_ != Phase::Goal) {
+               SetPhase(Phase::Goal);
+            }
+
+            // 滞在状態で判定し、着地とトリガー侵入の更新順による取りこぼしを避ける。
+            if (goalObject_->GetComponent<GameEngine::TriggerVolumeComponent>()->IsInside()) {
+               SetPhase(Phase::Complete);
+            }
          }
 
          break;
       case Phase::Complete:
          completionElapsed_ += std::max(deltaTime, 0.0f);
 
-         // 遷移要求は一度だけ発行し、遅延中は完了メッセージを読める時間を確保する。
+         // クリア文を読む時間を確保し、遷移要求は一度だけ発行する。
          if (!sceneChangeRequested_ && !nextScene_.empty() && completionElapsed_ >= completionDelay_) {
             sceneChangeRequested_ = true;
             GameEngine::EngineContext::ChangeScene(nextScene_);
          }
 
          break;
-      default:
-         break;
    }
 
-   wasGrounded_ = isGrounded;
+   wasAirborne_ = isAirborne;
+   wasDrifting_ = vehicleDrift_->IsDrifting();
    UpdateGuideText(deltaTime);
-}
-
-nlohmann::json TutorialProgressComponent::Serialize() const {
-   // 実行時の達成状況は保存せず、再開時に最初から案内できるよう設定値だけを永続化する。
-   // 目標惑星は現在の候補数に合わせた値を保存し、無効なインデックスをシーンへ残さない。
-   return nlohmann::json{{"playerObjectId", playerObjectId_}, {"targetPlanetIndex", GetNormalizedTargetPlanetIndex()},
-      {"nextScene", nextScene_}, {"completionDelay", completionDelay_}, {"guideFadeDuration", guideFadeDuration_}};
-}
-
-nlohmann::json TutorialProgressComponent::GetSharedParameters() const {
-   return ExtractSharedParameters({"playerObjectId", "nextScene", "targetPlanetIndex"});
-}
-
-void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
-}
-
-void TutorialProgressComponent::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
-}
-
-void TutorialProgressComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
-   if (!data.is_object()) return;
-
-   // 各設定を独立して検証し、欠落または型不一致なら既定値・現在値を維持する。
-   if (data.contains("playerObjectId") && data.at("playerObjectId").is_string()) {
-      playerObjectId_ = data.at("playerObjectId").get<std::string>();
-   }
-
-   if (data.contains("targetPlanetIndex") && data.at("targetPlanetIndex").is_number_integer()) {
-      targetPlanetIndex_ = std::max(data.at("targetPlanetIndex").get<std::int32_t>(), 0);
-   }
-
-   if (data.contains("nextScene") && data.at("nextScene").is_string()) {
-      nextScene_ = data.at("nextScene").get<std::string>();
-   }
-
-   if (data.contains("completionDelay") && data.at("completionDelay").is_number()) {
-      completionDelay_ = std::max(data.at("completionDelay").get<float>(), 0.0f);
-   }
-
-   if (data.contains("guideFadeDuration") && data.at("guideFadeDuration").is_number()) {
-      // フェード時間は後段の除数になるため、0以下を許可しない。
-      guideFadeDuration_ = std::max(data.at("guideFadeDuration").get<float>(), 0.0001f);
-   }
+   UpdateFeedback(deltaTime);
 }
 
 void TutorialProgressComponent::SetPhase(Phase phase) {
-   if (phase_ == phase) return;
-
    phase_ = phase;
 
    if (phase_ == Phase::Complete) {
-      // 完了フェーズへ入った瞬間を遷移待ち時間の起点にする。
       completionElapsed_ = 0.0f;
    }
-}
 
-std::int32_t TutorialProgressComponent::GetNormalizedTargetPlanetIndex() const {
-   if (!planetSwitcher_) {
-      // 参照解決前でも負値だけは除外し、シリアライズやインスペクターから安全に利用できるようにする。
-      return std::max(targetPlanetIndex_, 0);
+   // 説明中も自動走行を続け、ゴール到達後のクリア表示で停止する。
+   SetPlayerPaused(phase_ == Phase::Complete);
+
+   if (vehicleInput_) {
+      vehicleInput_->SetJumpEnabled(
+         phase_ == Phase::JumpPractice || phase_ == Phase::PlanetTransfer || phase_ == Phase::Goal);
    }
 
-   const std::int32_t planetCount = planetSwitcher_->GetPlanetCount();
-   return planetCount > 0 ? std::clamp(targetPlanetIndex_, 0, planetCount - 1) : 0;
+   SetGoalGuidanceEnabled(phase_ == Phase::PlanetTransfer || phase_ == Phase::Goal);
 }
 
-void TutorialProgressComponent::NormalizeTargetPlanetIndex() {
-   targetPlanetIndex_ = GetNormalizedTargetPlanetIndex();
+void TutorialProgressComponent::SetPlayerPaused(bool paused) {
+   // クリア表示中や参照不足時は、位置を保ったまま走行制御と物理を止める。
+   if (gravityBody_) {
+      if (paused) {
+         gravityBody_->StopMotion();
+      }
+
+      gravityBody_->SetEnabled(!paused && gravityEnabledWhenPlaying_);
+   }
+
+   if (vehicleController_) {
+      vehicleController_->SetEnabled(!paused && controllerEnabledWhenPlaying_);
+   }
+}
+
+void TutorialProgressComponent::SetTargetPlanetEnabled(bool enabled) {
+   if (!targetPlanet_) return;
+
+   if (auto* gravity = targetPlanet_->GetComponent<SphericalGravityAttractor>()) {
+      gravity->SetEnabled(enabled);
+   }
+
+   if (auto* render = targetPlanet_->GetComponent<GameEngine::RenderComponent>()) {
+      auto settings = render->DescribeSettings();
+      settings.visible = enabled;
+      render->Configure(settings);
+   }
+}
+
+void TutorialProgressComponent::SetGoalGuidanceEnabled(bool enabled) {
+   if (goalDistance_) {
+      goalDistance_->SetGuidanceEnabled(enabled);
+   }
+
+   if (goalDirection_) {
+      goalDirection_->SetGuidanceEnabled(enabled);
+   }
+
+   if (goalObject_) {
+      if (auto* render = goalObject_->GetComponent<GameEngine::RenderComponent>()) {
+         auto settings = render->DescribeSettings();
+         // クリア時は誘導と到達判定だけを止め、ゴール本体はシーン遷移まで表示する。
+         settings.visible = enabled || phase_ == Phase::Complete;
+         render->Configure(settings);
+      }
+
+      if (auto* trigger = goalObject_->GetComponent<GameEngine::TriggerVolumeComponent>()) {
+         trigger->SetEnabled(enabled);
+      }
+   }
+}
+
+bool TutorialProgressComponent::RevealTargetPlanet() {
+   auto* playerTransform = playerObject_->GetComponent<GameEngine::TransformComponent>();
+   auto* targetTransform = targetPlanet_->GetComponent<GameEngine::TransformComponent>();
+   auto* goalTransform = goalObject_->GetComponent<GameEngine::TransformComponent>();
+   GameEngine::Vector3 sourceCenter{};
+   float sourceRadius = 0.0f;
+
+   if (!playerTransform || !targetTransform || !goalTransform ||
+       !planetSwitcher_->TryGetLandingPlanet(sourceCenter, sourceRadius)) {
+      return false;
+   }
+
+   const auto playerPose = playerTransform->GetLocalPose();
+   const auto up = (playerPose.translation - sourceCenter).Normalize();
+   auto forward = GameEngine::RotateVector({0.0f, 0.0f, 1.0f}, playerPose.GetActiveQuaternion());
+   forward = forward - up * forward.Dot(up);
+
+   if (forward.LengthSquared() < 1.0e-6f) {
+      return false;
+   }
+
+   forward = forward.Normalize();
+   auto targetPose = targetTransform->GetLocalPose();
+   const auto scale = targetPose.scale;
+   const float targetRadius = 0.5f * std::max({std::abs(scale.x), std::abs(scale.y), std::abs(scale.z)});
+   const float minimumCenterDistance = sourceRadius + targetRadius + 10.0f;
+   const float minimumForwardDistance =
+      std::sqrt(std::max(minimumCenterDistance * minimumCenterDistance - sourceRadius * sourceRadius, 0.0f));
+   const float forwardDistance = std::max(targetRadius + transferSurfaceGap_, minimumForwardDistance);
+
+   // 長時間説明を読んだ場合や周回後でも、練習開始時の正面に出現させる。
+   // 惑星同士は最低10units離し、元の地表へ重なって出現しないようにする。
+   targetPose.translation = sourceCenter + up * sourceRadius + forward * forwardDistance;
+   targetTransform->ApplyLocalPose(targetPose);
+   const auto goalNormal = (up * 0.6f - forward * 0.8f).Normalize();
+   auto goalPose = goalTransform->GetLocalPose();
+   // TriggerVolumeは親行列を合成しないため、惑星とゴールをともにルートのワールド座標で配置する。
+   goalPose.translation = targetPose.translation + goalNormal * targetRadius;
+   // 旗の支柱の+Yを地表の外向き法線へ合わせ、地中へ埋めず地表から垂直に立てる。
+   goalPose.SetRotationQuaternion(GameEngine::LookRotation(up * 0.8f + forward * 0.6f, goalNormal));
+   goalTransform->ApplyLocalPose(goalPose);
+   landingFeedback_.clear();
+   usedAirControl_ = false;
+   SetTargetPlanetEnabled(true);
+   return true;
+}
+
+nlohmann::json TutorialProgressComponent::Serialize() const {
+   return nlohmann::json{{"playerObjectId", playerObjectId_}, {"targetPlanetObjectId", targetPlanetObjectId_},
+      {"goalObjectId", goalObjectId_}, {"feedbackObjectId", feedbackObjectId_},
+      {"goalDistanceObjectId", goalDistanceObjectId_}, {"goalDirectionObjectId", goalDirectionObjectId_},
+      {"nextScene", nextScene_}, {"completionDelay", completionDelay_}, {"guideFadeDuration", guideFadeDuration_},
+      {"transferSurfaceGap", transferSurfaceGap_}};
+}
+
+nlohmann::json TutorialProgressComponent::GetSharedParameters() const {
+   return ExtractSharedParameters({"playerObjectId", "targetPlanetObjectId", "goalObjectId", "feedbackObjectId",
+      "goalDistanceObjectId", "goalDirectionObjectId", "nextScene"});
+}
+
+void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
+   ReadParameters(data);
+}
+
+void TutorialProgressComponent::ApplySharedParameters(const nlohmann::json& data) {
+   ReadParameters(data);
+}
+
+void TutorialProgressComponent::ReadParameters(const nlohmann::json& data) {
+   if (!data.is_object()) return;
+
+   auto readId = [&data](const char* key, std::string& value) {
+      if (data.contains(key) && data.at(key).is_string()) {
+         value = data.at(key).get<std::string>();
+      }
+   };
+   readId("playerObjectId", playerObjectId_);
+   readId("targetPlanetObjectId", targetPlanetObjectId_);
+   readId("goalObjectId", goalObjectId_);
+   readId("feedbackObjectId", feedbackObjectId_);
+   readId("goalDistanceObjectId", goalDistanceObjectId_);
+   readId("goalDirectionObjectId", goalDirectionObjectId_);
+   readId("nextScene", nextScene_);
+
+   if (data.contains("completionDelay") && data.at("completionDelay").is_number()) {
+      const float delay = data.at("completionDelay").get<float>();
+      completionDelay_ = std::isfinite(delay) ? std::max(delay, 0.0f) : 2.5f;
+   }
+
+   if (data.contains("guideFadeDuration") && data.at("guideFadeDuration").is_number()) {
+      const float duration = data.at("guideFadeDuration").get<float>();
+      guideFadeDuration_ = std::isfinite(duration) ? std::max(duration, 0.0001f) : 0.2f;
+   }
+
+   if (data.contains("transferSurfaceGap") && data.at("transferSurfaceGap").is_number()) {
+      const float gap = data.at("transferSurfaceGap").get<float>();
+      transferSurfaceGap_ = std::isfinite(gap) ? std::max(gap, 10.0f) : 50.0f;
+   }
 }
 
 void TutorialProgressComponent::UpdateGuideText(float deltaTime) {
@@ -271,84 +473,131 @@ void TutorialProgressComponent::ApplyGuideOpacity() {
 }
 
 void TutorialProgressComponent::HandleLandingResult() {
-   const std::int32_t landedPlanetIndex = planetSwitcher_->GetCurrentPlanetIndex();
-
-   // 惑星間移動の課題では着地品質より先に着地先を検証する。
-   // 元の惑星へ戻った場合は最終課題のまま再挑戦させ、成功着地でも完了扱いにしない。
-   if (phase_ == Phase::PlanetTransfer && landedPlanetIndex != targetPlanetIndex_) {
-      landingFeedback_ = "元の惑星に戻りました。正面の目標惑星へ向けて、もう一度ジャンプしましょう。";
-      return;
-   }
-
-   // VehicleLandingBoostが同じ着地イベントで確定した結果を使い、
-   // 成功時だけ完了へ進め、未達時は具体的な修正点を示す練習フェーズへ移す。
    switch (landingBoost_->GetLastLandingResult()) {
       case LandingResult::Success:
-         landingFeedback_.clear();
-         SetPhase(Phase::Complete);
+         landingFeedback_ = "着地成功！　地表に姿勢を合わせて、速度を維持できました。";
          break;
       case LandingResult::Normal:
-         landingFeedback_ = "着地判定：NORMAL　機体の底を地表ともっと平行にすると SUCCESS です。";
-         SetPhase(Phase::LandingPractice);
+         landingFeedback_ = "着地できました。車体の底を地表と平行にすると、よりきれいに着地できます。";
          break;
       case LandingResult::Failure:
-         landingFeedback_ = "着地判定：FAILED　機体が大きく傾いています。姿勢を戻して再挑戦しましょう。";
-         SetPhase(Phase::LandingPractice);
-         break;
-      default:
+         landingFeedback_ = "車体が傾いていたため減速しました。空中で姿勢を整えて着地しましょう。";
          break;
    }
 }
 
-std::string TutorialProgressComponent::BuildGuideText() const {
-   switch (phase_) {
-      case Phase::Steering:
-         return "チュートリアル  1 / 4　走行と旋回\n"
-                "機体は自動で前進します。A / D または左スティック左右で旋回してください。";
-      case Phase::Jump:
-         return "チュートリアル  2 / 4　ジャンプ\n"
-                "正面の目標惑星へ向かい、SPACE または A ボタンでジャンプしてください。";
-      case Phase::AirControl: {
-         const std::string pitchStatus = usedPitch_ ? "OK" : "未操作";
-         const std::string rollStatus = usedRoll_ ? "OK" : "未操作";
-         return "チュートリアル  3 / 4　空中姿勢\n"
-                "W / S・左スティック上下：ピッチ［" +
-                pitchStatus + "］　Q / E・LB / RB：ロール［" + rollStatus + "］";
+void TutorialProgressComponent::UpdateFeedback(float deltaTime) {
+   if (!feedbackText_) return;
+
+   driftFeedbackRemaining_ = std::max(0.0f, driftFeedbackRemaining_ - std::max(deltaTime, 0.0f));
+   std::string feedback;
+
+   if (phase_ == Phase::DriftPractice) {
+      if (vehicleDrift_->CanFireMiniTurbo()) {
+         feedback = "ターボ準備OK！　A / D を離す・左スティックを中央に戻すと発動！";
+      } else if (vehicleDrift_->IsDrifting()) {
+         feedback = "ドリフト中…　同じ方向へ曲がり続けてターボをためましょう。";
+      } else if (driftFeedbackRemaining_ > 0.0f) {
+         feedback = driftFeedback_;
+      } else {
+         feedback = "A / D または左スティック左右を入れ続けると、ドリフトが始まります。";
       }
-      case Phase::PlanetTransfer: {
-         const std::string retryText = landingFeedback_.empty() ? std::string() : "\n" + landingFeedback_;
-         return "チュートリアル  4 / 4　惑星間ジャンプと着地\n"
-                "目標の惑星へ着地します。機体の上方向を地表の外側へそろえると SUCCESS です。" +
-                retryText;
+   } else if (phase_ == Phase::JumpPractice) {
+      feedback = characterJump_->IsJumping() ? "ジャンプ中！　この惑星に着地してみましょう。" : "ジャンプ 0 / 1";
+   } else if (phase_ == Phase::AirControlIntro) {
+      feedback = "ジャンプ 1 / 1　" + landingFeedback_;
+   } else if (phase_ == Phase::PlanetTransfer || phase_ == Phase::Goal) {
+      if (characterJump_->IsJumping()) {
+         const auto* transform = playerObject_->GetComponent<GameEngine::TransformComponent>();
+         const auto localUp =
+            GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, transform->GetLocalPose().GetActiveQuaternion());
+         const bool aligned = localUp.Dot(gravityBody_->GetTargetUpVector()) >= 0.95f;
+         feedback = aligned ? "姿勢OK！　車体の底と地表を平行に保ちましょう。"
+                            : "W / S・左スティック上下、Q / E・LB / RB で姿勢を地表に合わせましょう。";
+      } else {
+         feedback = landingFeedback_;
       }
-      case Phase::LandingPractice:
-         return "チュートリアル  4 / 4　成功着地を体験\n" + landingFeedback_ +
-                "\nSPACE / A で再ジャンプし、空中で姿勢を整えて着地してください。";
-      case Phase::Complete:
-         return "TUTORIAL COMPLETE！　着地成功\n"
-                "機体の底と地表が平行な状態が SUCCESS です。ゲームを開始します。";
-      default:
-         return {};
+
+      if (usedAirControl_) {
+         feedback += "\n姿勢操作：体験できました！";
+      }
    }
+
+   feedbackText_->SetText(feedback);
+}
+
+std::string TutorialProgressComponent::BuildGuideText() const {
+   const std::string next = "\nSPACE / A ボタン：次へ";
+
+   switch (phase_) {
+      case Phase::DrivingIntro:
+         return "チュートリアル  1 / 8　自動走行と加速\n"
+                "地上では自動で前進し、徐々に最高速度へ近づきます。\n"
+                "練習中は、左下の速度メーターを確認しましょう。" +
+                next;
+      case Phase::DriftIntro:
+         return "チュートリアル  2 / 8　ドリフトとミニターボ\n"
+                "A / D または左スティック左右を入れ続けると、ドリフトします。\n"
+                "ターボがたまったらハンドルを戻すと発動！　最高速度へ早く到達できます。" +
+                next;
+      case Phase::DriftPractice:
+         return "チュートリアル  3 / 8　ドリフトを体験しよう\n"
+                "ドリフトを続けてからハンドルを戻し、ミニターボを3回発動しましょう。\n"
+                "ミニターボ " +
+                std::to_string(miniTurboCount_) + " / 3";
+      case Phase::JumpIntro:
+         return "チュートリアル  4 / 8　ジャンプ\n"
+                "ミニターボ 3 / 3 達成！　次は SPACE / A ボタンでジャンプします。\n"
+                "速度が速いほど遠くへ飛べます。" +
+                next;
+      case Phase::JumpPractice:
+         return "チュートリアル  5 / 8　ジャンプを体験しよう\n"
+                "一度ボタンを離してから、SPACE / A ボタンでジャンプしましょう。\n"
+                "最初の惑星へ着地すると、次の説明へ進みます。";
+      case Phase::AirControlIntro:
+         return "チュートリアル  6 / 8　空中の姿勢と着地\n"
+                "W / S・左スティック上下：前後の傾き　Q / E・LB / RB：左右の傾き\n"
+                "車体の底を地表と平行にして着地すると速度を維持でき、大きく傾くと減速します。" +
+                next;
+      case Phase::PlanetTransfer:
+         return "チュートリアル  7 / 8　二つ目の惑星へ！\n"
+                "正面に惑星が出現しました。矢印の方向へ SPACE / A ボタンでジャンプ！\n"
+                "空中で姿勢を調整し、車体の底を地表に合わせて着地しましょう。";
+      case Phase::Goal:
+         return "チュートリアル  8 / 8　ゴールへ向かおう\n"
+                "二つ目の惑星に到着！　矢印と残り距離を見ながら、赤い旗を目指しましょう。";
+      case Phase::Complete:
+         return "TUTORIAL COMPLETE！\n"
+                "ゴールに到着しました。ドリフト・ジャンプ・姿勢操作を使ってレースへ！\n"
+                "まもなくゲームを開始します。";
+   }
+
+   return {};
 }
 
 const char* TutorialProgressComponent::GetPhaseName() const {
    switch (phase_) {
-      case Phase::Steering:
-         return "Steering";
-      case Phase::Jump:
-         return "Jump";
-      case Phase::AirControl:
-         return "AirControl";
+      case Phase::DrivingIntro:
+         return "DrivingIntro";
+      case Phase::DriftIntro:
+         return "DriftIntro";
+      case Phase::DriftPractice:
+         return "DriftPractice";
+      case Phase::JumpIntro:
+         return "JumpIntro";
+      case Phase::JumpPractice:
+         return "JumpPractice";
+      case Phase::AirControlIntro:
+         return "AirControlIntro";
       case Phase::PlanetTransfer:
          return "PlanetTransfer";
-      case Phase::LandingPractice:
-         return "LandingPractice";
+      case Phase::Goal:
+         return "Goal";
       case Phase::Complete:
          return "Complete";
-      default:
-         return "Unknown";
    }
+
+   return "Unknown";
 }
 
 #ifdef USE_IMGUI
@@ -358,19 +607,17 @@ void TutorialProgressComponent::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
+   GameEngine::EditorUI::ObjectReference("Target Planet", targetPlanetObjectId_, "SphericalGravityAttractor");
+   GameEngine::EditorUI::ObjectReference("Goal", goalObjectId_, "TriggerVolumeComponent");
+   GameEngine::EditorUI::ObjectReference("Feedback Text", feedbackObjectId_, "UITextComponent");
+   GameEngine::EditorUI::ObjectReference("Goal Distance", goalDistanceObjectId_, "RaceGoalDistanceTextComponent");
+   GameEngine::EditorUI::ObjectReference("Goal Direction", goalDirectionObjectId_, "RaceGoalDirectionHUDComponent");
    GameEngine::EditorUI::SceneReference("Next Scene", nextScene_);
-   ImGui::Text("Phase: %s", GetPhaseName());
-   const std::int32_t maxPlanetIndex = planetSwitcher_ ? std::max(planetSwitcher_->GetPlanetCount() - 1, 0) : 0;
-
-   if (ImGui::DragInt("Target Planet Index", &targetPlanetIndex_, 1.0f, 0, maxPlanetIndex)) {
-      NormalizeTargetPlanetIndex();
-   }
-
    ImGui::DragFloat("Completion Delay", &completionDelay_, 0.1f, 0.0f, 10.0f, "%.1f s");
    ImGui::DragFloat("Guide Fade Duration", &guideFadeDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");
-   ImGui::Text("Resolved: Jump=%s Landing=%s Switcher=%s Input=%s Boost=%s Text=%s", characterJump_ ? "true" : "false",
-      characterLanding_ ? "true" : "false", planetSwitcher_ ? "true" : "false", vehicleInput_ ? "true" : "false",
-      landingBoost_ ? "true" : "false", guideText_ ? "true" : "false");
+   ImGui::DragFloat("Transfer Surface Gap", &transferSurfaceGap_, 0.5f, 10.0f, 150.0f);
+   ImGui::Text("Phase: %s  Mini Turbo: %d / %d", GetPhaseName(), miniTurboCount_, kRequiredMiniTurbos);
+   ImGui::Text("References: %s", HasRequiredReferences() ? "Ready" : "Missing");
 }
 #endif
 

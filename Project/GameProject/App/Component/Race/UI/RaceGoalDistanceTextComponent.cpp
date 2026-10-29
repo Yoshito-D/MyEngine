@@ -65,7 +65,8 @@ void RaceGoalDistanceTextComponent::Update(float deltaTime) {
       raceManager_ ? raceManager_->GetState() : RaceManagerComponent::State::Finished;
    const bool isRaceStarted =
       raceState == RaceManagerComponent::State::Countdown || raceState == RaceManagerComponent::State::Running;
-   const bool shouldShow = isRaceStarted && playerObject_ && goalObject_;
+   const bool shouldShow =
+      guidanceEnabled_ && (raceManagerId_.empty() || isRaceStarted) && playerObject_ && goalObject_;
 
    // 待機・結果中は専用UIと競合しないよう距離表示を消す。
    if (!shouldShow) {
@@ -85,6 +86,16 @@ void RaceGoalDistanceTextComponent::Update(float deltaTime) {
 
    // 小数距離はformatの丸めに任せ、HUDでは読み取りやすい整数メートルへ統一する。
    text->SetText(std::format("{:.0f}m", std::max(distanceMeters, 0.0f)));
+}
+
+void RaceGoalDistanceTextComponent::SetGuidanceEnabled(bool enabled) {
+   guidanceEnabled_ = enabled;
+
+   if (!enabled && HasOwner()) {
+      if (auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>()) {
+         text->SetText("");
+      }
+   }
 }
 
 nlohmann::json RaceGoalDistanceTextComponent::Serialize() const {

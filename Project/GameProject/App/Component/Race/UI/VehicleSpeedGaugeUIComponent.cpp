@@ -89,8 +89,10 @@ void VehicleSpeedGaugeUIComponent::Update(float deltaTime) {
    }
 
    // 空中の垂直速度も含む実移動速度を優先し、地上移動だけの値に固定されないようにする。
-   const float speed = gravityBody_ ? std::max(gravityBody_->GetVelocity().Length(), 0.0f)
-                                    : std::max(groundMover_->GetCurrentSpeed(), 0.0f);
+   // 説明中など物理を一時停止した場合は、再開時の地上速度を保持して表示する。
+   const float speed = gravityBody_ && gravityBody_->IsEnabled() ? std::max(gravityBody_->GetVelocity().Length(), 0.0f)
+                       : groundMover_                            ? std::max(groundMover_->GetCurrentSpeed(), 0.0f)
+                                                                 : 0.0f;
    const float maximumSpeed = groundMover_ ? std::max(groundMover_->DescribeSettings().maxSpeed, 0.001f) : 40.0f;
    const float targetRatio = std::clamp(speed / maximumSpeed, 0.0f, 1.0f);
 
