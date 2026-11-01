@@ -1,7 +1,5 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraDebugView.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include <cstdio>
@@ -12,27 +10,6 @@
 
 namespace App {
 using namespace RearCameraMath;
-
-void RearCameraDebugView::MutateCameraState(GameEngine::CameraState&, float) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   const auto* recorder = GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>();
-
-   if (!recorder) return;
-
-   DrawCameraMeasurementOverlay(camera->DescribeSettings(), *recorder);
-#ifdef USE_IMGUI
-   if (const auto frame = camera->GetFrameView()) {
-      const auto sharedBefore = camera->GetSharedParameters();
-      auto settings = camera->DescribeSettings();
-      DrawCameraEvidenceWindow(settings, *frame, *GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>());
-      camera->Configure(settings);
-      camera->CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
-   }
-#endif
-}
 
 void RearCameraDebugView::DrawCameraMeasurementOverlay(
    const RearCameraSettings& settings, const RearCameraMeasurementRecorder& recorder) {
@@ -161,25 +138,6 @@ void RearCameraDebugView::DrawCameraEvidenceWindow(
 #endif
 
 #ifdef USE_IMGUI
-void RearCameraDebugView::DrawInspector() {
-   ImGui::PushID("DiagnosticsComponent");
-   RearCameraComponent::DrawInspector();
-   ImGui::PopID();
-   auto* camera = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<PlayerRearFollowCamera>() : nullptr;
-   auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
-
-   if (!camera || !recorder) return;
-
-   if (const auto frame = camera->GetFrameView()) {
-      bool enabled = camera->IsEnabled();
-      const auto sharedBefore = camera->GetSharedParameters();
-      auto settings = camera->DescribeSettings();
-      DrawInspector(settings, enabled, *frame, *recorder);
-      camera->Configure(settings);
-      camera->CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
-      camera->SetEnabled(enabled);
-   }
-}
 
 void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enabled, const RearCameraFrameView& frame,
    RearCameraMeasurementRecorder& recorder) {

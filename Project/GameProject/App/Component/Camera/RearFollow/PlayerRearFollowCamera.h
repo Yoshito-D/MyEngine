@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <optional>
 #include <algorithm>
 #include <cmath>
 
@@ -19,7 +18,7 @@ namespace App {
 ///       input_.gravityUp を角速度制限付きで補間する。
 ///       空中時は速度の反対方向へ徐々に補間する。
 ///       プレイヤーが加速すると FOV 拡大・カメラ後退距離増加で加速感を演出する。
-/// @details 外部入力と追従設定を管理し、各計算部品はVirtualCameraが所有・更新する。
+/// @details 外部入力と追従設定を管理し、各計算クラスを所有して依存順に更新する。
 ///          設定値は一括検証して適用し、実行中の設定への直接アクセスを許可しない。
 class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent, private RearCameraSettings {
 public:
@@ -29,11 +28,8 @@ public:
    /// @brief カメラコンポーネントを破棄する
    ~PlayerRearFollowCamera() override = default;
 
-   /// @brief 設定・入力部品を同じBodyステージの計算部品より先に配置する。
+   /// @brief 後方追従計算を他のBody補正より先に実行する。
    std::int32_t GetExecutionOrder() const override { return -1000; }
-
-   /// @brief 計算に必要な全コンポーネントが所有カメラ上に揃っているかを返す。
-   bool HasRequiredComponents() const;
 
    /// @brief 編集用の設定値をコピーする。
    RearCameraSettings DescribeSettings() const { return *this; }
@@ -44,10 +40,10 @@ public:
    /// @brief 外部から渡された追従入力を読み取り専用で返す。
    const RearCameraInput& GetInput() const { return input_; }
 
-   /// @brief 計測・UI用の非所有ビューを返す。必要な計算部品が欠ける場合は空。
-   std::optional<RearCameraFrameView> GetFrameView() const;
+   /// @brief 計測・UI用に、所有する計算結果の非所有ビューを返す。
+   RearCameraFrameView GetFrameView() const;
 
-   /// @brief 入力と設定だけを保持し、計算は後続コンポーネントへ委譲する。
+   /// @brief 重力Up・追従位置・注視姿勢を依存順に計算してカメラへ反映する。
    void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
 
    /// @brief 実行ステージ（Body）を返す
@@ -146,10 +142,12 @@ public:
    /// @param data 読み込むJSONデータ
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 追従距離・画角・補間速度などのカメラ設定を共有パラメーターとして取得する。
+   /// @return 実行時入力や各計算部品の補間履歴を含まない設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 各計算部品の補間履歴を維持したまま、共有カメラ設定を読み込んで検証する。
+   /// @param data カメラ設定のJSONオブジェクト。未指定の項目は現在値を保持する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
@@ -159,7 +157,7 @@ public:
 #endif
 
 protected:
-   /// @brief 必要な計算・表示コンポーネントを所有カメラへ追加する。
+   /// @brief 所有する計算クラスの補間履歴を初期化する。
    void OnAttach() override;
 
 private:
@@ -167,6 +165,14 @@ private:
 
    /// @brief 外部公開形式と補間履歴の初期化を橋渡しする。
    void ResetRuntimeState();
+   RearCameraTransition transition_;
+   RearCameraGravityUp gravity_;
+   RearCameraPlanetGuide planet_;
+   RearCameraDirectionTracker direction_;
+   RearCameraSpeedEffects speed_;
+   RearCameraPositionSolver position_;
+   RearCameraAimSolver aim_;
+   RearCameraMeasurementRecorder recorder_;
    RearCameraInput input_; ///< 外部から渡された追従入力。
 };
 

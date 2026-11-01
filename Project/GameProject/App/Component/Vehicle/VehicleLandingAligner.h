@@ -9,8 +9,8 @@ namespace App {
 /// @brief 着地直後に Slerp で姿勢を gravityUp に合わせるコンポーネント
 ///
 /// - VehicleMover が着地を検出したとき BeginAlign() を呼び出す
-/// - タイマーが残っている間は VehicleGroundMover の姿勢再構築をスキップさせる
-/// - Update() を毎フレーム呼ぶことで補正を進行させる
+/// - タイマーが残っている間は VehicleMover が地上操舵より補間姿勢を優先する
+/// - VehicleMover が Evaluate() を呼び、補間候補を受け取って適用する
 class VehicleLandingAligner final : public GameEngine::IObjectComponent {
 public:
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
@@ -18,11 +18,13 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両着地姿勢合わせ", "Vehicle Landing Aligner"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief シーン保存とコンポーネント検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 毎フレーム Slerp 補正を進行させる
-   void Update(float deltaTime) override;
+   /// @param rotation 補間中なら姿勢候補を受け取る。
+   /// @return 有効な補間候補がある場合true。
+   bool Evaluate(float deltaTime, GameEngine::Quaternion& rotation);
 
    /// @brief 着地補正を開始する
    /// @param startRot  着地した瞬間の回転
@@ -34,20 +36,22 @@ public:
 
 #ifdef USE_IMGUI
 
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 現在の設定と実行状態をインスペクターへ表示する。
    void DrawInspector() override;
 #endif
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief コンポーネントの保存対象設定をJSONで返す。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief JSONから設定を復元する。
+   /// @param data 保存されたコンポーネント設定。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
@@ -59,9 +63,6 @@ private:
 private:
    /// @brief 現在のタイマーから Slerp 済みクォータニオンを計算する
    GameEngine::Quaternion CalcBlendedRotation() const;
-
-   /// @brief blended を Transform と GravityBody に適用する
-   void ApplyBlendedRotation(const GameEngine::Quaternion& blended);
 
    float alignTimer_ = 0.0f;                                       ///< 着地姿勢補正を開始してからの経過時間（秒）。
    GameEngine::Quaternion alignStart_ = {0.0f, 0.0f, 0.0f, 1.0f};  ///< 着地姿勢補正を開始した時点の回転。

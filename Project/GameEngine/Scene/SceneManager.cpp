@@ -88,6 +88,8 @@ bool SceneManager::RequestSceneChange(const std::string& name) {
    if (!ReadScene(name, snapshot)) {
       return false;
    }
+
+   // 予約時に読込と検証を済ませ、暗転後のフレーム境界では確定済みスナップショットを適用する。
    pending_ = std::move(snapshot);
    return true;
 }
@@ -134,6 +136,7 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
       audio->StopPreviews();
 
       if (audio->IsAvailable()) {
+         // 旧シーンの破棄でBGM所有者が解放されても、次のシーンの要求が判明するまで停止判断を保留する。
          audio->BeginBgmSceneChange();
       }
    }
@@ -157,6 +160,7 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
    }
 
    if (!failure.empty()) {
+      // 構築途中のシーンと外部の接続を片付けてから、退避した旧シーンを再構築する。
       if (beforeReplace_) {
          beforeReplace_();
       }
@@ -193,6 +197,7 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
       }
    }
 
+   // 新規読込か復旧かにかかわらず、最終的に有効になったシーンのBGM要求で継続を判断する。
    if (audio && audio->IsAvailable()) {
       audio->EndBgmSceneChange(HasSceneBgmRequest(currentScene_->GetSceneWorld()));
    }
@@ -241,6 +246,7 @@ void SceneManager::CheckSceneChange() {
       transitionUpdateTime_ = std::chrono::steady_clock::now();
    }
 
+   // 暗転完了と予約の両方が揃ったフレーム境界でのみ、シーンの実体を入れ替える。
    if (commitReady_ && pending_) {
       auto snapshot = std::move(*pending_);
       pending_.reset();

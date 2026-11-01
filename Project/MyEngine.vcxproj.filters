@@ -263,6 +263,36 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GameProject\App\Component\UI\MenuNavigation.cpp">
+      <Filter>GameProject\App\Component\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.cpp">
+      <Filter>GameProject\App\Component\Tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Tutorial\TutorialGuidePresenter.cpp">
+      <Filter>GameProject\App\Component\Tutorial</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Rendering\PlayerShadowComponent.cpp">
+      <Filter>GameProject\App\Component\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RaceRecordStore.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\RacePresentation.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Camera\VehicleCameraEffects.cpp">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Camera\LandingPrediction.cpp">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Camera\CameraPresentationCapture.cpp">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Math\Functions\CollisionGeometry.cpp">
+      <Filter>GameEngine\Math\Functions</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Editor\ParameterAssetEditor.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
@@ -854,12 +884,6 @@
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraAimSolver.cpp">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponent.cpp">
-      <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
-    </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponentRegistry.cpp">
-      <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
-    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraDebugView.cpp">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClCompile>
@@ -995,6 +1019,36 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameProject\App\Component\UI\MenuNavigation.h">
+      <Filter>GameProject\App\Component\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.h">
+      <Filter>GameProject\App\Component\Tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Tutorial\TutorialGuidePresenter.h">
+      <Filter>GameProject\App\Component\Tutorial</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Rendering\PlayerShadowComponent.h">
+      <Filter>GameProject\App\Component\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceRecordStore.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RacePresentation.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\VehicleCameraEffects.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\LandingPrediction.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\CameraPresentationCapture.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Math\Functions\CollisionGeometry.h">
+      <Filter>GameEngine\Math\Functions</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Editor\ParameterAssetEditor.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
@@ -1629,9 +1683,6 @@
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraAimSolver.h">
-      <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponent.h">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraDebugView.h">

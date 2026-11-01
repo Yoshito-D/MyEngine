@@ -1,4 +1,6 @@
 #include "GameProject/App/Component/Vehicle/VehicleMover.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
+#include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameProject/App/Component/Vehicle/VehicleAirController.h"
 #include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
@@ -24,8 +26,94 @@ namespace App {
 // 公開設定
 // ================================================================
 
+Quaternion VehicleMover::AlignToGravity(const Quaternion& rotation, const Vector3& gravityUp, float deltaTime) {
+
+   const auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
+   if (switcher && switcher->HasPendingPlanetChange()) {
+      return rotation;
+   }
+
+   // 現在Upと目標Upを正規化
+   Vector3 current = orientationUp_.Normalize();
+   Vector3 target = gravityUp.Normalize();
+
+   if (current.LengthSquared() < 1e-8f) {
+      current = Vector3{0.0f, 1.0f, 0.0f};
+      orientationUp_ = current;
+   }
+
+   if (target.LengthSquared() < 1e-8f) {
+      target = Vector3{0.0f, 1.0f, 0.0f};
+   }
+
+   // 方向差が小さい場合は補間不要
+   float dot = current.Dot(target);
+
+   if (dot > 0.9999f) {
+
+      return rotation;
+   }
+
+   // ほぼ逆向きの場合は180度回転の特別処理
+   if (dot < -0.9999f) {
+      Vector3 axis = Vector3{1.0f, 0.0f, 0.0f}.Cross(current);
+
+      if (axis.LengthSquared() < 1e-6f) {
+         axis = Vector3{0.0f, 1.0f, 0.0f}.Cross(current);
+      }
+
+      if (axis.LengthSquared() < 1e-6f) {
+         axis = Vector3{0.0f, 0.0f, 1.0f}.Cross(current);
+      }
+
+      if (axis.LengthSquared() < 1e-6f) {
+
+         return rotation;
+      }
+
+      axis = axis.Normalize();
+      Quaternion rotDelta = MakeRotateAxisAngleQuaternion(axis, MathConstants::kPi);
+      Quaternion cur = rotation;
+      orientationUp_ = target;
+      return (rotDelta * cur).Normalize();
+   }
+
+   // 回転軸を求める
+   Vector3 rotAxis = current.Cross(target);
+
+   if (rotAxis.LengthSquared() < 1e-6f) {
+
+      return rotation;
+   }
+
+   rotAxis = rotAxis.Normalize();
+
+   // 角度差を算出
+   float angle = std::acos(std::clamp(dot, -1.0f, 1.0f));
+
+   if (std::abs(angle) < 1e-6f) {
+
+      return rotation;
+   }
+
+   // gravityAlignmentSpeed_ に基づき段階的に回転
+   float t = std::clamp(gravityAlignmentSpeed_ * deltaTime, 0.0f, 1.0f);
+   Quaternion rotDelta = MakeRotateAxisAngleQuaternion(rotAxis, angle * t);
+   Quaternion cur = rotation;
+
+   // 現在Upも補間更新
+   if (t >= 0.9999f) {
+      orientationUp_ = target;
+   } else {
+      orientationUp_ = Vector3::Lerp(current, target, t);
+   }
+   return (rotDelta * cur).Normalize();
+}
+
 void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput, bool isGrounded,
    const Vector3& gravityUp, float deltaTime) {
+   if (!HasOwner() || !IsEnabled()) return;
+
    auto* transform = GetOwner().GetComponent<TransformComponent>();
 
    if (!transform) return;
@@ -34,7 +122,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    // 空中でも時間を進め、ジャンプによって禁止時間が延びないようにする。
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
 
-   if (groundMover) {
+   if (groundMover && groundMover->IsEnabled()) {
       groundMover->AdvanceAccelerationBlock(deltaTime);
    }
 
@@ -55,6 +143,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    }
 
    wasGrounded_ = isGrounded;
+   Quaternion rotation = AlignToGravity(currentRotation, gravityUp, deltaTime);
 
    // ----------------------------------------------------------------
    // 接地中 / 空中 の分岐
@@ -63,13 +152,14 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    if (isGrounded) {
       auto* ground = GetOwner().GetComponent<VehicleGroundMover>();
 
-      if (ground) {
+      if (ground && ground->IsEnabled()) {
          // ドリフト中はステアリング感度を driftSteerMult 倍にする。
          // これにより、ドリフト中に向きの細かい調整がしやすくなる。
          auto* drift = GetOwner().GetComponent<VehicleDrift>();
-         const float effectiveSteer = drift ? drift->CalculateSteeringInput(steerInput) : steerInput;
+         const float effectiveSteer =
+            drift && drift->IsEnabled() ? drift->CalculateSteeringInput(steerInput) : steerInput;
 
-         ground->Apply(effectiveSteer, gravityUp, deltaTime);
+         rotation = ground->Apply(effectiveSteer, gravityUp, deltaTime, rotation);
 
          // lastMoveDirection_ は VehicleController::GetLastMoveDirection() 経由で
          // カメラ追従などに使われる。
@@ -81,7 +171,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
       // 毎フレーム Apply() を呼ぶことで内部タイマーが正しく動作する。
       auto* drift = GetOwner().GetComponent<VehicleDrift>();
 
-      if (drift) {
+      if (drift && drift->IsEnabled()) {
          drift->Apply(driftInput, steerInput, gravityUp, deltaTime);
       }
    } else {
@@ -89,10 +179,22 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
       // ドリフトは接地中のみ有効なので空中では呼ばない。
       auto* air = GetOwner().GetComponent<VehicleAirController>();
 
-      if (air) {
-         air->Apply(rollInput, pitchInput, deltaTime);
+      if (air && air->IsEnabled()) {
+         rotation = air->Apply(rollInput, pitchInput, deltaTime, rotation);
       }
    }
+   if (isGrounded) {
+      auto* aligner = GetOwner().GetComponent<VehicleLandingAligner>();
+      if (aligner && aligner->IsEnabled()) {
+         aligner->Evaluate(deltaTime, rotation);
+      }
+      orientationUp_ = RotateVector({0.0f, 1.0f, 0.0f}, rotation);
+   }
+
+   // 地上操舵・空中入力・着地補間を選択した後、車体姿勢はここで一度だけ適用する。
+   auto pose = transform->GetLocalPose();
+   pose.SetRotationQuaternion(rotation);
+   transform->ApplyLocalPose(pose);
 }
 
 // ================================================================
@@ -113,7 +215,7 @@ void VehicleMover::NotifyLandingBoost(const Vector3& localUp, const Vector3& gra
    // アタッチされていないとき (nullptr) は何もしない。
    auto* boost = GetOwner().GetComponent<VehicleLandingBoost>();
 
-   if (boost) {
+   if (boost && boost->IsEnabled()) {
       boost->TryBoost(localUp, gravityUp);
    }
 }
@@ -123,7 +225,7 @@ void VehicleMover::ResetAirAngularVelocity() {
    // リセットしないと着地後も慣性で回転し続けてしまう。
    auto* air = GetOwner().GetComponent<VehicleAirController>();
 
-   if (air) {
+   if (air && air->IsEnabled()) {
       air->ResetAngularVelocity();
    }
 }
@@ -131,12 +233,11 @@ void VehicleMover::ResetAirAngularVelocity() {
 void VehicleMover::NotifyLandingAligner(const Quaternion& currentRotation, const Vector3& gravityUp) {
    auto* aligner = GetOwner().GetComponent<VehicleLandingAligner>();
 
-   if (!aligner) return;
+   if (!aligner || !aligner->IsEnabled()) return;
 
    // 目標回転（gravityUp に正立した姿勢）を生成してから
    // BeginAlign() で Slerp 補間を開始する。
-   // 補間中は VehicleGroundMover が姿勢再構築をスキップするため
-   // 二重に姿勢が書き換わることを防げる。
+   // 最終姿勢の選択時に、地上操舵の候補より着地補間の候補を優先する。
    Quaternion targetRot = BuildAlignTargetRotation(currentRotation, gravityUp);
    aligner->BeginAlign(currentRotation, targetRot);
 }
@@ -159,49 +260,8 @@ Quaternion VehicleMover::BuildAlignTargetRotation(const Quaternion& currentRotat
 
    fwdFlat = fwdFlat * (1.0f / fwdLen);
 
-   // ---- ステップ 2: 正規直交基底を構築する ----
-   // right = gravityUp × fwdFlat（右方向）
-   // fwdOut = right × gravityUp（再計算した前方。直交性を保証するため）
-   Vector3 right = gravityUp.Cross(fwdFlat).Normalize();
-   Vector3 fwdOut = right.Cross(gravityUp).Normalize();
-
-   // ---- ステップ 3: 回転行列 → クォータニオン変換（Shepperd の方法）----
-   // 列順: [right | gravityUp | fwdOut]
-   // トレースの正負と最大対角成分に応じて 4 つの場合分けをするのは、
-   // sqrt の引数が負にならないよう数値的に安定した分岐を選ぶため。
-   float m00 = right.x, m10 = right.y, m20 = right.z;
-   float m01 = gravityUp.x, m11 = gravityUp.y, m21 = gravityUp.z;
-   float m02 = fwdOut.x, m12 = fwdOut.y, m22 = fwdOut.z;
-   float trace = m00 + m11 + m22;
-   Quaternion q;
-
-   if (trace > 0.0f) {
-      float s = 0.5f / std::sqrt(trace + 1.0f);
-      q.w = (0.25f / s);
-      q.x = (m21 - m12) * s;
-      q.y = (m02 - m20) * s;
-      q.z = (m10 - m01) * s;
-   } else if (m00 > m11 && m00 > m22) {
-      float s = 2.0f * std::sqrt(1.0f + m00 - m11 - m22);
-      q.w = (m21 - m12) / s;
-      q.x = 0.25f * s;
-      q.y = (m01 + m10) / s;
-      q.z = (m02 + m20) / s;
-   } else if (m11 > m22) {
-      float s = 2.0f * std::sqrt(1.0f + m11 - m00 - m22);
-      q.w = (m02 - m20) / s;
-      q.x = (m01 + m10) / s;
-      q.y = 0.25f * s;
-      q.z = (m12 + m21) / s;
-   } else {
-      float s = 2.0f * std::sqrt(1.0f + m22 - m00 - m11);
-      q.w = (m10 - m01) / s;
-      q.x = (m02 + m20) / s;
-      q.y = (m12 + m21) / s;
-      q.z = 0.25f * s;
-   }
-
-   return q.Normalize();
+   // 共通の基底変換を使い、地上姿勢と着地姿勢の計算規則を揃える。
+   return LookRotation(fwdFlat, gravityUp);
 }
 
 // ================================================================
@@ -216,6 +276,7 @@ void VehicleMover::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    ImGui::Separator();
+   ImGui::DragFloat(Tr("重力姿勢追従速度", "Gravity Alignment Speed"), &gravityAlignmentSpeed_, 0.1f, 0.0f, 100.0f);
    ImGui::Text("%s",
       Tr("コーディネーター: サブコンポーネントへ処理を委譲します。", "Coordinator: delegates to sub-components."));
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("最後の移動方向", "Last Move Direction"), lastMoveDirection_.x,
@@ -224,12 +285,23 @@ void VehicleMover::DrawInspector() {
 }
 #endif
 
+nlohmann::json VehicleMover::GetSharedParameters() const {
+   return Serialize();
+}
+
+void VehicleMover::ApplySharedParameters(const nlohmann::json& data) {
+   Deserialize(data);
+}
+
 nlohmann::json VehicleMover::Serialize() const {
-   return nlohmann::json::object();
+   return nlohmann::json{{"gravityAlignmentSpeed", gravityAlignmentSpeed_}};
 }
 
 void VehicleMover::Deserialize(const nlohmann::json& data) {
-   (void)data;
+   const float speed = data.contains("gravityAlignmentSpeed") && data.at("gravityAlignmentSpeed").is_number()
+                          ? data.at("gravityAlignmentSpeed").get<float>()
+                          : gravityAlignmentSpeed_;
+   gravityAlignmentSpeed_ = std::isfinite(speed) ? std::max(0.0f, speed) : 5.0f;
 }
 
 } // namespace App

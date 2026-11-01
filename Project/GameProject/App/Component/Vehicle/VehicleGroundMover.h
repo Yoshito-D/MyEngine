@@ -14,7 +14,7 @@ namespace App {
 /// - 毎フレーム autoSpeed へ向けて速度を回復しながら前進
 /// - ステアリング入力で yaw 回転
 /// - (gravityUp, flatForward) から姿勢を完全再構築
-/// - VehicleLandingAligner が同 Object にあれば補正中は姿勢再構築をスキップする
+/// - 姿勢候補を返し、最終適用はVehicleMoverに委ねる
 class VehicleGroundMover final : public GameEngine::IObjectComponent {
 public:
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
@@ -22,14 +22,17 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両地上移動", "Vehicle Ground Mover"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief シーン保存とコンポーネント検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 接地中の移動・姿勢を適用する
+   /// @brief 地上速度を更新し、地表に沿った姿勢候補を返す
    /// @param steerInput  左右入力（-1〜+1）
    /// @param gravityUp   現在の重力Up方向
    /// @param deltaTime   フレーム時間
-   void Apply(float steerInput, const GameEngine::Vector3& gravityUp, float deltaTime);
+   /// @param currentRot 計算の基準となる現在姿勢。
+   /// @return 操舵後の姿勢。無効時は入力姿勢を返す。
+   GameEngine::Quaternion Apply(float steerInput, const GameEngine::Vector3& gravityUp, float deltaTime,
+      const GameEngine::Quaternion& currentRot);
 
    /// @brief 着地失敗による減速と加速禁止を一括で適用する
    /// @param speed ペナルティ適用直後の前進速度
@@ -59,20 +62,22 @@ public:
 
 #ifdef USE_IMGUI
 
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 現在の設定と実行状態をインスペクターへ表示する。
    void DrawInspector() override;
 #endif
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief コンポーネントの保存対象設定をJSONで返す。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief JSONから設定を復元する。
+   /// @param data 保存されたコンポーネント設定。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
@@ -101,7 +106,7 @@ private:
    float autoSpeed = 16.0f;    ///< 通常走行速度。これを下回ったときのみ減速演出を発火する。
    float steerSpeed = 120.0f;  ///< ステアリング角速度（deg/sec）。
    float speedRecovery = 1.0f; ///< スピード回復速度（per sec）。
-   float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限
+   float maxSpeed = 40.0f;     ///< 外部加速を含めた前進速度の上限
 
 private:
    /// @brief 指定秒数だけ加速を禁止し、保留中の正の加速を破棄する
@@ -120,13 +125,6 @@ private:
 
    /// @brief GravityBody の水平速度を flatForward * currentSpeed_ に更新する
    void ApplyVelocityToGravityBody(const GameEngine::Vector3& flatForward, const GameEngine::Vector3& gravityUp);
-
-   /// @brief (gravityUp, flatForward) から姿勢クォータニオンを再構築して適用する
-   void RebuildPosture(const GameEngine::Vector3& flatForward, const GameEngine::Vector3& gravityUp);
-
-   /// @brief right / up / fwd 基底からクォータニオンを生成する
-   static GameEngine::Quaternion BasisToQuaternion(
-      const GameEngine::Vector3& right, const GameEngine::Vector3& up, const GameEngine::Vector3& fwd);
 
    /// @brief 現在の前進実速度（負値は未初期化を示す）
    float currentSpeed_ = -1.0f;

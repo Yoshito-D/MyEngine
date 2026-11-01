@@ -11,43 +11,46 @@ namespace App {
 /// @brief Vehicle の速度を SpeedLine ポストエフェクトへ反映するコンポーネント
 class VehicleSpeedPostEffectController final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "VehicleSpeedPostEffectController";
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{
       "車両速度ポストエフェクト", "Vehicle Speed Post Effect Controller"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief コンポーネントの保存・検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 所有中の共有ポストエフェクト状態を中立値へ戻して破棄する
    ~VehicleSpeedPostEffectController() override;
 
-   /// @copydoc GameEngine::IObjectComponent::Update
+   /// @brief 現在速度に応じて画面演出を更新する。
    void Update(float deltaTime) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnDetach
+   /// @brief 所有オブジェクトから外れる際に、適用中の速度演出を解除する。
    void OnDetach() override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnDisable
+   /// @brief 無効化される際に、適用中の速度演出を解除する。
    void OnDisable() override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 設定と実行状態をインスペクターへ表示する。
    void DrawInspector() override;
 #endif
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief 保存対象の設定をJSONで返す。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief 指定されたJSONから設定を復元する。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 共有できる設定をJSONで返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を保ち、指定した共有設定を適用する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。

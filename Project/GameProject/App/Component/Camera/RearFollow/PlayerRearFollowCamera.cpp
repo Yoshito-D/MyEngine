@@ -1,4 +1,5 @@
 #include "GameEngine/Utility/JsonValue.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include <cstdint>
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraDebugView.h"
@@ -24,6 +25,7 @@ void PlayerRearFollowCamera::Configure(const RearCameraSettings& requested) {
    auto settings = requested;
    const RearCameraSettings defaults;
 
+   // 補間計算へNaNや無限大が伝わらないよう、範囲制限より先に非有限値を既定値へ戻す。
    if (!std::isfinite(settings.distance)) {
       settings.distance = defaults.distance;
    }
@@ -193,7 +195,11 @@ void PlayerRearFollowCamera::Configure(const RearCameraSettings& requested) {
    }
 
    settings.distance = std::max(settings.distance, 0.0f);
+
+   // FOVはラジアンで保持し、投影が退化する0度・180度を避けて1度〜179度に制限する。
    settings.fovDefault = std::clamp(settings.fovDefault, 0.017453292f, 3.12413936f);
+
+   // 強度を正規化する区間には幅を持たせ、着地の最大ブレンド時刻は予測区間内に収める。
    settings.speedBoostMax = std::max(settings.speedBoostThreshold + 0.001f, settings.speedBoostMax);
    settings.preLandingFullBlendSeconds =
       std::clamp(settings.preLandingFullBlendSeconds, 0.0f, std::max(0.0f, settings.preLandingPredictionSeconds));
@@ -220,19 +226,25 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    input_.driftLookTargetHeightOffset = 0.0f;
    input_.playerVelocity = {0.0f, 0.0f, 0.0f};
 
+   transition_.Reset(*this);
+   gravity_.Reset(*this);
+   planet_.Reset(*this);
+   direction_.Reset(*this);
+   speed_.Reset(*this);
+   position_.Reset(*this);
+   aim_.Reset(*this);
+   recorder_.Reset(*this);
    if (auto* owner = GetOwnerCamera()) {
-      owner->ResetComponents(*this);
-
-      if (const auto* speed = owner->GetComponent<RearCameraSpeedEffects>()) {
-         GameEngine::CameraState state = owner->GetState();
-         state.fov = speed->GetState().currentFov;
-         owner->SetState(state);
-      }
+      // 演出側のFOVを初期化した直後にカメラ本体へも反映し、次回更新まで以前の画角が残るのを防ぐ。
+      auto state = owner->GetState();
+      state.fov = speed_.GetState().currentFov;
+      owner->SetState(state);
    }
 }
 
 void PlayerRearFollowCamera::SetLandingPrediction(const GameEngine::Vector3& up, const GameEngine::Vector3& backward,
    const GameEngine::Vector3& contactPoint, float secondsToImpact) {
+   // 予測方向がほぼゼロの場合は直前の方向を使い、着地への姿勢補間へゼロベクトルを渡さない。
    input_.predictedLandingUp = NormalizeOrFallback(up, input_.predictedLandingUp);
    input_.predictedLandingBackward = NormalizeOrFallback(backward, input_.predictedLandingBackward);
    input_.predictedLandingContact = contactPoint;
@@ -241,141 +253,93 @@ void PlayerRearFollowCamera::SetLandingPrediction(const GameEngine::Vector3& up,
 }
 
 void PlayerRearFollowCamera::OnAttach() {
-   auto* owner = GetOwnerCamera();
-
-   if (!owner) return;
-
-   // シーン内の従来の単一エントリを、その場で実際の独立コンポーネントへ展開する。
-   if (!owner->GetComponent<RearCameraTransition>()) {
-      owner->AddComponent<RearCameraTransition>();
-   }
-
-   if (!owner->GetComponent<RearCameraGravityUp>()) {
-      owner->AddComponent<RearCameraGravityUp>();
-   }
-
-   if (!owner->GetComponent<RearCameraPlanetGuide>()) {
-      owner->AddComponent<RearCameraPlanetGuide>();
-   }
-
-   if (!owner->GetComponent<RearCameraDirectionTracker>()) {
-      owner->AddComponent<RearCameraDirectionTracker>();
-   }
-
-   if (!owner->GetComponent<RearCameraSpeedEffects>()) {
-      owner->AddComponent<RearCameraSpeedEffects>();
-   }
-
-   if (!owner->GetComponent<RearCameraPositionSolver>()) {
-      owner->AddComponent<RearCameraPositionSolver>();
-   }
-
-   if (!owner->GetComponent<RearCameraAimSolver>()) {
-      owner->AddComponent<RearCameraAimSolver>();
-   }
-
-   if (!owner->GetComponent<RearCameraMeasurementRecorder>()) {
-      owner->AddComponent<RearCameraMeasurementRecorder>();
-   }
-
-   if (!owner->GetComponent<RearCameraDebugView>()) {
-      owner->AddComponent<RearCameraDebugView>();
-   }
-
    ResetRuntimeState();
 }
 
-bool PlayerRearFollowCamera::HasRequiredComponents() const {
-   const auto* owner = GetOwnerCamera();
-   return owner && owner->GetComponent<RearCameraTransition>() && owner->GetComponent<RearCameraGravityUp>() &&
-          owner->GetComponent<RearCameraPlanetGuide>() && owner->GetComponent<RearCameraDirectionTracker>() &&
-          owner->GetComponent<RearCameraSpeedEffects>() && owner->GetComponent<RearCameraPositionSolver>() &&
-          owner->GetComponent<RearCameraAimSolver>();
+RearCameraFrameView PlayerRearFollowCamera::GetFrameView() const {
+   return {input_, transition_, direction_, planet_, speed_, gravity_, aim_};
 }
 
-std::optional<RearCameraFrameView> PlayerRearFollowCamera::GetFrameView() const {
-   if (!HasRequiredComponents()) {
-      return std::nullopt;
-   }
-
-   const auto* owner = GetOwnerCamera();
-   return RearCameraFrameView{input_, *owner->GetComponent<RearCameraTransition>(),
-      *owner->GetComponent<RearCameraDirectionTracker>(), *owner->GetComponent<RearCameraPlanetGuide>(),
-      *owner->GetComponent<RearCameraSpeedEffects>(), *owner->GetComponent<RearCameraGravityUp>(),
-      *owner->GetComponent<RearCameraAimSolver>()};
-}
-
-void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState&, float) {
-   // 計算部品はVirtualCamera::CalculateStateが順番に呼ぶ。ここから重複実行しない。
+void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
+   // 遷移を先に確定し、同一フレームのUpを方向・位置・注視点へ順に伝える。
+   const auto events = transition_.BeginFrame(input_, aim_.GetState().lastLookTargetOffset);
+   transition_.UpdatePreLandingBlend(input_, *this, deltaTime);
+   transition_.UpdateAirborneBlend(input_, *this, deltaTime);
+   transition_.UpdatePlayerFramingBlend(input_, *this, deltaTime);
+   transition_.EndFrame(input_.isAirborne);
+   const auto oldUp = gravity_.GetState().currentGravityUp;
+   const auto up = gravity_.SmoothGravityUp(input_, *this, transition_.GetState(), aim_.GetState(), deltaTime);
+   direction_.TransportWithGravity(oldUp, up);
+   planet_.AdvanceTakeoffTimer(input_, *this, events, direction_.GetState().currentBackward, deltaTime);
+   planet_.UpdatePlanetDirectionGuide(input_, *this, direction_.GetState().currentBackward, deltaTime);
+   direction_.BeginLanding(events.justLanded);
+   const float planetBlend =
+      planet_.ComputePlanetDirectionBlend(input_, *this, transition_.GetState(), direction_.GetState().currentBackward);
+   direction_.UpdateBackwardVector(
+      input_, *this, transition_.GetState(), aim_.GetState(), planet_.GetState(), planetBlend, up, deltaTime);
+   const float boostAlpha = speed_.UpdateAccelerationEffect(input_, *this, transition_.GetState(), state, deltaTime);
+   const auto eye = position_.Update(input_, *this, transition_.GetState(), direction_.GetState(), speed_.GetState(),
+      aim_.GetState(), state, up, boostAlpha, deltaTime);
+   aim_.ApplyLookAt(input_, *this, transition_.GetState(), transition_.ComputePreLandingGuideBlend(input_),
+      direction_.GetState(), state, eye, up, deltaTime);
+   // 計測はカメラ補間用dtではなくゲーム更新時刻を使用し、同じフレームの重複を避ける。
+   recorder_.RecordCameraMeasurementSample(GameEngine::EngineContext::GetDeltaTime(),
+      GameEngine::EngineContext::GetGameFrameNumber(), *this, GetFrameView());
+   RearCameraDebugView::DrawCameraMeasurementOverlay(*this, recorder_);
+#ifdef USE_IMGUI
+   const auto sharedBefore = GetSharedParameters();
+   auto settings = DescribeSettings();
+   RearCameraDebugView::DrawCameraEvidenceWindow(settings, GetFrameView(), recorder_);
+   Configure(settings);
+   CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
+#endif
 }
 
 GameEngine::Vector3 PlayerRearFollowCamera::GetCameraUp() const {
-   const auto* aim = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraAimSolver>() : nullptr;
-   return aim ? aim->GetState().cachedUp : GameEngine::Vector3{0.0f, 1.0f, 0.0f};
+   return aim_.GetState().cachedUp;
 }
 
 GameEngine::Vector3 PlayerRearFollowCamera::GetCameraRight() const {
-   const auto* aim = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraAimSolver>() : nullptr;
-   return aim ? aim->GetState().cachedRight : GameEngine::Vector3{1.0f, 0.0f, 0.0f};
+   return aim_.GetState().cachedRight;
 }
 
 GameEngine::Vector3 PlayerRearFollowCamera::GetCameraForward() const {
-   const auto* aim = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraAimSolver>() : nullptr;
-   return aim ? aim->GetState().cachedForward : GameEngine::Vector3{0.0f, 0.0f, 1.0f};
+   return aim_.GetState().cachedForward;
 }
 
 void PlayerRearFollowCamera::StartCameraMeasurement(const std::string& testName) {
-   auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
-
-   if (recorder) {
-      if (const auto frame = GetFrameView()) {
-         recorder->StartCameraMeasurement(testName, *frame);
-      }
-   }
+   recorder_.StartCameraMeasurement(testName, GetFrameView());
 }
 
 bool PlayerRearFollowCamera::StopCameraMeasurement(bool saveToFile) {
-   auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
-   return recorder ? recorder->StopCameraMeasurement(saveToFile, *this) : !saveToFile;
+   return recorder_.StopCameraMeasurement(saveToFile, *this);
 }
 
 void PlayerRearFollowCamera::ClearCameraMeasurement() {
-   if (auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr) {
-      recorder->ClearCameraMeasurement();
-   }
+   recorder_.ClearCameraMeasurement();
 }
 
 bool PlayerRearFollowCamera::IsCameraMeasurementActive() const {
-   const auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
-   return recorder && recorder->GetState().cameraMeasurementActive;
+   return recorder_.GetState().cameraMeasurementActive;
 }
 
 size_t PlayerRearFollowCamera::GetCameraMeasurementSampleCount() const {
-   const auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
-   return recorder ? recorder->GetState().cameraMeasurementSamples.size() : 0;
+   return recorder_.GetState().cameraMeasurementSamples.size();
 }
 
 const std::string& PlayerRearFollowCamera::GetLastCameraMeasurementPath() const {
-   const auto* recorder = GetOwnerCamera() ? GetOwnerCamera()->GetComponent<RearCameraMeasurementRecorder>() : nullptr;
-   static const std::string empty;
-   return recorder ? recorder->GetState().lastCameraMeasurementPath : empty;
+   return recorder_.GetState().lastCameraMeasurementPath;
 }
 
 #ifdef USE_IMGUI
 void PlayerRearFollowCamera::DrawInspector() {
    bool enabled = IsEnabled();
-
-   if (ImGui::Checkbox("Enabled", &enabled)) {
-      SetEnabled(enabled);
-   }
-
-   ImGui::TextDisabled("Settings: RearCameraDebugView");
-
-   if (!HasRequiredComponents()) {
-      ImGui::TextDisabled("A required rear camera component is missing.");
-   }
-
-   Configure(DescribeSettings());
+   const auto sharedBefore = GetSharedParameters();
+   auto settings = DescribeSettings();
+   RearCameraDebugView::DrawInspector(settings, enabled, GetFrameView(), recorder_);
+   Configure(settings);
+   CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
+   SetEnabled(enabled);
 }
 #endif
 
@@ -524,6 +488,7 @@ void PlayerRearFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_
       GameEngine::JsonValue::ReadBool(data, "showCameraEvidenceWindow", showCameraEvidenceWindow);
    input_.autoSpeed = GameEngine::JsonValue::ReadFloat(data, "autoSpeed", input_.autoSpeed);
 
+   // シーン復元時だけ履歴を初期化し、共有設定を編集中に反映するときは追従・補間状態を維持する。
    if (initializeRuntime) {
       ResetRuntimeState();
    }

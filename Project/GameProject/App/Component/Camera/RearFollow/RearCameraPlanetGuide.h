@@ -1,26 +1,13 @@
 #pragma once
 
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraComponent.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraTypes.h"
 
 namespace App {
 
 /// @brief 空中の惑星方向ガイドを管理する。
-class RearCameraPlanetGuide : public RearCameraComponent {
+class RearCameraPlanetGuide {
 public:
-   /// @brief 所有カメラのパイプラインから担当処理を1フレーム進める。
-   void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
-
-   /// @brief 担当する処理ステージを返す。
-   GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Body; }
-
-   /// @brief 同一ステージの依存関係に従う更新順を返す。
-   std::int32_t GetExecutionOrder() const override { return -700; }
-
-   /// @brief シーン保存とFactory登録に使う名前を返す。
-   const char* GetComponentName() const override { return "RearCameraPlanetGuide"; }
-
    /// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向と係数を更新する
    /// @details 注視点はプレイヤー中心のまま保ち、eye 側の回り込み方向だけを補間する。
    ///          補間開始前は現在の後方へ張り付け、重力条件を満たした瞬間の逆振れを防ぐ。
@@ -43,7 +30,7 @@ public:
       const RearCameraFrameEvents& events, const GameEngine::Vector3& currentBackward, float deltaTime);
 
    /// @brief 設定の読み込み時に補間履歴を既定値へ戻す。
-   void Reset(const RearCameraSettings& settings) override;
+   void Reset(const RearCameraSettings& settings);
 
    /// @brief この段階の確定済み状態を読み取り専用で返す。
    const RearCameraPlanetState& GetState() const { return state_; }

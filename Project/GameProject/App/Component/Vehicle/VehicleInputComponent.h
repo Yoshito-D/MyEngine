@@ -17,6 +17,9 @@ namespace App {
 /// @details 物理キーやパッド番号を制御ロジックから隠し、アクションIDだけをこの境界で管理する。
 class VehicleInputComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Input; }
+
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "VehicleInputComponent";
    /// @brief エディターに表示する日本語名と英語名。

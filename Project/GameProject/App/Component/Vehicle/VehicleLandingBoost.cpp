@@ -22,7 +22,7 @@ LandingResult VehicleLandingBoost::TryBoost(const Vector3& localUp, const Vector
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
 
-   if (!groundMover) {
+   if (!IsEnabled() || !groundMover || !groundMover->IsEnabled()) {
       lastLandingResult_ = LandingResult::Normal;
       return lastLandingResult_;
    }

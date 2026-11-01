@@ -1,27 +1,9 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraTransition.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 
 namespace App {
 using namespace RearCameraMath;
-
-void RearCameraTransition::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   const auto& input = camera->GetInput();
-   const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
-   events_ = BeginFrame(input, aim.GetState().lastLookTargetOffset);
-   UpdatePreLandingBlend(input, camera->DescribeSettings(), deltaTime);
-
-   // この2つのブレンドはUp計算から独立しているため、同じ部品で先に確定できる。
-   UpdateAirborneBlend(input, camera->DescribeSettings(), deltaTime);
-   UpdatePlayerFramingBlend(input, camera->DescribeSettings(), deltaTime);
-   EndFrame(input.isAirborne);
-}
 
 /// @brief 地上/空中ブレンド値を更新する
 /// @details ジャンプ開始・着地で注視点、距離、FOV が一気に変わると画が跳ねるため、
@@ -152,7 +134,6 @@ RearCameraFrameEvents RearCameraTransition::BeginFrame(
 }
 
 void RearCameraTransition::Reset(const RearCameraSettings& settings) {
-   events_ = {};
    state_.wasAirborneLastFrame = false;
    state_.currentAirborneBlend = 0.0f;
    state_.currentPlayerFramingBlend = 0.0f;

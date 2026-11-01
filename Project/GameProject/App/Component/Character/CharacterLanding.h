@@ -14,6 +14,9 @@ namespace App {
 /// - 地上: 常に地表へ再配置し、速度を抑制
 class CharacterLanding final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Contacts; }
+
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "CharacterLanding";
    /// @brief エディターに表示する日本語名と英語名。
@@ -55,10 +58,11 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。

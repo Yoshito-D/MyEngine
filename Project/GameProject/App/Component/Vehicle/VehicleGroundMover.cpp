@@ -1,7 +1,6 @@
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
-#include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
@@ -20,10 +19,11 @@ namespace App {
 // 公開設定
 // ---------------------------------------------------------------
 
-void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float deltaTime) {
-   auto* transform = GetOwner().GetComponent<TransformComponent>();
-
-   if (!transform) return;
+Quaternion VehicleGroundMover::Apply(
+   float steerInput, const Vector3& gravityUp, float deltaTime, const Quaternion& currentRot) {
+   if (!IsEnabled() || !HasOwner()) {
+      return currentRot;
+   }
 
    // ---- 速度更新 ----
    // autoSpeed へ向けて currentSpeed_ を毎フレーム近づける。
@@ -33,7 +33,6 @@ void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float
    // ---- ステアリング ----
    // 現在のクォータニオンから前方ベクトルを取得し、
    // ステア入力に応じた yaw 回転を重力Up 軸まわりに加える。
-   Quaternion currentRot = transform->GetLocalPose().GetActiveQuaternion();
    Vector3 localForward = RotateVector({0.0f, 0.0f, 1.0f}, currentRot);
    Vector3 steered = ApplySteering(steerInput, localForward, gravityUp, deltaTime);
 
@@ -47,14 +46,8 @@ void VehicleGroundMover::Apply(float steerInput, const Vector3& gravityUp, float
    // 垂直速度（重力加速や着地処理の結果）は保持するため Dot で取り出して加算する。
    ApplyVelocityToGravityBody(flatForward_, gravityUp);
 
-   // ---- 姿勢再構築 ----
-   // VehicleLandingAligner が Slerp 補正中の場合は姿勢を書き換えない。
-   // 両方が同フレームに transform を書き換えると補正がキャンセルされるため。
-   auto* aligner = GetOwner().GetComponent<VehicleLandingAligner>();
-
-   if (aligner && aligner->IsAligning()) return;
-
-   RebuildPosture(flatForward_, gravityUp);
+   // 最終姿勢の選択とTransformへの適用は、移動の調整役に集約する。
+   return LookRotation(flatForward_, gravityUp);
 }
 
 // ---------------------------------------------------------------
@@ -172,87 +165,12 @@ Vector3 VehicleGroundMover::ProjectToHorizontalPlane(const Vector3& dir, const V
 void VehicleGroundMover::ApplyVelocityToGravityBody(const Vector3& flatForward, const Vector3& gravityUp) {
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
 
-   if (!gravityBody) return;
+   if (!gravityBody || !gravityBody->IsEnabled()) return;
 
    // 既存の速度から重力方向成分（垂直速度）だけを取り出す。
    // Dot(gravityUp) で垂直方向の大きさを得て、gravityUp を掛けて垂直ベクトルを復元する。
    // これを足さないと、重力落下やジャンプの垂直成分が毎フレームリセットされてしまう。
    gravityBody->ApplySurfaceVelocity(flatForward * currentSpeed_, gravityUp);
-}
-
-void VehicleGroundMover::RebuildPosture(const Vector3& flatForward, const Vector3& gravityUp) {
-   auto* transform = GetOwner().GetComponent<TransformComponent>();
-
-   if (!transform) return;
-
-   // 正規直交基底を構築する。
-   // right  = gravityUp × flatForward（右方向）
-   // fwdOut = right × gravityUp（再直交化した前方。直交性を完全に保証するため再計算する）
-   // この手順により、(right, gravityUp, fwdOut) が完全な右手系直交基底になる。
-   Vector3 right = gravityUp.Cross(flatForward).Normalize();
-   Vector3 fwdOut = right.Cross(gravityUp).Normalize();
-
-   // 基底からクォータニオンを生成して transform に書き込む。
-   {
-      auto pose = transform->GetLocalPose();
-      pose.SetRotationQuaternion(BasisToQuaternion(right, gravityUp, fwdOut));
-      transform->ApplyLocalPose(pose);
-   }
-
-   // GravityBody にも現在の Up 方向を通知する。
-   // GravityBody は「重力から見た現在の上向き」を内部で持っており、
-   // これを更新しないと回転補正が古い Up に向かって動き続ける。
-   auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-
-   if (gravityBody) {
-      gravityBody->SetCurrentUpVector(gravityUp);
-      gravityBody->SetTargetUpVector(gravityUp);
-   }
-}
-
-Quaternion VehicleGroundMover::BasisToQuaternion(const Vector3& right, const Vector3& up, const Vector3& fwd) {
-   // 3×3 回転行列の要素を列ベクトルとして並べる。
-   // [right | up | fwd] の順が OpenGL 列順（右手系）。
-   //   列0（X 軸）= right
-   //   列1（Y 軸）= up
-   //   列2（Z 軸）= fwd
-   float m00 = right.x, m10 = right.y, m20 = right.z;
-   float m01 = up.x, m11 = up.y, m21 = up.z;
-   float m02 = fwd.x, m12 = fwd.y, m22 = fwd.z;
-
-   // Shepperd 法による回転行列→クォータニオン変換。
-   // trace（対角和）= 4w² - 1 が正のときは w が最大成分なので標準式を使う。
-   // trace が負のときは w が小さく精度が落ちるため、最大の対角成分を基準に分岐する。
-   float trace = m00 + m11 + m22;
-   Quaternion q;
-
-   if (trace > 0.0f) {
-      float s = 0.5f / std::sqrt(trace + 1.0f);
-      q.w = (0.25f / s);
-      q.x = (m21 - m12) * s;
-      q.y = (m02 - m20) * s;
-      q.z = (m10 - m01) * s;
-   } else if (m00 > m11 && m00 > m22) {
-      float s = 2.0f * std::sqrt(1.0f + m00 - m11 - m22);
-      q.w = (m21 - m12) / s;
-      q.x = 0.25f * s;
-      q.y = (m01 + m10) / s;
-      q.z = (m02 + m20) / s;
-   } else if (m11 > m22) {
-      float s = 2.0f * std::sqrt(1.0f + m11 - m00 - m22);
-      q.w = (m02 - m20) / s;
-      q.x = (m01 + m10) / s;
-      q.y = 0.25f * s;
-      q.z = (m12 + m21) / s;
-   } else {
-      float s = 2.0f * std::sqrt(1.0f + m22 - m00 - m11);
-      q.w = (m10 - m01) / s;
-      q.x = (m02 + m20) / s;
-      q.y = (m12 + m21) / s;
-      q.z = 0.25f * s;
-   }
-
-   return q.Normalize();
 }
 
 // ---------------------------------------------------------------

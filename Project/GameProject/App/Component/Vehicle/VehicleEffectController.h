@@ -8,6 +8,9 @@ namespace App {
 /// @brief 車両状態をJSON定義済みのパーティクルスロットへ反映する
 class VehicleEffectController final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+
    static constexpr const char* kTypeName = "VehicleEffectController"; ///< コンポーネント型名。
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両エフェクト制御", "Vehicle Effect Controller"};

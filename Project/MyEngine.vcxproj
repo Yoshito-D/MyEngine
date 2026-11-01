@@ -177,6 +177,16 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameProject\App\Component\UI\MenuNavigation.cpp" />
+    <ClCompile Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.cpp" />
+    <ClCompile Include="GameProject\App\Component\Tutorial\TutorialGuidePresenter.cpp" />
+    <ClCompile Include="GameProject\App\Component\Rendering\PlayerShadowComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceRecordStore.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RacePresentation.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\VehicleCameraEffects.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\LandingPrediction.cpp" />
+    <ClCompile Include="GameProject\App\Component\Camera\CameraPresentationCapture.cpp" />
+    <ClCompile Include="GameEngine\Math\Functions\CollisionGeometry.cpp" />
     <ClCompile Include="GameEngine\Editor\ParameterAssetEditor.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Base\ParameterComponent.cpp" />
     <ClCompile Include="GameEngine\Assets\ParameterAssetStore.cpp" />
@@ -468,9 +478,7 @@
     <ClCompile Include="GameProject\App\Component\Camera\PlanetLeashCamera.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\PlayerRearFollowCamera.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraTransition.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraGravityUp.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponentRegistry.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraDirectionTracker.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraPlanetGuide.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraSpeedEffects.cpp" />
@@ -537,6 +545,16 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameProject\App\Component\UI\MenuNavigation.h" />
+    <ClInclude Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.h" />
+    <ClInclude Include="GameProject\App\Component\Tutorial\TutorialGuidePresenter.h" />
+    <ClInclude Include="GameProject\App\Component\Rendering\PlayerShadowComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceRecordStore.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RacePresentation.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\VehicleCameraEffects.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\LandingPrediction.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\CameraPresentationCapture.h" />
+    <ClInclude Include="GameEngine\Math\Functions\CollisionGeometry.h" />
     <ClInclude Include="GameEngine\Editor\ParameterAssetEditor.h" />
     <ClInclude Include="GameEngine\Object\Component\Base\ParameterComponent.h" />
     <ClInclude Include="GameEngine\Assets\ParameterAssetStore.h" />
@@ -743,7 +761,6 @@
     <ClInclude Include="GameProject\App\Component\Camera\PlanetLeashCamera.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\PlayerRearFollowCamera.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraTransition.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraComponent.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraGravityUp.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraDirectionTracker.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraPlanetGuide.h" />

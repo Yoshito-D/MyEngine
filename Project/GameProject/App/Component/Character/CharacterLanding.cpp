@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Character/CharacterLanding.h"
+#include "GameEngine/Math/Functions/CollisionGeometry.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Character/CharacterWalker.h"
@@ -32,8 +33,11 @@ void CharacterLanding::Update(float) {
    GameEngine::Vector3 landingCenter = planetCenter_;
    float landingSurfaceRadius = surfaceRadius_;
 
-   if (isJumping && switcher) {
-      switcher->TryGetLandingPlanet(landingCenter, landingSurfaceRadius);
+   if (switcher && switcher->IsEnabled()) {
+      if (!switcher->TryGetLandingPlanet(landingCenter, landingSurfaceRadius)) {
+         isGrounded_ = false;
+         return;
+      }
    }
 
    // 惑星中心からの距離と重力Upを算出
@@ -45,22 +49,9 @@ void CharacterLanding::Update(float) {
    GameEngine::Vector3 gravityUp = toSelf * (1.0f / dist);
    float upComp = gravityBody->GetVelocity().Dot(gravityUp);
 
-   // OBBの支持半径を計算：重力Down方向へのOBBの最大射影長
-   // = |dot(axisX, -gravityUp)| * halfX + |dot(axisY, -gravityUp)| * halfY + |dot(axisZ, -gravityUp)| * halfZ
-   float obbSupportRadius = 0.0f;
-   {
-      const GameEngine::Quaternion rot = transform->GetLocalPose().GetActiveQuaternion();
-      const GameEngine::Vector3 half = obbHalfExtents;
-
-      // OBBの3軸をワールド空間に変換
-      GameEngine::Vector3 axisX = RotateVector({1.0f, 0.0f, 0.0f}, rot);
-      GameEngine::Vector3 axisY = RotateVector({0.0f, 1.0f, 0.0f}, rot);
-      GameEngine::Vector3 axisZ = RotateVector({0.0f, 0.0f, 1.0f}, rot);
-
-      // 各軸の重力Down方向への射影絶対値 × 半サイズ
-      obbSupportRadius = std::abs(axisX.Dot(-gravityUp)) * half.x + std::abs(axisY.Dot(-gravityUp)) * half.y +
-                         std::abs(axisZ.Dot(-gravityUp)) * half.z;
-   }
+   // 判定とカメラ予測で同じOBB支持半径を使い、接触位置のずれを防ぐ。
+   const float obbSupportRadius =
+      GameEngine::ComputeObbSupportRadius(transform->GetLocalPose().GetActiveQuaternion(), obbHalfExtents, gravityUp);
 
    float snapRadius = landingSurfaceRadius + landingOffset + obbSupportRadius;
 
@@ -87,8 +78,7 @@ void CharacterLanding::Update(float) {
          // 垂直速度のみ除去し、水平成分は維持
          gravityBody->CancelNormalVelocity(gravityUp);
 
-         // PlanetSwitcher の確定は GravityAttractorLink の更新後に起きるため、
-         // 同フレームの着地結果判定が古い惑星法線を参照しないよう同期する。
+         // 積分後の接触地点の法線を通知し、姿勢と着地品質の判定に同じ法線を使う。
          gravityBody->SetTargetUpVector(gravityUp);
 
          // ジャンプ状態解除
@@ -99,12 +89,6 @@ void CharacterLanding::Update(float) {
          // 歩行慣性も着地時にリセット
          if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
             walker->ResetHorizontalVelocity();
-         }
-
-         if (switcher) {
-            if (switcher->HasSwitched()) {
-               switcher->ResetSwitchedFlag();
-            }
          }
 
          isGrounded_ = true;
@@ -119,12 +103,6 @@ void CharacterLanding::Update(float) {
          transform->ApplyLocalPose(pose);
       }
       gravityBody->StopMotion();
-
-      if (switcher) {
-         if (switcher->HasSwitched()) {
-            switcher->ResetSwitchedFlag();
-         }
-      }
 
       isGrounded_ = true;
    }

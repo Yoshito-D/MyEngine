@@ -1,8 +1,5 @@
 #include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
-#include "GameProject/App/Component/Gravity/GravityBody.h"
-#include "GameEngine/Object/Component/Base/TransformComponent.h"
-#include "GameEngine/Object/Object.h"
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <algorithm>
 
@@ -27,26 +24,15 @@ void VehicleLandingAligner::BeginAlign(const Quaternion& startRot, const Quatern
    alignTimer_ = alignTime;
 }
 
-void VehicleLandingAligner::Update(float deltaTime) {
-   // タイマーがゼロ以下なら補正は終了しているので何もしない。
-   if (alignTimer_ <= 0.0f) return;
-
-   auto* transform = GetOwner().GetComponent<TransformComponent>();
-
-   if (!transform) {
-      alignTimer_ = 0.0f;
-      return;
+bool VehicleLandingAligner::Evaluate(float deltaTime, Quaternion& rotation) {
+   if (!IsEnabled() || alignTimer_ <= 0.0f) {
+      return false;
    }
 
-   // タイマーを減算する。負にならないようクランプしてから使う。
-   alignTimer_ -= deltaTime;
-
-   if (alignTimer_ <= 0.0f) {
-      alignTimer_ = 0.0f;
-   }
-
-   // 補間比率を計算して姿勢を更新する。
-   ApplyBlendedRotation(CalcBlendedRotation());
+   // 移動の調整役から一度だけ進め、地上操舵より優先する姿勢候補を返す。
+   alignTimer_ = std::max(0.0f, alignTimer_ - std::max(0.0f, deltaTime));
+   rotation = CalcBlendedRotation();
+   return true;
 }
 
 // ---------------------------------------------------------------
@@ -65,31 +51,6 @@ Quaternion VehicleLandingAligner::CalcBlendedRotation() const {
    // 姿勢変化が一定速度で見える自然な補正になる。
    float t = 1.0f - std::clamp(alignTimer_ / alignTime, 0.0f, 1.0f);
    return Slerp(alignStart_, alignTarget_, t);
-}
-
-void VehicleLandingAligner::ApplyBlendedRotation(const Quaternion& blended) {
-   auto* transform = GetOwner().GetComponent<TransformComponent>();
-
-   if (!transform) return;
-
-   // Transform に補間済み回転を書き込む。
-   {
-      auto pose = transform->GetLocalPose();
-      pose.SetRotationQuaternion(blended);
-      transform->ApplyLocalPose(pose);
-   }
-
-   // GravityBody の Up ベクトルも補間値に合わせて更新する。
-   // GravityBody は「現在の Up」と「目標の Up」を両方持っており、
-   // これを更新しないと重力補正が古い Up に向かって動き続けて
-   // ランディングアライナーの補正と干渉してしまう。
-   auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-
-   if (gravityBody) {
-      Vector3 blendedUp = RotateVector({0.0f, 1.0f, 0.0f}, blended);
-      gravityBody->SetCurrentUpVector(blendedUp);
-      gravityBody->SetTargetUpVector(blendedUp);
-   }
 }
 
 // ---------------------------------------------------------------

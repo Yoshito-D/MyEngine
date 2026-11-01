@@ -66,13 +66,21 @@ void ComponentContainer::SynchronizeParameters() {
 }
 
 void ComponentContainer::Update(float deltaTime) {
-   // 無効Componentは状態を保持したまま更新だけ停止し、再有効化時に同じインスタンスを再利用する。
-   for (auto& component : components_) {
-      if (!component || !component->IsEnabled()) {
-         continue;
+   // 保存・Inspectorの並びは変更せず、依存関係に沿った非所有ビューだけを整列する。
+   std::vector<IObjectComponent*> updates;
+   updates.reserve(components_.size());
+   for (const auto& component : components_) {
+      if (component) {
+         updates.push_back(component.get());
       }
-
-      component->Update(deltaTime);
+   }
+   std::stable_sort(updates.begin(), updates.end(),
+      [](const auto* left, const auto* right) { return left->GetUpdatePhase() < right->GetUpdatePhase(); });
+   // 無効Componentは状態を保持したまま更新だけ停止し、再有効化時に同じインスタンスを再利用する。
+   for (auto* component : updates) {
+      if (component->IsEnabled()) {
+         component->Update(deltaTime);
+      }
    }
 }
 

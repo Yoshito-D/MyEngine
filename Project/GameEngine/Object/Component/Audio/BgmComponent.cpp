@@ -43,6 +43,7 @@ BgmComponent::~BgmComponent() {
 }
 
 void BgmComponent::Prepare() {
+   // 音源IDが変わった場合だけ既存の解決結果を捨て、未解決の音源は次の準備時にも読み込みを試みる。
    if (preparedAssetId_ != settings_.clipAssetId) {
       clip_.reset();
       preparedAssetId_ = settings_.clipAssetId;
@@ -76,6 +77,7 @@ bool BgmComponent::Submit(bool restart) {
       return false;
    }
 
+   // 再生要求の所有者を固定し、シーン切替後に旧コンポーネントが新しい要求を停止しないようにする。
    if (!ownerToken_) {
       ownerToken_ = audio->CreateBgmOwner();
    }
@@ -143,6 +145,8 @@ void BgmComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] b
       clip_.reset();
    }
    Configure(settings);
+
+   // 共有設定の変更は実行中の要求へ反映する。同じ音源なら再生位置を保ち、先頭から再開しない。
    if (!initializeRuntime && ownerToken_) {
       Submit(false);
    }
@@ -220,6 +224,7 @@ void BgmComponent::Configure(const Settings& requested) {
    auto settings = requested;
    [[maybe_unused]] const Settings defaults;
 
+   // 範囲制限だけではNaNを除けないため、音量やフェード時間の非有限値を先に既定値へ戻す。
    if (!std::isfinite(settings.volume)) {
       settings.volume = defaults.volume;
    }

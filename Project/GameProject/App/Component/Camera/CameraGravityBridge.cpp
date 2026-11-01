@@ -9,18 +9,13 @@
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
-#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
-#include "GameEngine/Scene/Camera/Components/PerlinNoise.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
-#include <filesystem>
-#include <vector>
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
@@ -28,288 +23,6 @@
 #endif
 
 namespace App {
-namespace {
-constexpr float kLandingPredictionStepSeconds = 1.0f / 60.0f;
-constexpr float kLandingPredictionDirectionEpsilon = 1e-4f;
-constexpr float kPresentationBackwardReversalDot = -0.2f;
-constexpr float kPresentationCameraForwardGravityAxisDot = 0.85f;
-constexpr const char* kPresentationDebugCaptureDirectory = "../Generated/PresentationScreenshots/20260809_camera_debug";
-constexpr const char* kPresentationCleanCaptureDirectory = "../Generated/PresentationScreenshots/20260809_camera_clean";
-
-GameEngine::Vector3 NormalizeOrFallback(const GameEngine::Vector3& value, const GameEngine::Vector3& fallback) {
-   // デバッグ描画やカメラ基底へNaNを渡さないよう、候補を段階的に退避させる。
-   const float length = value.Length();
-
-   if (length > 1e-5f) {
-      return value * (1.0f / length);
-   }
-
-   const float fallbackLength = fallback.Length();
-
-   if (fallbackLength > 1e-5f) {
-      return fallback * (1.0f / fallbackLength);
-   }
-
-   return {0.0f, 1.0f, 0.0f};
-}
-
-void RequestPresentationScreenshot(const char* filename, bool includeDebugGuides) {
-   const char* captureDirectory =
-      includeDebugGuides ? kPresentationDebugCaptureDirectory : kPresentationCleanCaptureDirectory;
-   GameEngine::EngineContext::RequestScreenshot(std::filesystem::path(captureDirectory) / filename);
-}
-
-float ComputeObbSupportRadius(const GameEngine::Quaternion& rotation, const GameEngine::Vector3& halfExtents,
-   const GameEngine::Vector3& surfaceUp) {
-   // OBBの各ローカル軸を法線へ射影し、法線方向に張り出す半径へ合成する。
-   const GameEngine::Vector3 axisX = GameEngine::RotateVector({1.0f, 0.0f, 0.0f}, rotation);
-   const GameEngine::Vector3 axisY = GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, rotation);
-   const GameEngine::Vector3 axisZ = GameEngine::RotateVector({0.0f, 0.0f, 1.0f}, rotation);
-   return std::abs(axisX.Dot(surfaceUp)) * std::abs(halfExtents.x) +
-          std::abs(axisY.Dot(surfaceUp)) * std::abs(halfExtents.y) +
-          std::abs(axisZ.Dot(surfaceUp)) * std::abs(halfExtents.z);
-}
-
-void DrawDebugArrow(const GameEngine::Vector3& origin, const GameEngine::Vector3& direction, float length,
-   const GameEngine::Vector4& color) {
-   const float safeLength = std::max(0.25f, length);
-   const GameEngine::Vector3 normalizedDirection = NormalizeOrFallback(direction, {0.0f, 1.0f, 0.0f});
-   const GameEngine::Vector3 tip = origin + normalizedDirection * safeLength;
-   GameEngine::EngineContext::DrawLine(origin, tip, color, false);
-   GameEngine::EngineContext::DrawCone(tip, safeLength * 0.08f, safeLength * 0.22f, -normalizedDirection, color, false);
-}
-
-void DrawPresentationLegendEntry(const char* text, float y, const GameEngine::Vector4& color) {
-   GameEngine::TextStyle shadowStyle{};
-   shadowStyle.fontId = "arial";
-   shadowStyle.fontSize = 28;
-   shadowStyle.color = {0.0f, 0.0f, 0.0f, 0.9f};
-   shadowStyle.sortingOrder = 899;
-   GameEngine::EngineContext::DrawUIText(text, {26.0f, y + 2.0f}, shadowStyle);
-
-   GameEngine::TextStyle style = shadowStyle;
-   style.color = color;
-   style.sortingOrder = 900;
-   GameEngine::EngineContext::DrawUIText(text, {24.0f, y}, style);
-}
-
-GameEngine::PerlinNoise* GetOrAddShakeNoise(GameEngine::ICinemachineComponent* cameraComponent) {
-   if (!cameraComponent) {
-      return nullptr;
-   }
-
-   auto* virtualCamera = cameraComponent->GetOwnerCamera();
-
-   if (!virtualCamera) {
-      return nullptr;
-   }
-
-   auto* noise = virtualCamera->GetComponent<GameEngine::PerlinNoise>();
-
-   if (!noise) {
-      // シェイク未設定のカメラでも演出を受けられるよう、必要時だけ追加する。
-      noise = virtualCamera->AddComponent<GameEngine::PerlinNoise>();
-   }
-
-   return noise;
-}
-
-void TriggerDirectionalShake(GameEngine::ICinemachineComponent* cameraComponent, const GameEngine::Vector3& direction,
-   float amplitude, float frequency, float duration) {
-   if (auto* noise = GetOrAddShakeNoise(cameraComponent)) {
-      noise->ShakeDirectional(direction, amplitude, frequency, duration);
-   }
-}
-}
-
-bool CameraGravityBridge::PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vector3& velocity,
-   const GameEngine::Vector3& planetCenter, float surfaceRadius, float landingOffset,
-   const GameEngine::Vector3& obbHalfExtents, const GameEngine::Quaternion& playerRotation,
-   const GravityBody& gravityBody, float predictionHorizon, const GameEngine::Vector3& fallbackForward,
-   const GameEngine::Vector3& fallbackRight, LandingPrediction& outPrediction) {
-   float horizon = std::clamp(predictionHorizon, 0.0f, 5.0f);
-
-   if (horizon <= 1e-4f || surfaceRadius <= 1e-4f) {
-      return false;
-   }
-
-   GameEngine::Vector3 simulatedPosition = position;
-   GameEngine::Vector3 simulatedVelocity = velocity;
-
-   // 軌道表示と接触判定が同じ積分結果を参照できるよう、初期点から記録する。
-   outPrediction.trajectoryPoints.clear();
-   outPrediction.trajectoryPoints.push_back(position);
-   GameEngine::Vector3 initialToSelf = simulatedPosition - planetCenter;
-   float initialDistance = initialToSelf.Length();
-
-   if (initialDistance <= 1e-4f) {
-      return false;
-   }
-
-   GameEngine::Vector3 initialUp = initialToSelf * (1.0f / initialDistance);
-
-   // プレイヤー中心ではなく、回転中のOBB下面が地表へ触れる半径を判定境界にする。
-   float initialSnapRadius =
-      surfaceRadius + landingOffset + ComputeObbSupportRadius(playerRotation, obbHalfExtents, initialUp);
-   float previousClearance = initialDistance - initialSnapRadius;
-
-   if (previousClearance <= 0.0f) {
-      return false;
-   }
-
-   float elapsed = 0.0f;
-
-   while (elapsed < horizon) {
-      float step = std::min(kLandingPredictionStepSeconds, horizon - elapsed);
-      GameEngine::Vector3 toSelf = simulatedPosition - planetCenter;
-      float distance = toSelf.Length();
-
-      if (distance <= 1e-4f) {
-         return false;
-      }
-
-      GameEngine::Vector3 surfaceUp = toSelf * (1.0f / distance);
-      GameEngine::Vector3 previousVelocity = simulatedVelocity;
-      GameEngine::Vector3 previousPosition = simulatedPosition;
-
-      // GravityBody と同じ半陰的オイラー順序で、候補惑星の放射重力だけを短時間先読みする。
-      simulatedVelocity = gravityBody.PredictVelocity(simulatedVelocity, surfaceUp, step);
-      simulatedPosition += simulatedVelocity * step;
-      outPrediction.trajectoryPoints.push_back(simulatedPosition);
-
-      GameEngine::Vector3 nextToSelf = simulatedPosition - planetCenter;
-      float nextDistance = nextToSelf.Length();
-
-      if (nextDistance <= 1e-4f) {
-         return false;
-      }
-
-      GameEngine::Vector3 nextUp = nextToSelf * (1.0f / nextDistance);
-      float nextSnapRadius =
-         surfaceRadius + landingOffset + ComputeObbSupportRadius(playerRotation, obbHalfExtents, nextUp);
-      float nextClearance = nextDistance - nextSnapRadius;
-
-      if (nextClearance <= 0.0f) {
-         // 前後フレームの符号変化を線形補間し、固定刻みの内側まで接触時刻を詰める。
-         float denominator = previousClearance - nextClearance;
-         float crossingAlpha = denominator > 1e-5f ? std::clamp(previousClearance / denominator, 0.0f, 1.0f) : 1.0f;
-         GameEngine::Vector3 hitPosition = previousPosition + (simulatedPosition - previousPosition) * crossingAlpha;
-         GameEngine::Vector3 hitVelocity = previousVelocity + (simulatedVelocity - previousVelocity) * crossingAlpha;
-         GameEngine::Vector3 hitUp = NormalizeOrFallback(hitPosition - planetCenter, nextUp);
-
-         // 地表へ近づく交差だけを着地予測として扱う。
-         if (hitVelocity.Dot(hitUp) > 0.0f) {
-            return false;
-         }
-
-         GameEngine::Vector3 landingForward = hitVelocity - hitUp * hitVelocity.Dot(hitUp);
-
-         if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
-            landingForward = fallbackForward - hitUp * fallbackForward.Dot(hitUp);
-         }
-
-         if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
-            // 真上・真下を向いた垂直着地では機首投影も退化するため、
-            // 表示中のカメラRightから画面上の前方を復元して方位を維持する。
-            landingForward = fallbackRight.Cross(hitUp);
-         }
-
-         if (landingForward.Length() <= kLandingPredictionDirectionEpsilon) {
-            return false;
-         }
-
-         landingForward = NormalizeOrFallback(landingForward, fallbackForward);
-         outPrediction.up = hitUp;
-         outPrediction.backward = -landingForward;
-         outPrediction.contactPoint = planetCenter + hitUp * (surfaceRadius + landingOffset);
-         outPrediction.secondsToImpact = elapsed + step * crossingAlpha;
-         outPrediction.trajectoryPoints.back() = hitPosition;
-         return true;
-      }
-
-      previousClearance = nextClearance;
-      elapsed += step;
-   }
-
-   return false;
-}
-
-void CameraGravityBridge::DrawPresentationGuides(const GameEngine::Vector3& playerPosition,
-   const GameEngine::Vector3& motionBackward, const GameEngine::Vector3& planetGuideBackward,
-   const GameEngine::Vector3& targetGravityUp, const GameEngine::Vector3& cameraForward,
-   const GameEngine::Vector3& cameraRight, const LandingPrediction* prediction, float guideLength,
-   std::int32_t conditionPreviewMode) {
-   const GameEngine::Vector4 trajectoryColor = {1.0f, 0.35f, 0.05f, 1.0f};
-   const GameEngine::Vector4 contactColor = {0.1f, 0.95f, 1.0f, 1.0f};
-   const GameEngine::Vector4 landingUpColor = {0.15f, 1.0f, 0.25f, 1.0f};
-   const GameEngine::Vector4 targetUpColor = {0.1f, 0.45f, 1.0f, 1.0f};
-   const GameEngine::Vector4 cameraForwardColor = {1.0f, 0.1f, 0.1f, 1.0f};
-   const GameEngine::Vector4 cameraBasisColor = {1.0f, 0.2f, 1.0f, 1.0f};
-   const float safeGuideLength = std::max(1.0f, guideLength);
-
-   const GameEngine::Vector3 safeRight = NormalizeOrFallback(cameraRight, {1.0f, 0.0f, 0.0f});
-   const GameEngine::Vector3 safeTargetUp = NormalizeOrFallback(targetGravityUp, {0.0f, 1.0f, 0.0f});
-   const GameEngine::Vector3 safeMotionBackward = NormalizeOrFallback(motionBackward, -safeTargetUp);
-   const GameEngine::Vector3 safePlanetGuideBackward = NormalizeOrFallback(planetGuideBackward, safeTargetUp);
-   const GameEngine::Vector3 safeCameraForward = NormalizeOrFallback(cameraForward, -safeMotionBackward);
-
-   if (conditionPreviewMode == 1) {
-      // 後方ベクトルが反転する条件では、比較する2軸を並べて角度差を可視化する。
-      const GameEngine::Vector3 guideOrigin = playerPosition + safeTargetUp * safeGuideLength * 0.45f;
-      DrawDebugArrow(guideOrigin - safeRight * 1.5f, safeMotionBackward, safeGuideLength * 0.5f, targetUpColor);
-      DrawDebugArrow(guideOrigin + safeRight * 1.5f, safePlanetGuideBackward, safeGuideLength * 0.5f, cameraBasisColor);
-      const float backwardDot = std::clamp(safeMotionBackward.Dot(safePlanetGuideBackward), -1.0f, 1.0f);
-      const float angleDegrees = std::acos(backwardDot) * 57.2957795f;
-      char conditionText[128]{};
-      std::snprintf(conditionText, sizeof(conditionText),
-         "Measured: velocity-back vs planet-guide = %.0f deg (dot=%.2f)", angleDegrees, backwardDot);
-      DrawPresentationLegendEntry("BLUE: velocity back (measured)", 24.0f, targetUpColor);
-      DrawPresentationLegendEntry("PURPLE: planet guide back (measured)", 60.0f, cameraBasisColor);
-      DrawPresentationLegendEntry(conditionText, 104.0f, {1.0f, 1.0f, 1.0f, 1.0f});
-      return;
-   }
-
-   if (conditionPreviewMode == 2) {
-      // 視線が重力軸へ寄る条件では、重なりを避けた平行配置で実測方向を示す。
-      const GameEngine::Vector3 gravityDown = -safeTargetUp;
-      const GameEngine::Vector3 guideOrigin = playerPosition + safeTargetUp * safeGuideLength * 0.75f;
-      DrawDebugArrow(guideOrigin - safeRight * 1.5f, gravityDown, safeGuideLength * 0.65f, targetUpColor);
-      DrawDebugArrow(guideOrigin + safeRight * 1.5f, safeCameraForward, safeGuideLength * 0.65f, cameraForwardColor);
-      char conditionText[112]{};
-      std::snprintf(conditionText, sizeof(conditionText), "Measured: forward vs gravity axis |dot|=%.2f",
-         std::abs(safeCameraForward.Dot(safeTargetUp)));
-      DrawPresentationLegendEntry("BLUE: gravity direction (measured)", 24.0f, targetUpColor);
-      DrawPresentationLegendEntry("RED: camera forward (measured)", 60.0f, cameraForwardColor);
-      DrawPresentationLegendEntry(conditionText, 104.0f, {1.0f, 1.0f, 1.0f, 1.0f});
-      return;
-   }
-
-   if (!prediction) return;
-
-   const std::vector<GameEngine::Vector3>& points = prediction->trajectoryPoints;
-
-   // 軌道は全区間を線で結び、球マーカーだけを間引いて画面の密集を抑える。
-   for (size_t index = 1; index < points.size(); ++index) {
-      GameEngine::EngineContext::DrawLine(points[index - 1], points[index], trajectoryColor, false);
-   }
-
-   const float trajectoryPointRadius = safeGuideLength * 0.025f;
-
-   for (size_t index = 0; index < points.size(); index += 8) {
-      GameEngine::EngineContext::DrawSphere(points[index], trajectoryPointRadius, trajectoryColor, false);
-   }
-
-   const GameEngine::Vector3 landingUp = NormalizeOrFallback(prediction->up, targetGravityUp);
-   const GameEngine::Vector3 markerCenter = prediction->contactPoint + landingUp * safeGuideLength * 0.04f;
-   GameEngine::EngineContext::DrawSphere(markerCenter, safeGuideLength * 0.13f, contactColor, false);
-   GameEngine::EngineContext::DrawCircle(markerCenter, safeGuideLength * 0.28f, landingUp, contactColor, false);
-   DrawDebugArrow(markerCenter, landingUp, safeGuideLength * 0.25f, landingUpColor);
-
-   DrawPresentationLegendEntry("ORANGE: predicted trajectory", 24.0f, trajectoryColor);
-   DrawPresentationLegendEntry("CYAN: predicted contact", 60.0f, contactColor);
-   DrawPresentationLegendEntry("GREEN: landing Up", 96.0f, landingUpColor);
-}
-
 void CameraGravityBridge::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    gravityFollowCamera_ = nullptr;
    playerRearFollowCamera_ = nullptr;
@@ -331,22 +44,8 @@ void CameraGravityBridge::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld
 void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
    const auto* drift = HasOwner() ? GetOwner().GetComponent<VehicleDrift>() : nullptr;
-   lastMiniTurboFireCount_ = drift ? drift->GetMiniTurboFireCount() : 0;
-   currentDriftDistanceScale_ = 1.0f;
-   currentDriftCameraHeightOffset_ = 0.0f;
-   currentDriftLookTargetHeightOffset_ = 0.0f;
-   presentationCaptureElapsed_ = 0.0f;
-   presentationJumpTriggered_ = false;
-   presentationGroundCaptured_ = false;
-   presentationPredictionCaptured_ = false;
-   presentationBeforeContactCaptured_ = false;
-   presentationContactCaptured_ = false;
-   presentationAfterLandingCaptured_ = false;
-   presentationAfterLandingElapsed_ = 0.0f;
-   presentationStraightDownCaptured_ = false;
-   presentationBackwardReversalCaptured_ = false;
-   presentationVideoFrameAccumulator_ = 0.0f;
-   presentationVideoFrameIndex_ = 0;
+   effects_.Reset(drift ? drift->GetMiniTurboFireCount() : 0);
+   presentation_.Reset();
 }
 
 void CameraGravityBridge::Update(float deltaTime) {
@@ -365,43 +64,15 @@ void CameraGravityBridge::Update(float deltaTime) {
    const auto* drift = GetOwner().GetComponent<VehicleDrift>();
    const auto* input = GetOwner().GetComponent<VehicleInputComponent>();
 
-   // ドリフト成立を待たず、デッドゾーン処理済みの横入力で接近を始める。
-   // 空中のロール入力では接近させず、地上の横入力中だけ演出を有効にする。
-   const bool isDriftCameraActive = enableDriftCameraApproach && drift && drift->IsEnabled() && input &&
-                                    input->GetSteerInput() != 0.0f && (!landing || landing->IsGrounded()) &&
-                                    (!jump || !jump->IsJumping());
-   const float targetDriftDistanceScale = isDriftCameraActive ? 1.0f - driftCameraDistanceReduction : 1.0f;
-   const float targetDriftCameraHeightOffset = isDriftCameraActive ? driftCameraHeightOffset : 0.0f;
-   const float targetDriftLookTargetHeightOffset = isDriftCameraActive ? driftLookTargetHeightOffset : 0.0f;
-   const float driftBlend = 1.0f - std::exp(-driftCameraLerpSpeed * std::max(0.0f, deltaTime));
-   currentDriftDistanceScale_ += (targetDriftDistanceScale - currentDriftDistanceScale_) * driftBlend;
-   currentDriftCameraHeightOffset_ += (targetDriftCameraHeightOffset - currentDriftCameraHeightOffset_) * driftBlend;
-   currentDriftLookTargetHeightOffset_ +=
-      (targetDriftLookTargetHeightOffset - currentDriftLookTargetHeightOffset_) * driftBlend;
-
-   // 保存用の基準設定を上書きせず、どのカメラへ切り替えても同じドリフト演出を入力する。
-   if (gravityFollowCamera_) {
-      gravityFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
-      gravityFollowCamera_->SetDriftHeightOffsets(currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
-   }
-
-   if (playerRearFollowCamera_) {
-      playerRearFollowCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
-      playerRearFollowCamera_->SetDriftHeightOffsets(
-         currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
-   }
-
-   if (planetLeashCamera_) {
-      planetLeashCamera_->SetDriftDistanceScale(currentDriftDistanceScale_);
-      planetLeashCamera_->SetDriftHeightOffsets(currentDriftCameraHeightOffset_, currentDriftLookTargetHeightOffset_);
-   }
-
-   // 全候補の追従入力を新しく保ち、画面固有のシェイク・撮影だけを選択先へ限定する。
    const auto* cameraMode = GetOwner().GetComponent<CameraModeSwitcher>();
-   const auto IsSelectedCamera = [cameraMode](const GameEngine::ICinemachineComponent* component) {
-      return component && (!cameraMode || component->GetOwnerCamera() == cameraMode->GetSelectedCamera());
-   };
-   const bool rearCameraSelected = IsSelectedCamera(playerRearFollowCamera_);
+   const auto* selectedCamera = cameraMode ? cameraMode->GetSelectedCamera() : nullptr;
+   const bool rearCameraSelected = playerRearFollowCamera_ && playerRearFollowCamera_->IsEnabled() &&
+                                   (!selectedCamera || playerRearFollowCamera_->GetOwnerCamera() == selectedCamera);
+   // 着地済みの基準を参照側から取得し、惑星選択側からの設定書き換えを不要にする。
+   if (switcher) {
+      float radius = 0.0f;
+      switcher->TryGetCurrentPlanet(planetCenter_, radius);
+   }
 
    // 惑星中心→自身方向を正規化して重力Upを作る
    GameEngine::Vector3 toSelf = transform->GetLocalPose().translation - planetCenter_;
@@ -479,109 +150,9 @@ void CameraGravityBridge::Update(float deltaTime) {
          }
       }
 
-      const GameEngine::Vector3 actualMotionBackward = NormalizeOrFallback(-playerVelocity, -forward);
-      const GameEngine::Vector3 actualPlanetGuideBackward = NormalizeOrFallback(pos - cameraPlanetCenter, gravityUp);
-      const float backwardReversalDot = actualMotionBackward.Dot(actualPlanetGuideBackward);
-
-      if (rearCameraSelected && debugDrawPresentationGuides) {
-         // 反転条件を先に選び、同時成立時も発表用ガイドの意味を一意に保つ。
-         std::int32_t conditionPreviewMode = 0;
-         const GameEngine::Vector3 actualCameraForward =
-            NormalizeOrFallback(playerRearFollowCamera_->GetCameraForward(), forward);
-         const float cameraForwardGravityAxisDot = std::abs(actualCameraForward.Dot(gravityUp));
-
-         if (isAirborne && playerVelocity.Length() > 0.5f && backwardReversalDot <= kPresentationBackwardReversalDot) {
-            conditionPreviewMode = 1;
-         } else if (isAirborne && cameraForwardGravityAxisDot >= kPresentationCameraForwardGravityAxisDot) {
-            conditionPreviewMode = 2;
-         }
-
-         DrawPresentationGuides(pos, actualMotionBackward, actualPlanetGuideBackward, gravityUp, actualCameraForward,
-            playerRearFollowCamera_->GetCameraRight(), hasLandingPrediction ? &prediction : nullptr,
-            presentationGuideLength, conditionPreviewMode);
-      }
-
-      if (rearCameraSelected && autoCapturePresentationSequence) {
-#ifdef USE_IMGUI
-         // 発表素材にはエディタUIを含めず、ゲーム画面とガイドだけを記録する。
-         GameEngine::EngineContext::SetDockSpaceVisible(false);
-#endif
-         if (!presentationMeasurementStarted_) {
-            // スクリーンショットとCSVを同じ試行へ結び付け、資料上の時刻と実測値を対応させる。
-            playerRearFollowCamera_->StartCameraMeasurement("presentation_sequence_warmup");
-            presentationMeasurementStarted_ = true;
-         }
-
-         presentationCaptureElapsed_ += std::max(0.0f, deltaTime);
-
-         if (autoCapturePresentationVideoFrames) {
-            // 実フレームレートとは独立した累積時間で、指定レートの連番画像へ間引く。
-            const float frameRate = std::max(1.0f, presentationVideoFrameRate);
-            const float captureStart = std::max(0.0f, presentationVideoCaptureStartDelay);
-            const float captureDuration = std::max(0.0f, presentationVideoCaptureDuration);
-            const uint32_t maxFrameCount = static_cast<uint32_t>(std::ceil(captureDuration * frameRate));
-
-            if (presentationCaptureElapsed_ >= captureStart &&
-                presentationCaptureElapsed_ <= captureStart + captureDuration &&
-                presentationVideoFrameIndex_ < maxFrameCount) {
-               const float frameInterval = 1.0f / frameRate;
-               presentationVideoFrameAccumulator_ += std::max(0.0f, deltaTime);
-
-               if (presentationVideoFrameIndex_ == 0 || presentationVideoFrameAccumulator_ >= frameInterval) {
-                  char filename[96]{};
-                  std::snprintf(
-                     filename, sizeof(filename), "video_frames/frame_%04u.png", presentationVideoFrameIndex_);
-                  RequestPresentationScreenshot(filename, debugDrawPresentationGuides);
-                  ++presentationVideoFrameIndex_;
-
-                  // 超過時間を次の撮影判定へ繰り越し、長いフレーム後の位相ずれを抑える。
-                  presentationVideoFrameAccumulator_ = std::fmod(presentationVideoFrameAccumulator_, frameInterval);
-               }
-            }
-         }
-
-         const float groundCaptureTime = std::max(0.75f, presentationCaptureJumpDelay - 0.5f);
-
-         // ジャンプ前後の節目を一度ずつ記録し、同じ状態が続いても重複撮影しない。
-         if (!presentationGroundCaptured_ && presentationCaptureElapsed_ >= groundCaptureTime) {
-            RequestPresentationScreenshot("01_direction_axes_grounded.png", debugDrawPresentationGuides);
-            presentationGroundCaptured_ = true;
-         }
-
-         if (!presentationJumpTriggered_ &&
-             presentationCaptureElapsed_ >= std::max(0.0f, presentationCaptureJumpDelay) &&
-             playerRearFollowCamera_->GetCameraMeasurementSampleCount() >= 30 && jump && !isAirborne) {
-            // シーン読込直後の姿勢初期化を実測最大値へ混ぜず、安定した直前フレームを始点にする。
-            playerRearFollowCamera_->StartCameraMeasurement("presentation_sequence_current_settings");
-            presentationMeasurementResetForJump_ = true;
-            jump->Jump(gravityUp);
-            presentationJumpTriggered_ = true;
-         }
-
-         if (hasLandingPrediction && !presentationPredictionCaptured_) {
-            RequestPresentationScreenshot("02_prediction_start.png", debugDrawPresentationGuides);
-            presentationPredictionCaptured_ = true;
-         }
-
-         if (hasLandingPrediction && !presentationBeforeContactCaptured_ && prediction.secondsToImpact <= 0.18f) {
-            RequestPresentationScreenshot("03_contact_before.png", debugDrawPresentationGuides);
-            presentationBeforeContactCaptured_ = true;
-         }
-
-         const GameEngine::Vector3 cameraForward =
-            NormalizeOrFallback(playerRearFollowCamera_->GetCameraForward(), forward);
-
-         if (isAirborne && !presentationBackwardReversalCaptured_ && playerVelocity.Length() > 0.5f &&
-             backwardReversalDot <= kPresentationBackwardReversalDot) {
-            RequestPresentationScreenshot("condition_backward_reversal.png", debugDrawPresentationGuides);
-            presentationBackwardReversalCaptured_ = true;
-         }
-
-         if (isAirborne && !presentationStraightDownCaptured_ &&
-             std::abs(cameraForward.Dot(gravityUp)) >= kPresentationCameraForwardGravityAxisDot) {
-            RequestPresentationScreenshot("condition_straight_down.png", debugDrawPresentationGuides);
-            presentationStraightDownCaptured_ = true;
-         }
+      if (rearCameraSelected) {
+         presentation_.Update(settings_, deltaTime, *playerRearFollowCamera_, jump, landing && landing->IsGrounded(),
+            hasLandingPrediction ? &prediction : nullptr);
       }
    }
 
@@ -611,81 +182,10 @@ void CameraGravityBridge::Update(float deltaTime) {
       planetLeashCamera_->SetSphereCenter(planetCenter_);
    }
 
-   if (landing) {
-      const bool isGrounded = landing->IsGrounded();
-
-      if (rearCameraSelected && autoCapturePresentationSequence && presentationJumpTriggered_) {
-         // 接地の立ち上がりを接触瞬間とし、その後は姿勢が落ち着くまで別タイマーで待つ。
-         if (isGrounded && !wasGrounded_ && !presentationContactCaptured_) {
-            RequestPresentationScreenshot("04_contact.png", debugDrawPresentationGuides);
-            presentationContactCaptured_ = true;
-            presentationAfterLandingElapsed_ = 0.0f;
-         } else if (presentationContactCaptured_ && !presentationAfterLandingCaptured_) {
-            presentationAfterLandingElapsed_ += std::max(0.0f, deltaTime);
-
-            if (presentationAfterLandingElapsed_ >= 0.45f) {
-               RequestPresentationScreenshot("05_after_landing.png", debugDrawPresentationGuides);
-               presentationAfterLandingCaptured_ = true;
-
-               if (presentationMeasurementStarted_ && presentationMeasurementResetForJump_ &&
-                   !presentationMeasurementSaved_) {
-                  presentationMeasurementSaved_ = playerRearFollowCamera_->StopCameraMeasurement(true);
-               }
-            }
-         }
-      }
-
-      if (enableLandingShake && isGrounded && !wasGrounded_) {
-         // 接地中の連続発火を避け、各カメラ固有の画面Upに沿って同じ衝撃を与える。
-         if (IsSelectedCamera(gravityFollowCamera_)) {
-            TriggerDirectionalShake(gravityFollowCamera_,
-               NormalizeOrFallback(gravityFollowCamera_->GetCameraUp(), gravityUp), landingShakeAmplitude,
-               landingShakeFrequency, landingShakeDuration);
-         }
-
-         if (IsSelectedCamera(playerRearFollowCamera_)) {
-            TriggerDirectionalShake(playerRearFollowCamera_,
-               NormalizeOrFallback(playerRearFollowCamera_->GetCameraUp(), gravityUp), landingShakeAmplitude,
-               landingShakeFrequency, landingShakeDuration);
-         }
-
-         if (IsSelectedCamera(planetLeashCamera_)) {
-            TriggerDirectionalShake(planetLeashCamera_,
-               NormalizeOrFallback(planetLeashCamera_->GetCameraUp(), gravityUp), landingShakeAmplitude,
-               landingShakeFrequency, landingShakeDuration);
-         }
-      }
-
-      wasGrounded_ = isGrounded;
-   }
-
-   const uint64_t miniTurboFireCount = drift ? drift->GetMiniTurboFireCount() : 0;
-   const bool miniTurboFired = drift && miniTurboFireCount != lastMiniTurboFireCount_;
-
-   // 無効中の通知も記録し、設定を再び有効にした瞬間の遅延発火を防ぐ。
-   lastMiniTurboFireCount_ = miniTurboFireCount;
-
-   if (enableMiniTurboShake && miniTurboFired && miniTurboShakeDuration > 0.0f &&
-       (miniTurboShakeHorizontalAmplitude > 0.0f || miniTurboShakeVerticalAmplitude > 0.0f)) {
-      // 同フレームに着地してもミニターボの縦横シェイクを優先する。
-      for (GameEngine::ICinemachineComponent* cameraComponent :
-         {static_cast<GameEngine::ICinemachineComponent*>(gravityFollowCamera_),
-            static_cast<GameEngine::ICinemachineComponent*>(playerRearFollowCamera_),
-            static_cast<GameEngine::ICinemachineComponent*>(planetLeashCamera_)}) {
-         if (IsSelectedCamera(cameraComponent)) {
-            if (auto* noise = GetOrAddShakeNoise(cameraComponent)) {
-               noise->ShakeScreenSpace(miniTurboShakeHorizontalAmplitude, miniTurboShakeVerticalAmplitude,
-                  miniTurboShakeFrequency, miniTurboShakeDuration);
-            }
-         }
-      }
-   }
-
-   if (autoCapturePresentationSequence && presentationMeasurementStarted_ && !presentationMeasurementSaved_ &&
-       presentationCaptureElapsed_ >= 30.0f && playerRearFollowCamera_) {
-      // 着地条件が成立しない試行でも無限に記録せず、失敗を含む30秒分を検証材料として残す。
-      presentationMeasurementSaved_ = playerRearFollowCamera_->StopCameraMeasurement(true);
-   }
+   const bool grounded = (!landing || landing->IsGrounded()) && (!jump || !jump->IsJumping());
+   const bool steering = grounded && drift && drift->IsEnabled() && input && input->GetSteerInput() != 0.0f;
+   effects_.Update(settings_, deltaTime, steering, grounded, drift ? drift->GetMiniTurboFireCount() : 0, gravityUp,
+      gravityFollowCamera_, playerRearFollowCamera_, planetLeashCamera_, selectedCamera);
 }
 
 #ifdef USE_IMGUI
@@ -709,43 +209,49 @@ void CameraGravityBridge::DrawInspector() {
    ImGui::Text("%s: %s", Tr("惑星レアッシュカメラ", "Planet Leash Camera"),
       planetLeashCamera_ ? Tr("設定済み", "Set") : Tr("なし", "None"));
    ImGui::Separator();
-   ImGui::Checkbox(Tr("着地シェイク", "Landing Shake"), &enableLandingShake);
-   ImGui::DragFloat(Tr("シェイク振幅", "Shake Amplitude"), &landingShakeAmplitude, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat(Tr("シェイク周波数", "Shake Frequency"), &landingShakeFrequency, 0.1f, 0.1f, 60.0f);
-   ImGui::DragFloat(Tr("シェイク時間", "Shake Duration"), &landingShakeDuration, 0.01f, 0.0f, 3.0f);
+   ImGui::Checkbox(Tr("着地シェイク", "Landing Shake"), &settings_.enableLandingShake);
+   ImGui::DragFloat(Tr("シェイク振幅", "Shake Amplitude"), &settings_.landingShakeAmplitude, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("シェイク周波数", "Shake Frequency"), &settings_.landingShakeFrequency, 0.1f, 0.1f, 60.0f);
+   ImGui::DragFloat(Tr("シェイク時間", "Shake Duration"), &settings_.landingShakeDuration, 0.01f, 0.0f, 3.0f);
    ImGui::Separator();
-   ImGui::Checkbox(Tr("ミニターボシェイク", "Mini Turbo Shake"), &enableMiniTurboShake);
-   ImGui::DragFloat(Tr("ミニターボ横揺れ振幅", "Mini Turbo Horizontal Amplitude"), &miniTurboShakeHorizontalAmplitude,
-      0.01f, 0.0f, 5.0f);
+   ImGui::Checkbox(Tr("ミニターボシェイク", "Mini Turbo Shake"), &settings_.enableMiniTurboShake);
+   ImGui::DragFloat(Tr("ミニターボ横揺れ振幅", "Mini Turbo Horizontal Amplitude"),
+      &settings_.miniTurboShakeHorizontalAmplitude, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("ミニターボ縦揺れ振幅", "Mini Turbo Vertical Amplitude"),
+      &settings_.miniTurboShakeVerticalAmplitude, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("ミニターボシェイク周波数", "Mini Turbo Shake Frequency"), &settings_.miniTurboShakeFrequency,
+      0.1f, 0.1f, 60.0f);
    ImGui::DragFloat(
-      Tr("ミニターボ縦揺れ振幅", "Mini Turbo Vertical Amplitude"), &miniTurboShakeVerticalAmplitude, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat(
-      Tr("ミニターボシェイク周波数", "Mini Turbo Shake Frequency"), &miniTurboShakeFrequency, 0.1f, 0.1f, 60.0f);
-   ImGui::DragFloat(
-      Tr("ミニターボシェイク時間", "Mini Turbo Shake Duration"), &miniTurboShakeDuration, 0.01f, 0.0f, 3.0f);
+      Tr("ミニターボシェイク時間", "Mini Turbo Shake Duration"), &settings_.miniTurboShakeDuration, 0.01f, 0.0f, 3.0f);
    ImGui::Separator();
-   ImGui::Checkbox(Tr("横入力時にカメラを近づける", "Camera Approach on Steering"), &enableDriftCameraApproach);
-   ImGui::DragFloat(
-      Tr("ドリフト時の距離短縮率", "Drift Distance Reduction"), &driftCameraDistanceReduction, 0.01f, 0.0f, 0.5f);
-   ImGui::DragFloat(
-      Tr("ドリフト時のカメラ高さ追加量", "Drift Camera Height Offset"), &driftCameraHeightOffset, 0.05f, -20.0f, 20.0f);
-   ImGui::DragFloat(Tr("ドリフト時の注視点高さ追加量", "Drift Look Target Height Offset"), &driftLookTargetHeightOffset,
-      0.05f, -10.0f, 10.0f);
+   ImGui::Checkbox(
+      Tr("横入力時にカメラを近づける", "Camera Approach on Steering"), &settings_.enableDriftCameraApproach);
+   ImGui::DragFloat(Tr("ドリフト時の距離短縮率", "Drift Distance Reduction"), &settings_.driftCameraDistanceReduction,
+      0.01f, 0.0f, 0.5f);
+   ImGui::DragFloat(Tr("ドリフト時のカメラ高さ追加量", "Drift Camera Height Offset"),
+      &settings_.driftCameraHeightOffset, 0.05f, -20.0f, 20.0f);
+   ImGui::DragFloat(Tr("ドリフト時の注視点高さ追加量", "Drift Look Target Height Offset"),
+      &settings_.driftLookTargetHeightOffset, 0.05f, -10.0f, 10.0f);
    ImGui::TextDisabled("%s", Tr("高さは通常時への加算量です（正: 上、負: 下）。",
                                 "Height offsets are added to normal height (positive: up, negative: down)."));
    ImGui::DragFloat(
-      Tr("ドリフトカメラの補間速度", "Drift Camera Lerp Speed"), &driftCameraLerpSpeed, 0.1f, 0.1f, 30.0f);
+      Tr("ドリフトカメラの補間速度", "Drift Camera Lerp Speed"), &settings_.driftCameraLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::Separator();
-   ImGui::Checkbox(Tr("発表用カメラガイド", "Presentation Camera Guides"), &debugDrawPresentationGuides);
-   ImGui::DragFloat(Tr("ガイド矢印の長さ", "Guide Arrow Length"), &presentationGuideLength, 0.1f, 1.0f, 30.0f);
-   ImGui::Checkbox(Tr("発表用連続撮影", "Auto-capture Presentation Sequence"), &autoCapturePresentationSequence);
-   ImGui::DragFloat(Tr("自動ジャンプ待ち時間", "Auto-jump Delay"), &presentationCaptureJumpDelay, 0.05f, 0.0f, 10.0f);
-   ImGui::Checkbox(Tr("発表動画用の連番PNG", "Presentation Video Frames"), &autoCapturePresentationVideoFrames);
-   ImGui::DragFloat(Tr("動画フレームレート", "Video Frame Rate"), &presentationVideoFrameRate, 1.0f, 1.0f, 60.0f);
+   ImGui::Checkbox(Tr("発表用カメラガイド", "Presentation Camera Guides"), &settings_.debugDrawPresentationGuides);
    ImGui::DragFloat(
-      Tr("動画撮影開始待ち", "Video Capture Start Delay"), &presentationVideoCaptureStartDelay, 0.05f, 0.0f, 30.0f);
-   ImGui::DragFloat(Tr("動画撮影時間", "Video Capture Duration"), &presentationVideoCaptureDuration, 0.1f, 0.0f, 60.0f);
-   ImGui::Text("%s: %s", Tr("接地していた", "Was Grounded"), wasGrounded_ ? Tr("はい", "true") : Tr("いいえ", "false"));
+      Tr("ガイド矢印の長さ", "Guide Arrow Length"), &settings_.presentationGuideLength, 0.1f, 1.0f, 30.0f);
+   ImGui::Checkbox(
+      Tr("発表用連続撮影", "Auto-capture Presentation Sequence"), &settings_.autoCapturePresentationSequence);
+   ImGui::DragFloat(
+      Tr("自動ジャンプ待ち時間", "Auto-jump Delay"), &settings_.presentationCaptureJumpDelay, 0.05f, 0.0f, 10.0f);
+   ImGui::Checkbox(
+      Tr("発表動画用の連番PNG", "Presentation Video Frames"), &settings_.autoCapturePresentationVideoFrames);
+   ImGui::DragFloat(
+      Tr("動画フレームレート", "Video Frame Rate"), &settings_.presentationVideoFrameRate, 1.0f, 1.0f, 60.0f);
+   ImGui::DragFloat(Tr("動画撮影開始待ち", "Video Capture Start Delay"), &settings_.presentationVideoCaptureStartDelay,
+      0.05f, 0.0f, 30.0f);
+   ImGui::DragFloat(
+      Tr("動画撮影時間", "Video Capture Duration"), &settings_.presentationVideoCaptureDuration, 0.1f, 0.0f, 60.0f);
    Configure(DescribeSettings());
 }
 #endif
@@ -755,28 +261,28 @@ nlohmann::json CameraGravityBridge::Serialize() const {
    json["gravityFollowCameraId"] = gravityFollowCameraId_;
    json["playerRearFollowCameraId"] = playerRearFollowCameraId_;
    json["planetLeashCameraId"] = planetLeashCameraId_;
-   json["enableLandingShake"] = enableLandingShake;
-   json["landingShakeAmplitude"] = landingShakeAmplitude;
-   json["landingShakeFrequency"] = landingShakeFrequency;
-   json["landingShakeDuration"] = landingShakeDuration;
-   json["enableMiniTurboShake"] = enableMiniTurboShake;
-   json["miniTurboShakeHorizontalAmplitude"] = miniTurboShakeHorizontalAmplitude;
-   json["miniTurboShakeVerticalAmplitude"] = miniTurboShakeVerticalAmplitude;
-   json["miniTurboShakeFrequency"] = miniTurboShakeFrequency;
-   json["miniTurboShakeDuration"] = miniTurboShakeDuration;
-   json["enableDriftCameraApproach"] = enableDriftCameraApproach;
-   json["driftCameraDistanceReduction"] = driftCameraDistanceReduction;
-   json["driftCameraHeightOffset"] = driftCameraHeightOffset;
-   json["driftLookTargetHeightOffset"] = driftLookTargetHeightOffset;
-   json["driftCameraLerpSpeed"] = driftCameraLerpSpeed;
-   json["debugDrawPresentationGuides"] = debugDrawPresentationGuides;
-   json["presentationGuideLength"] = presentationGuideLength;
-   json["autoCapturePresentationSequence"] = autoCapturePresentationSequence;
-   json["presentationCaptureJumpDelay"] = presentationCaptureJumpDelay;
-   json["autoCapturePresentationVideoFrames"] = autoCapturePresentationVideoFrames;
-   json["presentationVideoFrameRate"] = presentationVideoFrameRate;
-   json["presentationVideoCaptureStartDelay"] = presentationVideoCaptureStartDelay;
-   json["presentationVideoCaptureDuration"] = presentationVideoCaptureDuration;
+   json["enableLandingShake"] = settings_.enableLandingShake;
+   json["landingShakeAmplitude"] = settings_.landingShakeAmplitude;
+   json["landingShakeFrequency"] = settings_.landingShakeFrequency;
+   json["landingShakeDuration"] = settings_.landingShakeDuration;
+   json["enableMiniTurboShake"] = settings_.enableMiniTurboShake;
+   json["miniTurboShakeHorizontalAmplitude"] = settings_.miniTurboShakeHorizontalAmplitude;
+   json["miniTurboShakeVerticalAmplitude"] = settings_.miniTurboShakeVerticalAmplitude;
+   json["miniTurboShakeFrequency"] = settings_.miniTurboShakeFrequency;
+   json["miniTurboShakeDuration"] = settings_.miniTurboShakeDuration;
+   json["enableDriftCameraApproach"] = settings_.enableDriftCameraApproach;
+   json["driftCameraDistanceReduction"] = settings_.driftCameraDistanceReduction;
+   json["driftCameraHeightOffset"] = settings_.driftCameraHeightOffset;
+   json["driftLookTargetHeightOffset"] = settings_.driftLookTargetHeightOffset;
+   json["driftCameraLerpSpeed"] = settings_.driftCameraLerpSpeed;
+   json["debugDrawPresentationGuides"] = settings_.debugDrawPresentationGuides;
+   json["presentationGuideLength"] = settings_.presentationGuideLength;
+   json["autoCapturePresentationSequence"] = settings_.autoCapturePresentationSequence;
+   json["presentationCaptureJumpDelay"] = settings_.presentationCaptureJumpDelay;
+   json["autoCapturePresentationVideoFrames"] = settings_.autoCapturePresentationVideoFrames;
+   json["presentationVideoFrameRate"] = settings_.presentationVideoFrameRate;
+   json["presentationVideoCaptureStartDelay"] = settings_.presentationVideoCaptureStartDelay;
+   json["presentationVideoCaptureDuration"] = settings_.presentationVideoCaptureDuration;
    return json;
 }
 
@@ -806,93 +312,96 @@ void CameraGravityBridge::ReadParameters(const nlohmann::json& data, [[maybe_unu
    }
 
    if (data.contains("enableLandingShake")) {
-      enableLandingShake = data["enableLandingShake"];
+      settings_.enableLandingShake = data["enableLandingShake"];
    }
 
    if (data.contains("landingShakeAmplitude")) {
-      landingShakeAmplitude = data["landingShakeAmplitude"];
+      settings_.landingShakeAmplitude = data["landingShakeAmplitude"];
    }
 
    if (data.contains("landingShakeFrequency")) {
-      landingShakeFrequency = data["landingShakeFrequency"];
+      settings_.landingShakeFrequency = data["landingShakeFrequency"];
    }
 
    if (data.contains("landingShakeDuration")) {
-      landingShakeDuration = data["landingShakeDuration"];
+      settings_.landingShakeDuration = data["landingShakeDuration"];
    }
 
    if (data.contains("enableMiniTurboShake") && data.at("enableMiniTurboShake").is_boolean()) {
-      enableMiniTurboShake = data.at("enableMiniTurboShake").get<bool>();
+      settings_.enableMiniTurboShake = data.at("enableMiniTurboShake").get<bool>();
    }
 
    if (data.contains("miniTurboShakeHorizontalAmplitude") && data.at("miniTurboShakeHorizontalAmplitude").is_number()) {
-      miniTurboShakeHorizontalAmplitude = data.at("miniTurboShakeHorizontalAmplitude").get<float>();
+      settings_.miniTurboShakeHorizontalAmplitude = data.at("miniTurboShakeHorizontalAmplitude").get<float>();
    }
 
    if (data.contains("miniTurboShakeVerticalAmplitude") && data.at("miniTurboShakeVerticalAmplitude").is_number()) {
-      miniTurboShakeVerticalAmplitude = data.at("miniTurboShakeVerticalAmplitude").get<float>();
+      settings_.miniTurboShakeVerticalAmplitude = data.at("miniTurboShakeVerticalAmplitude").get<float>();
    }
 
    if (data.contains("miniTurboShakeFrequency") && data.at("miniTurboShakeFrequency").is_number()) {
-      miniTurboShakeFrequency = data.at("miniTurboShakeFrequency").get<float>();
+      settings_.miniTurboShakeFrequency = data.at("miniTurboShakeFrequency").get<float>();
    }
 
    if (data.contains("miniTurboShakeDuration") && data.at("miniTurboShakeDuration").is_number()) {
-      miniTurboShakeDuration = data.at("miniTurboShakeDuration").get<float>();
+      settings_.miniTurboShakeDuration = data.at("miniTurboShakeDuration").get<float>();
    }
 
    if (data.contains("enableDriftCameraApproach") && data.at("enableDriftCameraApproach").is_boolean()) {
-      enableDriftCameraApproach = data.at("enableDriftCameraApproach").get<bool>();
+      settings_.enableDriftCameraApproach = data.at("enableDriftCameraApproach").get<bool>();
    }
 
    if (data.contains("driftCameraDistanceReduction") && data.at("driftCameraDistanceReduction").is_number()) {
-      driftCameraDistanceReduction = data.at("driftCameraDistanceReduction").get<float>();
+      settings_.driftCameraDistanceReduction = data.at("driftCameraDistanceReduction").get<float>();
    }
 
    if (data.contains("driftCameraHeightOffset") && data.at("driftCameraHeightOffset").is_number()) {
-      driftCameraHeightOffset = data.at("driftCameraHeightOffset").get<float>();
+      settings_.driftCameraHeightOffset = data.at("driftCameraHeightOffset").get<float>();
    }
 
    if (data.contains("driftLookTargetHeightOffset") && data.at("driftLookTargetHeightOffset").is_number()) {
-      driftLookTargetHeightOffset = data.at("driftLookTargetHeightOffset").get<float>();
+      settings_.driftLookTargetHeightOffset = data.at("driftLookTargetHeightOffset").get<float>();
    }
 
    if (data.contains("driftCameraLerpSpeed") && data.at("driftCameraLerpSpeed").is_number()) {
-      driftCameraLerpSpeed = data.at("driftCameraLerpSpeed").get<float>();
+      settings_.driftCameraLerpSpeed = data.at("driftCameraLerpSpeed").get<float>();
    }
 
    if (data.contains("debugDrawPresentationGuides") && data.at("debugDrawPresentationGuides").is_boolean()) {
-      debugDrawPresentationGuides = data.at("debugDrawPresentationGuides").get<bool>();
+      settings_.debugDrawPresentationGuides = data.at("debugDrawPresentationGuides").get<bool>();
    }
 
    if (data.contains("presentationGuideLength") && data.at("presentationGuideLength").is_number()) {
-      presentationGuideLength = std::max(1.0f, data.at("presentationGuideLength").get<float>());
+      settings_.presentationGuideLength = std::max(1.0f, data.at("presentationGuideLength").get<float>());
    }
 
    if (data.contains("autoCapturePresentationSequence") && data.at("autoCapturePresentationSequence").is_boolean()) {
-      autoCapturePresentationSequence = data.at("autoCapturePresentationSequence").get<bool>();
+      settings_.autoCapturePresentationSequence = data.at("autoCapturePresentationSequence").get<bool>();
    }
 
    if (data.contains("presentationCaptureJumpDelay") && data.at("presentationCaptureJumpDelay").is_number()) {
-      presentationCaptureJumpDelay = std::max(0.0f, data.at("presentationCaptureJumpDelay").get<float>());
+      settings_.presentationCaptureJumpDelay = std::max(0.0f, data.at("presentationCaptureJumpDelay").get<float>());
    }
 
    if (data.contains("autoCapturePresentationVideoFrames") &&
        data.at("autoCapturePresentationVideoFrames").is_boolean()) {
-      autoCapturePresentationVideoFrames = data.at("autoCapturePresentationVideoFrames").get<bool>();
+      settings_.autoCapturePresentationVideoFrames = data.at("autoCapturePresentationVideoFrames").get<bool>();
    }
 
    if (data.contains("presentationVideoFrameRate") && data.at("presentationVideoFrameRate").is_number()) {
-      presentationVideoFrameRate = std::clamp(data.at("presentationVideoFrameRate").get<float>(), 1.0f, 60.0f);
+      settings_.presentationVideoFrameRate =
+         std::clamp(data.at("presentationVideoFrameRate").get<float>(), 1.0f, 60.0f);
    }
 
    if (data.contains("presentationVideoCaptureStartDelay") &&
        data.at("presentationVideoCaptureStartDelay").is_number()) {
-      presentationVideoCaptureStartDelay = std::max(0.0f, data.at("presentationVideoCaptureStartDelay").get<float>());
+      settings_.presentationVideoCaptureStartDelay =
+         std::max(0.0f, data.at("presentationVideoCaptureStartDelay").get<float>());
    }
 
    if (data.contains("presentationVideoCaptureDuration") && data.at("presentationVideoCaptureDuration").is_number()) {
-      presentationVideoCaptureDuration = std::max(0.0f, data.at("presentationVideoCaptureDuration").get<float>());
+      settings_.presentationVideoCaptureDuration =
+         std::max(0.0f, data.at("presentationVideoCaptureDuration").get<float>());
    }
 
    Configure(DescribeSettings());
@@ -903,30 +412,7 @@ void CameraGravityBridge::ReadParameters(const nlohmann::json& data, [[maybe_unu
 namespace App {
 
 CameraGravityBridge::Settings CameraGravityBridge::DescribeSettings() const {
-   Settings settings;
-   settings.enableLandingShake = enableLandingShake;
-   settings.landingShakeAmplitude = landingShakeAmplitude;
-   settings.landingShakeFrequency = landingShakeFrequency;
-   settings.landingShakeDuration = landingShakeDuration;
-   settings.enableMiniTurboShake = enableMiniTurboShake;
-   settings.miniTurboShakeHorizontalAmplitude = miniTurboShakeHorizontalAmplitude;
-   settings.miniTurboShakeVerticalAmplitude = miniTurboShakeVerticalAmplitude;
-   settings.miniTurboShakeFrequency = miniTurboShakeFrequency;
-   settings.miniTurboShakeDuration = miniTurboShakeDuration;
-   settings.enableDriftCameraApproach = enableDriftCameraApproach;
-   settings.driftCameraDistanceReduction = driftCameraDistanceReduction;
-   settings.driftCameraHeightOffset = driftCameraHeightOffset;
-   settings.driftLookTargetHeightOffset = driftLookTargetHeightOffset;
-   settings.driftCameraLerpSpeed = driftCameraLerpSpeed;
-   settings.debugDrawPresentationGuides = debugDrawPresentationGuides;
-   settings.presentationGuideLength = presentationGuideLength;
-   settings.autoCapturePresentationSequence = autoCapturePresentationSequence;
-   settings.presentationCaptureJumpDelay = presentationCaptureJumpDelay;
-   settings.autoCapturePresentationVideoFrames = autoCapturePresentationVideoFrames;
-   settings.presentationVideoFrameRate = presentationVideoFrameRate;
-   settings.presentationVideoCaptureStartDelay = presentationVideoCaptureStartDelay;
-   settings.presentationVideoCaptureDuration = presentationVideoCaptureDuration;
-   return settings;
+   return settings_;
 }
 
 void CameraGravityBridge::Configure(const Settings& requested) {
@@ -1005,28 +491,15 @@ void CameraGravityBridge::Configure(const Settings& requested) {
       settings.presentationVideoCaptureDuration = defaults.presentationVideoCaptureDuration;
    }
 
-   enableLandingShake = settings.enableLandingShake;
-   landingShakeAmplitude = settings.landingShakeAmplitude;
-   landingShakeFrequency = settings.landingShakeFrequency;
-   landingShakeDuration = settings.landingShakeDuration;
-   enableMiniTurboShake = settings.enableMiniTurboShake;
-   miniTurboShakeHorizontalAmplitude = settings.miniTurboShakeHorizontalAmplitude;
-   miniTurboShakeVerticalAmplitude = settings.miniTurboShakeVerticalAmplitude;
-   miniTurboShakeFrequency = settings.miniTurboShakeFrequency;
-   miniTurboShakeDuration = settings.miniTurboShakeDuration;
-   enableDriftCameraApproach = settings.enableDriftCameraApproach;
-   driftCameraDistanceReduction = settings.driftCameraDistanceReduction;
-   driftCameraHeightOffset = settings.driftCameraHeightOffset;
-   driftLookTargetHeightOffset = settings.driftLookTargetHeightOffset;
-   driftCameraLerpSpeed = settings.driftCameraLerpSpeed;
-   debugDrawPresentationGuides = settings.debugDrawPresentationGuides;
-   presentationGuideLength = settings.presentationGuideLength;
-   autoCapturePresentationSequence = settings.autoCapturePresentationSequence;
-   presentationCaptureJumpDelay = settings.presentationCaptureJumpDelay;
-   autoCapturePresentationVideoFrames = settings.autoCapturePresentationVideoFrames;
-   presentationVideoFrameRate = settings.presentationVideoFrameRate;
-   presentationVideoCaptureStartDelay = settings.presentationVideoCaptureStartDelay;
-   presentationVideoCaptureDuration = settings.presentationVideoCaptureDuration;
+   settings.landingShakeAmplitude = std::max(0.0f, settings.landingShakeAmplitude);
+   settings.landingShakeFrequency = std::max(0.1f, settings.landingShakeFrequency);
+   settings.landingShakeDuration = std::max(0.0f, settings.landingShakeDuration);
+   settings.presentationGuideLength = std::max(1.0f, settings.presentationGuideLength);
+   settings.presentationCaptureJumpDelay = std::max(0.0f, settings.presentationCaptureJumpDelay);
+   settings.presentationVideoFrameRate = std::clamp(settings.presentationVideoFrameRate, 1.0f, 60.0f);
+   settings.presentationVideoCaptureStartDelay = std::max(0.0f, settings.presentationVideoCaptureStartDelay);
+   settings.presentationVideoCaptureDuration = std::max(0.0f, settings.presentationVideoCaptureDuration);
+   settings_ = settings;
 }
 
 } // namespace App

@@ -17,12 +17,15 @@ namespace App {
 /// @brief メニュー項目の参照と基準姿勢を保持し、表示・選択・決定・非表示の演出を管理する。
 class MenuSelectionAnimationComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 構成済みの選択肢の数を返す。
+   std::size_t GetOptionCount() const { return options_.size(); }
+
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "MenuSelectionAnimationComponent";
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"メニュー選択演出", "Menu Selection Animation"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief シーン保存とコンポーネント検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief シーンに保存されたスケールと不透明度を取り直し、入力待ちまで項目を非表示にする。
@@ -66,20 +69,22 @@ public:
    /// @return 項目が利用できない場合はnullptr。
    GameEngine::UITextComponent* GetOptionText(std::size_t optionIndex) const;
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief コンポーネントの保存対象設定をJSONで返す。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief JSONから設定を復元する。
+   /// @param data 保存されたコンポーネント設定。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 現在の設定と実行状態をインスペクターへ表示する。
    void DrawInspector() override;
 #endif
 

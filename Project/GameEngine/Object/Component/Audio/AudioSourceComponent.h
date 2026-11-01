@@ -90,10 +90,14 @@ public:
    /// @brief 有効なスロット設定を復元し、再生せずにクリップを準備する。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 全スロットの保存設定を共有パラメーターとして取得する。
+   /// @return スロット名・音源ID・再生設定を含むJSON。クリップ実体や再生ハンドルは含まない。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief スロット名で既存の再生状態を照合し、共有パラメーターを反映する。
+   /// @param data slots配列を持つ設定JSON。配列がない場合は何も変更しない。
+   /// @details 同じ音源のボイスは再利用し、音源の変更・スロットの削除時は該当ボイスを解放する。
+   /// @throws std::runtime_error スロット名の重複や不正な数値など、適用できない設定がある場合。
    void ApplySharedParameters(const nlohmann::json& data) override;
 #ifdef MYPROJECT_NON_RELEASE
 

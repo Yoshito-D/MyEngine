@@ -1,32 +1,13 @@
 #pragma once
 
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraComponent.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMeasurementRecorder.h"
 
 namespace App {
 
 /// @brief 追従計算と独立したカメラ調整・計測表示。
-class RearCameraDebugView : public RearCameraComponent {
+class RearCameraDebugView {
 public:
-   /// @brief 所有カメラのパイプラインから担当処理を1フレーム進める。
-   void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
-
-   /// @brief 担当する処理ステージを返す。
-   GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Aim; }
-
-   /// @brief 同一ステージの依存関係に従う更新順を返す。
-   std::int32_t GetExecutionOrder() const override { return -800; }
-
-   /// @brief シーン保存とFactory登録に使う名前を返す。
-   const char* GetComponentName() const override { return "RearCameraDebugView"; }
-
-#ifdef USE_IMGUI
-
-   /// @brief 各計算部品が参照する設定と計測操作をInspectorへ表示する。
-   void DrawInspector() override;
-#endif
-
    /// @brief 計測中のフレーム数と回転量をゲーム画面へ重ねて表示する。
    static void DrawCameraMeasurementOverlay(
       const RearCameraSettings& settings, const RearCameraMeasurementRecorder& recorder);

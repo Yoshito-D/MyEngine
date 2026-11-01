@@ -1,7 +1,5 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMeasurementRecorder.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 #include "GameEngine/Utility/Logger.h"
@@ -15,18 +13,6 @@
 
 namespace App {
 using namespace RearCameraMath;
-
-void RearCameraMeasurementRecorder::MutateCameraState(GameEngine::CameraState&, float) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   if (const auto frame = camera->GetFrameView()) {
-      // 旧実装と同様、カメラ補間用dtではなくゲーム更新時刻で計測する。
-      RecordCameraMeasurementSample(GameEngine::EngineContext::GetDeltaTime(),
-         GameEngine::EngineContext::GetGameFrameNumber(), camera->DescribeSettings(), *frame);
-   }
-}
 
 /// @brief 検証条件名をファイル名として安全なASCIIへ変換する
 std::string SanitizeMeasurementName(const std::string& name) {
@@ -60,6 +46,7 @@ void RearCameraMeasurementRecorder::StartCameraMeasurement(
    ClearCameraMeasurement();
    state_.cameraMeasurementTestName = testName.empty() ? "camera_live" : testName;
    state_.cameraMeasurementSamples.reserve(3600);
+   // 計測開始時点の軸を比較元にし、最初の角度差に初期姿勢からの差分が混ざるのを防ぐ。
    state_.cameraMeasurementPreviousGravityUp = frame.gravity.GetState().currentGravityUp;
    state_.cameraMeasurementPreviousRight = frame.aim.GetState().cachedRight;
    state_.cameraMeasurementPreviousUp = frame.aim.GetState().cachedUp;
@@ -100,6 +87,7 @@ void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
    float deltaTime, uint64_t gameFrame, const RearCameraSettings& settings, const RearCameraFrameView& frame) {
    if (!state_.cameraMeasurementActive) return;
 
+   // 同じゲームフレームでカメラが複数回評価されても、経過時間と角度差を重複して記録しない。
    if (state_.cameraMeasurementLastGameFrame == gameFrame) return;
 
    state_.cameraMeasurementLastGameFrame = gameFrame;
@@ -129,6 +117,7 @@ void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
    sample.targetGravityUpErrorDegrees = AngleDegrees(frame.gravity.GetState().currentGravityUp, frame.input.gravityUp);
    sample.cameraForwardGravityUpAbsDot =
       std::abs(frame.aim.GetState().cachedForward.Dot(frame.gravity.GetState().currentGravityUp));
+   // 軸長の1からのずれと軸同士の内積を併記し、正規化の崩れと直交性の崩れを切り分ける。
    sample.rightLength = frame.aim.GetState().cachedRight.Length();
    sample.upLength = frame.aim.GetState().cachedUp.Length();
    sample.forwardLength = frame.aim.GetState().cachedForward.Length();
@@ -166,6 +155,7 @@ void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
       ++state_.cameraMeasurementInvalidCount;
    }
 
+   // 不正値を含むフレームも残し、CSV上で異常が発生した時刻と前後の状態を追えるようにする。
    state_.cameraMeasurementSamples.push_back(sample);
    state_.cameraMeasurementPreviousGravityUp = frame.gravity.GetState().currentGravityUp;
    state_.cameraMeasurementPreviousRight = frame.aim.GetState().cachedRight;
@@ -173,6 +163,7 @@ void RearCameraMeasurementRecorder::RecordCameraMeasurementSample(
    state_.cameraMeasurementPreviousForward = frame.aim.GetState().cachedForward;
    state_.cameraMeasurementHasPrevious = true;
 
+   // 長時間の計測でメモリーが増え続けないよう、上限に達した時点で停止して保存する。
    if (state_.cameraMeasurementSamples.size() >= kMaxCameraMeasurementSamples) {
       state_.cameraMeasurementActive = false;
       SaveCameraMeasurementFiles(settings);
@@ -241,6 +232,7 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
       return false;
    }
 
+   // 設定の角速度（ラジアン毎秒）を60FPS時の度毎フレームへ換算し、実測値と比較できる単位に揃える。
    const float theoreticalGravityUpDegreesPerFrameAt60Fps =
       std::max(0.0f, settings.gravityUpLerpSpeed) * kRadiansToDegrees / 60.0f;
    const float averageFps =
@@ -313,6 +305,7 @@ void RearCameraMeasurementRecorder::RunFixedGravityUpVerification(const RearCame
    ClearCameraMeasurement();
    state_.cameraMeasurementTestName = "fixed_180_gravity_up_60fps";
 
+   // 180度反対の方向では回転軸が一意に定まらないため、固定の右軸を与えて同じ条件で補間を検証する。
    constexpr float fixedDeltaTime = 1.0f / 60.0f;
    const GameEngine::Vector3 targetUp = {0.0f, -1.0f, 0.0f};
    const GameEngine::Vector3 cameraRight = {1.0f, 0.0f, 0.0f};

@@ -13,6 +13,7 @@ std::filesystem::path Utf8Path(const std::string& text) {
 }
 
 std::string Fold(std::string text) {
+   // UTF-8の非ASCIIバイトは保持し、ASCII英字の大文字小文字だけを同一視する。
    for (auto& c : text) {
       if (c >= 'A' && c <= 'Z') {
          c = static_cast<char>(c + ('a' - 'A'));
@@ -35,6 +36,8 @@ bool ValidName(const std::string& name) {
          return false;
       }
    }
+
+   // Windowsの予約デバイス名は拡張子を付けてもファイル名に使えないため、最初のピリオドより前で調べる。
    const auto stem = Fold(name.substr(0, name.find('.')));
    return stem != "con" && stem != "prn" && stem != "aux" && stem != "nul" &&
           !(stem.size() == 4 && (stem.starts_with("com") || stem.starts_with("lpt")) && stem[3] >= '1' &&
@@ -59,6 +62,7 @@ bool SceneCatalog::Load(const std::filesystem::path& path) {
       std::unordered_map<std::string, SceneDefinition> entries;
       std::unordered_set<std::string> names;
 
+      // シーン名はファイル名にも使うので、ASCII英字の大文字小文字だけが異なる登録も拒否する。
       for (const auto& [name, value] : data.at("scenes").items()) {
          if (!ValidName(name) || !value.is_string() || !names.insert(Fold(name)).second) {
             throw std::runtime_error("Invalid or duplicate scene name: " + name);
@@ -69,6 +73,7 @@ bool SceneCatalog::Load(const std::filesystem::path& path) {
             throw std::runtime_error("Scene path must be relative to resources");
          }
 
+         // 正規化後にも残る親参照は、resourcesの外へ抜けるパスになるため許可しない。
          for (const auto& part : relative) {
             if (part == "..") {
                throw std::runtime_error("Scene path escapes resources");
@@ -80,6 +85,8 @@ bool SceneCatalog::Load(const std::filesystem::path& path) {
       if (!entries.contains(initial)) {
          throw std::runtime_error("Startup scene is not registered");
       }
+
+      // 全項目の検証が済むまでは公開中の登録内容を変更せず、読込・検証失敗時も旧カタログを使えるようにする。
       scenes_ = std::move(entries);
       initialSceneName_ = initial;
       catalogData_ = std::move(data);
@@ -147,6 +154,7 @@ bool SceneCatalog::SaveCatalog(const nlohmann::json& data) {
 }
 
 bool SceneCatalog::CreateScene(const std::string& name) {
+   // エディター外で追加された登録も取り込み、古いカタログで上書きしないようにする。
    if (!Reload()) {
       return false;
    }
@@ -180,6 +188,8 @@ bool SceneCatalog::CreateScene(const std::string& name) {
       if (SaveCatalog(updated)) {
          return true;
       }
+
+      // カタログへの登録が失敗した場合は、この操作で作った空シーンだけを取り消す。
       std::error_code error;
       std::filesystem::remove(path, error);
 
