@@ -134,14 +134,29 @@ Json Cook(const std::filesystem::path& source, const std::filesystem::path& reso
       }
    }
 
-   const auto& metadata = image.GetMetadata();
+   const auto& sourceMetadata = image.GetMetadata();
 
-   if (metadata.dimension != DirectX::TEX_DIMENSION_TEXTURE2D || !metadata.width || !metadata.height ||
-       metadata.width > 16384 || metadata.height > 16384 || !metadata.mipLevels || metadata.mipLevels > 15 ||
-       (metadata.IsCubemap() ? metadata.arraySize != 6 : metadata.arraySize != 1)) {
+   if (sourceMetadata.dimension != DirectX::TEX_DIMENSION_TEXTURE2D || !sourceMetadata.width ||
+       !sourceMetadata.height || sourceMetadata.width > 16384 || sourceMetadata.height > 16384 ||
+       !sourceMetadata.mipLevels || sourceMetadata.mipLevels > 15 ||
+       (sourceMetadata.IsCubemap() ? sourceMetadata.arraySize != 6 : sourceMetadata.arraySize != 1)) {
       throw std::runtime_error("Unsupported texture dimensions or array");
    }
 
+   // 圧縮済みDDSは再圧縮しない。GPU互換性と元の画像寸法を保つため、4の倍数でない画像は非圧縮で残す。
+   if (!DirectX::IsCompressed(sourceMetadata.format) && sourceMetadata.width % 4 == 0 &&
+       sourceMetadata.height % 4 == 0) {
+      // 全ミップ・全配列面のアルファを調べ、半透明を含む画像にはBC3を使う。色空間も入力に合わせる。
+      const auto colorFormat = image.IsAlphaAllOpaque() ? DXGI_FORMAT_BC1_UNORM : DXGI_FORMAT_BC3_UNORM;
+      const auto format = DirectX::IsSRGB(sourceMetadata.format) ? DirectX::MakeSRGB(colorFormat) : colorFormat;
+      DirectX::ScratchImage compressed;
+      Check(DirectX::Compress(image.GetImages(), image.GetImageCount(), sourceMetadata, format,
+               DirectX::TEX_COMPRESS_PARALLEL, DirectX::TEX_THRESHOLD_DEFAULT, compressed),
+         "BC compression");
+      image = std::move(compressed);
+   }
+
+   const auto& metadata = image.GetMetadata();
    const auto relative = source.stem();
    const auto ddsName = std::filesystem::path(relative.wstring() + L".dds");
    const auto destination = output / ddsName;

@@ -8,8 +8,8 @@
 #include <dxgiformat.h>
 
 namespace GameEngine {
-/// @brief DDS生成規約。色空間・ミップ生成方法・カタログ形式を変更したら更新する。
-inline constexpr std::int32_t kTextureCookVersion = 3;
+/// @brief DDS生成規約。圧縮形式・色空間・ミップ生成方法・カタログ形式を変更したら更新する。
+inline constexpr std::int32_t kTextureCookVersion = 4;
 /// @brief 通常テクスチャを管理するResources相対のルート。
 inline constexpr std::array<const char*, 2> kTextureRoots = {"engine/textures", "game/textures"};
 
