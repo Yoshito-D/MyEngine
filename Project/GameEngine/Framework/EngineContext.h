@@ -296,6 +296,13 @@ public:
    /// @param opacity 0で通常表示、1で完全な黒
    static void SetSceneTransitionOpacity(float opacity);
 
+   /// @brief カメラ演出用の暗転率を設定する。シーン遷移用との最大値を最終表示へ適用する。
+   /// @param opacity 0で通常表示、1で完全な黒。非有限値は0として扱う。
+   static void SetCameraTransitionOpacity(float opacity);
+
+   /// @brief シーン入場・退出のフェードまたはシーン切り替えが進行中か返す。
+   static bool IsSceneTransitioning();
+
    //================================================================
    // タイムプロファイラー
    //================================================================

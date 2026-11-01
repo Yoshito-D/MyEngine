@@ -26,12 +26,42 @@ void RaceManagerComponent::Update(float deltaTime) {
       // Edit中のシーン読込ではPlayerを変更せず、最初のランタイム更新でのみレース用ロックを開始する。
       runtimeInitialized_ = true;
       Restart();
+      return;
    }
 
-   const float safeDeltaTime = std::max(deltaTime, 0.0f);
+   const float safeDeltaTime = std::isfinite(deltaTime) ? std::max(deltaTime, 0.0f) : 0.0f;
 
    // 状態ごとに進める時計を分離し、カウントダウンや結果待機を走行時間へ混ぜない。
    switch (state_) {
+      case State::Intro: {
+         if (!introSettings_.enabled || startMode_ != StartMode::Countdown) {
+            Restart();
+            break;
+         }
+
+         // 車両入力はロック中なので、UIアクションを直接参照する。入場前の決定は持ち越さない。
+         const auto& confirm = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
+
+         if (!confirm.held) {
+            introSkipArmed_ = true;
+         }
+
+         auto* brain = GameEngine::EngineContext::GetActiveBrain();
+         const auto frame = presentation_.UpdateIntro(brain, safeDeltaTime, introSkipArmed_ && confirm.triggered,
+            GameEngine::EngineContext::IsSceneTransitioning());
+         GameEngine::EngineContext::SetCameraTransitionOpacity(frame.opacity);
+
+         if (frame.switchToCountdown && useCountdownCameraPose_) {
+            presentation_.ApplyCountdownCameraPose(
+               brain, countdownCameraPosition_, countdownCameraRotation_, countdownCameraFov_);
+         }
+
+         if (frame.completed) {
+            BeginCountdown();
+         }
+
+         break;
+      }
       case State::Countdown:
          countdownRemaining_ -= safeDeltaTime;
 
@@ -71,6 +101,19 @@ void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    presentation_.CaptureInitialState();
    records_.LoadBestTimes(recordFile_, recordKey_);
    Restart();
+}
+
+void RaceManagerComponent::OnDisable() {
+   if (!runtimeInitialized_) return;
+
+   auto* brain = GameEngine::EngineContext::GetActiveBrain();
+   presentation_.CancelIntro(brain);
+   presentation_.RestoreEffects();
+   presentation_.SetPlayerLocked(false);
+   presentation_.SetCameraMotionPaused(brain, false, 0.0f, startCameraBlendEasing_);
+   GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
+   runtimeInitialized_ = false;
+   state_ = State::Waiting;
 }
 
 void RaceManagerComponent::NotifyStart() {
@@ -131,7 +174,16 @@ void RaceManagerComponent::Restart() {
    finishElapsed_ = 0.0f;
    sceneChangeRequested_ = false;
    restartRequested_ = false;
+   introSkipArmed_ = false;
 
+   // 編集時の読み込みは状態の準備だけに留め、カメラやプレイヤーへ実行時の変更を加えない。
+   if (!runtimeInitialized_) {
+      state_ = startMode_ == StartMode::Countdown ? State::Countdown : State::Waiting;
+      return;
+   }
+
+   presentation_.CancelIntro(GameEngine::EngineContext::GetActiveBrain());
+   GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
    presentation_.RestoreEffects();
 
    switch (startMode_) {
@@ -142,17 +194,13 @@ void RaceManagerComponent::Restart() {
          presentation_.SetPlayerLocked(false);
          break;
       case StartMode::Countdown:
-         state_ = State::Countdown;
-
-         // Edit中の読込では追従カメラを書き換えず、実行開始時に保存した姿勢を適用する。
-         if (runtimeInitialized_ && useCountdownCameraPose_) {
-            presentation_.ApplyCountdownCameraPose(GameEngine::EngineContext::GetActiveBrain(),
-               countdownCameraPosition_, countdownCameraRotation_, countdownCameraFov_);
+         if (introSettings_.enabled &&
+             presentation_.BeginIntro(GameEngine::EngineContext::GetActiveBrain(), introSettings_)) {
+            state_ = State::Intro;
+         } else {
+            BeginCountdown();
          }
 
-         presentation_.SetCameraMotionPaused(
-            GameEngine::EngineContext::GetActiveBrain(), true, startCameraBlendSeconds_, startCameraBlendEasing_);
-         presentation_.SetPlayerLocked(runtimeInitialized_ && lockPlayerDuringCountdown_);
          break;
       case StartMode::Gate:
       default:
@@ -184,7 +232,7 @@ nlohmann::json RaceManagerComponent::Serialize() const {
    }
 
    return nlohmann::json{{"startMode", startModeName}, {"countdownSeconds", countdownSeconds_},
-      {"useCountdownCameraPose", useCountdownCameraPose_},
+      {"intro", introSettings_.Serialize()}, {"useCountdownCameraPose", useCountdownCameraPose_},
       {"countdownCameraPosition", GameEngine::JsonValue::WriteVector3(countdownCameraPosition_)},
       {"countdownCameraRotation", GameEngine::JsonValue::WriteVector3(countdownCameraRotation_)},
       {"countdownCameraFov", countdownCameraFov_}, {"startCameraBlendSeconds", startCameraBlendSeconds_},
@@ -197,7 +245,7 @@ nlohmann::json RaceManagerComponent::Serialize() const {
 
 nlohmann::json RaceManagerComponent::GetSharedParameters() const {
    return ExtractSharedParameters(
-      {"playerObjectId", "finishCameraId", "restartScene", "nextScene", "recordKey", "recordFile"});
+      {"playerObjectId", "finishCameraId", "restartScene", "nextScene", "recordKey", "recordFile", "intro"});
 }
 
 void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
@@ -210,6 +258,10 @@ void RaceManagerComponent::ApplySharedParameters(const nlohmann::json& data) {
 
 void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object()) return;
+
+   if (data.contains("intro")) {
+      introSettings_.Deserialize(data.at("intro"));
+   }
 
    useCountdownCameraPose_ = GameEngine::JsonValue::ReadBool(data, "useCountdownCameraPose", useCountdownCameraPose_);
 
@@ -298,6 +350,23 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
    }
 }
 
+void RaceManagerComponent::BeginCountdown() {
+   auto* brain = GameEngine::EngineContext::GetActiveBrain();
+   presentation_.CancelIntro(brain);
+   GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
+   presentation_.RestoreEffects();
+   state_ = State::Countdown;
+   countdownRemaining_ = countdownSeconds_;
+
+   if (useCountdownCameraPose_) {
+      presentation_.ApplyCountdownCameraPose(
+         brain, countdownCameraPosition_, countdownCameraRotation_, countdownCameraFov_);
+   }
+
+   presentation_.SetCameraMotionPaused(brain, true, startCameraBlendSeconds_, startCameraBlendEasing_);
+   presentation_.SetPlayerLocked(lockPlayerDuringCountdown_);
+}
+
 void RaceManagerComponent::BeginRace() {
    // カウントダウン時間は走行記録へ含めず、開始時点を0秒として計測し直す。
    state_ = State::Running;
@@ -328,6 +397,7 @@ void RaceManagerComponent::DrawInspector() {
    }
 
    ImGui::DragFloat("Countdown Seconds", &countdownSeconds_, 0.1f, 0.0f, 60.0f);
+   DrawIntroInspector();
    ImGui::DragFloat("Start Camera Blend Seconds", &startCameraBlendSeconds_, 0.05f, 0.0f, 10.0f);
    auto easingIndex = static_cast<std::int32_t>(startCameraBlendEasing_);
 
@@ -377,7 +447,7 @@ void RaceManagerComponent::DrawInspector() {
    ImGui::Checkbox("Lock Player During Countdown", &lockPlayerDuringCountdown_);
    ImGui::Checkbox("Lock Player On Finish", &lockPlayerOnFinish_);
    ImGui::DragFloat("Finish Delay", &finishDelay_, 0.1f, 0.0f, 60.0f);
-   static const char* stateNames[] = {"Waiting", "Countdown", "Running", "Finished"};
+   static const char* stateNames[] = {"Waiting", "Intro", "Countdown", "Running", "Finished"};
    ImGui::Text("State: %s", stateNames[static_cast<std::int32_t>(state_)]);
    ImGui::Text("Time: %.3f", elapsedTime_);
    ImGui::Text("Checkpoint: %zu / %zu", nextCheckpointIndex_, checkpointCount_);
@@ -389,6 +459,75 @@ void RaceManagerComponent::DrawInspector() {
    if (ImGui::Button("Restart State")) {
       Restart();
    }
+}
+
+void RaceManagerComponent::DrawIntroInspector() {
+   if (!ImGui::TreeNode(GameEngine::LocalizeEditorText("ステージ紹介", "Stage Intro"))) return;
+
+   ImGui::Checkbox(GameEngine::LocalizeEditorText("ステージ紹介を再生", "Enable Stage Intro"), &introSettings_.enabled);
+   GameEngine::EditorUI::CameraReference(
+      GameEngine::LocalizeEditorText("導入専用カメラ", "Intro Camera"), introSettings_.cameraId);
+   ImGui::DragFloat(GameEngine::LocalizeEditorText("ゴール紹介の移動時間（秒）", "Goal Focus Move Seconds"),
+      &introSettings_.goalFocusSeconds, 0.1f, 0.0f, 120.0f);
+   ImGui::DragFloat(GameEngine::LocalizeEditorText("移動時間（秒）", "Move Seconds"), &introSettings_.moveSeconds, 0.1f,
+      0.0f, 120.0f);
+   ImGui::DragFloat(GameEngine::LocalizeEditorText("暗転時間（秒）", "Fade Out Seconds"),
+      &introSettings_.fadeOutSeconds, 0.05f, 0.0f, 10.0f);
+   ImGui::DragFloat(GameEngine::LocalizeEditorText("明転時間（秒）", "Fade In Seconds"), &introSettings_.fadeInSeconds,
+      0.05f, 0.0f, 10.0f);
+
+   auto drawPose = [](const char* id, const char* captureLabel, std::optional<GameEngine::CameraState>& pose) {
+      ImGui::PushID(id);
+
+      if (ImGui::Button(captureLabel)) {
+         if (const auto* brain = GameEngine::EngineContext::GetActiveBrain()) {
+            // ビュー行列指定のカメラもTRSへ揃え、画面で確認した構図をそのまま保存する。
+            pose = GameEngine::CameraState::Lerp(brain->GetCurrentState(), brain->GetCurrentState(), 0.0f);
+         }
+      }
+
+      if (pose) {
+         ImGui::DragFloat3(GameEngine::LocalizeEditorText("位置", "Position"), &pose->transform.translation.x, 1.0f);
+         auto degrees = pose->transform.GetActiveEuler() * GameEngine::MathConstants::kRadiansToDegrees;
+
+         if (ImGui::DragFloat3(GameEngine::LocalizeEditorText("回転（度）", "Rotation (deg)"), &degrees.x, 0.1f)) {
+            pose->transform.SetRotationEuler(degrees * GameEngine::MathConstants::kDegreesToRadians);
+         }
+
+         ImGui::SliderAngle(GameEngine::LocalizeEditorText("画角（度）", "FOV (deg)"), &pose->fov, 1.0f, 179.0f);
+      } else {
+         ImGui::TextUnformatted(GameEngine::LocalizeEditorText("構図が未保存です。", "Pose has not been captured."));
+      }
+
+      ImGui::PopID();
+   };
+
+   ImGui::Separator();
+   ImGui::TextUnformatted(GameEngine::LocalizeEditorText("1. ゴール紹介（横移動）", "1. Goal Focus (Sideways Pass)"));
+   drawPose("GoalFocusStartPose",
+      GameEngine::LocalizeEditorText(
+         "現在のカメラをゴール紹介の始点として保存", "Capture Current Camera for Goal Focus Start"),
+      introSettings_.goalFocusStartPose);
+   drawPose("GoalFocusEndPose",
+      GameEngine::LocalizeEditorText(
+         "現在のカメラをゴール紹介の終点として保存", "Capture Current Camera for Goal Focus End"),
+      introSettings_.goalFocusEndPose);
+   ImGui::Separator();
+   ImGui::TextUnformatted(GameEngine::LocalizeEditorText("2. ゴールからスタートへ移動", "2. Goal to Start"));
+   drawPose("GoalPose",
+      GameEngine::LocalizeEditorText("現在のカメラを移動始点として保存", "Capture Current Camera for Move Start"),
+      introSettings_.goalPose);
+   drawPose("StartPose",
+      GameEngine::LocalizeEditorText("現在のカメラを移動終点として保存", "Capture Current Camera for Move End"),
+      introSettings_.startPose);
+
+   if (introSettings_.enabled && !introSettings_.IsValid()) {
+      ImGui::TextWrapped(GameEngine::LocalizeEditorText(
+         "ゴール紹介と俯瞰移動、それぞれの始点・終点を保存してください。未設定時は導入を省略します。",
+         "Capture both endpoints for the goal focus and overview shots. Invalid settings skip the intro."));
+   }
+
+   ImGui::TreePop();
 }
 #endif
 

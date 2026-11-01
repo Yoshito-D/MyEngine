@@ -5,6 +5,71 @@
       },
       "virtualCameras": [
          {
+            "active": false,
+            "components": [],
+            "followTargetId": "",
+            "id": "StageIntroCamera",
+            "lookAtTargetId": "",
+            "name": "Stage Intro Camera",
+            "priority": 1000,
+            "state": {
+               "farClip": 10000.0,
+               "fov": 1.3089969158172607,
+               "hasViewMatrixOverride": false,
+               "nearClip": 0.20000000298023224,
+               "transform": {
+                  "rotation": [
+                     -2.516430616378784,
+                     -0.5501657724380493,
+                     3.1415927410125732
+                  ],
+                  "rotationQuaternion": [
+                     0.08352944254875183,
+                     -0.9157676100730896,
+                     0.29595381021499634,
+                     0.258464515209198
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "translation": [
+                     450.0,
+                     650.0,
+                     1100.0
+                  ]
+               },
+               "viewMatrixOverride": [
+                  [
+                     1.0,
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  [
+                     0.0,
+                     1.0,
+                     0.0,
+                     0.0
+                  ],
+                  [
+                     0.0,
+                     0.0,
+                     1.0,
+                     0.0
+                  ],
+                  [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ]
+               ]
+            }
+         },
+         {
             "active": true,
             "components": [
                {
@@ -656,6 +721,78 @@
                   "countdownSeconds": 3.0,
                   "finishCameraId": "GravityFollowCamera",
                   "finishDelay": 0.0,
+                  "intro": {
+                     "cameraId": "StageIntroCamera",
+                     "enabled": true,
+                     "fadeInSeconds": 0.4000000059604645,
+                     "fadeOutSeconds": 0.4000000059604645,
+                     "goalFocusEndPose": {
+                        "farClip": 10000.0,
+                        "fov": 0.7853981852531433,
+                        "nearClip": 0.20000000298023224,
+                        "position": [
+                           18.0,
+                           110.0,
+                           745.0
+                        ],
+                        "rotation": [
+                           0.026501469314098358,
+                           -0.9722661972045898,
+                           0.13761106133460999,
+                           0.1872413605451584
+                        ]
+                     },
+                     "goalFocusSeconds": 2.0,
+                     "goalFocusStartPose": {
+                        "farClip": 10000.0,
+                        "fov": 0.7853981852531433,
+                        "nearClip": 0.20000000298023224,
+                        "position": [
+                           -18.0,
+                           110.0,
+                           745.0
+                        ],
+                        "rotation": [
+                           0.026501469314098358,
+                           0.9722661972045898,
+                           -0.13761106133460999,
+                           0.1872413605451584
+                        ]
+                     },
+                     "goalPose": {
+                        "farClip": 10000.0,
+                        "fov": 0.9599310755729675,
+                        "nearClip": 0.20000000298023224,
+                        "position": [
+                           0.0,
+                           200.0,
+                           500.0
+                        ],
+                        "rotation": [
+                           0.30070579051971436,
+                           0.0,
+                           0.0,
+                           0.9537169337272644
+                        ]
+                     },
+                     "moveSeconds": 4.0,
+                     "startPose": {
+                        "farClip": 10000.0,
+                        "fov": 0.9599310755729675,
+                        "nearClip": 0.20000000298023224,
+                        "position": [
+                           0.0,
+                           125.0,
+                           -100.0
+                        ],
+                        "rotation": [
+                           0.30751559138298035,
+                           0.0,
+                           0.0,
+                           0.9515430927276611
+                        ]
+                     }
+                  },
                   "lockPlayerDuringCountdown": true,
                   "lockPlayerOnFinish": true,
                   "nextScene": "",
@@ -3324,7 +3461,7 @@
                            1.0,
                            1.0
                         ],
-                        "fillLightIntensity": 0.4300000071525574,
+                        "fillLightIntensity": 0.5299999713897705,
                         "lightingMode": 1,
                         "name": "GoalMaterial",
                         "ownership": "local",
@@ -3336,8 +3473,8 @@
                            1.0,
                            1.0
                         ],
-                        "rimLightIntensity": 0.0,
-                        "rimLightPower": 4.0,
+                        "rimLightIntensity": 2.9600000381469727,
+                        "rimLightPower": 1.7100000381469727,
                         "shininess": 40.0,
                         "textureName": "colormap",
                         "uvTransform": [

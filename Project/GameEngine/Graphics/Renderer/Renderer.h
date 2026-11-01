@@ -144,6 +144,10 @@ public:
    /// @param opacity 0で通常表示、1で完全な黒
    void SetSceneTransitionOpacity(float opacity);
 
+   /// @brief カメラ演出の暗転率を設定し、シーン遷移用との最大値を最終画像へ適用する。
+   /// @param opacity 0で通常表示、1で完全な黒。非有限値は0として扱う。
+   void SetCameraTransitionOpacity(float opacity);
+
 #ifdef USE_IMGUI
 
    /// @brief シーン管理の初期化後に、所有権を移さずエディタUIへ依存を接続する。
@@ -384,6 +388,9 @@ private:
    Microsoft::WRL::ComPtr<ID3D12Resource> sceneTransitionConstantBuffer_;
    SceneTransitionConstants* sceneTransitionConstants_ = nullptr; ///< 縦方向ぼかし・暗転用定数バッファの永続Map先。
    float sceneTransitionOpacity_ = 0.0f;                          ///< シーン遷移の暗転量。0で通常表示、1で完全な暗転。
+   float cameraTransitionOpacity_ = 0.0f;                         ///< カメラ演出が所有する暗転量。
+
+   void UpdateTransitionOpacity();
 
    /// @brief パイプライン名+ブレンドモードをキーにした解決済みキャッシュ
    struct PipelineHandle {

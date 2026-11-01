@@ -42,6 +42,7 @@
 #include "GameEngine/Graphics/Renderer/Pass/PostEffectPass.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <functional>
@@ -1092,14 +1093,25 @@ void Renderer::SetBlendMode(BlendMode blendMode) {
 }
 
 void Renderer::SetSceneTransitionOpacity(float opacity) {
-   sceneTransitionOpacity_ = std::clamp(opacity, 0.0f, 1.0f);
+   sceneTransitionOpacity_ = std::isfinite(opacity) ? std::clamp(opacity, 0.0f, 1.0f) : 0.0f;
+   UpdateTransitionOpacity();
+}
+
+void Renderer::SetCameraTransitionOpacity(float opacity) {
+   cameraTransitionOpacity_ = std::isfinite(opacity) ? std::clamp(opacity, 0.0f, 1.0f) : 0.0f;
+   UpdateTransitionOpacity();
+}
+
+void Renderer::UpdateTransitionOpacity() {
+   // 要求元ごとに値を保持し、片方の解除で他方の暗転を消さない。
+   const float opacity = std::max(sceneTransitionOpacity_, cameraTransitionOpacity_);
 
    if (sceneTransitionHorizontalConstants_) {
-      sceneTransitionHorizontalConstants_->opacity = sceneTransitionOpacity_;
+      sceneTransitionHorizontalConstants_->opacity = opacity;
    }
 
    if (sceneTransitionConstants_) {
-      sceneTransitionConstants_->opacity = sceneTransitionOpacity_;
+      sceneTransitionConstants_->opacity = opacity;
    }
 }
 
@@ -1159,8 +1171,8 @@ void Renderer::DrawFullscreenTriangle(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHand
 }
 
 void Renderer::ApplySceneTransitionOverlay() {
-   if (sceneTransitionOpacity_ <= 0.0f || !sceneTransitionHorizontalConstantBuffer_ ||
-       !sceneTransitionConstantBuffer_ || !offscreenRenderTarget_) {
+   if (std::max(sceneTransitionOpacity_, cameraTransitionOpacity_) <= 0.0f ||
+       !sceneTransitionHorizontalConstantBuffer_ || !sceneTransitionConstantBuffer_ || !offscreenRenderTarget_) {
       return;
    }
 

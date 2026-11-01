@@ -66,6 +66,9 @@ public:
    /// @brief 切替が確定したシーンの名前を取得する。
    std::string GetCurrentSceneName() const;
 
+   /// @brief 入場・退出のフェード、または予約されたシーン切り替えが進行中か返す。
+   bool IsSceneTransitioning() const;
+
    /// @brief 共有カタログを取得する。
    SceneCatalog& GetCatalog() { return catalog_; }
 
@@ -94,10 +97,10 @@ private:
    std::chrono::steady_clock::time_point transitionUpdateTime_; ///< フェード開始以降の時間だけを計測する基準時刻。
    float elapsed_ = 0.0f;                                       ///< 処理を開始してからの経過時間（秒）。
    float opacity_ = 0.0f;                                       ///< 影の濃さ（0～1）。
-   bool commitReady_ = false;                                ///< 暗転が完了し、シーン実体を置換できるかどうか。
-   bool replacing_ = false;                                  ///< シーンの構築・復旧中で再入を拒否するかどうか。
-   SceneLoadResult lastResult_;                              ///< 即時操作と予約操作を含む、直近の処理結果。
-   std::function<void()> beforeReplace_;                     ///< 旧シーンを破棄する前に編集状態などを切り離す通知。
+   bool commitReady_ = false;                                   ///< 暗転が完了し、シーン実体を置換できるかどうか。
+   bool replacing_ = false;                                     ///< シーンの構築・復旧中で再入を拒否するかどうか。
+   SceneLoadResult lastResult_;                                 ///< 即時操作と予約操作を含む、直近の処理結果。
+   std::function<void()> beforeReplace_;                        ///< 旧シーンを破棄する前に編集状態などを切り離す通知。
    std::function<void(const SceneSnapshot&, bool)> afterReplace_; ///< 新規または復旧シーンを構築した後の接続通知。
    std::function<SceneSnapshot()> captureRecovery_;               ///< 置換失敗時の復元元となる保存状態を取得する処理。
    static constexpr float kTransitionDuration = 0.4f;             ///< シーン遷移の暗転・復帰にそれぞれ使う時間（秒）。

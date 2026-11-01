@@ -25,6 +25,10 @@ std::string SceneManager::GetCurrentSceneName() const {
    return currentScene_ ? currentScene_->GetDefinition().name : std::string{};
 }
 
+bool SceneManager::IsSceneTransitioning() const {
+   return replacing_ || pending_.has_value() || transitionState_ != TransitionState::Idle;
+}
+
 SceneLoadResult SceneManager::Report(SceneLoadStatus status, std::string message) {
    lastResult_ = {status, std::move(message)};
 

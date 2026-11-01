@@ -420,6 +420,16 @@ void EngineContext::SetSceneTransitionOpacity(float opacity) {
    }
 }
 
+void EngineContext::SetCameraTransitionOpacity(float opacity) {
+   if (sRenderer_) {
+      sRenderer_->SetCameraTransitionOpacity(opacity);
+   }
+}
+
+bool EngineContext::IsSceneTransitioning() {
+   return sSceneManager_ && sSceneManager_->IsSceneTransitioning();
+}
+
 float EngineContext::GetDeltaTime() {
    if (sHasGameDeltaTimeOverride_) {
       return sGameDeltaTime_;
