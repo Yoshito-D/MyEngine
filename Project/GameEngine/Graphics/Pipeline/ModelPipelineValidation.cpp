@@ -132,6 +132,7 @@ bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, Mod
    UINT nextOffset = 0;
    std::unordered_set<std::string> inputs;
 
+   // 自動配置も実際のバイト位置へ解決し、共通の頂点バッファを別のレイアウトで誤読しないか確認する。
    for (const auto& input : layout) {
       const auto semantic = Lower(input.semanticName);
       const UINT offset = semantic == "position"   ? static_cast<UINT>(offsetof(Mesh::VertexData, position))
@@ -154,6 +155,7 @@ bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, Mod
    }
 
    for (const auto& input : vertex->inputParameters) {
+      // SV_VertexIDなどのシステム値はGPUが供給するため、頂点バッファ内の属性としては要求しない。
       if (Lower(input.semanticName).rfind("sv_", 0) == 0) {
          continue;
       }
@@ -172,6 +174,7 @@ bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, Mod
    model.bindings = root->second.parameters;
    std::unordered_set<std::string> semantics;
 
+   // 描画側が供給できる意味名とリソース種別に限定し、同じ意味名の重複による曖昧な割当を防ぐ。
    for (auto& binding : model.bindings) {
       binding.semantic = Lower(binding.semantic);
       binding.required = false;
@@ -221,6 +224,7 @@ bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, Mod
             return fail("unbound shader resource: " + resource.name);
          }
 
+         // シェーダーが実際に参照する項目だけを必須にし、共有ルートシグネチャの未使用項目は許容する。
          binding->required = true;
          const auto& semantic = binding->semantic;
 
@@ -253,6 +257,7 @@ bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, Mod
 
          parametersUsed = true;
 
+         // 独自パラメーターもHLSLの16バイト単位のバッファサイズと一致させ、項目数を含めて照合する。
          if (buffer->size != model.parameterBufferSize || buffer->size == 0 || buffer->size > 4096 ||
              buffer->size % 16 != 0 || buffer->variables.size() != model.parameters.size()) {
             return fail("materialParameters size/field count mismatch");
@@ -273,6 +278,7 @@ bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, Mod
                return fail("parameter layout/type mismatch: " + field.name);
             }
 
+            // 開始位置だけでなく占有バイト全体を記録し、ベクトル同士の部分的な重なりも検出する。
             for (UINT offset = field.offset; offset < field.offset + count * 4; ++offset) {
                if (!occupied.insert(offset).second) {
                   return fail("overlapping parameter: " + field.name);

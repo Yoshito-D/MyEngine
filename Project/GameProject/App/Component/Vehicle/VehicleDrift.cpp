@@ -21,6 +21,8 @@ namespace App {
 // ================================================================
 
 void VehicleDrift::Apply(bool driftInput, float steerInput, const Vector3& gravityUp, float deltaTime) {
+   if (!HasOwner() || !IsEnabled()) return;
+
    // ----------------------------------------------------------------
    // 1. ドリフト開始 / 継続 / 終了の状態管理
    // ----------------------------------------------------------------
@@ -40,7 +42,7 @@ void VehicleDrift::Apply(bool driftInput, float steerInput, const Vector3& gravi
          auto* gravBody = GetOwner().GetComponent<GravityBody>();
          auto* gndMover = GetOwner().GetComponent<VehicleGroundMover>();
 
-         if (gravBody && gndMover) {
+         if (gravBody && gravBody->IsEnabled() && gndMover && gndMover->IsEnabled()) {
             Vector3 fwd = gndMover->GetFlatForward();
             Vector3 right = gravityUp.Cross(fwd).Normalize();
             slideLateralSpeed_ = gravBody->GetVelocity().Dot(right);
@@ -155,11 +157,11 @@ void VehicleDrift::ApplySlideVelocity(float steerInput, const Vector3& gravityUp
 
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
 
-   if (!gravityBody) return;
+   if (!gravityBody || !gravityBody->IsEnabled()) return;
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
 
-   if (!groundMover) return;
+   if (!groundMover || !groundMover->IsEnabled()) return;
 
    // ---- 水平方向ベクトルの取得 ----
    // flatForward は VehicleGroundMover が毎フレーム更新する水平前進方向。
@@ -202,11 +204,11 @@ void VehicleDrift::ApplySlideVelocity(float steerInput, const Vector3& gravityUp
 void VehicleDrift::ApplyPostDriftBleed(const Vector3& gravityUp, float deltaTime) {
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
 
-   if (!gravityBody) return;
+   if (!gravityBody || !gravityBody->IsEnabled()) return;
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
 
-   if (!groundMover) return;
+   if (!groundMover || !groundMover->IsEnabled()) return;
 
    Vector3 flatForward = groundMover->GetFlatForward();
    Vector3 flatRight = gravityUp.Cross(flatForward).Normalize();
@@ -233,7 +235,7 @@ float VehicleDrift::CalculateSteeringInput(float steerInput) const {
 
 bool VehicleDrift::CanFireMiniTurbo() const {
    // miniTurboEnabled = false のときはブーストしない。
-   if (!miniTurboEnabled) {
+   if (!IsEnabled() || !miniTurboEnabled) {
       return false;
    }
 
@@ -244,7 +246,7 @@ bool VehicleDrift::CanFireMiniTurbo() const {
    }
 
    const auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
-   return groundMover && !groundMover->IsAccelerationBlocked();
+   return groundMover && groundMover->IsEnabled() && !groundMover->IsAccelerationBlocked();
 }
 
 void VehicleDrift::TryFireMiniTurbo() {
@@ -253,7 +255,7 @@ void VehicleDrift::TryFireMiniTurbo() {
 
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
 
-   if (!groundMover) return;
+   if (!groundMover || !groundMover->IsEnabled()) return;
 
    // 現在の速度に miniTurboBoost を impulse として加算する。
    // 直接上書きではなく加算にすることで、加速後は UpdateSpeed の減衰により

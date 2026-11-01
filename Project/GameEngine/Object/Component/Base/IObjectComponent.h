@@ -22,13 +22,25 @@ std::string LocalizeObjectComponentTypeName(const char* typeName);
 std::string MakeObjectComponentHeaderLabel(const char* typeName);
 #endif
 
+/// @brief 同じObject内の更新順。力の選択・積分・接触・操作・表示を順に評価する。
+enum class ObjectUpdatePhase {
+   Input,
+   TargetSelection,
+   Forces,
+   Physics,
+   Contacts,
+   Control,
+   Default,
+   Presentation,
+};
+
 /// @brief Objectへアタッチできるコンポーネントの共通インターフェース
 class IObjectComponent : public ParameterComponent {
 public:
-   /// @copydoc ParameterComponent::GetParameterDomain
+   /// @brief パラメータの保存先を区別するコンポーネント領域を返す。
    const char* GetParameterDomain() const override { return "Object"; }
 
-   /// @copydoc ParameterComponent::GetParameterType
+   /// @brief 共有パラメータの識別に使うコンポーネント型名を返す。
    const char* GetParameterType() const override { return GetTypeName(); }
 
    /// @brief 未接続・未確保の状態を構築する。
@@ -80,6 +92,9 @@ public:
    /// @brief 編集後に非所有参照だけを再解決する（ゲーム進行や保存設定は変更しない）
    /// @param sceneWorld 現在のシーンワールド
    virtual void OnReferencesChanged(SceneWorld& sceneWorld) { (void)sceneWorld; }
+
+   /// @brief 更新フェーズを返す。同じフェーズ内では追加順を維持する。
+   virtual ObjectUpdatePhase GetUpdatePhase() const { return ObjectUpdatePhase::Default; }
 
    /// @brief 更新処理（オーナーはGetOwner()で取得）
    virtual void Update([[maybe_unused]] float deltaTime) {};

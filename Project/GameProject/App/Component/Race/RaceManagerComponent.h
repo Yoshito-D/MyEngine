@@ -1,4 +1,6 @@
 #pragma once
+#include "GameProject/App/Component/Race/RacePresentation.h"
+#include "GameProject/App/Component/Race/RaceRecordStore.h"
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
@@ -37,7 +39,7 @@ public:
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"レース管理", "Race Manager"};
 
    /// @brief 保存・表示するベストタイムの最大件数
-   static constexpr size_t kBestTimeCount = 3;
+   static constexpr size_t kBestTimeCount = RaceRecordStore::kBestTimeCount;
 
    /// @brief コンポーネント型名を取得する
    /// @return RaceManagerComponent
@@ -51,7 +53,8 @@ public:
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   /// @brief 参照設定の変更後に、指定ワールドから依存先を解決し直す。
+   /// @param sceneWorld 参照先を検索するシーン。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief スタートゲート通過を通知する
@@ -83,11 +86,11 @@ public:
 
    /// @brief 現在のベストタイムを取得する
    /// @return 記録がない場合は0、記録がある場合は秒単位のタイム
-   float GetBestTime() const { return bestTimes_.empty() ? 0.0f : bestTimes_.front(); }
+   float GetBestTime() const { return records_.GetBestTimes().empty() ? 0.0f : records_.GetBestTimes().front(); }
 
    /// @brief 保存済みベストタイムを速い順で取得する
    /// @return 最大3件の秒単位タイム
-   const std::vector<float>& GetBestTimes() const { return bestTimes_; }
+   const std::vector<float>& GetBestTimes() const { return records_.GetBestTimes(); }
 
    /// @brief カウントダウン残り時間を取得する
    /// @return 秒単位の残り時間
@@ -109,10 +112,11 @@ public:
    /// @param data レース設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
@@ -126,18 +130,11 @@ private:
 
    void BeginRace();
    bool CanFinish() const;
-   void SetPlayerLocked(bool locked);
-   void SetCameraMotionPaused(bool paused);
-   void ApplyCountdownCameraPose();
-   void AddBestTime(float timeSeconds);
-   bool LoadBestTimes();
-   bool SaveBestTimes() const;
-   void LogRecordWarning(const std::string& message) const;
 
    State state_ = State::Waiting;                  ///< 現在のレース状態。
    StartMode startMode_ = StartMode::Countdown;    ///< 即時・カウントダウン・ゲート通過の開始方式。
    float elapsedTime_ = 0.0f;                      ///< 現在の計測時間（秒）。
-   std::vector<float> bestTimes_;                  ///< 保存済みベストタイム（秒）を速い順で保持する一覧。
+   RaceRecordStore records_;                       ///< レース記録の所有者。
    float countdownSeconds_ = 3.0f;                 ///< 開始前カウントダウンの時間（秒）。
    float countdownRemaining_ = 3.0f;               ///< カウントダウン残り時間（秒）。
    bool useCountdownCameraPose_ = false;           ///< カウントダウン専用の保存姿勢を使用するか。
@@ -166,19 +163,7 @@ private:
    bool sceneChangeRequested_ = false;                  ///< この進行状態からシーン切り替えを要求済みかどうか。
    bool restartRequested_ = false;                      ///< リトライのシーン切り替えを要求済みかどうか。
    bool runtimeInitialized_ = false;                    ///< 最初の実行時更新に必要な初期化が完了したかどうか。
-   bool playerLocked_ = false;                          ///< レース進行によるプレイヤーの一時停止が適用中かどうか。
-   bool vehicleControllerEnabledWhenUnlocked_ = false;  ///< 操作ロック解除時に戻す車両制御の元の有効状態。
-   bool vehicleInputEnabledWhenUnlocked_ = false;       ///< 操作ロック解除時に戻す走行入力の元の有効状態。
-   bool gravityBodyEnabledWhenUnlocked_ = false;        ///< 操作ロック解除時に戻す重力処理の元の有効状態。
-   bool cameraSwitcherEnabledWhenUnlocked_ = false;     ///< 操作ロック解除時に戻すカメラ切り替えの元の有効状態。
-   bool speedPostEffectEnabledWhenRacing_ = false;      ///< レース再開時に戻す速度演出制御の元の有効状態。
-   /// @brief プレイヤーの車両操作を制御するコンポーネントへの非所有参照。
-   VehicleController* vehicleController_ = nullptr;
-   VehicleInputComponent* vehicleInput_ = nullptr; ///< カメラ演出にも共有される走行用入力への非所有参照。
-   GravityBody* gravityBody_ = nullptr;            ///< プレイヤーの速度・重力・姿勢を参照するコンポーネント。
-   CameraModeSwitcher* cameraSwitcher_ = nullptr;  ///< プレイヤーの仮想カメラ切り替えを行うコンポーネントへの参照。
-   /// @brief プレイヤー速度に応じた画面演出を制御するコンポーネントへの参照。
-   VehicleSpeedPostEffectController* speedPostEffectController_ = nullptr;
+   RacePresentation presentation_;                      ///< 操作停止とカメラ演出の所有者。
 };
 
 } // namespace App

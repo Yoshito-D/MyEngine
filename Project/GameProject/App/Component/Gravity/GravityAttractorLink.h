@@ -6,9 +6,12 @@
 
 namespace App {
 
-/// @brief 指定した GravityAttractor を同オーナーの GravityBody へ橋渡しするコンポーネント
+/// @brief 選択済みの重力源を読み、同オーナーのGravityBodyへ一度だけ適用するコンポーネント
 class GravityAttractorLink final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Forces; }
+
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "GravityAttractorLink";
    /// @brief エディターに表示する日本語名と英語名。
@@ -19,10 +22,6 @@ public:
 
    /// @brief 現在の attractor を GravityBody へ適用する
    void Update(float) override;
-
-   /// @brief 適用元となる重力発生源を設定する
-   /// @details 非所有ポインターは保持せず、安定IDと型名から毎フレーム安全に再解決する。
-   void SetAttractor(GravityAttractor* attractor);
 
 #ifdef USE_IMGUI
 
@@ -35,19 +34,6 @@ public:
 
    /// @brief デシリアライズ（保存項目なしのため処理なし）
    void Deserialize(const nlohmann::json&) override {}
-
-private:
-   /// @brief 現在接続中の重力発生源を再解決する
-   GravityAttractor* ResolveAttractor() const;
-
-   /// @brief 接続先オブジェクトの安定ID（旧データ等で空の場合は名前を使用）
-   std::string attractorEntityId_;
-
-   /// @brief 接続先オブジェクト名
-   std::string attractorObjectName_;
-
-   /// @brief 接続先コンポーネント型名
-   std::string attractorTypeName_;
 };
 
 } // namespace App

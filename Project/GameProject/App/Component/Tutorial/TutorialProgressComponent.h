@@ -1,6 +1,8 @@
 #pragma once
+#include "GameProject/App/Component/Tutorial/TutorialGuidePresenter.h"
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Math/Types/Vector3.h"
 #include <cstdint>
 #include <string>
 
@@ -30,28 +32,31 @@ public:
    static constexpr GameEngine::ComponentDisplayName kDisplayName{
       "チュートリアル進行", "Tutorial Progress"}; ///< 表示名。
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief シーン保存とコンポーネント検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 対象プレイヤー・惑星・ゴール・UIを解決し、最初の説明から開始する。
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   /// @brief 参照設定の変更後に、指定ワールドから依存先を解決し直す。
+   /// @param sceneWorld 参照先を検索するシーン。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 決定入力と練習の達成状態を監視して進行する。
    void Update(float deltaTime) override;
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief コンポーネントの保存対象設定をJSONで返す。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief JSONから設定を復元する。
+   /// @param data 保存されたコンポーネント設定。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
@@ -60,38 +65,18 @@ public:
 #endif
 
 private:
-   enum class Phase {
-      DrivingIntro,
-      DriftIntro,
-      DriftPractice,
-      JumpIntro,
-      JumpPractice,
-      AirControlIntro,
-      PlanetTransfer,
-      Goal,
-      Complete,
-   };
-
-   enum class GuideFadeState {
-      Visible,
-      FadingOut,
-      FadingIn,
-   };
+   using Phase = TutorialPhase;
 
    void ReadParameters(const nlohmann::json& data);
    bool HasRequiredReferences() const;
    bool IsGamepadConnected() const;
    bool IsOnTargetPlanet() const;
    void SetPhase(Phase phase);
+   void UpdatePresentation(float deltaTime);
    void SetPlayerPaused(bool paused);
    void SetTargetPlanetEnabled(bool enabled);
    void SetGoalGuidanceEnabled(bool enabled);
    bool RevealTargetPlanet();
-   void UpdateGuideText(float deltaTime);
-   void ApplyGuideOpacity();
-   void UpdateFeedback(float deltaTime);
-   void HandleLandingResult();
-   std::string BuildGuideText() const;
    const char* GetPhaseName() const;
 
    static constexpr std::int32_t kRequiredMiniTurbos = 3;         ///< ドリフト課題で発動するミニターボの回数。
@@ -99,6 +84,7 @@ private:
    std::string targetPlanetObjectId_ = "Model:Planet_2";          ///< 練習開始時に出現させる惑星。
    std::string goalObjectId_ = "Model:Goal";                      ///< 目標惑星の地表へ配置するゴール。
    std::string feedbackObjectId_ = "UIText:TutorialFeedback";     ///< 操作結果を即座に表示するUI。
+   std::string promptObjectId_ = "UIText:TutorialPrompt";         ///< 本文より小さく表示する決定操作のUI。
    std::string goalDistanceObjectId_ = "UIText:GoalDistanceText"; ///< ゴール距離のUI。
    std::string goalDirectionObjectId_ = "Model:GoalDirectionHUD"; ///< ゴール方向のUI。
    std::string nextScene_ = "GameTest";                           ///< クリア表示後の自動遷移先。
@@ -119,28 +105,25 @@ private:
    VehicleLandingBoost* landingBoost_ = nullptr;            ///< 着地品質の結果。
    GameEngine::UITextComponent* guideText_ = nullptr;       ///< 現在の課題と説明文。
    GameEngine::UITextComponent* feedbackText_ = nullptr;    ///< 練習の即時フィードバック。
+   GameEngine::UITextComponent* promptText_ = nullptr;      ///< 次へ進むための操作案内。
    RaceGoalDistanceTextComponent* goalDistance_ = nullptr;  ///< 距離誘導の表示制御。
    RaceGoalDirectionHUDComponent* goalDirection_ = nullptr; ///< 方向誘導の表示制御。
 
-   Phase phase_ = Phase::DrivingIntro;                       ///< 現在の課題。
-   GuideFadeState guideFadeState_ = GuideFadeState::Visible; ///< 案内文のフェード状態。
-   std::string displayedText_;                               ///< 最後に反映した案内。
-   std::string pendingText_;                                 ///< フェード後に反映する案内。
-   std::string landingFeedback_;                             ///< 着地の結果に対応する説明。
-   std::string driftFeedback_;                               ///< 直近のドリフト結果。
-   float driftFeedbackRemaining_ = 0.0f;                     ///< 操作結果を表示する残り時間。進行判定には使わない。
-   float guideBaseOpacity_ = 1.0f;                           ///< シーンに保存された案内文の不透明度。
-   float guideVisibility_ = 1.0f;                            ///< フェードによる表示割合。
-   float completionElapsed_ = 0.0f;                          ///< クリア状態に入ってからの経過時間（秒）。
-   std::uint64_t lastMiniTurboFireCount_ = 0;                ///< 前回処理した発動連番。
-   std::int32_t miniTurboCount_ = 0;                         ///< この課題内で達成した回数。
-   bool wasDrifting_ = false;                                ///< ドリフト終了の検出用。
-   bool wasAirborne_ = false;                                ///< 離陸・着地の検出用。
-   bool jumpStarted_ = false;                                ///< ジャンプ課題開始後に離陸したか。
-   bool controllerEnabledWhenPlaying_ = true;                ///< シーン読込時の走行制御の有効状態。
-   bool gravityEnabledWhenPlaying_ = true;                   ///< シーン読込時の物理の有効状態。
-   bool sceneChangeRequested_ = false;                       ///< 二重遷移の抑止。
-   bool runtimeInitialized_ = false;                         ///< 編集時の読み込みと実行時の操作停止を分ける。
+   TutorialGuidePresenter guidePresenter_;    ///< 案内文面とフェードの所有者。
+   Phase phase_ = Phase::DrivingIntro;        ///< 現在の課題。
+   float completionElapsed_ = 0.0f;           ///< クリア状態に入ってからの経過時間（秒）。
+   std::uint64_t lastMiniTurboFireCount_ = 0; ///< 前回処理した発動連番。
+   std::int32_t miniTurboCount_ = 0;          ///< この課題内で達成した回数。
+   bool wasDrifting_ = false;                 ///< ドリフト終了の検出用。
+   bool wasAirborne_ = false;                 ///< 離陸・着地の検出用。
+   bool jumpStarted_ = false;                 ///< ジャンプ課題開始後に離陸したか。
+   GameEngine::Vector3 airControlStartUp_{};   ///< 練習ジャンプの離陸時の機体上方向。
+   bool airControlInputReceived_ = false;     ///< 今回のジャンプ中に姿勢操作を入力したか。
+   bool airRotationPerformed_ = false;        ///< 今回のジャンプ中に機体を十分に傾けたか。
+   bool controllerEnabledWhenPlaying_ = true; ///< シーン読込時の走行制御の有効状態。
+   bool gravityEnabledWhenPlaying_ = true;    ///< シーン読込時の物理の有効状態。
+   bool sceneChangeRequested_ = false;        ///< 二重遷移の抑止。
+   bool runtimeInitialized_ = false;          ///< 編集時の読み込みと実行時の操作停止を分ける。
 };
 
 } // namespace App

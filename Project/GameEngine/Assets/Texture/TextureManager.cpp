@@ -18,6 +18,7 @@ bool TextureManager::Initialize(GraphicsDevice* device) {
       }
       resourcesRoot_ = "Resources";
 
+      // 起動時はメタデータだけを集め、GPUへの読み込みはGetTextureやPreloadが必要とした画像に限定する。
       for (const auto* rootId : kTextureRoots) {
          const auto cooked = std::filesystem::path(rootId) / kTextureCookedDirectory;
          std::ifstream stream(resourcesRoot_ / cooked / "catalog.json");
@@ -36,6 +37,7 @@ bool TextureManager::Initialize(GraphicsDevice* device) {
             const auto namePath = ResourceAssetIdPath(info.name);
             const auto expected = cooked / std::filesystem::path(namePath.wstring() + L".dds");
 
+            // 名前を単一のファイル名に限定し、カタログが指すDDSを生成規約上の保存先と照合する。
             if (namePath.empty() || namePath.has_parent_path() || info.sourcePath.empty() ||
                 ResourcePathToUtf8(info.sourcePath.stem()) != info.name || info.ddsPath != expected) {
                throw std::runtime_error("Invalid texture catalog path: " + info.name);
@@ -57,6 +59,7 @@ bool TextureManager::Initialize(GraphicsDevice* device) {
       Logger::Info(std::format("Texture catalog: {} available, 0 loaded", catalog_.size()));
       return true;
    } catch (const std::exception& error) {
+      // 途中まで登録できていても破棄し、不完全なカタログを後続の読み込みに使わせない。
       catalog_.clear();
       Logger::Error("Cooked texture catalog unavailable. Delete the affected cached DDS and restart, or rebuild: " +
                     std::string(error.what()));
@@ -73,6 +76,8 @@ Texture* TextureManager::GetTexture(const std::string& textureName) {
    if (const auto loaded = textures_.find(textureName); loaded != textures_.end()) {
       return loaded->second.get();
    }
+
+   // 失敗した画像の再試行はRefreshFailedLoadsまで抑え、毎フレームのディスクアクセスとログを防ぐ。
    if (!device_ || textureName.empty() || failedTextureNames_.contains(textureName)) {
       return nullptr;
    }
@@ -93,6 +98,8 @@ Texture* TextureManager::GetTexture(const std::string& textureName) {
          "Cooked texture could not be loaded. Delete the affected cached DDS and restart, or rebuild: " + textureName);
       return nullptr;
    }
+
+   // コピー命令の記録だけでは転送は完了しないため、GPUのコピー完了までアップロード領域を保持する。
    intermediateResource_.push_back(std::move(intermediate));
    auto* result = texture.get();
    textures_.emplace(textureName, std::move(texture));
@@ -107,6 +114,8 @@ bool TextureManager::Preload(std::span<const std::string> textureNames) {
    const auto start = std::chrono::steady_clock::now();
    const auto previousCount = textures_.size();
    bool succeeded = true;
+
+   // 一部が失敗しても残りを準備し、全参照の結果をまとめて返す。
    for (const auto& id : textureNames) {
       if (!GetTexture(id)) {
          succeeded = false;

@@ -1,4 +1,5 @@
 #pragma once
+#include "GameProject/App/Component/UI/MenuNavigation.h"
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include <cstdint>
@@ -48,16 +49,14 @@ private:
    };
 
    void SwitchMenu(MenuSelectionAnimationComponent& animation, MenuPage page);
-   bool MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction);
    void RefreshSelectionText(MenuSelectionAnimationComponent& animation);
 
    std::string tutorialScene_ = "Tutorial";            ///< チュートリアル開始時に読み込む登録シーン名。
    std::string stageScene_ = "GameTest";               ///< 通常プレイ開始時に読み込む登録シーン名。
    MenuPage menuPage_ = MenuPage::Main;                ///< 現在表示しているメニュー階層。
    PendingAction pendingAction_ = PendingAction::None; ///< 決定演出の完了後に実行する操作。
-   std::int32_t selectedOption_ = -1;                  ///< 現在選択中のメニュー項目番号。負値は未選択。
+   MenuNavigation navigation_;                         ///< 共通の選択位置と入力抑制。
    bool startRequested_ = false;                       ///< シーン遷移または終了を要求済みかどうか。
-   bool navigationLatched_ = false;                    ///< 方向入力が中立に戻るまで次のメニュー移動を抑止する状態。
 };
 
 } // namespace App

@@ -1,51 +1,34 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraAimSolver.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 
 namespace App {
 using namespace RearCameraMath;
 
-void RearCameraAimSolver::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
-   const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
-   const auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
-   const auto eye = state.transform.translation;
-   ApplyLookAt(camera->GetInput(), camera->DescribeSettings(), transition, direction.GetState(), state, eye,
-      gravity.GetState().currentGravityUp, deltaTime);
-}
-
 /// @brief LookAt に使う注視点を計算する
 /// @details 地上ではプレイヤー中心より少し上を狙い、画面内の地面比率を下げる。
 ///          空中ではプレイヤー中心へ戻し、着地予測中だけ接触地点の少し先へ注視点を寄せる。
 GameEngine::Vector3 RearCameraAimSolver::ComputeLookTarget(const RearCameraInput& input,
-   const RearCameraSettings& settings, const RearCameraTransition& transition,
+   const RearCameraSettings& settings, const RearCameraTransitionState& transition, float preLandingGuideBlend,
    const RearCameraDirectionState& direction, const GameEngine::Vector3& up) const {
    // 構図専用ブレンドを使い、距離やFOVの空中補間速度から独立して
    // 地上下側と空中中央の切り替え時間を調整できるようにする。
    float targetHeight = (settings.groundedTargetHeight + input.driftLookTargetHeightOffset) *
-                        (1.0f - transition.GetState().currentPlayerFramingBlend);
+                        (1.0f - transition.currentPlayerFramingBlend);
    GameEngine::Vector3 lookTarget = input.pivotTarget + up * targetHeight;
 
-   float preLandingGuideBlend = transition.ComputePreLandingGuideBlend(input);
-
-   if (!input.isAirborne && transition.GetState().isLandingReleaseActive && preLandingGuideBlend > 1e-4f) {
+   if (!input.isAirborne && transition.isLandingReleaseActive && preLandingGuideBlend > 1e-4f) {
       // 接地時に表示していた注視点をピボット相対で保持する。
       // ワールド着地点を保持しないため、地上移動しても古い地点へカメラが引かれない。
-      GameEngine::Vector3 releaseTarget = input.pivotTarget + transition.GetState().landingReleaseLookOffset;
+      GameEngine::Vector3 releaseTarget = input.pivotTarget + transition.landingReleaseLookOffset;
       lookTarget = lookTarget + (releaseTarget - lookTarget) * preLandingGuideBlend;
-   } else if (input.isAirborne && transition.GetState().currentPreLandingBlend > 1e-4f) {
+   } else if (input.isAirborne && transition.currentPreLandingBlend > 1e-4f) {
       GameEngine::Vector3 landingForward =
          -NormalizeOrFallback(input.predictedLandingBackward, -direction.currentBackward);
       GameEngine::Vector3 terrainTarget =
          input.predictedLandingContact + landingForward * std::max(0.0f, settings.preLandingTerrainLookAhead);
       float terrainBlend =
-         std::clamp(settings.preLandingTerrainLookBlend, 0.0f, 1.0f) * transition.GetState().currentPreLandingBlend;
+         std::clamp(settings.preLandingTerrainLookBlend, 0.0f, 1.0f) * transition.currentPreLandingBlend;
 
       // 遠い着地点でも注視点が車体から離れすぎないよう、地形側へのオフセットを制限する。
       // ブレンド前に制限することで、予測開始直後も補間量に応じて徐々に注視点を移す。
@@ -76,11 +59,11 @@ float RearCameraAimSolver::EvaluateLookAtRecoveryCurve(const RearCameraSettings&
 /// @details LookAt の up には補間済み重力Upを使用する。
 ///          cachedRight / cachedUp は外部（UI など）で参照されるため確定させる。
 void RearCameraAimSolver::ApplyLookAt(const RearCameraInput& input, const RearCameraSettings& settings,
-   const RearCameraTransition& transition, const RearCameraDirectionState& direction, GameEngine::CameraState& state,
-   const GameEngine::Vector3& eye, const GameEngine::Vector3& up, float deltaTime) {
+   const RearCameraTransitionState& transition, float preLandingGuideBlend, const RearCameraDirectionState& direction,
+   GameEngine::CameraState& state, const GameEngine::Vector3& eye, const GameEngine::Vector3& up, float deltaTime) {
    using namespace GameEngine;
 
-   Vector3 lookTarget = ComputeLookTarget(input, settings, transition, direction, up);
+   Vector3 lookTarget = ComputeLookTarget(input, settings, transition, preLandingGuideBlend, direction, up);
    state_.lastLookTargetOffset = lookTarget - input.pivotTarget;
    Vector3 requestedUp = NormalizeOrFallback(up, state_.cachedUp);
 

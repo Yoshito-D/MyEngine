@@ -1,26 +1,13 @@
 #pragma once
 
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraComponent.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraFrameView.h"
 
 namespace App {
 
 /// @brief カメラ計測の履歴、集計、ファイル出力を所有する。
-class RearCameraMeasurementRecorder : public RearCameraComponent {
+class RearCameraMeasurementRecorder {
 public:
-   /// @brief 所有カメラのパイプラインから担当処理を1フレーム進める。
-   void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
-
-   /// @brief 担当する処理ステージを返す。
-   GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Aim; }
-
-   /// @brief 同一ステージの依存関係に従う更新順を返す。
-   std::int32_t GetExecutionOrder() const override { return -900; }
-
-   /// @brief シーン保存とFactory登録に使う名前を返す。
-   const char* GetComponentName() const override { return "RearCameraMeasurementRecorder"; }
-
    /// @brief 表示中の軸を始点として計測を開始する。
    void StartCameraMeasurement(const std::string& testName, const RearCameraFrameView& frame);
 
@@ -44,7 +31,7 @@ public:
    const RearCameraMeasurementState& GetState() const { return state_; }
 
    /// @brief 計測履歴を消去して停止する。
-   void Reset(const RearCameraSettings&) override { ClearCameraMeasurement(); }
+   void Reset(const RearCameraSettings&) { ClearCameraMeasurement(); }
 
 private:
    RearCameraMeasurementState state_; ///< 計測履歴。

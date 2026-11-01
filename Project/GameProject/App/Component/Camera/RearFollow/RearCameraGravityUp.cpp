@@ -1,33 +1,18 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraGravityUp.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraDirectionTracker.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 
 namespace App {
 using namespace RearCameraMath;
 
-void RearCameraGravityUp::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
-   const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
-   auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
-   SmoothGravityUp(
-      camera->GetInput(), camera->DescribeSettings(), transition.GetState(), aim.GetState(), direction, deltaTime);
-}
-
 /// @brief 目標重力Up に向けて currentGravityUp を角速度制限付きで回転する
 /// @details 惑星切り替え時に gravityUp（目標）が急変しても、
 ///          gravityUpLerpSpeed * deltaTime を1フレームの最大回転量として
 ///          currentGravityUp を少しずつ近づけ、カメラの急なRoll変化を抑制する。
-///          同じフレームのUpデルタ回転は currentBackward にも適用する。
+///          呼び出し元が同じフレームのUpデルタ回転を後方追従方向にも適用する。
 GameEngine::Vector3 RearCameraGravityUp::SmoothGravityUp(const RearCameraInput& input,
    const RearCameraSettings& settings, const RearCameraTransitionState& transition, const RearCameraAimState& aim,
-   RearCameraDirectionTracker& direction, float deltaTime) {
+   float deltaTime) {
    using namespace GameEngine;
 
    // 着地候補惑星へ接近している間は、接触前から予測着地法線へ基準Upを移す。
@@ -64,10 +49,6 @@ GameEngine::Vector3 RearCameraGravityUp::SmoothGravityUp(const RearCameraInput& 
    float maxRadiansDelta =
       std::min(settings.gravityUpLerpSpeed * std::max(0.0f, deltaTime), GameEngine::MathConstants::kPi - 1e-4f);
    state_.currentGravityUp = RotateTowardsUnit(oldUp, targetUp, maxRadiansDelta, aim.cachedRight);
-
-   if (direction.IsEnabled()) {
-      direction.TransportWithGravity(oldUp, state_.currentGravityUp);
-   }
 
    return state_.currentGravityUp;
 }

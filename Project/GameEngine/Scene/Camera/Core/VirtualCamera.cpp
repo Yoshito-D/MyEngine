@@ -241,18 +241,6 @@ bool VirtualCamera::EnableComponent(const ICinemachineComponent* component, bool
    return false;
 }
 
-void VirtualCamera::ResetComponents(const ICinemachineComponent& source) {
-   // 他のカメラの部品から通知されても、このカメラの補間履歴をリセットしない。
-   const bool ownsSource = std::any_of(
-      components_.begin(), components_.end(), [&source](const auto& owned) { return owned.get() == &source; });
-
-   if (!ownsSource) return;
-
-   for (const auto& owned : components_) {
-      owned->OnCameraReset(source);
-   }
-}
-
 #ifdef USE_IMGUI
 void VirtualCamera::DrawComponentInspector(const ICinemachineComponent* component) {
    for (const auto& owned : components_) {

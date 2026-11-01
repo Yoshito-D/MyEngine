@@ -1,26 +1,13 @@
 #pragma once
 
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraComponent.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraTypes.h"
 
 namespace App {
 
 /// @brief 離着陸の連続遷移を管理する。
-class RearCameraTransition : public RearCameraComponent {
+class RearCameraTransition {
 public:
-   /// @brief 所有カメラのパイプラインから担当処理を1フレーム進める。
-   void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
-
-   /// @brief 担当する処理ステージを返す。
-   GameEngine::CinemachineStage GetStage() const override { return GameEngine::CinemachineStage::Body; }
-
-   /// @brief 同一ステージの依存関係に従う更新順を返す。
-   std::int32_t GetExecutionOrder() const override { return -900; }
-
-   /// @brief シーン保存とFactory登録に使う名前を返す。
-   const char* GetComponentName() const override { return "RearCameraTransition"; }
-
    /// @brief 地上/空中ブレンド値を更新する
    /// @details ジャンプ開始・着地で注視点、距離、FOV が一気に変わると画が跳ねるため、
    ///          共有ブレンド値を先に滑らかに動かして各パラメータへ適用する。
@@ -46,17 +33,12 @@ public:
    void EndFrame(bool airborne) { state_.wasAirborneLastFrame = airborne; }
 
    /// @brief 設定の読み込み時に補間履歴を既定値へ戻す。
-   void Reset(const RearCameraSettings& settings) override;
+   void Reset(const RearCameraSettings& settings);
 
    /// @brief この段階の確定済み状態を読み取り専用で返す。
    const RearCameraTransitionState& GetState() const { return state_; }
 
-   /// @brief 今フレームの離着陸イベントを返す。無効時にはイベントを供給しない。
-   RearCameraFrameEvents GetEvents() const { return IsEnabled() ? events_ : RearCameraFrameEvents{}; }
-
 private:
-   RearCameraFrameEvents events_; ///< このフレームで検出した離陸・着地などの状態変化。
-
    /// @brief 接地時の表示状態を地上復帰用スナップショットへ保存する
    /// @details 予測接触点などのワールド座標を接地後も使うと、移動するプレイヤーから古い地点へ
    ///          カメラが引かれ続ける。ステートレスに再計算される注視点だけを相対オフセットで保存し、

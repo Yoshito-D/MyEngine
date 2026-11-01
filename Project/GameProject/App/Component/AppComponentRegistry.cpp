@@ -1,4 +1,5 @@
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
+#include "GameProject/App/Component/Rendering/PlayerShadowComponent.h"
 #include "GameEngine/Object/Object.h"
 
 #include "GameProject/App/Component/Camera/CameraGravityBridge.h"
@@ -83,6 +84,7 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::TutorialProgressComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleAirController>(),
    RegisterAppComponent<App::VehicleController>(),
+   RegisterAppComponent<App::PlayerShadowComponent>(),
    RegisterAppComponent<App::VehicleDrift>(),
    RegisterAppComponent<App::VehicleEffectController>(),
    RegisterAppComponent<App::VehicleGroundMover>(),

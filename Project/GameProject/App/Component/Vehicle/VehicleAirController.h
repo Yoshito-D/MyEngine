@@ -20,34 +20,39 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両空中制御", "Vehicle Air Controller"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief シーン保存とコンポーネント検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 空中の回転を適用する
+   /// @brief 空中の慣性と抵抗を更新し、回転の候補を返す
    /// @param rollInput   左右ロール入力（-1〜+1）
    /// @param pitchInput  前後入力（-1〜+1）
    /// @param deltaTime   フレーム時間
-   void Apply(float rollInput, float pitchInput, float deltaTime);
+   /// @param currentRot 計算の基準となる現在姿勢。
+   /// @return 入力反映後の姿勢。無効時は入力姿勢を返す。
+   GameEngine::Quaternion Apply(
+      float rollInput, float pitchInput, float deltaTime, const GameEngine::Quaternion& currentRot);
 
    /// @brief 着地時に角速度をリセットする
    void ResetAngularVelocity();
 
 #ifdef USE_IMGUI
 
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 現在の設定と実行状態をインスペクターへ表示する。
    void DrawInspector() override;
 #endif
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief コンポーネントの保存対象設定をJSONで返す。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief JSONから設定を復元する。
+   /// @param data 保存されたコンポーネント設定。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:

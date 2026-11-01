@@ -57,10 +57,13 @@ public:
    /// @brief 検証済みの設定を復元し、再生せずにクリップを準備する。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief BGMの保存設定を共有パラメーターとして取得する。
+   /// @return 音源ID・音量・ループ・フェードなどの設定JSON。再生状態や所有者トークンは含まない。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 共有設定を検証して音源を準備し、既存のBGM要求があれば更新する。
+   /// @param data BGM設定のJSONオブジェクト。未指定の項目には既定値を使う。
+   /// @details 同じ音源の再生位置は維持し、まだ再生要求がない場合は自動再生しない。
    void ApplySharedParameters(const nlohmann::json& data) override;
 #ifdef MYPROJECT_NON_RELEASE
 

@@ -1,21 +1,9 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraSpeedEffects.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 
 namespace App {
 using namespace RearCameraMath;
-
-void RearCameraSpeedEffects::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
-   boostAlpha_ =
-      UpdateAccelerationEffect(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), state, deltaTime);
-}
 
 /// @brief 通常FOVと演出による追加FOVを合成し state.fov へ反映する
 /// @details 通常FOVの編集は直接反映し、速度・空中演出の追加量だけを補間する。
@@ -104,7 +92,6 @@ float RearCameraSpeedEffects::UpdateAccelerationEffect(const RearCameraInput& in
 }
 
 void RearCameraSpeedEffects::Reset(const RearCameraSettings& settings) {
-   boostAlpha_ = 0.0f;
    state_.currentFov = ClampCameraFov(settings.fovDefault);
    state_.currentFovOffset = 0.0f;
    state_.springFovOffset = 0.0f;

@@ -154,51 +154,6 @@
                   "parameterAssetId": "game/parameters/cameras/PlayerRearFollowCamera/PlayerRearFollowCamera.json"
                },
                {
-                  "componentName": "RearCameraTransition",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraGravityUp",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraPlanetGuide",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraDirectionTracker",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraSpeedEffects",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraPositionSolver",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraAimSolver",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraMeasurementRecorder",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraDebugView",
-                  "data": {},
-                  "enabled": true
-               },
-               {
                   "componentName": "PerlinNoise",
                   "data": {
                      "initialAmplitude": 0.15000000596046448,
@@ -3680,6 +3635,7 @@
             {
                "data": {},
                "enabled": true,
+               "parameterAssetId": "game/parameters/player/VehicleMover.json",
                "typeName": "VehicleMover"
             },
             {
@@ -3762,6 +3718,11 @@
                "data": {},
                "enabled": true,
                "typeName": "VehicleEffectController"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "typeName": "PlayerShadowComponent"
             }
          ],
          "id": "Model:Player",

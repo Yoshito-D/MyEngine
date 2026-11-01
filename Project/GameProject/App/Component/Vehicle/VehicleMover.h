@@ -18,7 +18,7 @@ namespace App {
 ///   オプション（外すと機能が無効化される）:
 ///     - VehicleLandingAligner … 着地直後の Slerp 姿勢補正
 ///     - VehicleLandingBoost   … 着地時の速度ブースト
-///     - VehicleDrift          … ドリフト処理（将来実装）
+///     - VehicleDrift          … ドリフト処理
 class VehicleMover final : public GameEngine::IObjectComponent {
 public:
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
@@ -26,7 +26,7 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両移動", "Vehicle Mover"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief シーン保存とコンポーネント検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 操舵・空中姿勢入力と接地状態から移動・姿勢を適用する
@@ -43,19 +43,33 @@ public:
    /// @brief 直近の移動方向を取得する
    GameEngine::Vector3 GetLastMoveDirection() const { return lastMoveDirection_; }
 
+   /// @brief 重力への姿勢追従速度を共有パラメータとして返す。
+   nlohmann::json GetSharedParameters() const override;
+
+   /// @brief 補間履歴を維持し、重力への姿勢追従速度を適用する。
+   void ApplySharedParameters(const nlohmann::json& data) override;
+
 #ifdef USE_IMGUI
 
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 現在の設定と実行状態をインスペクターへ表示する。
    void DrawInspector() override;
 #endif
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief コンポーネントの保存対象設定をJSONで返す。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief JSONから設定を復元する。
+   /// @param data 保存されたコンポーネント設定。
    void Deserialize(const nlohmann::json& data) override;
 
 private:
+   /// @brief 重力基準の変化を現在姿勢へ反映し、車体へ書き込まず候補を返す。
+   GameEngine::Quaternion AlignToGravity(
+      const GameEngine::Quaternion& rotation, const GameEngine::Vector3& gravityUp, float deltaTime);
+
+   float gravityAlignmentSpeed_ = 5.0f;                  ///< 地表法線の変化へ追従する速度。
+   GameEngine::Vector3 orientationUp_{0.0f, 1.0f, 0.0f}; ///< 姿勢追従に使用した前回の上方向。
+
    /// @brief 着地遷移時に各サブコンポーネントへ通知する
    void OnLanded(const GameEngine::Quaternion& currentRotation, const GameEngine::Vector3& gravityUp);
 

@@ -1,25 +1,9 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraDirectionTracker.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 
 namespace App {
 using namespace RearCameraMath;
-
-void RearCameraDirectionTracker::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
-   const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
-   const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
-   const auto& planet = *GetOwnerCamera()->GetComponent<RearCameraPlanetGuide>();
-   BeginLanding(transition.GetEvents().justLanded);
-   UpdateBackwardVector(camera->GetInput(), camera->DescribeSettings(), transition.GetState(), aim.GetState(), planet,
-      gravity.GetState().currentGravityUp, deltaTime);
-}
 
 void RearCameraDirectionTracker::TransportWithGravity(
    const GameEngine::Vector3& oldUp, const GameEngine::Vector3& newUp) {
@@ -66,8 +50,8 @@ void RearCameraDirectionTracker::TransportWithGravity(
 /// @param up 正規化済み補間済み重力Up
 /// @param deltaTime フレーム時間
 void RearCameraDirectionTracker::UpdateBackwardVector(const RearCameraInput& input, const RearCameraSettings& settings,
-   const RearCameraTransitionState& transition, const RearCameraAimState& aim, const RearCameraPlanetGuide& planet,
-   const GameEngine::Vector3& up, float deltaTime) {
+   const RearCameraTransitionState& transition, const RearCameraAimState& aim, const RearCameraPlanetState& planet,
+   float planetBlend, const GameEngine::Vector3& up, float deltaTime) {
    using namespace GameEngine;
 
    Vector3 airborneFallbackBackward = NormalizeOrFallback(-input.airborneMoveForward, state_.currentBackward);
@@ -97,13 +81,11 @@ void RearCameraDirectionTracker::UpdateBackwardVector(const RearCameraInput& inp
    // 惑星ガイドは速度後方を補助する低優先度の入力として、最終方向を追従させる前に合成する。
    // 着地前補間が始まった後は地表の接線後方を優先し、惑星ガイドを段階的に解除する。
    if (input.isAirborne) {
-      float planetDirectionBlend =
-         planet.ComputePlanetDirectionBlend(input, settings, transition, state_.currentBackward) *
-         (1.0f - transition.currentPreLandingBlend);
+      float planetDirectionBlend = planetBlend * (1.0f - transition.currentPreLandingBlend);
 
       if (planetDirectionBlend > 1e-4f) {
          desiredBackward = BlendUnitDirectionSafely(
-            desiredBackward, planet.GetState().currentPlanetBackward, planetDirectionBlend, desiredBackward, up);
+            desiredBackward, planet.currentPlanetBackward, planetDirectionBlend, desiredBackward, up);
       }
    }
 

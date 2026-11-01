@@ -60,6 +60,7 @@ bool AudioSourceComponent::AddSlot(Slot slot) {
    }
 
    slot.volume = std::clamp(slot.volume, 0.0f, 1.0f);
+   // 保存設定と実行時状態は同じ添字で対応するため、スロットの追加・削除・並べ替えは必ず両方に反映する。
    slots_.push_back(std::move(slot));
    runtime_.emplace_back();
    runtime_.back().clip = EngineContext::GetSoundClip(slots_.back().clipAssetId);
@@ -92,6 +93,7 @@ bool AudioSourceComponent::SetClip(const std::string& name, const std::string& a
    auto clip = EngineContext::GetSoundClip(assetId);
    const bool resolved = clip != nullptr || assetId.empty();
 
+   // 音源変更時は旧クリップの永続ボイスを解放し、次のPlayで新しいクリップから作り直す。
    if (auto* audio = EngineContext::GetAudio()) {
       audio->Release(runtime_[i].handle);
    }
@@ -131,6 +133,7 @@ bool AudioSourceComponent::Play(const std::string& name) {
       return false;
    }
 
+   // 同じスロットのボイスを再利用し、Playの連続呼び出しで音が重ならないようにする。
    if (audio->IsValid(runtime_[i].handle)) {
       return audio->Play(runtime_[i].handle);
    }
@@ -180,6 +183,7 @@ AudioHandle AudioSourceComponent::PlayOneShot(const std::string& name) {
       return {};
    }
 
+   // 終了済みの単発音声はAudio側で解放されるため、追跡リストから無効なハンドルだけを取り除く。
    oneShots_.erase(std::remove_if(oneShots_.begin(), oneShots_.end(),
                       [audio](AudioHandle handle) { return !audio->IsValid(handle); }),
       oneShots_.end());
@@ -236,6 +240,7 @@ void AudioSourceComponent::ApplySharedParameters(const nlohmann::json& data) {
 void AudioSourceComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
    if (!data.is_object() || !data.contains("slots") || !data.at("slots").is_array()) return;
 
+   // シーン復元時は再生状態も作り直す。共有設定の反映時は名前で照合して既存のボイスを再利用する。
    if (initializeRuntime) {
       StopAll();
       slots_.clear();
@@ -279,6 +284,8 @@ void AudioSourceComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
          slots_[index] = std::move(slot);
       }
    }
+
+   // 削除で後続の添字が詰まるため、末尾から調べて未登録スロットを取り除く。
    for (size_t index = slots_.size(); index > 0; --index) {
       const auto name = slots_[index - 1].name;
       if (std::find(names.begin(), names.end(), name) == names.end()) {
@@ -404,6 +411,7 @@ void AudioSourceComponent::DrawInspector() {
       ImGui::PopID();
    }
 
+   // Inspectorの走査中はスロットへの参照を使うため、実際の削除は全項目の描画後に行う。
    if (!removeName.empty()) {
       RemoveSlot(removeName);
    }

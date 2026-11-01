@@ -1,26 +1,9 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraPositionSolver.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 
 namespace App {
 using namespace RearCameraMath;
-
-void RearCameraPositionSolver::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
-   const auto& gravity = *GetOwnerCamera()->GetComponent<RearCameraGravityUp>();
-   const auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
-   const auto& speed = *GetOwnerCamera()->GetComponent<RearCameraSpeedEffects>();
-   const auto& aim = *GetOwnerCamera()->GetComponent<RearCameraAimSolver>();
-   state.transform.translation = Update(camera->GetInput(), camera->DescribeSettings(), transition.GetState(),
-      direction.GetState(), speed.GetState(), aim.GetState(), state, gravity.GetState().currentGravityUp,
-      speed.GetBoostAlpha(), deltaTime);
-}
 
 /// @brief eye 位置を計算する（後退距離に加速ブーストを加味）
 /// @details カメラは pivot の後方（currentBackward 方向）に distance 離れた場所に置く。

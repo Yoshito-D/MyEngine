@@ -51,6 +51,7 @@ bool ParticleMeshModule::RebuildMesh(Mesh& mesh) {
          break;
    }
 
+   // GPUバッファの生成に失敗した場合は変更済みフラグを残し、次回も再構築の対象にする。
    if (!mesh.GetVertexBufferView().BufferLocation || !mesh.GetIndexCount()) {
       return false;
    }
@@ -60,6 +61,7 @@ bool ParticleMeshModule::RebuildMesh(Mesh& mesh) {
 }
 
 nlohmann::json ParticleMeshModule::ToJson() const {
+   // 現在選んでいない形状の設定も保存し、形状を切り替えて戻したときに編集値を復元できるようにする。
    return {{"enabled", IsEnabled()}, {"particleMeshType", static_cast<std::int32_t>(meshType_)},
       {"meshOriginY", originY_}, {"ringInnerRadius", ringInnerRadius_}, {"ringOuterRadius", ringOuterRadius_},
       {"ringSegments", ringSegments_}, {"sphereRadius", sphereRadius_}, {"sphereStacks", sphereStacks_},
@@ -73,6 +75,7 @@ nlohmann::json ParticleMeshModule::ToJson() const {
 }
 
 void ParticleMeshModule::FromJson(const nlohmann::json& j) {
+   // 各セッターで変更済みとし、複数の設定を読み終えてから利用側がまとめてメッシュを再構築する。
    if (j.contains("enabled")) {
       SetEnabled(j["enabled"].get<bool>());
    }
@@ -303,6 +306,7 @@ void ParticleMeshModule::SetTorusMinorSegments(uint32_t segments) {
 }
 
 void ParticleMeshModule::SetEnabled(bool enabled) {
+   // 有効・無効の切替でも選択形状と既定Quadが入れ替わるため、形状パラメーターが同じでも再構築する。
    if (IsEnabled() != enabled) {
       meshDirty_ = true;
    }

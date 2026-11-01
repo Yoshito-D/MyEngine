@@ -1,4 +1,5 @@
 #pragma once
+#include "GameProject/App/Component/UI/MenuNavigation.h"
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include <cstdint>
@@ -34,10 +35,11 @@ public:
    /// @brief JSONからRaceManager参照とタイトルへの遷移先を読み込む。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
@@ -48,7 +50,6 @@ public:
 private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
-   bool MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction);
    void RefreshSelectionText(MenuSelectionAnimationComponent& animation);
    bool ConfirmSelection(MenuSelectionAnimationComponent& animation);
    std::string BuildResultText() const;
@@ -56,9 +57,8 @@ private:
    std::string raceManagerId_;                   ///< レース進行を参照する管理Objectの安定Entity ID。
    std::string titleScene_ = "Title";            ///< タイトルへ戻るときに読み込む登録シーン名。
    RaceManagerComponent* raceManager_ = nullptr; ///< 参照解決済みレース管理コンポーネントへの非所有参照。
-   std::int32_t selectedOption_ = 1;             ///< 現在選択中のメニュー項目番号。負値は未選択。
+   MenuNavigation navigation_;                   ///< 共通の選択位置と入力抑制。
    bool resultRequested_ = false;                ///< 結果表示への切り替えを要求済みかどうか。
-   bool navigationLatched_ = false;              ///< 方向入力が中立に戻るまで次のメニュー移動を抑止する状態。
    bool showingResult_ = false;                  ///< 現在レース結果のメニューを表示しているかどうか。
 };
 

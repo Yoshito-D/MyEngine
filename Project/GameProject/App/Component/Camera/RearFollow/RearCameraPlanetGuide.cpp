@@ -1,24 +1,9 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraPlanetGuide.h"
 #include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 
 namespace App {
 using namespace RearCameraMath;
-
-void RearCameraPlanetGuide::MutateCameraState(GameEngine::CameraState&, float deltaTime) {
-   auto* camera = GetRearCamera();
-
-   if (!camera) return;
-
-   const auto& transition = *GetOwnerCamera()->GetComponent<RearCameraTransition>();
-   const auto& direction = *GetOwnerCamera()->GetComponent<RearCameraDirectionTracker>();
-   AdvanceTakeoffTimer(camera->GetInput(), camera->DescribeSettings(), transition.GetEvents(),
-      direction.GetState().currentBackward, deltaTime);
-   UpdatePlanetDirectionGuide(
-      camera->GetInput(), camera->DescribeSettings(), direction.GetState().currentBackward, deltaTime);
-}
 
 /// @brief 空中時にカメラ方向を近傍惑星側へ寄せるための方向と係数を更新する
 /// @details 注視点はプレイヤー中心のまま保ち、eye 側の回り込み方向だけを補間する。

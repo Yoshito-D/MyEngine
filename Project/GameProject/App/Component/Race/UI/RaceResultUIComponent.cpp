@@ -20,9 +20,9 @@ namespace App {
 
 void RaceResultUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    resultRequested_ = false;
-   navigationLatched_ = false;
+   navigation_.ResetInput();
    showingResult_ = false;
-   selectedOption_ = 1;
+   navigation_.Select(1);
 
    // 実行時ロードではOnReferencesChangedが自動では呼ばれないため、ここからも参照を解決する。
    OnReferencesChanged(sceneWorld);
@@ -51,8 +51,8 @@ void RaceResultUIComponent::Update(float) {
       text->SetText("");
       showingResult_ = false;
       resultRequested_ = false;
-      selectedOption_ = 1;
-      navigationLatched_ = false;
+      navigation_.Select(1);
+      navigation_.ResetInput();
       animation->Hide();
       return;
    }
@@ -60,9 +60,9 @@ void RaceResultUIComponent::Update(float) {
    if (!showingResult_) {
       showingResult_ = true;
       resultRequested_ = false;
-      selectedOption_ = animation->IsOptionAvailable(1) ? 1 : 0;
-      navigationLatched_ = false;
-      animation->Select(selectedOption_, false);
+      navigation_.Select(animation->IsOptionAvailable(1) ? 1 : 0);
+      navigation_.ResetInput();
+      animation->Select(navigation_.GetSelectedIndex(), false);
       RefreshSelectionText(*animation);
    }
 
@@ -71,22 +71,13 @@ void RaceResultUIComponent::Update(float) {
    // 決定演出は演出コンポーネントだけが更新する。
    if (resultRequested_) return;
 
-   animation->Select(selectedOption_, false);
+   animation->Select(navigation_.GetSelectedIndex(), false);
    RefreshSelectionText(*animation);
    const auto& navigationAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.NavigateHorizontal", 0);
-   const std::int32_t navigationDirection =
-      navigationAction.value.x > 0.5f ? 1 : (navigationAction.value.x < -0.5f ? -1 : 0);
-
-   // 閾値未満を中立として扱い、スティックの微小な揺れで選択が変わらないようにする。
-   if (navigationDirection == 0) {
-      navigationLatched_ = false;
-   } else if (!navigationLatched_) {
-      if (MoveSelection(*animation, navigationDirection)) {
-         animation->Select(selectedOption_);
-         RefreshSelectionText(*animation);
-      }
-
-      navigationLatched_ = true;
+   const auto navigationDirection = navigation_.ReadDirection(navigationAction.value.x);
+   if (navigation_.Move(*animation, navigationDirection)) {
+      animation->Select(navigation_.GetSelectedIndex());
+      RefreshSelectionText(*animation);
    }
 
    const auto& confirmAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
@@ -124,24 +115,6 @@ void RaceResultUIComponent::ReadParameters(const nlohmann::json& data, [[maybe_u
    }
 }
 
-bool RaceResultUIComponent::MoveSelection(MenuSelectionAnimationComponent& animation, std::int32_t direction) {
-   constexpr std::int32_t kOptionCount = 2;
-   const std::int32_t previousSelection = selectedOption_;
-   std::int32_t candidate = selectedOption_;
-
-   // 端では巡回し、未解決の項目を飛ばす。候補数までの試行に制限して全欠落時も終了させる。
-   for (std::int32_t attempt = 0; attempt < kOptionCount; ++attempt) {
-      candidate = (candidate + direction + kOptionCount) % kOptionCount;
-
-      if (animation.IsOptionAvailable(static_cast<std::size_t>(candidate))) {
-         selectedOption_ = candidate;
-         return selectedOption_ != previousSelection;
-      }
-   }
-
-   return false;
-}
-
 void RaceResultUIComponent::RefreshSelectionText(MenuSelectionAnimationComponent& animation) {
    if (auto* text = animation.GetOptionText(0)) {
       text->SetText("TITLE");
@@ -153,11 +126,11 @@ void RaceResultUIComponent::RefreshSelectionText(MenuSelectionAnimationComponent
 }
 
 bool RaceResultUIComponent::ConfirmSelection(MenuSelectionAnimationComponent& animation) {
-   if (!animation.IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
+   if (!animation.IsOptionAvailable(static_cast<std::size_t>(navigation_.GetSelectedIndex()))) {
       return false;
    }
 
-   if (selectedOption_ == 0) {
+   if (navigation_.GetSelectedIndex() == 0) {
       if (titleScene_.empty()) {
          return false;
       }

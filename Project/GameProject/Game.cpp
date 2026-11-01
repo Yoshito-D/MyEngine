@@ -1,7 +1,7 @@
 #include "GameProject/Game.h"
 #include <cstdint>
 #include "GameEngine/Utility/Logger.h"
-#include "GameProject/App/Component/Vehicle/VehicleController.h"
+#include "GameProject/App/Component/Rendering/PlayerShadowComponent.h"
 #include "GameEngine/Object/Model/Model.h"
 
 #ifdef USE_IMGUI
@@ -190,16 +190,16 @@ void Game::Draw() {
 
    if (!camera) return;
 
-   // VehicleControllerを持つプレイヤーが1体の構成。
+   // 影描画コンポーネントを持つプレイヤーが1体の構成。
    for (auto* model : sceneManager_->GetCurrentScene()->GetSceneWorld().GetObjectStore().GetModels()) {
       if (!model) {
          continue;
       }
 
-      auto* vehicle = model->GetComponent<App::VehicleController>();
+      auto* vehicle = model->GetComponent<App::PlayerShadowComponent>();
 
       // レース中の操作ロックで無効になっていても、停止中の車体の影は描画する。
-      if (!vehicle) {
+      if (!vehicle || !vehicle->IsEnabled()) {
          continue;
       }
 

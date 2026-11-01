@@ -154,51 +154,6 @@
                   "parameterAssetId": "game/parameters/cameras/PlayerRearFollowCamera/PlayerRearFollowCamera.json"
                },
                {
-                  "componentName": "RearCameraTransition",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraGravityUp",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraPlanetGuide",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraDirectionTracker",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraSpeedEffects",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraPositionSolver",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraAimSolver",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraMeasurementRecorder",
-                  "data": {},
-                  "enabled": true
-               },
-               {
-                  "componentName": "RearCameraDebugView",
-                  "data": {},
-                  "enabled": true
-               },
-               {
                   "componentName": "PerlinNoise",
                   "data": {
                      "initialAmplitude": 0.15000000596046448,
@@ -393,6 +348,7 @@
       "Sprite:SpeedGaugeFrame",
       "UIText:SpeedGaugeText",
       "UIText:TutorialFeedback",
+      "UIText:TutorialPrompt",
       "UIText:TutorialGuide"
    ],
    "objects": [
@@ -1183,6 +1139,7 @@
             {
                "data": {},
                "enabled": true,
+               "parameterAssetId": "game/parameters/player/VehicleMover.json",
                "typeName": "VehicleMover"
             },
             {
@@ -1269,6 +1226,11 @@
                "data": {},
                "enabled": true,
                "typeName": "VehicleEffectController"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "typeName": "PlayerShadowComponent"
             }
          ],
          "id": "Model:Player",
@@ -2377,6 +2339,73 @@
          "components": [
             {
                "data": {
+                  "name": "TutorialPrompt"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     0.0,
+                     0.0,
+                     0.0
+                  ],
+                  "rotationQuaternion": [
+                     0.0,
+                     0.0,
+                     0.0,
+                     1.0
+                  ],
+                  "rotationSource": "euler",
+                  "scale": [
+                     1.0,
+                     1.0,
+                     1.0
+                  ],
+                  "translation": [
+                     0.0,
+                     160.0,
+                     1.0
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "color": [
+                     0.8999999761581421,
+                     0.9800000190734863,
+                     1.0,
+                     1.0
+                  ],
+                  "fontId": "851Gkktt",
+                  "fontSize": 20,
+                  "horizontalAlignment": "Center",
+                  "lineSpacing": 1.0,
+                  "maxWidth": 1080.0,
+                  "pivot": [
+                     0.5,
+                     0.0
+                  ],
+                  "screenAnchor": "TopCenter",
+                  "sortingOrder": 200,
+                  "text": "SPACE キー：次へ"
+               },
+               "enabled": true,
+               "typeName": "UITextComponent"
+            }
+         ],
+         "id": "UIText:TutorialPrompt",
+         "objectType": "UIText",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
                   "name": "TutorialGuide"
                },
                "enabled": true,
@@ -2430,7 +2459,7 @@
                   ],
                   "screenAnchor": "TopCenter",
                   "sortingOrder": 200,
-                  "text": "チュートリアル  1 / 8　自動走行と加速\n地上では自動で前進し、徐々に最高速度へ近づきます。\n練習中は、左下の速度メーターを確認しましょう。\nSPACE キー：次へ"
+                  "text": "地上では自動で前進し、徐々に最高速度へ近づきます。\n練習中は、左下の速度メーターを確認しましょう。"
                },
                "enabled": true,
                "typeName": "UITextComponent"
@@ -2439,6 +2468,7 @@
                "data": {
                   "completionDelay": 2.5,
                   "feedbackObjectId": "UIText:TutorialFeedback",
+                  "promptObjectId": "UIText:TutorialPrompt",
                   "goalDirectionObjectId": "Model:GoalDirectionHUD",
                   "goalDistanceObjectId": "UIText:GoalDistanceText",
                   "goalObjectId": "Model:Goal",

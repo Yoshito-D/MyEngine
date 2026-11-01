@@ -27,15 +27,14 @@ constexpr float kAngularVelocityEpsilon = 0.001f;
 // 公開設定
 // ---------------------------------------------------------------
 
-void VehicleAirController::Apply(float rollInput, float pitchInput, float deltaTime) {
-   auto* transform = GetOwner().GetComponent<TransformComponent>();
-
-   if (!transform) return;
+Quaternion VehicleAirController::Apply(
+   float rollInput, float pitchInput, float deltaTime, const Quaternion& currentRot) {
+   if (!IsEnabled() || !HasOwner()) {
+      return currentRot;
+   }
 
    // 処理落ちやブレーク復帰時の大きなdtで、慣性が1フレームで消えることを防ぐ。
    const float controlDeltaTime = std::clamp(deltaTime, 0.0f, kMaxControlDeltaTime);
-
-   const Quaternion currentRot = transform->GetLocalPose().GetActiveQuaternion();
 
    // 角速度を目標値に向けて更新する。
    // スティックを戻す途中の小さい入力で、保持中の角速度を直接上書きしない。
@@ -51,24 +50,15 @@ void VehicleAirController::Apply(float rollInput, float pitchInput, float deltaT
    const Vector3 localRight = RotateVector({1.0f, 0.0f, 0.0f}, newRot);
    ApplyPitchRotation(newRot, localRight, controlDeltaTime);
 
-   // 角速度がほぼゼロのときは transform への書き込みをスキップして
-   // 浮動小数点の累積誤差による不要な更新を防ぐ。
-   if (std::abs(angularVelRoll_) > 1e-6f || std::abs(angularVelPitch_) > 1e-6f) {
-      {
-         auto pose = transform->GetLocalPose();
-         pose.SetRotationQuaternion(newRot);
-         transform->ApplyLocalPose(pose);
-      }
-   }
-
    // 空中でのわずかな水平減速（空気抵抗的な演出）。
    // GravityBody の速度から垂直成分（重力方向）を分離し、水平成分だけに
    // exp(-airDrag * dt) の減衰を掛けて戻す。垂直成分は重力計算に任せる。
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
 
-   if (gravityBody) {
+   if (gravityBody && gravityBody->IsEnabled()) {
       gravityBody->ApplySurfaceDrag(airDrag, controlDeltaTime);
    }
+   return newRot.Normalize();
 }
 
 // ---------------------------------------------------------------

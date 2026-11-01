@@ -2,23 +2,12 @@
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 
-#include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
-#include "GameProject/App/Component/Gravity/GravityBody.h"
-#include "GameProject/App/Component/Vehicle/VehicleController.h"
-#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
-#include "GameProject/App/Component/Vehicle/VehicleSpeedPostEffectController.h"
-#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Framework/EngineContext.h"
-#include "GameEngine/Object/Object.h"
-#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
-#include "GameEngine/Scene/SceneWorld.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <filesystem>
-#include <fstream>
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
@@ -27,8 +16,6 @@
 #endif
 
 namespace {
-constexpr std::int32_t kRecordFormatVersion = 1;
-constexpr std::int32_t kJsonIndentSize = 3;
 constexpr std::array<const char*, 4> kCameraBlendEasingNames = {"Linear", "EaseIn", "EaseOut", "EaseInOut"};
 }
 
@@ -75,37 +62,14 @@ void RaceManagerComponent::Update(float deltaTime) {
 }
 
 void RaceManagerComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
-   // 前シーンの参照を残さず、設定されたPlayerを起点に関連コンポーネントをまとめて解決する。
-   vehicleController_ = nullptr;
-   vehicleInput_ = nullptr;
-   gravityBody_ = nullptr;
-   cameraSwitcher_ = nullptr;
-   speedPostEffectController_ = nullptr;
-
-   if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
-      vehicleController_ = playerObject->GetComponent<VehicleController>();
-      vehicleInput_ = playerObject->GetComponent<VehicleInputComponent>();
-      gravityBody_ = playerObject->GetComponent<GravityBody>();
-      cameraSwitcher_ = playerObject->GetComponent<CameraModeSwitcher>();
-      speedPostEffectController_ = playerObject->GetComponent<VehicleSpeedPostEffectController>();
-   } else if (!playerObjectId_.empty()) {
-      Logger::Warning("Race player object was not found: " + playerObjectId_, Logger::LogChannel::Game);
-   }
+   presentation_.Resolve(sceneWorld, playerObjectId_);
 }
 
 void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
    runtimeInitialized_ = false;
-   playerLocked_ = false;
-
-   // エディタで指定した有効状態を保存し、レース中の一時ロック解除で上書きしない。
-   vehicleControllerEnabledWhenUnlocked_ = vehicleController_ && vehicleController_->IsEnabled();
-   vehicleInputEnabledWhenUnlocked_ = vehicleInput_ && vehicleInput_->IsEnabled();
-   gravityBodyEnabledWhenUnlocked_ = gravityBody_ && gravityBody_->IsEnabled();
-   cameraSwitcherEnabledWhenUnlocked_ = cameraSwitcher_ && cameraSwitcher_->IsEnabled();
-   speedPostEffectEnabledWhenRacing_ = speedPostEffectController_ && speedPostEffectController_->IsEnabled();
-
-   LoadBestTimes();
+   presentation_.CaptureInitialState();
+   records_.LoadBestTimes(recordFile_, recordKey_);
    Restart();
 }
 
@@ -128,26 +92,14 @@ void RaceManagerComponent::NotifyFinish() {
    state_ = State::Finished;
    startBannerRemaining_ = 0.0f;
    finishElapsed_ = 0.0f;
-   AddBestTime(elapsedTime_);
-   SaveBestTimes();
+   records_.AddBestTime(elapsedTime_);
+   records_.SaveBestTimes(recordFile_, recordKey_);
 
    if (lockPlayerOnFinish_) {
-      SetPlayerLocked(true);
+      presentation_.SetPlayerLocked(true);
    }
 
-   // 結果画面で停止後の速度値から加速演出が再有効化されないよう、制御元ごと停止する。
-   if (speedPostEffectController_) {
-      speedPostEffectController_->SetEnabled(false);
-   }
-
-   if (cameraSwitcher_ && !finishCameraId_.empty()) {
-      if (cameraSwitcher_->SwitchToCamera(finishCameraId_)) {
-         // 結果画面中に手動入力でゴールカメラから離れないよう固定する。
-         cameraSwitcher_->SetEnabled(false);
-      } else {
-         Logger::Warning("Race finish camera was not found: " + finishCameraId_, Logger::LogChannel::Game);
-      }
-   }
+   presentation_.ShowFinish(finishCameraId_);
 }
 
 void RaceManagerComponent::NotifyStartFinish() {
@@ -180,37 +132,34 @@ void RaceManagerComponent::Restart() {
    sceneChangeRequested_ = false;
    restartRequested_ = false;
 
-   if (cameraSwitcher_) {
-      // 結果画面で停止した入力・演出制御を、シーン解決時に記録した有効状態へ戻す。
-      cameraSwitcher_->SetEnabled(cameraSwitcherEnabledWhenUnlocked_);
-   }
-
-   if (speedPostEffectController_) {
-      speedPostEffectController_->SetEnabled(speedPostEffectEnabledWhenRacing_);
-   }
+   presentation_.RestoreEffects();
 
    switch (startMode_) {
       case StartMode::Immediate:
          state_ = State::Running;
-         SetCameraMotionPaused(false);
-         SetPlayerLocked(false);
+         presentation_.SetCameraMotionPaused(
+            GameEngine::EngineContext::GetActiveBrain(), false, startCameraBlendSeconds_, startCameraBlendEasing_);
+         presentation_.SetPlayerLocked(false);
          break;
       case StartMode::Countdown:
          state_ = State::Countdown;
 
          // Edit中の読込では追従カメラを書き換えず、実行開始時に保存した姿勢を適用する。
-         if (runtimeInitialized_) {
-            ApplyCountdownCameraPose();
+         if (runtimeInitialized_ && useCountdownCameraPose_) {
+            presentation_.ApplyCountdownCameraPose(GameEngine::EngineContext::GetActiveBrain(),
+               countdownCameraPosition_, countdownCameraRotation_, countdownCameraFov_);
          }
 
-         SetCameraMotionPaused(true);
-         SetPlayerLocked(runtimeInitialized_ && lockPlayerDuringCountdown_);
+         presentation_.SetCameraMotionPaused(
+            GameEngine::EngineContext::GetActiveBrain(), true, startCameraBlendSeconds_, startCameraBlendEasing_);
+         presentation_.SetPlayerLocked(runtimeInitialized_ && lockPlayerDuringCountdown_);
          break;
       case StartMode::Gate:
       default:
          state_ = State::Waiting;
-         SetCameraMotionPaused(false);
-         SetPlayerLocked(false);
+         presentation_.SetCameraMotionPaused(
+            GameEngine::EngineContext::GetActiveBrain(), false, startCameraBlendSeconds_, startCameraBlendEasing_);
+         presentation_.SetPlayerLocked(false);
          break;
    }
 }
@@ -352,239 +301,17 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
 void RaceManagerComponent::BeginRace() {
    // カウントダウン時間は走行記録へ含めず、開始時点を0秒として計測し直す。
    state_ = State::Running;
-   SetCameraMotionPaused(false);
+   presentation_.SetCameraMotionPaused(
+      GameEngine::EngineContext::GetActiveBrain(), false, startCameraBlendSeconds_, startCameraBlendEasing_);
    elapsedTime_ = 0.0f;
    startBannerRemaining_ = startTextDuration_;
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
-   SetPlayerLocked(false);
-}
-
-void RaceManagerComponent::SetCameraMotionPaused(bool paused) {
-   if (auto* brain = GameEngine::EngineContext::GetActiveBrain()) {
-      brain->SetCameraMotionPaused(paused, startCameraBlendSeconds_, startCameraBlendEasing_);
-   }
-}
-
-void RaceManagerComponent::ApplyCountdownCameraPose() {
-   if (!useCountdownCameraPose_) return;
-
-   auto* brain = GameEngine::EngineContext::GetActiveBrain();
-   auto* camera = cameraSwitcher_ ? cameraSwitcher_->GetSelectedCamera() : (brain ? brain->GetActiveCamera() : nullptr);
-
-   if (!camera) return;
-
-   auto state = camera->GetState();
-   state.transform.translation = countdownCameraPosition_;
-   state.transform.SetRotationEuler(countdownCameraRotation_);
-   state.hasViewMatrixOverride = false;
-   state.fov = countdownCameraFov_;
-   camera->SetState(state);
-
-   if (brain) {
-      brain->Cut(camera);
-   }
+   presentation_.SetPlayerLocked(false);
 }
 
 bool RaceManagerComponent::CanFinish() const {
    return nextCheckpointIndex_ >= checkpointCount_;
-}
-
-void RaceManagerComponent::SetPlayerLocked(bool locked) {
-   playerLocked_ = locked;
-
-   // 走行とカメラ演出の入力を一緒に止め、リザルトの左右操作でドリフト接近を発火させない。
-   // リザルトUIは別のUIアクションを直接読むため、選択と決定はそのまま受け付ける。
-   if (vehicleInput_) {
-      vehicleInput_->SetEnabled(!locked && vehicleInputEnabledWhenUnlocked_);
-   }
-
-   if (locked) {
-      // 物理を止める前に残速度を消し、解除直後にロック前の慣性が再開しないようにする。
-      if (gravityBody_) {
-         gravityBody_->StopMotion();
-         gravityBody_->SetEnabled(false);
-      }
-
-      if (vehicleController_) {
-         vehicleController_->SetEnabled(false);
-      }
-
-      return;
-   }
-
-   // 解除時にも速度を中立化してから、シーン本来の有効状態だけを復元する。
-   if (gravityBody_) {
-      gravityBody_->StopMotion();
-      gravityBody_->SetEnabled(gravityBodyEnabledWhenUnlocked_);
-   }
-
-   if (vehicleController_) {
-      vehicleController_->SetEnabled(vehicleControllerEnabledWhenUnlocked_);
-   }
-}
-
-void RaceManagerComponent::AddBestTime(float timeSeconds) {
-   if (!std::isfinite(timeSeconds) || timeSeconds <= 0.0f) return;
-
-   bestTimes_.push_back(timeSeconds);
-
-   // 保存・表示の双方が先頭から最速順を仮定するため、追加時点で固定件数へ正規化する。
-   std::sort(bestTimes_.begin(), bestTimes_.end());
-
-   if (bestTimes_.size() > kBestTimeCount) {
-      bestTimes_.resize(kBestTimeCount);
-   }
-}
-
-bool RaceManagerComponent::LoadBestTimes() {
-   bestTimes_.clear();
-
-   if (recordFile_.empty() || recordKey_.empty()) {
-      return true;
-   }
-
-   const std::filesystem::path recordPath(recordFile_);
-
-   if (!std::filesystem::exists(recordPath)) {
-      // 初回起動は記録なしが正常なので、空ランキングのまま成功として扱う。
-      return true;
-   }
-
-   try {
-      std::ifstream input(recordPath);
-
-      if (!input.is_open()) {
-         LogRecordWarning("could not open record file");
-         return false;
-      }
-
-      nlohmann::json root;
-      input >> root;
-
-      if (!root.is_object() || !root.contains("races") || !root.at("races").is_object()) {
-         LogRecordWarning("record file schema is invalid");
-         return false;
-      }
-
-      const auto& races = root.at("races");
-
-      // 1ファイルを複数コースで共有するため、現在のrecordKeyだけを取り出す。
-      if (!races.contains(recordKey_) || !races.at(recordKey_).is_object()) {
-         return true;
-      }
-
-      const auto& raceData = races.at(recordKey_);
-
-      if (!raceData.contains("bestTimes") || !raceData.at("bestTimes").is_array()) {
-         return true;
-      }
-
-      for (const auto& value : raceData.at("bestTimes")) {
-         if (value.is_number()) {
-            AddBestTime(value.get<float>());
-         }
-      }
-
-      return true;
-   } catch (const std::exception& exception) {
-      LogRecordWarning(std::string("failed to load records: ") + exception.what());
-      bestTimes_.clear();
-      return false;
-   }
-}
-
-bool RaceManagerComponent::SaveBestTimes() const {
-   if (recordFile_.empty() || recordKey_.empty()) {
-      LogRecordWarning("recordFile or recordKey is empty");
-      return false;
-   }
-
-   const std::filesystem::path recordPath(recordFile_);
-   nlohmann::json root = nlohmann::json::object();
-
-   if (std::filesystem::exists(recordPath)) {
-      // 他コースの記録を保持するため、既存JSONを土台に現在キーだけを更新する。
-      try {
-         std::ifstream input(recordPath);
-
-         if (input.is_open()) {
-            input >> root;
-         }
-      } catch (const std::exception& exception) {
-         LogRecordWarning(std::string("existing record file will be replaced: ") + exception.what());
-         root = nlohmann::json::object();
-      }
-   }
-
-   if (!root.is_object()) {
-      root = nlohmann::json::object();
-   }
-
-   root["version"] = kRecordFormatVersion;
-
-   if (!root.contains("races") || !root.at("races").is_object()) {
-      root["races"] = nlohmann::json::object();
-   }
-
-   root["races"][recordKey_]["bestTimes"] = bestTimes_;
-
-   std::error_code error;
-
-   if (!recordPath.parent_path().empty()) {
-      std::filesystem::create_directories(recordPath.parent_path(), error);
-
-      if (error) {
-         LogRecordWarning("could not create record directory: " + error.message());
-         return false;
-      }
-   }
-
-   std::filesystem::path temporaryPath = recordPath;
-   temporaryPath += ".tmp";
-
-   // 書き込み途中の本番ファイルを残さないよう、一時ファイルを完成させてから置換する。
-   try {
-      std::ofstream output(temporaryPath, std::ios::out | std::ios::trunc);
-
-      if (!output.is_open()) {
-         LogRecordWarning("could not open temporary record file");
-         return false;
-      }
-
-      output << root.dump(kJsonIndentSize) << '\n';
-      output.close();
-
-      if (!output) {
-         LogRecordWarning("could not finish writing temporary record file");
-         return false;
-      }
-   } catch (const std::exception& exception) {
-      LogRecordWarning(std::string("failed to write records: ") + exception.what());
-      return false;
-   }
-
-#ifdef _WIN32
-   // Windowsでは置換とディスク反映を同じAPIで要求し、既存ファイルも安全に更新する。
-   if (!MoveFileExW(temporaryPath.c_str(), recordPath.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-      LogRecordWarning("could not replace record file (Win32 error " + std::to_string(GetLastError()) + ")");
-      std::filesystem::remove(temporaryPath, error);
-      return false;
-   }
-#else
-   std::filesystem::rename(temporaryPath, recordPath, error);
-
-   if (error) {
-      LogRecordWarning("could not replace record file: " + error.message());
-      std::filesystem::remove(temporaryPath, error);
-      return false;
-   }
-#endif
-   return true;
-}
-
-void RaceManagerComponent::LogRecordWarning(const std::string& message) const {
-   Logger::Warning("Race record: " + message + " [" + recordFile_ + "]", Logger::LogChannel::Game);
 }
 
 #ifdef USE_IMGUI
@@ -655,8 +382,8 @@ void RaceManagerComponent::DrawInspector() {
    ImGui::Text("Time: %.3f", elapsedTime_);
    ImGui::Text("Checkpoint: %zu / %zu", nextCheckpointIndex_, checkpointCount_);
 
-   for (size_t index = 0; index < bestTimes_.size(); ++index) {
-      ImGui::Text("Best %zu: %.3f", index + 1, bestTimes_[index]);
+   for (size_t index = 0; index < records_.GetBestTimes().size(); ++index) {
+      ImGui::Text("Best %zu: %.3f", index + 1, records_.GetBestTimes()[index]);
    }
 
    if (ImGui::Button("Restart State")) {

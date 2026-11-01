@@ -34,6 +34,7 @@ std::shared_ptr<const SoundClip> SoundClip::Decode(const std::wstring& path) {
 
    ComPtr<IMFMediaType> requested;
 
+   // 圧縮形式の違いはMedia Foundationで吸収し、再生側へ渡すデータをPCMに統一する。
    if (FAILED(MFCreateMediaType(&requested)) || FAILED(requested->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio)) ||
        FAILED(requested->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM)) ||
        FAILED(reader->SetCurrentMediaType(
@@ -62,6 +63,7 @@ std::shared_ptr<const SoundClip> SoundClip::Decode(const std::wstring& path) {
 
    auto clip = std::shared_ptr<SoundClip>(new SoundClip());
    const BYTE* formatBytes = reinterpret_cast<const BYTE*>(rawFormat);
+   // 拡張情報も含む実際の形式サイズをコピーし、WAVEFORMATEXとして参照できる配置境界を確保する。
    clip->formatWords_.resize((formatSize + sizeof(uint64_t) - 1) / sizeof(uint64_t));
    std::memcpy(clip->formatWords_.data(), formatBytes, formatSize);
 
@@ -79,6 +81,7 @@ std::shared_ptr<const SoundClip> SoundClip::Decode(const std::wstring& path) {
          throw std::runtime_error("Audio stream error");
       }
 
+      // サンプルがない通知でも終端とは限らないため、終端フラグが立つまでは読み進める。
       if (!sample) {
          if (flags & MF_SOURCE_READERF_ENDOFSTREAM) {
             break;
@@ -101,6 +104,7 @@ std::shared_ptr<const SoundClip> SoundClip::Decode(const std::wstring& path) {
       }
 
       try {
+         // 全サンプルを1つの再生バッファへ連結するので、XAudio2の32ビットのバイト数上限を守る。
          if (length > std::numeric_limits<UINT32>::max() - clip->pcm_.size()) {
             throw std::runtime_error("Decoded audio exceeds XAudio2 buffer limit");
          }
@@ -109,6 +113,7 @@ std::shared_ptr<const SoundClip> SoundClip::Decode(const std::wstring& path) {
             clip->pcm_.insert(clip->pcm_.end(), bytes, bytes + length);
          }
       } catch (...) {
+         // メモリー確保失敗などで連結が中断されても、Media Foundationのバッファロックは解除する。
          buffer->Unlock();
          throw;
       }
@@ -122,6 +127,7 @@ std::shared_ptr<const SoundClip> SoundClip::Decode(const std::wstring& path) {
       }
    }
 
+   // 全チャンネルを含むサンプル単位で終わっていないPCMは、不完全なデータとして拒否する。
    if (clip->pcm_.empty() || clip->pcm_.size() % rawFormat->nBlockAlign != 0) {
       throw std::runtime_error("Empty or incomplete PCM audio");
    }

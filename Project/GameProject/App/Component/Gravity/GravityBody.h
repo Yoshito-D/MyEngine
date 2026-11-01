@@ -6,9 +6,12 @@
 
 namespace App {
 
-/// @brief 重力方向に追従して姿勢・速度・位置を更新する物理ボディ
+/// @brief 重力を積分して速度と位置を更新する物理ボディ
 class GravityBody final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Physics; }
+
    /// @brief コンポーネント種別名
    static constexpr const char* kTypeName = "GravityBody";
    /// @brief エディターに表示する日本語名と英語名。
@@ -17,16 +20,13 @@ public:
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 姿勢補間と重力物理更新を実行する
+   /// @brief 重力と速度から位置を更新する
    void Update(float deltaTime) override;
 
-   /// @brief 目標Up方向を設定する（回転補間に使用）
+   /// @brief 接触地点の法線を設定する（移動・姿勢制御が参照する）
    void SetTargetUpVector(const GameEngine::Vector3& targetUp);
 
-   /// @brief 目標Upへ即座に姿勢スナップする
-   void SnapToUpVector(const GameEngine::Vector3& targetUp);
-
-   /// @brief 地表法線から姿勢目標と、このボディの設定に基づく重力を適用する
+   /// @brief 地表法線を保持し、このボディの設定に基づく重力を適用する
    /// @param surfaceUp 地表の外向き法線。ゼロベクトルの場合は変更しない
    void ApplyGravityFromSurface(const GameEngine::Vector3& surfaceUp);
 
@@ -64,14 +64,8 @@ public:
    /// @brief 移動を完全に停止する
    void StopMotion();
 
-   /// @brief 現在のUp方向を取得する
-   GameEngine::Vector3 GetCurrentUpVector() const { return currentUpVector_; }
-
    /// @brief 今フレームの重力目標Up方向を取得する
    GameEngine::Vector3 GetTargetUpVector() const { return targetUpVector_; }
-
-   /// @brief 現在のUp方向を強制設定する（空中姿勢変化後の着地補正などに使用）
-   void SetCurrentUpVector(const GameEngine::Vector3& up) { currentUpVector_ = up.Normalize(); }
 
 #ifdef USE_IMGUI
 
@@ -85,17 +79,15 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照と実行履歴を除く、共有可能な設定JSONを返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行履歴を維持したまま共有設定を適用する。
+   /// @param data 適用する共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
-
-   /// @brief Up補間回転速度
-   float rotationSpeed = 5.0f;
 
    /// @brief 重力強度（加速度係数）
    float gravityStrength = 9.8f;
@@ -104,16 +96,10 @@ private:
    bool useGravity = true;
 
 private:
-   /// @brief 現在Upから目標Upへ姿勢を補間する
-   void UpdateRotation(float deltaTime);
-
    /// @brief 重力加速度で速度・位置を更新する
    void UpdatePhysics(float deltaTime);
 
 private:
-   /// @brief 現在のUpベクトル
-   GameEngine::Vector3 currentUpVector_ = {0.0f, 1.0f, 0.0f};
-
    /// @brief 次に向かうUpベクトル
    GameEngine::Vector3 targetUpVector_ = {0.0f, 1.0f, 0.0f};
 

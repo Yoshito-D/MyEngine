@@ -20,10 +20,10 @@ enum class CinemachineStage {
 /// @brief Cinemachineコンポーネントのインターフェース
 class ICinemachineComponent : public ParameterComponent {
 public:
-   /// @copydoc ParameterComponent::GetParameterDomain
+   /// @brief パラメータの保存先を区別するコンポーネント領域を返す。
    const char* GetParameterDomain() const override { return "Camera"; }
 
-   /// @copydoc ParameterComponent::GetParameterType
+   /// @brief 共有パラメータの識別に使うコンポーネント型名を返す。
    const char* GetParameterType() const override { return GetComponentName(); }
 
    /// @brief 未接続・未確保の状態を構築する。
@@ -79,9 +79,6 @@ public:
 protected:
    /// @brief 所有登録後に呼び出される初期化フック。所有者の差し替えは行わない。
    virtual void OnAttach() {}
-
-   /// @brief 同じカメラの入力部品に関連する補間履歴を初期化する。
-   virtual void OnCameraReset(const ICinemachineComponent& source) { (void)source; }
 
 private:
    friend class VirtualCamera;

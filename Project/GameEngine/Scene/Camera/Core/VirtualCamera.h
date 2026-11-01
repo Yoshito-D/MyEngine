@@ -57,8 +57,6 @@ public:
    /// @brief 所有する部品の有効状態を変更する。他のカメラの部品は受け入れない。
    bool EnableComponent(const ICinemachineComponent* component, bool enabled);
 
-   /// @brief 所有する部品へ、指定部品に関係する補間履歴のリセットを通知する。
-   void ResetComponents(const ICinemachineComponent& source);
 #ifdef USE_IMGUI
 
    /// @brief 所有確認の後に部品のInspector編集を実行する。
