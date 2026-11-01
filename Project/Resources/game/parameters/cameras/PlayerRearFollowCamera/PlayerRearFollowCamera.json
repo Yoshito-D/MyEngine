@@ -1,11 +1,9 @@
 {
-   "version": 1,
-   "domain": "Camera",
    "componentType": "PlayerRearFollowCamera",
    "data": {
       "airborneBlendLerpSpeed": 4.0,
       "airborneDistanceOffset": -2.0,
-      "airborneForwardLerpSpeed": 3.0,
+      "airborneForwardLerpSpeed": 7.0,
       "airborneFovOffset": 0.10000000149011612,
       "airborneGravityDirectionBoostBias": 0.5,
       "airborneGravityDirectionBoostFullThreshold": 1.0,
@@ -35,7 +33,7 @@
       "preLandingBlendLerpSpeed": 0.800000011920929,
       "preLandingFullBlendSeconds": 1.0,
       "preLandingMinOutwardHeight": 0.5,
-      "preLandingPredictionSeconds": 4.0,
+      "preLandingPredictionSeconds": 5.0,
       "preLandingReleaseLerpSpeed": 5.0,
       "preLandingTerrainLookAhead": 15.0,
       "preLandingTerrainLookBlend": 0.30000001192092896,
@@ -50,5 +48,7 @@
       "springDamping": 20.0,
       "springStiffness": 20.0,
       "takeoffFramingBlendSeconds": 0.4000000059604645
-   }
+   },
+   "domain": "Camera",
+   "version": 1
 }

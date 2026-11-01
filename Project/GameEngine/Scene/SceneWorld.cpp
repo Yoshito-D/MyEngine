@@ -236,6 +236,7 @@ void SceneWorld::SynchronizeParameters() {
 }
 
 void SceneWorld::Clear() {
+   EngineContext::SetCameraTransitionOpacity(0.0f);
    ParticleSystem::ClearWorldRuntime(this);
    if (auto* brain = GetCameraBrain()) {
       for (const auto& camera : virtualCameras_) {

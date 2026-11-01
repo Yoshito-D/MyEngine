@@ -183,6 +183,7 @@
     <ClCompile Include="GameProject\App\Component\Rendering\PlayerShadowComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceRecordStore.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RacePresentation.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\StageIntroSequence.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\VehicleCameraEffects.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\LandingPrediction.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\CameraPresentationCapture.cpp" />
@@ -551,6 +552,7 @@
     <ClInclude Include="GameProject\App\Component\Rendering\PlayerShadowComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceRecordStore.h" />
     <ClInclude Include="GameProject\App\Component\Race\RacePresentation.h" />
+    <ClInclude Include="GameProject\App\Component\Race\StageIntroSequence.h" />
     <ClInclude Include="GameProject\App\Component\Camera\VehicleCameraEffects.h" />
     <ClInclude Include="GameProject\App\Component\Camera\LandingPrediction.h" />
     <ClInclude Include="GameProject\App\Component\Camera\CameraPresentationCapture.h" />

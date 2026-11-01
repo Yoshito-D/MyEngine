@@ -32,8 +32,9 @@ void RaceTimeTextComponent::Update(float deltaTime) {
 
    const RaceManagerComponent::State raceState = raceManager_->GetState();
 
-   // カウントダウンとリザルトには専用UIがあるため、同じ位置で文字が重ならないよう隠す。
-   if (raceState == RaceManagerComponent::State::Countdown || raceState == RaceManagerComponent::State::Finished) {
+   // ステージ紹介では景色を優先し、カウントダウンとリザルトでは専用UIとの重なりを避ける。
+   if (raceState == RaceManagerComponent::State::Intro || raceState == RaceManagerComponent::State::Countdown ||
+       raceState == RaceManagerComponent::State::Finished) {
       text->SetText("");
       return;
    }

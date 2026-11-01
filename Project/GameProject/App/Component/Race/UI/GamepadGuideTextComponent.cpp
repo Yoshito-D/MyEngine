@@ -2,6 +2,7 @@
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/SceneWorld.h"
@@ -51,6 +52,13 @@ void GamepadGuideTextComponent::Update(float deltaTime) {
    auto* text = GetOwner().GetComponent<GameEngine::UITextComponent>();
 
    if (!text) return;
+
+   if (raceManager_ && raceManager_->GetState() == RaceManagerComponent::State::Intro) {
+      // スキップ入力と同じプレイヤー番号を毎フレーム確認し、途中の接続・切断にも表示を追従させる。
+      const bool gamepadConnected = GameEngine::EngineContext::IsGamePadConnected(0);
+      text->SetText(gamepadConnected ? "Aボタン：スキップ" : "Spaceキー：スキップ");
+      return;
+   }
 
    const bool isShowingResult = raceManager_ && raceManager_->GetState() == RaceManagerComponent::State::Finished;
 

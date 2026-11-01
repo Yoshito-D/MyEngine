@@ -78,10 +78,11 @@ void VehicleSpeedGaugeUIComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWo
 
 void VehicleSpeedGaugeUIComponent::Update(float deltaTime) {
    const bool isFinished = raceManager_ && raceManager_->GetState() == RaceManagerComponent::State::Finished;
+   const bool isIntro = raceManager_ && raceManager_->GetState() == RaceManagerComponent::State::Intro;
 
    // ゲージ本体と少なくとも一つの速度源がある場合だけ描画する。
-   // RaceManagerが設定されている場合は、リザルトUIとの重なりを避けるため終了時に隠す。
-   const bool canDisplay = gaugeSprite_ && (gravityBody_ || groundMover_) && !isFinished;
+   // ステージ紹介では景色を優先し、終了時にはリザルトUIとの重なりを避ける。
+   const bool canDisplay = gaugeSprite_ && (gravityBody_ || groundMover_) && !isFinished && !isIntro;
 
    if (!canDisplay) {
       SetHudVisible(false);

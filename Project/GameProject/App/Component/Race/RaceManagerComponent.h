@@ -22,6 +22,7 @@ public:
    /// @brief レース進行状態
    enum class State {
       Waiting,
+      Intro,
       Countdown,
       Running,
       Finished,
@@ -56,6 +57,9 @@ public:
    /// @brief 参照設定の変更後に、指定ワールドから依存先を解決し直す。
    /// @param sceneWorld 参照先を検索するシーン。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
+
+   /// @brief 一時演出を中止し、生存する対象の操作・カメラ・暗転を解除する。
+   void OnDisable() override;
 
    /// @brief スタートゲート通過を通知する
    void NotifyStart();
@@ -129,7 +133,12 @@ private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
    void BeginRace();
+   void BeginCountdown();
    bool CanFinish() const;
+
+#ifdef USE_IMGUI
+   void DrawIntroInspector();
+#endif
 
    State state_ = State::Waiting;                  ///< 現在のレース状態。
    StartMode startMode_ = StartMode::Countdown;    ///< 即時・カウントダウン・ゲート通過の開始方式。
@@ -163,6 +172,8 @@ private:
    bool sceneChangeRequested_ = false;                  ///< この進行状態からシーン切り替えを要求済みかどうか。
    bool restartRequested_ = false;                      ///< リトライのシーン切り替えを要求済みかどうか。
    bool runtimeInitialized_ = false;                    ///< 最初の実行時更新に必要な初期化が完了したかどうか。
+   StageIntroSettings introSettings_;                   ///< ステージ固有の俯瞰構図と再生時間。
+   bool introSkipArmed_ = false;                        ///< 導入開始後に決定入力の解放を確認したか。
    RacePresentation presentation_;                      ///< 操作停止とカメラ演出の所有者。
 };
 

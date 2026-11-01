@@ -281,6 +281,9 @@
     <ClCompile Include="GameProject\App\Component\Race\RacePresentation.cpp">
       <Filter>GameProject\App\Component\Race</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Race\StageIntroSequence.cpp">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\VehicleCameraEffects.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
@@ -1035,6 +1038,9 @@
       <Filter>GameProject\App\Component\Race</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RacePresentation.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\StageIntroSequence.h">
       <Filter>GameProject\App\Component\Race</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\VehicleCameraEffects.h">
