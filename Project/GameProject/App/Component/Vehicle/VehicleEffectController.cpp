@@ -1,14 +1,11 @@
 #include "GameProject/App/Component/Vehicle/VehicleEffectController.h"
-#include <cstdint>
-
-#include "GameProject/App/Component/Vehicle/VehicleDrift.h"
-#include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
-#include "GameProject/App/Component/Character/CharacterJump.h"
-#include "GameProject/App/Component/Character/CharacterLanding.h"
-#include "GameEngine/Effects/Particles/Modules/EmissionModule.h"
-#include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Component/Effects/ParticleEmitterComponent.h"
 #include "GameEngine/Object/Object.h"
+#include "GameEngine/Utility/Logger.h"
+#include <algorithm>
+#include <array>
+#include <limits>
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
@@ -16,13 +13,12 @@
 
 namespace App {
 namespace {
-bool ContainsEffectName(const std::string& path, const char* effectName) {
-   return path.find(effectName) != std::string::npos;
-}
+constexpr std::array kRoleNames = {
+   "DriftDust", "TurboReady", "TurboBurst", "TurboFlame", "Landing", "LandingFailure", "Jump"};
 
 GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
    const GameEngine::Vector3 localUp{0.0f, 1.0f, 0.0f};
-   const GameEngine::Vector3 surfaceNormal = normal.Normalize();
+   const auto surfaceNormal = normal.Normalize();
    const float dot = localUp.Dot(surfaceNormal);
 
    // 真下だけは回転軸が一意に決まらないため、X軸周りの180度回転を使う。
@@ -30,111 +26,165 @@ GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
       return {1.0f, 0.0f, 0.0f, 0.0f};
    }
 
-   const GameEngine::Vector3 axis = localUp.Cross(surfaceNormal);
+   const auto axis = localUp.Cross(surfaceNormal);
    return GameEngine::Quaternion{axis.x, axis.y, axis.z, 1.0f + dot}.Normalize();
 }
 }
 
-void VehicleEffectController::Update(float deltaTime) {
-   (void)deltaTime;
+void VehicleEffectController::OnSceneLoaded(GameEngine::SceneWorld&) {
+   const auto* events = HasOwner() ? GetOwner().GetComponent<VehicleEvents>() : nullptr;
+   eventCursor_.Reset(events ? events->GetSnapshot() : VehicleEventSnapshot{});
+}
 
+void VehicleEffectController::Update(float) {
    if (!HasOwner()) return;
 
    auto* emitter = GetOwner().GetComponent<GameEngine::ParticleEmitterComponent>();
-   auto* drift = GetOwner().GetComponent<VehicleDrift>();
-   auto* landingBoost = GetOwner().GetComponent<VehicleLandingBoost>();
-   auto* jump = GetOwner().GetComponent<CharacterJump>();
-   auto* landing = GetOwner().GetComponent<CharacterLanding>();
+   const auto* events = GetOwner().GetComponent<VehicleEvents>();
 
-   if (!emitter) return;
+   if (!emitter || !events) return;
 
-   const bool isJumping = jump && jump->IsJumping();
-   const bool isGrounded = landing && landing->IsGrounded();
-   const bool isDrifting = drift && drift->IsDrifting();
-   const bool canFireMiniTurbo = drift && drift->CanFireMiniTurbo();
+   const auto& snapshot = events->GetSnapshot();
+   const auto changes = eventCursor_.Read(snapshot);
 
-   // カメラ演出と通知を奪い合わず、各発動につき一度だけパーティクルを再生する。
-   const uint64_t miniTurboFireCount = drift ? drift->GetMiniTurboFireCount() : 0;
-   const bool miniTurboFired = drift && miniTurboFireCount != lastMiniTurboFireCount_;
-   lastMiniTurboFireCount_ = miniTurboFireCount;
-
-   // 継続状態から立ち上がりを抽出し、ジャンプ・着地系の単発エフェクトへ変換する。
-   const bool jumpedThisFrame = isJumping && !wasJumping_;
-   const bool landedThisFrame = isGrounded && !wasGrounded_;
-   const bool failedLandingThisFrame =
-      landedThisFrame && landingBoost && landingBoost->GetLastLandingResult() == LandingResult::Failure;
-
-   GameEngine::Vector3 landingContactPoint{};
-   GameEngine::Quaternion landingRotation = GameEngine::Quaternion::Identity();
-   const bool hasLandingTransform = landedThisFrame && landing && landing->HasLandingContact();
-
-   if (hasLandingTransform) {
-      // 車体中心ではなく実際の接触点・法線へ配置し、球面上でも地表に沿わせる。
-      landingContactPoint = landing->GetLastLandingContactPoint();
-      landingRotation = AlignUpToNormal(landing->GetLastLandingNormal());
-   }
-
-   // 共通エミッタ内のスロットをJSONパスで役割分けし、各ゲーム状態へ結び付ける。
-   for (std::int32_t slotIndex = 0; slotIndex < emitter->GetSlotCount(); ++slotIndex) {
-      auto* slot = emitter->DescribeSlot(slotIndex);
+   for (const auto& binding : bindings_) {
+      const auto* slot = emitter->DescribeSlot(binding.slot);
 
       if (!slot) {
          continue;
       }
 
-      if (ContainsEffectName(slot->jsonPath, "tire_dust")) {
-         emitter->EnableEmission(slotIndex, isDrifting && !isJumping);
-      } else if (ContainsEffectName(slot->jsonPath, "miniturbo")) {
-         emitter->EnableEmission(slotIndex, canFireMiniTurbo && !isJumping);
-      } else if (ContainsEffectName(slot->jsonPath, "sonicBoom") && miniTurboFired) {
-         emitter->Play(slotIndex);
-      } else if (ContainsEffectName(slot->jsonPath, "bonfire")) {
-         if (!isGrounded) {
-            // 空中へ移った時点で既存粒子も消し、車体に追従して見え続けるのを防ぐ。
-            emitter->EnableEmission(slotIndex, false);
-
-            if (emitter->IsPlaying(slotIndex) || emitter->HasLivingParticles(slotIndex)) {
-               emitter->Stop(slotIndex);
+      switch (binding.role) {
+         case VehicleEffectRole::DriftDust:
+            emitter->EnableEmission(binding.slot, snapshot.isDrifting && !snapshot.isAirborne);
+            break;
+         case VehicleEffectRole::TurboReady:
+            emitter->EnableEmission(binding.slot, snapshot.miniTurboReady && !snapshot.isAirborne);
+            break;
+         case VehicleEffectRole::TurboBurst:
+            if (changes.miniTurbo) {
+               emitter->Play(binding.slot);
             }
-         } else if (miniTurboFired) {
-            emitter->EnableEmission(slotIndex, true);
-            emitter->Play(slotIndex);
-         }
-      } else if (ContainsEffectName(slot->jsonPath, "landingRing") && landedThisFrame) {
-         if (hasLandingTransform) {
-            emitter->SetSlotWorldTransform(
-               slotIndex, landingContactPoint, landingRotation, slot->attachConfig.scaleOffset);
-         }
+            break;
+         case VehicleEffectRole::TurboFlame:
+            if (!snapshot.isGrounded) {
+               // 空中へ移った時点で既存粒子も消し、車体に追従して見え続けるのを防ぐ。
+               emitter->EnableEmission(binding.slot, false);
 
-         emitter->Play(slotIndex);
-      } else if (ContainsEffectName(slot->jsonPath, "landingDust") && landedThisFrame) {
-         if (hasLandingTransform) {
-            emitter->SetSlotWorldTransform(
-               slotIndex, landingContactPoint, landingRotation, slot->attachConfig.scaleOffset);
-         }
+               if (emitter->IsPlaying(binding.slot) || emitter->HasLivingParticles(binding.slot)) {
+                  emitter->Stop(binding.slot);
+               }
+            } else if (changes.miniTurbo) {
+               emitter->EnableEmission(binding.slot, true);
+               emitter->Play(binding.slot);
+            }
+            break;
+         case VehicleEffectRole::Landing:
+            if (changes.landed) {
+               if (snapshot.hasLandingContact) {
+                  // 車体中心ではなく、確定済み接触点と法線へ着地演出を配置する。
+                  emitter->SetSlotWorldTransform(binding.slot, snapshot.landingPoint,
+                     AlignUpToNormal(snapshot.landingNormal), slot->attachConfig.scaleOffset);
+               }
 
-         emitter->Play(slotIndex);
-      } else if (ContainsEffectName(slot->jsonPath, "landing_failure") && failedLandingThisFrame) {
-         emitter->Play(slotIndex);
-      } else if (ContainsEffectName(slot->jsonPath, "/jump.json") && jumpedThisFrame) {
-         emitter->Play(slotIndex);
+               emitter->Play(binding.slot);
+            }
+            break;
+         case VehicleEffectRole::LandingFailure:
+            if (changes.landed && snapshot.landingResult == LandingResult::Failure) {
+               emitter->Play(binding.slot);
+            }
+            break;
+         case VehicleEffectRole::Jump:
+            if (changes.tookOff) {
+               emitter->Play(binding.slot);
+            }
+            break;
+      }
+   }
+}
+
+nlohmann::json VehicleEffectController::Serialize() const {
+   auto bindings = nlohmann::json::array();
+
+   for (const auto& binding : bindings_) {
+      bindings.push_back({{"role", kRoleNames[static_cast<size_t>(binding.role)]}, {"slot", binding.slot}});
+   }
+
+   return {{"bindings", std::move(bindings)}};
+}
+
+void VehicleEffectController::Deserialize(const nlohmann::json& data) {
+   if (!data.is_object() || !data.contains("bindings")) return;
+
+   const auto& bindings = data.at("bindings");
+   std::vector<VehicleEffectBinding> parsed;
+   const auto fail = []() {
+      Logger::Warning(
+         "Vehicle effect bindings require known roles and non-negative slot indices.", Logger::LogChannel::Game);
+   };
+
+   if (!bindings.is_array()) {
+      fail();
+      return;
+   }
+
+   for (const auto& entry : bindings) {
+      if (!entry.is_object() || !entry.contains("role") || !entry.at("role").is_string() || !entry.contains("slot") ||
+          !entry.at("slot").is_number_integer()) {
+         fail();
+         return;
+      }
+
+      const auto roleName = entry.at("role").get<std::string>();
+      const auto role = std::find(kRoleNames.begin(), kRoleNames.end(), roleName);
+      const auto slot = entry.at("slot").get<std::int64_t>();
+
+      if (role == kRoleNames.end() || slot < 0 || slot > std::numeric_limits<std::int32_t>::max()) {
+         fail();
+         return;
+      }
+
+      const VehicleEffectBinding binding{
+         static_cast<VehicleEffectRole>(std::distance(kRoleNames.begin(), role)), static_cast<std::int32_t>(slot)};
+
+      if (std::find(parsed.begin(), parsed.end(), binding) == parsed.end()) {
+         parsed.push_back(binding);
       }
    }
 
-   wasJumping_ = isJumping;
-
-   // 次フレームのエッジ判定に使うため、全スロット処理後に状態を更新する。
-   wasGrounded_ = isGrounded;
+   bindings_ = std::move(parsed);
 }
 
 #ifdef USE_IMGUI
 void VehicleEffectController::DrawInspector() {
    const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
 
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
+   if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
-   ImGui::Text("Was Jumping: %s", wasJumping_ ? "true" : "false");
-   ImGui::Text("Was Grounded: %s", wasGrounded_ ? "true" : "false");
+   for (size_t index = 0; index < bindings_.size(); ++index) {
+      auto& binding = bindings_[index];
+      ImGui::PushID(static_cast<std::int32_t>(index));
+      auto role = static_cast<std::int32_t>(binding.role);
+
+      if (ImGui::Combo("Role", &role, kRoleNames.data(), static_cast<std::int32_t>(kRoleNames.size()))) {
+         binding.role = static_cast<VehicleEffectRole>(role);
+      }
+
+      ImGui::InputInt("Emitter Slot", &binding.slot);
+      binding.slot = std::max(binding.slot, std::int32_t{0});
+      const bool remove = ImGui::SmallButton("Remove");
+      ImGui::PopID();
+
+      if (remove) {
+         bindings_.erase(bindings_.begin() + index);
+         break;
+      }
+   }
+
+   if (ImGui::Button("Add Effect Binding")) {
+      bindings_.push_back({});
+   }
 }
 #endif
 

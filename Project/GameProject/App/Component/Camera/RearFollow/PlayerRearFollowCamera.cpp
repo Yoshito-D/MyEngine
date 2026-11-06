@@ -507,13 +507,20 @@ void PlayerRearFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_
 
 namespace App {
 
-void PlayerRearFollowCamera::SetDriftDistanceScale(float scale) {
-   input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, kMinimumDriftDistanceScale, 1.0f);
+void PlayerRearFollowCamera::ApplyVehicleFollowInput(const VehicleCameraFollowInput& input) {
+   input_.gravityUp = input.gravityUp;
+   input_.pivotTarget = input.target;
+   input_.planetCenter = input.landingPlanetCenter;
+   input_.playerSpeed = input.speed;
+   input_.autoSpeed = input.autoSpeed;
 }
 
-void PlayerRearFollowCamera::SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
-   input_.driftCameraHeightOffset = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
-   input_.driftLookTargetHeightOffset = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
+void PlayerRearFollowCamera::ApplyVehicleEffectInput(const VehicleCameraEffectInput& input) {
+   input_.driftDistanceScale =
+      std::clamp(std::isfinite(input.distanceScale) ? input.distanceScale : 1.0f, kMinimumDriftDistanceScale, 1.0f);
+   input_.driftCameraHeightOffset = std::isfinite(input.cameraHeightOffset) ? input.cameraHeightOffset : 0.0f;
+   input_.driftLookTargetHeightOffset =
+      std::isfinite(input.lookTargetHeightOffset) ? input.lookTargetHeightOffset : 0.0f;
 }
 
 } // namespace App

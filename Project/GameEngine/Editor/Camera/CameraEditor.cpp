@@ -5,6 +5,7 @@
 
 #include "GameEngine/Editor/Camera/CameraEditor.h"
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/EditorSceneContext.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Scene/Camera/Camera.h"
@@ -73,7 +74,74 @@ void CameraEditor::Initialize(LineRenderer* lineRenderer) {
    gizmo_.Initialize(lineRenderer);
 }
 
+void CameraEditor::SetContext(EditorSceneContext* context) {
+   if (context_ == context) return;
+
+   FinishEdits();
+   context_ = context;
+}
+
+void CameraEditor::FinishEdits() {
+   if (editingCameraId_.empty()) return;
+
+   // Commitから参照更新が発生しても二重確定しないよう、要求を先にローカルへ移す。
+   auto id = std::move(editingCameraId_);
+   auto before = std::move(cameraEditBefore_);
+   auto after = std::move(cameraEditAfter_);
+   editingCameraId_.clear();
+   cameraEditBefore_ = {};
+   cameraEditAfter_ = {};
+
+   if (context_) {
+      context_->CommitCameraEdit(id, before, after);
+   }
+}
+
+void CameraEditor::FinishEditsIfIdle() {
+   if (!ImGui::IsAnyItemActive() && !ImGuizmo::IsUsing()) {
+      FinishEdits();
+   }
+}
+
+void CameraEditor::RecordCameraEdit(VirtualCamera* camera, const nlohmann::json& before, bool continuous) {
+   if (!camera || !context_ || camera->GetId().empty()) return;
+
+   const auto after = camera->Serialize();
+
+   if (before == after) return;
+
+   if (!EngineContext::IsPlayModeEdit()) {
+      context_->MarkDirty();
+      return;
+   }
+
+   if (!editingCameraId_.empty() && editingCameraId_ != camera->GetId()) {
+      FinishEdits();
+   }
+
+   if (editingCameraId_.empty()) {
+      editingCameraId_ = camera->GetId();
+      cameraEditBefore_ = before;
+   }
+
+   cameraEditAfter_ = after;
+   context_->MarkDirty();
+
+   if (!continuous) {
+      FinishEdits();
+   }
+}
+
+void CameraEditor::SetTargetVirtualCamera(VirtualCamera* vcam) {
+   if (targetVirtualCamera_ != vcam) {
+      FinishEdits();
+   }
+
+   targetVirtualCamera_ = vcam;
+}
+
 void CameraEditor::SetTargetBrain(CinemachineBrain* brain) {
+   FinishEdits();
    targetBrain_ = brain;
 
    // Brain経由で出力カメラの非所有参照を取得する。
@@ -98,7 +166,10 @@ void CameraEditor::ShowEditorWindow() {
 
    bool visible = EngineContext::GetEditorWindowVisibility("CameraEditor", {"カメラエディタ", "Camera Editor"});
 
-   if (!visible) return;
+   if (!visible) {
+      FinishEditsIfIdle();
+      return;
+   }
 
    const float blendBefore = targetBrain_ ? targetBrain_->GetDefaultBlendTime() : 0.0f;
    const std::string windowLabel = StableWindowLabel(Tr("カメラエディタ", "Camera Editor"), "CameraEditor");
@@ -107,6 +178,7 @@ void CameraEditor::ShowEditorWindow() {
 
    if (!drawContents) {
       ImGui::End();
+      FinishEditsIfIdle();
       return;
    }
 
@@ -175,6 +247,7 @@ void CameraEditor::ShowEditorWindow() {
    }
 
    ImGui::End();
+   FinishEditsIfIdle();
 }
 
 void CameraEditor::ShowVirtualCameraTab() {
@@ -218,7 +291,7 @@ void CameraEditor::ShowVirtualCameraTab() {
                }
 
                camera->SetState(state);
-               targetVirtualCamera_ = camera;
+               SetTargetVirtualCamera(camera);
                selectedVirtualCameraIndex_ = static_cast<std::int32_t>(vcams.size()) - 1;
                EditorUI::MarkChanged();
             }
@@ -229,6 +302,7 @@ void CameraEditor::ShowVirtualCameraTab() {
       ImGui::BeginDisabled(!targetVirtualCamera_ || targetVirtualCamera_->GetId().empty());
 
       if (ImGui::Button(Tr("カメラを削除", "Delete Camera"))) {
+         FinishEdits();
          if (auto* world = world_) {
             if (world->RemoveVirtualCamera(targetVirtualCamera_)) {
                targetVirtualCamera_ = nullptr;
@@ -267,7 +341,7 @@ void CameraEditor::ShowVirtualCameraTab() {
 
          if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<std::int32_t>(i))) {
             selectedVirtualCameraIndex_ = static_cast<std::int32_t>(i);
-            targetVirtualCamera_ = vcam;
+            SetTargetVirtualCamera(vcam);
          }
 
          ImGui::PopID();
@@ -460,9 +534,7 @@ void CameraEditor::ShowVirtualCameraInspector(VirtualCamera* vcam) {
       ImGui::EndDisabled();
    }
 
-   if (!vcam->GetId().empty() && before != vcam->Serialize()) {
-      EditorUI::MarkChanged();
-   }
+   RecordCameraEdit(vcam, before, ImGui::IsAnyItemActive());
 }
 
 void CameraEditor::ShowAddComponentPopup(VirtualCamera* vcam) {
@@ -565,18 +637,17 @@ void CameraEditor::ShowBrainInspector(CinemachineBrain* brain) {
 
          if (ImGui::Selectable(label, selectedVirtualCameraIndex_ == static_cast<std::int32_t>(i))) {
             selectedVirtualCameraIndex_ = static_cast<std::int32_t>(i);
-            targetVirtualCamera_ = vcam;
+            SetTargetVirtualCamera(vcam);
          }
 
          ImGui::SameLine();
          bool active = vcam->IsActive();
+         const auto before = vcam->Serialize();
 
          if (ImGui::Checkbox("##enabled", &active)) {
             vcam->SetActive(active);
 
-            if (!vcam->GetId().empty()) {
-               EditorUI::MarkChanged();
-            }
+            RecordCameraEdit(vcam, before, false);
          }
 
          ImGui::PopID();
@@ -601,9 +672,13 @@ void CameraEditor::DrawGizmos(Camera* viewCamera) {
 
 void CameraEditor::DrawSceneGizmos(
    Camera* viewCamera, float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
-   if (!showGizmo_ || !useImGuizmo_ || !viewCamera || viewportWidth <= 0.0f || viewportHeight <= 0.0f) return;
+   if (!showGizmo_ || !useImGuizmo_ || !viewCamera || viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
+      FinishEditsIfIdle();
+      return;
+   }
 
    if (targetVirtualCamera_) {
+      const auto before = targetVirtualCamera_->Serialize();
       CameraState state = targetVirtualCamera_->GetState();
 
       if (DrawTransformGizmo(
@@ -612,11 +687,10 @@ void CameraEditor::DrawSceneGizmos(
          state.hasViewMatrixOverride = false;
          targetVirtualCamera_->SetState(state);
 
-         if (!targetVirtualCamera_->GetId().empty()) {
-            EditorUI::MarkChanged();
-         }
+         RecordCameraEdit(targetVirtualCamera_, before, true);
       }
 
+      FinishEditsIfIdle();
       return;
    }
 

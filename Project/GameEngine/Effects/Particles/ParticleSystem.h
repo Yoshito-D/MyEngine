@@ -24,22 +24,21 @@
 #include "GameEngine/Graphics/Resources/Material.h"
 #include "GameEngine/Assets/Model/ModelAsset.h"
 #include <nlohmann/json.hpp>
-#include <array>
-#include <deque>
 #include <optional>
 #include <stack>
 #include <type_traits>
 #include <memory>
 #include <vector>
-#include <wrl.h>
 
 namespace GameEngine {
 class SceneWorld;
 class GraphicsDevice;
 class Camera;
 class PSOManager;
+class ParticleGpuSimulation;
+class ParticleTrailRuntime;
 
-/// @brief Unity ライクなパーティクルシステム
+/// @brief 粒子の設定・再生・CPU属性を管理し、GPU処理とトレイルを協調させるFacade。
 class ParticleSystem {
 public:
    static constexpr uint32_t kMaxParticles = 4096; ///< 粒子用GPUバッファとCPU管理配列で扱える粒子数の上限。
@@ -67,12 +66,6 @@ public:
 
    /// @brief 自動更新・描画レジストリを空にする
    static void ClearRegisteredParticleSystems();
-
-   /// @brief 更新中に蓄積したサブエミッターイベントを安全なタイミングで生成する
-   static void ProcessPendingSubEmitters(SceneWorld* world);
-
-   /// @brief 指定Worldで生成した子エフェクトと未処理イベントを破棄する。
-   static void ClearWorldRuntime(SceneWorld* world);
 
    /// @brief パーティクルを更新元のWorldへ関連付ける。
    void SetWorld(SceneWorld* world) { world_ = world; }
@@ -418,34 +411,23 @@ public:
    void SetModelAsset(const ModelAsset* model) { modelAsset_ = model; }
 
    /// @brief リボン描画用GPU頂点バッファビューを取得する
-   const D3D12_VERTEX_BUFFER_VIEW& GetRibbonVertexBufferView() const { return gpuRibbonVertexBufferView_; }
+   const D3D12_VERTEX_BUFFER_VIEW& GetRibbonVertexBufferView() const;
 
    /// @brief ワールド空間で生成済みのリボン頂点を描画するための単位行列SRVを取得する
    /// @return リボン描画用インスタンシングSRV
-   D3D12_GPU_DESCRIPTOR_HANDLE GetRibbonInstancingSrvHandleGPU() const { return instancingSrvHandleGPU_; }
+   D3D12_GPU_DESCRIPTOR_HANDLE GetRibbonInstancingSrvHandleGPU() const;
 
    /// @brief リボン描画用GPUインデックスバッファビューを取得する
-   const D3D12_INDEX_BUFFER_VIEW& GetRibbonIndexBufferView() const { return gpuRibbonIndexBufferView_; }
+   const D3D12_INDEX_BUFFER_VIEW& GetRibbonIndexBufferView() const;
 
    /// @brief リボン描画用インデックス数を取得する
-   uint32_t GetRibbonIndexCount() const { return gpuRibbonIndexCount_; }
+   uint32_t GetRibbonIndexCount() const;
 
    // ========================================================
 
 private:
-   /// @brief 親粒子の消滅後に末尾から巻き取るリボン履歴
-   struct DetachedRibbon {
-      std::vector<Vector3> points;     ///< リボン形状を構成する位置履歴。
-      float width = 0.5f;              ///< 対象領域の横幅。
-      float age = 0.0f;                ///< 生成または処理開始からの経過時間（秒）。
-      float retractionDuration = 0.5f; ///< 死亡後のリボンを巻き取って消す時間（秒）。
-   };
-
    // パーティクル管理
-   std::vector<Particle> particles_;            ///< CPU側で管理する粒子ごとの寿命・視覚属性・履歴。
-   std::deque<DetachedRibbon> detachedRibbons_; ///< 親粒子の消滅後も描画するリボン履歴。
-   /// @brief モード切り替え時に履歴を初期化するための前回のトレイル方式。
-   TrailModule::TrailMode lastTrailMode_ = TrailModule::TrailMode::ParticlePath;
+   std::vector<Particle> particles_;  ///< CPU側で管理する粒子ごとの寿命・視覚属性・履歴。
    uint32_t activeParticleCount_ = 0; ///< CPU側で生存しているパーティクル数。
 
    // O(1) フリーリスト（非アクティブパーティクルのインデックスを管理）
@@ -492,136 +474,13 @@ private:
    /// @brief 粒子描画の色・輝度・テクスチャ効果を保持する所有マテリアル。
    std::unique_ptr<ParticleMaterial> material_ = nullptr;
 
-   // GPU インスタンシングリソース
-   /// @brief 粒子ごとの描画インスタンス情報を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource_ = nullptr;
-   /// @brief 粒子ごとの描画インスタンス情報を参照するCPU側の永続Map先。対応リソースがメモリを所有する。
-   ParticleForGPU* instancingData_ = nullptr;
-   /// @brief 粒子ごとの描画インスタンス情報を登録するSRVのCPU側ハンドル。
-   D3D12_CPU_DESCRIPTOR_HANDLE instancingSrvHandleCPU_{};
-   /// @brief ワールド空間で生成済みのリボン頂点を描画するための単位行列SRV。
-   D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU_{};
-   UINT instancingSrvIndex_ = UINT_MAX; // 解放用に記録
-
-   enum GpuDescriptorSlot : size_t {
-      kGpuStateUavDescriptor,
-      kGpuStateSrvDescriptor,
-      kGpuAttributesSrvDescriptor,
-      kGpuOutputUavDescriptor,
-      kGpuOutputSrvDescriptor,
-      kGpuMotionUavDescriptor,
-      kGpuSpawnRequestSrvDescriptor,
-      kGpuAliveUavDescriptor,
-      kGpuFreeListUavDescriptor,
-      kGpuFreeCountUavDescriptor,
-      kGpuOwnerMappingUavDescriptor,
-      kGpuOwnerMappingSrvDescriptor,
-      kGpuDescriptorCount
-   };
-
-   /// @brief GPU粒子の位置・速度・寿命を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuStateResource_ = nullptr;
-   /// @brief GPU粒子の力・速度制限・ノイズ設定を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuMotionResource_ = nullptr;
-   /// @brief CPUからGPUへ渡す粒子生成・衝突補正要求を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuSpawnRequestResource_ = nullptr;
-   /// @brief GPU粒子スロットの生存フラグを保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuAliveResource_ = nullptr;
-   /// @brief 未使用GPU粒子スロットのフリーリストを保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuFreeListResource_ = nullptr;
-   /// @brief GPU粒子フリーリストの空き数を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuFreeCountResource_ = nullptr;
-   /// @brief CPU粒子番号からGPUスロットへの対応表を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuOwnerMappingResource_ = nullptr;
-   /// @brief ソート順に並べた粒子の色・大きさ・回転・UVを保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuAttributesResource_ = nullptr;
-   /// @brief 描画用に変換した粒子インスタンスを保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuOutputResource_ = nullptr;
-   /// @brief GPU粒子シミュレーションの共通設定を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuSettingsResource_ = nullptr;
-
-   // CPUソートは前フレームのGPU位置を非同期Readbackし、描画中のGPU待機を発生させない。
-   /// @brief 前フレームのGPU粒子状態をCPUから読むためのコピーを保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuStateReadbackResource_ = nullptr;
-   /// @brief CPUからGPUへ渡す粒子生成・衝突補正要求を参照するCPU側の永続Map先。対応リソースがメモリを所有する。
-   GpuSpawnRequest* gpuSpawnRequestData_ = nullptr;
-   /// @brief ソート順に並べた粒子の色・大きさ・回転・UVを参照するCPU側の永続Map先。
-   /// 対応リソースがメモリを所有する。
-   GpuParticleAttributes* gpuAttributesData_ = nullptr;
-   /// @brief GPU粒子シミュレーションの共通設定を参照するCPU側の永続Map先。対応リソースがメモリを所有する。
-   GpuSimulationSettings* gpuSettingsData_ = nullptr;
-   /// @brief 前フレームのGPU粒子状態をCPUから読むためのコピーを参照するCPU側の永続Map先。
-   /// 対応リソースがメモリを所有する。
-   GpuParticleState* gpuStateReadbackData_ = nullptr;
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuStateUavHandleGPU_{}; ///< GPU粒子の位置・速度・寿命を書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuStateSrvHandleGPU_{}; ///< GPU粒子の位置・速度・寿命を読み出すSRVのGPU側ハンドル。
-   /// @brief GPU粒子の力・速度制限・ノイズ設定を書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuMotionUavHandleGPU_{};
-   /// @brief CPUからGPUへ渡す粒子生成・衝突補正要求を読み出すSRVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuSpawnRequestSrvHandleGPU_{};
-   /// @brief GPU粒子スロットの生存フラグを書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuAliveUavHandleGPU_{};
-   /// @brief 未使用GPU粒子スロットのフリーリストを書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuFreeListUavHandleGPU_{};
-   /// @brief GPU粒子フリーリストの空き数を書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuFreeCountUavHandleGPU_{};
-   /// @brief CPU粒子番号からGPUスロットへの対応表を書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuOwnerMappingUavHandleGPU_{};
-   /// @brief CPU粒子番号からGPUスロットへの対応表を読み出すSRVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuOwnerMappingSrvHandleGPU_{};
-   /// @brief ソート順に並べた粒子の色・大きさ・回転・UVを読み出すSRVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuAttributesSrvHandleGPU_{};
-   /// @brief 描画用に変換した粒子インスタンスを書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuOutputUavHandleGPU_{};
-   /// @brief 描画用に変換した粒子インスタンスを読み出すSRVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuOutputSrvHandleGPU_{};
-   /// @brief 粒子GPU処理用に借りたディスクリプタ番号。未割り当てはUINT_MAX。
-   std::array<UINT, kGpuDescriptorCount> gpuDescriptorIndices_{};
-   /// @brief GPU粒子の位置・速度・寿命の現在のリソース遷移状態。
-   D3D12_RESOURCE_STATES gpuStateResourceState_ = D3D12_RESOURCE_STATE_COMMON;
-   /// @brief CPU粒子番号からGPUスロットへの対応表の現在のリソース遷移状態。
-   D3D12_RESOURCE_STATES gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_COMMON;
-   /// @brief 描画用に変換した粒子インスタンスの現在のリソース遷移状態。
-   D3D12_RESOURCE_STATES gpuOutputResourceState_ = D3D12_RESOURCE_STATE_COMMON;
+   /// @brief GPU粒子プール・生成要求・Compute同期を管理する所有実行系。
+   std::unique_ptr<ParticleGpuSimulation> gpu_;
+   /// @brief 履歴・巻き取りとリボン生成資源を管理する所有実行系。
+   std::unique_ptr<ParticleTrailRuntime> trails_;
    std::vector<uint32_t> renderParticleIndices_;      ///< 描画順にソートしたCPU粒子番号。
    std::vector<uint32_t> gpuStateIndexByCpuParticle_; ///< CPU粒子番号から前フレームのGPUスロット番号への対応表。
-   uint32_t gpuRenderParticleCount_ = 0;              ///< GPUで描画出力を生成する粒子数。
-   uint32_t gpuPendingSpawnRequestCount_ = 0;         ///< GPUへまだ反映していない生成・衝突補正要求数。
-   bool gpuStateReadbackAvailable_ = false;           ///< CPU参照用のGPU状態コピーを記録済みかどうか。
-   SceneWorld* world_ = nullptr;              ///< 粒子の更新と子エフェクトの生成を行う所属ワールドへの非所有参照。
-   bool gpuNeedsInitialize_ = true;           ///< 次のDispatchでGPU粒子プールを初期化するかどうか。
-   uint32_t gpuInitializationStartIndex_ = 0; ///< 初期化が必要なGPU粒子スロットの先頭。
-   float gpuDeltaTime_ = 0.0f;                ///< 次のGPUシミュレーションへ渡す更新時間（秒）。
-
-   /// @brief リボンを構築する線分と端点の入力を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuRibbonInputResource_ = nullptr;
-   /// @brief GPUリボン生成の共通設定を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuRibbonSettingsResource_ = nullptr;
-   /// @brief GPUで生成したリボン頂点を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuRibbonVertexResource_ = nullptr;
-   /// @brief GPUで生成したリボン頂点の参照番号を保持する所有GPUリソース。
-   Microsoft::WRL::ComPtr<ID3D12Resource> gpuRibbonIndexResource_ = nullptr;
-   /// @brief リボンを構築する線分と端点の入力を参照するCPU側の永続Map先。対応リソースがメモリを所有する。
-   GpuRibbonSegment* gpuRibbonInputData_ = nullptr;
-   /// @brief GPUリボン生成の共通設定を参照するCPU側の永続Map先。対応リソースがメモリを所有する。
-   GpuSimulationSettings* gpuRibbonSettingsData_ = nullptr;
-   /// @brief リボンを構築する線分と端点の入力を読み出すSRVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuRibbonInputSrvHandleGPU_{};
-   /// @brief GPUで生成したリボン頂点を書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuRibbonVertexUavHandleGPU_{};
-   /// @brief GPUで生成したリボン頂点の参照番号を書き込むUAVのGPU側ハンドル。
-   D3D12_GPU_DESCRIPTOR_HANDLE gpuRibbonIndexUavHandleGPU_{};
-   /// @brief リボン入力SRVと出力UAVに借りたディスクリプタ番号。
-   std::array<UINT, 3> gpuRibbonDescriptorIndices_{UINT_MAX, UINT_MAX, UINT_MAX};
-   D3D12_VERTEX_BUFFER_VIEW gpuRibbonVertexBufferView_{}; ///< リボン描画用GPU頂点バッファビュー。
-   D3D12_INDEX_BUFFER_VIEW gpuRibbonIndexBufferView_{};   ///< リボン描画用GPUインデックスバッファビュー。
-   /// @brief GPUで生成したリボン頂点の現在のリソース遷移状態。
-   D3D12_RESOURCE_STATES gpuRibbonVertexState_ = D3D12_RESOURCE_STATE_COMMON;
-   /// @brief GPUで生成したリボン頂点の参照番号の現在のリソース遷移状態。
-   D3D12_RESOURCE_STATES gpuRibbonIndexState_ = D3D12_RESOURCE_STATE_COMMON;
-   uint32_t gpuRibbonSegmentCapacity_ = 0; ///< 再確保せずに扱えるリボン線分数の上限。
-   uint32_t gpuRibbonSegmentCount_ = 0;    ///< 今回GPUへ渡すリボン線分数。
-   uint32_t gpuRibbonIndexCount_ = 0;      ///< リボン描画用インデックス数。
+   SceneWorld* world_ = nullptr;                      ///< 更新と子エフェクト生成を行う所属ワールドへの非所有参照。
 
    // レンダリング設定
    const ModelAsset* modelAsset_ = nullptr; ///< メッシュパーティクルへ使用するモデルアセット。
@@ -648,26 +507,12 @@ private:
    /// @brief 描画候補として登録されたParticleSystemの非所有一覧。
    static std::vector<ParticleSystem*> sRegisteredParticleSystems_;
 
-   struct PendingSubEmitterEvent {
-      std::string effectPath;      ///< 生成する子エフェクトの設定ファイルパス。
-      SceneWorld* world = nullptr; ///< 子エフェクトを生成・更新するワールドへの非所有参照。
-      Vector3 position;            ///< 子エフェクトを生成するワールド位置。
-   };
-
-   /// @brief ワールド更新後にまとめて処理する子エフェクト生成要求。
-   static std::vector<PendingSubEmitterEvent> sPendingSubEmitterEvents_;
-   /// @brief 生成後の子エフェクトの寿命を保持する共有所有一覧。
-   static std::vector<std::shared_ptr<ParticleSystem>> sRuntimeSubEmitters_;
-
    SubEmitterSettings subEmitterSettings_;  ///< サブエミッター設定。
    uint32_t subEmitterEventsThisFrame_ = 0; ///< このフレームに受理したサブエミッターイベント数。
 
 private:
    /// @brief クワッドメッシュを作成（ビルボード用）
    void CreateQuadMesh();
-
-   /// @brief GPUシミュレーション用バッファとビューを作成する
-   void CreateGpuSimulationResources();
 
    /// @brief 実行中に増やされた最大粒子数をCPU所有スロットとGPU FreeListへ反映する
    void EnsureParticlePoolCapacity();
@@ -680,33 +525,11 @@ private:
    /// @brief マテリアルとRenderer設定から実際のCPU描画ソート方式を解決する
    RendererModule::SortMode ResolveSortMode() const;
 
-   /// @brief 必要区間数に応じてリボンCompute資源を確保する
-   void EnsureGpuRibbonResources(uint32_t requiredSegmentCount);
-
-   /// @brief リボン頂点・インデックス生成Compute Shaderを実行する
-   void DispatchGpuRibbon(const PSOManager* psoManager);
-
    /// @brief サブエミッター生成を遅延イベントキューへ登録する
    void QueueSubEmitter(const std::string& effectPath, const Vector3& position);
 
    /// @brief ParticleMeshModule の形状設定に基づいてパーティクルメッシュを再構築する
    void RebuildParticleMesh();
-
-   /// @brief 粒子履歴からカメラ向きのリボンメッシュを更新する
-   void BuildRibbonMesh(Camera* camera);
-
-   /// @brief 選択中のトレイル方式に応じて粒子のリボン点を更新する
-   /// @param particle 更新対象の粒子
-   void UpdateTrailPoints(Particle& particle);
-
-   /// @brief トレイル方式の変更を検出し、既存点列を新しい方式で初期化する
-   void SynchronizeTrailMode();
-
-   /// @brief 親粒子からリボン履歴を切り離して巻き取り対象へ移す
-   void DetachRibbon(Particle& particle);
-
-   /// @brief 切り離されたリボンの巻き取り時間を更新して期限切れを破棄する
-   void UpdateDetachedRibbons(float deltaTime);
 
    /// @brief 粒子を放出
    void EmitParticle();

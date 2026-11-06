@@ -3,6 +3,7 @@
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
 #include "GameEngine/Math/Types/Quaternion.h"
+#include <cstdint>
 
 namespace App {
 
@@ -89,8 +90,8 @@ private:
    /// @brief 直近の移動方向
    GameEngine::Vector3 lastMoveDirection_ = {0.0f, 0.0f, 1.0f};
 
-   /// @brief 前フレームの接地状態（着地遷移検出用）
-   bool wasGrounded_ = true;
+   /// @brief 操作フェーズで品質判定・姿勢補正まで処理した着地通知の連番。
+   std::uint64_t lastLandingCount_ = 0;
 };
 
 } // namespace App

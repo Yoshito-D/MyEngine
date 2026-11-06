@@ -6,6 +6,7 @@
 #include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
 #include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -131,18 +132,18 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    // 各サブコンポーネントへの転送のために必要。
    Quaternion currentRotation = transform->GetLocalPose().GetActiveQuaternion();
 
-   // ----------------------------------------------------------------
-   // 着地遷移の検出
-   // wasGrounded_ は前フレームの状態を保持している。
-   // 「前フレームが空中 (false) かつ現フレームが接地 (true)」の瞬間が着地タイミング。
-   // この瞬間に OnLanded() を呼んでブーストや姿勢補正を開始する。
-   // ----------------------------------------------------------------
-   if (isGrounded && !wasGrounded_) {
-      Logger::GameInfo("OnLanded");
-      OnLanded(currentRotation, gravityUp);
-   }
+   // 接触フェーズの確定通知を一度だけ受け、禁止タイマーを進めた後に品質と姿勢補正を確定する。
+   if (auto* events = GetOwner().GetComponent<VehicleEvents>()) {
+      const auto count = events->GetSnapshot().landingCount;
 
-   wasGrounded_ = isGrounded;
+      if (count > lastLandingCount_) {
+         OnLanded(currentRotation, gravityUp);
+         const auto* boost = GetOwner().GetComponent<VehicleLandingBoost>();
+         events->SetLandingResult(boost && boost->IsEnabled() ? boost->GetLastLandingResult() : LandingResult::Normal);
+      }
+
+      lastLandingCount_ = count;
+   }
    Quaternion rotation = AlignToGravity(currentRotation, gravityUp, deltaTime);
 
    // ----------------------------------------------------------------
@@ -282,7 +283,7 @@ void VehicleMover::DrawInspector() {
       Tr("コーディネーター: サブコンポーネントへ処理を委譲します。", "Coordinator: delegates to sub-components."));
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("最後の移動方向", "Last Move Direction"), lastMoveDirection_.x,
       lastMoveDirection_.y, lastMoveDirection_.z);
-   ImGui::Text("%s: %s", Tr("接地していた", "Was Grounded"), wasGrounded_ ? Tr("はい", "yes") : Tr("いいえ", "no"));
+   ImGui::Text("Landing events: %llu", static_cast<unsigned long long>(lastLandingCount_));
 }
 #endif
 

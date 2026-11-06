@@ -9,9 +9,7 @@
 #include "GameEngine/Math/Types/Vector3.h"
 #include "GameEngine/Math/Types/Vector4.h"
 #include "GameEngine/Math/Types/Quaternion.h"
-#include "GameProject/App/Component/Camera/GravityFollowCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameProject/App/Component/Camera/PlanetLeashCamera.h"
 #include <cstdint>
 #include <vector>
 
@@ -45,15 +43,6 @@ public:
 
    /// @brief 惑星中心座標を設定する
    void SetPlanetCenter(const GameEngine::Vector3& center) { planetCenter_ = center; }
-
-   /// @brief GravityFollowCamera 参照を設定する
-   void SetGravityFollowCamera(GravityFollowCamera* cam) { gravityFollowCamera_ = cam; }
-
-   /// @brief PlayerRearFollowCamera 参照を設定する
-   void SetPlayerRearFollowCamera(PlayerRearFollowCamera* cam) { playerRearFollowCamera_ = cam; }
-
-   /// @brief PlanetLeashCamera 参照を設定する
-   void SetPlanetLeashCamera(PlanetLeashCamera* cam) { planetLeashCamera_ = cam; }
 
 #ifdef USE_IMGUI
 
@@ -93,20 +82,11 @@ private:
    /// @brief 重力方向を算出するための惑星中心
    GameEngine::Vector3 planetCenter_ = {0.0f, 0.0f, 0.0f};
 
-   /// @brief 重力追従カメラへの通知先
-   GravityFollowCamera* gravityFollowCamera_ = nullptr;
-
    /// @brief プレイヤー後方追従カメラへの通知先
    PlayerRearFollowCamera* playerRearFollowCamera_ = nullptr;
-
-   /// @brief レアッシュカメラへの通知先
-   PlanetLeashCamera* planetLeashCamera_ = nullptr;
-
-   /// @brief 選択中カメラの安定ID。削除されたComponentの生ポインターを保持しない。
-   std::string gravityFollowCameraId_ = "GravityFollowCamera";
-   /// @brief プレイヤー後方追従カメラを参照する安定カメラID。
-   std::string playerRearFollowCameraId_ = "PlayerRearFollowCamera";
-   std::string planetLeashCameraId_ = "PlanetLeashCamera"; ///< 惑星を基準に追従するカメラの安定ID。
+   std::vector<IVehicleCamera*> cameras_; ///< 共通能力を持つ追従カメラへの非所有参照。参照変更時に再解決する。
+   /// @brief 通知先の安定カメラID。具象型を設定形式へ持ち込まない。
+   std::vector<std::string> cameraIds_{"GravityFollowCamera", "PlayerRearFollowCamera", "PlanetLeashCamera"};
 };
 
 } // namespace App

@@ -2,6 +2,7 @@
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
@@ -61,6 +62,10 @@ void VehicleDrift::Apply(bool driftInput, float steerInput, const Vector3& gravi
          // slideLateralSpeed_ はリセットしない。
          // これにより終了後も余韻として横速度が残り「タイヤがグリップを取り戻す」感が出る。
          TryFireMiniTurbo();
+
+         if (auto* events = GetOwner().GetComponent<VehicleEvents>()) {
+            events->PublishDriftEnd();
+         }
          isDrifting_ = false;
          driftTimer_ = 0.0f;
          sustainedTimer_ = 0.0f;
@@ -261,7 +266,9 @@ void VehicleDrift::TryFireMiniTurbo() {
    // 直接上書きではなく加算にすることで、加速後は UpdateSpeed の減衰により
    // 自然に autoSpeed へ戻る物理的な挙動になる。
    groundMover->AddVelocityImpulse(miniTurboBoost);
-   ++miniTurboFireCount_;
+   if (auto* events = GetOwner().GetComponent<VehicleEvents>()) {
+      events->PublishMiniTurbo();
+   }
 }
 
 // ================================================================

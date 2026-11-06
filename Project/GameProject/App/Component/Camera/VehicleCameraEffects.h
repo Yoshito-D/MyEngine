@@ -1,16 +1,15 @@
 #pragma once
 #include "GameEngine/Math/Types/Vector3.h"
+#include "GameProject/App/Component/Camera/IVehicleCamera.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include <cstdint>
+#include <span>
 
 namespace GameEngine {
 class VirtualCamera;
 }
 
 namespace App {
-class GravityFollowCamera;
-class PlayerRearFollowCamera;
-class PlanetLeashCamera;
-
 /// @brief 車両の走行状態に応じたカメラ演出の設定。
 struct VehicleCameraEffectsSettings {
 
@@ -61,20 +60,15 @@ struct VehicleCameraEffectsSettings {
 class VehicleCameraEffects {
 public:
    /// @brief 補間履歴を初期化し、既存のミニターボを新規イベントとして扱わない。
-   void Reset(uint64_t fireCount);
+   void Reset(const VehicleEventSnapshot& snapshot);
 
    /// @brief 走行状態を全候補へ入力し、シェイクは選択カメラだけへ適用する。
-   void Update(const VehicleCameraEffectsSettings& settings, float deltaTime, bool steering, bool isGrounded,
-      uint64_t miniTurboFireCount, const GameEngine::Vector3& gravityUp, GravityFollowCamera* gravityFollowCamera,
-      PlayerRearFollowCamera* playerRearFollowCamera, PlanetLeashCamera* planetLeashCamera,
-      const GameEngine::VirtualCamera* selectedCamera);
+   void Update(const VehicleCameraEffectsSettings& settings, float deltaTime, bool steering,
+      const VehicleEventSnapshot& snapshot, const GameEngine::Vector3& gravityUp,
+      std::span<IVehicleCamera* const> cameras, const GameEngine::VirtualCamera* selectedCamera);
 
 private:
-   /// @brief 着地遷移検出用の前フレーム接地状態
-   bool wasGrounded_ = true;
-
-   /// @brief カメラが最後に処理したミニターボ発動の連番
-   uint64_t lastMiniTurboFireCount_ = 0;
+   VehicleEventCursor eventCursor_; ///< カメラ演出が独立して保持する通知の既読位置。
 
    /// @brief 横入力状態に応じて補間したカメラ距離倍率
    float currentDriftDistanceScale_ = 1.0f;

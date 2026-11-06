@@ -75,10 +75,17 @@ void EditorSceneSession::Attach(Scene& scene, const nlohmann::json& data, bool p
    cameraEditor_->Initialize(EngineContext::GetLineRenderer());
    cameraEditor_->SetTargetBrain(brain);
    cameraEditor_->SetWorld(&scene.GetSceneWorld());
+   cameraEditor_->SetContext(context_.get());
 }
 
 void EditorSceneSession::Detach() {
    if (!scene_) return;
+
+   if (cameraEditor_) {
+      cameraEditor_->FinishEdits();
+      cameraEditor_->SetContext(nullptr);
+   }
+
    context_->Suspend();
    SaveDebugCameraState();
 
@@ -95,12 +102,21 @@ void EditorSceneSession::Detach() {
 
 void EditorSceneSession::BeginPlay() {
    if (!scene_ || editingContext_) return;
+
+   if (cameraEditor_) {
+      cameraEditor_->FinishEdits();
+   }
+
    const auto data = context_->SerializeToJson();
    // 再生中の操作で選択や履歴が書き換わらないよう、編集用Contextを別に保持する。
    context_->Suspend();
    editingContext_ = std::move(context_);
    context_ = std::make_unique<EditorSceneContext>(scene_->GetSceneWorld());
    context_->Rebind(scene_->GetSceneWorld(), definition_, data, false);
+
+   if (cameraEditor_) {
+      cameraEditor_->SetContext(context_.get());
+   }
 }
 
 void EditorSceneSession::RestoreEditingStateOnAttach() {

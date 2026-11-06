@@ -21,6 +21,54 @@ constexpr std::array<const char*, 4> kCameraBlendEasingNames = {"Linear", "EaseI
 
 namespace App {
 
+RaceManagerComponent::RaceManagerComponent() {
+   ConfigureStates();
+}
+
+void RaceManagerComponent::ConfigureStates() {
+   stateMachine_.AddState(State::Waiting, {.onEnter = [this]() {
+      presentation_.SetCameraMotionPaused(
+         GameEngine::EngineContext::GetActiveBrain(), false, startCameraBlendSeconds_, startCameraBlendEasing_);
+      presentation_.SetPlayerLocked(false);
+   }});
+   stateMachine_.AddState(State::Intro,
+      {.onEnter =
+            [this]() {
+               if (!presentation_.BeginIntro(GameEngine::EngineContext::GetActiveBrain(), introSettings_)) {
+                  stateMachine_.RequestState(State::Countdown);
+               }
+            },
+         .onUpdate = [this](float seconds) { UpdateIntro(seconds); },
+         .onExit =
+            [this]() {
+               presentation_.CancelIntro(GameEngine::EngineContext::GetActiveBrain());
+               GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
+            }});
+   stateMachine_.AddState(State::Countdown, {.onEnter = [this]() { EnterCountdown(); },
+                                               .onUpdate =
+                                                  [this](float seconds) {
+                                                     countdownRemaining_ -= seconds;
+                                                     if (countdownRemaining_ <= 0.0f) {
+                                                        showStartBannerOnEntry_ = true;
+                                                        stateMachine_.RequestState(State::Running);
+                                                     }
+                                                  }});
+   stateMachine_.AddState(State::Running, {.onEnter = [this]() { EnterRunning(); },
+                                             .onUpdate =
+                                                [this](float seconds) {
+                                                   elapsedTime_ += seconds;
+                                                   startBannerRemaining_ =
+                                                      std::max(startBannerRemaining_ - seconds, 0.0f);
+                                                }});
+   stateMachine_.AddState(State::Finished,
+      {.onEnter = [this]() { EnterFinished(); }, .onUpdate = [this](float seconds) { UpdateFinished(seconds); }});
+   stateMachine_.SetTransitionRule(State::Waiting, {State::Running});
+   stateMachine_.SetTransitionRule(State::Intro, {State::Countdown});
+   stateMachine_.SetTransitionRule(State::Countdown, {State::Running});
+   stateMachine_.SetTransitionRule(State::Running, {State::Finished});
+   stateMachine_.SetTransitionRule(State::Finished, {});
+}
+
 void RaceManagerComponent::Update(float deltaTime) {
    if (!runtimeInitialized_) {
       // Edit中のシーン読込ではPlayerを変更せず、最初のランタイム更新でのみレース用ロックを開始する。
@@ -29,65 +77,55 @@ void RaceManagerComponent::Update(float deltaTime) {
       return;
    }
 
-   const float safeDeltaTime = std::isfinite(deltaTime) ? std::max(deltaTime, 0.0f) : 0.0f;
+   stateMachine_.Update(deltaTime);
 
-   // 状態ごとに進める時計を分離し、カウントダウンや結果待機を走行時間へ混ぜない。
-   switch (state_) {
-      case State::Intro: {
-         if (!introSettings_.enabled || startMode_ != StartMode::Countdown) {
-            Restart();
-            break;
-         }
+   if (restartAfterUpdate_) {
+      restartAfterUpdate_ = false;
+      Restart();
+      return;
+   }
 
-         // 車両入力はロック中なので、UIアクションを直接参照する。入場前の決定は持ち越さない。
-         const auto& confirm = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
+   // 状態に入ったフレームでは次の時計を進めず、カウントダウンを走行時間へ混ぜない。
+   stateMachine_.ResolveRequests();
+}
 
-         if (!confirm.held) {
-            introSkipArmed_ = true;
-         }
+void RaceManagerComponent::UpdateIntro(float deltaTime) {
+   if (!introSettings_.enabled || startMode_ != StartMode::Countdown) {
+      restartAfterUpdate_ = true;
+      return;
+   }
 
-         auto* brain = GameEngine::EngineContext::GetActiveBrain();
-         const auto frame = presentation_.UpdateIntro(brain, safeDeltaTime, introSkipArmed_ && confirm.triggered,
-            GameEngine::EngineContext::IsSceneTransitioning());
-         GameEngine::EngineContext::SetCameraTransitionOpacity(frame.opacity);
+   // 車両入力はロック中なので、UIアクションを直接参照する。入場前の決定は持ち越さない。
+   const auto& confirm = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
 
-         if (frame.switchToCountdown && useCountdownCameraPose_) {
-            presentation_.ApplyCountdownCameraPose(
-               brain, countdownCameraPosition_, countdownCameraRotation_, countdownCameraFov_);
-         }
+   if (!confirm.held) {
+      introSkipArmed_ = true;
+   }
 
-         if (frame.completed) {
-            BeginCountdown();
-         }
+   auto* brain = GameEngine::EngineContext::GetActiveBrain();
+   const auto frame = presentation_.UpdateIntro(
+      brain, deltaTime, introSkipArmed_ && confirm.triggered, GameEngine::EngineContext::IsSceneTransitioning());
+   GameEngine::EngineContext::SetCameraTransitionOpacity(frame.opacity);
 
-         break;
+   if (frame.switchToCountdown && useCountdownCameraPose_) {
+      presentation_.ApplyCountdownCameraPose(
+         brain, countdownCameraPosition_, countdownCameraRotation_, countdownCameraFov_);
+   }
+
+   if (frame.completed) {
+      stateMachine_.RequestState(State::Countdown);
+   }
+}
+
+void RaceManagerComponent::UpdateFinished(float deltaTime) {
+   // リスタートを選んだ場合は自動遷移より優先し、二重のシーン要求を防ぐ。
+   if (!restartRequested_ && !nextScene_.empty() && !sceneChangeRequested_) {
+      finishElapsed_ += deltaTime;
+
+      if (finishElapsed_ >= finishDelay_) {
+         GameEngine::EngineContext::ChangeScene(nextScene_);
+         sceneChangeRequested_ = true;
       }
-      case State::Countdown:
-         countdownRemaining_ -= safeDeltaTime;
-
-         if (countdownRemaining_ <= 0.0f) {
-            BeginRace();
-         }
-
-         break;
-      case State::Running:
-         elapsedTime_ += safeDeltaTime;
-         startBannerRemaining_ = std::max(startBannerRemaining_ - safeDeltaTime, 0.0f);
-         break;
-      case State::Finished:
-         // リスタートを選んだ場合は自動遷移より優先し、二重のシーン要求を防ぐ。
-         if (!restartRequested_ && !nextScene_.empty() && !sceneChangeRequested_) {
-            finishElapsed_ += safeDeltaTime;
-
-            if (finishElapsed_ >= finishDelay_) {
-               GameEngine::EngineContext::ChangeScene(nextScene_);
-               sceneChangeRequested_ = true;
-            }
-         }
-
-         break;
-      default:
-         break;
    }
 }
 
@@ -112,27 +150,34 @@ void RaceManagerComponent::OnDisable() {
    presentation_.SetPlayerLocked(false);
    presentation_.SetCameraMotionPaused(brain, false, 0.0f, startCameraBlendEasing_);
    GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
+   stateMachine_.Stop();
    runtimeInitialized_ = false;
-   state_ = State::Waiting;
+   previewState_ = State::Waiting;
 }
 
 void RaceManagerComponent::NotifyStart() {
-   if (state_ != State::Waiting) return;
+   if (GetState() != State::Waiting) return;
 
-   BeginRace();
+   showStartBannerOnEntry_ = true;
+   stateMachine_.RequestState(State::Running);
+   stateMachine_.ResolveRequests();
 }
 
 void RaceManagerComponent::NotifyCheckpoint(size_t checkpointIndex) {
    // 次に期待する番号だけを受理し、逆走やゲートの往復で進捗を飛ばさない。
-   if (state_ == State::Running && checkpointIndex == nextCheckpointIndex_ && checkpointIndex < checkpointCount_) {
+   if (GetState() == State::Running && checkpointIndex == nextCheckpointIndex_ && checkpointIndex < checkpointCount_) {
       ++nextCheckpointIndex_;
    }
 }
 
 void RaceManagerComponent::NotifyFinish() {
-   if (state_ != State::Running || !CanFinish()) return;
+   if (GetState() != State::Running || !CanFinish()) return;
 
-   state_ = State::Finished;
+   stateMachine_.RequestState(State::Finished);
+   stateMachine_.ResolveRequests();
+}
+
+void RaceManagerComponent::EnterFinished() {
    startBannerRemaining_ = 0.0f;
    finishElapsed_ = 0.0f;
    records_.AddBestTime(elapsedTime_);
@@ -146,26 +191,27 @@ void RaceManagerComponent::NotifyFinish() {
 }
 
 void RaceManagerComponent::NotifyStartFinish() {
-   if (state_ == State::Waiting) {
+   if (GetState() == State::Waiting) {
       // 共用ゲートへの最初の進入はスタートとして扱う。
       NotifyStart();
       return;
    }
 
-   if (state_ == State::Running && startGateExited_) {
+   if (GetState() == State::Running && startGateExited_) {
       // スタート後に一度ゲート外へ出るまで、同じ重なりをゴールとして受理しない。
       NotifyFinish();
    }
 }
 
 void RaceManagerComponent::NotifyStartGateExit() {
-   if (state_ == State::Running) {
+   if (GetState() == State::Running) {
       startGateExited_ = true;
    }
 }
 
 void RaceManagerComponent::Restart() {
-   // レース進行と遷移要求を一括で初期化し、再試行を新規セッションと同じ状態に戻す。
+   // 再開始は通常の遷移規則と分け、新しいセッションとして任意の開始方式へ戻す。
+   stateMachine_.Stop();
    elapsedTime_ = 0.0f;
    countdownRemaining_ = countdownSeconds_;
    startBannerRemaining_ = 0.0f;
@@ -174,46 +220,30 @@ void RaceManagerComponent::Restart() {
    finishElapsed_ = 0.0f;
    sceneChangeRequested_ = false;
    restartRequested_ = false;
+   restartAfterUpdate_ = false;
    introSkipArmed_ = false;
+   showStartBannerOnEntry_ = startMode_ != StartMode::Immediate;
 
    // 編集時の読み込みは状態の準備だけに留め、カメラやプレイヤーへ実行時の変更を加えない。
-   if (!runtimeInitialized_) {
-      state_ = startMode_ == StartMode::Countdown ? State::Countdown : State::Waiting;
-      return;
-   }
+   previewState_ = startMode_ == StartMode::Countdown ? State::Countdown : State::Waiting;
+
+   if (!runtimeInitialized_) return;
 
    presentation_.CancelIntro(GameEngine::EngineContext::GetActiveBrain());
    GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
    presentation_.RestoreEffects();
+   const State initial = startMode_ == StartMode::Immediate ? State::Running
+                         : startMode_ == StartMode::Countdown
+                            ? (introSettings_.enabled ? State::Intro : State::Countdown)
+                            : State::Waiting;
+   stateMachine_.Start(initial);
 
-   switch (startMode_) {
-      case StartMode::Immediate:
-         state_ = State::Running;
-         presentation_.SetCameraMotionPaused(
-            GameEngine::EngineContext::GetActiveBrain(), false, startCameraBlendSeconds_, startCameraBlendEasing_);
-         presentation_.SetPlayerLocked(false);
-         break;
-      case StartMode::Countdown:
-         if (introSettings_.enabled &&
-             presentation_.BeginIntro(GameEngine::EngineContext::GetActiveBrain(), introSettings_)) {
-            state_ = State::Intro;
-         } else {
-            BeginCountdown();
-         }
-
-         break;
-      case StartMode::Gate:
-      default:
-         state_ = State::Waiting;
-         presentation_.SetCameraMotionPaused(
-            GameEngine::EngineContext::GetActiveBrain(), false, startCameraBlendSeconds_, startCameraBlendEasing_);
-         presentation_.SetPlayerLocked(false);
-         break;
-   }
+   // 導入カメラの不足時も同じフレームでCountdownへフォールバックする。
+   stateMachine_.ResolveRequests();
 }
 
 bool RaceManagerComponent::RequestRestart() {
-   if (state_ != State::Finished || restartRequested_ || restartScene_.empty()) {
+   if (GetState() != State::Finished || restartRequested_ || restartScene_.empty()) {
       return false;
    }
 
@@ -350,12 +380,11 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
    }
 }
 
-void RaceManagerComponent::BeginCountdown() {
+void RaceManagerComponent::EnterCountdown() {
    auto* brain = GameEngine::EngineContext::GetActiveBrain();
    presentation_.CancelIntro(brain);
    GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
    presentation_.RestoreEffects();
-   state_ = State::Countdown;
    countdownRemaining_ = countdownSeconds_;
 
    if (useCountdownCameraPose_) {
@@ -367,13 +396,12 @@ void RaceManagerComponent::BeginCountdown() {
    presentation_.SetPlayerLocked(lockPlayerDuringCountdown_);
 }
 
-void RaceManagerComponent::BeginRace() {
+void RaceManagerComponent::EnterRunning() {
    // カウントダウン時間は走行記録へ含めず、開始時点を0秒として計測し直す。
-   state_ = State::Running;
    presentation_.SetCameraMotionPaused(
       GameEngine::EngineContext::GetActiveBrain(), false, startCameraBlendSeconds_, startCameraBlendEasing_);
    elapsedTime_ = 0.0f;
-   startBannerRemaining_ = startTextDuration_;
+   startBannerRemaining_ = showStartBannerOnEntry_ ? startTextDuration_ : 0.0f;
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
    presentation_.SetPlayerLocked(false);
@@ -448,7 +476,7 @@ void RaceManagerComponent::DrawInspector() {
    ImGui::Checkbox("Lock Player On Finish", &lockPlayerOnFinish_);
    ImGui::DragFloat("Finish Delay", &finishDelay_, 0.1f, 0.0f, 60.0f);
    static const char* stateNames[] = {"Waiting", "Intro", "Countdown", "Running", "Finished"};
-   ImGui::Text("State: %s", stateNames[static_cast<std::int32_t>(state_)]);
+   ImGui::Text("State: %s", stateNames[static_cast<std::int32_t>(GetState())]);
    ImGui::Text("Time: %.3f", elapsedTime_);
    ImGui::Text("Checkpoint: %zu / %zu", nextCheckpointIndex_, checkpointCount_);
 

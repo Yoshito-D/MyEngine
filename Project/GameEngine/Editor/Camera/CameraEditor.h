@@ -6,6 +6,7 @@
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameEngine/Editor/Camera/CameraGizmo.h"
 #include <functional>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
@@ -17,6 +18,7 @@ class VirtualCamera;
 class CinemachineBrain;
 class LineRenderer;
 class ICinemachineComponent;
+class EditorSceneContext;
 
 /// @brief カメラエディタクラス
 /// カメラのパラメータ編集、視錐台表示、VirtualCamera管理を行う
@@ -42,6 +44,13 @@ public:
 
    /// @brief カメラの生成・削除で使用するWorldを関連付ける。
    void SetWorld(SceneWorld* world) { world_ = world; }
+
+   /// @brief カメラ編集を記録する既存の編集履歴へ接続する。切り替え前の操作は先に確定する。
+   /// @param context 現在のシーンの編集コンテキスト。nullptrで切り離す。
+   void SetContext(EditorSceneContext* context);
+
+   /// @brief 継続中のカメラ編集を一回のUndoとして確定する。保存・Play・Undoの前にも呼び出す。
+   void FinishEdits();
 
    /// @brief メインエディタウィンドウを表示
    void ShowEditorWindow();
@@ -70,7 +79,7 @@ public:
    void SetTargetCamera(Camera* camera) { targetCamera_ = camera; }
 
    /// @brief 編集対象のVirtualCameraを設定
-   void SetTargetVirtualCamera(VirtualCamera* vcam) { targetVirtualCamera_ = vcam; }
+   void SetTargetVirtualCamera(VirtualCamera* vcam);
 
    /// @brief 編集対象のBrainを設定（出力カメラも自動的にtargetCamera_に設定される）
    void SetTargetBrain(CinemachineBrain* brain);
@@ -114,12 +123,17 @@ private:
    bool DrawTransformGizmo(Transform& transform, Camera* viewCamera, float viewportX, float viewportY,
       float viewportWidth, float viewportHeight, const char* id);
    void ShowImGuizmoControls();
+   void RecordCameraEdit(VirtualCamera* camera, const nlohmann::json& before, bool continuous);
+   void FinishEditsIfIdle();
 
-   SceneWorld* world_ = nullptr;                  ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
-   CameraGizmo gizmo_;                            ///< カメラの位置・向き・視錐台を表示するギズモ。
-   Camera* targetCamera_ = nullptr;               ///< 直接編集する出力カメラへの参照。
-   VirtualCamera* targetVirtualCamera_ = nullptr; ///< 編集対象の仮想カメラへの参照。
-   CinemachineBrain* targetBrain_ = nullptr;      ///< 仮想カメラの選択と合成を管理するBrainへの参照。
+   SceneWorld* world_ = nullptr;                       ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
+   EditorSceneContext* context_ = nullptr;             ///< カメラ編集を既存の履歴へ記録する非所有参照。
+   std::string editingCameraId_;                       ///< ドラッグ一回をまとめて記録する仮想カメラの安定ID。
+   nlohmann::json cameraEditBefore_, cameraEditAfter_; ///< 継続中のカメラ編集の開始時と最後に適用した保存状態。
+   CameraGizmo gizmo_;                                 ///< カメラの位置・向き・視錐台を表示するギズモ。
+   Camera* targetCamera_ = nullptr;                    ///< 直接編集する出力カメラへの参照。
+   VirtualCamera* targetVirtualCamera_ = nullptr;      ///< 編集対象の仮想カメラへの参照。
+   CinemachineBrain* targetBrain_ = nullptr;           ///< 仮想カメラの選択と合成を管理するBrainへの参照。
 
    bool showGizmo_ = true;                                     ///< カメラのギズモを表示するかどうか。
    bool useImGuizmo_ = true;                                   ///< ImGuizmoによる移動・回転・拡縮操作を使うかどうか。

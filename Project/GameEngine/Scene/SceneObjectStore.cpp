@@ -30,9 +30,47 @@ std::string BuildNameFromAssetId(const std::string& assetId) {
 } // namespace
 
 SceneObjectStore::SceneObjectStore(SceneWorld& world) : world_(world) {
+   // ファクトリは呼び出し元ストアを受け取り、別Worldの所有先や寿命をキャプチャーしない。
+   RegisterObjectFactory("Generic", [](SceneObjectStore& store, const nlohmann::json& data) {
+      return store.CreateGenericObject(nullptr, data.value("id", ""));
+   });
+   RegisterObjectFactory("Model", [](SceneObjectStore& store, const nlohmann::json& data) {
+      const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(data);
+      return store.CreateModel(assetId, nullptr, data.value("id", ""));
+   });
+   RegisterObjectFactory("Sprite", [](SceneObjectStore& store, const nlohmann::json& data) {
+      const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(data);
+      return store.CreateSprite(assetId, nullptr, data.value("id", ""));
+   });
+   RegisterObjectFactory("UIText", [](SceneObjectStore& store, const nlohmann::json& data) {
+      return store.CreateUIText(nullptr, data.value("id", ""));
+   });
+   RegisterObjectFactory("Skybox",
+      [](SceneObjectStore& store, const nlohmann::json& data) { return store.CreateSkybox(data.value("id", "")); });
 }
 
 SceneObjectStore::~SceneObjectStore() = default;
+
+bool SceneObjectStore::RegisterObjectFactory(const std::string& objectType, ObjectFactory factory) {
+   if (objectType.empty() || !factory) {
+      return false;
+   }
+
+   objectFactories_.insert_or_assign(objectType, std::move(factory));
+   return true;
+}
+
+Object* SceneObjectStore::AdoptObject(std::unique_ptr<Object> object, const std::string& requestedId) {
+   if (!object) {
+      return nullptr;
+   }
+
+   Object* rawObject = object.get();
+   const std::string id = AllocateId(requestedId);
+   RegisterObject(id, rawObject);
+   objects_.push_back(std::move(object));
+   return rawObject;
+}
 
 Object* SceneObjectStore::CreateGenericObject(const Transform* initialTransform, const std::string& requestedId) {
    auto object = std::make_unique<Object>();
@@ -45,10 +83,7 @@ Object* SceneObjectStore::CreateGenericObject(const Transform* initialTransform,
 
    rawObject->SetObjectName(BuildUniqueObjectName("EmptyObject"));
 
-   const std::string id = AllocateId(requestedId);
-   RegisterObject(id, rawObject);
-   objects_.push_back(std::move(object));
-   return rawObject;
+   return AdoptObject(std::move(object), requestedId);
 }
 
 Object* SceneObjectStore::CreateModel(
@@ -78,10 +113,7 @@ Object* SceneObjectStore::CreateModel(
       rawModel->SetTransform(*initialTransform);
    }
 
-   const std::string id = AllocateId(requestedId);
-   RegisterObject(id, rawModel);
-   objects_.push_back(std::move(model));
-   return rawModel;
+   return AdoptObject(std::move(model), requestedId);
 }
 
 Object* SceneObjectStore::CreateSprite(
@@ -113,10 +145,7 @@ Object* SceneObjectStore::CreateSprite(
       }
    }
 
-   const std::string id = AllocateId(requestedId);
-   RegisterObject(id, rawSprite);
-   objects_.push_back(std::move(sprite));
-   return rawSprite;
+   return AdoptObject(std::move(sprite), requestedId);
 }
 
 Object* SceneObjectStore::CreateUIText(const Transform* initialTransform, const std::string& requestedId) {
@@ -141,10 +170,7 @@ Object* SceneObjectStore::CreateUIText(const Transform* initialTransform, const 
       }
    }
 
-   const std::string id = AllocateId(requestedId);
-   RegisterObject(id, rawText);
-   objects_.push_back(std::move(uiText));
-   return rawText;
+   return AdoptObject(std::move(uiText), requestedId);
 }
 
 Object* SceneObjectStore::CreateSkybox(const std::string& requestedId) {
@@ -158,10 +184,7 @@ Object* SceneObjectStore::CreateSkybox(const std::string& requestedId) {
    Skybox* rawSkybox = skybox.get();
    rawSkybox->Create(graphicsDevice);
 
-   const std::string id = AllocateId(requestedId);
-   RegisterObject(id, rawSkybox);
-   objects_.push_back(std::move(skybox));
-   return rawSkybox;
+   return AdoptObject(std::move(skybox), requestedId);
 }
 
 ParticleSystem* SceneObjectStore::CreateParticleSystem(
@@ -193,92 +216,36 @@ ParticleSystem* SceneObjectStore::CreateParticleSystem(
 }
 
 Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
-   if (!objectData.is_object()) {
+   if (!objectData.is_object() || !objectData.contains("objectType") || !objectData.at("objectType").is_string()) {
       return nullptr;
    }
 
-   const std::string objectType = objectData.value("objectType", "");
+   const auto& objectType = objectData.at("objectType").get_ref<const std::string&>();
+   const auto factory = objectFactories_.find(objectType);
 
-   // 派生型ごとの必須リソースを先に生成してから、共通コンポーネント状態を上書きする。
-   if (objectType == "ParticleSystem") {
-      RestoreParticleSystem(objectData);
+   if (factory == objectFactories_.end()) {
       return nullptr;
    }
 
-   if (objectType == "Generic") {
-      const std::string id = objectData.value("id", "");
-      Object* object = CreateGenericObject(nullptr, id);
+   Object* object = nullptr;
 
-      if (object) {
-         if (!ApplyObjectState(object, objectData)) {
-            return nullptr;
-         }
+   try {
+      // 派生型ごとの必須リソースを先に生成してから、共通コンポーネント状態を上書きする。
+      object = factory->second(*this, objectData);
+
+      if (object && Contains(object) && ApplyObjectState(object, objectData)) {
+         return object;
       }
-
-      return object;
+   } catch (const std::exception& error) {
+      Logger::Error("Object restore failed (" + objectType + "): " + error.what());
    }
 
-   if (objectType == "UIText") {
-      const std::string id = objectData.value("id", "");
-      Object* object = CreateUIText(nullptr, id);
-
-      if (!object) {
-         return nullptr;
-      }
-
-      if (!ApplyObjectState(object, objectData)) {
-         return nullptr;
-      }
-      return object;
+   if (object && Contains(object)) {
+      // 途中まで復元した実体を検索・描画対象へ残さず、GPU参照を保つ遅延削除経路で片付ける。
+      DeleteObject(GetId(object));
    }
 
-   if (objectType == "Skybox") {
-      const std::string id = objectData.value("id", "");
-      Object* object = CreateSkybox(id);
-
-      if (!object) {
-         return nullptr;
-      }
-
-      if (!ApplyObjectState(object, objectData)) {
-         return nullptr;
-      }
-      return object;
-   }
-
-   if (objectType == "Sprite") {
-      const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(objectData);
-      const std::string id = objectData.value("id", "");
-      Object* object = CreateSprite(assetId, nullptr, id);
-
-      if (!object) {
-         return nullptr;
-      }
-
-      if (!ApplyObjectState(object, objectData)) {
-         return nullptr;
-      }
-
-      return object;
-   }
-
-   if (objectType != "Model") {
-      return nullptr;
-   }
-
-   const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(objectData);
-   const std::string id = objectData.value("id", "");
-   Object* object = CreateModel(assetId, nullptr, id);
-
-   if (!object) {
-      return nullptr;
-   }
-
-   if (!ApplyObjectState(object, objectData)) {
-      return nullptr;
-   }
-
-   return object;
+   return nullptr;
 }
 
 ParticleSystem* SceneObjectStore::RestoreParticleSystem(const nlohmann::json& objectData) {

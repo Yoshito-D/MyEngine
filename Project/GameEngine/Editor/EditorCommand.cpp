@@ -141,6 +141,34 @@ bool EditObjectStateCommand::Apply(EditorCommandTarget& context, const nlohmann:
    return context.ApplySnapshot(id_, snapshot, particle_);
 }
 
+EditVirtualCameraStateCommand::EditVirtualCameraStateCommand(
+   std::string id, nlohmann::json before, nlohmann::json after)
+   : id_(std::move(id)), before_(std::move(before)), after_(std::move(after)) {
+}
+
+bool EditVirtualCameraStateCommand::Execute(EditorCommandTarget& context) {
+   if (id_.empty() || !before_.is_object() || !after_.is_object() || before_ == after_ || !before_.contains("id") ||
+       !before_.at("id").is_string() || !after_.contains("id") || !after_.at("id").is_string() ||
+       before_.at("id").get<std::string>() != id_ || after_.at("id").get<std::string>() != id_) {
+      return false;
+   }
+
+   if (alreadyApplied_) {
+      if (!context.ContainsCamera(id_)) {
+         return false;
+      }
+
+      alreadyApplied_ = false;
+      return true;
+   }
+
+   return context.ApplyCameraSnapshot(id_, after_);
+}
+
+void EditVirtualCameraStateCommand::Undo(EditorCommandTarget& context) {
+   context.ApplyCameraSnapshot(id_, before_);
+}
+
 ReorderObjectCommand::ReorderObjectCommand(std::string id, std::string beforeParent, std::string afterParent,
    std::vector<std::string> beforeOrder, std::vector<std::string> afterOrder)
    : id_(std::move(id)), beforeParent_(std::move(beforeParent)), afterParent_(std::move(afterParent)),

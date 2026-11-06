@@ -9,8 +9,9 @@
 #include <filesystem>
 
 namespace App {
-void CameraPresentationCapture::Reset() {
+void CameraPresentationCapture::Reset(const VehicleEventSnapshot& snapshot) {
    *this = {};
+   eventCursor_.Reset(snapshot);
 }
 
 using RearCameraMath::NormalizeOrFallback;
@@ -128,7 +129,13 @@ void CameraPresentationCapture::DrawPresentationGuides(const GameEngine::Vector3
 }
 
 void CameraPresentationCapture::Update(const CameraPresentationCaptureSettings& settings, float deltaTime,
-   PlayerRearFollowCamera& camera, CharacterJump* jump, bool isGrounded, const LandingPrediction* prediction) {
+   bool cameraSelected, PlayerRearFollowCamera& camera, CharacterJump* jump, const VehicleEventSnapshot& snapshot,
+   const LandingPrediction* prediction) {
+   const auto changes = eventCursor_.Read(snapshot);
+
+   // 他のカメラで発生した接触を、後から選択した時点の撮影対象にしない。
+   if (!cameraSelected) return;
+
    const auto& input = camera.GetInput();
    const auto& pos = input.pivotTarget;
    const auto& playerVelocity = input.playerVelocity;
@@ -239,7 +246,7 @@ void CameraPresentationCapture::Update(const CameraPresentationCaptureSettings& 
    }
    if (settings.autoCapturePresentationSequence && presentationJumpTriggered_) {
       // 接地の立ち上がりを接触瞬間とし、その後は姿勢が落ち着くまで別タイマーで待つ。
-      if (isGrounded && !wasGrounded_ && !presentationContactCaptured_) {
+      if (changes.landed && !presentationContactCaptured_) {
          RequestPresentationScreenshot("04_contact.png", settings.debugDrawPresentationGuides);
          presentationContactCaptured_ = true;
          presentationAfterLandingElapsed_ = 0.0f;
@@ -258,7 +265,6 @@ void CameraPresentationCapture::Update(const CameraPresentationCaptureSettings& 
       }
    }
 
-   wasGrounded_ = isGrounded;
    if (settings.autoCapturePresentationSequence && presentationMeasurementStarted_ && !presentationMeasurementSaved_ &&
        presentationCaptureElapsed_ >= 30.0f) {
       // 着地条件が成立しない試行でも無限に記録せず、失敗を含む30秒分を検証材料として残す。

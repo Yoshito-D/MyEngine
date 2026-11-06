@@ -1139,6 +1139,11 @@
             {
                "data": {},
                "enabled": true,
+               "typeName": "VehicleEvents"
+            },
+            {
+               "data": {},
+               "enabled": true,
                "parameterAssetId": "game/parameters/player/VehicleMover.json",
                "typeName": "VehicleMover"
             },
@@ -1202,9 +1207,11 @@
             },
             {
                "data": {
-                  "gravityFollowCameraId": "GravityFollowCamera",
-                  "planetLeashCameraId": "PlanetLeashCamera",
-                  "playerRearFollowCameraId": "PlayerRearFollowCamera"
+                  "cameraIds": [
+                     "GravityFollowCamera",
+                     "PlayerRearFollowCamera",
+                     "PlanetLeashCamera"
+                  ]
                },
                "enabled": true,
                "parameterAssetId": "game/parameters/player/CameraGravityBridge.json",
@@ -1225,6 +1232,7 @@
             {
                "data": {},
                "enabled": true,
+               "parameterAssetId": "game/parameters/player/VehicleEffectController.json",
                "typeName": "VehicleEffectController"
             },
             {

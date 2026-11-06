@@ -241,13 +241,16 @@ void PlanetLeashCamera::SetInitialEyePosition(const GameEngine::Vector3& eye) {
    isInitialized_ = true;
 }
 
-void PlanetLeashCamera::SetDriftDistanceScale(float scale) {
-   driftDistanceScale_ = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
+void PlanetLeashCamera::ApplyVehicleFollowInput(const VehicleCameraFollowInput& input) {
+   gravityUp_ = input.gravityUp;
+   pivotTarget_ = input.target;
+   sphereCenter_ = input.planetCenter;
 }
 
-void PlanetLeashCamera::SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {
-   driftCameraHeightOffset_ = std::isfinite(cameraHeightOffset) ? cameraHeightOffset : 0.0f;
-   driftLookTargetHeightOffset_ = std::isfinite(lookTargetHeightOffset) ? lookTargetHeightOffset : 0.0f;
+void PlanetLeashCamera::ApplyVehicleEffectInput(const VehicleCameraEffectInput& input) {
+   driftDistanceScale_ = std::clamp(std::isfinite(input.distanceScale) ? input.distanceScale : 1.0f, 0.5f, 1.0f);
+   driftCameraHeightOffset_ = std::isfinite(input.cameraHeightOffset) ? input.cameraHeightOffset : 0.0f;
+   driftLookTargetHeightOffset_ = std::isfinite(input.lookTargetHeightOffset) ? input.lookTargetHeightOffset : 0.0f;
 }
 
 PlanetLeashCamera::Settings PlanetLeashCamera::DescribeSettings() const {

@@ -12,6 +12,7 @@ namespace GameEngine {
 
 class Object;
 class ParticleSystem;
+class ParticleSubEmitterRuntime;
 class VirtualCamera;
 class CinemachineBrain;
 
@@ -48,6 +49,9 @@ public:
 
    /// @brief 共通ストアを読み取り専用で取得する。
    const SceneObjectStore& GetObjectStore() const { return objectStore_; }
+
+   /// @brief このワールドの子エフェクト生成と寿命を管理する実行系を取得する。
+   ParticleSubEmitterRuntime& GetParticleSubEmitterRuntime() { return *particleSubEmitterRuntime_; }
 
    /// @brief JSONからシーン全体を生成する
    /// @param sceneData シーン定義JSON
@@ -110,7 +114,8 @@ private:
 
    CinemachineBrain* cameraBrain_ = nullptr; ///< このワールドの仮想カメラを接続するBrainへの非所有参照。
    SceneObjectStore objectStore_;            ///< 共通の生成・削除・復元ストア。
-   std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_; ///< このワールドが所有する仮想カメラ一覧。
+   std::unique_ptr<ParticleSubEmitterRuntime> particleSubEmitterRuntime_; ///< このワールド専用の子エフェクト実行系。
+   std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_;           ///< このワールドが所有する仮想カメラ一覧。
    /// @brief 安定カメラIDから仮想カメラを引く非所有索引。
    std::unordered_map<std::string, VirtualCamera*> virtualCamerasById_;
 };

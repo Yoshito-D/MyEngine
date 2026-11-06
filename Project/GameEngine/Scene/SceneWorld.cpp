@@ -2,6 +2,7 @@
 #include "GameEngine/Scene/SceneWorld.h"
 
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Effects/Particles/ParticleSubEmitterRuntime.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -60,7 +61,9 @@ bool IsValidObjectState(const nlohmann::json& data) {
 }
 } // namespace
 
-SceneWorld::SceneWorld(CinemachineBrain* cameraBrain) : cameraBrain_(cameraBrain), objectStore_(*this) {
+SceneWorld::SceneWorld(CinemachineBrain* cameraBrain)
+   : cameraBrain_(cameraBrain), objectStore_(*this),
+     particleSubEmitterRuntime_(std::make_unique<ParticleSubEmitterRuntime>(*this)) {
 }
 
 SceneWorld::~SceneWorld() {
@@ -237,7 +240,7 @@ void SceneWorld::SynchronizeParameters() {
 
 void SceneWorld::Clear() {
    EngineContext::SetCameraTransitionOpacity(0.0f);
-   ParticleSystem::ClearWorldRuntime(this);
+   particleSubEmitterRuntime_->Clear();
    if (auto* brain = GetCameraBrain()) {
       for (const auto& camera : virtualCameras_) {
          brain->UnregisterVirtualCamera(camera.get());
@@ -250,6 +253,7 @@ void SceneWorld::Clear() {
    virtualCameras_.clear();
    objectStore_.Clear();
    objectStore_.FlushDeferredDeletes();
+   particleSubEmitterRuntime_->FinishFrame();
 }
 
 void SceneWorld::Update(float deltaTime) {
@@ -265,7 +269,7 @@ void SceneWorld::Update(float deltaTime) {
          particle->Update(deltaTime);
       }
    }
-   ParticleSystem::ProcessPendingSubEmitters(this);
+   particleSubEmitterRuntime_->ProcessPending();
    if (cameraBrain_) {
       cameraBrain_->Update(deltaTime);
    }
@@ -273,6 +277,7 @@ void SceneWorld::Update(float deltaTime) {
 
 void SceneWorld::FinishFrame() {
    objectStore_.FlushDeferredDeletes();
+   particleSubEmitterRuntime_->FinishFrame();
 }
 
 Object* SceneWorld::FindObjectById(const std::string& objectId) {

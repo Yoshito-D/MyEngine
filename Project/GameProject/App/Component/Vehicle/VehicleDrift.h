@@ -64,9 +64,6 @@ public:
    /// @brief ミニターボが発動できるかどうかをかえす
    bool CanFireMiniTurbo() const;
 
-   /// @brief ミニターボの累計発動回数を返す。各演出が独立して新しい発動を検出できる。
-   uint64_t GetMiniTurboFireCount() const { return miniTurboFireCount_; }
-
 #ifdef USE_IMGUI
 
    /// @brief 設定と実行状態を単位付きで表示・編集する。
@@ -165,9 +162,6 @@ private:
 
    /// @brief 現在ドリフト中かどうか
    bool isDrifting_ = false;
-
-   /// @brief カメラとパーティクルの更新順に依存しない発動通知の連番
-   uint64_t miniTurboFireCount_ = 0;
 
    /// @brief ドリフト継続時間（秒）。開始時にリセットされる。
    float driftTimer_ = 0.0f;

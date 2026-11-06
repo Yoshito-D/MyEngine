@@ -3,6 +3,7 @@
 #include "GameProject/App/Component/Race/RaceRecordStore.h"
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Utility/StateMachine.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include <cstddef>
 #include <string>
@@ -19,6 +20,9 @@ class VehicleSpeedPostEffectController;
 /// @brief タイムアタックの状態、経過時間、チェックポイント進行を管理する
 class RaceManagerComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 各進行状態の入場・更新・退場処理と遷移規則を登録する。
+   RaceManagerComponent();
+
    /// @brief レース進行状態
    enum class State {
       Waiting,
@@ -82,7 +86,7 @@ public:
 
    /// @brief 現在のレース状態を取得する
    /// @return レース進行状態
-   State GetState() const { return state_; }
+   State GetState() const { return stateMachine_.GetCurrentState().value_or(previewState_); }
 
    /// @brief 現在の計測時間を取得する
    /// @return 秒単位の経過時間
@@ -102,7 +106,7 @@ public:
 
    /// @brief START表示期間中か調べる
    /// @return STARTを表示する場合はtrue
-   bool IsStartBannerVisible() const { return state_ == State::Running && startBannerRemaining_ > 0.0f; }
+   bool IsStartBannerVisible() const { return GetState() == State::Running && startBannerRemaining_ > 0.0f; }
 
    /// @brief 設定されたレースシーンの完全な再読み込みを要求する
    /// @return シーン遷移要求を受け付けた場合はtrue
@@ -132,15 +136,20 @@ public:
 private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
-   void BeginRace();
-   void BeginCountdown();
+   void ConfigureStates();
+   void EnterCountdown();
+   void EnterRunning();
+   void EnterFinished();
+   void UpdateIntro(float deltaTime);
+   void UpdateFinished(float deltaTime);
    bool CanFinish() const;
 
 #ifdef USE_IMGUI
    void DrawIntroInspector();
 #endif
 
-   State state_ = State::Waiting;                  ///< 現在のレース状態。
+   GameEngine::StateMachine<State> stateMachine_;  ///< レース進行と入場・退場処理を管理する。
+   State previewState_ = State::Waiting;           ///< 実行開始前と無効化後に表示する進行状態。
    StartMode startMode_ = StartMode::Countdown;    ///< 即時・カウントダウン・ゲート通過の開始方式。
    float elapsedTime_ = 0.0f;                      ///< 現在の計測時間（秒）。
    RaceRecordStore records_;                       ///< レース記録の所有者。
@@ -172,6 +181,8 @@ private:
    bool sceneChangeRequested_ = false;                  ///< この進行状態からシーン切り替えを要求済みかどうか。
    bool restartRequested_ = false;                      ///< リトライのシーン切り替えを要求済みかどうか。
    bool runtimeInitialized_ = false;                    ///< 最初の実行時更新に必要な初期化が完了したかどうか。
+   bool restartAfterUpdate_ = false;                    ///< 状態更新中に要求された再開始をコールバック終了後に行うか。
+   bool showStartBannerOnEntry_ = true;                 ///< Runningへの入場時にSTART表示を開始するか。
    StageIntroSettings introSettings_;                   ///< ステージ固有の俯瞰構図と再生時間。
    bool introSkipArmed_ = false;                        ///< 導入開始後に決定入力の解放を確認したか。
    RacePresentation presentation_;                      ///< 操作停止とカメラ演出の所有者。

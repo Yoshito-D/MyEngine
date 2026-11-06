@@ -30,6 +30,7 @@
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleEffectController.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
@@ -87,6 +88,7 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::PlayerShadowComponent>(),
    RegisterAppComponent<App::VehicleDrift>(),
    RegisterAppComponent<App::VehicleEffectController>(),
+   RegisterAppComponent<App::VehicleEvents>(),
    RegisterAppComponent<App::VehicleGroundMover>(),
    RegisterAppComponent<App::VehicleInputComponent>(),
    RegisterAppComponent<App::VehicleLandingAligner>(),
