@@ -32,7 +32,8 @@ public:
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(SceneWorld& sceneWorld) override;
 
-   /// @copydoc IObjectComponent::OnReferencesChanged
+   /// @brief 対象IDの解決に使うシーン参照を更新する。重なり判定の履歴は初期化しない。
+   /// @param sceneWorld 参照の解決先となる現在のシーンワールド。
    void OnReferencesChanged(SceneWorld& sceneWorld) override { sceneWorld_ = &sceneWorld; }
 
    /// @brief 対象オブジェクトとの重なり状態を更新する
@@ -68,10 +69,12 @@ public:
    /// @param data トリガー設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief トリガー範囲の共有可能な調整値をJSONで取得する。
+   /// @return 判定対象のObject IDを除いた形状・中心オフセット・寸法・デバッグ表示条件を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief トリガー範囲の共有設定を既存コンポーネントへ反映する。
+   /// @param data 判定対象のObject IDを除いた形状・中心オフセット・寸法・デバッグ表示条件を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

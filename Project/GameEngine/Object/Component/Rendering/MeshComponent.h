@@ -59,10 +59,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 描画メッシュの共有可能な調整値をJSONで取得する。
+   /// @return 参照モデル・形状種別・形状生成パラメータを含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 描画メッシュの共有設定を既存コンポーネントへ反映する。
+   /// @param data 参照モデル・形状種別・形状生成パラメータを含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

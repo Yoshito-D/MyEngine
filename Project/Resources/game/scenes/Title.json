@@ -10,7 +10,7 @@
                {
                   "componentName": "TitleCameraRotation",
                   "data": {
-                     "rotationSpeedDegrees": 3
+                     "rotationSpeed": 0.05235987755982988
                   },
                   "enabled": true
                }

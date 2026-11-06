@@ -113,16 +113,16 @@ void VehicleSpeedPostEffectController::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("演出最低速度", "Minimum Effect Speed"), &minimumEffectSpeed, 0.1f, 0.0f, 200.0f);
-   ImGui::DragFloat(Tr("演出最大速度", "Maximum Effect Speed"), &maximumEffectSpeed, 0.1f, 0.0f, 200.0f);
-   ImGui::DragFloat(Tr("追従速度", "Response Speed"), &responseSpeed, 0.1f, 0.0f, 30.0f);
+   ImGui::DragFloat(Tr("演出最低速度 (m/s)", "Minimum Effect Speed (m/s)"), &minimumEffectSpeed, 0.1f, 0.0f, 200.0f);
+   ImGui::DragFloat(Tr("演出最大速度 (m/s)", "Maximum Effect Speed (m/s)"), &maximumEffectSpeed, 0.1f, 0.0f, 200.0f);
+   ImGui::DragFloat(Tr("追従速度 (1/s)", "Response Speed (1/s)"), &responseSpeed, 0.1f, 0.0f, 30.0f);
    ImGui::DragFloat(Tr("表示しきい値", "Visible Threshold"), &visibleThreshold, 0.001f, 0.0f, 1.0f);
    ImGui::DragFloat(Tr("待機時内側半径", "Idle Inner Radius"), &idleInnerRadius, 0.01f, 0.0f, 2.0f);
    ImGui::DragFloat(Tr("有効時内側半径", "Active Inner Radius"), &activeInnerRadius, 0.01f, 0.0f, 2.0f);
    ImGui::DragFloat(Tr("外側半径", "Outer Radius"), &outerRadius, 0.01f, 0.0f, 2.0f);
    ImGui::DragFloat(Tr("最大強度", "Max Intensity"), &maxIntensity, 0.01f, 0.0f, 3.0f);
-   ImGui::DragFloat(Tr("待機時フロー速度", "Idle Flow Speed"), &idleFlowSpeed, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat(Tr("有効時フロー速度", "Active Flow Speed"), &activeFlowSpeed, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("待機時フロー速度 (1/s)", "Idle Flow Speed (1/s)"), &idleFlowSpeed, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(Tr("有効時フロー速度 (1/s)", "Active Flow Speed (1/s)"), &activeFlowSpeed, 0.01f, 0.0f, 5.0f);
    ImGui::DragFloat(Tr("ライン密度", "Line Density"), &lineDensity, 1.0f, 16.0f, 512.0f);
    ImGui::DragFloat(Tr("太さ", "Thickness"), &thickness, 0.01f, 0.0f, 1.0f);
    ImGui::DragFloat(Tr("ランダムシード", "Random Seed"), &randomSeed, 0.1f, 0.0f, 100.0f);

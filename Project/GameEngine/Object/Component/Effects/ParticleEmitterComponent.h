@@ -62,19 +62,20 @@ public:
 
    // ── ライフサイクル ────────────────────────────────
 
-   /// @copydoc IObjectComponent::OnAttach
+   /// @brief 保存されたスロットのうち、未生成でファイル指定のある粒子システムを読み込む。
    void OnAttach() override;
 
-   /// @copydoc IObjectComponent::OnDetach
+   /// @brief 所有する全スロットの粒子システムを停止して破棄する。
    void OnDetach() override;
 
-   /// @copydoc IObjectComponent::OnEnable
+   /// @brief 読み込み済みスロットのうち、自動再生が有効な粒子システムを再生する。
    void OnEnable() override;
 
-   /// @copydoc IObjectComponent::OnDisable
+   /// @brief 読み込み済みの全粒子システムを一時停止する。
    void OnDisable() override;
 
-   /// @copydoc IObjectComponent::Update
+   /// @brief 距離カリングとボーン追従を評価し、放出姿勢・再生終了通知・終了スロットの削除を更新する。
+   /// @details フレーム時間の引数は使用しない。粒子そのもののシミュレーションはParticleSystem側で進める。
    void Update(float) override;
 
    /// @brief 選択中のジョイントとエミッター位置をデバッグ描画する
@@ -173,21 +174,25 @@ public:
 
    // ── シリアライズ ──────────────────────────────────
 
-   /// @copydoc IObjectComponent::Serialize
+   /// @brief パーティクルエミッターの保存対象設定をJSONへ変換する。
+   /// @return エフェクトファイル・追従設定・再生条件とカリング設定を含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc IObjectComponent::Deserialize
+   /// @brief 保存JSONからパーティクルエミッターの設定を復元する。
+   /// @param data エフェクトファイル・追従設定・再生条件とカリング設定を含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief パーティクルエミッターの共有可能な調整値をJSONで取得する。
+   /// @return エフェクトファイル・追従設定・再生条件とカリング設定を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief パーティクルエミッターの共有設定を既存コンポーネントへ反映する。
+   /// @param data エフェクトファイル・追従設定・再生条件とカリング設定を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc IObjectComponent::DrawInspector
+   /// @brief パーティクルエミッターのエフェクトファイル・追従設定・再生条件とカリング設定をインスペクターで表示・編集する。
    void DrawInspector() override;
 #endif
 

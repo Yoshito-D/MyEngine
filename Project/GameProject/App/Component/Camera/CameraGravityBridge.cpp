@@ -210,32 +210,33 @@ void CameraGravityBridge::DrawInspector() {
       planetLeashCamera_ ? Tr("設定済み", "Set") : Tr("なし", "None"));
    ImGui::Separator();
    ImGui::Checkbox(Tr("着地シェイク", "Landing Shake"), &settings_.enableLandingShake);
-   ImGui::DragFloat(Tr("シェイク振幅", "Shake Amplitude"), &settings_.landingShakeAmplitude, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat(Tr("シェイク周波数", "Shake Frequency"), &settings_.landingShakeFrequency, 0.1f, 0.1f, 60.0f);
-   ImGui::DragFloat(Tr("シェイク時間", "Shake Duration"), &settings_.landingShakeDuration, 0.01f, 0.0f, 3.0f);
+   ImGui::DragFloat(Tr("シェイク振幅 (m)", "Shake Amplitude (m)"), &settings_.landingShakeAmplitude, 0.01f, 0.0f, 5.0f);
+   ImGui::DragFloat(
+      Tr("シェイク周波数 (Hz)", "Shake Frequency (Hz)"), &settings_.landingShakeFrequency, 0.1f, 0.1f, 60.0f);
+   ImGui::DragFloat(Tr("シェイク時間 (s)", "Shake Duration (s)"), &settings_.landingShakeDuration, 0.01f, 0.0f, 3.0f);
    ImGui::Separator();
    ImGui::Checkbox(Tr("ミニターボシェイク", "Mini Turbo Shake"), &settings_.enableMiniTurboShake);
-   ImGui::DragFloat(Tr("ミニターボ横揺れ振幅", "Mini Turbo Horizontal Amplitude"),
+   ImGui::DragFloat(Tr("ミニターボ横揺れ振幅 (m)", "Mini Turbo Horizontal Amplitude (m)"),
       &settings_.miniTurboShakeHorizontalAmplitude, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat(Tr("ミニターボ縦揺れ振幅", "Mini Turbo Vertical Amplitude"),
+   ImGui::DragFloat(Tr("ミニターボ縦揺れ振幅 (m)", "Mini Turbo Vertical Amplitude (m)"),
       &settings_.miniTurboShakeVerticalAmplitude, 0.01f, 0.0f, 5.0f);
-   ImGui::DragFloat(Tr("ミニターボシェイク周波数", "Mini Turbo Shake Frequency"), &settings_.miniTurboShakeFrequency,
-      0.1f, 0.1f, 60.0f);
-   ImGui::DragFloat(
-      Tr("ミニターボシェイク時間", "Mini Turbo Shake Duration"), &settings_.miniTurboShakeDuration, 0.01f, 0.0f, 3.0f);
+   ImGui::DragFloat(Tr("ミニターボシェイク周波数 (Hz)", "Mini Turbo Shake Frequency (Hz)"),
+      &settings_.miniTurboShakeFrequency, 0.1f, 0.1f, 60.0f);
+   ImGui::DragFloat(Tr("ミニターボシェイク時間 (s)", "Mini Turbo Shake Duration (s)"),
+      &settings_.miniTurboShakeDuration, 0.01f, 0.0f, 3.0f);
    ImGui::Separator();
    ImGui::Checkbox(
       Tr("横入力時にカメラを近づける", "Camera Approach on Steering"), &settings_.enableDriftCameraApproach);
    ImGui::DragFloat(Tr("ドリフト時の距離短縮率", "Drift Distance Reduction"), &settings_.driftCameraDistanceReduction,
       0.01f, 0.0f, 0.5f);
-   ImGui::DragFloat(Tr("ドリフト時のカメラ高さ追加量", "Drift Camera Height Offset"),
+   ImGui::DragFloat(Tr("ドリフト時のカメラ高さ追加量 (m)", "Drift Camera Height Offset (m)"),
       &settings_.driftCameraHeightOffset, 0.05f, -20.0f, 20.0f);
-   ImGui::DragFloat(Tr("ドリフト時の注視点高さ追加量", "Drift Look Target Height Offset"),
+   ImGui::DragFloat(Tr("ドリフト時の注視点高さ追加量 (m)", "Drift Look Target Height Offset (m)"),
       &settings_.driftLookTargetHeightOffset, 0.05f, -10.0f, 10.0f);
    ImGui::TextDisabled("%s", Tr("高さは通常時への加算量です（正: 上、負: 下）。",
                                 "Height offsets are added to normal height (positive: up, negative: down)."));
-   ImGui::DragFloat(
-      Tr("ドリフトカメラの補間速度", "Drift Camera Lerp Speed"), &settings_.driftCameraLerpSpeed, 0.1f, 0.1f, 30.0f);
+   ImGui::DragFloat(Tr("ドリフトカメラの補間速度 (1/s)", "Drift Camera Lerp Speed (1/s)"),
+      &settings_.driftCameraLerpSpeed, 0.1f, 0.1f, 30.0f);
    ImGui::Separator();
    ImGui::Checkbox(Tr("発表用カメラガイド", "Presentation Camera Guides"), &settings_.debugDrawPresentationGuides);
    ImGui::DragFloat(
@@ -246,12 +247,12 @@ void CameraGravityBridge::DrawInspector() {
       Tr("自動ジャンプ待ち時間", "Auto-jump Delay"), &settings_.presentationCaptureJumpDelay, 0.05f, 0.0f, 10.0f);
    ImGui::Checkbox(
       Tr("発表動画用の連番PNG", "Presentation Video Frames"), &settings_.autoCapturePresentationVideoFrames);
-   ImGui::DragFloat(
-      Tr("動画フレームレート", "Video Frame Rate"), &settings_.presentationVideoFrameRate, 1.0f, 1.0f, 60.0f);
+   ImGui::DragFloat(Tr("動画フレームレート (fps)", "Video Frame Rate (fps)"), &settings_.presentationVideoFrameRate,
+      1.0f, 1.0f, 60.0f);
    ImGui::DragFloat(Tr("動画撮影開始待ち", "Video Capture Start Delay"), &settings_.presentationVideoCaptureStartDelay,
       0.05f, 0.0f, 30.0f);
-   ImGui::DragFloat(
-      Tr("動画撮影時間", "Video Capture Duration"), &settings_.presentationVideoCaptureDuration, 0.1f, 0.0f, 60.0f);
+   ImGui::DragFloat(Tr("動画撮影時間 (s)", "Video Capture Duration (s)"), &settings_.presentationVideoCaptureDuration,
+      0.1f, 0.0f, 60.0f);
    Configure(DescribeSettings());
 }
 #endif

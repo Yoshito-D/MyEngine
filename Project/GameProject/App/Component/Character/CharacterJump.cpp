@@ -32,7 +32,7 @@ void CharacterJump::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("ジャンプ力", "Jump Strength"), &jumpStrength, 0.1f, 0.0f, 30.0f);
+   ImGui::DragFloat(Tr("ジャンプ力 (m/s)", "Jump Strength (m/s)"), &jumpStrength, 0.1f, 0.0f, 30.0f);
    ImGui::Text("%s: %s", Tr("ジャンプ中", "Is Jumping"), isJumping_ ? Tr("はい", "true") : Tr("いいえ", "false"));
    Configure(DescribeSettings());
 }

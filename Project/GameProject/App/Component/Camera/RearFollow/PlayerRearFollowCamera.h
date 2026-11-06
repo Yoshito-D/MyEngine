@@ -72,7 +72,7 @@ public:
    void SetAirborne(bool isAirborne) { input_.isAirborne = isAirborne; }
 
    /// @brief プレイヤーの現在速度を設定する（加速演出に使用）
-   /// @param speed 速度の大きさ（単位は任意。加速感の判定に使用）
+   /// @param speed 速度の大きさ（m/s）。加速感の判定に使用。
    void SetPlayerSpeed(float speed) { input_.playerSpeed = speed; }
 
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）

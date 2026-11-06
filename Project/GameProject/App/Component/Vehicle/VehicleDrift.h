@@ -43,7 +43,7 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両ドリフト", "Vehicle Drift"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief 保存とコンポーネント検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief ドリフト入力・継続判定・速度横滑りを一括処理する
@@ -69,20 +69,20 @@ public:
 
 #ifdef USE_IMGUI
 
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 設定と実行状態を単位付きで表示・編集する。
    void DrawInspector() override;
 #endif
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief 設定値をプロジェクト共通の単位でJSONへ保存する。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief プロジェクト共通の単位で保存された設定JSONを読み込む。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照を除き、共有可能な設定をJSONで返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行状態を維持したまま、統一単位の共有設定JSONを適用する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
@@ -99,11 +99,11 @@ private:
    /// ドリフト中に slideLateralSpeed_ がこの割合まで滑らかに増える。
    float slideRatio = 0.2f;
 
-   /// @brief 横速度の蓄積速度（/sec）
+   /// @brief 横速度の蓄積速度（1/s）
    /// 大きいほどドリフト開始直後にすぐ滑り始める。小さいほどゆっくり滑り込む。
    float lateralBuildupRate = 1.0f;
 
-   /// @brief ドリフト終了後の横速度減衰速度（/sec）
+   /// @brief ドリフト終了後の横速度減衰速度（1/s）
    /// 大きいほどすぐにグリップが戻る。小さいほど余韻が長く残る。
    float postDriftBleedRate = 6.0f;
 
@@ -115,7 +115,7 @@ private:
    /// false にするとドリフト終了時の速度ブーストが発動しない。
    bool miniTurboEnabled = true;
 
-   /// @brief ドリフト終了後に加算する速度ブースト量（units/sec）
+   /// @brief ドリフト終了後に加算する速度ブースト量（m/s）
    float miniTurboBoost = 30.0f;
 
    /// @brief ミニターボが発動するドリフト最低継続時間（秒）
@@ -175,7 +175,7 @@ private:
    /// @brief ドリフトしている方向の符号（+1 右 / -1 左）。速度・継続判定に使用。
    float driftSign_ = 0.0f;
 
-   /// @brief 現在の横速度（units/sec）。ドリフト中に蓄積し終了後に減衰する。
+   /// @brief 現在の横速度（m/s）。ドリフト中に蓄積し終了後に減衰する。
    float slideLateralSpeed_ = 0.0f;
 
    /// @brief SustainedSteer モード用: 同方向ステア入力の蓄積時間（秒）

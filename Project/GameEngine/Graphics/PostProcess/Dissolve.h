@@ -55,10 +55,13 @@ public:
    /// @return エフェクト名
    const char* GetEffectName() const override { return "Dissolve"; }
 
-   /// @copydoc PostProcess::SerializeSettings
+   /// @brief 消失しきい値・境界色・マスクの変換と参照テクスチャをシーン保存用JSONへ変換する。
+   /// @return 当該エフェクト固有の設定を含むJSONオブジェクト。
    nlohmann::json SerializeSettings() const override;
 
-   /// @copydoc PostProcess::DeserializeSettings
+   /// @brief 消失しきい値・境界色・マスクの変換と参照テクスチャを部分設定JSONから復元し、GPU定数へ反映する。
+   /// @param settings エフェクトの設定JSONオブジェクト。未指定・型不正の項目は現在値を使う。
+   /// @return JSONオブジェクトを受け付けた場合はtrue。それ以外はfalse。
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    /// @brief 全数値パラメーターを有効範囲へ正規化して設定する。

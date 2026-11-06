@@ -205,8 +205,8 @@ void UITransformTweenComponent::DrawInspector() {
    ImGui::Checkbox(ImGuiHelper::Localize({"回転", "Rotation"}), &animateRotation);
 
    if (animateRotation) {
-      ImGui::DragFloat("Start Rotation", &startRotation, 0.01f);
-      ImGui::DragFloat("End Rotation", &endRotation, 0.01f);
+      ImGuiHelper::DragRadiansAsDegrees("Start Rotation (deg)", startRotation, 0.5f);
+      ImGuiHelper::DragRadiansAsDegrees("End Rotation (deg)", endRotation, 0.5f);
    }
 
    ImGui::DragFloat(ImGuiHelper::Localize({"遅延", "Delay"}), &delay, 0.01f, 0.0f);

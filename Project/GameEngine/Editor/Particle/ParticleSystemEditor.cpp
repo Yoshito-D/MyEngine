@@ -138,10 +138,9 @@ void DrawShapeBox(
    }
 }
 
-void DrawShapeCone(const Vector3& center, const Quaternion& rotation, const Vector3& scale, float angleDegrees,
-   float length, const Vector4& color) {
+void DrawShapeCone(const Vector3& center, const Quaternion& rotation, const Vector3& scale, float angle, float length,
+   const Vector4& color) {
    constexpr std::int32_t kSideLines = 8;
-   const float angle = angleDegrees * GameEngine::MathConstants::kDegreesToRadians;
    const float baseY = std::cos(angle) * length * scale.y;
    const float baseRadiusX = std::sin(angle) * length * scale.x;
    const float baseRadiusZ = std::sin(angle) * length * scale.z;
@@ -753,15 +752,14 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
                float radiusX = shapeModule->GetRadius() * scaleVec.x;
                float radiusZ = shapeModule->GetRadius() * scaleVec.z;
                float arc = shapeModule->GetArc();
-               float arcRadians = arc * GameEngine::MathConstants::kDegreesToRadians;
 
-               if (arc >= 360.0f) {
+               if (arc >= GameEngine::MathConstants::kTwoPi) {
                   DrawShapeEllipse(center, shapeRotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f),
                      Vector3(0.0f, 0.0f, 1.0f), radiusX, radiusZ, 0.0f, GameEngine::MathConstants::kTwoPi, shapeColor,
                      false);
                } else {
                   DrawShapeEllipse(center, shapeRotation, Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f),
-                     Vector3(0.0f, 0.0f, 1.0f), radiusX, radiusZ, 0.0f, arcRadians, shapeColor, true);
+                     Vector3(0.0f, 0.0f, 1.0f), radiusX, radiusZ, 0.0f, arc, shapeColor, true);
                }
 
                break;

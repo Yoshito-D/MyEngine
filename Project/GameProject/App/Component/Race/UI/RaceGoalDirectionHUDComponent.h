@@ -28,7 +28,9 @@ public:
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   /// @brief レース管理・プレイヤー・ゴールと、矢印モデルのUI描画部品を再解決する。
+   /// @param sceneWorld 参照の解決先となる現在のシーンワールド。
+   /// @details 所有者はModelとUIModelComponentを持つ構成を前提とする。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief プレイヤーとゴールの位置から3D矢印の向きを更新する

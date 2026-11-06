@@ -30,10 +30,13 @@ public:
 #endif
    const char* GetEffectName() const override { return "BoxFilter"; }
 
-   /// @copydoc PostProcess::SerializeSettings
+   /// @brief ボックスフィルターのカーネル半径をシーン保存用JSONへ変換する。
+   /// @return 当該エフェクト固有の設定を含むJSONオブジェクト。
    nlohmann::json SerializeSettings() const override;
 
-   /// @copydoc PostProcess::DeserializeSettings
+   /// @brief ボックスフィルターのカーネル半径を部分設定JSONから復元し、GPU定数へ反映する。
+   /// @param settings エフェクトの設定JSONオブジェクト。未指定・型不正の項目は現在値を使う。
+   /// @return JSONオブジェクトを受け付けた場合はtrue。それ以外はfalse。
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    /// @brief カーネル半径を設定（1=3x3, 2=5x5, 3=7x7）

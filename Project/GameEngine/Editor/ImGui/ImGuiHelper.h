@@ -117,6 +117,17 @@ bool DrawVec4Control(const std::string& label, Vector4& values, float resetValue
 bool DrawQuaternionControl(const std::string& label, Quaternion& value, float columnWidth = kDefaultColumnWidth,
    float speed = 0.01f, bool normalizeOnEdit = true);
 
+/// @brief rad基準の角度・角速度をdegree基準で表示・編集し、変更時だけradへ戻す。
+/// @param label deg・deg/sなど表示単位を含むラベル。
+/// @param radians 内部値（radまたはrad/s）。
+/// @param speedDegrees ドラッグ感度（degまたはdeg/s）。
+/// @param minDegrees 編集下限。maxDegreesと同じ場合は制限しない。
+/// @param maxDegrees 編集上限。
+/// @param format degree値の表示書式。
+/// @return 値を変更した場合はtrue。
+bool DragRadiansAsDegrees(const char* label, float& radians, float speedDegrees = 0.1f, float minDegrees = 0.0f,
+   float maxDegrees = 0.0f, const char* format = "%.2f");
+
 bool DrawEulerDegreesControl(const std::string& label, Vector3& eulerRadians, float resetDegrees = 0.0f,
    float columnWidth = kDefaultColumnWidth, float speedDegrees = 0.1f, float minDegrees = 0.0f, float maxDegrees = 0.0f,
    const char* format = "%.1f");
@@ -124,8 +135,8 @@ bool DrawEulerDegreesControl(const std::string& label, Vector3& eulerRadians, fl
 bool DrawQuaternionAsEulerDegrees(const std::string& label, Quaternion& value, float columnWidth = kDefaultColumnWidth,
    float speedDegrees = 0.1f, float minDegrees = 0.0f, float maxDegrees = 0.0f, const char* format = "%.1f");
 
-bool DrawTransformControl(const std::string& label, Transform& transform, float columnWidth = kDefaultColumnWidth,
-   bool rotationInDegrees = true);
+/// @brief トランスフォームを編集する。回転はdegreeで表示し、内部の姿勢はQuaternionで保持する。
+bool DrawTransformControl(const std::string& label, Transform& transform, float columnWidth = kDefaultColumnWidth);
 
 // テキスト操作 ----------------------------------------------------------------
 bool InputString(const std::string& label, std::string& text, size_t bufferSize = kDefaultTextBufferSize);

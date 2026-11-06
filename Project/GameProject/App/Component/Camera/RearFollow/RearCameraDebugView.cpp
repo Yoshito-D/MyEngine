@@ -5,6 +5,7 @@
 #include <cstdio>
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #endif
 
@@ -159,14 +160,14 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
                "Hover (?) for details. Larger blend speeds react faster; larger durations change more slowly."));
 
    if (ImGui::CollapsingHeader(Tr("基本構図", "Base Framing"), ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::DragFloat(Tr("基準後方距離", "Base Rear Distance"), &settings.distance, 0.1f, 1.0f, 100.0f);
+      ImGui::DragFloat(Tr("基準後方距離 (m)", "Base Rear Distance (m)"), &settings.distance, 0.1f, 1.0f, 100.0f);
       DrawHelp("通常時にプレイヤーからカメラまで離す後方距離です。空中距離や速度演出の加算前の基準値です。",
          "Base settings.distance behind the player before airborne and speed-effect offsets are added.");
-      ImGui::DragFloat(Tr("カメラ高さ", "Camera Height"), &settings.height, 0.1f, -20.0f, 50.0f);
+      ImGui::DragFloat(Tr("カメラ高さ (m)", "Camera Height (m)"), &settings.height, 0.1f, -20.0f, 50.0f);
       DrawHelp("カメラ位置を現在のUp方向へずらす量です。注視点の高さではありません。",
          "Moves the camera position along the current Up direction; it does not move the look target.");
-      ImGui::DragFloat(
-         Tr("地上注視点高さ", "Grounded Look Target Height"), &settings.groundedTargetHeight, 0.05f, -5.0f, 10.0f);
+      ImGui::DragFloat(Tr("地上注視点高さ (m)", "Grounded Look Target Height (m)"), &settings.groundedTargetHeight,
+         0.05f, -5.0f, 10.0f);
       DrawHelp("地上でカメラが見る点をプレイヤー中心から上へずらします。値を上げるとプレイヤーが画面下側に寄ります。",
          "Raises the grounded look target above the player center, placing the player lower in the frame.");
       ImGui::DragFloat(Tr("離陸構図切替秒", "Takeoff Framing Duration"), &settings.takeoffFramingBlendSeconds, 0.01f,
@@ -180,16 +181,17 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
    }
 
    if (ImGui::CollapsingHeader(Tr("空中の見え方", "Airborne Presentation"), ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::DragFloat(
-         Tr("空中時の追加距離", "Airborne Extra Distance"), &settings.airborneDistanceOffset, 0.1f, -30.0f, 30.0f);
+      ImGui::DragFloat(Tr("空中時の追加距離 (m)", "Airborne Extra Distance (m)"), &settings.airborneDistanceOffset,
+         0.1f, -30.0f, 30.0f);
       DrawHelp("空中で基準後方距離へ加える量です。周囲を広く見せます。",
          "Extra rear settings.distance added while airborne to show more surroundings.");
-      ImGui::DragFloat(
-         Tr("空中時の追加FOV", "Airborne Extra FOV"), &settings.airborneFovOffset, 0.001f, 0.0f, 0.5f, "%.3f");
+      GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("空中時の追加FOV (deg)", "Airborne Extra FOV (deg)"),
+         settings.airborneFovOffset, 0.001f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f,
+         0.5f * GameEngine::MathConstants::kRadiansToDegrees);
       DrawHelp("空中で通常FOVへ加える量です。速度によるFOV演出とは別です。",
          "FOV added while airborne, independently of speed-based FOV effects.");
-      ImGui::DragFloat(
-         Tr("空中表示切替速度", "Airborne State Blend Speed"), &settings.airborneBlendLerpSpeed, 0.1f, 0.1f, 30.0f);
+      ImGui::DragFloat(Tr("空中表示切替速度 (1/s)", "Airborne State Blend Speed (1/s)"),
+         &settings.airborneBlendLerpSpeed, 0.1f, 0.1f, 30.0f);
       DrawHelp(
          "空中距離・空中FOV・惑星ガイドの有効量を地上と空中の間で切り替える速度です。画面内のプレイヤー位置は構図切替秒で調整します。",
          "Blends airborne settings.distance, FOV, and planet-guide strength. Player screen placement uses the framing durations instead.");
@@ -207,25 +209,25 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
          0.0f, 1.0f, "%.2f");
       DrawHelp("接触の何秒前までに着地方向への補間を完了させるかを指定します。予測開始秒より小さくしてください。",
          "How long before contact the landing blend should be complete; keep it below the prediction lead time.");
-      ImGui::DragFloat(
-         Tr("着地補間の追従速度", "Pre-landing Blend Follow"), &settings.preLandingBlendLerpSpeed, 0.1f, 0.0f, 30.0f);
+      ImGui::DragFloat(Tr("着地補間の追従速度 (1/s)", "Pre-landing Blend Follow (1/s)"),
+         &settings.preLandingBlendLerpSpeed, 0.1f, 0.0f, 30.0f);
       DrawHelp(
          "残り時間から求めた補間量へ実際の着地前ブレンドが追従する速度です。小さくすると切り替わりがより穏やかになります。",
          "How quickly the actual pre-landing blend follows its time-based target; lower values make the transition more gradual.");
-      ImGui::DragFloat(
-         Tr("着地補間解除速度", "Pre-landing Release Speed"), &settings.preLandingReleaseLerpSpeed, 0.1f, 0.0f, 30.0f);
+      ImGui::DragFloat(Tr("着地補間解除速度 (1/s)", "Pre-landing Release Speed (1/s)"),
+         &settings.preLandingReleaseLerpSpeed, 0.1f, 0.0f, 30.0f);
       DrawHelp("予測が外れた場合と着地後に、保持していた着地前補間を解除する速度です。",
          "How quickly the retained pre-landing blend is released after a missed prediction or actual landing.");
-      ImGui::DragFloat(Tr("地形注視の先読み距離", "Terrain Look-ahead Distance"), &settings.preLandingTerrainLookAhead,
-         0.1f, 0.0f, 30.0f);
+      ImGui::DragFloat(Tr("地形注視の先読み距離 (m)", "Terrain Look-ahead Distance (m)"),
+         &settings.preLandingTerrainLookAhead, 0.1f, 0.0f, 30.0f);
       DrawHelp("予測接触地点から着地後の進行方向へ、注視候補を先読みする距離です。",
          "Distance ahead of the predicted contact point used as the terrain look target.");
       ImGui::DragFloat(Tr("地形注視の最大補正率", "Terrain Look Blend"), &settings.preLandingTerrainLookBlend, 0.01f,
          0.0f, 1.0f, "%.2f");
       DrawHelp("プレイヤー注視点から予測地形注視点へ寄せる最大割合です。",
          "Maximum blend from the player framing target toward the predicted terrain target.");
-      ImGui::DragFloat(
-         Tr("地表外側の最低高さ", "Minimum Outward Height"), &settings.preLandingMinOutwardHeight, 0.1f, 0.0f, 20.0f);
+      ImGui::DragFloat(Tr("地表外側の最低高さ (m)", "Minimum Outward Height (m)"), &settings.preLandingMinOutwardHeight,
+         0.1f, 0.0f, 20.0f);
       DrawHelp("着地前にカメラをプレイヤーと惑星の間へ入れないため、予測地表法線方向へ確保する最低高さです。",
          "Minimum offset along the predicted surface normal that keeps the camera from moving between the player and planet.");
    }
@@ -240,8 +242,10 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
          &settings.airbornePlanetDirectionBlend, 0.01f, 0.0f, 1.0f, "%.2f");
       DrawHelp("速度後方から惑星を映す方向へ寄せる上限です。0で補正なし、1でガイド方向まで寄せます。",
          "Maximum blend from velocity-rear direction toward the planet-guide direction: 0 disables correction, 1 allows full correction.");
-      ImGui::DragFloat(Tr("惑星ガイド追従速度", "Planet Guide Follow Speed"),
-         &settings.airbornePlanetDirectionLerpSpeed, 0.1f, 0.0f, 30.0f);
+      GameEngine::ImGuiHelper::DragRadiansAsDegrees(
+         Tr("惑星ガイド追従速度 (deg/s)", "Planet Guide Follow Speed (deg/s)"),
+         settings.airbornePlanetDirectionLerpSpeed, 0.1f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f,
+         30.0f * GameEngine::MathConstants::kRadiansToDegrees);
       DrawHelp(
          "惑星ガイドの方向と、重力方向による有効係数が変化へ追従する通常時の速度です。離陸後は停止・復帰設定に従って0からこの値へ戻ります。",
          "Normal follow speed for the guide direction and its gravity-gated strength. After takeoff, delay and restore settings bring speed back from zero to this value.");
@@ -272,76 +276,89 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
    }
 
    if (ImGui::CollapsingHeader(Tr("向きの追従", "Direction Tracking"), ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::DragFloat(Tr("空中速度後方の追従速度", "Airborne Velocity-rear Follow"),
+      ImGui::DragFloat(Tr("空中速度後方の追従速度 (1/s)", "Airborne Velocity-rear Follow (1/s)"),
          &settings.airborneForwardLerpSpeed, 0.1f, 0.0f, 30.0f);
       DrawHelp("空中でカメラの理想後方を、プレイヤー速度の反対方向へ回す速さです。カメラ位置全体の追従とは別です。",
          "How quickly the ideal rear direction turns opposite the player's velocity; separate from final camera-position smoothing.");
-      ImGui::DragFloat(Tr("地上後方の追従速度", "Grounded Rear Follow"), &settings.rearLerpSpeed, 0.1f, 0.0f, 30.0f);
+      ImGui::DragFloat(
+         Tr("地上後方の追従速度 (1/s)", "Grounded Rear Follow (1/s)"), &settings.rearLerpSpeed, 0.1f, 0.0f, 30.0f);
       DrawHelp("地上でカメラの理想後方をプレイヤー正面の反対へ回す速さです。",
          "How quickly the ideal rear direction turns behind the player's facing direction on the ground.");
       ImGui::DragFloat(Tr("着地後方速度の切替秒", "Landing Rear-speed Transition"),
          &settings.landingRearLerpRampSeconds, 0.01f, 0.0f, 5.0f, "%.2f");
       DrawHelp("着地直前の空中後方追従速度から、地上後方追従速度へ切り替える時間です。",
          "Time to transition from the airborne rear-follow speed to the grounded rear-follow speed after landing.");
-      ImGui::DragFloat(
-         Tr("重力Upの最大追従角速度", "Gravity Up Angular Speed"), &settings.gravityUpLerpSpeed, 0.1f, 0.1f, 30.0f);
+      GameEngine::ImGuiHelper::DragRadiansAsDegrees(
+         Tr("重力Upの最大追従角速度 (deg/s)", "Gravity Up Angular Speed (deg/s)"), settings.gravityUpLerpSpeed,
+         0.1f * GameEngine::MathConstants::kRadiansToDegrees, 0.1f * GameEngine::MathConstants::kRadiansToDegrees,
+         30.0f * GameEngine::MathConstants::kRadiansToDegrees);
       DrawHelp(
-         "惑星切替などで重力Upが変わったとき、カメラ基準Upを追従させる最大角速度（rad/s）です。最終ロール補間とは別です。",
-         "Maximum angular speed (rad/s) used to follow a changing gravity Up; separate from final roll smoothing.");
+         "惑星切替などで重力Upが変わったとき、カメラ基準Upを追従させる最大角速度（deg/s）です。最終ロール補間とは別です。",
+         "Maximum angular speed (deg/s) used to follow a changing gravity Up; separate from final roll smoothing.");
    }
 
    if (ImGui::CollapsingHeader(Tr("速度演出", "Speed Effects"), ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::DragFloat(Tr("通常FOV", "Base FOV"), &settings.fovDefault, 0.001f, 0.1f, 1.5f, "%.3f");
+      GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("通常FOV (deg)", "Base FOV (deg)"), settings.fovDefault,
+         0.001f * GameEngine::MathConstants::kRadiansToDegrees, 0.1f * GameEngine::MathConstants::kRadiansToDegrees,
+         1.5f * GameEngine::MathConstants::kRadiansToDegrees);
       DrawHelp("空中・速度演出を加える前の基準FOVです。編集した値は次のカメラ更新で直接反映します。",
          "Base FOV before airborne and speed effects; edits apply directly on the next camera update.");
-      ImGui::DragFloat(
-         Tr("高速時の追加FOV最大", "High-speed Extra FOV"), &settings.fovBoostMax, 0.001f, 0.0f, 0.5f, "%.3f");
+      GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("高速時の追加FOV最大 (deg)", "High-speed Extra FOV (deg)"),
+         settings.fovBoostMax, 0.001f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f,
+         0.5f * GameEngine::MathConstants::kRadiansToDegrees);
       DrawHelp("速度しきい値を超えて走り続けている間に加えるFOVの最大量です。瞬間キックとは異なる持続演出です。",
          "Maximum sustained FOV added while speed remains high; unlike the momentary kick, this persists.");
-      ImGui::DragFloat(Tr("FOV演出の追従速度", "FOV Effect Follow Speed"), &settings.fovLerpSpeed, 0.1f, 0.1f, 20.0f);
+      ImGui::DragFloat(
+         Tr("FOV演出の追従速度 (1/s)", "FOV Effect Follow Speed (1/s)"), &settings.fovLerpSpeed, 0.1f, 0.1f, 20.0f);
       DrawHelp("空中・高速・瞬間キックによる追加FOVの追従速度です。通常FOVの編集には影響しません。",
          "How quickly added FOV follows airborne, high-speed, and kick effects; base FOV edits are applied directly.");
-      ImGui::DragFloat(
-         Tr("高速時の追加距離最大", "High-speed Extra Distance"), &settings.distanceBoostMax, 0.1f, 0.0f, 30.0f);
+      ImGui::DragFloat(Tr("高速時の追加距離最大 (m)", "High-speed Extra Distance (m)"), &settings.distanceBoostMax,
+         0.1f, 0.0f, 30.0f);
       DrawHelp("速度しきい値を超えて走り続けている間に追加する後方距離の最大量です。瞬間キックとは異なる持続演出です。",
          "Maximum sustained rear settings.distance added while speed remains high; separate from the momentary kick.");
-      ImGui::DragFloat(Tr("速度変化FOVキック最大", "Speed-change FOV Kick Max"), &settings.speedChangeFovKickMax,
-         0.001f, 0.0f, 0.3f, "%.3f");
+      GameEngine::ImGuiHelper::DragRadiansAsDegrees(
+         Tr("速度変化FOVキック最大 (deg)", "Speed-change FOV Kick Max (deg)"), settings.speedChangeFovKickMax,
+         0.001f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f,
+         0.3f * GameEngine::MathConstants::kRadiansToDegrees);
       DrawHelp(
          "急加速・急減速した瞬間にばねへ与えるFOV変化の最大量です。旧『加速→FOVキック』と『ターボFOVキック』を統合した項目です。",
          "Maximum momentary FOV impulse on sudden acceleration or deceleration; replaces the former coefficient and turbo-kick pair.");
-      ImGui::DragFloat(Tr("速度変化距離キック最大", "Speed-change Distance Kick Max"),
+      ImGui::DragFloat(Tr("速度変化距離キック最大 (m)", "Speed-change Distance Kick Max (m)"),
          &settings.speedChangeDistanceKickMax, 0.05f, 0.0f, 8.0f);
       DrawHelp("急加速・急減速した瞬間にばねへ与える後方距離変化の最大量です。旧2項目を統合しています。",
          "Maximum momentary rear-settings.distance impulse on sudden acceleration or deceleration; replaces the former two controls.");
-      ImGui::DragFloat(Tr("キックばね剛性", "Kick Spring Stiffness"), &settings.springStiffness, 1.0f, 1.0f, 300.0f);
+      ImGui::DragFloat(
+         Tr("キックばね剛性 (1/s²)", "Kick Spring Stiffness (1/s²)"), &settings.springStiffness, 1.0f, 1.0f, 300.0f);
       DrawHelp("瞬間キックを元のFOV・距離へ引き戻すばねの強さです。大きいほど戻す力が強くなります。",
          "Restoring force that pulls momentary FOV and settings.distance kicks back to zero; larger values pull harder.");
-      ImGui::DragFloat(Tr("キックばね減衰", "Kick Spring Damping"), &settings.springDamping, 0.5f, 0.0f, 100.0f);
+      ImGui::DragFloat(
+         Tr("キックばね減衰 (1/s)", "Kick Spring Damping (1/s)"), &settings.springDamping, 0.5f, 0.0f, 100.0f);
       DrawHelp("瞬間キックの揺れを減らす強さです。大きいほど振動が早く収まります。",
          "Damping applied to momentary kicks; larger values settle oscillation sooner.");
-      ImGui::DragFloat(
-         Tr("高速演出開始速度", "High-speed Effect Start"), &settings.speedBoostThreshold, 0.5f, 0.0f, 100.0f);
+      ImGui::DragFloat(Tr("高速演出開始速度 (m/s)", "High-speed Effect Start (m/s)"), &settings.speedBoostThreshold,
+         0.5f, 0.0f, 100.0f);
       DrawHelp("持続する高速FOV・距離演出が効き始めるプレイヤー速度です。",
          "Player speed at which sustained high-speed FOV and settings.distance effects begin.");
-      ImGui::DragFloat(
-         Tr("高速演出最大速度", "High-speed Effect Full Speed"), &settings.speedBoostMax, 0.5f, 0.0f, 200.0f);
+      ImGui::DragFloat(Tr("高速演出最大速度 (m/s)", "High-speed Effect Full Speed (m/s)"), &settings.speedBoostMax,
+         0.5f, 0.0f, 200.0f);
       DrawHelp("持続する高速FOV・距離演出が最大になるプレイヤー速度です。開始速度より大きくしてください。",
          "Player speed at which sustained high-speed effects reach full strength; set it above the start speed.");
    }
 
    if (ImGui::CollapsingHeader(Tr("最終出力の安定化", "Final Output Stabilization"), ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::DragFloat(Tr("最終カメラ位置の追従速度", "Final Camera Position Follow"), &settings.positionLerpSpeed,
-         0.5f, 1.0f, 100.0f);
+      ImGui::DragFloat(Tr("最終カメラ位置の追従速度 (1/s)", "Final Camera Position Follow (1/s)"),
+         &settings.positionLerpSpeed, 0.5f, 1.0f, 100.0f);
       DrawHelp("空中・速度演出を合成した最終カメラ距離を滑らかにします。",
          "Smooths final camera settings.distance after airborne and speed effects are composed.");
-      ImGui::DragFloat(Tr("eye方向の最大角速度", "Eye Direction Max Angular Speed"),
-         &settings.eyeDirectionMaxAngularSpeed, 0.1f, 0.0f, 30.0f);
+      GameEngine::ImGuiHelper::DragRadiansAsDegrees(
+         Tr("eye方向の最大角速度 (deg/s)", "Eye Direction Max Angular Speed (deg/s)"),
+         settings.eyeDirectionMaxAngularSpeed, 0.1f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f,
+         30.0f * GameEngine::MathConstants::kRadiansToDegrees);
       DrawHelp(
          "上流で決定済みのeye方向は通常そのまま使い、急変時だけ1秒あたりの旋回角を制限します。低いジャンプの短い状態往復を吸収します。",
          "Normally keeps the resolved eye direction unchanged and only caps its angular speed during abrupt changes, absorbing short-hop state reversals.");
       ImGui::DragFloat(
-         Tr("最終ロールの追従速度", "Final Roll Follow"), &settings.rotationLerpSpeed, 0.5f, 0.1f, 100.0f);
+         Tr("最終ロールの追従速度 (1/s)", "Final Roll Follow (1/s)"), &settings.rotationLerpSpeed, 0.5f, 0.1f, 100.0f);
       DrawHelp(
          "カメラの視線をプレイヤーへ固定したまま、最終的なRight/Up（ロール）だけを滑らかにします。重力Up補間とは処理段階が異なります。",
          "Smooths only final Right/Up roll while keeping the view aimed at the player; it is downstream from gravity-Up tracking.");
@@ -486,7 +503,8 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("注視惑星中心", "Look Planet Center"), frame.input.planetCenter.x,
       frame.input.planetCenter.y, frame.input.planetCenter.z);
    ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), frame.input.playerSpeed,
-      Tr("現在FOV", "Current FOV"), frame.speed.GetState().currentFov);
+      Tr("現在FOV (deg)", "Current FOV (deg)"),
+      frame.speed.GetState().currentFov * GameEngine::MathConstants::kRadiansToDegrees);
 }
 #endif
 

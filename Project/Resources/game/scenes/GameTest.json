@@ -4766,8 +4766,7 @@
                   "playerObjectId": "Model:Player",
                   "raceManagerId": "Object:RaceManager",
                   "response": 8.0,
-                  "speedTextObjectId": "UIText:SpeedGaugeText",
-                  "unitToKmh": 3.5999999046325684
+                  "speedTextObjectId": "UIText:SpeedGaugeText"
                },
                "enabled": true,
                "typeName": "VehicleSpeedGaugeUIComponent"

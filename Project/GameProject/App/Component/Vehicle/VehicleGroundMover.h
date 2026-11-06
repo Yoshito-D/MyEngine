@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include "GameEngine/Math/Functions/MathConstants.h"
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
@@ -35,17 +36,19 @@ public:
       const GameEngine::Quaternion& currentRot);
 
    /// @brief 着地失敗による減速と加速禁止を一括で適用する
-   /// @param speed ペナルティ適用直後の前進速度
+   /// @param speed ペナルティ適用直後の前進速度（m/s）
    /// @param duration 加速を禁止する時間（秒）
    void ApplyLandingPenalty(float speed, float duration);
 
    /// @brief 加速度を積む（持続的な加速・減速用）
    /// 積まれた加速度は UpdateSpeed 内で v += a * dt として適用され、
    /// 適用後にリセットされる。autoSpeed への回復はその後に行われる。
+   /// @param accel 加算する加速度（m/s²）。
    void AddAcceleration(float accel);
 
    /// @brief 速度を即座に加算する（着地ブースト・ペナルティなど瞬間的な速度変化用）
    /// autoSpeed への回復は UpdateSpeed の指数平滑によって行われる。
+   /// @param impulse 瞬間的に加える速度変化（m/s）。
    void AddVelocityImpulse(float impulse);
 
    /// @brief 着地判定前に禁止時間を進める（空中も含めて移動更新ごとに1回）
@@ -54,7 +57,7 @@ public:
    /// @brief ミニターボと自動加速が禁止されているか取得する
    bool IsAccelerationBlocked() const { return accelerationBlockRemaining_ > 0.0f; }
 
-   /// @brief 現在の前進実速度を取得する
+   /// @brief 現在の前進実速度（m/s）を取得する
    float GetCurrentSpeed() const { return currentSpeed_; }
 
    /// @brief 直近の水平前方ベクトルを取得する
@@ -83,15 +86,15 @@ public:
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
 
-      /// @brief 自動前進速度（units/sec）
+      /// @brief 自動前進速度（m/s）
       float autoSpeed = 16.0f;
 
-      /// @brief ステアリング角速度（deg/sec）
-      float steerSpeed = 120.0f;
+      /// @brief ステアリング角速度（rad/s）
+      float steerSpeed = 120.0f * GameEngine::MathConstants::kDegreesToRadians;
 
-      /// @brief スピード回復速度（per sec）
+      /// @brief スピード回復速度（1/s）
       float speedRecovery = 1.0f;
-      float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限
+      float maxSpeed = 40.0f; ///< 外部加速を含めた前進速度の上限（m/s）
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
@@ -103,10 +106,10 @@ public:
 private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
-   float autoSpeed = 16.0f;    ///< 通常走行速度。これを下回ったときのみ減速演出を発火する。
-   float steerSpeed = 120.0f;  ///< ステアリング角速度（deg/sec）。
-   float speedRecovery = 1.0f; ///< スピード回復速度（per sec）。
-   float maxSpeed = 40.0f;     ///< 外部加速を含めた前進速度の上限
+   float autoSpeed = 16.0f; ///< 通常走行速度。これを下回ったときのみ減速演出を発火する。
+   float steerSpeed = 120.0f * GameEngine::MathConstants::kDegreesToRadians; ///< ステアリング角速度（rad/s）。
+   float speedRecovery = 1.0f;                                               ///< スピード回復速度（1/s）。
+   float maxSpeed = 40.0f;                                                   ///< 外部加速を含めた前進速度の上限（m/s）
 
 private:
    /// @brief 指定秒数だけ加速を禁止し、保留中の正の加速を破棄する
@@ -129,13 +132,13 @@ private:
    /// @brief 現在の前進実速度（負値は未初期化を示す）
    float currentSpeed_ = -1.0f;
 
-   /// @brief 外部から積まれた加速度（units/sec²）。UpdateSpeed で v += a * dt して毎フレームリセット
+   /// @brief 外部から積まれた加速度（m/s²）。UpdateSpeed で v += a * dt して毎フレームリセット
    float acceleration_ = 0.0f;
 
    /// @brief 着地失敗による加速禁止の残り時間（秒）
    float accelerationBlockRemaining_ = 0.0f;
 
-   /// @brief 外部から積まれた瞬間速度変化（units/sec）。UpdateSpeed で直接加算してリセット
+   /// @brief 外部から積まれた瞬間速度変化（m/s）。UpdateSpeed で直接加算してリセット
    float velocityImpulse_ = 0.0f;
 
    /// @brief 直近の水平前方ベクトル

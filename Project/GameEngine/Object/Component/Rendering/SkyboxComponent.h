@@ -63,10 +63,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief スカイボックスの共有可能な調整値をJSONで取得する。
+   /// @return 背景に使うテクスチャ名と色を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief スカイボックスの共有設定を既存コンポーネントへ反映する。
+   /// @param data 背景に使うテクスチャ名と色を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

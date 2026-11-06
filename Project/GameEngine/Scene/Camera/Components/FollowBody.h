@@ -13,13 +13,18 @@ public:
    /// @brief カメラコンポーネントを破棄する
    ~FollowBody() override = default;
 
-   /// @copydoc ICinemachineComponent::MutateCameraState
+   /// @brief 追従対象のワールド位置へオフセットを加え、各軸の指数減衰でカメラ位置を追従させる。
+   /// @param state 更新するカメラ状態。
+   /// @param deltaTime フレームの経過時間（s）。
+   /// @details 所有カメラまたは追従対象が未設定の場合は、カメラ状態を変更しない。
    void MutateCameraState(CameraState& state, float deltaTime) override;
 
-   /// @copydoc ICinemachineComponent::GetStage
+   /// @brief 仮想カメラ内でこの処理を実行するステージを返す。
+   /// @return 位置を計算するBodyステージ。
    CinemachineStage GetStage() const override { return CinemachineStage::Body; }
 
-   /// @copydoc ICinemachineComponent::GetComponentName
+   /// @brief 保存データと仮想カメラのコンポーネント検索に使う名前を返す。
+   /// @return 「FollowBody」を表す固定文字列。
    const char* GetComponentName() const override { return "FollowBody"; }
 
    /// @brief オフセットを設定
@@ -34,21 +39,25 @@ public:
    /// @brief 軸ごとの追従ダンピングを取得する
    const Vector3& GetDamping() const { return damping_; }
 
-   /// @copydoc ICinemachineComponent::Serialize
+   /// @brief カメラ位置追従の保存対象設定をJSONへ変換する。
+   /// @return 追従オフセット（m）と各軸の減衰係数（1/s）を含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc ICinemachineComponent::Deserialize
+   /// @brief 保存JSONからカメラ位置追従の設定を復元する。
+   /// @param data 追従オフセット（m）と各軸の減衰係数（1/s）を含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief カメラ位置追従の共有可能な調整値をJSONで取得する。
+   /// @return 追従オフセット（m）と各軸の減衰係数（1/s）を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief カメラ位置追従の共有設定を既存コンポーネントへ反映する。
+   /// @param data 追従オフセット（m）と各軸の減衰係数（1/s）を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ICinemachineComponent::DrawInspector
+   /// @brief カメラ位置追従の追従オフセット（m）と各軸の減衰係数（1/s）をインスペクターで表示・編集する。
    void DrawInspector() override;
 #endif
 

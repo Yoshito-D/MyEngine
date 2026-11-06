@@ -59,17 +59,21 @@ public:
 
 #ifdef USE_IMGUI
 
-   /// @copydoc PostProcess::ImGuiEdit
+   /// @brief 集中線の密度・範囲・太さ・強度・流速などをエディターで編集する。
    void ImGuiEdit() override;
 #endif
 
-   /// @copydoc PostProcess::GetEffectName
+   /// @brief エディター表示と保存識別に使うエフェクト名を返す。
+   /// @return 「Speed Line」を表す固定文字列。
    const char* GetEffectName() const override { return "Speed Line"; }
 
-   /// @copydoc PostProcess::SerializeSettings
+   /// @brief 集中線の中心・密度・太さ・範囲・時刻・流速をシーン保存用JSONへ変換する。
+   /// @return 当該エフェクト固有の設定を含むJSONオブジェクト。
    nlohmann::json SerializeSettings() const override;
 
-   /// @copydoc PostProcess::DeserializeSettings
+   /// @brief 集中線の中心・密度・太さ・範囲・時刻・流速を部分設定JSONから復元し、GPU定数へ反映する。
+   /// @param settings エフェクトの設定JSONオブジェクト。未指定・型不正の項目は現在値を使う。
+   /// @return JSONオブジェクトを受け付けた場合はtrue。それ以外はfalse。
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    /// @brief 集中線パラメーターを検証してまとめて設定する

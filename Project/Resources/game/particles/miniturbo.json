@@ -52,9 +52,9 @@
       }
    },
    "limitVelocityModule": {
-      "dampen": {
-         "max": 1,
-         "min": 1,
+      "dampingRate": {
+         "max": 828.9306334778564,
+         "min": 828.9306334778564,
          "randomize": false
       },
       "enabled": true,
@@ -218,8 +218,8 @@
       "enabled": true
    },
    "shapeModule": {
-      "angle": 15,
-      "arc": 360,
+      "angle": 0.2617993877991494,
+      "arc": 6.283185307179586,
       "boxSize": [
          0.10000000149011612,
          0.10000000149011612,
@@ -378,7 +378,7 @@
    },
    "velocityOverLifetimeModule": {
       "enabled": false,
-      "linearVelocity": {
+      "linearAcceleration": {
          "max": [
             0,
             0,
@@ -391,9 +391,9 @@
          ],
          "randomize": true
       },
-      "speedModifier": {
-         "max": 1,
-         "min": 1,
+      "speedGrowthRate": {
+         "max": 0,
+         "min": 0,
          "randomize": false
       }
    }

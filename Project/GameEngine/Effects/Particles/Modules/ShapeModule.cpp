@@ -56,7 +56,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
          break;
       }
       case ShapeType::Cone: {
-         float angle = RandomRange(0.0f, angle_ * MathConstants::kDegreesToRadians);
+         float angle = RandomRange(0.0f, angle_);
          float rotation = RandomRange(0.0f, MathConstants::kTwoPi);
          float distance = RandomRange(0.0f, length_);
          localOffset.x += distance * std::sin(angle) * std::cos(rotation) * scale.x;
@@ -97,7 +97,7 @@ Vector3 ShapeModule::GetRandomEmissionPosition() const {
          break;
       }
       case ShapeType::Circle: {
-         float angle = RandomRange(0.0f, arc_ * MathConstants::kDegreesToRadians);
+         float angle = RandomRange(0.0f, arc_);
          float r = (emitFrom_ == EmitFrom::Edge) ? radius_ : RandomRange(0.0f, radius_);
          localOffset.x += r * std::cos(angle) * scale.x;
          localOffset.z += r * std::sin(angle) * scale.z;
@@ -211,7 +211,7 @@ Vector3 ShapeModule::GetRandomEmissionDirection() const {
          break;
       }
       case ShapeType::Cone: {
-         float angle = RandomRange(0.0f, angle_ * MathConstants::kDegreesToRadians);
+         float angle = RandomRange(0.0f, angle_);
          float rotation = RandomRange(0.0f, MathConstants::kTwoPi);
          direction.x = std::sin(angle) * std::cos(rotation);
          direction.y = std::cos(angle);

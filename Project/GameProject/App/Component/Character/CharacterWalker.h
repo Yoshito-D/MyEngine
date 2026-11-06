@@ -53,31 +53,31 @@ public:
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照を除き、共有可能な設定をJSONで返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行状態を維持したまま、統一単位の共有設定JSONを適用する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
    struct Settings {
 
-      /// @brief 最大移動速度（units/sec）
+      /// @brief 最大移動速度（m/s）
       float moveSpeed = 5.0f;
 
-      /// @brief 地上加速度（units/sec²）
+      /// @brief 地上加速度（m/s²）
       float acceleration = 20.0f;
 
-      /// @brief 地上減速度（units/sec²）
+      /// @brief 地上減速度（m/s²）
       float friction = 15.0f;
 
-      /// @brief 空中加速度（units/sec²）
+      /// @brief 空中加速度（m/s²）
       float airAcceleration = 5.0f;
 
-      /// @brief 空中減速度（units/sec²）
+      /// @brief 空中減速度（m/s²）
       float airFriction = 0.0f;
 
-      /// @brief 旋回速度（rad/sec）
+      /// @brief 旋回速度（rad/s）
       float turnSpeed = 10.0f;
    };
 
@@ -90,12 +90,12 @@ public:
 private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
-   float moveSpeed = 5.0f;       ///< 最大移動速度（units/sec）。
+   float moveSpeed = 5.0f;       ///< 最大移動速度（m/s）。
    float acceleration = 20.0f;   ///< 1秒あたりの速度変化を表す加速度。
-   float friction = 15.0f;       ///< 地上減速度（units/sec²）。
-   float airAcceleration = 5.0f; ///< 空中加速度（units/sec²）。
-   float airFriction = 0.0f;     ///< 空中減速度（units/sec²）。
-   float turnSpeed = 10.0f;      ///< 旋回速度（rad/sec）。
+   float friction = 15.0f;       ///< 地上減速度（m/s²）。
+   float airAcceleration = 5.0f; ///< 空中加速度（m/s²）。
+   float airFriction = 0.0f;     ///< 空中減速度（m/s²）。
+   float turnSpeed = 10.0f;      ///< 旋回速度（rad/s）。
 
 private:
    /// @brief 重力平面上の現在速度

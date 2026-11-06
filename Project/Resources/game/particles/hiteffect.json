@@ -37,9 +37,17 @@
       ]
    },
    "limitVelocityModule": {
-      "dampen": 0.5,
+      "dampingRate": {
+         "min": 41.58883083359672,
+         "max": 41.58883083359672,
+         "randomize": false
+      },
       "enabled": false,
-      "speedLimit": 10
+      "speedLimit": {
+         "min": 10,
+         "max": 10,
+         "randomize": false
+      }
    },
    "mainModule": {
       "duration": 0.10000000149011612,
@@ -124,8 +132,8 @@
       "enabled": true
    },
    "shapeModule": {
-      "angle": 25,
-      "arc": 360,
+      "angle": 0.4363323129985824,
+      "arc": 6.283185307179586,
       "boxSize": [
          1,
          1,
@@ -245,12 +253,24 @@
    },
    "velocityOverLifetimeModule": {
       "enabled": false,
-      "linearVelocity": [
-         0,
-         0,
-         0
-      ],
-      "speedModifier": 1
+      "linearAcceleration": {
+         "min": [
+            0,
+            0,
+            0
+         ],
+         "max": [
+            0,
+            0,
+            0
+         ],
+         "randomize": false
+      },
+      "speedGrowthRate": {
+         "min": 0,
+         "max": 0,
+         "randomize": false
+      }
    },
    "particleMeshModule": {
       "enabled": true,

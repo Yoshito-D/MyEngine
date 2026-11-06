@@ -236,7 +236,7 @@ void MainModule::DrawInspector() {
    float duration = GetDuration();
 
    if (ImGuiHelper::DrawFloatControl(
-          L({"再生時間", "Duration"}), duration, 5.0f, kInspectorColumnWidth, 0.1f, 0.1f, 60.0f)) {
+          L({"再生時間 (s)", "Duration (s)"}), duration, 5.0f, kInspectorColumnWidth, 0.1f, 0.1f, 60.0f)) {
       SetDuration(duration);
    }
 
@@ -263,13 +263,13 @@ void MainModule::DrawInspector() {
    if (GetStartSpeedMode() == StartSpeedMode::Directional) {
       RandomFloat speed = GetStartSpeed();
 
-      if (DrawRandomFloat(L({"開始速度", "Start Speed"}), speed, 0.1f, 0.0f, 50.0f)) {
+      if (DrawRandomFloat(L({"開始速度 (m/s)", "Start Speed (m/s)"}), speed, 0.1f, 0.0f, 50.0f)) {
          SetStartSpeed(speed);
       }
    } else {
       RandomVector3 velocity = GetStartVelocity();
 
-      if (DrawRandomVector3(L({"開始速度ベクトル", "Start Velocity"}), velocity, 0.1f, -50.0f, 50.0f)) {
+      if (DrawRandomVector3(L({"開始速度ベクトル (m/s)", "Start Velocity (m/s)"}), velocity, 0.1f, -50.0f, 50.0f)) {
          SetStartVelocity(velocity);
       }
    }
@@ -291,7 +291,7 @@ void MainModule::DrawInspector() {
 
    RandomVector3 rotation = GetStartRotation();
 
-   if (DrawRandomEulerDegrees(L({"開始回転", "Start Rotation"}), rotation)) {
+   if (DrawRandomEulerDegrees(L({"開始回転 (deg)", "Start Rotation (deg)"}), rotation)) {
       SetStartRotation(rotation);
    }
 
@@ -488,31 +488,31 @@ void ShapeModule::DrawInspector() {
          float radius = GetRadius();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"半径", "Radius"}), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
+                L({"半径 (m)", "Radius (m)"}), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
             SetRadius(radius);
          }
 
          break;
       }
       case ShapeType::Cone: {
-         float angle = GetAngle();
+         float angle = ImGuiHelper::RadiansToDegrees(GetAngle());
 
          if (ImGuiHelper::DrawFloatControl(
                 L({"角度 (deg)", "Angle (deg)"}), angle, 25.0f, kInspectorColumnWidth, 1.0f, 0.0f, 90.0f)) {
-            SetAngle(angle);
+            SetAngle(ImGuiHelper::DegreesToRadians(angle));
          }
 
          float radius = GetRadius();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"半径", "Radius"}), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
+                L({"半径 (m)", "Radius (m)"}), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
             SetRadius(radius);
          }
 
          float length = GetLength();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"長さ", "Length"}), length, 5.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
+                L({"長さ (m)", "Length (m)"}), length, 5.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
             SetLength(length);
          }
 
@@ -522,7 +522,7 @@ void ShapeModule::DrawInspector() {
          Vector3 boxSize = GetBoxSize();
 
          if (ImGuiHelper::DrawVec3Control(
-                L({"箱サイズ", "Box Size"}), boxSize, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
+                L({"箱サイズ (m)", "Box Size (m)"}), boxSize, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
             SetBoxSize(boxSize);
          }
 
@@ -532,20 +532,20 @@ void ShapeModule::DrawInspector() {
          float radius = GetRadius();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"半径", "Radius"}), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
+                L({"半径 (m)", "Radius (m)"}), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.1f, 100.0f)) {
             SetRadius(radius);
          }
 
-         float arc = GetArc();
+         float arc = ImGuiHelper::RadiansToDegrees(GetArc());
 
          if (ImGuiHelper::DrawFloatControl(
                 L({"円弧 (deg)", "Arc (deg)"}), arc, 360.0f, kInspectorColumnWidth, 1.0f, 0.0f, 360.0f)) {
-            SetArc(arc);
+            SetArc(ImGuiHelper::DegreesToRadians(arc));
          }
 
          float outwardVelocity = GetCircleOutwardVelocity();
 
-         if (ImGuiHelper::DrawFloatControl(L({"外向き速度", "Outward Velocity"}), outwardVelocity, 0.0f,
+         if (ImGuiHelper::DrawFloatControl(L({"外向き速度 (m/s)", "Outward Velocity (m/s)"}), outwardVelocity, 0.0f,
                 kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
             SetCircleOutwardVelocity(outwardVelocity);
          }
@@ -556,14 +556,14 @@ void ShapeModule::DrawInspector() {
          float radius = GetRadius();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"半径", "Radius"}), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
+                L({"半径 (m)", "Radius (m)"}), radius, 1.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
             SetRadius(radius);
          }
 
          float height = GetLength();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"高さ", "Height"}), height, 5.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
+                L({"高さ (m)", "Height (m)"}), height, 5.0f, kInspectorColumnWidth, 0.1f, 0.0f, 100.0f)) {
             SetLength(height);
          }
 
@@ -615,16 +615,16 @@ void ShapeModule::DrawInspector() {
 void VelocityOverLifetimeModule::DrawInspector() {
    if (!DrawModuleEnabled(*this, "VelocityOverLifetime")) return;
 
-   RandomVector3 linearVelocity = GetLinearVelocityRange();
+   RandomVector3 linearAcceleration = GetLinearAccelerationRange();
 
-   if (DrawRandomVector3(L({"線形速度", "Linear Velocity"}), linearVelocity, 0.1f, -50.0f, 50.0f)) {
-      SetLinearVelocityRange(linearVelocity);
+   if (DrawRandomVector3(L({"加速度 (m/s²)", "Acceleration (m/s²)"}), linearAcceleration, 0.1f, -50.0f, 50.0f)) {
+      SetLinearAccelerationRange(linearAcceleration);
    }
 
-   RandomFloat speedModifier = GetSpeedModifierRange();
+   RandomFloat speedGrowthRate = GetSpeedGrowthRateRange();
 
-   if (DrawRandomFloat(L({"速度補正", "Speed Modifier"}), speedModifier, 0.01f, 0.0f, 5.0f)) {
-      SetSpeedModifierRange(speedModifier);
+   if (DrawRandomFloat(L({"速度増幅率 (1/s)", "Speed Growth Rate (1/s)"}), speedGrowthRate, 0.1f, -100.0f, 100.0f)) {
+      SetSpeedGrowthRateRange(speedGrowthRate);
    }
 }
 
@@ -633,14 +633,14 @@ void LimitVelocityOverLifetimeModule::DrawInspector() {
 
    RandomFloat speedLimit = GetSpeedLimitRange();
 
-   if (DrawRandomFloat(L({"速度上限", "Speed Limit"}), speedLimit, 0.1f, 0.0f, 100.0f)) {
+   if (DrawRandomFloat(L({"速度上限 (m/s)", "Speed Limit (m/s)"}), speedLimit, 0.1f, 0.0f, 100.0f)) {
       SetSpeedLimitRange(speedLimit);
    }
 
-   RandomFloat dampen = GetDampenRange();
+   RandomFloat dampingRate = GetDampingRateRange();
 
-   if (DrawRandomFloat(L({"減衰", "Dampen"}), dampen, 0.01f, 0.0f, 1.0f)) {
-      SetDampenRange(dampen);
+   if (DrawRandomFloat(L({"減衰係数 (1/s)", "Damping Rate (1/s)"}), dampingRate, 0.1f, 0.0f, 1000.0f)) {
+      SetDampingRateRange(dampingRate);
    }
 }
 
@@ -649,13 +649,13 @@ void ForceOverLifetimeModule::DrawInspector() {
 
    RandomVector3 force = GetForceRange();
 
-   if (DrawRandomVector3(L({"力", "Force"}), force, 0.1f, -50.0f, 50.0f)) {
+   if (DrawRandomVector3(L({"力 (m/s²)", "Force (m/s²)"}), force, 0.1f, -50.0f, 50.0f)) {
       SetForceRange(force);
    }
 
    RandomFloat drag = GetDragRange();
 
-   if (DrawRandomFloat(L({"空気抵抗", "Drag"}), drag, 0.05f, 0.0f, 50.0f)) {
+   if (DrawRandomFloat(L({"空気抵抗 (1/s)", "Drag (1/s)"}), drag, 0.05f, 0.0f, 50.0f)) {
       SetDragRange(drag);
    }
 
@@ -740,7 +740,8 @@ void RotationOverLifetimeModule::DrawInspector() {
 
    RandomVector3 angularVelocity{GetAngularVelocityMin(), GetAngularVelocityMax(), GetAngularVelocityRandomize()};
 
-   if (DrawRandomEulerDegrees(L({"角速度", "Angular Velocity"}), angularVelocity, 1.0f, -360.0f, 360.0f)) {
+   if (DrawRandomEulerDegrees(
+          L({"角速度 (deg/s)", "Angular Velocity (deg/s)"}), angularVelocity, 1.0f, -360.0f, 360.0f)) {
       ConfigureAngularVelocity(angularVelocity);
    }
 }
@@ -750,20 +751,28 @@ void NoiseModule::DrawInspector() {
 
    RandomFloat strength = GetStrengthRange();
 
-   if (DrawRandomFloat(L({"強さ", "Strength"}), strength, 0.1f, 0.0f, 10.0f)) {
+   if (DrawRandomFloat(L({"加速度振幅 (m/s²)", "Acceleration Amplitude (m/s²)"}), strength, 0.1f, 0.0f, 10.0f)) {
       SetStrengthRange(strength);
    }
 
    RandomFloat frequency = GetFrequencyRange();
+   frequency = RandomFloat(ImGuiHelper::RadiansToDegrees(frequency.Minimum()),
+      ImGuiHelper::RadiansToDegrees(frequency.Maximum()), frequency.IsRandomized());
 
-   if (DrawRandomFloat(L({"周波数", "Frequency"}), frequency, 0.01f, 0.0f, 5.0f)) {
-      SetFrequencyRange(frequency);
+   if (DrawRandomFloat(L({"空間周波数 (deg/m)", "Spatial Frequency (deg/m)"}), frequency, 0.5f, 0.0f,
+          5.0f * MathConstants::kRadiansToDegrees)) {
+      SetFrequencyRange(RandomFloat(ImGuiHelper::DegreesToRadians(frequency.Minimum()),
+         ImGuiHelper::DegreesToRadians(frequency.Maximum()), frequency.IsRandomized()));
    }
 
    RandomFloat scrollSpeed = GetScrollSpeedRange();
+   scrollSpeed = RandomFloat(ImGuiHelper::RadiansToDegrees(scrollSpeed.Minimum()),
+      ImGuiHelper::RadiansToDegrees(scrollSpeed.Maximum()), scrollSpeed.IsRandomized());
 
-   if (DrawRandomFloat(L({"スクロール速度", "Scroll Speed"}), scrollSpeed, 0.1f, 0.0f, 10.0f)) {
-      SetScrollSpeedRange(scrollSpeed);
+   if (DrawRandomFloat(L({"位相速度 (deg/s)", "Phase Speed (deg/s)"}), scrollSpeed, 1.0f, 0.0f,
+          10.0f * MathConstants::kRadiansToDegrees)) {
+      SetScrollSpeedRange(RandomFloat(ImGuiHelper::DegreesToRadians(scrollSpeed.Minimum()),
+         ImGuiHelper::DegreesToRadians(scrollSpeed.Maximum()), scrollSpeed.IsRandomized()));
    }
 }
 
@@ -1217,7 +1226,7 @@ void ParticleMeshModule::DrawInspector() {
          float radius = GetSphereRadius();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"半径", "Radius"}), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
+                L({"半径 (m)", "Radius (m)"}), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
             SetSphereRadius(radius);
          }
 
@@ -1263,7 +1272,7 @@ void ParticleMeshModule::DrawInspector() {
          float height = GetCylinderHeight();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"高さ", "Height"}), height, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 20.0f)) {
+                L({"高さ (m)", "Height (m)"}), height, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 20.0f)) {
             SetCylinderHeight(height);
          }
 
@@ -1280,14 +1289,14 @@ void ParticleMeshModule::DrawInspector() {
          float radius = GetConeRadius();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"半径", "Radius"}), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
+                L({"半径 (m)", "Radius (m)"}), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
             SetConeRadius(radius);
          }
 
          float height = GetConeHeight();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"高さ", "Height"}), height, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 20.0f)) {
+                L({"高さ (m)", "Height (m)"}), height, 1.0f, kInspectorColumnWidth, 0.01f, 0.01f, 20.0f)) {
             SetConeHeight(height);
          }
 
@@ -1304,7 +1313,7 @@ void ParticleMeshModule::DrawInspector() {
          float radius = GetCircleRadius();
 
          if (ImGuiHelper::DrawFloatControl(
-                L({"半径", "Radius"}), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
+                L({"半径 (m)", "Radius (m)"}), radius, 0.5f, kInspectorColumnWidth, 0.01f, 0.01f, 10.0f)) {
             SetCircleRadius(radius);
          }
 

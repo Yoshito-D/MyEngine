@@ -15,13 +15,17 @@ public:
    /// @param offscreenRT オフスクリーンレンダーターゲット（ping-pong バッファ管理用）
    explicit PostEffectPass(OffscreenRenderTarget* offscreenRT) : offscreenRT_(offscreenRT) {}
 
-   /// @copydoc IRenderPass::Execute
+   /// @brief ポストエフェクトを適用し、その結果へUIなどの後段描画コマンドを重ねる。
+   /// @param ctx 今フレームの描画対象・デバイス・描画処理を保持するコンテキスト。
+   /// @details 中間レンダーターゲットが未設定の場合は実行しない。
    void Execute(FrameContext& ctx) override;
 
-   /// @copydoc IRenderPass::GetName
+   /// @brief デバッグ表示でこのレンダーパスを識別する名前を返す。
+   /// @return 「PostEffectPass」を表す固定文字列。
    std::string_view GetName() const override { return "PostEffectPass"; }
 
-   /// @copydoc IRenderPass::GetPassType
+   /// @brief レンダラーが実行順を分類するためのパス種別を返す。
+   /// @return ポストエフェクトと後段描画を表すPostEffect。
    RenderPassType GetPassType() const override { return RenderPassType::PostEffect; }
 
 private:

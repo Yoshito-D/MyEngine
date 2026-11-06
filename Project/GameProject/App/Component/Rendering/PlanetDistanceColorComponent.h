@@ -20,32 +20,41 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"惑星距離ベースカラー", "Planet Distance Base Color"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief 保存データとコンポーネント検索に使う型名を返す。
+   /// @return 「PlanetDistanceColorComponent」を表す固定文字列。
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @copydoc GameEngine::IObjectComponent::Update
+   /// @brief プレイヤーと惑星地表との距離から、マテリアルのベース色をグレーへ補間する。
+   /// @param deltaTime 未使用。距離（m）からそのフレームの色を直接求める。
+   /// @details プレイヤー参照がない、または距離が非有限の場合は適用前の色へ戻す。
    void Update(float deltaTime) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnDisable
+   /// @brief 距離演出で変更したマテリアルの色を戻し、保持していた色の履歴を破棄する。
+   /// @details 演出後に外部で差し替え・再編集された色は上書きしない。
    void OnDisable() override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnDetach
+   /// @brief デタッチ前に距離演出による色変更を解除し、色の履歴を破棄する。
+   /// @details 差し替え済みマテリアルや外部で再編集された色は保持する。
    void OnDetach() override;
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief 惑星の距離連動色の保存対象設定をJSONへ変換する。
+   /// @return 距離の基準となるプレイヤーIDと色の減衰距離を含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief 保存JSONから惑星の距離連動色の設定を復元する。
+   /// @param data 距離の基準となるプレイヤーIDと色の減衰距離を含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 惑星の距離連動色の共有可能な調整値をJSONで取得する。
+   /// @return プレイヤーIDを除いた色の減衰距離（m）を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 惑星の距離連動色の共有設定を既存コンポーネントへ反映する。
+   /// @param data プレイヤーIDを除いた色の減衰距離（m）を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 惑星の距離連動色の距離の基準となるプレイヤーIDと色の減衰距離をインスペクターで表示・編集する。
    void DrawInspector() override;
 #endif
 

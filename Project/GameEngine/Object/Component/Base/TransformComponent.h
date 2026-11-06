@@ -18,18 +18,22 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"トランスフォーム", "Transform"};
 
-   /// @copydoc IObjectComponent::GetTypeName
+   /// @brief 保存データとコンポーネント検索に使う型名を返す。
+   /// @return 「TransformComponent」を表す固定文字列。
    const char* GetTypeName() const override;
 
-   /// @copydoc IObjectComponent::Serialize
+   /// @brief ローカルトランスフォームの保存対象設定をJSONへ変換する。
+   /// @return 位置・回転・スケール・回転表現と親の安定IDを含む設定JSON。
+   /// @details 位置はm、Euler角はradで保存し、Quaternionと回転表現の種別も保持する。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc IObjectComponent::Deserialize
+   /// @brief 保存JSONからローカルトランスフォームの設定を復元する。
+   /// @param data 位置・回転・スケール・回転表現と親の安定IDを含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc IObjectComponent::DrawInspector
+   /// @brief ローカルトランスフォームの位置・回転・スケール・回転表現と親の安定IDをインスペクターで表示・編集する。
    void DrawInspector() override;
 #endif
 

@@ -14,19 +14,24 @@
 /// @brief エンジン基盤とゲーム固有のシーン遷移を結び付けるアプリケーション本体
 class Game : public GameEngine::Framework {
 public:
-   /// @copydoc GameEngine::Framework::Initialize
+   /// @brief エンジン基盤とシーン管理を初期化し、起動シーンと編集セッションを接続する。
+   /// @details シーンカタログの読み込みに失敗した場合は通知して終了を要求する。
    void Initialize() override;
 
-   /// @copydoc GameEngine::Framework::Update
+   /// @brief 共有設定を同期し、プレイ状態に応じてエンジン・シーン・編集セッションと音声を更新する。
+   /// @details エディターの停止中はランタイム更新を進めず、編集用更新を継続する。
    void Update() override;
 
-   /// @copydoc GameEngine::Framework::Draw
+   /// @brief エディター描画を行い、有効なプレイヤーの影情報を現在のカメラへ提出する。
+   /// @details シーンまたは描画カメラがない場合は、影の描画情報を提出しない。
    void Draw() override;
 
-   /// @copydoc GameEngine::Framework::Finalize
+   /// @brief シーンを終了し、編集用サービスとエンジン基盤を依存関係の逆順に解放する。
+   /// @details エディタービルドでは次回起動用の編集シーン名を保存する。
    void Finalize() override;
 
-   /// @copydoc GameEngine::Framework::EndFrame
+   /// @brief フレーム描画を完了し、遅延削除と予約済みのシーン切り替えを確定する。
+   /// @details 描画中の参照を無効化しないよう、シーン実体の変更はフレーム末尾で行う。
    void EndFrame() override;
 
 private:

@@ -466,6 +466,18 @@ bool DrawQuaternionControl(
    return true;
 }
 
+bool DragRadiansAsDegrees(
+   const char* label, float& radians, float speedDegrees, float minDegrees, float maxDegrees, const char* format) {
+   float degrees = RadiansToDegrees(radians);
+
+   if (!ImGui::DragFloat(label, &degrees, speedDegrees, minDegrees, maxDegrees, format)) {
+      return false;
+   }
+
+   radians = DegreesToRadians(degrees);
+   return true;
+}
+
 bool DrawEulerDegreesControl(const std::string& label, Vector3& eulerRadians, float resetDegrees, float columnWidth,
    float speedDegrees, float minDegrees, float maxDegrees, const char* format) {
    // エンジン内部のラジアンを一時的に度へ変換し、編集が確定した場合だけ書き戻す。
@@ -491,7 +503,7 @@ bool DrawQuaternionAsEulerDegrees(const std::string& label, Quaternion& value, f
    return true;
 }
 
-bool DrawTransformControl(const std::string& label, Transform& transform, float columnWidth, bool rotationInDegrees) {
+bool DrawTransformControl(const std::string& label, Transform& transform, float columnWidth) {
    if (!BeginSection(label, true)) {
       return false;
    }
@@ -503,9 +515,7 @@ bool DrawTransformControl(const std::string& label, Transform& transform, float 
 
    // Transformがどちらの回転表現を保持していても、現在有効な姿勢を編集開始値にする。
    const bool rotationChanged =
-      rotationInDegrees
-         ? DrawEulerDegreesControl(Localize({"回転 (deg)", "Rotation (deg)"}), euler, 0.0f, columnWidth, 0.1f)
-         : DrawVec3Control(Localize({"回転 (rad)", "Rotation (rad)"}), euler, 0.0f, columnWidth, 0.01f);
+      DrawEulerDegreesControl(Localize({"回転 (deg)", "Rotation (deg)"}), euler, 0.0f, columnWidth, 0.1f);
 
    if (rotationChanged) {
       // 編集後はQuaternionへ統一してジンバル角の累積加算を避ける。

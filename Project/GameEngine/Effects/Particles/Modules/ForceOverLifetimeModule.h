@@ -87,15 +87,17 @@ public:
    /// @brief 距離減衰指数を取得する
    float GetAttractorFalloff() const { return attractorFalloff_; }
 
-   /// @copydoc ParticleModule::ToJson
+   /// @brief 加速度（m/s²）・抵抗係数（1/s）・吸引点の設定をJSONへ保存する。
+   /// @return モジュールの有効状態と固有パラメータを含む設定JSON。
    nlohmann::json ToJson() const override;
 
-   /// @copydoc ParticleModule::FromJson
+   /// @brief 加速度（m/s²）・抵抗係数（1/s）・吸引点の設定をJSONから読み込む。
+   /// @param json モジュールの有効状態と固有パラメータを含む設定JSON。
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ParticleModule::DrawInspector
+   /// @brief 加速度（m/s²）・抵抗係数（1/s）・吸引点の設定とモジュールの有効状態を表示・編集する。
    void DrawInspector() override;
 #endif
 

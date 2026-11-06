@@ -62,7 +62,7 @@ public:
       /// @brief この速度で SpeedLine 演出量が最大になる
       float maximumEffectSpeed = 40.0f;
 
-      /// @brief 演出量の追従速度（per sec）
+      /// @brief 演出量の追従速度（1/s）
       float responseSpeed = 100.0f;
 
       /// @brief この演出量未満では SpeedLine を無効化する
@@ -110,7 +110,7 @@ private:
 
    float minimumEffectSpeed = 16.0f;         ///< この速度に達すると SpeedLine 演出が出始める。
    float maximumEffectSpeed = 40.0f;         ///< この速度で SpeedLine 演出量が最大になる。
-   float responseSpeed = 100.0f;             ///< 演出量の追従速度（per sec）。
+   float responseSpeed = 100.0f;             ///< 演出量の追従速度（1/s）。
    float visibleThreshold = 0.015f;          ///< この演出量未満では SpeedLine を無効化する。
    float idleInnerRadius = 0.98f;            ///< 最低速度付近の内側半径。ほぼ画面端なので見えない。
    float activeInnerRadius = 0.4f;           ///< 最高速演出時の内側半径。小さいほど中心側まで線が入る。

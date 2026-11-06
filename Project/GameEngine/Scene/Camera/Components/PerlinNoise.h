@@ -14,13 +14,18 @@ public:
    /// @brief カメラコンポーネントを破棄する
    ~PerlinNoise() override = default;
 
-   /// @copydoc ICinemachineComponent::MutateCameraState
+   /// @brief 経過時間に応じたシェイクをカメラ位置へ加え、残り時間とビュー行列を同期する。
+   /// @param state 更新するカメラ状態。
+   /// @param deltaTime フレームの経過時間（s）。
+   /// @details 方向指定・画面基準・三軸の設定に応じて揺れを適用し、有限時間のシェイクは残り時間を減らす。
    void MutateCameraState(CameraState& state, float deltaTime) override;
 
-   /// @copydoc ICinemachineComponent::GetStage
+   /// @brief 仮想カメラ内でこの処理を実行するステージを返す。
+   /// @return 位置へ揺れを加えるNoiseステージ。
    CinemachineStage GetStage() const override { return CinemachineStage::Noise; }
 
-   /// @copydoc ICinemachineComponent::GetComponentName
+   /// @brief 保存データと仮想カメラのコンポーネント検索に使う名前を返す。
+   /// @return 「PerlinNoise」を表す固定文字列。
    const char* GetComponentName() const override { return "PerlinNoise"; }
 
    /// @brief シェイクを開始
@@ -52,21 +57,25 @@ public:
    /// @brief シェイク中かどうか
    bool IsShaking() const { return remainingTime_ > 0.0f; }
 
-   /// @copydoc ICinemachineComponent::Serialize
+   /// @brief カメラシェイクの保存対象設定をJSONへ変換する。
+   /// @return 振幅・周波数とシェイクの実行状態を含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc ICinemachineComponent::Deserialize
+   /// @brief 保存JSONからカメラシェイクの設定を復元する。
+   /// @param data 振幅・周波数とシェイクの実行状態を含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief カメラシェイクの共有可能な調整値をJSONで取得する。
+   /// @return 経過位相・残り時間・一時振幅・方向などの実行状態を除いたシェイク設定を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief カメラシェイクの共有設定を既存コンポーネントへ反映する。
+   /// @param data 経過位相・残り時間・一時振幅・方向などの実行状態を除いたシェイク設定を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ICinemachineComponent::DrawInspector
+   /// @brief カメラシェイクの振幅・周波数・再生状態を表示し、テストシェイクを操作する。
    void DrawInspector() override;
 #endif
 

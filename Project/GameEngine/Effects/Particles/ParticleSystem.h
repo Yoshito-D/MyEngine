@@ -101,10 +101,10 @@ public:
 
    /// @brief Update CSが粒子ごとに参照する永続的な運動パラメータ
    struct GpuParticleMotion {
-      Vector4 forceAndDrag;             ///< xyzは外力、wは速度の抵抗係数。
-      Vector4 velocityAndSpeedModifier; ///< xyzは速度加算値、wは速度倍率。
-      Vector4 limitAndGravity;          ///< xは速度上限、yは制限時の減衰率、zは重力倍率。
-      Vector4 noiseParams;              ///< xはノイズ強度、yは空間周波数、zは位相の進行速度。
+      Vector4 forceAndDrag;              ///< xyzは加速度（m/s²）、wは抵抗係数（1/s）。
+      Vector4 accelerationAndGrowthRate; ///< xyzは加速度（m/s²）、wは速度の指数増幅率（1/s）。
+      Vector4 limitAndGravity;           ///< xは速度上限（m/s）、yは減衰係数（1/s）、zは重力倍率。
+      Vector4 noiseParams;               ///< xは加速度振幅（m/s²）、yは空間周波数（rad/m）、zは位相速度（rad/s）。
    };
 
    /// @brief CPUで初期化した粒子固有値をGPUシミュレーションへ渡す属性
@@ -114,16 +114,16 @@ public:
       Vector4 sizeAndRotation;    ///< xyzは粒子の各軸サイズ、wはZ軸回転角（ラジアン）。
       Vector4 rotationQuaternion; ///< 姿勢を表す回転クォータニオン。
       Vector4 customData;         ///< シェーダー連携用（年齢、乱数、カメラフェード、速度）。
-      uint32_t stateIndex = 0; // 圧縮済み描画属性から永続GPU状態を引くための元粒子番号
-      uint32_t padding[3]{};   ///< GPU転送データの配置境界を揃える未使用領域。
+      uint32_t stateIndex = 0;    // 圧縮済み描画属性から永続GPU状態を引くための元粒子番号
+      uint32_t padding[3]{};      ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief Emitter CSへ渡す生成または状態上書き要求
    struct GpuSpawnRequest {
       GpuParticleState state;   ///< 生成する粒子の位置・速度・寿命・CPU所有番号。
       GpuParticleMotion motion; ///< GPUで積分する外力・速度倍率・制限・ノイズの設定。
-      uint32_t operation = 0; // 0: FreeListから生成、1: 既存所有粒子を上書き
-      uint32_t padding[3]{};  ///< GPU転送データの配置境界を揃える未使用領域。
+      uint32_t operation = 0;   // 0: FreeListから生成、1: 既存所有粒子を上書き
+      uint32_t padding[3]{};    ///< GPU転送データの配置境界を揃える未使用領域。
    };
 
    /// @brief GPUシミュレーションのフレーム定数

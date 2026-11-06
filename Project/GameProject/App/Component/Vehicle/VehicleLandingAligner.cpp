@@ -65,7 +65,7 @@ void VehicleLandingAligner::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("姿勢合わせ時間", "Align Time"), &alignTime, 0.01f, 0.05f, 2.0f);
+   ImGui::DragFloat(Tr("姿勢合わせ時間 (s)", "Align Time (s)"), &alignTime, 0.01f, 0.05f, 2.0f);
    ImGui::Spacing();
    ImGui::Text("%s: %.2f  %s: %s", Tr("姿勢合わせタイマー", "Align Timer"), alignTimer_, Tr("姿勢合わせ中", "Aligning"),
       IsAligning() ? Tr("はい", "yes") : Tr("いいえ", "no"));

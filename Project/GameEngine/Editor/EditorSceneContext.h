@@ -234,7 +234,11 @@ public:
       std::string name = "Edit Object");
 
    /// @brief 適用済みParticle編集を一回のUndoとして確定する。
-   /// @copydetails CommitObjectEdit
+   /// @param id 編集した粒子システムの安定ID。空文字列は受け付けない。
+   /// @param before 操作開始時の保存JSONオブジェクト。
+   /// @param after 操作終了時の保存JSONオブジェクト。
+   /// @param name Undo/Redo履歴へ表示する操作名。
+   /// @return 対象が存在し、変更を履歴へ登録できた場合はtrue。変更なし・無効な保存形式ならfalse。
    bool CommitParticleEdit(const std::string& id, const nlohmann::json& before, const nlohmann::json& after,
       std::string name = "Edit Particle System");
 
@@ -271,35 +275,72 @@ private:
       /// @brief 実行中のコマンドにだけ所有者の編集操作を提供する。
       explicit CommandOperations(EditorSceneContext& owner) : owner_(owner) {}
 
-      /// @copydoc EditorCommandTarget::Contains
+      /// @brief 現在の編集シーンで、指定IDのObjectまたは粒子システムが生存しているか調べる。
+      /// @param id 対象の安定ID。
+      /// @param particle 粒子システムを調べる場合はtrue、Objectの場合はfalse。
+      /// @return 現在のシーン内に有効な対象があればtrue。
       bool Contains(const std::string& id, bool particle) const override;
 
-      /// @copydoc EditorCommandTarget::Capture
+      /// @brief 指定IDのObjectまたは粒子システムから、安定IDを含む保存状態を取得する。
+      /// @param id 対象の安定ID。
+      /// @param particle 粒子システムを取得する場合はtrue、Objectの場合はfalse。
+      /// @return 対象の保存JSON。対象を解決できない場合はnull。
       nlohmann::json Capture(const std::string& id, bool particle) override;
 
-      /// @copydoc EditorCommandTarget::Create
+      /// @brief 新しい要素を作成するか、保存状態から復元して選択する。
+      /// @param kind 生成するObjectの種別、または粒子システムの指定。
+      /// @param pose 新規生成時の配置。有限な位置・回転・スケールを指定する。
+      /// @param assetId 新規生成時に使うモデル・画像・エフェクトのアセットID。
+      /// @param parentId 新規Objectの親の安定ID。空文字列ならルート。
+      /// @param snapshot Redo時に復元する保存JSON。オブジェクト形式でなければ新規生成する。
+      /// @return 生成・復元後の安定IDを含む保存JSON。失敗時はnull。
       nlohmann::json Create(CreateObjectCommand::Kind kind, const Transform& pose, const std::string& assetId,
          const std::string& parentId, const nlohmann::json& snapshot) override;
 
-      /// @copydoc EditorCommandTarget::Remove
+      /// @brief 対象の保存状態・子参照・再生状態を記録し、選択を解除して削除する。
+      /// @param id 削除する対象の安定ID。
+      /// @param particle 粒子システムを削除する場合はtrue、Objectの場合はfalse。
+      /// @param removed 取り消しに必要な削除前の状態の出力先。
+      /// @return 対象が存在し、削除できた場合はtrue。
       bool Remove(const std::string& id, bool particle, RemovedEditorEntity& removed) override;
 
-      /// @copydoc EditorCommandTarget::Restore
+      /// @brief 削除前の保存状態から対象を復元し、子参照または粒子の再生状態と選択を戻す。
+      /// @param removed 削除時に記録した保存状態・子ID・再生状態。
+      /// @param particle 粒子システムを復元する場合はtrue、Objectの場合はfalse。
+      /// @return 対象を復元できた場合はtrue。保存状態が無効、または復元に失敗した場合はfalse。
       bool Restore(const RemovedEditorEntity& removed, bool particle) override;
 
-      /// @copydoc EditorCommandTarget::ApplySnapshot
+      /// @brief 安定IDから解決した既存のObjectまたは粒子システムへ保存状態を適用する。
+      /// @param id 状態を変更する対象の安定ID。
+      /// @param snapshot 対象に適用する保存JSON。
+      /// @param particle 粒子システムを変更する場合はtrue、Objectの場合はfalse。
+      /// @return 対象を解決し、保存状態を適用できた場合はtrue。
       bool ApplySnapshot(const std::string& id, const nlohmann::json& snapshot, bool particle) override;
 
-      /// @copydoc EditorCommandTarget::ApplyPose
+      /// @brief Objectのローカル姿勢、または粒子システムの放出姿勢を一括適用する。
+      /// @param id 姿勢を変更する対象の安定ID。
+      /// @param pose 適用する有限な位置・回転・スケール。
+      /// @param particle 粒子システムを変更する場合はtrue、Objectの場合はfalse。
+      /// @return 対象へ姿勢を適用できた場合はtrue。非有限な姿勢や対象不在の場合はfalse。
       bool ApplyPose(const std::string& id, const Transform& pose, bool particle) override;
 
-      /// @copydoc EditorCommandTarget::Reorder
+      /// @brief 対象Objectの親を変更してから、Hierarchy表示順を適用する。
+      /// @param id 変更するObjectの安定ID。
+      /// @param parent 新しい親の安定ID。空文字列ならルート。
+      /// @param order 適用するObjectの表示順を表す安定IDの一覧。
+      /// @return 対象と親を解決でき、親の変更に成功した場合はtrue。
       bool Reorder(const std::string& id, const std::string& parent, const std::vector<std::string>& order) override;
 
-      /// @copydoc EditorCommandTarget::RestoreSnapshot
+      /// @brief 保存JSONの種別に応じてObjectまたは粒子システムを復元し、選択する。
+      /// @param snapshot 種別・安定ID・設定を含む対象の保存JSON。
+      /// @return 復元後の実際の安定IDを反映した保存JSON。失敗時はnull。
       nlohmann::json RestoreSnapshot(const nlohmann::json& snapshot) override;
 
-      /// @copydoc EditorCommandTarget::ModifyComponent
+      /// @brief 指定Objectに登録済みの型名でコンポーネントを追加または削除する。
+      /// @param id 変更するObjectの安定ID。
+      /// @param typeName コンポーネント登録表に存在する型名。
+      /// @param add 追加ならtrue、削除ならfalse。
+      /// @return 追加または削除できた場合はtrue。対象不在・型名が空・変更不要の場合はfalse。
       bool ModifyComponent(const std::string& id, const std::string& typeName, bool add) override;
 
    private:

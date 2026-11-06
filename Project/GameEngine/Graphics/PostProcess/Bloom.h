@@ -31,10 +31,13 @@ public:
 #endif
    const char* GetEffectName() const override { return "Bloom"; }
 
-   /// @copydoc PostProcess::SerializeSettings
+   /// @brief 輝度しきい値・境界の柔らかさ・合成強度・ぼかし半径をシーン保存用JSONへ変換する。
+   /// @return 当該エフェクト固有の設定を含むJSONオブジェクト。
    nlohmann::json SerializeSettings() const override;
 
-   /// @copydoc PostProcess::DeserializeSettings
+   /// @brief 輝度しきい値・境界の柔らかさ・合成強度・ぼかし半径を部分設定JSONから復元し、GPU定数へ反映する。
+   /// @param settings エフェクトの設定JSONオブジェクト。未指定・型不正の項目は現在値を使う。
+   /// @return JSONオブジェクトを受け付けた場合はtrue。それ以外はfalse。
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定

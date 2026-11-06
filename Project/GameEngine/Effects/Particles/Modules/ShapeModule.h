@@ -70,11 +70,11 @@ public:
    float GetRadius() const { return radius_; }
 
    /// @brief 円錐の開き角を設定する
-   /// @param angle 円錐角（度）
+   /// @param angle 円錐角（rad）
    void SetAngle(float angle) { angle_ = angle; }
 
    /// @brief 円錐の開き角を取得する
-   /// @return 円錐角（度）
+   /// @return 円錐角（rad）
    float GetAngle() const { return angle_; }
 
    /// @brief 円錐・円柱・線分の軸方向長さを設定する
@@ -94,11 +94,11 @@ public:
    const Vector3& GetBoxSize() const { return boxSize_; }
 
    /// @brief 円・円錐の放出に使う円弧範囲を設定する
-   /// @param arc 0から360までの角度範囲（度）
+   /// @param arc 0から2πまでの角度範囲（rad）
    void SetArc(float arc) { arc_ = arc; }
 
    /// @brief 円弧範囲を取得する
-   /// @return 角度範囲（度）
+   /// @return 角度範囲（rad）
    float GetArc() const { return arc_; }
 
    /// @brief 円形状で中心から外向きに加える速度を設定する
@@ -189,13 +189,13 @@ private:
    ShapeType shapeType_ = ShapeType::Cone; ///< 放出元の幾何形状。
    EmitFrom emitFrom_ = EmitFrom::Volume;  ///< 形状内の放出領域。
 
-   float radius_ = 1.0f;                ///< 球系形状の半径。
-   float angle_ = 25.0f;                ///< 円錐の放出方向に使う開き角（度）。
-   float length_ = 5.0f;                ///< 軸方向の長さ。
-   Vector3 boxSize_{1.0f, 1.0f, 1.0f};  ///< 箱形状の各軸サイズ。
-   float arc_ = 360.0f;                 ///< 円形の放出範囲として使う円弧角（度）。
-   float circleOutwardVelocity_ = 0.0f; ///< 円形状の外向き速度。
-   float torusMajorRadius_ = 1.0f;      ///< トーラスの主半径。
+   float radius_ = 1.0f;                                    ///< 球系形状の半径。
+   float angle_ = 25.0f * MathConstants::kDegreesToRadians; ///< 円錐の放出方向に使う開き角（rad）。
+   float length_ = 5.0f;                                    ///< 軸方向の長さ。
+   Vector3 boxSize_{1.0f, 1.0f, 1.0f};                      ///< 箱形状の各軸サイズ。
+   float arc_ = MathConstants::kTwoPi;                      ///< 円形の放出範囲として使う円弧角（rad）。
+   float circleOutwardVelocity_ = 0.0f;                     ///< 円形状の外向き速度。
+   float torusMajorRadius_ = 1.0f;                          ///< トーラスの主半径。
 
    Transform transform_{};                        ///< 形状のローカルトランスフォーム。
    const ModelAsset* skinnedMeshModel_ = nullptr; ///< 放出位置をサンプリングするモデルアセットへの非所有参照。

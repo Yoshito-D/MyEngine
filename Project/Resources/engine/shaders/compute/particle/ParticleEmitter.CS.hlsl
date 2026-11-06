@@ -11,10 +11,10 @@ struct GpuParticleState {
 };
 
 struct GpuParticleMotion {
-   float4 forceAndDrag;             ///< xyzは外力、wは速度の抵抗係数。
-   float4 velocityAndSpeedModifier; ///< xyzは速度加算値、wは速度倍率。
-   float4 limitAndGravity;          ///< xは速度上限、yは制限時の減衰率、zは重力倍率。
-   float4 noiseParams;              ///< xはノイズ強度、yは空間周波数、zは位相の進行速度。
+   float4 forceAndDrag;              ///< xyzは加速度（m/s²）、wは抵抗係数（1/s）。
+   float4 accelerationAndGrowthRate; ///< xyzは加速度（m/s²）、wは速度の指数増幅率（1/s）。
+   float4 limitAndGravity;           ///< xは速度上限（m/s）、yは減衰係数（1/s）、zは重力倍率。
+   float4 noiseParams;               ///< xは加速度振幅（m/s²）、yは空間周波数（rad/m）、zは位相速度（rad/s）。
 };
 
 struct GpuSpawnRequest {

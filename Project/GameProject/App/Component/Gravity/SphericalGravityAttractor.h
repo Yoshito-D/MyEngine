@@ -31,10 +31,12 @@ public:
    /// @brief influenceRadius をデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 球状重力源の共有可能な調整値をJSONで取得する。
+   /// @return 影響半径（m、0以下は無制限）を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 球状重力源の共有設定を既存コンポーネントへ反映する。
+   /// @param data 影響半径（m、0以下は無制限）を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

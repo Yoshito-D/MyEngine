@@ -34,26 +34,26 @@ public:
    void ReleaseGravity();
 
    /// @brief 仮の地表法線で重力を積分し、予測速度を返す（実際の状態は変更しない）
-   /// @param velocity 予測開始時の速度
+   /// @param velocity 予測開始時の速度（m/s）
    /// @param surfaceUp 候補地表の単位法線
    /// @param deltaTime 予測する時間（秒）
    GameEngine::Vector3 PredictVelocity(
       const GameEngine::Vector3& velocity, const GameEngine::Vector3& surfaceUp, float deltaTime) const;
 
-   /// @brief 現在速度を取得する
+   /// @brief 現在速度（m/s）を取得する
    GameEngine::Vector3 GetVelocity() const { return velocity_; }
 
    /// @brief ジャンプなどの瞬間的な速度変化を加える
-   /// @param impulse 加算する速度ベクトル
+   /// @param impulse 加算する速度ベクトル（m/s）
    void AddVelocityImpulse(const GameEngine::Vector3& impulse);
 
    /// @brief 重力法線方向の速度を保ちながら、地表に沿った移動速度を適用する
-   /// @param surfaceVelocity 地表に沿った速度ベクトル
+   /// @param surfaceVelocity 地表に沿った速度ベクトル（m/s）
    /// @param surfaceUp 地表の単位法線
    void ApplySurfaceVelocity(const GameEngine::Vector3& surfaceVelocity, const GameEngine::Vector3& surfaceUp);
 
    /// @brief 現在Upに沿う速度を保ち、地表に沿う速度だけを指数減衰させる
-   /// @param drag 減衰係数（per sec）
+   /// @param drag 減衰係数（1/s）
    /// @param deltaTime フレーム時間（秒）
    void ApplySurfaceDrag(float drag, float deltaTime);
 
@@ -89,7 +89,7 @@ public:
 private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
-   /// @brief 重力強度（加速度係数）
+   /// @brief 重力加速度の大きさ（m/s²）
    float gravityStrength = 9.8f;
 
    /// @brief 重力適用フラグ
@@ -103,10 +103,10 @@ private:
    /// @brief 次に向かうUpベクトル
    GameEngine::Vector3 targetUpVector_ = {0.0f, 1.0f, 0.0f};
 
-   /// @brief 現在の重力加速度
+   /// @brief 現在の重力加速度（m/s²）
    GameEngine::Vector3 gravityAcceleration_ = {0.0f, 0.0f, 0.0f};
 
-   /// @brief 現在の速度
+   /// @brief 現在の速度（m/s）
    GameEngine::Vector3 velocity_ = {0.0f, 0.0f, 0.0f};
 };
 

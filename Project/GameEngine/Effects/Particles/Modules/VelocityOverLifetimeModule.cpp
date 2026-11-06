@@ -1,12 +1,14 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Effects/Particles/Modules/VelocityOverLifetimeModule.h"
+#include <algorithm>
+#include <cmath>
 
 namespace GameEngine {
 VelocityOverLifetimeModule::VelocityOverLifetimeModule() = default;
 
 void VelocityOverLifetimeModule::InitializeParticle(Particle& particle) const {
-   particle.velocityOverLifetimeLinearVelocity = linearVelocity_.GetValue();
-   particle.velocityOverLifetimeSpeedModifier = speedModifier_.GetValue();
+   particle.velocityOverLifetimeLinearAcceleration = linearAcceleration_.GetValue();
+   particle.velocityOverLifetimeSpeedGrowthRate = speedGrowthRate_.GetValue();
 }
 
 void VelocityOverLifetimeModule::ApplyVelocity(Particle& particle, float deltaTime) const {
@@ -15,31 +17,30 @@ void VelocityOverLifetimeModule::ApplyVelocity(Particle& particle, float deltaTi
 
 void VelocityOverLifetimeModule::ApplyVelocity(
    Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const {
-   if (!IsEnabled()) return;
+   if (!IsEnabled() || deltaTime <= 0.0f) return;
 
-   Vector3 linearVelocity =
-      linearVelocity_.IsRandomized() ? particle.velocityOverLifetimeLinearVelocity : linearVelocity_.Minimum();
+   Vector3 linearAcceleration = linearAcceleration_.IsRandomized() ? particle.velocityOverLifetimeLinearAcceleration
+                                                                   : linearAcceleration_.Minimum();
 
    if (useLocalSimulation) {
       // 設定値はエミッターのローカル方向として解釈し、加算前にワールド方向へ回転する。
-      linearVelocity = RotateVector(linearVelocity, simulationTransform.GetActiveQuaternion());
+      linearAcceleration = RotateVector(linearAcceleration, simulationTransform.GetActiveQuaternion());
    }
 
-   particle.velocity += linearVelocity * deltaTime;
+   particle.velocity += linearAcceleration * deltaTime;
 
-   float speedModifier =
-      speedModifier_.IsRandomized() ? particle.velocityOverLifetimeSpeedModifier : speedModifier_.Minimum();
+   float speedGrowthRate =
+      speedGrowthRate_.IsRandomized() ? particle.velocityOverLifetimeSpeedGrowthRate : speedGrowthRate_.Minimum();
 
-   if (speedModifier != 1.0f) {
-      particle.velocity = particle.velocity * speedModifier;
-   }
+   // 増幅率は1/sで保持し、フレーム数ではなく経過秒から倍率を求める。
+   particle.velocity = particle.velocity * std::exp(speedGrowthRate * std::max(deltaTime, 0.0f));
 }
 
 nlohmann::json VelocityOverLifetimeModule::ToJson() const {
    nlohmann::json j;
    j["enabled"] = IsEnabled();
-   j["linearVelocity"] = linearVelocity_.ToJson();
-   j["speedModifier"] = speedModifier_.ToJson();
+   j["linearAcceleration"] = linearAcceleration_.ToJson();
+   j["speedGrowthRate"] = speedGrowthRate_.ToJson();
    return j;
 }
 
@@ -48,24 +49,12 @@ void VelocityOverLifetimeModule::FromJson(const nlohmann::json& j) {
       SetEnabled(j["enabled"].get<bool>());
    }
 
-   if (j.contains("linearVelocity")) {
-      if (j["linearVelocity"].is_object()) {
-         linearVelocity_.FromJson(j["linearVelocity"]);
-      } else if (j["linearVelocity"].is_array()) {
-         // 旧JSONのVector3は固定範囲へ変換し、見た目を変えずに新形式へ移行する。
-         auto arr = j["linearVelocity"];
-         Vector3 value{arr[0], arr[1], arr[2]};
-         linearVelocity_ = RandomVector3(value, value, false);
-      }
+   if (j.contains("linearAcceleration")) {
+      linearAcceleration_.FromJson(j["linearAcceleration"]);
    }
 
-   if (j.contains("speedModifier")) {
-      if (j["speedModifier"].is_object()) {
-         speedModifier_.FromJson(j["speedModifier"]);
-      } else {
-         float value = j["speedModifier"];
-         speedModifier_ = RandomFloat(value, value, false);
-      }
+   if (j.contains("speedGrowthRate")) {
+      speedGrowthRate_.FromJson(j["speedGrowthRate"]);
    }
 }
 }

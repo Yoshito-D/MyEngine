@@ -57,10 +57,12 @@ public:
    /// @param data LightComponent設定
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief ライトの共有可能な調整値をJSONで取得する。
+   /// @return ライト種別・色・強度・距離減衰などの照明条件を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief ライトの共有設定を既存コンポーネントへ反映する。
+   /// @param data ライト種別・色・強度・距離減衰などの照明条件を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
