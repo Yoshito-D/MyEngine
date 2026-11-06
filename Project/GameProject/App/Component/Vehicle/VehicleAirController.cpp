@@ -10,6 +10,7 @@
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 using namespace GameEngine;
@@ -38,10 +39,8 @@ Quaternion VehicleAirController::Apply(
 
    // 角速度を目標値に向けて更新する。
    // スティックを戻す途中の小さい入力で、保持中の角速度を直接上書きしない。
-   UpdateAngularVelocity(
-      -rollInput, angularVelRoll_, -rollInput * rollSpeed * MathConstants::kDegreesToRadians, controlDeltaTime);
-   UpdateAngularVelocity(
-      pitchInput, angularVelPitch_, pitchInput * pitchSpeed * MathConstants::kDegreesToRadians, controlDeltaTime);
+   UpdateAngularVelocity(-rollInput, angularVelRoll_, -rollInput * rollSpeed, controlDeltaTime);
+   UpdateAngularVelocity(pitchInput, angularVelPitch_, pitchInput * pitchSpeed, controlDeltaTime);
 
    // roll後の姿勢からpitch軸を取り直し、同時入力時も常に機体のローカル軸で回す。
    Quaternion newRot = currentRot;
@@ -117,11 +116,19 @@ void VehicleAirController::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(
-      (std::string(Tr("ロール速度 (deg/s)", "Roll Speed (deg/s)")) + "##1").c_str(), &rollSpeed, 1.0f, 0.0f, 360.0f);
-   ImGui::DragFloat(Tr("ピッチ速度 (deg/s)", "Pitch Speed (deg/s)"), &pitchSpeed, 1.0f, 0.0f, 360.0f);
-   ImGui::DragFloat(Tr("角速度減衰", "Angular Damping"), &angularDamping, 0.1f, 0.1f, 20.0f);
-   ImGui::DragFloat(Tr("空気抵抗", "Air Drag"), &airDrag, 0.05f, 0.0f, 5.0f);
+   float rollSpeedDegrees = ImGuiHelper::RadiansToDegrees(rollSpeed);
+   float pitchSpeedDegrees = ImGuiHelper::RadiansToDegrees(pitchSpeed);
+
+   if (ImGui::DragFloat(Tr("ロール速度 (deg/s)", "Roll Speed (deg/s)"), &rollSpeedDegrees, 1.0f, 0.0f, 360.0f)) {
+      rollSpeed = ImGuiHelper::DegreesToRadians(rollSpeedDegrees);
+   }
+
+   if (ImGui::DragFloat(Tr("ピッチ速度 (deg/s)", "Pitch Speed (deg/s)"), &pitchSpeedDegrees, 1.0f, 0.0f, 360.0f)) {
+      pitchSpeed = ImGuiHelper::DegreesToRadians(pitchSpeedDegrees);
+   }
+
+   ImGui::DragFloat(Tr("角速度減衰 (1/s)", "Angular Damping (1/s)"), &angularDamping, 0.1f, 0.1f, 20.0f);
+   ImGui::DragFloat(Tr("空気抵抗 (1/s)", "Air Drag (1/s)"), &airDrag, 0.05f, 0.0f, 5.0f);
    ImGui::Spacing();
    ImGui::Text("%s (deg/s): %.2f / %.2f", Tr("角速度 Roll/Pitch", "AngVel Roll/Pitch"),
       angularVelRoll_ * MathConstants::kRadiansToDegrees, angularVelPitch_ * MathConstants::kRadiansToDegrees);
@@ -130,7 +137,7 @@ void VehicleAirController::DrawInspector() {
 
 nlohmann::json VehicleAirController::Serialize() const {
    nlohmann::json json;
-   json["steerSpeed"] = rollSpeed;
+   json["rollSpeed"] = rollSpeed;
    json["pitchSpeed"] = pitchSpeed;
    json["angularDamping"] = angularDamping;
    json["airDrag"] = airDrag;
@@ -150,8 +157,8 @@ void VehicleAirController::ApplySharedParameters(const nlohmann::json& data) {
 }
 
 void VehicleAirController::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
-   if (data.contains("steerSpeed")) {
-      rollSpeed = data["steerSpeed"];
+   if (data.contains("rollSpeed")) {
+      rollSpeed = data["rollSpeed"];
    }
 
    if (data.contains("pitchSpeed")) {

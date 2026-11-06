@@ -52,10 +52,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief UI変形アニメーションの共有可能な調整値をJSONで取得する。
+   /// @return 位置・拡縮・回転の開始値と終了値、待機時間・再生時間と再生条件を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief UI変形アニメーションの共有設定を既存コンポーネントへ反映する。
+   /// @param data 位置・拡縮・回転の開始値と終了値、待機時間・再生時間と再生条件を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

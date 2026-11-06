@@ -1632,24 +1632,24 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
    // モジュール乱数は生成時に確定した値をRequestへ固定し、GPU更新ごとの再抽選を避ける。
    request.motion.forceAndDrag = Vector4(force.x, force.y, force.z, drag);
 
-   Vector3 linearVelocity(0.0f, 0.0f, 0.0f);
-   float speedModifier = 1.0f;
+   Vector3 linearAcceleration(0.0f, 0.0f, 0.0f);
+   float speedGrowthRate = 0.0f;
 
    if (velocityOverLifetimeModule_->IsEnabled()) {
-      linearVelocity = particle.velocityOverLifetimeLinearVelocity;
+      linearAcceleration = particle.velocityOverLifetimeLinearAcceleration;
 
       if (useLocalSimulation) {
-         linearVelocity = RotateVector(linearVelocity, simulationRotation);
+         linearAcceleration = RotateVector(linearAcceleration, simulationRotation);
       }
 
-      speedModifier = particle.velocityOverLifetimeSpeedModifier;
+      speedGrowthRate = particle.velocityOverLifetimeSpeedGrowthRate;
    }
 
-   request.motion.velocityAndSpeedModifier =
-      Vector4(linearVelocity.x, linearVelocity.y, linearVelocity.z, speedModifier);
+   request.motion.accelerationAndGrowthRate =
+      Vector4(linearAcceleration.x, linearAcceleration.y, linearAcceleration.z, speedGrowthRate);
    request.motion.limitAndGravity =
       Vector4(limitVelocityModule_->IsEnabled() ? particle.limitVelocitySpeedLimit : -1.0f,
-         particle.limitVelocityDampen, particle.gravityModifier, 0.0f);
+         particle.limitVelocityDampingRate, particle.gravityModifier, 0.0f);
    request.motion.noiseParams = Vector4(noiseModule_->IsEnabled() ? particle.noiseStrength : 0.0f,
       particle.noiseFrequency, particle.noiseScrollSpeed, 0.0f);
 }

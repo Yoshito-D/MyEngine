@@ -26,7 +26,8 @@ public:
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   /// @brief 保存されたID順に仮想カメラ参照を再解決し、選択中カメラと車両制御の接続を更新する。
+   /// @param sceneWorld 参照の解決先となる現在のシーンワールド。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 非ReleaseビルドではTab入力で次のカメラへ切り替える
@@ -51,10 +52,12 @@ public:
    /// @param data カメラ切り替え設定
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief カメラ切り替えの共有可能な調整値をJSONで取得する。
+   /// @return 参照カメラIDを除いた切り替え条件を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief カメラ切り替えの共有設定を既存コンポーネントへ反映する。
+   /// @param data 参照カメラIDを除いた切り替え条件を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

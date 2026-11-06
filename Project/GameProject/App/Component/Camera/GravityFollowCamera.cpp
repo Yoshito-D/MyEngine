@@ -11,6 +11,7 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #endif
 
@@ -645,7 +646,7 @@ void GravityFollowCamera::DrawInspector() {
       SetEnabled(enabled);
    }
 
-   ImGui::DragFloat(Tr("距離", "Distance"), &distance_, 0.1f, 0.5f, 200.0f);
+   ImGui::DragFloat(Tr("距離 (m)", "Distance (m)"), &distance_, 0.1f, 0.5f, 200.0f);
    float rotateSpeedDeg = rotateSpeed * MathConstants::kRadiansToDegrees;
 
    if (ImGui::DragFloat(
@@ -653,21 +654,31 @@ void GravityFollowCamera::DrawInspector() {
       rotateSpeed = rotateSpeedDeg * MathConstants::kDegreesToRadians;
    }
 
-   ImGui::DragFloat(Tr("スクロール速度", "Scroll Speed"), &scrollSpeed, 0.0001f, 0.0f, 0.1f, "%.4f");
-   ImGui::DragFloat(Tr("GravityUp補間", "GravityUp Lerp"), &gravityUpLerpSpeed, 0.1f, 0.1f, 30.0f);
-   ImGui::DragFloat(Tr("FOV デフォルト", "FOV Default"), &fovDefault, 0.001f, 0.1f, 1.5f, "%.3f");
-   ImGui::DragFloat(Tr("FOV ブースト最大", "FOV Boost Max"), &fovBoostMax, 0.001f, 0.0f, 0.5f, "%.3f");
-   ImGui::DragFloat(Tr("FOV 補間速度", "FOV Lerp Speed"), &fovLerpSpeed, 0.1f, 0.1f, 20.0f);
-   ImGui::DragFloat(Tr("距離ブースト", "Distance Boost"), &distanceBoostMax, 0.05f, 0.0f, 10.0f);
-   ImGui::DragFloat(Tr("ばね剛性", "Spring Stiffness"), &springStiffness, 1.0f, 1.0f, 300.0f);
-   ImGui::DragFloat(Tr("ばね減衰", "Spring Damping"), &springDamping, 0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat(Tr("加速→FOVキック", "Accel->FOV Kick"), &accelToFovKick, 0.0001f, 0.0f, 0.02f, "%.4f");
-   ImGui::DragFloat(Tr("加速→距離キック", "Accel->Dist Kick"), &accelToDistanceKick, 0.001f, 0.0f, 0.5f, "%.3f");
-   ImGui::DragFloat(Tr("ターボFOVキック", "Turbo FOV Kick"), &turboFovKickMax, 0.001f, 0.0f, 0.3f, "%.3f");
-   ImGui::DragFloat(Tr("ターボ距離キック", "Turbo Dist Kick"), &turboDistanceKickMax, 0.05f, 0.0f, 8.0f);
-   ImGui::DragFloat(Tr("速度しきい値", "Speed Threshold"), &speedBoostThreshold, 0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat(Tr("速度ブースト最大", "Speed Boost Max"), &speedBoostMax, 0.5f, 0.0f, 200.0f);
-   ImGui::DragFloat(Tr("位置補間", "Position Lerp"), &positionLerpSpeed, 0.5f, 1.0f, 100.0f);
+   ImGui::DragFloat(
+      Tr("スクロール速度 (m/wheel)", "Scroll Speed (m/wheel)"), &scrollSpeed, 0.0001f, 0.0f, 0.1f, "%.4f");
+   GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("GravityUp補間 (deg/s)", "GravityUp Lerp (deg/s)"),
+      gravityUpLerpSpeed, 0.1f * GameEngine::MathConstants::kRadiansToDegrees,
+      0.1f * GameEngine::MathConstants::kRadiansToDegrees, 30.0f * GameEngine::MathConstants::kRadiansToDegrees);
+   GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("FOV デフォルト (deg)", "FOV Default (deg)"), fovDefault,
+      0.001f * GameEngine::MathConstants::kRadiansToDegrees, 0.1f * GameEngine::MathConstants::kRadiansToDegrees,
+      1.5f * GameEngine::MathConstants::kRadiansToDegrees);
+   GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("FOV ブースト最大 (deg)", "FOV Boost Max (deg)"), fovBoostMax,
+      0.001f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f, 0.5f * GameEngine::MathConstants::kRadiansToDegrees);
+   ImGui::DragFloat(Tr("FOV 補間速度 (1/s)", "FOV Lerp Speed (1/s)"), &fovLerpSpeed, 0.1f, 0.1f, 20.0f);
+   ImGui::DragFloat(Tr("距離ブースト (m)", "Distance Boost (m)"), &distanceBoostMax, 0.05f, 0.0f, 10.0f);
+   ImGui::DragFloat(Tr("ばね剛性 (1/s²)", "Spring Stiffness (1/s²)"), &springStiffness, 1.0f, 1.0f, 300.0f);
+   ImGui::DragFloat(Tr("ばね減衰 (1/s)", "Spring Damping (1/s)"), &springDamping, 0.5f, 0.0f, 100.0f);
+   GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("加速→FOVキック (deg·s²/m)", "Accel->FOV Kick (deg·s²/m)"),
+      accelToFovKick, 0.0001f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f,
+      0.02f * GameEngine::MathConstants::kRadiansToDegrees);
+   ImGui::DragFloat(
+      Tr("加速→距離キック (s²)", "Accel->Dist Kick (s²)"), &accelToDistanceKick, 0.001f, 0.0f, 0.5f, "%.3f");
+   GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("ターボFOVキック (deg)", "Turbo FOV Kick (deg)"), turboFovKickMax,
+      0.001f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f, 0.3f * GameEngine::MathConstants::kRadiansToDegrees);
+   ImGui::DragFloat(Tr("ターボ距離キック (m)", "Turbo Dist Kick (m)"), &turboDistanceKickMax, 0.05f, 0.0f, 8.0f);
+   ImGui::DragFloat(Tr("速度しきい値 (m/s)", "Speed Threshold (m/s)"), &speedBoostThreshold, 0.5f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("速度ブースト最大 (m/s)", "Speed Boost Max (m/s)"), &speedBoostMax, 0.5f, 0.0f, 200.0f);
+   ImGui::DragFloat(Tr("位置補間 (1/s)", "Position Lerp (1/s)"), &positionLerpSpeed, 0.5f, 1.0f, 100.0f);
 
    float pitchDeg = pitch_ * MathConstants::kRadiansToDegrees;
 
@@ -684,8 +695,8 @@ void GravityFollowCamera::DrawInspector() {
       "%s: (%.2f, %.2f, %.2f)", Tr("ピボット目標", "Pivot Target"), pivotTarget_.x, pivotTarget_.y, pivotTarget_.z);
    ImGui::Text(
       "%s: (%.2f, %.2f, %.2f)", Tr("水平前方向", "Flat Forward"), flatForward_.x, flatForward_.y, flatForward_.z);
-   ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), playerSpeed_, Tr("現在FOV", "Current FOV"),
-      currentFov_);
+   ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), playerSpeed_,
+      Tr("現在FOV (deg)", "Current FOV (deg)"), currentFov_ * GameEngine::MathConstants::kRadiansToDegrees);
    Configure(DescribeSettings());
 }
 #endif

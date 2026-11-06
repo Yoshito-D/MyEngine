@@ -3,6 +3,7 @@
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
 #include "GameEngine/Math/Types/Quaternion.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
 
 namespace App {
 
@@ -58,16 +59,16 @@ public:
 private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
-   /// @brief ロール角速度（deg/sec）
-   float rollSpeed = 285.0f;
+   /// @brief ロール角速度（rad/s）
+   float rollSpeed = 285.0f * GameEngine::MathConstants::kDegreesToRadians;
 
-   /// @brief ピッチ角速度（deg/sec）
-   float pitchSpeed = 285.0f;
+   /// @brief ピッチ角速度（rad/s）
+   float pitchSpeed = 285.0f * GameEngine::MathConstants::kDegreesToRadians;
 
    /// @brief 空中回転の減衰係数（大きいほど慣性が少ない）
    float angularDamping = 2.5f;
 
-   /// @brief 空中の水平減速係数（per sec）
+   /// @brief 空中の水平減速係数（1/s）
    /// 小さい値にするほど空中での減速が緩やかになる
    float airDrag = 0.001f;
 

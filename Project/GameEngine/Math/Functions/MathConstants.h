@@ -17,4 +17,7 @@ constexpr float kDegreesToRadians = kPi / 180.0f;
 /// @brief ラジアンの角度を度数法へ変換する係数
 constexpr float kRadiansToDegrees = 180.0f / kPi;
 
+/// @brief 速度のm/sを表示用km/hへ変換する係数（1ワールド単位 = 1 m）。
+constexpr float kMetersPerSecondToKilometersPerHour = 3.6f;
+
 } // namespace GameEngine::MathConstants

@@ -85,10 +85,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief UIテキストの共有可能な調整値をJSONで取得する。
+   /// @return 画面アンカー・ピボット・描画順を除いたテキスト設定を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief UIテキストの共有設定を既存コンポーネントへ反映する。
+   /// @param data 画面アンカー・ピボット・描画順を除いたテキスト設定を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

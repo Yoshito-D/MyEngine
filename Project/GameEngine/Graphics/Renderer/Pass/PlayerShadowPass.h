@@ -76,7 +76,8 @@ public:
    /// @param ctx 通常描画と共有するフレームコンテキスト
    void Execute(FrameContext& ctx) override;
 
-   /// @copydoc IRenderPass::GetName
+   /// @brief デバッグ表示でこのレンダーパスを識別する名前を返す。
+   /// @return 「PlayerShadowPass」を表す固定文字列。
    std::string_view GetName() const override { return "PlayerShadowPass"; }
 
    /// @brief 不透明シーンへの追加描画として分類する。実行順はRendererの登録順で決まる。

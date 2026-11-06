@@ -40,7 +40,7 @@ public:
    void SetPivotTarget(const GameEngine::Vector3& target) { pivotTarget_ = target; }
 
    /// @brief プレイヤーの現在速度を設定する（加速演出に使用）
-   /// @param speed 速度の大きさ（単位は任意。加速感の判定に使用）
+   /// @param speed 速度の大きさ（m/s）。加速感の判定に使用。
    void SetPlayerSpeed(float speed) { playerSpeed_ = speed; }
 
    /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
@@ -76,16 +76,16 @@ public:
    /// @brief 直近更新時のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const;
 
-   /// @copydoc GameEngine::ICinemachineComponent::Serialize
+   /// @brief 設定値をプロジェクト共通の単位でJSONへ保存する。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::ICinemachineComponent::Deserialize
+   /// @brief プロジェクト共通の単位で保存された設定JSONを読み込む。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照を除き、共有可能な設定をJSONで返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行状態を維持したまま、統一単位の共有設定JSONを適用する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
@@ -106,7 +106,7 @@ public:
       /// @brief 惑星切り替え時の重力Up補間速度（大きいほど速く追従）
       float gravityUpLerpSpeed = 5.0f;
 
-      /// @brief 通常時の FOV（ラジアン相当）
+      /// @brief 通常時の FOV（rad）
       float fovDefault = 0.45f;
 
       /// @brief 加速時に加算される最大 FOV 量（視野を広げて速度感を演出）
@@ -159,7 +159,7 @@ private:
    float rotateSpeed = 0.005f;        ///< 入力回転感度。
    float scrollSpeed = 1.0f / 120.0f; ///< ホイールズーム感度。
    float gravityUpLerpSpeed = 5.0f;   ///< 惑星切り替え時の重力Up補間速度（大きいほど速く追従）。
-   float fovDefault = 0.45f;          ///< 通常時の FOV（ラジアン相当）。
+   float fovDefault = 0.45f;          ///< 通常時の FOV（rad）。
    float fovBoostMax = 0.08f;         ///< 加速時に加算される最大 FOV 量（視野を広げて速度感を演出）。
    float fovLerpSpeed = 4.0f;         ///< FOV が加速ブーストに追従する補間速度。
    float speedBoostThreshold = 5.0f;  ///< 加速演出を開始するプレイヤー速度の閾値。

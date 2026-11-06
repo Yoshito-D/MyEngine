@@ -54,10 +54,10 @@ void VehicleLandingBoost::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("ブースト量", "Boost Amount"), &boostAmount, 0.1f, 0.0f, 200.0f);
+   ImGui::DragFloat(Tr("ブースト量 (m/s)", "Boost Amount (m/s)"), &boostAmount, 0.1f, 0.0f, 200.0f);
    ImGui::DragFloat(Tr("ブーストしきい値", "Boost Threshold"), &boostThreshold, 0.01f, 0.0f, 1.0f);
    ImGui::DragFloat(Tr("法線しきい値", "Normal Threshold"), &normalThreshold, 0.01f, 0.0f, 1.0f);
-   ImGui::DragFloat(Tr("ペナルティ速度", "Penalty Speed"), &penaltySpeed, 0.1f, 0.0f, 200.0f);
+   ImGui::DragFloat(Tr("ペナルティ速度 (m/s)", "Penalty Speed (m/s)"), &penaltySpeed, 0.1f, 0.0f, 200.0f);
    ImGui::DragFloat(
       Tr("加速禁止時間（秒）", "Acceleration Block Duration (sec)"), &penaltyDuration, 0.05f, 0.0f, 10.0f);
 }

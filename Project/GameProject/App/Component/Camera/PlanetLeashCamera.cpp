@@ -212,9 +212,9 @@ void PlanetLeashCamera::DrawInspector() {
       SetEnabled(enabled);
    }
 
-   ImGui::DragFloat(Tr("最大追従距離", "Max Follow Distance"), &maxFollowDistance, 0.1f, 0.1f, 100.0f);
-   ImGui::DragFloat(Tr("追従速度", "Follow Speed"), &followSpeed, 0.1f, 0.0f, 50.0f);
-   ImGui::DragFloat(Tr("惑星最小距離", "Min Planet Distance"), &minPlanetDistance, 0.1f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("最大追従距離 (m)", "Max Follow Distance (m)"), &maxFollowDistance, 0.1f, 0.1f, 100.0f);
+   ImGui::DragFloat(Tr("追従速度 (1/s)", "Follow Speed (1/s)"), &followSpeed, 0.1f, 0.0f, 50.0f);
+   ImGui::DragFloat(Tr("惑星最小距離 (m)", "Min Planet Distance (m)"), &minPlanetDistance, 0.1f, 0.0f, 100.0f);
    ImGui::Checkbox(Tr("Gravity Upを使用", "Use Gravity Up"), &useGravityUp);
 
    ImGui::Separator();

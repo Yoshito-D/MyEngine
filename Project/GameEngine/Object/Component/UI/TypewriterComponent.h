@@ -55,10 +55,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 文字の逐次表示の共有可能な調整値をJSONで取得する。
+   /// @return 表示速度・待機時間・自動再生・繰り返しとテキスト変更時の再始動条件を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 文字の逐次表示の共有設定を既存コンポーネントへ反映する。
+   /// @param data 表示速度・待機時間・自動再生・繰り返しとテキスト変更時の再始動条件を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

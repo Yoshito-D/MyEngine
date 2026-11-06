@@ -147,15 +147,17 @@ public:
    /// @return 寿命終了時の拡縮率
    const Vector2& GetScaleCurveEnd() const { return scaleCurveEnd_; }
 
-   /// @copydoc ParticleModule::ToJson
+   /// @brief UVスクロール・回転（rad）・スケールの固定値・乱数範囲・寿命カーブの設定をJSONへ保存する。
+   /// @return モジュールの有効状態と固有パラメータを含む設定JSON。
    nlohmann::json ToJson() const override;
 
-   /// @copydoc ParticleModule::FromJson
+   /// @brief UVスクロール・回転（rad）・スケールの固定値・乱数範囲・寿命カーブの設定をJSONから読み込む。
+   /// @param json モジュールの有効状態と固有パラメータを含む設定JSON。
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ParticleModule::DrawInspector
+   /// @brief UVスクロール・回転・スケールの設定を編集し、回転角はdegreeで表示する。
    void DrawInspector() override;
 #endif
 

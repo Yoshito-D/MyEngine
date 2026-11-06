@@ -276,7 +276,8 @@ void VehicleMover::DrawInspector() {
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("重力姿勢追従速度", "Gravity Alignment Speed"), &gravityAlignmentSpeed_, 0.1f, 0.0f, 100.0f);
+   ImGui::DragFloat(
+      Tr("重力姿勢追従速度 (1/s)", "Gravity Alignment Speed (1/s)"), &gravityAlignmentSpeed_, 0.1f, 0.0f, 100.0f);
    ImGui::Text("%s",
       Tr("コーディネーター: サブコンポーネントへ処理を委譲します。", "Coordinator: delegates to sub-components."));
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("最後の移動方向", "Last Move Direction"), lastMoveDirection_.x,

@@ -70,10 +70,15 @@ public:
    /// @return エフェクト名。
    const char* GetEffectName() const override { return "White Noise"; }
 
-   /// @copydoc PostProcess::SerializeSettings
+   /// @brief ノイズ密度・シード更新頻度・しきい値・強度をシーン保存用JSONへ変換する。
+   /// @return 当該エフェクト固有の設定を含むJSONオブジェクト。
+   /// @details 描画で進行する経過時間は保存しない。
    nlohmann::json SerializeSettings() const override;
 
-   /// @copydoc PostProcess::DeserializeSettings
+   /// @brief ノイズ密度・シード更新頻度・しきい値・強度を部分設定JSONから復元し、GPU定数へ反映する。
+   /// @param settings エフェクトの設定JSONオブジェクト。未指定・型不正の項目は現在値を使う。
+   /// @return JSONオブジェクトを受け付けた場合はtrue。それ以外はfalse。
+   /// @details 経過時間と時計を初期化し、ノイズの時間進行を最初から開始する。
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    /// @brief ホワイトノイズの全パラメーターを設定する。

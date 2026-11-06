@@ -20,24 +20,29 @@ public:
       Screen ///< Renderer内部のUIカメラでスクリーン空間に描画する
    };
 
-   /// @copydoc IObjectComponent::GetTypeName
+   /// @brief 保存データとコンポーネント検索に使う型名を返す。
+   /// @return 「RenderComponent」を表す固定文字列。
    const char* GetTypeName() const override;
 
-   /// @copydoc IObjectComponent::Serialize
+   /// @brief 描画制御の保存対象設定をJSONへ変換する。
+   /// @return 表示可否・自動描画・ポストプロセス適用・描画空間を含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc IObjectComponent::Deserialize
+   /// @brief 保存JSONから描画制御の設定を復元する。
+   /// @param data 表示可否・自動描画・ポストプロセス適用・描画空間を含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 描画制御の共有可能な調整値をJSONで取得する。
+   /// @return 表示可否・自動描画・ポストプロセス適用・描画空間を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 描画制御の共有設定を既存コンポーネントへ反映する。
+   /// @param data 表示可否・自動描画・ポストプロセス適用・描画空間を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc IObjectComponent::DrawInspector
+   /// @brief 描画制御の表示可否・自動描画・ポストプロセス適用・描画空間をインスペクターで表示・編集する。
    void DrawInspector() override;
 #endif
 

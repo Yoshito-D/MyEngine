@@ -105,13 +105,17 @@ public:
    CreateObjectCommand(
       Kind kind, Transform transform = Transform(), std::string assetId = {}, std::string parentId = {});
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief 初回は指定種別の要素を生成し、Redoでは保存状態と安定IDを復元する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 対象を生成または復元し、安定IDを取得できた場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 現在の状態をRedo用に保存してから、生成したObjectまたは粒子システムを削除する。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示する要素の生成の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override;
 
 private:
@@ -129,13 +133,17 @@ public:
    /// @brief 適用済み編集を取り込み、Undo/Redoでは既存実体へ復元する。
    EditObjectStateCommand(std::string id, nlohmann::json before, nlohmann::json after, bool particle, std::string name);
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief 適用済み編集を履歴へ取り込み、Redoでは編集後の保存状態を対象へ反映する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 変更前後が異なり、履歴登録または状態の適用に成功した場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 保存した編集前の状態を既存のObjectまたは粒子システムへ適用する。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示する状態編集の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return name_.c_str(); }
 
 private:
@@ -154,13 +162,17 @@ public:
    ReorderObjectCommand(std::string id, std::string beforeParent, std::string afterParent,
       std::vector<std::string> beforeOrder, std::vector<std::string> afterOrder);
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief 保存した変更後の親IDとHierarchy表示順を対象Objectへ適用する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 親または順序に変更があり、対象へ適用できた場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 対象Objectの親IDとHierarchy表示順を変更前へ戻す。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示する親子関係と表示順の変更の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return "Reparent / Reorder Object"; }
 
 private:
@@ -180,13 +192,17 @@ public:
    /// @param objectId 削除対象のエディタオブジェクトID
    explicit DeleteObjectCommand(std::string objectId);
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief Objectの保存状態と子の参照を記録して削除し、選択状態も更新する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 削除対象が存在し、削除できた場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 削除前の保存状態からObjectを復元し、子の親参照と選択を戻す。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示するObjectの削除の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return "Delete Object"; }
 
 private:
@@ -201,13 +217,17 @@ public:
    /// @param objectId 削除対象のエディタオブジェクトID
    explicit DeleteParticleSystemCommand(std::string objectId);
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief 粒子システムの保存状態と再生状態を記録して削除する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 削除対象が存在し、削除できた場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 保存状態から粒子システムを復元し、削除前の再生状態と選択を戻す。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示する粒子システムの削除の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return "Delete Particle System"; }
 
 private:
@@ -224,13 +244,17 @@ public:
    /// @param after 操作後のトランスフォーム
    TransformObjectCommand(std::string objectId, const Transform& before, const Transform& after);
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief 対象Objectのローカルトランスフォームへ操作後の姿勢を適用する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 対象のTransformComponentへ有限な姿勢を適用できた場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 対象Objectのローカルトランスフォームを操作前の姿勢へ戻す。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示するObjectの変形の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return "Transform Object"; }
 
 private:
@@ -250,13 +274,17 @@ public:
    /// @param after 操作後のトランスフォーム
    TransformParticleSystemCommand(std::string objectId, const Transform& before, const Transform& after);
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief 対象粒子システムの放出形状へ操作後の姿勢を適用する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 対象粒子システムへ有限な放出姿勢を適用できた場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 対象粒子システムの放出形状を操作前の姿勢へ戻す。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示する粒子システムの変形の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return "Transform Particle System"; }
 
 private:
@@ -275,13 +303,17 @@ public:
    /// @param commandName Undo/Redoメニューへ表示する操作名
    RestoreObjectSnapshotCommand(nlohmann::json snapshot, std::string commandName);
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief 保存JSONからObjectまたは粒子システムを復元し、確定した安定IDを次回のRedo用に保持する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 保存JSONから対象を復元し、安定IDを取得できた場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 復元した対象の直前の状態を保存し、確定済みの安定IDで対象を削除する。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示するスナップショットの復元の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return commandName_.c_str(); }
 
 private:
@@ -299,13 +331,17 @@ public:
    /// @param add trueなら追加、falseなら削除。
    ModifyComponentCommand(std::string objectId, std::string typeName, bool add);
 
-   /// @copydoc IEditorCommand::Execute
+   /// @brief 操作前のObject全体を保存してから、指定型のコンポーネントを追加または削除する。
+   /// @param context 現在の編集シーンへの操作窓口。
+   /// @return 対象と型名が有効で、コンポーネントの追加または削除に成功した場合はtrue。
    bool Execute(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::Undo
+   /// @brief 保存したObject全体の状態を適用し、依存コンポーネントも含めて操作前へ戻す。
+   /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
    void Undo(EditorCommandTarget& context) override;
 
-   /// @copydoc IEditorCommand::GetName
+   /// @brief Undo/Redoメニューへ表示するコンポーネントの追加・削除の操作名を返す。
+   /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return add_ ? "Add Component" : "Remove Component"; }
 
 private:

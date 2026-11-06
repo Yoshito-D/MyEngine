@@ -37,7 +37,8 @@ public:
       BottomRight
    };
 
-   /// @copydoc IObjectComponent::GetTypeName
+   /// @brief 保存データとコンポーネント検索に使う型名を返す。
+   /// @return 「UIModelComponent」を表す固定文字列。
    const char* GetTypeName() const override;
 
    /// @brief 追加時にオーナーをスクリーンUI描画へ切り替える
@@ -49,21 +50,25 @@ public:
    /// @param screenHeight 描画先の高さ
    void ApplyLayout(const Camera& camera, uint32_t screenWidth, uint32_t screenHeight);
 
-   /// @copydoc IObjectComponent::Serialize
+   /// @brief 画面内モデル配置の保存対象設定をJSONへ変換する。
+   /// @return 投影方式・画面アンカー・オフセット・ピボット・奥行きを含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc IObjectComponent::Deserialize
+   /// @brief 保存JSONから画面内モデル配置の設定を復元する。
+   /// @param data 投影方式・画面アンカー・オフセット・ピボット・奥行きを含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 画面内モデル配置の共有可能な調整値をJSONで取得する。
+   /// @return 画面オフセット・ピボット・奥行き・アンカーを除いた投影設定を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 画面内モデル配置の共有設定を既存コンポーネントへ反映する。
+   /// @param data 画面オフセット・ピボット・奥行き・アンカーを除いた投影設定を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc IObjectComponent::DrawInspector
+   /// @brief 画面内モデル配置の投影方式・画面アンカー・オフセット・ピボット・奥行きをインスペクターで表示・編集する。
    void DrawInspector() override;
 #endif
 

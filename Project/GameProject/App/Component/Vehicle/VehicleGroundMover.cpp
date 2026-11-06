@@ -9,6 +9,7 @@
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 using namespace GameEngine;
@@ -135,8 +136,8 @@ Vector3 VehicleGroundMover::ApplySteering(
    }
 
    // ステアリング = 重力Up 軸まわりの yaw 回転。
-   // steerSpeed (deg/sec) × deltaTime で今フレームの回転角(rad)を計算する。
-   float yawAngle = steerInput * steerSpeed * MathConstants::kDegreesToRadians * deltaTime;
+   // steerSpeed (rad/s) × deltaTime で今フレームの回転角(rad)を計算する。
+   float yawAngle = steerInput * steerSpeed * deltaTime;
 
    // MakeRotateAxisAngleQuaternion で yawAngle ラジアン分の yaw クォータニオンを作り、
    // 現在の前方ベクトルを回転させる。
@@ -185,10 +186,15 @@ void VehicleGroundMover::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("自動速度", "Auto Speed"), &autoSpeed, 0.1f, 0.0f, 100.0f);
-   ImGui::DragFloat((std::string(Tr("操舵速度", "Steer Speed")) + "##2").c_str(), &steerSpeed, 1.0f, 0.0f, 360.0f);
-   ImGui::DragFloat(Tr("速度回復", "Speed Recovery"), &speedRecovery, 0.1f, 0.1f, 20.0f);
-   ImGui::DragFloat(Tr("最大速度", "Max Speed"), &maxSpeed, 0.1f, 0.0f, 200.0f);
+   ImGui::DragFloat(Tr("自動速度 (m/s)", "Auto Speed (m/s)"), &autoSpeed, 0.1f, 0.0f, 100.0f);
+   float steerSpeedDegrees = ImGuiHelper::RadiansToDegrees(steerSpeed);
+
+   if (ImGui::DragFloat(Tr("操舵角速度 (deg/s)", "Steer Speed (deg/s)"), &steerSpeedDegrees, 1.0f, 0.0f, 360.0f)) {
+      steerSpeed = ImGuiHelper::DegreesToRadians(steerSpeedDegrees);
+   }
+
+   ImGui::DragFloat(Tr("速度回復 (1/s)", "Speed Recovery (1/s)"), &speedRecovery, 0.1f, 0.1f, 20.0f);
+   ImGui::DragFloat(Tr("最大速度 (m/s)", "Max Speed (m/s)"), &maxSpeed, 0.1f, 0.0f, 200.0f);
    ImGui::Spacing();
 
    if (ImGui::Button(Tr("速度リセット", "Reset Speed"))) {

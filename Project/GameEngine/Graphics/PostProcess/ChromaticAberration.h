@@ -35,10 +35,13 @@ public:
 #endif
    const char* GetEffectName() const override { return "Chromatic Aberration"; }
 
-   /// @copydoc PostProcess::SerializeSettings
+   /// @brief 色ずれの中心・移動ピクセル量・方向をシーン保存用JSONへ変換する。
+   /// @return 当該エフェクト固有の設定を含むJSONオブジェクト。
    nlohmann::json SerializeSettings() const override;
 
-   /// @copydoc PostProcess::DeserializeSettings
+   /// @brief 色ずれの中心・移動ピクセル量・方向を部分設定JSONから復元し、GPU定数へ反映する。
+   /// @param settings エフェクトの設定JSONオブジェクト。未指定・型不正の項目は現在値を使う。
+   /// @return JSONオブジェクトを受け付けた場合はtrue。それ以外はfalse。
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定

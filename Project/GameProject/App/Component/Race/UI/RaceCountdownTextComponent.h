@@ -28,7 +28,8 @@ public:
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   /// @brief 保存されたレース管理IDから参照を再解決し、以前のシーンへの参照を破棄する。
+   /// @param sceneWorld 参照の解決先となる現在のシーンワールド。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief レース状態に応じてカウントダウン文字列を更新する
@@ -43,10 +44,12 @@ public:
    /// @param data 表示設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief カウントダウン表示の共有可能な調整値をJSONで取得する。
+   /// @return レース管理参照を除いた文字表示と切り替え演出を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief カウントダウン表示の共有設定を既存コンポーネントへ反映する。
+   /// @param data レース管理参照を除いた文字表示と切り替え演出を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

@@ -310,8 +310,16 @@ void LightComponent::DrawInspector() {
    } else if (type_ == Type::Spot) {
       ImGui::DragFloat("Distance", &settings.distance, 0.05f, 0.0f, 10000.0f);
       ImGui::DragFloat("Decay", &settings.decay, 0.01f, 0.0f, 100.0f);
-      ImGui::SliderFloat("Cos Angle", &settings.cosAngle, -1.0f, 1.0f);
-      ImGui::SliderFloat("Cos Falloff Start", &settings.cosFalloffStart, -1.0f, 1.0f);
+      float angle = std::acos(std::clamp(settings.cosAngle, -1.0f, 1.0f));
+      float falloffStart = std::acos(std::clamp(settings.cosFalloffStart, -1.0f, 1.0f));
+
+      if (ImGuiHelper::DragRadiansAsDegrees("Angle (deg)", angle, 0.1f, 0.0f, 180.0f)) {
+         settings.cosAngle = std::cos(angle);
+      }
+
+      if (ImGuiHelper::DragRadiansAsDegrees("Falloff Start (deg)", falloffStart, 0.1f, 0.0f, 180.0f)) {
+         settings.cosFalloffStart = std::cos(falloffStart);
+      }
    } else if (type_ == Type::Area) {
       ImGui::DragFloat2("Size", &settings.areaSize.x, 0.05f, 0.0f, 10000.0f);
    }

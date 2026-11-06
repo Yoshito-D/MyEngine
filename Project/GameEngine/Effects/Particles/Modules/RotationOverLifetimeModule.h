@@ -30,15 +30,17 @@ public:
    /// @brief ランダムな角速度を取得
    Vector3 GetRandomAngularVelocity() const;
 
-   /// @copydoc ParticleModule::ToJson
+   /// @brief 各軸の角速度範囲（rad/s）とランダム化の有無の設定をJSONへ保存する。
+   /// @return モジュールの有効状態と固有パラメータを含む設定JSON。
    nlohmann::json ToJson() const override;
 
-   /// @copydoc ParticleModule::FromJson
+   /// @brief 各軸の角速度範囲（rad/s）とランダム化の有無の設定をJSONから読み込む。
+   /// @param json モジュールの有効状態と固有パラメータを含む設定JSON。
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ParticleModule::DrawInspector
+   /// @brief 各軸の角速度範囲をdeg/sで表示し、ランダム化とともに編集する。
    void DrawInspector() override;
 #endif
 

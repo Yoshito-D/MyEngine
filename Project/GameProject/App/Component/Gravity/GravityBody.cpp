@@ -98,7 +98,7 @@ void GravityBody::DrawInspector() {
 
    ImGui::Separator();
    ImGui::Checkbox(Tr("重力を使用", "Use Gravity"), &useGravity);
-   ImGui::DragFloat(Tr("重力強度", "Gravity Strength"), &gravityStrength, 0.1f, 0.0f, 50.0f);
+   ImGui::DragFloat(Tr("重力強度 (m/s²)", "Gravity Strength (m/s²)"), &gravityStrength, 0.1f, 0.0f, 50.0f);
    ImGui::Spacing();
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("現在の上方向", "Current Up"), targetUpVector_.x, targetUpVector_.y,
       targetUpVector_.z);

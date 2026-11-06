@@ -97,7 +97,7 @@ struct RearCameraSettings {
    /// @brief 惑星切り替え時の重力Up補間速度（大きいほど速く追従）
    float gravityUpLerpSpeed = 5.0f;
 
-   /// @brief 通常時の FOV（ラジアン相当）
+   /// @brief 通常時の FOV（rad）
    float fovDefault = 0.45f;
 
    /// @brief 加速時に加算される最大 FOV 量（視野を広げて速度感を演出）

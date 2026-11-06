@@ -98,15 +98,17 @@ public:
    /// @return シート全体または単一行モード
    AnimationMode GetAnimationMode() const { return animationMode_; }
 
-   /// @copydoc ParticleModule::ToJson
+   /// @brief テクスチャシートの分割数・行選択・フレーム再生の設定をJSONへ保存する。
+   /// @return モジュールの有効状態と固有パラメータを含む設定JSON。
    nlohmann::json ToJson() const override;
 
-   /// @copydoc ParticleModule::FromJson
+   /// @brief テクスチャシートの分割数・行選択・フレーム再生の設定をJSONから読み込む。
+   /// @param json モジュールの有効状態と固有パラメータを含む設定JSON。
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ParticleModule::DrawInspector
+   /// @brief テクスチャシートの分割数・行選択・フレーム再生の設定とモジュールの有効状態を表示・編集する。
    void DrawInspector() override;
 #endif
 

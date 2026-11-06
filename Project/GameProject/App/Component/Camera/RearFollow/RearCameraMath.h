@@ -20,7 +20,7 @@ constexpr float kMaxSpringStep = 1.0f / 120.0f;
 // 旧ターボ係数が最大になっていた速度差を統合後も基準として使う。
 constexpr float kSpeedDeltaForMaxKick = 5.0f;
 constexpr float kGroundDirectionProjectionBlendRange = 0.15f;
-constexpr float kRadiansToDegrees = 57.29577951308232f;
+using GameEngine::MathConstants::kRadiansToDegrees;
 constexpr size_t kMaxCameraMeasurementSamples = 36000;
 constexpr const char* kCameraMeasurementDirectory = "../Generated/CameraMeasurements";
 

@@ -51,16 +51,20 @@ public:
    /// @brief 直近計算のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const { return cachedRight_; }
 
-   /// @copydoc GameEngine::ICinemachineComponent::Serialize
+   /// @brief 惑星追従カメラの保存対象設定をJSONへ変換する。
+   /// @return 追従距離・惑星との最小距離・追従速度とUpの選択条件を含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::ICinemachineComponent::Deserialize
+   /// @brief 保存JSONから惑星追従カメラの設定を復元する。
+   /// @param data 追従距離・惑星との最小距離・追従速度とUpの選択条件を含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 惑星追従カメラの共有可能な調整値をJSONで取得する。
+   /// @return 追従距離・惑星との最小距離・追従速度とUpの選択条件を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 惑星追従カメラの共有設定を既存コンポーネントへ反映する。
+   /// @param data 追従距離・惑星との最小距離・追従速度とUpの選択条件を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

@@ -58,15 +58,17 @@ public:
    /// @brief ノイズ座標のスクロール速度の乱数範囲を取得する
    const RandomFloat& GetScrollSpeedRange() const { return scrollSpeed_; }
 
-   /// @copydoc ParticleModule::ToJson
+   /// @brief 加速度振幅（m/s²）・空間周波数（rad/m）・位相速度（rad/s）の設定をJSONへ保存する。
+   /// @return モジュールの有効状態と固有パラメータを含む設定JSON。
    nlohmann::json ToJson() const override;
 
-   /// @copydoc ParticleModule::FromJson
+   /// @brief 加速度振幅（m/s²）・空間周波数（rad/m）・位相速度（rad/s）の設定をJSONから読み込む。
+   /// @param json モジュールの有効状態と固有パラメータを含む設定JSON。
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ParticleModule::DrawInspector
+   /// @brief ノイズの加速度振幅と周波数・位相速度を単位付きで表示・編集する。
    void DrawInspector() override;
 #endif
 

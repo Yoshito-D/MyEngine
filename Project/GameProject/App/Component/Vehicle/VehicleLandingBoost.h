@@ -27,7 +27,7 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両着地ブースト", "Vehicle Landing Boost"};
 
-   /// @copydoc GameEngine::IObjectComponent::GetTypeName
+   /// @brief 保存とコンポーネント検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
    /// @brief 着地時に判定を行い速度を調整する
@@ -41,26 +41,26 @@ public:
 
 #ifdef USE_IMGUI
 
-   /// @copydoc GameEngine::IObjectComponent::DrawInspector
+   /// @brief 設定と実行状態を単位付きで表示・編集する。
    void DrawInspector() override;
 #endif
 
-   /// @copydoc GameEngine::IObjectComponent::Serialize
+   /// @brief 設定値をプロジェクト共通の単位でJSONへ保存する。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc GameEngine::IObjectComponent::Deserialize
+   /// @brief プロジェクト共通の単位で保存された設定JSONを読み込む。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照を除き、共有可能な設定をJSONで返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行状態を維持したまま、統一単位の共有設定JSONを適用する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
-   /// @brief 着地ブーストの加算量（units/sec）
+   /// @brief 着地ブーストの加算量（m/s）
    float boostAmount = 0.0f;
 
    /// @brief ブーストが発動する平行度の閾値（dot 積。1 が完全平行）

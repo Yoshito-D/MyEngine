@@ -28,15 +28,17 @@ public:
    /// @brief 生存期間の終了色を取得する
    const Vector4& GetEndColor() const { return endColor_; }
 
-   /// @copydoc ParticleModule::ToJson
+   /// @brief 寿命に応じた開始色・終了色の設定をJSONへ保存する。
+   /// @return モジュールの有効状態と固有パラメータを含む設定JSON。
    nlohmann::json ToJson() const override;
 
-   /// @copydoc ParticleModule::FromJson
+   /// @brief 寿命に応じた開始色・終了色の設定をJSONから読み込む。
+   /// @param json モジュールの有効状態と固有パラメータを含む設定JSON。
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ParticleModule::DrawInspector
+   /// @brief 寿命に応じた開始色・終了色の設定とモジュールの有効状態を表示・編集する。
    void DrawInspector() override;
 #endif
 

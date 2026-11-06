@@ -19,22 +19,29 @@ public:
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr ComponentDisplayName kDisplayName{"アニメーション", "Animation"};
 
-   /// @copydoc IObjectComponent::GetTypeName
+   /// @brief 保存データとコンポーネント検索に使う型名を返す。
+   /// @return 「AnimationComponent」を表す固定文字列。
    const char* GetTypeName() const override;
 
-   /// @copydoc IObjectComponent::Serialize
+   /// @brief 骨格・ノードアニメーションの保存対象設定をJSONへ変換する。
+   /// @return クリップ・対象ノード・再生設定と現在の再生位置を含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc IObjectComponent::Deserialize
+   /// @brief 保存JSONから骨格・ノードアニメーションの設定を復元する。
+   /// @param data クリップ・対象ノード・再生設定と現在の再生位置を含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief 骨格・ノードアニメーションの共有可能な調整値をJSONで取得する。
+   /// @return 再生位置と再生可否を除いたクリップ・ノード・再生条件を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 骨格・ノードアニメーションの共有設定を既存コンポーネントへ反映する。
+   /// @param data 再生位置と再生可否を除いたクリップ・ノード・再生条件を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
-   /// @copydoc IObjectComponent::Update
+   /// @brief 選択クリップの再生位置を更新し、現在時刻の骨格・ノード姿勢を所有オブジェクトへ適用する。
+   /// @param deltaTime 再生を進める経過時間（s）。0以下では再生位置を進めない。
+   /// @details 一時停止中も現在時刻の姿勢を適用し、スクラブや設定変更の結果を反映する。
    void Update(float deltaTime) override;
 
    /// @brief アニメーションの再生を開始する
@@ -60,7 +67,7 @@ public:
 
 #ifdef USE_IMGUI
 
-   /// @copydoc IObjectComponent::DrawInspector
+   /// @brief 骨格・ノードアニメーションのクリップ・対象ノード・再生設定と現在の再生位置をインスペクターで表示・編集する。
    void DrawInspector() override;
 #endif
 

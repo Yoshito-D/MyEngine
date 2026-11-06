@@ -8,6 +8,7 @@
 
 #ifdef USE_IMGUI
 #include "imgui.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 namespace App {
@@ -25,7 +26,7 @@ const bool kRegistered = GameEngine::VirtualCamera::RegisterComponentFactory(
 void TitleCameraRotation::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
    if (!std::isfinite(deltaTime) || deltaTime <= 0.0f) return;
 
-   const float angle = rotationSpeedDegrees_ * GameEngine::MathConstants::kDegreesToRadians * deltaTime;
+   const float angle = rotationSpeed_ * deltaTime;
 
    if (!std::isfinite(angle)) return;
 
@@ -36,16 +37,20 @@ void TitleCameraRotation::MutateCameraState(GameEngine::CameraState& state, floa
 }
 
 nlohmann::json TitleCameraRotation::Serialize() const {
-   return nlohmann::json{{"rotationSpeedDegrees", rotationSpeedDegrees_}};
+   return nlohmann::json{{"rotationSpeed", rotationSpeed_}};
 }
 
 void TitleCameraRotation::Deserialize(const nlohmann::json& data) {
-   rotationSpeedDegrees_ = GameEngine::JsonValue::ReadFloat(data, "rotationSpeedDegrees", rotationSpeedDegrees_);
+   rotationSpeed_ = GameEngine::JsonValue::ReadFloat(data, "rotationSpeed", rotationSpeed_);
 }
 
 #ifdef USE_IMGUI
 void TitleCameraRotation::DrawInspector() {
-   ImGui::DragFloat("Rotation Speed (deg/s)", &rotationSpeedDegrees_, 0.1f, -30.0f, 30.0f);
+   float degreesPerSecond = GameEngine::ImGuiHelper::RadiansToDegrees(rotationSpeed_);
+
+   if (ImGui::DragFloat("Rotation Speed (deg/s)", &degreesPerSecond, 0.1f, -30.0f, 30.0f)) {
+      rotationSpeed_ = GameEngine::ImGuiHelper::DegreesToRadians(degreesPerSecond);
+   }
 }
 #endif
 

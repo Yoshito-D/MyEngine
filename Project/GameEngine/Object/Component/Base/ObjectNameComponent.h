@@ -17,18 +17,21 @@ public:
    /// @brief エディタへ表示するローカライズ済み名称
    static constexpr ComponentDisplayName kDisplayName{"オブジェクト名", "Object Name"};
 
-   /// @copydoc IObjectComponent::GetTypeName
+   /// @brief 保存データとコンポーネント検索に使う型名を返す。
+   /// @return 「ObjectNameComponent」を表す固定文字列。
    const char* GetTypeName() const override;
 
-   /// @copydoc IObjectComponent::Serialize
+   /// @brief オブジェクト名の保存対象設定をJSONへ変換する。
+   /// @return 所有オブジェクトの名前を含む設定JSON。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc IObjectComponent::Deserialize
+   /// @brief 保存JSONからオブジェクト名の設定を復元する。
+   /// @param data 所有オブジェクトの名前を含む設定JSON。
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc IObjectComponent::DrawInspector
+   /// @brief オブジェクト名の所有オブジェクトの名前をインスペクターで表示・編集する。
    void DrawInspector() override;
 #endif
 

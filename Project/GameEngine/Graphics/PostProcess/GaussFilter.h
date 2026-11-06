@@ -31,10 +31,13 @@ public:
 #endif
    const char* GetEffectName() const override { return "Gauss Filter"; }
 
-   /// @copydoc PostProcess::SerializeSettings
+   /// @brief ガウスぼかしの強度・カーネルサイズ・標準偏差をシーン保存用JSONへ変換する。
+   /// @return 当該エフェクト固有の設定を含むJSONオブジェクト。
    nlohmann::json SerializeSettings() const override;
 
-   /// @copydoc PostProcess::DeserializeSettings
+   /// @brief ガウスぼかしの強度・カーネルサイズ・標準偏差を部分設定JSONから復元し、GPU定数へ反映する。
+   /// @param settings エフェクトの設定JSONオブジェクト。未指定・型不正の項目は現在値を使う。
+   /// @return JSONオブジェクトを受け付けた場合はtrue。それ以外はfalse。
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
    // パラメータ設定

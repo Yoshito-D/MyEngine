@@ -31,7 +31,9 @@ public:
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @copydoc GameEngine::IObjectComponent::OnReferencesChanged
+   /// @brief レース管理・車両の速度源・ゲージ・枠・速度テキストの参照を再解決する。
+   /// @param sceneWorld 参照の解決先となる現在のシーンワールド。
+   /// @details 枠と速度テキストは任意。見つからない参照はnullptrとして保持する。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 速度比率に応じてゲージの幅とUV範囲を更新する
@@ -46,10 +48,10 @@ public:
    /// @param data ゲージ設定JSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照を除き、共有可能な設定をJSONで返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行状態を維持したまま、統一単位の共有設定JSONを適用する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
@@ -71,7 +73,6 @@ private:
    float gaugeWidth_ = 360.0f;  ///< 速度ゲージの基準横幅（ピクセル）。
    float gaugeHeight_ = 121.0f; ///< 速度ゲージの基準高さ（ピクセル）。
    float response_ = 8.0f;      ///< 実速度へ表示値を近づける補間応答速度。
-   float unitToKmh_ = 3.6f;     ///< ワールド速度を表示用km/hへ変換する倍率。
 
    RaceManagerComponent* raceManager_ = nullptr; ///< 参照解決済みレース管理コンポーネントへの非所有参照。
    GravityBody* gravityBody_ = nullptr;          ///< プレイヤーの速度・重力・姿勢を参照するコンポーネント。

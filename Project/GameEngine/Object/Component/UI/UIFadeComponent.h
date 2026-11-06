@@ -51,10 +51,12 @@ public:
    /// @param data 保存済みJSON
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief UIフェードの共有可能な調整値をJSONで取得する。
+   /// @return 透明度の開始値・終了値・待機時間・再生時間と再生条件を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief UIフェードの共有設定を既存コンポーネントへ反映する。
+   /// @param data 透明度の開始値・終了値・待機時間・再生時間と再生条件を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI

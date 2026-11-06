@@ -4,11 +4,13 @@
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
 #include <cmath>
 #include <algorithm>
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
+#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
 using namespace GameEngine;
@@ -118,12 +120,13 @@ void CharacterWalker::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("移動速度", "Move Speed"), &moveSpeed, 0.1f, 0.0f, 50.0f);
-   ImGui::DragFloat(Tr("加速度", "Acceleration"), &acceleration, 0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat(Tr("摩擦", "Friction"), &friction, 0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat(Tr("空中加速度", "Air Acceleration"), &airAcceleration, 0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat(Tr("空中摩擦", "Air Friction"), &airFriction, 0.5f, 0.0f, 100.0f);
-   ImGui::DragFloat(Tr("旋回速度", "Turn Speed"), &turnSpeed, 0.5f, 0.0f, 30.0f);
+   ImGui::DragFloat(Tr("移動速度 (m/s)", "Move Speed (m/s)"), &moveSpeed, 0.1f, 0.0f, 50.0f);
+   ImGui::DragFloat(Tr("加速度 (m/s²)", "Acceleration (m/s²)"), &acceleration, 0.5f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("摩擦 (m/s²)", "Friction (m/s²)"), &friction, 0.5f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("空中加速度 (m/s²)", "Air Acceleration (m/s²)"), &airAcceleration, 0.5f, 0.0f, 100.0f);
+   ImGui::DragFloat(Tr("空中摩擦 (m/s²)", "Air Friction (m/s²)"), &airFriction, 0.5f, 0.0f, 100.0f);
+   GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("旋回速度 (deg/s)", "Turn Speed (deg/s)"), turnSpeed,
+      0.5f * MathConstants::kRadiansToDegrees, 0.0f, 30.0f * MathConstants::kRadiansToDegrees);
    ImGui::Spacing();
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("水平速度", "Horizontal Velocity"), horizontalVelocity_.x,
       horizontalVelocity_.y, horizontalVelocity_.z);

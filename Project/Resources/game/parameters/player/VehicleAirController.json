@@ -5,7 +5,7 @@
    "data": {
       "airDrag": 0.009999999776482582,
       "angularDamping": 2.5,
-      "pitchSpeed": 250.0,
-      "steerSpeed": 250.0
+      "pitchSpeed": 4.363323129985823,
+      "rollSpeed": 4.363323129985823
    }
 }

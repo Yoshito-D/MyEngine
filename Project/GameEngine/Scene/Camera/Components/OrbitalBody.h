@@ -16,10 +16,13 @@ public:
    /// @brief カメラコンポーネントを破棄する
    ~OrbitalBody() override = default;
 
-   /// @copydoc ICinemachineComponent::MutateCameraState
+   /// @brief Yaw・Pitch（rad）とピボットから、カメラ位置とビュー行列を再構築する。
+   /// @param state 更新するカメラ状態。
+   /// @details フレーム時間の引数は使用しない。入力で更新済みの角度と距離から状態を計算する。
    void MutateCameraState(CameraState& state, float) override;
 
-   /// @copydoc ICinemachineComponent::GetStage
+   /// @brief 仮想カメラ内でこの処理を実行するステージを返す。
+   /// @return 位置とビュー行列を計算するBodyステージ。
    CinemachineStage GetStage() const override { return CinemachineStage::Body; }
 
    /// @brief 入力処理
@@ -71,24 +74,25 @@ public:
    /// @brief OrbitalBodyのYaw/Pitchから計算したカメラの右ベクトルを返す（スクリーン右方向）
    Vector3 GetCameraRight() const;
 
-   /// @copydoc ICinemachineComponent::GetComponentName
+   /// @brief 保存データと仮想カメラのコンポーネント検索に使う名前を返す。
+   /// @return 「OrbitalBody」を表す固定文字列。
    const char* GetComponentName() const override { return "OrbitalBody"; }
 
-   /// @copydoc ICinemachineComponent::Serialize
+   /// @brief 設定値をプロジェクト共通の単位でJSONへ保存する。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc ICinemachineComponent::Deserialize
+   /// @brief プロジェクト共通の単位で保存された設定JSONを読み込む。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief シーン固有の参照を除き、共有可能な設定をJSONで返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 実行状態を維持したまま、統一単位の共有設定JSONを適用する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ICinemachineComponent::DrawInspector
+   /// @brief 設定と実行状態を単位付きで表示・編集する。
    void DrawInspector() override;
 #endif
 
@@ -100,9 +104,9 @@ private:
    float distance_ = 75.0f;                   ///< ピボットからの距離。
    Vector3 pivotTarget_ = {0.0f, 0.0f, 0.0f}; ///< ピボットターゲット。
 
-   float rotateSpeed_ = 0.01f;        ///< 入力回転感度。
-   float scrollSpeed_ = 1.0f / 20.0f; ///< ホイールズーム感度。
-   float moveSpeed_ = 0.0008f;        ///< 最大移動速度（units/sec）。
+   float rotateSpeed_ = 0.01f;        ///< 入力回転感度（rad/pixel）。
+   float scrollSpeed_ = 1.0f / 20.0f; ///< ホイールズーム感度（m/wheel入力値）。
+   float moveSpeed_ = 0.0008f; ///< 距離に対するパン感度（1/pixel）。実移動量はdistance × mouseDelta × moveSpeed。。
 
    Matrix4x4 rotationMatrix_ = MakeIdentity4x4(); ///< 現在の旋回姿勢を表す回転行列。
 };

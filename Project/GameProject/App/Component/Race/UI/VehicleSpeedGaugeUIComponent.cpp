@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include "GameEngine/Math/Functions/MathConstants.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
@@ -110,7 +111,8 @@ void VehicleSpeedGaugeUIComponent::Update(float deltaTime) {
    gaugeSprite_->SetTextureUV({0.0f, 0.0f}, {textureWidth_ * visibleRatio, textureHeight_});
 
    if (speedText_) {
-      speedText_->SetText(std::format("{:.0f} km/h", speed * unitToKmh_));
+      speedText_->SetText(
+         std::format("{:.0f} km/h", speed * GameEngine::MathConstants::kMetersPerSecondToKilometersPerHour));
    }
 
    SetHudVisible(true);
@@ -146,7 +148,7 @@ nlohmann::json VehicleSpeedGaugeUIComponent::Serialize() const {
    // 解決済みポインターや補間途中の比率は保存せず、シーン再構築に必要な設定だけを残す。
    return nlohmann::json{{"raceManagerId", raceManagerId_}, {"playerObjectId", playerObjectId_},
       {"frameObjectId", frameObjectId_}, {"speedTextObjectId", speedTextObjectId_}, {"gaugeWidth", gaugeWidth_},
-      {"gaugeHeight", gaugeHeight_}, {"response", response_}, {"unitToKmh", unitToKmh_}};
+      {"gaugeHeight", gaugeHeight_}, {"response", response_}};
 }
 
 nlohmann::json VehicleSpeedGaugeUIComponent::GetSharedParameters() const {
@@ -184,7 +186,6 @@ void VehicleSpeedGaugeUIComponent::ReadParameters(const nlohmann::json& data, [[
    readPositiveFloat("gaugeWidth", gaugeWidth_);
    readPositiveFloat("gaugeHeight", gaugeHeight_);
    readPositiveFloat("response", response_);
-   readPositiveFloat("unitToKmh", unitToKmh_);
 }
 
 #ifdef USE_IMGUI
@@ -200,7 +201,6 @@ void VehicleSpeedGaugeUIComponent::DrawInspector() {
    ImGui::DragFloat("Gauge Width", &gaugeWidth_, 1.0f, 1.0f, 4096.0f);
    ImGui::DragFloat("Gauge Height", &gaugeHeight_, 1.0f, 1.0f, 4096.0f);
    ImGui::DragFloat("Response", &response_, 0.1f, 0.001f, 100.0f);
-   ImGui::DragFloat("Unit to km/h", &unitToKmh_, 0.1f, 0.001f, 100.0f);
    ImGui::Text("Resolved: Body=%s Mover=%s Gauge=%s Frame=%s Text=%s", gravityBody_ ? "true" : "false",
       groundMover_ ? "true" : "false", gaugeSprite_ ? "true" : "false", frameObject_ ? "true" : "false",
       speedText_ ? "true" : "false");

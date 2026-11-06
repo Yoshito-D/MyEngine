@@ -13,11 +13,12 @@ public:
 
 #ifdef USE_IMGUI
 
-   /// @copydoc PostProcess::ImGuiEdit
+   /// @brief リニア色からsRGBへの変換効果の項目見出しを表示する。固有の編集パラメータは持たない。
    void ImGuiEdit() override;
 #endif
 
-   /// @copydoc PostProcess::GetEffectName
+   /// @brief エディター表示と保存識別に使うエフェクト名を返す。
+   /// @return 「Linear to sRGB」を表す固定文字列。
    const char* GetEffectName() const override { return "Linear to sRGB"; }
 };
 }

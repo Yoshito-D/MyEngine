@@ -24,45 +24,47 @@ public:
    void ApplyVelocity(
       Particle& particle, float deltaTime, const Transform& simulationTransform, bool useLocalSimulation) const;
 
-   /// @brief 加算速度を固定値で設定する
-   void SetLinearVelocity(const Vector3& velocity) { linearVelocity_ = RandomVector3(velocity, velocity, false); }
+   /// @brief 加速度（m/s²）を固定値で設定する
+   void SetLinearAcceleration(const Vector3& acceleration) {
+      linearAcceleration_ = RandomVector3(acceleration, acceleration, false);
+   }
 
-   /// @brief 加算速度の代表値を取得する
-   Vector3 GetLinearVelocity() const { return linearVelocity_.Minimum(); }
+   /// @brief 加速度（m/s²）の代表値を取得する
+   Vector3 GetLinearAcceleration() const { return linearAcceleration_.Minimum(); }
 
-   /// @brief 加算速度を乱数範囲で設定する
-   void SetLinearVelocityRange(const RandomVector3& velocity) { linearVelocity_ = velocity; }
+   /// @brief 加速度（m/s²）を乱数範囲で設定する
+   void SetLinearAccelerationRange(const RandomVector3& acceleration) { linearAcceleration_ = acceleration; }
 
-   /// @brief 加算速度の乱数範囲を取得する
-   const RandomVector3& GetLinearVelocityRange() const { return linearVelocity_; }
+   /// @brief 加速度（m/s²）の乱数範囲を取得する
+   const RandomVector3& GetLinearAccelerationRange() const { return linearAcceleration_; }
 
-   /// @brief 速度倍率を固定値で設定する
-   void SetSpeedModifier(float modifier) { speedModifier_ = RandomFloat(modifier, modifier, false); }
+   /// @brief 速度の指数増幅率（1/s、0で等速）を固定値で設定する
+   void SetSpeedGrowthRate(float rate) { speedGrowthRate_ = RandomFloat(rate, rate, false); }
 
-   /// @brief 速度倍率の代表値を取得する
-   float GetSpeedModifier() const { return speedModifier_.Minimum(); }
+   /// @brief 速度の指数増幅率（1/s、0で等速）の代表値を取得する
+   float GetSpeedGrowthRate() const { return speedGrowthRate_.Minimum(); }
 
-   /// @brief 速度倍率を乱数範囲で設定する
-   void SetSpeedModifierRange(const RandomFloat& modifier) { speedModifier_ = modifier; }
+   /// @brief 速度の指数増幅率（1/s、0で等速）を乱数範囲で設定する
+   void SetSpeedGrowthRateRange(const RandomFloat& rate) { speedGrowthRate_ = rate; }
 
-   /// @brief 速度倍率の乱数範囲を取得する
-   const RandomFloat& GetSpeedModifierRange() const { return speedModifier_; }
+   /// @brief 速度の指数増幅率（1/s、0で等速）の乱数範囲を取得する
+   const RandomFloat& GetSpeedGrowthRateRange() const { return speedGrowthRate_; }
 
-   /// @copydoc ParticleModule::ToJson
+   /// @brief 加速度（m/s²）と指数増幅率（1/s）を乱数範囲としてJSONへ保存する。
    nlohmann::json ToJson() const override;
 
-   /// @copydoc ParticleModule::FromJson
+   /// @brief 加速度と指数増幅率の設定JSONを読み込む。
    void FromJson(const nlohmann::json& json) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc ParticleModule::DrawInspector
+   /// @brief 加速度と指数増幅率を単位付きで編集する。
    void DrawInspector() override;
 #endif
 
 private:
-   /// @brief 加算速度の乱数範囲。
-   RandomVector3 linearVelocity_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false};
-   RandomFloat speedModifier_{1.0f, 1.0f, false}; ///< 速度倍率の乱数範囲。
+   /// @brief 加速度（m/s²）の乱数範囲。
+   RandomVector3 linearAcceleration_{Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f), false};
+   RandomFloat speedGrowthRate_{0.0f, 0.0f, false}; ///< 速度の指数増幅率の乱数範囲（1/s）。
 };
 }

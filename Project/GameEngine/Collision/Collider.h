@@ -65,7 +65,7 @@ struct AABB {
 };
 
 /// @brief フックの法則と速度減衰に用いるばねパラメータ。
-/// @note 長さ・剛性・減衰係数の単位は、更新側の時間・座標単位と一貫させる。
+/// @note 距離はm、質量はkg、時間はsで扱う。剛性はN/m、減衰係数はkg/s。
 struct Spring {
    Vector3 anchor;           //!< アンカー
    float naturalLength;      //!< 自然長
@@ -77,15 +77,15 @@ struct Spring {
 /// @note massとradiusには通常0より大きい値を設定する。
 struct Ball {
    Vector3 position;     //!< 位置
-   Vector3 velocity;     //!< 速度
-   Vector3 acceleration; //!< 加速度
-   float mass;           //!< 質量
+   Vector3 velocity;     //!< 速度（m/s）
+   Vector3 acceleration; //!< 加速度（m/s²）
+   float mass;           //!< 質量（kg）
    float radius;         //!< 半径
    std::uint32_t color;  //!< 描画時に解釈するパック済みの色
 };
 
 /// @brief 固定点を支点として平面内を運動する単振り子の状態。
-/// @note 角度・角速度・角加速度の単位系は更新処理側で統一する。
+/// @note 角度はrad、角速度はrad/s、角加速度はrad/s²、長さはmで扱う。表示時だけdegreeへ換算する。
 struct Pendulum {
    Vector3 anchor;            //!< アンカー
    float length;              //!< 長さ
@@ -95,7 +95,7 @@ struct Pendulum {
 };
 
 /// @brief 固定点を支点として円錐面上を運動する円錐振り子の状態。
-/// @note 角度関連の値の単位系は更新処理側で統一する。
+/// @note 角度はrad、角速度はrad/s、長さはmで扱う。表示時だけdegreeへ換算する。
 struct ConicalPendulum {
    Vector3 anchor;        //!< アンカー
    float length;          //!< 長さ

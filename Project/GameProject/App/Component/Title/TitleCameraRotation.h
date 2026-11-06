@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
 
 namespace App {
 
@@ -30,7 +31,7 @@ public:
 #endif
 
 private:
-   float rotationSpeedDegrees_ = 3.0f; ///< ワールドY軸周りの回転速度（度/秒）。
+   float rotationSpeed_ = 3.0f * GameEngine::MathConstants::kDegreesToRadians; ///< ワールドY軸周りの回転速度（rad/s）。
 };
 
 } // namespace App

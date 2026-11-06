@@ -199,22 +199,28 @@ public:
    /// @brief 値型の描画コマンドを型消去インターフェースで所有する
    explicit DrawCommandWrapper(DrawCommand cmd) : cmd_(std::move(cmd)) {}
 
-   /// @copydoc IDrawCommand::GetRenderPass
+   /// @brief 所有する描画コマンドの実行先パスを返す。
+   /// @return 不透明・半透明・ポストプロセス後のいずれかの描画パス。
    RenderPass GetRenderPass() const override { return cmd_.renderPass; }
 
-   /// @copydoc IDrawCommand::GetBlendMode
+   /// @brief 所有する描画コマンドに設定されたブレンド方式を返す。
+   /// @return 描画時に適用するブレンドモード。
    BlendMode GetBlendMode() const override { return cmd_.blendMode; }
 
-   /// @copydoc IDrawCommand::GetTypePriority
+   /// @brief 距離情報がない、または距離が同じ描画コマンドの種別優先度を返す。
+   /// @return 描画種別に応じた整数。値が大きいコマンドを先に描画する。
    std::int32_t GetTypePriority() const override;
 
-   /// @copydoc IDrawCommand::GetSortPosition
+   /// @brief 描画対象の種別から透過ソートに使う位置を取得する。
+   /// @return モデル・ワールドスプライト・ラインから得られる位置。取得できない場合はnullopt。
    std::optional<Vector3> GetSortPosition() const override;
 
-   /// @copydoc IDrawCommand::GetCamera
+   /// @brief 描画コマンドが保持する描画用カメラの非所有参照を取得する。
+   /// @return モデル・ワールドスプライト・粒子・ラインのカメラ。UI要素や対象外の種別はnullptr。
    Camera* GetCamera() const override;
 
-   /// @copydoc IDrawCommand::GetDrawCommand
+   /// @brief レンダラーのコマンド実行へ渡す、所有中の描画データを参照する。
+   /// @return このラッパーが存続する間有効な描画コマンドへの読み取り専用参照。
    const DrawCommand& GetDrawCommand() const override { return cmd_; }
 
 private:
