@@ -22,6 +22,9 @@ public:
    /// @return ObjectType::UIText
    ObjectType GetObjectType() const override { return ObjectType::UIText; }
 
+   /// @brief 削除予約時にUIテキストを描画レジストリから解除する。実体とコンポーネントは維持する。
+   void OnRemovedFromScene() override;
+
    /// @brief 文字列とスタイルを初期化する
    /// @param text UTF-8文字列
    /// @param style 表示設定

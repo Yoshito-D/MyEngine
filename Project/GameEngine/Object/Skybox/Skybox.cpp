@@ -46,6 +46,10 @@ Skybox::~Skybox() {
    UnregisterSkybox(this);
 }
 
+void Skybox::OnRemovedFromScene() {
+   UnregisterSkybox(this);
+}
+
 void Skybox::UnregisterSkybox(Skybox* skybox) {
    // 破棄済みポインターを静的一覧へ残さず、名前生成やエディター列挙から参照されないようにする。
    auto it = std::find(sRegisteredSkyboxes_.begin(), sRegisteredSkyboxes_.end(), skybox);

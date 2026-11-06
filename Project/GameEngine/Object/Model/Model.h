@@ -30,6 +30,13 @@ public:
    /// @return ObjectType::Model
    ObjectType GetObjectType() const override { return ObjectType::Model; }
 
+   /// @brief モデルファイルを直接参照する場合のアセットIDを保存する。
+   /// @return 共通パラメータによる参照では空のassetIdを持つ、型固有の追加フィールド。
+   nlohmann::json SerializeObjectData() const override;
+
+   /// @brief 削除予約時にモデルを描画レジストリから解除する。実体とGPUリソースは維持する。
+   void OnRemovedFromScene() override;
+
    /// @brief 描画レジストリ内の全モデルを取得する
    static const std::vector<Model*>& GetRegisteredModels();
 

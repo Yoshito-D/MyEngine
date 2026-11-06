@@ -58,6 +58,10 @@ UIText::~UIText() {
    UnregisterText(this);
 }
 
+void UIText::OnRemovedFromScene() {
+   UnregisterText(this);
+}
+
 void UIText::Create(std::string text, const TextStyle& style) {
    if (auto* textComponent = GetTextComponent()) {
       textComponent->SetStyle(style);
