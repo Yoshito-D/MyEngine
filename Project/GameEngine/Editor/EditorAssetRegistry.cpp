@@ -3,6 +3,7 @@
 #ifdef USE_IMGUI
 
 #include "GameEngine/Assets/Texture/TextureCatalog.h"
+#include "GameEngine/Assets/Audio/SoundClipCache.h"
 #include <algorithm>
 #include <atomic>
 #include <cctype>
@@ -29,12 +30,19 @@ std::string ToLower(std::string value) {
    return value;
 }
 
-bool IsCookedTextureRoot(const std::filesystem::path& path, const std::filesystem::path& root) {
-   const auto id = ToLower(ToGenericString(path.lexically_relative(root)));
+bool IsCookedAssetId(const std::string& id, bool includeChildren) {
+   const auto matches = [&id, includeChildren](const auto& roots, const char* cookedDirectory) {
+      return std::any_of(roots.begin(), roots.end(), [&](const auto* root) {
+         const auto cookedId = ToLower(ToGenericString(std::filesystem::path(root) / cookedDirectory));
+         return id == cookedId || (includeChildren && id.starts_with(cookedId + "/"));
+      });
+   };
 
-   return std::any_of(kTextureRoots.begin(), kTextureRoots.end(), [&id](const auto* textureRoot) {
-      return id == ToLower(ToGenericString(std::filesystem::path(textureRoot) / kTextureCookedDirectory));
-   });
+   return matches(kTextureRoots, kTextureCookedDirectory) || matches(kAudioRoots, kAudioCookedDirectory);
+}
+
+bool IsCookedAssetRoot(const std::filesystem::path& path, const std::filesystem::path& root) {
+   return IsCookedAssetId(ToLower(ToGenericString(path.lexically_relative(root))), false);
 }
 
 bool IsValidFileName(const std::string& name) {
@@ -142,8 +150,8 @@ void EditorAssetRegistry::Scan(const std::filesystem::path& resourcesRoot) {
          break;
       }
 
-      if (std::filesystem::is_directory(status) && IsCookedTextureRoot(path, resourcesRoot_)) {
-         // 生成DDSとカタログを編集用アセットとして再登録しない。
+      if (std::filesystem::is_directory(status) && IsCookedAssetRoot(path, resourcesRoot_)) {
+         // 生成DDS・カタログ・PCMキャッシュを編集用アセットとして再登録しない。
          it.disable_recursion_pending();
       } else if (std::filesystem::is_symlink(status)) {
          // リンク先がルート外でもブラウザーの操作対象にならないよう除外する。
@@ -254,7 +262,7 @@ std::vector<std::string> EditorAssetRegistry::FindReferences(const std::string& 
          break;
       }
 
-      if (IsCookedTextureRoot(it->path(), resourcesRoot_) || std::filesystem::is_symlink(status) ||
+      if (IsCookedAssetRoot(it->path(), resourcesRoot_) || std::filesystem::is_symlink(status) ||
           NormalizeAssetId(it->path(), resourcesRoot_).empty()) {
          it.disable_recursion_pending();
       } else if (std::filesystem::is_regular_file(status)) {
@@ -403,13 +411,8 @@ bool EditorAssetRegistry::ResolveDestination(
    error.clear();
    const std::string foldedId = ToLower(assetId);
 
-   const bool isCooked = std::any_of(kTextureRoots.begin(), kTextureRoots.end(), [&foldedId](const auto* root) {
-      const auto id = ToLower(ToGenericString(std::filesystem::path(root) / kTextureCookedDirectory));
-      return foldedId == id || foldedId.starts_with(id + "/");
-   });
-
-   if (isCooked) {
-      error = "Generated textures are managed at startup and cannot be edited in Project.";
+   if (IsCookedAssetId(foldedId, true)) {
+      error = "Generated assets are managed automatically and cannot be edited in Project.";
       return false;
    }
 

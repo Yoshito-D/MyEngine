@@ -252,6 +252,7 @@
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
     <ClCompile Include="GameEngine\Assets\Audio\SoundClipCache.cpp" />
+    <ClCompile Include="GameEngine\Assets\Audio\AudioCacheStartup.cpp" />
     <ClCompile Include="GameEngine\Assets\Texture\TextureManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -508,6 +509,7 @@
     <ClCompile Include="GameProject\App\Component\Race\UI\RaceTimeFormatting.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\UI\RaceTimeTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\UI\VehicleSpeedGaugeUIComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Title\TitleCameraRotation.cpp" />
     <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
@@ -586,6 +588,7 @@
     <ClInclude Include="GameEngine\Assets\Material\MaterialManager.h" />
     <ClInclude Include="GameEngine\Assets\Model\ModelAssetManager.h" />
     <ClInclude Include="GameEngine\Assets\Audio\SoundClipCache.h" />
+    <ClInclude Include="GameEngine\Assets\Audio\AudioCacheStartup.h" />
     <ClInclude Include="GameEngine\Assets\Texture\TextureManager.h" />
     <ClInclude Include="GameEngine\Audio\Audio.h" />
     <ClInclude Include="GameEngine\Audio\BgmPlayer.h" />
@@ -795,6 +798,7 @@
     <ClInclude Include="GameProject\App\Component\Race\UI\RaceTimeFormatting.h" />
     <ClInclude Include="GameProject\App\Component\Race\UI\RaceTimeTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\UI\VehicleSpeedGaugeUIComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Title\TitleCameraRotation.h" />
     <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h" />
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
@@ -1057,7 +1061,10 @@
   <Target Name="PrepareTextureCache" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
     <Exec WorkingDirectory="$(ProjectDir)" Command="&quot;$(TargetPath)&quot; --prepare-textures &quot;$(ProjectDir)Resources&quot;" />
   </Target>
-  <Target Name="CopyRuntimeResources" AfterTargets="PrepareTextureCache" DependsOnTargets="CompileShaders" Condition="'$(DesignTimeBuild)' != 'true'">
+  <Target Name="PrepareAudioCache" AfterTargets="PrepareTextureCache" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Exec WorkingDirectory="$(ProjectDir)" Command="&quot;$(TargetPath)&quot; --prepare-audio &quot;$(ProjectDir)Resources&quot;" />
+  </Target>
+  <Target Name="CopyRuntimeResources" AfterTargets="PrepareAudioCache" DependsOnTargets="CompileShaders" Condition="'$(DesignTimeBuild)' != 'true'">
     <PropertyGroup>
       <_ResourceSourceDirectory Condition="'$(_ResourceSourceDirectory)' == ''">$(ProjectDir)Resources</_ResourceSourceDirectory>
       <_ResourceSourceRoot>$([System.IO.Path]::GetFullPath('$(_ResourceSourceDirectory)\'))</_ResourceSourceRoot>
@@ -1076,9 +1083,11 @@
     <RemoveDir Directories="@(_WrongCaseResourceRoot)" />
     <MakeDir Directories="$(_ResourceTargetRoot)" />
     <ItemGroup>
-      <_RuntimeResourceFile Include="$(_ResourceSourceRoot)**\*" Exclude="$(_ResourceSourceRoot)engine\textures\**\*;$(_ResourceSourceRoot)game\textures\**\*;$(_ResourceSourceRoot)engine\shaders\**\*" />
+      <_RuntimeResourceFile Include="$(_ResourceSourceRoot)**\*" Exclude="$(_ResourceSourceRoot)engine\textures\**\*;$(_ResourceSourceRoot)game\textures\**\*;$(_ResourceSourceRoot)engine\sounds\**\*;$(_ResourceSourceRoot)game\sounds\**\*;$(_ResourceSourceRoot)engine\shaders\**\*" />
       <!-- 通常テクスチャはCookedだけを含める。フォントのPNGアトラスは通常のリソースとして保持する。 -->
       <_RuntimeResourceFile Include="$(_ResourceSourceRoot)engine\textures\Cooked\*.dds;$(_ResourceSourceRoot)engine\textures\Cooked\catalog.json;$(_ResourceSourceRoot)game\textures\Cooked\*.dds;$(_ResourceSourceRoot)game\textures\Cooked\catalog.json" />
+      <!-- 音声は元のWAV・MP3を含めず、フォルダー構造を保ったPCMキャッシュだけを配布する。 -->
+      <_RuntimeResourceFile Include="$(_ResourceSourceRoot)engine\sounds\Cooked\**\*.pcmcache;$(_ResourceSourceRoot)game\sounds\Cooked\**\*.pcmcache" />
       <_ResourceToCopy Include="@(_RuntimeResourceFile)">
         <DestinationPath>$(_ResourceTargetRoot)$([MSBuild]::MakeRelative('$(_ResourceSourceRoot)', '%(FullPath)'))</DestinationPath>
       </_ResourceToCopy>

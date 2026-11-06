@@ -359,6 +359,9 @@
     <ClCompile Include="GameEngine\Assets\Audio\SoundClipCache.cpp">
       <Filter>GameEngine\Assets\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Assets\Audio\AudioCacheStartup.cpp">
+      <Filter>GameEngine\Assets\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Assets\Font\FontManager.cpp">
       <Filter>GameEngine\Assets\Font</Filter>
     </ClCompile>
@@ -977,6 +980,9 @@
     <ClCompile Include="GameProject\App\Component\Race\UI\VehicleSpeedGaugeUIComponent.cpp">
       <Filter>GameProject\App\Component\Race\UI</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Title\TitleCameraRotation.cpp">
+      <Filter>GameProject\App\Component\Title</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp">
       <Filter>GameProject\App\Component\Title</Filter>
     </ClCompile>
@@ -1131,6 +1137,9 @@
       <Filter>GameEngine\Assets</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Assets\Audio\SoundClipCache.h">
+      <Filter>GameEngine\Assets\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Assets\Audio\AudioCacheStartup.h">
       <Filter>GameEngine\Assets\Audio</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Assets\Font\FontManager.h">
@@ -1786,6 +1795,9 @@
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\UI\VehicleSpeedGaugeUIComponent.h">
       <Filter>GameProject\App\Component\Race\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Title\TitleCameraRotation.h">
+      <Filter>GameProject\App\Component\Title</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h">
       <Filter>GameProject\App\Component\Title</Filter>

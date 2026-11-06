@@ -5,6 +5,7 @@
 #include "GameEngine/Utility/D3DResourceLeakChecker.h"
 #include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Assets/Texture/TextureCacheStartup.h"
+#include "GameEngine/Assets/Audio/AudioCacheStartup.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Camera.h"
 #include "GameEngine/Scene/Light/DirectionalLight.h"
@@ -173,6 +174,7 @@ void Framework::Finalize() {
 
 void Framework::Run() {
    RunTextureCacheBuildCommandIfRequested();
+   RunAudioCacheBuildCommandIfRequested();
 
    const auto startupStart = std::chrono::steady_clock::now();
    bool firstPresent = true;

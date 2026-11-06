@@ -28,6 +28,9 @@ public:
    const std::vector<BYTE>& GetPcm() const { return pcm_; }
 
 private:
+   // キャッシュの復元時だけ、検証済みのPCMと形式情報を直接格納する。
+   friend class SoundClipCache;
+
    std::vector<uint64_t> formatWords_; ///< WAVEFORMATEXを十分な配置境界で保持する所有ストレージ。
    std::vector<BYTE> pcm_;             ///< いずれかのボイスが参照している間保持されるPCMデータ。
 };
