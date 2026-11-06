@@ -2,6 +2,7 @@
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Graphics/Resources/Material.h"
+#include <cstddef>
 #include <functional>
 #include <string>
 #include <utility>
@@ -15,6 +16,9 @@ class PSOManager;
 /// @brief Objectのマテリアルスロットとテクスチャ参照を名前付きで永続化する
 class MaterialComponent final : public IObjectComponent {
 public:
+   /// @brief マテリアルとテクスチャで使用できるスロット数の上限。有効な添字はこの値未満。
+   static constexpr size_t kMaxMaterialSlots = 4096;
+
    /// @brief シリアライズ時に使用するコンポーネント型名
    static constexpr const char* kTypeName = "MaterialComponent";
 
@@ -62,7 +66,7 @@ public:
    /// @param lightingMode 初期ライティング方式
    /// @param uvTransform 初期UV変換
    /// @return 解決または作成したマテリアル。サービス未設定時はnullptr
-   Material* EnsureMaterial(const std::string& name, uint32_t color = 0xffffffff,
+   Material* EnsureMaterial(const std::string& name, uint32_t color = Material::kDefaultColor,
       int32_t lightingMode = Material::LightingMode::HALFLAMBERT, const Matrix4x4& uvTransform = MakeIdentity4x4());
 
    /// @brief 全スロットを破棄して先頭へ1マテリアルを割り当てる
@@ -153,24 +157,24 @@ public:
    /// @return 環境テクスチャ名
    const std::string& GetEnvironmentTextureName() const { return environmentTextureName_; }
 
-   /// @copydoc IObjectComponent::GetTypeName
+   /// @brief シリアライズに使用するコンポーネント型名を返す。
    const char* GetTypeName() const override;
 
-   /// @copydoc IObjectComponent::Serialize
+   /// @brief マテリアルスロット、描画設定、テクスチャ参照をJSONへ保存する。
    nlohmann::json Serialize() const override;
 
-   /// @copydoc IObjectComponent::Deserialize
+   /// @brief JSONからマテリアルスロットとテクスチャ参照を復元する。
    void Deserialize(const nlohmann::json& data) override;
 
-   /// @copydoc GameEngine::ParameterComponent::GetSharedParameters
+   /// @brief オブジェクト間で共有する描画設定をJSONで返す。
    nlohmann::json GetSharedParameters() const override;
 
-   /// @copydoc GameEngine::ParameterComponent::ApplySharedParameters
+   /// @brief 共有パラメーターの描画設定を現在のコンポーネントへ反映する。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
 
-   /// @copydoc IObjectComponent::DrawInspector
+   /// @brief マテリアルスロットと描画設定の編集UIを表示する。
    void DrawInspector() override;
 #endif
 

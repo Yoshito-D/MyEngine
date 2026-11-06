@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <climits>
+#include <cstddef>
 #include <d3d12.h>
 #include "GameEngine/Graphics/Pipeline/PipelineState.h" // BlendModeの定義を含む
 
@@ -54,14 +55,23 @@ struct InputElementDefinition {
 
 /// @brief HLSLのバイトオフセットを明示したfloatベクトルパラメーター。
 struct MaterialParameterDefinition {
+   /// @brief シェーダーパラメーターで扱えるfloatベクトルの最大成分数。
+   static constexpr std::size_t kMaxComponents = 4;
+
    std::string name;                ///< 識別とエディター表示に使う名前。
    UINT offset = 0;                 ///< 定数バッファ先頭からこのパラメーターまでのバイト数。
    std::vector<float> defaultValue; ///< 設定が指定されない場合に採用する既定値。
-   bool checkbox = false; ///< 単一floatを0/1のチェックボックスで編集する。
+   bool checkbox = false;           ///< 単一floatを0/1のチェックボックスで編集する。
 };
 
 /// @brief すべてのPSOバリエーションで共有する、検証済みモデル描画契約。
 struct ModelPipelineDefinition {
+   /// @brief 独自マテリアルの定数バッファに許可し、GPUへ確保する最大バイト数。
+   static constexpr UINT kMaxParameterBufferSize = 4096;
+
+   /// @brief HLSL定数バッファのサイズに必要なアライメント（バイト）。
+   static constexpr UINT kParameterBufferAlignment = 16;
+
    std::vector<RootParameterDefinition> bindings;       ///< モデル描画に必要なリソースのバインド契約。
    UINT parameterBufferSize = 0;                        ///< 独自マテリアル定数バッファのサイズ（バイト）。
    std::vector<MaterialParameterDefinition> parameters; ///< ルートシグネチャへ登録するパラメーターの定義順一覧。
@@ -69,11 +79,11 @@ struct ModelPipelineDefinition {
 
 /// @brief パイプライン定義構造体
 struct PipelineDefinition {
-   bool modelCompatible = false; ///< 使用前にモデルの頂点およびリソース契約を検証する。
-   std::string name;             ///< 識別とエディター表示に使う名前。
-   std::string vertexShader;     ///< 使用する頂点シェーダーの登録名。
-   std::string pixelShader;      ///< 使用するピクセルシェーダーの登録名。
-   std::string rootSignature;    ///< リソースのバインド配置を定めるルートシグネチャ。
+   bool modelCompatible = false;                           ///< 使用前にモデルの頂点およびリソース契約を検証する。
+   std::string name;                                       ///< 識別とエディター表示に使う名前。
+   std::string vertexShader;                               ///< 使用する頂点シェーダーの登録名。
+   std::string pixelShader;                                ///< 使用するピクセルシェーダーの登録名。
+   std::string rootSignature;                              ///< リソースのバインド配置を定めるルートシグネチャ。
    std::vector<InputElementDefinition> inputLayout;        ///< 頂点バッファとシェーダー入力の対応定義。
    ModelPipelineDefinition model;                          ///< モデル描画のバインドと独自マテリアルの契約定義。
    bool supportBlendModes = false;                         ///< ブレンド方式ごとのPSOを生成するかどうか。

@@ -14,6 +14,19 @@
 namespace App {
 using namespace RearCameraMath;
 
+namespace {
+// 要約JSONの60FPS基準と固定刻み検証を同じ条件で計算する。
+constexpr uint64_t kReferenceFramesPerSecond = 60;
+constexpr size_t kInitialMeasurementReserveSeconds = 60;
+constexpr uint64_t kVerificationDurationSeconds = 4;
+constexpr uint64_t kVerificationFrameCount = kReferenceFramesPerSecond * kVerificationDurationSeconds;
+constexpr float kMinimumMeasurementDurationSeconds = 1e-6f;
+constexpr float kVerificationAngleToleranceDegrees = 1e-4f;
+constexpr std::int32_t kCsvDecimalPlaces = 7;
+constexpr std::int32_t kSummaryIndentSpaces = 3;
+constexpr std::int32_t kMeasurementFormatVersion = 1;
+}
+
 /// @brief 検証条件名をファイル名として安全なASCIIへ変換する
 std::string SanitizeMeasurementName(const std::string& name) {
    std::string sanitized;
@@ -45,7 +58,7 @@ void RearCameraMeasurementRecorder::StartCameraMeasurement(
    const std::string& testName, const RearCameraFrameView& frame) {
    ClearCameraMeasurement();
    state_.cameraMeasurementTestName = testName.empty() ? "camera_live" : testName;
-   state_.cameraMeasurementSamples.reserve(3600);
+   state_.cameraMeasurementSamples.reserve(kReferenceFramesPerSecond * kInitialMeasurementReserveSeconds);
    // 計測開始時点の軸を比較元にし、最初の角度差に初期姿勢からの差分が混ざるのを防ぐ。
    state_.cameraMeasurementPreviousGravityUp = frame.gravity.GetState().currentGravityUp;
    state_.cameraMeasurementPreviousRight = frame.aim.GetState().cachedRight;
@@ -207,7 +220,7 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
           "target_up_x,target_up_y,target_up_z,current_up_x,current_up_y,current_up_z,"
           "camera_right_x,camera_right_y,camera_right_z,camera_up_x,camera_up_y,camera_up_z,"
           "camera_forward_x,camera_forward_y,camera_forward_z\n";
-   csv << std::fixed << std::setprecision(7);
+   csv << std::fixed << std::setprecision(kCsvDecimalPlaces);
 
    for (const CameraMeasurementSample& sample : state_.cameraMeasurementSamples) {
       csv << sample.frame << ',' << sample.timeSeconds << ',' << sample.deltaTimeSeconds << ','
@@ -234,13 +247,13 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
 
    // 設定の角速度（ラジアン毎秒）を60FPS時の度毎フレームへ換算し、実測値と比較できる単位に揃える。
    const float theoreticalGravityUpDegreesPerFrameAt60Fps =
-      std::max(0.0f, settings.gravityUpLerpSpeed) * kRadiansToDegrees / 60.0f;
+      std::max(0.0f, settings.gravityUpLerpSpeed) * kRadiansToDegrees / static_cast<float>(kReferenceFramesPerSecond);
    const float averageFps =
-      state_.cameraMeasurementElapsedSeconds > 1e-6f
+      state_.cameraMeasurementElapsedSeconds > kMinimumMeasurementDurationSeconds
          ? static_cast<float>(state_.cameraMeasurementSamples.size()) / state_.cameraMeasurementElapsedSeconds
          : 0.0f;
    nlohmann::json summary{
-      {"formatVersion", 1},
+      {"formatVersion", kMeasurementFormatVersion},
       {"testName", state_.cameraMeasurementTestName},
       {"csvFile", csvPath.filename().generic_string()},
       {"definitions",
@@ -287,7 +300,7 @@ bool RearCameraMeasurementRecorder::SaveCameraMeasurementFiles(const RearCameraS
       return false;
    }
 
-   summaryFile << summary.dump(3);
+   summaryFile << summary.dump(kSummaryIndentSpaces);
    summaryFile.close();
 
    if (!summaryFile) {
@@ -306,7 +319,7 @@ void RearCameraMeasurementRecorder::RunFixedGravityUpVerification(const RearCame
    state_.cameraMeasurementTestName = "fixed_180_gravity_up_60fps";
 
    // 180度反対の方向では回転軸が一意に定まらないため、固定の右軸を与えて同じ条件で補間を検証する。
-   constexpr float fixedDeltaTime = 1.0f / 60.0f;
+   constexpr float fixedDeltaTime = 1.0f / static_cast<float>(kReferenceFramesPerSecond);
    const GameEngine::Vector3 targetUp = {0.0f, -1.0f, 0.0f};
    const GameEngine::Vector3 cameraRight = {1.0f, 0.0f, 0.0f};
    GameEngine::Vector3 currentUp = {0.0f, 1.0f, 0.0f};
@@ -314,7 +327,7 @@ void RearCameraMeasurementRecorder::RunFixedGravityUpVerification(const RearCame
    GameEngine::Vector3 previousCameraForward = cameraRight.Cross(currentUp);
    const float maxRadiansDelta = std::max(0.0f, settings.gravityUpLerpSpeed) * fixedDeltaTime;
 
-   for (uint64_t frame = 0; frame < 240; ++frame) {
+   for (uint64_t frame = 0; frame < kVerificationFrameCount; ++frame) {
       const GameEngine::Vector3 previousGravityUp = currentUp;
       currentUp = RotateTowardsUnit(currentUp, targetUp, maxRadiansDelta, cameraRight);
       const GameEngine::Vector3 cameraForward =
@@ -366,7 +379,7 @@ void RearCameraMeasurementRecorder::RunFixedGravityUpVerification(const RearCame
       previousCameraUp = currentUp;
       previousCameraForward = cameraForward;
 
-      if (sample.targetGravityUpErrorDegrees <= 1e-4f) {
+      if (sample.targetGravityUpErrorDegrees <= kVerificationAngleToleranceDegrees) {
          break;
       }
    }
