@@ -72,6 +72,23 @@ Model::~Model() {
    UnregisterModel(this);
 }
 
+nlohmann::json Model::SerializeObjectData() const {
+   std::string assetId;
+
+   if (const auto* meshComponent = GetComponent<MeshComponent>()) {
+      if (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile &&
+          meshComponent->GetParameterAssetId().empty()) {
+         assetId = meshComponent->GetAssetId();
+      }
+   }
+
+   return nlohmann::json{{"assetId", assetId}};
+}
+
+void Model::OnRemovedFromScene() {
+   UnregisterModel(this);
+}
+
 void Model::UnregisterModel(Model* model) {
    if (!model) return;
 

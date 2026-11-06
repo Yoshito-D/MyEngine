@@ -119,6 +119,14 @@ public:
 
    // --- シリアライゼーション ---
 
+   /// @brief 共通のID・親ID・種別・コンポーネントを除いた、型固有の追加フィールドを保存する。
+   /// @return 保存JSONへ追加するオブジェクト。固有データがない場合は空オブジェクト。
+   virtual nlohmann::json SerializeObjectData() const;
+
+   /// @brief 共通状態の適用後に、保存JSONから型固有の追加フィールドを復元する。
+   /// @param objectData 型の一致を検証済みの保存JSON。欠落した固有フィールドは現在値を維持する。
+   virtual void DeserializeObjectData(const nlohmann::json& objectData);
+
    /// @brief JSON配列と一致するようコンポーネント構成を復元する
    /// @return 有効な配列を適用できた場合はtrue
    bool DeserializeComponents(const nlohmann::json& componentsData);
@@ -130,6 +138,10 @@ public:
    void SynchronizeParameters() { components_.SynchronizeParameters(); }
 
    // --- ライフサイクル ---
+
+   /// @brief シーンからの削除予約時に、実体を破棄せず型固有の非所有登録を解除する。
+   /// @note デストラクターより先に呼ばれ、登録解除済みの場合も安全に処理する。
+   virtual void OnRemovedFromScene() {}
 
    /// @brief 有効な全コンポーネントを更新する
    void UpdateComponents(float deltaTime);

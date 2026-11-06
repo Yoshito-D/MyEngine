@@ -232,9 +232,6 @@ private:
    void UnregisterParticleSystem(ParticleSystem* particleSystem);
    void UnregisterOwnedRuntimeSystems(Object* object);
    void BumpCounterFromId(const std::string& id);
-   void DeserializeSpriteData(Sprite* sprite, const nlohmann::json& data) const;
-
-   static nlohmann::json SerializeSpriteData(const Sprite* sprite);
 
    SceneWorld& world_;                            ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
    std::vector<std::unique_ptr<Object>> objects_; ///< シーン内で生成したObjectの所有一覧。

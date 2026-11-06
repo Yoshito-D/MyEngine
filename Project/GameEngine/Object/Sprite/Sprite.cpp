@@ -14,6 +14,76 @@ namespace GameEngine {
 std::vector<Sprite*> Sprite::sRegisteredSprites_;
 
 namespace {
+const char* ToSpriteAnchorPointName(Sprite::AnchorPoint anchorPoint) {
+   switch (anchorPoint) {
+      case Sprite::AnchorPoint::TopLeft:
+         return "TopLeft";
+      case Sprite::AnchorPoint::TopCenter:
+         return "TopCenter";
+      case Sprite::AnchorPoint::TopRight:
+         return "TopRight";
+      case Sprite::AnchorPoint::MiddleLeft:
+         return "MiddleLeft";
+      case Sprite::AnchorPoint::MiddleCenter:
+         return "MiddleCenter";
+      case Sprite::AnchorPoint::MiddleRight:
+         return "MiddleRight";
+      case Sprite::AnchorPoint::BottomLeft:
+         return "BottomLeft";
+      case Sprite::AnchorPoint::BottomCenter:
+         return "BottomCenter";
+      case Sprite::AnchorPoint::BottomRight:
+         return "BottomRight";
+      default:
+         return "MiddleCenter";
+   }
+}
+
+Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::AnchorPoint fallback) {
+   if (value.is_string()) {
+      // 現行形式はenumの並び替えに影響されない名前で保存する。
+      const std::string name = value.get<std::string>();
+
+      if (name == "TopLeft") {
+         return Sprite::AnchorPoint::TopLeft;
+      }
+
+      if (name == "TopCenter") {
+         return Sprite::AnchorPoint::TopCenter;
+      }
+
+      if (name == "TopRight") {
+         return Sprite::AnchorPoint::TopRight;
+      }
+
+      if (name == "MiddleLeft") {
+         return Sprite::AnchorPoint::MiddleLeft;
+      }
+
+      if (name == "MiddleCenter") {
+         return Sprite::AnchorPoint::MiddleCenter;
+      }
+
+      if (name == "MiddleRight") {
+         return Sprite::AnchorPoint::MiddleRight;
+      }
+
+      if (name == "BottomLeft") {
+         return Sprite::AnchorPoint::BottomLeft;
+      }
+
+      if (name == "BottomCenter") {
+         return Sprite::AnchorPoint::BottomCenter;
+      }
+
+      if (name == "BottomRight") {
+         return Sprite::AnchorPoint::BottomRight;
+      }
+   }
+
+   return fallback;
+}
+
 // MaterialManagerの名前検索で別Spriteの既定Materialを共有しないよう、プロセス中に重複しない自動名を割り当てる。
 uint64_t sAutoSpriteMaterialCounter = 0;
 
@@ -77,6 +147,32 @@ Sprite::Sprite() {
 
 Sprite::~Sprite() {
    // Object基底がComponentを破棄する前に、Rendererから参照される非所有ポインターを外す。
+   UnregisterSprite(this);
+}
+
+nlohmann::json Sprite::SerializeObjectData() const {
+   std::string textureAssetId;
+
+   if (const auto* materialComponent = GetComponent<MaterialComponent>()) {
+      textureAssetId = materialComponent->GetParameterAssetId().empty() ? materialComponent->GetTextureName() : "";
+   }
+
+   return nlohmann::json{
+      {"assetId", textureAssetId}, {"sprite", {{"screenAnchorPoint", ToSpriteAnchorPointName(screenAnchorPoint_)}}}};
+}
+
+void Sprite::DeserializeObjectData(const nlohmann::json& objectData) {
+   if (!objectData.contains("sprite") || !objectData.at("sprite").is_object()) return;
+
+   const auto& data = objectData.at("sprite");
+
+   // Sprite専用状態はスクリーンアンカーだけで、寸法・反転・UVはComponentが復元する。
+   if (data.contains("screenAnchorPoint")) {
+      SetScreenAnchorPoint(ParseSpriteAnchorPoint(data.at("screenAnchorPoint"), screenAnchorPoint_));
+   }
+}
+
+void Sprite::OnRemovedFromScene() {
    UnregisterSprite(this);
 }
 

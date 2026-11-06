@@ -28,6 +28,17 @@ public:
    /// @return ObjectType::Sprite
    ObjectType GetObjectType() const override { return ObjectType::Sprite; }
 
+   /// @brief 直接参照するテクスチャのアセットIDとスクリーンアンカーを保存する。
+   /// @return assetIdとspriteを持つ型固有の追加フィールド。
+   nlohmann::json SerializeObjectData() const override;
+
+   /// @brief 共通コンポーネントの復元後に、スプライト固有のスクリーンアンカーを復元する。
+   /// @param objectData 型の一致を検証済みの保存JSON。アンカーの欠落・不正値では現在値を維持する。
+   void DeserializeObjectData(const nlohmann::json& objectData) override;
+
+   /// @brief 削除予約時にスプライトを描画レジストリから解除する。実体とGPUリソースは維持する。
+   void OnRemovedFromScene() override;
+
    /// @brief 描画レジストリ内の全スプライトを取得する
    /// @return 登録中Spriteへの非所有ポインター一覧
    static const std::vector<Sprite*>& GetRegisteredSprites();

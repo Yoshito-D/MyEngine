@@ -3,7 +3,6 @@
 #include "GameEngine/Scene/SceneObjectStore.h"
 #include "GameEngine/Scene/SceneWorld.h"
 
-#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include "GameEngine/Object/Component/Effects/ParticleEmitterComponent.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
@@ -28,75 +27,6 @@ std::string BuildNameFromAssetId(const std::string& assetId) {
    return std::string(reinterpret_cast<const char*>(name.data()), name.size());
 }
 
-const char* ToSpriteAnchorPointName(Sprite::AnchorPoint anchorPoint) {
-   switch (anchorPoint) {
-      case Sprite::AnchorPoint::TopLeft:
-         return "TopLeft";
-      case Sprite::AnchorPoint::TopCenter:
-         return "TopCenter";
-      case Sprite::AnchorPoint::TopRight:
-         return "TopRight";
-      case Sprite::AnchorPoint::MiddleLeft:
-         return "MiddleLeft";
-      case Sprite::AnchorPoint::MiddleCenter:
-         return "MiddleCenter";
-      case Sprite::AnchorPoint::MiddleRight:
-         return "MiddleRight";
-      case Sprite::AnchorPoint::BottomLeft:
-         return "BottomLeft";
-      case Sprite::AnchorPoint::BottomCenter:
-         return "BottomCenter";
-      case Sprite::AnchorPoint::BottomRight:
-         return "BottomRight";
-      default:
-         return "MiddleCenter";
-   }
-}
-
-Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::AnchorPoint fallback) {
-   if (value.is_string()) {
-      // 現行形式はenumの並び替えに影響されない名前で保存する。
-      const std::string name = value.get<std::string>();
-
-      if (name == "TopLeft") {
-         return Sprite::AnchorPoint::TopLeft;
-      }
-
-      if (name == "TopCenter") {
-         return Sprite::AnchorPoint::TopCenter;
-      }
-
-      if (name == "TopRight") {
-         return Sprite::AnchorPoint::TopRight;
-      }
-
-      if (name == "MiddleLeft") {
-         return Sprite::AnchorPoint::MiddleLeft;
-      }
-
-      if (name == "MiddleCenter") {
-         return Sprite::AnchorPoint::MiddleCenter;
-      }
-
-      if (name == "MiddleRight") {
-         return Sprite::AnchorPoint::MiddleRight;
-      }
-
-      if (name == "BottomLeft") {
-         return Sprite::AnchorPoint::BottomLeft;
-      }
-
-      if (name == "BottomCenter") {
-         return Sprite::AnchorPoint::BottomCenter;
-      }
-
-      if (name == "BottomRight") {
-         return Sprite::AnchorPoint::BottomRight;
-      }
-   }
-
-   return fallback;
-}
 } // namespace
 
 SceneObjectStore::SceneObjectStore(SceneWorld& world) : world_(world) {
@@ -320,9 +250,8 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
       const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(objectData);
       const std::string id = objectData.value("id", "");
       Object* object = CreateSprite(assetId, nullptr, id);
-      auto* sprite = dynamic_cast<Sprite*>(object);
 
-      if (!object || !sprite) {
+      if (!object) {
          return nullptr;
       }
 
@@ -382,28 +311,22 @@ ParticleSystem* SceneObjectStore::RestoreParticleSystem(const nlohmann::json& ob
 
 bool SceneObjectStore::DeleteObject(const std::string& objectId) {
    Object* target = FindById(objectId);
+
    if (!target) {
       return false;
    }
    const auto it =
       std::find_if(objects_.begin(), objects_.end(), [target](const auto& p) { return p.get() == target; });
+
    if (it == objects_.end()) {
       return false;
    }
+
    UnregisterObject(target);
    UnregisterOwnedRuntimeSystems(target);
-   if (auto* model = dynamic_cast<Model*>(target)) {
-      Model::UnregisterModel(model);
-   }
-   if (auto* sprite = dynamic_cast<Sprite*>(target)) {
-      Sprite::UnregisterSprite(sprite);
-   }
-   if (auto* text = dynamic_cast<UIText*>(target)) {
-      UIText::UnregisterText(text);
-   }
-   if (auto* skybox = dynamic_cast<Skybox*>(target)) {
-      Skybox::UnregisterSkybox(skybox);
-   }
+
+   // 型固有の描画登録は実体が存続している間に解除し、GPU参照の完了後まで破棄を遅らせる。
+   target->OnRemovedFromScene();
    deferredDeleteObjects_.push_back(std::move(*it));
    objects_.erase(it);
    return true;
@@ -553,50 +476,14 @@ nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, cons
       return nlohmann::json::object();
    }
 
-   const std::string stableId = id.empty() ? object->GetEntityId() : id;
-   const std::string& parentId = object->GetParentEntityId();
+   nlohmann::json objectData = object->SerializeObjectData();
+   objectData["id"] = id.empty() ? object->GetEntityId() : id;
+   objectData["parentId"] = object->GetParentEntityId();
 
-   if (const auto* uiText = dynamic_cast<const UIText*>(object)) {
-      // 復元前に正しい具象型を生成できるよう、Object共通データとは別に安定した種別名を保存する。
-      return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "UIText"},
-         {"components", uiText->SerializeComponents()}};
-   }
-
-   if (const auto* sprite = dynamic_cast<const Sprite*>(object)) {
-      std::string textureAssetId;
-
-      if (const auto* materialComponent = sprite->GetComponent<MaterialComponent>()) {
-         textureAssetId = materialComponent->GetParameterAssetId().empty() ? materialComponent->GetTextureName() : "";
-      }
-
-      return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Sprite"},
-         {"assetId", textureAssetId}, {"components", sprite->SerializeComponents()},
-         {"sprite", SerializeSpriteData(sprite)}};
-   }
-
-   if (const auto* skybox = dynamic_cast<const Skybox*>(object)) {
-      return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Skybox"},
-         {"components", skybox->SerializeComponents()}};
-   }
-
-   const auto* model = dynamic_cast<const Model*>(object);
-
-   if (!model) {
-      return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Generic"},
-         {"components", object->SerializeComponents()}};
-   }
-
-   std::string assetId;
-
-   if (const auto* meshComponent = model->GetComponent<MeshComponent>()) {
-      if (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile &&
-          meshComponent->GetParameterAssetId().empty()) {
-         assetId = meshComponent->GetAssetId();
-      }
-   }
-
-   return nlohmann::json{{"id", stableId}, {"parentId", parentId}, {"objectType", "Model"}, {"assetId", assetId},
-      {"components", model->SerializeComponents()}};
+   // 復元前に正しい具象型を生成できるよう、Object共通データとは別に安定した種別名を保存する。
+   objectData["objectType"] = ToObjectTypeName(object->GetObjectType());
+   objectData["components"] = object->SerializeComponents();
+   return objectData;
 }
 
 bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& objectData) const {
@@ -604,22 +491,9 @@ bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& ob
       return false;
    }
 
-   const std::string objectType = objectData.value("objectType", "Object");
-
    // 異なる具象型へスナップショットを適用すると専用データが欠落するため、先に型整合性を検証する。
-   if (objectType == "Model" && dynamic_cast<Model*>(object) == nullptr) {
-      return false;
-   }
-
-   if (objectType == "Sprite" && dynamic_cast<Sprite*>(object) == nullptr) {
-      return false;
-   }
-
-   if (objectType == "UIText" && dynamic_cast<UIText*>(object) == nullptr) {
-      return false;
-   }
-
-   if (objectType == "Skybox" && dynamic_cast<Skybox*>(object) == nullptr) {
+   if (!objectData.contains("objectType") || !objectData.at("objectType").is_string() ||
+       objectData.at("objectType") != ToObjectTypeName(object->GetObjectType())) {
       return false;
    }
 
@@ -633,12 +507,7 @@ bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& ob
       object->SetParentEntityId(objectData.at("parentId").get<std::string>());
    }
 
-   if (auto* sprite = dynamic_cast<Sprite*>(object)) {
-      if (objectData.contains("sprite") && objectData.at("sprite").is_object()) {
-         DeserializeSpriteData(sprite, objectData.at("sprite"));
-      }
-   }
-
+   object->DeserializeObjectData(objectData);
    return true;
 }
 
@@ -836,24 +705,6 @@ void SceneObjectStore::BumpCounterFromId(const std::string& id) {
       nextObjectIndex_ = std::max(nextObjectIndex_, number + 1);
    } catch (...) {
       // 接頭辞が同じでも数値でない外部IDは有効な識別子として残し、自動採番だけを変更しない。
-   }
-}
-
-nlohmann::json SceneObjectStore::SerializeSpriteData(const Sprite* sprite) {
-   if (!sprite) {
-      return nlohmann::json::object();
-   }
-
-   return nlohmann::json{{"screenAnchorPoint", ToSpriteAnchorPointName(sprite->GetScreenAnchorPoint())}};
-}
-
-void SceneObjectStore::DeserializeSpriteData(Sprite* sprite, const nlohmann::json& data) const {
-   if (!sprite || !data.is_object()) return;
-
-   // Sprite専用状態はスクリーンアンカーだけで、寸法・反転・UVはComponentが復元する。
-   if (data.contains("screenAnchorPoint")) {
-      sprite->SetScreenAnchorPoint(
-         ParseSpriteAnchorPoint(data.at("screenAnchorPoint"), sprite->GetScreenAnchorPoint()));
    }
 }
 

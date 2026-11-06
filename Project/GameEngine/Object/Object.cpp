@@ -250,6 +250,14 @@ bool Object::RemoveComponentByTypeName(const std::string& typeName) {
    return components_.RemoveByTypeName(typeName);
 }
 
+nlohmann::json Object::SerializeObjectData() const {
+   return nlohmann::json::object();
+}
+
+void Object::DeserializeObjectData(const nlohmann::json& objectData) {
+   (void)objectData;
+}
+
 bool Object::DeserializeComponents(const nlohmann::json& componentsData) {
    return components_.Deserialize(componentsData);
 }

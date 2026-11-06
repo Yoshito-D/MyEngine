@@ -13,6 +13,26 @@ enum class ObjectType : uint32_t {
    Skybox = 1u << 4
 };
 
+/// @brief オブジェクト種別をシーン保存用の安定した名前へ変換する。
+/// @param objectType 保存するオブジェクト種別。
+/// @return 対応する種別名。未定義の値はUnknownを返す。
+constexpr const char* ToObjectTypeName(ObjectType objectType) {
+   switch (objectType) {
+      case ObjectType::Generic:
+         return "Generic";
+      case ObjectType::Model:
+         return "Model";
+      case ObjectType::Sprite:
+         return "Sprite";
+      case ObjectType::UIText:
+         return "UIText";
+      case ObjectType::Skybox:
+         return "Skybox";
+   }
+
+   return "Unknown";
+}
+
 /// @brief 複数のオブジェクト種別を表すビットマスク
 using ObjectTypeMask = uint32_t;
 

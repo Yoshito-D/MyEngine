@@ -28,6 +28,9 @@ public:
    /// @return ObjectType::Skybox
    ObjectType GetObjectType() const override { return ObjectType::Skybox; }
 
+   /// @brief 削除予約時にスカイボックスを描画レジストリから解除する。実体とGPUリソースは維持する。
+   void OnRemovedFromScene() override;
+
    /// @brief 登録済みスカイボックスの一覧を取得する
    static const std::vector<Skybox*>& GetRegisteredSkyboxes();
 
