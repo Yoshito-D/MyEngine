@@ -48,7 +48,7 @@ void Material::Create(std::uint32_t color, int32_t lightingMode, const Matrix4x4
    // 既存マテリアルの見た目を維持し、必要なオブジェクトだけ補助光を有効にする。
    materialData_->rimLightColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
    materialData_->rimLightIntensity = 0.0f;
-   materialData_->rimLightPower = 4.0f;
+   materialData_->rimLightPower = kDefaultRimLightPower;
    materialData_->fillLightColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
    materialData_->fillLightIntensity = 0.0f;
 }
@@ -104,7 +104,7 @@ std::unique_ptr<Material> Material::Clone() const {
 }
 
 bool Material::SetParameter(const std::string& name, const std::vector<float>& value) {
-   if (name.empty() || value.empty() || value.size() > 4 ||
+   if (name.empty() || value.empty() || value.size() > MaterialParameterDefinition::kMaxComponents ||
        !std::all_of(value.begin(), value.end(), [](float v) { return std::isfinite(v); })) {
       Logger::Warning("[Material] Invalid parameter: pipeline=" + pipelineName_ + ", name=" + name);
       return false;
@@ -115,7 +115,8 @@ bool Material::SetParameter(const std::string& name, const std::vector<float>& v
 }
 
 ID3D12Resource* Material::PrepareParameters(const ModelPipelineDefinition& definition) const {
-   if (definition.parameterBufferSize == 0 || definition.parameterBufferSize > 4096 || !sDevice_) {
+   if (definition.parameterBufferSize == 0 ||
+       definition.parameterBufferSize > ModelPipelineDefinition::kMaxParameterBufferSize || !sDevice_) {
       return nullptr;
    }
 
@@ -130,7 +131,8 @@ ID3D12Resource* Material::PrepareParameters(const ModelPipelineDefinition& defin
 
    if (!parameterResource_) {
       // マテリアルごとに一度だけ確保し、ここではシェーダーやPSOを作成しない。
-      parameterResource_ = ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), 4096);
+      parameterResource_ =
+         ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), ModelPipelineDefinition::kMaxParameterBufferSize);
 
       if (!parameterResource_ || FAILED(parameterResource_->Map(0, nullptr, &parameterData_))) {
          return nullptr;
@@ -204,7 +206,7 @@ float Material::GetShininess() const {
       return materialData_->shininess;
    }
 
-   return 40.0f;
+   return kDefaultShininess;
 }
 
 void Material::SetEnvironmentTextureStrength(float strength) {
@@ -251,7 +253,7 @@ float Material::GetRimLightIntensity() const {
 
 void Material::SetRimLightPower(float power) {
    if (materialData_) {
-      materialData_->rimLightPower = std::max(power, 0.01f);
+      materialData_->rimLightPower = std::max(power, kMinRimLightPower);
    }
 }
 
@@ -260,7 +262,7 @@ float Material::GetRimLightPower() const {
       return materialData_->rimLightPower;
    }
 
-   return 4.0f;
+   return kDefaultRimLightPower;
 }
 
 void Material::SetFillLightColor(const Vector4& color) {

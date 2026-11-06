@@ -12,6 +12,13 @@
 namespace App {
 using namespace RearCameraMath;
 
+namespace {
+constexpr float kMinimumSpeedBoostRange = 0.001f;
+constexpr float kMinimumGravityDirectionBoostRange = 0.001f;
+constexpr float kMinimumLookAtRecoveryRange = 1e-4f;
+constexpr float kMinimumDriftDistanceScale = 0.5f;
+}
+
 const bool kRegistered = GameEngine::VirtualCamera::RegisterComponentFactory(
    "PlayerRearFollowCamera", [](GameEngine::VirtualCamera& camera) -> GameEngine::ICinemachineComponent* {
       if (auto* existing = camera.GetComponent<PlayerRearFollowCamera>()) {
@@ -197,14 +204,15 @@ void PlayerRearFollowCamera::Configure(const RearCameraSettings& requested) {
    settings.distance = std::max(settings.distance, 0.0f);
 
    // FOVはラジアンで保持し、投影が退化する0度・180度を避けて1度〜179度に制限する。
-   settings.fovDefault = std::clamp(settings.fovDefault, 0.017453292f, 3.12413936f);
+   settings.fovDefault = std::clamp(settings.fovDefault, kMinSafeFov, kMaxSafeFov);
 
    // 強度を正規化する区間には幅を持たせ、着地の最大ブレンド時刻は予測区間内に収める。
-   settings.speedBoostMax = std::max(settings.speedBoostThreshold + 0.001f, settings.speedBoostMax);
+   settings.speedBoostMax = std::max(settings.speedBoostThreshold + kMinimumSpeedBoostRange, settings.speedBoostMax);
    settings.preLandingFullBlendSeconds =
       std::clamp(settings.preLandingFullBlendSeconds, 0.0f, std::max(0.0f, settings.preLandingPredictionSeconds));
-   settings.airborneGravityDirectionBoostFullThreshold = std::max(
-      settings.airborneGravityDirectionBoostThreshold + 0.001f, settings.airborneGravityDirectionBoostFullThreshold);
+   settings.airborneGravityDirectionBoostFullThreshold =
+      std::max(settings.airborneGravityDirectionBoostThreshold + kMinimumGravityDirectionBoostRange,
+         settings.airborneGravityDirectionBoostFullThreshold);
    static_cast<RearCameraSettings&>(*this) = settings;
 }
 
@@ -476,8 +484,8 @@ void PlayerRearFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_
    eyeDirectionMaxAngularSpeed = std::max(
       0.0f, GameEngine::JsonValue::ReadFloat(data, "eyeDirectionMaxAngularSpeed", eyeDirectionMaxAngularSpeed));
    rotationLerpSpeed = GameEngine::JsonValue::ReadFloat(data, "rotationLerpSpeed", rotationLerpSpeed);
-   lookAtRecoveryRange =
-      std::max(1e-4f, GameEngine::JsonValue::ReadFloat(data, "lookAtRecoveryRange", lookAtRecoveryRange));
+   lookAtRecoveryRange = std::max(
+      kMinimumLookAtRecoveryRange, GameEngine::JsonValue::ReadFloat(data, "lookAtRecoveryRange", lookAtRecoveryRange));
    lookAtRecoveryCurveControl1 = std::clamp(
       GameEngine::JsonValue::ReadFloat(data, "lookAtRecoveryCurveControl1", lookAtRecoveryCurveControl1), 0.0f, 1.0f);
    lookAtRecoveryCurveControl2 = std::clamp(
@@ -500,7 +508,7 @@ void PlayerRearFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_
 namespace App {
 
 void PlayerRearFollowCamera::SetDriftDistanceScale(float scale) {
-   input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, 0.5f, 1.0f);
+   input_.driftDistanceScale = std::clamp(std::isfinite(scale) ? scale : 1.0f, kMinimumDriftDistanceScale, 1.0f);
 }
 
 void PlayerRearFollowCamera::SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset) {

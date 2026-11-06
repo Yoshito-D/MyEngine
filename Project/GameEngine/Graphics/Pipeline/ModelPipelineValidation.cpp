@@ -258,8 +258,10 @@ bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, Mod
          parametersUsed = true;
 
          // 独自パラメーターもHLSLの16バイト単位のバッファサイズと一致させ、項目数を含めて照合する。
-         if (buffer->size != model.parameterBufferSize || buffer->size == 0 || buffer->size > 4096 ||
-             buffer->size % 16 != 0 || buffer->variables.size() != model.parameters.size()) {
+         if (buffer->size != model.parameterBufferSize || buffer->size == 0 ||
+             buffer->size > ModelPipelineDefinition::kMaxParameterBufferSize ||
+             buffer->size % ModelPipelineDefinition::kParameterBufferAlignment != 0 ||
+             buffer->variables.size() != model.parameters.size()) {
             return fail("materialParameters size/field count mismatch");
          }
 
@@ -270,16 +272,16 @@ bool PSOManager::ValidateModelPipeline(const PipelineDefinition& definition, Mod
                buffer->variables.begin(), buffer->variables.end(), [&](const auto& v) { return v.name == field.name; });
             const UINT count = static_cast<UINT>(field.defaultValue.size());
 
-            if (count == 0 || count > 4 || variable == buffer->variables.end() ||
-                !MatchesField(*variable, field.offset, count) || field.offset > buffer->size ||
-                count * 4 > buffer->size - field.offset ||
+            if (count == 0 || count > MaterialParameterDefinition::kMaxComponents ||
+                variable == buffer->variables.end() || !MatchesField(*variable, field.offset, count) ||
+                field.offset > buffer->size || count * sizeof(float) > buffer->size - field.offset ||
                 !std::all_of(
                    field.defaultValue.begin(), field.defaultValue.end(), [](float v) { return std::isfinite(v); })) {
                return fail("parameter layout/type mismatch: " + field.name);
             }
 
             // 開始位置だけでなく占有バイト全体を記録し、ベクトル同士の部分的な重なりも検出する。
-            for (UINT offset = field.offset; offset < field.offset + count * 4; ++offset) {
+            for (UINT offset = field.offset; offset < field.offset + count * sizeof(float); ++offset) {
                if (!occupied.insert(offset).second) {
                   return fail("overlapping parameter: " + field.name);
                }

@@ -19,6 +19,29 @@
 #endif
 
 namespace {
+// パイプライン側の既定ブレンド方式を使用することを示す保存値。
+constexpr std::int32_t kInheritedBlendMode = -1;
+
+#ifdef USE_IMGUI
+// プレビュー寸法はフォントサイズに追従させ、DPIが変わっても表示比率を保つ。
+constexpr float kTexturePreviewSizeInFontUnits = 96.0f / 13.0f;
+constexpr float kTextureRectDragSpeed = 0.1f;
+constexpr float kMaxTextureCoordinate = 16384.0f;
+constexpr float kShininessDragSpeed = 0.1f;
+constexpr float kMaxShininess = 256.0f;
+constexpr float kLightIntensityDragSpeed = 0.01f;
+constexpr float kMaxLightIntensity = 10.0f;
+constexpr float kRimLightPowerDragSpeed = 0.05f;
+constexpr float kMaxRimLightPower = 32.0f;
+constexpr float kShaderParameterDragSpeed = 0.01f;
+constexpr float kCheckboxThreshold = 0.5f;
+constexpr size_t kPipelineNameBufferSize = 128;
+constexpr float kUvScaleDragSpeed = 0.01f;
+constexpr float kUvRotationDragSpeedDegrees = 0.1f;
+constexpr float kUvTranslationDragSpeed = 0.01f;
+constexpr float kEnvironmentCoefficientDragSpeed = 0.01f;
+#endif
+
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::MaterialComponent::kTypeName,
    [](GameEngine::Object& o) -> GameEngine::IObjectComponent* {
@@ -111,7 +134,7 @@ nlohmann::json SerializeMaterialProperties(const GameEngine::Material* material)
 
    // -1はパイプライン既定のBlendModeを使うという意味で、明示的なモードと区別する。
    const auto blendMode = material->GetBlendMode();
-   json["blendMode"] = blendMode.has_value() ? static_cast<std::int32_t>(blendMode.value()) : -1;
+   json["blendMode"] = blendMode.has_value() ? static_cast<std::int32_t>(blendMode.value()) : kInheritedBlendMode;
    json["pipelineName"] = material->GetPipelineName();
    json["parameters"] = material->GetParameters();
    return json;
@@ -227,7 +250,7 @@ bool MaterialComponent::IsOverridden(size_t slot) const {
 }
 
 Material* MaterialComponent::EditMaterial(size_t slot) {
-   if (slot >= 4096) {
+   if (slot >= kMaxMaterialSlots) {
       return nullptr;
    }
 
@@ -279,7 +302,7 @@ void MaterialComponent::ResetOverride(size_t slot) {
 }
 
 void MaterialComponent::SetSharedMaterial(size_t slot, Material* material, const std::string& name) {
-   if (slot >= 4096) return;
+   if (slot >= kMaxMaterialSlots) return;
 
    if (materials.size() <= slot) {
       materials.resize(slot + 1, nullptr);
@@ -470,7 +493,7 @@ const std::string& MaterialComponent::GetTextureName(size_t index) const {
 }
 
 void MaterialComponent::SetTextureName(size_t slot, const std::string& name) {
-   if (slot >= 4096) return;
+   if (slot >= kMaxMaterialSlots) return;
 
    // 通常Texture2DスロットへCubemapを入れるとShaderのView次元と一致しないため、割り当てを拒否する。
    if (!name.empty() && textureResolver_) {
@@ -573,7 +596,7 @@ void MaterialComponent::ReadParameters(const nlohmann::json& data, [[maybe_unuse
 
       if (!material && !name.empty() && creator_) {
          // シーン固有マテリアルは保存済みの名前から再生成する。
-         material = creator_(name, 0xffffffff, Material::LightingMode::HALFLAMBERT, MakeIdentity4x4());
+         material = creator_(name, Material::kDefaultColor, Material::LightingMode::HALFLAMBERT, MakeIdentity4x4());
       }
 
       if (!material && slot < previousMaterials.size()) {
@@ -588,11 +611,12 @@ void MaterialComponent::ReadParameters(const nlohmann::json& data, [[maybe_unuse
    textureNames_.clear();
 
    const auto& materialSlots = data.at("materialSlots");
-   materialNames_.reserve(std::min<size_t>(materialSlots.size(), 4096));
-   materials.reserve(std::min<size_t>(materialSlots.size(), 4096));
-   textureNames_.reserve(std::min<size_t>(materialSlots.size(), 4096));
+   const size_t slotCount = std::min(materialSlots.size(), kMaxMaterialSlots);
+   materialNames_.reserve(slotCount);
+   materials.reserve(slotCount);
+   textureNames_.reserve(slotCount);
 
-   for (size_t slot = 0; slot < std::min<size_t>(materialSlots.size(), 4096); ++slot) {
+   for (size_t slot = 0; slot < slotCount; ++slot) {
       const auto& slotData = materialSlots[slot];
 
       if (!slotData.is_object()) {
@@ -784,7 +808,8 @@ void MaterialComponent::DrawInspector() {
       if (Texture* texture = GetTexture(slot); texture && !texture->GetMetadata().IsCubemap()) {
          const float width = static_cast<float>(texture->GetWidth());
          const float height = static_cast<float>(texture->GetHeight());
-         const float maxSize = std::min(96.0f * ImGui::GetFontSize() / 13.0f, ImGui::GetContentRegionAvail().x);
+         const float maxSize =
+            std::min(kTexturePreviewSizeInFontUnits * ImGui::GetFontSize(), ImGui::GetContentRegionAvail().x);
 
          if (width > 0.0f && height > 0.0f && maxSize > 0.0f) {
             const float scale = maxSize / std::max(width, height);
@@ -797,8 +822,8 @@ void MaterialComponent::DrawInspector() {
    }
 
    ImGui::SeparatorText(Tr("テクスチャ矩形", "Texture Rect"));
-   ImGui::DragFloat2(Tr("左上", "Left Top"), &textureLeftTop_.x, 0.1f, 0.0f, 16384.0f);
-   ImGui::DragFloat2(Tr("サイズ", "Size"), &textureSize_.x, 0.1f, 0.0f, 16384.0f);
+   ImGui::DragFloat2(Tr("左上", "Left Top"), &textureLeftTop_.x, kTextureRectDragSpeed, 0.0f, kMaxTextureCoordinate);
+   ImGui::DragFloat2(Tr("サイズ", "Size"), &textureSize_.x, kTextureRectDragSpeed, 0.0f, kMaxTextureCoordinate);
 
    ImGui::BeginDisabled(!IsOverridden(inspectorSlot_) && !editShared_);
    Vector4 color = data->color;
@@ -830,7 +855,7 @@ void MaterialComponent::DrawInspector() {
 
    float shininess = data->shininess;
 
-   if (ImGui::DragFloat(Tr("光沢", "Shininess"), &shininess, 0.1f, 0.0f, 256.0f)) {
+   if (ImGui::DragFloat(Tr("光沢", "Shininess"), &shininess, kShininessDragSpeed, 0.0f, kMaxShininess)) {
       material->SetShininess(shininess);
    }
 
@@ -844,13 +869,15 @@ void MaterialComponent::DrawInspector() {
 
    float rimLightIntensity = data->rimLightIntensity;
 
-   if (ImGui::DragFloat(Tr("リムライト強度", "Rim Light Intensity"), &rimLightIntensity, 0.01f, 0.0f, 10.0f)) {
+   if (ImGui::DragFloat(Tr("リムライト強度", "Rim Light Intensity"), &rimLightIntensity, kLightIntensityDragSpeed, 0.0f,
+          kMaxLightIntensity)) {
       material->SetRimLightIntensity(rimLightIntensity);
    }
 
    float rimLightPower = data->rimLightPower;
 
-   if (ImGui::DragFloat(Tr("リムライト減衰", "Rim Light Power"), &rimLightPower, 0.05f, 0.01f, 32.0f)) {
+   if (ImGui::DragFloat(Tr("リムライト減衰", "Rim Light Power"), &rimLightPower, kRimLightPowerDragSpeed,
+          Material::kMinRimLightPower, kMaxRimLightPower)) {
       material->SetRimLightPower(rimLightPower);
    }
 
@@ -862,7 +889,8 @@ void MaterialComponent::DrawInspector() {
 
    float fillLightIntensity = data->fillLightIntensity;
 
-   if (ImGui::DragFloat(Tr("フィルライト強度", "Fill Light Intensity"), &fillLightIntensity, 0.01f, 0.0f, 10.0f)) {
+   if (ImGui::DragFloat(Tr("フィルライト強度", "Fill Light Intensity"), &fillLightIntensity, kLightIntensityDragSpeed,
+          0.0f, kMaxLightIntensity)) {
       material->SetFillLightIntensity(fillLightIntensity);
    }
 
@@ -871,7 +899,8 @@ void MaterialComponent::DrawInspector() {
       const char* blendModeLabels[] = {Tr("なし", "None"), Tr("通常", "Normal"), Tr("加算", "Add"),
          Tr("減算", "Subtract"), Tr("乗算", "Multiply"), Tr("スクリーン", "Screen")};
       const auto currentBlend = material->GetBlendMode();
-      std::int32_t blendIndex = currentBlend.has_value() ? static_cast<std::int32_t>(currentBlend.value()) : -1;
+      std::int32_t blendIndex =
+         currentBlend.has_value() ? static_cast<std::int32_t>(currentBlend.value()) : kInheritedBlendMode;
       const char* blendPreview = (blendIndex >= 0 && blendIndex < static_cast<std::int32_t>(BlendMode::kCount))
                                     ? blendModeLabels[blendIndex]
                                     : Tr("<デフォルト>", "<default>");
@@ -931,13 +960,13 @@ void MaterialComponent::DrawInspector() {
 
             if (field.checkbox) {
                // GPUへのfloatパックとシーン保存は共通処理を使い、UIでのみ0/1を切り替える。
-               bool checked = value[0] > 0.5f;
+               bool checked = value[0] > kCheckboxThreshold;
 
                if (ImGui::Checkbox(field.name.c_str(), &checked)) {
                   material->SetParameter(field.name, {checked ? 1.0f : 0.0f});
                }
             } else if (ImGui::DragScalarN(field.name.c_str(), ImGuiDataType_Float, value.data(),
-                          static_cast<std::int32_t>(value.size()), 0.01f)) {
+                          static_cast<std::int32_t>(value.size()), kShaderParameterDragSpeed)) {
                material->SetParameter(field.name, value);
             }
          }
@@ -948,7 +977,7 @@ void MaterialComponent::DrawInspector() {
       }
    } else {
       // 既存の非モデル用パイプラインエディターを維持する。
-      char buf[128] = {};
+      char buf[kPipelineNameBufferSize] = {};
       material->GetPipelineName().copy(buf, sizeof(buf) - 1);
 
       if (ImGui::InputText(Tr("パイプライン名", "Pipeline Name"), buf, sizeof(buf))) {
@@ -963,14 +992,14 @@ void MaterialComponent::DrawInspector() {
 
    // Scale/Rotation/Translationを個別に編集し、いずれかが変わったフレームだけ行列を再合成する。
    bool changed = false;
-   changed |= ImGui::DragFloat2(Tr("UVスケール", "UV Scale"), &uvScale.x, 0.01f);
+   changed |= ImGui::DragFloat2(Tr("UVスケール", "UV Scale"), &uvScale.x, kUvScaleDragSpeed);
 
-   if (ImGui::DragFloat(Tr("UV回転 (deg)", "UV Rotation (deg)"), &uvRotationDegrees, 0.1f)) {
+   if (ImGui::DragFloat(Tr("UV回転 (deg)", "UV Rotation (deg)"), &uvRotationDegrees, kUvRotationDragSpeedDegrees)) {
       uvRotation = ImGuiHelper::DegreesToRadians(uvRotationDegrees);
       changed = true;
    }
 
-   changed |= ImGui::DragFloat2(Tr("UV移動", "UV Translation"), &uvTranslation.x, 0.01f);
+   changed |= ImGui::DragFloat2(Tr("UV移動", "UV Translation"), &uvTranslation.x, kUvTranslationDragSpeed);
 
    if (changed) {
       material->SetUVTransform(uvScale, uvRotation, uvTranslation);
@@ -999,7 +1028,8 @@ void MaterialComponent::DrawInspector() {
 
    float environmentCoefficient = data->environmentCoefficient;
 
-   if (ImGui::DragFloat(Tr("環境反射係数", "Environment Coefficient"), &environmentCoefficient, 0.01f, 0.0f, 1.0f)) {
+   if (ImGui::DragFloat(Tr("環境反射係数", "Environment Coefficient"), &environmentCoefficient,
+          kEnvironmentCoefficientDragSpeed, 0.0f, 1.0f)) {
       material->SetEnvironmentTextureStrength(environmentCoefficient);
    }
 

@@ -22,6 +22,18 @@ class GraphicsDevice;
 //// @brief マテリアルクラス
 class Material : public IMaterialData {
 public:
+   /// @brief RGBA8形式の既定色（不透明な白）。
+   static constexpr std::uint32_t kDefaultColor = 0xffffffff;
+
+   /// @brief マテリアル未作成時にも使用する既定の光沢度。
+   static constexpr float kDefaultShininess = 40.0f;
+
+   /// @brief マテリアル未作成時にも使用するリムライトの既定減衰指数。
+   static constexpr float kDefaultRimLightPower = 4.0f;
+
+   /// @brief リムライトの減衰指数に許可する最小値。
+   static constexpr float kMinRimLightPower = 0.01f;
+
    /// @brief GPUデータを確保する前の状態を構築する。
    Material() = default;
 
@@ -66,8 +78,8 @@ public:
    /// @param color オブジェクトの色。デフォルトは 0xffffffff（白）
    /// @param enableLightingMode ライティングモード。デフォルトは LightingMode::HALFLAMBERT
    /// @param uvTransform UV座標に適用する 4x4 行列。デフォルトは単位行列
-   void Create(std::uint32_t color = 0xffffffff, int32_t lightingMode = LightingMode::HALFLAMBERT,
-      const Matrix4x4& uvTransform = MakeIdentity4x4(), float shininess = 40.0f);
+   void Create(std::uint32_t color = kDefaultColor, int32_t lightingMode = LightingMode::HALFLAMBERT,
+      const Matrix4x4& uvTransform = MakeIdentity4x4(), float shininess = kDefaultShininess);
 
    /// @brief マテリアルデータへのポインタを取得
    /// @return マテリアルデータへのポインタ

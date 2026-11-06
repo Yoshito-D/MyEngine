@@ -29,7 +29,7 @@ public:
    ~PlayerRearFollowCamera() override = default;
 
    /// @brief 後方追従計算を他のBody補正より先に実行する。
-   std::int32_t GetExecutionOrder() const override { return -1000; }
+   std::int32_t GetExecutionOrder() const override { return kExecutionOrder; }
 
    /// @brief 編集用の設定値をコピーする。
    RearCameraSettings DescribeSettings() const { return *this; }
@@ -161,6 +161,9 @@ protected:
    void OnAttach() override;
 
 private:
+   // 既定の実行順序（0）より先に追従状態を確定し、後続のBody補正の入力にする。
+   static constexpr std::int32_t kExecutionOrder = -1000;
+
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
    /// @brief 外部公開形式と補間履歴の初期化を橋渡しする。
