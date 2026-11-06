@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
+#include "GameProject/App/Component/Camera/IVehicleCamera.h"
 #include <algorithm>
 
 namespace App {
@@ -11,7 +12,7 @@ namespace App {
 /// @note 惑星切り替え時の急激なロール変化を防ぐため、gravityUp を毎フレーム
 ///       nlerp（正規化線形補間）でスムーズに遷移させる。
 ///       また、プレイヤー速度を受け取り、加速時に FOV を広げて速度感を演出する。
-class GravityFollowCamera : public GameEngine::ICinemachineComponent {
+class GravityFollowCamera : public GameEngine::ICinemachineComponent, public IVehicleCamera {
 public:
    /// @brief 追従カメラを既定の補間設定で生成する
    GravityFollowCamera() = default;
@@ -43,13 +44,17 @@ public:
    /// @param speed 速度の大きさ（m/s）。加速感の判定に使用。
    void SetPlayerSpeed(float speed) { playerSpeed_ = speed; }
 
-   /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
-   void SetDriftDistanceScale(float scale);
+   /// @brief 共通追従入力を、このカメラの位置・重力・速度入力へ適用する。
+   void ApplyVehicleFollowInput(const VehicleCameraFollowInput& input) override;
 
-   /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
-   /// @param cameraHeightOffset カメラ高さへ加える量。正の値は重力Up方向、負の値は下方向。
-   /// @param lookTargetHeightOffset 注視点高さへ加える量。正の値は重力Up方向、負の値は下方向。
-   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset);
+   /// @brief 保存設定を変更せず、距離倍率と高さ加算（m）の一時演出を適用する。
+   void ApplyVehicleEffectInput(const VehicleCameraEffectInput& input) override;
+
+   /// @brief 選択確認とシェイク通知に使用するカメラ部品を返す。
+   GameEngine::ICinemachineComponent& GetVehicleCameraComponent() override { return *this; }
+
+   /// @brief 直近のカメラUp方向を返す。
+   GameEngine::Vector3 GetVehicleCameraUp() const override { return GetCameraUp(); }
 
    /// @brief 通常走行速度（autoSpeed）を設定する
    /// @details これを下回った場合のみ減速演出を発火させる

@@ -264,6 +264,8 @@
     <ClCompile Include="GameEngine\Audio\BgmPlayer.cpp" />
     <ClCompile Include="GameEngine\Audio\SoundClip.cpp" />
     <ClCompile Include="GameEngine\Input\InputActionService.cpp" />
+    <ClCompile Include="GameEngine\Input\InputBinding.cpp" />
+    <ClCompile Include="GameEngine\Input\InputRebindSession.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\CommandDispatch.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\TextRenderer.cpp" />
     <ClCompile Include="GameEngine\UI\Text\TextLayout.cpp" />
@@ -353,6 +355,9 @@
     <ClCompile Include="GameEngine\Effects\Particles\Modules\TrailModule.cpp" />
     <ClCompile Include="GameEngine\Effects\Particles\ParticleMaterial.cpp" />
     <ClCompile Include="GameEngine\Effects\Particles\ParticleSystem.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\ParticleGpuSimulation.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\ParticleTrailRuntime.cpp" />
+    <ClCompile Include="GameEngine\Effects\Particles\ParticleSubEmitterRuntime.cpp" />
     <ClCompile Include="GameEngine\Editor\Particle\ParticleSystemEditor.cpp" />
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp" />
     <ClCompile Include="GameEngine\Framework\Framework.cpp" />
@@ -456,7 +461,6 @@
     <ClCompile Include="GameEngine\Math\Functions\SplineUtils.cpp" />
     <ClCompile Include="GameEngine\Math\Functions\VectorOperations.cpp" />
     <ClCompile Include="GameEngine\Math\Types\Quaternion.cpp" />
-    <ClCompile Include="GameEngine\Utility\StateMachine.cpp" />
     <ClCompile Include="GameEngine\Time\TimerSystem.cpp" />
     <ClCompile Include="GameEngine\Utility\Logger.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -516,6 +520,7 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEffectController.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEvents.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleGroundMover.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleInputComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.cpp" />
@@ -595,6 +600,8 @@
     <ClInclude Include="GameEngine\Audio\SoundClip.h" />
     <ClInclude Include="GameEngine\Graphics\Resources\IMaterialData.h" />
     <ClInclude Include="GameEngine\Input\InputActionService.h" />
+    <ClInclude Include="GameEngine\Input\InputBinding.h" />
+    <ClInclude Include="GameEngine\Input\InputRebindSession.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\CommandDispatch.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\FrameContext.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\IRenderPass.h" />
@@ -669,6 +676,9 @@
     <ClInclude Include="GameEngine\Effects\Particles\Particle.h" />
     <ClInclude Include="GameEngine\Effects\Particles\ParticleMaterial.h" />
     <ClInclude Include="GameEngine\Effects\Particles\ParticleSystem.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\ParticleGpuSimulation.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\ParticleTrailRuntime.h" />
+    <ClInclude Include="GameEngine\Effects\Particles\ParticleSubEmitterRuntime.h" />
     <ClInclude Include="GameEngine\Editor\Particle\ParticleSystemEditor.h" />
     <ClInclude Include="GameEngine\Utility\D3DResourceLeakChecker.h" />
     <ClInclude Include="GameEngine\Framework\EngineContext.h" />
@@ -761,6 +771,7 @@
     <ClInclude Include="GameEngine\Graphics\Device\ResourceHelper.h" />
     <ClInclude Include="GameEngine\Math\VectorMath.h" />
     <ClInclude Include="GameProject\App\Component\Camera\CameraGravityBridge.h" />
+    <ClInclude Include="GameProject\App\Component\Camera\IVehicleCamera.h" />
     <ClInclude Include="GameProject\App\Component\Camera\CameraModeSwitcher.h" />
     <ClInclude Include="GameProject\App\Component\Camera\GravityFollowCamera.h" />
     <ClInclude Include="GameProject\App\Component\Camera\PlanetLeashCamera.h" />
@@ -805,6 +816,7 @@
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEffectController.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEvents.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleGroundMover.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleInputComponent.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleLandingAligner.h" />

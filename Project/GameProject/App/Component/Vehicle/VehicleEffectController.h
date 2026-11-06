@@ -1,46 +1,71 @@
 #pragma once
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include <cstdint>
+#include <vector>
 
 namespace App {
 
-/// @brief 車両状態をJSON定義済みのパーティクルスロットへ反映する
+/// @brief 車両の通知や状態をパーティクル操作へ対応させる命令の種類。
+enum class VehicleEffectRole {
+   DriftDust,
+   TurboReady,
+   TurboBurst,
+   TurboFlame,
+   Landing,
+   LandingFailure,
+   Jump
+};
+
+/// @brief アセット名から独立した、車両演出の命令とエミッタースロットの対応。
+struct VehicleEffectBinding {
+   VehicleEffectRole role = VehicleEffectRole::DriftDust; ///< 実行する演出の役割。
+   std::int32_t slot = 0;                                 ///< 操作対象のエミッタースロット番号。
+
+   /// @brief 同じ役割とスロットの対応か比較する。
+   bool operator==(const VehicleEffectBinding&) const = default;
+};
+
+/// @brief 車両イベントに対応する明示的な命令を、設定されたパーティクルスロットへ実行する。
 class VehicleEffectController final : public GameEngine::IObjectComponent {
 public:
-   /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
+   /// @brief 車両の操作とイベント状態が確定した後に演出を適用する。
    GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
 
    static constexpr const char* kTypeName = "VehicleEffectController"; ///< コンポーネント型名。
-   /// @brief エディターに表示する日本語名と英語名。
-   static constexpr GameEngine::ComponentDisplayName kDisplayName{"車両エフェクト制御", "Vehicle Effect Controller"};
+   static constexpr GameEngine::ComponentDisplayName kDisplayName{
+      "車両エフェクト制御", "Vehicle Effect Controller"}; ///< 表示名。
 
-   /// @brief コンポーネント型名を取得する
-   /// @return VehicleEffectController
+   /// @brief 保存と登録に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief ドリフト、ジャンプ、着地状態をパーティクルへ反映する
-   /// @param deltaTime 未使用
+   /// @brief 接続前の通知を既読にして、実行開始前の演出を再生しない。
+   void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
+   /// @brief 各購読者と通知を奪い合わず、継続演出と単発演出を更新する。経過秒数は使用しない。
    void Update(float deltaTime) override;
 
-   /// @brief 設定項目を持たない空JSONを返す
-   /// @return 空のJSONオブジェクト
-   nlohmann::json Serialize() const override { return nlohmann::json::object(); }
+   /// @brief 役割名とスロット番号の対応をJSONへ保存する。
+   nlohmann::json Serialize() const override;
 
-   /// @brief 保存項目がないため何も行わない
-   /// @param data 未使用
-   void Deserialize(const nlohmann::json& data) override { (void)data; }
+   /// @brief 対応表を検証して一括適用する。不正な表では現在の設定を維持する。
+   void Deserialize(const nlohmann::json& data) override;
+
+   /// @brief シーンに依存しない演出の対応表を共通設定として返す。
+   nlohmann::json GetSharedParameters() const override { return Serialize(); }
+
+   /// @brief 共通設定の対応表を検証して適用する。
+   void ApplySharedParameters(const nlohmann::json& data) override { Deserialize(data); }
 
 #ifdef USE_IMGUI
-
-   /// @brief 現在の遷移検出状態を表示する
+   /// @brief 明示した演出の役割とスロットの対応を編集する。
    void DrawInspector() override;
 #endif
 
 private:
-   uint64_t lastMiniTurboFireCount_ = 0; ///< カメラが最後に処理したミニターボ発動の連番。
-   bool wasJumping_ = false;             ///< 離陸・着地の変化を検出する前フレームのジャンプ状態。
-   bool wasGrounded_ = true;             ///< 着地遷移検出用の前フレーム接地状態。
+   std::vector<VehicleEffectBinding> bindings_; ///< アセットパスやファイル名を参照しない演出命令。
+   VehicleEventCursor eventCursor_;             ///< この演出が独立して保持する通知の既読位置。
 };
 
 } // namespace App

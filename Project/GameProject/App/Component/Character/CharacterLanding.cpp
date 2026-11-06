@@ -9,6 +9,7 @@
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <cmath>
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
@@ -74,6 +75,10 @@ void CharacterLanding::Update(float) {
          lastLandingContactPoint_ = landingCenter + gravityUp * (landingSurfaceRadius + landingOffset);
          lastLandingNormal_ = gravityUp;
          hasLandingContact_ = true;
+
+         if (auto* events = GetOwner().GetComponent<VehicleEvents>()) {
+            events->PublishLanding(lastLandingContactPoint_, lastLandingNormal_);
+         }
 
          // 垂直速度のみ除去し、水平成分は維持
          gravityBody->CancelNormalVelocity(gravityUp);

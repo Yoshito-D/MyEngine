@@ -1,0 +1,61 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "VehicleEffectController",
+   "data": {
+      "bindings": [
+         {
+            "role": "DriftDust",
+            "slot": 0
+         },
+         {
+            "role": "DriftDust",
+            "slot": 1
+         },
+         {
+            "role": "DriftDust",
+            "slot": 2
+         },
+         {
+            "role": "DriftDust",
+            "slot": 3
+         },
+         {
+            "role": "TurboReady",
+            "slot": 4
+         },
+         {
+            "role": "TurboReady",
+            "slot": 5
+         },
+         {
+            "role": "TurboFlame",
+            "slot": 6
+         },
+         {
+            "role": "TurboFlame",
+            "slot": 7
+         },
+         {
+            "role": "TurboBurst",
+            "slot": 8
+         },
+         {
+            "role": "Landing",
+            "slot": 9
+         },
+         {
+            "role": "Jump",
+            "slot": 10
+         },
+         {
+            "role": "Landing",
+            "slot": 12
+         },
+         {
+            "role": "LandingFailure",
+            "slot": 13
+         }
+      ]
+   }
+}

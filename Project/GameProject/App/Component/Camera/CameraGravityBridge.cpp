@@ -24,28 +24,28 @@
 
 namespace App {
 void CameraGravityBridge::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
-   gravityFollowCamera_ = nullptr;
+   cameras_.clear();
    playerRearFollowCamera_ = nullptr;
-   planetLeashCamera_ = nullptr;
 
-   if (auto* camera = sceneWorld.FindVirtualCamera(gravityFollowCameraId_)) {
-      gravityFollowCamera_ = camera->GetComponent<GravityFollowCamera>();
-   }
+   for (const auto& id : cameraIds_) {
+      auto* camera = sceneWorld.FindVirtualCamera(id);
+      auto* follow = camera ? camera->GetComponent<IVehicleCamera>() : nullptr;
 
-   if (auto* camera = sceneWorld.FindVirtualCamera(playerRearFollowCameraId_)) {
-      playerRearFollowCamera_ = camera->GetComponent<PlayerRearFollowCamera>();
-   }
+      if (follow && std::find(cameras_.begin(), cameras_.end(), follow) == cameras_.end()) {
+         cameras_.push_back(follow);
+      }
 
-   if (auto* camera = sceneWorld.FindVirtualCamera(planetLeashCameraId_)) {
-      planetLeashCamera_ = camera->GetComponent<PlanetLeashCamera>();
+      if (camera && !playerRearFollowCamera_) {
+         playerRearFollowCamera_ = camera->GetComponent<PlayerRearFollowCamera>();
+      }
    }
 }
 
 void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
-   const auto* drift = HasOwner() ? GetOwner().GetComponent<VehicleDrift>() : nullptr;
-   effects_.Reset(drift ? drift->GetMiniTurboFireCount() : 0);
-   presentation_.Reset();
+   const auto* events = HasOwner() ? GetOwner().GetComponent<VehicleEvents>() : nullptr;
+   effects_.Reset(events ? events->GetSnapshot() : VehicleEventSnapshot{});
+   presentation_.Reset(events ? events->GetSnapshot() : VehicleEventSnapshot{});
 }
 
 void CameraGravityBridge::Update(float deltaTime) {
@@ -91,10 +91,23 @@ void CameraGravityBridge::Update(float deltaTime) {
       hasCameraPlanet = switcher->TryGetLandingPlanet(cameraPlanetCenter, cameraPlanetSurfaceRadius);
    }
 
-   // GravityFollowCamera 側へ重力Upと注視対象を同期
-   if (gravityFollowCamera_) {
-      gravityFollowCamera_->SetGravityUp(gravityUp);
-      gravityFollowCamera_->SetPivotTarget(pos);
+   float speed = 0.0f;
+   float autoSpeed = 13.0f;
+
+   if (const auto* mover = GetOwner().GetComponent<VehicleGroundMover>()) {
+      speed = mover->GetCurrentSpeed();
+      autoSpeed = mover->DescribeSettings().autoSpeed;
+   }
+
+   const VehicleCameraFollowInput followInput{.gravityUp = gravityUp,
+      .target = pos,
+      .planetCenter = planetCenter_,
+      .landingPlanetCenter = cameraPlanetCenter,
+      .speed = speed,
+      .autoSpeed = autoSpeed};
+
+   for (auto* camera : cameras_) {
+      camera->ApplyVehicleFollowInput(followInput);
    }
 
    // PlayerRearFollowCamera 側へ重力Up・注視対象・近傍惑星・前方・空中状態を同期
@@ -125,9 +138,6 @@ void CameraGravityBridge::Update(float deltaTime) {
          }
       }
 
-      playerRearFollowCamera_->SetGravityUp(gravityUp);
-      playerRearFollowCamera_->SetPivotTarget(pos);
-      playerRearFollowCamera_->SetPlanetCenter(cameraPlanetCenter);
       playerRearFollowCamera_->SetFollowForward(forward);
       playerRearFollowCamera_->SetAirborneMoveForward(airborneMoveForward);
       playerRearFollowCamera_->SetAirborne(isAirborne);
@@ -150,42 +160,16 @@ void CameraGravityBridge::Update(float deltaTime) {
          }
       }
 
-      if (rearCameraSelected) {
-         presentation_.Update(settings_, deltaTime, *playerRearFollowCamera_, jump, landing && landing->IsGrounded(),
-            hasLandingPrediction ? &prediction : nullptr);
-      }
-   }
-
-   // VehicleGroundMover から速度と autoSpeed を取得し、両カメラへ供給する
-   float speed = 0.0f;
-   float autoSpeed = 13.0f;
-
-   if (auto* mover = GetOwner().GetComponent<VehicleGroundMover>()) {
-      speed = mover->GetCurrentSpeed();
-      autoSpeed = mover->DescribeSettings().autoSpeed;
-   }
-
-   if (gravityFollowCamera_) {
-      gravityFollowCamera_->SetPlayerSpeed(speed);
-      gravityFollowCamera_->SetAutoSpeed(autoSpeed);
-   }
-
-   if (playerRearFollowCamera_) {
-      playerRearFollowCamera_->SetPlayerSpeed(speed);
-      playerRearFollowCamera_->SetAutoSpeed(autoSpeed);
-   }
-
-   // PlanetLeashCamera 側へ重力Up・注視対象・惑星中心を同期
-   if (planetLeashCamera_) {
-      planetLeashCamera_->SetGravityUp(gravityUp);
-      planetLeashCamera_->SetPivotTarget(pos);
-      planetLeashCamera_->SetSphereCenter(planetCenter_);
+      const auto* events = GetOwner().GetComponent<VehicleEvents>();
+      presentation_.Update(settings_, deltaTime, rearCameraSelected, *playerRearFollowCamera_, jump,
+         events ? events->GetSnapshot() : VehicleEventSnapshot{}, hasLandingPrediction ? &prediction : nullptr);
    }
 
    const bool grounded = (!landing || landing->IsGrounded()) && (!jump || !jump->IsJumping());
    const bool steering = grounded && drift && drift->IsEnabled() && input && input->GetSteerInput() != 0.0f;
-   effects_.Update(settings_, deltaTime, steering, grounded, drift ? drift->GetMiniTurboFireCount() : 0, gravityUp,
-      gravityFollowCamera_, playerRearFollowCamera_, planetLeashCamera_, selectedCamera);
+   const auto* events = GetOwner().GetComponent<VehicleEvents>();
+   effects_.Update(settings_, deltaTime, steering, events ? events->GetSnapshot() : VehicleEventSnapshot{}, gravityUp,
+      cameras_, selectedCamera);
 }
 
 #ifdef USE_IMGUI
@@ -195,19 +179,27 @@ void CameraGravityBridge::DrawInspector() {
 
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
-   GameEngine::EditorUI::CameraReference("Gravity Follow Camera", gravityFollowCameraId_, "GravityFollowCamera");
-   GameEngine::EditorUI::CameraReference(
-      "Player Rear Follow Camera", playerRearFollowCameraId_, "PlayerRearFollowCamera");
-   GameEngine::EditorUI::CameraReference("Planet Leash Camera", planetLeashCameraId_, "PlanetLeashCamera");
+   for (size_t index = 0; index < cameraIds_.size(); ++index) {
+      ImGui::PushID(static_cast<std::int32_t>(index));
+      GameEngine::EditorUI::CameraReference("Follow Camera", cameraIds_[index]);
+      ImGui::SameLine();
+      const bool remove = ImGui::SmallButton("Remove");
+      ImGui::PopID();
+
+      if (remove) {
+         cameraIds_.erase(cameraIds_.begin() + index);
+         break;
+      }
+   }
+
+   if (ImGui::Button("Add Follow Camera")) {
+      cameraIds_.emplace_back();
+   }
+
    ImGui::Separator();
    ImGui::Text(
       "%s: (%.2f, %.2f, %.2f)", Tr("惑星中心", "Planet Center"), planetCenter_.x, planetCenter_.y, planetCenter_.z);
-   ImGui::Text("%s: %s", Tr("重力追従カメラ", "Gravity Follow Camera"),
-      gravityFollowCamera_ ? Tr("設定済み", "Set") : Tr("なし", "None"));
-   ImGui::Text("%s: %s", Tr("プレイヤー後方追従", "Player Rear Follow"),
-      playerRearFollowCamera_ ? Tr("設定済み", "Set") : Tr("なし", "None"));
-   ImGui::Text("%s: %s", Tr("惑星レアッシュカメラ", "Planet Leash Camera"),
-      planetLeashCamera_ ? Tr("設定済み", "Set") : Tr("なし", "None"));
+   ImGui::Text("Resolved vehicle cameras: %zu", cameras_.size());
    ImGui::Separator();
    ImGui::Checkbox(Tr("着地シェイク", "Landing Shake"), &settings_.enableLandingShake);
    ImGui::DragFloat(Tr("シェイク振幅 (m)", "Shake Amplitude (m)"), &settings_.landingShakeAmplitude, 0.01f, 0.0f, 5.0f);
@@ -259,9 +251,7 @@ void CameraGravityBridge::DrawInspector() {
 
 nlohmann::json CameraGravityBridge::Serialize() const {
    nlohmann::json json;
-   json["gravityFollowCameraId"] = gravityFollowCameraId_;
-   json["playerRearFollowCameraId"] = playerRearFollowCameraId_;
-   json["planetLeashCameraId"] = planetLeashCameraId_;
+   json["cameraIds"] = cameraIds_;
    json["enableLandingShake"] = settings_.enableLandingShake;
    json["landingShakeAmplitude"] = settings_.landingShakeAmplitude;
    json["landingShakeFrequency"] = settings_.landingShakeFrequency;
@@ -288,7 +278,7 @@ nlohmann::json CameraGravityBridge::Serialize() const {
 }
 
 nlohmann::json CameraGravityBridge::GetSharedParameters() const {
-   return ExtractSharedParameters({"gravityFollowCameraId", "planetLeashCameraId", "playerRearFollowCameraId"});
+   return ExtractSharedParameters({"cameraIds"});
 }
 
 void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
@@ -300,16 +290,20 @@ void CameraGravityBridge::ApplySharedParameters(const nlohmann::json& data) {
 }
 
 void CameraGravityBridge::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
-   if (data.contains("gravityFollowCameraId") && data.at("gravityFollowCameraId").is_string()) {
-      gravityFollowCameraId_ = data.at("gravityFollowCameraId").get<std::string>();
-   }
+   if (data.contains("cameraIds") && data.at("cameraIds").is_array()) {
+      std::vector<std::string> ids;
+      bool valid = true;
 
-   if (data.contains("playerRearFollowCameraId") && data.at("playerRearFollowCameraId").is_string()) {
-      playerRearFollowCameraId_ = data.at("playerRearFollowCameraId").get<std::string>();
-   }
-
-   if (data.contains("planetLeashCameraId") && data.at("planetLeashCameraId").is_string()) {
-      planetLeashCameraId_ = data.at("planetLeashCameraId").get<std::string>();
+      for (const auto& id : data.at("cameraIds")) {
+         if (!id.is_string()) {
+            valid = false;
+            break;
+         }
+         ids.push_back(id.get<std::string>());
+      }
+      if (valid) {
+         cameraIds_ = std::move(ids);
+      }
    }
 
    if (data.contains("enableLandingShake")) {

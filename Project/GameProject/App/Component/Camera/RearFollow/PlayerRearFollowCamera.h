@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameEngine/Scene/Camera/Core/ICinemachineComponent.h"
+#include "GameProject/App/Component/Camera/IVehicleCamera.h"
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraPositionSolver.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMeasurementRecorder.h"
@@ -20,7 +21,9 @@ namespace App {
 ///       プレイヤーが加速すると FOV 拡大・カメラ後退距離増加で加速感を演出する。
 /// @details 外部入力と追従設定を管理し、各計算クラスを所有して依存順に更新する。
 ///          設定値は一括検証して適用し、実行中の設定への直接アクセスを許可しない。
-class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent, private RearCameraSettings {
+class PlayerRearFollowCamera : public GameEngine::ICinemachineComponent,
+                               public IVehicleCamera,
+                               private RearCameraSettings {
 public:
    /// @brief 後方追従カメラを既定の補間設定で生成する
    PlayerRearFollowCamera() = default;
@@ -75,13 +78,17 @@ public:
    /// @param speed 速度の大きさ（m/s）。加速感の判定に使用。
    void SetPlayerSpeed(float speed) { input_.playerSpeed = speed; }
 
-   /// @brief ドリフト接近演出の距離倍率を設定する（0.5〜1.0、通常時は1.0）
-   void SetDriftDistanceScale(float scale);
+   /// @brief 共通追従入力を、このカメラの位置・重力・速度入力へ適用する。
+   void ApplyVehicleFollowInput(const VehicleCameraFollowInput& input) override;
 
-   /// @brief ドリフト演出のカメラ・注視点高さの追加量を設定する（通常時は0）
-   /// @param cameraHeightOffset カメラ高さへ加える量。正の値はUp方向、負の値は下方向。
-   /// @param lookTargetHeightOffset 注視点高さへ加える量。正の値はUp方向、負の値は下方向。
-   void SetDriftHeightOffsets(float cameraHeightOffset, float lookTargetHeightOffset);
+   /// @brief 保存設定を変更せず、距離倍率と高さ加算（m）の一時演出を適用する。
+   void ApplyVehicleEffectInput(const VehicleCameraEffectInput& input) override;
+
+   /// @brief 選択確認とシェイク通知に使用するカメラ部品を返す。
+   GameEngine::ICinemachineComponent& GetVehicleCameraComponent() override { return *this; }
+
+   /// @brief 直近のカメラUp方向を返す。
+   GameEngine::Vector3 GetVehicleCameraUp() const override { return GetCameraUp(); }
 
    /// @brief プレイヤーの現在速度ベクトルを設定する（空中カメラ方向補間に使用）
    /// @param velocity ワールド空間の速度

@@ -1,8 +1,11 @@
 #pragma once
+
 #include "GameProject/App/Component/Tutorial/TutorialGuidePresenter.h"
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
+#include "GameEngine/Utility/StateMachine.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include <cstdint>
 #include <string>
 
@@ -28,6 +31,9 @@ class VehicleLandingBoost;
 /// @brief 決定ボタンで説明を進め、ドリフト・ジャンプ・惑星移動からゴールまでを案内する。
 class TutorialProgressComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 課題ごとの開始処理・達成判定・遷移規則を登録する。実行は最初のUpdateで開始する。
+   TutorialProgressComponent();
+
    static constexpr const char* kTypeName = "TutorialProgressComponent"; ///< コンポーネント型名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{
       "チュートリアル進行", "Tutorial Progress"}; ///< 表示名。
@@ -43,6 +49,7 @@ public:
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 決定入力と練習の達成状態を監視して進行する。
+   /// @param deltaTime ゲーム用の経過秒数。状態の時計では負・非有限の値を0秒として扱う。
    void Update(float deltaTime) override;
 
    /// @brief コンポーネントの保存対象設定をJSONで返す。
@@ -67,11 +74,41 @@ public:
 private:
    using Phase = TutorialPhase;
 
+   struct PhaseSettings {
+      bool playerPaused = false;        ///< 課題中に走行制御と物理を停止するか。
+      bool jumpEnabled = false;         ///< ジャンプ入力を許可するか。
+      bool goalGuidanceEnabled = false; ///< ゴールの誘導と到達判定を有効にするか。
+   };
+
+   struct ExplanationStep {
+      Phase phase;                      ///< 説明する課題。
+      Phase nextPhase;                  ///< 決定入力後の課題。
+      bool goalGuidanceEnabled = false; ///< 説明中にゴール誘導を表示するか。
+   };
+
+   struct FrameInput {
+      bool confirm = false;    ///< 案内の表示完了後に決定が押されたか。
+      bool isAirborne = false; ///< 現在空中にいるか。
+      bool tookOff = false;    ///< このフレームに離陸したか。
+      bool landed = false;     ///< このフレームに接地したか。
+      bool driftEnded = false; ///< 新しいドリフト終了を受信したか。
+   };
+
    void ReadParameters(const nlohmann::json& data);
    bool HasRequiredReferences() const;
    bool IsGamepadConnected() const;
    bool IsOnTargetPlanet() const;
-   void SetPhase(Phase phase);
+   void ConfigurePhases();
+   void RegisterPhase(Phase phase, PhaseSettings settings, GameEngine::StateMachine<Phase>::State state);
+   void ApplyPhaseSettings();
+   void UpdateDriftPractice();
+   void UpdateJumpPractice();
+   void UpdateAirControlPractice();
+   void UpdateGoalApproach();
+   void UpdateComplete(float deltaTime);
+
+   Phase GetPhase() const { return phaseMachine_.GetCurrentState().value_or(Phase::DrivingIntro); }
+
    void UpdatePresentation(float deltaTime);
    void SetPlayerPaused(bool paused);
    void SetTargetPlanetEnabled(bool enabled);
@@ -79,17 +116,19 @@ private:
    bool RevealTargetPlanet();
    const char* GetPhaseName() const;
 
-   static constexpr std::int32_t kRequiredMiniTurbos = 3;         ///< ドリフト課題で発動するミニターボの回数。
-   std::string playerObjectId_ = "Model:Player";                  ///< 操作対象の安定Entity ID。
-   std::string targetPlanetObjectId_ = "Model:Planet_2";          ///< 練習開始時に出現させる惑星。
-   std::string goalObjectId_ = "Model:Goal";                      ///< 目標惑星の地表へ配置するゴール。
-   std::string feedbackObjectId_ = "UIText:TutorialFeedback";     ///< 操作結果を即座に表示するUI。
-   std::string promptObjectId_ = "UIText:TutorialPrompt";         ///< 本文より小さく表示する決定操作のUI。
-   std::string goalDistanceObjectId_ = "UIText:GoalDistanceText"; ///< ゴール距離のUI。
-   std::string goalDirectionObjectId_ = "Model:GoalDirectionHUD"; ///< ゴール方向のUI。
-   std::string nextScene_ = "GameTest";                           ///< クリア表示後の自動遷移先。
-   float completionDelay_ = 2.5f;                                 ///< クリア表示から自動遷移までの待機時間（秒）。
-   float guideFadeDuration_ = 0.2f;                               ///< 課題の案内を切り替えるフェード時間（秒）。
+   static constexpr std::int32_t kRequiredMiniTurbos = 3;          ///< ドリフト課題で発動するミニターボの回数。
+   static constexpr float kAirControlInputThreshold = 0.1f;        ///< 空中姿勢操作として認める入力の絶対値。
+   static constexpr float kRequiredAirRotationCosine = 0.8660254f; ///< 離陸時から30度以上の回転を認める内積の上限。
+   std::string playerObjectId_ = "Model:Player";                   ///< 操作対象の安定Entity ID。
+   std::string targetPlanetObjectId_ = "Model:Planet_2";           ///< 練習開始時に出現させる惑星。
+   std::string goalObjectId_ = "Model:Goal";                       ///< 目標惑星の地表へ配置するゴール。
+   std::string feedbackObjectId_ = "UIText:TutorialFeedback";      ///< 操作結果を即座に表示するUI。
+   std::string promptObjectId_ = "UIText:TutorialPrompt";          ///< 本文より小さく表示する決定操作のUI。
+   std::string goalDistanceObjectId_ = "UIText:GoalDistanceText";  ///< ゴール距離のUI。
+   std::string goalDirectionObjectId_ = "Model:GoalDirectionHUD";  ///< ゴール方向のUI。
+   std::string nextScene_ = "GameTest";                            ///< クリア表示後の自動遷移先。
+   float completionDelay_ = 2.5f;                                  ///< クリア表示から自動遷移までの待機時間（秒）。
+   float guideFadeDuration_ = 0.2f;                                ///< 課題の案内を切り替えるフェード時間（秒）。
    float transferSurfaceGap_ = 50.0f; ///< 出現時のプレイヤーから目標惑星の手前側地表までの距離。
 
    GameEngine::Object* playerObject_ = nullptr;             ///< プレイヤーへの非所有参照。
@@ -102,6 +141,7 @@ private:
    VehicleController* vehicleController_ = nullptr;         ///< クリア時に停止する走行制御。
    VehicleInputComponent* vehicleInput_ = nullptr;          ///< 対象プレイヤーの入力。
    VehicleDrift* vehicleDrift_ = nullptr;                   ///< ミニターボ発動の実績。
+   VehicleEvents* vehicleEvents_ = nullptr;                 ///< 車両単位で確定した通知と走行状態。
    VehicleLandingBoost* landingBoost_ = nullptr;            ///< 着地品質の結果。
    GameEngine::UITextComponent* guideText_ = nullptr;       ///< 現在の課題と説明文。
    GameEngine::UITextComponent* feedbackText_ = nullptr;    ///< 練習の即時フィードバック。
@@ -109,21 +149,22 @@ private:
    RaceGoalDistanceTextComponent* goalDistance_ = nullptr;  ///< 距離誘導の表示制御。
    RaceGoalDirectionHUDComponent* goalDirection_ = nullptr; ///< 方向誘導の表示制御。
 
-   TutorialGuidePresenter guidePresenter_;    ///< 案内文面とフェードの所有者。
-   Phase phase_ = Phase::DrivingIntro;        ///< 現在の課題。
+   TutorialGuidePresenter guidePresenter_;        ///< 案内文面とフェードの所有者。
+   GameEngine::StateMachine<Phase> phaseMachine_; ///< 課題の開始・更新と許可された遷移の管理。
+   PhaseSettings phaseSettings_;              ///< 現在の課題の入力・表示設定。参照復旧時も進捗を初期化せず再適用する。
+   FrameInput frameInput_;                    ///< 一回の状態更新で共有する決定入力と離陸・着地の通知。
    float completionElapsed_ = 0.0f;           ///< クリア状態に入ってからの経過時間（秒）。
    std::uint64_t lastMiniTurboFireCount_ = 0; ///< 前回処理した発動連番。
    std::int32_t miniTurboCount_ = 0;          ///< この課題内で達成した回数。
-   bool wasDrifting_ = false;                 ///< ドリフト終了の検出用。
-   bool wasAirborne_ = false;                 ///< 離陸・着地の検出用。
+   VehicleEventCursor eventCursor_;           ///< 課題が独立して保持する通知の既読位置。
    bool jumpStarted_ = false;                 ///< ジャンプ課題開始後に離陸したか。
-   GameEngine::Vector3 airControlStartUp_{};   ///< 練習ジャンプの離陸時の機体上方向。
+   GameEngine::Vector3 airControlStartUp_{};  ///< 練習ジャンプの離陸時の機体上方向。
    bool airControlInputReceived_ = false;     ///< 今回のジャンプ中に姿勢操作を入力したか。
    bool airRotationPerformed_ = false;        ///< 今回のジャンプ中に機体を十分に傾けたか。
    bool controllerEnabledWhenPlaying_ = true; ///< シーン読込時の走行制御の有効状態。
    bool gravityEnabledWhenPlaying_ = true;    ///< シーン読込時の物理の有効状態。
    bool sceneChangeRequested_ = false;        ///< 二重遷移の抑止。
-   bool runtimeInitialized_ = false;          ///< 編集時の読み込みと実行時の操作停止を分ける。
+   bool referencesUnavailable_ = false; ///< 参照不足で一時停止しており、復旧時に現在課題の設定を戻す必要があるか。
 };
 
 } // namespace App

@@ -155,6 +155,33 @@ private:
    bool alreadyApplied_ = true; ///< 現在値へ反映済みで、履歴への登録だけが必要かどうか。
 };
 
+/// @brief 仮想カメラの適用済み編集を安定IDと前後スナップショットで記録する。
+class EditVirtualCameraStateCommand final : public IEditorCommand {
+public:
+   /// @brief Inspectorまたはギズモで適用した一操作を記録する。
+   /// @param id シーンが所有する仮想カメラの安定ID。DebugCameraの空IDは受け付けない。
+   /// @param before 操作前の完全なカメラ保存状態。
+   /// @param after 操作後の完全なカメラ保存状態。
+   EditVirtualCameraStateCommand(std::string id, nlohmann::json before, nlohmann::json after);
+
+   /// @brief 初回は適用済み編集を履歴へ取り込み、Redoでは変更後の状態を復元する。
+   /// @param context 実行時のカメラを安定IDで解決する編集操作窓口。
+   /// @return 対象と保存状態が有効で、履歴登録または復元に成功した場合はtrue。
+   bool Execute(EditorCommandTarget& context) override;
+
+   /// @brief 同じ安定IDの仮想カメラへ、部品構成を含む変更前の状態を復元する。
+   /// @param context 現在の編集操作窓口。
+   void Undo(EditorCommandTarget& context) override;
+
+   /// @brief Undo/Redoメニューへ表示するカメラ編集の操作名を返す。
+   const char* GetName() const override { return "Edit Virtual Camera"; }
+
+private:
+   std::string id_;                ///< シーン内で名前変更に影響されないカメラID。
+   nlohmann::json before_, after_; ///< 操作前後の完全なカメラ保存状態。
+   bool alreadyApplied_ = true;    ///< 初回は復元せず、適用済み編集を履歴へ記録するか。
+};
+
 /// @brief 親とHierarchy順を同時に変更し、一回のUndoで戻す。
 class ReorderObjectCommand final : public IEditorCommand {
 public:
@@ -376,6 +403,12 @@ public:
 
    /// @brief 既存対象へ保存状態を適用する。
    virtual bool ApplySnapshot(const std::string& id, const nlohmann::json& snapshot, bool particle) = 0;
+
+   /// @brief シーンが指定IDの仮想カメラを所有しているか調べる。DebugCameraは対象外とする。
+   virtual bool ContainsCamera(const std::string& id) const = 0;
+
+   /// @brief 既存の仮想カメラへ完全な保存状態を適用し、部品を参照するゲーム側を再接続する。
+   virtual bool ApplyCameraSnapshot(const std::string& id, const nlohmann::json& snapshot) = 0;
 
    /// @brief 有限な姿勢を対象の所有者に一括適用する。
    virtual bool ApplyPose(const std::string& id, const Transform& pose, bool particle) = 0;

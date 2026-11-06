@@ -488,6 +488,15 @@
     <ClCompile Include="GameEngine\Effects\Particles\ParticleSystem.cpp">
       <Filter>GameEngine\Effects\Particles</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Effects\Particles\ParticleGpuSimulation.cpp">
+      <Filter>GameEngine\Effects\Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Effects\Particles\ParticleTrailRuntime.cpp">
+      <Filter>GameEngine\Effects\Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Effects\Particles\ParticleSubEmitterRuntime.cpp">
+      <Filter>GameEngine\Effects\Particles</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Framework\EngineContext.cpp">
       <Filter>GameEngine\Framework</Filter>
     </ClCompile>
@@ -651,6 +660,12 @@
       <Filter>GameEngine\Input</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Input\InputActionService.cpp">
+      <Filter>GameEngine\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Input\InputBinding.cpp">
+      <Filter>GameEngine\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Input\InputRebindSession.cpp">
       <Filter>GameEngine\Input</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Math\Functions\ColorUtils.cpp">
@@ -863,9 +878,6 @@
     <ClCompile Include="GameEngine\Utility\Logger.cpp">
       <Filter>GameEngine\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Utility\StateMachine.cpp">
-      <Filter>GameEngine\Utility</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Window\Window.cpp">
       <Filter>GameEngine\Window</Filter>
     </ClCompile>
@@ -999,6 +1011,9 @@
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEffectController.cpp">
+      <Filter>GameProject\App\Component\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEvents.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleGroundMover.cpp">
@@ -1271,6 +1286,15 @@
     <ClInclude Include="GameEngine\Effects\Particles\ParticleSystem.h">
       <Filter>GameEngine\Effects\Particles</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Effects\Particles\ParticleGpuSimulation.h">
+      <Filter>GameEngine\Effects\Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Effects\Particles\ParticleTrailRuntime.h">
+      <Filter>GameEngine\Effects\Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Effects\Particles\ParticleSubEmitterRuntime.h">
+      <Filter>GameEngine\Effects\Particles</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Framework\EngineContext.h">
       <Filter>GameEngine\Framework</Filter>
     </ClInclude>
@@ -1443,6 +1467,12 @@
       <Filter>GameEngine\Input</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Input\InputActionService.h">
+      <Filter>GameEngine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Input\InputBinding.h">
+      <Filter>GameEngine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Input\InputRebindSession.h">
       <Filter>GameEngine\Input</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Math\Functions\ColorUtils.h">
@@ -1685,6 +1715,9 @@
     <ClInclude Include="GameProject\App\Component\Camera\CameraGravityBridge.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Camera\IVehicleCamera.h">
+      <Filter>GameProject\App\Component\Camera</Filter>
+    </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\CameraModeSwitcher.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
@@ -1815,6 +1848,9 @@
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEffectController.h">
+      <Filter>GameProject\App\Component\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEvents.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleGroundMover.h">

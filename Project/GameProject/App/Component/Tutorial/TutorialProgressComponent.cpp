@@ -23,7 +23,9 @@
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <utility>
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
@@ -31,6 +33,10 @@
 #endif
 
 namespace App {
+
+TutorialProgressComponent::TutorialProgressComponent() {
+   ConfigurePhases();
+}
 
 void TutorialProgressComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
@@ -43,6 +49,7 @@ void TutorialProgressComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
    vehicleController_ = playerObject_ ? playerObject_->GetComponent<VehicleController>() : nullptr;
    vehicleInput_ = playerObject_ ? playerObject_->GetComponent<VehicleInputComponent>() : nullptr;
    vehicleDrift_ = playerObject_ ? playerObject_->GetComponent<VehicleDrift>() : nullptr;
+   vehicleEvents_ = playerObject_ ? playerObject_->GetComponent<VehicleEvents>() : nullptr;
    landingBoost_ = playerObject_ ? playerObject_->GetComponent<VehicleLandingBoost>() : nullptr;
    guideText_ = HasOwner() ? GetOwner().GetComponent<GameEngine::UITextComponent>() : nullptr;
    auto* feedback = sceneWorld.FindObjectById(feedbackObjectId_);
@@ -56,23 +63,24 @@ void TutorialProgressComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
 }
 
 void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   phaseMachine_.Stop();
    OnReferencesChanged(sceneWorld);
    controllerEnabledWhenPlaying_ = vehicleController_ && vehicleController_->IsEnabled();
    gravityEnabledWhenPlaying_ = gravityBody_ && gravityBody_->IsEnabled();
    miniTurboCount_ = 0;
-   lastMiniTurboFireCount_ = vehicleDrift_ ? vehicleDrift_->GetMiniTurboFireCount() : 0;
-   wasDrifting_ = false;
-   wasAirborne_ = characterJump_ && characterJump_->IsJumping();
+   lastMiniTurboFireCount_ = vehicleEvents_ ? vehicleEvents_->GetSnapshot().miniTurboCount : 0;
+   eventCursor_.Reset(vehicleEvents_ ? vehicleEvents_->GetSnapshot() : VehicleEventSnapshot{});
    jumpStarted_ = false;
    airControlStartUp_ = {};
    airControlInputReceived_ = false;
    airRotationPerformed_ = false;
    sceneChangeRequested_ = false;
    completionElapsed_ = 0.0f;
-   runtimeInitialized_ = false;
+   phaseSettings_ = {};
+   frameInput_ = {};
+   referencesUnavailable_ = false;
    guidePresenter_.Reset(guideText_ ? guideText_->GetStyle().color.w : 1.0f);
    SetTargetPlanetEnabled(false);
-   phase_ = Phase::DrivingIntro;
    if (vehicleInput_) {
       vehicleInput_->SetJumpEnabled(false);
    }
@@ -87,12 +95,12 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
 
 void TutorialProgressComponent::UpdatePresentation(float deltaTime) {
    TutorialGuideState state;
-   state.phase = phase_;
+   state.phase = GetPhase();
    state.gamepadConnected = IsGamepadConnected();
    state.miniTurboCount = miniTurboCount_;
-   state.canFireMiniTurbo = vehicleDrift_ && vehicleDrift_->CanFireMiniTurbo();
-   state.isDrifting = vehicleDrift_ && vehicleDrift_->IsDrifting();
-   state.isAirborne = characterJump_ && characterJump_->IsJumping();
+   state.canFireMiniTurbo = vehicleEvents_ && vehicleEvents_->GetSnapshot().miniTurboReady;
+   state.isDrifting = vehicleEvents_ && vehicleEvents_->GetSnapshot().isDrifting;
+   state.isAirborne = vehicleEvents_ && vehicleEvents_->GetSnapshot().isAirborne;
    state.airRotationPerformed = airRotationPerformed_;
    const auto* transform = playerObject_ ? playerObject_->GetComponent<GameEngine::TransformComponent>() : nullptr;
    if (transform && gravityBody_) {
@@ -105,9 +113,9 @@ void TutorialProgressComponent::UpdatePresentation(float deltaTime) {
 }
 
 bool TutorialProgressComponent::HasRequiredReferences() const {
-   return guideText_ && feedbackText_ && promptText_ && playerObject_ && targetPlanet_ && goalObject_ && characterJump_ &&
-          characterLanding_ && gravityBody_ && planetSwitcher_ && vehicleController_ && vehicleInput_ &&
-          vehicleDrift_ && landingBoost_ && goalDistance_ && goalDirection_ &&
+   return guideText_ && feedbackText_ && promptText_ && playerObject_ && targetPlanet_ && goalObject_ &&
+          characterJump_ && characterLanding_ && gravityBody_ && planetSwitcher_ && vehicleController_ &&
+          vehicleInput_ && vehicleDrift_ && vehicleEvents_ && landingBoost_ && goalDistance_ && goalDirection_ &&
           playerObject_->GetComponent<GameEngine::TransformComponent>() &&
           targetPlanet_->GetComponent<GameEngine::TransformComponent>() &&
           targetPlanet_->GetComponent<SphericalGravityAttractor>() &&
@@ -131,14 +139,100 @@ bool TutorialProgressComponent::IsOnTargetPlanet() const {
    return planetSwitcher_->TryGetLandingPlanet(receiver, center, radius) && receiver == targetPlanet_;
 }
 
+void TutorialProgressComponent::ConfigurePhases() {
+   // 説明だけの課題は決定入力で進む共通処理を使い、練習固有の初期化は遷移先に閉じ込める。
+   constexpr std::array explanationSteps = {
+      ExplanationStep{Phase::DrivingIntro, Phase::DriftIntro},
+      ExplanationStep{Phase::DriftIntro, Phase::DriftPractice},
+      ExplanationStep{Phase::JumpIntro, Phase::JumpPractice},
+      ExplanationStep{Phase::AirControlIntro, Phase::AirControlPractice},
+      ExplanationStep{Phase::GoalGuidanceIntro, Phase::PlanetTransfer, true},
+   };
+
+   for (const auto& step : explanationSteps) {
+      RegisterPhase(step.phase, {.goalGuidanceEnabled = step.goalGuidanceEnabled},
+         {.onUpdate = [this, nextPhase = step.nextPhase](float) {
+            if (frameInput_.confirm) {
+               phaseMachine_.RequestState(nextPhase);
+            }
+         }});
+   }
+
+   RegisterPhase(Phase::DriftPractice, {},
+      {.onEnter =
+            [this]() {
+               miniTurboCount_ = 0;
+               lastMiniTurboFireCount_ = vehicleEvents_ ? vehicleEvents_->GetSnapshot().miniTurboCount : 0;
+            },
+         .onUpdate = [this](float) { UpdateDriftPractice(); }});
+   RegisterPhase(Phase::JumpPractice, {.jumpEnabled = true},
+      {.onEnter = [this]() { jumpStarted_ = false; }, .onUpdate = [this](float) { UpdateJumpPractice(); }});
+   RegisterPhase(Phase::AirControlPractice, {.jumpEnabled = true},
+      {.onEnter =
+            [this]() {
+               airControlStartUp_ = {};
+               airControlInputReceived_ = false;
+               airRotationPerformed_ = false;
+            },
+         .onUpdate = [this](float) { UpdateAirControlPractice(); }});
+   RegisterPhase(Phase::PlanetTransfer, {.jumpEnabled = true, .goalGuidanceEnabled = true},
+      {.onUpdate = [this](float) { UpdateGoalApproach(); }});
+   RegisterPhase(Phase::Goal, {.jumpEnabled = true, .goalGuidanceEnabled = true},
+      {.onUpdate = [this](float) { UpdateGoalApproach(); }});
+   RegisterPhase(Phase::Complete, {.playerPaused = true},
+      {.onEnter =
+            [this]() {
+               completionElapsed_ = 0.0f;
+               sceneChangeRequested_ = false;
+            },
+         .onUpdate = [this](float deltaTime) { UpdateComplete(deltaTime); }});
+
+   // 全状態の登録後に規則を設定し、課題の飛び越しを状態マシン側でも防ぐ。
+   for (const auto& step : explanationSteps) {
+      phaseMachine_.SetTransitionRule(step.phase, {step.nextPhase});
+   }
+
+   phaseMachine_.SetTransitionRule(Phase::DriftPractice, {Phase::JumpIntro});
+   phaseMachine_.SetTransitionRule(Phase::JumpPractice, {Phase::AirControlIntro});
+   phaseMachine_.SetTransitionRule(Phase::AirControlPractice, {Phase::GoalGuidanceIntro});
+   phaseMachine_.SetTransitionRule(Phase::PlanetTransfer, {Phase::Goal, Phase::Complete});
+   phaseMachine_.SetTransitionRule(Phase::Goal, {Phase::PlanetTransfer, Phase::Complete});
+   phaseMachine_.SetTransitionRule(Phase::Complete, {});
+}
+
+void TutorialProgressComponent::RegisterPhase(
+   Phase phase, PhaseSettings settings, GameEngine::StateMachine<Phase>::State state) {
+   state.onEnter = [this, settings, onEnter = std::move(state.onEnter)]() {
+      phaseSettings_ = settings;
+
+      if (onEnter) {
+         onEnter();
+      }
+
+      ApplyPhaseSettings();
+   };
+   phaseMachine_.AddState(phase, std::move(state));
+}
+
+void TutorialProgressComponent::ApplyPhaseSettings() {
+   // 説明中も自動走行を続け、ゴール到達後のクリア表示で停止する。
+   SetPlayerPaused(phaseSettings_.playerPaused);
+
+   if (vehicleInput_) {
+      vehicleInput_->SetJumpEnabled(phaseSettings_.jumpEnabled);
+   }
+
+   SetGoalGuidanceEnabled(phaseSettings_.goalGuidanceEnabled);
+}
+
 void TutorialProgressComponent::Update(float deltaTime) {
-   if (!runtimeInitialized_) {
+   if (!phaseMachine_.GetCurrentState()) {
       // 編集用のシーンに実行時の有効状態の変更を混入させない。
-      runtimeInitialized_ = true;
-      SetPhase(Phase::DrivingIntro);
+      phaseMachine_.Start(Phase::DrivingIntro);
    }
 
    if (!HasRequiredReferences()) {
+      referencesUnavailable_ = true;
       SetPlayerPaused(true);
       SetGoalGuidanceEnabled(false);
 
@@ -150,158 +244,116 @@ void TutorialProgressComponent::Update(float deltaTime) {
       return;
    }
 
-   const bool isAirborne = characterJump_->IsJumping();
-   const bool tookOff = isAirborne && !wasAirborne_;
-   const bool landed = !isAirborne && wasAirborne_ && characterLanding_->IsGrounded();
-   const bool confirm = vehicleInput_->IsConfirmTriggered() && guidePresenter_.IsReady();
-
-   switch (phase_) {
-      case Phase::DrivingIntro:
-         if (confirm) {
-            SetPhase(Phase::DriftIntro);
-         }
-
-         break;
-      case Phase::DriftIntro:
-         if (confirm) {
-            lastMiniTurboFireCount_ = vehicleDrift_->GetMiniTurboFireCount();
-            SetPhase(Phase::DriftPractice);
-         }
-
-         break;
-      case Phase::DriftPractice: {
-         const auto fireCount = vehicleDrift_->GetMiniTurboFireCount();
-
-         if (fireCount > lastMiniTurboFireCount_) {
-            const auto remaining = static_cast<std::uint64_t>(kRequiredMiniTurbos - miniTurboCount_);
-            miniTurboCount_ += static_cast<std::int32_t>(std::min(fireCount - lastMiniTurboFireCount_, remaining));
-            guidePresenter_.ShowDriftResult(true);
-         } else if (wasDrifting_ && !vehicleDrift_->IsDrifting()) {
-            guidePresenter_.ShowDriftResult(false);
-         }
-
-         lastMiniTurboFireCount_ = fireCount;
-
-         if (miniTurboCount_ >= kRequiredMiniTurbos) {
-            SetPhase(Phase::JumpIntro);
-         }
-
-         break;
-      }
-      case Phase::JumpIntro:
-         if (confirm) {
-            jumpStarted_ = false;
-            SetPhase(Phase::JumpPractice);
-         }
-
-         break;
-      case Phase::JumpPractice:
-         jumpStarted_ = jumpStarted_ || tookOff;
-
-         if (jumpStarted_ && landed) {
-            guidePresenter_.ShowLandingResult(landingBoost_->GetLastLandingResult());
-            SetPhase(Phase::AirControlIntro);
-         }
-
-         break;
-      case Phase::AirControlIntro:
-         if (confirm) {
-            SetPhase(Phase::AirControlPractice);
-         }
-
-         break;
-      case Phase::AirControlPractice: {
-         const auto* transform = playerObject_->GetComponent<GameEngine::TransformComponent>();
-         const auto up = GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, transform->GetLocalPose().GetActiveQuaternion());
-
-         if (tookOff) {
-            airControlStartUp_ = up;
-            airControlInputReceived_ = false;
-            airRotationPerformed_ = false;
-         }
-
-         if (isAirborne) {
-            airControlInputReceived_ = airControlInputReceived_ ||
-               std::abs(vehicleInput_->GetPitchInput()) > 0.1f || std::abs(vehicleInput_->GetRollInput()) > 0.1f;
-            // 自動的な姿勢変化や一瞬の入力だけでは達成せず、離陸時から30度以上の回転を体験させる。
-            airRotationPerformed_ = airRotationPerformed_ ||
-               (airControlInputReceived_ && up.Dot(airControlStartUp_) <= 0.8660254f);
-         }
-
-         if (landed) {
-            guidePresenter_.ShowLandingResult(landingBoost_->GetLastLandingResult());
-
-            if (airRotationPerformed_ && RevealTargetPlanet()) {
-               SetPhase(Phase::GoalGuidanceIntro);
-            }
-         }
-
-         break;
-      }
-      case Phase::GoalGuidanceIntro:
-         if (confirm) {
-            SetPhase(Phase::PlanetTransfer);
-         }
-
-         break;
-      case Phase::PlanetTransfer:
-      case Phase::Goal:
-         if (landed) {
-            guidePresenter_.ShowLandingResult(landingBoost_->GetLastLandingResult());
-
-            if (!IsOnTargetPlanet()) {
-               guidePresenter_.ShowReturnToSource();
-               SetPhase(Phase::PlanetTransfer);
-            }
-         }
-
-         if (IsOnTargetPlanet()) {
-            if (phase_ != Phase::Goal) {
-               SetPhase(Phase::Goal);
-            }
-
-            // 滞在状態で判定し、着地とトリガー侵入の更新順による取りこぼしを避ける。
-            if (goalObject_->GetComponent<GameEngine::TriggerVolumeComponent>()->IsInside()) {
-               SetPhase(Phase::Complete);
-            }
-         }
-
-         break;
-      case Phase::Complete:
-         completionElapsed_ += std::max(deltaTime, 0.0f);
-
-         // クリア文を読む時間を確保し、遷移要求は一度だけ発行する。
-         if (!sceneChangeRequested_ && !nextScene_.empty() && completionElapsed_ >= completionDelay_) {
-            sceneChangeRequested_ = true;
-            GameEngine::EngineContext::ChangeScene(nextScene_);
-         }
-
-         break;
+   if (referencesUnavailable_) {
+      // 参照の復旧は同じ課題の再開なので、Enterを再実行して達成回数や時計をリセットしない。
+      referencesUnavailable_ = false;
+      ApplyPhaseSettings();
    }
 
-   wasAirborne_ = isAirborne;
-   wasDrifting_ = vehicleDrift_->IsDrifting();
+   const auto& snapshot = vehicleEvents_->GetSnapshot();
+   const auto changes = eventCursor_.Read(snapshot);
+   frameInput_ = {
+      .confirm = vehicleInput_->IsConfirmTriggered() && guidePresenter_.IsReady(),
+      .isAirborne = snapshot.isAirborne,
+      .tookOff = changes.tookOff,
+      .landed = changes.landed,
+      .driftEnded = changes.driftEnded,
+   };
+   phaseMachine_.Update(deltaTime);
+
+   // 達成したフレームで入力許可と案内を切り替え、新しい課題の判定は次フレームから行う。
+   // これにより一回の決定入力で複数の説明を飛ばさず、クリア時計も入場フレームには進めない。
+   phaseMachine_.ResolveRequests();
    UpdatePresentation(deltaTime);
 }
 
-void TutorialProgressComponent::SetPhase(Phase phase) {
-   phase_ = phase;
+void TutorialProgressComponent::UpdateDriftPractice() {
+   const auto fireCount = vehicleEvents_->GetSnapshot().miniTurboCount;
 
-   if (phase_ == Phase::Complete) {
-      completionElapsed_ = 0.0f;
+   if (fireCount > lastMiniTurboFireCount_) {
+      const auto remaining = static_cast<std::uint64_t>(kRequiredMiniTurbos - miniTurboCount_);
+      miniTurboCount_ += static_cast<std::int32_t>(std::min(fireCount - lastMiniTurboFireCount_, remaining));
+      guidePresenter_.ShowDriftResult(true);
+   } else if (frameInput_.driftEnded) {
+      guidePresenter_.ShowDriftResult(false);
    }
 
-   // 説明中も自動走行を続け、ゴール到達後のクリア表示で停止する。
-   SetPlayerPaused(phase_ == Phase::Complete);
+   lastMiniTurboFireCount_ = fireCount;
 
-   if (vehicleInput_) {
-      vehicleInput_->SetJumpEnabled(
-         phase_ == Phase::JumpPractice || phase_ == Phase::AirControlPractice ||
-         phase_ == Phase::PlanetTransfer || phase_ == Phase::Goal);
+   if (miniTurboCount_ >= kRequiredMiniTurbos) {
+      phaseMachine_.RequestState(Phase::JumpIntro);
+   }
+}
+
+void TutorialProgressComponent::UpdateJumpPractice() {
+   jumpStarted_ = jumpStarted_ || frameInput_.tookOff;
+
+   if (jumpStarted_ && frameInput_.landed) {
+      guidePresenter_.ShowLandingResult(vehicleEvents_->GetSnapshot().landingResult);
+      phaseMachine_.RequestState(Phase::AirControlIntro);
+   }
+}
+
+void TutorialProgressComponent::UpdateAirControlPractice() {
+   const auto* transform = playerObject_->GetComponent<GameEngine::TransformComponent>();
+   const auto up = GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, transform->GetLocalPose().GetActiveQuaternion());
+
+   if (frameInput_.tookOff) {
+      airControlStartUp_ = up;
+      airControlInputReceived_ = false;
+      airRotationPerformed_ = false;
    }
 
-   SetGoalGuidanceEnabled(
-      phase_ == Phase::GoalGuidanceIntro || phase_ == Phase::PlanetTransfer || phase_ == Phase::Goal);
+   if (frameInput_.isAirborne) {
+      airControlInputReceived_ = airControlInputReceived_ ||
+                                 std::abs(vehicleInput_->GetPitchInput()) > kAirControlInputThreshold ||
+                                 std::abs(vehicleInput_->GetRollInput()) > kAirControlInputThreshold;
+
+      // 自動的な姿勢変化や一瞬の入力だけでは達成せず、離陸時から30度以上の回転を体験させる。
+      airRotationPerformed_ = airRotationPerformed_ ||
+                              (airControlInputReceived_ && up.Dot(airControlStartUp_) <= kRequiredAirRotationCosine);
+   }
+
+   if (frameInput_.landed) {
+      guidePresenter_.ShowLandingResult(vehicleEvents_->GetSnapshot().landingResult);
+
+      if (airRotationPerformed_ && RevealTargetPlanet()) {
+         phaseMachine_.RequestState(Phase::GoalGuidanceIntro);
+      }
+   }
+}
+
+void TutorialProgressComponent::UpdateGoalApproach() {
+   const bool onTargetPlanet = IsOnTargetPlanet();
+
+   if (frameInput_.landed) {
+      guidePresenter_.ShowLandingResult(vehicleEvents_->GetSnapshot().landingResult);
+
+      if (!onTargetPlanet) {
+         guidePresenter_.ShowReturnToSource();
+         phaseMachine_.RequestState(Phase::PlanetTransfer);
+      }
+   }
+
+   if (!onTargetPlanet) return;
+
+   // 滞在状態で判定し、着地とトリガー侵入の更新順による取りこぼしを避ける。
+   // 到着とゴールが同じフレームならCompleteへ直接進み、Goalを挟むための一フレームを追加しない。
+   if (goalObject_->GetComponent<GameEngine::TriggerVolumeComponent>()->IsInside()) {
+      phaseMachine_.RequestState(Phase::Complete);
+   } else if (GetPhase() != Phase::Goal) {
+      phaseMachine_.RequestState(Phase::Goal);
+   }
+}
+
+void TutorialProgressComponent::UpdateComplete(float deltaTime) {
+   completionElapsed_ += deltaTime;
+
+   // クリア文を読む時間を確保し、遷移要求は一度だけ発行する。
+   if (!sceneChangeRequested_ && !nextScene_.empty() && completionElapsed_ >= completionDelay_) {
+      sceneChangeRequested_ = true;
+      GameEngine::EngineContext::ChangeScene(nextScene_);
+   }
 }
 
 void TutorialProgressComponent::SetPlayerPaused(bool paused) {
@@ -346,7 +398,7 @@ void TutorialProgressComponent::SetGoalGuidanceEnabled(bool enabled) {
       if (auto* render = goalObject_->GetComponent<GameEngine::RenderComponent>()) {
          auto settings = render->DescribeSettings();
          // クリア時は誘導と到達判定だけを止め、ゴール本体はシーン遷移まで表示する。
-         settings.visible = enabled || phase_ == Phase::Complete;
+         settings.visible = enabled || GetPhase() == Phase::Complete;
          render->Configure(settings);
       }
 
@@ -435,7 +487,7 @@ void TutorialProgressComponent::ReadParameters(const nlohmann::json& data) {
 }
 
 const char* TutorialProgressComponent::GetPhaseName() const {
-   switch (phase_) {
+   switch (GetPhase()) {
       case Phase::DrivingIntro:
          return "DrivingIntro";
       case Phase::DriftIntro:

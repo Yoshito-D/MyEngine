@@ -20,6 +20,7 @@
 #include "GameEngine/Object/Text/UIText.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
+#include "GameEngine/Editor/EditorSceneSession.h"
 #include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Utility/JsonFile.h"
 #include "ImGuizmo.h"
@@ -36,6 +37,18 @@
 namespace GameEngine {
 
 using namespace EditorSceneGeometry;
+
+namespace {
+void FinishCameraEdits(EditorSceneContext& context) {
+   auto* session = EngineContext::GetEditorSceneSession();
+
+   if (session && session->GetContext() == &context) {
+      if (auto* editor = session->GetCameraEditor()) {
+         editor->FinishEdits();
+      }
+   }
+}
+} // namespace
 
 void EditorSceneContext::Initialize(const SceneDefinition& definition) {
    definition_ = definition;
@@ -87,6 +100,7 @@ void EditorSceneContext::Clear() {
 }
 
 bool EditorSceneContext::Save() {
+   FinishCameraEdits(*this);
    const std::filesystem::path filePath = GetSceneFilePath();
    try {
       if (!SaveJsonFileAtomically(filePath, SerializeToJson(), kJsonIndentSize)) {
@@ -507,11 +521,13 @@ void EditorSceneContext::RemoveComponentFromSelectedObject(const std::string& ty
 }
 
 void EditorSceneContext::Undo() {
+   FinishCameraEdits(*this);
    CommandOperations operations(*this);
    FinishCommand(commandStack_.Undo(operations));
 }
 
 void EditorSceneContext::Redo() {
+   FinishCameraEdits(*this);
    CommandOperations operations(*this);
    FinishCommand(commandStack_.Redo(operations));
 }
@@ -639,6 +655,23 @@ nlohmann::json EditorSceneContext::GetObjectSnapshot(const Object* object) {
 nlohmann::json EditorSceneContext::GetParticleSnapshot(const ParticleSystem* particleSystem) {
    return IsParticleSystemAlive(particleSystem) ? Store().SerializeObject(Store().GetId(particleSystem))
                                                 : nlohmann::json::object();
+}
+
+nlohmann::json EditorSceneContext::GetCameraSnapshot(const std::string& id) const {
+   const auto* camera = !id.empty() ? world_->FindVirtualCamera(id) : nullptr;
+   return camera ? camera->Serialize() : nlohmann::json::object();
+}
+
+bool EditorSceneContext::CommitCameraEdit(
+   const std::string& id, const nlohmann::json& before, const nlohmann::json& after) {
+   if (id.empty() || !before.is_object() || !after.is_object() || before == after || !before.contains("id") ||
+       !before.at("id").is_string() || !after.contains("id") || !after.at("id").is_string() ||
+       before.at("id").get<std::string>() != id || after.at("id").get<std::string>() != id ||
+       !world_->FindVirtualCamera(id)) {
+      return false;
+   }
+
+   return CommitEdit(std::make_unique<EditVirtualCameraStateCommand>(id, before, after));
 }
 
 bool EditorSceneContext::CommitObjectEdit(
@@ -867,6 +900,68 @@ bool EditorSceneContext::CommandOperations::ApplySnapshot(
    return found && owner_.Store().ApplyObjectState(found, snapshot);
 }
 
+bool EditorSceneContext::CommandOperations::ContainsCamera(const std::string& id) const {
+   return !id.empty() && owner_.world_->FindVirtualCamera(id) != nullptr;
+}
+
+bool EditorSceneContext::CommandOperations::ApplyCameraSnapshot(const std::string& id, const nlohmann::json& snapshot) {
+   auto* camera = !id.empty() ? owner_.world_->FindVirtualCamera(id) : nullptr;
+
+   if (!camera || !snapshot.is_object() || !snapshot.contains("id") || !snapshot.at("id").is_string() ||
+       snapshot.at("id").get<std::string>() != id || !snapshot.contains("state") || !snapshot.at("state").is_object() ||
+       !snapshot.contains("components") || !snapshot.at("components").is_array() ||
+       !ParameterAssetStore::Validate(snapshot, snapshot)) {
+      return false;
+   }
+
+   std::unordered_set<std::string> componentNames;
+
+   for (const auto& component : snapshot.at("components")) {
+      if (!component.is_object() || !component.contains("componentName") ||
+          !component.at("componentName").is_string()) {
+         return false;
+      }
+
+      const auto& name = component.at("componentName").get_ref<const std::string&>();
+
+      if (name.empty() || !componentNames.insert(name).second) {
+         return false;
+      }
+   }
+
+   const auto before = camera->Serialize();
+
+   try {
+      // Deserializeは同名部品の実体を維持し、追加・削除された部品だけを差し替える。
+      if (camera->Deserialize(snapshot)) {
+         const auto& state = camera->GetState();
+
+         if (state.transform.IsFinite() && state.fov > 0.0f && state.fov < MathConstants::kPi &&
+             state.nearClip > 0.0f && state.farClip > state.nearClip) {
+            // 削除・再生成されたカメラ部品を指すゲーム側の参照を、次の利用より前に更新する。
+            owner_.referencesDirty_ = true;
+            owner_.RefreshReferences();
+            return true;
+         }
+      }
+   } catch (const std::exception& error) {
+      Logger::Warning("Camera snapshot restore failed: " + id + ": " + error.what(), Logger::LogChannel::Editor);
+   }
+
+   // 途中まで復元された設定や部品を残さず、失敗前の完全な状態へ戻して再接続する。
+   try {
+      if (!camera->Deserialize(before)) {
+         Logger::Error("Could not recover camera after failed snapshot restore: " + id, Logger::LogChannel::Editor);
+      }
+   } catch (const std::exception& error) {
+      Logger::Error("Camera recovery failed: " + id + ": " + error.what(), Logger::LogChannel::Editor);
+   }
+
+   owner_.referencesDirty_ = true;
+   owner_.RefreshReferences();
+   return false;
+}
+
 bool EditorSceneContext::CommandOperations::ApplyPose(const std::string& id, const Transform& pose, bool particle) {
    if (!pose.IsFinite()) {
       return false;
@@ -940,6 +1035,8 @@ void EditorSceneContext::FinishCommand(bool changed) {
 }
 
 bool EditorSceneContext::CommitEdit(std::unique_ptr<IEditorCommand> command) {
+   // 他の対象の編集へ移る場合も、先に操作していたカメラを同じ履歴順で確定する。
+   FinishCameraEdits(*this);
    CommandOperations operations(*this);
    const bool changed = commandStack_.Execute(std::move(command), operations);
    FinishCommand(changed);

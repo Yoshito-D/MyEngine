@@ -1,196 +1,120 @@
 #pragma once
 
-#include "GameEngine/Input/Input.h"
+#include "GameEngine/Input/InputBinding.h"
+#include "GameEngine/Input/InputRebindSession.h"
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace GameEngine {
 
-/// @brief 入力アクションが返す値の種類
+/// @brief 入力アクションが返す値の種類。
 enum class InputActionType {
    Button,
    Axis1D,
    Axis2D
 };
 
-/// @brief 1フレーム分の入力アクション状態
+/// @brief 一フレーム分の入力アクション状態。
 struct InputActionState {
-   Vector2 value{};          ///< アクションの評価済み入力値。ボタンと1次元軸はX成分を使う。
-   bool held = false;        ///< 現在のフレームで入力が押下状態かどうか。
-   bool triggered = false;   ///< このフレームで入力が押下へ変化したかどうか。
-   bool released = false;    ///< このフレームで入力が解放へ変化したかどうか。
-   uint64_t frameNumber = 0; ///< この入力状態を評価したフレーム番号。
+   Vector2 value{};               ///< ボタンと一次元軸はX成分を使う評価済み入力値。
+   bool held = false;             ///< 現在入力が押下状態か。
+   bool triggered = false;        ///< このフレームで押下へ変化したか。
+   bool released = false;         ///< このフレームで解放へ変化したか。
+   std::uint64_t frameNumber = 0; ///< 評価したフレームの連番。
 };
 
-/// @brief アクションへ割り当てられる入力の種類
-enum class InputBindingType {
-   Key,
-   GamePadButton,
-   KeyAxis1D,
-   KeyAxis2D,
-   LeftStick,
-   RightStick
-};
-
-/// @brief スティック入力からアクションへ渡す成分
-enum class InputBindingAxis {
-   Both,
-   X,
-   Y
-};
-
-/// @brief 物理入力とアクションの対応情報
-struct InputBinding {
-   InputBindingType type = InputBindingType::Key;  ///< 処理対象の種類を区別する識別値。
-   KeyCode key = KeyCode::Space;                   ///< 単一ボタンのアクションへ割り当てるキー。
-   GamePadButton gamePadButton = GamePadButton::A; ///< アクションへ割り当てるゲームパッドボタン。
-   KeyCode negativeKey = KeyCode::A;               ///< 1次元入力の負方向へ割り当てるキー。
-   KeyCode positiveKey = KeyCode::D;               ///< 1次元入力の正方向へ割り当てるキー。
-   KeyCode leftKey = KeyCode::Left;                ///< 2次元入力の左方向へ割り当てるキー。
-   KeyCode rightKey = KeyCode::Right;              ///< 2次元入力の右方向へ割り当てるキー。
-   KeyCode upKey = KeyCode::Up;                    ///< 2次元入力の上方向へ割り当てるキー。
-   KeyCode downKey = KeyCode::Down;                ///< 2次元入力の下方向へ割り当てるキー。
-   InputBindingAxis axis = InputBindingAxis::Both; ///< スティックのX・Y・両方のどれを使うかの設定。
-   float scale = 1.0f;                             ///< 各軸の拡大率。
-};
-
-/// @brief 物理入力をゲーム用アクションへ変換するサービス
+/// @brief 物理入力をゲーム用アクションへ変換し、設定と再割り当てセッションを所有する。
 class InputActionService final {
 public:
-   static constexpr uint32_t kMaxPlayers = 4; ///< 入力状態を独立して保持するプレイヤースロット数。
+   static constexpr std::uint32_t kMaxPlayers = 4; ///< 入力状態を独立して保持するプレイヤースロット数。
 
-   /// @brief 入力バックエンドと設定ファイルを指定して初期化する
-   /// @param backend 低レベル入力バックエンド
-   /// @param defaultPath 既定アクション設定
-   /// @param overridePath ユーザー上書き設定
+   /// @brief バックエンド・設定ファイルを指定し、既定値とユーザー設定を読み込む。
+   /// @param backend 低レベル入力バックエンド。サービスの利用中は生存させる。
+   /// @param defaultPath 既定アクション設定。
+   /// @param overridePath ユーザー上書き設定。
    void Initialize(
       IInputBackend& backend, const std::filesystem::path& defaultPath, const std::filesystem::path& overridePath);
 
-   /// @brief 入力アクションを1フレーム進める
+   /// @brief アクションのスナップショットを確定した後、描画から独立して再割り当てを進める。
    void Update();
 
-   /// @brief 指定プレイヤーのアクション状態を取得する
-   /// @param actionMap アクションマップ名
-   /// @param actionId 安定したアクションID
-   /// @param playerSlot プレイヤースロット
-   /// @return 見つからない場合はゼロ状態
+   /// @brief 指定プレイヤーの評価済みアクション状態を取得する。見つからない場合はゼロ状態。
    const InputActionState& GetActionState(
-      const std::string& actionMap, const std::string& actionId, uint32_t playerSlot = 0) const;
+      const std::string& actionMap, const std::string& actionId, std::uint32_t playerSlot = 0) const;
 
-   /// @brief 入力再割り当ての待受を開始する
-   /// @return アクションが存在する場合はtrue
-   bool BeginRebind(const std::string& actionMap, const std::string& actionId, size_t bindingIndex);
+   /// @brief 再割り当ての待受を開始する。開始フレームのトリガーは採用しない。
+   /// @param controlIndex 未設定なら全体、設定時はキーバインドの物理入力列内の方向。
+   /// @return アクション・添字・指定方向が有効ならtrue。
+   bool BeginRebind(const std::string& actionMap, const std::string& actionId, size_t bindingIndex,
+      std::optional<size_t> controlIndex = std::nullopt);
 
-   /// @brief 指定アクションへバインドを適用する
+   /// @brief 再割り当ての状態・対象・競合候補を読み取る。
+   const InputRebindSession& GetRebindSession() const { return rebindSession_; }
+
+   /// @brief 確認待ちの候補を競合置換ありで適用する。適用できなければ確認待ちを維持する。
+   bool ConfirmRebindConflict();
+
+   /// @brief 競合候補を破棄し、次フレームから入力待ちへ戻す。
+   void RejectRebindConflict();
+
+   /// @brief 待受と競合確認を中止し、対象と候補を破棄する。
+   void CancelRebind();
+
+   /// @brief 指定アクションへバインドを適用する。
    /// @details 物理入力の競合は同一アクションマップ内でのみ検出・置換する。
-   /// @return 競合がないか置換が許可された場合はtrue
+   /// @return バインドが有効で、競合がないか置換が許可された場合はtrue。
    bool ApplyBinding(const std::string& actionMap, const std::string& actionId, size_t bindingIndex,
       const InputBinding& binding, bool replaceConflict);
 
-   /// @brief ユーザー上書き設定を読み込む
-   /// @return ファイル全体が正常だった場合はtrue
+   /// @brief ユーザー上書き設定を読み込む。成功した設定変更では進行中の再割り当てを中止する。
+   /// @return ファイル全体が正常だった場合はtrue。
    bool LoadOverrides();
 
-   /// @brief ユーザー上書き設定を一時ファイル経由で保存する
-   /// @return 保存できた場合はtrue
+   /// @brief 現在の設定を一時ファイル経由で原子的に保存する。
+   /// @return 保存できた場合はtrue。
    bool SaveOverrides() const;
 
-   /// @brief すべての割り当てを既定値へ戻す
+   /// @brief 全割り当てを既定値へ戻し、進行中の再割り当てを中止する。
    void ResetToDefaults();
 
 #ifdef USE_IMGUI
-
-   /// @brief 入力設定パネルを描画する
+   /// @brief 入力設定の状態を描画し、開始・確認・取消などの操作要求だけを送る。
    void DrawImGui();
 #endif
 
 private:
-   /// @brief バインドの競合判定に使う物理入力の種類。
-   enum class PhysicalControlType {
-      Key,
-      GamePadButton,
-      LeftStick,
-      RightStick,
-   };
-
-   /// @brief 複合バインドから取り出した、デバイス上の単一入力。
-   struct PhysicalControl {
-      PhysicalControlType type; ///< キー・ゲームパッドボタン・左右スティックの区別。
-      uint32_t value;           ///< キーまたはボタンの識別値。スティックの場合は0。
-
-      bool operator==(const PhysicalControl&) const = default;
-   };
-
-   enum class RebindPart {
-      Whole,
-      Negative,
-      Positive,
-      Left,
-      Right,
-      Up,
-      Down,
-   };
-
    struct ActionDefinition {
-      std::string map;                                    ///< アクションをまとめる入力マップ名。
-      std::string id;                                     ///< 同じ種類の要素を一意に識別するID。
-      InputActionType type = InputActionType::Button;     ///< 処理対象の種類を区別する識別値。
-      float deadZone = 0.24f;                             ///< スティック入力を中立とみなす範囲。
-      std::vector<InputBinding> bindings;                 ///< このアクションへ割り当てた物理入力の設定一覧。
-      std::array<InputActionState, kMaxPlayers> states{}; ///< プレイヤースロットごとの評価済みアクション状態。
-   };
-
-   struct PendingRebind {
-      std::string map;                     ///< アクションをまとめる入力マップ名。
-      std::string actionId;                ///< 入力マップ内で対象アクションを識別するID。
-      size_t bindingIndex = 0;             ///< 再割り当て対象のバインド番号。
-      RebindPart part = RebindPart::Whole; ///< 複合バインド内で再割り当てする方向または全体の指定。
-      bool active = false;                 ///< 更新と描画の候補として有効かどうか。
+      std::string map;                                    ///< 入力マップ名。
+      std::string id;                                     ///< マップ内のアクションID。
+      InputActionType type = InputActionType::Button;     ///< 合成するアクション値の種類。
+      float deadZone = 0.24f;                             ///< スティックを中立とみなす範囲。
+      std::vector<InputBinding> bindings;                 ///< 物理入力の割り当て。
+      std::array<InputActionState, kMaxPlayers> states{}; ///< プレイヤーごとの評価済み状態。
    };
 
    void BuildFallbackDefaults();
    bool LoadDefinitions(const std::filesystem::path& path, bool replaceAll);
    ActionDefinition* FindAction(const std::string& actionMap, const std::string& actionId);
    const ActionDefinition* FindAction(const std::string& actionMap, const std::string& actionId) const;
-   bool BeginRebindPart(
-      const std::string& actionMap, const std::string& actionId, size_t bindingIndex, RebindPart part);
-   Vector2 EvaluateBinding(const InputBinding& binding, uint32_t playerSlot, float deadZone) const;
+   void UpdateRebind();
+   bool HasRebindTarget() const;
+   bool ApplyRebindCandidate(const InputBinding& binding, bool replaceConflict);
    static std::string MakeKey(const std::string& actionMap, const std::string& actionId);
-
-   /// @brief 複合バインドを物理入力の列へ展開する。
-   static std::vector<PhysicalControl> GetPhysicalControls(const InputBinding& binding);
-
-   /// @brief 2つのバインドが同じ物理入力を使うか調べる。
-   static bool SharesPhysicalControl(const InputBinding& left, const InputBinding& right);
-
-   /// @brief 指定した物理入力がバインドに含まれるか調べる。
-   static bool ContainsPhysicalControl(const InputBinding& binding, const PhysicalControl& target);
-
-   /// @brief 複合バインド内の指定位置へ物理入力を設定する。
-   static bool SetPhysicalControlAtIndex(InputBinding& binding, size_t controlIndex, const PhysicalControl& control);
-
-   /// @brief 同じ形式のバインドで1つだけ変更された物理入力を取り出す。
    static bool FindSingleChangedControl(const InputBinding& previous, const InputBinding& replacement,
-      PhysicalControl& previousControl, PhysicalControl& replacementControl);
+      InputPhysicalControl& previousControl, InputPhysicalControl& replacementControl);
 
-   /// @brief 同じデバイス種別の物理入力をバインド内で置き換える。
-   static bool ReplacePhysicalControl(
-      InputBinding& binding, const PhysicalControl& target, const PhysicalControl& replacement);
-
-   IInputBackend* backend_ = nullptr;   ///< 物理デバイス状態を取得する入力バックエンドへの非所有参照。
-   std::filesystem::path defaultPath_;  ///< 既定の入力割り当てを読み込むファイル。
-   std::filesystem::path overridePath_; ///< ユーザーの入力割り当てを保存・読み込みするファイル。
-   /// @brief マップ名とアクションIDをキーにした現在の入力定義。
-   std::unordered_map<std::string, ActionDefinition> actions_;
-   std::unordered_map<std::string, ActionDefinition> defaults_; ///< 既定値へ戻すために保持する初期入力定義。
-   PendingRebind pendingRebind_;                                ///< 次の物理入力を待っている再割り当て要求。
-   InputBinding pendingConflictBinding_{}; ///< 既存割り当てと競合して確認待ちとなった入力バインド。
-   bool hasPendingConflict_ = false;       ///< 再割り当てで解決待ちの競合があるかどうか。
-   uint64_t frameNumber_ = 0;              ///< この入力状態を評価したフレーム番号。
+   IInputBackend* backend_ = nullptr;                           ///< 非所有の物理入力バックエンド。
+   std::filesystem::path defaultPath_;                          ///< 既定入力定義の読み込み元。
+   std::filesystem::path overridePath_;                         ///< ユーザー入力定義の読み書き先。
+   std::unordered_map<std::string, ActionDefinition> actions_;  ///< 現在の入力定義。
+   std::unordered_map<std::string, ActionDefinition> defaults_; ///< リセット先となる既定入力定義。
+   InputRebindSession rebindSession_;                           ///< 描画に依存しない再割り当ての状態。
+   std::uint64_t frameNumber_ = 0;                              ///< 評価したフレームの連番。
 };
 
 } // namespace GameEngine

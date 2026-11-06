@@ -225,6 +225,18 @@ public:
    /// @brief 安定IDを含む現在のParticle状態を取得する。
    nlohmann::json GetParticleSnapshot(const ParticleSystem* particleSystem);
 
+   /// @brief シーン所有の仮想カメラから、安定IDと部品構成を含む保存状態を取得する。
+   /// @param id 対象の安定ID。空IDのDebugCameraは対象外。
+   /// @return カメラの保存JSON。解決できない場合は空オブジェクト。
+   nlohmann::json GetCameraSnapshot(const std::string& id) const;
+
+   /// @brief 適用済み仮想カメラ編集を既存のUndo/Redo履歴へ一操作として取り込む。
+   /// @param id シーン所有の仮想カメラの安定ID。
+   /// @param before 操作開始時点の保存状態。
+   /// @param after 操作完了時点の保存状態。
+   /// @return 対象と保存状態が有効で履歴へ登録できた場合はtrue。
+   bool CommitCameraEdit(const std::string& id, const nlohmann::json& before, const nlohmann::json& after);
+
    /// @brief 適用済みInspector編集を一回のUndoとして確定する。
    /// @param id スナップショットに含まれる安定ID。
    /// @param before 操作開始時点の状態。
@@ -316,6 +328,12 @@ private:
       /// @param particle 粒子システムを変更する場合はtrue、Objectの場合はfalse。
       /// @return 対象を解決し、保存状態を適用できた場合はtrue。
       bool ApplySnapshot(const std::string& id, const nlohmann::json& snapshot, bool particle) override;
+
+      /// @brief シーンが所有する安定ID付き仮想カメラの生存を確認する。
+      bool ContainsCamera(const std::string& id) const override;
+
+      /// @brief 既存カメラへ保存状態を復元し、部品参照を再接続する。失敗時は変更前へ戻す。
+      bool ApplyCameraSnapshot(const std::string& id, const nlohmann::json& snapshot) override;
 
       /// @brief Objectのローカル姿勢、または粒子システムの放出姿勢を一括適用する。
       /// @param id 姿勢を変更する対象の安定ID。

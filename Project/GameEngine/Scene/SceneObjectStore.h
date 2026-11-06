@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameEngine/Math/MathUtils.h"
+#include <functional>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -21,11 +22,27 @@ class UIText;
 /// @brief 保存シーンから生成する各Object型を所有し、安定IDと遅延削除を管理する。
 class SceneObjectStore {
 public:
+   /// @brief 保存JSONからObjectを生成し、指定ストアへ所有権を登録して返すファクトリ。
+   /// @details 新しい具象型はAdoptObjectで登録する。失敗時はnullptrを返し、共通状態の復元はストアへ任せる。
+   using ObjectFactory = std::function<Object*(SceneObjectStore&, const nlohmann::json&)>;
+
    /// @brief 指定Worldに所属するObjectとパーティクルの所有ストアを作成する。
    explicit SceneObjectStore(SceneWorld& world);
 
    /// @brief 所有するシーンオブジェクトを破棄する。
    ~SceneObjectStore();
+
+   /// @brief シーン保存用の型名に対応する生成処理を登録する。同名の登録は置き換える。
+   /// @param objectType Objectの保存JSONに記録する型名。
+   /// @param factory 新しいObjectを生成して指定ストアへ登録する処理。
+   /// @return 登録成功時はtrue。型名が空またはファクトリが未設定なら変更せずfalse。
+   bool RegisterObjectFactory(const std::string& objectType, ObjectFactory factory);
+
+   /// @brief 未登録Objectの所有権を受け取り、所属Worldと安定IDを登録する。
+   /// @param object このストアが所有する新しいObject。nullptrなら何も登録しない。
+   /// @param requestedId 希望する安定ID。空または使用中なら新しいIDを割り当てる。
+   /// @return 登録したObjectへの非所有ポインター。objectがnullptrならnullptr。
+   Object* AdoptObject(std::unique_ptr<Object> object, const std::string& requestedId = {});
 
    /// @brief 描画機能を持たないGenericオブジェクトを作成する
    /// @param initialTransform 初期トランスフォーム。省略時は既定値
@@ -68,9 +85,10 @@ public:
    ParticleSystem* CreateParticleSystem(
       const std::string& assetId, const std::string& requestedId = {}, const Transform* initialTransform = nullptr);
 
-   /// @brief 種別付きJSONから対応するObject派生型を作成して状態を復元する
+   /// @brief 種別付きJSONに登録ファクトリを適用し、生成したObjectの共通状態と固有状態を復元する。
    /// @param objectData SerializeObjectState形式のJSON
-   /// @return 復元したObject。ParticleSystemまたは失敗時はnullptr
+   /// @return 復元したObject。未登録の型や失敗時はnullptr。失敗した生成物は登録解除して遅延削除する。
+   /// @note Objectを継承しないParticleSystemはRestoreParticleSystemで復元する。
    Object* RestoreObject(const nlohmann::json& objectData);
 
    /// @brief 種別付きJSONからParticleSystemを作成して状態を復元する
@@ -233,6 +251,8 @@ private:
    void UnregisterOwnedRuntimeSystems(Object* object);
    void BumpCounterFromId(const std::string& id);
 
+   /// @brief シーン保存用の型名から、このストアへObjectを登録する生成処理を引くマップ。
+   std::unordered_map<std::string, ObjectFactory> objectFactories_;
    SceneWorld& world_;                            ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
    std::vector<std::unique_ptr<Object>> objects_; ///< シーン内で生成したObjectの所有一覧。
    std::vector<std::unique_ptr<ParticleSystem>> particleSystems_; ///< シーン内で生成したParticleSystemの所有一覧。

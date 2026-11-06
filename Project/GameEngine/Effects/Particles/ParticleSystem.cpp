@@ -1,6 +1,10 @@
 #include "GameEngine/pch.h"
 #include <cstdint>
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Effects/Particles/ParticleGpuSimulation.h"
+#include "GameEngine/Effects/Particles/ParticleTrailRuntime.h"
+#include "GameEngine/Effects/Particles/ParticleSubEmitterRuntime.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Graphics/Device/ResourceHelper.h"
 #include "GameEngine/Math/MathUtils.h"
@@ -60,8 +64,6 @@ template <class Module> bool ParticleSystem::ApplyModuleConfiguration(Module& ta
 }
 
 std::vector<ParticleSystem*> ParticleSystem::sRegisteredParticleSystems_{};
-std::vector<ParticleSystem::PendingSubEmitterEvent> ParticleSystem::sPendingSubEmitterEvents_{};
-std::vector<std::shared_ptr<ParticleSystem>> ParticleSystem::sRuntimeSubEmitters_{};
 
 static_assert(
    sizeof(ParticleSystem::GpuParticleState) == 48, "GpuParticleState must match the particle compute shaders.");
@@ -75,47 +77,8 @@ namespace {
 GraphicsDevice* sDevice_ = nullptr;
 bool sIsInitialized_ = false;
 
-// 全Particle Compute Shaderのnumthreadsと一致させ、Dispatch過不足を防ぐ。
-constexpr uint32_t kParticleComputeThreadGroupSize = 64;
 constexpr uint32_t kInvalidGpuParticleIndex = UINT_MAX;
 constexpr std::int32_t kJsonIndentSize = 4;
-
-Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
-   ID3D12Device* device, size_t size, D3D12_RESOURCE_FLAGS flags) {
-   Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-   const CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-   const CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(size, flags);
-
-   // D3D12バッファの生成時状態は実質COMMONとして扱われるため、実際の初期状態と追跡値を一致させる。
-   const HRESULT result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
-      D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource));
-
-   if (FAILED(result)) {
-      Logger::Error(
-         std::format("[ParticleSystem] Failed to create default GPU buffer: size={}, flags={}, HRESULT=0x{:08X}", size,
-            static_cast<uint32_t>(flags), static_cast<uint32_t>(result)));
-      return nullptr;
-   }
-
-   return resource;
-}
-
-Microsoft::WRL::ComPtr<ID3D12Resource> CreateReadbackBuffer(ID3D12Device* device, size_t size) {
-   Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-   const CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_READBACK);
-   const CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(size);
-   const HRESULT result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
-      D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource));
-
-   if (FAILED(result)) {
-      Logger::Error(
-         std::format("[ParticleSystem] Failed to create GPU state readback buffer: size={}, HRESULT=0x{:08X}", size,
-            static_cast<uint32_t>(result)));
-      return nullptr;
-   }
-
-   return resource;
-}
 
 std::string BuildDefaultParticleSystemName(const std::vector<ParticleSystem*>& registeredParticleSystems) {
    auto exists = [&registeredParticleSystems](const std::string& name) {
@@ -173,8 +136,8 @@ void ParticleSystem::RebuildParticleMesh() {
 }
 
 ParticleSystem::ParticleSystem() {
-   // リソース生成より先に未割当値を設定し、失敗時の解放でも有効なインデックスと区別する。
-   gpuDescriptorIndices_.fill(UINT_MAX);
+   gpu_ = std::make_unique<ParticleGpuSimulation>();
+   trails_ = std::make_unique<ParticleTrailRuntime>();
 
    quadMesh_ = std::make_unique<Mesh>();
    material_ = std::make_unique<ParticleMaterial>();
@@ -217,61 +180,6 @@ ParticleSystem::ParticleSystem() {
 
 ParticleSystem::~ParticleSystem() {
    UnregisterParticleSystem(this);
-
-   // 永続MapしたUpload/Readbackを先に解除し、ComPtr破棄後にCPU側ポインターが残らないようにする。
-   if (instancingResource_ && instancingData_) {
-      instancingResource_->Unmap(0, nullptr);
-      instancingData_ = nullptr;
-   }
-
-   if (sDevice_ && instancingSrvIndex_ != UINT_MAX) {
-      sDevice_->ReleaseSrvIndex(instancingSrvIndex_);
-   }
-
-   if (gpuSpawnRequestResource_ && gpuSpawnRequestData_) {
-      gpuSpawnRequestResource_->Unmap(0, nullptr);
-      gpuSpawnRequestData_ = nullptr;
-   }
-
-   if (gpuAttributesResource_ && gpuAttributesData_) {
-      gpuAttributesResource_->Unmap(0, nullptr);
-      gpuAttributesData_ = nullptr;
-   }
-
-   if (gpuSettingsResource_ && gpuSettingsData_) {
-      gpuSettingsResource_->Unmap(0, nullptr);
-      gpuSettingsData_ = nullptr;
-   }
-
-   if (gpuRibbonSettingsResource_ && gpuRibbonSettingsData_) {
-      gpuRibbonSettingsResource_->Unmap(0, nullptr);
-      gpuRibbonSettingsData_ = nullptr;
-   }
-
-   if (gpuStateReadbackResource_ && gpuStateReadbackData_) {
-      gpuStateReadbackResource_->Unmap(0, nullptr);
-      gpuStateReadbackData_ = nullptr;
-   }
-
-   if (gpuRibbonInputResource_ && gpuRibbonInputData_) {
-      gpuRibbonInputResource_->Unmap(0, nullptr);
-      gpuRibbonInputData_ = nullptr;
-   }
-
-   if (sDevice_) {
-      // Descriptor indexは共有Heapから借りているため、Resourceとは別に全て返却する。
-      for (const UINT descriptorIndex : gpuDescriptorIndices_) {
-         if (descriptorIndex != UINT_MAX) {
-            sDevice_->ReleaseSrvIndex(descriptorIndex);
-         }
-      }
-
-      for (const UINT descriptorIndex : gpuRibbonDescriptorIndices_) {
-         if (descriptorIndex != UINT_MAX) {
-            sDevice_->ReleaseSrvIndex(descriptorIndex);
-         }
-      }
-   }
 }
 
 void ParticleSystem::UnregisterParticleSystem(ParticleSystem* particleSystem) {
@@ -285,6 +193,11 @@ void ParticleSystem::UnregisterParticleSystem(ParticleSystem* particleSystem) {
 }
 
 void ParticleSystem::Create() {
+   if (!sDevice_) {
+      Logger::Error("[ParticleSystem] Initialize must be called before Create.");
+      return;
+   }
+
    CreateQuadMesh();
 
    if (particleMeshModule_ && particleMeshModule_->IsDirty()) {
@@ -306,8 +219,6 @@ void ParticleSystem::Create() {
    renderParticleIndices_.clear();
    renderParticleIndices_.reserve(maxParticles);
    gpuStateIndexByCpuParticle_.assign(maxParticles, kInvalidGpuParticleIndex);
-   gpuRenderParticleCount_ = 0;
-   gpuPendingSpawnRequestCount_ = 0;
 
    for (auto& particle : particles_) {
       particle.isActive = false;
@@ -323,44 +234,8 @@ void ParticleSystem::Create() {
       freeParticleIndices_.push(static_cast<uint32_t>(i));
    }
 
-   // インスタンシング用リソースの作成
-   instancingResource_ =
-      ResourceHelper::CreateBufferResource(sDevice_->GetDevice(), sizeof(ParticleForGPU) * kMaxParticles);
-   instancingResource_->Map(0, nullptr, reinterpret_cast<void**>(&instancingData_));
-
-   // 初期化
-   for (uint32_t i = 0; i < kMaxParticles; ++i) {
-      instancingData_[i].wvp = MakeIdentity4x4();
-      instancingData_[i].world = MakeIdentity4x4();
-      instancingData_[i].uvTransform = MakeIdentity4x4();
-      instancingData_[i].color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-      instancingData_[i].customData = Vector4(0.0f, 0.0f, 1.0f, 0.0f);
-   }
-
-   // SRV作成
-   D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-   srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-   srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-   srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-   srvDesc.Buffer.FirstElement = 0;
-   srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-   srvDesc.Buffer.NumElements = kMaxParticles;
-   srvDesc.Buffer.StructureByteStride = sizeof(ParticleForGPU);
-
-   UINT index = sDevice_->GetNextSrvIndex();
-   instancingSrvIndex_ = index;
-
-   instancingSrvHandleCPU_ = CD3DX12_CPU_DESCRIPTOR_HANDLE(
-      sDevice_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), index, sDevice_->GetDescriptorSizeCBVSRVUAV());
-
-   instancingSrvHandleGPU_ = CD3DX12_GPU_DESCRIPTOR_HANDLE(
-      sDevice_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), index, sDevice_->GetDescriptorSizeCBVSRVUAV());
-
-   sDevice_->GetDevice()->CreateShaderResourceView(instancingResource_.Get(), &srvDesc, instancingSrvHandleCPU_);
-
-   sDevice_->IncrementSrvIndex();
-
-   CreateGpuSimulationResources();
+   gpu_->Create(*sDevice_);
+   trails_->Create(*sDevice_);
 
    activeParticleCount_ = 0;
 
@@ -371,227 +246,28 @@ void ParticleSystem::Create() {
 }
 
 void ParticleSystem::ClearRegisteredParticleSystems() {
-   sPendingSubEmitterEvents_.clear();
-   sRuntimeSubEmitters_.clear();
+   // 子を解除すると登録配列が変わるため、所有ワールドを先に収集する。
+   std::vector<SceneWorld*> worlds;
+   for (const auto* particle : sRegisteredParticleSystems_) {
+      if (particle && particle->GetWorld() &&
+          std::find(worlds.begin(), worlds.end(), particle->GetWorld()) == worlds.end()) {
+         worlds.push_back(particle->GetWorld());
+      }
+   }
+   for (auto* world : worlds) {
+      world->GetParticleSubEmitterRuntime().Clear();
+   }
    sRegisteredParticleSystems_.clear();
 }
 
-void ParticleSystem::ProcessPendingSubEmitters(SceneWorld* world) {
-   // 更新中のグローバル登録配列を変更しないよう、イベントはフレーム境界でまとめて実体化する。
-   sRuntimeSubEmitters_.erase(std::remove_if(sRuntimeSubEmitters_.begin(), sRuntimeSubEmitters_.end(),
-                                 [world](const auto& particleSystem) {
-                                    return !particleSystem ||
-                                           (particleSystem->GetWorld() == world && !particleSystem->IsPlaying() &&
-                                              particleSystem->GetActiveParticleCount() == 0);
-                                 }),
-      sRuntimeSubEmitters_.end());
-
-   // 死亡エフェクトが相互参照しても、再帰的な生成でメモリが無制限に増えないよう全体数を制限する。
-   constexpr size_t kMaxRuntimeSubEmitters = 256;
-
-   for (const PendingSubEmitterEvent& event : sPendingSubEmitterEvents_) {
-      if (event.world != world || event.effectPath.empty() || sRuntimeSubEmitters_.size() >= kMaxRuntimeSubEmitters) {
-         continue;
-      }
-
-      auto child = std::make_shared<ParticleSystem>();
-      child->SetWorld(world);
-      child->SetEditorInspectable(false);
-
-      if (!child->LoadFromJson(event.effectPath)) {
-         continue;
-      }
-
-      if (ShapeModule* shape = child->shapeModule_.get()) {
-         Transform transform = shape->GetTransform();
-         transform.translation += event.position;
-         shape->SetTransform(transform);
-      }
-
-      child->Create();
-
-      if (!child->IsPlaying()) {
-         child->Play();
-      }
-
-      sRuntimeSubEmitters_.push_back(std::move(child));
-   }
-
-   std::erase_if(sPendingSubEmitterEvents_, [world](const auto& event) { return event.world == world; });
-}
-
-void ParticleSystem::ClearWorldRuntime(SceneWorld* world) {
-   std::erase_if(sPendingSubEmitterEvents_, [world](const auto& event) { return event.world == world; });
-   std::erase_if(sRuntimeSubEmitters_, [world](const auto& child) { return child && child->GetWorld() == world; });
-}
-
 void ParticleSystem::QueueSubEmitter(const std::string& effectPath, const Vector3& position) {
-   if (!subEmitterSettings_.enabled || effectPath.empty() ||
+   if (!world_ || !subEmitterSettings_.enabled || effectPath.empty() ||
        subEmitterEventsThisFrame_ >= subEmitterSettings_.maxEventsPerFrame) {
       return;
    }
 
-   sPendingSubEmitterEvents_.push_back({effectPath, world_, position});
+   world_->GetParticleSubEmitterRuntime().Queue(effectPath, position);
    ++subEmitterEventsThisFrame_;
-}
-
-void ParticleSystem::CreateGpuSimulationResources() {
-   if (!sDevice_) return;
-
-   ID3D12Device* device = sDevice_->GetDevice();
-
-   // 可視状態と運動パラメーターを分離し、Render CSは必要なstateだけをSRVとして参照できるようにする。
-   gpuStateResource_ =
-      CreateDefaultBuffer(device, sizeof(GpuParticleState) * kMaxParticles, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-   gpuMotionResource_ = CreateDefaultBuffer(
-      device, sizeof(GpuParticleMotion) * kMaxParticles, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-   gpuAliveResource_ =
-      CreateDefaultBuffer(device, sizeof(uint32_t) * kMaxParticles, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-   gpuFreeListResource_ =
-      CreateDefaultBuffer(device, sizeof(uint32_t) * kMaxParticles, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-   gpuFreeCountResource_ = CreateDefaultBuffer(device, sizeof(uint32_t), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-   gpuOwnerMappingResource_ =
-      CreateDefaultBuffer(device, sizeof(uint32_t) * kMaxParticles, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-   gpuOutputResource_ =
-      CreateDefaultBuffer(device, sizeof(ParticleForGPU) * kMaxParticles, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-
-   if (!gpuStateResource_ || !gpuMotionResource_ || !gpuAliveResource_ || !gpuFreeListResource_ ||
-       !gpuFreeCountResource_ || !gpuOwnerMappingResource_ || !gpuOutputResource_) {
-      Logger::Error("[ParticleSystem] GPU particle resources are unavailable; this particle system cannot run.");
-      gpuStateResource_.Reset();
-      gpuOutputResource_.Reset();
-      return;
-   }
-
-   if (gpuStateReadbackResource_ && gpuStateReadbackData_) {
-      gpuStateReadbackResource_->Unmap(0, nullptr);
-      gpuStateReadbackData_ = nullptr;
-   }
-
-   // Spawn/Attributes/SettingsはCPUが毎フレーム更新するUpload、Stateだけがイベント用Readbackとなる。
-   gpuSpawnRequestResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuSpawnRequest) * kMaxParticles);
-   gpuAttributesResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuParticleAttributes) * kMaxParticles);
-   gpuSettingsResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuSimulationSettings));
-   gpuRibbonSettingsResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuSimulationSettings));
-   gpuStateReadbackResource_ = CreateReadbackBuffer(device, sizeof(GpuParticleState) * kMaxParticles);
-
-   if (!gpuSpawnRequestResource_ || !gpuAttributesResource_ || !gpuSettingsResource_ || !gpuRibbonSettingsResource_ ||
-       !gpuStateReadbackResource_) {
-      Logger::Error("[ParticleSystem] Failed to create required GPU simulation upload/readback resources.");
-      gpuStateResource_.Reset();
-      gpuOutputResource_.Reset();
-      return;
-   }
-
-   gpuSpawnRequestResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuSpawnRequestData_));
-   gpuAttributesResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuAttributesData_));
-   gpuSettingsResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuSettingsData_));
-   gpuRibbonSettingsResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuRibbonSettingsData_));
-
-   if (gpuStateReadbackResource_) {
-      const D3D12_RANGE readRange{0, sizeof(GpuParticleState) * kMaxParticles};
-      gpuStateReadbackResource_->Map(0, &readRange, reinterpret_cast<void**>(&gpuStateReadbackData_));
-   }
-
-   gpuStateReadbackAvailable_ = false;
-
-   for (uint32_t i = 0; i < kMaxParticles; ++i) {
-      gpuSpawnRequestData_[i] = {};
-      gpuAttributesData_[i].uvTransform = MakeIdentity4x4();
-      gpuAttributesData_[i].color = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-      gpuAttributesData_[i].sizeAndRotation = Vector4(1.0f, 1.0f, 1.0f, 0.0f);
-      gpuAttributesData_[i].rotationQuaternion = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-      gpuAttributesData_[i].customData = Vector4(0.0f, 0.0f, 1.0f, 0.0f);
-      gpuAttributesData_[i].stateIndex = i;
-   }
-
-   auto allocateDescriptor = [this]() {
-      const UINT index = sDevice_->GetNextSrvIndex();
-      sDevice_->IncrementSrvIndex();
-      return index;
-   };
-
-   for (UINT& descriptorIndex : gpuDescriptorIndices_) {
-      descriptorIndex = allocateDescriptor();
-   }
-
-   auto cpuHandle = [this](UINT index) {
-      return CD3DX12_CPU_DESCRIPTOR_HANDLE(
-         sDevice_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), index, sDevice_->GetDescriptorSizeCBVSRVUAV());
-   };
-   auto gpuHandle = [this](UINT index) {
-      return CD3DX12_GPU_DESCRIPTOR_HANDLE(
-         sDevice_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), index, sDevice_->GetDescriptorSizeCBVSRVUAV());
-   };
-
-   auto createStructuredUav = [&](ID3D12Resource* resource, UINT elementCount, UINT stride, UINT descriptorIndex) {
-      D3D12_UNORDERED_ACCESS_VIEW_DESC desc{};
-      desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-      desc.Format = DXGI_FORMAT_UNKNOWN;
-      desc.Buffer.NumElements = elementCount;
-      desc.Buffer.StructureByteStride = stride;
-      device->CreateUnorderedAccessView(resource, nullptr, &desc, cpuHandle(descriptorIndex));
-   };
-   auto createStructuredSrv = [&](ID3D12Resource* resource, UINT elementCount, UINT stride, UINT descriptorIndex) {
-      D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
-      desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-      desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-      desc.Format = DXGI_FORMAT_UNKNOWN;
-      desc.Buffer.NumElements = elementCount;
-      desc.Buffer.StructureByteStride = stride;
-      device->CreateShaderResourceView(resource, &desc, cpuHandle(descriptorIndex));
-   };
-
-   // 同じResourceへ用途別のUAV/SRVを用意し、Compute段間ではResource Stateだけを遷移させて再利用する。
-   createStructuredUav(
-      gpuStateResource_.Get(), kMaxParticles, sizeof(GpuParticleState), gpuDescriptorIndices_[kGpuStateUavDescriptor]);
-   createStructuredSrv(
-      gpuStateResource_.Get(), kMaxParticles, sizeof(GpuParticleState), gpuDescriptorIndices_[kGpuStateSrvDescriptor]);
-   createStructuredSrv(gpuAttributesResource_.Get(), kMaxParticles, sizeof(GpuParticleAttributes),
-      gpuDescriptorIndices_[kGpuAttributesSrvDescriptor]);
-   createStructuredUav(
-      gpuOutputResource_.Get(), kMaxParticles, sizeof(ParticleForGPU), gpuDescriptorIndices_[kGpuOutputUavDescriptor]);
-   createStructuredSrv(
-      gpuOutputResource_.Get(), kMaxParticles, sizeof(ParticleForGPU), gpuDescriptorIndices_[kGpuOutputSrvDescriptor]);
-   createStructuredUav(gpuMotionResource_.Get(), kMaxParticles, sizeof(GpuParticleMotion),
-      gpuDescriptorIndices_[kGpuMotionUavDescriptor]);
-   createStructuredSrv(gpuSpawnRequestResource_.Get(), kMaxParticles, sizeof(GpuSpawnRequest),
-      gpuDescriptorIndices_[kGpuSpawnRequestSrvDescriptor]);
-   createStructuredUav(
-      gpuAliveResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[kGpuAliveUavDescriptor]);
-   createStructuredUav(
-      gpuFreeListResource_.Get(), kMaxParticles, sizeof(uint32_t), gpuDescriptorIndices_[kGpuFreeListUavDescriptor]);
-   D3D12_UNORDERED_ACCESS_VIEW_DESC counterDesc{};
-   counterDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-   counterDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-   counterDesc.Buffer.NumElements = 1;
-   counterDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-   device->CreateUnorderedAccessView(
-      gpuFreeCountResource_.Get(), nullptr, &counterDesc, cpuHandle(gpuDescriptorIndices_[kGpuFreeCountUavDescriptor]));
-   createStructuredUav(gpuOwnerMappingResource_.Get(), kMaxParticles, sizeof(uint32_t),
-      gpuDescriptorIndices_[kGpuOwnerMappingUavDescriptor]);
-   createStructuredSrv(gpuOwnerMappingResource_.Get(), kMaxParticles, sizeof(uint32_t),
-      gpuDescriptorIndices_[kGpuOwnerMappingSrvDescriptor]);
-
-   gpuStateUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuStateUavDescriptor]);
-   gpuStateSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuStateSrvDescriptor]);
-   gpuAttributesSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuAttributesSrvDescriptor]);
-   gpuOutputUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuOutputUavDescriptor]);
-   gpuOutputSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuOutputSrvDescriptor]);
-   gpuMotionUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuMotionUavDescriptor]);
-   gpuSpawnRequestSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuSpawnRequestSrvDescriptor]);
-   gpuAliveUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuAliveUavDescriptor]);
-   gpuFreeListUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuFreeListUavDescriptor]);
-   gpuFreeCountUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuFreeCountUavDescriptor]);
-   gpuOwnerMappingUavHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuOwnerMappingUavDescriptor]);
-   gpuOwnerMappingSrvHandleGPU_ = gpuHandle(gpuDescriptorIndices_[kGpuOwnerMappingSrvDescriptor]);
-
-   gpuStateResourceState_ = D3D12_RESOURCE_STATE_COMMON;
-   gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_COMMON;
-   gpuOutputResourceState_ = D3D12_RESOURCE_STATE_COMMON;
-   gpuNeedsInitialize_ = true;
-   gpuInitializationStartIndex_ = 0;
-   gpuPendingSpawnRequestCount_ = 0;
 }
 
 void ParticleSystem::EnsureParticlePoolCapacity() {
@@ -611,156 +287,12 @@ void ParticleSystem::EnsureParticlePoolCapacity() {
       freeParticleIndices_.push(index);
    }
 
-   // 初回初期化前なら全範囲を初期化する。実行中の拡張では新規範囲だけをatomicにFreeListへ追加する。
-   if (!gpuNeedsInitialize_) {
-      gpuInitializationStartIndex_ = previousCapacity;
-   }
-
-   gpuNeedsInitialize_ = true;
-}
-
-void ParticleSystem::EnsureGpuRibbonResources(uint32_t requiredSegmentCount) {
-   if (!sDevice_ || requiredSegmentCount == 0 || requiredSegmentCount <= gpuRibbonSegmentCapacity_) return;
-
-   // 履歴点が少し増えるたびにGPU Resourceを作り直さないよう、倍増方式か最小64区間で拡張する。
-   const uint32_t newCapacity = std::max(requiredSegmentCount, std::max(gpuRibbonSegmentCapacity_ * 2u, 64u));
-
-   if (gpuRibbonInputResource_ && gpuRibbonInputData_) {
-      gpuRibbonInputResource_->Unmap(0, nullptr);
-      gpuRibbonInputData_ = nullptr;
-   }
-
-   ID3D12Device* device = sDevice_->GetDevice();
-   gpuRibbonInputResource_ = ResourceHelper::CreateBufferResource(device, sizeof(GpuRibbonSegment) * newCapacity);
-   gpuRibbonInputResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuRibbonInputData_));
-   gpuRibbonVertexResource_ = CreateDefaultBuffer(
-      device, sizeof(Mesh::VertexData) * newCapacity * 4u, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-   gpuRibbonIndexResource_ =
-      CreateDefaultBuffer(device, sizeof(uint32_t) * newCapacity * 6u, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-
-   if (!gpuRibbonVertexResource_ || !gpuRibbonIndexResource_) {
-      Logger::Error("[ParticleSystem] GPU ribbon resources are unavailable.");
-      gpuRibbonSegmentCount_ = 0;
-      gpuRibbonIndexCount_ = 0;
-      return;
-   }
-
-   if (gpuRibbonDescriptorIndices_[0] == UINT_MAX) {
-      for (UINT& descriptorIndex : gpuRibbonDescriptorIndices_) {
-         descriptorIndex = sDevice_->GetNextSrvIndex();
-         sDevice_->IncrementSrvIndex();
-      }
-   }
-
-   auto cpuHandle = [this](UINT index) {
-      return CD3DX12_CPU_DESCRIPTOR_HANDLE(
-         sDevice_->GetSRVHeap()->GetCPUDescriptorHandleForHeapStart(), index, sDevice_->GetDescriptorSizeCBVSRVUAV());
-   };
-   auto gpuHandle = [this](UINT index) {
-      return CD3DX12_GPU_DESCRIPTOR_HANDLE(
-         sDevice_->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), index, sDevice_->GetDescriptorSizeCBVSRVUAV());
-   };
-
-   D3D12_SHADER_RESOURCE_VIEW_DESC inputSrvDesc{};
-   inputSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-   inputSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-   inputSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
-   inputSrvDesc.Buffer.NumElements = newCapacity;
-   inputSrvDesc.Buffer.StructureByteStride = sizeof(GpuRibbonSegment);
-   device->CreateShaderResourceView(
-      gpuRibbonInputResource_.Get(), &inputSrvDesc, cpuHandle(gpuRibbonDescriptorIndices_[0]));
-   gpuRibbonInputSrvHandleGPU_ = gpuHandle(gpuRibbonDescriptorIndices_[0]);
-
-   D3D12_UNORDERED_ACCESS_VIEW_DESC vertexUavDesc{};
-   vertexUavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-   vertexUavDesc.Format = DXGI_FORMAT_UNKNOWN;
-   vertexUavDesc.Buffer.NumElements = newCapacity * 4u;
-   vertexUavDesc.Buffer.StructureByteStride = sizeof(Mesh::VertexData);
-   device->CreateUnorderedAccessView(
-      gpuRibbonVertexResource_.Get(), nullptr, &vertexUavDesc, cpuHandle(gpuRibbonDescriptorIndices_[1]));
-   gpuRibbonVertexUavHandleGPU_ = gpuHandle(gpuRibbonDescriptorIndices_[1]);
-
-   D3D12_UNORDERED_ACCESS_VIEW_DESC indexUavDesc{};
-   indexUavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-   indexUavDesc.Format = DXGI_FORMAT_UNKNOWN;
-   indexUavDesc.Buffer.NumElements = newCapacity * 6u;
-   indexUavDesc.Buffer.StructureByteStride = sizeof(uint32_t);
-   device->CreateUnorderedAccessView(
-      gpuRibbonIndexResource_.Get(), nullptr, &indexUavDesc, cpuHandle(gpuRibbonDescriptorIndices_[2]));
-   gpuRibbonIndexUavHandleGPU_ = gpuHandle(gpuRibbonDescriptorIndices_[2]);
-
-   gpuRibbonVertexBufferView_.BufferLocation = gpuRibbonVertexResource_->GetGPUVirtualAddress();
-   gpuRibbonVertexBufferView_.StrideInBytes = sizeof(Mesh::VertexData);
-   gpuRibbonIndexBufferView_.BufferLocation = gpuRibbonIndexResource_->GetGPUVirtualAddress();
-   gpuRibbonIndexBufferView_.Format = DXGI_FORMAT_R32_UINT;
-   gpuRibbonVertexState_ = D3D12_RESOURCE_STATE_COMMON;
-   gpuRibbonIndexState_ = D3D12_RESOURCE_STATE_COMMON;
-   gpuRibbonSegmentCapacity_ = newCapacity;
-}
-
-void ParticleSystem::DispatchGpuRibbon(const PSOManager* psoManager) {
-   if (!psoManager || !sDevice_ || gpuRibbonSegmentCount_ == 0 || !gpuRibbonVertexResource_ ||
-       !gpuRibbonIndexResource_) {
-      return;
-   }
-
-   constexpr const char* kPipelineName = "ParticleRibbonCompute";
-   const auto* pipeline = psoManager->GetComputePipeline(kPipelineName);
-
-   if (!pipeline || !pipeline->pipelineState) return;
-
-   auto* rootSignature = psoManager->GetRootSignature(pipeline->rootSignatureName);
-   const auto settingsSlot = psoManager->ResolvePipelineRootParameter(kPipelineName, "settings");
-   const auto segmentsSlot = psoManager->ResolvePipelineRootParameter(kPipelineName, "segments");
-   const auto verticesSlot = psoManager->ResolvePipelineRootParameter(kPipelineName, "vertices");
-   const auto indicesSlot = psoManager->ResolvePipelineRootParameter(kPipelineName, "indices");
-
-   if (!rootSignature || !settingsSlot || !segmentsSlot || !verticesSlot || !indicesSlot) return;
-
-   ID3D12GraphicsCommandList* commandList = sDevice_->GetCommandList();
-
-   // 前フレームはVertex/Index Bufferとして終わるため、Compute書込み前に両方をUAVへ戻す。
-   if (gpuRibbonVertexState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
-      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-         gpuRibbonVertexResource_.Get(), gpuRibbonVertexState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-      commandList->ResourceBarrier(1, &barrier);
-      gpuRibbonVertexState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-   }
-
-   if (gpuRibbonIndexState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
-      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-         gpuRibbonIndexResource_.Get(), gpuRibbonIndexState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-      commandList->ResourceBarrier(1, &barrier);
-      gpuRibbonIndexState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-   }
-
-   commandList->SetComputeRootSignature(rootSignature->GetRootSignature());
-   commandList->SetPipelineState(pipeline->pipelineState.Get());
-   commandList->SetComputeRootConstantBufferView(
-      settingsSlot.value(), gpuRibbonSettingsResource_->GetGPUVirtualAddress());
-   commandList->SetComputeRootDescriptorTable(segmentsSlot.value(), gpuRibbonInputSrvHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(verticesSlot.value(), gpuRibbonVertexUavHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(indicesSlot.value(), gpuRibbonIndexUavHandleGPU_);
-   commandList->Dispatch(
-      (gpuRibbonSegmentCount_ + kParticleComputeThreadGroupSize - 1u) / kParticleComputeThreadGroupSize, 1, 1);
-
-   // UAV書込み完了を可視化してから描画用Stateへ遷移し、同一フレームですぐDrawできるようにする。
-   const D3D12_RESOURCE_BARRIER uavBarriers[] = {CD3DX12_RESOURCE_BARRIER::UAV(gpuRibbonVertexResource_.Get()),
-      CD3DX12_RESOURCE_BARRIER::UAV(gpuRibbonIndexResource_.Get())};
-   commandList->ResourceBarrier(2, uavBarriers);
-   const D3D12_RESOURCE_BARRIER transitions[] = {
-      CD3DX12_RESOURCE_BARRIER::Transition(gpuRibbonVertexResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-         D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER),
-      CD3DX12_RESOURCE_BARRIER::Transition(
-         gpuRibbonIndexResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_INDEX_BUFFER)};
-   commandList->ResourceBarrier(2, transitions);
-   gpuRibbonVertexState_ = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-   gpuRibbonIndexState_ = D3D12_RESOURCE_STATE_INDEX_BUFFER;
+   gpu_->Grow(previousCapacity);
 }
 
 void ParticleSystem::Update(float deltaTime) {
    // 早期returnするフレームで前回値を再Dispatchしないよう、GPU用時間を最初に無効化する。
-   gpuDeltaTime_ = 0.0f;
+   gpu_->SetDeltaTime(0.0f);
    EnsureParticlePoolCapacity();
 
    if (!isPlaying_ || isPaused_) return;
@@ -770,9 +302,9 @@ void ParticleSystem::Update(float deltaTime) {
 
    if (deltaTime <= 0.0f) return;
 
-   gpuDeltaTime_ = deltaTime;
+   gpu_->SetDeltaTime(deltaTime);
    subEmitterEventsThisFrame_ = 0;
-   SynchronizeTrailMode();
+   trails_->Synchronize(particles_, *trailModule_, shapeModule_->GetTransform().translation);
 
    // メッシュ形状が変更された場合は再構築
    if (particleMeshModule_ && particleMeshModule_->IsDirty()) {
@@ -780,7 +312,7 @@ void ParticleSystem::Update(float deltaTime) {
    }
 
    systemTime_ += deltaTime;
-   UpdateDetachedRibbons(deltaTime);
+   trails_->UpdateDetached(deltaTime, *trailModule_);
 
    // 放出を継続すべきか確認する。
    bool shouldEmit = mainModule_->IsLooping() || systemTime_ < mainModule_->GetDuration();
@@ -829,16 +361,16 @@ void ParticleSystem::Update(float deltaTime) {
 
    // パーティクル更新
    activeParticleCount_ = 0;
-   const bool needsCpuState = gpuStateReadbackAvailable_ && gpuStateReadbackData_ &&
-                              (ResolveSortMode() != RendererModule::SortMode::None ||
-                                 (trailModule_ && trailModule_->IsEnabled()) || subEmitterSettings_.enabled);
+   const bool needsCpuState =
+      !gpu_->Readback().empty() && (ResolveSortMode() != RendererModule::SortMode::None ||
+                                      (trailModule_ && trailModule_->IsEnabled()) || subEmitterSettings_.enabled);
 
    if (needsCpuState) {
       // GPU slotはatomic FreeListで決まるため、owner indexから現在のslotを逆引きできる表を毎回組み直す。
       std::fill(gpuStateIndexByCpuParticle_.begin(), gpuStateIndexByCpuParticle_.end(), kInvalidGpuParticleIndex);
 
-      for (uint32_t stateIndex = 0; stateIndex < static_cast<uint32_t>(particles_.size()); ++stateIndex) {
-         const GpuParticleState& state = gpuStateReadbackData_[stateIndex];
+      for (uint32_t stateIndex = 0; stateIndex < static_cast<uint32_t>(gpu_->Readback().size()); ++stateIndex) {
+         const GpuParticleState& state = gpu_->Readback()[stateIndex];
 
          if (state.positionAndActive.w > 0.5f && state.ownerParticleIndex < gpuStateIndexByCpuParticle_.size()) {
             gpuStateIndexByCpuParticle_[state.ownerParticleIndex] = stateIndex;
@@ -860,7 +392,7 @@ void ParticleSystem::Update(float deltaTime) {
          const uint32_t stateIndex = gpuStateIndexByCpuParticle_[i];
 
          if (stateIndex != kInvalidGpuParticleIndex) {
-            const GpuParticleState& state = gpuStateReadbackData_[stateIndex];
+            const GpuParticleState& state = gpu_->Readback()[stateIndex];
             particle.transform.translation =
                Vector3(state.positionAndActive.x, state.positionAndActive.y, state.positionAndActive.z);
             particle.velocity =
@@ -869,7 +401,7 @@ void ParticleSystem::Update(float deltaTime) {
       }
 
       // 死亡判定より先に最終位置を履歴へ反映し、リボンが寿命直前の区間で途切れないようにする。
-      UpdateTrailPoints(particle);
+      trails_->UpdatePoints(particle, *trailModule_, shapeModule_->GetTransform().translation);
 
       // 時間を進める
       particle.currentTime += deltaTime;
@@ -877,7 +409,7 @@ void ParticleSystem::Update(float deltaTime) {
       // 寿命チェック
       if (particle.currentTime >= particle.lifeTime) {
          QueueSubEmitter(subEmitterSettings_.spawnOnDeathPath, particle.transform.translation);
-         DetachRibbon(particle);
+         trails_->Detach(particle, *trailModule_);
          particle.isActive = false;
          freeParticleIndices_.push(i);
          continue;
@@ -955,7 +487,7 @@ void ParticleSystem::Update(float deltaTime) {
 
    // ループ処理
    if (!mainModule_->IsLooping() && systemTime_ >= mainModule_->GetDuration()) {
-      if (activeParticleCount_ == 0 && detachedRibbons_.empty()) {
+      if (activeParticleCount_ == 0 && !trails_->HasDetached()) {
          Stop();
       }
    }
@@ -1008,296 +540,6 @@ Matrix4x4 ParticleSystem::BuildParticleUVTransform(const Particle& particle) con
           (MakeScaleMatrix(Vector3(uSize, vSize, 1.0f)) * MakeTranslateMatrix(Vector3(uOffset, vOffset, 0.0f)));
 }
 
-void ParticleSystem::UpdateTrailPoints(Particle& particle) {
-   if (!trailModule_ || !trailModule_->IsEnabled()) {
-      // 再有効化した瞬間に古い位置から長い帯が伸びないよう、無効中の履歴は保持しない。
-      particle.ribbonPoints.clear();
-      return;
-   }
-
-   auto& points = particle.ribbonPoints;
-
-   if (trailModule_->GetMode() == TrailModule::TrailMode::EmitterToParticle) {
-      const Vector3 emitterPosition =
-         shapeModule_ ? shapeModule_->GetTransform().translation : Vector3(0.0f, 0.0f, 0.0f);
-
-      // 接続モードでは履歴を蓄積せず、毎フレーム現在の両端だけを保持する。
-      points.clear();
-      points.push_back(emitterPosition);
-      points.push_back(particle.transform.translation);
-      return;
-   }
-
-   const float minDistanceSquared = trailModule_->GetMinDistance() * trailModule_->GetMinDistance();
-   const float distanceSquared =
-      points.empty() ? 0.0f : (particle.transform.translation - points.back()).LengthSquared();
-
-   // 現在位置は描画時に仮想の先端として補うため、履歴には距離を満たした固定点だけを残す。
-   if (points.empty() || distanceSquared >= minDistanceSquared) {
-      points.push_back(particle.transform.translation);
-      const size_t maxPoints = trailModule_->GetMaxPoints();
-
-      if (points.size() > maxPoints) {
-         points.erase(points.begin(), points.begin() + (points.size() - maxPoints));
-      }
-   }
-}
-
-void ParticleSystem::SynchronizeTrailMode() {
-   if (!trailModule_ || trailModule_->GetMode() == lastTrailMode_) return;
-
-   // 異なる意味の点列を混在させず、停止中のプレビューでも新しい方式を即座に反映する。
-   detachedRibbons_.clear();
-   lastTrailMode_ = trailModule_->GetMode();
-
-   for (Particle& particle : particles_) {
-      particle.ribbonPoints.clear();
-
-      if (particle.isActive) {
-         UpdateTrailPoints(particle);
-      }
-   }
-}
-
-void ParticleSystem::DetachRibbon(Particle& particle) {
-   if (!trailModule_ || !trailModule_->IsEnabled()) {
-      particle.ribbonPoints.clear();
-      return;
-   }
-
-   const float retractionDuration = trailModule_->GetRetractionDuration();
-
-   if (retractionDuration <= 0.0f || particle.ribbonPoints.empty()) {
-      particle.ribbonPoints.clear();
-      return;
-   }
-
-   std::vector<Vector3> points = std::move(particle.ribbonPoints);
-   particle.ribbonPoints.clear();
-
-   if ((particle.transform.translation - points.back()).LengthSquared() > 0.00000001f) {
-      points.push_back(particle.transform.translation);
-   }
-
-   if (points.size() < 2) return;
-
-   // 長寿命・高レート設定でも死亡済み履歴が無制限に増えないよう、粒子上限と同数に抑える。
-   if (detachedRibbons_.size() >= kMaxParticles) {
-      detachedRibbons_.pop_front();
-   }
-
-   DetachedRibbon detachedRibbon;
-   detachedRibbon.points = std::move(points);
-   detachedRibbon.width = particle.ribbonWidth;
-   detachedRibbon.retractionDuration = retractionDuration;
-   detachedRibbons_.push_back(std::move(detachedRibbon));
-}
-
-void ParticleSystem::UpdateDetachedRibbons(float deltaTime) {
-   if (!trailModule_ || !trailModule_->IsEnabled()) {
-      detachedRibbons_.clear();
-      return;
-   }
-
-   for (DetachedRibbon& ribbon : detachedRibbons_) {
-      ribbon.age += deltaTime;
-   }
-
-   detachedRibbons_.erase(std::remove_if(detachedRibbons_.begin(), detachedRibbons_.end(),
-                             [](const DetachedRibbon& ribbon) {
-                                return ribbon.points.size() < 2 || ribbon.age >= ribbon.retractionDuration;
-                             }),
-      detachedRibbons_.end());
-}
-
-void ParticleSystem::BuildRibbonMesh(Camera* camera) {
-   if (!camera || !quadMesh_ || !gpuRibbonSettingsData_) return;
-
-   SynchronizeTrailMode();
-
-   constexpr float kPointEpsilonSquared = 0.00000001f;
-   auto hasVirtualHead = [](const Particle& particle) {
-      return !particle.ribbonPoints.empty() &&
-             (particle.transform.translation - particle.ribbonPoints.back()).LengthSquared() > kPointEpsilonSquared;
-   };
-
-   // 必要区間数を先に集計し、Upload先を確保してから一度の走査で連続データを書き込む。
-   uint32_t segmentCount = 0;
-
-   for (const Particle& particle : particles_) {
-      if (!particle.isActive || particle.ribbonPoints.empty()) {
-         continue;
-      }
-
-      const size_t pointCount = particle.ribbonPoints.size() + (hasVirtualHead(particle) ? 1u : 0u);
-
-      if (pointCount >= 2) {
-         segmentCount += static_cast<uint32_t>(pointCount - 1);
-      }
-   }
-
-   for (const DetachedRibbon& ribbon : detachedRibbons_) {
-      if (ribbon.points.size() >= 2) {
-         segmentCount += static_cast<uint32_t>(ribbon.points.size() - 1);
-      }
-   }
-
-   gpuRibbonSegmentCount_ = segmentCount;
-   gpuRibbonIndexCount_ = segmentCount * 6u;
-
-   if (segmentCount == 0) return;
-
-   EnsureGpuRibbonResources(segmentCount);
-
-   if (!gpuRibbonInputData_ || !gpuRibbonVertexResource_ || !gpuRibbonIndexResource_) {
-      gpuRibbonSegmentCount_ = 0;
-      gpuRibbonIndexCount_ = 0;
-      return;
-   }
-
-   const float tailWidthScale = trailModule_->GetTailWidthScale();
-   const float textureTiling = trailModule_->GetTextureTiling();
-   uint32_t segmentIndex = 0;
-
-   // 生存粒子と切り離し済みRibbonで頂点化規則を共有し、継ぎ目・UVの計算差をなくす。
-   auto writeTrail = [&](size_t pointCount, auto&& getPoint, float width, float alpha) {
-      if (pointCount < 2) return;
-
-      float totalDistance = 0.0f;
-
-      for (size_t pointIndex = 0; pointIndex + 1 < pointCount; ++pointIndex) {
-         totalDistance += (getPoint(pointIndex + 1) - getPoint(pointIndex)).Length();
-      }
-
-      const float safeTotalDistance = std::max(totalDistance, 0.0001f);
-
-      auto normalizeDirection = [](const Vector3& direction, const Vector3& fallback) {
-         const float lengthSquared = direction.LengthSquared();
-         return lengthSquared > kPointEpsilonSquared ? direction / std::sqrt(lengthSquared) : fallback;
-      };
-      auto getTangent = [&](size_t pointIndex) {
-         if (pointIndex == 0) {
-            return normalizeDirection(getPoint(1) - getPoint(0), Vector3(0.0f, 1.0f, 0.0f));
-         }
-
-         if (pointIndex + 1 == pointCount) {
-            return normalizeDirection(getPoint(pointIndex) - getPoint(pointIndex - 1), Vector3(0.0f, 1.0f, 0.0f));
-         }
-
-         const Vector3 previousDirection =
-            normalizeDirection(getPoint(pointIndex) - getPoint(pointIndex - 1), Vector3(0.0f, 1.0f, 0.0f));
-         const Vector3 nextDirection =
-            normalizeDirection(getPoint(pointIndex + 1) - getPoint(pointIndex), previousDirection);
-
-         // 隣接区間で同じ接線を共有し、曲がり角の左右頂点を完全に一致させる。
-         return normalizeDirection(previousDirection + nextDirection, nextDirection);
-      };
-
-      float traveledDistance = 0.0f;
-
-      for (size_t pointIndex = 0; pointIndex + 1 < pointCount; ++pointIndex) {
-         const Vector3 start = getPoint(pointIndex);
-         const Vector3 end = getPoint(pointIndex + 1);
-         const float segmentLength = (end - start).Length();
-         const float startProgress = traveledDistance / safeTotalDistance;
-         traveledDistance += segmentLength;
-         const float endProgress = traveledDistance / safeTotalDistance;
-         const float startWidthScale = tailWidthScale + (1.0f - tailWidthScale) * startProgress;
-         const float endWidthScale = tailWidthScale + (1.0f - tailWidthScale) * endProgress;
-         const Vector3 startTangent = getTangent(pointIndex);
-         const Vector3 endTangent = getTangent(pointIndex + 1);
-
-         GpuRibbonSegment& segment = gpuRibbonInputData_[segmentIndex++];
-         segment.startAndWidth = Vector4(start.x, start.y, start.z, width * startWidthScale);
-         segment.endAndWidth = Vector4(end.x, end.y, end.z, width * endWidthScale);
-         segment.startTangentAndV =
-            Vector4(startTangent.x, startTangent.y, startTangent.z, startProgress * textureTiling);
-         segment.endTangentAndV = Vector4(endTangent.x, endTangent.y, endTangent.z, endProgress * textureTiling);
-         segment.alphaAndPadding = Vector4(alpha, alpha, 0.0f, 0.0f);
-      }
-   };
-
-   for (const Particle& particle : particles_) {
-      if (!particle.isActive || particle.ribbonPoints.empty()) {
-         continue;
-      }
-
-      const bool includesVirtualHead = hasVirtualHead(particle);
-      const size_t pointCount = particle.ribbonPoints.size() + (includesVirtualHead ? 1u : 0u);
-      writeTrail(
-         pointCount,
-         [&](size_t pointIndex) {
-            return includesVirtualHead && pointIndex == particle.ribbonPoints.size()
-                      ? particle.transform.translation
-                      : particle.ribbonPoints[pointIndex];
-         },
-         particle.ribbonWidth, 1.0f);
-   }
-
-   for (const DetachedRibbon& ribbon : detachedRibbons_) {
-      float totalDistance = 0.0f;
-
-      for (size_t pointIndex = 0; pointIndex + 1 < ribbon.points.size(); ++pointIndex) {
-         totalDistance += (ribbon.points[pointIndex + 1] - ribbon.points[pointIndex]).Length();
-      }
-
-      // smoothstepで退縮開始・終了の速度を0へ寄せ、尾端が急に動き出したり停止したりする印象を抑える。
-      const float progress = std::clamp(ribbon.age / ribbon.retractionDuration, 0.0f, 1.0f);
-      const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
-      float distanceToRetract = totalDistance * easedProgress;
-      size_t tailSegmentIndex = 0;
-
-      while (tailSegmentIndex + 2 < ribbon.points.size()) {
-         const float segmentLength = (ribbon.points[tailSegmentIndex + 1] - ribbon.points[tailSegmentIndex]).Length();
-
-         if (distanceToRetract <= segmentLength) {
-            break;
-         }
-
-         distanceToRetract -= segmentLength;
-         ++tailSegmentIndex;
-      }
-
-      const Vector3& segmentStart = ribbon.points[tailSegmentIndex];
-      const Vector3& segmentEnd = ribbon.points[tailSegmentIndex + 1];
-      const float segmentLength = (segmentEnd - segmentStart).Length();
-      const float segmentProgress =
-         segmentLength > 0.0001f ? std::clamp(distanceToRetract / segmentLength, 0.0f, 1.0f) : 1.0f;
-      const Vector3 retractedTail = segmentStart + (segmentEnd - segmentStart) * segmentProgress;
-
-      // 古い履歴点を進行中の尾端へ畳み、頂点数を保ったまま退縮済み区間を退化三角形にする。
-      writeTrail(
-         ribbon.points.size(),
-         [&](size_t pointIndex) { return pointIndex <= tailSegmentIndex ? retractedTail : ribbon.points[pointIndex]; },
-         ribbon.width, 1.0f);
-   }
-
-   const Transform cameraTransform = camera->GetTransform();
-   const Vector3 cameraForward = camera->GetForward();
-   const Quaternion cameraRotation = cameraTransform.GetActiveQuaternion();
-   const Vector3 cameraRight = RotateVector(Vector3(1.0f, 0.0f, 0.0f), cameraRotation).Normalize();
-   const Vector3 cameraUp = RotateVector(Vector3(0.0f, 1.0f, 0.0f), cameraRotation).Normalize();
-
-   // リボンと粒子シミュレーションは同一フレームに別Dispatchされるため、定数バッファを分離する。
-   gpuRibbonSettingsData_->viewProjection = camera->GetViewProjectionMatrix();
-   gpuRibbonSettingsData_->cameraPosition =
-      Vector4(cameraTransform.translation.x, cameraTransform.translation.y, cameraTransform.translation.z, 1.0f);
-   gpuRibbonSettingsData_->cameraRight = Vector4(cameraRight.x, cameraRight.y, cameraRight.z, 0.0f);
-   gpuRibbonSettingsData_->cameraUp = Vector4(cameraUp.x, cameraUp.y, cameraUp.z, 0.0f);
-   gpuRibbonSettingsData_->cameraForward = Vector4(cameraForward.x, cameraForward.y, cameraForward.z, 0.0f);
-   gpuRibbonSettingsData_->particleCount = segmentCount;
-   gpuRibbonVertexBufferView_.SizeInBytes = sizeof(Mesh::VertexData) * segmentCount * 4u;
-   gpuRibbonIndexBufferView_.SizeInBytes = sizeof(uint32_t) * gpuRibbonIndexCount_;
-
-   instancingData_[0].world = MakeIdentity4x4();
-   instancingData_[0].wvp = camera->GetViewProjectionMatrix();
-   instancingData_[0].uvTransform = MakeIdentity4x4();
-   instancingData_[0].color = trailModule_->GetColor();
-
-   // 負の寿命進行度をリボン頂点アルファの有効フラグとしてVSへ渡す。
-   instancingData_[0].customData = Vector4(-1.0f, 0.0f, 1.0f, 0.0f);
-}
-
 void ParticleSystem::UpdateMatrix(Camera* camera) {
    if (!camera || !rendererModule_) return;
 
@@ -1311,9 +553,8 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    }
 
    if (!CanUseGpuSimulation()) {
-      gpuRenderParticleCount_ = 0;
-      gpuRibbonSegmentCount_ = 0;
-      gpuRibbonIndexCount_ = 0;
+      gpu_->ClearDrawCount();
+      trails_->ClearDrawCount();
       return;
    }
 
@@ -1325,13 +566,15 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
    const Transform simulationTransform = shapeModule_ ? shapeModule_->GetTransform() : Transform{};
    const Quaternion simulationRotation = simulationTransform.GetActiveQuaternion();
 
+   GpuSimulationSettings settings{};
+
    // Update/Render Computeが同じフレーム設定を参照できるよう、Dispatch前に共通定数を一括更新する。
-   gpuSettingsData_->viewProjection = viewProjectionMatrix;
-   gpuSettingsData_->cameraPosition =
+   settings.viewProjection = viewProjectionMatrix;
+   settings.cameraPosition =
       Vector4(cameraTransform.translation.x, cameraTransform.translation.y, cameraTransform.translation.z, 1.0f);
-   gpuSettingsData_->cameraRight = Vector4(cameraRight.x, cameraRight.y, cameraRight.z, 0.0f);
-   gpuSettingsData_->cameraUp = Vector4(cameraUp.x, cameraUp.y, cameraUp.z, 0.0f);
-   float simulationDeltaTime = gpuDeltaTime_;
+   settings.cameraRight = Vector4(cameraRight.x, cameraRight.y, cameraRight.z, 0.0f);
+   settings.cameraUp = Vector4(cameraUp.x, cameraUp.y, cameraUp.z, 0.0f);
+   float simulationDeltaTime = gpu_->GetDeltaTime();
 #ifdef USE_IMGUI
    // ポーズ中はCPU更新が省略されるため、前フレームのGPU用デルタタイムを再利用させない。
    // ShouldRunRuntimeUpdate はステップ実行中だけtrueになるので、1フレーム送りは従来どおり動作する。
@@ -1339,12 +582,12 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
       simulationDeltaTime = 0.0f;
    }
 #endif
-   gpuSettingsData_->cameraForward = Vector4(cameraForward.x, cameraForward.y, cameraForward.z, simulationDeltaTime);
+   settings.cameraForward = Vector4(cameraForward.x, cameraForward.y, cameraForward.z, simulationDeltaTime);
    const std::int32_t billboardType = modelAsset_ ? static_cast<std::int32_t>(RendererModule::BillboardType::None)
                                                   : static_cast<std::int32_t>(rendererModule_->GetBillboardType());
-   gpuSettingsData_->renderParams = Vector4(static_cast<float>(billboardType), rendererModule_->GetSpeedScale(),
+   settings.renderParams = Vector4(static_cast<float>(billboardType), rendererModule_->GetSpeedScale(),
       rendererModule_->GetLengthScale(), rendererModule_->IsVelocityStretchEnabled() ? 1.0f : 0.0f);
-   gpuSettingsData_->cameraFadeParams = Vector4(rendererModule_->IsCameraFadeEnabled() ? 1.0f : 0.0f,
+   settings.cameraFadeParams = Vector4(rendererModule_->IsCameraFadeEnabled() ? 1.0f : 0.0f,
       rendererModule_->GetCameraFadeNear(), rendererModule_->GetCameraFadeFar(), 0.0f);
 
    Vector3 attractorPosition = forceOverLifetimeModule_->GetAttractorPosition();
@@ -1357,13 +600,13 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
       attractorPosition = simulationTransform.translation + RotateVector(attractorPosition, simulationRotation);
    }
 
-   gpuSettingsData_->attractorPosition = Vector4(attractorPosition.x, attractorPosition.y, attractorPosition.z, 0.0f);
-   gpuSettingsData_->attractorParams =
+   settings.attractorPosition = Vector4(attractorPosition.x, attractorPosition.y, attractorPosition.z, 0.0f);
+   settings.attractorParams =
       Vector4(forceOverLifetimeModule_->GetAttractorStrength(), forceOverLifetimeModule_->GetAttractorRadius(),
          forceOverLifetimeModule_->GetAttractorFalloff(), attractorEnabled ? 1.0f : 0.0f);
-   gpuSettingsData_->simulationOriginAndLocal = Vector4(simulationTransform.translation.x,
-      simulationTransform.translation.y, simulationTransform.translation.z, useLocalSimulation ? 1.0f : 0.0f);
-   gpuSettingsData_->simulationRotation =
+   settings.simulationOriginAndLocal = Vector4(simulationTransform.translation.x, simulationTransform.translation.y,
+      simulationTransform.translation.z, useLocalSimulation ? 1.0f : 0.0f);
+   settings.simulationRotation =
       Vector4(simulationRotation.x, simulationRotation.y, simulationRotation.z, simulationRotation.w);
 
    // ソート対象はアクティブ粒子のインデックスだけに絞り、行列生成と運動計算はCSに限定する。
@@ -1381,11 +624,11 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
       const Vector3 cameraPosition = cameraTransform.translation;
       const bool backToFront = sortMode == RendererModule::SortMode::BackToFront;
       auto getSortPosition = [this](uint32_t particleIndex) {
-         if (gpuStateReadbackAvailable_ && gpuStateReadbackData_) {
+         if (!gpu_->Readback().empty()) {
             const uint32_t stateIndex = gpuStateIndexByCpuParticle_[particleIndex];
 
             if (stateIndex != kInvalidGpuParticleIndex) {
-               const Vector4& position = gpuStateReadbackData_[stateIndex].positionAndActive;
+               const Vector4& position = gpu_->Readback()[stateIndex].positionAndActive;
                return Vector3(position.x, position.y, position.z);
             }
          }
@@ -1406,17 +649,15 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
          });
    }
 
-   gpuRenderParticleCount_ = static_cast<uint32_t>(renderParticleIndices_.size());
-   gpuSettingsData_->particleCount = gpuRenderParticleCount_;
-   gpuSettingsData_->particleCapacity = static_cast<uint32_t>(particles_.size());
-   gpuSettingsData_->spawnRequestCount = gpuPendingSpawnRequestCount_;
-   gpuSettingsData_->initializationStartIndex = gpuInitializationStartIndex_;
+   const uint32_t renderParticleCount = static_cast<uint32_t>(renderParticleIndices_.size());
+   settings.particleCount = renderParticleCount;
+   settings.particleCapacity = static_cast<uint32_t>(particles_.size());
 
    // Attributesはソート後の出力順に並べ、stateIndexでFreeList上の実状態へ対応付ける。
-   for (uint32_t outputIndex = 0; outputIndex < gpuRenderParticleCount_; ++outputIndex) {
+   for (uint32_t outputIndex = 0; outputIndex < renderParticleCount; ++outputIndex) {
       const uint32_t particleIndex = renderParticleIndices_[outputIndex];
       Particle& particle = particles_[particleIndex];
-      GpuParticleAttributes& attributes = gpuAttributesData_[outputIndex];
+      GpuParticleAttributes& attributes = gpu_->Attributes()[outputIndex];
       attributes.uvTransform = BuildParticleUVTransform(particle);
       attributes.color = particle.color;
       const Vector3 rotation = particle.transform.GetActiveEuler();
@@ -1430,8 +671,12 @@ void ParticleSystem::UpdateMatrix(Camera* camera) {
       attributes.stateIndex = particleIndex;
    }
 
-   if (trailModule_ && trailModule_->IsEnabled()) {
-      BuildRibbonMesh(camera);
+   gpu_->PrepareFrame(settings);
+
+   if (trailModule_->IsEnabled()) {
+      trails_->Build(camera, particles_, *trailModule_, shapeModule_->GetTransform().translation);
+   } else {
+      trails_->ClearDrawCount();
    }
 }
 
@@ -1470,19 +715,13 @@ void ParticleSystem::Stop() {
       freeParticleIndices_.push(i);
    }
 
-   detachedRibbons_.clear();
+   trails_->Clear();
    activeParticleCount_ = 0;
-   gpuRenderParticleCount_ = 0;
-   gpuRibbonSegmentCount_ = 0;
-   gpuRibbonIndexCount_ = 0;
    renderParticleIndices_.clear();
    std::fill(gpuStateIndexByCpuParticle_.begin(), gpuStateIndexByCpuParticle_.end(), kInvalidGpuParticleIndex);
-   gpuPendingSpawnRequestCount_ = 0;
 
    // Stop後の再生では古いowner mappingを残さず、GPUプール全体を再構築する。
-   gpuInitializationStartIndex_ = 0;
-   gpuNeedsInitialize_ = true;
-   gpuStateReadbackAvailable_ = false;
+   gpu_->Reset();
 }
 
 void ParticleSystem::Pause() {
@@ -1501,7 +740,7 @@ bool ParticleSystem::IsFinished() const {
    }
 
    if (isPlaying_ && !isPaused_ && !mainModule_->IsLooping() && systemTime_ >= mainModule_->GetDuration()) {
-      return activeParticleCount_ == 0 && detachedRibbons_.empty();
+      return activeParticleCount_ == 0 && !trails_->HasDetached();
    }
 
    return false;
@@ -1563,11 +802,27 @@ Texture* ParticleSystem::GetRibbonTexture() const {
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE ParticleSystem::GetInstancingSrvHandleGPU() const {
-   return gpuOutputSrvHandleGPU_;
+   return gpu_->GetOutputHandle();
 }
 
 uint32_t ParticleSystem::GetDrawParticleCount() const {
-   return CanUseGpuSimulation() ? gpuRenderParticleCount_ : 0u;
+   return CanUseGpuSimulation() ? gpu_->GetDrawCount() : 0u;
+}
+
+const D3D12_VERTEX_BUFFER_VIEW& ParticleSystem::GetRibbonVertexBufferView() const {
+   return trails_->GetVertexBufferView();
+}
+
+const D3D12_INDEX_BUFFER_VIEW& ParticleSystem::GetRibbonIndexBufferView() const {
+   return trails_->GetIndexBufferView();
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE ParticleSystem::GetRibbonInstancingSrvHandleGPU() const {
+   return trails_->GetInstancingHandle();
+}
+
+uint32_t ParticleSystem::GetRibbonIndexCount() const {
+   return trails_->GetIndexCount();
 }
 
 RendererModule::SortMode ParticleSystem::ResolveSortMode() const {
@@ -1589,20 +844,16 @@ RendererModule::SortMode ParticleSystem::ResolveSortMode() const {
 }
 
 bool ParticleSystem::CanUseGpuSimulation() const {
-   return gpuStateResource_ && gpuMotionResource_ && gpuSpawnRequestResource_ && gpuAliveResource_ &&
-          gpuFreeListResource_ && gpuFreeCountResource_ && gpuOwnerMappingResource_ && gpuAttributesResource_ &&
-          gpuOutputResource_ && gpuSettingsResource_ && gpuRibbonSettingsResource_ && gpuSpawnRequestData_ &&
-          gpuAttributesData_ && gpuSettingsData_ && rendererModule_;
+   return gpu_->IsReady() && trails_->IsReady() && rendererModule_;
 }
 
 void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwriteExisting) {
-   if (!gpuSpawnRequestData_ || particleIndex >= particles_.size() || gpuPendingSpawnRequestCount_ >= kMaxParticles) {
+   if (!gpu_->IsReady() || particleIndex >= particles_.size()) {
       return;
    }
 
    const Particle& particle = particles_[particleIndex];
-   GpuSpawnRequest& request = gpuSpawnRequestData_[gpuPendingSpawnRequestCount_++];
-   request = {};
+   GpuSpawnRequest request{};
    request.state.positionAndActive = Vector4(
       particle.transform.translation.x, particle.transform.translation.y, particle.transform.translation.z, 1.0f);
    request.state.velocityAndLifetime =
@@ -1652,220 +903,22 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
          particle.limitVelocityDampingRate, particle.gravityModifier, 0.0f);
    request.motion.noiseParams = Vector4(noiseModule_->IsEnabled() ? particle.noiseStrength : 0.0f,
       particle.noiseFrequency, particle.noiseScrollSpeed, 0.0f);
+
+   gpu_->Queue(request);
 }
 
 void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
-   if (!psoManager || !sDevice_ || !CanUseGpuSimulation()) return;
+   if (!CanUseGpuSimulation()) return;
 
-   ID3D12GraphicsCommandList* commandList = sDevice_->GetCommandList();
+   const bool needsCpuState =
+      ResolveSortMode() != RendererModule::SortMode::None || trailModule_->IsEnabled() || subEmitterSettings_.enabled;
+   if (!gpu_->DispatchSimulation(psoManager, needsCpuState)) return;
 
-   if (gpuStateResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
-      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-         gpuStateResource_.Get(), gpuStateResourceState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-      commandList->ResourceBarrier(1, &barrier);
-      gpuStateResourceState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+   // 本体が0でも巻き取り中の帯は残るため、リボン生成を本体の描画変換より先に独立実行する。
+   if (trailModule_->IsEnabled()) {
+      trails_->Dispatch(psoManager);
    }
-
-   if (gpuOwnerMappingResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
-      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-         gpuOwnerMappingResource_.Get(), gpuOwnerMappingResourceState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-      commandList->ResourceBarrier(1, &barrier);
-      gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-   }
-
-   auto getPipeline = [psoManager](const char* pipelineName) { return psoManager->GetComputePipeline(pipelineName); };
-   auto setPipeline = [&](const char* pipelineName) -> bool {
-      const auto* pipeline = getPipeline(pipelineName);
-
-      if (!pipeline || !pipeline->pipelineState) {
-         return false;
-      }
-
-      auto* rootSignature = psoManager->GetRootSignature(pipeline->rootSignatureName);
-
-      if (!rootSignature) {
-         return false;
-      }
-
-      commandList->SetComputeRootSignature(rootSignature->GetRootSignature());
-      commandList->SetPipelineState(pipeline->pipelineState.Get());
-      return true;
-   };
-   auto resolve = [psoManager](const char* pipelineName, const char* semantic) {
-      return psoManager->ResolvePipelineRootParameter(pipelineName, semantic);
-   };
-
-   // FreeList構築→Spawn反映→全slot更新→必要時Readback→描画変換の依存順を崩さずDispatchする。
-   if (gpuNeedsInitialize_) {
-      constexpr const char* kInitPipeline = "ParticleInitCompute";
-      const auto settings = resolve(kInitPipeline, "settings");
-      const auto states = resolve(kInitPipeline, "states");
-      const auto alive = resolve(kInitPipeline, "aliveflags");
-      const auto freeList = resolve(kInitPipeline, "freelist");
-      const auto freeCount = resolve(kInitPipeline, "freecount");
-      const auto mappings = resolve(kInitPipeline, "ownermappings");
-
-      if (!settings || !states || !alive || !freeList || !freeCount || !mappings || !setPipeline(kInitPipeline)) return;
-
-      commandList->SetComputeRootConstantBufferView(settings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
-      commandList->SetComputeRootDescriptorTable(states.value(), gpuStateUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(alive.value(), gpuAliveUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(freeList.value(), gpuFreeListUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(freeCount.value(), gpuFreeCountUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(mappings.value(), gpuOwnerMappingUavHandleGPU_);
-      const uint32_t initializationCount = gpuSettingsData_->particleCapacity -
-                                           std::min(gpuInitializationStartIndex_, gpuSettingsData_->particleCapacity);
-      commandList->Dispatch(
-         (initializationCount + kParticleComputeThreadGroupSize - 1u) / kParticleComputeThreadGroupSize, 1, 1);
-      const D3D12_RESOURCE_BARRIER initBarriers[] = {CD3DX12_RESOURCE_BARRIER::UAV(gpuStateResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuAliveResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuFreeListResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuFreeCountResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuOwnerMappingResource_.Get())};
-      commandList->ResourceBarrier(static_cast<UINT>(std::size(initBarriers)), initBarriers);
-      gpuNeedsInitialize_ = false;
-      gpuInitializationStartIndex_ = gpuSettingsData_->particleCapacity;
-   }
-
-   if (gpuPendingSpawnRequestCount_ > 0) {
-      constexpr const char* kEmitterPipeline = "ParticleEmitterCompute";
-      const auto settings = resolve(kEmitterPipeline, "settings");
-      const auto requests = resolve(kEmitterPipeline, "spawnrequests");
-      const auto states = resolve(kEmitterPipeline, "states");
-      const auto motions = resolve(kEmitterPipeline, "motions");
-      const auto alive = resolve(kEmitterPipeline, "aliveflags");
-      const auto freeList = resolve(kEmitterPipeline, "freelist");
-      const auto freeCount = resolve(kEmitterPipeline, "freecount");
-      const auto mappings = resolve(kEmitterPipeline, "ownermappings");
-
-      if (!settings || !requests || !states || !motions || !alive || !freeList || !freeCount || !mappings ||
-          !setPipeline(kEmitterPipeline)) {
-         return;
-      }
-
-      commandList->SetComputeRootConstantBufferView(settings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
-      commandList->SetComputeRootDescriptorTable(requests.value(), gpuSpawnRequestSrvHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(states.value(), gpuStateUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(motions.value(), gpuMotionUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(alive.value(), gpuAliveUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(freeList.value(), gpuFreeListUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(freeCount.value(), gpuFreeCountUavHandleGPU_);
-      commandList->SetComputeRootDescriptorTable(mappings.value(), gpuOwnerMappingUavHandleGPU_);
-      commandList->Dispatch(
-         (gpuPendingSpawnRequestCount_ + kParticleComputeThreadGroupSize - 1u) / kParticleComputeThreadGroupSize, 1, 1);
-
-      // 次段のUpdate CSがatomic操作の結果と書き込まれたslot/stateを一体として観測できるようにする。
-      const D3D12_RESOURCE_BARRIER emitterBarriers[] = {CD3DX12_RESOURCE_BARRIER::UAV(gpuStateResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuMotionResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuAliveResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuFreeListResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuFreeCountResource_.Get()),
-         CD3DX12_RESOURCE_BARRIER::UAV(gpuOwnerMappingResource_.Get())};
-      commandList->ResourceBarrier(static_cast<UINT>(std::size(emitterBarriers)), emitterBarriers);
-      gpuPendingSpawnRequestCount_ = 0;
-   }
-
-   // Spawnがないフレームも全capacityを更新し、寿命切れslotをFreeListへ確実に返却する。
-   constexpr const char* kUpdatePipeline = "ParticleUpdateCompute";
-   const auto updateSettings = resolve(kUpdatePipeline, "settings");
-   const auto updateStates = resolve(kUpdatePipeline, "states");
-   const auto updateMotions = resolve(kUpdatePipeline, "motions");
-   const auto updateAlive = resolve(kUpdatePipeline, "aliveflags");
-   const auto updateFreeList = resolve(kUpdatePipeline, "freelist");
-   const auto updateFreeCount = resolve(kUpdatePipeline, "freecount");
-   const auto updateMappings = resolve(kUpdatePipeline, "ownermappings");
-
-   if (!updateSettings || !updateStates || !updateMotions || !updateAlive || !updateFreeList || !updateFreeCount ||
-       !updateMappings || !setPipeline(kUpdatePipeline)) {
-      return;
-   }
-
-   commandList->SetComputeRootConstantBufferView(updateSettings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
-   commandList->SetComputeRootDescriptorTable(updateStates.value(), gpuStateUavHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(updateMotions.value(), gpuMotionUavHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(updateAlive.value(), gpuAliveUavHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(updateFreeList.value(), gpuFreeListUavHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(updateFreeCount.value(), gpuFreeCountUavHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(updateMappings.value(), gpuOwnerMappingUavHandleGPU_);
-   commandList->Dispatch(
-      (gpuSettingsData_->particleCapacity + kParticleComputeThreadGroupSize - 1u) / kParticleComputeThreadGroupSize, 1,
-      1);
-
-   // 次フレームのEmitter CSへFreeListのslot公開を完了してから、描画用SRVへ遷移する。
-   const D3D12_RESOURCE_BARRIER updateBarriers[] = {CD3DX12_RESOURCE_BARRIER::UAV(gpuStateResource_.Get()),
-      CD3DX12_RESOURCE_BARRIER::UAV(gpuAliveResource_.Get()), CD3DX12_RESOURCE_BARRIER::UAV(gpuFreeListResource_.Get()),
-      CD3DX12_RESOURCE_BARRIER::UAV(gpuFreeCountResource_.Get()),
-      CD3DX12_RESOURCE_BARRIER::UAV(gpuOwnerMappingResource_.Get())};
-   commandList->ResourceBarrier(static_cast<UINT>(std::size(updateBarriers)), updateBarriers);
-
-   const bool needsCpuState = ResolveSortMode() != RendererModule::SortMode::None ||
-                              (trailModule_ && trailModule_->IsEnabled()) || subEmitterSettings_.enabled;
-
-   // CPU機能が不要ならCOPYを挟まず直接SRVへ遷移し、不要なReadback帯域を使わない。
-   const auto stateTarget =
-      needsCpuState ? D3D12_RESOURCE_STATE_COPY_SOURCE : D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-   const auto stateTransition =
-      CD3DX12_RESOURCE_BARRIER::Transition(gpuStateResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, stateTarget);
-   commandList->ResourceBarrier(1, &stateTransition);
-   gpuStateResourceState_ = stateTarget;
-
-   if (needsCpuState && gpuStateReadbackResource_ && gpuStateReadbackData_) {
-      // ownerParticleIndexも同時にReadbackし、atomic FreeListで割り当てられた実番号をCPUソートへ対応付ける。
-      commandList->CopyBufferRegion(
-         gpuStateReadbackResource_.Get(), 0, gpuStateResource_.Get(), 0, sizeof(GpuParticleState) * particles_.size());
-      gpuStateReadbackAvailable_ = true;
-      const auto stateToSrv = CD3DX12_RESOURCE_BARRIER::Transition(
-         gpuStateResource_.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-      commandList->ResourceBarrier(1, &stateToSrv);
-      gpuStateResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-   }
-
-   const auto mappingToSrv = CD3DX12_RESOURCE_BARRIER::Transition(gpuOwnerMappingResource_.Get(),
-      D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-   commandList->ResourceBarrier(1, &mappingToSrv);
-   gpuOwnerMappingResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-
-   // Ribbonは更新後の位置履歴を使う一方、粒子本体が0でも残存できるためRender CSより先に独立実行する。
-   if (trailModule_ && trailModule_->IsEnabled()) {
-      DispatchGpuRibbon(psoManager);
-   }
-
-   // 本体が0でも上のUpdate CSとリボン生成までは実行し、死亡後のトレイルだけを描画できるようにする。
-   if (gpuRenderParticleCount_ == 0) return;
-
-   if (gpuOutputResourceState_ != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
-      const auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-         gpuOutputResource_.Get(), gpuOutputResourceState_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-      commandList->ResourceBarrier(1, &barrier);
-      gpuOutputResourceState_ = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-   }
-
-   // 最終段でソート済みAttributesとowner mappingを結合し、描画専用の連続Bufferへ変換する。
-   constexpr const char* kRenderPipeline = "ParticleRenderCompute";
-   const auto renderSettings = resolve(kRenderPipeline, "settings");
-   const auto renderAttributes = resolve(kRenderPipeline, "attributes");
-   const auto renderStates = resolve(kRenderPipeline, "states");
-   const auto renderMappings = resolve(kRenderPipeline, "ownermappings");
-   const auto renderOutput = resolve(kRenderPipeline, "outputparticles");
-
-   if (!renderSettings || !renderAttributes || !renderStates || !renderMappings || !renderOutput ||
-       !setPipeline(kRenderPipeline)) {
-      return;
-   }
-
-   commandList->SetComputeRootConstantBufferView(renderSettings.value(), gpuSettingsResource_->GetGPUVirtualAddress());
-   commandList->SetComputeRootDescriptorTable(renderAttributes.value(), gpuAttributesSrvHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(renderStates.value(), gpuStateSrvHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(renderMappings.value(), gpuOwnerMappingSrvHandleGPU_);
-   commandList->SetComputeRootDescriptorTable(renderOutput.value(), gpuOutputUavHandleGPU_);
-   commandList->Dispatch(
-      (gpuRenderParticleCount_ + kParticleComputeThreadGroupSize - 1u) / kParticleComputeThreadGroupSize, 1, 1);
-   const auto outputBarrier = CD3DX12_RESOURCE_BARRIER::UAV(gpuOutputResource_.Get());
-   commandList->ResourceBarrier(1, &outputBarrier);
-   const auto outputTransition = CD3DX12_RESOURCE_BARRIER::Transition(
-      gpuOutputResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-   commandList->ResourceBarrier(1, &outputTransition);
-   gpuOutputResourceState_ = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+   gpu_->DispatchRender(psoManager);
 }
 
 bool ParticleSystem::HasFiniteSettings(const nlohmann::json& settings) {

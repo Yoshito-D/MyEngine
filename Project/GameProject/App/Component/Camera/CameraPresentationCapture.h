@@ -1,5 +1,6 @@
 #pragma once
 #include "GameProject/App/Component/Camera/LandingPrediction.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include <cstdint>
 
 namespace App {
@@ -37,11 +38,12 @@ struct CameraPresentationCaptureSettings {
 class CameraPresentationCapture {
 public:
    /// @brief 前回の撮影状態を消去し、次の試行へ備える。
-   void Reset();
+   void Reset(const VehicleEventSnapshot& snapshot);
 
-   /// @brief 選択中カメラの入力と接地状態に従い、ガイド・撮影・計測を進める。
-   void Update(const CameraPresentationCaptureSettings& settings, float deltaTime, PlayerRearFollowCamera& camera,
-      CharacterJump* jump, bool isGrounded, const LandingPrediction* prediction);
+   /// @brief 通知を毎フレーム既読にし、選択中だけガイド・撮影・計測を進める。
+   void Update(const CameraPresentationCaptureSettings& settings, float deltaTime, bool cameraSelected,
+      PlayerRearFollowCamera& camera, CharacterJump* jump, const VehicleEventSnapshot& snapshot,
+      const LandingPrediction* prediction);
 
 private:
    /// @brief カメラ基底と着地予測を発表用のガイドとして表示する。
@@ -51,7 +53,7 @@ private:
       const GameEngine::Vector3& cameraRight, const LandingPrediction* prediction, float guideLength,
       std::int32_t conditionPreviewMode);
 
-   bool wasGrounded_ = true; ///< 接地遷移検出用の履歴。
+   VehicleEventCursor eventCursor_; ///< 撮影処理の通知の既読位置。
    /// @brief 発表用自動撮影の開始後経過時間
    float presentationCaptureElapsed_ = 0.0f;
 
