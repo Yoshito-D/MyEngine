@@ -3,7 +3,50 @@
       "brain": {
          "defaultBlendTime": 0
       },
-      "virtualCameras": []
+      "virtualCameras": [
+         {
+            "active": true,
+            "components": [
+               {
+                  "componentName": "TitleCameraRotation",
+                  "data": {
+                     "rotationSpeedDegrees": 3
+                  },
+                  "enabled": true
+               }
+            ],
+            "followTargetId": "",
+            "id": "TitleCamera",
+            "lookAtTargetId": "",
+            "name": "TitleCamera",
+            "priority": 0,
+            "state": {
+               "farClip": 10000,
+               "fov": 0.45,
+               "hasViewMatrixOverride": false,
+               "nearClip": 0.01,
+               "transform": {
+                  "rotationQuaternion": [
+                     0,
+                     0,
+                     0,
+                     1
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ]
+               }
+            }
+         }
+      ]
    },
    "hierarchyOrder": [
       "MainDirectionalLight",
@@ -461,6 +504,45 @@
                },
                "enabled": true,
                "typeName": "TitleStartComponent"
+            },
+            {
+               "data": {
+                  "slots": [
+                     {
+                        "bus": "UI",
+                        "clipAssetId": "game/sounds/se/system/cursor.mp3",
+                        "loop": false,
+                        "name": "cursor",
+                        "pitch": 1,
+                        "playOnStart": false,
+                        "volume": 1
+                     },
+                     {
+                        "bus": "UI",
+                        "clipAssetId": "game/sounds/se/system/decision.mp3",
+                        "loop": false,
+                        "name": "decision",
+                        "pitch": 1,
+                        "playOnStart": false,
+                        "volume": 1
+                     }
+                  ]
+               },
+               "enabled": true,
+               "typeName": "AudioSourceComponent"
+            },
+            {
+               "data": {
+                  "clipAssetId": "game/sounds/bgm/titleBgm.mp3",
+                  "continueAcrossScenes": false,
+                  "fadeInSeconds": 0,
+                  "fadeOutSeconds": 0,
+                  "loop": true,
+                  "playOnStart": true,
+                  "volume": 1
+               },
+               "enabled": true,
+               "typeName": "BgmComponent"
             }
          ],
          "id": "UIText:StartPrompt",

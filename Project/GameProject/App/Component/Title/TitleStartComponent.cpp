@@ -2,6 +2,7 @@
 
 #include "GameProject/App/Component/UI/MenuSelectionAnimationComponent.h"
 #include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Component/Audio/AudioSourceComponent.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
 #include <Windows.h>
@@ -71,11 +72,16 @@ void TitleStartComponent::Update(float) {
       if (navigation_.GetSelectedIndex() < 0) return;
    }
 
+   auto* audioSource = GetOwner().GetComponent<GameEngine::AudioSourceComponent>();
    animation->Select(navigation_.GetSelectedIndex(), false);
    RefreshSelectionText(*animation);
    const auto& cancelAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Cancel", 0);
 
    if (menuPage_ == MenuPage::StartSelection && cancelAction.triggered) {
+      if (audioSource) {
+         audioSource->PlayOneShot("cursor");
+      }
+
       SwitchMenu(*animation, MenuPage::Main);
       return;
    }
@@ -85,6 +91,10 @@ void TitleStartComponent::Update(float) {
    if (navigation_.Move(*animation, navigationDirection)) {
       animation->Select(navigation_.GetSelectedIndex());
       RefreshSelectionText(*animation);
+
+      if (audioSource) {
+         audioSource->PlayOneShot("cursor");
+      }
    }
 
    const auto& confirmAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
@@ -93,6 +103,10 @@ void TitleStartComponent::Update(float) {
 
    if (menuPage_ == MenuPage::Main) {
       if (animation->ConfirmSelection()) {
+         if (audioSource) {
+            audioSource->PlayOneShot("decision");
+         }
+
          pendingAction_ = navigation_.GetSelectedIndex() == 0 ? PendingAction::OpenStartMenu : PendingAction::Quit;
       }
 
@@ -103,6 +117,10 @@ void TitleStartComponent::Update(float) {
 
    // 空の遷移先や、演出対象を失った項目は決定できない状態として扱う。
    if (selectedScene.empty() || !animation->ConfirmSelection()) return;
+
+   if (audioSource) {
+      audioSource->PlayOneShot("decision");
+   }
 
    // 決定演出は演出コンポーネントが共通暗転中も更新する。
    startRequested_ = true;
