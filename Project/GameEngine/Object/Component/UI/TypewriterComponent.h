@@ -12,6 +12,9 @@ namespace GameEngine {
 /// @brief UITextComponentを先頭から1文字ずつ表示するコンポーネント
 class TypewriterComponent final : public IObjectComponent {
 public:
+   /// @brief ポーズ中もUI実時間で演出を進める。
+   GameEngine::ObjectUpdateDomain GetUpdateDomain() const override { return GameEngine::ObjectUpdateDomain::UI; }
+
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "TypewriterComponent";
    /// @brief エディターに表示する日本語名と英語名。

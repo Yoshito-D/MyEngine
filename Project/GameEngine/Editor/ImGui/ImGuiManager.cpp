@@ -248,7 +248,13 @@ void ImGuiManager::ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSce
    const std::function<void(float, float, float, float)>& overlayCallback, bool gameView) {
    const std::string windowLabel =
       gameView ? StableWindowLabel(Tr("ゲーム", "Game"), "Game") : StableWindowLabel(Tr("シーン", "Scene"), "Scene");
-   ImGui::Begin(windowLabel.c_str());
+   if (!ImGui::Begin(windowLabel.c_str())) {
+      if (gameView && overlayCallback) {
+         overlayCallback(0.0f, 0.0f, 0.0f, 0.0f);
+      }
+      ImGui::End();
+      return;
+   }
 
    if (!gameView) {
       isSceneHovered = ImGui::IsWindowHovered();
@@ -301,7 +307,7 @@ void ImGuiManager::ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSce
    ImVec2 imageMin = ImGui::GetCursorScreenPos();
    ImGui::Image(texId, imageSize);
 
-   if (!gameView && overlayCallback) {
+   if (overlayCallback) {
       // オーバーレイ側が画像と同じ座標系を使えるよう、中央寄せ後の画面矩形を通知する。
       overlayCallback(imageMin.x, imageMin.y, imageSize.x, imageSize.y);
    }

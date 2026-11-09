@@ -89,6 +89,12 @@ public:
    /// @return 見つからない場合はnullptr
    template <typename T> const T* GetComponent() const { return components_.Get<T>(); }
 
+   /// @brief 指定基底型へ変換できる最初のComponentを取得する。
+   template <typename T> T* GetComponentDerived() { return components_.GetDerived<T>(); }
+
+   /// @brief 指定基底型へ変換できる最初のComponentを読み取り専用で取得する。
+   template <typename T> const T* GetComponentDerived() const { return components_.GetDerived<T>(); }
+
    /// @brief 指定型のコンポーネントを所有しているか判定する
    template <typename T> bool HasComponent() const { return components_.Has<T>(); }
 
@@ -144,7 +150,7 @@ public:
    virtual void OnRemovedFromScene() {}
 
    /// @brief 有効な全コンポーネントを更新する
-   void UpdateComponents(float deltaTime);
+   void UpdateComponents(float deltaTime, ObjectUpdateDomain domain = ObjectUpdateDomain::Gameplay);
 
    /// @brief 全コンポーネントを有効化し、描画を再開する
    void Activate();

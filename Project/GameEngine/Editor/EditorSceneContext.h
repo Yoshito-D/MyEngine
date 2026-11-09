@@ -260,6 +260,12 @@ public:
    /// @brief Undo/Redo内に古いアセットIDを保持する履歴があるか調べる。
    bool HasEditHistory() const { return commandStack_.CanUndo() || commandStack_.CanRedo(); }
 
+   /// @brief UI画面または部品を選択中の親へ作成する。
+   void CreateUIElement(CreateObjectCommand::Kind kind);
+
+   /// @brief 選択したUI画面をResources内のアセットへ保存する。
+   bool SaveSelectedUIScreen(const std::string& assetId);
+
    /// @brief 正式IDのモデル・パーティクルを一操作として配置する。
    /// @param assetId スキャン済みリソース相対ID。
    /// @param parent モデルの親。nullptrでカメラ前方8単位のルート配置。Particleは親を持てない。
@@ -348,6 +354,9 @@ private:
       /// @param order 適用するObjectの表示順を表す安定IDの一覧。
       /// @return 対象と親を解決でき、親の変更に成功した場合はtrue。
       bool Reorder(const std::string& id, const std::string& parent, const std::vector<std::string>& order) override;
+
+      /// @brief UI画面の子孫をまとめて配置または削除し、復元用の保存状態を返す。
+      nlohmann::json ApplyUIScreen(const nlohmann::json& asset, bool remove, bool freshIds) override;
 
       /// @brief 保存JSONの種別に応じてObjectまたは粒子システムを復元し、選択する。
       /// @param snapshot 種別・安定ID・設定を含む対象の保存JSON。

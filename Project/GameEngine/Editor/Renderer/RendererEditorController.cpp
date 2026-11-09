@@ -573,8 +573,8 @@ void RendererEditorController::ShowAssetWindow() {
    ImGui::SetNextItemWidth(std::max(1.0f, std::min(220.0f * scale, ImGui::GetContentRegionAvail().x)));
    ImGui::InputTextWithHint(
       "##Search", Tr("名前を検索", "Search names"), editorAssetSearch_, sizeof(editorAssetSearch_));
-   const char* filters[] = {
-      "All types", "Folder", "Model", "Texture", "Audio", "Particle", "Scene", "Material", "Prefab", "Json", "Unknown"};
+   const char* filters[] = {"All types", "Folder", "Model", "Texture", "Audio", "Particle", "Scene", "Material",
+      "Prefab", "UI Screen", "Json", "Unknown"};
    ContinueRowIfFits(125.0f * scale);
    ImGui::SetNextItemWidth(std::max(1.0f, std::min(125.0f * scale, ImGui::GetContentRegionAvail().x)));
    ImGui::Combo("##Type", &editorAssetTypeFilter_, filters, IM_ARRAYSIZE(filters));
@@ -797,6 +797,33 @@ void RendererEditorController::ShowHierarchyWindow() {
       drawAssetMenu(Tr("モデル", "Model"), EditorAssetType::Model);
       drawAssetMenu(Tr("スプライト", "Sprite"), EditorAssetType::Texture);
       drawAssetMenu(Tr("パーティクル", "Particle System"), EditorAssetType::Particle);
+      drawAssetMenu(Tr("UI画面を配置", "Place UI Screen"), EditorAssetType::UIScreen);
+      if (ImGui::BeginMenu(Tr("共通UI", "UI Foundation"))) {
+         using Kind = CreateObjectCommand::Kind;
+         if (ImGui::MenuItem(Tr("画面", "Screen"))) {
+            editorContext->CreateUIElement(Kind::UICanvas);
+         }
+         if (ImGui::MenuItem(Tr("ボタン", "Button"))) {
+            editorContext->CreateUIElement(Kind::UIButton);
+         }
+         if (ImGui::MenuItem(Tr("スライダー", "Slider"))) {
+            editorContext->CreateUIElement(Kind::UISlider);
+         }
+         if (ImGui::MenuItem(Tr("トグル", "Toggle"))) {
+            editorContext->CreateUIElement(Kind::UIToggle);
+         }
+         if (ImGui::MenuItem(Tr("ラベル", "Label"))) {
+            editorContext->CreateUIElement(Kind::UILabel);
+         }
+         static char assetName[128] = "Screen";
+         ImGui::InputText("Asset name", assetName, sizeof(assetName));
+         if (ImGui::MenuItem(Tr("選択画面を保存", "Save Selected Screen"))) {
+            if (EditorAssetRegistry::IsValidName(assetName)) {
+               editorContext->SaveSelectedUIScreen(std::string("game/ui/") + assetName + ".json");
+            }
+         }
+         ImGui::EndMenu();
+      }
 
       if (ImGui::MenuItem(Tr("UIテキスト", "UI Text"))) {
          editorContext->CreateUIText();
@@ -833,7 +860,8 @@ void RendererEditorController::ShowHierarchyWindow() {
 
    if (editorContext && ImGui::BeginDragDropTarget()) {
       if (const auto* entry = EditorUI::AcceptAssetDrop(EditorAssetType::Unknown, [](const EditorAssetEntry& entry) {
-             return entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle;
+             return entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle ||
+                    entry.type == EditorAssetType::UIScreen;
           })) {
          FinishInspectorEdit(*editorContext);
 
@@ -1163,7 +1191,8 @@ void RendererEditorController::ShowInspectorWindow() {
             }
          }
 
-         if ((entry->type == EditorAssetType::Model || entry->type == EditorAssetType::Particle) &&
+         if ((entry->type == EditorAssetType::Model || entry->type == EditorAssetType::Particle ||
+                entry->type == EditorAssetType::UIScreen) &&
              ImGui::Button("Place in Scene")) {
             const auto id = entry->assetId;
 
@@ -1620,7 +1649,8 @@ void RendererEditorController::EmitAssetDragPayload(const EditorAssetEntry& entr
       ImGui::SetDragDropPayload("EDITOR_ASSET", entry.assetId.c_str(), entry.assetId.size() + 1);
       ImGui::Text("[%s] %s", EditorAssetRegistry::GetAssetTypeLabel(entry.type), entry.assetId.c_str());
 
-      if (entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle) {
+      if (entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle ||
+          entry.type == EditorAssetType::UIScreen) {
          ImGui::TextUnformatted("Scene: 8 units in front of camera. Hierarchy: model becomes child at local origin.");
       }
 

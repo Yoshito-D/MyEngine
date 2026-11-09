@@ -28,6 +28,9 @@ GameEngine::SceneManager* sSceneManager_ = nullptr;
 #ifdef USE_IMGUI
 GameEngine::EditorSceneSession* sEditorSceneSession_ = nullptr;
 #endif
+float sUIFrameDeltaTime_ = 0.0f;
+bool sGameplayInputBlocked_ = false;
+bool sEditorInputAccess_ = false;
 float sGameDeltaTime_ = 0.0f;
 bool sHasGameDeltaTimeOverride_ = false;
 uint64_t sGameFrameNumber_ = 0;
@@ -37,6 +40,22 @@ GameEngine::PlayModeController* sPlayModeController_ = nullptr;
 }
 
 namespace GameEngine {
+void EngineContext::SetUIFrameState(float deltaTime, bool gameplayInputBlocked) {
+   sUIFrameDeltaTime_ = deltaTime;
+   sGameplayInputBlocked_ = gameplayInputBlocked;
+   if (sInputActionService_) {
+      sInputActionService_->SetGameplayInputBlocked(gameplayInputBlocked);
+   }
+}
+
+float EngineContext::GetUIFrameDeltaTime() {
+   return sUIFrameDeltaTime_;
+}
+
+void EngineContext::SetEditorInputAccess(bool enabled) {
+   sEditorInputAccess_ = enabled;
+}
+
 ParameterAssetStore& EngineContext::GetParameterAssetStore() {
    return sAssetManager_->GetParameterAssetStore();
 }
@@ -128,7 +147,7 @@ void EngineContextInitializer::SetLightManager(LightManager* lightManager) {
 //================================================================
 
 bool EngineContext::IsKeyPressed(uint8_t key) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -136,7 +155,7 @@ bool EngineContext::IsKeyPressed(uint8_t key) {
 }
 
 bool EngineContext::IsKeyPressed(KeyCode key) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -147,6 +166,9 @@ bool EngineContext::IsKeyNotPressed(uint8_t key) {
    if (!sInput_) {
       return false;
    }
+   if (sGameplayInputBlocked_ && !sEditorInputAccess_) {
+      return true;
+   }
 
    return sInput_->IsKeyNotPressed(key);
 }
@@ -155,12 +177,15 @@ bool EngineContext::IsKeyNotPressed(KeyCode key) {
    if (!sInput_) {
       return false;
    }
+   if (sGameplayInputBlocked_ && !sEditorInputAccess_) {
+      return true;
+   }
 
    return sInput_->IsKeyNotPressed(key);
 }
 
 bool EngineContext::IsKeyTriggered(uint8_t key) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -168,7 +193,7 @@ bool EngineContext::IsKeyTriggered(uint8_t key) {
 }
 
 bool EngineContext::IsKeyTriggered(KeyCode key) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -176,7 +201,7 @@ bool EngineContext::IsKeyTriggered(KeyCode key) {
 }
 
 bool EngineContext::IsKeyReleased(uint8_t key) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -184,7 +209,7 @@ bool EngineContext::IsKeyReleased(uint8_t key) {
 }
 
 bool EngineContext::IsKeyReleased(KeyCode key) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -192,7 +217,7 @@ bool EngineContext::IsKeyReleased(KeyCode key) {
 }
 
 bool EngineContext::IsMousePressed(uint8_t button) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -200,7 +225,7 @@ bool EngineContext::IsMousePressed(uint8_t button) {
 }
 
 bool EngineContext::IsMousePressed(MouseButton button) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -211,6 +236,9 @@ bool EngineContext::IsMouseNotPressed(uint8_t button) {
    if (!sInput_) {
       return false;
    }
+   if (sGameplayInputBlocked_ && !sEditorInputAccess_) {
+      return true;
+   }
 
    return sInput_->IsMouseNotPressed(button);
 }
@@ -219,12 +247,15 @@ bool EngineContext::IsMouseNotPressed(MouseButton button) {
    if (!sInput_) {
       return false;
    }
+   if (sGameplayInputBlocked_ && !sEditorInputAccess_) {
+      return true;
+   }
 
    return sInput_->IsMouseNotPressed(button);
 }
 
 bool EngineContext::IsMouseReleased(uint8_t button) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -232,7 +263,7 @@ bool EngineContext::IsMouseReleased(uint8_t button) {
 }
 
 bool EngineContext::IsMouseReleased(MouseButton button) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -240,7 +271,7 @@ bool EngineContext::IsMouseReleased(MouseButton button) {
 }
 
 bool EngineContext::IsMouseTriggered(uint8_t button) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -248,7 +279,7 @@ bool EngineContext::IsMouseTriggered(uint8_t button) {
 }
 
 bool EngineContext::IsMouseTriggered(MouseButton button) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -256,7 +287,7 @@ bool EngineContext::IsMouseTriggered(MouseButton button) {
 }
 
 Vector2 EngineContext::GetMouseScreenPosition() {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return Vector2(0.0f, 0.0f);
    }
 
@@ -264,7 +295,7 @@ Vector2 EngineContext::GetMouseScreenPosition() {
 }
 
 Vector2 EngineContext::GetMouseDelta() {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return Vector2(0.0f, 0.0f);
    }
 
@@ -272,7 +303,7 @@ Vector2 EngineContext::GetMouseDelta() {
 }
 
 int32_t EngineContext::GetMouseWheelDelta() {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return 0;
    }
 
@@ -299,6 +330,9 @@ bool EngineContext::IsGamePadButtonNotPressed(WORD button, uint32_t index) {
    if (!sInput_) {
       return false;
    }
+   if (sGameplayInputBlocked_ && !sEditorInputAccess_) {
+      return true;
+   }
 
    return sInput_->IsGamePadButtonNotPressed(button, index);
 }
@@ -307,12 +341,15 @@ bool EngineContext::IsGamePadButtonNotPressed(GamePadButton button, uint32_t ind
    if (!sInput_) {
       return false;
    }
+   if (sGameplayInputBlocked_ && !sEditorInputAccess_) {
+      return true;
+   }
 
    return sInput_->IsGamePadButtonNotPressed(static_cast<WORD>(button), index);
 }
 
 bool EngineContext::IsGamePadButtonPressed(WORD button, uint32_t index) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -320,7 +357,7 @@ bool EngineContext::IsGamePadButtonPressed(WORD button, uint32_t index) {
 }
 
 bool EngineContext::IsGamePadButtonPressed(GamePadButton button, uint32_t index) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -328,7 +365,7 @@ bool EngineContext::IsGamePadButtonPressed(GamePadButton button, uint32_t index)
 }
 
 bool EngineContext::IsGamePadButtonTriggered(WORD button, uint32_t index) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -336,7 +373,7 @@ bool EngineContext::IsGamePadButtonTriggered(WORD button, uint32_t index) {
 }
 
 bool EngineContext::IsGamePadButtonTriggered(GamePadButton button, uint32_t index) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -344,7 +381,7 @@ bool EngineContext::IsGamePadButtonTriggered(GamePadButton button, uint32_t inde
 }
 
 bool EngineContext::IsGamePadButtonReleased(WORD button, uint32_t index) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -352,7 +389,7 @@ bool EngineContext::IsGamePadButtonReleased(WORD button, uint32_t index) {
 }
 
 bool EngineContext::IsGamePadButtonReleased(GamePadButton button, uint32_t index) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return false;
    }
 
@@ -360,7 +397,7 @@ bool EngineContext::IsGamePadButtonReleased(GamePadButton button, uint32_t index
 }
 
 Vector2 EngineContext::GetLeftStick(uint32_t index, float deadZone) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return Vector2(0.0f, 0.0f);
    }
 
@@ -368,7 +405,7 @@ Vector2 EngineContext::GetLeftStick(uint32_t index, float deadZone) {
 }
 
 Vector2 EngineContext::GetRightStick(uint32_t index, float deadZone) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return Vector2(0.0f, 0.0f);
    }
 
@@ -376,7 +413,7 @@ Vector2 EngineContext::GetRightStick(uint32_t index, float deadZone) {
 }
 
 float EngineContext::GetLeftTrigger(uint32_t index, float deadZone) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return 0.0f;
    }
 
@@ -384,7 +421,7 @@ float EngineContext::GetLeftTrigger(uint32_t index, float deadZone) {
 }
 
 float EngineContext::GetRightTrigger(uint32_t index, float deadZone) {
-   if (!sInput_) {
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return 0.0f;
    }
 
@@ -392,7 +429,7 @@ float EngineContext::GetRightTrigger(uint32_t index, float deadZone) {
 }
 
 void EngineContext::SetVibration(uint32_t index, float leftMotor, float rightMotor) {
-   if (!sInput_) return;
+   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) return;
 
    return sInput_->SetVibration(index, leftMotor, rightMotor);
 }
@@ -401,7 +438,7 @@ const InputActionState& EngineContext::GetInputActionState(
    const std::string& actionMap, const std::string& actionId, uint32_t playerSlot) {
    static const InputActionState emptyState{};
 
-   if (!sInputActionService_) {
+   if (!sInputActionService_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
       return emptyState;
    }
 

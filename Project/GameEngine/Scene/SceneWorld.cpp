@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/UI/UISystem.h"
 #include "GameEngine/Scene/SceneWorld.h"
 
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
@@ -62,7 +63,7 @@ bool IsValidObjectState(const nlohmann::json& data) {
 } // namespace
 
 SceneWorld::SceneWorld(CinemachineBrain* cameraBrain)
-   : cameraBrain_(cameraBrain), objectStore_(*this),
+   : cameraBrain_(cameraBrain), uiSystem_(std::make_unique<UISystem>(*this)), objectStore_(*this),
      particleSubEmitterRuntime_(std::make_unique<ParticleSubEmitterRuntime>(*this)) {
 }
 
@@ -184,6 +185,7 @@ nlohmann::json SceneWorld::SerializeToJson() const {
    return {{"version", kFormatVersion}, {"objects", objectStore_.SerializeAll()},
       {"cameras", {{"brain", {{"defaultBlendTime", brain ? brain->GetDefaultBlendTime() : 0.0f}}},
                      {"virtualCameras", std::move(cameras)}}},
+      {"hierarchyOrder", uiSystem_->GetHierarchyOrder()},
       {"renderSettings", EngineContext::SerializePostProcessSceneState()}};
 }
 
@@ -222,8 +224,10 @@ bool SceneWorld::ApplySnapshot(const nlohmann::json& sceneData) {
       }
    }
 
+   uiSystem_->SetHierarchyOrder(sceneData.value("hierarchyOrder", std::vector<std::string>{}));
    RestoreCameras(sceneData);
    ResolveReferences(objectStore_.GetObjects());
+   uiSystem_->InitializeScreens();
    return true;
 }
 
@@ -239,6 +243,7 @@ void SceneWorld::SynchronizeParameters() {
 }
 
 void SceneWorld::Clear() {
+   uiSystem_->ResetForScene();
    EngineContext::SetCameraTransitionOpacity(0.0f);
    particleSubEmitterRuntime_->Clear();
    if (auto* brain = GetCameraBrain()) {
@@ -258,11 +263,19 @@ void SceneWorld::Clear() {
 
 void SceneWorld::Update(float deltaTime) {
    const auto objects = objectStore_.GetObjects();
+   const bool gameplay = !uiSystem_->PausesGameplay();
    for (auto* object : objects) {
-      if (objectStore_.Contains(object) && !objectStore_.IsPendingDeletion(object)) {
-         object->UpdateComponents(deltaTime);
+      if (!objectStore_.Contains(object) || objectStore_.IsPendingDeletion(object)) {
+         continue;
+      }
+      if (gameplay) {
+         object->UpdateComponents(deltaTime, ObjectUpdateDomain::Gameplay);
+      }
+      if (objectStore_.Contains(object) && uiSystem_->IsUpdateVisible(*object)) {
+         object->UpdateComponents(EngineContext::GetUIFrameDeltaTime(), ObjectUpdateDomain::UI);
       }
    }
+   if (!gameplay) return;
    const auto particles = ParticleSystem::GetRegisteredParticleSystems();
    for (auto* particle : particles) {
       if (particle && particle->GetWorld() == this) {

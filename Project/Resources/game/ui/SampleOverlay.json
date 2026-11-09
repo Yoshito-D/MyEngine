@@ -1,0 +1,656 @@
+{
+   "version": 1,
+   "rootId": "ui_sample_overlay",
+   "objects": [
+      {
+         "id": "ui_sample_overlay",
+         "parentId": "",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "overlay"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "overlay",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     1280,
+                     720
+                  ]
+               }
+            },
+            {
+               "typeName": "UICanvasComponent",
+               "enabled": true,
+               "data": {}
+            },
+            {
+               "typeName": "UIScreenComponent",
+               "enabled": true,
+               "data": {
+                  "defaultFocusKey": "close",
+                  "blocksBelowInput": true,
+                  "pausesGameplay": true
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "show": {
+                     "enabled": true,
+                     "duration": 0.24,
+                     "delay": 0,
+                     "easing": 3,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.94,
+                              0.94
+                           ],
+                           "rotation": 0,
+                           "opacity": 0
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "hide": {
+                     "enabled": true,
+                     "duration": 0.18,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 0
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_overlay_background",
+         "parentId": "ui_sample_overlay",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "background"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "background",
+                  "position": [
+                     540,
+                     420
+                  ],
+                  "size": [
+                     650,
+                     270
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "UI sample panel",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.04,
+                           0.07,
+                           0.13,
+                           0.98
+                        ],
+                        "lightingMode": 0
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "ui_sample_overlay_title",
+         "parentId": "ui_sample_overlay",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "overlayTitle"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "overlayTitle",
+                  "position": [
+                     580,
+                     450
+                  ],
+                  "size": [
+                     580,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "GAMEPLAY PAUSED",
+                  "fontId": "arial",
+                  "fontSize": 38,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "idle": {
+                     "enabled": true,
+                     "duration": 0.8,
+                     "delay": 0,
+                     "easing": 1,
+                     "playback": 2,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              -8
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_overlay_note",
+         "parentId": "ui_sample_overlay",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "overlayNote"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "overlayNote",
+                  "position": [
+                     580,
+                     520
+                  ],
+                  "size": [
+                     600,
+                     50
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "UI continues to process input and animation.",
+                  "fontId": "arial",
+                  "fontSize": 23,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_close",
+         "parentId": "ui_sample_overlay",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "close"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "close",
+                  "position": [
+                     580,
+                     590
+                  ],
+                  "size": [
+                     360,
+                     64
+                  ]
+               }
+            },
+            {
+               "typeName": "UIButtonComponent",
+               "enabled": true,
+               "data": {}
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "focus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "unfocus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "click": {
+                     "enabled": true,
+                     "duration": 0.16,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 0.35,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.92,
+                              0.92
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_close_label",
+         "parentId": "ui_sample_close",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "closeLabel"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "closeLabel",
+                  "position": [
+                     20,
+                     14
+                  ],
+                  "size": [
+                     330,
+                     40
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "Close overlay",
+                  "fontId": "arial",
+                  "fontSize": 28,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      }
+   ]
+}

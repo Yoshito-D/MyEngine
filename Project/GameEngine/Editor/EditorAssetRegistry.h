@@ -22,6 +22,7 @@ enum class EditorAssetType {
    Material,  ///< マテリアル設定
    Parameter, ///< コンポーネント共通設定
    Prefab,    ///< プレハブ設定
+   UIScreen,  ///< 再利用するUI画面
    Json,      ///< 用途を特定しないJSON
    Unknown,   ///< 非対応または未分類
 };

@@ -47,6 +47,12 @@ public:
    const InputActionState& GetActionState(
       const std::string& actionMap, const std::string& actionId, std::uint32_t playerSlot = 0) const;
 
+   /// @brief ゲーム用アクションの取得を遮断する。物理入力と再割り当ては継続する。
+   void SetGameplayInputBlocked(bool blocked) { gameplayInputBlocked_ = blocked; }
+
+   /// @brief いずれかのアクションが保持中かを生の評価結果から返す。
+   bool HasHeldActions() const;
+
    /// @brief 再割り当ての待受を開始する。開始フレームのトリガーは採用しない。
    /// @param controlIndex 未設定なら全体、設定時はキーバインドの物理入力列内の方向。
    /// @return アクション・添字・指定方向が有効ならtrue。
@@ -108,6 +114,7 @@ private:
    static bool FindSingleChangedControl(const InputBinding& previous, const InputBinding& replacement,
       InputPhysicalControl& previousControl, InputPhysicalControl& replacementControl);
 
+   bool gameplayInputBlocked_ = false;
    IInputBackend* backend_ = nullptr;                           ///< 非所有の物理入力バックエンド。
    std::filesystem::path defaultPath_;                          ///< 既定入力定義の読み込み元。
    std::filesystem::path overridePath_;                         ///< ユーザー入力定義の読み書き先。

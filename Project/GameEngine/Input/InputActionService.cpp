@@ -302,11 +302,22 @@ const InputActionState& InputActionService::GetActionState(
    const std::string& actionMap, const std::string& actionId, uint32_t playerSlot) const {
    const ActionDefinition* action = FindAction(actionMap, actionId);
 
-   if (!action || playerSlot >= kMaxPlayers) {
+   if ((gameplayInputBlocked_ && actionMap == "Gameplay") || !action || playerSlot >= kMaxPlayers) {
       return kEmptyActionState;
    }
 
    return action->states[playerSlot];
+}
+
+bool InputActionService::HasHeldActions() const {
+   for (const auto& [key, definition] : actions_) {
+      for (const auto& state : definition.states) {
+         if (state.held) {
+            return true;
+         }
+      }
+   }
+   return false;
 }
 
 bool InputActionService::BeginRebind(

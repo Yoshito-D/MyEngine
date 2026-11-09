@@ -97,8 +97,10 @@ public:
    /// @brief Master音量を設定し、既存ボイスを即時更新する。
    void SetMasterVolume(float volume);
 
-   /// @brief 個別に一時停止したボイスを再開せず、ゲーム音声全体を一時停止・再開する。
-   void SetGamePaused(bool paused);
+   /// @brief ゲーム音声とUI音声の停止要求を個別に反映する。手動停止したボイスは再開しない。
+   /// @param paused BGM・SEを停止する場合はtrue。
+   /// @param pauseUi UIバスも停止する場合はtrue。エディター停止時に指定する。
+   void SetGamePaused(bool paused, bool pauseUi);
 
    /// @brief エディタープレビューだけを残し、ゲーム用の全ボイスを停止・解放する。
    void StopGameAudio();
@@ -181,6 +183,7 @@ private:
    /// @brief 全音声の最終出力に使い、終了時に破棄するマスタリングボイス。
    IXAudio2MasteringVoice* masteringVoice_ = nullptr;
    bool mfStarted_ = false;                            ///< Media Foundationの起動に成功し、終了処理が必要かどうか。
+   bool uiPaused_ = false;                             ///< UI音声もエディター操作によって停止しているか。
    bool gamePaused_ = false;                           ///< ゲーム音声を一括で一時停止しているかどうか。
    bool testMode_ = false;                             ///< 実オーディオデバイスを使わず状態遷移だけを検証するかどうか。
    float masterVolume_ = 1.0f;                         ///< 全出力バスへ共通に掛ける音量倍率。

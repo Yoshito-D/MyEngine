@@ -40,6 +40,9 @@
 #endif
 
 namespace GameEngine {
+class Input;
+class InputActionService;
+struct UIInputFrame;
 class GraphicsDevice;
 class Model;
 class Object;
@@ -66,6 +69,12 @@ public:
    /// @param assetManager アセット管理（テクスチャマネージャーを取得するため）
    void Initialize(GraphicsDevice* device, Window* window, CameraManager* cameraManager, LightManager* lightManager,
       AssetManager* assetManager = nullptr);
+
+   /// @brief 描画先と共通UIの論理ビューポート寸法を返す。
+   Vector2 GetUIViewportSize() const { return uiViewportSize_; }
+
+   /// @brief 生入力をGameビューの画像矩形へ変換する。ゲーム用入力フィルターを迂回する。
+   UIInputFrame ReadUIInput(Input& input, InputActionService& actions);
 
    /// @brief フレームの開始時の処理
    void BeginFrame();
@@ -359,6 +368,12 @@ private:
    /// @brief 奥行きを持つUIモデルを描く透視投影カメラ。
    std::unique_ptr<Camera> perspectiveUiCamera_ = std::make_unique<Camera>();
    /// @brief UIのレイアウト基準となるビューポート寸法。
+   Vector2 gameUIOrigin_{}; ///< 入力と同じ座標系でのGame画像左上。
+   Vector2 gameUISize_{};   ///< Game画像の表示寸法（物理ピクセル）。
+   Vector2 previousUIPointer_{};
+   bool gameUIActive_ = false;
+   bool gameUIWasPlaying_ = false; ///< Play開始時にGameタブへフォーカスを移すための前状態。
+   void DrawManagedUI();
    Vector2 uiViewportSize_ = {
       static_cast<float>(Window::kUiReferenceWidth), static_cast<float>(Window::kUiReferenceHeight)};
 

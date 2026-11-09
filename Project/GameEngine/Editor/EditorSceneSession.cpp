@@ -1,4 +1,6 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/UI/UISystem.h"
+#include "GameEngine/UI/UIAnimationComponent.h"
 #include <cstdint>
 #include "GameEngine/Editor/EditorSceneContext.h"
 
@@ -124,7 +126,22 @@ void EditorSceneSession::RestoreEditingStateOnAttach() {
 }
 
 void EditorSceneSession::Update() {
+   // ゲームのメニューが入力を遮断していても、編集カメラは生入力で操作する。
+   struct EditorInputScope {
+      EditorInputScope() { EngineContext::SetEditorInputAccess(true); }
+
+      ~EditorInputScope() { EngineContext::SetEditorInputAccess(false); }
+   } editorInputScope;
+
    if (!scene_) return;
+
+   if (EngineContext::IsPlayModeEdit()) {
+      for (auto* object : scene_->GetSceneWorld().GetObjectStore().GetObjects()) {
+         if (auto* animation = object->GetComponent<UIAnimationComponent>(); animation && animation->IsEnabled()) {
+            animation->UpdatePreview(EngineContext::GetUnscaledDeltaTime());
+         }
+      }
+   }
 
    if (!EngineContext::ShouldRunRuntimeUpdate()) {
       UpdateEditorLightProxies(EngineContext::GetUnscaledDeltaTime());
@@ -422,7 +439,8 @@ void EditorSceneSession::AcceptViewportAssetDrop() {
    if (!ImGui::BeginDragDropTarget()) return;
 
    if (const auto* entry = EditorUI::AcceptAssetDrop(EditorAssetType::Unknown, [](const EditorAssetEntry& entry) {
-          return entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle;
+          return entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle ||
+                 entry.type == EditorAssetType::UIScreen;
        })) {
       context_->PlaceAsset(entry->assetId);
    }
@@ -449,6 +467,17 @@ void EditorSceneSession::HandleViewportClickSelection(
 
    if (!camera) return;
 
+   if (scene_) {
+      auto& ui = scene_->GetSceneWorld().GetUI();
+      const Vector2 size = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
+      const auto layout = ui.BuildLayout(size, true);
+      if (auto* hit = UILayoutSolver::HitTest(scene_->GetSceneWorld(), layout,
+             {(mouse.x - viewportX) * size.x / viewportWidth, (mouse.y - viewportY) * size.y / viewportHeight},
+             false)) {
+         context_->SelectObject(hit);
+         return;
+      }
+   }
    Object* nearestObject = nullptr;
    float nearestDistanceSquared = std::numeric_limits<float>::max();
    constexpr float kMinPickRadiusPixels = 24.0f;

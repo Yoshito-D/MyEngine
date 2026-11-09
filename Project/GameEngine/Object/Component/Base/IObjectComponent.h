@@ -34,6 +34,12 @@ enum class ObjectUpdatePhase {
    Presentation,
 };
 
+/// @brief ゲーム進行と実時間UIを分ける更新区分。
+enum class ObjectUpdateDomain {
+   Gameplay,
+   UI
+};
+
 /// @brief Objectへアタッチできるコンポーネントの共通インターフェース
 class IObjectComponent : public ParameterComponent {
 public:
@@ -92,6 +98,9 @@ public:
    /// @brief 編集後に非所有参照だけを再解決する（ゲーム進行や保存設定は変更しない）
    /// @param sceneWorld 現在のシーンワールド
    virtual void OnReferencesChanged(SceneWorld& sceneWorld) { (void)sceneWorld; }
+
+   /// @brief 更新時間の区分を返す。既定はゲーム進行。
+   virtual ObjectUpdateDomain GetUpdateDomain() const { return ObjectUpdateDomain::Gameplay; }
 
    /// @brief 更新フェーズを返す。同じフェーズ内では追加順を維持する。
    virtual ObjectUpdatePhase GetUpdatePhase() const { return ObjectUpdatePhase::Default; }

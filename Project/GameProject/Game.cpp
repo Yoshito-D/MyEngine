@@ -1,4 +1,5 @@
 #include "GameProject/Game.h"
+#include "GameEngine/UI/UISystem.h"
 #include <cstdint>
 #include "GameEngine/Utility/Logger.h"
 #include "GameProject/App/Component/Rendering/PlayerShadowComponent.h"
@@ -152,6 +153,9 @@ void Game::Update() {
 #ifdef USE_IMGUI
    // エディタでは入力・時間を進めるランタイム更新と、選択表示などの編集更新を分離する。
    playModeController_->ProcessRequests(*sceneManager_);
+   const float uiDelta = playModeController_->IsPaused() ? playModeController_->GetStepDeltaTime()
+                                                         : GameEngine::EngineContext::GetUnscaledDeltaTime();
+   UpdateUIFrame(playModeController_->ShouldRunRuntimeUpdate(), uiDelta);
 
    if (playModeController_->ShouldRunRuntimeUpdate()) {
       Framework::Update();
@@ -161,17 +165,29 @@ void Game::Update() {
    editorSession_->Update();
 
    if (playModeController_->ShouldRunRuntimeUpdate()) {
-      GameEngine::EngineContext::AdvanceGameFrameNumber();
+      if (!sceneManager_->GetCurrentScene()->GetSceneWorld().GetUI().PausesGameplay()) {
+         GameEngine::EngineContext::AdvanceGameFrameNumber();
+      }
       sceneManager_->RuntimeUpdate();
    }
 #else
+   GameEngine::EngineContext::SetGameDeltaTime(GameEngine::EngineContext::GetUnscaledDeltaTime());
+   UpdateUIFrame(true, GameEngine::EngineContext::GetUnscaledDeltaTime());
    Framework::Update();
-   GameEngine::EngineContext::AdvanceGameFrameNumber();
+   if (!sceneManager_->GetCurrentScene()->GetSceneWorld().GetUI().PausesGameplay()) {
+      GameEngine::EngineContext::AdvanceGameFrameNumber();
+   }
    sceneManager_->EditorUpdate();
    sceneManager_->RuntimeUpdate();
 #endif
    CheckSceneFailure();
    if (auto* audio = GameEngine::EngineContext::GetAudio()) {
+      bool editorPaused = false;
+#ifdef USE_IMGUI
+      editorPaused = !playModeController_->IsPlaying();
+#endif
+      audio->SetGamePaused(
+         editorPaused || sceneManager_->GetCurrentScene()->GetSceneWorld().GetUI().PausesGameplay(), editorPaused);
       audio->Update(GameEngine::EngineContext::GetUnscaledDeltaTime());
    }
 }

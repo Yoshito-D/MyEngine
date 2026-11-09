@@ -6,6 +6,28 @@
 #pragma comment(lib, "xinput.lib")
 
 namespace {
+constexpr DWORD kInputEventBufferCapacity = 64;
+
+void ConfigureInputBuffer(IDirectInputDevice8* device) {
+   DIPROPDWORD property{};
+   property.diph.dwSize = sizeof(property);
+   property.diph.dwHeaderSize = sizeof(property.diph);
+   property.diph.dwHow = DIPH_DEVICE;
+   property.dwData = kInputEventBufferCapacity;
+   if (FAILED(device->SetProperty(DIPROP_BUFFERSIZE, &property.diph))) {
+      Logger::Warning("DirectInput event buffer could not be configured");
+   }
+}
+
+template <typename Apply> void ReadBufferedInput(IDirectInputDevice8* device, const Apply& apply) {
+   std::array<DIDEVICEOBJECTDATA, kInputEventBufferCapacity> events{};
+   DWORD count = static_cast<DWORD>(events.size());
+   if (FAILED(device->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), events.data(), &count, 0))) return;
+   for (DWORD index = 0; index < count; ++index) {
+      apply(events[index]);
+   }
+}
+
 GameEngine::Vector2 NormalizeStick(SHORT x, SHORT y, float deadZone) {
    using GameEngine::Vector2;
    // 軸ごとのデッドゾーンでは斜め入力の角度が歪むため、スティック全体を円形領域として評価する。
@@ -66,6 +88,8 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
 
    result = mouse_->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 
+   ConfigureInputBuffer(keyboard_.Get());
+   ConfigureInputBuffer(mouse_.Get());
    hwnd_ = hwnd;
 }
 
@@ -83,6 +107,12 @@ void Input::KeyboardUpdate() {
    std::fill(std::begin(key_), std::end(key_), static_cast<BYTE>(0));
    keyboard_->Acquire();
    keyboard_->GetDeviceState(sizeof(key_), key_);
+   // フレーム間に押して離した入力も一フレームの押下として残し、短いUI操作を取りこぼさない。
+   ReadBufferedInput(keyboard_.Get(), [this](const DIDEVICEOBJECTDATA& event) {
+      if (event.dwOfs < std::size(key_) && (event.dwData & kPressedStateMask) != 0) {
+         key_[event.dwOfs] |= kPressedStateMask;
+      }
+   });
 }
 
 void Input::MouseUpdate() {
@@ -91,6 +121,13 @@ void Input::MouseUpdate() {
    ZeroMemory(&mouseState_, sizeof(mouseState_));
    mouse_->Acquire();
    mouse_->GetDeviceState(sizeof(mouseState_), &mouseState_);
+   // 座標・移動量は状態取得を使い、短いクリックの押下だけをイベントキューから補う。
+   ReadBufferedInput(mouse_.Get(), [this](const DIDEVICEOBJECTDATA& event) {
+      if (event.dwOfs >= DIMOFS_BUTTON0 && event.dwOfs < DIMOFS_BUTTON0 + std::size(mouseState_.rgbButtons) &&
+          (event.dwData & kPressedStateMask) != 0) {
+         mouseState_.rgbButtons[event.dwOfs - DIMOFS_BUTTON0] |= kPressedStateMask;
+      }
+   });
 }
 
 void Input::GamePadUpdate() {

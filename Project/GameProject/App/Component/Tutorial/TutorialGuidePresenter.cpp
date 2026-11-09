@@ -8,13 +8,15 @@
 #include <algorithm>
 
 namespace App {
-void TutorialGuidePresenter::Reset(float baseOpacity) {
+void TutorialGuidePresenter::Reset(float baseOpacity, float feedbackBaseOpacity) {
    *this = {};
    guideBaseOpacity_ = baseOpacity;
+   feedbackBaseOpacity_ = feedbackBaseOpacity;
 }
 
 void TutorialGuidePresenter::UpdateGuideText(const TutorialGuideState& state, GameEngine::UITextComponent* guideText_,
-   GameEngine::UITextComponent* promptText, float deltaTime, float guideFadeDuration_) {
+   GameEngine::UITextComponent* promptText, GameEngine::UITextComponent* feedbackText, float deltaTime,
+   float guideFadeDuration_) {
    if (!guideText_) return;
 
    const std::string guide = BuildGuideText(state);
@@ -34,7 +36,7 @@ void TutorialGuidePresenter::UpdateGuideText(const TutorialGuideState& state, Ga
       pendingText_.clear();
       guideVisibility_ = 1.0f;
       guideFadeState_ = GuideFadeState::Visible;
-      ApplyGuideOpacity(guideText_, promptText);
+      ApplyGuideOpacity(guideText_, promptText, feedbackText);
       return;
    }
 
@@ -71,7 +73,7 @@ void TutorialGuidePresenter::UpdateGuideText(const TutorialGuideState& state, Ga
       }
    }
 
-   ApplyGuideOpacity(guideText_, promptText);
+   ApplyGuideOpacity(guideText_, promptText, feedbackText);
 }
 
 void TutorialGuidePresenter::UpdateLayout(GameEngine::UITextComponent* guideText,
@@ -103,8 +105,8 @@ void TutorialGuidePresenter::UpdateLayout(GameEngine::UITextComponent* guideText
    }
 }
 
-void TutorialGuidePresenter::ApplyGuideOpacity(
-   GameEngine::UITextComponent* guideText_, GameEngine::UITextComponent* promptText) {
+void TutorialGuidePresenter::ApplyGuideOpacity(GameEngine::UITextComponent* guideText_,
+   GameEngine::UITextComponent* promptText, GameEngine::UITextComponent* feedbackText) {
    if (!guideText_) return;
 
    const float easedVisibility =
@@ -115,6 +117,10 @@ void TutorialGuidePresenter::ApplyGuideOpacity(
 
    if (promptText) {
       promptText->SetOpacity(guideBaseOpacity_ * easedVisibility);
+   }
+
+   if (feedbackText) {
+      feedbackText->SetOpacity(feedbackBaseOpacity_ * easedVisibility);
    }
 }
 
@@ -137,6 +143,10 @@ void TutorialGuidePresenter::UpdateFeedback(
    if (!feedbackText_) return;
 
    driftFeedbackRemaining_ = std::max(0.0f, driftFeedbackRemaining_ - std::max(deltaTime, 0.0f));
+
+   // 次の課題の補足文が古い本文の下へ先に現れないよう、文面と配置の切り替えを完全透明時まで待つ。
+   if (guideFadeState_ == GuideFadeState::FadingOut) return;
+
    const bool gamepadConnected = state.gamepadConnected;
    std::string feedback;
 

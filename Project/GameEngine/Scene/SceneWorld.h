@@ -10,6 +10,7 @@
 
 namespace GameEngine {
 
+class UISystem;
 class Object;
 class ParticleSystem;
 class ParticleSubEmitterRuntime;
@@ -28,6 +29,12 @@ public:
 
    /// @brief World内のObjectとパーティクルを一度ずつ更新してからカメラを評価する。
    void Update(float deltaTime);
+
+   /// @brief シーンが所有するUI実行系を取得する。
+   UISystem& GetUI() { return *uiSystem_; }
+
+   /// @brief UI実行系を読み取り専用で取得する。
+   const UISystem& GetUI() const { return *uiSystem_; }
 
    /// @brief 描画終了後のフレーム境界で、遅延削除した実体を解放する。
    void FinishFrame();
@@ -113,6 +120,7 @@ private:
    void RestoreCameras(const nlohmann::json& sceneData);
 
    CinemachineBrain* cameraBrain_ = nullptr; ///< このワールドの仮想カメラを接続するBrainへの非所有参照。
+   std::unique_ptr<UISystem> uiSystem_;      ///< 画面・配置・入力のシーン固有実行系。
    SceneObjectStore objectStore_;            ///< 共通の生成・削除・復元ストア。
    std::unique_ptr<ParticleSubEmitterRuntime> particleSubEmitterRuntime_; ///< このワールド専用の子エフェクト実行系。
    std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_;           ///< このワールドが所有する仮想カメラ一覧。

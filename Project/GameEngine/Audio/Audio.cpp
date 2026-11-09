@@ -73,6 +73,7 @@ void Audio::Finalize() {
    }
 
    gamePaused_ = false;
+   uiPaused_ = false;
    testMode_ = false;
 }
 
@@ -111,7 +112,8 @@ size_t Audio::GetVoiceCount() const {
 AudioHandle Audio::Create(
    std::shared_ptr<const SoundClip> clip, AudioBus bus, float volume, float pitch, bool loop, bool preview) {
    if (!IsAvailable() || !clip || clip->GetPcm().empty() || !ValidPitch(pitch) || !std::isfinite(volume) ||
-       static_cast<size_t>(bus) >= busVolumes_.size() || (gamePaused_ && !preview)) {
+       static_cast<size_t>(bus) >= busVolumes_.size() ||
+       (!preview && (bus == AudioBus::Ui ? uiPaused_ : gamePaused_))) {
       return {};
    }
 
@@ -219,7 +221,7 @@ bool Audio::Play(AudioHandle handle) {
       return true;
    }
 
-   if (gamePaused_ && !entry->preview) {
+   if (!entry->preview && (entry->bus == AudioBus::Ui ? uiPaused_ : gamePaused_)) {
       return false;
    }
 
@@ -229,7 +231,7 @@ bool Audio::Play(AudioHandle handle) {
 bool Audio::Restart(AudioHandle handle) {
    Entry* entry = Find(handle);
 
-   if (!entry || (gamePaused_ && !entry->preview)) {
+   if (!entry || (!entry->preview && (entry->bus == AudioBus::Ui ? uiPaused_ : gamePaused_))) {
       return false;
    }
 
@@ -259,7 +261,7 @@ bool Audio::Pause(AudioHandle handle) {
 bool Audio::Resume(AudioHandle handle) {
    Entry* entry = Find(handle);
 
-   if (!entry || (gamePaused_ && !entry->preview)) {
+   if (!entry || (!entry->preview && (entry->bus == AudioBus::Ui ? uiPaused_ : gamePaused_))) {
       return false;
    }
 
@@ -375,10 +377,10 @@ void Audio::SetMasterVolume(float volume) {
    }
 }
 
-void Audio::SetGamePaused(bool paused) {
-   if (gamePaused_ == paused) return;
-
+void Audio::SetGamePaused(bool paused, bool pauseUi) {
+   if (gamePaused_ == paused && uiPaused_ == pauseUi) return;
    gamePaused_ = paused;
+   uiPaused_ = pauseUi;
 
    // ゲーム一時停止で止めたボイスだけを再開し、ユーザーが個別に止めたボイスは維持する。
    for (auto& entry : entries_) {
@@ -386,14 +388,15 @@ void Audio::SetGamePaused(bool paused) {
          continue;
       }
 
-      if (paused && entry.state == State::Playing) {
+      const bool shouldPause = entry.bus == AudioBus::Ui ? uiPaused_ : gamePaused_;
+      if (shouldPause && entry.state == State::Playing) {
          if (entry.voice) {
             entry.voice->Stop();
          }
 
          entry.state = State::Paused;
          entry.pausedByGame = true;
-      } else if (!paused && entry.pausedByGame) {
+      } else if (!shouldPause && entry.pausedByGame) {
          entry.pausedByGame = false;
 
          if (!entry.voice || SUCCEEDED(entry.voice->Start())) {
@@ -415,6 +418,7 @@ void Audio::StopGameAudio() {
    }
 
    gamePaused_ = false;
+   uiPaused_ = false;
 }
 
 void Audio::StopPreviews() {
