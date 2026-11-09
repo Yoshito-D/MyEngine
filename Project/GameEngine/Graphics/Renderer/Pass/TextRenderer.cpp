@@ -46,7 +46,7 @@ void TextRenderer::BeginFrame() {
 
 std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout, const TextStyle& style,
    const Transform& transform, size_t visibleGlyphCount, uint32_t layoutWidth, uint32_t layoutHeight,
-   float viewportWidth, float viewportHeight) {
+   float viewportWidth, float viewportHeight, const Matrix4x4* matrix) {
    std::vector<TextDrawData> drawDataList;
 
    if (layout.glyphs.empty() || layoutWidth == 0 || layoutHeight == 0 || viewportWidth <= 0.0f ||
@@ -68,6 +68,13 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
    const Vector2 pivotOffset = {layout.size.x * style.pivot.x, layout.size.y * style.pivot.y};
    const Vector2 origin = {anchorPosition.x + transform.translation.x, anchorPosition.y + transform.translation.y};
 
+   const auto place = [&](Vector2 point) {
+      if (!matrix) {
+         return TransformPoint(point, transform, origin);
+      }
+      const auto& m = matrix->m;
+      return Vector2{point.x * m[0][0] + point.y * m[1][0] + m[3][0], point.x * m[0][1] + point.y * m[1][1] + m[3][1]};
+   };
    std::vector<PageGeometry> pageGeometry;
    std::unordered_map<UINT64, size_t> pageLookup;
    const size_t glyphLimit = std::min(visibleGlyphCount, layout.glyphs.size());
@@ -105,14 +112,11 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
       // 1グリフを4頂点・2三角形へ展開する。位置だけCPUでSRT変換し、
       // atlasParametersはMSDF/ビットマップ種別をシェーダーで判別するため全頂点へ複製する。
       const uint32_t firstVertex = static_cast<uint32_t>(geometry.vertices.size());
+      geometry.vertices.push_back({place(localTopLeft), glyph.uvMin, style.color, atlasParameters});
+      geometry.vertices.push_back({place(localTopRight), {glyph.uvMax.x, glyph.uvMin.y}, style.color, atlasParameters});
       geometry.vertices.push_back(
-         {TransformPoint(localTopLeft, transform, origin), glyph.uvMin, style.color, atlasParameters});
-      geometry.vertices.push_back({TransformPoint(localTopRight, transform, origin), {glyph.uvMax.x, glyph.uvMin.y},
-         style.color, atlasParameters});
-      geometry.vertices.push_back({TransformPoint(localBottomLeft, transform, origin), {glyph.uvMin.x, glyph.uvMax.y},
-         style.color, atlasParameters});
-      geometry.vertices.push_back(
-         {TransformPoint(localBottomRight, transform, origin), glyph.uvMax, style.color, atlasParameters});
+         {place(localBottomLeft), {glyph.uvMin.x, glyph.uvMax.y}, style.color, atlasParameters});
+      geometry.vertices.push_back({place(localBottomRight), glyph.uvMax, style.color, atlasParameters});
       geometry.indices.insert(geometry.indices.end(),
          {firstVertex + 0u, firstVertex + 1u, firstVertex + 2u, firstVertex + 1u, firstVertex + 3u, firstVertex + 2u});
    }
@@ -142,6 +146,29 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
    }
 
    return drawDataList;
+}
+
+TextDrawData TextRenderer::QueueQuad(Vector2 size, const Matrix4x4& matrix, Vector2 uvMin, Vector2 uvMax, Vector4 color,
+   D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize) {
+   viewportWidth_ = viewportSize.x;
+   viewportHeight_ = viewportSize.y;
+   TextDrawData data{};
+   data.atlasSrv = texture;
+   data.startIndex = static_cast<uint32_t>(indices_.size());
+   data.indexCount = 6;
+   const auto base = static_cast<uint32_t>(vertices_.size());
+   const std::array<Vector2, 4> positions{{{0.0f, 0.0f}, {size.x, 0.0f}, {0.0f, size.y}, size}};
+   const std::array<Vector2, 4> coordinates{{uvMin, {uvMax.x, uvMin.y}, {uvMin.x, uvMax.y}, uvMax}};
+   const auto& m = matrix.m;
+   constexpr float kColorTextureAtlasType = 3.0f;
+   for (size_t i = 0; i < positions.size(); ++i) {
+      const auto point = positions[i];
+      const Vector2 position{
+         point.x * m[0][0] + point.y * m[1][0] + m[3][0], point.x * m[0][1] + point.y * m[1][1] + m[3][1]};
+      vertices_.push_back({position, coordinates[i], color, {1.0f, 1.0f, 0.0f, kColorTextureAtlasType}});
+   }
+   indices_.insert(indices_.end(), {base, base + 1, base + 2, base + 1, base + 3, base + 2});
+   return data;
 }
 
 bool TextRenderer::UploadBuffers() {

@@ -255,10 +255,6 @@ void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
 
    // EngineContext経由の全ゲーム処理へ、ここで確定した単一のDeltaTimeを配布する。
    EngineContext::SetGameDeltaTime(gameDeltaTime_);
-
-   if (auto* audio = EngineContext::GetAudio()) {
-      audio->SetGamePaused(mode_ == PlayMode::Paused || (mode_ == PlayMode::Edit && hasPlaySession_));
-   }
 }
 
 void PlayModeController::SetTimeScale(float timeScale) {
@@ -275,7 +271,7 @@ void PlayModeController::StopForSceneInitialization() {
    EngineContext::SetGameDeltaTime(gameDeltaTime_);
 
    if (auto* audio = EngineContext::GetAudio()) {
-      audio->SetGamePaused(previousMode != PlayMode::Edit);
+      audio->SetGamePaused(previousMode != PlayMode::Edit, previousMode != PlayMode::Edit);
    }
 
    // シーン遷移は同じPlayセッションの一部。開始Snapshotは明示的なStopまで保持する。
@@ -290,7 +286,7 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
       mode_ = PlayMode::Playing;
 
       if (auto* audio = EngineContext::GetAudio()) {
-         audio->SetGamePaused(false);
+         audio->SetGamePaused(false, false);
       }
 
       if (auto* scene = sceneManager.GetCurrentScene()) {
@@ -329,7 +325,7 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
    mode_ = PlayMode::Playing;
 
    if (auto* audio = EngineContext::GetAudio()) {
-      audio->SetGamePaused(false);
+      audio->SetGamePaused(false, false);
       audio->StopPreviews();
    }
 
@@ -381,7 +377,7 @@ void PlayModeController::StopAfterLoadFailure() {
    ClearPlaySessionState();
    if (auto* audio = EngineContext::GetAudio()) {
       audio->StopGameAudio();
-      audio->SetGamePaused(false);
+      audio->SetGamePaused(false, false);
    }
 }
 

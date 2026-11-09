@@ -2213,4 +2213,27 @@
       <Filter>Resources\engine\shaders</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameEngine\UI\UIComponents.h"><Filter>GameEngine\UI</Filter></ClInclude>
+    <ClCompile Include="GameEngine\UI\UIComponents.cpp"><Filter>GameEngine\UI</Filter></ClCompile>
+    <ClInclude Include="GameEngine\UI\UISystem.h"><Filter>GameEngine\UI</Filter></ClInclude>
+    <ClCompile Include="GameEngine\UI\UISystem.cpp"><Filter>GameEngine\UI</Filter></ClCompile>
+    <ClCompile Include="GameEngine\Graphics\Renderer\RendererUI.cpp"><Filter>GameEngine\Graphics\Renderer</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameProject\App\Component\UI\UISampleComponent.h"><Filter>GameProject\App\Component\UI</Filter></ClInclude>
+    <ClCompile Include="GameProject\App\Component\UI\UISampleComponent.cpp"><Filter>GameProject\App\Component\UI</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameEngine\UI\UIAnimationComponent.h"><Filter>GameEngine\UI</Filter></ClInclude>
+    <ClCompile Include="GameEngine\UI\UIAnimationComponent.cpp"><Filter>GameEngine\UI</Filter></ClCompile>
+    <ClCompile Include="GameEngine\UI\UIAnimationInspector.cpp"><Filter>GameEngine\UI</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameEngine\UI\UILayoutSolver.h"><Filter>GameEngine\UI</Filter></ClInclude>
+    <ClCompile Include="GameEngine\UI\UILayoutSolver.cpp"><Filter>GameEngine\UI</Filter></ClCompile>
+    <ClInclude Include="GameEngine\UI\UIScreenAssetSerializer.h"><Filter>GameEngine\UI</Filter></ClInclude>
+    <ClCompile Include="GameEngine\UI\UIScreenAssetSerializer.cpp"><Filter>GameEngine\UI</Filter></ClCompile>
+    <ClCompile Include="GameEngine\Scene\SceneObjectStoreSubtree.cpp"><Filter>GameEngine\Scene</Filter></ClCompile>
+  </ItemGroup>
 </Project>

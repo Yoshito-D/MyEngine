@@ -71,6 +71,9 @@ public:
    /// @brief ゲーム時間へ適用する倍率を取得する
    float GetTimeScale() const { return timeScale_; }
 
+   /// @brief エディターの1フレーム送りでUIへ配布する実時間（秒）を取得する。
+   float GetStepDeltaTime() const { return stepDeltaTime_; }
+
    /// @brief ゲーム時間へ適用する倍率を設定する
    void SetTimeScale(float timeScale);
 

@@ -909,6 +909,10 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
 
 void ParticleSystem::DispatchGpuSimulation(const PSOManager* psoManager) {
    if (!CanUseGpuSimulation()) return;
+   if (EngineContext::GetDeltaTime() <= 0.0f) {
+      gpu_->DispatchRender(psoManager);
+      return;
+   }
 
    const bool needsCpuState =
       ResolveSortMode() != RendererModule::SortMode::None || trailModule_->IsEnabled() || subEmitterSettings_.enabled;

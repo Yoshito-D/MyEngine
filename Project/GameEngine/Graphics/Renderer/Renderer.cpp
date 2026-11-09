@@ -1,4 +1,9 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/UI/UISystem.h"
+#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/UI/UIComponents.h"
+#include "GameEngine/Scene/Scene.h"
+#include "GameEngine/Input/InputActionService.h"
 #include <cstdint>
 #include <stdexcept>
 #include "GameEngine/Graphics/Renderer/Renderer.h"
@@ -765,11 +770,12 @@ void Renderer::EndFrame() {
    DrawAutoRegisteredParticles();
    DrawAutoRegisteredTexts();
 
-   textRenderer_->UploadBuffers();
-
    // ポストエフェクト対象のラインと対象外ラインを別キューへ送り、合成前後の位置を固定する。
    FlushLineRenderer(lineRenderer_.get(), RenderPass::Opaque);
    FlushLineRenderer(postProcessLineRenderer_.get(), RenderPass::PostProcess);
+
+   DrawManagedUI();
+   textRenderer_->UploadBuffers();
 
    // 次のフレームに備えてクリア
    lineRenderer_->Clear();
@@ -803,7 +809,19 @@ void Renderer::EndFrame() {
             }
          });
       bool gameHovered = false;
-      imGuiManager_->ShowViewport(offscreenRenderTarget_.get(), gameHovered, {}, true);
+      const bool playing = EngineContext::IsPlaying();
+      if (playing && !gameUIWasPlaying_) {
+         ImGui::SetNextWindowFocus();
+      }
+      gameUIWasPlaying_ = playing;
+      imGuiManager_->ShowViewport(
+         offscreenRenderTarget_.get(), gameHovered,
+         [this](float x, float y, float width, float height) {
+            gameUIOrigin_ = {x, y};
+            gameUISize_ = {width, height};
+            gameUIActive_ = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+         },
+         true);
 
       if (postProcessManager_->ShowImGuiControls() && editorController_) {
          editorController_->MarkActiveSceneDirty();
@@ -903,7 +921,8 @@ void Renderer::DrawAutoRegisteredSprites() {
    auto* fallbackTexture = textureManager->GetTexture("white1x1");
 
    for (auto* sprite : Sprite::GetRegisteredSprites()) {
-      if (!sprite) {
+      if (!sprite || (EngineContext::GetCurrentScene() &&
+                        EngineContext::GetCurrentScene()->GetSceneWorld().GetUI().IsManaged(*sprite))) {
          continue;
       }
 
@@ -986,7 +1005,8 @@ void Renderer::DrawAutoRegisteredTexts() {
    });
 
    for (UIText* text : texts) {
-      if (!text) {
+      if (!text || (EngineContext::GetCurrentScene() &&
+                      EngineContext::GetCurrentScene()->GetSceneWorld().GetUI().IsManaged(*text))) {
          continue;
       }
 

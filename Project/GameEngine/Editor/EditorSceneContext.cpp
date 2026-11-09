@@ -1,4 +1,9 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/UI/UISystem.h"
+#include "GameEngine/UI/UIComponents.h"
+#include "GameEngine/UI/UIScreenAssetSerializer.h"
+#include "GameEngine/UI/UIAnimationComponent.h"
+#include <fstream>
 #include <cstdint>
 #include "GameEngine/Editor/EditorSceneContext.h"
 
@@ -132,6 +137,7 @@ nlohmann::json EditorSceneContext::SerializeToJson() {
 
 void EditorSceneContext::ApplyHierarchyOrder(const nlohmann::json& hierarchyOrderData) {
    hierarchyOrder_.clear();
+   world_->GetUI().SetHierarchyOrder({});
 
    if (!hierarchyOrderData.is_array()) return;
 
@@ -156,6 +162,7 @@ void EditorSceneContext::ApplyHierarchyOrder(const nlohmann::json& hierarchyOrde
          hierarchyOrder_.push_back(id);
       }
    }
+   world_->GetUI().SetHierarchyOrder(hierarchyOrder_);
 }
 
 std::filesystem::path EditorSceneContext::GetSceneFilePath() const {
@@ -409,9 +416,54 @@ void EditorSceneContext::CreateAreaLight() {
       CreateObjectCommand::Kind::AreaLight, BuildPlacementTransformInFrontOfCamera()));
 }
 
+namespace {
+class UIScreenEditCommand final : public IEditorCommand {
+public:
+   /// @brief 配置・複製・削除の操作と初回ID再割当て方針を記録する。
+   UIScreenEditCommand(nlohmann::json asset, bool remove, bool fresh)
+      : asset_(std::move(asset)), remove_(remove), fresh_(fresh) {}
+
+   /// @brief 初回だけ新IDを割り当て、Redoでは確定済みIDを復元する。
+   bool Execute(EditorCommandTarget& target) override {
+      auto result = target.ApplyUIScreen(asset_, remove_, fresh_);
+      if (result.empty()) {
+         return false;
+      }
+      asset_ = std::move(result);
+      fresh_ = false;
+      return true;
+   }
+
+   /// @brief 子孫を含めて操作を取り消す。
+   void Undo(EditorCommandTarget& target) override { target.ApplyUIScreen(asset_, !remove_, false); }
+
+   /// @brief 履歴に表示する操作名を返す。
+   const char* GetName() const override { return remove_ ? "Delete UI Screen" : "Place UI Screen"; }
+
+private:
+   nlohmann::json asset_;
+   bool remove_;
+   bool fresh_;
+};
+}
+
 bool EditorSceneContext::PlaceAsset(const std::string& assetId, Object* parent) {
    const auto* entry = assetRegistry_.FindAsset(assetId);
 
+   if (entry && entry->type == EditorAssetType::UIScreen) {
+      try {
+         std::string error;
+         const auto asset = UIScreenAssetSerializer::Load(assetId, error);
+         if (asset.empty()) {
+            SetStatus(error, Logger::LogLevel::Warning);
+            return false;
+         }
+         return CommitEdit(std::make_unique<UIScreenEditCommand>(asset, false, true));
+      } catch (const std::exception& error) {
+         SetStatus(error.what(), Logger::LogLevel::Warning);
+         return false;
+      }
+   }
    if (!entry || (entry->type != EditorAssetType::Model && entry->type != EditorAssetType::Particle)) {
       SetStatus("Placement failed: only registered models and particles can be placed", Logger::LogLevel::Warning);
       return false;
@@ -441,7 +493,79 @@ bool EditorSceneContext::PlaceAsset(const std::string& assetId, Object* parent) 
    return created;
 }
 
+void EditorSceneContext::CreateUIElement(CreateObjectCommand::Kind kind) {
+   std::string parent;
+   if (kind != CreateObjectCommand::Kind::UICanvas) {
+      if (!selectedObject_ || !world_->GetUI().IsManaged(*selectedObject_)) {
+         SetStatus("Select a UI Canvas or one of its children", Logger::LogLevel::Warning);
+         return;
+      }
+      parent = selectedObject_->GetEntityId();
+   }
+   CommitEdit(std::make_unique<CreateObjectCommand>(kind, Transform{}, std::string{}, parent));
+}
+
+bool EditorSceneContext::SaveSelectedUIScreen(const std::string& assetId) {
+   if (!selectedObject_) {
+      return false;
+   }
+   std::string error;
+   const bool saved =
+      UIScreenAssetSerializer::Save(*world_, selectedObject_->GetEntityId(), assetId, error, hierarchyOrder_);
+   SetStatus(saved ? "Saved UI screen: " + assetId : error, saved ? Logger::LogLevel::Info : Logger::LogLevel::Warning);
+   if (saved) {
+      assetRegistry_.Scan();
+   }
+   return saved;
+}
+
+nlohmann::json EditorSceneContext::CommandOperations::ApplyUIScreen(
+   const nlohmann::json& asset, bool remove, bool freshIds) {
+   auto& store = owner_.Store();
+   std::string error;
+   if (remove) {
+      const auto id = asset.value("rootId", "");
+      auto snapshot = store.CaptureSubtree(id, error, owner_.hierarchyOrder_);
+      if (snapshot.empty()) {
+         owner_.SetStatus(error, Logger::LogLevel::Warning);
+         return {};
+      }
+      snapshot["editorHierarchyOrder"] = owner_.hierarchyOrder_;
+      owner_.SelectObject(nullptr);
+      store.DeleteSubtree(id);
+      return snapshot;
+   }
+   const auto id = store.RestoreSubtree(asset, freshIds, error);
+   if (id.empty()) {
+      owner_.SetStatus(error, Logger::LogLevel::Warning);
+      return {};
+   }
+   owner_.SelectObject(owner_.world_->FindObjectById(id));
+   auto snapshot = store.CaptureSubtree(id, error);
+   if (!freshIds && asset.contains("editorHierarchyOrder")) {
+      owner_.hierarchyOrder_ = asset.at("editorHierarchyOrder").get<std::vector<std::string>>();
+   } else {
+      for (const auto& object : snapshot["objects"]) {
+         const auto objectId = object.at("id").get<std::string>();
+         if (std::find(owner_.hierarchyOrder_.begin(), owner_.hierarchyOrder_.end(), objectId) ==
+             owner_.hierarchyOrder_.end()) {
+            owner_.hierarchyOrder_.push_back(objectId);
+         }
+      }
+   }
+   snapshot["editorHierarchyOrder"] = owner_.hierarchyOrder_;
+   return snapshot;
+}
+
 void EditorSceneContext::DuplicateSelectedObject() {
+   if (selectedObject_ && selectedObject_->GetComponent<UIScreenComponent>()) {
+      std::string error;
+      const auto asset = Store().CaptureSubtree(selectedObject_->GetEntityId(), error, hierarchyOrder_);
+      if (!asset.empty()) {
+         CommitEdit(std::make_unique<UIScreenEditCommand>(asset, false, true));
+      }
+      return;
+   }
    if (IsParticleSystemAlive(selectedParticleSystem_)) {
       // 複製もUndo可能にするため、具象型を直接コピーせず復元可能なスナップショットへ統一する。
       auto snapshot = GetParticleSnapshot(selectedParticleSystem_);
@@ -484,6 +608,14 @@ void EditorSceneContext::DuplicateSelectedObject() {
 void EditorSceneContext::DeleteObject(Object* object) {
    if (!CanDeleteObject(object)) return;
 
+   if (object->GetComponent<UIScreenComponent>()) {
+      std::string error;
+      auto asset = Store().CaptureSubtree(object->GetEntityId(), error, hierarchyOrder_);
+      if (!asset.empty()) {
+         CommitEdit(std::make_unique<UIScreenEditCommand>(asset, true, false));
+      }
+      return;
+   }
    CommitEdit(std::make_unique<DeleteObjectCommand>(object->GetEntityId()));
 }
 
@@ -778,6 +910,7 @@ nlohmann::json EditorSceneContext::CommandOperations::Create(CreateObjectCommand
          case Kind::Sprite:
             object = store.CreateSprite(assetId, &pose);
             break;
+         case Kind::UILabel:
          case Kind::UIText:
             object = store.CreateUIText(&pose);
             break;
@@ -789,6 +922,32 @@ nlohmann::json EditorSceneContext::CommandOperations::Create(CreateObjectCommand
             break;
       }
 
+      if (object && kind >= Kind::UICanvas && kind <= Kind::UILabel) {
+         object->AddComponent<TransformComponent>();
+         auto* rect = object->AddComponent<UIRectTransformComponent>();
+         auto settings = rect->DescribeSettings();
+         settings.elementKey = object->GetEntityId();
+         rect->Configure(settings);
+         if (kind == Kind::UICanvas) {
+            object->AddComponent<UICanvasComponent>();
+            object->AddComponent<UIScreenComponent>();
+            object->AddComponent<UIGroupComponent>();
+            object->AddComponent<UIAnimationComponent>();
+            object->SetObjectName("UI Screen");
+         } else if (kind == Kind::UIButton) {
+            object->AddComponent<UIButtonComponent>();
+            object->SetObjectName("Button");
+         } else if (kind == Kind::UISlider) {
+            object->AddComponent<UISliderComponent>();
+            object->SetObjectName("Slider");
+         } else if (kind == Kind::UIToggle) {
+            object->AddComponent<UIToggleComponent>();
+            object->SetObjectName("Toggle");
+         }
+         if (kind == Kind::UIButton || kind == Kind::UISlider || kind == Kind::UIToggle) {
+            object->AddComponent<UIAnimationComponent>()->ApplyButtonPreset();
+         }
+      }
       if (object && !parentId.empty()) {
          // 親が削除済みなら別のEntityを親にせず、生成自体を取り消す。
          if (!ResolveObject(parentId) || !object->SetParentEntityId(parentId)) {

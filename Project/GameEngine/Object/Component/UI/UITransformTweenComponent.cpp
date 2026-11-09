@@ -13,14 +13,14 @@
 #endif
 
 namespace {
-// Transform を持つ UI オブジェクトだけへ追加できるよう、Sprite と UIText の型マスクで登録する。
+// Genericの画面・操作部品にも演出を適用し、Transformの有無は更新時に確認する。
 const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFactory(
    GameEngine::UITransformTweenComponent::kTypeName,
    [](GameEngine::Object& object) -> GameEngine::IObjectComponent* {
       return object.AddComponent<GameEngine::UITransformTweenComponent>();
    },
    GameEngine::UITransformTweenComponent::kDisplayName,
-   GameEngine::ObjectType::Sprite | GameEngine::ObjectType::UIText);
+   GameEngine::ObjectType::Generic | GameEngine::ObjectType::Sprite | GameEngine::ObjectType::UIText);
 }
 
 namespace GameEngine {

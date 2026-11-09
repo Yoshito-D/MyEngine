@@ -95,6 +95,11 @@ public:
       UIText,
       Skybox,
       Particle,
+      UICanvas,
+      UIButton,
+      UISlider,
+      UIToggle,
+      UILabel,
       DirectionalLight,
       PointLight,
       SpotLight,
@@ -418,6 +423,9 @@ public:
 
    /// @brief スナップショットから作成し、確定したIDを返すデータに反映する。
    virtual nlohmann::json RestoreSnapshot(const nlohmann::json& snapshot) = 0;
+
+   /// @brief UI画面全体を一操作で配置・復元・削除する。成功時は確定ID付き保存状態を返す。
+   virtual nlohmann::json ApplyUIScreen(const nlohmann::json& asset, bool remove, bool freshIds) = 0;
 
    /// @brief コンポーネントを型名で追加・削除する。
    virtual bool ModifyComponent(const std::string& id, const std::string& typeName, bool add) = 0;

@@ -84,6 +84,22 @@ public:
       return it == typeIndex_.end() ? nullptr : static_cast<const T*>(it->second);
    }
 
+   /// @brief 指定基底型へ変換できる最初のComponentを取得する。所有権は移さない。
+   template <typename T> T* GetDerived() {
+      for (const auto& component : components_) {
+         if (auto* found = dynamic_cast<T*>(component.get())) return found;
+      }
+      return nullptr;
+   }
+
+   /// @brief 指定基底型へ変換できる最初のComponentを読み取り専用で取得する。
+   template <typename T> const T* GetDerived() const {
+      for (const auto& component : components_) {
+         if (const auto* found = dynamic_cast<const T*>(component.get())) return found;
+      }
+      return nullptr;
+   }
+
    /// @brief コンポーネントを持っているか（テンプレート版）
    template <typename T> bool Has() const {
       static_assert(std::is_base_of_v<IObjectComponent, T>, "T must derive from IObjectComponent");
@@ -117,7 +133,7 @@ public:
    bool RemoveByTypeName(const std::string& typeName);
 
    /// @brief 全コンポーネントを更新する
-   void Update(float deltaTime);
+   void Update(float deltaTime, ObjectUpdateDomain domain = ObjectUpdateDomain::Gameplay);
 
    /// @brief 無効な部品も含め共通設定の変更を適用する。
    void SynchronizeParameters();

@@ -1126,4 +1126,27 @@
     <RemoveDir Directories="@(_EmptyRuntimeResourceDirectory)" />
     <Message Importance="High" Text="Resources: @(_ResourceToCopy-&gt;Count()) files selected, @(_StaleRuntimeResource-&gt;Count()) stale files removed; unchanged files skipped." />
   </Target>
+  <ItemGroup>
+    <ClInclude Include="GameEngine\UI\UIComponents.h" />
+    <ClCompile Include="GameEngine\UI\UIComponents.cpp" />
+    <ClInclude Include="GameEngine\UI\UISystem.h" />
+    <ClCompile Include="GameEngine\UI\UISystem.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\RendererUI.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameProject\App\Component\UI\UISampleComponent.h" />
+    <ClCompile Include="GameProject\App\Component\UI\UISampleComponent.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameEngine\UI\UIAnimationComponent.h" />
+    <ClCompile Include="GameEngine\UI\UIAnimationComponent.cpp" />
+    <ClCompile Include="GameEngine\UI\UIAnimationInspector.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GameEngine\UI\UILayoutSolver.h" />
+    <ClCompile Include="GameEngine\UI\UILayoutSolver.cpp" />
+    <ClInclude Include="GameEngine\UI\UIScreenAssetSerializer.h" />
+    <ClCompile Include="GameEngine\UI\UIScreenAssetSerializer.cpp" />
+    <ClCompile Include="GameEngine\Scene\SceneObjectStoreSubtree.cpp" />
+  </ItemGroup>
 </Project>

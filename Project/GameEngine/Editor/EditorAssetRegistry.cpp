@@ -654,6 +654,8 @@ const char* EditorAssetRegistry::GetAssetTypeLabel(EditorAssetType type) {
          return "Material";
       case EditorAssetType::Parameter:
          return "Shared Parameters";
+      case EditorAssetType::UIScreen:
+         return "UI Screen";
       case EditorAssetType::Prefab:
          return "Prefab";
       case EditorAssetType::Json:
@@ -707,6 +709,10 @@ EditorAssetType EditorAssetRegistry::ClassifyAsset(
 
       if (category == "parameters") {
          return EditorAssetType::Parameter;
+      }
+
+      if (category == "ui") {
+         return EditorAssetType::UIScreen;
       }
 
       if (category == "prefabs") {

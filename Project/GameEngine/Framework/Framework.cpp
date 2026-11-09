@@ -1,4 +1,6 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/UI/UISystem.h"
+#include "GameEngine/Scene/Scene.h"
 #include <chrono>
 #include "GameEngine/Framework/Framework.h"
 #include "GameEngine/Utility/ExportDump.h"
@@ -131,6 +133,36 @@ void Framework::EndFrame() {
    // 中間リソースの解放
    assetManager_->GetTextureManager()->ReleaseIntermediateResources();
    assetManager_->GetFontManager()->ReleaseIntermediateResources();
+}
+
+void Framework::UpdateUIFrame(bool runtimeUpdate, float uiDeltaTime) {
+   auto* scene = EngineContext::GetCurrentScene();
+   if (!scene) {
+      EngineContext::SetUIFrameState(0.0f, false);
+      return;
+   }
+   auto& ui = scene->GetSceneWorld().GetUI();
+   auto input = renderer_->ReadUIInput(*input_, *inputActionService_);
+   input.active = input.active && runtimeUpdate;
+   ui.BeginFrame(renderer_->GetUIViewportSize(), input, uiDeltaTime, runtimeUpdate);
+   if (ui.BlocksGameplayInput()) {
+      waitForGameplayInputRelease_ = true;
+   } else if (waitForGameplayInputRelease_) {
+      bool held = inputActionService_->HasHeldActions();
+      constexpr std::uint32_t kDirectInputKeyCount = 256;
+      for (std::uint32_t key = 0; key < kDirectInputKeyCount; ++key) {
+         held = held || input_->IsKeyPressed(static_cast<std::uint8_t>(key));
+      }
+      for (const auto button : {MouseButton::Left, MouseButton::Right, MouseButton::Middle}) {
+         held = held || input_->IsMousePressed(button);
+      }
+      waitForGameplayInputRelease_ = held;
+   }
+   EngineContext::SetUIFrameState(
+      runtimeUpdate ? uiDeltaTime : 0.0f, ui.BlocksGameplayInput() || waitForGameplayInputRelease_);
+   if (ui.PausesGameplay()) {
+      EngineContext::SetGameDeltaTime(0.0f);
+   }
 }
 
 void Framework::Update() {

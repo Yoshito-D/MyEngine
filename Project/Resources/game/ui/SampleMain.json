@@ -1,0 +1,1251 @@
+{
+   "version": 1,
+   "rootId": "ui_sample_main",
+   "objects": [
+      {
+         "id": "ui_sample_main",
+         "parentId": "",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "main"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "main",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     1280,
+                     720
+                  ]
+               }
+            },
+            {
+               "typeName": "UICanvasComponent",
+               "enabled": true,
+               "data": {}
+            },
+            {
+               "typeName": "UIScreenComponent",
+               "enabled": true,
+               "data": {
+                  "defaultFocusKey": "open",
+                  "blocksBelowInput": true,
+                  "openOnStart": true
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "show": {
+                     "enabled": true,
+                     "duration": 0.24,
+                     "delay": 0,
+                     "easing": 3,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.94,
+                              0.94
+                           ],
+                           "rotation": 0,
+                           "opacity": 0
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "hide": {
+                     "enabled": true,
+                     "duration": 0.18,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 0
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_title",
+         "parentId": "ui_sample_main",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "title"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "title",
+                  "position": [
+                     72,
+                     46
+                  ],
+                  "size": [
+                     900,
+                     70
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "UI FOUNDATION",
+                  "fontId": "arial",
+                  "fontSize": 48,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_help",
+         "parentId": "ui_sample_main",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "help"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "help",
+                  "position": [
+                     72,
+                     120
+                  ],
+                  "size": [
+                     1150,
+                     48
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "Mouse / arrows or WASD / gamepad   |   Space / A: confirm   Esc / B: back",
+                  "fontId": "arial",
+                  "fontSize": 23,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_open",
+         "parentId": "ui_sample_main",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "open"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "open",
+                  "position": [
+                     72,
+                     210
+                  ],
+                  "size": [
+                     410,
+                     62
+                  ]
+               }
+            },
+            {
+               "typeName": "UIButtonComponent",
+               "enabled": true,
+               "data": {
+                  "navigationOrder": 0
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "focus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "unfocus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "click": {
+                     "enabled": true,
+                     "duration": 0.16,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 0.35,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.92,
+                              0.92
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_open_label",
+         "parentId": "ui_sample_open",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "openLabel"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "openLabel",
+                  "position": [
+                     18,
+                     15
+                  ],
+                  "size": [
+                     385,
+                     40
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "Open overlay (pauses gameplay)",
+                  "fontId": "arial",
+                  "fontSize": 24,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_slider_label",
+         "parentId": "ui_sample_main",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "sliderValue"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "sliderValue",
+                  "position": [
+                     72,
+                     300
+                  ],
+                  "size": [
+                     410,
+                     40
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "Value: 0.50",
+                  "fontId": "arial",
+                  "fontSize": 28,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_slider",
+         "parentId": "ui_sample_main",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "slider"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "slider",
+                  "position": [
+                     72,
+                     350
+                  ],
+                  "size": [
+                     410,
+                     44
+                  ]
+               }
+            },
+            {
+               "typeName": "UISliderComponent",
+               "enabled": true,
+               "data": {
+                  "navigationOrder": 1,
+                  "value": 0.5,
+                  "step": 0.05
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "focus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "unfocus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "click": {
+                     "enabled": true,
+                     "duration": 0.16,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 0.35,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.92,
+                              0.92
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_toggle",
+         "parentId": "ui_sample_main",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "toggle"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "toggle",
+                  "position": [
+                     72,
+                     430
+                  ],
+                  "size": [
+                     70,
+                     44
+                  ]
+               }
+            },
+            {
+               "typeName": "UIToggleComponent",
+               "enabled": true,
+               "data": {
+                  "navigationOrder": 2
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "focus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "unfocus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "click": {
+                     "enabled": true,
+                     "duration": 0.16,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 0.35,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.92,
+                              0.92
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_toggle_label",
+         "parentId": "ui_sample_main",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "toggleValue"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "toggleValue",
+                  "position": [
+                     160,
+                     433
+                  ],
+                  "size": [
+                     400,
+                     40
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "Toggle: OFF",
+                  "fontId": "arial",
+                  "fontSize": 28,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_game_time",
+         "parentId": "ui_sample_main",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "gameTime"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "gameTime",
+                  "position": [
+                     620,
+                     225
+                  ],
+                  "size": [
+                     500,
+                     45
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "Game time: 0.00 s",
+                  "fontId": "arial",
+                  "fontSize": 32,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_ui_time",
+         "parentId": "ui_sample_main",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "uiTime"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "uiTime",
+                  "position": [
+                     620,
+                     290
+                  ],
+                  "size": [
+                     500,
+                     45
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "UI time: 0.00 s",
+                  "fontId": "arial",
+                  "fontSize": 32,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      },
+      {
+         "id": "ui_sample_note",
+         "parentId": "ui_sample_main",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "note"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "note",
+                  "position": [
+                     620,
+                     380
+                  ],
+                  "size": [
+                     580,
+                     130
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "The game clock freezes under the overlay.\nThe UI clock and UI audio keep running.\nSlider: left/right or drag. Tab: next control.",
+                  "fontId": "arial",
+                  "fontSize": 25,
+                  "color": [
+                     0.92,
+                     0.95,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ]
+               }
+            }
+         ]
+      }
+   ]
+}

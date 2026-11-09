@@ -38,21 +38,21 @@ struct TutorialGuideState {
 /// @brief 案内・結果文面とフェードを管理し、課題の進行判定から分離する。
 class TutorialGuidePresenter {
 public:
-   /// @brief 案内履歴を消し、シーンの基準不透明度を保存する。
-   void Reset(float baseOpacity);
+   /// @brief 案内履歴を消し、シーンの本文と補足文の基準不透明度を保存する。
+   void Reset(float baseOpacity, float feedbackBaseOpacity);
 
    /// @brief 説明が完全表示され、次へ進む入力を受け付けられるかを返す。
    bool IsReady() const { return guideFadeState_ == GuideFadeState::Visible && pendingText_.empty(); }
 
-   /// @brief 最新の課題文面に向けてフェードを更新する。表示先がない場合は何もしない。
-   void UpdateGuideText(
-      const TutorialGuideState& state, GameEngine::UITextComponent* guideText,
-      GameEngine::UITextComponent* promptText, float deltaTime, float fadeDuration);
+   /// @brief 最新の課題文面に向け、本文・操作案内・補足文のフェードを同期する。本文の表示先がない場合は何もしない。
+   void UpdateGuideText(const TutorialGuideState& state, GameEngine::UITextComponent* guideText,
+      GameEngine::UITextComponent* promptText, GameEngine::UITextComponent* feedbackText, float deltaTime,
+      float fadeDuration);
 
    /// @brief 折り返しを含む本文と操作案内の実際の高さに合わせ、各UIを余白付きで縦に並べる。
    void UpdateLayout(GameEngine::UITextComponent* guideText, GameEngine::UITextComponent* promptText,
       GameEngine::UITextComponent* feedbackText);
-   /// @brief 操作状態と結果に対応する短い案内を表示する。
+   /// @brief 本文のフェードアウト中は前の補足文を保ち、それ以外は最新の操作状態と結果を表示する。
    void UpdateFeedback(const TutorialGuideState& state, GameEngine::UITextComponent* feedbackText, float deltaTime);
    /// @brief ドリフト終了の成否を一定時間表示する。
    void ShowDriftResult(bool fired);
@@ -73,7 +73,8 @@ private:
    };
 
    static std::string BuildGuideText(const TutorialGuideState& state);
-   void ApplyGuideOpacity(GameEngine::UITextComponent* guideText, GameEngine::UITextComponent* promptText);
+   void ApplyGuideOpacity(GameEngine::UITextComponent* guideText, GameEngine::UITextComponent* promptText,
+      GameEngine::UITextComponent* feedbackText);
    GuideFadeState guideFadeState_ = GuideFadeState::Visible; ///< 案内文のフェード状態。
    std::string displayedText_;                               ///< 最後に反映した案内。
    std::string pendingText_;                                 ///< フェード後に反映する案内。
@@ -81,6 +82,7 @@ private:
    std::string driftFeedback_;                               ///< 直近のドリフト結果。
    float driftFeedbackRemaining_ = 0.0f;                     ///< 操作結果を表示する残り時間。進行判定には使わない。
    float guideBaseOpacity_ = 1.0f;                           ///< シーンに保存された案内文の不透明度。
+   float feedbackBaseOpacity_ = 1.0f;                        ///< シーンに保存された補足文の不透明度。
    float guideVisibility_ = 1.0f;                            ///< フェードによる表示割合。
 };
 }

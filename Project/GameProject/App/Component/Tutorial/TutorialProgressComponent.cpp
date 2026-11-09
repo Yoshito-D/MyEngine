@@ -79,7 +79,8 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
    phaseSettings_ = {};
    frameInput_ = {};
    referencesUnavailable_ = false;
-   guidePresenter_.Reset(guideText_ ? guideText_->GetStyle().color.w : 1.0f);
+   guidePresenter_.Reset(
+      guideText_ ? guideText_->GetStyle().color.w : 1.0f, feedbackText_ ? feedbackText_->GetStyle().color.w : 1.0f);
    SetTargetPlanetEnabled(false);
    if (vehicleInput_) {
       vehicleInput_->SetJumpEnabled(false);
@@ -107,7 +108,7 @@ void TutorialProgressComponent::UpdatePresentation(float deltaTime) {
       const auto up = GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, transform->GetLocalPose().GetActiveQuaternion());
       state.aligned = up.Dot(gravityBody_->GetTargetUpVector()) >= 0.95f;
    }
-   guidePresenter_.UpdateGuideText(state, guideText_, promptText_, deltaTime, guideFadeDuration_);
+   guidePresenter_.UpdateGuideText(state, guideText_, promptText_, feedbackText_, deltaTime, guideFadeDuration_);
    guidePresenter_.UpdateFeedback(state, feedbackText_, deltaTime);
    guidePresenter_.UpdateLayout(guideText_, promptText_, feedbackText_);
 }

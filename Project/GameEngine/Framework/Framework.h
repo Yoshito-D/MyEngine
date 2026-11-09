@@ -42,7 +42,12 @@ public:
    /// @brief ビルド用DDS生成、または通常の初期化・描画ループを実行する。
    void Run();
 
+protected:
+   /// @brief 生入力からUIを更新し、ゲーム入力の遮断とUI実時間を確定する。
+   void UpdateUIFrame(bool runtimeUpdate, float uiDeltaTime);
+
 private:
+   bool waitForGameplayInputRelease_ = false; ///< メニュー終了操作をゲームへ持ち越さないための中立待ち。
 #ifdef _DEBUG
    /// @brief 他の所有メンバー破棄後にDirect3Dリソースの解放漏れを確認する監視オブジェクト。
    D3DResourceLeakChecker resourceLeakChecker;

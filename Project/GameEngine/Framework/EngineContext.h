@@ -74,6 +74,15 @@ public:
    /// @brief アプリケーション所有のシーン管理を接続する。破棄前に接続を解除する。
    static void SetSceneManager(SceneManager* manager);
 
+   /// @brief UI入力と時間のフレーム状態を確定する。ゲーム用入力だけを遮断する。
+   static void SetUIFrameState(float deltaTime, bool gameplayInputBlocked);
+
+   /// @brief UIへ配布するフレーム時間（秒）を返す。エディター停止時は0。
+   static float GetUIFrameDeltaTime();
+
+   /// @brief エディターの生入力参照区間を開始・終了する。ゲーム更新の外でだけ使用する。
+   static void SetEditorInputAccess(bool enabled);
+
    /// @brief アプリケーションが所有するシーン管理を取得する。
    static SceneManager* GetSceneManager();
 

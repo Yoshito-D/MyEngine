@@ -40,7 +40,11 @@ public:
    /// @return アトラスページごとの描画コマンドデータ
    std::vector<TextDrawData> QueueText(const TextLayoutResult& layout, const TextStyle& style,
       const Transform& transform, size_t visibleGlyphCount, uint32_t layoutWidth, uint32_t layoutHeight,
-      float viewportWidth, float viewportHeight);
+      float viewportWidth, float viewportHeight, const Matrix4x4* matrix = nullptr);
+
+   /// @brief 共通UI変換を適用した画像矩形を文字と同じキューへ追加する。
+   TextDrawData QueueQuad(Vector2 size, const Matrix4x4& matrix, Vector2 uvMin, Vector2 uvMax, Vector4 color,
+      D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize);
 
    /// @brief CPU上で構築した頂点とインデックスをGPU可視バッファへ反映する
    /// @return 転送に成功した場合はtrue

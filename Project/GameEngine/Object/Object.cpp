@@ -266,8 +266,8 @@ nlohmann::json Object::SerializeComponents() const {
    return components_.Serialize();
 }
 
-void Object::UpdateComponents(float deltaTime) {
-   components_.Update(deltaTime);
+void Object::UpdateComponents(float deltaTime, ObjectUpdateDomain domain) {
+   components_.Update(deltaTime, domain);
 }
 
 void Object::Activate() {

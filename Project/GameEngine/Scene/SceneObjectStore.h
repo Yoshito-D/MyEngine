@@ -102,6 +102,19 @@ public:
    /// @return 復元可能なオブジェクトJSON
    nlohmann::json SerializeObjectState(const Object* object, const std::string& id = {}) const;
 
+   /// @brief ルートと全子孫のIDを親から子の順で列挙する。保存できないComponentにも依存しない。
+   std::vector<std::string> GetSubtreeIds(const std::string& rootId, const std::vector<std::string>& order = {}) const;
+
+   /// @brief ルートと全子孫の完全な設定を保存する。アセット用の型制限は適用しない。
+   nlohmann::json CaptureSubtree(
+      const std::string& rootId, std::string& error, const std::vector<std::string>& order = {}) const;
+
+   /// @brief 階層を二段階で復元する。freshIds=falseは元IDを使い、途中失敗は生成分を解除する。
+   std::string RestoreSubtree(const nlohmann::json& snapshot, bool freshIds, std::string& error);
+
+   /// @brief ルートと子孫を子から順に遅延削除する。保存形式やComponentの許可リストは使わない。
+   bool DeleteSubtree(const std::string& rootId);
+
    /// @brief 既存Objectへ同じ具象型の保存状態を適用する
    /// @param object 適用対象
    /// @param objectData SerializeObjectState形式のJSON

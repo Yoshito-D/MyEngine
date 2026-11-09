@@ -20,7 +20,13 @@ IObjectComponent* ComponentContainer::AddByTypeName(const std::string& typeName)
    }
 
    // 文字列から具象型を生成する責務はRegistryへ集約し、JSON復元側が各Componentを知らずに済むようにする。
-   return ComponentRegistry::GetInstance().CreateComponent(owner_, typeName);
+   try {
+      return ComponentRegistry::GetInstance().CreateComponent(owner_, typeName);
+   } catch (const std::exception& error) {
+      // 接続条件の違反は追加失敗として返し、Inspector操作でランタイム全体を終了させない。
+      Logger::Warning("Component attachment failed: " + typeName + ": " + error.what());
+      return nullptr;
+   }
 }
 
 bool ComponentContainer::HasByTypeName(const std::string& typeName) const {
@@ -65,7 +71,7 @@ void ComponentContainer::SynchronizeParameters() {
    }
 }
 
-void ComponentContainer::Update(float deltaTime) {
+void ComponentContainer::Update(float deltaTime, ObjectUpdateDomain domain) {
    // 保存・Inspectorの並びは変更せず、依存関係に沿った非所有ビューだけを整列する。
    std::vector<IObjectComponent*> updates;
    updates.reserve(components_.size());
@@ -78,7 +84,7 @@ void ComponentContainer::Update(float deltaTime) {
       [](const auto* left, const auto* right) { return left->GetUpdatePhase() < right->GetUpdatePhase(); });
    // 無効Componentは状態を保持したまま更新だけ停止し、再有効化時に同じインスタンスを再利用する。
    for (auto* component : updates) {
-      if (component->IsEnabled()) {
+      if (component->IsEnabled() && component->GetUpdateDomain() == domain) {
          component->Update(deltaTime);
       }
    }

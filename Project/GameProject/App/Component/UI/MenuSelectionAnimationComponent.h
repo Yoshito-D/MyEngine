@@ -17,6 +17,9 @@ namespace App {
 /// @brief メニュー項目の参照と基準姿勢を保持し、表示・選択・決定・非表示の演出を管理する。
 class MenuSelectionAnimationComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief ポーズ中もUI実時間で演出を進める。
+   GameEngine::ObjectUpdateDomain GetUpdateDomain() const override { return GameEngine::ObjectUpdateDomain::UI; }
+
    /// @brief 構成済みの選択肢の数を返す。
    std::size_t GetOptionCount() const { return options_.size(); }
 

@@ -12,6 +12,9 @@ namespace GameEngine {
 /// @brief UIの移動、拡縮、回転を時間補間するコンポーネント
 class UITransformTweenComponent final : public IObjectComponent {
 public:
+   /// @brief ポーズ中もUI実時間で演出を進める。
+   GameEngine::ObjectUpdateDomain GetUpdateDomain() const override { return GameEngine::ObjectUpdateDomain::UI; }
+
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "UITransformTweenComponent";
    /// @brief エディターに表示する日本語名と英語名。
