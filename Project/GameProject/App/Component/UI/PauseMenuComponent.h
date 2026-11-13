@@ -5,12 +5,22 @@
 #include <initializer_list>
 #include <string>
 
+namespace GameEngine {
+class Audio;
+}
+
 namespace App {
-/// @brief チュートリアルとゲームで共通のポーズ画面・音量設定を接続する。
+/// @brief チュートリアルとゲームで共通のポーズ画面を接続し、ユーザー音量設定を読み書きする。
 class PauseMenuComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "PauseMenuComponent";
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"ポーズメニュー", "Pause Menu"};
+
+   /// @brief 全体・BGM・SE音量を読み込む。ファイルがない場合や不正な場合は現在の音量を保つ。
+   /// @details ポーズ画面を持たないタイトルの音声にも反映するため、シーン読込前に呼び出す。
+   /// @param audio 読み込んだ0～1の音量を適用する音声サービス。
+   /// @return 読み込みに成功した場合、または初回起動でファイルがない場合はtrue。
+   static bool LoadAudioSettings(GameEngine::Audio& audio);
 
    /// @brief 保存と検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
@@ -39,6 +49,11 @@ public:
 #endif
 
 private:
+   /// @brief 全体・BGM・SEの設定音量を一時ファイル経由で保存する。BGMの一時的な減衰率は保存しない。
+   /// @param audio 設定した0～1の音量を取得する音声サービス。
+   /// @return 保存先の置換まで成功した場合はtrue。失敗時は既存のファイルを保持する。
+   static bool SaveAudioSettings(const GameEngine::Audio& audio);
+
    bool IsPresentationActive() const;
    bool CreatePauseScreen();
    void OpenSettings();

@@ -1,5 +1,4 @@
 #include "GameProject/App/Component/UI/PauseMenuComponent.h"
-#include "GameProject/App/AudioSettings.h"
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameEngine/Audio/Audio.h"
 #include "GameEngine/Framework/EngineContext.h"
@@ -10,11 +9,16 @@
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/UI/UIComponents.h"
 #include "GameEngine/UI/UISystem.h"
+#include "GameEngine/Utility/JsonFile.h"
 #include "GameEngine/Utility/Logger.h"
 #include <format>
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <stdexcept>
 #include <utility>
 
 #ifdef USE_IMGUI
@@ -23,6 +27,9 @@
 #endif
 
 namespace {
+/// @brief タイム記録と同じ保存フォルダーに置く、ユーザー音量設定の保存先。
+constexpr const char* kAudioSettingsFile = "Saved/audio_settings.json";
+constexpr std::int32_t kAudioSettingsVersion = 1;
 constexpr const char* kPauseScreenAsset = "game/ui/PauseMenu.json";
 constexpr const char* kSettingsScreenAsset = "game/ui/PauseSettings.json";
 constexpr const char* kCursorSoundAsset = "game/sounds/se/system/cursor.mp3";
@@ -31,9 +38,76 @@ constexpr float kVolumePercent = 100.0f;
 constexpr float kPausedBgmGain = 0.25f;
 constexpr float kPauseBackgroundBlur = 1.0f;
 constexpr float kSelectionFrameLoopSeconds = 3.0f;
+
+float ReadVolume(const nlohmann::json& settings, const char* key) {
+   const auto& value = settings.at(key);
+
+   if (!value.is_number()) {
+      throw std::invalid_argument(std::string("volume is not a number: ") + key);
+   }
+
+   const float volume = value.get<float>();
+
+   if (!std::isfinite(volume) || volume < 0.0f || volume > 1.0f) {
+      throw std::invalid_argument(std::string("volume is outside 0..1: ") + key);
+   }
+
+   return volume;
+}
 }
 
 namespace App {
+bool PauseMenuComponent::LoadAudioSettings(GameEngine::Audio& audio) {
+   const std::filesystem::path file(kAudioSettingsFile);
+
+   try {
+      // 初回起動では既定の音量を使い、設定を変更するまでは保存ファイルを作らない。
+      if (!std::filesystem::exists(file)) {
+         return true;
+      }
+
+      std::ifstream input(file);
+
+      if (!input.is_open()) {
+         throw std::runtime_error("could not open settings file");
+      }
+
+      nlohmann::json settings;
+      input >> settings;
+
+      if (!settings.is_object() || !settings.contains("version") || !settings.at("version").is_number_integer() ||
+          settings.at("version") != kAudioSettingsVersion) {
+         throw std::invalid_argument("invalid settings format");
+      }
+
+      // 全項目を検証してから適用し、一部だけ読み込まれた音量で起動することを防ぐ。
+      const float master = ReadVolume(settings, "master");
+      const float bgm = ReadVolume(settings, "bgm");
+      const float se = ReadVolume(settings, "se");
+      audio.SetMasterVolume(master);
+      audio.SetBusVolume(GameEngine::AudioBus::Bgm, bgm);
+      audio.SetBusVolume(GameEngine::AudioBus::Se, se);
+      return true;
+   } catch (const std::exception& exception) {
+      Logger::Warning("Audio settings could not be loaded: " + file.generic_string() + " (" + exception.what() + ")",
+         Logger::LogChannel::Game);
+      return false;
+   }
+}
+
+bool PauseMenuComponent::SaveAudioSettings(const GameEngine::Audio& audio) {
+   const std::filesystem::path file(kAudioSettingsFile);
+   const nlohmann::json settings{{"version", kAudioSettingsVersion}, {"master", audio.GetMasterVolume()},
+      {"bgm", audio.GetBusVolume(GameEngine::AudioBus::Bgm)}, {"se", audio.GetBusVolume(GameEngine::AudioBus::Se)}};
+
+   if (GameEngine::SaveJsonFileAtomically(file, settings)) {
+      return true;
+   }
+
+   Logger::Warning("Audio settings could not be saved: " + file.generic_string(), Logger::LogChannel::Game);
+   return false;
+}
+
 void PauseMenuComponent::OnSceneLoaded(GameEngine::SceneWorld& world) {
    world_ = &world;
    pauseScreenId_.clear();
