@@ -85,7 +85,7 @@ void CreateStructuredBufferUav(
 
 }
 
-void ModelAsset::CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCluster& skinCluster,
+void SkinCluster::CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCluster& skinCluster,
    const std::vector<MeshData>& meshes, const std::vector<ComPtr<ID3D12Resource>>& vertexResources) {
    ID3D12Device* d3dDevice = device->GetDevice();
 
@@ -121,7 +121,7 @@ void ModelAsset::CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCl
    }
 }
 
-void ModelAsset::CreateOutputSkinningResources(
+void SkinCluster::CreateOutputSkinningResources(
    GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes) {
    ID3D12Device* d3dDevice = device->GetDevice();
 
@@ -233,14 +233,24 @@ bool ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, 
 
    // ボーンを持たないモデルではスキニング用ディスクリプタを消費しない。
    if (hasSkinningData_ && skeleton_ && !skeleton_->GetJoints().empty() && !modelData_.meshes.empty()) {
-      skinCluster_ = CreateSkinCluster(device, *skeleton_, modelData_);
+      skinCluster_ = SkinCluster::Create(device, *skeleton_, modelData_, vertexResources_);
    }
 
    return true;
 }
 
-std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() const try {
+std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() const {
    if (!hasSkinningData_ || !graphicsDevice_ || !skeleton_ || !skinCluster_) {
+      return std::nullopt;
+   }
+
+   return skinCluster_->CreateInstance(graphicsDevice_, *skeleton_, modelData_.meshes);
+}
+
+std::optional<SkinCluster> SkinCluster::CreateInstance(
+   GraphicsDevice* device, const Skeleton& skeleton, const std::vector<MeshData>& meshes) const try {
+   if (!device || !device->GetDevice() || !HasPalette() ||
+       skeleton.GetJoints().size() != inverseBindPoseMatrices.size()) {
       return std::nullopt;
    }
 
@@ -249,23 +259,23 @@ std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() const try {
    SkinCluster instance;
 
    // 読み取り専用の入力だけを共有し、出力リソースと遷移状態の別名を作らない。
-   instance.inverseBindPoseMatrices = skinCluster_->inverseBindPoseMatrices;
-   instance.influenceResources = skinCluster_->influenceResources;
-   instance.influenceBufferViews = skinCluster_->influenceBufferViews;
-   instance.mappedInfluenceData = skinCluster_->mappedInfluenceData;
-   instance.inputVertexSrvHandles = skinCluster_->inputVertexSrvHandles;
-   instance.influenceSrvHandles = skinCluster_->influenceSrvHandles;
-   instance.inputVertexDescriptors = skinCluster_->inputVertexDescriptors;
-   instance.influenceDescriptors = skinCluster_->influenceDescriptors;
-   ID3D12Device* d3dDevice = graphicsDevice_->GetDevice();
+   instance.inverseBindPoseMatrices = inverseBindPoseMatrices;
+   instance.influenceResources = influenceResources;
+   instance.influenceBufferViews = influenceBufferViews;
+   instance.mappedInfluenceData = mappedInfluenceData;
+   instance.inputVertexSrvHandles = inputVertexSrvHandles;
+   instance.influenceSrvHandles = influenceSrvHandles;
+   instance.inputVertexDescriptors = inputVertexDescriptors;
+   instance.influenceDescriptors = influenceDescriptors;
+   ID3D12Device* d3dDevice = device->GetDevice();
 
    instance.paletteResource =
-      ResourceHelper::CreateBufferResource(d3dDevice, sizeof(WellForGPU) * skeleton_->GetJoints().size());
-   WellForGPU* mappedPalette = nullptr;
-   instance.paletteResource->Map(0, nullptr, reinterpret_cast<void**>(&mappedPalette));
-   instance.mappedPalette = {mappedPalette, skeleton_->GetJoints().size()};
+      ResourceHelper::CreateBufferResource(d3dDevice, sizeof(WellForGPU) * skeleton.GetJoints().size());
+   WellForGPU* paletteData = nullptr;
+   instance.paletteResource->Map(0, nullptr, reinterpret_cast<void**>(&paletteData));
+   instance.mappedPalette = {paletteData, skeleton.GetJoints().size()};
 
-   instance.paletteSrvHandle = AllocateSrvUavDescriptor(graphicsDevice_, instance.paletteDescriptor);
+   instance.paletteSrvHandle = AllocateSrvUavDescriptor(device, instance.paletteDescriptor);
 
    D3D12_SHADER_RESOURCE_VIEW_DESC paletteSrvDesc{};
    paletteSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -273,20 +283,20 @@ std::optional<SkinCluster> ModelAsset::CreateSkinClusterInstance() const try {
    paletteSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
    paletteSrvDesc.Buffer.FirstElement = 0;
    paletteSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-   paletteSrvDesc.Buffer.NumElements = static_cast<UINT>(skeleton_->GetJoints().size());
+   paletteSrvDesc.Buffer.NumElements = static_cast<UINT>(skeleton.GetJoints().size());
    paletteSrvDesc.Buffer.StructureByteStride = sizeof(WellForGPU);
    d3dDevice->CreateShaderResourceView(
       instance.paletteResource.Get(), &paletteSrvDesc, instance.paletteSrvHandle.first);
 
    // アニメーション適用前でもBind Poseで正しく描ける初期Paletteを設定する。
-   for (size_t jointIndex = 0; jointIndex < skeleton_->GetJoints().size(); ++jointIndex) {
+   for (size_t jointIndex = 0; jointIndex < skeleton.GetJoints().size(); ++jointIndex) {
       const Matrix4x4 skinMatrix =
-         instance.inverseBindPoseMatrices[jointIndex] * skeleton_->GetJoints()[jointIndex].skeletonSpaceMatrix;
+         instance.inverseBindPoseMatrices[jointIndex] * skeleton.GetJoints()[jointIndex].skeletonSpaceMatrix;
       instance.mappedPalette[jointIndex].skeletonSpaceMatrix = skinMatrix;
       instance.mappedPalette[jointIndex].skeletonSpaceInverseTransposeMatrix = skinMatrix.Inverse().Transpose();
    }
 
-   CreateOutputSkinningResources(graphicsDevice_, instance, modelData_.meshes);
+   CreateOutputSkinningResources(device, instance, meshes);
 
    return instance;
 } catch (const std::overflow_error& error) {
@@ -491,11 +501,11 @@ int32_t ModelAsset::CreateJoint(const Node& node, const std::optional<int32_t>& 
    return joint.index;
 }
 
-SkinCluster ModelAsset::CreateSkinCluster(
-   GraphicsDevice* device, const Skeleton& skeleton, const ModelData& modelData) {
+SkinCluster SkinCluster::Create(GraphicsDevice* device, const Skeleton& skeleton, const ModelData& modelData,
+   const std::vector<ComPtr<ID3D12Resource>>& vertexResources) {
    SkinCluster skinCluster;
 
-   if (!device) {
+   if (!device || !device->GetDevice() || skeleton.GetJoints().empty()) {
       return skinCluster;
    }
 
@@ -508,9 +518,9 @@ SkinCluster ModelAsset::CreateSkinCluster(
    // 1) palette用Resourceを確保
    skinCluster.paletteResource =
       ResourceHelper::CreateBufferResource(d3dDevice, sizeof(WellForGPU) * skeleton.GetJoints().size());
-   WellForGPU* mappedPalette = nullptr;
-   skinCluster.paletteResource->Map(0, nullptr, reinterpret_cast<void**>(&mappedPalette));
-   skinCluster.mappedPalette = {mappedPalette, skeleton.GetJoints().size()};
+   WellForGPU* paletteData = nullptr;
+   skinCluster.paletteResource->Map(0, nullptr, reinterpret_cast<void**>(&paletteData));
+   skinCluster.mappedPalette = {paletteData, skeleton.GetJoints().size()};
 
    // 2) palette用SRVを作成
    {
@@ -561,7 +571,7 @@ SkinCluster ModelAsset::CreateSkinCluster(
       skinCluster.influenceBufferViews[meshIndex].StrideInBytes = sizeof(VertexInfluence);
    }
 
-   CreateInputSkinningResourceViews(device, skinCluster, modelData.meshes, vertexResources_);
+   CreateInputSkinningResourceViews(device, skinCluster, modelData.meshes, vertexResources);
    CreateOutputSkinningResources(device, skinCluster, modelData.meshes);
 
    // 5) InverseBindPoseMatrixの保存領域を作成

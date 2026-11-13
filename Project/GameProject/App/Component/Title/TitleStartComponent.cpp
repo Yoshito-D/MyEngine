@@ -15,82 +15,136 @@
 
 namespace App {
 
-void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld&) {
-   menuPage_ = MenuPage::Main;
-   pendingAction_ = PendingAction::None;
-   navigation_.Select(-1);
-   startRequested_ = false;
-   navigation_.ResetInput();
+TitleStartComponent::TitleStartComponent() {
+   ConfigureStates();
 }
 
-void TitleStartComponent::Update(float) {
-   if (!HasOwner() || startRequested_) return;
+void TitleStartComponent::ConfigureStates() {
+   stateMachine_.AddState(State::Main, {.onUpdate = [this](float) { UpdateMainMenu(); }});
+   stateMachine_.AddState(State::StartSelection, {.onUpdate = [this](float) { UpdateStartSelection(); }});
+   // 演出中にSelectで表示状態を戻さず、完了を確認してから次のメニューへ切り替える。
+   stateMachine_.AddState(State::OpeningStartMenu, {.onUpdate = [this](float) {
+      if (GetAnimation()->IsReactionComplete()) {
+         stateMachine_.RequestState(State::StartSelection);
+      }
+   }});
+   stateMachine_.AddState(State::Quitting, {.onUpdate = [this](float) {
+      if (GetAnimation()->IsReactionComplete()) {
+         stateMachine_.RequestState(State::Exiting);
+      }
+   }});
+   stateMachine_.AddState(State::StartingScene, {.onEnter = [this]() {
+      // 決定演出は演出コンポーネントが共通暗転中も更新する。
+      const auto& scene = navigation_.GetSelectedIndex() == 0 ? tutorialScene_ : stageScene_;
+      GameEngine::EngineContext::ChangeScene(scene);
+   }});
+   stateMachine_.AddState(State::Exiting, {.onEnter = [this]() { ExitApplication(); }});
+   stateMachine_.SetTransitionRule(State::Main, {State::OpeningStartMenu, State::Quitting});
+   stateMachine_.SetTransitionRule(State::StartSelection, {State::Main, State::StartingScene});
+   stateMachine_.SetTransitionRule(State::OpeningStartMenu, {State::StartSelection});
+   stateMachine_.SetTransitionRule(State::Quitting, {State::Exiting});
+   stateMachine_.SetTransitionRule(State::StartingScene, {});
+   stateMachine_.SetTransitionRule(State::Exiting, {});
+   stateMachine_.SetTransitionCallback([this](State, State next) {
+      // 初期Startでは表示を変更せず、メニュー間の移動時だけ表示演出を開始する。
+      if (next == State::Main || next == State::StartSelection) {
+         RevealMenu(*GetAnimation());
+      }
+   });
+}
 
-   auto* animation = GetOwner().GetComponent<MenuSelectionAnimationComponent>();
+void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld&) {
+   stateMachine_.Stop();
+   navigation_.Select(-1);
+   navigation_.ResetInput();
+   stateMachine_.Start(State::Main);
+}
+
+MenuSelectionAnimationComponent* TitleStartComponent::GetAnimation() {
+   return HasOwner() ? GetOwner().GetComponent<MenuSelectionAnimationComponent>() : nullptr;
+}
+
+void TitleStartComponent::Update(float deltaTime) {
+   auto* animation = GetAnimation();
 
    if (!animation || !animation->IsEnabled()) return;
 
-   // 演出中にSelectで表示状態を戻さず、完了を確認してから次のメニューへ切り替える。
-   if (pendingAction_ != PendingAction::None) {
-      if (!animation->IsReactionComplete()) return;
+   stateMachine_.Update(deltaTime);
+   // 同じ決定入力を遷移先でも消費せず、入場処理だけをこのフレームに反映する。
+   stateMachine_.ResolveRequests();
+}
 
-      const auto action = pendingAction_;
-      pendingAction_ = PendingAction::None;
+void TitleStartComponent::UpdateMainMenu() {
+   auto* animation = GetAnimation();
 
-      if (action == PendingAction::OpenStartMenu) {
-         SwitchMenu(*animation, MenuPage::StartSelection);
-      } else {
-         startRequested_ = true;
-#ifdef USE_IMGUI
-         // エディターではゲームの再生を終了し、編集中のシーンへ戻す。
-         GameEngine::EngineContext::RequestPlayModeStop();
-#else
-         PostQuitMessage(0);
-#endif
+   if (ReadMenuInput(*animation, false) != MenuInput::Confirm || !ConfirmSelection(*animation)) return;
+
+   stateMachine_.RequestState(navigation_.GetSelectedIndex() == 0 ? State::OpeningStartMenu : State::Quitting);
+}
+
+void TitleStartComponent::UpdateStartSelection() {
+   auto* animation = GetAnimation();
+   const auto input = ReadMenuInput(*animation, true);
+
+   if (input == MenuInput::Cancel) {
+      if (auto* audioSource = GetOwner().GetComponent<GameEngine::AudioSourceComponent>()) {
+         audioSource->PlayOneShot("cursor");
       }
 
+      stateMachine_.RequestState(State::Main);
       return;
    }
 
+   if (input != MenuInput::Confirm) return;
+
+   const auto& selectedScene = navigation_.GetSelectedIndex() == 0 ? tutorialScene_ : stageScene_;
+
+   // 空の遷移先や、演出対象を失った項目は決定できない状態として扱う。
+   if (selectedScene.empty() || !ConfirmSelection(*animation)) return;
+
+   stateMachine_.RequestState(State::StartingScene);
+}
+
+TitleStartComponent::MenuInput TitleStartComponent::ReadMenuInput(
+   MenuSelectionAnimationComponent& animation, bool allowCancel) {
    // 表示される前の項目への決定や、押し続けによる次画面への入力持ち越しを防ぐ。
-   if (animation->IsRevealing()) return;
+   if (animation.IsRevealing()) {
+      return MenuInput::None;
+   }
 
    // 初回の選択は全コンポーネントの参照解決後に行い、ロード時の通知順序に依存させない。
    if (navigation_.GetSelectedIndex() < 0 ||
-       !animation->IsOptionAvailable(static_cast<std::size_t>(navigation_.GetSelectedIndex()))) {
+       !animation.IsOptionAvailable(static_cast<std::size_t>(navigation_.GetSelectedIndex()))) {
       navigation_.Select(-1);
 
       // 上側の項目を優先しつつ、欠けている場合は利用可能な項目へフォールバックする。
       for (std::int32_t index = 0; index < 2; ++index) {
-         if (animation->IsOptionAvailable(static_cast<std::size_t>(index))) {
+         if (animation.IsOptionAvailable(static_cast<std::size_t>(index))) {
             navigation_.Select(index);
             break;
          }
       }
 
       // 表示できる項目がないままシーン遷移だけを受け付けない。
-      if (navigation_.GetSelectedIndex() < 0) return;
+      if (navigation_.GetSelectedIndex() < 0) {
+         return MenuInput::None;
+      }
    }
 
    auto* audioSource = GetOwner().GetComponent<GameEngine::AudioSourceComponent>();
-   animation->Select(navigation_.GetSelectedIndex(), false);
-   RefreshSelectionText(*animation);
+   animation.Select(navigation_.GetSelectedIndex(), false);
+   RefreshSelectionText(animation);
    const auto& cancelAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Cancel", 0);
 
-   if (menuPage_ == MenuPage::StartSelection && cancelAction.triggered) {
-      if (audioSource) {
-         audioSource->PlayOneShot("cursor");
-      }
-
-      SwitchMenu(*animation, MenuPage::Main);
-      return;
+   if (allowCancel && cancelAction.triggered) {
+      return MenuInput::Cancel;
    }
 
    const auto& navigationAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Navigate", 0);
    const auto navigationDirection = navigation_.ReadDirection(navigationAction.value.x);
-   if (navigation_.Move(*animation, navigationDirection)) {
-      animation->Select(navigation_.GetSelectedIndex());
-      RefreshSelectionText(*animation);
+   if (navigation_.Move(animation, navigationDirection)) {
+      animation.Select(navigation_.GetSelectedIndex());
+      RefreshSelectionText(animation);
 
       if (audioSource) {
          audioSource->PlayOneShot("cursor");
@@ -98,33 +152,28 @@ void TitleStartComponent::Update(float) {
    }
 
    const auto& confirmAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
+   return confirmAction.triggered ? MenuInput::Confirm : MenuInput::None;
+}
 
-   if (!confirmAction.triggered) return;
-
-   if (menuPage_ == MenuPage::Main) {
-      if (animation->ConfirmSelection()) {
-         if (audioSource) {
-            audioSource->PlayOneShot("decision");
-         }
-
-         pendingAction_ = navigation_.GetSelectedIndex() == 0 ? PendingAction::OpenStartMenu : PendingAction::Quit;
-      }
-
-      return;
+bool TitleStartComponent::ConfirmSelection(MenuSelectionAnimationComponent& animation) {
+   if (!animation.ConfirmSelection()) {
+      return false;
    }
 
-   const std::string& selectedScene = navigation_.GetSelectedIndex() == 0 ? tutorialScene_ : stageScene_;
-
-   // 空の遷移先や、演出対象を失った項目は決定できない状態として扱う。
-   if (selectedScene.empty() || !animation->ConfirmSelection()) return;
-
-   if (audioSource) {
+   if (auto* audioSource = GetOwner().GetComponent<GameEngine::AudioSourceComponent>()) {
       audioSource->PlayOneShot("decision");
    }
 
-   // 決定演出は演出コンポーネントが共通暗転中も更新する。
-   startRequested_ = true;
-   GameEngine::EngineContext::ChangeScene(selectedScene);
+   return true;
+}
+
+void TitleStartComponent::ExitApplication() {
+#ifdef USE_IMGUI
+   // エディターではゲームの再生を終了し、編集中のシーンへ戻す。
+   GameEngine::EngineContext::RequestPlayModeStop();
+#else
+   PostQuitMessage(0);
+#endif
 }
 
 nlohmann::json TitleStartComponent::Serialize() const {
@@ -143,8 +192,7 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    }
 }
 
-void TitleStartComponent::SwitchMenu(MenuSelectionAnimationComponent& animation, MenuPage page) {
-   menuPage_ = page;
+void TitleStartComponent::RevealMenu(MenuSelectionAnimationComponent& animation) {
    navigation_.Select(-1);
    animation.Hide();
    navigation_.Move(animation, 1);
@@ -153,8 +201,8 @@ void TitleStartComponent::SwitchMenu(MenuSelectionAnimationComponent& animation,
 }
 
 void TitleStartComponent::RefreshSelectionText(MenuSelectionAnimationComponent& animation) {
-   const char* labels[] = {menuPage_ == MenuPage::Main ? "はじめる" : "チュートリアルから",
-      menuPage_ == MenuPage::Main ? "やめる" : "ステージから"};
+   const bool mainMenu = stateMachine_.GetCurrentState() == State::Main;
+   const char* labels[] = {mainMenu ? "はじめる" : "チュートリアルから", mainMenu ? "やめる" : "ステージから"};
 
    for (std::int32_t index = 0; index < 2; ++index) {
       if (auto* text = animation.GetOptionText(static_cast<std::size_t>(index))) {
@@ -177,9 +225,12 @@ void TitleStartComponent::DrawInspector() {
 
    GameEngine::EditorUI::SceneReference("Tutorial Scene", tutorialScene_);
    GameEngine::EditorUI::SceneReference("Stage Scene", stageScene_);
-   ImGui::Text("Menu: %s", menuPage_ == MenuPage::Main ? "Main" : "Start Selection");
+   const auto state = stateMachine_.GetCurrentState();
+   const bool startMenu = state == State::StartSelection || state == State::StartingScene;
+   const bool requested = state == State::StartingScene || state == State::Exiting;
+   ImGui::Text("Menu: %s", startMenu ? "Start Selection" : "Main");
    ImGui::Text("Selected Option: %d", navigation_.GetSelectedIndex());
-   ImGui::Text("Start Requested: %s", startRequested_ ? "true" : "false");
+   ImGui::Text("Start Requested: %s", requested ? "true" : "false");
 }
 #endif
 

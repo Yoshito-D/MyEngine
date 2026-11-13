@@ -1,0 +1,4763 @@
+{
+   "version": 1,
+   "rootId": "pause_menu",
+   "objects": [
+      {
+         "id": "pause_menu",
+         "parentId": "",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "ポーズ"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "root",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     1280,
+                     720
+                  ]
+               }
+            },
+            {
+               "typeName": "UICanvasComponent",
+               "enabled": true,
+               "data": {}
+            },
+            {
+               "typeName": "UIScreenComponent",
+               "enabled": true,
+               "data": {
+                  "defaultFocusKey": "restart",
+                  "drawBelow": true,
+                  "blocksBelowInput": true,
+                  "pausesGameplay": true,
+                  "openOnStart": false,
+                  "pointerBlocksNavigation": true,
+                  "disablePointerWithGamepad": true,
+                  "resetFocusOnOpen": true
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "show": {
+                     "enabled": true,
+                     "duration": 0.24,
+                     "delay": 0,
+                     "easing": 3,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 0
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "hide": {
+                     "enabled": true,
+                     "duration": 0.18,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 0
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_backdrop",
+         "parentId": "pause_menu",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "backdrop"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "backdrop",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     1280,
+                     720
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause backdrop",
+                        "textureName": "white1x1",
+                        "color": [
+                           0,
+                           0,
+                           0,
+                           0.55
+                        ],
+                        "lightingMode": 0
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_panel",
+         "parentId": "pause_menu",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "panel"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "panel",
+                  "position": [
+                     380,
+                     72
+                  ],
+                  "size": [
+                     520,
+                     576
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause menu frame",
+                        "textureName": "pause_menu_frame",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_menu_frame"
+      },
+      {
+         "id": "pause_menu_content",
+         "parentId": "pause_menu",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "content"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "content",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     1280,
+                     720
+                  ]
+               }
+            },
+            {
+               "typeName": "UIGroupComponent",
+               "enabled": true,
+               "data": {
+                  "visible": true,
+                  "interactable": true,
+                  "opacity": 1
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_heading",
+         "parentId": "pause_menu_content",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "heading"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "heading",
+                  "position": [
+                     440,
+                     130
+                  ],
+                  "size": [
+                     400,
+                     44
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "ポーズ",
+                  "fontId": "851Gkktt",
+                  "fontSize": 44,
+                  "color": [
+                     0.94,
+                     0.96,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ],
+                  "maxWidth": 400
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_restart",
+         "parentId": "pause_menu_content",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restart"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restart",
+                  "position": [
+                     440,
+                     232
+                  ],
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UIButtonComponent",
+               "enabled": true,
+               "data": {
+                  "navigationOrder": 0,
+                  "normalColor": [
+                     0.025,
+                     0.055,
+                     0.09,
+                     1
+                  ],
+                  "selectedColor": [
+                     0.1,
+                     0.145,
+                     0.2,
+                     1
+                  ],
+                  "pressedColor": [
+                     0.075,
+                     0.115,
+                     0.165,
+                     1
+                  ],
+                  "disabledColor": [
+                     0.025,
+                     0.055,
+                     0.09,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "focus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "unfocus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "click": {
+                     "enabled": true,
+                     "duration": 0.16,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 0.35,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.92,
+                              0.92
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_restartFrame",
+         "parentId": "pause_menu_restart",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartFrame"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartFrame",
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UIGroupComponent",
+               "enabled": true,
+               "data": {
+                  "visible": false,
+                  "interactable": true,
+                  "opacity": 1
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_restartFrameOuter",
+         "parentId": "pause_menu_restartFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartFrameOuter"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartFrameOuter",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Outer",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.65,
+                           0.96,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_restartFrameTop",
+         "parentId": "pause_menu_restartFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartFrameTop"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartFrameTop",
+                  "position": [
+                     1,
+                     1
+                  ],
+                  "size": [
+                     398,
+                     2
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Top",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0.44026548672566373,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_restartFrameRight",
+         "parentId": "pause_menu_restartFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartFrameRight"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartFrameRight",
+                  "position": [
+                     397,
+                     3
+                  ],
+                  "size": [
+                     2,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Right",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0,
+                              -1,
+                              0,
+                              0
+                           ],
+                           [
+                              0.059734513274336286,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0.44026548672566373,
+                              1,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_restartFrameBottom",
+         "parentId": "pause_menu_restartFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartFrameBottom"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartFrameBottom",
+                  "position": [
+                     1,
+                     57
+                  ],
+                  "size": [
+                     398,
+                     2
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Bottom",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              -0.44026548672566373,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              -1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0.9402654867256637,
+                              1,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_restartFrameLeft",
+         "parentId": "pause_menu_restartFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartFrameLeft"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartFrameLeft",
+                  "position": [
+                     1,
+                     3
+                  ],
+                  "size": [
+                     2,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Left",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              -0.059734513274336286,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              1,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_restartFrameInner",
+         "parentId": "pause_menu_restartFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartFrameInner"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartFrameInner",
+                  "position": [
+                     3,
+                     3
+                  ],
+                  "size": [
+                     394,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Inner",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.2,
+                           0.48,
+                           0.6,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_restartFrameFace",
+         "parentId": "pause_menu_restart",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartFrameFace"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartFrameFace",
+                  "position": [
+                     4,
+                     4
+                  ],
+                  "size": [
+                     392,
+                     52
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Face",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.025,
+                           0.055,
+                           0.09,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_restartLabel",
+         "parentId": "pause_menu_restart",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "restartLabel"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "restartLabel",
+                  "position": [
+                     24,
+                     13
+                  ],
+                  "size": [
+                     352,
+                     40
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "リスタート",
+                  "fontId": "851Gkktt",
+                  "fontSize": 30,
+                  "color": [
+                     0.94,
+                     0.96,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ],
+                  "maxWidth": 352
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_title",
+         "parentId": "pause_menu_content",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "title"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "title",
+                  "position": [
+                     440,
+                     312
+                  ],
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UIButtonComponent",
+               "enabled": true,
+               "data": {
+                  "navigationOrder": 1,
+                  "normalColor": [
+                     0.025,
+                     0.055,
+                     0.09,
+                     1
+                  ],
+                  "selectedColor": [
+                     0.1,
+                     0.145,
+                     0.2,
+                     1
+                  ],
+                  "pressedColor": [
+                     0.075,
+                     0.115,
+                     0.165,
+                     1
+                  ],
+                  "disabledColor": [
+                     0.025,
+                     0.055,
+                     0.09,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "focus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "unfocus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "click": {
+                     "enabled": true,
+                     "duration": 0.16,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 0.35,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.92,
+                              0.92
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_titleFrame",
+         "parentId": "pause_menu_title",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleFrame"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleFrame",
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UIGroupComponent",
+               "enabled": true,
+               "data": {
+                  "visible": false,
+                  "interactable": true,
+                  "opacity": 1
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_titleFrameOuter",
+         "parentId": "pause_menu_titleFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleFrameOuter"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleFrameOuter",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Outer",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.65,
+                           0.96,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_titleFrameTop",
+         "parentId": "pause_menu_titleFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleFrameTop"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleFrameTop",
+                  "position": [
+                     1,
+                     1
+                  ],
+                  "size": [
+                     398,
+                     2
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Top",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0.44026548672566373,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_titleFrameRight",
+         "parentId": "pause_menu_titleFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleFrameRight"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleFrameRight",
+                  "position": [
+                     397,
+                     3
+                  ],
+                  "size": [
+                     2,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Right",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0,
+                              -1,
+                              0,
+                              0
+                           ],
+                           [
+                              0.059734513274336286,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0.44026548672566373,
+                              1,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_titleFrameBottom",
+         "parentId": "pause_menu_titleFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleFrameBottom"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleFrameBottom",
+                  "position": [
+                     1,
+                     57
+                  ],
+                  "size": [
+                     398,
+                     2
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Bottom",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              -0.44026548672566373,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              -1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0.9402654867256637,
+                              1,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_titleFrameLeft",
+         "parentId": "pause_menu_titleFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleFrameLeft"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleFrameLeft",
+                  "position": [
+                     1,
+                     3
+                  ],
+                  "size": [
+                     2,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Left",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              -0.059734513274336286,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              1,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_titleFrameInner",
+         "parentId": "pause_menu_titleFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleFrameInner"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleFrameInner",
+                  "position": [
+                     3,
+                     3
+                  ],
+                  "size": [
+                     394,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Inner",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.2,
+                           0.48,
+                           0.6,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_titleFrameFace",
+         "parentId": "pause_menu_title",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleFrameFace"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleFrameFace",
+                  "position": [
+                     4,
+                     4
+                  ],
+                  "size": [
+                     392,
+                     52
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Face",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.025,
+                           0.055,
+                           0.09,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_titleLabel",
+         "parentId": "pause_menu_title",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "titleLabel"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "titleLabel",
+                  "position": [
+                     24,
+                     13
+                  ],
+                  "size": [
+                     352,
+                     40
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "タイトル",
+                  "fontId": "851Gkktt",
+                  "fontSize": 30,
+                  "color": [
+                     0.94,
+                     0.96,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ],
+                  "maxWidth": 352
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_settings",
+         "parentId": "pause_menu_content",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settings"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settings",
+                  "position": [
+                     440,
+                     392
+                  ],
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UIButtonComponent",
+               "enabled": true,
+               "data": {
+                  "navigationOrder": 2,
+                  "normalColor": [
+                     0.025,
+                     0.055,
+                     0.09,
+                     1
+                  ],
+                  "selectedColor": [
+                     0.1,
+                     0.145,
+                     0.2,
+                     1
+                  ],
+                  "pressedColor": [
+                     0.075,
+                     0.115,
+                     0.165,
+                     1
+                  ],
+                  "disabledColor": [
+                     0.025,
+                     0.055,
+                     0.09,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "focus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "unfocus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "click": {
+                     "enabled": true,
+                     "duration": 0.16,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 0.35,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.92,
+                              0.92
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_settingsFrame",
+         "parentId": "pause_menu_settings",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsFrame"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsFrame",
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UIGroupComponent",
+               "enabled": true,
+               "data": {
+                  "visible": false,
+                  "interactable": true,
+                  "opacity": 1
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_settingsFrameOuter",
+         "parentId": "pause_menu_settingsFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsFrameOuter"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsFrameOuter",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Outer",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.65,
+                           0.96,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_settingsFrameTop",
+         "parentId": "pause_menu_settingsFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsFrameTop"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsFrameTop",
+                  "position": [
+                     1,
+                     1
+                  ],
+                  "size": [
+                     398,
+                     2
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Top",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0.44026548672566373,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_settingsFrameRight",
+         "parentId": "pause_menu_settingsFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsFrameRight"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsFrameRight",
+                  "position": [
+                     397,
+                     3
+                  ],
+                  "size": [
+                     2,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Right",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0,
+                              -1,
+                              0,
+                              0
+                           ],
+                           [
+                              0.059734513274336286,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0.44026548672566373,
+                              1,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_settingsFrameBottom",
+         "parentId": "pause_menu_settingsFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsFrameBottom"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsFrameBottom",
+                  "position": [
+                     1,
+                     57
+                  ],
+                  "size": [
+                     398,
+                     2
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Bottom",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              -0.44026548672566373,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              -1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0.9402654867256637,
+                              1,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_settingsFrameLeft",
+         "parentId": "pause_menu_settingsFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsFrameLeft"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsFrameLeft",
+                  "position": [
+                     1,
+                     3
+                  ],
+                  "size": [
+                     2,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Left",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              -0.059734513274336286,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              1,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_settingsFrameInner",
+         "parentId": "pause_menu_settingsFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsFrameInner"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsFrameInner",
+                  "position": [
+                     3,
+                     3
+                  ],
+                  "size": [
+                     394,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Inner",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.2,
+                           0.48,
+                           0.6,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_settingsFrameFace",
+         "parentId": "pause_menu_settings",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsFrameFace"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsFrameFace",
+                  "position": [
+                     4,
+                     4
+                  ],
+                  "size": [
+                     392,
+                     52
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Face",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.025,
+                           0.055,
+                           0.09,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_settingsLabel",
+         "parentId": "pause_menu_settings",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "settingsLabel"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "settingsLabel",
+                  "position": [
+                     24,
+                     13
+                  ],
+                  "size": [
+                     352,
+                     40
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "設定",
+                  "fontId": "851Gkktt",
+                  "fontSize": 30,
+                  "color": [
+                     0.94,
+                     0.96,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ],
+                  "maxWidth": 352
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_resume",
+         "parentId": "pause_menu_content",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resume"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resume",
+                  "position": [
+                     440,
+                     472
+                  ],
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UIButtonComponent",
+               "enabled": true,
+               "data": {
+                  "navigationOrder": 3,
+                  "normalColor": [
+                     0.025,
+                     0.055,
+                     0.09,
+                     1
+                  ],
+                  "selectedColor": [
+                     0.1,
+                     0.145,
+                     0.2,
+                     1
+                  ],
+                  "pressedColor": [
+                     0.075,
+                     0.115,
+                     0.165,
+                     1
+                  ],
+                  "disabledColor": [
+                     0.025,
+                     0.055,
+                     0.09,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIAnimationComponent",
+               "enabled": true,
+               "data": {
+                  "focus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "unfocus": {
+                     "enabled": true,
+                     "duration": 0.12,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1.06,
+                              1.06
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  },
+                  "click": {
+                     "enabled": true,
+                     "duration": 0.16,
+                     "delay": 0,
+                     "easing": 2,
+                     "playback": 0,
+                     "keys": [
+                        {
+                           "time": 0,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 0.35,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              0.92,
+                              0.92
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        },
+                        {
+                           "time": 1,
+                           "offset": [
+                              0,
+                              0
+                           ],
+                           "scale": [
+                              1,
+                              1
+                           ],
+                           "rotation": 0,
+                           "opacity": 1
+                        }
+                     ]
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_resumeFrame",
+         "parentId": "pause_menu_resume",
+         "objectType": "Generic",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeFrame"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeFrame",
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "UIGroupComponent",
+               "enabled": true,
+               "data": {
+                  "visible": false,
+                  "interactable": true,
+                  "opacity": 1
+               }
+            }
+         ]
+      },
+      {
+         "id": "pause_menu_resumeFrameOuter",
+         "parentId": "pause_menu_resumeFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeFrameOuter"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeFrameOuter",
+                  "position": [
+                     0,
+                     0
+                  ],
+                  "size": [
+                     400,
+                     60
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Outer",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.65,
+                           0.96,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_resumeFrameTop",
+         "parentId": "pause_menu_resumeFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeFrameTop"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeFrameTop",
+                  "position": [
+                     1,
+                     1
+                  ],
+                  "size": [
+                     398,
+                     2
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Top",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0.44026548672566373,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_resumeFrameRight",
+         "parentId": "pause_menu_resumeFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeFrameRight"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeFrameRight",
+                  "position": [
+                     397,
+                     3
+                  ],
+                  "size": [
+                     2,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Right",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0,
+                              -1,
+                              0,
+                              0
+                           ],
+                           [
+                              0.059734513274336286,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0.44026548672566373,
+                              1,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_resumeFrameBottom",
+         "parentId": "pause_menu_resumeFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeFrameBottom"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeFrameBottom",
+                  "position": [
+                     1,
+                     57
+                  ],
+                  "size": [
+                     398,
+                     2
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Bottom",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              -0.44026548672566373,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              -1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0.9402654867256637,
+                              1,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_resumeFrameLeft",
+         "parentId": "pause_menu_resumeFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeFrameLeft"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeFrameLeft",
+                  "position": [
+                     1,
+                     3
+                  ],
+                  "size": [
+                     2,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Left",
+                        "textureName": "pause_button_flow",
+                        "color": [
+                           1,
+                           1,
+                           1,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              -0.059734513274336286,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              1,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "pause_button_flow"
+      },
+      {
+         "id": "pause_menu_resumeFrameInner",
+         "parentId": "pause_menu_resumeFrame",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeFrameInner"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeFrameInner",
+                  "position": [
+                     3,
+                     3
+                  ],
+                  "size": [
+                     394,
+                     54
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Inner",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.2,
+                           0.48,
+                           0.6,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_resumeFrameFace",
+         "parentId": "pause_menu_resume",
+         "objectType": "Sprite",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeFrameFace"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeFrameFace",
+                  "position": [
+                     4,
+                     4
+                  ],
+                  "size": [
+                     392,
+                     52
+                  ]
+               }
+            },
+            {
+               "typeName": "RenderComponent",
+               "enabled": true,
+               "data": {
+                  "renderSpace": "Screen",
+                  "visible": true,
+                  "autoRender": true,
+                  "applyPostProcess": false
+               }
+            },
+            {
+               "typeName": "MaterialComponent",
+               "enabled": true,
+               "data": {
+                  "materialSlots": [
+                     {
+                        "ownership": "local",
+                        "name": "Pause button Face",
+                        "textureName": "white1x1",
+                        "color": [
+                           0.025,
+                           0.055,
+                           0.09,
+                           1
+                        ],
+                        "lightingMode": 0,
+                        "uvTransform": [
+                           [
+                              1,
+                              0,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              1,
+                              0,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              1,
+                              0
+                           ],
+                           [
+                              0,
+                              0,
+                              0,
+                              1
+                           ]
+                        ]
+                     }
+                  ]
+               }
+            }
+         ],
+         "assetId": "white1x1"
+      },
+      {
+         "id": "pause_menu_resumeLabel",
+         "parentId": "pause_menu_resume",
+         "objectType": "UIText",
+         "components": [
+            {
+               "typeName": "ObjectNameComponent",
+               "enabled": true,
+               "data": {
+                  "name": "resumeLabel"
+               }
+            },
+            {
+               "typeName": "TransformComponent",
+               "enabled": true,
+               "data": {
+                  "translation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ]
+               }
+            },
+            {
+               "typeName": "UIRectTransformComponent",
+               "enabled": true,
+               "data": {
+                  "elementKey": "resumeLabel",
+                  "position": [
+                     24,
+                     13
+                  ],
+                  "size": [
+                     352,
+                     40
+                  ]
+               }
+            },
+            {
+               "typeName": "UITextComponent",
+               "enabled": true,
+               "data": {
+                  "text": "もどる",
+                  "fontId": "851Gkktt",
+                  "fontSize": 30,
+                  "color": [
+                     0.94,
+                     0.96,
+                     1,
+                     1
+                  ],
+                  "screenAnchor": "TopLeft",
+                  "pivot": [
+                     0,
+                     0
+                  ],
+                  "maxWidth": 352
+               }
+            }
+         ]
+      }
+   ]
+}

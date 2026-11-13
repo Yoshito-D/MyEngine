@@ -11,6 +11,37 @@
 using Microsoft::WRL::ComPtr;
 
 namespace GameEngine {
+
+std::shared_ptr<const SoundClip> SoundClip::CreateFromPcm(std::span<const BYTE> formatBytes, std::vector<BYTE> pcm) {
+   if (formatBytes.size() < sizeof(WAVEFORMATEX) || formatBytes.size() > sizeof(WAVEFORMATEXTENSIBLE) || pcm.empty() ||
+       pcm.size() > std::numeric_limits<UINT32>::max()) {
+      throw std::runtime_error("Invalid PCM audio size");
+   }
+
+   // キャッシュから復元する形式情報も、拡張情報を含めて配置境界を満たすストレージへ格納する。
+   auto clip = std::shared_ptr<SoundClip>(new SoundClip());
+   clip->formatWords_.resize((formatBytes.size() + sizeof(uint64_t) - 1) / sizeof(uint64_t));
+   std::memcpy(clip->formatWords_.data(), formatBytes.data(), formatBytes.size());
+   const auto* format = clip->GetFormat();
+   constexpr size_t kExtensibleFormatExtraSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+   const bool extensible =
+      format->wFormatTag == WAVE_FORMAT_EXTENSIBLE && formatBytes.size() >= sizeof(WAVEFORMATEXTENSIBLE) &&
+      format->cbSize >= kExtensibleFormatExtraSize &&
+      IsEqualGUID(reinterpret_cast<const WAVEFORMATEXTENSIBLE*>(format)->SubFormat, MFAudioFormat_PCM);
+
+   if ((format->wFormatTag != WAVE_FORMAT_PCM && !extensible) ||
+       sizeof(WAVEFORMATEX) + format->cbSize > formatBytes.size() || format->nChannels == 0 ||
+       format->nSamplesPerSec == 0 || format->wBitsPerSample == 0 || format->wBitsPerSample > 32 ||
+       format->wBitsPerSample % 8 != 0 || format->nBlockAlign == 0 ||
+       format->nBlockAlign != static_cast<std::uint32_t>(format->nChannels) * (format->wBitsPerSample / 8) ||
+       format->nAvgBytesPerSec != static_cast<std::uint64_t>(format->nSamplesPerSec) * format->nBlockAlign ||
+       pcm.size() % format->nBlockAlign != 0) {
+      throw std::runtime_error("Invalid PCM audio format");
+   }
+
+   clip->pcm_ = std::move(pcm);
+   return clip;
+}
 #ifdef MYPROJECT_NON_RELEASE
 std::shared_ptr<const SoundClip> SoundClip::CreateForTesting(const WAVEFORMATEX& format, std::vector<BYTE> pcm) {
    if (format.nBlockAlign == 0 || pcm.empty() || pcm.size() % format.nBlockAlign != 0) {

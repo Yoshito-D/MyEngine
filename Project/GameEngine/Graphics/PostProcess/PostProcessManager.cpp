@@ -218,8 +218,6 @@ bool PostProcessManager::ConfigureEffectPipeline(
       return false;
    }
 
-   effect->SetPipeline(pipeline, rootSignature);
-
    // ルート引数の物理番号はJSON定義へ閉じ込め、エフェクト側には意味名から解決した番号だけを渡す。
    const auto cbSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "constantbuffer");
    const auto inputSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "inputtexture");
@@ -243,15 +241,7 @@ bool PostProcessManager::ConfigureEffectPipeline(
       return false;
    }
 
-   effect->SetBindingSlots(cbSlot.value(), inputSlot.value());
-
-   if (depthSlot.has_value()) {
-      effect->SetDepthTextureRootSlot(depthSlot.value());
-   }
-
-   if (maskSlot.has_value()) {
-      effect->SetMaskTextureRootSlot(maskSlot.value());
-   }
+   effect->ConfigurePipeline(*pipeline, *rootSignature, cbSlot.value(), inputSlot.value(), depthSlot, maskSlot);
 
    return true;
 }

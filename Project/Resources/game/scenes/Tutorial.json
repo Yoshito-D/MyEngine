@@ -333,6 +333,7 @@
       ]
    },
    "hierarchyOrder": [
+      "Object:PauseMenu",
       "MainDirectionalLight",
       "MainPointLight",
       "MainSpotLight",
@@ -352,6 +353,27 @@
       "UIText:TutorialGuide"
    ],
    "objects": [
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "Pause Menu"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "titleScene": "Title"
+               },
+               "enabled": true,
+               "typeName": "PauseMenuComponent"
+            }
+         ],
+         "id": "Object:PauseMenu",
+         "objectType": "Generic",
+         "parentId": ""
+      },
       {
          "components": [
             {
@@ -1152,7 +1174,7 @@
                   "autoSpeed": 37.5,
                   "maxSpeed": 37.5,
                   "speedRecovery": 0.17499999701976776,
-                  "steerSpeed": 2.0943951023931953
+                  "steerSpeed": 2.094395160675049
                },
                "enabled": true,
                "typeName": "VehicleGroundMover"
@@ -1239,6 +1261,17 @@
                "data": {},
                "enabled": true,
                "typeName": "PlayerShadowComponent"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "parameterAssetId": "game/parameters/player/VehicleAudioSource.json",
+               "typeName": "AudioSourceComponent"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "typeName": "VehicleAudioController"
             }
          ],
          "id": "Model:Player",
@@ -2306,7 +2339,7 @@
                   ],
                   "translation": [
                      0.0,
-                     208.0,
+                     167.890625,
                      1.0
                   ]
                },
@@ -2373,7 +2406,7 @@
                   ],
                   "translation": [
                      0.0,
-                     160.0,
+                     124.359375,
                      1.0
                   ]
                },
@@ -2386,7 +2419,7 @@
                      0.8999999761581421,
                      0.9800000190734863,
                      1.0,
-                     1.0
+                     0.949999988079071
                   ],
                   "fontId": "851Gkktt",
                   "fontSize": 20,
@@ -2475,18 +2508,31 @@
                "data": {
                   "completionDelay": 2.5,
                   "feedbackObjectId": "UIText:TutorialFeedback",
-                  "promptObjectId": "UIText:TutorialPrompt",
                   "goalDirectionObjectId": "Model:GoalDirectionHUD",
                   "goalDistanceObjectId": "UIText:GoalDistanceText",
                   "goalObjectId": "Model:Goal",
                   "guideFadeDuration": 0.20000000298023224,
                   "nextScene": "GameTest",
                   "playerObjectId": "Model:Player",
+                  "promptObjectId": "UIText:TutorialPrompt",
                   "targetPlanetObjectId": "Model:Planet_2",
                   "transferSurfaceGap": 50.0
                },
                "enabled": true,
                "typeName": "TutorialProgressComponent"
+            },
+            {
+               "data": {
+                  "clipAssetId": "game/sounds/bgm/tutorialBGM.mp3",
+                  "continueAcrossScenes": false,
+                  "fadeInSeconds": 0.0,
+                  "fadeOutSeconds": 0.0,
+                  "loop": true,
+                  "playOnStart": true,
+                  "volume": 0.8059999942779541
+               },
+               "enabled": true,
+               "typeName": "BgmComponent"
             }
          ],
          "id": "UIText:TutorialGuide",

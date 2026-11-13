@@ -7,18 +7,19 @@ struct PixelShaderInput {
 
 Texture2D<float4> gFontAtlas : register(t0);
 SamplerState gFontSampler : register(s0);
+SamplerState gImageSampler : register(s1);
 
 float Median(float red, float green, float blue) {
    return max(min(red, green), min(max(red, green), blue));
 }
 
 float4 main(PixelShaderInput input) : SV_TARGET0 {
-   const float4 atlasSample = gFontAtlas.Sample(gFontSampler, input.texCoord);
    // 通常画像も同じ頂点・描画順で扱い、フォントの距離場評価と区別する。
    const float kColorTextureAtlasType = 3.0f;
    if (input.atlasParameters.w >= kColorTextureAtlasType) {
-      return atlasSample * input.color;
+      return gFontAtlas.Sample(gImageSampler, input.texCoord) * input.color;
    }
+   const float4 atlasSample = gFontAtlas.Sample(gFontSampler, input.texCoord);
    float coverage = atlasSample.r;
 
    if (input.atlasParameters.w >= 1.0f) {

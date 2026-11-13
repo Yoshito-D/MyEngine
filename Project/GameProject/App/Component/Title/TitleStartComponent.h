@@ -2,6 +2,7 @@
 #include "GameProject/App/Component/UI/MenuNavigation.h"
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameEngine/Utility/StateMachine.h"
 #include <cstdint>
 #include <string>
 
@@ -12,6 +13,9 @@ class MenuSelectionAnimationComponent;
 /// @details 同じObjectのMenuSelectionAnimationComponentの2項目を、メニュー階層ごとに切り替える。
 class TitleStartComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief メニュー操作・決定演出待ち・遷移要求の状態と遷移規則を登録する。
+   TitleStartComponent();
+
    static constexpr const char* kTypeName = "TitleStartComponent"; ///< コンポーネント型名。
    /// @brief エディターに表示する日本語名と英語名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"タイトル開始UI", "Title Start UI"};
@@ -37,26 +41,35 @@ public:
 #endif
 
 private:
-   enum class MenuPage {
+   enum class State {
       Main,
-      StartSelection
+      StartSelection,
+      OpeningStartMenu,
+      Quitting,
+      StartingScene,
+      Exiting
    };
 
-   enum class PendingAction {
+   enum class MenuInput {
       None,
-      OpenStartMenu,
-      Quit
+      Confirm,
+      Cancel
    };
 
-   void SwitchMenu(MenuSelectionAnimationComponent& animation, MenuPage page);
+   void ConfigureStates();
+   void UpdateMainMenu();
+   void UpdateStartSelection();
+   MenuInput ReadMenuInput(MenuSelectionAnimationComponent& animation, bool allowCancel);
+   bool ConfirmSelection(MenuSelectionAnimationComponent& animation);
+   void ExitApplication();
+   MenuSelectionAnimationComponent* GetAnimation();
+   void RevealMenu(MenuSelectionAnimationComponent& animation);
    void RefreshSelectionText(MenuSelectionAnimationComponent& animation);
 
-   std::string tutorialScene_ = "Tutorial";            ///< チュートリアル開始時に読み込む登録シーン名。
-   std::string stageScene_ = "GameTest";               ///< 通常プレイ開始時に読み込む登録シーン名。
-   MenuPage menuPage_ = MenuPage::Main;                ///< 現在表示しているメニュー階層。
-   PendingAction pendingAction_ = PendingAction::None; ///< 決定演出の完了後に実行する操作。
-   MenuNavigation navigation_;                         ///< 共通の選択位置と入力抑制。
-   bool startRequested_ = false;                       ///< シーン遷移または終了を要求済みかどうか。
+   std::string tutorialScene_ = "Tutorial";       ///< チュートリアル開始時に読み込む登録シーン名。
+   std::string stageScene_ = "GameTest";          ///< 通常プレイ開始時に読み込む登録シーン名。
+   GameEngine::StateMachine<State> stateMachine_; ///< メニュー階層・演出待ち・要求済み状態を一元管理する。
+   MenuNavigation navigation_;                    ///< 共通の選択位置と入力抑制。
 };
 
 } // namespace App

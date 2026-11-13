@@ -398,6 +398,7 @@
       ]
    },
    "hierarchyOrder": [
+      "Object:PauseMenu",
       "MainDirectionalLight",
       "MainPointLight",
       "MainSpotLight",
@@ -431,6 +432,27 @@
       "UIText:GamepadGuideText"
    ],
    "objects": [
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "Pause Menu"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "titleScene": "Title"
+               },
+               "enabled": true,
+               "typeName": "PauseMenuComponent"
+            }
+         ],
+         "id": "Object:PauseMenu",
+         "objectType": "Generic",
+         "parentId": ""
+      },
       {
          "components": [
             {
@@ -742,7 +764,7 @@
                            0.1872413605451584
                         ]
                      },
-                     "goalFocusSeconds": 2.0,
+                     "goalFocusSeconds": 1.5,
                      "goalFocusStartPose": {
                         "farClip": 10000.0,
                         "fov": 0.7853981852531433,
@@ -775,7 +797,7 @@
                            0.9537169337272644
                         ]
                      },
-                     "moveSeconds": 4.0,
+                     "moveSeconds": 3.0,
                      "startPose": {
                         "farClip": 10000.0,
                         "fov": 0.9599310755729675,
@@ -808,6 +830,45 @@
                },
                "enabled": true,
                "typeName": "RaceManagerComponent"
+            },
+            {
+               "data": {
+                  "slots": [
+                     {
+                        "bus": "SE",
+                        "clipAssetId": "game/sounds/se/race/jingle.mp3",
+                        "loop": false,
+                        "name": "jingle",
+                        "pitch": 1.0,
+                        "playOnStart": false,
+                        "volume": 1.0
+                     },
+                     {
+                        "bus": "SE",
+                        "clipAssetId": "game/sounds/se/race/countdown.mp3",
+                        "loop": false,
+                        "name": "countdown",
+                        "pitch": 1.0,
+                        "playOnStart": false,
+                        "volume": 1.0
+                     }
+                  ]
+               },
+               "enabled": true,
+               "typeName": "AudioSourceComponent"
+            },
+            {
+               "data": {
+                  "clipAssetId": "game/sounds/bgm/gameBGM.mp3",
+                  "continueAcrossScenes": false,
+                  "fadeInSeconds": 0.0,
+                  "fadeOutSeconds": 0.0,
+                  "loop": true,
+                  "playOnStart": false,
+                  "volume": 0.7039999961853027
+               },
+               "enabled": true,
+               "typeName": "BgmComponent"
             }
          ],
          "id": "Object:RaceManager",
@@ -3868,6 +3929,17 @@
                "data": {},
                "enabled": true,
                "typeName": "PlayerShadowComponent"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "parameterAssetId": "game/parameters/player/VehicleAudioSource.json",
+               "typeName": "AudioSourceComponent"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "typeName": "VehicleAudioController"
             }
          ],
          "id": "Model:Player",

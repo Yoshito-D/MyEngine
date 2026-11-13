@@ -117,11 +117,11 @@ void RaceResultUIComponent::ReadParameters(const nlohmann::json& data, [[maybe_u
 
 void RaceResultUIComponent::RefreshSelectionText(MenuSelectionAnimationComponent& animation) {
    if (auto* text = animation.GetOptionText(0)) {
-      text->SetText("TITLE");
+      text->SetText("タイトル");
    }
 
    if (auto* text = animation.GetOptionText(1)) {
-      text->SetText("RESTART");
+      text->SetText("リスタート");
    }
 }
 
@@ -146,7 +146,7 @@ bool RaceResultUIComponent::ConfirmSelection(MenuSelectionAnimationComponent& an
 
 std::string RaceResultUIComponent::BuildResultText() const {
    std::ostringstream stream;
-   stream << "FINISH\nTIME " << FormatRaceTime(raceManager_->GetElapsedTime()) << "\n\nBEST TIMES\n";
+   stream << "フィニッシュ\nタイム " << FormatRaceTime(raceManager_->GetElapsedTime()) << "\n\nベストタイム\n";
 
    // RaceManagerが保持する昇順の記録を、その並びを崩さず順位表示へ変換する。
    const auto& bestTimes = raceManager_->GetBestTimes();

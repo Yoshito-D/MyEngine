@@ -269,6 +269,10 @@ void UISystem::ApplyRequests() {
             }
 
             if (state.lifecycle == ScreenLifecycle::Closed) {
+               if (screen->DescribeSettings().resetFocusOnOpen) {
+                  state.focused.clear();
+               }
+
                stack_.push_back(request.id);
             }
 
@@ -400,7 +404,7 @@ void UISystem::BeginFrame(
          ~DispatchScope() { flag = false; }
       } scope(dispatching_);
 
-      DispatchInput(input, unscaledDeltaTime);
+      DispatchInput(ApplyInputPolicy(input), unscaledDeltaTime);
    } else {
       captured_.clear();
       inputLatched_ = true;
@@ -411,10 +415,12 @@ void UISystem::BeginFrame(
    inputLayout_ = BuildLayout(viewportSize);
    const auto screenId = InputScreen();
    EnsureFocus(screenId);
-   Object* hit = runtimeUpdate && input.active && input.pointerInside
-                    ? UILayoutSolver::HitTest(world_, inputLayout_, input.pointer)
+   const auto effectiveInput = ApplyInputPolicy(input);
+   Object* hit = runtimeUpdate && effectiveInput.active && effectiveInput.pointerInside
+                    ? UILayoutSolver::HitTest(world_, inputLayout_, effectiveInput.pointer)
                     : nullptr;
-   SetInteraction(runtimeUpdate && input.active ? screenId : std::string{}, hit ? hit->GetEntityId() : std::string{});
+   SetInteraction(
+      runtimeUpdate && effectiveInput.active ? screenId : std::string{}, hit ? hit->GetEntityId() : std::string{});
    UpdatePolicy();
 }
 
@@ -448,6 +454,16 @@ Object* UISystem::FindElement(const std::string& rootId, const std::string& elem
    }
 
    return found;
+}
+
+std::string UISystem::GetFocusedElementId(const std::string& rootId) const {
+   const auto screen = screens_.find(rootId);
+
+   if (screen == screens_.end() || screen->second.lifecycle != ScreenLifecycle::Open) {
+      return {};
+   }
+
+   return InteractiveWidget(screen->second.focused) ? screen->second.focused : std::string{};
 }
 
 std::vector<std::string> UISystem::Focusable(const std::string& screenId) const {
@@ -529,6 +545,39 @@ void UISystem::SetInteraction(const std::string& screenId, const std::string& ho
    }
 }
 
+UIInputFrame UISystem::ApplyInputPolicy(UIInputFrame input) {
+   const auto* root = world_.FindObjectById(InputScreen());
+   const auto* screen = root ? root->GetComponent<UIScreenComponent>() : nullptr;
+
+   if (!screen) {
+      return input;
+   }
+
+   const auto& settings = screen->DescribeSettings();
+
+   if (settings.disablePointerWithGamepad && input.gamepadConnected) {
+      input.pointerInside = false;
+      input.pointerMoved = false;
+      input.pointerDown = false;
+      input.pointerPressed = false;
+      input.pointerReleased = false;
+      // 接続前に始めたドラッグや押下を、切り替え後のボタン解放へ持ち越さない。
+      captured_.clear();
+   }
+
+   if (settings.pointerBlocksNavigation && input.active && input.pointerInside &&
+       UILayoutSolver::HitTest(world_, inputLayout_, input.pointer)) {
+      input.confirm = false;
+      input.cancel = false;
+      input.next = false;
+      input.previous = false;
+      input.vertical = 0.0f;
+      input.horizontal = 0.0f;
+   }
+
+   return input;
+}
+
 void UISystem::DispatchInput(const UIInputFrame& input, float unscaledDeltaTime) {
    const auto screenId = InputScreen();
 
@@ -537,6 +586,11 @@ void UISystem::DispatchInput(const UIInputFrame& input, float unscaledDeltaTime)
       inputLatched_ = true;
       return;
    }
+
+   const auto* root = world_.FindObjectById(screenId);
+   const auto* screen = root ? root->GetComponent<UIScreenComponent>() : nullptr;
+
+   if (!screen) return;
 
    EnsureFocus(screenId);
    auto focusable = Focusable(screenId);
@@ -550,7 +604,7 @@ void UISystem::DispatchInput(const UIInputFrame& input, float unscaledDeltaTime)
    Object* hit = input.pointerInside ? UILayoutSolver::HitTest(world_, inputLayout_, input.pointer) : nullptr;
    const std::string hitId = hit ? hit->GetEntityId() : std::string{};
 
-   if (hit && (input.pointerMoved || input.pointerPressed)) {
+   if (hit && (input.pointerMoved || input.pointerPressed || screen->DescribeSettings().pointerBlocksNavigation)) {
       // 非モーダル画面越しのクリックでも、実際に属する画面の選択を保持する。
       for (const auto& element : inputLayout_) {
          if (element.objectId == hitId) {
@@ -600,13 +654,6 @@ void UISystem::DispatchInput(const UIInputFrame& input, float unscaledDeltaTime)
    }
 
    if (!requests_.empty()) {
-      return;
-   }
-
-   const auto* root = world_.FindObjectById(screenId);
-   const auto* screen = root ? root->GetComponent<UIScreenComponent>() : nullptr;
-
-   if (!screen) {
       return;
    }
 

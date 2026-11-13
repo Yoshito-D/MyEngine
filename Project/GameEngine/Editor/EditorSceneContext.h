@@ -111,6 +111,12 @@ public:
    /// @brief const Contextからは編集対象を読み取り専用で列挙する。
    std::vector<const ParticleSystem*> CollectEditableParticleSystems() const;
 
+   /// @brief 指定ポインターが現在の編集対象に含まれるか、参照先を読み取らずに確認する。
+   bool IsObjectAlive(const Object* object) const;
+
+   /// @brief 指定ポインターが現在の編集対象の粒子システムか、参照先を読み取らずに確認する。
+   bool IsParticleSystemAlive(const ParticleSystem* particleSystem) const;
+
    /// @brief 通常オブジェクトを単一選択し、パーティクル選択を解除する
    /// @param object 選択対象。nullptrで選択解除
    void SelectObject(Object* object);
@@ -279,15 +285,27 @@ public:
    /// @brief 編集コマンドを実行し、Undo履歴とdirty状態を一緒に記録する。
    bool CommitEdit(std::unique_ptr<IEditorCommand> command);
 
-   /// @brief フレーム中の編集が完了した後に遅延削除を確定する。
+   /// @brief 適用済みObject姿勢の編集をUndo履歴へ記録する。無効な対象は拒否する。
+   /// @param object 編集したObject。現在の編集ワールドに属する必要がある。
+   /// @param before 操作開始時のローカル姿勢。
+   /// @param after 適用済みのローカル姿勢。
+   /// @return 編集を履歴へ記録できた場合はtrue。
+   bool CommitObjectTransform(Object* object, const Transform& before, const Transform& after);
+
+   /// @brief 適用済み粒子システム姿勢の編集をUndo履歴へ記録する。無効な対象は拒否する。
+   /// @param particleSystem 編集した粒子システム。現在の編集ワールドに属する必要がある。
+   /// @param before 操作開始時のエミッター姿勢。
+   /// @param after 適用済みのエミッター姿勢。
+   /// @return 編集を履歴へ記録できた場合はtrue。
+   bool CommitParticleTransform(ParticleSystem* particleSystem, const Transform& before, const Transform& after);
+
+   /// @brief 削除された対象の選択を解除し、音声プレビューを停止する。
    void FinishEditingFrame();
 
    /// @brief アセット候補を再走査する。
    void RefreshAssets();
 
 private:
-   friend class EditorSceneSession;
-
    class CommandOperations final : public EditorCommandTarget {
    public:
       /// @brief 実行中のコマンドにだけ所有者の編集操作を提供する。
@@ -376,8 +394,6 @@ private:
    };
 
    void FinishCommand(bool changed);
-   bool IsObjectAlive(const Object* object) const;
-   bool IsParticleSystemAlive(const ParticleSystem* particleSystem) const;
    Transform BuildPlacementTransformInFrontOfCamera() const;
    std::string GetObjectIdForCommand(const Object* object) const;
    std::string GetParticleSystemIdForCommand(const ParticleSystem* particleSystem);

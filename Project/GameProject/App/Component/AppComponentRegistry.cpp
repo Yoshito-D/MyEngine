@@ -26,7 +26,9 @@
 #include "GameProject/App/Component/Title/TitleStartComponent.h"
 #include "GameProject/App/Component/Tutorial/TutorialProgressComponent.h"
 #include "GameProject/App/Component/UI/MenuSelectionAnimationComponent.h"
+#include "GameProject/App/Component/UI/PauseMenuComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleAirController.h"
+#include "GameProject/App/Component/Vehicle/VehicleAudioController.h"
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleEffectController.h"
@@ -82,8 +84,10 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::TitleStartComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::MenuSelectionAnimationComponent>(
       GameEngine::ObjectType::Generic | GameEngine::ObjectType::UIText),
+   RegisterAppComponent<App::PauseMenuComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Generic)),
    RegisterAppComponent<App::TutorialProgressComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleAirController>(),
+   RegisterAppComponent<App::VehicleAudioController>(),
    RegisterAppComponent<App::VehicleController>(),
    RegisterAppComponent<App::PlayerShadowComponent>(),
    RegisterAppComponent<App::VehicleDrift>(),

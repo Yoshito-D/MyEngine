@@ -65,6 +65,9 @@ struct UIScreenSettings {
    bool blocksBelowInput = true;
    bool pausesGameplay = false;
    bool openOnStart = false;
+   bool resetFocusOnOpen = false;          ///< 閉じた画面を開くとき、保存された選択を破棄して初期選択先へ戻す。
+   bool pointerBlocksNavigation = false;   ///< 操作要素にポインターが重なっている間は方向・決定・戻る入力を無視する。
+   bool disablePointerWithGamepad = false; ///< パッド接続中はポインターによる選択・クリック・ドラッグを無視する。
 };
 
 /// @brief 型付き設定を保存JSONへ変換する。

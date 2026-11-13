@@ -45,35 +45,23 @@ void PostProcess::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rend
 
 /// @brief エフェクト適用時にバインドするパイプライン一式を設定する。
 /// @details パイプライン構築と所有はPSO管理側へ集約されているため、本クラスは非所有ポインタのみを保持する。
+///          PSO定義の意味名から解決済みの番号を受け取り、派生エフェクトを物理的な並び順から独立させる。
+///          深度とマスクは一部のエフェクトだけが使用する任意入力として扱う。
 /// @param pipeline 描画に使用するパイプラインステート
 /// @param rootSignature パイプラインと対応するルートシグネチャ
-void PostProcess::SetPipeline(const PipelineState* pipeline, const RootSignature* rootSignature) {
-   pipeline_ = pipeline;
-   rootSignature_ = rootSignature;
-}
-
-/// @brief 定数バッファと入力カラーSRVのルートパラメータ番号を設定する。
-/// @details PSO定義の意味名から解決済みの番号を受け取ることで、派生エフェクトを個々の
-///          ルートシグネチャの物理的な並び順から独立させる。
 /// @param constantBufferSlot エフェクト固有定数をバインドするルートパラメータ番号
 /// @param inputTextureSlot 前段の描画結果をバインドするルートパラメータ番号
-void PostProcess::SetBindingSlots(UINT constantBufferSlot, UINT inputTextureSlot) {
+/// @param depthTextureSlot 深度SRVをバインドするルートパラメータ番号
+/// @param maskTextureSlot マスクSRVをバインドするルートパラメータ番号
+void PostProcess::ConfigurePipeline(const PipelineState& pipeline, const RootSignature& rootSignature,
+   UINT constantBufferSlot, UINT inputTextureSlot, std::optional<UINT> depthTextureSlot,
+   std::optional<UINT> maskTextureSlot) {
+   pipeline_ = &pipeline;
+   rootSignature_ = &rootSignature;
    constantBufferRootSlot_ = constantBufferSlot;
    inputTextureRootSlot_ = inputTextureSlot;
-}
-
-/// @brief 深度バッファSRVのルートパラメータ番号を設定する。
-/// @details 深度を参照するエフェクトだけが利用する任意バインディングであり、番号はPSO定義から解決される。
-/// @param depthTextureSlot 深度SRVをバインドするルートパラメータ番号
-void PostProcess::SetDepthTextureRootSlot(UINT depthTextureSlot) {
-   depthTextureRootSlot_ = depthTextureSlot;
-}
-
-/// @brief マスクテクスチャSRVのルートパラメータ番号を設定する。
-/// @details マスクを参照するエフェクトだけが利用する任意バインディングであり、番号はPSO定義から解決される。
-/// @param maskTextureSlot マスクSRVをバインドするルートパラメータ番号
-void PostProcess::SetMaskTextureRootSlot(UINT maskTextureSlot) {
-   maskTextureRootSlot_ = maskTextureSlot;
+   depthTextureRootSlot_ = depthTextureSlot.value_or(depthTextureRootSlot_);
+   maskTextureRootSlot_ = maskTextureSlot.value_or(maskTextureRootSlot_);
 }
 
 /// @brief 状態を持たないエフェクト向けの既定設定を生成する。

@@ -35,6 +35,7 @@ enum class RenderPass {
    Opaque,      // 不透明オブジェクト（ポストプロセス前）
    Transparent, // 半透明オブジェクト（ポストプロセス前）
    PostProcess, // ポストプロセス後
+   Overlay,     // 背景の画面効果も適用した後の共通UI
 };
 
 /// @brief モデル描画用データ
@@ -52,8 +53,8 @@ struct SpriteDrawData {
    Sprite* sprite;                               ///< 描画対象スプライトへの非所有参照。
    Texture* texture;                             ///< 描画に使用するテクスチャへの非所有参照。
    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle; ///< 描画時に参照するテクスチャSRVのGPUハンドル。
-   Camera* camera;      // 描画時のカメラを保存
-   BlendMode blendMode; // ブレンドモード
+   Camera* camera;                               // 描画時のカメラを保存
+   BlendMode blendMode;                          // ブレンドモード
 };
 
 /// @brief UI用スプライト描画用データ
@@ -64,7 +65,7 @@ struct UISpriteDrawData {
    Sprite::AnchorPoint anchorPoint;              ///< 画面上のアンカー。
    uint32_t screenWidth;                         ///< UI配置の基準となる画面幅（ピクセル）。
    uint32_t screenHeight;                        ///< UI配置の基準となる画面高（ピクセル）。
-   BlendMode blendMode; // ブレンドモード
+   BlendMode blendMode;                          // ブレンドモード
 };
 
 /// @brief UIテキスト描画用データ
@@ -79,7 +80,7 @@ struct TextDrawData {
 /// @brief パーティクル描画用データ
 struct ParticleDrawData {
    ParticleSystem* particleSystem; ///< 描画・更新するParticleSystemへの参照。
-   Camera* camera; // 描画時のカメラを保存
+   Camera* camera;                 // 描画時のカメラを保存
 };
 
 /// @brief ライン描画用データ

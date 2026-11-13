@@ -4,6 +4,9 @@
 
 #include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Object/Component/Audio/AudioSourceComponent.h"
+#include "GameEngine/Object/Component/Audio/BgmComponent.h"
+#include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
 #include <algorithm>
 #include <array>
@@ -36,11 +39,24 @@ void RaceManagerComponent::ConfigureStates() {
             [this]() {
                if (!presentation_.BeginIntro(GameEngine::EngineContext::GetActiveBrain(), introSettings_)) {
                   stateMachine_.RequestState(State::Countdown);
+                  return;
+               }
+
+               if (HasOwner()) {
+                  if (auto* source = GetOwner().GetComponent<GameEngine::AudioSourceComponent>()) {
+                     source->Restart("jingle");
+                  }
                }
             },
          .onUpdate = [this](float seconds) { UpdateIntro(seconds); },
          .onExit =
             [this]() {
+               if (HasOwner()) {
+                  if (auto* source = GetOwner().GetComponent<GameEngine::AudioSourceComponent>()) {
+                     source->Stop("jingle");
+                  }
+               }
+
                presentation_.CancelIntro(GameEngine::EngineContext::GetActiveBrain());
                GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
             }});
@@ -144,6 +160,7 @@ void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
 void RaceManagerComponent::OnDisable() {
    if (!runtimeInitialized_) return;
 
+   StopRaceAudio();
    auto* brain = GameEngine::EngineContext::GetActiveBrain();
    presentation_.CancelIntro(brain);
    presentation_.RestoreEffects();
@@ -229,6 +246,7 @@ void RaceManagerComponent::Restart() {
 
    if (!runtimeInitialized_) return;
 
+   StopRaceAudio();
    presentation_.CancelIntro(GameEngine::EngineContext::GetActiveBrain());
    GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
    presentation_.RestoreEffects();
@@ -394,9 +412,22 @@ void RaceManagerComponent::EnterCountdown() {
 
    presentation_.SetCameraMotionPaused(brain, true, startCameraBlendSeconds_, startCameraBlendEasing_);
    presentation_.SetPlayerLocked(lockPlayerDuringCountdown_);
+
+   if (countdownRemaining_ > 0.0f && HasOwner()) {
+      if (auto* source = GetOwner().GetComponent<GameEngine::AudioSourceComponent>()) {
+         source->Restart("countdown");
+      }
+   }
 }
 
 void RaceManagerComponent::EnterRunning() {
+   // シーンの自動再生を使わず、操作解放と計測開始の状態遷移にBGMの先頭を合わせる。
+   if (HasOwner()) {
+      if (auto* bgm = GetOwner().GetComponent<GameEngine::BgmComponent>()) {
+         bgm->Restart();
+      }
+   }
+
    // カウントダウン時間は走行記録へ含めず、開始時点を0秒として計測し直す。
    presentation_.SetCameraMotionPaused(
       GameEngine::EngineContext::GetActiveBrain(), false, startCameraBlendSeconds_, startCameraBlendEasing_);
@@ -405,6 +436,18 @@ void RaceManagerComponent::EnterRunning() {
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
    presentation_.SetPlayerLocked(false);
+}
+
+void RaceManagerComponent::StopRaceAudio() {
+   if (!HasOwner()) return;
+
+   if (auto* source = GetOwner().GetComponent<GameEngine::AudioSourceComponent>()) {
+      source->StopAll();
+   }
+
+   if (auto* bgm = GetOwner().GetComponent<GameEngine::BgmComponent>()) {
+      bgm->Stop();
+   }
 }
 
 bool RaceManagerComponent::CanFinish() const {

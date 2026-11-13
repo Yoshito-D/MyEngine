@@ -708,12 +708,16 @@ SrvDescriptorAllocation::~SrvDescriptorAllocation() {
    }
 }
 
-std::shared_ptr<SrvDescriptorAllocation> GraphicsDevice::AllocateSrvDescriptor() {
+std::shared_ptr<SrvDescriptorAllocation> SrvDescriptorAllocation::Allocate(GraphicsDevice& device) {
    // 共有所有権の確保が失敗しても未確保のスロットを返却しないよう、確定後にdeviceを渡す。
-   auto allocation = std::shared_ptr<SrvDescriptorAllocation>(new SrvDescriptorAllocation(GetNextSrvIndex()));
-   IncrementSrvIndex();
-   allocation->device_ = this;
+   auto allocation = std::shared_ptr<SrvDescriptorAllocation>(new SrvDescriptorAllocation(device.GetNextSrvIndex()));
+   device.IncrementSrvIndex();
+   allocation->device_ = &device;
    return allocation;
+}
+
+std::shared_ptr<SrvDescriptorAllocation> GraphicsDevice::AllocateSrvDescriptor() {
+   return SrvDescriptorAllocation::Allocate(*this);
 }
 
 void GraphicsDevice::ReleaseSrvIndex(UINT index) {

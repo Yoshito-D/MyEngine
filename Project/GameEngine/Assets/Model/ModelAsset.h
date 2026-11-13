@@ -66,8 +66,13 @@ struct SkinningInformationForGPU {
    uint32_t padding[3] = {}; ///< GPU転送データの配置境界を揃える未使用領域。
 };
 
+struct ModelData;
+
 class SkinCluster {
-   friend class ModelAsset;
+   static void CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCluster& skinCluster,
+      const std::vector<MeshData>& meshes, const std::vector<ComPtr<ID3D12Resource>>& vertices);
+   static void CreateOutputSkinningResources(
+      GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes);
 
    // 不変な入力はコピー間で共有し、Palette/出力を差し替える際には対応する所有権も置換する。
    /// @brief メッシュごとの入力頂点SRVの共有所有権。
@@ -104,6 +109,22 @@ class SkinCluster {
 public:
    /// @brief 未確保のスキニング状態を構築する。
    SkinCluster() = default;
+
+   /// @brief モデルのバインド姿勢・頂点・ウェイトからスキニング用リソースを生成する。
+   /// @param device リソースの確保元。生成結果の破棄まで生存させる。
+   /// @param skeleton モデルに対応するバインド姿勢のスケルトン。
+   /// @param modelData メッシュとジョイントウェイトを含むモデルデータ。
+   /// @param vertices 各メッシュの入力頂点リソース。生成結果の利用中は有効に保つ。
+   static SkinCluster Create(GraphicsDevice* device, const Skeleton& skeleton, const ModelData& modelData,
+      const std::vector<ComPtr<ID3D12Resource>>& vertices);
+
+   /// @brief 不変な入力を共有し、パレットと出力を個別に確保した描画インスタンスを生成する。
+   /// @param device 元クラスタと同じリソースの確保元。
+   /// @param skeleton 元クラスタと同じバインド姿勢のスケルトン。
+   /// @param meshes 元クラスタと同じメッシュ一覧。
+   /// @return 独立した実行状態。未初期化またはディスクリプター不足ならnullopt。
+   std::optional<SkinCluster> CreateInstance(
+      GraphicsDevice* device, const Skeleton& skeleton, const std::vector<MeshData>& meshes) const;
 
    /// @brief 同じ出力GPUリソースを別の遷移状態で管理するコピーを禁止する。
    SkinCluster(const SkinCluster&) = delete;
@@ -226,10 +247,6 @@ public:
    bool HasSkinningData() const { return hasSkinningData_; }
 
 private:
-   static void CreateInputSkinningResourceViews(GraphicsDevice* device, SkinCluster& skinCluster,
-      const std::vector<MeshData>& meshes, const std::vector<ComPtr<ID3D12Resource>>& vertices);
-   static void CreateOutputSkinningResources(
-      GraphicsDevice* device, SkinCluster& skinCluster, const std::vector<MeshData>& meshes);
    std::string assetId_;                                     ///< このモデルの完全なアセットID。
    ModelData modelData_;                                     ///< 読み込み済みのメッシュ・マテリアル・スキニング情報。
    std::vector<ComPtr<ID3D12Resource>> vertexResources_;     // 複数リソース
@@ -251,7 +268,5 @@ private:
    Skeleton CreateSkeleton(const Node& rootNode, const ModelData& modelData);
 
    int32_t CreateJoint(const Node& node, const std::optional<int32_t>& parent, std::vector<Joint>& joints);
-
-   SkinCluster CreateSkinCluster(GraphicsDevice* device, const Skeleton& skeleton, const ModelData& modelData);
 };
 }

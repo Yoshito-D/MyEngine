@@ -303,20 +303,11 @@ void EditorSceneSession::DrawGizmoInspectorControls() {
 
 void EditorSceneSession::DrawTransformGizmo(
    float viewportX, float viewportY, float viewportWidth, float viewportHeight) {
-   if (context_->selectedObject_ && !context_->IsObjectAlive(context_->selectedObject_)) {
-      if (auto* audio = EngineContext::GetAudio()) {
-         audio->StopPreviews();
-      }
+   context_->FinishEditingFrame();
+   Object* selectedObject = context_->GetSelectedObject();
+   ParticleSystem* selectedParticleSystem = context_->GetSelectedParticleSystem();
 
-      context_->selectedObject_ = nullptr;
-   }
-
-   if (context_->selectedParticleSystem_ && !context_->IsParticleSystemAlive(context_->selectedParticleSystem_)) {
-      context_->selectedParticleSystem_ = nullptr;
-   }
-
-   if ((!context_->selectedObject_ && !context_->selectedParticleSystem_) || viewportWidth <= 0.0f ||
-       viewportHeight <= 0.0f) {
+   if ((!selectedObject && !selectedParticleSystem) || viewportWidth <= 0.0f || viewportHeight <= 0.0f) {
       return;
    }
 
@@ -324,8 +315,8 @@ void EditorSceneSession::DrawTransformGizmo(
 
    if (!camera) return;
 
-   if (context_->selectedParticleSystem_) {
-      const auto shapeSettings = context_->selectedParticleSystem_->DescribeShapeModule();
+   if (selectedParticleSystem) {
+      const auto shapeSettings = selectedParticleSystem->DescribeShapeModule();
       const auto* shapeModule = &shapeSettings;
 
       Matrix4x4 worldMatrix = MakeAffineMatrix(shapeModule->GetTransform());
@@ -341,14 +332,14 @@ void EditorSceneSession::DrawTransformGizmo(
          ToImGuizmoMode(gizmoMode_), &worldMatrix.m[0][0]);
 
       if (ImGuizmo::IsUsing()) {
-         if (!isManipulatingParticleSystem_ || manipulatingParticleSystem_ != context_->selectedParticleSystem_) {
+         if (!isManipulatingParticleSystem_ || manipulatingParticleSystem_ != selectedParticleSystem) {
             // 連続ドラッグの開始値を一度だけ保存し、毎フレームの微小移動を個別の履歴にしない。
             particleTransformBeforeManipulation_ = beforeCall;
-            manipulatingParticleSystem_ = context_->selectedParticleSystem_;
+            manipulatingParticleSystem_ = selectedParticleSystem;
             isManipulatingParticleSystem_ = true;
          }
 
-         context_->selectedParticleSystem_->ApplyEmitterPose(MatrixToTransform(worldMatrix));
+         selectedParticleSystem->ApplyEmitterPose(MatrixToTransform(worldMatrix));
          return;
       }
 
@@ -367,18 +358,17 @@ void EditorSceneSession::DrawTransformGizmo(
       return;
    }
 
-   auto* transformComponent = context_->selectedObject_->GetComponent<TransformComponent>();
+   auto* transformComponent = selectedObject->GetComponent<TransformComponent>();
 
    if (!transformComponent) return;
 
-   const bool useScreenSpace = UsesScreenRenderSpace(context_->selectedObject_);
+   const bool useScreenSpace = UsesScreenRenderSpace(selectedObject);
 
    // UITextは左上原点のY下向き座標で頂点化されるため、SpriteのY上向き投影と分ける。
-   const bool useUITextCoordinates = useScreenSpace && dynamic_cast<UIText*>(context_->selectedObject_) != nullptr;
+   const bool useUITextCoordinates = useScreenSpace && dynamic_cast<UIText*>(selectedObject) != nullptr;
    const Vector2 screenSize = GetEditorScreenCameraSize(viewportWidth, viewportHeight);
-   const Vector3 screenRenderOffset = useScreenSpace
-                                         ? GetScreenRenderOffset(context_->selectedObject_, GetEditorScreenLayoutSize())
-                                         : Vector3(0.0f, 0.0f, 0.0f);
+   const Vector3 screenRenderOffset =
+      useScreenSpace ? GetScreenRenderOffset(selectedObject, GetEditorScreenLayoutSize()) : Vector3(0.0f, 0.0f, 0.0f);
 
    Transform gizmoTransform = transformComponent->GetLocalPose();
 
@@ -401,10 +391,10 @@ void EditorSceneSession::DrawTransformGizmo(
       ToImGuizmoOperation(gizmoOperation_, useUITextCoordinates), ToImGuizmoMode(gizmoMode_), &worldMatrix.m[0][0]);
 
    if (ImGuizmo::IsUsing()) {
-      if (!isManipulating_ || manipulatingObject_ != context_->selectedObject_) {
+      if (!isManipulating_ || manipulatingObject_ != selectedObject) {
          // 選択がドラッグ中に変わっても、開始値と対象を同じ組として保持する。
          transformBeforeManipulation_ = beforeCall;
-         manipulatingObject_ = context_->selectedObject_;
+         manipulatingObject_ = selectedObject;
          isManipulating_ = true;
       }
 
@@ -454,7 +444,7 @@ void EditorSceneSession::HandleViewportClickSelection(
 
    if (!ImGui::IsWindowHovered() || !ImGui::IsMouseClicked(ImGuiMouseButton_Left)) return;
 
-   if (context_->selectedObject_ && (ImGuizmo::IsOver() || ImGuizmo::IsUsing())) return;
+   if (context_->GetSelectedObject() && (ImGuizmo::IsOver() || ImGuizmo::IsUsing())) return;
 
    ImVec2 mouse = ImGui::GetMousePos();
 
@@ -584,16 +574,14 @@ bool EditorSceneSession::HasTransformChanged(const Transform& lhs, const Transfo
 void EditorSceneSession::SubmitTransformIfNeeded(const Transform& before, const Transform& after, Object* object) {
    if (!object || !HasTransformChanged(before, after)) return;
 
-   context_->CommitEdit(
-      std::make_unique<TransformObjectCommand>(context_->GetObjectIdForCommand(object), before, after));
+   context_->CommitObjectTransform(object, before, after);
 }
 
 void EditorSceneSession::SubmitParticleTransformIfNeeded(
    const Transform& before, const Transform& after, ParticleSystem* particleSystem) {
    if (!particleSystem || !HasTransformChanged(before, after)) return;
 
-   context_->CommitEdit(std::make_unique<TransformParticleSystemCommand>(
-      context_->GetParticleSystemIdForCommand(particleSystem), before, after));
+   context_->CommitParticleTransform(particleSystem, before, after);
 }
 
 }

@@ -23,19 +23,13 @@ public:
       EaseInOut,
    };
 
-   /// @brief 出力カメラを持たないBrainを構築する。
-   CinemachineBrain();
+   /// @brief 出力カメラの所有権を受け取り、Brainを構築する。
+   /// @param outputCamera 状態を反映する出力先。所有権を移譲する。
+   explicit CinemachineBrain(std::unique_ptr<Camera> outputCamera);
 
    /// @brief 所有出力カメラとブレンド状態を破棄する。
    ~CinemachineBrain();
 
-   /// @brief 初期化（Cameraの所有権を受け取る）
-   /// @param outputCamera 出力先カメラ（所有権移譲）
-private:
-   friend class CameraManager;
-   void Initialize(std::unique_ptr<Camera> outputCamera);
-
-public:
    /// @brief 出力カメラを取得
    Camera* GetOutputCamera() { return outputCamera_.get(); }
 

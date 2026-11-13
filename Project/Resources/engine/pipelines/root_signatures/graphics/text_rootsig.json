@@ -27,8 +27,18 @@
       "addressV": "Clamp",
       "addressW": "Clamp",
       "comparisonFunc": "Never",
-      "maxLOD": 0.0,
+      "maxLOD": 0,
       "shaderRegister": 0,
+      "visibility": "Pixel"
+    },
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Wrap",
+      "addressV": "Wrap",
+      "addressW": "Wrap",
+      "comparisonFunc": "Never",
+      "maxLOD": 0,
+      "shaderRegister": 1,
       "visibility": "Pixel"
     }
   ]

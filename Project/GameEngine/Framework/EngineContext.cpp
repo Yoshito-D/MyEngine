@@ -463,6 +463,12 @@ void EngineContext::SetCameraTransitionOpacity(float opacity) {
    }
 }
 
+void EngineContext::SetOverlayBackgroundBlur(float strength) {
+   if (sRenderer_) {
+      sRenderer_->SetOverlayBackgroundBlur(strength);
+   }
+}
+
 bool EngineContext::IsSceneTransitioning() {
    return sSceneManager_ && sSceneManager_->IsSceneTransitioning();
 }

@@ -16,6 +16,7 @@
 namespace GameEngine {
 UIInputFrame Renderer::ReadUIInput(Input& input, InputActionService& actions) {
    UIInputFrame frame;
+   frame.gamepadConnected = input.GetConnectedGamePadCount() != 0;
    POINT pointer{};
    GetCursorPos(&pointer);
    bool standalone = true;
@@ -94,7 +95,7 @@ void Renderer::DrawManagedUI() {
             text->GetVisibleGlyphCount(), Window::kUiReferenceWidth, Window::kUiReferenceHeight, uiViewportSize_.x,
             uiViewportSize_.y, &item.matrix);
          for (const auto& command : commands) {
-            SubmitDrawCommand(DrawCommand::CreateText(command, RenderPass::PostProcess));
+            SubmitDrawCommand(DrawCommand::CreateText(command, RenderPass::Overlay));
          }
          continue;
       }
@@ -105,10 +106,12 @@ void Renderer::DrawManagedUI() {
       }
       auto* texture = textures->GetTexture("white1x1");
       Vector4 color{1.0f, 1.0f, 1.0f, item.opacity};
+      Matrix4x4 uvTransform = MakeIdentity4x4();
       if (const auto* material = object->GetComponent<MaterialComponent>()) {
          if (material->GetMaterial()) {
             color = material->GetMaterial()->GetColor();
             color.w *= item.opacity;
+            uvTransform = material->GetMaterial()->GetUVTransform();
          }
          if (!material->GetTextureNames().empty()) {
             if (auto* requested = textures->GetTexture(material->GetTextureNames().front());
@@ -145,8 +148,8 @@ void Renderer::DrawManagedUI() {
       }
       const auto queue = [&](Vector2 size, Vector4 tint) {
          const auto command = textRenderer_->QueueQuad(
-            size, item.matrix, uvMin, uvMax, tint, texture->GetTextureSrvHandleGPU(), uiViewportSize_);
-         SubmitDrawCommand(DrawCommand::CreateText(command, RenderPass::PostProcess));
+            size, item.matrix, uvMin, uvMax, tint, texture->GetTextureSrvHandleGPU(), uiViewportSize_, uvTransform);
+         SubmitDrawCommand(DrawCommand::CreateText(command, RenderPass::Overlay));
       };
       queue(item.size, color);
       // 操作部品の値表示は専用の描画色だけを変更し、保存値や共有マテリアルへ書き戻さない。

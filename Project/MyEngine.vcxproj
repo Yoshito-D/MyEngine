@@ -177,7 +177,9 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameProject\App\AudioSettings.cpp" />
     <ClCompile Include="GameProject\App\Component\UI\MenuNavigation.cpp" />
+    <ClCompile Include="GameProject\App\Component\UI\PauseMenuComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.cpp" />
     <ClCompile Include="GameProject\App\Component\Tutorial\TutorialGuidePresenter.cpp" />
     <ClCompile Include="GameProject\App\Component\Rendering\PlayerShadowComponent.cpp" />
@@ -517,6 +519,7 @@
     <ClCompile Include="GameProject\App\Component\Title\TitleStartComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAirController.cpp" />
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAudioController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleController.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleDrift.cpp" />
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEffectController.cpp" />
@@ -553,7 +556,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameProject\App\AudioSettings.h" />
     <ClInclude Include="GameProject\App\Component\UI\MenuNavigation.h" />
+    <ClInclude Include="GameProject\App\Component\UI\PauseMenuComponent.h" />
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.h" />
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialGuidePresenter.h" />
     <ClInclude Include="GameProject\App\Component\Rendering\PlayerShadowComponent.h" />
@@ -813,6 +818,7 @@
     <ClInclude Include="GameProject\App\Component\Title\TitleStartComponent.h" />
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialProgressComponent.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAirController.h" />
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAudioController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleController.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleDrift.h" />
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEffectController.h" />

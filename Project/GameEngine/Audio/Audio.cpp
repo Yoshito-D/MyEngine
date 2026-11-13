@@ -75,6 +75,7 @@ void Audio::Finalize() {
    gamePaused_ = false;
    uiPaused_ = false;
    testMode_ = false;
+   bgmDucking_ = 1.0f;
 }
 
 Audio::Entry* Audio::Find(AudioHandle handle) {
@@ -112,8 +113,7 @@ size_t Audio::GetVoiceCount() const {
 AudioHandle Audio::Create(
    std::shared_ptr<const SoundClip> clip, AudioBus bus, float volume, float pitch, bool loop, bool preview) {
    if (!IsAvailable() || !clip || clip->GetPcm().empty() || !ValidPitch(pitch) || !std::isfinite(volume) ||
-       static_cast<size_t>(bus) >= busVolumes_.size() ||
-       (!preview && (bus == AudioBus::Ui ? uiPaused_ : gamePaused_))) {
+       static_cast<size_t>(bus) >= busVolumes_.size() || (!preview && IsBusPaused(bus))) {
       return {};
    }
 
@@ -221,7 +221,7 @@ bool Audio::Play(AudioHandle handle) {
       return true;
    }
 
-   if (!entry->preview && (entry->bus == AudioBus::Ui ? uiPaused_ : gamePaused_)) {
+   if (!entry->preview && IsBusPaused(entry->bus)) {
       return false;
    }
 
@@ -231,7 +231,7 @@ bool Audio::Play(AudioHandle handle) {
 bool Audio::Restart(AudioHandle handle) {
    Entry* entry = Find(handle);
 
-   if (!entry || (!entry->preview && (entry->bus == AudioBus::Ui ? uiPaused_ : gamePaused_))) {
+   if (!entry || (!entry->preview && IsBusPaused(entry->bus))) {
       return false;
    }
 
@@ -261,7 +261,7 @@ bool Audio::Pause(AudioHandle handle) {
 bool Audio::Resume(AudioHandle handle) {
    Entry* entry = Find(handle);
 
-   if (!entry || (!entry->preview && (entry->bus == AudioBus::Ui ? uiPaused_ : gamePaused_))) {
+   if (!entry || (!entry->preview && IsBusPaused(entry->bus))) {
       return false;
    }
 
@@ -300,9 +300,19 @@ AudioHandle Audio::PlayOneShot(
    return Create(std::move(clip), bus, volume, pitch, false, preview);
 }
 
+bool Audio::IsBusPaused(AudioBus bus) const {
+   return bus == AudioBus::Se ? gamePaused_ : uiPaused_;
+}
+
+float Audio::GetEffectiveVolume(const Entry& entry) const {
+   // ユーザーの音量設定を変更せず別の倍率を掛け、設定画面で変更した値も再開時にそのまま使う。
+   const float duckingGain = entry.bus == AudioBus::Bgm && !entry.preview ? bgmDucking_ : 1.0f;
+   return masterVolume_ * busVolumes_[static_cast<size_t>(entry.bus)] * entry.volume * entry.fade * duckingGain;
+}
+
 void Audio::ApplyVolume(Entry& entry) {
    if (entry.voice) {
-      entry.voice->SetVolume(masterVolume_ * busVolumes_[static_cast<size_t>(entry.bus)] * entry.volume * entry.fade);
+      entry.voice->SetVolume(GetEffectiveVolume(entry));
    }
 }
 
@@ -367,6 +377,11 @@ void Audio::SetBusVolume(AudioBus bus, float volume) {
    }
 }
 
+float Audio::GetBusVolume(AudioBus bus) const {
+   const auto index = static_cast<size_t>(bus);
+   return index < busVolumes_.size() ? busVolumes_[index] : 0.0f;
+}
+
 void Audio::SetMasterVolume(float volume) {
    if (!std::isfinite(volume)) return;
 
@@ -374,6 +389,22 @@ void Audio::SetMasterVolume(float volume) {
 
    for (auto& entry : entries_) {
       ApplyVolume(entry);
+   }
+}
+
+void Audio::SetBgmDucking(float gain) {
+   if (!std::isfinite(gain)) return;
+
+   const float normalizedGain = Gain(gain);
+
+   if (bgmDucking_ == normalizedGain) return;
+
+   bgmDucking_ = normalizedGain;
+
+   for (auto& entry : entries_) {
+      if (entry.bus == AudioBus::Bgm) {
+         ApplyVolume(entry);
+      }
    }
 }
 
@@ -388,7 +419,9 @@ void Audio::SetGamePaused(bool paused, bool pauseUi) {
          continue;
       }
 
-      const bool shouldPause = entry.bus == AudioBus::Ui ? uiPaused_ : gamePaused_;
+      ApplyVolume(entry);
+      const bool shouldPause = IsBusPaused(entry.bus);
+
       if (shouldPause && entry.state == State::Playing) {
          if (entry.voice) {
             entry.voice->Stop();
@@ -419,6 +452,7 @@ void Audio::StopGameAudio() {
 
    gamePaused_ = false;
    uiPaused_ = false;
+   bgmDucking_ = 1.0f;
 }
 
 void Audio::StopPreviews() {
@@ -444,7 +478,7 @@ void Audio::Update(float realSeconds) {
       }
    }
 
-   if (bgmPlayer_ && !gamePaused_ && std::isfinite(realSeconds) && realSeconds > 0.0f) {
+   if (bgmPlayer_ && !IsBusPaused(AudioBus::Bgm) && std::isfinite(realSeconds) && realSeconds > 0.0f) {
       bgmPlayer_->Update(realSeconds);
    }
 }
@@ -484,7 +518,7 @@ void Audio::CompleteForTesting(AudioHandle handle) {
 
 float Audio::GetEffectiveVolumeForTesting(AudioHandle handle) const {
    const Entry* entry = Find(handle);
-   return entry ? masterVolume_ * busVolumes_[static_cast<size_t>(entry->bus)] * entry->volume * entry->fade : 0.0f;
+   return entry ? GetEffectiveVolume(*entry) : 0.0f;
 }
 
 uint32_t Audio::GetStartCountForTesting(AudioHandle handle) const {

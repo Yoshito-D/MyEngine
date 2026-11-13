@@ -18,6 +18,11 @@ class GraphicsDevice;
 /// @note GraphicsDeviceより先に破棄し、GPUが参照していないフレーム境界で解放する
 class SrvDescriptorAllocation final {
 public:
+   /// @brief デバイスからSRV/UAVスロットを確保し、共有所有権を返す。
+   /// @param device スロットの確保元。返却が終わるまで生存させる。
+   /// @throws std::overflow_error ヒープに空きがない場合。
+   static std::shared_ptr<SrvDescriptorAllocation> Allocate(GraphicsDevice& device);
+
    /// @brief 所有するスロットを返却する
    ~SrvDescriptorAllocation();
 
@@ -31,8 +36,6 @@ public:
    SrvDescriptorAllocation& operator=(const SrvDescriptorAllocation&) = delete;
 
 private:
-   friend class GraphicsDevice;
-
    explicit SrvDescriptorAllocation(UINT index) : index_(index) {}
 
    GraphicsDevice* device_ = nullptr; ///< GPUリソースや描画コマンドの生成に使うデバイスへの参照。

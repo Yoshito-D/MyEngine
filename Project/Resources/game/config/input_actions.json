@@ -102,6 +102,19 @@
                   "key": "Tab"
                }
             ]
+         },
+         "Gameplay.Pause": {
+            "type": "Button",
+            "bindings": [
+               {
+                  "type": "Key",
+                  "key": "Escape"
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "Start"
+               }
+            ]
          }
       },
       "UI": {
@@ -176,6 +189,10 @@
                {
                   "type": "GamePadButton",
                   "button": "B"
+               },
+               {
+                  "type": "GamePadButton",
+                  "button": "Start"
                }
             ]
          },

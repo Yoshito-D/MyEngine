@@ -263,7 +263,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GameProject\App\AudioSettings.cpp">
+      <Filter>GameProject\App</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\UI\MenuNavigation.cpp">
+      <Filter>GameProject\App\Component\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProject\App\Component\UI\PauseMenuComponent.cpp">
       <Filter>GameProject\App\Component\UI</Filter>
     </ClCompile>
     <ClCompile Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.cpp">
@@ -1013,6 +1019,9 @@
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEffectController.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
+    <ClCompile Include="GameProject\App\Component\Vehicle\VehicleAudioController.cpp">
+      <Filter>GameProject\App\Component\Vehicle</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Vehicle\VehicleEvents.cpp">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClCompile>
@@ -1043,7 +1052,13 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameProject\App\AudioSettings.h">
+      <Filter>GameProject\App</Filter>
+    </ClInclude>
     <ClInclude Include="GameProject\App\Component\UI\MenuNavigation.h">
+      <Filter>GameProject\App\Component\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\UI\PauseMenuComponent.h">
       <Filter>GameProject\App\Component\UI</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.h">
@@ -1848,6 +1863,9 @@
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEffectController.h">
+      <Filter>GameProject\App\Component\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Vehicle\VehicleAudioController.h">
       <Filter>GameProject\App\Component\Vehicle</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Vehicle\VehicleEvents.h">
