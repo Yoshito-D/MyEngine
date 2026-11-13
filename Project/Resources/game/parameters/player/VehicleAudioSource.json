@@ -1,0 +1,54 @@
+{
+   "componentType": "AudioSourceComponent",
+   "data": {
+      "slots": [
+         {
+            "bus": "SE",
+            "clipAssetId": "game/sounds/se/vehicle/drift.mp3",
+            "loop": true,
+            "name": "drift",
+            "pitch": 1,
+            "playOnStart": false,
+            "volume": 0.6570000052452087
+         },
+         {
+            "bus": "SE",
+            "clipAssetId": "game/sounds/se/vehicle/miniTurbo.wav",
+            "loop": true,
+            "name": "miniTurbo",
+            "pitch": 0.878000020980835,
+            "playOnStart": false,
+            "volume": 0.09700000286102295
+         },
+         {
+            "bus": "SE",
+            "clipAssetId": "game/sounds/se/vehicle/acceleration.mp3",
+            "loop": false,
+            "name": "acceleration",
+            "pitch": 1,
+            "playOnStart": false,
+            "volume": 1
+         },
+         {
+            "bus": "SE",
+            "clipAssetId": "game/sounds/se/vehicle/landing.mp3",
+            "loop": false,
+            "name": "landing",
+            "pitch": 1,
+            "playOnStart": false,
+            "volume": 1
+         },
+         {
+            "bus": "SE",
+            "clipAssetId": "game/sounds/se/vehicle/miss.mp3",
+            "loop": false,
+            "name": "miss",
+            "pitch": 1,
+            "playOnStart": false,
+            "volume": 1
+         }
+      ]
+   },
+   "domain": "Object",
+   "version": 1
+}

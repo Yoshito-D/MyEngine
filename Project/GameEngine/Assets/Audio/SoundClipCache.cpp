@@ -5,7 +5,6 @@
 #include <bcrypt.h>
 #include <fstream>
 #include <limits>
-#include <mfapi.h>
 #include <span>
 #include <stdexcept>
 
@@ -159,41 +158,22 @@ std::shared_ptr<const SoundClip> SoundClipCache::ReadDiskCache(const std::filesy
       throw std::runtime_error("Invalid audio cache size");
    }
 
-   auto clip = std::shared_ptr<SoundClip>(new SoundClip());
-   clip->formatWords_.resize((formatSize + sizeof(std::uint64_t) - 1) / sizeof(std::uint64_t));
-   input.read(reinterpret_cast<char*>(clip->formatWords_.data()), static_cast<std::streamsize>(formatSize));
-   const auto* format = clip->GetFormat();
-   const bool extensible =
-      format->wFormatTag == WAVE_FORMAT_EXTENSIBLE && formatSize >= sizeof(WAVEFORMATEXTENSIBLE) &&
-      format->cbSize >= 22 &&
-      IsEqualGUID(reinterpret_cast<const WAVEFORMATEXTENSIBLE*>(format)->SubFormat, MFAudioFormat_PCM);
+   std::vector<BYTE> formatBytes(static_cast<size_t>(formatSize));
+   input.read(reinterpret_cast<char*>(formatBytes.data()), static_cast<std::streamsize>(formatSize));
+   std::vector<BYTE> pcm(static_cast<size_t>(pcmSize));
+   input.read(reinterpret_cast<char*>(pcm.data()), static_cast<std::streamsize>(pcmSize));
 
-   if (!input || (format->wFormatTag != WAVE_FORMAT_PCM && !extensible) ||
-       sizeof(WAVEFORMATEX) + format->cbSize > formatSize || format->nChannels == 0 || format->nSamplesPerSec == 0 ||
-       format->wBitsPerSample == 0 || format->wBitsPerSample > 32 || format->wBitsPerSample % 8 != 0 ||
-       format->nBlockAlign == 0 ||
-       format->nBlockAlign != static_cast<std::uint32_t>(format->nChannels) * (format->wBitsPerSample / 8) ||
-       format->nAvgBytesPerSec != static_cast<std::uint64_t>(format->nSamplesPerSec) * format->nBlockAlign ||
-       pcmSize % format->nBlockAlign != 0) {
-      throw std::runtime_error("Invalid cached PCM format");
-   }
-
-   clip->pcm_.resize(static_cast<size_t>(pcmSize));
-   input.read(reinterpret_cast<char*>(clip->pcm_.data()), static_cast<std::streamsize>(pcmSize));
-   const auto formatBytes =
-      std::span(reinterpret_cast<const BYTE*>(clip->formatWords_.data()), static_cast<size_t>(formatSize));
-
-   if (!input || HashPcm(formatBytes, clip->pcm_) != digest) {
+   if (!input || HashPcm(formatBytes, pcm) != digest) {
       throw std::runtime_error("Audio cache checksum mismatch");
    }
 
-   return clip;
+   return SoundClip::CreateFromPcm(formatBytes, std::move(pcm));
 }
 
 void SoundClipCache::WriteDiskCache(const std::filesystem::path& path, const SoundClip& clip, std::uint64_t sourceSize,
    std::filesystem::file_time_type modified) {
    const auto formatSize = sizeof(WAVEFORMATEX) + clip.GetFormat()->cbSize;
-   const auto formatBytes = std::span(reinterpret_cast<const BYTE*>(clip.formatWords_.data()), formatSize);
+   const auto formatBytes = std::span(reinterpret_cast<const BYTE*>(clip.GetFormat()), formatSize);
    const auto digest = HashPcm(formatBytes, clip.GetPcm());
    const std::array<std::uint64_t, 4> metadata = {
       sourceSize, static_cast<std::uint64_t>(modified.time_since_epoch().count()), formatSize, clip.GetPcm().size()};

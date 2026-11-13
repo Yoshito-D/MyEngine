@@ -2,6 +2,7 @@
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
+#include "GameEngine/Utility/StateMachine.h"
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -17,6 +18,9 @@ namespace App {
 /// @brief メニュー項目の参照と基準姿勢を保持し、表示・選択・決定・非表示の演出を管理する。
 class MenuSelectionAnimationComponent final : public GameEngine::IObjectComponent {
 public:
+   /// @brief 演出ごとの入場・更新処理を登録し、非表示状態で初期化する。
+   MenuSelectionAnimationComponent();
+
    /// @brief ポーズ中もUI実時間で演出を進める。
    GameEngine::ObjectUpdateDomain GetUpdateDomain() const override { return GameEngine::ObjectUpdateDomain::UI; }
 
@@ -46,10 +50,12 @@ public:
    bool Reveal(std::int32_t optionIndex);
 
    /// @brief 表示演出が進行中かを取得する。
-   bool IsRevealing() const { return state_ == State::Revealing; }
+   bool IsRevealing() const { return stateMachine_.GetCurrentState() == State::Revealing; }
 
    /// @brief 決定演出が最後まで再生されたかを取得する。
-   bool IsReactionComplete() const { return state_ == State::Reacting && elapsed_ >= reactionDuration_; }
+   bool IsReactionComplete() const {
+      return stateMachine_.GetCurrentState() == State::Reacting && elapsed_ >= reactionDuration_;
+   }
 
    /// @brief 選択項目を変更する。同じ項目への通知では再生位置を維持する。
    /// @param optionIndex 保存された項目一覧の添字。
@@ -98,6 +104,7 @@ private:
       Hidden,
       Revealing,
       Selecting,
+      SwitchingSelection,
       Reacting
    };
 
@@ -109,6 +116,10 @@ private:
       bool captured = false;                                    ///< 演出前の基準サイズと透明度を取得済みかどうか。
    };
 
+   void ConfigureStates();
+   void RestartAnimation(State state);
+   bool IsSelecting() const;
+   void RestoreOptions();
    GameEngine::Object* FindOptionObject(std::size_t optionIndex) const;
    float EvaluateSelectionScale(float deltaTime);
    void ApplyReveal();
@@ -116,20 +127,19 @@ private:
    void ApplyReaction();
    void ValidateSettings();
 
-   std::vector<OptionVisual> options_; ///< 選択演出を適用するメニュー項目と基準表示状態。
-   float pulseDuration_ = 0.9f;        ///< 選択中の拡縮を繰り返す周期（秒）。
-   float pulseScale_ = 1.1f;           ///< 選択中の拡縮演出で使う最大スケール倍率。
-   float switchDuration_ = 0.16f;      ///< 選択項目の変更演出に使う時間（秒）。
-   float switchScale_ = 0.82f;         ///< 選択が切り替わるときに一時適用するスケール倍率。
-   float revealDuration_ = 0.25f;      ///< 下から上げながらフェードインする時間（秒）。
-   float revealOffsetY_ = 24.0f;       ///< 表示開始位置を基準位置より下へずらす距離（UIピクセル）。
-   float reactionDuration_ = 0.18f;    ///< 選択確定後の反応演出に使う時間（秒）。
-   float reactionEndScale_ = 2.0f;     ///< 決定時の横スケールに掛ける終了倍率。縦の終了スケールは0。
-   State state_ = State::Hidden;       ///< 現在の処理段階または実行状態。
-   std::int32_t selectedOption_ = -1;  ///< 現在選択中のメニュー項目番号。負値は未選択。
-   float elapsed_ = 0.0f;              ///< 処理を開始してからの経過時間（秒）。
-   bool switching_ = false;            ///< 選択項目の切り替え演出が進行中かどうか。
-   bool skipAdvance_ = false;          ///< 演出を開始したフレームの時間加算を一度だけ省略する状態。
+   std::vector<OptionVisual> options_;            ///< 選択演出を適用するメニュー項目と基準表示状態。
+   float pulseDuration_ = 0.9f;                   ///< 選択中の拡縮を繰り返す周期（秒）。
+   float pulseScale_ = 1.1f;                      ///< 選択中の拡縮演出で使う最大スケール倍率。
+   float switchDuration_ = 0.16f;                 ///< 選択項目の変更演出に使う時間（秒）。
+   float switchScale_ = 0.82f;                    ///< 選択が切り替わるときに一時適用するスケール倍率。
+   float revealDuration_ = 0.25f;                 ///< 下から上げながらフェードインする時間（秒）。
+   float revealOffsetY_ = 24.0f;                  ///< 表示開始位置を基準位置より下へずらす距離（UIピクセル）。
+   float reactionDuration_ = 0.18f;               ///< 選択確定後の反応演出に使う時間（秒）。
+   float reactionEndScale_ = 2.0f;                ///< 決定時の横スケールに掛ける終了倍率。縦の終了スケールは0。
+   GameEngine::StateMachine<State> stateMachine_; ///< 各演出の入場処理と更新、完了時の遷移を管理する。
+   std::int32_t selectedOption_ = -1;             ///< 現在選択中のメニュー項目番号。負値は未選択。
+   float elapsed_ = 0.0f;                         ///< 処理を開始してからの経過時間（秒）。
+   bool skipAdvance_ = false;                     ///< 演出を開始したフレームの時間加算を一度だけ省略する状態。
    GameEngine::Vector3 reactionStartScale_ = {1.0f, 1.0f, 1.0f}; ///< 選択確定演出を開始したときのスケール。
 };
 

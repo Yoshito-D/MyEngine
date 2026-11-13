@@ -145,6 +145,9 @@ void InputActionService::BuildFallbackDefaults() {
          {GamePadButtonInputBinding{GamePadButton::DPadDown}}, {LeftStickInputBinding{InputBindingAxis::Y}, -1.0f}});
    addAction("UI", "UI.Confirm", InputActionType::Button,
       {{KeyInputBinding{KeyCode::Space}}, {GamePadButtonInputBinding{GamePadButton::A}}});
+   addAction("UI", "UI.Cancel", InputActionType::Button,
+      {{KeyInputBinding{KeyCode::Escape}}, {GamePadButtonInputBinding{GamePadButton::B}},
+         {GamePadButtonInputBinding{GamePadButton::Start}}});
 }
 
 bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool replaceAll) {

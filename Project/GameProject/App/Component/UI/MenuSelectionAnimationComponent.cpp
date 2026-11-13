@@ -18,6 +18,101 @@
 
 namespace App {
 
+MenuSelectionAnimationComponent::MenuSelectionAnimationComponent() {
+   ConfigureStates();
+   stateMachine_.Start(State::Hidden);
+}
+
+void MenuSelectionAnimationComponent::ConfigureStates() {
+   using AnimationState = GameEngine::StateMachine<State>::State;
+   stateMachine_.AddState(State::Hidden, {.onEnter = [this]() {
+      selectedOption_ = -1;
+      elapsed_ = 0.0f;
+      skipAdvance_ = false;
+      RestoreOptions();
+   }});
+
+   AnimationState revealing = {
+      .onEnter =
+         [this]() {
+            elapsed_ = 0.0f;
+            ApplyReveal();
+         },
+      .onUpdate =
+         [this](float seconds) {
+            elapsed_ = std::min(elapsed_ + seconds, revealDuration_);
+            ApplyReveal();
+
+            if (elapsed_ >= revealDuration_) {
+               stateMachine_.RequestState(State::Selecting);
+            }
+         },
+   };
+   stateMachine_.AddState(State::Revealing, std::move(revealing));
+
+   AnimationState selecting = {
+      .onEnter =
+         [this]() {
+            elapsed_ = 0.0f;
+            ApplySelection(1.0f);
+         },
+      .onUpdate = [this](float seconds) { ApplySelection(EvaluateSelectionScale(seconds)); },
+   };
+   stateMachine_.AddState(State::Selecting, std::move(selecting));
+
+   AnimationState switchingSelection = {
+      .onEnter =
+         [this]() {
+            elapsed_ = 0.0f;
+            ApplySelection(switchScale_);
+         },
+      .onUpdate =
+         [this](float seconds) {
+            elapsed_ = std::min(elapsed_ + seconds, switchDuration_);
+            const float progress = std::clamp(elapsed_ / switchDuration_, 0.0f, 1.0f);
+            ApplySelection(GameEngine::Easing::EaseOutCubic(switchScale_, 1.0f, progress));
+
+            if (elapsed_ >= switchDuration_) {
+               stateMachine_.RequestState(State::Selecting);
+            }
+         },
+   };
+   stateMachine_.AddState(State::SwitchingSelection, std::move(switchingSelection));
+
+   AnimationState reacting = {
+      .onEnter =
+         [this]() {
+            elapsed_ = 0.0f;
+            const auto* transform = FindOptionObject(static_cast<std::size_t>(selectedOption_))
+                                       ->GetComponent<GameEngine::TransformComponent>();
+            reactionStartScale_ = transform->GetLocalPose().scale;
+         },
+      .onUpdate =
+         [this](float seconds) {
+            elapsed_ = std::min(elapsed_ + seconds, reactionDuration_);
+            ApplyReaction();
+         },
+   };
+   stateMachine_.AddState(State::Reacting, std::move(reacting));
+   stateMachine_.SetTransitionRule(State::Hidden, {});
+   stateMachine_.SetTransitionRule(State::Revealing, {State::Selecting});
+   stateMachine_.SetTransitionRule(State::Selecting, {});
+   stateMachine_.SetTransitionRule(State::SwitchingSelection, {State::Selecting});
+   stateMachine_.SetTransitionRule(State::Reacting, {});
+}
+
+void MenuSelectionAnimationComponent::RestartAnimation(State state) {
+   // 操作による再生開始は同じ状態でも再入場し、内部の完了遷移だけを通常の遷移規則で扱う。
+   stateMachine_.Stop();
+   skipAdvance_ = true;
+   stateMachine_.Start(state);
+}
+
+bool MenuSelectionAnimationComponent::IsSelecting() const {
+   const auto state = stateMachine_.GetCurrentState();
+   return state == State::Selecting || state == State::SwitchingSelection;
+}
+
 void MenuSelectionAnimationComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    for (auto& option : options_) {
       option.captured = false;
@@ -55,26 +150,15 @@ void MenuSelectionAnimationComponent::OnReferencesChanged(GameEngine::SceneWorld
 }
 
 void MenuSelectionAnimationComponent::Update(float deltaTime) {
-   if (state_ == State::Hidden) return;
+   if (stateMachine_.GetCurrentState() == State::Hidden) return;
 
    // 通知元とこのコンポーネントの更新順序にかかわらず、演出の開始値を一度表示する。
    const float step = skipAdvance_ ? 0.0f : std::max(deltaTime, 0.0f);
    skipAdvance_ = false;
 
-   if (state_ == State::Selecting) {
-      ApplySelection(EvaluateSelectionScale(step));
-   } else if (state_ == State::Revealing) {
-      elapsed_ = std::min(elapsed_ + step, revealDuration_);
-      ApplyReveal();
-
-      if (elapsed_ >= revealDuration_) {
-         state_ = State::Selecting;
-         elapsed_ = 0.0f;
-      }
-   } else {
-      elapsed_ = std::min(elapsed_ + step, reactionDuration_);
-      ApplyReaction();
-   }
+   stateMachine_.Update(step);
+   // 次の演出の時計は進めず、完了したフレームで状態だけを確定する。
+   stateMachine_.ResolveRequests();
 }
 
 bool MenuSelectionAnimationComponent::Reveal(std::int32_t optionIndex) {
@@ -83,11 +167,7 @@ bool MenuSelectionAnimationComponent::Reveal(std::int32_t optionIndex) {
    }
 
    selectedOption_ = optionIndex;
-   state_ = State::Revealing;
-   elapsed_ = 0.0f;
-   switching_ = false;
-   skipAdvance_ = true;
-   ApplyReveal();
+   RestartAnimation(State::Revealing);
    return true;
 }
 
@@ -96,41 +176,29 @@ bool MenuSelectionAnimationComponent::Select(std::int32_t optionIndex, bool anim
       return false;
    }
 
-   if (state_ == State::Selecting && selectedOption_ == optionIndex) {
+   if (IsSelecting() && selectedOption_ == optionIndex) {
       return true;
    }
 
    selectedOption_ = optionIndex;
-   state_ = State::Selecting;
-   elapsed_ = 0.0f;
-   switching_ = animateSwitch;
-   skipAdvance_ = true;
-   ApplySelection(EvaluateSelectionScale(0.0f));
+   RestartAnimation(animateSwitch ? State::SwitchingSelection : State::Selecting);
    return true;
 }
 
 bool MenuSelectionAnimationComponent::ConfirmSelection() {
-   if (state_ != State::Selecting || selectedOption_ < 0 ||
-       !IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
+   if (!IsSelecting() || selectedOption_ < 0 || !IsOptionAvailable(static_cast<std::size_t>(selectedOption_))) {
       return false;
    }
 
-   const auto* transform =
-      FindOptionObject(static_cast<std::size_t>(selectedOption_))->GetComponent<GameEngine::TransformComponent>();
-   reactionStartScale_ = transform->GetLocalPose().scale;
-   state_ = State::Reacting;
-   elapsed_ = 0.0f;
-   skipAdvance_ = true;
+   RestartAnimation(State::Reacting);
    return true;
 }
 
 void MenuSelectionAnimationComponent::Hide() {
-   state_ = State::Hidden;
-   selectedOption_ = -1;
-   elapsed_ = 0.0f;
-   switching_ = false;
-   skipAdvance_ = false;
+   RestartAnimation(State::Hidden);
+}
 
+void MenuSelectionAnimationComponent::RestoreOptions() {
    for (std::size_t index = 0; index < options_.size(); ++index) {
       auto* text = GetOptionText(index);
 
@@ -171,18 +239,6 @@ GameEngine::Object* MenuSelectionAnimationComponent::FindOptionObject(std::size_
 
 float MenuSelectionAnimationComponent::EvaluateSelectionScale(float deltaTime) {
    elapsed_ += deltaTime;
-
-   if (switching_) {
-      const float progress = std::clamp(elapsed_ / switchDuration_, 0.0f, 1.0f);
-      const float scale = GameEngine::Easing::EaseOutCubic(switchScale_, 1.0f, progress);
-
-      if (progress >= 1.0f) {
-         switching_ = false;
-         elapsed_ = 0.0f;
-      }
-
-      return scale;
-   }
 
    elapsed_ = std::fmod(elapsed_, pulseDuration_);
    const float phase = elapsed_ / pulseDuration_;

@@ -2,6 +2,7 @@
 
 #include <d3d12.h>
 #include <memory>
+#include <optional>
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Graphics/Device/OffscreenRenderTarget.h"
 #include "GameEngine/Graphics/Pipeline/PipelineState.h"
@@ -52,23 +53,17 @@ public:
    /// @return 設定を適用できた場合はtrue
    virtual bool DeserializeSettings(const nlohmann::json& settings);
 
+   /// @brief パイプラインと対応するルートパラメータ番号を一括設定する。
+   /// @param pipeline 描画に使うパイプライン。エフェクトの生存中は有効に保つ。
+   /// @param rootSignature パイプラインに対応するルートシグネチャ。
+   /// @param constantBufferSlot エフェクト固有定数のスロット。
+   /// @param inputTextureSlot 入力カラーSRVのスロット。
+   /// @param depthTextureSlot 深度SRVのスロット。未指定なら現在値を保持する。
+   /// @param maskTextureSlot マスクSRVのスロット。未指定なら現在値を保持する。
+   void ConfigurePipeline(const PipelineState& pipeline, const RootSignature& rootSignature, UINT constantBufferSlot,
+      UINT inputTextureSlot, std::optional<UINT> depthTextureSlot, std::optional<UINT> maskTextureSlot);
+
 private:
-   friend class PostProcessManager;
-
-   /// @brief パイプラインとルートシグネチャを設定（外部から）
-   /// @param pipeline パイプラインステート
-   /// @param rootSignature ルートシグネチャ
-   void SetPipeline(const PipelineState* pipeline, const RootSignature* rootSignature);
-
-   /// @brief 入力SRV/定数バッファのルートパラメータスロットを設定
-   void SetBindingSlots(UINT constantBufferSlot, UINT inputTextureSlot);
-
-   /// @brief 深度SRVのルートパラメータスロットを設定
-   void SetDepthTextureRootSlot(UINT depthTextureSlot);
-
-   /// @brief マスクSRVのルートパラメータスロットを設定
-   void SetMaskTextureRootSlot(UINT maskTextureSlot);
-
    GraphicsDevice* device_ = nullptr;              ///< 初期化時に関連付けた非所有デバイス。
    OffscreenRenderTarget* renderTarget_ = nullptr; ///< 初期化時に関連付けた非所有描画先。
 

@@ -37,7 +37,7 @@ public:
    /// @brief 新しいBGM要求がなかった場合に、以前のトラックの継続設定を適用する。
    void EndSceneChange(bool hasNewRequest);
 
-   /// @brief 実時間秒でフェードを進める。呼び出し側はゲーム一時停止中に更新を止める。
+   /// @brief 実時間秒でフェードを進める。呼び出し側はエディター停止中だけ更新を止める。
    void Update(float seconds);
 
    /// @brief 両方のトラックを停止し、すべての所有者トークンを無効化する。

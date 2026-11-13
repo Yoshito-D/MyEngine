@@ -13,8 +13,7 @@ CinemachineBrain* CameraManager::CreateUnit(std::unique_ptr<Camera> outputCamera
    }
 
    auto unit = std::make_unique<CameraUnit>();
-   unit->brain = std::make_unique<CinemachineBrain>();
-   unit->brain->Initialize(std::move(outputCamera));
+   unit->brain = std::make_unique<CinemachineBrain>(std::move(outputCamera));
 
    CameraUnit* ptr = unit.get();
    units_.push_back(std::move(unit));

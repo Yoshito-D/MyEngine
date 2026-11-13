@@ -15,6 +15,7 @@ class UIWidgetComponent;
 struct UIInputFrame {
    Vector2 pointer{}; ///< 描画先に正規化したUIピクセル。
    bool active = true;
+   bool gamepadConnected = false; ///< ボタンの押下状態とは独立した、ゲームパッドの接続状態。
    bool pointerInside = false;
    bool pointerMoved = false;
    bool pointerDown = false;
@@ -49,6 +50,9 @@ public:
    /// @brief 画面とコールバックの解除を要求する。Objectと配置順は保持する。
    void Clear();
 
+   /// @brief シーン破棄前に画面状態・要求・配置順を即時解除する。入力配送中には呼び出さない。
+   void ResetForScene();
+
    /// @brief 画面と子孫の削除を要求する。入力配送中に実体や配置結果を変更しない。
    void RemoveScreen(const std::string& rootId);
 
@@ -79,6 +83,9 @@ public:
    /// @brief 画面内の一意なキーからObjectを検索する。重複キーの場合はnullptr。
    Object* FindElement(const std::string& rootId, const std::string& elementKey) const;
 
+   /// @brief 指定画面で現在選択されている操作要素のIDを返す。未表示・終了中・選択なしでは空文字列。
+   std::string GetFocusedElementId(const std::string& rootId) const;
+
    /// @brief 保存と配置計算で共有する階層順を設定する。
    void SetHierarchyOrder(const std::vector<std::string>& order) { hierarchyOrder_ = order; }
 
@@ -89,7 +96,6 @@ public:
    const std::string& GetLastError() const { return lastError_; }
 
 private:
-   friend class SceneWorld;
    enum class ScreenLifecycle : std::int32_t {
       Closed,
       Open,
@@ -112,13 +118,13 @@ private:
       std::string id;
    };
 
-   void ResetForScene();
    void ResetRuntime();
    void ApplyRequests();
    void AdvanceTransitions(bool finishAnimations);
    void CloseScreen(const std::string& id);
    void UpdatePolicy();
    void DispatchInput(const UIInputFrame& input, float unscaledDeltaTime);
+   UIInputFrame ApplyInputPolicy(UIInputFrame input);
    UIWidgetComponent* Widget(const std::string& id) const;
    UIWidgetComponent* InteractiveWidget(const std::string& id) const;
    std::string InputScreen() const;

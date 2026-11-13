@@ -1,6 +1,7 @@
 #pragma once
 #include "GameEngine/Scene/Scene.h"
 #include "GameEngine/Scene/SceneCatalog.h"
+#include "GameEngine/Utility/StateMachine.h"
 #include <chrono>
 #include <functional>
 #include <optional>
@@ -80,24 +81,27 @@ public:
       std::function<SceneSnapshot()> recovery);
 
 private:
+   enum class TransitionState {
+      Idle,
+      FadingOut,
+      WaitingForCommit,
+      PreparingFadeIn,
+      FadingIn
+   };
+
+   void ConfigureTransitionStates();
+   void UpdateFade(float deltaTime, bool fadingOut);
    bool ReadScene(const std::string& name, SceneSnapshot& snapshot);
    SceneLoadResult Replace(const SceneSnapshot& snapshot);
    SceneLoadResult Report(SceneLoadStatus status, std::string message);
    void BeginFadeIn();
-   SceneCatalog& catalog_;                ///< 共有カタログ。
-   std::unique_ptr<Scene> currentScene_;  ///< 現在実行・編集している所有シーン。
-   std::optional<SceneSnapshot> pending_; ///< フレーム境界で適用する読み込み済みのシーン切り替え要求。
-   enum class TransitionState {
-      Idle,
-      FadingOut,
-      PreparingFadeIn,
-      FadingIn
-   };
-   TransitionState transitionState_ = TransitionState::Idle;    ///< 暗転・シーン置換・復帰の進行段階。
+   SceneCatalog& catalog_;                           ///< 共有カタログ。
+   std::unique_ptr<Scene> currentScene_;             ///< 現在実行・編集している所有シーン。
+   std::optional<SceneSnapshot> pending_;            ///< フレーム境界で適用する読み込み済みのシーン切り替え要求。
+   StateMachine<TransitionState> transitionMachine_; ///< 暗転・シーン置換待ち・復帰の入場と更新を管理する。
    std::chrono::steady_clock::time_point transitionUpdateTime_; ///< フェード開始以降の時間だけを計測する基準時刻。
    float elapsed_ = 0.0f;                                       ///< 処理を開始してからの経過時間（秒）。
    float opacity_ = 0.0f;                                       ///< 影の濃さ（0～1）。
-   bool commitReady_ = false;                                   ///< 暗転が完了し、シーン実体を置換できるかどうか。
    bool replacing_ = false;                                     ///< シーンの構築・復旧中で再入を拒否するかどうか。
    SceneLoadResult lastResult_;                                 ///< 即時操作と予約操作を含む、直近の処理結果。
    std::function<void()> beforeReplace_;                        ///< 旧シーンを破棄する前に編集状態などを切り離す通知。

@@ -12,7 +12,7 @@ namespace GameEngine {
 class BgmPlayer;
 struct BgmRequest;
 
-/// @brief 再生カテゴリ。実効音量はMaster * category * voice * fadeで決まる。
+/// @brief 再生カテゴリ。実効音量はMaster * category * voice * fade * ダッキング倍率で決まる。
 enum class AudioBus {
    Bgm,
    Se,
@@ -53,7 +53,7 @@ public:
    /// @brief 再生デバイスが作成済みかどうか。
    bool IsAvailable() const { return masteringVoice_ != nullptr || testMode_; }
 
-   /// @brief ボイスを確保して再生を開始する。無音中、一時停止中、または上限時は無効値を返す。
+   /// @brief ボイスを確保して再生を開始する。無音中、対象バスの一時停止中、または上限時は無効値を返す。
    AudioHandle Create(std::shared_ptr<const SoundClip> clip, AudioBus bus, float volume = 1.0f, float pitch = 1.0f,
       bool loop = false, bool preview = false);
 
@@ -94,12 +94,22 @@ public:
    /// @brief Master、BGM、SE、UIの音量を設定し、既存ボイスを即時更新する。
    void SetBusVolume(AudioBus bus, float volume);
 
+   /// @brief 指定バスの音量倍率（0～1）を返す。未定義のバスは0を返す。
+   float GetBusVolume(AudioBus bus) const;
+
    /// @brief Master音量を設定し、既存ボイスを即時更新する。
    void SetMasterVolume(float volume);
 
-   /// @brief ゲーム音声とUI音声の停止要求を個別に反映する。手動停止したボイスは再開しない。
-   /// @param paused BGM・SEを停止する場合はtrue。
-   /// @param pauseUi UIバスも停止する場合はtrue。エディター停止時に指定する。
+   /// @brief 全出力へ共通に掛ける音量倍率（0～1）を返す。
+   float GetMasterVolume() const { return masterVolume_; }
+
+   /// @brief 設定音量を保持したまま、BGMの実効音量へ一時的な減衰倍率を掛ける。プレビューは対象外。
+   /// @param gain 0～1の倍率。1で減衰を解除する。非有限値は無視する。
+   void SetBgmDucking(float gain);
+
+   /// @brief ゲーム進行の停止ではSEを停止し、エディター停止ではBGM・UI音声も停止する。
+   /// @param paused ゲーム進行を停止する場合はtrue。手動停止したボイスは自動再開しない。
+   /// @param pauseUi UIバスとBGMも停止する場合はtrue。エディター停止時に指定する。
    void SetGamePaused(bool paused, bool pauseUi);
 
    /// @brief エディタープレビューだけを残し、ゲーム用の全ボイスを停止・解放する。
@@ -176,6 +186,8 @@ private:
    const Entry* Find(AudioHandle handle) const;
    bool Start(Entry& entry);
    void DestroyVoice(Entry& entry);
+   bool IsBusPaused(AudioBus bus) const;
+   float GetEffectiveVolume(const Entry& entry) const;
    void ApplyVolume(Entry& entry);
    void Retire(Entry& entry);
 
@@ -184,9 +196,10 @@ private:
    IXAudio2MasteringVoice* masteringVoice_ = nullptr;
    bool mfStarted_ = false;                            ///< Media Foundationの起動に成功し、終了処理が必要かどうか。
    bool uiPaused_ = false;                             ///< UI音声もエディター操作によって停止しているか。
-   bool gamePaused_ = false;                           ///< ゲーム音声を一括で一時停止しているかどうか。
+   bool gamePaused_ = false;                           ///< ゲーム進行の停止に合わせてSEを停止するか。
    bool testMode_ = false;                             ///< 実オーディオデバイスを使わず状態遷移だけを検証するかどうか。
    float masterVolume_ = 1.0f;                         ///< 全出力バスへ共通に掛ける音量倍率。
+   float bgmDucking_ = 1.0f;                            ///< 呼び出し元が指定するBGMの一時的な減衰倍率。
    std::array<float, 3> busVolumes_{1.0f, 1.0f, 1.0f}; ///< 出力バス別に掛ける音量倍率。
    std::array<Entry, kMaxHandles> entries_{};          ///< 登録済み惑星候補。
    std::unique_ptr<BgmPlayer> bgmPlayer_;              ///< BGMの要求元とクロスフェードを管理する所有オブジェクト。

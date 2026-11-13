@@ -43,8 +43,9 @@ public:
       float viewportWidth, float viewportHeight, const Matrix4x4* matrix = nullptr);
 
    /// @brief 共通UI変換を適用した画像矩形を文字と同じキューへ追加する。
+   /// @param uvTransform マテリアルのUV座標変換。位置・寸法やヒット判定には影響しない。
    TextDrawData QueueQuad(Vector2 size, const Matrix4x4& matrix, Vector2 uvMin, Vector2 uvMax, Vector4 color,
-      D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize);
+      D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize, const Matrix4x4& uvTransform);
 
    /// @brief CPU上で構築した頂点とインデックスをGPU可視バッファへ反映する
    /// @return 転送に成功した場合はtrue

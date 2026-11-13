@@ -1,4 +1,5 @@
 #include "GameProject/Game.h"
+#include "GameProject/App/AudioSettings.h"
 #include "GameEngine/UI/UISystem.h"
 #include <cstdint>
 #include "GameEngine/Utility/Logger.h"
@@ -78,6 +79,12 @@ void SaveLastEditorSceneName(const std::string& sceneName) {
 
 void Game::Initialize() {
    Framework::Initialize();
+
+   // シーンの音声を開始する前に、前回保存したユーザー音量を復元する。
+   if (auto* audio = GameEngine::EngineContext::GetAudio()) {
+      App::LoadAudioSettings(*audio);
+   }
+
    if (!sceneCatalog_.Load()) {
       Logger::Critical(sceneCatalog_.GetLastError());
       MessageBoxA(nullptr, sceneCatalog_.GetLastError().c_str(), "Scene catalog failed", MB_OK | MB_ICONERROR);

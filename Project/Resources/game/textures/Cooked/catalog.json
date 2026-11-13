@@ -217,6 +217,30 @@
          "width": 512
       },
       {
+         "ddsHash": "ffb99ae409987ebc3506320ac4fb17f3cfdb1123b58a653863122dfd61f08810",
+         "ddsPath": "game/textures/Cooked/pause_button_flow.dds",
+         "format": 28,
+         "height": 1254,
+         "isCubemap": false,
+         "mipLevels": 4,
+         "name": "pause_button_flow",
+         "sourceHash": "3e6c01399a5631518d8d75ac957c63b31eeeb8cf23b0770f6f3a6fb1b07c7d6d",
+         "sourcePath": "game/textures/ui/pause_button_flow.png",
+         "width": 1254
+      },
+      {
+         "ddsHash": "2ee961e0dd7ef7eb517bcb535f52a527d5838b8994a087a779af047b42decd14",
+         "ddsPath": "game/textures/Cooked/pause_menu_frame.dds",
+         "format": 87,
+         "height": 1482,
+         "isCubemap": false,
+         "mipLevels": 4,
+         "name": "pause_menu_frame",
+         "sourceHash": "24bd153cbc330731064307a46a324b6051265496a3876e891876348ebf77e7ac",
+         "sourcePath": "game/textures/ui/pause_menu_frame.png",
+         "width": 1062
+      },
+      {
          "ddsHash": "60d53364844826f82bcedffd8224045076a91ac1be3dc509018ee5ed7f21a06f",
          "ddsPath": "game/textures/Cooked/plywood_diff_2k.dds",
          "format": 71,

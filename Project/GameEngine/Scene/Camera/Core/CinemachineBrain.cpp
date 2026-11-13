@@ -7,12 +7,10 @@
 
 namespace GameEngine {
 
-CinemachineBrain::CinemachineBrain() = default;
-CinemachineBrain::~CinemachineBrain() = default;
-
-void CinemachineBrain::Initialize(std::unique_ptr<Camera> outputCamera) {
-   outputCamera_ = std::move(outputCamera);
+CinemachineBrain::CinemachineBrain(std::unique_ptr<Camera> outputCamera) : outputCamera_(std::move(outputCamera)) {
 }
+
+CinemachineBrain::~CinemachineBrain() = default;
 
 void CinemachineBrain::SetCameraMotionPaused(bool paused, float resumeBlendSeconds, BlendEasing resumeBlendEasing) {
    if (cameraMotionPaused_ == paused) return;

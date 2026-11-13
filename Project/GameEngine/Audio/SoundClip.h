@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <span>
 
 namespace GameEngine {
 
@@ -15,6 +16,12 @@ public:
    /// @param path 非ASCII文字を含むネイティブファイルシステムパス。
    /// @return 完全なWAVEFORMATEXブロックを持つ変更不可のクリップ。
    static std::shared_ptr<const SoundClip> Decode(const std::wstring& path);
+
+   /// @brief PCMと形式情報を検証し、変更不可のクリップを生成する。無効な入力では例外を送出する。
+   /// @param format WAVEFORMATEXと拡張情報を含む完全な形式ブロック。
+   /// @param pcm 全チャンネルを含むサンプル単位のPCM。所有権を受け取る。
+   /// @return 検証済みの形式とPCMを所有するクリップ。
+   static std::shared_ptr<const SoundClip> CreateFromPcm(std::span<const BYTE> format, std::vector<BYTE> pcm);
 #ifdef MYPROJECT_NON_RELEASE
 
    /// @brief テスト用に、Media Foundationを使わず検証済みの小さなPCMフィクスチャを作成する。
@@ -28,8 +35,7 @@ public:
    const std::vector<BYTE>& GetPcm() const { return pcm_; }
 
 private:
-   // キャッシュの復元時だけ、検証済みのPCMと形式情報を直接格納する。
-   friend class SoundClipCache;
+   SoundClip() = default;
 
    std::vector<uint64_t> formatWords_; ///< WAVEFORMATEXを十分な配置境界で保持する所有ストレージ。
    std::vector<BYTE> pcm_;             ///< いずれかのボイスが参照している間保持されるPCMデータ。

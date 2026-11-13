@@ -99,6 +99,9 @@ void to_json(nlohmann::json& data, const UIScreenSettings& value) {
    data["blocksBelowInput"] = value.blocksBelowInput;
    data["pausesGameplay"] = value.pausesGameplay;
    data["openOnStart"] = value.openOnStart;
+   data["resetFocusOnOpen"] = value.resetFocusOnOpen;
+   data["pointerBlocksNavigation"] = value.pointerBlocksNavigation;
+   data["disablePointerWithGamepad"] = value.disablePointerWithGamepad;
 }
 
 void from_json(const nlohmann::json& data, UIScreenSettings& value) {
@@ -111,6 +114,9 @@ void from_json(const nlohmann::json& data, UIScreenSettings& value) {
    value.blocksBelowInput = data.value("blocksBelowInput", value.blocksBelowInput);
    value.pausesGameplay = data.value("pausesGameplay", value.pausesGameplay);
    value.openOnStart = data.value("openOnStart", value.openOnStart);
+   value.resetFocusOnOpen = data.value("resetFocusOnOpen", value.resetFocusOnOpen);
+   value.pointerBlocksNavigation = data.value("pointerBlocksNavigation", value.pointerBlocksNavigation);
+   value.disablePointerWithGamepad = data.value("disablePointerWithGamepad", value.disablePointerWithGamepad);
 }
 
 void to_json(nlohmann::json& data, const UIWidgetSettings& value) {

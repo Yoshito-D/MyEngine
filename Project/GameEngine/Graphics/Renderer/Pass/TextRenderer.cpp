@@ -149,7 +149,7 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
 }
 
 TextDrawData TextRenderer::QueueQuad(Vector2 size, const Matrix4x4& matrix, Vector2 uvMin, Vector2 uvMax, Vector4 color,
-   D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize) {
+   D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize, const Matrix4x4& uvTransform) {
    viewportWidth_ = viewportSize.x;
    viewportHeight_ = viewportSize.y;
    TextDrawData data{};
@@ -160,12 +160,16 @@ TextDrawData TextRenderer::QueueQuad(Vector2 size, const Matrix4x4& matrix, Vect
    const std::array<Vector2, 4> positions{{{0.0f, 0.0f}, {size.x, 0.0f}, {0.0f, size.y}, size}};
    const std::array<Vector2, 4> coordinates{{uvMin, {uvMax.x, uvMin.y}, {uvMin.x, uvMax.y}, uvMax}};
    const auto& m = matrix.m;
+   const auto& uv = uvTransform.m;
    constexpr float kColorTextureAtlasType = 3.0f;
    for (size_t i = 0; i < positions.size(); ++i) {
       const auto point = positions[i];
       const Vector2 position{
          point.x * m[0][0] + point.y * m[1][0] + m[3][0], point.x * m[0][1] + point.y * m[1][1] + m[3][1]};
-      vertices_.push_back({position, coordinates[i], color, {1.0f, 1.0f, 0.0f, kColorTextureAtlasType}});
+      const auto coordinate = coordinates[i];
+      const Vector2 texCoord{coordinate.x * uv[0][0] + coordinate.y * uv[1][0] + uv[3][0],
+         coordinate.x * uv[0][1] + coordinate.y * uv[1][1] + uv[3][1]};
+      vertices_.push_back({position, texCoord, color, {1.0f, 1.0f, 0.0f, kColorTextureAtlasType}});
    }
    indices_.insert(indices_.end(), {base, base + 1, base + 2, base + 1, base + 3, base + 2});
    return data;

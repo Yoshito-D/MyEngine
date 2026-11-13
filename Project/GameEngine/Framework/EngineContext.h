@@ -309,6 +309,10 @@ public:
    /// @param opacity 0で通常表示、1で完全な黒。非有限値は0として扱う。
    static void SetCameraTransitionOpacity(float opacity);
 
+   /// @brief オーバーレイの背後へ適用するぼかし強度を描画サービスへ渡す。
+   /// @param strength 0で無効、1で最大のぼかし。非有限値は0として扱う。
+   static void SetOverlayBackgroundBlur(float strength);
+
    /// @brief シーン入場・退出のフェードまたはシーン切り替えが進行中か返す。
    static bool IsSceneTransitioning();
 

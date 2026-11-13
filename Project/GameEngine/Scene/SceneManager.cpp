@@ -6,6 +6,58 @@
 
 namespace GameEngine {
 SceneManager::SceneManager(SceneCatalog& catalog) : catalog_(catalog) {
+   ConfigureTransitionStates();
+   transitionMachine_.Start(TransitionState::Idle);
+}
+
+void SceneManager::ConfigureTransitionStates() {
+   transitionMachine_.AddState(TransitionState::Idle, {.onEnter = [this]() {
+      elapsed_ = opacity_ = 0.0f;
+      EngineContext::SetSceneTransitionOpacity(opacity_);
+   }});
+
+   StateMachine<TransitionState>::State fadingOut = {
+      .onEnter =
+         [this]() {
+            elapsed_ = opacity_ * kTransitionDuration;
+            transitionUpdateTime_ = std::chrono::steady_clock::now();
+         },
+      .onUpdate = [this](float seconds) { UpdateFade(seconds, true); },
+   };
+   transitionMachine_.AddState(TransitionState::FadingOut, std::move(fadingOut));
+   transitionMachine_.AddState(TransitionState::WaitingForCommit, {});
+   transitionMachine_.AddState(TransitionState::PreparingFadeIn, {.onEnter = [this]() {
+      elapsed_ = 0.0f;
+      opacity_ = 1.0f;
+      EngineContext::SetSceneTransitionOpacity(opacity_);
+   }});
+
+   StateMachine<TransitionState>::State fadingIn = {
+      .onEnter =
+         [this]() {
+            elapsed_ = 0.0f;
+            transitionUpdateTime_ = std::chrono::steady_clock::now();
+         },
+      .onUpdate = [this](float seconds) { UpdateFade(seconds, false); },
+   };
+   transitionMachine_.AddState(TransitionState::FadingIn, std::move(fadingIn));
+   transitionMachine_.SetTransitionRule(
+      TransitionState::Idle, {TransitionState::FadingOut, TransitionState::PreparingFadeIn});
+   transitionMachine_.SetTransitionRule(TransitionState::FadingOut, {TransitionState::WaitingForCommit});
+   transitionMachine_.SetTransitionRule(TransitionState::WaitingForCommit, {});
+   transitionMachine_.SetTransitionRule(TransitionState::PreparingFadeIn, {TransitionState::FadingIn});
+   transitionMachine_.SetTransitionRule(TransitionState::FadingIn, {TransitionState::Idle});
+}
+
+void SceneManager::UpdateFade(float deltaTime, bool fadingOut) {
+   elapsed_ += deltaTime;
+   const float progress = std::clamp(elapsed_ / kTransitionDuration, 0.0f, 1.0f);
+   opacity_ = fadingOut ? progress : 1.0f - progress;
+   EngineContext::SetSceneTransitionOpacity(opacity_);
+
+   if (progress >= 1.0f) {
+      transitionMachine_.RequestState(fadingOut ? TransitionState::WaitingForCommit : TransitionState::Idle);
+   }
 }
 
 SceneManager::~SceneManager() {
@@ -26,7 +78,7 @@ std::string SceneManager::GetCurrentSceneName() const {
 }
 
 bool SceneManager::IsSceneTransitioning() const {
-   return replacing_ || pending_.has_value() || transitionState_ != TransitionState::Idle;
+   return replacing_ || pending_.has_value() || transitionMachine_.GetCurrentState() != TransitionState::Idle;
 }
 
 SceneLoadResult SceneManager::Report(SceneLoadStatus status, std::string message) {
@@ -83,7 +135,7 @@ bool SceneManager::RequestSceneChange(const std::string& name) {
       return false;
    }
 
-   if (replacing_ || pending_ || transitionState_ != TransitionState::Idle) {
+   if (IsSceneTransitioning()) {
       Report(SceneLoadStatus::Rejected, "Scene transition is already pending");
       return false;
    }
@@ -206,6 +258,11 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
       audio->EndBgmSceneChange(HasSceneBgmRequest(currentScene_->GetSceneWorld()));
    }
 #ifndef USE_IMGUI
+   // 旧シーンのポーズを引き継ぐと、新しいシーンのBGMや自動再生SEの生成が拒否される。
+   if (audio) {
+      audio->SetGamePaused(false, false);
+   }
+
    BeginSceneAudio(currentScene_->GetSceneWorld());
 #endif
    replacing_ = false;
@@ -216,23 +273,16 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
 }
 
 void SceneManager::EditorUpdate() {
-   if (transitionState_ == TransitionState::Idle || transitionState_ == TransitionState::PreparingFadeIn) return;
+   const auto state = transitionMachine_.GetCurrentState();
+
+   if (state != TransitionState::FadingOut && state != TransitionState::FadingIn) return;
 
    // フレームのデルタタイムには開始前のシーン読込も含まれるため、フェード自身の基準時刻から計測する。
    const auto now = std::chrono::steady_clock::now();
-   elapsed_ += std::chrono::duration<float>(now - transitionUpdateTime_).count();
+   const float deltaTime = std::chrono::duration<float>(now - transitionUpdateTime_).count();
    transitionUpdateTime_ = now;
-   const float progress = std::clamp(elapsed_ / kTransitionDuration, 0.0f, 1.0f);
-   opacity_ = transitionState_ == TransitionState::FadingOut ? progress : 1.0f - progress;
-   EngineContext::SetSceneTransitionOpacity(opacity_);
-
-   if (progress >= 1.0f) {
-      if (transitionState_ == TransitionState::FadingOut) {
-         commitReady_ = true;
-      } else {
-         transitionState_ = TransitionState::Idle;
-      }
-   }
+   transitionMachine_.Update(deltaTime);
+   transitionMachine_.ResolveRequests();
 }
 
 void SceneManager::RuntimeUpdate() {
@@ -245,13 +295,13 @@ void SceneManager::CheckSceneChange() {
    if (replacing_) return;
 
    // 最初の描画で発生する資源準備も暗転中に済ませ、表示できる状態になってから復帰時間を計測する。
-   if (transitionState_ == TransitionState::PreparingFadeIn) {
-      transitionState_ = TransitionState::FadingIn;
-      transitionUpdateTime_ = std::chrono::steady_clock::now();
+   if (transitionMachine_.GetCurrentState() == TransitionState::PreparingFadeIn) {
+      transitionMachine_.RequestState(TransitionState::FadingIn);
+      transitionMachine_.ResolveRequests();
    }
 
    // 暗転完了と予約の両方が揃ったフレーム境界でのみ、シーンの実体を入れ替える。
-   if (commitReady_ && pending_) {
+   if (transitionMachine_.GetCurrentState() == TransitionState::WaitingForCommit && pending_) {
       auto snapshot = std::move(*pending_);
       pending_.reset();
       const auto result = Replace(snapshot);
@@ -260,26 +310,22 @@ void SceneManager::CheckSceneChange() {
          CancelTransition();
          BeginFadeIn();
       }
-   } else if (pending_ && transitionState_ != TransitionState::FadingOut) {
-      transitionState_ = TransitionState::FadingOut;
-      elapsed_ = opacity_ * kTransitionDuration;
-      transitionUpdateTime_ = std::chrono::steady_clock::now();
+   } else if (pending_ && transitionMachine_.GetCurrentState() == TransitionState::Idle) {
+      transitionMachine_.RequestState(TransitionState::FadingOut);
+      transitionMachine_.ResolveRequests();
    }
 }
 
 void SceneManager::CancelTransition() {
    pending_.reset();
-   commitReady_ = false;
-   transitionState_ = TransitionState::Idle;
-   elapsed_ = opacity_ = 0.0f;
-   EngineContext::SetSceneTransitionOpacity(0.0f);
+   // 取消は通常の遷移規則にかかわらず、予約と表示を初期状態へ戻す。
+   transitionMachine_.Stop();
+   transitionMachine_.Start(TransitionState::Idle);
 }
 
 void SceneManager::BeginFadeIn() {
-   transitionState_ = TransitionState::PreparingFadeIn;
-   elapsed_ = 0.0f;
-   opacity_ = 1.0f;
-   EngineContext::SetSceneTransitionOpacity(opacity_);
+   transitionMachine_.RequestState(TransitionState::PreparingFadeIn);
+   transitionMachine_.ResolveRequests();
 }
 
 void SceneManager::Finalize() {

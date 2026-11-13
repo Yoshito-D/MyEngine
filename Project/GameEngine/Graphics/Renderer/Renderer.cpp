@@ -152,6 +152,16 @@ void Renderer::Initialize(GraphicsDevice* device, Window* window, CameraManager*
    sceneTransitionConstants_->applyComposite = 1;
    SetSceneTransitionOpacity(0.0f);
 
+   // 同じフレームのシーン暗転と併用できるよう、背景ぼかし用のGPU定数を別に保持する。
+   for (size_t index = 0; index < backgroundBlurConstantBuffers_.size(); ++index) {
+      auto& buffer = backgroundBlurConstantBuffers_[index];
+      buffer = ResourceHelper::CreateBufferResource(device_->GetDevice(), sizeof(SceneTransitionConstants));
+      buffer->Map(0, nullptr, reinterpret_cast<void**>(&backgroundBlurConstants_[index]));
+      auto& constants = *backgroundBlurConstants_[index];
+      constants = {};
+      constants.blurDirection[index] = 1.0f;
+   }
+
    BuildDefaultPasses();
 }
 
@@ -253,6 +263,7 @@ void Renderer::BeginFrame() {
    opaqueCommands_.clear();
    transparentCommands_.clear();
    postProcessCommands_.clear();
+   overlayCommands_.clear();
    textRenderer_->BeginFrame();
 
 #ifdef USE_IMGUI
@@ -577,7 +588,9 @@ void Renderer::SubmitDrawCommand(const DrawCommand& command) {
          draw.blendMode = psoManager_->ResolveModelBlendMode(
             effectiveName, value ? value->GetBlendMode().value_or(command.blendMode) : command.blendMode);
          draw.modelData.blendMode = draw.blendMode;
-         draw.renderPass = DetermineRenderPass(draw.blendMode, command.renderPass != RenderPass::PostProcess);
+         draw.renderPass = command.renderPass == RenderPass::Overlay
+                              ? RenderPass::Overlay
+                              : DetermineRenderPass(draw.blendMode, command.renderPass != RenderPass::PostProcess);
          RouteDrawCommand(draw);
       }
 
@@ -598,6 +611,9 @@ void Renderer::RouteDrawCommand(const DrawCommand& command) {
          break;
       case RenderPass::PostProcess:
          postProcessCommands_.push_back(std::move(wrapper));
+         break;
+      case RenderPass::Overlay:
+         overlayCommands_.push_back(std::move(wrapper));
          break;
       case RenderPass::Opaque:
          opaqueCommands_.push_back(std::move(wrapper));
@@ -791,7 +807,16 @@ void Renderer::EndFrame() {
       }
    }
 
-   // UIまで合成した画像へ適用し、実行画面とエディタのシーンビューを同じ暗転結果にする。
+   // 背景画像へのぼかしを終えてから共通UIを合成し、UI自体へ画面効果を掛けない。
+   ApplyOverlayBackgroundBlur();
+
+   if (!overlayCommands_.empty()) {
+      offscreenRenderTarget_->PreDrawWithoutClear(false);
+      ExecuteDrawCommands(overlayCommands_);
+      offscreenRenderTarget_->PostDraw();
+   }
+
+   // シーンを退出する共通暗転はUIまで合成した最終画像へ適用する。
    ApplySceneTransitionOverlay();
 
    // 中間面の全合成が終わってからバックバッファをRTV化し、最終画像を一度だけ転送する。
@@ -1100,6 +1125,15 @@ void Renderer::Finalize() {
    sceneTransitionConstants_ = nullptr;
    sceneTransitionConstantBuffer_.Reset();
 
+   for (size_t index = 0; index < backgroundBlurConstantBuffers_.size(); ++index) {
+      if (backgroundBlurConstantBuffers_[index] && backgroundBlurConstants_[index]) {
+         backgroundBlurConstantBuffers_[index]->Unmap(0, nullptr);
+      }
+
+      backgroundBlurConstants_[index] = nullptr;
+      backgroundBlurConstantBuffers_[index].Reset();
+   }
+
    if (textRenderer_) {
       textRenderer_->Finalize();
    }
@@ -1196,6 +1230,32 @@ void Renderer::ApplySceneTransitionOverlay() {
       return;
    }
 
+   ApplyBlurPasses(sceneTransitionHorizontalConstantBuffer_.Get(), sceneTransitionConstantBuffer_.Get());
+}
+
+void Renderer::ApplyOverlayBackgroundBlur() {
+   if (backgroundBlurStrength_ <= 0.0f) return;
+
+   ApplyBlurPasses(backgroundBlurConstantBuffers_.front().Get(), backgroundBlurConstantBuffers_.back().Get());
+}
+
+void Renderer::SetOverlayBackgroundBlur(float strength) {
+   const float normalizedStrength = std::isfinite(strength) ? std::clamp(strength, 0.0f, 1.0f) : 0.0f;
+
+   if (backgroundBlurStrength_ == normalizedStrength) return;
+
+   backgroundBlurStrength_ = normalizedStrength;
+
+   for (auto* constants : backgroundBlurConstants_) {
+      if (constants) {
+         constants->opacity = backgroundBlurStrength_;
+      }
+   }
+}
+
+void Renderer::ApplyBlurPasses(ID3D12Resource* horizontalConstants, ID3D12Resource* verticalConstants) {
+   if (!horizontalConstants || !verticalConstants || !offscreenRenderTarget_) return;
+
    auto* transitionPipeline = psoManager_->GetPipeline("SceneTransition");
    const auto constantBufferSlot = psoManager_->ResolvePipelineRootParameter("SceneTransition", "constantbuffer");
    const auto inputTextureSlot = psoManager_->ResolvePipelineRootParameter("SceneTransition", "inputtexture");
@@ -1224,8 +1284,8 @@ void Renderer::ApplySceneTransitionOverlay() {
    };
 
    // 隣接画素を横・縦に分けて取得し、間隔を空けた格子状サンプリングを避ける。
-   applyTransitionPass(offscreenRenderTarget_->GetSRVHandleGPU(), sceneTransitionHorizontalConstantBuffer_.Get());
-   applyTransitionPass(offscreenRenderTarget_->GetSRVHandleGPU(), sceneTransitionConstantBuffer_.Get());
+   applyTransitionPass(offscreenRenderTarget_->GetSRVHandleGPU(), horizontalConstants);
+   applyTransitionPass(offscreenRenderTarget_->GetSRVHandleGPU(), verticalConstants);
 
    InvalidatePipelineBinding();
 }

@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <vector>
 #include <optional>
+#include <array>
 #include <filesystem>
 #include <string_view>
 #include <cstdint>
@@ -156,6 +157,10 @@ public:
    /// @brief カメラ演出の暗転率を設定し、シーン遷移用との最大値を最終画像へ適用する。
    /// @param opacity 0で通常表示、1で完全な黒。非有限値は0として扱う。
    void SetCameraTransitionOpacity(float opacity);
+
+   /// @brief オーバーレイより前の描画結果へ適用するぼかし強度を設定する。
+   /// @param strength 0で無効、1で最大のぼかし。非有限値は0として扱う。
+   void SetOverlayBackgroundBlur(float strength);
 
 #ifdef USE_IMGUI
 
@@ -381,6 +386,7 @@ private:
    std::vector<std::unique_ptr<IDrawCommand>> opaqueCommands_;      // 不透明オブジェクト
    std::vector<std::unique_ptr<IDrawCommand>> transparentCommands_; // 半透明オブジェクト
    std::vector<std::unique_ptr<IDrawCommand>> postProcessCommands_; // ポストプロセス後の描画
+   std::vector<std::unique_ptr<IDrawCommand>> overlayCommands_;     // 背景ぼかし後に重ねる共通UI
 
    BlendMode currentBlendMode_ = BlendMode::kBlendModeNormal; ///< 現在のブレンドモード。
    std::string currentPipelineName_; ///< 現在のコマンドリストへ設定済みと記録したパイプライン名。
@@ -404,6 +410,13 @@ private:
    SceneTransitionConstants* sceneTransitionConstants_ = nullptr; ///< 縦方向ぼかし・暗転用定数バッファの永続Map先。
    float sceneTransitionOpacity_ = 0.0f;                          ///< シーン遷移の暗転量。0で通常表示、1で完全な暗転。
    float cameraTransitionOpacity_ = 0.0f;                         ///< カメラ演出が所有する暗転量。
+
+   static constexpr size_t kBlurPassCount = 2; ///< 水平・垂直方向のぼかしを別々に実行するパス数。
+   /// @brief シーン遷移の暗転定数とは独立した、オーバーレイの背景ぼかし専用の定数バッファ。
+   std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, kBlurPassCount> backgroundBlurConstantBuffers_;
+   std::array<SceneTransitionConstants*, kBlurPassCount>
+      backgroundBlurConstants_{};        ///< 各方向の定数バッファの永続Map先。
+   float backgroundBlurStrength_ = 0.0f; ///< 呼び出し元が指定する背景ぼかしの強度（0～1）。
 
    void UpdateTransitionOpacity();
 
@@ -469,6 +482,12 @@ private:
 
    /// @brief UIを含む最終シーン画像へ遷移暗転を適用する
    void ApplySceneTransitionOverlay();
+
+   /// @brief 指定された強度でオーバーレイの背後の描画結果をぼかす。
+   void ApplyOverlayBackgroundBlur();
+
+   /// @brief 横・縦方向の定数を用いて、共有する全画面ぼかしパイプラインを順に実行する。
+   void ApplyBlurPasses(ID3D12Resource* horizontalConstants, ID3D12Resource* verticalConstants);
 
    /// @brief UI描画専用カメラを初期化
    void InitializeUICamera();

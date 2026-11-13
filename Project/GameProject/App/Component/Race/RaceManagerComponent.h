@@ -140,6 +140,7 @@ private:
    void EnterCountdown();
    void EnterRunning();
    void EnterFinished();
+   void StopRaceAudio();
    void UpdateIntro(float deltaTime);
    void UpdateFinished(float deltaTime);
    bool CanFinish() const;

@@ -1202,12 +1202,31 @@ bool EditorSceneContext::CommitEdit(std::unique_ptr<IEditorCommand> command) {
    return changed;
 }
 
-void EditorSceneContext::FinishEditingFrame() {
-   if (!IsObjectAlive(selectedObject_)) {
-      selectedObject_ = nullptr;
+bool EditorSceneContext::CommitObjectTransform(Object* object, const Transform& before, const Transform& after) {
+   if (!IsObjectAlive(object)) {
+      return false;
    }
-   if (!IsParticleSystemAlive(selectedParticleSystem_)) {
-      selectedParticleSystem_ = nullptr;
+
+   return CommitEdit(std::make_unique<TransformObjectCommand>(GetObjectIdForCommand(object), before, after));
+}
+
+bool EditorSceneContext::CommitParticleTransform(
+   ParticleSystem* particleSystem, const Transform& before, const Transform& after) {
+   if (!IsParticleSystemAlive(particleSystem)) {
+      return false;
+   }
+
+   return CommitEdit(
+      std::make_unique<TransformParticleSystemCommand>(GetParticleSystemIdForCommand(particleSystem), before, after));
+}
+
+void EditorSceneContext::FinishEditingFrame() {
+   if (selectedObject_ && !IsObjectAlive(selectedObject_)) {
+      SelectObject(nullptr);
+   }
+
+   if (selectedParticleSystem_ && !IsParticleSystemAlive(selectedParticleSystem_)) {
+      SelectParticleSystem(nullptr);
    }
 }
 
