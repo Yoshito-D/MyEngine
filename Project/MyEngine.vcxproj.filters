@@ -263,9 +263,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GameProject\App\AudioSettings.cpp">
-      <Filter>GameProject\App</Filter>
-    </ClCompile>
     <ClCompile Include="GameProject\App\Component\UI\MenuNavigation.cpp">
       <Filter>GameProject\App\Component\UI</Filter>
     </ClCompile>
@@ -1052,9 +1049,6 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GameProject\App\AudioSettings.h">
-      <Filter>GameProject\App</Filter>
-    </ClInclude>
     <ClInclude Include="GameProject\App\Component\UI\MenuNavigation.h">
       <Filter>GameProject\App\Component\UI</Filter>
     </ClInclude>
@@ -2237,10 +2231,6 @@
     <ClInclude Include="GameEngine\UI\UISystem.h"><Filter>GameEngine\UI</Filter></ClInclude>
     <ClCompile Include="GameEngine\UI\UISystem.cpp"><Filter>GameEngine\UI</Filter></ClCompile>
     <ClCompile Include="GameEngine\Graphics\Renderer\RendererUI.cpp"><Filter>GameEngine\Graphics\Renderer</Filter></ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="GameProject\App\Component\UI\UISampleComponent.h"><Filter>GameProject\App\Component\UI</Filter></ClInclude>
-    <ClCompile Include="GameProject\App\Component\UI\UISampleComponent.cpp"><Filter>GameProject\App\Component\UI</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameEngine\UI\UIAnimationComponent.h"><Filter>GameEngine\UI</Filter></ClInclude>

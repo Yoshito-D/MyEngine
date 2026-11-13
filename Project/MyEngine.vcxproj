@@ -177,7 +177,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GameProject\App\AudioSettings.cpp" />
     <ClCompile Include="GameProject\App\Component\UI\MenuNavigation.cpp" />
     <ClCompile Include="GameProject\App\Component\UI\PauseMenuComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.cpp" />
@@ -556,7 +555,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GameProject\App\AudioSettings.h" />
     <ClInclude Include="GameProject\App\Component\UI\MenuNavigation.h" />
     <ClInclude Include="GameProject\App\Component\UI\PauseMenuComponent.h" />
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.h" />
@@ -1138,10 +1136,6 @@
     <ClInclude Include="GameEngine\UI\UISystem.h" />
     <ClCompile Include="GameEngine\UI\UISystem.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\RendererUI.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="GameProject\App\Component\UI\UISampleComponent.h" />
-    <ClCompile Include="GameProject\App\Component\UI\UISampleComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameEngine\UI\UIAnimationComponent.h" />
