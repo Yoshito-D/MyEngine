@@ -1,166 +1,47 @@
 #include "GameEngine/pch.h"
-#include <cstdint>
 #include "GameEngine/Graphics/Renderer/DrawCommand.h"
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include <utility>
 
 namespace GameEngine {
-
-DrawCommand DrawCommand::CreateModel(Model* model, const std::vector<D3D12_GPU_DESCRIPTOR_HANDLE>& textures,
-   Camera* camera, BlendMode blendMode, RenderPass renderPass) {
-   DrawCommand cmd;
-   cmd.type = DrawCommandType::Model;
-   cmd.blendMode = blendMode;
-   cmd.renderPass = renderPass;
-   cmd.modelData.model = model;
-   cmd.modelData.textures = textures;
-   cmd.modelData.camera = camera;
-   cmd.modelData.blendMode = blendMode;
-   return cmd;
+namespace {
+DrawSortData DescribeSortData(const ModelDrawData& data) {
+   return {data.model ? std::optional<Vector3>(data.model->GetPosition()) : std::nullopt, data.camera,
+      DrawSortPriority::Model};
 }
 
-DrawCommand DrawCommand::CreateSprite(Sprite* sprite, Texture* texture, D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle,
-   Camera* camera, BlendMode blendMode, RenderPass renderPass) {
-   DrawCommand cmd;
-   cmd.type = DrawCommandType::Sprite;
-   cmd.blendMode = blendMode;
-   cmd.renderPass = renderPass;
-   cmd.spriteData.sprite = sprite;
-   cmd.spriteData.texture = texture;
-   cmd.spriteData.textureSrvHandle = textureSrvHandle;
-   cmd.spriteData.camera = camera;
-   cmd.spriteData.blendMode = blendMode;
-   return cmd;
+DrawSortData DescribeSortData(const SpriteDrawData& data) {
+   const auto* transform = data.sprite ? data.sprite->GetComponent<TransformComponent>() : nullptr;
+   return {transform ? std::optional<Vector3>(transform->GetLocalPose().translation) : std::nullopt, data.camera,
+      DrawSortPriority::SpriteAndText};
 }
 
-DrawCommand DrawCommand::CreateUISprite(Sprite* sprite, Texture* texture, D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle,
-   Sprite::AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight, BlendMode blendMode,
-   RenderPass renderPass) {
-   DrawCommand cmd;
-   cmd.type = DrawCommandType::Sprite;
-   cmd.blendMode = blendMode;
-   cmd.renderPass = renderPass;
-   cmd.isUISprite = true; // UIスプライトフラグを設定
-   cmd.uiSpriteData.sprite = sprite;
-   cmd.uiSpriteData.texture = texture;
-   cmd.uiSpriteData.textureSrvHandle = textureSrvHandle;
-   cmd.uiSpriteData.anchorPoint = anchorPoint;
-   cmd.uiSpriteData.screenWidth = screenWidth;
-   cmd.uiSpriteData.screenHeight = screenHeight;
-   cmd.uiSpriteData.blendMode = blendMode;
-   return cmd;
+DrawSortData DescribeSortData(const UISpriteDrawData&) {
+   // 画面空間UIにはカメラ距離を割り当てず、同じ優先度内の登録順を維持する。
+   return {std::nullopt, nullptr, DrawSortPriority::SpriteAndText};
 }
 
-DrawCommand DrawCommand::CreateText(const TextDrawData& textData, RenderPass renderPass) {
-   DrawCommand cmd;
-   cmd.type = DrawCommandType::Text;
-   cmd.blendMode = BlendMode::kBlendModeNormal;
-   cmd.renderPass = renderPass;
-   cmd.textData = textData;
-   return cmd;
+DrawSortData DescribeSortData(const TextDrawData&) {
+   return {std::nullopt, nullptr, DrawSortPriority::SpriteAndText};
 }
 
-DrawCommand DrawCommand::CreateParticle(
-   ParticleSystem* particleSystem, Camera* camera, BlendMode blendMode, RenderPass renderPass) {
-   DrawCommand cmd;
-   cmd.type = DrawCommandType::Particle;
-   cmd.blendMode = blendMode;
-   cmd.renderPass = renderPass;
-   cmd.particleData.particleSystem = particleSystem;
-   cmd.particleData.camera = camera;
-   return cmd;
+DrawSortData DescribeSortData(const ParticleDrawData& data) {
+   return {std::nullopt, data.camera, DrawSortPriority::Particle};
 }
 
-DrawCommand DrawCommand::CreateLine(std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc,
-   Camera* camera, RenderPass renderPass, std::optional<Vector3> sortPosition) {
-   DrawCommand cmd;
-   cmd.type = DrawCommandType::Line;
-   cmd.blendMode = BlendMode::kBlendModeNormal;
-   cmd.renderPass = renderPass;
-   cmd.lineData.drawFunc = drawFunc;
-   cmd.lineData.camera = camera;
-   cmd.lineData.sortPosition = sortPosition;
+DrawSortData DescribeSortData(const LineDrawData& data) {
+   return {data.sortPosition, data.camera, DrawSortPriority::Line};
+}
+} // namespace
 
-   if (camera) {
-      // 実行時までCameraの行列が変化しても、登録時に意図した視点で線を描けるよう値をスナップショットする。
-      cmd.lineData.viewProjectionMatrix = camera->GetViewProjectionMatrix();
-   }
-
-   return cmd;
+DrawCommand::DrawCommand(RenderPass renderPass, DrawPayload payload)
+   : renderPass_(renderPass), payload_(std::move(payload)) {
+   RefreshSortData();
 }
 
-// ============================================================
-// DrawCommandWrapper
-// ============================================================
-
-std::optional<Vector3> DrawCommandWrapper::GetSortPosition() const {
-   // 透明ソートに使える代表位置だけを返す。画面空間UI／テキストは距離の概念を持たないため未指定とする。
-   switch (cmd_.type) {
-      case DrawCommandType::Model:
-         if (cmd_.modelData.model) {
-            return cmd_.modelData.model->GetPosition();
-         }
-
-         break;
-      case DrawCommandType::Sprite:
-         if (!cmd_.isUISprite && cmd_.spriteData.sprite) {
-            if (const auto* tc = cmd_.spriteData.sprite->GetComponent<TransformComponent>()) {
-               return tc->GetLocalPose().translation;
-            }
-         }
-
-         break;
-      case DrawCommandType::Text:
-         break;
-      case DrawCommandType::Line:
-         if (cmd_.lineData.sortPosition) {
-            return cmd_.lineData.sortPosition;
-         }
-
-         break;
-      default:
-         break;
-   }
-
-   return std::nullopt;
+void DrawCommand::RefreshSortData() {
+   // 手動Draw後にTransformが変更された場合も、従来と同じソート直前の位置で比較する。
+   sortData_ = std::visit([](const auto& data) { return DescribeSortData(data); }, payload_);
 }
-
-Camera* DrawCommandWrapper::GetCamera() const {
-   switch (cmd_.type) {
-      case DrawCommandType::Model:
-         return cmd_.modelData.camera;
-      case DrawCommandType::Sprite:
-         return cmd_.isUISprite ? nullptr : cmd_.spriteData.camera;
-      case DrawCommandType::Text:
-         return nullptr;
-      case DrawCommandType::Particle:
-         return cmd_.particleData.camera;
-      case DrawCommandType::Line:
-         return cmd_.lineData.camera;
-      default:
-         return nullptr;
-   }
-}
-
-} // namespace GameEngine
-
-namespace GameEngine {
-
-std::int32_t DrawCommandWrapper::GetTypePriority() const {
-   switch (cmd_.type) {
-      case DrawCommandType::Model:
-         return 4;
-      case DrawCommandType::Sprite:
-         return 3;
-      case DrawCommandType::Text:
-         return 3;
-      case DrawCommandType::Particle:
-         return 2;
-      case DrawCommandType::Line:
-         return 1;
-      default:
-         return 0;
-   }
-}
-
 } // namespace GameEngine

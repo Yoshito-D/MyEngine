@@ -177,6 +177,10 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameEngine\Graphics\Renderer\RenderQueue.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\DrawCommandFactory.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Resources\PrimitiveMeshFactory.cpp" />
+    <ClCompile Include="GameEngine\Editor\EditorAssetCommand.cpp" />
     <ClCompile Include="GameProject\App\Component\UI\MenuNavigation.cpp" />
     <ClCompile Include="GameProject\App\Component\UI\PauseMenuComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.cpp" />
@@ -267,7 +271,7 @@
     <ClCompile Include="GameEngine\Input\InputActionService.cpp" />
     <ClCompile Include="GameEngine\Input\InputBinding.cpp" />
     <ClCompile Include="GameEngine\Input\InputRebindSession.cpp" />
-    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\CommandDispatch.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\DrawCommandExecutor.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\TextRenderer.cpp" />
     <ClCompile Include="GameEngine\UI\Text\TextLayout.cpp" />
     <ClCompile Include="GameEngine\UI\Text\Utf8Decoder.cpp" />
@@ -555,6 +559,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameEngine\Graphics\Renderer\RenderQueue.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\DrawCommandFactory.h" />
+    <ClInclude Include="GameEngine\Graphics\Resources\PrimitiveMeshFactory.h" />
+    <ClInclude Include="GameEngine\Editor\EditorAssetCommand.h" />
     <ClInclude Include="GameProject\App\Component\UI\MenuNavigation.h" />
     <ClInclude Include="GameProject\App\Component\UI\PauseMenuComponent.h" />
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialStagePlacement.h" />
@@ -605,7 +613,7 @@
     <ClInclude Include="GameEngine\Input\InputActionService.h" />
     <ClInclude Include="GameEngine\Input\InputBinding.h" />
     <ClInclude Include="GameEngine\Input\InputRebindSession.h" />
-    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\CommandDispatch.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\DrawCommandExecutor.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\FrameContext.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\IRenderPass.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\OpaquePass.h" />

@@ -191,7 +191,7 @@ void RendererEditorController::BeginEditorFrame() {
       editorActiveScenePath_ = scenePath;
       editorAssetQueryKey_.clear();
       editorAssetCheckKey_.clear();
-      editorAssetOperation_.clear();
+      editorAssetOperation_ = EditorAssetOperation::None;
       editorInspectorEntityId_.clear();
       editorInspectorBefore_ = {};
       editorInspectorAfter_ = {};
@@ -707,7 +707,7 @@ void RendererEditorController::ShowAssetWindow() {
    if (ImGui::BeginPopupContextWindow(
           "FolderCreate", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
       if (ImGui::MenuItem("Create Folder", nullptr, false, EngineContext::IsPlayModeEdit())) {
-         editorAssetOperation_ = "Create Folder";
+         editorAssetOperation_ = EditorAssetOperation::CreateFolder;
          editorAssetOperationId_ = editorCurrentFolder_;
          std::snprintf(editorAssetName_, sizeof(editorAssetName_), "%s", "New Folder");
       }
@@ -1712,17 +1712,17 @@ void RendererEditorController::HandlePanelShortcuts(EditorSceneContext& context,
       if (editorSelectedAssetId_.empty()) return;
 
       if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_D, false)) {
-         editorAssetOperation_ = "Duplicate";
+         editorAssetOperation_ = EditorAssetOperation::Duplicate;
          editorAssetOperationId_ = editorSelectedAssetId_;
       }
 
       if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
-         editorAssetOperation_ = "Delete";
+         editorAssetOperation_ = EditorAssetOperation::Delete;
          editorAssetOperationId_ = editorSelectedAssetId_;
       }
 
       if (ImGui::IsKeyPressed(ImGuiKey_F2, false)) {
-         editorAssetOperation_ = "Rename";
+         editorAssetOperation_ = EditorAssetOperation::Rename;
          editorAssetOperationId_ = editorSelectedAssetId_;
          const auto name = editorSelectedAssetId_.substr(editorSelectedAssetId_.find_last_of('/') + 1);
 
@@ -1748,30 +1748,35 @@ void RendererEditorController::HandlePanelShortcuts(EditorSceneContext& context,
    }
 }
 
+EditorAssetCommandContext RendererEditorController::MakeAssetCommandContext(EditorSceneContext& context) const {
+   return {context.GetAssetRegistry(), EngineContext::IsPlayModeEdit(), context.IsDirty() || context.HasEditHistory(),
+      [&context]() { return context.SerializeToJson().dump(); }};
+}
+
+const std::string& RendererEditorController::GetAssetOperationRestriction(EditorAssetOperation operation) const {
+   return editorAssetRestrictions_[static_cast<size_t>(operation)];
+}
+
 void RendererEditorController::CheckAssetOperations(EditorSceneContext& context, const std::string& id) {
-   auto& registry = context.GetAssetRegistry();
+   const auto commandContext = MakeAssetCommandContext(context);
    const auto scenePath = context.GetSceneFilePath().generic_u8string();
-   const std::string key =
-      id + "\n" + std::to_string(registry.GetRevision()) + "\n" + std::string(scenePath.begin(), scenePath.end());
+   const std::string key = id + "\n" + std::to_string(commandContext.registry.GetRevision()) + "\n" +
+                           std::string(scenePath.begin(), scenePath.end()) + "\n" +
+                           std::to_string(commandContext.editMode) + std::to_string(commandContext.hasSceneEdits);
 
    if (key == editorAssetCheckKey_) return;
 
    editorAssetCheckKey_ = key;
-   registry.CanRenameOrMove(id, editorAssetRenameReason_);
-   registry.CanDuplicate(id, editorAssetDuplicateReason_);
-   registry.CanRemove(id, editorAssetDeleteReason_);
-   const auto* entry = registry.FindAsset(id);
 
-   if (entry && editorAssetRenameReason_.empty()) {
-      const std::string scene = context.SerializeToJson().dump();
-
-      if (scene.find(nlohmann::json(id).dump()) != std::string::npos ||
-          scene.find(nlohmann::json(entry->displayName).dump()) != std::string::npos) {
-         editorAssetRenameReason_ =
-            "Referenced by the active scene; changing this path ID cannot update all references safely.";
-      }
+   // 保存済み参照の走査結果を共有し、入力欄の編集だけではファイルを再走査しない。
+   for (const auto operation : {EditorAssetOperation::CreateFolder, EditorAssetOperation::Rename,
+           EditorAssetOperation::Duplicate, EditorAssetOperation::Delete}) {
+      auto command = CreateEditorAssetCommand({.operation = operation, .assetId = id});
+      editorAssetRestrictions_[static_cast<size_t>(operation)] = command->CheckAvailability(commandContext);
    }
 
+   editorAssetRestrictions_[static_cast<size_t>(EditorAssetOperation::Move)] =
+      GetAssetOperationRestriction(EditorAssetOperation::Rename);
    editorAssetDeleteReferences_.clear();
    editorAssetDeleteReferencesLoaded_ = false;
 }
@@ -1804,7 +1809,7 @@ void RendererEditorController::DrawAssetContextMenu(EditorSceneContext& context,
 
    if (entry.type == EditorAssetType::Folder) {
       if (ImGui::MenuItem("Create Folder", nullptr, false, !builtIn)) {
-         editorAssetOperation_ = "Create Folder";
+         editorAssetOperation_ = EditorAssetOperation::CreateFolder;
          editorAssetOperationId_ = entry.assetId;
          std::snprintf(editorAssetName_, sizeof(editorAssetName_), "%s", "New Folder");
       }
@@ -1814,42 +1819,43 @@ void RendererEditorController::DrawAssetContextMenu(EditorSceneContext& context,
       }
    }
 
-   if (ImGui::MenuItem("Duplicate", "Ctrl+D", false, editorAssetDuplicateReason_.empty())) {
-      editorAssetOperation_ = "Duplicate";
+   if (ImGui::MenuItem(
+          "Duplicate", "Ctrl+D", false, GetAssetOperationRestriction(EditorAssetOperation::Duplicate).empty())) {
+      editorAssetOperation_ = EditorAssetOperation::Duplicate;
       editorAssetOperationId_ = entry.assetId;
    }
 
-   if (!editorAssetDuplicateReason_.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-      ImGui::SetTooltip("%s", editorAssetDuplicateReason_.c_str());
+   if (!GetAssetOperationRestriction(EditorAssetOperation::Duplicate).empty() &&
+       ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("%s", GetAssetOperationRestriction(EditorAssetOperation::Duplicate).c_str());
    }
 
    const auto filename = entry.filePath.filename().u8string();
    const std::string name(filename.begin(), filename.end());
-   const bool canRename = !context.IsDirty() && !context.HasEditHistory() && editorAssetRenameReason_.empty() &&
-                          name.size() < sizeof(editorAssetName_);
+   const bool canRename =
+      GetAssetOperationRestriction(EditorAssetOperation::Rename).empty() && name.size() < sizeof(editorAssetName_);
 
    if (ImGui::MenuItem("Rename", "F2", false, canRename)) {
-      editorAssetOperation_ = "Rename";
+      editorAssetOperation_ = EditorAssetOperation::Rename;
       editorAssetOperationId_ = entry.assetId;
       std::snprintf(editorAssetName_, sizeof(editorAssetName_), "%s", name.c_str());
    }
 
    if (!canRename && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-      const char* reason =
-         (context.IsDirty() || context.HasEditHistory())
-            ? "Save and reload the scene to release Undo references before modifying path IDs"
-            : (name.size() >= sizeof(editorAssetName_) ? "This filename exceeds the supported edit field length."
-                                                       : editorAssetRenameReason_.c_str());
+      const char* reason = name.size() >= sizeof(editorAssetName_)
+                              ? "This filename exceeds the supported edit field length."
+                              : GetAssetOperationRestriction(EditorAssetOperation::Rename).c_str();
       ImGui::SetTooltip("%s", reason);
    }
 
-   if (ImGui::MenuItem("Delete", "Delete", false, editorAssetDeleteReason_.empty())) {
-      editorAssetOperation_ = "Delete";
+   if (ImGui::MenuItem("Delete", "Delete", false, GetAssetOperationRestriction(EditorAssetOperation::Delete).empty())) {
+      editorAssetOperation_ = EditorAssetOperation::Delete;
       editorAssetOperationId_ = entry.assetId;
    }
 
-   if (!editorAssetDeleteReason_.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-      ImGui::SetTooltip("%s", editorAssetDeleteReason_.c_str());
+   if (!GetAssetOperationRestriction(EditorAssetOperation::Delete).empty() &&
+       ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("%s", GetAssetOperationRestriction(EditorAssetOperation::Delete).c_str());
    }
 
    ImGui::EndDisabled();
@@ -1862,43 +1868,36 @@ void RendererEditorController::AcceptAssetMove(EditorSceneContext& context, cons
    if (const auto* payload = ImGui::AcceptDragDropPayload(
           "EDITOR_ASSET", ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect)) {
       const auto* entry = context.GetAssetRegistry().ResolveAssetPayload(payload->Data, payload->DataSize);
+      std::string destination;
+      std::string restriction = "Invalid destination";
 
       if (entry) {
          CheckAssetOperations(context, entry->assetId);
+         const size_t separator = entry->assetId.find_last_of('/');
+         const std::string filename =
+            separator == std::string::npos ? entry->assetId : entry->assetId.substr(separator + 1);
+         destination = folder.empty() ? filename : folder + "/" + filename;
+         auto command = CreateEditorAssetCommand(
+            {.operation = EditorAssetOperation::Move, .assetId = entry->assetId, .destinationId = destination});
+         restriction = GetAssetOperationRestriction(EditorAssetOperation::Move);
+
+         if (restriction.empty()) {
+            restriction = command->ValidateArguments(MakeAssetCommandContext(context));
+         }
       }
 
-      const size_t separator = entry ? entry->assetId.find_last_of('/') : std::string::npos;
-      const std::string parent = entry && separator != std::string::npos ? entry->assetId.substr(0, separator) : "";
-      const bool folderValid = folder.empty() || context.GetAssetRegistry().FindAsset(folder, EditorAssetType::Folder);
-      const bool builtInTarget = folder == "engine" || folder.starts_with("engine/");
-      const bool particleFolder = folder == "game/particles" || folder.starts_with("game/particles/") ||
-                                  folder == "particles" || folder.starts_with("particles/");
-      const bool typeValid = !entry || entry->type != EditorAssetType::Particle || particleFolder;
-      const bool valid = entry && folderValid && !builtInTarget && typeValid && EngineContext::IsPlayModeEdit() &&
-                         !context.IsDirty() && !context.HasEditHistory() && entry->assetId != folder &&
-                         parent != folder && editorAssetRenameReason_.empty();
-
-      if (valid && payload->IsPreview()) {
+      if (restriction.empty() && payload->IsPreview()) {
          ImGui::GetWindowDrawList()->AddRect(
             ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImGuiCol_DragDropTarget), 0, 0, 2);
       }
 
       if (payload->IsDelivery()) {
-         if (valid) {
-            editorAssetOperation_ = "Move";
+         if (restriction.empty()) {
+            editorAssetOperation_ = EditorAssetOperation::Move;
             editorAssetOperationId_ = entry->assetId;
-            const std::string filename =
-               separator == std::string::npos ? entry->assetId : entry->assetId.substr(separator + 1);
-            editorAssetMoveDestination_ = folder.empty() ? filename : folder + "/" + filename;
-         } else if (context.IsDirty() || context.HasEditHistory()) {
-            editorAssetStatus_ = "Save and reload the scene to release Undo references before moving path IDs";
-         } else if (builtInTarget) {
-            editorAssetStatus_ = "Engine resource folders use built-in names and cannot be modified.";
-         } else if (!typeValid) {
-            editorAssetStatus_ = "Particle settings must stay inside the particles resource folder.";
+            editorAssetMoveDestination_ = destination;
          } else {
-            editorAssetStatus_ =
-               entry && !editorAssetRenameReason_.empty() ? editorAssetRenameReason_ : "Invalid destination";
+            editorAssetStatus_ = restriction;
          }
       }
    }
@@ -1908,7 +1907,7 @@ void RendererEditorController::AcceptAssetMove(EditorSceneContext& context, cons
 
 void RendererEditorController::DrawAssetDialogs(EditorSceneContext& context) {
    // Registryの再構築は描画が終わった後だけ行い、走査中のEntry参照を失効させない。
-   if (!editorAssetOperation_.empty()) {
+   if (editorAssetOperation_ != EditorAssetOperation::None) {
       ImGui::OpenPopup("Asset Operation");
    }
 
@@ -1925,27 +1924,34 @@ void RendererEditorController::DrawAssetDialogs(EditorSceneContext& context) {
    }
 
    CheckAssetOperations(context, editorAssetOperationId_);
-   ImGui::TextWrapped("%s: %s", editorAssetOperation_.c_str(), editorAssetOperationId_.c_str());
+   auto commandContext = MakeAssetCommandContext(context);
+   auto command = CreateEditorAssetCommand(
+      {editorAssetOperation_, editorAssetOperationId_, editorAssetName_, editorAssetMoveDestination_});
 
-   if (editorAssetOperation_ == "Rename" || editorAssetOperation_ == "Create Folder") {
-      ImGui::InputText("Name", editorAssetName_, sizeof(editorAssetName_));
+   if (!command) {
+      ImGui::CloseCurrentPopup();
+      ImGui::EndPopup();
+      return;
    }
 
-   if (editorAssetOperation_ == "Move") {
+   ImGui::TextWrapped("%s: %s", command->GetName(), editorAssetOperationId_.c_str());
+
+   if (editorAssetOperation_ == EditorAssetOperation::Rename ||
+       editorAssetOperation_ == EditorAssetOperation::CreateFolder) {
+      if (ImGui::InputText("Name", editorAssetName_, sizeof(editorAssetName_))) {
+         command = CreateEditorAssetCommand(
+            {editorAssetOperation_, editorAssetOperationId_, editorAssetName_, editorAssetMoveDestination_});
+      }
+   }
+
+   if (editorAssetOperation_ == EditorAssetOperation::Move) {
       ImGui::TextWrapped("Destination: %s", editorAssetMoveDestination_.c_str());
    }
 
-   if (editorAssetOperation_ == "Delete") {
+   if (editorAssetOperation_ == EditorAssetOperation::Delete) {
       if (!editorAssetDeleteReferencesLoaded_) {
-         editorAssetDeleteReferences_ = context.GetAssetRegistry().FindReferences(editorAssetOperationId_);
+         editorAssetDeleteReferences_ = command->GetReferences(commandContext);
          editorAssetDeleteReferencesLoaded_ = true;
-         const auto* asset = context.GetAssetRegistry().FindAsset(editorAssetOperationId_);
-         const std::string scene = context.SerializeToJson().dump();
-
-         if (scene.find(nlohmann::json(editorAssetOperationId_).dump()) != std::string::npos ||
-             (asset && scene.find(nlohmann::json(asset->displayName).dump()) != std::string::npos)) {
-            editorAssetDeleteReferences_.push_back("Active scene (including unsaved edits)");
-         }
       }
 
       ImGui::TextWrapped(
@@ -1962,32 +1968,18 @@ void RendererEditorController::DrawAssetDialogs(EditorSceneContext& context) {
       ImGui::TextWrapped("The active scene and loaded resources can retain cached data until reload.");
    }
 
-   std::string restriction;
+   // 入力欄の編集結果だけを更新し、重い対象検証はキャッシュする。実行時はCommandが両方を再検証する。
+   std::string restriction = GetAssetOperationRestriction(editorAssetOperation_);
 
-   if (!EngineContext::IsPlayModeEdit()) {
-      restriction = "Asset changes are only available in Edit mode.";
-   } else if (editorAssetOperation_ == "Duplicate") {
-      restriction = editorAssetDuplicateReason_;
-   } else if (editorAssetOperation_ == "Delete") {
-      restriction = editorAssetDeleteReason_;
-   } else if (editorAssetOperation_ == "Create Folder" &&
-              (editorAssetOperationId_ == "engine" || editorAssetOperationId_.starts_with("engine/"))) {
-      restriction = "Engine resource folders use built-in names and cannot be modified.";
-   } else if (editorAssetOperation_ == "Rename" || editorAssetOperation_ == "Move") {
-      restriction = (context.IsDirty() || context.HasEditHistory())
-                       ? "Save and reload the scene to release Undo references before changing path IDs."
-                       : editorAssetRenameReason_;
-      const auto* asset = context.GetAssetRegistry().FindAsset(editorAssetOperationId_);
-
-      if (editorAssetOperation_ == "Rename" && asset &&
-          asset->filePath.filename().u8string().size() >= sizeof(editorAssetName_)) {
-         restriction = "This filename exceeds the supported edit field length.";
-      }
+   if (restriction.empty()) {
+      restriction = command->ValidateArguments(commandContext);
    }
 
-   if ((editorAssetOperation_ == "Rename" || editorAssetOperation_ == "Create Folder") &&
-       !EditorAssetRegistry::IsValidName(editorAssetName_)) {
-      restriction = "Enter a valid filename; reserved names and path separators are not allowed.";
+   const auto* asset = context.GetAssetRegistry().FindAsset(editorAssetOperationId_);
+
+   if (editorAssetOperation_ == EditorAssetOperation::Rename && asset &&
+       asset->filePath.filename().u8string().size() >= sizeof(editorAssetName_)) {
+      restriction = "This filename exceeds the supported edit field length.";
    }
 
    if (!restriction.empty()) {
@@ -1996,43 +1988,11 @@ void RendererEditorController::DrawAssetDialogs(EditorSceneContext& context) {
 
    ImGui::BeginDisabled(!restriction.empty());
 
-   if (ImGui::Button(editorAssetOperation_ == "Delete" ? "Delete permanently" : "Apply")) {
-      auto& registry = context.GetAssetRegistry();
-      std::string newId, error;
-      bool ok = false;
+   if (ImGui::Button(editorAssetOperation_ == EditorAssetOperation::Delete ? "Delete permanently" : "Apply")) {
+      const auto result = command->Execute(commandContext);
+      editorAssetStatus_ = result.succeeded ? std::string(command->GetName()) + " completed" : result.error;
 
-      if (editorAssetOperation_ == "Create Folder") {
-         ok = registry.CreateFolder(editorAssetOperationId_, editorAssetName_, newId, error);
-      } else if (editorAssetOperation_ == "Duplicate") {
-         ok = registry.Duplicate(editorAssetOperationId_, newId, error);
-      } else if (editorAssetOperation_ == "Delete") {
-         ok = registry.Remove(editorAssetOperationId_, error);
-      } else {
-         const size_t separator = editorAssetOperationId_.find_last_of('/');
-         newId =
-            editorAssetOperation_ == "Move"
-               ? editorAssetMoveDestination_
-               : (separator == std::string::npos ? std::string(editorAssetName_)
-                                                 : editorAssetOperationId_.substr(0, separator + 1) + editorAssetName_);
-
-         if (context.IsDirty() || context.HasEditHistory()) {
-            error = "Save and reload the scene to release Undo references before changing asset path IDs";
-         } else {
-            const auto scene = context.SerializeToJson().dump();
-            const auto* asset = registry.FindAsset(editorAssetOperationId_);
-
-            if (scene.find(nlohmann::json(editorAssetOperationId_).dump()) != std::string::npos ||
-                (asset && scene.find(nlohmann::json(asset->displayName).dump()) != std::string::npos)) {
-               error = "Referenced by active scene; path reference updates cannot be guaranteed";
-            } else {
-               ok = registry.RenameOrMove(editorAssetOperationId_, newId, error);
-            }
-         }
-      }
-
-      editorAssetStatus_ = ok ? editorAssetOperation_ + " completed" : error;
-
-      if (ok) {
+      if (result.succeeded) {
          if (assetManager_ && assetManager_->GetTextureManager()) {
             assetManager_->GetTextureManager()->RefreshFailedLoads();
          }
@@ -2040,15 +2000,15 @@ void RendererEditorController::DrawAssetDialogs(EditorSceneContext& context) {
          editorAssetQueryKey_.clear();
          editorAssetCheckKey_.clear();
 
-         if (!newId.empty()) {
-            const size_t separator = newId.find_last_of('/');
-            NavigateToFolder(separator == std::string::npos ? "" : newId.substr(0, separator));
-            SelectAsset(context, newId);
+         if (!result.assetId.empty()) {
+            const size_t separator = result.assetId.find_last_of('/');
+            NavigateToFolder(separator == std::string::npos ? "" : result.assetId.substr(0, separator));
+            SelectAsset(context, result.assetId);
          } else if (editorSelectedAssetId_ == editorAssetOperationId_) {
             editorSelectedAssetId_.clear();
          }
 
-         editorAssetOperation_.clear();
+         editorAssetOperation_ = EditorAssetOperation::None;
          ImGui::CloseCurrentPopup();
       }
    }
@@ -2057,7 +2017,7 @@ void RendererEditorController::DrawAssetDialogs(EditorSceneContext& context) {
    ContinueRowIfFits(ImGui::CalcTextSize("Cancel").x + ImGui::GetStyle().FramePadding.x * 2);
 
    if (ImGui::Button("Cancel")) {
-      editorAssetOperation_.clear();
+      editorAssetOperation_ = EditorAssetOperation::None;
       ImGui::CloseCurrentPopup();
    }
 

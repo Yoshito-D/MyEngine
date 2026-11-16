@@ -4,6 +4,7 @@
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Graphics/Resources/Mesh.h"
+#include "GameEngine/Graphics/Resources/PrimitiveMeshFactory.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
 #include "GameEngine/Object/Object.h"
@@ -45,74 +46,15 @@ GameEngine::MeshComponent::SourceType ParseSourceType(
 }
 
 const char* ToPrimitiveTypeName(GameEngine::MeshComponent::PrimitiveType primitiveType) {
-   switch (primitiveType) {
-      case GameEngine::MeshComponent::PrimitiveType::Ring:
-         return "Ring";
-      case GameEngine::MeshComponent::PrimitiveType::Sphere:
-         return "Sphere";
-      case GameEngine::MeshComponent::PrimitiveType::Box:
-         return "Box";
-      case GameEngine::MeshComponent::PrimitiveType::Cylinder:
-         return "Cylinder";
-      case GameEngine::MeshComponent::PrimitiveType::Cone:
-         return "Cone";
-      case GameEngine::MeshComponent::PrimitiveType::Circle:
-         return "Circle";
-      case GameEngine::MeshComponent::PrimitiveType::Plane:
-         return "Plane";
-      case GameEngine::MeshComponent::PrimitiveType::Torus:
-         return "Torus";
-      case GameEngine::MeshComponent::PrimitiveType::Triangle:
-         return "Triangle";
-      case GameEngine::MeshComponent::PrimitiveType::Quad:
-      default:
-         return "Quad";
-   }
+   const auto* definition = GameEngine::PrimitiveMeshFactory::Find(primitiveType);
+   return definition ? definition->name : "Quad";
 }
 
 GameEngine::MeshComponent::PrimitiveType ParsePrimitiveType(
    const nlohmann::json& value, GameEngine::MeshComponent::PrimitiveType fallback) {
    if (value.is_string()) {
-      const std::string name = value.get<std::string>();
-
-      if (name == "Quad") {
-         return GameEngine::MeshComponent::PrimitiveType::Quad;
-      }
-
-      if (name == "Ring") {
-         return GameEngine::MeshComponent::PrimitiveType::Ring;
-      }
-
-      if (name == "Sphere") {
-         return GameEngine::MeshComponent::PrimitiveType::Sphere;
-      }
-
-      if (name == "Box") {
-         return GameEngine::MeshComponent::PrimitiveType::Box;
-      }
-
-      if (name == "Cylinder") {
-         return GameEngine::MeshComponent::PrimitiveType::Cylinder;
-      }
-
-      if (name == "Cone") {
-         return GameEngine::MeshComponent::PrimitiveType::Cone;
-      }
-
-      if (name == "Circle") {
-         return GameEngine::MeshComponent::PrimitiveType::Circle;
-      }
-
-      if (name == "Plane") {
-         return GameEngine::MeshComponent::PrimitiveType::Plane;
-      }
-
-      if (name == "Torus") {
-         return GameEngine::MeshComponent::PrimitiveType::Torus;
-      }
-
-      if (name == "Triangle") {
-         return GameEngine::MeshComponent::PrimitiveType::Triangle;
+      if (const auto* definition = GameEngine::PrimitiveMeshFactory::Find(value.get<std::string>())) {
+         return definition->type;
       }
    }
 
@@ -173,17 +115,6 @@ GameEngine::MeshComponent::PlaneOrientation ParsePlaneOrientation(
    return fallback;
 }
 
-GameEngine::Mesh::PlaneOrientation ToMeshPlaneOrientation(GameEngine::MeshComponent::PlaneOrientation orientation) {
-   switch (orientation) {
-      case GameEngine::MeshComponent::PlaneOrientation::XZ:
-         return GameEngine::Mesh::PlaneOrientation::XZ;
-      case GameEngine::MeshComponent::PlaneOrientation::YZ:
-         return GameEngine::Mesh::PlaneOrientation::YZ;
-      case GameEngine::MeshComponent::PlaneOrientation::XY:
-      default:
-         return GameEngine::Mesh::PlaneOrientation::XY;
-   }
-}
 }
 
 namespace GameEngine {
@@ -451,21 +382,28 @@ void MeshComponent::DrawInspector() {
 
    // すべてのUI変更を一つのフラグへ集約し、操作ごとの部分再生成を避けてフレーム末尾に一度だけ作り直す。
    bool meshChanged = false;
-   const char* primitiveTypeItems[] = {
-      "Quad", "Ring", "Sphere", "Box", "Cylinder", "Cone", "Circle", "Plane", "Torus", "Triangle"};
-   std::int32_t primitiveTypeIndex = static_cast<std::int32_t>(primitiveType_);
+   const auto* definition = PrimitiveMeshFactory::Find(primitiveType_);
 
-   if (ImGui::Combo(Tr("プリミティブ", "Primitive"), &primitiveTypeIndex, primitiveTypeItems, 10)) {
-      primitiveType_ = static_cast<PrimitiveType>(primitiveTypeIndex);
-      meshChanged = true;
+   if (ImGui::BeginCombo(Tr("プリミティブ", "Primitive"), definition ? definition->name : "Unknown")) {
+      for (const auto& candidate : PrimitiveMeshFactory::GetDefinitions()) {
+         const bool selected = candidate.type == primitiveType_;
+
+         if (ImGui::Selectable(candidate.name, selected)) {
+            primitiveType_ = candidate.type;
+            definition = &candidate;
+            meshChanged = true;
+         }
+
+         if (selected) {
+            ImGui::SetItemDefaultFocus();
+         }
+      }
+
+      ImGui::EndCombo();
    }
 
    // 同じ生成関数を任意平面へ射影できる形状だけにOrientation設定を表示する。
-   const bool supportsPlaneOrientation =
-      primitiveType_ == PrimitiveType::Ring || primitiveType_ == PrimitiveType::Circle ||
-      primitiveType_ == PrimitiveType::Plane || primitiveType_ == PrimitiveType::Triangle;
-
-   if (supportsPlaneOrientation) {
+   if (definition && definition->supportsPlaneOrientation) {
       const char* orientationItems[] = {"XY", "XZ", "YZ"};
       std::int32_t orientationIndex = static_cast<std::int32_t>(planeOrientation_);
 
@@ -476,130 +414,12 @@ void MeshComponent::DrawInspector() {
    }
 
    // 立体形状のY方向原点だけを0～1で移動し、地面置き/中心基準をTransform変更なしで選べる。
-   const bool supportsOriginY = primitiveType_ == PrimitiveType::Sphere || primitiveType_ == PrimitiveType::Box ||
-                                primitiveType_ == PrimitiveType::Cylinder || primitiveType_ == PrimitiveType::Cone ||
-                                primitiveType_ == PrimitiveType::Torus;
-
-   if (supportsOriginY) {
+   if (definition && definition->supportsOriginY) {
       meshChanged |= ImGui::SliderFloat(Tr("原点Y", "Origin Y"), &originY_, 0.0f, 1.0f, "%.2f");
    }
 
-   switch (primitiveType_) {
-      case PrimitiveType::Quad:
-         meshChanged |= ImGui::DragFloat2(Tr("サイズ", "Size"), &quadSize_.x, 0.1f, 0.001f, 4096.0f);
-         meshChanged |= ImGui::DragFloat2(Tr("アンカー", "Anchor"), &quadAnchorPoint_.x, 0.01f, -10.0f, 10.0f);
-         meshChanged |= ImGui::Checkbox(Tr("左右反転", "Flip X"), &flipX_);
-         meshChanged |= ImGui::Checkbox(Tr("上下反転", "Flip Y"), &flipY_);
-         break;
-      case PrimitiveType::Ring: {
-         meshChanged |= ImGui::DragFloat(Tr("内半径", "Inner Radius"), &ringInnerRadius_, 0.01f, 0.0f, 1000.0f);
-         meshChanged |= ImGui::DragFloat(Tr("外半径", "Outer Radius"), &ringOuterRadius_, 0.01f, 0.001f, 1000.0f);
-         std::int32_t segments = static_cast<std::int32_t>(ringSegments_);
-
-         if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
-            ringSegments_ = static_cast<uint32_t>(std::max(segments, 3));
-            meshChanged = true;
-         }
-
-         break;
-      }
-      case PrimitiveType::Sphere: {
-         meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &sphereRadius_, 0.01f, 0.001f, 1000.0f);
-         std::int32_t stacks = static_cast<std::int32_t>(sphereStacks_);
-         std::int32_t slices = static_cast<std::int32_t>(sphereSlices_);
-
-         if (ImGui::DragInt(Tr("スタック", "Stacks"), &stacks, 1.0f, 2, 256)) {
-            sphereStacks_ = static_cast<uint32_t>(std::max(stacks, 2));
-            meshChanged = true;
-         }
-
-         if (ImGui::DragInt(Tr("スライス", "Slices"), &slices, 1.0f, 3, 512)) {
-            sphereSlices_ = static_cast<uint32_t>(std::max(slices, 3));
-            meshChanged = true;
-         }
-
-         break;
-      }
-      case PrimitiveType::Box:
-         meshChanged |= ImGui::DragFloat3(Tr("サイズ", "Size"), &boxSize_.x, 0.01f, 0.001f, 1000.0f);
-         break;
-      case PrimitiveType::Cylinder: {
-         meshChanged |= ImGui::DragFloat(Tr("上半径", "Top Radius"), &cylinderTopRadius_, 0.01f, 0.0f, 1000.0f);
-         meshChanged |= ImGui::DragFloat(Tr("下半径", "Bottom Radius"), &cylinderBottomRadius_, 0.01f, 0.0f, 1000.0f);
-         meshChanged |= ImGui::DragFloat(Tr("高さ", "Height"), &cylinderHeight_, 0.01f, 0.001f, 1000.0f);
-         std::int32_t segments = static_cast<std::int32_t>(cylinderSegments_);
-
-         if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
-            cylinderSegments_ = static_cast<uint32_t>(std::max(segments, 3));
-            meshChanged = true;
-         }
-
-         break;
-      }
-      case PrimitiveType::Cone: {
-         meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &coneRadius_, 0.01f, 0.001f, 1000.0f);
-         meshChanged |= ImGui::DragFloat(Tr("高さ", "Height"), &coneHeight_, 0.01f, 0.001f, 1000.0f);
-         std::int32_t segments = static_cast<std::int32_t>(coneSegments_);
-
-         if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
-            coneSegments_ = static_cast<uint32_t>(std::max(segments, 3));
-            meshChanged = true;
-         }
-
-         break;
-      }
-      case PrimitiveType::Circle: {
-         meshChanged |= ImGui::DragFloat(Tr("半径", "Radius"), &circleRadius_, 0.01f, 0.001f, 1000.0f);
-         std::int32_t segments = static_cast<std::int32_t>(circleSegments_);
-
-         if (ImGui::DragInt(Tr("分割数", "Segments"), &segments, 1.0f, 3, 512)) {
-            circleSegments_ = static_cast<uint32_t>(std::max(segments, 3));
-            meshChanged = true;
-         }
-
-         break;
-      }
-      case PrimitiveType::Plane: {
-         meshChanged |= ImGui::DragFloat(Tr("幅", "Width"), &planeWidth_, 0.01f, 0.001f, 1000.0f);
-         meshChanged |= ImGui::DragFloat(Tr("奥行き", "Depth"), &planeDepth_, 0.01f, 0.001f, 1000.0f);
-         std::int32_t widthSegments = static_cast<std::int32_t>(planeWidthSegments_);
-         std::int32_t depthSegments = static_cast<std::int32_t>(planeDepthSegments_);
-
-         if (ImGui::DragInt(Tr("幅の分割数", "Width Segments"), &widthSegments, 1.0f, 1, 512)) {
-            planeWidthSegments_ = static_cast<uint32_t>(std::max(widthSegments, 1));
-            meshChanged = true;
-         }
-
-         if (ImGui::DragInt(Tr("奥行きの分割数", "Depth Segments"), &depthSegments, 1.0f, 1, 512)) {
-            planeDepthSegments_ = static_cast<uint32_t>(std::max(depthSegments, 1));
-            meshChanged = true;
-         }
-
-         break;
-      }
-      case PrimitiveType::Torus: {
-         meshChanged |= ImGui::DragFloat(Tr("主半径", "Major Radius"), &torusMajorRadius_, 0.01f, 0.001f, 1000.0f);
-         meshChanged |= ImGui::DragFloat(Tr("副半径", "Minor Radius"), &torusMinorRadius_, 0.01f, 0.001f, 1000.0f);
-         std::int32_t majorSegments = static_cast<std::int32_t>(torusMajorSegments_);
-         std::int32_t minorSegments = static_cast<std::int32_t>(torusMinorSegments_);
-
-         if (ImGui::DragInt(Tr("主分割数", "Major Segments"), &majorSegments, 1.0f, 3, 512)) {
-            torusMajorSegments_ = static_cast<uint32_t>(std::max(majorSegments, 3));
-            meshChanged = true;
-         }
-
-         if (ImGui::DragInt(Tr("副分割数", "Minor Segments"), &minorSegments, 1.0f, 3, 512)) {
-            torusMinorSegments_ = static_cast<uint32_t>(std::max(minorSegments, 3));
-            meshChanged = true;
-         }
-
-         break;
-      }
-      case PrimitiveType::Triangle:
-         meshChanged |= ImGui::DragFloat3("V0", &triangleV0_.x, 0.01f);
-         meshChanged |= ImGui::DragFloat3("V1", &triangleV1_.x, 0.01f);
-         meshChanged |= ImGui::DragFloat3("V2", &triangleV2_.x, 0.01f);
-         break;
+   if (definition && definition->drawInspector) {
+      meshChanged |= definition->drawInspector(*this);
    }
 
    if (meshChanged) {
@@ -622,45 +442,7 @@ void MeshComponent::CreateMesh() {
       return;
    }
 
-   // 編集済み頂点を残さず、選択中パラメーターからGPUバッファまで一括で再構築する。
-   mesh_ = std::make_unique<Mesh>();
-   const Mesh::PlaneOrientation meshOrientation = ToMeshPlaneOrientation(planeOrientation_);
-
-   switch (primitiveType_) {
-      case PrimitiveType::Quad:
-         mesh_->CreateSprite(quadSize_.x, quadSize_.y);
-
-         // Sprite生成後にAnchor/Flipを頂点位置へ反映する必要があるのはQuadだけである。
-         ApplyToMesh();
-         break;
-      case PrimitiveType::Ring:
-         mesh_->CreateRing(ringInnerRadius_, ringOuterRadius_, ringSegments_, meshOrientation);
-         break;
-      case PrimitiveType::Sphere:
-         mesh_->CreateSphere(sphereRadius_, sphereStacks_, sphereSlices_, originY_);
-         break;
-      case PrimitiveType::Box:
-         mesh_->CreateBox(boxSize_.x, boxSize_.y, boxSize_.z, originY_);
-         break;
-      case PrimitiveType::Cylinder:
-         mesh_->CreateCylinder(cylinderTopRadius_, cylinderBottomRadius_, cylinderHeight_, cylinderSegments_, originY_);
-         break;
-      case PrimitiveType::Cone:
-         mesh_->CreateCone(coneRadius_, coneHeight_, coneSegments_, originY_);
-         break;
-      case PrimitiveType::Circle:
-         mesh_->CreateCircle(circleRadius_, circleSegments_, meshOrientation);
-         break;
-      case PrimitiveType::Plane:
-         mesh_->CreatePlane(planeWidth_, planeDepth_, planeWidthSegments_, planeDepthSegments_, meshOrientation);
-         break;
-      case PrimitiveType::Torus:
-         mesh_->CreateTorus(torusMajorRadius_, torusMinorRadius_, torusMajorSegments_, torusMinorSegments_, originY_);
-         break;
-      case PrimitiveType::Triangle:
-         mesh_->CreateTriangle(triangleV0_, triangleV1_, triangleV2_, meshOrientation);
-         break;
-   }
+   mesh_ = PrimitiveMeshFactory::Create(*this);
 }
 
 Mesh* MeshComponent::EnsureMesh() {

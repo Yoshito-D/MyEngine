@@ -700,7 +700,11 @@
                         "lightingMode": 2,
                         "name": "planetMaterial",
                         "ownership": "local",
-                        "parameters": {},
+                        "parameters": {
+                           "triplanarScale": [
+                              1.0
+                           ]
+                        },
                         "pipelineName": "Object3DTriplanar",
                         "rimLightColor": [
                            1.0,
@@ -914,6 +918,9 @@
                               1.0
                            ],
                            "triplanarSampleZ": [
+                              1.0
+                           ],
+                           "triplanarScale": [
                               1.0
                            ]
                         },
@@ -2529,7 +2536,7 @@
                   "fadeOutSeconds": 0.0,
                   "loop": true,
                   "playOnStart": true,
-                  "volume": 0.8059999942779541
+                  "volume": 0.25
                },
                "enabled": true,
                "typeName": "BgmComponent"

@@ -3,6 +3,8 @@
 #include <cstdint>
 #ifdef USE_IMGUI
 
+#include "GameEngine/Editor/EditorAssetCommand.h"
+#include <array>
 #include <cstddef>
 #include <filesystem>
 #include <string>
@@ -67,6 +69,8 @@ private:
    void DrawAssetDialogs(EditorSceneContext& context);
    void AcceptAssetMove(EditorSceneContext& context, const std::string& folder);
    void CheckAssetOperations(EditorSceneContext& context, const std::string& id);
+   EditorAssetCommandContext MakeAssetCommandContext(EditorSceneContext& context) const;
+   const std::string& GetAssetOperationRestriction(EditorAssetOperation operation) const;
    void RequestSceneOpen(const std::string& sceneName, bool reload = false);
    void DrawUnsavedSceneDialog(EditorSceneContext& context);
    void HandlePanelShortcuts(EditorSceneContext& context, bool projectPanel);
@@ -82,30 +86,30 @@ private:
    EditorSceneSession* session_ = nullptr; ///< 表示中シーンの編集セッションへの非所有参照。
    AssetManager* assetManager_ = nullptr;  ///< アセットの読み込みと共有を委譲する管理オブジェクトへの参照。
 
-   bool editorAssetIconView_ = true;                      ///< アセットをアイコン一覧で表示するかどうか。
-   float editorThumbnailSize_ = 64.0f;                    ///< アセット一覧のサムネイル表示サイズ（ピクセル）。
-   float editorFolderPaneWidth_ = 190.0f;                 ///< アセットブラウザーのフォルダーペイン幅（ピクセル）。
-   std::string editorCurrentFolder_;                      ///< アセット一覧で表示しているフォルダー。
-   std::string editorTreeRevealFolder_;                   ///< フォルダーツリーで次に展開・表示する対象。
-   std::string editorSelectedAssetId_;                    ///< アセットブラウザーで選択中の永続アセットID。
-   char editorAssetSearch_[256]{};                        ///< アセット検索の入力文字列バッファ。
-   std::int32_t editorAssetTypeFilter_ = 0;               ///< アセット一覧へ適用する種類フィルターの選択番号。
-   bool editorSearchAllFolders_ = false;                  ///< 現在のフォルダー以外も検索対象に含めるかどうか。
-   bool editorRevealAsset_ = false;                       ///< 選択アセットの位置へ一覧をスクロールする要求。
-   std::string editorAssetQueryKey_;                      ///< 一覧の再検索が必要か判定する検索条件キー。
-   std::vector<std::string> editorVisibleAssets_;         ///< 現在の検索条件に一致する表示対象のアセットID。
-   std::string editorAssetStatus_;                        ///< アセット操作の結果をユーザーへ伝える表示文字列。
-   std::string editorAssetOperation_;                     ///< 確認ダイアログで処理するアセット操作の種類。
-   std::string editorAssetOperationId_;                   ///< 確認待ちのアセット操作の対象ID。
-   std::string editorAssetMoveDestination_;               ///< 移動先として指定したアセットフォルダー。
-   char editorAssetName_[256]{};                          ///< アセットの作成・改名に使う名前入力バッファ。
-   std::string editorAssetCheckKey_;                      ///< 操作可否の検証結果を再利用するための条件キー。
-   std::string editorAssetRenameReason_;                  ///< 改名できない理由または検証結果。
-   std::string editorAssetDuplicateReason_;               ///< 複製できない理由または検証結果。
-   std::string editorAssetDeleteReason_;                  ///< 削除できない理由または検証結果。
-   std::vector<std::string> editorAssetDeleteReferences_; ///< 削除対象のアセットを参照している保存先の一覧。
-   bool editorAssetDeleteReferencesLoaded_ = false;       ///< 削除確認用の参照元一覧を取得済みかどうか。
-   std::int32_t editorSelectedAddComponentIndex_ = 0;     ///< 追加するコンポーネント候補の選択番号。
+   bool editorAssetIconView_ = true;              ///< アセットをアイコン一覧で表示するかどうか。
+   float editorThumbnailSize_ = 64.0f;            ///< アセット一覧のサムネイル表示サイズ（ピクセル）。
+   float editorFolderPaneWidth_ = 190.0f;         ///< アセットブラウザーのフォルダーペイン幅（ピクセル）。
+   std::string editorCurrentFolder_;              ///< アセット一覧で表示しているフォルダー。
+   std::string editorTreeRevealFolder_;           ///< フォルダーツリーで次に展開・表示する対象。
+   std::string editorSelectedAssetId_;            ///< アセットブラウザーで選択中の永続アセットID。
+   char editorAssetSearch_[256]{};                ///< アセット検索の入力文字列バッファ。
+   std::int32_t editorAssetTypeFilter_ = 0;       ///< アセット一覧へ適用する種類フィルターの選択番号。
+   bool editorSearchAllFolders_ = false;          ///< 現在のフォルダー以外も検索対象に含めるかどうか。
+   bool editorRevealAsset_ = false;               ///< 選択アセットの位置へ一覧をスクロールする要求。
+   std::string editorAssetQueryKey_;              ///< 一覧の再検索が必要か判定する検索条件キー。
+   std::vector<std::string> editorVisibleAssets_; ///< 現在の検索条件に一致する表示対象のアセットID。
+   std::string editorAssetStatus_;                ///< アセット操作の結果をユーザーへ伝える表示文字列。
+   EditorAssetOperation editorAssetOperation_ =
+      EditorAssetOperation::None;           ///< 確認ダイアログで処理するアセット操作の種類。
+   std::string editorAssetOperationId_;     ///< 確認待ちのアセット操作の対象ID。
+   std::string editorAssetMoveDestination_; ///< 移動先として指定したアセットフォルダー。
+   char editorAssetName_[256]{};            ///< アセットの作成・改名に使う名前入力バッファ。
+   std::string editorAssetCheckKey_;        ///< 操作可否の検証結果を再利用するための条件キー。
+   std::array<std::string, static_cast<size_t>(EditorAssetOperation::Count)>
+      editorAssetRestrictions_;                                 ///< 操作ごとの実行可否。
+   std::vector<std::string> editorAssetDeleteReferences_;       ///< 削除対象のアセットを参照している保存先の一覧。
+   bool editorAssetDeleteReferencesLoaded_ = false;             ///< 削除確認用の参照元一覧を取得済みかどうか。
+   std::int32_t editorSelectedAddComponentIndex_ = 0;           ///< 追加するコンポーネント候補の選択番号。
    char editorNewSceneName_[kSceneNameBufferSize] = "NewScene"; ///< 新規シーン名の入力バッファ。
    std::vector<std::string> editorSceneNames_;                  ///< シーン選択メニューに表示する登録名の一覧。
    std::string editorSelectedSceneName_;                        ///< シーン一覧で選択中の名前。

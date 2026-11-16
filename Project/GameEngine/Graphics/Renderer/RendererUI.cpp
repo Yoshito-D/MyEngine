@@ -95,7 +95,7 @@ void Renderer::DrawManagedUI() {
             text->GetVisibleGlyphCount(), Window::kUiReferenceWidth, Window::kUiReferenceHeight, uiViewportSize_.x,
             uiViewportSize_.y, &item.matrix);
          for (const auto& command : commands) {
-            SubmitDrawCommand(DrawCommand::CreateText(command, RenderPass::Overlay));
+            SubmitDrawCommand(DrawCommand(RenderPass::Overlay, command));
          }
          continue;
       }
@@ -149,7 +149,7 @@ void Renderer::DrawManagedUI() {
       const auto queue = [&](Vector2 size, Vector4 tint) {
          const auto command = textRenderer_->QueueQuad(
             size, item.matrix, uvMin, uvMax, tint, texture->GetTextureSrvHandleGPU(), uiViewportSize_, uvTransform);
-         SubmitDrawCommand(DrawCommand::CreateText(command, RenderPass::Overlay));
+         SubmitDrawCommand(DrawCommand(RenderPass::Overlay, command));
       };
       queue(item.size, color);
       // 操作部品の値表示は専用の描画色だけを変更し、保存値や共有マテリアルへ書き戻さない。

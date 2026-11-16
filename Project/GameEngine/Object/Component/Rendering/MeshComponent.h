@@ -11,6 +11,7 @@
 namespace GameEngine {
 class Mesh;
 class Texture;
+class PrimitiveMeshFactory;
 
 /// @brief モデルファイルまたはエンジン標準プリミティブを選択してメッシュを供給するコンポーネント
 class MeshComponent final : public IObjectComponent {
@@ -186,6 +187,8 @@ public:
    void ApplyTextureCoordinates(Texture* texture, const Vector2& leftTop, const Vector2& size);
 
 private:
+   friend class PrimitiveMeshFactory;
+
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
    SourceType sourceType_ = SourceType::ModelFile;            ///< メッシュデータの入力元。

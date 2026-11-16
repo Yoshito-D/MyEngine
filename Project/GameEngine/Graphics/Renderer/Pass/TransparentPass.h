@@ -1,14 +1,11 @@
 #pragma once
 
 #include "GameEngine/Graphics/Renderer/Pass/IRenderPass.h"
-#include "GameEngine/Graphics/Renderer/DrawCommand.h"
-#include <vector>
-#include <memory>
 
 namespace GameEngine {
 
 /// @brief 半透明オブジェクト描画パス
-/// カメラ距離でソートしてから transparentCommands を実行する。
+/// カメラ距離でソートしてから半透明キューを実行する。
 class TransparentPass final : public IRenderPass {
 public:
    /// @brief 透過描画コマンドをカメラ距離などで並べ替え、シーン色・深度を保存してから描画する。
@@ -23,10 +20,6 @@ public:
    /// @brief レンダラーが実行順を分類するためのパス種別を返す。
    /// @return 半透明描画を表すTransparent。
    RenderPassType GetPassType() const override { return RenderPassType::Transparent; }
-
-private:
-   /// @brief カメラ距離でコマンドをソート（遠い順）
-   void Sort(std::vector<std::unique_ptr<IDrawCommand>>& commands) const;
 };
 
 } // namespace GameEngine
