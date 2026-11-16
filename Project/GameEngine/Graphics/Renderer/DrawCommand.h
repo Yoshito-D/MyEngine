@@ -2,230 +2,120 @@
 
 #include <cstdint>
 #include <d3d12.h>
-#include <vector>
 #include <functional>
 #include <optional>
-#include <memory>
+#include <variant>
+#include <vector>
 #include "GameEngine/Graphics/Pipeline/PipelineState.h"
 #include "GameEngine/Object/Sprite/Sprite.h"
-#include "GameEngine/Window/Window.h"
-
-// 前方宣言
-struct ID3D12GraphicsCommandList;
 
 namespace GameEngine {
 class Model;
-class Sprite;
 class ParticleSystem;
 class Texture;
 class Camera;
+class RenderQueue;
 
-/// @brief 描画コマンドの種類
-enum class DrawCommandType {
-   Model,
-   Sprite,
-   Text,
+/// @brief コマンドを実行する描画段階。Countはキューの配列サイズに使用する。
+enum class RenderPass : std::uint32_t {
+   Opaque,      ///< 不透明オブジェクト（ポストプロセス前）。
+   Transparent, ///< 半透明オブジェクト（ポストプロセス前）。
+   PostProcess, ///< ポストプロセス後。
+   Overlay,     ///< 背景の画面効果も適用した後の共通UI。
+   Count
+};
+
+/// @brief 距離が同じ、または距離を持たない描画の優先度。大きい値を先に描画する。
+enum class DrawSortPriority : std::int32_t {
+   Line = 1,
    Particle,
-   Line,
-   Shape
+   SpriteAndText,
+   Model
 };
 
-/// @brief 描画パスの種類
-enum class RenderPass {
-   Opaque,      // 不透明オブジェクト（ポストプロセス前）
-   Transparent, // 半透明オブジェクト（ポストプロセス前）
-   PostProcess, // ポストプロセス後
-   Overlay,     // 背景の画面効果も適用した後の共通UI
-};
-
-/// @brief モデル描画用データ
+/// @brief 一つのサブメッシュの描画データ。参照先はフレームの描画完了まで生存させる。
 struct ModelDrawData {
-   Model* model;                    ///< 描画するModelへの非所有参照。
-   std::optional<size_t> meshIndex; ///< 選択されたサブメッシュ。未設定のコマンドはキュー投入前に分割する。
-   std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textures;            ///< 名前やスロットに対応するテクスチャの一覧。
-   D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandle = {}; // 環境テクスチャSRV (ptr==0なら無効)
-   Camera* camera;                                               // 描画時のカメラを保存
-   BlendMode blendMode;                                          // ブレンドモード
+   Model* model = nullptr;                                    ///< 描画対象への非所有参照。
+   size_t meshIndex = 0;                                      ///< 生成器で分割済みのサブメッシュ番号。
+   std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textures;         ///< メッシュ順に対応するSRVハンドルの所有配列。
+   D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandle{}; ///< 環境テクスチャSRV。ptrが0なら未指定。
+   Camera* camera = nullptr;                                  ///< 描画時のカメラへの非所有参照。
+   BlendMode blendMode = BlendMode::kBlendModeNormal;         ///< スロットとパイプラインの設定から解決済みのブレンド。
 };
 
-/// @brief スプライト描画用データ
+/// @brief ワールド空間スプライトの描画データ。
 struct SpriteDrawData {
-   Sprite* sprite;                               ///< 描画対象スプライトへの非所有参照。
-   Texture* texture;                             ///< 描画に使用するテクスチャへの非所有参照。
-   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle; ///< 描画時に参照するテクスチャSRVのGPUハンドル。
-   Camera* camera;                               // 描画時のカメラを保存
-   BlendMode blendMode;                          // ブレンドモード
+   Sprite* sprite = nullptr;                          ///< 描画対象への非所有参照。
+   Texture* texture = nullptr;                        ///< 描画するテクスチャへの非所有参照。
+   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle{};    ///< 登録時点で確定したSRVハンドル。
+   Camera* camera = nullptr;                          ///< 描画時のカメラへの非所有参照。
+   BlendMode blendMode = BlendMode::kBlendModeNormal; ///< マテリアルと引数から解決したブレンド。
 };
 
-/// @brief UI用スプライト描画用データ
+/// @brief 座標変換を登録時に済ませたUIスプライトの描画データ。
 struct UISpriteDrawData {
-   Sprite* sprite;                               ///< 描画対象スプライトへの非所有参照。
-   Texture* texture;                             ///< 描画に使用するテクスチャへの非所有参照。
-   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle; ///< 描画時に参照するテクスチャSRVのGPUハンドル。
-   Sprite::AnchorPoint anchorPoint;              ///< 画面上のアンカー。
-   uint32_t screenWidth;                         ///< UI配置の基準となる画面幅（ピクセル）。
-   uint32_t screenHeight;                        ///< UI配置の基準となる画面高（ピクセル）。
-   BlendMode blendMode;                          // ブレンドモード
+   Sprite* sprite = nullptr;                          ///< 描画対象への非所有参照。
+   Texture* texture = nullptr;                        ///< 描画するテクスチャへの非所有参照。
+   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle{};    ///< 登録時点で確定したSRVハンドル。
+   BlendMode blendMode = BlendMode::kBlendModeNormal; ///< 描画時のブレンド方式。
 };
 
-/// @brief UIテキスト描画用データ
+/// @brief フォントまたは共通UIの共有ジオメトリを描画する範囲。
 struct TextDrawData {
-   D3D12_GPU_DESCRIPTOR_HANDLE atlasSrv = {}; ///< フォントアトラスをシェーダーから読むSRVのGPUハンドル。
-   uint32_t indexCount = 0;                   ///< 描画に使用する頂点参照番号の数。
-   uint32_t startIndex = 0;                   ///< 共有インデックスバッファ内の描画開始位置。
-   int32_t baseVertex = 0;                    ///< インデックス値へ加える頂点の基準オフセット。
-   int32_t sortingOrder = 0;                  ///< UI要素を前後に並べる描画順。
+   D3D12_GPU_DESCRIPTOR_HANDLE atlasSrv{}; ///< フォントアトラスなどのSRVハンドル。
+   std::uint32_t indexCount = 0;           ///< 描画に使用する頂点参照番号の数。
+   std::uint32_t startIndex = 0;           ///< 共有インデックスバッファ内の開始位置。
+   std::int32_t baseVertex = 0;            ///< 頂点の基準オフセット。
+   std::int32_t sortingOrder = 0;          ///< UI要素を前後に並べる描画順。
 };
 
-/// @brief パーティクル描画用データ
+/// @brief 粒子のGPU更新と描画に使うデータ。
 struct ParticleDrawData {
-   ParticleSystem* particleSystem; ///< 描画・更新するParticleSystemへの参照。
-   Camera* camera;                 // 描画時のカメラを保存
+   ParticleSystem* particleSystem = nullptr; ///< 更新と描画の対象への非所有参照。
+   Camera* camera = nullptr;                 ///< 描画時のカメラへの非所有参照。
 };
 
-/// @brief ライン描画用データ
+/// @brief 線の描画関数と、登録時点で確定した視点。
 struct LineDrawData {
-   std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc; // ViewProjection行列を受け取る
-   Camera* camera;                                                             // 描画時のカメラを保存
-   Matrix4x4 viewProjectionMatrix;      // 描画時のカメラのビュープロジェクション行列
-   std::optional<Vector3> sortPosition; // 透過ソート用の位置ヒント
+   std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc; ///< 行列を受け取る描画関数。
+   Camera* camera = nullptr;                                                   ///< ソートに使うカメラへの非所有参照。
+   Matrix4x4 viewProjectionMatrix{};    ///< 登録時のViewProjection行列のスナップショット。
+   std::optional<Vector3> sortPosition; ///< 透明ソート用の代表位置（m）。
 };
 
-/// @brief 描画コマンド
-struct DrawCommand {
-   DrawCommandType type;    ///< 処理対象の種類を区別する識別値。
-   BlendMode blendMode;     ///< 優先ブレンドモード（nullopt = 加算）。
-   RenderPass renderPass;   ///< このコマンドを実行する描画パス。
-   bool isUISprite = false; // UIスプライトかどうかを識別するフラグ
+/// @brief 一つのコマンドが保持する型付きデータ。種別タグと実データの不一致を防ぐ。
+using DrawPayload =
+   std::variant<ModelDrawData, SpriteDrawData, UISpriteDrawData, TextDrawData, ParticleDrawData, LineDrawData>;
 
-   // 各種データ（該当するものだけ使用）
-   ModelDrawData modelData;       ///< 読み込み済みのメッシュ・マテリアル・スキニング情報。
-   SpriteDrawData spriteData;     ///< ワールド空間スプライトの描画情報。
-   UISpriteDrawData uiSpriteData; ///< 画面上のUIスプライトの描画情報。
-   TextDrawData textData;         ///< 共有テキストバッファの描画範囲とアトラス情報。
-   ParticleDrawData particleData; ///< 粒子描画の対象システムとカメラ情報。
-   LineDrawData lineData;         ///< ライン描画処理とソート位置・カメラ情報。
-
-   /// @brief 後からファクトリ関数と同じ形式で値を設定できる空コマンドを生成する
-   DrawCommand() = default;
-
-   /// @brief モデル描画コマンドを作成
-   /// @param model 描画するモデル
-   /// @param textures モデルに使用するテクスチャのSRVハンドルリスト
-   /// @param camera 描画時のカメラ
-   /// @param blendMode ブレンドモード
-   /// @param renderPass 描画パス
-   static DrawCommand CreateModel(Model* model, const std::vector<D3D12_GPU_DESCRIPTOR_HANDLE>& textures,
-      Camera* camera, BlendMode blendMode, RenderPass renderPass);
-
-   /// @brief スプライト描画コマンドを作成
-   /// @param sprite 描画するスプライト
-   /// @param texture スプライトに使用するテクスチャ
-   /// @param textureSrvHandle スプライトに使用するテクスチャのSRVハンドル
-   /// @param camera 描画時のカメラ
-   /// @param blendMode ブレンドモード
-   /// @param renderPass 描画パス
-   static DrawCommand CreateSprite(Sprite* sprite, Texture* texture, D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle,
-      Camera* camera, BlendMode blendMode, RenderPass renderPass);
-
-   /// @brief UI用スプライト描画コマンドを作成
-   /// @param sprite 描画するスプライト
-   /// @param texture スプライトに使用するテクスチャ
-   /// @param textureSrvHandle スプライトに使用するテクスチャのSRVハンドル
-   /// @param anchorPoint アンカーポイント
-   /// @param screenWidth 画面幅
-   /// @param screenHeight 画面高さ
-   /// @param blendMode ブレンドモード
-   /// @param renderPass 描画パス
-   static DrawCommand CreateUISprite(Sprite* sprite, Texture* texture, D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle,
-      Sprite::AnchorPoint anchorPoint, uint32_t screenWidth, uint32_t screenHeight, BlendMode blendMode,
-      RenderPass renderPass);
-
-   /// @brief UIテキスト描画コマンドを作成
-   /// @param textData 共有テキストバッファ上の描画範囲
-   /// @param renderPass 描画パス
-   static DrawCommand CreateText(const TextDrawData& textData, RenderPass renderPass);
-
-   /// @brief パーティクル描画コマンドを作成
-   /// @param particleSystem 描画するパーティクルシステム
-   /// @param camera 描画時のカメラ
-   /// @param blendMode ブレンドモード
-   /// @param renderPass 描画パス
-   static DrawCommand CreateParticle(
-      ParticleSystem* particleSystem, Camera* camera, BlendMode blendMode, RenderPass renderPass);
-
-   /// @brief ライン描画コマンドを作成
-   /// @param drawFunc ラインを描画する関数（ID3D12GraphicsCommandList*とViewProjection行列を引数に取る）
-   /// @param camera 描画時のカメラ
-   /// @param sortPosition 透過ソート用の位置ヒント
-   /// @param renderPass 描画パス
-   static DrawCommand CreateLine(std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc,
-      Camera* camera, RenderPass renderPass, std::optional<Vector3> sortPosition = std::nullopt);
+/// @brief コマンドの型に依存せず比較できる透明ソート情報。
+struct DrawSortData {
+   std::optional<Vector3> position;                    ///< 距離ソートに使う位置（m）。画面空間UIなどは未指定。
+   Camera* camera = nullptr;                           ///< 距離を計算するカメラへの非所有参照。
+   DrawSortPriority priority = DrawSortPriority::Line; ///< 距離情報がないか距離が等しい場合の描画優先度。
 };
 
-// ============================================================
-// IDrawCommand — 型消去ベースの描画コマンドインターフェース
-// DrawCommand の内部データを直接持ちながら、
-// Renderer の Execute/Sort ロジックに必要な情報を仮想関数で公開する。
-// ============================================================
-
-/// @brief 型消去ベース描画コマンドインターフェース
-class IDrawCommand {
+/// @brief キューが値として所有する一回分の描画要求。GPU実行はVisitorへ委譲する。
+class DrawCommand {
 public:
-   /// @brief 派生コマンドを基底ポインター経由で安全に破棄する
-   virtual ~IDrawCommand() = default;
+   /// @brief 実行段階と型付きデータを所有し、ソート情報を初期化する。
+   /// @param renderPass コマンドの実行段階。
+   /// @param payload フレーム終了まで有効な参照と、コマンド自身が保持する描画データ。
+   DrawCommand(RenderPass renderPass, DrawPayload payload);
 
-   /// @brief 描画パスを取得
-   virtual RenderPass GetRenderPass() const = 0;
+   /// @brief このコマンドを実行する描画段階を返す。
+   RenderPass GetRenderPass() const { return renderPass_; }
 
-   /// @brief ブレンドモードを取得
-   virtual BlendMode GetBlendMode() const = 0;
+   /// @brief Visitorへ渡す型付きデータを取得する。
+   const DrawPayload& GetPayload() const { return payload_; }
 
-   /// @brief 描画種別のソート優先度を取得（大きいほど先に描画）
-   virtual std::int32_t GetTypePriority() const = 0;
-
-   /// @brief 透過ソート用のワールド座標を取得（取得不可の場合 nullopt）
-   virtual std::optional<Vector3> GetSortPosition() const = 0;
-
-   /// @brief 描画時に使用するカメラを取得（取得不可の場合 nullptr）
-   virtual Camera* GetCamera() const = 0;
-
-   /// @brief 描画コマンドを DrawCommand 形式で取得（Renderer の Execute に渡すため）
-   virtual const DrawCommand& GetDrawCommand() const = 0;
-};
-
-/// @brief DrawCommand をラップする IDrawCommand の標準実装
-class DrawCommandWrapper final : public IDrawCommand {
-public:
-   /// @brief 値型の描画コマンドを型消去インターフェースで所有する
-   explicit DrawCommandWrapper(DrawCommand cmd) : cmd_(std::move(cmd)) {}
-
-   /// @brief 所有する描画コマンドの実行先パスを返す。
-   /// @return 不透明・半透明・ポストプロセス後のいずれかの描画パス。
-   RenderPass GetRenderPass() const override { return cmd_.renderPass; }
-
-   /// @brief 所有する描画コマンドに設定されたブレンド方式を返す。
-   /// @return 描画時に適用するブレンドモード。
-   BlendMode GetBlendMode() const override { return cmd_.blendMode; }
-
-   /// @brief 距離情報がない、または距離が同じ描画コマンドの種別優先度を返す。
-   /// @return 描画種別に応じた整数。値が大きいコマンドを先に描画する。
-   std::int32_t GetTypePriority() const override;
-
-   /// @brief 描画対象の種別から透過ソートに使う位置を取得する。
-   /// @return モデル・ワールドスプライト・ラインから得られる位置。取得できない場合はnullopt。
-   std::optional<Vector3> GetSortPosition() const override;
-
-   /// @brief 描画コマンドが保持する描画用カメラの非所有参照を取得する。
-   /// @return モデル・ワールドスプライト・粒子・ラインのカメラ。UI要素や対象外の種別はnullptr。
-   Camera* GetCamera() const override;
-
-   /// @brief レンダラーのコマンド実行へ渡す、所有中の描画データを参照する。
-   /// @return このラッパーが存続する間有効な描画コマンドへの読み取り専用参照。
-   const DrawCommand& GetDrawCommand() const override { return cmd_; }
+   /// @brief 登録時または直近のソート直前に確定した比較情報を返す。
+   const DrawSortData& GetSortData() const { return sortData_; }
 
 private:
-   DrawCommand cmd_; ///< 所有する値型の描画コマンド。
+   friend class RenderQueue;
+   void RefreshSortData();
+   RenderPass renderPass_; ///< コマンドが所属する描画段階。
+   DrawPayload payload_;   ///< 実行時に使用する唯一の具象データ。
+   DrawSortData sortData_; ///< ソート処理が共通に参照する比較情報。
 };
-
 } // namespace GameEngine

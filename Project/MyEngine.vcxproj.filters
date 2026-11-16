@@ -263,6 +263,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GameEngine\Graphics\Renderer\RenderQueue.cpp">
+      <Filter>GameEngine\Graphics\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Graphics\Renderer\DrawCommandFactory.cpp">
+      <Filter>GameEngine\Graphics\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Graphics\Resources\PrimitiveMeshFactory.cpp">
+      <Filter>GameEngine\Graphics\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEngine\Editor\EditorAssetCommand.cpp">
+      <Filter>GameEngine\Editor</Filter>
+    </ClCompile>
     <ClCompile Include="GameProject\App\Component\UI\MenuNavigation.cpp">
       <Filter>GameProject\App\Component\UI</Filter>
     </ClCompile>
@@ -605,7 +617,7 @@
     <ClCompile Include="GameEngine\Graphics\Renderer\Light\LightManager.cpp">
       <Filter>GameEngine\Graphics\Renderer\Light</Filter>
     </ClCompile>
-    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\CommandDispatch.cpp">
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\DrawCommandExecutor.cpp">
       <Filter>GameEngine\Graphics\Renderer\Pass</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\LineRenderer.cpp">
@@ -1049,6 +1061,18 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameEngine\Graphics\Renderer\RenderQueue.h">
+      <Filter>GameEngine\Graphics\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Graphics\Renderer\DrawCommandFactory.h">
+      <Filter>GameEngine\Graphics\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Graphics\Resources\PrimitiveMeshFactory.h">
+      <Filter>GameEngine\Graphics\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Editor\EditorAssetCommand.h">
+      <Filter>GameEngine\Editor</Filter>
+    </ClInclude>
     <ClInclude Include="GameProject\App\Component\UI\MenuNavigation.h">
       <Filter>GameProject\App\Component\UI</Filter>
     </ClInclude>
@@ -1409,7 +1433,7 @@
     <ClInclude Include="GameEngine\Graphics\Renderer\Light\LightManager.h">
       <Filter>GameEngine\Graphics\Renderer\Light</Filter>
     </ClInclude>
-    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\CommandDispatch.h">
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\DrawCommandExecutor.h">
       <Filter>GameEngine\Graphics\Renderer\Pass</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\FrameContext.h">

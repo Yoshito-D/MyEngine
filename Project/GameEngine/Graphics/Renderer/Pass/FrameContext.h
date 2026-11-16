@@ -1,9 +1,7 @@
 #pragma once
 
-#include "GameEngine/Graphics/Renderer/DrawCommand.h"
+#include "GameEngine/Graphics/Renderer/RenderQueue.h"
 #include "GameEngine/Graphics/Pipeline/PSOManager.h"
-#include <vector>
-#include <memory>
 #include <functional>
 #include <string>
 
@@ -40,10 +38,8 @@ struct FrameContext {
    UIRenderer* uiRenderer = nullptr;             ///< 画面上のUIスプライトを描画するレンダラー。
    TextRenderer* textRenderer = nullptr;         ///< 文字のジオメトリ生成と描画を行うレンダラー。
 
-   // ----- コマンドキュー（レンダーパス別）-----
-   std::vector<std::unique_ptr<IDrawCommand>>* opaqueCommands = nullptr;      ///< 不透明オブジェクト。
-   std::vector<std::unique_ptr<IDrawCommand>>* transparentCommands = nullptr; ///< 半透明オブジェクト。
-   std::vector<std::unique_ptr<IDrawCommand>>* postProcessCommands = nullptr; ///< ポストプロセス後の描画。
+   // ----- フレーム単位のコマンド所有先 -----
+   RenderQueue* renderQueue = nullptr; ///< 各パスが参照する共通キュー。実行中に追加・削除しない。
 
    // ----- パイプライン設定関数（Renderer::SetPipeline を経由させる）-----
    /// @brief 指定した名前とブレンド方式のPSOを設定する処理。

@@ -120,7 +120,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData, Material* defaultM
       cmdList->SetPipelineState(skinningComputePipeline->pipelineState.Get());
 
       for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
-         if (modelData.meshIndex && *modelData.meshIndex != i) {
+         if (modelData.meshIndex != i) {
             continue;
          }
 
@@ -275,7 +275,7 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData, Material* defaultM
 
    // スロットは既存のサブメッシュ順を維持し、未設定スロットはスロット0を継承する。
    for (size_t i = 0; modelMeshes && i < modelMeshes->size(); ++i) {
-      if (modelData.meshIndex && *modelData.meshIndex != i) {
+      if (modelData.meshIndex != i) {
          continue;
       }
 

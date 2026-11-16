@@ -1,7 +1,7 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Graphics/Renderer/Pass/PostEffectPass.h"
 #include "GameEngine/Graphics/Renderer/Pass/FrameContext.h"
-#include "GameEngine/Graphics/Renderer/Pass/CommandDispatch.h"
+#include "GameEngine/Graphics/Renderer/Pass/DrawCommandExecutor.h"
 #include "GameEngine/Graphics/Device/OffscreenRenderTarget.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Graphics/PostProcess/PostProcessManager.h"
@@ -37,13 +37,14 @@ void PostEffectPass::Execute(FrameContext& ctx) {
    // エフェクト済みの色を消さずにUI等を重ねる。直前の色・深度コピーは、
    // この区間の屈折パーティクルが自己参照しないための入力となる。
    // --- 2. ポストプロセス後コマンド（UI など）を実行 ---
-   if (ctx.postProcessCommands && !ctx.postProcessCommands->empty()) {
+   const auto commands =
+      ctx.renderQueue ? ctx.renderQueue->GetCommands(RenderPass::PostProcess) : std::span<const DrawCommand>{};
+
+   if (!commands.empty()) {
       offscreenRT_->CaptureSceneTextures();
       offscreenRT_->PreDrawWithoutClear(true);
 
-      for (const auto& icmd : *ctx.postProcessCommands) {
-         DispatchDrawCommand(icmd->GetDrawCommand(), ctx);
-      }
+      DrawCommandExecutor::Execute(commands, ctx);
 
       offscreenRT_->PostDraw();
    }

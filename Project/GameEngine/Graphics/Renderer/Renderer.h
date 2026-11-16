@@ -16,7 +16,7 @@
 #include "GameEngine/Graphics/Pipeline/PSOManager.h"
 #include "GameEngine/Scene/Camera/CameraManager.h"
 #include "GameEngine/Graphics/Renderer/Light/LightManager.h"
-#include "GameEngine/Graphics/Renderer/DrawCommand.h"
+#include "GameEngine/Graphics/Renderer/RenderQueue.h"
 #include "GameEngine/Graphics/Renderer/Pass/ModelRenderer.h"
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Graphics/Renderer/Pass/SpriteRenderer.h"
@@ -44,6 +44,7 @@ namespace GameEngine {
 class Input;
 class InputActionService;
 struct UIInputFrame;
+struct DrawSubmissionContext;
 class GraphicsDevice;
 class Model;
 class Object;
@@ -266,8 +267,8 @@ public:
       const Vector4& boneColor = Vector4(0.2f, 1.0f, 1.0f, 1.0f), bool applyPostProcess = false);
 
    /// @brief 外部システムから描画コマンドを投入する
-   /// @param command 描画コマンド
-   void SubmitDrawCommand(const DrawCommand& command);
+   /// @param command サブメッシュ分割済みの型付きコマンド。配列などの所有権をキューへ移す。
+   void SubmitDrawCommand(DrawCommand command);
 
    /// @brief スカイボックスを描画する（BeginFrame/EndFrameの間で呼ぶ）
    /// @param skybox スカイボックス
@@ -383,10 +384,7 @@ private:
       static_cast<float>(Window::kUiReferenceWidth), static_cast<float>(Window::kUiReferenceHeight)};
 
    // 描画コマンドリスト（レンダーパス別）
-   std::vector<std::unique_ptr<IDrawCommand>> opaqueCommands_;      // 不透明オブジェクト
-   std::vector<std::unique_ptr<IDrawCommand>> transparentCommands_; // 半透明オブジェクト
-   std::vector<std::unique_ptr<IDrawCommand>> postProcessCommands_; // ポストプロセス後の描画
-   std::vector<std::unique_ptr<IDrawCommand>> overlayCommands_;     // 背景ぼかし後に重ねる共通UI
+   RenderQueue renderQueue_; ///< フレーム内コマンドを描画段階ごとに所有するキュー。
 
    BlendMode currentBlendMode_ = BlendMode::kBlendModeNormal; ///< 現在のブレンドモード。
    std::string currentPipelineName_; ///< 現在のコマンドリストへ設定済みと記録したパイプライン名。
@@ -464,17 +462,7 @@ private:
    void DrawModelWithCamera(
       Model* model, Texture* texture, Camera* camera, std::optional<BlendMode> blendMode, bool applyPostProcess);
 
-   /// @brief 描画コマンドを実行する
-   /// @param commands 実行する描画コマンドリスト
-   void ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawCommand>>& commands);
-
-   /// @brief 描画パスに応じてコマンドを振り分ける
-   /// @param command 振り分ける描画コマンド
-   void RouteDrawCommand(const DrawCommand& command);
-
-   /// @brief ラインの内部描画処理
-   /// @param lineData ライン描画データ
-   void DrawLineInternal(const LineDrawData& lineData);
+   DrawSubmissionContext MakeDrawSubmissionContext();
 
    /// @brief フルスクリーントライアングルでテクスチャを画面に描画
    /// @param textureSrvHandle 描画するテクスチャのSRVハンドル
@@ -508,8 +496,5 @@ private:
 
    /// CSなどによる外部PSO変更後に、次のグラフィックスPSO設定を強制する。
    void InvalidatePipelineBinding();
-
-   /// @brief ブレンドモードとポストプロセス指定から描画パスを決定
-   RenderPass DetermineRenderPass(BlendMode blendMode, bool applyPostProcess) const;
 };
 }

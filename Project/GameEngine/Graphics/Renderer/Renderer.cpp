@@ -7,6 +7,9 @@
 #include <cstdint>
 #include <stdexcept>
 #include "GameEngine/Graphics/Renderer/Renderer.h"
+#include "GameEngine/Graphics/Renderer/DrawCommandFactory.h"
+#include "GameEngine/Graphics/Renderer/Pass/DrawCommandExecutor.h"
+#include <utility>
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Scene/Camera/Camera.h"
@@ -209,8 +212,8 @@ void Renderer::BuildDefaultPasses() {
    AddPass(std::make_unique<TransparentPass>());
    AddPass(std::make_unique<PostEffectPass>(offscreenRenderTarget_.get()));
 
-   // パス間で共有する依存先とコマンド配列のアドレスを一度だけ束縛する。
-   // vectorの中身はBeginFrameで消えるがvector自体のアドレスは変わらない。
+   // パス間で共有する依存先とコマンド所有先を一度だけ接続する。
+   // キューの要素はBeginFrameで消えるが、RenderQueue自体のアドレスは変わらない。
    frameCtx_.device = device_;
    frameCtx_.psoManager = psoManager_.get();
    frameCtx_.lightManager = lightManager_;
@@ -222,9 +225,7 @@ void Renderer::BuildDefaultPasses() {
    frameCtx_.particleRenderer = particleRenderer_.get();
    frameCtx_.uiRenderer = uiRenderer_.get();
    frameCtx_.textRenderer = textRenderer_.get();
-   frameCtx_.opaqueCommands = &opaqueCommands_;
-   frameCtx_.transparentCommands = &transparentCommands_;
-   frameCtx_.postProcessCommands = &postProcessCommands_;
+   frameCtx_.renderQueue = &renderQueue_;
    frameCtx_.setPipelineFunc = [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); };
    frameCtx_.invalidatePipelineBindingFunc = [this]() { InvalidatePipelineBinding(); };
 }
@@ -260,10 +261,7 @@ void Renderer::BeginFrame() {
 
    // 各パスのキューはフレーム単位。テキストだけは全コマンド確定後に一括アップロードするため、
    // CPU側の頂点・インデックス蓄積もここで開始する。
-   opaqueCommands_.clear();
-   transparentCommands_.clear();
-   postProcessCommands_.clear();
-   overlayCommands_.clear();
+   renderQueue_.Clear();
    textRenderer_->BeginFrame();
 
 #ifdef USE_IMGUI
@@ -301,185 +299,57 @@ void Renderer::BeginFrame() {
    postProcessLineRenderer_->Begin();
 }
 
+DrawSubmissionContext Renderer::MakeDrawSubmissionContext() {
+   return {renderQueue_, currentBlendMode_, activeEnvironmentTextureSrvHandle_};
+}
+
 void Renderer::Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
-   Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
-   assert(activeCamera != nullptr);
-   DrawModelWithCamera(model, texture, activeCamera, blendMode, applyPostProcess);
+   Camera* camera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
+   DrawModelWithCamera(model, texture, camera, blendMode, applyPostProcess);
 }
 
 void Renderer::DrawModelWithCamera(
    Model* model, Texture* texture, Camera* camera, std::optional<BlendMode> blendMode, bool applyPostProcess) {
-   assert(model != nullptr);
-   assert(texture != nullptr);
-   assert(camera != nullptr);
+   if (!model || !texture || !camera || !psoManager_) return;
 
-   auto* meshComponent = model->GetComponent<MeshComponent>();
-
-   if (!meshComponent ||
-       (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile && !meshComponent->GetModelAsset()) ||
-       (meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive && !meshComponent->EnsureMesh())) {
-      return;
-   }
-
-   std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> handles = {texture->GetTextureSrvHandleGPU()};
-
-   // 行列を更新
-   model->UpdateMatrix(camera);
-
-   // スロットごとのブレンド上書きは、コマンドを描画単位へ分割する際に解決する。
-   const BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-
-   // 描画パスの決定
-   RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
-
-   DrawCommand cmd = DrawCommand::CreateModel(model, handles, camera, effectiveBlendMode, renderPass);
-   cmd.modelData.environmentTextureSrvHandle = activeEnvironmentTextureSrvHandle_;
-   SubmitDrawCommand(cmd);
+   Texture* textures[] = {texture};
+   ModelCommandFactory::Submit(
+      {*model, textures, *camera, blendMode, applyPostProcess}, MakeDrawSubmissionContext(), *psoManager_);
 }
 
 void Renderer::Draw(
    Model* model, const std::vector<Texture*>& textures, std::optional<BlendMode> blendMode, bool applyPostProcess) {
-   Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
-   assert(activeCamera != nullptr);
-   assert(model != nullptr);
-   assert(!textures.empty());
+   Camera* camera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
 
-   auto* meshComponent = model->GetComponent<MeshComponent>();
+   if (!model || !camera || !psoManager_) return;
 
-   if (!meshComponent ||
-       (meshComponent->GetSourceType() == MeshComponent::SourceType::ModelFile && !meshComponent->GetModelAsset()) ||
-       (meshComponent->GetSourceType() == MeshComponent::SourceType::Primitive && !meshComponent->EnsureMesh())) {
-      return;
-   }
-
-   // DrawCommandが実行時にTextureオブジェクトへ再アクセスしないよう、登録時点で
-   // メッシュ順にGPU SRVハンドルへ変換して値として保持する。
-   std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textureSrvHandles;
-   textureSrvHandles.reserve(textures.size());
-
-   for (const auto& texture : textures) {
-      assert(texture != nullptr);
-      textureSrvHandles.push_back(texture->GetTextureSrvHandleGPU());
-   }
-
-   // 行列を更新
-   model->UpdateMatrix(activeCamera);
-
-   const BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-
-   // 描画パスの決定
-   RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
-
-   DrawCommand cmd = DrawCommand::CreateModel(model, textureSrvHandles, activeCamera, effectiveBlendMode, renderPass);
-   cmd.modelData.environmentTextureSrvHandle = activeEnvironmentTextureSrvHandle_;
-   SubmitDrawCommand(cmd);
+   ModelCommandFactory::Submit({*model, std::span<Texture* const>(textures), *camera, blendMode, applyPostProcess},
+      MakeDrawSubmissionContext(), *psoManager_);
 }
 
 void Renderer::Draw(Sprite* sprite, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
-   Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
-   assert(activeCamera != nullptr);
-   assert(sprite != nullptr);
-   assert(texture != nullptr);
+   Camera* camera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
 
-   sprite->Update(activeCamera, texture);
+   if (!sprite || !texture || !camera) return;
 
-   // MaterialComponent のブレンドモード優先解決
-   BlendMode effectiveBlendMode = currentBlendMode_;
-
-   if (const auto* mc = sprite->GetComponent<MaterialComponent>()) {
-      if (mc->GetMaterial()) {
-         if (const auto matBlend = mc->GetMaterial()->GetBlendMode()) {
-            effectiveBlendMode = *matBlend;
-         } else {
-            effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-         }
-      } else {
-         effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-      }
-   } else {
-      effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-   }
-
-   // 描画パスの決定
-   RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
-
-   DrawCommand cmd = DrawCommand::CreateSprite(
-      sprite, texture, texture->GetTextureSrvHandleGPU(), activeCamera, effectiveBlendMode, renderPass);
-   SubmitDrawCommand(cmd);
+   SpriteCommandFactory::Submit({*sprite, *texture, *camera, blendMode, applyPostProcess}, MakeDrawSubmissionContext());
 }
 
 void Renderer::Draw(ParticleSystem* particleSystem) {
-   Camera* activeCamera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
-   assert(activeCamera != nullptr);
-   assert(particleSystem != nullptr);
+   Camera* camera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
 
-   // CPU粒子が尽きた直後も、前フレームのGPU粒子をFreeListへ戻すため最後のCompute更新が必要。
-   const uint32_t activeCount = particleSystem->GetActiveParticleCount();
-   const bool needsGpuCleanup = activeCount == 0 && particleSystem->GetDrawParticleCount() > 0;
+   if (!particleSystem || !camera) return;
 
-   if (activeCount == 0 && !needsGpuCleanup) return;
-
-   particleSystem->UpdateMatrix(activeCamera);
-
-   // パーティクルマテリアルのブレンドモード優先解決（デフォルトは加算）
-   BlendMode blendMode = BlendMode::kBlendModeAdd;
-
-   if (const auto* pm = particleSystem->GetMaterial()) {
-      if (const auto matBlend = pm->GetBlendMode()) {
-         blendMode = *matBlend;
-      }
-   }
-
-   const auto* particleMaterial = particleSystem->GetMaterial();
-   const bool requiresBloomPass = particleMaterial && particleMaterial->GetBrightness() > 1.0f;
-
-   // 発光値はBloom前のHDRシーンへ書く必要がある。明示設定がなくても輝度>1なら自動的に前段へ送る。
-   RenderPass renderPass =
-      particleSystem->GetUsePostProcess() || requiresBloomPass ? RenderPass::Transparent : RenderPass::PostProcess;
-
-   // パーティクルは常に遅延描画（透明度があるため）
-   DrawCommand cmd = DrawCommand::CreateParticle(particleSystem, activeCamera, blendMode, renderPass);
-   SubmitDrawCommand(cmd);
+   ParticleCommandFactory::Submit({*particleSystem, *camera}, MakeDrawSubmissionContext());
 }
 
 void Renderer::DrawUI(Sprite* sprite, Texture* texture, Sprite::AnchorPoint anchorPoint,
    std::optional<BlendMode> blendMode, bool applyPostProcess, uint32_t screenWidth, uint32_t screenHeight) {
-   assert(sprite != nullptr);
-   assert(texture != nullptr);
+   if (!sprite || !texture || !uiCamera_) return;
 
-   // 基準レイアウト以外も、現在の出力アスペクト比へ一様フィットさせる。
-   // 行列構築後に共有カメラを戻し、後続の基準UIの投影を変えない。
-   const bool usesReferenceLayout = screenWidth == static_cast<uint32_t>(Window::kUiReferenceWidth) &&
-                                    screenHeight == static_cast<uint32_t>(Window::kUiReferenceHeight);
-   bool restoreReferenceViewport = false;
-
-   if (!usesReferenceLayout && screenWidth > 0 && screenHeight > 0) {
-      const float layoutScale = std::min(
-         uiViewportSize_.x / static_cast<float>(screenWidth), uiViewportSize_.y / static_cast<float>(screenHeight));
-      const Vector2 layoutViewportSize = {uiViewportSize_.x / layoutScale, uiViewportSize_.y / layoutScale};
-      uiCamera_->SetOrthographicSize(layoutViewportSize.x, layoutViewportSize.y);
-      restoreReferenceViewport = true;
-   }
-
-   sprite->UpdateMatrixForUI(uiCamera_.get(), texture, anchorPoint, screenWidth, screenHeight);
-
-   if (restoreReferenceViewport) {
-      uiCamera_->SetOrthographicSize(uiViewportSize_.x, uiViewportSize_.y);
-   }
-
-   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandle = texture->GetTextureSrvHandleGPU();
-
-   // ブレンドモードの決定（引数で指定されていない場合は現在のモードを使用）
-   //    BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-
-   BlendMode effectiveBlendMode = blendMode.value_or(currentBlendMode_);
-
-   // 描画パスの決定
-   RenderPass renderPass = DetermineRenderPass(effectiveBlendMode, applyPostProcess);
-
-   DrawCommand cmd = DrawCommand::CreateUISprite(
-      sprite, texture, textureSrvHandle, anchorPoint, screenWidth, screenHeight, effectiveBlendMode, renderPass);
-   SubmitDrawCommand(cmd);
+   UICommandFactory::Submit({*sprite, *texture, *uiCamera_, uiViewportSize_, anchorPoint, blendMode, applyPostProcess,
+                               screenWidth, screenHeight},
+      MakeDrawSubmissionContext());
 }
 
 void Renderer::DrawUIText(std::string_view text, const Vector2& position, const TextStyle& style) {
@@ -496,7 +366,7 @@ void Renderer::DrawUIText(std::string_view text, const Vector2& position, const 
       Window::kUiReferenceWidth, Window::kUiReferenceHeight, uiViewportSize_.x, uiViewportSize_.y);
 
    for (const TextDrawData& textData : drawDataList) {
-      SubmitDrawCommand(DrawCommand::CreateText(textData, RenderPass::PostProcess));
+      SubmitDrawCommand(DrawCommand(RenderPass::PostProcess, textData));
    }
 }
 
@@ -572,53 +442,8 @@ void Renderer::DrawSkybox(Skybox* skybox) {
    currentPipelineBlendMode_ = BlendMode::kBlendModeNone;
 }
 
-void Renderer::SubmitDrawCommand(const DrawCommand& command) {
-   if (command.type == DrawCommandType::Model && command.modelData.model && !command.modelData.meshIndex) {
-      auto* mesh = command.modelData.model->GetComponent<MeshComponent>();
-      auto* material = command.modelData.model->GetComponent<MaterialComponent>();
-      const auto* asset = mesh ? mesh->GetModelAsset() : nullptr;
-      const size_t count = asset ? asset->GetMeshData().size() : 1;
-
-      for (size_t slot = 0; slot < count; ++slot) {
-         DrawCommand draw = command;
-         draw.modelData.meshIndex = slot;
-         auto* value = material ? material->GetMaterial(slot) : nullptr;
-         const std::string name = value && !value->GetPipelineName().empty() ? value->GetPipelineName() : "Object3D";
-         const std::string effectiveName = psoManager_->GetModelPipeline(name) ? name : "Object3D";
-         draw.blendMode = psoManager_->ResolveModelBlendMode(
-            effectiveName, value ? value->GetBlendMode().value_or(command.blendMode) : command.blendMode);
-         draw.modelData.blendMode = draw.blendMode;
-         draw.renderPass = command.renderPass == RenderPass::Overlay
-                              ? RenderPass::Overlay
-                              : DetermineRenderPass(draw.blendMode, command.renderPass != RenderPass::PostProcess);
-         RouteDrawCommand(draw);
-      }
-
-      return;
-   }
-
-   RouteDrawCommand(command);
-}
-
-void Renderer::RouteDrawCommand(const DrawCommand& command) {
-   // 登録時にパス別の配列へ分離し、EndFrameでは依存順に連続実行できるようにする。
-   // wrapperは各描画種別に共通のソート情報と実データの寿命を提供する。
-   auto wrapper = std::make_unique<DrawCommandWrapper>(command);
-
-   switch (command.renderPass) {
-      case RenderPass::Transparent:
-         transparentCommands_.push_back(std::move(wrapper));
-         break;
-      case RenderPass::PostProcess:
-         postProcessCommands_.push_back(std::move(wrapper));
-         break;
-      case RenderPass::Overlay:
-         overlayCommands_.push_back(std::move(wrapper));
-         break;
-      case RenderPass::Opaque:
-         opaqueCommands_.push_back(std::move(wrapper));
-         break;
-   }
+void Renderer::SubmitDrawCommand(DrawCommand command) {
+   renderQueue_.Enqueue(std::move(command));
 }
 
 void Renderer::DrawSpline(
@@ -810,9 +635,13 @@ void Renderer::EndFrame() {
    // 背景画像へのぼかしを終えてから共通UIを合成し、UI自体へ画面効果を掛けない。
    ApplyOverlayBackgroundBlur();
 
-   if (!overlayCommands_.empty()) {
+   const auto overlayCommands = renderQueue_.GetCommands(RenderPass::Overlay);
+
+   if (!overlayCommands.empty()) {
+      // 通常パスと同じ入力を用意し、Overlay内の屈折も合成済み背景と現在の深度を参照する。
+      offscreenRenderTarget_->CaptureSceneTextures();
       offscreenRenderTarget_->PreDrawWithoutClear(false);
-      ExecuteDrawCommands(overlayCommands_);
+      DrawCommandExecutor::Execute(overlayCommands, frameCtx_);
       offscreenRenderTarget_->PostDraw();
    }
 
@@ -1051,60 +880,9 @@ void Renderer::DrawAutoRegisteredTexts() {
          Window::kUiReferenceHeight, uiViewportSize_.x, uiViewportSize_.y);
 
       for (const TextDrawData& textData : drawDataList) {
-         SubmitDrawCommand(DrawCommand::CreateText(textData, RenderPass::PostProcess));
+         SubmitDrawCommand(DrawCommand(RenderPass::PostProcess, textData));
       }
    }
-}
-
-void Renderer::ExecuteDrawCommands(const std::vector<std::unique_ptr<IDrawCommand>>& commands) {
-   // パス側で並べ替えた共通コマンドを、型ごとの専用レンダラーへここで振り分ける。
-   // PSO設定コールバックを共有し、連続する同一PSOの冗長なバインドを抑える。
-   for (const auto& icmd : commands) {
-      const DrawCommand& cmd = icmd->GetDrawCommand();
-
-      switch (cmd.type) {
-         case DrawCommandType::Model:
-            modelRenderer_->DrawModel(cmd.modelData, defaultMaterial_.get(), lightManager_,
-               [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); });
-            break;
-         case DrawCommandType::Sprite:
-            if (cmd.isUISprite) {
-               uiRenderer_->DrawUISprite(cmd.uiSpriteData, defaultMaterial_.get(),
-                  [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); });
-            } else {
-               spriteRenderer_->DrawSprite(cmd.spriteData, defaultMaterial_.get(), lightManager_,
-                  [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); });
-            }
-
-            break;
-         case DrawCommandType::Particle:
-            particleRenderer_->DrawParticle(
-               cmd.particleData, [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); },
-               [this]() { InvalidatePipelineBinding(); });
-            break;
-         case DrawCommandType::Text:
-            textRenderer_->DrawUIText(
-               cmd.textData, [this](const std::string& name, BlendMode mode) { SetPipeline(name, mode); });
-            break;
-         case DrawCommandType::Line:
-            DrawLineInternal(cmd.lineData);
-            break;
-      }
-   }
-}
-
-void Renderer::DrawLineInternal(const LineDrawData& lineData) {
-   if (!lineData.drawFunc) return;
-
-   // Line3DパイプラインをPipelineManagerから取得
-   auto* linePipeline = psoManager_->GetPipeline("Line3D");
-   assert(linePipeline != nullptr);
-
-   device_->GetCommandList()->SetPipelineState(linePipeline->GetPipelineState());
-   device_->GetCommandList()->SetGraphicsRootSignature(linePipeline->GetRootSignature());
-
-   // 描画関数を実行（ViewProjection行列を渡す）
-   lineData.drawFunc(device_->GetCommandList(), lineData.viewProjectionMatrix);
 }
 
 void Renderer::Finalize() {
@@ -1396,19 +1174,9 @@ void Renderer::FlushLineRenderer(LineRenderer* renderer, RenderPass renderPass) 
          cmdList->DrawInstanced(2, static_cast<UINT>(lineCount), 0, 0);
       };
 
-      DrawCommand cmd = DrawCommand::CreateLine(drawFunc, camera, renderPass, center);
-      SubmitDrawCommand(cmd);
+      DrawCommand cmd = LineCommandFactory::Create(std::move(drawFunc), camera, renderPass, center);
+      SubmitDrawCommand(std::move(cmd));
    }
-}
-
-RenderPass Renderer::DetermineRenderPass(BlendMode blendMode, bool applyPostProcess) const {
-   if (!applyPostProcess) {
-      // 「ポストプロセス対象外」はエフェクト適用後に描くキューを意味する。
-      return RenderPass::PostProcess;
-   }
-
-   // 深度を書き込む不透明物を先に確定し、ブレンド物だけを距離ソート可能な透明パスへ送る。
-   return (blendMode == BlendMode::kBlendModeNone) ? RenderPass::Opaque : RenderPass::Transparent;
 }
 
 } // namespace GameEngine
