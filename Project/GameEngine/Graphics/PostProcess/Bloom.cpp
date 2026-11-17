@@ -4,6 +4,7 @@
 #include "GameEngine/Utility/Logger.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <exception>
 
 #ifdef USE_IMGUI
@@ -57,7 +58,7 @@ void Bloom::DrawPass(Pass pass, D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) {
    commands->SetPipelineState(GetPipeline()->GetPipelineState());
    commands->SetGraphicsRootSignature(GetRootSignature()->GetRootSignature());
    commands->SetGraphicsRootConstantBufferView(GetConstantBufferRootSlot(),
-      constantBuffer_->GetGPUVirtualAddress() + sizeof(BloomCB) * static_cast<size_t>(pass));
+      constantBuffer_->GetGPUVirtualAddress() + kConstantBufferStride * static_cast<size_t>(pass));
    commands->SetGraphicsRootDescriptorTable(GetInputTextureRootSlot(), inputSRV);
 
    // 横パスでは描画中の中間画像をSRVへ束縛せず、未使用スロットにも安全な入力画像を指定する。
@@ -144,7 +145,7 @@ bool Bloom::EnsureBlurTarget() {
 
 void Bloom::CreateConstantBuffer() {
    constantBuffer_ = ResourceHelper::CreateBufferResource(
-      GetDevice()->GetDevice(), sizeof(BloomCB) * static_cast<size_t>(Pass::Count));
+      GetDevice()->GetDevice(), kConstantBufferStride * static_cast<size_t>(Pass::Count));
    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
 }
 
@@ -182,7 +183,7 @@ void Bloom::UpdateConstantBuffer() {
 
    for (size_t pass = 0; pass < static_cast<size_t>(Pass::Count); ++pass) {
       constants.pass = static_cast<std::uint32_t>(pass);
-      constantBufferData_[pass] = constants;
+      std::memcpy(constantBufferData_ + kConstantBufferStride * pass, &constants, sizeof(constants));
    }
 }
 

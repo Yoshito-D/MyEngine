@@ -36,6 +36,9 @@ public:
    /// @brief 着地時に角速度をリセットする
    void ResetAngularVelocity();
 
+   /// @brief 空中移動の水平減速係数（1/s）を返す。無効時に適用するかは呼び出し側で判断する。
+   float GetAirDrag() const { return airDrag; }
+
 #ifdef USE_IMGUI
 
    /// @brief 現在の設定と実行状態をインスペクターへ表示する。

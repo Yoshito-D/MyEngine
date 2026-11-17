@@ -15,7 +15,7 @@ constexpr float kLandingPredictionDirectionEpsilon = 1e-4f;
 bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vector3& velocity,
    const GameEngine::Vector3& planetCenter, float surfaceRadius, float landingOffset,
    const GameEngine::Vector3& obbHalfExtents, const GameEngine::Quaternion& playerRotation,
-   const GravityBody& gravityBody, float predictionHorizon, const GameEngine::Vector3& fallbackForward,
+   const GravityBody& gravityBody, float airDrag, float predictionHorizon, const GameEngine::Vector3& fallbackForward,
    const GameEngine::Vector3& fallbackRight, LandingPrediction& outPrediction) {
    float horizon = std::clamp(predictionHorizon, 0.0f, 5.0f);
 
@@ -38,7 +38,7 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
 
    GameEngine::Vector3 initialUp = initialToSelf * (1.0f / initialDistance);
 
-   // プレイヤー中心ではなく、回転中のOBB下面が地表へ触れる半径を判定境界にする。
+   // プレイヤー中心ではなく、現在姿勢のOBB下面が地表へ触れる半径を判定境界にする。
    float initialSnapRadius =
       surfaceRadius + landingOffset + GameEngine::ComputeObbSupportRadius(playerRotation, obbHalfExtents, initialUp);
    float previousClearance = initialDistance - initialSnapRadius;
@@ -62,7 +62,7 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
       GameEngine::Vector3 previousVelocity = simulatedVelocity;
       GameEngine::Vector3 previousPosition = simulatedPosition;
 
-      // GravityBody と同じ半陰的オイラー順序で、候補惑星の放射重力だけを短時間先読みする。
+      // GravityBody と同じ半陰的オイラー順序で、候補惑星の放射重力による移動を先読みする。
       simulatedVelocity = gravityBody.PredictVelocity(simulatedVelocity, surfaceUp, step);
       simulatedPosition += simulatedVelocity * step;
       outPrediction.trajectoryPoints.push_back(simulatedPosition);
@@ -117,6 +117,8 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
          return true;
       }
 
+      // 実際の空中制御は移動・接触判定の後に減速する。積分前の法線を使い、次の移動へ反映する。
+      simulatedVelocity = GravityBody::PredictSurfaceDrag(simulatedVelocity, surfaceUp, airDrag, step);
       previousClearance = nextClearance;
       elapsed += step;
    }

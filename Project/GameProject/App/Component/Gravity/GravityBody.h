@@ -57,6 +57,15 @@ public:
    /// @param deltaTime フレーム時間（秒）
    void ApplySurfaceDrag(float drag, float deltaTime);
 
+   /// @brief 指定した法線方向の速度を保ち、地表に沿う速度だけを指数減衰させた予測速度を返す。
+   /// @param velocity 減衰前の速度（m/s）。
+   /// @param surfaceUp 減衰の基準となる地表の単位法線。
+   /// @param drag 減衰係数（1/s）。
+   /// @param deltaTime 減衰を適用する時間（秒）。
+   /// @return 減衰後の速度（m/s）。実際の状態は変更しない。
+   static GameEngine::Vector3 PredictSurfaceDrag(
+      const GameEngine::Vector3& velocity, const GameEngine::Vector3& surfaceUp, float drag, float deltaTime);
+
    /// @brief 着地時に法線方向の速度を除去し、地表に沿う速度を保持する
    /// @param surfaceUp 地表の単位法線
    void CancelNormalVelocity(const GameEngine::Vector3& surfaceUp);

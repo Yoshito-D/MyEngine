@@ -4,6 +4,7 @@
 #include <wrl.h>
 #include <d3d12.h>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 namespace GameEngine {
@@ -65,8 +66,7 @@ private:
    static constexpr size_t kWeightsPerVector = 4;
    static constexpr size_t kWeightVectorCount = (kMaxKernelRadius + kWeightsPerVector) / kWeightsPerVector;
 
-   // パスごとに256バイト境界の別領域を持ち、記録済みコマンドの定数を上書きしない。
-   struct alignas(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT) BloomCB {
+   struct BloomCB {
       float threshold;
       float intensity;
       float softThreshold;
@@ -76,7 +76,11 @@ private:
       std::array<std::array<float, kWeightsPerVector>, kWeightVectorCount> weights{};
    };
 
-   static_assert(sizeof(BloomCB) == D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+   // D3D12の定数バッファは開始位置を256バイト境界に揃える。
+   // 構造体の配置は変えず、パスごとに別領域を持って記録済みコマンドの定数を上書きしない。
+   static constexpr size_t kConstantBufferAlignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+   static constexpr size_t kConstantBufferStride =
+      (sizeof(BloomCB) + kConstantBufferAlignment - 1) / kConstantBufferAlignment * kConstantBufferAlignment;
 
    float threshold_ = 1.0f;     // 通常の白を超えるHDR発光を中心に抽出する
    float softThreshold_ = 0.5f; // 閾値境界だけを滑らかにし、通常色へのにじみを抑える
@@ -84,7 +88,7 @@ private:
    float blurRadius_ = 4.0f;    // パーティクル輪郭の外側まで発光を広げる
 
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
-   BloomCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
+   std::byte* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
    Microsoft::WRL::ComPtr<ID3D12Resource> blurTexture_;         ///< 横方向の発光ぼかしを保存するHDR中間画像。
    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> blurRtvHeap_;   ///< シーンのRTVを上書きしない専用ヒープ。
