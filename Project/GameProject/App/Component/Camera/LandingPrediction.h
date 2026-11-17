@@ -15,11 +15,12 @@ struct LandingPrediction {
    std::vector<GameEngine::Vector3> trajectoryPoints;     ///< 着地予測でサンプリングした移動軌道の位置列。
 };
 
-/// @brief 重力と機体の形状から地表への接触姿勢・時刻を予測する。
+/// @brief 現在の機体姿勢と重力先を固定し、重力・空中減速・機体の形状から地表への接触姿勢・時刻を予測する。
+/// @param airDrag 空中移動に適用する水平減速係数（1/s）。減速しない場合は0を渡す。
 bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vector3& velocity,
    const GameEngine::Vector3& planetCenter, float surfaceRadius, float landingOffset,
    const GameEngine::Vector3& obbHalfExtents, const GameEngine::Quaternion& playerRotation,
-   const GravityBody& gravityBody, float predictionHorizon, const GameEngine::Vector3& fallbackForward,
+   const GravityBody& gravityBody, float airDrag, float predictionHorizon, const GameEngine::Vector3& fallbackForward,
    const GameEngine::Vector3& fallbackRight, LandingPrediction& outPrediction);
 
 }

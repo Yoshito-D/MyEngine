@@ -7,6 +7,8 @@
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
+#include "GameProject/App/Component/Vehicle/VehicleAirController.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
@@ -149,10 +151,16 @@ void CameraGravityBridge::Update(float deltaTime) {
       bool hasLandingPrediction = false;
 
       if (isAirborne && hasCameraPlanet && gravityBody && landing) {
+         const auto* air = GetOwner().GetComponent<VehicleAirController>();
+         const auto* controller = GetOwner().GetComponent<VehicleController>();
+         const auto* mover = GetOwner().GetComponent<VehicleMover>();
+         const bool appliesAirDrag =
+            air && air->IsEnabled() && controller && controller->IsEnabled() && mover && mover->IsEnabled();
+         const float airDrag = appliesAirDrag ? air->GetAirDrag() : 0.0f;
          float predictionHorizon = std::max(0.0f, playerRearFollowCamera_->GetPreLandingPredictionHorizon());
          hasLandingPrediction = PredictLanding(pos, playerVelocity, cameraPlanetCenter, cameraPlanetSurfaceRadius,
             landing->DescribeSettings().landingOffset, landing->DescribeSettings().obbHalfExtents, rotation,
-            *gravityBody, predictionHorizon, forward, playerRearFollowCamera_->GetCameraRight(), prediction);
+            *gravityBody, airDrag, predictionHorizon, forward, playerRearFollowCamera_->GetCameraRight(), prediction);
 
          if (hasLandingPrediction) {
             playerRearFollowCamera_->SetLandingPrediction(

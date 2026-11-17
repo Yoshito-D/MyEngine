@@ -61,9 +61,14 @@ void GravityBody::ApplySurfaceVelocity(const Vector3& surfaceVelocity, const Vec
 }
 
 void GravityBody::ApplySurfaceDrag(float drag, float deltaTime) {
-   const Vector3 normalVelocity = targetUpVector_ * velocity_.Dot(targetUpVector_);
-   const Vector3 surfaceVelocity = velocity_ - normalVelocity;
-   velocity_ = surfaceVelocity * std::exp(-drag * deltaTime) + normalVelocity;
+   velocity_ = PredictSurfaceDrag(velocity_, targetUpVector_, drag, deltaTime);
+}
+
+Vector3 GravityBody::PredictSurfaceDrag(
+   const Vector3& velocity, const Vector3& surfaceUp, float drag, float deltaTime) {
+   const Vector3 normalVelocity = surfaceUp * velocity.Dot(surfaceUp);
+   const Vector3 surfaceVelocity = velocity - normalVelocity;
+   return surfaceVelocity * std::exp(-drag * deltaTime) + normalVelocity;
 }
 
 void GravityBody::CancelNormalVelocity(const Vector3& surfaceUp) {
