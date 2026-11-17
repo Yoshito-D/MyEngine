@@ -1,6 +1,7 @@
 #include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include "GameEngine/Object/Object.h"
 
@@ -23,6 +24,10 @@ void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
 
    // ジャンプ状態を記録
    isJumping_ = true;
+
+   if (auto* drift = GetOwner().GetComponent<VehicleDrift>()) {
+      drift->ResetMiniTurboCharge();
+   }
 
    if (auto* events = GetOwner().GetComponent<VehicleEvents>()) {
       events->PublishTakeoff();

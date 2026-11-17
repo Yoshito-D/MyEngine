@@ -55,6 +55,50 @@
          {
             "role": "LandingFailure",
             "slot": 13
+         },
+         {
+            "role": "LandingDebris",
+            "slot": 14
+         },
+         {
+            "role": "LandingDebris",
+            "slot": 15
+         },
+         {
+            "role": "JumpDebris",
+            "slot": 16
+         },
+         {
+            "role": "TurboBurst",
+            "slot": 17
+         },
+         {
+            "role": "TurboBurst",
+            "slot": 18
+         },
+         {
+            "role": "TurboBurst",
+            "slot": 19
+         },
+         {
+            "role": "TurboBurst",
+            "slot": 20
+         },
+         {
+            "role": "DriveDust",
+            "slot": 21
+         },
+         {
+            "role": "DriveDust",
+            "slot": 22
+         },
+         {
+            "role": "DriveDebris",
+            "slot": 23
+         },
+         {
+            "role": "DriveDebris",
+            "slot": 24
          }
       ]
    }

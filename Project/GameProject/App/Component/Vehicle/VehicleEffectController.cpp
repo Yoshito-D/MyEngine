@@ -5,6 +5,7 @@
 #include "GameEngine/Utility/Logger.h"
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <limits>
 
 #ifdef USE_IMGUI
@@ -13,8 +14,11 @@
 
 namespace App {
 namespace {
-constexpr std::array kRoleNames = {
-   "DriftDust", "TurboReady", "TurboBurst", "TurboFlame", "Landing", "LandingFailure", "Jump"};
+constexpr std::array kRoleNames = {"DriftDust", "TurboReady", "TurboBurst", "TurboFlame", "Landing", "LandingFailure",
+   "Jump", "LandingDebris", "JumpDebris", "DriveDust", "DriveDebris"};
+
+constexpr float kContactEffectLift = 0.08f;   ///< 地表との交差を抑える発生点の持ち上げ量（m）。
+constexpr float kDriveEffectsMinSpeed = 1.0f; ///< 停止付近での放出を抑える最低走行速度（m/s）。
 
 GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
    const GameEngine::Vector3 localUp{0.0f, 1.0f, 0.0f};
@@ -34,6 +38,8 @@ GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
 void VehicleEffectController::OnSceneLoaded(GameEngine::SceneWorld&) {
    const auto* events = HasOwner() ? GetOwner().GetComponent<VehicleEvents>() : nullptr;
    eventCursor_.Reset(events ? events->GetSnapshot() : VehicleEventSnapshot{});
+   wasDriftDustActive_ = false;
+   wasDriveEffectsActive_ = false;
 }
 
 void VehicleEffectController::Update(float) {
@@ -46,6 +52,8 @@ void VehicleEffectController::Update(float) {
 
    const auto& snapshot = events->GetSnapshot();
    const auto changes = eventCursor_.Read(snapshot);
+   const bool driftDustActive = snapshot.isDrifting && snapshot.isGrounded;
+   const bool driveEffectsActive = snapshot.isGrounded && std::abs(snapshot.groundSpeed) > kDriveEffectsMinSpeed;
 
    for (const auto& binding : bindings_) {
       const auto* slot = emitter->DescribeSlot(binding.slot);
@@ -55,8 +63,23 @@ void VehicleEffectController::Update(float) {
       }
 
       switch (binding.role) {
+         case VehicleEffectRole::DriveDust:
+         case VehicleEffectRole::DriveDebris:
+            emitter->EnableEmission(binding.slot, driveEffectsActive);
+
+            if (driveEffectsActive &&
+                (!wasDriveEffectsActive_ || changes.landed || !emitter->IsPlaying(binding.slot))) {
+               // 再開時に距離の履歴だけを初期化し、空中・停止中の移動をまとめて放出しない。
+               emitter->Play(binding.slot);
+            }
+            break;
          case VehicleEffectRole::DriftDust:
-            emitter->EnableEmission(binding.slot, snapshot.isDrifting && !snapshot.isAirborne);
+            emitter->EnableEmission(binding.slot, driftDustActive);
+
+            if (driftDustActive && (!wasDriftDustActive_ || changes.landed || !emitter->IsPlaying(binding.slot))) {
+               // チャージを待たず開始バーストを出し、空中の移動距離を次の放出へ持ち越さない。
+               emitter->Play(binding.slot);
+            }
             break;
          case VehicleEffectRole::TurboReady:
             emitter->EnableEmission(binding.slot, snapshot.miniTurboReady && !snapshot.isAirborne);
@@ -79,29 +102,50 @@ void VehicleEffectController::Update(float) {
                emitter->Play(binding.slot);
             }
             break;
-         case VehicleEffectRole::Landing:
-            if (changes.landed) {
-               if (snapshot.hasLandingContact) {
-                  // 車体中心ではなく、確定済み接触点と法線へ着地演出を配置する。
-                  emitter->SetSlotWorldTransform(binding.slot, snapshot.landingPoint,
-                     AlignUpToNormal(snapshot.landingNormal), slot->attachConfig.scaleOffset);
-               }
-
-               emitter->Play(binding.slot);
-            }
-            break;
          case VehicleEffectRole::LandingFailure:
             if (changes.landed && snapshot.landingResult == LandingResult::Failure) {
+               // 故障を示す煙の発生元は車体に追従させ、地面に残る着地の土煙と区別する。
                emitter->Play(binding.slot);
             }
             break;
          case VehicleEffectRole::Jump:
             if (changes.tookOff) {
+               // 砂埃の発生元は上昇する車体へ追従させ、放出済みの粒子は空中へ残す。
                emitter->Play(binding.slot);
             }
             break;
+         case VehicleEffectRole::Landing:
+         case VehicleEffectRole::LandingDebris:
+         case VehicleEffectRole::JumpDebris: {
+            const bool isTakeoff = binding.role == VehicleEffectRole::JumpDebris;
+            const bool triggered = isTakeoff ? changes.tookOff : changes.landed;
+
+            if (triggered) {
+               const bool hasContact = isTakeoff ? snapshot.hasTakeoffContact : snapshot.hasLandingContact;
+
+               // 岩は専用の陰影入りテクスチャを使い、接触点が確定したときだけ地表から放出する。
+               if (!hasContact && (binding.role == VehicleEffectRole::LandingDebris ||
+                                     binding.role == VehicleEffectRole::JumpDebris)) {
+                  continue;
+               }
+
+               if (hasContact) {
+                  // 車体中心ではなく、踏み切り・着地の確定済み接触点と法線へ演出を配置する。
+                  const auto& point = isTakeoff ? snapshot.takeoffPoint : snapshot.landingPoint;
+                  const auto& normal = isTakeoff ? snapshot.takeoffNormal : snapshot.landingNormal;
+                  emitter->SetSlotWorldTransform(binding.slot, point + normal * kContactEffectLift,
+                     AlignUpToNormal(normal), slot->attachConfig.scaleOffset);
+               }
+
+               emitter->Play(binding.slot);
+            }
+            break;
+         }
       }
    }
+
+   wasDriftDustActive_ = driftDustActive;
+   wasDriveEffectsActive_ = driveEffectsActive;
 }
 
 nlohmann::json VehicleEffectController::Serialize() const {

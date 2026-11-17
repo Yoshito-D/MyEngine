@@ -230,6 +230,7 @@ bool PostProcessManager::ConfigureEffectPipeline(
    // 深度とマスクは一部エフェクトだけの任意入力だが、対応するRootSignatureを選んだ場合は必須とする。
    const auto depthSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "depthtexture");
    const auto maskSlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "masktexture");
+   const auto auxiliarySlot = psoManager_->ResolvePipelineRootParameter(pipelineName, "auxiliarytexture");
 
    if (rootSignatureName == "PostProcessOutline" && !depthSlot.has_value()) {
       Logger::Error("[PostProcessManager] Outline post-process binding slot is missing: depthtexture");
@@ -241,7 +242,13 @@ bool PostProcessManager::ConfigureEffectPipeline(
       return false;
    }
 
-   effect->ConfigurePipeline(*pipeline, *rootSignature, cbSlot.value(), inputSlot.value(), depthSlot, maskSlot);
+   if (rootSignatureName == "PostProcessBloom" && !auxiliarySlot.has_value()) {
+      Logger::Error("[PostProcessManager] Bloom post-process binding slot is missing: auxiliarytexture");
+      return false;
+   }
+
+   effect->ConfigurePipeline(
+      *pipeline, *rootSignature, cbSlot.value(), inputSlot.value(), depthSlot, maskSlot, auxiliarySlot);
 
    return true;
 }

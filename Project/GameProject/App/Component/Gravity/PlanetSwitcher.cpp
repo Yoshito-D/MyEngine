@@ -240,6 +240,30 @@ bool PlanetSwitcher::TryGetCurrentPlanet(GameEngine::Vector3& center, float& rad
    return radius > 0.0f;
 }
 
+bool PlanetSwitcher::TryGetCurrentPlanet(GameEngine::Model*& model, GameEngine::Vector3& center, float& radius) const {
+   model = nullptr;
+   center = {};
+   radius = 0.0f;
+   GameEngine::Vector3 planetCenter;
+   float planetRadius = 0.0f;
+
+   if (!TryGetCurrentPlanet(planetCenter, planetRadius)) {
+      return false;
+   }
+
+   auto* planet = FindPlanetById(entries_[currentIndex_].objectId);
+
+   if (!planet || !std::isfinite(planetCenter.x) || !std::isfinite(planetCenter.y) || !std::isfinite(planetCenter.z) ||
+       !std::isfinite(planetRadius)) {
+      return false;
+   }
+
+   model = planet;
+   center = planetCenter;
+   radius = planetRadius;
+   return true;
+}
+
 bool PlanetSwitcher::IsOwnerAirborne() const {
    if (!HasOwner()) {
       return false;

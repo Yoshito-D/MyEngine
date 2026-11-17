@@ -70,6 +70,13 @@ public:
    /// @brief 着地済みの惑星の中心と半径を取得する。
    bool TryGetCurrentPlanet(GameEngine::Vector3& center, float& radius) const;
 
+   /// @brief 着地済み惑星のモデル・中心（m）・半径（m）を取得する。空中の着地候補は使用しない。
+   /// @param model 現在の惑星モデル。失敗時はnullptr。
+   /// @param center 惑星中心のワールド座標。失敗時はゼロ。
+   /// @param radius 地表半径。失敗時はゼロ。
+   /// @return モデルと有限で有効な地表情報が揃っている場合true。
+   bool TryGetCurrentPlanet(GameEngine::Model*& model, GameEngine::Vector3& center, float& radius) const;
+
    /// @brief 着地済み惑星と異なる重力先へ空中で移動しているかを返す。
    bool HasPendingPlanetChange() const { return pendingIndex_ >= 0 && pendingIndex_ != currentIndex_; }
 

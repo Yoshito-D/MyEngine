@@ -53,15 +53,17 @@ void PostProcess::Initialize(GraphicsDevice* device, OffscreenRenderTarget* rend
 /// @param inputTextureSlot 前段の描画結果をバインドするルートパラメータ番号
 /// @param depthTextureSlot 深度SRVをバインドするルートパラメータ番号
 /// @param maskTextureSlot マスクSRVをバインドするルートパラメータ番号
+/// @param auxiliaryTextureSlot エフェクト内部の中間画像SRVをバインドするルートパラメータ番号
 void PostProcess::ConfigurePipeline(const PipelineState& pipeline, const RootSignature& rootSignature,
    UINT constantBufferSlot, UINT inputTextureSlot, std::optional<UINT> depthTextureSlot,
-   std::optional<UINT> maskTextureSlot) {
+   std::optional<UINT> maskTextureSlot, std::optional<UINT> auxiliaryTextureSlot) {
    pipeline_ = &pipeline;
    rootSignature_ = &rootSignature;
    constantBufferRootSlot_ = constantBufferSlot;
    inputTextureRootSlot_ = inputTextureSlot;
    depthTextureRootSlot_ = depthTextureSlot.value_or(depthTextureRootSlot_);
    maskTextureRootSlot_ = maskTextureSlot.value_or(maskTextureRootSlot_);
+   auxiliaryTextureRootSlot_ = auxiliaryTextureSlot.value_or(auxiliaryTextureRootSlot_);
 }
 
 /// @brief 状態を持たないエフェクト向けの既定設定を生成する。

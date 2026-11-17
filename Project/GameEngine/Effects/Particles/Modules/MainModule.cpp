@@ -135,6 +135,7 @@ nlohmann::json MainModule::ToJson() const {
    j["gravityModifier"] = gravityModifier_.ToJson();
    j["timeScale"] = timeScale_;
    j["simulationSpace"] = static_cast<std::int32_t>(simulationSpace_);
+   j["motionRelativeToEmitter"] = motionRelativeToEmitter_;
    j["playOnAwake"] = playOnAwake_;
    j["maxParticles"] = maxParticles_;
 
@@ -174,6 +175,10 @@ void MainModule::FromJson(const nlohmann::json& j) {
 
    if (j.contains("simulationSpace")) {
       simulationSpace_ = static_cast<SimulationSpace>(j.at("simulationSpace").get<std::int32_t>());
+   }
+
+   if (j.contains("motionRelativeToEmitter")) {
+      SetMotionRelativeToEmitter(j.at("motionRelativeToEmitter"));
    }
 
    if (j.contains("playOnAwake")) {

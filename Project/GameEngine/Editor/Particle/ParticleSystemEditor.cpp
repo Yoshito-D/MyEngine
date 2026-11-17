@@ -581,6 +581,24 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
             particleMaterial->SetAlphaCutoff(alphaCutoff);
          }
 
+         float edgeSoftness = particleMaterial->GetEdgeSoftness();
+
+         if (ImGui::SliderFloat(ScopedLabel(Tr("煙の輪郭フェード幅", "Smoke Edge Softness"),
+                                   "ParticleEdgeSoftness_" + particleSystemName)
+                                   .c_str(),
+                &edgeSoftness, 0.0f, 1.0f)) {
+            particleMaterial->SetEdgeSoftness(edgeSoftness);
+         }
+
+         float smokeDensity = particleMaterial->GetSmokeDensity();
+
+         if (ImGui::DragFloat(ScopedLabel(Tr("煙の濃度 (0=無効)", "Smoke Density (0=Off)"),
+                                 "ParticleSmokeDensity_" + particleSystemName)
+                                 .c_str(),
+                &smokeDensity, 0.02f, 0.0f, 8.0f)) {
+            particleMaterial->SetSmokeDensity(smokeDensity);
+         }
+
          std::int32_t toonSteps = static_cast<std::int32_t>(particleMaterial->GetToonSteps());
 
          if (ImGui::DragInt(ScopedLabel(Tr("トゥーン階調 (0=無効)", "Toon Steps (0=Off)"),
@@ -682,7 +700,12 @@ void Edit(GameEngine::ParticleSystem* particleSystem) {
          }
       }
 
-      auto* modelAsset = particleSystem->GetModelAsset();
+      const auto* modelAsset = particleSystem->GetModelAsset();
+      std::string nextModelId = modelAsset ? modelAsset->GetAssetId() : std::string();
+
+      if (EditorUI::AssetReference(Tr("モデル", "Model"), nextModelId, EditorAssetType::Model)) {
+         particleSystem->SetModelAssetId(nextModelId);
+      }
 
       if (modelAsset) {
          ImGui::Text("%s: %s", Tr("モデル", "Model"), Tr("読み込み済み", "Loaded"));

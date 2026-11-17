@@ -746,6 +746,22 @@ bool ParticleSystem::IsFinished() const {
    return false;
 }
 
+bool ParticleSystem::SetModelAssetId(const std::string& assetId) {
+   if (assetId.empty()) {
+      modelAsset_.reset();
+      return true;
+   }
+
+   auto asset = EngineContext::LoadModelByAssetId(assetId);
+
+   if (!asset) {
+      return false;
+   }
+
+   modelAsset_ = std::move(asset);
+   return true;
+}
+
 void ParticleSystem::SetTexture(Texture* texture) {
    if (texture && texture->GetMetadata().IsCubemap()) {
       texture = nullptr;
@@ -865,7 +881,8 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
    // 新規生成はFreeListからslotを確保し、衝突補正はowner mapping上の既存slotを上書きする。
    request.operation = overwriteExisting ? 1u : 0u;
 
-   const bool useLocalSimulation = mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local;
+   const bool rotateMotion = mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local ||
+                             mainModule_->IsMotionRelativeToEmitter();
    const Quaternion simulationRotation = particle.simulationSpaceTransform.GetActiveQuaternion();
    Vector3 force(0.0f, 0.0f, 0.0f);
    float drag = 0.0f;
@@ -873,7 +890,7 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
    if (forceOverLifetimeModule_->IsEnabled()) {
       force = particle.forceOverLifetimeForce;
 
-      if (useLocalSimulation) {
+      if (rotateMotion) {
          force = RotateVector(force, simulationRotation);
       }
 
@@ -889,7 +906,7 @@ void ParticleSystem::QueueGpuParticleCommand(uint32_t particleIndex, bool overwr
    if (velocityOverLifetimeModule_->IsEnabled()) {
       linearAcceleration = particle.velocityOverLifetimeLinearAcceleration;
 
-      if (useLocalSimulation) {
+      if (rotateMotion) {
          linearAcceleration = RotateVector(linearAcceleration, simulationRotation);
       }
 
@@ -1084,12 +1101,13 @@ void ParticleSystem::EmitParticle() {
    particle.gravityModifier = mainModule_->GetGravityModifierRange().GetValue();
 
    const bool useVectorStartVelocity = mainModule_->GetStartSpeedMode() == MainModule::StartSpeedMode::Vector3;
-   const bool useLocalSimulation = mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local;
+   const bool rotateMotion = mainModule_->GetSimulationSpace() == MainModule::SimulationSpace::Local ||
+                             mainModule_->IsMotionRelativeToEmitter();
    auto resolveStartVelocity = [&]() {
       Vector3 velocity = mainModule_->GetStartVelocity().GetValue();
 
-      if (useLocalSimulation) {
-         // Vector3モードの設定値はShapeローカル軸として扱い、GPUへ渡す前にWorld方向へ回転する。
+      if (rotateMotion) {
+         // 位置の追従とは独立して生成時の地表姿勢を焼き込み、放出後の惑星切替から切り離す。
          velocity = RotateVector(velocity, emitterTransform.GetActiveQuaternion());
       }
 
@@ -1182,7 +1200,8 @@ bool ParticleSystem::LoadFromJson(const std::string& filePath) {
       ifs >> j;
       FromJson(j);
       return true;
-   } catch (...) {
+   } catch (const std::exception& exception) {
+      Logger::Error("[ParticleSystem] Could not load " + filePath + ": " + exception.what());
       return false;
    }
 }
@@ -1190,6 +1209,7 @@ bool ParticleSystem::LoadFromJson(const std::string& filePath) {
 nlohmann::json ParticleSystem::ToJson() const {
    nlohmann::json j;
    j["textureName"] = textureName_;
+   j["modelAssetId"] = modelAsset_ ? modelAsset_->GetAssetId() : std::string();
 
    // ブレンドモード
    if (material_ && material_->GetBlendMode().has_value()) {
@@ -1217,7 +1237,8 @@ nlohmann::json ParticleSystem::ToJson() const {
          {"softParticleDistance", material_->GetSoftParticleDistance()},
          {"distortionStrength", material_->GetDistortionStrength()},
          {"distortionBlend", material_->GetDistortionBlend()},
-         {"distortionUseTextureFlow", material_->IsDistortionUsingTextureFlow()}};
+         {"distortionUseTextureFlow", material_->IsDistortionUsingTextureFlow()},
+         {"edgeSoftness", material_->GetEdgeSoftness()}, {"smokeDensity", material_->GetSmokeDensity()}};
    }
 
    // 各モジュールのToJson()を呼び出し
@@ -1312,6 +1333,10 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
       SetTextureName(j["textureName"].get<std::string>());
    }
 
+   if (j.contains("modelAssetId") && !SetModelAssetId(j.at("modelAssetId").get<std::string>())) {
+      Logger::Warning("[ParticleSystem] Could not load particle model: " + j.at("modelAssetId").get<std::string>());
+   }
+
    // ブレンドモード
    if (j.contains("blendMode") && !j["blendMode"].is_null() && material_) {
       material_->SetBlendMode(static_cast<BlendMode>(j["blendMode"].get<std::int32_t>()));
@@ -1381,6 +1406,14 @@ void ParticleSystem::FromJson(const nlohmann::json& j) {
 
    if (j.contains("materialSettings") && j["materialSettings"].is_object() && material_) {
       const auto& settings = j["materialSettings"];
+
+      if (settings.contains("smokeDensity")) {
+         material_->SetSmokeDensity(settings.at("smokeDensity"));
+      }
+
+      if (settings.contains("edgeSoftness")) {
+         material_->SetEdgeSoftness(settings.at("edgeSoftness"));
+      }
 
       if (settings.contains("brightness")) {
          material_->SetBrightness(settings["brightness"]);

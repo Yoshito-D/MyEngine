@@ -15,7 +15,11 @@ enum class VehicleEffectRole {
    TurboFlame,
    Landing,
    LandingFailure,
-   Jump
+   Jump,
+   LandingDebris,
+   JumpDebris,
+   DriveDust,
+   DriveDebris
 };
 
 /// @brief アセット名から独立した、車両演出の命令とエミッタースロットの対応。
@@ -66,6 +70,8 @@ public:
 private:
    std::vector<VehicleEffectBinding> bindings_; ///< アセットパスやファイル名を参照しない演出命令。
    VehicleEventCursor eventCursor_;             ///< この演出が独立して保持する通知の既読位置。
+   bool wasDriftDustActive_ = false;            ///< 前フレームに接地したドリフトの煙を放出していたか。
+   bool wasDriveEffectsActive_ = false;         ///< 前フレームに通常走行の砂埃と小石を放出していたか。
 };
 
 } // namespace App

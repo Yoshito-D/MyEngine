@@ -64,6 +64,9 @@ public:
    /// @brief ミニターボが発動できるかどうかをかえす
    bool CanFireMiniTurbo() const;
 
+   /// @brief 速度やドリフト状態を維持したまま、ミニターボの蓄積時間だけをリセットする。
+   void ResetMiniTurboCharge();
+
 #ifdef USE_IMGUI
 
    /// @brief 設定と実行状態を単位付きで表示・編集する。

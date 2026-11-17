@@ -1,240 +1,107 @@
 {
    "blendMode": 1,
-   "colorOverLifetimeModule": {
-      "enabled": true,
-      "endColor": [
-         0,
-         0,
-         0,
-         0
-      ],
-      "startColor": [
-         0.0235294122248888,
-         0.0235294122248888,
-         0.0235294122248888,
-         1
-      ]
-   },
-   "emissionModule": {
-      "bursts": [],
-      "enabled": true,
-      "rateOverDistance": 0,
-      "rateOverTime": 47.5
-   },
-   "forceOverLifetimeModule": {
-      "attractorEnabled": false,
-      "attractorFalloff": 1,
-      "attractorPosition": [
-         0,
-         0,
-         0
-      ],
-      "attractorRadius": 0,
-      "attractorStrength": 0,
-      "drag": {
-         "max": 0,
-         "min": 0,
-         "randomize": false
-      },
-      "enabled": false,
-      "force": {
-         "max": [
-            0,
-            0,
-            0
-         ],
-         "min": [
-            0,
-            0,
-            0
-         ],
-         "randomize": false
-      }
-   },
-   "limitVelocityModule": {
-      "dampingRate": {
-         "max": 828.9306334778564,
-         "min": 828.9306334778564,
-         "randomize": false
-      },
-      "enabled": true,
-      "speedLimit": {
-         "max": 4.900000095367432,
-         "min": 4.900000095367432,
-         "randomize": false
-      }
-   },
+   "textureName": "dust_cloud",
+   "modelAssetId": "",
+   "usePostProcess": true,
    "mainModule": {
-      "duration": 1,
-      "gravityModifier": {
-         "max": 0,
-         "min": 0,
-         "randomize": false
-      },
+      "duration": 1.0,
       "looping": false,
-      "maxParticles": 292,
+      "maxParticles": 320,
       "playOnAwake": false,
       "simulationSpace": 0,
-      "startColor": {
-         "max": 4294967295,
-         "min": 4294967295,
-         "randomize": false
-      },
+      "motionRelativeToEmitter": true,
+      "timeScale": 1,
       "startLifetime": {
-         "max": 0.7699999809265137,
-         "min": 0.4699999988079071,
+         "min": 0.85,
+         "max": 1.5,
          "randomize": true
       },
-      "startRotation": {
-         "max": [
-            0,
-            0,
-            180
-         ],
+      "startSpeedMode": 1,
+      "startSpeed": {
+         "min": 0,
+         "max": 0,
+         "randomize": false
+      },
+      "startVelocity": {
          "min": [
-            0,
-            0,
-            0
+            -0.2,
+            1.0,
+            -0.4
+         ],
+         "max": [
+            0.2,
+            1.8,
+            0.15
          ],
          "randomize": true
       },
       "startSize": {
-         "max": [
-            0.019999999552965164,
-            0.019999999552965164,
-            0.019999999552965164
-         ],
          "min": [
-            0.009999999776482582,
-            0.009999999776482582,
-            0.009999999776482582
+            0.38,
+            0.38,
+            0.38
+         ],
+         "max": [
+            0.38,
+            0.38,
+            0.38
+         ],
+         "randomize": false
+      },
+      "startRotation": {
+         "min": [
+            0,
+            0,
+            0
+         ],
+         "max": [
+            0,
+            0,
+            6.283185307
          ],
          "randomize": true
       },
-      "startSpeed": {
-         "max": 0,
+      "startColor": {
+         "min": 4294967295,
+         "max": 4294967295,
+         "randomize": false
+      },
+      "gravityModifier": {
          "min": 0,
-         "randomize": true
-      },
-      "startSpeedMode": 0,
-      "startVelocity": {
-         "max": [
-            0,
-            6,
-            0
-         ],
-         "min": [
-            0,
-            5,
-            0
-         ],
-         "randomize": false
-      },
-      "timeScale": 1
-   },
-   "materialSettings": {
-      "alphaCutoff": 0.0010000000474974513,
-      "brightness": 1,
-      "distortionBlend": 1,
-      "distortionStrength": 0,
-      "distortionUseTextureFlow": false,
-      "softParticleDistance": 1.0099999904632568,
-      "softParticles": true,
-      "toonSteps": 0
-   },
-   "noiseModule": {
-      "enabled": false,
-      "frequency": {
-         "max": 0.5,
-         "min": 0.5,
-         "randomize": false
-      },
-      "scrollSpeed": {
-         "max": 1,
-         "min": 1,
-         "randomize": false
-      },
-      "strength": {
-         "max": 1,
-         "min": 1,
+         "max": 0,
          "randomize": false
       }
    },
-   "particleMeshModule": {
-      "boxSize": [
-         1,
-         1,
-         1
-      ],
-      "circleRadius": 0.5,
-      "circleSegments": 32,
-      "coneHeight": 1,
-      "coneRadius": 0.5,
-      "coneSegments": 32,
-      "cylinderBottomRadius": 0.5,
-      "cylinderHeight": 1,
-      "cylinderSegments": 32,
-      "cylinderTopRadius": 0.5,
+   "emissionModule": {
       "enabled": true,
-      "meshOriginY": 0.5,
-      "particleMeshType": 0,
-      "planeDepth": 1,
-      "planeWidth": 1,
-      "ringInnerRadius": 0.14000000059604645,
-      "ringOuterRadius": 0.5,
-      "ringSegments": 32,
-      "sphereRadius": 0.5,
-      "sphereSlices": 32,
-      "sphereStacks": 16,
-      "torusMajorRadius": 0.5,
-      "torusMajorSegments": 32,
-      "torusMinorRadius": 0.20000000298023224,
-      "torusMinorSegments": 16
-   },
-   "rendererModule": {
-      "billboardType": 1,
-      "cameraFadeEnabled": false,
-      "cameraFadeFar": 1,
-      "cameraFadeNear": 0.25,
-      "enabled": true,
-      "lengthScale": 2,
-      "rotationSpace": 1,
-      "sortMode": 0,
-      "speedScale": 1,
-      "velocityStretchEnabled": false
-   },
-   "rotationOverLifetimeModule": {
-      "angularVelocityMax": [
-         0,
-         0,
-         2
-      ],
-      "angularVelocityMin": [
-         0,
-         0,
-         -2
-      ],
-      "angularVelocityRandomize": true,
-      "enabled": true
+      "rateOverTime": 36,
+      "rateOverDistance": 6,
+      "bursts": [
+         {
+            "time": 0,
+            "count": 6,
+            "cycles": 1,
+            "interval": 1
+         }
+      ]
    },
    "shapeModule": {
-      "angle": 0.2617993877991494,
-      "arc": 6.283185307179586,
-      "boxSize": [
-         0.4000000059604645,
-         0.30000001192092896,
-         0.699999988079071
-      ],
-      "circleOutwardVelocity": 2.0999999046325684,
-      "emitFrom": 2,
       "enabled": true,
-      "length": 0.5,
-      "position": [
-         -10.988847732543945,
-         5.376364231109619,
-         9.18006420135498
+      "shapeType": 3,
+      "emitFrom": 0,
+      "radius": 0.32,
+      "arc": 6.283185307,
+      "circleOutwardVelocity": 0,
+      "boxSize": [
+         0.3,
+         0.16,
+         0.35
       ],
-      "radius": 0.4000000059604645,
+      "position": [
+         0,
+         0,
+         0
+      ],
       "rotation": [
          0,
          0,
@@ -244,157 +111,138 @@
          1,
          1,
          1
+      ]
+   },
+   "colorOverLifetimeModule": {
+      "enabled": true,
+      "startColor": [
+         0.12,
+         0.12,
+         0.12,
+         0.42
       ],
-      "shapeType": 3,
-      "torusMajorRadius": 1
+      "endColor": [
+         0.23,
+         0.23,
+         0.23,
+         0
+      ]
    },
    "sizeOverLifetimeModule": {
       "enabled": true,
+      "startSize": [
+         0.38,
+         0.38,
+         0.38
+      ],
       "endSize": [
-         0,
-         0,
-         0
+         1.55,
+         1.55,
+         1.55
       ],
       "sizeMultiplier": {
-         "max": 0.6800000071525574,
-         "min": 0.5099999904632568,
+         "min": 0.75,
+         "max": 1.3,
          "randomize": true
-      },
-      "startSize": [
-         1,
-         1,
-         0.5
-      ]
-   },
-   "subEmitters": {
-      "collisionPlaneDistance": 0,
-      "collisionPlaneNormal": [
-         0,
-         1,
-         0
-      ],
-      "collisionRestitution": 0,
-      "enabled": false,
-      "maxEventsPerFrame": 32,
-      "spawnOnCollisionPath": "",
-      "spawnOnDeathPath": "",
-      "spawnOnUpdatePath": "",
-      "updateInterval": 0.10000000149011612
-   },
-   "textureName": "smoke",
-   "textureSheetAnimationModule": {
-      "animationMode": 0,
-      "cycles": 1,
-      "enabled": false,
-      "frameCount": 1,
-      "frameOverTime": 1,
-      "randomRow": false,
-      "rowIndex": 0,
-      "startFrame": 0,
-      "tilesX": 1,
-      "tilesY": 1
-   },
-   "trailModule": {
-      "color": [
-         1,
-         1,
-         1,
-         1
-      ],
-      "enabled": false,
-      "maxPoints": 16,
-      "minDistance": 0.10000000149011612,
-      "mode": 0,
-      "retractionDuration": 0.5,
-      "tailWidthScale": 0,
-      "textureName": "",
-      "textureTiling": 1,
-      "width": {
-         "max": 0.5,
-         "min": 0.5,
-         "randomize": false
       }
    },
-   "usePostProcess": true,
-   "uvTransformModule": {
-      "enabled": false,
-      "rotationConstant": 0,
-      "rotationCurveEnd": 0,
-      "rotationCurveStart": 0,
-      "rotationMode": 0,
-      "rotationRandom": {
-         "max": 0,
-         "min": 0,
-         "randomize": false
-      },
-      "scaleConstant": [
-         1,
-         1
+   "rotationOverLifetimeModule": {
+      "enabled": true,
+      "angularVelocityMin": [
+         0,
+         0,
+         -0.55
       ],
-      "scaleCurveEnd": [
-         1,
-         1
+      "angularVelocityMax": [
+         0,
+         0,
+         0.55
       ],
-      "scaleCurveStart": [
-         1,
-         1
-      ],
-      "scaleMode": 0,
-      "scaleRandom": {
-         "max": [
-            1,
-            1
-         ],
+      "angularVelocityRandomize": true
+   },
+   "forceOverLifetimeModule": {
+      "enabled": true,
+      "force": {
          "min": [
-            1,
-            1
-         ],
-         "randomize": false
-      },
-      "scrollConstant": [
-         0,
-         0
-      ],
-      "scrollCurveEnd": [
-         0,
-         0
-      ],
-      "scrollCurveStart": [
-         0,
-         0
-      ],
-      "scrollMode": 0,
-      "scrollRandom": {
-         "max": [
             0,
+            1.1,
             0
          ],
-         "min": [
+         "max": [
             0,
+            1.1,
             0
          ],
          "randomize": false
-      }
+      },
+      "drag": {
+         "min": 0.8,
+         "max": 0.8,
+         "randomize": false
+      },
+      "attractorEnabled": false
    },
    "velocityOverLifetimeModule": {
-      "enabled": false,
-      "linearAcceleration": {
-         "max": [
-            0,
-            0,
-            0
-         ],
-         "min": [
-            0,
-            0,
-            0
-         ],
+      "enabled": false
+   },
+   "limitVelocityModule": {
+      "enabled": false
+   },
+   "noiseModule": {
+      "enabled": true,
+      "strength": {
+         "min": 0.35,
+         "max": 0.85,
+         "randomize": true
+      },
+      "frequency": {
+         "min": 2.2,
+         "max": 2.2,
          "randomize": false
       },
-      "speedGrowthRate": {
-         "max": 0,
-         "min": 0,
+      "scrollSpeed": {
+         "min": 1.1,
+         "max": 1.1,
          "randomize": false
       }
+   },
+   "rendererModule": {
+      "enabled": true,
+      "billboardType": 1,
+      "rotationSpace": 1,
+      "sortMode": 2,
+      "velocityStretchEnabled": false,
+      "cameraFadeEnabled": true,
+      "cameraFadeNear": 0.12,
+      "cameraFadeFar": 0.6
+   },
+   "particleMeshModule": {
+      "particleMeshType": 0,
+      "meshOriginY": 0.5,
+      "enabled": true
+   },
+   "materialSettings": {
+      "brightness": 1.0,
+      "alphaCutoff": 0.001,
+      "toonSteps": 0,
+      "softParticles": true,
+      "softParticleDistance": 0.12,
+      "edgeSoftness": 0.82,
+      "distortionStrength": 0,
+      "distortionBlend": 1,
+      "distortionUseTextureFlow": false,
+      "smokeDensity": 1.8
+   },
+   "uvTransformModule": {
+      "enabled": false
+   },
+   "textureSheetAnimationModule": {
+      "enabled": false
+   },
+   "trailModule": {
+      "enabled": false
+   },
+   "subEmitters": {
+      "enabled": false
    }
 }

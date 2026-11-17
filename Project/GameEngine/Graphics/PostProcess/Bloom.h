@@ -3,20 +3,14 @@
 #include "GameEngine/Graphics/PostProcess/PostProcess.h"
 #include <wrl.h>
 #include <d3d12.h>
+#include <array>
+#include <cstdint>
 
 namespace GameEngine {
 
 /// @brief ブルーム効果
 class Bloom : public PostProcess {
 public:
-   /// @brief ブルーム用パラメータ構造体
-   struct BloomCB {
-      float threshold;     // 輝度閾値
-      float intensity;     // ブルーム強度
-      float blurRadius;    // ブラー半径
-      float softThreshold; // ソフト閾値（閾値付近の滑らかさ）
-   };
-
    /// @brief 初期化（パイプラインは外部から設定される）
    /// @param device グラフィックスデバイス
    /// @param renderTarget レンダーターゲット
@@ -27,8 +21,11 @@ public:
    void Apply(D3D12_GPU_DESCRIPTOR_HANDLE inputSRV) override;
 
 #ifdef USE_IMGUI
+   /// @brief ブルームのしきい値・強度・ぼかし半径を編集する。
    void ImGuiEdit() override;
 #endif
+
+   /// @brief エフェクトの表示名を取得する。
    const char* GetEffectName() const override { return "Bloom"; }
 
    /// @brief 輝度しきい値・境界の柔らかさ・合成強度・ぼかし半径をシーン保存用JSONへ変換する。
@@ -40,16 +37,47 @@ public:
    /// @return JSONオブジェクトを受け付けた場合はtrue。それ以外はfalse。
    bool DeserializeSettings(const nlohmann::json& settings) override;
 
-   // パラメータ設定
+   /// @brief 発光を抽出する輝度しきい値を設定する。
    void SetThreshold(float threshold);
 
+   /// @brief 周囲へ加算する発光の強度を設定する。
    void SetIntensity(float intensity);
 
+   /// @brief ぼかしの広がりを設定する（ピクセル基準、0～10）。
    void SetBlurRadius(float radius);
 
+   /// @brief 輝度しきい値の境界の柔らかさを設定する（0～1）。
    void SetSoftThreshold(float softThreshold);
 
 private:
+   // Bloom.PS.hlslのパス番号・重み配列と一致させる。
+   enum class Pass : std::uint32_t {
+      Copy,
+      Horizontal,
+      Composite,
+      Count
+   };
+   static constexpr float kMaxBlurRadius = 10.0f;
+   static constexpr float kSigmaPerBlurRadius = 1.5f;
+   static constexpr float kKernelSupportSigma = 3.0f;
+   static constexpr std::int32_t kMaxKernelRadius =
+      static_cast<std::int32_t>(kMaxBlurRadius * kSigmaPerBlurRadius * kKernelSupportSigma);
+   static constexpr size_t kWeightsPerVector = 4;
+   static constexpr size_t kWeightVectorCount = (kMaxKernelRadius + kWeightsPerVector) / kWeightsPerVector;
+
+   // パスごとに256バイト境界の別領域を持ち、記録済みコマンドの定数を上書きしない。
+   struct alignas(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT) BloomCB {
+      float threshold;
+      float intensity;
+      float softThreshold;
+      std::int32_t kernelRadius;
+      std::uint32_t pass;
+      std::array<float, 3> padding{};
+      std::array<std::array<float, kWeightsPerVector>, kWeightVectorCount> weights{};
+   };
+
+   static_assert(sizeof(BloomCB) == D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+
    float threshold_ = 1.0f;     // 通常の白を超えるHDR発光を中心に抽出する
    float softThreshold_ = 0.5f; // 閾値境界だけを滑らかにし、通常色へのにじみを抑える
    float intensity_ = 1.0f;     // HDR輝度差を保ちながら周辺光を加算する
@@ -58,7 +86,14 @@ private:
    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< この処理の設定をGPUへ渡す所有定数バッファ。
    BloomCB* constantBufferData_ = nullptr; ///< 定数バッファの永続Map先。対応するリソースがメモリを所有する。
 
+   Microsoft::WRL::ComPtr<ID3D12Resource> blurTexture_;         ///< 横方向の発光ぼかしを保存するHDR中間画像。
+   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> blurRtvHeap_;   ///< シーンのRTVを上書きしない専用ヒープ。
+   std::shared_ptr<SrvDescriptorAllocation> blurSrvAllocation_; ///< 共有SRVヒープ内の中間画像スロットの所有権。
+   D3D12_GPU_DESCRIPTOR_HANDLE blurSrvHandle_{};                ///< 中間画像のGPU参照ハンドル。
+
    void CreateConstantBuffer();
    void UpdateConstantBuffer();
+   bool EnsureBlurTarget();
+   void DrawPass(Pass pass, D3D12_GPU_DESCRIPTOR_HANDLE inputSRV);
 };
 }

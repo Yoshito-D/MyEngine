@@ -20,11 +20,11 @@ void ParticleMaterial::Create(GraphicsDevice* device, const Vector4& color) {
    materialData_->uvTransform = MakeIdentity4x4();
 
    // Shader側の定数レイアウトに合わせ、関連するScalar設定をVector4単位でまとめて転送する。
-   materialData_->renderingParams = Vector4(brightness_, alphaCutoff_, static_cast<float>(toonSteps_), 0.0f);
+   materialData_->renderingParams = Vector4(brightness_, alphaCutoff_, static_cast<float>(toonSteps_), edgeSoftness_);
    materialData_->effectParams =
       Vector4(softParticlesEnabled_ ? 1.0f : 0.0f, softParticleDistance_, distortionStrength_, distortionBlend_);
    materialData_->sceneParams = Vector4(1.0f, 1.0f, 0.01f, 100.0f);
-   materialData_->projectionParams = Vector4(0.0f, distortionUseTextureFlow_ ? 1.0f : 0.0f, 0.0f, 0.0f);
+   materialData_->projectionParams = Vector4(0.0f, distortionUseTextureFlow_ ? 1.0f : 0.0f, smokeDensity_, 0.0f);
 }
 
 void ParticleMaterial::SetColor(const Vector4& color) {
@@ -74,6 +74,22 @@ float ParticleMaterial::GetAlphaCutoff() const {
 
 uint32_t ParticleMaterial::GetToonSteps() const {
    return toonSteps_;
+}
+
+void ParticleMaterial::SetEdgeSoftness(float softness) {
+   edgeSoftness_ = std::clamp(softness, 0.0f, 1.0f);
+
+   if (materialData_) {
+      materialData_->renderingParams.w = edgeSoftness_;
+   }
+}
+
+void ParticleMaterial::SetSmokeDensity(float density) {
+   smokeDensity_ = std::max(density, 0.0f);
+
+   if (materialData_) {
+      materialData_->projectionParams.z = smokeDensity_;
+   }
 }
 
 void ParticleMaterial::SetSoftParticlesEnabled(bool enabled) {

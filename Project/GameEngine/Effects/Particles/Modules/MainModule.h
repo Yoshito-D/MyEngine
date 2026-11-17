@@ -276,6 +276,13 @@ public:
    /// @return 現在の座標空間
    SimulationSpace GetSimulationSpace() const { return simulationSpace_; }
 
+   /// @brief 初速・加速度を生成時のエミッター座標からワールド方向へ回すか設定する。
+   /// @details ワールド空間の粒子を移動元へ追従させず、地表の法線方向へ放出できる。
+   void SetMotionRelativeToEmitter(bool enabled) { motionRelativeToEmitter_ = enabled; }
+
+   /// @brief 初速・加速度を生成時のエミッター座標で解釈するか取得する。
+   bool IsMotionRelativeToEmitter() const { return motionRelativeToEmitter_; }
+
    /// @brief システム初期化時に自動再生するか設定する
    /// @param play 自動再生する場合はtrue
    void SetPlayOnAwake(bool play) { playOnAwake_ = play; }
@@ -323,7 +330,8 @@ private:
    RandomFloat gravityModifier_{0.0f, 0.0f, false};           ///< 粒子ごとの重力倍率範囲。
    float timeScale_ = 1.0f;                                   ///< このシステム固有の時間倍率。
    SimulationSpace simulationSpace_ = SimulationSpace::World; ///< パーティクルのシミュレーション座標空間。
-   bool playOnAwake_ = true;                                  ///< システム初期化時に自動再生するかどうかする。
-   uint32_t maxParticles_ = 1000;                             ///< 同時に生存できるパーティクル数の上限。
+   bool motionRelativeToEmitter_ = false; ///< 位置追従とは独立して生成時の姿勢で初速・加速度を回すか。
+   bool playOnAwake_ = true;              ///< システム初期化時に自動再生するかどうかする。
+   uint32_t maxParticles_ = 1000;         ///< 同時に生存できるパーティクル数の上限。
 };
 }

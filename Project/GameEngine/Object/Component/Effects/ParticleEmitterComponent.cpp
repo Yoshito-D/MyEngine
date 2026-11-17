@@ -277,6 +277,14 @@ void ParticleEmitterComponent::EnableEmission(std::int32_t index, bool enabled) 
    }
 }
 
+void ParticleEmitterComponent::SetSlotTexture(std::int32_t index, Texture* texture) {
+   auto* slot = GetSlot(index);
+
+   if (slot && slot->particleSystem) {
+      slot->particleSystem->SetTexture(texture);
+   }
+}
+
 bool ParticleEmitterComponent::HasLivingParticles(std::int32_t index) const {
    const auto* slot = GetSlot(index);
    return slot && slot->particleSystem && slot->particleSystem->GetActiveParticleCount() > 0;

@@ -931,6 +931,7 @@
     <None Include="Resources\engine\pipelines\root_signatures\graphics\skybox_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_bloom_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_dissolve_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_outline_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_rootsig.json" />
